@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { acquireStudioHuddleAudioFocus } from "../../live/huddle/studio-p2p-huddle-audio-focus";
 
 import { studioVirtualToonHqManifest } from "./hq/toon-hq-manifest";
 import { createOffice2dActor } from "./office2d-actors";
@@ -538,6 +539,13 @@ describe("스테이지 확장·배경 이펙트·상호작용 고도화", () => 
       expect(playOffice2dSpatialCue("room-enter", { roomId: "hq-color-lab", talking: true })).toBe(true);
       expect(freqs[0]).toBeCloseTo(659.25);
       expect(gains[1]! / gains[0]!).toBeCloseTo(0.25);
+      const release = acquireStudioHuddleAudioFocus();
+      try {
+        expect(playOffice2dSpatialCue("room-enter", { roomId: "hq-color-lab" })).toBe(true);
+        expect(gains[2]! / gains[0]!).toBeCloseTo(0.25);
+      } finally { release(); }
+      expect(playOffice2dSpatialCue("room-enter", { roomId: "hq-color-lab" })).toBe(true);
+      expect(gains[3]).toBeCloseTo(gains[0]!);
       vi.runAllTimers();
     } finally {
       vi.useRealTimers();

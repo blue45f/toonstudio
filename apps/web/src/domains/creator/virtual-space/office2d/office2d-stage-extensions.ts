@@ -8,6 +8,7 @@
  * - 공간 테마(spaceTheme) 배경 외곽 톤 매핑
  */
 import type { StudioBuildPlacedFixture } from "../studio-virtual-space-build-mode-vitality";
+import { studioHuddleAudioFocusSnapshot } from "../../live/huddle/studio-p2p-huddle-audio-focus";
 import type { StudioVirtualDecorationState, StudioVirtualDecorType } from "../studio-virtual-space-customization";
 import type { StudioDayNightCycleConfig } from "../studio-virtual-space-engine-bridge";
 import type { StudioInteractableStateKey } from "../studio-virtual-space-interactable-objects";
@@ -534,7 +535,7 @@ export function playOffice2dSpatialCue(
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    const duck = options?.talking ? 0.25 : 1;
+    const duck = options?.talking || studioHuddleAudioFocusSnapshot() ? 0.25 : 1;
     const roomPair = (options?.roomId ? ROOM_CHORD_HZ[options.roomId] : undefined) ?? [523.25, 783.99];
     const [f0, f1] =
       kind === "desk-claim"

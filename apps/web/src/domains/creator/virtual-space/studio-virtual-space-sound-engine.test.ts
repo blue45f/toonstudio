@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StudioFootstepEvent } from "./studio-virtual-space-footsteps";
+import { acquireStudioHuddleAudioFocus } from "../live/huddle/studio-p2p-huddle-audio-focus";
 import {
   StudioVirtualSpaceSoundEngine,
   playStudioFootstepSound,
@@ -184,5 +185,44 @@ describe("StudioVirtualSpaceSoundEngine", () => {
     playStudioSfxSound("emote", 1);
     expect(f.oscillators).toHaveLength(2);
     f.engine.dispose();
+  });
+
+  it("회의 입퇴장 시 재생 중인 효과음도 낮추고 사용자 음량과 음소거를 보존한다", () => {
+    const f = fixture();
+    f.engine.unlock();
+    const master = f.gains[0]?.gain;
+    expect(master?.value).toBe(0.7);
+    const release = acquireStudioHuddleAudioFocus();
+    try {
+      expect(master?.setTargetAtTime).toHaveBeenLastCalledWith(expect.closeTo(0.105), 2, expect.any(Number));
+      f.engine.setPreference({ effectsEnabled: true, effectsVolume: 0.4 });
+      expect(master?.setTargetAtTime).toHaveBeenLastCalledWith(expect.closeTo(0.06), 2, expect.any(Number));
+      f.engine.setPreference({ effectsEnabled: false, effectsVolume: 0.4 });
+      expect(master?.setTargetAtTime).toHaveBeenLastCalledWith(0, 2, expect.any(Number));
+      release();
+      expect(master?.setTargetAtTime).toHaveBeenLastCalledWith(0, 2, expect.any(Number));
+      f.engine.setPreference({ effectsEnabled: true, effectsVolume: 0.4 });
+      expect(master?.setTargetAtTime).toHaveBeenLastCalledWith(0.4, 2, expect.any(Number));
+    } finally { release(); f.engine.dispose(); }
+  });
+
+  it("회의 중 생성한 엔진도 처음부터 감쇠하며 마지막 회의 종료 때만 복귀한다", () => {
+    const releaseFirst = acquireStudioHuddleAudioFocus();
+    const releaseSecond = acquireStudioHuddleAudioFocus();
+    const f = fixture();
+    try {
+      expect(f.gains).toHaveLength(0);
+      f.engine.unlock();
+      expect(f.gains[0]?.gain.value).toBeCloseTo(0.105);
+      releaseFirst();
+      expect(f.gains[0]?.gain.setTargetAtTime).not.toHaveBeenCalled();
+      releaseSecond();
+      expect(f.gains[0]?.gain.setTargetAtTime).toHaveBeenLastCalledWith(0.7, 2, expect.any(Number));
+      f.engine.dispose();
+      const calls = f.gains[0]?.gain.setTargetAtTime.mock.calls.length;
+      const releaseAfterDispose = acquireStudioHuddleAudioFocus();
+      releaseAfterDispose();
+      expect(f.gains[0]?.gain.setTargetAtTime.mock.calls.length).toBe(calls);
+    } finally { releaseFirst(); releaseSecond(); f.engine.dispose(); }
   });
 });

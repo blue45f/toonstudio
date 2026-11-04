@@ -18,6 +18,7 @@ import {
   type StudioSfxKind,
 } from "./studio-virtual-space-sound-synth";
 import type { StudioVirtualSoundPreference } from "./studio-virtual-space-sound-preference";
+import { studioHuddleAudioFocusSnapshot, subscribeStudioHuddleAudioFocus } from "../live/huddle/studio-p2p-huddle-audio-focus";
 
 export interface StudioSoundEngineDependencies {
   createContext(): AudioContext;
@@ -54,16 +55,21 @@ export class StudioVirtualSpaceSoundEngine {
   private lastFootstepAt = Number.NEGATIVE_INFINITY;
   private readonly lastSfxAt = new Map<StudioSfxKind, number>();
   private disposed = false;
+  private ducked = studioHuddleAudioFocusSnapshot();
+  private readonly unsubscribeAudioFocus: () => void;
 
-  constructor(private readonly dependencies: StudioSoundEngineDependencies = browserDependencies) {}
+  constructor(private readonly dependencies: StudioSoundEngineDependencies = browserDependencies) {
+    this.unsubscribeAudioFocus = subscribeStudioHuddleAudioFocus(() => {
+      this.ducked = studioHuddleAudioFocusSnapshot();
+      this.applyGain();
+    });
+  }
 
-  /** 효과음 설정을 반영한다. 꺼지면 이후 재생은 전부 건너뛴다. */
+  /** 효과음 설정을 반영한다. 꺼지면 현재 출력을 낮추고 이후 재생도 건너뛴다. */
   setPreference(preference: Pick<StudioVirtualSoundPreference, "effectsEnabled" | "effectsVolume">): void {
     this.enabled = preference.effectsEnabled;
     this.volume = clamp01(preference.effectsVolume);
-    if (this.master && this.context) {
-      this.master.gain.setTargetAtTime(this.volume, this.context.currentTime, 0.03);
-    }
+    this.applyGain();
   }
 
   /**
@@ -151,6 +157,7 @@ export class StudioVirtualSpaceSoundEngine {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.unsubscribeAudioFocus();
     const context = this.context;
     this.context = null;
     this.master = null;
@@ -162,12 +169,23 @@ export class StudioVirtualSpaceSoundEngine {
     return this.dependencies.now?.() ?? performance.now();
   }
 
+  /** 회의 우선순위는 사용자 음량·켜짐 설정과 별개이며 이미 재생 중인 소리에도 적용한다. */
+  private outputVolume(): number {
+    return this.enabled ? this.volume * (this.ducked ? 0.15 : 1) : 0;
+  }
+
+  private applyGain(): void {
+    if (this.master && this.context) {
+      this.master.gain.setTargetAtTime(this.outputVolume(), this.context.currentTime, 0.03);
+    }
+  }
+
   private ensureContext(): AudioContext | null {
     if (this.context || this.disposed) return this.context;
     try {
       const context = this.dependencies.createContext();
       this.master = context.createGain();
-      this.master.gain.value = this.volume;
+      this.master.gain.value = this.outputVolume();
       this.master.connect(context.destination);
       this.context = context;
       return context;

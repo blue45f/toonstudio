@@ -168,7 +168,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
               data-testid={`studio-vspace-audition-footstep-${item.surface}`}
               disabled={!sound.effectsEnabled}
               onClick={() => auditionFootstep(item.surface, item.labelKo, item.labelEn)}
-              className="rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-fg disabled:opacity-50"
+              className="min-h-11 rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-fg disabled:opacity-50"
             >
               {bt(item.labelKo, item.labelEn)}
             </button>
@@ -182,7 +182,7 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
               data-testid={`studio-vspace-audition-sfx-${item.kind}`}
               disabled={!sound.effectsEnabled}
               onClick={() => auditionSfx(item.kind, item.labelKo, item.labelEn)}
-              className="rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-fg disabled:opacity-50"
+              className="min-h-11 rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-fg disabled:opacity-50"
             >
               {bt(item.labelKo, item.labelEn)}
             </button>
