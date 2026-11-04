@@ -3,3 +3,5 @@
 .studio-environment-panel__options{display:grid;grid-template-columns:1fr 1fr;gap:14px}.studio-environment-panel__options fieldset>div{display:flex;flex-wrap:wrap;gap:7px}.studio-environment-panel__options button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:36px!important;padding:7px 10px;border:1px solid var(--color-line);border-radius:10px;background:var(--color-card);color:var(--color-fg-2);font-size:11px;font-weight:850}.studio-environment-panel__options button[aria-pressed=true]{border-color:color-mix(in srgb,var(--color-accent) 60%,white);background:var(--color-accent-soft);color:var(--color-accent)}
 @media(max-width:520px){.studio-environment-panel{padding:13px}.studio-environment-panel__options{grid-template-columns:1fr}.studio-environment-panel__backdrops>div{grid-template-columns:1fr 1fr}.studio-environment-panel__backdrops button{min-height:96px!important}}
 @media(prefers-reduced-motion:reduce){.studio-environment-panel__backdrops img{transition:none}}
+/* 터치 기기에서는 시간대·날씨 칩이 36px라 손가락으로 누르기 좁았다. 공통 조작 크기(44px)를 지킨다. */
+@media(pointer:coarse){.studio-environment-panel__options button{min-height:44px!important}}

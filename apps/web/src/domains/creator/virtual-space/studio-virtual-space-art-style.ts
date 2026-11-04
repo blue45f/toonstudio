@@ -220,6 +220,25 @@ export function studioVirtualArtNpcUrl(
   return `${V5_ROOT}/${key}/npcs/npc-${role}-${motion}${suffix ? `-${suffix}` : ""}.webp`;
 }
 
+/**
+ * '공간 아트 스타일' 선택이 실제로 바꾸는 범위 안내 문구.
+ * 기본 2D(office2d) 스튜디오의 바닥·벽·가구는 '공간 테마'가 정하고 작화 선택은 월드에 닿지 않는다.
+ * 그런데도 "건물·가구·바닥의 작화를 선택해요"라고 안내해, 눌러도 화면이 그대로인 것처럼 보였다.
+ * 작화가 월드를 바꾸는 이전(legacy) 장면과 구분해 실제 효과 범위를 정직하게 알린다.
+ */
+export function studioVirtualArtStyleScopeNote(stageKind: "office2d" | "legacy" | "three"): { readonly ko: string; readonly en: string } {
+  if (stageKind === "office2d") {
+    return {
+      ko: "이 작화는 입장 미리보기와 배경 장소·분위기 미리보기에 쓰여요. 기본 2D 스튜디오의 바닥·벽은 아래 '공간 테마'로 바꿔요.",
+      en: "This art direction drives the entry preview and the backdrop and atmosphere previews. Floors and walls in the default 2D studio come from the Space theme below.",
+    };
+  }
+  return {
+    ko: "건물·가구·바닥의 작화를 선택해요. 내 캐릭터는 직접 고른 모습을 유지해요.",
+    en: "Choose the art for buildings, furniture and floors. Your character keeps the look you chose.",
+  };
+}
+
 export function readStudioVirtualArtStyle(): StudioVirtualArtStyleKey {
   if (typeof window === "undefined") return DEFAULT_STUDIO_VIRTUAL_ART_STYLE;
   try {

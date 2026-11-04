@@ -193,22 +193,25 @@ export class Office2dStageExtensions {
     if (sprite === "coffee-machine") {
       nextState = prev === "coffee:brewing" ? "coffee:ready" : "coffee:brewing";
       particles.emit("steam", x, y - 56, 6, 1.3);
-      particles.emit("spark", x, y - 44, 8, 1);
+      particles.emitComboBurst("interaction", x, y - 36, 0.9);
       this.pushComicBurst("보글보글 ☕ 에스프레소!", "#f59e0b", x, y - 58, nowMs);
     } else if (sprite === "floor-lamp") {
       nextState = prev === "light:off" ? "light:on" : "light:off";
+      particles.emit("starburst", x, y - 64, 6, 1);
       particles.emit("spark", x, y - 64, 6, 0.9);
       this.pushComicBurst("찰칵 💡 스탠드 조명!", "#fbbf24", x, y - 64, nowMs);
     } else if (sprite === "kanban-board" || sprite === "storyboard-wall" || sprite === "review-screen") {
       nextState = "media:open";
       particles.emit("note", x, y - 58, 5, 1);
+      particles.emitComboBurst("interaction", x, y - 40, 0.95);
       this.pushComicBurst(sprite === "review-screen" ? "승인 PASS ✅ 합평 스크린" : "번뜩—!! 📌 콘티·칸반 동기화", "#38bdf8", x, y - 62, nowMs);
     } else if (sprite === "printer-station" || sprite === "vending-machine") {
       nextState = "print:active";
       particles.emit("confetti", x, y - 48, 10, 0.85);
+      particles.emit("starburst", x, y - 48, 5, 0.9);
       this.pushComicBurst("위이잉 🖨 교정지 출력 완료!", "#34d399", x, y - 56, nowMs);
     } else {
-      particles.emit("spark", x, y - 42, 6, 0.85);
+      particles.emitComboBurst("interaction", x, y - 32, 1);
       this.pushComicBurst("스슥— ✒️ 워크스테이션 가동!", "#a855f7", x, y - 52, nowMs);
     }
 

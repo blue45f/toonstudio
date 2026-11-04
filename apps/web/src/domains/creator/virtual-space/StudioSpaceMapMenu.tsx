@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { spaceKoParticle } from "./hud/space-korean";
 import {
   STUDIO_VIRTUAL_SPACE_ZONES,
   type StudioVirtualSpaceZone,
@@ -499,7 +500,7 @@ export function StudioSpaceMapMenu({
                   className="studio-space-map-travel"
                   onClick={() => onTravel(zone.id)}
                   aria-label={bt(
-                    `${zone.labelKo}로 이동${isCurrent ? " (현재 위치)" : ""}`,
+                    `${spaceKoParticle(zone.labelKo, "으로")} 이동${isCurrent ? " (현재 위치)" : ""}`,
                     `Travel to ${zone.labelEn}${isCurrent ? " (current location)" : ""}`,
                   )}
                 />

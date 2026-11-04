@@ -10,6 +10,7 @@
  * 각 파이프라인(가구 배치·앰비언트·조명)이 처리할 배치 요청(pending)으로 낸다.
  */
 
+import { spaceKoParticle } from "./hud/space-korean";
 import {
   addStudioVirtualDecorationSafely,
   editStudioVirtualDecoration,
@@ -114,7 +115,7 @@ export const STUDIO_BUILD_CATALOG: readonly StudioBuildCatalogEntry[] = Object.f
   ...STUDIO_LIGHT_FIXTURE_KINDS.map((meta) => entry({
     id: `light:${meta.kind}`, category: "light", refId: meta.kind,
     labelKo: meta.labelKo, labelEn: meta.labelEn,
-    descriptionKo: `${meta.labelKo}를 설치해요.`, descriptionEn: `Install a ${meta.labelEn.toLowerCase()}.`,
+    descriptionKo: `${spaceKoParticle(meta.labelKo, "을")} 설치해요.`, descriptionEn: `Install a ${meta.labelEn.toLowerCase()}.`,
     icon: LIGHT_ICONS[meta.kind] ?? "💡",
   })),
   ...STUDIO_LIGHTING_PRESET_KEYS.map((key) => {
