@@ -58,15 +58,20 @@ export function SpacePopover({ open, onClose, title, sheet, palette = false, anc
   }, [open, modal]);
 
   if (!open) return null;
+  const closeModal = () => {
+    // showModal()이 걸어 둔 모달 비활성(inert) 잠금을 먼저 풀어야 onClose() 안의 focusWorld()가 캔버스로 초점을 돌려줄 수 있다.
+    if (dialogRef.current?.open) dialogRef.current.close();
+    onClose();
+  };
   const header = <header className={modal ? "space-sheet__header" : "space-popover__header"}>
     {sheet ? <span className="space-sheet__grip" aria-hidden /> : null}
     <h2 id={titleId}>{title}</h2>
-    <button type="button" className="space-icon-button" onClick={onClose} aria-label={bt("닫기", "Close")}><X size={18} aria-hidden /></button>
+    <button type="button" className="space-icon-button" onClick={modal ? closeModal : onClose} aria-label={bt("닫기", "Close")}><X size={18} aria-hidden /></button>
   </header>;
   if (modal) {
     return <dialog ref={dialogRef} className={cn(palette && !sheet ? "space-palette" : "space-sheet", className)} aria-labelledby={titleId}
-      data-space-interactive="true" onCancel={(event) => { event.preventDefault(); onClose(); }}
-      onKeyDown={(event) => { if (event.key === "Escape") event.stopPropagation(); }}>
+      data-space-interactive="true" onCancel={(event) => { event.preventDefault(); closeModal(); }}
+      onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeModal(); } }}>
       <div className="space-sheet__body">
         {header}
         {children}

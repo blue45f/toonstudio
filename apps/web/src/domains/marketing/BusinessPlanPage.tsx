@@ -50,7 +50,7 @@ export function BusinessPlanPage() {
   );
 
   return (
-    <main className="min-h-[calc(100dvh-var(--site-header-height,4.25rem))] py-5 sm:py-8 lg:py-10">
+    <div className="min-h-[calc(100dvh-var(--site-header-height,4.25rem))] py-5 sm:py-8 lg:py-10">
       <Container>
         <HeroBlock
           eyebrow="TOONSTUDIO BUSINESS PLAN"
@@ -105,6 +105,6 @@ export function BusinessPlanPage() {
           </section>
         ))}
       </Container>
-    </main>
+    </div>
   );
 }

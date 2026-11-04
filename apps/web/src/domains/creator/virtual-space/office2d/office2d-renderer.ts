@@ -55,6 +55,7 @@ import {
   type Office2dSpriteKey,
 } from "./office2d-sprite-catalog";
 import { office2dOutsideColor, type Office2dStageExtensions } from "./office2d-stage-extensions";
+import { OFFICE2D_THEME_FLOOR_ALPHA, office2dThemeFloorColor, office2dThemeWallTone } from "./office2d-theme-tint";
 import {
   computeOffice2dObjectOcclusion,
   findOffice2dActionableObjectAhead,
@@ -270,7 +271,20 @@ export class Office2dRenderer {
       rect.x < originX + CHUNK && rect.x + rect.width > originX && rect.y < originY + CHUNK && rect.y + rect.height > originY;
     const background = this.scene.backgroundUrl ? this.host.image(this.scene.backgroundUrl) : null;
     if (background) ctx.drawImage(background, 0, 0, this.scene.width, this.scene.height);
-    else for (const floor of this.scene.floors) if (intersects(floor)) paintOffice2dFloor(ctx, floor);
+    else for (const floor of this.scene.floors) if (intersects(floor)) {
+      paintOffice2dFloor(ctx, floor);
+      const tint = office2dThemeFloorColor(spaceTheme, floor.floor);
+      if (tint) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(floor.x, floor.y, floor.width, floor.height);
+        ctx.clip();
+        ctx.globalAlpha = OFFICE2D_THEME_FLOOR_ALPHA;
+        ctx.fillStyle = tint;
+        ctx.fillRect(floor.x, floor.y, floor.width, floor.height);
+        ctx.restore();
+      }
+    }
     paintOffice2dRoomFloorBackdrops(ctx, this.scene, originX, originY, CHUNK, (url) => this.host.image(url), spaceTheme);
     for (const object of this.scene.objects) {
       if (object.layer !== "floor") continue;
@@ -455,7 +469,7 @@ export class Office2dRenderer {
 
   private drawNorthWall(ctx: Office2dCanvas2D, wall: Office2dWall, frame: Office2dRenderFrame, labelBoxes: readonly Office2dLabelBox[]): void {
     const language = frame.language;
-    paintOffice2dNorthWall(ctx, wall);
+    paintOffice2dNorthWall(ctx, { ...wall, tone: office2dThemeWallTone(frame.spaceTheme, wall.tone) });
     paintOffice2dNorthWallArtMural(ctx, wall, (url) => this.host.image(url), frame.time, frame.reducedMotion);
     const faceTop = wall.y + 12;
     const faceBottom = wall.y + wall.height - 8;

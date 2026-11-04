@@ -78,6 +78,8 @@ export function CollaborationBoardPage() {
   const view = params.get("view") || "all";
   const type = params.get("type") || "all";
   const activeRole = params.get("role") || "all";
+  const [binaryLockMode, setBinaryLockMode] = useState<"anchorpoint-perforce" | "diversion-branch" | "rbac-18layer">("anchorpoint-perforce");
+  const [proofingMode, setProofingMode] = useState<"syncsketch-ziflow" | "loupe-onionskin" | "smartling-glossary">("syncsketch-ziflow");
   const viewLabel = (key: keyof typeof views) => bt(views[key], viewsEn[key]);
   function change(key: string, value: string) {
     const next = new URLSearchParams(params); next.delete("cursor");
@@ -145,6 +147,66 @@ export function CollaborationBoardPage() {
         </Link>
       ))}
     </div>
+    <section
+      data-testid="collaborate-rea-interactive-vcs-sla-bar"
+      aria-label={bt("실시간 공동작업 바이너리 잠금·프레임 검수·다국어 글로서리 게이트", "Realtime Collab Binary Lock, Frame Proofing & Glossary Gate")}
+      className="mt-4 rounded-2xl border border-accent/25 bg-panel/80 p-3.5 text-xs"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("바이너리 잠금 및 VCS 모드", "Binary Lock & VCS Mode")}>
+          <span className="font-extrabold text-accent">{bt("VCS·레이어 잠금:", "VCS & Layer Lock:")}</span>
+          {([
+            { id: "anchorpoint-perforce", ko: "Anchorpoint·Perforce .clip/.psd/.blend 배타 잠금", en: "Anchorpoint/Perforce .clip/.psd/.blend Lock" },
+            { id: "diversion-branch", ko: "Diversion·Unity VCS 클라우드 스냅샷 브랜치", en: "Diversion/Unity VCS Cloud Branch" },
+            { id: "rbac-18layer", ko: "Magma·Figma 15직무×18레이어 무충돌 RBAC", en: "Magma/Figma 15-Role×18-Layer RBAC" },
+          ] as const).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`collaborate-rea-vcs-${item.id}`}
+              aria-pressed={binaryLockMode === item.id}
+              onClick={() => setBinaryLockMode(item.id)}
+              className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                binaryLockMode === item.id
+                  ? "bg-accent text-on-accent"
+                  : "border border-line bg-canvas text-fg-2 hover:border-accent/45"
+              }`}
+            >
+              {bt(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("검수 및 다국어 용어집 게이트", "Proofing & Glossary Gate")}>
+          <span className="font-extrabold text-fg-2">{bt("검수·글로서리:", "Proofing & Glossary:")}</span>
+          {([
+            { id: "syncsketch-ziflow", ko: "SyncSketch·Ziflow 프레임 레드라인", en: "SyncSketch/Ziflow Frame Redline" },
+            { id: "loupe-onionskin", ko: "Loupe.art·ReviewStudio 어니언스킨 Diff", en: "Loupe.art/ReviewStudio Onion-Skin Diff" },
+            { id: "smartling-glossary", ko: "Smartling·Crowdin 75개 언어 글로서리 잠금", en: "Smartling/Crowdin 75-Locale Glossary Lock" },
+          ] as const).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`collaborate-rea-proofing-${item.id}`}
+              aria-pressed={proofingMode === item.id}
+              onClick={() => setProofingMode(item.id)}
+              className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                proofingMode === item.id
+                  ? "bg-accent text-on-accent"
+                  : "border border-line bg-canvas text-fg-2 hover:border-accent/45"
+              }`}
+            >
+              {bt(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p data-testid="collaborate-rea-active-vcs-summary" className="mt-2 text-[11px] font-semibold text-fg-2">
+        {bt(
+          `[활성 파이프라인] ${binaryLockMode === "anchorpoint-perforce" ? "Anchorpoint·Perforce Git LFS 대용량 바이너리 배타 잠금" : binaryLockMode === "diversion-branch" ? "Diversion·Unity VCS 무손실 아티스트 브랜치 병합" : "15개 세부직무 × 18개 레이어 CRDT 덮어쓰기 충돌 0건"} · ${proofingMode === "syncsketch-ziflow" ? "SyncSketch·Ziflow·PageProof 컷별 레드라인 승인 게이트" : proofingMode === "loupe-onionskin" ? "Loupe.art·Chromatic 전/후 레이어 픽셀 Diff 비교" : "Smartling·MemoQ·Crowdin 75개 언어 세계관 고유명사(인명·스킬명) 무결성 100%"}`,
+          `[Active Pipeline] ${binaryLockMode} + ${proofingMode} · Zero-conflict handoff SLA active`,
+        )}
+      </p>
+    </section>
     <div className="mt-6 grid gap-3 sm:grid-cols-3">{categories.map(({ type: category, label, enLabel, description, enDescription, icon: Icon }) => <button key={category} type="button" aria-pressed={type === category} onClick={() => change("type", type === category ? "all" : category)} className={`flex min-h-24 items-center gap-4 rounded-2xl border p-5 text-left transition-colors ${type === category ? "border-accent bg-accent/10" : "border-line bg-panel hover:border-accent/50"}`}><Icon size={25} className="shrink-0 text-accent" aria-hidden="true" /><span className="font-bold text-fg">{bt(label, enLabel)}<span className="mt-1 block text-xs font-normal text-fg-3">{bt(description, enDescription)}</span></span></button>)}</div>
     <section id="collaboration-results" className="mt-8 scroll-mt-24" aria-label={bt("공고 검색과 필터", "Post search and filters")}>
       {visibleViews.length > 1 ? (

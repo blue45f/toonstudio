@@ -61,6 +61,10 @@ describe("CommunityPage", () => {
     expect(screen.getByTestId("community-rea-creator-showcase-bar").textContent).toContain(
       "CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE",
     );
+    expect(screen.getByTestId("community-rea-interactive-workbench")).toBeTruthy();
+    expect(screen.getByTestId("community-rea-active-track-summary").textContent).toContain(
+      "Skeb 무수정 리퀘스트",
+    );
     // 이모지 아이콘을 쓰지 않는다(사이트 공통 아이콘 문법).
     expect(document.body.textContent).not.toMatch(/[📚🖋☕🫧]/u);
   });

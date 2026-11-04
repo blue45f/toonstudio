@@ -54,6 +54,10 @@
   right: calc(var(--space-panel-width, 380px) + var(--space-gutter, 12px) * 2 + var(--space-safe-right, 0px));
 }
 
+.space-hud[data-hud-layout="desktop"]:has(.space-context-suggestion) .studio-vspace-three-lighting-hud {
+  bottom: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 84px);
+}
+
 /* 휴대폰·태블릿 세로: 도크는 화면 폭 전체, 오른쪽 아래는 조이스틱(약 124px)이라 '말 걸기' 위 왼쪽에 두고 조이스틱을 피해 줄을 바꾼다. */
 @media (max-width: 1023.98px) {
   .studio-vspace-three-lighting-hud {
@@ -62,6 +66,14 @@
     left: calc(var(--space-gutter, 12px) + var(--space-safe-left, 0px));
     justify-content: flex-start;
     max-width: calc(100% - var(--space-gutter, 12px) * 3 - 124px - var(--space-safe-left, 0px));
+  }
+
+  .space-hud:has(.space-interact-prompt, .space-status-chip, .space-focus-chip) .studio-vspace-three-lighting-hud {
+    bottom: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 116px);
+  }
+
+  .space-hud:has(.space-context-suggestion) .studio-vspace-three-lighting-hud {
+    bottom: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 136px);
   }
 
   .studio-vspace-three-lighting-hud button {

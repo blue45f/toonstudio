@@ -205,14 +205,14 @@ export class StudioReviewPreviewProducerRepository {
       if (await receipt(client, actor, intent)) invariant("preview-intent-terminal");
       const assetId = studioReviewPreviewPageAsset(studioReviewPreviewIntentKey(actor, intent), ordinal);
       await lockStudioReviewPreviewStorage(client, intent.workId, canonical.sha256, { object, sourceAssetId: assetId, referenceId: assetId });
-      const registered = await client.query(
+      // blob은 runtime에서 불변이다. 같은 hash의 기존 검수 상태를 UPDATE로 승격하지 않는다.
+      await client.query(
         `INSERT INTO studio_blob (hash, size, "mediaType", "objectKey", "encryptionMetadata", "malwareStatus", "formatStatus")
          VALUES ($1, $2, 'image/png', $3, NULL, 'clean', 'valid')
-         ON CONFLICT (hash) DO UPDATE SET "malwareStatus" = 'clean', "formatStatus" = 'valid'
-         WHERE studio_blob.size = EXCLUDED.size AND studio_blob."mediaType" = EXCLUDED."mediaType"
-           AND studio_blob."objectKey" = EXCLUDED."objectKey" AND studio_blob."encryptionMetadata" IS NULL
-           AND studio_blob."malwareStatus" IN ('pending', 'clean') AND studio_blob."formatStatus" IN ('pending', 'valid')
-         RETURNING hash`, [canonical.sha256, canonical.bytes.byteLength, canonicalJson(object)]);
+         ON CONFLICT (hash) DO NOTHING`, [canonical.sha256, canonical.bytes.byteLength, canonicalJson(object)]);
+      const registered = await client.query(`SELECT hash FROM studio_blob WHERE hash=$1 AND size=$2
+        AND "mediaType"='image/png' AND "objectKey"=$3 AND "encryptionMetadata" IS NULL
+        AND "malwareStatus"='clean' AND "formatStatus"='valid'`, [canonical.sha256, canonical.bytes.byteLength, canonicalJson(object)]);
       if (registered.rows.length !== 1) invariant("preview-blob-metadata-conflict");
       // Persist server-decoded raster dimensions, never dimensions supplied by the browser.
       const raster = studioReviewPageRasterSchema.parse({ ordinal, sha256: canonical.sha256, width: canonical.width, height: canonical.height });
@@ -298,7 +298,6 @@ export class StudioReviewPreviewProducerRepository {
       // Keep metadata monotonic across clock adjustment and legacy client-dated
       // artifacts without relaxing either database time constraint.
       await client.query(`UPDATE studio_artifact SET "headRevisionId"=$2,"updatedAt"=GREATEST("createdAt","updatedAt",clock_timestamp()) WHERE id=$1`, [intent.artifactId, checkpointId]);
-      await client.query(`UPDATE studio_project_graph SET "updatedAt"=GREATEST("createdAt","updatedAt",clock_timestamp()) WHERE id=$1`, [intent.projectId]);
       const result: StoredReceipt = { status: "completed", fingerprint: studioReviewPreviewDigest(intent), subject: {
         schemaVersion: 1, workId: intent.workId, projectId: intent.projectId, artifactId: intent.artifactId,
         reviewId, revisionId, rootGraphHash: intent.sourceContentDigest } };

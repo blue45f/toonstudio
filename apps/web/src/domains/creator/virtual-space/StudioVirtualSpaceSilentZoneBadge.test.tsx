@@ -8,9 +8,10 @@ import { createSilentZone } from "./studio-virtual-space-silent-zone";
 const ZONE = createSilentZone({ id: "focus-room", name: "집중 작업실", rect: { x: 0, y: 0, width: 400, height: 300 } })!;
 
 describe("StudioVirtualSpaceSilentZoneBadge", () => {
-  it("구역 안에 있을 때 뱃지를 표시한다", () => {
+  it("구역 안에 있을 때 유리 알약 클래스를 가진 뱃지를 표시한다", () => {
     render(<StudioVirtualSpaceSilentZoneBadge zone={ZONE} mutedByZone />);
-    expect(screen.getByRole("status")).toBeTruthy();
+    const badge = screen.getByRole("status");
+    expect(badge.classList.contains("space-silent-zone-badge")).toBe(true);
     expect(screen.getByText(/집중 작업실/)).toBeTruthy();
     expect(screen.getByText(/마이크가 자동으로 꺼졌어요/)).toBeTruthy();
   });

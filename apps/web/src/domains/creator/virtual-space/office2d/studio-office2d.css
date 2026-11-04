@@ -73,6 +73,49 @@
   display: none;
 }
 
+/*
+ * 띠보다 길어 가로로 밀어야 할 때(1024~1319px에서 패널이 열린 상태 등) 잘린 쪽 가장자리를 옅게 지워 "더 있음"을 알린다.
+ * 스크롤 위치에 맞춰 왼쪽·오른쪽 페이드가 번갈아 사라지고, 넘치지 않으면 스크롤 타임라인이 꺼져 페이드가 0이다.
+ * 스크롤 연동 애니메이션을 못 쓰는 브라우저에서는 이 규칙을 건너뛰어 지금처럼 보인다.
+ */
+@property --office2d-rail-fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --office2d-rail-fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes office2d-rail-edge-fade {
+  0% {
+    --office2d-rail-fade-start: 0px;
+    --office2d-rail-fade-end: 24px;
+  }
+
+  8%,
+  92% {
+    --office2d-rail-fade-start: 24px;
+    --office2d-rail-fade-end: 24px;
+  }
+
+  100% {
+    --office2d-rail-fade-start: 24px;
+    --office2d-rail-fade-end: 0px;
+  }
+}
+
+@supports (animation-timeline: scroll(self inline)) {
+  .studio-office2d-pipeline__steps {
+    mask-image: linear-gradient(to right, transparent 0, #000 var(--office2d-rail-fade-start), #000 calc(100% - var(--office2d-rail-fade-end)), transparent 100%);
+    animation: office2d-rail-edge-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+
 .studio-office2d-pipeline__item {
   display: flex;
   flex: none;
@@ -165,14 +208,19 @@
 }
 
 .studio-office2d-schematic-banner {
+  --office2d-rail-inset-start: calc(var(--space-gutter, 12px) + var(--space-safe-left, 0px));
+  --office2d-rail-inset-end: calc(var(--space-minimap-width, 248px) + var(--space-gutter, 12px) * 2 + var(--space-safe-right, 0px));
   position: absolute;
   top: calc(var(--space-safe-top, 0px) + 126px);
-  left: 50%;
+  right: var(--office2d-rail-inset-end);
+  left: var(--office2d-rail-inset-start);
   z-index: 4;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
-  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - var(--office2d-rail-inset-start) - var(--office2d-rail-inset-end));
+  margin-inline: auto;
   padding: 6px 14px;
   border: 1px solid color-mix(in srgb, var(--color-accent) 60%, var(--space-border, var(--color-line)));
   border-radius: 999px;
@@ -235,8 +283,12 @@
   }
 }
 
-/* 오른쪽 패널이 열리면 지도가 패널 왼쪽으로 밀리므로 공정 바도 그 왼쪽 빈 띠 안에 둔다. */
+/* 오른쪽 패널이 열리면 지도가 패널 왼쪽으로 밀리므로 공정 바와 평면도 배너도 그 왼쪽 빈 띠 안에 둔다. */
 .space-hud[data-panel-open][data-hud-layout="desktop"] .studio-office2d-pipeline {
+  --office2d-rail-inset-end: calc(var(--space-panel-width, 380px) + var(--space-minimap-width, 248px) + var(--space-gutter, 12px) * 3 + var(--space-safe-right, 0px));
+}
+
+.space-hud[data-panel-open][data-hud-layout="desktop"] .studio-office2d-schematic-banner {
   --office2d-rail-inset-end: calc(var(--space-panel-width, 380px) + var(--space-minimap-width, 248px) + var(--space-gutter, 12px) * 3 + var(--space-safe-right, 0px));
 }
 
@@ -311,6 +363,14 @@
   .space-hud:has(.studio-office2d-pipeline):has(.space-status-slot:not(:empty)) .space-hud__slot--top-center {
     top: calc(var(--space-safe-top, 0px) + 124px + 44px);
   }
+
+  .space-hud:has(.studio-office2d-schematic-banner) .space-hud__slot--top-center {
+    top: calc(var(--space-safe-top, 0px) + 124px + 44px);
+  }
+
+  .space-hud:has(.studio-office2d-schematic-banner):has(.space-status-slot:not(:empty)) .space-hud__slot--top-center {
+    top: calc(var(--space-safe-top, 0px) + 124px + 44px + 44px);
+  }
 }
 
 @media (max-width: 1023.98px) and (min-height: 521px) {
@@ -322,8 +382,27 @@
     top: calc(var(--space-safe-top, 0px) + 74px + 60px + 64px);
   }
 
+  .space-hud:has(.studio-office2d-schematic-banner) .space-hud__slot--top-center {
+    top: calc(var(--space-safe-top, 0px) + 74px + 60px + 42px);
+  }
+
+  .space-hud:has(.studio-office2d-schematic-banner):has(.space-status-slot:not(:empty)) .space-hud__slot--top-center {
+    top: calc(var(--space-safe-top, 0px) + 74px + 60px + 64px + 42px);
+  }
+
   .space-hud:has(.space-status-slot:not(:empty)) .studio-office2d-pipeline {
     top: calc(var(--space-safe-top, 0px) + 74px + 64px);
+  }
+
+  .studio-office2d-schematic-banner {
+    top: calc(var(--space-safe-top, 0px) + 74px + 60px);
+    right: 10px;
+    left: 10px;
+    max-width: calc(100% - 20px);
+  }
+
+  .space-hud:has(.space-status-slot:not(:empty)) .studio-office2d-schematic-banner {
+    top: calc(var(--space-safe-top, 0px) + 74px + 60px + 64px);
   }
 
   .space-hud:has(.studio-office2d-pipeline) .space-zone-splash {

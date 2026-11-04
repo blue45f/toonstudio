@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { validateReleaseWorkflows } from "./release-workflow-policy.mjs";
 
 export const FREE_INFRASTRUCTURE_POLICY_VERSION =
@@ -248,6 +249,37 @@ export function readFreeInfrastructurePolicy(
   return parsed;
 }
 
+const checkoutImagePath = String.raw`/apps/web/public/assets/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\.(?:png|jpe?g|gif|webp)`;
+const checkoutImageLines = [
+  new RegExp(String.raw`^\s*(${checkoutImagePath})\s*$`, "gmu"),
+  new RegExp(String.raw`^\s*\$\{\{\s*matrix\.shard\s*==\s*'[A-Za-z0-9_-]+'\s*&&\s*'(${checkoutImagePath})'\s*\|\|\s*''\s*\}\}\s*$`, "gmu"),
+];
+
+/** checkout 입력의 완전한 정적 이미지 경로만 제외한다. 명령·설정과 조건식 자체는 계속 검사한다. */
+function oracleInfrastructureSource(source, path) {
+  if (!/^\.github\/workflows\/[^/]+\.ya?ml$/u.test(path)) return source;
+  let document;
+  try { document = parseDocument(source); } catch { return source; }
+  if (document.errors.length) return source;
+  const jobs = document.get("jobs", true), ranges = [];
+  if (!isMap(jobs)) return source;
+  for (const job of jobs.items) {
+    const steps = isMap(job.value) ? job.value.get("steps", true) : null;
+    if (!isSeq(steps)) continue;
+    for (const step of steps.items) {
+      if (!isMap(step) || !/^actions\/checkout@/u.test(step.get("uses") ?? "")) continue;
+      const sparse = step.getIn(["with", "sparse-checkout"], true);
+      if (isScalar(sparse) && typeof sparse.value === "string" && sparse.range) ranges.push(sparse.range);
+    }
+  }
+  for (const [start, end] of ranges.sort((a, b) => b[0] - a[0])) {
+    let inspected = source.slice(start, end);
+    for (const pattern of checkoutImageLines) inspected = inspected.replace(pattern, (line, image) => line.replace(image, ""));
+    source = source.slice(0, start) + inspected + source.slice(end);
+  }
+  return source;
+}
+
 export function validateFreeInfrastructureRepository(root = process.cwd()) { // NOSONAR javascript:S3776
   const issues = [];
   const at = (relativePath) => resolve(root, relativePath);
@@ -301,7 +333,7 @@ export function validateFreeInfrastructureRepository(root = process.cwd()) { // 
     }
     if (stat !== "file" || /\.(?:png|jpe?g|gif|webp|zip|gz|wasm)$/iu.test(path)) return;
     const source = readFileSync(path, "utf8");
-    if (oraclePattern.test(source)) {
+    if (oraclePattern.test(oracleInfrastructureSource(source, path.slice(root.length + 1)))) {
       issues.push(`active infrastructure surface references retired Oracle infrastructure: ${path.slice(root.length + 1)}`);
     }
   };

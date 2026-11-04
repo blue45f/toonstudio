@@ -8,7 +8,7 @@ import {
 } from "./studio-crdt-operation-error";
 import { createStudioCrdtOutbox, type StudioCrdtOutbox } from "./studio-crdt-outbox";
 import { defaultSetTimeout, defaultClearTimeout } from "./studio-crdt-binding-timers";
-import { captureStudioCrdtWriteContext } from "./studio-crdt-write-context";
+import { bindStudioCrdtWriteBoundary, captureStudioCrdtWriteContext } from "./studio-crdt-write-context";
 import type { StudioScopedCrdtPublisher } from "../studio-collab/studio-scoped-write-authority";
 import {
   STUDIO_CRDT_ORIGIN_REMOTE,
@@ -240,7 +240,7 @@ export class StudioCrdtRoomBinding {
     this.room = options.room;
     this.canEdit = options.canEdit ?? true;
     this.scopedWrite = options.scopedWrite ?? null;
-    this.unbindScopedFlush = this.scopedWrite?.bindFlushBoundary(() => this.batchSubscription?.flush());
+    this.unbindScopedFlush = bindStudioCrdtWriteBoundary(this.scopedWrite, this.document, () => this.batchSubscription?.flush());
     this.outboxScope = options.outboxScope?.trim() || null;
     this.outbox = options.outbox ?? createStudioCrdtOutbox();
     this.recoveryVault = options.recoveryVault ?? createStudioCrdtRecoveryVault();

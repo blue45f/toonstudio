@@ -493,8 +493,8 @@ export async function runStudioPageSavePipeline(
     setCurrentPageId(originalPageId);
     setMasterEditMode(originalMasterEditMode);
 
-    const { writeStudioPublicationIntegrity } = await import("./studio-publication-integrity");
-    const publicationDocumentBase = await writeStudioPublicationIntegrity({
+    const { prepareStudioSavePublicationBase } = await import("./export/studio-save-publication-boundary");
+    const publicationDocumentBase = await prepareStudioSavePublicationBase({
       document: sharedDocument?.document.doc ?? loadedWork?.doc,
       sourceKind: "studio_document",
       projectId: sourceProjectId,
@@ -510,7 +510,7 @@ export async function runStudioPageSavePipeline(
       ownerUserId: studioAuthUserId,
       approvedAt: status === "published" ? new Date().toISOString() : null,
       toolIds: ["toonstudio-web", "studio-canvas-editor"],
-    });
+    }, { status, shared: sharedDocument !== null, mappedFullEdit: deps.scopedWrite?.authority?.mappedFullEdit === true });
     if (!saveScopeStillCurrent()) return;
     const cover = await downscaleStudioCanvasDataUrl(pageImages[0] || "", 480);
     const {

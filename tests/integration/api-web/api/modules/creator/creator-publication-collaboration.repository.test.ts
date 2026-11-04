@@ -1,7 +1,9 @@
 import { BadRequestException } from "@nestjs/common";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { prepareCreatorPublicationSharedDocumentPatch } from "../../../../../../apps/api/src/modules/creator/creator-publication-collaboration.repository";
+import { CreatorCollaborationRepository } from "../../../../../../apps/api/src/modules/creator/creator-collaboration.repository";
+import { creatorPublicationCollaborationRepositoryProvider, CreatorPublicationCollaborationRepository, prepareCreatorPublicationSharedDocumentPatch } from "../../../../../../apps/api/src/modules/creator/creator-publication-collaboration.repository";
+import { MembershipOperationsService } from "../../../../../../apps/api/src/modules/membership-operations/membership-operations.service";
 import {
   createDefaultCreatorPublicationDirective,
   readCreatorPublicationDirective,
@@ -9,6 +11,7 @@ import {
 } from "../../../../../../apps/web/src/shared/lib/creator-publication-contract";
 
 import type { CreatorSharedDocument } from "../../../../../../apps/api/src/modules/creator/creator-collaboration.repository";
+import type { StudioScopedRestWriteInput } from "../../../../../../apps/api/src/modules/creator/studio-scoped-write-rest";
 
 const now = new Date("2026-09-09T09:00:00.000Z");
 
@@ -207,5 +210,36 @@ describe("prepareCreatorPublicationSharedDocumentPatch", () => {
         message: "예약 시간은 현재보다 최소 1분 뒤여야 합니다.",
       });
     }
+  });
+});
+
+describe("실제 Creator 협업 provider의 제한 저장 문맥", () => {
+  it.each(["viewer", "commenter", "editor"] as const)("%s의 제한 저장 문맥을 그대로 전달하고 기존 게시 정책은 보호한다", async (role) => {
+    const current = completeDirective({ visibility: "unlisted", comments: "closed", allowRemix: false });
+    const shared: CreatorSharedDocument = { ...sharedDocument({ role, doc: writeCreatorPublicationDirective({ original: true }, current) }),
+      workId: "work-1", status: "active", capabilities: { view: true, edit: role === "editor" },
+      revision: 4, crdtServerSequence: "9", updatedAt: "2026-11-04T00:00:00.000Z" };
+    const patch = { doc: writeCreatorPublicationDirective({ changedContent: true }, completeDirective({ visibility: "public", comments: "open" })) };
+    const scoped: StudioScopedRestWriteInput = { mutationId: "same-scoped-mutation", writeContext: {
+      version: 1, policyVersion: 7, grantIds: ["assigned-grant"], creations: [], restorations: [],
+    } };
+    const originalPatch = structuredClone(patch), originalScoped = structuredClone(scoped);
+    const response = { workId: "work-1", revision: 5, updatedAt: "2026-11-04T00:00:01.000Z" };
+    const read = vi.spyOn(CreatorCollaborationRepository.prototype, "getSharedDocument").mockResolvedValue(shared);
+    const save = vi.spyOn(CreatorCollaborationRepository.prototype, "saveSharedDocument").mockResolvedValue(response);
+    try {
+      expect(creatorPublicationCollaborationRepositoryProvider.provide).toBe(CreatorCollaborationRepository);
+      // CreatorModule과 같은 factory와 주입 토큰 타입으로 호출해 실제 override를 통과한다.
+      const repository: CreatorCollaborationRepository = creatorPublicationCollaborationRepositoryProvider.useFactory(new MembershipOperationsService());
+      expect(repository).toBeInstanceOf(CreatorPublicationCollaborationRepository);
+      await expect(repository.saveSharedDocument("actor-1", "work-1", 4, 9n, patch, scoped)).resolves.toEqual(response);
+      expect(read).toHaveBeenCalledExactlyOnceWith("actor-1", "work-1");
+      expect(save).toHaveBeenCalledExactlyOnceWith("actor-1", "work-1", 4, 9n, expect.objectContaining({ doc: expect.any(Object) }), scoped);
+      expect(save.mock.calls[0]?.[5]).toBe(scoped);
+      const forwardedPatch = save.mock.calls[0]?.[4];
+      expect(forwardedPatch?.doc).toMatchObject({ changedContent: true });
+      expect(readCreatorPublicationDirective(forwardedPatch?.doc)).toMatchObject({ visibility: "unlisted", comments: "closed", allowRemix: false });
+      expect(patch).toEqual(originalPatch); expect(scoped).toEqual(originalScoped);
+    } finally { read.mockRestore(); save.mockRestore(); }
   });
 });

@@ -1,5 +1,4 @@
 import { BadRequestException } from "@nestjs/common";
-import type { StudioScopedRestWriteInput } from "./studio-scoped-write-rest";
 
 import {
   markCreatorPublicationPublished,
@@ -12,6 +11,7 @@ import {
 } from "@toonstudio/contracts/creator-publication-contract";
 
 import { MembershipOperationsService } from "../membership-operations/membership-operations.service";
+import type { StudioScopedRestWriteInput } from "./studio-scoped-write-rest";
 import {
   CreatorCollaborationRepository,
   type CreatorSharedDocument,
@@ -132,7 +132,9 @@ export class CreatorPublicationCollaborationRepository extends CreatorCollaborat
     workId: string,
     baseRevision: number,
     crdtServerSequence: bigint,
-    patch: CreatorSharedDocumentPatch, scoped?: StudioScopedRestWriteInput, readerCapabilities: readonly string[] = [],
+    patch: CreatorSharedDocumentPatch,
+    scoped?: StudioScopedRestWriteInput,
+    readerCapabilities: readonly string[] = [],
   ): Promise<CreatorSharedDocumentSaveResponse> {
     const shared = await super.getSharedDocument(actorUserId, workId);
     const protectedPatch = prepareCreatorPublicationSharedDocumentPatch({
@@ -144,7 +146,9 @@ export class CreatorPublicationCollaborationRepository extends CreatorCollaborat
       workId,
       baseRevision,
       crdtServerSequence,
-      protectedPatch, scoped, readerCapabilities,
+      protectedPatch,
+      scoped,
+      readerCapabilities,
     );
   }
 }

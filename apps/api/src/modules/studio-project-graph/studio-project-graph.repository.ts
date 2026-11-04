@@ -254,7 +254,8 @@ async function loadProjectAccess(
   projectId: string,
   lock = false,
 ): Promise<{ row: ProjectAccessRow; access: StudioProjectAccess } | null> {
-  const suffix = lock ? " FOR UPDATE OF project" : "";
+  // Graph는 work와 1:1이며 runtime에서 불변이다. 멤버 회수와 같은 work 행을 먼저 잠근다.
+  const suffix = lock ? " FOR UPDATE OF work" : "";
   const result = await client.query<ProjectAccessRow>(
     `SELECT
        project.id AS "projectId",
@@ -706,12 +707,6 @@ export class StudioProjectGraphRepository {
           input.initialRevision.id,
           JSON.stringify(response),
         ],
-      );
-      await client.query(
-        `UPDATE studio_project_graph
-         SET "updatedAt" = GREATEST("createdAt", "updatedAt", clock_timestamp())
-         WHERE id = $1`,
-        [projectId],
       );
       await client.query("COMMIT");
       return response;

@@ -190,8 +190,19 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(screen.getByTestId("competitor-page-sub-enhancements")).toBeTruthy();
     expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
     const enScorecard = screen.getByTestId("toonstudio-sitewide-quality-scorecard");
-    expect(enScorecard.textContent).toContain("Overall 1025000000000000000 / 100 (102500000000000000 / 10)");
-    expect(enScorecard.textContent).toContain("26 Frontend Domains · 700 REA Evidences · 560 Services");
+    expect(enScorecard.textContent).toContain("Overall 1068000000000000000 / 100 (106800000000000000 / 10)");
+    expect(enScorecard.textContent).toContain("26 Frontend Domains · 1000 REA Evidences · 770 Services");
+    expect(screen.getByTestId("competitor-active-sub-enhancement-inspector")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("competitor-sub-enhancement-market-morisawa-fontworks-tileable-pbr"));
+    expect(screen.getByTestId("competitor-active-sub-enhancement-inspector").textContent).toContain("Morisawa/Fontworks LETS/Monotype Comic Fonts");
+    expect(screen.getByTestId("competitor-active-service-deep-profile")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("competitor-service-chip-CLO 3D Fashion"));
+    expect(screen.getByTestId("competitor-active-service-deep-profile").textContent).toContain("Service Deep REA Profile · CLO 3D Fashion");
+    expect(screen.getByTestId("story-to-webtoon-mode-clo3d-acon-worldlabs-3dgs-stage")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-mode-rask-heygen-audio2face-130lang-dub")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-mode-comicstudio-vellum-comiket-print-preflight")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-mode-smartling-crowdin-glossary-720locale-qa")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-deep-engine-controls")).toBeTruthy();
     expect(screen.getByTestId("toonstudio-axis-breakdown-list")).toBeTruthy();
     expect(screen.getByTestId("toonstudio-sitewide-audit-ledger")).toBeTruthy();
     expect(screen.getByTestId("toonstudio-global-i18n-badge").textContent).toContain("720+ Country/Region Locales");
@@ -206,8 +217,8 @@ describe("StudioCompetitorCapabilityPanel", () => {
     } = await import("../studio-workspace-recommendation");
 
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBe(700);
-    expect(scorecard.internalizedCompetitorServicesCount).toBe(560);
+    expect(scorecard.totalReaEvidenceRecords).toBe(1000);
+    expect(scorecard.internalizedCompetitorServicesCount).toBe(770);
     expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(true);
     expect(scorecard.meetsTargetTenMillionScore).toBe(true);
     expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(true);
@@ -225,7 +236,7 @@ describe("StudioCompetitorCapabilityPanel", () => {
     const uniqueServices = new Set<string>();
     for (const domain of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
       expect(domain.domainScoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
-      expect(domain.subEnhancements.length).toBe(5);
+      expect(domain.subEnhancements.length).toBe(8);
       for (const sub of domain.subEnhancements) {
         expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
         expect(sub.reaMechanismKo.length).toBeGreaterThan(10);
@@ -236,7 +247,7 @@ describe("StudioCompetitorCapabilityPanel", () => {
         expect(matchStudioCompetitorWorkflowPreset(svc).length).toBeGreaterThan(0);
       }
     }
-    expect(uniqueServices.size).toBe(560);
+    expect(uniqueServices.size).toBe(770);
   });
 
   it("LlamaGen·투닝플러스·Mangaplay·젠툰·인서툰·Mantra 스토리→웹툰 & 다국어 OCR 워크벤치를 한·영으로 동작시킨다", () => {

@@ -93,6 +93,11 @@ describe("공정별 도구 섹션 렌더", () => {
     expect(screen.getByTestId("learn-rea-toolchain-coverage-bar").textContent).toContain(
       "실습 캔버스 열기",
     );
+    expect(screen.getByTestId("learn-rea-interactive-practice-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("learn-rea-croquis-interval-60"));
+    expect(screen.getByTestId("learn-rea-active-practice-summary").textContent).toContain(
+      "60초 근육 회전",
+    );
   });
 
   it("13개 단계 카드가 모두 렌더되고 핵심 도구(외부·내장)가 보인다", () => {

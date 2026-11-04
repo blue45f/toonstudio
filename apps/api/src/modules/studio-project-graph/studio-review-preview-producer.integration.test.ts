@@ -14,6 +14,7 @@ import type { StudioProjectGraphRepository } from "./studio-project-graph.reposi
 import type { StudioReviewPreviewProducerRepository } from "./studio-review-preview-producer.repository";
 import type { StudioReviewPreviewProducerService } from "./studio-review-preview-producer.service";
 import type { StudioReviewPreviewService } from "./studio-review-preview.service";
+import { registerStudioReviewPreviewProducerCases } from "./studio-review-preview-producer-test-cases";
 import type { deleteWork as DeleteWork } from "../../server/creator/works";
 import { studioReviewPreviewDigest, studioReviewPreviewIntentKey, studioReviewPreviewPageAsset,
   type StudioReviewPreviewCapture, type StudioReviewPreviewIntent } from "./studio-review-preview-producer.contract";
@@ -102,15 +103,8 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     if (previousAdmission === undefined) delete process.env.STUDIO_WORK_ASSET_ADMISSION; else process.env.STUDIO_WORK_ASSET_ADMISSION = previousAdmission;
   });
 
-  it.each(["studio_project_graph", "studio_artifact"] as const)("keeps capture timestamps monotonic when %s is ahead of the current clock", async (table) => {
-    const f = await capture(1), id = table === "studio_project_graph" ? f.intent.projectId : f.intent.artifactId;
-    // Model clock rollback deterministically without sleeps or weaker constraints.
-    await pool.query(`UPDATE ${table} SET "createdAt"=clock_timestamp()+interval '1 hour', "updatedAt"=clock_timestamp()+interval '2 hours' WHERE id=$1`, [id]);
-    const before = (await pool.query(`SELECT "updatedAt" FROM ${table} WHERE id=$1`, [id])).rows[0]!;
-    const result = await completeCapture(f.actor, f.intent);
-    const after = (await pool.query(`SELECT "updatedAt">=$2::timestamptz AS retained, "updatedAt">="createdAt" AS valid FROM ${table} WHERE id=$1`, [id, before.updatedAt])).rows[0]!;
-    expect(after).toEqual({ retained: true, valid: true });
-    expect((await graph.getReview(f.actor, result.subject.reviewId)).status).toBe("open");
+  registerStudioReviewPreviewProducerCases({ pool: () => pool, service: () => service, graph: () => graph,
+    capture: () => capture(1), completeCapture,
   });
 
   async function capture(pageCount = 2, extension: Record<string, unknown> = {}) {
