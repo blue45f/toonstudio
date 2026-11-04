@@ -1,7 +1,7 @@
 # ToonStudio 문서 안내
 
 - 상태: **현재 문서 체계**
-- 최종 갱신: **2026-10-22**
+- 최종 갱신: **2026-11-04**
 
 ## 문서 권위 순서
 
@@ -48,6 +48,8 @@ UV 아일랜드를 한 타일로 정리하는 후속 구현은 [웹 UV 정리 �
 3. [`architecture/modular-monorepo-target.md`](architecture/modular-monorepo-target.md)
 4. 해당 애플리케이션·패키지의 README
 5. 관련 ADR과 테스트
+
+기능을 추가할 때는 [기능 확장 실무 가이드](engineering/feature-extension-guide.md)에서 모듈·상태·권한·테마·3D·협업·API/DB·자산 수명과 검증 경로를 연결한다. 개별 계약과 정책은 해당 정본 문서를 따른다.
 
 Studio는 다음 문서를 추가로 본다.
 

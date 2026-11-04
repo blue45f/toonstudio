@@ -1,13 +1,14 @@
 # 아키텍처 문서 지도
 
 - 상태: **현재 문서 색인**
-- 최종 갱신: **2026-09-26**
+- 최종 갱신: **2026-11-04**
 
 ## 현재 권위 문서
 
 | 문서 | 역할 |
 | --- | --- |
 | [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) | 저장소 전체의 현재 구조와 경계 |
+| [`../engineering/feature-extension-guide.md`](../engineering/feature-extension-guide.md) | 기능 추가 시 모듈·상태·권한·자산 수명·검증 경계를 연결하는 실무 진입점 |
 | [`frontend-layered-architecture.md`](frontend-layered-architecture.md) | Web/Admin의 `app/domains/platform/shared` 규칙 |
 | [`modular-monorepo-target.md`](modular-monorepo-target.md) | 모듈형 모노레포 목표와 마이그레이션 순서 |
 | [`studio-current-boundaries.md`](studio-current-boundaries.md) | Studio의 현재 권위·저장·렌더링·협업 경계 |
