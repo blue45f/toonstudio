@@ -8,6 +8,9 @@ import { createStudioScopedWriteFixture } from "./studio-scoped-write.test-fixtu
 import { bindStudioScopedWriteAuthority } from "./studio-scoped-write-authority";
 import { admitStudioScopedDrawStart, admitStudioScopedPagesCommit, assertStudioScopedDrawContinuation } from "./studio-scoped-write-mutation";
 import { createStudioCrdtTransitionPublisher } from "../studio-cuttoon-editor/runtime/createStudioCrdtTransitionPublisher";
+import { StudioCrdtDocument } from "../live/studio-crdt-document";
+import { studioDrawElementToCrdtStroke } from "../live/studio-crdt-page-bridge";
+import { bindStudioCrdtWriteBoundary, captureStudioCrdtWriteContext } from "../live/studio-crdt-write-context";
 
 function editor(editable = true) {
   const f = createStudioScopedWriteFixture();
@@ -50,6 +53,20 @@ function pen(x = 100, y = 100): DrawEl {
     stampTuning: null, brushDynamics: {}, stabilizer: 0, stabilizerMode: "standard", velocitySensitivity: 0.65, pressureCurve: 1,
     positionScale: 2, brushTip: { tiltEnabled: false, angleDeg: 0, roundness: 1 },
     symmetry: { type: "none", centerX: 360, centerY: 384, radialCount: 6 } }).element;
+}
+
+function deferredEditor(fullEdit: boolean) {
+  const e = frameEditor(), document = new StudioCrdtDocument();
+  e.owner.current.locked = !fullEdit;
+  e.authority.setPolicy({ ...e.policy, fullEdit, scopedWrite: !fullEdit });
+  const unbindLive = bindStudioCrdtWriteBoundary(e.authority, document, () => {});
+  e.choose();
+  const fresh = admitStudioScopedDrawStart(e.owner, e.page.id, e.page.elements, pen()), next = { ...e.page, elements: [...e.page.elements, fresh] };
+  document.addStroke(studioDrawElementToCrdtStroke(e.page.id, fresh));
+  const capture = () => captureStudioCrdtWriteContext(e.authority, fullEdit, document), first = capture();
+  const commit = (previous: PageState, next: PageState, history?: "undo" | "redo") => admitStudioScopedPagesCommit({ owner: e.owner, previous: [previous], next: [next],
+    history, reportError: e.reportError, lockMessage: () => "잠금" });
+  return { ...e, document, fresh, next, first, capture, commit, dispose: () => { unbindLive?.(); e.unbind(); document.destroy(); } };
 }
 
 describe("전체 편집자의 명시 매핑 원고 경계", () => {
@@ -210,5 +227,41 @@ describe("실제 펜 시작점의 매핑 컷 경계", () => {
       });
       expect(admitStudioScopedDrawStart(e.owner, e.page.id, [...e.frames, ...history], pen())).toMatchObject({ frameClipId: "frame-own", noClip: false });
     } finally { e.unbind(); }
+  });
+});
+
+describe.each([true, false])("첫 live 생성 뒤 지연된 로컬 확정 (fullEdit=%s)", (fullEdit) => {
+  it("이미 전송한 살아있는 획의 최초 로컬 확정에서 생성·복원을 다시 전송하지 않는다", () => {
+    const e = deferredEditor(fullEdit), original = structuredClone(e.first);
+    try {
+      expect(e.first?.creations).toEqual([{ kind: "stroke", id: e.fresh.id, targetId: "target-1" }]);
+      expect(e.commit(e.page, e.next)).toBe(true);
+      expect(e.capture()).toMatchObject({ creations: [], restorations: [] });
+      expect(e.first).toEqual(original);
+    } finally { e.dispose(); }
+  });
+  it("최초 확정 뒤 실제 undo로 삭제한 획의 redo는 정확히 한 번 복원으로 선언한다", () => {
+    const e = deferredEditor(fullEdit), original = structuredClone(e.first);
+    try {
+      expect(e.commit(e.page, e.next)).toBe(true); e.capture();
+      expect(e.commit(e.next, e.page, "undo")).toBe(true);
+      expect(e.document.deleteStroke(e.fresh.id)).toBe(true);
+      expect(e.capture()).toMatchObject({ creations: [], restorations: [] });
+      expect(e.commit(e.page, e.next, "redo")).toBe(true);
+      expect(e.document.restoreStroke(e.fresh.id)).toBe(true);
+      expect(e.capture()).toMatchObject({ creations: [], restorations: [{ kind: "stroke", id: e.fresh.id, targetId: "target-1" }] });
+      expect(e.first).toEqual(original);
+    } finally { e.dispose(); }
+  });
+  it.each(["grant", "identity"])("첫 전송 뒤 %s 변경 시 지연 확정과 복원 재선언을 거절한다", (change) => {
+    const e = deferredEditor(fullEdit), original = structuredClone(e.first), restore = vi.spyOn(e.authority, "registerRestoration");
+    try {
+      if (change === "grant") e.authority.setPolicy({ ...e.policy, fullEdit, scopedWrite: !fullEdit, policyVersion: 2,
+        grants: e.policy.grants.map((grant) => ({ ...grant, revokedAt: "2026-10-29T01:00:00.000Z" })) });
+      else e.fence.authScopeKey = "other-actor";
+      expect(e.commit(e.page, e.next)).toBe(false);
+      expect(restore).not.toHaveBeenCalled();
+      expect(e.first).toEqual(original);
+    } finally { e.dispose(); }
   });
 });

@@ -66,10 +66,11 @@ export async function runStudioScopedPageSavePipeline(status: "draft" | "publish
     let pending = previouslyLoaded ?? await boundStudioSaveIntentOperation(studioScopedSavePendingRepository.load(pendingScope));
     if (!current()) return;
     if (!pending) {
-      await authority.refresh(); if (!current()) return; authority.purposeContext();
+      // 마지막 획은 현재 ticket으로 확정한 뒤 정책을 갱신한다. refresh는 이전 ticket을 무효화한다.
       if (deps.pendingStrokeCommitsRef.current) flushSync(() => { deps.flushPendingStrokeCommitsRef.current(); });
       if (deps.pendingStrokeCommitsRef.current || bindings.isDrawing()) throw new Error("마지막 획을 확정한 뒤 다시 저장하세요.");
       initial = deps.captureStudioMutationTicket(); projectGeneration = deps.studioRevisionProjectGenerationRef.current;
+      await authority.refresh(); if (!current()) return; authority.purposeContext();
     }
     release = authority.holdMutations();
     deps.sharedDocumentSaveAbortRef.current?.abort(); controller = new AbortController(); deps.sharedDocumentSaveAbortRef.current = controller;

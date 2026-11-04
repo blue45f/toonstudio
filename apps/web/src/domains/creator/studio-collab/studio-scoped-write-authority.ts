@@ -12,6 +12,7 @@ export interface StudioScopedCrdtPublisher {
   captureWriteContext(present?: (kind: StudioScopedEntityKind, id: string, pageId: string, restoration: boolean) => boolean): StudioScopedWriteContext;
   captureFullEditWriteContext?(present?: (kind: StudioScopedEntityKind, id: string, pageId: string, restoration: boolean) => boolean): StudioScopedWriteContext | undefined;
   bindFlushBoundary(flush: (() => void) | null): () => void;
+  bindEntityPresence?(present: (kind: StudioScopedEntityKind, id: string, pageId: string) => boolean): () => void;
 }
 const key = (kind: StudioScopedEntityKind, id: string, pageId?: string) => kind === "group" ? `group:${studioCrdtProjectionGroupKey(pageId ?? "", id)}` : `${kind}:${id}`;
 const activeAt = (start: string, end: string | null, now: number) => Date.parse(start) <= now && (end === null || now <= Date.parse(end));
@@ -27,6 +28,7 @@ export class StudioScopedWriteAuthority implements StudioScopedCrdtPublisher {
   private mutationHolds = 0;
   private refreshPolicy: (() => Promise<StudioScopedWritePolicy | null>) | null = null;
   private flushBoundary: (() => void) | null = null;
+  private entityPresence: { readonly read: (kind: StudioScopedEntityKind, id: string, pageId: string) => boolean } | null = null;
   private readonly listeners = new Set<() => void>();
   private readonly localTargets = new Map<string, string>();
   private readonly creationTickets = new Map<string, StudioScopedDrawingTicket>();
@@ -41,6 +43,18 @@ export class StudioScopedWriteAuthority implements StudioScopedCrdtPublisher {
   readonly subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   readonly getEpoch = () => this.epoch;
   bindFlushBoundary(flush: (() => void) | null): () => void { this.flushBoundary = flush; return () => { if (this.flushBoundary === flush) this.flushBoundary = null; }; }
+  bindEntityPresence(read: (kind: StudioScopedEntityKind, id: string, pageId: string) => boolean): () => void {
+    const binding = { read }; this.entityPresence = binding;
+    return () => { if (this.entityPresence === binding) this.entityPresence = null; };
+  }
+  hasCurrentLiveEntity(kind: StudioScopedEntityKind, id: string, targetId = this.selectedTargetId): boolean {
+    const binding = this.entityPresence, current = { ...this.fence() }, policy = this.policy, target = policy?.targets.find((target) => target.definition.id === targetId);
+    if (!binding || !target || !this.mappedPolicyVerified) return false;
+    const present = binding.read(kind, id, target.definition.pageId), after = this.fence();
+    return present && this.entityPresence === binding && this.policy === policy && this.mappedPolicyVerified
+      && current.authScopeKey === after.authScopeKey && current.workId === after.workId
+      && current.accessGeneration === after.accessGeneration && current.documentGeneration === after.documentGeneration;
+  }
   bindPolicyRefresh(refresh: (() => Promise<StudioScopedWritePolicy | null>) | null): void { this.refreshPolicy = refresh; }
   refresh(): Promise<StudioScopedWritePolicy | null> { return this.refreshPolicy?.() ?? Promise.resolve(null); }
   mount(): void { this.disposed = false; this.invalidate(); }

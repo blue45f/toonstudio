@@ -16,18 +16,18 @@ export function admitStudioMappedPagesCommit(input: { readonly owner: Owner; rea
     if (!authority.mappedPolicyVerified) throw failure();
     const before = projectStudioScopedAuthoringDocument({ pagesList: input.previous }), after = projectStudioScopedAuthoringDocument({ pagesList: input.next });
     const ownership = new Map<string, string>();
-    const policy = authority.snapshot;
+    const policy = authority.snapshot, peek = authority.peekMappedContext();
     for (const target of policy?.targets ?? []) for (const entity of target.definition.entities) ownership.set(scopedEntityKey(entity.kind, entity.id, target.definition.pageId), target.definition.id);
     for (const entity of policy?.ownedEntities ?? []) {
       const target = policy?.targets.find((entry) => entry.definition.id === entity.targetId);
       if (target) ownership.set(scopedEntityKey(entity.kind, entity.id, target.definition.pageId), entity.targetId);
     }
-    for (const [key, entity] of before.entities) {
+    for (const [key, entity] of new Map([...before.entities, ...after.entities])) {
       if (entity.pageId !== authority.currentTarget?.definition.pageId) continue;
+      if (!before.entities.has(key) && !authority.requiresRestoration(entity.kind, entity.id)) continue;
       const owner = authority.ownerOf(entity.kind, entity.id);
       if (owner) ownership.set(key, owner);
     }
-    const peek = authority.peekMappedContext();
     const present = (entry: StudioScopedWriteContext["creations"][number]) => {
       const target = policy?.targets.find((target) => target.definition.id === entry.targetId);
       return target && after.entities.has(scopedEntityKey(entry.kind, entry.id, target.definition.pageId));
@@ -44,7 +44,8 @@ export function admitStudioMappedPagesCommit(input: { readonly owner: Owner; rea
     if (admitted.targetIds.length && !input.previewOnly) {
       if (!target || !authority.drawingAllowed) throw failure();
       const ticket = authority.captureDrawingTicket(target.definition.pageId, target.definition.layerId);
-      for (const entry of restorations) authority.registerRestoration(ticket, entry.kind, entry.id);
+      // 지연된 로컬 history 확정의 증명은 유지하되 이미 살아있는 live 객체를 복원으로 재전송하지 않는다.
+      for (const entry of restorations) if (!authority.hasCurrentLiveEntity(entry.kind, entry.id, entry.targetId)) authority.registerRestoration(ticket, entry.kind, entry.id);
       authority.admitMappedEdit();
     }
     return true;

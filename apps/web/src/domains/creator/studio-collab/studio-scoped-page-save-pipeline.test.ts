@@ -9,6 +9,11 @@ import type { StudioPageSavePipelineDeps } from "../studio-page-save-pipeline";
 import type { StudioScopedSavePending, StudioScopedSavePendingScope } from "./studio-scoped-save-pending";
 import type { StudioSharedDocument } from "../studio-shared-document-client";
 import type { StudioScopedWritePolicy } from "@toonstudio/contracts/studio-scoped-write";
+import { createStudioScopedWriteFixture } from "./studio-scoped-write.test-fixture";
+import { bindStudioScopedWriteAuthority, type StudioScopedWriteAuthority } from "./studio-scoped-write-authority";
+import { admitStudioScopedDrawStart, admitStudioScopedPagesCommit } from "./studio-scoped-write-mutation";
+import type { DrawEl } from "../studio-element-model";
+import type { PageState } from "../studio-page-state";
 
 const mocks = vi.hoisted(() => ({ read: vi.fn(), patch: vi.fn(), load: vi.fn(), acknowledge: vi.fn(),
   pendingLoad: vi.fn(), pendingRemember: vi.fn(), pendingClear: vi.fn(), pending: new Map<string, StudioScopedSavePending>() }));
@@ -31,7 +36,7 @@ const context = { version: 1 as const, policyVersion: 1, grantIds: ["grant"], cr
 const key = (scope: StudioScopedSavePendingScope) => JSON.stringify([scope.actorUserId, scope.workId]);
 const policy = (requiresScopedSaveReconciliation: boolean): StudioScopedWritePolicy => ({ version: 1, workId: "work", policyVersion: 1,
   canManage: false, fullEdit: true, scopedWrite: false, targets: [], grants: [], ownedEntities: [], requiresScopedSaveReconciliation });
-function fixture() {
+function fixture(actualAuthority?: StudioScopedWriteAuthority) {
   const source = reviewEditorFixture(() => "a".repeat(64)), timeline: string[] = [];
   const ticket = { authScopeKey: "actor", workId: "work", accessGeneration: 1, documentGeneration: 1 };
   let currentPolicy: StudioScopedWritePolicy | null = null;
@@ -42,9 +47,10 @@ function fixture() {
   const saved: StudioSharedDocument = { ...source.saved, role: "viewer", access: "view", capabilities: { view: true, edit: false },
     document: { ...source.saved.document, doc: { ...source.saved.document.doc, width: CANVAS_W } } };
   mocks.read.mockResolvedValue(saved); mocks.patch.mockImplementation(async () => { timeline.push("patch"); return { workId: "work", revision: 8, updatedAt: "2026-10-29T06:00:00.000Z" }; });
-  const deps = { scopedWrite: { authority, getSnapshot: () => source.snapshot, isDrawing: () => false }, workId: "work", studioAuthUserId: "actor", sharedDocument: saved,
+  const pendingStrokeCommitsRef: { current: object | null } = { current: null };
+  const deps = { scopedWrite: { authority: actualAuthority ?? authority, getSnapshot: () => source.snapshot, isDrawing: () => false }, workId: "work", studioAuthUserId: "actor", sharedDocument: saved,
     autosaveKey: "scoped-save-test", editorMountedRef: { current: true }, currentStudioDocumentScopeRef: { current: { authScopeKey: "actor", workId: "work" } },
-    captureStudioMutationTicket: () => ({ ...ticket }), pendingStrokeCommitsRef: { current: null }, flushPendingStrokeCommitsRef: { current: vi.fn(() => true) },
+    captureStudioMutationTicket: () => ({ ...ticket }), pendingStrokeCommitsRef, flushPendingStrokeCommitsRef: { current: vi.fn(() => true) },
     sharedDocumentSaveAbortRef: { current: null as AbortController | null }, documentSaveInFlightRef: { current: false }, studioCrdtAuthoritativeSaveBarrierRef: { current: barrier }, studioCrdtDocumentRef: { current: null },
     setSaving: vi.fn(), setError: vi.fn(), setSharedDocumentNotice: vi.fn(), setSharedDocumentScope: vi.fn(), ownerDetailAbortRef: { current: null }, setFxPanelOpen: vi.fn(), setLoadedWork: vi.fn(),
     clearAutosaveDurableAuthority: vi.fn(), studioLifecycleDurableGenerationRef: { current: 0 }, studioRevisionProjectGenerationRef: { current: 9 }, studioLifecycleDurablePendingFingerprintRef: { current: "pending" } };
@@ -87,6 +93,49 @@ describe("제한 저장의 실제 ACK와 초안 보존", () => {
     expect(f.deps.clearAutosaveDurableAuthority).toHaveBeenCalledTimes(1); expect(localStorage.getItem("scoped-save-test")).toBeNull();
     expect(localStorage.getItem(sidecarKey)).toBeNull();
     expect(f.deps.documentSaveInFlightRef.current).toBe(false);
+  });
+  it.each([false, true])("실제 권위는 마지막 획을 refresh 전에 확정하고 ACK 뒤 배정을 다시 검사한다 (회수=%s)", async (revokeAfterAck) => {
+    const real = createStudioScopedWriteFixture(), f = fixture(real.authority), events: string[] = [], reportError = vi.fn();
+    f.deps.studioAuthUserId = real.authority.authScopeKey; f.deps.workId = real.authority.workId;
+    f.ticket.authScopeKey = real.authority.authScopeKey; f.ticket.workId = real.authority.workId;
+    f.deps.currentStudioDocumentScopeRef.current = { authScopeKey: real.authority.authScopeKey, workId: real.authority.workId };
+    const owner = { current: { locked: true } }, unbind = bindStudioScopedWriteAuthority(owner, real.authority);
+    real.choose();
+    const previous: PageState = { id: "page-1", elements: [], bg: "#fff", bgGrad: null, canvasH: 768 };
+    const stroke: DrawEl = admitStudioScopedDrawStart(owner, previous.id, previous.elements,
+      { id: "last-pointer-stroke", type: "draw", points: [10, 10, 20, 20], stroke: "#000", strokeWidth: 3 });
+    const next: PageState = { ...previous, elements: [stroke] };
+    real.authority.captureWriteContext();
+    let committed = false, refreshes = 0;
+    f.deps.pendingStrokeCommitsRef.current = {};
+    f.deps.flushPendingStrokeCommitsRef.current.mockImplementation(() => {
+      events.push("flush");
+      committed = admitStudioScopedPagesCommit({ owner, previous: [previous], next: [next], reportError, lockMessage: () => "잠금" });
+      if (committed) f.deps.pendingStrokeCommitsRef.current = null;
+      return committed;
+    });
+    real.authority.bindPolicyRefresh(async () => {
+      events.push("refresh"); refreshes++;
+      const value = revokeAfterAck && refreshes === 2 ? { ...real.policy, policyVersion: 2,
+        grants: real.policy.grants.map((grant) => ({ ...grant, revokedAt: "2026-10-29T01:00:00.000Z" })) } : real.policy;
+      real.authority.setPolicy(value); return value;
+    });
+    f.barrier.mockImplementation(async () => {
+      events.push("barrier");
+      if (!revokeAfterAck) throw new Error("회귀 검증의 승인 경계 중단");
+      return { serverSequence: "7" };
+    });
+    try {
+      await f.run();
+      expect(committed, reportError.mock.calls.flat().join(" ")).toBe(true);
+      expect(reportError).not.toHaveBeenCalled();
+      expect(events).toEqual(revokeAfterAck ? ["flush", "refresh", "barrier", "refresh"] : ["flush", "refresh", "barrier"]);
+      expect(f.barrier).toHaveBeenCalledOnce();
+      expect(f.deps.setError).toHaveBeenLastCalledWith(revokeAfterAck ? "현재 유효한 담당 원고 범위를 선택하세요." : "회귀 검증의 승인 경계 중단");
+      expect(mocks.read).not.toHaveBeenCalled(); expect(mocks.patch).not.toHaveBeenCalled();
+      expect(mocks.acknowledge).not.toHaveBeenCalled(); expectDraftPreserved();
+      expect(f.deps.documentSaveInFlightRef.current).toBe(false);
+    } finally { unbind(); real.authority.dispose(); }
   });
   it("durable intent ACK 실패는 서버 저장 뒤에도 primary와 sidecar를 지우지 않는다", async () => {
     const f = fixture(); mocks.acknowledge.mockRejectedValueOnce(new Error("기기 ACK 실패"));

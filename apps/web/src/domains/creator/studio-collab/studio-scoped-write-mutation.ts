@@ -36,7 +36,7 @@ export function admitStudioScopedElementCommit(input: Input & { readonly pageId:
       if (authority.ownerOf(kind(value), id) !== target.definition.id) throw new Error("선택한 담당 범위의 원고만 변경할 수 있습니다.");
       if (!input.previewOnly) {
         authority.admitExisting(ticket, kind(value), id);
-        if (!before && after && authority.requiresRestoration(kind(after), id)) authority.registerRestoration(ticket, kind(after), id);
+        if (!before && after && authority.requiresRestoration(kind(after), id) && !authority.hasCurrentLiveEntity(kind(after), id)) authority.registerRestoration(ticket, kind(after), id);
       }
     }
     return true;
