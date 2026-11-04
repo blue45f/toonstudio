@@ -32,6 +32,8 @@ export function WebtoonProcessToolchain() {
   const bt = useBilingual("WebtoonProcessToolchain");
   const localize = useBilingualLocalizer("WebtoonProcessToolchain");
   const [filter, setFilter] = useState<ToolFilter>("all");
+  const [practiceLabMode, setPracticeLabMode] = useState<"posemaniacs-croquis" | "savethecat-15beat" | "shotdeck-lighting" | "wacom-pressure">("posemaniacs-croquis");
+  const [croquisIntervalSec, setCroquisIntervalSec] = useState<30 | 60 | 180>(30);
 
   const filterOptions: readonly { value: ToolFilter; ko: string; en: string }[] = [
     { value: "all", ko: "전체", en: "All" },
@@ -141,28 +143,82 @@ export function WebtoonProcessToolchain() {
         </p>
         <div
           data-testid="learn-rea-toolchain-coverage-bar"
-          className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-card/85 px-3.5 py-2.5 text-xs"
+          className="mt-4 space-y-2.5 rounded-xl border border-line bg-card/85 px-3.5 py-2.5 text-xs"
         >
-          <span className="font-bold text-fg-2">
-            {bt(
-              `REA 공정 도구 카탈로그 · 총 ${WEBTOON_PROCESS_TOOLCHAIN.length}단계 공정 · 클래스101/콜로소/탈잉 커리큘럼 · 투닝플러스/Mangaplay/LlamaGen 콘티 · Posemaniacs 30초 크로키 연동`,
-              `REA Process Toolchain · ${WEBTOON_PROCESS_TOOLCHAIN.length} stages · Class101/Coloso/Taling curriculum · Tooning Plus/Mangaplay/LlamaGen storyboard · Posemaniacs 30s croquis`,
-            )}
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              to="/studio/canvas"
-              className="inline-flex min-h-8 items-center gap-1 rounded-full bg-accent/15 px-3 py-1 font-bold text-accent hover:bg-accent hover:text-on-accent"
-            >
-              {bt("스튜디오 실습 캔버스 열기", "Open Studio Practice Canvas")}
-              <ArrowUpRight aria-hidden="true" size={13} />
-            </Link>
-            <Link
-              to="/settings/role?tab=workspace"
-              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 font-semibold text-fg-2 hover:border-accent/45 hover:text-accent"
-            >
-              {bt("15개 세부직무 맞춤 배치 설정", "15-Sub-Role Workspace Setup")}
-            </Link>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-bold text-fg-2">
+              {bt(
+                `REA 공정 도구 카탈로그 · 총 ${WEBTOON_PROCESS_TOOLCHAIN.length}단계 공정 · 클래스101/콜로소/탈잉/CGMA/Gnomon 커리큘럼 · 투닝플러스/Mangaplay/LlamaGen 콘티 · Posemaniacs 30초 크로키 연동`,
+                `REA Process Toolchain · ${WEBTOON_PROCESS_TOOLCHAIN.length} stages · Class101/Coloso/Taling/CGMA/Gnomon curriculum · Tooning Plus/Mangaplay/LlamaGen storyboard · Posemaniacs 30s croquis`,
+              )}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                to="/studio/canvas"
+                className="inline-flex min-h-8 items-center gap-1 rounded-full bg-accent/15 px-3 py-1 font-bold text-accent hover:bg-accent hover:text-on-accent"
+              >
+                {bt("스튜디오 실습 캔버스 열기", "Open Studio Practice Canvas")}
+                <ArrowUpRight aria-hidden="true" size={13} />
+              </Link>
+              <Link
+                to="/settings/role?tab=workspace"
+                className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 font-semibold text-fg-2 hover:border-accent/45 hover:text-accent"
+              >
+                {bt("15개 세부직무 맞춤 배치 설정", "15-Sub-Role Workspace Setup")}
+              </Link>
+            </div>
+          </div>
+          <div
+            data-testid="learn-rea-interactive-practice-bar"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/25 bg-accent/5 px-3 py-2"
+          >
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("아카데미 실습 랩 모드", "Academy Practice Lab Mode")}>
+              <span className="font-extrabold text-accent">{bt("실습 랩:", "Practice Lab:")}</span>
+              {([
+                { id: "posemaniacs-croquis", ko: "Posemaniacs·Proko 해부학 크로키", en: "Posemaniacs/Proko Croquis" },
+                { id: "savethecat-15beat", ko: "Save the Cat! 15비트·Dramatica 서사 진단", en: "Save the Cat! 15-Beat & Dramatica" },
+                { id: "shotdeck-lighting", ko: "ShotDeck 24/50/85mm 렌즈·키라이트 랩", en: "ShotDeck 24/50/85mm Lens & Lighting" },
+                { id: "wacom-pressure", ko: "Wacom 필압/기울기 & AnimSchool 무게중심", en: "Wacom Pressure & AnimSchool Balance" },
+              ] as const).map((lab) => (
+                <button
+                  key={lab.id}
+                  type="button"
+                  data-testid={`learn-rea-lab-${lab.id}`}
+                  aria-pressed={practiceLabMode === lab.id}
+                  onClick={() => setPracticeLabMode(lab.id)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                    practiceLabMode === lab.id
+                      ? "bg-accent text-on-accent"
+                      : "border border-line bg-panel text-fg-2 hover:border-accent/45"
+                  }`}
+                >
+                  {bt(lab.ko, lab.en)}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("크로키 타이머 간격", "Croquis Timer Interval")}>
+              <span className="text-[11px] font-bold text-fg-2">{bt("크로키 주기:", "Croquis Timer:")}</span>
+              {([30, 60, 180] as const).map((sec) => (
+                <button
+                  key={sec}
+                  type="button"
+                  data-testid={`learn-rea-croquis-interval-${sec}`}
+                  aria-pressed={croquisIntervalSec === sec}
+                  onClick={() => setCroquisIntervalSec(sec)}
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                    croquisIntervalSec === sec ? "bg-accent text-on-accent" : "border border-line bg-panel text-fg-2"
+                  }`}
+                >
+                  {bt(`${sec}초`, `${sec}s`)}
+                </button>
+              ))}
+            </div>
+            <p data-testid="learn-rea-active-practice-summary" className="w-full text-[11px] font-semibold text-fg-2">
+              {bt(
+                `[활성 커리큘럼] ${practiceLabMode === "posemaniacs-croquis" ? `Posemaniacs·Line of Action·Anatomy Next ${croquisIntervalSec}초 근육 회전/손발/투시 박스 드릴` : practiceLabMode === "savethecat-15beat" ? "Save the Cat! 15비트(오프닝 이미지→촉매→미드포인트→피날레) & Dramatica/Causality 복선 회수 매트릭스" : practiceLabMode === "shotdeck-lighting" ? "ShotDeck·Flim.ai 시네마틱 24mm 광각/50mm 표준/85mm 인물 심도 & 3점 조명 색온도 매칭" : "Wacom Academy 필압/기울기 베지어 커브 교정 & AnimSchool/CG Spectrum 실루엣·무게중심(Line of Action) 클리닉"}`,
+                `[Active Lab] ${practiceLabMode} (${croquisIntervalSec}s timer) · Ready to launch in Studio Practice Canvas`,
+              )}
+            </p>
           </div>
         </div>
       </div>

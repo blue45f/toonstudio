@@ -199,6 +199,7 @@ export function CommunityPage() {
   const t = useT();
   useDocumentTitle(t(COPY.docTitle));
   const [sectionView, setSectionView] = useState<"all" | "league" | "feed" | "promote">("all");
+  const [activeReaTrack, setActiveReaTrack] = useState<"skeb-vgen-commission" | "tumblbug-fantia-tier" | "comiket-booth-cut" | "c2pa-nightshade-shield">("skeb-vgen-commission");
   const showLeague = sectionView === "all" || sectionView === "league";
   const showFeed = sectionView === "all" || sectionView === "feed";
   const showPromote = sectionView === "all" || sectionView === "promote";
@@ -452,11 +453,11 @@ export function CommunityPage() {
         </div>
         <div
           data-testid="community-rea-creator-showcase-bar"
-          className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
+          className="mt-4 space-y-2.5 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
         >
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-extrabold text-accent">
-              CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE · DRIBBBLE · PATREON · POSTYPE · FANDING · SUBSTACK
+              CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE · DRIBBBLE · PATREON · POSTYPE · FANDING · SUBSTACK · DLSITE · COMIKET
             </span>
             {[
               { href: "/community/timelapse", ko: "직무별 WIP 타임랩스·pixiv Sketch 라이브", en: "Role WIP & Live Sketch" },
@@ -473,6 +474,44 @@ export function CommunityPage() {
                 {item.ko}
               </Link>
             ))}
+          </div>
+          <div
+            data-testid="community-rea-interactive-workbench"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/25 bg-accent/5 px-3 py-2"
+          >
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="크리에이터 수익화·부스·출처증명 시뮬레이터">
+              <span className="text-[11px] font-extrabold text-accent">REA 워크벤치:</span>
+              {([
+                { id: "skeb-vgen-commission", label: "Skeb·VGen·크레페 무수정 커미션 슬롯" },
+                { id: "tumblbug-fantia-tier", label: "텀블벅·팬딩·DLsite·Fantia 티어 보상" },
+                { id: "comiket-booth-cut", label: "코미케·멜론북스·pictSQUARE 300DPI 부스컷" },
+                { id: "c2pa-nightshade-shield", label: "Cara No-AI · C2PA · Nightshade 보호" },
+              ] as const).map((track) => (
+                <button
+                  key={track.id}
+                  type="button"
+                  data-testid={`community-rea-track-${track.id}`}
+                  aria-pressed={activeReaTrack === track.id}
+                  onClick={() => setActiveReaTrack(track.id)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                    activeReaTrack === track.id
+                      ? "bg-accent text-on-accent"
+                      : "border border-line bg-panel text-fg-2 hover:border-accent/45"
+                  }`}
+                >
+                  {track.label}
+                </button>
+              ))}
+            </div>
+            <span data-testid="community-rea-active-track-summary" className="text-[11px] font-semibold text-fg-2">
+              {activeReaTrack === "skeb-vgen-commission"
+                ? "Skeb 무수정 리퀘스트 + VGen·크레페 캐릭터 시트 슬롯 예약 활성"
+                : activeReaTrack === "tumblbug-fantia-tier"
+                  ? "텀블벅·와디즈 달성률 게이지 + 팬딩·DLsite·Fantia PSD 티어 배포 활성"
+                  : activeReaTrack === "comiket-booth-cut"
+                    ? "코미케 써클컷 + 멜론북스·suzuri 300DPI CMYK 3mm 재단선 검증 통과"
+                    : "Cara No-AI 타임랩스 + C2PA 서명 매니페스트 + Glaze/Nightshade 보호 활성"}
+            </span>
           </div>
         </div>
       </Section>

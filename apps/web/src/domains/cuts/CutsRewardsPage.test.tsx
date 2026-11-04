@@ -43,7 +43,7 @@ describe("CutsRewardsPage", () => {
   it("지난 기간을 고르면 확정 정산액으로 바뀐다", async () => {
     renderPage();
     await screen.findByLabelText("정산 요약");
-    fireEvent.click(screen.getByRole("button", { name: /2026년 9월/ }));
+    fireEvent.click(screen.getByRole("button", { name: /마감/ }));
     await waitFor(() => {
       expect(screen.getByText("확정 정산액")).toBeTruthy();
     });

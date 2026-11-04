@@ -75,6 +75,11 @@ describe("구인·의뢰 게시판 상태", () => {
 
     const chipGroup = screen.getByRole("group", { name: "웹툰 공정별 어시스턴트·파트너 원클릭 필터" });
     expect(chipGroup).toBeTruthy();
+    expect(screen.getByTestId("collaborate-rea-interactive-vcs-sla-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("collaborate-rea-vcs-diversion-branch"));
+    expect(screen.getByTestId("collaborate-rea-active-vcs-summary").textContent).toContain(
+      "Diversion·Unity VCS 무손실 아티스트 브랜치 병합",
+    );
 
     fireEvent.click(within(chipGroup).getByRole("button", { name: "선화·펜선" }));
     await waitFor(() => expect(list).toHaveBeenLastCalledWith({ role: "ink" }, expect.any(AbortSignal)));
