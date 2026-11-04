@@ -122,12 +122,16 @@ export interface Office2dRenderFrame {
   readonly extensions?: Office2dStageExtensions | undefined;
   readonly schematicMode?: boolean | undefined;
   readonly comicBursts?: readonly Office2dComicBurst[] | undefined;
+  /** 순간 이동 직후 월드를 덮는 어두운 막의 불투명도(0~1). 이름표·말풍선 같은 화면 위 요소는 막 위에 그린다. */
+  readonly viewVeil?: number | undefined;
 }
 
 const CHUNK = 512;
 const ACTOR_HEIGHT = OFFICE2D_ACTOR_HEIGHT;
 const FOOT_RATIO = OFFICE2D_FOOT_RATIO;
 const OUTSIDE = "#2b2420";
+/** 순간 이동 막 색. 테마에 따라 밝아질 수 있는 바깥 색 대신 중립 어둠을 써서 어느 테마에서도 번쩍이지 않게 한다. */
+const TELEPORT_VEIL_COLOR = "#0f1218";
 const SIGN_FONT = "700 13px Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif";
 
 interface SortEntry {
@@ -194,6 +198,12 @@ export class Office2dRenderer {
       );
     }
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    if (frame.viewVeil !== undefined && frame.viewVeil > 0.01) {
+      ctx.globalAlpha = Math.min(1, frame.viewVeil);
+      ctx.fillStyle = TELEPORT_VEIL_COLOR;
+      ctx.fillRect(0, 0, viewport.width, viewport.height);
+      ctx.globalAlpha = 1;
+    }
     this.drawOverlay(ctx, frame, overlay);
   }
 

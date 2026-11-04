@@ -37,7 +37,11 @@ class FakeContext implements Office2dCanvas2D {
   scale(): void {}
   rotate(): void {}
   setTransform(): void { this.count("setTransform"); }
-  fillRect(): void { this.count("fillRect"); }
+  fillRect(_x?: number, _y?: number, width?: number, height?: number): void {
+    this.count("fillRect");
+    // 뷰포트(1280×720, 배율 1) 전체를 반투명으로 덮는 칠은 순간 이동 막뿐이다.
+    if (width === 1280 && height === 720 && this.globalAlpha > 0.05 && this.globalAlpha < 0.95) this.count("viewportVeil");
+  }
   strokeRect(): void {}
   clearRect(): void {}
   beginPath(): void {}
@@ -83,7 +87,7 @@ function peer(sessionId: string, x: number, y: number): StudioVirtualSpacePeer {
   };
 }
 
-function setup(options: { readonly snapshot?: StudioVirtualSpaceSnapshot; readonly withImages?: boolean } = {}) {
+function setup(options: { readonly snapshot?: StudioVirtualSpaceSnapshot; readonly withImages?: boolean; readonly reducedMotion?: boolean } = {}) {
   let clock = Date.UTC(2026, 9, 28, 3, 0, 0);
   let current = options.snapshot ?? snapshot();
   const bridge = new StudioVirtualSpaceEngineBridge();
@@ -119,7 +123,7 @@ function setup(options: { readonly snapshot?: StudioVirtualSpaceSnapshot; readon
     getSeatedActors: () => [],
     getCallbacks: () => callbacks,
     getLanguage: () => "ko",
-    getReducedMotion: () => true,
+    getReducedMotion: () => options.reducedMotion ?? true,
     clock: () => clock,
   });
   runtime.setViewport(1280, 720);
@@ -170,6 +174,50 @@ describe("Office2dRuntime", () => {
     const diagonalDistance = Math.hypot(336 - end.x, 1470 - end.y);
     expect(diagonalDistance).toBeGreaterThan(straightDistance * 0.9);
     expect(diagonalDistance).toBeLessThan(straightDistance * 1.1);
+  });
+
+  it("순간 이동 직후에는 어두운 막이 가장 진하게 시작해 340ms 안에 부드럽게 풀린다", () => {
+    const { runtime, bridge, run } = setup({ reducedMotion: false });
+    runtime.start();
+    run(0.1);
+    expect(runtime.teleportVeil()).toBe(0);
+    bridge.requestTeleport({ x: 700, y: 1330 });
+    run(1 / 60);
+    const first = runtime.teleportVeil();
+    expect(first).toBeGreaterThan(0.6);
+    expect(first).toBeLessThanOrEqual(0.78);
+    run(0.12);
+    const middle = runtime.teleportVeil();
+    expect(middle).toBeGreaterThan(0);
+    expect(middle).toBeLessThan(first);
+    run(0.3);
+    expect(runtime.teleportVeil()).toBe(0);
+  });
+
+  it("순간 이동 막은 화면을 한 번 덮어 그리고, 풀린 뒤에는 그리지 않는다", () => {
+    const { runtime, bridge, run } = setup({ reducedMotion: false });
+    runtime.start();
+    run(0.1);
+    const calm = new FakeContext();
+    runtime.draw(calm, 1);
+    expect(calm.calls.get("viewportVeil") ?? 0).toBe(0);
+    bridge.requestTeleport({ x: 700, y: 1330 });
+    run(1 / 60);
+    const veiled = new FakeContext();
+    runtime.draw(veiled, 1);
+    expect(veiled.calls.get("viewportVeil")).toBe(1);
+    run(0.5);
+    const settled = new FakeContext();
+    runtime.draw(settled, 1);
+    expect(settled.calls.get("viewportVeil") ?? 0).toBe(0);
+  });
+
+  it("동작 줄이기에서는 순간 이동에 막을 쓰지 않는다", () => {
+    const { runtime, bridge, run } = setup({ reducedMotion: true });
+    runtime.start();
+    bridge.requestTeleport({ x: 700, y: 1330 });
+    run(1 / 60);
+    expect(runtime.teleportVeil()).toBe(0);
   });
 
   it("벽을 통과하지 못한다(로비 동쪽 벽)", () => {
