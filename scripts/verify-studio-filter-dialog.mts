@@ -291,7 +291,7 @@ async function screenshotClipped(
 }
 
 /**
- * 문서 픽셀만 비교하기 위한 캡처. 캔버스 상태 바(확대율·페이지·작업 버튼)는 뷰포트에 고정된 크롬이라
+ * 문서 픽셀만 비교하기 위한 캡처. 캔버스 상태 바와 페이지 띠의 그림자는 뷰포트에 고정된 크롬이라
  * 오류 안내 행 때문에 캔버스가 내려가면 제자리에 남고, 정렬된 클립의 아래쪽에 들어온다. 그 픽셀은 문서가
  * 아니므로 이 캡처 동안만 숨기고 레이아웃은 그대로 둔다(visibility 는 자리를 차지하므로 배치가 바뀌지 않는다).
  */
@@ -300,7 +300,7 @@ async function screenshotDocumentPixels(
   clip: { x: number; y: number; width: number; height: number },
 ): Promise<Buffer> {
   const setStatusBarVisibility = (value: string) => page.evaluate((visibility) => {
-    document.querySelectorAll<HTMLElement>('[data-studio-status-bar="true"]')
+    document.querySelectorAll<HTMLElement>('[data-studio-status-bar="true"], [data-studio-page-sequence-strip="true"]')
       .forEach((element) => { element.style.visibility = visibility; });
   }, value);
   await setStatusBarVisibility("hidden");
@@ -841,7 +841,7 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
       && isDeepStrictEqual(document.pagesList, originalPages),
     "History traversal changed the original saved strokes");
     if (AUTHENTICATED) await selectCanonicalImage();
-    const baseline = await screenshotClipped(page, clip);
+    const baseline = await (EXPECT_DENIAL ? screenshotDocumentPixels(page, clip) : screenshotClipped(page, clip));
     committedBaseline = { livePresentationDiff: await compareScreenshotPixels(page, liveBaseline, baseline),
       originalDrawCount: 2, persistedHistoryUnchanged: true };
     writeFileSync(join(SCRATCH, "studio-filter-dialog-baseline.png"), baseline);
@@ -906,7 +906,7 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
           y: clip.y + deniedStage.y - baselineStage.y };
         const restoredDeadline = Date.now() + 10_000;
         do {
-          result.undoDiff = await compareScreenshotPixels(page, baseline, await screenshotDocumentPixels(page, alignedClip));
+          result.undoDiff = await compareScreenshotPixels(page, baseline, await screenshotDocumentPixels(page, alignedClip).then((bytes) => { writeFileSync(join(SCRATCH, "studio-filter-dialog-denial-restored.png"), bytes); return bytes; }));
           if (result.undoDiff.changedPixels <= result.undoDiff.totalPixels * 0.002) break;
           await page.waitForTimeout(150);
         } while (Date.now() < restoredDeadline);
@@ -918,7 +918,7 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
           return after && Math.abs(after.x - before.x) < 0.5 && Math.abs(after.y - before.y) < 0.5
             && Math.abs(after.width - before.width) < 0.5 && Math.abs(after.height - before.height) < 0.5;
         }, baselineStage);
-        const dismissedDiff = await compareScreenshotPixels(page, baseline, await screenshotClipped(page, clip));
+        const dismissedDiff = await compareScreenshotPixels(page, baseline, await screenshotDocumentPixels(page, clip));
         invariant(dismissedDiff.changedPixels <= dismissedDiff.totalPixels * 0.002,
           `${filterCase.label}: 오류를 닫은 뒤 원래 화면 영역의 원본 픽셀이 달라졌습니다`);
         const afterDismiss = await readDurableStudioAutosaveDocument(page, autosaveKey);
