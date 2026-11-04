@@ -143,11 +143,11 @@ export function MarketResourceFamilyExplorer({ className, compact = false }: Mar
             {bt("REA 글로벌 에셋 호환 규격:", "REA Global Asset Specs:")}
           </span>
           {[
-            bt("ACON3D·SketchUp·KitBash3D (.skp/.glb 2점투시)", "ACON3D·SketchUp·KitBash3D (.skp/.glb)"),
-            bt("Clip Studio·Krita·Procreate 브러시", "CSP·Krita·Procreate Brushes"),
-            bt("VRoid Hub VRM·Daz3D·Marvelous·Polycam·Meshy·Hyper3D Rodin·ZBrush 3D", "VRoid Hub·Daz3D·Marvelous·Polycam·Meshy·Rodin·ZBrush"),
-            bt("Poly Haven·ambientCG·Sketchfab CC0 PBR/HDRI", "Poly Haven·ambientCG·Sketchfab PBR/HDRI"),
-            bt("눈누(Noonnu)·Google Fonts 상업무료 식자폰트 & 뮤팟(Mewpot)/Suno/Udio/Epidemic 음원", "Noonnu·Google Fonts & Mewpot/Suno/Udio/Epidemic Audio"),
+            bt("ACON3D·SketchUp·Shapr3D·Plasticity·KitBash3D (.skp/.glb 2점투시)", "ACON3D·SketchUp·Shapr3D·Plasticity·KitBash3D (.skp/.glb)"),
+            bt("Clip Studio·Krita·Procreate·Paintstorm·TrueGrit·RetroSupply 브러시", "CSP·Krita·Procreate·Paintstorm·TrueGrit·RetroSupply Brushes"),
+            bt("VRoid Hub·Nomad Sculpt·Womp·World Labs·Postshot 3DGS·ZBrush 3D", "VRoid Hub·Nomad Sculpt·Womp·World Labs·Postshot 3DGS·ZBrush"),
+            bt("Poly Haven·ambientCG·Sketchfab·Blockade Labs Skybox CC0 PBR/HDRI", "Poly Haven·ambientCG·Sketchfab·Blockade Skybox PBR/HDRI"),
+            bt("눈누·산돌구름·폰트코·FontForge 식자폰트 & 뮤팟·Artlist·Splice·Pixabay 음원", "Noonnu·Sandoll·Fontco Fonts & Mewpot/Artlist/Splice/Pixabay Audio"),
             bt("BOOTH·Unity·CGTrader 1인·스튜디오 상업 라이선스 검증", "BOOTH·Unity·CGTrader License Verified"),
           ].map((badge) => (
             <span

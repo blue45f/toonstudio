@@ -177,6 +177,15 @@ export const TOOLCHAIN_STAGES_ART: readonly ProcessToolchainStage[] = [
         pricing: "freemium",
       },
       {
+        name: { ko: "Nomad Sculpt / Shapr3D / Plasticity / World Labs", en: "Nomad Sculpt / Shapr3D / Plasticity / World Labs" },
+        role: {
+          ko: "태블릿 스컬프팅(Nomad)·하드서피스 CAD(Shapr3D·Plasticity)·3D 가우시안 스플래팅 공간 생성(World Labs·Postshot·Kiri Engine) 도구",
+          en: "Tablet sculpting (Nomad), hard-surface CAD (Shapr3D, Plasticity), and 3D Gaussian Splatting scene tools (World Labs, Postshot, Kiri Engine)",
+        },
+        kind: "external",
+        pricing: "freemium",
+      },
+      {
         name: { ko: "캐릭터 셰이퍼", en: "Character Shaper" },
         role: {
           ko: "3D 캐릭터의 체형과 포즈를 빚는 셰이퍼",

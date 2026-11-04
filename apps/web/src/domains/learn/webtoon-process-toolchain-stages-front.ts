@@ -158,6 +158,15 @@ export const TOOLCHAIN_STAGES_FRONT: readonly ProcessToolchainStage[] = [
         kind: "external",
       },
       {
+        name: { ko: "Causality / Bibisco / Trelby", en: "Causality / Bibisco / Trelby" },
+        role: {
+          ko: "다중 캐릭터 타임라인·서브플롯 인과 시퀀서(Causality)와 오픈소스 소설·각본 설계 도구(Bibisco·Manuskript·Trelby)",
+          en: "Multi-character subplot causality sequencer (Causality) and open-source novel/screenplay architecture tools (Bibisco, Manuskript, Trelby)",
+        },
+        kind: "external",
+        pricing: "freemium",
+      },
+      {
         name: { ko: "작가의 방", en: "Writer Room" },
         role: {
           ko: "전제·시놉시스·비트·장면·컷·대사를 단계별 문서로 쓰는 공간 (에디터 안)",
