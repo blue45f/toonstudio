@@ -934,7 +934,7 @@ test("PR 전체 이력의 filtered merge checkout은 추가 인증 없이 기준
     git(repository, ...identity, "commit", "--quiet", "-m", "feature");
     git(repository, "checkout", "--quiet", "main");
     git(repository, ...identity, "merge", "--quiet", "--no-ff", "feature", "-m", "merge");
-    git(root, "clone", "--quiet", "--filter=blob:none", "--depth=2", "--no-checkout", `file://${repository}`, workspace);
+    git(root, "clone", "--quiet", "--filter=blob:none", "--no-checkout", `file://${repository}`, workspace);
     git(workspace, "remote", "set-url", "origin", `file://${join(root, "unavailable-remote")}`);
     const noFetch = { GIT_NO_LAZY_FETCH: "1" };
     assert.equal(runGit(workspace, ["cat-file", "-e", `${baseSha}^{commit}`], noFetch).status, 0);

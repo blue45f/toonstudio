@@ -1,24 +1,36 @@
 import { VRM } from "@pixiv/three-vrm";
 import { Quaternion } from "three";
-import { useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { getStudioHumanoidBoneDescriptor, isStudioHumanoidBoneName } from "../../studio-humanoid-bones";
 import { assertCharacterPoseConstraintAdmission } from "../runtime/character-pose-constraint-admission";
 import { clampStudioVrmJointDegrees } from "../../vrm/studio-vrm-pose-editing";
+import { createStudioVrmFingerCurlPose } from "../../vrm/studio-vrm-hand-poses";
 import { captureCharacterPoseRuntimeV3 } from "../pose-v3/character-pose-runtime-adapter";
 import { validateCharacterDocumentV3 } from "../document/character-document-v3";
 import { planCharacterPoseAuthoringInput } from "../runtime/character-pose-authoring-input";
+import { projectCharacterFingerAuthoringEdits } from "../runtime/character-finger-authoring-projection";
 
 import type { CharacterDocumentV3 } from "../document/character-document-v3";
 import type { CharacterAuthoringAuthorityHookResult } from "./use-character-authoring-authority";
 import type { StudioVrmPhotoPoseApplyPayload } from "../../vrm/StudioVrmPhotoPoseScanner";
 import type { StudioVrmPoserHost } from "../../vrm/StudioVrmPoserHost";
+import type { StudioVrmFingerName } from "../../vrm/studio-vrm-finger-curl";
+import type { FingerRotationMap } from "../../vrm/studio-vrm-poser-utils";
 
-/** 사진과 추적 확정은 호스트를 먼저 변경하지 않고 V3 명령으로 들어온다. */
+/** 손가락·사진·추적 확정은 호스트를 먼저 변경하지 않고 V3 명령으로 들어온다. */
 export function useCharacterAuthoringInputs(h: StudioVrmPoserHost, authoring: CharacterAuthoringAuthorityHookResult, enabled: boolean): StudioVrmPoserHost {
+  const bt = useBilingual("CharacterAuthoringInputs");
   const latest = useRef({ h, authoring, enabled });
   latest.current = { h, authoring, enabled };
   const sequence = useRef(0);
+  const baseline = useRef<{ owner: typeof authoring.authority; vrm: unknown; fingers: FingerRotationMap | undefined; ready: boolean }>({
+    owner: authoring.authority, vrm: h.vrm, fingers: h.fingerEdits, ready: false,
+  });
+  if (!enabled || !baseline.current.ready || baseline.current.owner !== authoring.authority || baseline.current.vrm !== h.vrm) {
+    baseline.current = { owner: authoring.authority, vrm: h.vrm, fingers: h.fingerEdits, ready: h.status === "ready" };
+  }
   const notice = (message: string) => {
     const setter: unknown = latest.current.h.setJointHandleStatus;
     if (typeof setter === "function") setter(message);
@@ -38,10 +50,11 @@ export function useCharacterAuthoringInputs(h: StudioVrmPoserHost, authoring: Ch
     }
     return { host, source: host.vrm, owner: current.authoring, document: snapshot.document };
   };
-  const withCustomHands = (document: CharacterDocumentV3, pose: CharacterDocumentV3["pose"]): CharacterDocumentV3 => {
+  const withCustomHands = (document: CharacterDocumentV3, pose: CharacterDocumentV3["pose"], side?: "left" | "right"): CharacterDocumentV3 => {
     const handPose = { ...document.recipe.handPose };
     for (const [name, rotation] of Object.entries(pose.bones)) {
       if (!isStudioHumanoidBoneName(name) || getStudioHumanoidBoneDescriptor(name).region !== "finger") continue;
+      if (side && !name.startsWith(side)) continue;
       const before = document.pose.bones[name];
       if (before && new Quaternion(...before).angleTo(new Quaternion(...rotation)) <= 1e-6) continue;
       delete handPose[name.startsWith("left") ? "left" : "right"];
@@ -73,6 +86,29 @@ export function useCharacterAuthoringInputs(h: StudioVrmPoserHost, authoring: Ch
       return false;
     }
   };
+  const curl = (side: "left" | "right", degrees: number, finger?: StudioVrmFingerName): void => {
+    try {
+      const current = context();
+      const fingers = createStudioVrmFingerCurlPose(side, degrees, finger);
+      const pose = planCharacterPoseAuthoringInput({ source: current.source, previous: current.document.pose,
+        kind: "manual", bones: {}, fingers,
+        lockedBones: current.host.lockedPoseBones,
+        clampRotation: current.host.jointLimitsEnabled ? (bone, axis, radians) =>
+          clampStudioVrmJointDegrees(bone, axis, radians * 180 / Math.PI) * Math.PI / 180 : undefined,
+      });
+      const changed = Object.keys(fingers).some((name) => {
+        if (!isStudioHumanoidBoneName(name)) return false;
+        const next = pose.bones[name];
+        const before = current.document.pose.bones[name];
+        const rotation = before ? new Quaternion(...before) : current.source.humanoid.getNormalizedBoneNode(name)?.quaternion;
+        return next && rotation && rotation.angleTo(new Quaternion(...next)) > 1e-6;
+      });
+      if (!changed) return;
+      commit(current.owner, withCustomHands(current.document, pose, side), bt("손가락 굽힘", "Finger curl"));
+    } catch (error) {
+      notice(error instanceof Error ? error.message : bt("손가락 굽힘을 적용하지 못했습니다.", "Could not apply finger curl."));
+    }
+  };
   const capture = (): boolean => {
     try {
       const current = context(true);
@@ -99,5 +135,27 @@ export function useCharacterAuthoringInputs(h: StudioVrmPoserHost, authoring: Ch
       return false;
     }
   };
-  return enabled ? { ...h, handlePhotoPoseApply: photo, handleCapturePose: capture } : h;
+  // 슬라이더도 같은 원본을 읽어야 undo·redo가 실제 뼈대와 표시값을 함께 복원한다.
+  const pose = (authoring.snapshot.previewDocument ?? authoring.snapshot.document).pose;
+  const source = h.vrm;
+  const fallback = baseline.current.fingers;
+  const tracking = Boolean(h.webcamActive);
+  const projection = useMemo(() => {
+    try {
+      return { fingers: enabled && !tracking && authoring.hydrated && source instanceof VRM
+        ? projectCharacterFingerAuthoringEdits(source, pose, fallback ?? {}) : null, error: null };
+    } catch (error) {
+      return { fingers: null, error: error instanceof Error ? error.message : bt("손가락 굽힘을 적용하지 못했습니다.", "Could not apply finger curl.") };
+    }
+  }, [enabled, tracking, authoring.hydrated, source, pose, fallback, bt]);
+  const { fingers } = projection;
+  const setFingerEdits: unknown = h.setFingerEdits;
+  const setJointHandleStatus: unknown = h.setJointHandleStatus;
+  useEffect(() => {
+    if (projection.error && typeof setJointHandleStatus === "function") setJointHandleStatus(projection.error);
+    if (!fingers || typeof setFingerEdits !== "function" || JSON.stringify(h.fingerEdits ?? {}) === JSON.stringify(fingers)) return;
+    setFingerEdits(fingers);
+  }, [fingers, projection.error, setFingerEdits, setJointHandleStatus, h.fingerEdits]);
+  return enabled ? { ...h, fingerEdits: fingers ?? h.fingerEdits, updateFingerCurl: curl,
+    handlePhotoPoseApply: photo, handleCapturePose: capture } : h;
 }

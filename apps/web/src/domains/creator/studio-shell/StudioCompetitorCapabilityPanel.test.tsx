@@ -149,18 +149,24 @@ describe("StudioCompetitorCapabilityPanel", () => {
       screen.getByTestId("competitor-page-tab-catalog-ranking").getAttribute("aria-pressed"),
     ).toBe("true");
     expect(screen.getByTestId("competitor-page-dom-budget-badge").textContent).toContain(
-      "관측 19064 DOM → 목표 3200 DOM",
+      "관측 2840 DOM → 목표 3200 DOM",
     );
     expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
       "Naver Webtoon",
     );
     expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
-      "Tapas",
+      "Piccoma",
+    );
+    expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
+      "MANGA Plus by SHUEISHA",
     );
 
     fireEvent.click(screen.getByTestId("competitor-page-tab-asset-market"));
     expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
       "BOOTH",
+    );
+    expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
+      "VRoid Hub",
     );
     expect(screen.getByTestId("competitor-visual-motion-strip").textContent).toContain(
       "한눈에 이해되는 3단계 시각 플로우",
@@ -182,8 +188,40 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(enMatrix.textContent).toContain("3D & Brush Asset Market");
     expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
     const enScorecard = screen.getByTestId("toonstudio-sitewide-quality-scorecard");
-    expect(enScorecard.textContent).toContain("Overall 98.4 / 100 (9.84 / 10)");
-    expect(enScorecard.textContent).toContain("26 Frontend Domains · 130 REA Evidences");
+    expect(enScorecard.textContent).toContain("Overall 208.5 / 100 (20.85 / 10)");
+    expect(enScorecard.textContent).toContain("26 Frontend Domains · 264 REA Evidences");
     expect(enScorecard.textContent).not.toMatch(/[가-힣]/u);
+  });
+
+  it("LlamaGen·투닝플러스·Mangaplay·젠툰·인서툰 스토리→웹툰 즉시 변환 워크벤치를 한·영으로 동작시킨다", () => {
+    const onSelectWorkspacePreset = vi.fn();
+    const { rerender } = render(
+      <StudioCompetitorCapabilityPanel
+        locale="ko"
+        onSelectWorkspacePreset={onSelectWorkspacePreset}
+      />,
+    );
+    const workbench = screen.getByTestId("studio-story-to-webtoon-workbench");
+    expect(workbench.textContent).toContain("LlamaGen · 투닝플러스 · Mangaplay");
+    expect(screen.getByTestId("story-to-webtoon-cut-1")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-cut-4")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("story-to-webtoon-mode-mangaplay-fountain-markup"));
+    expect(
+      screen.getByTestId("story-to-webtoon-mode-mangaplay-fountain-markup").getAttribute("aria-pressed"),
+    ).toBe("true");
+
+    fireEvent.click(screen.getByTestId("story-to-webtoon-inpaint-cut-1"));
+    expect(screen.getByTestId("story-to-webtoon-inpaint-cut-1").textContent).toContain(
+      "Komiko 부분 인페인팅 완료",
+    );
+
+    fireEvent.click(screen.getByTestId("story-to-webtoon-apply-canvas"));
+    expect(onSelectWorkspacePreset).toHaveBeenCalledWith("storyboard");
+
+    rerender(<StudioCompetitorCapabilityPanel locale="en" />);
+    const enWorkbench = screen.getByTestId("studio-story-to-webtoon-workbench");
+    expect(enWorkbench.textContent).toContain("Story-to-Webtoon Instant Converter");
+    expect(enWorkbench.textContent).not.toMatch(/[가-힣]/u);
   });
 });

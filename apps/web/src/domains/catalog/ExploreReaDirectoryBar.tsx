@@ -148,16 +148,23 @@ export function ExploreReaDirectoryBar({
           },
           {
             id: "tapas-bite-sized",
-            ko: "Tapas·WEBTOON 스낵 스크롤 (30~45컷)",
-            en: "Tapas/WEBTOON Bite-size (30-45 cuts)",
+            ko: "Tapas·WEBTOON·MANGA Plus 글로벌 동시연재 (30~45컷)",
+            en: "Tapas/WEBTOON/MANGA Plus Simulrelease (30-45 cuts)",
             status: ["ongoing"] as SerialStatus[],
             sortKey: "newest" as SortKey,
           },
           {
             id: "lezhin-binge-complete",
-            ko: "리디·레진 완결 정주행 (전회차 몰아보기)",
-            en: "Ridi/Lezhin Completed Binge",
+            ko: "리디·레진·봄툰·피너툰·Manta·Piccoma 완결 정주행 패스",
+            en: "Ridi/Lezhin/Bomtoon/Peanutoon/Manta/Piccoma Binge Pass",
             status: ["completed"] as SerialStatus[],
+            sortKey: "rating" as SortKey,
+          },
+          {
+            id: "munpia-novelpia-watcha",
+            ko: "문피아·조아라·노벨피아 노벨코믹스 & 왓챠피디아 고별점 픽",
+            en: "Munpia/Joara/Novelpia Novel-Comics & Watcha Pedia Top Rated",
+            status: ["ongoing"] as SerialStatus[],
             sortKey: "rating" as SortKey,
           },
         ].map((preset) => (

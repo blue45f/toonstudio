@@ -51,7 +51,7 @@ describe("BG3D event-driven frame quality sampling", () => {
       onScaleChange={scale} onFrameTimeChange={report} />);
     advance("always", 0);
     expect(scale).toHaveBeenCalledExactlyOnceWith(1);
-    expect(report.mock.calls.some(([value]) => typeof value === "number" && value > 16)).toBe(true);
+    expect(report).toHaveBeenLastCalledWith(80);
   });
 
   it("keeps resolution fixed during a paused gesture even if animation requires continuous frames", () => {

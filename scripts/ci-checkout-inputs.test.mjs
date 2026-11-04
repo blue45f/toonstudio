@@ -99,4 +99,3 @@ test("기반 회귀는 실제 씬 카탈로그의 모든 CC0 VRM 원본을 최�
     await fs.rm(directory, { recursive: true, force: true });
   }
 });
-

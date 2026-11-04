@@ -123,6 +123,7 @@ jobs:
         run: |
           python -m unittest discover -s tools -p test_package_non_studio_preview.py
           git rev-parse HEAD > dist/audit-source-sha.txt
+          python -m unittest discover -s tools -p test_package_non_studio_preview.py -v
           python tools/package-non-studio-preview.py
       - uses: actions/upload-artifact@v7
         with:

@@ -16,9 +16,10 @@ class PreviewPackageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "dist"
             kept = ["index.html", "assets/public-AbCd1234.js", "assets/opencv-public-demo-AbCd1234.js",
-                    "assets/main-AbCd1234.css", "fonts/public.woff2", "brand/public.webp", "data/catalog/01.json"]
+                    "assets/main-AbCd1234.css", "fonts/public.woff2", "brand/public.webp", "data/catalog/01.json",
+                    "i18n/ko/common.json", "locales/en.json", "catalog/index.json", "assets/studio-bg3d-physics.worker-public-demo-AbCd1234.js"]
             omitted = ["assets/opencv-AbCd1234.js", "assets/web-ifc-api-AbCd1234.js",
-                       "assets/3d/unused.png", "i18n/studio/unused.json"]
+                       "assets/studio-bg3d-physics.worker-AbCd1234.js", "assets/3d/unused.png", "i18n/studio/unused.json"]
             before = {}
             for name in kept + omitted:
                 path = root / name
@@ -46,6 +47,18 @@ class PreviewPackageTests(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, "exceeds 250 MB"):
                 preview.package_preview(root, output)
             self.assertEqual(output.read_bytes(), b"previous verified archive")
+
+
+    def test_oversize_public_input_still_fails_before_writing_archive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "dist"
+            root.mkdir()
+            with (root / "index.html").open("wb") as source:
+                source.truncate(preview.MAX_PREVIEW_BYTES + 1)
+            output = Path(directory) / "preview.tar.gz"
+            with self.assertRaisesRegex(SystemExit, "250 MB"):
+                preview.package_preview(root, output)
+            self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":
