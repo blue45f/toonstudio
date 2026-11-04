@@ -144,6 +144,61 @@ describe("free infrastructure policy", () => {
   });
 });
 
+describe("퇴역 Oracle 인프라와 checkout 정적 이미지 경로의 구분", () => {
+  const image = "/apps/web/public/assets/virtual-studio/studio-art-v14/rooms/tarot-story-oracle-pavilion.webp";
+  const conditional = (path) => `\${{ matrix.shard == 'studio-foundation' && '${path}' || '' }}`;
+  const checkoutIssues = (sparse, step = {}) => validateFreeInfrastructureRepository(fixture({
+    ".github/workflows/assets.yml": stringify({
+      on: "push", jobs: { audit: { steps: [{ uses: "actions/checkout@v6", with: { "sparse-checkout": sparse }, ...step }] } },
+    }),
+  }));
+
+  it.each([image, conditional(image)])("checkout의 정확한 이미지 경로에서 파일명만 인프라로 오인하지 않는다: %s", (sparse) => {
+    expect(checkoutIssues(sparse)).toEqual([]);
+  });
+
+  it("같은 scalar 안의 다른 OCI 설정과 표현식 조건은 계속 탐지한다", () => {
+    for (const sparse of [`${image}\n/deploy/oci/config`, conditional(image).replace("studio-foundation", "oracle")]) {
+      expect(checkoutIssues(sparse)).toEqual([expect.stringContaining("retired Oracle infrastructure")]);
+    }
+  });
+
+  it.each([
+    "/apps/web/public/assets/../oracle.webp",
+    "/apps/web/public/assets/rooms/./oracle.webp",
+    "/apps/web/public/assets/rooms/oracle.webp.sh",
+    "/apps/web/public/assets/rooms/oracle.webp?v=1",
+    "/apps/web/public/assets/rooms/oracle.webp#preview",
+    "/apps/web/public/assets/rooms/*oracle.webp",
+    "/apps/web/public/assets/rooms\\oracle.webp",
+    `${image} # 예외를 가장한 주석`,
+    `${image}; echo hidden`,
+    `\${{ inputs.asset || '${image}' }}`,
+  ])("불완전한 경로·확장자·추가 명령과 임의 표현식에는 예외를 주지 않는다: %s", (sparse) => {
+    expect(checkoutIssues(sparse)).toEqual([expect.stringContaining("retired Oracle infrastructure")]);
+  });
+
+  it.each([
+    { uses: "vendor/checkout@v1" },
+    { with: { path: image } },
+    { run: "oci compute instance list" },
+    { env: { CLOUD_PROVIDER: "oracle" } },
+  ])("다른 action·입력·명령·환경변수의 Oracle 참조를 제외하지 않는다: %j", (step) => {
+    expect(checkoutIssues(image, step)).toEqual([expect.stringContaining("retired Oracle infrastructure")]);
+  });
+
+  it.each([
+    ["deploy/runtime.sh", "oci compute instance list"],
+    ["docs/operations/origin.md", "Oracle Cloud Infrastructure 설정"],
+    ["DEPLOY.md", "deploy/oci/bootstrap.sh"],
+    [".github/workflows/image-command.yml", stringify({ on: "push", jobs: { audit: { steps: [{ run: `cat ${image}` }] } } })],
+  ])("checkout 필드 밖의 실제 인프라 참조는 차단한다: %s", (path, source) => {
+    expect(validateFreeInfrastructureRepository(fixture({ [path]: source }))).toEqual([
+      expect.stringContaining("retired Oracle infrastructure"),
+    ]);
+  });
+});
+
 describe("CI production publisher policy", () => {
   const blocked = [
     ["Cloudflare", "pnpm run cloudflare:static:deploy"],
