@@ -1,6 +1,7 @@
 // ContentPacksPage와 같은 상대 경로 import: worktree에서도 이 브랜치의 core 사전을
 // 그대로 바인딩하기 위한 기존 도메인 관례다. 병합 뒤에는 패키지 import와 동일 파일이다.
 import { REFERENCE_QUERY_MAX_LENGTH, resolveReferenceQuery } from "../../../../../packages/core/src/reference-query-language";
+import { loadOpusMtTranslator } from "./research-query-mt";
 
 /**
  * 리서치 데스크 공용 한→영 검색어 변환 계층.
@@ -75,8 +76,7 @@ async function loadTranslatorSafely(
 ): Promise<ResearchQueryTranslator | null> {
   try {
     if (loadTranslator) return await loadTranslator();
-    const mt = await import("./research-query-mt");
-    return await mt.loadOpusMtTranslator();
+    return await loadOpusMtTranslator();
   } catch {
     return null;
   }
