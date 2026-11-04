@@ -441,17 +441,27 @@ export function StudioCompetitorCapabilityPanel({
             <div className="flex flex-wrap items-center justify-between gap-1.5 text-[0.68rem]">
               <span className="font-black text-fg">
                 {locale === "ko"
-                  ? "7대 페이지 도메인별 66+ 글로벌 유사 서비스 REA 벤치마크·내재화 매트릭스"
-                  : "Page-by-page 66+ global service REA benchmark & internalization matrix"}
+                  ? `7대 페이지 도메인별 ${siteWideScorecard.internalizedCompetitorServicesCount}개 글로벌·국내외 유사 서비스 REA 벤치마크·세부 고도화 매트릭스`
+                  : `Page-by-page ${siteWideScorecard.internalizedCompetitorServicesCount} global & startup service REA benchmark & sub-enhancement matrix`}
               </span>
-              <span
-                data-testid="competitor-page-dom-budget-badge"
-                className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-accent"
-              >
-                {locale === "ko"
-                  ? `${activePageBenchmark.routePath} · 관측 ${activePageBenchmark.observedDomNodes} DOM → 목표 ${activePageBenchmark.targetDomBudgetNodes} DOM`
-                  : `${activePageBenchmark.routePath} · Observed ${activePageBenchmark.observedDomNodes} DOM -> Target ${activePageBenchmark.targetDomBudgetNodes} DOM`}
-              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                  data-testid="competitor-page-domain-score-badge"
+                  className="rounded bg-success/20 px-2 py-0.5 font-mono text-[0.62rem] font-black text-success"
+                >
+                  {locale === "ko"
+                    ? `도메인 점수 ${activePageBenchmark.domainScoreOutOf100} / 100`
+                    : `Domain ${activePageBenchmark.domainScoreOutOf100} / 100`}
+                </span>
+                <span
+                  data-testid="competitor-page-dom-budget-badge"
+                  className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-accent"
+                >
+                  {locale === "ko"
+                    ? `${activePageBenchmark.routePath} · 관측 ${activePageBenchmark.observedDomNodes} DOM → 목표 ${activePageBenchmark.targetDomBudgetNodes} DOM`
+                    : `${activePageBenchmark.routePath} · Observed ${activePageBenchmark.observedDomNodes} DOM -> Target ${activePageBenchmark.targetDomBudgetNodes} DOM`}
+                </span>
+              </div>
             </div>
             <div
               role="group"
@@ -478,7 +488,9 @@ export function StudioCompetitorCapabilityPanel({
                         : "border-line bg-card text-fg-2 hover:border-accent/40 hover:text-fg",
                     )}
                   >
-                    {locale === "ko" ? pageItem.labelKo : pageItem.labelEn}
+                    {locale === "ko"
+                      ? `${pageItem.labelKo} (${pageItem.domainScoreOutOf100})`
+                      : `${pageItem.labelEn} (${pageItem.domainScoreOutOf100})`}
                   </button>
                 );
               })}
@@ -504,6 +516,30 @@ export function StudioCompetitorCapabilityPanel({
                 </li>
               ))}
             </ul>
+            <div
+              data-testid="competitor-page-sub-enhancements"
+              className="mt-2 grid gap-1.5 sm:grid-cols-3"
+            >
+              {activePageBenchmark.subEnhancements.map((sub) => (
+                <div
+                  key={sub.id}
+                  data-testid={`competitor-sub-enhancement-${sub.id}`}
+                  className="rounded-lg border border-line bg-card px-2 py-1.5 text-[0.6rem]"
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-bold text-fg">
+                      {locale === "ko" ? sub.titleKo : sub.titleEn}
+                    </span>
+                    <span className="rounded bg-success/15 px-1.5 py-0.5 font-mono text-[0.58rem] font-black text-success">
+                      {sub.scoreOutOf100} / 100
+                    </span>
+                  </div>
+                  <div className="mt-1 truncate text-[0.56rem] text-fg-3">
+                    {sub.referenceServices.join(" · ")}
+                  </div>
+                </div>
+              ))}
+            </div>
             <div
               data-testid="competitor-visual-motion-strip"
               className="mt-2.5 grid gap-2 rounded-lg border border-accent/25 bg-card/90 p-2 sm:grid-cols-[9.5rem_minmax(0,1fr)]"
@@ -565,8 +601,8 @@ export function StudioCompetitorCapabilityPanel({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <strong className="text-[0.68rem] font-extrabold text-fg">
                 {locale === "ko"
-                  ? `사이트 전체 REA 완성도 스코어카드 (${siteWideScorecard.analyzedFrontendDomainsCount}개 프론트엔드 도메인 · ${siteWideScorecard.totalReaEvidenceRecords}건 REA 증거)`
-                  : `Site-Wide REA Quality Scorecard (${siteWideScorecard.analyzedFrontendDomainsCount} Frontend Domains · ${siteWideScorecard.totalReaEvidenceRecords} REA Evidences)`}
+                  ? `사이트 전체 REA 완성도 스코어카드 (${siteWideScorecard.analyzedFrontendDomainsCount}개 프론트엔드 도메인 · ${siteWideScorecard.totalReaEvidenceRecords}건 REA 증거 · ${siteWideScorecard.internalizedCompetitorServicesCount}개 서비스 내재화)`
+                  : `Site-Wide REA Quality Scorecard (${siteWideScorecard.analyzedFrontendDomainsCount} Frontend Domains · ${siteWideScorecard.totalReaEvidenceRecords} REA Evidences · ${siteWideScorecard.internalizedCompetitorServicesCount} Services)`}
               </strong>
               <span
                 className="rounded-md bg-success/20 px-2 py-0.5 text-[0.66rem] font-black text-success"
@@ -577,32 +613,25 @@ export function StudioCompetitorCapabilityPanel({
                   : `Overall ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`}
               </span>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-5 text-[0.6rem] font-semibold text-fg-2">
-              <div className="rounded border border-line bg-card px-2 py-1">
-                {locale === "ko"
-                  ? `기능 내재화 ${siteWideScorecard.featureInternalizationScore}`
-                  : `Internalization ${siteWideScorecard.featureInternalizationScore}`}
-              </div>
-              <div className="rounded border border-line bg-card px-2 py-1">
-                {locale === "ko"
-                  ? `UI/UX 통일성 ${siteWideScorecard.uiUxDesignUnityScore}`
-                  : `UI/UX Unity ${siteWideScorecard.uiUxDesignUnityScore}`}
-              </div>
-              <div className="rounded border border-line bg-card px-2 py-1">
-                {locale === "ko"
-                  ? `직관성 ${siteWideScorecard.intuitivenessScore}`
-                  : `Intuitiveness ${siteWideScorecard.intuitivenessScore}`}
-              </div>
-              <div className="rounded border border-line bg-card px-2 py-1">
-                {locale === "ko"
-                  ? `사용성·인체공학 ${siteWideScorecard.usabilityErgonomicsScore}`
-                  : `Usability ${siteWideScorecard.usabilityErgonomicsScore}`}
-              </div>
-              <div className="rounded border border-line bg-card px-2 py-1">
-                {locale === "ko"
-                  ? `DOM 예산·성능 ${siteWideScorecard.domPerformanceBudgetScore}`
-                  : `DOM Budget ${siteWideScorecard.domPerformanceBudgetScore}`}
-              </div>
+            <div
+              data-testid="toonstudio-axis-breakdown-list"
+              className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-5 text-[0.6rem] text-fg-2"
+            >
+              {siteWideScorecard.axisBreakdowns.map((axis) => (
+                <div
+                  key={axis.axisId}
+                  data-testid={`toonstudio-axis-${axis.axisId}`}
+                  className="rounded border border-line bg-card px-2 py-1.5"
+                >
+                  <div className="flex items-center justify-between gap-1 font-bold text-fg">
+                    <span>{locale === "ko" ? axis.labelKo : axis.labelEn}</span>
+                    <span className="font-mono text-success">{axis.scoreOutOf100}</span>
+                  </div>
+                  <p className="mt-0.5 text-[0.55rem] leading-3.5 text-fg-3">
+                    {locale === "ko" ? axis.subEnhancementSummaryKo : axis.subEnhancementSummaryEn}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

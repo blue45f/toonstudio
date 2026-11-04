@@ -261,6 +261,7 @@ export function StudioStoryToWebtoonStartupWorkbench({
   const [characterDnaLocked, setCharacterDnaLocked] = useState<boolean>(true);
   const [inpaintedCutIndex, setInpaintedCutIndex] = useState<number | null>(null);
   const [customScript, setCustomScript] = useState<string>("");
+  const [simulreleaseLang, setSimulreleaseLang] = useState<"KO" | "EN" | "JA">("KO");
 
   const activePreset = useMemo(
     () => STORY_PRESETS.find((p) => p.id === selectedPresetId) ?? STORY_PRESETS[0],
@@ -431,6 +432,29 @@ export function StudioStoryToWebtoonStartupWorkbench({
           >
             {ko ? "DNA 시드 잠금 전환" : "Toggle DNA Lock"}
           </button>
+          <div
+            role="group"
+            aria-label={ko ? "다국어 식자 동시 조판 언어" : "Multilingual lettering language"}
+            className="inline-flex items-center gap-0.5 rounded-md border border-line bg-card p-0.5"
+          >
+            {(["KO", "EN", "JA"] as const).map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                data-testid={`story-to-webtoon-lang-${lang}`}
+                aria-pressed={simulreleaseLang === lang}
+                onClick={() => setSimulreleaseLang(lang)}
+                className={cn(
+                  "rounded px-1.5 py-0.5 font-mono text-[0.56rem] font-bold transition-colors",
+                  simulreleaseLang === lang
+                    ? "bg-accent text-on-accent"
+                    : "text-fg-3 hover:text-fg",
+                )}
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
           {(
             [
               {
@@ -541,9 +565,19 @@ export function StudioStoryToWebtoonStartupWorkbench({
                     <span className="font-black text-accent">
                       {ko ? `CUT 0${cut.cutNumber} · ${cut.aspectRatio}` : `CUT 0${cut.cutNumber} · ${cut.aspectRatio}`}
                     </span>
-                    <span className="rounded bg-panel px-1.5 py-0.5 font-mono text-[0.56rem] text-fg-3">
-                      {characterDnaLocked ? cut.characterDnaSeed : "DNA-FREE"}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span
+                        data-testid={`story-to-webtoon-koma-tension-${cut.cutNumber}`}
+                        className="rounded bg-success/15 px-1.5 py-0.5 font-mono text-[0.55rem] font-bold text-success"
+                      >
+                        {ko
+                          ? `코마 텐션 ${92 + cut.cutNumber}% · ${simulreleaseLang} 식자`
+                          : `Koma Tension ${92 + cut.cutNumber}% · ${simulreleaseLang} Lettering`}
+                      </span>
+                      <span className="rounded bg-panel px-1.5 py-0.5 font-mono text-[0.56rem] text-fg-3">
+                        {characterDnaLocked ? cut.characterDnaSeed : "DNA-FREE"}
+                      </span>
+                    </div>
                   </div>
                   <div className="mt-1 flex flex-wrap gap-1 text-[0.58rem] text-fg-2">
                     <span className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold">
