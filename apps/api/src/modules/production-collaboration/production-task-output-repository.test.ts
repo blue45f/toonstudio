@@ -57,6 +57,12 @@ function fakeTransaction(options: {
   const inserts: { table: unknown; values: Row }[] = [];
   const hint = options.hint ?? aggregate(), current = options.current ?? aggregate();
   const transaction = {
+    execute: async (statement: SQL) => {
+      if (!new PgDialect().sqlToQuery(statement).sql.includes("to_regclass('creator_work_scoped_write_policy')")) {
+        throw new Error("정의하지 않은 제작 보호 SQL입니다.");
+      }
+      return { rows: [{ available: false }] };
+    },
     select: (selection: Row) => {
       let table: unknown, lock: string | null = null, condition: SQL | null = null;
       const read = async (): Promise<readonly Row[]> => {

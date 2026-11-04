@@ -52,10 +52,10 @@ import {
 
 test("manifest lists every numbered SQL migration exactly once in order", () => {
   const manifest = loadMigrationManifest();
-  expect(manifest).toHaveLength(119);
+  expect(manifest).toHaveLength(120);
   expect(manifest[0].id).toBe("0001_studio_ai_usage_ledger");
-  expect(manifest.at(-1).id).toBe("0119_studio_review_voice_note_guard_schema");
-  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(119);
+  expect(manifest.at(-1).id).toBe("0120_studio_role_pipeline_policy");
+  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(120);
 });
 
 test("음성 검수 함수 복구는 기배포 0093 원문과 체크섬을 보존한다", () => {

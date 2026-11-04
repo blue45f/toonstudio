@@ -16048,7 +16048,7 @@ const puppetWarpArmed =
     automaticRasterPublicationEnabled: STUDIO_AUTOMATIC_RASTER_PUBLICATION_ENABLED,
     getDocument: () => studioCrdtDocumentRef.current,
     getRuntime: () => studioCrdtSceneRuntimeRef.current,
-      reportError: setError, reportNotice: offlineSceneNotice.report,
+      reportError: setError, reportNotice: offlineSceneNotice.report, mutationOwner: collaborationAccessRef,
     });
   publishStudioCrdtSceneTransitionRef.current = publishStudioCrdtSceneTransition;
 
@@ -29197,7 +29197,7 @@ function clearSelectionForEdit() {
       studioLeftToolRailHandlers={studioLeftToolRailHandlers}
       studioLegacyCommentThreadIdSet={studioLegacyCommentThreadIdSet}
       studioLiveJam={studioLiveJam}
-      studioLiveParticipant={studioLiveParticipant} scopedWriteRuntime={scopedWriteRuntime} scopedCanvasDrawingAvailable={canStartStudioScopedDrawing(collaborationAccessRef, scopedCanvasBoundaryRef, tool)} scopedSavePendingConfirmation={scopedDraftSaveState.pendingConfirmation}
+      studioLiveParticipant={studioLiveParticipant} scopedWriteRuntime={scopedWriteRuntime} onScopedWriteLayer={(layerId, frameId) => applyGroupSelectionState({ activeGroupId: layerId, selectedId: frameId, marqueeIds: [] })} scopedCanvasDrawingAvailable={canStartStudioScopedDrawing(collaborationAccessRef, scopedCanvasBoundaryRef, tool)} scopedSavePendingConfirmation={scopedDraftSaveState.pendingConfirmation}
       studioLiveRoomRef={studioLiveRoomRef}
       studioLiveTransportFactory={studioLiveTransportFactory}
       studioMainMenuGroups={studioMainMenuGroups}

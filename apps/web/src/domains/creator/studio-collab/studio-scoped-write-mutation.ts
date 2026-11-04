@@ -4,6 +4,7 @@ import type { PageState } from "../studio-page-state";
 import { studioScopedWriteAuthority } from "./studio-scoped-write-authority";
 import { containingPanel } from "../studio-element-geometry";
 import { sha256HexPortable } from "@toonstudio/contracts/sha256-portable";
+import { admitStudioMappedPagesCommit, mappedStudioDrawAuthority, studioMappedStrokeRequiresAuthority } from "./studio-role-pipeline-mutation";
 
 type AccessOwner = { readonly current: { readonly locked: boolean } };
 type Input = { readonly owner: AccessOwner; readonly reportError: (message: string) => void; readonly lockMessage: () => string; readonly master?: boolean; readonly previewOnly?: boolean; readonly history?: "undo" | "redo" };
@@ -12,7 +13,10 @@ const kind = (value: { type: string }) => value.type === "draw" ? "stroke" as co
 
 /** 전역 잠금을 유지한 채 실제 before/after의 모든 변경 ID가 명시 대상에 속하는지 확인한다. */
 export function admitStudioScopedElementCommit(input: Input & { readonly pageId: string; readonly previous: readonly El[]; readonly next: readonly El[]; readonly patch?: Partial<Omit<PageState, "id" | "elements">> }): boolean {
-  if (!input.owner.current.locked) return true;
+  if (!input.owner.current.locked) {
+    const page = { id: input.pageId, elements: input.previous };
+    return admitStudioMappedPagesCommit({ ...input, previous: [page], next: [{ ...page, ...input.patch, elements: input.next }], pageOnly: input.pageId });
+  }
   if (input.history && equal(input.previous, input.next)) return false;
   const authority = studioScopedWriteAuthority(input.owner);
   if (!authority || input.master || Object.keys(input.patch ?? {}).length) { input.reportError(input.lockMessage()); return false; }
@@ -41,7 +45,7 @@ export function admitStudioScopedElementCommit(input: Input & { readonly pageId:
 
 /** 페이지 추가·삭제·순서·메타데이터를 제한 권한으로 변경하지 않는다. */
 export function admitStudioScopedPagesCommit(input: Input & { readonly previous: readonly PageState[]; readonly next: readonly PageState[] }): boolean {
-  if (!input.owner.current.locked) return true;
+  if (!input.owner.current.locked) return admitStudioMappedPagesCommit(input);
   if (input.history && equal(input.previous, input.next)) return false;
   if (input.previous.length !== input.next.length || input.previous.some((page, index) => page.id !== input.next[index]?.id)) { input.reportError(input.lockMessage()); return false; }
   const authority = studioScopedWriteAuthority(input.owner), edge = studioScopedHistoryEdge(input.previous, input.next, input.history === "undo");
@@ -96,8 +100,9 @@ export function registerStudioScopedDerivedEntity(owner: object, sourceStrokeId:
 
 /** 실제 pointer가 만든 ID를 첫 픽셀·Y 변경 전에 명시 target에 연결한다. */
 export function admitStudioScopedDrawStart(owner: AccessOwner, pageId: string, elements: readonly El[], stroke: DrawEl): DrawEl {
-  if (!owner.current.locked) return stroke;
-  const authority = studioScopedWriteAuthority(owner), target = authority?.currentTarget;
+  const mapped = mappedStudioDrawAuthority(owner, pageId, stroke);
+  if (!owner.current.locked && !mapped) return stroke;
+  const authority = mapped ?? studioScopedWriteAuthority(owner), target = authority?.currentTarget;
   if (!authority || !target) throw new Error("그리기 전에 현재 담당 원고 범위를 선택하세요.");
   const next = { ...stroke };
   if (target.definition.frameId !== null) { next.frameClipId = target.definition.frameId; next.noClip = false; }
@@ -111,7 +116,7 @@ export function admitStudioScopedDrawStart(owner: AccessOwner, pageId: string, e
   return next;
 }
 export function assertStudioScopedDrawContinuation(owner: AccessOwner, strokeId: string): void {
-  if (!owner.current.locked) return;
+  if (!owner.current.locked && !studioMappedStrokeRequiresAuthority(owner, strokeId)) return;
   const authority = studioScopedWriteAuthority(owner);
   if (!authority) throw new Error("현재 원고 편집 권한을 확인할 수 없습니다.");
   authority.assertCreationContinuation("stroke", strokeId);

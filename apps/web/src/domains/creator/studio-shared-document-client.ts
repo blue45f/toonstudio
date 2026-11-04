@@ -1,6 +1,7 @@
 import { STUDIO_PROJECT_MAX_PAGES } from "./studio-project-file";
 import { StudioScopedWriteContextSchema, type StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import { STUDIO_TEAM_ROLES, type StudioTeamRole } from "./studio-team-client";
+import { studioMappedSaveMutationId } from "./studio-collab/studio-mapped-save-mutation-id";
 
 import { api, isHttpError, toApiError } from "@/platform/api";
 import { creatorWorkReadOptions } from "@/platform/creator-work-read-options";
@@ -612,7 +613,8 @@ export async function updateStudioSharedDocument(
   workId: string,
   role: StudioTeamRole,
   input: UpdateStudioSharedDocumentInput,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  mappedWriteContext?: StudioScopedWriteContext,
 ): Promise<StudioSharedDocumentSaveResponse> {
   if (!exactId(workId)) {
     throw new StudioSharedDocumentInputError("공동 문서 작품 식별자가 올바르지 않습니다.");
@@ -632,7 +634,12 @@ export async function updateStudioSharedDocument(
   if (!SHARED_DOCUMENT_MUTABLE_FIELDS.some((field) => hasOwn(patch, field))) {
     throw new StudioSharedDocumentInputError("공동 편집자가 저장할 원고 변경 사항이 없습니다.");
   }
-  return patchStudioSharedDocument(workId, patch, signal);
+  const context = mappedWriteContext === undefined ? undefined : StudioScopedWriteContextSchema.parse(mappedWriteContext);
+  if (context && (context.creations.length || context.restorations.length)) {
+    throw new StudioSharedDocumentInputError("실시간 변경 승인을 확인한 뒤 보호 원고를 저장하세요.");
+  }
+  return patchStudioSharedDocument(workId, { ...patch, ...(context ? { writeContext: context,
+    mutationId: studioMappedSaveMutationId(workId, { ...patch, writeContext: context }) } : {}) }, signal);
 }
 
 /** 담당 원고 본문만 보낸다. 역할·metadata·게시 상태를 이 목적의 저장에 섞지 않는다. */

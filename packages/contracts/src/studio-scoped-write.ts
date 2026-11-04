@@ -1,6 +1,8 @@
 import { assertScopeRef, PRODUCTION_SCOPE_KINDS } from "@toonstudio/core/production/scope";
 import { z } from "zod";
 
+import { StudioRolePipelineAccessSchema, StudioRolePipelineManagementSchema, StudioRolePipelineStateSchema } from "./studio-role-pipeline";
+
 const identity = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,159}$/u);
 const productionIdentity = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/u);
 const timestamp = z.iso.datetime({ offset: true });
@@ -66,6 +68,8 @@ export const StudioScopedWritePolicySchema = z.object({
   targets: z.array(StudioScopedWriteTargetSchema).max(100_000),
   grants: z.array(StudioScopedWriteGrantSchema).max(100_000),
   ownedEntities: z.array(entity.extend({ targetId: identity }).strict()).max(100_000),
+  rolePipeline: StudioRolePipelineStateSchema.nullable().optional(),
+  rolePipelineAccess: StudioRolePipelineAccessSchema.optional(),
 }).strict();
 
 export const StudioScopedWriteManagementCommandSchema = z.object({
@@ -77,6 +81,7 @@ export const StudioScopedWriteManagementCommandSchema = z.object({
       startsAt: timestamp, endsAt: timestamp.nullable() }).strict(),
     z.object({ type: z.literal("revoke-target"), targetId: identity }).strict(),
     z.object({ type: z.literal("revoke-grant"), grantId: identity }).strict(),
+    ...StudioRolePipelineManagementSchema.options,
   ]),
 }).strict();
 

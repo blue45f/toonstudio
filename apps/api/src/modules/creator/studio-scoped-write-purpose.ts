@@ -19,7 +19,16 @@ export async function authorizeStudioScopedPurpose(query: StudioScopedSql, work:
 /** 검증된 캡처의 실제 ID만 현재 담당 작업·배정과 대조한다. sourceEvidence는 허가가 아니다. */
 export async function assertStudioScopedTaskOutputAuthorization(query: StudioScopedSql, authorization: StudioScopedAuthorization,
   command: SubmitProductionTaskOutputCommand, captures: ProductionTaskOutputCaptures): Promise<readonly string[]> {
-  if (authorization.work.access.edit) return [];
+  if (authorization.work.access.edit && !authorization.mappedFull) return [];
+  if (authorization.mappedFull) {
+    const selected = command.selection.mode === "document"
+      ? captures.output.pages.map((page) => ({ pageId: page.pageId, frameIds: null }))
+      : command.selection.pages.map((page) => ({ pageId: page.pageId,
+        frameIds: "frameIds" in page ? page.frameIds : null }));
+    const touchesMapped = authorization.mappedFull.controlledTargets.some((target) => selected.some((page) => page.pageId === target.definition.pageId
+      && (target.definition.frameId === null || page.frameIds === null || page.frameIds.includes(target.definition.frameId))));
+    if (!touchesMapped) return [];
+  }
   if (!authorization.context || authorization.context.creations.length || authorization.context.restorations.length) {
     throw new StudioScopedWriteDeniedError("context");
   }

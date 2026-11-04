@@ -7,6 +7,7 @@ import {
 } from "./studio-crdt-operation-error";
 import { createStudioCrdtOutbox, type StudioCrdtOutbox } from "./studio-crdt-outbox";
 import { defaultSetTimeout, defaultClearTimeout } from "./studio-crdt-binding-timers";
+import { captureStudioCrdtWriteContext } from "./studio-crdt-write-context";
 import type { StudioScopedCrdtPublisher } from "../studio-collab/studio-scoped-write-authority";
 import {
   STUDIO_CRDT_ORIGIN_REMOTE,
@@ -83,7 +84,6 @@ export type StudioCrdtBindingStatusPayload =
       recoveryUpdateCount: number; collaborativeEditsBlocked: true; retryable: false;
       recoveryVaultId?: string; recoveryExportAvailable: boolean; outboxCleanupAtRisk?: boolean;
     };
-
 export interface StudioCrdtBindingTelemetry {
   /** Update batches awaiting local-only delivery, authoritative acknowledgement, or recovery. */
   pendingCount: number;
@@ -237,7 +237,7 @@ export class StudioCrdtRoomBinding {
     this.document = options.document;
     this.room = options.room;
     this.canEdit = options.canEdit ?? true;
-    this.scopedWrite = this.canEdit ? null : options.scopedWrite ?? null;
+    this.scopedWrite = options.scopedWrite ?? null;
     this.unbindScopedFlush = this.scopedWrite?.bindFlushBoundary(() => this.batchSubscription?.flush());
     this.outboxScope = options.outboxScope?.trim() || null;
     this.outbox = options.outbox ?? createStudioCrdtOutbox();
@@ -677,7 +677,7 @@ export class StudioCrdtRoomBinding {
   private enqueueUpdate(update: Uint8Array): void {
     if (this.closed || this.recoveryState || update.byteLength <= EMPTY_UPDATE_BYTE_LENGTH) return;
     let encoded: string, writeContext: StudioCrdtUpdateRequest["writeContext"];
-    try { encoded = encodeStudioCrdtUpdate(update); writeContext = this.scopedWrite?.captureWriteContext((kind, id, pageId, restoration) => kind === "stroke" ? this.document.getStroke(id, !restoration) !== null : kind === "element" ? this.document.getSceneElement(id, !restoration) !== null : kind === "group" ? this.document.getLayerGroup(pageId, id, !restoration) !== null : this.document.getRasterOperationLog(id) !== null); }
+    try { encoded = encodeStudioCrdtUpdate(update); writeContext = captureStudioCrdtWriteContext(this.scopedWrite, this.canEdit, this.document); }
     catch (error) { this.emitStatus({ state: "error", message: statusMessageFrom(error, "update-encode-failed") }); return; }
     const canCoalesce = !this.recoveryTransition && (!this.room.ready || (this.hasAuthoritativeServer() && !this.authoritativeSyncReady));
     const tail = [...this.pending.values()].at(-1);

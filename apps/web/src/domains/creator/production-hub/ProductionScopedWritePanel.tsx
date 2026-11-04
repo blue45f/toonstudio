@@ -13,6 +13,8 @@ import { loadTaskOutputCaptureChoices, loadTaskOutputCapturePages, type TaskOutp
 import { scopedDateTimeLocal, scopedManagementRequest, scopedManagementScopes, scopedSavedPages, type ScopedSavedPage } from "./studio-scoped-write-management-model";
 import { clearScopedManagementRecovery, loadScopedManagementRecovery, saveScopedManagementRecovery } from "./studio-scoped-write-management-recovery";
 import { useProductionReviewClock } from "./use-production-review-clock";
+import { ProductionRolePipelinePanel } from "./ProductionRolePipelinePanel";
+import { roleTypeLabel } from "./production-labels";
 
 const FIELD = "mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 py-2 text-sm text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 const subscribe = (notify: () => void) => { const listener = () => notify(); listeners.add(listener); return () => { listeners.delete(listener); }; };
@@ -44,6 +46,7 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
 }) {
   const bt = useBilingual("ProductionScopedWritePanel"), workId = aggregate.workId;
   const [policy, setPolicy] = useState<StudioScopedWritePolicy | null>(null), [error, setError] = useState<string | null>(null), [notice, setNotice] = useState<string | null>(null);
+  const [workRevision, setWorkRevision] = useState<number | null>(null);
   const [loading, setLoading] = useState(true), [attempt, refresh] = useState(0), [busy, setBusy] = useState(false);
   const [pending, setPending] = useState(() => loadScopedManagementRecovery(actorId, workId));
   const pendingRef = useRef(pending), busyRef = useRef(false), mounted = useRef(true);
@@ -70,8 +73,9 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
       if (policyResult.status === "fulfilled") setPolicy(policyResult.value); else { setPolicy(null); setError(message(policyResult.reason)); }
       if (choicesResult.status === "fulfilled") setChoices(choicesResult.value); else { setChoices([]); setSourceError(message(choicesResult.reason)); }
       if (documentResult.status === "fulfilled") {
+        setWorkRevision(documentResult.value.revision);
         try { setSaved(scopedSavedPages(documentResult.value.document.doc)); } catch (cause) { setSaved([]); setSourceError(message(cause)); }
-      } else { setSaved([]); setSourceError(message(documentResult.reason)); }
+      } else { setSaved([]); setWorkRevision(null); setSourceError(message(documentResult.reason)); }
       if (teamResult.status === "fulfilled") setMembers(teamResult.value.members); else { setMembers([]); setSourceError(message(teamResult.reason)); }
     });
     return () => controller.abort();
@@ -125,7 +129,7 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
     && (assignment.endsAt === null || Date.parse(assignment.endsAt) > now)
     && aggregate.parties.some((party) => party.id === assignment.partyId && party.status === "active" && party.accountUserId)
     && aggregate.parties.some((party) => party.id === assignment.partyId && members.some((member) => member.userId === party.accountUserId
-      && member.status === "active" && (member.role === "viewer" || member.role === "commenter")))
+      && member.status === "active" && (member.role === "viewer" || member.role === "commenter" || policy?.rolePipeline?.enabled === true)))
     && (!grantTarget || scopeContains(assignment.scope, grantTarget.definition.scope)));
   const disabled = busy || pending !== null || !policy?.canManage;
   const resetIds = () => { selectFrame(""); selectLayer(""); selectEntities([]); pageEntities(0); searchEntities(""); };
@@ -138,7 +142,7 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
     }
   };
   return <section aria-label={bt("실제 담당 편집 권한 관리", "Actual scoped editing access management")} className="space-y-4">
-    <p className="text-sm text-fg-2">{bt("열람·댓글 역할의 팀원에게 실제 페이지·컷·레이어 편집을 별도로 배정합니다. 표지·납품 이미지·공용 설정은 관리자 권한을 유지합니다.", "Assign specific pages, frames and layers to viewers and commenters. Cover, delivery images and shared settings retain manager access.")}</p>
+    <p className="text-sm text-fg-2">{policy?.rolePipeline?.enabled ? bt("프로젝트의 실제 직군 배정과 인계·승인 잠금을 확인합니다. 관리자는 담당 원고 범위를 배정하고, 현재 담당자는 승인된 제출을 인계할 수 있습니다.", "Review actual project roles and handoff or approval locks. Managers assign scopes; current assignees hand off approved submissions.") : bt("열람·댓글 역할의 팀원에게 실제 페이지·컷·레이어 편집을 별도로 배정합니다. 표지·납품 이미지·공용 설정은 관리자 권한을 유지합니다.", "Assign specific pages, frames and layers to viewers and commenters. Cover, delivery images and shared settings retain manager access.")}</p>
     {loading ? <p role="status">{bt("현재 편집 배정을 확인하고 있습니다.", "Checking current editing assignments.")}</p> : null}
     {error ? <p role="alert" className="text-sm text-bad">{error}</p> : null}
     {notice ? <p role="status" className="text-sm text-fg-2">{notice}</p> : null}
@@ -146,9 +150,12 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
     {pending ? <div className="rounded-xl border border-warn/40 bg-warn/10 p-3">
       <p className="text-sm">{bt("결과를 확인할 편집 권한 요청이 남아 있습니다.", "An editing access request still needs confirmation.")}</p>
       <p className="break-all text-xs text-fg-2">{pending.mutationId}</p>
-      <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={busy || !policy?.canManage} onClick={() => void run(pending)}>{bt("같은 요청 결과 확인", "Check the same request")}</button>
+      <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={busy || (!policy?.canManage && pending.command.type !== "handoff-role-pipeline")} onClick={() => void run(pending)}>{bt("같은 요청 결과 확인", "Check the same request")}</button>
     </div> : null}
     {policy && !policy.canManage ? <p role="status">{bt("현재 계정은 편집 범위를 관리할 수 없습니다.", "This account cannot manage editing ranges.")}</p> : null}
+    {policy && (policy.canManage || policy.rolePipeline?.enabled) ? <ProductionRolePipelinePanel key={policy.policyVersion} policy={policy} aggregate={aggregate} disabled={busy || pending !== null}
+        onCommand={commit} workRevision={workRevision} />
+      : null}
     {policy?.canManage ? <>
       <form className="space-y-3 rounded-xl border border-line p-3" onSubmit={(event) => {
         event.preventDefault(); if (!task || !page || !capturedPage || !capture || !selectedScope) return;
@@ -219,7 +226,7 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
           <ScopedAssignmentSelect label={bt("실제 계정의 역할 배정", "Role assigned to an actual account")}
             placeholder={bt("담당자 선택", "Select assignee")} value={assignmentId} onSelect={changeAssignment}
             options={assignments.map((assignment) => { const party = aggregate.parties.find((entry) => entry.id === assignment.partyId);
-              return { id: assignment.id, label: `${party?.publicDisplayName ?? ""} · ${assignment.roleType} · ${party?.accountUserId ?? ""}` }; })} />
+              return { id: assignment.id, label: `${party?.publicDisplayName ?? ""} · ${roleTypeLabel(assignment.roleType, bt)}` }; })} />
           <label className="text-sm">{bt("편집 시작", "Editing starts")}<input required type="datetime-local" step="1" className={FIELD} value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label>
           <label className="text-sm">{bt("편집 종료 (선택)", "Editing ends (optional)")}<input type="datetime-local" step="1" className={FIELD} value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label>
         </fieldset>
@@ -232,8 +239,8 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
             <div className="rounded-xl border border-accent/30 bg-accent-soft/20 p-2.5 text-xs text-fg-2">
               <p className="font-semibold text-fg">
                 {bt(
-                  `선택 직군(${selectedRole.roleType}) 권장 편집 레이어 그룹: ${profile.allowedLayerGroups.join(", ")}`,
-                  `Recommended layer groups for ${selectedRole.roleType}: ${profile.allowedLayerGroups.join(", ")}`,
+                  `선택 직군(${roleTypeLabel(selectedRole.roleType, bt)}) 권장 편집 레이어 그룹: ${profile.allowedLayerGroups.join(", ")}`,
+                  `Recommended layer groups for ${roleTypeLabel(selectedRole.roleType, bt)}: ${profile.allowedLayerGroups.join(", ")}`,
                 )}
               </p>
               <p className="mt-0.5 text-[0.7rem] text-fg-3">{profile.summaryKo}</p>

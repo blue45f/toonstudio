@@ -22,7 +22,7 @@ import { loadStudioScopedCrdtAuthority } from "./studio-scoped-crdt-authority";
 import { admitStudioScopedLiveOp } from "./studio-scoped-live-op-write";
 import { StudioScopedWriteDeniedError } from "./studio-scoped-write-effects";
 import { authorizeStudioScopedWrite, lockStudioScopedWork, loadStudioScopedReceipt, persistStudioScopedCreations,
-  recordStudioScopedReceipt, studioScopedDrizzle, studioScopedRequestHash } from "./studio-scoped-write-store";
+  recordStudioScopedReceipt, studioScopedDrizzle, studioScopedRequestHash, studioScopedRequiresEffectAdmission } from "./studio-scoped-write-store";
 
 import {
   creatorWorkOpLogs,
@@ -74,7 +74,7 @@ export class DrizzleStudioLiveOpLogStore implements StudioLiveOpLogStore {
         const query = studioScopedDrizzle(transaction), work = await lockStudioScopedWork(query, workId, actorUserId);
         const authorization = await authorizeStudioScopedWrite(query, work, writeContext);
         const requestHash = studioScopedRequestHash({ op, writeContext: writeContext ?? null });
-        const scopedReceipt = authorization.context ? await loadStudioScopedReceipt(query, work, "op", op.opId, requestHash) : null;
+        const scopedReceipt = studioScopedRequiresEffectAdmission(authorization) ? await loadStudioScopedReceipt(query, work, "op", op.opId, requestHash) : null;
         const [existing] = await transaction
           .select()
           .from(creatorWorkOpLogs)
@@ -88,7 +88,7 @@ export class DrizzleStudioLiveOpLogStore implements StudioLiveOpLogStore {
           return { inserted: false, op: storedOp(existing) };
         }
         let admission: ReturnType<typeof admitStudioScopedLiveOp>;
-        if (authorization.context) {
+        if (studioScopedRequiresEffectAdmission(authorization)) {
           const authority = await loadStudioScopedCrdtAuthority(transaction, workId, work.document);
           const durable = await transaction.select().from(creatorWorkOpLogs).where(eq(creatorWorkOpLogs.workId, workId)).orderBy(asc(creatorWorkOpLogs.sequence));
           admission = admitStudioScopedLiveOp(authorization, authority.state, durable.map(storedOp), op);
@@ -120,7 +120,7 @@ export class DrizzleStudioLiveOpLogStore implements StudioLiveOpLogStore {
             )
             .limit(1);
           if (!conflicting) throw new Error("studio op log record disappeared");
-          assertStudioScopedWriteReplay(authorization, authorization.context
+          assertStudioScopedWriteReplay(authorization, studioScopedRequiresEffectAdmission(authorization)
             ? await loadStudioScopedReceipt(query, work, "op", op.opId, requestHash) : null);
           if (conflicting.actorUserId !== actorUserId || canonicalJson(conflicting.op) !== canonicalJson(op)) throw new StudioScopedWriteDeniedError("context");
           return { inserted: false, op: storedOp(conflicting) };

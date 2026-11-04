@@ -6,6 +6,7 @@ import { studioWorkAssetSourceUri } from "@toonstudio/contracts/studio-work-asse
 import { sha256HexPortable } from "@toonstudio/contracts/sha256-portable";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import { scopedStudioDrawingContinuationLocked, type StudioScopedCanvasBoundaryRef } from "./studio-scoped-drawing-boundary";
+import { studioMappedStrokeRequiresAuthority } from "./studio-role-pipeline-mutation";
 
 type Owner = { readonly current: { readonly locked: boolean } };
 interface PendingImage { readonly id: string; source?: string; context?: StudioScopedWriteContext; completed?: boolean; inFlight?: Promise<El[]> }
@@ -18,7 +19,7 @@ function row(owner: object, strokeId: string, candidate: string): PendingImage {
 
 /** 제한 편집의 원본 PNG 저장 요청 ID는 성공 여부가 불명확해도 같은 stroke에서 바꾸지 않는다. */
 export function scopedStudioCanonicalImageId(owner: Owner, strokeId: string, candidate: string): string {
-  return owner.current.locked ? row(owner, strokeId, candidate).id : candidate;
+  return owner.current.locked || studioMappedStrokeRequiresAuthority(owner, strokeId) ? row(owner, strokeId, candidate).id : candidate;
 }
 export function scopedStudioCanonicalMutationLocked(owner: Owner, strokeId: string, globalLocked = false, boundary?: StudioScopedCanvasBoundaryRef): boolean {
   return scopedStudioDrawingContinuationLocked(owner, strokeId, globalLocked, boundary);
@@ -32,7 +33,7 @@ export function scopedStudioLivingInkReplacement(owner: Owner, elements: readonl
 
 /** 원본 PNG bytes를 동일 실제 ID로 먼저 승인하고, stable URI를 받은 뒤에만 Y 참조를 발행한다. */
 export async function admitStudioScopedCanonicalImage(owner: Owner, strokeId: string, imageId: string, elements: readonly El[]): Promise<El[]> {
-  if (!owner.current.locked) return [...elements];
+  if (!owner.current.locked && !studioMappedStrokeRequiresAuthority(owner, strokeId)) return [...elements];
   const authority = studioScopedWriteAuthority(owner);
   if (!authority) throw new Error("파생 원고의 현재 담당 권한을 확인할 수 없습니다.");
   authority.assertCreationContinuation("stroke", strokeId);

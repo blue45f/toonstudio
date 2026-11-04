@@ -16,6 +16,8 @@ import {
 
 import { requireCreatorCommunitySchema } from "./community-schema";
 import { safeDate } from "./shared";
+import { studioCrdtWorkAdvisoryLockQuery } from "./studio-crdt.repository";
+import { admitStudioRolePipelineFullDocument } from "./studio-role-pipeline-full-write";
 import {
   assertCreatorWorkLinked3dPassAssetsInTransaction,
   creatorWorkSnapshotSelection,
@@ -152,6 +154,7 @@ export async function restoreWorkRevision(
   const now = new Date();
 
   const restored = await db.transaction(async (tx) => {
+    await tx.execute(studioCrdtWorkAdvisoryLockQuery(workId));
     const [current] = await tx
       .select({ ownerId: creatorWorks.userId, revision: creatorWorks.revision })
       .from(creatorWorks)
@@ -178,6 +181,7 @@ export async function restoreWorkRevision(
     const snapshot = createCreatorWorkRevisionSnapshot(
       target.snapshot as CreatorWorkRevisionSnapshotSource
     );
+    await admitStudioRolePipelineFullDocument(tx, userId, workId, snapshot.doc);
     await assertCreatorWorkLinked3dPassAssetsInTransaction(tx, workId, {
       cover: snapshot.cover,
       pages: snapshot.pages,

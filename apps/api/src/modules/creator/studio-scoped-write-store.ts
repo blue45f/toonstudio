@@ -9,6 +9,8 @@ import { migrateProductionProjectAggregate, projectScope, scopeContains, type Pr
 import { StudioScopedWriteContextSchema, StudioScopedWriteGrantSchema, StudioScopedWriteTargetSchema,
   type StudioScopedEntityKind, type StudioScopedWriteContext, type StudioScopedWriteGrant,
   type StudioScopedWritePolicy, type StudioScopedWriteTarget } from "@toonstudio/contracts/studio-scoped-write";
+import { StudioRolePipelineStateSchema, studioRolePipelineControlledTargetIds, studioRolePipelineFrozenTargetIds,
+  studioRolePipelineGrantTargetIds, studioRolePipelineGroupStage, type StudioRolePipelineState } from "@toonstudio/contracts/studio-role-pipeline";
 import { creatorDraftCollaborationRooms, creatorWorkCollaborators, creatorWorks, productionProjects, users } from "../../platform/database";
 import { resolveCreatorCollaborationAccess, type CreatorCollaborationAccess } from "./creator-collaboration.policy";
 import type { DrizzleStudioCrdtTransaction } from "./studio-crdt.repository";
@@ -34,7 +36,7 @@ export const studioScopedPg = (client: Pick<PoolClient, "query">): StudioScopedS
 const ownershipSchema = z.record(z.string().regex(/^(?:element|stroke|group|surface):.+$/u), z.string().min(1).max(160));
 const policySchema = z.object({ policyVersion: z.number().int().positive().max(2_147_483_647),
   targets: z.array(StudioScopedWriteTargetSchema).max(100_000), grants: z.array(StudioScopedWriteGrantSchema).max(100_000),
-  ownership: ownershipSchema }).strict().refine((policy) => {
+  ownership: ownershipSchema, rolePipeline: StudioRolePipelineStateSchema.nullable().default(null) }).strict().refine((policy) => {
     const targets = new Map(policy.targets.map((target) => [target.definition.id, target]));
     return targets.size === policy.targets.length && new Set(policy.grants.map((grant) => grant.id)).size === policy.grants.length
       && Object.entries(policy.ownership).every(([key, targetId]) => {
@@ -47,6 +49,7 @@ export interface StudioScopedStoredPolicy {
   readonly targets: readonly StudioScopedWriteTarget[];
   readonly grants: readonly StudioScopedWriteGrant[];
   readonly ownership: Readonly<Record<string, string>>;
+  readonly rolePipeline?: StudioRolePipelineState | null;
 }
 export interface StudioScopedWork {
   readonly workId: string; readonly actorUserId: string; readonly revision: number; readonly document: unknown;
@@ -93,7 +96,7 @@ export async function lockStudioScopedWork(query: StudioScopedSql, workId: strin
 export async function loadStudioScopedPolicy(query: StudioScopedSql, workId: string, lock = false): Promise<StudioScopedStoredPolicy> {
   let rows: readonly Record<string, unknown>[];
   try {
-    rows = await query.query(sql`SELECT "policyVersion",targets,grants,ownership FROM creator_work_scoped_write_policy
+    rows = await query.query(sql`SELECT "policyVersion",targets,grants,ownership,to_jsonb(policy)->'rolePipeline' AS "rolePipeline" FROM creator_work_scoped_write_policy AS policy
       WHERE "workId"=${workId}${lock ? sql` FOR UPDATE` : sql``}`);
   } catch (cause) {
     if (scopedRecord(cause)?.code === "42P01") throw new ServiceUnavailableException("제한 편집 기능의 준비가 완료되지 않았습니다.");
@@ -143,20 +146,84 @@ export interface StudioScopedAuthorization {
   readonly work: StudioScopedWork; readonly policy: StudioScopedStoredPolicy;
   readonly targets: readonly StudioScopedWriteTarget[]; readonly grants: readonly StudioScopedWriteGrant[];
   readonly context: StudioScopedWriteContext | null;
+  readonly mappedFull?: { readonly controlledTargets: readonly StudioScopedWriteTarget[] };
+}
+export function studioScopedRequiresEffectAdmission(authorization: StudioScopedAuthorization | undefined): boolean {
+  return Boolean(authorization?.context || authorization?.mappedFull);
+}
+export function studioScopedEffectParameters(authorization: StudioScopedAuthorization) {
+  return { context: authorization.context ?? { version: 1 as const, policyVersion: authorization.policy.policyVersion,
+    grantIds: [], creations: [], restorations: [] }, targets: authorization.targets,
+    ownership: new Map(Object.entries(authorization.policy.ownership)),
+    ...(authorization.mappedFull ? { mappedFull: authorization.mappedFull } : {}) };
+}
+const TERMINAL_SCOPED_TASKS = ["conditionally-approved", "approved", "done", "cancelled", "out-of-scope"];
+function pipelineFrozenTargets(pipeline: StudioRolePipelineState, aggregate: ProductionProjectAggregate): Set<string> {
+  const frozen = new Set(studioRolePipelineFrozenTargetIds(pipeline));
+  for (const mapping of pipeline.groupMappings) {
+    const stage = pipeline.stageTasks.find((entry) => entry.stageId === studioRolePipelineGroupStage(mapping.groupId));
+    const task = aggregate.tasks.find((entry) => entry.id === stage?.taskId);
+    if (!task || TERMINAL_SCOPED_TASKS.includes(task.status)) for (const id of mapping.targetIds) frozen.add(id);
+  }
+  const finalTaskId = pipeline.stageTasks.find((entry) => entry.stageId === "pd-editorial-review")?.taskId;
+  if (aggregate.tasks.some((task) => task.id === finalTaskId && ["approved", "done"].includes(task.status))) {
+    for (const id of studioRolePipelineControlledTargetIds(pipeline)) frozen.add(id);
+  }
+  return frozen;
+}
+function pipelineActorCanHandoff(pipeline: StudioRolePipelineState, aggregate: ProductionProjectAggregate, work: StudioScopedWork): boolean {
+  if (!pipeline.enabled || pipeline.approvedAt) return false;
+  if (work.access.manageMembers) return true;
+  const taskId = pipeline.stageTasks.find((stage) => stage.stageId === pipeline.activeStageId)?.taskId;
+  const task = aggregate.tasks.find((entry) => entry.id === taskId), now = Date.parse(work.now);
+  if (!task || !Number.isFinite(now)) return false;
+  const bindings = new Set(pipeline.roleBindings.map((binding) => binding.assignmentId));
+  return aggregate.assignments.some((assignment) => {
+    const party = aggregate.parties.find((entry) => entry.id === assignment.partyId);
+    return task.assignmentIds.includes(assignment.id) && bindings.has(assignment.id)
+      && assignment.projectId === aggregate.projectId && assignment.status === "active"
+      && party?.status === "active" && party.accountUserId === work.actorUserId
+      && Number.isFinite(Date.parse(assignment.startsAt)) && Date.parse(assignment.startsAt) <= now
+      && (assignment.endsAt === null || (Number.isFinite(Date.parse(assignment.endsAt)) && Date.parse(assignment.endsAt) > now))
+      && scopeContains(assignment.scope, task.scope);
+  });
+}
+function permittedGrantTargetIds(policy: StudioScopedStoredPolicy, grant: StudioScopedWriteGrant,
+  aggregate: ProductionProjectAggregate): readonly string[] {
+  const pipeline = policy.rolePipeline;
+  if (!pipeline?.enabled) return grant.targetIds;
+  const controlled = new Set(studioRolePipelineControlledTargetIds(pipeline)), frozen = pipelineFrozenTargets(pipeline, aggregate);
+  const permitted = new Set(studioRolePipelineGrantTargetIds(pipeline, grant));
+  return grant.targetIds.filter((id) => !controlled.has(id) || (permitted.has(id) && !frozen.has(id)));
 }
 export async function authorizeStudioScopedWrite(query: StudioScopedSql, work: StudioScopedWork,
   context: StudioScopedWriteContext | undefined): Promise<StudioScopedAuthorization> {
-  if (work.access.edit) return { work, policy: { policyVersion: 0, targets: [], grants: [], ownership: {} }, targets: [], grants: [], context: null };
   const parsed = StudioScopedWriteContextSchema.safeParse(context);
-  if (!parsed.success) throw new StudioScopedWriteDeniedError("context");
-  const hint = await loadStudioScopedPolicy(query, work.workId);
-  const hintedGrants = parsed.data.grantIds.flatMap((id) => hint.grants.filter((entry) => entry.id === id));
+  if (!work.access.edit && !parsed.success) throw new StudioScopedWriteDeniedError("context");
+  let fullHint: StudioScopedStoredPolicy | null = null;
+  const legacyFull = (): StudioScopedAuthorization => ({ work, policy: { policyVersion: 0, targets: [], grants: [], ownership: {} }, targets: [], grants: [], context: null });
+  if (work.access.edit) {
+    const availability = await query.query(sql`SELECT to_regclass('creator_work_scoped_write_policy') IS NOT NULL AS available`);
+    if (availability.length !== 1 || typeof availability[0]?.available !== "boolean") throw new StudioScopedWriteDeniedError("policy");
+    if (!availability[0].available) return legacyFull();
+    fullHint = await loadStudioScopedPolicy(query, work.workId);
+    if (!fullHint.rolePipeline?.enabled) return legacyFull();
+  }
+  const hint = fullHint ?? await loadStudioScopedPolicy(query, work.workId);
+  if (!parsed.success && (!work.access.edit || context !== undefined)) throw new StudioScopedWriteDeniedError("context");
+  const hintedGrants = (parsed.success ? parsed.data.grantIds : []).flatMap((id) => hint.grants.filter((entry) => entry.id === id));
   const projects = new Map<string, ProductionProjectAggregate>();
   // Production 작업·역할을 정책 행보다 먼저 잠가 제출 경로의 work → project → policy 순서와 맞춘다.
-  for (const id of [...new Set(hintedGrants.map((grant) => grant.productionProjectId))].sort()) {
+  for (const id of [...new Set([...hintedGrants.map((grant) => grant.productionProjectId),
+    ...(hint.rolePipeline?.enabled ? [hint.rolePipeline.productionProjectId] : [])])].sort()) {
     projects.set(id, await loadStudioScopedProduction(query, work.workId, id));
   }
   const policy = await loadStudioScopedPolicy(query, work.workId, true);
+  const controlledIds = new Set(studioRolePipelineControlledTargetIds(policy.rolePipeline));
+  const mappedFull = work.access.edit && policy.rolePipeline?.enabled
+    ? { controlledTargets: policy.targets.filter((target) => controlledIds.has(target.definition.id)) } : undefined;
+  if (mappedFull && (mappedFull.controlledTargets.length !== controlledIds.size || !controlledIds.size)) throw new StudioScopedWriteDeniedError("policy");
+  if (!parsed.success) return { work, policy, targets: [], grants: [], context: null, ...(mappedFull ? { mappedFull } : {}) };
   if (policy.policyVersion !== parsed.data.policyVersion) throw new ConflictException({ code: "studio_scoped_policy_changed",
     message: "편집 배정이나 정책이 변경됐습니다. 초안을 보존하고 현재 권한을 다시 확인하세요.", policyVersion: policy.policyVersion });
   const selected = parsed.data.grantIds.map((id) => policy.grants.filter((entry) => entry.id === id));
@@ -170,8 +237,13 @@ export async function authorizeStudioScopedWrite(query: StudioScopedSql, work: S
     const aggregate = projects.get(grant.productionProjectId);
     return !aggregate || !studioScopedGrantIsCurrent(grant, policy.targets, aggregate, work.actorUserId, now);
   })) throw new StudioScopedWriteDeniedError("policy");
-  const allowed = new Set(grants.flatMap((grant) => grant.targetIds));
-  return { work: { ...work, now: new Date(now).toISOString() }, policy, targets: policy.targets.filter((target) => allowed.has(target.definition.id)), grants, context: parsed.data };
+  const allowed = new Set(grants.flatMap((grant) => {
+    const aggregate = projects.get(grant.productionProjectId);
+    return aggregate ? permittedGrantTargetIds(policy, grant, aggregate) : [];
+  }));
+  return { work: { ...work, now: new Date(now).toISOString() }, policy,
+    targets: policy.targets.filter((target) => allowed.has(target.definition.id) && (!mappedFull || controlledIds.has(target.definition.id))),
+    grants, context: parsed.data, ...(mappedFull ? { mappedFull } : {}) };
 }
 
 export function studioScopedRequestHash(value: unknown): string {
@@ -192,14 +264,14 @@ export async function loadStudioScopedReceipt(query: StudioScopedSql, work: Stud
 }
 export async function recordStudioScopedReceipt(query: StudioScopedSql, authorization: StudioScopedAuthorization,
   kind: string, mutationId: string, requestHash: string, targetIds: readonly string[], response: unknown = null): Promise<void> {
-  if (authorization.work.access.edit) return;
+  if (!studioScopedRequiresEffectAdmission(authorization)) return;
   await query.query(sql`INSERT INTO creator_work_scoped_write_receipt ("workId",kind,"mutationId","actorUserId","requestHash","policyVersion","targetIds",response,"createdAt")
     VALUES (${authorization.work.workId},${kind},${mutationId},${authorization.work.actorUserId},${requestHash},${authorization.policy.policyVersion},
       ${JSON.stringify(targetIds)}::jsonb,${JSON.stringify(response)}::jsonb,${authorization.work.now}::timestamptz)`);
 }
 export async function persistStudioScopedCreations(query: StudioScopedSql, authorization: StudioScopedAuthorization,
   created: readonly { readonly kind: StudioScopedEntityKind; readonly id: string; readonly targetId: string }[]): Promise<void> {
-  if (!created.length || authorization.work.access.edit) return;
+  if (!created.length || !studioScopedRequiresEffectAdmission(authorization)) return;
   const ownership = { ...authorization.policy.ownership };
   for (const entry of created) {
     const target = authorization.targets.find((target) => target.definition.id === entry.targetId);
@@ -229,10 +301,15 @@ export async function studioScopedPolicyForActor(query: StudioScopedSql, work: S
     if (grant.actorUserId !== work.actorUserId || grant.revokedAt !== null) continue;
     let aggregate = projects.get(grant.productionProjectId);
     if (!aggregate) { aggregate = await loadStudioScopedProduction(query, work.workId, grant.productionProjectId); projects.set(grant.productionProjectId, aggregate); }
-    if (studioScopedGrantIsCurrent(grant, policy.targets, aggregate, work.actorUserId, work.now)) grants.push(grant);
+    if (studioScopedGrantIsCurrent(grant, policy.targets, aggregate, work.actorUserId, work.now)) {
+      const targetIds = permittedGrantTargetIds(policy, grant, aggregate);
+      if (targetIds.length) grants.push({ ...grant, targetIds: [...targetIds] });
+    }
   }
   const selected = new Set(grants.flatMap((grant) => grant.targetIds));
-  const targets = work.access.manageMembers ? policy.targets : policy.targets.filter((target) => selected.has(target.definition.id));
+  const controlled = new Set(studioRolePipelineControlledTargetIds(policy.rolePipeline));
+  const targets = work.access.manageMembers ? policy.targets : policy.targets.filter((target) => selected.has(target.definition.id)
+    || (work.access.edit && controlled.has(target.definition.id)));
   const visible = new Set(targets.map((target) => target.definition.id));
   const ownedEntities = Object.entries(policy.ownership).flatMap(([key, targetId]) => {
     if (!visible.has(targetId)) return [];
@@ -240,7 +317,16 @@ export async function studioScopedPolicyForActor(query: StudioScopedSql, work: S
     if (!identity || (identity.kind === "group" && identity.pageId !== target?.definition.pageId)) throw new StudioScopedWriteDeniedError("ambiguous");
     return [{ kind: identity.kind, id: identity.id, targetId }];
   });
+  let rolePipelineAccess;
+  if (policy.rolePipeline?.enabled) {
+    const pipeline = policy.rolePipeline;
+    let aggregate = projects.get(pipeline.productionProjectId);
+    if (!aggregate) { aggregate = await loadStudioScopedProduction(query, work.workId, pipeline.productionProjectId); projects.set(pipeline.productionProjectId, aggregate); }
+    rolePipelineAccess = { editableTargetIds: [...selected].filter((id) => controlled.has(id)),
+      frozenTargetIds: [...pipelineFrozenTargets(pipeline, aggregate)], canHandoff: pipelineActorCanHandoff(pipeline, aggregate, work) };
+  }
   return { version: 1, workId: work.workId, policyVersion: policy.policyVersion, canManage: work.access.manageMembers,
     fullEdit: work.access.edit, scopedWrite: grants.length > 0, scopedWriteReady: true, requiresScopedSaveReconciliation,
-    targets: [...targets], grants: work.access.manageMembers ? [...policy.grants] : grants, ownedEntities };
+    targets: [...targets], grants: work.access.manageMembers ? [...policy.grants] : grants, ownedEntities,
+    ...(policy.rolePipeline ? { rolePipeline: policy.rolePipeline } : {}), ...(rolePipelineAccess ? { rolePipelineAccess } : {}) };
 }

@@ -9,6 +9,7 @@ import * as Y from "yjs";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ProductionProjectAggregate, ProductionTask } from "@toonstudio/core/production";
 import { createProductionWorkflowProfile } from "@toonstudio/contracts/production-workflow";
+import { STUDIO_ROLE_PIPELINE_STAGE_IDS, type StudioRolePipelineConfiguration } from "@toonstudio/contracts/studio-role-pipeline";
 import type { StudioScopedWriteContext, StudioScopedWriteManagementCommand, StudioScopedWritePolicy,
   StudioScopedWriteSourceSchema } from "@toonstudio/contracts/studio-scoped-write";
 import { materializeStudioAuthoringFromCrdt } from "@toonstudio/contracts/studio-crdt-authoring";
@@ -22,6 +23,11 @@ import { studioReviewPreviewDigest, type StudioReviewPreviewCapture,
   type StudioReviewPreviewIntent } from "../studio-project-graph/studio-review-preview-producer.contract";
 
 const url = process.env.STUDIO_LIVE_POSTGRES_INTEGRATION_URL?.trim() || process.env.TEST_DATABASE_URL?.trim();
+const browserOrigin = process.env.TOONSTUDIO_RBAC_BROWSER_ORIGIN?.trim();
+if (browserOrigin) {
+  const parsed = new URL(browserOrigin);
+  if (parsed.protocol !== "http:" || parsed.hostname !== "127.0.0.1" || !parsed.port || parsed.username || parsed.password) throw new Error("화면 검증은 명시 포트의 loopback 웹에서만 실행합니다.");
+}
 if (process.env.CI && !url) throw new Error("공개 제한 편집 producer 검증에는 준비된 로컬 PostgreSQL URL이 필요합니다.");
 type Actor = { id: string; email: string; password: string; cookie: string };
 type Subject = z.infer<typeof StudioScopedWriteSourceSchema>;
@@ -313,8 +319,7 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
     expect(await state(f)).toEqual(before);
   }, 30_000);
 
-  it("실제 제출본의 검수 승인은 이전 담당 작업의 새 저장·CRDT·재제출을 차단한다", async () => {
-    const f = await fixture();
+  async function approveScopedTask(f: Fixture) {
     await durableWrite(f);
     const capture = await completeCapture(f.workId, f.actor, f.context), submitted = submit(f, capture.subject);
     const result = await command(f.projectId, submitted, f.actor);
@@ -355,12 +360,17 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
     expect(persisted.tasks.find((entry) => entry.id === task.id)?.status).toBe("approved");
     expect(persisted.submissions.find((entry) => entry.id === output.id)).toMatchObject({ status: "approved", sourceEvidence: output.sourceEvidence });
     expect(persisted.deliverables.find((entry) => entry.id === output.deliverableId)?.approvedSubmissionId).toBe(output.id);
+    return persisted;
+  }
+
+  it("실제 제출본의 검수 승인은 이전 담당 작업의 새 저장·CRDT·재제출을 차단한다", async () => {
+    const f = await fixture(), persisted = await approveScopedTask(f);
     expect((await policy(f.workId, f.actor)).scopedWrite).toBe(false);
     const before = await state(f), current = await shared(f.workId, f.actor);
     expect((await h.request(`/creator/works/${f.workId}/team/document`, { method: "PATCH", cookie: f.actor.cookie,
       body: saveBody(current, f.context, changedStroke(current.document.doc, "own", "#00ff00")) })).status).toBe(403);
     await expectDeniedCrdt(f);
-    expect((await command(f.projectId, submit(f, capture.subject), f.actor)).status).toBe(403);
+    expect((await command(f.projectId, submit(f), f.actor)).status).toBe(403);
     expect(await state(f)).toEqual(before);
     expect((await project(f.projectId)).aggregate).toEqual(persisted);
   }, 30_000);
@@ -444,6 +454,149 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
         data: Y.encodeStateAsUpdate(doc), writeContext: f.context })).rejects.toMatchObject({ code: "policy" });
     } finally { doc.destroy(); }
   }
+
+  async function pipelineConfiguration(f: Fixture, prefix = "pipeline"): Promise<StudioRolePipelineConfiguration> {
+    const aggregate = (await project(f.projectId)).aggregate, template = aggregate.tasks.find((task) => task.id === "current-task");
+    if (!template) throw new Error("실제 제작 작업이 없습니다.");
+    const stageTasks = STUDIO_ROLE_PIPELINE_STAGE_IDS.map((stageId, index) => ({ stageId,
+      taskId: prefix === "pipeline" && index === 0 ? "current-task" : `${prefix}-${stageId}` }));
+    for (const { taskId } of stageTasks.filter((entry) => entry.taskId !== "current-task")) {
+      expect((await command(f.projectId, { type: "upsert-task", task: { ...template, id: taskId, status: "draft",
+        outputDeliverableIds: [], inputRevisionRefs: [], dependencyTaskIds: [], reviewerAssignmentIds: [] } })).status).toBe(201);
+    }
+    return { productionProjectId: f.projectId, roleBindings: [{ roleId: "creator", assignmentId: "worker-role" }],
+      groupMappings: [{ groupId: "story-notes", targetIds: ["target"] }], stageTasks };
+  }
+  async function enablePipeline(f: Fixture) {
+    const configuration = await pipelineConfiguration(f);
+    const current = await manage(f.workId, { type: "configure-role-pipeline", configuration });
+    const actorPolicy = await policy(f.workId, f.actor);
+    const grant = actorPolicy.grants.find((entry) => entry.id.startsWith("role-pipeline:") && entry.actorUserId === f.actor.id && entry.revokedAt === null);
+    if (!grant) throw new Error("실제 직군 연결로 만든 현재 공정 배정이 없습니다.");
+    f.context = { ...f.context, policyVersion: current.policyVersion, grantIds: [grant.id] };
+    return configuration;
+  }
+
+  it("명시적 프로젝트 보호는 전체 편집자의 매핑 밖 기능을 보존하고 소유자·직군 사칭도 보호 범위를 우회하지 못한다", async () => {
+    const f = await fixture(), configuration = await enablePipeline(f), route = `/creator/works/${f.workId}/team/document`;
+    expect((await h.request(`/creator/works/${f.workId}/scoped-write`, { cookie: f.actor.cookie,
+      body: { mutationId: randomUUID(), expectedPolicyVersion: f.context.policyVersion, command: { type: "configure-role-pipeline", configuration } } })).status).toBe(403);
+    expect((await h.request(`/creator/works/${f.workId}/team/members/${f.actor.id}`, { method: "PATCH", cookie: owner().cookie, body: { role: "editor" } })).status).toBe(200);
+    const initial = await shared(f.workId);
+    const ordinary = (current: Shared, doc: Record<string, unknown>) => ({ baseRevision: current.revision, crdtServerSequence: current.crdtServerSequence, doc });
+    expect((await h.request(route, { method: "PATCH", cookie: owner().cookie, body: ordinary(initial, changedStroke(initial.document.doc, "own")) })).status).toBe(403);
+    expect((await h.request(`/creator/works/${f.workId}`, { method: "PATCH", cookie: owner().cookie,
+      body: { baseRevision: initial.revision, doc: changedStroke(initial.document.doc, "own") } })).status).toBe(403);
+    expect((await h.request(route, { method: "PATCH", cookie: f.actor.cookie,
+      body: ordinary(initial, changedStroke(initial.document.doc, "own")) })).status).toBe(403);
+    const outside = await h.request(route, { method: "PATCH", cookie: f.actor.cookie,
+      body: { ...ordinary(initial, changedStroke(initial.document.doc, "outside")), title: "기존 전체 편집 기능 보존" } });
+    expect(outside.status).toBe(200);
+    const current = await shared(f.workId, f.actor);
+    expect((await h.request(route, { method: "PATCH", cookie: f.actor.cookie,
+      body: saveBody(current, f.context, changedStroke(current.document.doc, "own")) })).status).toBe(200);
+    expect((await policy(f.workId, f.actor)).fullEdit).toBe(true);
+    const reloaded = await policy(f.workId, f.actor);
+    expect(reloaded.rolePipeline?.enabled).toBe(true);
+    expect(reloaded.rolePipelineAccess?.editableTargetIds).toEqual(["target"]);
+    await manage(f.workId, { type: "disable-role-pipeline" });
+    const legacy = await shared(f.workId, f.actor);
+    expect((await h.request(route, { method: "PATCH", cookie: f.actor.cookie,
+      body: ordinary(legacy, changedStroke(legacy.document.doc, "own", "#00ff00")) })).status).toBe(200);
+  }, 30_000);
+
+  it("승인·인계 잠금은 정책 끄기·매핑 교체로 풀리지 않고 새 작업의 개정본으로만 재시작한다", async () => {
+    const f = await fixture(), configuration = await enablePipeline(f), approved = await approveScopedTask(f);
+    const denyManagement = async (command: StudioScopedWriteManagementCommand["command"]) => h.request(`/creator/works/${f.workId}/scoped-write`, {
+      cookie: owner().cookie, body: { mutationId: randomUUID(), expectedPolicyVersion: (await policy(f.workId)).policyVersion, command },
+    });
+    expect((await denyManagement({ type: "disable-role-pipeline" })).status).toBe(409);
+    expect((await denyManagement({ type: "configure-role-pipeline", configuration })).status).toBe(409);
+    const nextTask = approved.tasks.find((task) => task.id === configuration.stageTasks[1]?.taskId);
+    const submission = approved.submissions.find((entry) => entry.status === "approved");
+    if (!nextTask || !submission) throw new Error("실제 다음 작업과 승인 입력이 없습니다.");
+    expect((await denyManagement({ type: "handoff-role-pipeline", expectedProjectRevision: approved.revision })).status).toBe(400);
+    expect((await command(f.projectId, { type: "upsert-task", task: { ...nextTask, dependencyTaskIds: ["current-task"],
+      inputRevisionRefs: [submission.revisionRef] } })).status).toBe(201);
+    const handed = await manage(f.workId, { type: "handoff-role-pipeline", expectedProjectRevision: (await project(f.projectId)).aggregate.revision });
+    expect(handed.rolePipeline).toMatchObject({ activeStageId: "storyboard-conte", frozenStageIds: ["story-script"] });
+    const afterHandoff = await shared(f.workId), before = await state(f);
+    expect((await h.request(`/creator/works/${f.workId}/team/document`, { method: "PATCH", cookie: owner().cookie,
+      body: { baseRevision: afterHandoff.revision, crdtServerSequence: afterHandoff.crdtServerSequence,
+        doc: changedStroke(afterHandoff.document.doc, "own", "#00ff00") } })).status).toBe(403);
+    expect(await state(f)).toEqual(before);
+    const replacement = await pipelineConfiguration(f, "rework");
+    const restarted = await manage(f.workId, { type: "restart-role-pipeline", configuration: replacement, expectedWorkRevision: afterHandoff.revision });
+    expect(restarted.rolePipeline).toMatchObject({ activeStageId: "story-script", frozenStageIds: [], approvedAt: null });
+    expect(restarted.rolePipeline?.history.map((entry) => entry.kind)).toEqual(["handoff", "restart"]);
+    expect((await shared(f.workId)).revision).toBe(afterHandoff.revision + 1);
+    expect((await project(f.projectId)).aggregate.submissions.find((entry) => entry.id === submission.id)).toEqual(submission);
+  }, 30_000);
+
+  it.runIf(Boolean(browserOrigin))("실제 브라우저의 관리자 설정·새로고침과 담당자 재로그인은 같은 API 정책을 유지한다", async () => {
+    const f = await fixture(), configuration = await pipelineConfiguration(f);
+    const { chromium } = await import("playwright"), { mkdir } = await import("node:fs/promises");
+    const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH ?? chromium.executablePath() });
+    const contexts: import("playwright").BrowserContext[] = [];
+    const open = async (actor: Actor) => {
+      const context = await browser.newContext({ locale: "ko-KR", viewport: { width: 1440, height: 1000 }, serviceWorkers: "block" });
+      contexts.push(context);
+      // 응답 fixture 대신 실제 Nest API로 전달한다. 외부 저장소만 위의 메모리 port를 사용한다.
+      await context.route("**/api/**", async (route) => {
+        const target = new URL(route.request().url());
+        const response = await route.fetch({ url: `${h.base}${target.pathname}${target.search}`, maxRedirects: 0 });
+        await route.fulfill({ response });
+      });
+      const page = await context.newPage();
+      await page.goto(`${browserOrigin}/auth/login`, { waitUntil: "domcontentloaded" });
+      const form = page.locator('[data-auth-form="true"]'); await form.waitFor({ timeout: 120_000 });
+      await form.locator('input[type="email"]').fill(actor.email);
+      await form.locator('input[autocomplete="current-password"]').fill(actor.password);
+      await form.locator('button[type="submit"]').click();
+      await page.getByRole("heading", { name: /이미 로그인되어 있어요|already signed in/iu }).waitFor({ timeout: 60_000 });
+      return page;
+    };
+    const panel = async (page: import("playwright").Page) => {
+      await page.goto(`${browserOrigin}/production/projects/${f.projectId}/settings`, { waitUntil: "domcontentloaded" });
+      await page.getByText("실제 원고의 담당 편집 범위 배정", { exact: true }).click({ timeout: 120_000 });
+      const section = page.getByRole("region", { name: "실제 직군별 원고 보호", exact: true });
+      await section.waitFor(); return section;
+    };
+    try {
+      const manager = await open(owner()), section = await panel(manager);
+      expect(await section.getByRole("status").textContent()).toContain("꺼짐");
+      await section.getByRole("listbox", { name: "제작 직군 총괄 1인작가", exact: true }).selectOption(["worker-role"]);
+      await section.getByRole("checkbox", { name: /target$/u }).check();
+      for (const mapping of configuration.stageTasks) {
+        const label = STUDIO_ROLE_PIPELINE_STAGE_IDS.indexOf(mapping.stageId);
+        await section.getByRole("combobox", { name: /^실제 공정/u }).nth(label).selectOption(mapping.taskId);
+      }
+      await section.getByRole("checkbox", { name: "연결한 실제 범위에 전체 편집자도 포함하는 보호를 적용함을 확인했습니다.", exact: true }).check();
+      await section.getByRole("button", { name: "이 프로젝트의 원고 보호 켜기", exact: true }).click();
+      await section.getByRole("status").filter({ hasText: "켜짐" }).waitFor();
+      expect((await policy(f.workId)).rolePipeline).toMatchObject({ ...configuration, enabled: true });
+      await manager.reload({ waitUntil: "domcontentloaded" });
+      const restored = await panel(manager); expect(await restored.getByRole("status").textContent()).toContain("켜짐");
+      await mkdir(".qa/role-pipeline", { recursive: true });
+      await restored.locator("h3").scrollIntoViewIfNeeded();
+      await manager.screenshot({ path: ".qa/role-pipeline/manager-enabled.png" });
+      const worker = await open(f.actor), restricted = await panel(worker);
+      expect(await restricted.getByRole("button", { name: "이 프로젝트의 보호 끄기", exact: true }).count()).toBe(0);
+      expect(await restricted.getByRole("listbox").count()).toBe(0);
+      await worker.context().clearCookies(); await worker.close();
+      const relogged = await open(f.actor), current = await panel(relogged);
+      expect(await current.getByRole("status").textContent()).toContain("켜짐");
+      await relogged.setViewportSize({ width: 390, height: 900 });
+      await current.screenshot({ path: ".qa/role-pipeline/worker-relogin-mobile.png" });
+    } catch (error) {
+      await mkdir(".qa/role-pipeline", { recursive: true });
+      for (const [index, context] of contexts.entries()) {
+        const page = context.pages().at(-1);
+        if (page && !new URL(page.url()).pathname.startsWith("/auth/")) await page.screenshot({ path: `.qa/role-pipeline/failure-${index}.png` });
+      }
+      throw error;
+    } finally { for (const context of contexts) await context.close(); await browser.close(); }
+  }, 180_000);
 });
 
 function element(doc: Record<string, unknown>, id: string): Record<string, unknown> {
@@ -603,7 +756,7 @@ async function createHarness(connectionString: string, workIds: string[]) {
       },
     };
     app = await NestFactory.create(IntegrationModule, { logger: diagnosticLogger, bodyParser: false });
-    app.use(sessionAuth); app.use(createCsrfProtectionMiddleware({ NODE_ENV: "test", API_CORS_ALLOWED_ORIGINS: "http://127.0.0.1:5199" }));
+    app.use(sessionAuth); app.use(createCsrfProtectionMiddleware({ NODE_ENV: "test", API_CORS_ALLOWED_ORIGINS: ["http://127.0.0.1:5199", browserOrigin].filter(Boolean).join(",") }));
     app.use(json({ limit: "2mb" })); app.setGlobalPrefix("api"); await app.listen(0, "127.0.0.1");
     const address = app.getHttpServer().address() as AddressInfo, base = `http://127.0.0.1:${address.port}`;
     async function request<T = Record<string, unknown>>(route: string, options: {
@@ -618,7 +771,7 @@ async function createHarness(connectionString: string, workIds: string[]) {
       });
       return { status: response.status, body: await response.json() as T, cookie: response.headers.get("set-cookie")?.split(";")[0] ?? null };
     }
-    return { request, outbox, pool: dbPool, crdt: realtime, close };
+    return { request, outbox, pool: dbPool, crdt: realtime, close, base };
   } catch (cause) {
     try { await close(); } catch (cleanupError) { throw new AggregateError([cause, cleanupError], "공개 producer 초기화와 정리에 실패했습니다.", { cause: cleanupError }); }
     throw cause;

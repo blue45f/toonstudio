@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { ConflictException, ServiceUnavailableException } from "@nestjs/common";
 import { PgDialect } from "drizzle-orm/pg-core";
+import { STUDIO_ROLE_PIPELINE_STAGE_IDS, type StudioRolePipelineState } from "@toonstudio/contracts/studio-role-pipeline";
 import type { StudioScopedSql } from "./studio-scoped-write-store";
 import { authorizeStudioScopedWrite, loadStudioScopedReceipt, studioScopedGrantIsCurrent, studioScopedPolicyForActor } from "./studio-scoped-write-store";
 import { SCOPED_AT, scopedFixture } from "./studio-scoped-write.test-fixture";
@@ -51,10 +52,10 @@ describe("현재 계정·제작 배정에 묶은 명시 편집 정책", () => {
   });
 
   it("기존 owner/admin/editor의 전체 edit 계약과 무문맥 입력은 유지한다", async () => {
-    const { authorization } = scopedFixture(), query = { query: vi.fn() } satisfies StudioScopedSql;
+    const { authorization } = scopedFixture(), query = { query: vi.fn().mockResolvedValue([{ available: false }]) } satisfies StudioScopedSql;
     const full = await authorizeStudioScopedWrite(query, { ...authorization.work, access: { ...authorization.work.access, edit: true } }, undefined);
     expect(full.context).toBeNull();
-    expect(query.query).not.toHaveBeenCalled();
+    expect(query.query).toHaveBeenCalledTimes(1);
   });
 
   it("선행 공정이 끝난 뒤에도 stable raw 귀속은 유지하고 다음 task에 새 grant를 만들 수 있다", () => {
@@ -118,5 +119,33 @@ describe("현재 계정·제작 배정에 묶은 명시 편집 정책", () => {
     }
     const damaged = { query: vi.fn().mockResolvedValueOnce([{ available: true }]).mockResolvedValueOnce([{ policyVersion: 1, grants: [] }]) } satisfies StudioScopedSql;
     await expect(studioScopedPolicyForActor(damaged, work)).rejects.toBeDefined();
+  });
+
+  it("승인으로 편집 grant가 끝난 현재 담당자도 실제 배정·기간에 맞으면 인계 가능 여부를 받는다", async () => {
+    const f = scopedFixture(), aggregate = { ...f.aggregate, tasks: f.aggregate.tasks.map((task) => ({ ...task, status: "approved" as const })) };
+    const pipeline: StudioRolePipelineState = { version: 1, enabled: true, productionProjectId: aggregate.projectId,
+      roleBindings: [{ roleId: "story", assignmentId: "role" }], groupMappings: [{ groupId: "story-notes", targetIds: ["target"] }],
+      stageTasks: STUDIO_ROLE_PIPELINE_STAGE_IDS.map((stageId, index) => ({ stageId, taskId: index === 0 ? "task" : `task-${index}` })),
+      activeStageId: "story-script", frozenStageIds: [], approvedAt: null, history: [] };
+    const project = async (current = aggregate, state = pipeline, work = f.authorization.work) => {
+      const query = { query: vi.fn() } satisfies StudioScopedSql;
+      if (work.access.edit) query.query.mockResolvedValueOnce([{ available: true }]);
+      query.query.mockResolvedValueOnce([{ ...f.authorization.policy, rolePipeline: state }])
+        .mockResolvedValue([{ id: current.projectId, workId: current.workId, revision: current.revision, aggregate: current }]);
+      return studioScopedPolicyForActor(query, work);
+    };
+    expect(await project()).toMatchObject({ scopedWrite: false,
+      rolePipelineAccess: { editableTargetIds: [], frozenTargetIds: ["target"], canHandoff: true } });
+    const variants = [
+      { ...aggregate, tasks: aggregate.tasks.map((task) => ({ ...task, assignmentIds: [] })) },
+      { ...aggregate, assignments: aggregate.assignments.map((role) => role.id === "role" ? { ...role, status: "paused" as const } : role) },
+      { ...aggregate, assignments: aggregate.assignments.map((role) => role.id === "role" ? { ...role, endsAt: SCOPED_AT } : role) },
+      { ...aggregate, parties: aggregate.parties.map((party) => party.id === "actor-party" ? { ...party, accountUserId: "another-account" } : party) },
+    ];
+    for (const current of variants) expect((await project(current)).rolePipelineAccess?.canHandoff).toBe(false);
+    expect((await project(aggregate, { ...pipeline, roleBindings: [{ roleId: "story", assignmentId: "other-role" }] })).rolePipelineAccess?.canHandoff).toBe(false);
+    const manager = { ...f.authorization.work, access: { ...f.authorization.work.access, edit: true, manageMembers: true } };
+    expect((await project(variants[0], pipeline, manager)).rolePipelineAccess?.canHandoff).toBe(true);
+    expect((await project(aggregate, { ...pipeline, approvedAt: SCOPED_AT }, manager)).rolePipelineAccess?.canHandoff).toBe(false);
   });
 });

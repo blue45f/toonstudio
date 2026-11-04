@@ -116,6 +116,9 @@ export function StudioWebtoonRolePipelineSubPanel(): ReactElement {
           "This is a production plan and permission preview. It does not change manuscripts, server permissions, assignees or workspaces. The plan resets when you leave this tab.",
         )}
       </p>
+      <a href="/production/projects" className="inline-flex min-h-11 items-center rounded border border-line px-2 text-accent underline">
+        {bi("실제 프로젝트의 계정·담당 원고 권한 관리", "Manage actual project accounts and manuscript access")}
+      </a>
       <div className="rounded border border-line bg-raised/40 p-2">
         <div className="flex flex-wrap items-center justify-between gap-1">
           <span className="font-bold text-fg">{bi("① 예시 직군 선택", "1. Choose a preview role")}</span>

@@ -23,6 +23,7 @@ import { rateLimit } from "@toonstudio/contracts/rate-limit";
 import { StudioLinked3dPassAssetFenceError } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
 import { StudioRealtimeRevocationService } from "../../platform/adapters/studio-realtime-revocation/studio-realtime-revocation.client";
 import { userFacingException } from "./user-facing-error";
+import { isStudioRolePipelineBoundaryError } from "./studio-role-pipeline-full-write";
 import {
   MEMBERSHIP_REWARD_SERVICE,
   type MembershipRewardService,
@@ -534,7 +535,7 @@ export class CreatorService {
       if (error instanceof StudioLinked3dPassAssetFenceError) {
         throw creatorLinked3dPassAssetFenceConflict(error);
       }
-      throw userFacingException(error, "작품을 수정할 수 없습니다.");
+      throw isStudioRolePipelineBoundaryError(error) ? error : userFacingException(error, "작품을 수정할 수 없습니다.");
     }
   }
 
@@ -590,7 +591,7 @@ export class CreatorService {
       if (error instanceof StudioLinked3dPassAssetFenceError) {
         throw creatorLinked3dPassAssetFenceConflict(error);
       }
-      throw new BadRequestException("작품 revision을 복원할 수 없습니다.");
+      throw isStudioRolePipelineBoundaryError(error) ? error : new BadRequestException("작품 revision을 복원할 수 없습니다.");
     }
   }
 

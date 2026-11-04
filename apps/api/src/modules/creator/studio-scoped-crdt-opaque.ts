@@ -1,6 +1,7 @@
 import * as Y from "yjs";
 import { STUDIO_CRDT_RASTER_ROOT_NAMES } from "@toonstudio/contracts/studio-crdt-raster-document-contract";
-import { scopedEntityKey, StudioScopedWriteDeniedError } from "./studio-scoped-write-effects";
+import { projectStudioScopedAuthoringDocument, scopedEntityKey, studioScopedEntityTouchesTarget, StudioScopedWriteDeniedError } from "./studio-scoped-write-effects";
+import { materializeStudioAuthoringFromCrdt } from "@toonstudio/contracts/studio-crdt-authoring";
 import type { StudioScopedAuthorization } from "./studio-scoped-write-store";
 
 type SharedType = Exclude<Y.Item["parent"], Y.ID | null>;
@@ -105,10 +106,15 @@ function ownedStrokeAnchors(doc: Y.Doc, authorization: StudioScopedAuthorization
   const anchors = new Set<Y.Item>(), root = doc.share.get("strokes");
   if (!(root instanceof Y.Map)) return anchors;
   const targets = new Set(authorization.targets.map((target) => target.definition.id));
+  const state = authorization.mappedFull ? projectStudioScopedAuthoringDocument(materializeStudioAuthoringFromCrdt({ baseline: authorization.work.document, doc })) : null;
   for (const [id, record] of root) {
     if (!(record instanceof Y.Map) || record.get("id") !== id || !record._item) continue;
     const owner = authorization.policy.ownership[scopedEntityKey("stroke", id)];
-    if (owner && targets.has(owner)) anchors.add(record._item);
+    const controlled = authorization.mappedFull?.controlledTargets;
+    const entity = state?.entities.get(scopedEntityKey("stroke", id));
+    const unrestricted = controlled && !controlled.some((target) => target.definition.id === owner
+      || (entity && state && studioScopedEntityTouchesTarget(entity, target, state)));
+    if ((owner && targets.has(owner)) || unrestricted) anchors.add(record._item);
   }
   return anchors;
 }

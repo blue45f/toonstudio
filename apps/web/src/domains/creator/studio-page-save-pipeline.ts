@@ -739,7 +739,7 @@ export async function runStudioPageSavePipeline(
         workId,
         sharedDocument.role,
         sharedPatch,
-        saveController.signal
+        saveController.signal, deps.scopedWrite?.authority?.fullEditSaveContext(),
       );
       linkedCloudSaveCommitted = true;
       if (

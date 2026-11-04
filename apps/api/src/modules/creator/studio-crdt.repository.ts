@@ -5,7 +5,7 @@ import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scop
 import { assertStudioScopedWriteReplay } from "./studio-scoped-write-replay";
 import { StudioScopedWriteDeniedError, type StudioScopedWriteEffectAdmission } from "./studio-scoped-write-effects";
 import { authorizeStudioScopedWrite, lockStudioScopedWork, loadStudioScopedReceipt, persistStudioScopedCreations,
-  recordStudioScopedReceipt, studioScopedDrizzle, studioScopedRequestHash, type StudioScopedAuthorization } from "./studio-scoped-write-store";
+  recordStudioScopedReceipt, studioScopedDrizzle, studioScopedRequestHash, studioScopedRequiresEffectAdmission, type StudioScopedAuthorization } from "./studio-scoped-write-store";
 
 import {
   creatorWorkCrdtSnapshots,
@@ -173,7 +173,7 @@ export async function loadStudioCrdtDocumentInTransaction(
     .from(creatorWorkCrdtSnapshots)
     .where(eq(creatorWorkCrdtSnapshots.workId, workId))
     .limit(1);
-  const compactedSequence = storedSnapshot?.compactedSequence ?? 0n;
+  const compactedSequence = storedSnapshot?.compactedSequence ?? BigInt(0);
   const rows = await transaction
     .select()
     .from(creatorWorkCrdtUpdates)
@@ -268,7 +268,7 @@ export class DrizzleStudioCrdtRepository implements StudioCrdtRepository {
         const work = await lockStudioScopedWork(query, input.workId, input.actorUserId);
         const authorization = await authorizeStudioScopedWrite(query, work, input.writeContext);
         const requestHash = studioScopedRequestHash({ payloadHash: Buffer.from(payloadHash).toString("hex"), writeContext: input.writeContext ?? null });
-        const scopedReceipt = authorization.context ? await loadStudioScopedReceipt(query, work, "crdt", input.updateId, requestHash) : null;
+        const scopedReceipt = studioScopedRequiresEffectAdmission(authorization) ? await loadStudioScopedReceipt(query, work, "crdt", input.updateId, requestHash) : null;
         const [existingReceipt] = await transaction
           .select()
           .from(creatorWorkCrdtUpdateReceipts)
@@ -294,7 +294,7 @@ export class DrizzleStudioCrdtRepository implements StudioCrdtRepository {
           transaction,
           authorization
         );
-        if (authorization.context && !admission) throw new StudioScopedWriteDeniedError("ambiguous");
+        if (studioScopedRequiresEffectAdmission(authorization) && !admission) throw new StudioScopedWriteDeniedError("ambiguous");
 
         // Claim the durable dedupe key after merged validation. The unique conflict fallback is
         // defense in depth for a writer that does not yet participate in this lock protocol.
@@ -328,7 +328,7 @@ export class DrizzleStudioCrdtRepository implements StudioCrdtRepository {
           if (!conflictingReceipt || conflictingReceipt.sequence === null) {
             throw new Error("CRDT update receipt disappeared or is incomplete");
           }
-          assertStudioScopedWriteReplay(authorization, authorization.context
+          assertStudioScopedWriteReplay(authorization, studioScopedRequiresEffectAdmission(authorization)
             ? await loadStudioScopedReceipt(query, work, "crdt", input.updateId, requestHash) : null);
           return { inserted: false, receipt: receiptRecord(conflictingReceipt) };
         }

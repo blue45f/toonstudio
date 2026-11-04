@@ -4,6 +4,7 @@ import type {
 } from "./creator-collaboration.policy";
 import type { StudioLinked3dPassAssetRow } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
 import type { CreatorWorkRevisionSnapshot } from "../../server/creator-work-revisions";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
 export type CreatorCollaborationInvitationAction = "accept" | "decline";
 
@@ -251,7 +252,8 @@ export interface CreatorCollaborationUnitOfWork {
     workId: string,
     baseRevision: number,
     patch: CreatorSharedDocumentPatch,
-    updatedAt: Date
+    updatedAt: Date,
+    scoped?: { readonly mutationId: string; readonly writeContext: StudioScopedWriteContext; readonly crdtServerSequence: bigint }
   ): Promise<CreatorSharedDocumentMutationRecord | null>;
   appendWorkRevision(
     workId: string,

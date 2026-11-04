@@ -135,7 +135,7 @@ export async function loadStudioScopedCrdtAuthority(transaction: DrizzleStudioCr
   try {
     const references = await loadStudioScopedCrdtReferenceSources(transaction, workId, baseline, [doc]);
     const authority = projectStudioScopedCrdtAuthority(doc, baseline, references);
-    const serverSequence = current.updates.at(-1)?.sequence ?? current.snapshot?.compactedSequence ?? 0n;
+    const serverSequence = current.updates.at(-1)?.sequence ?? current.snapshot?.compactedSequence ?? BigInt(0);
     return { ...authority, serverSequence };
   } finally { doc.destroy(); }
 }

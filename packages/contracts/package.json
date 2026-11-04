@@ -406,6 +406,16 @@
       "types": "./src/production-stage-gate.ts",
       "import": "./src/production-stage-gate.ts",
       "default": "./src/production-stage-gate.ts"
+    },
+    "./studio-role-pipeline": {
+      "types": "./src/studio-role-pipeline.ts",
+      "import": "./src/studio-role-pipeline.ts",
+      "default": "./src/studio-role-pipeline.ts"
+    },
+    "./studio-scoped-write-effects": {
+      "types": "./src/studio-scoped-write-effects.ts",
+      "import": "./src/studio-scoped-write-effects.ts",
+      "default": "./src/studio-scoped-write-effects.ts"
     }
   },
   "dependencies": {

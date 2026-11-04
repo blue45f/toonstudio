@@ -273,7 +273,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 170 |
+| API `platform/database` 파일 | 173 |
 | `packages/core` 파일 | 148 |
 | `lint:strict` 경고 예산 (`lintStrictMaxWarnings`) | 2,189 |
 
@@ -344,3 +344,8 @@ pnpm run typecheck
 ```
 
 아키텍처 변경은 문서만 고치지 말고 ratchet, 테스트, 경로 원장과 함께 반영한다.
+
+2026-11-04 직군별 원고 보호의 추가형 migration `0120_studio_role_pipeline_policy.sql`은
+현재 172개 DB 소스에 SQL 한 파일만 더해 상한 173을 만든다. 기존 정책 행은 NULL 기본값으로
+보존하고 프로젝트가 명시적으로 켜기 전에는 기존 ACL·담당 배정을 변경하지 않는다. 공통 효과
+검증은 Web/API의 실제 두 소비자를 위해 contracts 공개 경계로 옮기고 API의 기존 진입점을 유지한다.

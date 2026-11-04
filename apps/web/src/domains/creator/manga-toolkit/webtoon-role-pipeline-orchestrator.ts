@@ -7,6 +7,8 @@
  * 실제 문서·서버 접근 권한·담당자·작업공간을 변경하는 인증 경로가 아니다.
  */
 
+import { STUDIO_ROLE_PIPELINE_ROLES, type StudioRolePipelineGroupId, type StudioRolePipelineStageId } from "@toonstudio/contracts/studio-role-pipeline";
+
 import { creatorRoleWorkspacePreset } from "../creator-role-workspace-presets";
 import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
 
@@ -16,35 +18,8 @@ import {
   type CreatorRoleId,
 } from "@/shared/lib/creator-role-contract";
 
-export type WebtoonPipelineStageId =
-  | "story-script"
-  | "storyboard-conte"
-  | "bg3d-spatial"
-  | "line-art-ink"
-  | "flat-color-mask"
-  | "shading-fx-post"
-  | "lettering-sfx"
-  | "pd-editorial-review";
-
-export type WebtoonCanonicalLayerGroupId =
-  | "story-notes"
-  | "dialogue-draft"
-  | "storyboard"
-  | "panel-frame"
-  | "camera-guide"
-  | "background-3d"
-  | "background-line"
-  | "background-tone"
-  | "main-lineart"
-  | "assistant-line"
-  | "flat-color"
-  | "color-mask"
-  | "shading"
-  | "fx-overlay"
-  | "balloon"
-  | "dialogue-text"
-  | "sfx-typography"
-  | "review-annotation";
+export type WebtoonPipelineStageId = StudioRolePipelineStageId;
+export type WebtoonCanonicalLayerGroupId = StudioRolePipelineGroupId;
 
 export interface WebtoonCanonicalLayerGroupSpec {
   readonly id: WebtoonCanonicalLayerGroupId;
@@ -391,7 +366,7 @@ export function resolveRolePipelinePreset(roleId: CreatorRoleId): ResolvedRolePi
   const canonWriteAccess = isLead ? "full" : isAssistant ? "propose-only" : "read-only";
   const allowedLayerGroups = canonWriteAccess === "read-only"
     ? []
-    : ROLE_ALLOWED_LAYER_GROUPS[roleId] ?? stage.ownedLayerGroups;
+    : STUDIO_ROLE_PIPELINE_ROLES.find((role) => role.id === roleId)?.groupIds ?? ROLE_ALLOWED_LAYER_GROUPS[roleId] ?? stage.ownedLayerGroups;
   const allowedSet = new Set<WebtoonCanonicalLayerGroupId>(allowedLayerGroups);
   const lockedLayerGroups = WEBTOON_CANONICAL_LAYER_GROUPS.map((g) => g.id).filter(
     (id) => !allowedSet.has(id),

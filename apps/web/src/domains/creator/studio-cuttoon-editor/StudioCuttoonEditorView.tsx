@@ -212,7 +212,7 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
           onExportBackup={() => s.studioMenubarContentHandlers.handleExportProject()}
         />
         </Suspense>
-        {s.scopedWriteRuntime ? <StudioScopedWriteTargetPicker runtime={s.scopedWriteRuntime} currentPageId={s.currentPageId} onPage={s.setCurrentPageId} onDraw={() => { s.activatePrimaryCanvasTool("draw", "pen"); }} /> : null}
+        {s.scopedWriteRuntime ? <StudioScopedWriteTargetPicker runtime={s.scopedWriteRuntime} currentPageId={s.currentPageId} onPage={s.setCurrentPageId} onLayer={s.onScopedWriteLayer} onDraw={() => { s.activatePrimaryCanvasTool("draw", "pen"); }} /> : null}
         <StudioCuttoonEditorWorkspace {...s} />
         <StudioCuttoonEditorContextMenu {...s} />
       </Container>

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { normalizeStudioSharedDocumentPatch, updateStudioScopedSharedDocument } from "../studio-shared-document-client";
+import { normalizeStudioSharedDocumentPatch, updateStudioScopedSharedDocument, updateStudioSharedDocument } from "../studio-shared-document-client";
 
 const mocks = vi.hoisted(() => ({ patch: vi.fn() }));
 vi.mock("@/platform/api", () => ({ api: { patch: mocks.patch }, isHttpError: () => false, toApiError: async (error: unknown) => error }));
@@ -25,5 +25,15 @@ describe("현재 배정의 별도 본문 REST client", () => {
   it("잘못된 서버 revision을 성공 ACK로 처리하지 않는다", async () => {
     mocks.patch.mockResolvedValueOnce({ workId: "work", revision: 9, updatedAt: "2026-10-29T06:00:00.000Z" });
     await expect(updateStudioScopedSharedDocument("work", input())).rejects.toThrow();
+  });
+  it("전체 편집의 명시 grant 문맥과 같은 전체 본문은 같은 mutation ID를 보낸다", async () => {
+    const body = { baseRevision: 3, crdtServerSequence: "7", doc: { pagesList: [] }, title: "보존할 제목" };
+    await updateStudioSharedDocument("work", "editor", body, undefined, context);
+    await updateStudioSharedDocument("work", "editor", body, undefined, context);
+    const first = mocks.patch.mock.calls[0]?.[1], second = mocks.patch.mock.calls[1]?.[1];
+    expect(first).toMatchObject({ ...body, writeContext: context, mutationId: expect.stringMatching(/^[\da-f-]{36}$/u) });
+    expect(second).toEqual(first);
+    await updateStudioSharedDocument("work", "editor", { ...body, title: "바뀐 제목" }, undefined, context);
+    expect(mocks.patch.mock.calls[2]?.[1].mutationId).not.toBe(first.mutationId);
   });
 });

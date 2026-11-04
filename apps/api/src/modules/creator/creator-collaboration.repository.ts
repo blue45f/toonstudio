@@ -865,7 +865,8 @@ export class CreatorCollaborationRepository {
         workId,
         baseRevision,
         patch,
-        now
+        now,
+        scoped ? { ...scoped, crdtServerSequence } : undefined
       );
       if (!updated) {
         const latest = await unit.findAccessibleDocument(actorUserId, workId);

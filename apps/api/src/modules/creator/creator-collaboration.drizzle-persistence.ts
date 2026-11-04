@@ -16,6 +16,8 @@ import {
 import { CREATOR_WORK_REVISION_MAX } from "../../server/creator-work-revisions";
 
 import { studioCrdtWorkAdvisoryLockQuery } from "./studio-crdt.repository";
+import { withStudioRolePipelineFullDocumentUpdate } from "./studio-role-pipeline-full-write";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
 import type {
   AppendCreatorCollaborationEventInput,
@@ -823,19 +825,15 @@ export class DrizzleCreatorCollaborationUnitOfWork implements CreatorCollaborati
     workId: string,
     baseRevision: number,
     patch: CreatorSharedDocumentPatch,
-    updatedAt: Date
+    updatedAt: Date,
+    scoped?: { readonly mutationId: string; readonly writeContext: StudioScopedWriteContext; readonly crdtServerSequence: bigint }
   ): Promise<CreatorSharedDocumentMutationRecord | null> {
     // 서비스가 작품 행을 먼저 잠그지만 UPDATE에도 동일 ACL을 중복 적용한다. 향후 호출자가
     // 바뀌어도 pending/viewer 권한이 write primitive까지 도달하지 못하도록 하는 방어선이다.
-    const rows = await buildCreatorSharedDocumentUpdateQuery(
-      this.executor,
-      actorUserId,
-      workId,
-      baseRevision,
-      patch,
-      updatedAt
+    return withStudioRolePipelineFullDocumentUpdate(
+      this.executor, { actorUserId, workId, baseRevision, patch, updatedAt, scoped },
+      () => buildCreatorSharedDocumentUpdateQuery(this.executor, actorUserId, workId, baseRevision, patch, updatedAt),
     );
-    return rows[0] ?? null;
   }
 
   async appendWorkRevision(

@@ -13,7 +13,8 @@ import {
   productionProjects,
 } from "../../platform/database";
 import { resolveCreatorCollaborationAccess } from "../creator/creator-collaboration.policy";
-import { studioScopedRequestHash } from "../creator/studio-scoped-write-store";
+import { studioScopedDrizzle, studioScopedRequestHash, studioScopedRequiresEffectAdmission } from "../creator/studio-scoped-write-store";
+import { assertStudioRolePipelineProductionMutation } from "../creator/studio-role-pipeline-management";
 import { matchesProductionTaskBatchPreconditions, type ProductionTaskBatchPreconditions } from "./production-task-batch-concurrency";
 import { getVerifiedProductionTaskOutputCaptures } from "./production-task-output-source";
 import { authorizeProductionTaskOutput, inspectScopedProductionTaskOutput, lockProductionTaskOutputWork,
@@ -378,6 +379,7 @@ export class ProductionCollaborationRepository {
       assertAggregateRow(row);
       const response = input.mutate(row.aggregate);
       const aggregate = response.aggregate;
+      await assertStudioRolePipelineProductionMutation(studioScopedDrizzle(transaction), row.aggregate, aggregate);
       if (
         aggregate.projectId !== row.id
         || aggregate.workId !== row.workId
@@ -467,7 +469,7 @@ export class ProductionCollaborationRepository {
       const access = await loadAccess(transaction, input.actorUserId, row.workId);
       const outputAuthorization = scopedWork && outputCommand
         ? await authorizeProductionTaskOutput(transaction, scopedWork, outputCommand) : null;
-      const limitedOutput = outputAuthorization?.context ? outputAuthorization : null;
+      const limitedOutput = studioScopedRequiresEffectAdmission(outputAuthorization ?? undefined) ? outputAuthorization : null;
       const requiredCapability = input.requiredCapability ?? "edit";
       if (!access?.view || (requiredCapability === "comment" && !access.comment)) {
         throw new ProductionProjectForbiddenError("edit");
@@ -517,6 +519,7 @@ export class ProductionCollaborationRepository {
       const response = taskOutputCaptures ? input.mutate(currentAggregate, access, taskOutputCaptures)
         : input.mutate(currentAggregate, access);
       const aggregate = response.aggregate;
+      await assertStudioRolePipelineProductionMutation(studioScopedDrizzle(transaction), currentAggregate, aggregate);
       if (
         aggregate.projectId !== row.id
         || aggregate.workId !== row.workId

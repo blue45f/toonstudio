@@ -1,5 +1,6 @@
 import { StudioScopedWriteContextSchema, StudioScopedWritePolicySchema, type StudioScopedEntityKind, type StudioScopedWriteContext, type StudioScopedWritePolicy, type StudioScopedWriteTarget } from "@toonstudio/contracts/studio-scoped-write";
 import { studioCrdtProjectionGroupKey } from "@toonstudio/contracts/studio-crdt-authoring/group-key";
+import { studioRolePipelineControlledTargetIds, studioRolePipelineGrantTargetIds } from "@toonstudio/contracts/studio-role-pipeline";
 
 export interface StudioScopedWriteFence { readonly authScopeKey: string | null; readonly workId: string | null; readonly accessGeneration: number; readonly documentGeneration: number; readonly scopedMutationReady?: boolean }
 export interface StudioScopedDrawingTicket {
@@ -9,6 +10,7 @@ export interface StudioScopedDrawingTicket {
 }
 export interface StudioScopedCrdtPublisher {
   captureWriteContext(present?: (kind: StudioScopedEntityKind, id: string, pageId: string, restoration: boolean) => boolean): StudioScopedWriteContext;
+  captureFullEditWriteContext?(present?: (kind: StudioScopedEntityKind, id: string, pageId: string, restoration: boolean) => boolean): StudioScopedWriteContext | undefined;
   bindFlushBoundary(flush: (() => void) | null): () => void;
 }
 const key = (kind: StudioScopedEntityKind, id: string, pageId?: string) => kind === "group" ? `group:${studioCrdtProjectionGroupKey(pageId ?? "", id)}` : `${kind}:${id}`;
@@ -34,6 +36,7 @@ export class StudioScopedWriteAuthority implements StudioScopedCrdtPublisher {
   private readonly queuedRestorations = new Map<string, { kind: StudioScopedEntityKind; id: string; targetId: string; policyVersion: number }>();
   private queuedContext: StudioScopedWriteContext | null = null;
   private lastAdmittedContext: StudioScopedWriteContext | null = null;
+  private readonly mappedAdmittedGrantIds = new Set<string>();
   constructor(readonly authScopeKey: string, readonly workId: string, private readonly fence: () => StudioScopedWriteFence, private readonly now = Date.now) {}
   readonly subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   readonly getEpoch = () => this.epoch;
@@ -47,21 +50,50 @@ export class StudioScopedWriteAuthority implements StudioScopedCrdtPublisher {
   }
   suspend(): void { try { this.flushBoundary?.(); } finally { this.verified = false; this.invalidate(); } }
   get snapshot(): StudioScopedWritePolicy | null { return this.policy; }
+  get mappedFullEdit(): boolean { return this.policy?.fullEdit === true && this.policy.rolePipeline?.enabled === true; }
+  get controlledTargets(): readonly StudioScopedWriteTarget[] {
+    const ids = new Set(studioRolePipelineControlledTargetIds(this.policy?.rolePipeline));
+    return this.policy?.targets.filter((target) => ids.has(target.definition.id)) ?? [];
+  }
+  get mappedPolicyVerified(): boolean { return this.verified && this.hasCurrentIdentity; }
+  peekMappedContext(): StudioScopedWriteContext {
+    return { version: 1, policyVersion: this.policy?.policyVersion ?? 0, grantIds: this.grantsForSelection.map((grant) => grant.id),
+      creations: [...this.queuedCreations.values()].map(({ kind, id, targetId }) => ({ kind, id, targetId })),
+      restorations: [...this.queuedRestorations.values()].map(({ kind, id, targetId }) => ({ kind, id, targetId })) };
+  }
+  admitMappedEdit(): void { this.admitContext(this.purposeContext()); }
+  fullEditSaveContext(): StudioScopedWriteContext | undefined {
+    if (!this.mappedFullEdit || !this.mappedPolicyVerified || !this.policy) return undefined;
+    const admitted = new Set([...this.mappedAdmittedGrantIds, ...this.grantsForSelection.map((grant) => grant.id)]);
+    const grantIds = [...new Set(this.controlledTargets.flatMap((target) => this.grantsForTarget(target.definition.id))
+      .filter((grant) => admitted.has(grant.id)).map((grant) => grant.id))];
+    return grantIds.length ? { version: 1, policyVersion: this.policy.policyVersion, grantIds, creations: [], restorations: [] } : undefined;
+  }
+  captureFullEditWriteContext(present?: (kind: StudioScopedEntityKind, id: string, pageId: string, restoration: boolean) => boolean): StudioScopedWriteContext | undefined {
+    return this.mappedFullEdit && this.queuedContext ? this.captureWriteContext(present) : undefined;
+  }
   get targetId(): string | null { return this.selectedTargetId; }
   get grantId(): string | null { return this.selectedGrantId; }
   get hasCurrentIdentity(): boolean { return !this.disposed && this.sameIdentity(); }
   get drawingAllowed(): boolean { return !this.mutationHolds && this.fence().scopedMutationReady !== false && Boolean(this.currentTarget && this.grantsForSelection.length); }
   get currentTarget(): StudioScopedWriteTarget | null { return this.availableTargets.find((target) => target.definition.id === this.selectedTargetId) ?? null; }
   get availableTargets(): readonly StudioScopedWriteTarget[] {
-    if (this.disposed || !this.verified || !this.policy?.scopedWrite || !this.sameIdentity()) return [];
-    const now = this.now(), grants = this.policy.grants.filter((grant) => grant.actorUserId === this.authScopeKey && grant.revokedAt === null && activeAt(grant.startsAt, grant.endsAt, now));
-    return this.policy.targets.filter((target) => target.revokedAt === null && grants.some((grant) => grant.productionProjectId === target.definition.productionProjectId && grant.targetIds.includes(target.definition.id)));
+    const policy = this.policy;
+    if (!policy || this.disposed || !this.verified || (!policy.scopedWrite && !this.mappedFullEdit) || !this.sameIdentity()) return [];
+    return policy.targets.filter((target) => target.revokedAt === null && this.grantsForTarget(target.definition.id).length > 0);
+  }
+  grantsForTarget(targetId: string) {
+    const policy = this.policy, target = policy?.targets.find((entry) => entry.definition.id === targetId), now = this.now();
+    if (!policy || !target || !this.verified || !this.hasCurrentIdentity) return [];
+    const pipeline = policy.rolePipeline, controlled = studioRolePipelineControlledTargetIds(pipeline).includes(targetId);
+    return policy.grants.filter((grant) => grant.actorUserId === this.authScopeKey && grant.revokedAt === null && activeAt(grant.startsAt, grant.endsAt, now)
+      && grant.productionProjectId === target.definition.productionProjectId && grant.targetIds.includes(targetId)
+      && (!controlled || (policy.rolePipelineAccess?.editableTargetIds.includes(targetId) === true
+        && pipeline && studioRolePipelineGrantTargetIds(pipeline, grant).includes(targetId))));
   }
   get grantsForSelection() {
-    const target = this.currentTarget, now = this.now();
-    return target && this.policy ? this.policy.grants.filter((grant) => grant.actorUserId === this.authScopeKey && grant.revokedAt === null && activeAt(grant.startsAt, grant.endsAt, now)
-      && grant.productionProjectId === target.definition.productionProjectId && grant.targetIds.includes(target.definition.id)
-      && (this.selectedGrantId === null || grant.id === this.selectedGrantId)) : [];
+    const target = this.currentTarget;
+    return target ? this.grantsForTarget(target.definition.id).filter((grant) => this.selectedGrantId === null || grant.id === this.selectedGrantId) : [];
   }
   setPolicy(value: StudioScopedWritePolicy): void {
     let policy: StudioScopedWritePolicy, owners: Array<{ identity: string; targetId: string }>;
@@ -78,6 +110,7 @@ export class StudioScopedWriteAuthority implements StudioScopedCrdtPublisher {
       });
     } catch (cause) { this.verified = false; this.invalidate(); throw cause; }
     this.queuedContext = null; this.lastAdmittedContext = null;
+    if (this.policy?.policyVersion !== policy.policyVersion) this.mappedAdmittedGrantIds.clear();
     this.policy = policy; this.verified = true;
     for (const owned of owners) {
       this.localTargets.set(owned.identity, owned.targetId);
@@ -86,7 +119,7 @@ export class StudioScopedWriteAuthority implements StudioScopedCrdtPublisher {
   }
   chooseTarget(id: string | null, grantId: string | null = null): void {
     if (id !== null && !this.availableTargets.some((target) => target.definition.id === id)) throw new Error("현재 계정에 배정된 원고 범위를 선택하세요.");
-    if (grantId !== null && !this.policy?.grants.some((grant) => grant.id === grantId && grant.actorUserId === this.authScopeKey && grant.revokedAt === null && activeAt(grant.startsAt, grant.endsAt, this.now()) && id !== null && grant.targetIds.includes(id))) throw new Error("현재 유효한 작업 배정을 선택하세요.");
+    if (grantId !== null && (id === null || !this.grantsForTarget(id).some((grant) => grant.id === grantId))) throw new Error("현재 유효한 작업 배정을 선택하세요.");
     if (id === this.selectedTargetId && grantId === this.selectedGrantId) return;
     this.flushBoundary?.(); this.selectedTargetId = id; this.selectedGrantId = grantId; this.invalidate();
   }
@@ -176,6 +209,7 @@ export class StudioScopedWriteAuthority implements StudioScopedCrdtPublisher {
     return value;
   }
   private admitContext(value: StudioScopedWriteContext): void {
+    if (this.mappedFullEdit) for (const id of value.grantIds) this.mappedAdmittedGrantIds.add(id);
     if (this.queuedContext && this.queuedContext.policyVersion !== value.policyVersion) this.flushBoundary?.();
     this.queuedContext = this.queuedContext ? { ...this.queuedContext, grantIds: [...new Set([...this.queuedContext.grantIds, ...value.grantIds])] } : structuredClone(value);
     this.lastAdmittedContext = structuredClone(this.queuedContext);

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getStudioScopedWritePolicy, manageStudioScopedWritePolicy } from "../studio-collab/studio-scoped-write-client";
 import { getStudioSharedDocument } from "../studio-shared-document-client";
@@ -81,7 +81,7 @@ describe("실제 원고 범위 등록·공정 배정·회수 관리", () => {
     if (futureStart) expect(vi.mocked(manageStudioScopedWritePolicy).mock.calls[0]?.[1]).toMatchObject({ command: {
       startsAt: new Date(Math.ceil(Date.parse(futureStart) / 1000) * 1000).toISOString(),
     } });
-    expect(screen.queryByRole("option", { name: /제작자.*owner/ })).toBeNull();
+    expect(within(screen.getByLabelText("실제 계정의 역할 배정")).queryByRole("option", { name: /제작자.*owner/ })).toBeNull();
   });
 
   it("경계 clock이 갱신되지 않아도 선택 이벤트의 초를 사용하고 늦은 제출에서 기간을 다시 쓰지 않는다", async () => {

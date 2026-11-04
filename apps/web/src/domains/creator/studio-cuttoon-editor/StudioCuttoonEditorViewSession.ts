@@ -11,6 +11,7 @@ export type StudioCuttoonEditorViewSession =
   StudioCuttoonEditorViewSessionCore &
   StudioCuttoonEditorViewSessionRest & {
     scopedWriteRuntime?: import("./runtime/useStudioScopedWriteRuntime").StudioScopedWriteRuntime; scopedCanvasDrawingAvailable?: boolean; scopedSavePendingConfirmation?: boolean;
+    onScopedWriteLayer?: (layerId: string | null, frameId: string | null) => void;
     toggleCanvasFlipX?: () => void;
     zoomReset?: () => void;
     clearPolyLassoDraft?: () => void;

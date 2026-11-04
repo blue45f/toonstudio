@@ -1,6 +1,9 @@
 // 창작 작품(웹툰/컷툰) CRUD — 목록/상세/생성/수정/삭제와 연결 자산 검증.
 import { and, asc, desc, eq, gt, inArray, lt, lte, or, sql } from "drizzle-orm";
+import { creatorWorkSnapshotSelection } from "../../modules/creator/creator-work-snapshot-selection";
 import { readCreatorPublicationSource } from "@toonstudio/contracts/creator-publication-integrity";
+import { studioCrdtWorkAdvisoryLockQuery } from "../../modules/creator/studio-crdt.repository";
+import { admitStudioRolePipelineFullDocument } from "../../modules/creator/studio-role-pipeline-full-write";
 
 import {
   assertStudioLinked3dPassAssetRows,
@@ -83,6 +86,8 @@ import {
 } from "../../modules/creator/works-contract";
 
 import type { SQL } from "drizzle-orm";
+
+export { creatorWorkSnapshotSelection } from "../../modules/creator/creator-work-snapshot-selection";
 
 export async function assertCreatorWorkLinked3dPassAssetsInTransaction(
   transaction: CreatorCommunityTransaction,
@@ -719,27 +724,7 @@ export async function createWork(userId: string, input: CreatorWorkInput): Promi
   });
 }
 
-export const creatorWorkSnapshotSelection = {
-  id: creatorWorks.id,
-  userId: creatorWorks.userId,
-  hidden: creatorWorks.hidden,
-  createdAt: creatorWorks.createdAt,
-  updatedAt: creatorWorks.updatedAt,
-  titleId: creatorWorks.titleId,
-  title: creatorWorks.title,
-  description: creatorWorks.description,
-  cover: creatorWorks.cover,
-  tags: creatorWorks.tags,
-  format: creatorWorks.format,
-  pages: creatorWorks.pages,
-  doc: creatorWorks.doc,
-  status: creatorWorks.status,
-  seriesId: creatorWorks.seriesId,
-  episodeNo: creatorWorks.episodeNo,
-  challengeId: creatorWorks.challengeId,
-  remixFromId: creatorWorks.remixFromId,
-  revision: creatorWorks.revision,
-};
+
 
 export async function mutationResultForWork(
   userId: string,
@@ -835,6 +820,7 @@ export async function updateWork(
   }
 
   const updated = await db.transaction(async (tx) => {
+    await tx.execute(studioCrdtWorkAdvisoryLockQuery(id));
     // This is the same row lock used by immutable work-asset upload/deletion. Keep it ahead of the
     // asset query so the exact candidate JSON and its rows remain one transaction-scoped fact.
     const [locked] = await tx
@@ -855,6 +841,7 @@ export async function updateWork(
     if (locked.revision >= CREATOR_WORK_REVISION_MAX) {
       throw new Error("작품 revision 상한에 도달해 더 저장할 수 없습니다.");
     }
+    if (Object.hasOwn(fields, "doc")) await admitStudioRolePipelineFullDocument(tx, userId, id, fields.doc);
     const [draftCollaborationRoom] = requestedStatus === undefined
       ? []
       : await tx

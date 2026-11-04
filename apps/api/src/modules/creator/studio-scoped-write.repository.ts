@@ -9,6 +9,7 @@ import { getVerifiedProductionTaskOutputCaptures } from "../production-collabora
 import { studioReviewCaptureFromOperation, studioReviewResolutionCaptureQuery } from "../studio-project-graph/studio-review-capture-attestation";
 import { studioCrdtWorkAdvisoryLockQuery } from "./studio-crdt.repository";
 import { loadStudioScopedCrdtAuthority } from "./studio-scoped-crdt-authority";
+import { applyStudioRolePipelineManagement, isStudioRolePipelineManagement, studioRolePipelineProjectId } from "./studio-role-pipeline-management";
 import { projectStudioScopedAuthoringDocument, scopedEntityKey, scopedRecord, StudioScopedWriteDeniedError,
   validateStudioScopedWriteTarget } from "./studio-scoped-write-effects";
 import { loadStudioScopedPolicy, loadStudioScopedProduction, loadStudioScopedReceipt, lockStudioScopedWork,
@@ -30,13 +31,14 @@ export class StudioScopedWriteRepository {
     return db.transaction(async (transaction) => {
       await transaction.execute(studioCrdtWorkAdvisoryLockQuery(workId));
       const query = studioScopedDrizzle(transaction), work = await lockStudioScopedWork(query, workId, actorUserId, true);
-      if (!work.access.manageMembers) throw new ForbiddenException("제작 관리자만 편집 범위를 연결할 수 있습니다.");
+      if (!work.access.manageMembers && input.command.type !== "handoff-role-pipeline") throw new ForbiddenException("제작 관리자만 편집 범위를 연결할 수 있습니다.");
       const requestHash = studioScopedRequestHash(input);
       const receipt = await loadStudioScopedReceipt(query, work, "management", input.mutationId, requestHash);
       // 과거 성공을 재실행하지 않고 현재 계정에 보이는 정책을 다시 반환한다.
       if (receipt) return studioScopedPolicyForActor(query, work);
       const hint = await loadStudioScopedPolicy(query, workId);
-      const projectId = input.command.type === "register-target" ? input.command.target.productionProjectId
+      const projectId = isStudioRolePipelineManagement(input.command) ? studioRolePipelineProjectId(input.command, hint)
+        : input.command.type === "register-target" ? input.command.target.productionProjectId
         : input.command.type === "grant" ? input.command.productionProjectId : undefined;
       const aggregate = projectId ? await loadStudioScopedProduction(query, workId, projectId) : null;
       const current = await loadStudioScopedPolicy(query, workId, true);
@@ -47,7 +49,16 @@ export class StudioScopedWriteRepository {
       if (current.policyVersion >= 2_147_483_647) throw new ConflictException("편집 정책 버전 한도에 도달했습니다.");
       let targets = [...current.targets], grants = [...current.grants];
       const ownership = { ...current.ownership }, command = input.command;
-      if (command.type === "register-target") {
+      if (isStudioRolePipelineManagement(command)) {
+        if (!aggregate) throw new StudioScopedWriteDeniedError("policy");
+        const restartAuthority = command.type === "restart-role-pipeline"
+          ? await loadStudioScopedCrdtAuthority(transaction, workId, work.document) : null;
+        const managedWork = restartAuthority ? { ...work, document: restartAuthority.authoringDocument,
+          work: { ...work.work, doc: restartAuthority.authoringDocument } } : work;
+        const changed = await applyStudioRolePipelineManagement(query, managedWork, current, aggregate, input, command);
+        await this.persist(query, work, { ...changed, policyVersion: current.policyVersion + 1 }, input, requestHash);
+        return studioScopedPolicyForActor(query, work);
+      } else if (command.type === "register-target") {
         if (!aggregate || targets.some((target) => target.definition.id === command.target.id)) throw new ConflictException("기존 범위 ID를 다시 사용할 수 없습니다.");
         const task = aggregate.tasks.find((entry) => entry.id === command.target.taskId);
         if (!task || !scopeContains(projectScope(aggregate.projectId), command.target.scope)
@@ -96,7 +107,7 @@ export class StudioScopedWriteRepository {
         if (!grants.some((grant) => grant.id === command.grantId && grant.revokedAt === null)) throw new ConflictException("현재 활성 배정을 선택하세요.");
         grants = grants.map((grant) => grant.id === command.grantId ? { ...grant, revokedAt: work.now } : grant);
       }
-      const policy = { policyVersion: current.policyVersion + 1, targets, grants, ownership };
+      const policy = { policyVersion: current.policyVersion + 1, targets, grants, ownership, rolePipeline: current.rolePipeline ?? null };
       await this.persist(query, work, policy, input, requestHash);
       return studioScopedPolicyForActor(query, work);
     });
@@ -104,11 +115,11 @@ export class StudioScopedWriteRepository {
 
   private async persist(query: StudioScopedSql, work: StudioScopedWork, policy: StudioScopedStoredPolicy,
     input: StudioScopedWriteManagementCommand, requestHash: string): Promise<void> {
-    await query.query(sql`INSERT INTO creator_work_scoped_write_policy ("workId","policyVersion",targets,grants,ownership,"updatedBy","updatedAt")
+    await query.query(sql`INSERT INTO creator_work_scoped_write_policy ("workId","policyVersion",targets,grants,ownership,"updatedBy","updatedAt","rolePipeline")
       VALUES (${work.workId},${policy.policyVersion},${JSON.stringify(policy.targets)}::jsonb,${JSON.stringify(policy.grants)}::jsonb,
-        ${JSON.stringify(policy.ownership)}::jsonb,${work.actorUserId},${work.now}::timestamptz)
+        ${JSON.stringify(policy.ownership)}::jsonb,${work.actorUserId},${work.now}::timestamptz,${policy.rolePipeline ? JSON.stringify(policy.rolePipeline) : null}::jsonb)
       ON CONFLICT ("workId") DO UPDATE SET "policyVersion"=excluded."policyVersion",targets=excluded.targets,
-        grants=excluded.grants,ownership=excluded.ownership,"updatedBy"=excluded."updatedBy","updatedAt"=excluded."updatedAt"`);
+        grants=excluded.grants,ownership=excluded.ownership,"updatedBy"=excluded."updatedBy","updatedAt"=excluded."updatedAt","rolePipeline"=excluded."rolePipeline"`);
     await query.query(sql`INSERT INTO creator_work_scoped_write_receipt ("workId",kind,"mutationId","actorUserId","requestHash","policyVersion","targetIds",response,"createdAt")
       VALUES (${work.workId},'management',${input.mutationId},${work.actorUserId},${requestHash},${policy.policyVersion},'[]'::jsonb,
         ${JSON.stringify({ version: 1, policyVersion: policy.policyVersion })}::jsonb,${work.now}::timestamptz)`);

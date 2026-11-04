@@ -80,7 +80,7 @@ export function ProductionTeamSurface({
       <ProductionProjectCoverSettings aggregate={aggregate} execute={execute} canEdit={access.edit} />
       {!isDemo && access.manage && executeStrict ? <ProductionCollaborationRoleSection aggregate={aggregate} canManage={access.manage}
         execute={executeStrict} refresh={refresh} hasUnconfirmedCommand={hasUnconfirmedCommand} /> : null}
-      {!isDemo && aggregate.projectId !== "sample-project" && access.manage ? <ProductionScopedWriteSection aggregate={aggregate} /> : null}
+      {!isDemo && aggregate.projectId !== "sample-project" && access.view ? <ProductionScopedWriteSection aggregate={aggregate} /> : null}
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <ProductionSectionCard
           title={bt("참여자와 담당 역할", "Members and assigned roles")}

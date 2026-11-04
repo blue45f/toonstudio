@@ -4,6 +4,7 @@ import {
 } from "../../offline-branch/studio-offline-host-integration";
 
 import { resolveStudioCrdtScenePublishNotice } from "../../status-i18n/studio-producer-error-i18n-live-crdt";
+import { admitStudioMappedPagesCommit } from "../../studio-collab/studio-role-pipeline-mutation";
 
 import type { StudioCrdtDocument } from "../../live/studio-crdt-document";
 import type { StudioCrdtSceneGraphRuntime } from "../../live/StudioLiveCollaborationProvider";
@@ -16,6 +17,7 @@ export interface StudioCrdtTransitionPublisherInput {
   readonly getRuntime: () => StudioCrdtSceneGraphRuntime | null;
   readonly reportError: (message: string) => void;
   readonly reportNotice: (message: string) => void;
+  readonly mutationOwner?: { readonly current: { readonly locked: boolean } };
 }
 
 export interface StudioCrdtTransitionPublisher {
@@ -41,6 +43,8 @@ export function createStudioCrdtTransitionPublisher(
     registerNewDraws = true,
     offlineRealtimeStrokeIds: readonly string[] = [],
   ): boolean => {
+    if (input.mutationOwner && !admitStudioMappedPagesCommit({ owner: input.mutationOwner, previous: previousPages,
+      next: nextPages, reportError: input.reportError })) return false;
     const document = input.getDocument();
     const runtime = input.getRuntime();
     const stagedOffline = stageStudioOfflineSceneTransition(

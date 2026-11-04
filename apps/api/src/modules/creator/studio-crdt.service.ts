@@ -6,7 +6,7 @@ import * as Y from "yjs";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import { admitStudioScopedCrdtProbe, type StudioScopedCrdtProbeAdmission } from "./studio-scoped-crdt-write";
 import { StudioScopedWriteDeniedError, type StudioScopedWriteEffectAdmission } from "./studio-scoped-write-effects";
-import type { StudioScopedAuthorization } from "./studio-scoped-write-store";
+import { studioScopedRequiresEffectAdmission, type StudioScopedAuthorization } from "./studio-scoped-write-store";
 
 import {
   STUDIO_CRDT_RASTER_OPERATIONS_ROOT,
@@ -1059,7 +1059,7 @@ export class StudioCrdtService implements OnModuleDestroy {
     try {
       if (requiresScopedAuthority && !authorization) throw new StudioScopedWriteDeniedError("policy");
       return await this.validateUpdateAgainstDocument(workId, durable.doc, update, actorUserId, transaction,
-        authorization?.context ? (before, probe) => admitStudioScopedCrdtProbe(authorization, before, probe, transaction, update) : undefined);
+        studioScopedRequiresEffectAdmission(authorization) ? (before, probe) => admitStudioScopedCrdtProbe(authorization, before, probe, transaction, update) : undefined);
     } finally { durable.doc.destroy(); }
   }
 
