@@ -158,10 +158,10 @@ export const TOOLCHAIN_STAGES_FRONT: readonly ProcessToolchainStage[] = [
         kind: "external",
       },
       {
-        name: { ko: "Causality / Bibisco / Trelby", en: "Causality / Bibisco / Trelby" },
+        name: { ko: "Causality / Bibisco / Trelby / STARC", en: "Causality / Bibisco / Trelby / STARC" },
         role: {
-          ko: "다중 캐릭터 타임라인·서브플롯 인과 시퀀서(Causality)와 오픈소스 소설·각본 설계 도구(Bibisco·Manuskript·Trelby)",
-          en: "Multi-character subplot causality sequencer (Causality) and open-source novel/screenplay architecture tools (Bibisco, Manuskript, Trelby)",
+          ko: "다중 캐릭터 타임라인·서브플롯 인과 시퀀서(Causality), 코믹 대본·세계관 매트릭스(STARC·WriterDuet·Highland 2·Fade In·Kit Scenarist), 오픈소스 소설 설계 도구(Bibisco·Manuskript·Trelby)",
+          en: "Multi-character subplot causality sequencer (Causality), comic script & world matrix tools (STARC, WriterDuet, Highland 2, Fade In, Kit Scenarist), and open-source novel architecture tools (Bibisco, Manuskript, Trelby)",
         },
         kind: "external",
         pricing: "freemium",

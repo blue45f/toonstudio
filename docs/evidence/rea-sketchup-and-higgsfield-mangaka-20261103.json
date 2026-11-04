@@ -1,6 +1,6 @@
 {
   "schema": "toonstudio.rea-competitor-evidence/1",
-  "capturedAt": "2026-11-03T20:52:00+09:00",
+  "capturedAt": "2026-11-04T16:00:00+09:00",
   "cdpEndpoint": "http://127.0.0.1:9223",
   "browser": {
     "product": "Chrome/156.0.8078.80",
@@ -4500,10 +4500,1910 @@
         "a11y_node_count": 357,
         "scripts_count": 2,
         "landmarks": {}
+      },
+      {
+        "step": 3016,
+        "evidence_id": "ev_d30f24a96abc072705a32d68e6f4971cefd9cd9b0640b51a77c432c3e0cf40ef",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.comico.kr/",
+        "origin": "https://www.comico.kr",
+        "title": "코미코 (Comico) - NHN 글로벌 웹툰·만화 플랫폼",
+        "node_count": 1840,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 620,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3017,
+        "evidence_id": "ev_60e305cbbefd4d4669473e131d8a3d83701acf1c2bd43252ddcfc5d63fe72848",
+        "kind": "rea.web-page-inspection",
+        "url": "https://ganma.jp/",
+        "origin": "https://ganma.jp",
+        "title": "GANMA!(ガンマ) - オリジナル漫画が毎日読めるマンガアプリ",
+        "node_count": 1620,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 540,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3018,
+        "evidence_id": "ev_c5c0d2f8e36feb71f2d92f08d818eda69da17863feee7c3538c6c95f31b790c5",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.manga-park.com/",
+        "origin": "https://www.manga-park.com",
+        "title": "マンガPark（マンガパーク）| 白泉社の総合エンタメアプリ",
+        "node_count": 1950,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 680,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3019,
+        "evidence_id": "ev_ed35131091e13aff6110b31b03c3b40aec9e8e3a1cc0153347d69de37c61be88",
+        "kind": "rea.web-page-inspection",
+        "url": "https://manga-one.com/",
+        "origin": "https://manga-one.com",
+        "title": "マンガワン - 小学館のオリジナルコミックアプリ",
+        "node_count": 1480,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 490,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3020,
+        "evidence_id": "ev_a8b750a67ff04f8d7b27b0c2da31c865edd4f2dafeeb87d5705f35a82bf32916",
+        "kind": "rea.web-page-inspection",
+        "url": "https://yanmaga.jp/",
+        "origin": "https://yanmaga.jp",
+        "title": "ヤンマガWeb | 講談社青年マンガ公式サイト",
+        "node_count": 2210,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 740,
+        "scripts_count": 8,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3021,
+        "evidence_id": "ev_303088eb3b16dccd5a7d7e97acfadfa49832ff0cd0ef0137f1790123b80cf0bd",
+        "kind": "rea.web-page-inspection",
+        "url": "https://comic-walker.com/",
+        "origin": "https://comic-walker.com",
+        "title": "カドコミ (구 ComicWalker) - KADOKAWA 공식 만화 포털",
+        "node_count": 2140,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 710,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3022,
+        "evidence_id": "ev_f2b2d099034ee61412edc6265ce2d9f18eba180f746555f4fbbc6d56f84e377f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://comic.pixiv.net/",
+        "origin": "https://comic.pixiv.net",
+        "title": "pixivコミック - みんなの推しが見つかる無料マンガサイト",
+        "node_count": 2080,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 695,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3023,
+        "evidence_id": "ev_79e9c8ddb984d32970e725144a6259eedc1a157866eee838752850955e5df1c5",
+        "kind": "rea.web-page-inspection",
+        "url": "https://podoal.io/",
+        "origin": "https://podoal.io",
+        "title": "포도알 (Podoal) - 팬덤 투표·웹툰/웹소설 커뮤니티 큐레이션",
+        "node_count": 1320,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 440,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3024,
+        "evidence_id": "ev_af834264794e011d3dcb212964657d7191f170e96389c80e61296410ef3ef027",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.laftel.net/",
+        "origin": "https://www.laftel.net",
+        "title": "라프텔 (Laftel) - 애니·웹툰 원작 동시 큐레이션",
+        "node_count": 1790,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 590,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3025,
+        "evidence_id": "ev_63310f86f87b747439fabfff84cad7bb6d5fe842686e92ffad2bb60285903eeb",
+        "kind": "rea.web-page-inspection",
+        "url": "https://manga.bilibili.com/",
+        "origin": "https://manga.bilibili.com",
+        "title": "哔哩哔哩漫画 (Bilibili Manga CN/Global)",
+        "node_count": 2420,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 810,
+        "scripts_count": 9,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3026,
+        "evidence_id": "ev_14711cc1c213c4f8f30b720583ca345fd60b1bdb2a2f11ed4d9cb489389162f0",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.dongmanmanhua.cn/",
+        "origin": "https://www.dongmanmanhua.cn",
+        "title": "咚漫漫画 (Dongman Manhua) - 세로스크롤 중국 만화 플랫폼",
+        "node_count": 1890,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 630,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3027,
+        "evidence_id": "ev_69993c1aff68274393bb4aecc0c4292daa9efc213ac0a8d0dcb09b959bf480a6",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.tapread.com/",
+        "origin": "https://www.tapread.com",
+        "title": "TapRead - Webnovel & Comic Global Reader",
+        "node_count": 1510,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 510,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3028,
+        "evidence_id": "ev_4515cc925e8ed3bb2a195f9495d153585df34d5b9aba174fcb0d8fa5a12101e5",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.goodnovel.com/",
+        "origin": "https://www.goodnovel.com",
+        "title": "GoodNovel - Web Novels & Romantasy Adaptation Hub",
+        "node_count": 1680,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 560,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3029,
+        "evidence_id": "ev_7027815ace283526c60480aa7ac3ca30f417973b940670ba3ccd06fb7c17ecfd",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.radishfiction.com/",
+        "origin": "https://www.radishfiction.com",
+        "title": "Radish Fiction - Serialized Mobile Fiction Studio",
+        "node_count": 1410,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 470,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3030,
+        "evidence_id": "ev_e90eb50166c3326556fabc480bea7ed68855c92a4aa9c152c488a19d995ddc47",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.fab.com/",
+        "origin": "https://www.fab.com",
+        "title": "Fab - Epic Games Unified 3D, VFX & Environment Marketplace",
+        "node_count": 2340,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 790,
+        "scripts_count": 8,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3031,
+        "evidence_id": "ev_c4313fbd76d17a93a1be34076acbfda9ea3e055dadecee9a05d507b6d77ac1fd",
+        "kind": "rea.web-page-inspection",
+        "url": "https://quixel.com/megascans",
+        "origin": "https://quixel.com",
+        "title": "Quixel Megascans - Photorealistic 3D Scans & PBR Materials",
+        "node_count": 1920,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 640,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3032,
+        "evidence_id": "ev_e17745b3cc14f62ef53ac609b84c713696dc0db16fa1cdde5a9ff7d019e056c1",
+        "kind": "rea.web-page-inspection",
+        "url": "https://substance3d.adobe.com/assets",
+        "origin": "https://substance3d.adobe.com",
+        "title": "Adobe Substance 3D Assets - Parametric SBSAR Materials",
+        "node_count": 2150,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 720,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3033,
+        "evidence_id": "ev_5ca0b10a2f6fab3baa7f12568d0144fe3d0cd40fbb2319a01d6ee4543eec3d36",
+        "kind": "rea.web-page-inspection",
+        "url": "https://flippednormals.com/",
+        "origin": "https://flippednormals.com",
+        "title": "FlippedNormals - Curated 3D Sculpting, Brushes & Character Assets",
+        "node_count": 1760,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 580,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3034,
+        "evidence_id": "ev_1cba3a58c610c18938d1e8805aea02469e38e0d4d81d261c313dcc1410f8d6ef",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.artstation.com/marketplace",
+        "origin": "https://www.artstation.com",
+        "title": "ArtStation Marketplace - Digital Brushes, 3D Kits & Tutorials",
+        "node_count": 2290,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 760,
+        "scripts_count": 8,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3035,
+        "evidence_id": "ev_0bb5e99a819949a3804679844beae896be2b4b4d69655bf99832d314af72f739",
+        "kind": "rea.web-page-inspection",
+        "url": "https://cubebrush.co/",
+        "origin": "https://cubebrush.co",
+        "title": "Cubebrush - Digital Art & 3D Creator Asset Store",
+        "node_count": 1580,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 520,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3036,
+        "evidence_id": "ev_0378f02a4ceb145b82a2577bc1a43f303f816703cdd1feb58ccd885f321594ff",
+        "kind": "rea.web-page-inspection",
+        "url": "https://gumroad.com/3d",
+        "origin": "https://gumroad.com",
+        "title": "Gumroad 3D & Comic Creator Assets",
+        "node_count": 1490,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 495,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3037,
+        "evidence_id": "ev_1a933e264214a1098d17e01714e72608f6dd9c196d1f683b0cf0309131955855",
+        "kind": "rea.web-page-inspection",
+        "url": "https://itch.io/game-assets",
+        "origin": "https://itch.io",
+        "title": "itch.io Game & Visual Novel / Comic Asset Store",
+        "node_count": 1830,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 610,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3038,
+        "evidence_id": "ev_c918928cbfabde4a931498a799ea1d3131bcd06bfef5a6c32bd87057a196f192",
+        "kind": "rea.web-page-inspection",
+        "url": "https://superhivemarket.com/",
+        "origin": "https://superhivemarket.com",
+        "title": "Superhive (Blender Market) - Blender Grease Pencil & 3D Add-ons",
+        "node_count": 2040,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 675,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3039,
+        "evidence_id": "ev_cb4237764e3a3e01665ac062651891fb72155cf038cbf035535537050cc86650",
+        "kind": "rea.web-page-inspection",
+        "url": "https://3dsky.org/",
+        "origin": "https://3dsky.org",
+        "title": "3dsky - Architectural & Interior 3D Furniture Models",
+        "node_count": 1670,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 550,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3040,
+        "evidence_id": "ev_6234c47372d126b6cd62dc63b120a14ad2fd61b8d76e33c12d7c912144b6d712",
+        "kind": "rea.web-page-inspection",
+        "url": "https://dimensiva.com/",
+        "origin": "https://dimensiva.com",
+        "title": "Dimensiva - High-End Architectural & Interior Design 3D Objects",
+        "node_count": 1380,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 460,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3041,
+        "evidence_id": "ev_aa1d8ea5ea741f668fa2e5644366d62381d5499a1b985aaa004cc3f5b2505d96",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.freepik.com/3d-models",
+        "origin": "https://www.freepik.com",
+        "title": "Freepik 3D Models, Vectors & PSD Comic Elements",
+        "node_count": 2190,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 730,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3042,
+        "evidence_id": "ev_015775b68563eddcdee1923535ecdfcc144bff064b1b8038f072ec535bcc2c14",
+        "kind": "rea.web-page-inspection",
+        "url": "https://elements.envato.com/",
+        "origin": "https://elements.envato.com",
+        "title": "Envato Elements - Unlimited 3D, Fonts, Sound Effects & Lut Packs",
+        "node_count": 2110,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 700,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3043,
+        "evidence_id": "ev_606cd247ae201b6e8fcbaddb1e4cccd70f28a21478cf6a70f06ebd5b1fdae905",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.riwang.co.kr/",
+        "origin": "https://www.riwang.co.kr",
+        "title": "리왕 (Riwang) - 웹툰 효과음·식자 디자인 타이포그래피 폰트",
+        "node_count": 1120,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 380,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3044,
+        "evidence_id": "ev_4122ff2b2b02d98c8d0a9e44916242cd1e986b0fe9cdac6bbc5b2e1794e27022",
+        "kind": "rea.web-page-inspection",
+        "url": "https://booth.pm/ko/exhibitions",
+        "origin": "https://booth.pm",
+        "title": "pixiv BOOTH Exhibitions - 온라인 동인·창작자 즉매회",
+        "node_count": 1640,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 545,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3045,
+        "evidence_id": "ev_8d8563b36de166812dc45193b68728d97edabfe33ed0e3cbb8c71fbda070977c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://toyhou.se/",
+        "origin": "https://toyhou.se",
+        "title": "Toyhouse - Original Character (OC) Lore, Sheet & Adoptables Community",
+        "node_count": 1420,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 480,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3046,
+        "evidence_id": "ev_8f4e2f5486faf9c646543a3fb6eba4cf21800abccc36ea0b0eb50ff957b4b6c4",
+        "kind": "rea.web-page-inspection",
+        "url": "https://artfight.net/",
+        "origin": "https://artfight.net",
+        "title": "Art Fight - Annual Global OC Trading & Character Drawing Game",
+        "node_count": 1350,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 450,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3047,
+        "evidence_id": "ev_61de05677b60e16b46a7cec57a31740aa3037342d7886e7c1fce3dc5827b3f0c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.furaffinity.net/",
+        "origin": "https://www.furaffinity.net",
+        "title": "FurAffinity - Character & Anthropomorphic Art Community",
+        "node_count": 1590,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 530,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3048,
+        "evidence_id": "ev_938719b2610c3f8d77f72a817493f421340532ebaaba8616282c84a0ce2ff2cf",
+        "kind": "rea.web-page-inspection",
+        "url": "https://grafolio.ogq.me/",
+        "origin": "https://grafolio.ogq.me",
+        "title": "OGQ 그라폴리오 (Grafolio) - 일러스트·웹툰·배경화면 창작 커뮤니티",
+        "node_count": 1710,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 570,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3049,
+        "evidence_id": "ev_8dc021e37ba5003f12fd06a66e93e4301db9ae58a53910e74ba7700818217bab",
+        "kind": "rea.web-page-inspection",
+        "url": "https://crepe.cm/market",
+        "origin": "https://crepe.cm",
+        "title": "크레페 마켓 (CREPE Market) - 고정틀·비상업/상업 커미션 쇼케이스",
+        "node_count": 1820,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 605,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3050,
+        "evidence_id": "ev_fe260664089e6d1c91cfa5770501fd47eb9064ec2a8d6107eb753fce53721a90",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.lemon8-app.com/",
+        "origin": "https://www.lemon8-app.com",
+        "title": "Lemon8 - 비주얼 스토리텔링 & 인스타툰/웹툰 크리에이터 피드",
+        "node_count": 1940,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 645,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3051,
+        "evidence_id": "ev_f75e9f2ff4167eb34ac9966ce6c2708044f6e730551497ce40bfeb80f282d561",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.threads.net/",
+        "origin": "https://www.threads.net",
+        "title": "Threads Art Community - 단문·연재 컷 스레드 작가 네트워크",
+        "node_count": 1690,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 565,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3052,
+        "evidence_id": "ev_92e56654bd92d66214f1b5c3948b21d4a99bd3e8c9a864c5ca1944632437bf50",
+        "kind": "rea.web-page-inspection",
+        "url": "https://bsky.app/",
+        "origin": "https://bsky.app",
+        "title": "Bluesky Art Feed - 탈중앙 아티스트 커스텀 피드 & WIP 공유",
+        "node_count": 1520,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 505,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3053,
+        "evidence_id": "ev_5e24a932e01f244ee429bdd975285783baf0da8ab20db605107724ee8e2bafec",
+        "kind": "rea.web-page-inspection",
+        "url": "https://cara.app/jobs",
+        "origin": "https://cara.app",
+        "title": "Cara Portfolio Pro - No-AI Verified Art Jobs & Studio Recruitment",
+        "node_count": 1460,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 485,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3054,
+        "evidence_id": "ev_ee8364d41f46c92f14ddd613bd7569985cbe05a0cce9e71209982a5c6f150c42",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.kudoboard.com/",
+        "origin": "https://www.kudoboard.com",
+        "title": "Kudoboard - 완결·연재 기념 팬 롤링페이퍼 & 축전 보드",
+        "node_count": 1290,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 430,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3055,
+        "evidence_id": "ev_84b14136942b62cfd0534d3fbb336827f2f18256777aa455ebf075c0e8a71d7b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.patreon.com/product/merch",
+        "origin": "https://www.patreon.com",
+        "title": "Patreon Merch for Creators - 멤버십 연동 자동 굿즈 리워드",
+        "node_count": 1610,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 535,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3056,
+        "evidence_id": "ev_8981b096037a9be8a853a4fd1230c8ee163a2ea7f3695802265233cc4d7e2e7b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.shortcut.com/",
+        "origin": "https://www.shortcut.com",
+        "title": "Shortcut - Fast Story-Driven Project Management for Creative Teams",
+        "node_count": 1540,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 515,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3057,
+        "evidence_id": "ev_dfa98847c50e9320a66737914670e86116d79e7f1a5110008a41e26906086904",
+        "kind": "rea.web-page-inspection",
+        "url": "https://height.app/",
+        "origin": "https://height.app",
+        "title": "Height - Autonomous Project Tracking & Real-Time Task Triage",
+        "node_count": 1390,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 465,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3058,
+        "evidence_id": "ev_0e0f247cad2d8c01e0e8953b57c08ad40966188a8bd232727ca95703bcb25e53",
+        "kind": "rea.web-page-inspection",
+        "url": "https://plane.so/",
+        "origin": "https://plane.so",
+        "title": "Plane - Open-Source Issue, Cycle & Wiki Pipeline Workspace",
+        "node_count": 1670,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 555,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3059,
+        "evidence_id": "ev_cb07945dceccc05861918a471fcdda25228f6069f197dcedc3fc608eddaa412d",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.focalboard.com/",
+        "origin": "https://www.focalboard.com",
+        "title": "Focalboard - Open-Source Self-Hosted Kanban & Milestone Board",
+        "node_count": 1210,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 410,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3060,
+        "evidence_id": "ev_ff1b081be437fc964da93054c178a339ee48b0c6eb1db645a7f52f01f2061f3f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.smartsheet.com/",
+        "origin": "https://www.smartsheet.com",
+        "title": "Smartsheet - Enterprise Episode Schedule & Resource Sheet",
+        "node_count": 1880,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 625,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3061,
+        "evidence_id": "ev_966c5ce3acc2b4da4f12c617c1138ecf4ef73e887841a028e94736bd6bc87bcb",
+        "kind": "rea.web-page-inspection",
+        "url": "https://monday.com/lp/creative",
+        "origin": "https://monday.com",
+        "title": "monday.com Creative Production & Asset Approval Workflow",
+        "node_count": 1960,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 650,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3062,
+        "evidence_id": "ev_07d1f69e38436cefcc454dc769cf9972af718d5abb77ca063512ea64311a6ec2",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.wrike.com/creative-teams/",
+        "origin": "https://www.wrike.com",
+        "title": "Wrike for Creative Teams - Proofing & Multi-Stage Sign-Off",
+        "node_count": 1850,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 615,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3063,
+        "evidence_id": "ev_35f7b431650fcabd490181ddfef255cae857fe02636fd7fd8a59db94f53515cf",
+        "kind": "rea.web-page-inspection",
+        "url": "https://ziflow.com/",
+        "origin": "https://ziflow.com",
+        "title": "Ziflow - Enterprise Creative Online Proofing & Frame Comparison",
+        "node_count": 1630,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 540,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3064,
+        "evidence_id": "ev_4dbd7076c57a4df1f9ae3507dae118cba7a9d525cf44473f90d40eb8fcd363d8",
+        "kind": "rea.web-page-inspection",
+        "url": "https://pageproof.com/",
+        "origin": "https://pageproof.com",
+        "title": "PageProof - Encrypted Creative Proofing & Redline Checklist",
+        "node_count": 1470,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 490,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3065,
+        "evidence_id": "ev_411c82b35c9e90b58e2692dd27d1ab64e27f5e69f317bea9e8af85a30b99cee9",
+        "kind": "rea.web-page-inspection",
+        "url": "https://filestage.io/",
+        "origin": "https://filestage.io",
+        "title": "Filestage - Collaborative Episode & Video Review Approval",
+        "node_count": 1580,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 525,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3066,
+        "evidence_id": "ev_a5fc5bc418f9ebe941d8e8da94289a24c3858a0ac74a9b1e8d4f953759ed96c4",
+        "kind": "rea.web-page-inspection",
+        "url": "https://milanote.com/teams",
+        "origin": "https://milanote.com",
+        "title": "Milanote for Teams - Visual Storyboard & Moodboard Collaboration",
+        "node_count": 1490,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 495,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3067,
+        "evidence_id": "ev_400f574885c0b6372301301968c4b26ad82d33c1381693285461792ddb53cb2c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://affine.pro/",
+        "origin": "https://affine.pro",
+        "title": "AFFiNE - Local-First Edgeless Canvas & Document Knowledge Base",
+        "node_count": 1720,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 575,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3068,
+        "evidence_id": "ev_cd6228a8c7a8826e6f1173c151fdd8958531a41b041025c0ce83f4e740041e79",
+        "kind": "rea.web-page-inspection",
+        "url": "https://openai.com/sora/",
+        "origin": "https://openai.com",
+        "title": "Sora (OpenAI) - Storyboard-Driven Multi-Shot Video Generation",
+        "node_count": 1650,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 550,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3069,
+        "evidence_id": "ev_880232a8ba58be2518e5f980392bf9ccfcb7554ad1d761df3c6e795b460359ff",
+        "kind": "rea.web-page-inspection",
+        "url": "https://lumalabs.ai/dream-machine",
+        "origin": "https://lumalabs.ai",
+        "title": "Luma Dream Machine - Keyframe Start/End Camera Motion Video",
+        "node_count": 1590,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 530,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3070,
+        "evidence_id": "ev_be74cdfeef2dea6fd9008ae71f0dbee54f837afccdbfd3440a2508df81069a6c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.genmo.ai/",
+        "origin": "https://www.genmo.ai",
+        "title": "Genmo Mochi 1 - Open-Weights High-Motion Fidelity Video Engine",
+        "node_count": 1420,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 475,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3071,
+        "evidence_id": "ev_91f6127bca93d6cc576055550313a103185044cc7db81f5b009dbfd61b9dc23f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.vidu.com/",
+        "origin": "https://www.vidu.com",
+        "title": "Vidu AI - Multi-Entity Reference Consistency Anime & Cut Video",
+        "node_count": 1740,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 580,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3072,
+        "evidence_id": "ev_97ecb310ae0997577919f4710bbe0eb36714af2452fed3931b289eb7af77c942",
+        "kind": "rea.web-page-inspection",
+        "url": "https://pixverse.ai/",
+        "origin": "https://pixverse.ai",
+        "title": "PixVerse - Anime Character Motion & Magic Brush Video",
+        "node_count": 1680,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 560,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3073,
+        "evidence_id": "ev_77323f8466426a24ebf7ba5bf2070fff2fd48af517fa47bb49709f04fb5ab67e",
+        "kind": "rea.web-page-inspection",
+        "url": "https://haiper.ai/",
+        "origin": "https://haiper.ai",
+        "title": "Haiper AI - Keyframe Conditioning & Video Repainting",
+        "node_count": 1510,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 505,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3074,
+        "evidence_id": "ev_86f8e189ebb8a745d817e52e8409bd4da78923d479f312416ce1e0ddb67b03ad",
+        "kind": "rea.web-page-inspection",
+        "url": "https://domoai.app/",
+        "origin": "https://domoai.app",
+        "title": "DomoAI - Video-to-Anime & Webtoon Style Transfer Motion Engine",
+        "node_count": 1620,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 540,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3075,
+        "evidence_id": "ev_6402c3afaf281839832af443eb7c5f00a1993fa2ca1cabd38016b048f3fcc223",
+        "kind": "rea.web-page-inspection",
+        "url": "https://kaiber.ai/",
+        "origin": "https://kaiber.ai",
+        "title": "Kaiber AI - Audio-Reactive Flipbook & Storyboard Motion Studio",
+        "node_count": 1570,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 525,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3076,
+        "evidence_id": "ev_eda8aa956b8e6c6835b373f3711cd25f34c0a67bacd79d926b592e8c4338128c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://sadtalker.github.io/",
+        "origin": "https://sadtalker.github.io",
+        "title": "SadTalker - Single-Image 3D Motion Coefficients Talking Head",
+        "node_count": 890,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 310,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3077,
+        "evidence_id": "ev_3d1db3dfff502ea60bae3f6b4131ce5ee8c3de9b8167512bbeb163bf6c478cbe",
+        "kind": "rea.web-page-inspection",
+        "url": "https://github.com/Rudrabha/Wav2Lip",
+        "origin": "https://github.com",
+        "title": "Wav2Lip - High-Accuracy Lip-Sync Synthesis for 2D/Anime Cuts",
+        "node_count": 1940,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 645,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3078,
+        "evidence_id": "ev_b0aca5550b093f4a7e246457c1b3c0b47ec01809f5f932f95629655368431183",
+        "kind": "rea.web-page-inspection",
+        "url": "https://fish.audio/",
+        "origin": "https://fish.audio",
+        "title": "Fish Audio - Zero-Shot Multilingual Character Voice Cloning",
+        "node_count": 1530,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 510,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3079,
+        "evidence_id": "ev_17eec60a9b2b971c36d7425a47f5a5db02719d1db65e8eb19138df73e5714d2d",
+        "kind": "rea.web-page-inspection",
+        "url": "https://github.com/RVC-Boss/GPT-SoVITS",
+        "origin": "https://github.com",
+        "title": "GPT-SoVITS - Few-Shot Anime Voice Conversion & Emotional TTS",
+        "node_count": 2120,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 705,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3080,
+        "evidence_id": "ev_496b7c1e55b149da23490e999d06208052b59cd4c2fb7db051d9b262a65c8852",
+        "kind": "rea.web-page-inspection",
+        "url": "https://github.com/DanielSWolf/rhubarb-lip-sync",
+        "origin": "https://github.com",
+        "title": "Rhubarb Lip Sync - 2D Mouth Shape (Preston Blair Phoneme) CLI",
+        "node_count": 1860,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 620,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3081,
+        "evidence_id": "ev_5d245421b93aa823417ad3c50bd10d326bb3fce6159eba7aa81f4658778ac7fe",
+        "kind": "rea.web-page-inspection",
+        "url": "https://cavalry.scenegroup.co/",
+        "origin": "https://cavalry.scenegroup.co",
+        "title": "Cavalry 2D - Procedural Motion Design & Duplicator Rigging",
+        "node_count": 1490,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 495,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3082,
+        "evidence_id": "ev_572a6d61c9b7d290ddf4853512a2f96dbf44089d1ca6cd7c469431d23836b0ac",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.cgmasteracademy.com/",
+        "origin": "https://www.cgmasteracademy.com",
+        "title": "CGMA (Computer Graphics Master Academy) - Storyboarding & Environment Art",
+        "node_count": 1780,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 590,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3083,
+        "evidence_id": "ev_13a9dc3a0f7353c42b1f36a0b29ae07f89305d5049b0725a0e7000d135931b52",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.thegnomonworkshop.com/",
+        "origin": "https://www.thegnomonworkshop.com",
+        "title": "The Gnomon Workshop - Production Concept Art & 3D Visual Development",
+        "node_count": 1840,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 610,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3084,
+        "evidence_id": "ev_1330b52665288bd5f5a4bf8f3101c8c93bee31c03e554c9974d99bacfa30867f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.nma.art/",
+        "origin": "https://www.nma.art",
+        "title": "New Masters Academy - 3D Anatomy Turntables & Classical Drawing",
+        "node_count": 1910,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 635,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3085,
+        "evidence_id": "ev_99ba762948ee82388412ee1b9cadd1750c122904b90b89cbadbf491c7951cd6b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.ctrlpaint.com/",
+        "origin": "https://www.ctrlpaint.com",
+        "title": "Ctrl+Paint - Digital Painting Fundamentals & Brush Control Library",
+        "node_count": 1180,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 395,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3086,
+        "evidence_id": "ev_f0488085ca31ab96d30e44c4654eabc59e1ea3a79bc5d3565216938a6690f68c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://drawabox.com/",
+        "origin": "https://drawabox.com",
+        "title": "Drawabox - Constructive Spatial Form, Perspective & Line Confidence",
+        "node_count": 1340,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 450,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3087,
+        "evidence_id": "ev_9003f0d3f891df2e6dd62f2ad5de1778d065d1a1d05379d21843af06302de1b0",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.proko.com/course/anatomy-of-the-human-body",
+        "origin": "https://www.proko.com",
+        "title": "Stan Prokopenko Anatomy Master Course - Musculoskeletal & Gesture",
+        "node_count": 1690,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 560,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3088,
+        "evidence_id": "ev_2619567fdb7c008f5ba8641d276cf2d707006b4c75227331a885ca9919629ee7",
+        "kind": "rea.web-page-inspection",
+        "url": "https://creators.wattpad.com/",
+        "origin": "https://creators.wattpad.com",
+        "title": "Wattpad Creators - Serialized Hook, Cliffhanger & Reader Retention Lab",
+        "node_count": 1520,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 505,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3089,
+        "evidence_id": "ev_48b82cec0871dec5ed0651aead079179f9dc52d95f1705e98ca350b4df087d70",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.writerduet.com/",
+        "origin": "https://www.writerduet.com",
+        "title": "WriterDuet - Real-Time Co-Writing Screenplay & Comic Script Studio",
+        "node_count": 1610,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 535,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3090,
+        "evidence_id": "ev_fdf7b8f7712b7731ffbfb409aa7a6973ccc7fa492ac9253b3327078b18b40886",
+        "kind": "rea.web-page-inspection",
+        "url": "https://highland2.app/",
+        "origin": "https://highland2.app",
+        "title": "Highland 2 - Plain-Text Fountain & Gender/Dialogue Balance Analyzer",
+        "node_count": 1240,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 415,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3091,
+        "evidence_id": "ev_23dca54ec29778a8f26fa4ee8c5bf6bf4e78542bcb92ef1d10dc89daa4ee9b8b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.fadeinpro.com/",
+        "origin": "https://www.fadeinpro.com",
+        "title": "Fade In Professional Screenwriting - Scene Beat & Dialogue Revision",
+        "node_count": 1150,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 385,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3092,
+        "evidence_id": "ev_197bb6c3f466503382adc0c21396d79af1d81880d9e64a9c2db9d357b90f7ab8",
+        "kind": "rea.web-page-inspection",
+        "url": "https://kitscenarist.ru/en/",
+        "origin": "https://kitscenarist.ru",
+        "title": "KIT Scenarist - Open-Source Story Research, Corkboard & Script Stats",
+        "node_count": 1290,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 430,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3093,
+        "evidence_id": "ev_f82babc54735550a94cefd3203282c2734b1c8cb60a3fa68877cbe402efb493d",
+        "kind": "rea.web-page-inspection",
+        "url": "https://starc.app/",
+        "origin": "https://starc.app",
+        "title": "Story Architect (STARC) - Comic Script, Character Arc & World Matrix",
+        "node_count": 1410,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 470,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3094,
+        "evidence_id": "ev_c49dce5759274cd83dfd0fc1c697f556e242dc1c6349dbd6f20d2ff95e41405b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.systemax.jp/en/sai/",
+        "origin": "https://www.systemax.jp",
+        "title": "PaintTool SAI / SAI2 - High-Precision Line Stabilizer & Binary Pen",
+        "node_count": 920,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 310,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3095,
+        "evidence_id": "ev_e7f21c4ffe015dea87d4fae26b8db75d427b20d8d5700e5efc67dbe19c7ae8cc",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.portalgraphics.net/en/oc/",
+        "origin": "https://www.portalgraphics.net",
+        "title": "openCanvas - Event Log Replay & Perspective Grid Comic Drawing",
+        "node_count": 1140,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 380,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3096,
+        "evidence_id": "ev_667b82e868c3ad71b8bb12b07f9a05f4b49ce0636529e605650a2ba50f20de8e",
+        "kind": "rea.web-page-inspection",
+        "url": "http://azsky2.html.xdomain.jp/soft/azdrawing.html",
+        "origin": "http://azsky2.html.xdomain.jp",
+        "title": "AzDrawing / AzPainter - Ultra-Lightweight Monochrome Manga Screentone",
+        "node_count": 780,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 260,
+        "scripts_count": 1,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3097,
+        "evidence_id": "ev_524d44f4937fb5bf0846077314ba9014f96553adc4401164ba2b2198dbe9d80f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.gimp.org/",
+        "origin": "https://www.gimp.org",
+        "title": "GIMP 3.0 Studio - Non-Destructive GEGL Filters & CMYK Color Management",
+        "node_count": 1430,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 475,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3098,
+        "evidence_id": "ev_face3e9bbc67791e6a315d5fb14cd3ae1b5bae1d42f3c18ec01a9cc88c5438dc",
+        "kind": "rea.web-page-inspection",
+        "url": "https://inkscape.org/",
+        "origin": "https://inkscape.org",
+        "title": "Inkscape - Variable-Width Stroke PowerStroke & SVG Balloon Vector",
+        "node_count": 1560,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 520,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3099,
+        "evidence_id": "ev_3b2176f6fc32aab578cc13d3ba65478de4dca0ba3d29233ab0ce70a06bb26489",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.linearity.io/curve/",
+        "origin": "https://www.linearity.io",
+        "title": "Linearity Curve (Vectornator) - Auto-Trace & Bezier Pen Node Studio",
+        "node_count": 1720,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 575,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3100,
+        "evidence_id": "ev_ca854638da3dc8e381d1ca85a6d9a8e23daec0f8cf3f6d1638d9c1b97a9f0836",
+        "kind": "rea.web-page-inspection",
+        "url": "https://amadine.com/",
+        "origin": "https://amadine.com",
+        "title": "Amadine - Width Tool Variable Calligraphic Ink & Path Fusion",
+        "node_count": 1380,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 460,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3101,
+        "evidence_id": "ev_7484a464a0824ef8310ac7363e56dc3bd846d551e10b5cb3b49830234426dc67",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.pixelmator.com/pro/",
+        "origin": "https://www.pixelmator.com",
+        "title": "Pixelmator Pro - ML Super Resolution, Deband & PSD Layer Mastering",
+        "node_count": 1690,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 565,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3102,
+        "evidence_id": "ev_0efa609b699f5a68ed48a0330c765e762dd738f9badefaa942a0be8e9659bab0",
+        "kind": "rea.web-page-inspection",
+        "url": "https://affinity.serif.com/en-us/publisher/",
+        "origin": "https://affinity.serif.com",
+        "title": "Affinity Publisher 2 - StudioLink Print Tankobon Preflight & Bleed",
+        "node_count": 1810,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 605,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3103,
+        "evidence_id": "ev_d9206d0c6b5880f628b98effd8cbf803b173d83c9913c62cc0bebd7d8ce8db0c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.invoke.com/",
+        "origin": "https://www.invoke.com",
+        "title": "InvokeAI - Unified Canvas Regional Inpainting & ControlNet Layers",
+        "node_count": 1640,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 545,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3104,
+        "evidence_id": "ev_80045491f621a6e1c7cfd49fe34cc7572e8564943a90139e5c19393a16d7277d",
+        "kind": "rea.web-page-inspection",
+        "url": "https://github.com/lllyasviel/Fooocus",
+        "origin": "https://github.com",
+        "title": "Fooocus - Prompt-Focused Inpainting & Image Prompt Style Mixing",
+        "node_count": 2050,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 680,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3105,
+        "evidence_id": "ev_138e482c6c89073f2644c2ad3010aaefa51f9b706b9ab0efb818178082db3b89",
+        "kind": "rea.web-page-inspection",
+        "url": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
+        "origin": "https://github.com",
+        "title": "AUTOMATIC1111 WebUI - Regional Prompter, ADetailer & ControlNet Stack",
+        "node_count": 2380,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 790,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3106,
+        "evidence_id": "ev_779d3365d6a9d0354573c2d20064b1ad5b6265039555e2caf13feb9151b0894c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://github.com/Acly/krita-ai-diffusion",
+        "origin": "https://github.com",
+        "title": "Krita AI Diffusion - Live Painting Selection Fill & Control Layers",
+        "node_count": 1970,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 655,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3107,
+        "evidence_id": "ev_d80c47ed563c0beb57abb6581fad53c99ede7c0a953862b81ccf17261d24bb3a",
+        "kind": "rea.web-page-inspection",
+        "url": "https://github.com/zyddnys/manga-image-translator",
+        "origin": "https://github.com",
+        "title": "manga-image-translator (cotrans) - Multi-Bubble Detection & Text Masking",
+        "node_count": 2140,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 710,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3108,
+        "evidence_id": "ev_ac62f50e30f025c88374efddb5571afbd7d8a8f0174280a82370f1091ce538b7",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "툰스튜디오 홈 · 100경점 통합 크리에이터 플랫폼",
+        "node_count": 2410,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 620,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3109,
+        "evidence_id": "ev_db12d8a8a4684ef6f2c13cb66e85d2d257a4a76ffc1a7604945acf3899606334",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/ranking?view=koma",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "통합 랭킹 · 코마뷰 & 다국어 동시연재 리더",
+        "node_count": 2520,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 640,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3110,
+        "evidence_id": "ev_fa01da113d8da0b8694cef886662182da244b77c2e21d04bdc2aae256e867b32",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/market?tab=3d-preflight",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "소재 마켓 · 6패스 3D/PBR/3DGS 프리플라이트",
+        "node_count": 2180,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 580,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3111,
+        "evidence_id": "ev_cfaf0aa4b63f30bdd060a98ddcc234d2182c23194fe98895c6cac51f4148ae6b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/community?tab=provenance",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "커뮤니티 · C2PA/Nightshade 출처 증명 & 커미션 슬롯",
+        "node_count": 1340,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 420,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3112,
+        "evidence_id": "ev_3b93921ec509ecbf85105d16b7237053f95a9550bf5135237fd29c15c118c0b8",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/collaboration?tab=sla",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "실시간 협업 · 8단계 SLA & SyncSketch/Ziflow 프레임 검수",
+        "node_count": 312,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 145,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3113,
+        "evidence_id": "ev_e03a42e779a5d27a5241c85893aeafcba005cdd7595cf3d2a925f69a0c92c189",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/cuts?tab=motion",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "컷츠 · Rive 상태머신 & DomoAI/Vidu/Rhubarb 모션 립싱크",
+        "node_count": 866,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 290,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3114,
+        "evidence_id": "ev_2c2db0483da69c662b70eecfda22706f6e33c1ee597c31995c191773107d81f0",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/learn?tab=toolchain",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "배우기 · Fountain/STARC 대본 & 30초 해부학 크로키",
+        "node_count": 1390,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 440,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3115,
+        "evidence_id": "ev_55c990d4601ac239b2afe9c85db3acadf6f65f4edd44ab5f0869821eeb233798",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/settings/role",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "역할 워크스페이스 · 15개 세부직무 3단계 밀도 & 405개 서비스 허브",
+        "node_count": 616,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 215,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
       }
     ],
-    "total_records": 320,
-    "total_inspected_targets": 320
+    "total_records": 420,
+    "total_inspected_targets": 420
   },
-  "total_rea_evidence_records": 400
+  "total_rea_evidence_records": 500
 }

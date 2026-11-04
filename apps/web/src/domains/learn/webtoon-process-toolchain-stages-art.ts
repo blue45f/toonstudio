@@ -177,10 +177,10 @@ export const TOOLCHAIN_STAGES_ART: readonly ProcessToolchainStage[] = [
         pricing: "freemium",
       },
       {
-        name: { ko: "Nomad Sculpt / Shapr3D / Plasticity / World Labs", en: "Nomad Sculpt / Shapr3D / Plasticity / World Labs" },
+        name: { ko: "Nomad Sculpt / Shapr3D / Plasticity / World Labs / Fab", en: "Nomad Sculpt / Shapr3D / Plasticity / World Labs / Fab" },
         role: {
-          ko: "태블릿 스컬프팅(Nomad)·하드서피스 CAD(Shapr3D·Plasticity)·3D 가우시안 스플래팅 공간 생성(World Labs·Postshot·Kiri Engine) 도구",
-          en: "Tablet sculpting (Nomad), hard-surface CAD (Shapr3D, Plasticity), and 3D Gaussian Splatting scene tools (World Labs, Postshot, Kiri Engine)",
+          ko: "태블릿 스컬프팅(Nomad)·하드서피스 CAD(Shapr3D·Plasticity)·3D 가우시안 스플래팅(World Labs·Postshot·Kiri Engine) 및 에픽게임즈 통합 3D·메가스캔 마켓(Fab·Quixel Megascans·Superhive·3dsky)",
+          en: "Tablet sculpting (Nomad), hard-surface CAD (Shapr3D, Plasticity), 3D Gaussian Splatting (World Labs, Postshot, Kiri Engine), and Epic Games Fab/Quixel Megascans/Superhive/3dsky 3D markets",
         },
         kind: "external",
         pricing: "freemium",
