@@ -30,7 +30,7 @@ export const SCENE_META: SceneMeta[] = [
   { title: "Responsible AI", kicker: "Responsible AI", audio: "n20.mp3", dwell: 21 },
   { title: "비즈니스 모델", kicker: "Business Model", audio: "n21.mp3", dwell: 24 },
   { title: "검증 로드맵", kicker: "Roadmap", audio: "n22.mp3", dwell: 38 },
-  { title: "팀 · Ask", kicker: "Team & Ask", audio: "n23.mp3", dwell: 22 },
+  { title: "1인 창업자 · Ask", kicker: "Team & Ask", audio: "n23.mp3", dwell: 22 },
   { title: "마무리", kicker: null, audio: "n24.mp3", dwell: 32 },
 ];
 

@@ -192,7 +192,7 @@ export function IrPitchPage() {
           {[
             { ko: "아직 비어 있는 자리 — 브라우저에서 전문 드로잉 + 전 공정 통합", en: "A position still open — pro drawing + full process, in a browser" },
             { ko: "직접 설계·튜닝한 전문 브러시 프리셋 226종 · WebGPU 스트로크 렌더링", en: "226 pro brush presets, designed and tuned in-house · WebGPU stroke rendering" },
-            { ko: "1인부터 소규모 팀까지 한곳에서 협업 (대규모는 설계·로드맵)", en: "Collaboration in one place, solo to small teams (large studios: design & roadmap)" },
+            { ko: "지망생 이상 전문 창작자부터 소규모 팀까지 한곳에서 협업 (대규모는 설계·로드맵)", en: "Collaboration in one place, from aspiring professionals to small teams (large studios: design & roadmap)" },
             { ko: "회차-공정-담당-승인, 웹툰식 분업을 그대로 내장", en: "Episodes, processes, owners, approvals — the webtoon way, built in" },
           ].map((item) => (
             <li key={item.en} className="rounded-2xl border border-line/70 bg-card/65 p-6 font-display text-xl font-black leading-snug text-fg">{bi(item.ko, item.en)}</li>
@@ -240,7 +240,7 @@ export function IrPitchPage() {
     (
       <div key="model" className={sceneShell}>
         <p className="eyebrow text-accent">BUSINESS MODEL & VALIDATION</p>
-        <h2 className={bigTitle}>{bi("개인 창작자에서 시작해 팀·교육·마켓으로.", "Starting with solo creators, then teams, education and a marketplace.")}</h2>
+        <h2 className={bigTitle}>{bi("지망생 이상 전문 창작자에서 시작해 팀·교육·마켓으로.", "Starting with aspiring professionals, then teams, education and a marketplace.")}</h2>
         <ul className="grid gap-2 md:grid-cols-2">
           {BUSINESS_MODEL.map((model) => {
             const copy = bi(model.ko, model.en);
@@ -424,8 +424,8 @@ export function IrPitchPage() {
               en: { title: "226 pro brush presets, designed and tuned in-house · WebGPU stroke rendering", body: "A WebGPU vector renderer (Vello) that we ported and patched ourselves draws strokes on the GPU, so professional brush feel and speed hold up right in the browser." },
             },
             {
-              ko: { title: "1인부터 팀까지, 한곳에서 협업", body: "지금은 1인 작가와 소규모 팀이 실제로 연재하는 흐름에 맞춰 설계하고 검증하고 있어요. 대규모 스튜디오로 넓히는 건 같은 구조를 키우는 일이라, 지원 설계와 로드맵 단계로 구분해 둡니다." },
-              en: { title: "Collaboration in one place, from solo to team", body: "Right now we design and validate around how solo creators and small teams actually publish. Growing to large studios means scaling the same structure — we keep that clearly marked as support design and roadmap." },
+              ko: { title: "지망생 이상 전문 창작자부터 팀까지, 한곳에서 협업", body: "지금은 지망생 이상 전문 작가와 소규모 팀이 실제로 연재하는 흐름에 맞춰 설계하고 검증하고 있어요. 대규모 스튜디오로 넓히는 건 같은 구조를 키우는 일이라, 지원 설계와 로드맵 단계로 구분해 둡니다." },
+              en: { title: "Collaboration in one place, from aspiring professionals to teams", body: "Right now we design and validate around how aspiring professionals and small teams actually publish. Growing to large studios means scaling the same structure — we keep that clearly marked as support design and roadmap." },
             },
             {
               ko: { title: "회차-공정-담당-승인, 웹툰식 분업 그대로", body: "웹툰 팀이 일하는 방식 그대로, 회차·공정·담당자·승인을 제품 구조에 넣었어요. 팀이 커져도 흐름이 흐트러지지 않습니다." },
@@ -495,8 +495,8 @@ export function IrPitchPage() {
         </div>
         <p className="mt-4 max-w-3xl break-keep text-sm leading-7 text-fg-2">
           {bi(
-            "그런데 정작 웹툰 종주국인 한국에서 제작 표준은 일본 셀시스의 클립스튜디오예요(누적 5,000만 부 — 2025년 4월 공식 발표, 구독 ARR 46억 엔 초과). 이름난 드로잉 툴을 놓고 보면 클립스튜디오(일본), 포토샵(미국), 프로크리에이트(호주), 메디방/이비스(일본)까지 전부 외산이고, 국산 전문 드로잉 툴은 없어요. 공식 점유율 통계가 따로 없어 구조로 어림잡은 수치지만, 전문 드로잉 코어는 사실상 전부 외산이고 국산은 0%에 가깝습니다. 국산 도구는 협업이나 소재 같은 주변에 머물러 있고, 기획부터 연재까지 잇는 제작 중심은 비어 있어요. ToonStudio가 들어가려는 자리가 여기입니다.",
-            "And yet, in Korea — the home of webtoons — the production standard is Japan's Clip Studio by Celsys (50 million copies cumulative, officially announced April 2025; subscription ARR above JPY 4.6 billion). Line up the well-known drawing tools and they are all foreign: Clip Studio (Japan), Photoshop (US), Procreate (Australia), MediBang/ibis (Japan). There is no Korean professional drawing tool. There are no official share statistics, so this is a structural estimate — but the pro drawing core is effectively all foreign, and the Korean share is close to zero. Korean tools stay around the edges, in collaboration and assets, while the production core from planning to release sits empty. That is exactly where ToonStudio aims to be.",
+            "그런데 정작 웹툰 종주국인 한국에서 제작 표준은 일본 셀시스의 클립스튜디오예요(누적 5,000만 부 — 2025년 4월 공식 발표, 구독 ARR 46억 엔 초과). 이름난 드로잉 툴을 놓고 보면 클립스튜디오(일본), 포토샵(미국), 프로크리에이트(호주), 메디방/이비스(일본)까지 전부 외산이고, 국산 전문 드로잉 툴은 없어요. 공식 점유율 통계가 따로 없어 구조로 어림잡은 수치지만, 전문 드로잉 코어는 사실상 전부 외산이고 국산은 0%에 가깝습니다. 국산 도구는 협업이나 소재 같은 주변에 머물러 있고, 기획부터 연재까지 잇는 제작 중심은 비어 있어요. ToonStudio가 들어가려는 자리가 여기입니다. 왜 웹툰인가 — 웹툰 제작 툴 시장은 클립스튜디오가 거의 독과점하고 있어, 클립스튜디오 하나와 경쟁할 수 있으면 어느 정도 시장 경쟁력을 확보할 수 있다고 봅니다. 또 웹툰은 분업화가 잘 된 산업이라 툴과 플랫폼의 사용성이 들어가기 좋습니다.",
+            "And yet, in Korea — the home of webtoons — the production standard is Japan's Clip Studio by Celsys (50 million copies cumulative, officially announced April 2025; subscription ARR above JPY 4.6 billion). Line up the well-known drawing tools and they are all foreign: Clip Studio (Japan), Photoshop (US), Procreate (Australia), MediBang/ibis (Japan). There is no Korean professional drawing tool. There are no official share statistics, so this is a structural estimate — but the pro drawing core is effectively all foreign, and the Korean share is close to zero. Korean tools stay around the edges, in collaboration and assets, while the production core from planning to release sits empty. That is exactly where ToonStudio aims to be. Why webtoons — the production-tool market is almost a Clip Studio monopoly, so competing with Clip Studio alone can secure market competitiveness. Webtoons are also a well-divided industry, so a tool and platform fit naturally into its workflow.",
           )}
         </p>
         <p className="mt-2 text-xs leading-5 text-fg-3">
@@ -505,7 +505,7 @@ export function IrPitchPage() {
       </section>
 
       <section className={INTRO_SECTION} aria-labelledby="ir-model-title">
-        <IntroSectionHeading id="ir-model-title" eyebrow={eyebrow("BUSINESS MODEL & VALIDATION")} title={bi("개인 창작자에서 시작해 팀·교육·마켓으로 넓혀 갑니다.", "Starting with solo creators, then teams, education and a marketplace.")} />
+        <IntroSectionHeading id="ir-model-title" eyebrow={eyebrow("BUSINESS MODEL & VALIDATION")} title={bi("지망생 이상 전문 창작자에서 시작해 팀·교육·마켓으로 넓혀 갑니다.", "Starting with aspiring professionals, then teams, education and a marketplace.")} />
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
           <ul className="grid gap-3">
             {BUSINESS_MODEL.map((model) => {
@@ -560,7 +560,7 @@ export function IrPitchPage() {
             })}
           </ol>
           <p className="mt-4 break-keep border-t border-line/60 pt-4 text-sm leading-6 text-fg-2">
-            {bi("회원이 1만 명이 될 때까지는 전 기능을 무료로 운영해요. 위 순서로 사람을 모으고, 1만 명을 넘긴 뒤에 유료화로 넘어가는 계획입니다.", "Every feature stays free until membership reaches 10,000. We grow in the order above, then switch to paid plans past that mark.")}
+            {bi("회원이 1만 명이 될 때까지는 전 기능을 무료로 운영해요. 위 순서로 사람을 모으고, 1만 명을 넘긴 뒤에 유료화로 넘어가는 계획입니다. 가격 정책은 심플하게 기본 무료 + AI 크레딧 중심이며, 팀 가격은 지금 정하지 않고 사용자가 늘어난 뒤에 정합니다.", "Every feature stays free until membership reaches 10,000. We grow in the order above, then switch to paid plans past that mark. Pricing stays simple — free basic plus AI credits — and the team price is undecided until users grow.")}
           </p>
           <p className="mt-4 break-keep border-t border-line/60 pt-4 text-sm leading-6 text-fg-2">
             <span className="font-bold text-fg">{bi("장기 비전 — 웹툰 포털로 진화", "Long-term vision — evolving into a webtoon portal")}</span>
@@ -579,7 +579,7 @@ export function IrPitchPage() {
               <span className="rounded-full border border-accent/40 px-2.5 py-1 text-xs font-bold text-accent">{bi("모두의 창업 1라운드 선정", "Modoo Startup · Round 1 selected")}</span>
             </p>
             <p className="mt-2 break-keep text-sm leading-6 text-fg-2">
-              {bi("18년차 개발자예요. 제품 설계부터 프론트엔드, 인프라, AI 연결, 테스트 자동화까지 혼자 다 만들고, 프로토타입을 지금의 베타 서비스까지 키워 왔어요.", "A developer of 18 years. He builds everything himself — product design, front-end, infrastructure, AI wiring, test automation — and has grown the prototype into today's beta service.")}
+              {bi("18년차 개발자예요. 제품 설계부터 프론트엔드, 인프라, AI 연결, 테스트 자동화까지 혼자 다 만들고, 프로토타입을 지금의 베타 서비스까지 키워 왔어요. 채용 예정 역할은 영업·마케팅, 고객지원, 엔지니어, 도메인 리드이며, 이름과 시기는 미확정입니다.", "A developer of 18 years. He builds everything himself — product design, front-end, infrastructure, AI wiring, test automation — and has grown the prototype into today's beta service. Planned hires are sales & marketing, customer support, engineering and a domain lead; names and timing are undecided.")}
             </p>
             <ul className="mt-4 grid gap-2.5 border-t border-line/60 pt-4">
               {FOUNDER_CAREER.map((career) => (
