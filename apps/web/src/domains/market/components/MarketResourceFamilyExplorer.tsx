@@ -1,4 +1,5 @@
 import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
+import { useState } from "react";
 
 import { MARKET_FAMILY_ART } from "../models/market-family-art";
 import {
@@ -114,6 +115,8 @@ function FamilyCard({
 
 export function MarketResourceFamilyExplorer({ className, compact = false }: MarketResourceFamilyExplorerProps) {
   const bt = useBilingual("MarketResourceFamilyExplorer");
+  const [licenseTier, setLicenseTier] = useState<"solo" | "team-5" | "enterprise" | "doujin-pod">("solo");
+  const [preflightSpec, setPreflightSpec] = useState<"6pass-lt" | "tileable-0px" | "clo3d-vrm" | "morisawa-sandoll">("6pass-lt");
 
   return (
     <section className={cn("min-w-0", className)} aria-labelledby="market-resource-family-title">
@@ -164,6 +167,57 @@ export function MarketResourceFamilyExplorer({ className, compact = false }: Mar
         >
           {bt("스튜디오 캔버스 1-Click 연동", "1-Click Studio Canvas Inject")}
         </Link>
+      </div>
+
+      <div
+        data-testid="market-rea-interactive-preflight-bar"
+        className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-accent/30 bg-panel/75 px-4 py-2.5 text-xs"
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-bold text-fg">{bt("라이선스 좌석 산정기:", "License Tier Calculator:")}</span>
+          {([
+            { id: "solo", ko: "1인 개인작가 (상업 연재)", en: "1-Seat Solo Creator" },
+            { id: "team-5", ko: "3~5인 스튜디오 공동작업", en: "3-5 Seat Studio Team" },
+            { id: "enterprise", ko: "에이전시·제작사 무제한", en: "Agency Unlimited" },
+            { id: "doujin-pod", ko: "코미케·DLsite·마플샵 동인/굿즈", en: "Comiket/DLsite/POD Merch" },
+          ] as const).map((tier) => (
+            <button
+              key={tier.id}
+              type="button"
+              aria-pressed={licenseTier === tier.id}
+              data-testid={`market-license-tier-${tier.id}`}
+              onClick={() => setLicenseTier(tier.id)}
+              className={cn(
+                "rounded-full border px-2.5 py-0.5 text-[11px] font-bold transition-colors",
+                licenseTier === tier.id ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-fg-2 hover:border-accent/40",
+              )}
+            >
+              {bt(tier.ko, tier.en)}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {([
+            { id: "6pass-lt", ko: "6패스 은선·VRAM ≤512MB 검증", en: "6-Pass LT & VRAM <=512MB" },
+            { id: "tileable-0px", ko: "Tileable AI 4방향 심리스 0px", en: "Tileable AI 0px Seam QA" },
+            { id: "clo3d-vrm", ko: "CLO 3D 의상·VRM 본 리깅 호환", en: "CLO 3D & VRM Rig Verified" },
+            { id: "morisawa-sandoll", ko: "모리사와·산돌·눈누 임베딩 허가", en: "Morisawa/Sandoll Font Embed OK" },
+          ] as const).map((spec) => (
+            <button
+              key={spec.id}
+              type="button"
+              aria-pressed={preflightSpec === spec.id}
+              data-testid={`market-preflight-spec-${spec.id}`}
+              onClick={() => setPreflightSpec(spec.id)}
+              className={cn(
+                "rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-semibold transition-colors",
+                preflightSpec === spec.id ? "border-success bg-success/15 text-success" : "border-line bg-card text-fg-3 hover:border-accent/40",
+              )}
+            >
+              ✓ {bt(spec.ko, spec.en)}
+            </button>
+          ))}
+        </div>
       </div>
 
       <SiteRail

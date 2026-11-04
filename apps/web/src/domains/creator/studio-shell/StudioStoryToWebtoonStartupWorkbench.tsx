@@ -11,7 +11,11 @@ export type StoryToWebtoonEngineModeId =
   | "insertoon-shorts-packager"
   | "mantra-ichigo-ocr-typesetter"
   | "domoai-vidu-cavalry-motion"
-  | "iclight-instantid-yolo-relight";
+  | "iclight-instantid-yolo-relight"
+  | "clo3d-acon-worldlabs-3dgs-stage"
+  | "rask-heygen-audio2face-130lang-dub"
+  | "comicstudio-vellum-comiket-print-preflight"
+  | "smartling-crowdin-glossary-720locale-qa";
 
 export type StoryToWebtoonLayoutFormatId =
   | "vertical-webtoon-scroll"
@@ -264,6 +268,10 @@ export function StudioStoryToWebtoonStartupWorkbench({
   const [characterDnaLocked, setCharacterDnaLocked] = useState<boolean>(true);
   const [provenanceShieldLocked, setProvenanceShieldLocked] = useState<boolean>(true);
   const [inpaintedCutIndex, setInpaintedCutIndex] = useState<number | null>(null);
+  const [lens6PassPreset, setLens6PassPreset] = useState<"18mm-6pass" | "35mm-6pass" | "85mm-rim">("35mm-6pass");
+  const [dubbingMasterPreset, setDubbingMasterPreset] = useState<"lufs14-duck12" | "audio2face-60fps">("lufs14-duck12");
+  const [printPortalSpec, setPrintPortalSpec] = useState<"webtoon-800" | "jump-b4-600dpi" | "comiket-a5-cmyk">("webtoon-800");
+  const [loreGlossaryLocked, setLoreGlossaryLocked] = useState<boolean>(true);
   const [customScript, setCustomScript] = useState<string>("");
   const [simulreleaseLang, setSimulreleaseLang] = useState<
     "KO" | "EN" | "JA" | "ZH" | "ZH-TW" | "ES" | "FR" | "DE" | "PT" | "ID" | "TH" | "VI" | "AR" | "HI" | "RU" | "TR" | "IT" | "PL"
@@ -475,6 +483,46 @@ export function StudioStoryToWebtoonStartupWorkbench({
             ? "⑥ 2D 법선 재조명 & 만화 컷·말풍선 검출 (IC-Light · Clipdrop · InstantID · YOLOv8)"
             : "6. 2D Normal Relighting & Comic Detector (IC-Light · Clipdrop · InstantID · YOLOv8)"}
         </button>
+        <button
+          type="button"
+          data-testid="story-to-webtoon-mode-clo3d-acon-worldlabs-3dgs-stage"
+          aria-pressed={engineMode === "clo3d-acon-worldlabs-3dgs-stage"}
+          onClick={() => setEngineMode("clo3d-acon-worldlabs-3dgs-stage")}
+          className={cn("inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors", engineMode === "clo3d-acon-worldlabs-3dgs-stage" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:border-accent/40")}
+        >
+          <Sparkles size={12} aria-hidden="true" />
+          {ko ? "⑦ 3D 의상 드레이프·3DGS·6패스 LT 스테이징 (CLO 3D · ACON3D · World Labs · Shapr3D)" : "7. 3D Garment Drape, 3DGS & 6-Pass LT Stage (CLO 3D · ACON3D · World Labs · Shapr3D)"}
+        </button>
+        <button
+          type="button"
+          data-testid="story-to-webtoon-mode-rask-heygen-audio2face-130lang-dub"
+          aria-pressed={engineMode === "rask-heygen-audio2face-130lang-dub"}
+          onClick={() => setEngineMode("rask-heygen-audio2face-130lang-dub")}
+          className={cn("inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors", engineMode === "rask-heygen-audio2face-130lang-dub" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:border-accent/40")}
+        >
+          <Clapperboard size={12} aria-hidden="true" />
+          {ko ? "⑧ 130개국어 보이스클로닝·Audio2Face 립싱크 & 스템 마스터링 (Rask AI · HeyGen · Krisp)" : "8. 130-Lang Voice-Clone, Audio2Face Lip-Sync & Stem Mastering (Rask AI · HeyGen · Krisp)"}
+        </button>
+        <button
+          type="button"
+          data-testid="story-to-webtoon-mode-comicstudio-vellum-comiket-print-preflight"
+          aria-pressed={engineMode === "comicstudio-vellum-comiket-print-preflight"}
+          onClick={() => { setEngineMode("comicstudio-vellum-comiket-print-preflight"); setLayoutFormat("manga-page-spread"); }}
+          className={cn("inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors", engineMode === "comicstudio-vellum-comiket-print-preflight" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:border-accent/40")}
+        >
+          <Code2 size={12} aria-hidden="true" />
+          {ko ? "⑨ 상업지/단행본 인쇄 조판(잠자리표·모아레 0%) & 98대 포털 투고 (ComicStudio · Vellum · Comiket)" : "9. Print Trim-Bleed Layout & 98-Portal Submission Preflight (ComicStudio · Vellum · Comiket)"}
+        </button>
+        <button
+          type="button"
+          data-testid="story-to-webtoon-mode-smartling-crowdin-glossary-720locale-qa"
+          aria-pressed={engineMode === "smartling-crowdin-glossary-720locale-qa"}
+          onClick={() => setEngineMode("smartling-crowdin-glossary-720locale-qa")}
+          className={cn("inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors", engineMode === "smartling-crowdin-glossary-720locale-qa" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:border-accent/40")}
+        >
+          <Wand2 size={12} aria-hidden="true" />
+          {ko ? "⑩ 세계관 고유명사 글로서리 잠금 & 720+ 국가/75개 언어 QA (Smartling · Crowdin · MemoQ)" : "10. Lore Glossary Lock & 720+ Country / 75-Language QA (Smartling · Crowdin · MemoQ)"}
+        </button>
       </div>
 
       {/* Story Genre Presets + Format & DNA Controls */}
@@ -584,6 +632,29 @@ export function StudioStoryToWebtoonStartupWorkbench({
         </div>
       </div>
 
+      <div
+        data-testid="story-to-webtoon-deep-engine-controls"
+        className="mt-2 flex flex-wrap items-center justify-between gap-1.5 rounded-lg border border-line bg-card/90 px-2.5 py-1.5 text-[0.58rem]"
+      >
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="font-bold text-accent">{ko ? "심층 파이프라인 프리셋:" : "Deep Pipeline Presets:"}</span>
+          <button type="button" data-testid="story-to-webtoon-lens-toggle" onClick={() => setLens6PassPreset((p) => (p === "35mm-6pass" ? "18mm-6pass" : p === "18mm-6pass" ? "85mm-rim" : "35mm-6pass"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
+            {ko ? `3D·LT: ${lens6PassPreset === "35mm-6pass" ? "35mm 표준 6패스 은선+AO" : lens6PassPreset === "18mm-6pass" ? "18mm 광각 배경 투시+3DGS" : "85mm 인물 림라이트+CLO의상"}` : `3D/LT: ${lens6PassPreset}`}
+          </button>
+          <button type="button" data-testid="story-to-webtoon-dubbing-toggle" onClick={() => setDubbingMasterPreset((p) => (p === "lufs14-duck12" ? "audio2face-60fps" : "lufs14-duck12"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
+            {ko ? `더빙·음향: ${dubbingMasterPreset === "lufs14-duck12" ? "-14 LUFS · BGM -12dB 오토더킹" : "Audio2Face 60fps 안면립싱크"}` : `Dub/Audio: ${dubbingMasterPreset}`}
+          </button>
+          <button type="button" data-testid="story-to-webtoon-print-toggle" onClick={() => setPrintPortalSpec((p) => (p === "webtoon-800" ? "jump-b4-600dpi" : p === "jump-b4-600dpi" ? "comiket-a5-cmyk" : "webtoon-800"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
+            {ko ? `조판·투고: ${printPortalSpec === "webtoon-800" ? "웹툰 800×1280px RGB" : printPortalSpec === "jump-b4-600dpi" ? "점프+/DAYS NEO B4 600DPI" : "코미케/단행본 A5 350DPI CMYK"}` : `Print/Spec: ${printPortalSpec}`}
+          </button>
+          <button type="button" data-testid="story-to-webtoon-glossary-toggle" aria-pressed={loreGlossaryLocked} onClick={() => setLoreGlossaryLocked((v) => !v)} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-success hover:border-accent/40">
+            {loreGlossaryLocked ? (ko ? "용어집(Glossary) 잠금 ON · 75개 언어 무결성" : "Lore Glossary Lock ON · 75-Lang QA") : (ko ? "용어집 자유 번역" : "Glossary Unlocked")}
+          </button>
+        </div>
+        <span className="font-mono text-[0.55rem] text-fg-3">
+          {ko ? `활성 엔진: ${engineMode} · 모아레 0%` : `Active Engine: ${engineMode} · Moire 0%`}
+        </span>
+      </div>
       {/* Live Story / Fountain Script Editor + Real-time Generated Webtoon Cuts */}
       <div className="mt-2.5 grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
         <div className="flex flex-col justify-between rounded-lg border border-line bg-card p-2.5">
