@@ -42,6 +42,7 @@ import type { Office2dCanvas2D } from "./office2d-procedural-art";
 import { Office2dRenderer, type Office2dPropVisual, type Office2dRendererHost } from "./office2d-renderer";
 import { office2dSceneFor, type Office2dScene, type Office2dSeatVisual } from "./office2d-scene";
 import { studioUserStatusLabel } from "./office2d-status";
+import { Office2dTeleportVeil } from "./office2d-teleport-veil";
 import {
   office2dAccentFor,
   office2dCharacterForAvatar,
@@ -90,9 +91,6 @@ const SELF_BODY = "actor:self";
 const SELF_RADIUS = 12;
 const ACCELERATION = 1900;
 const DECELERATION = 2600;
-/** 순간 이동 직후 새 장소가 서서히 드러나도록 어둡게 시작해 풀리는 막. 화면이 뚝 끊겨 길을 잃는 느낌을 줄인다. */
-const TELEPORT_VEIL_MS = 340;
-const TELEPORT_VEIL_ALPHA = 0.78;
 const LOCAL_STATE_INTERVAL_MS = 80;
 const METRICS_INTERVAL_MS = 1000;
 const PEER_INTERPOLATION = 11;
@@ -135,7 +133,7 @@ export class Office2dRuntime {
   private readonly seenReactions = new Map<string, number>();
   private elapsed = 0;
   private snapCamera = true;
-  private veilStartedAt: number | null = null;
+  private readonly teleportVeil = new Office2dTeleportVeil();
   private ambientTimer = 0;
   private started = false;
 
@@ -350,7 +348,7 @@ export class Office2dRuntime {
     this.destination = null;
     this.pending = null;
     this.snapCamera = true;
-    this.veilStartedAt = this.now();
+    this.teleportVeil.trigger(this.now());
     this.particles.emit("ring", free.x, free.y, 1, 2);
     if (this.stuck.reset()) this.options.getCallbacks().onStuckChange?.(false);
   }
@@ -766,19 +764,8 @@ export class Office2dRuntime {
       language: this.options.getLanguage(), particles: this.particles, ghost: this.options.bridge.isGhostMode(),
       atmosphere: stageProps?.atmosphere, spaceTheme: stageProps?.spaceTheme, tileEffects: stageProps?.tileEffects,
       placedFixtures: stageProps?.placedFixtures, decorations: stageProps?.decorations,
-      activeObjectStates: this.extensions.activeObjectStates, extensions: this.extensions, viewVeil: this.teleportVeil(),
+      activeObjectStates: this.extensions.activeObjectStates, extensions: this.extensions, viewVeil: this.teleportVeil.opacity(this.now(), this.options.getReducedMotion()),
     });
-  }
-
-  /**
-   * 순간 이동 직후 화면을 덮는 어두운 막의 불투명도(0~1). 이동 순간 가장 진하고 340ms 동안 부드럽게 풀린다.
-   * 동작 줄이기 설정에서는 막 없이 바로 보여 준다.
-   */
-  teleportVeil(): number {
-    if (this.veilStartedAt === null || this.options.getReducedMotion()) return 0;
-    const age = (this.now() - this.veilStartedAt) / TELEPORT_VEIL_MS;
-    if (!(age < 1)) return 0;
-    return (1 - Math.max(0, age)) ** 2 * TELEPORT_VEIL_ALPHA;
   }
 
   private locateTarget(): StudioVirtualSpacePoint | null {
