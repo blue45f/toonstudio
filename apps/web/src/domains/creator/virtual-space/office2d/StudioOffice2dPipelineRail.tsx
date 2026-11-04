@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+import { spaceKoParticle } from "../hud/space-korean";
 import type { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-engine-bridge";
 import { toonHqPipelineRooms, type ToonHqRoom } from "./hq/toon-hq-blueprint";
 
@@ -64,7 +65,7 @@ export function StudioOffice2dPipelineRail({
                 type="button"
                 className="studio-office2d-pipeline__step"
                 aria-current={state === "current" ? "location" : undefined}
-                aria-label={bt(`${step + 1}단계 ${room.pipelineKo ?? room.labelKo} · ${room.labelKo}로 이동`, `Step ${step + 1} ${room.pipelineEn ?? room.labelEn} · go to ${room.labelEn}`)}
+                aria-label={bt(`${step + 1}단계 ${room.pipelineKo ?? room.labelKo} · ${spaceKoParticle(room.labelKo, "으로")} 이동`, `Step ${step + 1} ${room.pipelineEn ?? room.labelEn} · go to ${room.labelEn}`)}
                 title={bt(room.labelKo, room.labelEn)}
                 onClick={() => go(room)}
               >

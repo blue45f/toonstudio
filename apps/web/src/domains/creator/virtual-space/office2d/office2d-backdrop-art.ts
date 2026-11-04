@@ -376,6 +376,31 @@ export function paintOffice2dRoomAmbientEffects(
       ctx.beginPath();
       ctx.ellipse(cx, cy + 12, 48, 20, 0, 0, Math.PI * 2);
       ctx.stroke();
+    } else if (room.id === "hq-ink-bay") {
+      // 펜선·원고실: 듀얼 신티크 크로스헤어 & G펜 집중선 링
+      ctx.strokeStyle = `rgba(56, 189, 248, ${0.22 + pulse * 0.16})`;
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([8, 4]);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 12, 54, 21, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (room.id === "hq-review-room" || room.id === "hq-publish-desk") {
+      // 시사회·송고 데스크: 글로벌 업링크 & 시네마 스포트라이트 오라
+      ctx.strokeStyle = room.id === "hq-publish-desk"
+        ? `rgba(236, 72, 153, ${0.24 + pulse * 0.16})`
+        : `rgba(96, 165, 250, ${0.24 + pulse * 0.16})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 10, 50, 20, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (room.id === "hq-lounge") {
+      // 에스프레소 라운지: 따뜻한 골든 아로마 파동
+      ctx.strokeStyle = `rgba(245, 158, 11, ${0.2 + pulse * 0.14})`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 14, 44, 18, 0, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     // 북쪽 벽 창문에서 바닥으로 드리우는 대각선 볼류메트릭 채광(Sunbeam / Neon Light Shaft)
@@ -441,7 +466,7 @@ export interface Office2dComicBurst {
 }
 
 /**
- * ZEP/웹툰 스타일 만화적 의성어·특수효과 팝업(상승 + 스케일 + 페이드아웃)을 화면 좌표계에 그린다.
+ * ZEP/웹툰 스타일 만화적 의성어·특수효과 팝업(탄성 팝인 스케일 + 방사형 집중선 스파이크 + 상승 페이드아웃)을 화면 좌표계에 그린다.
  */
 export function paintOffice2dComicBursts(
   ctx: Office2dCanvas2D,
@@ -461,17 +486,41 @@ export function paintOffice2dComicBursts(
     const progress = age / burst.durationMs;
     const rise = reducedMotion ? 16 : Math.min(1, progress * 1.25) * 44;
     const alpha = progress < 0.2 ? progress / 0.2 : Math.max(0, 1 - (progress - 0.2) / 0.8);
+    const popScale = reducedMotion
+      ? 1
+      : progress < 0.14
+        ? 0.72 + (progress / 0.14) * 0.42
+        : 1.14 - Math.min(1, (progress - 0.14) / 0.26) * 0.14;
     const screen = camera.worldToScreen({ x: burst.x, y: burst.y - rise });
     const textWidth = ctx.measureText(burst.text).width;
-    const pillW = textWidth + 22;
-    const pillH = 26;
+    const pillW = (textWidth + 24) * popScale;
+    const pillH = 26 * popScale;
 
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+    if (!reducedMotion && progress < 0.55) {
+      const spikeAlpha = alpha * (1 - progress / 0.55) * 0.75;
+      ctx.strokeStyle = burst.color;
+      ctx.globalAlpha = spikeAlpha;
+      ctx.lineWidth = 1.6;
+      for (let i = 0; i < 8; i += 1) {
+        const angle = (i * Math.PI) / 4 + progress * 0.35;
+        const innerX = screen.x + Math.cos(angle) * (pillW * 0.46);
+        const innerY = screen.y + Math.sin(angle) * (pillH * 0.54);
+        const outerX = screen.x + Math.cos(angle) * (pillW * 0.58 + 7);
+        const outerY = screen.y + Math.sin(angle) * (pillH * 0.72 + 5);
+        ctx.beginPath();
+        ctx.moveTo(innerX, innerY);
+        ctx.lineTo(outerX, outerY);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = alpha;
+    }
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
     office2dRoundRect(ctx, screen.x - pillW / 2, screen.y - pillH / 2, pillW, pillH, 999);
     ctx.fill();
     ctx.strokeStyle = burst.color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.2;
     ctx.stroke();
     ctx.fillStyle = "#f8fafc";
     ctx.fillText(burst.text, screen.x, screen.y + 0.5);

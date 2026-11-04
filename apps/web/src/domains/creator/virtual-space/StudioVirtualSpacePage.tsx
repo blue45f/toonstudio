@@ -69,7 +69,7 @@ import { useSpaceUserZoom } from "./hud/use-space-user-zoom";
 import { SpaceZoomControls } from "./hud/SpaceZoomControls";
 import { useStudioPrivateRoom } from "./private-room/use-studio-private-room";
 import { studioPrivateRoomWalkTarget } from "./private-room/studio-private-room-walk";
-import { STUDIO_VIRTUAL_ART_STYLES } from "./studio-virtual-space-art-style";
+import { STUDIO_VIRTUAL_ART_STYLES, studioVirtualArtStyleScopeNote } from "./studio-virtual-space-art-style";
 import {
   isStudioVirtualCampusRoom,
   resolveStudioVirtualBuiltinWorld,
@@ -1739,7 +1739,7 @@ export function VirtualSpaceExperience({
         <SpaceAvatarDetailSection identity={fallbackIdentity} />
         {stageKind !== "three" ? <fieldset className="space-panel-section studio-vspace-art-style-picker">
           <legend>{bt("공간 아트 스타일", "World art direction")}</legend>
-          <p className="space-panel-note">{bt("건물·가구·바닥의 작화를 선택해요. 내 캐릭터는 직접 고른 모습을 유지해요.", "Choose the art for buildings, furniture and floors. Your character keeps the look you chose.")}</p>
+          <p className="space-panel-note">{bt(studioVirtualArtStyleScopeNote(stageKind).ko, studioVirtualArtStyleScopeNote(stageKind).en)}</p>
           <div className="studio-vspace-art-style-grid">
             {STUDIO_VIRTUAL_ART_STYLES.map((style) => <button key={style.key} type="button" data-art-style={style.key} aria-pressed={artStyle === style.key}
               title={bt(style.descriptionKo, style.descriptionEn)} onClick={() => selectArtStyle(style.key)}>

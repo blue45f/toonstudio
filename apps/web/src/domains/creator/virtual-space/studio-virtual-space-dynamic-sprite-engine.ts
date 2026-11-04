@@ -19,6 +19,12 @@ import {
   type PracticalCollaboratorLiveUnit,
   type PracticalSpriteWorkspaceState,
 } from "./studio-virtual-space-dynamic-sprite-catalog";
+import {
+  renderDynamicSpriteEyesSvg,
+  renderDynamicSpriteHeadgearSvg,
+  renderDynamicSpriteMouthSvg,
+  renderDynamicSpriteVfxLayerSvg,
+} from "./studio-virtual-space-dynamic-sprite-svg-parts";
 
 export * from "./studio-virtual-space-dynamic-sprite-catalog";
 
@@ -209,86 +215,10 @@ export function renderDynamicCreatorSpriteSvg(input: {
   const hipY = shoulderY + 34;
   const showVfx = input.showVfx ?? true;
 
-  let eyesSvg: string;
-  if (k.isBlinkFrame || expr.eyeStyle === "closed-zen") {
-    eyesSvg = `
-      <path d="M -5.2 ${headCenterY - 0.5} Q -3.2 ${headCenterY + 1.4} -1.2 ${headCenterY - 0.5}" stroke="${persona.hairHex}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      <path d="M 1.2 ${headCenterY - 0.5} Q 3.2 ${headCenterY + 1.4} 5.2 ${headCenterY - 0.5}" stroke="${persona.hairHex}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    `;
-  } else if (expr.eyeStyle === "wink-happy") {
-    eyesSvg = `
-      <path d="M -5.4 ${headCenterY - 0.3} Q -3.2 ${headCenterY - 2.4} -1.1 ${headCenterY - 0.3}" stroke="${persona.hairHex}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-      <ellipse cx="3.3" cy="${headCenterY - 0.4}" rx="2.1" ry="2.5" fill="${persona.eyeHex}"/>
-      <circle cx="2.7" cy="${headCenterY - 1.3}" r="0.9" fill="#ffffff"/>
-    `;
-  } else if (expr.eyeStyle === "star-pupil") {
-    eyesSvg = `
-      <ellipse cx="-3.3" cy="${headCenterY - 0.4}" rx="2.3" ry="2.6" fill="${persona.eyeHex}"/>
-      <ellipse cx="3.3" cy="${headCenterY - 0.4}" rx="2.3" ry="2.6" fill="${persona.eyeHex}"/>
-      <polygon points="-3.3,${headCenterY - 2.4} -2.7,${headCenterY - 0.9} -1.3,${headCenterY - 0.4} -2.7,${headCenterY + 0.2} -3.3,${headCenterY + 1.6} -3.9,${headCenterY + 0.2} -5.3,${headCenterY - 0.4} -3.9,${headCenterY - 0.9}" fill="#fef08a"/>
-      <polygon points="3.3,${headCenterY - 2.4} 3.9,${headCenterY - 0.9} 5.3,${headCenterY - 0.4} 3.9,${headCenterY + 0.2} 3.3,${headCenterY + 1.6} 2.7,${headCenterY + 0.2} 1.3,${headCenterY - 0.4} 2.7,${headCenterY - 0.9}" fill="#fef08a"/>
-    `;
-  } else if (expr.eyeStyle === "heart-glow") {
-    eyesSvg = `
-      <circle cx="-3.3" cy="${headCenterY - 0.4}" r="2.3" fill="#ec4899"/>
-      <circle cx="3.3" cy="${headCenterY - 0.4}" r="2.3" fill="#ec4899"/>
-      <circle cx="-3.8" cy="${headCenterY - 1.2}" r="0.9" fill="#fbcfe8"/>
-      <circle cx="2.8" cy="${headCenterY - 1.2}" r="0.9" fill="#fbcfe8"/>
-    `;
-  } else {
-    eyesSvg = `
-      <ellipse cx="-3.3" cy="${headCenterY - 0.4}" rx="2.1" ry="2.5" fill="${persona.eyeHex}"/>
-      <ellipse cx="3.3" cy="${headCenterY - 0.4}" rx="2.1" ry="2.5" fill="${persona.eyeHex}"/>
-      <circle cx="-3.9" cy="${headCenterY - 1.3}" r="0.95" fill="#ffffff"/>
-      <circle cx="2.7" cy="${headCenterY - 1.3}" r="0.95" fill="#ffffff"/>
-    `;
-  }
-
-  const mouthH = Math.max(1.2, k.mouthOpenRatio * 3.4);
-  const mouthSvg =
-    expr.mouthStyle === "firm-line"
-      ? `<path d="M -2.2 ${headCenterY + 4.2} L 2.2 ${headCenterY + 3.9}" stroke="#9f1239" stroke-width="1.3" stroke-linecap="round"/>`
-      : expr.mouthStyle === "wavy-panic"
-        ? `<path d="M -2.8 ${headCenterY + 4.2} Q -1.4 ${headCenterY + 3.1} 0 ${headCenterY + 4.2} T 2.8 ${headCenterY + 4.2}" stroke="#9f1239" stroke-width="1.2" fill="none"/>`
-        : `<ellipse cx="0" cy="${headCenterY + 4.2}" rx="2.2" ry="${mouthH}" fill="#fb7185"/>`;
-
-  const vfxLayerSvg = showVfx
-    ? `
-      <g class="sprite-vfx-layer" transform="translate(80, 92) scale(${k.vfxPulseScale})">
-        <ellipse cx="0" cy="40" rx="46" ry="14" fill="none" stroke="${vfx.primaryColorHex}" stroke-width="2" stroke-dasharray="6 4" opacity="0.85"/>
-        <ellipse cx="0" cy="40" rx="34" ry="9" fill="${vfx.secondaryColorHex}" fill-opacity="0.22" stroke="${vfx.secondaryColorHex}" stroke-width="1.2"/>
-        <g transform="rotate(${k.weaponOrbitDeg})">
-          <circle cx="0" cy="-20" r="42" fill="none" stroke="${vfx.primaryColorHex}" stroke-width="1.3" stroke-dasharray="4 8" opacity="0.65"/>
-          <polygon points="0,-66 4,-56 -4,-56" fill="${vfx.primaryColorHex}"/>
-          <polygon points="58,-20 48,-16 48,-24" fill="${vfx.secondaryColorHex}"/>
-          <polygon points="-58,-20 -48,-16 -48,-24" fill="${vfx.secondaryColorHex}"/>
-        </g>
-        ${
-          input.vfxId === "manga-speedlines"
-            ? `<g stroke="${vfx.primaryColorHex}" stroke-width="1.6" opacity="0.75">
-                <line x1="-68" y1="-58" x2="-38" y2="-32"/>
-                <line x1="68" y1="-58" x2="38" y2="-32"/>
-                <line x1="-72" y1="0" x2="-42" y2="-6"/>
-                <line x1="72" y1="0" x2="42" y2="-6"/>
-              </g>`
-            : ""
-        }
-        ${
-          input.vfxId === "holo-floating-monitors"
-            ? `<g opacity="0.9">
-                <rect x="-64" y="-46" width="24" height="16" rx="3" fill="#0f172a" fill-opacity="0.8" stroke="${vfx.primaryColorHex}" stroke-width="1.4"/>
-                <rect x="40" y="-42" width="24" height="16" rx="3" fill="#0f172a" fill-opacity="0.8" stroke="${vfx.secondaryColorHex}" stroke-width="1.4"/>
-              </g>`
-            : ""
-        }
-        ${
-          input.vfxId === "crimson-ink-slash" || input.actionId === "tablet-combo-draw"
-            ? `<path d="M -56 -12 Q 0 -68 58 6" fill="none" stroke="${vfx.primaryColorHex}" stroke-width="4" stroke-linecap="round" opacity="0.82"/>`
-            : ""
-        }
-      </g>
-    `
-    : "";
+  const eyesSvg = renderDynamicSpriteEyesSvg(persona, expr, k, headCenterY);
+  const mouthSvg = renderDynamicSpriteMouthSvg(expr, k, headCenterY);
+  const headgearSvg = renderDynamicSpriteHeadgearSvg(persona, r, headCenterY, k.hairBouncePx);
+  const vfxLayerSvg = showVfx ? renderDynamicSpriteVfxLayerSvg(input.vfxId, input.actionId, vfx, k) : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" data-persona="${persona.personaId}" data-action="${input.actionId}" data-expression="${input.expressionId}" data-vfx="${input.vfxId}" data-frame="${k.frameIndex}">
     ${vfxLayerSvg}
@@ -316,12 +246,7 @@ export function renderDynamicCreatorSpriteSvg(input: {
       </g>
       <g transform="rotate(${k.headTiltDeg}, 0, ${headCenterY})">
         <ellipse cx="0" cy="${headCenterY - 1 + k.hairBouncePx * 0.4}" rx="${r + 3.2}" ry="${r + 2.8}" fill="${persona.hairHex}"/>
-        ${
-          persona.personaId === "studio-cat-mascot" || persona.hairSilhouette === "headphone-hood"
-            ? `<polygon points="${-r},${headCenterY - r + 2} ${-r - 4},${headCenterY - r - 8} ${-r + 4},${headCenterY - r - 2}" fill="${persona.primaryHex}"/>
-               <polygon points="${r},${headCenterY - r + 2} ${r + 4},${headCenterY - r - 8} ${r - 4},${headCenterY - r - 2}" fill="${persona.primaryHex}"/>`
-            : ""
-        }
+        ${headgearSvg}
         <ellipse cx="0" cy="${headCenterY}" rx="${r}" ry="${r * 0.96}" fill="${persona.skinHex}" stroke="${persona.hairHex}" stroke-width="0.9"/>
         <ellipse cx="-5.2" cy="${headCenterY + 2.1}" rx="2.2" ry="1.1" fill="#fb7185" opacity="${expr.blushOpacity}"/>
         <ellipse cx="5.2" cy="${headCenterY + 2.1}" rx="2.2" ry="1.1" fill="#fb7185" opacity="${expr.blushOpacity}"/>

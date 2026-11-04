@@ -2,8 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { acquireStudioHuddleAudioFocus } from "../../live/huddle/studio-p2p-huddle-audio-focus";
 
 import { studioVirtualToonHqManifest } from "./hq/toon-hq-manifest";
-import { createOffice2dActor } from "./office2d-actors";
+import { advanceOffice2dActor, createOffice2dActor, office2dActorBlink, office2dActorBob } from "./office2d-actors";
 import { office2dActorFoot, office2dActorHeadY, OFFICE2D_ACTOR_HEIGHT } from "./office2d-actor-geometry";
+import {
+  DYNAMIC_CREATOR_SPRITE_CAST,
+  DYNAMIC_SPRITE_EXPRESSIONS,
+  DYNAMIC_SPRITE_VFX_PRESETS,
+  renderDynamicCreatorSpriteSvg,
+} from "../studio-virtual-space-dynamic-sprite-engine";
 import { office2dBaseZoom, office2dVisibleWorldSpan } from "./office2d-camera";
 import {
   Office2dCoworkerCrowd,
@@ -550,6 +556,76 @@ describe("스테이지 확장·배경 이펙트·상호작용 고도화", () => 
     } finally {
       vi.useRealTimers();
       vi.unstubAllGlobals();
+    }
+  });
+
+  it("생체역학 보행(방향 전환 쿠션·착석 안착·발걸음 접지·전력 질주 잔상·눈 깜빡임)과 12종 파티클·다이내믹 SVG를 계산한다", () => {
+    const runner = createOffice2dActor({ id: "runner", kind: "self", character: "artist", accent: "#38bdf8", name: "작가", x: 100, y: 100, facing: "right", now: 0 });
+    // 반대 방향 급전환 시 turnTransition 발동 및 발걸음 반주기(34px) 돌파 시 footstepTriggered 감지
+    advanceOffice2dActor(runner, 64, 100, 0.05);
+    expect(runner.facing).toBe("left");
+    expect(runner.turnTransition).toBe(1);
+    expect(runner.footstepTriggered).toBe(true);
+    expect(runner.afterimages.length).toBeGreaterThanOrEqual(1);
+
+    // 착석 전환 시 poseTransition 발동 및 탄성 보브 반영
+    runner.seat = backSeat;
+    advanceOffice2dActor(runner, 64, 100, 0.016);
+    expect(runner.poseTransition).toBe(1);
+    const seatedBob = office2dActorBob(runner, 1.2, false);
+    expect(seatedBob.scaleY).toBeLessThanOrEqual(1.08);
+
+    // 눈 깜빡임(뒷모습은 0, 정면/측면은 깜빡임 주기 내 양수)
+    runner.seat = null;
+    runner.facing = "up";
+    expect(office2dActorBlink(runner, 0.05, false)).toBe(0);
+    runner.facing = "down";
+    let sawBlink = false;
+    for (let t = 0; t < 6; t += 0.04) {
+      if (office2dActorBlink(runner, t, false) > 0.5) sawBlink = true;
+    }
+    expect(sawBlink).toBe(true);
+
+    // 12종 파티클 및 5종 멀티 레이어 콤보 버스트 렌더링 검증
+    const particles = new Office2dParticles(42);
+    for (const preset of ["interaction", "sprint", "emote", "seat", "awakening"] as const) {
+      particles.emitComboBurst(preset, 200, 200, 1);
+    }
+    expect(particles.count).toBeGreaterThan(30);
+    particles.update(0.05);
+    const ctx = createFakeCanvas2d();
+    particles.draw(ctx);
+
+    // 다이내믹 크리에이터 스프라이트 10종 표정·8종 VFX·8인 페르소나 SVG 생성 검증
+    for (const expr of DYNAMIC_SPRITE_EXPRESSIONS) {
+      const svg = renderDynamicCreatorSpriteSvg({
+        personaId: "line-artist",
+        actionId: "tablet-combo-draw",
+        expressionId: expr.id,
+        vfxId: "crimson-ink-slash",
+        frameIndex: 1,
+      });
+      expect(svg).toContain(`data-expression="${expr.id}"`);
+    }
+    for (const vfx of DYNAMIC_SPRITE_VFX_PRESETS) {
+      const svg = renderDynamicCreatorSpriteSvg({
+        personaId: "colorist",
+        actionId: "awakening-skill-burst",
+        expressionId: "sparkle-star",
+        vfxId: vfx.id,
+        frameIndex: 2,
+      });
+      expect(svg).toContain(`data-vfx="${vfx.id}"`);
+    }
+    for (const persona of DYNAMIC_CREATOR_SPRITE_CAST) {
+      const svg = renderDynamicCreatorSpriteSvg({
+        personaId: persona.personaId,
+        actionId: persona.defaultActionId,
+        expressionId: persona.defaultExpressionId,
+        vfxId: persona.defaultVfxId,
+        frameIndex: 0,
+      });
+      expect(svg).toContain(`data-persona="${persona.personaId}"`);
     }
   });
 });

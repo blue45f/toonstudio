@@ -1,5 +1,5 @@
 import type { SpaceNpcDialogueMoment } from "./space-npc-portrait";
-import { spaceKoParticle } from "./space-korean";
+import { spaceKoCopula, spaceKoParticle } from "./space-korean";
 
 /**
  * NPC 대화 선택지 '구역 안내·오늘의 팁' 문구.
@@ -39,7 +39,7 @@ export function spaceNpcZoneGuide(input: {
   readonly interactions: readonly { readonly labelKo: string; readonly labelEn: string }[];
 }): SpaceNpcLine {
   const purpose = (input.roomId ? ZONE_PURPOSE[input.roomId] : undefined)
-    ?? { ko: `여기는 ${input.roomLabelKo}이에요.`, en: `This is ${input.roomLabelEn}.` };
+    ?? { ko: `여기는 ${spaceKoCopula(input.roomLabelKo)}.`, en: `This is ${input.roomLabelEn}.` };
   const ko = listLabels(input.interactions.map((item) => item.labelKo), ", ");
   const en = listLabels(input.interactions.map((item) => item.labelEn), " and ");
   return {

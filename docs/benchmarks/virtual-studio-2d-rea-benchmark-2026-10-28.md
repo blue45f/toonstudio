@@ -344,3 +344,30 @@
 | **공간 음향 큐** | Gather `LeakyDesks`, WA `decreaseAudioPlayerVolumeWhileTalking`(`ev_c8d86099…aba1`), SoWork `AudioPool` | 방마다 다른 2음 화음의 짧은 WebAudio 큐(방 입장·착석·지정석 저장·평면도·이모트). 레일 `🔊 공간음 / 🔇 음소거` 토글은 `localStorage`에 저장. `talking` 옵션은 볼륨을 1/4로 낮추는 더킹을 지원하지만, 실제 발화 감지와의 연결은 `target` | [`office2d-stage-extensions.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-stage-extensions.ts), [`StudioOffice2dPipelineRail.tsx`](../../apps/web/src/domains/creator/virtual-space/office2d/StudioOffice2dPipelineRail.tsx) |
 | **1~6 빠른 이모트 의성어** | WA `EmoteStore` `emojiFavorite` 1~6(`ev_c8d86099…aba1`) | 이모트 전송은 기존 페이지 이모트 키맵(1~9·Z·F)이 그대로 맡고, 2D 캔버스는 같은 키에 웹툰 의성어 팝업(`반가워요—!!`, `마감 버닝—!!` 등)과 효과음만 덧붙여 중복 전송이 없다 | [`StudioOffice2dCanvas.tsx`](../../apps/web/src/domains/creator/virtual-space/office2d/StudioOffice2dCanvas.tsx), [`office2d-stage-extensions.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-stage-extensions.ts) |
 | **창 채광(볼류메트릭 라이트 샤프트)** | Gather·ZEP 방 분위기 조명, 3차 배경 이펙트 연장 | 각 HQ 방 북쪽 창에서 바닥으로 떨어지는 방 액센트색 대각선 빛줄기 | [`office2d-backdrop-art.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-backdrop-art.ts) |
+
+
+## 10. 5차 REA — 고품질 스프라이트 · 생체역학 보행(방향 피벗·착석 안착·잔상·눈 깜빡임) · 12종 멀티레이어 VFX (`current`)
+
+> 상태 구분: 이 절은 2026-11-04 기준 REA 정적·시맨틱 그래프 분석(`analyze_javascript_application`, `inspect_analysis_view`, `trace_javascript_semantics`)으로 도출한 레거시 Phaser 파이프라인 대비 Office2D·Dynamic Sprite 간극을 해소한 **현재 상태(`current`)**를 기록한다.
+
+### 10.1 5차 REA Evidence 원장
+
+| 대상 | 분석 범위 | REA 연산 | Evidence ID |
+| --- | --- | --- | --- |
+| CDP 브라우저 세션 | `http://127.0.0.1:9223` 활성 타깃 검증 | `list_browser_targets` | `ev_24b5776ad0a3407b329c8b326e7e24ac0310676b405606a8b73d22c0980faba9` |
+| Office2D 핵심 14모듈 | `office2d/*` + `studio-virtual-space-dynamic-sprite-*` | `analyze_javascript_application` / `inspect_analysis_view` | `ev_b2ed7ccbc68d2489ff571d5a1ffd500e0bb8af65bacd03e7bbcac2679477c23c` / `ev_cae7bae68a154895256c2dbd14d750dfa1c1c654f9449b01b4c787e2a3810310` |
+| 시맨틱 호출·데이터 흐름 추적 | `office2dActorFrame`, `Office2dParticles` forward-influence | `trace_javascript_semantics` | `ev_de70facdada3f06eff49a6946577f3e27d35fe1a9925237a1aa0f4004365b867` / `ev_da3226c59dd421270752d929e09e7e6aa535b2da7609624bfa88c7d9fcc91a0d` |
+| Office2D + Dynamic Sprite 24모듈 | 24 files, 377,888B, 55,774 AST nodes, 1,096 call-flow, 19,689 data-flow | `analyze_javascript_application` | `ev_f30f65423305974582445a36adf677c5c8a9a2ecbc99b76bb3bacfcd26aa8ed8` / `ev_0616a060ddc65a0d83e39622b97054d50c7b495a2c5b20b58971d5bfa6a2759f` |
+| HD Sprite · Smoothing · Particle 비교 | `studio-virtual-space-hd-sprite-pipeline.ts` 등 6모듈 | `analyze_javascript_application` | `ev_38b8f1c5a85d9c9f37b28f758072dfc473369338c85ff8b4603c95cc7dc1a478` / `ev_aab179a803650792e9d5440d1fa86b232353e9292a5fc6e2ade2f161c31b546f` |
+| 고도화 후 10모듈 사후 검증 | 업그레이드된 Office2D·Dynamic Sprite 10모듈 (parse_failures: 0, 33,447 AST nodes, 11,510 data-flow) | `analyze_javascript_application` | `ev_be97e48929102f7aa2f1f80924a09611a68235af8bb420ce7e577bff65a46c00` / `ev_86517c4294bdfc02603ddadf0455826db106f813729fac50dffc286ea18e16ea` |
+
+### 10.2 5차 고도화 반영 매핑 (`current`)
+
+| 영역 | REA 진단 결과 | 고도화 구현 내용 (`current`) | 구현 파일 |
+| --- | --- | --- | --- |
+| **생체역학 보행 · 방향 피벗 쿠션 · 착석 안착** | `office2d-actors.ts`가 방향 전환 피벗 쿠션과 착석·기립 전환 안착 스쿼시, 보행 반주기 발걸음 접지 신호를 계산하지 않음(`ev_f30f6542…8ed8`) | 방향 전환 시 `turnTransition` 수평 압축·피벗 홉, 착석·기립 전이 시 `poseTransition` 안착 스쿼시, `HALF_STRIDE(34px)` 돌파 시 좌·우 교차 `footstepTriggered`/`footstepSide` 및 전력 질주(`speed >= 245`) 시 최대 3단 `afterimages` 잔상 버퍼·배우별 고유 위상 눈 깜빡임(`office2dActorBlink`) 구현 | [`office2d-actors.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-actors.ts), [`office2d-runtime.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-runtime.ts) |
+| **이중 접지 그림자(Core AO + Penumbra) & 잔상·블링크 렌더** | `office2d-renderer.ts`가 단일 타원 그림자만 그리고 `resolveStudioHdGroundContactSpec`을 호출하지 않음(`ev_38b8f1c5…a478`) | 보행 주기에 반응하는 이중 접지 그림자(외곽 Soft Penumbra + 발밑 Core AO), 전력 질주 시 아틀라스 보행 프레임 기반 반투명 스피드 잔상 트레일, 정면·측면 캐릭터 자연스러운 눈 깜빡임 아이라인 렌더링 연결 | [`office2d-renderer.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-renderer.ts) |
+| **12종 고밀도 파티클 & 5종 멀티레이어 콤보 버스트** | `office2d-particles.ts`가 7종 기본 원/사각형 파티클만 지원(`ev_da3226c5…1a0d`) | 4각 다이아몬드 별빛(`starburst`), 흔들리며 낙하하는 꽃잎(`petal`), 속도 정렬 스트릭(`speedline`), 웹툰 먹물 튀김(`ink-splash`), 이중 동심원 충격파(`shockwave`) 추가 및 상황별 5종 `emitComboBurst`(`interaction`, `sprint`, `emote`, `seat`, `awakening`) 구현 | [`office2d-particles.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-particles.ts), [`office2d-stage-extensions.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-stage-extensions.ts) |
+| **웹툰 의성어 방사형 집중선 & 전 구역 앰비언트 이펙트** | `paintOffice2dComicBursts`가 정적 알약 배지만 표시하고 일부 방의 중앙 앰비언트 이펙트가 비어 있음(`ev_0616a060…d59f`) | 의성어 팝업 시 탄성 팝인 스케일(`0.72 → 1.14 → 1.0`) + 8방위 만화 집중선 스파이크 연출 추가, `hq-ink-bay`·`hq-review-room`·`hq-publish-desk`·`hq-lounge` 전용 공간 오라 링 확장 | [`office2d-backdrop-art.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-backdrop-art.ts) |
+| **다이내믹 크리에이터 스프라이트 10표정·8헤어·8VFX·2단 잔상** | `renderDynamicCreatorSpriteSvg`가 10종 눈/입 스타일과 8종 VFX 프리셋 중 일부만 분기 렌더링함(`ev_0616a060…d59f`) | 10종 `eyeStyle`·10종 `mouthStyle`·8종 `hairSilhouette`(베레모·사이버 포니테일·트윈테일·AR 바이저·헤드폰·고양이 귀)·8종 `DynamicSpriteVfxId` 전용 벡터 파츠 모듈 분리 및 `StudioVirtualDynamicSpriteAvatar` 2단 모션 트레일 잔상 구현 | [`studio-virtual-space-dynamic-sprite-svg-parts.ts`](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-dynamic-sprite-svg-parts.ts), [`studio-virtual-space-dynamic-sprite-engine.ts`](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-dynamic-sprite-engine.ts), [`StudioVirtualDynamicSpriteAvatar.tsx`](../../apps/web/src/domains/creator/virtual-space/StudioVirtualDynamicSpriteAvatar.tsx) |
+

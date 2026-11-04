@@ -12,7 +12,15 @@ import type { StudioVirtualDecorationState } from "../studio-virtual-space-custo
 import type { StudioVirtualAvatarProfile, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import type { StudioSpaceThemeKey } from "../studio-virtual-space-theme";
 import type { StudioTileEffectDefinition } from "../studio-virtual-space-tile-effects";
-import { office2dActorBob, office2dActorFrame, office2dActorOpacity, type Office2dActor } from "./office2d-actors";
+import { resolveStudioHdGroundContactSpec } from "../studio-virtual-space-hd-sprite-pipeline";
+import {
+  OFFICE2D_GAIT_DISTANCE,
+  office2dActorBlink,
+  office2dActorBob,
+  office2dActorFrame,
+  office2dActorOpacity,
+  type Office2dActor,
+} from "./office2d-actors";
 import { OFFICE2D_ACTOR_HEIGHT, OFFICE2D_FOOT_RATIO, office2dActorFoot } from "./office2d-actor-geometry";
 import { paintOffice2dAvatarAccessory } from "./office2d-avatar-appearance";
 import { office2dAtlasDrawFrame, office2dAtlasImageMatches } from "./office2d-atlas-frames";
@@ -122,12 +130,16 @@ export interface Office2dRenderFrame {
   readonly extensions?: Office2dStageExtensions | undefined;
   readonly schematicMode?: boolean | undefined;
   readonly comicBursts?: readonly Office2dComicBurst[] | undefined;
+  /** 순간 이동 직후 월드를 덮는 어두운 막의 불투명도(0~1). 이름표·말풍선 같은 화면 위 요소는 막 위에 그린다. */
+  readonly viewVeil?: number | undefined;
 }
 
 const CHUNK = 512;
 const ACTOR_HEIGHT = OFFICE2D_ACTOR_HEIGHT;
 const FOOT_RATIO = OFFICE2D_FOOT_RATIO;
 const OUTSIDE = "#2b2420";
+/** 순간 이동 막 색. 테마에 따라 밝아질 수 있는 바깥 색 대신 중립 어둠을 써서 어느 테마에서도 번쩍이지 않게 한다. */
+const TELEPORT_VEIL_COLOR = "#0f1218";
 const SIGN_FONT = "700 13px Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif";
 
 interface SortEntry {
@@ -194,6 +206,12 @@ export class Office2dRenderer {
       );
     }
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    if (frame.viewVeil !== undefined && frame.viewVeil > 0.01) {
+      ctx.globalAlpha = Math.min(1, frame.viewVeil);
+      ctx.fillStyle = TELEPORT_VEIL_COLOR;
+      ctx.fillRect(0, 0, viewport.width, viewport.height);
+      ctx.globalAlpha = 1;
+    }
     this.drawOverlay(ctx, frame, overlay);
   }
 
@@ -359,7 +377,34 @@ export class Office2dRenderer {
     for (const actor of frame.actors) {
       if (!inside(actor, visible) || actor.seat) continue;
       const bob = office2dActorBob(actor, frame.time, frame.reducedMotion);
-      paintOffice2dShadow(ctx, actor.x, actor.y + 1, 15 * bob.shadowScale, 5.5 * bob.shadowScale, 0.3 * office2dActorOpacity(actor, frame.now));
+      const actorAlpha = office2dActorOpacity(actor, frame.now);
+      const isGhost = actor.id === frame.selfId && frame.ghost;
+      const contact = resolveStudioHdGroundContactSpec({
+        tier: "ultra",
+        moving: actor.moving,
+        seated: false,
+        ghost: isGhost,
+        reducedMotion: frame.reducedMotion,
+        distance: actor.stride,
+        stride: OFFICE2D_GAIT_DISTANCE,
+      });
+      if (!contact.visible) continue;
+      paintOffice2dShadow(
+        ctx,
+        actor.x,
+        actor.y + 1.5,
+        17 * bob.shadowScale * contact.penumbraScaleX,
+        6.2 * bob.shadowScale,
+        contact.penumbraAlpha * actorAlpha,
+      );
+      paintOffice2dShadow(
+        ctx,
+        actor.x,
+        actor.y + 0.8,
+        contact.coreWidth * 0.52 * bob.shadowScale,
+        contact.coreHeight * 0.55 * bob.shadowScale,
+        contact.coreAlpha * actorAlpha,
+      );
     }
   }
 
@@ -523,6 +568,45 @@ export class Office2dRenderer {
     const image = reaction?.image ?? workImage ?? walkImage;
     const drawHeight = seated && !workImage ? height * 0.9 : height;
     const tilt = !seated && !workImage ? bob.tiltRad : 0;
+
+    // 전력 질주 잔상(Afterimage Ghost Trail) 렌더링
+    if (!frame.reducedMotion && !seated && actor.afterimages && actor.afterimages.length > 0) {
+      const ghostTone = avatarProfile?.accent ?? actor.accent;
+      for (let idx = actor.afterimages.length - 1; idx >= 0; idx -= 1) {
+        const ghost = actor.afterimages[idx];
+        if (!ghost || ghost.alpha <= 0.02) continue;
+        const ghostScale = Math.max(0.84, 0.96 - idx * 0.04);
+        ctx.save();
+        ctx.globalAlpha = opacity * ghost.alpha * 0.72;
+        ctx.fillStyle = ghostTone;
+        ctx.beginPath();
+        ctx.ellipse(ghost.x, ghost.y + 1, 12 * ghostScale, 4.5 * ghostScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        if (walkImage) {
+          const ghostFrame = office2dActorFrame({ facing: ghost.facing, moving: true, stride: ghost.stride, seat: null });
+          const ghostDraw = office2dAtlasDrawFrame(actor.character, "walk", ghostFrame.row, ghostFrame.col, walkImage, 1, Boolean(generatedWalkImage));
+          const gs = ghostDraw.source;
+          const gt = ghostDraw.destination;
+          const gw = width * ghostScale;
+          const gh = drawHeight * ghostScale;
+          ctx.translate(ghost.x, ghost.y + 3);
+          ctx.drawImage(
+            walkImage,
+            gs.x,
+            gs.y,
+            gs.width,
+            gs.height,
+            -gw / 2 + (gt.x / 128) * gw,
+            -gh * FOOT_RATIO + (gt.y / 192) * gh,
+            (gt.width / 128) * gw,
+            (gt.height / 192) * gh,
+          );
+        }
+        ctx.restore();
+      }
+      ctx.globalAlpha = opacity;
+    }
+
     let accessoryOffset = { x: 0, y: 0 };
     if (image) {
       // 작업 자세의 80%, 보행 착석 폴백의 92% 자르기는 기존 논리셀 계약을 유지한다.
@@ -544,6 +628,34 @@ export class Office2dRenderer {
     } else {
       paintOffice2dFallbackActor(ctx, footX, anchorY, height, actor.accent, actor.facing, actor.stride / 10);
     }
+
+    // 고유 위상 기반 자연스러운 눈 깜빡임(Micro Eye Blink) 오버레이
+    const blink = office2dActorBlink(actor, frame.time, frame.reducedMotion);
+    const activeFacing = actor.seat?.facing ?? actor.facing;
+    if (blink > 0.35 && activeFacing !== "up" && !reaction) {
+      ctx.save();
+      ctx.translate(footX, anchorY);
+      ctx.rotate(tilt);
+      ctx.strokeStyle = "rgba(42, 30, 24, 0.78)";
+      ctx.lineWidth = Math.max(1.3, 1.8 * blink);
+      const eyeY = -drawHeight * 0.66 + accessoryOffset.y * 0.5;
+      if (activeFacing === "down") {
+        ctx.beginPath();
+        ctx.moveTo(-6.5, eyeY);
+        ctx.lineTo(-2.5, eyeY + 0.5);
+        ctx.moveTo(2.5, eyeY + 0.5);
+        ctx.lineTo(6.5, eyeY);
+        ctx.stroke();
+      } else {
+        const dir = activeFacing === "left" ? -1 : 1;
+        ctx.beginPath();
+        ctx.moveTo(dir * 2.5, eyeY);
+        ctx.lineTo(dir * 6.8, eyeY + 0.4);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     if (avatarProfile) paintOffice2dAvatarAccessory(ctx, avatarProfile, {
       facing: actor.seat?.facing ?? actor.facing, footX, footY: anchorY, width,
       height: drawHeight, tiltRad: tilt, offset: accessoryOffset,

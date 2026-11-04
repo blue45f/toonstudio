@@ -126,6 +126,28 @@ export function StudioVirtualDynamicSpriteAvatar({
     headTallUnits,
   ]);
 
+  const afterimageTrail2SvgMarkup = useMemo(() => {
+    if (kinematics.afterimageCount < 2 || reducedMotion) return null;
+    return renderDynamicCreatorSpriteSvg({
+      personaId,
+      actionId,
+      expressionId,
+      vfxId,
+      frameIndex: (frameIndex + 6) % 8,
+      headTallUnits,
+      showVfx: false,
+    });
+  }, [
+    kinematics.afterimageCount,
+    reducedMotion,
+    personaId,
+    actionId,
+    expressionId,
+    vfxId,
+    frameIndex,
+    headTallUnits,
+  ]);
+
   return (
     <div
       data-testid={testId ?? `dynamic-sprite-avatar-${personaId}`}
@@ -150,7 +172,19 @@ export function StudioVirtualDynamicSpriteAvatar({
         className="relative flex items-center justify-center"
         style={{ width: `${sizePx}px`, height: `${sizePx}px` }}
       >
-        {/* 역동적 잔상 (Afterimage Motion Trail) — compositor transform & opacity 전용 */}
+        {/* 역동적 2단 잔상 (Afterimage Motion Trail) — compositor transform & opacity 전용 */}
+        {afterimageTrail2SvgMarkup ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              transform: "translate3d(-18px, 4px, 0) scale(0.92)",
+              opacity: 0.18,
+              filter: `drop-shadow(0 0 8px ${persona.accentHex})`,
+            }}
+            dangerouslySetInnerHTML={{ __html: afterimageTrail2SvgMarkup }}
+          />
+        ) : null}
         {afterimagePrevSvgMarkup ? (
           <div
             aria-hidden="true"

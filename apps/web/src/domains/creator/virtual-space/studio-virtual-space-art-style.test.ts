@@ -9,6 +9,7 @@ import {
   studioVirtualArtAssetUrl,
   studioVirtualArtObjectUrl,
   studioVirtualArtStyle,
+  studioVirtualArtStyleScopeNote,
   studioVirtualArtTextureUrl,
   studioVirtualLivingTownAssetUrl,
   studioVirtualLobbyPreviewObjectPosition,
@@ -54,6 +55,16 @@ describe("Virtual Studio art direction", () => {
       .toBe("/assets/virtual-studio/living-town-v6/sky-island/waterfall-sheet.webp");
     expect(studioVirtualLivingTownAssetUrl("retro", "terrain-tile-atlas"))
       .toBe("/assets/virtual-studio/living-town-v6/retro/terrain-tile-atlas.webp");
+  });
+
+  it("작화 선택 안내는 기본 2D에서 월드가 바뀐다고 약속하지 않고 공간 테마를 가리킨다", () => {
+    const office2d = studioVirtualArtStyleScopeNote("office2d");
+    expect(office2d.ko).toContain("공간 테마");
+    expect(office2d.ko).not.toContain("작화를 선택해요");
+    expect(office2d.en).toContain("Space theme");
+    const legacy = studioVirtualArtStyleScopeNote("legacy");
+    expect(legacy.ko).toContain("건물·가구·바닥의 작화를 선택해요");
+    expect(studioVirtualArtStyleScopeNote("three")).toEqual(legacy);
   });
 
   it("로비 미리보기 초점은 여섯 스타일 모두 실측 좌표를 갖고 object-position으로 변환된다 (W5-T7)", () => {

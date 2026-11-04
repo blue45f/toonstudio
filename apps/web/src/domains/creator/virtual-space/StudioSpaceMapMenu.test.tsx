@@ -32,6 +32,14 @@ describe("StudioSpaceMapMenu", () => {
     expect(screen.getByRole("heading", { name: "드로잉 아틀리에" })).not.toBeNull();
   });
 
+  it("모든 공간 카드의 이동 버튼 이름이 공간 이름 받침에 맞는 조사(으로/로)를 쓴다", () => {
+    renderMenu();
+    // ㅂ 받침 '랩'은 '으로', 받침 없는 '센터'는 '로'.
+    expect(screen.getByRole("button", { name: "스토리 랩으로 이동" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "출고 센터로 이동" })).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "스토리 랩로 이동" })).toBeNull();
+  });
+
   it("카드 클릭 시 onTravel에 공간 id를 전달한다", () => {
     const { onTravel } = renderMenu();
     fireEvent.click(screen.getByRole("button", { name: "카페 라운지로 이동" }));

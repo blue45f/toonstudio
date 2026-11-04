@@ -121,12 +121,18 @@
 .space-lobby__stage-head,
 .space-lobby__avatar,
 .space-lobby__chips { position: relative; z-index: 1; }
-.space-lobby__stage-head { display: grid; gap: 6px; min-width: 0; }
+.space-lobby__stage-head { display: grid; justify-items: start; gap: 6px; min-width: 0; }
+/* 월드 아트(하늘·파스텔처럼 밝은 배경)가 어떤 테마든 글자가 묻히지 않도록 킥커는 자체 유리 알약 위에 둔다. */
 .space-lobby__kicker {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin: 0;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 38%, var(--color-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-panel) 82%, transparent);
+  backdrop-filter: blur(8px);
   color: var(--color-accent);
   font-size: 12px;
   font-weight: 900;
@@ -139,6 +145,7 @@
   font-size: clamp(18px, 2vw, 22px);
   font-weight: 900;
   overflow-wrap: anywhere;
+  text-shadow: 0 1px 10px color-mix(in srgb, var(--color-canvas) 78%, transparent);
 }
 .space-lobby__avatar {
   position: relative;
