@@ -1,4 +1,4 @@
-import { isStudioOfficeEnvironmentKey, studioOfficeEnvironment, type StudioOfficeEnvironmentKey } from "./studio-virtual-space-office-environments";
+import { studioSpaceThemeArtworkUrl } from "./studio-virtual-space-theme-artwork";
 import { Palette } from "lucide-react";
 import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
 import { STUDIO_CHARACTER_SKINS, studioCharacterSkinForArtStyle } from "./studio-virtual-space-character-skins";
@@ -15,47 +15,6 @@ import {
 export interface StudioVirtualSpaceThemePickerProps {
   readonly value: StudioSpaceThemeKey;
   readonly onChange: (value: StudioSpaceThemeKey) => void;
-}
-
-const ILLUSTRATED_SPACE_THEME_ART: Readonly<
-  Record<Exclude<StudioSpaceThemeKey, StudioOfficeEnvironmentKey>, { readonly themeUrl: string }>
-> = {
-  "modern-office": {
-    themeUrl: "/assets/virtual-studio/studio-art-v11/themes/seoul-editorial-hq.webp",
-  },
-  "webtoon-atelier": {
-    themeUrl: "/assets/virtual-studio/studio-art-v10/studio-theme-floor-panorama.webp",
-  },
-  "celestial-observatory": {
-    themeUrl: "/assets/virtual-studio/studio-art-v13/themes/magic-academy-astral-library.webp",
-  },
-  "cinema-screening": {
-    themeUrl: "/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp",
-  },
-  "cozy-wood": {
-    themeUrl: "/assets/virtual-studio/studio-art-v11/themes/lofi-cat-storyhouse.webp",
-  },
-  "neon-night": {
-    themeUrl: "/assets/virtual-studio/studio-art-v11/themes/cyber-neon-lab.webp",
-  },
-  "garden-terrace": {
-    themeUrl: "/assets/virtual-studio/studio-art-v11/themes/hanok-botanical-atelier.webp",
-  },
-  library: {
-    themeUrl: "/assets/virtual-studio/studio-art-v13/themes/abyssal-bioluminescent-worldlab.webp",
-  },
-  "sakura-campus": {
-    themeUrl: "/assets/virtual-studio/studio-art-v12/themes/romance-palace-conservatory.webp",
-  },
-  "sunset-harbor": {
-    themeUrl: "/assets/virtual-studio/studio-art-v13/themes/dolby-sound-dubbing-studio.webp",
-  },
-};
-
-function officeEnvironmentArt(key: StudioOfficeEnvironmentKey) {
-  const environment = studioOfficeEnvironment(key);
-  if (!environment) throw new Error(`Missing office environment: ${key}`);
-  return { themeUrl: environment.previewUrl };
 }
 
 /**
@@ -77,9 +36,7 @@ export function StudioVirtualSpaceThemePicker({ value, onChange }: StudioVirtual
       <div className="studio-theme-picker__grid">
         {STUDIO_SPACE_THEMES.map((theme) => {
           const swatch = studioSpaceThemeSwatch(theme);
-          const nanoArt = isStudioOfficeEnvironmentKey(theme.key)
-            ? officeEnvironmentArt(theme.key)
-            : ILLUSTRATED_SPACE_THEME_ART[theme.key];
+          const themeUrl = studioSpaceThemeArtworkUrl(theme.key);
           const selected = value === theme.key;
           const recommended = theme.recommendedCharacterKeys.flatMap((key) => {
             const skin = STUDIO_CHARACTER_SKINS.find((item) => item.key === key);
@@ -101,7 +58,7 @@ export function StudioVirtualSpaceThemePicker({ value, onChange }: StudioVirtual
                 aria-hidden
               >
                 <img
-                  src={nanoArt.themeUrl}
+                  src={themeUrl}
                   alt=""
                   loading="lazy"
                   decoding="async"
