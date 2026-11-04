@@ -661,6 +661,14 @@ export const TOOLCHAIN_STAGES_ART: readonly ProcessToolchainStage[] = [
         },
         kind: "builtin",
       },
+      {
+        name: { ko: "IC-Light · Clipdrop Relight · YOLOv8 Comic Detector", en: "IC-Light · Clipdrop Relight · YOLOv8 Comic Detector" },
+        role: {
+          ko: "2D 법선 추정 기반 실시간 림라이트/역광 재조명 및 만화 컷·말풍선 바운딩박스 자동 검출 도구",
+          en: "2D normal-estimated rim/backlight relighting and automated comic panel/bubble bounding-box detector",
+        },
+        kind: "external",
+      },
     ],
   },
 ];

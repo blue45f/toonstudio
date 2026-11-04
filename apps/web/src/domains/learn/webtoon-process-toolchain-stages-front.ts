@@ -485,6 +485,14 @@ export const TOOLCHAIN_STAGES_FRONT: readonly ProcessToolchainStage[] = [
         kind: "builtin",
         href: "/studio/assets",
       },
+      {
+        name: { ko: "Anchorpoint Git · Perforce Helix Core", en: "Anchorpoint Git · Perforce Helix Core" },
+        role: {
+          ko: "대용량 .clip/.psd/.blend 바이너리 파일 배타적 잠금과 버전 관리를 제공하는 아트 파이프라인 도구",
+          en: "Binary asset version control and exclusive file locking for large .clip/.psd/.blend files",
+        },
+        kind: "external",
+      },
     ],
   },
 ];

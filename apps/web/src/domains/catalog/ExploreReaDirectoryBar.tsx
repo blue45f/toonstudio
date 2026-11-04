@@ -169,8 +169,8 @@ export function ExploreReaDirectoryBar({
           },
           {
             id: "bilibili-kuaikan-comicdays",
-            ko: "빌리빌리·콰이칸·동만·코믹데이즈·망가원·GANMA!·코미코·TapRead·GoodNovel·Radish 아시아/글로벌 인기작",
-            en: "Bilibili/Kuaikan/Dongman/Comic Days/Manga One/GANMA!/Comico/TapRead/GoodNovel/Radish Global Hits",
+            ko: "빌리빌리·콰이칸·동만·토나리노영점프·쿠라게번치·망가도서관Z·포켓코믹스·진강문학성·SFACG 아시아/글로벌 인기작",
+            en: "Bilibili/Kuaikan/Dongman/Tonari no Young Jump/Kurage Bunch/Manga Library Z/Pocket Comics/JJWXC/SFACG Global Hits",
             status: ["ongoing"] as SerialStatus[],
             sortKey: "popular" as SortKey,
           },

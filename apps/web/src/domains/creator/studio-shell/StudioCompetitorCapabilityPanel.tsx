@@ -518,7 +518,7 @@ export function StudioCompetitorCapabilityPanel({
             </ul>
             <div
               data-testid="competitor-page-sub-enhancements"
-              className="mt-2 grid gap-1.5 sm:grid-cols-3"
+              className="mt-2 grid gap-1.5 sm:grid-cols-2"
             >
               {activePageBenchmark.subEnhancements.map((sub) => (
                 <div
@@ -534,8 +534,14 @@ export function StudioCompetitorCapabilityPanel({
                       {sub.scoreOutOf100} / 100
                     </span>
                   </div>
-                  <div className="mt-1 truncate text-[0.56rem] text-fg-3">
-                    {sub.referenceServices.join(" · ")}
+                  <p className="mt-1 text-[0.56rem] leading-3.5 text-fg-2">
+                    {locale === "ko" ? sub.reaMechanismKo : sub.reaMechanismEn}
+                  </p>
+                  <div className="mt-1 flex items-center justify-between gap-1 text-[0.54rem] text-fg-3">
+                    <span className="truncate">{sub.referenceServices.join(" · ")}</span>
+                    <code className="shrink-0 rounded bg-panel px-1 py-0.5 font-mono text-accent">
+                      {sub.internalizedModulePath.split("/").slice(-1)[0]}
+                    </code>
                   </div>
                 </div>
               ))}
@@ -609,7 +615,7 @@ export function StudioCompetitorCapabilityPanel({
                 data-testid="toonstudio-sitewide-score-badge"
               >
                 {locale === "ko"
-                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`
+                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (102,500,000,000,000만점 · ${siteWideScorecard.overallScore10} / 10)`
                   : `Overall ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`}
               </span>
             </div>
