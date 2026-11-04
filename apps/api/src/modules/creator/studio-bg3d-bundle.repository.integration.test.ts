@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import * as Y from "yjs";
 import { Pool } from "pg";
+import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postgres-integration-tests.mjs";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { STUDIO_WORK_ASSET_ADMISSION_OPT_IN_TOKEN } from "@toonstudio/contracts/studio-work-asset-contract";
 import { hashStudioBg3dSixPassBundleManifest, studioBg3dSixPassArtifactSourceUri, parseStudioBg3dSixPassBundleManifest, verifyStudioBg3dSixPassBundleReceipt, STUDIO_BG3D_SIX_PASS_BUNDLE_STATE_CONTRACT } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
@@ -19,13 +20,21 @@ localIntegration("6패스 PostgreSQL 봉인·권한·quota", () => {
   let repository: DrizzleStudioBg3dBundleRepository;
   let service: StudioBg3dBundleService;
   let previousUrl: string | undefined;
+  let policyBaseline: readonly unknown[] | null = null;
   const users: string[] = [];
   const works: string[] = [];
   const upload = vi.fn<PrivateObjectStoragePort["uploadImmutable"]>().mockImplementation(async (input) => bg3dTestObject(input.bytes, input.contentType === "application/json" ? "application/json" : "image/png"));
   beforeAll(async () => {
-    if (!target || !["127.0.0.1", "localhost"].includes(new URL(target).hostname)) throw new Error("이 검증은 명시적인 일회용 로컬 PostgreSQL만 사용합니다.");
+    if (!target || !["127.0.0.1", "localhost", "::1", "[::1]"].includes(new URL(target).hostname)) throw new Error("이 검증은 명시적인 일회용 로컬 PostgreSQL만 사용합니다.");
+    validatePostgresIntegrationUrl(target);
     previousUrl = process.env.DATABASE_URL; process.env.DATABASE_URL = target;
     pool = new Pool({ connectionString: target, max: 3, application_name: "bg3d-bundle-local-proof" });
+    const guards = await pool.query<{ tgname: string }>(`SELECT tgname FROM pg_trigger
+      WHERE NOT tgisinternal AND tgenabled <> 'D' AND tgname=ANY($1::text[])
+        AND tgrelid IN (to_regclass('public.studio_bg3d_bundle_revision'),to_regclass('public.studio_bg3d_bundle_artifact'))`, [["studio_bg3d_revision_guard", "studio_bg3d_artifact_guard"]]);
+    expect(guards.rows.map(({ tgname }) => tgname).sort(), "실행 준비 단계에서 0121의 실제 불변 원본 trigger를 적용해야 합니다.")
+      .toEqual(["studio_bg3d_artifact_guard", "studio_bg3d_revision_guard"]);
+    policyBaseline = (await pool.query('SELECT * FROM membership_policy_override ORDER BY key')).rows;
     runtime = await import("../../platform/database");
     const { DrizzleStudioBg3dBundleRepository } = await import("./studio-bg3d-bundle.repository");
     const { StudioBg3dBundleService } = await import("./studio-bg3d-bundle.service");
@@ -37,12 +46,15 @@ localIntegration("6패스 PostgreSQL 봉인·권한·quota", () => {
   afterEach(async () => {
     if (works.length) await pool.query('DELETE FROM creator_work WHERE id=ANY($1::text[])', [works.splice(0)]);
     if (users.length) await pool.query('DELETE FROM "user" WHERE id=ANY($1::text[])', [users.splice(0)]);
-    await pool.query("DELETE FROM membership_policy_override WHERE key='plan:free'");
     upload.mockClear();
   });
   afterAll(async () => {
-    vi.unstubAllEnvs(); await Promise.all([pool?.end(), runtime?.dbPool.end()]);
-    if (previousUrl === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = previousUrl;
+    try {
+      if (policyBaseline !== null) expect((await pool.query('SELECT * FROM membership_policy_override ORDER BY key')).rows).toEqual(policyBaseline);
+    } finally {
+      vi.unstubAllEnvs(); await Promise.all([pool?.end(), runtime?.dbPool.end()]);
+      if (previousUrl === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = previousUrl;
+    }
   });
   async function work() {
     const owner = randomUUID(), outsider = randomUUID(), id: string = randomUUID(); users.push(owner, outsider); works.push(id);
@@ -131,10 +143,16 @@ localIntegration("6패스 PostgreSQL 봉인·권한·quota", () => {
     const stale = parseStudioBg3dSixPassBundleManifest({ ...next.manifest, renderRevisionId: "stale-revision", parentRevisionId: null });
     await expect(service.prepare(f.owner, { ...f.key, renderRevisionId: stale.renderRevisionId }, stale)).rejects.toThrow(/부모 revision/);
   });
-  it("현재 저장 한도가 부족하면 전체 예약을 거부하고 정책값을 바꾸지 않는다", async () => {
+  it("테스트 계정의 일일 한도를 소진하면 전체 예약을 거부하고 공유 정책값을 바꾸지 않는다", async () => {
     const f = await work();
-    await pool.query("INSERT INTO membership_policy_override (key,value,active) VALUES ('plan:free',$1::jsonb,true)", [JSON.stringify({ entitlements: { "storage.bytes": 1, "upload.file.maxBytes": 1, "upload.daily.maxBytes": 1 } })]);
-    await expect(service.prepare(f.owner, f.key, f.manifest)).rejects.toThrow(/한도/);
+    const { resolveEffectiveResourcePolicy } = await import("../membership-operations/membership-resource-quota");
+    const policy = await runtime.db.transaction((transaction) => resolveEffectiveResourcePolicy(transaction, f.owner));
+    expect(policy.dailyUploadMaxBytes).toBeGreaterThan(0);
+    await pool.query(`INSERT INTO membership_resource_usage_event (id,"userId",kind,"sourceKey",bytes,metadata)
+      VALUES ($1,$2,'upload',$3,$4,'{"surface":"bg3d-native-quota-fixture"}'::jsonb)`,
+      [randomUUID(), f.owner, `bg3d-quota-fixture:${randomUUID()}`, policy.dailyUploadMaxBytes]);
+    await expect(service.prepare(f.owner, f.key, f.manifest)).rejects.toMatchObject({ response: { quota: "daily-upload" } });
+    expect(await runtime.db.transaction((transaction) => resolveEffectiveResourcePolicy(transaction, f.owner))).toEqual(policy);
     expect((await pool.query('SELECT count(*)::text AS value FROM studio_bg3d_bundle_revision WHERE "workId"=$1', [f.workId])).rows[0]?.value).toBe("0");
     expect(upload).not.toHaveBeenCalled();
   });

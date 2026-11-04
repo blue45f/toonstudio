@@ -337,6 +337,9 @@ test("review database invariants execute with real PostgreSQL and the accepted g
   assert.ok(migrationFiles.includes("0090_studio_review_voice_note.sql"));
   assert.ok(migrationFiles.includes("0091_creator_work_publication_media.sql"));
   assert.ok(migrationFiles.includes("0116_studio_review_comment_pen_strokes.sql"));
+  assert.ok(migrationFiles.includes("0121_studio_bg3d_six_pass_bundle.sql"));
+  assert.match(preparation, /"studio_bg3d_revision_guard"/u);
+  assert.match(preparation, /"studio_bg3d_artifact_guard"/u);
   assert.ok(!migrationFiles.includes("0084_studio_pinned_review_share.sql"));
   for (const migration of migrationFiles) {
     assert.ok(

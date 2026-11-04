@@ -20,6 +20,7 @@ const GLOB_PATTERN = /[*?[\]]/u;
 
 /** These mandatory suites belong to the real PostgreSQL lane, never to a DB-less shard. */
 export const CORE_DATABASE_VITEST_TARGETS = Object.freeze([
+  "apps/api/src/modules/creator/studio-bg3d-bundle.repository.integration.test.ts",
   "apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts",
   "apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts",
   "apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts",
