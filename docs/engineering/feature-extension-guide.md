@@ -68,7 +68,7 @@ UI 색상은 `apps/web/src/shared/lib/theme.ts`·`theme-presets.ts`와 [디자�
 - Web의 `creator/live/`와 API `modules/creator/studio-live-gateway-*.ts`, `studio-crdt.service.ts`·`studio-crdt.repository.ts`를 함께 읽는다. 문서 편집·presence·음성·화면 공유는 권한과 수명이 다르다.
 - 영속 프로젝트·작업실 계약은 API `modules/studio-project-graph/`와 `packages/studio-project-model/src/graph/`를 확인한다. 세션 주체·프로젝트 ACL·방 입장 권한을 서버에서 검증하고 클라이언트 헤더나 DTO의 owner ID를 신뢰하지 않는다.
 - 로컬 반영, 송신 성공, 서버 영속 ACK, 상대 재생을 따로 관측한다. 재연결·중복·역순·권한 회수·방 변경·삭제 이후 늦게 도착한 응답을 시험한다. 음성은 사용자 동의·장치 해제·권한 거부를 포함한다.
-- Cloudflare Durable Objects의 임시 상태와 Socket.IO/CRDT 영속 저장 계약을 혼동하지 않는다. P2P signaling 교환 성공도 ICE·원격 미디어 성공을 증명하지 않는다.
+- Cloudflare Durable Objects의 방 조정 상태와 API/PostgreSQL의 문서·CRDT 저장 권위를 구분한다. DO도 ACL·nonce·receipt·presence 등을 SQLite에 영속 저장한다([조정자 계약](../../deploy/cloudflare-realtime/README.md)). P2P signaling 교환 성공도 ICE·원격 미디어 성공을 증명하지 않는다.
 - DB schema·migration은 `apps/api/src/platform/database/`, 적용 순서는 `scripts/production-database-migrations.manifest`가 소유한다. controller·시작 명령에서 DDL을 실행하지 않는다. schema·DTO·event·저장 모델을 별개로 검토한다.
 - 호환 확장은 구 runtime에서도 동작하는 추가형 변경부터 적용하고, 필드 삭제·이름 변경·제약 강화는 별도 contract 단계로 분리한다. 기존 migration의 체크섬을 바꾸지 않는다. 현재 onpod의 단일 역할·TLS 예외와 공식 migration workflow의 차이는 [인프라 지도](../operations/infrastructure-map.md) 7·8절을 먼저 확인한다.
 
