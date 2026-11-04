@@ -160,6 +160,23 @@ export const TOOLCHAIN_STAGES_ART: readonly ProcessToolchainStage[] = [
         kind: "external",
       },
       {
+        name: { ko: "돈드로우 (DonDraw)", en: "DonDraw" },
+        role: {
+          ko: "스케치업(SKP)·클립스튜디오(CS3O) 웹툰 배경·소품을 거래하는 국내 3D 소재 마켓",
+          en: "Korean 3D asset market for SketchUp (SKP) and Clip Studio (CS3O) webtoon backgrounds and props",
+        },
+        kind: "external",
+      },
+      {
+        name: { ko: "Tripo 3D / Rodin (Hyper3D)", en: "Tripo 3D / Rodin (Hyper3D)" },
+        role: {
+          ko: "단일 컨셉 스케치나 텍스트로 쿼드 리토폴로지·PBR 텍스처 3D 소품 메쉬를 생성하는 AI 3D 도구",
+          en: "AI 3D tools generating quad-retopologized PBR-textured 3D prop meshes from a single sketch or prompt",
+        },
+        kind: "external",
+        pricing: "freemium",
+      },
+      {
         name: { ko: "캐릭터 셰이퍼", en: "Character Shaper" },
         role: {
           ko: "3D 캐릭터의 체형과 포즈를 빚는 셰이퍼",

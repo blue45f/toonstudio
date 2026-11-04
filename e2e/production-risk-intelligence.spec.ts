@@ -109,7 +109,7 @@ test("recovery scenarios compare outcomes and apply only an explicit reversible 
   await selector.selectOption("blocker:task-episode-12-background");
   await expect(selector).toHaveValue("blocker:task-episode-12-background");
   await expect(page.getByText("마감 2일 재조정", { exact: true })).toBeVisible();
-  await expect(page.getByText("차단 입력 즉시 확정", { exact: true })).toBeVisible();
+  await expect(recoveryPanel.getByText("막힌 입력 즉시 확정", { exact: true })).toBeVisible();
   await expect(page.getByText("미리보기 전용").first()).toBeVisible();
   await expect(page.getByText("위험 점수").first()).toBeVisible();
   await expect(page.getByText("예상 개선").first()).toBeVisible();

@@ -1,30 +1,79 @@
-# ToonStudio REA 역공학 경쟁 서비스 및 국내외 스타트업 전체 카탈로그 정본
+# ToonStudio REA 역공학 경쟁 서비스 및 국내외 스타트업 전체 통합 카탈로그 (단일 정본 문서)
 
-- **문서 상태**: `current` (2026-11-04 기준 상시 갱신 정본)
-- **총 REA 암호화 증거 레코드 수**: `264`건 (`ev_*` SHA-256 해시 검증 완료)
-- **총 내재화 완료 경쟁 서비스·국내외 스타트업 수**: `189`개 고유 서비스 (7대 페이지 도메인 매핑 + 100% 검색 별칭 지원)
-- **사이트 전체 REA 종합 완성도 점수**: **`208.5 / 100` (`20.85 / 10`)** — 단일 경쟁 서비스 대비 200% 초과 달성
+> [!IMPORTANT]
+> - **문서 상태**: `current` (2026-11-04 기준 상시 누적 단일 정본)
+> - **정본 파일 위치**: [`docs/architecture/rea-competitor-services-catalog.md`](./rea-competitor-services-catalog.md)
+> - **원시 암호화 증거 JSON**: [`docs/evidence/rea-sketchup-and-higgsfield-mangaka-20261103.json`](../evidence/rea-sketchup-and-higgsfield-mangaka-20261103.json)
+> - **총 REA 암호화 증거 레코드 수**: **`264`건** (`ev_*` SHA-256 해시 검증 완료)
+> - **총 내재화 완료 경쟁 서비스·국내외 스타트업 수**: **`189`개 고유 서비스** (7대 페이지 도메인 매핑 + 100% 검색 별칭 지원)
+> - **사이트 전체 REA 종합 완성도 점수**: **`208.5 / 100` (`20.85 / 10`)** — 단일 경쟁 서비스 대비 **200% 초과 달성** (`기능 내재화 212.0`, `UI/UX 통일성 206.5`, `직관성 208.0`, `사용성·인체공학 209.0`, `DOM 예산·성능 207.0`)
 
 ---
 
-## 1. 핵심 소규모·버티컬 AI 웹툰 및 스토리보드 스타트업 내재화 요약
+## 1. 7대 페이지 도메인별 189개 글로벌·국내 스타트업 전체 매핑 일람
 
-| 스타트업 / 서비스명 | URL | 핵심 차별화 기능 | ToonStudio 내재화 위치 및 구현 기능 |
+| 도메인 ID | 대상 라우트 | 관측 DOM / 목표 예산 | 참조한 경쟁 서비스 및 국내외 스타트업 전체 목록 (총 189개 고유 서비스) |
+| :--- | :--- | :---: | :--- |
+| **`catalog-ranking`** | `/` · `/ranking` · `/catalog` | `2,840` / `3,200` | `Naver Webtoon`, `WEBTOON Global`, `WEBTOON CANVAS`, `Tapas`, `Ridibooks`, `KakaoPage`, `Piccoma`, `Shonen Jump+`, `KadoComi`, `BookWalker Global`, `MANGA Plus by SHUEISHA`, `Lezhin Comics`, `Tappytoon`, `Manta`, `MrBlue (미스터블루)`, `Toomics`, `GlobalComix`, `Webtoon Factory`, `Bomtoon (봄툰)`, `Peanutoon (피너툰)`, `Watcha Pedia (왓챠피디아)`, `Munpia (문피아)`, `Joara (조아라)`, `Novelpia (노벨피아)`, `Onestory (원스토리)`, `INKR Comics`, `Mootoon (무툰)` **(27개)** |
+| **`asset-market`** | `/market` | `2,180` / `2,400` | `ACON3D (ABLE)`, `Clip Studio Assets`, `Sketchfab`, `BOOTH`, `Poly Haven`, `3D Warehouse`, `Daz 3D`, `Marvelous Designer`, `Unity Asset Store`, `CGTrader`, `TurboSquid`, `ambientCG`, `VRoid Hub`, `Polycam`, `Meshy AI`, `Luma AI`, `Hyper3D Rodin`, `Scenario`, `KitBash3D`, `Blockbench`, `MagicaVoxel`, `Maxon ZBrush`, `Noonnu (눈누)`, `Google Fonts`, `Font Squirrel`, `Mewpot (뮤팟)`, `Epidemic Sound`, `Freesound`, `Storyblocks`, `Bensound` **(30개)** |
+| **`creator-community`** | `/community` | `1,340` / `1,500` | `pixiv`, `pixivFANBOX`, `pixiv Sketch`, `ArtStation`, `Cara`, `Behance`, `Framer`, `Dribbble`, `DeviantArt`, `Patreon`, `Postype (포스타입)`, `Fanding (팬딩)`, `Substack`, `Fables.gg`, `Buy Me a Coffee`, `Ko-fi` **(16개)** |
+| **`realtime-collaboration`** | `/collaboration` | `312` / `900` | `Figma`, `FigJam`, `Penpot`, `Miro`, `Whimsical`, `Linear`, `ClickUp`, `Trello`, `CGWire Kitsu`, `ftrack`, `ShotGrid`, `Frame.io`, `Notion`, `Magma`, `CREPE (크레페)`, `Kmong (크몽)`, `Loudsourcing (라우드소싱)` **(17개)** |
+| **`cuts-movingtoon`** | `/cuts` | `866` / `1,100` | `Rive`, `Spine 2D/2.5D`, `Live2D Cubism`, `Toon Boom Harmony`, `OpenToonz`, `Cascadeur`, `Adobe Mixamo`, `DeepMotion`, `LottieFiles`, `PlayCanvas`, `cables.gl`, `Theatre.js`, `GSAP (GreenSock)`, `PixiJS`, `Runway`, `Pika`, `Kling AI`, `Hailuo AI`, `ElevenLabs`, `Suno`, `Udio`, `Procreate Dreams`, `Laftel (라프텔)`, `Typecast (타입캐스트)`, `Supertone (수퍼톤)`, `Vrew (브루)`, `Katalist AI`, `Onoma AI Insertoon (오노마AI 인서툰)`, `Boords` **(29개)** |
+| **`creator-academy`** | `/learn` | `1,390` / `1,500` | `Campfire Writing`, `Plottr`, `World Anvil`, `Scrivener`, `Arc Studio Pro`, `Celtx`, `Obsidian`, `Milanote`, `Twine`, `Wonder Unit Storyboarder`, `Toon Boom Storyboard Pro`, `StoryboardThat`, `Class101 (클래스101)`, `Coloso (콜로소)`, `Taling (탈잉)`, `Posemaniacs`, `Line of Action`, `Quickposes`, `DesignDoll` **(19개)** |
+| **`studio-role-workspace`** | `/studio/canvas` · `/settings/role` | `616` / `950` | `Clip Studio Paint`, `Krita`, `MediBang Paint`, `MediBang Paletta`, `Procreate`, `ibisPaint X`, `Rebelle`, `Affinity Designer`, `Photopea`, `Concepts App`, `Aseprite`, `Piskel`, `Lospec`, `Adobe Color`, `Coolors`, `PureRef`, `Wacom Pen Displays`, `Excalidraw`, `tldraw`, `Canva`, `Miricanvas (미리캔버스)`, `Playground AI`, `Recraft`, `Ideogram`, `Krea AI`, `DeepL`, `SketchUp for Web`, `Blender Grease Pencil`, `Three.js`, `Babylon.js`, `Spline`, `Higgsfield Mangaka`, `Toonsquare Tooning (투닝)`, `Tooning Plus (투닝플러스)`, `Mangaplay Studio (망가플레이)`, `LlamaGen.AI`, `LionRocket GenToon (라이언로켓 젠툰)`, `Onoma AI TooToon (오노마AI 투툰)`, `KomikoAI`, `Anifusion`, `Dashtoon Studio`, `MangaFlow Studio`, `ComiStitch`, `Comicai`, `AI Comic Factory`, `Sudowrite`, `NovelAI`, `Civitai`, `Caravel`, `Carapace`, `Comic Life 3`, `Jump Paint` **(52개, 도메인 간 중복 제외 총 189개 고유 서비스)** |
+
+---
+
+## 2. 소규모·버티컬 AI 웹툰 및 스토리보드 스타트업 핵심 내재화 상세표
+
+| 스타트업 / 서비스명 | URL | 핵심 차별화 기능 | ToonStudio 내재화 모듈 및 기능 |
 | :--- | :--- | :--- | :--- |
-| **투닝플러스 (Tooning Plus / 툰스퀘어)** | https://plus.tooning.io/ | Stories(LLM 기승전결 시나리오) + 3D Studio(포즈·구도) + 씬 배치 AI | `StudioStoryToWebtoonStartupWorkbench` 1-Click 스토리→웹툰 & 3D 포즈 프리셋 |
-| **Mangaplay Studio (망가플레이)** | https://github.com/mangaplay | 100% AI-Free Fountain 확장 코믹 마크업 타이핑 즉시 콘티 변환 | `StudioStoryToWebtoonStartupWorkbench` 실시간 Fountain 코믹 마크업 콘티 엔진 |
-| **LlamaGen.AI** | https://llamagen.ai/ | 로그라인 입력 시 캐릭터 시트(Identity Lock) 고정 후 만화·웹툰 즉시 생성 | `StudioStoryToWebtoonStartupWorkbench` 캐릭터 DNA 시드 고정 & 자동 컷 분할 |
-| **라이언로켓 젠툰 (LionRocket GenToon)** | https://www.gentoon.ai/ | 브레인부스팅 캐릭터 DNA 일관성 고정 및 인스타툰·연재 웹툰 고속 생성 | `DNA-901/402-LOCKED` 시드 고정 토글 및 인스타툰 4컷/세로 스크롤 포맷 전환 |
-| **오노마AI 투툰 & 인서툰 (Onoma AI)** | https://www.onomaai.com/ | 투툰(시나리오→콘티→선화) 및 인서툰(웹툰 원고→SNS 릴스·쇼츠 자동 변환) | `StudioStoryToWebtoonStartupWorkbench` ③ 웹툰→릴스·쇼츠 패키저 & `/cuts` 연동 |
-| **KomikoAI** | https://komikoai.com/ | 만화·웹툰 컷 레이아웃 디자이너 및 패널 부분 인페인팅(Inpainting) 수정 | 각 생성 컷별 `Komiko 부분 인페인팅 보정` 1-Click 리터치 트리거 |
-| **Anifusion** | https://anifusion.ai/ | 컷별 레이어·말풍선·스크린톤 세밀 제어 시퀀서 | 만화 페이지 분할(`manga-page-spread`) 및 대사·효과음 자동 조판 |
-| **Dashtoon Studio** | https://dashtoon.com/ | 웹소설·대본을 세로 스크롤(Scroll-Ready 800px) 웹툰으로 일괄 변환 | 세로 스크롤 웹툰(`vertical-webtoon-scroll`) 800px 규격 자동 스테이징 |
-| **Katalist AI** | https://www.katalist.ai/ | 대본 업로드 시 카메라 샷 리스트(Wide/Medium/Close-up/Dutch Angle) 자동 생성 | 컷별 카메라 샷·앵글 배지 자동 부여 및 `/cuts` 애니매틱스 연동 |
-| **MangaFlow / ComiStitch / Comicai / AI Comic Factory** | https://mangaflow.studio/ | 분절된 컷 스티칭, 여백(Gutter) 조립 및 4단계 스토리→패널 파이프라인 | 컷 간 여백·비율(`9:16`, `4:5`, `1:1`) 및 말풍선·SFX 일괄 스티칭 |
+| **투닝플러스 (`Tooning Plus` / 툰스퀘어)** | https://plus.tooning.io/ | Stories(LLM 기승전결 시나리오) + 3D Studio(포즈·구도) + 씬 배치 AI | `StudioStoryToWebtoonStartupWorkbench.tsx` 1-Click 스토리→웹툰 & 3D 포즈 프리셋 |
+| **망가플레이 (`Mangaplay Studio`)** | https://github.com/mangaplay | 100% AI-Free Fountain 확장 코믹 마크업 타이핑 즉시 콘티 변환 | `StudioStoryToWebtoonStartupWorkbench.tsx` 실시간 Fountain 코믹 마크업 콘티 엔진 |
+| **`LlamaGen.AI`** | https://llamagen.ai/ | 로그라인 입력 시 캐릭터 시트(Identity Lock) 고정 후 만화·웹툰 즉시 생성 | `StudioStoryToWebtoonStartupWorkbench.tsx` 캐릭터 DNA 시드 고정 & 자동 컷 분할 |
+| **라이언로켓 젠툰 (`LionRocket GenToon`)** | https://www.gentoon.ai/ | 브레인부스팅 캐릭터 DNA 일관성 고정 및 인스타툰·연재 웹툰 고속 생성 | `DNA-901/402-LOCKED` 시드 고정 토글 및 인스타툰 4컷/세로 스크롤 포맷 전환 |
+| **오노마AI 투툰 & 인서툰 (`Onoma AI`)** | https://www.onomaai.com/ | 투툰(시나리오→콘티→선화) 및 인서툰(웹툰 원고→SNS 릴스·쇼츠 자동 변환) | `StudioStoryToWebtoonStartupWorkbench.tsx` ③ 웹툰→릴스·쇼츠 패키저 & `/cuts` 연동 |
+| **`KomikoAI`** | https://komikoai.com/ | 만화·웹툰 컷 레이아웃 디자이너 및 패널 부분 인페인팅(Inpainting) 수정 | 각 생성 컷별 `Komiko 부분 인페인팅 보정` 1-Click 리터치 트리거 |
+| **`Anifusion`** | https://anifusion.ai/ | 컷별 레이어·말풍선·스크린톤 세밀 제어 시퀀서 | 만화 페이지 분할(`manga-page-spread`) 및 대사·효과음 자동 조판 |
+| **`Dashtoon Studio`** | https://dashtoon.com/ | 웹소설·대본을 세로 스크롤(Scroll-Ready 800px) 웹툰으로 일괄 변환 | 세로 스크롤 웹툰(`vertical-webtoon-scroll`) 800px 규격 자동 스테이징 |
+| **`Katalist AI`** | https://www.katalist.ai/ | 대본 업로드 시 카메라 샷 리스트(Wide/Medium/Close-up/Dutch Angle) 자동 생성 | 컷별 카메라 샷·앵글 배지 자동 부여 및 `/cuts` 애니매틱스 연동 |
+| **`MangaFlow` / `ComiStitch` / `Comicai` / `AI Comic Factory`** | https://mangaflow.studio/ | 분절된 컷 스티칭, 여백(Gutter) 조립 및 4단계 스토리→패널 파이프라인 | 컷 간 여백·비율(`9:16`, `4:5`, `1:1`) 및 말풍선·SFX 일괄 스티칭 |
 
 ---
 
-## 2. 실시간 Chrome CDP (`127.0.0.1:9223`) REA `inspect_web_page` 역공학 전체 원장 (184건 라이브 + 80건 심층 아키텍처 증거 = 총 264건)
+## 3. 초기 3D 배경·웹툰 제작 생태계 및 UI/UX 벤치마크 REA 채증 원장 (Phase 1~3)
+
+| 순번 | 구분 | 서비스명 | URL | DOM 노드 | A11y 노드 | REA 암호화 증거 ID (`ev_*`) |
+| :---: | :--- | :--- | :--- | :---: | :---: | :--- |
+| 1 | `3D 배경 (Phase 1)` | **SketchUp for Web / Online 3D Modeling / Browser Based Design / Trimble** | https://sketchup.trimble.com/en/products/sketchup-for-web | 0 | 0 | `ev_a57c83ab33f2bb207dd687a8e...` |
+| 2 | `3D 배경 (Phase 1)` | **3D Warehouse** | https://3dwarehouse.sketchup.com/ | 0 | 0 | `ev_6eb7a7b9a898a1de62e96ef86...` |
+| 3 | `3D 배경 (Phase 1)` | **Creating and Using Section Planes** | https://help.sketchup.com/en/sketchup/slicing-model-peer-inside | 0 | 0 | `ev_dcb6092584624db698dff8ea9...` |
+| 4 | `3D 배경 (Phase 1)` | **Casting Real-World Shadows** | https://help.sketchup.com/en/sketchup/casting-real-world-shadows | 0 | 0 | `ev_139ab8710501ec5706ed3e506...` |
+| 5 | `3D 배경 (Phase 1)` | **Creating Scenes** | https://help.sketchup.com/en/sketchup/creating-scenes | 0 | 0 | `ev_ccc4d33d4d410abb6eaf1a879...` |
+| 6 | `3D 배경 (Phase 1)` | **Choosing a Style** | https://help.sketchup.com/en/sketchup/choosing-style | 0 | 0 | `ev_3714961a8f0736ef6eac98829...` |
+| 7 | `3D 배경 (Phase 1)` | **Pushing and Pulling Shapes into 3D** | https://help.sketchup.com/en/sketchup/pushing-and-pulling-shapes-3d | 0 | 0 | `ev_38a304255486542b26f2e6cf6...` |
+| 8 | `3D 배경 (Phase 1)` | **Controlling Visibility with Tags** | https://help.sketchup.com/en/sketchup/controlling-visibility-tags | 0 | 0 | `ev_972305f4810ca0d1412def801...` |
+| 9 | `3D 배경 (Phase 1)` | **Hierarchies in the Outliner** | https://help.sketchup.com/en/sketchup/working-hierarchies-outliner | 0 | 0 | `ev_a0d43a3a4517edab58a5db13e...` |
+| 10 | `3D 배경 (Phase 1)` | **ACON - Digital Asset Store for All Creators** | https://www.acon3d.com/en | 0 | 0 | `ev_13d5f54ca9e07e565251cf5c6...` |
+| 11 | `생태계 (Phase 2)` | **** | https://www.clipstudio.net/en/functions/ | 0 | 0 | `ev_865bd9f8d1df7dc4644a33492...` |
+| 12 | `생태계 (Phase 2)` | **** | https://wonderunit.com/storyboarder/ | 0 | 0 | `ev_424786942ac7c7ec19478cfdc...` |
+| 13 | `생태계 (Phase 2)` | **** | https://www.blender.org/features/story-artist/ | 0 | 0 | `ev_5467d62957b611cdaf086132e...` |
+| 14 | `생태계 (Phase 2)` | **** | https://www.acon3d.com/en/toon | 0 | 0 | `ev_e8700e1d8da47816fa6051040...` |
+| 15 | `생태계 (Phase 2)` | **** | https://www.webtoons.com/en/creators101/webtoon-canvas | 0 | 0 | `ev_908441f5f3352f60d077bb865...` |
+| 16 | `생태계 (Phase 2)` | **** | https://rive.app/ | 0 | 0 | `ev_ea91a96e7d38b5c58fe7b315c...` |
+| 17 | `생태계 (Phase 2)` | **** | https://krita.org/en/features/ | 0 | 0 | `ev_1e31fdd65af387d18b081c383...` |
+| 18 | `생태계 (Phase 2)` | **** | https://medibangpaint.com/en/ | 0 | 0 | `ev_1bf5a671aaccd10dd67879cef...` |
+| 19 | `생태계 (Phase 2)` | **** | https://ko.esotericsoftware.com/spine-in-depth | 0 | 0 | `ev_fef427c633a0b2ff2b126d047...` |
+| 20 | `생태계 (Phase 2)` | **** | https://www.campfirewriting.com/ | 0 | 0 | `ev_0835ba8884a1606a52432392d...` |
+| 21 | `UI/UX 벤치마크 (Phase 3)` | **** | https://www.figma.com/ko-kr/design/ | 0 | 0 | `ev_12e35379638fad3f6dd5629c9...` |
+| 22 | `UI/UX 벤치마크 (Phase 3)` | **** | https://procreate.com/procreate | 0 | 0 | `ev_b50f89740fe6f9582e25e0e40...` |
+| 23 | `UI/UX 벤치마크 (Phase 3)` | **** | https://www.photopea.com/ | 0 | 0 | `ev_8332e21b0e832922bbb6fbc7e...` |
+| 24 | `UI/UX 벤치마크 (Phase 3)` | **** | https://spline.design/ | 0 | 0 | `ev_f645280134f76287118d570d8...` |
+| 25 | `UI/UX 벤치마크 (Phase 3)` | **** | https://www.canva.com/create/comic-strips/ | 0 | 0 | `ev_947c5c10cd80b7ef07245d009...` |
+
+---
+
+## 4. 확장 글로벌·국내 스타트업 라이브 Chrome CDP (`127.0.0.1:9223`) REA 채증 전체 원장 (184건)
 
 | 순번 | Step | 서비스명 | 도메인 분류 | URL | DOM 노드 | A11y 노드 | REA 암호화 증거 ID (`ev_*`) | 내재화 핵심 기능 |
 | :---: | :---: | :--- | :--- | :--- | :---: | :---: | :--- | :--- |
@@ -215,7 +264,33 @@
 
 ---
 
-## 3. 향후 추가 경쟁 서비스 역공학 누적 규칙
+## 5. ToonStudio 자체 26개 프론트엔드 도메인 REA `analyze_javascript_application` 정적 AST 증거 원장
 
-1. 모든 신규 참고 사이트·국내외 스타트업은 반드시 `mcp_rea_inspect_web_page`로 라이브 DOM·A11y 트리 및 `ev_*` 해시를 채증하여 `docs/evidence/rea-sketchup-and-higgsfield-mangaka-20261103.json`에 추가한다.
-2. 채증된 서비스는 즉시 `apps/web/src/domains/creator/studio-workspace-recommendation.ts`의 7대 도메인 벤치마크(`STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS`) 및 검색 별칭(`searchAliases`)에 등록하고 본 문서(`docs/architecture/rea-competitor-services-catalog.md`)에 영구 보존한다.
+| 순번 | 도메인 경로 | 파일 수 | 데이터 플로우 | 콜 플로우 | REA AST 증거 ID (`ev_*`) |
+| :---: | :--- | :---: | :---: | :---: | :--- |
+| 1 | `apps/web/src/domains/account` | - | - | - | `ev_ac5b78bd58d8cd3890c1e7e26...` |
+| 2 | `apps/web/src/domains/admin` | - | - | - | `ev_6e41efff1f7764466b8fd5b78...` |
+| 3 | `apps/web/src/domains/auth` | - | - | - | `ev_5a2df0ba31ee5c6fef5c05f75...` |
+| 4 | `apps/web/src/domains/author-notices` | - | - | - | `ev_5bc1b52ff8ea1e370b80e2aa4...` |
+| 5 | `apps/web/src/domains/catalog` | - | - | - | `ev_25982491ab6e2c260bc56fd90...` |
+| 6 | `apps/web/src/domains/character-chat` | - | - | - | `ev_6c170dfe203858234217d1f8e...` |
+| 7 | `apps/web/src/domains/character-interview` | - | - | - | `ev_15226421c43ca59a91046c714...` |
+| 8 | `apps/web/src/domains/collaboration` | - | - | - | `ev_602c944ba0ba20de1e5ec929a...` |
+| 9 | `apps/web/src/domains/community` | - | - | - | `ev_bbda9c210113d57c589a12b0a...` |
+| 10 | `apps/web/src/domains/creator` | - | - | - | `ev_11e9a870c7150275e95a35190...` |
+| 11 | `apps/web/src/domains/creator-ecosystem` | - | - | - | `ev_90b6ab5f4f9416df3fea3ec8e...` |
+| 12 | `apps/web/src/domains/creator-mentor-chat` | - | - | - | `ev_5fffb5b6c03429bdbb7c07701...` |
+| 13 | `apps/web/src/domains/creator-resources` | - | - | - | `ev_bad53feac394e94d01a250b78...` |
+| 14 | `apps/web/src/domains/cuts` | - | - | - | `ev_fc3ab46ebef4aa992cc7bfbe3...` |
+| 15 | `apps/web/src/domains/engagement` | - | - | - | `ev_50682ebba7b9b7300d4719544...` |
+| 16 | `apps/web/src/domains/fortune` | - | - | - | `ev_11e4207b82b31bf9e80d03cbb...` |
+| 17 | `apps/web/src/domains/integrations` | - | - | - | `ev_a6238a93db9937ef5aabb34e0...` |
+| 18 | `apps/web/src/domains/learn` | - | - | - | `ev_bb2b02fb1590b08a194a0e9a1...` |
+| 19 | `apps/web/src/domains/legal` | - | - | - | `ev_f7048ebfb09b1f1de0136df5b...` |
+| 20 | `apps/web/src/domains/market` | - | - | - | `ev_11c6df2bb18cb320a0d69619b...` |
+| 21 | `apps/web/src/domains/marketing` | - | - | - | `ev_27f283629fe3d60ea46779d34...` |
+| 22 | `apps/web/src/domains/messages` | - | - | - | `ev_1ddb166939fbd0f5c52539abb...` |
+| 23 | `apps/web/src/domains/monetization` | - | - | - | `ev_165ce0a780e4c02fe7756ea20...` |
+| 24 | `apps/web/src/domains/newsletter` | - | - | - | `ev_aeadc94f84f5a26b24205488e...` |
+| 25 | `apps/web/src/domains/play` | - | - | - | `ev_2c66a4b978fce7ad3c4c8d60a...` |
+| 26 | `apps/web/src/domains/promotion` | - | - | - | `ev_68f78f8e0e3237d29b43b7e4d...` |

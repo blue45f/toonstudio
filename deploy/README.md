@@ -1,33 +1,23 @@
-# deploy/ 인덱스 — 배포 단위 지도 (삭제·이동 결정용이 아님)
+# 배포 단위 안내
 
-> 이 파일은 새로 추가된 인덱스이다. 배포 단위를 삭제하거나 합치지 않는다.
-> 각 단위의 실제 가동 여부, 트리거, 소유자는 아래에 "미확인"으로 표시된 항목을
-> 실제 배포 현황과 대조한 뒤에 채워야 한다. 인덱스만으로 가동 여부를 단정하지 않는다.
+- 상태: **current** — 저장소 탐색 안내(2026-11-04).
+- 운영 자원과 마지막 공급자 조회 기록은 [인프라 지도](../docs/operations/infrastructure-map.md)가 정본이다. 아래 상태는 그 기록과 저장소 설정을 구분하며 이번 세션의 실시간 공급자 조회를 뜻하지 않는다.
+- 승인 범위는 루트 `AGENTS.md`, `DEPLOY.md`, `STANDING_APPROVAL.json`을 따른다. 이 인덱스는 승인 범위를 바꾸지 않는다.
 
-## 배포 단위 목록 (상위 디렉토리 기준)
+| 단위 | 역할·근거 | 가동 상태의 근거 |
+| --- | --- | --- |
+| `cloudflare-static/` | SPA·엣지 gateway·R2 공개 에셋. `wrangler.jsonc`의 `ASSETS`·`LARGE_ASSETS` binding | 인프라 지도 1절의 운영 기록 |
+| `cloudflare-analytics/` | 트래픽 분석 Worker·D1 | 인프라 지도 1절의 운영 기록 |
+| `cloudflare-apex-redirect/` | apex → www 정본 리다이렉트 | 인프라 지도 1절의 운영 기록 |
+| `cloudflare-realtime/` | Studio 임시 실시간 상태·Durable Objects | 인프라 지도 1절의 운영 기록 |
+| `onpod/` | 서울 Core API·DB 재구축 도구. [README](onpod/README.md)의 고정 커밋 재현 절차 | 2026-10-23 컷오버·2026-10-29 조회 기록. 재구축 스크립트는 일상 이미지 교체 절차가 아님 |
+| `capability-worker/` | 선택형 capability 배포 구현·설정 | 이 조사에서는 원격 가동 여부 미확인 |
+| `federated-data-plane/` | 선택형 데이터 평면 배포 구현 | 이 조사에서는 원격 가동 여부 미확인. API 내부 구현과 이름이 같다는 이유로 중복 삭제하지 않음 |
+| `gcp-free-data/` | GCP 데이터 계층 배포 구현 | 이 조사에서는 원격 가동 여부 미확인 |
+| `trust/` | 신뢰·검증 관련 구성 | 앱 호스팅 단위 수에 포함해 세지 않음 |
 
-| 단위 | 종류 (이름 기준) | 주의 사항 |
-|---|---|---|
-| `cloudflare-static/` | 정적 배포 | 정적 자산 배포 경로와 `apps/`의 빌드 출력이 일치하는지 확인 필요 |
-| `cloudflare-analytics/` | 분석 | 정적·실시간 단위와 수집 경로가 겹치는지 확인 필요 |
-| `cloudflare-apex-redirect/` | 리다이렉트 | apex 도메인 정책과 다른 Cloudflare 단위 간 우선순위 확인 필요 |
-| `cloudflare-realtime/` | 실시간 | 실시간 경로가 `apps/api`의 Socket.IO 경로와 어떻게 연결되는지 확인 필요 |
-| `capability-worker/` | 워커 | 어떤 capability를 제공하는지, 호출 주체가 누구인지 확인 필요 |
-| `federated-data-plane/` | 데이터 평면 | 이중 위치 주의: `apps/api/src/platform/federated-data-plane/`에도 있다. 기본 비활성으로 알려져 있다. 의도된 분리인지 중복인지 diff·참조 확인 전에는 합치지도, 지우지도 않는다 |
-| `gcp-free-data/` | 무료 티어 데이터 | `config/free-database-federation.json`, `config/free-infrastructure-policy.json`과 정책이 겹치는지 확인 필요 |
-| `onpod/` | 배포 환경 | 어떤 환경·트리거로 배포되는지 확인 필요 |
-| `trust/` | 신뢰·정책 | 어떤 검증·서명을 담당하는지 확인 필요 |
+GPU 추론 코드는 별도 [`services/creator-inference/README.md`](../services/creator-inference/README.md)에 있다. CPU 시험과 CUDA GPU 검증·운영 배포는 구분되며, 이 목록으로 GPU 공급자나 운영 중인 GPU 인스턴스를 추정하지 않는다. onpod와 RunPod도 서로 다른 서비스다.
 
-## 기타 파일
+환경변수 계약은 `backend-capabilities.env.example`, `integration-runtime-connectors.env.example`과 각 단위의 예제를 참조한다. 예제나 코드 참조는 실제 credential의 존재·유효성 증거가 아니다. 비밀값은 문서에 기록하지 않는다.
 
-- `STANDING_APPROVAL.json` (682B): 존재만 확인했다. 본문 해석은 이 인덱스에서 하지 않는다.
-- `backend-capabilities.env.example` (8,937B): 백엔드 capability 관련 예시. 비밀값이 없는 예시 범위에서만 다룬다.
-- `integration-runtime-connectors.env.example` (1,756B): 통합 런타임 커넥터 관련 예시.
-
-## 이 인덱스의 사용법
-
-1. 새 배포 단위를 추가할 때는 이 표에 한 줄을 먼저 추가한다: 목적, 대상 앱·서비스, 가동 여부, 트리거.
-2. 단위를 삭제·합치려면 가동 여부와 참조를 먼저 증명한다. 이 표에 적혀 있다는 사실만으로는 삭제 근거가 되지 않는다.
-3. 서비스 수(메인 백엔드 1개 + GPU 추론 1개)보다 배포 단위가 많다는 점이
-   이 레포의 가장 큰 운영 확장성 리스크이다. 단위를 줄이는 것보다,
-   먼저 각 단위의 가동 여부와 책임을 확정하는 것이 순서이다.
+새 단위는 역할·설정 근거·가동 증거를 함께 추가한다. 삭제·통합은 호출·배포 참조와 운영 상태를 확인한 뒤 결정한다.

@@ -73,6 +73,35 @@ function tipPalmDot(vrm: import("@pixiv/three-vrm").VRM, side: "left" | "right")
 }
 
 describe("VRM finger curl polarity", () => {
+  it("중지를 편집하지 않아도 첫 검지 굽힘이 전체 손 보정과 같은 방향을 유지한다", async () => {
+    for (const character of CORE) {
+      const vrm = await load(character.file);
+      const pose = pickNaturalIdlePose(character.id);
+      for (const side of ["left", "right"] as const) {
+        for (const sign of [-1, 1]) {
+          applyPoseToVrm(vrm, stripFingerBones(pose.bones as PoseBoneMap), pose.yOffset ?? 0);
+          const key = `${side}IndexProximal` as const;
+          const patch: FingerRotationMap = { [key]: [0, 0, sign * 0.6] };
+          invalidateVrmFingerCurlPolarityCache(vrm);
+          applyFingerRotations(vrm, patch);
+          const cold = readFingerEuler(vrm, key);
+          invalidateVrmFingerCurlPolarityCache(vrm);
+          applyFingerRotations(vrm, { ...patch, [`${side}MiddleProximal`]: [0, 0, sign * 0.6] });
+          const calibrated = readFingerEuler(vrm, key);
+          expect(eulerDistance(cold, calibrated), `${character.name}/${side}/${sign} 첫 단독 편집 방향`).toBeLessThan(1e-6);
+          // 저장된 편집값을 다시 읽고 축 캐시가 없는 상태에서도 같은 결과여야 한다.
+          const restored: FingerRotationMap = JSON.parse(JSON.stringify(patch));
+          for (let edit = 0; edit < 5; edit += 1) {
+            invalidateVrmFingerCurlPolarityCache(vrm);
+            applyPoseToVrm(vrm, stripFingerBones(pose.bones as PoseBoneMap), pose.yOffset ?? 0);
+            applyFingerRotations(vrm, restored);
+            expect(eulerDistance(readFingerEuler(vrm, key), calibrated)).toBeLessThan(1e-6);
+          }
+        }
+      }
+    }
+  }, 180_000);
+
   it("curls middle fingertips into the palm for core humanoids (including Lumi axis flip)", async () => {
     const failures: string[] = [];
     for (const character of CORE) {

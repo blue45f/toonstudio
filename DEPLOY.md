@@ -1,21 +1,21 @@
 # ToonStudio 배포 가이드
 
 > **2026-09-15 사용자 정책:** 자동 빌드·배포 금지. PR 병합은 배포 승인이 아닙니다.
-> 승인한 main SHA의 변경 배포 단위만 Cloudflare와 Render에 수동 반영합니다.
-> Vercel 런타임·설정·배포 workflow는 퇴역했으며 Cloudflare/Render만 운영 권위로 사용합니다.
+> 승인한 main SHA의 변경 배포 단위만 각 단위의 승인 범위에 따라 수동 반영합니다.
+> 현재 배포 위치는 Cloudflare와 onpod이며 Vercel·Render 런타임은 퇴역했습니다.
 > [최소 비용 배포 정책](docs/operations/minimum-cost-deployment-policy.md)이 이전 자동 배포 지침을 대체합니다.
 
 > **2026-10-23 인프라 변경:** Core API는 onpod `toonstudio-api`(서울), PostgreSQL 원장은 onpod `toonstudio-db`로 옮겼고 Render `toonspectrum-core-api`는 삭제했다. 현재 사실·절차는 [인프라 지도](docs/operations/infrastructure-map.md)가 정본이다. 이 문서의 Render·Supabase·Neon 서술은 퇴역 기록이며 onpod 단위는 아직 상시 승인 범위 밖이다.
 
-> 운영 DB/데이터 플레인과 Neon `neondb`의 legacy 경계는 [`docs/operations/canonical-database-topology.md`](docs/operations/canonical-database-topology.md)를 정본으로 사용합니다.
+> 상태: **current** — 배포 진입 안내. 공급자 상태의 마지막 직접 조회 기록은 인프라 지도의 2026-10-29 기록이며, 현재 세션의 공급자 조회 결과가 아닙니다. 아래에서 별도로 표시한 과거 절차는 운영 대상 확인 없이 실행하지 않습니다.
 
 기본 운영 권위는 무료 우선으로 분리합니다. Cloudflare Static Assets가 SPA와 정적 카탈로그를
 직접 제공하고, 최소 Worker gateway는 API·Socket.IO·OG crawler 경로만 검토된 Core API origin으로
-전달합니다. 동적 PostgreSQL 원장의 현재 권위는 onpod `toonstudio-db`입니다(과거 Supabase는 미사용, Neon은 삭제).
-Cloudflare Durable Objects는 Studio의 임시 실시간 상태, Upstash는 선택형 분산 제한·조정,
-파일 data plane의 리소스별 현재·퇴역 상태는 인프라 지도를 따릅니다. Core API의 기본 origin은
-onpod `toonstudio-api`이며 배포와 롤백은 각 Cloudflare/onpod 배포 단위의 검증된
-version으로 수행합니다.
+전달합니다. 동적 원장은 onpod PostgreSQL `toonstudio-db`, Core API는 onpod `toonstudio-api`입니다.
+Cloudflare Durable Objects는 Studio의 임시 실시간 상태를, R2는 대형 공개 에셋을 담당합니다.
+Upstash·B2·Supabase 연동 설정이 저장소에 있다는 사실만으로 해당 서비스가 운영 중임을 뜻하지 않습니다.
+Supabase 저장소는 컷오버 기록에서 비활성(`SUPABASE_OBJECT_STORAGE_ENABLED=false`)이며 Neon은 삭제됐습니다.
+현재 연결 경로와 구성요소별 상태·롤백은 [인프라 지도](docs/operations/infrastructure-map.md)를 따릅니다.
 
 한 제공자가 다른 제공자의 전체 폴백이 되지는 않습니다. 각 workload는 하나의 authority를 가지며,
 동등 계약·quota snapshot·복구 절차가 검증되지 않은 공급자에는 자동으로 쓰지 않습니다.
@@ -29,15 +29,16 @@ version으로 수행합니다.
 | DB | PostgreSQL | onpod `toonstudio-db`(서울, 2026-10-23~; Supabase는 미사용, Neon은 삭제) | 동적 데이터 + checksum migration 원장 |
 | Studio realtime | Durable Objects | Cloudflare | presence·comment invalidation·screen-share signaling |
 | 분산 제한/조정 | Redis | Upstash(선택) | auth rate-limit·lease·coordination |
-| private object storage | 목적별 private buckets | Supabase/R2/B2 | source·derived·export 고정 라우팅 |
+| 대형 공개 에셋 | object storage | Cloudflare R2 | Worker의 `LARGE_ASSETS` binding |
+| 선택형 private object storage | 목적별 private buckets | Supabase/R2/B2 연동 구현 | 실제 활성 여부는 인프라 지도와 기능별 설정 확인 |
 | 개인 프로젝트 | OPFS/로컬/BYOS | 사용자 기기·저장소 | 운영자 중앙 저장 최소화 |
 
-`render.yaml`은 두 런타임을 정의합니다. `toonspectrum-core-api`는
+`render.yaml`은 **퇴역한 Blueprint**이며 현재 운영 배포 명세가 아닙니다. 이 파일은 두 런타임을 정의합니다. `toonspectrum-core-api`는
 `API_RUNTIME_ROLE=full`인 동적 HTTP 권위이고, `toonspectrum-studio-live`는 선택형 Socket.IO
 폴백입니다. 정적 gateway의 `CORE_API_ORIGIN`은 readiness를 통과한 Core 서비스만 가리켜야 하며,
 실시간 전용 origin이나 정적 사이트 자신을 지정하면 안 됩니다.
 
-### 운영 검증 스냅샷 (2026-09-16)
+### 과거 운영 검증 스냅샷 (2026-09-16, 컷오버 이전)
 
 - production DB `0001`~`0058` exact ledger와 runtime capability 검증 완료
 - Cloudflare realtime `realtime.toonstudio.cloud` custom hostname/DNS/TLS 활성; `workers.dev`는 독립 canary·rollback으로 유지
@@ -49,8 +50,8 @@ version으로 수행합니다.
 
 - Node 24.16+와 pnpm 11 (`corepack enable` 권장)
 - Cloudflare 계정과 수동 배포 권한
-- Render Core API 서비스와 수동 배포 권한
-- 현재 권위인 Supabase PostgreSQL의 `DATABASE_URL` (Neon `neondb`는 legacy 보존이며 새 운영 쓰기 권위로 쓰지 않습니다)
+- onpod Core API 앱의 승인된 이미지 교체 권한(인프라 지도 3·6.6·8절)
+- DB 작업 시 onpod PostgreSQL 접속 권한. 비밀값 위치와 동기화는 인프라 지도 5·6.4절을 따릅니다.
 - 소셜 로그인 실연동 시 Google Cloud / Kakao Developers / Naver Developers / GitHub OAuth App
 
 ## 1. 로컬 검증
@@ -112,7 +113,9 @@ pnpm run cloudflare:static:deploy
 | `render-core-api-image-deploy` | 위에서 만든 이미지 태그를 Render `toonspectrum-core-api`에 이미지 지정 배포(`POST /v1/services/{id}/deploys`의 `imageUrl`, 또는 대시보드 Manual Deploy). **서비스 설정의 `imagePath`는 옛 태그라서 이미지 지정 없는 재배포(`trigger_deploy`)는 옛 버전으로 되돌아가므로 쓰지 않는다** | 직전 정상 배포의 이미지 태그를 같은 방법으로 재배포 |
 | `production-database-migrations-additive` | `production-database-migrations.yml`을 `apply` 모드로 실행(릴리스 SHA는 이미 `origin/main`의 조상이어야 한다). **추가형 migration만** — 새 테이블·인덱스·제약·트리거 | 추가형이라 구 runtime과 호환되며, 되돌림이 필요하면 migration 파일 첫 줄의 롤백 주석을 별도 승인으로 수행 |
 
-공통 조건과 순서:
+이 표는 `deploy/STANDING_APPROVAL.json`에 남아 있는 승인 범위의 설명입니다. Render scope가 남아 있어도 삭제된 서비스를 재생성하거나 onpod에 승계할 권한은 아닙니다. 운영 DB workflow도 아직 Neon·Supabase 대상이므로 onpod DB에 그대로 실행하지 않습니다(인프라 지도 8절). onpod 이미지 교체는 별도 승인을 받은 뒤 지도 6.6절을 따릅니다.
+
+기존 승인 단위의 공통 조건과 순서(Render 단계는 컷오버 이전 기록):
 
 1. 대상은 배포 시점 `origin/main` 끝의 40자리 SHA 하나이며 필수 CI(`core`·`verify`)가 그 SHA에서 녹색이어야 한다. 같은 SHA의 중복 배포·자동 재시도는 하지 않는다.
 2. 순서는 migration(추가형 여부를 SQL로 다시 확인) → 컨테이너 릴리스 → Render 이미지 배포 → 정적 웹 → apex Worker이며, 배포 단위 사이에 health·로그인·자산 업로드 같은 스모크를 확인한다.
@@ -121,10 +124,10 @@ pnpm run cloudflare:static:deploy
 5. GitHub 환경(`production-database`)의 required reviewer 같은 보호 설정은 저장소 소유자의 통제 아래 그대로 유지한다. `NO-STUDIO-WRITERS` 확인 문구는 추가형 migration에서만 소유자를 대신해 입력하며, 입력 사실과 근거를 배포 기록에 남긴다.
 6. 결과에는 승인(상시 승인 적용), SHA, 검증, 배포 ID/URL, 롤백 대상을 구분해 기록한다.
 
-Core API에는 `.env.production.example`의 PostgreSQL·인증·CORS·목적별 object storage 설정을
-Render encrypted environment 또는 root `.env.local` Secret File로 주입합니다. `CORE_API_ORIGIN`은
+Core API의 환경변수 이름과 계약은 `.env.production.example`을 참조하고, onpod 주입·저장 위치는
+인프라 지도 5·6.3절을 따릅니다. 예제는 활성 기능이나 실제 키의 유효성을 증명하지 않습니다. `CORE_API_ORIGIN`은
 credential, path, query가 없는 별도 HTTPS origin이어야 하며 readiness와 origin provenance 검사를 통과해야 합니다.
-Render의 상시 플랫폼 헬스체크는 DB를 깨우지 않는 `/api/health/live`만 사용합니다. DB·스키마를 확인하는
+상시 플랫폼 헬스체크는 DB를 깨우지 않는 `/api/health/live`만 사용합니다. DB·스키마를 확인하는
 `/api/health/ready`는 수동 릴리스 게이트와 배포 후 점검에서만 호출하여 DB를 불필요하게 깨우거나 무료 한도를
 소모하지 않습니다. 이 규칙은 과거 Neon Free의 scale-to-zero와 월간 CU-hour 한도를 기준으로 정했고, 현재
 `render.yaml`도 같은 정책으로 `/api/health/live`만 상시 probe로 씁니다.
@@ -186,13 +189,15 @@ GitHub는 OAuth App의 Client ID/Secret을 Core API에 주입합니다. 자세�
 - 표지 프록시(`/api/cover?u=...`)가 이미지를 반환하거나 안전하게 폴백하는지 확인.
 - 로그인/리뷰/커뮤니티 기능이 DB 연결로 동작하는지 확인.
 - 에지 출처 인증 확인: `GET https://<domain>/api/health/capabilities` 응답의 `edgeOriginAuth`가 `enforced`인지 확인합니다.
-  `disabled`이면 Core API 원본(Render 주소)이 Cloudflare 게이트웨이를 거치지 않은 직접 요청도 모두 처리합니다. 이때는 Render의
+  `disabled`이면 Core API 원본이 Cloudflare 게이트웨이를 거치지 않은 직접 요청도 모두 처리합니다. 이때는 승인된 절차에 따라 Core API의
   `CLOUDFLARE_EDGE_ORIGIN_SECRET`(앞뒤 공백 없는 32바이트 이상)과 게이트웨이 Worker의 `CORE_ORIGIN_SECRET`을 같은 값으로 설정하고
   해당 runtime을 수동 재배포합니다(값은 출력하지 않습니다). 원본 주소로 직접 `GET /api/auth/providers`를 보내 HTTP 403
   (`Trusted edge origin is required`)인지도 확인합니다. 서버 시작 로그의 "에지 출처 인증이 꺼져 있습니다" 경고가 같은 상태를 알립니다.
   규칙과 상태 응답 노출 결정은 [`docs/operations/production-environment.md`](docs/operations/production-environment.md#에지-출처-인증)를 따릅니다.
 
 ## 6. Studio 실시간 권위와 선택형 Socket.IO 폴백
+
+현재 가동 기록은 인프라 지도를 우선합니다. 아래 별도 Render runtime·분리 역할 DB·Blueprint 절차는 **legacy exception**(컷오버 이전 구성 또는 선택형 설계)이며 현재 운영 배포를 증명하지 않습니다. `toonspectrum-studio-live`는 지도 기준 생성된 적이 없습니다. 보안·권한 검증 계약은 보존하되 이 절의 Render·DB 명령을 onpod에 그대로 적용하지 않습니다.
 
 현재 ephemeral realtime production 정본은 Cloudflare Durable Objects의
 `realtime.toonstudio.cloud` custom domain입니다. `workers.dev` origin은 독립 canary와
@@ -202,7 +207,7 @@ Cloudflare는 presence, comment invalidation, screen-share signaling을
 
 로그인한 사용자가 저장된 작품을 다시 편집하고 서버에 저장하려면 CRDT 변경을 영속 저장하는
 Socket.IO 권위 서버가 필요합니다. Cloudflare presence나 local/P2P 전달은 이 저장 확인을
-대신하지 않습니다. 기본 장기 실행 Nest 경로는 Render의 별도 runtime입니다. 이 경로는
+대신하지 않습니다. 컷오버 이전의 별도 장기 실행 Nest 설계는 Render runtime을 대상으로 했습니다. 이 경로는
 Cloudflare 권위를 자동으로 바꾸거나 저장 확인을 생략하지 않습니다.
 
 `render.yaml`의 Nest 프로세스는 전체 모듈 그래프를 재사용하지만

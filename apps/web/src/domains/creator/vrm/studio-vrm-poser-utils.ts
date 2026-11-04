@@ -1965,7 +1965,7 @@ export function resolveFingerCurlPolarity(
   const baseline = middleTipPalmDot(vrm, side);
   if (baseline === null) return 1;
 
-  applyFingerSide(humanoid, fingers, side, 1, 1);
+  applyFingerSide(humanoid, { [`${side}MiddleProximal`]: [0, 0, zSum < 0 ? -0.35 : 0.35] }, side, 1, 1); // 단독 손가락·큰 굽힘에도 동일한 중지 축 프로브를 쓴다.
   humanoid.update();
   vrm.scene.updateMatrixWorld(true);
   const positive = middleTipPalmDot(vrm, side);
