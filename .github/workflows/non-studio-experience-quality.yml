@@ -114,7 +114,7 @@ jobs:
           apps/api/src/modules/production-collaboration/production-collaboration.service.test.ts
           apps/web/src/domains/creator/production-hub/ProductionScheduleWorkspace.test.tsx
           apps/web/src/domains/creator/studio-exact-resume-context.test.ts
-          apps/web/src/domains/creator/useStudioExactResumeContext.test.tsx
+          apps/web/src/domains/creator/lettering/useStudioExactResumeContext.test.tsx
           apps/web/src/domains/creator/studio-shell/StudioProjectLibraryPage.test.tsx
       - name: Production bundle
         run: pnpm run build:bundle

@@ -37,10 +37,10 @@ jobs:
         run: |
           pnpm exec vitest run \
             apps/web/src/domains/creator/studio-local-document-source.test.ts \
-            apps/web/src/domains/creator/studio-project-library-reader.test.ts \
+            apps/web/src/domains/creator/export/studio-project-library-reader.test.ts \
             apps/web/src/domains/creator/studio-project-document-reader.test.ts \
             apps/web/src/domains/creator/studio-project-document-store.test.ts \
-            apps/web/src/domains/creator/studio-document-persistence-scope.test.ts \
+            apps/web/src/domains/creator/live/studio-document-persistence-scope.test.ts \
             apps/web/src/domains/creator/studio-router/routes/StudioEditorRoute.local-source.test.tsx \
             apps/web/src/domains/creator/studio-workspace-route.test.ts \
             apps/web/src/domains/creator/studio-document-workspace.test.ts \
