@@ -143,11 +143,12 @@ export function MarketResourceFamilyExplorer({ className, compact = false }: Mar
             {bt("REA 글로벌 에셋 호환 규격:", "REA Global Asset Specs:")}
           </span>
           {[
-            bt("ACON3D·SketchUp (.skp/.glb 2점투시)", "ACON3D·SketchUp (.skp/.glb 2-pt)"),
+            bt("ACON3D·SketchUp·KitBash3D (.skp/.glb 2점투시)", "ACON3D·SketchUp·KitBash3D (.skp/.glb)"),
             bt("Clip Studio·Krita·Procreate 브러시", "CSP·Krita·Procreate Brushes"),
-            bt("VRoid·Daz3D·Marvelous 포즈/의상", "VRoid·Daz3D·Marvelous Pose/Cloth"),
-            bt("Poly Haven·Sketchfab PBR/HDRI", "Poly Haven·Sketchfab PBR/HDRI"),
-            bt("BOOTH 1인·스튜디오 상업 라이선스 검증", "BOOTH Solo/Studio License Verified"),
+            bt("VRoid Hub VRM·Daz3D·Marvelous·Polycam·Meshy·Hyper3D Rodin·ZBrush 3D", "VRoid Hub·Daz3D·Marvelous·Polycam·Meshy·Rodin·ZBrush"),
+            bt("Poly Haven·ambientCG·Sketchfab CC0 PBR/HDRI", "Poly Haven·ambientCG·Sketchfab PBR/HDRI"),
+            bt("눈누(Noonnu)·Google Fonts 상업무료 식자폰트 & 뮤팟(Mewpot)/Suno/Udio/Epidemic 음원", "Noonnu·Google Fonts & Mewpot/Suno/Udio/Epidemic Audio"),
+            bt("BOOTH·Unity·CGTrader 1인·스튜디오 상업 라이선스 검증", "BOOTH·Unity·CGTrader License Verified"),
           ].map((badge) => (
             <span
               key={badge}

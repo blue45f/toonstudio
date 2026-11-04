@@ -456,13 +456,14 @@ export function CommunityPage() {
         >
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-extrabold text-accent">
-              CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE
+              CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE · DRIBBBLE · PATREON · POSTYPE · FANDING · SUBSTACK
             </span>
             {[
-              { href: "/community/timelapse", ko: "직무별 WIP 타임랩스 (선화·채색·3D배경)", en: "Role WIP Timelapses" },
-              { href: "/community?provenance=human-verified", ko: "인간 순수 창작 (Human-Verified)", en: "Human-Verified Art" },
-              { href: "/community?provenance=ai-assisted", ko: "AI 보조 투명성 명시 (Provenance)", en: "AI-Assisted Provenance" },
-              { href: "/team/recruiting", ko: "스튜디오·어시스턴트 구인 매칭", en: "Studio & Assistant Recruiting" },
+              { href: "/community/timelapse", ko: "직무별 WIP 타임랩스·pixiv Sketch 라이브", en: "Role WIP & Live Sketch" },
+              { href: "/community?provenance=human-verified", ko: "인간 순수 창작 (Cara/DeviantArt No-AI)", en: "Human-Verified Art" },
+              { href: "/community?provenance=ai-assisted", ko: "AI 보조 투명성·Dribbble 5색 팔레트 스와치", en: "AI Provenance & 5-Color Swatch" },
+              { href: "/monetization", ko: "팬딩(Fanding)·포스타입·Patreon·FANBOX·Substack 선공개/PSD 티어", en: "Fanding/Postype/Patreon/FANBOX/Substack Tiers" },
+              { href: "/team/recruiting", ko: "크레페·크몽·스튜디오 어시스턴트 구인 매칭", en: "CREPE/Kmong/Studio Assistant Recruiting" },
             ].map((item) => (
               <Link
                 key={item.href}

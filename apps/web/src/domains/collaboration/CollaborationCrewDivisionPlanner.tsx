@@ -272,13 +272,16 @@ export function CollaborationCrewDivisionPlanner({
             className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
           />
           <span className="font-extrabold text-accent">
-            {bt("KITSU · LINEAR · FRAME.IO · MIRO 인계 SLA:", "KITSU · LINEAR · FRAME.IO · MIRO SLA:")}
+            {bt("KITSU · FTRACK · LINEAR · FIGJAM · 크레페(CREPE) · 크몽 · 라우드소싱 · MAGMA SLA:", "KITSU · FTRACK · LINEAR · FIGJAM · CREPE · KMONG · LOUDSOURCING · MAGMA SLA:")}
           </span>
           <span className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold">
             {bt("18개 레이어 RBAC 잠금 보호", "18-Layer RBAC Lock Guard")}
           </span>
           <span className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold">
             {bt("동시 분업 레이어 충돌 0건 검증", "Zero-Conflict Parallel Layer Check")}
+          </span>
+          <span className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold">
+            {bt("크레페 커미션 슬롯 · 크몽 3단 외주 에스크로 · 라우드소싱 시안 비교", "CREPE Commission Slots · Kmong 3-Tier Escrow · Loudsourcing Briefs")}
           </span>
           <span className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold">
             {bt("8단계 공정 핀포인트 레드라인 검수", "8-Stage Pinpoint Redline Review")}
