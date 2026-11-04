@@ -20,6 +20,7 @@ on:
       - 'apps/web/src/domains/market/**'
       - 'apps/web/src/domains/catalog/search-page-layout.css'
       - 'tools/package-non-studio-preview.py'
+      - 'tools/test_package_non_studio_preview.py'
       - 'apps/web/src/domains/marketing/creator-prism.css'
       - 'apps/web/src/domains/marketing/CreatorHomeExperience.tsx'
       - 'apps/web/src/domains/creator-resources/CreatorHomePage.tsx'
@@ -120,6 +121,7 @@ jobs:
         run: pnpm run build:bundle
       - name: Package bounded offline preview for interactive inspection
         run: |
+          python -m unittest discover -s tools -p test_package_non_studio_preview.py
           git rev-parse HEAD > dist/audit-source-sha.txt
           python tools/package-non-studio-preview.py
       - uses: actions/upload-artifact@v7
