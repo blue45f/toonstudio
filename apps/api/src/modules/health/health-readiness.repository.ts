@@ -1,11 +1,9 @@
 import { resolveDatabaseRuntimeRoleMode, type DatabaseRuntimeRoleMode } from "../../config/database-role-mode";
 import { dbPool } from "../../platform/database";
 import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-contract";
-
 import { CUSTOMER_SUPPORT_ACL_READY_SQL } from "./health-customer-support-acl";
 import { containsEvery, timedHealthQuery } from "./health-readiness-query";
 import { roleSeparationAclReady } from "./health-readiness-role-separation";
-
 import type { QueryablePool } from "./health-readiness-query";
 
 export { HEALTH_READINESS_QUERY_TIMEOUT_MS } from "./health-readiness-query";
@@ -200,6 +198,8 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "studio_ai_usage_ledger",
   "studio_ai_visual_bible_revision",
   "studio_artifact",
+  "studio_bg3d_bundle_artifact",
+  "studio_bg3d_bundle_revision",
   "studio_blob",
   "studio_capability_ledger",
   "studio_compatibility_report",
@@ -221,7 +221,7 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "studio_review_policy",
   "studio_review_policy_event",
   "studio_review_reviewer",
-  "studio_review_voice_note", "studio_bg3d_bundle_revision", "studio_bg3d_bundle_artifact",
+  "studio_review_voice_note",
   "studio_revision",
   "studio_revision_blob",
   "studio_revision_parent",
