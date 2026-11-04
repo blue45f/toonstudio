@@ -23,7 +23,7 @@ import { studioReviewPreviewDigest, type StudioReviewPreviewCapture,
 
 const url = process.env.STUDIO_LIVE_POSTGRES_INTEGRATION_URL?.trim() || process.env.TEST_DATABASE_URL?.trim();
 if (process.env.CI && !url) throw new Error("공개 제한 편집 producer 검증에는 준비된 로컬 PostgreSQL URL이 필요합니다.");
-type Actor = { id: string; email: string; cookie: string };
+type Actor = { id: string; email: string; password: string; cookie: string };
 type Subject = z.infer<typeof StudioScopedWriteSourceSchema>;
 type Shared = { workId: string; revision: number; crdtServerSequence: string; role: string;
   capabilities: { view: boolean; edit: boolean }; document: { doc: Record<string, unknown>; cover: string; pages: string[] } };
@@ -57,7 +57,7 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
       const login = await h.request<{ user: { id: string; role: string }; token?: string }>("/auth/login", { body: { email, password } });
       expect(login.status).toBe(201); expect(login.body.user.role).toBe("user"); expect(login.body.token).toBeUndefined();
       if (!login.cookie) throw new Error("실제 로그인 세션 쿠키가 없습니다.");
-      actors.push({ id: login.body.user.id, email, cookie: login.cookie });
+      actors.push({ id: login.body.user.id, email, password, cookie: login.cookie });
     }
   }, 60_000);
   afterAll(async () => { await h?.close(); });
@@ -310,6 +310,93 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
     expect((await h.request("/studio-project-graph/review-captures/status", { cookie: f.actor.cookie, body: prepared.body })).status).toBe(403);
     expect((await h.request("/studio-project-graph/review-captures/cancel", { cookie: f.actor.cookie, body: { intent: prepared.body } })).status).toBe(403);
     expect((await command(f.projectId, submit(f), f.actor)).status).toBe(403);
+    expect(await state(f)).toEqual(before);
+  }, 30_000);
+
+  it("실제 제출본의 검수 승인은 이전 담당 작업의 새 저장·CRDT·재제출을 차단한다", async () => {
+    const f = await fixture();
+    await durableWrite(f);
+    const capture = await completeCapture(f.workId, f.actor, f.context), submitted = submit(f, capture.subject);
+    const result = await command(f.projectId, submitted, f.actor);
+    expect(result.status).toBe(201);
+    const aggregate = result.body.aggregate, task = aggregate.tasks.find((entry) => entry.id === "current-task");
+    const output = aggregate.submissions.find((entry) => entry.id === submitted.submissionId);
+    const ownerParty = aggregate.parties.find((entry) => entry.accountUserId === owner().id);
+    const ownerRole = aggregate.assignments.find((entry) => entry.partyId === ownerParty?.id);
+    if (!task || !output || !ownerRole) throw new Error("실제 제출 작업·원고·검수 계정 배정이 없습니다.");
+    const reviewerId = "owner-review-role";
+    const reviewer = await command(f.projectId, { type: "configure-collaboration", parties: aggregate.parties,
+      assignments: [...aggregate.assignments, { ...ownerRole, id: reviewerId, roleType: "editor", lead: false }],
+      authorityRules: aggregate.authorityRules });
+    expect(reviewer.status, "실제 검수자 배정").toBe(201);
+    const reviewPolicy = { id: "current-task-review", projectId: f.projectId, scope: task.scope,
+      responseDueHours: 24, expiredReviewAction: "escalate", quorumBasis: "accounts",
+      lanes: [{ lane: "production", eligibleAssignmentIds: [reviewerId], requiredAssignmentIds: [reviewerId],
+        quorum: 1, vetoAssignmentIds: [], blocksPublication: true }] };
+    expect((await command(f.projectId, { type: "upsert-review-policy", policy: reviewPolicy })).status, "계정 기준 필수 검수 정책").toBe(201);
+    expect((await command(f.projectId, { type: "upsert-task", task: { ...task, reviewerAssignmentIds: [reviewerId] } })).status, "작업 검수자 연결").toBe(201);
+    for (const [fromStatus, toStatus] of [["draft", "ready"], ["ready", "in-progress"]]) {
+      expect((await command(f.projectId, { type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus, toStatus }] })).status,
+        `작업 상태 ${fromStatus} → ${toStatus}`).toBe(201);
+    }
+    expect((await command(f.projectId, { type: "upsert-submission", submission: { ...output, status: "in-review" } })).status, "제출본 검수 시작").toBe(201);
+    expect((await command(f.projectId, { type: "transition-task-batch", transitions: [
+      { taskId: task.id, fromStatus: "in-progress", toStatus: "internal-review" },
+    ] })).status, "작업 내부 검수 시작").toBe(201);
+    expect((await command(f.projectId, { type: "record-review-decision", policyId: reviewPolicy.id, decision: {
+      id: "current-task-approved", reviewRoundId: output.id, lane: "production", assignmentId: reviewerId,
+      value: "approve", reasonCode: "checked", evidenceScopeRefs: [task.scope], conditions: [], createdAt: new Date().toISOString(),
+    } })).status, "실제 검수 계정의 승인 결정").toBe(201);
+    const approved = await command(f.projectId, { type: "upsert-submission", submission: {
+      ...output, status: "approved", evidenceRefs: ["current-task-approved"],
+    } });
+    expect(approved.status, "현재 제출본의 승인 확정").toBe(201);
+    const persisted = (await project(f.projectId)).aggregate;
+    expect(persisted.tasks.find((entry) => entry.id === task.id)?.status).toBe("approved");
+    expect(persisted.submissions.find((entry) => entry.id === output.id)).toMatchObject({ status: "approved", sourceEvidence: output.sourceEvidence });
+    expect(persisted.deliverables.find((entry) => entry.id === output.deliverableId)?.approvedSubmissionId).toBe(output.id);
+    expect((await policy(f.workId, f.actor)).scopedWrite).toBe(false);
+    const before = await state(f), current = await shared(f.workId, f.actor);
+    expect((await h.request(`/creator/works/${f.workId}/team/document`, { method: "PATCH", cookie: f.actor.cookie,
+      body: saveBody(current, f.context, changedStroke(current.document.doc, "own", "#00ff00")) })).status).toBe(403);
+    await expectDeniedCrdt(f);
+    expect((await command(f.projectId, submit(f, capture.subject), f.actor)).status).toBe(403);
+    expect(await state(f)).toEqual(before);
+    expect((await project(f.projectId)).aggregate).toEqual(persisted);
+  }, 30_000);
+
+  it("재로그인과 새 정책 조회는 담당 범위와 저장 원고를 복원하고 회수된 역할을 다시 허용하지 않는다", async () => {
+    const f = await fixture(), initial = await shared(f.workId, f.actor), assigned = await policy(f.workId, f.actor);
+    const relogin = async () => {
+      const oldCookie = f.actor.cookie;
+      expect((await h.request("/auth/logout", { cookie: oldCookie, body: {} })).status).toBe(201);
+      expect((await h.request(`/creator/works/${f.workId}/scoped-write`, { cookie: oldCookie })).status).toBe(403);
+      const login = await h.request<{ user: { id: string } }>("/auth/login", {
+        body: { email: f.actor.email, password: f.actor.password },
+      });
+      expect(login.status).toBe(201); expect(login.body.user.id).toBe(f.actor.id);
+      if (!login.cookie) throw new Error("재로그인 세션 쿠키가 없습니다.");
+      f.actor.cookie = login.cookie;
+    };
+    await relogin();
+    expect(await policy(f.workId, f.actor)).toEqual(assigned);
+    expect(await shared(f.workId, f.actor)).toEqual(initial);
+    await durableWrite(f);
+    const saved = await shared(f.workId, f.actor), before = await state(f);
+    expect(element(saved.document.doc, "own").stroke).toBe("#ff0000");
+    expect(element(saved.document.doc, "outside")).toEqual(element(initial.document.doc, "outside"));
+    expect((await h.request(`/creator/works/${f.workId}/team/document`, { method: "PATCH", cookie: f.actor.cookie,
+      body: saveBody(saved, f.context, changedStroke(saved.document.doc, "outside")) })).status).toBe(403);
+    const current = await project(f.projectId);
+    expect((await command(f.projectId, { type: "configure-collaboration", parties: current.aggregate.parties,
+      assignments: current.aggregate.assignments.map((role) => role.id === "worker-role" ? { ...role, status: "paused" } : role),
+      authorityRules: current.aggregate.authorityRules })).status).toBe(201);
+    await relogin();
+    expect((await policy(f.workId, f.actor)).scopedWrite).toBe(false);
+    expect(await shared(f.workId, f.actor)).toEqual(saved);
+    expect((await h.request(`/creator/works/${f.workId}/team/document`, { method: "PATCH", cookie: f.actor.cookie,
+      body: saveBody(saved, f.context, changedStroke(saved.document.doc, "own", "#00ff00")) })).status).toBe(403);
+    await expectDeniedCrdt(f);
     expect(await state(f)).toEqual(before);
   }, 30_000);
 
