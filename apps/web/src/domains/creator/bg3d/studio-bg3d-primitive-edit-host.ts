@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { Bg3dModelLibraryEntry } from "./studio-bg3d-model-library-loader";
+import { listBg3dModelLibraryEntriesV12, type Bg3dModelLibraryEntry } from "./studio-bg3d-model-library-loader";
 import type { StudioBg3dPrimitiveEditOrchestratorHost } from "./studio-bg3d-primitive-edit-orchestrator";
 import type { StudioBg3dPrimitiveEditPorts } from "./studio-bg3d-primitive-edit-ports";
 import {
@@ -48,7 +48,6 @@ export function createStudioBg3dPrimitiveEditHost(host: StudioBg3dPrimitiveEditE
     async onAssetCommitted(record) {
       const session = host.modalAssetSessionRef?.current;
       if (host.setModelLibrary) {
-        const { listBg3dModelLibraryEntriesV12 } = await import("./studio-bg3d-model-library-loader");
         const entries = await listBg3dModelLibraryEntriesV12();
         if (session && host.modalAssetSessionRef?.current === session && host.open) host.setModelLibrary?.(entries);
       }

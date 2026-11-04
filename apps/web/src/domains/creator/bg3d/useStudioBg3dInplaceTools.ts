@@ -5,6 +5,7 @@ import type { Scene3dInplaceSelection } from "../scene3d/integration/scene3d-inp
 import type { Scene3dInplaceToolsBridge, Scene3dSelectedAssetInput } from "../scene3d/integration/scene3d-inplace-contract";
 import type { StudioBg3dInplaceToolsContext } from "./studio-bg3d-inplace-tools-context";
 import type { StudioBg3dModelExportProvenanceReceipt } from "./studio-bg3d-model-export-provenance";
+import { getStoredBg3dModelV12 } from "./studio-bg3d-model-library-loader";
 import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 export function readStudioBg3dInplaceSelection(
@@ -136,9 +137,6 @@ export function createStudioBg3dInplaceToolsBridge(
       );
       if (!model)
         throw new Scene3dInplaceError("stale", "선택 모델이 사라졌습니다.");
-      const { getStoredBg3dModelV12 } = await import(
-        "./studio-bg3d-model-library-loader"
-      );
       const record = await getStoredBg3dModelV12(model.modelId, { signal });
       assertRuntimeCurrent();
       if (

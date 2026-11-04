@@ -286,6 +286,9 @@ export function createStudioManualChunks(predicates: {
       // Never add routers, panels, dictionaries or locale catalogs to this chunk.
       return "studio-lazy-surface-fallback";
     }
+    if (id.endsWith("/src/domains/creator/components/StudioColorVisionHintPreview.tsx")) {
+      return "StudioColorVisionHintPreview";
+    }
     if (
       id.includes("/node_modules/react/") ||
       id.includes("/node_modules/react-dom/") ||
