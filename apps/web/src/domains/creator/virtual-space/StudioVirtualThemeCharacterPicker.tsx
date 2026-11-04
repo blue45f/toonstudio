@@ -88,7 +88,7 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, stageK
         const recommended = recommendedKeys.has(skin.key);
         return <button key={skin.key} type="button" className="studio-vspace-character-picker__item"
           data-theme-recommended={recommended || undefined} aria-pressed={selected}
-          aria-label={bt(`${skin.labelKo} 캐릭터 선택`, `Select ${skin.labelEn} character`)} onClick={() => onSelect(index)}>
+          aria-label={bt(`${skin.labelKo} 캐릭터 선택`, `Select ${skin.labelEn} character`)} title={bt(skin.labelKo, skin.labelEn)} onClick={() => onSelect(index)}>
           <span className="studio-vspace-character-picker__preview">{stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={index} identity={identity} /> : <StudioVirtualCharacterPreview skin={presented} />}</span>
           <strong>{bt(skin.labelKo, skin.labelEn)}</strong>
           {recommended ? <small className="studio-vspace-character-picker__badge">{bt("테마 추천", "Theme pick")}</small> : null}

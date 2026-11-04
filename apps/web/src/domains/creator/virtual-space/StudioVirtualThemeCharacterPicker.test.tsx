@@ -28,6 +28,12 @@ describe("StudioVirtualThemeCharacterPicker", () => {
     view.rerender(<StudioVirtualThemeCharacterPicker mode="all" stageKind="office2d" identity={identity} artStyle="retro" avatarIndex={0} onSelect={onSelect} />);
     expect(view.container.querySelectorAll("[data-office-character]")).toHaveLength(STUDIO_CHARACTER_SKINS.length);
   });
+  it("카드 이름이 좁은 칸에서 잘려도 전체 이름을 title로 확인할 수 있다", () => {
+    render(<StudioVirtualThemeCharacterPicker mode="all" stageKind="office2d" identity="title-owner" artStyle="neon" avatarIndex={0} onSelect={vi.fn()} />);
+    for (const skin of STUDIO_CHARACTER_SKINS) {
+      expect(screen.getByRole("button", { name: `${skin.labelKo} 캐릭터 선택` }).getAttribute("title")).toBe(skin.labelKo);
+    }
+  });
   it.each(["legacy", "three"] as const)("%s에서는 기존 작화 캐릭터를 유지한다", (stageKind) => {
     const view = render(<StudioVirtualThemeCharacterPicker mode="all" stageKind={stageKind} artStyle="neon" avatarIndex={0} onSelect={vi.fn()} />);
     expect(view.container.querySelector("[data-office-character]")).toBeNull();

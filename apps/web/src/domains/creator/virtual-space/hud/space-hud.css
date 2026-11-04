@@ -2361,4 +2361,19 @@ button.space-location__pulse:hover {
   .space-joystick .studio-vspace-joystick { width: 5.75rem; height: 5.75rem; }
 }
 
+/* 데스크톱 최소 폭(1024~1179px)에서 오른쪽 패널이 열리면 지도가 패널 왼쪽으로 밀려와 위치 칩 오른쪽(3D 전환·빠른 찾기)을 135px가량 덮었다.
+   칩이 지도 앞에서 끝나도록 폭을 제한하고, 부가 알약(공간명·펄스·연결 상태·버튼 글자)을 접어 나가기·현재 구역·엔진 전환·찾기만 남긴다.
+   접힌 버튼은 aria-label·title로 이름을 유지한다. */
+@media (min-width: 1024px) and (max-width: 1179.98px) {
+  .space-hud[data-panel-open] .space-hud__slot--top-left {
+    max-width: calc(100% - var(--space-panel-width) - var(--space-minimap-width) - var(--space-gutter) * 4 - var(--space-safe-left) - var(--space-safe-right));
+  }
+  .space-hud[data-panel-open] .space-location__text { min-width: 0; }
+  .space-hud[data-panel-open] .space-location__space,
+  .space-hud[data-panel-open] .space-location__pulse,
+  .space-hud[data-panel-open] .space-location__connection,
+  .space-hud[data-panel-open] .space-location__engine-toggle > span,
+  .space-hud[data-panel-open] .space-location__search kbd { display: none; }
+}
+
 

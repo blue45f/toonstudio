@@ -546,7 +546,7 @@
 /* 자동 크기 행에서는 이미지의 height:100%가 이미지 자신의 크기를 따라 순환해 상자(100px)보다 커지고 카드 밖으로 삐져나와 이름표·발이 겹쳤다. 행·열을 상자 크기로 고정한다. */
 .studio-vspace-character-picker__preview{display:grid;grid-template:minmax(0,1fr)/minmax(0,1fr);place-items:end center;width:100%;height:100px;color:var(--color-accent)}
 .studio-vspace-character-picker__preview>.studio-character-preview{width:100%;height:100%;object-fit:contain;object-position:bottom}
-.studio-vspace-character-picker__item strong{max-width:100%;overflow:hidden;font-size:12px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+.studio-vspace-character-picker__item strong{display:-webkit-box;max-width:100%;overflow:hidden;font-size:12px;font-weight:800;line-height:1.3;text-align:center;overflow-wrap:anywhere;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .studio-vspace-character-picker__check{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--color-accent);color:var(--color-on-accent)}
 .studio-vspace-character-picker :is(button):focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.studio-vspace-character-picker__item{transition:none}.studio-vspace-character-picker__item:hover{transform:none}}
