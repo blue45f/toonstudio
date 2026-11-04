@@ -44,6 +44,7 @@ export const POSTGRES_INTEGRATION_SUITES = Object.freeze([
   "apps/api/src/modules/creator/studio-work-asset.repository.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts",
+  "apps/api/src/modules/studio-project-graph/studio-review-existing-graph-runtime.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts",

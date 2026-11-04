@@ -118,6 +118,7 @@ apps/web/src/domains/auth/components/in-app-browser-notice.test.tsx
 apps/web/src/domains/catalog/DiscoverHubPage.test.tsx
 apps/web/src/domains/catalog/memory-finder/MemoryFinderSection.test.tsx
 apps/web/src/domains/catalog/memory-finder/memory-finder-model.test.ts
+apps/web/src/domains/catalog/search-explorer-query-lifecycle.test.tsx
 apps/web/src/domains/character-chat/CharacterChatSpeech.test.tsx
 apps/web/src/domains/character-chat/CharacterChatVoiceFields.test.tsx
 apps/web/src/domains/character-chat/character-chat-speech.test.ts
@@ -425,6 +426,7 @@ apps/web/src/domains/creator/ecosystem/reader-feedback-text.test.ts
 apps/web/src/domains/creator/export
 apps/web/src/domains/creator/export/studio-psd-adjustment-graph.test.ts
 apps/web/src/domains/creator/export/studio-psd-panel-clip.test.ts
+apps/web/src/domains/creator/export/studio-save-publication-boundary.test.ts
 apps/web/src/domains/creator/export/studio-svg-panel-clip.test.ts
 apps/web/src/domains/creator/handoff-envelope
 apps/web/src/domains/creator/history/StudioHistoryPanel.focus-return.test.tsx
@@ -460,6 +462,8 @@ apps/web/src/domains/creator/live/huddle
 apps/web/src/domains/creator/live/studio-crdt-authoring-projection.test.ts
 apps/web/src/domains/creator/live/studio-crdt-history.test.ts
 apps/web/src/domains/creator/live/studio-crdt-page-bridge-structural-sharing.test.ts
+apps/web/src/domains/creator/live/studio-crdt-room-binding.immutable-outbox.test.ts
+apps/web/src/domains/creator/live/studio-crdt-write-context.test.ts
 apps/web/src/domains/creator/live/studio-live-acoustic-control.test.ts
 apps/web/src/domains/creator/live/studio-live-adaptive-cursor-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-collaboration-room.test.ts
@@ -539,7 +543,9 @@ apps/web/src/domains/creator/studio-autosave-snapshot-fence.test.ts
 apps/web/src/domains/creator/studio-autosave-sqlite-store.test.ts
 apps/web/src/domains/creator/studio-batch-rename.test.ts
 apps/web/src/domains/creator/studio-bundle-asset-delivery.test.ts
+apps/web/src/domains/creator/studio-collab/studio-role-pipeline-mutation.test.ts
 apps/web/src/domains/creator/studio-collab/studio-scoped-asset-context.test.ts
+apps/web/src/domains/creator/studio-collab/studio-scoped-draft-save.compiler.test.mjs
 apps/web/src/domains/creator/studio-collab/studio-scoped-draft-save.test.tsx
 apps/web/src/domains/creator/studio-collab/studio-scoped-drawing-boundary.test.ts
 apps/web/src/domains/creator/studio-collab/studio-scoped-history.test.ts
@@ -799,6 +805,7 @@ scripts/verify-virtual-studio-art-manifest.test.mjs
 scripts/workflow-injection-policy.test.mjs
 scripts/workflow-secret-scope.test.mjs
 tests/integration/api-web/api/modules/creator-marketplace/creator-marketplace-social-boundary.test.ts
+tests/integration/api-web/api/modules/creator/creator-publication-collaboration.repository.test.ts
 tests/integration/api-web/api/modules/creator/studio-live-lock.repository.test.ts
 tests/integration/api-web/api/modules/creator/studio-live.gateway.test.ts
 tests/integration/api-web/api/modules/creator/studio-live.protocol.test.ts

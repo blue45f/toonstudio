@@ -36,7 +36,7 @@ export function admitStudioScopedElementCommit(input: Input & { readonly pageId:
       if (authority.ownerOf(kind(value), id) !== target.definition.id) throw new Error("선택한 담당 범위의 원고만 변경할 수 있습니다.");
       if (!input.previewOnly) {
         authority.admitExisting(ticket, kind(value), id);
-        if (!before && after && authority.requiresRestoration(kind(after), id)) authority.registerRestoration(ticket, kind(after), id);
+        if (!before && after && authority.requiresRestoration(kind(after), id) && !authority.hasCurrentLiveEntity(kind(after), id)) authority.registerRestoration(ticket, kind(after), id);
       }
     }
     return true;
@@ -100,7 +100,7 @@ export function registerStudioScopedDerivedEntity(owner: object, sourceStrokeId:
 
 /** 실제 pointer가 만든 ID를 첫 픽셀·Y 변경 전에 명시 target에 연결한다. */
 export function admitStudioScopedDrawStart(owner: AccessOwner, pageId: string, elements: readonly El[], stroke: DrawEl): DrawEl {
-  const mapped = mappedStudioDrawAuthority(owner, pageId, stroke);
+  const mapped = mappedStudioDrawAuthority(owner, pageId, stroke, elements);
   if (!owner.current.locked && !mapped) return stroke;
   const authority = mapped ?? studioScopedWriteAuthority(owner), target = authority?.currentTarget;
   if (!authority || !target) throw new Error("그리기 전에 현재 담당 원고 범위를 선택하세요.");

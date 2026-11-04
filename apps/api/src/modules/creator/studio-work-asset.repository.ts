@@ -700,18 +700,11 @@ async function registerStorageObjectInTransaction(
   if (!isLocatedPrivateObjectReference(object)) {
     throw new StudioWorkAssetStorageReferenceConflictError();
   }
-  await transaction
-    .insert(creatorAssetStorageObjects)
-    .values({
-      purpose: object.purpose,
-      digest: object.digest,
-      contractVersion: object.contractVersion,
-      providerId: object.providerId,
-      objectPath: object.objectPath,
-      byteLength: object.byteLength,
-      contentType: object.contentType,
-    })
-    .onConflictDoNothing();
+  // 제한된 runtime ACL에 맞춰 허용 열만 쓴다. Drizzle의 생략 열 DEFAULT도 INSERT 권한을 요구한다.
+  await transaction.execute(sql`INSERT INTO ${creatorAssetStorageObjects}
+    ("purpose","digest","contractVersion","providerId","objectPath","byteLength","contentType")
+    VALUES (${object.purpose},${object.digest},${object.contractVersion},${object.providerId},
+      ${object.objectPath},${object.byteLength},${object.contentType}) ON CONFLICT DO NOTHING`);
 
   let row = await lockStorageObject(transaction, object.purpose, object.digest);
   if (!row || !isExactStudioWorkAssetStorageObject(storageObjectFromRow(row), object)) {
@@ -748,17 +741,10 @@ async function registerStorageReferenceInTransaction(
   input: StudioWorkAssetStorageReference,
 ): Promise<StudioWorkAssetStorageReference> {
   const object = PrivateObjectReferenceSchema.parse(input.object);
-  await transaction
-    .insert(creatorWorkAssetStorageReferences)
-    .values({
-      workId: input.workId,
-      purpose: object.purpose,
-      referenceId: input.referenceId,
-      objectDigest: object.digest,
-      sourceAssetId: input.sourceAssetId,
-      createdBy: actorUserId,
-    })
-    .onConflictDoNothing();
+  await transaction.execute(sql`INSERT INTO ${creatorWorkAssetStorageReferences}
+    ("workId","purpose","referenceId","objectDigest","sourceAssetId","createdBy")
+    VALUES (${input.workId},${object.purpose},${input.referenceId},${object.digest},
+      ${input.sourceAssetId},${actorUserId}) ON CONFLICT DO NOTHING`);
   const [row] = await transaction
     .select()
     .from(creatorWorkAssetStorageReferences)

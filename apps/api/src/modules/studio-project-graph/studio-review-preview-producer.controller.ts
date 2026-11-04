@@ -58,7 +58,8 @@ export class StudioReviewPreviewProducerController {
   @UseInterceptors(FileInterceptor("file", { limits: STUDIO_REVIEW_PREVIEW_UPLOAD_LIMITS }))
   @Header("Cache-Control", "private, no-store, max-age=0")
   async upload(@Param(new ZodValidationPipe(StudioReviewCapturePageParamsDto)) params: StudioReviewCapturePageParamsDto,
-    @Body(new ZodValidationPipe(StudioReviewCapturePageBodyDto)) body: StudioReviewCapturePageBodyDto,
+    // 운송 문자열 변환은 명시 파이프 한 곳에서 수행한다. 전역 DTO 파이프의 이중 변환을 막는다.
+    @Body(new ZodValidationPipe(StudioReviewCapturePageBodyDto)) body: z.infer<typeof StudioReviewCapturePageBodyDto.schema>,
     @UploadedFile() file: StudioWorkAssetUploadFile | undefined, @Req() request: Request, @Headers("x-user-id") userId?: string) {
     const abort = new AbortController();
     const aborted = () => abort.abort();
