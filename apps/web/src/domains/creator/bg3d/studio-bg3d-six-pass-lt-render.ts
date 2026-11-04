@@ -1,7 +1,7 @@
 import type { StudioBg3dLtRasterInput, StudioBg3dLtRasterLayer } from "./studio-bg3d-lt-render";
 import type { StudioBg3dSixPassLtSettings } from "./studio-bg3d-scene-document-types";
 import { parseStudioBg3dSixPassLtSettings } from "../contracts/studio-bg3d-six-pass-settings";
-import { buildSketchUpWebtoonSixPassLtRecipe } from "./studio-bg3d-sketchup-webtoon-staging-bridge";
+import { buildSketchUpWebtoonSixPassLtRecipe } from "./studio-bg3d-six-pass-lt-recipe";
 
 export function isStudioBg3dSixPassLtSettings(value: unknown): value is StudioBg3dSixPassLtSettings {
   return parseStudioBg3dSixPassLtSettings(value) !== null;
