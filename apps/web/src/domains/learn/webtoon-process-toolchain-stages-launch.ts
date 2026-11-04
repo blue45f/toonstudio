@@ -660,6 +660,14 @@ export const TOOLCHAIN_STAGES_LAUNCH: readonly ProcessToolchainStage[] = [
         kind: "builtin",
         href: "/character-chat/manage",
       },
+      {
+        name: { ko: "OpusClip · Submagic · Resemble AI", en: "OpusClip · Submagic · Resemble AI" },
+        role: {
+          ko: "무빙툰 클라이맥스 하이라이트 자동 클립·키네틱 자막 및 다역 감정 더빙 도구",
+          en: "Moving-toon climax highlight auto-clipping, kinetic captions, and multi-character emotional dubbing",
+        },
+        kind: "external",
+      },
     ],
   },
 ];

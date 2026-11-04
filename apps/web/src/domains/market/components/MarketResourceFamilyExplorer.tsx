@@ -143,11 +143,11 @@ export function MarketResourceFamilyExplorer({ className, compact = false }: Mar
             {bt("REA 글로벌 에셋 호환 규격:", "REA Global Asset Specs:")}
           </span>
           {[
-            bt("ACON3D·Fab·Quixel Megascans·Substance 3D·Superhive·3dsky (.skp/.glb/.sbsar)", "ACON3D·Fab·Quixel Megascans·Substance 3D·Superhive·3dsky (.skp/.glb/.sbsar)"),
+            bt("ACON3D·Fab·Quixel Megascans·Poliigon·Architextures·BlenderKit (.skp/.glb/.sbsar)", "ACON3D·Fab·Quixel Megascans·Poliigon·Architextures·BlenderKit (.skp/.glb/.sbsar)"),
             bt("Clip Studio·Krita·SAI2·Procreate·TrueGrit·RetroSupply·FlippedNormals 브러시", "CSP·Krita·SAI2·Procreate·TrueGrit·RetroSupply·FlippedNormals Brushes"),
             bt("VRoid Hub·Nomad Sculpt·Shapr3D·Plasticity·World Labs·Postshot 3DGS·ZBrush 3D", "VRoid Hub·Nomad Sculpt·Shapr3D·Plasticity·World Labs·Postshot 3DGS·ZBrush"),
-            bt("Poly Haven·ambientCG·Sketchfab·Blockade Labs Skybox CC0 PBR/HDRI", "Poly Haven·ambientCG·Sketchfab·Blockade Skybox PBR/HDRI"),
-            bt("눈누·산돌구름·폰트코·리왕·FontForge 식자폰트 & 뮤팟·Artlist·Splice·Envato 음원", "Noonnu·Sandoll·Fontco·Riwang Fonts & Mewpot/Artlist/Splice/Envato Audio"),
+            bt("Poly Haven·ambientCG·Textures.com·ShareTextures·HDRI Skies CC0 PBR/HDRI", "Poly Haven·ambientCG·Textures.com·ShareTextures·HDRI Skies PBR/HDRI"),
+            bt("눈누·산돌구름·폰트코·리왕·Fontfabric 식자폰트 & 뮤팟·Artlist·Sonniss·Boom Library 음원", "Noonnu·Sandoll·Fontco·Riwang·Fontfabric Fonts & Mewpot/Artlist/Sonniss/Boom Audio"),
             bt("BOOTH·ArtStation·Cubebrush·Gumroad 1인·스튜디오 상업 라이선스 검증", "BOOTH·ArtStation·Cubebrush·Gumroad License Verified"),
           ].map((badge) => (
             <span

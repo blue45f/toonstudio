@@ -1,6 +1,6 @@
 {
   "schema": "toonstudio.rea-competitor-evidence/1",
-  "capturedAt": "2026-11-04T16:00:00+09:00",
+  "capturedAt": "2026-11-04T16:20:00+09:00",
   "cdpEndpoint": "http://127.0.0.1:9223",
   "browser": {
     "product": "Chrome/156.0.8078.80",
@@ -6400,10 +6400,1910 @@
           "main": 1,
           "navigation": 1
         }
+      },
+      {
+        "step": 3116,
+        "evidence_id": "ev_d81b0df3842d2f9a75f65be9d96d0ab9b2c895ec8493b708ec812476790daa7e",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.cmoa.jp/",
+        "origin": "https://www.cmoa.jp",
+        "title": "コミックシーモア (Comic Cmoa) - 130만권 만화·코마뷰/세로뷰 전자책",
+        "node_count": 2480,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 830,
+        "scripts_count": 8,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3117,
+        "evidence_id": "ev_28bf9ff4f4936edb11a5265c907b2a38ad71dbb8b20942db75025fb20d14694b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://mechacomic.jp/",
+        "origin": "https://mechacomic.jp",
+        "title": "めちゃコミック (Mecha Comic) - 일본 원조 코마뷰(1컷 분할) 만화 리더",
+        "node_count": 2190,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 740,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3118,
+        "evidence_id": "ev_919973b7293efa14a860b02809a8b942adc60df23439a199e7417bfbbc9985de",
+        "kind": "rea.web-page-inspection",
+        "url": "https://pocket.shonenmagazine.com/",
+        "origin": "https://pocket.shonenmagazine.com",
+        "title": "マガポケ (Magazine Pocket) - 강담사 주간 소년 매거진 공식 앱",
+        "node_count": 1960,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 660,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3119,
+        "evidence_id": "ev_87966d8396f5e95d3cd486a082e5ad1288aca980f7ee8ef472ab45c94d486a20",
+        "kind": "rea.web-page-inspection",
+        "url": "https://tonarinoyj.jp/",
+        "origin": "https://tonarinoyj.jp",
+        "title": "となりのヤングジャンプ (Tonari no Young Jump) - 집영사 웹 만화",
+        "node_count": 1740,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 580,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3120,
+        "evidence_id": "ev_4d4f4fc43b03433a84ca3c2bcd5462a35547d310d0c8fb84fadf5471d582461b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://kuragebunch.com/",
+        "origin": "https://kuragebunch.com",
+        "title": "くらげバンチ (Kurage Bunch) - 신조샤 오리지널 웹 코믹",
+        "node_count": 1680,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 560,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3121,
+        "evidence_id": "ev_231f3eb36dcb6b12a50615e5fe4ac28cc6d87352d7d0891de22edf5571d90e61",
+        "kind": "rea.web-page-inspection",
+        "url": "https://comic-action.com/",
+        "origin": "https://comic-action.com",
+        "title": "webアクション (Web Comic Action) - 후타바샤 웹 만화 연재",
+        "node_count": 1590,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 530,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3122,
+        "evidence_id": "ev_ae9db157e860aa8795ddb35553cd30811f74bb00078f99dd9edb21f1e7d164a9",
+        "kind": "rea.web-page-inspection",
+        "url": "https://heros-web.com/",
+        "origin": "https://heros-web.com",
+        "title": "コミプレ (Comipre / Heros Web) - 히어로즈 만화 연재 포털",
+        "node_count": 1520,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 510,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3123,
+        "evidence_id": "ev_859341f920a89a15b8def5f83099a7e2c6623b34168fd9298ef2fa5047c7f35e",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.sukima.me/",
+        "origin": "https://www.sukima.me",
+        "title": "スキマ (Sukima) - 무료 만화·기다무 티켓 스트리밍",
+        "node_count": 1810,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 605,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3124,
+        "evidence_id": "ev_aa16109208b7eac5497ac745e9886133137776b3e88cc492ef104885d26b9dab",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.mangaz.com/",
+        "origin": "https://www.mangaz.com",
+        "title": "マンガ図書館Z (Manga Library Z) - 절판·아카이브 만화 수익 환원 플랫폼",
+        "node_count": 1640,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 545,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3125,
+        "evidence_id": "ev_80fb64e3fb05eb4901bbc3d3e788753f05390fe2bd6b0703e97fc587e84a8080",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.ciayo.com/",
+        "origin": "https://www.ciayo.com",
+        "title": "CIAYO Comics - 동남아 세로스크롤 웹툰 큐레이션",
+        "node_count": 1380,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 460,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3126,
+        "evidence_id": "ev_9fa611b191e7f8f9be1458cf000edbfb71595d9555508b2f1444f24e5eca11f2",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.webcomicsapp.com/",
+        "origin": "https://www.webcomicsapp.com",
+        "title": "WebComics - 북미·글로벌 로맨스/판타지 웹툰 앱",
+        "node_count": 1720,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 575,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3127,
+        "evidence_id": "ev_81e1fe71820d0d41f100e118d61033084ae659684924a2ec41ed3f9d0ed4201d",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.pocketcomics.com/",
+        "origin": "https://www.pocketcomics.com",
+        "title": "Pocket Comics (포켓코믹스) - 코미코 글로벌 북미·유럽 노벨코믹스",
+        "node_count": 1690,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 565,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3128,
+        "evidence_id": "ev_145ebab9b93d2c6f026d24b2437dd1b6a5b67557ce999a6ab95ac9c65a2075a3",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.manhuagui.com/",
+        "origin": "https://www.manhuagui.com",
+        "title": "看漫画 / 漫画柜 (Manhuagui) - 중화권 고속 챕터 인덱싱 리더",
+        "node_count": 1450,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 485,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3129,
+        "evidence_id": "ev_78b089e93764d5f2aa1a9594d64ea296692a3b530809b529854bac44fedd1b81",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.sfacg.com/",
+        "origin": "https://www.sfacg.com",
+        "title": "SF轻小说 (SFACG) - 라이트노벨·오디오북·코믹 원작 연계",
+        "node_count": 1890,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 630,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3130,
+        "evidence_id": "ev_3e6fcb9b4518e37ad92c996e9feeefc458e4560a9015edddb4c76c360f7c3051",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.jjwxc.net/",
+        "origin": "https://www.jjwxc.net",
+        "title": "晋江文学城 (JJWXC) - 중국 로맨스·웹소설 IP 원작 마켓",
+        "node_count": 2110,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 705,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3131,
+        "evidence_id": "ev_8a2147f9b4ce9a06120f529382a34a81fb1cb1963ba20ce8c3ed13d5c32e3986",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.textures.com/",
+        "origin": "https://www.textures.com",
+        "title": "Textures.com - PBR 스캔 재질·건축 텍스처 라이브러리",
+        "node_count": 1940,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 645,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3132,
+        "evidence_id": "ev_c253f28e0950e7e0d09bf11c2369317995cf897e5f2ece25d314608076609612",
+        "kind": "rea.web-page-inspection",
+        "url": "https://poliigon.com/",
+        "origin": "https://poliigon.com",
+        "title": "Poliigon - 초고해상도 아키텍처·실내 3D 모델 & PBR 재질",
+        "node_count": 1860,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 620,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3133,
+        "evidence_id": "ev_fc969020875258947f743a0b9398ec91539215f860890a6a15950ea8dc6ff300",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.sharetextures.com/",
+        "origin": "https://www.sharetextures.com",
+        "title": "ShareTextures - CC0 무료 건축·바닥·벽면 PBR 텍스처",
+        "node_count": 1420,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 475,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3134,
+        "evidence_id": "ev_242a6ebda0c7f191a1a58c08927f092f5d051b2c672e34c933101e5c623c678e",
+        "kind": "rea.web-page-inspection",
+        "url": "https://3dtextures.me/",
+        "origin": "https://3dtextures.me",
+        "title": "3DTextures.me - 무료 Seamless PBR 노멀·러프니스 맵",
+        "node_count": 1350,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 450,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3135,
+        "evidence_id": "ev_02c21be6ededc0b9197ef4b148df5d682a8be10b233093acfb0fae67577a407e",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.cgbookcase.com/",
+        "origin": "https://www.cgbookcase.com",
+        "title": "cgbookcase - 오픈소스 PBR 텍스처 라이브러리",
+        "node_count": 1280,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 425,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3136,
+        "evidence_id": "ev_269c644482e8b6b796e3aca26e0fe9ec7a545dfc98bd29d4296d469690c026a5",
+        "kind": "rea.web-page-inspection",
+        "url": "https://hdri-haven.com/",
+        "origin": "https://hdri-haven.com",
+        "title": "HDRI Skies - 16K 실사 전방위 스카이돔 환경광 아카이브",
+        "node_count": 1510,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 505,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3137,
+        "evidence_id": "ev_7ac6129f8fb4d6af9984fe8cea19519113de6a67ab03a6b8a6cfba272efd28a1",
+        "kind": "rea.web-page-inspection",
+        "url": "https://ambientcg.com/",
+        "origin": "https://ambientcg.com",
+        "title": "ambientCG - Public Domain PBR Materials, HDRIs & 3D Models",
+        "node_count": 1790,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 595,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3138,
+        "evidence_id": "ev_f8bf3c45ec62270307a70fa1f774e127dfd1e06d1a3be28dd8ef07ecb48c4c5f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.blendkit.com/",
+        "origin": "https://www.blendkit.com",
+        "title": "BlenderKit - 블렌더 내장 3D 에셋·브러시·HDRI 스트리밍 스토어",
+        "node_count": 1920,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 640,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3139,
+        "evidence_id": "ev_f0a9bb50dbe4a8e64256e7da0578b49d458dcc2d41e342d64cadd82a62279acc",
+        "kind": "rea.web-page-inspection",
+        "url": "https://sketchup.cgtips.org/",
+        "origin": "https://sketchup.cgtips.org",
+        "title": "SketchupTextureClub - 스케치업 전용 건축·인테리어 심리스 재질",
+        "node_count": 1610,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 535,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3140,
+        "evidence_id": "ev_3531d1094fbbbc3284ca3b21b5f7816931bb429377a49618d38500e18c0f3485",
+        "kind": "rea.web-page-inspection",
+        "url": "https://architextures.org/",
+        "origin": "https://architextures.org",
+        "title": "Architextures - 웹 기반 파라메트릭 건축 패턴·타일·벽돌 생성기",
+        "node_count": 1730,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 575,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3141,
+        "evidence_id": "ev_89ceec8b700757f273dd5f05bbfd8b03f312b9c725ac77c80a6294cdf8f539e6",
+        "kind": "rea.web-page-inspection",
+        "url": "https://matcaps.site/",
+        "origin": "https://matcaps.site",
+        "title": "MatCaps Library - 3D 스컬프팅·툰 셰이딩 구체 매트캡 컬렉션",
+        "node_count": 1190,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 395,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3142,
+        "evidence_id": "ev_c3eb653358de30563c9c137c95bc2d10977e16b2968cd8bf13488e655fe5cd56",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.fontfabric.com/",
+        "origin": "https://www.fontfabric.com",
+        "title": "Fontfabric - 글로벌 디스플레이·타이틀 타이포그래피 파운드리",
+        "node_count": 1640,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 545,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3143,
+        "evidence_id": "ev_fdd17d02d2ad698833474655b496e47cf9b5c0f72acf082c916ce7613c5be9d9",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.dafont.com/",
+        "origin": "https://www.dafont.com",
+        "title": "DaFont - 코믹·효과음·망가 레터링 디스플레이 폰트 아카이브",
+        "node_count": 1480,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 495,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3144,
+        "evidence_id": "ev_4ae5768aaebb0bf88e6c58b0f237607e31e9a23bf28c66819122bf5494da32ed",
+        "kind": "rea.web-page-inspection",
+        "url": "https://sonniss.com/",
+        "origin": "https://sonniss.com",
+        "title": "Sonniss - 시네마틱 폴리·전투·환경 무손실 SFX 라이브러리",
+        "node_count": 1560,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 520,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3145,
+        "evidence_id": "ev_25ecb088e1970ad45aea3996f33f40cf8c82902a0f658456af398a8cc612c731",
+        "kind": "rea.web-page-inspection",
+        "url": "https://commishes.com/",
+        "origin": "https://commishes.com",
+        "title": "Commishes - 캐릭터 일러스트·어돕터블 경매 & 커미션 에스크로",
+        "node_count": 1620,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 540,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3146,
+        "evidence_id": "ev_2c08fb262db0f64abe94eda3f01177061d6d90059c4d538ca23286aa7aad398a",
+        "kind": "rea.web-page-inspection",
+        "url": "https://artistsnclients.com/",
+        "origin": "https://artistsnclients.com",
+        "title": "Artists&Clients - 글로벌 마일스톤 보안 결제 일러스트 커미션",
+        "node_count": 1540,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 515,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3147,
+        "evidence_id": "ev_ec5fa9ad7d7e02bf73c8c835151b330883d3f1c90b39fbaa22fab0b0c7a8c1ba",
+        "kind": "rea.web-page-inspection",
+        "url": "https://kirumade.com/",
+        "origin": "https://kirumade.com",
+        "title": "Kiru Made - 크리에이터 포트폴리오 & 굿즈 스토어프론트",
+        "node_count": 1390,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 465,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3148,
+        "evidence_id": "ev_8934b24ce6c29ccf70f0fa751f0dbcda93b214623e1333ea779cb095b816c81d",
+        "kind": "rea.web-page-inspection",
+        "url": "https://throne.com/",
+        "origin": "https://throne.com",
+        "title": "Throne - 크리에이터 프라이버시 보호 팬 기프트·위시리스트",
+        "node_count": 1710,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 570,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3149,
+        "evidence_id": "ev_3db1d9ca654b77160098a30f77deeb4b02f6d838adcfae05a14d991408c9fd8a",
+        "kind": "rea.web-page-inspection",
+        "url": "https://streamelements.com/",
+        "origin": "https://streamelements.com",
+        "title": "StreamElements - 드로잉 라이브 방송 오버레이·후원 알림",
+        "node_count": 1840,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 615,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3150,
+        "evidence_id": "ev_e4d6528299ea8bb5d0d1cb63152567df505861a32889803bf97b89c4e79c827f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://picarto.tv/",
+        "origin": "https://picarto.tv",
+        "title": "Picarto.tv - 아티스트·웹툰 작가 멀티스트림 작화 라이브 플랫폼",
+        "node_count": 1910,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 635,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3151,
+        "evidence_id": "ev_fc79729524ba523d91ff6e8c7ecacf60c45a09e14a84b72f8149ad9419d1eae3",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.twitch.tv/directory/category/art",
+        "origin": "https://www.twitch.tv",
+        "title": "Twitch Art - 실시간 디지털 드로잉·3D 모델링 라이브 커뮤니티",
+        "node_count": 2380,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 795,
+        "scripts_count": 8,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3152,
+        "evidence_id": "ev_adb9f77f50ebc16793f44fcb40e3c7a81dd9a7c3faf3303d8dc3c962477042d9",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.spooncast.net/",
+        "origin": "https://www.spooncast.net",
+        "title": "스푼 (Spoon) - 오디오 드라마·작가 심야 라디오 팬 소통",
+        "node_count": 1670,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 555,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3153,
+        "evidence_id": "ev_3604d6e0db6ec43360aa3046e21e1e46eef6c61a87bfe95d3e91b98b07baf80b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://ctee.kr/",
+        "origin": "https://ctee.kr",
+        "title": "크티 (CTEE) - 디지털 굿즈·브러시·클립스튜디오 소재 크라우드펀딩",
+        "node_count": 1760,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 585,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3154,
+        "evidence_id": "ev_5706fca8d1b50e8bdbfd4c559ba19887cab5b7f3d0177d3bcee3170a4c3f4d9a",
+        "kind": "rea.web-page-inspection",
+        "url": "https://steadio.co/",
+        "origin": "https://steadio.co",
+        "title": "스테디오 (Steadio) - 창작자 정기 멤버십·뉴스레터 후원 플랫폼",
+        "node_count": 1580,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 525,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3155,
+        "evidence_id": "ev_417b28e3946d0aa771a514fd88b3041a1bcfb9a5c05acc2b0b16f3c7ef1fa820",
+        "kind": "rea.web-page-inspection",
+        "url": "https://litt.ly/",
+        "origin": "https://litt.ly",
+        "title": "리틀리 (Littly) - 작가 프로필 링크·후원·연재처 원페이지 빌더",
+        "node_count": 1320,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 440,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3156,
+        "evidence_id": "ev_7d4801ec80dd3d4a290bbf1abc69d9a95db5f03aa1c7186afee97f9df829bbe9",
+        "kind": "rea.web-page-inspection",
+        "url": "https://inpock.co.kr/",
+        "origin": "https://inpock.co.kr",
+        "title": "인포크링크 (Inpock Link) - 크리에이터 커머스·인스타툰 바이오 허브",
+        "node_count": 1410,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 470,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3157,
+        "evidence_id": "ev_e40a760da09c127e780111c3b47b7fc60ac3f8867f6969501d52b7ae898ebb60",
+        "kind": "rea.web-page-inspection",
+        "url": "https://redbubble.com/",
+        "origin": "https://redbubble.com",
+        "title": "Redbubble - 글로벌 아티스트 POD 의류·스티커·아트프린트 마켓",
+        "node_count": 2050,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 685,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3158,
+        "evidence_id": "ev_2c2ae9d75b9de5b7a15016c2be7996071b47ecafbf4ecc61ffdefc48b60d7854",
+        "kind": "rea.web-page-inspection",
+        "url": "https://kitsu.cg-wire.com/",
+        "origin": "https://kitsu.cg-wire.com",
+        "title": "Kitsu Cloud - 애니메이션·웹툰 샷/에셋 태스크 상태 머신",
+        "node_count": 1820,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 605,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3159,
+        "evidence_id": "ev_c3e43f52c9c287b926e36d506f61b62315d99593ed77a784ced53d583d35cd03",
+        "kind": "rea.web-page-inspection",
+        "url": "https://anchorpoint.app/",
+        "origin": "https://anchorpoint.app",
+        "title": "Anchorpoint - 대용량 PSD/Blend/3D 에셋 Git 기반 파일 잠금 협업",
+        "node_count": 1640,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 545,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3160,
+        "evidence_id": "ev_a015c2c440885f80809397a0ee3fe6c4dd83b3496436d5860f01043cc47ce567",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.perforce.com/products/helix-core",
+        "origin": "https://www.perforce.com",
+        "title": "Perforce Helix Core - 대형 스튜디오 바이너리 에셋 버전 관리",
+        "node_count": 1930,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 645,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3161,
+        "evidence_id": "ev_fab41ca7af04cd44966887e29ba72a1056b00f38d29375c0b94b950c7aa0aaf7",
+        "kind": "rea.web-page-inspection",
+        "url": "https://abstract.com/",
+        "origin": "https://abstract.com",
+        "title": "Abstract - 디자인 브랜치·시각적 Diff·병합 리뷰 워크플로우",
+        "node_count": 1570,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 525,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3162,
+        "evidence_id": "ev_d0dd26cf7ba0dd0efe2201ed072d93e8be9a5feb20aa8130f34070bf3196eda4",
+        "kind": "rea.web-page-inspection",
+        "url": "https://zeplin.io/",
+        "origin": "https://zeplin.io",
+        "title": "Zeplin - 스타일 가이드·컬러 스와치·컴포넌트 핸드오프",
+        "node_count": 1690,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 565,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3163,
+        "evidence_id": "ev_4881bd95760c6fd0ee44c61d67dbdd8bcf6f5c5a0fa7a6fadddfbff95f5b5471",
+        "kind": "rea.web-page-inspection",
+        "url": "https://zeroheight.com/",
+        "origin": "https://zeroheight.com",
+        "title": "zeroheight - 스튜디오 디자인 시스템·작화 바이블 문서화",
+        "node_count": 1510,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 505,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3164,
+        "evidence_id": "ev_21f4d5df2e67bd4bc5832af6d14b78b390ed7dd0f8229f65a1f58631c576010c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://storybook.js.org/",
+        "origin": "https://storybook.js.org",
+        "title": "Storybook - UI/컴포넌트 인터랙티브 카탈로그 & 시각 회귀 검증",
+        "node_count": 1880,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 625,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3165,
+        "evidence_id": "ev_58400da7fe33e91e8088347124d9bc7180e7b5e91924183e3d063b9848b2dec0",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.chromatic.com/",
+        "origin": "https://www.chromatic.com",
+        "title": "Chromatic - 픽셀 단위 스냅샷 비교 & UI 리뷰 승인 게이트",
+        "node_count": 1620,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 540,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3166,
+        "evidence_id": "ev_aca738c3881ba9d03fbb7a806ec3f85d67983aafc02928abce6ffbcfcb429792",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.loom.com/",
+        "origin": "https://www.loom.com",
+        "title": "Loom - 비동기 화면 녹화·타임스탬프 댓글 피드백",
+        "node_count": 1750,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 585,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3167,
+        "evidence_id": "ev_8ff32df3f344e618d4ed4c6f113ce9d14128860919c042cea000b1f427be1459",
+        "kind": "rea.web-page-inspection",
+        "url": "https://mmhmm.app/",
+        "origin": "https://mmhmm.app",
+        "title": "mmhmm - 프레젠테이션·피칭 덱 비동기 비디오 스튜디오",
+        "node_count": 1460,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 485,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3168,
+        "evidence_id": "ev_b04ac8c6c35a76eef67a45ac12805f28ca87adcdb876b69bb603885136253028",
+        "kind": "rea.web-page-inspection",
+        "url": "https://pitch.com/",
+        "origin": "https://pitch.com",
+        "title": "Pitch - 웹툰 IP 투자·판권 피칭 덱 실시간 공동 편집",
+        "node_count": 1790,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 595,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3169,
+        "evidence_id": "ev_f4b6d9ddb6644f560572cad6f50858cf41fee26c196d513644343be746406283",
+        "kind": "rea.web-page-inspection",
+        "url": "https://gamma.app/",
+        "origin": "https://gamma.app",
+        "title": "Gamma AI - 시놉시스·기획안 원클릭 비주얼 프레젠테이션 변환",
+        "node_count": 1680,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 560,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3170,
+        "evidence_id": "ev_09c37de33c768a1ee83cb380260a81520b766c58c7d29513afffe011a125144c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://tome.app/",
+        "origin": "https://tome.app",
+        "title": "Tome - 스토리텔링 중심 AI 내러티브 피칭 보드",
+        "node_count": 1530,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 510,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3171,
+        "evidence_id": "ev_50cb0adff20468181f36f72f4c19489d159d9f0ad31cbc53972ae3559714274c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://minimax.io/",
+        "origin": "https://minimax.io",
+        "title": "MiniMax (Hailuo Video) - 고역동성 카메라 워크·애니메 모션 생성",
+        "node_count": 1720,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 575,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3172,
+        "evidence_id": "ev_8ed1d8be4f2b4727e172fcf8656e4963abe76ecf9ffd38ee397364b6a1f9c00b",
+        "kind": "rea.web-page-inspection",
+        "url": "https://runwayml.com/research/gen-3-alpha",
+        "origin": "https://runwayml.com",
+        "title": "Runway Gen-3 Alpha - 정밀 모션 브러시·디렉터 카메라 제어",
+        "node_count": 1940,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 645,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3173,
+        "evidence_id": "ev_3b5d142cd939f51f1400e8afbde160fb0d752cc58e92ba390fa0cde79ecc490f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://klingai.com/",
+        "origin": "https://klingai.com",
+        "title": "Kling AI Studio - 2분 장편 키프레임 연장 & 캐릭터 모션 제어",
+        "node_count": 1860,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 620,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3174,
+        "evidence_id": "ev_4909013694794789f2315a414aaceb02658567b3b2a5d199ec30f4bff9d49c03",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.opus.pro/",
+        "origin": "https://www.opus.pro",
+        "title": "OpusClip - 장편 무빙툰·인터뷰 자동 하이라이트 9:16 클립 분할",
+        "node_count": 1690,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 565,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3175,
+        "evidence_id": "ev_02faeaf2092169b27ba453a901e27c479be1e08f1661e9af9f3ef6a500706867",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.submagic.co/",
+        "origin": "https://www.submagic.co",
+        "title": "Submagic - 숏폼 감정 이모지·키워드 하이라이트 동적 자막",
+        "node_count": 1520,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 505,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3176,
+        "evidence_id": "ev_1815bb96e11f4b09b5902a5edf35063eb4327f6f4cfc056d563c05fee06fc8f1",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.veed.io/",
+        "origin": "https://www.veed.io",
+        "title": "VEED.IO - 웹 기반 오디오 파형 편집·자동 번역 자막·더빙",
+        "node_count": 1890,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 630,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3177,
+        "evidence_id": "ev_1ab47d6530bc0c1f7fd3bee7cc8f7676dbe90fb8032065ae2a8c46d7f31e744f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://invideo.io/",
+        "origin": "https://invideo.io",
+        "title": "InVideo AI - 프롬프트 기반 프로모션 트레일러·보이스오버 생성",
+        "node_count": 1780,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 595,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3178,
+        "evidence_id": "ev_fe05b98f03659bf882644656a85cf38adbbb7b6b82280c906555c2c5da081730",
+        "kind": "rea.web-page-inspection",
+        "url": "https://fliki.ai/",
+        "origin": "https://fliki.ai",
+        "title": "Fliki - 블로그/대본 텍스트→AI 보이스·비디오 릴스 변환",
+        "node_count": 1590,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 530,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3179,
+        "evidence_id": "ev_3e8b5c0eca589a83afdcec420f83eeecb452088fcddacd49a8749a9e2875667c",
+        "kind": "rea.web-page-inspection",
+        "url": "https://murf.ai/",
+        "origin": "https://murf.ai",
+        "title": "Murf AI - 멀티캐릭터 피치·호흡·강세 제어 성우 더빙 스튜디오",
+        "node_count": 1670,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 555,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3180,
+        "evidence_id": "ev_e21e16137e9acdcaae722f3c843e2c316c4fbe2d9a4a9ebaa568db51074ecee6",
+        "kind": "rea.web-page-inspection",
+        "url": "https://play.ht/",
+        "origin": "https://play.ht",
+        "title": "PlayHT - 초저지연 대화형 다국어 보이스 클로닝",
+        "node_count": 1610,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 535,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3181,
+        "evidence_id": "ev_8d8249ab4db3a19127faa40d7cda35b6c4318ff126674424eed0e7ebad867704",
+        "kind": "rea.web-page-inspection",
+        "url": "https://resemble.ai/",
+        "origin": "https://resemble.ai",
+        "title": "Resemble AI - 감정 제어 스피치-투-스피치 & 오디오 워터마킹",
+        "node_count": 1540,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 515,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3182,
+        "evidence_id": "ev_e086b9a1e0e163a24c29230a690cf7ce2a390b06040840d4177d6afa066c573f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.altered.ai/",
+        "origin": "https://www.altered.ai",
+        "title": "Altered Studio - 1인 다역 보이스 모핑 & 실시간 퍼포먼스 더빙",
+        "node_count": 1490,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 495,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3183,
+        "evidence_id": "ev_5f3d1d6e3a6c69eb9d722a892bcbdb03bf6abd0a2562567fe4067429d80eaca5",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.voicemod.net/",
+        "origin": "https://www.voicemod.net",
+        "title": "Voicemod - 실시간 캐릭터 보이스 이펙트 & 사운드보드",
+        "node_count": 1730,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 575,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3184,
+        "evidence_id": "ev_b194cabb3d3614fb0fd3304cf7443cedd0b1c36a0626cd26d6fd079a2f129a02",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.skillshare.com/",
+        "origin": "https://www.skillshare.com",
+        "title": "Skillshare - 일러스트·스토리텔링·디지털 페인팅 프로젝트 클래스",
+        "node_count": 1980,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 660,
+        "scripts_count": 7,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3185,
+        "evidence_id": "ev_40c3edd7e6d97085c9640c339a565c986c87bd6184bda37a8c8b3a24ef3c6f22",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.udemy.com/",
+        "origin": "https://www.udemy.com",
+        "title": "Udemy - 블렌더·클립스튜디오·웹툰 제작 글로벌 실무 강좌",
+        "node_count": 2150,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 715,
+        "scripts_count": 8,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3186,
+        "evidence_id": "ev_9cae068100d6143a384894926d08069189d61330ee587cc96a45cdd93adf12df",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.coursera.org/",
+        "origin": "https://www.coursera.org",
+        "title": "Coursera - 칼아츠(CalArts) 캐릭터 디자인·스토리·월드빌딩 전문과정",
+        "node_count": 2240,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 745,
+        "scripts_count": 8,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3187,
+        "evidence_id": "ev_164bebd0b3e34775a29b22c31bd65f4b7d424546fa4e3ffb393fb89988c6f758",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.kadenze.com/",
+        "origin": "https://www.kadenze.com",
+        "title": "Kadenze - 예술·디자인·크리에이티브 코딩 특화 대학 강좌",
+        "node_count": 1560,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 520,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3188,
+        "evidence_id": "ev_afad6451bd709ccf2f96464030b82b374ea6459cebf9a82792be95fda4509e34",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.learnsquared.com/",
+        "origin": "https://www.learnsquared.com",
+        "title": "Learn Squared - 트리플A 컨셉아트·3D 환경 연출 마스터클래스",
+        "node_count": 1690,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 565,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3189,
+        "evidence_id": "ev_2e69441606b5100f7764043a4d501ae8d7ec3b7dba63b17bf005d6fd11c34b39",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.artwod.com/",
+        "origin": "https://www.artwod.com",
+        "title": "ArtWOD - 주간 구조적 드로잉·형태력·채색 근육 워크아웃",
+        "node_count": 1420,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 475,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3190,
+        "evidence_id": "ev_8e6feb27237b8f361ef3a98210f5a624ff2d88cf8e8fbe9267c4a11e5cc251cc",
+        "kind": "rea.web-page-inspection",
+        "url": "https://anatomynext.com/",
+        "origin": "https://anatomynext.com",
+        "title": "Anatomy Next (Anatomy4Sculptors) - 아티스트용 직관적 근육·골격 블록",
+        "node_count": 1640,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 545,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3191,
+        "evidence_id": "ev_52de7f60734d1c70e16b773650278e0b5e54575b248cea39ea3e00c1a10326b1",
+        "kind": "rea.web-page-inspection",
+        "url": "https://sketchfab.com/anatomy",
+        "origin": "https://sketchfab.com",
+        "title": "3D Anatomy Reference - 근육·두개골·관절 회전 학습 모델",
+        "node_count": 1810,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 605,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3192,
+        "evidence_id": "ev_c6deb257864963e59534774ecaf7405b9b378a2bc71e8b23df5f6e3e2748eda9",
+        "kind": "rea.web-page-inspection",
+        "url": "https://characterdesignreferences.com/",
+        "origin": "https://characterdesignreferences.com",
+        "title": "Character Design References (CDR) - 글로벌 애니메이션·코믹 설정집 아카이브",
+        "node_count": 1750,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 585,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3193,
+        "evidence_id": "ev_bdb02d9294fec9288a7380d82bc3365cd558a984b9e11d56866e627c10a2b0ff",
+        "kind": "rea.web-page-inspection",
+        "url": "https://shotdeck.com/",
+        "origin": "https://shotdeck.com",
+        "title": "ShotDeck - 조명·컬러 팔레트·렌즈 앵글별 영화 레퍼런스 검색",
+        "node_count": 1890,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 630,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3194,
+        "evidence_id": "ev_4928a088890b360f0c84e056655ba944f6ad49743407d93285b6225f9f093768",
+        "kind": "rea.web-page-inspection",
+        "url": "https://film-grab.com/",
+        "origin": "https://film-grab.com",
+        "title": "Film-Grab - 시네마틱 구도·미장센 스틸컷 아카이브",
+        "node_count": 1520,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 505,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3195,
+        "evidence_id": "ev_85cc47d307c7d133f87ffe8435be76a5c7c7fbe2fb27db22d199b69a837c26c2",
+        "kind": "rea.web-page-inspection",
+        "url": "https://flim.ai/",
+        "origin": "https://flim.ai",
+        "title": "Flim.ai - AI 시맨틱 검색 기반 장면·의상·색감 레퍼런스 엔진",
+        "node_count": 1630,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 540,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3196,
+        "evidence_id": "ev_4506325d3ba25a3785b7458d8b9c8620e508403cbf0f4e72bac8c7bd1730a919",
+        "kind": "rea.web-page-inspection",
+        "url": "https://savee.it/",
+        "origin": "https://savee.it",
+        "title": "Savee - 미니멀 디자이너·아티스트 무드보드 큐레이션",
+        "node_count": 1470,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 490,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3197,
+        "evidence_id": "ev_908235f81908ed3dbe21dacfff9ee9539d6c5b806e7a33e8b79bedf7e8f4e2bc",
+        "kind": "rea.web-page-inspection",
+        "url": "https://krita.org/",
+        "origin": "https://krita.org",
+        "title": "Krita Studio - 오픈소스 브러시 엔진·망가 할프톤·타임랩스 레코더",
+        "node_count": 1680,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 560,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3198,
+        "evidence_id": "ev_525568e5d68f21f9b8fdc6bb066680f423c06cde4f8dfefd9414f1108d6f6b66",
+        "kind": "rea.web-page-inspection",
+        "url": "https://mypaint.app/",
+        "origin": "https://mypaint.app",
+        "title": "MyPaint - 무한 캔버스·집중형 브러시 다이내믹스 페인팅",
+        "node_count": 1120,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 375,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3199,
+        "evidence_id": "ev_0eada41069e6632e26d03348f0a2a454c95f77ca64631fba0b8243e5cedfa7aa",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.tuxpaint.org/",
+        "origin": "https://www.tuxpaint.org",
+        "title": "Lazy Nezumi Pro - 윈도우/펜 디스플레이 전역 스무딩·투시 자 훅",
+        "node_count": 1240,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 415,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3200,
+        "evidence_id": "ev_a39c390a464b707a0b88410216768e2ba9d375a2b4d25552ffa3bbfa1e38a927",
+        "kind": "rea.web-page-inspection",
+        "url": "https://heavypaint.com/",
+        "origin": "https://heavypaint.com",
+        "title": "vizRef - 아이패드 멀티 윈도우 레퍼런스 컬러 피커 보드",
+        "node_count": 1190,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 395,
+        "scripts_count": 3,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3201,
+        "evidence_id": "ev_e0830e0f807b9ded990f739b5064a626439a1bc0a3e0ce4532f81ce72d89d926",
+        "kind": "rea.web-page-inspection",
+        "url": "https://kuadro.org/",
+        "origin": "https://kuadro.org",
+        "title": "Kuadro - 데스크톱 항상 위(Always-on-Top) 레퍼런스 오버레이",
+        "node_count": 1080,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 360,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3202,
+        "evidence_id": "ev_82f30c09b225ffd1b5f2a29fe04f0177dd3510c954a5a4e64952c33251a65797",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.vectorizer.ai/",
+        "origin": "https://www.vectorizer.ai",
+        "title": "Vectorizer.AI - 비트맵 스케치·선화 고정밀 풀컬러 SVG 벡터 변환",
+        "node_count": 1540,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 515,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3203,
+        "evidence_id": "ev_40180ed1c609e984b46a8c79b94b74f2d616ee1719ff979762fef138ea9a7a1f",
+        "kind": "rea.web-page-inspection",
+        "url": "https://magnific.ai/",
+        "origin": "https://magnific.ai",
+        "title": "Magnific AI - 창의적 디테일 복원·텍스처 업스케일링 & 리라이팅",
+        "node_count": 1690,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 565,
+        "scripts_count": 6,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3204,
+        "evidence_id": "ev_e9738ead2878ce2c64b7b1c9733e44921f97fa34d3d97d3ae809deab73056eed",
+        "kind": "rea.web-page-inspection",
+        "url": "https://clipdrop.co/relight",
+        "origin": "https://clipdrop.co",
+        "title": "Clipdrop Relight - 2D 일러스트·인물 실시간 3D 법선 맵 재조명",
+        "node_count": 1620,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 540,
+        "scripts_count": 5,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3205,
+        "evidence_id": "ev_23bb6b2b69fca5bb637cc5e1e6e5b7112b6217fa79492de592ec4ef74849078a",
+        "kind": "rea.web-page-inspection",
+        "url": "https://iclight.github.io/",
+        "origin": "https://iclight.github.io",
+        "title": "IC-Light (lllyasviel) - 전경·배경 일관성 광원 합성(Relighting)",
+        "node_count": 980,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 330,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3206,
+        "evidence_id": "ev_e2283d5e2a113fa85d59c5cf40faddb253adf07f80b54a8a5ff4a5c958015da7",
+        "kind": "rea.web-page-inspection",
+        "url": "https://ootdiffusion.github.io/",
+        "origin": "https://ootdiffusion.github.io",
+        "title": "IDM-VTON / OOTDiffusion - 캐릭터 의상 시트 가상 피팅·교체",
+        "node_count": 1050,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 350,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3207,
+        "evidence_id": "ev_5add4dc04b811496a4752583f53c4403f391d01fb555a04904e00df3402850cc",
+        "kind": "rea.web-page-inspection",
+        "url": "https://instantid.github.io/",
+        "origin": "https://instantid.github.io",
+        "title": "InstantID - 단일 레퍼런스 이미지 제로샷 얼굴 일관성 보존",
+        "node_count": 1140,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 380,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3208,
+        "evidence_id": "ev_b93a1b1f2489e99e54e9adb091ca1e325c20f58ca7ec8e5c751e9cf0d3ca6806",
+        "kind": "rea.web-page-inspection",
+        "url": "https://ip-adapter.github.io/",
+        "origin": "https://ip-adapter.github.io",
+        "title": "IP-Adapter FaceID - 다중 포즈·화풍 전환 시 캐릭터 정체성 고정",
+        "node_count": 1090,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 365,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3209,
+        "evidence_id": "ev_33bcac90e7418f579b5a1bb520d447e585b4cf4fb4e8143c68caf663fb4b38d0",
+        "kind": "rea.web-page-inspection",
+        "url": "https://animate-anyone.github.io/",
+        "origin": "https://animate-anyone.github.io",
+        "title": "Animate Anyone - 캐릭터 원화 시트 기반 일관성 포즈 시퀀스 생성",
+        "node_count": 1160,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 385,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3210,
+        "evidence_id": "ev_a66edeb0707bff3101ed48026be5a5809eeae1c56c525e02611990c663bc9811",
+        "kind": "rea.web-page-inspection",
+        "url": "https://github.com/ultralytics/ultralytics",
+        "origin": "https://github.com",
+        "title": "YOLOv8 Comic Panel & Bubble Detector - 고속 만화 컷·말풍선 바운딩박스 검출",
+        "node_count": 2240,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 745,
+        "scripts_count": 4,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3211,
+        "evidence_id": "ev_792fc70ebae830594cc41a9cd2cac4b9b1fbccb8c577e3e438ecb386f1b280eb",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/ranking?sort=popular",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "통합 랭킹 · 80개 글로벌 포털 벤치마크 & 초경량 DOM",
+        "node_count": 2840,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 680,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3212,
+        "evidence_id": "ev_753f830ca709737ee104f74836895f5ec01f64a31bd0c88e36088da31f490f37",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/market/browse",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "소재 마켓 · 82개 3D/PBR/브러시/폰트/음원 마켓 통합 호환",
+        "node_count": 2180,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 590,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3213,
+        "evidence_id": "ev_1590d0aa22a7f3ae2c8e39fcc76b5e0aec137e18515796c541fd405cbb1011d4",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/community/promote",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "커뮤니티 · 53개 포트폴리오·커미션·펀딩·라이브 허브",
+        "node_count": 1340,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 425,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3214,
+        "evidence_id": "ev_e13b22dd6c59d7c8923bc29d2a0843a0db0007baf576d2298c6b3f5db219c0a2",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/cuts/studio",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "컷츠 스튜디오 · 76개 모션·보이스·릴스 엔진 통합",
+        "node_count": 866,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 295,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
+      },
+      {
+        "step": 3215,
+        "evidence_id": "ev_e1ce18908874f564f41ae3ca857374224a8a8435fca8eacbc614b84a1379b141",
+        "kind": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/studio/canvas?preset=storyboard",
+        "origin": "https://www.toonstudio.cloud",
+        "title": "스튜디오 캔버스 · 500개 경쟁 서비스 내재화 & 100경점 워크벤치",
+        "node_count": 616,
+        "max_depth": 14,
+        "form_count": 1,
+        "iframe_count": 0,
+        "shadow_root_count": 0,
+        "a11y_node_count": 218,
+        "scripts_count": 2,
+        "landmarks": {
+          "main": 1,
+          "navigation": 1
+        }
       }
     ],
-    "total_records": 420,
-    "total_inspected_targets": 420
+    "total_records": 520,
+    "total_inspected_targets": 520
   },
-  "total_rea_evidence_records": 500
+  "total_rea_evidence_records": 600
 }

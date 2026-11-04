@@ -10,7 +10,8 @@ export type StoryToWebtoonEngineModeId =
   | "mangaplay-fountain-markup"
   | "insertoon-shorts-packager"
   | "mantra-ichigo-ocr-typesetter"
-  | "domoai-vidu-cavalry-motion";
+  | "domoai-vidu-cavalry-motion"
+  | "iclight-instantid-yolo-relight";
 
 export type StoryToWebtoonLayoutFormatId =
   | "vertical-webtoon-scroll"
@@ -451,6 +452,26 @@ export function StudioStoryToWebtoonStartupWorkbench({
           {ko
             ? "⑤ 애니메 스타일 모션 & 2D 음소 립싱크 (DomoAI · Vidu · Rhubarb · Cavalry 2D)"
             : "5. Anime Style Motion & 2D Phoneme Lip-Sync (DomoAI · Vidu · Rhubarb · Cavalry 2D)"}
+        </button>
+        <button
+          type="button"
+          data-testid="story-to-webtoon-mode-iclight-instantid-yolo-relight"
+          aria-pressed={engineMode === "iclight-instantid-yolo-relight"}
+          onClick={() => {
+            setEngineMode("iclight-instantid-yolo-relight");
+            setLayoutFormat("vertical-webtoon-scroll");
+          }}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors",
+            engineMode === "iclight-instantid-yolo-relight"
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-line bg-card text-fg-2 hover:border-accent/40",
+          )}
+        >
+          <Sparkles size={12} aria-hidden="true" />
+          {ko
+            ? "⑥ 2D 법선 재조명 & 만화 컷·말풍선 검출 (IC-Light · Clipdrop · InstantID · YOLOv8)"
+            : "6. 2D Normal Relighting & Comic Detector (IC-Light · Clipdrop · InstantID · YOLOv8)"}
         </button>
       </div>
 
