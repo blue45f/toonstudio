@@ -2374,6 +2374,11 @@ button.space-location__pulse:hover {
   .space-hud[data-panel-open] .space-location__connection,
   .space-hud[data-panel-open] .space-location__engine-toggle > span,
   .space-hud[data-panel-open] .space-location__search kbd { display: none; }
+  /* 상단 가운데 칸(근접 카드·안내)은 위치 칩 폭(548px) 오른쪽에서 시작하도록 잡혀 있어, 이 폭에서는 칸 너비가 음수가 되어 카드가 지도·패널 위로 삐져나왔다.
+     지도 왼쪽 빈 띠의 왼쪽 끝부터 시작하게 해 공정 바 아래 칸 안에 놓는다. */
+  .space-hud[data-panel-open][data-hud-layout="desktop"] .space-hud__slot--top-center {
+    left: calc(var(--space-gutter) + var(--space-safe-left));
+  }
 }
 
 
