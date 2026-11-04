@@ -1,10 +1,11 @@
-import express from "express";
+import { createServer, type Server } from "node:http";
+
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { signSession } from "./server/session";
 import { getSessionAuthenticationPrincipal, sessionAuth } from "./session-middleware";
 
-import type { Server } from "node:http";
+import type { Request, Response } from "express";
 
 vi.mock("./server/user-lifecycle", () => ({
   isSessionAllowed: vi.fn(async () => true),
@@ -21,14 +22,25 @@ describe("운영 세션 쿠키 HTTP 인증 경계", () => {
     vi.stubEnv("AUTH_SESSION_SECRET", "cookie-http-integration-test-secret-123456789");
     attacker = signSession("attacker-user", 1);
     hostUser = signSession("host-user", 1);
-    const app = express();
-    app.use(sessionAuth);
-    app.get("/api/auth/session", (request, response) => {
-      const principal = getSessionAuthenticationPrincipal(request);
-      response.status(principal ? 200 : 401).json({ userId: principal?.userId ?? null });
+    server = createServer((req, res) => {
+      if (req.method !== "GET" || req.url !== "/api/auth/session") {
+        res.writeHead(404).end();
+        return;
+      }
+      const expressReq = req as unknown as Request;
+      const expressRes = res as unknown as Response;
+      sessionAuth(expressReq, expressRes, (error?: unknown) => {
+        if (error) {
+          res.writeHead(500).end();
+          return;
+        }
+        const principal = getSessionAuthenticationPrincipal(expressReq);
+        res.writeHead(principal ? 200 : 401, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ userId: principal?.userId ?? null }));
+      });
     });
     await new Promise<void>((resolve, reject) => {
-      server = app.listen(0, "127.0.0.1", () => resolve());
+      server.listen(0, "127.0.0.1", () => resolve());
       server.once("error", reject);
     });
     const address = server.address();

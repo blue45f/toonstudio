@@ -231,7 +231,8 @@ describe("native .toon3d 작업파일", () => {
     expectCode(() => decodeStudioHybridDccWorkfile(jsonBytes(record), { documentId: "target" }), "INVALID_FORMAT");
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
     const valid = encodeStudioHybridDccWorkfile(cube());
-    const duplicate = encoder.encode(new TextDecoder().decode(valid).replace("{", '{"version":1,'));
+    const validText = new TextDecoder().decode(valid);
+    const duplicate = encoder.encode(`{"version":1,${validText.slice(1)}`);
     expectCode(() => decodeStudioHybridDccWorkfile(duplicate, { documentId: "target" }), "INVALID_FORMAT");
     expectCode(() => decodeStudioHybridDccWorkfile(new Uint8Array(STUDIO_HYBRID_DCC_WORKFILE_MAX_BYTES + 1), { documentId: "target" }), "PAYLOAD_TOO_LARGE");
   });

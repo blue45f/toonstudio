@@ -260,6 +260,29 @@ export const CSP_PRINT_COMPANY_PRESETS: readonly CspPrintCompanyPreset[] = [
   },
 ] as const;
 
+function extractXmlAttrValue(openTag: string, attrName: string): string {
+  const needle = `${attrName.toLowerCase()}="`;
+  const startIdx = openTag.toLowerCase().indexOf(needle);
+  if (startIdx < 0) return "";
+  const valStart = startIdx + needle.length;
+  const valEnd = openTag.indexOf('"', valStart);
+  return valEnd >= 0 ? openTag.slice(valStart, valEnd) : "";
+}
+
+function splitXmlElementBlocks(xmlText: string, tagName: string): { readonly openTag: string; readonly body: string }[] {
+  const results: { readonly openTag: string; readonly body: string }[] = [];
+  const openNeedle = `<${tagName.toLowerCase()}`;
+  for (const segment of xmlText.split(new RegExp(`<\\/${tagName}>`, "i"))) {
+    const lowerSeg = segment.toLowerCase();
+    const openIdx = lowerSeg.lastIndexOf(openNeedle);
+    const afterName = openIdx >= 0 ? lowerSeg[openIdx + openNeedle.length] : undefined;
+    if (openIdx < 0 || (afterName !== undefined && afterName !== ">" && !/\s/.test(afterName))) continue;
+    const gtIdx = segment.indexOf(">", openIdx + openNeedle.length);
+    if (gtIdx >= 0) results.push({ openTag: segment.slice(openIdx, gtIdx + 1), body: segment.slice(gtIdx + 1) });
+  }
+  return results;
+}
+
 /**
  * `PrintCoInfo.xml` 문자열을 파싱하여 인쇄소 프리셋 목록을 반환한다.
  */
@@ -268,14 +291,12 @@ export function parseCspPrintCoInfoXml(xmlText: string): CspParsedPrintCoInfo {
   const version = versionMatch ? Number.parseInt(versionMatch[1] ?? "117", 10) : 117;
   const companies: CspPrintCompanyPreset[] = [];
 
-  const companyinfoRegex =
-    /<printingcompanyinfo\s+name="([^"]*)"\s+id="(\d+)"(?:\s+url="([^"]*)")?>([\s\S]*?)<\/printingcompanyinfo>/gi;
-  let infoMatch: RegExpExecArray | null = companyinfoRegex.exec(xmlText);
-  while (infoMatch !== null) {
-    const name = (infoMatch[1] ?? "").trim();
-    const id = Number.parseInt(infoMatch[2] ?? "0", 10);
-    const url = (infoMatch[3] ?? "").trim();
-    const body = infoMatch[4] ?? "";
+  for (const { openTag, body } of splitXmlElementBlocks(xmlText, "printingcompanyinfo")) {
+    const name = extractXmlAttrValue(openTag, "name").trim();
+    const idRaw = extractXmlAttrValue(openTag, "id").trim();
+    if (!idRaw) continue;
+    const id = Number.parseInt(idRaw, 10);
+    const url = extractXmlAttrValue(openTag, "url").trim();
     const coverThickness = Number.parseFloat(
       /<coverpaper>\s*<thickness>([\d.]+)<\/thickness>\s*<\/coverpaper>/i.exec(body)?.[1] ?? "0.2",
     );
@@ -315,7 +336,6 @@ export function parseCspPrintCoInfoXml(xmlText: string): CspParsedPrintCoInfo {
       spineWidthDesignate,
       coverMakeType,
     });
-    infoMatch = companyinfoRegex.exec(xmlText);
   }
 
   return { version, companies };
@@ -399,10 +419,7 @@ export function parseCspEpubAndKindleDeviceXml(
   readonly kindleDevices: readonly CspKindleDevicePreset[];
 } {
   const epubDevices: CspEpubDevicePreset[] = [];
-  const deviceRegex = /<device>([\s\S]*?)<\/device>/gi;
-  let match: RegExpExecArray | null = deviceRegex.exec(epubXml);
-  while (match !== null) {
-    const body = match[1] ?? "";
+  for (const { body } of splitXmlElementBlocks(epubXml, "device")) {
     const name = (/<name\s+value="([^"]*)"/i.exec(body)?.[1] ?? "").replaceAll("&quot;", '"').trim();
     const resMatch = /<resolution\s+shortside="(\d+)"\s+longside="(\d+)"/i.exec(body);
     const widthPx = Number.parseInt(resMatch?.[1] ?? "0", 10);
@@ -410,14 +427,10 @@ export function parseCspEpubAndKindleDeviceXml(
     if (name && widthPx > 0 && heightPx > 0) {
       epubDevices.push({ name, widthPx, heightPx });
     }
-    match = deviceRegex.exec(epubXml);
   }
 
   const kindleDevices: CspKindleDevicePreset[] = [];
-  const kindleRegex = /<device>([\s\S]*?)<\/device>/gi;
-  let kMatch: RegExpExecArray | null = kindleRegex.exec(kindleXml);
-  while (kMatch !== null) {
-    const body = kMatch[1] ?? "";
+  for (const { body } of splitXmlElementBlocks(kindleXml, "device")) {
     const nameMatch = /<name\s+value="([^"]*)"(?:\s+abbreviation="([^"]*)")?/i.exec(body);
     const name = (nameMatch?.[1] ?? "").replaceAll("&quot;", '"').trim();
     const abbreviation = nameMatch?.[2] ? nameMatch[2].replaceAll("&quot;", '"').trim() : undefined;
@@ -434,7 +447,6 @@ export function parseCspEpubAndKindleDeviceXml(
     if (name && widthPx > 0 && heightPx > 0) {
       kindleDevices.push({ name, abbreviation, widthPx, heightPx, orientation, countries });
     }
-    kMatch = kindleRegex.exec(kindleXml);
   }
 
   return { epubDevices, kindleDevices };

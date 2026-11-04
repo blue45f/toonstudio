@@ -398,6 +398,28 @@ function extractXmlTagText(xml: string, tagName: string): string {
 	return match?.[1]?.trim() ?? "";
 }
 
+function findXmlOpenTag(xml: string, tagName: string): string {
+	const lower = xml.toLowerCase();
+	const needle = `<${tagName.toLowerCase()}`;
+	let pos = 0;
+	while (pos < lower.length) {
+		const idx = lower.indexOf(needle, pos);
+		if (idx < 0) return "";
+		const nextChar = lower[idx + needle.length];
+		if (nextChar === ">" || nextChar === "/" || (nextChar !== undefined && /\s/.test(nextChar))) {
+			const endIdx = xml.indexOf(">", idx + needle.length);
+			return endIdx >= 0 ? xml.slice(idx, endIdx + 1) : "";
+		}
+		pos = idx + needle.length;
+	}
+	return "";
+}
+
+function readXmlAttrFromTag(openTag: string, attrName: string): string {
+	const regex = new RegExp(`\\b${attrName}=["']([^"']+)["']`, "i");
+	return regex.exec(openTag)?.[1] ?? "";
+}
+
 function extractDatalistValues(xml: string, key: string): string[] {
 	const blockRegex = new RegExp(
 		`<datalist\\s+key=["']${key}["'][^>]*>([\\s\\S]*?)<\\/datalist>`,
@@ -408,14 +430,16 @@ function extractDatalistValues(xml: string, key: string): string[] {
 		return [];
 	}
 	const values: string[] = [];
-	const dataRegex = /<data(?:\s[^>]*)?>([\s\S]*?)<\/data>/gi;
-	let match = dataRegex.exec(blockMatch[1]);
-	while (match !== null) {
-		const text = (match[1] ?? "").trim();
+	for (const segment of blockMatch[1].split(/<\/data>/i)) {
+		const lowerSeg = segment.toLowerCase();
+		const openIdx = lowerSeg.lastIndexOf("<data");
+		if (openIdx < 0) continue;
+		const gtIdx = segment.indexOf(">", openIdx + 5);
+		if (gtIdx < 0) continue;
+		const text = segment.slice(gtIdx + 1).trim();
 		if (text.length > 0) {
 			values.push(text);
 		}
-		match = dataRegex.exec(blockMatch[1]);
 	}
 	return values;
 }
@@ -430,8 +454,10 @@ export function parseCspMaterialPackageXmlBundle(input: {
 }): CspMaterialPackageDescriptor {
 	const { catalogXml, infoXml, layerDataXml } = input;
 	const archiveVersion = extractXmlTagText(catalogXml, "version") || "2.0.0";
-	const catalogUuidMatch = /<catalog[^>]*\buuid=["']([^"']+)["']/i.exec(catalogXml);
-	const groupUuidMatch = /<group[^>]*\buuid=["']([^"']+)["']/i.exec(catalogXml);
+	const catalogOpenTag = findXmlOpenTag(catalogXml, "catalog");
+	const catalogUuid = readXmlAttrFromTag(catalogOpenTag, "uuid");
+	const groupOpenTag = findXmlOpenTag(catalogXml, "group");
+	const groupUuid = readXmlAttrFromTag(groupOpenTag, "uuid");
 	const itemBlockMatch = /<item\b([^>]*)>([\s\S]*?)<\/item>/i.exec(catalogXml);
 	const itemUuidMatch = itemBlockMatch?.[1]
 		? /\buuid=["']([^"']+)["']/i.exec(itemBlockMatch[1])
@@ -441,10 +467,10 @@ export function parseCspMaterialPackageXmlBundle(input: {
 	const catalogName =
 		extractXmlTagText(itemInner, "name") || extractXmlTagText(catalogXml, "name");
 
-	const toolMatch =
-		/<tool[^>]*\bcompany=["']([^"']+)["'][^>]*\bname=["']([^"']+)["'][^>]*\bversion=["']([^"']+)["']/i.exec(
-			catalogXml,
-		);
+	const toolOpenTag = findXmlOpenTag(catalogXml, "tool");
+	const toolCompany = readXmlAttrFromTag(toolOpenTag, "company") || "celsys";
+	const toolName = readXmlAttrFromTag(toolOpenTag, "name") || "paint";
+	const toolVersion = readXmlAttrFromTag(toolOpenTag, "version") || "1.1.0";
 
 	const files: CspMaterialFileRef[] = [];
 	const fileRegex = /<file\b([^>]*)>([\s\S]*?)<\/file>/gi;
@@ -464,7 +490,7 @@ export function parseCspMaterialPackageXmlBundle(input: {
 
 	let layerData: CspMaterialLayerDataSpec | null = null;
 	if (layerDataXml) {
-		const infoUuid = /<info[^>]*\buuid=["']([^"']+)["']/i.exec(layerDataXml)?.[1] ?? "";
+		const infoUuid = readXmlAttrFromTag(findXmlOpenTag(layerDataXml, "info"), "uuid");
 		const firstNum = (key: string, fallback: number): number => {
 			const raw = extractDatalistValues(layerDataXml, key)[0];
 			const parsed = raw !== undefined ? Number(raw) : Number.NaN;
@@ -491,14 +517,14 @@ export function parseCspMaterialPackageXmlBundle(input: {
 
 	return {
 		archiveVersion,
-		catalogUuid: catalogUuidMatch?.[1] ?? "",
+		catalogUuid,
 		catalogName,
-		groupUuid: groupUuidMatch?.[1] ?? "",
+		groupUuid,
 		itemUuid: itemUuidMatch?.[1] ?? "",
 		itemType,
-		toolCompany: toolMatch?.[1] ?? "celsys",
-		toolName: toolMatch?.[2] ?? "paint",
-		toolVersion: toolMatch?.[3] ?? "1.1.0",
+		toolCompany,
+		toolName,
+		toolVersion,
 		tags,
 		files,
 		layerData,

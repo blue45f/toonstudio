@@ -27,6 +27,11 @@ export function validateBundleReleaseCi(sha, runPages, checkPages) {
   return Object.freeze({ runId: latest.id, checkSuiteId: latest.check_suite_id, core: "success", verify: "success" });
 }
 
+const isRemoteMainAtSha = (lsRemoteOutput, sha) => {
+  const parts = String(lsRemoteOutput ?? "").trim().split(/\s+/u);
+  return parts.length === 2 && parts[0] === sha && parts[1] === "refs/heads/main";
+};
+
 export function authorizeBundleR2Production({ approvedSha, repoRoot = REPO_ROOT, environment = process.env,
   command = readCommand, read = readFileSync } = {}) {
   if (!SHA.test(approvedSha)) transferFail("APPROVED_SHA", "소문자 40자리 main SHA를 명시하세요.");
@@ -45,7 +50,7 @@ export function authorizeBundleR2Production({ approvedSha, repoRoot = REPO_ROOT,
   local();
   if (!ORIGINS.includes(git("remote", "get-url", "origin"))) transferFail("REPOSITORY_SCOPE", "검토한 ToonStudio 원격 저장소가 아닙니다.");
   const remoteHead = git("ls-remote", "--heads", "origin", "refs/heads/main");
-  if (!new RegExp(`^${approvedSha}\\s+refs/heads/main$`, "u").test(remoteHead)) transferFail("MAIN_ADVANCED", "방금 조회한 원격 main과 승인 SHA가 다릅니다. 새 SHA의 검증 상태를 확인하세요.");
+  if (!isRemoteMainAtSha(remoteHead, approvedSha)) transferFail("MAIN_ADVANCED", "방금 조회한 원격 main과 승인 SHA가 다릅니다. 새 SHA의 검증 상태를 확인하세요.");
   const api = (path) => {
     try { return JSON.parse(command("gh", ["api", "--paginate", "--slurp", path], repoRoot)); }
     catch { transferFail("CI_READ_FAILED", "필수 CI 상태를 해석할 수 없습니다. 원문을 출력하지 않고 중단합니다."); }
@@ -55,7 +60,7 @@ export function authorizeBundleR2Production({ approvedSha, repoRoot = REPO_ROOT,
     api(`repos/${REPOSITORY}/commits/${approvedSha}/check-runs?per_page=100`));
   const rawCommon = git("rev-parse", "--git-common-dir"), gitCommonDir = isAbsolute(rawCommon) ? rawCommon : resolve(repoRoot, rawCommon);
   return Object.freeze({ approvedSha, ci, gitCommonDir, assertLocal: local,
-    assertRemoteMain: () => { local(); if (!new RegExp(`^${approvedSha}\\s+refs/heads/main$`, "u").test(git("ls-remote", "--heads", "origin", "refs/heads/main"))) transferFail("MAIN_ADVANCED", "업로드 중 원격 main이 바뀌었습니다. 정적 웹을 이 SHA로 게시하지 말고 재검토하세요."); } });
+    assertRemoteMain: () => { local(); if (!isRemoteMainAtSha(git("ls-remote", "--heads", "origin", "refs/heads/main"), approvedSha)) transferFail("MAIN_ADVANCED", "업로드 중 원격 main이 바뀌었습니다. 정적 웹을 이 SHA로 게시하지 말고 재검토하세요."); } });
 }
 
 /** 같은 clone의 모든 worktree를 묶는다. 다른 기기의 실행자는 배포 조정자가 따로 배제해야 한다. */

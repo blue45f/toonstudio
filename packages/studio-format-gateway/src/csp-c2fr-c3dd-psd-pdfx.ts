@@ -223,58 +223,58 @@ function readXmlAttribute(tagText: string, attrName: string): string {
   return match?.[1] ?? "";
 }
 
-/**
- * `.c2fr` 내부 `metadata/info.xml` 및 `metadata/info_parts_0.xml` (`<CelsysCharacterInfo>`)을 파싱합니다.
- */
+function findAllXmlOpenTags(xmlText: string, tagName: string, requireSpace = false): string[] {
+  const tags: string[] = [];
+  const lower = xmlText.toLowerCase();
+  const needle = `<${tagName.toLowerCase()}`;
+  for (let pos = 0; pos < lower.length; ) {
+    const idx = lower.indexOf(needle, pos);
+    if (idx < 0) break;
+    const ch = lower[idx + needle.length];
+    const ok = requireSpace ? ch !== undefined && /\s/.test(ch) : ch === ">" || ch === "/" || (ch !== undefined && /\s/.test(ch));
+    const endIdx = ok ? xmlText.indexOf(">", idx + needle.length) : -1;
+    if (ok && endIdx >= 0) { tags.push(xmlText.slice(idx + needle.length, endIdx)); pos = endIdx + 1; }
+    else pos = idx + needle.length;
+  }
+  return tags;
+}
+
+const findFirstXmlOpenTag = (xmlText: string, tagName: string, requireSpace = false): string =>
+  findAllXmlOpenTags(xmlText, tagName, requireSpace)[0] ?? "";
+
+/** `.c2fr` 내부 `metadata/info.xml` 및 `metadata/info_parts_0.xml` (`<CelsysCharacterInfo>`)을 파싱합니다. */
 export function parseCspC2frCharacterInfoXml(xmlText: string): CspC2frCharacterInfoMeta {
-  const rootMatch = /<CelsysCharacterInfo[^>]*>/i.exec(xmlText);
-  const infoMatch = /<info[^>]*>/i.exec(xmlText);
-  const charMatch = /<character[^>]*>/i.exec(xmlText);
-  const fileMatch = /<file[^>]*>/i.exec(xmlText);
-  const partsMatch = /<parts\s[^>]*>/i.exec(xmlText);
-  const meshMatch = /<mesh[^>]*>/i.exec(xmlText);
-  const materialMatch = /<material[^>]*>/i.exec(xmlText);
-  const textureMatch = /<texture[^>]*>/i.exec(xmlText);
+  const rootTag = findFirstXmlOpenTag(xmlText, "CelsysCharacterInfo");
+  const infoTag = findFirstXmlOpenTag(xmlText, "info");
+  const charTag = findFirstXmlOpenTag(xmlText, "character");
+  const fileTag = findFirstXmlOpenTag(xmlText, "file");
+  const partsTag = findFirstXmlOpenTag(xmlText, "parts", true);
+  const meshTag = findFirstXmlOpenTag(xmlText, "mesh");
+  const materialTag = findFirstXmlOpenTag(xmlText, "material");
+  const textureTag = findFirstXmlOpenTag(xmlText, "texture");
 
   const partsGroups: { aliasName: string; selectMode: "toggle" | "checkable" }[] = [];
-  const groupRegex = /<parts_group\s+([^>]*?)\/?>/gi;
-  let groupMatch = groupRegex.exec(xmlText);
-  while (groupMatch !== null) {
-    const attrs = groupMatch[1] ?? "";
+  for (const attrs of findAllXmlOpenTags(xmlText, "parts_group", true)) {
     const aliasName = readXmlAttribute(attrs, "alias_name");
     const selectModeRaw = readXmlAttribute(attrs, "select_mode");
     if (aliasName.length > 0) {
-      partsGroups.push({
-        aliasName,
-        selectMode: selectModeRaw === "checkable" ? "checkable" : "toggle",
-      });
+      partsGroups.push({ aliasName, selectMode: selectModeRaw === "checkable" ? "checkable" : "toggle" });
     }
-    groupMatch = groupRegex.exec(xmlText);
   }
 
   return {
-    version: rootMatch ? readXmlAttribute(rootMatch[0], "version") || "1.0.0" : "1.0.0",
-    tool: infoMatch ? readXmlAttribute(infoMatch[0], "tool") : "CHARACTER STDUIO 1.0",
-    aliasName: charMatch ? readXmlAttribute(charMatch[0], "alias_name") : "",
-    characterType: charMatch ? readXmlAttribute(charMatch[0], "type") || "dessindoll" : "dessindoll",
-    plainScaleCm: charMatch
-      ? Number.parseFloat(readXmlAttribute(charMatch[0], "plain_scale") || "170")
-      : 170,
-    partsGroupCount: charMatch
-      ? Number.parseInt(readXmlAttribute(charMatch[0], "parts_gourp_count") || "11", 10)
-      : partsGroups.length,
-    modelFilename: fileMatch
-      ? readXmlAttribute(fileMatch[0], "model_filename").replace(/\\/g, "/")
-      : "",
-    modelUuid: fileMatch ? readXmlAttribute(fileMatch[0], "model_uuid") : "",
-    meshName: meshMatch ? readXmlAttribute(meshMatch[0], "mesh_name") : "",
-    materialName: materialMatch ? readXmlAttribute(materialMatch[0], "material_name") : "",
-    diffuseTextureFilename: textureMatch
-      ? readXmlAttribute(textureMatch[0], "texture_filename").replace(/\\/g, "/")
-      : "",
-    nnbFilename: partsMatch
-      ? readXmlAttribute(partsMatch[0], "nnb_filename").replace(/\\/g, "/")
-      : "",
+    version: rootTag ? readXmlAttribute(rootTag, "version") || "1.0.0" : "1.0.0",
+    tool: infoTag ? readXmlAttribute(infoTag, "tool") : "CHARACTER STDUIO 1.0",
+    aliasName: charTag ? readXmlAttribute(charTag, "alias_name") : "",
+    characterType: charTag ? readXmlAttribute(charTag, "type") || "dessindoll" : "dessindoll",
+    plainScaleCm: charTag ? Number.parseFloat(readXmlAttribute(charTag, "plain_scale") || "170") : 170,
+    partsGroupCount: charTag ? Number.parseInt(readXmlAttribute(charTag, "parts_gourp_count") || "11", 10) : partsGroups.length,
+    modelFilename: fileTag ? readXmlAttribute(fileTag, "model_filename").replace(/\\/g, "/") : "",
+    modelUuid: fileTag ? readXmlAttribute(fileTag, "model_uuid") : "",
+    meshName: meshTag ? readXmlAttribute(meshTag, "mesh_name") : "",
+    materialName: materialTag ? readXmlAttribute(materialTag, "material_name") : "",
+    diffuseTextureFilename: textureTag ? readXmlAttribute(textureTag, "texture_filename").replace(/\\/g, "/") : "",
+    nnbFilename: partsTag ? readXmlAttribute(partsTag, "nnb_filename").replace(/\\/g, "/") : "",
     partsGroups,
   };
 }
@@ -294,48 +294,30 @@ export interface CspNininBaoriNnbMeta {
 }
 
 function decodeXmlCrLfEntities(raw: string): [string, string] {
-  const normalized = raw
-    .replace(/&#xD;&#xA;/gi, "\n")
-    .replace(/&#13;&#10;/g, "\n")
-    .replace(/\r\n/g, "\n");
+  const normalized = raw.replace(/&#xD;&#xA;/gi, "\n").replace(/&#13;&#10;/g, "\n").replace(/\r\n/g, "\n");
   const parts = normalized.split("\n").map((s) => s.trim()).filter((s) => s.length > 0);
   return [parts[0] ?? "", parts[1] ?? parts[0] ?? ""];
 }
 
-/**
- * `.c2fr` 내부 `metadata/parts_0000.nnb` (`<Celsys_Ninin-Baori_Info>`) 3D 본 리타겟팅 매핑을 파싱합니다.
- */
+/** `.c2fr` 내부 `metadata/parts_0000.nnb` (`<Celsys_Ninin-Baori_Info>`) 3D 본 리타겟팅 매핑을 파싱합니다. */
 export function parseCspNininBaoriNnbXml(xmlText: string): CspNininBaoriNnbMeta {
-  const rootMatch = /<Celsys_Ninin-Baori_Info[^>]*>/i.exec(xmlText);
-  const infoMatch = /<info[^>]*>/i.exec(xmlText);
-  const nnbMatch = /<ninin-baori[^>]*>/i.exec(xmlText);
-
+  const rootTag = findFirstXmlOpenTag(xmlText, "Celsys_Ninin-Baori_Info");
+  const infoTag = findFirstXmlOpenTag(xmlText, "info");
+  const nnbTag = findFirstXmlOpenTag(xmlText, "ninin-baori");
   const boneLinks: CspNininBaoriBoneLink[] = [];
-  const bgRegex = /<bone_group\s+([^>]*?)>/gi;
-  let match = bgRegex.exec(xmlText);
-  while (match !== null) {
-    const attrs = match[1] ?? "";
+  for (const attrs of findAllXmlOpenTags(xmlText, "bone_group", true)) {
     const dstRaw = readXmlAttribute(attrs, "destination_name_group");
     const srcRaw = readXmlAttribute(attrs, "source_name_group");
     if (dstRaw.length > 0 && srcRaw.length > 0) {
       const [sourceParentBone, sourceChildBone] = decodeXmlCrLfEntities(srcRaw);
       const [destinationParentBone, destinationChildBone] = decodeXmlCrLfEntities(dstRaw);
-      boneLinks.push({
-        sourceParentBone,
-        sourceChildBone,
-        destinationParentBone,
-        destinationChildBone,
-      });
+      boneLinks.push({ sourceParentBone, sourceChildBone, destinationParentBone, destinationChildBone });
     }
-    match = bgRegex.exec(xmlText);
   }
-
   return {
-    version: rootMatch ? readXmlAttribute(rootMatch[0], "version") || "1.0.0" : "1.0.0",
-    tool: infoMatch ? readXmlAttribute(infoMatch[0], "tool") || "NnB_Module 1.0" : "NnB_Module 1.0",
-    nameListFormat: nnbMatch
-      ? Number.parseInt(readXmlAttribute(nnbMatch[0], "name_list_fmt") || "1", 10)
-      : 1,
+    version: rootTag ? readXmlAttribute(rootTag, "version") || "1.0.0" : "1.0.0",
+    tool: infoTag ? readXmlAttribute(infoTag, "tool") || "NnB_Module 1.0" : "NnB_Module 1.0",
+    nameListFormat: nnbTag ? Number.parseInt(readXmlAttribute(nnbTag, "name_list_fmt") || "1", 10) : 1,
     boneLinks,
   };
 }

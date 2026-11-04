@@ -16,7 +16,7 @@ const LENIENT_DECODER = new TextDecoder("utf-8");
 const MAGIC_LINE = "GIMP-VBR";
 /** 이름은 최대 255바이트(문서). */
 const MAX_NAME_BYTES = 255;
-const FLOAT_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/u;
+const FLOAT_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/u;
 const KNOWN_SHAPES: ReadonlySet<string> = new Set(["circle", "square", "diamond"]);
 
 export type GimpGeneratedBrushShape = "circle" | "square" | "diamond";

@@ -501,24 +501,33 @@ export function parseCspPromotionImageInfoXml(xmlText: string): {
   readonly version: string;
   readonly entries: readonly CspPromotionImageInfoEntry[];
 } {
-  const rootMatch = /<promotionimageroot[^>]*version\s*=\s*"([^"]*)"/i.exec(xmlText);
+  const lowerXml = xmlText.toLowerCase();
+  const rootStart = lowerXml.indexOf("<promotionimageroot");
+  const rootEnd = rootStart >= 0 ? xmlText.indexOf(">", rootStart) : -1;
+  const rootTag = rootStart >= 0 && rootEnd >= 0 ? xmlText.slice(rootStart, rootEnd + 1) : "";
+  const rootVersionMatch = /\bversion\s*=\s*"([^"]*)"/i.exec(rootTag);
   const entries: CspPromotionImageInfoEntry[] = [];
 
-  const blockRegex =
-    /<promotionimageinfo\s+author\s*=\s*"([^"]*)"\s+filepath\s*=\s*"([^"]*)"[^>]*>([\s\S]*?)<\/promotionimageinfo>/gi;
-  let match = blockRegex.exec(xmlText);
-  while (match !== null) {
-    const author = match[1] ?? "";
-    const filePath = match[2] ?? "";
-    const inner = match[3] ?? "";
-    const colorMatch = /color\s*=\s*"([^"]*)"/i.exec(inner);
+  for (const segment of xmlText.split(/<\/promotionimageinfo>/i)) {
+    const lowerSeg = segment.toLowerCase();
+    const openIdx = lowerSeg.lastIndexOf("<promotionimageinfo");
+    if (openIdx < 0) continue;
+    const gtIdx = segment.indexOf(">", openIdx + 19);
+    if (gtIdx < 0) continue;
+    const openTag = segment.slice(openIdx, gtIdx + 1);
+    const inner = segment.slice(gtIdx + 1);
+    const authorMatch = /\bauthor\s*=\s*"([^"]*)"/i.exec(openTag);
+    const filepathMatch = /\bfilepath\s*=\s*"([^"]*)"/i.exec(openTag);
+    if (!authorMatch || !filepathMatch) continue;
+    const author = authorMatch[1] ?? "";
+    const filePath = filepathMatch[1] ?? "";
+    const colorMatch = /\bcolor\s*=\s*"([^"]*)"/i.exec(inner);
     const logoColor = colorMatch?.[1]?.toLowerCase() === "white" ? "white" : "black";
     entries.push({ author, filePath, logoColor });
-    match = blockRegex.exec(xmlText);
   }
 
   return {
-    version: rootMatch?.[1] ?? "1.0.0",
+    version: rootVersionMatch?.[1] ?? "1.0.0",
     entries,
   };
 }

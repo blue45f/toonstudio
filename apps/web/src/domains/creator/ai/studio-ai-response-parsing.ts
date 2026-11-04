@@ -94,7 +94,7 @@ export function isAnthropicStudioUrl(url: string): boolean {
     const parsed = new URL(url.trim());
     return parsed.hostname === "api.anthropic.com" || parsed.hostname.endsWith(".anthropic.com");
   } catch {
-    return url.includes("api.anthropic.com");
+    return false;
   }
 }
 
