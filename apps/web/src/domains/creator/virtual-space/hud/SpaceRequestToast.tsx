@@ -6,6 +6,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioSpaceSocialRequest } from "../StudioVirtualSpaceSocialPanel";
 import type { StudioVirtualSpaceGreeting } from "../studio-virtual-space-social";
 import { readSpaceProximityPreferences } from "./space-dock-model";
+import { spaceKoParticle } from "./space-korean";
 
 /** 받은 요청·손 흔들기 토스트가 떠 있는 시간. 사라져도 요청은 참가자 패널에 남는다. */
 const SPACE_REQUEST_TOAST_MS = 10_000;
@@ -62,7 +63,7 @@ export const SpaceRequestToast = memo(function SpaceRequestToast({
     const name = request.peer.displayName;
     return <section className="space-request-toast" aria-label={bt(`${name}님의 ${actionKo}`, `${actionEn} from ${name}`)} data-space-interactive="true">
       <UsersRound size={18} aria-hidden />
-      <p role="status"><strong>{name}</strong> · {bt(`${actionKo}이 왔어요`, `sent a ${actionEn}`)}
+      <p role="status"><strong>{name}</strong> · {bt(`${spaceKoParticle(actionKo, "이")} 왔어요`, `sent a ${actionEn}`)}
         {acceptDisabledReason ? <span className="space-request-toast__reason">{acceptDisabledReason}</span> : null}
       </p>
       <div className="space-request-toast__actions">
