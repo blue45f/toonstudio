@@ -38,10 +38,13 @@ import {
   type Page,
 } from "playwright";
 
+
 import { STUDIO_CANVAS_WIDTH } from "../apps/web/src/domains/creator/canvas/studio-canvas-constants";
 import { DEFAULT_CANVAS_H } from "../apps/web/src/domains/creator/studio-pages";
 
 import { DIST_DIR } from "./lib/repo-paths.mjs";
+import { planStudioLifecyclePhysicalCapture } from "./lib/studio-lifecycle-capture-policy.mjs";
+import { captureStableLifecycleArtwork, comparePngPixels } from "./lib/studio-lifecycle-capture.mjs";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import {
   enabledStudioHistoryControl,
@@ -70,6 +73,8 @@ const LOG_PATH = join(SCRATCH, "studio-lifecycle-preview.log");
 const REPORT_PATH = join(SCRATCH, "studio-lifecycle-report.json");
 const AUTOSAVE_PREFIX = "toonstudio-studio-autosave";
 const DURABLE_AUTOSAVE_SETTLE_MS = 2_500;
+// 관리형 클라우드가 제공한 Chromium도 같은 정책으로 실행할 수 있게 경로만 선택한다.
+const chromiumExecutablePath = process.env.TOONSPECTRUM_CHROMIUM_PATH?.trim();
 const CLEAN_SESSION_KEY = "toonstudio-lifecycle-verifier-cleaned";
 const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
 const MOBILE_HINT_KEY = "toonstudio-studio-mobile-hint-dismissed";
@@ -117,6 +122,7 @@ interface LifecycleResult {
     autosaveSettleBeforeReloadMs: number;
     recoveryReadyAfterReloadMs: number;
   };
+  presentation: { initialPreviewToCommitted: PixelDiffEvidence };
   visual: {
     blankToCommitted: PixelDiffEvidence;
     blankToUndone: PixelDiffEvidence;
@@ -132,6 +138,7 @@ interface LifecycleResult {
   };
   artifacts: {
     directory: string;
+    initialPreview: string;
     baseline: string;
     committed: string;
     undone: string;
@@ -318,89 +325,6 @@ async function enabledHistoryButton(
   return enabledStudioHistoryControl(page, ariaLabel === "실행취소" ? "undo" : "redo");
 }
 
-async function comparePngPixels(
-  page: Page,
-  first: Buffer,
-  second: Buffer,
-  channelTolerance: number,
-  crop: PixelCrop | null = null,
-): Promise<PixelDiffEvidence> {
-  return page.evaluate(async ({ firstBase64, secondBase64, tolerance, cropRatios }) => {
-    const [firstResponse, secondResponse] = await Promise.all([
-      fetch(`data:image/png;base64,${firstBase64}`),
-      fetch(`data:image/png;base64,${secondBase64}`),
-    ]);
-    const [firstBitmap, secondBitmap] = await Promise.all([
-      createImageBitmap(await firstResponse.blob()),
-      createImageBitmap(await secondResponse.blob()),
-    ]);
-    const firstCanvas = new OffscreenCanvas(firstBitmap.width, firstBitmap.height);
-    const secondCanvas = new OffscreenCanvas(secondBitmap.width, secondBitmap.height);
-    const firstContext = firstCanvas.getContext("2d", { willReadFrequently: true });
-    const secondContext = secondCanvas.getContext("2d", { willReadFrequently: true });
-    if (!firstContext || !secondContext) throw new Error("could not create PNG comparison context");
-    firstContext.drawImage(firstBitmap, 0, 0);
-    secondContext.drawImage(secondBitmap, 0, 0);
-    const a = {
-      width: firstCanvas.width,
-      height: firstCanvas.height,
-      data: firstContext.getImageData(0, 0, firstCanvas.width, firstCanvas.height).data,
-    };
-    const b = {
-      width: secondCanvas.width,
-      height: secondCanvas.height,
-      data: secondContext.getImageData(0, 0, secondCanvas.width, secondCanvas.height).data,
-    };
-    firstBitmap.close();
-    secondBitmap.close();
-    if (a.width !== b.width || a.height !== b.height) {
-      return {
-        changedPixels: Math.max(a.width * a.height, b.width * b.height),
-        totalPixels: Math.max(a.width * a.height, b.width * b.height),
-        maxChannelDelta: 255,
-      };
-    }
-    const left = cropRatios
-      ? Math.max(0, Math.min(a.width - 1, Math.floor(a.width * cropRatios.leftRatio)))
-      : 0;
-    const top = cropRatios
-      ? Math.max(0, Math.min(a.height - 1, Math.floor(a.height * cropRatios.topRatio)))
-      : 0;
-    const right = cropRatios
-      ? Math.max(left + 1, Math.min(a.width, Math.ceil(a.width * cropRatios.rightRatio)))
-      : a.width;
-    const bottom = cropRatios
-      ? Math.max(top + 1, Math.min(a.height, Math.ceil(a.height * cropRatios.bottomRatio)))
-      : a.height;
-    let changedPixels = 0;
-    let maxChannelDelta = 0;
-    for (let y = top; y < bottom; y += 1) {
-      for (let x = left; x < right; x += 1) {
-        const offset = (y * a.width + x) * 4;
-        let pixelDelta = 0;
-        for (let channel = 0; channel < 4; channel += 1) {
-          pixelDelta = Math.max(
-            pixelDelta,
-            Math.abs(a.data[offset + channel]! - b.data[offset + channel]!),
-          );
-        }
-        maxChannelDelta = Math.max(maxChannelDelta, pixelDelta);
-        if (pixelDelta > tolerance) changedPixels += 1;
-      }
-    }
-    return {
-      changedPixels,
-      totalPixels: (right - left) * (bottom - top),
-      maxChannelDelta,
-    };
-  }, {
-    firstBase64: first.toString("base64"),
-    secondBase64: second.toString("base64"),
-    tolerance: channelTolerance,
-    cropRatios: crop,
-  });
-}
-
 async function decodedPngStats(page: Page, bytes: Buffer): Promise<DecodedPngStats> {
   return page.evaluate(async (base64) => {
     const response = await fetch(`data:image/png;base64,${base64}`);
@@ -433,20 +357,8 @@ async function decodedPngStats(page: Page, bytes: Buffer): Promise<DecodedPngSta
   }, bytes.toString("base64"));
 }
 
-async function captureStableStage(page: Page, stage: Locator): Promise<Buffer> {
-  let current = await stage.screenshot({ animations: "disabled" });
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    await page.waitForTimeout(80);
-    const next = await stage.screenshot({ animations: "disabled" });
-    const diff = await comparePngPixels(page, current, next, 2);
-    if (diff.changedPixels <= 3) return next;
-    current = next;
-  }
-  return current;
-}
-
-// Element screenshots include portal UI painted over the same physical rectangle. Preserve the
-// separate Konva Canvas2D pixels and DOM geometry to distinguish such UI from an actual ink remnant.
+// artwork 캡처와 별도로 전체 stage의 canvas 원본·DOM 기하를 보존한다.
+// 주입된 Skia canvas도 포함되므로 이 진단은 GPU readback을 수행할 수 있다.
 async function recordStageSurfaces(stage: Locator, label: string): Promise<string> {
   const path = join(SCRATCH, `studio-lifecycle-${label}-surfaces.json`);
   try {
@@ -583,7 +495,7 @@ async function runLifecycle(browser: Browser, origin: string): Promise<Lifecycle
   const contextOptions = { viewport: { width: 1440, height: 1000 }, acceptDownloads: true };
   const profile = VERIFY_OFFLINE_DRAWING ? mkdtempSync(join(tmpdir(), "toonstudio-offline-profile-")) : null;
   let context = profile
-    ? await chromium.launchPersistentContext(profile, { ...contextOptions, headless: true, args: ["--no-sandbox"] })
+    ? await chromium.launchPersistentContext(profile, { ...contextOptions, ...(chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : {}), headless: true, args: ["--no-sandbox"] })
     : await browser.newContext(contextOptions);
   await observeStudioRecovery(context);
   let page = await context.newPage();
@@ -616,10 +528,6 @@ async function runLifecycle(browser: Browser, origin: string): Promise<Lifecycle
       await page.mouse.move(1, (page.viewportSize()?.height ?? 1000) - 1);
       await page.keyboard.press("Escape");
     }
-    const baseline = await captureStableStage(page, stage);
-    writeFileSync(baselinePath, baseline);
-    const surfaceDiagnostics = [await recordStageSurfaces(stage, "baseline")];
-
     const stageBox = await stage.boundingBox();
     const viewport = page.viewportSize();
     invariant(stageBox && viewport, "could not measure the Studio canvas");
@@ -638,6 +546,13 @@ async function runLifecycle(browser: Browser, origin: string): Promise<Lifecycle
       bottomRatio: Math.min(1, (start.y - stageBox.y + 150) / stageBox.height),
     };
     log(`artwork crop: ${JSON.stringify({ stageBox, viewport, artworkCrop })}`);
+    const capturePlan = planStudioLifecyclePhysicalCapture({ stage: stageBox, viewport, artworkCrop,
+      deviceScaleFactor: await page.evaluate(() => devicePixelRatio) });
+    writeFileSync(join(SCRATCH, "studio-lifecycle-capture-region.json"), JSON.stringify(capturePlan, null, 2));
+    const baseline = await captureStableLifecycleArtwork(page, stage, artworkCrop);
+    writeFileSync(baselinePath, baseline);
+    const surfaceDiagnostics = [await recordStageSurfaces(stage, "baseline")];
+
     const hitCanvas = await page.evaluate(({ x, y }) => {
       const target = document.elementFromPoint(x, y);
       return Boolean(target?.closest(".konvajs-content"));
@@ -661,21 +576,26 @@ async function runLifecycle(browser: Browser, origin: string): Promise<Lifecycle
     const historyReadyAfterPointerUpMs = performance.now() - pointerReleasedAt;
     // Remove the live brush cursor from visual evidence; it is UI feedback, not committed ink.
     await page.mouse.move(1, (page.viewportSize()?.height ?? 1000) - 1);
-    const committed = await captureStableStage(page, stage);
+    const initialPreview = await captureStableLifecycleArtwork(page, stage, artworkCrop);
+    const initialPreviewPath = join(SCRATCH, "studio-lifecycle-initial-preview.png");
+    writeFileSync(initialPreviewPath, initialPreview);
+    const committed = await captureStableLifecycleArtwork(page, stage, artworkCrop, true);
+    const initialPreviewToCommitted = await comparePngPixels(page, initialPreview, committed, 2);
+    log(`초기 프리뷰 전환(문서 이력과 별도 진단): ${JSON.stringify(initialPreviewToCommitted)}`);
     writeFileSync(committedPath, committed);
     surfaceDiagnostics.push(await recordStageSurfaces(stage, "committed"));
 
     await undo.click();
     const redo = await enabledHistoryButton(page, "다시실행");
     await page.mouse.move(1, (page.viewportSize()?.height ?? 1000) - 1);
-    const undone = await captureStableStage(page, stage);
+    const undone = await captureStableLifecycleArtwork(page, stage, artworkCrop);
     writeFileSync(undonePath, undone);
     surfaceDiagnostics.push(await recordStageSurfaces(stage, "undone"));
 
     await redo.click();
     const redoCompletedAt = performance.now();
     await enabledHistoryButton(page, "실행취소");
-    const redone = await captureStableStage(page, stage);
+    const redone = await captureStableLifecycleArtwork(page, stage, artworkCrop, true);
     writeFileSync(redonePath, redone);
 
     // V12 writes the authoritative snapshot to OPFS/SQLite and deliberately deletes the old
@@ -740,12 +660,12 @@ async function runLifecycle(browser: Browser, origin: string): Promise<Lifecycle
     const restoredStage = page.locator(".konvajs-content").first();
     await restoredStage.waitFor({ state: "visible" });
     await page.mouse.move(1, (page.viewportSize()?.height ?? 1000) - 1);
-    let reloaded = await captureStableStage(page, restoredStage);
-    let redoneToReloaded = await comparePngPixels(page, redone, reloaded, 2, artworkCrop);
+    let reloaded = await captureStableLifecycleArtwork(page, restoredStage, artworkCrop, true);
+    let redoneToReloaded = await comparePngPixels(page, redone, reloaded, 2);
     for (let attempt = 0; attempt < 8 && redoneToReloaded.changedPixels > 192; attempt += 1) {
       await page.waitForTimeout(120);
-      reloaded = await captureStableStage(page, restoredStage);
-      redoneToReloaded = await comparePngPixels(page, redone, reloaded, 2, artworkCrop);
+      reloaded = await captureStableLifecycleArtwork(page, restoredStage, artworkCrop, true);
+      redoneToReloaded = await comparePngPixels(page, redone, reloaded, 2);
     }
     writeFileSync(reloadedPath, reloaded);
 
@@ -762,9 +682,9 @@ async function runLifecycle(browser: Browser, origin: string): Promise<Lifecycle
     );
 
     const visual = {
-      blankToCommitted: await comparePngPixels(page, baseline, committed, 2, artworkCrop),
-      blankToUndone: await comparePngPixels(page, baseline, undone, 2, artworkCrop),
-      committedToRedone: await comparePngPixels(page, committed, redone, 2, artworkCrop),
+      blankToCommitted: await comparePngPixels(page, baseline, committed, 2),
+      blankToUndone: await comparePngPixels(page, baseline, undone, 2),
+      committedToRedone: await comparePngPixels(page, committed, redone, 2),
       redoneToReloaded,
       beforeToAfterReloadExport: await comparePngPixels(
         page,
@@ -804,6 +724,7 @@ async function runLifecycle(browser: Browser, origin: string): Promise<Lifecycle
         autosaveSettleBeforeReloadMs,
         recoveryReadyAfterReloadMs,
       },
+      presentation: { initialPreviewToCommitted },
       visual,
       export: {
         beforeReload: {
@@ -825,6 +746,7 @@ async function runLifecycle(browser: Browser, origin: string): Promise<Lifecycle
       },
       artifacts: {
         directory: SCRATCH,
+        initialPreview: initialPreviewPath,
         baseline: baselinePath,
         committed: committedPath,
         undone: undonePath,
@@ -841,7 +763,8 @@ async function runLifecycle(browser: Browser, origin: string): Promise<Lifecycle
         "Persistence coverage is the shipped OPFS/SQLite autosave and reload/recovery UI path, not authenticated server/database save.",
         "historyReadyAfterPointerUpMs includes Playwright transport and DOM polling overhead; it is diagnostic, not input-latency p95.",
         "The gate covers Chromium production preview and one default opaque pen stroke, not every brush/backend/browser.",
-        "Surface diagnostics follow each baseline/committed/Undo screenshot; observation and Canvas2D readback can affect subsequent timing, and rectangle intersections do not prove occlusion.",
+        "artwork PNG는 원래 물리 ROI를 그대로 비교하며, 초기 프리뷰 정합성은 문서 이력 검사와 별도로 보고합니다.",
+      "baseline/committed/Undo 이미지 뒤에 전체 표면을 진단합니다. GPU를 포함한 canvas readback과 관측은 후속 시점에 영향을 줄 수 있으며, 사각형 교차만으로 가림을 증명하지는 않습니다.",
       ],
     };
     writeFileSync(REPORT_PATH, `${JSON.stringify(result, null, 2)}\n`);
@@ -952,7 +875,7 @@ async function main(): Promise<void> {
   let browser: Browser | null = null;
   try {
     await waitForServer(origin);
-    browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
+    browser = await chromium.launch({ ...(chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : {}), headless: true, args: ["--no-sandbox"] });
     await verifySourceHydration(browser, origin);
     const result = await runLifecycle(browser, origin);
     await browser.close();
