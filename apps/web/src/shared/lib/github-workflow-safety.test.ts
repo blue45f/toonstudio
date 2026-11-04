@@ -328,6 +328,33 @@ describe("GitHub workflow safety", () => {
     }
   });
 
+  it("Learning 워크플로가 이동한 음영 회귀 테스트를 실행하고 변경을 감지한다", () => {
+    const workflow = requireWorkflow("learning-quality.yml").parsed;
+    const shadingTest = "apps/web/src/domains/creator/scene3d/studio-impasto-relief-shading-v1.light-constants.test.ts";
+    expect(existsSync(join(repositoryRoot, shadingTest)), shadingTest).toBe(true);
+
+    if (!isRecord(workflow.on)) throw new Error("Learning 트리거가 없습니다");
+    for (const event of ["pull_request", "push"]) {
+      const trigger = workflow.on[event];
+      if (!isRecord(trigger)) throw new Error(`Learning ${event} 트리거가 없습니다`);
+      expect(trigger.paths, `${event}가 이동한 음영 테스트 변경을 감지해야 합니다`).toContain(shadingTest);
+    }
+
+    if (!isRecord(workflow.jobs)) throw new Error("Learning 작업이 없습니다");
+    const job = workflow.jobs["learning-quality"];
+    if (!isRecord(job) || !Array.isArray(job.steps)) {
+      throw new Error("Learning 검증 단계가 없습니다");
+    }
+    const commands = job.steps
+      .filter(isRecord)
+      .map((step) => step.run)
+      .filter((run): run is string => typeof run === "string");
+    for (const prefix of ["pnpm exec eslint ", "pnpm exec vitest run "]) {
+      const command = commands.find((run) => run.startsWith(prefix));
+      expect(command?.split(/\s+/u), prefix).toContain(shadingTest);
+    }
+  });
+
   it("keeps retired one-shot writers and alert snapshots out of the repository", () => {
     for (const relativePath of retiredArtifacts) {
       expect(

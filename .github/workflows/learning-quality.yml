@@ -4,10 +4,10 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
     branches: [main]
-    paths: ['apps/web/src/domains/learn/**', 'e2e/learn*.spec.ts', 'tsconfig.learning.json', '.github/workflows/learning-quality.yml', 'apps/web/src/domains/creator/studio-impasto-relief-shading-v1*.ts']
+    paths: ['apps/web/src/domains/learn/**', 'e2e/learn*.spec.ts', 'tsconfig.learning.json', '.github/workflows/learning-quality.yml', 'apps/web/src/domains/creator/studio-impasto-relief-shading-v1*.ts', 'apps/web/src/domains/creator/scene3d/studio-impasto-relief-shading-v1.light-constants.test.ts']
   push:
     branches: ["main"]
-    paths: ['apps/web/src/domains/learn/**', 'e2e/learn*.spec.ts', 'tsconfig.learning.json', '.github/workflows/learning-quality.yml', 'apps/web/src/domains/creator/studio-impasto-relief-shading-v1*.ts']
+    paths: ['apps/web/src/domains/learn/**', 'e2e/learn*.spec.ts', 'tsconfig.learning.json', '.github/workflows/learning-quality.yml', 'apps/web/src/domains/creator/studio-impasto-relief-shading-v1*.ts', 'apps/web/src/domains/creator/scene3d/studio-impasto-relief-shading-v1.light-constants.test.ts']
 
   workflow_dispatch:
 permissions:
@@ -36,10 +36,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm exec tsc -p tsconfig.learning.json
-      - run: pnpm exec eslint apps/web/src/domains/learn e2e/learn.spec.ts e2e/learn-resilience.spec.ts e2e/learn-guided-lessons.spec.ts apps/web/src/domains/creator/studio-impasto-relief-shading-v1.ts apps/web/src/domains/creator/studio-impasto-relief-shading-v1.light-constants.test.ts --max-warnings=0
+      - run: pnpm exec eslint apps/web/src/domains/learn e2e/learn.spec.ts e2e/learn-resilience.spec.ts e2e/learn-guided-lessons.spec.ts apps/web/src/domains/creator/studio-impasto-relief-shading-v1.ts apps/web/src/domains/creator/scene3d/studio-impasto-relief-shading-v1.light-constants.test.ts --max-warnings=0
       # Directory discovery includes the accessibility suite instead of silently omitting it.
       - name: Learning and shading output regressions
-        run: pnpm exec vitest run apps/web/src/domains/learn apps/web/src/domains/creator/studio-impasto-relief-shading-v1.light-constants.test.ts
+        run: pnpm exec vitest run apps/web/src/domains/learn apps/web/src/domains/creator/scene3d/studio-impasto-relief-shading-v1.light-constants.test.ts
       # Full performance budgets run once in CI/core's isolated serial lane. Repeating them here
       # both consumes a runner and makes wall-clock assertions compete with browser work.
       - name: Cache Playwright Chromium
