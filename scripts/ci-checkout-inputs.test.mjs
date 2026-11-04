@@ -3,13 +3,11 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import nodeTest from "node:test";
 import { fileURLToPath } from "node:url";
-import { test as vitestTest } from "vitest";
 import { parse } from "yaml";
 import { fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 
-const test = process.env.VITEST ? vitestTest : nodeTest;
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const root = fileURLToPath(new URL("../", import.meta.url));
 
 test("접근성 체크아웃은 화면·글꼴·브랜드 영상과 검증 소스를 보존한다", async () => {
@@ -101,3 +99,4 @@ test("기반 회귀는 실제 씬 카탈로그의 모든 CC0 VRM 원본을 최�
     await fs.rm(directory, { recursive: true, force: true });
   }
 });
+

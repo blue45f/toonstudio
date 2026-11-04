@@ -1183,7 +1183,7 @@ async function selectDesktopBrush(
   const catalog = await openDesktopCatalog(page);
   await catalog.getByRole("tab", { name: "전체", exact: true }).click();
   await catalog.getByRole("searchbox").fill(preset.name);
-  const option = catalog.getByRole("button", { name: `${preset.name} 선택`, exact: true });
+  const option = catalog.getByRole("button", { name: `${preset.name} 선택`, exact: true }).and(catalog.locator(`[data-studio-brush-select=${JSON.stringify(preset.id)}]`));
   await revealVirtualizedBrushOption(catalog, option);
   await option.waitFor({ state: "visible" });
   await option.scrollIntoViewIfNeeded();
