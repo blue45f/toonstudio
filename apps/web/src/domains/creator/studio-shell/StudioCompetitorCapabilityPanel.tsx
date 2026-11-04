@@ -29,6 +29,8 @@ import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
 
 import type { CreatorRoleId } from "@/shared/lib/creator-role-contract";
 
+import { StudioStoryToWebtoonStartupWorkbench } from "./StudioStoryToWebtoonStartupWorkbench";
+
 export type StudioCompetitorCapabilityLocale = "ko" | "en";
 
 const COMPETITOR_ROLE_FILTER_CHIPS: readonly {
@@ -550,6 +552,11 @@ export function StudioCompetitorCapabilityPanel({
               </div>
             </div>
           </div>
+
+          <StudioStoryToWebtoonStartupWorkbench
+            locale={locale}
+            onSelectWorkspacePreset={onSelectWorkspacePreset ? handleSelectWorkspace : undefined}
+          />
 
           <div
             className="mt-3 rounded-xl border border-success/30 bg-success/5 p-2.5"

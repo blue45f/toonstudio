@@ -390,13 +390,14 @@ export function CutsStudioPage() {
             className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
           />
           <span className="font-extrabold text-accent">
-            {t("RIVE · SPINE · LIVE2D · CASCADEUR 무빙툰 연출 프리셋:", "RIVE · SPINE · LIVE2D · CASCADEUR Moving-Toon Presets:")}
+            {t("RIVE · SPINE · LIVE2D · GSAP · PLAYCANVAS · THEATRE.JS 무빙툰 프리셋:", "RIVE · SPINE · LIVE2D · GSAP · PLAYCANVAS · THEATRE.JS Presets:")}
           </span>
           {[
-            t("스크롤 패럴랙스 깊이 루프 (2.5D)", "Scroll Parallax Depth Loop (2.5D)"),
-            t("대사·말풍선 탄성 바운스", "Dialogue & Balloon Elastic Bounce"),
-            t("Cascadeur 액션 타격 카메라 셰이크", "Cascadeur Action Camera Shake"),
-            t("9:16 숏폼 상하단 UI 안전영역 가이드", "9:16 Shortform Safe-Zone Guide"),
+            t("GSAP ScrollTrigger 패럴랙스 깊이 루프 (2.5D)", "GSAP ScrollTrigger Parallax Loop (2.5D)"),
+            t("PlayCanvas·cables.gl WebGPU 셰이더 & Theatre.js 카메라 커브", "PlayCanvas/cables.gl WebGPU & Theatre.js Curve"),
+            t("Cascadeur·Runway·Pika·Kling·Hailuo 액션 카메라 셰이크 & 모션 브러시", "Cascadeur/Runway/Pika/Kling/Hailuo Camera Shake & Motion"),
+            t("타입캐스트·수퍼톤·ElevenLabs AI 성우 더빙 & 뮤팟·Suno·Epidemic 효과음 싱크", "Typecast/Supertone/ElevenLabs Voice & Mewpot/Suno/Epidemic SFX Sync"),
+            t("오노마AI 인서툰·브루(Vrew)·Katalist 대본 자막 타이밍 & 9:16 릴스 안전영역", "Onoma AI Insertoon/Vrew/Katalist Subtitle Sync & 9:16 Safe-Zone"),
           ].map((presetLabel) => (
             <span
               key={presetLabel}
