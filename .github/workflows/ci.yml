@@ -1024,6 +1024,7 @@ jobs:
           scripts/studio-review-voice-note-backup.integration.test.mjs
           apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-review-existing-graph-runtime.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-recording-booth-asset.integration.test.ts
