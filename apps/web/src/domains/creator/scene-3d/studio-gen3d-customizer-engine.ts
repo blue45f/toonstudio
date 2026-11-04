@@ -724,7 +724,8 @@ export function buildGen3dCustomizationRecipe(input: Gen3dCustomizationInput): G
   const trimmedCustomUrl = (input.customGlbUrl ?? "").trim();
   const isCustomUrlOverride =
     trimmedCustomUrl.length > 0 &&
-    (trimmedCustomUrl.endsWith(".glb") || trimmedCustomUrl.endsWith(".vrm") || trimmedCustomUrl.startsWith("/models/") || trimmedCustomUrl.startsWith("https://"));
+    (trimmedCustomUrl.startsWith("/models/") || trimmedCustomUrl.startsWith("https://")) &&
+    (trimmedCustomUrl.endsWith(".glb") || trimmedCustomUrl.endsWith(".vrm"));
   const effectiveGlbUrl = isCustomUrlOverride ? trimmedCustomUrl : model.url;
   const validPartIds = new Set(model.customizableParts.map((p) => p.id));
   const filteredParts = input.enabledPartIds.filter((id) => validPartIds.has(id));

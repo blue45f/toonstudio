@@ -750,7 +750,7 @@ export function StudioGen3dEcosystemExtensionPanel({
               <code>{customizationRecipe.effectiveGlbUrl}</code>
             </div>
             <a
-              href={customizationRecipe.effectiveGlbUrl}
+              href={activeMcpModel.url}
               download={activeMcpModel.fileName}
               data-testid="tripo3d-mcp-direct-glb-download"
               className="rounded border border-accent/60 bg-accent-soft/40 px-2 py-0.5 text-[0.6rem] font-semibold text-accent hover:bg-accent-soft"

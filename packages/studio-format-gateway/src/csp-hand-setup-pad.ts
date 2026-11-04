@@ -311,6 +311,23 @@ function readPepXmlAttr(tagText: string, attrName: string): string {
   return match?.[1] ?? "";
 }
 
+function findPepOpenTag(xmlText: string, tagName: string): string {
+  const lower = xmlText.toLowerCase();
+  const needle = `<${tagName.toLowerCase()}`;
+  let pos = 0;
+  while (pos < lower.length) {
+    const idx = lower.indexOf(needle, pos);
+    if (idx < 0) return "";
+    const nextChar = lower[idx + needle.length];
+    if (nextChar === ">" || nextChar === "/" || (nextChar !== undefined && /\s/.test(nextChar))) {
+      const endIdx = xmlText.indexOf(">", idx + needle.length);
+      return endIdx >= 0 ? xmlText.slice(idx, endIdx + 1) : "";
+    }
+    pos = idx + needle.length;
+  }
+  return "";
+}
+
 /**
  * `handsetup_*.pep` (`<celsysdocument><pose><node rotquat="...">`) XML을 파싱합니다.
  */
@@ -320,29 +337,38 @@ export function parseCspHandSetupPepXml(xmlText: string): {
   readonly tool: string;
   readonly joints: Readonly<Record<string, CspWxyzQuaternion>>;
 } {
-  const infoMatch = /<info[^>]*>/i.exec(xmlText);
-  const poseMatch = /<pose[^>]*>/i.exec(xmlText);
+  const infoTag = findPepOpenTag(xmlText, "info");
+  const poseTag = findPepOpenTag(xmlText, "pose");
   const joints: Record<string, CspWxyzQuaternion> = {};
 
-  const nodeRegex = /<node\s+([^>]*?)>/gi;
-  let match = nodeRegex.exec(xmlText);
-  while (match !== null) {
-    const attrs = match[1] ?? "";
-    const name = readPepXmlAttr(attrs, "name");
-    const rqStr = readPepXmlAttr(attrs, "rotquat");
-    if (name.length > 0 && rqStr.length > 0) {
-      const nums = rqStr.trim().split(/\s+/).map((s) => Number.parseFloat(s));
-      if (nums.length === 4 && nums.every((n) => Number.isFinite(n))) {
-        joints[name] = [nums[0]!, nums[1]!, nums[2]!, nums[3]!];
+  const lower = xmlText.toLowerCase();
+  let pos = 0;
+  while (pos < lower.length) {
+    const idx = lower.indexOf("<node", pos);
+    if (idx < 0) break;
+    const nextChar = lower[idx + 5];
+    if (nextChar !== undefined && /\s/.test(nextChar)) {
+      const endIdx = xmlText.indexOf(">", idx + 5);
+      if (endIdx < 0) break;
+      const attrs = xmlText.slice(idx + 5, endIdx);
+      const name = readPepXmlAttr(attrs, "name");
+      const rqStr = readPepXmlAttr(attrs, "rotquat");
+      if (name.length > 0 && rqStr.length > 0) {
+        const nums = rqStr.trim().split(/\s+/).map((s) => Number.parseFloat(s));
+        if (nums.length === 4 && nums.every((n) => Number.isFinite(n))) {
+          joints[name] = [nums[0]!, nums[1]!, nums[2]!, nums[3]!];
+        }
       }
+      pos = endIdx + 1;
+    } else {
+      pos = idx + 5;
     }
-    match = nodeRegex.exec(xmlText);
   }
 
   return {
-    aliasName: poseMatch ? readPepXmlAttr(poseMatch[0], "alias_name") : "",
-    searchTags: poseMatch ? readPepXmlAttr(poseMatch[0], "search_tags") : "",
-    tool: infoMatch ? readPepXmlAttr(infoMatch[0], "tool") : "Celsys PoseStudio 1.0",
+    aliasName: poseTag ? readPepXmlAttr(poseTag, "alias_name") : "",
+    searchTags: poseTag ? readPepXmlAttr(poseTag, "search_tags") : "",
+    tool: infoTag ? readPepXmlAttr(infoTag, "tool") : "Celsys PoseStudio 1.0",
     joints,
   };
 }

@@ -43,15 +43,16 @@ const AVATAR_PERSONA_MAP: Readonly<Record<string, IllustratedCreatorPersonaId>> 
   "agent-sophia": "studio-cat-mascot",
 };
 
+const DEFAULT_FLOOR_BACKDROP_URL =
+  "/assets/virtual-studio/studio-art-v10/studio-theme-floor-panorama.webp";
+
 export function StudioVirtualOfficeSpatialCanvasHud({
   onNavigateToTab,
 }: StudioVirtualOfficeSpatialCanvasHudProps) {
   const [hudState, setHudState] = useState<SpatialCanvasHudState>(() =>
     createDefaultSpatialCanvasHudState(),
   );
-  const [floorBackdropUrl, setFloorBackdropUrl] = useState<string>(
-    "/assets/virtual-studio/studio-art-v10/studio-theme-floor-panorama.webp",
-  );
+  const [floorBackdropUrl, setFloorBackdropUrl] = useState<string>(DEFAULT_FLOOR_BACKDROP_URL);
   const [activeSelfEmoteId, setActiveSelfEmoteId] = useState<
     IllustratedV13EmoteId | null
   >(null);
@@ -187,11 +188,12 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             data-testid="spatial-floor-theme-select"
             value={floorBackdropUrl}
             onChange={(e) => {
-              const nextUrl = e.target.value;
-              setFloorBackdropUrl(nextUrl);
+              const requestedUrl = e.target.value;
               const matched = ILLUSTRATED_V11_STUDIO_THEMES.find(
-                (t) => t.assetUrl === nextUrl,
+                (t) => t.assetUrl === requestedUrl,
               );
+              const safeBackdropUrl = matched ? matched.assetUrl : DEFAULT_FLOOR_BACKDROP_URL;
+              setFloorBackdropUrl(safeBackdropUrl);
               setHudToastKo(
                 matched
                   ? `스튜디오 플로어 배경을 '${matched.titleKo}' 테마로 전환했습니다.`
@@ -200,7 +202,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             }}
             className="rounded-lg border border-line bg-panel px-2 py-1 text-xs"
           >
-            <option value="/assets/virtual-studio/studio-art-v10/studio-theme-floor-panorama.webp">
+            <option value={DEFAULT_FLOOR_BACKDROP_URL}>
               🏛️ 플래그십 2.5D 파노라마 (v10)
             </option>
             {ILLUSTRATED_V11_STUDIO_THEMES.map((theme) => (

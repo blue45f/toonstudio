@@ -536,7 +536,7 @@ export const CSP_REMAINING_RESOURCE_ARCHIVE_SPECS = [
 export function compileCsp48B1A2B7IndentationDslToXml(dslText: string): string {
   const lines = dslText
     .split(/\r?\n/)
-    .map((raw) => raw.replace(/\s+$/, ""))
+    .map((raw) => raw.trimEnd())
     .filter((line) => line.trim().length > 0);
 
   interface NodeItem {

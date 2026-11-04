@@ -16,10 +16,11 @@ test("하위 도메인 iframe의 상위 Domain 쿠키가 운영 세션을 바꾸
     const oauthNames = [oauthStateCookieName("github"), oauthPkceVerifierCookieName("github"), oauthLinkSessionCookieName("apple")];
     await context.route("**/*", async (route) => {
       const request = route.request();
-      if (request.url().startsWith(`${mainOrigin}/api/`)) {
+      const requestUrl = new URL(request.url());
+      if (requestUrl.origin === mainOrigin && requestUrl.pathname.startsWith("/api/")) {
         receivedCookies = (await request.allHeaders()).cookie ?? "";
         await route.fulfill({ contentType: "application/json", body: "{}" });
-      } else if (request.url().startsWith(displayOrigin)) {
+      } else if (requestUrl.origin === displayOrigin) {
         await route.fulfill({
           contentType: "text/html; charset=utf-8",
           headers: { "Content-Security-Policy": `frame-ancestors 'self' ${mainOrigin}` },

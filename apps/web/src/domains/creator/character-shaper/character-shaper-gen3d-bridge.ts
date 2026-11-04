@@ -249,7 +249,7 @@ export function buildShaperGen3dSlotGenerationPlan(input: {
       pivotToCenterBottom: true,
       enrichedPrompt,
       pipelineSteps: ["generate(P2-20260801)", "decimate(25k·quad)", "uv(smart)", "texture(v3.5·delight)", "convert(glb·pivot)"],
-      cliCommand: `pnpm tripo3d:scenario --scenario webtoon-prop --prompt "${enrichedPrompt.replace(/"/gu, '\\"')}" --delight`,
+      cliCommand: `pnpm tripo3d:scenario --scenario webtoon-prop --prompt "${enrichedPrompt.replace(/\\/gu, "\\\\").replace(/"/gu, '\\"')}" --delight`,
       mcpToolName: "tripo_generate_prop_glb",
       visualProfile,
     };
@@ -282,7 +282,7 @@ export function buildShaperGen3dSlotGenerationPlan(input: {
         "texture(v3.5·delight)",
         "rig(v3.0·vrm)",
       ],
-      cliCommand: `pnpm tripo3d:scenario --scenario webtoon-character --prompt "${basePrompt.replace(/"/gu, '\\"')}" --segment --delight`,
+      cliCommand: `pnpm tripo3d:scenario --scenario webtoon-character --prompt "${basePrompt.replace(/\\/gu, "\\\\").replace(/"/gu, '\\"')}" --segment --delight`,
       mcpToolName: "tripo_segment_wearable_parts",
       visualProfile,
     };
@@ -311,7 +311,7 @@ export function buildShaperGen3dSlotGenerationPlan(input: {
       "rig(v3.0·spec=vrm·biped)",
       "retarget(idle·walk)",
     ],
-    cliCommand: `pnpm tripo3d:scenario --scenario webtoon-character --prompt "${basePrompt.replace(/"/gu, '\\"')}" --delight`,
+    cliCommand: `pnpm tripo3d:scenario --scenario webtoon-character --prompt "${basePrompt.replace(/\\/gu, "\\\\").replace(/"/gu, '\\"')}" --delight`,
     mcpToolName: "tripo_generate_character_vrm",
     visualProfile,
   };

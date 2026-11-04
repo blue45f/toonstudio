@@ -203,15 +203,22 @@ export function slerpQuatWxyz(
 
 function extractXmlAttributes(attrString: string): Record<string, string> {
   const attrs: Record<string, string> = {};
-  const attrRegex = /([A-Za-z0-9_:-]+)\s*=\s*"([^"]*)"/g;
-  let match = attrRegex.exec(attrString);
-  while (match !== null) {
-    const key = match[1];
-    const val = match[2];
-    if (key !== undefined && val !== undefined) {
-      attrs[key] = val;
+  let cursor = 0;
+  const len = attrString.length;
+  while (cursor < len) {
+    const eqIdx = attrString.indexOf("=", cursor);
+    if (eqIdx < 0) break;
+    const rawKeySegment = attrString.slice(cursor, eqIdx).trim();
+    const lastSpaceIdx = rawKeySegment.search(/\s[^\s]*$/);
+    const key = lastSpaceIdx >= 0 ? rawKeySegment.slice(lastSpaceIdx + 1) : rawKeySegment;
+    const openQuoteIdx = attrString.indexOf('"', eqIdx + 1);
+    if (openQuoteIdx < 0) break;
+    const closeQuoteIdx = attrString.indexOf('"', openQuoteIdx + 1);
+    if (closeQuoteIdx < 0) break;
+    if (key.length > 0 && /^[A-Za-z0-9_:-]+$/.test(key)) {
+      attrs[key] = attrString.slice(openQuoteIdx + 1, closeQuoteIdx);
     }
-    match = attrRegex.exec(attrString);
+    cursor = closeQuoteIdx + 1;
   }
   return attrs;
 }
