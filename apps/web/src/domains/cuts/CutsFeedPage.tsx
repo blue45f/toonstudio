@@ -376,7 +376,7 @@ export function CutsFeedPage() {
     const currentIndex = visibleClips.findIndex((clip) => clip.id === activeId);
     const nextIndex = Math.min(
       visibleClips.length - 1,
-      Math.max(0, (currentIndex < 0 ? 0 : currentIndex) + direction),
+      Math.max(0, currentIndex < 0 ? 0 : currentIndex + direction),
     );
     const element = itemRefs.current.get(visibleClips[nextIndex]?.id ?? "");
     element?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -460,7 +460,7 @@ export function CutsFeedPage() {
           </Link>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-5xl px-4 pt-3">
+      <div className="mx-auto w-full max-w-5xl snap-end px-4 pt-3">
         <SiteContextualSubNav pathnameOverride="/cuts" />
         <section
           data-testid="cuts-rea-interactive-motion-dub-bar"
