@@ -4,6 +4,7 @@ import { StudioScopedWriteManagementCommandSchema, type StudioScopedWriteGrant,
   type StudioScopedWriteManagementCommand, type StudioScopedWritePolicy,
   type StudioScopedWriteTarget } from "@toonstudio/contracts/studio-scoped-write";
 import { projectScope, scopeContains } from "@toonstudio/core/production";
+import { studioRolePipelineControlledTargetIds, studioRolePipelineGrantTargetIds } from "@toonstudio/contracts/studio-role-pipeline";
 import { db } from "../../platform/database";
 import { getVerifiedProductionTaskOutputCaptures } from "../production-collaboration/production-task-output-source";
 import { studioReviewCaptureFromOperation, studioReviewResolutionCaptureQuery } from "../studio-project-graph/studio-review-capture-attestation";
@@ -88,19 +89,33 @@ export class StudioScopedWriteRepository {
         const roles = aggregate.assignments.filter((entry) => entry.id === command.assignmentId), role = roles[0];
         const party = role && aggregate.parties.find((entry) => entry.id === role.partyId);
         if (roles.length !== 1 || !role || !party?.accountUserId || party.status !== "active") throw new StudioScopedWriteDeniedError("policy");
-        const actor = await query.query(sql`SELECT member.role,member.status,account.status AS "accountStatus"
-          FROM creator_work_collaborator member JOIN "user" account ON account.id=member."userId"
-          WHERE member."workId"=${workId} AND member."userId"=${party.accountUserId} FOR SHARE OF member,account`);
-        if (actor.length !== 1 || actor[0]?.status !== "active" || actor[0]?.accountStatus !== "active"
-          || !["viewer", "commenter"].includes(String(actor[0]?.role))) throw new BadRequestException("현재 작품의 활성 열람·댓글 계정에만 제한 편집을 배정할 수 있습니다.");
         const grant: StudioScopedWriteGrant = { id: command.id, actorUserId: party.accountUserId, assignmentId: role.id,
           taskId: command.taskId, productionProjectId: aggregate.projectId, targetIds: command.targetIds, startsAt: command.startsAt, endsAt: command.endsAt,
           createdBy: actorUserId, createdAt: work.now, revokedAt: null };
+        const actor = await query.query(sql`SELECT member.role,member.status,account.status AS "accountStatus"
+          FROM "user" account LEFT JOIN creator_work_collaborator member
+            ON member."workId"=${workId} AND member."userId"=account.id
+          WHERE account.id=${party.accountUserId} FOR SHARE OF account`);
+        const owner = party.accountUserId === work.work.userId, activeMember = actor[0]?.status === "active";
+        const limitedRecipient = !owner && activeMember && ["viewer", "commenter"].includes(String(actor[0]?.role));
+        const fullRecipient = owner || (activeMember && ["admin", "editor"].includes(String(actor[0]?.role)));
+        const pipeline = current.rolePipeline;
+        const permitted = new Set(pipeline?.enabled && pipeline.productionProjectId === aggregate.projectId
+          ? studioRolePipelineGrantTargetIds(pipeline, grant) : []);
+        const currentTask = aggregate.tasks.find((task) => task.id === command.taskId);
+        const pipelineRecipient = fullRecipient && currentTask?.assignmentIds.includes(role.id)
+          && command.targetIds.every((id) => permitted.has(id));
+        if (actor.length !== 1 || actor[0]?.accountStatus !== "active" || (!limitedRecipient && !pipelineRecipient)) {
+          throw new BadRequestException("활성 열람·댓글 계정 또는 현재 분업 정책에 명시한 전체 편집 담당자에만 배정할 수 있습니다.");
+        }
         const starts = Date.parse(grant.startsAt), ends = grant.endsAt === null ? Infinity : Date.parse(grant.endsAt);
         if (starts < Date.parse(role.startsAt) || ends <= starts || (role.endsAt !== null && ends > Date.parse(role.endsAt))
           || !studioScopedGrantIsCurrent(grant, targets, aggregate, party.accountUserId, grant.startsAt)) throw new StudioScopedWriteDeniedError("policy");
         grants.push(grant);
       } else if (command.type === "revoke-target") {
+        if (studioRolePipelineControlledTargetIds(current.rolePipeline).includes(command.targetId)) {
+          throw new ConflictException("활성 분업 정책의 실제 원고 연결은 해제할 수 없습니다. 편집 권한은 배정 회수나 역할 중지로 회수하세요.");
+        }
         if (!targets.some((target) => target.definition.id === command.targetId && target.revokedAt === null)) throw new ConflictException("현재 활성 범위를 선택하세요.");
         targets = targets.map((target) => target.definition.id === command.targetId ? { ...target, revokedAt: work.now } : target);
       } else {

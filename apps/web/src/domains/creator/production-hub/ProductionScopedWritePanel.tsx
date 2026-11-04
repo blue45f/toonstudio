@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ChangeEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type ChangeEvent } from "react";
 import { productionRolePermissionProfile, scopeContains, type ProductionProjectAggregate } from "@toonstudio/core/production";
 import { StudioScopedWriteManagementCommandSchema, type StudioScopedEntity, type StudioScopedWriteManagementCommand,
   type StudioScopedWritePolicy } from "@toonstudio/contracts/studio-scoped-write";
@@ -45,6 +45,7 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
   readonly aggregate: ProductionProjectAggregate; readonly actorId: string; readonly authRevision: number;
 }) {
   const bt = useBilingual("ProductionScopedWritePanel"), workId = aggregate.workId;
+  const protectedTargetNoticeId = useId();
   const [policy, setPolicy] = useState<StudioScopedWritePolicy | null>(null), [error, setError] = useState<string | null>(null), [notice, setNotice] = useState<string | null>(null);
   const [workRevision, setWorkRevision] = useState<number | null>(null);
   const [loading, setLoading] = useState(true), [attempt, refresh] = useState(0), [busy, setBusy] = useState(false);
@@ -123,6 +124,7 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
   const matchingEntities = visibleEntities.filter((entry) => `${entry.label} ${entry.kind} ${entry.id}`.toLocaleLowerCase().includes(entityQuery.trim().toLocaleLowerCase()));
   const displayedEntities = matchingEntities.slice(entityOffset, entityOffset + 100);
   const targets = policy?.targets.filter((target) => target.revokedAt === null && target.definition.productionProjectId === aggregate.projectId) ?? [];
+  const protectedTargetIds = new Set(policy?.rolePipeline?.enabled ? policy.rolePipeline.groupMappings.flatMap((mapping) => mapping.targetIds) : []);
   const grantTarget = targets.find((target) => target.definition.id === grantTargetId), grantTask = tasks.find((task) => task.id === grantTaskId);
   const grantTasks = grantTarget ? tasks.filter((task) => scopeContains(task.scope, grantTarget.definition.scope)) : tasks;
   const assignments = aggregate.assignments.filter((assignment) => assignment.projectId === aggregate.projectId && assignment.status === "active"
@@ -250,6 +252,7 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
         <button type="submit" className={buttonClass({ size: "sm" })} disabled={disabled || !grantTarget || !grantTask || !assignmentId}>{bt("담당 편집 배정", "Assign scoped editing")}</button>
       </form>
       <div className="space-y-2"><h3 className="text-sm font-bold">{bt("현재 배정과 회수", "Assignments and revocation")}</h3>
+        {protectedTargetIds.size ? <p id={protectedTargetNoticeId} className="text-sm text-fg-2">{bt("직군 보호에 연결된 범위는 보존합니다. 편집 배정 회수 또는 재작업을 사용하세요.", "Scopes linked to role protection are preserved. Revoke an editing grant or start rework instead.")}</p> : null}
         {policy.grants.filter((grant) => grant.productionProjectId === aggregate.projectId).map((grant) => <div key={grant.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line p-3 text-sm">
           <span className="min-w-0 flex-1 break-all">{aggregate.tasks.find((task) => task.id === grant.taskId)?.title ?? grant.taskId} · {aggregate.parties.find((party) => party.accountUserId === grant.actorUserId)?.publicDisplayName ?? grant.actorUserId}
             <span className="block text-xs text-fg-2">{grant.startsAt} — {grant.endsAt ?? bt("역할 배정 기간까지", "Until role expiry")} · {grant.revokedAt ? bt("회수됨", "Revoked") : bt("기간과 현재 역할에 따라 적용", "Subject to current role and period")}</span></span>
@@ -257,7 +260,7 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
         </div>)}
         {targets.map((target) => <div key={target.definition.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line p-3 text-sm">
           <span className="min-w-0 flex-1 break-all">{target.definition.pageId} · {target.definition.frameId ?? target.definition.layerId ?? bt("페이지 전체", "Whole page")}<span className="block text-xs text-fg-2">{target.definition.id}</span></span>
-          <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={disabled} onClick={() => commit({ type: "revoke-target", targetId: target.definition.id })}>{bt("원고 범위 회수", "Revoke manuscript range")}</button>
+          <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={disabled || protectedTargetIds.has(target.definition.id)} aria-describedby={protectedTargetIds.has(target.definition.id) ? protectedTargetNoticeId : undefined} onClick={() => commit({ type: "revoke-target", targetId: target.definition.id })}>{bt("원고 범위 회수", "Revoke manuscript range")}</button>
         </div>)}
       </div>
     </> : null}

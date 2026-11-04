@@ -7,6 +7,7 @@ import { scopedCaptureFixture } from "./studio-scoped-write-capture.test-fixture
 import { scopedDocument, scopedFixture, SCOPED_AT } from "./studio-scoped-write.test-fixture";
 import { StudioScopedWriteRepository } from "./studio-scoped-write.repository";
 import type { StudioScopedStoredPolicy } from "./studio-scoped-write-store";
+import { STUDIO_ROLE_PIPELINE_STAGE_IDS, type StudioRolePipelineState } from "@toonstudio/contracts/studio-role-pipeline";
 
 const doubles = vi.hoisted(() => ({ transaction: vi.fn(), capture: vi.fn(), authority: vi.fn() }));
 vi.mock("../../platform/database", async (importOriginal) => ({
@@ -19,7 +20,7 @@ beforeEach(() => vi.clearAllMocks());
 function fixture(actor = "owner") {
   const f = scopedFixture(), capture = scopedCaptureFixture(), repository = new StudioScopedWriteRepository();
   let policy: StudioScopedStoredPolicy = { policyVersion: 0, targets: [], grants: [], ownership: {} };
-  let managerRole = "admin", recipientRole = "viewer";
+  let managerRole = "admin", recipientRole: string | null = "viewer", aggregate = f.aggregate;
   const receipts = new Map<string, Record<string, unknown>>(), writes: string[] = [], dialect = new PgDialect();
   const execute = vi.fn(async (statement: SQL) => {
     const compiled = dialect.sqlToQuery(statement), text = compiled.sql, params = compiled.params;
@@ -33,10 +34,11 @@ function fixture(actor = "owner") {
     if (text.includes('SELECT "actorUserId","requestHash"')) return { rows: receipts.has(String(params[2])) ? [receipts.get(String(params[2]))] : [] };
     if (text.includes("to_regclass('creator_work_scoped_write_policy')")) return { rows: [{ available: true }] };
     if (text.includes('SELECT "policyVersion",targets,grants,ownership')) return { rows: policy.policyVersion ? [policy] : [] };
-    if (text.includes('FROM "production_project"')) return { rows: [{ id: f.aggregate.projectId, workId: f.aggregate.workId, revision: f.aggregate.revision, aggregate: f.aggregate }] };
+    if (text.includes('FROM "production_project"')) return { rows: [{ id: aggregate.projectId, workId: aggregate.workId, revision: aggregate.revision, aggregate }] };
     if (text.includes("jsonb_build_object('schemaVersion',1")) return { rows: [capture.row] };
     if (text.includes("INSERT INTO creator_work_scoped_write_policy")) {
-      writes.push("policy"); policy = { policyVersion: Number(params[1]), targets: JSON.parse(String(params[2])), grants: JSON.parse(String(params[3])), ownership: JSON.parse(String(params[4])) };
+      writes.push("policy"); policy = { policyVersion: Number(params[1]), targets: JSON.parse(String(params[2])), grants: JSON.parse(String(params[3])), ownership: JSON.parse(String(params[4])),
+        rolePipeline: params[7] === null ? null : JSON.parse(String(params[7])) };
       return { rows: [] };
     }
     if (text.includes("INSERT INTO creator_work_scoped_write_receipt")) {
@@ -52,7 +54,15 @@ function fixture(actor = "owner") {
     command: { type: "register-target", target: { ...f.target.definition, source: capture.capture.subject } } };
   return { ...f, repository, register, writes, execute, receipts, policy: () => policy,
     setPolicy: (value: StudioScopedStoredPolicy) => { policy = value; },
-    setManagerRole: (role: string) => { managerRole = role; }, setRecipientRole: (role: string) => { recipientRole = role; } };
+    setAggregate: (value: typeof aggregate) => { aggregate = value; },
+    setManagerRole: (role: string) => { managerRole = role; }, setRecipientRole: (role: string | null) => { recipientRole = role; } };
+}
+
+function pipeline(): StudioRolePipelineState {
+  return { version: 1, enabled: true, productionProjectId: "production", activeStageId: "story-script",
+    roleBindings: [{ roleId: "story", assignmentId: "role" }], groupMappings: [{ groupId: "story-notes", targetIds: ["target"] }],
+    stageTasks: STUDIO_ROLE_PIPELINE_STAGE_IDS.map((stageId, index) => ({ stageId, taskId: index === 0 ? "task" : `task-${index}` })),
+    frozenStageIds: [], approvedAt: null, history: [] };
 }
 
 describe("관리자의 독립 원고 범위·공정 grant 명령", () => {
@@ -104,5 +114,48 @@ describe("관리자의 독립 원고 범위·공정 grant 명령", () => {
     await expect(f.repository.manage("owner", "work", { ...request, expectedPolicyVersion: 2, mutationId: "dca64b07-06e4-4f4d-9445-bca96ebace00",
       command: { ...request.command, id: "another-grant" } })).rejects.toMatchObject({ status: 400 });
     expect(f.policy().grants).toHaveLength(1);
+  });
+
+  it.each(["editor", "admin", "owner"])("켜진 분업의 현재 실제 %s 담당자에게만 명시 grant를 추가한다", async (recipient) => {
+    const f = fixture(); await f.repository.manage("owner", "work", f.register);
+    f.setPolicy({ ...f.policy(), rolePipeline: pipeline() }); f.setRecipientRole(recipient === "owner" ? null : recipient);
+    if (recipient === "owner") f.setAggregate({ ...f.aggregate,
+      parties: f.aggregate.parties.map((party) => party.id === "actor-party" ? { ...party, accountUserId: "owner" } : party) });
+    const result = await f.repository.manage("owner", "work", { mutationId: "352342e0-9e6a-4bbd-a13d-d4912690f617", expectedPolicyVersion: 1,
+      command: { type: "grant", id: "full-grant", productionProjectId: "production", assignmentId: "role", taskId: "task",
+        targetIds: ["target"], startsAt: f.grant.startsAt, endsAt: f.grant.endsAt } });
+    expect(result.grants[0]).toMatchObject({ id: "full-grant", actorUserId: recipient === "owner" ? "owner" : "actor" });
+    expect(f.policy().rolePipeline).toEqual(pipeline());
+    expect(f.execute.mock.calls.map(([statement]) => new PgDialect().sqlToQuery(statement).sql)
+      .some((statement) => statement.includes('FROM "user" account LEFT JOIN creator_work_collaborator member') && statement.includes("FOR SHARE OF account"))).toBe(true);
+  });
+
+  it("전체 편집자 grant는 현재 canonical 역할·단계 task·실제 task 배정·모든 target이 맞아야 한다", async () => {
+    for (const reason of ["role", "task", "assignment", "target"]) {
+      const f = fixture(); await f.repository.manage("owner", "work", f.register); f.setRecipientRole("editor");
+      const state = pipeline();
+      if (reason === "role") state.roleBindings = [{ roleId: "line-art", assignmentId: "role" }];
+      if (reason === "task") state.stageTasks[0] = { stageId: "story-script", taskId: "different-task" };
+      if (reason === "assignment") f.setAggregate({ ...f.aggregate, tasks: f.aggregate.tasks.map((task) => ({ ...task, assignmentIds: [] })) });
+      f.setPolicy({ ...f.policy(), rolePipeline: state }); const before = [...f.writes];
+      await expect(f.repository.manage("owner", "work", { mutationId: "352342e0-9e6a-4bbd-a13d-d4912690f617", expectedPolicyVersion: 1,
+        command: { type: "grant", id: "full-grant", productionProjectId: "production", assignmentId: "role", taskId: "task",
+          targetIds: reason === "target" ? ["target", "unmapped"] : ["target"], startsAt: f.grant.startsAt, endsAt: f.grant.endsAt } })).rejects.toMatchObject({ status: 400 });
+      expect(f.writes).toEqual(before);
+    }
+  });
+
+  it("활성 분업이 참조하는 target 해제는 막고 미매핑 target의 기존 해제는 유지한다", async () => {
+    const f = fixture(); await f.repository.manage("owner", "work", f.register);
+    const outside = { ...f.target, definition: { ...f.target.definition, id: "unmapped", entities: [] } };
+    f.setPolicy({ ...f.policy(), targets: [...f.policy().targets, outside], rolePipeline: pipeline() });
+    const before = [...f.writes];
+    await expect(f.repository.manage("owner", "work", { mutationId: "352342e0-9e6a-4bbd-a13d-d4912690f617", expectedPolicyVersion: 1,
+      command: { type: "revoke-target", targetId: "target" } })).rejects.toMatchObject({ status: 409 });
+    expect(f.writes).toEqual(before);
+    await f.repository.manage("owner", "work", { mutationId: "352342e0-9e6a-4bbd-a13d-d4912690f617", expectedPolicyVersion: 1,
+      command: { type: "revoke-target", targetId: "unmapped" } });
+    expect(f.policy().targets.find((target) => target.definition.id === "target")?.revokedAt).toBeNull();
+    expect(f.policy().targets.find((target) => target.definition.id === "unmapped")?.revokedAt).toBe(SCOPED_AT);
   });
 });

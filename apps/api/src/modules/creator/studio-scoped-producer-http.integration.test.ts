@@ -482,6 +482,14 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
     expect((await h.request(`/creator/works/${f.workId}/scoped-write`, { cookie: f.actor.cookie,
       body: { mutationId: randomUUID(), expectedPolicyVersion: f.context.policyVersion, command: { type: "configure-role-pipeline", configuration } } })).status).toBe(403);
     expect((await h.request(`/creator/works/${f.workId}/team/members/${f.actor.id}`, { method: "PATCH", cookie: owner().cookie, body: { role: "editor" } })).status).toBe(200);
+    expect((await h.request(`/creator/works/${f.workId}/scoped-write`, { cookie: owner().cookie,
+      body: { mutationId: randomUUID(), expectedPolicyVersion: f.context.policyVersion, command: { type: "revoke-target", targetId: "target" } } })).status).toBe(409);
+    const oldGrant = (await policy(f.workId, f.actor)).grants.find((grant) => grant.id === f.context.grantIds[0]);
+    if (!oldGrant) throw new Error("현재 담당자의 명시 배정이 없습니다.");
+    await manage(f.workId, { type: "revoke-grant", grantId: oldGrant.id });
+    const renewed = await manage(f.workId, { type: "grant", id: "renewed-editor", productionProjectId: f.projectId,
+      assignmentId: oldGrant.assignmentId, taskId: oldGrant.taskId, targetIds: oldGrant.targetIds, startsAt: oldGrant.startsAt, endsAt: oldGrant.endsAt });
+    f.context = { ...f.context, policyVersion: renewed.policyVersion, grantIds: ["renewed-editor"] };
     const initial = await shared(f.workId);
     const ordinary = (current: Shared, doc: Record<string, unknown>) => ({ baseRevision: current.revision, crdtServerSequence: current.crdtServerSequence, doc });
     expect((await h.request(route, { method: "PATCH", cookie: owner().cookie, body: ordinary(initial, changedStroke(initial.document.doc, "own")) })).status).toBe(403);

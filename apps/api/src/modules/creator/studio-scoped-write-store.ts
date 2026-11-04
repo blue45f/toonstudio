@@ -194,7 +194,9 @@ function permittedGrantTargetIds(policy: StudioScopedStoredPolicy, grant: Studio
   if (!pipeline?.enabled) return grant.targetIds;
   const controlled = new Set(studioRolePipelineControlledTargetIds(pipeline)), frozen = pipelineFrozenTargets(pipeline, aggregate);
   const permitted = new Set(studioRolePipelineGrantTargetIds(pipeline, grant));
-  return grant.targetIds.filter((id) => !controlled.has(id) || (permitted.has(id) && !frozen.has(id)));
+  const currentTaskId = pipeline.stageTasks.find((stage) => stage.stageId === pipeline.activeStageId)?.taskId;
+  const currentAssignment = aggregate.tasks.find((task) => task.id === currentTaskId)?.assignmentIds.includes(grant.assignmentId) === true;
+  return grant.targetIds.filter((id) => !controlled.has(id) || (currentAssignment && permitted.has(id) && !frozen.has(id)));
 }
 export async function authorizeStudioScopedWrite(query: StudioScopedSql, work: StudioScopedWork,
   context: StudioScopedWriteContext | undefined): Promise<StudioScopedAuthorization> {

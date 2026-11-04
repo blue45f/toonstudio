@@ -8,6 +8,7 @@ import { loadTaskOutputCaptureChoices, loadTaskOutputCapturePages } from "./prod
 import { ProductionScopedWritePanel } from "./ProductionScopedWritePanel";
 import { scopedManagementUiFixture } from "./studio-scoped-write-management.test-fixture";
 import { loadScopedManagementRecovery } from "./studio-scoped-write-management-recovery";
+import { STUDIO_ROLE_PIPELINE_STAGES } from "@toonstudio/contracts/studio-role-pipeline";
 
 const auth = vi.hoisted(() => ({ actorId: "owner", revision: 1 }));
 vi.mock("@/domains/auth/public/session/auth-session-state", async (importOriginal) => ({
@@ -127,5 +128,21 @@ describe("실제 원고 범위 등록·공정 배정·회수 관리", () => {
     await waitFor(() => expect(manageStudioScopedWritePolicy).toHaveBeenCalledTimes(2));
     expect(vi.mocked(manageStudioScopedWritePolicy).mock.calls[1]?.[1]).toEqual(original);
     await waitFor(() => expect(loadScopedManagementRecovery("owner", "work")).toBeNull());
+  });
+  it("활성 직군 보호의 실제 target은 회수하지 않고 배정 회수·재작업을 안내한다", async () => {
+    const f = setup();
+    vi.mocked(getStudioScopedWritePolicy).mockResolvedValue({ ...f.policy, rolePipeline: {
+      version: 1, enabled: true, productionProjectId: f.aggregate.projectId,
+      roleBindings: [{ roleId: "line-art", assignmentId: "artist-role" }], groupMappings: [{ groupId: "main-lineart", targetIds: ["target"] }],
+      stageTasks: STUDIO_ROLE_PIPELINE_STAGES.map((stage, index) => ({ stageId: stage.id, taskId: `pipeline-task-${index}` })),
+      activeStageId: "line-art-ink", frozenStageIds: [], approvedAt: null, history: [],
+    } });
+    render(<ProductionScopedWritePanel aggregate={f.aggregate} />);
+    const revoke = await screen.findByRole("button", { name: "원고 범위 회수" });
+    expect(revoke.hasAttribute("disabled")).toBe(true);
+    expect(revoke.getAttribute("aria-describedby")).toBeTruthy();
+    expect(screen.getByText("직군 보호에 연결된 범위는 보존합니다. 편집 배정 회수 또는 재작업을 사용하세요.")).toBeTruthy();
+    fireEvent.click(revoke);
+    expect(manageStudioScopedWritePolicy).not.toHaveBeenCalled();
   });
 });

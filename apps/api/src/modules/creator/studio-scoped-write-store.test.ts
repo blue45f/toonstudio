@@ -148,4 +148,21 @@ describe("현재 계정·제작 배정에 묶은 명시 편집 정책", () => {
     expect((await project(variants[0], pipeline, manager)).rolePipelineAccess?.canHandoff).toBe(true);
     expect((await project(aggregate, { ...pipeline, approvedAt: SCOPED_AT }, manager)).rolePipelineAccess?.canHandoff).toBe(false);
   });
+
+  it("현재 task 배정이 제거되면 명시 grant의 매핑 권한은 사라지고 미매핑 레거시 grant는 유지한다", async () => {
+    const f = scopedFixture(), legacy = { ...f.target, definition: { ...f.target.definition, id: "legacy", entities: [] } };
+    const pipeline: StudioRolePipelineState = { version: 1, enabled: true, productionProjectId: f.aggregate.projectId,
+      roleBindings: [{ roleId: "story", assignmentId: "role" }], groupMappings: [{ groupId: "story-notes", targetIds: ["target"] }],
+      stageTasks: STUDIO_ROLE_PIPELINE_STAGE_IDS.map((stageId, index) => ({ stageId, taskId: index === 0 ? "task" : `task-${index}` })),
+      activeStageId: "story-script", frozenStageIds: [], approvedAt: null, history: [] };
+    const policy = { ...f.authorization.policy, targets: [f.target, legacy], grants: [{ ...f.grant, targetIds: ["target", "legacy"] }], rolePipeline: pipeline };
+    for (const assigned of [true, false]) {
+      const aggregate = { ...f.aggregate, tasks: f.aggregate.tasks.map((task) => ({ ...task, assignmentIds: assigned ? ["role"] : [] })) };
+      const query = { query: vi.fn().mockResolvedValueOnce([policy])
+        .mockResolvedValueOnce([{ id: aggregate.projectId, workId: aggregate.workId, revision: aggregate.revision, aggregate }])
+        .mockResolvedValueOnce([policy]).mockResolvedValueOnce([{ now: SCOPED_AT }]) } satisfies StudioScopedSql;
+      expect((await authorizeStudioScopedWrite(query, f.authorization.work, f.context)).targets.map((target) => target.definition.id))
+        .toEqual(assigned ? ["target", "legacy"] : ["legacy"]);
+    }
+  });
 });
