@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
@@ -65,6 +65,9 @@ describe("CommunityPage", () => {
     expect(screen.getByTestId("community-rea-active-track-summary").textContent).toContain(
       "Skeb 무수정 리퀘스트",
     );
+    fireEvent.click(screen.getByTestId("community-rea-track-c2pa-nightshade-shield"));
+    expect(screen.getByTestId("community-rea-active-track-summary").textContent).toContain("Glaze/Nightshade 보호 방식 검토 예시");
+    expect(screen.getByTestId("community-rea-active-track-summary").textContent).not.toContain("보호 활성");
     // 이모지 아이콘을 쓰지 않는다(사이트 공통 아이콘 문법).
     expect(document.body.textContent).not.toMatch(/[📚🖋☕🫧]/u);
   });

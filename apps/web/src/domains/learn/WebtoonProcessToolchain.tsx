@@ -196,8 +196,8 @@ export function WebtoonProcessToolchain() {
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("크로키 타이머 간격", "Croquis Timer Interval")}>
-              <span className="text-[11px] font-bold text-fg-2">{bt("크로키 주기:", "Croquis Timer:")}</span>
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("크로키 주기 미리보기", "Croquis Interval Preview")}>
+              <span className="text-[11px] font-bold text-fg-2">{bt("크로키 주기:", "Croquis Interval:")}</span>
               {([30, 60, 180] as const).map((sec) => (
                 <button
                   key={sec}
@@ -215,8 +215,8 @@ export function WebtoonProcessToolchain() {
             </div>
             <p data-testid="learn-rea-active-practice-summary" className="w-full text-[11px] font-semibold text-fg-2">
               {bt(
-                `[활성 커리큘럼] ${practiceLabMode === "posemaniacs-croquis" ? `Posemaniacs·Line of Action·Anatomy Next ${croquisIntervalSec}초 근육 회전/손발/투시 박스 드릴` : practiceLabMode === "savethecat-15beat" ? "Save the Cat! 15비트(오프닝 이미지→촉매→미드포인트→피날레) & Dramatica/Causality 복선 회수 매트릭스" : practiceLabMode === "shotdeck-lighting" ? "ShotDeck·Flim.ai 시네마틱 24mm 광각/50mm 표준/85mm 인물 심도 & 3점 조명 색온도 매칭" : "Wacom Academy 필압/기울기 베지어 커브 교정 & AnimSchool/CG Spectrum 실루엣·무게중심(Line of Action) 클리닉"}`,
-                `[Active Lab] ${practiceLabMode} (${croquisIntervalSec}s timer) · Ready to launch in Studio Practice Canvas`,
+                `[실습 계획 미리보기] ${practiceLabMode === "posemaniacs-croquis" ? `Posemaniacs·Line of Action·Anatomy Next ${croquisIntervalSec}초 근육 회전/손발/투시 박스 드릴` : practiceLabMode === "savethecat-15beat" ? "Save the Cat! 15비트(오프닝 이미지→촉매→미드포인트→피날레) & Dramatica/Causality 복선 회수 매트릭스" : practiceLabMode === "shotdeck-lighting" ? "ShotDeck·Flim.ai 시네마틱 24mm 광각/50mm 표준/85mm 인물 심도 & 3점 조명 색온도 매칭" : "Wacom Academy 필압/기울기 베지어 커브 교정 & AnimSchool/CG Spectrum 실루엣·무게중심(Line of Action) 클리닉"}`,
+                `[Practice Plan Preview] ${practiceLabMode} · Reference interval: ${croquisIntervalSec}s`,
               )}
             </p>
           </div>

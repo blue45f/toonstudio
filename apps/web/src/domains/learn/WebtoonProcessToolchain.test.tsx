@@ -98,6 +98,7 @@ describe("공정별 도구 섹션 렌더", () => {
     expect(screen.getByTestId("learn-rea-active-practice-summary").textContent).toContain(
       "60초 근육 회전",
     );
+    expect(screen.getByTestId("learn-rea-active-practice-summary").textContent).toContain("[실습 계획 미리보기]");
   });
 
   it("13개 단계 카드가 모두 렌더되고 핵심 도구(외부·내장)가 보인다", () => {

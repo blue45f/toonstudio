@@ -57,7 +57,7 @@ describe("CutsFeedPage 준비 상태", () => {
     expect(screen.getByRole("button", { name: "인기순" })).toBeTruthy();
     expect(screen.getByTestId("cuts-rea-interactive-motion-dub-bar")).toBeTruthy();
     expect(screen.getByTestId("cuts-rea-active-engine-summary").textContent).toContain(
-      "Rive 스크롤/탭 상태머신",
+      "[구성 미리보기] Rive 스크롤/탭 상태머신",
     );
   });
 });
