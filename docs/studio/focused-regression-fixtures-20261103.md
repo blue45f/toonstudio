@@ -141,3 +141,18 @@ quality-static job 126313764282의 카탈로그 중복 type import 오류는 #26
 동일하게 두 선언을 합쳐 해결한다. 타입·동작은 유지하며 변경 파일 lint가 통과했다.
 비 Studio QA 묶음의 별도 250MB 예산 초과는 로컬 정식 출력에서도 재현해 #2683에
 선택 용량 분포와 함께 공유했다. 이 기록은 해당 묶음 성공을 주장하지 않는다.
+
+## Scene3D 하네스의 실제 재질 캐시 계약
+
+프로덕션 worker·CSP 조건의 기존 하네스를 클라우드 Chromium에서 실행해
+`Missing real model cache` 실패를 재현했다. 제품은 renderer 재질 backend를 포함한
+키로 원본·결과를 보관하지만 하네스만 raw ID로 조회했다. #2683과 같은 제품의
+`resolveStudioBg3dMaterialBackend`·`readStudioBg3dModelCacheEntry`를 사용하고
+결과가 실제 존재하는지도 명시적으로 검사한다. 개발 서버의 카탈로그 URL도 제품의
+릴리스 메타데이터에서 읽어 같은 해시 카탈로그를 서빙한다.
+
+관련 9개 파일·108개 시험과 변경 파일 lint가 통과했다. 실제 클라우드 Chromium에서
+프로덕션 worker+CSP의 LOD·결과 재사용, release·결과 재사용, 개발 모드 세 실행이
+모두 성공했고 오류·경고는 각각 0개였다. 원본·결과 비교, 적용 전 원본 불변,
+선택 객체 적용·Undo/Redo, 비선택 공유 인스턴스와 스케일, OPFS 재열기 검사를
+그대로 유지했다. 제품 캐시 정책과 검증 기준·시간 제한은 변경하지 않았다.
