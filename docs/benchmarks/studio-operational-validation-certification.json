@@ -16,7 +16,7 @@
       "title": "Resource budgets and historical eight-hour soak evidence",
       "outcome": "Performance plans preserve originals, robust leak analysis rejects growth, and the committed eight-hour pass and leak-regression fixture remain distinguishable.",
       "tests": [
-        "apps/web/src/domains/creator/studio-performance-budget.test.ts",
+        "apps/web/src/domains/creator/studio-cuttoon-editor/studio-performance-budget.test.ts",
         "tests/benchmarks/harness/soak.test.ts"
       ],
       "artifacts": [
@@ -37,17 +37,17 @@
       "title": "Shared professional drawing engine quality",
       "outcome": "Integrated Studio and ToonStudio Draw share bounded input prediction, stabilizer endpoint completion, pressure dynamics, device input profiles, live stylus feedback, large-canvas brush coverage, selection refinement and compositing semantics without creating a second editor authority.",
       "tests": [
-        "apps/web/src/domains/creator/studio-drawing-presentation.test.ts",
+        "apps/web/src/domains/creator/brush/studio-drawing-presentation.test.ts",
         "apps/web/src/domains/creator/brush/studio-drawing-input-deck-model.test.ts",
         "apps/web/src/domains/creator/brush/studio-drawing-input-profile-library.test.ts",
         "apps/web/src/domains/creator/brush/studio-brush-cursor-sensor.test.ts",
         "apps/web/src/domains/creator/brush/studio-brush-velocity-pressure.test.ts",
         "apps/web/src/domains/creator/brush/studio-stroke-stabilizer.test.ts",
-        "apps/web/src/domains/creator/studio-lowlatency-ingest-adapter.test.ts",
-        "apps/web/src/domains/creator/studio-lowlatency-prediction-budget.test.ts",
-        "apps/web/src/domains/creator/studio-predicted-ink-tail.test.ts",
+        "apps/web/src/domains/creator/studio-cuttoon-editor/studio-lowlatency-ingest-adapter.test.ts",
+        "apps/web/src/domains/creator/studio-cuttoon-editor/studio-lowlatency-prediction-budget.test.ts",
+        "apps/web/src/domains/creator/brush/studio-predicted-ink-tail.test.ts",
         "apps/web/src/domains/creator/studio-dynamic-brush-coverage-renderer.test.ts",
-        "apps/web/src/domains/creator/studio-selection-refinement.test.ts",
+        "apps/web/src/domains/creator/scene3d/studio-selection-refinement.test.ts",
         "apps/web/src/domains/creator/studio-live-adjustment.test.ts"
       ],
       "artifacts": []
@@ -61,7 +61,7 @@
         "apps/web/src/domains/creator/export/studio-psd-export-text.test.ts",
         "apps/web/src/domains/creator/export/studio-psd-adjustment-graph.test.ts",
         "apps/web/src/domains/creator/studio-clip-selection-roundtrip.test.ts",
-        "apps/web/src/domains/creator/studio-workspace-interchange.test.ts"
+        "apps/web/src/domains/creator/live/studio-workspace-interchange.test.ts"
       ],
       "artifacts": []
     },

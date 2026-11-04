@@ -11,10 +11,10 @@
 
 기본 운영 권위는 무료 우선으로 분리합니다. Cloudflare Static Assets가 SPA와 정적 카탈로그를
 직접 제공하고, 최소 Worker gateway는 API·Socket.IO·OG crawler 경로만 검토된 Core API origin으로
-전달합니다. Supabase PostgreSQL이 동적 원장의 현재 권위이고(기존 Neon `neondb`는 legacy로 보존),
+전달합니다. 동적 PostgreSQL 원장의 현재 권위는 onpod `toonstudio-db`입니다(과거 Supabase는 미사용, Neon은 삭제).
 Cloudflare Durable Objects는 Studio의 임시 실시간 상태, Upstash는 선택형 분산 제한·조정,
-목적별 R2/B2/Supabase private storage는 파일 data plane을 담당합니다. Core API의 기본 origin은
-Render `toonspectrum-core-api`이며 배포와 롤백은 각 Cloudflare/Render 배포 단위의 검증된
+파일 data plane의 리소스별 현재·퇴역 상태는 인프라 지도를 따릅니다. Core API의 기본 origin은
+onpod `toonstudio-api`이며 배포와 롤백은 각 Cloudflare/onpod 배포 단위의 검증된
 version으로 수행합니다.
 
 한 제공자가 다른 제공자의 전체 폴백이 되지는 않습니다. 각 workload는 하나의 authority를 가지며,
