@@ -1,3 +1,4 @@
+import type { StudioVirtualStageKind } from "./office2d/studio-virtual-space-stage-mode";
 import { CalendarDays, Check, Copy, Handshake, History, Lightbulb, MapPinned, MessageCircle, Search, Trash2, Type, UsersRound, Volume2, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
@@ -60,9 +61,10 @@ function npcIdentity(npc: StudioWorldNpcDefinition) {
  * - 선택지: 구역 안내 · 오늘의 팁 · 같이 작업하기 + 역할별 바로 가기. 직접 질문도 할 수 있다.
  */
 export function StudioVirtualSpaceNpcDialoguePanel({
-  npc, room, operations, peers, artStyle, dialogueScale, ttsEnabled, onDialogueScale, onAction, onClose,
+  npc, room, operations, peers, artStyle, stageKind, dialogueScale, ttsEnabled, onDialogueScale, onAction, onClose,
   modal = false, roomInteractions = [], personal = false,
 }: {
+  readonly stageKind?: StudioVirtualStageKind;
   readonly npc: StudioWorldNpcDefinition;
   readonly artStyle: StudioVirtualArtStyleKey;
   readonly dialogueScale: StudioVirtualDialogueScale;
@@ -302,7 +304,7 @@ export function StudioVirtualSpaceNpcDialoguePanel({
     data-space-interactive="true" data-dialogue-scale={dialogueScale} data-modal={modal || undefined} data-expression={expression}
     onKeyDown={moveButtonFocus}>
     <header className="space-npc-dialogue__header">
-      <SpaceNpcPortrait skinKey={npc.skinKey} expression={expression} alt={nameRole} artStyle={artStyle} />
+      <SpaceNpcPortrait stageKind={stageKind} skinKey={npc.skinKey} expression={expression} alt={nameRole} artStyle={artStyle} />
       <div className="space-npc-dialogue__who">
         <p className="space-npc-dialogue__where"><span className="space-npc-dialogue__badge">NPC</span>{bt(roomLabelKo, roomLabelEn)}</p>
         <h2 id={titleId}>{bt(identity.nameKo, identity.nameEn)}</h2>

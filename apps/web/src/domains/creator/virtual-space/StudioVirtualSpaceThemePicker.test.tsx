@@ -12,6 +12,19 @@ afterEach(() => cleanup());
 vi.setConfig({ testTimeout: 30000 });
 
 describe("StudioVirtualSpaceThemePicker", () => {
+  it.each([
+    ["modern-office", "studio-art-v14/rooms/global-ip-pitch-boardroom.webp"],
+    ["webtoon-atelier", "studio-art-v11/themes/seoul-editorial-hq.webp"],
+    ["celestial-observatory", "studio-art-v12/themes/scifi-orbital-command.webp"],
+    ["garden-terrace", "studio-art-v12/themes/murim-bamboo-pavilion.webp"],
+    ["library", "studio-art-v13/themes/magic-academy-astral-library.webp"],
+    ["sunset-harbor", "studio-art-v13/themes/rooftop-sunset-screening-stage.webp"],
+  ])("%s 카드에 실제 월드 배경을 표시한다", (key, asset) => {
+    const { container } = render(<StudioVirtualSpaceThemePicker value="modern-office" onChange={vi.fn()} />);
+    const image = container.querySelector(`[data-atelier-theme-preview="${key}"]`);
+    expect(image?.getAttribute("src")).toBe(`/assets/virtual-studio/${asset}`);
+  });
+
   it("테마 13종을 모두 보여 주고 현재 테마가 눌린 상태로 표시된다", () => {
     render(<StudioVirtualSpaceThemePicker value="modern-office" onChange={vi.fn()} />);
     const buttons = screen.getAllByRole("button");

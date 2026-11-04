@@ -95,7 +95,7 @@ jobs:
           apps/web/src/domains/creator/live/studio-live-collaboration-transport.test.ts
           apps/web/src/domains/creator/live/studio-live-jam-session.test.ts
           apps/web/src/domains/creator/live/studio-live-page-lifecycle.test.ts
-          apps/web/src/domains/creator/StudioDraftOperationSyncAssistant.test.tsx
+          apps/web/src/domains/creator/live/StudioDraftOperationSyncAssistant.test.tsx
           apps/web/src/domains/creator/canvas/StudioCinematicCanvasWelcome.test.tsx
           scripts/studio-canvas-preview-budget.test.ts
           scripts/lib/studio-collaboration-readiness.test.ts
@@ -114,7 +114,7 @@ jobs:
           apps/web/src/domains/creator/live/studio-live-jam-session.test.ts
           apps/web/src/domains/creator/live/studio-live-page-lifecycle.ts
           apps/web/src/domains/creator/live/studio-live-page-lifecycle.test.ts
-          apps/web/src/domains/creator/StudioDraftOperationSyncAssistant.test.tsx
+          apps/web/src/domains/creator/live/StudioDraftOperationSyncAssistant.test.tsx
           apps/web/src/domains/creator/canvas/StudioCinematicCanvasWelcome.test.tsx
           scripts/studio-canvas-preview-budget.test.ts
           scripts/lib/studio-collaboration-readiness.test.ts

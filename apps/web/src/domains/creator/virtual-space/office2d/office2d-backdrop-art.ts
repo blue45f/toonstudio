@@ -1,4 +1,4 @@
-import { STUDIO_OFFICE_ENVIRONMENTS, studioOfficeEnvironment } from "../studio-virtual-space-office-environments";
+import { studioSpaceThemeArtworkUrl, studioSpaceThemeArtworkUrls } from "../studio-virtual-space-theme-artwork";
 /**
  * ToonOffice 2D 고품질 이미지 배경(룸 아트 뮤럴·테마 카펫), 실시간 공간 이펙트,
  * 가구 가림 반투명화(Occlusion Fade), 만화적 의성어(VFX Burst), 평면도(Schematic) 오버뷰 렌더러.
@@ -177,22 +177,11 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
 });
 
-const SPACE_THEME_BACKDROP_URLS: Readonly<Partial<Record<StudioSpaceThemeKey, string>>> = Object.freeze({
-  "webtoon-atelier": "/assets/virtual-studio/studio-art-v11/themes/seoul-editorial-hq.webp",
-  "modern-office": "/assets/virtual-studio/studio-art-v14/rooms/global-ip-pitch-boardroom.webp",
-  "cozy-wood": "/assets/virtual-studio/studio-art-v11/themes/lofi-cat-storyhouse.webp",
-  "neon-night": "/assets/virtual-studio/studio-art-v11/themes/cyber-neon-lab.webp",
-  "garden-terrace": "/assets/virtual-studio/studio-art-v12/themes/murim-bamboo-pavilion.webp",
-  "sakura-campus": "/assets/virtual-studio/studio-art-v12/themes/romance-palace-conservatory.webp",
-  "sunset-harbor": "/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp",
-  library: "/assets/virtual-studio/studio-art-v13/themes/magic-academy-astral-library.webp",
-  "celestial-observatory": "/assets/virtual-studio/studio-art-v12/themes/scifi-orbital-command.webp",
-  "cinema-screening": "/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp",
-});
+
 
 /** 지연 로딩할 고해상도 룸 배경·소품 이미지 URL 목록. */
 export function office2dBackdropAssetUrls(): readonly string[] {
-  const urls = new Set<string>([...Object.values(SPACE_THEME_BACKDROP_URLS).filter((url): url is string => Boolean(url)), ...STUDIO_OFFICE_ENVIRONMENTS.map((environment) => environment.previewUrl)]);
+  const urls = new Set<string>(studioSpaceThemeArtworkUrls());
   for (const spec of Object.values(OFFICE2D_ROOM_ART_SPECS)) {
     urls.add(spec.backdropUrl);
     if (spec.propUrl) urls.add(spec.propUrl);
@@ -235,7 +224,7 @@ export function paintOffice2dRoomFloorBackdrops(
   spaceTheme?: StudioSpaceThemeKey | null,
 ): void {
   if (scene.kind !== "toon-hq") return;
-  const themeUrl = spaceTheme ? studioOfficeEnvironment(spaceTheme)?.previewUrl ?? SPACE_THEME_BACKDROP_URLS[spaceTheme] : null;
+  const themeUrl = spaceTheme ? studioSpaceThemeArtworkUrl(spaceTheme) : null;
   const themeImg = themeUrl ? getImage(themeUrl) : null;
   for (const room of TOON_HQ_ROOMS) {
     const spec = OFFICE2D_ROOM_ART_SPECS[room.id];

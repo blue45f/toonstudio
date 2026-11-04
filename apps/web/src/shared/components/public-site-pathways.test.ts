@@ -7,12 +7,12 @@ describe("public creative pathways", () => {
     ["/search", "discover"], ["/research/assets/", "discover"], ["/references", "discover"],
     ["/learn/recipes", "learn"], ["/guide", "learn"], ["/market/resource/123", "resources"],
     ["/story-lab", "create"], ["/showcase/work/abc", "share"], ["/community/post/123", "share"],
-    ["/create/promo", "share"],
+    ["/create/promo", "share"], ["/marketplace", "resources"],
   ])("classifies %s as one coherent step", (pathname, phase) => {
     expect(publicJourneyPhase(pathname)).toBe(phase);
   });
 
-  it.each(["/", "/studio", "/studio/assets", "/admin", "/settings", "/marketplace", "/learning", "/create-other"])("does not claim unrelated route %s", (pathname) => {
+  it.each(["/", "/studio", "/studio/assets", "/admin", "/settings", "/marketplaces", "/learning", "/create-other"])("does not claim unrelated route %s", (pathname) => {
     expect(publicJourneyPhase(pathname)).toBeUndefined();
   });
 

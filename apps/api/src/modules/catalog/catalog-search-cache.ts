@@ -2,8 +2,7 @@ import { createHash } from "node:crypto";
 
 import { searchTitles } from "@toonstudio/core";
 
-import type { SearchFilters, SortKey } from "@toonstudio/core";
-import type { PlatformId, Title } from "@toonstudio/core";
+import type { PlatformId, SearchFilters, SortKey, Title } from "@toonstudio/core";
 
 function coverage(titles: readonly Title[]) {
   const counts = new Map<PlatformId, number>();
