@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import * as bundleProduct from "./scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-product-authority";
+import * as lineProduct from "./studio-linked-3d-pass-product-authority";
+import { createBg3dBundleProjectFixture, createBg3dBundleTestAuthority } from "./bg3d/studio-bg3d-bundle-project.test-fixture";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   hydrateStudioAiImageReferenceDocument,
@@ -214,5 +217,35 @@ describe("preserve the current drawing before continuing an older one", () => {
     expect(fixture.context.setPagesHistory).not.toHaveBeenCalled();
     expect(fixture.context.setHasAutosave).not.toHaveBeenCalled();
     expect(fixture.context.setError).toHaveBeenCalledOnce();
+  });
+});
+
+
+describe("6패스 자동저장 실제 복구 입구", () => {
+  beforeEach(() => vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ width: 1, height: 1, close: vi.fn() }))));
+  afterEach(() => vi.unstubAllGlobals());
+  it("retained 전체 본문 검증 뒤에만 실제 원고 history를 교체한다", async () => {
+    const f = await createBg3dBundleProjectFixture(true); const r = recoveryFixture();
+    r.context.autosaveRecoveryCandidateRef.current = { ...r.candidate, payload: { version: 5, savedAt: SAVED_AT, pagesList: f.project.pagesList } };
+    const bundle = vi.spyOn(bundleProduct, "acquireStudioBg3dSixPassBundleProductAuthority").mockResolvedValue(f.authority);
+    const line = vi.spyOn(lineProduct, "acquireStudioLinked3dPassProductAuthority").mockResolvedValue(f.authority);
+    try {
+      await restoreStudioAutosaveRecovery(r.context);
+      expect(r.context.setError).not.toHaveBeenCalled();
+      expect(r.context.setPagesHistory).toHaveBeenCalledOnce();
+      expect(r.context.pagesHistoryRef.current[0][0].bg3dLtBundles).toEqual(f.state);
+      expect(r.context.autosaveRecoveryCandidateRef.current).toBeNull();
+    } finally { bundle.mockRestore(); line.mockRestore(); }
+  });
+  it("기존 기기 본문이 사라지면 복구 후보·현재 원고를 보존하고 적용하지 않는다", async () => {
+    const f = await createBg3dBundleProjectFixture(); const r = recoveryFixture();
+    const candidate = { ...r.candidate, payload: { version: 5 as const, savedAt: SAVED_AT, pagesList: f.project.pagesList } };
+    r.context.autosaveRecoveryCandidateRef.current = candidate;
+    const bundle = vi.spyOn(bundleProduct, "acquireStudioBg3dSixPassBundleProductAuthority").mockResolvedValue(createBg3dBundleTestAuthority());
+    try {
+      await restoreStudioAutosaveRecovery(r.context);
+      expect(r.context.setError).toHaveBeenCalled(); expect(r.context.setPagesHistory).not.toHaveBeenCalled();
+      expect(r.context.preserveCurrentDocument).not.toHaveBeenCalled(); expect(r.context.autosaveRecoveryCandidateRef.current).toBe(candidate);
+    } finally { bundle.mockRestore(); }
   });
 });

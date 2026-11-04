@@ -1,6 +1,6 @@
 import "reflect-metadata";
 
-import { Controller, Module, Post, type INestApplication } from "@nestjs/common";
+import { Controller, Get, Header, Module, Post, type INestApplication } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -16,6 +16,10 @@ const CONFIGURED_ORIGIN = "https://app.toonstudio.example";
 
 @Controller("cors-probe")
 class CorsProbeController {
+  @Get()
+  @Header("x-studio-required-reader-capabilities", '["bg3d-sixpass-bundle.v1"]')
+  read() { return { ok: true }; }
+
   @Post()
   create() {
     return { ok: true };
@@ -64,6 +68,18 @@ describe("API CORS", () => {
     expect(response.headers.get("access-control-allow-headers")?.toLowerCase()).toContain("idempotency-key");
     expect(response.headers.get("access-control-allow-headers")?.toLowerCase()).toContain("x-toonstudio-csrf");
     expect(response.headers.get("access-control-allow-credentials")).toBe("true");
+  });
+
+  it("reader capability GET preflight와 응답 공개를 기존 Origin 경계 안에서 허용한다", async () => {
+    const preflight = await fetch(`${baseUrl}/api/cors-probe`, { method: "OPTIONS", headers: { Origin: CONFIGURED_ORIGIN,
+      "Access-Control-Request-Method": "GET", "Access-Control-Request-Headers": "x-studio-reader-capabilities" } });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("access-control-allow-headers")?.toLowerCase()).toContain("x-studio-reader-capabilities");
+    const response = await fetch(`${baseUrl}/api/cors-probe`, { headers: { Origin: CONFIGURED_ORIGIN,
+      "x-studio-reader-capabilities": '["bg3d-sixpass-bundle.v1"]' } });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("access-control-expose-headers")?.toLowerCase()).toContain("x-studio-required-reader-capabilities");
+    expect(response.headers.get("x-studio-required-reader-capabilities")).toBe('["bg3d-sixpass-bundle.v1"]');
   });
 
   it("허용된 Origin의 실제 POST 응답에도 CORS 헤더를 넣는다", async () => {

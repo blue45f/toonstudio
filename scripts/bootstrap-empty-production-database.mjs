@@ -86,7 +86,7 @@ const BOOTSTRAP_CONTRACT_PATHS = Object.freeze([
   "scripts/bootstrap-forward-migration-boundary.mjs",
   "scripts/production-database-migrations.manifest",
   "scripts/production-operations-database-contract.mjs",
-  "scripts/run-production-database-migrations.mjs",
+  "scripts/run-production-database-migrations.mjs", "scripts/studio-bg3d-bundle-runtime-acl.mjs",
   "scripts/validate-production-database-url.mjs",
   "scripts/verify-production-database-capabilities.mjs",
   "scripts/customer-support-database-contract.mjs",

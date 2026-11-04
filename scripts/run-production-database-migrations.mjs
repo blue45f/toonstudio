@@ -3,7 +3,7 @@ import { buildCustomerSupportRuntimeAclSql, buildCustomerSupportCapabilitySql } 
 import { buildProductionOperationsRuntimeAclSql } from "./production-operations-database-contract.mjs";
 import { buildProductionOperationRuntimeAclSql, buildProductionOperationCapabilitySql } from "./production-operation-database-contract.mjs";
 import { buildStudioVirtualSpaceRuntimeAclSql, buildStudioVirtualSpaceCapabilitySql } from "./studio-virtual-space-database-contract.mjs";
-
+import { buildBg3dBundleRuntimeAclSql, buildBg3dBundleRuntimeAclViolationSql } from "./studio-bg3d-bundle-runtime-acl.mjs";
 import { createHash, randomBytes } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
@@ -1948,7 +1948,7 @@ export function buildCreatorAssetObjectStorageRuntimeAclSql(
 ) {
   const role = validateRuntimeDatabaseRole(runtimeDatabaseRole);
   const quotedRole = `"${role}"`;
-  return `
+  return `${buildBg3dBundleRuntimeAclSql(role)}
 REVOKE ALL ON TABLE
   public.creator_asset_storage_object,
   public.creator_work_asset_storage_reference,
@@ -2024,7 +2024,7 @@ export function buildCreatorAssetObjectStorageRuntimeAclViolationSql(
   runtimeDatabaseRole,
 ) {
   const role = validateRuntimeDatabaseRole(runtimeDatabaseRole);
-  return `(
+  return `(${buildBg3dBundleRuntimeAclViolationSql(role)} OR
     NOT pg_catalog.has_table_privilege(
       ${sqlLiteral(role)},
       'public.creator_asset_storage_object',

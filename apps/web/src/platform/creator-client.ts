@@ -1,4 +1,4 @@
-import { creatorWorkReadOptions } from "./creator-work-read-options";
+import { creatorWorkReadOptions } from "./creator-work-read-options"; import { STUDIO_READER_CAPABILITY_HEADERS, withStudioReaderCapabilities } from "./studio-reader-capabilities";
 // 창작 게시판(/api/creator) 전용 타입 + ky 헬퍼.
 // 인증은 공유 클라이언트의 HttpOnly 세션 쿠키만 사용하므로 호출부는
 // x-user-id나 브라우저 저장 토큰을 별도로 전달하지 않는다.
@@ -514,8 +514,8 @@ export async function updateWork(
 ): Promise<WorkSummary> {
   return mutateWorkOrThrow(
     () => signal
-      ? api.patch<WorkSummary>(`${BASE}/works/${encodeURIComponent(id)}`, input, { signal })
-      : api.patch<WorkSummary>(`${BASE}/works/${encodeURIComponent(id)}`, input),
+      ? api.patch<WorkSummary>(`${BASE}/works/${encodeURIComponent(id)}`, withStudioReaderCapabilities(input), { signal })
+      : api.patch<WorkSummary>(`${BASE}/works/${encodeURIComponent(id)}`, withStudioReaderCapabilities(input)),
     "창작물을 수정하지 못했습니다."
   );
 }
@@ -540,7 +540,7 @@ export async function getWorkRevision(
   const data = await callOrThrow(
     () => api.get<unknown>(
       `${BASE}/works/${encodeURIComponent(id)}/revisions/${revision}`,
-      { signal }
+      { signal, headers: STUDIO_READER_CAPABILITY_HEADERS }
     ),
     "작품 버전을 불러오지 못했습니다."
   );
@@ -572,12 +572,12 @@ export async function restoreWorkRevision(
     () => signal
       ? api.post<WorkSummary>(
           `${BASE}/works/${encodeURIComponent(id)}/revisions/${revision}/restore`,
-          { baseRevision },
+          withStudioReaderCapabilities({ baseRevision }),
           { signal }
         )
       : api.post<WorkSummary>(
           `${BASE}/works/${encodeURIComponent(id)}/revisions/${revision}/restore`,
-          { baseRevision }
+          withStudioReaderCapabilities({ baseRevision })
         ),
     "작품 버전을 복원하지 못했습니다."
   );

@@ -6,6 +6,7 @@
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import type { StudioBg3dSixPassLtSettings } from "./studio-bg3d-scene-document-types";
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
+import { studioBg3dDocumentRequiresSixPassReader } from "../contracts/studio-bg3d-six-pass-settings";
 import type { BgPanelTab, StudioBg3dBackgroundSettings, StudioBg3dLightingSettings, StudioBg3dLineOutputSettings, StudioBg3dLtUserPresetMutationResult, StudioBg3dLtUserPresetMutationSuccess, StudioBg3dSceneDocument, StudioBg3dSunRigConfig, StudioBg3dToneOutputSettings } from "./studio-bg3d-editor-runtime-bindings";
 import {
   beginStudio3dGradeDocumentGesture,
@@ -505,14 +506,15 @@ export function attachStudioBg3dEditorLtHost(h: Record<string, any>) {
   h.applyLtPreset = applyLtPreset;
   h.updateSixPassLt = (settings: StudioBg3dSixPassLtSettings | null): boolean => {
     if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current) || h.insertBlocked || h.isCapturing || h.isRestoringScene) return false;
+    if (settings && h.sixPassLtUnavailableReason) { setError(h.sixPassLtUnavailableReason); return false; }
     if (settings && !h.captureRef.current?.adapter?.sixPassProfile) {
       setError(translateBilingualPair("Bg3dSixPass", "현재 렌더러는 실제 6패스 분리 캡처를 지원하지 않습니다. Three.js WebGL 렌더러가 필요합니다.", "This renderer does not support six-pass capture. Select the Three.js WebGL renderer."));
       return false;
     }
     const { sixPassLt: previous, ...output } = sceneBaseDocument.output;
     if (JSON.stringify(previous ?? null) === JSON.stringify(settings)) return true;
-    const next = canonicalSceneDocument({ ...sceneBaseDocument, version: settings ? 4 : 3,
-      output: { ...output, ...(settings ? { sixPassLt: settings } : {}) } });
+    const candidate = { ...sceneBaseDocument, output: { ...output, ...(settings ? { sixPassLt: settings } : {}) } };
+    const next = canonicalSceneDocument({ ...candidate, version: studioBg3dDocumentRequiresSixPassReader(candidate) ? 4 : 3 });
     if (!next) { setError(translateBilingualPair("Bg3dSixPass", "6패스 LT 설정을 장면에 저장하지 못했습니다.", "Could not save six-pass LT settings to the scene.")); return false; }
     commitImmediateHistoryTransition(primitives, customModels, next, undefined, { label: "6패스 LT 출력 설정", source: "inspector" });
     setSceneBaseDocument(next);

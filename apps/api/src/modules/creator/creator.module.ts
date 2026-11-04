@@ -74,6 +74,10 @@ import {
   StudioVoiceIcePolicyService,
   studioVoiceIceConfigurationProvider,
 } from "./studio-voice-ice-policy.service";
+import { StudioBg3dBundleController, StudioBg3dBundleCapabilitiesController } from "./studio-bg3d-bundle.controller";
+import { studioBg3dBundleRepositoryProvider } from "./studio-bg3d-bundle.repository";
+import { StudioBg3dBundleReaderGuard, StudioBg3dBundleOwnerReaderGuard } from "./studio-bg3d-bundle-reader.guard";
+import { StudioBg3dBundleService } from "./studio-bg3d-bundle.service";
 import { StudioWorkAssetController } from "./studio-work-asset.controller";
 import { studioWorkAssetRepositoryProvider } from "./studio-work-asset.repository";
 import { StudioWorkAssetService } from "./studio-work-asset.service";
@@ -102,6 +106,8 @@ const privateObjectStorageModule =
     StudioTeamCommentController,
     StudioVoiceIcePolicyController,
     StudioWorkAssetController,
+    StudioBg3dBundleController,
+    StudioBg3dBundleCapabilitiesController,
   ],
   providers: [
     creatorAssetSchemaPreflightProvider,
@@ -123,6 +129,7 @@ const privateObjectStorageModule =
     studioTeamCommentRepositoryProvider,
     studioVoiceIceConfigurationProvider,
     studioWorkAssetRepositoryProvider,
+    studioBg3dBundleRepositoryProvider,
     CreatorPublicationMediaService,
     CreatorPublicationSchedulerService,
     CreatorRoleWorkspaceRepository,
@@ -142,6 +149,7 @@ const privateObjectStorageModule =
     StudioTeamCommentService,
     StudioVoiceIcePolicyService,
     StudioWorkAssetService,
+    StudioBg3dBundleService, StudioBg3dBundleReaderGuard, StudioBg3dBundleOwnerReaderGuard,
     StudioRasterAssetUploadGuard,
     StudioWorkAssetUploadGuard,
     StudioCrdtService,

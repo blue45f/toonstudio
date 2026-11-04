@@ -1,28 +1,17 @@
 import { describe, expect, it } from "vitest";
-
+import { readFileSync } from "node:fs";
 import { readStudioPageCompositionSource } from "../studio-cuttoon-editor/read-studio-cuttoon-editor-source";
 
-
 const source = readStudioPageCompositionSource();
-
-describe("Studio initial CRDT frontier layout boundary", () => {
-  it("projects the authoritative frontier before the first editable canvas paint", () => {
-    const applyFrontierIndex = source.indexOf("const applyFrontier = (");
-    expect(applyFrontierIndex).toBeGreaterThan(-1);
-
-    const hookPrefix = source.slice(Math.max(0, applyFrontierIndex - 220), applyFrontierIndex);
-    expect(hookPrefix).toContain("useLayoutEffect(() => {");
-    expect(hookPrefix).not.toContain("useEffect(() => {");
-
-    const nextLayoutEffectIndex = source.indexOf(
-      "\n  useLayoutEffect(() => {",
-      applyFrontierIndex,
-    );
-    expect(nextLayoutEffectIndex).toBeGreaterThan(applyFrontierIndex);
-    const reconciliationEffect = source.slice(applyFrontierIndex, nextLayoutEffectIndex);
-    expect(reconciliationEffect).toContain("applyFrontier({");
-    expect(reconciliationEffect).toContain(
-      "setStudioCrdtReconciledDocument(studioCrdtDocument)",
-    );
+const binding = readFileSync(new URL("./studio-crdt-frontier-reconciliation-binding.ts", import.meta.url), "utf8");
+describe("Studio 최초 CRDT frontier layout 경계", () => {
+  it("기존 동기 projection은 첫 editable paint 이전 layout effect에서 실행한다", () => {
+    const call = source.indexOf("return runtime.bindFrontierReconciliation({");
+    expect(call).toBeGreaterThan(-1);
+    expect(source.slice(call - 210, call)).toContain("useLayoutEffect(() => {");
+    expect(binding).toContain("applyFrontier(offline.studioOfflineDocumentFrontier(input.document), null)");
+    const plain = binding.indexOf("if (!frontier.pages.some");
+    expect(binding.slice(plain, plain + 180)).toContain("applyResolved(frontier, changedIds, forceOfflineProjection); return;");
+    expect(binding).toContain("input.setReconciled(input.document)");
   });
 });

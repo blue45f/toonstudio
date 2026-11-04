@@ -1,3 +1,4 @@
+import { parseStudioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import type {
   StudioRasterSourceLease,
   StudioRasterSourceLeaseOptions,
@@ -7,7 +8,7 @@ export const STUDIO_LINKED_3D_PORTABLE_RASTER_MAX_SOURCE_BYTES = 64 * 1024 * 102
 export const STUDIO_LINKED_3D_PORTABLE_RASTER_MAX_EMBEDDED_BYTES = 96 * 1024 * 1024;
 
 const STRICT_LOCATOR_PATTERN = /^studio-opfs-cas:sha256:[a-f0-9]{64}$/u;
-const RESERVED_PREFIX = "studio-opfs-cas:";
+const isReserved = (value: string) => value.startsWith("studio-opfs-cas:") || value.startsWith("bg3d-lt-artifact:");
 
 export interface StudioPortableRasterElement {
   readonly src?: string;
@@ -99,8 +100,8 @@ export async function projectStudioLinked3dRasterSourcesForPortableExport<
 ): Promise<readonly Element[]> {
   throwIfAborted(options.signal);
   const locators = Array.from(new Set(elements.flatMap((element) => {
-    if (typeof element.src !== "string" || !element.src.startsWith(RESERVED_PREFIX)) return [];
-    if (!STRICT_LOCATOR_PATTERN.test(element.src)) {
+    if (typeof element.src !== "string" || !isReserved(element.src)) return [];
+    if (!STRICT_LOCATOR_PATTERN.test(element.src) && !parseStudioBg3dSixPassArtifactSourceUri(element.src)) {
       throw new StudioLinked3dPortableRasterProjectionError(
         "연결형 3D raster locator가 손상되어 portable 내보내기를 중단했습니다.",
       );

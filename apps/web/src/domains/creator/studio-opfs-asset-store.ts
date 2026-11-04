@@ -366,6 +366,8 @@ function createSequencer(): <T>(task: () => Promise<T>) => Promise<T> {
 // ── 저장소 ──────────────────────────────────────────────────────────────
 
 export interface StudioOpfsAssetStoreOptions {
+  /** 같은 origin의 다른 탭이 추가한 immutable 본문을 읽는 권위만 색인을 매번 갱신한다. */
+  readonly freshReads?: boolean;
   fs: StudioOpfsFileSystem;
   digest?: StudioOpfsDigest | null;
   estimator?: StudioOpfsStorageEstimator | null;
@@ -429,7 +431,7 @@ export function createStudioOpfsAssetStore(
   const sequence = createSequencer();
   let cached: StudioOpfsIndexState | null = null;
 
-  async function loadIndex(fresh = false): Promise<StudioOpfsIndexState> {
+  async function loadIndex(fresh = options.freshReads === true): Promise<StudioOpfsIndexState> {
     if (!fresh && cached) return cached;
     cached = parseIndex(await fs.read(INDEX_PATH));
     return cached;

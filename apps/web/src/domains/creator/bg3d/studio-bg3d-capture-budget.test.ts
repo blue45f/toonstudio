@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertStudioBg3dCaptureBudget } from "./studio-bg3d-capture-budget";
+import { assertStudioBg3dCaptureBudget, STUDIO_BG3D_SIX_PASS_CAPTURE_MAX_PIXELS } from "./studio-bg3d-capture-budget";
 
 describe("Scene3D color and depth capture budgets", () => {
   it("admits a 4096-square color output without enlarging the LT/depth budget", () => {
@@ -21,4 +21,15 @@ it("accounts for all optional normal targets/readbacks before allocating an expo
   expect(() => assertStudioBg3dCaptureBudget({ width: 4096, height: 2048, includeDepth: true, includeNormals: true })).toThrow(/budget/);
   expect(() => assertStudioBg3dCaptureBudget({ width: 4096, height: 2048, includeDepth: true })).not.toThrow();
   expect(() => assertStudioBg3dCaptureBudget({ width: 2, height: 2, includeDepth: false, includeNormals: true })).toThrow();
+});
+
+
+it("순차 6패스는 실제 원고 요청과 기존 8M 해상도를 낮추지 않는다", () => {
+  expect(STUDIO_BG3D_SIX_PASS_CAPTURE_MAX_PIXELS).toBe(8_388_608);
+  for (const [width, height] of [[3155, 2160], [4096, 2048]]) {
+    expect(() => assertStudioBg3dCaptureBudget({ width, height, includeDepth: true,
+      includeNormals: true, includeSixPass: true })).not.toThrow();
+  }
+  expect(() => assertStudioBg3dCaptureBudget({ width: 4096, height: 2049,
+    includeDepth: true, includeSixPass: true })).toThrow(/budget/);
 });

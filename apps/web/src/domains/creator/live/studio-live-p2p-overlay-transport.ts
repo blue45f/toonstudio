@@ -1,9 +1,10 @@
+import { respondStudioP2pCrdtSync } from "./studio-live-p2p-bg3d-reader";
+import { STUDIO_CRDT_READER_CAPABILITIES, requiresStudioBg3dBundleReader, studioCrdtReaderMetadata, supportsStudioCrdtReaders } from "./studio-crdt-reader-capability";
 import {
   createStudioCrdtLocalWireMessage,
   isStudioCrdtLocalWireCandidate,
   parseStudioCrdtLocalWireMessage,
   parseStudioCrdtSyncRequest,
-  parseStudioCrdtSyncResponse,
   parseStudioCrdtUpdateRequest,
   STUDIO_CRDT_PROTOCOL_VERSION,
   type StudioCrdtSyncRequest,
@@ -173,6 +174,7 @@ interface StudioLiveP2pPeerLink {
   peerBinaryLanes: readonly string[];
   /** Capability-scoped feature lanes advertised by this authenticated peer. */
   peerCapabilities: readonly StudioPeerCapability[];
+  readerCapabilities?: readonly string[];
   /** True once our own capability announcement reached this peer's channel. */
   announcedBinaryLanes: boolean;
   inkInboundWindow: StudioLiveP2pInkInboundWindow | null;
@@ -447,6 +449,8 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   }
 
   requestCrdtSync(request: StudioCrdtSyncRequest): Promise<StudioCrdtSyncResponse | null> {
+    if (request.artifactScope === "origin") return this.primary.originArtifactScope === "same-origin" && this.primary.requestCrdtSync
+      ? this.primary.requestCrdtSync(request) : Promise.reject(new Error("기기 전용 6패스 원고는 같은 기기의 탭에서만 동기화할 수 있습니다."));
     // A peer snapshot can repair a peer room, never certify a server save boundary.
     if (this.primary.crdtFanout === "authoritative") {
       return this.primary.requestCrdtSync?.(request) ?? Promise.resolve(null);
@@ -460,37 +464,14 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   }
 
   respondCrdtSync(response: StudioCrdtSyncResponse, targetSessionId: string): boolean {
-    if (this.openPeerChannelCount() > 0) {
-      const parsed = parseStudioCrdtSyncResponse(response, {
-        expectedWorkId: this.context.workId,
-      });
-      if (parsed && targetSessionId && this.sendMeshCrdtWire({
-        workId: this.context.workId,
-        senderSessionId: this.context.participant.sessionId,
-        targetSessionId,
-        kind: "sync-response",
-        payload: parsed,
-      })) {
-        return true;
-      }
-    }
-    if (this.primary.respondCrdtSync) {
-      return this.primary.respondCrdtSync(response, targetSessionId);
-    }
-    const parsed = parseStudioCrdtSyncResponse(response, {
-      expectedWorkId: this.context.workId,
-    });
-    if (!parsed || !targetSessionId) return false;
-    return this.sendMeshCrdtWire({
-      workId: this.context.workId,
-      senderSessionId: this.context.participant.sessionId,
-      targetSessionId,
-      kind: "sync-response",
-      payload: parsed,
-    });
+    return respondStudioP2pCrdtSync({ primary: this.primary, response, targetSessionId,
+      workId: this.context.workId, sessionId: this.context.participant.sessionId,
+      hasPeers: this.openPeerChannelCount() > 0, send: (message) => this.sendMeshCrdtWire(message) });
   }
 
   publishCrdtUpdate(request: StudioCrdtUpdateRequest): Promise<StudioCrdtUpdateAck> {
+    if (request.artifactScope === "origin") return this.primary.originArtifactScope === "same-origin" && this.primary.publishCrdtUpdate
+      ? this.primary.publishCrdtUpdate(request) : Promise.reject(new Error("기기 전용 6패스 본문은 원격 연결로 전달할 수 없습니다."));
     // Retain BroadcastChannel for same-profile tabs, but never let its successful receipt hide
     // a failed cross-browser mesh transmission in a room without document authority.
     if (this.primary.publishCrdtUpdate) {
@@ -636,6 +617,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
           updateId: parsed.updateId,
           serverSequence: "0",
           update: parsed.update,
+          ...studioCrdtReaderMetadata(parsed),
         },
       });
       if (!delivered) {
@@ -663,9 +645,11 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
   private sendMeshCrdtWire(
     message: Parameters<typeof createStudioCrdtLocalWireMessage>[0],
   ): boolean {
-    if (this.closed || this.peers.size === 0) return false;
+    if (this.closed || this.peers.size === 0 || message.payload.artifactScope === "origin") return false;
+    if (requiresStudioBg3dBundleReader(message.payload) && [...this.peers.values()].some((peer) =>
+      (!message.targetSessionId || peer.sessionId === message.targetSessionId) && !supportsStudioCrdtReaders(peer))) return false;
     let delivered = 0;
-    const serialized = JSON.stringify(createStudioCrdtLocalWireMessage(message));
+    const serialized = JSON.stringify(createStudioCrdtLocalWireMessage({ ...message, ...studioCrdtReaderMetadata(message.payload) }));
     const target = message.targetSessionId;
     if (message.kind === "update" && !target
       && this.peers.size !== this.knownPeerSessionIds.size) return false;
@@ -678,13 +662,13 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     return delivered > 0 && (message.kind !== "update" || delivered === expected);
   }
 
-  private receiveMeshCrdt(value: unknown): boolean {
+  private receiveMeshCrdt(value: unknown, peer: StudioLiveP2pPeerLink): boolean {
     if (!isStudioCrdtLocalWireCandidate(value)) return false;
     const wire = parseStudioCrdtLocalWireMessage(value, {
       expectedWorkId: this.context.workId,
       selfSessionId: this.context.participant.sessionId,
     });
-    if (!wire) return true;
+    if (!wire || wire.artifactScope === "origin" || wire.payload.artifactScope === "origin") return true;
     if (wire.kind === "sync-response") {
       const pending = this.pendingCrdtSync.get(wire.payload.requestId);
       if (!pending) return true;
@@ -696,7 +680,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     if (wire.kind === "sync-request") {
       this.emitMeshCrdt({
         type: "sync-request",
-        request: wire.payload,
+        request: { ...wire.payload, ...(peer.readerCapabilities ? { readerCapabilities: peer.readerCapabilities } : {}) },
         senderSessionId: wire.senderSessionId,
       });
       return true;
@@ -900,6 +884,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
         wire: STUDIO_LIVE_P2P_CAPS_WIRE,
         binaryLanes: [...lanes],
         peerCapabilities: [...this.localPeerCapabilities],
+        readerCapabilities: STUDIO_CRDT_READER_CAPABILITIES,
       }),
     )) link.announcedBinaryLanes = false;
   }
@@ -1308,13 +1293,13 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     const peerCaps = parseStudioLiveP2pCapsMessage(parsed);
     if (peerCaps) {
       link.peerBinaryLanes = peerCaps.binaryLanes;
-      link.peerCapabilities = peerCaps.peerCapabilities;
+      link.peerCapabilities = peerCaps.peerCapabilities; link.readerCapabilities = peerCaps.readerCapabilities;
       // Announcements can race the channel opening (the offerer's greeting may fire while the
       // answerer is still connecting). Answer a peer's caps so the exchange always converges.
       this.announceMeshBinaryLanes(link);
       return;
     }
-    if (this.receiveMeshCrdt(parsed)) return;
+    if (this.receiveMeshCrdt(parsed, link)) return;
     const envelope = parseStudioLiveEnvelope(parsed, {
       expectedWorkId: this.context.workId,
       selfSessionId: this.context.participant.sessionId,

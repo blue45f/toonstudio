@@ -14,9 +14,10 @@ import {
   Post,
   Query,
   Res,
-  StreamableFile,
+  StreamableFile, UseGuards,
 } from "@nestjs/common";
 
+import { StudioBg3dBundleReaderGuard, StudioBg3dBundleOwnerReaderGuard } from "./studio-bg3d-bundle-reader.guard";
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
 import { isAdminUser } from "../../server/app-config";
 
@@ -80,6 +81,7 @@ export class CreatorController {
   }
 
   @Get("/creator/works/:id")
+  @UseGuards(StudioBg3dBundleOwnerReaderGuard)
   @Header("Cache-Control", "no-store, max-age=0")
   async getWork(
     @Param(new ZodValidationPipe(CreatorWorkParamsDto)) params: CreatorWorkParamsDto,
@@ -194,6 +196,7 @@ export class CreatorController {
   }
 
   @Get("/creator/works/:id/revisions/:revision")
+  @UseGuards(StudioBg3dBundleReaderGuard)
   @Header("Cache-Control", "no-store, max-age=0")
   async getWorkRevision(
     @Param() params: CreatorWorkRevisionParamsDto,
@@ -225,7 +228,7 @@ export class CreatorController {
       uid,
       params.id,
       params.revision,
-      body.baseRevision
+      body.baseRevision, body.readerCapabilities
     );
   }
 
@@ -261,6 +264,7 @@ export class CreatorController {
   }
 
   @Get("/creator/works/:id/team/document")
+  @UseGuards(StudioBg3dBundleReaderGuard)
   @Header("Cache-Control", "private, no-store, max-age=0")
   async getSharedWorkDocument(
     @Param(new ZodValidationPipe(CreatorTeamWorkParamsDto)) params: CreatorTeamWorkParamsDto,
@@ -271,6 +275,7 @@ export class CreatorController {
   }
 
   @Get("/creator/works/:id/team/document/meta")
+  @UseGuards(StudioBg3dBundleReaderGuard)
   @Header("Cache-Control", "private, no-store, max-age=0")
   async getSharedWorkDocumentMeta(
     @Param(new ZodValidationPipe(CreatorTeamWorkParamsDto)) params: CreatorTeamWorkParamsDto,

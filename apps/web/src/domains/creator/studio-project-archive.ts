@@ -3,6 +3,8 @@ import { assertStudioPsdSourceArchiveEvidence } from "./export/studio-psd-source
 import { probableStudioProjectAssetField as probableAssetField, isStudioBundleArchiveMetadata, studioProjectArchiveReferenceMode as documentReferenceMode } from "./studio-project-archive-dependencies";
 import { STUDIO_PSD_SOURCE_MIME, validateStudioPsdSourceBytes } from "./export/studio-psd-source";
 import { z } from "zod";
+import { resolveStudioProjectArchiveLimits as resolveLimits } from "./project/archive/studio-project-archive-limits";
+import { minimumStudioProjectFileVersion } from "./studio-project-version";
 
 import { deriveStudioBg3dGlbBudgetProfiles } from "./bg3d/studio-bg3d-device-quality";
 import { validateStudioBg3dGlbOffMainThread } from "./bg3d/studio-bg3d-glb-validation-worker-client";
@@ -94,6 +96,7 @@ export const STUDIO_PROJECT_ARCHIVE_ATTACHMENT_KINDS = [
   "obj",
   "audio",
   "psd-source",
+  "bg3d-lt-scene",
 ] as const;
 
 export type StudioProjectArchiveAttachmentKind =
@@ -354,8 +357,8 @@ const ManifestTotalsSchema = z
   .object({
     entryCount: z.number().int().min(2).max(STUDIO_PROJECT_ARCHIVE_LIMITS.maxAttachments + 2),
     attachmentCount: z.number().int().nonnegative().max(STUDIO_PROJECT_ARCHIVE_LIMITS.maxAttachments),
-    attachmentBytes: z.number().int().nonnegative().max(STUDIO_PROJECT_ARCHIVE_LIMITS.maxTotalAttachmentBytes),
-    contentBytes: z.number().int().positive().max(STUDIO_PROJECT_ARCHIVE_LIMITS.maxArchiveBytes),
+    attachmentBytes: z.number().int().nonnegative().max(512 * 1024 * 1024),
+    contentBytes: z.number().int().positive().max(544 * 1024 * 1024),
   })
   .strict();
 const ManifestAttachmentBaseShape = {
@@ -487,7 +490,8 @@ export function collectStudioBg3dProjectArchivePlan(
   rawProject: unknown,
   options: Pick<StudioProjectArchiveOptions, "limits"> = {}
 ): StudioBg3dProjectArchivePlan {
-  const limits = resolveLimits(options.limits);
+  const limits = resolveLimits(options.limits, isRecord(rawProject) && Array.isArray(rawProject.pagesList)
+    && minimumStudioProjectFileVersion(rawProject.pagesList, rawProject.master) === 5);
   const boundedProject = canonicalizeProjectValue(rawProject, "", 0, {
     seen: new WeakSet(),
     diagnostics: [],
@@ -684,85 +688,6 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
  * 한도 라벨 코드 (A4 D4 R13) — 생산자는 라벨 원문 대신 코드만 운반하고,
  * 표시 라벨은 status-i18n 리졸버의 `studio.producerError.projectArchive.label.*` 키가 해석한다.
  */
-type StudioProjectArchiveLimitLabelCode =
-  | "archive"
-  | "attachment"
-  | "attachmentTotal"
-  | "projectJson"
-  | "manifestJson"
-  | "attachmentCount"
-  | "referenceCount"
-  | "path"
-  | "jsonDepth"
-  | "jsonNodeCount";
-
-function resolvePositiveLimit(
-  value: number | undefined,
-  hardMaximum: number,
-  labelCode: StudioProjectArchiveLimitLabelCode
-): number {
-  if (value === undefined) return hardMaximum;
-  if (!Number.isSafeInteger(value) || value <= 0 || value > hardMaximum) {
-    fail("ARCHIVE_INVALID", "limitInvalid", {}, { labelCode });
-  }
-  return value;
-}
-
-function resolveLimits(value: Partial<StudioProjectArchiveLimits> | undefined): StudioProjectArchiveLimits {
-  return {
-    maxArchiveBytes: resolvePositiveLimit(
-      value?.maxArchiveBytes,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxArchiveBytes,
-      "archive"
-    ),
-    maxAttachmentBytes: resolvePositiveLimit(
-      value?.maxAttachmentBytes,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxAttachmentBytes,
-      "attachment"
-    ),
-    maxTotalAttachmentBytes: resolvePositiveLimit(
-      value?.maxTotalAttachmentBytes,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxTotalAttachmentBytes,
-      "attachmentTotal"
-    ),
-    maxProjectBytes: resolvePositiveLimit(
-      value?.maxProjectBytes,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxProjectBytes,
-      "projectJson"
-    ),
-    maxManifestBytes: resolvePositiveLimit(
-      value?.maxManifestBytes,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxManifestBytes,
-      "manifestJson"
-    ),
-    maxAttachments: resolvePositiveLimit(
-      value?.maxAttachments,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxAttachments,
-      "attachmentCount"
-    ),
-    maxReferences: resolvePositiveLimit(
-      value?.maxReferences,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxReferences,
-      "referenceCount"
-    ),
-    maxPathBytes: resolvePositiveLimit(
-      value?.maxPathBytes,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxPathBytes,
-      "path"
-    ),
-    maxDepth: resolvePositiveLimit(
-      value?.maxDepth,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxDepth,
-      "jsonDepth"
-    ),
-    maxJsonNodes: resolvePositiveLimit(
-      value?.maxJsonNodes,
-      STUDIO_PROJECT_ARCHIVE_LIMITS.maxJsonNodes,
-      "jsonNodeCount"
-    ),
-  };
-}
-
 /** JSON.parse output has no cycles; check it iteratively before any recursive canonical traversal. */
 function assertDecodedProjectWithinLimits(
   value: unknown,
@@ -1036,6 +961,12 @@ function inspectAttachmentBytes(
   declaredMimeType: string,
   diagnostics: StudioProjectArchiveDiagnostic[]
 ): string {
+  if (kind === "bg3d-lt-scene") {
+    validateDeclaredMime(declaredMimeType, ["application/json"]);
+    const scene = parseStudioBg3dSceneDocument(decodeUtf8(bytes, "MIME_SIGNATURE_MISMATCH", "bg3dSceneReadFailed"));
+    if (bytes.byteLength > STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES || !scene || scene.version !== 4 || !scene.output.sixPassLt || scene.attachments.length) fail("MIME_SIGNATURE_MISMATCH", "bg3dSceneInvalid");
+    return "application/json";
+  }
   if (kind === "psd-source") {
     try { validateStudioPsdSourceBytes(bytes); } catch { fail("MIME_SIGNATURE_MISMATCH", "psdSignatureInvalid"); }
     validateDeclaredMime(declaredMimeType, [STUDIO_PSD_SOURCE_MIME]);
@@ -1103,6 +1034,7 @@ function extensionFor(mimeType: string, kinds: ReadonlySet<StudioProjectArchiveA
   if (kinds.has("vrm")) return "vrm";
   const extensions: Record<string, string> = {
     "image/png": "png",
+    "application/json": "json",
     "image/vnd.adobe.photoshop": "psd",
     "image/jpeg": "jpg",
     "image/gif": "gif",
@@ -1567,12 +1499,14 @@ function scanExternalProjectDependencies(
   }
 }
 
-function linked3dArchiveCoverage(
+async function linked3dArchiveCoverage(
   project: StudioProjectFile,
   evidence: Parameters<typeof assertStudioLinked3dPassProjectArchiveEvidence>[1],
-): ReadonlySet<string> {
+): Promise<ReadonlySet<string>> {
   try {
-    return assertStudioLinked3dPassProjectArchiveEvidence(project, evidence);
+    const legacy = assertStudioLinked3dPassProjectArchiveEvidence(project, evidence);
+    const { assertStudioBg3dSixPassProjectArchiveEvidence } = await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-archive");
+    return new Set([...legacy, ...await assertStudioBg3dSixPassProjectArchiveEvidence(project, evidence)]);
   } catch (cause) {
     if (!(cause instanceof StudioLinked3dPassProjectArchiveError)) throw cause;
     const causeParams: Readonly<Record<string, string>> = cause.variant ? { causeCode: cause.code, causeVariant: cause.variant } : { detail: cause.message };
@@ -2025,7 +1959,7 @@ export async function buildStudioProjectArchive(
   if (input.attachments !== undefined && !Array.isArray(input.attachments)) {
     fail("ATTACHMENT_COUNT_LIMIT", "attachmentInputNotArray");
   }
-  const limits = resolveLimits(options.limits);
+  let limits = resolveLimits(options.limits, true);
   const diagnostics: StudioProjectArchiveDiagnostic[] = [];
   const boundedInput = canonicalizeProjectValue(input.project, "", 0, {
     seen: new WeakSet(),
@@ -2045,6 +1979,8 @@ export async function buildStudioProjectArchive(
       cause,
     );
   }
+  limits = resolveLimits(options.limits, minimumStudioProjectFileVersion(parsedProject.pagesList, parsedProject.master) === 5);
+  await (await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-contract")).collectStudioBg3dSixPassProjectBundles(parsedProject);
   const canonicalProjectValue = canonicalizeProjectValue(parsedProject, "", 0, {
     seen: new WeakSet(),
     diagnostics,
@@ -2174,7 +2110,7 @@ export async function buildStudioProjectArchive(
   }
 
   const canonicalProject = parseStudioProjectFile(canonicalProjectValue);
-  const linked3dCoveredPointers = linked3dArchiveCoverage(
+  const linked3dCoveredPointers = await linked3dArchiveCoverage(
     canonicalProject,
     [...archiveAttachmentEvidence].map(([sha256, evidence]) => ({ sha256, ...evidence })),
   );
@@ -2193,6 +2129,7 @@ export async function buildStudioProjectArchive(
         );
     }
   );
+  await (await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-archive")).verifyStudioBg3dSixPassProjectArchiveBodies(canonicalProject, async (hash) => { const body = context.attachments.get(hash.slice(7)); return body ? new Uint8Array(await body.blob.arrayBuffer()) : null; });
   scanExternalProjectDependencies(canonicalProject, "", diagnostics, linked3dCoveredPointers);
   const canonicalProjectJson = canonicalJson(canonicalProjectValue);
   const projectBytes = textEncoder.encode(canonicalProjectJson);
@@ -2240,6 +2177,7 @@ export async function buildStudioProjectArchive(
   let blob: Blob;
   try {
     blob = await buildStudioPackageArchiveBlob(entries, {
+      sizeProfile: minimumStudioProjectFileVersion(canonicalProject.pagesList, canonicalProject.master) === 5 ? "bg3d-sixpass-project-v5" : undefined,
       mimeType: STUDIO_PROJECT_ARCHIVE_MIME,
       crc32ExecutionMode: options.crc32ExecutionMode ?? "worker", signal: options.signal,
       limits: {
@@ -2441,7 +2379,7 @@ export async function importStudioProjectArchive(
   source: StudioPackageArchiveSource,
   options: ImportStudioProjectArchiveOptions = {}
 ): Promise<ImportStudioProjectArchiveResult> {
-  const limits = resolveLimits(options.limits);
+  let limits = resolveLimits(options.limits, true);
   const diagnostics: StudioProjectArchiveDiagnostic[] = [];
   const reader = createZipReader(source, limits);
   const zipEntries = await parseZipEntries(reader, limits);
@@ -2485,6 +2423,10 @@ export async function importStudioProjectArchive(
     manifest.version
   );
   const canonicalProject = parsedProject.stored;
+  limits = resolveLimits(options.limits, minimumStudioProjectFileVersion(canonicalProject.pagesList, canonicalProject.master) === 5);
+  if (reader.size > limits.maxArchiveBytes || zipEntries.reduce((sum, entry) => sum + entry.uncompressedBytes, 0) > limits.maxArchiveBytes) fail("ARCHIVE_SIZE_LIMIT", "archiveTooLarge");
+  validateCanonicalManifest(manifest, limits);
+  await (await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-contract")).collectStudioBg3dSixPassProjectBundles(canonicalProject);
   const rehydratedValue = JSON.parse(canonicalJson(parsedProject.value)) as Record<string, unknown>;
   const importedAttachments = new Map<string, StudioProjectArchiveImportedAttachment>();
   const manifestAssetPointerOwners = new Map<string, string>();
@@ -2600,7 +2542,7 @@ export async function importStudioProjectArchive(
     attachment.sha256,
     attachment,
   ]));
-  const linked3dCoveredPointers = linked3dArchiveCoverage(canonicalProject, manifest.attachments);
+  const linked3dCoveredPointers = await linked3dArchiveCoverage(canonicalProject, manifest.attachments);
   warnUncoveredReferenceBoardAttachments(
     canonicalProject,
     diagnostics,
@@ -2615,6 +2557,7 @@ export async function importStudioProjectArchive(
     }
   );
   assertStudioPsdSourceArchiveEvidence(canonicalProject, manifest.attachments);
+  await (await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-archive")).verifyStudioBg3dSixPassProjectArchiveBodies(canonicalProject, async (hash) => { const body = importedAttachments.get(hash.slice(7)); return body ? new Uint8Array(await body.blob.arrayBuffer()) : null; });
   scanExternalProjectDependencies(rehydratedValue, "", diagnostics, linked3dCoveredPointers);
   let project: StudioProjectFile;
   try {

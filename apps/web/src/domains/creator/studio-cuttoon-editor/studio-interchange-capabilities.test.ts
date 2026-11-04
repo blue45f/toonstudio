@@ -600,7 +600,7 @@ describe("Studio interchange capability registry", () => {
   });
 
   it("known hard limits match the audited runtime boundaries", () => {
-    expect(studioInterchangeCapability("toonproject-archive")?.sizeBudget.maxFileBytes).toBe(280_000_000);
+    expect(studioInterchangeCapability("toonproject-archive")?.sizeBudget.maxFileBytes).toBe(544 * 1024 * 1024);
     expect(studioInterchangeCapability("inkml")).toMatchObject({
       label: "InkML (ToonStudio 안전 부분집합)",
       import: "available",

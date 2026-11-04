@@ -108,7 +108,7 @@ describe("Studio 3D insert controller boundary", () => {
     expect(contract.source).toContain("export interface StudioBackground3DInsertResult");
     expect(contract.source).toContain("export type StudioVrmPoserInsertResult");
     expect(contract.source).toContain("export type StudioBg3dLtRasterLayerRole");
-    expect(contract.source.split("\n").length).toBeLessThanOrEqual(70);
+    expect(contract.source.trimEnd().split("\n").length).toBeLessThanOrEqual(70);
 
     expect(background.source).toContain(
       'export type {\n  StudioBackground3DInsertResult,\n  StudioBackground3DLtLayer,\n} from "../scene-3d/studio-3d-insert-contract";'
@@ -235,8 +235,10 @@ describe("Studio 3D insert controller boundary", () => {
     expect(backgroundInsert).toContain(
       "if (targetElementId && renderResult.magicFilterMask) {"
     );
-    expect(backgroundInsert).toContain("if (isRealtimeTeamSession) {");
-    expect(backgroundInsert.indexOf("if (isRealtimeTeamSession) {")).toBeLessThan(
+    expect(backgroundInsert).toContain("if (isRealtimeTeamSession && !sixPass) {");
+    expect(backgroundInsert).toContain("const sixPass = !!result.bg3dScene.output.sixPassLt;");
+    expect(backgroundInsert).toContain("await transaction.prepareStudioBg3dSixPassBundle(");
+    expect(backgroundInsert.indexOf("if (isRealtimeTeamSession && !sixPass) {")).toBeLessThan(
       backgroundInsert.indexOf("const plan = planStudioBg3dLtLayers")
     );
     expect(backgroundInsert.indexOf(

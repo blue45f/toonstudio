@@ -1,3 +1,5 @@
+import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { studioBg3dReaderRoom, broadcastStudioBg3dReaderSafe } from "./studio-live-bg3d-reader-fence";
 import {
   encodeStudioCrdtBinaryEnvelope,
   fragmentStudioCrdtBinarySyncEnvelope,
@@ -193,9 +195,11 @@ export async function selectCrdtBinaryWire(
   }
   if (!selection.selected) {
     try {
-      selection.pendingJoin ??= Promise.resolve(
-        client.join(studioLiveCrdtBinaryRoom(parsed.data.workId))
-      );
+      selection.pendingJoin ??= (async () => {
+        await client.join(studioLiveCrdtBinaryRoom(parsed.data.workId));
+        if (client.data.studioReaderCapabilities?.includes(STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY))
+          await client.join(studioBg3dReaderRoom(studioLiveCrdtBinaryRoom(parsed.data.workId)));
+      })();
       await selection.pendingJoin;
     } catch {
       await this.finishCrdtBinarySelectionCleanup(selection);
@@ -294,10 +298,9 @@ export async function syncCrdtDocumentBinary(
 
   let sync: Awaited<ReturnType<StudioCrdtService["syncBytes"]>>;
   try {
-    sync = await this.studioCrdtService.syncBytes(
-      parsed.data.workId,
-      parsed.data.stateVector
-    );
+    const readers = parsed.data.readerCapabilities ?? client.data.studioReaderCapabilities;
+    sync = readers ? await this.studioCrdtService.syncBytes(parsed.data.workId, parsed.data.stateVector, readers)
+      : await this.studioCrdtService.syncBytes(parsed.data.workId, parsed.data.stateVector);
   } catch (error) {
     const mappedFailure = mapStudioLiveCrdtFailure(error, parsed.data.workId, "sync");
     if (mappedFailure.diagnostic) {
@@ -345,6 +348,7 @@ export async function syncCrdtDocumentBinary(
           sync.serverStateVector
         ),
         serverSequence: sync.serverSequence,
+        ...(sync.requiredReaderCapabilities ? { requiredReaderCapabilities: [...sync.requiredReaderCapabilities] } : {}),
       },
     });
   } catch (error) {
@@ -421,6 +425,7 @@ export async function applyCrdtUpdateBinary(
       actorUserId: authorizedBefore.value.userId,
       data: parsed.data.update,
       writeContext: parsed.data.writeContext,
+      ...((parsed.data.readerCapabilities ?? client.data.studioReaderCapabilities) ? { readerCapabilities: parsed.data.readerCapabilities ?? client.data.studioReaderCapabilities } : {}),
     });
   } catch (error) {
     const mappedFailure = mapStudioLiveCrdtFailure(error, parsed.data.workId, "update");
@@ -437,6 +442,7 @@ export async function applyCrdtUpdateBinary(
     updateId: applied.updateId,
     serverSequence: applied.serverSequence,
     duplicate: applied.duplicate,
+    ...(applied.requiredReaderCapabilities ? { requiredReaderCapabilities: [...applied.requiredReaderCapabilities] } : {}),
   };
   const response: StudioLiveAck<StudioLiveCrdtBinaryUpdateAck> = { ok: true, data };
   reply(ack, response);
@@ -447,11 +453,10 @@ export async function applyCrdtUpdateBinary(
       updateId: applied.updateId,
       serverSequence: applied.serverSequence,
       update: Buffer.from(applied.update).toString("base64"),
+      ...(applied.requiredReaderCapabilities ? { requiredReaderCapabilities: [...applied.requiredReaderCapabilities] } : {}),
     };
     try {
-      client
-        .to(studioLiveRoom(parsed.data.workId))
-        .emit("studio:crdt:update", legacyRemote);
+      await broadcastStudioBg3dReaderSafe(this, client, studioLiveRoom(parsed.data.workId), "studio:crdt:update", legacyRemote, applied.requiredReaderCapabilities);
     } catch (error) {
       this.logCrdtBroadcastFailure(parsed.data.workId, applied.updateId, error, "legacy");
     }
@@ -463,10 +468,9 @@ export async function applyCrdtUpdateBinary(
         updateId: applied.updateId,
         serverSequence: applied.serverSequence,
         update: encodeStudioCrdtBinaryEnvelope("update", applied.update),
+        ...(applied.requiredReaderCapabilities ? { requiredReaderCapabilities: [...applied.requiredReaderCapabilities] } : {}),
       };
-      client
-        .to(studioLiveCrdtBinaryRoom(parsed.data.workId))
-        .emit(STUDIO_LIVE_CRDT_BINARY_REMOTE_EVENT, binaryRemote);
+      await broadcastStudioBg3dReaderSafe(this, client, studioLiveCrdtBinaryRoom(parsed.data.workId), STUDIO_LIVE_CRDT_BINARY_REMOTE_EVENT, binaryRemote, applied.requiredReaderCapabilities);
     } catch (error) {
       this.logCrdtBroadcastFailure(parsed.data.workId, applied.updateId, error, "binary");
     }
@@ -512,10 +516,9 @@ export async function syncCrdtDocument(
 
   let sync: Awaited<ReturnType<StudioCrdtService["sync"]>>;
   try {
-    sync = await this.studioCrdtService.sync(
-      parsed.data.workId,
-      parsed.data.stateVector
-    );
+    const readers = parsed.data.readerCapabilities ?? client.data.studioReaderCapabilities;
+    sync = readers ? await this.studioCrdtService.sync(parsed.data.workId, parsed.data.stateVector, readers)
+      : await this.studioCrdtService.sync(parsed.data.workId, parsed.data.stateVector);
   } catch (error) {
     const mappedFailure = mapStudioLiveCrdtFailure(error, parsed.data.workId, "sync");
     if (mappedFailure.diagnostic) {
@@ -545,6 +548,7 @@ export async function syncCrdtDocument(
       totalBytes: sync.totalBytes,
       serverStateVector: sync.serverStateVector,
       serverSequence: sync.serverSequence,
+      ...(sync.requiredReaderCapabilities ? { requiredReaderCapabilities: [...sync.requiredReaderCapabilities] } : {}),
     },
   });
 }
@@ -597,6 +601,7 @@ export async function applyCrdtUpdate(
       actorUserId: authorizedBefore.value.userId,
       data: parsed.data.update,
       writeContext: parsed.data.writeContext,
+      ...((parsed.data.readerCapabilities ?? client.data.studioReaderCapabilities) ? { readerCapabilities: parsed.data.readerCapabilities ?? client.data.studioReaderCapabilities } : {}),
     });
   } catch (error) {
     const mappedFailure = mapStudioLiveCrdtFailure(error, parsed.data.workId, "update");
@@ -613,6 +618,7 @@ export async function applyCrdtUpdate(
     serverSequence: applied.serverSequence,
     serverStateVector: applied.serverStateVector,
     duplicate: applied.duplicate,
+    ...(applied.requiredReaderCapabilities ? { requiredReaderCapabilities: [...applied.requiredReaderCapabilities] } : {}),
   };
   const response: StudioLiveAck<StudioLiveCrdtUpdateAck> = { ok: true, data };
   // 실제 승인 경계는 append transaction의 현재 작품·배정 검사다. 커밋된 결과는 ACK 후 전파한다.
@@ -625,9 +631,10 @@ export async function applyCrdtUpdate(
       updateId: applied.updateId,
       serverSequence: applied.serverSequence,
       update: applied.update,
+      ...(applied.requiredReaderCapabilities ? { requiredReaderCapabilities: [...applied.requiredReaderCapabilities] } : {}),
     };
     try {
-      client.to(studioLiveRoom(parsed.data.workId)).emit("studio:crdt:update", remote);
+      await broadcastStudioBg3dReaderSafe(this, client, studioLiveRoom(parsed.data.workId), "studio:crdt:update", remote, applied.requiredReaderCapabilities);
     } catch (error) {
       this.logger.error(
         {

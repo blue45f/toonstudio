@@ -122,6 +122,7 @@ export interface CreatorWorkInput {
   remixFromId?: unknown;
   // 생략 시 레거시 last-write-wins. 전달 시 현재 revision과 정확히 일치해야만 수정한다.
   baseRevision?: unknown;
+  readerCapabilities?: readonly string[];
 }
 
 const SORTS = new Set<CreatorWorkSort>(["recent", "likes", "views"]);

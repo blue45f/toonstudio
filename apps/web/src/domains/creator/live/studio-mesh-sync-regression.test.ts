@@ -624,3 +624,23 @@ describe("mesh transport synchronization regressions", () => {
     await expect(a.transport.requestCrdtSync?.(syncRequest())).rejects.toThrow("authority offline");
   });
 });
+
+
+describe("6패스 origin 본문 P2P 경계", () => {
+  const meta = { readerCapabilities: ["bg3d-sixpass-bundle.v1"], requiredReaderCapabilities: ["bg3d-sixpass-bundle.v1"], artifactScope: "origin" as const };
+  it("실제 열린 RTC가 있어도 origin update·sync는 same-origin primary만 사용한다", async () => {
+    const { a, b } = await pair(); Object.defineProperty(a.primary, "originArtifactScope", { value: "same-origin" });
+    const received: StudioCrdtTransportMessage[] = []; b.transport.subscribeCrdt?.((event) => received.push(event));
+    await a.transport.publishCrdtUpdate?.({ ...request(), ...meta });
+    await a.transport.requestCrdtSync?.({ ...syncRequest(), ...meta });
+    await microtasks();
+    expect(a.primary.publishCrdtUpdate).toHaveBeenCalledOnce(); expect(a.primary.requestCrdtSync).toHaveBeenCalledOnce();
+    expect(received).toEqual([]);
+  });
+  it("same-origin 권위가 없으면 origin 본문을 원격 primary나 RTC로 우회하지 않는다", async () => {
+    const { a } = await pair();
+    await expect(a.transport.publishCrdtUpdate?.({ ...request(), ...meta })).rejects.toThrow(/기기 전용/);
+    await expect(a.transport.requestCrdtSync?.({ ...syncRequest(), ...meta })).rejects.toThrow(/같은 기기/);
+    expect(a.primary.publishCrdtUpdate).not.toHaveBeenCalled(); expect(a.primary.requestCrdtSync).not.toHaveBeenCalled();
+  });
+});

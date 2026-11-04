@@ -1,3 +1,6 @@
+import { readStudioLinkedPassAssetRows } from "../../modules/creator/studio-linked-pass-asset-admission";
+import { extractStudioBg3dLinkedPassRequirementsInTransaction } from "../../modules/creator/studio-bg3d-linked-pass-admission";
+import { assertStudioBg3dRestDocumentInTransaction } from "../../modules/creator/studio-bg3d-bundle-rest-gate";
 // 창작 작품(웹툰/컷툰) CRUD — 목록/상세/생성/수정/삭제와 연결 자산 검증.
 import { and, asc, desc, eq, gt, inArray, lt, lte, or, sql } from "drizzle-orm";
 import { creatorWorkSnapshotSelection } from "../../modules/creator/creator-work-snapshot-selection";
@@ -25,7 +28,6 @@ import {
   creatorFollows,
   creatorSeries,
   creatorWorkAssetStorageReferences,
-  creatorWorkAssets,
   creatorWorkBookmarks,
   creatorWorkComments,
   creatorWorkLikes,
@@ -92,36 +94,13 @@ export { creatorWorkSnapshotSelection } from "../../modules/creator/creator-work
 export async function assertCreatorWorkLinked3dPassAssetsInTransaction(
   transaction: CreatorCommunityTransaction,
   workId: string,
-  envelope: CreatorWorkLinked3dJsonEnvelope
+  envelope: CreatorWorkLinked3dJsonEnvelope, readerCapabilities: readonly string[] = []
 ): Promise<void> {
-  const requirements = extractStudioLinked3dPassAssetRequirements(envelope);
+  const requirements = await extractStudioBg3dLinkedPassRequirementsInTransaction(transaction, workId, envelope, readerCapabilities);
   if (requirements.length === 0) return;
-  const rows = await transaction
-    .select({
-      workId: creatorWorkAssets.workId,
-      assetId: creatorWorkAssets.assetId,
-      elementType: creatorWorkAssets.elementType,
-      mimeType: creatorWorkAssets.mimeType,
-      descriptor: creatorWorkAssets.descriptor,
-      byteSize: creatorWorkAssets.byteSize,
-      sha256: creatorWorkAssets.sha256,
-      intrinsicWidth: creatorWorkAssets.intrinsicWidth,
-      intrinsicHeight: creatorWorkAssets.intrinsicHeight,
-      decodedRgbaBytes: creatorWorkAssets.decodedRgbaBytes,
-    })
-    .from(creatorWorkAssets)
-    .where(
-      and(
-        eq(creatorWorkAssets.workId, workId),
-        inArray(
-          creatorWorkAssets.assetId,
-          requirements.map(({ assetId }) => assetId)
-        )
-      )
-    );
+  const rows = await readStudioLinkedPassAssetRows(transaction, workId, requirements.map(({ assetId }) => assetId));
   assertStudioLinked3dPassAssetRows({ workId, requirements, rows });
 }
-
 // ── 목록 ─────────────────────────────────────────────────────────────
 export async function listWorks(opts: {
   titleId?: string;
@@ -599,7 +578,6 @@ export async function bumpViews(id: string): Promise<void> {
     // best-effort: 실패해도 무시
   }
 }
-
 // ── 생성 ─────────────────────────────────────────────────────────────
 export async function createWork(userId: string, input: CreatorWorkInput): Promise<CreatorWorkMutationResult> {
   return withDatabaseCapability("creator.works.write", async () => {
@@ -676,6 +654,7 @@ export async function createWork(userId: string, input: CreatorWorkInput): Promi
   }
   if (challengeId) values.challengeId = challengeId;
   await db.transaction(async (tx) => {
+    await assertStudioBg3dRestDocumentInTransaction(tx, id, doc, input.readerCapabilities ?? []);
     await tx.insert(creatorWorks).values(values);
     await tx.insert(creatorWorkRevisions).values({
       workId: id,
@@ -747,7 +726,6 @@ export async function mutationResultForWork(
   } = detail;
   return { ...summary, revision };
 }
-
 // ── 수정(작성자 전용) ────────────────────────────────────────────────
 export async function updateWork(
   userId: string,
@@ -842,6 +820,7 @@ export async function updateWork(
       throw new Error("작품 revision 상한에 도달해 더 저장할 수 없습니다.");
     }
     if (Object.hasOwn(fields, "doc")) await admitStudioRolePipelineFullDocument(tx, userId, id, fields.doc);
+    await assertStudioBg3dRestDocumentInTransaction(tx, id, Object.hasOwn(fields, "doc") ? fields.doc : locked.doc, patch.readerCapabilities ?? [], locked.doc);
     const [draftCollaborationRoom] = requestedStatus === undefined
       ? []
       : await tx
@@ -863,7 +842,7 @@ export async function updateWork(
       cover: Object.hasOwn(fields, "cover") ? fields.cover : locked.cover,
       pages: Object.hasOwn(fields, "pages") ? fields.pages : locked.pages,
       doc: Object.hasOwn(fields, "doc") ? fields.doc : locked.doc,
-    });
+    }, patch.readerCapabilities ?? []);
 
     // `baseRevision`을 생략한 레거시 저장도 동시 요청으로 PostgreSQL integer 상한을 넘지 않게
     // write 조건에서 다시 막는다. 사전 조회는 친절한 오류용이며 안전성은 이 조건이 담당한다.

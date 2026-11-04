@@ -1030,24 +1030,24 @@ describe("creator draft collaboration SQL boundary", () => {
       roomLock
     );
     const extract = source.indexOf(
-      "extractStudioLinked3dPassAssetRequirements",
+      "assertStudioLinkedPassUnitAssets",
       workLock
     );
     const metadataQuery = source.indexOf(
       "unit.findLinked3dPassAssetRows",
       extract
     );
-    const fence = source.indexOf("assertStudioLinked3dPassAssetRows", metadataQuery);
-    const publish = source.indexOf("unit.promoteRoom", fence);
-
+    const publish = source.indexOf("unit.promoteRoom", metadataQuery);
+    const helper = readFileSync(new URL("../../../../../../apps/api/src/modules/creator/studio-linked-pass-asset-admission.ts", import.meta.url), "utf8");
+    expect(helper.indexOf("await input.extract")).toBeLessThan(helper.indexOf("rows: await input.read"));
+    expect(helper).toContain("assertStudioLinked3dPassAssetRows");
     expect(promoteMethod).toBeGreaterThan(0);
     expect(ownerLock).toBeGreaterThan(promoteMethod);
     expect(roomLock).toBeGreaterThan(ownerLock);
     expect(workLock).toBeGreaterThan(roomLock);
     expect(extract).toBeGreaterThan(workLock);
     expect(metadataQuery).toBeGreaterThan(extract);
-    expect(fence).toBeGreaterThan(metadataQuery);
-    expect(publish).toBeGreaterThan(fence);
+    expect(publish).toBeGreaterThan(metadataQuery);
   });
 
   it("publishes creator_work and the exact retained revision snapshot in one UoW", () => {

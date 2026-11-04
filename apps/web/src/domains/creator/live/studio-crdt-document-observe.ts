@@ -1,4 +1,5 @@
 import * as Y from "yjs";
+import { bindStudioCrdtBg3dBundleObservers } from "./studio-crdt-bg3d-bundle-refs";
 
 import {
   MAX_ID_LENGTH,
@@ -48,6 +49,7 @@ import type { StudioCrdtDocumentHost } from "./studio-crdt-document-host";
 
 export function bindStudioCrdtDocumentObservers(host: StudioCrdtDocumentHost): void {
     bindStudioCrdtShared3dStageObservers(host);
+    bindStudioCrdtBg3dBundleObservers(host);
     for (const [id, value] of host.strokes) registerRecord(host, id, value);
     for (const value of host.order) registerOrderEntry(host, value);
     for (const [id, active] of host.sceneElementIds) {

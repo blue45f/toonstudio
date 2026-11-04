@@ -5,6 +5,7 @@ import { studioMappedSaveMutationId } from "./studio-collab/studio-mapped-save-m
 
 import { api, isHttpError, toApiError } from "@/platform/api";
 import { creatorWorkReadOptions } from "@/platform/creator-work-read-options";
+import { STUDIO_READER_CAPABILITY_HEADERS, withStudioReaderCapabilities } from "@/platform/studio-reader-capabilities";
 
 const SHARED_DOCUMENT_BASE = "/creator/works";
 const MAX_REVISION = 2_147_483_647;
@@ -597,7 +598,7 @@ export async function getStudioSharedDocumentMeta(
   }
   let payload: unknown;
   try {
-    payload = await api.get<unknown>(sharedDocumentMetaPath(workId), { signal });
+    payload = await api.get<unknown>(sharedDocumentMetaPath(workId), { signal, headers: STUDIO_READER_CAPABILITY_HEADERS });
   } catch (error) {
     const accessError = accessErrorFrom(
       error,
@@ -661,7 +662,7 @@ async function patchStudioSharedDocument(workId: string,
   patch: UpdateStudioSharedDocumentInput & { readonly mutationId?: string; readonly writeContext?: StudioScopedWriteContext }, signal?: AbortSignal) {
   let payload: unknown;
   try {
-    payload = await api.patch<unknown>(sharedDocumentPath(workId), patch, { signal });
+    payload = await api.patch<unknown>(sharedDocumentPath(workId), withStudioReaderCapabilities(patch), { signal });
   } catch (error) {
     const crdtConflict = crdtSequenceConflictFrom(error);
     if (crdtConflict) throw crdtConflict;

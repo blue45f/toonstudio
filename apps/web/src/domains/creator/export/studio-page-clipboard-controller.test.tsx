@@ -30,6 +30,7 @@ function renderClipboard(
   marqueeIds: string[] = [],
 ) {
   const commit = vi.fn((_nextElements: El[]) => true);
+  const setError = vi.fn();
   const setSelectedId = vi.fn();
   const setMarqueeIds = vi.fn();
   const setTool = vi.fn();
@@ -69,12 +70,13 @@ function renderClipboard(
     setSelectedId,
     setTool,
     announceDrawingShortcut,
-    setError: vi.fn(),
+    setError,
   }));
 
   return {
     ...hook,
     announceDrawingShortcut,
+    setError,
     commit,
     setMarqueeIds,
     setSelectedId,
@@ -191,5 +193,15 @@ describe("Studio duplicate placement", () => {
     const [nextElements] = hook.commit.mock.calls[0]!;
     expect(nextElements[1].id).not.toBe(source.id);
     expect(nextElements[1]).toMatchObject({ x: 240, y: 260 });
+  });
+});
+
+describe("native 6패스 복제 경계", () => {
+  it("직접 복제와 잘라내기는 문서 commit 전에 원본 입장 미지원 안내로 거부한다", () => {
+    const native: El = { id: "native-line", type: "image", src: `studio-opfs-cas:sha256:${"a".repeat(64)}`, x: 0, y: 0, width: 1, height: 1, rotation: 0,
+      bg3dLtBundleReference: { kind: "bg3d-sixpass-bundle", bundleId: "bundle-one", renderRevisionId: "revision-one", manifestHash: `sha256:${"b".repeat(64)}`, role: "main-line", elementId: "native-line" } };
+    const hook = renderClipboard([native], native.id);
+    act(() => { expect(hook.result.current.duplicateSelected()).toBe(false); expect(hook.result.current.cutSelectedElements()).toBe(false); });
+    expect(hook.commit).not.toHaveBeenCalled(); expect(hook.setError).toHaveBeenLastCalledWith(expect.stringContaining("아직 지원하지 않습니다"));
   });
 });

@@ -1,3 +1,4 @@
+import { STUDIO_CRDT_BG3D_IMAGE_KEYS, validateStudioCrdtBg3dImageReference } from "./studio-crdt-bg3d-image-reference";
 import { parseStudioPsdSource } from "../export/studio-psd-source";
 import { parseStudioBundleSourceCredit } from "@toonstudio/contracts/studio-bundle-source-credit";
 import {
@@ -158,6 +159,7 @@ export const STUDIO_CRDT_SCENE_ELEMENT_KEYS_BY_TYPE: Record<
   ]),
   reference: new Set([
     "elementType",
+    ...STUDIO_CRDT_BG3D_IMAGE_KEYS,
     ...STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS,
     ...STUDIO_FILTER_MASK_REFERENCE_EDIT_KEYS,
   ]),
@@ -332,6 +334,7 @@ export function validateStudioCrdtSceneElementPayload(
     props,
   });
   if (payload.type === "reference") {
+    validateStudioCrdtBg3dImageReference(props);
     if (!isLegacyStudioCrdtReferenceType(props.elementType)) {
       throw new Error("참조 요소의 원본 타입이 올바르지 않습니다.");
     }

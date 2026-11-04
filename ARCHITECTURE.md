@@ -273,7 +273,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 173 |
+| API `platform/database` 파일 | 174 |
 | `packages/core` 파일 | 148 |
 | `lint:strict` 경고 예산 (`lintStrictMaxWarnings`) | 2,189 |
 
@@ -349,3 +349,9 @@ pnpm run typecheck
 현재 172개 DB 소스에 SQL 한 파일만 더해 상한 173을 만든다. 기존 정책 행은 NULL 기본값으로
 보존하고 프로젝트가 명시적으로 켜기 전에는 기존 ACL·담당 배정을 변경하지 않는다. 공통 효과
 검증은 Web/API의 실제 두 소비자를 위해 contracts 공개 경계로 옮기고 API의 기존 진입점을 유지한다.
+
+2026-11-05 사용자가 승인한 실제 6패스 CRDT·에셋 저장 계약의 추가형 migration
+`0121_studio_bg3d_six_pass_bundle.sql`은 불변 이력을 지키기 위해 새 SQL 한 파일로 남긴다.
+두 테이블의 Drizzle 정의는 기존 `studio-raster-asset.schema.ts`에 포함하여 DB 소스 상한은
+173에서 174로 SQL 한 파일만 반영한다. Creator 직하·교차 앱·파일 크기 예산은 올리지 않는다.
+이 승인은 코드·migration 파일·분리 로컬 DB 검증에 한정하며 운영 DB 적용·배포를 허가하지 않는다.

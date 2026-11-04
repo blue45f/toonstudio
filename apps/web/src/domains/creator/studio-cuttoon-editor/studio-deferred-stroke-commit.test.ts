@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { studioBg3dSixPassEditReason } from "./runtime/bg3d-six-pass/studio-bg3d-six-pass-edit-guard";
+import { createBg3dBundleProjectFixture } from "../bg3d/studio-bg3d-bundle-project.test-fixture";
 import { captureLayerComp } from "../layer/studio-layer-comps";
 import { StudioCrdtDocument } from "../live/studio-crdt-document";
 import { reconcileStudioCrdtSceneGraphPages } from "../live/studio-crdt-page-bridge";
@@ -46,7 +48,7 @@ function createEditor(page: PageState = {
     invalidateAdvancedFillWork: vi.fn(() => true), coalesceKeyRef: { current: null as string | null },
     currentPageIdRef: { current: "A" }, pagesHiRef: { current: 0 }, pagesHistoryRef: { current: [[page]] },
     studioCrdtDocumentRef: { current: null as StudioCrdtDocument | null },
-    studioCrdtSceneRuntimeRef: { current: null as StudioCrdtSceneGraphRuntime | null },
+    studioCrdtSceneRuntimeRef: { current: null as StudioCrdtSceneGraphRuntime | Pick<StudioCrdtSceneGraphRuntime, "admitNativePageMutation"> | null },
     publishStudioCrdtSceneTransition: vi.fn<StudioCrdtTransitionPublisher["publishSceneTransition"]>(() => true),
     onHistoryBranch: vi.fn(() => { discardStudioRetainedStrokeRedo(undone, discardPixels); }),
     recordStudioHistoryTransition: vi.fn(), recordStudioHistoryJournalPages: vi.fn(),
@@ -351,4 +353,61 @@ describe("오프라인 변경을 유지하는 원자적 페이지 커밋", () =>
     expect(projectPages).toHaveBeenCalledTimes(2);
     expect(editor.state.setError).not.toHaveBeenCalled();
   });
+});
+
+describe("6패스 보존 페이지 제거의 원고 사전 거부", () => {
+  it.each(["delete-page", "wipe-document"])("%s는 pending 획·history·피어를 건드리기 전에 구체 안내로 거부한다", async (operation) => {
+    const fixture = await createBg3dBundleProjectFixture(), native: PageState = { ...fixture.project.pagesList[0], elements: [] };
+    const editor = createEditor(native), before = editor.state.pagesHistoryRef.current;
+    const ordinary = { ...native, id: "ordinary-page", bg3dLtBundles: undefined };
+    editor.state.pendingStrokeCommitsRef.current = { pageId: native.id, strokes: [stroke], retryCount: 0 };
+    const result = editor.engine().commitPages(operation === "delete-page" ? [ordinary] : []);
+    expect(result).toBe(false); expect(editor.state.pagesHistoryRef.current).toBe(before);
+    expect(editor.state.setError).toHaveBeenCalledExactlyOnceWith(expect.stringContaining("페이지의 전체 삭제는 아직 지원하지 않습니다"));
+    expect(editor.state.flushPendingStrokeCommitsRef.current).not.toHaveBeenCalled();
+    expect(editor.state.setPagesHistory).not.toHaveBeenCalled(); expect(editor.state.setPagesHi).not.toHaveBeenCalled();
+    expect(editor.state.recordStudioHistoryJournalPages).not.toHaveBeenCalled(); expect(editor.state.publishStudioCrdtSceneTransition).not.toHaveBeenCalled();
+    expect(editor.state.pendingStrokeCommitsRef.current?.strokes).toEqual([stroke]);
+  });
+  it("일반 페이지 제거와 native 페이지의 레이어 비우기는 기존 원고 commit을 유지한다", async () => {
+    const ordinary = createEditor(), extra = { ...ordinary.page, id: "ordinary-second" };
+    ordinary.state.pagesHistoryRef.current = [[ordinary.page, extra]];
+    expect(ordinary.engine().commitPages([ordinary.page])).toBe(true);
+    expect(ordinary.state.pagesHistoryRef.current.at(-1)).toEqual([ordinary.page]);
+    const fixture = await createBg3dBundleProjectFixture(), native = createEditor(fixture.project.pagesList[0]);
+    native.state.studioCrdtSceneRuntimeRef.current = { admitNativePageMutation: studioBg3dSixPassEditReason };
+    expect(native.engine().commitPages([{ ...native.page, elements: [], shared3dStage: undefined, linked3dRender: undefined }], { pendingStrokePolicy: "drop" })).toBe(true);
+    expect(native.state.pagesHistoryRef.current.at(-1)?.[0].bg3dLtBundles).toEqual(native.page.bg3dLtBundles);
+  });
+});
+
+describe("native 6패스 일반 편집의 실제 원고 사전 검사", () => {
+  it.each(["commit", "coalesced", "pages"])("%s는 group 분리를 history·journal·피어 발행 전에 거부한다", async (operation) => {
+    const fixture = await createBg3dBundleProjectFixture(), page: PageState = fixture.project.pagesList[0], editor = createEditor(page);
+    editor.state.currentPageIdRef.current = page.id;
+    editor.state.studioCrdtSceneRuntimeRef.current = { admitNativePageMutation: studioBg3dSixPassEditReason };
+    const next = page.elements.map((element) => ({ ...element, groupId: "different-group" })), history = editor.state.pagesHistoryRef.current;
+    if (operation === "commit") expect(editor.engine().commit(next)).toBe(false);
+    else if (operation === "pages") expect(editor.engine().commitPages([{ ...page, elements: next }])).toBe(false);
+    else editor.engine().commitCoalesced(next, "native-group-change");
+    expect(editor.state.setError).toHaveBeenCalledExactlyOnceWith(expect.stringContaining("그룹·역할·픽셀"));
+    expect(editor.state.pagesHistoryRef.current).toBe(history); expect(editor.state.setPagesHistory).not.toHaveBeenCalled();
+    expect(editor.state.recordStudioHistoryJournalPages).not.toHaveBeenCalled(); expect(editor.state.publishStudioCrdtSceneTransition).not.toHaveBeenCalled();
+    expect(editor.state.invalidateAdvancedFillWork).not.toHaveBeenCalled();
+  });
+  it("작가 표현 변경과 일부 native 레이어 삭제는 원래 commit을 유지한다", async () => {
+    const fixture = await createBg3dBundleProjectFixture(), page: PageState = fixture.project.pagesList[0], editor = createEditor(page);
+    editor.state.studioCrdtSceneRuntimeRef.current = { admitNativePageMutation: studioBg3dSixPassEditReason };
+    const next = page.elements.slice(1).map((element) => ({ ...element, name: "작가 편집", opacity: .35, blendMode: "screen" as const, hidden: false }));
+    expect(editor.engine().commit(next)).toBe(true);
+    expect(editor.state.pagesHistoryRef.current.at(-1)?.[0].elements).toEqual(next);
+  });
+});
+
+it("native runtime authority가 준비되지 않으면 원고 반영 전에 구체적인 준비 안내를 보낸다", async () => {
+  const fixture = await createBg3dBundleProjectFixture(), editor = createEditor(fixture.project.pagesList[0]), before = editor.state.pagesHistoryRef.current;
+  expect(editor.engine().commit(editor.page.elements)).toBe(false);
+  expect(editor.state.pagesHistoryRef.current).toBe(before);
+  expect(editor.state.setError).toHaveBeenLastCalledWith(expect.stringContaining("저장 검증 경로를 준비"));
+  expect(editor.state.publishStudioCrdtSceneTransition).not.toHaveBeenCalled();
 });

@@ -90,10 +90,7 @@ describe("pending stroke lifecycle source contract", () => {
       "studioWorkAssetAdmissionCoordinator.sync({",
       "const observeSceneElements = ("
     );
-    const remoteFrontier = sourceBetween(
-      "const applyFrontier = (",
-      "applyFrontier(studioOfflineHost.studioOfflineDocumentFrontier("
-    );
+    const remoteFrontier = readFileSync(new URL("./live/studio-crdt-frontier-reconciliation-binding.ts", import.meta.url), "utf8");
     const hydratedAssets = sourceBetween(
       "const referenceSources = readyStudioWorkAssetImageSources(studioWorkAssetHydrator);",
       "// useCallback: 렌더 중 호출되는 메시지 헬퍼"
@@ -104,8 +101,8 @@ describe("pending stroke lifecycle source contract", () => {
     // hook-argument refs inside effect scope). The ref-before-state contract is unchanged.
     expect(admission).toContain("commitStudioWorkAssetAdmittedHistory(pagesHistoryRef, admitted.history)");
     expect(admission).toContain("rebaseStudioHistoryJournal(");
-    expect(remoteFrontier).toContain("const currentHistory = pagesHistoryRef.current");
-    expect(remoteFrontier).toContain("pagesHistoryRef.current = reconciled.history");
+    expect(remoteFrontier).toContain("const currentHistory = input.pagesHistoryRef.current");
+    expect(remoteFrontier).toContain("input.pagesHistoryRef.current = reconciled.history");
     expect(remoteFrontier).toContain('"remote CRDT reconciliation"');
     expect(remoteFrontier).not.toContain("setPagesHistoryState((history)");
     expect(hydratedAssets).toContain("const currentHistory = pagesHistoryRef.current");

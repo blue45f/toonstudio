@@ -1,3 +1,4 @@
+import { studioCrdtReaderMetadataKeys, validStudioCrdtReaderMetadata, studioCrdtReaderMetadata, type StudioCrdtReaderMetadata } from "./studio-crdt-reader-capability";
 import { STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION } from "../../../shared/lib/studio-brush-material-program-contract";
 import { fromUint8Array, toUint8Array } from "js-base64";
 import { StudioScopedWriteContextSchema, type StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
@@ -69,14 +70,14 @@ const DECIMAL_SEQUENCE_PATTERN = /^(?:0|[1-9][0-9]*)$/u;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const TEXT_ENCODER = new TextEncoder();
 
-export interface StudioCrdtSyncRequest {
+export interface StudioCrdtSyncRequest extends StudioCrdtReaderMetadata {
   protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
   workId: string;
   requestId: string;
   stateVector: string;
 }
 
-export interface StudioCrdtSyncResponse {
+export interface StudioCrdtSyncResponse extends StudioCrdtReaderMetadata {
   protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
   workId: string;
   requestId: string;
@@ -90,7 +91,7 @@ export interface StudioCrdtSyncResponse {
   serverSequence: string;
 }
 
-export interface StudioCrdtUpdateRequest {
+export interface StudioCrdtUpdateRequest extends StudioCrdtReaderMetadata {
   writeContext?: StudioScopedWriteContext;
   protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
   workId: string;
@@ -100,7 +101,7 @@ export interface StudioCrdtUpdateRequest {
   update: string;
 }
 
-export interface StudioCrdtUpdateAck {
+export interface StudioCrdtUpdateAck extends StudioCrdtReaderMetadata {
   protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
   workId: string;
   updateId: string;
@@ -110,7 +111,7 @@ export interface StudioCrdtUpdateAck {
   duplicate: boolean;
 }
 
-export interface StudioCrdtRemoteUpdate {
+export interface StudioCrdtRemoteUpdate extends StudioCrdtReaderMetadata {
   protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
   workId: string;
   updateId: string;
@@ -135,7 +136,7 @@ export type StudioCrdtTransportMessage =
       senderSessionId: string | null;
     };
 
-export type StudioCrdtLocalWireMessage =
+export type StudioCrdtLocalWireMessage = StudioCrdtReaderMetadata & (
   | {
       brand: typeof STUDIO_CRDT_LOCAL_WIRE_BRAND;
       protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
@@ -162,7 +163,7 @@ export type StudioCrdtLocalWireMessage =
       targetSessionId: null;
       kind: "update";
       payload: StudioCrdtRemoteUpdate;
-    };
+    });
 
 export interface ParseStudioCrdtOptions {
   expectedWorkId?: string;
@@ -325,8 +326,8 @@ export function parseStudioCrdtSyncRequest(
 ): StudioCrdtSyncRequest | null {
   if (
     !isRecord(value) ||
-    !hasExactKeys(value, ["protocolVersion", "workId", "requestId", "stateVector"]) ||
-    !commonContract(value, options) ||
+    !hasExactKeys(value, ["protocolVersion", "workId", "requestId", "stateVector", ...studioCrdtReaderMetadataKeys(value)]) ||
+    !commonContract(value, options) || !validStudioCrdtReaderMetadata(value) ||
     !isSafeId(value.requestId) ||
     decodeCanonicalBase64(value.stateVector, STUDIO_CRDT_STATE_VECTOR_MAX_BYTES) === null
   ) {
@@ -342,6 +343,7 @@ export function parseStudioCrdtSyncResponse(
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
+      ...studioCrdtReaderMetadataKeys(value),
       "protocolVersion",
       "workId",
       "requestId",
@@ -352,7 +354,7 @@ export function parseStudioCrdtSyncResponse(
       "serverStateVector",
       "serverSequence",
     ]) ||
-    !commonContract(value, options) ||
+    !commonContract(value, options) || !validStudioCrdtReaderMetadata(value) ||
     !isSafeId(value.requestId) ||
     !isUuid(value.transferId) ||
     !isSequence(value.serverSequence) ||
@@ -385,6 +387,7 @@ export function parseStudioCrdtUpdateRequest(
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
+      ...studioCrdtReaderMetadataKeys(value),
       "protocolVersion",
       "workId",
       "updateId",
@@ -392,7 +395,7 @@ export function parseStudioCrdtUpdateRequest(
       "update",
       ...(Object.hasOwn(value, "writeContext") ? ["writeContext"] : []),
     ]) ||
-    !commonContract(value, options) ||
+    !commonContract(value, options) || !validStudioCrdtReaderMetadata(value) ||
     !isUuid(value.updateId) ||
     typeof value.clientSequence !== "number" ||
     !Number.isSafeInteger(value.clientSequence) ||
@@ -404,7 +407,7 @@ export function parseStudioCrdtUpdateRequest(
   const context = Object.hasOwn(value, "writeContext") ? StudioScopedWriteContextSchema.safeParse(value.writeContext) : null;
   if (context && !context.success) return null;
   return { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: String(value.workId), updateId: String(value.updateId),
-    clientSequence: value.clientSequence, update: String(value.update), ...(context?.success ? { writeContext: context.data } : {}) };
+    clientSequence: value.clientSequence, update: String(value.update), ...(context?.success ? { writeContext: context.data } : {}), ...studioCrdtReaderMetadata(value as StudioCrdtReaderMetadata) };
 }
 
 /**
@@ -437,6 +440,7 @@ export function parseStudioCrdtUpdateAck(
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
+      ...studioCrdtReaderMetadataKeys(value),
       "protocolVersion",
       "workId",
       "updateId",
@@ -444,7 +448,7 @@ export function parseStudioCrdtUpdateAck(
       "serverStateVector",
       "duplicate",
     ]) ||
-    !commonContract(value, options) ||
+    !commonContract(value, options) || !validStudioCrdtReaderMetadata(value) ||
     !isUuid(value.updateId) ||
     !isSequence(value.serverSequence) ||
     typeof value.duplicate !== "boolean" ||
@@ -463,13 +467,14 @@ export function parseStudioCrdtRemoteUpdate(
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
+      ...studioCrdtReaderMetadataKeys(value),
       "protocolVersion",
       "workId",
       "updateId",
       "serverSequence",
       "update",
     ]) ||
-    !commonContract(value, options) ||
+    !commonContract(value, options) || !validStudioCrdtReaderMetadata(value) ||
     !isUuid(value.updateId) ||
     !isSequence(value.serverSequence) ||
     decodeCanonicalBase64(value.update, STUDIO_CRDT_UPDATE_MAX_BYTES) === null
@@ -480,7 +485,7 @@ export function parseStudioCrdtRemoteUpdate(
 }
 
 export function createStudioCrdtLocalWireMessage(
-  message:
+  message: StudioCrdtReaderMetadata & (
     | {
         workId: string;
         senderSessionId: string;
@@ -501,7 +506,7 @@ export function createStudioCrdtLocalWireMessage(
         targetSessionId: null;
         kind: "update";
         payload: StudioCrdtRemoteUpdate;
-      }
+      })
 ): StudioCrdtLocalWireMessage {
   const wire = {
     brand: STUDIO_CRDT_LOCAL_WIRE_BRAND,
@@ -524,7 +529,9 @@ export function parseStudioCrdtLocalWireMessage(
     byteLength === null ||
     byteLength > STUDIO_CRDT_LOCAL_MESSAGE_MAX_BYTES ||
     !isRecord(value) ||
+    !validStudioCrdtReaderMetadata(value) ||
     !hasExactKeys(value, [
+      ...studioCrdtReaderMetadataKeys(value),
       "brand",
       "protocolVersion",
       "workId",

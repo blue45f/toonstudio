@@ -56,6 +56,7 @@ function fixture(options: FixtureOptions = {}) {
     toneMapping: THREE.ACESFilmicToneMapping,
     toneMappingExposure: 1.25,
     xr: { enabled: true },
+    shadowMap: { autoUpdate: false, needsUpdate: false },
     getRenderTarget: vi.fn(() => renderTarget),
     getActiveCubeFace: vi.fn(() => activeCubeFace),
     getActiveMipmapLevel: vi.fn(() => activeMipmapLevel),
@@ -383,4 +384,94 @@ it("keeps WebGL color targets alive after a restoration error until readback fin
   fence.resolve(new Uint8Array(16));
   await rejected;
   expect(dispose).toHaveBeenCalledTimes(2);
+});
+
+
+describe("순차 6패스 WebGL 캡처", () => {
+  it("이전 fence·target 정리가 끝나야 다음 패스를 시작하고 라이브 helper와 카메라는 복원한다", async () => {
+    const f = fixture();
+    const gates = Array.from({ length: 4 }, () => deferred<THREE.TypedArray>());
+    const depthGate = deferred<Float32Array>();
+    const targetDispose = vi.spyOn(THREE.WebGLRenderTarget.prototype, "dispose");
+    const helper = new THREE.Group(), beautyOnly = new THREE.Group();
+    registerStudioBg3dCaptureExcludedObject(helper); registerStudioBg3dDepthExcludedObject(beautyOnly);
+    f.scene.add(helper, beautyOnly);
+    const sourceMaterial = new THREE.MeshStandardMaterial({ color: "#806020" });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), sourceMaterial); f.scene.add(mesh);
+    let readbackIndex = 0;
+    vi.mocked(f.renderer.readRenderTargetPixelsAsync).mockImplementation((_target, _x, _y, _width, _height, pixels) => {
+      pixels.set(f.bottomUpRgba);
+      const gate = gates[readbackIndex++];
+      if (!gate) throw new Error("예상하지 않은 GPU 제출");
+      return gate.promise;
+    });
+    captureDepthMock.mockImplementationOnce(() => depthGate.promise);
+    const frozenCameras: THREE.Camera[] = [];
+    vi.mocked(f.renderer.render).mockImplementation((renderedScene, camera) => {
+      if (renderedScene !== f.scene) return;
+      expect(helper.visible).toBe(false); expect(beautyOnly.visible).toBe(false);
+      frozenCameras.push(camera);
+    });
+    const pending = captureStudioBg3dRaster(f.adapter, { width: 2, height: 2, includeDepth: true,
+      includeNormals: true, includeSixPass: true, background: { color: "#ffffff", alpha: 0 } });
+    expect(readbackIndex).toBe(1); expect(captureDepthMock).not.toHaveBeenCalled();
+    expectLiveRendererStateRestored(f); expect(helper.visible).toBe(true); expect(beautyOnly.visible).toBe(true);
+    f.camera.position.x = 99; f.camera.far = 9000; f.camera.updateProjectionMatrix();
+    gates[0].resolve(f.bottomUpRgba);
+    await vi.waitFor(() => expect(captureDepthMock).toHaveBeenCalledOnce());
+    expect(targetDispose).toHaveBeenCalledTimes(2); expect(readbackIndex).toBe(1);
+    expect(helper.visible).toBe(true); expect(beautyOnly.visible).toBe(true);
+    depthGate.resolve(new Float32Array(4));
+    await vi.waitFor(() => expect(readbackIndex).toBe(2));
+    expect(targetDispose).toHaveBeenCalledTimes(2); expectLiveRendererStateRestored(f);
+    gates[1].resolve(f.bottomUpRgba);
+    await vi.waitFor(() => expect(readbackIndex).toBe(3));
+    expect(targetDispose).toHaveBeenCalledTimes(3); expect(mesh.material).toBe(sourceMaterial);
+    expect(helper.visible).toBe(true); expect(beautyOnly.visible).toBe(true);
+    gates[2].resolve(f.bottomUpRgba);
+    await vi.waitFor(() => expect(readbackIndex).toBe(4));
+    expect(targetDispose).toHaveBeenCalledTimes(5); expect(mesh.material).toBe(sourceMaterial);
+    gates[3].resolve(f.bottomUpRgba);
+    const result = await pending;
+    expect(targetDispose).toHaveBeenCalledTimes(7);
+    expect(frozenCameras.every((camera) => camera === frozenCameras[0] && camera !== f.camera && camera.position.x === 0)).toBe(true);
+    expect(captureDepthMock.mock.calls[0]?.[0].camera).toBe(frozenCameras[0]);
+    expect(result.linearDepthFarMeters).toBe(2000); expect(result.flatColorRgba).toBeDefined();
+    expect(result.shadowRgba).toBeDefined(); expect(result.normalRgba).toBeDefined();
+    expectLiveRendererStateRestored(f); expect(mesh.material).toBe(sourceMaterial);
+    mesh.geometry.dispose(); sourceMaterial.dispose();
+  });
+
+  it("마지막 그림자 복사가 실패해도 모든 target·임시 재질을 정리한다", async () => {
+    const f = fixture();
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()); f.scene.add(mesh);
+    const original = mesh.material;
+    const materialDispose = vi.spyOn(THREE.Material.prototype, "dispose");
+    const targetDispose = vi.spyOn(THREE.WebGLRenderTarget.prototype, "dispose");
+    captureDepthMock.mockResolvedValueOnce(new Float32Array(4));
+    const failure = new Error("그림자 복사 실패");
+    vi.mocked(f.renderer.readRenderTargetPixelsAsync)
+      .mockImplementationOnce(async (_target, _x, _y, _width, _height, pixels) => pixels)
+      .mockImplementationOnce(async (_target, _x, _y, _width, _height, pixels) => pixels)
+      .mockRejectedValueOnce(failure);
+    await expect(captureStudioBg3dRaster(f.adapter, { width: 2, height: 2, includeDepth: true,
+      includeSixPass: true, background: { color: "#ffffff", alpha: 0 } })).rejects.toBe(failure);
+    expect(targetDispose).toHaveBeenCalledTimes(6); expect(materialDispose).toHaveBeenCalledTimes(5);
+    expect(mesh.material).toBe(original); expectLiveRendererStateRestored(f);
+    mesh.geometry.dispose(); original.dispose();
+  });
+
+  it("GPU 대기 중 장면이 변경되면 다음 패스와 혼합 결과 반환을 거부한다", async () => {
+    const first = deferred<THREE.TypedArray>();
+    const f = fixture({ readback: first.promise });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()); f.scene.add(mesh);
+    const pending = captureStudioBg3dRaster(f.adapter, { width: 2, height: 2, includeDepth: true,
+      includeSixPass: true, background: { color: "#ffffff", alpha: 0 } });
+    const failure = expect(pending).rejects.toThrow(/장면이 변경/);
+    mesh.rotation.y = 1;
+    first.resolve(f.bottomUpRgba);
+    await failure;
+    expect(captureDepthMock).not.toHaveBeenCalled(); expectLiveRendererStateRestored(f);
+    mesh.geometry.dispose(); mesh.material.dispose();
+  });
 });

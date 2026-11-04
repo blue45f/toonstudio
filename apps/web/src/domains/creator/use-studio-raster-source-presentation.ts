@@ -5,12 +5,14 @@ import type {
   StudioRasterSourceLeaseOptions,
 } from "./render/studio-raster-source-lease";
 
-const LINKED_CAS_PREFIX = "studio-opfs-cas:sha256:";
+const isCasSource = (source: string | null): boolean => !!source && (source.startsWith("studio-opfs-cas:") || source.startsWith("bg3d-lt-artifact:"));
+
+export type StudioRasterPresentationLease = Pick<StudioRasterSourceLease, "src" | "release"> & { readonly kind: "passthrough" | "linked-3d-cas" | "thumbnail" };
 
 export type StudioRasterSourceLeaseAcquirer = (
   source: string,
   options: StudioRasterSourceLeaseOptions,
-) => Promise<StudioRasterSourceLease>;
+) => Promise<StudioRasterPresentationLease>;
 
 export interface StudioRasterSourcePresentation {
   readonly error: Error | null;
@@ -42,13 +44,13 @@ export function useStudioRasterSourcePresentation(
     readonly source: string;
     readonly src: string | null;
   } | null>(null);
-  const linked = source?.startsWith(LINKED_CAS_PREFIX) === true;
+  const linked = isCasSource(source);
 
   useEffect(() => {
-    if (!source || !source.startsWith(LINKED_CAS_PREFIX)) return;
+    if (!source || !isCasSource(source)) return;
     const controller = new AbortController();
     let active = true;
-    let lease: StudioRasterSourceLease | null = null;
+    let lease: StudioRasterPresentationLease | null = null;
     const acquire = options.acquire ?? acquireDefaultStudioRasterSourceLease;
     void acquire(source, {
       consumer: options.consumer,
@@ -58,7 +60,7 @@ export function useStudioRasterSourcePresentation(
         nextLease.release();
         return;
       }
-      if (nextLease.kind !== "linked-3d-cas") {
+      if (nextLease.kind !== "linked-3d-cas" && nextLease.kind !== "thumbnail") {
         nextLease.release();
         throw new Error("연결형 3D raster source가 검증된 CAS lease를 반환하지 않았습니다.");
       }

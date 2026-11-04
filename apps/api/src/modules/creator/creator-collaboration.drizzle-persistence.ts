@@ -1,4 +1,7 @@
-import { and, asc, count, desc, eq, inArray, isNotNull, lt, lte, ne, or, sql, type SQL } from "drizzle-orm";
+import { readStudioLinkedPassAssetRows } from "./studio-linked-pass-asset-admission";
+import { extractStudioBg3dLinkedPassRequirementsInTransaction } from "./studio-bg3d-linked-pass-admission";
+import type { CreatorWorkLinked3dJsonEnvelope } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
+import { and, asc, count, desc, eq, isNotNull, lt, lte, ne, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import {
@@ -7,7 +10,6 @@ import {
   creatorWorkCollaborators,
   creatorWorkCrdtSnapshots,
   creatorWorkCrdtUpdates,
-  creatorWorkAssets,
   creatorWorkRevisions,
   creatorWorks,
   db,
@@ -793,31 +795,16 @@ export class DrizzleCreatorCollaborationUnitOfWork implements CreatorCollaborati
     return rows[0] ?? null;
   }
 
+  async extractStudioLinked3dPassRequirements(workId: string, envelope: CreatorWorkLinked3dJsonEnvelope, features: readonly string[]) {
+    if (!("rollback" in this.executor)) throw new Error("6패스 입장 검증에는 같은 transaction이 필요합니다.");
+    return extractStudioBg3dLinkedPassRequirementsInTransaction(this.executor, workId, envelope, features);
+  }
+
   async findStudioLinked3dPassAssets(
     workId: string,
     assetIds: readonly string[]
   ) {
-    if (assetIds.length === 0) return [];
-    return this.executor
-      .select({
-        workId: creatorWorkAssets.workId,
-        assetId: creatorWorkAssets.assetId,
-        elementType: creatorWorkAssets.elementType,
-        mimeType: creatorWorkAssets.mimeType,
-        descriptor: creatorWorkAssets.descriptor,
-        byteSize: creatorWorkAssets.byteSize,
-        sha256: creatorWorkAssets.sha256,
-        intrinsicWidth: creatorWorkAssets.intrinsicWidth,
-        intrinsicHeight: creatorWorkAssets.intrinsicHeight,
-        decodedRgbaBytes: creatorWorkAssets.decodedRgbaBytes,
-      })
-      .from(creatorWorkAssets)
-      .where(
-        and(
-          eq(creatorWorkAssets.workId, workId),
-          inArray(creatorWorkAssets.assetId, [...assetIds])
-        )
-      );
+    return readStudioLinkedPassAssetRows(this.executor, workId, assetIds);
   }
 
   async updateAccessibleDocument(
@@ -826,12 +813,12 @@ export class DrizzleCreatorCollaborationUnitOfWork implements CreatorCollaborati
     baseRevision: number,
     patch: CreatorSharedDocumentPatch,
     updatedAt: Date,
-    scoped?: { readonly mutationId: string; readonly writeContext: StudioScopedWriteContext; readonly crdtServerSequence: bigint }
+    scoped?: { readonly mutationId: string; readonly writeContext: StudioScopedWriteContext; readonly crdtServerSequence: bigint }, readerCapabilities?: readonly string[]
   ): Promise<CreatorSharedDocumentMutationRecord | null> {
     // 서비스가 작품 행을 먼저 잠그지만 UPDATE에도 동일 ACL을 중복 적용한다. 향후 호출자가
     // 바뀌어도 pending/viewer 권한이 write primitive까지 도달하지 못하도록 하는 방어선이다.
     return withStudioRolePipelineFullDocumentUpdate(
-      this.executor, { actorUserId, workId, baseRevision, patch, updatedAt, scoped },
+      this.executor, { actorUserId, workId, baseRevision, patch, updatedAt, scoped, readerCapabilities },
       () => buildCreatorSharedDocumentUpdateQuery(this.executor, actorUserId, workId, baseRevision, patch, updatedAt),
     );
   }

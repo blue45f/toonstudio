@@ -1,4 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
+import type { StudioScopedRestWriteInput } from "./studio-scoped-write-rest";
 
 import {
   markCreatorPublicationPublished,
@@ -131,7 +132,7 @@ export class CreatorPublicationCollaborationRepository extends CreatorCollaborat
     workId: string,
     baseRevision: number,
     crdtServerSequence: bigint,
-    patch: CreatorSharedDocumentPatch,
+    patch: CreatorSharedDocumentPatch, scoped?: StudioScopedRestWriteInput, readerCapabilities: readonly string[] = [],
   ): Promise<CreatorSharedDocumentSaveResponse> {
     const shared = await super.getSharedDocument(actorUserId, workId);
     const protectedPatch = prepareCreatorPublicationSharedDocumentPatch({
@@ -143,7 +144,7 @@ export class CreatorPublicationCollaborationRepository extends CreatorCollaborat
       workId,
       baseRevision,
       crdtServerSequence,
-      protectedPatch,
+      protectedPatch, scoped, readerCapabilities,
     );
   }
 }

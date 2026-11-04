@@ -1,3 +1,4 @@
+import { STUDIO_READER_CAPABILITY_HEADERS } from "./studio-reader-capabilities";
 import type { ApiOptions } from "./api";
 
 /** Only idempotent manuscript GETs opt in; publishing and save mutations never retry. */
@@ -8,7 +9,7 @@ export function creatorWorkReadOptions(
   // This signal also bounds response.text(), which runs after the shared client's header timeout.
   const deadline = AbortSignal.timeout(45_000);
   return {
-    params,
+    params, headers: STUDIO_READER_CAPABILITY_HEADERS,
     signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
     timeout: 15_000,
     retry: {

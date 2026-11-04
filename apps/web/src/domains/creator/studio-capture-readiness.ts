@@ -1,3 +1,4 @@
+import { parseStudioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 /**
  * Deterministic capture readiness gate for the React-Konva studio.
  *
@@ -303,11 +304,11 @@ async function preloadAssetSource(
   linked3dPassAuthority: StudioLinked3dPassCasAuthority | undefined,
   signal?: AbortSignal,
 ): Promise<void> {
-  if (!source.startsWith(STUDIO_LINKED_3D_PASS_LOCATOR_NAMESPACE)) {
+  if (!source.startsWith(STUDIO_LINKED_3D_PASS_LOCATOR_NAMESPACE) && !source.startsWith("bg3d-lt-artifact:")) {
     await preloadImage(source, signal);
     return;
   }
-  if (!STUDIO_LINKED_3D_PASS_LOCATOR_PATTERN.test(source)) {
+  if (!STUDIO_LINKED_3D_PASS_LOCATOR_PATTERN.test(source) && !parseStudioBg3dSixPassArtifactSourceUri(source)) {
     throw new Error("invalid-linked-3d-pass-locator");
   }
 

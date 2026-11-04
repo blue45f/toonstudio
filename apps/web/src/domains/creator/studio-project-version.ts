@@ -1,5 +1,5 @@
 /** 저장된 편집 기능에 필요한 최소 reader. 렌더러를 로드하지 않는다. */
-export type StudioProjectFileVersion = 2 | 3 | 4;
+export type StudioProjectFileVersion = 2 | 3 | 4 | 5;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -26,10 +26,27 @@ function requiresSixPassReader(value: unknown): boolean {
   return false;
 }
 
+/** 삭제된 묶음도 undo가 참조하는 revision이 남아 있으면 새 reader를 요구한다. */
+function requiresSixPassBundleReader(value: unknown): boolean {
+  const pending: unknown[] = [value];
+  const seen = new WeakSet<object>();
+  while (pending.length > 0) {
+    const candidate = pending.pop();
+    if (typeof candidate !== "object" || candidate === null || seen.has(candidate)) continue;
+    seen.add(candidate);
+    if (isRecord(candidate) && candidate.contract === "toonstudio.bg3d-sixpass-bundles.v1"
+      && Array.isArray(candidate.bundles) && candidate.bundles.some((bundle) =>
+        isRecord(bundle) && Array.isArray(bundle.revisions) && bundle.revisions.length > 0)) return true;
+    for (const entry of Object.values(candidate)) pending.push(entry);
+  }
+  return false;
+}
+
 export function minimumStudioProjectFileVersion(
   pages: readonly unknown[],
   master: unknown,
 ): StudioProjectFileVersion {
+  if (requiresSixPassBundleReader(pages) || requiresSixPassBundleReader(master)) return 5;
   if (requiresSixPassReader(pages) || requiresSixPassReader(master)) return 4;
   return pages.some((page) => isRecord(page) && Array.isArray(page.elements)
       && page.elements.some(requiresTaperSpacingReader))
@@ -43,6 +60,7 @@ export function resolveStudioProjectFileVersion(
   pages: readonly unknown[], master: unknown, storedVersion?: unknown,
 ): StudioProjectFileVersion {
   const minimum = minimumStudioProjectFileVersion(pages, master);
+  if (storedVersion === 5 || minimum === 5) return 5;
   if (storedVersion === 4 || minimum === 4) return 4;
   return storedVersion === 3 ? 3 : minimum;
 }

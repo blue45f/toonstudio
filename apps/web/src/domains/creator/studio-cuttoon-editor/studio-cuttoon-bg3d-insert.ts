@@ -4,14 +4,17 @@
  * 이 모듈은 그 가방에만 의존한다(추출 전 클로저와 동일 의미).
  */
 import { planStudioBg3dLtDetachComposite, planStudioBg3dLtDrawingAssist, planStudioBg3dRealtimeMergedApply, planStudioBg3dSharedCharacterVisibility, planStudioBg3dSharedStageMutation, resolveStudioBg3dCapturedCharacterPlacements, resolveStudioBg3dLinkedRenderState, resolveStudioBg3dLtLinkedScene } from "../bg3d/studio-bg3d-lt-apply";
+import { preserveStudioBg3dSixPassArtistLayers, preserveStudioBg3dSixPassArtistGroups } from "../scene3d/bg3d-six-pass/studio-bg3d-six-pass-recapture";
 import { planStudioBg3dLtLayers } from "../bg3d/studio-bg3d-lt-layer-plan";
 import { attachStudioBg3dMagicFilterMaskToLtPlan } from "../bg3d/studio-bg3d-magic-layer-attach";
+import type { StudioBg3dSixPassBundleManifest, StudioBg3dSixPassBundleState } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
 import type { StudioBg3dSceneDocument } from "../bg3d/studio-bg3d-scene-document";
 import { expectStudioRasterImagePresentation } from "../render/studio-raster-image-presentation";
 import type { StudioBackground3DInsertResult } from "../scene-3d/studio-3d-insert-contract";
 import { mapStudioBg3dPerspectiveGuidesToAnchor } from "../scene-3d/studio-3d-insert-controller";
 import { CANVAS_W } from "../studio-assets";
 import type { El } from "../studio-element-model";
+import type { PageState } from "../studio-page-state";
 import { uid } from "../studio-id";
 import { createCanvasImageElement } from "../studio-image-placement";
 import { isEffectivelyLocked } from "../studio-layers";
@@ -36,6 +39,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
     canvasH,
     addEl,
     isRealtimeTeamSession,
+    scopedWriteRuntime,
     elements,
     activePage,
     bg3dDccSourceRef,
@@ -68,9 +72,15 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
   ): Promise<boolean> {
     setError(null);
     setStatusNotice(null);
-    if ((isRealtimeTeamSession || masterEditMode)
-      && (result.bg3dScene.output.sixPassLt || result.layers.some(({ role }) => role === "shadow" || role === "depth"))) {
-      setError("6패스 LT의 분리 레이어는 일반 페이지에서만 저장할 수 있습니다. 실시간 공동 편집이나 문서 마스터에서 병합 결과로 자동 전환하지 않습니다.");
+    const sixPass = !!result.bg3dScene.output.sixPassLt;
+    if (sixPass && (masterEditMode || result.bg3dScene.attachments.length || result.bg3dScene.nodes.some((node) => node.kind !== "primitive"))) {
+      setError("6패스 묶음 v1은 일반 원고의 기본 도형 장면을 지원합니다. 문서 마스터와 외부 모델 원본은 아직 지원하지 않습니다.");
+      return false;
+    }
+    let nativeState: StudioBg3dSixPassBundleState | undefined = activePage.bg3dLtBundles;
+    let previousBundle = targetElementId ? nativeState?.bundles.find((bundle) => bundle.bundleId === elementById.get(targetElementId)?.bg3dLtBundleId) : undefined;
+    if (previousBundle && (!sixPass || result.sharedStageMutation?.kind === "unlink")) {
+      setError("봉인된 6패스 묶음의 일반 LT 전환·연결 해제는 아직 지원하지 않습니다. 원본을 유지한 정적 이미지 복사본을 사용해 주세요.");
       return false;
     }
     const anchorLayer = result.layers.at(-1);
@@ -136,11 +146,8 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       return true;
     }
 
-    // The separated LT raster bundle still stays out of a realtime room because its multiple pixel
-    // bodies do not share one bounded CRDT/CAS receipt. The merged raster + embedded Scene remains
-    // self-contained, while its page-local bundle identity and Shared Stage relationship are
-    // committed atomically so selecting/reopening the background can resolve the character link.
-    if (isRealtimeTeamSession) {
+    // 6패스는 봉인된 분리 본문 경로를 사용하고, 일반 LT의 기존 병합 동작을 유지한다.
+    if (isRealtimeTeamSession && !sixPass) {
       const realtimePlan = planStudioBg3dRealtimeMergedApply({
         result,
         elements,
@@ -218,6 +225,26 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       return false;
     }
 
+    let restoredManifests: readonly StudioBg3dSixPassBundleManifest[] = [];
+    const recoveryTarget = targetElementId ? elementById.get(targetElementId) : undefined;
+    if (sixPass && authorizedWorkAssetScopeId && recoveryTarget?.type === "image" && recoveryTarget.bg3dLtBundleId && recoveryTarget.groupId) {
+      try {
+        const [bundleModule, lineModule, api] = await Promise.all([
+          import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-product-authority"),
+          import("../studio-linked-3d-pass-product-authority"), import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-api"),
+        ]);
+        const [authority, lineAuthority] = await Promise.all([bundleModule.acquireStudioBg3dSixPassBundleProductAuthority(), lineModule.acquireStudioLinked3dPassProductAuthority()]);
+        const recovered = await api.recoverStudioBg3dSixPassRemoteBundleState({ workId: authorizedWorkAssetScopeId,
+          pageId: activePage.id, bundleId: recoveryTarget.bg3dLtBundleId, groupId: recoveryTarget.groupId,
+          previousState: nativeState, elements, authority, lineAuthority });
+        nativeState = recovered.state; restoredManifests = recovered.restoredManifests;
+        previousBundle = nativeState?.bundles.find(({ bundleId }) => bundleId === recoveryTarget.bg3dLtBundleId);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "이전 6패스 봉인 원본을 복구하지 못해 원고를 변경하지 않았습니다.");
+        return false;
+      }
+    }
+
     const template = createCanvasImageElement({
       id: uid(),
       src: anchorLayer.pngDataUrl,
@@ -226,6 +253,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       sourceWidth: renderResult.width,
       sourceHeight: renderResult.height,
     });
+    const previousManifest = previousBundle?.revisions.find((revision: { renderRevisionId: string }) => revision.renderRevisionId === previousBundle.activeRevisionId) ?? restoredManifests.at(-1);
     const plan = planStudioBg3dLtLayers<El, StudioBg3dSceneDocument>({
       elements,
       groups,
@@ -242,6 +270,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
           depth: uid(),
           "texture-line": uid(),
           "main-line": uid(),
+          ...(previousManifest ? Object.fromEntries(previousManifest.layers.map((layer: { role: string; elementId: string }) => [layer.role, layer.elementId])) : {}),
         },
       },
       newElementTemplate: template,
@@ -276,7 +305,8 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       setError(magicAttachment.message);
       return false;
     }
-    const materializedGroups = detachPlan?.ok ? detachPlan.nextGroups : plan.nextGroups;
+    const plannedGroups = detachPlan?.ok ? detachPlan.nextGroups : plan.nextGroups;
+    const materializedGroups = previousBundle ? preserveStudioBg3dSixPassArtistGroups(plannedGroups, groups, plan.groupId) : plannedGroups;
     const capturedPlacements = resolveStudioBg3dCapturedCharacterPlacements({ renderResult });
     if (!capturedPlacements.ok) {
       setError(capturedPlacements.message);
@@ -294,7 +324,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       return false;
     }
     const { currentStageCollection, sharedCharacterVisibility } = visibilityResolution;
-    let nextElements = [...sharedCharacterVisibility.nextElements];
+    let nextElements = previousBundle ? preserveStudioBg3dSixPassArtistLayers(sharedCharacterVisibility.nextElements, elements, plan.bundleId) : [...sharedCharacterVisibility.nextElements];
     const anchor = nextElements.find((element) => element.id === plan.anchorElementId);
     const mappedGuides = anchor?.type === "image"
       ? mapStudioBg3dPerspectiveGuidesToAnchor(renderResult.perspectiveGuides, anchor)
@@ -382,14 +412,14 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
         const previousPass = currentLinkedRender?.links.find(
           ({ bundleId }) => bundleId === plan.bundleId,
         )?.passRevision;
-        const prepared = await prepareStudioLinked3dLinePass({
+        let prepared = await prepareStudioLinked3dLinePass({
           authority,
           sourceHash: linkedStage.background.sourceHash,
           scene: linkedScene,
           layers: renderResult.layers,
           previous: previousPass,
         });
-        const durableElements = materializeStudioLinked3dLinePassLocator(
+        let durableElements = materializeStudioLinked3dLinePassLocator(
           nextElements,
           plan.bundleId,
           prepared.descriptor,
@@ -397,6 +427,31 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
         if (!durableElements) {
           setError("canonical line pass를 실제 Canvas main-line 레이어에 결박하지 못했어요.");
           return false;
+        }
+        let bundleState = nativeState;
+        let sealBundle: ((nextPage: PageState) => Promise<void>) | undefined;
+        let commitBundle = (apply: () => Promise<boolean>): Promise<boolean> => apply();
+        if (sixPass) {
+          const [{ acquireStudioBg3dSixPassBundleProductAuthority }, transaction] = await Promise.all([
+            import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-product-authority"), import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-transaction"),
+          ]);
+          const bundleAuthority = await acquireStudioBg3dSixPassBundleProductAuthority();
+          const bundle = await transaction.prepareStudioBg3dSixPassBundle({ authority: bundleAuthority, result: renderResult,
+            scene: linkedScene, elements: durableElements, pageId: activePage.id, bundleId: plan.bundleId,
+            groupId: plan.groupId, anchorElementId: plan.anchorElementId, renderRevisionId: uid(), linePassRevision: prepared.descriptor.revision, previousState: nativeState });
+          prepared = transaction.alignStudioBg3dSixPassPreparedLinePass(prepared, bundle.manifest, linkedScene);
+          sealBundle = async (nextPage) => {
+            await transaction.preflightStudioBg3dSixPassPageCommit({ document: studioCrdtDocumentRef?.current ?? null,
+              pages: [activePage], nextPage });
+            if (authorizedWorkAssetScopeId) {
+              const api = await import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-api");
+              const scoped = scopedWriteRuntime?.authority;
+              const writeContext = scoped && (!scoped.snapshot?.fullEdit || scoped.mappedFullEdit) ? scoped.purposeContext() : undefined;
+              await api.sealStudioBg3dSixPassRemoteBundle({ workId: authorizedWorkAssetScopeId, prepared: bundle, authority: bundleAuthority, writeContext });
+            }
+          };
+          durableElements = bundle.elements; bundleState = bundle.state;
+          commitBundle = (apply) => transaction.commitStudioBg3dSixPassPreparedBundle({ authority: bundleAuthority, prepared: bundle, restoredManifests, apply });
         }
         const nextLinkedRender = upsertStudioLinked3dRenderLink({
           value: currentLinkedRender,
@@ -411,7 +466,9 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
           setError("Canvas line pass·3D Shot·artist correction 교차참조를 검증하지 못했어요.");
           return false;
         }
-        const accepted = await commitStudioLinked3dPreparedPass({
+        await sealBundle?.({ ...activePage, elements: durableElements, bg3dLtBundles: bundleState, groups: materializedGroups,
+          shared3dStage: stageMutation.nextState, linked3dRender: nextLinkedRender, ...(nextDrawingAssist ? { drawingAssist: nextDrawingAssist } : {}) });
+        const accepted = await commitBundle(() => commitStudioLinked3dPreparedPass({
           authority,
           ownerId: `studio-linked-3d-pass:${activePage.id}:${plan.bundleId}`,
           prepared,
@@ -425,13 +482,14 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
             // LT layers, Scene/Shot, Stage, correction reapplication/conflict projection, and CAS
             // receipt enter the existing pagesHistory/CRDT bridge as one undoable transition.
             return commit(durableElements, {
+              ...(sixPass ? { bg3dLtBundles: bundleState } : {}),
               groups: materializedGroups,
               shared3dStage: stageMutation.nextState,
               linked3dRender: nextLinkedRender,
               ...(nextDrawingAssist ? { drawingAssist: nextDrawingAssist } : {}),
             });
           },
-        });
+        }));
         if (!accepted) return false;
         nextElements = durableElements;
       } catch (cause) {

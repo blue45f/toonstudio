@@ -1,3 +1,4 @@
+import { hasStudioBg3dSixPassImageMarker } from "./studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-persistence-markers";
 import {
   hydrateStudioAiImageReferenceDocument,
   type StudioAiImageReferenceDocument,
@@ -15,7 +16,8 @@ import {
 import { parseStudioLayerComps } from "./layer/studio-layer-comps-document";
 import { normalizeStudioPublishPackageSettings } from "./studio-publish-package";
 import { normalizeStudioPublishPackSettings } from "./studio-publish-preflight";
-import { resolveStudioProjectFileVersion, type StudioProjectFileVersion } from "./studio-project-version";
+import { minimumStudioProjectFileVersion, resolveStudioProjectFileVersion, type StudioProjectFileVersion } from "./studio-project-version";
+import { hasStudioBg3dSixPassBundleStateEnvelope } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import {
   normalizeStudioReferenceBoardDocument,
   studioReferenceBoardHasContent,
@@ -27,6 +29,7 @@ export const LEGACY_STUDIO_AUTOSAVE_KEY = "toonstudio-studio-autosave";
 const STUDIO_AUTOSAVE_PREFIX = "toonstudio-studio-autosave:v12";
 const TAPER_SPACING_AUTOSAVE_KIND = "studio-taper-spacing-autosave";
 const SIX_PASS_AUTOSAVE_KIND = "studio-six-pass-lt-autosave";
+const SIX_PASS_BUNDLE_AUTOSAVE_KIND = "studio-six-pass-bundle-autosave";
 
 export class StudioAutosaveUnsupportedVersionError extends Error {
   constructor(readonly version: number) {
@@ -44,9 +47,17 @@ function futureAutosaveVersion(raw: string | null): number | null {
       const value = pending.pop();
       if (!value || typeof value !== "object" || Array.isArray(value)) continue;
       const record = value as Record<string, unknown>;
+      if (Array.isArray(record.pagesList) && record.pagesList.some((page) => page !== null && typeof page === "object"
+        && ((Object.hasOwn(page, "bg3dLtBundles") && !hasStudioBg3dSixPassBundleStateEnvelope(Reflect.get(page, "bg3dLtBundles")))
+          || (Array.isArray(Reflect.get(page, "elements")) && (Reflect.get(page, "elements") as unknown[]).some(hasStudioBg3dSixPassImageMarker)
+            && minimumStudioProjectFileVersion([page], null) !== 5)))) return 5;
       const durableEnvelope = record.kind === "toonspectrum:studio-autosave-sqlite" || record.kind === "toonspectrum:studio-autosave-opfs-checkpoint";
-      const maximum = record.kind === "toonstudio-lifecycle-recovery-journal" || durableEnvelope ? 1 : 4;
+      const maximum = record.kind === "toonstudio-lifecycle-recovery-journal" || durableEnvelope ? 1
+        : record.kind === SIX_PASS_AUTOSAVE_KIND ? 4 : record.kind === TAPER_SPACING_AUTOSAVE_KIND ? 3 : 5;
       if (typeof record.version === "number" && Number.isSafeInteger(record.version) && record.version > maximum) return record.version;
+      if ((record.kind === SIX_PASS_AUTOSAVE_KIND || record.kind === TAPER_SPACING_AUTOSAVE_KIND || record.kind === SIX_PASS_BUNDLE_AUTOSAVE_KIND)
+        && record.payload && typeof record.payload === "object" && "version" in record.payload
+        && typeof record.payload.version === "number" && record.payload.version > maximum) return record.payload.version;
       if (record.payload && typeof record.payload === "object") pending.push(record.payload);
       if (durableEnvelope && typeof record.payload === "string") { try { pending.push(JSON.parse(record.payload)); } catch { /* 손상 판정은 기존 envelope parser가 담당한다. */ } }
       if (record.kind === "toonstudio-lifecycle-recovery-journal" && Array.isArray(record.candidates)) { for (const candidate of record.candidates) pending.push(candidate); }
@@ -108,6 +119,7 @@ export type StudioAutosavePayload = {
     drawingPractice?: unknown;
     layerComps?: unknown;
     shared3dStage?: unknown;
+    bg3dLtBundles?: unknown;
   }>;
   master?: { elements?: unknown[] } | unknown;
   characterBible?: unknown;
@@ -277,18 +289,21 @@ export function parseStudioAutosave(raw: string | null): StudioAutosavePayload |
     const value: unknown = JSON.parse(raw);
     if (!value || typeof value !== "object") return null;
     let record = value as Record<string, unknown>;
-    if (record.kind === TAPER_SPACING_AUTOSAVE_KIND || record.kind === SIX_PASS_AUTOSAVE_KIND) {
-      const requiredVersion = record.kind === SIX_PASS_AUTOSAVE_KIND ? 4 : 3;
+    if (record.kind === TAPER_SPACING_AUTOSAVE_KIND || record.kind === SIX_PASS_AUTOSAVE_KIND || record.kind === SIX_PASS_BUNDLE_AUTOSAVE_KIND) {
+      const requiredVersion = record.kind === SIX_PASS_BUNDLE_AUTOSAVE_KIND ? 5 : record.kind === SIX_PASS_AUTOSAVE_KIND ? 4 : 3;
       const payload = record.payload;
       if (record.version !== requiredVersion || !payload || typeof payload !== "object" || Array.isArray(payload)) return null;
       record = payload as Record<string, unknown>;
       if (record.version !== requiredVersion) return null;
     }
-    if (typeof record.version === "number" && record.version > 4) return null;
+    if (typeof record.version === "number" && record.version > 5) return null;
     if (!Array.isArray(record.pagesList) || record.pagesList.length === 0) return null;
     const pagesList = record.pagesList.map((page) => {
       if (!page || typeof page !== "object" || Array.isArray(page)) return page;
       const pageRecord = page as Record<string, unknown>;
+      if ((pageRecord.bg3dLtBundles !== undefined && !hasStudioBg3dSixPassBundleStateEnvelope(pageRecord.bg3dLtBundles))
+      || (Array.isArray(pageRecord.elements) && pageRecord.elements.some(hasStudioBg3dSixPassImageMarker)
+        && minimumStudioProjectFileVersion([pageRecord], null) !== 5)) throw new Error("6패스 묶음 복구 계약이 올바르지 않습니다.");
       const {
         drawingPractice: rawDrawingPractice,
         shared3dStage: rawSharedStage,
@@ -382,6 +397,9 @@ function normalizedStudioAutosavePayload(payload: StudioAutosavePayload) {
   const pagesList = payload.pagesList.map((page) => {
     if (!page || typeof page !== "object" || Array.isArray(page)) return page;
     const pageRecord = page as Record<string, unknown>;
+    if ((pageRecord.bg3dLtBundles !== undefined && !hasStudioBg3dSixPassBundleStateEnvelope(pageRecord.bg3dLtBundles))
+      || (Array.isArray(pageRecord.elements) && pageRecord.elements.some(hasStudioBg3dSixPassImageMarker)
+        && minimumStudioProjectFileVersion([pageRecord], null) !== 5)) throw new Error("6패스 묶음 복구 계약이 올바르지 않습니다.");
     const {
       drawingPractice: rawDrawingPractice,
       shared3dStage: rawSharedStage,
@@ -419,7 +437,9 @@ export function serializeStudioAutosave(payload: StudioAutosavePayload): string 
   const safePayload = normalizedStudioAutosavePayload(payload);
   // Historical recovery readers ignore a top-level version, but require pagesList. Keep new
   // brush snapshots behind an envelope they cannot silently interpret as an old drawing.
-  return JSON.stringify(safePayload.version === 4
+  return JSON.stringify(safePayload.version === 5
+    ? { kind: SIX_PASS_BUNDLE_AUTOSAVE_KIND, version: 5, payload: safePayload }
+    : safePayload.version === 4
     ? { kind: SIX_PASS_AUTOSAVE_KIND, version: 4, payload: safePayload }
     : safePayload.version === 3
     ? { kind: TAPER_SPACING_AUTOSAVE_KIND, version: 3, payload: safePayload }
@@ -504,6 +524,7 @@ function studioAutosavePublishPackHasContent(value: unknown): boolean {
 
 export function studioAutosaveHasContent(payload: StudioAutosavePayload): boolean {
   return (
+    minimumStudioProjectFileVersion(payload.pagesList, payload.master) === 5 ||
     // A lifecycle receipt is an explicit dirty snapshot. It can intentionally represent deleting
     // the final element or changing page/background metadata that older content heuristics omit.
     payload.lifecycleDurability !== undefined ||

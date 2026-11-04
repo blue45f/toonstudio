@@ -1,9 +1,14 @@
+import { StudioBg3dBundleService } from "./studio-bg3d-bundle.service";
+import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { assertStudioCrdtBg3dBundleAdmission, snapshotStudioCrdtBg3dBundles, STUDIO_BG3D_BUNDLE_REVISIONS_ROOT } from "./studio-crdt-bg3d-bundle";
+import { StudioBg3dReaderUpgradeRequiredError, isStudioBg3dReaderUpgradeRequired } from "./studio-bg3d-reader-capability";
+import { StudioCrdtInvalidPayloadError, StudioCrdtUpdateIdConflictError, StudioCrdtDocumentTooLargeError, StudioCrdtBackpressureError, StudioCrdtStorageCorruptionError } from "./studio-crdt-service-contracts";
+import type { StudioCrdtServiceOptions, StudioCrdtSyncResult, StudioCrdtBinarySyncResult, StudioCrdtApplyUpdateInput, StudioCrdtApplyBinaryUpdateInput, StudioCrdtApplyUpdateResult, StudioCrdtApplyBinaryUpdateResult } from "./studio-crdt-service-contracts";
 import { randomUUID } from "node:crypto";
 
 import { Inject, Injectable, Logger, OnModuleDestroy, Optional } from "@nestjs/common";
 import { fromUint8Array, toUint8Array } from "js-base64";
 import * as Y from "yjs";
-import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import { admitStudioScopedCrdtProbe, type StudioScopedCrdtProbeAdmission } from "./studio-scoped-crdt-write";
 import { StudioScopedWriteDeniedError, type StudioScopedWriteEffectAdmission } from "./studio-scoped-write-effects";
 import { studioScopedRequiresEffectAdmission, type StudioScopedAuthorization } from "./studio-scoped-write-store";
@@ -61,6 +66,7 @@ import type {
 } from "@toonstudio/contracts/studio-crdt-raster-ops";
 import type { StudioWorkAssetReference } from "@toonstudio/contracts/studio-work-asset-contract";
 
+export * from "./studio-crdt-service-contracts";
 export { hasValidStudioCrdtRootSchema };
 
 export interface StudioCrdtRasterAssetAdmission {
@@ -146,111 +152,6 @@ function assertStudioCrdtAppendedRasterLayersWritable(
         "update cannot append a Studio raster operation to a locked layer"
       );
     }
-  }
-}
-
-export interface StudioCrdtServiceOptions {
-  now?: () => Date;
-  stateVectorMaxBytes?: number;
-  compactUpdateCount?: number;
-  compactUpdateBytes?: number;
-  compactIntervalMs?: number;
-  idleEvictionMs?: number;
-  evictionSweepMs?: number;
-  maxPendingOperationsPerWork?: number;
-  maxPendingOperationsTotal?: number;
-  clusterLoadHeartbeatMs?: number;
-  clusterLoadStaleAfterMs?: number;
-  maxClusterPendingOperationsTotal?: number;
-  nodeId?: string;
-  scheduleInterval?: (handler: () => void, delay: number) => ReturnType<typeof setInterval>;
-  cancelInterval?: (handle: ReturnType<typeof setInterval>) => void;
-}
-
-export interface StudioCrdtSyncResult {
-  chunks: string[];
-  chunkCount: number;
-  totalBytes: number;
-  serverStateVector: string;
-  serverSequence: string;
-}
-
-export interface StudioCrdtBinarySyncResult {
-  update: Uint8Array;
-  totalBytes: number;
-  serverStateVector: Uint8Array;
-  serverSequence: string;
-}
-
-export interface StudioCrdtApplyUpdateInput {
-  workId: string;
-  updateId: string;
-  actorUserId: string;
-  data: string;
-  writeContext?: StudioScopedWriteContext;
-}
-
-export interface StudioCrdtApplyBinaryUpdateInput {
-  workId: string;
-  updateId: string;
-  actorUserId: string;
-  data: Uint8Array;
-  writeContext?: StudioScopedWriteContext;
-}
-
-export interface StudioCrdtApplyUpdateResult {
-  duplicate: boolean;
-  updateId: string;
-  update: string;
-  serverStateVector: string;
-  serverSequence: string;
-}
-
-export interface StudioCrdtApplyBinaryUpdateResult {
-  duplicate: boolean;
-  updateId: string;
-  update: Uint8Array;
-  serverStateVector: Uint8Array;
-  serverSequence: string;
-}
-
-export class StudioCrdtInvalidPayloadError extends Error {
-  constructor(message = "Invalid CRDT payload") {
-    super(message);
-    this.name = "StudioCrdtInvalidPayloadError";
-  }
-}
-
-export class StudioCrdtUpdateIdConflictError extends Error {
-  constructor() {
-    super("CRDT update id was already used for different content");
-    this.name = "StudioCrdtUpdateIdConflictError";
-  }
-}
-
-export class StudioCrdtDocumentTooLargeError extends Error {
-  constructor() {
-    super("CRDT document exceeds the server byte budget");
-    this.name = "StudioCrdtDocumentTooLargeError";
-  }
-}
-
-/**
- * The operation was rejected before execution because this API process already has the bounded
- * amount of CRDT work it can retain safely. Clients may retry the same idempotent request after
- * backoff; no durable mutation has started when this error is raised.
- */
-export class StudioCrdtBackpressureError extends Error {
-  constructor() {
-    super("CRDT operation queue is saturated");
-    this.name = "StudioCrdtBackpressureError";
-  }
-}
-
-export class StudioCrdtStorageCorruptionError extends Error {
-  constructor(message = "Stored CRDT state is invalid") {
-    super(message);
-    this.name = "StudioCrdtStorageCorruptionError";
   }
 }
 
@@ -416,7 +317,8 @@ export class StudioCrdtService implements OnModuleDestroy {
     options: StudioCrdtServiceOptions = {},
     @Optional()
     @Inject(StudioCrdtRasterCheckpointCoordinator)
-    private readonly rasterCheckpointCoordinator?: StudioCrdtRasterCheckpointCoordinator
+    private readonly rasterCheckpointCoordinator?: StudioCrdtRasterCheckpointCoordinator,
+    @Optional() @Inject(StudioBg3dBundleService) private readonly bg3dBundles?: StudioBg3dBundleService
   ) {
     this.now = options.now ?? (() => new Date());
     this.stateVectorMaxBytes = boundedInteger(
@@ -498,7 +400,22 @@ export class StudioCrdtService implements OnModuleDestroy {
     return this.documents.size;
   }
 
-  async sync(workId: string, stateVectorBase64?: string | null): Promise<StudioCrdtSyncResult> {
+  private hasCachedBg3dBundle(workId: string): boolean {
+    const doc = this.documents.get(workId)?.doc;
+    return Boolean(doc?.share.has(STUDIO_BG3D_BUNDLE_REVISIONS_ROOT) && doc.getMap(STUDIO_BG3D_BUNDLE_REVISIONS_ROOT).size);
+  }
+
+  async assertReaderCapability(workId: string, features: readonly string[] = []): Promise<void> {
+    if (this.hasCachedBg3dBundle(workId) && !features.includes(STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY)) throw new StudioBg3dReaderUpgradeRequiredError();
+    try { await this.bg3dBundles?.assertReaderCapability(workId, features); }
+    catch (error) { if (isStudioBg3dReaderUpgradeRequired(error)) throw new StudioBg3dReaderUpgradeRequiredError(); throw error; }
+  }
+
+  async requiredReaderCapabilities(workId: string): Promise<readonly string[]> {
+    return this.hasCachedBg3dBundle(workId) || await this.bg3dBundles?.hasRetainedBundles(workId) ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] : [];
+  }
+
+  async sync(workId: string, stateVectorBase64?: string | null, readerCapabilities: readonly string[] = []): Promise<StudioCrdtSyncResult> {
     const stateVector =
       stateVectorBase64 == null
         ? null
@@ -507,7 +424,7 @@ export class StudioCrdtService implements OnModuleDestroy {
             STUDIO_CRDT_STATE_VECTOR_MAX_BYTES,
             "state vector"
           );
-    const sync = await this.syncBytes(workId, stateVector);
+    const sync = await this.syncBytes(workId, stateVector, readerCapabilities);
     const chunks = chunkStudioCrdtSyncDiff(sync.update);
     return {
       chunks,
@@ -515,12 +432,13 @@ export class StudioCrdtService implements OnModuleDestroy {
       totalBytes: sync.totalBytes,
       serverStateVector: fromUint8Array(sync.serverStateVector),
       serverSequence: sync.serverSequence,
+      ...(sync.requiredReaderCapabilities ? { requiredReaderCapabilities: sync.requiredReaderCapabilities } : {}),
     };
   }
 
   async syncBytes(
     workId: string,
-    stateVectorValue?: Uint8Array | null
+    stateVectorValue?: Uint8Array | null, readerCapabilities: readonly string[] = []
   ): Promise<StudioCrdtBinarySyncResult> {
     const stateVector =
       stateVectorValue == null
@@ -532,6 +450,8 @@ export class StudioCrdtService implements OnModuleDestroy {
           );
     return this.withWorkLock(workId, async () => {
       const entry = await this.getCaughtUpDocument(workId);
+      await this.assertReaderCapability(workId, readerCapabilities);
+      const required = await this.requiredReaderCapabilities(workId);
       let diff: Uint8Array;
       try {
         diff = stateVector
@@ -552,6 +472,7 @@ export class StudioCrdtService implements OnModuleDestroy {
           this.stateVectorMaxBytes
         ),
         serverSequence: entry.sequence.toString(),
+        ...(required.length ? { requiredReaderCapabilities: required } : {}),
       };
     });
   }
@@ -565,6 +486,7 @@ export class StudioCrdtService implements OnModuleDestroy {
       workId: input.workId, updateId: input.updateId, actorUserId: input.actorUserId,
       data: update,
       writeContext: input.writeContext,
+      readerCapabilities: input.readerCapabilities,
     });
     return {
       ...applied,
@@ -586,6 +508,8 @@ export class StudioCrdtService implements OnModuleDestroy {
     );
     return this.withWorkLock(input.workId, async () => {
       const entry = await this.getCaughtUpDocument(input.workId);
+      await this.assertReaderCapability(input.workId, input.readerCapabilities);
+      const required = await this.requiredReaderCapabilities(input.workId);
       const persisted = await this.repository.appendUpdate(
         {
           workId: input.workId,
@@ -600,7 +524,7 @@ export class StudioCrdtService implements OnModuleDestroy {
           current,
           update,
           input.actorUserId,
-          transaction, authorization, input.writeContext !== undefined
+          transaction, authorization, input.writeContext !== undefined, input.readerCapabilities
         )
       );
       if (
@@ -628,6 +552,7 @@ export class StudioCrdtService implements OnModuleDestroy {
           this.stateVectorMaxBytes
         ),
         serverSequence: persisted.receipt.sequence.toString(),
+        ...(required.length ? { requiredReaderCapabilities: required } : {}),
       };
     });
   }
@@ -876,7 +801,7 @@ export class StudioCrdtService implements OnModuleDestroy {
     workId: string, doc: Y.Doc,
     update: Uint8Array,
     actorUserId: string,
-    transaction?: DrizzleStudioCrdtTransaction, validateAuthority?: StudioScopedCrdtProbeAdmission
+    transaction?: DrizzleStudioCrdtTransaction, validateAuthority?: StudioScopedCrdtProbeAdmission, readerCapabilities: readonly string[] = []
   ): Promise<StudioScopedWriteEffectAdmission | undefined> {
     const probe = new Y.Doc();
     const candidate = new Y.Doc();
@@ -1035,8 +960,11 @@ export class StudioCrdtService implements OnModuleDestroy {
           );
         }
       }
+      if (this.bg3dBundles && transaction) await assertStudioCrdtBg3dBundleAdmission(transaction, workId, doc, probe, readerCapabilities, candidate, update);
+      else if (snapshotStudioCrdtBg3dBundles(probe).revisions.size) throw new StudioCrdtInvalidPayloadError("6패스 봉인 검증 권위가 없습니다.");
       return await validateAuthority?.(doc, probe);
     } catch (error) {
+      if (isStudioBg3dReaderUpgradeRequired(error)) throw new StudioBg3dReaderUpgradeRequiredError();
       if (
         error instanceof StudioScopedWriteDeniedError || error instanceof StudioCrdtDocumentTooLargeError ||
         error instanceof StudioCrdtInvalidPayloadError
@@ -1053,13 +981,13 @@ export class StudioCrdtService implements OnModuleDestroy {
     update: Uint8Array,
     actorUserId: string,
     transaction: DrizzleStudioCrdtTransaction,
-    authorization?: StudioScopedAuthorization, requiresScopedAuthority = false
+    authorization?: StudioScopedAuthorization, requiresScopedAuthority = false, readerCapabilities: readonly string[] = []
   ) {
     const durable = this.createCachedDocument(workId, current);
     try {
       if (requiresScopedAuthority && !authorization) throw new StudioScopedWriteDeniedError("policy");
       return await this.validateUpdateAgainstDocument(workId, durable.doc, update, actorUserId, transaction,
-        studioScopedRequiresEffectAdmission(authorization) ? (before, probe) => admitStudioScopedCrdtProbe(authorization, before, probe, transaction, update) : undefined);
+        studioScopedRequiresEffectAdmission(authorization) ? (before, probe) => admitStudioScopedCrdtProbe(authorization, before, probe, transaction, update) : undefined, readerCapabilities);
     } finally { durable.doc.destroy(); }
   }
 

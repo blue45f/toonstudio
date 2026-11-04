@@ -568,7 +568,7 @@ export async function runStudioPageSavePipeline(
     } | null = null;
     if (!saveScopeStillCurrent()) return;
     if (!canApplyStudioMutation(saveMutationTicket, { allowDuringSave: true })) return;
-    if (serverSavePages.some((page) => page.linked3dRender !== undefined)) {
+    if (serverSavePages.some((page) => page.linked3dRender !== undefined || page.bg3dLtBundles !== undefined)) {
       const canonicalSaveProject = creatorWorkSnapshotToStudioProject(payload);
       const { ensureStudioLinked3dPassCloudProject } = await import("./studio-linked-3d-pass-cloud-project"
       );

@@ -1,3 +1,7 @@
+import { applyStudioBg3dBundlePublication } from "./studio-crdt-bg3d-bundle-preflight";
+import { planStudioCrdtOrderMoves } from "./studio-crdt-order-moves";
+import { asStudioCrdtDocumentHost } from "./studio-crdt-document-host";
+import { planStudioCrdtBg3dBundleDiff } from "./studio-crdt-bg3d-bundle-refs";
 import {
   migrateStudioShared3dStageCollectionDocument,
   studioShared3dStageVisibilityOverlayElementIds,
@@ -24,12 +28,8 @@ import type {
   StudioCrdtStrokePayloadKey,
 } from "./studio-crdt-document";
 
+export { planStudioCrdtOrderMoves, type StudioCrdtOrderMove } from "./studio-crdt-order-moves";
 export { StudioCrdtScenePublishError, type StudioCrdtScenePublishErrorCode } from "./studio-crdt-scene-publisher-error";
-
-export interface StudioCrdtOrderMove {
-  id: string;
-  beforeId: string | null;
-}
 
 export interface StudioCrdtScenePublishResult {
   sceneElementMutations: number;
@@ -121,67 +121,10 @@ function diffProperties(
   return { set, unset, changed };
 }
 
-function uniqueIds(ids: readonly string[]): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const id of ids) {
-    if (seen.has(id)) continue;
-    seen.add(id);
-    result.push(id);
-  }
-  return result;
-}
-
 function isCompatibleDrawElement<TElement extends StudioCrdtCompatibleElement>(
   element: TElement
 ): element is TElement & StudioCrdtCompatibleDrawElement {
   return element.type === "draw";
-}
-
-/**
- * Produces a minimum-cardinality move set for unique IDs by retaining one LIS/LCS. Moves are
- * emitted tail-to-head, matching the CRDT's `move(id, beforeId)` primitive.
- */
-export function planStudioCrdtOrderMoves(
-  currentIds: readonly string[],
-  desiredIds: readonly string[]
-): StudioCrdtOrderMove[] {
-  const current = uniqueIds(currentIds);
-  const desired = uniqueIds(desiredIds);
-  const desiredPosition = new Map(desired.map((id, index) => [id, index]));
-  const common = current.filter((id) => desiredPosition.has(id));
-  const positions = common.map((id) => desiredPosition.get(id)!);
-  const tails: number[] = [];
-  const tailIndices: number[] = [];
-  const previousIndices = Array<number>(positions.length).fill(-1);
-  for (let index = 0; index < positions.length; index += 1) {
-    const value = positions[index]!;
-    let low = 0;
-    let high = tails.length;
-    while (low < high) {
-      const middle = (low + high) >>> 1;
-      if (tails[middle]! < value) low = middle + 1;
-      else high = middle;
-    }
-    tails[low] = value;
-    previousIndices[index] = low > 0 ? tailIndices[low - 1]! : -1;
-    tailIndices[low] = index;
-  }
-  const retained = new Set<string>();
-  let retainedIndex = tailIndices[tails.length - 1] ?? -1;
-  while (retainedIndex >= 0) {
-    retained.add(common[retainedIndex]!);
-    retainedIndex = previousIndices[retainedIndex]!;
-  }
-
-  const moves: StudioCrdtOrderMove[] = [];
-  let beforeId: string | null = null;
-  for (let index = desired.length - 1; index >= 0; index -= 1) {
-    const id = desired[index]!;
-    if (!retained.has(id)) moves.push({ id, beforeId });
-    beforeId = id;
-  }
-  return moves;
 }
 
 function supportedSceneInputs<
@@ -651,7 +594,7 @@ function publishSceneOrderForPage<TElement extends StudioCrdtCompatibleElement>(
   return { mutations, moves: moves.length };
 }
 
-export function publishStudioCrdtSceneGraphDiff<
+function publishStudioCrdtSceneGraphDiffUnchecked<
   TElement extends StudioCrdtCompatibleElement,
   TPage extends StudioCrdtCompatibleOrderedPage<TElement>,
 >(
@@ -660,13 +603,10 @@ export function publishStudioCrdtSceneGraphDiff<
   nextPages: readonly TPage[],
   options: StudioCrdtScenePublishOptions = {}
 ): StudioCrdtScenePublishResult {
+  const publishBundles = planStudioCrdtBg3dBundleDiff(asStudioCrdtDocumentHost(document).doc, nextPages);
   const registerNewDraws = options.registerNewDraws ?? true;
   const previousById = new Map(previousPages.map((page) => [page.id, page]));
   const nextById = new Map(nextPages.map((page) => [page.id, page]));
-  // Validate every bounded page envelope and every unbounded Shared Stage collection before the
-  // first document mutation. Shared Stage itself is intentionally not copied into the 8 KiB page
-  // payload; it is published per entry below so independent stage edits do not become one opaque
-  // last-writer-wins value.
   const previousPageInputs = new Map(previousPages.map((page) => [
     page.id,
     studioPageToCrdtPage(page),
@@ -705,9 +645,6 @@ export function publishStudioCrdtSceneGraphDiff<
   const managedPageIdsBefore = new Set(document.getPages(true).map(({ id }) => id));
   let pageMutations = 0;
 
-  // A first Shared Stage bootstrap needs a durable page identity before the server can admit its
-  // sidecar records. Materialize only pages that participate in Shared Stage authority; the main
-  // page diff below retains its existing lazy registration behavior for every other page.
   const sharedStagePageIds = new Set<string>();
   const deferredSharedStagePageIds = new Set<string>();
   const managedSharedStagePageIds = new Set(
@@ -780,6 +717,7 @@ export function publishStudioCrdtSceneGraphDiff<
       { pageDeleted: !nextById.has(pageId) },
     );
   }
+  publishBundles();
   const layerGroupMutations = publishLayerGroupRecords(
     document,
     previousLayerGroupInputs,
@@ -929,4 +867,15 @@ export function publishStudioCrdtSceneGraphDiff<
     elementMoves,
     pageMoves: 0,
   };
+}
+
+export function publishStudioCrdtSceneGraphDiff<
+  TElement extends StudioCrdtCompatibleElement,
+  TPage extends StudioCrdtCompatibleOrderedPage<TElement>,
+>(document: StudioCrdtDocument, previousPages: readonly TPage[], nextPages: readonly TPage[],
+  options: StudioCrdtScenePublishOptions = {}): StudioCrdtScenePublishResult {
+  const bundle = applyStudioBg3dBundlePublication(document, nextPages, (shadow) =>
+    publishStudioCrdtSceneGraphDiffUnchecked(shadow, previousPages, nextPages, options));
+  if (bundle) return bundle.result;
+  return publishStudioCrdtSceneGraphDiffUnchecked(document, previousPages, nextPages, options);
 }

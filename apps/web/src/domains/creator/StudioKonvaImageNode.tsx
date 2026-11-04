@@ -527,7 +527,7 @@ export function StudioKonvaImageNode({
     // Canonical linked-3D pass bytes stay in OPFS/CAS. Acquire the shared, verified presentation
     // lease only for decode/presentation; ordinary sources retain their synchronous assignment
     // path. The lease owns both the bounded CAS read and the ref-counted Blob URL lifetime.
-    if (src.startsWith("studio-opfs-cas:sha256:")) {
+    if (src.startsWith("studio-opfs-cas:") || src.startsWith("bg3d-lt-artifact:")) {
       void import("./render/studio-raster-source-lease")
         .then(({ acquireStudioRasterSourceLease }) =>
           acquireStudioRasterSourceLease(src, {

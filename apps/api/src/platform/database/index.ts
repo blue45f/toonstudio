@@ -58,3 +58,5 @@ export * from "./creator-asset-object-storage.schema";
 export * from "./creator-asset-platform.schema";
 export * from "./creator-asset-processing.schema";
 export * from "./creator-asset-rights-evidence.schema";
+
+export { studioBg3dBundleRevisions, studioBg3dBundleArtifacts } from "./studio-raster-asset.schema";

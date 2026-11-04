@@ -53,8 +53,8 @@ vi.mock("./studio-page-lazy-ui", async () => {
   return {
     StudioAiProvenancePanel: panel("ai-provenance"),
     StudioAutoActionsPanel: panel("auto-actions"),
-    StudioBackground3D: ({ onClose, onInsert }: { onClose: () => void; onInsert: (value: unknown) => void }) => (
-      <div data-optional-panel="bg3d">
+    StudioBackground3D: ({ onClose, onInsert, sixPassLtUnavailableReason }: { onClose: () => void; onInsert: (value: unknown) => void; sixPassLtUnavailableReason?: string | null }) => (
+      <div data-optional-panel="bg3d" data-six-pass-unavailable-reason={sixPassLtUnavailableReason}>
         <button type="button" onClick={() => onInsert({ kind: "bg3d" })}>BG3D 삽입</button>
         <button type="button" onClick={onClose}>BG3D 닫기</button>
       </div>
@@ -272,6 +272,13 @@ describe("StudioLazyPanelStack", () => {
     expect(setPoserVrmOpen).toHaveBeenCalledWith(false);
     expect(setPoserInitialDataUrl).toHaveBeenCalledWith(undefined);
     expect(setPoserInitialElementId).toHaveBeenCalledWith(undefined);
+  });
+
+  it("6패스 수신 문서 capability를 실제 3D 편집기 경계까지 전달한다", () => {
+    render(withRetainedBg3dHost(<StudioLazyPanelStack {...createProps({ bg3dOpen: true,
+      bg3dSixPassLtUnavailableReason: "six-pass-unsupported-document-surface" })} />));
+    expect(document.querySelector('[data-optional-panel="bg3d"]')?.getAttribute("data-six-pass-unavailable-reason"))
+      .toBe("six-pass-unsupported-document-surface");
   });
 
   it("delegates semantic BG3D insertion and clears every caller-owned initial value on close", () => {

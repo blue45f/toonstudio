@@ -1,11 +1,16 @@
 # 3D 스테이징·6패스 LT 영속 경로 조사
 
-- 상태: **current — 기준 main 조사와 사용자 승인 후 로컬 구현**, 병합·배포 전
+- 상태: **historical — 최초 PR 기준 조사와 선행 구현 증거, 후속 저장 계약은 migration**
 - 조사일: 2026-11-04
+- 최신 후속: [2026-11-05 실제 묶음 구현·검증 보고](bg3d-six-pass-bundle-implementation-2026-11-05.md).
+  아래 표의 칩/미연결 판정은 명시한 최초 기준 SHA에 대한 사실이다.
 - 기준 main: `ac09b2353986eacd13e7e30f6f7d7469337d8dba`
 - 관련 변경: [PR #2667](https://github.com/blue45f/toonstudio/pull/2667), 2026-11-03 22:08:09 KST 병합
 - 승인: 2026-11-04 사용자가 실제 6패스와 저장 계약 확장 진행을 명시 승인했다. 운영 배포는 별도다.
 - 이 작업: 구현 범위 안내 보완, 창틀·문 회전 수정, 실제 6패스 및 조건부 scene/project v4 구현.
+- 후속 검증 기준: `650beb41c1269dfd978757e288134f7037956a1c`. 앞선 구현은 다른 세션에서
+  이 커밋으로 main에 반영됐다. 아래 7절은 원래 독립 작업트리에서 기록한 검증이며,
+  동일 제품 모달에서 원고로 바로 전달하는 경로의 추가 발견은 8절에서 구분한다.
 
 ## 1. 조사 기준 main의 적용 범위
 
@@ -105,39 +110,44 @@ StudioBackground3D의 handleInsert
 - 기존 도형 삽입 콜백·카메라 적용·문서 저장·history 권위를 재사용하고 일반 LT 동작을 유지한다.
 
 승인 후에는 아래 5절의 실제 6패스를 기존 LT 캡처·Worker·PNG·bundle·문서 commit 경로에
-연결했다. 이전 섹션의 6패스 미연결 판정은 기준 main에 대한 것으로, 이 로컬 변경 이후와
-혼동하지 않는다. 새 경로는 Three.js WebGL2와 일반 원고 페이지를 지원한다. 실시간 공동 편집,
-마스터, 컷 배치 출력은 자동 일반 LT 변환 대신 명시적으로 거부한다.
+연결했다. 이전 섹션의 6패스 미연결 판정은 기준 main에 대한 것으로, 구현 반영 이후와
+혼동하지 않는다. Three.js WebGL2의 실제 분리 픽셀 생성과 비실시간 adapter 분기는 연결했다.
+그러나 실제 제품의 새 원고도 CRDT를 사용하므로 이 분기를 일반 원고의 지원 완료로
+표현할 수 없다. 아래 9절에서 확인한 제품 적용 실패와 구체적인 추가 계약을 구분한다.
+실시간 표면·마스터·컷 배치 출력은 자동 일반 LT 변환 대신 명시적으로 거부한다.
 
 캡처 지원은 불투명 표준 재질에 한정한다. 사용자 셰이더·알파 컷·반투명·변위·투과 재질,
 WebGPU/Babylon, reverse/log depth를 지원 완료로 표시하지 않는다. 요청은 명시적으로 거부하며
 다른 렌더러로 자동 재실행하지 않는다. 실제 shadow map 가림률을 쓰며 광원 에너지 가중
-기여도와 완전히 같은 물리 합성이라고 주장하지 않는다. 현재 6패스 GPU/CPU 메모리 예산은
-4,194,304픽셀까지이며 초과하면 출력 해상도를 몰래 낮추지 않고 오류를 반환한다.
+기여도와 완전히 같은 물리 합성이라고 주장하지 않는다. `650beb41c`의 6패스 GPU/CPU
+메모리 예산은 4,194,304픽셀이며, 기존 삽입 품질 계획과의 불일치 및 후속 수정은 8절에 기록한다.
 
 ## 5. 승인된 실제 6패스 구현과 저장 영향
 
-사용자가 아래 저장 계약 확장을 승인한 뒤 로컬 코드에 구현했다. 운영 배포 승인은 포함하지 않는다.
+사용자가 아래 저장 계약 확장을 승인한 뒤 구현했다. 운영 배포 승인은 포함하지 않는다.
 
-1. 기존 artifact capture를 재사용해 실제 shadow coverage를 생성한다. beauty 이미지의 이름만
-   shadow로 바꾸지 않는다. 기존 `color` 출력은 캡처한 beauty 색상을 사용하므로 독립 shadow를
-   곱하기만 하면 음영이 중복될 수 있다. 밑색의 조명/그림자 포함 여부를 정의하고 실제 분리
-   캡처와 합성 픽셀 회귀를 함께 구현한다. 지원하지 않는 renderer에서는 명시적으로 실패한다.
+1. 실제 캡처 adapter에서 조명·그림자가 없는 MeshBasic 밑색과 ShadowMaterial의 shadow
+   coverage를 별도로 생성한다. beauty를 shadow로 재명명하거나 beauty에 같은 음영을 중복
+   적용하지 않는다. 지원하지 않는 renderer·재질에서는 명시적으로 실패한다.
 2. 기존 LT Worker에서 color와 halftone을 함께 생성하고, depth를 fog RGBA로 변환한다.
 3. 기존 `bg3dLtRole`에 `shadow`, `depth`를 추가한다. planner·linked metadata·삽입 adapter의
    whitelist, 역할 순서, blend/opacity, ID 할당을 함께 확장한다.
-4. 제안 필드 `scene.output.sixPassLt`에 레시피 버전, 역할별 blend/opacity/visible과 fog 설정을
-   보존한다. 6패스를 사용한 장면만 scene v4로 쓰고 v3/v4를 함께 읽는다. 기존 v3 문서·고정 컷의
+4. `scene.output.sixPassLt`에 레시피 버전, shadow/fog 불투명도와 fog 거리·색상 설정을
+   보존한다. 역할별 blend/opacity/visible은 생성한 원고 레이어의 기존 속성으로 저장한다.
+   6패스를 사용한 장면만 scene v4로 쓰고 v3/v4를 함께 읽는다. 기존 v3 문서·고정 컷의
    sourceHash·템플릿 sceneJson을 일괄 변환하지 않는다. 6패스가 들어간 프로젝트에만 최소 reader
    version 4를 요구하도록 파일·snapshot/autosave·envelope의 버전 선택을 함께 확장한다.
 5. 기존 `onInsert`·OPFS/CAS·문서 `commit`·history 경로를 재사용한다. 별도 저장소를 만들지 않는다.
-6. bundle 재캡처·anchor 삭제/분리·복사·Magic Layer 선택과 PNG/PSD 전달을 회귀 검증한다.
+6. bundle 재캡처·anchor 삭제/분리·복사·Magic Layer 선택의 기존 역할 처리를 확장한다.
+   기존 4역할 전용 PNG/PSD·배치 출력은 6패스를 명시적으로 거부하며 지원 완료로 표시하지 않는다.
 
 **저장 호환성 영향:** 구버전 planner는 새 `shadow`/`depth` 역할의 bundle 재적용을 거부한다.
 구버전의 느슨한 scene 정규화는 새 output 필드를 버리고 strict parse는 손실 정규화를 거부한다.
 optional 필드 추가만으로 구버전 편집 호환을
 보장할 수 없다. 구버전은 프로젝트 v4를 열지 못하도록 명시적으로 거부하고, 새 앱에서 기존
-v2/v3 프로젝트·v1/v2/v3 장면의 동작을 보존하는 것이 제안이다. 독립 장면/소재에도 설정을
+v2/v3 프로젝트·v1/v2/v3 장면을 읽는 경로를 유지했다. 기존 envelope의 parse→serialize 왕복은
+reader 버전을 보존한다. 실제 편집 snapshot은 남은 데이터의 최소 reader 버전을 계산하므로,
+6패스 역할과 scene v4를 모두 제거한 문서는 다시 v2/v3로 저장될 수 있다. 독립 장면/소재에도 설정을
 보존하려면 page 메타데이터에만 레시피를 두는 우회로는 부족하다. 일반 페이지 6층부터 검증하며,
 실시간 협업·마스터의 6층 지원은 별도 receipt/
 그룹 제약 해결이 필요하다. 기존 합성 저장 동작을 6층 지원으로 보고하지 않는다.
@@ -172,7 +182,8 @@ undo/redo 각 한 단계, 잠금·실패의 원자성, 프로젝트 파일 왕�
 - `pnpm validate:documentation`: 신규 보고서 포함 통과(검증 테스트 15개).
 - 변경 소스 lint·Secretlint, 신규 보고서 Secretlint, `git diff --check`: 통과.
 - `pnpm harness:verify`: 아키텍처·문서·source layout·앱 경계·파일 크기·Studio eager graph 및
-  workspace 소유권 검사 통과. 전체 Web/API typecheck 종료 결과는 검증 완료 후 기록한다.
+  workspace 소유권 검사 통과. 초기 작업트리의 전체 typecheck는 여기서 완료 근거로 삼지
+  않으며, 후속 작업트리의 최종 Web/API 통과는 8절에 별도로 기록한다.
 - 실제 Blender 5.2.0 LTS(`fbe6228777e7`)의 `tools/toonbridge/test/blender-adapters.integration.py`:
   종료 코드 0. 자체 `.blend` 저장·재열기, frame 7·96×80 PNG, 평가된 mesh GLB(48 triangles),
   선화 PNG(검은 픽셀 81·흰 픽셀 7,453), Shape Key, compositor 주 이미지·원본 hash 보존,
@@ -209,10 +220,137 @@ undo/redo 각 한 단계, 잠금·실패의 원자성, 프로젝트 파일 왕�
   compaction에서 거부하고 원본을 보존한다. SQLite 긴급 쓰기는 기존 무대기 계약을 유지해
   이미 관측한 미래 값만 거부한다. 미관측 다른 탭의 동시 쓰기 및 이미 설치된 구앱의 코드를
   이 패치가 통제한다고 보장하지 않는다. DB schema·저장키 변경·데이터 이동은 실행하지 않았다.
-- 이번 변경의 운영 배포, 커밋, PR 생성, 병합: 수행하지 않음.
+- 위 독립 검증 시점에는 운영 배포·커밋·PR 생성·병합을 수행하지 않았다.
+  후속 재개 때 앞선 구현의 main 커밋 `650beb41c`를 확인했다. 이 작업에서 운영 배포를 실행하지 않았다.
 
 기준 main의 범위는 “브라우저 3D 도형 배치·2점 투시 적용 및 기존 LT 원고 삽입 기반을 갖추고,
-고급 스테이징·6패스 LT·Mangaka 제작 계획을 계산/미리보기로 제공”이다. 이번 로컬 구현의
-6패스는 별도의 검증 결과와 지원 범위를 붙여 설명해야 하며, 병합·운영 반영 완료로 쓰지 않는다.
+고급 스테이징·6패스 LT·Mangaka 제작 계획을 계산/미리보기로 제공”이다. 이후 구현한
+6패스는 별도의 검증 결과와 지원 범위를 붙여 설명해야 한다. `650beb41c`의 main 반영과
+제품 모달의 연속 흐름 검증·운영 배포는 각각 구분한다.
 “SketchUp·Blender 전체 기능 통합”, “원클릭 6패스 원고 생성 완성”, “Higgsfield 사진 변환 연동
 완료”는 이번 조사와 검증으로 뒷받침되지 않는다.
+
+## 8. 동일 제품 모달에서 원고로 전달하는 후속 검증
+
+- 상태: **historical — 추가 저장 계약 승인 전의 GPU 예산 수정과 제품 원고 미지원 발견**.
+- 승인 후 실제 원고 전달·재열기 성공은 상단의 2026-11-05 후속 보고를 따른다.
+- 앞선 별도 모달 캡처와 합성 PNG ZIP 가져오기 통과를 동일 host의 연속 성공으로 합치지 않는다.
+- 실제 `/studio/canvas` guest 원고에서 모달을 열고 22개 노드·6패스를 적용해 배경 추가를
+  실행했을 때, 모달이 닫히지 않았고 원고 레이어는 0개였다. 자동 재시도는 하지 않았다.
+- CDP 예외 진단에서 `RangeError: 3D capture exceeds the raster pixel budget.`를 확인했다.
+  실제 요청은 `3155×2160 = 6,814,800`픽셀이었다. 삽입 품질 계획은 기존 LT 최대
+  `8,388,608`픽셀을 사용하지만, 새 6패스의 동시 캡처 제한은 `4,194,304`픽셀이어서
+  GPU 작업 제출 전에 거부됐다. 이는 6패스 레시피·원고 저장 단계의 성공으로 덮을 수 없는
+  실제 연결 결함이다.
+- 후속 수정은 6패스의 캡처만 순차 제출하여 동시 버퍼를 줄이고 기존 출력 해상도를 유지한다.
+  일반 LT 캡처와 기존 도형 삽입·카메라 적용 경로는 재구현하지 않는다. 각 패스 제출 직후
+  라이브 상태를 복원하고 fence 완료 후 자원을 폐기하며, 패스 사이 장면 변경은 혼합 출력
+  저장 전에 거부한다. 새 저장 형식·DB schema·저장키 변경은 추가하지 않는다.
+- 수정된 6패스 한도는 기존 LT와 같은 `8,388,608`픽셀이다. 색 패스 하나의
+  HDR·depth·display·PBO·packed·정규화 버퍼는 약 28 B/px이고, 앞선 패스의 보관 배열은
+  최대 16 B/px다. 반환 경계의 원본·소유 복사본은 최대 48 B/px다. 64 B/px·512 MiB는
+  이 캡처 working buffer의 보수적 계산이며 장면·텍스처·브라우저 전체 메모리의 실측 또는
+  상한 보증이 아니다. 일반 LT의 동시 제출 경로와 한도는 바꾸지 않았다.
+- 카메라의 투영·world matrix를 entry에서 복사하고, 각 제출 전후 가시 계층·transform·
+  geometry/morph/instance 업로드 버전·재질/텍스처·단면·광원·fog·renderer 출력 상태를
+  검사한다. 애니메이션이나 턴테이블이 계속 변경되는 장면은 혼합된 여섯 장을 저장하지 않고
+  중단한다. 각 패스의 helper·재질·renderer 임시 상태는 GPU 대기 전에 복원한다.
+- 최종 관련 Vitest 40파일, 494개: 통과. 6패스·저장 계약, 기존 도형·카메라·history,
+  실제 요청 `3155×2160` 및 최대 해상도 허용, 순차 fence·target 정리, 마지막 shadow 실패,
+  장면 변경 거부와 renderer 파생 행렬의 무해한 갱신, 제한된 native SKP golden을 포함한다.
+  수정 파일 ESLint·guard 단독 strict TypeScript 검사도 통과했다. 전체 하네스는 별도 확인 중이다.
+- 순차 adapter의 독립 실제 GPU 픽셀 검증: shadow 58→0, albedo 바이트 동일,
+  전경 그림자 누출 0, 빈 장면 alpha 0, 원본 재질·renderer 상태 복원, pageerror 0을 확인했다.
+  같은 adapter의 `3155×2160` 직접 캡처는 `includeNormals: true`로 성공했다. 다섯 GPU
+  readback이 모두 같은 해상도였고 관측된 동시 readback 최대치는 1개다. 여섯 원본 배열의
+  합계는 163,555,200bytes(24 B/px)였다. 단순 시험 장면의 캡처 시간은 약 574ms이며,
+  임의 복잡한 장면의 성능 보장이나 제품 원고 전달 성공을 대신하는 수치는 아니다.
+- 실제 제품 `/studio/canvas`의 `전체 기능 → 삽입 → 장면 도우미`로 모달을 열고
+  WebGL2·22개 노드·2점 투시·6패스를 적용했다. GPU 요청은 한 번만 실행했다.
+  캡처·guard·Worker 예외는 없었지만 부모 원고가 실시간 표면이라는 이유로 거부했다.
+  원고는 0층이며, 이 실행에서 ZIP·재열기·undo/redo가 성공했다고 보고할 수 없다.
+  Chrome for Testing 156.0.8078.4, viewport 1600×1200, 외부 요청·pageerror는 0개였다.
+- 기존 전체 하네스의 아키텍처·문서·source layout·앱 경계·파일 크기·eager graph·lint·
+  Secretlint는 통과했다. Web TSC는 후속 UI 변경 전 소스로 실행 중이었고 약 28분 시점
+  physical footprint 15.3 GiB를 관측했다. 해당 작업트리의 오래된 검사만 종료했으며(143),
+  Web/API 전체 typecheck 통과로 기록하지 않는다. 다른 세션의 검사는 종료하지 않았다.
+- 이후 최종 소스로 실행한 `pnpm harness:verify`는 **종료 코드 0**으로 통과했다. Web 전체
+  typecheck와 API·work-session browser tools·Postgres tools typecheck를 포함한다.
+  마지막 CSS 너비 조정 뒤 lint·Secretlint·`pnpm validate:architecture`를 추가로 통과했다.
+  파일 크기·BG3D eager graph 기준선을 늘리지 않았고 `git diff --check`도 통과했다.
+- 후속 변경은 `codex/bg3d-six-pass-handoff-20261104`의 로컬 작업 상태다. 기준 SHA는
+  `650beb41c1269dfd978757e288134f7037956a1c`이며 새 커밋·push·PR·병합·운영 배포는 하지 않았다.
+
+## 9. 실제 원고 표면과 추가 승인 범위
+
+- 상태: **historical — 추가 계약 승인 전의 원고 실패와 승인 요청 근거**.
+
+**일반 페이지와 비실시간 세션은 동의어가 아니다.** 새 guest 초안·로그인 초안·리믹스는
+`!workId → liveJam → requiresStudioLiveServer`로 실시간 표면이 된다. 로그인한 저장 작품도
+서버 협업 정본을 사용한다. 실제 guest에서 master/page/collaboration lock은 false였고
+`studioCrdtOperationSyncReady=true`였다. 권한을 우회하면 해결되는 문제가 아니다.
+
+추가 승인 전 image CRDT는 로컬 이미지의 topology를 전달했다. 여섯 PNG·LT 역할·blend·bundle·scene
+본문을 원격 복원하는 계약이 없고, work asset 입장도 기본 비활성이며 개별 비동기 업로드다.
+main-line만 OPFS/CAS 영수증으로 저장된다. 따라서 거부 가드를 없애거나 guest 예외를 넣으면
+본 탭과 다른 탭의 결과가 달라질 수 있다.
+
+- 당시 허가한 범위: 잘못된 지원 표시를 고쳐 GPU 작업 전에 미지원 이유를 알린다. 기존
+  일반 LT·도형 삽입·카메라 적용과 최종 문서 권한 검사는 유지한다.
+- 가져온 v4 장면의 일반 LT 전환도 수정했다. 보존된 컷에 6패스가 남아 있으면 기존 최소
+  reader 계산으로 scene v4를 유지하며, 현재 출력만 일반 LT로 바꾼다. 컷 JSON과 active shot은
+  보존한다. 실제 strict parser 호스트 회귀로 수정 전 실패와 수정 후 성공을 확인했다.
+- 실제 화면 재검증: 새 guest의 6패스 적용 차단·이유·도형 18개·카메라 적용·일반 LT footer,
+  합성 PNG v4 ZIP의 정식 `3D 배경 편집` 재열기·설정 보존·6패스 footer 차단·명시적 일반 LT
+  전환·undo 차단 복원·redo 활성 모두 통과했다. 새 GPU 요청은 0회이며, 이 검증을 실제
+  6패스 원고 전달 성공으로 취급하지 않는다. pageerror와 외부 요청은 0개다.
+- LT 안내가 속성 패널에서 잘리는 문제는 실제 컨테이너 폭을 쓰는 카드 grid와 sidebar의
+  `min-width` 제약을 고쳐 해결했다. sidebar right 1591px/width 360px, LT card right 1521px,
+  viewport 1600px를 관측했고, 7개 가로 경계·overflow 검사를 통과했다.
+- 추가 범위: 여섯 본문·scene·역할·presentation을 하나의 immutable render revision과
+  manifest/receipt로 결박하고 단일 CRDT 전이·원격 복원·재캡처·undo/redo를 검증한다.
+- 기존 `creator_work_asset`의 image 8 MiB·행 12 MiB SQL CHECK를 조용히 넓히지 않는다.
+  별도 bundle revision/artifact 테이블·전용 namespace·API·조건부 project v5 등 저장 계약
+  보강이 필요하다. 기존 로컬 6패스 v4 파일과 일반 이미지 계약은 유지한다.
+- [추가 저장·동기화 계약 검토안](bg3d-six-pass-bundle-contract-proposal-2026-11-04.md)을
+  제시하고 사용자 승인을 요청했다. 실제 운영 DB 적용·배포·quota 변경은 별도 승인 대상이다.
+
+추가 승인 전 제품 수준은 **실제 6패스 픽셀 생성 및 로컬 파일/adapter 검증, 제품 원고 직접 적용은
+미지원**이었다. 승인 뒤의 native 묶음 구현과 실제 화면 성공은 2026-11-05 후속 보고에서 따로
+판정하며, 이 과거 기록을 현재 제품 지원 판정으로 사용하지 않는다.
+
+### 2026-11-05 추가 저장 계약의 초기 파일·복구·구 reader 경계 기록
+
+사용자 승인 뒤, 보존된 `bg3dLtBundles` revision이 있는 원고에만 프로젝트 v5를 적용하는
+파일 경계를 구현했다. 기존 v2·v3·v4 원고와 정본 envelope의 일괄 변환은 하지 않는다.
+자동저장은 `studio-six-pass-bundle-autosave`라는 별도 봉투를 사용하며 미래 reader 봉투를
+기존 복구본 위에 덮어쓰지 않는다. 동기식 시작 codec은 작은 봉투만 검사하고, 실제 복구
+입구 `restoreStudioAutosaveRecovery`가 전체 manifest·보존 본문·브라우저 PNG decode와 기존
+선화 CAS를 재검증한 뒤 원고를 교체한다. 검증 실패 시 복구 후보와 현재 원고를 보존한다.
+
+`.toonproject.zip`은 현재 표시 레이어를 일부/전부 삭제한 뒤에도 retained revision의 여섯
+PNG와 원본 scene JSON을 모두 보관한다. 동일 digest 본문은 ZIP 안에서 한 번만 저장하고,
+import는 새 bundle CAS와 기존 main-line CAS를 각각 복원한 뒤 문서를 한 번 반영한다.
+정본 manifest는 파일 안의 보존 상태에서 재생성해 동일 hash로 native CAS에 복원한다.
+scene에는 원본 모델 첨부가 없어야 하므로 외부 GLB·SKP 원본까지 담는 묶음으로 해석하지 않는다.
+
+v5 retained 묶음 ZIP만 파일 544 MiB, 첨부 합계 512 MiB 상한을 사용한다. 기존 v2·v3·v4의
+280,000,000/256,000,000바이트 상한과 별도 모바일 하한은 유지한다. 일반 ZIP intake는 절대
+상한으로 중앙 디렉터리를 먼저 읽고, 프로젝트·계약 확인 뒤 해당 버전의 상한을 다시 검사한다.
+비압축 store-only·entry 수·실제 크기·CRC·SHA-256·IHDR·원본 scene hash 검사는 유지한다.
+
+구형 workspace `.toonstudio` formatVersion 1은 새 묶음 본문을 담지 못하므로 6패스 묶음
+원고의 export/import를 명시적으로 거절하고 `.toonproject.zip` 사용을 안내한다. 불완전한
+새 프로젝트를 생성하지 않는다. 구형 패키지 전체 형식의 확장은 이번 구현에 포함하지 않았다.
+
+일반 v8 CRDT 메시지는 기존 구조를 유지한다. 보존 묶음 문서는 별도 reader 광고와
+`requiredReaderCapabilities: ["bg3d-sixpass-bundle.v1"]`, `artifactScope`를 사용한다. 구 exact-key
+reader는 신규 feature 봉투를 거부하며, 신규 앱도 구 reader의 변경·동기화 요청을 차단한다.
+기기 전용 `origin` 본문은 명시적 same-origin primary만 사용하고 열린 RTC로 전달하지 않는다.
+송신 feature 전이는 shadow 문서 검증 뒤 실제 Y 문서에 단일 업데이트로 반영한다.
+수신은 CRDT 참조와 모든 native 본문을 검증한 뒤 편집 가능한 pages/history frontier를 재조정한다.
+작품 범위 `work`는 인증된 서버 영수증을 확인한 manifest 집합에만 부여한다.
+
+이 절의 합성 PNG·인메모리 native-interface 회귀는 저장/거절/보상 계약 증거다. 실제 GPU,
+실제 native OPFS, 동일 origin 두 탭, 새 브라우저 문맥의 ZIP 재열기는 별도 화면 검증 결과로
+기록한다. 배포·운영 DB migration을 실행했다는 뜻이 아니다.

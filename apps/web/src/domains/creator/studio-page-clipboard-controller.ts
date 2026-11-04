@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 
+import { studioBg3dSixPassCopyUnavailableReason } from "./studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-copy-guard";
 import { remapStudioBg3dLtCopiedBundles } from "./bg3d/studio-bg3d-lt-copy-remap";
 import { hasTrack, normalizeAnimationTimelineDoc } from "./studio-anim-tracks";
 import { CANVAS_W } from "./studio-assets";
@@ -240,6 +241,8 @@ export function useStudioPageClipboard({
   } | null {
     const members = collectCopyElements(elements, selectedId, marqueeIds);
     if (members.length === 0) return null;
+    const unavailable = studioBg3dSixPassCopyUnavailableReason(members);
+    if (unavailable) { setError(unavailable); return null; }
     const memberIds = members.map((member) => member.id);
     const expectedGroupIds = masterEditMode
       ? []
@@ -338,6 +341,8 @@ export function useStudioPageClipboard({
     );
     if (!plan) return false;
     const plannedElements = plan.els as unknown as El[];
+    const unavailable = studioBg3dSixPassCopyUnavailableReason(plannedElements);
+    if (unavailable) { setError(unavailable); return false; }
     const patchedPlannedElements = singleElementPatch && plannedElements.length === 1
       ? [{
           ...plannedElements[0],

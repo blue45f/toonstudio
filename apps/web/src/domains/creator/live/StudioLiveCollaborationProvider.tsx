@@ -56,6 +56,8 @@ export interface StudioCrdtSceneGraphRuntime {
   acknowledgeDraftProtection: (
     protectedUpdateIds: readonly string[]
   ) => Promise<void>;
+  admitNativePageMutation: typeof import("./studio-crdt-frontier-reconciliation-binding").admitNativePageMutation;
+  bindFrontierReconciliation: typeof import("./studio-crdt-frontier-reconciliation-binding").bindStudioCrdtFrontierReconciliation;
   publish: typeof import("./studio-crdt-scene-publisher").publishStudioCrdtSceneGraphDiff;
   reconcileHistory: typeof import( "./studio-crdt-history").reconcileStudioCrdtSceneGraphHistory;
   reconcilePages: typeof import("./studio-crdt-page-bridge").reconcileStudioCrdtSceneGraphPages;
@@ -632,6 +634,7 @@ export function StudioLiveCollaborationProvider({
             sceneHistoryModule,
             scenePageBridgeModule,
             rasterUiBridgeModule,
+            frontierBindingModule,
           ] = await Promise.all([
             import( "./studio-crdt-document"),
             import( "./studio-crdt-room-binding"),
@@ -639,10 +642,12 @@ export function StudioLiveCollaborationProvider({
             import( "./studio-crdt-history"),
             import("./studio-crdt-page-bridge"),
             import( "./studio-crdt-raster-ui-bridge"),
+            import("./studio-crdt-frontier-reconciliation-binding"),
           ]);
           if (cancelled) return;
           crdtDocument = new documentModule.StudioCrdtDocument();
           crdtBinding = new bindingModule.StudioCrdtRoomBinding({
+            bg3dBundleArtifactScope: () => crdtDocument ? bindingModule.studioCrdtBg3dBundleArtifactScope(crdtDocument, nextRoom.workId) : "origin",
             document: crdtDocument,
             room: nextRoom,
             canEdit: participantCanEdit, scopedWrite,
@@ -808,6 +813,8 @@ export function StudioLiveCollaborationProvider({
                 await readyBinding.acknowledgeDraftProtection(protectedUpdateIds);
                 if (cancelled || crdtBinding !== readyBinding) throw new Error("공동 편집 원고가 변경되었습니다.");
               },
+              admitNativePageMutation: frontierBindingModule.admitNativePageMutation,
+              bindFrontierReconciliation: frontierBindingModule.bindStudioCrdtFrontierReconciliation,
               publish: scenePublisherModule.publishStudioCrdtSceneGraphDiff,
               reconcileHistory: sceneHistoryModule.reconcileStudioCrdtSceneGraphHistory,
               reconcilePages: scenePageBridgeModule.reconcileStudioCrdtSceneGraphPages,

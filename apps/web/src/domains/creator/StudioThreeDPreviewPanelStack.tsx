@@ -86,6 +86,7 @@ export type StudioThreeDPreviewPanelStackProps = Pick<
   | "bg3dInitialDataUrl"
   | "bg3dInitialScene"
   | "bg3dOperation"
+  | "bg3dSixPassLtUnavailableReason"
   | "bg3dTargetBundleId"
   | "bg3dBatchRecoveryScope"
   | "validateRecoveryAccess"
@@ -256,6 +257,7 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
   bg3dInitialScene,
   bg3dTargetBundleId,
   bg3dOperation,
+  bg3dSixPassLtUnavailableReason,
   bg3dBatchRecoveryScope,
   validateRecoveryAccess,
   bg3dOpen,
@@ -449,6 +451,7 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
         sharedCharactersLinkedToOtherBackgroundCount
       }
       operation={bg3dOperation}
+      sixPassLtUnavailableReason={bg3dSixPassLtUnavailableReason}
       recoveryScope={bg3dBatchRecoveryScope}
       validateRecoveryAccess={validateRecoveryAccess}
       onClose={() => {

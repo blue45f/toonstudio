@@ -17,6 +17,18 @@ export const STUDIO_BG3D_NORMAL_CAPTURE_MAX_PIXELS = Math.floor(
   STUDIO_BG3D_NORMAL_CAPTURE_MAX_WORKING_BYTES / STUDIO_BG3D_NORMAL_CAPTURE_BYTES_PER_PIXEL,
 );
 
+/**
+ * 순차 6패스의 보수적 working-buffer 상한. 가장 큰 색 제출은 HDR8+depth4+display4+
+ * PBO4+packed4+정규화4=28 B/px이며 기존 출력은 최대16 B/px를 유지한다.
+ * 최종 소유 복사도 원본24+복사24=48 B/px다. 64 B/px는 양쪽 peak를 덮는다.
+ * 장면·텍스처·브라우저 전체 메모리를 측정하거나 보증하는 값은 아니다.
+ */
+export const STUDIO_BG3D_SIX_PASS_CAPTURE_MAX_WORKING_BYTES = 512 * 1024 * 1024;
+export const STUDIO_BG3D_SIX_PASS_CAPTURE_BYTES_PER_PIXEL = 64;
+export const STUDIO_BG3D_SIX_PASS_CAPTURE_MAX_PIXELS = Math.floor(
+  STUDIO_BG3D_SIX_PASS_CAPTURE_MAX_WORKING_BYTES / STUDIO_BG3D_SIX_PASS_CAPTURE_BYTES_PER_PIXEL,
+);
+
 export function assertStudioBg3dCaptureBudget(input: {
   readonly width: number;
   readonly height: number;
@@ -37,8 +49,7 @@ export function assertStudioBg3dCaptureBudget(input: {
     throw new RangeError("6패스 LT 캡처에는 깊이 캡처가 필요합니다.");
   }
   const pixels = input.width * input.height;
-  // 6패스는 추가 밑색·그림자·선형 깊이와 소유 복사본을 포함해 128 B/px, 최대 512 MiB로 제한한다.
-  const maximum = input.includeSixPass ? Math.floor(512 * 1024 * 1024 / 128) : input.includeNormals ? STUDIO_BG3D_NORMAL_CAPTURE_MAX_PIXELS : input.includeDepth ? STUDIO_BG3D_DEPTH_CAPTURE_MAX_PIXELS : STUDIO_BG3D_COLOR_CAPTURE_MAX_PIXELS;
+  const maximum = input.includeSixPass ? STUDIO_BG3D_SIX_PASS_CAPTURE_MAX_PIXELS : input.includeNormals ? STUDIO_BG3D_NORMAL_CAPTURE_MAX_PIXELS : input.includeDepth ? STUDIO_BG3D_DEPTH_CAPTURE_MAX_PIXELS : STUDIO_BG3D_COLOR_CAPTURE_MAX_PIXELS;
   if (!Number.isSafeInteger(pixels) || pixels > maximum) {
     throw new RangeError("3D capture exceeds the raster pixel budget.");
   }

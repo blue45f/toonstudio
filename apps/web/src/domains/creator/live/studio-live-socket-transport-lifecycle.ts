@@ -1,3 +1,4 @@
+import { STUDIO_CRDT_READER_CAPABILITIES } from "./studio-crdt-reader-capability";
 /** Implementation helpers for `StudioLiveSocketTransport`; not a public entry. */
 import { STUDIO_ACOUSTIC_CONVERSATION_EVENT } from "@toonstudio/studio-project-model/world-conversation";
 import { studioLiveAcousticJoinBinding } from "./studio-live-acoustic-control";
@@ -370,7 +371,7 @@ export function beginJoin(this: StudioLiveSocketTransportHost): void {
   });
   this.socket.emit(
     "studio:join",
-    { workId: this.context.workId, clientInstanceId: this.context.participant.sessionId },
+    { workId: this.context.workId, clientInstanceId: this.context.participant.sessionId, readerCapabilities: STUDIO_CRDT_READER_CAPABILITIES },
     (value: unknown) => {
       if (this.closed || generation !== this.joinGeneration || !this.socket.connected) return;
       const response = parseJoinAck(value);
@@ -613,7 +614,7 @@ export function handleFailure(this: StudioLiveSocketTransportHost, failure: Serv
   // A work-level operation can be forbidden after a role downgrade without revoking view access
   // to the joined room. Only join/socket authentication and explicit access:revoked are terminal.
   const recoverable =
-    failure.code !== "unauthenticated" &&
+    failure.code !== "reader_upgrade_required" && failure.code !== "unauthenticated" &&
     !(source === "socket" && failure.code === "forbidden");
   this.emitStatus({
     state: recoverable ? "error" : "revoked",

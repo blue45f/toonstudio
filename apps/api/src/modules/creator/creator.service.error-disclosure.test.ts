@@ -154,7 +154,7 @@ describe("CreatorService 공동 문서 저장 오류 경계", () => {
     expect(error.getStatus()).toBe(status);
     expect(error.getResponse()).toEqual(original.getResponse());
     expect(save).toHaveBeenCalledExactlyOnceWith("user-1", "work-1", 1, BigInt(0), { doc: document },
-      { mutationId: body.mutationId, writeContext });
+      { mutationId: body.mutationId, writeContext }, undefined);
   });
 
   it.each([

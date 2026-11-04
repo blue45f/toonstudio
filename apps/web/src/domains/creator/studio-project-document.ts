@@ -14,11 +14,12 @@ import {
   serializeStudioProjectFile,
   type StudioProjectFile,
 } from "./studio-project-file";
+import { collectStudioBg3dSixPassProjectBundles } from "./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-contract";
 
 export const STUDIO_PROJECT_DOCUMENT_FORMAT_ID =
   "toonstudio.studio-project" as const;
 export const STUDIO_PROJECT_DOCUMENT_PAYLOAD_TYPE = "project" as const;
-export const STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION = 4 as const;
+export const STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION = 5 as const;
 const LEGACY_PROJECT_DOCUMENT_VERSION = 2;
 
 export interface StudioProjectDocumentMetadata {
@@ -273,7 +274,7 @@ const legacyProjectDocumentRegistry = createStudioDocumentMigratorRegistry([
 ]);
 
 // V3 changes the minimum reader for V4 brush snapshots, not the bytes of existing V2 envelopes.
-function projectReaderRegistry(version: 3 | 4) {
+function projectReaderRegistry(version: 3 | 4 | 5) {
   return createStudioDocumentMigratorRegistry([{
     formatId: STUDIO_PROJECT_DOCUMENT_FORMAT_ID,
     payloadType: STUDIO_PROJECT_DOCUMENT_PAYLOAD_TYPE,
@@ -284,6 +285,7 @@ function projectReaderRegistry(version: 3 | 4) {
 }
 const studioProjectDocumentRegistry = projectReaderRegistry(3);
 const sixPassProjectDocumentRegistry = projectReaderRegistry(4);
+const sixPassBundleProjectDocumentRegistry = projectReaderRegistry(5);
 
 export function createStudioProjectDocumentEnvelope(
   value: unknown,
@@ -336,6 +338,7 @@ export async function buildStudioProjectDocumentSaveArtifact(
     metadata,
     extensions
   );
+  await collectStudioBg3dSixPassProjectBundles(parseStudioProjectFile(envelope.payload.data));
   const canonicalJson = serializeCanonicalStudioDocumentEnvelope(envelope);
   const checksum = await checksumCanonicalStudioDocumentEnvelope(envelope);
   return Object.freeze({
@@ -377,9 +380,11 @@ export async function parseStudioProjectDocument(
         value
       );
     }
+    const project = parseStudioProjectFile(decoded);
+    await collectStudioBg3dSixPassProjectBundles(project);
     return {
       source: "legacy-project",
-      project: parseStudioProjectFile(decoded),
+      project,
       envelope: null,
       receipt: null,
     };
@@ -389,8 +394,10 @@ export async function parseStudioProjectDocument(
     && typeof decoded.format.version === "number"
     && decoded.format.version > LEGACY_PROJECT_DOCUMENT_VERSION;
   const registry = usesNewReader
-    ? isRecord(decoded) && isRecord(decoded.format) && decoded.format.version === 4
-      ? sixPassProjectDocumentRegistry : studioProjectDocumentRegistry
+    ? isRecord(decoded) && isRecord(decoded.format) && decoded.format.version === 5
+      ? sixPassBundleProjectDocumentRegistry
+      : isRecord(decoded) && isRecord(decoded.format) && decoded.format.version === 4
+        ? sixPassProjectDocumentRegistry : studioProjectDocumentRegistry
     : legacyProjectDocumentRegistry;
   const migrated = await registry.migrate(decoded);
   if (!migrated.ok) {
@@ -404,6 +411,7 @@ export async function parseStudioProjectDocument(
       typeof STUDIO_PROJECT_DOCUMENT_PAYLOAD_TYPE
     >;
   const project = parseStudioProjectFile(migratedEnvelope.payload.data);
+  await collectStudioBg3dSixPassProjectBundles(project);
   if (project.version > migratedEnvelope.format.version) {
     throw new StudioProjectDocumentError({
       severity: "error",

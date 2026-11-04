@@ -1,5 +1,6 @@
+import { StudioCrdtLocalReaderFence } from "./studio-crdt-local-reader-fence";
+import { studioCrdtReaderMetadata } from "./studio-crdt-reader-capability";
 import {
-  createStudioCrdtLocalWireMessage,
   isStudioCrdtLocalWireCandidate,
   parseStudioCrdtLocalWireMessage,
   parseStudioCrdtSyncRequest,
@@ -88,6 +89,7 @@ export type StudioLiveTransportControlEvent =
  * authenticated socket has received a successful work-room ACL acknowledgement.
  */
 export interface StudioLiveTransport {
+  readonly originArtifactScope?: "same-origin";
   /** Present only after a Core work-room join; no private-room or media permission is implied. */
   readonly acousticCoreBinding?: StudioLiveAcousticCoreBinding | null;
   /** Negotiated single-server lease authority; wrappers only forward their primary's capability. */
@@ -206,12 +208,14 @@ export { isStudioLocalLiveTransportSupported };
 
 /** Memory-only, same-origin tab transport. It never writes signaling data to localStorage. */
 export class StudioBroadcastChannelTransport implements StudioLiveTransport {
+  readonly originArtifactScope = "same-origin" as const;
   readonly mode = "local" as const;
   private readonly channel: StudioBroadcastChannelLike;
   private readonly listeners = new Set<(value: unknown) => void>();
   private readonly crdtListeners = new Set<(message: StudioCrdtTransportMessage) => void>();
   private readonly inkListeners = new Set<(value: unknown) => void>();
   private readonly crdtContext: StudioBroadcastCrdtContext | null;
+  private readonly readerFence: StudioCrdtLocalReaderFence | null;
   private readonly pendingSync = new Map<string, PendingLocalSync>();
   private readonly seenUpdateIds = new Set<string>();
   private readonly scheduleTimeout: (handler: () => void, delay: number) => unknown;
@@ -221,6 +225,7 @@ export class StudioBroadcastChannelTransport implements StudioLiveTransport {
   private closed = false;
   private connected = false;
   private readonly onMessage = (event: MessageEvent<unknown>) => {
+    if (this.readerFence?.receiveAdvertisement(event.data)) return;
     if (isStudioCrdtLocalWireCandidate(event.data)) {
       this.onCrdtMessage(event.data);
       return;
@@ -243,6 +248,7 @@ export class StudioBroadcastChannelTransport implements StudioLiveTransport {
   ) {
     this.channel = createChannel(roomName);
     this.crdtContext = crdtContext;
+    this.readerFence = crdtContext ? new StudioCrdtLocalReaderFence(crdtContext.workId, crdtContext.participant.sessionId, (value) => this.channel.postMessage(value)) : null;
     this.scheduleTimeout = dependencies.setTimeout ?? ((handler, delay) => globalThis.setTimeout(handler, delay));
     this.cancelTimeout =
       dependencies.clearTimeout ??
@@ -320,8 +326,9 @@ export class StudioBroadcastChannelTransport implements StudioLiveTransport {
       }, this.syncTimeoutMs);
       this.pendingSync.set(parsed.requestId, { resolve, timeout });
       try {
+        this.readerFence?.advertise();
         this.channel.postMessage(
-          createStudioCrdtLocalWireMessage({
+          this.readerFence!.decorate({
             workId: context.workId,
             senderSessionId: context.participant.sessionId,
             targetSessionId: null,
@@ -344,7 +351,7 @@ export class StudioBroadcastChannelTransport implements StudioLiveTransport {
     if (!parsed) return false;
     try {
       this.channel.postMessage(
-        createStudioCrdtLocalWireMessage({
+        this.readerFence!.decorate({
           workId: context.workId,
           senderSessionId: context.participant.sessionId,
           targetSessionId,
@@ -368,7 +375,7 @@ export class StudioBroadcastChannelTransport implements StudioLiveTransport {
       this.rememberUpdateId(parsed.updateId);
       try {
         this.channel.postMessage(
-          createStudioCrdtLocalWireMessage({
+          this.readerFence!.decorate({
             workId: context.workId,
             senderSessionId: context.participant.sessionId,
             targetSessionId: null,
@@ -379,6 +386,7 @@ export class StudioBroadcastChannelTransport implements StudioLiveTransport {
               updateId: parsed.updateId,
               serverSequence: "0",
               update: parsed.update,
+              ...studioCrdtReaderMetadata(parsed),
             },
           })
         );
@@ -422,10 +430,8 @@ export class StudioBroadcastChannelTransport implements StudioLiveTransport {
   private onCrdtMessage(value: unknown): void {
     const context = this.crdtContext;
     if (!this.ready || !context) return;
-    const wire = parseStudioCrdtLocalWireMessage(value, {
-      expectedWorkId: context.workId,
-      selfSessionId: context.participant.sessionId,
-    });
+    const parsed = parseStudioCrdtLocalWireMessage(value, { expectedWorkId: context.workId, selfSessionId: context.participant.sessionId });
+    const wire = parsed ? this.readerFence?.accept(parsed) : null;
     if (!wire) return;
     if (wire.kind === "sync-response") {
       const pending = this.pendingSync.get(wire.payload.requestId);

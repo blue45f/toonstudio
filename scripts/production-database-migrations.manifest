@@ -118,3 +118,4 @@ apps/api/src/platform/database/migrations/0117_studio_scoped_write_policy.sql
 apps/api/src/platform/database/migrations/0118_customer_support.sql
 apps/api/src/platform/database/migrations/0119_studio_review_voice_note_guard_schema.sql
 apps/api/src/platform/database/migrations/0120_studio_role_pipeline_policy.sql
+apps/api/src/platform/database/migrations/0121_studio_bg3d_six_pass_bundle.sql

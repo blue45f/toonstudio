@@ -1,15 +1,16 @@
+import { assertStudioLinkedPassUnitAssets, readStudioLinkedPassAssetRows } from "./studio-linked-pass-asset-admission";
+import { extractStudioBg3dLinkedPassRequirementsInTransaction } from "./studio-bg3d-linked-pass-admission";
+import { assertStudioBg3dBundleReaderInTransaction } from "./studio-bg3d-bundle.repository";
+import { studioCrdtWorkAdvisoryLockQuery } from "./studio-crdt.repository";
 import { randomUUID } from "node:crypto";
 
 import { and, count, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
 
 import {
-  assertStudioLinked3dPassAssetRows,
-  extractStudioLinked3dPassAssetRequirements,
-  type StudioLinked3dPassAssetRow,
+  type StudioLinked3dPassAssetRow, type CreatorWorkLinked3dJsonEnvelope, type StudioLinked3dPassAssetRequirement,
 } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
 import {
   creatorDraftCollaborationRooms,
-  creatorWorkAssets,
   creatorWorkRevisions,
   creatorWorks,
   db,
@@ -95,6 +96,7 @@ export interface PromoteCreatorDraftCollaborationInput {
   readonly expectedWorkRevision: number;
   readonly finalStatus: CreatorDraftCollaborationFinalStatus;
   readonly clientMutationId: string;
+  readonly readerCapabilities?: readonly string[];
 }
 
 export interface CreateCreatorDraftCollaborationRoomInput {
@@ -160,6 +162,8 @@ export interface CreatorDraftCollaborationUnitOfWork {
     ownerUserId: string,
     workId: string
   ): Promise<CreatorDraftCollaborationProvisionalWorkRecord | null>;
+  assertReaderCapability?(workId: string, features: readonly string[]): Promise<void>;
+  extractStudioLinked3dPassRequirements?(workId: string, envelope: CreatorWorkLinked3dJsonEnvelope, features: readonly string[]): Promise<readonly StudioLinked3dPassAssetRequirement[]>;
   findLinked3dPassAssetRows(
     workId: string,
     assetIds: readonly string[]
@@ -459,6 +463,15 @@ class DrizzleCreatorDraftCollaborationUnitOfWork
     return normalizeRoomRecord(rows[0]);
   }
 
+  async assertReaderCapability(workId: string, features: readonly string[]): Promise<void> {
+    await this.transaction.execute(studioCrdtWorkAdvisoryLockQuery(workId));
+    await assertStudioBg3dBundleReaderInTransaction(this.transaction, workId, features);
+  }
+
+  async extractStudioLinked3dPassRequirements(workId: string, envelope: CreatorWorkLinked3dJsonEnvelope, features: readonly string[]) {
+    return extractStudioBg3dLinkedPassRequirementsInTransaction(this.transaction, workId, envelope, features);
+  }
+
   async lockProvisionalWorkForPromotion(
     ownerUserId: string,
     workId: string
@@ -501,28 +514,7 @@ class DrizzleCreatorDraftCollaborationUnitOfWork
     workId: string,
     assetIds: readonly string[]
   ): Promise<readonly StudioLinked3dPassAssetRow[]> {
-    if (assetIds.length === 0) return [];
-    return this.transaction
-      .select({
-        workId: creatorWorkAssets.workId,
-        assetId: creatorWorkAssets.assetId,
-        elementType: creatorWorkAssets.elementType,
-        mimeType: creatorWorkAssets.mimeType,
-        descriptor: creatorWorkAssets.descriptor,
-        byteSize: creatorWorkAssets.byteSize,
-        sha256: creatorWorkAssets.sha256,
-        intrinsicWidth: creatorWorkAssets.intrinsicWidth,
-        intrinsicHeight: creatorWorkAssets.intrinsicHeight,
-        decodedRgbaBytes: creatorWorkAssets.decodedRgbaBytes,
-      })
-      .from(creatorWorkAssets)
-      .where(
-        and(
-          eq(creatorWorkAssets.workId, workId),
-          inArray(creatorWorkAssets.assetId, [...new Set(assetIds)])
-        )
-      )
-      .orderBy(creatorWorkAssets.assetId);
+    return readStudioLinkedPassAssetRows(this.transaction, workId, assetIds);
   }
 
   async countOwnerRoomsCreatedSince(
@@ -939,6 +931,7 @@ export class CreatorDraftCollaborationRepository {
         if (room.workId !== input.targetWorkId) {
           return { kind: "target-mismatch" };
         }
+        await unit.assertReaderCapability?.(room.workId, input.readerCapabilities ?? []);
         if (room.status === "promoted") {
           return room.promotionMutationId === input.clientMutationId &&
             room.promotionExpectedWorkRevision === input.expectedWorkRevision &&
@@ -980,20 +973,9 @@ export class CreatorDraftCollaborationRepository {
             currentWorkRevision: work.revision,
           };
         }
-        const requirements = extractStudioLinked3dPassAssetRequirements({
-          cover: work.cover,
-          pages: work.pages,
-          doc: work.doc,
-        });
-        const assetRows = await unit.findLinked3dPassAssetRows(
-          room.workId,
-          requirements.map(({ assetId }) => assetId)
-        );
-        assertStudioLinked3dPassAssetRows({
-          workId: room.workId,
-          requirements,
-          rows: assetRows,
-        });
+        await assertStudioLinkedPassUnitAssets({ workId: room.workId,
+          envelope: { cover: work.cover, pages: work.pages, doc: work.doc }, features: input.readerCapabilities ?? [],
+          extract: unit.extractStudioLinked3dPassRequirements?.bind(unit), read: unit.findLinked3dPassAssetRows.bind(unit) });
         const promoted = await unit.promoteRoom({
           ownerUserId: input.ownerUserId,
           roomId: room.roomId,

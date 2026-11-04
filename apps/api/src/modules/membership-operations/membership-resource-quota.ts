@@ -15,6 +15,7 @@ import {
   creatorWorkAssetStorageReferences,
   creatorWorkAssets,
   creatorWorks,
+  studioBg3dBundleRevisions,
   db,
   membershipGrants,
   membershipPolicyOverrides,
@@ -166,11 +167,21 @@ export async function resolveEffectiveResourcePolicy(
   };
 }
 
+/** 추가형 6패스 migration 전에는 기존 에셋 경로의 저장량 계산을 그대로 유지한다. */
+async function readBg3dBundleReservationBytes(transaction: MembershipTransaction, userId: string): Promise<number> {
+  const readiness = await transaction.execute(sql`SELECT to_regclass('public.studio_bg3d_bundle_revision') AS relation`);
+  if (!(readiness.rows?.[0] as Record<string, unknown> | undefined)?.relation) return 0;
+  const [usage] = await transaction.select({ bytes: sql<string>`coalesce(sum(${studioBg3dBundleRevisions.reservedBytes}), 0)::bigint` })
+    .from(studioBg3dBundleRevisions).innerJoin(creatorWorks, eq(creatorWorks.id, studioBg3dBundleRevisions.workId))
+    .where(eq(creatorWorks.userId, userId));
+  return asSafeInt(usage?.bytes);
+}
+
 export async function readMembershipStorageUsage(
   transaction: MembershipTransaction,
   userId: string,
 ): Promise<MembershipStorageUsage> {
-  const [[workAsset], [rasterAsset], generatedResult] = await Promise.all([
+  const [[workAsset], [rasterAsset], generatedResult, bg3dBundleBytes] = await Promise.all([
     transaction
       .select({
         bytes: sql<string>`coalesce(sum(${creatorWorkAssets.byteSize}), 0)::bigint`,
@@ -200,10 +211,11 @@ export async function readMembershipStorageUsage(
           AND storage.purpose IN ('derived', 'export')
       ) AS objects
     `),
+    readBg3dBundleReservationBytes(transaction, userId),
   ]);
 
   const generatedRow = (generatedResult.rows?.[0] ?? {}) as Record<string, unknown>;
-  const workAssetBytes = asSafeInt(workAsset?.bytes);
+  const workAssetBytes = asSafeInt(workAsset?.bytes) + bg3dBundleBytes;
   const rasterAssetBytes = asSafeInt(rasterAsset?.bytes);
   const generatedObjectBytes = asSafeInt(generatedRow.bytes);
   return {

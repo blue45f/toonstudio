@@ -372,7 +372,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
   };
   const offered3dCommands = listOfferedStudio3dCommands();
   return (
-          <aside className="flex min-h-0 flex-col border-t border-line bg-panel lg:border-l lg:border-t-0" data-offered-3d-commands={offered3dCommands.map((command) => command.id).join(" ")}>
+          <aside className="flex min-h-0 min-w-0 w-full flex-col border-t border-line bg-panel lg:border-l lg:border-t-0" data-offered-3d-commands={offered3dCommands.map((command) => command.id).join(" ")}>
             {simpleMode ? (
               <StudioBg3dSceneDirectorPanel
                 activeGoal={activeSceneGoal}
@@ -680,7 +680,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               }}
               sharedStageUpdateBlockedReason={sharedStageUpdateBlockedReason}
               onOpenSharedStage={() => setActivePanelTab("layers")}
-              error={error}
+              error={error ?? h.sixPassLtInsertUnavailableReason}
               saveNotice={librarySaveNotice}
               isCapturing={isCapturing}
               deletingModelInProgress={deletingModelId !== null}
@@ -700,7 +700,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               ) || isCapturing
                 || insertBlocked
                 || immersiveSceneActive
-                || sharedStageUpdateBlockedReason !== null}
+                || sharedStageUpdateBlockedReason !== null || Boolean(h.sixPassLtInsertUnavailableReason)}
               onInsert={handleInsert}
               operation={operation}
               mutationKind={sharedStageMutationKind}

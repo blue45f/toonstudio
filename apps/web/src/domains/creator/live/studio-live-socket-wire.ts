@@ -1,3 +1,5 @@
+import { validStudioCrdtReaderMetadata } from "./studio-crdt-reader-capability";
+import { studioLiveRequiredReaderFailure } from "./studio-live-bg3d-reader-capability";
 import {
   parseStudioCrdtWireAdvertisement,
   type StudioCrdtWireAdvertisement,
@@ -55,6 +57,7 @@ export interface ServerActiveScreenShare {
 }
 
 export interface ServerJoinSnapshot {
+  requiredReaderCapabilities?: readonly string[];
   /** Missing on v1 gateways; new clients retain their legacy wire behavior in that case. */
   lockProtocolVersion: number;
   /** Zero is the local legacy sentinel; revision-aware gateways advertise the exact v1 contract. */
@@ -74,6 +77,7 @@ export interface ServerFailure {
   ok: false;
   code: string;
   message: string;
+  requiredReaderCapabilities?: readonly string[];
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
@@ -247,17 +251,19 @@ export function parseFailure(value: unknown): ServerFailure | null {
     !isRecord(value) ||
     value.ok !== false ||
     !safeString(value.code, 80) ||
-    !safeString(value.message, 500)
+    !safeString(value.message, 500) || !validStudioCrdtReaderMetadata(value)
   ) {
     return null;
   }
-  return { ok: false, code: value.code, message: value.message };
+  return { ok: false, code: value.code, message: value.message, ...(value.requiredReaderCapabilities ? { requiredReaderCapabilities: value.requiredReaderCapabilities as readonly string[] } : {}) };
 }
 
 export function parseJoinAck(value: unknown): ServerJoinSnapshot | ServerFailure | null {
   const failure = parseFailure(value);
   if (failure) return failure;
   if (!isRecord(value) || value.ok !== true || !isRecord(value.data)) return null;
+  if (!validStudioCrdtReaderMetadata(value.data)) return null;
+  const readerFailure = studioLiveRequiredReaderFailure(value.data); if (readerFailure) return readerFailure;
   const self = parseParticipant(value.data.self);
   const lockProtocolVersion = value.data.lockProtocolVersion === undefined
     ? 1
@@ -343,6 +349,7 @@ export function parseJoinAck(value: unknown): ServerJoinSnapshot | ServerFailure
     return null;
   }
   return {
+    ...(value.data.requiredReaderCapabilities ? { requiredReaderCapabilities: value.data.requiredReaderCapabilities as readonly string[] } : {}),
     lockProtocolVersion,
     lockRevisionVersion: revisionAware ? STUDIO_LIVE_LOCK_REVISION_VERSION : 0,
     lockSnapshotRevision,

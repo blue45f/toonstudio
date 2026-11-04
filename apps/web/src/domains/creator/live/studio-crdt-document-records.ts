@@ -1,3 +1,4 @@
+import { readStudioCrdtBg3dBundleReferences } from "./studio-crdt-bg3d-bundle-refs";
 import * as Y from "yjs";
 
 import {
@@ -213,6 +214,7 @@ export function readPageRecord(host: StudioCrdtDocumentHost,
       deleted: isDeleted(host, record, pageDeletionTarget(id)),
       orderIndex,
       shared3dStageManaged: false,
+      bg3dLtBundleReferences: readStudioCrdtBg3dBundleReferences(host.doc, id),
     }, shared3dStageState);
   }
 

@@ -240,7 +240,7 @@ export interface StudioLazyPanelStackProps {
   autoActionStatus: string | null;
   bg3dInitialDataUrl: string | undefined;
   bg3dInitialScene: StudioBg3dSceneDocument | undefined;
-  bg3dOperation: "insert" | "update";
+  bg3dOperation: "insert" | "update"; bg3dSixPassLtUnavailableReason?: string | null;
   /** View-only LT identity used to resolve the page-owned Shared Stage without exposing a raw target. */
   bg3dTargetBundleId: string | null;
   bg3dBatchRecoveryScope: StudioBg3dShotBatchRecoveryScope | null;
@@ -460,7 +460,7 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
   autoActionStatus,
   bg3dInitialDataUrl,
   bg3dInitialScene,
-  bg3dOperation,
+  bg3dOperation, bg3dSixPassLtUnavailableReason,
   bg3dTargetBundleId,
   bg3dBatchRecoveryScope,
   validateRecoveryAccess,
@@ -684,7 +684,7 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
         activePage={activePage}
         bg3dInitialDataUrl={bg3dInitialDataUrl}
         bg3dInitialScene={bg3dInitialScene}
-        bg3dOperation={bg3dOperation}
+        bg3dOperation={bg3dOperation} bg3dSixPassLtUnavailableReason={bg3dSixPassLtUnavailableReason}
         bg3dTargetBundleId={bg3dTargetBundleId}
         bg3dBatchRecoveryScope={bg3dBatchRecoveryScope}
         validateRecoveryAccess={validateRecoveryAccess}

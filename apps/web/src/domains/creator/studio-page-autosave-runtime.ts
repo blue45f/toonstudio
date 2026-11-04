@@ -1,3 +1,4 @@
+import { hasStudioBg3dSixPassAutosaveMarkers } from "./studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-persistence-markers";
 import { hydrateStudioAiImageReferenceDocument } from "./ai/studio-ai-image-reference-roles";
 import { normalizeStudioAiProvenanceDocument } from "./ai/studio-ai-provenance";
 import { recoverInterruptedStudioAiOperations } from "./ai/studio-ai-provenance-recorder";
@@ -270,6 +271,9 @@ export async function restoreStudioAutosaveRecovery(
           }
         }
         const parsed = saved.payload;
+        if (hasStudioBg3dSixPassAutosaveMarkers(parsed)) {
+          await (await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-autosave-restore")).verifyStudioBg3dSixPassAutosaveRestore(parsed);
+        }
         const [
           { normalizeStudioReleaseSchedule },
           normalizedPublicationAnalytics,

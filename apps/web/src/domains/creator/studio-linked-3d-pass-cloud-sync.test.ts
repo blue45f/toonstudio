@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createBg3dBundleProjectFixture } from "./bg3d/studio-bg3d-bundle-project.test-fixture";
 
 import {
   compensateStudioLinked3dPassCloudUploads,
@@ -248,6 +249,21 @@ async function captureCloudEntries(
 }
 
 describe("Studio linked 3D pass cloud sync", () => {
+  it("native·일반 LT 혼합 원고에서 native 주선만 별도 봉인 경로에 남기고 일반 cloud 왕복은 유지한다", async () => {
+    const authority = createAuthority();
+    const legacy = await projectWithPngs(authority.authority, [PNG_FIXTURES[0]]);
+    const native = await createBg3dBundleProjectFixture();
+    const project = parseStudioProjectFile({ ...legacy, version: 5, pagesList: [...legacy.pagesList, ...native.project.pagesList] });
+    const uploads = vi.fn(async (_workId: string, reference: StudioWorkAssetReference, descriptor: StudioWorkAssetDescriptor, blob: Blob) => await exactManifest(reference, descriptor, blob));
+    const receipts = await ensureStudioLinked3dPassCloudArtifacts({ workId: "mixed-work", project, authority: authority.authority, upload: uploads });
+    expect(uploads).toHaveBeenCalledOnce(); expect(receipts).toHaveLength(1);
+    expect(receipts[0].contentHash).not.toBe(native.manifest.layers.find((layer) => layer.role === "main-line")?.artifact.contentHash);
+    const source = uploads.mock.calls[0];
+    const target = createAuthority(), apply = vi.fn(() => "applied");
+    const download = vi.fn(async () => ({ manifest: receipts[0].manifest, blob: source[3] }));
+    await expect(hydrateStudioLinked3dPassCloudArtifacts({ workId: "mixed-work", project, authority: target.authority, apply, download })).resolves.toBe("applied");
+    expect(download).toHaveBeenCalledOnce(); expect(apply).toHaveBeenCalledExactlyOnceWith(project);
+  });
   it("derives one strict deterministic image asset ID and rejects widened hashes", () => {
     const hash = `sha256:${"a".repeat(64)}` as const;
     expect(studioLinked3dPassCloudAssetReference(hash)).toEqual({

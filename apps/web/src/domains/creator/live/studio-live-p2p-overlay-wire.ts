@@ -1,3 +1,4 @@
+import { validStudioCrdtReaderMetadata } from "./studio-crdt-reader-capability";
 import type { StudioCrdtSyncResponse } from "./studio-crdt-protocol";
 import {
   isStudioLiveInkWireCandidate,
@@ -37,6 +38,7 @@ export function isPlainRecord(value: unknown): value is Record<string, unknown> 
 }
 
 export interface StudioLiveP2pCapsMessage {
+  readonly readerCapabilities?: readonly string[];
   readonly binaryLanes: readonly string[];
   readonly peerCapabilities: readonly StudioPeerCapability[];
 }
@@ -60,8 +62,9 @@ export function parseStudioLiveP2pCapsMessage(value: unknown): StudioLiveP2pCaps
     ) return null;
     parsedLanes.push(lane);
   }
-  if (!capabilities.every(isStudioPeerCapability)) return null;
+  if (!capabilities.every(isStudioPeerCapability) || !validStudioCrdtReaderMetadata(value)) return null;
   return {
+    ...(Array.isArray(value.readerCapabilities) ? { readerCapabilities: Object.freeze([...value.readerCapabilities] as string[]) } : {}),
     binaryLanes: Object.freeze(parsedLanes),
     peerCapabilities: Object.freeze([...new Set(capabilities)]),
   };

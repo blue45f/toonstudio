@@ -747,7 +747,7 @@ describe("StudioLiveSocketTransport", () => {
     expect(socket.auth).toEqual({ sessionToken: TOKEN });
     expect(socket.emitted[0]).toEqual({
       event: "studio:join",
-      payload: { workId: "work-1", clientInstanceId: localParticipant.sessionId },
+      payload: { workId: "work-1", clientInstanceId: localParticipant.sessionId, readerCapabilities: ["bg3d-sixpass-bundle.v1"] },
     });
     expect(JSON.stringify(socket.emitted)).not.toContain(TOKEN);
 
@@ -4445,7 +4445,7 @@ describe("StudioLiveSocketTransport", () => {
         event: "studio:join",
         payload: {
           workId: "work-1",
-          clientInstanceId: localParticipant.sessionId,
+          clientInstanceId: localParticipant.sessionId, readerCapabilities: ["bg3d-sixpass-bundle.v1"],
         },
       },
       {
