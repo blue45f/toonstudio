@@ -12,6 +12,8 @@ for (const [workflow, jobId, timeout, runner = "ubuntu-24.04"] of [
   ["studio-finishing-quality", "quality-static", 25],
   ["studio-finishing-quality", "finishing-quality", 30],
   ["feedback-community-validation", "feedback-community", 40, "ubuntu-latest"],
+  ["kmas-reference-library", "references", 20, "ubuntu-latest"],
+  ["non-studio-experience-quality", "non-studio-quality", 45],
 ]) {
   test(`${workflow}/${jobId}는 기존 Core SDK 정리 안전 경계를 체크아웃 전에 사용한다`, () => {
     const job = parse(read(workflow)).jobs[jobId];
@@ -37,7 +39,8 @@ for (const [workflow, jobId, timeout, runner = "ubuntu-24.04"] of [
       }
       assert.notEqual(spawnSync("bash", ["-c", predicate], { env: { ...environment, ImageOS: "ubuntu26", RUNNER_ENVIRONMENT: "self-hosted" } }).status, 0);
     }
-    assert.deepEqual(job.steps[checkout].with, { "persist-credentials": false });
+    if (workflow === "kmas-reference-library") assert.equal(job.steps[checkout].with, undefined);
+    else assert.deepEqual(job.steps[checkout].with, { "persist-credentials": false });
     assert.equal(job.steps.find((step) => step.uses?.startsWith("actions/setup-node@")).with.cache, "pnpm");
     assert(job.steps.some((step) => step.run === "pnpm install --frozen-lockfile --prefer-offline"));
     assert(job.steps.some((step) => step.run === "node --test scripts/ci-enospc-followup-policy.test.mjs"));
