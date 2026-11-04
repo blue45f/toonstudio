@@ -91,7 +91,7 @@ describe("실제 binding의 native 본문 입장 전 CRDT 교체 차단", () => 
         expect(scoped.authority.hasCurrentLiveEntity("element", element.id)).toBe(true);
         expect(scoped.authority.hasCurrentLiveEntity("element", element.id, "target-2")).toBe(false);
       }
-      expect(scoped.authority.hasCurrentLiveEntity("group", page.groups?.[0]?.id ?? "missing-group")).toBe(true);
+      expect(scoped.authority.hasCurrentLiveEntity("group", f.f.manifest.groupId)).toBe(true);
       f.binding.close();
       for (const element of page.elements) expect(scoped.authority.hasCurrentLiveEntity("element", element.id)).toBe(false);
       expect(f.statuses.filter((entry) => entry.state === "error")).toEqual([]);
