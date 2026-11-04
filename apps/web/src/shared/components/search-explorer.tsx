@@ -70,7 +70,7 @@ import {
   type TitleFilterState,
 } from "@/shared/lib/title-filters";
 import { cn } from "@/shared/lib/utils";
-import { useDebouncedValue } from "@/shared/hooks/use-debounced-value";
+import { useSearchQueryDraft } from "./use-search-query-draft";
 import { usePaginatedSearch } from "@/platform/use-paginated-search";
 
 type FilterToken = { key: string; label: string; category: string };
@@ -116,8 +116,7 @@ export function SearchExplorer({
     initialQuery,
     searchParams,
   ]);
-  const [q, setQ] = useState(parsed.query);
-  const debouncedQ = useDebouncedValue(q, 180);
+  const { q, setQ, debouncedQ, canCommitQuery } = useSearchQueryDraft(parsed.query);
   const [showFilters, setShowFilters] = useState(false);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const filterSheetRef = useRef<HTMLElement>(null);
@@ -202,9 +201,6 @@ export function SearchExplorer({
     updateState((current) => ({ ...current, view: next }));
 
   useEffect(() => {
-    setQ((current) => (current === parsed.query ? current : parsed.query));
-  }, [parsed.query]);
-  useEffect(() => {
     if (!showFilters) return undefined;
     const previousOverflow = document.body.style.overflow;
     const sheet = filterSheetRef.current;
@@ -252,7 +248,7 @@ export function SearchExplorer({
     };
   }, [showFilters]);
   useEffect(() => {
-    if (debouncedQ.trim() === parsed.query.trim()) return;
+    if (!canCommitQuery || debouncedQ.trim() === parsed.query.trim()) return;
     updateState((current) => ({
       ...current,
       query: debouncedQ,
@@ -261,7 +257,7 @@ export function SearchExplorer({
           ? "relevance"
           : current.sort,
     }));
-  }, [debouncedQ, parsed.query, updateState]);
+  }, [canCommitQuery, debouncedQ, parsed.query, updateState]);
 
   const recentSearches = useApp((s) => s.recentSearches);
   const recordRecentSearch = useApp((s) => s.addRecentSearch);
