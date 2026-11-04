@@ -9,7 +9,8 @@ describe("현재 배정의 별도 본문 REST client", () => {
   beforeEach(() => mocks.patch.mockReset().mockResolvedValue({ workId: "work", revision: 4, updatedAt: "2026-10-29T06:00:00.000Z" }));
   it("역할과 metadata를 보내지 않고 정확한 ID·정책·sequence를 그대로 전송한다", async () => {
     const body = input(); await expect(updateStudioScopedSharedDocument("work", body)).resolves.toMatchObject({ revision: 4 });
-    expect(mocks.patch).toHaveBeenCalledWith("/creator/works/work/team/document", body, { signal: undefined });
+    expect(mocks.patch).toHaveBeenCalledWith("/creator/works/work/team/document",
+      { ...body, readerCapabilities: ["bg3d-sixpass-bundle.v1"] }, { signal: undefined });
   });
   it("게시 metadata·대기 중 creations·누락 ID는 네트워크 전에 거절한다", async () => {
     for (const body of [{ ...input(), status: "published" }, { ...input(), mutationId: "invalid" },

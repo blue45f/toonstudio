@@ -24,7 +24,7 @@ describe("project file reader version for tapered station spacing", () => {
     const backup = JSON.parse(serializeStudioAutosaveBackup(source));
     expect(backup.version).toBe(3);
     expect(parseStudioProjectFile(backup).pagesList[0].elements).toEqual([element]);
-    expect(parseStudioAutosave(JSON.stringify({ ...source, version: 4 }))).toBeNull();
+    expect(parseStudioAutosave(JSON.stringify({ ...source, version: 6 }))).toBeNull();
   });
   it("exports a new V4 stroke with its V3 file envelope without changing the stored stroke", () => {
     const element = stroke(V4_PIPELINE);
@@ -70,6 +70,6 @@ describe("project file reader version for tapered station spacing", () => {
 
   it("retains an explicit supported V3 envelope and rejects unknown file versions", () => {
     expect(parseStudioProjectFile({ ...project([]), version: 3 }).version).toBe(3);
-    expect(() => parseStudioProjectFile({ ...project([stroke(V4_PIPELINE)]), version: 4 })).toThrow(/프로젝트/);
+    expect(() => parseStudioProjectFile({ ...project([stroke(V4_PIPELINE)]), version: 6 })).toThrow(/프로젝트/);
   });
 });
