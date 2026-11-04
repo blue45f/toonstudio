@@ -173,6 +173,15 @@ export const TOOLCHAIN_STAGES_FRONT: readonly ProcessToolchainStage[] = [
         },
         kind: "builtin",
       },
+      {
+        name: { ko: "스토리→웹툰 & 마크업 즉시 변환 워크벤치", en: "Story-to-Webtoon & Live Markup Converter" },
+        role: {
+          ko: "LlamaGen.AI·투닝플러스·망가플레이(Fountain 마크업)·젠툰(DNA 잠금)·투툰/인서툰을 결합해 시놉시스와 대본을 세로 스크롤 웹툰 컷·말풍선으로 즉시 변환하는 내장 워크벤치",
+          en: "Built-in workbench combining LlamaGen.AI, Tooning Plus, Mangaplay Fountain markup, GenToon DNA lock, and TooToon/Insertoon to turn synopses and scripts directly into vertical webtoon cuts and speech balloons",
+        },
+        kind: "builtin",
+        href: "/studio/canvas",
+      },
     ],
   },
   {
@@ -238,6 +247,15 @@ export const TOOLCHAIN_STAGES_FRONT: readonly ProcessToolchainStage[] = [
         role: {
           ko: "스토리를 넣으면 패널을 자동으로 구성하는 Story Mode",
           en: "Story Mode that composes panels automatically from a story",
+        },
+        kind: "external",
+        pricing: "freemium",
+      },
+      {
+        name: { ko: "Katalist AI / Boords", en: "Katalist AI / Boords" },
+        role: {
+          ko: "스크립트 업로드 후 3D 카메라 구도·포즈 제어와 프레임별 애니매틱 타이밍 시트를 생성하는 스토리보드 도구",
+          en: "Storyboarding tools generating 3D camera/pose staging and frame-by-frame animatic timing sheets from uploaded scripts",
         },
         kind: "external",
         pricing: "freemium",
@@ -377,6 +395,14 @@ export const TOOLCHAIN_STAGES_FRONT: readonly ProcessToolchainStage[] = [
         role: {
           ko: "PD와 작가가 실시간으로 함께 편집하는 투닝 플러스의 협업 에디터 (말풍선·효과 배치 포함)",
           en: "Tooning Plus's collaborative editor where PDs and artists edit together in real time, including balloons and effects",
+        },
+        kind: "external",
+      },
+      {
+        name: { ko: "크레페 (CREPE) / 크몽 (Kmong)", en: "CREPE / Kmong" },
+        role: {
+          ko: "웹툰 선화·채색·3D 배경·식자 어시스턴트 커미션 슬롯과 마일스톤 외주 계약을 연결하는 국내 플랫폼",
+          en: "Korean platforms connecting webtoon line art, coloring, 3D background, and lettering assistant commission slots and milestone contracts",
         },
         kind: "external",
       },

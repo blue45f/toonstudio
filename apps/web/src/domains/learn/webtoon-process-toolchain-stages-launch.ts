@@ -177,6 +177,24 @@ export const TOOLCHAIN_STAGES_LAUNCH: readonly ProcessToolchainStage[] = [
         kind: "external",
       },
       {
+        name: { ko: "인서툰 (Insertoon) / KomikoAI", en: "Insertoon / KomikoAI" },
+        role: {
+          ko: "일상 인스타툰 4컷/8컷 정방형 만화 생성과 선화 자동 채색·부분 인페인팅을 지원하는 AI 만화 도구",
+          en: "AI comic tools for 4/8-panel square Instatoons, line art colorization, and region inpainting",
+        },
+        kind: "external",
+        pricing: "freemium",
+      },
+      {
+        name: { ko: "Anifusion / MangaFlow", en: "Anifusion / MangaFlow" },
+        role: {
+          ko: "캔버스 레이어 인페인팅·말풍선 결합과 노드 기반 멀티패널 생성 워크플로우를 제공하는 AI 웹툰 에디터",
+          en: "AI webtoon editors offering canvas layer inpainting, speech balloons, and node-based multi-panel generation",
+        },
+        kind: "external",
+        pricing: "freemium",
+      },
+      {
         name: { ko: "AI 코믹 디렉터", en: "AI Comic Director" },
         role: {
           ko: "시나리오 비트를 장면 후보 이미지로 만들어 검토·적용하는 AI 연출",
@@ -534,6 +552,41 @@ export const TOOLCHAIN_STAGES_LAUNCH: readonly ProcessToolchainStage[] = [
         },
         kind: "external",
         pricing: "subscription",
+      },
+      {
+        name: { ko: "미리캔버스 (Miricanvas) / 망고보드", en: "Miricanvas / Mangoboard" },
+        role: {
+          ko: "웹툰 표지 타이틀 로고·인스타툰 카드뉴스·SNS 홍보 배너 템플릿을 제작하는 국내 웹 디자인 도구",
+          en: "Korean web design tools for webtoon cover title logos, Instatoon carousels, and social promo banners",
+        },
+        kind: "external",
+        pricing: "freemium",
+      },
+      {
+        name: { ko: "타입캐스트 (Typecast) / 수퍼톤 (Supertone)", en: "Typecast / Supertone" },
+        role: {
+          ko: "웹툰 캐릭터 대사 감정 연기 AI 성우 보이스와 무빙툰·릴스 홍보 영상 더빙 오디오를 제작하는 도구",
+          en: "AI voice acting and emotional character dubbing studios for motion webtoons and promotional reels",
+        },
+        kind: "external",
+        pricing: "freemium",
+      },
+      {
+        name: { ko: "뮤팟 (Mewpot) / 셀바이뮤직", en: "Mewpot / SellBuyMusic" },
+        role: {
+          ko: "웹툰 BGM·효과음(SFX) 상업적 라이선스 음원과 분위기별 오디오 큐레이션을 제공하는 국내 사운드 플랫폼",
+          en: "Korean sound platforms providing commercial-license webtoon BGM, SFX, and mood-based audio curation",
+        },
+        kind: "external",
+        pricing: "subscription",
+      },
+      {
+        name: { ko: "팬딩 (Fanding) / 클래스101 / 콜로소", en: "Fanding / Class101 / Coloso" },
+        role: {
+          ko: "웹툰 작가 팬 멤버십·설정집 후원과 현업 작가 작화·3D 배경 실무 강의를 잇는 창작자 성장 생태계",
+          en: "Creator growth ecosystem linking fan memberships, lorebook patronage, and pro webtoon masterclasses",
+        },
+        kind: "external",
       },
       {
         name: { ko: "홍보 게시판", en: "Promotion Board" },
