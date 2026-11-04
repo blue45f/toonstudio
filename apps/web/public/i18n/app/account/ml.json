@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "ബയോ",
   "account.profile.bioPlaceholder": "ഒരു വരിയില് നിങ്ങളെക്കുറിച്ച് പറയൂ.",
   "account.profile.bioLength": "{length} /280",
+  "account.profile.draftRecovered": "ഈ പേജ് വിടുന്നതിന് മുമ്പ് നിങ്ങൾ വരുത്തിയ മാറ്റങ്ങൾ പുനഃസ്ഥാപിച്ചു. അവ ഇതുവരെ സെർവറിൽ സേവ് ചെയ്തിട്ടില്ല.",
+  "account.profile.discardDraft": "ഡ്രാഫ്റ്റ് ഉപേക്ഷിക്കുക",
+  "account.profile.draftRestored": "സേവ് ചെയ്യാത്ത നിങ്ങളുടെ പ്രൊഫൈൽ ഡ്രാഫ്റ്റ് പുനഃസ്ഥാപിച്ചു.",
   "account.profile.saveButton": "പ്രൊഫൈല് സംരക്ഷിക്കുക",
   "account.profile.saving": "സംരക്ഷിക്കുന്നു…",
   "account.profile.saved": "സംരക്ഷിച്ചു",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "എന്റെ അക്കൌണ്ട്",
   "account.page.title": "എന്റെ പ്രൊഫൈല്",
   "account.page.subtitle": "നിങ്ങളുടെ പോസ്റ്റുകളും പ്രവർത്തനങ്ങളും പരിശോധിക്കുക, നിങ്ങളുടെ പ്രൊഫൈല് വിശദാംശങ്ങള് നിയന്ത്രിക്കുക.",
-  "account.page.tabsAria": "പ്രൊഫൈൽ ടാബുകൾ",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "പ്രൊഫൈൽ ടാബുകൾ"
 }

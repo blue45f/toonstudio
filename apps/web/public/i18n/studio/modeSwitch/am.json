@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "ወደ ስቱዲዮ ሁነታ ቀይር",
+  "studio.modeSwitch.toSimple": "ወደ ቀላል ሁነታ ቀይር",
+  "studio.modeSwitch.studioMode": "የስቱዲዮ ሁነታ",
+  "studio.modeSwitch.simpleMode": "ቀላል ሁነታ"
 }

@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Stüdyo Moduna Geç",
+  "studio.modeSwitch.toSimple": "Basit Moda Geç",
+  "studio.modeSwitch.studioMode": "Stüdyo Modu",
+  "studio.modeSwitch.simpleMode": "Basit Mod"
 }

@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "పరిచయం",
   "account.profile.bioPlaceholder": "మీ గురించి మాకు ఒక పంక్తిలో చెప్పండి.",
   "account.profile.bioLength": "{length} /280",
+  "account.profile.draftRecovered": "ఈ పేజీని విడిచిపెట్టే ముందు మీరు చేసిన మార్పులు పునరుద్ధరించబడ్డాయి. అవి ఇంకా సర్వర్‌లో సేవ్ చేయబడలేదు.",
+  "account.profile.discardDraft": "డ్రాఫ్ట్‌ను విస్మరించు",
+  "account.profile.draftRestored": "మీ సేవ్ చేయని ప్రొఫైల్ డ్రాఫ్ట్ పునరుద్ధరించబడింది.",
   "account.profile.saveButton": "ప్రొఫైల్ను సేవ్ చేయండి",
   "account.profile.saving": "సేవ్ చేస్తోంది…",
   "account.profile.saved": "సేవ్ చేయబడింది",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "నా ఖాతా",
   "account.page.title": "నా ప్రొఫైల్",
   "account.page.subtitle": "మీ పోస్ట్లను, మీ కార్యాచరణను తనిఖీ చేయండి, మీ ప్రొఫైల్ వివరాలను నిర్వహించండి.",
-  "account.page.tabsAria": "ప్రొఫైల్ టాబ్లు",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "ప్రొఫైల్ టాబ్లు"
 }

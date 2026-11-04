@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Par mani",
   "account.profile.bioPlaceholder": "Vienā rindā pastāstiet par sevi.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Izmaiņas, ko veicāt pirms šīs lapas pamešanas, ir atjaunotas. Tās vēl nav saglabātas serverī.",
+  "account.profile.discardDraft": "Atmest melnrakstu",
+  "account.profile.draftRestored": "Jūsu nesaglabātais profila melnraksts ir atjaunots.",
   "account.profile.saveButton": "Saglabāt profilu",
   "account.profile.saving": "Saglabā…",
   "account.profile.saved": "Saglabāts",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "MANS KONTS",
   "account.page.title": "Mans profils",
   "account.page.subtitle": "Pārbaudiet savus ierakstus un aktivitāti un pārvaldiet profila datus.",
-  "account.page.tabsAria": "Profila cilnes",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Profila cilnes"
 }

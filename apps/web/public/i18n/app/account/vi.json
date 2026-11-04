@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Giới thiệu",
   "account.profile.bioPlaceholder": "Nói cho chúng tôi biết về bản thân mình trong một dòng.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Các thay đổi bạn thực hiện trước khi rời khỏi trang này đã được khôi phục. Chúng vẫn chưa được lưu lên máy chủ.",
+  "account.profile.discardDraft": "Hủy bản nháp",
+  "account.profile.draftRestored": "Bản nháp hồ sơ chưa lưu của bạn đã được khôi phục.",
   "account.profile.saveButton": "Lưu hồ sơ",
   "account.profile.saving": "Đang lưu…",
   "account.profile.saved": "Đã lưu",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "Tài khoản của tôi",
   "account.page.title": "Thông tin của tôi",
   "account.page.subtitle": "Kiểm tra bài đăng và hoạt động của bạn, và quản lý chi tiết hồ sơ của bạn.",
-  "account.page.tabsAria": "Tab thông tin của tôi",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Tab thông tin của tôi"
 }

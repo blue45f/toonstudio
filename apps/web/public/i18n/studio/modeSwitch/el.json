@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Μετάβαση σε λειτουργία Στούντιο",
+  "studio.modeSwitch.toSimple": "Μετάβαση σε Απλή λειτουργία",
+  "studio.modeSwitch.studioMode": "Λειτουργία Στούντιο",
+  "studio.modeSwitch.simpleMode": "Απλή λειτουργία"
 }

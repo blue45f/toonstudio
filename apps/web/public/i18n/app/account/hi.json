@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "परिचय",
   "account.profile.bioPlaceholder": "एक पंक्ति में अपना परिचय दें।",
   "account.profile.bioLength": "{length} /280",
+  "account.profile.draftRecovered": "इस पृष्ठ को छोड़ने से पहले किए गए आपके बदलाव बहाल कर दिए गए हैं। वे अभी सर्वर पर सहेजे नहीं गए हैं।",
+  "account.profile.discardDraft": "ड्राफ़्ट हटाएँ",
+  "account.profile.draftRestored": "आपका असहेजा प्रोफ़ाइल ड्राफ़्ट बहाल कर दिया गया है।",
   "account.profile.saveButton": "प्रोफ़ाइल सहेजें",
   "account.profile.saving": "सहेजा जा रहा है…",
   "account.profile.saved": "सहेजा गया",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "मेरा खाता",
   "account.page.title": "मेरी प्रोफ़ाइल",
   "account.page.subtitle": "अपनी पोस्ट और गतिविधि की जांच करें, और अपने प्रोफ़ाइल विवरण प्रबंधित करें।",
-  "account.page.tabsAria": "प्रोफ़ाइल टैब",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "प्रोफ़ाइल टैब"
 }

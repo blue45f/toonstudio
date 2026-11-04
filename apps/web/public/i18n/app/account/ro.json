@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografie",
   "account.profile.bioPlaceholder": "Descrieți-vă într-o singură propoziție.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Modificările făcute înainte de a părăsi această pagină au fost restaurate. Acestea nu au fost încă salvate pe server.",
+  "account.profile.discardDraft": "Renunță la ciornă",
+  "account.profile.draftRestored": "Ciorna nesalvată a profilului tău a fost restaurată.",
   "account.profile.saveButton": "Salvați profilul",
   "account.profile.saving": "Se salvează…",
   "account.profile.saved": "Salvat",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "CONTUL MEU",
   "account.page.title": "Profilul meu",
   "account.page.subtitle": "Verificați postările și activitățile și gestionați detaliile profilului.",
-  "account.page.tabsAria": "Tab-uri de profil",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Tab-uri de profil"
 }

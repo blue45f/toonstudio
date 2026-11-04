@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Իմ մասին",
   "account.profile.bioPlaceholder": "Մեկ տողով պատմեք ձեր մասին։",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Այս էջից դուրս գալուց առաջ ձեր կատարած փոփոխությունները վերականգնվել են։ Դրանք դեռ չեն պահպանվել սերվերում։",
+  "account.profile.discardDraft": "Հրաժարվել սևագրից",
+  "account.profile.draftRestored": "Ձեր պրոֆիլի չպահպանված սևագիրը վերականգնվել է։",
   "account.profile.saveButton": "Պահպանել պրոֆիլը",
   "account.profile.saving": "Պահպանվում է…",
   "account.profile.saved": "Պահպանված",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "ԻՄ ՀԱՇԻՎԸ",
   "account.page.title": "Իմ պրոֆիլը",
   "account.page.subtitle": "Ստուգեք ձեր գրառումները եւ գործունեությունը եւ կառավարեք ձեր պրոֆիլի մանրամասները:",
-  "account.page.tabsAria": "Պրոֆիլի ներդիրներ",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Պրոֆիլի ներդիրներ"
 }

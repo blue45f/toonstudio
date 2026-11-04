@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "О себе",
   "account.profile.bioPlaceholder": "Расскажите о себе в одной строке.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Изменения, внесённые перед уходом с этой страницы, восстановлены. Они ещё не сохранены на сервере.",
+  "account.profile.discardDraft": "Отменить черновик",
+  "account.profile.draftRestored": "Несохранённый черновик вашего профиля восстановлен.",
   "account.profile.saveButton": "Сохранить профиль",
   "account.profile.saving": "Сохранение…",
   "account.profile.saved": "Сохранено",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "МОЙ АККАУНТ",
   "account.page.title": "Мой профиль",
   "account.page.subtitle": "Просматривайте свои публикации и активность и управляйте профилем.",
-  "account.page.tabsAria": "Вкладки профиля",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Вкладки профиля"
 }

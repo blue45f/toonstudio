@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Անցնել Ստուդիայի ռեժիմի",
+  "studio.modeSwitch.toSimple": "Անցնել Պարզ ռեժիմի",
+  "studio.modeSwitch.studioMode": "Ստուդիայի ռեժիմ",
+  "studio.modeSwitch.simpleMode": "Պարզ ռեժիմ"
 }

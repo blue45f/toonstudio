@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografia",
   "account.profile.bioPlaceholder": "Opowiedz nam o sobie w jednym wierszu.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Zmiany wprowadzone przed opuszczeniem tej strony zostały przywrócone. Nie zostały jeszcze zapisane na serwerze.",
+  "account.profile.discardDraft": "Odrzuć wersję roboczą",
+  "account.profile.draftRestored": "Niezapisana wersja robocza profilu została przywrócona.",
   "account.profile.saveButton": "Zapisz profil",
   "account.profile.saving": "Zapisywanie…",
   "account.profile.saved": "Zapisano",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "MOJE KONTO",
   "account.page.title": "Mój profil",
   "account.page.subtitle": "Sprawdź swoje posty i aktywność, a także zarządzaj szczegółami profilu.",
-  "account.page.tabsAria": "Karty profilu",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Karty profilu"
 }

@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Comută la modul Studio",
+  "studio.modeSwitch.toSimple": "Comută la modul Simplu",
+  "studio.modeSwitch.studioMode": "Mod Studio",
+  "studio.modeSwitch.simpleMode": "Mod Simplu"
 }

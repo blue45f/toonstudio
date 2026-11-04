@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografie",
   "account.profile.bioPlaceholder": "Vertel ons van jouself in een reël.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Jou veranderinge voordat jy hierdie bladsy verlaat het, is herstel. Dit is nog nie op die bediener gestoor nie.",
+  "account.profile.discardDraft": "Gooi konsep weg",
+  "account.profile.draftRestored": "Jou ongestoorde profielkonsep is herstel.",
   "account.profile.saveButton": "Stoor profiel",
   "account.profile.saving": "Stoor tans…",
   "account.profile.saved": "Gestoor",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "MY REKENING",
   "account.page.title": "My profiel",
   "account.page.subtitle": "Gaan jou plasings en aktiwiteit na en bestuur jou profielbesonderhede.",
-  "account.page.tabsAria": "Profieloortjies",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Profieloortjies"
 }

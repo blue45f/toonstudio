@@ -12,7 +12,7 @@
  * - 표시 중인 텍스처는 캐릭터 에셋 상주 정책이 최소 30초 유지하므로 페이드 도중 사라지지 않는다.
  */
 
-import Phaser from "phaser";
+import type Phaser from "phaser";
 
 import {
   STUDIO_SPRITE_CROSSFADE_MS,

@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Prebaci na Studio način rada",
+  "studio.modeSwitch.toSimple": "Prebaci na Jednostavni način rada",
+  "studio.modeSwitch.studioMode": "Studio način rada",
+  "studio.modeSwitch.simpleMode": "Jednostavni način rada"
 }

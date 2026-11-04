@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "സ്റ്റുഡിയോ മോഡിലേക്ക് മാറുക",
+  "studio.modeSwitch.toSimple": "ലളിതമായ മോഡിലേക്ക് മാറുക",
+  "studio.modeSwitch.studioMode": "സ്റ്റുഡിയോ മോഡ്",
+  "studio.modeSwitch.simpleMode": "ലളിതമായ മോഡ്"
 }

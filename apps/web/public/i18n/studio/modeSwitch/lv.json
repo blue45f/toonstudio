@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Pārslēgt uz Studijas režīmu",
+  "studio.modeSwitch.toSimple": "Pārslēgt uz Vienkāršo režīmu",
+  "studio.modeSwitch.studioMode": "Studijas režīms",
+  "studio.modeSwitch.simpleMode": "Vienkāršais režīms"
 }

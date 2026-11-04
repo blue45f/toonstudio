@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografie",
   "account.profile.bioPlaceholder": "Vertel in één zin iets over jezelf.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Je wijzigingen van voordat je deze pagina verliet zijn hersteld. Ze zijn nog niet op de server opgeslagen.",
+  "account.profile.discardDraft": "Concept verwijderen",
+  "account.profile.draftRestored": "Je niet-opgeslagen profielconcept is hersteld.",
   "account.profile.saveButton": "Profiel opslaan",
   "account.profile.saving": "Opslaan…",
   "account.profile.saved": "Opgeslagen",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "MIJN ACCOUNT",
   "account.page.title": "Mijn profiel",
   "account.page.subtitle": "Bekijk je berichten en activiteit en beheer je profielgegevens.",
-  "account.page.tabsAria": "Tabbladen van mijn profiel",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Tabbladen van mijn profiel"
 }

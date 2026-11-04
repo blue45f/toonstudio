@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "स्टुडिओ मोडवर स्विच करा",
+  "studio.modeSwitch.toSimple": "सोप्या मोडवर स्विच करा",
+  "studio.modeSwitch.studioMode": "स्टुडिओ मोड",
+  "studio.modeSwitch.simpleMode": "सोपा मोड"
 }

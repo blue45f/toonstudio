@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "ປະຫວັດຫຍໍ້",
   "account.profile.bioPlaceholder": "ບອກກ່ຽວກັບຕົວທ່ານໃນແຖວດຽວ.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "ການປ່ຽນແປງຂອງທ່ານກ່ອນອອກຈາກໜ້ານີ້ໄດ້ຖືກກູ້ຄືນແລ້ວ. ພວກມັນຍັງບໍ່ທັນໄດ້ຖືກບັນທຶກໄວ້ໃນເຊີບເວີເທື່ອ.",
+  "account.profile.discardDraft": "ຍົກເລີກຮ່າງ",
+  "account.profile.draftRestored": "ຮ່າງໂປຣໄຟລ໌ທີ່ຍັງບໍ່ໄດ້ບັນທຶກຂອງທ່ານໄດ້ຖືກກູ້ຄືນແລ້ວ.",
   "account.profile.saveButton": "ບັນທຶກໂປຣໄຟລ໌",
   "account.profile.saving": "ກຳລັງບັນທຶກ…",
   "account.profile.saved": "ບັນທຶກແລ້ວ",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "ບັນຊີຂອງຂ້ອຍ",
   "account.page.title": "ໂປຣໄຟລ໌ຂອງຂ້ອຍ",
   "account.page.subtitle": "ກວດເບິ່ງໂພສຕ໌ ແລະ ກິດຈະກຳຂອງທ່ານ, ແລະ ຈັດການລາຍລະອຽດໂປຣໄຟລ໌ຂອງທ່ານ.",
-  "account.page.tabsAria": "ແຖບໂປຣໄຟລ໌",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "ແຖບໂປຣໄຟລ໌"
 }

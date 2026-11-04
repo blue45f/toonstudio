@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "ជីវប្រវត្តិ",
   "account.profile.bioPlaceholder": "ប្រាប់យើងអំពីខ្លួនអ្នកក្នុងមួយបន្ទាត់។",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "ការផ្លាស់ប្តូររបស់អ្នកមុនពេលចាកចេញពីទំព័រនេះត្រូវបានស្ដារឡើងវិញ។ ពួកវាមិនទាន់ត្រូវបានរក្សាទុកទៅក្នុងម៉ាស៊ីនមេនៅឡើយទេ។",
+  "account.profile.discardDraft": "បោះបង់សេចក្ដីព្រាង",
+  "account.profile.draftRestored": "សេចក្ដីព្រាងប្រវត្តិរូបដែលមិនទាន់រក្សាទុករបស់អ្នកត្រូវបានស្ដារឡើងវិញ។",
   "account.profile.saveButton": "រក្សាទុកប្រវត្តិរូប",
   "account.profile.saving": "កំពុងរក្សាទុក…",
   "account.profile.saved": "បានរក្សាទុក",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "គណនីរបស់ខ្ញុំ",
   "account.page.title": "ប្រវត្តិរូបរបស់ខ្ញុំ",
   "account.page.subtitle": "ពិនិត្យការបង្ហោះ និងសកម្មភាពរបស់អ្នក ហើយគ្រប់គ្រងព័ត៌មានលម្អិតនៃប្រវត្តិរូបរបស់អ្នក។",
-  "account.page.tabsAria": "ផ្ទាំងប្រវត្តិរូប",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "ផ្ទាំងប្រវត្តិរូប"
 }

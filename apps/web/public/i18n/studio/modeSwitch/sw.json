@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Badili hadi Hali ya Studio",
+  "studio.modeSwitch.toSimple": "Badili hadi Hali Rahisi",
+  "studio.modeSwitch.studioMode": "Hali ya Studio",
+  "studio.modeSwitch.simpleMode": "Hali Rahisi"
 }

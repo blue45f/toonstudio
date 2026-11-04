@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "ბიოგრაფია",
   "account.profile.bioPlaceholder": "მოგვიყევით თქვენს შესახებ ერთი წინადადებით.",
   "account.profile.bioLength": "{length} /280",
+  "account.profile.draftRecovered": "ამ გვერდის დატოვებამდე შეტანილი ცვლილებები აღდგენილია. ისინი ჯერ არ არის შენახული სერვერზე.",
+  "account.profile.discardDraft": "მონახაზის გაუქმება",
+  "account.profile.draftRestored": "თქვენი პროფილის შეუნახავი მონახაზი აღდგენილია.",
   "account.profile.saveButton": "შეინახეთ პროფილი",
   "account.profile.saving": "ინახება…",
   "account.profile.saved": "შენახულია",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "ჩემი ანგარიში",
   "account.page.title": "ჩემი პროფილი",
   "account.page.subtitle": "შეამოწმეთ თქვენი პოსტები და აქტივობა და მართეთ თქვენი პროფილის დეტალები.",
-  "account.page.tabsAria": "პროფილის ჩანართები",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "პროფილის ჩანართები"
 }

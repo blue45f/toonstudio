@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Bio",
   "account.profile.bioPlaceholder": "Özünüzü bir cümlə ilə təqdim edin.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Bu səhifədən çıxmazdan əvvəl etdiyiniz dəyişikliklər bərpa edildi. Onlar hələ serverdə saxlanılmayıb.",
+  "account.profile.discardDraft": "Qaralamanı ləğv et",
+  "account.profile.draftRestored": "Saxlanılmamış profil qaralamanız bərpa edildi.",
   "account.profile.saveButton": "Profili saxla",
   "account.profile.saving": "Saxlanılır…",
   "account.profile.saved": "Saxlanıldı",
@@ -39,11 +42,8 @@
   "account.profile.errorSave": "Profil saxlanıla bilmədi. Bir az sonra yenidən saxlamağa cəhd edin.",
   "account.profile.errorDelete": "Hesab silinə bilmədi. Bir az sonra yenidən cəhd edin.",
   "account.profile.loadingError": "Profil yüklənə bilmədi. Bir az sonra yenidən cəhd edin.",
-  "account.page.eyebrow": "MY ACCOUNT",
+  "account.page.eyebrow": "HESABIM",
   "account.page.title": "Profilim",
   "account.page.subtitle": "Yazılarınızı və fəaliyyətinizi yoxlayın, profil məlumatlarınızı idarə edin.",
-  "account.page.tabsAria": "Profil bölmələri",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Profil bölmələri"
 }
