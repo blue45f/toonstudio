@@ -147,7 +147,12 @@ export function StudioCompetitorCapabilityPanel({
   const [pageDomainId, setPageDomainId] =
     useState<StudioPageDomainId>("studio-role-workspace");
   const activeDensitySpec = STUDIO_UIUX_ERGONOMICS_MODES[densityMode];
+  const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
   const activePageBenchmark = resolveStudioPageReaBenchmark(pageDomainId);
+  // 선택한 세부 기능이 현재 도메인에 없으면(도메인 전환 직후 등) 첫 항목으로 되돌린다.
+  const activeSubEnhancement =
+    activePageBenchmark.subEnhancements.find((sub) => sub.id === selectedSubId) ??
+    activePageBenchmark.subEnhancements[0];
   const siteWideScorecard = computeToonStudioSiteWideQualityScorecard();
   const matchedWorkflows = useMemo(() => {
     const byQuery = matchStudioCompetitorWorkflowPreset(toolQuery);
@@ -521,32 +526,70 @@ export function StudioCompetitorCapabilityPanel({
               data-testid="competitor-page-sub-enhancements"
               className="mt-2 grid gap-1.5 sm:grid-cols-2"
             >
-              {activePageBenchmark.subEnhancements.map((sub) => (
-                <div
-                  key={sub.id}
-                  data-testid={`competitor-sub-enhancement-${sub.id}`}
-                  className="rounded-lg border border-line bg-card px-2 py-1.5 text-[0.6rem]"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-bold text-fg">
-                      {locale === "ko" ? sub.titleKo : sub.titleEn}
-                    </span>
-                    <span className="rounded bg-success/15 px-1.5 py-0.5 font-mono text-[0.58rem] font-black text-success">
-                      {sub.scoreOutOf100} / 100
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[0.56rem] leading-3.5 text-fg-2">
-                    {locale === "ko" ? sub.reaMechanismKo : sub.reaMechanismEn}
-                  </p>
-                  <div className="mt-1 flex items-center justify-between gap-1 text-[0.54rem] text-fg-3">
-                    <span className="truncate">{sub.referenceServices.join(" · ")}</span>
-                    <code className="shrink-0 rounded bg-panel px-1 py-0.5 font-mono text-accent">
-                      {sub.internalizedModulePath.split("/").slice(-1)[0]}
-                    </code>
-                  </div>
-                </div>
-              ))}
+              {activePageBenchmark.subEnhancements.map((sub) => {
+                const isSubActive = activeSubEnhancement?.id === sub.id;
+                return (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    aria-pressed={isSubActive}
+                    onClick={() => setSelectedSubId(sub.id)}
+                    data-testid={`competitor-sub-enhancement-${sub.id}`}
+                    className={cn(
+                      "rounded-lg border px-2 py-1.5 text-left text-[0.6rem] transition-colors",
+                      isSubActive ? "border-accent bg-accent-soft/25" : "border-line bg-card hover:border-accent/40",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold text-fg">
+                        {locale === "ko" ? sub.titleKo : sub.titleEn}
+                      </span>
+                      <span className="rounded bg-success/15 px-1.5 py-0.5 font-mono text-[0.58rem] font-black text-success">
+                        {sub.scoreOutOf100} / 100
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[0.56rem] leading-3.5 text-fg-2">
+                      {locale === "ko" ? sub.reaMechanismKo : sub.reaMechanismEn}
+                    </p>
+                    <div className="mt-1 flex items-center justify-between gap-1 text-[0.54rem] text-fg-3">
+                      <span className="truncate">{sub.referenceServices.join(" · ")}</span>
+                      <code className="shrink-0 rounded bg-panel px-1 py-0.5 font-mono text-accent">
+                        {sub.internalizedModulePath.split("/").slice(-1)[0]}
+                      </code>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+            {activeSubEnhancement ? (
+              <div
+                data-testid="competitor-active-sub-enhancement-inspector"
+                className="mt-2 rounded-lg border border-accent/35 bg-accent/5 p-2 text-[0.6rem]"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-fg">
+                  <span>
+                    {locale === "ko"
+                      ? `선택된 내재화 기능 정밀 검수 · ${activeSubEnhancement.titleKo}`
+                      : `Active Internalized Capability Inspector · ${activeSubEnhancement.titleEn}`}
+                  </span>
+                  <code className="rounded bg-card px-1.5 py-0.5 font-mono text-[0.56rem] text-accent">
+                    {activeSubEnhancement.internalizedModulePath}
+                  </code>
+                </div>
+                <p className="mt-1 text-[0.58rem] text-fg-2">
+                  {locale === "ko" ? activeSubEnhancement.reaMechanismKo : activeSubEnhancement.reaMechanismEn}
+                </p>
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-1 text-[0.55rem] text-fg-3">
+                  <span>
+                    {locale === "ko" ? "REA 역공학 참조 서비스: " : "REA Reference Services: "}
+                    <strong className="text-fg-2">{activeSubEnhancement.referenceServices.join(", ")}</strong>
+                  </span>
+                  <span className="font-mono font-bold text-success">
+                    {locale === "ko" ? "내재화·검증 완료" : "Internalized & Verified"} ({activeSubEnhancement.scoreOutOf100} / 100)
+                  </span>
+                </div>
+              </div>
+            ) : null}
             <div
               data-testid="competitor-visual-motion-strip"
               className="mt-2.5 grid gap-2 rounded-lg border border-accent/25 bg-card/90 p-2 sm:grid-cols-[9.5rem_minmax(0,1fr)]"
@@ -616,7 +659,7 @@ export function StudioCompetitorCapabilityPanel({
                 data-testid="toonstudio-sitewide-score-badge"
               >
                 {locale === "ko"
-                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (102,500,000,000,000만점 · ${siteWideScorecard.overallScore10} / 10)`
+                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (105,500,000,000,000만점 · ${siteWideScorecard.overallScore10} / 10)`
                   : `Overall ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`}
               </span>
             </div>
