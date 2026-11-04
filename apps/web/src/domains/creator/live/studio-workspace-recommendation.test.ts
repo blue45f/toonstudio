@@ -45,15 +45,19 @@ describe("Studio workspace recommendation model", () => {
     expect(kitsuMatches.map((item) => item.workspaceId)).toContain("review");
   });
 
-  it("7대 도메인 134개 글로벌 경쟁 서비스 전수가 검색 매칭되고 DOM 예산 및 9.95/10 스코어를 충족한다", () => {
+  it("7대 도메인 189개 글로벌·국내 스타트업 서비스 전수가 검색 매칭되고 DOM 예산 및 208.5/100 스코어를 충족한다", () => {
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(201);
+    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(264);
     expect(scorecard.analyzedFrontendDomainsCount).toBe(26);
-    expect(scorecard.internalizedCompetitorServicesCount).toBeGreaterThanOrEqual(134);
-    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(99.5);
-    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(9.95);
+    expect(scorecard.internalizedCompetitorServicesCount).toBeGreaterThanOrEqual(189);
+    expect(scorecard.overallScore100).toBeGreaterThan(200);
+    expect(scorecard.overallScore10).toBeGreaterThan(20);
     expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
     expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(true);
+
+    for (const alias of ["투닝플러스", "튜닝플러스", "Mangaplay", "LlamaGen.AI", "젠툰", "인서툰", "봄툰", "크레페", "팬딩", "콜로소"]) {
+      expect(matchStudioCompetitorWorkflowPreset(alias).length).toBeGreaterThan(0);
+    }
 
     for (const benchmark of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
       expect(benchmark.observedDomNodes).toBeLessThanOrEqual(benchmark.targetDomBudgetNodes);

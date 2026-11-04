@@ -145,9 +145,9 @@ export function MarketResourceFamilyExplorer({ className, compact = false }: Mar
           {[
             bt("ACON3D·SketchUp·KitBash3D (.skp/.glb 2점투시)", "ACON3D·SketchUp·KitBash3D (.skp/.glb)"),
             bt("Clip Studio·Krita·Procreate 브러시", "CSP·Krita·Procreate Brushes"),
-            bt("VRoid Hub VRM·Daz3D·Marvelous·Polycam·Meshy 3D", "VRoid Hub·Daz3D·Marvelous·Polycam·Meshy"),
+            bt("VRoid Hub VRM·Daz3D·Marvelous·Polycam·Meshy·Hyper3D Rodin·ZBrush 3D", "VRoid Hub·Daz3D·Marvelous·Polycam·Meshy·Rodin·ZBrush"),
             bt("Poly Haven·ambientCG·Sketchfab CC0 PBR/HDRI", "Poly Haven·ambientCG·Sketchfab PBR/HDRI"),
-            bt("눈누(Noonnu)·Google Fonts 상업무료 식자폰트 & Freesound 효과음", "Noonnu·Google Fonts & Freesound SFX"),
+            bt("눈누(Noonnu)·Google Fonts 상업무료 식자폰트 & 뮤팟(Mewpot)/Suno/Udio/Epidemic 음원", "Noonnu·Google Fonts & Mewpot/Suno/Udio/Epidemic Audio"),
             bt("BOOTH·Unity·CGTrader 1인·스튜디오 상업 라이선스 검증", "BOOTH·Unity·CGTrader License Verified"),
           ].map((badge) => (
             <span

@@ -155,9 +155,16 @@ export function ExploreReaDirectoryBar({
           },
           {
             id: "lezhin-binge-complete",
-            ko: "리디·레진·Manta·Piccoma 완결 정주행 패스",
-            en: "Ridi/Lezhin/Manta/Piccoma Binge Pass",
+            ko: "리디·레진·봄툰·피너툰·Manta·Piccoma 완결 정주행 패스",
+            en: "Ridi/Lezhin/Bomtoon/Peanutoon/Manta/Piccoma Binge Pass",
             status: ["completed"] as SerialStatus[],
+            sortKey: "rating" as SortKey,
+          },
+          {
+            id: "munpia-novelpia-watcha",
+            ko: "문피아·조아라·노벨피아 노벨코믹스 & 왓챠피디아 고별점 픽",
+            en: "Munpia/Joara/Novelpia Novel-Comics & Watcha Pedia Top Rated",
+            status: ["ongoing"] as SerialStatus[],
             sortKey: "rating" as SortKey,
           },
         ].map((preset) => (

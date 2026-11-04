@@ -395,9 +395,9 @@ export function CutsStudioPage() {
           {[
             t("GSAP ScrollTrigger 패럴랙스 깊이 루프 (2.5D)", "GSAP ScrollTrigger Parallax Loop (2.5D)"),
             t("PlayCanvas·cables.gl WebGPU 셰이더 & Theatre.js 카메라 커브", "PlayCanvas/cables.gl WebGPU & Theatre.js Curve"),
-            t("Cascadeur·Runway 액션 타격 카메라 셰이크", "Cascadeur/Runway Action Camera Shake"),
-            t("ElevenLabs 보이스 더빙 & Freesound/Storyblocks 효과음 싱크", "ElevenLabs Voice & Freesound/Storyblocks SFX Sync"),
-            t("9:16 숏폼 상하단 UI 안전영역 가이드", "9:16 Shortform Safe-Zone Guide"),
+            t("Cascadeur·Runway·Pika·Kling·Hailuo 액션 카메라 셰이크 & 모션 브러시", "Cascadeur/Runway/Pika/Kling/Hailuo Camera Shake & Motion"),
+            t("타입캐스트·수퍼톤·ElevenLabs AI 성우 더빙 & 뮤팟·Suno·Epidemic 효과음 싱크", "Typecast/Supertone/ElevenLabs Voice & Mewpot/Suno/Epidemic SFX Sync"),
+            t("오노마AI 인서툰·브루(Vrew)·Katalist 대본 자막 타이밍 & 9:16 릴스 안전영역", "Onoma AI Insertoon/Vrew/Katalist Subtitle Sync & 9:16 Safe-Zone"),
           ].map((presetLabel) => (
             <span
               key={presetLabel}
