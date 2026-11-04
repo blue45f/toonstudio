@@ -195,6 +195,14 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(screen.getByTestId("competitor-active-sub-enhancement-inspector")).toBeTruthy();
     fireEvent.click(screen.getByTestId("competitor-sub-enhancement-market-morisawa-fontworks-tileable-pbr"));
     expect(screen.getByTestId("competitor-active-sub-enhancement-inspector").textContent).toContain("Morisawa/Fontworks LETS/Monotype Comic Fonts");
+    expect(screen.getByTestId("competitor-active-service-deep-profile")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("competitor-service-chip-CLO 3D Fashion"));
+    expect(screen.getByTestId("competitor-active-service-deep-profile").textContent).toContain("Service Deep REA Profile · CLO 3D Fashion");
+    expect(screen.getByTestId("story-to-webtoon-mode-clo3d-acon-worldlabs-3dgs-stage")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-mode-rask-heygen-audio2face-130lang-dub")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-mode-comicstudio-vellum-comiket-print-preflight")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-mode-smartling-crowdin-glossary-720locale-qa")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-deep-engine-controls")).toBeTruthy();
     expect(screen.getByTestId("toonstudio-axis-breakdown-list")).toBeTruthy();
     expect(screen.getByTestId("toonstudio-sitewide-audit-ledger")).toBeTruthy();
     expect(screen.getByTestId("toonstudio-global-i18n-badge").textContent).toContain("720+ Country/Region Locales");

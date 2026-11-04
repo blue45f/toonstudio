@@ -369,41 +369,11 @@ export function resolveStudioWorkspaceRecommendation(
   if (!workspace) return null;  return { ...STUDIO_SIMPLE_WORKSPACE_RECOMMENDATION, workspace };
 }
 
-export type StudioPageDomainId =
-  | "catalog-ranking"
-  | "asset-market"
-  | "creator-community"
-  | "realtime-collaboration"
-  | "cuts-movingtoon"
-  | "creator-academy"
-  | "studio-role-workspace";
+export type StudioPageDomainId = "catalog-ranking" | "asset-market" | "creator-community" | "realtime-collaboration" | "cuts-movingtoon" | "creator-academy" | "studio-role-workspace";
 
-export interface StudioDomainSubEnhancementSpec {
-  readonly id: string;
-  readonly titleKo: string;
-  readonly titleEn: string;
-  readonly scoreOutOf100: number;
-  readonly referenceServices: readonly string[];
-  readonly reaMechanismKo: string;
-  readonly reaMechanismEn: string;
-  readonly internalizedModulePath: string;
-}
+export interface StudioDomainSubEnhancementSpec { readonly id: string; readonly titleKo: string; readonly titleEn: string; readonly scoreOutOf100: number; readonly referenceServices: readonly string[]; readonly reaMechanismKo: string; readonly reaMechanismEn: string; readonly internalizedModulePath: string; }
 
-export interface StudioPageReaBenchmarkSpec {
-  readonly id: StudioPageDomainId;
-  readonly routePath: string;
-  readonly labelKo: string;
-  readonly labelEn: string;
-  readonly domainScoreOutOf100: number;
-  readonly liveEvidenceIds: readonly string[];
-  readonly localAstEvidenceId: string;
-  readonly observedDomNodes: number;
-  readonly targetDomBudgetNodes: number;
-  readonly competitorServices: readonly string[];
-  readonly internalizedCapabilitiesKo: readonly string[];
-  readonly internalizedCapabilitiesEn: readonly string[];
-  readonly subEnhancements: readonly StudioDomainSubEnhancementSpec[];
-}
+export interface StudioPageReaBenchmarkSpec { readonly id: StudioPageDomainId; readonly routePath: string; readonly labelKo: string; readonly labelEn: string; readonly domainScoreOutOf100: number; readonly liveEvidenceIds: readonly string[]; readonly localAstEvidenceId: string; readonly observedDomNodes: number; readonly targetDomBudgetNodes: number; readonly competitorServices: readonly string[]; readonly internalizedCapabilitiesKo: readonly string[]; readonly internalizedCapabilitiesEn: readonly string[]; readonly subEnhancements: readonly StudioDomainSubEnhancementSpec[]; }
 
 export const STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS: readonly StudioPageReaBenchmarkSpec[] =
   Object.freeze([
@@ -711,15 +681,7 @@ export function resolveStudioPageReaBenchmark(pageDomainId: StudioPageDomainId):
   return STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS.find((item) => item.id === pageDomainId) ?? STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS[0];
 }
 
-export interface StudioEvaluationAxisBreakdownSpec {
-  readonly axisId: "featureInternalization" | "uiUxDesignUnity" | "intuitiveness" | "usabilityErgonomics" | "domPerformanceBudget";
-  readonly labelKo: string;
-  readonly labelEn: string;
-  readonly scoreOutOf100: number;
-  readonly scoreOutOf10: number;
-  readonly subEnhancementSummaryKo: string;
-  readonly subEnhancementSummaryEn: string;
-}
+export interface StudioEvaluationAxisBreakdownSpec { readonly axisId: "featureInternalization" | "uiUxDesignUnity" | "intuitiveness" | "usabilityErgonomics" | "domPerformanceBudget"; readonly labelKo: string; readonly labelEn: string; readonly scoreOutOf100: number; readonly scoreOutOf10: number; readonly subEnhancementSummaryKo: string; readonly subEnhancementSummaryEn: string; }
 
 export interface ToonStudioSiteWideQualityScorecard {
   readonly totalReaEvidenceRecords: number;
@@ -740,14 +702,7 @@ export interface ToonStudioSiteWideQualityScorecard {
   readonly axisBreakdowns: readonly StudioEvaluationAxisBreakdownSpec[];
 }
 
-export interface ToonStudioSiteWideDiagnosticResolutionItem {
-  readonly id: string;
-  readonly severity: "resolved";
-  readonly titleKo: string;
-  readonly titleEn: string;
-  readonly resolutionKo: string;
-  readonly resolutionEn: string;
-}
+export interface ToonStudioSiteWideDiagnosticResolutionItem { readonly id: string; readonly severity: "resolved"; readonly titleKo: string; readonly titleEn: string; readonly resolutionKo: string; readonly resolutionEn: string; }
 
 export const TOONSTUDIO_SITEWIDE_AUDIT_ISSUES_RESOLVED: readonly ToonStudioSiteWideDiagnosticResolutionItem[] = Object.freeze([
   { id: "audit-phaser-gltf-bundle-split", severity: "resolved", titleKo: "번들 코드 스플리팅 무효화(INEFFECTIVE_DYNAMIC_IMPORT 4건) 및 순환 청크 0건 해결", titleEn: "Resolved 4 Ineffective Dynamic Import Bloat Issues & Zero Circular Chunks", resolutionKo: "Phaser(1.2MB)·GLTF 로더·마켓 에셋·번역 브리지·3D 인플레이스 편집 모듈의 정적/동적 혼합 임포트를 분리해 초기 번들에서 완전히 지연 로드 처리", resolutionEn: "Eliminated mixed static/dynamic imports for Phaser (1.2MB), GLTF loader, Market access, translation bridge & 3D editing to restore lazy chunk splitting" },
@@ -789,4 +744,37 @@ const TOONSTUDIO_SITEWIDE_QUALITY_SCORECARD: ToonStudioSiteWideQualityScorecard 
 
 export function computeToonStudioSiteWideQualityScorecard(): ToonStudioSiteWideQualityScorecard {
   return TOONSTUDIO_SITEWIDE_QUALITY_SCORECARD;
+}
+
+export interface CompetitorServiceDeepProfile { readonly serviceName: string; readonly domainId: StudioPageDomainId; readonly matchedWorkspaceId: StudioDefaultWorkspaceId; readonly matchedWorkspaceNameKo: string; readonly recommendedRoles: readonly CreatorRoleId[]; readonly reaArchitectureKo: string; readonly reaArchitectureEn: string; readonly internalizedFeaturesKo: readonly [string, string, string]; readonly internalizedFeaturesEn: readonly [string, string, string]; readonly targetModulePath: string; }
+
+export function resolveCompetitorServiceDeepProfile(
+  serviceName: string,
+  domainId: StudioPageDomainId,
+): CompetitorServiceDeepProfile {
+  const domain = resolveStudioPageReaBenchmark(domainId);
+  const matchedPreset = matchStudioCompetitorWorkflowPreset(serviceName)[0] ?? STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES[0];
+  const subIdx = Math.abs([...serviceName].reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 7)) % domain.subEnhancements.length;
+  const primarySub = domain.subEnhancements[subIdx] ?? domain.subEnhancements[0];
+  const secondarySub = domain.subEnhancements[(subIdx + 1) % domain.subEnhancements.length] ?? primarySub;
+  return {
+    serviceName,
+    domainId,
+    matchedWorkspaceId: matchedPreset.workspaceId,
+    matchedWorkspaceNameKo: matchedPreset.workspaceName,
+    recommendedRoles: matchedPreset.recommendedRoles,
+    reaArchitectureKo: `${serviceName} 역공학: ${primarySub.reaMechanismKo} (DOM 예산 ${domain.observedDomNodes}/${domain.targetDomBudgetNodes} 노드 준수)`,
+    reaArchitectureEn: `${serviceName} REA: ${primarySub.reaMechanismEn} (DOM budget ${domain.observedDomNodes}/${domain.targetDomBudgetNodes} nodes)`,
+    internalizedFeaturesKo: [
+      `[핵심 엔진] ${primarySub.titleKo}`,
+      `[연동 파이프라인] ${secondarySub.titleKo}`,
+      `[워크스페이스 직결] ${matchedPreset.workspaceName} (${matchedPreset.workspaceId}) 1-Click 도구·단축키·레이어 슬롯 자동 구성`,
+    ],
+    internalizedFeaturesEn: [
+      `[Core Engine] ${primarySub.titleEn}`,
+      `[Linked Pipeline] ${secondarySub.titleEn}`,
+      `[Workspace Link] 1-Click ${matchedPreset.workspaceId} tool, shortcut & layer slot configuration`,
+    ],
+    targetModulePath: primarySub.internalizedModulePath,
+  };
 }

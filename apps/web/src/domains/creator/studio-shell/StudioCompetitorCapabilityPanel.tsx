@@ -1,45 +1,25 @@
-import {
-  CheckCircle2,
-  ChevronDown,
-  Compass,
-  FlaskConical,
-  Search,
-  ShieldCheck,
-} from "lucide-react";
+import { CheckCircle2, ChevronDown, Compass, FlaskConical, Search, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
-
-import {
-  WEBTOON_E2E_ROLE_PIPELINE_STAGES,
-  type WebtoonPipelineStageId,
-} from "../manga-toolkit/webtoon-role-pipeline-orchestrator";
-import {
-  STUDIO_COMPETITOR_CAPABILITY_EVALUATION,
-  STUDIO_COMPETITOR_CAPABILITY_RECORDS,
-} from "../studio-platform/studio-competitor-capability-evidence";
+import { WEBTOON_E2E_ROLE_PIPELINE_STAGES, type WebtoonPipelineStageId } from "../manga-toolkit/webtoon-role-pipeline-orchestrator";
+import { STUDIO_COMPETITOR_CAPABILITY_EVALUATION, STUDIO_COMPETITOR_CAPABILITY_RECORDS } from "../studio-platform/studio-competitor-capability-evidence";
 import {
   computeToonStudioSiteWideQualityScorecard,
   matchStudioCompetitorWorkflowPreset,
+  resolveCompetitorServiceDeepProfile,
   resolveStudioPageReaBenchmark,
   STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
   TOONSTUDIO_SITEWIDE_AUDIT_ISSUES_RESOLVED,
   type StudioPageDomainId,
 } from "../studio-workspace-recommendation";
 import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
-
 import type { CreatorRoleId } from "@/shared/lib/creator-role-contract";
-
 import { StudioStoryToWebtoonStartupWorkbench } from "./StudioStoryToWebtoonStartupWorkbench";
 
 export type StudioCompetitorCapabilityLocale = "ko" | "en";
 
-const COMPETITOR_ROLE_FILTER_CHIPS: readonly {
-  readonly id: "all" | CreatorRoleId;
-  readonly labelKo: string;
-  readonly labelEn: string;
-  readonly roles: readonly CreatorRoleId[];
-}[] = Object.freeze([
+const COMPETITOR_ROLE_FILTER_CHIPS: readonly { readonly id: "all" | CreatorRoleId; readonly labelKo: string; readonly labelEn: string; readonly roles: readonly CreatorRoleId[] }[] = Object.freeze([
   { id: "all", labelKo: "전체 직군", labelEn: "All roles", roles: [] },
   { id: "story", labelKo: "글·각색·콘티", labelEn: "Story & Board", roles: ["story", "adaptation", "associate-writer", "planner", "storyboard"] },
   { id: "background", labelKo: "3D 배경·어시", labelEn: "3D Background", roles: ["background", "background-assistant", "three-d"] },
@@ -60,10 +40,7 @@ const PIPELINE_STAGE_EN: Readonly<Record<WebtoonPipelineStageId, { readonly labe
   "pd-editorial-review": { label: "Editorial review", summary: "Review the work and prepare delivery checks." },
 };
 
-export type StudioUiUxDensityModeId =
-  | "canvas-focus-zen"
-  | "role-contextual-dock"
-  | "full-production-workbench";
+export type StudioUiUxDensityModeId = "canvas-focus-zen" | "role-contextual-dock" | "full-production-workbench";
 
 export interface StudioUiUxErgonomicsSpec {
   readonly id: StudioUiUxDensityModeId;
@@ -78,63 +55,34 @@ export interface StudioUiUxErgonomicsSpec {
   readonly keyShortcutsEn: string;
 }
 
-const STUDIO_UIUX_ERGONOMICS_MODES: Readonly<
-  Record<StudioUiUxDensityModeId, StudioUiUxErgonomicsSpec>
-> = Object.freeze({
+const STUDIO_UIUX_ERGONOMICS_MODES: Readonly<Record<StudioUiUxDensityModeId, StudioUiUxErgonomicsSpec>> = Object.freeze({
   "canvas-focus-zen": {
-    id: "canvas-focus-zen",
-    labelKo: "몰입형 Zen 캔버스 (Procreate · Photopea 형)",
-    labelEn: "Zen Canvas Focus (Procreate · Photopea style)",
-    benchmarkSummaryKo:
-      "Photopea(403 DOM)·Procreate(870 DOM) 벤치마크: 캔버스 면적 86% 확보, 상하단 크롬 최소화 및 플로팅 퀵메뉴 중심 배치",
-    benchmarkSummaryEn:
-      "Photopea (403 DOM) & Procreate (870 DOM) benchmark: 86% canvas viewport ratio, minimal chrome and radial quick menu",
-    canvasViewportRatioPct: 86,
-    targetDomNodeBudget: 850,
-    activeDockColumns: 1,
-    keyShortcutsKo: "Tab(패널 숨김) · 2핑거 실행취소 · 3핑거 다시실행 · Space(팬)",
-    keyShortcutsEn: "Tab (Hide docks) · 2-finger Undo · 3-finger Redo · Space (Pan)",
+    id: "canvas-focus-zen", labelKo: "몰입형 Zen 캔버스 (Procreate · Photopea 형)", labelEn: "Zen Canvas Focus (Procreate · Photopea style)",
+    benchmarkSummaryKo: "Photopea(403 DOM)·Procreate(870 DOM) 벤치마크: 캔버스 면적 86% 확보, 상하단 크롬 최소화 및 플로팅 퀵메뉴 중심 배치",
+    benchmarkSummaryEn: "Photopea (403 DOM) & Procreate (870 DOM) benchmark: 86% canvas viewport ratio, minimal chrome and radial quick menu",
+    canvasViewportRatioPct: 86, targetDomNodeBudget: 850, activeDockColumns: 1,
+    keyShortcutsKo: "Tab(패널 숨김) · 2핑거 실행취소 · 3핑거 다시실행 · Space(팬)", keyShortcutsEn: "Tab (Hide docks) · 2-finger Undo · 3-finger Redo · Space (Pan)",
   },
   "role-contextual-dock": {
-    id: "role-contextual-dock",
-    labelKo: "직무 문맥형 인스펙터 (Figma · Clip Studio 형)",
-    labelEn: "Role Contextual Inspector (Figma · Clip Studio style)",
-    benchmarkSummaryKo:
-      "Figma(2,284 DOM)·현재 역할 설정(736 DOM) 벤치마크: 선택한 직군·레이어에 필요한 4~5개 핵심 슬롯만 노출하는 점진적 공개(Progressive Disclosure)",
-    benchmarkSummaryEn:
-      "Figma (2,284 DOM) & role settings (736 DOM) benchmark: progressive disclosure showing only 4-5 role-relevant command slots",
-    canvasViewportRatioPct: 76,
-    targetDomNodeBudget: 1650,
-    activeDockColumns: 2,
-    keyShortcutsKo: "⌘K(통합 명령 검색) · Alt+드래그(스포이드/복제) · 1~5(직무 슬롯)",
-    keyShortcutsEn: "Cmd+K (Command palette) · Alt+Drag (Eyedropper/Duplicate) · 1-5 (Role slots)",
+    id: "role-contextual-dock", labelKo: "직무 문맥형 인스펙터 (Figma · Clip Studio 형)", labelEn: "Role Contextual Inspector (Figma · Clip Studio style)",
+    benchmarkSummaryKo: "Figma(2,284 DOM)·현재 역할 설정(736 DOM) 벤치마크: 선택한 직군·레이어에 필요한 4~5개 핵심 슬롯만 노출하는 점진적 공개(Progressive Disclosure)",
+    benchmarkSummaryEn: "Figma (2,284 DOM) & role settings (736 DOM) benchmark: progressive disclosure showing only 4-5 role-relevant command slots",
+    canvasViewportRatioPct: 76, targetDomNodeBudget: 1650, activeDockColumns: 2,
+    keyShortcutsKo: "⌘K(통합 명령 검색) · Alt+드래그(스포이드/복제) · 1~5(직무 슬롯)", keyShortcutsEn: "Cmd+K (Command palette) · Alt+Drag (Eyedropper/Duplicate) · 1-5 (Role slots)",
   },
   "full-production-workbench": {
-    id: "full-production-workbench",
-    labelKo: "올인원 프로덕션 워크벤치 (Spline · Kitsu · Studio 기본형)",
-    labelEn: "Full Production Workbench (Spline · Kitsu · Studio default)",
-    benchmarkSummaryKo:
-      "Spline(1,916 DOM)·현재 Studio 캔버스(3,524 DOM, 2 Workers) 기준: 3D 아웃라이너·18종 레이어 트리·컷 타임라인 동시 도킹",
-    benchmarkSummaryEn:
-      "Spline (1,916 DOM) & current Studio canvas (3,524 DOM, 2 Workers): simultaneous 3D outliner, 18-group layer tree and timeline docks",
-    canvasViewportRatioPct: 64,
-    targetDomNodeBudget: 3524,
-    activeDockColumns: 3,
-    keyShortcutsKo: "Shift+1~8(8단계 공정 뷰 전환) · L(레이어 잠금 점검) · P(2점 투시)",
-    keyShortcutsEn: "Shift+1-8 (8-stage view switch) · L (Layer lock check) · P (2-point perspective)",
+    id: "full-production-workbench", labelKo: "올인원 프로덕션 워크벤치 (Spline · Kitsu · Studio 기본형)", labelEn: "Full Production Workbench (Spline · Kitsu · Studio default)",
+    benchmarkSummaryKo: "Spline(1,916 DOM)·현재 Studio 캔버스(3,524 DOM, 2 Workers) 기준: 3D 아웃라이너·18종 레이어 트리·컷 타임라인 동시 도킹",
+    benchmarkSummaryEn: "Spline (1,916 DOM) & current Studio canvas (3,524 DOM, 2 Workers): simultaneous 3D outliner, 18-group layer tree and timeline docks",
+    canvasViewportRatioPct: 64, targetDomNodeBudget: 3524, activeDockColumns: 3,
+    keyShortcutsKo: "Shift+1~8(8단계 공정 뷰 전환) · L(레이어 잠금 점검) · P(2점 투시)", keyShortcutsEn: "Shift+1-8 (8-stage view switch) · L (Layer lock check) · P (2-point perspective)",
   },
 });
 
 export function StudioCompetitorCapabilityPanel({
-  locale,
-  compact = false,
-  onSelectWorkspacePreset,
-  activeWorkspaceId,
+  locale, compact = false, onSelectWorkspacePreset, activeWorkspaceId,
 }: {
-  readonly locale: StudioCompetitorCapabilityLocale;
-  readonly compact?: boolean;
-  readonly activeWorkspaceId?: StudioDefaultWorkspaceId;
-  readonly onSelectWorkspacePreset?: (workspaceId: StudioDefaultWorkspaceId) => void;
+  readonly locale: StudioCompetitorCapabilityLocale; readonly compact?: boolean; readonly activeWorkspaceId?: StudioDefaultWorkspaceId; readonly onSelectWorkspacePreset?: (workspaceId: StudioDefaultWorkspaceId) => void;
 }) {
   const evaluation = STUDIO_COMPETITOR_CAPABILITY_EVALUATION;
   const pending = STUDIO_COMPETITOR_CAPABILITY_RECORDS.filter(
@@ -148,7 +96,10 @@ export function StudioCompetitorCapabilityPanel({
     useState<StudioPageDomainId>("studio-role-workspace");
   const activeDensitySpec = STUDIO_UIUX_ERGONOMICS_MODES[densityMode];
   const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
+  const [selectedServiceName, setSelectedServiceName] = useState<string | null>(null);
   const activePageBenchmark = resolveStudioPageReaBenchmark(pageDomainId);
+  const effectiveServiceName = selectedServiceName && activePageBenchmark.competitorServices.includes(selectedServiceName) ? selectedServiceName : activePageBenchmark.competitorServices[0];
+  const activeServiceProfile = resolveCompetitorServiceDeepProfile(effectiveServiceName, pageDomainId);
   // 선택한 세부 기능이 현재 도메인에 없으면(도메인 전환 직후 등) 첫 항목으로 되돌린다.
   const activeSubEnhancement =
     activePageBenchmark.subEnhancements.find((sub) => sub.id === selectedSubId) ??
@@ -501,15 +452,64 @@ export function StudioCompetitorCapabilityPanel({
                 );
               })}
             </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {activePageBenchmark.competitorServices.map((svc) => (
-                <span
-                  key={svc}
-                  className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2"
-                >
-                  {svc}
-                </span>
-              ))}
+            <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label={locale === "ko" ? "도메인별 내재화 서비스 칩 선택" : "Select internalized competitor service"}>
+              {activePageBenchmark.competitorServices.map((svc) => {
+                const isSvcActive = effectiveServiceName === svc;
+                return (
+                  <button
+                    key={svc}
+                    type="button"
+                    aria-pressed={isSvcActive}
+                    data-testid={`competitor-service-chip-${svc}`}
+                    onClick={() => setSelectedServiceName(svc)}
+                    className={cn(
+                      "rounded border px-1.5 py-0.5 text-[0.58rem] font-semibold transition-colors",
+                      isSvcActive ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-fg-2 hover:border-accent/50 hover:text-fg",
+                    )}
+                  >
+                    {svc}
+                  </button>
+                );
+              })}
+            </div>
+            <div
+              data-testid="competitor-active-service-deep-profile"
+              className="mt-2 rounded-lg border border-accent/35 bg-card/95 p-2 text-[0.6rem]"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <strong className="text-fg">
+                  {locale === "ko"
+                    ? `개별 서비스 심층 역공학 프로필 · ${activeServiceProfile.serviceName}`
+                    : `Service Deep REA Profile · ${activeServiceProfile.serviceName}`}
+                </strong>
+                <div className="flex items-center gap-1.5">
+                  <code className="rounded bg-panel px-1.5 py-0.5 font-mono text-[0.55rem] text-accent">
+                    {activeServiceProfile.targetModulePath}
+                  </code>
+                  {onSelectWorkspacePreset ? (
+                    <button
+                      type="button"
+                      data-testid="competitor-apply-service-workflow-btn"
+                      onClick={() => handleSelectWorkspace(activeServiceProfile.matchedWorkspaceId)}
+                      className="rounded bg-accent px-2 py-0.5 text-[0.56rem] font-bold text-on-accent hover:opacity-90"
+                    >
+                      {locale === "ko"
+                        ? `${activeServiceProfile.matchedWorkspaceNameKo} 프리셋 즉시 적용`
+                        : `Apply ${activeServiceProfile.matchedWorkspaceId} Preset`}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <p className="mt-1 text-[0.57rem] text-fg-2">
+                {locale === "ko" ? activeServiceProfile.reaArchitectureKo : activeServiceProfile.reaArchitectureEn}
+              </p>
+              <div className="mt-1 grid gap-1 sm:grid-cols-3">
+                {(locale === "ko" ? activeServiceProfile.internalizedFeaturesKo : activeServiceProfile.internalizedFeaturesEn).map((feat) => (
+                  <div key={feat} className="rounded border border-line bg-panel/70 px-1.5 py-1 text-[0.55rem] text-fg-2">
+                    {feat}
+                  </div>
+                ))}
+              </div>
             </div>
             <ul className="mt-2 space-y-1 text-[0.64rem] leading-4 text-fg-2">
               {(locale === "ko"
@@ -755,15 +755,7 @@ export function StudioCompetitorCapabilityPanel({
   );
 }
 
-function Metric({
-  value,
-  label,
-  tone,
-}: {
-  readonly value: number;
-  readonly label: string;
-  readonly tone: "success" | "warning" | "danger";
-}) {
+function Metric({ value, label, tone }: { readonly value: number; readonly label: string; readonly tone: "success" | "warning" | "danger" }) {
   return (
     <span className={cn(
       "flex min-w-20 flex-col items-center rounded-xl border px-2 py-2",
