@@ -114,6 +114,10 @@ describe("공정별 도구 섹션 렌더", () => {
       "에이블러 (ABLUR)",
       "캐릭터 셰이퍼",
       "세계관 랩",
+      "스토리→웹툰 & 마크업 즉시 변환 워크벤치",
+      "인서툰 (Insertoon) / KomikoAI",
+      "미리캔버스 (Miricanvas) / 망고보드",
+      "타입캐스트 (Typecast) / 수퍼톤 (Supertone)",
     ]) {
       expect(screen.getAllByText(toolName).length).toBeGreaterThan(0);
     }
