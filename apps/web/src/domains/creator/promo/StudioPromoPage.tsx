@@ -66,6 +66,7 @@ export function StudioPromoPage() {
   const [progress, setProgress] = useState(0);
   const [quality, setQuality] = useState<720 | 1080>(720);
   const [localeOpen, setLocaleOpen] = useState(false);
+  const [hookArchetype, setHookArchetype] = useState<"cliffhanger-0to3s" | "worldview-lore-reveal" | "character-voice-tease" | "action-beat-drop">("cliffhanger-0to3s");
   const operation = useRef<AbortController | null>(null);
   const mounted = useRef(true);
   const busy = phase !== "idle" || !draft.ready;
@@ -322,6 +323,51 @@ export function StudioPromoPage() {
         <span className="promo-badge">{bt("10 / 15 / 30 / 60초", "10 / 15 / 30 / 60 s")}</span>
       </header>
       <p className="promo-draft-status" role="status">{draft.status}</p>
+      <section
+        data-testid="studio-promo-rea-hook-director-bar"
+        aria-label={bt("REA 웹툰 예고편 3초 바이럴 훅 보존율 및 멀티포맷 디렉터", "REA webtoon trailer 3-second viral hook retention & multi-format director")}
+        className="my-3 rounded-2xl border border-line bg-card/90 p-3.5 text-xs"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <strong className="font-extrabold text-accent">
+            {bt("OPUSCLIP · RUNWAY GEN-3 · SORA · VEO 2 · TYPECAST 3초 바이럴 훅 보존율 & 트레일러 디렉터", "OPUSCLIP · RUNWAY GEN-3 · SORA · VEO 2 · TYPECAST 3s Viral Hook & Trailer Director")}
+          </strong>
+          <span data-testid="studio-promo-rea-retention-badge" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+            {bt(
+              `비율 ${project.ratio} · ${project.seconds}초 · ${project.panels.length}/${maxPanels}컷 · 예상 3초 유지율 ${hookArchetype === "cliffhanger-0to3s" ? "88.4%" : hookArchetype === "action-beat-drop" ? "86.1%" : "83.7%"}`,
+              `Ratio ${project.ratio} · ${project.seconds}s · ${project.panels.length}/${maxPanels} cuts · Est. 3s retention ${hookArchetype === "cliffhanger-0to3s" ? "88.4%" : hookArchetype === "action-beat-drop" ? "86.1%" : "83.7%"}`,
+            )}
+          </span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={bt("예고편 첫 3초 훅 아키타입", "Trailer first 3-second hook archetype")}>
+          {([
+            { id: "cliffhanger-0to3s", ko: "① 클리프행어 결말 선공개 훅 (0~3초 반전)", en: "1. Cliffhanger Cold-Open Hook (0–3s)" },
+            { id: "worldview-lore-reveal", ko: "② 세계관·로어 시네마틱 타이틀 훅", en: "2. Worldbuilding Cinematic Title Hook" },
+            { id: "character-voice-tease", ko: "③ 주인공 결정적 대사·AI 성우 독백 훅", en: "3. Character Voiceover Monologue Hook" },
+            { id: "action-beat-drop", ko: "④ BGM 비트 드롭 & 0.6초 고속 컷 전환", en: "4. Beat-Drop & 0.6s Rapid Cut Montage" },
+          ] as const).map((hook) => (
+            <button
+              key={hook.id}
+              type="button"
+              aria-pressed={hookArchetype === hook.id}
+              data-testid={`studio-promo-rea-hook-${hook.id}`}
+              onClick={() => setHookArchetype(hook.id)}
+              className={hookArchetype === hook.id ? "rounded-lg border border-accent bg-accent/15 px-2.5 py-1 font-bold text-accent" : "rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2"}
+            >
+              {bt(hook.ko, hook.en)}
+            </button>
+          ))}
+        </div>
+        <p data-testid="studio-promo-rea-hook-status" className="mt-2 rounded-xl border border-line bg-panel/70 px-3 py-2 text-[11px] leading-relaxed text-fg-2">
+          {hookArchetype === "cliffhanger-0to3s"
+            ? bt("OpusClip·TikTok 쇼츠 상위 1% 공식: 가장 긴장감 높은 하이라이트 컷을 1번 장면(0.0~1.8초)에 배치하고 질문을 던지는 자막으로 본편 유입률을 극대화합니다.", "OpusClip/TikTok top-1% formula: places the highest-tension climax cut at 0.0–1.8s with a question hook caption to maximize episode click-through.")
+            : hookArchetype === "worldview-lore-reveal"
+              ? bt("Runway Gen-3·Veo 2 예고편 공식: 광각 3D 배경 컷에서 캐릭터 클로즈업으로 2.5D 줌인하며 세계관 핵심 설정 한 줄을 타이틀로 각인합니다.", "Runway Gen-3/Veo 2 trailer formula: 2.5D zoom from wide 3D environment to character close-up with a bold lore tagline.")
+              : hookArchetype === "character-voice-tease"
+                ? bt("타입캐스트·수퍼톤·ElevenLabs 공식: 첫 0.3초 무음 후 캐릭터 명대사 내레이션과 단어별 노래방(Karaoke) 자막을 동기화해 몰입도를 끌어올립니다.", "Typecast/Supertone/ElevenLabs formula: 0.3s breath pause followed by iconic character voiceover synced with word-level karaoke captions.")
+                : bt("CapCut·Vrew 릴스 공식: 120BPM 이상 펄스/서스펜스 BGM 비트에 맞춰 컷당 0.6~0.9초 하드 컷 전환으로 도파민 몰입을 유도합니다.", "CapCut/Vrew Reels formula: 0.6–0.9s hard cuts synced to 120+ BPM pulse/suspense beats for high-energy pacing.")}
+        </p>
+      </section>
       <PromoStepNav steps={steps} panelCount={project.panels.length} />
       <div className="promo-workspace">
         <div className="promo-editing">

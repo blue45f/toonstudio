@@ -303,6 +303,8 @@ export function CutsStudioPage() {
   const [publishBlocked, setPublishBlocked] = useState(false);
   const [studioEngine, setStudioEngine] = useState<StudioEnginePreset>("gsap-parallax-25d");
   const [targetFps, setTargetFps] = useState<StudioTargetFps>("60fps-webgpu");
+  const [cameraCurve, setCameraCurve] = useState<"spring-impact" | "smooth-pan-25d" | "shonen-shake-burst" | "emotional-slowzoom">("spring-impact");
+  const [duckingProfile, setDuckingProfile] = useState<"dialogue-minus12db" | "sfx-punch-minus6db" | "cinema-lufs14">("dialogue-minus12db");
 
   // 선택한 회차가 리믹스 진입 대상과 같을 때만 리믹스 초안으로 만든다.
   const isRemixDraft =
@@ -509,6 +511,72 @@ export function CutsStudioPage() {
             `[활성 렌더 파이프라인] 엔진: ${studioEngine} · 주사율: ${targetFps} · Rive, Spine, Live2D, Vrew, Onoma AI Insertoon, ElevenLabs 무빙툰 규격 호환`,
             `[Active Render Pipeline] Engine: ${studioEngine} · Frame-Rate: ${targetFps} · Rive, Spine, Live2D, Vrew, Onoma AI Insertoon, ElevenLabs movingtoon spec ready`,
           )}
+        </p>
+      </section>
+      <section
+        data-testid="cuts-studio-rea-keyframe-ducking-bar"
+        aria-label={t("REA 9:16 무빙툰 키프레임 이징 커브 및 오토더킹 스튜디오 바", "REA 9:16 moving-toon keyframe easing curve & auto-ducking studio bar")}
+        className="my-3 rounded-2xl border border-line bg-card/90 p-3.5 text-xs"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <strong className="font-extrabold text-accent">
+            {t("RIVE · TOON BOOM · CAPCUT · VREW · KLING 1.6 카메라 키프레임 커브 & -12dB 보이스 오토더킹", "RIVE · TOON BOOM · CAPCUT · VREW · KLING 1.6 Camera Keyframe Curve & -12dB Auto-Ducking")}
+          </strong>
+          <span data-testid="cuts-studio-rea-ducking-badge" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+            {duckingProfile === "dialogue-minus12db"
+              ? t("대사 발화 시 BGM -12dB 감쇠 · Rhubarb 6음소 싱크", "Dialogue -12dB BGM Ducking · Rhubarb 6-Viseme")
+              : duckingProfile === "sfx-punch-minus6db"
+                ? t("타격 효과음 구간 -6dB 사이드체인 · 60fps", "SFX Impact -6dB Sidechain · 60fps")
+                : t("전 구간 -14 LUFS 라우드니스 정규화", "-14 LUFS Broadcast Loudness Normalization")}
+          </span>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("카메라 키프레임 커브 프리셋", "Camera keyframe curve presets")}>
+            {([
+              { id: "spring-impact", ko: "스프링 임팩트 줌 (Cubic-Bezier 0.22,1,0.36,1)", en: "Spring Impact Zoom (0.22,1,0.36,1)" },
+              { id: "smooth-pan-25d", ko: "2.5D 다층 패럴랙스 글라이드", en: "2.5D Multi-Plane Parallax Glide" },
+              { id: "shonen-shake-burst", ko: "액션 타격 카메라 셰이크 & 스피드라인", en: "Action Camera Shake & Speedline" },
+              { id: "emotional-slowzoom", ko: "감정 클로즈업 슬로우 랙포커스", en: "Emotional Slow Zoom & Rack Focus" },
+            ] as const).map((curve) => (
+              <button
+                key={curve.id}
+                type="button"
+                aria-pressed={cameraCurve === curve.id}
+                data-testid={`cuts-studio-rea-curve-${curve.id}`}
+                onClick={() => setCameraCurve(curve.id)}
+                className={cameraCurve === curve.id ? "rounded-lg border border-accent bg-accent/15 px-2.5 py-1 font-bold text-accent" : "rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2"}
+              >
+                {t(curve.ko, curve.en)}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1" role="group" aria-label={t("오디오 오토더킹 프로필", "Audio auto-ducking profile")}>
+            {([
+              { id: "dialogue-minus12db", ko: "대사 -12dB 더킹", en: "Dialogue -12dB" },
+              { id: "sfx-punch-minus6db", ko: "효과음 -6dB 더킹", en: "SFX -6dB" },
+              { id: "cinema-lufs14", ko: "-14 LUFS 마스터링", en: "-14 LUFS Master" },
+            ] as const).map((duck) => (
+              <button
+                key={duck.id}
+                type="button"
+                aria-pressed={duckingProfile === duck.id}
+                data-testid={`cuts-studio-rea-duck-${duck.id}`}
+                onClick={() => setDuckingProfile(duck.id)}
+                className={duckingProfile === duck.id ? "rounded-md border border-accent bg-accent px-2 py-0.5 text-[11px] font-bold text-on-accent" : "rounded-md border border-line bg-panel px-2 py-0.5 text-[11px] text-fg-3"}
+              >
+                {t(duck.ko, duck.en)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p data-testid="cuts-studio-rea-keyframe-status" className="mt-2 rounded-xl border border-line bg-panel/70 px-3 py-2 text-[11px] leading-relaxed text-fg-2">
+          {cameraCurve === "spring-impact"
+            ? t("Rive·Theatre.js 스프링 이징 커브로 핵심 대사 컷 진입 첫 0.18초에 시선을 고정하고 말풍선 팝업 타이밍을 동기화합니다.", "Locks viewer focus in the first 0.18s using Rive/Theatre.js spring easing synced to speech-balloon pop-in.")
+            : cameraCurve === "smooth-pan-25d"
+              ? t("전경 캐릭터와 3D 배경 레이어를 1:0.35 깊이 비율로 분리 이동하여 스크롤 원고를 자연스러운 9:16 무빙툰으로 변환합니다.", "Separates foreground character and 3D background layers at a 1:0.35 depth ratio for smooth 9:16 motion comics.")
+              : cameraCurve === "shonen-shake-burst"
+                ? t("클라이맥스 타격 프레임에 12Hz 감쇠 진동과 집중선 오버레이를 결합해 소년만화풍 타격감을 극대화합니다.", "Combines 12Hz damped camera shake with speedline overlays on impact frames for shonen action punch.")
+                : t("감정선 독백 구간에서 1.00x → 1.14x 선형 줌인과 피사계 심도(DoF) 블러를 적용해 대사 전달력을 높입니다.", "Applies a 1.00x → 1.14x slow push-in with subtle depth-of-field blur during emotional monologues.")}
         </p>
       </section>
 
