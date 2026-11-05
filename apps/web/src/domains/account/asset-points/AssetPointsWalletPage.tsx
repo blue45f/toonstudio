@@ -45,6 +45,14 @@ import { awardDailyLoginBonus } from "./asset-points-triggers";
 
 const HISTORY_LIMIT = 20;
 
+type WalletExchangeTier =
+  | "clippy-brush-pack-150p"
+  | "acon-3d-prop-300p"
+  | "tapas-cuts-boost-500p"
+  | "fifo-365d-auto-guard";
+
+type WalletFifoWindow = "30d-urgent-first" | "90d-quarterly" | "365d-full-ledger";
+
 function eventLabel(event: AssetPointEvent, t: (ko: string, en: string) => string): string {
   if (event.kind === "earn") {
     const rule = event.activityKey ? assetPointEarnRule(event.activityKey) : null;
@@ -65,6 +73,8 @@ export function AssetPointsWalletPage() {
   const events = useCurrentOwnerAssetPointEvents();
   const claimUnownedEvents = useAssetPointsStore((state) => state.claimUnownedEvents);
   const [loginBonusPoints, setLoginBonusPoints] = useState<number | null>(null);
+  const [exchangeTier, setExchangeTier] = useState<WalletExchangeTier>("clippy-brush-pack-150p");
+  const [fifoWindow, setFifoWindow] = useState<WalletFifoWindow>("30d-urgent-first");
   const claimedForUserRef = useRef<string | null>(null);
   // 원장은 IndexedDB 비동기 persist라 복원이 끝나기 전에는 빈 원장이 진짜처럼
   // 보인다(잔액 0P·내역 없음). 복원 완료 전에는 잔액을 표시하지 않고, 마운트
@@ -103,6 +113,101 @@ export function AssetPointsWalletPage() {
     );
   }, [events]);
 
+  const fifoExchangeBar = (
+    <section
+      data-testid="wallet-rea-fifo-exchange-bar"
+      aria-label={t(
+        "REA 선입선출(FIFO) 소멸 방지 및 마켓 에셋 교환 시뮬레이터",
+        "REA FIFO Point Expiry Guard & Market Asset Exchange Simulator",
+      )}
+      className="mt-6 rounded-3xl border border-line bg-panel p-4 text-xs"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          className="flex flex-wrap items-center gap-1.5"
+          role="group"
+          aria-label={t("에셋 교환 티어 시뮬레이션", "Asset Exchange Tier Simulation")}
+        >
+          <span className="font-extrabold text-accent">
+            {t("교환 티어:", "Exchange Tier:")}
+          </span>
+          {([
+            {
+              id: "clippy-brush-pack-150p",
+              ko: "CLIPPY 브러시 팩 (150P)",
+              en: "CLIPPY Brush Pack (150P)",
+            },
+            {
+              id: "acon-3d-prop-300p",
+              ko: "에이콘3D 배경 소품 (300P)",
+              en: "ACON3D Background Prop (300P)",
+            },
+            {
+              id: "tapas-cuts-boost-500p",
+              ko: "컷츠 사운드·이펙트 팩 (500P)",
+              en: "Cuts SFX & Motion Pack (500P)",
+            },
+            {
+              id: "fifo-365d-auto-guard",
+              ko: "365일 만료 임박분 자동 우선 차감",
+              en: "365d Expiry Auto-FIFO Guard",
+            },
+          ] as const).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`wallet-rea-tier-${item.id}`}
+              aria-pressed={exchangeTier === item.id}
+              onClick={() => setExchangeTier(item.id)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                exchangeTier === item.id
+                  ? "border-accent bg-accent text-white"
+                  : "border-line bg-card text-fg-2 hover:border-accent/50"
+              }`}
+            >
+              {t(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <div
+          className="flex flex-wrap items-center gap-1.5"
+          role="group"
+          aria-label={t("선입선출(FIFO) 차감 구간", "FIFO Deduction Window")}
+        >
+          <span className="font-extrabold text-accent">
+            {t("차감 구간:", "FIFO Window:")}
+          </span>
+          {([
+            { id: "30d-urgent-first", ko: "30일 이내 만료 임박분 우선", en: "30d Urgent Expiry First" },
+            { id: "90d-quarterly", ko: "90일 분기별 적립 원장", en: "90d Quarterly Ledger" },
+            { id: "365d-full-ledger", ko: "365일 전체 유효 원장", en: "365d Full Active Ledger" },
+          ] as const).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`wallet-rea-window-${item.id}`}
+              aria-pressed={fifoWindow === item.id}
+              onClick={() => setFifoWindow(item.id)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                fifoWindow === item.id
+                  ? "border-accent bg-accent text-white"
+                  : "border-line bg-card text-fg-2 hover:border-accent/50"
+              }`}
+            >
+              {t(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p data-testid="wallet-rea-fifo-status" className="mt-2 text-[11px] text-fg-2">
+        {t(
+          `[FIFO 차감 시뮬레이션] 선택 티어: ${exchangeTier} · 차감 구간: ${fifoWindow} · Clip Studio CLIPPY, Tapas Ink, Piccoma Coin, Webtoon Cookie 방식의 비현금성 활동 리워드 선입선출(FIFO) 자동 차감 규격 적용`,
+          `[FIFO Deduction Simulation] Tier: ${exchangeTier} · Window: ${fifoWindow} · Non-cash activity reward FIFO auto-deduction benchmarked on Clip Studio CLIPPY, Tapas Ink, Piccoma Coin, Webtoon Cookie`,
+        )}
+      </p>
+    </section>
+  );
+
   if (!userId) {
     return (
       <Container size="prose" className="py-10 sm:py-16">
@@ -118,6 +223,7 @@ export function AssetPointsWalletPage() {
             "Studio Points are rewards you earn from signing in and creating. Sign in to see your balance and history.",
           )}
         </p>
+        {fifoExchangeBar}
         <section
           aria-label={t("포인트 안내", "About points")}
           className="mt-6 rounded-3xl border border-line bg-panel p-5"
@@ -203,6 +309,8 @@ export function AssetPointsWalletPage() {
         }
         asideClassName="hidden md:block"
       />
+
+      {fifoExchangeBar}
 
       {loginBonusPoints !== null ? (
         <div

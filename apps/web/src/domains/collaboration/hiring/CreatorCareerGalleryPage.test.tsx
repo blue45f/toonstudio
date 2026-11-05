@@ -7,6 +7,8 @@ import { CreatorCareerGalleryPage } from "./CreatorCareerGalleryPage";
 
 import type { CreatorCareerPublic } from "../../../../../../packages/contracts/src/creator-hiring";
 
+import { useI18n } from "@/shared/lib/i18n";
+
 const getMock = vi.fn();
 vi.mock("@/platform/api", () => ({
   api: { get: (...args: unknown[]) => getMock(...args) },
@@ -219,5 +221,49 @@ describe("CreatorCareerGalleryPage", () => {
     expect(screen.getByRole("button", { name: /다시 불러오기/ })).toBeTruthy();
     // 실패를 빈 상태로 위장하지 않는다
     expect(screen.queryByText("공개된 포트폴리오가 아직 없어요.")).toBeNull();
+  });
+
+  it("REA 커리어 증빙 인스펙터 바에서 증빙 모드와 검증 깊이를 한/영 전환하며 시뮬레이션한다", async () => {
+    act(() => {
+      useI18n.getState().setLang("ko");
+    });
+    getMock.mockResolvedValue(items);
+    renderGallery();
+    await screen.findByText("달빛 기사단");
+
+    const bar = screen.getByTestId("career-gallery-rea-proof-bar");
+    expect(bar).toBeTruthy();
+
+    expect(screen.getByTestId("career-gallery-rea-mode-kitsu-cut-credit-hash").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("career-gallery-rea-depth-peer-confirmed").getAttribute("aria-pressed")).toBe("true");
+
+    const status = screen.getByTestId("career-gallery-rea-proof-status");
+    expect(status.textContent).toContain("ArtStation Pro");
+    expect(status.textContent).toContain("Behance");
+    expect(status.textContent).toContain("Cara");
+    expect(status.textContent).toContain("CGWire Kitsu");
+    expect(status.textContent).toContain("KOCCA");
+
+    fireEvent.click(screen.getByTestId("career-gallery-rea-mode-cara-c2pa-human-stroke"));
+    expect(screen.getByTestId("career-gallery-rea-mode-cara-c2pa-human-stroke").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("career-gallery-rea-mode-kitsu-cut-credit-hash").getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("Cara·C2PA 필압 스트로크 증명");
+
+    fireEvent.click(screen.getByTestId("career-gallery-rea-depth-psd-layer-sha256"));
+    expect(screen.getByTestId("career-gallery-rea-depth-psd-layer-sha256").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("career-gallery-rea-depth-peer-confirmed").getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("CLIP·PSD 레이어 트리 SHA-256");
+
+    act(() => {
+      useI18n.getState().setLang("en");
+    });
+
+    expect(status.textContent).toContain("Cara & C2PA Human Stroke Proof");
+    expect(status.textContent).toContain("CLIP & PSD Layer Tree SHA-256");
+    expect(bar.textContent).not.toMatch(/[\uAC00-\uD7A3]/u);
+
+    act(() => {
+      useI18n.getState().setLang("ko");
+    });
   });
 });

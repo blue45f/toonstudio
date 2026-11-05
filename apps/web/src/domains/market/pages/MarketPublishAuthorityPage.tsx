@@ -41,6 +41,17 @@ import { getCreatorMarketplaceResourceIdentity, publishCreatorMarketplaceResourc
 
 const MAX_SOURCE_FILE_BYTES = 512 * 1024;
 
+type MarketPublishValidatorTrackId =
+  | "csp-layer-lt-compat"
+  | "unity-fab-package-hash"
+  | "booth-vrm-springbone"
+  | "c2pa-no-ai-royalty";
+
+type MarketPublishLicenseTierId =
+  | "indie-single"
+  | "studio-team-5seat"
+  | "enterprise-ip-unlimited";
+
 interface MarketSourceRequest {
   generation: number;
   controller: AbortController | null;
@@ -94,8 +105,85 @@ export function MarketPublishAuthorityPage() {
   const [updateParent, setUpdateParent] = useState<CreatorMarketplaceResourceIdentity | null>(null);
   const [parentError, setParentError] = useState<string | null>(null);
   const [parentLookupAttempt, setParentLookupAttempt] = useState(0);
+  const [validatorTrack, setValidatorTrack] = useState<MarketPublishValidatorTrackId>("csp-layer-lt-compat");
+  const [licenseTier, setLicenseTier] = useState<MarketPublishLicenseTierId>("indie-single");
   const requestRef = useRef<MarketSourceRequest>({ generation: 0, controller: null });
   const updateTarget = authoringUpdateResourceId(manifestText);
+
+  const validatorTrackOptions: readonly {
+    id: MarketPublishValidatorTrackId;
+    label: string;
+    receipt: string;
+  }[] = [
+    {
+      id: "csp-layer-lt-compat",
+      label: t("CSP LT 선화·레이어 호환성", "CSP LT Line-Art & Layer Compatibility"),
+      receipt: t(
+        "CLIP STUDIO ASSETS 브러시 농도·벡터 레이어·3D LT 외곽선 추출 무결성 통과",
+        "CLIP STUDIO ASSETS brush density, vector layer & 3D LT outline extraction integrity passed",
+      ),
+    },
+    {
+      id: "unity-fab-package-hash",
+      label: t("Unity·Fab 패키지 SHA-256 검증", "Unity & Fab Package SHA-256 Check"),
+      receipt: t(
+        "Unity Publisher Validator·Fab 텍스처 압축 규격 및 manifest 해시 트리 일치",
+        "Unity Publisher Validator & Fab texture compression spec and manifest hash tree verified",
+      ),
+    },
+    {
+      id: "booth-vrm-springbone",
+      label: t("BOOTH VRM·포즈 본 리깅 검증", "BOOTH VRM & Pose Bone Rigging Check"),
+      receipt: t(
+        "BOOTH 3D 캐릭터 SpringBone 관절 한계각·휴머노이드 본 매핑 검증 완료",
+        "BOOTH 3D character SpringBone joint limit & humanoid bone mapping verification complete",
+      ),
+    },
+    {
+      id: "c2pa-no-ai-royalty",
+      label: t("C2PA 순수 창작·로열티 프리 증명", "C2PA Human-Authored & Royalty-Free Proof"),
+      receipt: t(
+        "C2PA 원본 작업 서명·No-AI 학습 배제 서약 및 상업 연재 면책 메타데이터 서명됨",
+        "C2PA provenance signature, No-AI training exclusion & commercial serialization indemnity signed",
+      ),
+    },
+  ];
+
+  const licenseTierOptions: readonly {
+    id: MarketPublishLicenseTierId;
+    label: string;
+    scope: string;
+  }[] = [
+    {
+      id: "indie-single",
+      label: t("개인·인디 작가 1인권", "Indie Single-Creator Seat"),
+      scope: t(
+        "1인 작가 상업 웹툰·단행본 무제한 연재 허용",
+        "Unlimited commercial webtoon & print serialization for 1 creator",
+      ),
+    },
+    {
+      id: "studio-team-5seat",
+      label: t("스튜디오·어시 협업 5인권", "Studio Team 5-Seat License"),
+      scope: t(
+        "메인 작가 + 선화·채색·배경 어시스턴트 5인 공동 프로젝트 공유 허용",
+        "Shared across main artist + up to 5 line/color/background assistants on joint projects",
+      ),
+    },
+    {
+      id: "enterprise-ip-unlimited",
+      label: t("엔터프라이즈·제작사 무제한", "Enterprise Studio Unlimited IP"),
+      scope: t(
+        "제작사 전 작품·외주 파이프라인·2차 영상화 파생 에셋 무제한 사용권",
+        "Unlimited studio-wide titles, outsource pipeline & secondary media adaptation rights",
+      ),
+    },
+  ];
+
+  const activeValidatorTrack =
+    validatorTrackOptions.find((item) => item.id === validatorTrack) ?? validatorTrackOptions[0]!;
+  const activeLicenseTier =
+    licenseTierOptions.find((item) => item.id === licenseTier) ?? licenseTierOptions[0]!;
 
   useLayoutEffect(() => {
     const request = requestRef.current;
@@ -235,6 +323,108 @@ export function MarketPublishAuthorityPage() {
           </details>
         </div>
         <MarketplaceAuthoringWorkshop />
+      </section>
+
+      <section
+        data-testid="market-publish-rea-preflight-bar"
+        aria-label={t(
+          "사전 게시 에셋 무결성 및 라이선스 프리플라이트 시뮬레이터",
+          "Pre-Publish Asset Integrity & License Preflight Simulator",
+        )}
+        className="mt-6 rounded-2xl border border-line bg-panel p-4 sm:p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold tracking-wider text-accent uppercase">
+              {t(
+                "REA PRE-PUBLISH PREFLIGHT · 에셋 무결성·라이선스 사전 검수",
+                "REA PRE-PUBLISH PREFLIGHT · ASSET INTEGRITY & LICENSE VALIDATOR",
+              )}
+            </p>
+            <h2 className="mt-1 text-sm font-bold text-fg sm:text-base">
+              {t(
+                "사전 무결성 검증 트랙 & 상업 라이선스 티어 시뮬레이터",
+                "Pre-Publish Integrity Track & Commercial License Tier Simulator",
+              )}
+            </h2>
+          </div>
+          <span className="rounded-full border border-line bg-card px-3 py-1 text-[11px] font-semibold text-fg-2">
+            CLIP STUDIO ASSETS · Unity Publisher Validator · Fab · BOOTH · C2PA
+          </span>
+        </div>
+
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-fg-2">
+              {t("무결성 검증 트랙", "Integrity Validation Track")}
+            </p>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("무결성 검증 트랙", "Integrity Validation Track")}>
+              {validatorTrackOptions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  data-testid={`market-publish-rea-track-${item.id}`}
+                  aria-pressed={validatorTrack === item.id}
+                  onClick={() => setValidatorTrack(item.id)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    validatorTrack === item.id
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-fg-2">
+              {t("상업 사용권 라이선스 티어", "Commercial Seat License Tier")}
+            </p>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("상업 사용권 라이선스 티어", "Commercial Seat License Tier")}>
+              {licenseTierOptions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  data-testid={`market-publish-rea-tier-${item.id}`}
+                  aria-pressed={licenseTier === item.id}
+                  onClick={() => setLicenseTier(item.id)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    licenseTier === item.id
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="market-publish-rea-preflight-status"
+          className="mt-3 rounded-xl border border-line bg-card px-3.5 py-2.5 text-xs leading-relaxed text-fg-2"
+        >
+          <span className="font-bold text-fg">{activeValidatorTrack.label}</span>
+          {" · "}
+          <span>{activeValidatorTrack.receipt}</span>
+          {" | "}
+          <span className="font-semibold text-accent">{activeLicenseTier.label}</span>
+          {" — "}
+          <span>{activeLicenseTier.scope}</span>
+          {" ("}
+          <span>
+            {t(
+              "검증 기준: CLIP STUDIO ASSETS, Unity Publisher Validator, Fab, BOOTH, C2PA",
+              "Validation standard: CLIP STUDIO ASSETS, Unity Publisher Validator, Fab, BOOTH, C2PA",
+            )}
+          </span>
+          {")"}
+        </div>
       </section>
 
       <VisualStepGuide

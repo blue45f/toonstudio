@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -12,8 +12,18 @@ import { Container } from "@/shared/components/section";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+type ByokRoutingPolicy =
+  | "byok-12key-auto-rotate"
+  | "free-first-managed-fallback"
+  | "comfy-invoke-local-bridge"
+  | "c2pa-zero-retention-guard";
+
+type ByokProbeMode = "realtime-verify" | "429-auto-failover" | "budget-cap-shield";
+
 export function AiSettingsPage() {
   const t = useBilingual("AiSettingsPage");
+  const [routingPolicy, setRoutingPolicy] = useState<ByokRoutingPolicy>("byok-12key-auto-rotate");
+  const [probeMode, setProbeMode] = useState<ByokProbeMode>("realtime-verify");
   useDocumentTitle(t("AI 설정 · ToonStudio", "AI settings · ToonStudio"));
   const location = useLocation();
   const source = new URLSearchParams(location.search).get("source");
@@ -48,6 +58,98 @@ export function AiSettingsPage() {
         asideClassName="hidden lg:block"
       />
       <SiteArtSurfaceSpotlight cardId="nb-manage-vault" defaultLensId="curation" compact className="mb-6" />
+      <section
+        data-testid="ai-settings-rea-byok-failover-bar"
+        aria-label={t(
+          "REA BYOK 다중 키 자동 순환 및 로컬·클라우드 페일오버 시뮬레이터",
+          "REA BYOK Multi-Key Auto-Rotation & Local-Cloud Failover Simulator",
+        )}
+        className="mb-6 rounded-2xl border border-line bg-panel p-4 text-xs"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div
+            className="flex flex-wrap items-center gap-1.5"
+            role="group"
+            aria-label={t("라우팅 정책 선택", "Routing Policy Selection")}
+          >
+            <span className="font-extrabold text-accent">
+              {t("라우팅 정책:", "Routing Policy:")}
+            </span>
+            {([
+              {
+                id: "byok-12key-auto-rotate",
+                ko: "BYOK 12종 키 자동 순환",
+                en: "BYOK 12-Provider Key Auto-Rotate",
+              },
+              {
+                id: "free-first-managed-fallback",
+                ko: "무료 AI 우선 · 매니지드 폴백",
+                en: "Free-First & Managed Fallback",
+              },
+              {
+                id: "comfy-invoke-local-bridge",
+                ko: "ComfyUI·InvokeAI 로컬 브리지",
+                en: "ComfyUI & InvokeAI Local Bridge",
+              },
+              {
+                id: "c2pa-zero-retention-guard",
+                ko: "C2PA 서명 · 무보관(Zero-Retention) 보호",
+                en: "C2PA Provenance & Zero-Retention Guard",
+              },
+            ] as const).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`ai-settings-rea-policy-${item.id}`}
+                aria-pressed={routingPolicy === item.id}
+                onClick={() => setRoutingPolicy(item.id)}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  routingPolicy === item.id
+                    ? "border-accent bg-accent text-white"
+                    : "border-line bg-card text-fg-2 hover:border-accent/50"
+                }`}
+              >
+                {t(item.ko, item.en)}
+              </button>
+            ))}
+          </div>
+          <div
+            className="flex flex-wrap items-center gap-1.5"
+            role="group"
+            aria-label={t("페일오버 프로브 모드", "Failover Probe Mode")}
+          >
+            <span className="font-extrabold text-accent">
+              {t("프로브 모드:", "Probe Mode:")}
+            </span>
+            {([
+              { id: "realtime-verify", ko: "실시간 연결 검증", en: "Realtime Connection Verify" },
+              { id: "429-auto-failover", ko: "429 한도 초과 무중단 우회", en: "429 Rate-Limit Auto-Failover" },
+              { id: "budget-cap-shield", ko: "일일 예산 상한 가드", en: "Daily Budget Cap Shield" },
+            ] as const).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`ai-settings-rea-probe-${item.id}`}
+                aria-pressed={probeMode === item.id}
+                onClick={() => setProbeMode(item.id)}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  probeMode === item.id
+                    ? "border-accent bg-accent text-white"
+                    : "border-line bg-card text-fg-2 hover:border-accent/50"
+                }`}
+              >
+                {t(item.ko, item.en)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p data-testid="ai-settings-rea-byok-status" className="mt-2 text-[11px] text-fg-2">
+          {t(
+            `[BYOK 라우터 상태] 정책: ${routingPolicy} · 프로브: ${probeMode} · Cursor, Raycast, TypingMind, Zed, ComfyUI 아키텍처 기준 다중 키 페일오버 활성`,
+            `[BYOK Router Status] Policy: ${routingPolicy} · Probe: ${probeMode} · Multi-key failover active with Cursor, Raycast, TypingMind, Zed, ComfyUI architecture standard`,
+          )}
+        </p>
+      </section>
       <Suspense
         fallback={
           <LoadingState

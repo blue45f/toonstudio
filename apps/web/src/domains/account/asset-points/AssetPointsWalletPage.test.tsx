@@ -108,4 +108,36 @@ describe("로그인 사용자", () => {
     expect(screen.getByText(/에셋 구매 · 수채화 브러시 팩/)).toBeTruthy();
     expect(screen.getByText("포인트로 산 에셋")).toBeTruthy();
   });
+
+  it("대화형 REA 선입선출(FIFO) 소멸 방지 및 마켓 에셋 교환 시뮬레이터를 전환한다", () => {
+    authState.userId = "user-1";
+    renderPage();
+
+    expect(screen.getByTestId("wallet-rea-fifo-exchange-bar")).toBeTruthy();
+    const defaultTierBtn = screen.getByTestId("wallet-rea-tier-clippy-brush-pack-150p");
+    const aconTierBtn = screen.getByTestId("wallet-rea-tier-acon-3d-prop-300p");
+    const defaultWindowBtn = screen.getByTestId("wallet-rea-window-30d-urgent-first");
+    const quarterlyWindowBtn = screen.getByTestId("wallet-rea-window-90d-quarterly");
+
+    expect(defaultTierBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(aconTierBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(defaultWindowBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(quarterlyWindowBtn.getAttribute("aria-pressed")).toBe("false");
+
+    const status = screen.getByTestId("wallet-rea-fifo-status");
+    expect(status.textContent).toContain("clippy-brush-pack-150p");
+    expect(status.textContent).toContain("30d-urgent-first");
+    expect(status.textContent).toContain("Clip Studio CLIPPY");
+    expect(status.textContent).toContain("Tapas Ink");
+
+    fireEvent.click(aconTierBtn);
+    fireEvent.click(quarterlyWindowBtn);
+
+    expect(defaultTierBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(aconTierBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(defaultWindowBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(quarterlyWindowBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(status.textContent).toContain("acon-3d-prop-300p");
+    expect(status.textContent).toContain("90d-quarterly");
+  });
 });

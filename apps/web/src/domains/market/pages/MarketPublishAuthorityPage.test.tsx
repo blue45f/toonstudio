@@ -10,6 +10,7 @@ import type { CreatorMarketplaceResourceIdentity, CreatorMarketplaceResourceReco
 
 import { buildCreatorMarketplaceAuthoringManifest, createCreatorMarketplaceAuthoringDraft } from "@/shared/lib/creator-marketplace-authoring-workshop";
 import { CREATOR_MARKETPLACE_STARTER_RECORDS } from "@/shared/lib/creator-marketplace-starter-catalog";
+import { useI18n } from "@/shared/lib/i18n";
 
 const mocks = vi.hoisted(() => ({ session: vi.fn(), identity: vi.fn(), publish: vi.fn() }));
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ useSession: mocks.session }));
@@ -194,5 +195,47 @@ describe("MarketPublishAuthorityPage authoring release identity", () => {
     await act(async () => { pending.reject(new Error("old file failed")); await pending.promise.catch(() => undefined); });
     expect(screen.queryByRole("alert")).toBeNull();
     expect((screen.getByLabelText("공개 Manifest JSON") as HTMLTextAreaElement).value).toBe(next);
+  });
+
+  it("renders the REA preflight simulator and switches validation tracks and license tiers in ko and en", () => {
+    act(() => {
+      useI18n.getState().setLang("ko");
+    });
+    render(view());
+
+    const bar = screen.getByTestId("market-publish-rea-preflight-bar");
+    expect(bar).toBeTruthy();
+
+    expect(screen.getByTestId("market-publish-rea-track-csp-layer-lt-compat").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("market-publish-rea-tier-indie-single").getAttribute("aria-pressed")).toBe("true");
+
+    const status = screen.getByTestId("market-publish-rea-preflight-status");
+    expect(status.textContent).toContain("CLIP STUDIO ASSETS");
+    expect(status.textContent).toContain("Unity Publisher Validator");
+    expect(status.textContent).toContain("Fab");
+    expect(status.textContent).toContain("BOOTH");
+    expect(status.textContent).toContain("C2PA");
+
+    fireEvent.click(screen.getByTestId("market-publish-rea-track-unity-fab-package-hash"));
+    expect(screen.getByTestId("market-publish-rea-track-unity-fab-package-hash").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("market-publish-rea-track-csp-layer-lt-compat").getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("Unity Publisher Validator·Fab 텍스처 압축 규격");
+
+    fireEvent.click(screen.getByTestId("market-publish-rea-tier-studio-team-5seat"));
+    expect(screen.getByTestId("market-publish-rea-tier-studio-team-5seat").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("market-publish-rea-tier-indie-single").getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("스튜디오·어시 협업 5인권");
+
+    act(() => {
+      useI18n.getState().setLang("en");
+    });
+
+    expect(status.textContent).toContain("Unity & Fab Package SHA-256 Check");
+    expect(status.textContent).toContain("Studio Team 5-Seat License");
+    expect(bar.textContent).not.toMatch(/[\uAC00-\uD7A3]/u);
+
+    act(() => {
+      useI18n.getState().setLang("ko");
+    });
   });
 });

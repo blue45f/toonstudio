@@ -88,6 +88,7 @@ export function LearningResourcesPage() {
   const [youtubeQuery, setYoutubeQuery] = useState("");
   const [youtubeState, setYoutubeState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [youtubeResult, setYoutubeResult] = useState<YouTubeLearningSearchResponse | null>(null);
+  const [skillTrack, setSkillTrack] = useState<"storyboard-pacing" | "anatomy-croquis" | "bg3d-perspective" | "color-lighting">("storyboard-pacing");
 
   useEffect(() => { document.title = "강좌·자료 라이브러리 · 툰스튜디오"; }, []);
 
@@ -144,6 +145,54 @@ export function LearningResourcesPage() {
         <div className="learn-section-heading">
           <div><p className="learn-eyebrow">CURATED LIBRARY</p><h2 id="resource-library-title">웹툰 제작 전 과정을 찾는 자료 라이브러리</h2></div>
           <p className="learn-small">스토리 → 콘티 → 작화 → 채색 → 배경 → 게시까지 제작 단계로 좁혀보세요.</p>
+        </div>
+        <div
+          data-testid="learn-resources-rea-skilltree-bar"
+          aria-label="REA 직무별 스킬트리 및 실습 키트 매처"
+          className="mb-4 rounded-2xl border border-line bg-card/90 p-3.5 text-xs"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <strong className="font-extrabold text-accent">
+              COLOSO · CLASS101 · PROKO · CGMA · DRAWABOX · SCOTT ROBERTSON 직무 스킬트리 & 1-Click 필터 매처
+            </strong>
+            <span data-testid="learn-resources-rea-match-badge" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+              매칭 자료 {visibleResources.length}개 · 현재 직군 {role === "all" ? "전체" : ROLE_LABELS[role]}
+            </span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="직무별 커리큘럼 스킬트리">
+            {([
+              { id: "storyboard-pacing", label: "① 스토리·연출 콘티 (Save the Cat! · 필름문법)", roleValue: "story", stepValue: "storyboard", desc: "Save the Cat! 15비트 서사 구조와 스크롤 호흡·컷 연출 강좌를 즉시 필터링합니다." },
+              { id: "anatomy-croquis", label: "② 인체 해부학·선화 (Proko · Vilppu · 포스드로잉)", roleValue: "line-art", stepValue: "lineart", desc: "Proko·Glenn Vilppu 제스처 드로잉과 필압 선화·펜터치 교정 자료를 즉시 연결합니다." },
+              { id: "bg3d-perspective", label: "③ 3D 배경·투시 도법 (Drawabox · SketchUp · LT)", roleValue: "background", stepValue: "background", desc: "Drawabox·Scott Robertson 투시 도법과 SketchUp/Blender 6-Pass 은선 추출 자료를 매칭합니다." },
+              { id: "color-lighting", label: "④ 채색·시네마틱 조명 (Marco Bucci · ShotDeck)", roleValue: "color", stepValue: "coloring", desc: "Marco Bucci 색채 설계·림라이트/역광 보정·그라데이션 맵 채색 커리큘럼을 매칭합니다." },
+            ] as const).map((track) => (
+              <button
+                key={track.id}
+                type="button"
+                aria-pressed={skillTrack === track.id}
+                data-testid={`learn-resources-rea-track-${track.id}`}
+                onClick={() => {
+                  setSkillTrack(track.id);
+                  const next = new URLSearchParams(params);
+                  next.set("role", track.roleValue);
+                  next.set("step", track.stepValue);
+                  setParams(next);
+                }}
+                className={skillTrack === track.id ? "rounded-lg border border-accent bg-accent/15 px-2.5 py-1 font-bold text-accent" : "rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2"}
+              >
+                {track.label}
+              </button>
+            ))}
+          </div>
+          <p data-testid="learn-resources-rea-skilltree-status" className="mt-2 rounded-xl border border-line bg-panel/70 px-3 py-2 text-[11px] leading-relaxed text-fg-2">
+            {skillTrack === "storyboard-pacing"
+              ? "콜로소·CGMA·Save the Cat! 기준: 로그라인 설계 → 15비트 플롯 → 스마트폰 세로 스크롤 시선 유도 콘티 실습으로 이어집니다."
+              : skillTrack === "anatomy-croquis"
+                ? "Proko·New Masters Academy·Vilppu 기준: 30초 포스(Force) 크로키 → 해부학 랜드마크 → G펜/벡터 선화 필압 정리로 이어집니다."
+                : skillTrack === "bg3d-perspective"
+                  ? "Drawabox·Scott Robertson·ACON3D 기준: 1·2·3점 투시 그리드 → 3D 에셋 카메라 화각(24~50mm) → 6패스 은선 합성으로 이어집니다."
+                  : "Marco Bucci·ShotDeck·Schoolism 기준: 평면 밑색 분리 → 색온도 대비(한색 그림자·난색 조명) → 대기원근 후보정으로 이어집니다."}
+          </p>
         </div>
         <div className="academy-resource-filters">
           <label className="academy-wide-filter" htmlFor="academy-resource-search">자료 검색
