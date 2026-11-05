@@ -47,4 +47,23 @@ describe("opening a saved material brush without recipe approximation", () => {
     await expect(loadBrushStudioSavedMaterial("id")).rejects.toThrow("corrupt-storage");
     expect(put).not.toHaveBeenCalled();
   });
+  it("이전 외부 안료는 원본 저장 행을 보존한 명시 이주 후보로 반환한다", async () => {
+    const saved = structuredClone(createBrushStudioV6ProductBrush({ ...createBrushStudioV6Program("mixbox-pigment-spray"), licenseProfile: "noncommercial-full" }));
+    const material = saved.enginePrograms?.material;
+    if (!material || material.version !== 2) throw new Error("테스트 영수증이 없습니다.");
+    Object.assign(material.runtime, { bindings: material.runtime.bindings.map((binding) =>
+      binding.nodeIds.includes("pigment-mixbox") ? {
+        providerId: "mixbox-js-v2", version: "2.0.0", license: "CC-BY-NC-4.0", rights: "noncommercial",
+        execution: "native", nodeIds: ["pigment-mixbox"],
+      } : binding) });
+    const before = structuredClone(saved);
+    getById.mockResolvedValue(saved);
+    const result = await loadBrushStudioSavedMaterial(saved.id);
+    expect(result.migration?.sourceMaterial).toEqual(before.enginePrograms?.material);
+    expect(JSON.parse(result.migration?.sourceSavedBrush ?? "null")).toEqual(before);
+    expect(createBrushStudioV6MaterialReceipt(result.program).runtime.bindings.some((binding) => binding.providerId === "mixbox-js-v2")).toBe(false);
+    expect(result.program.id).toBe(saved.id);
+    expect(saved).toEqual(before);
+    expect(put).not.toHaveBeenCalled();
+  });
 });

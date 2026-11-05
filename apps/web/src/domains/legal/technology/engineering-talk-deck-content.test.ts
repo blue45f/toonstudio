@@ -484,6 +484,7 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
 
     const targets = read("scripts/ci-required-vitest-targets.txt").split("\n").filter((line) => line.trim() && !line.trim().startsWith("#")).length;
     expect(slide.points.map((point) => point.ko).join("\n")).toContain(`${targets}개 대상`);
+    expect(slide.points.map((point) => point.en).join("\n")).toContain(`${targets} curated targets`);
     const required = /const required = \[([^\]]*)\];/u.exec(read(".github/workflows/ci.yml"))?.[1]?.split(",").length;
     expect(required).toBe(Number(factOf(slideOf("talk-ai-dev"), 1, "필수 검사")));
 

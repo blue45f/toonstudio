@@ -371,6 +371,26 @@ describe("Studio linked 3D render document", () => {
     })).toBeUndefined();
   });
 
+  it("보관 원본은 활성 보정 참조에 중복 등록하지 않고 링크 해제 뒤에도 원문 출처를 유지한다", () => {
+    const { document, elements, stage, scene, passRevision } = materializedLink();
+    const provenance = createStudioLinked3dCorrectionProvenance(document, "bundle-a-main-line")!;
+    const active = { id: "active-correction", type: "draw", linked3dCorrection: provenance };
+    const archive = { ...active, id: "archived-correction", hidden: true,
+      legacyPigmentArchive: { version: 1, sourceElementId: active.id, sourceIndex: elements.length },
+      brushEnginePrograms: { version: 1, material: { version: 1, slots: { pigment: "pigment-mixbox" } } } };
+    const withArchive = [...elements, archive, active];
+    const linked = upsertStudioLinked3dRenderLink({ value: document, bundleId: "bundle-a", shotId: scene.activeShotId!, passRevision, elements: withArchive, shared3dStage: stage });
+    expect(linked).not.toBeNull();
+    expect(onlyLink(linked!).corrections.map(({ elementId }) => elementId)).toEqual([active.id]);
+    expect(validateStudioLinked3dReservedPageState({ value: linked, elements: withArchive })).toMatchObject({ ok: true });
+    expect(validateStudioLinked3dRenderDocumentAgainstPage({ value: linked, elements: withArchive, shared3dStage: stage })).toMatchObject({ ok: true });
+    const detached = detachStudioLinked3dCorrections(withArchive, ["bundle-a"]);
+    expect(detached?.find(({ id }) => id === archive.id)).toEqual(archive);
+    expect(detached?.find(({ id }) => id === active.id)?.linked3dCorrection).toBeUndefined();
+    const forged = { ...archive, legacyPigmentArchive: { ...archive.legacyPigmentArchive, version: 2 } };
+    expect(validateStudioLinked3dReservedPageState({ value: linked, elements: [...elements, forged, active] })).toMatchObject({ ok: false, code: "correction-integrity-mismatch" });
+  });
+
   it("rejects orphan reserved locators and detaches visible corrections when a link retires", () => {
     const { document, elements, stage, scene, passRevision } = materializedLink();
     const provenance = createStudioLinked3dCorrectionProvenance(document, "bundle-a-main-line");

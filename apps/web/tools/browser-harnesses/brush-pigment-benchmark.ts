@@ -5,7 +5,7 @@ import { createBrushStudioV6PigmentPalette, type BrushStudioV6PigmentProviderId 
 
 const MODES: readonly { id: BrushStudioV6PigmentProviderId; node: string }[] = [
   { id: "spectral-wgm-v1", node: "pigment-spectral" },
-  { id: "mixbox-js-v2", node: "pigment-mixbox" },
+  { id: "toonstudio-latent-pigment-v1", node: "pigment-latent" },
   { id: "spectral-js-v3", node: "pigment-spectral-js" },
   { id: "open-km-spectral-v1", node: "pigment-open-km-spectral" },
   { id: "colormix-lab-v3", node: "pigment-colormix-lab" },

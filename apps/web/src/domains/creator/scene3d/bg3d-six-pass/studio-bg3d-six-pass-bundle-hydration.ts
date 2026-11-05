@@ -6,6 +6,8 @@ import { getStudioBg3dSixPassBundleArtifacts, hashStudioBg3dSixPassBundleManifes
   studioBg3dSixPassArtifactSourceUri, type StudioBg3dSixPassBundleManifest,
 } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
 import { parseStudioBg3dSixPassBundleImageReference } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { isStudioLegacyPigmentArchivedElement } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+import { parseStudioLinked3dCorrectionProvenance } from "@toonstudio/contracts/studio-linked-3d-correction";
 import { parseStudioBg3dSceneDocument, type StudioBg3dSceneDocument } from "../../bg3d/studio-bg3d-scene-document";
 import type { StudioOpfsAssetStore } from "../../studio-opfs-asset-store";
 import type { PageState } from "../../studio-page-state";
@@ -119,7 +121,16 @@ export async function hydrateStudioBg3dSixPassFrontier(frontier: StudioCrdtScene
     const oldIndex = parseStudioLinked3dRenderDocument(baseline.find((entry) => entry.id === page.id)?.linked3dRender);
     let linked3dRender: StudioLinked3dRenderDocument | undefined = oldIndex
       ? { ...oldIndex, links: oldIndex.links.filter((link) => !bundles.some((bundle) => bundle.bundleId === link.bundleId)) } : undefined;
-    const correctionSources = frontier.strokes.filter((stroke) => !stroke.deleted && stroke.pageId === page.id).map(studioCrdtStrokeToDrawElement);
+    const correctionSources = frontier.strokes.filter((stroke) => !stroke.deleted && stroke.pageId === page.id)
+      .map(studioCrdtStrokeToDrawElement)
+      // 보관본은 frontier에 그대로 두고 활성 보정 index의 입력에서만 제외한다.
+      .filter((source) => !isStudioLegacyPigmentArchivedElement(source))
+      .map(({ linked3dCorrection, ...source }) => {
+        if (linked3dCorrection === undefined) return source;
+        const provenance = parseStudioLinked3dCorrectionProvenance(linked3dCorrection);
+        if (!provenance) throw new Error("6패스 보정 획의 연결 출처가 올바르지 않습니다.");
+        return { ...source, linked3dCorrection: provenance };
+      });
     for (const bundle of bundles) {
       if (!bundle.activeRevisionId) continue;
       const active = loaded.get(bundle.activeRevisionId)!;

@@ -325,11 +325,11 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-natural-media", claim: "Mixbox 는 CC BY-NC 4.0, 상업 빌드는 제거하거나 별도 라이선스", needles: ["CC BY-NC 4.0", "THIRD_PARTY_NOTICES.md"],
+    lesson: "seminar-natural-media", claim: "외부 Mixbox를 제거하고 자체 잠재 안료로 연결", needles: ["자체 잠재 안료", "THIRD_PARTY_NOTICES.md"],
     check: () => {
       const notices = flat("THIRD_PARTY_NOTICES.md");
-      expect(notices).toMatch(/`mixbox` \| 2\.0\.0 \| CC BY-NC 4\.0/u);
-      expect(notices).toContain("disable/remove the Mixbox provider) or obtain a");
+      expect(notices).not.toMatch(/`mixbox` \| 2\.0\.0 \| CC BY-NC 4\.0/u);
+      expect(readText("package.json")).not.toContain('"mixbox":');
     },
   },
   {
@@ -556,7 +556,7 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-open-source", claim: "pnpm 패치 N개(pnpm-workspace.yaml 에서 센 값) + 포크 2개(wgpu 30.0.1 는 toon-fabric 피처 뒤, braces 는 중첩 깊이 100 가드)", needles: ["포크는 둘", "wgpu 29.0.4", "toon-fabric", "crates/vendor/wgpu-toon", "patches/braces", "깊이 100", "CC BY-NC 4.0"],
+    lesson: "seminar-open-source", claim: "pnpm 패치 N개(pnpm-workspace.yaml 에서 센 값) + 포크 2개(wgpu 30.0.1 는 toon-fabric 피처 뒤, braces 는 중첩 깊이 100 가드)", needles: ["포크는 둘", "wgpu 29.0.4", "toon-fabric", "crates/vendor/wgpu-toon", "patches/braces", "깊이 100", "외부 Mixbox는 제거"],
     check: () => {
       // 패치 개수는 하드코딩하지 않고 pnpm-workspace.yaml 의 patchedDependencies 에서 센다. 패치 파일 수와도 맞아야 한다.
       const count = patchedDependencyCount();

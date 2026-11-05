@@ -10,6 +10,7 @@
  */
 export type StudioCrdtPageBridgeErrorCode =
   | "r8-grain-reference-invalid" | "stroke-payload-version-unsupported" | "brush-program-version-incompatible" | "outline-stroke-version-incompatible"
+  | "legacy-pigment-archive-invalid"
   | "outline-stroke-invalid" | "stroke-input-contract-invalid" | "taper-spacing-version-required" | "dynamic-min-diameter-invalid"
   | "continuation-pipeline-version-incompatible" | "r8-grain-version-incompatible" | "material-pressure-version-incompatible" | "material-pressure-invalid"
   | "material-min-diameter-invalid" | "element-type-unsupported" | "draw-element-stroke-sync-required" | "filter-mask-non-image-reference"

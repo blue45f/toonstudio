@@ -1,3 +1,4 @@
+import { STUDIO_READER_CAPABILITIES, STUDIO_READER_CAPABILITY_HEADERS } from "./studio-reader-capabilities";
 import { createHash } from "node:crypto";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -87,7 +88,7 @@ describe("creator client revision conflicts", () => {
     expect(JSON.stringify(error)).not.toContain("secret");
     expect(apiPatch).toHaveBeenCalledWith("/creator/works/work%2F1", {
       title: "수정",
-      baseRevision: 7, readerCapabilities: ["bg3d-sixpass-bundle.v1"],
+      baseRevision: 7, readerCapabilities: STUDIO_READER_CAPABILITIES,
     });
     expect(toApiError).not.toHaveBeenCalled();
   });
@@ -102,7 +103,7 @@ describe("creator client revision conflicts", () => {
     expect((error as WorkRevisionConflictError).currentRevision).toBe(11);
     expect(apiPost).toHaveBeenCalledWith(
       "/creator/works/work-1/revisions/3/restore",
-      { baseRevision: 10, readerCapabilities: ["bg3d-sixpass-bundle.v1"] }
+      { baseRevision: 10, readerCapabilities: STUDIO_READER_CAPABILITIES }
     );
     expect(toApiError).not.toHaveBeenCalled();
   });
@@ -140,13 +141,13 @@ describe("creator client revision conflicts", () => {
     });
     expect(apiPatch).toHaveBeenCalledWith(
       "/creator/works/work%2F1",
-      { title: "수정", baseRevision: 7, readerCapabilities: ["bg3d-sixpass-bundle.v1"] },
+      { title: "수정", baseRevision: 7, readerCapabilities: STUDIO_READER_CAPABILITIES },
       { signal: controller.signal }
     );
     expect(apiPost).toHaveBeenNthCalledWith(
       2,
       "/creator/works/work%2F1/revisions/3/restore",
-      { baseRevision: 7, readerCapabilities: ["bg3d-sixpass-bundle.v1"] },
+      { baseRevision: 7, readerCapabilities: STUDIO_READER_CAPABILITIES },
       { signal: controller.signal }
     );
   });
@@ -684,7 +685,7 @@ describe("creator client revision response contracts", () => {
       signal: controller.signal,
     });
     expect(apiGet).toHaveBeenNthCalledWith(2, "/creator/works/work%2F1/revisions/2", {
-      signal: controller.signal, headers: { "x-studio-reader-capabilities": '["bg3d-sixpass-bundle.v1"]' },
+      signal: controller.signal, headers: STUDIO_READER_CAPABILITY_HEADERS,
     });
   });
 });

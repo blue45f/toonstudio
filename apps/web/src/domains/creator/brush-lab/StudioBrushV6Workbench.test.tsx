@@ -8,7 +8,9 @@ import { serializeBrushStudioV6Authoring } from "./brush-studio-v6-authoring-doc
 import { StudioBrushV6Workbench } from "./StudioBrushV6Workbench";
 import { createBrushStudioV6Program, type BrushStudioV6Program } from "./brush-studio-v6-engine";
 
-const { preview, save } = vi.hoisted(() => ({ preview: vi.fn(), save: vi.fn() }));
+const { preview, save, downloadSource } = vi.hoisted(() => ({ preview: vi.fn(), save: vi.fn(), downloadSource: vi.fn() }));
+
+vi.mock("./brush-studio-source-download", () => ({ downloadBrushStudioSource: downloadSource }));
 
 vi.mock("./brush-studio-v6-preview", () => ({
   renderBrushStudioV6Preview: preview,
@@ -34,6 +36,7 @@ beforeEach(() => {
   localStorage.clear();
   preview.mockClear();
   save.mockReset();
+  downloadSource.mockReset();
 });
 afterEach(cleanup);
 
@@ -262,21 +265,23 @@ describe("V6 brush experiments in the workbench", () => {
     expect(bristle.disabled).toBe(true);
   });
 
-  it("shows pinned provider identities and noncommercial/GPL adapter boundaries", () => {
+  it("이전 Mixbox 브러시에서 자체 안료의 실행 정보와 호환 어댑터를 표시한다", () => {
     localStorage.setItem(
       "toonstudio.brush-program-v6:test",
-      // The Mixbox catalog brush is bound under its target profile; the
-      // default profile is permissive-only since the P0 license decision.
-      JSON.stringify({ ...createBrushStudioV6Program("mixbox-oil-bristle"), licenseProfile: "noncommercial-full" }),
+      // 이전 레시피 식별자와 다른 어댑터 설정은 유지하고 안료 실행 정보는 자체 엔진을 표시한다.
+      serializeBrushStudioV6Authoring({ ...createBrushStudioV6Program("mixbox-oil-bristle"), licenseProfile: "noncommercial-full" }),
     );
     render(<StudioBrushV6Workbench scope="test" />);
     fireEvent.click(screen.getByRole("button", { name: "전문가 설정" }));
     fireEvent.click(screen.getByRole("button", { name: "호환성·성능" }));
     const plan = screen.getByRole("region", { name: "무폴백 브러시 엔진 바인딩" });
     expect(within(plan).getByText(/fallback none/u)).toBeTruthy();
-    expect(within(plan).getByText("Mixbox")).toBeTruthy();
+    expect(within(plan).getByText("ToonStudio Latent Pigment")).toBeTruthy();
+    expect(within(plan).queryByText("Mixbox")).toBeNull();
     expect(within(plan).queryByText("mixbox-js-v2@2.0.0")).toBeNull();
     expect(within(plan).getAllByText("명시적 호환 어댑터").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "재료·질감" }));
+    expect(screen.getByRole("note").textContent).toContain("이전 Mixbox 브러시는 자체 잠재 안료로 혼색");
   });
 
   it("disables product save when a selected engine has no exact product path", () => {
@@ -318,6 +323,65 @@ describe("V6 brush experiments in the workbench", () => {
     view.unmount();
     render(<StudioBrushV6Workbench scope="test" />);
     expect(stored()).toEqual(before);
+  });
+
+  it("이전 Mixbox 실행 파일은 원문을 보존하고 명시적으로 선택한 뒤 자체 안료로 가져온다", async () => {
+    const program = { ...createBrushStudioV6Program("mixbox-oil-bristle"), licenseProfile: "noncommercial-full" as const };
+    const source = JSON.parse(serializeBrushStudioV6Authoring(program)) as {
+      materialReceipt: { runtime: { bindings: readonly { readonly nodeIds: readonly string[] }[] } };
+    };
+    source.materialReceipt.runtime.bindings = source.materialReceipt.runtime.bindings.map((binding) =>
+      binding.nodeIds.includes("pigment-mixbox") ? { ...binding,
+        providerId: "mixbox-js-v2", version: "2.0.0", license: "CC-BY-NC-4.0", rights: "noncommercial",
+        execution: "native", nodeIds: ["pigment-mixbox"],
+      } : binding);
+    const original = JSON.stringify(source);
+    const view = render(<StudioBrushV6Workbench scope="test" />);
+    const before = localStorage.getItem("toonstudio.brush-program-v6:test");
+    await act(async () => {
+      fireEvent.change(view.container.querySelector('input[type="file"]')!, { target: { files: [{
+        name: "original.brush.json", size: original.length, text: async () => original,
+      }] } });
+    });
+    const migration = screen.getByRole("region", { name: "이전 안료 브러시 가져오기" });
+    expect(localStorage.getItem("toonstudio.brush-program-v6:test")).toBe(before);
+    expect(migration.textContent).toContain("색 결과가 달라질 수 있습니다");
+    fireEvent.click(within(migration).getByRole("button", { name: "원본 파일 내려받기" }));
+    expect(downloadSource).toHaveBeenCalledExactlyOnceWith(original, "original.brush.json");
+    fireEvent.click(within(migration).getByRole("button", { name: "자체 안료로 가져오기" }));
+    expect(stored().id).toBe("mixbox-oil-bristle");
+    expect(stored().slots.pigment).toBe("pigment-mixbox");
+    const current = JSON.parse(localStorage.getItem("toonstudio.brush-program-v6:test")!) as {
+      materialReceipt: { runtime: { bindings: readonly { readonly providerId: string }[] } };
+    };
+    expect(current.materialReceipt.runtime.bindings.some((binding) => binding.providerId === "toonstudio-latent-pigment-v1")).toBe(true);
+    expect(current.materialReceipt.runtime.bindings.some((binding) => binding.providerId === "mixbox-js-v2")).toBe(false);
+    expect(screen.queryByRole("region", { name: "이전 안료 브러시 가져오기" })).toBeNull();
+  });
+
+  it("실행 기록 없는 Mixbox 설정 파일도 색 변화 안내와 원본 보관 뒤 명시적으로 가져온다", async () => {
+    const base = createBrushStudioV6Program();
+    const program = { ...base, slots: { ...base.slots, pigment: "pigment-mixbox" } };
+    const original = JSON.stringify({ program }, null, 2);
+    const view = render(<StudioBrushV6Workbench scope="test" />);
+    const before = localStorage.getItem("toonstudio.brush-program-v6:test");
+    await act(async () => {
+      fireEvent.change(view.container.querySelector('input[type="file"]')!, { target: { files: [{
+        name: "settings.brush.json", size: original.length, text: async () => original,
+      }] } });
+    });
+    const migration = screen.getByRole("region", { name: "이전 안료 브러시 가져오기" });
+    expect(migration.textContent).toContain("색 결과가 달라질 수 있습니다");
+    expect(localStorage.getItem("toonstudio.brush-program-v6:test")).toBe(before);
+    fireEvent.click(within(migration).getByRole("button", { name: "원본 파일 내려받기" }));
+    expect(downloadSource).toHaveBeenCalledExactlyOnceWith(original, "settings.brush.json");
+    fireEvent.click(within(migration).getByRole("button", { name: "자체 안료로 가져오기" }));
+    expect(stored()).toEqual(program);
+    const current = JSON.parse(localStorage.getItem("toonstudio.brush-program-v6:test")!) as {
+      materialReceipt: { runtime: { bindings: readonly { readonly providerId: string }[] } };
+    };
+    expect(current.materialReceipt.runtime.bindings.some((binding) => binding.providerId === "toonstudio-latent-pigment-v1")).toBe(true);
+    expect(current.materialReceipt.runtime.bindings.some((binding) => binding.providerId === "mixbox-js-v2")).toBe(false);
   });
 
   it("ignores an imported file that resolves after a newer user edit", async () => {

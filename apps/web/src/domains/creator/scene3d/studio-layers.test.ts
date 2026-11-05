@@ -954,6 +954,36 @@ describe("isEffectivelyHidden", () => {
 });
 
 describe("isEffectivelyLocked", () => {
+  const source = { id: "source", type: "draw", kind: "freehand", locked: false, brushEnginePrograms: {
+    material: { version: 1, slots: { pigment: "pigment-mixbox" } },
+  } };
+  const archive = { ...source, id: "archive", hidden: true,
+    legacyPigmentArchive: { version: 1, sourceElementId: source.id, sourceIndex: 0 } };
+
+  it("그룹이 없는 마스터 보관 원본도 wire locked를 바꾸지 않고 UI 편집을 보호한다", () => {
+    expect(isEffectivelyLocked(archive, [])).toBe(true);
+    expect(archive.locked).toBe(false);
+    expect(isEffectivelyLocked(source, [])).toBe(false);
+    expect(isEffectivelyLocked({ ...source, hidden: false }, [])).toBe(false);
+  });
+
+  it("원본 identity·표시값을 복구하고 보관 metadata를 제거하면 추가 UI 잠금을 해제한다", () => {
+    const { legacyPigmentArchive: metadata, hidden: _hidden, ...restored } = archive;
+    restored.id = metadata.sourceElementId;
+    expect(isEffectivelyLocked(restored, [])).toBe(false);
+  });
+
+  it.each([
+    { ...archive, hidden: false },
+    { ...archive, id: source.id },
+    { ...archive, legacyPigmentArchive: { version: 9, sourceElementId: source.id, sourceIndex: 0 } },
+    { ...archive, legacyPigmentArchive: { version: 1, sourceElementId: source.id, sourceIndex: -1 } },
+    { ...archive, legacyPigmentArchive: { version: 1, sourceElementId: source.id, sourceIndex: 0, unknown: true } },
+    { ...archive, brushEnginePrograms: { material: { version: 1, slots: { pigment: "pigment-latent" } } } },
+  ])("일반 획이나 손상·위조 보관 metadata를 추가 잠금 근거로 사용하지 않는다", (item) => {
+    expect(isEffectivelyLocked(item, [])).toBe(false);
+  });
+
   const groups: LayerGroup[] = [
     { id: "open", name: "o", locked: false },
     { id: "lock", name: "l", locked: true },

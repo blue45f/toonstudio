@@ -4,7 +4,7 @@ import { probableStudioProjectAssetField as probableAssetField, isStudioBundleAr
 import { STUDIO_PSD_SOURCE_MIME, validateStudioPsdSourceBytes } from "./export/studio-psd-source";
 import { z } from "zod";
 import { resolveStudioProjectArchiveLimits as resolveLimits } from "./project/archive/studio-project-archive-limits";
-import { minimumStudioProjectFileVersion } from "./studio-project-version";
+import { hasStudioSixPassBundleProjectContent } from "./studio-project-version";
 
 import { deriveStudioBg3dGlbBudgetProfiles } from "./bg3d/studio-bg3d-device-quality";
 import { validateStudioBg3dGlbOffMainThread } from "./bg3d/studio-bg3d-glb-validation-worker-client";
@@ -491,7 +491,7 @@ export function collectStudioBg3dProjectArchivePlan(
   options: Pick<StudioProjectArchiveOptions, "limits"> = {}
 ): StudioBg3dProjectArchivePlan {
   const limits = resolveLimits(options.limits, isRecord(rawProject) && Array.isArray(rawProject.pagesList)
-    && minimumStudioProjectFileVersion(rawProject.pagesList, rawProject.master) === 5);
+    && hasStudioSixPassBundleProjectContent(rawProject.pagesList, rawProject.master));
   const boundedProject = canonicalizeProjectValue(rawProject, "", 0, {
     seen: new WeakSet(),
     diagnostics: [],
@@ -1979,7 +1979,7 @@ export async function buildStudioProjectArchive(
       cause,
     );
   }
-  limits = resolveLimits(options.limits, minimumStudioProjectFileVersion(parsedProject.pagesList, parsedProject.master) === 5);
+  limits = resolveLimits(options.limits, hasStudioSixPassBundleProjectContent(parsedProject.pagesList, parsedProject.master));
   await (await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-contract")).collectStudioBg3dSixPassProjectBundles(parsedProject);
   const canonicalProjectValue = canonicalizeProjectValue(parsedProject, "", 0, {
     seen: new WeakSet(),
@@ -2177,7 +2177,7 @@ export async function buildStudioProjectArchive(
   let blob: Blob;
   try {
     blob = await buildStudioPackageArchiveBlob(entries, {
-      sizeProfile: minimumStudioProjectFileVersion(canonicalProject.pagesList, canonicalProject.master) === 5 ? "bg3d-sixpass-project-v5" : undefined,
+      sizeProfile: hasStudioSixPassBundleProjectContent(canonicalProject.pagesList, canonicalProject.master) ? "bg3d-sixpass-project-v5" : undefined,
       mimeType: STUDIO_PROJECT_ARCHIVE_MIME,
       crc32ExecutionMode: options.crc32ExecutionMode ?? "worker", signal: options.signal,
       limits: {
@@ -2423,7 +2423,7 @@ export async function importStudioProjectArchive(
     manifest.version
   );
   const canonicalProject = parsedProject.stored;
-  limits = resolveLimits(options.limits, minimumStudioProjectFileVersion(canonicalProject.pagesList, canonicalProject.master) === 5);
+  limits = resolveLimits(options.limits, hasStudioSixPassBundleProjectContent(canonicalProject.pagesList, canonicalProject.master));
   if (reader.size > limits.maxArchiveBytes || zipEntries.reduce((sum, entry) => sum + entry.uncompressedBytes, 0) > limits.maxArchiveBytes) fail("ARCHIVE_SIZE_LIMIT", "archiveTooLarge");
   validateCanonicalManifest(manifest, limits);
   await (await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-contract")).collectStudioBg3dSixPassProjectBundles(canonicalProject);

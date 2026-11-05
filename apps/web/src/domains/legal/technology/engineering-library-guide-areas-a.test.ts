@@ -154,7 +154,7 @@ describe("라이브러리 해설 영역 1~4 · 숫자·상태 주장", () => {
     expect(card("vrm-3d-characters", "manifold-csg")).toContain("about 65.9 MB");
   });
 
-  it("문서에서 가져온 수치(169/255·처리량 배수·76개 소스·Mixbox 2.0.0 핀)가 원문에 있다", () => {
+  it("문서에서 가져온 수치(169/255·처리량 배수·76개 소스·자체 잠재 안료 경계)가 원문에 있다", () => {
     const promotion = read("docs/studio-bg3d-webgpu-engine-promotion-2026-08-29.md");
     expect(promotion).toContain("169/255");
     const vrm = card("vrm-3d-characters", "three-vrm");
@@ -181,9 +181,10 @@ describe("라이브러리 해설 영역 1~4 · 숫자·상태 주장", () => {
     expect(card("brush-engines", "google-ink")).toContain("76 translation units");
 
     const profile = read("apps/web/src/domains/creator/brush-lab/brush-studio-v6-license-profile.ts");
-    expect(profile).toMatch(/id: "mixbox-js-v2",\s*label: "Mixbox",\s*version: "2\.0\.0"/u);
-    expect(card("brush-engines", "mixbox")).toContain("2.0.0 감사 핀");
-    expect(card("brush-engines", "mixbox")).toContain("2.0.0 audit pin");
+    expect(profile).toContain('id: "toonstudio-latent-pigment-v1"');
+    expect(profile).not.toContain('id: "mixbox-js-v2"');
+    expect(card("brush-engines", "mixbox")).toContain("자체 잠재 안료");
+    expect(card("brush-engines", "mixbox")).toContain("Project license");
   });
 
   it("경로#심볼로 적은 근거는 그 파일 안에 심볼이 실제로 있다", () => {
