@@ -338,7 +338,9 @@ describe("원래 Chemy Linux 참조의 CI 소비 경계", () => {
     const index = job.steps.findIndex((step) => step.name === "같은 Linux job에서 고정 원래 Chemy 소스 두 Canvas 비교"), step = job.steps[index]!;
     expect(index).toBeGreaterThan(0); expect(step.if).toBe("failure()"); expect(step["timeout-minutes"]).toBe(5); expect(step["continue-on-error"]).toBeUndefined();
     expect(step.run?.replace(/\s+/gu, " ").trim()).toBe('timeout --signal=TERM --kill-after=10s 180s node scripts/verify-studio-chemy-v1-original-linux-reference.mjs --current "$RUNNER_TEMP/studio-material-morphology/legacy-chemy-pressure-only" --out "$RUNNER_TEMP/studio-material-morphology/original-linux-reference"');
-    expect(job.steps[index - 1]!.name).toBe("실패 뒤 Chemy V1 원본 두 Canvas 수집");
+    expect(job.steps[index - 1]!.name).toBe("Chemy V1 원본 두 Canvas 검증·수집");
+    expect(job.steps[index - 1]!.if).toBe("${{ !cancelled() }}");
+    expect(job.steps[index - 1]!["continue-on-error"]).toBeUndefined();
     expect(job.steps[index + 1]!.if).toBe("always()");
     expect(job.steps[index + 1]!.with?.path).toBe("${{ runner.temp }}/studio-material-morphology");
     expect(job.steps.find((item) => item.name === "Verify six hybrid topology engines, thirty materials and twelve symmetry combinations")?.run).toBe("node scripts/verify-studio-hybrid-topology.mjs");
