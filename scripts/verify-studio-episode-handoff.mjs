@@ -30,6 +30,7 @@ assert.equal(originalPages.length, 6, "원본 여섯 컷이 필요합니다.");
 const digest = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 assert.equal(digest(originalPages), fixture.source.pagesSha256, "원본 컷 자료가 바뀌었습니다.");
 const changedSources = [...new Set([
+  ...execFileSync("git", ["diff", "--name-only", "--diff-filter=ACM", "origin/main...HEAD"], { cwd: root, encoding: "utf8" }).trim().split("\n"),
   ...execFileSync("git", ["diff", "--name-only", "--diff-filter=ACM", "HEAD"], { cwd: root, encoding: "utf8" }).trim().split("\n"),
   ...execFileSync("git", ["ls-files", "--others", "--exclude-standard"], { cwd: root, encoding: "utf8" }).trim().split("\n"),
 ])].filter((path) => path.startsWith("apps/web/src/domains/creator/")
@@ -41,6 +42,7 @@ const sourceFiles = await Promise.all(changedSources.map(async (path) => ({ path
 const report = {
   status: "running", startedAt: new Date().toISOString(),
   baseSha: execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim(),
+  baseMainSha: execFileSync("git", ["rev-parse", "origin/main"], { cwd: root, encoding: "utf8" }).trim(),
   sourceFingerprint: digest(sourceFiles), sourceFiles,
   originalPagesSha256: fixture.source.pagesSha256,
   assertions: {}, pageErrors: [], observations: [],

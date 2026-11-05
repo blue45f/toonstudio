@@ -1,7 +1,8 @@
 {
   "status": "passed",
-  "startedAt": "2026-11-05T09:57:42.050Z",
-  "baseSha": "2c626df4000fcfc32318faa793a61bea3ef0901b",
+  "startedAt": "2026-11-05T10:31:37.611Z",
+  "baseSha": "bd012edace07073a8a9ad51ee34e70363429cf7c",
+  "baseMainSha": "994e5ba34df98b6bcf1cb46c567456924a89dd68",
   "sourceFingerprint": "6c9e30fc14d0928cb1dd451989733bbee8441cc7e6d3132e5aa176c25b0fe5f4",
   "sourceFiles": [
     {
@@ -84,10 +85,6 @@
   "pageErrors": [],
   "observations": [
     {
-      "kind": "native-dialog",
-      "message": ""
-    },
-    {
       "kind": "handoff-layout",
       "width": 1440,
       "geometry": {
@@ -112,8 +109,8 @@
     "기기 원고의 UI 연결 검증이며 실제 계정·DB 시험은 별도 실행",
     "최종 사람 확인을 대신 체크하지 않음"
   ],
-  "projectId": "6-1459rup",
-  "documentId": "ep01-3n47b3",
+  "projectId": "6-u7ysnj",
+  "documentId": "ep01-16ywq95",
   "storyboardRecovery": {
     "recoveryMode": "automatic",
     "recoveryBannerObserved": true,
@@ -128,5 +125,5 @@
     "automaticRestoreCompleted": true,
     "restoreActionCompleted": false
   },
-  "finishedAt": "2026-11-05T09:58:06.924Z"
+  "finishedAt": "2026-11-05T10:32:34.071Z"
 }

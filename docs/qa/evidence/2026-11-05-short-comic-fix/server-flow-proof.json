@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "status": "passed-with-human-publication-gate",
   "verifiedAt": "2026-11-05",
-  "baseMainSha": "2c626df4000fcfc32318faa793a61bea3ef0901b",
-  "candidateState": "최신 main 기반 작업트리의 미커밋 수정 포함. 최종 commit·PR·병합·배포는 별도 기록한다.",
+  "baseMainSha": "994e5ba34df98b6bcf1cb46c567456924a89dd68",
+  "candidateState": "최신 main 994e5ba34와 기존 최소수정을 무충돌 merge한 후보 bd012edac에서 재실행했다. 최종 문서·증거 commit, PR, main 병합, 운영 배포는 별도 기록한다.",
   "execution": {
     "command": "node node_modules/vitest/vitest.mjs run tests/integration/api-web/studio-six-page-lifecycle.integration.test.ts --maxWorkers=1",
     "environmentVariableNames": [
@@ -22,11 +22,15 @@
       "passed": 2,
       "failed": 0,
       "total": 2,
-      "durationMs": 83035.07373046875
+      "durationMs": 143467.5791015625
     },
     "selectedFixtureCases": 1,
     "selectedLiveCases": 1,
-    "liveCaseSkipped": false
+    "liveCaseSkipped": false,
+    "attempt": 8,
+    "utcStartedAt": "2026-11-05T10:31:09.687Z",
+    "utcEndedAt": "2026-11-05T10:33:33.154Z",
+    "liveCaseDurationMs": 131904.579125
   },
   "source": {
     "title": "우산을 돌려주는 날",
@@ -108,7 +112,7 @@
     ]
   },
   "admission": "공개 API로 새 서버 작품에 등록했다. 원본 로컬 프로젝트와 같은 ID라는 주장이 아니다.",
-  "registeredServerWorkId": "d415aa78-cc33-43ab-bd51-822e4e233b49",
+  "registeredServerWorkId": "8ee7a000-9b22-467c-b283-35cab486b2ff",
   "initialCrdtUpdates": {
     "count": 63,
     "maxBytes": 4807,
@@ -213,7 +217,7 @@
     {
       "pageId": "jam-page-work-instant-mw3a5c2h-l4nv",
       "ordinal": 0,
-      "sha256": "6dce61e29f680d90ca9c1ca95d9d4253a26d158dda0fb4e36355ea8a51e2a1d9",
+      "sha256": "a422e968bfeae84340befea62c9efa8c5f0448da9d877ed7882efab0e28c74fe",
       "width": 1440,
       "height": 1440,
       "rgbaSha256": "961ce8e6d9a211776c7f2867d7fbf4ae26eaca5c566ac3c0fe971eb75f927bfc",
@@ -222,7 +226,7 @@
     {
       "pageId": "7ed541c6-8018-4c4a-88ec-14120db66ecd",
       "ordinal": 1,
-      "sha256": "0fda6c44d1fd374d4635b2b2bd59636c7ebb52e8c5d3bd35cbb03ece8f6a36d1",
+      "sha256": "df21de39d1a431984a88315fae2d903780d2c93d092cbb1552c6421eb09ed808",
       "width": 1440,
       "height": 1440,
       "rgbaSha256": "2c91905fe8c136d55d7b10177ab049fa7cec447f9447dd7029bd9afd75a04b02",
@@ -231,7 +235,7 @@
     {
       "pageId": "eb0f4de2-1dd5-4631-b800-3ebf424fa9d1",
       "ordinal": 2,
-      "sha256": "bef1bc6d41bb698b951f9ceb2dc6da34189119bae03bdfbf340b8f9d26859e7d",
+      "sha256": "890fcf0bb4003d8b53612906f86fdc7580024ea026f00987af6d50424236d5b9",
       "width": 1440,
       "height": 1440,
       "rgbaSha256": "d3551dfe2fec1b346fc30d2a6bca212a5696cb47c10bb2a557f6a9716bd9f9ec",
@@ -240,7 +244,7 @@
     {
       "pageId": "a6af11be-af66-4902-9221-6a568d2373de",
       "ordinal": 3,
-      "sha256": "e5582c5cf1ec9472aa4b828dd32d08aaf12cab88a9aacfcdb0024c5c252ddf0e",
+      "sha256": "bb73b723ddd7607dd9d1ac32325ff8daaa4a44924c2f3e628edcd594b4c9e079",
       "width": 1440,
       "height": 1440,
       "rgbaSha256": "53c73cbd096398a189eb479c262baa355650b8ffd1033c8172aa6ceb0ef1a714",
@@ -249,7 +253,7 @@
     {
       "pageId": "b12d10e4-89f9-452a-8cbb-b821d7bb42de",
       "ordinal": 4,
-      "sha256": "8abf8d268882ac2ac6c60ed231ba8d154888e5011a15c954accfdd93e67a17ba",
+      "sha256": "c25eb3e55ef299fc318041830769282be7a5bf965ed336acb1fed4df8bd28d10",
       "width": 1440,
       "height": 1440,
       "rgbaSha256": "9c3871677e7bdbb1e565992d9e51f9361c82f137ad28739626df898cc191ed80",
@@ -258,7 +262,7 @@
     {
       "pageId": "2876c965-36b5-47c7-a69e-43148add8f9b",
       "ordinal": 5,
-      "sha256": "de8dc73076f9bb7a6ac3e38453dd0251674b64433c4003bd0a410909b4f57e89",
+      "sha256": "bdf9df6c3c510472c63c3bafb031a0c8ad58ec86875a7c02a93df697796f3bdd",
       "width": 1440,
       "height": 1440,
       "rgbaSha256": "deb509d4d19fa368e356fb6218502d1d323e1ec8c7e6f21393e9a00bcda69360",
@@ -268,28 +272,28 @@
   "pointerUndoRedoUndoRestored": true,
   "workerLive": {
     "synced": true,
-    "updateAcks": 7,
+    "updateAcks": 9,
     "rejected": 0
   },
   "bothAccountsReloadedAndRelogged": true,
   "actualSixPageReview": {
     "schemaVersion": 1,
-    "projectId": "review-project-908ea8086232a40306dc57627b6f76b9aeb75ec42a3d52fb6a5ad8bad7b89078",
-    "workId": "d415aa78-cc33-43ab-bd51-822e4e233b49",
-    "artifactId": "review-manuscript-908ea8086232a40306dc57627b6f76b9aeb75ec42a3d52fb6a5ad8bad7b89078",
-    "reviewId": "review-b14bbab707319fed953d82fecbf2a9231c8055673ddb47fa7fe610e7fa79a03c",
-    "revisionId": "review-snapshot-b14bbab707319fed953d82fecbf2a9231c8055673ddb47fa7fe610e7fa79a03c",
-    "rootGraphHash": "541b2335030e07ea350e7c0d7d9b7a0bb2014a9a4b6475dde4fd930e1243395f"
+    "projectId": "review-project-7c3a7be6b39636c205de6b57c02774664d15badc7983b87ecc202f3f7eaccea0",
+    "workId": "8ee7a000-9b22-467c-b283-35cab486b2ff",
+    "artifactId": "review-manuscript-7c3a7be6b39636c205de6b57c02774664d15badc7983b87ecc202f3f7eaccea0",
+    "reviewId": "review-5e7668064e739ea502dc80de8255c29384119b28e371a9218f71bb617ff52007",
+    "revisionId": "review-snapshot-5e7668064e739ea502dc80de8255c29384119b28e371a9218f71bb617ff52007",
+    "rootGraphHash": "b9150936e92904310d0a03b28386197c4b415f406efb0591fdf338fa84e84e08"
   },
   "approvedSubmission": {
-    "submissionId": "six-submission-3b2b1eab-7d32-447f-a7fc-4ec759256000",
+    "submissionId": "six-submission-272b815b-c3cf-47fe-aaba-7b5514251628",
     "revision": {
-      "id": "review-snapshot-b14bbab707319fed953d82fecbf2a9231c8055673ddb47fa7fe610e7fa79a03c",
+      "id": "review-snapshot-5e7668064e739ea502dc80de8255c29384119b28e371a9218f71bb617ff52007",
       "lineage": "visual",
       "revision": 3,
-      "digest": "sha256:541b2335030e07ea350e7c0d7d9b7a0bb2014a9a4b6475dde4fd930e1243395f",
-      "createdAt": "2026-11-05T10:11:42.639Z",
-      "productionSubmissionId": "six-submission-3b2b1eab-7d32-447f-a7fc-4ec759256000"
+      "digest": "sha256:b9150936e92904310d0a03b28386197c4b415f406efb0591fdf338fa84e84e08",
+      "createdAt": "2026-11-05T10:32:51.728Z",
+      "productionSubmissionId": "six-submission-272b815b-c3cf-47fe-aaba-7b5514251628"
     }
   },
   "approvalMeaning": "자동화된 픽셀·순서 보존 검사의 기술 검토 승인. 권리·등급·작품 품질의 사람 확인을 의미하지 않는다.",
@@ -497,12 +501,12 @@
     },
     {
       "table": "studio_blob",
-      "priorRows": 22,
+      "priorRows": 28,
       "unchanged": true
     },
     {
       "table": "creator_asset_storage_object",
-      "priorRows": 44,
+      "priorRows": 56,
       "unchanged": true
     }
   ],
@@ -524,7 +528,7 @@
       "passed": 2,
       "failed": 0,
       "total": 2,
-      "durationMs": 83035.07373046875
+      "durationMs": 143467.5791015625
     }
   },
   "limitations": [
@@ -535,5 +539,12 @@
     "원본의 과거 Undo journal은 없으므로 보존했다고 주장하지 않는다. 새 실제 포인터의 Undo/Redo/Undo와 서버 revision을 검사했다.",
     "과거 8d315c85d PNG와 최신 후보의 픽셀 완전 일치는 검증되지 않았다. 현재 후보 내부의 협업 전 기준과 이후 검수·재로그인·ZIP 사이만 strict0로 확인했다.",
     "메일과 private object storage는 기존 시험 port이며 운영 메일·R2 네트워크 영속성은 이 시험 밖이다."
-  ]
+  ],
+  "candidateCommitSha": "bd012edace07073a8a9ad51ee34e70363429cf7c",
+  "previousCandidateBaselineComparison": {
+    "previousBaseMainSha": "2c626df4000fcfc32318faa793a61bea3ef0901b",
+    "currentBaseMainSha": "994e5ba34df98b6bcf1cb46c567456924a89dd68",
+    "allSixPngBytesIdentical": true,
+    "historical8dPixelMismatchRemainsSeparate": true
+  }
 }
