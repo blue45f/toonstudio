@@ -9,6 +9,7 @@ import { STUDIO_ALL_BRUSH_CATALOG_ITEMS } from "./studio-brush-catalog";
 
 const root = resolve(import.meta.dirname, "../../../../../../");
 const harness = readFileSync(resolve(root, "scripts/verify-studio-brushes.mts"), "utf8");
+const mobileSettings = readFileSync(resolve(root, "scripts/lib/studio-mobile-brush-settings.ts"), "utf8");
 
 describe("Studio brush browser harness catalogue boundary", () => {
   it("keeps the full product catalogue unique and its core partition identical to BRUSH_PRESETS", () => {
@@ -136,7 +137,9 @@ describe("Studio brush browser harness catalogue boundary", () => {
     expect(harness).toContain('[role="dialog"][data-studio-brush-floating]');
     expect(harness).toContain('await catalog.getAttribute("role") === "region"');
     expect(harness).toContain("await closeDesktopCatalog(page, catalog)");
-    expect(harness).toContain(":not([data-studio-primary-action])");
+    expect(mobileSettings).toContain('button[aria-controls="studio-mobile-draw-settings"]:not([data-studio-primary-action])');
+    expect(harness).toMatch(/import\s*\{\s*openMobileBrushSettings\s*\}\s*from\s*"\.\/lib\/studio-mobile-brush-settings"/u);
+    expect(harness.match(/await openMobileBrushSettings\(page, dock\)/gu)).toHaveLength(2);
     expect(harness).toContain("TOONSPECTRUM_BRUSH_STABILITY_ROUNDS");
     expect(harness).toContain("captureBrushStageFailure(page, \"durability\", error, errors)");
     expect(harness).not.toContain('catalog.waitFor({ state: "detached" }).catch(() => {})');
