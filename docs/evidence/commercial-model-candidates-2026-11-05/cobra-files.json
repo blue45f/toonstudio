@@ -1,0 +1,93 @@
+{
+  "repository": "JunhaoZhuang/Cobra",
+  "revision": "ed677418ceb4fada6d1a369139bd7e8a3a13433d",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 1519,
+      "lfs": null
+    },
+    {
+      "path": "LE/erika.pth",
+      "bytes": 172789563,
+      "lfs": {
+        "sha256": "badbd6baf013cefbd98993307b02cc14a26c770d067416e4fdecc8720b88feeb",
+        "size": 172789563,
+        "pointerSize": 134
+      }
+    },
+    {
+      "path": "README.md",
+      "bytes": 5453,
+      "lfs": null
+    },
+    {
+      "path": "image_encoder/config.json",
+      "bytes": 560,
+      "lfs": null
+    },
+    {
+      "path": "image_encoder/pytorch_model.bin",
+      "bytes": 2528481905,
+      "lfs": {
+        "sha256": "3d3ec1e66737f77a4f3bc2df3c52eacefc69ce7825e2784183b1d4e9877d9193",
+        "size": 2528481905,
+        "pointerSize": 135
+      }
+    },
+    {
+      "path": "line_GSRP/MultiResNetModel.bin",
+      "bytes": 340148769,
+      "lfs": {
+        "sha256": "056b805a02d775dd18920851307f8bcc8fdcfd3f09197d945cb682ad9a2ed7dd",
+        "size": 340148769,
+        "pointerSize": 134
+      }
+    },
+    {
+      "path": "line_ckpt/controlnet.bin",
+      "bytes": 503963680,
+      "lfs": {
+        "sha256": "b4cc47bb796ffdbb7cbcde7ebd38b4b35db1f3e61e4b7b4b71257229876fa27c",
+        "size": 503963680,
+        "pointerSize": 134
+      }
+    },
+    {
+      "path": "line_ckpt/transformer_lora_pos.bin",
+      "bytes": 221169512,
+      "lfs": {
+        "sha256": "1fdd6edc0b1e3643690e1ab38d2d4e94f72eb7671d073b346ea7472ca884b9f6",
+        "size": 221169512,
+        "pointerSize": 134
+      }
+    },
+    {
+      "path": "shadow_GSRP/MultiResNetModel.bin",
+      "bytes": 340148769,
+      "lfs": {
+        "sha256": "2b1c2cf7c53e627419b4741455fc69ed51922914dda3e54ed0ba4a9e2883d3b3",
+        "size": 340148769,
+        "pointerSize": 134
+      }
+    },
+    {
+      "path": "shadow_ckpt/controlnet.bin",
+      "bytes": 503963680,
+      "lfs": {
+        "sha256": "fd42fb398eab730a3d54d2f350047a47816fce12b6daf9de62f50ff6550db905",
+        "size": 503963680,
+        "pointerSize": 134
+      }
+    },
+    {
+      "path": "shadow_ckpt/transformer_lora_pos.bin",
+      "bytes": 221169512,
+      "lfs": {
+        "sha256": "62bbec6b7ce1e73f1dafd241843e4204aadeeea9f8c336512d0a5cd83e1c9c83",
+        "size": 221169512,
+        "pointerSize": 134
+      }
+    }
+  ]
+}

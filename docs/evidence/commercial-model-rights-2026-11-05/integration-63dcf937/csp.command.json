@@ -1,0 +1,14 @@
+{
+  "cwd": "/workspace/scratch/toonstudio-commercial-main-validation",
+  "argv": [
+    "node",
+    "scripts/verify-static-csp.mjs",
+    "dist/index.html"
+  ],
+  "envOverrides": {
+    "npm_config_manage_package_manager_versions": "false",
+    "PNPM_HOME": "/tmp/toonstudio-pnpm",
+    "XDG_DATA_HOME": "/tmp/toonstudio-xdg"
+  },
+  "started": "2026-11-05T12:12:27.963952+00:00"
+}

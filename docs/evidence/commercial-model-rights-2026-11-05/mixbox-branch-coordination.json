@@ -1,0 +1,48 @@
+{
+  "scope": "기존 Mixbox 브랜치는 비교만 수행, 병합·편집하지 않음",
+  "mixboxHead": "7d1ef53c01d2eb76777b72d14534434ff91491c0",
+  "mixboxBase": "994e5ba34df98b6bcf1cb46c567456924a89dd68",
+  "licenseBranch": "codex/commercial-model-license-audit-20261105",
+  "licenseBase": "63dcf937ca8658fbae52396595416daa1a796043",
+  "overlappingPaths": [
+    ".github/workflows/ci.yml",
+    "apps/web/src/domains/legal/technology/EngineeringLicenseInventory.tsx",
+    "apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx",
+    "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-overview.ts",
+    "apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-license-inventory.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts",
+    "package.json",
+    "pnpm-lock.yaml",
+    "scripts/generate-third-party-notices.mjs"
+  ],
+  "sameChangesClaimed": false,
+  "mergeOrder": "조정자가 배정할 때까지 main 병합 대기",
+  "requiredStatusCheckProtectionRead": {
+    "operation": "GET /repos/blue45f/toonstudio/branches/main/protection/required_status_checks",
+    "status": 403,
+    "reason": "Resource not accessible by integration",
+    "retry": false
+  },
+  "localBranchesMerged": false,
+  "initialOverlappingPaths": [
+    "apps/web/src/domains/legal/technology/EngineeringLicenseInventory.tsx",
+    "apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx",
+    "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-overview.ts",
+    "apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-license-inventory.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts",
+    "package.json",
+    "pnpm-lock.yaml",
+    "scripts/generate-third-party-notices.mjs"
+  ],
+  "additionalCiOwnership": "라이선스·전체 타입 검사기 회귀 테스트 13개를 dependency 설치 후 기존 typecheck job에 추가하는 단독 step. 기존 gates/runner/brush/config hunk 변경 없음."
+}

@@ -1,0 +1,15 @@
+{
+  "cwd": "/workspace/scratch/toonstudio-commercial-main-validation",
+  "argv": [
+    "node",
+    "--max-old-space-size=8192",
+    "scripts/typecheck-shards-worker.mjs",
+    "/tmp/toonstudio-license-main5165-validation-nt5gbonh/pre-harness-inventory-job.json"
+  ],
+  "envOverrides": {
+    "npm_config_manage_package_manager_versions": "false",
+    "PNPM_HOME": "/tmp/toonstudio-pnpm",
+    "XDG_DATA_HOME": "/tmp/toonstudio-xdg"
+  },
+  "started": "2026-11-05T13:13:31.800257+00:00"
+}

@@ -1,0 +1,23 @@
+{
+  "outerExit": 1,
+  "command": [
+    "env",
+    "NODE_OPTIONS=--max-old-space-size=12288",
+    "pnpm",
+    "run",
+    "quality:imports"
+  ],
+  "unresolvedImports": [
+    {
+      "specifier": "/fixture.js",
+      "path": "scripts/verify-latent-pigment-browser.mjs",
+      "line": 176,
+      "column": 26
+    }
+  ],
+  "ancillaryDiagnostic": "Wrangler debug log mkdir /home/agent/.config/.wrangler emitted ENOENT",
+  "sourceModified": false,
+  "baselineModified": false,
+  "checkSkipped": false,
+  "owner": "parent identified separate UX/semantic work"
+}

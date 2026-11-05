@@ -1,0 +1,35 @@
+{
+  "cwd": "/workspace/scratch/toonstudio-commercial-main-validation",
+  "argv": [
+    "pnpm",
+    "exec",
+    "vitest",
+    "run",
+    "--maxWorkers=2",
+    "apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts",
+    "apps/web/src/domains/legal/technology/product-tour-tech-links.test.ts",
+    "apps/web/src/domains/creator/export/studio-native-lanczos.test.ts",
+    "apps/web/src/domains/creator/export/studio-vips-export.test.ts",
+    "apps/web/src/domains/creator/export/studio-export-presets.vips-route.test.ts",
+    "packages/studio-engine-registry/src/__tests__/effect-compiler.test.ts",
+    "packages/studio-engine-registry/src/__tests__/manifest-governance.test.ts",
+    "tests/benchmarks/harness/native-gaussian.test.ts",
+    "apps/web/src/domains/creator/live/studio-live-surface-filter-provider.test.ts",
+    "apps/web/src/domains/creator/live/studio-live-surface-filter-provider-boundary.test.ts",
+    "apps/web/src/domains/creator/studio-onnx-animegan.test.ts",
+    "apps/web/src/domains/creator/studio-onnx-tag2pix.test.ts",
+    "apps/web/src/domains/creator/studio-onnx-inference-provider.test.ts",
+    "apps/web/src/domains/creator/studio-onnx-inference-provider-boundary.test.ts",
+    "scripts/__tests__/generate-third-party-notices.test.mjs",
+    "scripts/generate-third-party-notices-remotion.test.mjs"
+  ],
+  "envOverrides": {
+    "npm_config_manage_package_manager_versions": "false",
+    "PNPM_HOME": "/tmp/toonstudio-pnpm",
+    "XDG_DATA_HOME": "/tmp/toonstudio-xdg"
+  },
+  "started": "2026-11-05T11:40:57.223819+00:00"
+}

@@ -1,0 +1,14 @@
+{
+  "cwd": "/workspace/scratch/toonstudio-commercial-main-validation",
+  "argv": [
+    "python3",
+    "/tmp/toonstudio-license-main5165-validation-nt5gbonh/freeze-source.py",
+    "/tmp/toonstudio-license-main5165-validation-nt5gbonh/post-prebuild-source-hashes.json"
+  ],
+  "envOverrides": {
+    "npm_config_manage_package_manager_versions": "false",
+    "PNPM_HOME": "/tmp/toonstudio-pnpm",
+    "XDG_DATA_HOME": "/tmp/toonstudio-xdg"
+  },
+  "started": "2026-11-05T13:13:29.092881+00:00"
+}

@@ -1,0 +1,18 @@
+{
+  "status": "lightweight source review, no product changes",
+  "source_revision": "2f26a525f8b604b8e98fb84ebad0af5aef727944",
+  "source_preprocessing": "PIL RGB conversion, float32 NHWC /127.5-1 once",
+  "evaluation_preprocessing": "PIL RGB conversion, float32 NCHW /127.5-1 once; explicit transpose NCHW->NHWC into original SavedModel and inverse after",
+  "channel_order": "RGB at source, numpy input, TF graph boundary, ONNX input and saved output; no BGR path",
+  "alpha": "Evaluation images opaque RGB. Product white alpha composition was not exercised.",
+  "resize": "PIL Lanczos 512\u00b2 in evaluation; current app adapter uses browser rasterization. This differs and is not claimed integrated equivalence.",
+  "architecture": "Original author exported_models/light_paprika_SavedModel is loaded, no manual graph reconstruction. Official generator.py/light=True uses ShuffleNetV2 path and final tanh.",
+  "wrong_checkpoint_check": "All 44 ONNX convolution kernels (3,511,872 bytes), after reversing tf2onnx layout conversion, byte-match both own raw light checkpoint and official SavedModel variables. Complete scalar/norm/metadata identity not yet checked.",
+  "warning": "TF2.16 loading TF2.0-alpha SavedModel emits OBJECT_CONFIG_JSON metadata missing warnings; actual outputs are finite. This has not been silently ignored as proof of exact raw-checkpoint restoration.",
+  "parity_confounders": [
+    "CPU ONNX Runtime 1.20.1 and browser ONNX Runtime Web 1.30.0 differ.",
+    "Browser provider and optimization/reduction math differs from CPU.",
+    "Detailed per-operator numerical localization not run."
+  ],
+  "quality_observation": "Visible yellow/brown cast, detail blur, grid/edge artifacts on this two-image smoke. Insufficient for product acceptance; not a general theorem that checkpoint is unusable."
+}

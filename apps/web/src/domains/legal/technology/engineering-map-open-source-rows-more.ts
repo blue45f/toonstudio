@@ -113,27 +113,27 @@ const AI_VISION_ROWS: readonly EngineeringMapRow[] = [
 const OUTPUT_ROWS: readonly EngineeringMapRow[] = [
   {
     id: "wasm-vips",
-    name: "wasm-vips",
+    name: "ToonStudio Lanczos3",
     status: "live",
-    link: { title: "wasm-vips", url: "https://github.com/kleisauke/wasm-vips" },
-    asOf: AS_OF,
+    link: { title: "ToonStudio", url: "https://github.com/blue45f/toonstudio" },
+    asOf: "2026-11-05",
     cells: {
       role: t(
-        "libvips(이미지 처리 라이브러리)를 WASM으로 옮긴 것. 한 변이 8192px를 넘고 16,384² 화소 이내인 초대형 페이지를 최종 내보낼 때 Lanczos3 방식으로 줄이는 데 쓴다.",
-        "libvips (an image-processing library) compiled to WASM. It downsizes very large pages, over 8192 px on a side and within 16,384² pixels, with the Lanczos3 kernel during final export.",
+        "표준 Lanczos3 수식으로 독립 구현한 RGBA 축소기. 한 변이 8192px를 넘고 16,384² 화소 이내인 초대형 페이지를 최종 내보낼 때 줄인다.",
+        "An independently authored RGBA downsampler using standard Lanczos3 equations. It downsizes very large pages over 8192 px on a side and within 16,384² pixels during final export.",
       ),
-      license: t("MIT (내장 libvips는 LGPL)", "MIT (bundled libvips: LGPL)"),
-      mode: t("WASM · 지연 로드 · 내보내기", "WASM · lazy · export"),
+      license: same("internal"),
+      mode: t("자체 JS · 지연 로드 · 내보내기", "First-party JS · lazy · export"),
       note: t(
-        "래퍼는 MIT지만 내장 libvips·libheif 등은 LGPL이다. 고지 생성기는 THIRD-PARTY-NOTICES.md를 수집하지 않아 생성 고지에는 MIT로만 나온다. 레지스트리는 'LGPL 격리 필수·dev-only 후보'인데 코드상 내보내기에서 도달한다.",
-        "The wrapper is MIT, but the bundled libvips, libheif and others are LGPL. The notice generator does not collect THIRD-PARTY-NOTICES.md, so the generated notice shows MIT only. The registry says LGPL isolation is required and it is a dev-only candidate, yet export code can reach it.",
+        "2026-11-05 wasm-vips의 제품 축소 기능을 자체 구현으로 이관한다. 저장된 wasm-vips-pipeline ID는 호환성을 위해 유지하며 과거 libvips 측정치를 자체 코드의 성능으로 표기하지 않는다. 속도·메모리 한도는 별도 검증한다.",
+        "The 2026-11-05 migration moves the product downscale function from wasm-vips to first-party code. The saved wasm-vips-pipeline ID remains for compatibility. Historical libvips measurements are not native-code performance claims; time and memory need separate validation.",
       ),
     },
     evidence: [
+      "apps/web/src/domains/creator/export/studio-native-lanczos.ts",
       "apps/web/src/domains/creator/export/studio-vips-export.ts",
       "apps/web/src/domains/creator/render/studio-raster-export-orchestration-runtime.ts",
       "packages/studio-engine-registry/src/filter-providers.ts",
-      "scripts/generate-third-party-notices.mjs",
     ],
   },
   {
@@ -175,8 +175,8 @@ const OUTPUT_ROWS: readonly EngineeringMapRow[] = [
       license: t("Remotion License(SPDX 아님)", "Remotion License (not an SPDX ID)"),
       mode: t("런타임 · 마케팅 페이지", "Runtime · marketing page"),
       note: t(
-        "자격 조건에 따라 무료 사용 또는 Company License가 필요한 자체 라이선스다. 저장소는 패키지·버전·라이선스 문구 해시를 고정해 감시하지만, 배포 법인이 대상인지는 저장소로 확인할 수 없다.",
-        "A custom license: free use depending on eligibility, otherwise a Company License. The repository pins the package, version and license-text hash and audits them, but whether the distributing entity qualifies cannot be verified from the repository.",
+        "4.0.536은 개인·직원 3명 이하 영리 조직의 무료 상업 사용을 허용해 설명된 개인·1인 운영 전제로 유지한다. 일반 FAQ의 기준은 조직 전체 3명 이하이며, 실제 인원은 독립 검증하지 않았다. 무료 자격 밖이면 Company License가 필요하다.",
+        "Version 4.0.536 permits free commercial use for individuals and for-profit entities with up to 3 employees; retained under the stated individual, one-person premise. The general FAQ uses total organizational headcount of up to 3 people; actual headcount is not independently verified. A Company License applies outside free eligibility.",
       ),
     },
     evidence: [
@@ -354,8 +354,8 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
       license: same("—"),
       mode: t("빌드 · postbuild", "Build · postbuild"),
       note: t(
-        "이번 점검에서 감사는 통과했다(pnpm 584건, Vello CPU 85·GPU 137 crate, 불투명 WASM 3종). 다만 THIRD-PARTY-NOTICES.md 같은 이름의 파일은 수집하지 않아 wasm-vips가 MIT로만 나온다.",
-        "The audit passed in this review (584 pnpm entries, 85 Vello CPU and 137 GPU crates, 3 opaque WASM inventories). But files named like THIRD-PARTY-NOTICES.md are not collected, so wasm-vips shows up as MIT only.",
+        "2026-10-08 감사는 pnpm 584건, Vello CPU 85·GPU 137 crate, 불투명 WASM 3종으로 통과했다. 2026-11-05에는 THIRD-PARTY-NOTICES.md 같은 내장 고지 파일의 수집 누락을 수정했다. 현재 목록은 각 빌드 산출물을 따른다.",
+        "The 2026-10-08 audit passed with 584 pnpm entries, 85 Vello CPU and 137 GPU crates, and 3 opaque WASM inventories. The omission of embedded notices named like THIRD-PARTY-NOTICES.md was fixed on 2026-11-05. The current inventory comes from each build output.",
       ),
     },
     evidence: [

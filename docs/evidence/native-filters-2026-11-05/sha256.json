@@ -1,0 +1,22 @@
+[
+  {
+    "path": "docs/evidence/native-filters-2026-11-05/blur-reference-float.png",
+    "sha256": "876916fb645aab87c91b194b438c1bcdaf42b8719b1146fe0cc8b9236210e749",
+    "bytes": 86120
+  },
+  {
+    "path": "docs/evidence/native-filters-2026-11-05/blur-toonstudio-native-gaussian.png",
+    "sha256": "0f514fae3ea297eb184ffbe619309705f2bd5e3593ba7f2326862db54e210c84",
+    "bytes": 86088
+  },
+  {
+    "path": "docs/evidence/native-filters-2026-11-05/downscale-reference-box.png",
+    "sha256": "6b792e43f4cea7a2f536a03c54dec8e75d3320c4869d8962258d9fb311bde91b",
+    "bytes": 301819
+  },
+  {
+    "path": "docs/evidence/native-filters-2026-11-05/downscale-toonstudio-native-lanczos3.png",
+    "sha256": "f05eca7d0bec886c1727ab82c08008de5f51ed736e02ecd45199b8099c0d08bf",
+    "bytes": 563571
+  }
+]

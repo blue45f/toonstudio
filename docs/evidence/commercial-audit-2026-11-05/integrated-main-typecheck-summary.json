@@ -1,0 +1,43 @@
+{
+  "head": "2c626df4000fcfc32318faa793a61bea3ef0901b",
+  "worktree": "/workspace/scratch/toonstudio-commercial-main-validation",
+  "web": {
+    "complete": true,
+    "checked": 26231,
+    "expected": 26231,
+    "roots": 16936,
+    "diagnostics": 0,
+    "typescript": "6.0.3",
+    "fingerprint": "0a2a58e565069979a257b124fe95c8f213606c4ba74c5aad61470bd8c4f96b91",
+    "finalSnapshotMatches": true,
+    "workers": 16,
+    "retries": 0,
+    "peakRssBytes": 8639463424,
+    "semanticWorkerSeconds": 964.2800000000001,
+    "report": "/tmp/toonstudio-main-full-typecheck-report.json",
+    "reportSha256": "a4f8d5858f37352e854c4a7fc42cb09cc3f864d291e1665ff2c0bded0296ea57"
+  },
+  "api": {
+    "command": "pnpm --filter @webtoon-nest/api run typecheck",
+    "explicitConfirmationExitCode": 0,
+    "log": "/tmp/toonstudio-main-api-typecheck-confirm.log",
+    "projects": [
+      "tsconfig.json",
+      "tools/tsconfig.work-session-browser.json",
+      "tools/tsconfig.postgres-tools.json"
+    ]
+  },
+  "canonical": {
+    "command": "pnpm run typecheck",
+    "log": "/tmp/toonstudio-main-canonical-typecheck.log",
+    "workspaceLinksVerified": true,
+    "reachedApi": true,
+    "rawSessionExitCodeCaptured": false,
+    "note": "웹 complete·0 diagnostics·API 도달과 동일 API 단계의 명시적 exit0로 전체 단계 검증. 최초 canonical session의 도구 종료코드는 보존하지 못함."
+  },
+  "scripts": {
+    "web": "node scripts/typecheck-shards.mjs --heap-mb 8192 --max-source-bytes 12582912",
+    "typecheck": "node scripts/verify-workspace-package-links.mjs && pnpm run typecheck:web && pnpm --filter @webtoon-nest/api run typecheck",
+    "build": "pnpm run typecheck:web && NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts"
+  }
+}

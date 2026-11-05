@@ -6,17 +6,31 @@
   사진을 애니메이션풍 얼굴로 변환하도록 학습된 스타일 변환망. 풍경·컷
   전반 변환은 `animegan2-paprika.onnx`가 맡고, 이 모델은 인물
   중심 컷용이다.
-- 원본 프로젝트: https://github.com/bryandlee/animegan2-pytorch —
-  코드와 가중치 모두 **MIT License** (Copyright (c) 2021 Bryan Lee,
-  상용 사용 가능). 이 PyTorch 포팅은 원본 TensorFlow 구현
-  (https://github.com/TachibanaYoshino/AnimeGANv2, Xin Chen et al.,
-  "AnimeGAN: A Novel Lightweight GAN for Photo Animation", 2019)의
-  계열 가중치를 포팅한 것으로, 원본 TF 저장소에는 라이선스 파일이
-  없다. 채택한 가중치는 MIT 라이선스가 적용되는 bryandlee 배포본
-  경유이며, 권리 부여는 그 배포본의 MIT 라이선스를 따른다.
-  Face Paint 계열의 학습 데이터는 원본 프로젝트 고지대로
-  CelebA-HQ 얼굴 사진과 애니메이션 얼굴 데이터셋이다.
-- 이 파일은 위 MIT 배포본의 공식 체크포인트
+- 배포 프로젝트: https://github.com/bryandlee/animegan2-pytorch
+  - 고정 commit: `25d7b017267208dfaf34026aa3425e518372aa2f`
+  - 선언 라이선스: **MIT (repository checkpoint)**, Copyright (c) 2021 Bryan Lee.
+  - 권리 상태: **declared-permissive**, 학습 출처는 일부 확인·추가 검토 상태(2026-11-05).
+  저자 관리 저장소에서 아래 실제 체크포인트를 root MIT LICENSE와 함께 추적하며,
+  공식 hubconf.py가 이를 기본 모델로 제공한다. 따라서 저장소의 MIT가 해당 체크포인트에도
+  적용된다는 합리적 근거가 있다. 개별 파일의 별도 라이선스 부재를 무허가 근거로 삼지 않는다.
+  이는 저장소 배포 범위에 근거한 분류이며 모든 학습 데이터·제3자 권리의 해결을 보증하지 않는다.
+  이 모델에 대한 별도 비상업 조건은 확인하지 못했으며, 변환 가중치 Paprika의 조건을 자동 적용하지 않는다.
+  - 고정 모델 설명: https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/README.md#additional-model-weights
+  - 고정 라이선스: https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/LICENSE
+  - 고정 체크포인트: https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/weights/face_paint_512_v2.pt
+- 학습·업로드 출처의 구별:
+  repository OWNER `bryandlee`는 Face Portrait v1/v2가 private dataset으로 학습됐으며
+  얼굴은 FFHQ-trained StyleGAN2에서 생성했다고 설명했다.
+  https://github.com/bryandlee/animegan2-pytorch/issues/30#issuecomment-982134241
+  저자는 별도 얼굴 모델의 pix2pix·network blending 절차도 설명했으나,
+  v1에서 시작한 이 스레드를 exact v2 전체 학습 계보로 일반화하지 않는다.
+  https://github.com/bryandlee/animegan2-pytorch/issues/3#issuecomment-931984741
+  Git의 체크포인트 추가 commit `f9b71ce9e53fa125c57434ea87780cbdab1c86d5`의 author 이름은
+  `xhlulu`이고 메시지는 `Add weights from gdrive`다. 이 업로드를 저자 본인의 학습 발언과 혼동하지 않는다.
+  당시 root MIT LICENSE도 현재와 동일하다. exact v2의 private 자료와 teacher checkpoint·생성물 조건은
+  완전히 재현되지 않았으며, 이 공백만으로 FacePaint나 그 출력이 자동 비상업이라고 단정하지 않는다.
+  후속 증거: `docs/evidence/commercial-model-rights-2026-11-05/facepaint-rights.json`.
+- 이 파일은 위 PyTorch 배포본의 체크포인트
   `weights/face_paint_512_v2.pt` (8,601,086 bytes, SHA-256
   `06b88a204eb230889444ad868ee5608f4fce5d4ff7b7738acaa4209c2b8fdca7`)를
   직접 ONNX 변환한 것으로, 가중치 값은 원본과 동일하다(state_dict

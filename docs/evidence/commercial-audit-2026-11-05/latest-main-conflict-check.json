@@ -1,0 +1,120 @@
+{
+  "baseHead": "8d315c85d6fde4a3a30255612c756d3e299a95b0",
+  "fetchedMain": "2c626df4000fcfc32318faa793a61bea3ef0901b",
+  "remoteChangedFiles": [
+    "apps/web/config/compact-bootstrap-assets.ts",
+    "apps/web/config/compact-svg-structure.ts",
+    "apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx",
+    "apps/web/src/domains/creator/brush/StudioDrawNode.tsx",
+    "apps/web/src/domains/creator/brush/studio-brush-selection.prewarm.test.ts",
+    "apps/web/src/domains/creator/brush/studio-brush-selection.ts",
+    "apps/web/src/domains/creator/brush/studio-wet-wash-live-pipeline.ts",
+    "apps/web/src/domains/creator/brush/wet-paper/StudioDrawNode.dry-brush-live.test.tsx",
+    "apps/web/src/domains/creator/brush/wet-paper/studio-dry-brush-live-host.ts",
+    "apps/web/src/domains/creator/brush/wet-paper/studio-dry-brush-live-lifecycle.test.ts",
+    "apps/web/src/domains/creator/brush/wet-paper/studio-dry-brush-live-loading.test.ts",
+    "apps/web/src/domains/creator/brush/wet-paper/studio-watercolor-settled-surface.ts",
+    "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-host-types.ts",
+    "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-host.test.ts",
+    "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-host.ts",
+    "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-lanes.test.ts",
+    "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-runtime.ts",
+    "apps/web/src/domains/creator/studio-shell/StudioShellFloatingTarget.tsx",
+    "apps/web/src/domains/creator/studio-shell/studio-shell-default-safe-viewport.test.ts",
+    "apps/web/src/domains/creator/studio-shell/studio-shell-default-safe-viewport.ts",
+    "apps/web/src/domains/creator/studio-shell/use-studio-floating-surface-layout.test.tsx",
+    "apps/web/src/domains/creator/use-studio-floating-surface-layout.ts",
+    "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+    "apps/web/src/domains/legal/technology/engineering-atlas-platform-ops-safety.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-free-tier-rows.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-curriculum.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-lessons.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-talk-deck-content.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-talk-slides-core.ts",
+    "apps/web/src/domains/legal/technology/engineering-talk-slides-ops.ts",
+    "apps/web/tools/browser-harnesses/collaboration-c9/actual-input.test.mjs",
+    "apps/web/tools/browser-harnesses/collaboration-c9/asset-contract.test.mjs",
+    "apps/web/tools/browser-harnesses/collaboration-c9/browser-finalization.test.mjs",
+    "apps/web/tools/browser-harnesses/collaboration-c9/local-qa-tls.test.mjs",
+    "apps/web/tools/browser-harnesses/collaboration-c9/manuscript-browser.test.mjs",
+    "apps/web/tools/browser-harnesses/collaboration-c9/manuscript-contract.test.mjs",
+    "apps/web/tools/browser-harnesses/collaboration-c9/request-lifecycle.test.mjs",
+    "apps/web/tools/browser-harnesses/collaboration-c9/snapshot-contract.test.mjs",
+    "docs/reports/main-ci-quality-followup-2026-11-05.md",
+    "scripts/ci-core-regression-shards.test.mjs",
+    "scripts/ci-required-vitest-targets.txt",
+    "scripts/lib/compact-bootstrap-assets.test.mjs",
+    "scripts/lib/compact-svg-structure.test.mjs",
+    "scripts/lib/studio-hokusai-preview-diagnostics.test.ts",
+    "scripts/lib/studio-hokusai-preview-diagnostics.ts",
+    "scripts/verify-studio-hokusai-live-integration.mts",
+    "scripts/verify-studio-hokusai-live-integration.test.ts",
+    "tests/integration/api-web/api/modules/creator/creator.service.test.ts"
+  ],
+  "overlappingTrackedFiles": [
+    "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+    "apps/web/src/domains/legal/technology/engineering-atlas-platform-ops-safety.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts"
+  ],
+  "untrackedRemotePathCollisions": [],
+  "cachedPatchCheckExit": 1,
+  "cachedPatchCheckStderr": "error: patch failed: apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts:551\nerror: apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts: patch does not apply\nerror: patch failed: apps/web/src/domains/legal/technology/engineering-atlas-platform-ops-safety.ts:25\nerror: apps/web/src/domains/legal/technology/engineering-atlas-platform-ops-safety.ts: patch does not apply\nerror: patch failed: apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts:43\nerror: apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts: patch does not apply\nerror: patch failed: apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts:222\nerror: apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts: patch does not apply\n",
+  "scope": "read-only application check against temporary index; no merge or worktree rewrite; untracked collisions checked separately",
+  "threeWayPreviews": [
+    {
+      "path": "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+      "threeWayPreviewExit": 1,
+      "wouldChangeCurrentFile": true,
+      "conflictMarkerCount": 1,
+      "note": "stdout-only preview; working tree and Git refs untouched"
+    },
+    {
+      "path": "apps/web/src/domains/legal/technology/engineering-atlas-platform-ops-safety.ts",
+      "threeWayPreviewExit": 0,
+      "wouldChangeCurrentFile": false,
+      "conflictMarkerCount": 0,
+      "note": "stdout-only preview; working tree and Git refs untouched"
+    },
+    {
+      "path": "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts",
+      "threeWayPreviewExit": 2,
+      "wouldChangeCurrentFile": true,
+      "conflictMarkerCount": 2,
+      "note": "stdout-only preview; working tree and Git refs untouched"
+    },
+    {
+      "path": "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts",
+      "threeWayPreviewExit": 0,
+      "wouldChangeCurrentFile": true,
+      "conflictMarkerCount": 0,
+      "note": "stdout-only preview; working tree and Git refs untouched"
+    },
+    {
+      "path": "apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts",
+      "threeWayPreviewExit": 1,
+      "wouldChangeCurrentFile": true,
+      "conflictMarkerCount": 1,
+      "note": "stdout-only preview; working tree and Git refs untouched"
+    },
+    {
+      "path": "apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts",
+      "threeWayPreviewExit": 0,
+      "wouldChangeCurrentFile": true,
+      "conflictMarkerCount": 0,
+      "note": "stdout-only preview; working tree and Git refs untouched"
+    }
+  ],
+  "actualThreeWayConflictFiles": [
+    "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts"
+  ]
+}

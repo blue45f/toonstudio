@@ -124,7 +124,7 @@ describe("라이브러리 현황", () => {
     expect(within(section).queryByText("mixbox")).toBeNull();
     expect(within(section).getByText("u2netp.onnx")).toBeTruthy();
     expect(within(section).getByText("tag2pix.onnx")).toBeTruthy();
-    expect(within(section).getByRole("status").textContent).toContain("116개 / 전체 116개 라이브러리");
+    expect(within(section).getByRole("status").textContent).toContain("115개 / 전체 115개 라이브러리");
   });
 
   it("라이브러리 검색은 이름으로 걸러 개수를 알린다", () => {
@@ -133,8 +133,40 @@ describe("라이브러리 현황", () => {
     const search = within(section).getByLabelText(/라이브러리·라이선스 검색|Search libraries/u);
     fireEvent.change(search, { target: { value: "opencascade" } });
 
-    expect(within(section).getByRole("status").textContent).toContain("1개 / 전체 116개 라이브러리");
+    expect(within(section).getByRole("status").textContent).toContain("1개 / 전체 115개 라이브러리");
     expect(within(section).getAllByText("opencascade.js").length).toBeGreaterThan(0);
     expect(within(section).queryByText("three")).toBeNull();
+  });
+
+  it("Remotion의 무료 상업 사용 전제와 Tag2Pix 비상업 제한을 구별한다", () => {
+    renderLicenses();
+    const section = inventorySection();
+    const notes = within(section).getAllByText(/Remotion 4\.0\.536의 자체 라이선스/u);
+    expect(notes).toHaveLength(2);
+    for (const note of notes) {
+      expect(note.textContent).toContain("개인 또는 직원 3명 이하 영리 조직의 무료 상업 사용");
+      expect(note.textContent).toContain("운영자가 설명한 개인·1인 운영 전제");
+      expect(note.textContent).toContain("조직 전체 3명 이하");
+      expect(note.textContent).toContain("실제 조직 인원은 독립 검증하지 않았습니다");
+      expect(note.textContent).toContain("비상업 조건인 Tag2Pix 가중치와는 다른 항목");
+    }
+    expect(within(section).getByText("Non-commercial; redistribution restricted")).toBeTruthy();
+  });
+});
+
+
+describe("모델 가중치 권리 공개", () => {
+  it("기존 모델 기능을 숨기지 않고 제한·조건 충돌·MIT 체크포인트를 구별한다", () => {
+    renderLicenses();
+    const tagRow = screen.getByText("tag2pix.onnx").closest("article");
+    const paprikaRow = screen.getByText("animegan2-paprika.onnx").closest("article");
+    const faceRow = screen.getByText("animegan2-face-paint-512-v2.onnx").closest("article");
+    expect(tagRow?.textContent).toContain("Non-commercial; redistribution restricted");
+    expect(tagRow?.textContent).toMatch(/이용·재배포 제한|Use and redistribution restrictions/u);
+    expect(paprikaRow?.textContent).toMatch(/권리 확인 대기|Rights verification pending/u);
+    expect(faceRow?.textContent).toContain("MIT (repository checkpoint)");
+    expect(faceRow?.textContent).toMatch(/학습 출처는 일부만 공개|Training provenance is partially documented/u);
+    expect(faceRow?.textContent).not.toMatch(/권리 확인 대기|Rights verification pending/u);
+    expect(screen.getByText(/고지 파일이나 SHA-256 일치가 상용 이용 허가를 뜻하지 않습니다|a notice file or matching SHA-256 does not grant commercial permission/u)).toBeTruthy();
   });
 });

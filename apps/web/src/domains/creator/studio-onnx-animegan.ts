@@ -5,8 +5,12 @@
  *
  * Why this model: the 2026-10-06 anime-style track measured the
  * AnimeGANv2 generator ports shipped by bryandlee/animegan2-pytorch
- * (MIT License, weights included) against the adoption bar — commercial
- * license cleared, browser-practical size/speed, lazy-loadable. The two
+ * against the adoption bar for browser-practical size/speed and lazy loading.
+ * 2026-11-05 권리 감사: Paprika는 원본 비상업 조건과 하류 MIT 주장 충돌 상태다.
+ * Face Paint는 저자 관리 저장소의 tracked checkpoint와 root MIT에 근거해
+ * declared-permissive로 분류하며, 일부만 확인된 학습 출처는 별도 검토한다.
+ * Paprika의 비상업 조건을 Face Paint에 자동 적용하지 않는다.
+ * The two
  * bundled weights are direct ONNX conversions of the official `.pt`
  * checkpoints, produced and verified in-repo style (strict state_dict
  * binding, PyTorch-reference parity below one 8-bit step on natural

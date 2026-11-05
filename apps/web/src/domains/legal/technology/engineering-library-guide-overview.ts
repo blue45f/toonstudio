@@ -71,7 +71,7 @@ export const LIBRARY_GUIDE_OVERVIEW: LibraryGuideOverview = {
         label: t("8 · 만들기·검사·내보내기", "8 · Build, check, export"),
         sub: t("빌드, 테스트, 파일 형식과 영상 출력", "Builds, tests, file formats and video output"),
         tone: "neutral",
-        chips: ["Vite", "Vitest", "Playwright", "wasm-vips", "ag-psd", "pdf-lib"],
+        chips: ["Vite", "Vitest", "Playwright", "ToonStudio Lanczos3", "ag-psd", "pdf-lib"],
       },
     ],
     // 괄호 이름은 화면의 영역 묶음(영역 바로가기·목차)과 같은 상수의 짧은 이름을 쓴다.

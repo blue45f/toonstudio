@@ -1,0 +1,124 @@
+{
+  "fixtures": "/tmp/toonstudio-model-checker-independent-5qbr4jk4",
+  "results": [
+    {
+      "case": "safe",
+      "exit": 0,
+      "result": {
+        "scope": "selected-known-model-byte-hashes",
+        "filesVisited": 1,
+        "onnxFiles": 1,
+        "inspected": 1,
+        "matches": [],
+        "blockingMatches": [],
+        "reviewMatches": []
+      },
+      "stderr": ""
+    },
+    {
+      "case": "root-link",
+      "exit": 0,
+      "result": {
+        "scope": "selected-known-model-byte-hashes",
+        "filesVisited": 1,
+        "onnxFiles": 1,
+        "inspected": 1,
+        "matches": [],
+        "blockingMatches": [],
+        "reviewMatches": []
+      },
+      "stderr": ""
+    },
+    {
+      "case": "bad-flag",
+      "exit": 2,
+      "result": null,
+      "stderr": "모델 배포 검사 실패: 사용법: node scripts/check-restricted-model-distribution.mjs [배포 디렉터리] [--json]. 경로와 파일 접근 권한을 확인하세요."
+    },
+    {
+      "case": "missing",
+      "exit": 2,
+      "result": null,
+      "stderr": "모델 배포 검사 실패: ENOENT: no such file or directory, scandir '/tmp/toonstudio-model-checker-independent-5qbr4jk4/missing'. 경로와 파일 접근 권한을 확인하세요."
+    },
+    {
+      "case": "file-root",
+      "exit": 2,
+      "result": null,
+      "stderr": "모델 배포 검사 실패: ENOTDIR: not a directory, scandir '/tmp/toonstudio-model-checker-independent-5qbr4jk4/assets/safe.onnx'. 경로와 파일 접근 권한을 확인하세요."
+    },
+    {
+      "case": "child-link",
+      "exit": 2,
+      "stderr": "모델 배포 검사 실패: 심볼릭 링크는 배포 검사 전에 해소하세요: child-link. 경로와 파일 접근 권한을 확인하세요."
+    },
+    {
+      "case": "synthetic-blocking",
+      "exit": 1,
+      "result": {
+        "scope": "selected-known-model-byte-hashes",
+        "filesVisited": 1,
+        "onnxFiles": 1,
+        "inspected": 1,
+        "matches": [
+          {
+            "path": "safe.onnx",
+            "model": "Tag2Pix",
+            "sha256": "258c9f6ac20e73b46140ad8225fae16b09dc575c3cad909407b445bdd6b3561f",
+            "byteLength": 27,
+            "status": "noncommercial-and-redistribution-restricted",
+            "disposition": "block",
+            "source": "https://github.com/blandocs/Tag2Pix#license"
+          }
+        ],
+        "blockingMatches": [
+          {
+            "path": "safe.onnx",
+            "model": "Tag2Pix",
+            "sha256": "258c9f6ac20e73b46140ad8225fae16b09dc575c3cad909407b445bdd6b3561f",
+            "byteLength": 27,
+            "status": "noncommercial-and-redistribution-restricted",
+            "disposition": "block",
+            "source": "https://github.com/blandocs/Tag2Pix#license"
+          }
+        ],
+        "reviewMatches": []
+      },
+      "note": "isolated process substitutes only expected policy digest/size in memory; no repository edits or actual weights"
+    },
+    {
+      "case": "synthetic-review",
+      "exit": 0,
+      "result": {
+        "scope": "selected-known-model-byte-hashes",
+        "filesVisited": 1,
+        "onnxFiles": 1,
+        "inspected": 1,
+        "matches": [
+          {
+            "path": "safe.onnx",
+            "model": "AnimeGAN Face Paint v2",
+            "sha256": "258c9f6ac20e73b46140ad8225fae16b09dc575c3cad909407b445bdd6b3561f",
+            "byteLength": 27,
+            "status": "mit-repository-checkpoint-training-provenance-review",
+            "disposition": "review",
+            "source": "https://github.com/bryandlee/animegan2-pytorch#additional-model-weights"
+          }
+        ],
+        "blockingMatches": [],
+        "reviewMatches": [
+          {
+            "path": "safe.onnx",
+            "model": "AnimeGAN Face Paint v2",
+            "sha256": "258c9f6ac20e73b46140ad8225fae16b09dc575c3cad909407b445bdd6b3561f",
+            "byteLength": 27,
+            "status": "mit-repository-checkpoint-training-provenance-review",
+            "disposition": "review",
+            "source": "https://github.com/bryandlee/animegan2-pytorch#additional-model-weights"
+          }
+        ]
+      },
+      "note": "isolated process substitutes only expected policy digest/size in memory; no repository edits or actual weights"
+    }
+  ]
+}

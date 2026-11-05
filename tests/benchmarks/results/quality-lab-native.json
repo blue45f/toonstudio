@@ -1,0 +1,67 @@
+{
+  "harness": "tests/benchmarks/harness/quality-lab.ts",
+  "generatedAt": "2026-11-05T09:30:24.611Z",
+  "host": {
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "AMD EPYC 9V74 80-Core Processor",
+    "node": "v24.19.0"
+  },
+  "references": {
+    "downscale": "float box-average reduction (engine-independent)",
+    "blur": "separable float gaussian, radius 4 sigma, clamp edges"
+  },
+  "downscale2048to512": [
+    {
+      "candidate": "nearest-floor",
+      "psnrDb": 13.92,
+      "ssim": 0.7918,
+      "wallMs": 3.42,
+      "artifact": "downscale-nearest-floor.png"
+    },
+    {
+      "candidate": "canvaskit-cubic-mitchell",
+      "psnrDb": 23.78,
+      "ssim": 0.9768,
+      "wallMs": 43.4,
+      "artifact": "downscale-canvaskit-cubic-mitchell.png"
+    },
+    {
+      "candidate": "canvaskit-linear-nomips",
+      "psnrDb": 25.31,
+      "ssim": 0.9834,
+      "wallMs": 22.85,
+      "artifact": "downscale-canvaskit-linear-nomips.png"
+    },
+    {
+      "candidate": "toonstudio-native-lanczos3",
+      "psnrDb": 27.26,
+      "ssim": 0.9887,
+      "wallMs": 87.26,
+      "artifact": "downscale-toonstudio-native-lanczos3.png"
+    }
+  ],
+  "gaussianBlurSigma4": [
+    {
+      "candidate": "canvaskit-imagefilter",
+      "psnrDb": 47.94,
+      "ssim": 0.9874,
+      "wallMs": 45.22,
+      "artifact": "blur-canvaskit-imagefilter.png"
+    },
+    {
+      "candidate": "opencv-gaussian",
+      "psnrDb": 36.58,
+      "ssim": 0.9701,
+      "wallMs": 83.77,
+      "artifact": "blur-opencv-gaussian.png"
+    },
+    {
+      "candidate": "toonstudio-native-gaussian",
+      "psnrDb": 58.52,
+      "ssim": 0.9987,
+      "wallMs": 79.75,
+      "artifact": "blur-toonstudio-native-gaussian.png"
+    }
+  ]
+}

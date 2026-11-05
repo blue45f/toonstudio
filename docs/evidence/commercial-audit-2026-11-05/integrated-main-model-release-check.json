@@ -1,0 +1,27 @@
+{
+  "scope": "selected-known-onnx-model-hashes",
+  "inspected": 6,
+  "matches": [
+    {
+      "path": "assets/animegan2-face-paint-512-v2-2PHtSotV.onnx",
+      "model": "AnimeGAN Face Paint v2",
+      "sha256": "54ce55c73dc974c24fa55cf1204577a6181c7e86d312a3a07f798bbbd99d4ee2",
+      "status": "weight-rights-unresolved",
+      "source": "https://github.com/bryandlee/animegan2-pytorch#additional-model-weights"
+    },
+    {
+      "path": "assets/animegan2-paprika-HePLp6yq.onnx",
+      "model": "AnimeGANv2 Paprika",
+      "sha256": "7cb5bf08d7778a8f4e25f1e654fdc24d56dc9b6cbb9c1db42e4f9d0425e7fe62",
+      "status": "upstream-noncommercial-conflicts-with-port-license",
+      "source": "https://github.com/TachibanaYoshino/AnimeGANv2#license"
+    },
+    {
+      "path": "assets/tag2pix-B03WmUfQ.onnx",
+      "model": "Tag2Pix",
+      "sha256": "ae01698835b99a009533ebbcf840d416a32bee0c0f4c9be060c21ab2084491cc",
+      "status": "noncommercial-and-redistribution-restricted",
+      "source": "https://github.com/blandocs/Tag2Pix#license"
+    }
+  ]
+}

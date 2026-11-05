@@ -1,0 +1,42 @@
+{
+  "checks": {
+    "harnessOuterExitZero": true,
+    "reportFresh": true,
+    "complete": true,
+    "zeroDiagnostics": true,
+    "noFailure": true,
+    "coverageCount": true,
+    "coverageUnique": true,
+    "coverageFullProgram": true,
+    "strict": true,
+    "noEmit": true,
+    "incrementalDisabled": true,
+    "sameOriginalProgram": true,
+    "sameOriginalFingerprint": true,
+    "finalFingerprint": true,
+    "canonicalLimits": true
+  },
+  "complete": true,
+  "fingerprint": "471df5034f6389575901d72bf7761c56cda825c947ccc354b0839e61ba2395bb",
+  "limits": {
+    "workerConcurrency": 1,
+    "heapMb": 8192,
+    "maxSourceBytes": 12582912
+  },
+  "typescriptVersion": "6.0.3",
+  "coverage": {
+    "checkedFiles": 26272,
+    "expectedFiles": 26272
+  },
+  "roots": 16966,
+  "readInputs": 27075,
+  "finalSnapshot": {
+    "fingerprint": "471df5034f6389575901d72bf7761c56cda825c947ccc354b0839e61ba2395bb"
+  },
+  "workers": 16,
+  "diagnostics": 0,
+  "maxWorkerRssBytes": 8651100160,
+  "retryWorkers": 0,
+  "reportSha256": "77bb1e54cf45dd47c7eef7b6bdea41676b49a08aeff5e905df59c24e796def13",
+  "reportMtimeNs": 1793885551748460613
+}

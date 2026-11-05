@@ -1,0 +1,119 @@
+{
+  "baselineHead": "8d315c85d6fde4a3a30255612c756d3e299a95b0",
+  "externalVipsManifestEntries": [],
+  "externalVipsBinaryMatches": [],
+  "removedPackageBinaryHashesChecked": 4,
+  "builtWasmFiles": [
+    {
+      "path": "assets/basis_encoder-BU4uLNSp.wasm",
+      "bytes": 3288143,
+      "sha256": "9807719e87cf3d979b0d69ae7112eb88aec6a0e0206c0b2d00dc0bed0d581b80"
+    },
+    {
+      "path": "assets/basis_transcoder-VXdx5NbI.wasm",
+      "bytes": 527333,
+      "sha256": "6cf17dc889352c42e9acf8897107978d127005fe3386c36a0e3845e27967630a"
+    },
+    {
+      "path": "assets/canvaskit-SCAxUyCS.wasm",
+      "bytes": 7317345,
+      "sha256": "25ebed8e60158c5854f8dc807b936daca21354f8bfb6a2231266b0a93812f301"
+    },
+    {
+      "path": "assets/ink_mesh-CGBa3Lpq.wasm",
+      "bytes": 540523,
+      "sha256": "74b6bebcf64b6a48f6648f898df5529f2627d1f29d4d861c215447bec8aa9312"
+    },
+    {
+      "path": "assets/manifold-BE4c7gO-.wasm",
+      "bytes": 541470,
+      "sha256": "73e3b419ad31294f6b1cc478173944e50efc4a34bfdeeff0107bdfc12975f11c"
+    },
+    {
+      "path": "assets/mypaint-wasm-Q5-BId2l.wasm",
+      "bytes": 83484,
+      "sha256": "1d6f2f4ab8a69856359efab8666e319099bc2e004eb6272df015384139daf6b3"
+    },
+    {
+      "path": "assets/opencascade.wasm-DEAxFiks.wasm",
+      "bytes": 65864037,
+      "sha256": "6cc2f3fa1611d32ad7563f7092aa1bf58741124302630cef7d21561ecd7b7284"
+    },
+    {
+      "path": "assets/ort-wasm-simd-threaded.asyncify-CxOG5pUO.wasm",
+      "bytes": 26861777,
+      "sha256": "49871f5a4409519797e127440868a6d1923339d9185907f301a5b2a1d90af082"
+    },
+    {
+      "path": "assets/ort-wasm-simd-threaded.asyncify-D5D0fo7z.wasm",
+      "bytes": 26781914,
+      "sha256": "39f9f0894d478800487ed9f7dbe92618498db320cf55c8e3d89adff8dce658da"
+    },
+    {
+      "path": "assets/ort-wasm-simd-threaded.jsep-MDYUKy93.wasm",
+      "bytes": 28312028,
+      "sha256": "3ad23231b5bd6d9dda55a7f84606315e0bf35b6750c28ee993c987c54cacab0f"
+    },
+    {
+      "path": "assets/rhino3dm-CWOyICcB.wasm",
+      "bytes": 2670316,
+      "sha256": "18cb4b663cda1167d510e49c7780808a14f8ea3b609bcf751f5b6062e7692df2"
+    },
+    {
+      "path": "assets/sqlite3-BVKGSWc-.wasm",
+      "bytes": 864752,
+      "sha256": "02d7e48164395fa68f81c6ec33e9da5461be397dc57602ac0cd89b4bbba1d312"
+    },
+    {
+      "path": "assets/studio_engine_vello_bg-BDhiAqsC.wasm",
+      "bytes": 8000640,
+      "sha256": "92eec21dc7ffda37137cb91e685c65ac293422b00ce020870b903713f221947d"
+    },
+    {
+      "path": "assets/studio_engine_vello_bg-niBAzCHZ.wasm",
+      "bytes": 3771542,
+      "sha256": "82d299c0ff34fd0252ef7f26a7c2ad8e5f7f751f8060e235dc2d6272665c0a4e"
+    },
+    {
+      "path": "assets/studio_hokusai_wasm_bg-CaEkvrOE.wasm",
+      "bytes": 187243,
+      "sha256": "289b73c88173c7e05d973fd8c66ba42a06a96a453425f87bdebfbcebb0a921c6"
+    },
+    {
+      "path": "assets/thorvg-CKyvO4AG.wasm",
+      "bytes": 909352,
+      "sha256": "c6f485345f35742784fe5da2fda7b708e6c53a82b7d8a406a13171682d7d218f"
+    },
+    {
+      "path": "assets/thorvg-T6LIuRwu.wasm",
+      "bytes": 906648,
+      "sha256": "8837f392e41c9a8a900a35389c8aa627da00afb261879a19b57d2a37c097b8b8"
+    },
+    {
+      "path": "assets/vision_wasm_internal-CA13OlP-.wasm",
+      "bytes": 11153617,
+      "sha256": "6a5c64584c2ab61c763b6e204afbdbc7ce1caf7f5216187322bca8df94f646bc"
+    },
+    {
+      "path": "assets/vision_wasm_module_internal-CgkWg6EJ.wasm",
+      "bytes": 11153641,
+      "sha256": "617b8e0248dbd27e9d7ece4218004eae4cefb499196d1bb4fa0e3fef21708756"
+    },
+    {
+      "path": "assets/vision_wasm_nosimd_internal-B4x4ZKaa.wasm",
+      "bytes": 10481398,
+      "sha256": "8a3092d34c79d3f57e6ba8592105e8a90f6b07c27891ffecd14cca428bfd3e31"
+    },
+    {
+      "path": "assets/web-ifc-BDaIXFUT.wasm",
+      "bytes": 1595268,
+      "sha256": "1fbd30bd5515ff6ad15268e87aa26e41d57b29411c8461618b63bee92735d349"
+    },
+    {
+      "path": "assets/xatlas-BoZ5JfyM.wasm",
+      "bytes": 144834,
+      "sha256": "4f5eb292cb5ab54c3a6872452c8a1fea79976bffe97c060ba60e256419942b96"
+    }
+  ],
+  "legacyIdentifiers": "StudioVips* and wasm-vips-pipeline are retained API/data IDs; not evidence of external package inclusion"
+}

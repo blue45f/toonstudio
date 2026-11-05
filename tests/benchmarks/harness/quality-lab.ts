@@ -10,7 +10,7 @@
  *    outputs are committed as PNGs for human review (승인 요건: reference
  *    images).
  * 2. Gaussian blur σ4 on 512² luma: reference is an exact separable float
- *    gaussian; candidates are CanvasKit ImageFilter, OpenCV and wasm-vips.
+ *    gaussian; candidates are CanvasKit ImageFilter, OpenCV and the independent native filter.
  *
  * Results feed the ProviderBenchmarkRegistry visualQuality axis so provider
  * SELECTION is quality-weighted, not just fast. Run:
@@ -24,9 +24,13 @@ import { performance } from "node:perf_hooks";
 import { encodeRgbaToPng } from "@toonstudio/studio-engine-skia";
 import { loadCanvasKitNode } from "@toonstudio/studio-engine-skia/node";
 
+import { resizeStudioRgbaLanczos3 } from "../../../apps/web/src/domains/creator/export/studio-native-lanczos";
+
+import { gaussianBlurRgba } from "./native-gaussian";
+
 const REPO_ROOT = new URL("../../..", import.meta.url).pathname;
 const RESULTS_DIR = join(REPO_ROOT, "tests", "benchmarks", "results");
-const ARTIFACT_DIR = join(REPO_ROOT, "tests", "benchmarks", "artifacts", "quality-lab");
+const ARTIFACT_DIR = join(REPO_ROOT, "tests", "benchmarks", "artifacts", "quality-lab-native");
 
 const SRC = 2048;
 const DST = 512;
@@ -296,35 +300,12 @@ async function main(): Promise<void> {
     image.delete();
   }
 
-  // wasm-vips (lanczos3 default reduce)
+  // 표준 Lanczos3 자체 구현 — 과거 wasm-vips 기록과 별도 후보로 측정한다.
   {
-    const { default: Vips } = (await import("wasm-vips")) as unknown as {
-      default: (options?: Record<string, unknown>) => Promise<{
-        Image: {
-          newFromMemory(
-            data: Uint8Array,
-            width: number,
-            height: number,
-            bands: number,
-            format: string,
-          ): {
-            resize(scale: number): { writeToMemory(): Uint8Array; delete(): void };
-            delete(): void;
-          };
-        };
-        concurrency(n: number): void;
-      }>;
-    };
-    const vips = await Vips({ dynamicLibraries: [] });
-    vips.concurrency(1);
     const start = performance.now();
-    const image = vips.Image.newFromMemory(sourceRgba, SRC, SRC, 4, "uchar");
-    const resized = image.resize(DST / SRC);
-    const pixels = resized.writeToMemory();
+    const pixels = resizeStudioRgbaLanczos3(sourceRgba, SRC, SRC, DST, DST);
     const wallMs = performance.now() - start;
-    resized.delete();
-    image.delete();
-    await recordDownscale("wasm-vips-lanczos3", new Uint8Array(pixels), wallMs);
+    await recordDownscale("toonstudio-native-lanczos3", pixels, wallMs);
   }
 
   // ---- Gaussian blur shootout (512² luma card, σ4) ----
@@ -416,35 +397,12 @@ async function main(): Promise<void> {
     dst.delete();
   }
 
-  // wasm-vips gaussblur
+  // 반경 4 sigma·clamp 경계·premultiplied alpha의 자체 Gaussian.
   {
-    const { default: Vips } = (await import("wasm-vips")) as unknown as {
-      default: (options?: Record<string, unknown>) => Promise<{
-        Image: {
-          newFromMemory(
-            data: Uint8Array,
-            width: number,
-            height: number,
-            bands: number,
-            format: string,
-          ): {
-            gaussblur(sigma: number): { writeToMemory(): Uint8Array; delete(): void };
-            delete(): void;
-          };
-        };
-        concurrency(n: number): void;
-      }>;
-    };
-    const vips = await Vips({ dynamicLibraries: [] });
-    vips.concurrency(1);
-    const image = vips.Image.newFromMemory(blurCardRgba, blurSize, blurSize, 4, "uchar");
     const start = performance.now();
-    const blurred = image.gaussblur(sigma);
-    const pixels = blurred.writeToMemory();
+    const pixels = gaussianBlurRgba(blurCardRgba, blurSize, blurSize, sigma);
     const wallMs = performance.now() - start;
-    blurred.delete();
-    image.delete();
-    await recordBlur("wasm-vips-gaussblur", new Uint8Array(pixels), wallMs);
+    await recordBlur("toonstudio-native-gaussian", pixels, wallMs);
   }
 
   const report = {
@@ -459,7 +417,7 @@ async function main(): Promise<void> {
     gaussianBlurSigma4: blur,
   };
   await mkdir(RESULTS_DIR, { recursive: true });
-  const target = join(RESULTS_DIR, "quality-lab.json");
+  const target = join(RESULTS_DIR, "quality-lab-native.json");
   await writeFile(target, `${JSON.stringify(report, null, 2)}\n`);
   for (const row of [...downscale, ...blur]) {
     console.log(

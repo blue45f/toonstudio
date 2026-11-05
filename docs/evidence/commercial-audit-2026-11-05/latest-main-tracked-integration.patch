@@ -1,0 +1,1759 @@
+--- a/apps/web/src/domains/creator/assets/animegan2-face-paint-512-v2.LICENSE.md
++++ b/apps/web/src/domains/creator/assets/animegan2-face-paint-512-v2.LICENSE.md
+@@ -6,17 +6,17 @@
+   사진을 애니메이션풍 얼굴로 변환하도록 학습된 스타일 변환망. 풍경·컷
+   전반 변환은 `animegan2-paprika.onnx`가 맡고, 이 모델은 인물
+   중심 컷용이다.
+-- 원본 프로젝트: https://github.com/bryandlee/animegan2-pytorch —
+-  코드와 가중치 모두 **MIT License** (Copyright (c) 2021 Bryan Lee,
+-  상용 사용 가능). 이 PyTorch 포팅은 원본 TensorFlow 구현
+-  (https://github.com/TachibanaYoshino/AnimeGANv2, Xin Chen et al.,
+-  "AnimeGAN: A Novel Lightweight GAN for Photo Animation", 2019)의
+-  계열 가중치를 포팅한 것으로, 원본 TF 저장소에는 라이선스 파일이
+-  없다. 채택한 가중치는 MIT 라이선스가 적용되는 bryandlee 배포본
+-  경유이며, 권리 부여는 그 배포본의 MIT 라이선스를 따른다.
+-  Face Paint 계열의 학습 데이터는 원본 프로젝트 고지대로
+-  CelebA-HQ 얼굴 사진과 애니메이션 얼굴 데이터셋이다.
+-- 이 파일은 위 MIT 배포본의 공식 체크포인트
++- 배포 프로젝트: https://github.com/bryandlee/animegan2-pytorch
++  (구현 코드의 MIT License, Copyright (c) 2021 Bryan Lee).
++  upstream README의 Additional Model Weights는 Face Portrait v2를 별도 학습한
++  512×512 얼굴 모델로 설명한다. Paprika처럼 원본 TensorFlow 체크포인트를
++  변환했다고 단정할 근거는 확인하지 못했다. 구현 코드의 MIT와 별개로 이 정확한
++  가중치 및 학습 데이터에 대한 상용 배포 권리 범위는 추가 확인이 필요하다.
++  Paprika의 비상업 조건이 이 별도 가중치에도 적용된다고 확정하지 않는다.
++  - 모델 설명: https://github.com/bryandlee/animegan2-pytorch#additional-model-weights
++  - 구현 라이선스: https://github.com/bryandlee/animegan2-pytorch/blob/main/LICENSE
++  권리 상태는 **미확인**이며 기존의 무조건적 상용 가능 주장을 철회한다(2026-11-05).
++- 이 파일은 위 PyTorch 배포본의 체크포인트
+   `weights/face_paint_512_v2.pt` (8,601,086 bytes, SHA-256
+   `06b88a204eb230889444ad868ee5608f4fce5d4ff7b7738acaa4209c2b8fdca7`)를
+   직접 ONNX 변환한 것으로, 가중치 값은 원본과 동일하다(state_dict
+--- a/apps/web/src/domains/creator/assets/animegan2-paprika.LICENSE.md
++++ b/apps/web/src/domains/creator/assets/animegan2-paprika.LICENSE.md
+@@ -6,17 +6,19 @@
+   극장 애니메이션풍(굵은 색면, 단순화된 음영)으로 변환하는 스타일 변환망.
+   Paprika 스타일은 풍경·컷 전반 변환용으로, 인물 얼굴 전용 변환은
+   `animegan2-face-paint-512-v2.onnx`가 맡는다.
+-- 원본 프로젝트: https://github.com/bryandlee/animegan2-pytorch —
+-  코드와 가중치 모두 **MIT License** (Copyright (c) 2021 Bryan Lee,
+-  상용 사용 가능). 이 PyTorch 포팅은 원본 TensorFlow 구현
+-  (https://github.com/TachibanaYoshino/AnimeGANv2, Xin Chen et al.,
+-  "AnimeGAN: A Novel Lightweight GAN for Photo Animation", 2019)의
+-  가중치를 변환한 것으로, 원본 TF 저장소에는 라이선스 파일이 없다.
+-  채택한 가중치는 MIT 라이선스가 적용되는 bryandlee 배포본 경유이며,
+-  권리 부여는 그 배포본의 MIT 라이선스를 따른다. Paprika 스타일의
+-  학습 데이터는 원본 프로젝트 고지대로 영화 "파프리카"(2006)의
+-  BD 프레임 1,284장이다.
+-- 이 파일은 위 MIT 배포본의 공식 체크포인트 `weights/paprika.pt`
++- 권리 상태: **상용 이용 권한 미확인 — 고위험 검토 항목** (2026-11-05).
++  PyTorch 구현의 MIT 라이선스만으로 변환된 원본 체크포인트의 상용 권한을
++  확정할 수 없다. 원본 TensorFlow 저장소는 별도 LICENSE 파일 유무와 무관하게
++  README의 License 절에서 비상업 목적 이용과 상업 이용 시 별도 허가를 명시한다.
++  - 원본 조건: https://github.com/TachibanaYoshino/AnimeGANv2#license
++  - 변환 경위: https://github.com/bryandlee/animegan2-pytorch#weight-conversion-from-the-original-repo-tensorflow
++  - PyTorch 구현 라이선스: https://github.com/bryandlee/animegan2-pytorch/blob/main/LICENSE
++  이 저장소에서 해당 Paprika 가중치의 별도 상용 허가서는 확인하지 못했다.
++  ONNX 변환은 원본 조건을 해소하는 근거가 아니다. 학습 자료는 원본 README상
++  영화 "파프리카"(2006)의 BD 프레임 1,284장이며, 데이터 권리도 별도 검토 대상이다.
++  사용자가 요구한 대체 구현 검증 전 제거 금지 순서에 따라 파일과 동작은 보존했다.
++  상용 배포 가능 판정 또는 동등 대체 완료를 의미하지 않는다.
++- 이 파일은 위 PyTorch 배포본의 체크포인트 `weights/paprika.pt`
+   (8,603,556 bytes, SHA-256
+   `3eaba1b6d01e88ea32b16a6006b04eb3f60327c1dcc841de640d3196898da344`)를
+   직접 ONNX 변환한 것으로, 가중치 값은 원본과 동일하다(state_dict
+--- a/apps/web/src/domains/creator/assets/tag2pix.LICENSE.md
++++ b/apps/web/src/domains/creator/assets/tag2pix.LICENSE.md
+@@ -4,17 +4,21 @@
+ - SHA-256: `ae01698835b99a009533ebbcf840d416a32bee0c0f4c9be060c21ab2084491cc`
+ - 모델: Tag2Pix — Kim et al., "Tag2Pix: Line Art Colorization Using Text
+   Tag With SECat and Changing Loss", ICCV 2019. 선화 + 색 태그 조건 채색용.
+-- 원본 프로젝트: https://github.com/blandocs/Tag2Pix — 코드와 가중치 모두
+-  **MIT License** (Copyright (c) 2019 Seoul National University, 상용 사용
+-  가능). 가중치는 같은 저장소의 GitHub 릴리스 자산으로 배포된다.
++- 권리 상태: **배포 가중치의 비상업 조건 및 재배포 제한 확인** (2026-11-05).
++  원본 프로젝트 https://github.com/blandocs/Tag2Pix#license 는 학습·시험 코드는
++  MIT로 제공하지만 release의 학습 가중치·네트워크 덤프 `model.pth`와
++  `tag2pix_512.pkl`는 비상업 목적이며 재배포를 명시적으로 제한한다.
++  이 ONNX 파일은 아래 두 자산의 변환본이므로 코드의 MIT 고지만으로 상용 이용과
++  재배포가 허용된다고 판단할 수 없다. 별도 허가서는 확인하지 못했다.
++  기능을 유지하는 동등 대체가 검증될 때까지 파일을 보존하며, 현재 상용 배포
++  가능 또는 문제 해결 완료를 뜻하지 않는다.
+ - 이 파일은 원본 가중치 2종(생성망 `tag2pix_512.pkl`, 특징 추출망
+   `model.pth` — SEResNeXt-Half)을 하나의 ONNX 그래프로 직접 변환한 것으로,
+   가중치 값은 원본과 동일하다. 소스 자산 SHA-256:
+   - `tag2pix_512.pkl`: `f929bba53e16992097fff82d2a42fbb7bc611d6170b6cac81b37bf940340cf59`
+   - `model.pth`: `e59efdfa6e4fe883acfb3fe7e5a6abd0da6363554d67fe8f526e143d64a960df`
+   변환 시 생성망 state_dict 전량(누락·초과 0)과 특징망 384/384 텐서가
+-  바인딩됨을 확인했다. 변환 자체는 추가 조건을 부과하지 않으며, 가중치에
+-  대한 권리 부여는 원본 프로젝트의 MIT 라이선스를 따른다.
++  바인딩됨을 확인했다. 변환은 위 원본 가중치의 이용·재배포 제한을 해소하지 않는다.
+ - 학습 데이터: Danbooru2017 일러스트 (저자 논문·저장소 명시). 모델 출력의
+   색감 경향(옅은 파스텔)이 이 학습 분포를 따른다.
+ - 텐서 계약: 입력 `line` float32 `[1,1,512,512]` (흑백 선화, 흰 배경·검은
+--- a/apps/web/src/domains/creator/export/studio-export-presets.ts
++++ b/apps/web/src/domains/creator/export/studio-export-presets.ts
+@@ -385,7 +385,7 @@
+   /** 실제 저장 폭(px). */
+   targetWidth: number;
+   /**
+-   * wasm-vips 고품질 축소 레인으로 처리된 대형 페이지 수.
++   * 자체 Lanczos3 고품질 축소 레인으로 처리된 대형 페이지 수.
+    * 라우팅된 페이지가 없으면 키 자체가 없다(기존 결과 shape 불변 — pristine 계약).
+   */
+   vipsRoutedPages?: number;
+@@ -404,7 +404,7 @@
+     );
+   }
+   if (result.vipsRoutedPages !== undefined && result.vipsRoutedPages > 0) {
+-    parts.push(`고해상 페이지 ${result.vipsRoutedPages}장은 고품질 축소(wasm-vips)로 저장했어요.`);
++    parts.push(`고해상 페이지 ${result.vipsRoutedPages}장은 고품질 축소(Lanczos3)로 저장했어요.`);
+   }
+   if (result.tiledPages) parts.push(`대형 페이지 ${result.tiledPages}장은 원본을 타일로 읽어 저장했어요.`);
+   return parts.join(" ");
+@@ -437,7 +437,7 @@
+   createCanvas?: (width: number, height: number) => HTMLCanvasElement;
+   /** 테스트 주입용 — 기본은 downloadBlob(실제 파일 저장). */
+   download?: (blob: Blob, filename: string) => void;
+-  /** 테스트 주입용 — 기본은 loadVipsForExport(wasm-vips 공유 캐시, dynamic import 유지). */
++  /** 테스트 주입용 — 기본은 loadVipsForExport(자체 Lanczos3 공유 캐시, dynamic import 유지). */
+   loadVipsRuntime?: () => Promise<StudioVipsExportRuntime>;
+   /** 테스트 주입용 — 기본은 getImageData 픽셀 읽기(null이면 선택된 vips 작업 실패). */
+   readPageRgba?: (page: HTMLCanvasElement) => Uint8Array | null;
+@@ -448,9 +448,9 @@
+ }
+ 
+ // ─────────────────────────────────────────────────────────────────────────────
+-// wasm-vips 대형 페이지 다운스케일 레인 — V12 게이트 매트릭스 Large image 행 실배선.
++// 자체 Lanczos3 대형 페이지 다운스케일 레인 — V12 게이트 매트릭스 Large image 행 실배선.
+ // 근거(tests/benchmarks/results/quality-lab.json 2026-08-07): downscale 에서
+-// wasm-vips lanczos3 가 PSNR 27.26dB/SSIM 0.9887 로 브라우저 drawImage 상당의
++// 과거 wasm-vips lanczos3 는 PSNR 27.26dB/SSIM 0.9887 로 브라우저 drawImage 상당의
+ // canvaskit-linear(25.31dB/0.9834)를 이긴다. 단일 인코어 표면 예산(8192 edge /
+ // 8192² area — studio-vips-export planVipsExportRoute)을 넘는 페이지만 라우팅하고,
+ // 예산 안 페이지는 작업 시작 전에 Canvas2D 경로를 선택해 바이트 그대로 유지한다
+@@ -493,7 +493,7 @@
+   drawPages: PresetExportPage[];
+   /** 라우팅된 페이지는 source 크기가 리샘플 결과로 갱신된 레이아웃(1:1 blit). */
+   layouts: PresetPageLayout[];
+-  /** wasm-vips 로 실제 리샘플된 페이지 수. */
++  /** 자체 Lanczos3로 실제 리샘플된 페이지 수. */
+   vipsRoutedPages: number;
+   tiledPages: ReadonlyMap<number, StudioPresetTiledRasterSource>;
+ }
+@@ -521,10 +521,10 @@
+ }
+ 
+ /**
+- * 인코어 표면 예산(8192 edge/면적)을 넘는 페이지만 wasm-vips lanczos3 로 규격 폭까지
++ * 인코어 표면 예산(8192 edge/면적)을 넘는 페이지만 자체 Lanczos3로 규격 폭까지
+  * 미리 축소한다. 리샘플된 페이지의 레이아웃은 1:1 blit 이 되도록 source 크기를 결과
+  * 크기로 바꿔치기하므로 슬라이스 합성의 drawImage 는 더 이상 화질을 결정하지 않는다.
+- * 라우팅 대상이 하나도 없으면 wasm 로드조차 하지 않고 원본 배열 사본을 돌려준다
++ * 라우팅 대상이 하나도 없으면 축소 런타임도 로드하지 않고 원본 배열 사본을 돌려준다
+  * (작업 전 Canvas2D 선택, 기존 경로 바이트 불변). vips 또는 out-of-core가 선택된 뒤
+  * provider가 준비/실행되지 않으면 다운로드 전에 명시적으로 실패한다.
+  */
+@@ -567,7 +567,7 @@
+   } catch (cause) {
+     throw new PresetVipsUnavailableError({
+       stage: "load",
+-      message: frozenStatus6Text("studio.frozenStatus6.exportPresets.vipsLoadFailed", "선택된 고품질 축소 엔진(wasm-vips)을 불러오지 못해 내보내기를 중단했어요."),
++      message: frozenStatus6Text("studio.frozenStatus6.exportPresets.vipsLoadFailed", "선택된 고품질 축소 엔진(Lanczos3)을 불러오지 못해 내보내기를 중단했어요."),
+       cause,
+     });
+   }
+@@ -584,7 +584,7 @@
+       throw new PresetVipsUnavailableError({
+         stage: "read",
+         pageIndex: index,
+-        message: `페이지 ${index + 1}의 픽셀을 vips 입력으로 읽지 못해 내보내기를 중단했어요.`,
++        message: `페이지 ${index + 1}의 픽셀을 축소 입력으로 읽지 못해 내보내기를 중단했어요.`,
+       });
+     }
+     let raster: StudioVipsRaster;
+@@ -602,7 +602,7 @@
+       throw new PresetVipsUnavailableError({
+         stage: "resample",
+         pageIndex: index,
+-        message: `페이지 ${index + 1}을 wasm-vips로 축소하지 못해 내보내기를 중단했어요.`,
++        message: `페이지 ${index + 1}을 Lanczos3로 축소하지 못해 내보내기를 중단했어요.`,
+         cause,
+       });
+     }
+@@ -611,7 +611,7 @@
+       throw new PresetVipsUnavailableError({
+         stage: "materialize",
+         pageIndex: index,
+-        message: `페이지 ${index + 1}의 vips 결과를 합성 표면으로 만들지 못해 내보내기를 중단했어요.`,
++        message: `페이지 ${index + 1}의 축소 결과를 합성 표면으로 만들지 못해 내보내기를 중단했어요.`,
+       });
+     }
+     drawPages[index] = resampled;
+@@ -737,7 +737,7 @@
+     options.format
+   );
+   if (!plan || plan.slices.length === 0) throw new Error("내보낼 페이지가 없어요.");
+-  // 인코어 표면 예산(8192 edge/면적)을 넘는 페이지만 wasm-vips lanczos3 로 선축소 —
++  // 인코어 표면 예산(8192 edge/면적)을 넘는 페이지만 자체 Lanczos3로 선축소 —
+   // 예산 안 문서는 아무 것도 바뀌지 않고(원본 참조·원본 레이아웃) 기존 바이트 그대로다.
+   const prepared = await prepareVipsRoutedPresetPages(pages, plan, options);
+   const createCanvas = options.createCanvas ?? createSliceCanvas;
+--- a/apps/web/src/domains/creator/export/studio-export-presets.vips-route.test.ts
++++ b/apps/web/src/domains/creator/export/studio-export-presets.vips-route.test.ts
+@@ -435,7 +435,7 @@
+       { files: 3, oversized: 0, format: "jpg", targetWidth: 690, vipsRoutedPages: 2 },
+       naver
+     );
+-    expect(message).toContain("고해상 페이지 2장은 고품질 축소(wasm-vips)로 저장했어요.");
++    expect(message).toContain("고해상 페이지 2장은 고품질 축소(Lanczos3)로 저장했어요.");
+   });
+ 
+ });
+--- a/apps/web/src/domains/creator/export/studio-vips-export.test.ts
++++ b/apps/web/src/domains/creator/export/studio-vips-export.test.ts
+@@ -1,4 +1,4 @@
+-// studio-vips-export 계약 테스트 — 실 wasm-vips 를 node 에서 로드해 검증한다
++// studio-vips-export 계약 테스트 — 자체 Lanczos3 런타임을 node에서 검증한다
+ // (Quality Lab tests/benchmarks/harness/quality-lab.ts 가 동일 방식의 node 로드를 실증).
+ // 품질 기준 수치는 tests/benchmarks/results/quality-lab.json(2026-08-07) 인용:
+ //   downscale 2048→512 wasm-vips-lanczos3 PSNR 27.26dB / SSIM 0.9887 (1위),
+@@ -200,15 +200,17 @@
+     expect(wasmVipsPipelineDescriptor.capabilities).not.toContain(
+       "filter.phase.preview",
+     );
+-  });
+-
+-  it("passes the license gate only in isolated mode (LGPL, never bundled)", () => {
++    expect(wasmVipsPipelineDescriptor.capabilities).not.toContain("filter.op.gaussian-blur");
++    expect(wasmVipsPipelineDescriptor.capabilities).not.toContain("filter.op.thumbnail");
++  });
++
++  it("passes the internal license gate for the independently authored runtime", () => {
+     expect(evaluateLicenseGate(STUDIO_VIPS_EXPORT_LICENSE)).toEqual({
+-      mode: "isolated",
++      mode: "bundle",
+     });
+   });
+ 
+-  it("loads wasm-vips through exactly one dynamic import and no static import", () => {
++  it("loads the independent runtime lazily without importing wasm-vips", () => {
+     const source = readFileSync(moduleUrl, "utf8");
+     const file = ts.createSourceFile(
+       moduleUrl.pathname,
+@@ -240,7 +242,7 @@
+     };
+     visit(file);
+     expect(staticImports).not.toContain("wasm-vips");
+-    expect(dynamicImports).toEqual(["wasm-vips"]);
++    expect(dynamicImports).toEqual(["./studio-native-resize-runtime"]);
+   });
+ });
+ 
+@@ -423,7 +425,7 @@
+ 
+   it("keeps premultiplied alpha edges clean (no transparent-color fringe)", async () => {
+     // 왼쪽 절반 불투명 빨강, 오른쪽 절반 완전투명 초록. 프리멀티플라이 없이
+-    // 섞으면 경계 픽셀에 초록이 절반 수준(≈127)으로 번진다 — vips resize 는
++    // 섞으면 경계 픽셀에 초록이 절반 수준(≈127)으로 번진다 — 자체 resize는
+     // 알파를 프리멀티플라이해 경계의 초록 오염이 잔물결 수준에 머문다.
+     const source = makeRgba(8, 8, (x) =>
+       x < 4 ? [255, 0, 0, 255] : [0, 255, 0, 0],
+--- a/apps/web/src/domains/creator/export/studio-vips-export.ts
++++ b/apps/web/src/domains/creator/export/studio-vips-export.ts
+@@ -1,30 +1,21 @@
+-// ToonStudio V12 게이트 매트릭스 Large image 행 — 초대형 이미지 최종 내보내기 provider.
+-//
+-// 근거(Quality Lab 실측, tests/benchmarks/results/quality-lab.json 2026-08-07):
+-//   downscale 2048→512에서 wasm-vips lanczos3가 PSNR 27.26dB / SSIM 0.9887로 1위
+-//   (canvaskit-linear-nomips 25.31dB/0.9834, canvaskit-cubic-mitchell 23.78dB/0.9768).
+-// 카탈로그: packages/studio-engine-registry/src/filter-providers.ts 의
+-//   wasm-vips-pipeline descriptor(capabilities: filter.op.resize/pyramid,
+-//   filter.phase.final 전용, license LGPL-2.1-or-later → isolated 게이트).
+-//
+-// 절대 규칙:
+-// - wasm-vips 는 반드시 dynamic import() 로만 로드한다(번들 게이트가 정적 import 를 잡는다).
+-// - final/export 레인 전용 — preview 경로에서 호출 금지(descriptor 와 동일).
+-// - 조용한 손실 금지: 크기 드리프트·버퍼 불일치·로드 실패는 전부 명시적 throw.
+-//   호출자도 같은 내보내기를 다른 provider로 재실행하지 않는다.
+-
+-export const STUDIO_VIPS_EXPORT_REVISION = 1 as const;
++// 자체 Lanczos3 최종 내보내기 레인. 외부 wasm-vips 의존성을 사용하지 않는다.
++// 기존 vips 이름의 공개 식별자·route는 저장된 계약과 호출자의 호환성을 위해 보존한다.
++// 큰 축소는 정수 box prefilter와 3-lobe sinc, 알파는 premultiplied 필터링한다.
++// 기존 Quality Lab의 PSNR/SSIM 하한을 낮추지 않고 통과해야 한다.
++// final/export 전용이며 실패 시 다른 provider로 조용히 대체하지 않는다.
++
++export const STUDIO_VIPS_EXPORT_REVISION = 2 as const;
+ 
+ /** 카탈로그 descriptor id — 테스트가 registry 와의 정합을 검증한다. */
+ export const STUDIO_VIPS_EXPORT_PROVIDER_ID = "wasm-vips-pipeline" as const;
+ 
+-/** Quality Lab 승자 설정 그대로: libvips resize 기본 커널(lanczos3), 단일 스레드. */
++/** 자체 Lanczos3 커널, 단일 스레드. */
+ export const STUDIO_VIPS_EXPORT_KERNEL = "lanczos3" as const;
+ export const STUDIO_VIPS_EXPORT_CONCURRENCY = 1 as const;
+ 
+-/** descriptor 와 동일해야 하는 라이선스 표기 — LGPL 은 isolated 배포 모드 전용. */
+-export const STUDIO_VIPS_EXPORT_LICENSE = "LGPL-2.1-or-later" as const;
+-export const STUDIO_VIPS_EXPORT_ATTRIBUTION = "libvips / wasm-vips" as const;
++/** descriptor 와 동일해야 하는 라이선스 표기 — 자체 구현이므로 internal 정책을 따른다. */
++export const STUDIO_VIPS_EXPORT_LICENSE = "internal" as const;
++export const STUDIO_VIPS_EXPORT_ATTRIBUTION = "ToonStudio native Lanczos3" as const;
+ 
+ /**
+  * 단일 인코어 표면(Canvas2D 슬라이스 합성 레인)의 한 변 상한.
+@@ -44,8 +35,8 @@
+ /**
+  * vips 레인이 한 번에 붙잡는 입력 픽셀 상한 = 16384²(1GiB RGBA).
+  * 근거: 16384 는 studio-export.ts MAX_CANVAS_DIM(브라우저 캔버스 보수 상한)이고,
+- * wasm 32-bit 힙(≈2GiB)에서 소스 사본 + 출력 + 파이프라인 스크래치가 공존하려면
+- * 소스가 1GiB 를 넘을 수 없다. 초과분은 타일 기반
++ * 기존 입력 예산은 호환성을 위해 유지한다. 자체 구현은 전체 float 이미지 대신
++ * 필요한 수평 행만 보관하지만, 소스·출력 allocation은 여전히 필요하다. 초과분은 타일 기반
+  * studio-out-of-core-export-provider 가 소유한다.
+  */
+ export const STUDIO_VIPS_EXPORT_MAX_INPUT_PIXELS = 268_435_456 as const;
+@@ -54,7 +45,7 @@
+ export const STUDIO_VIPS_EXPORT_MAX_PYRAMID_LEVELS = 32 as const;
+ 
+ /**
+- * wasm-vips 로드/초기화 실패. 원인(cause)을 보존해 전달하며, 이 모듈과 호출자 모두
++ * ToonStudio native Lanczos3 로드/초기화 실패. 원인(cause)을 보존해 전달하며, 이 모듈과 호출자 모두
+  * 같은 내보내기를 다른 provider로 조용히 대체하지 않는다.
+  */
+ export class VipsUnavailableError extends Error {
+@@ -64,7 +55,7 @@
+   }
+ }
+ 
+-/** wasm-vips 인스턴스의 최소 구조 타입 — 정적 import 없이 호출면만 서술한다. */
++/** ToonStudio native Lanczos3 인스턴스의 최소 구조 타입 — 정적 import 없이 호출면만 서술한다. */
+ interface VipsImageHandle {
+   readonly width: number;
+   readonly height: number;
+@@ -92,7 +83,7 @@
+ 
+ export interface StudioVipsLoadOptions {
+   /**
+-   * 테스트/격리 배포용 주입점. 기본은 dynamic import("wasm-vips").
++   * 테스트/격리 배포용 주입점. 기본은 자체 resize runtime의 dynamic import.
+    * 최초 성공 결과가 캐시되므로 이후 호출의 importVips 는 무시된다.
+    */
+   readonly importVips?: () => Promise<unknown>;
+@@ -140,15 +131,15 @@
+ let runtimeCache: Promise<StudioVipsExportRuntime> | null = null;
+ 
+ function defaultImportVips(): Promise<unknown> {
+-  // 번들 게이트 계약: wasm-vips 는 이 dynamic import 한 곳에서만 등장해야 한다.
+-  return import("wasm-vips");
++  // 번들 게이트 계약: ToonStudio native Lanczos3 는 이 dynamic import 한 곳에서만 등장해야 한다.
++  return import("./studio-native-resize-runtime");
+ }
+ 
+ function isVipsModule(value: unknown): value is VipsModule {
+   if (typeof value !== "object" || value === null) return false;
+   const candidate = value as { Image?: unknown; concurrency?: unknown };
+   if (typeof candidate.concurrency !== "function") return false;
+-  // embind 는 Image 를 클래스(function)로 노출한다 — 정적 newFromMemory 만 계약.
++  // 기존 주입 런타임의 클래스 또는 자체 객체 모두 정적 newFromMemory 계약을 따른다.
+   const image = candidate.Image;
+   if (
+     (typeof image !== "object" && typeof image !== "function")
+@@ -169,41 +160,40 @@
+     moduleNamespace = await importVips();
+   } catch (cause) {
+     throw new VipsUnavailableError(
+-      "wasm-vips module could not be imported for the export lane.",
++      "ToonStudio native Lanczos3 module could not be imported for the export lane.",
+       { cause },
+     );
+   }
+   const factory = (moduleNamespace as { default?: unknown } | null)?.default;
+   if (typeof factory !== "function") {
+     throw new VipsUnavailableError(
+-      "wasm-vips module did not expose a default factory function.",
++      "ToonStudio native Lanczos3 module did not expose a default factory function.",
+     );
+   }
+   let vips: unknown;
+   try {
+-    // Quality Lab 실사용과 동일: 동적 라이브러리(heif/jxl/resvg) 없이 코어만 초기화.
++    // 기존 주입점의 옵션 계약은 보존한다. 자체 런타임은 외부 동적 라이브러리를 사용하지 않는다.
+     vips = await (factory as (options?: Record<string, unknown>) => Promise<unknown>)(
+       { dynamicLibraries: [] },
+     );
+   } catch (cause) {
+     throw new VipsUnavailableError(
+-      "wasm-vips failed to initialize its WebAssembly runtime.",
++      "ToonStudio native Lanczos3 failed to initialize its JavaScript runtime.",
+       { cause },
+     );
+   }
+   if (!isVipsModule(vips)) {
+     throw new VipsUnavailableError(
+-      "wasm-vips initialized but its module shape is not the expected vips API.",
+-    );
+-  }
+-  // 결정성 기준선(Quality Lab 과 동일): 단일 스레드. SMP 는 COOP/COEP 워커 전제라
+-  // 이 레인에서는 켜지 않는다(descriptor limitations 참조).
++      "ToonStudio native Lanczos3 initialized but its module shape is not the expected vips API.",
++    );
++  }
++  // 결정성 기준선: 자체 구현은 단일 스레드로 동작한다.
+   vips.concurrency(STUDIO_VIPS_EXPORT_CONCURRENCY);
+   return Object.freeze({ vips });
+ }
+ 
+ /**
+- * wasm-vips 를 dynamic import 로 1회 로드/초기화해 캐시한다.
++ * ToonStudio native Lanczos3 를 dynamic import 로 1회 로드/초기화해 캐시한다.
+  * 동시 호출은 같은 초기화 프로미스를 공유하고, 실패 시 캐시를 비워
+  * 다음 호출이 재시도할 수 있게 한다(실패 자체는 VipsUnavailableError 로 전달).
+  */
+@@ -278,10 +268,10 @@
+     vscale: targetHeight / sourceHeight,
+   });
+   try {
+-    // 조용한 손실 금지: libvips 의 목표 크기 반올림이 요청과 다르면 즉시 실패.
++    // 조용한 손실 금지: 자체 resize의 목표 크기 반올림이 요청과 다르면 즉시 실패.
+     if (resized.width !== targetWidth || resized.height !== targetHeight) {
+       throw new Error(
+-        `wasm-vips resize drifted to ${resized.width}x${resized.height} `
++        `ToonStudio native Lanczos3 resize drifted to ${resized.width}x${resized.height} `
+         + `(requested ${targetWidth}x${targetHeight}); refusing silent size loss.`,
+       );
+     }
+@@ -289,11 +279,11 @@
+     const expectedBytes = targetWidth * targetHeight * RGBA_BANDS;
+     if (memory.length !== expectedBytes) {
+       throw new Error(
+-        `wasm-vips returned ${memory.length} bytes for `
++        `ToonStudio native Lanczos3 returned ${memory.length} bytes for `
+         + `${targetWidth}x${targetHeight} RGBA8 (expected ${expectedBytes}).`,
+       );
+     }
+-    // wasm 힙 뷰와의 수명 결합을 끊기 위해 JS 힙으로 복사해 반환한다.
++    // 주입 런타임의 buffer 수명과 결합하지 않도록 방어적 사본을 반환한다.
+     return {
+       rgba: new Uint8Array(memory),
+       width: targetWidth,
+@@ -305,7 +295,7 @@
+ }
+ 
+ /**
+- * vips lanczos3(Quality Lab downscale 승자 설정 그대로)로 RGBA8 버퍼를
++ * 자체 lanczos3(기존 Quality Lab 품질 하한 유지)로 RGBA8 버퍼를
+  * 정확히 targetWidth×targetHeight 로 축소한다. 결정적이며(단일 스레드,
+  * 고정 커널), 동일 크기 요청은 재표본 없이 방어적 사본을 돌려준다.
+  */
+@@ -320,7 +310,7 @@
+   assertSourceRaster(rgba, width, height);
+   assertDownscaleTarget(width, height, targetWidth, targetHeight);
+   if (targetWidth === width && targetHeight === height) {
+-    // 항등 요청은 무손실 사본 — wasm 로드 자체를 요구하지 않는다.
++    // 항등 요청은 무손실 사본 — 런타임 로드를 요구하지 않는다.
+     return { rgba: new Uint8Array(rgba), width, height };
+   }
+   const runtime = options.runtime ?? (await loadVipsForExport());
+@@ -342,7 +332,7 @@
+  * 웹툰 세로 스크롤용 mip 피라미드. 레벨 k 의 크기는
+  * max(1, floor(width/2^k)) × max(1, floor(height/2^k)) — 각 축은 1 에서 클램프된다.
+  * 누적 오차를 피하려고 모든 레벨을 원본에서 직접 lanczos3 로 재표본한다
+- * (libvips resize 는 큰 축소도 내부 shrink+reduce 로 고품질 처리).
++ * (큰 축소는 자체 box prefilter + sinc로 처리).
+  * 양 축이 모두 1 에 도달한 다음 레벨부터는 정보가 늘지 않으므로 잘라낸다 —
+  * 결과 길이는 요청 levels 보다 짧을 수 있다.
+  */
+@@ -429,7 +419,7 @@
+       reason:
+         `${width}x${height} exceeds the single in-core surface budget `
+         + `(edge ${limits.singleSurfaceEdgePx}px / area `
+-        + `${limits.singleSurfacePixels}px); the wasm-vips final lane owns it.`,
++        + `${limits.singleSurfacePixels}px); the ToonStudio native Lanczos3 final lane owns it.`,
+     };
+   }
+   return {
+--- a/apps/web/src/domains/creator/status-i18n/studio-frozen6-status-i18n.ts
++++ b/apps/web/src/domains/creator/status-i18n/studio-frozen6-status-i18n.ts
+@@ -35,10 +35,10 @@
+ 
+ // ── export/studio-export-presets.ts
+ registerI18nLocaleEntries("ko", {
+-  "studio.frozenStatus6.exportPresets.vipsLoadFailed": "선택된 고품질 축소 엔진(wasm-vips)을 불러오지 못해 내보내기를 중단했어요.",
+-});
+-registerI18nLocaleEntries("en", {
+-  "studio.frozenStatus6.exportPresets.vipsLoadFailed": "Could not load the selected high-quality downscale engine (wasm-vips), so the export was stopped.",
++  "studio.frozenStatus6.exportPresets.vipsLoadFailed": "선택된 고품질 축소 엔진(Lanczos3)을 불러오지 못해 내보내기를 중단했어요.",
++});
++registerI18nLocaleEntries("en", {
++  "studio.frozenStatus6.exportPresets.vipsLoadFailed": "Could not load the selected high-quality downscale engine (Lanczos3), so the export was stopped.",
+ });
+ 
+ // ── studio-screen-share.ts
+--- a/apps/web/src/domains/creator/studio-onnx-animegan.ts
++++ b/apps/web/src/domains/creator/studio-onnx-animegan.ts
+@@ -5,8 +5,10 @@
+  *
+  * Why this model: the 2026-10-06 anime-style track measured the
+  * AnimeGANv2 generator ports shipped by bryandlee/animegan2-pytorch
+- * (MIT License, weights included) against the adoption bar — commercial
+- * license cleared, browser-practical size/speed, lazy-loadable. The two
++ * against the adoption bar for browser-practical size/speed and lazy loading.
++ * 2026-11-05 권리 감사: Paprika는 원본 비상업 조건과 하류 MIT 주장 충돌,
++ * Face Paint는 별도 가중치 권리 확인 대기다. 상용 권리 해결 주장은 철회한다.
++ * The two
+  * bundled weights are direct ONNX conversions of the official `.pt`
+  * checkpoints, produced and verified in-repo style (strict state_dict
+  * binding, PyTorch-reference parity below one 8-bit step on natural
+--- a/apps/web/src/domains/creator/studio-onnx-tag2pix.ts
++++ b/apps/web/src/domains/creator/studio-onnx-tag2pix.ts
+@@ -8,9 +8,10 @@
+  * offline, no key configured, provider down — the user directive of
+  * 2026-10-03 asks for a client-side ONNX fallback "even if it is a stretch":
+  * model size, inference time, and quality limits are accepted, the license
+- * guardrail is not. Tag2Pix (Kim et al., ICCV 2019; official implementation
+- * and release weights, MIT License) is the line-art colorizer that clears
+- * that bar. Source pixels never leave the device; only the versioned model
++ * guardrail is not. 2026-11-05 권리 감사: 구현 코드는 MIT지만 release 가중치는
++ * 비상업 목적 및 재배포 제한이 있어 기존 상용 가능 판단을 철회한다.
++ * 동등 대체 검증 전 기능 보존 상태이며 assets/tag2pix.LICENSE.md를 따른다.
++ * Source pixels never leave the device; only the versioned model
+  * asset and the ONNX Runtime WASM assets are downloaded, lazily, on first
+  * use of this fallback.
+  *
+--- a/apps/web/src/domains/legal/technology/EngineeringLicenseInventory.tsx
++++ b/apps/web/src/domains/legal/technology/EngineeringLicenseInventory.tsx
+@@ -86,8 +86,8 @@
+       </h2>
+       <p className="mt-4 max-w-3xl text-sm leading-7 text-fg-2">
+         {bi(
+-          `워크스페이스의 모든 패키지(루트, apps, packages)에서 선언한 직접 의존성 ${LIBRARIES.length}개입니다. 라이선스 명은 설치된 패키지의 메타데이터에서 확인했고, 버전은 lockfile이 고정한 값입니다(${ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT} 기준). 전이 의존성 전체와 개발 전용 도구는 배포 빌드가 생성하는 THIRD_PARTY_NOTICES와 라이선스 audit가 따로 맡습니다.`,
+-          `These are the ${LIBRARIES.length} direct dependencies declared across every workspace package (root, apps, packages). License names were read from installed package metadata and versions are the values pinned by the lockfile (as of ${ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT}). The full transitive graph and development-only tools are covered separately by the build-generated THIRD_PARTY_NOTICES and the license audit.`,
++          `${ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT} 직접 의존성 스냅샷에 2026-11-05 wasm-vips 제거를 반영한 ${LIBRARIES.length}개 목록입니다. 나머지 버전·라이선스를 모두 현행 기준으로 재검토한 목록은 아닙니다. 현재 전체 인벤토리는 배포 빌드가 생성하는 THIRD_PARTY_NOTICES와 라이선스 audit를 확인합니다.`,
++          `This ${LIBRARIES.length}-entry list is the ${ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT} direct-dependency snapshot with the 2026-11-05 removal of wasm-vips applied. All other versions and licenses have not been freshly re-reviewed here. Use the build-generated THIRD_PARTY_NOTICES and license audit for the current full inventory.`,
+         )}
+       </p>
+ 
+@@ -191,7 +191,7 @@
+       <div className="mt-12">
+         <h3 className="text-base font-black text-fg">{bi("브라우저에서 실행하는 AI 모델 자산", "AI model assets running in the browser")}</h3>
+         <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">
+-          {bi("코드 라이브러리와 별개로, 모델 가중치는 자산 옆의 고지 파일(.LICENSE.md)로 출처와 라이선스를 고정합니다. 고지가 없는 모델은 싣지 않습니다. 각 파일은 내려받을 때 SHA-256 다이제스트가 등록값과 같은지 검사한 뒤에만 세션을 엽니다.", "Separately from code libraries, model weights pin their source and license in a notice file (.LICENSE.md) beside the asset; models without a notice are not shipped. Each file's SHA-256 digest is checked against the registered value before a session opens.")}
++          {bi("모델 가중치의 권리는 구현 코드의 라이선스와 별도로 확인합니다. 아래 표는 현재 포함된 자산의 상태이며, 고지 파일이나 SHA-256 일치가 상용 이용 허가를 뜻하지 않습니다. Tag2Pix의 비상업·재배포 제한, Paprika의 원본 조건 충돌, Face Paint의 미확인 권리는 대체 또는 별도 권리 확인이 남아 있습니다. 파일 해시는 세션 전에 검사합니다.", "Weight rights are reviewed separately from implementation code licenses. This table records currently included assets; a notice file or matching SHA-256 does not grant commercial permission. Tag2Pix non-commercial and redistribution restrictions, Paprika upstream-term conflicts, and unverified Face Paint rights still require replacement or separate rights confirmation. File hashes are checked before a session opens.")}
+         </p>
+         <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-line/70 bg-panel/55">
+           <div className="hidden grid-cols-[1.2fr_0.7fr_0.5fr_1.4fr] gap-5 border-b border-line bg-raised/70 px-6 py-3 font-display text-[0.64rem] font-black uppercase tracking-[0.12em] text-fg-3 lg:grid">
+@@ -203,7 +203,11 @@
+           {ENGINEERING_MODEL_ASSET_LICENSES.map((model) => (
+             <article key={model.file} className="grid gap-3 border-b border-line/70 px-5 py-4 last:border-b-0 sm:px-6 lg:grid-cols-[1.2fr_0.7fr_0.5fr_1.4fr] lg:gap-5">
+               <p className="font-mono text-[0.82rem] font-bold text-fg">{model.file}</p>
+-              <p className="text-xs font-bold text-fg-2">{model.license}</p>
++              <div className="text-xs font-bold text-fg-2">
++                <p>{model.license}</p>
++                {model.rightsStatus === "restricted" ? <p className="mt-1">{bi("이용·재배포 제한", "Use and redistribution restrictions")}</p> : null}
++                {model.rightsStatus === "unverified" ? <p className="mt-1">{bi("권리 확인 대기", "Rights verification pending")}</p> : null}
++              </div>
+               <p className="font-mono text-[0.72rem] text-fg-3">{formatMegabytes(model.bytes)}</p>
+               <div>
+                 <p className="text-xs leading-6 text-fg-2">{bi(model.role.ko, model.role.en)}</p>
+--- a/apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx
++++ b/apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx
+@@ -124,7 +124,7 @@
+     expect(within(section).getAllByText("mixbox").length).toBeGreaterThan(0);
+     expect(within(section).getByText("u2netp.onnx")).toBeTruthy();
+     expect(within(section).getByText("tag2pix.onnx")).toBeTruthy();
+-    expect(within(section).getByRole("status").textContent).toContain("117개 / 전체 117개 라이브러리");
++    expect(within(section).getByRole("status").textContent).toContain("116개 / 전체 116개 라이브러리");
+   });
+ 
+   it("라이브러리 검색은 이름으로 걸러 개수를 알린다", () => {
+@@ -133,8 +133,23 @@
+     const search = within(section).getByLabelText(/라이브러리·라이선스 검색|Search libraries/u);
+     fireEvent.change(search, { target: { value: "opencascade" } });
+ 
+-    expect(within(section).getByRole("status").textContent).toContain("1개 / 전체 117개 라이브러리");
++    expect(within(section).getByRole("status").textContent).toContain("1개 / 전체 116개 라이브러리");
+     expect(within(section).getAllByText("opencascade.js").length).toBeGreaterThan(0);
+     expect(within(section).queryByText("three")).toBeNull();
+   });
+ });
++
++
++describe("모델 가중치 권리 공개", () => {
++  it("기존 모델 기능을 숨기지 않고 제한과 미확인 상태를 별도로 보여준다", () => {
++    renderLicenses();
++    const tagRow = screen.getByText("tag2pix.onnx").closest("article");
++    const paprikaRow = screen.getByText("animegan2-paprika.onnx").closest("article");
++    const faceRow = screen.getByText("animegan2-face-paint-512-v2.onnx").closest("article");
++    expect(tagRow?.textContent).toContain("Non-commercial; redistribution restricted");
++    expect(tagRow?.textContent).toMatch(/이용·재배포 제한|Use and redistribution restrictions/u);
++    expect(paprikaRow?.textContent).toMatch(/권리 확인 대기|Rights verification pending/u);
++    expect(faceRow?.textContent).toMatch(/권리 확인 대기|Rights verification pending/u);
++    expect(screen.getByText(/고지 파일이나 SHA-256 일치가 상용 이용 허가를 뜻하지 않습니다|a notice file or matching SHA-256 does not grant commercial permission/u)).toBeTruthy();
++  });
++});
+--- a/apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts
++++ b/apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts
+@@ -388,8 +388,8 @@
+         "Restricted dependencies are pinned by name, version and license. mixbox 2.0.0 (CC-BY-NC-4.0) and remotion and @remotion/player 4.0.536 (Remotion License, not a standard SPDX id) pass only in exactly that combination, and the build fails if the version or label changes. A new CC-BY-NC package outside that list also fails. This card describes only how the repository handles them and makes no legal judgment.",
+       ),
+       t(
+-        "빈틈 셋을 적습니다. ① 손으로 쓴 루트 THIRD_PARTY_NOTICES.md 는 일부 목록이라 직접 의존성 117개 중 22개만 싣고 95개는 빠져 있습니다. 완전한 목록은 빌드 산출 고지입니다. ② wasm-vips 패키지는 자체 THIRD-PARTY-NOTICES.md 에 LGPL 라이브러리를 적지만, 생성기는 LICENSE·COPYING·NOTICE 로 시작하는 파일만 모아 생성 고지에는 MIT 로만 나옵니다. ③ mixbox 는 브러시 코드가 정적 import 하고 허용 여부는 런타임 라이선스 프로필이 판정하는데, 툴체인 문서는 같은 mixbox 를 연구 전용·비실행으로 적습니다.",
+-        "Three gaps are noted. 1 The hand-written root THIRD_PARTY_NOTICES.md is a partial list that carries only 22 of the 117 direct dependencies and omits 95; the full list is the build output. 2 The wasm-vips package lists LGPL libraries in its own THIRD-PARTY-NOTICES.md, but the generator only collects files named like LICENSE, COPYING or NOTICE, so the generated notice shows only MIT. 3 The brush code imports mixbox statically and a runtime license profile decides its use, while the toolchain document calls the same mixbox research-only and non-executable.",
++        "검토 지점 셋을 적습니다. ① 손으로 쓴 루트 THIRD_PARTY_NOTICES.md 는 일부 목록이라 직접 의존성 117개 중 22개만 싣고 95개는 빠져 있습니다. 완전한 목록은 빌드 산출 고지입니다. ② 2026-11-05 수정으로 생성기는 THIRD-PARTY-NOTICES.md 같은 내장 고지도 수집합니다. 과거 wasm-vips의 LGPL 고지 누락을 해결한 것이며, 고지 수집만으로 source·교체 등 모든 배포 의무가 충족되는 것은 아닙니다. ③ mixbox 는 브러시 코드가 정적 import 하고 허용 여부는 런타임 라이선스 프로필이 판정하는데, 툴체인 문서는 같은 mixbox 를 연구 전용·비실행으로 적습니다.",
++        "Three review points are noted. 1 The hand-written root THIRD_PARTY_NOTICES.md is a partial list that carries only 22 of the 117 direct dependencies and omits 95; the full list is the build output. 2 After the 2026-11-05 fix the generator also collects embedded notices named like THIRD-PARTY-NOTICES.md. This fixes the former omission of wasm-vips LGPL notices; collecting notices alone does not fulfill every source and replacement obligation. 3 The brush code imports mixbox statically and a runtime license profile decides its use, while the toolchain document calls the same mixbox research-only and non-executable.",
+       ),
+     ],
+     keyPoints: [
+@@ -506,8 +506,8 @@
+         {
+           question: t("GPL 은 하나도 없나요?", "Is there no GPL at all?"),
+           answer: t(
+-            "npm 직접 의존성에는 GPL·AGPL 이 없고 허용 목록에도 단독으로 들어 있지 않습니다. 다만 직접 의존성 opencascade.js 1.1.1(LGPL-2.1-only, 고지 파일과 docs/third-party/opencascade-lgpl.md 에 기록), wasm-vips 의 내장 LGPL 라이브러리, 외부 프로그램을 별도 프로세스로만 연결하는 ToonBridge 같은 맥락이 있어 전혀 없다고 말하지는 않습니다.",
+-            "There is no GPL or AGPL among the direct npm dependencies, and neither appears alone in the allowlist. But with the direct dependency opencascade.js 1.1.1 (LGPL-2.1-only, recorded in the notice file and docs/third-party/opencascade-lgpl.md), LGPL libraries inside wasm-vips and external programs linked only as separate processes through ToonBridge, we do not claim there is none anywhere.",
++            "npm 직접 의존성에는 GPL·AGPL 이 없고 허용 목록에도 단독으로 들어 있지 않습니다. 다만 직접 의존성 opencascade.js 1.1.1(LGPL-2.1-only, 고지 파일과 docs/third-party/opencascade-lgpl.md 에 기록), wasm-vips 의 과거 내장 LGPL 라이브러리 사용 기록, 외부 프로그램을 별도 프로세스로만 연결하는 ToonBridge 같은 맥락이 있어 전혀 없다고 말하지는 않습니다.",
++            "There is no GPL or AGPL among the direct npm dependencies, and neither appears alone in the allowlist. But with the direct dependency opencascade.js 1.1.1 (LGPL-2.1-only, recorded in the notice file and docs/third-party/opencascade-lgpl.md), historical use of LGPL libraries inside wasm-vips and external programs linked only as separate processes through ToonBridge, we do not claim there is none anywhere.",
+           ),
+         },
+         {
+@@ -526,8 +526,8 @@
+         },
+       ],
+       pitfall: t(
+-        "법률 판단을 하지 마세요. 이 카드는 저장소가 라이선스를 어떻게 처리하는지만 설명합니다. Remotion 을 배포 법인이 쓸 수 있는 자격인지는 저장소로 확인할 수 없고, 툴체인 문서와 코드의 mixbox 서술이 서로 다르며, wasm-vips 의 LGPL 이 생성 고지에 나타나지 않는다는 점은 알려진 공백입니다.",
+-        "Do not make legal judgments. This card explains only how the repository handles licenses. Whether the distributing entity is eligible to use Remotion cannot be confirmed from the repository, the toolchain document and the code describe mixbox differently, and wasm-vips' LGPL not appearing in the generated notice is a known gap.",
++        "법률 판단을 하지 마세요. 이 카드는 저장소가 라이선스를 어떻게 처리하는지만 설명합니다. Remotion 을 배포 법인이 쓸 수 있는 자격인지는 저장소로 확인할 수 없고, 툴체인 문서와 코드의 mixbox 서술이 서로 다르며, 내장 고지 수집 누락은 2026-11-05 수정했지만 그 사실만으로 배포 의무 충족을 확정할 수는 없습니다.",
++        "Do not make legal judgments. This card explains only how the repository handles licenses. Whether the distributing entity is eligible to use Remotion cannot be confirmed from the repository, the toolchain document and the code describe mixbox differently, and the omission of embedded notices was fixed on 2026-11-05, but that alone does not establish distribution compliance.",
+       ),
+     },
+     technologies: ["SPDX", "Remotion", "Mixbox", "wasm-vips"],
+@@ -685,7 +685,7 @@
+         {
+           question: t("새 취약점이 나오면 어떻게 하나요?", "What happens when a new vulnerability appears?"),
+           answer: t(
+-            "audit:security 가 pnpm audit 를 예외 없이 돌리고, 전이 의존성은 overrides 로 고쳐진 버전으로 올립니다. overrides 는 현재 57개입니다.",
++            "audit:security 가 pnpm audit 를 예외 없이 돌리고, 전이 의존성은 overrides 로 고쳐진 버전으로 올립니다. overrides 는 현재 61개입니다.",
+             "audit:security runs pnpm audit with no exceptions, and transitive dependencies are raised to fixed versions through overrides, 61 of them today.",
+           ),
+         },
+--- a/apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts
++++ b/apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts
+@@ -5,7 +5,7 @@
+  * 라이브러리 해설 · 영역 8 "만들고 검사하고 내보내기".
+  * 사실의 정본은 오픈소스 지도(vite-vitest-playwright·pnpm-patches-overrides·wasm-vips·psd-pdf-formats·remotion 행),
+  * pnpm-workspace.yaml(패치·override), tests/benchmarks/results/quality-lab.json(wasm-vips 선택 근거), ADR-0008과 코드다.
+- * 라이선스가 까다로운 wasm-vips(LGPL 구성요소)·Remotion(자체 라이선스)은 설치본이 말하는 라이선스만 적고 적격성은 판단하지 않는다.
++ * 과거 wasm-vips 측정과 현재 자체 Lanczos3 구현을 구별하며, Remotion의 법인 자격은 확정하지 않는다.
+  * 수치는 engineering-library-guide-areas-b.test.ts 가 pnpm-workspace.yaml 등에서 읽어 대조한다. 기준일 2026-10-08.
+  */
+ 
+@@ -18,12 +18,12 @@
+   title: t("만들고 검사하고 내보내기", "Build, check and export"),
+   question: t("빌드·테스트·내보내기는 무엇으로 하나?", "What do we build, test and export with?"),
+   oneLine: t(
+-    "Vite가 묶고, Vitest·Playwright가 지키고, 내보내기는 기기 안의 wasm-vips·ag-psd 등이 맡습니다.",
+-    "Vite bundles, Vitest and Playwright guard, and on-device parts such as wasm-vips and ag-psd handle export.",
++    "Vite가 묶고, Vitest·Playwright가 지키고, 내보내기는 기기 안의 자체 Lanczos3·ag-psd 등이 맡습니다.",
++    "Vite bundles, Vitest and Playwright guard, and on-device parts such as ToonStudio Lanczos3 and ag-psd handle export.",
+   ),
+   easy: t(
+-    "공장의 조립 라인과 검수대에 비유합니다. 부품을 조립하고(Vite) 검수대 세 곳(단위·브라우저·접근성)을 지나야 출고되며, 내보낼 때는 같은 공장의 포장 라인(wasm-vips·ag-psd)이 포장합니다. 손본 부품은 수정 기록표(패치·override)로 남깁니다.",
+-    "Think of an assembly line and inspection desks in a factory. Parts are assembled (Vite) and must pass three inspection desks (unit, browser, accessibility) before shipping, and exports are packed on the packing line of the same factory (wasm-vips, ag-psd). Parts we modified stay on a change record (patches and overrides).",
++    "공장의 조립 라인과 검수대에 비유합니다. 부품을 조립하고(Vite) 검수대 세 곳(단위·브라우저·접근성)을 지나야 출고되며, 내보낼 때는 같은 공장의 포장 라인(자체 Lanczos3·ag-psd)이 포장합니다. 손본 부품은 수정 기록표(패치·override)로 남깁니다.",
++    "Think of an assembly line and inspection desks in a factory. Parts are assembled (Vite) and must pass three inspection desks (unit, browser, accessibility) before shipping, and exports are packed on the packing line of the same factory (ToonStudio Lanczos3, ag-psd). Parts we modified stay on a change record (patches and overrides).",
+   ),
+   designWhy: [
+     {
+@@ -43,15 +43,15 @@
+     {
+       title: t("고쳐 쓴 곳은 기록으로 남긴다", "What we changed stays on record"),
+       body: t(
+-        "pnpm 패치 7개와 override 61개는 pnpm-workspace.yaml에 모았고, 대표 포크 2개(braces·wgpu-toon)는 저장소 안 폴더로 둡니다. 설치 때 자동 적용되고, 빌드가 라이선스 고지를 만들며 허용 목록 밖 라이선스는 감사에서 실패합니다(wasm-vips 내장 LGPL은 생성 고지에 MIT로만 나옵니다).",
+-        "The 7 pnpm patches and 61 overrides are gathered in pnpm-workspace.yaml, and 2 representative forks (braces and wgpu-toon) live in folders inside the repository. They apply automatically at install, the build generates license notices, and a license outside the allowlist fails the audit (the LGPL parts bundled in wasm-vips appear in the generated notice only as MIT).",
++        "pnpm 패치 7개와 override 61개는 pnpm-workspace.yaml에 모았고, 대표 포크 2개(braces·wgpu-toon)는 저장소 안 폴더로 둡니다. 설치 때 자동 적용되고, 빌드가 라이선스 고지를 만들며 허용 목록 밖 라이선스는 감사에서 실패합니다(2026-11-05 수정으로 내장 라이브러리의 THIRD-PARTY-NOTICES.md도 수집합니다).",
++        "The 7 pnpm patches and 61 overrides are gathered in pnpm-workspace.yaml, and 2 representative forks (braces and wgpu-toon) live in folders inside the repository. They apply automatically at install, the build generates license notices, and a license outside the allowlist fails the audit (the 2026-11-05 fix also collects embedded-library THIRD-PARTY-NOTICES.md files).",
+       ),
+     },
+     {
+       title: t("내보내기는 기기 안에서, 까다로운 부품은 따로", "Export on the device, demanding parts apart"),
+       body: t(
+-        "초대형 페이지 축소·PSD·PDF 작업·영상 렌더 키트를 서버 없이 기기에서 만듭니다. LGPL 구성요소가 든 wasm-vips는 final 내보내기에서만 dynamic import로, Remotion은 /product-tour 경로에서만 불러오며, ADR-0008은 LGPL 계층의 배포 형태를 법무 검토 후 확정한다고 적습니다.",
+-        "Huge-page downsizing, PSD, PDF work and video render kits are made on the device without a server. wasm-vips, which carries LGPL components, is loaded by dynamic import only for final export and Remotion only on the /product-tour route, and ADR-0008 says the distribution form of LGPL layers is settled after legal review.",
++        "초대형 페이지 축소·PSD·PDF 작업·영상 렌더 키트를 서버 없이 기기에서 만듭니다. 대형 페이지 축소는 자체 Lanczos3 엔진을 final 내보내기에서 지연 로드합니다. Remotion은 /product-tour 재생과 렌더 키트에 쓰며, ADR-0008의 LGPL 배포 검토는 남아 있는 해당 라이브러리에 적용됩니다.",
++        "Huge-page downsizing, PSD, PDF work and video render kits are made on the device without a server. The first-party Lanczos3 engine loads lazily for final export. Remotion remains in /product-tour playback and render kits; ADR-0008 distribution review still applies to remaining LGPL libraries.",
+       ),
+     },
+   ],
+@@ -64,8 +64,8 @@
+       "Source is installed with pnpm, bundled by Vite and passes the check gates to become a build, and exporting happens inside that app on the device itself.",
+     ),
+     alt: t(
+-      "왼쪽에서 오른쪽으로 읽습니다. 소스 코드가 pnpm으로 설치되고(패치 7개와 override 61개 적용) Vite로 묶입니다. 검사는 서로 다른 곳을 봅니다. Vitest는 소스를 직접 돌리고, Playwright(axe)는 개발 서버를 열고, 번들 검사와 라이선스 고지는 빌드 결과를 확인합니다. 이 작업들이 병렬로 모두 통과해야 배포 후보가 됩니다. 사용자가 앱에서 작품을 내보낼 때는 서버 없이 기기에서 wasm-vips가 초대형 페이지를 줄이고 ag-psd가 PSD를 만듭니다. 작품의 PDF 내보내기는 라이브러리 없이 직접 조립하고, pdf-lib와 pdf.js는 이미 있는 PDF를 합치고 나누는 작업대에서, Remotion은 홍보 영상 편집기의 렌더 키트(ZIP) 생성과 /product-tour 재생에서 씁니다.",
+-      "Read from left to right. Source code is installed with pnpm (7 patches and 61 overrides applied) and bundled by Vite. The checks look at different things: Vitest runs the source directly, Playwright with axe opens the dev server, and the bundle check and license notices inspect the build output. All of these jobs run in parallel and must pass for a commit to become a release candidate. When a user exports artwork in the app, on the device without a server wasm-vips shrinks huge pages and ag-psd builds the PSD. Exporting artwork to PDF is assembled by hand with no library; pdf-lib and pdf.js are used in the workbench for existing PDFs, and Remotion for the promo editor's render kit (ZIP) and the /product-tour playback.",
++      "왼쪽에서 오른쪽으로 읽습니다. 소스 코드가 pnpm으로 설치되고(패치 7개와 override 61개 적용) Vite로 묶입니다. 검사는 서로 다른 곳을 봅니다. Vitest는 소스를 직접 돌리고, Playwright(axe)는 개발 서버를 열고, 번들 검사와 라이선스 고지는 빌드 결과를 확인합니다. 이 작업들이 병렬로 모두 통과해야 배포 후보가 됩니다. 사용자가 앱에서 작품을 내보낼 때는 서버 없이 기기에서 자체 Lanczos3가 초대형 페이지를 줄이고 ag-psd가 PSD를 만듭니다. 작품의 PDF 내보내기는 라이브러리 없이 직접 조립하고, pdf-lib와 pdf.js는 이미 있는 PDF를 합치고 나누는 작업대에서, Remotion은 홍보 영상 편집기의 렌더 키트(ZIP) 생성과 /product-tour 재생에서 씁니다.",
++      "Read from left to right. Source code is installed with pnpm (7 patches and 61 overrides applied) and bundled by Vite. The checks look at different things: Vitest runs the source directly, Playwright with axe opens the dev server, and the bundle check and license notices inspect the build output. All of these jobs run in parallel and must pass for a commit to become a release candidate. When a user exports artwork in the app, on the device without a server ToonStudio Lanczos3 shrinks huge pages and ag-psd builds the PSD. Exporting artwork to PDF is assembled by hand with no library; pdf-lib and pdf.js are used in the workbench for existing PDFs, and Remotion for the promo editor's render kit (ZIP) and the /product-tour playback.",
+     ),
+     nodes: [
+       { id: "source", label: t("소스 코드", "Source code"), sub: t("TypeScript · React", "TypeScript, React"), tone: "neutral", shape: "pill", at: [0, 1] },
+@@ -75,7 +75,7 @@
+       { id: "playwright", label: t("Playwright", "Playwright"), sub: t("실제 브라우저 · axe", "Real browser, axe"), tone: "good", at: [1, 2] },
+       { id: "dist", label: t("배포 파일", "Deployable build"), sub: t("번들 검사 · 고지문", "Bundle check, notices"), tone: "good", at: [4, 1] },
+       { id: "export", label: t("작품 내보내기", "Export artwork"), sub: t("서버 없이 기기에서", "On the device"), tone: "local", shape: "pill", at: [4, 3] },
+-      { id: "vips", label: t("wasm-vips", "wasm-vips"), sub: t("초대형 페이지 축소", "Shrink huge pages"), tone: "local", at: [3, 3] },
++      { id: "vips", label: t("자체 Lanczos3", "ToonStudio Lanczos3"), sub: t("초대형 페이지 축소", "Shrink huge pages"), tone: "local", at: [3, 3] },
+       { id: "psd", label: t("ag-psd", "ag-psd"), sub: t("PSD 레이어", "PSD layers"), tone: "local", at: [3, 4] },
+       { id: "pdf", label: t("pdf-lib", "pdf-lib"), sub: t("기존 PDF 합치기·분할", "Merge, split existing PDFs"), tone: "local", at: [4, 4] },
+       { id: "remotion", label: t("Remotion", "Remotion"), sub: t("영상 재생·렌더 키트", "Video player, render kit"), tone: "local", at: [5, 3] },
+@@ -197,33 +197,34 @@
+     },
+     {
+       id: "wasm-vips",
+-      name: "wasm-vips",
+-      kind: "library",
+-      package: "wasm-vips",
+-      oneLine: t("이미지 처리 라이브러리 libvips를 WASM으로 옮긴 것", "The image-processing library libvips compiled to WASM"),
++      name: "ToonStudio Lanczos3",
++      kind: "engine",
++      oneLine: t("픽셀 중심 좌표와 alpha를 보존하는 자체 이미지 축소 엔진", "A first-party image downsampler with pixel-center and alpha handling"),
+       usedFor: t(
+         "한 변이 8192px를 넘는 초대형 페이지를 최종 내보낼 때 Lanczos3 방식으로 줄입니다(16,384² 화소까지). 미리보기에는 쓰지 않습니다.",
+         "Downsizes pages over 8192 px on a side with the Lanczos3 kernel during final export (up to 16,384² pixels). It is not used for previews.",
+       ),
+       why: t(
+-        "Quality Lab 실측(2026-08-07, 2048→512 축소)에서 PSNR 27.26dB·SSIM 0.9887로 CanvasKit 두 방식(25.31/0.9834, 23.78/0.9768)보다 높았습니다. 그래서 큰 페이지의 최종 내보내기에만 씁니다.",
+-        "In the Quality Lab measurement (2026-08-07, 2048 to 512 downscale) it scored PSNR 27.26 dB and SSIM 0.9887, above both CanvasKit methods (25.31/0.9834 and 23.78/0.9768). So it is used only for the final export of big pages.",
+-      ),
+-      alternatives: t(
+-        "비교 후보는 CanvasKit 선형·cubic 축소입니다. Quality Lab 1회 측정은 15~30ms 대 124ms(Apple M2 Max 1대)였으나 워밍업 뒤 20회 측정에선 wasm-vips 축소가 p50 16.4ms였습니다. 실패해도 몰래 대체하지 않습니다.",
+-        "The comparison candidates were CanvasKit linear and cubic downscaling. A single Quality Lab run took 15 to 30 ms versus 124 ms (one Apple M2 Max), but a warmed 20-run benchmark of the same resize put wasm-vips at a p50 of 16.4 ms. A failed export is never quietly replaced.",
+-      ),
+-      cost: t(
+-        "래퍼만 MIT이고 내장 libvips·glib·libheif 등은 LGPLv3이며 생성 고지에는 MIT로만 나옵니다. 레지스트리는 'dev-only 후보·LGPL 격리 배포 필요'라 적어, 상업 배포 조건은 별도 확인이 필요합니다.",
+-        "Only the wrapper is MIT; the bundled libvips, glib, libheif and others are LGPLv3, and the generated notice shows only MIT. The registry says 'dev-only candidate, LGPL isolated deployment required', so commercial distribution terms need separate review.",
++        "2026-11-05 자체 구현으로 대형 페이지 축소·피라미드 기능을 이관합니다. 과거 wasm-vips의 Quality Lab 측정은 PSNR 27.26dB·SSIM 0.9887, CanvasKit은 25.31/0.9834·23.78/0.9768이었습니다. 이 과거 수치를 자체 엔진의 성능으로 재인용하지 않습니다.",
++        "The 2026-11-05 first-party implementation takes over large-page downsizing and pyramids. Historical wasm-vips Quality Lab results were PSNR 27.26 dB and SSIM 0.9887 versus CanvasKit 25.31/0.9834 and 23.78/0.9768. Those historical results are not attributed to the native engine.",
++      ),
++      alternatives: t(
++        "과거 비교는 CanvasKit 선형·cubic과 wasm-vips입니다. Quality Lab 1회는 15~30ms 대 124ms, 별도 워밍업 20회 wasm-vips p50은 16.4ms였습니다. 자체 구현의 속도는 별도 검증하며 이 수치를 승계하지 않습니다.",
++        "The historical comparison was CanvasKit linear and cubic versus wasm-vips: 15 to 30 ms versus 124 ms in one Quality Lab run, with a separate warmed 20-run wasm-vips p50 of 16.4 ms. The native implementation needs its own timing; it does not inherit those numbers.",
++      ),
++      cost: t(
++        "표준 수식으로 독립 구현한 internal 코드입니다. 현 Linux 검증 호스트에서 20회 축소 p50은 69.344ms였으며 과거 Mac 측정과 직접 비교하지 않습니다. 크기별 시간·메모리 검증이 필요하고 저장된 wasm-vips-pipeline ID는 호환성을 위해 유지합니다.",
++        "This is independently authored internal code based on standard equations. A 20-run resize p50 was 69.344 ms on the current Linux test host; it is not a direct comparison with the historical Mac run. Time and memory need size-specific checks, and the saved wasm-vips-pipeline ID remains for compatibility.",
+       ),
+       paths: [
++        `${EXPORT}/studio-native-lanczos.ts`,
+         `${EXPORT}/studio-vips-export.ts`,
+         `${EXPORT}/studio-export-presets.ts`,
+         "packages/studio-engine-registry/src/filter-providers.ts",
+-        "docs/candidates/filters/capability-survey.md",
++        "docs/reports/native-filter-bench-2026-11-05.md",
+       ],
+-      license: "MIT",
++      license: "internal",
++      licenseSource: "packages/studio-engine-registry/src/filter-providers.ts",
+       status: "live",
+       mapRowId: "wasm-vips",
+       atlasIds: ["oss-license-notice-pipeline"],
+@@ -321,8 +322,8 @@
+     },
+   ],
+   pitfall: t(
+-    "wasm-vips(LGPL 구성요소)와 Remotion(자체 라이선스)은 설치본이 말하는 라이선스만 적었고 적격성은 판단하지 않았습니다. resvg·HarfBuzz는 모듈과 테스트만 있고 제품에 연결하지 않아(experimental) 카드에서 뺐습니다.",
+-    "For wasm-vips (LGPL components) and Remotion (custom license) only what the installed package says is written, and eligibility is not judged. resvg and HarfBuzz have modules and tests but are not wired into the product (experimental), so they are left out of the cards.",
++    "wasm-vips의 과거 기록과 현재 자체 Lanczos3 구현을 구별합니다. Remotion(자체 라이선스)의 법인 자격은 확인하지 못했습니다. resvg·HarfBuzz는 모듈과 테스트만 있고 제품에 연결하지 않아(experimental) 카드에서 뺐습니다.",
++    "Historical wasm-vips records are distinguished from the current first-party Lanczos3 implementation. Entity eligibility for Remotion (custom license) is unconfirmed. resvg and HarfBuzz have modules and tests but are not wired into the product (experimental), so they are left out of the cards.",
+   ),
+   status: "live",
+   atlasIds: [
+--- a/apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts
++++ b/apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts
+@@ -187,26 +187,23 @@
+     expect(area("ai-on-device")).toContain("4곳");
+   });
+ 
+-  it("wasm-vips 선택 근거 수치가 코드 주석과 같고, LGPL·Remotion 라이선스 서술이 설치본과 같다", () => {
+-    const vips = read("apps/web/src/domains/creator/export/studio-vips-export.ts");
++  it("과거 wasm-vips 측정과 현재 자체 축소 엔진을 구별한다", () => {
++    const runtime = read("apps/web/src/domains/creator/export/studio-vips-export.ts");
+     const build = area("build-quality-media");
+-    for (const figure of ["27.26dB", "0.9887", "25.31dB/0.9834", "23.78dB/0.9768"]) expect(vips).toContain(figure);
+     for (const figure of ["27.26", "0.9887", "25.31/0.9834", "23.78/0.9768"]) expect(build).toContain(figure);
+-    // 속도 수치(약 124ms 대 15~30ms)는 tests/benchmarks/results 를 읽지 않고, 같은 표를 옮겨 적은 문서와 대조한다.
++    // 수치는 과거 wasm-vips 측정에만 귀속하고 현재 구현의 시간·품질 측정으로 재인용하지 않는다.
+     const survey = read("docs/candidates/filters/capability-survey.md");
+     for (const figure of ["27.26dB", "25.31dB", "23.78dB", "123.6ms", "15.0ms", "30.0ms"]) expect(survey).toContain(figure);
+     expect(build).toContain("15~30ms 대 124ms");
+     expect(build).toContain("15 to 30 ms versus 124 ms");
+-
+-    const notices = read("node_modules/wasm-vips/THIRD-PARTY-NOTICES.md");
+-    for (const library of ["libvips", "glib", "libheif"]) expect(notices).toMatch(new RegExp(`\\|\\s*${library}\\s*\\|\\s*LGPLv3`, "u"));
+-    expect((JSON.parse(read("node_modules/wasm-vips/package.json")) as { license: string }).license).toBe("MIT");
++    expect(build).toContain("과거 수치를 자체 엔진의 성능으로 재인용하지 않습니다");
++    expect(runtime).toContain('import("./studio-native-resize-runtime")');
++    expect(runtime).not.toMatch(/import\(["']wasm-vips["']\)/u);
+     const registry = read("packages/studio-engine-registry/src/filter-providers.ts");
+-    expect(registry).toContain("dev-only candidate");
+-    expect(registry).toContain("LGPL isolated deployment mode required");
+-    // docs/technology/engineering-libraries.md 6절 표는 "레지스트리 라벨(LGPL-2.1-or-later)과 설치본 고지(LGPLv3)가 다르다"고 적는다.
+-    // 레지스트리 라벨이 바뀌면 이 단언이 실패하니, 그때 문서의 해당 문장을 함께 고친다.
+-    expect(registry, "레지스트리 라벨이 바뀌었다: 문서 6절 wasm-vips 행을 고친다").toContain('license: "LGPL-2.1-or-later"');
++    expect(registry).toContain('attribution: "ToonStudio native Lanczos3"');
++    expect(registry).toContain('license: "internal"');
++    expect(registry).toContain('runtime: "js"');
++    expect(registry).toContain("legacy wasm-vips measurements do not describe this independently authored implementation");
+ 
+     // Remotion 카드는 package 를 적지 않는다: 설치본 license 필드가 SPDX 가 아니라 안내 문구라 지도 행(Remotion License)과 대조할 수 없다.
+     expect((JSON.parse(read("node_modules/remotion/package.json")) as { license: string }).license).toBe("SEE LICENSE IN LICENSE.md");
+--- a/apps/web/src/domains/legal/technology/engineering-library-guide-overview.ts
++++ b/apps/web/src/domains/legal/technology/engineering-library-guide-overview.ts
+@@ -71,7 +71,7 @@
+         label: t("8 · 만들기·검사·내보내기", "8 · Build, check, export"),
+         sub: t("빌드, 테스트, 파일 형식과 영상 출력", "Builds, tests, file formats and video output"),
+         tone: "neutral",
+-        chips: ["Vite", "Vitest", "Playwright", "wasm-vips", "ag-psd", "pdf-lib"],
++        chips: ["Vite", "Vitest", "Playwright", "ToonStudio Lanczos3", "ag-psd", "pdf-lib"],
+       },
+     ],
+     // 괄호 이름은 화면의 영역 묶음(영역 바로가기·목차)과 같은 상수의 짧은 이름을 쓴다.
+--- a/apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts
++++ b/apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts
+@@ -6,13 +6,13 @@
+ } from "./engineering-license-inventory";
+ 
+ describe("라이브러리 라이선스 현황 데이터", () => {
+-  it("직접 의존성 117개를 표면별로 빠짐없이 담는다", () => {
+-    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(117);
++  it("과거 직접 의존성 스냅샷에 wasm-vips 제거를 반영한 116개를 담는다", () => {
++    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(116);
+     const bySurface = new Map<string, number>();
+     for (const library of ENGINEERING_LIBRARY_LICENSES) {
+       bySurface.set(library.surface, (bySurface.get(library.surface) ?? 0) + 1);
+     }
+-    expect(bySurface.get("web")).toBe(85);
++    expect(bySurface.get("web")).toBe(84);
+     expect(bySurface.get("api")).toBe(22);
+     expect(bySurface.get("mobile")).toBe(8);
+     expect(bySurface.get("labs")).toBe(2);
+@@ -54,20 +54,34 @@
+ });
+ 
+ describe("AI 모델 자산 라이선스 데이터", () => {
+-  it("고지가 있는 모델 여섯 개만 싣고 라이선스는 허용 목록 안에 있다", () => {
++  it("고지가 있는 모델 여섯 개의 크기·역할과 권리 상태를 담는다", () => {
+     expect(ENGINEERING_MODEL_ASSET_LICENSES).toHaveLength(6);
+     for (const model of ENGINEERING_MODEL_ASSET_LICENSES) {
+-      expect(["MIT", "Apache-2.0", "BSD-3-Clause"], model.file).toContain(model.license);
++      expect(model.license.length, model.file).toBeGreaterThan(0);
+       expect(model.bytes, model.file).toBeGreaterThan(0);
+       expect(model.role.ko.length, model.file).toBeGreaterThan(0);
++      expect(["declared-permissive", "restricted", "unverified"], model.file).toContain(model.rightsStatus);
+     }
+   });
+ 
+-  it("AnimeGANv2 두 모델은 배포본 경유 경계를 고지로 남긴다", () => {
+-    const animegan = ENGINEERING_MODEL_ASSET_LICENSES.filter((model) => model.file.startsWith("animegan2-"));
+-    expect(animegan).toHaveLength(2);
+-    for (const model of animegan) {
+-      expect(model.note?.ko).toContain("MIT 라이선스 배포본");
+-    }
++  it("코드 MIT와 별개인 Tag2Pix 가중치의 비상업·재배포 제한을 드러낸다", () => {
++    const tag2pix = ENGINEERING_MODEL_ASSET_LICENSES.find((model) => model.file === "tag2pix.onnx");
++    expect(tag2pix?.rightsStatus).toBe("restricted");
++    expect(tag2pix?.license).toContain("Non-commercial");
++    expect(tag2pix?.license).toContain("redistribution restricted");
++    expect(tag2pix?.note?.ko).toContain("ONNX 변환은 이 제한을 해소하지 않는다");
++  });
++
++  it("Paprika 원본 조건 충돌과 별도 학습 Face Paint의 미확인 권리를 구별한다", () => {
++    const paprika = ENGINEERING_MODEL_ASSET_LICENSES.find((model) => model.file === "animegan2-paprika.onnx");
++    const face = ENGINEERING_MODEL_ASSET_LICENSES.find((model) => model.file === "animegan2-face-paint-512-v2.onnx");
++    expect(paprika?.rightsStatus).toBe("unverified");
++    expect(paprika?.note?.ko).toContain("비상업 조건");
++    expect(paprika?.note?.ko).toContain("충돌");
++    expect(face?.rightsStatus).toBe("unverified");
++    expect(face?.note?.ko).toContain("별도 학습 모델");
++    expect(face?.note?.ko).toContain("단정하지 않는다");
++    expect(paprika?.license).not.toBe("MIT");
++    expect(face?.license).not.toBe("MIT");
+   });
+ });
+--- a/apps/web/src/domains/legal/technology/engineering-license-inventory.ts
++++ b/apps/web/src/domains/legal/technology/engineering-license-inventory.ts
+@@ -7,6 +7,7 @@
+  * 공식 링크(url)는 설치된 패키지의 package.json license·homepage·repository
+  * 필드에서 확인했다. 버전은 pnpm-lock.yaml importers가 고정한 직접 resolved
+  * version만 적는다 — 전이 관계로만 고정된 버전은 이 표에 넣지 않는다.
++ * 2026-11-05 자체 축소 구현 전환으로 wasm-vips 1개를 제거했다(나머지는 위 기준일 스냅샷).
+  * 재측정과 차분 확인은 scripts/collect-engineering-licenses.mjs가 맡는다.
+  * 전이 의존성과 개발 전용 도구(devDependencies: Vite, Vitest, Playwright, ESLint,
+  * TypeScript 등)는 이 표의 범위가 아니며, 전이 의존성 전체는 배포 빌드가 생성하는
+@@ -672,14 +673,7 @@
+     surface: "web",
+     role: { ko: "메시 가속 구조(BVH)", en: "Mesh acceleration structure (BVH)" },
+   },
+-  {
+-    name: "wasm-vips",
+-    version: "0.0.18",
+-    license: "MIT",
+-    url: "https://github.com/kleisauke/wasm-vips",
+-    surface: "web",
+-    role: { ko: "대형 이미지 내보내기 처리(libvips WASM) — 래퍼는 MIT, 번들된 libvips·libheif 등은 LGPL이며 엔진 레지스트리는 'LGPL 격리 배포가 필요한 후보'로 기록합니다", en: "Large-image export processing (libvips WASM) — the wrapper is MIT while bundled libvips, libheif and others are LGPL; the engine registry records it as a candidate requiring LGPL-isolated deployment" },
+-  },
++
+   {
+     name: "web-ifc",
+     version: "0.0.77",
+--- a/apps/web/src/domains/legal/technology/engineering-license-model-assets.ts
++++ b/apps/web/src/domains/legal/technology/engineering-license-model-assets.ts
+@@ -9,6 +9,7 @@
+   readonly file: string;
+   readonly license: string;
+   readonly bytes: number;
++  readonly rightsStatus: "declared-permissive" | "restricted" | "unverified";
+   readonly role: LocalizedText;
+   readonly note?: LocalizedText;
+ }
+@@ -22,39 +23,46 @@
+   {
+     file: "u2netp.onnx",
+     license: "Apache-2.0",
++    rightsStatus: "declared-permissive",
+     bytes: 4574861,
+     role: { ko: "일반 피사체 분리와 배경 제거", en: "General subject separation and background removal" },
+   },
+   {
+     file: "tag2pix.onnx",
+-    license: "MIT",
++    license: "Non-commercial; redistribution restricted",
++    rightsStatus: "restricted",
+     bytes: 79269994,
+     role: { ko: "선화에 색 태그를 조건으로 채색", en: "Colorizing line art conditioned on color tags" },
++    note: { ko: "2026-11-05 확인: 원본 README는 구현 코드를 MIT로 두지만 release 가중치는 비상업 목적이며 재배포를 제한한다. ONNX 변환은 이 제한을 해소하지 않는다. 별도 허가 또는 동등 대체 검증 전 상용 배포 차단 사항이다.", en: "Reviewed 2026-11-05: the upstream README puts the implementation code under MIT but restricts release weights to non-commercial use and restricts redistribution. ONNX conversion does not resolve these terms. Commercial distribution remains blocked pending separate permission or a verified equivalent replacement." },
+   },
+   {
+     file: "teed.onnx",
+     license: "MIT",
++    rightsStatus: "declared-permissive",
+     bytes: 248429,
+     role: { ko: "사진과 참조 이미지에서 선(엣지) 추출", en: "Extracting edges (line art) from photos and references" },
+   },
+   {
+     file: "realesrgan-anime-6b.onnx",
+     license: "BSD-3-Clause",
++    rightsStatus: "declared-permissive",
+     bytes: 17939941,
+     role: { ko: "일러스트·애니메이션 4배 업스케일", en: "4x upscaling for illustrations and animation" },
+   },
+   {
+     file: "animegan2-paprika.onnx",
+-    license: "MIT",
++    license: "Unresolved upstream terms",
++    rightsStatus: "unverified",
+     bytes: 8702673,
+     role: { ko: "풍경·컷 전반의 애니메이션풍 변환", en: "Anime-style conversion for scenery and whole cuts" },
+-    note: { ko: "가중치는 MIT 라이선스 배포본(bryandlee/animegan2-pytorch)을 직접 변환했다. 원본 TensorFlow 저장소에는 라이선스 파일이 없어, 권리 근거는 채택한 배포본의 MIT로 한정한다.", en: "Weights were converted directly from the MIT-licensed distribution (bryandlee/animegan2-pytorch). The original TensorFlow repository ships no license file, so the rights basis is limited to the adopted distribution's MIT license." },
++    note: { ko: "2026-11-05 확인: 원본 AnimeGANv2 README의 비상업 조건과 PyTorch 포트의 MIT 주장이 충돌한다. Paprika는 원본 가중치 변환본이며 코드의 MIT만으로 해당 가중치의 상용 권리를 확정할 수 없다. 별도 상용 허가는 미확인이다.", en: "Reviewed 2026-11-05: the original AnimeGANv2 README non-commercial terms conflict with the PyTorch port MIT claim. Paprika is converted from the original weights; the code MIT license does not establish commercial rights for those weights. Separate commercial authorization is unconfirmed." },
+   },
+   {
+     file: "animegan2-face-paint-512-v2.onnx",
+-    license: "MIT",
++    license: "Unverified weight rights",
++    rightsStatus: "unverified",
+     bytes: 8702673,
+     role: { ko: "인물 사진의 애니메이션풍 얼굴 변환", en: "Anime-style face conversion for portraits" },
+-    note: { ko: "가중치는 MIT 라이선스 배포본(bryandlee/animegan2-pytorch)을 직접 변환했다. 원본 TensorFlow 저장소에는 라이선스 파일이 없어, 권리 근거는 채택한 배포본의 MIT로 한정한다.", en: "Weights were converted directly from the MIT-licensed distribution (bryandlee/animegan2-pytorch). The original TensorFlow repository ships no license file, so the rights basis is limited to the adopted distribution's MIT license." },
++    note: { ko: "2026-11-05 확인: upstream은 Face Portrait v2를 별도 학습 모델로 설명한다. Paprika와 같은 변환 경위나 비상업 조건을 단정하지 않는다. 구현 코드 MIT와 별개로 정확한 가중치·학습 데이터의 상용 배포 권리는 추가 확인이 필요하다.", en: "Reviewed 2026-11-05: upstream describes Face Portrait v2 as a separately trained model. Its provenance and terms must not be conflated with converted Paprika weights. Commercial distribution rights for the exact weights and training data need separate confirmation from the implementation code MIT license." },
+   },
+ ];
+--- a/apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts
++++ b/apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts
+@@ -113,27 +113,27 @@
+ const OUTPUT_ROWS: readonly EngineeringMapRow[] = [
+   {
+     id: "wasm-vips",
+-    name: "wasm-vips",
+-    status: "live",
+-    link: { title: "wasm-vips", url: "https://github.com/kleisauke/wasm-vips" },
+-    asOf: AS_OF,
+-    cells: {
+-      role: t(
+-        "libvips(이미지 처리 라이브러리)를 WASM으로 옮긴 것. 한 변이 8192px를 넘고 16,384² 화소 이내인 초대형 페이지를 최종 내보낼 때 Lanczos3 방식으로 줄이는 데 쓴다.",
+-        "libvips (an image-processing library) compiled to WASM. It downsizes very large pages, over 8192 px on a side and within 16,384² pixels, with the Lanczos3 kernel during final export.",
+-      ),
+-      license: t("MIT (내장 libvips는 LGPL)", "MIT (bundled libvips: LGPL)"),
+-      mode: t("WASM · 지연 로드 · 내보내기", "WASM · lazy · export"),
+-      note: t(
+-        "래퍼는 MIT지만 내장 libvips·libheif 등은 LGPL이다. 고지 생성기는 THIRD-PARTY-NOTICES.md를 수집하지 않아 생성 고지에는 MIT로만 나온다. 레지스트리는 'LGPL 격리 필수·dev-only 후보'인데 코드상 내보내기에서 도달한다.",
+-        "The wrapper is MIT, but the bundled libvips, libheif and others are LGPL. The notice generator does not collect THIRD-PARTY-NOTICES.md, so the generated notice shows MIT only. The registry says LGPL isolation is required and it is a dev-only candidate, yet export code can reach it.",
+-      ),
+-    },
+-    evidence: [
++    name: "ToonStudio Lanczos3",
++    status: "live",
++    link: { title: "ToonStudio", url: "https://github.com/blue45f/toonstudio" },
++    asOf: "2026-11-05",
++    cells: {
++      role: t(
++        "표준 Lanczos3 수식으로 독립 구현한 RGBA 축소기. 한 변이 8192px를 넘고 16,384² 화소 이내인 초대형 페이지를 최종 내보낼 때 줄인다.",
++        "An independently authored RGBA downsampler using standard Lanczos3 equations. It downsizes very large pages over 8192 px on a side and within 16,384² pixels during final export.",
++      ),
++      license: same("internal"),
++      mode: t("자체 JS · 지연 로드 · 내보내기", "First-party JS · lazy · export"),
++      note: t(
++        "2026-11-05 wasm-vips의 제품 축소 기능을 자체 구현으로 이관한다. 저장된 wasm-vips-pipeline ID는 호환성을 위해 유지하며 과거 libvips 측정치를 자체 코드의 성능으로 표기하지 않는다. 속도·메모리 한도는 별도 검증한다.",
++        "The 2026-11-05 migration moves the product downscale function from wasm-vips to first-party code. The saved wasm-vips-pipeline ID remains for compatibility. Historical libvips measurements are not native-code performance claims; time and memory need separate validation.",
++      ),
++    },
++    evidence: [
++      "apps/web/src/domains/creator/export/studio-native-lanczos.ts",
+       "apps/web/src/domains/creator/export/studio-vips-export.ts",
+       "apps/web/src/domains/creator/render/studio-raster-export-orchestration-runtime.ts",
+       "packages/studio-engine-registry/src/filter-providers.ts",
+-      "scripts/generate-third-party-notices.mjs",
+     ],
+   },
+   {
+@@ -354,8 +354,8 @@
+       license: same("—"),
+       mode: t("빌드 · postbuild", "Build · postbuild"),
+       note: t(
+-        "이번 점검에서 감사는 통과했다(pnpm 584건, Vello CPU 85·GPU 137 crate, 불투명 WASM 3종). 다만 THIRD-PARTY-NOTICES.md 같은 이름의 파일은 수집하지 않아 wasm-vips가 MIT로만 나온다.",
+-        "The audit passed in this review (584 pnpm entries, 85 Vello CPU and 137 GPU crates, 3 opaque WASM inventories). But files named like THIRD-PARTY-NOTICES.md are not collected, so wasm-vips shows up as MIT only.",
++        "2026-10-08 감사는 pnpm 584건, Vello CPU 85·GPU 137 crate, 불투명 WASM 3종으로 통과했다. 2026-11-05에는 THIRD-PARTY-NOTICES.md 같은 내장 고지 파일의 수집 누락을 수정했다. 현재 목록은 각 빌드 산출물을 따른다.",
++        "The 2026-10-08 audit passed with 584 pnpm entries, 85 Vello CPU and 137 GPU crates, and 3 opaque WASM inventories. The omission of embedded notices named like THIRD-PARTY-NOTICES.md was fixed on 2026-11-05. The current inventory comes from each build output.",
+       ),
+     },
+     evidence: [
+--- a/apps/web/src/domains/legal/technology/engineering-map-open-source.ts
++++ b/apps/web/src/domains/legal/technology/engineering-map-open-source.ts
+@@ -32,8 +32,8 @@
+       en: "The service stands on layers of open source; heavy parts load only when needed and are pinned by version and hash.",
+     },
+     alt: {
+-      ko: "위에서 아래로 여섯 층입니다. 앱 기반(React, NestJS), 협업·저장(Yjs, SQLite WASM), 2D 편집·렌더(Konva, CanvasKit, Hokusai), 3D(three.js, Babylon.js), AI·비전(ONNX Runtime Web, MediaPipe), 출력·변환(wasm-vips, Remotion) 순서이며, 층마다 대표 오픈소스를 칩으로 보여 줍니다.",
+-      en: "Six layers from top to bottom: app foundation (React, NestJS), collaboration and storage (Yjs, SQLite WASM), 2D editing and rendering (Konva, CanvasKit, Hokusai), 3D (three.js, Babylon.js), AI and vision (ONNX Runtime Web, MediaPipe) and output and conversion (wasm-vips, Remotion). Each layer shows its representative open-source projects as chips.",
++      ko: "위에서 아래로 여섯 층입니다. 앱 기반(React, NestJS), 협업·저장(Yjs, SQLite WASM), 2D 편집·렌더(Konva, CanvasKit, Hokusai), 3D(three.js, Babylon.js), AI·비전(ONNX Runtime Web, MediaPipe), 출력·변환(자체 Lanczos3, Remotion) 순서이며, 층마다 대표 오픈소스를 칩으로 보여 줍니다.",
++      en: "Six layers from top to bottom: app foundation (React, NestJS), collaboration and storage (Yjs, SQLite WASM), 2D editing and rendering (Konva, CanvasKit, Hokusai), 3D (three.js, Babylon.js), AI and vision (ONNX Runtime Web, MediaPipe) and output and conversion (ToonStudio Lanczos3, Remotion). Each layer shows its representative open-source projects as chips.",
+     },
+     layers: [
+       {
+@@ -76,7 +76,7 @@
+         label: { ko: "출력·변환", en: "Output and conversion" },
+         sub: { ko: "내보내기·파일 형식·영상", en: "Export, file formats and video" },
+         tone: "neutral",
+-        chips: ["wasm-vips", "ag-psd", "pdf-lib", "Remotion"],
++        chips: ["ToonStudio Lanczos3", "ag-psd", "pdf-lib", "Remotion"],
+       },
+     ],
+   },
+@@ -86,8 +86,8 @@
+       en: "The license column is not legal advice; it shows the SPDX labels the repository records in installed package.json files and docs. This table does not decide legal compliance.",
+     },
+     {
+-      ko: "주의 지점 셋. Mixbox(CC-BY-NC-4.0)는 브러시 엔진이 정적으로 import합니다 — 저장소는 provider 권리 라벨·기본 프로파일 permissive-only·감사 핀으로 다루지만, 툴체인 카탈로그는 같은 패키지를 research-only·비실행으로 적어 서술이 어긋납니다. wasm-vips는 래퍼만 MIT이고 내장 libvips 등은 LGPL인데 고지 생성기가 THIRD-PARTY-NOTICES.md를 수집하지 않습니다. Remotion은 자체 라이선스라 배포 법인의 자격을 저장소로 확인할 수 없습니다.",
+-      en: "Three caution points. Mixbox (CC-BY-NC-4.0) is statically imported by the brush engine; the repository handles it with a provider rights label, the default profile permissive-only and an audit pin, yet the toolchain catalog lists the same package as research-only and non-executable, so the two descriptions disagree. wasm-vips is MIT only for its wrapper while the bundled libvips and others are LGPL, and the notice generator does not collect THIRD-PARTY-NOTICES.md. Remotion has its own license, and whether the distributing entity qualifies cannot be verified from the repository.",
++      ko: "주의 지점 셋. Mixbox(CC-BY-NC-4.0)는 브러시 엔진이 정적으로 import합니다 — 저장소는 provider 권리 라벨·기본 프로파일 permissive-only·감사 핀으로 다루지만, 툴체인 카탈로그는 같은 패키지를 research-only·비실행으로 적어 서술이 어긋납니다. 과거 wasm-vips는 래퍼만 MIT이고 내장 libvips 등은 LGPL이었습니다. 현재 축소 기능은 자체 Lanczos3로 이관하며, 2026-11-05 고지 수집 수정도 완료했습니다. Remotion은 자체 라이선스라 배포 법인의 자격을 저장소로 확인할 수 없습니다.",
++      en: "Three caution points. Mixbox (CC-BY-NC-4.0) is statically imported by the brush engine; the repository handles it with a provider rights label, the default profile permissive-only and an audit pin, yet the toolchain catalog lists the same package as research-only and non-executable, so the two descriptions disagree. Former wasm-vips use involved an MIT wrapper with bundled LGPL libraries. Current downscaling moves to first-party Lanczos3, and the notice collection fix was completed on 2026-11-05. Remotion has its own license, and whether the distributing entity qualifies cannot be verified from the repository.",
+     },
+     {
+       ko: "손으로 쓴 THIRD_PARTY_NOTICES.md는 직접 의존성 117개 중 22개만 실린 부분 목록입니다(95개 누락). 완전한 목록은 빌드가 만드는 고지(dist/legal/THIRD_PARTY_NOTICES.generated.md, scripts/generate-third-party-notices.mjs)입니다.",
+--- a/apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts
++++ b/apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts
+@@ -91,8 +91,8 @@
+   {
+     question: t("오픈소스 라이선스 문제는 없나요?", "Any open-source licensing issues?"),
+     answer: t(
+-      "/about/technology/licenses에 그룹별 의무와 주의사항을 공개하고 고지 파일은 빌드가 생성하며, 손으로 쓴 THIRD_PARTY_NOTICES.md는 일부 목록입니다. 사실만 말씀드리면 Mixbox는 CC BY-NC 4.0(비상업), Remotion은 자격 조건이 있는 자체 라이선스, wasm-vips는 MIT 래퍼에 LGPL 라이브러리가 내장돼 생성 고지에는 MIT로만 나오는 알려진 공백이 있고, Hokusai는 MIT OR Apache-2.0의 외부 크레이트를 감싼 것입니다. 이 조건이 우리 배포에 충분한지, 특히 Remotion 자격 여부는 저장소로 확인할 수 없어(미확인) 소유자의 결정과 별도 확인이 필요하며 법률 판단은 하지 않습니다.",
+-      "Obligations and cautions per license group are published at /about/technology/licenses, the notice file is generated by the build, and the hand-written THIRD_PARTY_NOTICES.md is only a partial list. Stating facts only: Mixbox is CC BY-NC 4.0 (non-commercial), Remotion has its own license with eligibility conditions, wasm-vips is an MIT wrapper with embedded LGPL libraries that appear only as MIT in the generated notices (a known gap), and Hokusai is an external MIT OR Apache-2.0 crate that we wrap. Whether these terms suffice for our distribution, especially Remotion eligibility, cannot be confirmed from the repository (unconfirmed), so it is the owner's decision and needs separate review; we make no legal judgment.",
++      "/about/technology/licenses에 그룹별 의무와 주의사항을 공개하고 고지 파일은 빌드가 생성하며, 손으로 쓴 THIRD_PARTY_NOTICES.md는 일부 목록입니다. 사실만 말씀드리면 Mixbox는 CC BY-NC 4.0(비상업), Remotion은 자격 조건이 있는 자체 라이선스, 과거 wasm-vips는 MIT 래퍼에 LGPL 라이브러리가 내장됐고, 현재 축소는 자체 Lanczos3로 이관하며 2026-11-05 내장 고지 수집도 수정했고, Hokusai는 MIT OR Apache-2.0의 외부 크레이트를 감싼 것입니다. 이 조건이 우리 배포에 충분한지, 특히 Remotion 자격 여부는 저장소로 확인할 수 없어(미확인) 소유자의 결정과 별도 확인이 필요하며 법률 판단은 하지 않습니다.",
++      "Obligations and cautions per license group are published at /about/technology/licenses, the notice file is generated by the build, and the hand-written THIRD_PARTY_NOTICES.md is only a partial list. Stating facts only: Mixbox is CC BY-NC 4.0 (non-commercial), Remotion has its own license with eligibility conditions, the former wasm-vips path had an MIT wrapper with embedded LGPL libraries; current downsizing moves to first-party Lanczos3, the 2026-11-05 fix covers embedded notices, and Hokusai is an external MIT OR Apache-2.0 crate that we wrap. Whether these terms suffice for our distribution, especially Remotion eligibility, cannot be confirmed from the repository (unconfirmed), so it is the owner's decision and needs separate review; we make no legal judgment.",
+     ),
+     glossaryId: "oss-license",
+     atlasId: "oss-license-notice-pipeline",
+--- a/apps/web/src/domains/marketing/ProductTourRemotionComposition.test.ts
++++ b/apps/web/src/domains/marketing/ProductTourRemotionComposition.test.ts
+@@ -1,3 +1,6 @@
++import { createHash } from "node:crypto";
++import { readFileSync } from "node:fs";
++
+ import { describe, expect, it } from "vitest";
+ 
+ import {
+@@ -20,4 +23,22 @@
+     expect(productTourCaptionAtFrame(Math.round(1 * fps), fps, "en")).toContain("ToonStudio");
+     expect(productTourCaptionAtFrame(Math.round(8 * fps), fps, "ko")).toBeNull();
+   });
++
++  it("독립 보간 전환 후 전체 558초의 gain과 한·영 자막 관찰 결과를 유지한다", () => {
++    const baseline: {
++      readonly frames: number;
++      readonly gainDecimals: number;
++      readonly gainSha256: string;
++      readonly captionKoSha256: string;
++      readonly captionEnSha256: string;
++    } = JSON.parse(readFileSync("packages/product-tour-film/src/film-animation-baseline.json", "utf8"));
++    const frames = Array.from({ length: baseline.frames }, (_, frame) => frame);
++    const digest = (values: readonly (string | null)[]) => createHash("sha256").update(JSON.stringify(values)).digest("hex");
++    expect(digest(frames.map((frame) => productTourBgmGainAtFrame(frame, fps).toFixed(baseline.gainDecimals))))
++      .toBe(baseline.gainSha256);
++    expect(digest(frames.map((frame) => productTourCaptionAtFrame(frame, fps, "ko"))))
++      .toBe(baseline.captionKoSha256);
++    expect(digest(frames.map((frame) => productTourCaptionAtFrame(frame, fps, "en"))))
++      .toBe(baseline.captionEnSha256);
++  });
+ });
+--- a/apps/web/src/domains/marketing/product-tour-remotion-timeline.ts
++++ b/apps/web/src/domains/marketing/product-tour-remotion-timeline.ts
+@@ -1,4 +1,4 @@
+-import { interpolate } from "remotion";
++import { filmInterpolate } from "@toonstudio/product-tour-film/animation";
+ 
+ import { PRODUCT_TOUR_RUNTIME_AUDIO } from "./product-tour-audio.generated";
+ import type { ProductTourLocale } from "./product-tour-content";
+@@ -11,13 +11,13 @@
+ function cueGainAtSecond(second: number, start: number, end: number): number {
+   if (second < start - DUCK_ATTACK_SECONDS || second > end + DUCK_RELEASE_SECONDS) return 1;
+   if (second < start) {
+-    return interpolate(second, [start - DUCK_ATTACK_SECONDS, start], [1, DUCKED_GAIN], {
++    return filmInterpolate(second, [start - DUCK_ATTACK_SECONDS, start], [1, DUCKED_GAIN], {
+       extrapolateLeft: "clamp",
+       extrapolateRight: "clamp",
+     });
+   }
+   if (second <= end) return DUCKED_GAIN;
+-  return interpolate(second, [end, end + DUCK_RELEASE_SECONDS], [DUCKED_GAIN, 1], {
++  return filmInterpolate(second, [end, end + DUCK_RELEASE_SECONDS], [DUCKED_GAIN, 1], {
+     extrapolateLeft: "clamp",
+     extrapolateRight: "clamp",
+   });
+--- a/package.json
++++ b/package.json
+@@ -100,6 +100,7 @@
+     "audit:sitewide-visual-ux:forced-colors": "AUDIT_WORKERS=2 AUDIT_ROUTE_MODE=all AUDIT_THEMES=contrast AUDIT_VIEWPORT_MODE=all AUDIT_FORCED_COLORS=active AUDIT_SCENE_CHECK=0 AUDIT_SCROLL_SWEEP=1 AUDIT_STRICT=1 AUDIT_CAPTURE=never node scripts/audit-sitewide-visual-ux.mjs",
+     "audit:auth-modal-visual-ux": "node scripts/audit-auth-modal-visual-ux.mjs",
+     "audit:licenses": "node scripts/generate-third-party-notices.mjs --check",
++    "audit:restricted-models": "node scripts/check-restricted-model-distribution.mjs",
+     "lint:security": "pnpm run lint:strict && pnpm run quality:secrets && pnpm run audit:security",
+     "quality:imports": "knip --include unlisted,unresolved",
+     "quality:deadcode": "knip",
+@@ -121,9 +122,9 @@
+     "turbo:lint": "pnpm exec turbo run lint",
+     "turbo:test": "pnpm exec turbo run test --concurrency=1",
+     "bench:studio-engine": "tsx tests/benchmarks/harness/main.ts",
+-    "bench:filter-candidates": "tsx tests/benchmarks/harness/filter-candidates.ts",
++    "bench:filter-candidates": "tsx --tsconfig tests/benchmarks/harness/tsconfig.json tests/benchmarks/harness/filter-candidates.ts",
+     "soak:studio-engine": "tsx tests/benchmarks/harness/soak.ts",
+-    "bench:quality-lab": "tsx tests/benchmarks/harness/quality-lab.ts",
++    "bench:quality-lab": "tsx --tsconfig tests/benchmarks/harness/tsconfig.json tests/benchmarks/harness/quality-lab.ts",
+     "verify:studio-engine": "node scripts/verify-studio-engine.mjs",
+     "verify:studio-launch": "tsx scripts/verify-studio-launch.mts",
+     "verify:studio-asset-workspace": "tsx scripts/verify-studio-asset-workspace.mts",
+@@ -426,7 +427,6 @@
+     "three": "0.186.1",
+     "three-bvh-csg": "0.0.18",
+     "three-mesh-bvh": "0.9.16",
+-    "wasm-vips": "^0.0.19",
+     "web-ifc": "0.0.78",
+     "xatlasjs": "0.2.0",
+     "yjs": "^13.6.33",
+--- a/packages/product-tour-film/package.json
++++ b/packages/product-tour-film/package.json
+@@ -12,6 +12,11 @@
+       "types": "./src/index.ts",
+       "import": "./src/index.ts",
+       "default": "./src/index.ts"
++    },
++    "./animation": {
++      "types": "./src/film-animation.ts",
++      "import": "./src/film-animation.ts",
++      "default": "./src/film-animation.ts"
+     }
+   },
+   "peerDependencies": {
+--- a/packages/product-tour-film/src/ProductTourFilm.tsx
++++ b/packages/product-tour-film/src/ProductTourFilm.tsx
+@@ -1,12 +1,12 @@
+ import {
+   AbsoluteFill,
+   Img,
+-  interpolate,
+-  spring,
+   staticFile,
+   useCurrentFrame,
+   useVideoConfig,
+ } from "remotion";
++
++import { filmEntranceSpring, filmInterpolate } from "./film-animation";
+ 
+ /**
+  * 장면 이미지의 성격. capture는 영상 제작 시점의 실제 제품 화면 캡처,
+@@ -208,7 +208,7 @@
+   inputRange: readonly number[],
+   outputRange: readonly number[],
+ ) {
+-  return interpolate(value, inputRange, outputRange, {
++  return filmInterpolate(value, inputRange, outputRange, {
+     extrapolateLeft: "clamp",
+     extrapolateRight: "clamp",
+   });
+@@ -367,7 +367,7 @@
+   if (!chapter) return null;
+   const localFrame = frame - chapter.start * fps;
+   const durationFrames = (chapter.end - chapter.start) * fps;
+-  const entry = spring({ frame: localFrame, fps, config: { damping: 24, stiffness: 92, mass: 1.1 } });
++  const entry = filmEntranceSpring({ frame: localFrame, fps, config: { damping: 24, stiffness: 92, mass: 1.1 } });
+   const exitOpacity = safeInterpolate(localFrame, [durationFrames - 22, durationFrames - 2], [1, 0]);
+   const contentOpacity = Math.min(entry, exitOpacity);
+   const beatIndex = Math.min(2, Math.floor((localFrame / Math.max(1, durationFrames)) * 3));
+--- a/packages/studio-engine-registry/src/__tests__/effect-compiler.test.ts
++++ b/packages/studio-engine-registry/src/__tests__/effect-compiler.test.ts
+@@ -78,10 +78,10 @@
+     ).toThrow(/invalid effect graph/);
+   });
+ 
+-  it("vips descriptor passes the license gate only via the isolated mode", () => {
++  it("legacy provider id describes an independently authored bundle-allowed runtime", () => {
+     const registry = filterRegistry();
+     const vips = registry.get("wasm-vips-pipeline");
+-    expect(vips?.licenseGate.mode).toBe("isolated");
++    expect(vips?.licenseGate.mode).toBe("bundle");
+     expect(wasmVipsPipelineDescriptor.capabilities).not.toContain(
+       "filter.phase.preview",
+     );
+@@ -168,8 +168,13 @@
+     const { ProviderBenchmarkRegistry } = await import("../benchmark-registry");
+     const registry = filterRegistry();
+     const benchmarks = new ProviderBenchmarkRegistry();
+-    // canvaskit/opencv measured below floor; wasm-vips (also a gaussian-blur
+-    // final provider) is unmeasured and therefore has no passing evidence.
++    // 실제 native export descriptor는 Gaussian을 제공하지 않는다.
++    // 미측정 후보를 조용히 선택하지 않는 계약은 명시적인 테스트 fixture로 유지한다.
++    registry.registerTestFixture({
++      ...wasmVipsPipelineDescriptor,
++      id: "unmeasured-gaussian-test",
++      capabilities: ["filter.op.gaussian-blur", "filter.phase.final"],
++    });
+     benchmarks.record("canvaskit-imagefilter", { visualQuality: 0.3 });
+     benchmarks.record("opencv-image-worker", { visualQuality: 0.2 });
+     const graph: EffectGraphIR = {
+--- a/packages/studio-engine-registry/src/filter-providers.ts
++++ b/packages/studio-engine-registry/src/filter-providers.ts
+@@ -77,29 +77,27 @@
+   providerDescriptorSchema.parse({
+     id: "wasm-vips-pipeline",
+     kind: "image-pipeline",
+-    displayName: "wasm-vips large-image pipeline",
+-    version: "wasm-vips 0.0.18 (dev-only candidate)",
+-    license: "LGPL-2.1-or-later",
+-    attribution: "libvips / wasm-vips",
++    displayName: "ToonStudio native large-image pipeline",
++    version: "native-lanczos3 1 (candidate; legacy provider id)",
++    license: "internal",
++    attribution: "ToonStudio native Lanczos3",
+     maturity: "candidate",
+-    runtime: "wasm-worker",
++    runtime: "js",
+     capabilities: [
+       "filter.op.resize",
+-      "filter.op.gaussian-blur",
+       "filter.op.pyramid",
+-      "filter.op.thumbnail",
+       "filter.phase.final",
+     ],
+     limitations: [
+-      "final/export lane only — no preview phase; LGPL isolated deployment mode required",
+-      "single-thread baseline measured; SMP requires COOP/COEP workers",
++      "final/export lane only — no preview phase; independently authored internal runtime",
++      "single-thread execution; bounded horizontal-row scratch, integer box prefilter and premultiplied-alpha Lanczos3",
+       "provider failure aborts the requested export operation; no CanvasKit substitution is permitted",
+     ],
+     previewQuality: "reference",
+     finalQuality: "production",
+     determinism: "tolerance",
+     memoryEstimateMb: 64,
+-    knownIssues: ["measured: resize 2048->512 p50 16.4ms, gaussblur s4 2048^2 p50 46.7ms"],
++    knownIssues: ["legacy wasm-vips measurements do not describe this independently authored implementation; see native benchmark records"],
+   });
+ 
+ const canvasKitImageFilterBootstrap = declareTrustedBootstrapProvider(
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -377,9 +377,6 @@
+       three-mesh-bvh:
+         specifier: 0.9.16
+         version: 0.9.16(three@0.186.1)
+-      wasm-vips:
+-        specifier: ^0.0.19
+-        version: 0.0.19
+       web-ifc:
+         specifier: 0.0.78
+         version: 0.0.78
+@@ -9160,10 +9157,6 @@
+     resolution: {integrity: sha512-3hu+tD8YzSLGuFYtPRb48vdhKMi0KQV5sn+uWr8+7dMEq/2G/dtLrdDinkLjqq5TIbIBjYJ4Ax/n3YiaW7QM8A==}
+     engines: {node: 20 || >=22}
+ 
+-  wasm-vips@0.0.19:
+-    resolution: {integrity: sha512-KeejYs8oNqPUd2C/XPRhQtRabydqOSkUyCdWhFf2ucL8rVKqHvtp5ZYuYLyeDG/4y45tvROST3mQWla+1uotSA==}
+-    engines: {node: '>=17.0.0'}
+-
+   web-ifc@0.0.78:
+     resolution: {integrity: sha512-LGKMNYFVNyz9vVERN0iz+zvPQJqT7MEGBxslzcuuhwDDOA116LmJLKkg8sZ5SEvQJSc5NRVMWgpRNkDmuoQoJg==}
+ 
+@@ -17648,8 +17641,6 @@
+ 
+   walk-up-path@4.0.0: {}
+ 
+-  wasm-vips@0.0.19: {}
+-
+   web-ifc@0.0.78: {}
+ 
+   web-push@3.6.7:
+--- a/scripts/generate-third-party-notices.mjs
++++ b/scripts/generate-third-party-notices.mjs
+@@ -16,6 +16,8 @@
+ import { fileURLToPath } from "node:url";
+ 
+ import { parse as parseYaml } from "yaml";
++
++import { findRootLicenseFiles } from "./third-party-license-files.mjs";
+ 
+ import {
+   REVIEWED_RUST_LICENSE_EXPRESSIONS,
+@@ -1583,28 +1585,6 @@
+     );
+ }
+ 
+-function findRootLicenseFiles(packagePath) {
+-  let names;
+-  try {
+-    names = readdirSync(packagePath);
+-  } catch {
+-    return [];
+-  }
+-  return names
+-    .filter((name) =>
+-      /^(?:licen[sc]e|copying|notice)(?:[._-].*)?$/iu.test(name),
+-    )
+-    .map((name) => join(packagePath, name))
+-    .filter((path) => {
+-      try {
+-        return statSync(path).isFile() && statSync(path).size <= 2_000_000;
+-      } catch {
+-        return false;
+-      }
+-    })
+-    .sort();
+-}
+-
+ function collectMplFallback() {
+   const storePath = join(REPOSITORY_ROOT, "node_modules", ".pnpm");
+   if (!existsSync(storePath)) return null;
+--- a/tests/benchmarks/harness/filter-candidates.ts
++++ b/tests/benchmarks/harness/filter-candidates.ts
+@@ -1,15 +1,19 @@
+ /**
+  * Filter-provider candidate evidence bench (V11.1 §3.3, matrix E16/E17).
+  *
+- * wasm-vips is a DEV dependency only (nothing ships in the bundle); OpenCV.js
+- * is already a pinned production hybrid-provider dependency with a worker
+- * protocol — this harness records the §3.3 benchmark evidence for both. Run
+- * from repo root: pnpm run bench:filter-candidates
++ * 자체 Lanczos3 리샘플러·Gaussian과 OpenCV.js를 현재 구현으로 측정한다.
++ * 과거 wasm-vips 측정값은 filter-candidates.json에 보존하고 이 실행은
++ * filter-candidates-native.json에 새 구현의 이름으로 기록한다.
++ * 실행: pnpm run bench:filter-candidates
+  */
+ import { mkdir, writeFile } from "node:fs/promises";
+ import { cpus, platform, arch } from "node:os";
+ import { join } from "node:path";
+ import { performance } from "node:perf_hooks";
++
++import { resizeStudioRgbaLanczos3 } from "../../../apps/web/src/domains/creator/export/studio-native-lanczos";
++
++import { gaussianBlurRgba } from "./native-gaussian";
+ 
+ const REPO_ROOT = new URL("../../..", import.meta.url).pathname;
+ const RESULTS_DIR = join(REPO_ROOT, "tests", "benchmarks", "results");
+@@ -148,7 +152,7 @@
+ 
+   return {
+     candidate: "opencv-js",
+-    version: "5.0.0-release.1 (@techstark/opencv-js, dev-only)",
++    version: "5.0.0-release.1 (@techstark/opencv-js)",
+     loadMs,
+     operations,
+     notes: [
+@@ -158,68 +162,32 @@
+   };
+ }
+ 
+-async function benchWasmVips(): Promise<CandidateReport> {
+-  const loadStart = performance.now();
+-  const { default: Vips } = (await import("wasm-vips")) as unknown as {
+-    default: (options?: Record<string, unknown>) => Promise<VipsModule>;
+-  };
+-  interface VipsImage {
+-    resize(scale: number): VipsImage;
+-    gaussblur(sigma: number): VipsImage;
+-    writeToMemory(): Uint8Array;
+-    delete(): void;
+-  }
+-  interface VipsModule {
+-    Image: {
+-      newFromMemory(
+-        data: Uint8Array,
+-        width: number,
+-        height: number,
+-        bands: number,
+-        format: string,
+-      ): VipsImage;
+-    };
+-    concurrency(n: number): void;
+-  }
+-  const vips = await Vips({ dynamicLibraries: [] });
+-  vips.concurrency(1); // deterministic single-thread baseline
+-  const loadMs = Number((performance.now() - loadStart).toFixed(1));
+-
++async function benchNativeFilters(): Promise<CandidateReport> {
+   const size = 2048;
+   const card = testCardRgba(size);
+   const operations: CandidateReport["operations"] = {};
+-
+   {
+     let out: Uint8Array = new Uint8Array();
+     const distribution = bench(() => {
+-      const image = vips.Image.newFromMemory(card, size, size, 4, "uchar");
+-      const resized = image.resize(0.25);
+-      out = resized.writeToMemory();
+-      resized.delete();
+-      image.delete();
++      out = resizeStudioRgbaLanczos3(card, size, size, 512, 512);
+     });
+     operations["resize-2048-to-512"] = { ...distribution, ...signature(out) };
+   }
+   {
+     let out: Uint8Array = new Uint8Array();
+     const distribution = bench(() => {
+-      const image = vips.Image.newFromMemory(card, size, size, 4, "uchar");
+-      const blurred = image.gaussblur(4);
+-      out = blurred.writeToMemory();
+-      blurred.delete();
+-      image.delete();
++      out = gaussianBlurRgba(card, size, size, 4);
+     });
+     operations["gaussblur-sigma4-2048"] = { ...distribution, ...signature(out) };
+   }
+-
+   return {
+-    candidate: "wasm-vips",
+-    version: "0.0.18 (dev-only)",
+-    loadMs,
++    candidate: "toonstudio-native-filters",
++    version: "independent-lanczos3-gaussian-v1",
++    loadMs: 0,
+     operations,
+     notes: [
+-      "large-final/export lane candidate per matrix E17 (LGPL — isolated deployment mode required)",
+-      "single-thread concurrency pinned for deterministic baseline; SMP needs COOP/COEP workers",
++      "표준 Lanczos3와 반경 4 sigma Gaussian의 독립 구현, premultiplied alpha·clamp 경계",
++      "외부 WASM 초기화가 없는 동기 JavaScript 경로; 과거 wasm-vips 결과를 재명명하지 않음",
+     ],
+   };
+ }
+@@ -228,7 +196,7 @@
+   const reports: CandidateReport[] = [];
+   for (const [name, runner] of [
+     ["opencv-js", benchOpenCv],
+-    ["wasm-vips", benchWasmVips],
++    ["toonstudio-native-filters", benchNativeFilters],
+   ] as const) {
+     try {
+       reports.push(await runner());
+@@ -253,7 +221,7 @@
+     }
+   }
+   await mkdir(RESULTS_DIR, { recursive: true });
+-  const target = join(RESULTS_DIR, "filter-candidates.json");
++  const target = join(RESULTS_DIR, "filter-candidates-native.json");
+   await writeFile(
+     target,
+     `${JSON.stringify(
+--- a/tests/benchmarks/harness/quality-lab.ts
++++ b/tests/benchmarks/harness/quality-lab.ts
+@@ -10,7 +10,7 @@
+  *    outputs are committed as PNGs for human review (승인 요건: reference
+  *    images).
+  * 2. Gaussian blur σ4 on 512² luma: reference is an exact separable float
+- *    gaussian; candidates are CanvasKit ImageFilter, OpenCV and wasm-vips.
++ *    gaussian; candidates are CanvasKit ImageFilter, OpenCV and the independent native filter.
+  *
+  * Results feed the ProviderBenchmarkRegistry visualQuality axis so provider
+  * SELECTION is quality-weighted, not just fast. Run:
+@@ -24,9 +24,13 @@
+ import { encodeRgbaToPng } from "@toonstudio/studio-engine-skia";
+ import { loadCanvasKitNode } from "@toonstudio/studio-engine-skia/node";
+ 
++import { resizeStudioRgbaLanczos3 } from "../../../apps/web/src/domains/creator/export/studio-native-lanczos";
++
++import { gaussianBlurRgba } from "./native-gaussian";
++
+ const REPO_ROOT = new URL("../../..", import.meta.url).pathname;
+ const RESULTS_DIR = join(REPO_ROOT, "tests", "benchmarks", "results");
+-const ARTIFACT_DIR = join(REPO_ROOT, "tests", "benchmarks", "artifacts", "quality-lab");
++const ARTIFACT_DIR = join(REPO_ROOT, "tests", "benchmarks", "artifacts", "quality-lab-native");
+ 
+ const SRC = 2048;
+ const DST = 512;
+@@ -296,35 +300,12 @@
+     image.delete();
+   }
+ 
+-  // wasm-vips (lanczos3 default reduce)
+-  {
+-    const { default: Vips } = (await import("wasm-vips")) as unknown as {
+-      default: (options?: Record<string, unknown>) => Promise<{
+-        Image: {
+-          newFromMemory(
+-            data: Uint8Array,
+-            width: number,
+-            height: number,
+-            bands: number,
+-            format: string,
+-          ): {
+-            resize(scale: number): { writeToMemory(): Uint8Array; delete(): void };
+-            delete(): void;
+-          };
+-        };
+-        concurrency(n: number): void;
+-      }>;
+-    };
+-    const vips = await Vips({ dynamicLibraries: [] });
+-    vips.concurrency(1);
++  // 표준 Lanczos3 자체 구현 — 과거 wasm-vips 기록과 별도 후보로 측정한다.
++  {
+     const start = performance.now();
+-    const image = vips.Image.newFromMemory(sourceRgba, SRC, SRC, 4, "uchar");
+-    const resized = image.resize(DST / SRC);
+-    const pixels = resized.writeToMemory();
++    const pixels = resizeStudioRgbaLanczos3(sourceRgba, SRC, SRC, DST, DST);
+     const wallMs = performance.now() - start;
+-    resized.delete();
+-    image.delete();
+-    await recordDownscale("wasm-vips-lanczos3", new Uint8Array(pixels), wallMs);
++    await recordDownscale("toonstudio-native-lanczos3", pixels, wallMs);
+   }
+ 
+   // ---- Gaussian blur shootout (512² luma card, σ4) ----
+@@ -416,35 +397,12 @@
+     dst.delete();
+   }
+ 
+-  // wasm-vips gaussblur
+-  {
+-    const { default: Vips } = (await import("wasm-vips")) as unknown as {
+-      default: (options?: Record<string, unknown>) => Promise<{
+-        Image: {
+-          newFromMemory(
+-            data: Uint8Array,
+-            width: number,
+-            height: number,
+-            bands: number,
+-            format: string,
+-          ): {
+-            gaussblur(sigma: number): { writeToMemory(): Uint8Array; delete(): void };
+-            delete(): void;
+-          };
+-        };
+-        concurrency(n: number): void;
+-      }>;
+-    };
+-    const vips = await Vips({ dynamicLibraries: [] });
+-    vips.concurrency(1);
+-    const image = vips.Image.newFromMemory(blurCardRgba, blurSize, blurSize, 4, "uchar");
++  // 반경 4 sigma·clamp 경계·premultiplied alpha의 자체 Gaussian.
++  {
+     const start = performance.now();
+-    const blurred = image.gaussblur(sigma);
+-    const pixels = blurred.writeToMemory();
++    const pixels = gaussianBlurRgba(blurCardRgba, blurSize, blurSize, sigma);
+     const wallMs = performance.now() - start;
+-    blurred.delete();
+-    image.delete();
+-    await recordBlur("wasm-vips-gaussblur", new Uint8Array(pixels), wallMs);
++    await recordBlur("toonstudio-native-gaussian", pixels, wallMs);
+   }
+ 
+   const report = {
+@@ -459,7 +417,7 @@
+     gaussianBlurSigma4: blur,
+   };
+   await mkdir(RESULTS_DIR, { recursive: true });
+-  const target = join(RESULTS_DIR, "quality-lab.json");
++  const target = join(RESULTS_DIR, "quality-lab-native.json");
+   await writeFile(target, `${JSON.stringify(report, null, 2)}\n`);
+   for (const row of [...downscale, ...blur]) {
+     console.log(
+--- a/tests/benchmarks/harness/tsconfig.json
++++ b/tests/benchmarks/harness/tsconfig.json
+@@ -9,7 +9,10 @@
+     "isolatedModules": true,
+     "verbatimModuleSyntax": true,
+     "skipLibCheck": true,
+-    "types": ["node"]
++    "types": ["node"],
++    "paths": {
++      "@/*": ["../../../apps/web/src/*"]
++    }
+   },
+   "include": [
+     "main.ts",
+--- a/tests/benchmarks/harness/vips-export-cutover.ts
++++ b/tests/benchmarks/harness/vips-export-cutover.ts
+@@ -1,19 +1,19 @@
+ /**
+- * vips export cutover — 웨이브 A-④ 실측 하네스.
++ * 대형 캔버스 export cutover — 자체 Lanczos3 레인 실측 하네스.
+  *
+- * 대형 캔버스 규격 내보내기(exportPresetSlices)의 wasm-vips 레인 실배선 전/후를
++ * 대형 캔버스 규격 내보내기(exportPresetSlices)의 자체 Lanczos3 레인 실배선 전/후를
+  * 동일 입력으로 비교한다:
+  *  - before: 브라우저 ctx.drawImage(imageSmoothingQuality "high") 프록시인
+  *    CanvasKit linear(no-mips) 다운스케일 — quality-lab 과 동일 프록시.
+  *  - after: 컷오버 경로 그대로 prepareVipsRoutedPresetPages → downscaleForExport
+- *    (wasm-vips lanczos3, 단일 스레드).
++ *    (독립 JavaScript Lanczos3).
+  *  - 레퍼런스: float 면적평균(부분 픽셀 가중 포함 — 비정수 배율 일반화) —
+  *    quality-lab 방법론의 직사각형·분수 배율 확장.
+  *  - pristine: 인코어 예산(8192 edge/면적) 이하 캔버스는 prepare 가 원본 참조를
+  *    그대로 돌려주고 바이트가 불변임을 sha256 으로 증명한다.
+  *
+- * 실행: pnpm exec tsx tests/benchmarks/harness/vips-export-cutover.ts
+- * 결과: tests/benchmarks/results/vips-export-cutover.json
++ * 실행: pnpm exec tsx --tsconfig tests/benchmarks/harness/tsconfig.json tests/benchmarks/harness/vips-export-cutover.ts
++ * 결과: tests/benchmarks/results/native-export-cutover.json
+  */
+ import { createHash } from "node:crypto";
+ import { mkdir, writeFile } from "node:fs/promises";
+@@ -297,7 +297,7 @@
+   if (!beforePixels) throw new Error("readPixels failed");
+   const beforeLuma = rgbaToLuma(new Uint8Array(beforePixels as Uint8Array));
+ 
+-  // after 레인: 컷오버 경로 그대로 prepareVipsRoutedPresetPages(실 wasm-vips).
++  // after 레인: 컷오버 경로 그대로 prepareVipsRoutedPresetPages(자체 Lanczos3).
+   const loadStart = performance.now();
+   const runtime = await loadVipsForExport();
+   const loadMs = performance.now() - loadStart;
+@@ -350,9 +350,9 @@
+       beforeLane:
+         "CanvasKit linear/no-mips drawImageRectOptions — 브라우저 ctx.drawImage 프록시(quality-lab canvaskit-linear-nomips 와 동일)",
+       afterLane:
+-        "prepareVipsRoutedPresetPages → downscaleForExport (wasm-vips lanczos3, concurrency 1) — 실배선 경로 그대로",
++        "prepareVipsRoutedPresetPages → downscaleForExport (독립 JavaScript Lanczos3) — 실배선 경로 그대로",
+       note:
+-        "wallMs 는 단일 실행 실측(공유 개발 호스트). after.wallMs 는 prepare 전체(복사 포함), loadMs 는 wasm 초기화 별도.",
++        "wallMs 는 단일 실행 실측(공유 개발 호스트). after.wallMs 는 prepare 전체(복사 포함), loadMs 는 호환 runtime 로더 비용 별도.",
+     },
+     routes,
+     pristine,
+@@ -369,7 +369,7 @@
+         ssim: meanSsim(reference, beforeLuma, targetW, targetH),
+       },
+       after: {
+-        lane: "wasm-vips-lanczos3 (cutover: prepareVipsRoutedPresetPages)",
++        lane: "toonstudio-native-lanczos3 (cutover: prepareVipsRoutedPresetPages)",
+         wallMs: Number(afterWallMs.toFixed(2)),
+         loadMs: Number(loadMs.toFixed(2)),
+         psnrDb: psnr(reference, afterLuma),
+@@ -380,7 +380,7 @@
+   };
+ 
+   await mkdir(RESULTS_DIR, { recursive: true });
+-  const out = join(RESULTS_DIR, "vips-export-cutover.json");
++  const out = join(RESULTS_DIR, "native-export-cutover.json");
+   await writeFile(out, `${JSON.stringify(results, null, 2)}\n`);
+   console.log(`wrote ${out}`);
+   console.log(JSON.stringify(results.routed, null, 2));
+--- a/tools/media/brand-film/src/TechnologyStoryFilm.tsx
++++ b/tools/media/brand-film/src/TechnologyStoryFilm.tsx
+@@ -1,7 +1,6 @@
++import { filmEntranceSpring, filmInterpolate } from "@toonstudio/product-tour-film/animation";
+ import {
+   AbsoluteFill,
+-  interpolate,
+-  spring,
+   useCurrentFrame,
+   useVideoConfig,
+ } from "remotion";
+@@ -60,12 +59,12 @@
+   const scene = scenes[sceneIndex] ?? scenes[0];
+   const localFrame = frame - Math.floor(sceneIndex * sceneLength);
+   const localDuration = Math.ceil(sceneLength);
+-  const enter = spring({
++  const enter = filmEntranceSpring({
+     frame: localFrame,
+     fps,
+     config: { damping: 24, stiffness: 82, mass: 0.9 },
+   });
+-  const opacity = interpolate(
++  const opacity = filmInterpolate(
+     localFrame,
+     [0, 16, Math.max(18, localDuration - 18), Math.max(19, localDuration - 1)],
+     [0, 1, 1, 0],
+@@ -101,7 +100,7 @@
+           height: width * 0.66,
+           borderRadius: "50%",
+           background: "#2b5037",
+-          transform: `translateY(${interpolate(frame, [0, durationInFrames], [26, -36])}px)`,
++          transform: `translateY(${filmInterpolate(frame, [0, durationInFrames], [26, -36])}px)`,
+         }}
+       />
+       <div
+@@ -182,7 +181,7 @@
+         <section
+           style={{
+             alignSelf: portrait ? "stretch" : "center",
+-            transform: `translateY(${(1 - enter) * 54}px) rotate(${interpolate(localFrame, [0, localDuration], [-1.5, 0.6])}deg)`,
++            transform: `translateY(${(1 - enter) * 54}px) rotate(${filmInterpolate(localFrame, [0, localDuration], [-1.5, 0.6])}deg)`,
+             border: "1px solid #abc39c55",
+             borderRadius: portrait ? 26 : 30,
+             background: "#f3f4e9",
+--- a/tools/media/brand-film/src/ToonStudioFilm.tsx
++++ b/tools/media/brand-film/src/ToonStudioFilm.tsx
+@@ -1,4 +1,5 @@
+-import { AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
++import { filmEntranceSpring, filmInterpolate } from "@toonstudio/product-tour-film/animation";
++import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+ 
+ const SCENES = [
+   { kicker: "YOUR STORY STARTS HERE", title: "아이디어를\n첫 장면으로.", description: "상상하던 이야기를 직접 만드는 즐거움.", label: "01 / IMAGINE" },
+@@ -15,8 +16,8 @@
+   const chapter = Math.min(3, Math.floor(frame / 180));
+   const local = frame % 180;
+   const scene = SCENES[chapter];
+-  const progress = spring({ frame: local, fps, config: { damping: 22, stiffness: 85 } });
+-  const opacity = interpolate(local, [0, 14, 162, 179], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
++  const progress = filmEntranceSpring({ frame: local, fps, config: { damping: 22, stiffness: 85 } });
++  const opacity = filmInterpolate(local, [0, 14, 162, 179], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+   const end = chapter === 3;
+   const ink = end ? "#f3f4e9" : "#233c2d";
+   const muted = end ? "#c0d1b3" : "#5d755d";
+@@ -24,7 +25,7 @@
+   const fontSize = portrait ? (end ? 61 : 67) : stacked ? 62 : end ? 58 : height < 680 ? 61 : 68;
+   return <AbsoluteFill style={{ backgroundColor: end ? "#193629" : "#f3f4e9", color: ink, fontFamily: "'Noto Sans CJK KR', 'Noto Sans', sans-serif", overflow: "hidden" }}>
+     <AbsoluteFill style={{ backgroundImage: end ? "radial-gradient(#cce89012 1px,transparent 1px)" : "radial-gradient(#33572a12 1px,transparent 1px)", backgroundSize: "20px 20px" }} />
+-    <div style={{ position: "absolute", width: width * 0.66, height: width * 0.66, borderRadius: "50%", background: end ? "#284c32" : "#e2ebd0", right: -width * 0.16, top: height * 0.2, transform: `translateY(${interpolate(frame, [0, 720], [15, -30])}px)` }} />
++    <div style={{ position: "absolute", width: width * 0.66, height: width * 0.66, borderRadius: "50%", background: end ? "#284c32" : "#e2ebd0", right: -width * 0.16, top: height * 0.2, transform: `translateY(${filmInterpolate(frame, [0, 720], [15, -30])}px)` }} />
+     <div style={{ position: "absolute", left: 55, top: 36, fontSize: 22, fontWeight: 800, letterSpacing: -1 }}>ToonStudio<span style={{ color: "#83a357" }}>✳</span></div>
+     <div style={{ position: "absolute", right: 55, top: 43, fontSize: portrait ? 9 : 11, letterSpacing: portrait ? 1 : 2, color: muted }}>CREATE YOUR NEXT STORY</div>
+     <div style={{ position: "absolute", inset: 0, padding: stacked ? (portrait ? "146px 50px 100px" : "112px 80px 80px") : "132px 55px 100px", display: "flex", flexDirection: stacked ? "column" : "row", alignItems: stacked ? "flex-start" : "center", justifyContent: stacked ? "flex-start" : "space-between", gap: stacked ? (portrait ? 44 : 28) : 40, opacity }}>
+@@ -34,7 +35,7 @@
+         <div style={{ marginTop: 24, fontSize: portrait ? 21 : 19, lineHeight: 1.8, color: muted, wordBreak: "keep-all" }}>{scene.description}</div>
+         {end && <div style={{ marginTop: 20, display: "inline-flex", alignItems: "center", gap: 30, padding: "13px 25px", background: "#d3ec9c", color: "#284125", fontSize: 17, borderRadius: 8, fontWeight: 700 }}>스튜디오 시작하기 <span>↗</span></div>}
+       </div>
+-      <div style={{ width: artWidth, alignSelf: "center", transform: `translateY(${(1 - progress) * 45}px) rotate(${interpolate(local, [0, 179], [-2, 1])}deg) scale(${interpolate(local, [0, 179], [0.97, 1.025])})`, background: "#fff", border: "1px solid #bdcbb6", borderRadius: 14, padding: 13, color: "#2a422f", boxShadow: "0 25px 70px #0b27102b", flexShrink: 0 }}>
++      <div style={{ width: artWidth, alignSelf: "center", transform: `translateY(${(1 - progress) * 45}px) rotate(${filmInterpolate(local, [0, 179], [-2, 1])}deg) scale(${filmInterpolate(local, [0, 179], [0.97, 1.025])})`, background: "#fff", border: "1px solid #bdcbb6", borderRadius: 14, padding: 13, color: "#2a422f", boxShadow: "0 25px 70px #0b27102b", flexShrink: 0 }}>
+         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, height: 26, padding: "0 5px 10px", color: "#667d5c" }}><span>● ● ●</span><span>나의 첫 번째 이야기 / CHAPTER 01</span><span>✳</span></div>
+         <Img src={staticFile("brand/studio-scene.svg")} style={{ display: "block", width: "100%", borderRadius: 3 }} />
+         <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 5px 1px", fontSize: 10, letterSpacing: 1, color: "#647b5c" }}><span>DRAW · TELL · BUILD</span><span>{scene.label}</span></div>

@@ -1,0 +1,146 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import os from 'node:os';
+import { performance } from 'node:perf_hooks';
+import { pathToFileURL } from 'node:url';
+
+// 평가 전용: 제품 의존성이나 원본 파일을 수정하지 않는다.
+const candidate = '/workspace/scratch/toonstudio-commercial-main-validation';
+const oldPackage = '/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips';
+const work = '/tmp/toonstudio-native-resize-same-environment';
+const evidence = '/workspace/toonstudio/docs/evidence/commercial-model-rights-2026-11-05/native-resize-comparison';
+const hash = (bytes: Uint8Array | string) => crypto.createHash('sha256').update(bytes).digest('hex');
+const memory = () => ({ ...process.memoryUsage(), maxRssKiB: process.resourceUsage().maxRSS,
+  cgroupCurrentBytes: Number(fs.readFileSync('/sys/fs/cgroup/memory.current', 'utf8').trim()) });
+const facadePath = path.join(candidate, 'apps/web/src/domains/creator/export/studio-vips-export.ts');
+const nativePath = path.join(candidate, 'apps/web/src/domains/creator/export/studio-native-lanczos.ts');
+const runtimePath = path.join(candidate, 'apps/web/src/domains/creator/export/studio-native-resize-runtime.ts');
+// tsx는 package type에 따라 로컬 .ts를 CJS namespace로 노출할 수 있다.
+const facadeNamespace = await import(pathToFileURL(facadePath).href);
+const { downscaleForExport } = facadeNamespace.downscaleForExport ? facadeNamespace : facadeNamespace.default;
+const nativeNamespace = await import(pathToFileURL(runtimePath).href);
+const nativeFactory = typeof nativeNamespace.default === 'function' ? nativeNamespace.default : nativeNamespace.default.default;
+const vipsFactory = (await import(pathToFileURL(path.join(oldPackage, 'lib/vips-node.mjs')).href)).default;
+let begin = performance.now();
+const nativeVips = await nativeFactory();
+const nativeInitMs = performance.now() - begin;
+begin = performance.now();
+const oldVips = await vipsFactory({ dynamicLibraries: [] });
+const oldInitMs = performance.now() - begin;
+oldVips.concurrency(1);
+nativeVips.concurrency(1);
+const runtimes = { native: { vips: nativeVips }, formerWasmVips: { vips: oldVips } };
+
+function synthetic(kind: string, width: number, height: number): Uint8Array {
+  const bytes = new Uint8Array(width * height * 4);
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const i = (y * width + x) * 4;
+    if (kind === 'checker') {
+      const c = ((Math.floor(x / 13) + Math.floor(y / 13)) & 1) * 255;
+      bytes.set([c, c, c, 255], i);
+    } else if (kind === 'transparent') {
+      // 완전히 투명한 녹색 옆의 불투명 빨강. alpha 아래의 RGB와 합성 색을 구분한다.
+      bytes.set(x < width / 2 ? [255, 0, 0, 255] : [0, 255, 0, 0], i);
+    } else {
+      bytes.set([Math.round(x / (width - 1) * 255), Math.round(y / (height - 1) * 255),
+        Math.round((x + y) / (width + height - 2) * 255), 255], i);
+    }
+  }
+  return bytes;
+}
+
+function compare(a: Uint8Array, b: Uint8Array, width: number, height: number, mode: 'raw' | 'black' | 'white', edgeOnly = false) {
+  const channels = mode === 'raw' ? 4 : 3;
+  const max = Array(channels).fill(0), sum = Array(channels).fill(0), square = Array(channels).fill(0);
+  let count = 0;
+  const read = (bytes: Uint8Array, p: number, c: number) => mode === 'raw' ? bytes[p + c]
+    : bytes[p + c] * bytes[p + 3] / 255 + (mode === 'white' ? 255 - bytes[p + 3] : 0);
+  const left = edgeOnly ? Math.floor(width / 2) - 8 : 0;
+  const right = edgeOnly ? Math.ceil(width / 2) + 8 : width;
+  for (let y = 0; y < height; y++) for (let x = left; x < right; x++) {
+    const p = (y * width + x) * 4; count++;
+    for (let c = 0; c < channels; c++) {
+      const e = Math.abs(read(a, p, c) - read(b, p, c));
+      max[c] = Math.max(max[c], e); sum[c] += e; square[c] += e * e;
+    }
+  }
+  const mse = square.reduce((a, b) => a + b, 0) / (count * channels);
+  // 8×8 비중첩 luminance 창, 모집단 분산, C1=(.01*255)^2, C2=(.03*255)^2.
+  let ssim = 0, windows = 0;
+  for (let y = 0; y < height; y += 8) for (let x = left; x < right; x += 8) {
+    let sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0, n = 0;
+    for (let yy = y; yy < Math.min(y + 8, height); yy++) for (let xx = x; xx < Math.min(x + 8, right); xx++) {
+      const p = (yy * width + xx) * 4;
+      const aa = .2126 * read(a, p, 0) + .7152 * read(a, p, 1) + .0722 * read(a, p, 2);
+      const bb = .2126 * read(b, p, 0) + .7152 * read(b, p, 1) + .0722 * read(b, p, 2);
+      sa += aa; sb += bb; saa += aa * aa; sbb += bb * bb; sab += aa * bb; n++;
+    }
+    const ma = sa / n, mb = sb / n, va = Math.max(0, saa / n - ma * ma), vb = Math.max(0, sbb / n - mb * mb), cov = sab / n - ma * mb;
+    ssim += ((2 * ma * mb + 6.5025) * (2 * cov + 58.5225)) / ((ma * ma + mb * mb + 6.5025) * (va + vb + 58.5225)); windows++;
+  }
+  return { channels: mode === 'raw' ? ['R', 'G', 'B', 'A'] : ['R', 'G', 'B'], pixels: count,
+    maxAbsByChannel: max, maeByChannel: sum.map(n => n / count), mae: sum.reduce((a,b)=>a+b,0)/(count*channels),
+    mse, psnrDb: mse === 0 ? 'Infinity' : 10 * Math.log10(255 * 255 / mse), luminanceSsim8x8: ssim / windows };
+}
+
+function alphaSummary(bytes: Uint8Array, transparent: boolean) {
+  let min = 255, max = 0, zero = 0, fractional = 0, hiddenRgb = 0, greenOnBlackMax = 0;
+  for (let p = 0; p < bytes.length; p += 4) {
+    const a = bytes[p + 3]; min = Math.min(min, a); max = Math.max(max, a);
+    if (a === 0) { zero++; if(bytes[p] || bytes[p+1] || bytes[p+2]) hiddenRgb++; }
+    else if (a < 255) fractional++;
+    if (transparent) greenOnBlackMax = Math.max(greenOnBlackMax,bytes[p+1] * a / 255);
+  }
+  return { min, max, zeroPixels:zero, fractionalPixels:fractional, zeroAlphaWithHiddenRgbPixels:hiddenRgb,
+    ...(transparent ? { greenOnBlackMax } : {}) };
+}
+
+const cases = [
+  { id: 'gradient-2048', kind: 'gradient', w: 2048, h: 2048, tw: 512, th: 512 },
+  { id: 'checker13-2048', kind: 'checker', w: 2048, h: 2048, tw: 512, th: 512 },
+  { id: 'transparent-edge-2048', kind: 'transparent', w: 2048, h: 2048, tw: 512, th: 512 },
+  { id: 'usgs-2048', kind: 'usgs', w: 2048, h: 2048, tw: 512, th: 512 },
+  { id: 'gradient-prime-2053x1021', kind: 'gradient', w: 2053, h: 1021, tw: 513, th: 255 },
+];
+const result: any = { schema: 1, at: new Date().toISOString(), candidateHead: '7a118fc4ea1c1dadd96090351a35580b0e93d3d1',
+  node: process.version, platform: `${process.platform}/${process.arch}`, cpu: os.cpus()[0].model,
+  clock: 'node:perf_hooks performance.now, one process, alternating provider order', warmupRunsPerProvider: 3, measuredRunsPerProvider: 5,
+  timerIncludes: 'same downscaleForExport facade; newFromMemory, resize, writeToMemory, defensive output copy, delete; initialization excluded',
+  nativeInitMs, formerInitMs: oldInitMs, packageVersion: '0.0.19', versions: JSON.parse(fs.readFileSync(path.join(oldPackage,'versions.json'),'utf8')),
+  sources: [facadePath,nativePath,runtimePath,path.join(oldPackage,'lib/vips-node.mjs'),path.join(oldPackage,'lib/vips.wasm')].map(p=>({ path:p,sha256:hash(fs.readFileSync(p)) })),
+  memoryAfterInit: memory(), cases: [] };
+
+for (const spec of cases) {
+  global.gc?.();
+  const input = spec.kind === 'usgs' ? new Uint8Array(fs.readFileSync(path.join(work,'usgs-2048.rgba'))) : synthetic(spec.kind,spec.w,spec.h);
+  const inputHash = hash(input), timings: Record<string, number[]> = { native: [], formerWasmVips: [] }, outputs: Record<string, Uint8Array> = {};
+  const hashes: Record<string, string[]> = { native: [], formerWasmVips: [] };
+  const before = memory();
+  for (let run = -3; run < 5; run++) {
+    for (const name of run % 2 === 0 ? ['native','formerWasmVips'] : ['formerWasmVips','native']) {
+      const start = performance.now();
+      const resized = await downscaleForExport(input,spec.w,spec.h,spec.tw,spec.th,{ runtime:runtimes[name as keyof typeof runtimes] });
+      const elapsed = performance.now() - start;
+      if (resized.width !== spec.tw || resized.height !== spec.th || resized.rgba.length !== spec.tw * spec.th * 4) throw new Error(`dimension failure ${spec.id}/${name}`);
+      if (run >= 0) { timings[name].push(elapsed); hashes[name].push(hash(resized.rgba)); }
+      outputs[name] = resized.rgba;
+    }
+  }
+  const timingSummary = Object.fromEntries(Object.entries(timings).map(([name, values]) => {const sorted=[...values].sort((a,b)=>a-b);return[name,{samplesMs:values,minMs:sorted[0],medianMs:sorted[2],maxMs:sorted[4]}];}));
+  const details = { ...spec, inputSha256:inputHash, inputUnchanged:hash(input)===inputHash,
+    timings:timingSummary, nativeOverFormerMedianRatio:timingSummary.native.medianMs/timingSummary.formerWasmVips.medianMs,
+    deterministic:Object.fromEntries(Object.entries(hashes).map(([k,v])=>[k,new Set(v).size===1])), outputHashes:Object.fromEntries(Object.entries(hashes).map(([k,v])=>[k,v[0]])),
+    alpha:Object.fromEntries(Object.entries(outputs).map(([k,v])=>[k,alphaSummary(v,spec.kind==='transparent')])),
+    byteOutputFinite:true, outputBuffersSeparateFromInput:Object.values(outputs).every(v=>v.buffer!==input.buffer), exactDimensions:true,
+    metrics:{rawRgba:compare(outputs.native,outputs.formerWasmVips,spec.tw,spec.th,'raw'),compositeBlack:compare(outputs.native,outputs.formerWasmVips,spec.tw,spec.th,'black'),compositeWhite:compare(outputs.native,outputs.formerWasmVips,spec.tw,spec.th,'white'),
+      ...(spec.kind==='transparent'?{edgeBlack:compare(outputs.native,outputs.formerWasmVips,spec.tw,spec.th,'black',true),edgeWhite:compare(outputs.native,outputs.formerWasmVips,spec.tw,spec.th,'white',true),
+        centerRowSamples:Array.from({length:10},(_,i)=>{const x=Math.floor(spec.tw/2)-5+i,p=(Math.floor(spec.th/2)*spec.tw+x)*4;return{x,native:[...outputs.native.slice(p,p+4)],former:[...outputs.formerWasmVips.slice(p,p+4)]};})}:{})},memoryBefore:before,memoryAfter:memory() };
+  for(const [name,bytes] of Object.entries(outputs)) fs.writeFileSync(path.join(work,`${spec.id}-${name}.rgba`),bytes);
+  result.cases.push(details);
+  fs.writeFileSync(path.join(evidence,'comparison.json'),JSON.stringify(result,null,2)+'\n');
+  console.log(JSON.stringify({id:spec.id,timings:timingSummary,ratio:details.nativeOverFormerMedianRatio,raw:details.metrics.rawRgba,deterministic:details.deterministic,inputUnchanged:details.inputUnchanged,rss:process.memoryUsage().rss}));
+}
+result.memoryFinal=memory();
+fs.writeFileSync(path.join(evidence,'comparison.json'),JSON.stringify(result,null,2)+'\n');
+oldVips.shutdown();

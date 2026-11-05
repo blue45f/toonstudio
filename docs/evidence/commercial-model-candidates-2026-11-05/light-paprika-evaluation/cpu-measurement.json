@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/tmp/toonstudio-light-paprika-evaluation/venv/bin/python",
+    "/tmp/toonstudio-light-paprika-evaluation/evaluate_onnx.py"
+  ],
+  "exit_code": 0,
+  "wall_seconds": 17.530996407000202,
+  "max_rss_kib": 1637628,
+  "user_seconds": 16.530011000000002,
+  "system_seconds": 0.988564
+}

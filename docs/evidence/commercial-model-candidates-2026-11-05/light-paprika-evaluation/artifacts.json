@@ -1,0 +1,158 @@
+{
+  "state": "isolated evaluation only, no production model migration",
+  "created": "2026-11-05",
+  "source": "author own Apache repository light_paprika only",
+  "weights_in_repository": false,
+  "artifacts": [
+    {
+      "path": "archive-receipt.json",
+      "bytes": 453,
+      "sha256": "3bd4d5a6f17ae8f0f7371d0827b0cf156d4f84972334ba35fcc2fd7c123d5391"
+    },
+    {
+      "path": "browser-measurement.json",
+      "bytes": 251,
+      "sha256": "21848206483392126b3060a84a8a31b8a2e6c8d4632505abafe2343858aec2ec"
+    },
+    {
+      "path": "browser-stderr.log",
+      "bytes": 1158,
+      "sha256": "1cad154a7597e71f445fc9e4bf206f0898b93ab42a4e29f639a7fbec606ac95b"
+    },
+    {
+      "path": "browser-wasm-result.json",
+      "bytes": 1433,
+      "sha256": "548934e2ac203d8f317b7f8ab66fb857a1992940e838299539fcc6bc61872f1e"
+    },
+    {
+      "path": "browser.log",
+      "bytes": 225,
+      "sha256": "417d1bb352c65acc5fc4a23be570cca40a5f3ab1dc04b6ca88662eb089ffcb73"
+    },
+    {
+      "path": "browser_receipt.mjs",
+      "bytes": 844,
+      "sha256": "63f9839b26ee90aa53795160b437ab8d0fb5135f9705668ebefa36493462a579"
+    },
+    {
+      "path": "candidate-comparison.png",
+      "bytes": 1373378,
+      "sha256": "469b3747314628559961729a6e0695e7d47a90c86e1f503e206039ef5fccbeb0"
+    },
+    {
+      "path": "check_checkpoint_kernels.py",
+      "bytes": 1620,
+      "sha256": "00b0da630de97e09961064d8a28f29347e07ca9313cd6c94125fe80d111d0fab"
+    },
+    {
+      "path": "checkpoint-kernel-evidence.json",
+      "bytes": 22793,
+      "sha256": "f619255ae32874c00376f02b6a7c4c2799181e2278834ae2037dc0986ba38c7b"
+    },
+    {
+      "path": "conversion-measurement.json",
+      "bytes": 293,
+      "sha256": "59362e40794f4bb0e3fdccfbe78817787e9c5d53f75cf792594fe52cda2d92d2"
+    },
+    {
+      "path": "conversion-result.json",
+      "bytes": 1309,
+      "sha256": "0686e2ebefec3b56b884c6930df6a758424472cba6072fd4c8baf4dfe3ed3c84"
+    },
+    {
+      "path": "conversion-stderr.log",
+      "bytes": 23072,
+      "sha256": "86047aa4ce241a2228544a243c2443ea5a6ad9de4756b9e5d4218b2ac7acd9aa"
+    },
+    {
+      "path": "conversion.log",
+      "bytes": 1525,
+      "sha256": "2fa4f92a2ee665ad95465b8bda65ad7fc97b65c66c74e548e83f2df0e634e9c5"
+    },
+    {
+      "path": "cpu-measurement.json",
+      "bytes": 301,
+      "sha256": "2e80649e50fa8efba0a4ca2298b53e89afb33eb4ec7ca7ccf2fe2cefd66254d9"
+    },
+    {
+      "path": "cpu-stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "cpu.log",
+      "bytes": 1924,
+      "sha256": "6beaef0720bc97ccce1cbf6addac0ea2719cbdd1d9496918bd848b269f605906"
+    },
+    {
+      "path": "evaluate_onnx.py",
+      "bytes": 3382,
+      "sha256": "c23e203b2c0434c52924d97af182e1b87319255b68e15a330e3f63fca192c201"
+    },
+    {
+      "path": "inputs/sources.json",
+      "bytes": 633,
+      "sha256": "45d301362455d6313137b6c7cf8436a208f6e660ddab037c38309fabcb5ba346"
+    },
+    {
+      "path": "inputs/synthetic-city.png",
+      "bytes": 105042,
+      "sha256": "9e365fa970a70e64485834d06ba4f525f6b1a63403d10bbfa4beda75a5f61cf7"
+    },
+    {
+      "path": "inputs/usgs-mountain-lake-original.jpg",
+      "bytes": 192506,
+      "sha256": "14aeb5477e6d38c8513fa0db8fdf38944bbe826370063b04b24aa4bdb1de4007"
+    },
+    {
+      "path": "inspect_convert.py",
+      "bytes": 3388,
+      "sha256": "4bf721dde3f07153fabe5e376afb5e76eaa43747ca87cd2b22145ca0065006cb"
+    },
+    {
+      "path": "onnx-cpu-result.json",
+      "bytes": 1933,
+      "sha256": "802745dd930d783fd818730170ed5b29679ffeabde243a8978096ff6f0e1c418"
+    },
+    {
+      "path": "pip-freeze.txt",
+      "bytes": 768,
+      "sha256": "f141e80adda331dabde141dc4834ea56144d3ab2d0aff813a2e7cae87d0a6aec"
+    },
+    {
+      "path": "preprocessing-review.json",
+      "bytes": 1825,
+      "sha256": "d9fbda1488d579da3f7f1c1ce9552b530cd60e173fc2871f39ca118743e8b74a"
+    },
+    {
+      "path": "public-domain-proof/sources.json",
+      "bytes": 576,
+      "sha256": "dda0112d2c4495d8b9eef6036a38a71f84949f6593581d9f0077abc770d6d3c7"
+    },
+    {
+      "path": "public-domain-proof/usgs-gallery-rights.txt",
+      "bytes": 15779,
+      "sha256": "5748a87c0f2307a941304027a9c01d4a80034cd3348297803d56ed92bafd8708"
+    },
+    {
+      "path": "public-domain-proof/usgs-mountain-lake-page.txt",
+      "bytes": 3594,
+      "sha256": "340b35a40eedeea560378e47265e28e8f414b5fe65c248d070a857376704c004"
+    },
+    {
+      "path": "run_measured.py",
+      "bytes": 565,
+      "sha256": "0a4b0d8ecddce2238926c54e50bf0ae20e89d1495f23082bed24da15b0602092"
+    },
+    {
+      "path": "serve_evaluation.py",
+      "bytes": 875,
+      "sha256": "e265991a58a61b9c3d53bc157b0af4772453c45e9e0746da752275f5a0dc9b4b"
+    },
+    {
+      "path": "test.html",
+      "bytes": 1547,
+      "sha256": "d69e197bdd54da5f143f7b60286e9b302cfcaafee9c280f173f6cc3e5ebde010"
+    }
+  ]
+}

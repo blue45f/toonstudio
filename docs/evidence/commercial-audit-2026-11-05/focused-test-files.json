@@ -1,0 +1,18 @@
+[
+  "apps/web/src/domains/creator/export/studio-export-presets.vips-route.test.ts",
+  "apps/web/src/domains/creator/export/studio-native-lanczos.test.ts",
+  "apps/web/src/domains/creator/export/studio-vips-export.test.ts",
+  "apps/web/src/domains/creator/studio-onnx-animegan.test.ts",
+  "apps/web/src/domains/creator/studio-onnx-tag2pix.test.ts",
+  "apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx",
+  "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts",
+  "apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts",
+  "apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts",
+  "apps/web/src/domains/marketing/ProductTourPage.test.tsx",
+  "apps/web/src/domains/marketing/ProductTourRemotionComposition.test.ts",
+  "packages/product-tour-film/src/film-animation.test.ts",
+  "packages/studio-engine-registry/src/__tests__/effect-compiler.test.ts",
+  "packages/studio-engine-registry/src/__tests__/manifest-governance.test.ts",
+  "scripts/__tests__/generate-third-party-notices.test.mjs",
+  "tests/benchmarks/harness/native-gaussian.test.ts"
+]

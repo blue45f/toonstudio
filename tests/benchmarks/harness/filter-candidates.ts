@@ -1,15 +1,19 @@
 /**
  * Filter-provider candidate evidence bench (V11.1 §3.3, matrix E16/E17).
  *
- * wasm-vips is a DEV dependency only (nothing ships in the bundle); OpenCV.js
- * is already a pinned production hybrid-provider dependency with a worker
- * protocol — this harness records the §3.3 benchmark evidence for both. Run
- * from repo root: pnpm run bench:filter-candidates
+ * 자체 Lanczos3 리샘플러·Gaussian과 OpenCV.js를 현재 구현으로 측정한다.
+ * 과거 wasm-vips 측정값은 filter-candidates.json에 보존하고 이 실행은
+ * filter-candidates-native.json에 새 구현의 이름으로 기록한다.
+ * 실행: pnpm run bench:filter-candidates
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import { cpus, platform, arch } from "node:os";
 import { join } from "node:path";
 import { performance } from "node:perf_hooks";
+
+import { resizeStudioRgbaLanczos3 } from "../../../apps/web/src/domains/creator/export/studio-native-lanczos";
+
+import { gaussianBlurRgba } from "./native-gaussian";
 
 const REPO_ROOT = new URL("../../..", import.meta.url).pathname;
 const RESULTS_DIR = join(REPO_ROOT, "tests", "benchmarks", "results");
@@ -148,7 +152,7 @@ async function benchOpenCv(): Promise<CandidateReport> {
 
   return {
     candidate: "opencv-js",
-    version: "5.0.0-release.1 (@techstark/opencv-js, dev-only)",
+    version: "5.0.0-release.1 (@techstark/opencv-js)",
     loadMs,
     operations,
     notes: [
@@ -158,68 +162,32 @@ async function benchOpenCv(): Promise<CandidateReport> {
   };
 }
 
-async function benchWasmVips(): Promise<CandidateReport> {
-  const loadStart = performance.now();
-  const { default: Vips } = (await import("wasm-vips")) as unknown as {
-    default: (options?: Record<string, unknown>) => Promise<VipsModule>;
-  };
-  interface VipsImage {
-    resize(scale: number): VipsImage;
-    gaussblur(sigma: number): VipsImage;
-    writeToMemory(): Uint8Array;
-    delete(): void;
-  }
-  interface VipsModule {
-    Image: {
-      newFromMemory(
-        data: Uint8Array,
-        width: number,
-        height: number,
-        bands: number,
-        format: string,
-      ): VipsImage;
-    };
-    concurrency(n: number): void;
-  }
-  const vips = await Vips({ dynamicLibraries: [] });
-  vips.concurrency(1); // deterministic single-thread baseline
-  const loadMs = Number((performance.now() - loadStart).toFixed(1));
-
+async function benchNativeFilters(): Promise<CandidateReport> {
   const size = 2048;
   const card = testCardRgba(size);
   const operations: CandidateReport["operations"] = {};
-
   {
     let out: Uint8Array = new Uint8Array();
     const distribution = bench(() => {
-      const image = vips.Image.newFromMemory(card, size, size, 4, "uchar");
-      const resized = image.resize(0.25);
-      out = resized.writeToMemory();
-      resized.delete();
-      image.delete();
+      out = resizeStudioRgbaLanczos3(card, size, size, 512, 512);
     });
     operations["resize-2048-to-512"] = { ...distribution, ...signature(out) };
   }
   {
     let out: Uint8Array = new Uint8Array();
     const distribution = bench(() => {
-      const image = vips.Image.newFromMemory(card, size, size, 4, "uchar");
-      const blurred = image.gaussblur(4);
-      out = blurred.writeToMemory();
-      blurred.delete();
-      image.delete();
+      out = gaussianBlurRgba(card, size, size, 4);
     });
     operations["gaussblur-sigma4-2048"] = { ...distribution, ...signature(out) };
   }
-
   return {
-    candidate: "wasm-vips",
-    version: "0.0.18 (dev-only)",
-    loadMs,
+    candidate: "toonstudio-native-filters",
+    version: "independent-lanczos3-gaussian-v1",
+    loadMs: 0,
     operations,
     notes: [
-      "large-final/export lane candidate per matrix E17 (LGPL — isolated deployment mode required)",
-      "single-thread concurrency pinned for deterministic baseline; SMP needs COOP/COEP workers",
+      "표준 Lanczos3와 반경 4 sigma Gaussian의 독립 구현, premultiplied alpha·clamp 경계",
+      "외부 WASM 초기화가 없는 동기 JavaScript 경로; 과거 wasm-vips 결과를 재명명하지 않음",
     ],
   };
 }
@@ -228,7 +196,7 @@ async function main(): Promise<void> {
   const reports: CandidateReport[] = [];
   for (const [name, runner] of [
     ["opencv-js", benchOpenCv],
-    ["wasm-vips", benchWasmVips],
+    ["toonstudio-native-filters", benchNativeFilters],
   ] as const) {
     try {
       reports.push(await runner());
@@ -253,7 +221,7 @@ async function main(): Promise<void> {
     }
   }
   await mkdir(RESULTS_DIR, { recursive: true });
-  const target = join(RESULTS_DIR, "filter-candidates.json");
+  const target = join(RESULTS_DIR, "filter-candidates-native.json");
   await writeFile(
     target,
     `${JSON.stringify(
