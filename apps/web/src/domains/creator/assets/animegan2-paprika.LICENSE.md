@@ -6,17 +6,19 @@
   극장 애니메이션풍(굵은 색면, 단순화된 음영)으로 변환하는 스타일 변환망.
   Paprika 스타일은 풍경·컷 전반 변환용으로, 인물 얼굴 전용 변환은
   `animegan2-face-paint-512-v2.onnx`가 맡는다.
-- 원본 프로젝트: https://github.com/bryandlee/animegan2-pytorch —
-  코드와 가중치 모두 **MIT License** (Copyright (c) 2021 Bryan Lee,
-  상용 사용 가능). 이 PyTorch 포팅은 원본 TensorFlow 구현
-  (https://github.com/TachibanaYoshino/AnimeGANv2, Xin Chen et al.,
-  "AnimeGAN: A Novel Lightweight GAN for Photo Animation", 2019)의
-  가중치를 변환한 것으로, 원본 TF 저장소에는 라이선스 파일이 없다.
-  채택한 가중치는 MIT 라이선스가 적용되는 bryandlee 배포본 경유이며,
-  권리 부여는 그 배포본의 MIT 라이선스를 따른다. Paprika 스타일의
-  학습 데이터는 원본 프로젝트 고지대로 영화 "파프리카"(2006)의
-  BD 프레임 1,284장이다.
-- 이 파일은 위 MIT 배포본의 공식 체크포인트 `weights/paprika.pt`
+- 권리 상태: **상용 이용 권한 미확인 — 고위험 검토 항목** (2026-11-05).
+  PyTorch 구현의 MIT 라이선스만으로 변환된 원본 체크포인트의 상용 권한을
+  확정할 수 없다. 원본 TensorFlow 저장소는 별도 LICENSE 파일 유무와 무관하게
+  README의 License 절에서 비상업 목적 이용과 상업 이용 시 별도 허가를 명시한다.
+  - 원본 조건: https://github.com/TachibanaYoshino/AnimeGANv2#license
+  - 변환 경위: https://github.com/bryandlee/animegan2-pytorch#weight-conversion-from-the-original-repo-tensorflow
+  - PyTorch 구현 라이선스: https://github.com/bryandlee/animegan2-pytorch/blob/main/LICENSE
+  이 저장소에서 해당 Paprika 가중치의 별도 상용 허가서는 확인하지 못했다.
+  ONNX 변환은 원본 조건을 해소하는 근거가 아니다. 학습 자료는 원본 README상
+  영화 "파프리카"(2006)의 BD 프레임 1,284장이며, 데이터 권리도 별도 검토 대상이다.
+  사용자가 요구한 대체 구현 검증 전 제거 금지 순서에 따라 파일과 동작은 보존했다.
+  상용 배포 가능 판정 또는 동등 대체 완료를 의미하지 않는다.
+- 이 파일은 위 PyTorch 배포본의 체크포인트 `weights/paprika.pt`
   (8,603,556 bytes, SHA-256
   `3eaba1b6d01e88ea32b16a6006b04eb3f60327c1dcc841de640d3196898da344`)를
   직접 ONNX 변환한 것으로, 가중치 값은 원본과 동일하다(state_dict

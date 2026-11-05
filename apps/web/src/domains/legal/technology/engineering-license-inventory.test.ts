@@ -6,13 +6,13 @@ import {
 } from "./engineering-license-inventory";
 
 describe("라이브러리 라이선스 현황 데이터", () => {
-  it("직접 의존성 117개를 표면별로 빠짐없이 담는다", () => {
-    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(117);
+  it("과거 직접 의존성 스냅샷에 wasm-vips 제거를 반영한 116개를 담는다", () => {
+    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(116);
     const bySurface = new Map<string, number>();
     for (const library of ENGINEERING_LIBRARY_LICENSES) {
       bySurface.set(library.surface, (bySurface.get(library.surface) ?? 0) + 1);
     }
-    expect(bySurface.get("web")).toBe(85);
+    expect(bySurface.get("web")).toBe(84);
     expect(bySurface.get("api")).toBe(22);
     expect(bySurface.get("mobile")).toBe(8);
     expect(bySurface.get("labs")).toBe(2);
@@ -54,20 +54,36 @@ describe("라이브러리 라이선스 현황 데이터", () => {
 });
 
 describe("AI 모델 자산 라이선스 데이터", () => {
-  it("고지가 있는 모델 여섯 개만 싣고 라이선스는 허용 목록 안에 있다", () => {
+  it("고지가 있는 모델 여섯 개의 크기·역할과 권리 상태를 담는다", () => {
     expect(ENGINEERING_MODEL_ASSET_LICENSES).toHaveLength(6);
     for (const model of ENGINEERING_MODEL_ASSET_LICENSES) {
-      expect(["MIT", "Apache-2.0", "BSD-3-Clause"], model.file).toContain(model.license);
+      expect(model.license.length, model.file).toBeGreaterThan(0);
       expect(model.bytes, model.file).toBeGreaterThan(0);
       expect(model.role.ko.length, model.file).toBeGreaterThan(0);
+      expect(["declared-permissive", "restricted", "unverified"], model.file).toContain(model.rightsStatus);
     }
   });
 
-  it("AnimeGANv2 두 모델은 배포본 경유 경계를 고지로 남긴다", () => {
-    const animegan = ENGINEERING_MODEL_ASSET_LICENSES.filter((model) => model.file.startsWith("animegan2-"));
-    expect(animegan).toHaveLength(2);
-    for (const model of animegan) {
-      expect(model.note?.ko).toContain("MIT 라이선스 배포본");
-    }
+  it("코드 MIT와 별개인 Tag2Pix 가중치의 비상업·재배포 제한을 드러낸다", () => {
+    const tag2pix = ENGINEERING_MODEL_ASSET_LICENSES.find((model) => model.file === "tag2pix.onnx");
+    expect(tag2pix?.rightsStatus).toBe("restricted");
+    expect(tag2pix?.license).toContain("Non-commercial");
+    expect(tag2pix?.license).toContain("redistribution restricted");
+    expect(tag2pix?.note?.ko).toContain("ONNX 변환은 이 제한을 해소하지 않는다");
+  });
+
+  it("Paprika 원본 조건 충돌과 Face Paint의 MIT 체크포인트·학습 출처 검토를 구별한다", () => {
+    const paprika = ENGINEERING_MODEL_ASSET_LICENSES.find((model) => model.file === "animegan2-paprika.onnx");
+    const face = ENGINEERING_MODEL_ASSET_LICENSES.find((model) => model.file === "animegan2-face-paint-512-v2.onnx");
+    expect(paprika?.rightsStatus).toBe("unverified");
+    expect(paprika?.note?.ko).toContain("비상업 조건");
+    expect(paprika?.note?.ko).toContain("충돌");
+    expect(face?.rightsStatus).toBe("declared-permissive");
+    expect(face?.license).toBe("MIT (repository checkpoint)");
+    expect(face?.note?.ko).toContain("별도 학습 모델");
+    expect(face?.note?.ko).toContain("단정하지 않는다");
+    expect(face?.note?.ko).toContain("root MIT와 함께 배포");
+    expect(face?.note?.ko).toContain("학습 출처는 일부만 공개");
+    expect(paprika?.license).not.toBe("MIT");
   });
 });

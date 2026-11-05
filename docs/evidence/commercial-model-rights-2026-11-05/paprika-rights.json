@@ -1,0 +1,522 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-11-05",
+  "status": "current / 1차 출처 조사 완료, 상용 권리 해소·동등 대체 미완료",
+  "head": "8d315c85d6fde4a3a30255612c756d3e299a95b0",
+  "scope": {
+    "newOutputsOnly": [
+      "docs/evidence/commercial-model-rights-2026-11-05/paprika-rights.json",
+      "docs/reports/paprika-rights-followup-2026-11-05.md"
+    ],
+    "protectedInputs": [
+      {
+        "path": "apps/web/src/domains/creator/assets/animegan2-paprika.onnx",
+        "bytes": 8702673,
+        "sha256": "7cb5bf08d7778a8f4e25f1e654fdc24d56dc9b6cbb9c1db42e4f9d0425e7fe62"
+      },
+      {
+        "path": "apps/web/src/domains/creator/assets/animegan2-paprika.LICENSE.md",
+        "bytes": 2640,
+        "sha256": "525cd0b3e92b26eb0769686d7ad170d0c9345f94ac8c126ed1f7a6e992346540"
+      },
+      {
+        "path": "apps/web/src/domains/creator/studio-onnx-animegan.ts",
+        "bytes": 14952,
+        "sha256": "9ec63ecf8ad0383a44c63755d7d76aeb63875c470597976d455ca68b942d6461"
+      },
+      {
+        "path": "apps/web/src/domains/creator/studio-onnx-runtime-assets.ts",
+        "bytes": 7097,
+        "sha256": "52a61d61c8f2c6c378bf9013c951219a7151d81a6f925c5a62550d33a2c2f5e2"
+      },
+      {
+        "path": "docs/reports/commercial-model-replacement-candidates-2026-11-05.md",
+        "bytes": 20907,
+        "sha256": "71ce36345761bcab2c35d2aca264569f86fc1e4baa29462993c56124157e0d88"
+      }
+    ],
+    "excludedWork": "이전 독립 세션 대상과 다른 라이브러리는 조사·수정하지 않았다.",
+    "runtimeOrAssetChanges": false,
+    "restrictedWeightDownload": false,
+    "restrictedWeightInference": false,
+    "trainingOrDistillation": false,
+    "externalMessages": false,
+    "publishPushMergeDeploy": false
+  },
+  "localPaprika": {
+    "asset": {
+      "path": "apps/web/src/domains/creator/assets/animegan2-paprika.onnx",
+      "bytes": 8702673,
+      "sha256": "7cb5bf08d7778a8f4e25f1e654fdc24d56dc9b6cbb9c1db42e4f9d0425e7fe62"
+    },
+    "gitBlobSha1": "2a61089d9f4232f6058d47683a39241ca7a42ba8",
+    "introductionCommit": "19d744abb140d634926a9802e81f24b4378c2eb2",
+    "introductionDate": "2026-10-05T19:51:40Z",
+    "graphInspection": {
+      "producerName": "pytorch",
+      "producerVersion": "2.14.1",
+      "irVersion": 7,
+      "opset": 13,
+      "input": {
+        "name": "image",
+        "dtype": "float32",
+        "shape": [
+          1,
+          3,
+          512,
+          512
+        ]
+      },
+      "output": {
+        "name": "anime",
+        "dtype": "float32",
+        "shape": [
+          1,
+          3,
+          512,
+          512
+        ]
+      },
+      "nodeCount": 614,
+      "metadataProperties": [],
+      "inferenceRun": false
+    },
+    "recordedConversion": {
+      "noticePath": "apps/web/src/domains/creator/assets/animegan2-paprika.LICENSE.md",
+      "checkpointPath": "bryandlee/animegan2-pytorch/weights/paprika.pt",
+      "checkpointBytes": 8603556,
+      "checkpointSha256": "3eaba1b6d01e88ea32b16a6006b04eb3f60327c1dcc841de640d3196898da344",
+      "stateDictClaim": "기존 고지는 누락·초과 0 및 합성 자연 입력 최대 절대 오차 2.9e-4를 기록한다.",
+      "claimReproducedThisTurn": false,
+      "note": "기존 기록과 commit 설명은 출처 증거다. 원본 .pt SHA-256·tensor 동등성을 이번에 재다운로드/실행하여 검증한 것은 아니다."
+    },
+    "runtimeBoundary": {
+      "assetLoader": "apps/web/src/domains/creator/studio-onnx-runtime-assets.ts:175",
+      "lazyImport": "./assets/animegan2-paprika.onnx?url",
+      "adapter": "apps/web/src/domains/creator/studio-onnx-animegan.ts",
+      "inputSemantics": "512x512 NCHW RGB [-1,1], 알파는 흰색 위에 합성",
+      "outputSemantics": "tanh RGB [-1,1], 상위 서비스가 원본 크기로 확대",
+      "scope": "풍경·일반 컷 애니풍 변환",
+      "preserved": true
+    }
+  },
+  "upstream": {
+    "original": {
+      "repository": "TachibanaYoshino/AnimeGANv2",
+      "commit": "724b5ce75185c2e838d30c9077dbb967ab034254",
+      "readme": {
+        "purpose": "원저자 사용 조건과 학습 자료",
+        "url": "https://github.com/TachibanaYoshino/AnimeGANv2/blob/724b5ce75185c2e838d30c9077dbb967ab034254/README.md",
+        "git_blob_sha1": "f3700d7ddc5d349bc48e45dffbbecb2be62b350f",
+        "summary": "README License 절은 비상업 목적 이용과 상업 이용 시 저자에게 연락하여 허가서를 받는 경로를 명시한다. 별도 LICENSE 파일 부재는 허가가 아니다."
+      },
+      "licenseExcerpts": [
+        "non-commercial purposes",
+        "authorization letter"
+      ],
+      "trainingStyle": {
+        "film": "Paprika",
+        "imageCount": 1284,
+        "sourceQuality": "BDRip",
+        "finding": "학습 자료 권리 확인은 별도 공백이며 원본 README의 명시적 이용 제한과 구분한다."
+      },
+      "assets": [
+        {
+          "path": "checkpoint/generator_Paprika_weight/Paprika-54.ckpt.data-00000-of-00001",
+          "git_blob_sha1": "484915b2219d04c157773126759c81377470896f",
+          "bytes": 8574208,
+          "url": "https://github.com/TachibanaYoshino/AnimeGANv2/blob/724b5ce75185c2e838d30c9077dbb967ab034254/checkpoint/generator_Paprika_weight/Paprika-54.ckpt.data-00000-of-00001",
+          "weightBodyFetched": false
+        },
+        {
+          "path": "checkpoint/generator_Paprika_weight/Paprika-54.ckpt.index",
+          "git_blob_sha1": "fd693fc2fcf25de33cce9ed3cf8ecd3962acf50c",
+          "bytes": 3071,
+          "url": "https://github.com/TachibanaYoshino/AnimeGANv2/blob/724b5ce75185c2e838d30c9077dbb967ab034254/checkpoint/generator_Paprika_weight/Paprika-54.ckpt.index",
+          "weightBodyFetched": false
+        },
+        {
+          "path": "checkpoint/generator_Paprika_weight/Paprika-54.ckpt.meta",
+          "git_blob_sha1": "a5d4e2ffd1ce7dffb180731a8c929a8c49b20515",
+          "bytes": 268374,
+          "url": "https://github.com/TachibanaYoshino/AnimeGANv2/blob/724b5ce75185c2e838d30c9077dbb967ab034254/checkpoint/generator_Paprika_weight/Paprika-54.ckpt.meta",
+          "weightBodyFetched": false
+        },
+        {
+          "path": "checkpoint/generator_Paprika_weight/checkpoint",
+          "git_blob_sha1": "b718f6c0019d5d4c9606ee97eab2569caba8d20f",
+          "bytes": 87,
+          "url": "https://github.com/TachibanaYoshino/AnimeGANv2/blob/724b5ce75185c2e838d30c9077dbb967ab034254/checkpoint/generator_Paprika_weight/checkpoint",
+          "weightBodyFetched": false
+        }
+      ],
+      "checkpointPointer": "model_checkpoint_path: \"Paprika-54.ckpt\"\nall_model_checkpoint_paths: \"Paprika-54.ckpt\"\n",
+      "exactEpochLinkToPort": "원저자 고정 revision의 checkpoint 텍스트는 Paprika-54를 선택한다. 이것만으로 배포된 .pt가 정확히 54 epoch 변환임을 입증하지는 못한다."
+    },
+    "port": {
+      "repository": "bryandlee/animegan2-pytorch",
+      "commit": "25d7b017267208dfaf34026aa3425e518372aa2f",
+      "readme": {
+        "purpose": "변환 계보",
+        "url": "https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/README.md",
+        "git_blob_sha1": "46cb01aadca9d47276cb6984acdff4f0f087973e",
+        "summary": "Paprika 결과를 원본 TensorFlow 가중치의 변환으로 설명한다. 별도 face 모델과 구분한다."
+      },
+      "license": {
+        "purpose": "PyTorch 구현 MIT",
+        "url": "https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/LICENSE",
+        "git_blob_sha1": "7322da2042570877be982738d20c29bd3338e184",
+        "summary": "Bryan Lee의 구현에 MIT 고지가 있다. 원저자 checkpoint에 대한 별도 상용 허가서를 확인한 증거는 아니다."
+      },
+      "converter": {
+        "purpose": "변환 구현",
+        "url": "https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/convert_weights.py",
+        "git_blob_sha1": "19a784ce2d2487fa12ced35fa3f644d7f4615ee2",
+        "summary": "TensorFlow checkpoint를 restore한 뒤 tensor 이름·축을 변환하여 PyTorch state_dict로 저장한다. 기본 경로는 AnimeGANv2/checkpoint/generator_Paprika_weight이다."
+      },
+      "hub": {
+        "purpose": "실제 checkpoint 선택",
+        "url": "https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/hubconf.py",
+        "git_blob_sha1": "90595986b45aa1cc798fc982209f756e807ccff5",
+        "summary": "paprika 별칭은 weights/paprika.pt로 연결된다. 상류 기본 URL은 main이므로 이 조사에서는 commit과 blob ID를 고정했다."
+      },
+      "assets": [
+        {
+          "path": "weights/paprika.pt",
+          "git_blob_sha1": "58086c9db9fc7a9e5c2876ca31b8079599352643",
+          "bytes": 8603556,
+          "url": "https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/weights/paprika.pt",
+          "weightBodyFetched": false
+        }
+      ]
+    }
+  },
+  "findings": [
+    {
+      "id": "P1",
+      "classification": "confirmed-upstream-noncommercial-condition",
+      "confidence": "high",
+      "evidence": "원저자 고정 README License 절",
+      "finding": "원본 프로젝트의 명시적 비상업 조건·별도 상용 허가 경로를 확인했다."
+    },
+    {
+      "id": "P2",
+      "classification": "documented-upstream-checkpoint-lineage",
+      "confidence": "high for documented chain; unverified forensic tensor identity",
+      "evidence": "포트 고정 README·convert_weights.py·hubconf.py + 로컬 고지/도입 commit",
+      "finding": "제품 ONNX는 포트 paprika.pt 변환으로 기록되며 포트는 원본 TensorFlow Paprika 변환을 설명한다. exact TF epoch와 전체 tensor identity는 이번에 재현하지 않았다."
+    },
+    {
+      "id": "P3",
+      "classification": "unresolved-commercial-authorization",
+      "confidence": "high that evidence is absent from examined records",
+      "evidence": "읽은 로컬 고지·기존 후보 보고서·도입 commit·상류 문서",
+      "finding": "해당 checkpoint/ONNX에 적용되는 별도 상용 허가서를 이 조사 자료에서 찾지 못했다. 허가서가 어디에도 존재하지 않는다고 단정하지 않는다."
+    },
+    {
+      "id": "P4",
+      "classification": "license-chain-conflict-not-cured-by-format-conversion",
+      "confidence": "high as conservative release assessment",
+      "finding": "하류 구현의 MIT와 ONNX 변환만으로 상류 가중치 조건이 해소됐다고 볼 근거가 없다. 현재 상용 배포 해소 판정 및 제거 가능한 대체 완료는 불가하다."
+    }
+  ],
+  "priorLightPaprika": {
+    "report": "docs/reports/commercial-model-replacement-candidates-2026-11-05.md",
+    "evidence": "docs/evidence/commercial-model-candidates-2026-11-05/light-paprika-evaluation/browser-wasm-result.json",
+    "state": "기존 격리 평가 실패를 읽었으며 재실행하지 않았다.",
+    "cpuRuntime": "onnxruntime 1.20.1",
+    "browserRuntime": "onnxruntime-web 1.30.0",
+    "maxAbsError": 0.04379662871360779,
+    "threshold": 0.00784313725490196,
+    "browserCallsMs": [
+      4535.770000000019,
+      4213.770000000019,
+      4228.520000000019
+    ],
+    "quality": "기존 보고서는 노란/갈색 색조·세부 흐림·grid/경계 artifact를 기록했다.",
+    "confounder": "CPU/browser ORT 버전이 달라 원인을 모델 자체로 단정하지 않는다.",
+    "adoptionStatus": "품질 동등성·브라우저 수치 기준 미통과, 제품 미통합"
+  },
+  "alternatives": [
+    {
+      "id": "onnx-fast-neural-style",
+      "status": "상용 조건 검토 가능한 독립 계보의 소형 평가 후보; Paprika 대체 채택 아님",
+      "checkpointGrant": {
+        "license": "BSD-3-Clause",
+        "confidence": "high for published model-specific license; incomplete data/style provenance review",
+        "source": {
+          "purpose": "모델별 라이선스·입출력·학습 출처",
+          "url": "https://github.com/onnx/models/blob/c5cae0f1942c8d7727372c7b1f6b485aa39e4421/validated/vision/style_transfer/fast_neural_style/README.md",
+          "git_blob_sha1": "b31b1d7acb3b3709c93d020692e82edef7b954f6",
+          "summary": "모델 README가 BSD-3-Clause를 명시하고 각 .onnx checkpoint를 직접 연결한다. 저장소 루트 Apache 고지만 대신 적용하지 않았다."
+        },
+        "originalImplementationLicense": {
+          "purpose": "원 학습 구현 BSD-3-Clause",
+          "url": "https://github.com/pytorch/examples/blob/acc295dc7b90714f1bf47f06004fc19a7fe235c4/LICENSE",
+          "git_blob_sha1": "1ba2484d4697a92afd0bf6be291eca930315534c",
+          "summary": "소스·바이너리 재배포를 허용하되 저작권·조건·면책 고지 및 비보증/비홍보 조건을 지킨다."
+        }
+      },
+      "commit": "c5cae0f1942c8d7727372c7b1f6b485aa39e4421",
+      "assets": [
+        {
+          "url": "https://github.com/onnx/models/blob/c5cae0f1942c8d7727372c7b1f6b485aa39e4421/validated/vision/style_transfer/fast_neural_style/model/mosaic-9.onnx",
+          "git_blob_sha1": "63dd19601e1c98634af63fea129bda4240fd055a",
+          "lfsPointerText": "version https://git-lfs.github.com/spec/v1\noid sha256:fa646dedade881243f8d5a2ceb7de2b93675b21fc24f7482894ac4851a9a0a47\nsize 6728029\n",
+          "checkpointSha256": "fa646dedade881243f8d5a2ceb7de2b93675b21fc24f7482894ac4851a9a0a47",
+          "checkpointBytes": 6728029,
+          "actualWeightBodyFetched": false
+        },
+        {
+          "url": "https://github.com/onnx/models/blob/c5cae0f1942c8d7727372c7b1f6b485aa39e4421/validated/vision/style_transfer/fast_neural_style/model/candy-9.onnx",
+          "git_blob_sha1": "af80f462a4c5cfb6aabc6bc63121445be6102c0b",
+          "lfsPointerText": "version https://git-lfs.github.com/spec/v1\noid sha256:9d11a3529d1e547da6ae07201d93484dbab2ec0a3614535752c8f40f0fe2968a\nsize 6728029\n",
+          "checkpointSha256": "9d11a3529d1e547da6ae07201d93484dbab2ec0a3614535752c8f40f0fe2968a",
+          "checkpointBytes": 6728029,
+          "actualWeightBodyFetched": false
+        }
+      ],
+      "lineage": {
+        "originalSource": {
+          "purpose": "독립 학습 경로",
+          "url": "https://github.com/pytorch/examples/blob/acc295dc7b90714f1bf47f06004fc19a7fe235c4/fast_neural_style/README.md",
+          "git_blob_sha1": "9b5834ed7ddc688e4f10f4bd1b044cf02278c982",
+          "summary": "PyTorch 원저자는 COCO 2014 content 및 각 style 이미지로 모델을 학습했다고 설명한다. AnimeGAN/Paprika 변환 경로가 아니다."
+        },
+        "pytorchCommit": "acc295dc7b90714f1bf47f06004fc19a7fe235c4",
+        "onnxConversion": {
+          "purpose": "공식 ONNX 변환 경로",
+          "url": "https://github.com/onnx/models/blob/c5cae0f1942c8d7727372c7b1f6b485aa39e4421/validated/vision/style_transfer/fast_neural_style/dependencies/conversion.ipynb",
+          "git_blob_sha1": "8ff256cfcc2190429ff111c1b72558f9840214af",
+          "summary": "PyTorch TransformerNet state_dict를 읽어 ONNX로 내보내는 예제이다."
+        },
+        "confidence": "문서상 별도 학습 계보가 강하게 확인된다. tensor ancestry의 전수 감사는 아니다."
+      },
+      "runtime": {
+        "format": "ONNX",
+        "opset": 9,
+        "input": "float32 NCHW RGB [0,255]",
+        "output": "float32 NCHW RGB를 [0,255] clip; 문서상 입력과 같은 해상도",
+        "integrationDifference": "현재 [-1,1] 모델 계약과 달라 독립 adapter 및 normalization·native size·alpha·cancel·fallback·lazy-load 회귀 검증이 필요하다.",
+        "feasibility": "모델당 6,728,029-byte ONNX는 크기/형식상 기기 평가 후보다. 실제 graph/operator 검증·CPU/WASM/WebGPU 실행·메모리·시간은 측정하지 않았다.",
+        "runtimeSource": "https://onnxruntime.ai/docs/tutorials/web/",
+        "runtimeCaveat": "ORT 문서의 WASM operator 지원 설명은 이 특정 graph의 성공 증거가 아니며 WebGPU는 지원 subset 검증이 필요하다."
+      },
+      "quality": {
+        "expectedStyle": "Mosaic/Candy/Rain Princess/Udnie/Pointilism 회화 스타일",
+        "notEstablished": [
+          "Paprika의 애니풍 색면·윤곽 표현",
+          "풍경·일반 컷 품질 동등성",
+          "세부 구조와 얼굴 보존",
+          "원래 사용자 경험과의 동등성"
+        ],
+        "dataConcern": "COCO 각 이미지와 style 참조 그림의 권리는 전수 확인하지 않았다. 이것은 checkpoint가 자동 NC라는 결론이 아니다."
+      },
+      "nextIndependentWork": "권리가 확인된 평가 입력으로 원본 PyTorch와 ONNX/provider 출력·속도·메모리·품질을 비교할 수 있다. 이 조사에서는 모델 본문을 받거나 실행하지 않았다."
+    },
+    {
+      "id": "google-magenta-arbitrary-image-stylization",
+      "status": "독립 계보·공식 browser 경로 후보; exact checkpoint grant·품질 검증 미완료",
+      "checkpointGrant": {
+        "familyCard": "https://www.kaggle.com/models/google/arbitrary-image-stylization-v1",
+        "familyLicenseObservedByIndependentAgent": "Apache 2.0",
+        "confidence": "medium family metadata only; exact variant not independently readable",
+        "exactHub": "https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2",
+        "observedRedirect": "https://www.kaggle.com/models/google/arbitrary-image-stylization-v1/tensorFlow1/256/2?tfhub-redirect=true",
+        "exactCard": {
+          "purpose": "고정 TFHub v2 API 설명",
+          "url": "https://github.com/tensorflow/tfhub.dev/blob/c2f2d3b759f6171059f10e1e9f5a30d44d729606/assets/docs/google/models/magenta/arbitrary-image-stylization-v1-256/2.md",
+          "git_blob_sha1": "cd8e864ed6422a16e9db8d92c682595b4bf27215",
+          "summary": "정확한 v2 문서에는 별도 license 줄이 없고, 본 조사 웹 도구로 Kaggle 본문을 읽을 수 없었다. 코드 Apache footer를 가중치 허가로 대신하지 않는다."
+        },
+        "exactCheckpointSha256": null,
+        "weightBodyFetched": false
+      },
+      "sources": [
+        {
+          "purpose": "원 학습·checkpoint",
+          "url": "https://github.com/magenta/magenta/blob/be6558f1a06984faff6d6949234f5fe9ad0ffdb5/magenta/models/arbitrary_image_stylization/README.md",
+          "commit": "be6558f1a06984faff6d6949234f5fe9ad0ffdb5",
+          "gitBlobSha1": "7a0fb34b5920ebbbed9792c910f5b29e160a0a7a",
+          "sha256": "c1ae5eccfdc808b5a1399057f12b3041a4675c3950714964df1ef75237d04ec9"
+        },
+        {
+          "purpose": "공식 TF.js 구현과 기본 asset URL",
+          "url": "https://github.com/magenta/magenta-js/blob/96bad8837da43beb53f2e5aaea9f29f3db4bdddb/image/src/arbitrary_stylization/model.ts",
+          "commit": "96bad8837da43beb53f2e5aaea9f29f3db4bdddb",
+          "gitBlobSha1": "e52c9112cf89e02ac7968f1115f61376099fe6a6",
+          "sha256": "ffc73d1aad1ccb0bc8edbd964b622f932c81467a8a675608620c940d7d2678b3",
+          "codeLicenseOnly": "Apache-2.0"
+        }
+      ],
+      "lineage": {
+        "work": "Ghiasi et al., BMVC 2017",
+        "browserPort": "https://magenta.withgoogle.com/blog/2018/12/20/style-transfer-js/",
+        "documentedDatasets": [
+          "Painter by Numbers",
+          "DTD",
+          "ImageNet"
+        ],
+        "independence": "2017 원 연구와 2018 브라우저 이식의 별도 학습·Google 모델 증류 계보는 AnimeGANv2 Paprika 변환과 구분된다. 이 작업에서 새로운 증류를 하지 않았다.",
+        "dataConcern": "DTD 원 배포 페이지는 research purposes라고 적는다. 정확한 가중치 권리·데이터 권리는 구분하여 조사해야 하며 이 문구만으로 공개 Google 가중치가 NC라고 확정하지 않는다.",
+        "dataSource": "https://www.robots.ox.ac.uk/~vgg/data/dtd/"
+      },
+      "browserManifests": [
+        {
+          "url": "https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/predictor/weights_manifest.json",
+          "sha256": "4781b7c9a4e8efaab75d0124d3f38261427e33ba9b652a7c9712227135a1af24",
+          "bytes": 27560,
+          "generation": "1542821542339680",
+          "tensorCount": 263,
+          "weightBytes": 9544344
+        },
+        {
+          "url": "https://storage.googleapis.com/magentadata/js/checkpoints/style/arbitrary/transformer/weights_manifest.json",
+          "sha256": "a33994cb7a6d474407083f2e01e2108655e95a9b2c81a6527e7b76513182ae5b",
+          "bytes": 10228,
+          "generation": "1542821553078080",
+          "tensorCount": 89,
+          "weightBytes": 7815640
+        }
+      ],
+      "shardHeadMetadata": [
+        {
+          "path": "predictor/group1-shard1of3",
+          "bytes": 4194304,
+          "generation": "1542821542792959",
+          "crc32cBase64": "TJu5mg=="
+        },
+        {
+          "path": "predictor/group1-shard2of3",
+          "bytes": 4194304,
+          "generation": "1542821546468711",
+          "crc32cBase64": "HT3Akw=="
+        },
+        {
+          "path": "predictor/group1-shard3of3",
+          "bytes": 1155736,
+          "generation": "1542821548081018",
+          "crc32cBase64": "vZBjdA=="
+        },
+        {
+          "path": "transformer/group1-shard1of2",
+          "bytes": 4194304,
+          "generation": "1545324888425599",
+          "crc32cBase64": "CXpuzw=="
+        },
+        {
+          "path": "transformer/group1-shard2of2",
+          "bytes": 3621336,
+          "generation": "1545324888388524",
+          "crc32cBase64": "LyOl8Q=="
+        }
+      ],
+      "runtime": {
+        "defaultWeightBytes": 17359984,
+        "metadataOnly": true,
+        "actualWeightBodiesFetched": false,
+        "compactVariantWarning": "공식 기본 asset 합계는 17,359,984 bytes다. 블로그의 MobileNetV2 9.6MB + separable transformer 2.4MB 조합은 별도 demo이며 공식 기본 모델 또는 TFHub v2에 그 크기·시간을 전용하지 않는다.",
+        "input": "TFHub v2는 NHWC float32 RGB [0,1]의 content+style 두 입력, style 권장 256px",
+        "browserFeasibility": "공식 TF.js GPU 구현은 있으나 구형 FrozenModel API다. 현재 ORT로의 exact ONNX export·WASM·WebGPU·속도·메모리·provider parity는 검증하지 않았다."
+      },
+      "quality": {
+        "styleReferenceRequired": true,
+        "rightsClearedReferenceAvailable": "not_selected_or_verified_this_research",
+        "paprikaEquivalence": false,
+        "reason": "일반 회화 texture/color transfer는 Paprika 애니풍 의미·구조 보존·얼굴 품질의 동등성 증거가 아니다."
+      },
+      "nextIndependentWork": "정확한 checkpoint/버전의 모델 grant와 실제 browser assets 적용 범위를 먼저 확보한 뒤 격리 평가할 수 있다."
+    }
+  ],
+  "decision": {
+    "replacementReady": false,
+    "removeExistingModel": false,
+    "commercialClearance": false,
+    "blockers": [
+      "해당 Paprika checkpoint/ONNX에 대한 별도 상용 허가 증거 미확보",
+      "기존 변환의 exact upstream epoch/tensor identity 재현 영수증 미확보",
+      "독립 후보의 Paprika 범위 기능·품질·브라우저 동등성 미검증",
+      "Google exact variant/브라우저 weight grant 확인 미완료"
+    ],
+    "independentProgress": [
+      "원저자·포트 commit/blob와 local ONNX를 고정하여 권리 충돌을 재현 가능하게 기록",
+      "ONNX BSD-3-Clause 모델과 정확한 LFS checkpoint 식별자 확보",
+      "Google browser source/manifests/shard metadata와 별도 학습 계보 확보",
+      "기존 light_paprika 실패를 보존하고 통과로 재해석하지 않음"
+    ]
+  },
+  "validation": {
+    "jsonParse": {
+      "passed": true,
+      "command": "Python json.loads 및 핵심 사실 불변식 검사",
+      "checks": [
+        "Paprika hash/shape",
+        "새 후보 2개",
+        "Google manifest/shard size 합계 17,359,984",
+        "상용 권리·대체 완료를 주장하지 않음",
+        "제한 가중치 다운로드/추론/증류 없음"
+      ]
+    },
+    "harnessCheck": {
+      "passed": true,
+      "command": "pnpm harness:check",
+      "exitCode": 0
+    },
+    "secretlint": {
+      "passed": true,
+      "command": "node scripts/secretlint-files.mjs -- docs/evidence/commercial-model-rights-2026-11-05/paprika-rights.json docs/reports/paprika-rights-followup-2026-11-05.md",
+      "files": 2,
+      "exitCode": 0
+    },
+    "diffCheck": {
+      "passed": true,
+      "command": "git diff --check",
+      "exitCode": 0
+    },
+    "protectedInputs": {
+      "allUnchangedAssertionInitiallyPassed": false,
+      "initialCheckOutcome": "runtime hash 차이를 탐지하여 중단 후 병행 작업 원인을 부모에게 확인했다. 무조건 통과로 바꾸지 않았다.",
+      "files": [
+        {
+          "path": "apps/web/src/domains/creator/assets/animegan2-paprika.onnx",
+          "beforeSha256": "7cb5bf08d7778a8f4e25f1e654fdc24d56dc9b6cbb9c1db42e4f9d0425e7fe62",
+          "afterSha256": "7cb5bf08d7778a8f4e25f1e654fdc24d56dc9b6cbb9c1db42e4f9d0425e7fe62",
+          "unchanged": true
+        },
+        {
+          "path": "apps/web/src/domains/creator/assets/animegan2-paprika.LICENSE.md",
+          "beforeSha256": "525cd0b3e92b26eb0769686d7ad170d0c9345f94ac8c126ed1f7a6e992346540",
+          "afterSha256": "525cd0b3e92b26eb0769686d7ad170d0c9345f94ac8c126ed1f7a6e992346540",
+          "unchanged": true
+        },
+        {
+          "path": "apps/web/src/domains/creator/studio-onnx-animegan.ts",
+          "beforeSha256": "9ec63ecf8ad0383a44c63755d7d76aeb63875c470597976d455ca68b942d6461",
+          "afterSha256": "24d9301539851affceb8336065d66e5fe6033098e042c9b8903ffaf077ab0ded",
+          "unchanged": false
+        },
+        {
+          "path": "apps/web/src/domains/creator/studio-onnx-runtime-assets.ts",
+          "beforeSha256": "52a61d61c8f2c6c378bf9013c951219a7151d81a6f925c5a62550d33a2c2f5e2",
+          "afterSha256": "52a61d61c8f2c6c378bf9013c951219a7151d81a6f925c5a62550d33a2c2f5e2",
+          "unchanged": true
+        },
+        {
+          "path": "docs/reports/commercial-model-replacement-candidates-2026-11-05.md",
+          "beforeSha256": "71ce36345761bcab2c35d2aca264569f86fc1e4baa29462993c56124157e0d88",
+          "afterSha256": "71ce36345761bcab2c35d2aca264569f86fc1e4baa29462993c56124157e0d88",
+          "unchanged": true
+        }
+      ],
+      "concurrentChangeAttribution": "부모가 2026-11-05 메시지에서 다른 담당자의 승인된 provenance 상단 주석 수정이며 본문 hash 불변을 확인했다고 통보했다. 이 조사 담당자는 해당 파일을 쓰거나 되돌리지 않았다.",
+      "assetNoticeLoaderPriorReportUnchanged": true
+    },
+    "headAtValidation": "8d315c85d6fde4a3a30255612c756d3e299a95b0",
+    "unrun": [
+      "새 후보 weight body 다운로드",
+      "변환·CPU/WASM/WebGPU 추론·품질 평가",
+      "학습·증류",
+      "실제 제품 runtime 회귀·전체 typecheck/build"
+    ]
+  }
+}

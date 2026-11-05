@@ -1,0 +1,22 @@
+[
+  {
+    "path": "node_modules/wasm-vips/lib/vips-heif.wasm",
+    "bytes": 3802681,
+    "sha256": "f8f94224977c9de22118274e09adc4d4a4e6dd81a55e261406d69d7fd3021667"
+  },
+  {
+    "path": "node_modules/wasm-vips/lib/vips-jxl.wasm",
+    "bytes": 2224543,
+    "sha256": "ffdd01c8dbd6a8fc616f1a023cbf2b526d12df770f5adca96e44cdf8c20c8afe"
+  },
+  {
+    "path": "node_modules/wasm-vips/lib/vips-resvg.wasm",
+    "bytes": 1176530,
+    "sha256": "9c7c1c78260240c454cce7ff875dc8026985c433f27ea90e849f02d50cea8917"
+  },
+  {
+    "path": "node_modules/wasm-vips/lib/vips.wasm",
+    "bytes": 5154052,
+    "sha256": "36c25e290570757f911b45d67947e8262b01261028db438dadc09990ad978ff6"
+  }
+]

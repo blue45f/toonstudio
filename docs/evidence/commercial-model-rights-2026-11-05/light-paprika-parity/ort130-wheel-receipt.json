@@ -1,0 +1,18 @@
+{
+  "source": "https://pypi.org/pypi/onnxruntime/1.30.0/json",
+  "filename": "onnxruntime-1.30.0-cp312-cp312-manylinux_2_28_x86_64.whl",
+  "url": "https://files.pythonhosted.org/packages/34/35/e7f862dbacbc99fadd9b14a614e49c99bf0f35fd9927a82f096e3de33531/onnxruntime-1.30.0-cp312-cp312-manylinux_2_28_x86_64.whl",
+  "bytes": 23585654,
+  "sha256": "fa688e7891a6aa206636fe7372e27ee75fd17713289f6b4fc7b190e0a7de9328",
+  "requires_dist": [
+    "flatbuffers",
+    "numpy>=1.21.6",
+    "packaging",
+    "protobuf>=4.25.8",
+    "sympy; extra == \"symbolic\"",
+    "ml_dtypes; extra == \"quantization\""
+  ],
+  "isolated_target": "/tmp/toonstudio-light-paprika-parity-followup/ort130",
+  "old_venv": "/tmp/toonstudio-light-paprika-evaluation/venv",
+  "installation": "existing-venv pip --no-deps --no-cache-dir --target isolated_target wheel"
+}

@@ -1,0 +1,37 @@
+{
+  "head": "8d315c85d6fde4a3a30255612c756d3e299a95b0",
+  "latestMainChecked": "2c626df4000fcfc32318faa793a61bea3ef0901b",
+  "dependencyRemoved": "wasm-vips@0.0.19",
+  "mixboxModified": false,
+  "vitest": {
+    "suites": 16,
+    "passed": 230,
+    "failed": 1,
+    "failureEvidence": "known-baseline-test-failure.json",
+    "fileList": "focused-test-files.json"
+  },
+  "nodePolicyRegressionTestsPassed": 2,
+  "focusedStrictTypecheck": {
+    "passed": true,
+    "filesInProgram": 811,
+    "memoryUsedKib": 443461,
+    "config": "focused-typecheck-config.json"
+  },
+  "focusedBenchmarkTypecheckPassed": true,
+  "wholeProjectTypecheckPassed": false,
+  "wholeProjectTypecheckEvidence": "build-memory-diagnostics.json",
+  "finalBundlePassed": true,
+  "staticBundleGatePassed": true,
+  "cspPassed": true,
+  "architectureFullGatePassed": true,
+  "isolatedChromiumNativeExportPassed": true,
+  "browserEvidence": "native-browser-probe-result.json",
+  "dependencyLicenseAuditPassed": true,
+  "dependencySecurityAuditPassed": true,
+  "expectedRestrictedModelScanExit": 1,
+  "restrictedOrUnresolvedModelsStillDistributed": 3,
+  "mainIntegrationPatchTemporaryIndexCheckPassed": true,
+  "mainIntegrationActuallyApplied": false,
+  "commitPushMergeDeployPerformed": false,
+  "limit": "Current working tree built/tested at baseline HEAD plus local changes; latest-main resolved preview not built/tested."
+}

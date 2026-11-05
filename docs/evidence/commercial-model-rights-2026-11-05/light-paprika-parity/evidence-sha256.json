@@ -1,0 +1,92 @@
+[
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/browser-runtime-hashes.json",
+    "bytes": 977,
+    "sha256": "c07103c451385fa7679b2b96f689b61ba5852217c19a71e35667569b7b83888f"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/browser.mjs",
+    "bytes": 864,
+    "sha256": "2e266312eb353053bb81005337a0c8c3f75d6751b404c6d4b13abb1c13e4a1ff"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/browser130-result.json",
+    "bytes": 5793,
+    "sha256": "d376104ec0397810a6ade24a53b4f487f4829d9a8da4162826ff4870ade8f189"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/commands.json",
+    "bytes": 1840,
+    "sha256": "fd13b9ee9c2a34c2306c4f2626a9acec5ae7765cfc9555b455f32a06da292dbe"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/compare_arrays.py",
+    "bytes": 1306,
+    "sha256": "92edb41deb81abe748df755e21a9e3beb4520e95bfb3d8038190d99963c55dd6"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/cpu130-result.json",
+    "bytes": 3390,
+    "sha256": "393b098942871bf7d077422fb17af89afdd578b5334013820d7e19904279cbde"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/cpu130.log.txt",
+    "bytes": 2920,
+    "sha256": "14dc210cb8d2383af37de21f1147d2b84c868c0b10037e69c9901694a5d9f52a"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/evaluate_cpu130.py",
+    "bytes": 3026,
+    "sha256": "11a1077b20224e1d4da449350395a4e8ad115e3deba6046b2863d7142ba8817a"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/independent-array-comparison.json",
+    "bytes": 1184,
+    "sha256": "e38ea7684e5c8cb9c79c21e34a6bc0e7c5c599f6e8430bd0ed7dcfbf4059232c"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/install.log.txt",
+    "bytes": 320,
+    "sha256": "9f795abbaecaad3df00fc4f6c039a31d67eb37cf83fe796861dc548e5cac6f20"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/old-environment-unchanged.json",
+    "bytes": 264,
+    "sha256": "146ac5c666256cb3164101bf1540b5c35fc5b86030bdf3772fb18c9dd2b03fca"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/ort130-wheel-receipt.json",
+    "bytes": 836,
+    "sha256": "b8111e5cfae83f3132d1e19e3200febeba284101820c4bd5665d7ccfc62099ad"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/protobuf-install.log.txt",
+    "bytes": 308,
+    "sha256": "0accaba80be647a79031cd753e12d6bf7ad1d58859e75b58151763eeef59184b"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/protobuf4258-wheel-receipt.json",
+    "bytes": 564,
+    "sha256": "fdadb90a33fc77d8ef83226fabbaa833a7a0185dc2787bc68cb4b9965caf38c6"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/resolved-environment-check.json",
+    "bytes": 731,
+    "sha256": "b926c914126681c6163f103276db46c6c4bd63736e335c3e1440e8001b49e225"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/serve.py",
+    "bytes": 2061,
+    "sha256": "fcf8146bd98761eb11f2187b552087c780f452f92b57e8a10c72db7372d7922e"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/server.log.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/test.html",
+    "bytes": 2841,
+    "sha256": "c89a95696700bb2563b95ab76bdaf0badf900192e03415637e8330bf0324dcb9"
+  }
+]

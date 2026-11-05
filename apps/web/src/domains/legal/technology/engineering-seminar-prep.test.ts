@@ -110,6 +110,13 @@ const PREP_FACTS: readonly PrepFact[] = [
       expect(render).toContain('role: tone.type === "color" ? "color" : "tone"');
       expect(render).toContain("if (settings.sixPassLt !== undefined) {");
       expect(render).toContain("layers: assembleStudioBg3dSixPassLtLayers(rasterInput, settings.sixPassLt,");
+      const card = findAtlasEntry("toon-shading-outline");
+      expect(card?.facts).toContainEqual(expect.objectContaining({ value: "6", label: expect.objectContaining({ ko: "지원하는 레이어 역할: 컬러·톤·그림자·깊이·질감선·주선" }) }));
+      expect(card?.tagline.ko).toContain("기본 LT는 설정에 따라 컬러 또는 톤");
+      expect(card?.tagline.en).toContain("six-pass LT separates six roles");
+      const architecture = readText("apps", "web", "src", "domains", "legal", "technology", "engineering-architecture-guide-runtime-c.ts");
+      expect(architecture).toContain("6패스 선택 시 컬러·톤·그림자·깊이·질감선·주선 여섯 역할");
+      expect(architecture).toContain("selecting six passes inserts color, tone, shadow, depth, texture lines and main lines");
     },
   },
   {
@@ -363,6 +370,12 @@ describe("준비실 예상 질문 계약", () => {
     expect(item?.answer.ko).toMatch(/별도 확인/u);
     expect(item?.answer.ko).toMatch(/법률 판단은 하지 않습니다/u);
     expect(item?.answer.en).toMatch(/no legal judgment/u);
+    expect(item?.answer.ko).toContain("개인·직원 3명 이하 영리 조직의 무료 상업 사용");
+    expect(item?.answer.ko).toContain("설명된 개인·1인 운영 전제로 유지");
+    expect(item?.answer.ko).toContain("조직 전체 3명 이하");
+    expect(item?.answer.ko).toContain("실제 인원은 독립 검증하지 않았으므로(미확인)");
+    expect(item?.answer.en).toContain("retained under the stated individual, one-person premise");
+    expect(item?.answer.en).toContain("actual headcount was not independently verified");
   });
 
   it("경쟁·참고 제품 질문은 영역별 대표만 들고(제품 4개 이하) 우열·가격·점유율을 조사하지 않았다고 말한다", () => {

@@ -1,0 +1,35 @@
+{
+  "files": [
+    {
+      "root": "/workspace/toonstudio",
+      "path": "/workspace/toonstudio/.env.deployment-reference.local",
+      "created": true,
+      "mode": "0o600",
+      "ignored": true,
+      "tracked": false,
+      "secretValuesIncluded": false
+    },
+    {
+      "root": "/workspace/scratch/toonstudio-commercial-main-validation",
+      "path": "/workspace/scratch/toonstudio-commercial-main-validation/.env.deployment-reference.local",
+      "created": true,
+      "mode": "0o600",
+      "ignored": true,
+      "tracked": false,
+      "secretValuesIncluded": false
+    }
+  ],
+  "secretValueReads": false,
+  "processVariableNamePresenceOnly": {
+    "CLOUDFLARE_API_TOKEN": false,
+    "CF_API_TOKEN": false,
+    "ONPOD_TOKEN": false,
+    "DATABASE_URL": false,
+    "AUTH_SESSION_SECRET": false,
+    "AUTH_STATE_SECRET": false,
+    "PERSONAL_CLOUD_OAUTH_STATE_SECRET": false,
+    "PERSONAL_CLOUD_TOKEN_ENCRYPTION_KEY": false,
+    "CLOUDFLARE_EDGE_ORIGIN_SECRET": false
+  },
+  "pilatesFlow": "Project name supplied; repository/address/checkout/SHA/commands/keys unverified, no guessing or operations."
+}

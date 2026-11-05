@@ -1,0 +1,34 @@
+[
+  {
+    "path": "apps/web/src/domains/creator/export/studio-native-lanczos.ts",
+    "sha256": "dbd395c52642f0f684fd3d63e6b150dfb9e770430fc52159df000ab897594b96"
+  },
+  {
+    "path": "tests/benchmarks/harness/native-gaussian.ts",
+    "sha256": "f58da411c3d73ce1e9738a433ed0ad1f24c2bfb59122449c9683b27d429eb89b"
+  },
+  {
+    "path": "tests/benchmarks/harness/quality-lab.ts",
+    "sha256": "f68c4b6751bc33e86625b0238db93c4f67936885e48fed86766104941b91ed97"
+  },
+  {
+    "path": "tests/benchmarks/harness/filter-candidates.ts",
+    "sha256": "44ac5d7c6597512a523130b7677856906e86cc2ff28de8fa6fb04256b25492a5"
+  },
+  {
+    "path": "tests/benchmarks/harness/vips-export-cutover.ts",
+    "sha256": "c3fe1d7b6f7dd982e1ff26906eea9cefe13028319b2884550161e55180354143"
+  },
+  {
+    "path": "tests/benchmarks/results/quality-lab-native.json",
+    "sha256": "e8f1dbe187aa68daeb2abac3f5910e8e37da5f8642e26dc69c12a8e9f937c939"
+  },
+  {
+    "path": "tests/benchmarks/results/filter-candidates-native.json",
+    "sha256": "1d39441acc22281646041f500ba94bb968d287069b1d24892f1312e766e6903e"
+  },
+  {
+    "path": "tests/benchmarks/results/native-export-cutover.json",
+    "sha256": "155294d55c7d92479259908b5eefe8a598a39e79da298d217f77d471ea781b97"
+  }
+]

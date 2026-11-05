@@ -1,0 +1,10 @@
+{
+  "test": "apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts",
+  "source": "apps/web/src/domains/creator/bg3d/studio-bg3d-lt-layer-plan.ts",
+  "expectedLiteral": "[\"color\", \"tone\", \"texture-line\", \"main-line\"]",
+  "testUnchangedFromHead": true,
+  "sourceUnchangedFromHead": true,
+  "headTestRequiresLiteral": true,
+  "headSourceContainsLiteral": false,
+  "observedResult": "engineering-seminar-prep one existing LT pass-list assertion fails in both unchanged source/test baseline; not suppressed"
+}

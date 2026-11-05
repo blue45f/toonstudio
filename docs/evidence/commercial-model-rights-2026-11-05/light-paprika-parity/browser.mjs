@@ -1,0 +1,4 @@
+import {chromium} from '/workspace/toonstudio/node_modules/.pnpm/playwright@1.64.1/node_modules/playwright/index.mjs';
+import {writeFile} from 'node:fs/promises';
+const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--disable-gpu','--no-sandbox']});
+try{const page=await browser.newPage();const consoleErrors=[];page.on('pageerror',err=>consoleErrors.push(String(err)));await page.goto('http://127.0.0.1:8923/test.html');await page.waitForFunction(()=>typeof window.runCandidate==='function');const result=await page.evaluate(()=>window.runCandidate());result.page_errors=consoleErrors;await writeFile('/workspace/toonstudio/docs/evidence/commercial-model-rights-2026-11-05/light-paprika-parity/browser130-result.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));}finally{await browser.close();}

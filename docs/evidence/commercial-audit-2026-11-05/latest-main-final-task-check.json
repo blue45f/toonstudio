@@ -1,0 +1,29 @@
+{
+  "validatedBase": "2c626df4000fcfc32318faa793a61bea3ef0901b",
+  "latestFetchedMain": "994e5ba34df98b6bcf1cb46c567456924a89dd68",
+  "remoteChangedPaths": [
+    ".github/workflows/studio-collaboration-sync.yml",
+    "apps/api/src/modules/creator/studio-crdt-bg3d-bundle.test.ts",
+    "apps/api/src/modules/creator/studio-crdt-bg3d-bundle.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-authoring-projection.test.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-bg3d-reader-fence.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-frontier-async-history.test.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-frontier-reconciliation-binding.test.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-frontier-reconciliation-binding.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-pending-frontier-history.test.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-pending-frontier-history.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-room-binding.remote-admission.test.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-room-binding.ts",
+    "apps/web/src/domains/creator/live/studio-crdt-room-event-queue.ts",
+    "docs/verification/2026-11-05-crdt-six-pass-consistency.md",
+    "packages/contracts/src/studio-crdt-authoring/element-projection.ts",
+    "scripts/ci-required-vitest-targets.txt"
+  ],
+  "overlappingTrackedPaths": [],
+  "newPathCollisions": [],
+  "patchCheckExit": 0,
+  "stderr": "",
+  "patchSha256": "ccdf712b46c27f6d20543d1a20f6b352a54ac032c8388073bc1de0b0e571bb7f",
+  "newMainBuiltOrTypechecked": false,
+  "actualMerge": false
+}

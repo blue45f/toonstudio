@@ -1,0 +1,19 @@
+{
+  "targetMain": "2c626df4000fcfc32318faa793a61bea3ef0901b",
+  "trackedFiles": 37,
+  "overlappingFiles": [
+    "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+    "apps/web/src/domains/legal/technology/engineering-atlas-platform-ops-safety.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-curriculum.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-lessons.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts"
+  ],
+  "temporaryIndexCheckExit": 0,
+  "stderr": "",
+  "patchSha256": "d0a0d18881ccf92786dcbd24f000dbce76b738816e878f035ad6e21da7295d82",
+  "sourceMathRollbackPreserved": true
+}

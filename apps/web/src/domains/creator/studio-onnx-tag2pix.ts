@@ -8,9 +8,10 @@
  * offline, no key configured, provider down — the user directive of
  * 2026-10-03 asks for a client-side ONNX fallback "even if it is a stretch":
  * model size, inference time, and quality limits are accepted, the license
- * guardrail is not. Tag2Pix (Kim et al., ICCV 2019; official implementation
- * and release weights, MIT License) is the line-art colorizer that clears
- * that bar. Source pixels never leave the device; only the versioned model
+ * guardrail is not. 2026-11-05 권리 감사: 구현 코드는 MIT지만 release 가중치는
+ * 비상업 목적 및 재배포 제한이 있어 기존 상용 가능 판단을 철회한다.
+ * 동등 대체 검증 전 기능 보존 상태이며 assets/tag2pix.LICENSE.md를 따른다.
+ * Source pixels never leave the device; only the versioned model
  * asset and the ONNX Runtime WASM assets are downloaded, lazily, on first
  * use of this fallback.
  *

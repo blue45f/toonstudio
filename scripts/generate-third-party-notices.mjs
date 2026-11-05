@@ -17,6 +17,8 @@ import { fileURLToPath } from "node:url";
 
 import { parse as parseYaml } from "yaml";
 
+import { findRootLicenseFiles } from "./third-party-license-files.mjs";
+
 import {
   REVIEWED_RUST_LICENSE_EXPRESSIONS,
   VELLO_VENDORED_PACKAGE_SOURCES,
@@ -1581,28 +1583,6 @@ export function readFilesystemLicenseInventory() { // NOSONAR javascript:S3776
         left.name.localeCompare(right.name)
         || left.versions.join(",").localeCompare(right.versions.join(",")),
     );
-}
-
-function findRootLicenseFiles(packagePath) {
-  let names;
-  try {
-    names = readdirSync(packagePath);
-  } catch {
-    return [];
-  }
-  return names
-    .filter((name) =>
-      /^(?:licen[sc]e|copying|notice)(?:[._-].*)?$/iu.test(name),
-    )
-    .map((name) => join(packagePath, name))
-    .filter((path) => {
-      try {
-        return statSync(path).isFile() && statSync(path).size <= 2_000_000;
-      } catch {
-        return false;
-      }
-    })
-    .sort();
 }
 
 function collectMplFallback() {

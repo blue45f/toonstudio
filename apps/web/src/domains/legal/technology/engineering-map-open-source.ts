@@ -32,8 +32,8 @@ export const ENGINEERING_MAP_OPEN_SOURCE: EngineeringMap = {
       en: "The service stands on layers of open source; heavy parts load only when needed and are pinned by version and hash.",
     },
     alt: {
-      ko: "위에서 아래로 여섯 층입니다. 앱 기반(React, NestJS), 협업·저장(Yjs, SQLite WASM), 2D 편집·렌더(Konva, CanvasKit, Hokusai), 3D(three.js, Babylon.js), AI·비전(ONNX Runtime Web, MediaPipe), 출력·변환(wasm-vips, Remotion) 순서이며, 층마다 대표 오픈소스를 칩으로 보여 줍니다.",
-      en: "Six layers from top to bottom: app foundation (React, NestJS), collaboration and storage (Yjs, SQLite WASM), 2D editing and rendering (Konva, CanvasKit, Hokusai), 3D (three.js, Babylon.js), AI and vision (ONNX Runtime Web, MediaPipe) and output and conversion (wasm-vips, Remotion). Each layer shows its representative open-source projects as chips.",
+      ko: "위에서 아래로 여섯 층입니다. 앱 기반(React, NestJS), 협업·저장(Yjs, SQLite WASM), 2D 편집·렌더(Konva, CanvasKit, Hokusai), 3D(three.js, Babylon.js), AI·비전(ONNX Runtime Web, MediaPipe), 출력·변환(자체 Lanczos3, Remotion) 순서이며, 층마다 대표 오픈소스를 칩으로 보여 줍니다.",
+      en: "Six layers from top to bottom: app foundation (React, NestJS), collaboration and storage (Yjs, SQLite WASM), 2D editing and rendering (Konva, CanvasKit, Hokusai), 3D (three.js, Babylon.js), AI and vision (ONNX Runtime Web, MediaPipe) and output and conversion (ToonStudio Lanczos3, Remotion). Each layer shows its representative open-source projects as chips.",
     },
     layers: [
       {
@@ -76,7 +76,7 @@ export const ENGINEERING_MAP_OPEN_SOURCE: EngineeringMap = {
         label: { ko: "출력·변환", en: "Output and conversion" },
         sub: { ko: "내보내기·파일 형식·영상", en: "Export, file formats and video" },
         tone: "neutral",
-        chips: ["wasm-vips", "ag-psd", "pdf-lib", "Remotion"],
+        chips: ["ToonStudio Lanczos3", "ag-psd", "pdf-lib", "Remotion"],
       },
     ],
   },
@@ -86,8 +86,8 @@ export const ENGINEERING_MAP_OPEN_SOURCE: EngineeringMap = {
       en: "The license column is not legal advice; it shows the SPDX labels the repository records in installed package.json files and docs. This table does not decide legal compliance.",
     },
     {
-      ko: "주의 지점 셋. Mixbox(CC-BY-NC-4.0)는 브러시 엔진이 정적으로 import합니다 — 저장소는 provider 권리 라벨·기본 프로파일 permissive-only·감사 핀으로 다루지만, 툴체인 카탈로그는 같은 패키지를 research-only·비실행으로 적어 서술이 어긋납니다. wasm-vips는 래퍼만 MIT이고 내장 libvips 등은 LGPL인데 고지 생성기가 THIRD-PARTY-NOTICES.md를 수집하지 않습니다. Remotion은 자체 라이선스라 배포 법인의 자격을 저장소로 확인할 수 없습니다.",
-      en: "Three caution points. Mixbox (CC-BY-NC-4.0) is statically imported by the brush engine; the repository handles it with a provider rights label, the default profile permissive-only and an audit pin, yet the toolchain catalog lists the same package as research-only and non-executable, so the two descriptions disagree. wasm-vips is MIT only for its wrapper while the bundled libvips and others are LGPL, and the notice generator does not collect THIRD-PARTY-NOTICES.md. Remotion has its own license, and whether the distributing entity qualifies cannot be verified from the repository.",
+      ko: "주의 지점 셋. Mixbox(CC-BY-NC-4.0)는 브러시 엔진이 정적으로 import합니다 — 저장소는 provider 권리 라벨·기본 프로파일 permissive-only·감사 핀으로 다루지만, 툴체인 카탈로그는 같은 패키지를 research-only·비실행으로 적어 서술이 어긋납니다. 과거 wasm-vips는 래퍼만 MIT이고 내장 libvips 등은 LGPL이었습니다. 현재 축소 기능은 자체 Lanczos3로 이관하며, 2026-11-05 고지 수집 수정도 완료했습니다. Remotion 4.0.536은 설명된 개인·1인 운영 전제에서 무료 상업 사용이 가능해 유지합니다. 조직 전체 인원은 독립 검증하지 않았습니다.",
+      en: "Three caution points. Mixbox (CC-BY-NC-4.0) is statically imported by the brush engine; the repository handles it with a provider rights label, the default profile permissive-only and an audit pin, yet the toolchain catalog lists the same package as research-only and non-executable, so the two descriptions disagree. Former wasm-vips use involved an MIT wrapper with bundled LGPL libraries. Current downscaling moves to first-party Lanczos3, and the notice collection fix was completed on 2026-11-05. Remotion 4.0.536 is retained for free commercial use under the stated individual, one-person premise. Total organizational headcount was not independently verified.",
     },
     {
       ko: "손으로 쓴 THIRD_PARTY_NOTICES.md는 직접 의존성 117개 중 22개만 실린 부분 목록입니다(95개 누락). 완전한 목록은 빌드가 만드는 고지(dist/legal/THIRD_PARTY_NOTICES.generated.md, scripts/generate-third-party-notices.mjs)입니다.",

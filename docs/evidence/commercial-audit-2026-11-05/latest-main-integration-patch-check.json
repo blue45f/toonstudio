@@ -1,0 +1,18 @@
+{
+  "targetMain": "2c626df4000fcfc32318faa793a61bea3ef0901b",
+  "sourceHead": "8d315c85d6fde4a3a30255612c756d3e299a95b0",
+  "trackedFileCount": 38,
+  "resolvedOverlapFiles": [
+    "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+    "apps/web/src/domains/legal/technology/engineering-atlas-platform-ops-safety.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts"
+  ],
+  "temporaryIndexCheckExit": 0,
+  "stderr": "",
+  "patchSha256": "6bacef323916e6f6d265a89ea0f62e78832bb900442822858181b66e63e29616",
+  "appliedToWorkingTree": false,
+  "limitations": "Tracks existing-file changes only. New untracked implementation/tests/evidence files remain in checkout and must be included separately. Integrated latest-main code has not been built/tested."
+}

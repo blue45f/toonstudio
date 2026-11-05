@@ -1,0 +1,15 @@
+{
+  "status": "succeeded",
+  "file_name": "toonstudio-commercial-deliverable-2026-11-05.tar.gz",
+  "library_file_id": "libfile_7a708bc76c68819183e287400297932b",
+  "file_id": "file_00000000a0cc820e83d174a8ad7455da",
+  "version": 0,
+  "size_bytes": 22228586,
+  "sha256": "22ce7831d20896297b960f8ac70e7f42af3e331bd92efa6dfb62e6a5255b0912",
+  "local_path": "/workspace/scratch/toonstudio-commercial-deliverable-2026-11-05.tar.gz",
+  "metadata_helper_exit": 0,
+  "scope": "사용자 복구용 비공개 ChatGPT Library 사본. 공유 링크·push·PR·배포 없음. 실제 env·secret·제한 제품 모델 binary 제외.",
+  "source_base": "2c626df4000fcfc32318faa793a61bea3ef0901b + 보존된 작업 patch",
+  "created_date": "2026-11-05",
+  "resumed_findings_included": false
+}

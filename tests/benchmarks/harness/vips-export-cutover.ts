@@ -1,19 +1,19 @@
 /**
- * vips export cutover — 웨이브 A-④ 실측 하네스.
+ * 대형 캔버스 export cutover — 자체 Lanczos3 레인 실측 하네스.
  *
- * 대형 캔버스 규격 내보내기(exportPresetSlices)의 wasm-vips 레인 실배선 전/후를
+ * 대형 캔버스 규격 내보내기(exportPresetSlices)의 자체 Lanczos3 레인 실배선 전/후를
  * 동일 입력으로 비교한다:
  *  - before: 브라우저 ctx.drawImage(imageSmoothingQuality "high") 프록시인
  *    CanvasKit linear(no-mips) 다운스케일 — quality-lab 과 동일 프록시.
  *  - after: 컷오버 경로 그대로 prepareVipsRoutedPresetPages → downscaleForExport
- *    (wasm-vips lanczos3, 단일 스레드).
+ *    (독립 JavaScript Lanczos3).
  *  - 레퍼런스: float 면적평균(부분 픽셀 가중 포함 — 비정수 배율 일반화) —
  *    quality-lab 방법론의 직사각형·분수 배율 확장.
  *  - pristine: 인코어 예산(8192 edge/면적) 이하 캔버스는 prepare 가 원본 참조를
  *    그대로 돌려주고 바이트가 불변임을 sha256 으로 증명한다.
  *
- * 실행: pnpm exec tsx tests/benchmarks/harness/vips-export-cutover.ts
- * 결과: tests/benchmarks/results/vips-export-cutover.json
+ * 실행: pnpm exec tsx --tsconfig tests/benchmarks/harness/tsconfig.json tests/benchmarks/harness/vips-export-cutover.ts
+ * 결과: tests/benchmarks/results/native-export-cutover.json
  */
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -297,7 +297,7 @@ async function main(): Promise<void> {
   if (!beforePixels) throw new Error("readPixels failed");
   const beforeLuma = rgbaToLuma(new Uint8Array(beforePixels as Uint8Array));
 
-  // after 레인: 컷오버 경로 그대로 prepareVipsRoutedPresetPages(실 wasm-vips).
+  // after 레인: 컷오버 경로 그대로 prepareVipsRoutedPresetPages(자체 Lanczos3).
   const loadStart = performance.now();
   const runtime = await loadVipsForExport();
   const loadMs = performance.now() - loadStart;
@@ -350,9 +350,9 @@ async function main(): Promise<void> {
       beforeLane:
         "CanvasKit linear/no-mips drawImageRectOptions — 브라우저 ctx.drawImage 프록시(quality-lab canvaskit-linear-nomips 와 동일)",
       afterLane:
-        "prepareVipsRoutedPresetPages → downscaleForExport (wasm-vips lanczos3, concurrency 1) — 실배선 경로 그대로",
+        "prepareVipsRoutedPresetPages → downscaleForExport (독립 JavaScript Lanczos3) — 실배선 경로 그대로",
       note:
-        "wallMs 는 단일 실행 실측(공유 개발 호스트). after.wallMs 는 prepare 전체(복사 포함), loadMs 는 wasm 초기화 별도.",
+        "wallMs 는 단일 실행 실측(공유 개발 호스트). after.wallMs 는 prepare 전체(복사 포함), loadMs 는 호환 runtime 로더 비용 별도.",
     },
     routes,
     pristine,
@@ -369,7 +369,7 @@ async function main(): Promise<void> {
         ssim: meanSsim(reference, beforeLuma, targetW, targetH),
       },
       after: {
-        lane: "wasm-vips-lanczos3 (cutover: prepareVipsRoutedPresetPages)",
+        lane: "toonstudio-native-lanczos3 (cutover: prepareVipsRoutedPresetPages)",
         wallMs: Number(afterWallMs.toFixed(2)),
         loadMs: Number(loadMs.toFixed(2)),
         psnrDb: psnr(reference, afterLuma),
@@ -380,7 +380,7 @@ async function main(): Promise<void> {
   };
 
   await mkdir(RESULTS_DIR, { recursive: true });
-  const out = join(RESULTS_DIR, "vips-export-cutover.json");
+  const out = join(RESULTS_DIR, "native-export-cutover.json");
   await writeFile(out, `${JSON.stringify(results, null, 2)}\n`);
   console.log(`wrote ${out}`);
   console.log(JSON.stringify(results.routed, null, 2));

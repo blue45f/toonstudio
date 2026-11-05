@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-05",
+  "status": "current-primary-source-followup-no-runtime-change",
+  "scopeKo": "Face Paint 512 v2만 검토. Mixbox·Remotion·다른 모델·runtime·기존 고지를 수정하지 않음.",
+  "repositoryHead": "8d315c85d6fde4a3a30255612c756d3e299a95b0",
+  "localModel": {
+    "path": "apps/web/src/domains/creator/assets/animegan2-face-paint-512-v2.onnx",
+    "bytes": 8702673,
+    "sha256": "54ce55c73dc974c24fa55cf1204577a6181c7e86d312a3a07f798bbbd99d4ee2",
+    "noticePath": "apps/web/src/domains/creator/assets/animegan2-face-paint-512-v2.LICENSE.md",
+    "noticeSha256": "0173edd1ab02acc9748f7667304f5a340d4152588ae57e4563cc25b9ab73cc8e",
+    "checkpointConversionLink": "기존 로컬 고지가 아래 upstream checkpoint를 직접 ONNX 변환했다고 기록한다. 이 후속 작업에서 변환/수치 parity를 재실행하지 않음.",
+    "metadata": {
+      "producerName": "pytorch",
+      "producerVersion": "2.14.1",
+      "domain": null,
+      "docString": null,
+      "metadataProps": []
+    },
+    "metadataMethod": "protobuf ModelProto의 top-level producer/domain/docString/metadata_props만 읽음. pickle 실행·모델 추론 없음."
+  },
+  "upstream": {
+    "repository": "bryandlee/animegan2-pytorch",
+    "commit": "25d7b017267208dfaf34026aa3425e518372aa2f",
+    "files": [
+      {
+        "path": "README.md",
+        "url": "https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/README.md",
+        "rawUrl": "https://raw.githubusercontent.com/bryandlee/animegan2-pytorch/25d7b017267208dfaf34026aa3425e518372aa2f/README.md",
+        "bytes": 4928,
+        "sha256": "4d244bb3b292b55969f32d17122bb8a28c5ecc418e42c207bcf9620521daff5c",
+        "gitBlobSha1": "46cb01aadca9d47276cb6984acdff4f0f087973e",
+        "gitBlobVerified": true
+      },
+      {
+        "path": "LICENSE",
+        "url": "https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/LICENSE",
+        "rawUrl": "https://raw.githubusercontent.com/bryandlee/animegan2-pytorch/25d7b017267208dfaf34026aa3425e518372aa2f/LICENSE",
+        "bytes": 1066,
+        "sha256": "0722b5505349ac7ccc5a446da532e81f0962a07a671c6cc1f2f38a4a09c80c45",
+        "gitBlobSha1": "7322da2042570877be982738d20c29bd3338e184",
+        "gitBlobVerified": true
+      },
+      {
+        "path": "hubconf.py",
+        "url": "https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/hubconf.py",
+        "rawUrl": "https://raw.githubusercontent.com/bryandlee/animegan2-pytorch/25d7b017267208dfaf34026aa3425e518372aa2f/hubconf.py",
+        "bytes": 1863,
+        "sha256": "8115169c6a98becb3234db547043fb7e4e548e096628489b9c22f4b99d2b4ea1",
+        "gitBlobSha1": "90595986b45aa1cc798fc982209f756e807ccff5",
+        "gitBlobVerified": true
+      },
+      {
+        "path": "weights/face_paint_512_v2.pt",
+        "url": "https://github.com/bryandlee/animegan2-pytorch/blob/25d7b017267208dfaf34026aa3425e518372aa2f/weights/face_paint_512_v2.pt",
+        "rawUrl": "https://raw.githubusercontent.com/bryandlee/animegan2-pytorch/25d7b017267208dfaf34026aa3425e518372aa2f/weights/face_paint_512_v2.pt",
+        "bytes": 8601086,
+        "sha256": "06b88a204eb230889444ad868ee5608f4fce5d4ff7b7738acaa4209c2b8fdca7",
+        "gitBlobSha1": "d75102f8f201ddaf8dbe6b913b1a97585b55f838",
+        "gitBlobVerified": true
+      }
+    ],
+    "licenseExpression": "MIT",
+    "licenseText": "MIT License\n\nCopyright (c) 2021 Bryan Lee\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+    "checkpointIntroduced": {
+      "commit": "f9b71ce9e53fa125c57434ea87780cbdab1c86d5",
+      "date": "2021-11-06T20:57:09Z",
+      "message": "Add weights from gdrive",
+      "gitAuthorName": "xhlulu",
+      "githubAuthorLinked": false,
+      "rootLicenseAtIntroductionSha256": "0722b5505349ac7ccc5a446da532e81f0962a07a671c6cc1f2f38a4a09c80c45",
+      "rootLicenseUnchanged": true
+    },
+    "checkpointHosting": "Git tracked .pt in author-maintained repository. hubconf.py constructs known checkpoint URL here and defaults to face_paint_512_v2. README also links public Google Drive checkpoint; this audit did not independently fetch Drive.",
+    "checkpointArchive": {
+      "format": "PyTorch ZIP",
+      "entryCount": 79,
+      "embeddedLicenseOrModelCardFilenameFound": false,
+      "warningKo": "개별 artifact 내부 license 문서 부재는 저장소 MIT grant를 부정하는 근거가 아니다."
+    },
+    "ownerStatements": [
+      {
+        "issue": 3,
+        "commentId": 890972600,
+        "url": "https://github.com/bryandlee/animegan2-pytorch/issues/3#issuecomment-890972600",
+        "apiUrl": "https://api.github.com/repos/bryandlee/animegan2-pytorch/issues/comments/890972600",
+        "author": "bryandlee",
+        "authorAssociation": "OWNER",
+        "createdAt": "2021-08-02T12:08:02Z",
+        "updatedAt": "2021-08-02T12:08:02Z",
+        "bodySha256": "3f837d4505e0160d8502cab08fb0d653c2231b30bbf0746cbe40ca09c89745e6",
+        "verifiedExcerpt": null,
+        "summaryKo": "저자는 얼굴 모델의 pix2pix 방식과 LPIPS/L2/GAN loss를 설명한다. 이 스레드는 v1에 관한 것이므로 모든 v2 세부사항으로 일반화하지 않는다."
+      },
+      {
+        "issue": 3,
+        "commentId": 931984741,
+        "url": "https://github.com/bryandlee/animegan2-pytorch/issues/3#issuecomment-931984741",
+        "apiUrl": "https://api.github.com/repos/bryandlee/animegan2-pytorch/issues/comments/931984741",
+        "author": "bryandlee",
+        "authorAssociation": "OWNER",
+        "createdAt": "2021-10-01T07:37:47Z",
+        "updatedAt": "2021-10-01T07:39:56Z",
+        "bodySha256": "add62038c6036b269d9fcff57f448aa29200e091b76d0036d47dae1447511fe2",
+        "verifiedExcerpt": null,
+        "summaryKo": "저자는 공식 StyleGAN2-ADA PyTorch 모델을 연결하고 network blending으로 생성한 input/target과 segmentation mask의 사용을 설명한다. v2의 정확한 teacher checkpoint/revision까지 고정하지는 않는다."
+      },
+      {
+        "issue": 5,
+        "commentId": 916813543,
+        "url": "https://github.com/bryandlee/animegan2-pytorch/issues/5#issuecomment-916813543",
+        "apiUrl": "https://api.github.com/repos/bryandlee/animegan2-pytorch/issues/comments/916813543",
+        "author": "bryandlee",
+        "authorAssociation": "OWNER",
+        "createdAt": "2021-09-10T10:51:51Z",
+        "updatedAt": "2021-09-10T10:51:51Z",
+        "bodySha256": "1540a12268ab59676a0d35addefc34661f96b4ae34708c590076664784cfb97c",
+        "verifiedExcerpt": null,
+        "summaryKo": "저자는 당시 training code를 공개할 계획이 없다고 답했다."
+      },
+      {
+        "issue": 30,
+        "commentId": 982134241,
+        "url": "https://github.com/bryandlee/animegan2-pytorch/issues/30#issuecomment-982134241",
+        "apiUrl": "https://api.github.com/repos/bryandlee/animegan2-pytorch/issues/comments/982134241",
+        "author": "bryandlee",
+        "authorAssociation": "OWNER",
+        "createdAt": "2021-11-29T23:41:55Z",
+        "updatedAt": "2021-11-29T23:42:05Z",
+        "bodySha256": "e13ba0c8422348c5a1ef9dbc9c83d29ba13967853cfb38f612194b7b3c897761",
+        "verifiedExcerpt": "Hi, those were trained on private dataset. Faces were generated from the FFHQ-trained stylegan2.",
+        "summaryKo": "v1/v2 질문에 저자가 private dataset과 FFHQ-trained StyleGAN2 생성 얼굴을 사용했다고 답했다."
+      },
+      {
+        "issue": 37,
+        "commentId": 986173020,
+        "url": "https://github.com/bryandlee/animegan2-pytorch/issues/37#issuecomment-986173020",
+        "apiUrl": "https://api.github.com/repos/bryandlee/animegan2-pytorch/issues/comments/986173020",
+        "author": "bryandlee",
+        "authorAssociation": "OWNER",
+        "createdAt": "2021-12-05T06:06:56Z",
+        "updatedAt": "2021-12-05T06:06:56Z",
+        "bodySha256": "3dad5ce47fc25438b2009ff79e85e9e8c64d202f2ae0d9425ebd7e61a371558b",
+        "verifiedExcerpt": null,
+        "summaryKo": "저자는 non-saturating GAN loss, FFHQ-Aging-Dataset의 deeplabv3 segmentation 사용을 설명했다. 이 comment만으로 exact v2 전체 학습 체인을 확정하지 않는다."
+      }
+    ]
+  },
+  "misattributionControl": {
+    "url": "https://github.com/bryandlee/animegan2-pytorch/issues/25#issuecomment-973645233",
+    "commentAuthor": "dressedanonymous",
+    "authorAssociation": "NONE",
+    "bodySha256": "18b0d02745fbeac66c04691e749559d8b4fec6fe6726e8512d92e104eb97eab7",
+    "findingKo": "Face Portrait v2의 model+weights가 MIT라는 이 댓글은 프로젝트 저자 bryandlee의 발언이 아니라 사용자의 해석이다. GitHub UI Author는 issue 작성자 표시이며 repository OWNER와 다르다. 이 댓글을 별도 권리 부여로 사용하지 않음."
+  },
+  "trainingSourceReferences": [
+    {
+      "repository": "NVlabs/stylegan2",
+      "commit": "bf0fe0baba9fc7039eae0cac575c1778be1ce3e3",
+      "documents": [
+        {
+          "path": "LICENSE.txt",
+          "url": "https://github.com/NVlabs/stylegan2/blob/bf0fe0baba9fc7039eae0cac575c1778be1ce3e3/LICENSE.txt",
+          "sha256": "803ddcc4dd20de6387e2e5731f6a864ea01364dd305b17bda7157bcab0c39295"
+        },
+        {
+          "path": "README.md",
+          "url": "https://github.com/NVlabs/stylegan2/blob/bf0fe0baba9fc7039eae0cac575c1778be1ce3e3/README.md",
+          "sha256": "d76f41a33b416ccae218e5521cd9d1952a6963ea7cc754239e8afe5889f9ad51"
+        }
+      ]
+    },
+    {
+      "repository": "NVlabs/stylegan2-ada-pytorch",
+      "commit": "d72cc7d041b42ec8e806021a205ed9349f87c6a4",
+      "documents": [
+        {
+          "path": "LICENSE.txt",
+          "url": "https://github.com/NVlabs/stylegan2-ada-pytorch/blob/d72cc7d041b42ec8e806021a205ed9349f87c6a4/LICENSE.txt",
+          "sha256": "d782a1e765f4848609352fd9d74cc36b103ef6f51900baed06fb1c995188b95f"
+        },
+        {
+          "path": "README.md",
+          "url": "https://github.com/NVlabs/stylegan2-ada-pytorch/blob/d72cc7d041b42ec8e806021a205ed9349f87c6a4/README.md",
+          "sha256": "5247c73b121d30d011faeefd63903d9429b0d91d36c9ac1e2f409420ec2499b2"
+        }
+      ]
+    },
+    {
+      "repository": "NVlabs/ffhq-dataset",
+      "commit": "4826aa6ea77aa7f1a7802b938ed7c40afb985cda",
+      "documents": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/NVlabs/ffhq-dataset/blob/4826aa6ea77aa7f1a7802b938ed7c40afb985cda/README.md",
+          "sha256": "c12efdc2759654840c9b2f8fe1cd9a6716be218b831c27056e13e3ec5cd3d663"
+        }
+      ]
+    }
+  ],
+  "assessment": {
+    "codeLicense": "MIT-confirmed",
+    "checkpointLicense": "MIT-repository-scope-reasonable-inference-no-exclusion-found",
+    "checkpointLicenseConfidence": "medium-high engineering inference, not express checkpoint-specific author statement",
+    "checkpointCommercialProhibitionDetected": false,
+    "sameAsConvertedPaprika": false,
+    "trainingProvenance": "partially-documented-private-data-and-generated-faces",
+    "trainingSourceNotesKo": [
+      "원본 StyleGAN2와 ADA의 공식 README는 제공 작업에 NVIDIA source license를 안내하고 official pretrained network 사용을 함께 안내한다. 읽은 두 LICENSE의 Work/derivative 범위는 NC research/evaluation 제한을 포함한다. 정확히 어떤 teacher binary와 별도 허가를 사용했는지는 author comment가 고정하지 않는다.",
+      "읽은 두 NVIDIA LICENSE와 README에서 생성 이미지 자체나 그 이미지로 학습한 독립 downstream 모델에 명시적으로 부과하는 별도 output-license clause는 확인하지 못했다. Work/derivative 정의를 해당 downstream에 적용할 수 있는지는 추가 해석 문제다.",
+      "FFHQ 개별 이미지에는 CC-BY2, CC-BY-NC2, Public Domain/CC0/US Government가 섞여 있고, dataset JSON metadata·download script·documentation 자체는 CC-BY-NC-SA4이다. 이를 모든 원본 이미지가 동일 BY-NC-SA라는 뜻으로 일반화하지 않는다.",
+      "NC teacher에서 생성했다는 사실만으로 FacePaint/output이 자동으로 NC라는 결론은 이 증거에서 도출하지 않는다."
+    ],
+    "recommendationKo": "FacePaint를 confirmed NC 또는 Paprika와 동일한 제한 가중치로 분류하지 않는다. author-maintained repo의 tracked checkpoint와 root MIT에 근거한 permissive 판단을 명시적 추론으로 기록하고, 별도 training provenance 공백을 추적한다. 현재 모델은 보존한다.",
+    "remainingEvidenceKo": [
+      "v2의 정확한 private cartoon data/teacher checkpoint·버전과 생성물 이용 조건은 공개 자료에서 완전히 재현되지 않음.",
+      "검토한 README/LICENSE/hubconf와 targeted owner issue comments에 checkpoint-specific 별도 명시적 grant 문장은 찾지 못함. 각 파일에 별도 license가 반드시 있어야 한다는 요구는 아님.",
+      "로컬 ONNX→upstream .pt 변환 lineage는 기존 고지와 source checkpoint hash 일치로 확인되지만 새로운 numerical parity run은 수행하지 않음."
+    ]
+  },
+  "alternatives": [
+    {
+      "name": "현 FacePaint v2 유지 + 정확한 repository-scope MIT/출처 고지",
+      "state": "lowest-technical-risk-candidate",
+      "rightsKo": "추가 모델 교체로 새로운 grant를 얻는 것은 아니다. confirmed NC 근거가 없고 tracked repo MIT가 강한 근거이므로 blanket 제거보다 현재 기능 보존이 합리적이다.",
+      "equivalence": "기존 모델을 그대로 쓰므로 이 작업에 의한 품질 변화 없음"
+    },
+    {
+      "name": "minivision-ai/photo2cartoon",
+      "state": "not-cleared-not-equivalent",
+      "primaryUrls": [
+        "https://github.com/minivision-ai/photo2cartoon/blob/master/LICENSE",
+        "https://github.com/minivision-ai/photo2cartoon/blob/master/README.md"
+      ],
+      "rightsKo": "MIT 저장소지만 README는 공개 모델 데이터가 인터넷에서 수집됐음을 설명하고 외부 pretrained recognition·segmentation 및 별도 Drive ONNX 자산을 사용한다. 정확한 weight/데이터 grant 미완결; 더 안전하다고 확인하지 못함.",
+      "equivalence": "identity-preserving face cartoon 목표는 유사하나 512 full image/background 처리 및 스타일·인구집단 coverage가 다르고 별도 정렬·분할이 필요. 검증 대체 아님."
+    },
+    {
+      "name": "menyifang/DCT-Net",
+      "state": "not-cleared-not-equivalent",
+      "primaryUrls": [
+        "https://github.com/menyifang/DCT-Net/blob/main/LICENSE",
+        "https://github.com/menyifang/DCT-Net/blob/main/README.md"
+      ],
+      "rightsKo": "코드 Apache2. README는 copyright 문제로 cartoon training exemplar를 제공하지 못한다고 명시하고 FFHQ/teacher/generated styles를 사용한다. 개별 ModelScope weight/데이터/teacher 권리 검토가 필요; 안전하다는 근거로 삼지 않음.",
+      "equivalence": "multi-style portrait 목표는 유사하지만 현 브라우저 ONNX 계약/크기/성능/품질은 확인하지 않음."
+    },
+    {
+      "name": "권리 확보 사진+직접/위탁 제작 portrait target으로 독립 학습",
+      "state": "credible-safe-path-not-an-existing-equivalent-model",
+      "rightsKo": "상업 학습·재배포가 허용된 code/data/checkpoint와 identity·초상 이용 동의를 문서화하고 restricted checkpoint·출력을 training/distillation 입력으로 쓰지 않아야 한다.",
+      "equivalence": "현재 동등 weights가 없으므로 학습·얼굴 다양성·background 보존·ONNX WASM/WebGPU 품질/성능 검증 전 교체 불가"
+    }
+  ],
+  "nextStepKo": "부모 감사에서 confirmed NC 목록과 FacePaint를 구별하고 upstream commit/checkpoint hash/root MIT 고지를 보존한다. 별도 provenance를 확보할 수 있다면 정확한 v2 teacher/data/weights 권리 범위 문서만 추가한다(이번 작업에서 외부 연락하지 않음). 대체가 필요하다고 결정되면 권리 확보 데이터로 독립 학습 후 동일 portrait corpus/ONNX 경로에서 품질·성능을 먼저 검증한다.",
+  "verification": {
+    "localOnnxHashMatchedExistingNotice": true,
+    "upstreamCheckpointHashMatchedExistingNotice": true,
+    "upstreamGitBlobMatched": true,
+    "checkpointUnpickledOrExecuted": false,
+    "modelInferenceRun": false,
+    "runtimeModified": false,
+    "existingNoticeModified": false,
+    "reaUsed": false,
+    "sourceCaptureDirectory": "/tmp/toonstudio-facepaint-rights",
+    "knownLimitsKo": [
+      "공개 issue/댓글의 targeted 조사이며 모든 과거 발언을 완전 조사한 것은 아니다.",
+      "GitHub issue search API 일부 요청은 HTTP422로 실패했으며 웹 검색과 직접 primary issue API 조회를 사용했다.",
+      "모든 법역의 권리 해석 또는 non-infringement를 보증하지 않는다."
+    ]
+  }
+}

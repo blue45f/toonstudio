@@ -1,0 +1,6 @@
+Processing /tmp/toonstudio-light-paprika-parity-followup/onnxruntime-1.30.0-cp312-cp312-manylinux_2_28_x86_64.whl
+Installing collected packages: onnxruntime
+Successfully installed onnxruntime-1.30.0
+
+[notice] A new release of pip is available: 25.0.1 -> 26.3
+[notice] To update, run: python -m pip install --upgrade pip

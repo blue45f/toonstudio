@@ -1,0 +1,7 @@
+{
+  "checkedNamedTrackedFiles": 11,
+  "changedNamedTrackedFiles": [],
+  "dependencyBefore": "2.0.0",
+  "dependencyAfter": "2.0.0",
+  "note": "Named Mixbox files and direct dependency preserved. Shared lockfile diff removes only wasm-vips."
+}

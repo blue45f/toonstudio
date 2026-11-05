@@ -1,0 +1,122 @@
+[
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/animegan2-pytorch-readme.txt",
+    "sha256": "4d244bb3b292b55969f32d17122bb8a28c5ecc418e42c207bcf9620521daff5c"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/animeganv2-upstream-readme.txt",
+    "sha256": "6b424121f4c606d5574c3cad43b0e199b78510040c11f3bf31961dc877f40ada"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/build-memory-diagnostics.json",
+    "sha256": "d2f8bd15ac0bcd41ec04f05449c3e52d55551d0882fa41b349545835dba437eb"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/bundle-model-residues.json",
+    "sha256": "4fe495d77d15bb30700ccba7e80c91ec4438af85fabcc105e6b73fc8a5b3a7e5"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/final-verification-summary.json",
+    "sha256": "2dc50594f408f4b7de481e3c16872786f7ad534412f723ac9d1eab3ca2e69d97"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/final-vips-bundle-residue-check.json",
+    "sha256": "7a6686e3c5ea7494fd41ca91659f1a1c4f321f3b733f1ec0cb1d1f789fe44fa8"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/focused-benchmark-typecheck-config.json",
+    "sha256": "87e401aad1cce6133d07670d9cb0c2ac9a22c965b321b57c6c937544dd9c6db6"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/focused-test-files.json",
+    "sha256": "4d5360c5c5d84c784222ed4e91fd2f6f91757d78889799773575eee673535545"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/focused-typecheck-config.json",
+    "sha256": "81beb8df9b00b93b31541e6efe3c7f74b0cdf199025e6982146f925e57c9c2e0"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/installed-suspect-license-sha256.json",
+    "sha256": "150fc0792542a2734fb44d5507da2ff31f63bc679d9e34bef0730293574e3d48"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/known-baseline-test-failure.json",
+    "sha256": "20aafe08fe62056b21babd7c54a3609a947e85487f57c47fc4b3ad60d32d75be"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/known-model-release-check-final.json",
+    "sha256": "d68c05ccc72684fb2511b16e4ca8ab16c040be8430b6921dae88f320525e53f8"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/known-model-release-check.json",
+    "sha256": "d68c05ccc72684fb2511b16e4ca8ab16c040be8430b6921dae88f320525e53f8"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/latest-main-conflict-check.json",
+    "sha256": "ebf13458a8e559a67bef8877141088fde3e23bfb4e42e6aa60040fd84bf37086"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/latest-main-integration-patch-check.json",
+    "sha256": "2f3e61517f229e18f319821ff13cdc43cbfb6a6ff7d6bc9322e6c554bf6972ea"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/latest-main-resolution-notes.md",
+    "sha256": "9991a00c296858026f9cc3567c05de04f3971c6c1a3b9745aea9fdd95b002d85"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/latest-main-tracked-integration.patch",
+    "sha256": "6bacef323916e6f6d265a89ea0f62e78832bb900442822858181b66e63e29616"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/lock-inventory.json",
+    "sha256": "e9fef0f51ed5b6a2b20b0b3c12df0994d85d129cdf03a4acfd9442bff0c13f68"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/mixbox-exclusion-check.json",
+    "sha256": "f76283270ec77e56389f96e5a3f278875b33c8f0a82932d1b8aa3029682dc00d"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/native-browser-probe-result.json",
+    "sha256": "d6f53d5c2f7c12bfcb2a3ab3ea621134a32cd51ceabb04abbe423745ae93d369"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/native-browser-probe.mjs",
+    "sha256": "309619545fb82a72c8cefb6ba56b083b6e78394792fa87b20f57de613c75dd54"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/production-npm-inventory-after-removal.json",
+    "sha256": "00f82e60081da3c44717350cd71252ea557b00c07ed0adf2f299af1758f510d2"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/production-npm-inventory.json",
+    "sha256": "876002ebba80fb2675e50d32026a34d228651c5ca8921f4f0053cab24ed11ecb"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/remotion-4.0.536-license.txt",
+    "sha256": "bd65083b940f61904f6ef298aade918a7cad72a3e35bc406e36fab365844b673"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/removed-vips-binary-digests.json",
+    "sha256": "2ef8b6e8eb826dd309fb500cf320396c972a3e3f0bafda81ce0082460fc61433"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/suspect-references.json",
+    "sha256": "71995c1d3bc06431f543b3ce2d8c2dadbf33267f241b35bf5430ad9ad3d27ca0"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/tag2pix-upstream-readme.txt",
+    "sha256": "ae3e73e171d0305a78babe62a62a5ed758ba8891512700c268c5eba6839e1387"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/tracked-assets.json",
+    "sha256": "5974b924f8a02406d55f4a162b8445a5fe34a1ffb60370c90dc9fc13785d4d00"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/wasm-vips-0.0.19-third-party-notices.txt",
+    "sha256": "0f52de00dd217125646ae85177def3e144de48d11f76368f257ba6468d3f7d8d"
+  },
+  {
+    "path": "docs/evidence/commercial-audit-2026-11-05/wasm-vips-0.0.19-versions.json",
+    "sha256": "e1b6858d24d76de7c28c15a5765d02661a1638b8555625bbc74cb3c67f6f184d"
+  }
+]

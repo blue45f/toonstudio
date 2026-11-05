@@ -388,8 +388,8 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
         "Restricted dependencies are pinned by name, version and license. mixbox 2.0.0 (CC-BY-NC-4.0) and remotion and @remotion/player 4.0.536 (Remotion License, not a standard SPDX id) pass only in exactly that combination, and the build fails if the version or label changes. A new CC-BY-NC package outside that list also fails. This card describes only how the repository handles them and makes no legal judgment.",
       ),
       t(
-        "빈틈 셋을 적습니다. ① 손으로 쓴 루트 THIRD_PARTY_NOTICES.md 는 일부 목록이라 직접 의존성 117개 중 22개만 싣고 95개는 빠져 있습니다. 완전한 목록은 빌드 산출 고지입니다. ② wasm-vips 패키지는 자체 THIRD-PARTY-NOTICES.md 에 LGPL 라이브러리를 적지만, 생성기는 LICENSE·COPYING·NOTICE 로 시작하는 파일만 모아 생성 고지에는 MIT 로만 나옵니다. ③ mixbox 는 브러시 코드가 정적 import 하고 허용 여부는 런타임 라이선스 프로필이 판정하는데, 툴체인 문서는 같은 mixbox 를 연구 전용·비실행으로 적습니다.",
-        "Three gaps are noted. 1 The hand-written root THIRD_PARTY_NOTICES.md is a partial list that carries only 22 of the 117 direct dependencies and omits 95; the full list is the build output. 2 The wasm-vips package lists LGPL libraries in its own THIRD-PARTY-NOTICES.md, but the generator only collects files named like LICENSE, COPYING or NOTICE, so the generated notice shows only MIT. 3 The brush code imports mixbox statically and a runtime license profile decides its use, while the toolchain document calls the same mixbox research-only and non-executable.",
+        "검토 지점 셋을 적습니다. ① 손으로 쓴 루트 THIRD_PARTY_NOTICES.md 는 일부 목록이라 직접 의존성 117개 중 22개만 싣고 95개는 빠져 있습니다. 완전한 목록은 빌드 산출 고지입니다. ② 2026-11-05 수정으로 생성기는 THIRD-PARTY-NOTICES.md 같은 내장 고지도 수집합니다. 과거 wasm-vips의 LGPL 고지 누락을 해결한 것이며, 고지 수집만으로 source·교체 등 모든 배포 의무가 충족되는 것은 아닙니다. ③ mixbox 는 브러시 코드가 정적 import 하고 허용 여부는 런타임 라이선스 프로필이 판정하는데, 툴체인 문서는 같은 mixbox 를 연구 전용·비실행으로 적습니다.",
+        "Three review points are noted. 1 The hand-written root THIRD_PARTY_NOTICES.md is a partial list that carries only 22 of the 117 direct dependencies and omits 95; the full list is the build output. 2 After the 2026-11-05 fix the generator also collects embedded notices named like THIRD-PARTY-NOTICES.md. This fixes the former omission of wasm-vips LGPL notices; collecting notices alone does not fulfill every source and replacement obligation. 3 The brush code imports mixbox statically and a runtime license profile decides its use, while the toolchain document calls the same mixbox research-only and non-executable.",
       ),
     ],
     keyPoints: [
@@ -506,8 +506,8 @@ try {
         {
           question: t("GPL 은 하나도 없나요?", "Is there no GPL at all?"),
           answer: t(
-            "npm 직접 의존성에는 GPL·AGPL 이 없고 허용 목록에도 단독으로 들어 있지 않습니다. 다만 직접 의존성 opencascade.js 1.1.1(LGPL-2.1-only, 고지 파일과 docs/third-party/opencascade-lgpl.md 에 기록), wasm-vips 의 내장 LGPL 라이브러리, 외부 프로그램을 별도 프로세스로만 연결하는 ToonBridge 같은 맥락이 있어 전혀 없다고 말하지는 않습니다.",
-            "There is no GPL or AGPL among the direct npm dependencies, and neither appears alone in the allowlist. But with the direct dependency opencascade.js 1.1.1 (LGPL-2.1-only, recorded in the notice file and docs/third-party/opencascade-lgpl.md), LGPL libraries inside wasm-vips and external programs linked only as separate processes through ToonBridge, we do not claim there is none anywhere.",
+            "npm 직접 의존성에는 GPL·AGPL 이 없고 허용 목록에도 단독으로 들어 있지 않습니다. 다만 직접 의존성 opencascade.js 1.1.1(LGPL-2.1-only, 고지 파일과 docs/third-party/opencascade-lgpl.md 에 기록), wasm-vips 의 과거 내장 LGPL 라이브러리 사용 기록, 외부 프로그램을 별도 프로세스로만 연결하는 ToonBridge 같은 맥락이 있어 전혀 없다고 말하지는 않습니다.",
+            "There is no GPL or AGPL among the direct npm dependencies, and neither appears alone in the allowlist. But with the direct dependency opencascade.js 1.1.1 (LGPL-2.1-only, recorded in the notice file and docs/third-party/opencascade-lgpl.md), historical use of LGPL libraries inside wasm-vips and external programs linked only as separate processes through ToonBridge, we do not claim there is none anywhere.",
           ),
         },
         {
@@ -526,8 +526,8 @@ try {
         },
       ],
       pitfall: t(
-        "법률 판단을 하지 마세요. 이 카드는 저장소가 라이선스를 어떻게 처리하는지만 설명합니다. Remotion 을 배포 법인이 쓸 수 있는 자격인지는 저장소로 확인할 수 없고, 툴체인 문서와 코드의 mixbox 서술이 서로 다르며, wasm-vips 의 LGPL 이 생성 고지에 나타나지 않는다는 점은 알려진 공백입니다.",
-        "Do not make legal judgments. This card explains only how the repository handles licenses. Whether the distributing entity is eligible to use Remotion cannot be confirmed from the repository, the toolchain document and the code describe mixbox differently, and wasm-vips' LGPL not appearing in the generated notice is a known gap.",
+        "이 카드는 라이선스 처리와 확인 근거를 설명합니다. Remotion 4.0.536은 개인·직원 3명 이하 영리 조직의 무료 상업 사용을 허용해 설명된 개인·1인 운영 전제로 유지합니다. 일반 FAQ는 조직 전체 3명 이하가 기준이며 실제 인원은 독립 검증하지 않았습니다. 툴체인 문서와 코드의 mixbox 서술이 서로 다르며, 내장 고지 수집 누락은 2026-11-05 수정했지만 그 사실만으로 배포 의무 충족을 확정할 수는 없습니다.",
+        "This card explains license handling and its evidence. Remotion 4.0.536 permits free commercial use by individuals and for-profit entities with up to 3 employees, so it is retained under the stated individual, one-person premise. The general FAQ uses total organizational headcount of up to 3 people; actual headcount is not independently verified. Separately, the toolchain document and the code describe mixbox differently, and the omission of embedded notices was fixed on 2026-11-05, but that alone does not establish distribution compliance.",
       ),
     },
     technologies: ["SPDX", "Remotion", "Mixbox", "wasm-vips"],
@@ -685,7 +685,7 @@ export async function loadVerifiedModel(url: string, expected: { bytes: number; 
         {
           question: t("새 취약점이 나오면 어떻게 하나요?", "What happens when a new vulnerability appears?"),
           answer: t(
-            "audit:security 가 pnpm audit 를 예외 없이 돌리고, 전이 의존성은 overrides 로 고쳐진 버전으로 올립니다. overrides 는 현재 57개입니다.",
+            "audit:security 가 pnpm audit 를 예외 없이 돌리고, 전이 의존성은 overrides 로 고쳐진 버전으로 올립니다. overrides 는 현재 61개입니다.",
             "audit:security runs pnpm audit with no exceptions, and transitive dependencies are raised to fixed versions through overrides, 61 of them today.",
           ),
         },
