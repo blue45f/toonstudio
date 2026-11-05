@@ -76,7 +76,7 @@ function productRepositoryAvailable(): boolean {
   }
 }
 
-async function acquireProductStudioFloatingSurfacePreferencesRepositoryDeferred(): Promise<
+async function loadProductRepository(): Promise<
   StudioFloatingSurfacePreferencesRepository
 > {
   const { acquireProductStudioFloatingSurfacePreferencesRepository } = await import(
@@ -94,12 +94,12 @@ export function useStudioFloatingSurfaceLayout({
   sessionKey = studioFloatingSurfaceSessionKey(surfaceId),
   enabled = true,
   repositoryFactory =
-    acquireProductStudioFloatingSurfacePreferencesRepositoryDeferred,
+    loadProductRepository,
 }: UseStudioFloatingSurfaceLayoutOptions): UseStudioFloatingSurfaceLayoutResult {
   const { version, xRatio, yRatio, width, height, dock, positionLocked, sizeLocked } =
     normalizeStudioFloatingSurfaceLayout(defaultLayout, defaultLayout);
   // 같은 기본값은 참조를 유지한다.
-  const normalizedDefault = useMemo(
+  const fallback = useMemo(
     () => Object.freeze({ version, xRatio, yRatio, width, height, dock, positionLocked, sizeLocked }),
     [version, xRatio, yRatio, width, height, dock, positionLocked, sizeLocked],
   );
@@ -108,9 +108,9 @@ export function useStudioFloatingSurfaceLayout({
     return () => { pending ??= repositoryFactory(); return pending; };
   }, [repositoryFactory]);
   const identity = useMemo(() => ({ surfaceId, sessionKey, repository }), [surfaceId, sessionKey, repository]);
-  const currentIdentityRef = useRef(identity);
-  currentIdentityRef.current = identity;
-  const session = useMemo(() => readSessionLayout(identity.sessionKey, normalizedDefault), [identity, normalizedDefault]);
+  const identityRef = useRef(identity);
+  identityRef.current = identity;
+  const session = useMemo(() => readSessionLayout(identity.sessionKey, fallback), [identity, fallback]);
   const [layoutState, setLayoutState] = useState(() => ({ identity, layout: session.layout }));
   const layout = layoutState.identity === identity ? layoutState.layout : session.layout;
   const [overrideState, setOverrideState] = useState<{
@@ -121,12 +121,12 @@ export function useStudioFloatingSurfaceLayout({
   const [failure, setFailure] =
     useState<UseStudioFloatingSurfaceLayoutResult["failure"]>(null);
   const liveLayoutRef = useRef(layout);
-  const localGenerationRef = useRef(0);
+  const generationRef = useRef(0);
   const localChoiceIdentityRef = useRef<typeof identity | null>(null);
   liveLayoutRef.current = layout;
 
   const sqliteAvailable = repositoryFactory
-    !== acquireProductStudioFloatingSurfacePreferencesRepositoryDeferred
+    !== loadProductRepository
     || productRepositoryAvailable();
 
   useEffect(() => {
@@ -140,11 +140,11 @@ export function useStudioFloatingSurfaceLayout({
     setFailure(null);
     setOverrideState({ identity, value: session.override === "present" || localChoiceIdentityRef.current === identity ? "present" : "checking" });
     let disposed = false;
-    const generationAtStart = localGenerationRef.current;
+    const generationAtStart = generationRef.current;
     void repository()
-      .then((target) => target.load(surfaceId, normalizedDefault))
+      .then((target) => target.load(surfaceId, fallback))
       .then((result) => {
-        if (disposed || currentIdentityRef.current !== identity || generationAtStart !== localGenerationRef.current) return;
+        if (disposed || identityRef.current !== identity || generationAtStart !== generationRef.current) return;
         setFailure(result.failure);
         setAuthority(result.failure ? "session-only" : "sqlite-opfs");
         setOverrideState({ identity, value: result.failure ? "unknown"
@@ -165,7 +165,7 @@ export function useStudioFloatingSurfaceLayout({
         );
       })
       .catch(() => {
-        if (disposed || currentIdentityRef.current !== identity || generationAtStart !== localGenerationRef.current) return;
+        if (disposed || identityRef.current !== identity || generationAtStart !== generationRef.current) return;
         setAuthority("session-only");
         setFailure("storage-unavailable");
         setOverrideState({ identity, value: "unknown" });
@@ -176,7 +176,7 @@ export function useStudioFloatingSurfaceLayout({
   }, [
     enabled,
     identity,
-    normalizedDefault,
+    fallback,
     repository,
     sessionKey,
     session,
@@ -185,14 +185,14 @@ export function useStudioFloatingSurfaceLayout({
   ]);
 
   const setLayout = useCallback((nextLayout: StudioFloatingSurfaceLayout) => {
-    if (currentIdentityRef.current !== identity) return;
-    localGenerationRef.current += 1;
-    const generation = localGenerationRef.current;
+    if (identityRef.current !== identity) return;
+    generationRef.current += 1;
+    const generation = generationRef.current;
     localChoiceIdentityRef.current = identity;
     setOverrideState({ identity, value: "present" });
     const normalized = normalizeStudioFloatingSurfaceLayout(
       nextLayout,
-      normalizedDefault,
+      fallback,
     );
     if (studioFloatingSurfaceLayoutsEqual(liveLayoutRef.current, normalized)) {
       setAuthority((current) => current === "checking" ? "session-only" : current);
@@ -214,19 +214,19 @@ export function useStudioFloatingSurfaceLayout({
     void repository()
       .then((target) => target.save(surfaceId, normalized))
       .then((result) => {
-        if (currentIdentityRef.current !== identity || generation !== localGenerationRef.current) return;
+        if (identityRef.current !== identity || generation !== generationRef.current) return;
         setAuthority(result.status === "persisted" ? "sqlite-opfs" : "session-only");
         setFailure(result.failure);
         if (result.failure || result.status !== "persisted") setOverrideState({ identity, value: "unknown" });
       })
       .catch(() => {
-        if (currentIdentityRef.current !== identity || generation !== localGenerationRef.current) return;
+        if (identityRef.current !== identity || generation !== generationRef.current) return;
         setAuthority("session-only");
         setFailure("storage-unavailable");
         setOverrideState({ identity, value: "unknown" });
       });
   }, [
-    normalizedDefault,
+    fallback,
     identity,
     repository,
     sessionKey,
@@ -235,8 +235,8 @@ export function useStudioFloatingSurfaceLayout({
   ]);
 
   const resetLayout = useCallback(() => {
-    setLayout(normalizedDefault);
-  }, [normalizedDefault, setLayout]);
+    setLayout(fallback);
+  }, [fallback, setLayout]);
 
   return {
     layout,
