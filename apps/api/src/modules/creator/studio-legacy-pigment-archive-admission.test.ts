@@ -1,8 +1,41 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import * as Y from "yjs";
+import { loadStudioCrdtDocumentInTransaction, type DrizzleStudioCrdtTransaction } from "./studio-crdt.repository";
+import { assertStudioLegacyPigmentArchiveRestDocumentInTransaction } from "./studio-legacy-pigment-archive-rest-gate";
 import type { StudioCrdtScopedRecord } from "@toonstudio/contracts/studio-crdt-authoring";
 import { assertStudioLegacyPigmentArchiveTransition as admit, assertStudioLegacyPigmentArchiveCrdtRecords,
   assertStudioLegacyPigmentArchiveBaselineProjection, canonicalStudioLegacyPigmentV6Source,
-  studioLegacyPigmentArchiveSourceAuthority } from "./studio-legacy-pigment-archive-admission";
+  studioLegacyPigmentArchiveSourceAuthority, assertStudioLegacyPigmentArchiveReader } from "./studio-legacy-pigment-archive-admission";
+
+vi.mock("./studio-crdt.repository", async (importOriginal) => ({ ...await importOriginal<typeof import("./studio-crdt.repository")>(),
+  loadStudioCrdtDocumentInTransaction: vi.fn(),
+}));
+
+describe("REST 보존 획 reader 입장", () => {
+  function durable(deleted: boolean) {
+    const doc = new Y.Doc(), stroke = new Y.Map<unknown>();
+    doc.getMap("strokes").set("draw-one", stroke);
+    for (const [key, value] of Object.entries({ id: "draw-one", pageId: "page-one", layerId: "page-root", status: "finalized",
+      payloadVersion: 7, type: "draw", kind: "freehand", mode: "pen", stroke: "#123456", strokeWidth: 3, deleted,
+      extensions: { colorizeMaskEnabled: false } })) stroke.set(key, value);
+    for (const key of ["points", "pressures", "tiltXs", "tiltYs", "twists", "speeds", "tangentialPressures"]) {
+      const values = new Y.Array<number>(); values.push(key === "points" ? [1, 2, 10, 20] : key === "pressures" ? [0.5, 0.5] : [0, 0]); stroke.set(key, values);
+    }
+    const order = new Y.Map<unknown>();
+    for (const [key, value] of Object.entries({ strokeId: "draw-one", pageId: "page-one", layerId: "page-root", active: true })) order.set(key, value);
+    doc.getArray("stroke-order").push([order]);
+    const snapshot = Y.encodeStateAsUpdate(doc); doc.destroy();
+    return { snapshot: { workId: "work-one", snapshot, compactedSequence: 1n, updatedAt: new Date(0) }, updates: [] };
+  }
+  it.each([false, true])("archive 없는 raw v7 deleted=%s도 구 REST 저장을 거절하고 최신 reader의 명시 삭제를 허용한다", async (deleted) => {
+    vi.mocked(loadStudioCrdtDocumentInTransaction).mockResolvedValue(durable(deleted));
+    const baseline = { pagesList: [{ id: "page-one", elements: [] }] }, transaction = {} as DrizzleStudioCrdtTransaction;
+    await expect(assertStudioLegacyPigmentArchiveRestDocumentInTransaction(transaction, "work-one", baseline, baseline, ["bg3d-sixpass-bundle.v1"]))
+      .rejects.toMatchObject({ response: { code: "studio_legacy_pigment_archive_reader_upgrade_required" } });
+    await expect(assertStudioLegacyPigmentArchiveRestDocumentInTransaction(transaction, "work-one", baseline, baseline, ["legacy-pigment-preservation.v1"]))
+      .resolves.toBeUndefined();
+  });
+});
 
 function fixture(hidden?: boolean) {
   const source = { id: "source", type: "draw", kind: "freehand", mode: "pen", name: "원본 획", groupId: "source-group",
@@ -27,6 +60,15 @@ function rawRecords(f: ReturnType<typeof fixture>, archived = true): StudioCrdtS
 }
 
 describe("이전 혼색 보관 원본의 서버 전이", () => {
+  it("archive 없는 PSD·색칠 마스크 저장도 구 reader를 거절하고 최신 reader의 명시 제거를 허용한다", () => {
+    const required = "legacy-pigment-preservation.v1";
+    for (const field of [{ psdGroupId: "folder" }, { colorizeMaskEnabled: false }]) {
+      const document = { pagesList: [{ id: "page", elements: [{ id: "draw", type: "draw", ...field }] }] };
+      expect(() => assertStudioLegacyPigmentArchiveReader(document, ["bg3d-sixpass-bundle.v1"])).toThrow(/최신 버전/);
+      expect(() => assertStudioLegacyPigmentArchiveReader(document, [required])).not.toThrow();
+      expect(() => admit(document, { pagesList: [{ id: "page", elements: [] }] })).not.toThrow();
+    }
+  });
   it("보관 필드 없는 일반 원고 쓰기는 기존 검증에 위임한다", () => {
     expect(() => admit({ version: 2 }, { title: "수정" })).not.toThrow();
   });

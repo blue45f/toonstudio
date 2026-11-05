@@ -126,13 +126,13 @@ describe("경계선 면 나누기 전용 도구와 실제 hook", () => {
     await waitFor(() => expect(button("면 나누기 적용")).toHaveProperty("disabled", false));
     const resultHash = need(screen.getByTestId("preview-hash").textContent);
     expect(resultHash).not.toBe("없음"); expect(resultHash).not.toBe(f.source.sourceHash);
-    expect(screen.getByRole("status").textContent).toContain("적용 전에는 원본과 편집 이력이 바뀌지 않습니다");
+    expect(screen.getByRole("status").textContent).toBe(i18nDict[useI18n.getState().lang]?.["studio.bg3dScene.boundaryChord.status.ready"]);
     expect(f.observed.workspace).toBe(f.original); expect(f.published).not.toHaveBeenCalled();
     expect(serializeStudioEditableMesh(f.source.mesh)).toEqual(original);
     expect(serializeStudioCommandJournal(f.original.session.journal)).toBe(journal);
     fireEvent.click(button("면 나누기 적용"));
     await waitFor(() => expect(f.published).toHaveBeenCalledExactlyOnceWith("경계선으로 면 나누기"));
-    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("면을 나눴습니다"));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe(i18nDict[useI18n.getState().lang]?.["studio.bg3dScene.boundaryChord.notice.applied"]));
     expect(need(workspaceComponentSelectionSource(f.observed.workspace)).sourceHash).toBe(resultHash);
     expect(f.observed.workspace.session.state.commandCount).toBe(f.original.session.state.commandCount + 1);
     expect(f.observed.workspace.session.undoStack).toHaveLength(f.original.session.undoStack.length + 1);

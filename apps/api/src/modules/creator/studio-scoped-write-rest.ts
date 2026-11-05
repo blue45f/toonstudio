@@ -25,8 +25,11 @@ export interface StudioScopedRestWriteInput {
 const savedSchema = z.object({ workId: z.string(), revision: z.number().int().positive(), updatedAt: z.iso.datetime({ offset: true }) }).strict();
 
 /** caller는 같은 작품 advisory lock을 보유한다. 압축본과 suffix를 합친 최신 권위를 사용한다. */
-export async function loadStudioScopedRestAuthority(transaction: DrizzleStudioCrdtTransaction, workId: string, baseline: unknown): Promise<unknown> {
-  return (await loadStudioScopedCrdtAuthority(transaction, workId, baseline)).authoringDocument;
+export async function loadStudioScopedRestAuthority(transaction: DrizzleStudioCrdtTransaction, workId: string, baseline: unknown, readers?: readonly string[]): Promise<unknown> {
+  const authority = await loadStudioScopedCrdtAuthority(transaction, workId, baseline);
+  if (readers) assertStudioLegacyPigmentArchiveReader({ pagesList: [{ elements: [...authority.state.entities.values()]
+    .filter((entity) => entity.kind === "stroke").map((entity) => entity.value) }] }, readers);
+  return authority.authoringDocument;
 }
 
 /** 제한 편집만 별도 권위로 저장한다. 일반 editor는 null을 받아 기존 저장 경로를 유지한다. */
@@ -58,9 +61,10 @@ export async function saveStudioScopedRestDocument(input: {
       if (!Object.hasOwn(input.patch, "doc") || Object.keys(input.patch).some((key) => key !== "doc")) {
         throw new BadRequestException({ code: "studio_scoped_document_only", message: "담당 원고는 문서 저장을 사용하세요. 표지·납품 이미지·작품 설정은 제작 관리자 권한입니다." });
       }
-      const beforeDocument = await loadStudioScopedRestAuthority(transaction, input.workId, work.document);
+      const beforeDocument = await loadStudioScopedRestAuthority(transaction, input.workId, work.document, input.readerCapabilities ?? []);
       assertStudioLegacyPigmentArchiveReader(work.document, input.readerCapabilities ?? []);
       assertStudioLegacyPigmentArchiveReader(beforeDocument, input.readerCapabilities ?? []);
+      assertStudioLegacyPigmentArchiveReader(input.patch.doc, input.readerCapabilities ?? []);
       assertStudioLegacyPigmentArchiveTransition(studioLegacyPigmentArchiveSourceAuthority(work.document, beforeDocument, input.patch.doc), input.patch.doc);
       await assertStudioBg3dRestDocumentInTransaction(transaction, input.workId, input.patch.doc, input.readerCapabilities ?? [], beforeDocument);
       const admission = admitStudioScopedWriteEffects({ before: projectStudioScopedAuthoringDocument(beforeDocument),

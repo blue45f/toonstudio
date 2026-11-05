@@ -1,3 +1,4 @@
+import { STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { describe, expect, it } from "vitest";
 import { createBrushStudioV6Program } from "../brush-lab/brush-studio-v6-engine";
 import { createBrushStudioV6MaterialReceipt } from "../brush-lab/brush-studio-v6-material-receipt";
@@ -21,6 +22,14 @@ function project(elements: unknown[]) {
 }
 
 describe("외부 혼색 원본의 파일·ZIP·자동복구 보존", () => {
+  it.each(STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS)("보존 필드 %s는 단독으로도 정본과 같은 최소 reader를 요구한다", (key) => {
+    // 버전 선택은 값의 스키마 검증이 아닌 필드의 존재를 판정한다.
+    const element = { type: "draw", [key]: key === "colorizeMaskEnabled" ? false : null };
+    expect(minimumStudioProjectFileVersion([{ elements: [element] }], null)).toBe(6);
+    expect(minimumStudioProjectFileVersion([], { elements: [element] })).toBe(6);
+    expect(minimumStudioProjectFileVersion([{ elements: [{ type: "draw", unrelatedMetadata: null }] }], null)).toBe(2);
+  });
+
   it("원본 body·숨김·출처를 raw JSON과 정본 envelope v6으로 보존한다", async () => {
     const original = archive(), source = project([original]), before = JSON.stringify(source);
     const saved = serializeStudioProjectFile(source), parsed = parseStudioProjectFile(JSON.parse(saved));

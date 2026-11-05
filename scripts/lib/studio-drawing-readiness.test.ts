@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+
 import { errors, type Locator, type Page } from "playwright";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { parse } from "yaml";
 
 import {
   clickStudioControlAfterReadiness,
@@ -8,6 +11,15 @@ import {
 } from "./studio-drawing-readiness";
 
 type Surface = "comic" | "notice" | "beta" | "welcome" | "quickstart" | "viewport" | "stage";
+
+it("모바일 브러시 helper 단독 변경도 PR과 main 화면 검사를 실행한다", () => {
+  const helper = "scripts/lib/studio-mobile-brush-settings.ts";
+  const workflow: unknown = parse(readFileSync(new URL("../../.github/workflows/studio-brush-filter-stability.yml", import.meta.url), "utf8"));
+  expect(workflow).toMatchObject({ on: {
+    pull_request: { paths: expect.arrayContaining([helper]) },
+    push: { paths: expect.arrayContaining([helper]) },
+  } });
+});
 const selectors: Record<Surface, string> = {
   comic: '[data-studio-quick-comic-overlay="true"]',
   notice: '[data-testid="mobile-full-edit-notice"][data-studio-mobile-notice-compact="false"]',

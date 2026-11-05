@@ -32,6 +32,23 @@ function persisted(source: StudioCrdtCompatibleDrawElement) {
 }
 
 describe("외부 혼색 원본 출처의 실제 Y 저장·웹/서버 투영", () => {
+  it.each(["archive", "active"])("%s 획의 기존 스케치 스타일이 서버 입장 검사와 재접속 투영을 통과한다", (kind) => {
+    const source = { ...archivedStroke(), sketch: { enabled: true, roughness: 2, bowing: 1.5, fillStyle: "cross-hatch" } };
+    if (kind === "active") {
+      delete source.legacyPigmentArchive;
+      source.brushEnginePrograms = { version: 1, material: createBrushStudioV6MaterialReceipt(createBrushStudioV6Program("mixbox-pigment-spray")) };
+    }
+    const f = persisted(source), peer = new StudioCrdtDocument(f.document.encodeStateAsUpdate()), raw = ySnapshot(peer);
+    try {
+      expect(hasValidStudioCrdtRootSchema(raw)).toBe(true);
+      expect(studioCrdtStrokeToDrawElement(peer.getStroke(source.id)!).sketch).toEqual(source.sketch);
+      const baseline = { pagesList: [f.page] };
+      expect(readStudioCrdtScopedRecords({ baseline, doc: raw }).find((record) => record.id === source.id)?.value.sketch).toEqual(source.sketch);
+      expect(materializeStudioAuthoringFromCrdt({ baseline, doc: raw })).toMatchObject({ pagesList: [{ elements: [{ sketch: source.sketch }] }] });
+      raw.getMap<Y.Map<unknown>>("strokes").get(source.id)!.set("sketch", { content: "x".repeat(17 * 1024) });
+      expect(hasValidStudioCrdtRootSchema(raw)).toBe(false);
+    } finally { raw.destroy(); peer.destroy(); f.document.destroy(); }
+  });
   it.each([1, 2] as const)("V%i 원본을 v7로 복제·직렬화해 source identity와 외부 실행 영수증을 보존한다", (version) => {
     const source = archivedStroke(version), before = JSON.stringify(source), f = persisted(source);
     const peer = new StudioCrdtDocument(f.document.encodeStateAsUpdate()), raw = ySnapshot(peer);

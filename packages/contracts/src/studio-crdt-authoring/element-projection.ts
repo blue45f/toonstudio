@@ -13,7 +13,7 @@ export interface StudioCrdtProjectionStrokePayload {
   points: number[]; stroke: string; strokeWidth: number; version?: unknown; extensions?: Record<string, unknown>;
 }
 const ARRAY_KEYS = ["points", "pressures", "tiltXs", "tiltYs", "twists", "speeds", "tangentialPressures", "altitudeAngles", "azimuthAngles", "contactWidths", "contactHeights", "sampleTimeOffsets"] as const;
-const SCALAR_KEYS = ["kind", "mode", "opacity", "fill", "gradient", "pattern", "brush", "brushCatalogId", "brushCatalogName", "sampleSpacing", "brushDynamics", "brushTip", "strokeStyle", "shapeParams", "symmetry", "blendMode"] as const;
+const SCALAR_KEYS = ["kind", "mode", "opacity", "fill", "gradient", "pattern", "brush", "brushCatalogId", "brushCatalogName", "sampleSpacing", "brushDynamics", "brushTip", "strokeStyle", "shapeParams", "sketch", "symmetry", "blendMode"] as const;
 const EXTENSION_KEYS = ["smartShape", "stamp", "stampPipeline", "watercolorPipeline", "name", "hidden", "locked", "noClip", "frameClipId", "lockAspect", "groupId", "clipBelow", "alphaLocked", "maskSrc", "maskEnabled", "layerRole", "layerColor", "emeresSourceId"] as const;
 
 /** 이미 admission에서 의미 검증한 페이로드를 손실 없이 Authoring 필드로 옮긴다. 렌더러를 추정하지 않는다. */

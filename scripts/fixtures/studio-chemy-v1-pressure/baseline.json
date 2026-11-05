@@ -1,0 +1,84 @@
+{
+  "policy": "legacy-chemy-v1-raster-and-transfer-v1",
+  "contractChange": "Chemy V1의 최종 알파 질량 >1.15 하한을 더 이상 요구하지 않는다. 기존 외관·필압 경로 보존 계약으로 교체하며 동등하거나 강화된 압력 하한이 아니다.",
+  "status": "사용자 결정 반영; Linux 원본 픽셀 검증 대기",
+  "provenance": {
+    "commit": "1391d200a1f3015d2cdc0cefe4d090f2ad2b8935",
+    "reportSha256": "d7e174b61e66f3cb780e9811b96eb9f77b702b9ba2779ed1d93f118be7e572a3",
+    "recordedAt": "2026-11-05T11:00:56.088Z",
+    "browser": "156.0.8078.4",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "linuxPixelIdentityVerified": false,
+    "pngVsRawVerification": "Independent Pillow PNG decode matched both archived getImageData RGBA SHA-256 values. This is specific to these two fixtures.",
+    "opacityReference": {
+      "commit": "1391d200a1f3015d2cdc0cefe4d090f2ad2b8935",
+      "node": "v24.22.1",
+      "sourceMatchesArchivedBrowser": true,
+      "method": "불변 원본에서 1회 추출한 절대 opacity 벡터 지문. 검사 중 expected 계산·덮어쓰기 없음."
+    }
+  },
+  "environment": {
+    "browser": "156.0.8078.4",
+    "platform": "darwin",
+    "architecture": "arm64"
+  },
+  "snapshot": {
+    "materialVersion": 1,
+    "carrier": "carrier-cpu-klecks-chemy-v1",
+    "seed": 20260909,
+    "sampleCount": 96,
+    "rawPressures": [
+      0.15,
+      0.85
+    ],
+    "mappedPressures": [
+      0.20096828688518137,
+      0.919047625504462
+    ],
+    "markCount": 1758,
+    "width": 640,
+    "height": 480
+  },
+  "sourceSha256": {
+    "low": "24c2aad648d5f6bd4d1ef946627ca5a5b77dbe1ee8f4474446298b865dcde801",
+    "high": "876b95d7568e30a0f6aa1464f550af254ade8dc33db5bbcc23d5820c8e789e1b"
+  },
+  "orderedGeometrySha256": "c3dc88ce69ac18a8bee5894bb3530bd65a8e521f02afc4b08f338515b381b643",
+  "geometrySerialization": "JSON.stringify(marks.map(({opacity,...mark})=>mark)); includes color and order",
+  "referenceLaw": "고정 mapped pressure의 sqrt 비례 관계. 4 EPS × ratio는 곱셈·나눗셈 IEEE754 경계이며 픽셀 골든은 정확 동일 요구.",
+  "pixels": {
+    "low": {
+      "rgbaSha256": "4864d1efb7d08ab3c44157626f8939bc5ebc8fde78680bf45e0b3705b31f6773",
+      "alphaMass": 12307470,
+      "visiblePixels": 57695,
+      "opaquePixels": 662,
+      "alphaAtLeast95PercentPixels": 33217,
+      "histogramSha256": "b6f80bfdb962184bbcfb4ea4c065f1296745fea25a54862623cf05658b96d270",
+      "fixturePngSha256": "177f7858dc2ee0b9d534648923f045ae9c226eeaa09cffdb37ed40091ca571db"
+    },
+    "high": {
+      "rgbaSha256": "abcb8641227cb4e00064f62f621a653da8c0744c5fad42f9807a7cf5fd4eb8b6",
+      "alphaMass": 13936892,
+      "visiblePixels": 57806,
+      "opaquePixels": 39694,
+      "alphaAtLeast95PercentPixels": 45343,
+      "histogramSha256": "63db9521e0bfa03a114ac3a3ebf291429e58f49ebc014cc5d203d25a380db545",
+      "fixturePngSha256": "51dc4fd65ab236f3073fd78e3aa806be0d82a1b2c67bb7e0f20586340a2ef5c6"
+    }
+  },
+  "contract": {
+    "originalMinimumExclusive": 1.15,
+    "originalMinimumRetained": false,
+    "approvalStatus": "owner-approved-2026-11-05"
+  },
+  "opacitySha256": {
+    "low": "37e33b6de841d8ea0e3abbd273841f3473d196e40920857973ec33c182630332",
+    "high": "4693669be489e6a95dc7baf87b4e7c25be5028c76218ad72dba0827f80cc5c22"
+  },
+  "approval": {
+    "decidedAtKST": "2026-11-05 21:06",
+    "scope": "Chemy V1만 기존 픽셀·필압 경로 보존으로 교체하며 원래 15% 하한을 포기한다. 다른 33종·제품 렌더러·저장 형식·데이터·권한은 유지한다. Linux 검증과 전체 CI 통과 후 병합한다.",
+    "decision": "사용자가 제시한 변경안의 판단과 진행을 위임해 기존 외관 보존을 선택했다."
+  }
+}

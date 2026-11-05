@@ -14,7 +14,7 @@ import { enabledStudioHistoryControl } from "../../../scripts/lib/studio-verify-
 import { validatePostgresIntegrationUrl } from "../../../scripts/run-postgres-integration-tests.mjs";
 import fixture from "../../corpus/studio/short-comic-six-pages.json";
 
-import { captureSixPageReview, downloadSixPagePngs, exportSixPageSnapshot, openSixPageCanvas, technicalPackage, temporaryPointer } from "./studio-six-page-browser-support";
+import { captureSixPageRendererReceipt, captureSixPageReview, downloadSixPagePngs, exportSixPageSnapshot, openSixPageCanvas, technicalPackage, temporaryPointer, type SixPageRendererReceipt } from "./studio-six-page-browser-support";
 import { digest, registerActors, shared, sixPageProduction, type Actor } from "./studio-six-page-test-support";
 
 import type { StudioReviewPreviewSubject } from "../../../apps/api/src/modules/studio-project-graph/studio-review-preview";
@@ -182,8 +182,16 @@ describe.skipIf(!databaseUrl || !origin)("동일 6컷의 실제 저장·협업·
       expect(comparison.backgroundPixels).toBeGreaterThan(1_000); expect(comparison.nonBackgroundPixels).toBeGreaterThan(1_000);
       return { pageId: pageIds[i], ...pngPixels(bytes), historicalComparison: comparison };
     });
+    const exportRendererReceipts: (SixPageRendererReceipt & { pageId: string })[] = [];
+    for (const [index, source] of fixture.project.pagesList.entries()) {
+      const expected = currentBaseline[index];
+      if (!expected) throw new Error("같은 컷의 UI 내보내기 기준본이 없습니다.");
+      const receipt = await captureSixPageRendererReceipt(manager.page, source);
+      expect(receipt).toMatchObject({ status: "captured", backend: "skia-document", rgbaSha256: expected.rgbaSha256, reason: null });
+      exportRendererReceipts.push({ pageId: source.id, ...receipt });
+    }
     await writeFile(join(output, "candidate-current-baseline.json"), JSON.stringify({ payloadDifferenceFields, currentBaseline,
-      historicalBaselineMain: "8d315c85d6fde4a3a30255612c756d3e299a95b0", crossVersionPixelEqualityClaimed: false }, null, 2));
+      exportRendererReceipts, historicalBaselineMain: "8d315c85d6fde4a3a30255612c756d3e299a95b0", crossVersionPixelEqualityClaimed: false }, null, 2));
     const collaborator = await openSixPageCanvas(browser, h, worker, workId, origin!); openPages.push(collaborator.page);
     assertOriginal(await exportSixPageSnapshot(collaborator.page, join(output, "worker-before.json")));
     const baselineCount = fixture.project.pagesList.at(-1)!.elements.length;
@@ -293,7 +301,7 @@ describe.skipIf(!databaseUrl || !origin)("동일 6컷의 실제 저장·협업·
       initialCrdtUpdates: { count: initialUpdates.length, maxBytes: Math.max(...initialUpdates.map(bytes => bytes.length)), budgetUnchanged: true },
       candidateCurrentBaseline: { payloadDifferenceFields, pages: currentBaseline, strictCurrentWorkflowComparison: true,
         crossVersionPixelEqualityClaimed: false, historicalBaselineMain: "8d315c85d6fde4a3a30255612c756d3e299a95b0" },
-      pagesDeepEqual: true, pixels: pixelProof, pointerUndoRedoUndoRestored: true, workerLive: collaborator.proof,
+      pagesDeepEqual: true, pixels: pixelProof, exportRendererReceipts, pointerUndoRedoUndoRestored: true, workerLive: collaborator.proof,
       bothAccountsReloadedAndRelogged: true, actualSixPageReview: subject, approvedSubmission: approved,
       activeStage: "storyboard-conte", originalProvenancePreserved: true, sourceHistoryJournalPresent: false,
       humanPublicationChecksConfirmed: false, uiPackageBlocked: true,

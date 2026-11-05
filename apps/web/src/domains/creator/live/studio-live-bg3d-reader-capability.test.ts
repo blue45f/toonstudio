@@ -9,16 +9,17 @@ import { createStudioCrdtServerAckError } from "./studio-crdt-operation-error";
 import { encodeStudioCrdtBinaryEnvelope } from "@/shared/lib/studio-crdt-binary-envelope";
 
 const updateId = "00000000-0000-4000-8000-000000000001";
+const READERS = [CAP, "legacy-pigment-preservation.v1"];
 describe("원격 공동편집의 6패스 reader 광고", () => {
   it("이 기기의 origin 권위를 원격 서버 요청으로 보내지 않는다", () => {
     const request = { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-1", requestId: "request-1", stateVector: "AA==",
       requiredReaderCapabilities: [CAP], artifactScope: "origin" as const };
     const wire = studioCrdtRemoteReaderRequest(request);
-    expect(wire).toMatchObject({ readerCapabilities: [CAP] }); expect(wire).not.toHaveProperty("artifactScope");
+    expect(wire).toMatchObject({ readerCapabilities: READERS }); expect(wire).not.toHaveProperty("artifactScope");
     expect(wire).not.toHaveProperty("requiredReaderCapabilities"); expect(request.artifactScope).toBe("origin");
-    expect(createStudioCrdtBinarySyncRequest(wire)).toMatchObject({ readerCapabilities: [CAP] });
+    expect(createStudioCrdtBinarySyncRequest(wire)).toMatchObject({ readerCapabilities: READERS });
     expect(createStudioCrdtBinaryUpdateRequest(studioCrdtRemoteReaderRequest({ protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION,
-      workId: "work-1", updateId, clientSequence: 1, update: "AA==", readerCapabilities: [] }))).toMatchObject({ readerCapabilities: [CAP] });
+      workId: "work-1", updateId, clientSequence: 1, update: "AA==", readerCapabilities: [] }))).toMatchObject({ readerCapabilities: READERS });
   });
   it("JSON 변환을 거친 binary ACK와 원격 업데이트에도 요구 계약을 남긴다", () => {
     const common = { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, wireVersion: 1, workId: "work-1", updateId, serverSequence: "1", requiredReaderCapabilities: [CAP] };

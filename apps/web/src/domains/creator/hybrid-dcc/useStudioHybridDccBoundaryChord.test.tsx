@@ -3,6 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { Matrix4, OrthographicCamera, Vector2, Vector3 } from "three";
 import { afterEach, describe, expect, it } from "vitest";
+import { i18nDict, useI18n } from "@/shared/lib/i18n";
 
 import { inspectStudioMeshSurfaceForInteractiveProjection } from "../mesh-surface/studio-mesh-surface-interactive";
 import { hashStudioEditableMesh, serializeStudioEditableMesh } from "../studio-editable-half-edge-mesh";
@@ -76,7 +77,7 @@ describe("경계선 면 나누기 훅의 실제 source/host 경계", () => {
     expect(committed.selection?.elementIds).toHaveLength(2);
     expect(request.canCommit()).toBe(true);
     view.rerender({ ...f.input, workspace: committed.workspace, selection: need(committed.selection) });
-    await waitFor(() => expect(view.result.current.notice).toContain("면을 나눴습니다"));
+    await waitFor(() => expect(view.result.current.notice).toBe(i18nDict[useI18n.getState().lang]?.["studio.bg3dScene.boundaryChord.notice.applied"]));
     expect(view.result.current.engaged).toBe(false);
     expect(hashStudioEditableMesh(need(workspaceComponentSelectionSource(workspaceUndo(committed.workspace))).mesh)).toBe(f.source.sourceHash);
   });

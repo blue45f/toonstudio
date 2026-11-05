@@ -7,7 +7,8 @@ on:
     paths:
       - "scripts/audit-studio-brush-pressure-curves.mts"
       - "scripts/audit-studio-brush-semantic-quality.mts"
-      - "apps/web/src/domains/creator/StudioActiveBrushSummary.test.tsx"
+      - "scripts/lib/studio-brush-settled-granulation-evidence.ts"
+      - "apps/web/src/domains/creator/brush/StudioActiveBrushSummary.test.tsx"
       - "apps/web/src/domains/creator/StudioActiveBrushSummary.tsx"
       - "apps/web/src/domains/creator/brush/StudioBrushEngineMixer.test.tsx"
       - "apps/web/src/domains/creator/brush/StudioBrushEngineMixer.tsx"
@@ -28,7 +29,8 @@ on:
     paths:
       - "scripts/audit-studio-brush-pressure-curves.mts"
       - "scripts/audit-studio-brush-semantic-quality.mts"
-      - "apps/web/src/domains/creator/StudioActiveBrushSummary.test.tsx"
+      - "scripts/lib/studio-brush-settled-granulation-evidence.ts"
+      - "apps/web/src/domains/creator/brush/StudioActiveBrushSummary.test.tsx"
       - "apps/web/src/domains/creator/StudioActiveBrushSummary.tsx"
       - "apps/web/src/domains/creator/brush/**"
       - ".github/workflows/studio-brush-semantic-quality.yml"
@@ -70,7 +72,7 @@ jobs:
           apps/web/src/domains/creator/brush/studio-brush-semantic-quality.test.ts
           apps/web/src/domains/creator/brush/studio-brush-material-distinctness.test.ts
           apps/web/src/domains/creator/brush/studio-brush-pressure-curve-quality.test.ts
-          apps/web/src/domains/creator/StudioActiveBrushSummary.test.tsx
+          apps/web/src/domains/creator/brush/StudioActiveBrushSummary.test.tsx
           apps/web/src/domains/creator/brush/studio-brush-catalog-lazy-boundary.test.ts
           apps/web/src/domains/creator/brush/studio-brush-engine-mix.test.ts
           apps/web/src/domains/creator/brush/StudioBrushEngineMixer.test.tsx
@@ -93,7 +95,8 @@ jobs:
           pnpm exec eslint --max-warnings=0
           scripts/audit-studio-brush-pressure-curves.mts
           scripts/audit-studio-brush-semantic-quality.mts
-          apps/web/src/domains/creator/StudioActiveBrushSummary.test.tsx
+          scripts/lib/studio-brush-settled-granulation-evidence.ts
+          apps/web/src/domains/creator/brush/StudioActiveBrushSummary.test.tsx
           apps/web/src/domains/creator/StudioActiveBrushSummary.tsx
           apps/web/src/domains/creator/brush/StudioBrushEngineMixer.test.tsx
           apps/web/src/domains/creator/brush/StudioBrushEngineMixer.tsx
@@ -110,6 +113,8 @@ jobs:
           apps/web/src/domains/creator/brush/studio-brush-semantic-quality.ts
 
       - name: Typecheck
+        env:
+          NODE_OPTIONS: --max-old-space-size=16384
         run: pnpm exec tsc -p tsconfig.json --noEmit --incremental false
 
       - name: Build production Studio

@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { createBrushStudioV6Program } from "../brush-lab/brush-studio-v6-engine";
-import { normalizeBrushStudioV6MaterialConfig } from "../brush-lab/brush-studio-v6-material-engine";
+import { createBrushStudioV6MaterialReceipt } from "../brush-lab/brush-studio-v6-material-receipt";
 import { exportPageToSvg } from "../export/studio-svg-export";
 import { loadStudioPerfectFreehandStroker } from "../studio-perfect-freehand";
 
@@ -213,14 +213,9 @@ function buildProductionDrawElementForCatalogItem(
   const runtimeBrushId = item.id;
   const recipeId = studioV6RecipeIdFromCatalogId(item.id);
   const v6Program = recipeId ? createBrushStudioV6Program(recipeId) : null;
+  // 전체 재질의 수학·렌더 경로 검사에는 프로필을 명시한다. 제품의 기본 선택 권한은 바꾸지 않는다.
   const v6Material = v6Program
-    ? normalizeBrushStudioV6MaterialConfig({
-        version: 1,
-        seed: v6Program.seed,
-        slots: v6Program.slots,
-        tuning: v6Program.tuning,
-        input: v6Program.input,
-      })
+    ? createBrushStudioV6MaterialReceipt(v6Program, "noncommercial-full")
     : null;
   const brushEnginePrograms = v6Material
     ? studioBrushEngineProgramSetFromMaterial(v6Material)
@@ -288,7 +283,7 @@ describe("실제 서비스 전체 브러시 카탈로그 및 장시간 소크(Lo
     resetStudioWetWashLivePipelineCacheForTests();
   });
 
-  it("서비스 전체 브러시 카탈로그(코어·프로 377종 + V6 머티리얼 139종 = 총 516종)가 실제 포인터 시작 계획·캔버스·SVG 렌더 파이프라인을 무결하게 통과한다", () => {
+  it("전체 브러시 516종이 명시적 검사 프로필에서 실제 포인터 시작 계획·캔버스·SVG 렌더 파이프라인을 통과한다", () => {
     const itemsById = new Map<string, StudioBrushCatalogItem>();
     for (const item of STUDIO_ALL_BRUSH_CATALOG_ITEMS) itemsById.set(item.id, item);
     for (const item of STUDIO_LIBRARY_ALL_BRUSH_CATALOG_ITEMS) itemsById.set(item.id, item);

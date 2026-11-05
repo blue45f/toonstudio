@@ -1156,6 +1156,7 @@ export interface StudioLiveIdentityClaim {
 export interface StudioLiveSocketData {
   studioReaderCapabilities?: readonly string[];
   studioBg3dReaderRoom?: string;
+  studioPreservedDrawReaderRooms?: readonly string[];
   /**
    * Shared Socket.IO adapters expose `socket.data` through `fetchSockets()`, so this discovery
    * surface contains only public presence plus a comparison-only HMAC identity claim. Never place

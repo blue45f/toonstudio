@@ -87,6 +87,18 @@ export function readStudioShellFloatingViewport(
   };
 }
 
+/** border·scrollbar gutter를 제외한 실제 표시 영역을 화면 좌표로 읽는다. */
+function clientBounds(element: HTMLElement): StudioShellCanvasBounds | null {
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0 || element.clientWidth <= 0 || element.clientHeight <= 0) return null;
+  const scaleX = element.offsetWidth > 0 ? rect.width / element.offsetWidth : 1;
+  const scaleY = element.offsetHeight > 0 ? rect.height / element.offsetHeight : 1;
+  return { left: rect.left + element.clientLeft * scaleX, top: rect.top + element.clientTop * scaleY,
+    right: rect.left + (element.clientLeft + element.clientWidth) * scaleX,
+    bottom: rect.top + (element.clientTop + element.clientHeight) * scaleY };
+}
+const CLIPPED_OVERFLOW = /^(auto|scroll|hidden|clip|overlay)$/u;
+
 /** 캔버스·패널 경계를 관찰한다. 저장 쓰기는 없다. */
 export function observeStudioShellCanvasBounds(listener: (bounds: StudioShellCanvasBounds | null) => void): () => void {
   let observed = new Set<HTMLElement>();
@@ -97,16 +109,27 @@ export function observeStudioShellCanvasBounds(listener: (bounds: StudioShellCan
     if (!active) return;
     const canvases = Array.from(document.querySelectorAll<HTMLElement>('[data-studio-editor="true"] [data-studio-canvas-viewport]'));
     const targets = new Set([...canvases, ...document.querySelectorAll<HTMLElement>('[data-studio-editor="true"] #studio-inspector')]);
+    const canvas = canvases.find((element) => clientBounds(element) !== null);
+    let bounds = canvas ? clientBounds(canvas) : null;
+    if (bounds) for (let ancestor = canvas?.parentElement; ancestor; ancestor = ancestor.parentElement) {
+      const style = getComputedStyle(ancestor);
+      const clipX = CLIPPED_OVERFLOW.test(style.overflowX), clipY = CLIPPED_OVERFLOW.test(style.overflowY);
+      if (!clipX && !clipY) continue;
+      targets.add(ancestor);
+      const clip = clientBounds(ancestor);
+      if (!clip) { bounds = null; break; }
+      bounds = { left: clipX ? Math.max(bounds.left, clip.left) : bounds.left,
+        right: clipX ? Math.min(bounds.right, clip.right) : bounds.right,
+        top: clipY ? Math.max(bounds.top, clip.top) : bounds.top,
+        bottom: clipY ? Math.min(bounds.bottom, clip.bottom) : bounds.bottom };
+    }
     for (const previous of observed) if (!targets.has(previous)) resize?.unobserve(previous);
     for (const target of targets) if (!observed.has(target)) resize?.observe(target);
     observed = targets;
     // 숨겨진 캔버스도 관찰해 재표시 때 갱신한다.
-    const canvas = canvases.find((element) => { const rect = element.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; });
-    const rect = canvas?.getBoundingClientRect();
     const inspector = canvas?.closest('[data-studio-editor="true"]')?.querySelector<HTMLElement>("#studio-inspector");
     const inspectorRect = inspector?.getBoundingClientRect();
     const dock = canvas?.closest("[data-studio-inspector-dock]")?.getAttribute("data-studio-inspector-dock") ?? null;
-    const bounds = rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom } : null;
     listener(bounds ? excludeDockedStudioInspector(bounds, inspectorRect ?? null, dock,
       inspector?.dataset.studioPanelDetached === "true") : null);
   };

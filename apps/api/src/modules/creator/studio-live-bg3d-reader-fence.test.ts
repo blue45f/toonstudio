@@ -1,7 +1,7 @@
 import { StudioLiveRoomTransitionCoordinator } from "./studio-live-room-transition-coordinator";
 import { describe, expect, it, vi } from "vitest";
 import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY as CAP } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
-import { broadcastStudioBg3dReaderSafe, resetStudioBg3dReaderRoom, joinStudioBg3dReaderRoom } from "./studio-live-bg3d-reader-fence";
+import { broadcastStudioBg3dReaderSafe, resetStudioBg3dReaderRoom, joinStudioBg3dReaderRoom, studioRequiredReaderRoom, studioSupportedReaderRooms } from "./studio-live-bg3d-reader-fence";
 import type { StudioLiveGatewayHost } from "./studio-live-gateway-host";
 import type { StudioLiveSocket } from "./studio-live.protocol";
 
@@ -31,6 +31,19 @@ describe("6패스 수신 reader fence", () => {
     await expect(broadcastStudioBg3dReaderSafe(h.host, h.sender, "work-room", "update", {}, [CAP])).rejects.toThrow();
     expect(h.sender.to).toHaveBeenCalledOnce(); expect(h.sender.to).toHaveBeenCalledWith("work-room:reader:bg3d-sixpass-bundle.v1"); expect(h.direct).not.toHaveBeenCalled();
   });
+  it("BG3D만 지원하는 접속 중 구 peer에는 최초 v7 본문을 보내지 않는다", async () => {
+    const preserved = "legacy-pigment-preservation.v1", h = harness();
+    const old = { id: "old", data: { studioReaderCapabilities: [CAP] }, emit: vi.fn(), disconnect: vi.fn() };
+    const current = { id: "current", data: { studioReaderCapabilities: [CAP, preserved] }, emit: vi.fn(), disconnect: vi.fn() };
+    h.fetchSockets.mockResolvedValue([old, current]);
+    await broadcastStudioBg3dReaderSafe(h.host, h.sender, "work-room", "update", { body: "v7" }, [CAP, preserved]);
+    expect(h.sender.to).toHaveBeenCalledWith(studioRequiredReaderRoom("work-room", [CAP, preserved]));
+    expect(h.sender.to).not.toHaveBeenCalledWith("work-room:reader:bg3d-sixpass-bundle.v1");
+    expect(old.emit).toHaveBeenCalledExactlyOnceWith("studio:error", expect.objectContaining({ requiredReaderCapabilities: [CAP, preserved] }));
+    expect(old.disconnect).toHaveBeenCalledWith(true); expect(current.disconnect).not.toHaveBeenCalled();
+    expect(studioSupportedReaderRooms("work-room", [CAP])).not.toContain(studioRequiredReaderRoom("work-room", [CAP, preserved]));
+    expect(studioSupportedReaderRooms("work-room", [CAP, preserved])).toContain(studioRequiredReaderRoom("work-room", [CAP, preserved]));
+  });
 });
 
 describe("6패스 수신 방의 작품 전환", () => {
@@ -56,5 +69,24 @@ describe("6패스 수신 방의 작품 전환", () => {
     const h = transitionHarness(); h.socket.leave.mockRejectedValueOnce(new Error("adapter failed"));
     expect(await resetStudioBg3dReaderRoom(h.host, h.client, 1)).toBe(false);
     expect(h.host.disconnectRoomIsolationFailure).toHaveBeenCalledWith(h.client); expect(h.socket.join).not.toHaveBeenCalled();
+  });
+  it("v7과 BG3D 교집합 방도 작품 전환 시 전부 정리한다", async () => {
+    const h = transitionHarness(); h.socket.data.studioReaderCapabilities = [CAP, "legacy-pigment-preservation.v1"];
+    const rooms = studioSupportedReaderRooms("next", h.socket.data.studioReaderCapabilities);
+    expect(await joinStudioBg3dReaderRoom(h.host, h.client, "next", 1)).toBe(true);
+    expect(rooms).toHaveLength(3);
+    for (const room of rooms) expect(h.socket.join).toHaveBeenCalledWith(room);
+    expect(await resetStudioBg3dReaderRoom(h.host, h.client, 1)).toBe(true);
+    for (const room of rooms) expect(h.socket.leave).toHaveBeenCalledWith(room);
+    expect(h.client.data.studioPreservedDrawReaderRooms).toBeUndefined();
+  });
+  it("두번째 capability 방의 지연 참가도 구 세대가 되면 모든 이전 참가를 되돌린다", async () => {
+    const h = transitionHarness(); h.socket.data.studioReaderCapabilities = [CAP, "legacy-pigment-preservation.v1"];
+    let finish: (() => void) | undefined;
+    h.socket.join.mockImplementationOnce(async () => undefined).mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
+    const pending = joinStudioBg3dReaderRoom(h.host, h.client, "next", 1);
+    await vi.waitFor(() => expect(finish).toBeDefined()); h.stale(); finish?.();
+    expect(await pending).toBe(false);
+    for (const room of studioSupportedReaderRooms("next", h.socket.data.studioReaderCapabilities)) expect(h.socket.leave).toHaveBeenCalledWith(room);
   });
 });

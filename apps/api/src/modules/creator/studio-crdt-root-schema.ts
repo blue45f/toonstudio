@@ -69,6 +69,7 @@ const STUDIO_CRDT_STROKE_JSON_KEYS = [
   "brushTip",
   "strokeStyle",
   "shapeParams",
+  "sketch",
   "symmetry",
   "extensions",
 ] as const;
