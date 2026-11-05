@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { CAMPUS_ROUTE_DISTRICTS } from "@/shared/lib/spatial-campus/campus-bindings";
+
 const root = process.cwd();
 const text = (path: string) => readFileSync(join(root, path), "utf8");
 const required = (path: string) => expect(existsSync(join(root, path)), path).toBe(true);
@@ -12,7 +14,14 @@ describe("Virtual Studio all-pages design closure", () => {
     required("apps/web/src/app/spatial-campus/campus-route-coverage.test.ts");
     required("apps/web/src/domains/fortune/fortune-campus-map.ts");
     const coverage = text("apps/web/src/app/spatial-campus/campus-route-coverage.test.ts");
-    expect(coverage).toContain('expect(market).toHaveLength(11)');
+    const marketRoutes = [...CAMPUS_ROUTE_DISTRICTS.keys()].filter((id) => id.startsWith("market-"));
+    expect(marketRoutes).toHaveLength(14);
+    expect(coverage).toContain(`expect(market).toHaveLength(${marketRoutes.length})`);
+    expect(coverage).toContain('expect(campusBinding(route.id, route.path)?.districtId).toBe("market")');
+    for (const id of ["market-checkout", "market-orders"]) {
+      expect(CAMPUS_ROUTE_DISTRICTS.get(id)).toBe("market");
+      expect(coverage).toMatch(new RegExp(`campusBinding\\("${id}", [^\\n]+\\?\\.surface\\)\\.toBe\\("protected"\\)`));
+    }
     expect(coverage).toContain("explicitly classifies every registered top-level route");
     expect(text("apps/web/src/domains/fortune/fortune-campus-map.ts")).toContain("FORTUNE_EXPERIENCES");
   });

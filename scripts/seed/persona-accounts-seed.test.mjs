@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 import { ORGANIC_PERSONA_ACCOUNTS } from "./persona-accounts-catalog.mjs";
 import {

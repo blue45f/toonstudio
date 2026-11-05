@@ -1,7 +1,7 @@
 // 소스 전용 회귀 검사: 실제 PNG codec·브라우저 CSP 통과 여부는 별도 Chrome 실행에서 확인한다.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import test from "node:test";
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 import vm from "node:vm";
 
 const harnessSource = await readFile(new URL("./browser.mjs", import.meta.url), "utf8");

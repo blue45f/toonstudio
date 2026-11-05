@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { runInNewContext } from "node:vm";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
@@ -77,7 +79,9 @@ describe("Studio companion browser harness boundary", () => {
     expect(harness).toContain('parsed.protocol === "http:"');
     expect(harness).toContain('parsed.hostname === "127.0.0.1"');
     expect(harness).toContain("parsed.port.length > 0");
-    expect(harness).toContain("parsed.origin === preview.origin");
+    expect(harness).toContain("source.origin === preview.origin");
+    expect(harness).toContain('source.search === ""');
+    expect(harness).toContain('source.hash === ""');
     expect(harness).toContain(
       "'ws://127.0.0.1:${preview.port}/socket.io/?EIO=4&transport=websocket' failed: ",
     );
@@ -90,6 +94,34 @@ describe("Studio companion browser harness boundary", () => {
     expect(harness).not.toContain(
       '"/api/v1/apps/toonstudio/visits/ping"',
     );
+  });
+
+  it("실제 console 분류 함수는 소유 preview의 정확한 socket 종료와 자산 출처만 허용한다", () => {
+    const file = ts.createSourceFile("companion.mts", harness, ts.ScriptTarget.Latest, true);
+    const names = new Set(["staticPreviewUrl", "isExpectedStaticPreviewSocketIoHandshakeClose", "isExpectedStaticPreviewConsoleError"]);
+    const functions = file.statements.filter((statement): statement is ts.FunctionDeclaration =>
+      ts.isFunctionDeclaration(statement) && names.has(statement.name?.text ?? ""));
+    expect(functions).toHaveLength(names.size);
+    const source = functions.map((statement) => statement.getText(file)).join("\n");
+    const classify = runInNewContext(ts.transpile(source, { target: ts.ScriptTarget.ES2022 })
+      + "\nisExpectedStaticPreviewConsoleError", { URL }) as (
+      message: { text(): string; location(): { url: string } }, preview: string,
+    ) => boolean;
+    const preview = "http://127.0.0.1:4179";
+    const message = "WebSocket connection to 'ws://127.0.0.1:4179/socket.io/?EIO=4&transport=websocket' failed: Connection closed before receiving a handshake response";
+    const classifyAt = (url: string, base = preview, text = message) =>
+      classify({ text: () => text, location: () => ({ url }) }, base);
+    expect(classifyAt(`${preview}/assets/studio.A-1.js`)).toBe(true);
+    expect(classifyAt("")).toBe(true);
+    for (const url of [
+      "http://127.0.0.1:4180/assets/studio.js", "http://localhost:4179/assets/studio.js",
+      "https://example.test/assets/studio.js", `${preview}/api/studio-realtime/tickets`,
+      `${preview}/assets/studio.js?retry=1`, `${preview}/assets/studio.js#fragment`, "invalid",
+    ]) expect(classifyAt(url), url).toBe(false);
+    for (const base of ["https://127.0.0.1:4179", "https://example.test", "http://localhost:4179", "http://127.0.0.1"])
+      expect(classifyAt(`${preview}/assets/studio.js`, base), base).toBe(false);
+    expect(classifyAt(`${preview}/assets/studio.js`, preview, message.replace("4179", "4180"))).toBe(false);
+    expect(classifyAt(`${preview}/assets/studio.js`, preview, "net::ERR_CONNECTION_REFUSED")).toBe(false);
   });
 
   it("validates decoded Navigator pixels and awaits the in-process preview shutdown", () => {
