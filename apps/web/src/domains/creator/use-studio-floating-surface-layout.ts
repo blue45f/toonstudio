@@ -25,6 +25,9 @@ export type StudioFloatingSurfaceLayoutAuthority =
   | "sqlite-opfs"
   | "session-only";
 
+/** 해당 surface의 저장·사용자 선택 출처이며 none만 기본 배치 자동 회피를 허용한다. */
+export type StudioFloatingSurfaceLayoutOverride = "checking" | "none" | "present" | "unknown";
+
 export interface UseStudioFloatingSurfaceLayoutOptions {
   readonly surfaceId: string;
   readonly defaultLayout: StudioFloatingSurfaceLayout;
@@ -37,6 +40,7 @@ export interface UseStudioFloatingSurfaceLayoutOptions {
 export interface UseStudioFloatingSurfaceLayoutResult {
   readonly layout: StudioFloatingSurfaceLayout;
   readonly authority: StudioFloatingSurfaceLayoutAuthority;
+  readonly layoutOverride: StudioFloatingSurfaceLayoutOverride;
   readonly failure: StudioFloatingSurfacePersistenceFailure | "storage-unavailable" | null;
   readonly setLayout: (layout: StudioFloatingSurfaceLayout) => void;
   readonly resetLayout: () => void;
@@ -52,6 +56,15 @@ function browserSessionStorage(): StudioFloatingSurfaceStorage | null {
   } catch {
     return null;
   }
+}
+
+function readSessionLayout(sessionKey: string, fallback: StudioFloatingSurfaceLayout) {
+  const storage = browserSessionStorage();
+  let override: StudioFloatingSurfaceLayoutOverride = "unknown";
+  try {
+    if (storage) override = storage.getItem(sessionKey) === null ? "none" : "present";
+  } catch { override = "unknown"; }
+  return { layout: loadStudioFloatingSurfaceLayout(storage, sessionKey, fallback), override };
 }
 
 function productRepositoryAvailable(): boolean {
@@ -90,53 +103,61 @@ export function useStudioFloatingSurfaceLayout({
     () => normalizeStudioFloatingSurfaceLayout(defaultLayout, defaultLayout),
     [defaultLayout],
   );
-  const [layout, setLayoutState] = useState<StudioFloatingSurfaceLayout>(() =>
-    loadStudioFloatingSurfaceLayout(
-      browserSessionStorage(),
-      sessionKey,
-      normalizedDefault,
-    )
-  );
+  const repository = useMemo(() => {
+    let pending: Promise<StudioFloatingSurfacePreferencesRepository> | null = null;
+    return () => { pending ??= repositoryFactory(); return pending; };
+  }, [repositoryFactory]);
+  const identity = useMemo(() => ({ surfaceId, sessionKey, repository }), [surfaceId, sessionKey, repository]);
+  const currentIdentityRef = useRef(identity);
+  currentIdentityRef.current = identity;
+  const session = useMemo(() => readSessionLayout(identity.sessionKey, normalizedDefault), [identity, normalizedDefault]);
+  const [layoutState, setLayoutState] = useState(() => ({ identity, layout: session.layout }));
+  const layout = layoutState.identity === identity ? layoutState.layout : session.layout;
+  const [overrideState, setOverrideState] = useState<{
+    identity: typeof identity; value: StudioFloatingSurfaceLayoutOverride;
+  }>(() => ({ identity, value: session.override === "present" ? "present" : "checking" }));
   const [authority, setAuthority] =
     useState<StudioFloatingSurfaceLayoutAuthority>("checking");
   const [failure, setFailure] =
     useState<UseStudioFloatingSurfaceLayoutResult["failure"]>(null);
   const liveLayoutRef = useRef(layout);
   const localGenerationRef = useRef(0);
-  const repositoryRef =
-    useRef<Promise<StudioFloatingSurfacePreferencesRepository> | null>(null);
+  const localChoiceIdentityRef = useRef<typeof identity | null>(null);
   liveLayoutRef.current = layout;
 
   const sqliteAvailable = repositoryFactory
     !== acquireProductStudioFloatingSurfacePreferencesRepositoryDeferred
     || productRepositoryAvailable();
 
-  const repository = useCallback(() => {
-    repositoryRef.current ??= repositoryFactory();
-    return repositoryRef.current;
-  }, [repositoryFactory]);
-
   useEffect(() => {
+    setLayoutState((current) => current.identity === identity ? current : { identity, layout: session.layout });
     if (!enabled || !sqliteAvailable) {
       setAuthority("session-only");
+      setOverrideState({ identity, value: session.override === "present" ? "present" : "unknown" });
       return;
     }
+    setAuthority("checking");
+    setFailure(null);
+    setOverrideState({ identity, value: session.override === "present" || localChoiceIdentityRef.current === identity ? "present" : "checking" });
     let disposed = false;
     const generationAtStart = localGenerationRef.current;
     void repository()
       .then((target) => target.load(surfaceId, normalizedDefault))
       .then((result) => {
-        if (disposed) return;
+        if (disposed || currentIdentityRef.current !== identity || generationAtStart !== localGenerationRef.current) return;
         setFailure(result.failure);
         setAuthority(result.failure ? "session-only" : "sqlite-opfs");
+        setOverrideState({ identity, value: result.failure ? "unknown"
+          : result.persisted || session.override === "present" || localChoiceIdentityRef.current === identity ? "present"
+            : session.override === "none" ? "none" : "unknown" });
         if (
           !result.persisted
-          || generationAtStart !== localGenerationRef.current
+          || localChoiceIdentityRef.current === identity
         ) {
           return;
         }
         liveLayoutRef.current = result.layout;
-        setLayoutState(result.layout);
+        setLayoutState({ identity, layout: result.layout });
         saveStudioFloatingSurfaceLayout(
           browserSessionStorage(),
           sessionKey,
@@ -144,33 +165,41 @@ export function useStudioFloatingSurfaceLayout({
         );
       })
       .catch(() => {
-        if (disposed) return;
+        if (disposed || currentIdentityRef.current !== identity || generationAtStart !== localGenerationRef.current) return;
         setAuthority("session-only");
         setFailure("storage-unavailable");
+        setOverrideState({ identity, value: "unknown" });
       });
     return () => {
       disposed = true;
     };
   }, [
     enabled,
+    identity,
     normalizedDefault,
     repository,
     sessionKey,
+    session,
     sqliteAvailable,
     surfaceId,
   ]);
 
   const setLayout = useCallback((nextLayout: StudioFloatingSurfaceLayout) => {
+    if (currentIdentityRef.current !== identity) return;
+    localGenerationRef.current += 1;
+    const generation = localGenerationRef.current;
+    localChoiceIdentityRef.current = identity;
+    setOverrideState({ identity, value: "present" });
     const normalized = normalizeStudioFloatingSurfaceLayout(
       nextLayout,
       normalizedDefault,
     );
     if (studioFloatingSurfaceLayoutsEqual(liveLayoutRef.current, normalized)) {
+      setAuthority((current) => current === "checking" ? "session-only" : current);
       return;
     }
-    localGenerationRef.current += 1;
     liveLayoutRef.current = normalized;
-    setLayoutState(normalized);
+    setLayoutState({ identity, layout: normalized });
     saveStudioFloatingSurfaceLayout(
       browserSessionStorage(),
       sessionKey,
@@ -179,20 +208,26 @@ export function useStudioFloatingSurfaceLayout({
     if (!sqliteAvailable) {
       setAuthority("session-only");
       setFailure("storage-unavailable");
+      setOverrideState({ identity, value: "unknown" });
       return;
     }
     void repository()
       .then((target) => target.save(surfaceId, normalized))
       .then((result) => {
+        if (currentIdentityRef.current !== identity || generation !== localGenerationRef.current) return;
         setAuthority(result.status === "persisted" ? "sqlite-opfs" : "session-only");
         setFailure(result.failure);
+        if (result.failure || result.status !== "persisted") setOverrideState({ identity, value: "unknown" });
       })
       .catch(() => {
+        if (currentIdentityRef.current !== identity || generation !== localGenerationRef.current) return;
         setAuthority("session-only");
         setFailure("storage-unavailable");
+        setOverrideState({ identity, value: "unknown" });
       });
   }, [
     normalizedDefault,
+    identity,
     repository,
     sessionKey,
     sqliteAvailable,
@@ -206,6 +241,7 @@ export function useStudioFloatingSurfaceLayout({
   return {
     layout,
     authority,
+    layoutOverride: overrideState.identity === identity ? overrideState.value : "checking",
     failure,
     setLayout,
     resetLayout,
