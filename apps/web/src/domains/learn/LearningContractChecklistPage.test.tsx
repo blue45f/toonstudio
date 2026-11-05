@@ -24,6 +24,10 @@ describe("웹툰 계약서 검토 체크리스트 학습 화면", () => {
     // 본문은 화면에 들어올 때 불러온다 — 불러오는 동안 상태를 알리고, 이후 질문 목록이 나타난다.
     expect(await screen.findByRole("radiogroup", { name: /지체상금/u }, { timeout: 15_000 })).toBeTruthy();
     expect(screen.getByRole("note").textContent).toContain("법률 자문이 아니에요");
+    expect(screen.getByTestId("contract-rea-mg-rs-simulator")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("contract-rea-clause-secondary-ip-split"));
+    fireEvent.click(screen.getByTestId("contract-rea-rs-60-40"));
+    expect(screen.getByTestId("contract-rea-mg-rs-status").textContent).toContain("2차적 저작물");
     // 학습 화면의 큰 구획 제목은 h2, 항목 제목은 h3 이다.
     expect(screen.getByRole("heading", { level: 2, name: "대가와 정산" })).toBeTruthy();
   });

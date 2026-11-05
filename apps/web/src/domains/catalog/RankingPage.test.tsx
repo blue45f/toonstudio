@@ -48,6 +48,8 @@ describe("통합 랭킹 페이지", () => {
     expect(current.textContent).toContain(label);
     expect(current.textContent).not.toContain("rating");
     expect(screen.getByTestId("ranking-quick-axes")).toBeTruthy();
+    expect(screen.getByTestId("ranking-rea-formula-simulator-bar")).toBeTruthy();
+    expect(screen.getByTestId("ranking-rea-formula-status").textContent).toContain("Score = 0.55×ΔViews");
   });
 });
 

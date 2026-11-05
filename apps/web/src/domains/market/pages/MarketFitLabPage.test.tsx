@@ -141,6 +141,9 @@ describe("MarketFitLabPage", () => {
 
     expect(screen.getByRole("heading", { name: "제작 적합성 랩" })).toBeTruthy();
     expect(screen.getByTestId("market-fit-lab-guide")).toBeTruthy();
+    expect(screen.getByTestId("market-fit-rea-benchmark-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("market-fit-rea-preset-vrm-humanoid-rig"));
+    expect(screen.getByTestId("market-fit-rea-benchmark-status").textContent).toContain("VRM 1.0 · Mixamo 52");
     expect(screen.getAllByTestId("fit-card").map((element) => element.textContent))
       .toEqual(["Ready", "Blocked"]);
     expect(screen.getByRole("button", { name: /조건 일치 1/ })).toBeTruthy();

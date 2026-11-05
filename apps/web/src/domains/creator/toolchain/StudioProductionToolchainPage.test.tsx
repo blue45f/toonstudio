@@ -27,6 +27,9 @@ describe("Studio production toolchain pages", () => {
     renderRoute(<StudioProductionToolchainPage />, "/studio/toolchain?projectId=project-a");
 
     expect(screen.getByRole("heading", { name: /그리기 이후의 제작/u })).toBeTruthy();
+    expect(screen.getByTestId("toolchain-rea-pipeline-receipt-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("toolchain-rea-track-comfy-deterministic-seed"));
+    expect(screen.getByTestId("toolchain-rea-pipeline-receipt-status").textContent).toContain("ComfyUI");
     expect(screen.getByRole("link", { name: /제작 작업 시작/u }).getAttribute("href"))
       .toBe("/studio/jobs?projectId=project-a");
     expect(screen.queryByText("Mixbox")).not.toBeTruthy();
