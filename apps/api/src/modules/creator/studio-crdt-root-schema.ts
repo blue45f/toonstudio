@@ -1,3 +1,6 @@
+import { hasValidStudioPsdElementMetadata } from "./studio-crdt-psd-metadata";
+import { parseStudioLinked3dCorrectionProvenance } from "@toonstudio/contracts/studio-linked-3d-correction";
+import { hasValidStudioLegacyPigmentArchiveStroke, STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { isBoundedStudioCrdtId } from "./studio-crdt-identifiers";
 import { STUDIO_BG3D_IMAGE_PROPERTIES, hasValidStudioBg3dImageReferenceProps, isValidStudioBg3dImageReferenceCandidate, hasValidStudioCrdtBg3dBundleRoots } from "./studio-crdt-bg3d-bundle";
 import { hasValidStudioBrushEngineProgramExtension, STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION } from "@toonstudio/contracts/studio-brush-material-program-contract";
@@ -107,7 +110,8 @@ const STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION = 5;
 function strokePayloadSupportsContinuation(version: unknown): boolean {
   return version === STUDIO_CRDT_STROKE_PAYLOAD_VERSION
     || version === STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION
-    || version === STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION;
+    || version === STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION
+    || version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION;
 }
 const STUDIO_CRDT_LAYERED_FLOW_PAINT_MODEL = "layered-flow-v1";
 const STUDIO_CRDT_BOUNDED_FLOW_PAINT_MODEL = "bounded-flow-v2";
@@ -2216,27 +2220,7 @@ function validateSceneElementRoot(id: string, record: Y.Map<unknown>): boolean {
   ]) {
     if (key in props && typeof props[key] !== "boolean") return false;
   }
-  if ("psdSource" in props) {
-    const value = props.psdSource;
-    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-    const source = value as Record<string, unknown>;
-    if (source.version !== 1 || typeof source.hash !== "string" || !/^sha256:[a-f0-9]{64}$/u.test(source.hash)
-      || !boundedExactText(source.name, 512) || typeof source.bytes !== "number" || !Number.isSafeInteger(source.bytes)
-      || source.bytes < 26 || source.bytes > 128 * 1024 * 1024
-      || Object.keys(source).some((key) => !["version", "hash", "name", "bytes"].includes(key))) return false;
-  }
-  for (const key of ["psdGroupId", "psdRasterSourceId"]) {
-    if (key in props && !boundedExactText(props[key], 160)) return false;
-  }
-  if ("psdFolderPath" in props) {
-    const path = props.psdFolderPath;
-    if (!Array.isArray(path) || path.length > 64 || path.some((entry: unknown) => {
-      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return true;
-      const folder = entry as Record<string, unknown>;
-      return !boundedExactText(folder.id, 160) || !boundedString(folder.name, 512)
-        || Object.keys(folder).some((key) => key !== "id" && key !== "name");
-    })) return false;
-  }
+  if (!hasValidStudioPsdElementMetadata(props, boundedExactText, boundedString)) return false;
   if ("text" in props && !boundedString(props.text, STUDIO_CRDT_JSON_MAX_STRING_LENGTH)) return false;
   if ("stickyNotePresetId" in props && !boundedExactText(props.stickyNotePresetId, 160)) {
     return false;
@@ -2608,6 +2592,7 @@ export function hasValidStudioCrdtStrokePaintContract(
     brushDynamics?.depositPipeline === "causal-deposit-v4-taper-spacing"
     && input.payloadVersion !== STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION
     && input.payloadVersion !== STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION
+    && input.payloadVersion !== STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION
   ) return false;
   const r8GrainAdmission = rendererSignificantR8GrainAdmission(input.brushDynamics);
   if (
@@ -2648,9 +2633,12 @@ export function hasValidStudioCrdtStrokePaintContract(
   return false;
 }
 
+
 function validateStrokeRoot(id: string, record: Y.Map<unknown>): boolean {
   const strokeWidth = record.get("strokeWidth");
   const payloadVersion = record.get("payloadVersion");
+  const rawExtensions = record.get("extensions");
+  const archive = payloadVersion === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && rawExtensions !== null && typeof rawExtensions === "object" && Object.hasOwn(rawExtensions, "legacyPigmentArchive");
   if (
     !hasOnlyKeys(record, STUDIO_CRDT_STROKE_RECORD_KEYS) ||
     record.get("id") !== id ||
@@ -2663,8 +2651,8 @@ function validateStrokeRoot(id: string, record: Y.Map<unknown>): boolean {
       payloadVersion !== STUDIO_CRDT_MATERIAL_STROKE_PAYLOAD_VERSION &&
       !strokePayloadSupportsContinuation(payloadVersion)) ||
     record.get("type") !== "draw" ||
-    (record.get("mode") !== "pen" && record.get("mode") !== "eraser") ||
-    !boundedExactText(record.get("kind"), 80) ||
+    (!(archive && !record.has("mode")) && record.get("mode") !== "pen" && record.get("mode") !== "eraser") ||
+    (!(archive && !record.has("kind")) && !boundedExactText(record.get("kind"), 80)) ||
     !boundedExactText(record.get("stroke"), 256) ||
     !finiteNumberInRange(strokeWidth, 0.01, STUDIO_CRDT_STROKE_WIDTH_MAX)
   ) {
@@ -2708,6 +2696,12 @@ function validateStrokeRoot(id: string, record: Y.Map<unknown>): boolean {
     ? brushDynamicsValue as Record<string, unknown>
     : undefined;
   if (!hasValidStudioBrushEngineProgramExtension(payloadVersion, extensions?.brushEnginePrograms)) return false;
+  if (!hasValidStudioLegacyPigmentArchiveStroke({ version: payloadVersion, type: record.get("type"),
+    kind: record.get("kind"), mode: record.get("mode"), extensions })) return false;
+  if (payloadVersion === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && (!hasValidStudioPsdElementMetadata(extensions ?? {}, boundedExactText, boundedString)
+    || (extensions?.colorizeMaskEnabled !== undefined && typeof extensions.colorizeMaskEnabled !== "boolean")
+    || (extensions?.colorizeMask !== undefined && (!extensions.colorizeMask || typeof extensions.colorizeMask !== "object" || Array.isArray(extensions.colorizeMask)))
+    || (extensions?.linked3dCorrection !== undefined && !parseStudioLinked3dCorrectionProvenance(extensions.linked3dCorrection)))) return false;
   const hasMaterialPressureModel = extensions !== undefined
     && Object.prototype.hasOwnProperty.call(extensions, "materialPressureModel");
   const hasMaterialMinimumDiameterRatio = extensions !== undefined
@@ -2718,6 +2712,7 @@ function validateStrokeRoot(id: string, record: Y.Map<unknown>): boolean {
     brushDynamics?.depositPipeline === "causal-deposit-v4-taper-spacing"
     && payloadVersion !== STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION
     && payloadVersion !== STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION
+    && payloadVersion !== STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION
   ) return false;
   const hasSegmentedCausalDeposit =
     STUDIO_CRDT_SEGMENTED_CAUSAL_DEPOSIT_PIPELINES.has(brushDynamics?.depositPipeline);
@@ -2785,7 +2780,7 @@ function validateStrokeRoot(id: string, record: Y.Map<unknown>): boolean {
     && normalizedInkInput === null
   ) return false;
   const requiresExtendedInkChannels =
-    isStudioInkInputContractV2(normalizedInkInput);
+    !archive && isStudioInkInputContractV2(normalizedInkInput);
   const metadata: Record<string, unknown> = {
     version: payloadVersion,
     type: "draw",
@@ -2810,7 +2805,7 @@ function validateStrokeRoot(id: string, record: Y.Map<unknown>): boolean {
   ) as Record<(typeof STUDIO_CRDT_STROKE_SAMPLE_KEYS)[number], unknown>;
   if (
     STUDIO_CRDT_STROKE_BASE_SAMPLE_KEYS.some(
-      (key) => !(arrays[key] instanceof Y.Array),
+      (key) => !(archive && key !== "points" && arrays[key] === undefined) && !(arrays[key] instanceof Y.Array),
     )
     || (
       requiresExtendedInkChannels
@@ -2832,7 +2827,7 @@ function validateStrokeRoot(id: string, record: Y.Map<unknown>): boolean {
   const sampleCount = points.length / 2;
   if (
     STUDIO_CRDT_STROKE_BASE_SAMPLE_KEYS.slice(1).some(
-      (key) => (arrays[key] as Y.Array<unknown>).length !== sampleCount
+      (key) => arrays[key] instanceof Y.Array && (arrays[key] as Y.Array<unknown>).length !== sampleCount
     )
     || STUDIO_CRDT_STROKE_EXTENDED_INK_SAMPLE_KEYS.some(
       (key) => (

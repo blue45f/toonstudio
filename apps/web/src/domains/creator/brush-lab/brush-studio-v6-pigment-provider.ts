@@ -1,4 +1,3 @@
-import mixbox from "mixbox";
 import {
   createExternalPigmentPalette, EXTERNAL_PIGMENT_PROVIDERS,
   isExternalPigmentProvider, prepareExternalPigmentPair,
@@ -21,7 +20,6 @@ export type BrushStudioV6PigmentProviderId =
   | ExternalPigmentProvider
   | "rgb-linear-v1"
   | "spectral-wgm-v1"
-  | "mixbox-js-v2"
   | "toonstudio-latent-pigment-v1"
   | "ks-reference-wgm-v1"
   | "inkwash-density-wgm-v1";
@@ -47,7 +45,6 @@ export const BRUSH_STUDIO_V6_PIGMENT_PROVIDERS = Object.freeze([
   ...EXTERNAL_PIGMENT_PROVIDERS.map((entry) => descriptor({ ...entry, rights: "permissive", execution: "native" })),
   descriptor({ id: "rgb-linear-v1", nodeId: "pigment-rgb", label: "RGB Linear", version: "1", rights: "internal", execution: "native" }),
   descriptor({ id: "spectral-wgm-v1", nodeId: "pigment-spectral", label: "Spectral WGM", version: "1", rights: "permissive", execution: "native" }),
-  descriptor({ id: "mixbox-js-v2", nodeId: "pigment-mixbox", label: "Mixbox Latent Pigment", version: "2.0.0", rights: "noncommercial", execution: "native" }),
   descriptor({ id: "toonstudio-latent-pigment-v1", nodeId: "pigment-latent", label: "ToonStudio Latent Pigment", version: "1", rights: "internal", execution: "native" }),
   descriptor({ id: "ks-reference-wgm-v1", nodeId: "pigment-open-km", label: "K/S Reference WGM", version: "1", rights: "internal", execution: "legacy-reference" }),
   descriptor({ id: "inkwash-density-wgm-v1", nodeId: "pigment-inkwash-density", label: "Inkwash Density WGM", version: "1", rights: "private-grant", execution: "legacy-reference" }),
@@ -70,7 +67,7 @@ export class BrushStudioV6PigmentProviderUnavailableError extends Error {
 export function brushStudioV6PigmentProviderForNode(
   nodeId: string,
 ): BrushStudioV6PigmentProviderDescriptor | null {
-  return PROVIDER_BY_NODE.get(nodeId) ?? null;
+  return PROVIDER_BY_NODE.get(nodeId === "pigment-mixbox" ? "pigment-latent" : nodeId) ?? null;
 }
 
 function unit(value: number): number {
@@ -107,25 +104,6 @@ function mixWgm(first: Rgb, second: Rgb, ratio: number, spectral: boolean): stri
   return hexColor(mixStudioSpectralWgm(first, second, 1 - ratio, spectral ? 1 : 0));
 }
 
-function mixboxPalette(
-  first: Rgb,
-  second: Rgb,
-  steps: number,
-): readonly string[] {
-  const firstLatent = mixbox.floatRgbToLatent([first.r, first.g, first.b]);
-  const secondLatent = mixbox.floatRgbToLatent([second.r, second.g, second.b]);
-  return Object.freeze(Array.from({ length: steps }, (_, index) => {
-    const ratio = index / (steps - 1);
-    const endpoint = exactEndpoint(first, second, ratio);
-    if (endpoint) return endpoint;
-    const latent = Array.from({ length: mixbox.LATENT_SIZE }, (__, channel) => {
-      const left = firstLatent[channel] ?? 0;
-      return left + ((secondLatent[channel] ?? left) - left) * ratio;
-    });
-    return hexColor(mixbox.latentToFloatRgb(latent));
-  }));
-}
-
 /** 자체 잠재 안료 혼합기: 두 색의 잠재 색을 한 번씩만 풀고 비율마다 선형 보간한다. */
 function latentPalette(
   first: Rgb,
@@ -159,7 +137,6 @@ export function createBrushStudioV6PigmentPalette(
   if (isExternalPigmentProvider(providerId)) return createExternalPigmentPalette(primary, secondary, providerId, count);
   const first = parseColor(primary);
   const second = parseColor(secondary);
-  if (providerId === "mixbox-js-v2") return mixboxPalette(first, second, count);
   if (providerId === "toonstudio-latent-pigment-v1") return latentPalette(first, second, count);
   const spectral = providerId !== "rgb-linear-v1";
   return Object.freeze(Array.from({ length: count }, (_, index) => {
@@ -181,15 +158,6 @@ export function mixBrushStudioV6PigmentColors(
   if (isExternalPigmentProvider(providerId)) return prepareExternalPigmentPair(first, second, providerId)(ratio);
   if (ratio === 0) return hexColor(parseColor(first));
   if (ratio === 1) return hexColor(parseColor(second));
-  if (providerId === "mixbox-js-v2") {
-    const primary = parseColor(first);
-    const secondary = parseColor(second);
-    return hexColor(mixbox.lerpFloat(
-      [primary.r, primary.g, primary.b],
-      [secondary.r, secondary.g, secondary.b],
-      ratio,
-    ));
-  }
   if (providerId === "toonstudio-latent-pigment-v1") {
     const primary = parseColor(first);
     const secondary = parseColor(second);
@@ -204,7 +172,7 @@ export function mixBrushStudioV6PigmentColors(
 }
 
 /**
- * 상업용 배포(permissive-only)에서도 즉시 사용 가능한 자체 잠재 안료 채도 보존 혼색기.
+ * permissive-only에서 internal로 분류하는 자체 잠재 안료 채도 보존 혼색기.
  * 노란색+파란색 등 보색 인접 안료 혼합 시 선형 RGB의 회색 탁색 현상을 방지한다.
  */
 export function mixBrushStudioV6PigmentChromaPreserving(

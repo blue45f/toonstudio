@@ -18,6 +18,7 @@ import { createOriginalSample } from "./ecosystem/ecosystem-content";
 import { resolvePixelSelectionSceneTarget } from "./studio-pixel-selection-scene-target";
 import { selectStudioLiveStrokeMedia, studioHokusaiLiveStrokeSelected } from "./live/studio-live-stroke-media-selection";
 import { useStudioMaterialBrushRequest } from "./brush/useStudioMaterialBrushRequest";
+import { isStudioLegacyPigmentArchivedElement } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { createStudioAutosaveSnapshotFence, studioEmptyAutosaveNeedsTombstone } from "./studio-autosave-snapshot-fence";
 import { useStudioAdjustmentLayerCommands } from "./useStudioAdjustmentLayerCommands";
 import { StudioColorProofProvider } from "./color/StudioColorProofContext";
@@ -12611,7 +12612,7 @@ export function StudioCuttoonEditor({
   const captureCommitRef = useRef({
     pageId: activePage.id,
     historyIndex: pagesHi,
-    page: activePage,
+    page: activePage, master,
     exporting: false,
     timelapse: false,
     masterEditMode,
@@ -12620,7 +12621,7 @@ export function StudioCuttoonEditor({
     captureCommitRef.current = {
       pageId: activePage.id,
       historyIndex: pagesHi,
-      page: activePage,
+      page: activePage, master,
       exporting: isExporting,
       timelapse: timelapseCapturing,
       masterEditMode,
@@ -17015,7 +17016,6 @@ const puppetWarpArmed =
       activeGroupId: null,
     });
   }
-
   function patchLayerItems(
     ids: readonly string[],
     resolvePatch: (element: El) => Partial<El>,
@@ -17029,7 +17029,7 @@ const puppetWarpArmed =
     if (idSet.size === 0) return;
     let changed = false;
     const next = elements.map((element) => {
-      if (!idSet.has(element.id)) return element;
+      if (!idSet.has(element.id) || isStudioLegacyPigmentArchivedElement(element)) return element;
       const patch = resolvePatch(element);
       if (Object.keys(patch).every((key) => Object.is(element[key as keyof El], patch[key as keyof El]))) {
         return element;
@@ -23746,13 +23746,13 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     endLiveResourceEdit();
   }
 
-  async function captureReadyStageForPage(page: PageState, onReady?: (page: PageState) => void): Promise<Konva.Stage> {
+  async function captureReadyStageForPage(page: PageState, onReady?: (page: PageState) => void): Promise<Konva.Stage> { const captureGeneration = studioRevisionProjectGenerationRef.current;
     if (!ensureSharedDocumentAvailableForExport()) {
       throw new Error(hostErrorText("studio.hostError.sharedDocRequiredCapture", "공동 문서를 불러온 뒤 캡처할 수 있어요."));
     }
     const { waitForStudioCaptureReady } = await loadStudioCaptureReadinessRuntime();
     return waitForStudioCaptureReady({
-      pageId: page.id,
+      pageId: page.id, getMaster: () => captureCommitRef.current.master, getDocumentGeneration: () => studioRevisionProjectGenerationRef.current, expectedDocumentGeneration: captureGeneration,
       getRenderedPageId: () => {
         const committed = captureCommitRef.current;
         return committed.exporting && !committed.masterEditMode ? committed.pageId : null;
@@ -23769,7 +23769,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
   async function captureReadyStageForHistoryPage(
     page: PageState,
     historyIndex: number
-  ): Promise<Konva.Stage> {
+  ): Promise<Konva.Stage> { const captureGeneration = studioRevisionProjectGenerationRef.current;
     if (!ensureSharedDocumentAvailableForExport()) {
       throw new Error(hostErrorText("studio.hostError.sharedDocRequiredTimelapse", "공동 문서를 불러온 뒤 타임랩스를 만들 수 있어요."));
     }
@@ -23779,7 +23779,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     } = await loadStudioCaptureReadinessRuntime();
     const renderKey = `${page.id}:${historyIndex}`;
     return waitForStudioCaptureReady({
-      pageId: renderKey,
+      pageId: renderKey, sourcePage: page, getMaster: () => captureCommitRef.current.master, getDocumentGeneration: () => studioRevisionProjectGenerationRef.current, expectedDocumentGeneration: captureGeneration,
       getRenderedPageId: () => {
         const committed = captureCommitRef.current;
         return committed.timelapse && !committed.masterEditMode
@@ -23787,7 +23787,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
           : null;
       },
       getStage: () => stageRef.current,
-      assetSources: collectStudioCaptureAssetSources(page, master),
+      assetSources: collectStudioCaptureAssetSources(page, captureCommitRef.current.master),
     });
   }
 
@@ -25740,7 +25740,7 @@ function clearSelectionForEdit() {
   ), [openStudioQuickActionsAt, quickActionsOpen, workspaceControlSide]);
 
   const rasterExportOrchestration = useStudioRasterExportOrchestration({
-    activePage, pages, masterElements: master.elements, currentPageId,
+    activePage, pages, masterElements: master.elements, getMasterElements: () => captureCommitRef.current.master.elements, getDocumentGeneration: () => studioRevisionProjectGenerationRef.current, currentPageId,
     masterEditMode,
     exportTransparent,
     exportFormat,

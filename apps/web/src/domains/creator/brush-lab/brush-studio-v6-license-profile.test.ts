@@ -25,7 +25,7 @@ describe("V6 brush engine license profile", () => {
     expect(new Set(BRUSH_STUDIO_V6_PROVIDER_MANIFEST.map((entry) => entry.id)).size)
       .toBe(BRUSH_STUDIO_V6_PROVIDER_MANIFEST.length);
     expect(BRUSH_STUDIO_V6_PROVIDER_MANIFEST.find((entry) => entry.id === "mixbox-js-v2"))
-      .toMatchObject({ license: "CC-BY-NC-4.0", integration: "connected" });
+      .toBeUndefined();
     expect(BRUSH_STUDIO_V6_PROVIDER_MANIFEST.find((entry) => entry.id === "krita-paintop-gpl"))
       .toMatchObject({ license: "GPL-3.0-or-later", integration: "adapter-ready" });
     expect(BRUSH_STUDIO_V6_PROVIDER_MANIFEST.find((entry) => entry.id === "libmypaint-wasm-v1"))
@@ -35,7 +35,7 @@ describe("V6 brush engine license profile", () => {
     const nodeIds = BRUSH_STUDIO_V6_PROVIDER_MANIFEST.flatMap((entry) => entry.nodeIds);
     expect(new Set(nodeIds).size).toBe(nodeIds.length);
     expect(brushStudioV6ProviderManifestForNode("pigment-mixbox")).toMatchObject({
-      id: "mixbox-js-v2", productPath: "material-contact", materialExecution: "native",
+      id: "toonstudio-latent-pigment-v1", productPath: "material-contact", materialExecution: "native", rights: "internal",
     });
     expect(brushStudioV6MaterialExecutionForNode("carrier-hokusai-dabs"))
       .toBe("compatibility-adapter");

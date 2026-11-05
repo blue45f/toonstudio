@@ -438,28 +438,26 @@ const TWO_D_ROWS: readonly EngineeringMapRow[] = [
   },
   {
     id: "mixbox",
-    name: "Mixbox",
+    name: "ToonStudio Latent Pigment",
     status: "live",
-    link: { title: "Mixbox", url: "https://scrtwpns.com/mixbox" },
-    asOf: AS_OF,
+    asOf: "2026-11-05",
     cells: {
       role: t(
-        "물감처럼 섞이는 색 혼합(파랑 + 노랑 = 초록)을 계산하는 안료 혼색 엔진. 브러시 스튜디오 V6의 혼색 provider(mixbox-js-v2) 하나로 쓰인다.",
-        "A pigment-mixing engine that blends colors like paint (blue + yellow = green). It serves as one color-mixing provider (mixbox-js-v2) in Brush Studio V6.",
+        "자체 잠재 안료 혼색 엔진. 안료 4종 농도와 RGB 잔차를 보간하며, 이전 Mixbox 브러시의 안료 실행도 이 엔진으로 연결한다.",
+        "An independently implemented latent pigment mixer. It interpolates four pigment concentrations and RGB residuals and also serves the pigment path of former Mixbox brushes.",
       ),
-      license: same("CC-BY-NC-4.0"),
-      mode: t("런타임 · 정적 import", "Runtime · static import"),
+      license: same("Project license"),
+      mode: t("런타임 · 자체 TypeScript", "Runtime · project-authored TypeScript"),
       note: t(
-        "비상업(NC) 라이선스. 저장소의 처리: provider 권리 라벨 noncommercial, 기본 프로파일 permissive-only(Mixbox는 noncommercial-full 명시 opt-in에서만 허용), 2.0.0만 허용하는 감사 핀. 상용 빌드는 제거·비활성 또는 상업 라이선스가 필요하다고 기록했다. 같은 계약의 MIT 대안은 spectral.js·colormix.",
-        "Non-commercial (NC) license. The repository's handling: provider rights label noncommercial, default profile permissive-only (Mixbox allowed only on explicit noncommercial-full opt-in), and an audit pin that allows only 2.0.0. Commercial builds must remove or disable it or buy a commercial license. MIT alternatives behind the same contract: spectral.js and colormix.",
+        "외부 Mixbox 패키지·코드·LUT를 사용하지 않는다. 이전 브러시의 식별자·입력·형상 설정은 보존하며 새 혼색 결과는 원본 Mixbox와 다를 수 있다. 저장된 획과 새로 그리는 획을 구분해야 한다.",
+        "Does not use the external Mixbox package, code or LUT. Former brush identifiers, input and geometry settings are preserved; newly mixed colors may differ from Mixbox. Previously stored strokes and newly drawn strokes must be distinguished.",
       ),
     },
     evidence: [
-      "third_party/mixbox/README.md",
+      "apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-mixer.ts",
       "apps/web/src/domains/creator/brush-lab/brush-studio-v6-pigment-provider.ts",
       "apps/web/src/domains/creator/brush-lab/brush-studio-v6-license-profile.ts",
-      "scripts/generate-third-party-notices.mjs",
-      "config/studio-production-toolchain.json",
+      "docs/features/latent-pigment-mixing.md",
     ],
   },
   {

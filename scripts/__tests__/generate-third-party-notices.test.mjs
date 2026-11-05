@@ -115,35 +115,24 @@ describe("generated third-party notice inventory", () => {
     ).toThrow("Unreviewed production license expression");
   });
 
-  it("admits only the exact reviewed noncommercial Mixbox boundary", () => {
-    const inventory = parsePnpmLicenseInventory(
-      JSON.stringify({
-        "CC-BY-NC-4.0": [
-          {
-            name: "mixbox",
-            versions: ["2.0.0"],
-            paths: ["/tmp/mixbox"],
-            author: "Secret Weapons",
-            homepage: "https://scrtwpns.com/mixbox",
-          },
-        ],
-      }),
-    );
-
-    expect(inventory[0]).toMatchObject({
-      name: "mixbox",
-      versions: ["2.0.0"],
-      license: "CC-BY-NC-4.0",
-    });
+  it("제거한 Mixbox가 라이선스 라벨을 바꾸어 재유입되어도 거부한다", () => {
     for (const [name, version, license] of [
-      ["unexpected-nc-package", "2.0.0", "CC-BY-NC-4.0"],
+      ["mixbox", "2.0.0", "CC-BY-NC-4.0"],
       ["mixbox", "2.0.1", "CC-BY-NC-4.0"],
       ["mixbox", "2.0.0", "MIT"],
     ]) {
       expect(() => parsePnpmLicenseInventory(JSON.stringify({
         [license]: [{ name, versions: [version], paths: [`/tmp/${name}`] }],
-      }))).toThrow("Unreviewed restricted production license package");
+      }))).toThrow("제거한 Mixbox 패키지를 운영 의존성에 다시 포함할 수 없습니다.");
     }
+  });
+
+  it("검토되지 않은 비상업 패키지를 운영 의존성에서 거부한다", () => {
+    expect(() => parsePnpmLicenseInventory(JSON.stringify({
+      "CC-BY-NC-4.0": [{
+        name: "unexpected-nc-package", versions: ["2.0.0"], paths: ["/tmp/unexpected-nc-package"],
+      }],
+    }))).toThrow("Unreviewed restricted production license package");
   });
 
   it("keeps the reviewed p5.brush standalone dependency licenses auditable", () => {
@@ -222,12 +211,9 @@ describe("generated third-party notice inventory", () => {
     expect(
       inventory.some(
         (entry) =>
-          entry.name === "mixbox"
-          && entry.versions.length === 1
-          && entry.versions[0] === "2.0.0"
-          && entry.license === "CC-BY-NC-4.0",
+          entry.name === "mixbox",
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("validates both Vello feature inventories and every opaque WASM provenance boundary", () => {

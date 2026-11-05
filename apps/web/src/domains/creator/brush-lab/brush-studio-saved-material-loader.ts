@@ -1,5 +1,5 @@
 import { loadStudioBrushLibrarySqliteRepository } from "../studio-page-editor-runtime-loaders";
-import { createBrushStudioV6ExactEditorProgram } from "./brush-studio-v6-authoring-document";
+import { createBrushStudioV6ExactEditorProgram, migrateBrushStudioV6LegacyMixboxMaterial } from "./brush-studio-v6-authoring-document";
 
 /** Read only: opening never rewrites the saved library entry or guesses a similar recipe. */
 export async function loadBrushStudioSavedMaterial(id: string) {
@@ -11,8 +11,18 @@ export async function loadBrushStudioSavedMaterial(id: string) {
   if (!saved.enginePrograms?.material) {
     throw new Error("이 브러시의 원본 엔진 편집은 아직 지원하지 않습니다. 원본은 그대로 사용할 수 있습니다.");
   }
-  return {
-    program: createBrushStudioV6ExactEditorProgram(saved.enginePrograms.material, saved.id, saved.name, saved),
-    persistent: product.authority === "sqlite",
-  };
+  try {
+    return {
+      program: createBrushStudioV6ExactEditorProgram(saved.enginePrograms.material, saved.id, saved.name, saved),
+      persistent: product.authority === "sqlite",
+    };
+  } catch (error) {
+    const migration = migrateBrushStudioV6LegacyMixboxMaterial(saved.enginePrograms.material);
+    if (!migration) throw error;
+    return {
+      program: createBrushStudioV6ExactEditorProgram(migration.material, saved.id, saved.name, saved),
+      persistent: product.authority === "sqlite",
+      migration: { ...migration, sourceSavedBrush: JSON.stringify(saved) },
+    };
+  }
 }

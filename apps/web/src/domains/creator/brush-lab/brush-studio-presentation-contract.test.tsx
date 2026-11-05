@@ -11,28 +11,28 @@ afterEach(cleanup);
 
 describe("version-free presentation with stable execution identity", () => {
   it("shows provider names without exposing or mutating revision identifiers", () => {
-    // Mixbox is noncommercial: binding it requires the noncommercial-full
-    // profile since the default profile became permissive-only (P0).
+    // 이전 안료 식별자도 자체 엔진 실행 정보에 연결되며 외부 패키지를 실행하지 않는다.
     const plan = planBrushStudioV6ProviderRuntime([
       brushStudioV6Node("pigment-spectral-js"), brushStudioV6Node("pigment-mixbox"),
-    ], "noncommercial-full");
+    ]);
     const before = JSON.stringify(plan);
     expect(plan.valid).toBe(true);
     expect(plan.bindings).toEqual(expect.arrayContaining([
       expect.objectContaining({ providerId: "spectral-js-v3", version: "3.0.0" }),
-      expect.objectContaining({ providerId: "mixbox-js-v2", version: "2.0.0" }),
+      expect.objectContaining({ providerId: "toonstudio-latent-pigment-v1", version: "1" }),
     ]));
     const { container } = render(<StudioBrushV6ProviderPlan plan={plan} />);
     expect(screen.getByRole("heading", { name: "Spectral.js · 분광 K/S" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Mixbox" })).toBeTruthy();
-    expect(container.textContent).not.toMatch(/spectral-js-v3|mixbox-js-v2|3\.0\.0|2\.0\.0/u);
+    expect(screen.getByRole("heading", { name: "ToonStudio Latent Pigment" })).toBeTruthy();
+    expect(container.textContent).not.toMatch(/spectral-js-v3|toonstudio-latent-pigment-v1|mixbox-js-v2|3\.0\.0|2\.0\.0/u);
     expect(JSON.stringify(plan)).toBe(before);
   });
   it("keeps named library selection while hiding package versions", () => {
     const { container } = render(<StudioPigmentComparison primary="#002185" secondary="#fcd200"
       node="pigment-spectral-js" secondaryActive onSelect={() => undefined} />);
     expect(screen.getByRole("button", { name: "Spectral.js 선택" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Mixbox 선택" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "잠재 안료(자체) 선택" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Mixbox 선택" })).toBeNull();
     expect(container.textContent).not.toMatch(/Spectral\.js 3|Mixbox 2/u);
   });
 

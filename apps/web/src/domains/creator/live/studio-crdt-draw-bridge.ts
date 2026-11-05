@@ -1,3 +1,4 @@
+import { isStudioLegacyPigmentArchiveSource, parseStudioLegacyPigmentArchive, STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS, type StudioLegacyPigmentArchive } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { isStudioBrushEngineProgramWireValue } from "../../../shared/lib/studio-brush-material-program-contract";
 import type { StudioBrushEngineProgramSet } from "../brush/studio-brush-engine-program-set";
 import {
@@ -34,6 +35,7 @@ import {
 
 import {
   STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION,
+  STUDIO_CRDT_LEGACY_PIGMENT_ARCHIVE_STROKE_PAYLOAD_VERSION,
   STUDIO_CRDT_LEGACY_STROKE_PAYLOAD_VERSION,
   STUDIO_CRDT_MATERIAL_STROKE_PAYLOAD_VERSION,
   STUDIO_CRDT_PAINT_STROKE_PAYLOAD_VERSION,
@@ -92,6 +94,14 @@ export interface StudioCrdtCompatibleDrawElement {
   contactHeights?: number[];
   sampleTimeOffsets?: number[];
   brushEnginePrograms?: StudioBrushEngineProgramSet;
+  legacyPigmentArchive?: StudioLegacyPigmentArchive;
+  psdGroupId?: string;
+  psdRasterSourceId?: string;
+  psdSource?: unknown;
+  psdFolderPath?: unknown;
+  colorizeMask?: unknown;
+  colorizeMaskEnabled?: boolean;
+  linked3dCorrection?: unknown;
   brushDynamics?: unknown;
   brushTip?: unknown;
   stamp?: unknown;
@@ -307,6 +317,20 @@ function extensionsOf(element: StudioCrdtCompatibleDrawElement): StudioCrdtJsonO
     }
     extensions.brushEnginePrograms = jsonObject(element.brushEnginePrograms)!;
   }
+  if (element.legacyPigmentArchive !== undefined) {
+    const archive = parseStudioLegacyPigmentArchive(element.legacyPigmentArchive);
+    if (!archive || element.id === archive.sourceElementId || element.hidden !== true || !isStudioLegacyPigmentArchiveSource(element)) {
+      throw new Error("외부 혼색 원본의 보관 출처가 올바르지 않습니다.");
+    }
+    extensions.legacyPigmentArchive = jsonObject(archive)!;
+
+  }
+  for (const key of STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS) {
+    if (element[key] === undefined) continue;
+    const value = jsonValue(element[key]);
+    if (value === undefined) throw new Error("보관 원본의 편집 필드가 JSON 계약과 다릅니다.");
+    extensions[key] = value;
+  }
   // Keep this versioned opt-in out of the generic JSON whitelist: an unknown future string must
   // never be persisted as if this client knew how to render its pressure semantics.
   if (isStudioInkPressureModel(element.pressureModel)) {
@@ -365,7 +389,7 @@ export function studioDrawElementToCrdtStroke(
     throw new Error("획 페인트 모델과 브러시 합성 모드가 호환되지 않습니다.");
   }
   const sampleCount = Math.floor(element.points.length / 2);
-  assertStudioInkV2AlignedChannels(element, sampleCount);
+  if (element.legacyPigmentArchive === undefined) assertStudioInkV2AlignedChannels(element, sampleCount);
   const pressureFallback = studioInkFallbackPressure(element.pressureModel);
   const pressures = element.pressures === undefined
     && isStudioInkPressureModel(element.pressureModel)
@@ -399,7 +423,10 @@ export function studioDrawElementToCrdtStroke(
   // Preserve legacy payload versions. Only newly authored taper-aware spacing requires v5;
   // existing segmented continuation and immutable R8 grain keep their v4 snapshots.
   const usesTaperSpacing = brushDynamics?.depositPipeline === STUDIO_DYNAMIC_BRUSH_DEPOSIT_PIPELINE_CAUSAL_V4;
-  const payloadVersion = extensions?.brushEnginePrograms !== undefined
+  const payloadVersion = extensions?.legacyPigmentArchive !== undefined
+    || STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS.some((key) => extensions?.[key] !== undefined)
+    ? STUDIO_CRDT_LEGACY_PIGMENT_ARCHIVE_STROKE_PAYLOAD_VERSION
+    : extensions?.brushEnginePrograms !== undefined
     ? STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION
     : usesTaperSpacing
     ? STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION
@@ -414,11 +441,12 @@ export function studioDrawElementToCrdtStroke(
         : extensions?.paintModel !== undefined
           ? STUDIO_CRDT_PAINT_STROKE_PAYLOAD_VERSION
           : STUDIO_CRDT_LEGACY_STROKE_PAYLOAD_VERSION;
+  const archive = extensions?.legacyPigmentArchive !== undefined;
   const payload: StudioCrdtDrawStrokePayload = {
     version: payloadVersion,
     type: "draw",
-    kind: element.kind ?? "freehand",
-    mode: element.mode ?? "pen",
+    ...(archive ? (element.kind === undefined ? {} : { kind: element.kind }) : { kind: element.kind ?? "freehand" }),
+    ...(archive ? (element.mode === undefined ? {} : { mode: element.mode }) : { mode: element.mode ?? "pen" }),
     points: element.points.slice(0, sampleCount * 2),
     stroke: element.stroke,
     strokeWidth: element.strokeWidth,
@@ -461,6 +489,13 @@ export function studioDrawElementToCrdtStroke(
   payload.sketch = jsonObject(element.sketch);
   payload.symmetry = jsonObject(element.symmetry);
   payload.extensions = extensions;
+  if (archive) {
+    for (const key of ["points", "pressures", "tiltXs", "tiltYs", "twists", "speeds", "tangentialPressures", "altitudeAngles", "azimuthAngles", "contactWidths", "contactHeights", "sampleTimeOffsets"] as const) {
+      const values = element[key];
+      if (values === undefined) { if (key !== "points") delete payload[key]; }
+      else payload[key] = [...values];
+    }
+  }
   return {
     id: element.id,
     pageId,

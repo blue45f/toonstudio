@@ -11,7 +11,8 @@ export * from "./filter-providers";
 export * from "./effect-compiler";
 export * from "./benchmark-registry";
 export * from "./tournament";
-export * from "./wgsl-variants";
+// 선택형 WGSL 생성기는 전용 진입점으로 불러와 일반 엔진 레지스트리의 초기 그래프에서 분리한다.
+// "@toonstudio/studio-engine-registry/wgsl-variants" 경로는 기존 생성 API를 그대로 제공한다.
 export * from "./wgsl-sandbox";
 export * from "./wgsl-pipeline-cache";
 // The WESL variant compiler imports `*.wesl?raw` sources and the ESM-only `wesl` package, so it

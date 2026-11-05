@@ -19,7 +19,7 @@ import { collectStudioBg3dSixPassProjectBundles } from "./scene3d/bg3d-six-pass/
 export const STUDIO_PROJECT_DOCUMENT_FORMAT_ID =
   "toonstudio.studio-project" as const;
 export const STUDIO_PROJECT_DOCUMENT_PAYLOAD_TYPE = "project" as const;
-export const STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION = 5 as const;
+export const STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION = 6 as const;
 const LEGACY_PROJECT_DOCUMENT_VERSION = 2;
 
 export interface StudioProjectDocumentMetadata {
@@ -274,7 +274,7 @@ const legacyProjectDocumentRegistry = createStudioDocumentMigratorRegistry([
 ]);
 
 // V3 changes the minimum reader for V4 brush snapshots, not the bytes of existing V2 envelopes.
-function projectReaderRegistry(version: 3 | 4 | 5) {
+function projectReaderRegistry(version: 3 | 4 | 5 | 6) {
   return createStudioDocumentMigratorRegistry([{
     formatId: STUDIO_PROJECT_DOCUMENT_FORMAT_ID,
     payloadType: STUDIO_PROJECT_DOCUMENT_PAYLOAD_TYPE,
@@ -286,6 +286,7 @@ function projectReaderRegistry(version: 3 | 4 | 5) {
 const studioProjectDocumentRegistry = projectReaderRegistry(3);
 const sixPassProjectDocumentRegistry = projectReaderRegistry(4);
 const sixPassBundleProjectDocumentRegistry = projectReaderRegistry(5);
+const legacyPigmentArchiveProjectDocumentRegistry = projectReaderRegistry(6);
 
 export function createStudioProjectDocumentEnvelope(
   value: unknown,
@@ -394,7 +395,9 @@ export async function parseStudioProjectDocument(
     && typeof decoded.format.version === "number"
     && decoded.format.version > LEGACY_PROJECT_DOCUMENT_VERSION;
   const registry = usesNewReader
-    ? isRecord(decoded) && isRecord(decoded.format) && decoded.format.version === 5
+    ? isRecord(decoded) && isRecord(decoded.format) && decoded.format.version === 6
+      ? legacyPigmentArchiveProjectDocumentRegistry
+      : isRecord(decoded) && isRecord(decoded.format) && decoded.format.version === 5
       ? sixPassBundleProjectDocumentRegistry
       : isRecord(decoded) && isRecord(decoded.format) && decoded.format.version === 4
         ? sixPassProjectDocumentRegistry : studioProjectDocumentRegistry

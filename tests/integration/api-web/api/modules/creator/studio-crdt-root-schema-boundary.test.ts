@@ -53,6 +53,11 @@ describe("Studio CRDT root schema ownership boundary", () => {
 
     expect(service.valueImports).toContain("./studio-crdt-root-schema");
     expect(schema.valueImports).toEqual([
+      "./studio-crdt-psd-metadata",
+      "@toonstudio/contracts/studio-linked-3d-correction",
+      "@toonstudio/contracts/studio-legacy-pigment-archive",
+      "./studio-crdt-identifiers",
+      "./studio-crdt-bg3d-bundle",
       "@toonstudio/contracts/studio-brush-material-program-contract",
       "yjs",
       "@toonstudio/contracts/studio-brush-r8-grain-asset-contract",
@@ -78,16 +83,31 @@ describe("Studio CRDT root schema ownership boundary", () => {
       "function validateLayerGroupRoot",
       "function validateStrokeRoot",
       "function validateStudioCrdtDeletionRoots",
-      "function snapshotStudioCrdtR8GrainReferences",
       "function snapshotStudioWorkAssetReferences",
     ]) {
       expect(schema).toContain(declaration);
       expect(service).not.toContain(declaration);
     }
 
+    const r8Snapshot = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-r8-reference-snapshot.ts");
+    expect(schema).toContain('from "./studio-crdt-r8-reference-snapshot"');
+    expect(r8Snapshot.source).toContain("export function snapshotStudioCrdtR8GrainReferences");
+    expect(r8Snapshot.valueImports).toEqual([
+      "yjs", "@toonstudio/contracts/studio-brush-r8-grain-asset-contract", "./studio-crdt-identifiers",
+    ]);
+    expect(r8Snapshot.dynamicImports).toEqual([]);
+    expect(service).not.toContain("function snapshotStudioCrdtR8GrainReferences");
+
+    const contracts = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-service-contracts.ts");
+    expect(service).toContain('from "./studio-crdt-service-contracts"');
+    for (const errorClass of ["class StudioCrdtInvalidPayloadError", "class StudioCrdtStorageCorruptionError"]) {
+      expect(contracts.source).toContain(errorClass);
+      expect(schema).not.toContain(errorClass);
+    }
+    expect(contracts.valueImports.some((specifier) => specifier.includes("web/src"))).toBe(false);
+    expect(contracts.dynamicImports).toEqual([]);
+
     for (const serviceResponsibility of [
-      "class StudioCrdtInvalidPayloadError",
-      "class StudioCrdtStorageCorruptionError",
       "class StudioCrdtService",
       "private async catchUpDocument",
       "private async maybeCompact",

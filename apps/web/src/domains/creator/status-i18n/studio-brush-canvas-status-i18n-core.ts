@@ -12,6 +12,7 @@ import {
 } from "@/shared/lib/i18n";
 
 registerI18nLocaleEntries("ko", {
+  "studio.brushCanvasStatus.canvas.legacyPigmentConfirm": "이전 혼색 획 · 확인 필요",
   "studio.brushCanvasStatus.canvas.adjustCacheRestoreFailed": "보정 레이어 화면 캐시를 복원하지 못했어요.",
   "studio.brushCanvasStatus.canvas.adjustComputeAtScaleFailed": "요청한 출력 배율에서 보정 레이어를 계산하지 못했어요. 출력 배율을 낮춰 주세요.",
   "studio.brushCanvasStatus.canvas.adjustComputeFailed": "보정 레이어를 계산하지 못했어요.",
@@ -46,6 +47,7 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "studio.brushCanvasStatus.canvas.legacyPigmentConfirm": "Earlier pigment stroke · review required",
   "studio.brushCanvasStatus.canvas.adjustCacheRestoreFailed": "Could not restore the adjustment layer display cache.",
   "studio.brushCanvasStatus.canvas.adjustComputeAtScaleFailed": "Could not compute the adjustment layer at the requested output scale. Lower the output scale.",
   "studio.brushCanvasStatus.canvas.adjustComputeFailed": "Could not compute the adjustment layer.",

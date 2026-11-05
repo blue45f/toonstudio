@@ -2,6 +2,32 @@
 
 작성 기준일: 2026-10-15 · 대상: Brush Studio V6 재료 브러시의 안료 슬롯(노드 `pigment-latent`), 브러시 랩 "안료 혼색 비교" 패널
 
+2026-11-05 갱신: 외부 Mixbox 패키지를 호출하던 경로를 자체 잠재 안료 엔진으로 통합한다.
+아래의 2026-10-15·2026-10-29 측정과 시험 개수는 당시 검증 기록이며, 이번 변경의 검증 결과와
+운영 배포 완료를 뜻하지 않는다. 이번 변경의 범위는 다음과 같다.
+
+- **current**: `pigment-mixbox`는 기존 저장 데이터의 노드 식별자로만 보존하고, 실행 제공자는
+  `toonstudio-latent-pigment-v1`(`internal`)로 연결한다. 기존 레시피 식별자·팁·질감·압력·pickup
+  설정은 보존하고 사용자 표시는 자체 혼색임을 밝힌다. 원본 Mixbox와 동일한 색 출력은 보장하지 않는다.
+- **migration**: 과거 `mixbox-js-v2/noncommercial` binding을 담은 재료·authoring은 원본과
+  신규 receipt를 분리해 명시적으로 이주한다. Mixbox 안료 binding 외의 provider나 매개변수는
+  바꾸지 않으며, 다른 copyleft·private-grant 제공자에는 기존 권리 검사를 계속 적용한다.
+- **current**: `mixbox` npm 의존성, 외부 패키지 import와 `mixbox-js-v2` 제공자 매니페스트는
+  제거한다. 자체 제공자는 기본 `permissive-only`에서 실행한다. 운영 의존성 감사는 외부
+  `mixbox` 패키지 재유입을 거부하며, 실제 빌드 포함 여부는 산출물로 따로 검사한다.
+- **legacy exception**: 종전 Mixbox 제공자는 비상업 권리 프로필에서만 허용되는 실행 계획과
+  별개로 정적 import를 가지고 있었다. 권리 프로필 검사만으로 번들 제외를 보장한다고 해석하지 않는다.
+- **운영 관찰**: 2026-11-05 공개 운영 청크에 원본 Mixbox의 데이터·GLSL이 포함됨을
+  [검증 보고서](../reports/mixbox-internalization-verification-2026-11-05.md)의 해시 대조로 확인했다.
+  이 변경안의 운영 반영·계정 실행, 원본과의 시각·성능 동등성, 방법·특허 권리는 미확인이다.
+  10장의 권리 상태는 그대로 유지한다.
+
+자체 CPU 공개 경계 `pigment/latent-pigment-api.ts`는 8비트·부동소수 RGB/RGBA 배열·객체, CSS 색 이름·hex와
+`rgb()/rgba()`, 선형 RGB 및 자체 7채널 잠재 색 왕복을 제공한다. `lerp*`의 알파는 RGB와 독립
+선형 보간하므로 투명색의 RGB도 혼색에 참여한다. 14장의 기존 GPU `mix_rgba`는 coverage로
+색 비율을 가중하므로 알파 계약이 다르다. 자체 7채널 배열은 원본 Mixbox의 잠재 데이터와
+교환할 수 없으며, API 모양의 대응을 출력 동일성으로 해석하지 않는다.
+
 이 문서는 색을 "안료 4종의 농도 + 3채널 잔차"로 바꿔 섞는 독립 구현의 **현재 구현(current)**, 근거, 한계, 권리 상태를 나눠 적는다. 구현되지 않은 것을 현재 기능처럼 쓰지 않는다. 설계 근거는 [분석 보고서](../reports/mixbox-working-principle-analysis-2026-10-15.md)(역사 자료)의 구조 설명이며, 이 문서가 구현 이후의 현재 사실을 설명한다.
 
 ## 1. 상태 요약
@@ -22,7 +48,9 @@
 | 제품 캔버스 혼색: 혼색 브러시 `latent-pigment` 방식과 섞는 방식 선택 UI | current, 단위·컴포넌트 시험. 브라우저 화면 미검증 | `brush/studio-wet-mix.ts`, `StudioWetMixPanel.tsx`, 14.5장 |
 | 제품 GPU 렌더러에서 잠재 안료 셰이더 사용 | target(미연결) | 14.6장 |
 
-Mixbox(`mixbox-js-v2`)의 비상업 경계, 기존 동작, 기존 시험은 바꾸지 않았다. 새 런타임 의존성, 새 정적 데이터 표, 새 동적 import(따라서 새 lazy chunk), DB 마이그레이션은 없다. 번들 확인 범위는 7장에 적었다. 2026-10-29 표 고속 경로(14장)도 커밋한 데이터 파일 없이 첫 사용 때 메모리에서 굽는다.
+2026-10-15 구현 당시에는 Mixbox(`mixbox-js-v2`)의 비상업 경계와 기존 동작을 유지했다.
+2026-11-05 변경은 위 갱신 항목처럼 외부 패키지 호출을 제거한다. 2026-10-29 표 고속 경로(14장)는
+커밋한 데이터 파일 없이 첫 사용 때 메모리에서 굽는 자체 구현이며 계속 재사용한다.
 
 ## 2. 구조
 
@@ -172,14 +200,17 @@ pnpm exec tsx scripts/generate-latent-pigment-model.mts --sweep    # 설계 변�
 ## 7. 제공자 등록과 사용자 화면
 
 - 제공자 `toonstudio-latent-pigment-v1`, 노드 `pigment-latent`, 권리 `internal`, 라이선스 `Project license`로 `BRUSH_STUDIO_V6_PROVIDER_MANIFEST`에 등록했다. 권리가 `internal`이라 `permissive-only`를 포함한 모든 프로필에서 허용된다.
-- Mixbox 노드(`pigment-mixbox`, `mixbox-js-v2`, `noncommercial`)는 같은 안료 슬롯에서 그대로 `permissive-only`와 `source-available`에 차단된다. 상업 차단 시험은 바뀌지 않고 통과한다.
+- 2026-10-15 당시 Mixbox 노드(`pigment-mixbox`, `mixbox-js-v2`, `noncommercial`)는
+  `permissive-only`와 `source-available` 실행 계획에서 차단됐다. 2026-11-05에는 저장 노드
+  식별자 `pigment-mixbox`만 호환용으로 보존하고 자체 제공자에 연결하며, 외부 Mixbox 실행은 제거한다.
 - `brush-studio-v6-pigment-provider.ts`에 같은 슬롯용 어댑터를 더했다. 팔레트는 양 끝 색의 잠재 색을 한 번씩만 풀고 비율마다 보간하며, 양 끝점은 입력 색과 정확히 같다.
 - 엔진 노드 목록, 토폴로지 캐리어 호환 목록, 재료 엔진 안료 목록, 비교 패널에 항목을 더했다. 비교 패널 항목은 네이티브 버튼(`잠재 안료(자체) 선택`)이고 눌림 상태를 `aria-pressed`로 알린다. 보기만 해서는 브러시를 바꾸지 않는다.
 - **번들·구조**: 혼합기·생성 상수·기저 표 3개 모듈(원본 합계 35,434바이트 ≈ 34.6KiB: 29,781 + 3,189 + 2,464)은 안료 제공자(`brush-studio-v6-pigment-provider.ts`)가 정적으로 가져오며, 그 제공자가 이미 Studio 어댑터의 진입 그래프(`studio-legacy-editor-adapter.tsx` → `StudioPage.tsx` → … → `brush-studio-v6-material-engine.ts` → 제공자)에 정적으로 들어 있으므로 이 3개 모듈도 같은 그래프에 들어온다(진입 그래프 검사기로 확인). 새 동적 import와 새 정적 데이터 파일은 없다. 생성기와 `scripts/` 파일은 이 그래프에 도달하지 않는다. 기존 파일 4개(라이선스 프로필, 재료 엔진, 안료 제공자, 토폴로지 재료)의 증가분 2,174바이트를 더하면 진입 그래프 원본은 모두 37,608바이트(≈36.7KiB, 기준 커밋 대비 약 0.19%) 늘었다. 확인한 것은 진입 그래프 래칫(통과: 정적 도달 원본 18.47 MiB, 허용 상한 18.72 MiB)과 파일 크기 래칫(통과), `validate:architecture` 전체(통과)이다. 청크 수 래칫(297/297)은 전체 빌드가 필요해 이 작업에서 실행하지 못했으므로 "청크가 늘지 않았다"는 정적 근거만 있고 측정값은 없다. 새 파일은 모두 `brush-lab/pigment/` 아래이고 파일당 800줄 이하다.
 
 ## 8. 시험
 
-속성 기반이며 다른 구현의 출력값을 기대값이나 상수로 쓰지 않는다(난수는 고정 시드 선형 합동 생성기만).
+아래는 2026-10-15 검증 기록이다. 속성 기반이며 다른 구현의 출력값을 기대값이나 상수로 쓰지
+않는다(난수는 고정 시드 선형 합동 생성기만). 파일별 시험 개수와 Mixbox 경계 설명은 당시 상태다.
 
 | 파일 | 개수 | 증명하는 것 |
 | --- | ---: | --- |
@@ -214,7 +245,9 @@ pnpm exec vitest run apps/web/src/domains/creator/brush-lab/pigment scripts/gene
 - **서면 합의 식별자**: 미기재. 저장소 소유자가 [`third_party/mixbox/LICENSE-GRANT.md`](../../third_party/mixbox/LICENSE-GRANT.md)에 작성할 때까지 소유자의 진술(제작사의 허락)은 사실로 기록하되 검증된 권리로 취급하지 않는다.
 - **특허**: 이 구현이 어떤 특허 청구항에 해당하는지 확인하지 못했다. 서면 합의에 특허 실시 허락 또는 비주장이 들어 있는지 소유자가 확인해야 한다. 논문 본문(안료 기저·잔차 정의)도 이 작업에서 확인하지 않았다.
 - 매니페스트의 `internal` / `Project license`는 이 코드의 출처 분류이며 법적 허가를 뜻하지 않는다. **상업 배포 전에 법무 확인이 필요하다.**
-- Mixbox 패키지 자체(`mixbox-js-v2`)의 비상업 경계는 서면 합의 근거가 기록되기 전까지 그대로 둔다: [`third_party/mixbox/README.md`](../../third_party/mixbox/README.md).
+- 외부 Mixbox 패키지는 2026-11-05 변경에서 제거한다. 원본 패키지의 비상업 조건, 서면 합의
+  미기재와 자체 구현의 방법·특허 권리 미확인은 별개로 남는다:
+  [`third_party/mixbox/README.md`](../../third_party/mixbox/README.md).
 
 ### clean-room 기록
 
@@ -223,13 +256,12 @@ pnpm exec vitest run apps/web/src/domains/creator/brush-lab/pigment scripts/gene
 - 실행한 것: Mixbox를 호출하는 기존 시험(실행만 했고 내부는 보지 않았다)과 개발 전용 비교 스크립트(공개 함수 `lerpFloat`만 블랙박스로 호출).
 - 구현자가 공개 자료로 아는 일반 지식(Kubelka–Munk 이론, 일반 안료 계열의 대략적인 색)은 쓰였다.
 
-## 11. 블랙박스 비교 (참고 수치, 개발 전용)
+## 11. 과거 블랙박스 비교 (2026-10-15 참고 기록)
 
-```sh
-pnpm exec tsx scripts/dev/compare-latent-pigment-with-mixbox.mts
-```
-
-`mixbox` 패키지가 해석될 때만 동작하며(아니면 건너뛰고 정상 종료), 패키지의 공개 함수 `lerpFloat`을 로더 훅이 없는 별도 `node` 프로세스에서 블랙박스로 호출한다. 패키지 소스·상수는 열지 않는다. 운영 번들과 CI에 포함되지 않으며, 출력값을 시험 기대값이나 상수로 쓰지 않는다. 결과는 품질 판정이나 합격 기준이 아니다.
+당시 개발 전용 `scripts/dev/compare-latent-pigment-with-mixbox.mts`는 원본의 공개 함수
+`lerpFloat`을 별도 `node` 프로세스에서 블랙박스로 호출했다. 패키지 소스·상수는 열지 않았고,
+출력값을 시험 기대값이나 모델 상수로 쓰지 않았다. 외부 의존성을 제거한 2026-11-05 변경에서는
+이 비교 스크립트도 제거한다. 아래 과거 측정은 자체 엔진과 원본의 품질 동등성이나 합격 기준이 아니다.
 
 12색 팔레트의 모든 쌍 × 비율 0.25/0.5/0.75 = 198건(2026-10-15 측정):
 

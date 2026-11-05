@@ -1,5 +1,8 @@
 # ToonStudio production toolchain
 
+- 상태: **current — 로컬 제작 툴체인**, 외부 Mixbox 패키지는 **legacy exception(제거)**
+- Mixbox 경계 갱신일: **2026-11-05**
+
 ## Purpose
 
 The production toolchain extends Studio beyond drawing without adding a new parallel product shell.
@@ -15,7 +18,7 @@ project caches are never stored as the canonical manuscript.
 
 ## Supported areas
 
-The catalog in `config/studio-production-toolchain.json` currently describes 25 reviewed tools across
+The catalog in `config/studio-production-toolchain.json` currently describes 24 reviewed tools across
 12 areas.
 
 | Area | Reviewed tools | Product boundary |
@@ -31,7 +34,7 @@ The catalog in `config/studio-production-toolchain.json` currently describes 25 
 | References | darktable | local image development |
 | Audio and accessibility | eSpeak NG, Rubber Band | local speech/phoneme and time/pitch processing |
 | Production operations | Nextcloud, OpenProject, Matrix, Discourse, Matomo | connector catalog only; requires user-owned service configuration |
-| Noncommercial research | Mixbox, OpenPose | visible only in the explicit Research NC profile; not executable by default |
+| Noncommercial research | OpenPose | visible only in the explicit Research NC profile; not executable by default |
 
 “Reviewed” does not mean installed, visually certified or bundled. `/studio/engines` distinguishes
 those states and presents the exact local probe result.
@@ -52,7 +55,7 @@ service connectors.
 
 ### Research NC
 
-Explicitly exposes noncommercial candidates such as Mixbox and OpenPose. They remain non-executable
+Explicitly exposes noncommercial candidates such as OpenPose. They remain non-executable
 unless a separately reviewed module or adapter is supplied. This profile must not be used as evidence
 that commercial use is permitted.
 
@@ -111,7 +114,12 @@ version. They are not added as unvalidated optional keys to v2.
 - External programs are not installed automatically.
 - Connector-only tools do not claim live API integration without user credentials and service URLs.
 - Sweet Home 3D and Scribus are detected but their automatic adapters remain disabled.
-- Mixbox and OpenPose remain research-only and disabled.
+- OpenPose remains research-only and disabled.
+- 외부 Mixbox 패키지와 툴체인 항목은 2026-11-05 변경에서 제거했다. 종전의 이 카탈로그 내
+  `executable: false`는 로컬 툴체인 작업만 막았고, 별도 Brush Studio V6의 정적 import나
+  안료 비교 실행 경로를 차단하는 근거는 아니었다. 브러시의 자체 혼색 경로와 과거 Mixbox
+  기록은 [잠재 안료 혼합기](../features/latent-pigment-mixing.md)와
+  [권리 기록](../../third_party/mixbox/README.md)에서 구분한다.
 - Command plans are operational starting points; visual parity, large-corpus performance and each
   upstream version still require dedicated acceptance evidence.
 - Environment isolation is not an operating-system sandbox; only trusted local binaries may be enabled.

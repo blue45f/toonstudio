@@ -1,3 +1,4 @@
+import { hasValidStudioLegacyPigmentArchiveStroke, STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { hasValidStudioBrushEngineProgramExtension, STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION } from "../../../shared/lib/studio-brush-material-program-contract";
 import { payloadMetadataByteLength } from "./studio-crdt-payload-metadata";
 
@@ -174,7 +175,7 @@ export function normalizedSamples(
   allowEmpty: boolean,
   storedPressureModel?: StudioInkPressureModel,
   requireExtendedInkChannels?: boolean,
-) {
+): StudioCrdtStrokeSamples {
   const extensions = "extensions" in samples && samples.extensions
     && typeof samples.extensions === "object"
     && !Array.isArray(samples.extensions)
@@ -190,6 +191,11 @@ export function normalizedSamples(
     extensions && "inkInput" in extensions ? extensions.inkInput : undefined,
   );
   const embeddedV2 = isStudioInkInputContractV2(embeddedInkContract);
+  const archive = "version" in samples && samples.version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && extensions && "legacyPigmentArchive" in extensions && extensions.legacyPigmentArchive !== undefined;
+  if (archive) {
+    sampleCount(samples, allowEmpty);
+    return Object.fromEntries(SAMPLE_ARRAY_KEYS.flatMap((key) => samples[key] === undefined ? [] : [[key, [...samples[key]!]]])) as unknown as StudioCrdtStrokeSamples;
+  }
   const requireExtended = requireExtendedInkChannels ?? embeddedV2;
   const count = sampleCount(
     samples,
@@ -281,8 +287,9 @@ export function validatePayload(payload: StudioCrdtDrawStrokePayload, allowEmpty
   ) {
     throw new Error("지원하지 않는 획 페이로드 버전입니다.");
   }
-  if (!exactText(payload.kind, 80)) throw new Error("획 종류가 올바르지 않습니다.");
-  if (payload.mode !== "pen" && payload.mode !== "eraser") {
+  const archive = payload.version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && payload.extensions?.legacyPigmentArchive !== undefined;
+  if (!(archive && payload.kind === undefined) && !exactText(payload.kind, 80)) throw new Error("획 종류가 올바르지 않습니다.");
+  if (!(archive && payload.mode === undefined) && payload.mode !== "pen" && payload.mode !== "eraser") {
     throw new Error("획 합성 모드가 올바르지 않습니다.");
   }
   if (!exactText(payload.stroke, 256)) throw new Error("획 색상이 올바르지 않습니다.");
@@ -322,6 +329,7 @@ export function validatePayload(payload: StudioCrdtDrawStrokePayload, allowEmpty
     payload.brushDynamics?.depositPipeline === STUDIO_DYNAMIC_BRUSH_DEPOSIT_PIPELINE_CAUSAL_V4
     && payload.version !== STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION
     && payload.version !== STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION
+    && payload.version !== STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION
   ) {
     throw new Error("테이퍼 간격 브러시는 획 페이로드 v5가 필요합니다.");
   }
@@ -357,6 +365,9 @@ export function validatePayload(payload: StudioCrdtDrawStrokePayload, allowEmpty
   }
   if (!hasValidStudioBrushEngineProgramExtension(payload.version, payload.extensions?.brushEnginePrograms)) {
     throw new Error("브러시 엔진 프로그램과 획 페이로드 버전이 호환되지 않습니다.");
+  }
+  if (!hasValidStudioLegacyPigmentArchiveStroke(payload)) {
+    throw new Error("외부 혼색 원본과 보관 출처 버전이 호환되지 않습니다.");
   }
   const outlineStroke = payload.extensions?.outlineStroke;
   if (outlineStroke !== undefined) {
@@ -429,7 +440,7 @@ export function validatePayload(payload: StudioCrdtDrawStrokePayload, allowEmpty
     );
   }
   const requiresExtendedInkChannels =
-    isStudioInkInputContractV2(normalizedInkInput);
+    !archive && isStudioInkInputContractV2(normalizedInkInput);
   sampleCount(
     payload,
     allowEmpty,
@@ -450,8 +461,8 @@ export function setOptionalRecordValue(
 export function setPayloadMetadata(record: Y.Map<unknown>, payload: StudioCrdtDrawStrokePayload): void {
   record.set("payloadVersion", payload.version);
   record.set("type", payload.type);
-  record.set("kind", payload.kind);
-  record.set("mode", payload.mode);
+  setOptionalRecordValue(record, "kind", payload.kind);
+  setOptionalRecordValue(record, "mode", payload.mode);
   record.set("stroke", payload.stroke);
   record.set("strokeWidth", payload.strokeWidth);
   setOptionalRecordValue(record, "opacity", payload.opacity);
@@ -471,8 +482,8 @@ export function setPayloadMetadataField(
 ): void {
   if (key === "version") record.set("payloadVersion", payload.version);
   else if (key === "type") record.set("type", payload.type);
-  else if (key === "kind") record.set("kind", payload.kind);
-  else if (key === "mode") record.set("mode", payload.mode);
+  else if (key === "kind") setOptionalRecordValue(record, "kind", payload.kind);
+  else if (key === "mode") setOptionalRecordValue(record, "mode", payload.mode);
   else if (key === "stroke") record.set("stroke", payload.stroke);
   else if (key === "strokeWidth") record.set("strokeWidth", payload.strokeWidth);
   else if (key === "opacity" || key === "sampleSpacing") {
@@ -519,21 +530,23 @@ export function readPayload(record: Y.Map<unknown>): StudioCrdtDrawStrokePayload
   const sharedArrays = Object.fromEntries(
     SAMPLE_ARRAY_KEYS.map((key) => [key, yArray(record, key)])
   ) as Record<StudioCrdtSampleArrayKey, Y.Array<number> | null>;
+  const archive = version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && readJsonObject(record, "extensions")?.legacyPigmentArchive !== undefined;
   const pointsLength = sharedArrays.points?.length ?? -1;
   const count = pointsLength / 2;
   if (
     !isStudioCrdtStrokePayloadVersion(version) ||
     type !== "draw" ||
-    !kind ||
-    (mode !== "pen" && mode !== "eraser") ||
+    (!(archive && !record.has("kind")) && !kind) ||
+    (!(archive && !record.has("mode")) && mode !== "pen" && mode !== "eraser") ||
     !stroke ||
     strokeWidth === null ||
-    BASE_SAMPLE_ARRAY_KEYS.some((key) => sharedArrays[key] === null) ||
+    SAMPLE_ARRAY_KEYS.some((key) => record.has(key) && sharedArrays[key] === null) ||
+    (archive ? sharedArrays.points === null : BASE_SAMPLE_ARRAY_KEYS.some((key) => sharedArrays[key] === null)) ||
     pointsLength < 0 ||
     pointsLength % 2 !== 0 ||
     count > STUDIO_CRDT_STROKE_MAX_SAMPLES ||
     BASE_SAMPLE_ARRAY_KEYS.slice(1).some(
-      (key) => sharedArrays[key]!.length !== count,
+      (key) => sharedArrays[key] !== null && sharedArrays[key]!.length !== count,
     )
     || EXTENDED_INK_SAMPLE_ARRAY_KEYS.some(
       (key) => sharedArrays[key] !== null && sharedArrays[key]!.length !== count,
@@ -550,8 +563,8 @@ export function readPayload(record: Y.Map<unknown>): StudioCrdtDrawStrokePayload
   const payload: StudioCrdtDrawStrokePayload = {
     version,
     type,
-    kind,
-    mode,
+    ...(kind === null ? {} : { kind }),
+    ...(mode === undefined ? {} : { mode: mode as "pen" | "eraser" }),
     stroke,
     strokeWidth,
     points: arrays.points!,
@@ -562,6 +575,9 @@ export function readPayload(record: Y.Map<unknown>): StudioCrdtDrawStrokePayload
     speeds: arrays.speeds!,
     tangentialPressures: arrays.tangentialPressures!,
   };
+  if (archive) {
+    for (const key of BASE_SAMPLE_ARRAY_KEYS) if (key !== "points" && arrays[key] === undefined) delete payload[key];
+  }
   for (const key of EXTENDED_INK_SAMPLE_ARRAY_KEYS) {
     const values = arrays[key];
     if (values !== undefined) Object.assign(payload, { [key]: values });

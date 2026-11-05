@@ -1,6 +1,8 @@
 import { readStudioLinkedPassAssetRows } from "../../modules/creator/studio-linked-pass-asset-admission";
 import { extractStudioBg3dLinkedPassRequirementsInTransaction } from "../../modules/creator/studio-bg3d-linked-pass-admission";
 import { assertStudioBg3dRestDocumentInTransaction } from "../../modules/creator/studio-bg3d-bundle-rest-gate";
+import { assertStudioLegacyPigmentArchiveTransition } from "../../modules/creator/studio-legacy-pigment-archive-admission";
+import { assertStudioLegacyPigmentArchiveRestDocumentInTransaction } from "../../modules/creator/studio-legacy-pigment-archive-rest-gate";
 // 창작 작품(웹툰/컷툰) CRUD — 목록/상세/생성/수정/삭제와 연결 자산 검증.
 import { and, asc, desc, eq, gt, inArray, lt, lte, or, sql } from "drizzle-orm";
 import { creatorWorkSnapshotSelection } from "../../modules/creator/creator-work-snapshot-selection";
@@ -654,6 +656,7 @@ export async function createWork(userId: string, input: CreatorWorkInput): Promi
   }
   if (challengeId) values.challengeId = challengeId;
   await db.transaction(async (tx) => {
+    assertStudioLegacyPigmentArchiveTransition(undefined, doc);
     await assertStudioBg3dRestDocumentInTransaction(tx, id, doc, input.readerCapabilities ?? []);
     await tx.insert(creatorWorks).values(values);
     await tx.insert(creatorWorkRevisions).values({
@@ -820,6 +823,7 @@ export async function updateWork(
       throw new Error("작품 revision 상한에 도달해 더 저장할 수 없습니다.");
     }
     if (Object.hasOwn(fields, "doc")) await admitStudioRolePipelineFullDocument(tx, userId, id, fields.doc);
+    if (Object.hasOwn(fields, "doc")) await assertStudioLegacyPigmentArchiveRestDocumentInTransaction(tx, id, fields.doc, locked.doc, patch.readerCapabilities ?? []);
     await assertStudioBg3dRestDocumentInTransaction(tx, id, Object.hasOwn(fields, "doc") ? fields.doc : locked.doc, patch.readerCapabilities ?? [], locked.doc);
     const [draftCollaborationRoom] = requestedStatus === undefined
       ? []
