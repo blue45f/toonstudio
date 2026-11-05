@@ -683,6 +683,8 @@ export default defineConfig(({ command, mode }) => ({
             "qrcode",
             // 자동 탐색을 끈 원고 검증에서도 Spectral의 CommonJS 진입점을 브라우저 모듈로 변환한다.
             "spectral.js",
+            // 실제 캔버스 진입점이 가져오는 reconciler의 CommonJS 상수도 함께 변환한다.
+            "react-konva/lib/ReactKonvaCore",
           ],
         }
       : {}),

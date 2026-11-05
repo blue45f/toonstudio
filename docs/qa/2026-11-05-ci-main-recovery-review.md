@@ -45,3 +45,5 @@
 `7dc2a368a43cb2b35997f5a81c77da1c9e4f0254`의 새 Vite 캐시에서 같은 6컷 시험을 실행했다. 먼저 로컬 시험 DB를 연결 파일의 포트가 아닌 기본 포트로 시작해 준비 단계 두 번이 실패했다. 이를 기존 데이터나 schema 변경 없이 명시 포트로 바로잡은 뒤 실계정 준비는 통과했지만, `TOONSPECTRUM_VITE_DISABLE_OPTIMIZE_DEPS=1`의 명시 목록에 `spectral.js`가 없어 CommonJS 진입점의 default export 오류로 화면 진입이 실패했다. 원본 fixture 1개 통과·실계정 사례 1개 실패였으며 원격 CI·전체 제작 통과로 계산하지 않는다.
 
 변환 목록에 `spectral.js`만 추가했다. 안료 계산·렌더러·저장 형식은 바꾸지 않는다. 동일 시험의 새 냉간 캐시·새 결과 폴더 실행은 별도 확인하고, 첫 실패의 원시 로그와 고정 소스 지문은 보존한다. 이 설정은 원고 브라우저 검증 서버에서 사용하는 기존 선택 모드이며 production 빌드나 운영 배포의 증거와 구분한다.
+
+첫 변환 보완 `bdba63889e35c72cc011026038d1d037c32bc543`의 새 냉간 실행에서는 Spectral 오류가 사라졌지만 `react-konva`의 실제 캔버스 진입점이 읽는 CommonJS `react-reconciler/constants.js`의 named export 오류로 다시 1개 통과·1개 실패했다. 따라서 첫 보완만으로 화면 진입이 해결됐다고 표시하지 않는다. 실제 앱이 import하는 `react-konva/lib/ReactKonvaCore`를 명시 변환 목록에 추가해 그 의존 경로 전체를 변환한다. 임의로 transitive 패키지를 직접 import하거나 의존성·렌더러를 바꾸지 않는다. 후속 실제 완주 결과는 같은 방식으로 별도 확인한다.
