@@ -32,6 +32,44 @@ beforeEach(() => { sessionStorage.clear(); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("플로팅 배치의 메모리 전용 사용자 지정 출처", () => {
+  it("렌더마다 같은 의미의 새 기본값을 전달해도 읽기와 렌더가 반복되지 않는다", async () => {
+    const store = memoryStore(), repository = createStudioFloatingSurfacePreferencesRepository(store), factory = async () => repository;
+    let renders = 0;
+    const { result, rerender } = renderHook(({ defaultLayout }) => {
+      const value = useStudioFloatingSurfaceLayout({ surfaceId: "surface", defaultLayout: { ...defaultLayout }, repositoryFactory: factory });
+      if (++renders > 16) throw new Error("같은 기본값으로 플로팅 배치 렌더가 반복됩니다.");
+      return value;
+    }, { initialProps: { defaultLayout: fallback } });
+    await waitFor(() => expect(result.current.layoutOverride).toBe("none"));
+    for (let index = 0; index < 5; index += 1) {
+      rerender({ defaultLayout: { ...fallback, yRatio: fallback.yRatio + index / 1_000_000, width: fallback.width + index / 100 } });
+    }
+    await act(async () => {});
+    expect(result.current.layout).toEqual(fallback);
+    expect(result.current.authority).toBe("sqlite-opfs");
+    expect(result.current.layoutOverride).toBe("none");
+    expect(store.get).toHaveBeenCalledTimes(1);
+    expect(store.set).not.toHaveBeenCalled();
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it.each([
+    { xRatio: 0.25 }, { yRatio: 0.4 }, { width: 420 }, { height: 72 },
+    { dock: "left" as const }, { positionLocked: true }, { sizeLocked: true },
+  ])("실제 기본값 변경 %j는 새 읽기와 명시 초기화에 반영한다", async (change) => {
+    const store = memoryStore(), repository = createStudioFloatingSurfacePreferencesRepository(store);
+    const load = vi.fn(repository.load), factory = async () => ({ ...repository, load });
+    const { result, rerender } = renderHook(({ defaultLayout }) => useStudioFloatingSurfaceLayout({ surfaceId: "surface", defaultLayout, repositoryFactory: factory }), { initialProps: { defaultLayout: fallback } });
+    await waitFor(() => expect(result.current.layoutOverride).toBe("none"));
+    const next = { ...fallback, ...change };
+    rerender({ defaultLayout: next });
+    await waitFor(() => expect(load).toHaveBeenLastCalledWith("surface", next));
+    expect(store.set).not.toHaveBeenCalled();
+    act(() => { result.current.resetLayout(); });
+    expect(result.current.layout).toEqual(next);
+    await waitFor(() => expect(store.set).toHaveBeenCalledTimes(1));
+  });
+
   it("동일 target의 저장 없음이 확인돼야 none이며 자동 쓰기는 하지 않는다", async () => {
     const store = memoryStore(), repository = createStudioFloatingSurfacePreferencesRepository(store);
     const factory = async () => repository;

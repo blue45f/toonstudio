@@ -99,9 +99,12 @@ export function useStudioFloatingSurfaceLayout({
   repositoryFactory =
     acquireProductStudioFloatingSurfacePreferencesRepositoryDeferred,
 }: UseStudioFloatingSurfaceLayoutOptions): UseStudioFloatingSurfaceLayoutResult {
+  const { version, xRatio, yRatio, width, height, dock, positionLocked, sizeLocked } =
+    normalizeStudioFloatingSurfaceLayout(defaultLayout, defaultLayout);
+  // 호출자가 매 렌더 새 객체를 전달해도 같은 기본값으로 저장소 읽기를 반복하지 않는다.
   const normalizedDefault = useMemo(
-    () => normalizeStudioFloatingSurfaceLayout(defaultLayout, defaultLayout),
-    [defaultLayout],
+    () => Object.freeze({ version, xRatio, yRatio, width, height, dock, positionLocked, sizeLocked }),
+    [version, xRatio, yRatio, width, height, dock, positionLocked, sizeLocked],
   );
   const repository = useMemo(() => {
     let pending: Promise<StudioFloatingSurfacePreferencesRepository> | null = null;
