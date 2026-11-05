@@ -1058,7 +1058,7 @@ export class StudioCrdtRoomBinding {
       const transport = this.captureTransport();
       try {
         const admission = applyStudioCrdtBg3dReaderUpdate(this.document, decodeStudioCrdtUpdate(event.update.update), event.update, this.room.workId, this.hasAuthoritativeServer(),
-          { isActive: () => this.isCurrentTransport(transport), apply: () => { if (this.classifyAuthoritativeSequence(event.update.serverSequence) !== "stale") this.document.applyUpdateBase64(event.update.update, STUDIO_CRDT_ORIGIN_REMOTE); } });
+          { isActive: () => this.isCurrentTransport(transport), apply: () => { if (this.classifyAuthoritativeSequence(event.update.serverSequence) === "stale") return false; this.document.applyUpdateBase64(event.update.update, STUDIO_CRDT_ORIGIN_REMOTE); return true; } });
         if (admission) await admission;
         if (!this.isCurrentTransport(transport)) return;
         const sequenceState = this.classifyAuthoritativeSequence(event.update.serverSequence);

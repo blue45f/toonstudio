@@ -4,7 +4,8 @@ import { createBg3dBundleProjectFixture } from "../bg3d/studio-bg3d-bundle-proje
 import type { StudioCrdtSceneGraphFrontier } from "./studio-crdt-history";
 import { StudioCrdtDocument } from "./studio-crdt-document";
 import { asStudioCrdtDocumentHost } from "./studio-crdt-document-host";
-import { publishStudioCrdtSceneGraphDiff } from "./studio-crdt-scene-publisher";
+import { publishStudioCrdtSceneGraphDiff, publishStudioCrdtDrawGraphDiff } from "./studio-crdt-scene-publisher";
+import { studioCrdtBg3dReaderMetadata, studioCrdtPeerSyncResponse } from "./studio-crdt-bg3d-reader-fence";
 import { STUDIO_CRDT_ORIGIN_REMOTE, STUDIO_CRDT_PROTOCOL_VERSION, encodeStudioCrdtUpdate, type StudioCrdtRemoteUpdate } from "./studio-crdt-protocol";
 import { StudioCrdtRoomBinding, type StudioCrdtBindingStatus } from "./studio-crdt-room-binding";
 import { add, FakeRoom, room } from "./studio-crdt-room-binding.test-support";
@@ -43,6 +44,48 @@ async function fixture(start = true) {
 }
 
 describe("6패스 복원 중 원격 업데이트의 입장 순서", () => {
+  it("최신 v6 sync가 추월한 v7 업데이트는 정상 pending에 요구만 남겨 구 peer를 차단하지 않는다", async () => {
+    const f = await fixture(false), pendingSource = new StudioCrdtDocument();
+    const programs = { version: 1 as const, oil: { bristlePhysics: false, bristleLoadDynamics: false, impastoRelief: false } };
+    const draw = (stroke: string, preserve = false) => ({ id: "draw-a", type: "draw" as const, points: [0, 0, 7, 8], stroke, strokeWidth: 2,
+      brushEnginePrograms: programs, ...(preserve ? { psdGroupId: "psd-group" } : {}) });
+    const pages = (stroke: string, preserve = false) => [{ id: "page-1", bg: "#fff", bgGrad: null, canvasH: 1080, elements: [draw(stroke, preserve)] }];
+    const base = pages("#000000"), rich = pages("#112233", true), latest = pages("#abcdef");
+    const oldSync = () => studioCrdtPeerSyncResponse({ document: f.client, workId: f.fake.workId, transferId: "old-sync", sequence: 2, scope: () => "work",
+      request: { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: f.fake.workId, requestId: "old", stateVector: "AA==", readerCapabilities: [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] } });
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    try {
+      publishStudioCrdtDrawGraphDiff(f.server, [], base); await f.binding.start();
+      publishStudioCrdtDrawGraphDiff(pendingSource, [], base); const pendingVector = pendingSource.encodeStateVector();
+      publishStudioCrdtDrawGraphDiff(pendingSource, base, latest);
+      f.client.applyUpdate(pendingSource.encodeStateAsUpdate(pendingVector), STUDIO_CRDT_ORIGIN_REMOTE);
+      const doc = asStudioCrdtDocumentHost(f.client).doc;
+      expect(doc.store.pendingStructs).not.toBeNull();
+      expect(studioCrdtBg3dReaderMetadata(f.client).requiredReaderCapabilities).toEqual([STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY]);
+      expect(oldSync()).not.toBeNull();
+      hydrate.mockClear(); let calls = 0;
+      hydrate.mockImplementation(async (frontier: StudioCrdtSceneGraphFrontier) => {
+        if (++calls === 1) await gate;
+        return hydrated(frontier);
+      });
+      const vector = f.server.encodeStateVector(); publishStudioCrdtDrawGraphDiff(f.server, base, rich);
+      expect(f.server.getStroke("draw-a")?.payload.version).toBe(7); f.fake.serverSequence = 1;
+      const incoming = f.deliver({ protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: f.fake.workId,
+        updateId: "00000000-0000-4000-8000-000000000001", serverSequence: "1", update: encodeStudioCrdtUpdate(f.server.encodeStateAsUpdate(vector)),
+        ...studioCrdtBg3dReaderMetadata(f.server, () => "work") });
+      await vi.waitFor(() => expect(hydrate).toHaveBeenCalledOnce());
+      publishStudioCrdtDrawGraphDiff(f.server, rich, latest); expect(f.server.getStroke("draw-a")?.payload.version).toBe(6);
+      f.fake.serverSequence = 2; await f.binding.syncNow();
+      const snapshot = f.client.encodeStateAsUpdate(), stateVector = f.client.encodeStateVector(), pending = doc.store.pendingStructs?.update.slice();
+      const apply = vi.spyOn(f.client, "applyUpdateBase64"); release(); await incoming;
+      expect(apply).not.toHaveBeenCalled(); expect(f.client.encodeStateAsUpdate()).toEqual(snapshot);
+      expect(f.client.encodeStateVector()).toEqual(stateVector); expect(doc.store.pendingStructs?.update).toEqual(pending);
+      expect(f.client.getStroke("draw-a")?.payload).toMatchObject({ version: 6, stroke: "#abcdef" });
+      expect(studioCrdtBg3dReaderMetadata(f.client).requiredReaderCapabilities).toEqual([STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY]);
+      expect(oldSync()).not.toBeNull(); expect(f.statuses.filter(({ state }) => state === "error")).toEqual([]);
+    } finally { release(); pendingSource.destroy(); f.close(); }
+  });
   it("서로 다른 두 클라이언트의 연속 변경을 다음 주기 동기화 없이 모두 적용한다", async () => {
     const f = await fixture();
     try {

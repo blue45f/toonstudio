@@ -53,7 +53,7 @@ export function studioCrdtPeerSyncResponse(input: { document: StudioCrdtDocument
 }
 interface StudioCrdtBg3dAdmissionApplication {
   isActive: () => boolean;
-  apply: () => void;
+  apply: () => boolean | void;
 }
 
 /** 일반 획은 동기 적용한다. 6패스는 최신 shadow 검증과 실제 적용 사이에 비동기 틈을 두지 않는다. */
@@ -79,9 +79,10 @@ export function applyStudioCrdtBg3dReaderUpdate(document: StudioCrdtDocument, by
     // Yjs update 구독자가 apply 안에서 재전파해도 검증한 요구 메타를 잃지 않는다. 실패 시 원래 기억을 복원한다.
     receivedPendingReaders.set(host.doc, incoming);
     try {
-      application.apply();
+      const applied = application.apply();
       if (receivedPendingReaders.get(host.doc) === incoming) {
-        if (host.doc.store.pendingStructs !== null || host.doc.store.pendingDs !== null) receivedPendingReaders.set(host.doc, { required, applying: false });
+        if (applied === false) { if (previous) receivedPendingReaders.set(host.doc, previous); else receivedPendingReaders.delete(host.doc); }
+        else if (host.doc.store.pendingStructs !== null || host.doc.store.pendingDs !== null) receivedPendingReaders.set(host.doc, { required, applying: false });
         else receivedPendingReaders.delete(host.doc);
       }
     } catch (error) {
