@@ -1,4 +1,5 @@
-import { studioCrdtBg3dReaderMetadata, studioCrdtBg3dPublishedRequest, studioCrdtPeerSyncResponse, prepareStudioCrdtBg3dReaderAdmission, prepareStudioCrdtBg3dSyncAdmission } from "./studio-crdt-bg3d-reader-fence";
+import { subscribeStudioCrdtRoomEventsInOrder } from "./studio-crdt-room-event-queue";
+import { studioCrdtBg3dReaderMetadata, studioCrdtBg3dPublishedRequest, studioCrdtPeerSyncResponse, applyStudioCrdtBg3dReaderUpdate, applyStudioCrdtBg3dSyncResponse } from "./studio-crdt-bg3d-reader-fence";
 import {
   classifyStudioCrdtFailure,
   shouldRetainNonAuthoritativePendingUpdate,
@@ -37,7 +38,6 @@ import {
   resolveStudioLiveProducerErrorFromCause,
   resolveStudioLiveRoomError,
 } from "../status-i18n/studio-producer-error-i18n-live-room";
-
 import type {
   StudioCrdtBatchSubscription,
   StudioCrdtDocument,
@@ -266,7 +266,7 @@ export class StudioCrdtRoomBinding {
       this.emitRecoveryRequiredStatus();
       return;
     }
-    this.unsubscribeCrdt = this.room.subscribeCrdt((event) => this.onCrdtEvent(event));
+    this.unsubscribeCrdt = subscribeStudioCrdtRoomEventsInOrder(this.room, (event) => this.onCrdtEvent(event));
     this.unsubscribeRoom = this.room.subscribe((event) => this.onRoomEvent(event));
     if (this.canEdit || this.scopedWrite) {
       this.batchSubscription = this.document.subscribeBatchedUpdates(({ update }) => {
@@ -647,10 +647,10 @@ export class StudioCrdtRoomBinding {
     if (this.closed || this.recoveryState) return;
     if (!this.isCurrentTransport(transport)) throw this.transportChangedError();
     if (response) {
-      const admission = prepareStudioCrdtBg3dSyncAdmission(this.document, response, this.room.workId, this.hasAuthoritativeServer());
+      const admission = applyStudioCrdtBg3dSyncResponse(this.document, response, this.room.workId, this.hasAuthoritativeServer(),
+        { isActive: () => this.isCurrentTransport(transport), apply: () => this.document.applySyncResponse(response) });
       if (admission) await admission;
       if (!this.isCurrentTransport(transport)) throw this.transportChangedError();
-      this.document.applySyncResponse(response);
       this.advanceAuthoritativeSequenceAfterSync(response.serverSequence);
       if (this.hasAuthoritativeServer()) {
         // The authoritative response has been validated and applied. Only from this point may a
@@ -659,9 +659,9 @@ export class StudioCrdtRoomBinding {
       }
       const serverVector = decodeStudioCrdtStateVector(response.serverStateVector);
       const localVector = this.document.encodeStateVector();
-      // Pending operations already represent the client's unsent frontier. Adding a second
-      // aggregate diff on reconnect would persist the same Yjs structs under a fresh updateId.
-      if ((this.canEdit || this.scopedWrite) && this.pending.size === 0 && !sameBytes(serverVector, localVector)) {
+      // 오래된 응답에 없는 새 원격 변경을 로컬 누락분으로 재발행하지 않는다.
+      if (this.hasAuthoritativeServer() && (this.resyncRequested || BigInt(response.serverSequence) < (this.authoritativeServerSequence ?? BigInt(0)))) this.resyncRequested = true;
+      else if ((this.canEdit || this.scopedWrite) && this.pending.size === 0 && !sameBytes(serverVector, localVector)) {
         const missingOnServer = this.document.encodeStateAsUpdate(serverVector);
         if (missingOnServer.byteLength > EMPTY_UPDATE_BYTE_LENGTH) this.enqueueUpdate(missingOnServer);
       }
@@ -1054,16 +1054,16 @@ export class StudioCrdtRoomBinding {
   private async onCrdtEvent(event: StudioLiveCrdtRoomEvent): Promise<void> {
     if (this.closed || this.recoveryState) return;
     if (event.type === "update") {
-      const sequenceState = this.classifyAuthoritativeSequence(event.update.serverSequence);
-      if (sequenceState === "stale") return;
+      if (this.classifyAuthoritativeSequence(event.update.serverSequence) === "stale") return;
+      const transport = this.captureTransport();
       try {
-        const admission = prepareStudioCrdtBg3dReaderAdmission(this.document, decodeStudioCrdtUpdate(event.update.update), event.update, this.room.workId, this.hasAuthoritativeServer());
+        const admission = applyStudioCrdtBg3dReaderUpdate(this.document, decodeStudioCrdtUpdate(event.update.update), event.update, this.room.workId, this.hasAuthoritativeServer(),
+          { isActive: () => this.isCurrentTransport(transport), apply: () => { if (this.classifyAuthoritativeSequence(event.update.serverSequence) !== "stale") this.document.applyUpdateBase64(event.update.update, STUDIO_CRDT_ORIGIN_REMOTE); } });
         if (admission) await admission;
-        if (this.closed || this.recoveryState) return;
-        this.document.applyUpdateBase64(event.update.update, STUDIO_CRDT_ORIGIN_REMOTE);
-        if (sequenceState === "contiguous") {
-          this.authoritativeServerSequence = BigInt(event.update.serverSequence);
-        } else if (sequenceState === "gap") {
+        if (!this.isCurrentTransport(transport)) return;
+        const sequenceState = this.classifyAuthoritativeSequence(event.update.serverSequence);
+        if (sequenceState === "contiguous") this.advanceAuthoritativeSequenceAfterSync(event.update.serverSequence);
+        else if (sequenceState === "gap" || (sequenceState === "untracked" && this.hasAuthoritativeServer())) {
           this.requestAuthoritativeRepair(statusFrom("repair-gap-detected"));
         }
       } catch (error) {

@@ -25,6 +25,43 @@ function creditedAssetFixture() {
 }
 
 describe("실제 Web CRDT와 공유 Authoring 투영", () => {
+  it.each(["main-line", "tone"] as const)("두 클라이언트의 6패스 %s 필터 초기화를 투영하면서 CAS 원본과 출처를 보존한다", (role) => {
+    const f = fixture(), receiver = new StudioCrdtDocument(), credit = studioBundleCreditFixture();
+    const contentHash = "sha256:" + "a".repeat(64);
+    const staleEffects = { blurFx: { type: "gaussian", strength: 25, radius: 5, angle: 0 }, blur: 12, grayscale: true };
+    const image = {
+      id: `reset-${role}`, type: "image", x: 10, y: 20, width: 30, height: 40, rotation: 0,
+      src: role === "main-line" ? `studio-opfs-cas:${contentHash}` : `bg3d-lt-artifact://sha256/${"a".repeat(64)}`,
+      bg3dLtBundleId: "bundle-1", bg3dLtRole: role, bg3dLtRenderMode: "separated",
+      bg3dLtBundleReference: { kind: "bg3d-sixpass-bundle", bundleId: "bundle-1", renderRevisionId: "rev-1",
+        manifestHash: contentHash, role, elementId: `reset-${role}` },
+      contrast: 30, decodedWidth: 800, bundleSourceCredit: credit, ...staleEffects,
+    };
+    f.pages[0]!.elements.push(image);
+    f.source.addSceneElement(studioElementToCrdtSceneElement("page-1", image));
+    receiver.applyUpdate(f.source.encodeStateAsUpdate());
+    const receivedBefore = receiver.getSceneElement(image.id);
+    expect(receivedBefore?.payload.props).toMatchObject(staleEffects);
+    const vector = receiver.encodeStateVector();
+    f.source.patchSceneElement(image.id, { set: { contrast: -40 }, unset: [...Object.keys(staleEffects), "bundleSourceCredit"] });
+    receiver.applyUpdate(f.source.encodeStateAsUpdate(vector));
+    const record = receiver.getSceneElement(image.id);
+    expect(record).toBeDefined();
+    if (!record) throw new Error("수신한 6패스 요소가 없습니다.");
+    expect(record.payload.props.contrast).toBe(-40);
+    for (const key of Object.keys(staleEffects)) expect(record.payload.props).not.toHaveProperty(key);
+    const projected = studioCrdtElementToSceneElement(record, image);
+    const reconciled = reconcileStudioCrdtSceneGraphPages(f.pages, [], receiver.getSceneElements(), receiver.getPages(true), []);
+    for (const candidate of [projected, reconciled.pages[0]!.elements[0]]) {
+      for (const key of Object.keys(staleEffects)) expect(candidate).not.toHaveProperty(key);
+      expect(candidate).toMatchObject({ src: image.src, contrast: -40, decodedWidth: 800,
+        bg3dLtBundleReference: image.bg3dLtBundleReference, bundleSourceCredit: credit });
+    }
+    const republished = studioElementToCrdtSceneElement("page-1", projected);
+    for (const key of Object.keys(staleEffects)) expect(republished.payload.props).not.toHaveProperty(key);
+    expect(image).toMatchObject(staleEffects);
+    receiver.destroy(); f.source.destroy();
+  });
   it("원격 봉투의 유효한 위조 출처도 불변 descriptor의 출처를 덮지 못한다", () => {
     const f = creditedAssetFixture(), forged = studioBundleCreditFixture({ provider: "위조 봉투 제공자" });
     const remoteElement = { ...f.reference, x: 70, bundleSourceCredit: forged };

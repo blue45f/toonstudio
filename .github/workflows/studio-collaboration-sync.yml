@@ -95,6 +95,10 @@ jobs:
           scripts/lib/studio-composited-canvas-fingerprint.test.ts
           apps/web/src/domains/creator/studio-cuttoon-editor/runtime/studio-collaboration-access-policy.test.ts
           apps/web/src/domains/creator/live/studio-crdt-room-binding.test.ts
+          apps/web/src/domains/creator/live/studio-crdt-frontier-async-history.test.ts
+          apps/web/src/domains/creator/live/studio-crdt-frontier-reconciliation-binding.test.ts
+          apps/web/src/domains/creator/live/studio-crdt-pending-frontier-history.test.ts
+          apps/web/src/domains/creator/live/studio-crdt-room-binding.remote-admission.test.ts
           apps/web/src/domains/creator/live/studio-live-client-identity.test.ts
           apps/web/src/domains/creator/live/studio-live-collaboration-transport.test.ts
           apps/web/src/domains/creator/live/studio-live-jam-session.test.ts
