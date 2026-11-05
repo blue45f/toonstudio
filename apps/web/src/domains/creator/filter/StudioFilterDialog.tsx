@@ -1617,7 +1617,7 @@ export function StudioFilterDialog({
           ) : null}
         </div>
 
-        <footer className="shrink-0 border-t border-line bg-card/35 px-4 py-3">
+        <footer data-own-control-size="true" className="shrink-0 border-t border-line bg-card/35 px-4 py-3">
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"
