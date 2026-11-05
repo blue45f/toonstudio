@@ -590,7 +590,7 @@ test("product 초기 checkout은 문서 정본을 포함하고 대형 아트는 
   assert.doesNotMatch(job("static"), /Restore documentation authority for product regressions/u);
 });
 
-test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·문서 3개 선언을 최초 checkout에서 정확히 보존한다", () => {
+test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·문서 16개 선언을 최초 checkout에서 정확히 보존한다", () => {
   const asset = "/apps/web/public/assets/";
   const foundationInputs = [
     "/apps/web/public/assets/3d/environments/bundle-v1/deploy-index.b90b58fd4c87e9fddb2e39a7f1cbeb75ce93f0bc19f4f1cc053ac696e55e377c.json",
@@ -666,9 +666,22 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
     `${asset}studio/generated-backgrounds/gpt25-v1/fantasy/gpt25-bg-fantasy-dragon-cliff-vertical-depth/background.png`,
   ];
   const foundationDocumentInputs = [
-    "/docs/third-party/opencascade-lgpl.md",
+    "/docs/adr/0003-one-primary-surface-owner.md",
+    "/docs/adr/0004-2d-baseline-canvaskit-plus-vello-cpu.md",
+    "/docs/adr/0005-inking-pipeline-staged.md",
+    "/docs/adr/0006-natural-media-hokusai-first.md",
+    "/docs/adr/0008-license-isolation-policy.md",
+    "/docs/adr/0009-google-ink-poc-gate-and-fallback.md",
+    "/docs/adr/0011-v12-frontier-quarantine-ledger.md",
+    "/docs/adr/0017-vello-gap-alternative-engine-lanes.md",
+    "/docs/adr/0018-no-automatic-engine-fallback-vello-primary.md",
+    "/docs/adr/0019-renderer-role-ledger-single-authority.md",
+    "/docs/adr/0022-studio-authority-identity-production-modes.md",
+    "/docs/adr/0025-skia-retained-document-migration.md",
+    "/docs/adr/0026-labs-experimental-apps-engine-selection-and-promotion.md",
     "/docs/studio-bg3d-webgpu-engine-promotion-2026-08-29.md",
-    "/docs/adr/",
+    "/docs/candidates/engine-portfolio/capability-survey.md",
+    "/docs/third-party/opencascade-lgpl.md",
   ];
   const owned = {
     product: ["/docs/", ...[
@@ -698,10 +711,11 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
   assert.ok(routeVisualInputs.every((path) => path.endsWith("/background.png")), "페이지 시각 입력은 원본 PNG 개별 파일이어야 합니다.");
   const routeVisualSet = new Set(routeVisualInputs);
   const foundationDocumentSet = new Set(foundationDocumentInputs);
-  assert.equal(foundationDocumentSet.size, 3);
+  assert.equal(foundationDocumentSet.size, 16);
+  assert.ok(foundationDocumentInputs.every((path) => path.endsWith(".md") && !path.includes("*")), "문서 입력은 정확한 개별 Markdown 파일이어야 합니다.");
   for (const path of foundationDocumentInputs) assert.ok(existsSync(join(repoRoot, path.slice(1))), `foundation 문서 정본 누락: ${path}`);
   assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 90, 0, 1, 7]);
-  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 107, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 120, 0, 1, 7]);
   const declarations = [...job("static").matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
   assert.match(job("static"), /persist-credentials: false/u);
   assert.match(job("static"), /sparse-checkout-cone-mode: false/u);
@@ -714,8 +728,8 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
   assert.ok(routeVisualDeclarations.every((match) => match[1] === "studio-foundation"), "페이지 시각 입력은 foundation만 소유해야 합니다.");
   assert.deepEqual(foundationDocumentDeclarations.map((match) => match[2]).sort(), [...foundationDocumentInputs].sort());
   assert.ok(foundationDocumentDeclarations.every((match) => match[1] === "studio-foundation"), "추가 문서 선언은 foundation만 소유해야 합니다.");
-  assert.equal(declarations.length, 128, "기존 111개와 원본 PNG 14개·문서 3개 선언을 정확히 보존해야 합니다.");
-  assert.equal(new Set(declarations.map((match) => match[2])).size, 123, "새 PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
+  assert.equal(declarations.length, 141, "기존 111개와 원본 PNG 14개·문서 16개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(declarations.map((match) => match[2])).size, 136, "새 PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
   for (const [shard, paths] of Object.entries(owned)) {
     assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
   }
@@ -730,7 +744,7 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
   const unrelated = ["apps/web/public/assets/unrelated/large.glb", "apps/web/public/vrm/unrelated.vrm", "artifacts/unrelated.bin",
     "apps/web/public/assets/virtual-studio/studio-art-v11/unrelated-large.webp",
     "apps/web/public/assets/3d/environments/bundle-v1/unrelated-large.glb"];
-  const unrelatedDocuments = ["docs/third-party/unrelated.md", "docs/unrelated/large.bin"];
+  const unrelatedDocuments = ["docs/third-party/unrelated.md", "docs/adr/9999-unrelated.md", "docs/unrelated/large.bin"];
   try {
     git("init", "--quiet");
     for (const file of [world, ...Object.values(owned).flat().map(input), ...unrelated, ...unrelatedDocuments, "package.json"]) {
