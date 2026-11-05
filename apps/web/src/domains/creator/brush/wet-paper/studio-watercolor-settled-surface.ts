@@ -6,7 +6,7 @@
  * - 리빙잉크 베이크 레인(커밋 렌더): 바이트 동일한 베이스 워시를 바로 그리고 시분할 캐시에서 증강 dab을 받는다
  *   (2026-08-14 정지 수정 그대로).
  * - 젖은 종이 레인(커밋 렌더): dab 계획은 다른 레인과 같은 재질 스케일 베이스 워시이고, 정착 시뮬레이션 래스터가
- *   준비되면 그 래스터가 획을 대신 그린다(`wetPaperBake`). 라이브 초안·썸네일은 언제나 베이스 워시다.
+ *   준비되면 획을 대신 그린다(`wetPaperBake`). 갈필 초안도 베이크하며 다른 초안·썸네일은 기본 워시다.
  * SVG 내보내기는 같은 프로그램 해석(`resolveStudioWetPaperBakeProgramIdForBrush`)을 쓰고 동기로 굽는다.
  */
 
@@ -50,7 +50,7 @@ export interface StudioWatercolorSettledSurfaceInput {
   /** 획 고정 시드(`watercolorBrushSeedFromKey(element.id)`). */
   readonly seed: number;
   readonly activeDraft: boolean;
-  /** 문서 렌더(커밋 획)만 베이크를 요청한다. */
+  /** 커밋 렌더 여부. 갈필 초안도 베이크한다. */
   readonly durableDocumentRender: boolean;
   readonly enginePrograms: StudioBrushEngineProgramSet | null;
   /** 획 색(젖은 종이 래스터 합성). */
@@ -93,10 +93,9 @@ export function resolveStudioWatercolorSettledSurface(
     input.activeDraft ? "live" : "settled",
     enginePrograms,
   );
-  const wetPaperProgramId = input.durableDocumentRender && !input.activeDraft
-    ? resolveStudioWetPaperBakeProgramIdForBrush(brush, enginePrograms)
-    : null;
-  const wetPaperBake = wetPaperProgramId
+  const wetPaperProgramId = resolveStudioWetPaperBakeProgramIdForBrush(brush, enginePrograms);
+  const wetPaperBake = wetPaperProgramId && (input.activeDraft
+    ? wetPaperProgramId === "chu-tai-dry-brush" : input.durableDocumentRender)
     ? requestStudioWetPaperBake(
         dabs,
         { seed, programId: wetPaperProgramId },

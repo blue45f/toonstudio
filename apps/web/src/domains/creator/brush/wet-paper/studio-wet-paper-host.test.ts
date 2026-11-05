@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { applyStudioBrushAliasWatercolorMaterial } from "../studio-brush-alias-profile";
+
+import { resolveStudioWatercolorSettledSurface } from "./studio-watercolor-settled-surface";
 import {
   drawStudioWetPaperBake,
   peekStudioWetPaperBakeResult,
@@ -140,6 +143,41 @@ describe("wet-paper settled bake host (time-sliced, cached)", () => {
     expect(requestStudioWetPaperBake(DABS, request, "#aa3300", () => {}, 3)).not.toBeNull();
     expect(requestStudioWetPaperBake(DABS, request, "#111111", () => {}, 3)).not.toBeNull();
     expect(studioWetPaperBakeHostStatsForTests().cells).toBe(cellsAfterSolve);
+  });
+
+  it("갈필 라이브의 오래된 prefix를 취소하고 완료 전환에서 최종 베이크 바이트를 공유한다", async () => {
+    const canvases = installFakeDocument(), abandonedReady = vi.fn();
+    const base = {
+      brush: "ink-wash--dry-brush", seed: 13, enginePrograms: null, color: "#7653bf",
+      activeDraft: true, durableDocumentRender: false, bakeGeneration: 0, requester: "dry-live-prefix",
+    };
+    const abandoned = resolveStudioWatercolorSettledSurface({ ...base, plannedDabs: DABS.slice(0, 5), onBakeReady: abandonedReady });
+    expect(abandoned.wetPaperBake).toBeNull();
+    expect(studioWetPaperBakeHostStatsForTests().pendingSolves).toBe(1);
+    await waitFor((onReady) => {
+      const live = resolveStudioWatercolorSettledSurface({ ...base, plannedDabs: DABS, onBakeReady: onReady });
+      expect(live.wetPaperBake).toBeNull();
+      const committing = resolveStudioWatercolorSettledSurface({ ...base, plannedDabs: DABS, activeDraft: false, durableDocumentRender: true, onBakeReady: () => {} });
+      expect(committing.wetPaperBake).toBeNull();
+      expect(studioWetPaperBakeHostStatsForTests().pendingSolves).toBe(1);
+    });
+    expect(abandonedReady).not.toHaveBeenCalled();
+    const live = resolveStudioWatercolorSettledSurface({ ...base, plannedDabs: DABS, onBakeReady: () => {}, bakeGeneration: 1 });
+    const committed = resolveStudioWatercolorSettledSurface({ ...base, plannedDabs: DABS, activeDraft: false, durableDocumentRender: true, onBakeReady: () => {}, bakeGeneration: 1 });
+    expect(live.wetPaperBake).not.toBeNull();
+    expect(committed.wetPaperBake).toBe(live.wetPaperBake);
+    expect(studioWetPaperBakeHostStatsForTests()).toMatchObject({ entries: 1, pendingSolves: 0, pendingComposites: 0 });
+    const dabs = applyStudioBrushAliasWatercolorMaterial(base.brush, DABS, base.seed, "settled", null);
+    expect(live.dabs).toEqual(dabs);
+    const settings = normalizeStudioWetPaperBakeSettings({ seed: base.seed, phase: "settled", programId: "chu-tai-dry-brush" });
+    if (!settings) throw new Error("갈필 프로그램을 해석할 수 없습니다.");
+    const expected = solveStudioWetPaperBakeUncached(dabs, settings);
+    if (!expected) throw new Error("기존 갈필 최종 베이크가 없습니다.");
+    const raster = compositeStudioWetPaperRaster(expected, base.color);
+    if (!raster) throw new Error("기존 갈필 최종 래스터가 없습니다.");
+    expect(canvases).toHaveLength(1);
+    expect(Buffer.from(canvases[0]?.pixels ?? [])).toEqual(Buffer.from(raster.rgba));
+    expect(live.wetPaperBake).toMatchObject({ x: raster.originXPx, y: raster.originYPx, width: raster.width * raster.pixelPx, height: raster.height * raster.pixelPx });
   });
 
   it("fails closed for unknown programs, empty plans and documents without a canvas", async () => {

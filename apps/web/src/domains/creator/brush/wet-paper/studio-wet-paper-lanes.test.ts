@@ -130,6 +130,15 @@ describe("wet-paper diffusion lanes (MoXi · Curtis · granulation · dry brush)
     for (const [laneId] of LANES) {
       expect(resolveStudioWetPaperBakeProgramIdForBrush(laneId, bloomOverride), laneId).toBeNull();
       expect(resolveStudioWetPaperBakeProgramIdForBrush(laneId, livingOverride), laneId).toBeNull();
+      for (const enginePrograms of [bloomOverride, livingOverride]) {
+        const surface = resolveStudioWatercolorSettledSurface({
+          brush: laneId, plannedDabs: [{ x: 20, y: 40, radius: 7, opacity: 0.5, role: "core" }],
+          seed: 3, enginePrograms, color: "#202020", activeDraft: true, durableDocumentRender: false,
+          onBakeReady: () => {}, bakeGeneration: 0,
+        });
+        expect(surface.wetPaperBake, laneId).toBeNull();
+        expect(studioWetPaperBakeHostStatsForTests().pendingSolves, laneId).toBe(0);
+      }
     }
   });
 
@@ -155,7 +164,7 @@ describe("wet-paper diffusion lanes (MoXi · Curtis · granulation · dry brush)
     expect(createStudioBrushCompositionBaseline("ink-wash--living-bake", "watercolor").physics).toBe("inkwash-fluid");
   });
 
-  it("requests the settled bake only for committed document renders and keeps the base wash bytes", () => {
+  it("갈필 초안과 커밋은 베이크를 요청하고 다른 초안·썸네일은 기존 베이스 워시를 유지한다", () => {
     const planned = Array.from({ length: 12 }, (_, index) => ({
       x: 20 + index * 4,
       y: 40,
@@ -176,7 +185,8 @@ describe("wet-paper diffusion lanes (MoXi · Curtis · granulation · dry brush)
       };
       const live = resolveStudioWatercolorSettledSurface({ ...base, activeDraft: true, durableDocumentRender: false });
       expect(live.wetPaperBake).toBeNull();
-      expect(studioWetPaperBakeHostStatsForTests().pendingSolves, laneId).toBe(0);
+      expect(studioWetPaperBakeHostStatsForTests().pendingSolves, laneId).toBe(laneId === "ink-wash--dry-brush" ? 1 : 0);
+      resetStudioWetPaperBakeHostForTests();
       const thumbnail = resolveStudioWatercolorSettledSurface({ ...base, activeDraft: false, durableDocumentRender: false });
       expect(thumbnail.wetPaperBake).toBeNull();
       expect(studioWetPaperBakeHostStatsForTests().pendingSolves, laneId).toBe(0);
