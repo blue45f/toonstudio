@@ -1,0 +1,12 @@
+[
+  {
+    "image": "usgs-mountain-lake-original.jpg",
+    "source": "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/thumbnails/image/wrri-mountain-lake.jpg",
+    "page": "https://www.usgs.gov/media/images/mountain-lake",
+    "rights_page": "https://www.usgs.gov/products/multimedia-gallery",
+    "rights": "USGS Multimedia Gallery public domain unless noted; image page lists no contrary restriction",
+    "sha256": "14aeb5477e6d38c8513fa0db8fdf38944bbe826370063b04b24aa4bdb1de4007",
+    "retrieved": "2026-11-05",
+    "purpose": "isolated candidate inference evaluation only, not training"
+  }
+]

@@ -24,10 +24,14 @@ describe("Scene3D output CI inputs", () => {
     expect(scene.steps.some((step) => step.run === "pnpm run typecheck")).toBe(true);
     expect(core.steps.some((step) => step.run?.includes("pnpm run typecheck"))).toBe(true);
     expect(scene["timeout-minutes"]).toBe(20);
-    const command = JSON.parse(readFileSync(new URL("package.json", repoRoot), "utf8")).scripts.typecheck;
-    expect(command).toContain("verify-workspace-package-links.mjs");
-    expect(command).toContain("tsc -p tsconfig.json --incremental false");
-    expect(command).toContain("pnpm --filter @webtoon-nest/api run typecheck");
+    const scripts = JSON.parse(readFileSync(new URL("package.json", repoRoot), "utf8")).scripts;
+    expect(scripts.typecheck).toBe(
+      "node scripts/verify-workspace-package-links.mjs && pnpm run typecheck:web && pnpm --filter @webtoon-nest/api run typecheck",
+    );
+    // 모든 worker는 같은 전체 Program을 유지하며 파일별 진단만 순차 수집한다.
+    expect(scripts["typecheck:web"]).toBe(
+      "node scripts/typecheck-shards.mjs --heap-mb 8192 --max-source-bytes 12582912",
+    );
   });
 
   it("keeps imported environment manifests in the real sparse checkout without downloading model binaries", () => {

@@ -1,0 +1,24 @@
+{
+  "state": "draft-only/read-only-repository",
+  "base": "63dcf937ca8658fbae52396595416daa1a796043",
+  "ours": "abd691ee218a49a92b6ef170c152fa7415d23cf0",
+  "theirs": "5165e4faf796cebe255460ab38d1c13fde8972c4",
+  "virtualMergeTree": "48f46a795c052d8ecefee1ae46d7134d55555313",
+  "files": [
+    {
+      "path": "apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts",
+      "bytes": 5826,
+      "sha256": "b6cfbc123621ef15fdd12eb73c0eab7485c675dec40db150e46fad53bc1a6d14",
+      "lines": 108
+    },
+    {
+      "path": "apps/web/src/domains/legal/technology/engineering-map-open-source.ts",
+      "bytes": 9941,
+      "sha256": "d01151676123ce174e42a935e84b3087f1bed52625cdcf005fbbce289bd79993",
+      "lines": 106
+    }
+  ],
+  "testsRun": false,
+  "buildRun": false,
+  "repoIndexOrBranchWrites": false
+}

@@ -435,7 +435,7 @@ describe("presetExportResultMessage — vips 레인 안내", () => {
       { files: 3, oversized: 0, format: "jpg", targetWidth: 690, vipsRoutedPages: 2 },
       naver
     );
-    expect(message).toContain("고해상 페이지 2장은 고품질 축소(wasm-vips)로 저장했어요.");
+    expect(message).toContain("고해상 페이지 2장은 고품질 축소(Lanczos3)로 저장했어요.");
   });
 
 });

@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/tmp/toonstudio-light-paprika-evaluation/venv/bin/python",
+    "/tmp/toonstudio-light-paprika-evaluation/inspect_convert.py"
+  ],
+  "exit_code": 0,
+  "wall_seconds": 19.15476810600012,
+  "max_rss_kib": 1138884,
+  "user_seconds": 18.726502,
+  "system_seconds": 0.409251
+}

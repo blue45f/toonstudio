@@ -1,0 +1,32 @@
+{
+  "extends": "/workspace/toonstudio/tests/benchmarks/harness/tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "/workspace/toonstudio/tests/benchmarks/harness/filter-candidates.ts",
+    "/workspace/toonstudio/tests/benchmarks/harness/quality-lab.ts",
+    "/workspace/toonstudio/tests/benchmarks/harness/vips-export-cutover.ts",
+    "/workspace/toonstudio/tests/benchmarks/harness/native-gaussian.ts",
+    "/workspace/toonstudio/tests/benchmarks/harness/native-gaussian.test.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/webgpu-flag-constants.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/bezier-js-shim.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/canvaskit-wasm-shim.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/canvaskit-wasm-url-shim.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/gltf-validator.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/mixbox.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/number-is-safe-integer.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/onnxruntime-web-assets.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/opencascade-js.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/opentype-js-shim.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/p5-brush-standalone.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/pigment-libraries.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/studio-engine-skia-shim.d.ts",
+    "/workspace/toonstudio/packages/studio-engine-skia/src/canvaskit-wasm-url.d.ts"
+  ]
+}

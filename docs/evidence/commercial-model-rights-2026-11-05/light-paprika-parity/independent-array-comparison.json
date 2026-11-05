@@ -1,0 +1,28 @@
+[
+  {
+    "image": "usgs-mountain-lake-original.jpg",
+    "elements": 786432,
+    "browser_nonfinite": 0,
+    "browser_sha256": "181601280d44b1fbfef11203060d654600c9b45b017457a0e1a76bf369e209ce",
+    "cpu130_sha256": "568b0be2bc285842df7e5aea5e93440ac2cd7cdeca815e9fa23c7b2ec862d2c3",
+    "max_error_vs_cpu130": 0.04379662871360779,
+    "mean_error_vs_cpu130_float64_accumulator": 0.007179233008477711,
+    "elements_above_or_equal_2_over_255": 337020,
+    "fraction_above_or_equal_2_over_255": 0.4285430908203125,
+    "max_error_browser_vs_tf": 0.04536554217338562,
+    "parity_passed": false
+  },
+  {
+    "image": "synthetic-city.png",
+    "elements": 786432,
+    "browser_nonfinite": 0,
+    "browser_sha256": "0e586c045863bfc72c23639a1d945bbe5ee49b1368d18c9d684f0c56601c8ba0",
+    "cpu130_sha256": "3626b0be2c8d83790923a4704b3c004416e702d948a94c283c6339240bb4fa61",
+    "max_error_vs_cpu130": 0.06566113047301769,
+    "mean_error_vs_cpu130_float64_accumulator": 0.008437058871622346,
+    "elements_above_or_equal_2_over_255": 489866,
+    "fraction_above_or_equal_2_over_255": 0.6228968302408854,
+    "max_error_browser_vs_tf": 0.06759050115942955,
+    "parity_passed": false
+  }
+]

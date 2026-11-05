@@ -1,0 +1,18 @@
+{
+  "build-postchecks-review.md": {
+    "bytes": 8000,
+    "sha256": "a404122d4448f244cad52292d766c31a7b0d490e7ddb7d0e8c03691f489f84ca"
+  },
+  "final-result.json": {
+    "bytes": 14059,
+    "sha256": "bb56209ffcec6fcedc631c644b48ba81b7e7e879fed2d35d90fd0d9bd2b8bda6"
+  },
+  "final-program-comparison.json": {
+    "bytes": 232,
+    "sha256": "f880ee430dba8f643ac97f1ee7ceb1f954224ead3a4a42f436f312d8afc2c91e"
+  },
+  "final-source-comparison.json": {
+    "bytes": 99,
+    "sha256": "93a4992c5a4a1e6c0c298366799539e270ef87bfd51b7f14da5eed385d1dd231"
+  }
+}

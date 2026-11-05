@@ -1,0 +1,20 @@
+[
+  {
+    "path": "dist/assets/animegan2-face-paint-512-v2-2PHtSotV.onnx",
+    "bytes": 8702673,
+    "sha256": "54ce55c73dc974c24fa55cf1204577a6181c7e86d312a3a07f798bbbd99d4ee2",
+    "finding": "restricted-or-unresolved-model-still-distributed"
+  },
+  {
+    "path": "dist/assets/animegan2-paprika-HePLp6yq.onnx",
+    "bytes": 8702673,
+    "sha256": "7cb5bf08d7778a8f4e25f1e654fdc24d56dc9b6cbb9c1db42e4f9d0425e7fe62",
+    "finding": "restricted-or-unresolved-model-still-distributed"
+  },
+  {
+    "path": "dist/assets/tag2pix-B03WmUfQ.onnx",
+    "bytes": 79269994,
+    "sha256": "ae01698835b99a009533ebbcf840d416a32bee0c0f4c9be060c21ab2084491cc",
+    "finding": "restricted-or-unresolved-model-still-distributed"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "outerExit": 0,
+  "coveredIdentifiers": 1077323,
+  "totalIdentifiers": 1080690,
+  "coveragePercent": 99.68,
+  "thresholdPercent": 95,
+  "command": [
+    "env",
+    "NODE_OPTIONS=--max-old-space-size=12288",
+    "pnpm",
+    "run",
+    "check:type-coverage"
+  ],
+  "scope": "existing CI scope from tsconfig.type-coverage.json and package.json typeCoverage; not nightly full coverage"
+}

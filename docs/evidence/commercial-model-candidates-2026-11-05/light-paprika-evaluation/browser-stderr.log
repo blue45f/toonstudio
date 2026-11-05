@@ -1,0 +1,8 @@
+file:///tmp/toonstudio-light-paprika-evaluation/browser_receipt.mjs:7
+ if(result.receipts.some(x=>x.nonfinite!==0||x.maxAbsoluteErrorVsCpu>2/255))throw new Error(JSON.stringify(result));
+                                                                                  ^
+
+Error: {"runtime":"onnxruntime-web 1.30.0","provider":"wasm","numThreads":1,"userAgent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36","loadMs":517.0400000000373,"receipts":[{"ms":4535.770000000019,"shape":[1,3,512,512],"maxAbsoluteErrorVsCpu":0.04379662871360779,"meanAbsoluteErrorVsCpu":0.007179233008477711,"nonfinite":0},{"ms":4213.770000000019,"shape":[1,3,512,512],"maxAbsoluteErrorVsCpu":0.04379662871360779,"meanAbsoluteErrorVsCpu":0.007179233008477711,"nonfinite":0},{"ms":4228.520000000019,"shape":[1,3,512,512],"maxAbsoluteErrorVsCpu":0.04379662871360779,"meanAbsoluteErrorVsCpu":0.007179233008477711,"nonfinite":0}],"warning":"Single photo smoke and three calls; no product integration or quality acceptance."}
+    at file:///tmp/toonstudio-light-paprika-evaluation/browser_receipt.mjs:7:83
+
+Node.js v24.19.0

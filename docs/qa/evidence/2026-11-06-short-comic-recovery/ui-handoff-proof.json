@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "executionSource": "f63dd7cf3c90804c077bd31868ca68de2b54fca8",
+  "originalPagesSha256": "e06fa6d22e86f9a6755832ed19df57fb918997d557da27ab30c7ab900bb37e10",
+  "assertions": {
+    "originalSixPagesImported": true,
+    "sameProjectDocumentEpisodeAndSixPages": true,
+    "reloadPreservesSixPages": true,
+    "handoffResponsiveAndAccessible": true,
+    "humanChecksRemainPendingAndExportBlocked": true
+  },
+  "pageErrorCount": 0,
+  "scope": "독립 guest UI 경로이며 인증된 서버 시나리오를 대신하지 않는다."
+}

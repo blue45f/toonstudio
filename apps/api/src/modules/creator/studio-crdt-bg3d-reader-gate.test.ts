@@ -5,6 +5,7 @@ import * as Y from "yjs";
 import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY as CAP } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY as PRESERVED } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { StudioCrdtService } from "./studio-crdt.service";
+import { hasValidStudioCrdtRootSchema } from "./studio-crdt-root-schema";
 import { StudioBg3dReaderUpgradeRequiredError } from "./studio-bg3d-reader-capability";
 import { assertStudioBg3dBundleReaderInTransaction } from "./studio-bg3d-bundle.repository";
 import { performJoin } from "./studio-live-gateway-join";
@@ -143,6 +144,32 @@ describe("archive 없는 v7 보존 필드의 구 reader 차단", () => {
     expect(strokeRecord(current).get("strokeWidth")).toBe(7);
     expect(strokeRecord(current).get("shapeParams")).toEqual({ ordinaryValue: 7 });
     expect(h.repository.receipts.size).toBe(2); expect(h.repository.nextSequence).toBe(3n);
+  });
+
+  it.each([1, 2, 3, 4, 5, 6].flatMap((version) => [
+    { version, field: "psdGroupId", value: "ordinary" },
+    { version, field: "colorizeMaskEnabled", value: false },
+  ]))("정상 v$version shapeParams의 $field는 부모 도착 순서와 무관하게 허용한다", async ({ version, field, value }) => {
+    const doc = trackedDoc(); Y.applyUpdate(doc, wireBytes(oldReaderFixture.oldSeedBase64));
+    const record = strokeRecord(doc); record.set("payloadVersion", version);
+    if (version < 6) record.delete("extensions");
+    const parent = Y.encodeStateAsUpdate(doc), vector = Y.encodeStateVector(doc), shapeParams = { [field]: value };
+    record.set("shapeParams", shapeParams);
+    const child = Y.encodeStateAsUpdate(doc, vector), pending = trackedDoc(); Y.applyUpdate(pending, child);
+    expect(pending.store.pendingStructs).not.toBeNull();
+    expect(hasValidStudioCrdtRootSchema(doc)).toBe(true);
+    expect(hasValidStudioCrdtRootSchema(pending)).toBe(true);
+    for (const [first, second] of [[parent, child], [child, parent]] as const) {
+      const h = preservedHarness();
+      expect((await append(h.service, 71, first, oldFeatures)).requiredReaderCapabilities).toBeUndefined();
+      expect((await append(h.service, 72, second, oldFeatures)).requiredReaderCapabilities).toBeUndefined();
+      const sync = await h.service.syncBytes("work-one", null, oldFeatures), current = trackedDoc(); Y.applyUpdate(current, sync.update);
+      expect(current.store.pendingStructs).toBeNull(); expect(hasValidStudioCrdtRootSchema(current)).toBe(true);
+      expect(strokeRecord(current).get("payloadVersion")).toBe(version);
+      expect(strokeRecord(current).get("shapeParams")).toEqual(shapeParams);
+      expect(strokeRecord(current).get("extensions") ?? {}).not.toHaveProperty(field);
+      expect(h.repository.receipts.size).toBe(2); expect(h.repository.nextSequence).toBe(3n);
+    }
   });
 
   it.each(["psdGroupId", "colorizeMaskEnabled"] as const)("첫 %s 도착도 candidate 단계에서 구 writer를 거절한다", async (field) => {

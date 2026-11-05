@@ -1,0 +1,56 @@
+{
+  "wheel_sources": [
+    "https://pypi.org/pypi/onnxruntime/1.30.0/json",
+    "https://pypi.org/pypi/protobuf/4.25.8/json"
+  ],
+  "commands": [
+    [
+      "/tmp/toonstudio-light-paprika-evaluation/venv/bin/python",
+      "-m",
+      "pip",
+      "install",
+      "--no-deps",
+      "--no-cache-dir",
+      "--target",
+      "/tmp/toonstudio-light-paprika-parity-followup/ort130",
+      "/tmp/toonstudio-light-paprika-parity-followup/onnxruntime-1.30.0-cp312-cp312-manylinux_2_28_x86_64.whl"
+    ],
+    [
+      "/tmp/toonstudio-light-paprika-evaluation/venv/bin/python",
+      "-m",
+      "pip",
+      "install",
+      "--no-deps",
+      "--no-cache-dir",
+      "--target",
+      "/tmp/toonstudio-light-paprika-parity-followup/ort130",
+      "/tmp/toonstudio-light-paprika-parity-followup/protobuf-4.25.8-cp37-abi3-manylinux2014_x86_64.whl"
+    ],
+    [
+      "env",
+      "PYTHONPATH=/tmp/toonstudio-light-paprika-parity-followup/ort130",
+      "/tmp/toonstudio-light-paprika-evaluation/venv/bin/python",
+      "/tmp/toonstudio-light-paprika-parity-followup/evaluate_cpu130.py"
+    ],
+    [
+      "python",
+      "/tmp/toonstudio-light-paprika-parity-followup/serve.py"
+    ],
+    [
+      "node",
+      "/tmp/toonstudio-light-paprika-parity-followup/browser.mjs"
+    ],
+    [
+      "/tmp/toonstudio-light-paprika-evaluation/venv/bin/python",
+      "/tmp/toonstudio-light-paprika-parity-followup/compare_arrays.py"
+    ]
+  ],
+  "outcomes": {
+    "installation": "exit0",
+    "cpu130_inference": "exit0",
+    "browser130_inference": "exit0; receipt records parity failure",
+    "independent_array_comparison": "exit0; parity_passed false for both",
+    "local_server": "stopped after browser finished"
+  },
+  "scope": "Only isolated evaluation candidate and two existing evaluation inputs; no product source/weight or old venv upgrade."
+}

@@ -1,0 +1,23 @@
+{
+  "filesAdded": [
+    {
+      "path": "/workspace/scratch/toonstudio-commercial-main-validation/docs/evidence/commercial-model-rights-2026-11-05/native-resize-comparison/compare.mts",
+      "bytes": 10553,
+      "sha256": "8878f941242fdce868cad40df56aaece36be6be19c1d9c497a3867c50437bc07",
+      "declaration": false,
+      "defaultLibrary": false
+    }
+  ],
+  "filesRemoved": [],
+  "filesChanged": [],
+  "rootsAdded": [
+    "/workspace/scratch/toonstudio-commercial-main-validation/docs/evidence/commercial-model-rights-2026-11-05/native-resize-comparison/compare.mts"
+  ],
+  "rootsRemoved": [],
+  "inputsAdded": {
+    "/workspace/scratch/toonstudio-commercial-main-validation/docs/evidence/commercial-model-rights-2026-11-05/native-resize-comparison/compare.mts": "8878f941242fdce868cad40df56aaece36be6be19c1d9c497a3867c50437bc07"
+  },
+  "inputsRemoved": {},
+  "inputsChanged": [],
+  "otherIdentityChanged": []
+}

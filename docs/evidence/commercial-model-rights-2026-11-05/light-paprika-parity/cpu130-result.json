@@ -1,0 +1,103 @@
+{
+  "runtime": "1.30.0",
+  "runtime_import_path": "/tmp/toonstudio-light-paprika-parity-followup/ort130/onnxruntime/__init__.py",
+  "python": "3.12.14",
+  "dependencies": {
+    "numpy": "1.26.4",
+    "protobuf": "4.25.8",
+    "flatbuffers": "25.12.19",
+    "packaging": "26.3"
+  },
+  "provider": [
+    "CPUExecutionProvider"
+  ],
+  "intra_op_threads": 1,
+  "inter_op_threads": 1,
+  "graph_optimization": "GraphOptimizationLevel.ORT_ENABLE_ALL",
+  "model_sha256": "431f2b1c7a3ab31fbee32fcae193e4e65b2304484e0a646a481d1a61351a17a8",
+  "load_seconds": 0.035597545000200626,
+  "cases": [
+    {
+      "image": "usgs-mountain-lake-original.jpg",
+      "input_sha256": "34cc9916a3e4f2ae8150e1adcbdb20c81d961353bd64668bf83baac92ac1de94",
+      "output_sha256_each_trial": [
+        "568b0be2bc285842df7e5aea5e93440ac2cd7cdeca815e9fa23c7b2ec862d2c3",
+        "568b0be2bc285842df7e5aea5e93440ac2cd7cdeca815e9fa23c7b2ec862d2c3",
+        "568b0be2bc285842df7e5aea5e93440ac2cd7cdeca815e9fa23c7b2ec862d2c3",
+        "568b0be2bc285842df7e5aea5e93440ac2cd7cdeca815e9fa23c7b2ec862d2c3"
+      ],
+      "bitwise_deterministic": true,
+      "shape": [
+        1,
+        3,
+        512,
+        512
+      ],
+      "dtype": "float32",
+      "nonfinite": 0,
+      "first_seconds": 2.0986810510003124,
+      "warm_seconds": [
+        2.163794488000349,
+        1.7394459869992716,
+        1.7437302289999934
+      ],
+      "warm_median_seconds": 1.7437302289999934,
+      "error_vs_tf2162": {
+        "max_absolute_error": 0.001568913459777832,
+        "mean_absolute_error": 0.0002567076589912176,
+        "threshold": 0.00784313725490196,
+        "passed_strict_less_than": true
+      },
+      "error_vs_cpu1201": {
+        "max_absolute_error": 0.0,
+        "mean_absolute_error": 0.0,
+        "threshold": 0.00784313725490196,
+        "passed_strict_less_than": true
+      },
+      "min": -0.9926603436470032,
+      "max": 0.8958120346069336
+    },
+    {
+      "image": "synthetic-city.png",
+      "input_sha256": "d1a3118c76db8ed71b14ada68f25d48447177436a7cbcd9dc15cb60b1f1a2e85",
+      "output_sha256_each_trial": [
+        "3626b0be2c8d83790923a4704b3c004416e702d948a94c283c6339240bb4fa61",
+        "3626b0be2c8d83790923a4704b3c004416e702d948a94c283c6339240bb4fa61",
+        "3626b0be2c8d83790923a4704b3c004416e702d948a94c283c6339240bb4fa61",
+        "3626b0be2c8d83790923a4704b3c004416e702d948a94c283c6339240bb4fa61"
+      ],
+      "bitwise_deterministic": true,
+      "shape": [
+        1,
+        3,
+        512,
+        512
+      ],
+      "dtype": "float32",
+      "nonfinite": 0,
+      "first_seconds": 1.7330863779989159,
+      "warm_seconds": [
+        1.7412863560002734,
+        1.7346972989998903,
+        1.7581253110001853
+      ],
+      "warm_median_seconds": 1.7412863560002734,
+      "error_vs_tf2162": {
+        "max_absolute_error": 0.0021629631519317627,
+        "mean_absolute_error": 0.0003784331202041358,
+        "threshold": 0.00784313725490196,
+        "passed_strict_less_than": true
+      },
+      "error_vs_cpu1201": {
+        "max_absolute_error": 0.0,
+        "mean_absolute_error": 0.0,
+        "threshold": 0.00784313725490196,
+        "passed_strict_less_than": true
+      },
+      "min": -0.9644312858581543,
+      "max": 0.9163526296615601
+    }
+  ],
+  "maxrss_KiB": 1651036,
+  "limitation": "Numerical parity only; no visual quality acceptance or product integration."
+}

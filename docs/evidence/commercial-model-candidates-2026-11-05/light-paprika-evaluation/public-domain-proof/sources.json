@@ -1,0 +1,16 @@
+[
+  {
+    "file": "usgs-gallery-rights.txt",
+    "source": "https://www.usgs.gov/products/multimedia-gallery",
+    "retrieved": "2026-11-05",
+    "sha256": "5748a87c0f2307a941304027a9c01d4a80034cd3348297803d56ed92bafd8708",
+    "format": "visible page text, scripts/styles omitted"
+  },
+  {
+    "file": "usgs-mountain-lake-page.txt",
+    "source": "https://www.usgs.gov/media/images/mountain-lake",
+    "retrieved": "2026-11-05",
+    "sha256": "340b35a40eedeea560378e47265e28e8f414b5fe65c248d070a857376704c004",
+    "format": "visible page text, scripts/styles omitted"
+  }
+]

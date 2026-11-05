@@ -1,0 +1,844 @@
+{
+  "state": "lightweight static array byte-presence evidence, no TF or inference import",
+  "conv_kernels": 44,
+  "matched_in_both": 44,
+  "scope": "All converted convolution kernels after undoing standard tf2onnx HWIO/depthwise layout conversion. Not complete checkpoint variable/metadata identity.",
+  "kernels": [
+    {
+      "node": "Conv__212",
+      "onnx_shape": [
+        96,
+        3,
+        5,
+        5
+      ],
+      "source_shape": [
+        5,
+        5,
+        3,
+        96
+      ],
+      "bytes": 28800,
+      "source_sha256": "9864fceb0556a6d57e4053d25eb21df20e3a969183516f246b12a8e9b6ad2db8",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2/sequential_2/depthwise_conv2d_1/depthwise",
+      "onnx_shape": [
+        96,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        96,
+        1
+      ],
+      "bytes": 3456,
+      "source_sha256": "3f08a084d753575edd605153c8d11a48ba19e8c80f683237e958427bbccd5a54",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2/sequential_2/conv2d_3/Conv2D",
+      "onnx_shape": [
+        96,
+        96,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        96,
+        96
+      ],
+      "bytes": 36864,
+      "source_sha256": "26a2e7a51cd7fac7f32d48e98e1a440cd9ac10b7922b458b692eeac6f52b8d2c",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2/sequential_1/conv2d_1/Conv2D",
+      "onnx_shape": [
+        96,
+        96,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        96,
+        96
+      ],
+      "bytes": 36864,
+      "source_sha256": "75050cac52fa6d38091aea5341e60bb1df7cdbe81e8c2cadbb4f51b8f75d93ef",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2/sequential_1/depthwise_conv2d/depthwise",
+      "onnx_shape": [
+        96,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        96,
+        1
+      ],
+      "bytes": 3456,
+      "source_sha256": "f6e51e094e41afc4de11edb74ebe1dd05a47bf025e801c10fbad014512598556",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2/sequential_1/conv2d_2/Conv2D",
+      "onnx_shape": [
+        96,
+        96,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        96,
+        96
+      ],
+      "bytes": 36864,
+      "source_sha256": "11e24b6981b736dbbdc85cf488903fa62aff6a34877eeaccee299119750ce235",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2_1/sequential_5/depthwise_conv2d_3/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "9e8d310ccb5275eee0c72b234328664a286f857a67385fcb42d1288ae62b145e",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2_1/sequential_5/conv2d_6/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "f97442077d44f9e20b549d701c9eb8605d617b566ec702299a5e33c7a8cf85ba",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2_1/sequential_4/conv2d_4/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "da381eb90498c60a4af9866c5699149a94db7b7515bac5a9325348ca51802362",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2_1/sequential_4/depthwise_conv2d_2/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "c6531917724e170c37ff34b9ea42f29b25a9eb893a7480f149ebc9283afeaf8e",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/DownShuffleUnitV2_1/sequential_4/conv2d_5/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "528e60f1c96e450ff1ec412f7744451e9e56d5a014efc7ec4e03904c3f4a5480",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2/sequential_7/conv2d_7/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "822ddfe44917a2924966f511cb0660d990089d72663ca8762cfee09c6037f094",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2/sequential_7/depthwise_conv2d_4/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "d291e18e616b4add56659081cdff182c5e7ea8f3ad6dccdca8ae1c202a67d10c",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2/sequential_7/conv2d_8/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "0a1e19f285c3c8a52ffaf76fb1fe0764a2212ecf1efa41052056b4800f5b68d5",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_1/sequential_8/conv2d_9/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "89492c286dafc8dde007ad717e544935130261bc04cdcc5c6605fec9a02f3ce4",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_1/sequential_8/depthwise_conv2d_5/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "f61c30e44057e6c190285343eaafd4558d6a23836c6eba7c3e503bd1b7048082",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_1/sequential_8/conv2d_10/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "b1d20e170960c5e42b25c7d6588c6b495360005de7d89a59384e44e3d1ffd713",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_2/sequential_9/conv2d_11/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "6233d0d01689a1abdb603e6ab81295db6ebddf14fe44bf427ee8298919f40cd6",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_2/sequential_9/depthwise_conv2d_6/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "b7909f4eff1c825275a35753c1c5026e58758ab7080f5d61150683f4f131ff7d",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_2/sequential_9/conv2d_12/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "debeb7b5e5f2f43f9d87b06e1f32bf2fc02149496ed84e88edc7f585cf1568ef",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_3/sequential_10/conv2d_13/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "8ab05d46b7e5240357c9925ce191272c5ef692a8af6bc2893d7130d9c3c19144",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_3/sequential_10/depthwise_conv2d_7/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "cec9de3887caf8f8eddb6ee4041c06cfe005cf5da687cedf11607555661cf70a",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_3/sequential_10/conv2d_14/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "d0baf4d96eadc060936d09d54d7929b69541e7a09d8b24e83acac609525ace41",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_4/sequential_11/conv2d_15/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "ed7d8dfd38101993c3fae9e01436f44aa030635100b43eee394442a18f8ae604",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_4/sequential_11/depthwise_conv2d_8/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "e4a78dc1dd93bb32e91a488d9e0a4c93aa32ef3bc0dc47c2a6bc469d0048dc50",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_4/sequential_11/conv2d_16/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "a1c55e6f6299c9eb2b6d1dc55ef5903e430c10e012201fad2600772e2a75a8ca",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_5/sequential_12/conv2d_17/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "d2a956b1d791d91bb6def43ad9b8512c9379839dfc51d8628d47068e3ce45449",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_5/sequential_12/depthwise_conv2d_9/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "a11242e51e46fbaa014acdfbc395d089bab8e495dc066b5a92ae6f4a5694d628",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_5/sequential_12/conv2d_18/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "ad2bf2186988bdff66abca58de5d751806e1e76f1bc96ddc5f9138904c583790",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_6/sequential_13/conv2d_19/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "6fa5f4eb20793729491953b1ded8f31a7389668dee985304ebd180829d1778e6",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_6/sequential_13/depthwise_conv2d_10/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "08ba4fe948371e34bcd0657b9a1a8876aa1f18811f456a34a11b63f338980d06",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_6/sequential_13/conv2d_20/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "2e26b65bfa7abe3ea298e6f301296e292a598ea2059d0404a62cb1f4d9dc8c57",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_7/sequential_14/conv2d_21/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "29c98c0ae8c90a604e8ecaa592a49ee9edf1ebf2132c540ba043101570179faf",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_7/sequential_14/depthwise_conv2d_11/depthwise",
+      "onnx_shape": [
+        192,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        192,
+        1
+      ],
+      "bytes": 6912,
+      "source_sha256": "a316bff17ac60b90e8039e603331ebed3e6dc3b87776dfdd48f96c187c360f45",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/sequential_15/BasicShuffleUnitV2_7/sequential_14/conv2d_22/Conv2D",
+      "onnx_shape": [
+        192,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        192
+      ],
+      "bytes": 147456,
+      "source_sha256": "4e5cd0ea5edaa7b09bc0d30bc6577e805bd3ecdcbeaf0b0207a5cfae48beecda",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/UpSampleConv/sequential_17/conv2d_23/BiasAdd",
+      "onnx_shape": [
+        192,
+        384,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        384,
+        192
+      ],
+      "bytes": 294912,
+      "source_sha256": "f2ffa676a2ae453baecfadf559bf5fdfac2656be322658b46c2ef37a797d9945",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/UpSampleConv/sequential_17/BasicShuffleUnitV2/sequential_16/conv2d_24/Conv2D",
+      "onnx_shape": [
+        96,
+        96,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        96,
+        96
+      ],
+      "bytes": 36864,
+      "source_sha256": "00a14c4abd1d5022d4845f72fcdbc6893255096ff9c97bdfe50d6b885057f6c6",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/UpSampleConv/sequential_17/BasicShuffleUnitV2/sequential_16/depthwise_conv2d_12/depthwise",
+      "onnx_shape": [
+        96,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        96,
+        1
+      ],
+      "bytes": 3456,
+      "source_sha256": "908e70680de114fa72bbf1ff9fb1f49d67f18d4afc1888b8d76cafc32d7da325",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/UpSampleConv/sequential_17/BasicShuffleUnitV2/sequential_16/conv2d_25/Conv2D",
+      "onnx_shape": [
+        96,
+        96,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        96,
+        96
+      ],
+      "bytes": 36864,
+      "source_sha256": "9d993174612953b965892359a39375b52d10c76392ade9bead7fbd54c26f6855",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/UpSampleConv_1/sequential_19/conv2d_26/BiasAdd",
+      "onnx_shape": [
+        96,
+        192,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        192,
+        96
+      ],
+      "bytes": 73728,
+      "source_sha256": "887bface91e02f913121fc12162cd14e3276d96870a338505a45bd185275fac4",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/UpSampleConv_1/sequential_19/BasicShuffleUnitV2/sequential_18/conv2d_27/Conv2D",
+      "onnx_shape": [
+        48,
+        48,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        48,
+        48
+      ],
+      "bytes": 9216,
+      "source_sha256": "096cfb2a7417c1a78dc0290eb548ecbc78ce2de88d09cedd108c8a9140e7263c",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/UpSampleConv_1/sequential_19/BasicShuffleUnitV2/sequential_18/depthwise_conv2d_13/depthwise",
+      "onnx_shape": [
+        48,
+        1,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        3,
+        48,
+        1
+      ],
+      "bytes": 1728,
+      "source_sha256": "c81b04d578b6b16cde91ab06212baa4aaa7ccc536d3f84d596141cc32949405f",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "StatefulPartitionedCall/StatefulPartitionedCall/Generator/UpSampleConv_1/sequential_19/BasicShuffleUnitV2/sequential_18/conv2d_28/Conv2D",
+      "onnx_shape": [
+        48,
+        48,
+        1,
+        1
+      ],
+      "source_shape": [
+        1,
+        1,
+        48,
+        48
+      ],
+      "bytes": 9216,
+      "source_sha256": "6c51a570c3fbe006bd5c6cd7ac5abf9f26bedfd40fafecac99830043291c6c97",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    },
+    {
+      "node": "Conv__377",
+      "onnx_shape": [
+        3,
+        96,
+        5,
+        5
+      ],
+      "source_shape": [
+        5,
+        5,
+        96,
+        3
+      ],
+      "bytes": 28800,
+      "source_sha256": "1643a31344e63708d6a31beb9f4bee59cf1cf9cbd7ddc77abd24664553fc9013",
+      "present_in_raw_light_checkpoint": true,
+      "present_in_savedmodel_variables": true
+    }
+  ]
+}

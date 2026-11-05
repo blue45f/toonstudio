@@ -77,29 +77,27 @@ export const wasmVipsPipelineDescriptor: ProviderDescriptor =
   providerDescriptorSchema.parse({
     id: "wasm-vips-pipeline",
     kind: "image-pipeline",
-    displayName: "wasm-vips large-image pipeline",
-    version: "wasm-vips 0.0.18 (dev-only candidate)",
-    license: "LGPL-2.1-or-later",
-    attribution: "libvips / wasm-vips",
+    displayName: "ToonStudio native large-image pipeline",
+    version: "native-lanczos3 1 (candidate; legacy provider id)",
+    license: "internal",
+    attribution: "ToonStudio native Lanczos3",
     maturity: "candidate",
-    runtime: "wasm-worker",
+    runtime: "js",
     capabilities: [
       "filter.op.resize",
-      "filter.op.gaussian-blur",
       "filter.op.pyramid",
-      "filter.op.thumbnail",
       "filter.phase.final",
     ],
     limitations: [
-      "final/export lane only — no preview phase; LGPL isolated deployment mode required",
-      "single-thread baseline measured; SMP requires COOP/COEP workers",
+      "final/export lane only — no preview phase; independently authored internal runtime",
+      "single-thread execution; bounded horizontal-row scratch, integer box prefilter and premultiplied-alpha Lanczos3",
       "provider failure aborts the requested export operation; no CanvasKit substitution is permitted",
     ],
     previewQuality: "reference",
     finalQuality: "production",
     determinism: "tolerance",
     memoryEstimateMb: 64,
-    knownIssues: ["measured: resize 2048->512 p50 16.4ms, gaussblur s4 2048^2 p50 46.7ms"],
+    knownIssues: ["legacy wasm-vips measurements do not describe this independently authored implementation; see native benchmark records"],
   });
 
 const canvasKitImageFilterBootstrap = declareTrustedBootstrapProvider(

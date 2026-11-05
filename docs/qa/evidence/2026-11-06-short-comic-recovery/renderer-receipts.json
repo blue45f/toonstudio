@@ -1,0 +1,47 @@
+{
+  "executionSource": "f63dd7cf3c90804c077bd31868ca68de2b54fca8",
+  "receipts": [
+    {
+      "pageId": "jam-page-work-instant-mw3a5c2h-l4nv",
+      "status": "captured",
+      "backend": "skia-document",
+      "rgbaSha256": "961ce8e6d9a211776c7f2867d7fbf4ae26eaca5c566ac3c0fe971eb75f927bfc",
+      "reason": null
+    },
+    {
+      "pageId": "7ed541c6-8018-4c4a-88ec-14120db66ecd",
+      "status": "captured",
+      "backend": "skia-document",
+      "rgbaSha256": "2c91905fe8c136d55d7b10177ab049fa7cec447f9447dd7029bd9afd75a04b02",
+      "reason": null
+    },
+    {
+      "pageId": "eb0f4de2-1dd5-4631-b800-3ebf424fa9d1",
+      "status": "captured",
+      "backend": "skia-document",
+      "rgbaSha256": "d3551dfe2fec1b346fc30d2a6bca212a5696cb47c10bb2a557f6a9716bd9f9ec",
+      "reason": null
+    },
+    {
+      "pageId": "a6af11be-af66-4902-9221-6a568d2373de",
+      "status": "captured",
+      "backend": "skia-document",
+      "rgbaSha256": "53c73cbd096398a189eb479c262baa355650b8ffd1033c8172aa6ceb0ef1a714",
+      "reason": null
+    },
+    {
+      "pageId": "b12d10e4-89f9-452a-8cbb-b821d7bb42de",
+      "status": "captured",
+      "backend": "skia-document",
+      "rgbaSha256": "9c3871677e7bdbb1e565992d9e51f9361c82f137ad28739626df898cc191ed80",
+      "reason": null
+    },
+    {
+      "pageId": "2876c965-36b5-47c7-a69e-43148add8f9b",
+      "status": "captured",
+      "backend": "skia-document",
+      "rgbaSha256": "deb509d4d19fa368e356fb6218502d1d323e1ec8c7e6f21393e9a00bcda69360",
+      "reason": null
+    }
+  ]
+}

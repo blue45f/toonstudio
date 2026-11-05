@@ -1,0 +1,29 @@
+{
+  "caseCount": 5,
+  "measuredRunsPerProvider": 5,
+  "allContractsVerified": true,
+  "alphaChannelsExactlyAgree": true,
+  "sourceHashesStillMatch": [
+    {
+      "path": "/workspace/scratch/toonstudio-commercial-main-validation/apps/web/src/domains/creator/export/studio-vips-export.ts",
+      "unchanged": true
+    },
+    {
+      "path": "/workspace/scratch/toonstudio-commercial-main-validation/apps/web/src/domains/creator/export/studio-native-lanczos.ts",
+      "unchanged": true
+    },
+    {
+      "path": "/workspace/scratch/toonstudio-commercial-main-validation/apps/web/src/domains/creator/export/studio-native-resize-runtime.ts",
+      "unchanged": true
+    },
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/lib/vips-node.mjs",
+      "unchanged": true
+    },
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/lib/vips.wasm",
+      "unchanged": true
+    }
+  ],
+  "reportEvidenceLinksResolve": true
+}

@@ -385,7 +385,7 @@ export interface PresetExportResult {
   /** 실제 저장 폭(px). */
   targetWidth: number;
   /**
-   * wasm-vips 고품질 축소 레인으로 처리된 대형 페이지 수.
+   * 자체 Lanczos3 고품질 축소 레인으로 처리된 대형 페이지 수.
    * 라우팅된 페이지가 없으면 키 자체가 없다(기존 결과 shape 불변 — pristine 계약).
   */
   vipsRoutedPages?: number;
@@ -404,7 +404,7 @@ export function presetExportResultMessage(result: PresetExportResult, preset: Ex
     );
   }
   if (result.vipsRoutedPages !== undefined && result.vipsRoutedPages > 0) {
-    parts.push(`고해상 페이지 ${result.vipsRoutedPages}장은 고품질 축소(wasm-vips)로 저장했어요.`);
+    parts.push(`고해상 페이지 ${result.vipsRoutedPages}장은 고품질 축소(Lanczos3)로 저장했어요.`);
   }
   if (result.tiledPages) parts.push(`대형 페이지 ${result.tiledPages}장은 원본을 타일로 읽어 저장했어요.`);
   return parts.join(" ");
@@ -437,7 +437,7 @@ export interface PresetSliceExportOptions {
   createCanvas?: (width: number, height: number) => HTMLCanvasElement;
   /** 테스트 주입용 — 기본은 downloadBlob(실제 파일 저장). */
   download?: (blob: Blob, filename: string) => void;
-  /** 테스트 주입용 — 기본은 loadVipsForExport(wasm-vips 공유 캐시, dynamic import 유지). */
+  /** 테스트 주입용 — 기본은 loadVipsForExport(자체 Lanczos3 공유 캐시, dynamic import 유지). */
   loadVipsRuntime?: () => Promise<StudioVipsExportRuntime>;
   /** 테스트 주입용 — 기본은 getImageData 픽셀 읽기(null이면 선택된 vips 작업 실패). */
   readPageRgba?: (page: HTMLCanvasElement) => Uint8Array | null;
@@ -448,9 +448,9 @@ export interface PresetSliceExportOptions {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// wasm-vips 대형 페이지 다운스케일 레인 — V12 게이트 매트릭스 Large image 행 실배선.
+// 자체 Lanczos3 대형 페이지 다운스케일 레인 — V12 게이트 매트릭스 Large image 행 실배선.
 // 근거(tests/benchmarks/results/quality-lab.json 2026-08-07): downscale 에서
-// wasm-vips lanczos3 가 PSNR 27.26dB/SSIM 0.9887 로 브라우저 drawImage 상당의
+// 과거 wasm-vips lanczos3 는 PSNR 27.26dB/SSIM 0.9887 로 브라우저 drawImage 상당의
 // canvaskit-linear(25.31dB/0.9834)를 이긴다. 단일 인코어 표면 예산(8192 edge /
 // 8192² area — studio-vips-export planVipsExportRoute)을 넘는 페이지만 라우팅하고,
 // 예산 안 페이지는 작업 시작 전에 Canvas2D 경로를 선택해 바이트 그대로 유지한다
@@ -493,7 +493,7 @@ export interface PresetVipsPreparedPages {
   drawPages: PresetExportPage[];
   /** 라우팅된 페이지는 source 크기가 리샘플 결과로 갱신된 레이아웃(1:1 blit). */
   layouts: PresetPageLayout[];
-  /** wasm-vips 로 실제 리샘플된 페이지 수. */
+  /** 자체 Lanczos3로 실제 리샘플된 페이지 수. */
   vipsRoutedPages: number;
   tiledPages: ReadonlyMap<number, StudioPresetTiledRasterSource>;
 }
@@ -521,10 +521,10 @@ function defaultCreateResampledPresetPage(raster: StudioVipsRaster): HTMLCanvasE
 }
 
 /**
- * 인코어 표면 예산(8192 edge/면적)을 넘는 페이지만 wasm-vips lanczos3 로 규격 폭까지
+ * 인코어 표면 예산(8192 edge/면적)을 넘는 페이지만 자체 Lanczos3로 규격 폭까지
  * 미리 축소한다. 리샘플된 페이지의 레이아웃은 1:1 blit 이 되도록 source 크기를 결과
  * 크기로 바꿔치기하므로 슬라이스 합성의 drawImage 는 더 이상 화질을 결정하지 않는다.
- * 라우팅 대상이 하나도 없으면 wasm 로드조차 하지 않고 원본 배열 사본을 돌려준다
+ * 라우팅 대상이 하나도 없으면 축소 런타임도 로드하지 않고 원본 배열 사본을 돌려준다
  * (작업 전 Canvas2D 선택, 기존 경로 바이트 불변). vips 또는 out-of-core가 선택된 뒤
  * provider가 준비/실행되지 않으면 다운로드 전에 명시적으로 실패한다.
  */
@@ -567,7 +567,7 @@ export async function prepareVipsRoutedPresetPages(
   } catch (cause) {
     throw new PresetVipsUnavailableError({
       stage: "load",
-      message: frozenStatus6Text("studio.frozenStatus6.exportPresets.vipsLoadFailed", "선택된 고품질 축소 엔진(wasm-vips)을 불러오지 못해 내보내기를 중단했어요."),
+      message: frozenStatus6Text("studio.frozenStatus6.exportPresets.vipsLoadFailed", "선택된 고품질 축소 엔진(Lanczos3)을 불러오지 못해 내보내기를 중단했어요."),
       cause,
     });
   }
@@ -584,7 +584,7 @@ export async function prepareVipsRoutedPresetPages(
       throw new PresetVipsUnavailableError({
         stage: "read",
         pageIndex: index,
-        message: `페이지 ${index + 1}의 픽셀을 vips 입력으로 읽지 못해 내보내기를 중단했어요.`,
+        message: `페이지 ${index + 1}의 픽셀을 축소 입력으로 읽지 못해 내보내기를 중단했어요.`,
       });
     }
     let raster: StudioVipsRaster;
@@ -602,7 +602,7 @@ export async function prepareVipsRoutedPresetPages(
       throw new PresetVipsUnavailableError({
         stage: "resample",
         pageIndex: index,
-        message: `페이지 ${index + 1}을 wasm-vips로 축소하지 못해 내보내기를 중단했어요.`,
+        message: `페이지 ${index + 1}을 Lanczos3로 축소하지 못해 내보내기를 중단했어요.`,
         cause,
       });
     }
@@ -611,7 +611,7 @@ export async function prepareVipsRoutedPresetPages(
       throw new PresetVipsUnavailableError({
         stage: "materialize",
         pageIndex: index,
-        message: `페이지 ${index + 1}의 vips 결과를 합성 표면으로 만들지 못해 내보내기를 중단했어요.`,
+        message: `페이지 ${index + 1}의 축소 결과를 합성 표면으로 만들지 못해 내보내기를 중단했어요.`,
       });
     }
     drawPages[index] = resampled;
@@ -737,7 +737,7 @@ export async function exportPresetSlices(options: PresetSliceExportOptions): Pro
     options.format
   );
   if (!plan || plan.slices.length === 0) throw new Error("내보낼 페이지가 없어요.");
-  // 인코어 표면 예산(8192 edge/면적)을 넘는 페이지만 wasm-vips lanczos3 로 선축소 —
+  // 인코어 표면 예산(8192 edge/면적)을 넘는 페이지만 자체 Lanczos3로 선축소 —
   // 예산 안 문서는 아무 것도 바뀌지 않고(원본 참조·원본 레이아웃) 기존 바이트 그대로다.
   const prepared = await prepareVipsRoutedPresetPages(pages, plan, options);
   const createCanvas = options.createCanvas ?? createSliceCanvas;

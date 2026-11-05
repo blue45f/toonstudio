@@ -1,0 +1,163 @@
+[
+  {
+    "file": "cobra-readme.txt",
+    "source": "https://raw.githubusercontent.com/zhuang2002/Cobra/48d6168838e05fbb707f393441219069aa33733b/README.md",
+    "sha256": "fd5bd9878176c16aab78c83e45312483c185e6322117bb80ee9f021ae3bd54b0",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "cobra-license.txt",
+    "source": "https://raw.githubusercontent.com/zhuang2002/Cobra/48d6168838e05fbb707f393441219069aa33733b/LICENSE",
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "cobra-model-card.txt",
+    "source": "https://huggingface.co/JunhaoZhuang/Cobra/raw/ed677418ceb4fada6d1a369139bd7e8a3a13433d/README.md",
+    "sha256": "170b84c6ccee5a33d2df47daa4ba88e202ffc6ff833ad0fef150086de23d4add",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "pixart-base-model-card.txt",
+    "source": "https://huggingface.co/PixArt-alpha/PixArt-XL-2-1024-MS/raw/b89adadeccd9ead2adcb9fa2825d3fabec48d404/README.md",
+    "sha256": "bdd17f61f9a9dbfec90efb0344c092466bff4c251f8e022782ac07f09c4ca04e",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "paints-tensorflow-readme.txt",
+    "source": "https://raw.githubusercontent.com/rapidrabbit76/PaintsTensorFlow/41860c76ac98e4f054b4c255856ed9229309b610/readme.md",
+    "sha256": "75c2eb92637d063706c687c14f3333144bcaa1c03cf659fb48f330de632e308b",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "paints-tensorflow-license.txt",
+    "source": "https://raw.githubusercontent.com/rapidrabbit76/PaintsTensorFlow/41860c76ac98e4f054b4c255856ed9229309b610/LICENSE",
+    "sha256": "d0258c242e3a3d7d3b5567cccbd2b9e367b8f0a215f6419204eab7f18285fe7c",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "cartoongan-readme.txt",
+    "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/README.md",
+    "sha256": "4c8fc3f86807f92bdbf6c07f259e470b04e78696e337c4992299ea6b126c63de",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "cartoongan-license.txt",
+    "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/LICENSE",
+    "sha256": "4fe7df3f4b7c56ad62714ccfa020965ea6383ae106a7617ebe7c09fa50cfc557",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "cobra-files.json",
+    "source": "https://huggingface.co/api/models/JunhaoZhuang/Cobra?blobs=true",
+    "sha256": "f96498e92e0c75d2fd5170baaa86621a827831569e4ae252fddc9ca41bc9b129",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "pixart-files.json",
+    "source": "https://huggingface.co/api/models/PixArt-alpha/PixArt-XL-2-1024-MS?blobs=true",
+    "sha256": "04561f5496e25cf7c00c160cb048542464150eccb08bdc06d8836619fac56766",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "anime-face-seg-license.txt",
+    "source": "https://raw.githubusercontent.com/siyeong0/Anime-Face-Segmentation/7107bfc64610cec5b9e64a2c16a4f011b5f513e5/LICENSE",
+    "sha256": "bd0eab5045709c3be3c38251f9076fa3893d19293c6c452d7f20b451fad7473a",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "anime-face-seg-readme.txt",
+    "source": "https://raw.githubusercontent.com/siyeong0/Anime-Face-Segmentation/7107bfc64610cec5b9e64a2c16a4f011b5f513e5/README.md",
+    "sha256": "08fe12c2d7cc956edaab2be884155b865b07625c146ba9bb45230713f613711d",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "cartoongan-commercial-issue-comments.json",
+    "source": "https://api.github.com/repos/mnicnc404/CartoonGan-tensorflow/issues/41/comments",
+    "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "cartoongan-commercial-issue.json",
+    "source": "https://api.github.com/repos/mnicnc404/CartoonGan-tensorflow/issues/41",
+    "sha256": "b0fd91a1dab16b6c50c239206ce21c7308046031cef210fa209c5a533b7bd0fb",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "clipseg-author-comment.json",
+    "source": "https://api.github.com/repos/timojl/clipseg/issues/comments/1580579019",
+    "sha256": "79cbe195e96f5515cc9342fe118e255e0d6a952997184444237ad1fc820a0d5b",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "clipseg-license.txt",
+    "source": "https://raw.githubusercontent.com/timojl/clipseg/77c4e2dc853880df46413d4a870a725e961f2f73/LICENSE",
+    "sha256": "b641121e2ffd9bb9ccfe118cacc2471e499f28b74f665bb4ea4f912d9f691087",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "clipseg-model-card.txt",
+    "source": "https://huggingface.co/CIDAS/clipseg-rd64-refined/raw/999e0328d9e10b484360c477313983f9afdd7050/README.md",
+    "sha256": "c1e26ac022542015a04d804460bdc1159d753c4349b628e086f127475d2fcf25",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "clipseg-onnx-files.json",
+    "source": "https://huggingface.co/api/models/Xenova/clipseg-rd64-refined/revision/924dc94f85f58739f353f94258b33bc47eae4862?blobs=true",
+    "sha256": "9c0bad6f9a03d89eccaa9c8ec4ff0b69145398bbec8ec9c085035acb5790383d",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "paintschainer-readme.txt",
+    "source": "https://raw.githubusercontent.com/taizan/PaintsChainer/5cd88aef2bdef2d018d399fe787dbfa527ddf30a/README.md",
+    "sha256": "7b8955296e0a46da1437087420ba404d76c38f659a08f343fea565e9ea9c6a52",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "segformer-clothes-model-card.txt",
+    "source": "https://huggingface.co/mattmdjaga/segformer_b2_clothes/raw/584abc1e1d260e23c0fc627c5217a09b2b461046/README.md",
+    "sha256": "fca39e62db301b5113f14ef71679da395d8c638a069176483373c74048563856",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "segformer-license.txt",
+    "source": "https://raw.githubusercontent.com/NVlabs/SegFormer/65fa8cfa9b52b6ee7e8897a98705abf8570f9e32/LICENSE",
+    "sha256": "f549820c06519e3105e5174a2fd7285224ffd2268a7f879a843b1a255fd04a61",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "style2paints-readme.txt",
+    "source": "https://raw.githubusercontent.com/lllyasviel/style2paints/a0d164d6a8a69fa4a87139bcd193291057f4ca39/README.md",
+    "sha256": "6570d1bf0afc5baa63ad0c7154e49c6bfb2962e7868217df7aa767218058a453",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  },
+  {
+    "file": "style2paints-v3-readme.txt",
+    "source": "https://raw.githubusercontent.com/lllyasviel/style2paints/a0d164d6a8a69fa4a87139bcd193291057f4ca39/V3/README.md",
+    "sha256": "83451707c44f3e47da67b585b05c180adceca1bd27e829d9e145b724da32dff0",
+    "retrieved": "2026-11-05",
+    "kind": "metadata-no-weights"
+  }
+]

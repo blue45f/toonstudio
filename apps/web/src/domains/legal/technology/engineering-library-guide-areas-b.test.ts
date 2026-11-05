@@ -187,30 +187,42 @@ describe("라이브러리 해설 영역 5~8 · 숫자 주장", () => {
     expect(area("ai-on-device")).toContain("4곳");
   });
 
-  it("wasm-vips 선택 근거 수치가 코드 주석과 같고, LGPL·Remotion 라이선스 서술이 설치본과 같다", () => {
-    const vips = read("apps/web/src/domains/creator/export/studio-vips-export.ts");
+  it("과거 wasm-vips 측정과 현재 자체 축소 엔진을 구별한다", () => {
+    const runtime = read("apps/web/src/domains/creator/export/studio-vips-export.ts");
     const build = area("build-quality-media");
-    for (const figure of ["27.26dB", "0.9887", "25.31dB/0.9834", "23.78dB/0.9768"]) expect(vips).toContain(figure);
     for (const figure of ["27.26", "0.9887", "25.31/0.9834", "23.78/0.9768"]) expect(build).toContain(figure);
-    // 속도 수치(약 124ms 대 15~30ms)는 tests/benchmarks/results 를 읽지 않고, 같은 표를 옮겨 적은 문서와 대조한다.
+    // 수치는 과거 wasm-vips 측정에만 귀속하고 현재 구현의 시간·품질 측정으로 재인용하지 않는다.
     const survey = read("docs/candidates/filters/capability-survey.md");
     for (const figure of ["27.26dB", "25.31dB", "23.78dB", "123.6ms", "15.0ms", "30.0ms"]) expect(survey).toContain(figure);
     expect(build).toContain("15~30ms 대 124ms");
     expect(build).toContain("15 to 30 ms versus 124 ms");
-
-    const notices = read("node_modules/wasm-vips/THIRD-PARTY-NOTICES.md");
-    for (const library of ["libvips", "glib", "libheif"]) expect(notices).toMatch(new RegExp(`\\|\\s*${library}\\s*\\|\\s*LGPLv3`, "u"));
-    expect((JSON.parse(read("node_modules/wasm-vips/package.json")) as { license: string }).license).toBe("MIT");
+    expect(build).toContain("과거 수치를 자체 엔진의 성능으로 재인용하지 않습니다");
+    expect(runtime).toContain('import("./studio-native-resize-runtime")');
+    expect(runtime).not.toMatch(/import\(["']wasm-vips["']\)/u);
     const registry = read("packages/studio-engine-registry/src/filter-providers.ts");
-    expect(registry).toContain("dev-only candidate");
-    expect(registry).toContain("LGPL isolated deployment mode required");
-    // docs/technology/engineering-libraries.md 6절 표는 "레지스트리 라벨(LGPL-2.1-or-later)과 설치본 고지(LGPLv3)가 다르다"고 적는다.
-    // 레지스트리 라벨이 바뀌면 이 단언이 실패하니, 그때 문서의 해당 문장을 함께 고친다.
-    expect(registry, "레지스트리 라벨이 바뀌었다: 문서 6절 wasm-vips 행을 고친다").toContain('license: "LGPL-2.1-or-later"');
+    expect(registry).toContain('attribution: "ToonStudio native Lanczos3"');
+    expect(registry).toContain('license: "internal"');
+    expect(registry).toContain('runtime: "js"');
+    expect(registry).toContain("legacy wasm-vips measurements do not describe this independently authored implementation");
 
     // Remotion 카드는 package 를 적지 않는다: 설치본 license 필드가 SPDX 가 아니라 안내 문구라 지도 행(Remotion License)과 대조할 수 없다.
     expect((JSON.parse(read("node_modules/remotion/package.json")) as { license: string }).license).toBe("SEE LICENSE IN LICENSE.md");
     expect(read("node_modules/remotion/LICENSE.md")).toMatch(/^\s*# Remotion License/u);
     expect(read("THIRD_PARTY_NOTICES.md")).toContain("Remotion License");
+  });
+
+  it("고정된 Remotion 4 라이선스의 무료 상업 사용과 인원 미검증을 구별한다", () => {
+    const manifest = JSON.parse(read("node_modules/remotion/package.json")) as { version: string };
+    expect(manifest.version).toBe("4.0.536");
+    const license = read("node_modules/remotion/LICENSE.md");
+    expect(license).toContain("- an individual");
+    expect(license).toContain("- a for-profit organization with up to 3 employees");
+    expect(license).toContain("to use the software non-commercially or commercially");
+    const build = area("build-quality-media");
+    expect(build).toContain("설명된 개인·1인 운영 전제의 무료 상업 사용으로 유지");
+    expect(build).toContain("조직 전체 3명 이하");
+    expect(build).toContain("실제 인원은 독립 검증하지 않았습니다");
+    expect(build).toContain("total organizational headcount of up to 3 people");
+    expect(build).toContain("actual headcount is not independently verified");
   });
 });

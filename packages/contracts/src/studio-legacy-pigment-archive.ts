@@ -49,9 +49,11 @@ export function hasStudioPreservedDrawReaderCrdt(document: {
       || hasStudioPreservedDrawReaderFields(stroke.get("extensions")))) return true;
   }
   const pending = document.store?.pendingStructs;
+  // 알려진 일반 JSON 키는 extensions와 구분한다. 부모가 없어 상속 키가 null이면 보수적으로 보호한다.
+  // 따라서 키 미확정 일반 JSON의 이름 충돌까지 해소한 판정은 아니다.
   return !!pending && !!decodePending && decodePending(pending.update).some((item) =>
     item.key === "payloadVersion" && item.values.includes(STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION)
-    || item.values.some(hasStudioPreservedDrawReaderFields));
+    || ((item.key === "extensions" || item.key === null) && item.values.some(hasStudioPreservedDrawReaderFields)));
 }
 const KEYS = ["version", "sourceElementId", "sourceGroupId", "sourceIndex", "sourceHidden"];
 function record(value: unknown): Record<string, unknown> | null {

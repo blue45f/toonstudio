@@ -1,0 +1,174 @@
+{
+  "runtime": "onnxruntime-web 1.30.0",
+  "runtime_versions": {
+    "common": "1.30.0",
+    "web": "1.30.0"
+  },
+  "provider": "wasm",
+  "num_threads": 1,
+  "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+  "model_sha256": "431f2b1c7a3ab31fbee32fcae193e4e65b2304484e0a646a481d1a61351a17a8",
+  "load_ms": 479.63000000081956,
+  "cases": [
+    {
+      "image": "usgs-mountain-lake-original.jpg",
+      "input_sha256": "34cc9916a3e4f2ae8150e1adcbdb20c81d961353bd64668bf83baac92ac1de94",
+      "trials": [
+        {
+          "run_ms": 4590.3499999996275,
+          "shape": [
+            1,
+            3,
+            512,
+            512
+          ],
+          "dtype": "float32",
+          "nonfinite": 0,
+          "output_sha256": "181601280d44b1fbfef11203060d654600c9b45b017457a0e1a76bf369e209ce",
+          "error_vs_cpu1201": {
+            "max_absolute_error": 0.04379662871360779,
+            "mean_absolute_error": 0.007179233008477711,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          },
+          "error_vs_cpu1300": {
+            "max_absolute_error": 0.04379662871360779,
+            "mean_absolute_error": 0.007179233008477711,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          }
+        },
+        {
+          "run_ms": 4325.4350000005215,
+          "shape": [
+            1,
+            3,
+            512,
+            512
+          ],
+          "dtype": "float32",
+          "nonfinite": 0,
+          "output_sha256": "181601280d44b1fbfef11203060d654600c9b45b017457a0e1a76bf369e209ce",
+          "error_vs_cpu1201": {
+            "max_absolute_error": 0.04379662871360779,
+            "mean_absolute_error": 0.007179233008477711,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          },
+          "error_vs_cpu1300": {
+            "max_absolute_error": 0.04379662871360779,
+            "mean_absolute_error": 0.007179233008477711,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          }
+        },
+        {
+          "run_ms": 4280.199999999255,
+          "shape": [
+            1,
+            3,
+            512,
+            512
+          ],
+          "dtype": "float32",
+          "nonfinite": 0,
+          "output_sha256": "181601280d44b1fbfef11203060d654600c9b45b017457a0e1a76bf369e209ce",
+          "error_vs_cpu1201": {
+            "max_absolute_error": 0.04379662871360779,
+            "mean_absolute_error": 0.007179233008477711,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          },
+          "error_vs_cpu1300": {
+            "max_absolute_error": 0.04379662871360779,
+            "mean_absolute_error": 0.007179233008477711,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          }
+        }
+      ],
+      "bitwise_deterministic": true
+    },
+    {
+      "image": "synthetic-city.png",
+      "input_sha256": "d1a3118c76db8ed71b14ada68f25d48447177436a7cbcd9dc15cb60b1f1a2e85",
+      "trials": [
+        {
+          "run_ms": 4611.530000001192,
+          "shape": [
+            1,
+            3,
+            512,
+            512
+          ],
+          "dtype": "float32",
+          "nonfinite": 0,
+          "output_sha256": "0e586c045863bfc72c23639a1d945bbe5ee49b1368d18c9d684f0c56601c8ba0",
+          "error_vs_cpu1201": {
+            "max_absolute_error": 0.06566113047301769,
+            "mean_absolute_error": 0.008437058871622346,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          },
+          "error_vs_cpu1300": {
+            "max_absolute_error": 0.06566113047301769,
+            "mean_absolute_error": 0.008437058871622346,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          }
+        },
+        {
+          "run_ms": 4809.799999998882,
+          "shape": [
+            1,
+            3,
+            512,
+            512
+          ],
+          "dtype": "float32",
+          "nonfinite": 0,
+          "output_sha256": "0e586c045863bfc72c23639a1d945bbe5ee49b1368d18c9d684f0c56601c8ba0",
+          "error_vs_cpu1201": {
+            "max_absolute_error": 0.06566113047301769,
+            "mean_absolute_error": 0.008437058871622346,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          },
+          "error_vs_cpu1300": {
+            "max_absolute_error": 0.06566113047301769,
+            "mean_absolute_error": 0.008437058871622346,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          }
+        },
+        {
+          "run_ms": 4296.1899999994785,
+          "shape": [
+            1,
+            3,
+            512,
+            512
+          ],
+          "dtype": "float32",
+          "nonfinite": 0,
+          "output_sha256": "0e586c045863bfc72c23639a1d945bbe5ee49b1368d18c9d684f0c56601c8ba0",
+          "error_vs_cpu1201": {
+            "max_absolute_error": 0.06566113047301769,
+            "mean_absolute_error": 0.008437058871622346,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          },
+          "error_vs_cpu1300": {
+            "max_absolute_error": 0.06566113047301769,
+            "mean_absolute_error": 0.008437058871622346,
+            "threshold": 0.00784313725490196,
+            "passed_strict_less_than": false
+          }
+        }
+      ],
+      "bitwise_deterministic": true
+    }
+  ],
+  "limitation": "Numerical parity only; visual quality acceptance and product integration were not performed.",
+  "page_errors": []
+}

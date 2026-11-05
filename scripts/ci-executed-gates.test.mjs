@@ -28,11 +28,6 @@ function job(name) {
   return block;
 }
 
-function assertTrackedRepositoryFile(path, root = repoRoot) {
-  const tracked = spawnSync("git", ["ls-files", "--error-unmatch", "--", path], { cwd: root, encoding: "utf8" });
-  assert.equal(tracked.status, 0, `저장소 Git 정본에 없는 입력: ${path}\n${tracked.stderr}`);
-}
-
 function targetExists(target) {
   const absoluteTarget = join(repoRoot, target);
   if (existsSync(absoluteTarget)) return true;
@@ -52,6 +47,14 @@ function targetExists(target) {
       .replaceAll("*", ".*")}$`,
   );
   return readdirSync(directory).some((entry) => expression.test(entry));
+}
+
+/** 문서 본문을 체크아웃하지 않는 lane도 Git 추적 정본의 누락은 거부한다. */
+function assertTrackedDocumentInputs(inputs, { cwd = repoRoot, env } = {}) {
+  const tracked = spawnSync("git", ["ls-files", "--error-unmatch", "--",
+    ...inputs.map((path) => `:(literal)${path.slice(1)}`)], { cwd, env, encoding: "utf8" });
+  assert.equal(tracked.status, 0,
+    `foundation 문서 정본이 Git 추적 목록에 없습니다: ${inputs.join(", ")}\n${tracked.error?.message ?? tracked.stderr}`);
 }
 
 test("checkout 조건식 파서는 알려진 literal 이외의 실행식과 조건을 거부한다", () => {
@@ -595,6 +598,38 @@ test("product 초기 checkout은 문서 정본을 포함하고 대형 아트는 
   assert.doesNotMatch(job("static"), /Restore documentation authority for product regressions/u);
 });
 
+test("문서 없는 typecheck checkout도 Git 추적 정본을 확인하고 미추적 물리 파일은 거부한다", () => {
+  const root = mkdtempSync(join(tmpdir(), "core-document-index-authority-"));
+  const env = fixtureGitEnvironment(root);
+  const path = "/docs/third-party/opencascade-lgpl.md";
+  const relative = path.slice(1), absolute = join(root, relative);
+  const git = (...args) => {
+    const result = spawnSync("git", args, { cwd: root, env, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  try {
+    git("init", "--quiet");
+    mkdirSync(dirname(absolute), { recursive: true });
+    writeFileSync(absolute, "정본 문서\n");
+    writeFileSync(join(root, "package.json"), "{}\n");
+    git("add", ".");
+    const tree = git("write-tree");
+    git("config", "core.sparseCheckout", "true");
+    git("config", "core.sparseCheckoutCone", "false");
+    writeFileSync(join(root, ".git/info/sparse-checkout"), `${sparsePatterns(job("typecheck")).join("\n")}\n`);
+    git("read-tree", "-mu", tree);
+    assert.equal(existsSync(absolute), false, "typecheck lane은 foundation 문서 본문을 내려받지 않습니다.");
+    assertTrackedDocumentInputs([path], { cwd: root, env });
+
+    git("update-index", "--force-remove", "--", relative);
+    mkdirSync(dirname(absolute), { recursive: true });
+    writeFileSync(absolute, "추적되지 않은 파일\n");
+    assert.equal(existsSync(absolute), true);
+    assert.throws(() => assertTrackedDocumentInputs([path], { cwd: root, env }), /foundation 문서 정본이 Git 추적 목록에 없습니다/u);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·문서 16개 선언을 최초 checkout에서 정확히 보존한다", () => {
   const asset = "/apps/web/public/assets/";
   const foundationInputs = [
@@ -718,7 +753,7 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
   const foundationDocumentSet = new Set(foundationDocumentInputs);
   assert.equal(foundationDocumentSet.size, 16);
   assert.ok(foundationDocumentInputs.every((path) => path.endsWith(".md") && !path.includes("*")), "문서 입력은 정확한 개별 Markdown 파일이어야 합니다.");
-  for (const path of foundationDocumentInputs) assertTrackedRepositoryFile(path.slice(1));
+  assertTrackedDocumentInputs(foundationDocumentInputs);
   assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 90, 0, 1, 7]);
   assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 120, 0, 1, 7]);
   const declarations = [...job("static").matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
@@ -782,14 +817,14 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
     git("read-tree", "-mu", "HEAD");
     for (const path of foundationDocumentInputs) {
       assert.equal(existsSync(join(root, path.slice(1))), false, `preflight에 불필요한 문서 본문: ${path}`);
-      assertTrackedRepositoryFile(path.slice(1), root);
+      assertTrackedDocumentInputs([path], { cwd: root, env });
     }
-    assert.throws(() => assertTrackedRepositoryFile("docs/adr/0003-one-primary-surface-owner-typo.md", root), /저장소 Git 정본에 없는 입력/u);
+    assert.throws(() => assertTrackedDocumentInputs(["/docs/adr/0003-one-primary-surface-owner-typo.md"], { cwd: root, env }), /foundation 문서 정본이 Git 추적 목록에 없습니다/u);
     const untracked = "docs/adr/untracked-foundation.md";
     mkdirSync(dirname(join(root, untracked)), { recursive: true });
     writeFileSync(join(root, untracked), "untracked fixture\n");
     assert.ok(existsSync(join(root, untracked)));
-    assert.throws(() => assertTrackedRepositoryFile(untracked, root), /저장소 Git 정본에 없는 입력/u);
+    assert.throws(() => assertTrackedDocumentInputs([`/${untracked}`], { cwd: root, env }), /foundation 문서 정본이 Git 추적 목록에 없습니다/u);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 

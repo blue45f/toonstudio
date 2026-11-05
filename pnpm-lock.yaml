@@ -374,9 +374,6 @@ importers:
       three-mesh-bvh:
         specifier: 0.9.16
         version: 0.9.16(three@0.186.1)
-      wasm-vips:
-        specifier: ^0.0.19
-        version: 0.0.19
       web-ifc:
         specifier: 0.0.78
         version: 0.0.78
@@ -9154,10 +9151,6 @@ packages:
     resolution: {integrity: sha512-3hu+tD8YzSLGuFYtPRb48vdhKMi0KQV5sn+uWr8+7dMEq/2G/dtLrdDinkLjqq5TIbIBjYJ4Ax/n3YiaW7QM8A==}
     engines: {node: 20 || >=22}
 
-  wasm-vips@0.0.19:
-    resolution: {integrity: sha512-KeejYs8oNqPUd2C/XPRhQtRabydqOSkUyCdWhFf2ucL8rVKqHvtp5ZYuYLyeDG/4y45tvROST3mQWla+1uotSA==}
-    engines: {node: '>=17.0.0'}
-
   web-ifc@0.0.78:
     resolution: {integrity: sha512-LGKMNYFVNyz9vVERN0iz+zvPQJqT7MEGBxslzcuuhwDDOA116LmJLKkg8sZ5SEvQJSc5NRVMWgpRNkDmuoQoJg==}
 
@@ -17643,8 +17636,6 @@ snapshots:
       xml-name-validator: 5.0.0
 
   walk-up-path@4.0.0: {}
-
-  wasm-vips@0.0.19: {}
 
   web-ifc@0.0.78: {}
 

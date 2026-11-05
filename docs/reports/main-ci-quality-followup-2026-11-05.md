@@ -165,3 +165,7 @@ Linux 원격 `6e6808de`의 두 압력 raw를 artifact 13430803684에서 한 번 
 진단은 기존 failure-only 두 Canvas 단계 직후에만 실행하고, 180초 명령 기한과 10초 강제 정리 유예·기존 Ubuntu 24.04/35분 job·always artifact를 유지한다. PR/push의 두 새 입력 경로도 연결한다. 원래 실패·각 source fence·browser/server 정리·receipt 저장 실패를 독립적으로 수집하고 모두 시도한 뒤 nonzero로 전달한다. baseline·환경 목록·golden은 자동 갱신하지 않는다. 기존 QA 30개와 manifest·계측·RGB 1 차이 거절·PNG decode·namespace·실패 전달·workflow 회귀 16개, source 적용 뒤 46개가 모두 통과했다.
 
 Mac 사전 검증은 2026-11-06 01:43:35~01:43:42 KST에 원래 소스의 두 draw만 실행해 7.3초·exit 0으로 완료했다. 원래 57소스 전후 지문과 입력·geometry·opacity가 같았고 두 raw는 기존 Mac 기준에 정확히 일치했다. 브라우저·서버 정상 종료와 자체 port 52317 LISTEN 0도 확인했다. 최종 정리 helper는 그 뒤 순수 단위로 보강했으므로 이를 최종 Linux CLI 실행 성공으로 확대하지 않는다. 전체 workspace 전후 fence는 수집하지 않았으며 원래 57소스와 공유 baseline/observer의 고정 지문 범위로 구분한다. 새로운 Linux 비교 결과를 확보한 뒤에만 해당 환경의 원래 픽셀 보존 여부와 기준 확장을 판정한다.
+
+2026-11-06 02:24 KST에 main이 `7c5ed4db7d739449312793ee3bc471131420f434`로 진전했다. PR #2727을 거쳐 기존 f0 보완의 대부분이 이미 main에 포함됐으며 PR #2726 자체의 미병합과 구분한다. 이를 ordinary merge로 보존 통합하면서 일반 pending JSON과 실제 extensions/null 보호를 구분하는 최신 계약, 원본 불변 단언, 문서 Git index 정본과 전체 Program 타입 검사 정책을 유지했다. 충돌 관련 8파일 205개와 Node 정책 4파일 42개, 최신 native resize/export 및 registry 4파일 60개가 통과했다. 각 실행은 겹칠 수 있어 합산하지 않으며 새로운 통합 커밋의 전체 하네스·최종 hosted CI 성공을 대신하지 않는다.
+
+PR #2724가 먼저 main에 적용한 vips 제거·native Lanczos3 최종 내보내기와 모델 권리 고지는 되돌리지 않았다. 현재 native 회귀 성공을 과거 vips 출력의 픽셀 동일성 보장으로 확대하지 않는다. 원래 Chemy 57소스 경로에는 resize/vips가 없고, 실제 참조 호스트의 관련 package pin과 원본 baseline·observer 지문은 유지된다. 후속 PR에 남은 것은 검사 소비 경계·회귀 및 동결 원본 Linux 비교이며 새 렌더러·저장 형식·권한 정책 변경이 아니다.

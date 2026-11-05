@@ -21,4 +21,3 @@ export async function openMobileBrushSettings(page: Page, dock: Locator): Promis
   if (remaining <= 0) throw new Error("모바일 브러시 설정 열기의 60000ms 예산을 초과했습니다.");
   await tools.waitFor({ state: "hidden", timeout: remaining });
 }
-

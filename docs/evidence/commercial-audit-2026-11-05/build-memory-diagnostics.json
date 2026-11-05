@@ -1,0 +1,11 @@
+{
+  "memoryLimitBytes": 17179869184,
+  "cgroupMemoryEvents": "low 0\nhigh 0\nmax 63732\noom 6\noom_kill 2\noom_group_kill 0\n",
+  "initialBuildExit": 137,
+  "initialHarnessExit": 137,
+  "cappedSequentialCommand": "NODE_OPTIONS=--max-old-space-size=11264 node node_modules/typescript/bin/tsc -p tsconfig.json --incremental false --extendedDiagnostics",
+  "cappedSequentialExit": 134,
+  "cappedSequentialFailure": "V8 heap out of memory at approximately 11220 MiB live heap; no additional cgroup oom_kill",
+  "webTsTsxFileCount": 16674,
+  "limits": "No PID-specific kernel OOM log captured; initial cgroup history supports but does not prove individual kills. Full project typecheck has not passed."
+}

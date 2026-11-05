@@ -2,7 +2,8 @@ import {
   translateCurrentStaticSourceText,
 } from "@/shared/lib/i18n-bilingual-copy";
 // 기기 채색 패널 — 클라우드 AI를 쓸 수 없을 때(오프라인·키 미설정)의 폴백.
-// Tag2Pix(선화 채색 GAN, MIT)를 onnxruntime-web으로 기기에서 직접 돌린다.
+// Tag2Pix 선화 채색 GAN을 기기에서 직접 실행한다. 코드는 MIT지만 배포 가중치는
+// 비상업·재배포 제한이 있어 별도 권리 해결 또는 검증된 동등 대체가 필요하다.
 // 클라우드 경로가 가능하면 그쪽이 우선이며, 이 패널은 ① AI 미설정 시 제안
 // 자리에서, ② 사용자가 "기기에서 채색"을 명시적으로 고를 때만 쓰인다.
 // 모델·런타임은 실행 버튼을 눌렀을 때만 동적 import로 지연 로딩된다.

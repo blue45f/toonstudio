@@ -681,6 +681,16 @@ export default defineConfig(({ command, mode }) => ({
             "lucide-react",
             // QRCode's browser entry is CommonJS; prebundle it for the manuscript acceptance harness.
             "qrcode",
+            // 자동 탐색을 끈 원고 검증에서도 Spectral의 CommonJS 진입점을 브라우저 모듈로 변환한다.
+            "spectral.js",
+            // Konva의 도형 등록은 원래 단일 모듈에 두고, 그 하위 CommonJS 의존성만 변환한다.
+            "react-konva > react-reconciler",
+            "react-konva > react-reconciler/constants.js",
+            "react-konva > scheduler",
+            // 접속 모듈이 조용히 초기화 실패하지 않도록 Socket.IO 개발 경로의 CommonJS logger도 변환한다.
+            "socket.io-client > debug",
+            // 내보내기 엔진이 초기화 누락으로 호환 렌더러에 조용히 우회하지 않도록 한다.
+            "canvaskit-wasm",
           ],
         }
       : {}),

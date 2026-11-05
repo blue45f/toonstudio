@@ -1,0 +1,489 @@
+{
+  "candidate": {
+    "head": "b063d8e52c00d6f500a3eea37c7cda80f05973f9",
+    "parents": [
+      "abd691ee218a49a92b6ef170c152fa7415d23cf0",
+      "5165e4faf796cebe255460ab38d1c13fde8972c4"
+    ],
+    "cwd": "/workspace/scratch/toonstudio-commercial-main-validation",
+    "created": "2026-11-05T13:40:22.094506+00:00",
+    "status": "clean",
+    "priorCanonicalEvidence": "/tmp/toonstudio-license-main5165-validation-nt5gbonh"
+  },
+  "finalGit": {
+    "head": "b063d8e52c00d6f500a3eea37c7cda80f05973f9",
+    "parents": [
+      "abd691ee218a49a92b6ef170c152fa7415d23cf0",
+      "5165e4faf796cebe255460ab38d1c13fde8972c4"
+    ],
+    "status": ""
+  },
+  "canonicalEvidence": {
+    "report": "/tmp/toonstudio-license-main5165-validation-nt5gbonh/canonical-web-report.json",
+    "reportSha256": "77bb1e54cf45dd47c7eef7b6bdea41676b49a08aeff5e905df59c24e796def13",
+    "fingerprint": "471df5034f6389575901d72bf7761c56cda825c947ccc354b0839e61ba2395bb",
+    "coverage": {
+      "checkedFiles": 26272,
+      "expectedFiles": 26272
+    },
+    "complete": true
+  },
+  "program": {
+    "files": 26272,
+    "roots": 16966,
+    "readInputs": 27075,
+    "fingerprint": "471df5034f6389575901d72bf7761c56cda825c947ccc354b0839e61ba2395bb",
+    "sameOriginalIdentity": true,
+    "sameOriginalFingerprint": true,
+    "strict": true
+  },
+  "sourceFreeze": {
+    "beforeFiles": 31156,
+    "afterFiles": 31156,
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "memory": {
+    "before": {
+      "low": 0,
+      "high": 0,
+      "max": 493905,
+      "oom": 6,
+      "oom_kill": 2,
+      "oom_group_kill": 0
+    },
+    "after": {
+      "low": 0,
+      "high": 0,
+      "max": 568120,
+      "oom": 6,
+      "oom_kill": 2,
+      "oom_group_kill": 0
+    },
+    "oomKillIncrease": 0
+  },
+  "commands": [
+    {
+      "label": "prebuild-inventory",
+      "argv": [
+        "node",
+        "--max-old-space-size=8192",
+        "scripts/typecheck-shards-worker.mjs",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/prebuild-inventory-job.json"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:40:22.119969+00:00",
+      "finished": "2026-11-05T13:40:44.701747+00:00"
+    },
+    {
+      "label": "build-bundle",
+      "argv": [
+        "pnpm",
+        "run",
+        "build:bundle"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:41:17.964524+00:00",
+      "finished": "2026-11-05T13:45:43.878951+00:00"
+    },
+    {
+      "label": "postbuild-inventory",
+      "argv": [
+        "node",
+        "--max-old-space-size=8192",
+        "scripts/typecheck-shards-worker.mjs",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/postbuild-inventory-job.json"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:45:50.384716+00:00",
+      "finished": "2026-11-05T13:46:18.113518+00:00"
+    },
+    {
+      "label": "postbuild-identity-review",
+      "argv": [
+        "python3",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/check-build-identity.py"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:46:35.013928+00:00",
+      "finished": "2026-11-05T13:46:37.995756+00:00"
+    },
+    {
+      "label": "studio-bundle",
+      "argv": [
+        "pnpm",
+        "run",
+        "check:studio-bundle"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:47:00.611583+00:00",
+      "finished": "2026-11-05T13:47:01.783836+00:00"
+    },
+    {
+      "label": "csp",
+      "argv": [
+        "node",
+        "scripts/verify-static-csp.mjs",
+        "dist/index.html"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:47:09.870266+00:00",
+      "finished": "2026-11-05T13:47:09.923490+00:00"
+    },
+    {
+      "label": "browser-version",
+      "argv": [
+        "/usr/bin/chromium",
+        "--version"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:47:09.900670+00:00",
+      "finished": "2026-11-05T13:47:09.970163+00:00"
+    },
+    {
+      "label": "vips-residues",
+      "argv": [
+        "python3",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/check-vips-residues.py"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:47:09.880266+00:00",
+      "finished": "2026-11-05T13:47:10.213155+00:00"
+    },
+    {
+      "label": "remotion-chunks",
+      "argv": [
+        "pnpm",
+        "run",
+        "check:product-tour-remotion-chunks"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:47:09.887022+00:00",
+      "finished": "2026-11-05T13:47:10.375869+00:00"
+    },
+    {
+      "label": "restricted-models",
+      "argv": [
+        "node",
+        "scripts/check-restricted-model-distribution.mjs",
+        "dist",
+        "--json"
+      ],
+      "exit": 1,
+      "started": "2026-11-05T13:47:09.866712+00:00",
+      "finished": "2026-11-05T13:47:10.585633+00:00"
+    },
+    {
+      "label": "native-browser-system-chromium",
+      "argv": [
+        "node",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/native-browser-probe-system-chromium.mjs"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:48:00.708678+00:00",
+      "finished": "2026-11-05T13:48:03.119924+00:00"
+    },
+    {
+      "label": "native-browser-server",
+      "argv": [
+        "node",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/serve.mjs"
+      ],
+      "exit": 143,
+      "started": "2026-11-05T13:47:59.901704+00:00",
+      "finished": "2026-11-05T13:48:03.271588+00:00"
+    },
+    {
+      "label": "native-browser-orchestration",
+      "argv": [
+        "python3",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/run-browser.py"
+      ],
+      "exit": 1,
+      "started": "2026-11-05T13:47:59.858699+00:00",
+      "finished": "2026-11-05T13:48:03.294781+00:00"
+    },
+    {
+      "label": "native-browser-cleanup-review",
+      "argv": [
+        "python3",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/review-browser-cleanup.py"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:49:05.747965+00:00",
+      "finished": "2026-11-05T13:49:05.778058+00:00"
+    },
+    {
+      "label": "quality-imports",
+      "argv": [
+        "env",
+        "NODE_OPTIONS=--max-old-space-size=12288",
+        "pnpm",
+        "run",
+        "quality:imports"
+      ],
+      "exit": 1,
+      "started": "2026-11-05T13:49:05.808374+00:00",
+      "finished": "2026-11-05T13:49:26.953145+00:00"
+    },
+    {
+      "label": "type-coverage",
+      "argv": [
+        "env",
+        "NODE_OPTIONS=--max-old-space-size=12288",
+        "pnpm",
+        "run",
+        "check:type-coverage"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:49:54.886376+00:00",
+      "finished": "2026-11-05T13:53:06.008692+00:00"
+    },
+    {
+      "label": "postchecks-inventory",
+      "argv": [
+        "node",
+        "--max-old-space-size=8192",
+        "scripts/typecheck-shards-worker.mjs",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/postchecks-inventory-job.json"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:53:25.831785+00:00",
+      "finished": "2026-11-05T13:53:50.454913+00:00"
+    },
+    {
+      "label": "final-identity-review",
+      "argv": [
+        "python3",
+        "/tmp/toonstudio-license-main5165-validation-nt5gbonh/build-b063d8e5/final-identity-review.py"
+      ],
+      "exit": 0,
+      "started": "2026-11-05T13:54:08.204325+00:00",
+      "finished": "2026-11-05T13:54:10.985095+00:00"
+    }
+  ],
+  "parentAudits": {
+    "security": {
+      "sourceLog": "/tmp/toonstudio-license-main5165-security.log",
+      "sourceExit": "/tmp/toonstudio-license-main5165-security.exit",
+      "exit": 0,
+      "sha256": "545187b7291734cf6fc09c822caf6cf8d2ee907a75ea0eaf5874007be549904b",
+      "runOwner": "parent root",
+      "candidate": "b063d8e52c00d6f500a3eea37c7cda80f05973f9"
+    },
+    "licenses": {
+      "sourceLog": "/tmp/toonstudio-license-main5165-licenses.log",
+      "sourceExit": "/tmp/toonstudio-license-main5165-licenses.exit",
+      "exit": 0,
+      "sha256": "5a29a6ca66de75ec9057d92a11a179e58e36e6c88c141c26cfc434846f620d01",
+      "runOwner": "parent root",
+      "candidate": "b063d8e52c00d6f500a3eea37c7cda80f05973f9"
+    }
+  },
+  "typeCoverage": {
+    "outerExit": 0,
+    "coveredIdentifiers": 1077323,
+    "totalIdentifiers": 1080690,
+    "coveragePercent": 99.68,
+    "thresholdPercent": 95,
+    "command": [
+      "env",
+      "NODE_OPTIONS=--max-old-space-size=12288",
+      "pnpm",
+      "run",
+      "check:type-coverage"
+    ],
+    "scope": "existing CI scope from tsconfig.type-coverage.json and package.json typeCoverage; not nightly full coverage"
+  },
+  "qualityImports": {
+    "outerExit": 1,
+    "command": [
+      "env",
+      "NODE_OPTIONS=--max-old-space-size=12288",
+      "pnpm",
+      "run",
+      "quality:imports"
+    ],
+    "unresolvedImports": [
+      {
+        "specifier": "/fixture.js",
+        "path": "scripts/verify-latent-pigment-browser.mjs",
+        "line": 176,
+        "column": 26
+      }
+    ],
+    "ancillaryDiagnostic": "Wrangler debug log mkdir /home/agent/.config/.wrangler emitted ENOENT",
+    "sourceModified": false,
+    "baselineModified": false,
+    "checkSkipped": false,
+    "owner": "parent identified separate UX/semantic work"
+  },
+  "browser": {
+    "browser": "154.0.8037.57",
+    "scope": "isolated-source-browser-native-export-not-full-studio-e2e",
+    "width": 61,
+    "height": 31,
+    "bytes": 7564,
+    "repeatedBytesEqual": true,
+    "inputUnchanged": true,
+    "identityIndependent": true,
+    "constantPreserved": true,
+    "rejectsUpscale": true,
+    "pyramid": [
+      [
+        128,
+        64
+      ],
+      [
+        64,
+        32
+      ],
+      [
+        32,
+        16
+      ],
+      [
+        16,
+        8
+      ],
+      [
+        8,
+        4
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "sha256": "038e30b0fecf6941edcba206db916caab8c4cdefcba0ecab95b7ea3db495db13",
+    "elapsedMs": 82.4,
+    "requested": [
+      "/__native-probe__",
+      "/src/domains/creator/export/studio-vips-export.ts",
+      "/src/domains/creator/export/studio-native-resize-runtime.ts",
+      "/src/domains/creator/export/studio-native-lanczos.ts"
+    ],
+    "blocked": [],
+    "externalVipsRequests": []
+  },
+  "browserCleanup": {
+    "originalOrchestrationExit": 1,
+    "actualProbeOuterExit": 0,
+    "serverOuterExit": 143,
+    "intentionalSignal": "SIGTERM",
+    "ownedServerPid": 40491,
+    "pidGone": true,
+    "portClosed": true,
+    "classification": "cleanup-wrapper expected zero but Vite deliberately exited 143 after SIGTERM; product probe passed; original failure preserved",
+    "probeAssertionsChanged": false,
+    "probeRepeated": false
+  },
+  "modelPolicy": {
+    "outerExit": 1,
+    "blocking": 2,
+    "review": 1,
+    "onnxFiles": 6,
+    "inspected": 6,
+    "blockingModels": [
+      "AnimeGANv2 Paprika",
+      "Tag2Pix"
+    ],
+    "reviewModels": [
+      "AnimeGAN Face Paint v2"
+    ]
+  },
+  "vipsResidues": {
+    "scope": "current build dist; all filenames checked by removed binary sizes and SHA256, plus external wasm-vips manifest paths",
+    "files": 20221,
+    "wasmFiles": 22,
+    "removedBinaryDigests": [
+      {
+        "path": "node_modules/wasm-vips/lib/vips-heif.wasm",
+        "bytes": 3802681,
+        "sha256": "f8f94224977c9de22118274e09adc4d4a4e6dd81a55e261406d69d7fd3021667"
+      },
+      {
+        "path": "node_modules/wasm-vips/lib/vips-jxl.wasm",
+        "bytes": 2224543,
+        "sha256": "ffdd01c8dbd6a8fc616f1a023cbf2b526d12df770f5adca96e44cdf8c20c8afe"
+      },
+      {
+        "path": "node_modules/wasm-vips/lib/vips-resvg.wasm",
+        "bytes": 1176530,
+        "sha256": "9c7c1c78260240c454cce7ff875dc8026985c433f27ea90e849f02d50cea8917"
+      },
+      {
+        "path": "node_modules/wasm-vips/lib/vips.wasm",
+        "bytes": 5154052,
+        "sha256": "36c25e290570757f911b45d67947e8262b01261028db438dadc09990ad978ff6"
+      }
+    ],
+    "sameSizeCandidatesChecked": [],
+    "removedBinaryMatches": [],
+    "externalVipsManifestMatches": [],
+    "nativeRuntimeEntries": [
+      {
+        "key": "src/domains/creator/export/studio-native-resize-runtime.ts",
+        "file": "assets/studio-native-resize-runtime-CcqsUgQn.js"
+      }
+    ],
+    "manifestSha256": "1f15ed4f6efce8fde369acf29cbc0d8d19deacb8ba48b3694cc573b5da925820"
+  },
+  "builtArtifacts": {
+    "dist/.vite/manifest.json": {
+      "bytes": 1362522,
+      "mtimeNs": 1793886337434752935,
+      "sha256": "1f15ed4f6efce8fde369acf29cbc0d8d19deacb8ba48b3694cc573b5da925820"
+    },
+    "dist/index.html": {
+      "bytes": 14816,
+      "mtimeNs": 1793886337434752935,
+      "sha256": "dd0bb84ec0481c79eaeedc9681b32c73aeb6cabb827f99cd3fde8d082f5dade7"
+    },
+    "dist/legal/THIRD_PARTY_NOTICES.generated.md": {
+      "bytes": 1071616,
+      "mtimeNs": 1793886341332547281,
+      "sha256": "23b0cae45cad00a029755f06f1aef34671fe7aba2b01b88d25a59e10f9707154"
+    }
+  },
+  "failed": [
+    {
+      "check": "quality:imports",
+      "exit": 1,
+      "reason": "Unresolved imports (1): /fixture.js scripts/verify-latent-pigment-browser.mjs:176:26",
+      "sourceFixed": false
+    },
+    {
+      "check": "native-browser-orchestration",
+      "exit": 1,
+      "reason": "cleanup wrapper wrongly required server exit 0 after intentional SIGTERM; actual probe exit 0, server exit 143, independent cleanup review exit 0",
+      "originalFailurePreserved": true,
+      "assertionsChanged": false
+    }
+  ],
+  "expectedPolicyBlock": [
+    {
+      "check": "restricted-models",
+      "exit": 1,
+      "blocking": 2,
+      "review": 1
+    }
+  ],
+  "unrun": [
+    "Full Studio UI/E2E and fresh runtime/CWV measurements",
+    "Nightly full-scope typed identifier coverage; existing CI scoped gate ran instead",
+    "Remaining remote CI jobs and merge queue; owned by parent/coordinator"
+  ],
+  "sourceEditsByValidator": false,
+  "publishOrRefChangesByValidator": false,
+  "mainMergeOrDeployByValidator": false
+}

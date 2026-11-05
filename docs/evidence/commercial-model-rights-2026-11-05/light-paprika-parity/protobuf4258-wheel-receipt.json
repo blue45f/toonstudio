@@ -1,0 +1,9 @@
+{
+  "source": "https://pypi.org/pypi/protobuf/4.25.8/json",
+  "filename": "protobuf-4.25.8-cp37-abi3-manylinux2014_x86_64.whl",
+  "url": "https://files.pythonhosted.org/packages/d6/c6/c9deaa6e789b6fc41b88ccbdfe7a42d2b82663248b715f55aa77fbc00724/protobuf-4.25.8-cp37-abi3-manylinux2014_x86_64.whl",
+  "bytes": 294924,
+  "sha256": "83e6e54e93d2b696a92cad6e6efc924f3850f82b52e1563778dfab8b355101b0",
+  "reason": "onnxruntime 1.30.0 requires protobuf>=4.25.8; old venv protobuf3.20.3 is preserved",
+  "target": "/tmp/toonstudio-light-paprika-parity-followup/ort130"
+}

@@ -1,0 +1,1043 @@
+{
+  "schema": 1,
+  "at": "2026-11-05T12:01:59.139Z",
+  "candidateHead": "7a118fc4ea1c1dadd96090351a35580b0e93d3d1",
+  "node": "v24.19.0",
+  "platform": "linux/x64",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "clock": "node:perf_hooks performance.now, one process, alternating provider order",
+  "warmupRunsPerProvider": 3,
+  "measuredRunsPerProvider": 5,
+  "timerIncludes": "same downscaleForExport facade; newFromMemory, resize, writeToMemory, defensive output copy, delete; initialization excluded",
+  "nativeInitMs": 0.03178800000000592,
+  "formerInitMs": 80.20728199999999,
+  "packageVersion": "0.0.19",
+  "versions": {
+    "aom": "3.15.1",
+    "brotli": "1.2.0",
+    "cgif": "0.5.4",
+    "emscripten": "6.0.10",
+    "exif": "0.6.26",
+    "expat": "2.8.5",
+    "ffi": "3.8.0",
+    "glib": "2.90.0",
+    "heif": "1.23.5",
+    "highway": "1.4.0",
+    "imagequant": "2.4.1",
+    "jxl": "0.12.0",
+    "lcms": "2.19.1",
+    "mozjpeg": "0826579",
+    "png": "1.6.58",
+    "resvg": "0.48.1",
+    "tiff": "4.7.2",
+    "uhdr": "2.0.2",
+    "vips": "8.18.7",
+    "webp": "1.6.0",
+    "zlib-ng": "2.3.3"
+  },
+  "sources": [
+    {
+      "path": "/workspace/scratch/toonstudio-commercial-main-validation/apps/web/src/domains/creator/export/studio-vips-export.ts",
+      "sha256": "eff8927020147c22e6f15ff1461ebb5994e50efe66e4c7ebaf6547bf44f80811"
+    },
+    {
+      "path": "/workspace/scratch/toonstudio-commercial-main-validation/apps/web/src/domains/creator/export/studio-native-lanczos.ts",
+      "sha256": "dbd395c52642f0f684fd3d63e6b150dfb9e770430fc52159df000ab897594b96"
+    },
+    {
+      "path": "/workspace/scratch/toonstudio-commercial-main-validation/apps/web/src/domains/creator/export/studio-native-resize-runtime.ts",
+      "sha256": "8f67fb6614737e141d91886b197187cbc1a0d61d265aa01f62b553c877d0e36d"
+    },
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/lib/vips-node.mjs",
+      "sha256": "ec5a7268a7e067e514a0e03f989de6456611e2826471fbe3d31a668438b0b932"
+    },
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/lib/vips.wasm",
+      "sha256": "36c25e290570757f911b45d67947e8262b01261028db438dadc09990ad978ff6"
+    }
+  ],
+  "memoryAfterInit": {
+    "rss": 108957696,
+    "heapTotal": 40189952,
+    "heapUsed": 20162824,
+    "external": 15337787,
+    "arrayBuffers": 12775710,
+    "maxRssKiB": 107612,
+    "cgroupCurrentBytes": 8213671936
+  },
+  "cases": [
+    {
+      "id": "gradient-2048",
+      "kind": "gradient",
+      "w": 2048,
+      "h": 2048,
+      "tw": 512,
+      "th": 512,
+      "inputSha256": "87fc54e168882748110351cb93f14b7389d447f8d6872bfd232e6ee10107ecd9",
+      "inputUnchanged": true,
+      "timings": {
+        "native": {
+          "samplesMs": [
+            85.85632299999997,
+            73.44861500000002,
+            64.31945499999983,
+            80.44494000000009,
+            73.25473499999998
+          ],
+          "minMs": 64.31945499999983,
+          "medianMs": 73.44861500000002,
+          "maxMs": 85.85632299999997
+        },
+        "formerWasmVips": {
+          "samplesMs": [
+            29.595278000000008,
+            22.509424999999965,
+            26.131681999999955,
+            23.61927300000002,
+            24.348081999999977
+          ],
+          "minMs": 22.509424999999965,
+          "medianMs": 24.348081999999977,
+          "maxMs": 29.595278000000008
+        }
+      },
+      "nativeOverFormerMedianRatio": 3.0166078379397643,
+      "deterministic": {
+        "native": true,
+        "formerWasmVips": true
+      },
+      "outputHashes": {
+        "native": "34cc70e557b40168736eb4f4f84907bd78cf49dafa55feff4c20e8f0e5886d5d",
+        "formerWasmVips": "6e30ac619b424c2768e804afaf71c4ee3733c8b0ea6b3c5e3a27a30cf532429e"
+      },
+      "alpha": {
+        "formerWasmVips": {
+          "min": 255,
+          "max": 255,
+          "zeroPixels": 0,
+          "fractionalPixels": 0,
+          "zeroAlphaWithHiddenRgbPixels": 0
+        },
+        "native": {
+          "min": 255,
+          "max": 255,
+          "zeroPixels": 0,
+          "fractionalPixels": 0,
+          "zeroAlphaWithHiddenRgbPixels": 0
+        }
+      },
+      "byteOutputFinite": true,
+      "outputBuffersSeparateFromInput": true,
+      "exactDimensions": true,
+      "metrics": {
+        "rawRgba": {
+          "channels": [
+            "R",
+            "G",
+            "B",
+            "A"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "maeByChannel": [
+            0.022838592529296875,
+            0.01171875,
+            0.18375778198242188,
+            0
+          ],
+          "mae": 0.05457878112792969,
+          "mse": 0.05457878112792969,
+          "psnrDb": 60.760565282391454,
+          "luminanceSsim8x8": 0.9998865124518058
+        },
+        "compositeBlack": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            1,
+            1,
+            1
+          ],
+          "maeByChannel": [
+            0.022838592529296875,
+            0.01171875,
+            0.18375778198242188
+          ],
+          "mae": 0.07277170817057292,
+          "mse": 0.07277170817057292,
+          "psnrDb": 59.511177916308455,
+          "luminanceSsim8x8": 0.9998865124518058
+        },
+        "compositeWhite": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            1,
+            1,
+            1
+          ],
+          "maeByChannel": [
+            0.022838592529296875,
+            0.01171875,
+            0.18375778198242188
+          ],
+          "mae": 0.07277170817057292,
+          "mse": 0.07277170817057292,
+          "psnrDb": 59.511177916308455,
+          "luminanceSsim8x8": 0.9998865124518058
+        }
+      },
+      "memoryBefore": {
+        "rss": 135745536,
+        "heapTotal": 51314688,
+        "heapUsed": 28943936,
+        "external": 21583324,
+        "arrayBuffers": 19021207,
+        "maxRssKiB": 132564,
+        "cgroupCurrentBytes": 8240656384
+      },
+      "memoryAfter": {
+        "rss": 349765632,
+        "heapTotal": 50790400,
+        "heapUsed": 24056600,
+        "external": 76152756,
+        "arrayBuffers": 21118359,
+        "maxRssKiB": 341568,
+        "cgroupCurrentBytes": 8455163904
+      }
+    },
+    {
+      "id": "checker13-2048",
+      "kind": "checker",
+      "w": 2048,
+      "h": 2048,
+      "tw": 512,
+      "th": 512,
+      "inputSha256": "41e60f0643bea0e40ab5a79c79e53694db829dbdcf9bfbbb5598ea20de7658a8",
+      "inputUnchanged": true,
+      "timings": {
+        "native": {
+          "samplesMs": [
+            70.48334900000009,
+            69.62299600000006,
+            68.78212499999972,
+            76.73542899999984,
+            64.23731399999997
+          ],
+          "minMs": 64.23731399999997,
+          "medianMs": 69.62299600000006,
+          "maxMs": 76.73542899999984
+        },
+        "formerWasmVips": {
+          "samplesMs": [
+            21.518561000000318,
+            21.31414300000006,
+            21.96350900000016,
+            21.35709799999995,
+            21.49929199999997
+          ],
+          "minMs": 21.31414300000006,
+          "medianMs": 21.49929199999997,
+          "maxMs": 21.96350900000016
+        }
+      },
+      "nativeOverFormerMedianRatio": 3.2383855245093724,
+      "deterministic": {
+        "native": true,
+        "formerWasmVips": true
+      },
+      "outputHashes": {
+        "native": "892ebefa377c4423c3c2e5712cef890d982137f3ed4e7be0ce340aaeea4fcec1",
+        "formerWasmVips": "94aa1610886bc649a8ab2668c0d0d1793bf9aacd31253f971d8b16f8e5ba0b72"
+      },
+      "alpha": {
+        "formerWasmVips": {
+          "min": 255,
+          "max": 255,
+          "zeroPixels": 0,
+          "fractionalPixels": 0,
+          "zeroAlphaWithHiddenRgbPixels": 0
+        },
+        "native": {
+          "min": 255,
+          "max": 255,
+          "zeroPixels": 0,
+          "fractionalPixels": 0,
+          "zeroAlphaWithHiddenRgbPixels": 0
+        }
+      },
+      "byteOutputFinite": true,
+      "outputBuffersSeparateFromInput": true,
+      "exactDimensions": true,
+      "metrics": {
+        "rawRgba": {
+          "channels": [
+            "R",
+            "G",
+            "B",
+            "A"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            14,
+            14,
+            14,
+            0
+          ],
+          "maeByChannel": [
+            1.0389442443847656,
+            1.0389442443847656,
+            1.0389442443847656,
+            0
+          ],
+          "mae": 0.7792081832885742,
+          "mse": 6.02292537689209,
+          "psnrDb": 40.332728785050264,
+          "luminanceSsim8x8": 0.9995881201922341
+        },
+        "compositeBlack": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            14,
+            14,
+            14
+          ],
+          "maeByChannel": [
+            1.0389442443847656,
+            1.0389442443847656,
+            1.0389442443847656
+          ],
+          "mae": 1.0389442443847656,
+          "mse": 8.030567169189453,
+          "psnrDb": 39.083341418967265,
+          "luminanceSsim8x8": 0.9995881201922341
+        },
+        "compositeWhite": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            14,
+            14,
+            14
+          ],
+          "maeByChannel": [
+            1.0389442443847656,
+            1.0389442443847656,
+            1.0389442443847656
+          ],
+          "mae": 1.0389442443847656,
+          "mse": 8.030567169189453,
+          "psnrDb": 39.083341418967265,
+          "luminanceSsim8x8": 0.9995881201922341
+        }
+      },
+      "memoryBefore": {
+        "rss": 366542848,
+        "heapTotal": 50790400,
+        "heapUsed": 13660520,
+        "external": 40453026,
+        "arrayBuffers": 37895575,
+        "maxRssKiB": 357952,
+        "cgroupCurrentBytes": 8474038272
+      },
+      "memoryAfter": {
+        "rss": 376659968,
+        "heapTotal": 50790400,
+        "heapUsed": 18636664,
+        "external": 73154472,
+        "arrayBuffers": 70597021,
+        "maxRssKiB": 367832,
+        "cgroupCurrentBytes": 8483790848
+      }
+    },
+    {
+      "id": "transparent-edge-2048",
+      "kind": "transparent",
+      "w": 2048,
+      "h": 2048,
+      "tw": 512,
+      "th": 512,
+      "inputSha256": "ab798b7e7ceae8332558e81551ef293fc520be136721869e5532deb987fe83d6",
+      "inputUnchanged": true,
+      "timings": {
+        "native": {
+          "samplesMs": [
+            63.597753999999895,
+            66.7394949999998,
+            60.7067790000001,
+            66.33130099999971,
+            66.9450139999999
+          ],
+          "minMs": 60.7067790000001,
+          "medianMs": 66.33130099999971,
+          "maxMs": 66.9450139999999
+        },
+        "formerWasmVips": {
+          "samplesMs": [
+            21.968065999999908,
+            23.34246200000007,
+            21.52457000000004,
+            21.38458000000037,
+            21.48621200000025
+          ],
+          "minMs": 21.38458000000037,
+          "medianMs": 21.52457000000004,
+          "maxMs": 23.34246200000007
+        }
+      },
+      "nativeOverFormerMedianRatio": 3.0816551039114644,
+      "deterministic": {
+        "native": true,
+        "formerWasmVips": true
+      },
+      "outputHashes": {
+        "native": "819d6781c5cc29c4582ffe9a4a88fb0510a1a28ca586d4c14eae96c5542fe096",
+        "formerWasmVips": "912d608875ae601c22f399f2913fe66a6e8546b80b98aaeeba580d430712bf69"
+      },
+      "alpha": {
+        "formerWasmVips": {
+          "min": 0,
+          "max": 255,
+          "zeroPixels": 130048,
+          "fractionalPixels": 2048,
+          "zeroAlphaWithHiddenRgbPixels": 130048,
+          "greenOnBlackMax": 13.231372549019607
+        },
+        "native": {
+          "min": 0,
+          "max": 255,
+          "zeroPixels": 130048,
+          "fractionalPixels": 2048,
+          "zeroAlphaWithHiddenRgbPixels": 0,
+          "greenOnBlackMax": 0
+        }
+      },
+      "byteOutputFinite": true,
+      "outputBuffersSeparateFromInput": true,
+      "exactDimensions": true,
+      "metrics": {
+        "rawRgba": {
+          "channels": [
+            "R",
+            "G",
+            "B",
+            "A"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            254,
+            255,
+            0,
+            0
+          ],
+          "maeByChannel": [
+            0.99609375,
+            127.5,
+            0,
+            0
+          ],
+          "mae": 32.1240234375,
+          "mse": 8184.5400390625,
+          "psnrDb": 9.000860832421287,
+          "luminanceSsim8x8": 0.49871929652240193
+        },
+        "compositeBlack": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            13.231372549019607,
+            13.231372549019607,
+            0
+          ],
+          "maeByChannel": [
+            0.05557598039215617,
+            0.05557598039215618,
+            0
+          ],
+          "mae": 0.037050653594770784,
+          "mse": 0.4584932077406058,
+          "psnrDb": 51.51747454586242,
+          "luminanceSsim8x8": 0.9963107347276393
+        },
+        "compositeWhite": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            13.231372549019596,
+            13.231372549019607,
+            0
+          ],
+          "maeByChannel": [
+            0.05557598039215929,
+            0.05557598039215618,
+            0
+          ],
+          "mae": 0.037050653594771825,
+          "mse": 0.4584932077406057,
+          "psnrDb": 51.51747454586242,
+          "luminanceSsim8x8": 0.9982816718619464
+        },
+        "edgeBlack": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 8192,
+          "maxAbsByChannel": [
+            13.231372549019607,
+            13.231372549019607,
+            0
+          ],
+          "maeByChannel": [
+            1.7784313725489975,
+            1.7784313725489977,
+            0
+          ],
+          "mae": 1.185620915032665,
+          "mse": 14.671782647699386,
+          "psnrDb": 36.46597476266336,
+          "luminanceSsim8x8": 0.8819435112847904
+        },
+        "edgeWhite": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 8192,
+          "maxAbsByChannel": [
+            13.231372549019596,
+            13.231372549019607,
+            0
+          ],
+          "maeByChannel": [
+            1.7784313725490972,
+            1.7784313725489977,
+            0
+          ],
+          "mae": 1.1856209150326984,
+          "mse": 14.671782647699382,
+          "psnrDb": 36.46597476266336,
+          "luminanceSsim8x8": 0.9450134995825812
+        },
+        "centerRowSamples": [
+          {
+            "x": 251,
+            "native": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "former": [
+              255,
+              0,
+              0,
+              255
+            ]
+          },
+          {
+            "x": 252,
+            "native": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "former": [
+              255,
+              0,
+              0,
+              255
+            ]
+          },
+          {
+            "x": 253,
+            "native": [
+              255,
+              0,
+              0,
+              254
+            ],
+            "former": [
+              254,
+              1,
+              0,
+              254
+            ]
+          },
+          {
+            "x": 254,
+            "native": [
+              255,
+              0,
+              0,
+              255
+            ],
+            "former": [
+              255,
+              0,
+              0,
+              255
+            ]
+          },
+          {
+            "x": 255,
+            "native": [
+              255,
+              0,
+              0,
+              241
+            ],
+            "former": [
+              241,
+              14,
+              0,
+              241
+            ]
+          },
+          {
+            "x": 256,
+            "native": [
+              255,
+              0,
+              0,
+              14
+            ],
+            "former": [
+              14,
+              241,
+              0,
+              14
+            ]
+          },
+          {
+            "x": 257,
+            "native": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "former": [
+              0,
+              255,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 258,
+            "native": [
+              255,
+              0,
+              0,
+              1
+            ],
+            "former": [
+              1,
+              254,
+              0,
+              1
+            ]
+          },
+          {
+            "x": 259,
+            "native": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "former": [
+              0,
+              255,
+              0,
+              0
+            ]
+          },
+          {
+            "x": 260,
+            "native": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "former": [
+              0,
+              255,
+              0,
+              0
+            ]
+          }
+        ]
+      },
+      "memoryBefore": {
+        "rss": 376659968,
+        "heapTotal": 50266112,
+        "heapUsed": 14120744,
+        "external": 40453026,
+        "arrayBuffers": 37895575,
+        "maxRssKiB": 367832,
+        "cgroupCurrentBytes": 8486354944
+      },
+      "memoryAfter": {
+        "rss": 374751232,
+        "heapTotal": 50528256,
+        "heapUsed": 24638112,
+        "external": 57720744,
+        "arrayBuffers": 22166935,
+        "maxRssKiB": 367832,
+        "cgroupCurrentBytes": 8484175872
+      }
+    },
+    {
+      "id": "usgs-2048",
+      "kind": "usgs",
+      "w": 2048,
+      "h": 2048,
+      "tw": 512,
+      "th": 512,
+      "inputSha256": "0f42ca1b984777467a298406b716034cf62d079a7d3001f0791f3b0359f933d0",
+      "inputUnchanged": true,
+      "timings": {
+        "native": {
+          "samplesMs": [
+            86.02807500000017,
+            79.83950399999958,
+            82.46292600000015,
+            76.74152700000013,
+            83.89868399999978
+          ],
+          "minMs": 76.74152700000013,
+          "medianMs": 82.46292600000015,
+          "maxMs": 86.02807500000017
+        },
+        "formerWasmVips": {
+          "samplesMs": [
+            21.597921000000042,
+            21.07362200000034,
+            21.391029999999773,
+            21.21748800000023,
+            21.293533000000025
+          ],
+          "minMs": 21.07362200000034,
+          "medianMs": 21.293533000000025,
+          "maxMs": 21.597921000000042
+        }
+      },
+      "nativeOverFormerMedianRatio": 3.8726746754519343,
+      "deterministic": {
+        "native": true,
+        "formerWasmVips": true
+      },
+      "outputHashes": {
+        "native": "2d56b03c77719c78b1ef1320bededadf5b0aba4dae4c3cd1072ddf8b4565abc7",
+        "formerWasmVips": "8c51c4d83e2b1c29cae9f6dbbd79648635c9ea1cbc3f3aa5bcd346b33c95f5d4"
+      },
+      "alpha": {
+        "formerWasmVips": {
+          "min": 255,
+          "max": 255,
+          "zeroPixels": 0,
+          "fractionalPixels": 0,
+          "zeroAlphaWithHiddenRgbPixels": 0
+        },
+        "native": {
+          "min": 255,
+          "max": 255,
+          "zeroPixels": 0,
+          "fractionalPixels": 0,
+          "zeroAlphaWithHiddenRgbPixels": 0
+        }
+      },
+      "byteOutputFinite": true,
+      "outputBuffersSeparateFromInput": true,
+      "exactDimensions": true,
+      "metrics": {
+        "rawRgba": {
+          "channels": [
+            "R",
+            "G",
+            "B",
+            "A"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            4,
+            3,
+            4,
+            0
+          ],
+          "maeByChannel": [
+            0.3269538879394531,
+            0.3238945007324219,
+            0.3237037658691406,
+            0
+          ],
+          "mae": 0.2436380386352539,
+          "mse": 0.2449941635131836,
+          "psnrDb": 54.2392462256138,
+          "luminanceSsim8x8": 0.9994017043574162
+        },
+        "compositeBlack": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            4,
+            3,
+            4
+          ],
+          "maeByChannel": [
+            0.3269538879394531,
+            0.3238945007324219,
+            0.3237037658691406
+          ],
+          "mae": 0.32485071818033856,
+          "mse": 0.3266588846842448,
+          "psnrDb": 52.9898588595308,
+          "luminanceSsim8x8": 0.9994017043574162
+        },
+        "compositeWhite": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 262144,
+          "maxAbsByChannel": [
+            4,
+            3,
+            4
+          ],
+          "maeByChannel": [
+            0.3269538879394531,
+            0.3238945007324219,
+            0.3237037658691406
+          ],
+          "mae": 0.32485071818033856,
+          "mse": 0.3266588846842448,
+          "psnrDb": 52.9898588595308,
+          "luminanceSsim8x8": 0.9994017043574162
+        }
+      },
+      "memoryBefore": {
+        "rss": 407257088,
+        "heapTotal": 50528256,
+        "heapUsed": 13095864,
+        "external": 57230242,
+        "arrayBuffers": 54672791,
+        "maxRssKiB": 397712,
+        "cgroupCurrentBytes": 8519028736
+      },
+      "memoryAfter": {
+        "rss": 407388160,
+        "heapTotal": 50266112,
+        "heapUsed": 15167224,
+        "external": 49988008,
+        "arrayBuffers": 47430557,
+        "maxRssKiB": 397840,
+        "cgroupCurrentBytes": 8519028736
+      }
+    },
+    {
+      "id": "gradient-prime-2053x1021",
+      "kind": "gradient",
+      "w": 2053,
+      "h": 1021,
+      "tw": 513,
+      "th": 255,
+      "inputSha256": "ccd95df638bab6bd894b06c83711b71617c92204f365ba33d9051a1592ffea44",
+      "inputUnchanged": true,
+      "timings": {
+        "native": {
+          "samplesMs": [
+            61.320090000000164,
+            60.78735999999935,
+            62.96422100000018,
+            60.69322800000009,
+            60.902312000000165
+          ],
+          "minMs": 60.69322800000009,
+          "medianMs": 60.902312000000165,
+          "maxMs": 62.96422100000018
+        },
+        "formerWasmVips": {
+          "samplesMs": [
+            10.816525999999612,
+            10.542303999999604,
+            11.005599999999504,
+            13.219368000000031,
+            11.060023000000001
+          ],
+          "minMs": 10.542303999999604,
+          "medianMs": 11.005599999999504,
+          "maxMs": 13.219368000000031
+        }
+      },
+      "nativeOverFormerMedianRatio": 5.5337566329871075,
+      "deterministic": {
+        "native": true,
+        "formerWasmVips": true
+      },
+      "outputHashes": {
+        "native": "47841593e39d39f1d0261893c7a5fa9676c0348ee7e3096781c3804fbfb4ddb4",
+        "formerWasmVips": "8feb6868a8f0f429243d2e0200f7568086fa74d5cf7bc57235d909e9d1e9ecc9"
+      },
+      "alpha": {
+        "formerWasmVips": {
+          "min": 255,
+          "max": 255,
+          "zeroPixels": 0,
+          "fractionalPixels": 0,
+          "zeroAlphaWithHiddenRgbPixels": 0
+        },
+        "native": {
+          "min": 255,
+          "max": 255,
+          "zeroPixels": 0,
+          "fractionalPixels": 0,
+          "zeroAlphaWithHiddenRgbPixels": 0
+        }
+      },
+      "byteOutputFinite": true,
+      "outputBuffersSeparateFromInput": true,
+      "exactDimensions": true,
+      "metrics": {
+        "rawRgba": {
+          "channels": [
+            "R",
+            "G",
+            "B",
+            "A"
+          ],
+          "pixels": 130815,
+          "maxAbsByChannel": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "maeByChannel": [
+            0.12280701754385964,
+            0.043137254901960784,
+            0.10803042464549173,
+            0
+          ],
+          "mae": 0.06849367427282804,
+          "mse": 0.06849367427282804,
+          "psnrDb": 59.77429896751556,
+          "luminanceSsim8x8": 0.9996900624937198
+        },
+        "compositeBlack": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 130815,
+          "maxAbsByChannel": [
+            1,
+            1,
+            1
+          ],
+          "maeByChannel": [
+            0.12280701754385964,
+            0.043137254901960784,
+            0.10803042464549173
+          ],
+          "mae": 0.09132489903043739,
+          "mse": 0.09132489903043739,
+          "psnrDb": 58.524911601432564,
+          "luminanceSsim8x8": 0.9996900624937198
+        },
+        "compositeWhite": {
+          "channels": [
+            "R",
+            "G",
+            "B"
+          ],
+          "pixels": 130815,
+          "maxAbsByChannel": [
+            1,
+            1,
+            1
+          ],
+          "maeByChannel": [
+            0.12280701754385964,
+            0.043137254901960784,
+            0.10803042464549173
+          ],
+          "mae": 0.09132489903043739,
+          "mse": 0.09132489903043739,
+          "psnrDb": 58.524911601432564,
+          "luminanceSsim8x8": 0.9996900624937198
+        }
+      },
+      "memoryBefore": {
+        "rss": 407388160,
+        "heapTotal": 50266112,
+        "heapUsed": 13710656,
+        "external": 32060262,
+        "arrayBuffers": 29502811,
+        "maxRssKiB": 397840,
+        "cgroupCurrentBytes": 8521105408
+      },
+      "memoryAfter": {
+        "rss": 422199296,
+        "heapTotal": 50266112,
+        "heapUsed": 14377568,
+        "external": 43847436,
+        "arrayBuffers": 12723539,
+        "maxRssKiB": 412304,
+        "cgroupCurrentBytes": 8535769088
+      }
+    }
+  ],
+  "memoryFinal": {
+    "rss": 422199296,
+    "heapTotal": 50266112,
+    "heapUsed": 14472880,
+    "external": 43847436,
+    "arrayBuffers": 12723539,
+    "maxRssKiB": 412304,
+    "cgroupCurrentBytes": 8536793088
+  }
+}

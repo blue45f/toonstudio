@@ -1,0 +1,61 @@
+{
+  "extends": "/workspace/toonstudio/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false,
+    "typeRoots": [
+      "/workspace/toonstudio/node_modules/@types"
+    ],
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "/workspace/toonstudio/apps/web/src/domains/creator/export/studio-export-presets.ts",
+    "/workspace/toonstudio/apps/web/src/domains/creator/export/studio-export-presets.vips-route.test.ts",
+    "/workspace/toonstudio/apps/web/src/domains/creator/export/studio-native-lanczos.test.ts",
+    "/workspace/toonstudio/apps/web/src/domains/creator/export/studio-native-lanczos.ts",
+    "/workspace/toonstudio/apps/web/src/domains/creator/export/studio-native-resize-runtime.ts",
+    "/workspace/toonstudio/apps/web/src/domains/creator/export/studio-vips-export.test.ts",
+    "/workspace/toonstudio/apps/web/src/domains/creator/export/studio-vips-export.ts",
+    "/workspace/toonstudio/apps/web/src/domains/creator/status-i18n/studio-frozen6-status-i18n.ts",
+    "/workspace/toonstudio/apps/web/src/domains/creator/studio-onnx-animegan.ts",
+    "/workspace/toonstudio/apps/web/src/domains/creator/studio-onnx-tag2pix.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/EngineeringLicenseInventory.tsx",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-atlas-platform-ops-safety.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-library-guide-areas-b-build.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-library-guide-overview.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-license-inventory.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-license-model-assets.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-map-open-source.ts",
+    "/workspace/toonstudio/apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts",
+    "/workspace/toonstudio/apps/web/src/domains/marketing/ProductTourRemotionComposition.test.ts",
+    "/workspace/toonstudio/apps/web/src/domains/marketing/product-tour-remotion-timeline.ts",
+    "/workspace/toonstudio/packages/product-tour-film/src/ProductTourFilm.tsx",
+    "/workspace/toonstudio/packages/product-tour-film/src/film-animation.test.ts",
+    "/workspace/toonstudio/packages/product-tour-film/src/film-animation.ts",
+    "/workspace/toonstudio/packages/studio-engine-registry/src/__tests__/effect-compiler.test.ts",
+    "/workspace/toonstudio/packages/studio-engine-registry/src/filter-providers.ts",
+    "/workspace/toonstudio/tools/media/brand-film/src/TechnologyStoryFilm.tsx",
+    "/workspace/toonstudio/tools/media/brand-film/src/ToonStudioFilm.tsx",
+    "/workspace/toonstudio/apps/web/src/shared/types/webgpu-flag-constants.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/bezier-js-shim.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/canvaskit-wasm-shim.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/canvaskit-wasm-url-shim.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/gltf-validator.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/mixbox.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/number-is-safe-integer.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/onnxruntime-web-assets.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/opencascade-js.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/opentype-js-shim.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/p5-brush-standalone.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/pigment-libraries.d.ts",
+    "/workspace/toonstudio/apps/web/src/shared/types/vendor/studio-engine-skia-shim.d.ts"
+  ],
+  "exclude": []
+}

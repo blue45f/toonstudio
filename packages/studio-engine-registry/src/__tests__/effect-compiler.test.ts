@@ -78,10 +78,10 @@ describe("effect graph compiler (§7.3)", () => {
     ).toThrow(/invalid effect graph/);
   });
 
-  it("vips descriptor passes the license gate only via the isolated mode", () => {
+  it("legacy provider id describes an independently authored bundle-allowed runtime", () => {
     const registry = filterRegistry();
     const vips = registry.get("wasm-vips-pipeline");
-    expect(vips?.licenseGate.mode).toBe("isolated");
+    expect(vips?.licenseGate.mode).toBe("bundle");
     expect(wasmVipsPipelineDescriptor.capabilities).not.toContain(
       "filter.phase.preview",
     );
@@ -168,8 +168,13 @@ describe("quality floor — 품질이 성능보다 우선 (§3.2 최소 통과 �
     const { ProviderBenchmarkRegistry } = await import("../benchmark-registry");
     const registry = filterRegistry();
     const benchmarks = new ProviderBenchmarkRegistry();
-    // canvaskit/opencv measured below floor; wasm-vips (also a gaussian-blur
-    // final provider) is unmeasured and therefore has no passing evidence.
+    // 실제 native export descriptor는 Gaussian을 제공하지 않는다.
+    // 미측정 후보를 조용히 선택하지 않는 계약은 명시적인 테스트 fixture로 유지한다.
+    registry.registerTestFixture({
+      ...wasmVipsPipelineDescriptor,
+      id: "unmeasured-gaussian-test",
+      capabilities: ["filter.op.gaussian-blur", "filter.phase.final"],
+    });
     benchmarks.record("canvaskit-imagefilter", { visualQuality: 0.3 });
     benchmarks.record("opencv-image-worker", { visualQuality: 0.2 });
     const graph: EffectGraphIR = {
