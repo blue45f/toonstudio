@@ -6,6 +6,23 @@ import type { StudioPublishPackageManifest } from "../../../apps/web/src/domains
 import type { Browser, Page } from "playwright";
 
 export interface LiveProof { synced: boolean; updateAcks: number; rejected: number }
+export interface SixPageRendererReceipt { status: string; backend: string | null; rgbaSha256: string | null; reason: string | null }
+
+/** UI 내보내기를 마친 뒤 선호 렌더러와 같은 픽셀인지 확인해 조용한 호환 경로 우회를 탐지한다. */
+export async function captureSixPageRendererReceipt(page: Page, source: unknown): Promise<SixPageRendererReceipt> {
+  return page.evaluate<SixPageRendererReceipt>(`(async () => {
+    const {captureStudioSkiaDocumentForExport: capture} = await import('/src/domains/creator/render/studio-skia-document-export.ts');
+    const result = await capture({page:${JSON.stringify(source)},masterElements:[],exportScale:2,transparent:false});
+    if (result.status !== 'captured') return {status:result.status,backend:null,rgbaSha256:null,reason:result.reason};
+    const context = result.canvas.getContext('2d');
+    if (!context) throw new Error('렌더러의 실제 픽셀을 읽지 못했습니다.');
+    const pixels = context.getImageData(0,0,result.canvas.width,result.canvas.height).data;
+    const hash = await crypto.subtle.digest('SHA-256',pixels.buffer);
+    return {status:result.status,backend:result.canvas.dataset.studioRasterExportBackend ?? null,
+      rgbaSha256:Array.from(new Uint8Array(hash),value=>value.toString(16).padStart(2,'0')).join(''),reason:null};
+  })()`);
+}
+
 export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, actor: Actor, workId: string, origin: string) {
   const context = await browser.newContext({ viewport: { width: 1600, height: 1100 }, locale: "ko-KR", serviceWorkers: "block" });
   await context.route("https://preview.invalid/**", async route => {
