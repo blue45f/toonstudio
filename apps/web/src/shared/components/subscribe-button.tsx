@@ -17,6 +17,7 @@ export function SubscribeButton({
   className?: string;
 }) {
   const hydrated = useHydrated();
+  const waitingForOwner = useApp((s) => s.userId === null && (s.libraryOwnerId !== null || s.libraryMergeOwnerId !== null));
   const subscribed = useApp((s) => s.subscriptions[titleId]);
   const toggle = useApp((s) => s.toggleSubscription);
   const celebrate = useCelebrate();
@@ -28,6 +29,7 @@ export function SubscribeButton({
     <button
       type="button"
       aria-pressed={on}
+      disabled={!hydrated || waitingForOwner}
       onClick={(e) => {
         const next = !on;
         toggle(titleId);
@@ -38,7 +40,7 @@ export function SubscribeButton({
         }
       }}
       className={cn(
-        "flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-medium transition-colors duration-150",
+        "disabled:cursor-wait disabled:opacity-60 flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-medium transition-colors duration-150",
         on
           ? "border-accent/50 bg-accent-soft text-accent"
           : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",

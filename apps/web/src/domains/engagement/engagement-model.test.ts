@@ -9,6 +9,7 @@ import {
   incrementGrowthMetric,
   notificationDateBucket,
   releaseNotificationForTitle,
+  notificationDisplayText,
   summarizeGrowthExperiments,
   zeroGrowthMetrics,
   zeroGrowthProjectSummary,
@@ -66,6 +67,25 @@ describe("engagement model", () => {
       useI18n.setState({ lang: previous });
     }
   });
+  it("저장한 예정 알림의 상태를 유지하면서 현재 언어로 표시한다", () => {
+    const previous = useI18n.getState().lang;
+    try {
+      useI18n.setState({ lang: "en" });
+      const notification = releaseNotificationForTitle(title(), new Date(2026, 8, 25));
+      if (!notification) throw new Error("예정 알림이 생성되지 않았습니다.");
+      const saved = { ...notification, readAt: "2026-09-25T08:01:00Z", archivedAt: "2026-09-25T08:02:00Z", snoozedUntil: "2099-01-01T00:00:00Z" };
+      const before = { ...saved };
+      useI18n.setState({ lang: "ko" });
+      expect(notificationDisplayText(saved)).toEqual({
+        title: "작품 하나 오늘 연재 예정",
+        body: "등록된 연재 요일 메타데이터 기준입니다. 새 회차 공개 여부는 제공 플랫폼에서 확인해 주세요.",
+      });
+      expect(saved).toEqual(before);
+      useI18n.setState({ lang: "en" });
+      expect(notificationDisplayText(saved).title).toBe(notification.title);
+    } finally { useI18n.setState({ lang: previous }); }
+  });
+
   it("creates deterministic release notifications only on the configured weekday", () => {
     // releaseNotificationForTitle는 로컬 시간 기준(getDay/localDateKey)이라
     // 고정 오프셋을 박으면 러너 시간대에 따라 같은 instant의 요일이 달라진다.

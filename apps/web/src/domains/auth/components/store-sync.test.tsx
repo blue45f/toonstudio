@@ -80,6 +80,68 @@ describe("StoreSync collection reconciliation", () => {
     vi.useRealTimers();
   });
 
+  it.each((["reads", "ratings", "reviews", "likedReviews"] as const).flatMap((slice) =>
+    [false, true].map((writeFinished) => ({ slice, writeFinished })),
+  ))("복귀 조회 중 변경한 $slice를 보호한다 (쓰기 선완료: $writeFinished)", async ({ slice, writeFinished }) => {
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    const snapshot = deferredResponse();
+    const write = deferredResponse();
+    const empty = { ratings: {}, reads: {}, subscriptions: {}, reviews: {}, likedReviews: {}, collections: [] };
+    let reads = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) !== "/api/me") return write.promise;
+      reads += 1;
+      return reads === 2 ? snapshot.promise : response(empty);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    useApp.setState({ libraryOwnerId: "owner-store-sync" });
+    render(<StoreSync />);
+    await waitFor(() => expect(useApp.getState().userId).toBe("owner-store-sync"));
+    await act(async () => { await Promise.resolve(); });
+    act(() => window.dispatchEvent(new Event("focus")));
+    await waitFor(() => expect(reads).toBe(2));
+    await act(async () => {
+      const store = useApp.getState();
+      if (slice === "reads") store.setRead("saved", "reading");
+      if (slice === "ratings") store.setRating("saved", 4);
+      if (slice === "reviews") store.upsertReview({
+        titleId: "saved", rating: 4, text: "새 리뷰", tags: [], spoiler: false, createdAt: "2026-11-05T00:00:00Z",
+      });
+      if (slice === "likedReviews") store.toggleLikeReview("saved");
+    });
+    const edited = useApp.getState()[slice];
+    if (writeFinished) await act(async () => { write.resolve(response({ ok: true })); });
+    await act(async () => { snapshot.resolve(response(empty)); });
+    expect(useApp.getState()[slice]).toEqual(edited);
+    if (!writeFinished) await act(async () => { write.resolve(response({ ok: true })); });
+  });
+
+  it("읽기 쓰기가 진행 중이면 복귀 조회를 기다렸다가 완료 후 재시도한다", async () => {
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    const write = deferredResponse();
+    let snapshots = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/me/read") return write.promise;
+      snapshots += 1;
+      return response({ ratings: {}, reads: snapshots === 1 ? {} : { saved: "reading" }, subscriptions: {}, reviews: {}, likedReviews: {}, collections: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    useApp.setState({ libraryOwnerId: "owner-store-sync" });
+    render(<StoreSync />);
+    await waitFor(() => expect(snapshots).toBe(1));
+    await act(async () => { await Promise.resolve(); });
+    vi.useFakeTimers();
+    await act(async () => {
+      useApp.getState().setRead("saved", "reading");
+      window.dispatchEvent(new Event("focus"));
+    });
+    expect(snapshots).toBe(1);
+    await act(async () => { write.resolve(response({ ok: true })); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
+    expect(snapshots).toBe(2);
+    expect(useApp.getState().reads).toEqual({ saved: "reading" });
+  });
+
   it("다른 기기의 구독 변경을 화면 복귀 시 교체하고 같은 복귀 이벤트를 합친다", async () => {
     let visibility: DocumentVisibilityState = "visible";
     vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);

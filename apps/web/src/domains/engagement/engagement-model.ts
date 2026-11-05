@@ -21,6 +21,7 @@ export interface EngagementNotification {
   readonly archivedAt: string | null;
   readonly snoozedUntil: string | null;
   readonly sourceKey: string;
+  readonly scheduledTitleName?: string;
 }
 
 export type ReadingMood =
@@ -345,6 +346,7 @@ export function releaseNotificationForTitle(
   const dateKey = localDateKey(now);
   return {
     id: `release:${dateKey}:${title.id}`,
+    scheduledTitleName: title.title,
     category: "release",
     title: engagementStatusText("engagement.status.release.scheduledTitle", { title: title.title }, "{title} 오늘 연재 예정"),
     body: engagementStatusText("engagement.status.release.scheduledBody", "등록된 연재 요일 메타데이터 기준입니다. 새 회차 공개 여부는 제공 플랫폼에서 확인해 주세요."),
@@ -354,6 +356,18 @@ export function releaseNotificationForTitle(
     archivedAt: null,
     snoozedUntil: null,
     sourceKey: `catalog-release:${title.id}:${dateKey}`,
+  };
+}
+
+/** 저장된 예정 알림은 표시 시 번역한다. 이전 버전의 한·영 문구도 보존해 지원한다. */
+export function notificationDisplayText(notification: EngagementNotification): Pick<EngagementNotification, "title" | "body"> {
+  if (notification.category !== "release" || !notification.sourceKey.startsWith("catalog-release:")) return notification;
+  const titleName = notification.scheduledTitleName
+    ?? (/^(.*)(?: is scheduled for today| 오늘 연재 예정)$/u.exec(notification.title)?.[1]);
+  if (titleName === undefined) return notification;
+  return {
+    title: engagementStatusText("engagement.status.release.scheduledTitle", { title: titleName }, "{title} 오늘 연재 예정"),
+    body: engagementStatusText("engagement.status.release.scheduledBody", "등록된 연재 요일 메타데이터 기준입니다. 새 회차 공개 여부는 제공 플랫폼에서 확인해 주세요."),
   };
 }
 
