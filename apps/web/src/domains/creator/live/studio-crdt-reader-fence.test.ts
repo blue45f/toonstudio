@@ -9,7 +9,7 @@ import { publishStudioCrdtSceneGraphDiff, publishStudioCrdtDrawGraphDiff } from 
 import { StudioMemoryBroadcastHub, StudioBroadcastChannelTransport } from "./studio-live-collaboration-transport";
 import { StudioCrdtLocalReaderFence } from "./studio-crdt-local-reader-fence";
 import { asStudioCrdtDocumentHost } from "./studio-crdt-document-host";
-import { applyStudioCrdtBg3dReaderUpdate, studioCrdtBg3dReaderMetadata, studioCrdtPeerSyncResponse, studioCrdtBg3dPublishedRequest } from "./studio-crdt-bg3d-reader-fence";
+import { applyStudioCrdtBg3dReaderUpdate, applyStudioCrdtBg3dSyncResponse, studioCrdtBg3dReaderMetadata, studioCrdtPeerSyncResponse, studioCrdtBg3dPublishedRequest } from "./studio-crdt-bg3d-reader-fence";
 import { createStudioCrdtLocalWireMessage, encodeStudioCrdtUpdate, parseStudioCrdtLocalWireMessage, STUDIO_CRDT_PROTOCOL_VERSION,
   type StudioCrdtTransportMessage } from "./studio-crdt-protocol";
 import type { StudioLiveRoom } from "./studio-live-collaboration-room";
@@ -132,6 +132,72 @@ describe("archive 없는 v7 보존 획 reader 경계", () => {
       expect(applyStudioCrdtBg3dReaderUpdate(receiver, parent, {}, "work-a", false,
         { isActive: () => true, apply: () => receiver.applyUpdate(parent) })).toBeNull();
       expect(receiver.getStroke("draw-a")?.payload).toMatchObject({ version: 1, strokeWidth: 7, shapeParams: { ordinaryValue: 7 } });
+    } finally { source.destroy(); receiver.destroy(); }
+  });
+  it("색상뿐인 pending도 검증해 받은 요구를 apply 중 재전파·현대 peer 전달·후속 입장에 유지한다", () => {
+    const source = new StudioCrdtDocument(), receiver = new StudioCrdtDocument(), forward = new StudioCrdtDocument(), old = new StudioCrdtDocument();
+    try {
+      const before = pages(true); publishStudioCrdtDrawGraphDiff(source, [], before); const vector = source.encodeStateVector();
+      const after = before.map((page) => ({ ...page, elements: page.elements.map((element) => ({ ...element, stroke: "#abcdef" })) }));
+      publishStudioCrdtDrawGraphDiff(source, before, after); const child = source.encodeStateAsUpdate(vector);
+      const metadata = studioCrdtBg3dReaderMetadata(source);
+      let duringApply: ReturnType<typeof studioCrdtBg3dReaderMetadata> | undefined;
+      expect(applyStudioCrdtBg3dReaderUpdate(receiver, child, metadata, "work-a", false, { isActive: () => true, apply: () => {
+        receiver.applyUpdate(child); duringApply = studioCrdtBg3dReaderMetadata(receiver);
+      } })).toBeNull();
+      expect(asStudioCrdtDocumentHost(receiver).doc.store.pendingStructs).not.toBeNull();
+      expect(duringApply?.requiredReaderCapabilities).toEqual([preserved]);
+      expect(studioCrdtBg3dReaderMetadata(receiver).requiredReaderCapabilities).toEqual([preserved]);
+      const request = { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-a", requestId: "color-sync", stateVector: "AA==", readerCapabilities: [CAP] };
+      expect(studioCrdtPeerSyncResponse({ document: receiver, request, workId: "work-a", transferId: "color", sequence: 1 })).toBeNull();
+      const response = studioCrdtPeerSyncResponse({ document: receiver, request: { ...request, readerCapabilities: [CAP, preserved] }, workId: "work-a", transferId: "color", sequence: 1 });
+      if (!response) throw new Error("현대 reader의 전달 응답이 없습니다.");
+      expect(applyStudioCrdtBg3dSyncResponse(forward, response, "work-a", false,
+        { isActive: () => true, apply: () => forward.applySyncResponse(response) })).toBeNull();
+      expect(studioCrdtBg3dReaderMetadata(forward).requiredReaderCapabilities).toEqual([preserved]);
+      asStudioCrdtDocumentHost(old).doc.getMap("metadata").set("normal", true); const oldUpdate = old.encodeStateAsUpdate();
+      expect(() => applyStudioCrdtBg3dReaderUpdate(receiver, oldUpdate, { readerCapabilities: [CAP] }, "work-a", false,
+        { isActive: () => true, apply: () => receiver.applyUpdate(oldUpdate) })).toThrow(/reader/);
+      expect(asStudioCrdtDocumentHost(receiver).doc.getMap("metadata").get("normal")).toBeUndefined();
+      expect(studioCrdtBg3dReaderMetadata(receiver).requiredReaderCapabilities).toEqual([preserved]);
+    } finally { source.destroy(); receiver.destroy(); forward.destroy(); old.destroy(); }
+  });
+  it("거절·실패·obsolete apply는 받은 요구를 문서에 남기지 않는다", () => {
+    const source = new StudioCrdtDocument(), receiver = new StudioCrdtDocument();
+    try {
+      const before = pages(true); publishStudioCrdtDrawGraphDiff(source, [], before); const vector = source.encodeStateVector();
+      publishStudioCrdtDrawGraphDiff(source, before, before.map((page) => ({ ...page, elements: page.elements.map((element) => ({ ...element, stroke: "#abcdef" })) })));
+      const child = source.encodeStateAsUpdate(vector), metadata = studioCrdtBg3dReaderMetadata(source);
+      expect(() => applyStudioCrdtBg3dReaderUpdate(receiver, child, { requiredReaderCapabilities: ["future-reader.v2"] }, "work-a", false,
+        { isActive: () => true, apply: () => receiver.applyUpdate(child) })).toThrow();
+      expect(studioCrdtBg3dReaderMetadata(receiver)).toEqual({});
+      expect(() => applyStudioCrdtBg3dReaderUpdate(receiver, child, metadata, "work-a", false,
+        { isActive: () => true, apply: () => { throw new Error("apply 실패 대조"); } })).toThrow("apply 실패 대조");
+      expect(studioCrdtBg3dReaderMetadata(receiver)).toEqual({});
+      let checks = 0; const apply = vi.fn(() => receiver.applyUpdate(child));
+      expect(applyStudioCrdtBg3dReaderUpdate(receiver, child, metadata, "work-a", false,
+        { isActive: () => ++checks === 1, apply })).toBeNull();
+      expect(apply).not.toHaveBeenCalled(); expect(studioCrdtBg3dReaderMetadata(receiver)).toEqual({});
+    } finally { source.destroy(); receiver.destroy(); }
+  });
+  it("과잉 요구로 받은 정상 v6 pending이 풀리면 기억을 해제해 old peer를 영구 차단하지 않는다", () => {
+    const source = new StudioCrdtDocument(), receiver = new StudioCrdtDocument();
+    try {
+      const before = pages(false).map((page) => ({ ...page, elements: page.elements.map((element) => ({ ...element,
+        brushEnginePrograms: { version: 1 as const, oil: { bristlePhysics: false, bristleLoadDynamics: false, impastoRelief: false } } })) }));
+      publishStudioCrdtDrawGraphDiff(source, [], before); const parent = source.encodeStateAsUpdate(), vector = source.encodeStateVector();
+      expect(source.getStroke("draw-a")?.payload.version).toBe(6);
+      publishStudioCrdtDrawGraphDiff(source, before, before.map((page) => ({ ...page, elements: page.elements.map((element) => ({ ...element, stroke: "#abcdef" })) })));
+      const child = source.encodeStateAsUpdate(vector);
+      expect(applyStudioCrdtBg3dReaderUpdate(receiver, child, { readerCapabilities: [CAP, preserved], requiredReaderCapabilities: [preserved] }, "work-a", false,
+        { isActive: () => true, apply: () => receiver.applyUpdate(child) })).toBeNull();
+      expect(studioCrdtBg3dReaderMetadata(receiver).requiredReaderCapabilities).toEqual([preserved]);
+      expect(applyStudioCrdtBg3dReaderUpdate(receiver, parent, {}, "work-a", true,
+        { isActive: () => true, apply: () => receiver.applyUpdate(parent) })).toBeNull();
+      expect(receiver.getStroke("draw-a")?.payload.version).toBe(6); expect(studioCrdtBg3dReaderMetadata(receiver)).toEqual({});
+      expect(studioCrdtPeerSyncResponse({ document: receiver,
+        request: { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-a", requestId: "v6-sync", stateVector: "AA==", readerCapabilities: [CAP] },
+        workId: "work-a", transferId: "v6", sequence: 1 })).not.toBeNull();
     } finally { source.destroy(); receiver.destroy(); }
   });
 });

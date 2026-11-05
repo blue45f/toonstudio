@@ -10,6 +10,16 @@ import { STUDIO_CRDT_READER_CAPABILITIES, assertStudioCrdtSupportedReaders, requ
 import type { StudioCrdtDocument } from "./studio-crdt-document";
 
 const ROOT = "studio-bg3d-bundle-revisions-v1";
+interface PendingReaderRequirement { readonly required: readonly string[]; readonly applying: boolean }
+const receivedPendingReaders = new WeakMap<Y.Doc, PendingReaderRequirement>();
+function pendingReaderRequirements(doc: Y.Doc): readonly string[] {
+  const remembered = receivedPendingReaders.get(doc);
+  if (doc.store.pendingStructs === null && doc.store.pendingDs === null) {
+    if (!remembered?.applying) receivedPendingReaders.delete(doc);
+    return [];
+  }
+  return remembered?.required ?? [];
+}
 function hasStudioPreservedDrawReaderCrdt(doc: Y.Doc): boolean {
   return hasPreservedReader(doc, (update) => Y.decodeUpdateV2(update).structs.flatMap((item) =>
     item instanceof Y.Item ? [{ key: item.parentSub, values: item.content.getContent() }] : []));
@@ -26,7 +36,8 @@ export function studioCrdtBg3dBundleArtifactScope(document: StudioCrdtDocument, 
 export function studioCrdtBg3dReaderMetadata(document: StudioCrdtDocument, scope?: () => "origin" | "work"): StudioCrdtReaderMetadata {
   const bg3d = registry(document).size > 0;
   const required: string[] = bg3d ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] : [];
-  if (hasStudioPreservedDrawReaderCrdt(asStudioCrdtDocumentHost(document).doc)) required.push(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY);
+  const doc = asStudioCrdtDocumentHost(document).doc;
+  if (hasStudioPreservedDrawReaderCrdt(doc) || pendingReaderRequirements(doc).includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY)) required.push(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY);
   return required.length ? { readerCapabilities: STUDIO_CRDT_READER_CAPABILITIES,
     requiredReaderCapabilities: required, ...(bg3d ? { artifactScope: scope?.() ?? "origin" } : {}) } : {};
 }
@@ -53,6 +64,33 @@ export function applyStudioCrdtBg3dReaderUpdate(document: StudioCrdtDocument, by
   assertStudioCrdtSupportedReaders(meta);
   const host = asStudioCrdtDocumentHost(document);
   const requiresPreserved = meta.requiredReaderCapabilities?.includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY) === true;
+  const assertPendingReaders = () => {
+    const required = pendingReaderRequirements(host.doc);
+    if (!authoritative && !supportsStudioCrdtReaders(meta, required)) throw new Error("획의 보존된 편집 정보를 지원하는 reader 동기화가 필요합니다.");
+  };
+  assertPendingReaders();
+  const applyWithReaderRequirements = () => {
+    if (!application.isActive()) return;
+    assertPendingReaders();
+    const retained = pendingReaderRequirements(host.doc), previous = receivedPendingReaders.get(host.doc);
+    const required = [...new Set([...retained, ...(requiresPreserved ? [STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY] : [])])];
+    if (!required.length) { application.apply(); return; }
+    const incoming = { required, applying: true };
+    // Yjs update 구독자가 apply 안에서 재전파해도 검증한 요구 메타를 잃지 않는다. 실패 시 원래 기억을 복원한다.
+    receivedPendingReaders.set(host.doc, incoming);
+    try {
+      application.apply();
+      if (receivedPendingReaders.get(host.doc) === incoming) {
+        if (host.doc.store.pendingStructs !== null || host.doc.store.pendingDs !== null) receivedPendingReaders.set(host.doc, { required, applying: false });
+        else receivedPendingReaders.delete(host.doc);
+      }
+    } catch (error) {
+      if (receivedPendingReaders.get(host.doc) === incoming) {
+        if (previous) receivedPendingReaders.set(host.doc, previous); else receivedPendingReaders.delete(host.doc);
+      }
+      throw error;
+    }
+  };
   const assertPreservedReader = (candidate: Y.Doc) => {
     if ((requiresPreserved || hasStudioPreservedDrawReaderCrdt(candidate))
       && (!requiresPreserved || !authoritative && !supportsStudioCrdtReaders(meta, meta.requiredReaderCapabilities ?? []))) {
@@ -73,7 +111,7 @@ export function applyStudioCrdtBg3dReaderUpdate(document: StudioCrdtDocument, by
   }
   const candidateFeature = registry(document).size > 0 || requiresStudioBg3dBundleReader(meta)
     || new TextDecoder().decode(bytes).includes(ROOT) || new TextDecoder().decode(bytes).includes("bg3dLtBundleReference");
-  if (!candidateFeature) { application.apply(); return null; }
+  if (!candidateFeature) { applyWithReaderRequirements(); return null; }
   if (!requiresStudioBg3dBundleReader(meta)) throw new Error("6패스 문서는 구 reader의 동기화와 변경을 받을 수 없습니다.");
   const scope = meta.artifactScope ?? (authoritative ? "work" : null);
   if (!scope || (scope === "origin" && authoritative)) throw new Error("6패스 본문의 기기·작품 권위 범위를 확인하지 못했습니다.");
@@ -106,7 +144,7 @@ export function applyStudioCrdtBg3dReaderUpdate(document: StudioCrdtDocument, by
           }
           if (!application.isActive()) return;
           if (revision !== before) continue;
-          application.apply();
+          applyWithReaderRequirements();
           return;
         } finally { shadow.destroy(); }
       }
