@@ -63,7 +63,7 @@ const FREE_INFRA = sourcedTable(
       "ai-browser-budget-ledger",
       t("Browser budget ledger", "Browser budget ledger"),
       t("개인 무료 AI 호출 전 한도 예약", "Reserves budget before a free-key AI call"),
-      t("경로마다 하루 25회 · 64,000토큰 · 10-07", "Per route: 25 calls a day · 64,000 tokens · 10-07"),
+      t("같은 주소·모델·키마다 하루 25회 · 64,000토큰 · 11-05", "Per address, model and key: 25 calls a day · 64,000 tokens · 11-05"),
       statusCell("live"),
     ],
     [
@@ -166,19 +166,19 @@ export const OPS_SLIDES = [
     ),
     facts: [
       { value: "5,100+", label: t("웹 테스트 파일(Vitest, git 추적 기준)", "Web test files (Vitest, tracked by git)") },
-      { value: "52", label: t("E2E 스펙(Playwright)", "E2E specs (Playwright)") },
+      { value: "60", label: t("E2E 스펙(Playwright)", "E2E specs (Playwright)") },
       { value: "101", label: t("GitHub Actions 워크플로 파일", "GitHub Actions workflow files") },
       { value: "0", label: t("앱 간 직접 import(래칫)", "Cross-app imports (ratchet)") },
     ],
     points: [
       t("래칫: 레거시 경계 위반은 상한(0·0)에 묶여 늘면 CI가 실패 — 도메인 간 깊은 import 실측은 0", "Ratchet: legacy boundary violations are capped (0 and 0) and CI fails if they grow — measured deep imports are 0"),
       t("접근성: 코어 필수 게이트는 axe 스모크(기본 설정, 모션 감소 없음) — 모션 감소·강제 색상은 수동 매트릭스, 키보드 점검은 스모크에 없음", "Accessibility: the required core gate is an axe smoke (default config, no reduced motion) — reduced motion and forced colors are a manual matrix and keyboard checks are not in the smoke"),
-      t("5,100+는 수집 규모이지 매 PR 게이트가 아님 — 병합을 막는 코어는 큐레이션한 750개 대상, 정본은 CI", "5,100+ is the collected scale, not a per-PR gate — the merge-blocking core lists 750 curated targets, and CI is the source of truth"),
+      t("5,100+는 수집 규모이지 매 PR 게이트가 아님 — 병합을 막는 코어는 큐레이션한 847개 대상, 정본은 CI", "5,100+ is the collected scale, not a per-PR gate — the merge-blocking core lists 847 curated targets, and CI is the source of truth"),
     ],
     stack: ["Vitest", "Testing Library", "Playwright", "@axe-core/playwright", "GitHub Actions"],
     notes: t(
-      "건강검진표처럼 오늘 센 값만 읽습니다. 웹 테스트 파일 5,100개 이상, E2E 스펙 52개, 워크플로 101개입니다.\n래칫: 앱 간 import는 0, 레거시 shared→domain(0)과 도메인 간 깊은 import(0)는 상한이라 늘면 CI가 실패하며, 깊은 import 실측은 0입니다.\n접근성은 코어 게이트가 axe 스모크(기본 설정, 모션 감소 없음), 모션 감소·강제 색상은 수동, 키보드 점검은 스모크에 없습니다. 근거는 architecture-boundary-ratchet.json입니다. 다음은 성능입니다. 질문이 나오면 ‘Architecture boundary ratchet’ 카드를 엽니다.",
-      "Read it like a health-check sheet: only values counted today. Web test files exceed 5,100, with 52 E2E specs and 101 workflows.\nRatchet: cross-app imports stay at 0, and legacy shared→domain (0) and cross-domain deep imports (0) are caps, so CI fails if they grow; measured deep imports are 0.\nAccessibility: the core gate is an axe smoke (default config, no reduced motion), reduced motion and forced colors are manual and keyboard checks are not in the smoke. The basis is architecture-boundary-ratchet.json. Next, performance. If asked, open the ‘Architecture boundary ratchet’ card.",
+      "건강검진표처럼 오늘 센 값만 읽습니다. 웹 테스트 파일 5,100개 이상, E2E 스펙 60개, 워크플로 101개입니다.\n래칫: 앱 간 import는 0, 레거시 shared→domain(0)과 도메인 간 깊은 import(0)는 상한이라 늘면 CI가 실패하며, 깊은 import 실측은 0입니다.\n접근성은 코어 게이트가 axe 스모크(기본 설정, 모션 감소 없음), 모션 감소·강제 색상은 수동, 키보드 점검은 스모크에 없습니다. 근거는 architecture-boundary-ratchet.json입니다. 다음은 성능입니다. 질문이 나오면 ‘Architecture boundary ratchet’ 카드를 엽니다.",
+      "Read it like a health-check sheet: only values counted today. Web test files exceed 5,100, with 60 E2E specs and 101 workflows.\nRatchet: cross-app imports stay at 0, and legacy shared→domain (0) and cross-domain deep imports (0) are caps, so CI fails if they grow; measured deep imports are 0.\nAccessibility: the core gate is an axe smoke (default config, no reduced motion), reduced motion and forced colors are manual and keyboard checks are not in the smoke. The basis is architecture-boundary-ratchet.json. Next, performance. If asked, open the ‘Architecture boundary ratchet’ card.",
     ),
     chapterId: "quality",
     evidence: [

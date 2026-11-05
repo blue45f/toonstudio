@@ -517,8 +517,8 @@ export const FREE_TIER_AI_ROWS: readonly EngineeringMapRow[] = [
         "When a personal free key calls an AI, the browser first reserves in a ledger how many calls and tokens may be used today. The ledger keeps only counts and times, never prompts, replies or keys.",
       ),
       limit: t(
-        "우리가 건 상한(공급자 한도 아님): 경로마다 하루(UTC) 25회·예약 토큰 64,000개·출력 1,024 토큰, 요청 256 KiB·응답 2 MiB.",
-        "Our caps, not provider limits: per route per UTC day 25 calls, 64,000 reserved tokens and 1,024 output tokens, 256 KiB per request and 2 MiB per reply.",
+        "우리가 건 상한(공급자 한도 아님): 같은 주소·모델·키마다 하루(UTC) 25회·예약 토큰 64,000개·출력 1,024 토큰, 요청 256 KiB·응답 2 MiB.",
+        "Our caps, not provider limits: per address, model and key per UTC day 25 calls, 64,000 reserved tokens and 1,024 output tokens, 256 KiB per request and 2 MiB per reply.",
       ),
       "on-exceed": t(
         "호출 전에 멈춥니다. 402는 사용자가 풀기 전까지 잠그고, 429는 15분(두 번째는 다음 UTC 자정), 401·403은 10분 멈춥니다. 유료로 자동 전환하지 않으며, 브라우저 데이터를 지우면 장부가 초기화됩니다.",
@@ -533,7 +533,7 @@ export const FREE_TIER_AI_ROWS: readonly EngineeringMapRow[] = [
       "apps/web/src/shared/ai/user-ai-transport.ts",
       "docs/operations/free-ai-runtime.md",
     ],
-    asOf: "2026-10-07",
+    asOf: "2026-11-05",
   },
   {
     id: "ai-personal-free-keys",

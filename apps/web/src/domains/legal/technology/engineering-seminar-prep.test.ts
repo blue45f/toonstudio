@@ -103,9 +103,13 @@ const PREP_FACTS: readonly PrepFact[] = [
     },
   },
   {
-    atlasId: "toon-shading-outline", needles: ["컬러·톤·질감선·주선"],
+    atlasId: "toon-shading-outline", needles: ["컬러 또는 톤", "6패스를 선택하면", "그림자·깊이", "여섯 역할"],
     check: () => {
-      expect(readText("apps", "web", "src", "domains", "creator", "bg3d", "studio-bg3d-lt-layer-plan.ts")).toContain('["color", "tone", "texture-line", "main-line"]');
+      expect(readText("apps", "web", "src", "domains", "creator", "bg3d", "studio-bg3d-lt-layer-plan.ts")).toContain('["color", "tone", "shadow", "depth", "texture-line", "main-line"]');
+      const render = readText("apps", "web", "src", "domains", "creator", "bg3d", "studio-bg3d-lt-render.ts");
+      expect(render).toContain('role: tone.type === "color" ? "color" : "tone"');
+      expect(render).toContain("if (settings.sixPassLt !== undefined) {");
+      expect(render).toContain("layers: assembleStudioBg3dSixPassLtLayers(rasterInput, settings.sixPassLt,");
     },
   },
   {
