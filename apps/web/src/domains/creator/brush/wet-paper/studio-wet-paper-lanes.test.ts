@@ -164,7 +164,7 @@ describe("wet-paper diffusion lanes (MoXi · Curtis · granulation · dry brush)
     expect(createStudioBrushCompositionBaseline("ink-wash--living-bake", "watercolor").physics).toBe("inkwash-fluid");
   });
 
-  it("갈필 초안과 커밋은 베이크를 요청하고 다른 초안·썸네일은 기존 베이스 워시를 유지한다", () => {
+  it("초안은 최종 물리 작업을 걸지 않고 커밋만 최종 베이크를 요청한다", () => {
     const planned = Array.from({ length: 12 }, (_, index) => ({
       x: 20 + index * 4,
       y: 40,
@@ -185,7 +185,7 @@ describe("wet-paper diffusion lanes (MoXi · Curtis · granulation · dry brush)
       };
       const live = resolveStudioWatercolorSettledSurface({ ...base, activeDraft: true, durableDocumentRender: false });
       expect(live.wetPaperBake).toBeNull();
-      expect(studioWetPaperBakeHostStatsForTests().pendingSolves, laneId).toBe(laneId === "ink-wash--dry-brush" ? 1 : 0);
+      expect(studioWetPaperBakeHostStatsForTests().pendingSolves, laneId).toBe(0);
       resetStudioWetPaperBakeHostForTests();
       const thumbnail = resolveStudioWatercolorSettledSurface({ ...base, activeDraft: false, durableDocumentRender: false });
       expect(thumbnail.wetPaperBake).toBeNull();

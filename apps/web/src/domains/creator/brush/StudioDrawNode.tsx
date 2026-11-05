@@ -1,4 +1,4 @@
-import { memo, useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from "react";
 import {
   Arrow,
   Circle as KCircle,
@@ -191,7 +191,7 @@ import {
   traceStudioWetRibbonCarrierBatch,
 } from "./studio-wet-ribbon-carrier";
 import { planStudioWetWashLivePipeline } from "./studio-wet-wash-live-pipeline";
-import { drawStudioWetPaperBake, resolveStudioWatercolorSettledSurface } from "./wet-paper/studio-watercolor-settled-surface";
+import { drawStudioWetPaperBake, releaseStudioWetPaperBakeRequesters, resolveStudioWatercolorSettledSurface } from "./wet-paper/studio-watercolor-settled-surface";
 
 import type { CalligraphyStylusInput } from "../studio-brush";
 import type { DrawEl } from "../studio-element-model";
@@ -401,18 +401,25 @@ export const StudioDrawNode = memo(function StudioDrawNode({
       ? el.pattern
       : undefined,
   );
-  // Opt-in living-ink settled bake (2026-08-14 stall fix): the whole-stroke fluid solve is far
-  // over the 33ms chunk budget, so committed bake-lane strokes render their byte-identical base
-  // wash immediately and a time-sliced background job bakes the bloom. This generation counter
-  // is bumped when a requested bake lands in the deterministic cache; it flows into the request
-  // call below so compiled (React Compiler) render bodies re-execute it and pick up the cache.
-  // 2026-10-29: 젖은 종이 정착 베이크(brush/wet-paper)도 같은 세대 카운터로 다시 그린다.
+  // 정착 결과·갈필 침착 미리보기가 준비되면 같은 세대로 다시 그린다. 전체 물리 계산은 시분할한다.
   const [livingInkBakeGeneration, notifyLivingInkBakeReady] = useReducer(
     (generation: number) => (generation + 1) | 0,
     0,
   );
   // 젖은 종이 요청자(렌더 인스턴스 + 대칭 변형): 같은 획을 고치는 동안 지나간 모양·색의 굽기를 버린다.
   const bakeRequesterId = useId();
+  const wetPaperMounted = useRef(true);
+  const notifyWetPaperReady = useCallback(() => {
+    if (wetPaperMounted.current) notifyLivingInkBakeReady();
+  }, []);
+  useEffect(() => {
+    wetPaperMounted.current = true;
+    return () => {
+      wetPaperMounted.current = false;
+      // StrictMode의 재설정은 같은 작업을 계속 쓴다. 실제 언마운트는 다음 microtask에 해제한다.
+      queueMicrotask(() => { if (!wetPaperMounted.current) releaseStudioWetPaperBakeRequesters(bakeRequesterId); });
+    };
+  }, [bakeRequesterId]);
   const rootGroupRef = useRef<Konva.Group | null>(null);
   // 정착 베이크가 도착하면 캐시된 조상(블렌드·마스크·조정 그룹)이 베이스 워시 픽셀을 계속 그리지 않게, 가장
   // 가까운 캐시 소유자부터 다시 만든다(늦게 도착한 이미지와 같은 규칙).
@@ -1851,20 +1858,8 @@ export const StudioDrawNode = memo(function StudioDrawNode({
             // fluid field is global, so live drafts render the base wash and the bloom lands on
             // settle — SVG export is settled by definition and passes "settled" at both sites.
             //
-            // 2026-08-14 stall fix: the settled bake is a whole-stroke fluid solve measured at
-            // 30–116ms — it must never run synchronously in this render body. The "live" result
-            // below is byte-identical to the bake's input (the bake augments AFTER material
-            // scaling and is identity for the live phase), so bake lanes render that base wash
-            // now and request the settled augment from the time-sliced deterministic cache; the
-            // bloom lands when the job completes — the settled-bake contract's own drying
-            // language. Program resolution mirrors applyStudioBrushAliasWatercolorMaterial's
-            // one-authority order (wet-edge-bloom pin wins; bake consulted only without it), so
-            // lanes without a bake program keep the exact single-call path and bytes.
-            // 2026-10-29: 이 해석(커스텀 오버라이드 > 레인 핀, 브러시당 웻 텍스처 권위 하나)과 두 정착
-            // 베이크(리빙잉크 시분할 요청 + 젖은 종이 정착 래스터)는 resolveStudioWatercolorSettledSurface
-            // 한 곳이 맡는다. 젖은 종이 레인의 커밋 획은 시분할 작업이 끝나면 종이 시뮬레이션 래스터를
-            // 그리고, 그 전에는 베이스 워시를 그린다. 라이브 파이프라인은 프로그램 없는 레인만 받아
-            // 재질 스케일까지 끝냈으므로 이 해석을 건너뛴다(바이트 동일).
+            // 커스텀 프로그램 우선권과 정착 권위는 리졸버가 맡는다. 갈필은 초안·최종 대기 중에 같은
+            // 침착 표면을 쓰고, 커밋의 전체 물리가 준비되면 최종 래스터로 바뀐다. 다른 레인은 기존 워시다.
             const settledSurface = liveWetWashPlan
               ? null
               : resolveStudioWatercolorSettledSurface({
@@ -1875,7 +1870,7 @@ export const StudioDrawNode = memo(function StudioDrawNode({
                   durableDocumentRender,
                   enginePrograms: runtimeEnginePrograms,
                   color: stroke,
-                  onBakeReady: notifyLivingInkBakeReady,
+                  onBakeReady: notifyWetPaperReady,
                   bakeGeneration: livingInkBakeGeneration,
                   requester: `${bakeRequesterId}#${index}`,
                 });

@@ -108,6 +108,7 @@ export async function materializeStudioBrushCatalogSelection(
   catalogId: unknown
 ): Promise<StudioBrushCatalogSelection | null> {
   if (typeof catalogId !== "string" || !catalogId) return null;
+  prewarmDryBrush(catalogId);
   const corePreset = STUDIO_CORE_BRUSH_PRESET_BY_ID.get(catalogId);
   if (corePreset) return studioCoreBrushCatalogSelection(corePreset);
   if (isStudioV6BrushCatalogId(catalogId)) {
@@ -120,11 +121,17 @@ export async function materializeStudioBrushCatalogSelection(
 
 /** Warm only the optional engine chunk when pointer/focus intent makes selection likely. */
 export async function preloadStudioBrushCatalogSelection(catalogId: unknown): Promise<void> {
+  prewarmDryBrush(catalogId);
   if (isStudioV6BrushCatalogId(catalogId)) {
     await loadStudioV6BrushCatalogRuntime();
     return;
   }
   if (isStudioBrushPackCatalogId(catalogId)) await loadStudioBrushPackRuntime();
+}
+
+function prewarmDryBrush(id: unknown): void {
+  if (id === "ink-wash--dry-brush") void import("./wet-paper/studio-dry-brush-live-host")
+    .then((host) => host.prewarmStudioDryBrushLiveHost(), () => false);
 }
 
 export function isStudioBrushCatalogSelection(
