@@ -2017,7 +2017,7 @@ describe("모바일 브러시 메뉴 재준비 회귀", () => {
           expect(options.timeout).toBeGreaterThan(0);
           // Playwright 정상 click의 pointerdown이 실제 도크 document listener에 전달된다.
           fireEvent.pointerDown(close);
-          outsidePointerClosed.push(panel.hidden);
+          outsidePointerClosed.push(panel.hidden === true);
           fireEvent.click(close);
           noticeVisible = false;
         } }),
