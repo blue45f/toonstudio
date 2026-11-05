@@ -24,7 +24,8 @@ secret 짝은 이름·목적지 계약이며 비교를 위해 원문을 클라�
 
 | 실행 | 결과 |
 | --- | --- |
-| `node --test scripts/deployment-preflight.test.mjs` | 15/15 통과 |
+| `node --test scripts/deployment-preflight.test.mjs` | 16/16 통과 |
+| 저장소 Vitest의 새 preflight 테스트 | 16/16 통과; Node/Vitest runner 분기 호환성 확인 |
 | `node --test scripts/agent-harness.test.mjs` | 6/6 통과 |
 | `node scripts/agent-harness.mjs check` | 통과 |
 | `node scripts/verify-pnpm-lockfile.mjs` | 20 importers 통과 |
@@ -32,10 +33,14 @@ secret 짝은 이름·목적지 계약이며 비교를 위해 원문을 클라�
 | 기존 `validate-production-database-url.test.mjs` | 저장소 Vitest 4.1.12에서 27/27 통과; 임시 Vitest 검사도 통과 |
 | 변경 파일 Secretlint | 저장소 harness의 13개 변경 파일 검사 통과; 임시 13.0.7 검사도 통과 |
 | `pnpm harness:verify` | 최신 main 기반 구조·하네스·lockfile·변경 ESLint·Secretlint 전체 통과 |
-| CI 설치 전 mandatory Node 검사와 새 preflight 테스트 | 156/156 통과 |
+| CI 설치 전 mandatory Node 검사와 새 preflight 테스트 | 157/157 통과 |
 | 저장소 custom GitHub secret pattern 검사 | 변경 파일 대상 통과 |
 | `git diff --check` 및 patch whitespace 검사 | 통과 |
 | secret 없는 실제 CLI | local은 offline 계약만 통과, onpod-current는 필수 이름 누락으로 blocked |
+
+병합 전 검토에서 새 테스트가 전체 Vitest 수집 시 `No test suite found`로 실패함을 재현했다. 기존 하네스 테스트와 같은 `process.env.VITEST` 분기 패턴으로 수정하고 Node·Vitest 각각 16/16를 재검증했다. 이 수정은 테스트를 제외하지 않고 두 실행 경로의 검증을 보존한다.
+
+공통 API `SECRET_KEYS` 밖에 있는 결제·개인 클라우드 암호화·신규 저장소 키 세 이름은 각 소비자 source를 근거로 명시적 server-secret metadata를 추가했다. 운영 값은 읽지 않았고 공개 Kakao key 허용은 유지한다.
 
 최초 기존 validator 테스트를 Node 내장 runner와 함께 실행한 명령은 `vitest` 미설치로 실패했다. 이후 임시 경로의 올바른 runner에서 위 27개를 재검증했다.
 최초 Secretlint에서 합성 basic-auth URL literal 1건을 탐지했고 중립 fixture 조립으로 수정한 뒤 통과했다.

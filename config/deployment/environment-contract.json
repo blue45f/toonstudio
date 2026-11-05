@@ -341,6 +341,33 @@
       "required": "optional",
       "default": null,
       "unit": "operator"
+    },
+    "TOSS_PAYMENTS_SECRET_KEY": {
+      "purpose": "결제 서버 인증; 브라우저 공개 금지",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "api",
+      "source": "apps/api/src/modules/creator-support/creator-support.config.ts"
+    },
+    "PERSONAL_CLOUD_TOKEN_ENCRYPTION_KEY": {
+      "purpose": "개인 클라우드 토큰 암호화; 브라우저 공개 금지",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "api",
+      "source": "apps/api/src/modules/personal-cloud/personal-cloud.config.ts"
+    },
+    "SUPABASE_OBJECT_STORAGE_SECRET_KEY": {
+      "purpose": "저장소 서버 인증의 신규 키; 브라우저 공개 금지",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "api",
+      "source": "apps/api/src/platform/adapters/supabase-object-storage/supabase-object-storage.config.ts"
     }
   },
   "pairs": [
