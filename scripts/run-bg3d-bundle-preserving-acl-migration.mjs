@@ -18,6 +18,8 @@ import { createProductionMigrationConnection, isDisposableMigrationConnection } 
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const APPLY_CONFIRMATION = "APPLY-TOONSPECTRUM-PRODUCTION-MIGRATIONS";
+// 다른 역할의 backend_type은 NULL일 수 있으므로 종류를 확인할 수 없는 세션도 거절한다.
+export const BG3D_OTHER_CLIENTS_SQL = "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND (backend_type='client backend' OR backend_type IS NULL);";
 
 export function validateBg3dMigrationOptions(options) {
   if (!["plan", "apply"].includes(options.mode)) throw new Error("0121 보존 경로는 plan 또는 apply만 허용합니다.");
@@ -49,7 +51,7 @@ function requireTrue(connection, sql, message) {
 }
 
 function requireNoOtherClients(connection) {
-  if (queryScalar(connection, "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND backend_type='client backend';") !== "0") {
+  if (queryScalar(connection, BG3D_OTHER_CLIENTS_SQL) !== "0") {
     throw new Error("다른 DB client가 연결되어 있어 Studio writer drain 확인을 수용할 수 없습니다.");
   }
 }

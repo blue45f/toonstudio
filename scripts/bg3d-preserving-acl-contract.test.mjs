@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { DatabaseSync } from "node:sqlite";
 import { expect, test } from "vitest";
 
 import {
@@ -6,7 +7,7 @@ import {
   planBg3dPreservingAclMigration, validateBg3dObjectState,
 } from "./bg3d-preserving-acl-contract.mjs";
 import { loadMigrationManifest } from "./run-production-database-migrations.mjs";
-import { parseBg3dMigrationArguments, runBg3dPreservingAclMigration, validateBg3dMigrationOptions } from "./run-bg3d-bundle-preserving-acl-migration.mjs";
+import { BG3D_OTHER_CLIENTS_SQL, parseBg3dMigrationArguments, runBg3dPreservingAclMigration, validateBg3dMigrationOptions } from "./run-bg3d-bundle-preserving-acl-migration.mjs";
 
 const releaseSha = "534ee5b18549d154753767e402f8389ff2a96216";
 const manifest = loadMigrationManifest();
@@ -84,5 +85,26 @@ test("CLI는 explicit CA·writer 확인만 파싱하며 기존 일반 runner의 
   });
   for (const argv of [["toString", "x"], ["constructor", "x"], ["--skip-acl"], ["--stale-lock-owner-token", "x"], ["--mode", "apply", "--mode", "apply"], ["--public-ca-file"]]) {
     expect(() => parseBg3dMigrationArguments(argv)).toThrow();
+  }
+});
+
+test.each([
+  ["자기 연결", "fixture", 1, "client backend", "active", 0],
+  ["다른 유휴 client", "fixture", 2, "client backend", "idle", 1],
+  ["다른 활성 client", "fixture", 2, "client backend", "active", 1],
+  ["다른 역할의 비가시 연결", "fixture", 2, null, null, 1],
+  ["다른 DB의 비가시 연결", "another", 2, null, null, 0],
+  ["종류가 확인된 백그라운드", "fixture", 2, "autovacuum worker", "active", 0],
+])("writer drain SQL은 %s을 구분한다", (_label, datname, pid, backendType, state, count) => {
+  // 실제 PostgreSQL의 역할별 가시성 검증과 별도로, 정본 SQL의 NULL 조건을 실행한다.
+  const database = new DatabaseSync(":memory:");
+  try {
+    database.function("current_database", () => "fixture");
+    database.function("pg_backend_pid", () => 1);
+    database.exec("CREATE TABLE pg_stat_activity(datname TEXT, pid INTEGER, backend_type TEXT, state TEXT);");
+    database.prepare("INSERT INTO pg_stat_activity VALUES(?,?,?,?)").run(datname, pid, backendType, state);
+    expect(database.prepare(BG3D_OTHER_CLIENTS_SQL).get()["count(*)"]).toBe(count);
+  } finally {
+    database.close();
   }
 });

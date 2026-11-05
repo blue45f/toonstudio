@@ -59,6 +59,13 @@ node scripts/run-bg3d-bundle-preserving-acl-migration.mjs \
 
 확인 문구를 자동 생성하거나 writer가 없었다고 추정하지 않는다. apply는 다른 DB client backend가
 남아 있으면 거절한다. 이 시점 검사는 운영자가 적용 동안 writer drain을 유지할 책임을 대체하지 않는다.
+유휴 연결도 검사하며, 일반 migrator에게 다른 역할의 `backend_type`이 NULL로 보이면
+그 세션도 보수적으로 거절한다. 통계 조회 권한을 새로 부여하거나 비가시 연결을 없는 것으로 세지 않는다.
+
+API와 독립된 엄격 TLS 관리 runner 및 소비자 재접속 차단 경로를 먼저 확보한다.
+관리 경로 확보 전에는 API를 pause하지 않는다. paused API의 exec를 runner로 사용할 수 없다.
+배너나 일시적인 빈 pool은 drain 증거가 아니다. GUI·health·관측 연결까지 정상 종료하고,
+drain 이후 보존 기준선을 다시 기록한 뒤 적용과 검증이 끝날 때까지 이 상태를 유지한다.
 
 ## 기존 권한과 새 객체
 
