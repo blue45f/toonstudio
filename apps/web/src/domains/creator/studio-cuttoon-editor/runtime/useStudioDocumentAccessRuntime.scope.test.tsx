@@ -50,6 +50,25 @@ function layout(documentId: string): StudioDocumentLayoutRuntime {
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe("document persistence and source access wiring", () => {
+  it("로컬 원점 복구 전후의 룸이 달라도 문서의 자동 저장·체크포인트 키와 기존 복구본은 유지한다", () => {
+    const documentId = "ep01-six-pages";
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <StudioDocumentLayoutContext value={layout(documentId)}>{children}</StudioDocumentLayoutContext>
+    );
+    const initialProps: { instantWorkId: string; liveRoomQueryParam: string | null } = {
+      instantWorkId: "work-instant-fresh-5678", liveRoomQueryParam: null,
+    };
+    const { result, rerender } = renderHook((room) => useStudioDocumentAccessRuntime({ ...options(null), ...room }), { wrapper, initialProps });
+    const key = result.current.autosaveKey;
+    const checkpoint = result.current.checkpointKey;
+    localStorage.setItem(key, "기존 여섯 페이지 복구본");
+    rerender({ instantWorkId: "work-instant-prev-1234", liveRoomQueryParam: "work-instant-prev-1234" });
+    expect(result.current.autosaveKey).toBe(key);
+    expect(result.current.checkpointKey).toBe(checkpoint);
+    expect(localStorage.getItem(key)).toBe("기존 여섯 페이지 복구본");
+    localStorage.removeItem(key);
+  });
+
   it("preserves local recovery keys while all server access services receive a null workId", () => {
     const documentId = "ep01-existing";
     const wrapper = ({ children }: { children: ReactNode }) => (

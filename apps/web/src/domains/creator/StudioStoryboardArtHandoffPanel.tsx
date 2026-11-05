@@ -13,17 +13,20 @@ import {
   bindBeatsToEpisode,
   deriveStoryboardArtHandoff,
   planStudioStoryboard,
-  storyboardArtStartHref,
   type StudioShotSize,
   type StudioStoryBeat,
 } from "./studio-storyboard-planner";
 
 import { r4CreatorStatusText } from "./r4-cat1-status-i18n";
+import Link from "@/shared/navigation/router-link";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 export interface StudioStoryboardArtHandoffPanelProps {
   readonly episodeId: string;
   /** 이 회차의 콘티 비트. 비어 있으면 패널 자체를 그리지 않는다. */
   readonly beats: readonly StudioStoryBeat[];
+  /** 동일 프로젝트·문서로 검증된 목적지만 받는다. 새 작품 생성으로 우회하지 않는다. */
+  readonly artHref: string | null;
 }
 
 const SHOT_SIZE_LABELS: Readonly<Record<StudioShotSize, string>> = {
@@ -37,22 +40,21 @@ const SHOT_SIZE_LABELS: Readonly<Record<StudioShotSize, string>> = {
 export function StudioStoryboardArtHandoffPanel({
   episodeId,
   beats,
+  artHref,
 }: StudioStoryboardArtHandoffPanelProps) {
+  const bt = useBilingual("StudioStoryboardArtHandoffPanel");
   if (beats.length === 0) return null;
 
   let handoff: ReturnType<typeof deriveStoryboardArtHandoff> | null;
-  let href: string | null;
   try {
     const bound = bindBeatsToEpisode(beats, episodeId);
     const plan = planStudioStoryboard(bound);
     handoff = deriveStoryboardArtHandoff(plan, bound);
-    href = storyboardArtStartHref(episodeId, plan);
   } catch {
     handoff = null;
-    href = null;
   }
 
-  if (!handoff || !href) {
+  if (!handoff) {
     return (
       <section aria-label="작화 샷 계획">
         <h3>작화 샷 계획</h3>
@@ -64,8 +66,8 @@ export function StudioStoryboardArtHandoffPanel({
   }
 
   return (
-    <section aria-label="작화 샷 계획">
-      <h3>작화 샷 계획 — 콘티에서 가져와요</h3>
+    <section aria-label="작화 샷 계획" className="space-y-2">
+      <h3 className="font-semibold">{bt("작화 샷 계획 — 저장된 회차 기준", "Artwork shot plan — saved episode")}</h3>
       <p>
         샷 {handoff.shots.length}개 · 예상 캔버스 높이 약{" "}
         {handoff.estimatedCanvasHeightPx}px
@@ -73,7 +75,7 @@ export function StudioStoryboardArtHandoffPanel({
           ? " · 작화를 시작하기 전에 확인할 샷이 있어요."
           : " · 그대로 작화를 시작할 수 있어요."}
       </p>
-      <ol>
+      <ol className="list-decimal space-y-2 pl-5">
         {handoff.shots.map((shot) => (
           <li key={shot.shotId}>
             {shot.summary} ({SHOT_SIZE_LABELS[shot.shotSize]} · {shot.camera} ·{" "}
@@ -81,7 +83,7 @@ export function StudioStoryboardArtHandoffPanel({
           </li>
         ))}
       </ol>
-      <a href={href}>이 회차 작화 시작하기</a>
+      {artHref ? <Link href={artHref}>{bt("이 회차 작화 시작하기", "Open this episode artwork")}</Link> : null}
     </section>
   );
 }

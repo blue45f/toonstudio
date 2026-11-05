@@ -2,7 +2,6 @@ import {
   AlertTriangle,
   Check,
   CheckCircle2,
-  CircleAlert,
   Download,
   ExternalLink,
   FileArchive,
@@ -46,6 +45,10 @@ import {
   type StudioPublishThumbnailSlot,
 } from "./studio-publish-package";
 import { StudioPublishPackageAiSection } from "./publish/StudioPublishPackageAiSection";
+import { StudioPublishPackageReadinessSummary } from "./publish/StudioPublishPackageReadinessSummary";
+import { resolveStudioPublishPackageReadiness } from "./publish/studio-publish-package-readiness";
+import type { StudioPublishPreflightResult } from "./studio-publish-preflight";
+import type { StudioPublishComplianceResult } from "./studio-publish-compliance";
 import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import { resolveStudioPublishPackageIssue } from "./status-i18n/studio-producer-error-i18n-publish";
 import { AI_USAGE_META } from "./publish/studio-publish-package-ai-usage-meta";
@@ -61,6 +64,9 @@ export interface StudioPublishPackagePanelProps {
   settings: StudioPublishPackageSettings;
   onSettingsChange: (settings: StudioPublishPackageSettings) => void;
   plan: StudioPublishPackagePlan;
+  preflightResult: StudioPublishPreflightResult | null;
+  complianceResult: StudioPublishComplianceResult | null;
+  onReviewRequiredChecks?: () => void;
   creditsText?: string;
   onCreditsTextChange?: (value: string) => void;
   /** Downloads the privacy-safe public projection. It can be useful even when validation fails. */
@@ -309,7 +315,7 @@ function IssueLedger({
       {issues.length === 0 ? (
         <div className="mt-3 flex min-h-20 items-center gap-3 rounded-xl border border-dashed border-line px-4 text-xs text-fg-3">
           <CheckCircle2 size={17} className="shrink-0 text-good" aria-hidden />
-          {isError ? frozenStatus2Text("studio.frozenStatus2.publishPkg.noBlockingErrors", "내보내기를 막는 오류가 없습니다.") : frozenStatus2Text("studio.frozenStatus2.publishPkg.noMoreWarnings", "추가로 확인할 경고가 없습니다.")}
+          {isError ? frozenStatus2Text("studio.frozenStatus2.publishPkg.noBlockingErrors", "파일 계획에 차단 오류가 없습니다.") : frozenStatus2Text("studio.frozenStatus2.publishPkg.noMoreWarnings", "추가로 확인할 경고가 없습니다.")}
         </div>
       ) : (
         <>
@@ -379,6 +385,9 @@ export function StudioPublishPackagePanel({
   settings,
   onSettingsChange,
   plan,
+  preflightResult,
+  complianceResult,
+  onReviewRequiredChecks,
   creditsText = "",
   onCreditsTextChange,
   onDownloadManifest,
@@ -393,6 +402,7 @@ export function StudioPublishPackagePanel({
   const destinationId = useId();
   const reviewPdfProfileId = useId();
   const preset = plan.preset;
+  const readiness = resolveStudioPublishPackageReadiness(plan, preflightResult, complianceResult);
   const supportedFormats = (Object.keys(FORMAT_LABELS) as OutputFormat[]).filter((format) =>
     preset.episode.allowedMimeTypes.includes(FORMAT_MIME[format])
   );
@@ -552,12 +562,12 @@ export function StudioPublishPackagePanel({
                 </h2>
                 <span
                   className={`inline-flex min-h-6 items-center rounded-full border px-2 text-[0.65rem] font-bold ${
-                    plan.canExport
+                    readiness.canExport
                       ? "border-good/35 bg-good/10 text-good"
                       : "border-bad/35 bg-bad/10 text-bad"
                   }`}
                 >
-                  {plan.canExport ? frozenStatus2Text("studio.frozenStatus2.publishPkg.canExport", "내보내기 가능") : frozenStatus2Text("studio.frozenStatus2.publishPkg.errorCountBadge", { count: plan.errors.length }, "오류 {count}")}
+                  {readiness.canExport ? frozenStatus2Text("studio.frozenStatus2.publishPkg.canExport", "내보내기 가능") : frozenStatus2Text("studio.frozenStatus2.publishPkg.errorCountBadge", { count: readiness.blockingIssueCount }, "오류 {count}")}
                 </span>
               </div>
               <p
@@ -577,24 +587,8 @@ export function StudioPublishPackagePanel({
             </button>
           </div>
 
-          <div
-            role="status"
-            aria-live="polite"
-            className={`mt-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-[0.7rem] leading-relaxed ${
-              plan.canExport
-                ? "border-good/30 bg-good/10 text-good"
-                : "border-bad/30 bg-bad/10 text-bad"
-            }`}
-          >
-            {plan.canExport ? (
-              <CheckCircle2 size={15} className="mt-0.5 shrink-0" aria-hidden />
-            ) : (
-              <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden />
-            )}
-            <span>
-              {plan.canExport ? frozenStatus2Text("studio.frozenStatus2.publishPkg.summaryNoBlockers", { count: plan.warnings.length.toLocaleString("ko-KR") }, "차단 오류 없음 · 경고 {count}건은 내보내기 전에 확인하세요.") : frozenStatus2Text("studio.frozenStatus2.publishPkg.summaryBlockers", { count: plan.errors.length.toLocaleString("ko-KR") }, "차단 오류 {count}건을 해결해야 실제 파일 생성을 시작할 수 있습니다.")}
-            </span>
-          </div>
+          <StudioPublishPackageReadinessSummary readiness={readiness} onReviewRequiredChecks={onReviewRequiredChecks}
+            summary={readiness.canExport ? frozenStatus2Text("studio.frozenStatus2.publishPkg.summaryNoBlockers", { count: readiness.warningCount.toLocaleString("ko-KR") }, "차단 오류 없음 · 경고 {count}건은 내보내기 전에 확인하세요.") : frozenStatus2Text("studio.frozenStatus2.publishPkg.summaryBlockers", { count: readiness.blockingIssueCount.toLocaleString("ko-KR") }, "차단 오류 {count}건을 해결해야 실제 파일 생성을 시작할 수 있습니다.")} />
         </header>
 
         <nav
@@ -911,14 +905,14 @@ export function StudioPublishPackagePanel({
                   </span>
                 </div>
                 <dl className="mt-3 grid grid-cols-2 divide-x divide-y divide-line overflow-hidden rounded-xl border border-line bg-card/25 sm:grid-cols-4">
-                  <Metric label="차단 오류" value={`${plan.errors.length}건`} detail="0건이어야 내보내기 가능" />
-                  <Metric label="검토 경고" value={`${plan.warnings.length}건`} detail="사람 확인 또는 렌더 후 재검사" />
+                  <Metric label="차단 오류" value={`${readiness.blockingIssueCount}건`} detail="필수 자체 확인을 포함한 생성 조건" />
+                  <Metric label="검토 경고" value={`${readiness.warningCount}건`} detail="사람 확인 또는 렌더 후 재검사" />
                   <Metric label="계획 파일" value={`${plan.artifacts.length}개`} detail="이미지와 보조 파일 합계" />
                   <Metric label="알려진 회차 용량" value={formatBytes(plan.manifest.totals.knownEpisodeBytes)} />
                 </dl>
               </section>
 
-              <IssueLedger title="내보내기를 막는 오류" issues={plan.errors} tone="error" />
+              <IssueLedger title="파일 계획의 차단 오류" issues={plan.errors} tone="error" />
               <IssueLedger title="내보내기 전 확인할 경고" issues={plan.warnings} tone="warning" />
 
               <div className="flex items-start gap-3 rounded-xl border border-line bg-card/25 px-3 py-3 text-[0.7rem] leading-relaxed text-fg-3 sm:px-4">
@@ -1035,7 +1029,7 @@ export function StudioPublishPackagePanel({
                   <Metric label="스키마" value={plan.manifest.schema} />
                   <Metric label="버전" value={`v${plan.manifest.version}`} />
                   <Metric label="AI 사용" value={AI_USAGE_META[plan.manifest.ai.usage].label} />
-                  <Metric label="검증 상태" value={plan.manifest.validation.canExport ? "통과" : frozenStatus2Text("studio.frozenStatus2.publishPkg.validationFailedValue", "오류 있음")} />
+                  <Metric label="파일 계획 점검" value={plan.manifest.validation.canExport ? "통과" : frozenStatus2Text("studio.frozenStatus2.publishPkg.validationFailedValue", "오류 있음")} />
                 </dl>
               </section>
             </div>
@@ -1077,8 +1071,8 @@ export function StudioPublishPackagePanel({
                 <button
                   type="button"
                   onClick={() => onBeginExport(plan)}
-                  disabled={!plan.canExport || exportBusy}
-                  aria-describedby={!plan.canExport ? "publish-package-export-blocked" : undefined}
+                  disabled={!readiness.canExport || exportBusy}
+                  aria-describedby={!readiness.canExport ? "publish-package-export-blocked" : undefined}
                   className={PRIMARY_BUTTON_CLASS}
                 >
                   {exportBusy ? (
@@ -1091,9 +1085,9 @@ export function StudioPublishPackagePanel({
               )}
             </div>
           </div>
-          {!plan.canExport && onBeginExport && (
+          {!readiness.canExport && onBeginExport && (
             <p id="publish-package-export-blocked" className="mt-1 text-right text-[0.65rem] text-bad">
-              {frozenStatus2Text("studio.frozenStatus2.publishPkg.exportBlockedReason", { count: plan.errors.length.toLocaleString("ko-KR") }, "차단 오류 {count}건을 해결하면 실제 파일 생성을 시작할 수 있습니다.")}
+              {frozenStatus2Text("studio.frozenStatus2.publishPkg.exportBlockedReason", { count: readiness.blockingIssueCount.toLocaleString("ko-KR") }, "차단 오류 {count}건을 해결하면 실제 파일 생성을 시작할 수 있습니다.")}
             </p>
           )}
         </footer>

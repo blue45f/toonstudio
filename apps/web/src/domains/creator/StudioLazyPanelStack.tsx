@@ -932,7 +932,6 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
           />
         ) : null}
       </Suspense>
-
       <Suspense fallback={null}>
         {publishPackageOpen && publishPackagePlan ? (
           <StudioPublishPackagePanel
@@ -941,6 +940,9 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
             settings={effectivePublishPackageSettings}
             onSettingsChange={updatePublishPackageSettings}
             plan={publishPackagePlan}
+            preflightResult={publishPreflightResult}
+            complianceResult={publishComplianceResult}
+            onReviewRequiredChecks={() => { setPublishPackageOpen(false); setPublishPreflightOpen(true); }}
             creditsText={currentPublishPackageCreditsText()}
             onCreditsTextChange={(value) => {
               if (!collaborationDocumentLocked) {
@@ -956,7 +958,6 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
           />
         ) : null}
       </Suspense>
-
       <Suspense fallback={null}>
         {aiProvenanceOpen ? (
           <StudioAiProvenancePanel
@@ -973,7 +974,6 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
           />
         ) : null}
       </Suspense>
-
       <Suspense fallback={null}>
         {writerRoomOpen ? (
           <StudioWriterRoomPanel

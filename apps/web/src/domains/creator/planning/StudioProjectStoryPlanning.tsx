@@ -35,6 +35,7 @@
  * handleSavePlan 경로로 저장한다. 실집계가 없으면 카드는 빈 상태 안내만 낸다.
  */
 import { useEffect, useMemo, useState } from "react";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import {
@@ -86,6 +87,8 @@ import {
   saveStudioEpisodePlan,
   type StudioProjectPlanningState,
 } from "./studio-planning-store";
+import { studioEpisodeDocumentHref } from "./studio-episode-document-handoff";
+import { useStudioEpisodeDocumentTargets } from "./useStudioEpisodeDocumentTargets";
 
 export type StudioProjectStoryPlanningView = "episodes" | "characters" | "world" | "timeline";
 
@@ -136,6 +139,9 @@ function seedSettingRefs(projectId: string): readonly StorySeedSettingRef[] {
 }
 
 function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
+  const bt = useBilingual("StudioProjectStoryPlanning.handoff");
+  const targets = useStudioEpisodeDocumentTargets(projectId);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [planning, setPlanning] = useState<StudioProjectPlanningState | null>(
     () => loadPlanning(projectId),
   );
@@ -151,6 +157,8 @@ function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
 
   useEffect(() => {
     setPlanning(loadPlanning(projectId));
+    setSaveError(null);
+    setPickedEpisodeId(null);
     setSettingRefs(seedSettingRefs(projectId));
     setBibleCharacters(loadBibleCharacters(projectId));
     const onUpdated = (event: Event) => {
@@ -212,8 +220,11 @@ function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
   const handleSavePlan = (plan: EpisodePlanWithSynopsis) => {
     try {
       setPlanning(saveStudioEpisodePlan(window.localStorage, projectId, plan, window));
+      setSaveError(null);
+      return true;
     } catch {
-      // 저장 실패 시 편집 표면의 입력은 그대로 남는다. 다음 저장에서 다시 시도할 수 있다.
+      setSaveError(bt("회차 기획을 저장하지 못해 원고를 열지 않았습니다. 입력은 유지됩니다. 저장 공간을 확인하고 다시 저장해 주세요.", "The episode plan could not be saved, so the manuscript was not opened. Your input is kept. Check device storage and save again."));
+      return false;
     }
   };
 
@@ -273,12 +284,26 @@ function EpisodeSynopsisSurface({ projectId }: { readonly projectId: string }) {
           />
         </div>
       )}
+      <label className="mb-3 block text-sm font-semibold text-fg">
+        {bt("콘티·작화 대상 원고", "Storyboard and artwork manuscript")}
+        <select
+          className="mt-1 block min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg"
+          value={targets.selected?.id ?? ""}
+          onChange={(event) => targets.select(event.target.value)}
+        >
+          <option value="">{bt("기존 원고 선택", "Select an existing manuscript")}</option>
+          {targets.documents.map((document) => <option key={document.id} value={document.id}>{document.title}</option>)}
+        </select>
+      </label>
+      {saveError ? <p role="alert">{saveError}</p> : null}
       <StudioEpisodeStoryPage
         season={planning.season}
         plans={planning.plans}
         onSavePlan={handleSavePlan}
         selectedEpisodeId={pickedEpisodeId ?? undefined}
         onSelectEpisode={setPickedEpisodeId}
+        storyboardHrefForEpisode={(episodeId) => targets.selected
+          ? studioEpisodeDocumentHref(targets.selected, episodeId, "storyboard") : null}
       />
       <div className="mt-4">
         <StudioSeasonBeatBoard

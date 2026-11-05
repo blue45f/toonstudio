@@ -83,13 +83,13 @@ export function StudioDocumentLayout({
     storage: currentStudioSessionStorage(),
   }));
   const { data: session } = useSession();
-  const instantWorkId = useStudioLocalDraftOwner({
+  const { instantWorkId, canPublishRoom } = useStudioLocalDraftOwner({
     initialInstantWorkId, roomId: liveRoomParam, workId, remixId,
     ownerId: session?.user?.id ?? null,
     projectId: studioRoute.projectId, documentId: studioRoute.documentId, draftId: studioRoute.draftId,
   });
   useEffect(() => {
-    if (!shouldPublishStudioLiveJamRoom({
+    if (!canPublishRoom || !shouldPublishStudioLiveJamRoom({
       remixId,
       roomId: liveRoomParam,
       workId,
@@ -103,7 +103,7 @@ export function StudioDocumentLayout({
       if (readStudioLiveRoomQuery(current) === instantWorkId) return current;
       return withStudioLiveJamRoom(current, instantWorkId);
     }, { replace: true });
-  }, [instantWorkId, liveRoomParam, remixId, setSearchParams, workId]);
+  }, [canPublishRoom, instantWorkId, liveRoomParam, remixId, setSearchParams, workId]);
 
   const runtime: StudioDocumentLayoutRuntime = {
     documentKey,

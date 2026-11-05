@@ -72,7 +72,8 @@ export function holdStudioLocalDraftOwnership(input: {
     cancelQueuedRequest = () => queued.abort();
     options = { signal: queued.signal };
   }
-  void Promise.resolve().then(() => locks.request(
+  // StrictMode가 정리한 effect는 요청 자체를 제출하지 않아 다음 effect의 복구 리스를 가로막지 않는다.
+  void Promise.resolve().then(() => active ? locks.request(
     STUDIO_LOCAL_DRAFT_OWNER_PREFIX + JSON.stringify([scope, room]), options,
     async (lock) => {
       if (!active || !lock) return;
@@ -88,7 +89,7 @@ export function holdStudioLocalDraftOwnership(input: {
       }
       await held;
     },
-  )).catch(() => {
+  ) : undefined).catch(() => {
     // Never turn unsupported/denied ownership coordination into an edit grant.
     // 해제로 취소된 소유 탭의 대기 요청(AbortError)도 여기서 끝나며 콜백은 실행되지 않는다.
   });

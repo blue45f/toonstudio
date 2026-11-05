@@ -8,6 +8,8 @@
  * - 데이터는 props 로 받는다 (스토어·영속 연결은 후속 단계; 정본은 EpisodePlan/SeasonPlan).
  */
 import { useMemo, useState } from "react";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import Link from "@/shared/navigation/router-link";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { SeasonPlan } from "@toonstudio/core/production";
 import {
@@ -39,7 +41,9 @@ export interface StudioEpisodeStoryPageProps {
   readonly selectedEpisodeId?: string | null;
   /** 회차가 골라질 때의 알림. 내부 선택과 함께 갱신된다. */
   readonly onSelectEpisode?: (episodeId: string) => void;
-  readonly onSavePlan: (plan: EpisodePlanWithSynopsis) => void;
+  readonly onSavePlan: (plan: EpisodePlanWithSynopsis) => boolean | void;
+  /** 호스트가 확인한 기존 원고만 연다. 연결되지 않으면 새 작품으로 우회하지 않는다. */
+  readonly storyboardHrefForEpisode?: (episodeId: string) => string | null;
 }
 
 export function StudioEpisodeStoryPage({
@@ -50,6 +54,7 @@ export function StudioEpisodeStoryPage({
   selectedEpisodeId,
   onSelectEpisode,
   onSavePlan,
+  storyboardHrefForEpisode,
 }: StudioEpisodeStoryPageProps) {
   const arc = useMemo(() => seasonArcView(season, plans), [season, plans]);
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(
@@ -102,6 +107,7 @@ export function StudioEpisodeStoryPage({
           beats={beatsByEpisodeId?.[selected.episodeId]}
           genre={genre}
           onSavePlan={onSavePlan}
+          storyboardHref={storyboardHrefForEpisode?.(selected.episodeId) ?? null}
         />
       )}
     </section>
@@ -113,12 +119,15 @@ function EpisodeSynopsisEditor({
   beats,
   genre,
   onSavePlan,
+  storyboardHref,
 }: {
   readonly plan: EpisodePlanWithSynopsis;
   readonly beats?: readonly StudioStoryBeat[];
   readonly genre?: string;
-  readonly onSavePlan: (plan: EpisodePlanWithSynopsis) => void;
+  readonly onSavePlan: (plan: EpisodePlanWithSynopsis) => boolean | void;
+  readonly storyboardHref: string | null;
 }) {
+  const bt = useBilingual("StudioEpisodeStoryPage.handoff");
   const [goal, setGoal] = useState(plan.goal ?? "");
   const [synopsis, setSynopsis] = useState(plan.synopsis ?? "");
   const [emotionFrom, setEmotionFrom] = useState(plan.emotionalArc?.from ?? "");
@@ -282,10 +291,16 @@ function EpisodeSynopsisEditor({
       )}
       <p aria-live="polite">{card.needsSynopsis ? r3c04StatusText("studio.r3c04Status.planning.storyPage.synopsisEmpty", "아직 줄거리 칸이 비어 있어요.") : r3c04StatusText("studio.r3c04Status.planning.storyPage.synopsisFilled", "줄거리 칸이 채워졌어요.")}</p>
       <button type="submit">저장</button>
-      {/* 콘티 연결: PR #2303 의 시작점 값(start=storyboard)을 그대로 쓴다 */}
-      <a href={`/studio/new?start=storyboard&episode=${encodeURIComponent(plan.episodeId)}`}>
-        이 회차 콘티 시작하기
-      </a>
+      <p>{bt("현재 기획을 저장하고 선택한 기존 원고를 엽니다. 원고 내용은 자동으로 바꾸지 않습니다.", "Save this episode plan and open the selected manuscript. Its artwork is not changed automatically.")}</p>
+      {storyboardHref ? (
+        <Link href={storyboardHref} onClick={(event) => {
+          if (onSavePlan(draft) === false) event.preventDefault();
+        }}>
+          {bt("이 회차 콘티 시작하기", "Open this episode storyboard")}
+        </Link>
+      ) : (
+        <span role="status">{bt("콘티를 이어갈 기존 원고를 선택해 주세요.", "Select the existing manuscript for this storyboard.")}</span>
+      )}
     </form>
   );
 }

@@ -185,7 +185,14 @@ export async function createCanvasHarness(connectionString: string, workIds: str
       return { status: response.status, body: await response.json() as T, cookie: response.headers.get("set-cookie")?.split(";")[0] ?? null };
     }
     const { StudioCrdtService } = await import("./studio-crdt.service");
-    return { request, outbox, pool, close, base, crdt: app.get(StudioCrdtService) };
+    return { request, outbox, pool, close, base, crdt: app.get(StudioCrdtService),
+      // 실제 업로드한 검수 PNG를 시험 저장소에서 읽는다. 호출자가 원본 버퍼를 바꾸지 못한다.
+      readPrivateObjectBytes(digest: string): Buffer | undefined {
+        if (!/^sha256:[a-f0-9]{64}$/u.test(digest)) throw new Error("시험 객체 digest가 올바르지 않습니다.");
+        for (const [key, bytes] of stored) if (key.endsWith(`:${digest}`)) return Buffer.from(bytes);
+        return undefined;
+      },
+    };
   } catch (cause) {
     try { await close(); } catch (cleanupError) { throw new AggregateError([cause, cleanupError], "공개 producer 초기화와 정리에 실패했습니다.", { cause: cleanupError }); }
     throw cause;
