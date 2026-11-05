@@ -812,6 +812,19 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
       for (const file of unrelated) assert.equal(existsSync(join(root, file)), false, `${shard}: 무관한 대형 자산 ${file}`);
       for (const file of unrelatedDocuments) assert.equal(existsSync(join(root, file)), shard === "product", `${shard}: 기존 product 외의 무관한 문서 ${file}`);
     }
+    // preflight는 선언을 검사하고, 문서 본문 복원은 위의 실제 shard 행렬에서 검증한다.
+    writeFileSync(join(root, ".git/info/sparse-checkout"), `${sparsePatterns(job("typecheck")).join("\n")}\n`);
+    git("read-tree", "-mu", "HEAD");
+    for (const path of foundationDocumentInputs) {
+      assert.equal(existsSync(join(root, path.slice(1))), false, `preflight에 불필요한 문서 본문: ${path}`);
+      assertTrackedDocumentInputs([path], { cwd: root, env });
+    }
+    assert.throws(() => assertTrackedDocumentInputs(["/docs/adr/0003-one-primary-surface-owner-typo.md"], { cwd: root, env }), /foundation 문서 정본이 Git 추적 목록에 없습니다/u);
+    const untracked = "docs/adr/untracked-foundation.md";
+    mkdirSync(dirname(join(root, untracked)), { recursive: true });
+    writeFileSync(join(root, untracked), "untracked fixture\n");
+    assert.ok(existsSync(join(root, untracked)));
+    assert.throws(() => assertTrackedDocumentInputs([`/${untracked}`], { cwd: root, env }), /foundation 문서 정본이 Git 추적 목록에 없습니다/u);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
