@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StoreSync } from "./store-sync";
 
 import { useApp } from "@/shared/lib/store";
+import { hasPendingSubscriptionWrites } from "@/shared/lib/store-api-post";
 
 const session = vi.hoisted(() => ({
   value: {
@@ -13,7 +14,8 @@ const session = vi.hoisted(() => ({
       user: { id: "owner-store-sync" },
       token: "session-store-sync" as string | null,
     },
-    status: "authenticated" as const,
+    ready: true,
+    status: "authenticated" as "authenticated" | "unauthenticated",
   },
 }));
 
@@ -36,10 +38,12 @@ function response(body: unknown, status = 200): Response {
 
 function deferredResponse() {
   let resolve!: (value: Response) => void;
-  const promise = new Promise<Response>((resolvePromise) => {
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<Response>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise;
+    reject = rejectPromise;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 }
 
 function resetStore() {
@@ -66,12 +70,264 @@ describe("StoreSync collection reconciliation", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     session.value.data.token = "session-store-sync";
+    session.value.ready = true;
+    session.value.status = "authenticated";
     resetStore();
   });
 
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
+  });
+
+  it("다른 기기의 구독 변경을 화면 복귀 시 교체하고 같은 복귀 이벤트를 합친다", async () => {
+    let visibility: DocumentVisibilityState = "visible";
+    vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);
+    let subscriptions: Record<string, boolean> = { original: true };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toBe("/api/me");
+      return response({ ratings: {}, reads: {}, subscriptions, reviews: {}, likedReviews: {}, collections: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    useApp.setState({ libraryOwnerId: "owner-store-sync" });
+
+    render(<StoreSync />);
+    await waitFor(() => expect(useApp.getState().subscriptions).toEqual({ original: true }));
+
+    subscriptions = { remote: true };
+    act(() => {
+      window.dispatchEvent(new Event("focus"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await waitFor(() => expect(useApp.getState().subscriptions).toEqual({ remote: true }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    visibility = "hidden";
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+      window.dispatchEvent(new Event("focus"));
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    subscriptions = {};
+    visibility = "visible";
+    act(() => document.dispatchEvent(new Event("visibilitychange")));
+    await waitFor(() => expect(useApp.getState().subscriptions).toEqual({}));
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("동기화 중 복귀 이벤트는 요청을 겹치지 않고 한 번만 재실행한다", async () => {
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    const first = deferredResponse();
+    const fetchMock = vi.fn()
+      .mockImplementationOnce(() => first.promise)
+      .mockResolvedValue(response({
+        ratings: {}, reads: {}, subscriptions: { remote: true }, reviews: {}, likedReviews: {}, collections: [],
+      }));
+    vi.stubGlobal("fetch", fetchMock);
+    useApp.setState({ libraryOwnerId: "owner-store-sync" });
+
+    render(<StoreSync />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      document.dispatchEvent(new Event("visibilitychange"));
+      await Promise.resolve();
+      window.dispatchEvent(new Event("focus"));
+      await Promise.resolve();
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    first.resolve(response({
+      ratings: {}, reads: {}, subscriptions: { original: true }, reviews: {}, likedReviews: {}, collections: [],
+    }));
+    await waitFor(() => expect(useApp.getState().subscriptions).toEqual({ remote: true }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("해제 후 복귀 이벤트와 지연 응답이 구독을 변경하지 않는다", async () => {
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    const pending = deferredResponse();
+    const fetchMock = vi.fn(() => pending.promise);
+    vi.stubGlobal("fetch", fetchMock);
+    const removeWindowListener = vi.spyOn(window, "removeEventListener");
+    const removeDocumentListener = vi.spyOn(document, "removeEventListener");
+    useApp.setState({ libraryOwnerId: "owner-store-sync", subscriptions: { saved: true } });
+
+    const view = render(<StoreSync />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    view.unmount();
+    expect(removeWindowListener).toHaveBeenCalledWith("focus", expect.any(Function));
+    expect(removeDocumentListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
+
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      document.dispatchEvent(new Event("visibilitychange"));
+      pending.resolve(response({
+        ratings: {}, reads: {}, subscriptions: { stale: true }, reviews: {}, likedReviews: {}, collections: [],
+      }));
+      await Promise.resolve();
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(useApp.getState().subscriptions).toEqual({ saved: true });
+  });
+
+  it("세션 확인 전에는 기존 계정 구독을 보존하고 확인 후 동기화한다", async () => {
+    session.value.ready = false;
+    session.value.status = "unauthenticated";
+    useApp.setState({
+      userId: "owner-store-sync",
+      libraryOwnerId: "owner-store-sync",
+      subscriptions: { saved: true },
+    });
+    const fetchMock = vi.fn(async () => response({
+      ratings: {}, reads: {}, subscriptions: { remote: true }, reviews: {}, likedReviews: {}, collections: [],
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const view = render(<StoreSync />);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(useApp.getState().subscriptions).toEqual({ saved: true });
+    expect(useApp.getState().userId).toBe("owner-store-sync");
+
+    session.value.ready = true;
+    session.value.status = "authenticated";
+    view.rerender(<StoreSync />);
+    await waitFor(() => expect(useApp.getState().subscriptions).toEqual({ remote: true }));
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it.each([false, true])("복귀 조회 중 바꾼 구독은 늦은 스냅샷에 덮이지 않는다 (쓰기 선완료: %s)", async (writeFinished) => {
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    const snapshot = deferredResponse();
+    const write = deferredResponse();
+    let snapshotRequests = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/me/subscription") return write.promise;
+      expect(String(input)).toBe("/api/me");
+      snapshotRequests += 1;
+      if (snapshotRequests === 2) return snapshot.promise;
+      return response({
+        ratings: {}, reads: {}, subscriptions: { saved: snapshotRequests === 1 },
+        reviews: {}, likedReviews: {}, collections: [],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    useApp.setState({ libraryOwnerId: "owner-store-sync" });
+    render(<StoreSync />);
+    await waitFor(() => expect(useApp.getState().subscriptions).toEqual({ saved: true }));
+
+    act(() => window.dispatchEvent(new Event("focus")));
+    await waitFor(() => expect(snapshotRequests).toBe(2));
+    vi.useFakeTimers();
+    act(() => useApp.getState().toggleSubscription("saved"));
+    expect(hasPendingSubscriptionWrites()).toBe(true);
+    if (writeFinished) {
+      await act(async () => {
+        write.resolve(response({ ok: true, subscribed: false }));
+      });
+      expect(hasPendingSubscriptionWrites()).toBe(false);
+    }
+    await act(async () => {
+      snapshot.resolve(response({
+        ratings: {}, reads: {}, subscriptions: { saved: true }, reviews: {}, likedReviews: {}, collections: [],
+      }));
+    });
+    expect(useApp.getState().subscriptions).toEqual({ saved: false });
+
+    if (!writeFinished) {
+      await act(async () => window.dispatchEvent(new Event("focus")));
+      expect(snapshotRequests).toBe(2);
+      await act(async () => {
+        write.resolve(response({ ok: true, subscribed: false }));
+      });
+    }
+    expect(hasPendingSubscriptionWrites()).toBe(false);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(snapshotRequests).toBe(3);
+    expect(useApp.getState().subscriptions).toEqual({ saved: false });
+  });
+
+  it.each([false, true])("구독 쓰기 성공·실패 후 진행 상태를 정리한다 (실패: %s)", async (failed) => {
+    const write = deferredResponse();
+    vi.stubGlobal("fetch", vi.fn(() => write.promise));
+    useApp.getState().setSessionIdentity("owner-store-sync", "session-store-sync");
+    useApp.getState().toggleSubscription("saved");
+    expect(hasPendingSubscriptionWrites()).toBe(true);
+
+    await act(async () => {
+      if (failed) write.reject(new TypeError("연결 실패"));
+      else write.resolve(response({ ok: true, subscribed: true }));
+    });
+    expect(hasPendingSubscriptionWrites()).toBe(false);
+    expect(useApp.getState().subscriptions).toEqual({ saved: true });
+  });
+
+  it("이전 계정·세션의 구독 쓰기는 새 세션 동기화를 막지 않는다", async () => {
+    const write = deferredResponse();
+    vi.stubGlobal("fetch", vi.fn(() => write.promise));
+    useApp.getState().setSessionIdentity("owner-store-sync", "previous-session");
+    useApp.getState().toggleSubscription("saved");
+    expect(hasPendingSubscriptionWrites()).toBe(true);
+
+    useApp.getState().setSessionIdentity("owner-store-sync", "next-session");
+    expect(hasPendingSubscriptionWrites()).toBe(false);
+    useApp.getState().setSessionIdentity("another-owner", "another-session");
+    expect(hasPendingSubscriptionWrites()).toBe(false);
+    await act(async () => write.resolve(response({ ok: true, subscribed: true })));
+    expect(hasPendingSubscriptionWrites()).toBe(false);
+  });
+
+  it("로그인 병합 도중 바꾼 구독은 보존하고 쓰기 완료 후 서버 스냅샷으로 교체한다", async () => {
+    vi.useFakeTimers();
+    const merge = deferredResponse();
+    const write = deferredResponse();
+    const serverCollection = {
+      id: "server-existing", name: "서버 서재", emoji: "📚", titleIds: [], createdAt: "2026-11-06T00:00:00.000Z",
+    };
+    let snapshotRequests = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === "/api/me/merge") {
+        expect(JSON.parse(String(init?.body)).subscriptions).toEqual({ saved: true });
+        return merge.promise;
+      }
+      if (String(input) === "/api/me/subscription") return write.promise;
+      expect(String(input)).toBe("/api/me");
+      snapshotRequests += 1;
+      return response({
+        ratings: {}, reads: {}, subscriptions: { remote: true }, reviews: {}, likedReviews: {}, collections: [serverCollection],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    useApp.setState({ subscriptions: { saved: true } });
+
+    render(<StoreSync />);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    act(() => useApp.getState().toggleSubscription("saved"));
+    await act(async () => {
+      merge.resolve(response({
+        ratings: {}, reads: {}, subscriptions: { saved: true }, reviews: {}, likedReviews: {}, collections: [serverCollection],
+      }));
+    });
+    expect(useApp.getState().subscriptions).toEqual({ saved: false });
+    expect(useApp.getState().collections).toEqual([serverCollection]);
+    expect(useApp.getState().libraryOwnerId).toBe("owner-store-sync");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(snapshotRequests).toBe(0);
+    await act(async () => {
+      write.resolve(response({ ok: true, subscribed: false }));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(snapshotRequests).toBe(1);
+    expect(useApp.getState().subscriptions).toEqual({ remote: true });
+    expect(useApp.getState().collections).toEqual([serverCollection]);
   });
 
   it("keeps local collection authority offline and resumes sync on reconnect", async () => {
