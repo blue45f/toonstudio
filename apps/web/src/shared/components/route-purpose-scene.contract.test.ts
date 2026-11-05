@@ -46,7 +46,11 @@ describe("site-wide visual UX contracts", () => {
     expect(component).toContain("videoFailed");
     expect(component).toContain('data-ready={videoReady ? "true" : "false"}');
     expect(routeCss).toContain('video[data-ready="true"]');
-    expect(component).toContain("aria-label={paused");
+    expect(component).toContain("const toggleLabel = paused");
+    expect(component).toContain("aria-label={toggleLabel}");
+    expect(component).toContain('"페이지 모션 재생" : "Play page motion"');
+    expect(component).toContain('"페이지 모션 일시정지" : "Pause page motion"');
+    expect(component).toContain("aria-pressed={paused}");
     expect(component).not.toMatch(/from ["'](?:remotion|@remotion)/u);
     expect(routeCss).toContain("perspective: 1050px");
     expect(routeCss).toContain("prefers-reduced-motion: reduce");
