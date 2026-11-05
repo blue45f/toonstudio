@@ -1,3 +1,4 @@
+import { latentPigmentPackedAtlasLayout, type LatentPigmentTextureEncoding } from "./latent-pigment-float32-atlas";
 /**
  * 잠재 안료 혼합 셰이더 모듈 생성기 — WGSL(WebGPU)과 GLSL ES 3.0(WebGL2) 두 벌을 같은 표에서 만든다.
  *
@@ -221,12 +222,40 @@ export interface LatentPigmentGlslOptions {
   /** 표 샘플러 uniform 이름. 기본 `u_latentPigmentTable`. */
   readonly samplerName?: string;
   readonly tableSize?: number;
+  /** packed-float32는 농도 Float32의 바이트를 RGBA8 텍스처에 그대로 보존한다. */
+  readonly textureEncoding?: LatentPigmentTextureEncoding;
 }
 
 /**
  * GLSL ES 3.00 모듈 문자열(`#version` 줄은 넣지 않는다). 기본 정밀도에 기대지 않도록 모든 부동소수 선언에
  * highp 를 붙였다. 표 텍스처는 RGBA32F(필터링 없음)로 올리고 texelFetch 로 읽는다.
  */
+function packedAtlasTexelStatements(size: number): string {
+  return `  highp float index = ((float(i.z) * ${size}.0 + float(i.y)) * ${size}.0 + float(i.x)) * 4.0;
+  return vec4(latent_pigment_packed_float(index), latent_pigment_packed_float(index + 1.0),
+    latent_pigment_packed_float(index + 2.0), latent_pigment_packed_float(index + 3.0));`;
+}
+
+/** GLSL100에도 비트 연산이나 부동소수 텍스처 확장을 요구하지 않는 명시적 IEEE754 복호화다. */
+function packedAtlasDecoder(size: number, version: 100 | 300, sampler: string): string {
+  const { width, height } = latentPigmentPackedAtlasLayout(size);
+  const sample = version === 100
+    ? `texture2D(${sampler}, (vec2(column, row) + 0.5) / vec2(${width}.0, ${height}.0))`
+    : `texelFetch(${sampler}, ivec2(column, row), 0)`;
+  return `
+highp float latent_pigment_packed_float(highp float index) {
+  highp float column = mod(index, ${width}.0);
+  highp float row = floor(index / ${width}.0);
+  highp vec4 bytes = floor(${sample} * 255.0 + 0.5);
+  highp float sign_value = 1.0 - 2.0 * floor(bytes.w / 128.0);
+  highp float exponent = mod(bytes.w, 128.0) * 2.0 + floor(bytes.z / 128.0);
+  highp float mantissa = mod(bytes.z, 128.0) * 65536.0 + bytes.y * 256.0 + bytes.x;
+  if (exponent == 0.0) return sign_value * (mantissa / 8388608.0) * exp2(-126.0);
+  return sign_value * (1.0 + mantissa / 8388608.0) * exp2(exponent - 127.0);
+}
+`;
+}
+
 export function buildLatentPigmentGlsl(options: LatentPigmentGlslOptions = {}): string {
   const version = options.version ?? 300;
   if (version !== 100 && version !== 300) throw new RangeError("GLSL 버전은 100 또는 300이어야 합니다.");
@@ -235,6 +264,9 @@ export function buildLatentPigmentGlsl(options: LatentPigmentGlslOptions = {}): 
     throw new RangeError(`표 배치가 올바르지 않습니다(받은 값: ${String(layout)}).`);
   }
   if (version === 100 && layout !== "atlas-2d") throw new RangeError("WebGL1은 2D 안료 아틀라스가 필요합니다.");
+  const encoding = options.textureEncoding ?? "float32";
+  if (encoding !== "float32" && encoding !== "packed-float32") throw new RangeError("안료 텍스처 인코딩이 올바르지 않습니다.");
+  if (encoding === "packed-float32" && layout !== "atlas-2d") throw new RangeError("안료 바이트 표는 2D 아틀라스가 필요합니다.");
   const sampler = options.samplerName ?? "u_latentPigmentTable";
   if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(sampler) || sampler.startsWith("gl_")) {
     throw new RangeError(`샘플러 이름이 올바르지 않습니다(받은 값: ${sampler}).`);
@@ -244,14 +276,18 @@ export function buildLatentPigmentGlsl(options: LatentPigmentGlslOptions = {}): 
   const samplerDeclaration = layout === "texture-3d"
     ? `uniform highp sampler3D ${sampler};`
     : `uniform highp sampler2D ${sampler};`;
-  const texelFetch = version === 100
+  const texelFetch = encoding === "packed-float32"
+    ? packedAtlasTexelStatements(size)
+    : version === 100
     ? `  return texture2D(${sampler}, (vec2(float(i.x + i.z * LATENT_PIGMENT_TABLE_SIZE), float(i.y)) + 0.5) / vec2(float(LATENT_PIGMENT_TABLE_SIZE * LATENT_PIGMENT_TABLE_SIZE), float(LATENT_PIGMENT_TABLE_SIZE)));`
     : layout === "texture-3d"
     ? `  return texelFetch(${sampler}, i, 0);`
     : `  return texelFetch(${sampler}, ivec2(i.x + i.z * LATENT_PIGMENT_TABLE_SIZE, i.y), 0);`;
   return `${header("glsl", size)}
+// texture encoding ${encoding}
 const int LATENT_PIGMENT_TABLE_SIZE = ${size};
 ${samplerDeclaration}
+${encoding === "packed-float32" ? packedAtlasDecoder(size, version, sampler) : ""}
 
 struct LatentPigment {
   highp vec4 concentrations;

@@ -191,10 +191,6 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
       "./studio-producer-error-i18n-filter-worker.ts",
       "./studio-producer-error-i18n-gateway.ts",
     ].map((rel) => readFileSync(new URL(rel, import.meta.url), "utf-8")).join("\n");
-    const blocks: Record<string, string[]> = {};
-    for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
-      blocks[match[1] ?? ""] = [...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? "");
-    }
     // R9: 등록 블록이 구간별로 늘었다(tm 11 + animatic 25 — 본체 23 + 자막 파서 2). 블록 단위 누적으로 패리티를 본다.
     // R10: 코어에 create 11(라벨 7 + 메시지 4)·bg3dTemplate 6(이전 서브코드 5 + 보존 고지 1)·shotBatch 2·music 4가 더해져 코어 누적 59키가 됐다.
     // R11: 형제 모듈 구간(glb 55 + palette 23 + dialogue 105 + bg3dLt 50 + bg3dMeasure·shotBatchPlan 56)이 더해져 전체 누적 348키가 된다.
@@ -213,7 +209,7 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    // R24: 기존 외부 혼색 보관 출처 오류 1키를 포함해 두 언어의 2,382키와 중복 부재를 확인한다.
+    // R24: 외부 혼색 원본의 보관 출처 오류 1키가 더해졌다 — 전체 누적 2,382키.
     expect(source).toContain('"studio.producerError.livePageBridge.legacyPigmentArchiveInvalid": "외부 혼색 원본의 보관 출처가 올바르지 않습니다. 원본 보관본을 다시 확인해 주세요."');
     expect(source).toContain('"studio.producerError.livePageBridge.legacyPigmentArchiveInvalid": "The archived pigment source provenance is invalid. Check the original archive again."');
     expect(new Set(accumulated.ko).size).toBe(2382);

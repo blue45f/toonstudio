@@ -16,7 +16,8 @@ import { build } from "vite";
 
 const SCRIPT = fileURLToPath(import.meta.url);
 const ROOT = path.resolve(path.dirname(SCRIPT), "..");
-const OUTPUT = path.join(ROOT, ".qa/mixbox-internalization/browser-probe");
+const OUTPUT = path.resolve(process.env.TOONSTUDIO_LATENT_PIGMENT_VERIFY_DIR
+  ?? path.join(ROOT, ".qa/mixbox-internalization/browser-probe"));
 const RESULT_TIMEOUT_MS = 180_000;
 const BROWSER_TIMEOUT_MS = 30_000;
 const ARTIFACTS = ["fixture.ts", "dist/fixture.js", "module-audit.json", "result.json", "brushes-23.png", "verifier-source.mjs"];
@@ -172,9 +173,8 @@ async function within(promise, milliseconds, label) {
 }
 
 /** Playwright가 이 함수 전체를 브라우저로 직렬화하므로 내부 함수는 외부 클로저를 읽지 않는다. */
-async function inspectBrowserPigment(expectedIds) {
-  const fixtureUrl = new URL("/fixture.js", location.href).href;
-  const m = await import(fixtureUrl);
+async function inspectBrowserPigment({ expectedIds, fixtureModuleUrl }) {
+  const m = await import(fixtureModuleUrl);
   const tableStarted = performance.now();
   const table = m.bakeLatentPigmentTable(33);
   const tableBakeMs = performance.now() - tableStarted;
@@ -237,16 +237,28 @@ async function inspectBrowserPigment(expectedIds) {
     }
     return shader;
   }
-  function inspectWebGl(api, layout) {
+  function inspectWebGl(api, layout, path = "direct") {
     const canvas = document.createElement("canvas");
     canvas.width = 1; canvas.height = 1;
     const gl = canvas.getContext(api, { alpha: true, premultipliedAlpha: false, antialias: false, preserveDrawingBuffer: true });
     if (!gl) return { api, layout, available: false, pass: false, reason: "필수 WebGL 컨텍스트 미지원" };
     const modern = api === "webgl2";
+    const publicDefaults = path === "public-defaults";
+    const uploadGl = path === "without-float-extension" ? new Proxy(gl, {
+      get(target, key) {
+        if (key === "getExtension") return (name) => name === "OES_texture_float" ? null : target.getExtension(name);
+        const value = Reflect.get(target, key, target);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    }) : gl;
     const state = dirtyUnpack(gl, modern);
     let resource, vertexShader, fragmentShader, program, buffer;
     try {
-      resource = m.createLatentPigmentWebGlResource(gl, { table, tableLayout: layout });
+      if (publicDefaults) {
+        const texture = m.toonstudioPigment.lutTexture(uploadGl);
+        resource = { texture, target: gl.TEXTURE_2D, version: modern ? 300 : 100, dispose: () => gl.deleteTexture(texture) };
+      } else resource = m.createLatentPigmentWebGlResource(uploadGl, { table, tableLayout: layout,
+        ...(path === "packed" ? { textureEncoding: "packed-float32" } : {}) });
       const after = state.parameters.map((parameter) => gl.getParameter(parameter));
       const restored = state.before.every((value, index) => value === after[index])
         && (!modern || gl.getParameter(gl.PIXEL_UNPACK_BUFFER_BINDING) === state.buffer);
@@ -254,7 +266,8 @@ async function inspectBrowserPigment(expectedIds) {
 void main(){gl_Position=vec4(p,0.0,1.0);}`;
       const fragment = `${modern ? "#version 300 es\n" : ""}precision highp float;
 precision highp int;
-${m.glsl({ version: resource.version, tableLayout: layout, tableSize: table.size })}
+${m.glsl(publicDefaults ? (modern ? { version: 300 } : {})
+  : { version: resource.version, tableLayout: layout, tableSize: table.size, textureEncoding: resource.textureEncoding })}
 uniform vec4 a; uniform vec4 b; uniform float t; uniform int mode;
 ${modern ? "out vec4 color;" : ""}
 void main(){
@@ -262,7 +275,8 @@ void main(){
     : mode==1 ? latent_pigment_mix_rgba(a,b,t)
     : mode==2 ? vec4(toonstudio_pigment_lerp_linear(a.rgb,b.rgb,t),1.0)
     : mode==3 ? latent_pigment_mix_linear_rgba(a,b,t)
-    : mode==4 ? toonstudio_pigment_lerp(a,b,t) : toonstudio_pigment_lerp_linear(a,b,t);
+    : mode==4 ? toonstudio_pigment_lerp(a,b,t) : mode==5 ? toonstudio_pigment_lerp_linear(a,b,t)
+    : latent_pigment_table_texel(ivec3(a.rgb));
 }`;
       vertexShader = compile(gl, gl.VERTEX_SHADER, vertex, `${api}/${layout}`);
       fragmentShader = compile(gl, gl.FRAGMENT_SHADER, fragment, `${api}/${layout}`);
@@ -302,11 +316,22 @@ void main(){
         const error = maximumError(actual, expected);
         return { mode: mode === 4 ? "public-independent-rgba" : "public-independent-linear-rgba", a, b, t, actual, expected, error, pass: error <= 2 };
       });
-      const maxError = Math.max(...pixels.map((pixel) => pixel.error), ...publicAlpha.map((pixel) => pixel.error));
+      const atlasWidth = resource.textureWidth ?? Math.ceil(Math.sqrt(table.concentrations.length));
+      const rawTexels = [...new Set([0, Math.floor((atlasWidth - 1) / 4), Math.floor(atlasWidth / 4),
+        Math.floor((atlasWidth + 1) / 4), table.size ** 3 - 1])].map((index) => {
+        const coordinate = [index % table.size, Math.floor(index / table.size) % table.size, Math.floor(index / table.size ** 2)];
+        const actual = uniform(6, [...coordinate, 1], [0, 0, 0, 1], 0);
+        const expected = Array.from(table.concentrations.slice(index * 4, index * 4 + 4), (value) => Math.round(value * 255));
+        return { index, coordinate, actual, expected, error: maximumError(actual, expected) };
+      });
+      const maxError = Math.max(...pixels.map((pixel) => pixel.error), ...publicAlpha.map((pixel) => pixel.error),
+        ...rawTexels.map((texel) => texel.error));
       const webglError = gl.getError();
-      return { api, layout, available: true, device: renderer(gl), shaderCompiled: true, pixels, publicAlpha,
+      const encodingMatched = path !== "without-float-extension" || resource.textureEncoding === "packed-float32";
+      return { api, layout, path, textureEncoding: resource.textureEncoding, textureWidth: resource.textureWidth,
+        textureHeight: resource.textureHeight, available: true, device: renderer(gl), shaderCompiled: true, pixels, publicAlpha, rawTexels,
         maxError, webglError, unpackBefore: state.before, unpackAfter: after, unpackStateRestored: restored,
-        pass: maxError <= 2 && webglError === gl.NO_ERROR && restored };
+        pass: maxError <= 2 && rawTexels.every((texel) => texel.error <= 1) && webglError === gl.NO_ERROR && restored && encodingMatched };
     } finally {
       resource?.dispose();
       for (const value of [buffer, state.buffer]) if (value) gl.deleteBuffer(value);
@@ -439,8 +464,10 @@ fn main(@builtin(global_invocation_id) index:vec3u){
         telemetryCount: telemetry.length, provider, pass: changed && telemetry.length > 0 && provider === "toonstudio-latent-pigment-v1" };
     } finally { controller.destroy(); }
   }
-  const gpu = [["webgl", "atlas-2d"], ["webgl2", "atlas-2d"], ["webgl2", "texture-3d"]]
-    .map(([api, layout]) => inspectWebGl(api, layout));
+  const gpu = [["webgl", "atlas-2d", "direct"], ["webgl2", "atlas-2d", "direct"], ["webgl2", "texture-3d", "direct"],
+    ["webgl", "atlas-2d", "without-float-extension"], ["webgl2", "atlas-2d", "packed"],
+    ["webgl", "atlas-2d", "public-defaults"], ["webgl2", "atlas-2d", "public-defaults"]]
+    .map(([api, layout, path]) => inspectWebGl(api, layout, path));
   const webgpu = await inspectWebGpu();
   const cpuApi = {
     namedCss: m.toonstudioPigment.lerp("red", "blue", 0),
@@ -461,8 +488,8 @@ fn main(@builtin(global_invocation_id) index:vec3u){
 
 function summary(result) {
   return { pass: result.pass, browser: result.browserVersion, tableSize: result.tableSize,
-    gpu: result.gpu.map(({ api, layout, maxError, pass, device, unpackStateRestored }) =>
-      ({ api, layout, maxError, pass, device, unpackStateRestored })),
+    gpu: result.gpu.map(({ api, layout, path, textureEncoding, maxError, pass, device, unpackStateRestored }) =>
+      ({ api, layout, path, textureEncoding, maxError, pass, device, unpackStateRestored })),
     webgpu: { available: result.webgpu.available, state: result.webgpu.state, reason: result.webgpu.reason,
       adapter: result.webgpu.adapter, count: result.webgpu.count, maxError: result.webgpu.maxError, pass: result.webgpu.pass },
     brushes: result.brushes.length, brushFailures: result.brushes.filter((row) => !row.pass),
@@ -496,7 +523,9 @@ export async function runBrowserVerification() {
     const consoleErrors = [];
     page.on("pageerror", (error) => consoleErrors.push(error.message));
     await page.goto(`http://127.0.0.1:${port}/`, { timeout: BROWSER_TIMEOUT_MS });
-    const result = await within(page.evaluate(inspectBrowserPigment, EXPECTED_IDS), RESULT_TIMEOUT_MS, "안료 브라우저 검증");
+    const result = await within(page.evaluate(inspectBrowserPigment, {
+      expectedIds: EXPECTED_IDS, fixtureModuleUrl: new URL("fixture.js", page.url()).href,
+    }), RESULT_TIMEOUT_MS, "안료 브라우저 검증");
     Object.assign(result, { runId, sourceRevision, workingTreeDirty, verifierSha256, browserVersion: browser.version(), consoleErrors,
       browserFlags: ["--enable-unsafe-webgpu"], physicalGpuVerified: false, previousEvidence });
     const audit = await optionalJson(path.join(OUTPUT, "module-audit.json"));

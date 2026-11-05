@@ -14,7 +14,9 @@ const readiness = readFileSync(
 describe("Studio brush browser beta admission", () => {
   it("도형의 캔버스 수신과 제스처 전후 동일 좌표계를 검증한다", () => {
     const start = source.indexOf("async function runSmartShapeMatrix");
-    const end = source.indexOf("async function openMobileBrushSettings", start);
+    const end = source.indexOf("async function runMobileTouchAudit", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
     const shapes = source.slice(start, end);
     expect(shapes).toContain("document.elementFromPoint(x, y)");
     expect(shapes).toContain('target?.closest(".konvajs-content")');

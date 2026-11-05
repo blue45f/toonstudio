@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import pressureBaseline from "./fixtures/studio-chemy-v1-pressure/baseline.json";
@@ -42,7 +44,50 @@ describe("V6 material pixel comparison", () => {
   });
 });
 
-describe("Chemy V1 검토 계약: 관측 객체 음성 회귀이며 engine mutation 실행은 아님", () => {
+describe("전체 topology 압력 하한 계약", () => {
+  const file = ts.createSourceFile("studio-hybrid-topology-browser.ts",
+    readFileSync(new URL("./studio-hybrid-topology-browser.ts", import.meta.url), "utf8"), ts.ScriptTarget.Latest, true);
+  const audit = file.statements.find((node): node is ts.FunctionDeclaration =>
+    ts.isFunctionDeclaration(node) && node.name?.text === "auditStudioHybridTopology");
+  const loop = audit?.body?.statements.find((node): node is ts.ForOfStatement =>
+    ts.isForOfStatement(node) && node.expression.getText(file) === "BRUSH_STUDIO_V6_TOPOLOGIES.entries()");
+
+  it("Chemy 예외 없이 루프에서 직접 원래 15% 초과 조건을 실행한다", () => {
+    if (!loop || !ts.isBlock(loop.statement)) throw new Error("전체 topology 감사 루프가 필요합니다.");
+    const gate = loop.statement.statements.find((node) => {
+      if (!ts.isExpressionStatement(node) || !ts.isCallExpression(node.expression)) return false;
+      const [condition] = node.expression.arguments;
+      return node.expression.expression.getText(file) === "check" && condition && ts.isBinaryExpression(condition)
+        && condition.left.getText(file) === "pressureRatio";
+    });
+    if (!gate) throw new Error("Chemy를 포함한 모든 topology에 무조건 실행하는 압력 gate가 필요합니다.");
+    // 실제 감사의 문장을 실행한다. 조건문 안의 Chemy 예외는 직접 자식 gate로 인정하지 않는다.
+    for (const recipeId of ["klecks-chemy", "control-topology"]) {
+      for (const [pressureRatio, expected] of [[1, false], [1.1323929288472774, false], [1.15, false],
+        [1.150001, true], [NaN, false]] as const) {
+        const checks: boolean[] = [];
+        runInNewContext(gate.getText(file), {
+          topology: { recipeId }, pressureRatio,
+          check: (ok: boolean) => { checks.push(ok); },
+        });
+        expect(checks, `${recipeId}: ${pressureRatio}`).toEqual([expected]);
+      }
+    }
+  });
+
+  it("전체 보고서는 원래 하한 유지와 면제 승인 미확인을 기록한다", () => {
+    const result = audit?.body?.statements.find(ts.isReturnStatement)?.expression;
+    if (!result || !ts.isObjectLiteralExpression(result)) throw new Error("전체 감사 보고서가 필요합니다.");
+    const policy = result.properties.find((node): node is ts.PropertyAssignment =>
+      ts.isPropertyAssignment(node) && node.name.getText(file) === "chemyPressurePolicy");
+    if (!policy) throw new Error("전체 감사의 압력 계약 보고가 필요합니다.");
+    expect(runInNewContext(`(${policy.initializer.getText(file)})`)).toEqual({
+      originalMinimumExclusive: 1.15, originalMinimumRetained: true, approvalStatus: "waiver-approval-unverified",
+    });
+  });
+});
+
+describe("Chemy V1 보관 정책 진단: 관측 객체 음성 회귀이며 engine mutation 실행은 아님", () => {
   const baseline: ChemyPressureBaseline = pressureBaseline;
   const valid = (): ChemyPressureObservation => ({
     environment: structuredClone(baseline.environment), snapshot: structuredClone(baseline.snapshot),
@@ -52,7 +97,7 @@ describe("Chemy V1 검토 계약: 관측 객체 음성 회귀이며 engine mutat
     primitive: { countLow: 1758, countHigh: 1758, proportionalityViolations: 0, invalidMarks: 0,
       opacitySha256: { ...baseline.opacitySha256 } }, alphaMonotonicViolations: 0,
   });
-  it("합격 관측도 이전 15% 보장은 미충족이며 사용자 결정 범위를 명시한다", () => {
+  it("보관된 제안의 승인 표기는 전체 감사의 독립 15% 하한 통과를 뜻하지 않는다", () => {
     const result = checkLegacyChemyV1Pressure(valid(), baseline);
     expect(result.ok).toBe(true); expect(result.evaluated).toBe(true);
     expect(result.originalAggregatePasses).toBe(false);
@@ -86,7 +131,7 @@ describe("Chemy V1 검토 계약: 관측 객체 음성 회귀이며 engine mutat
     const result = checkLegacyChemyV1Pressure(actual, baseline);
     expect(result.ok).toBe(false); expect(result.evaluated).toBe(false);
   });
-  it("골든 누락·손상과 승인 의미 누락을 거부한다", () => {
+  it("골든 누락·손상과 보관된 계약 필드 변경을 거부한다", () => {
     expect(checkLegacyChemyV1Pressure(valid(), null).ok).toBe(false);
     const changed = structuredClone(baseline); changed.pixels.low.rgbaSha256 = "broken";
     expect(checkLegacyChemyV1Pressure(valid(), changed).ok).toBe(false);

@@ -1,7 +1,12 @@
-// 작은 버전 청크의 런타임 의존성을 만들지 않는다. 정본 필드와의 일치는 동작 회귀로 검사한다.
-const PRESERVED_DRAW_METADATA_KEYS = ["psdGroupId", "psdRasterSourceId", "psdSource", "psdFolderPath", "colorizeMask", "colorizeMaskEnabled", "linked3dCorrection"] as const;
+import type { STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 /** 저장된 편집 기능에 필요한 최소 reader. 렌더러를 로드하지 않는다. */
 export type StudioProjectFileVersion = 2 | 3 | 4 | 5 | 6;
+
+// 작은 버전 계약은 런타임 의존성 없이 유지하고 공유 계약의 키 추가·삭제는 타입 검사로 감지한다.
+const PRESERVED_DRAW_METADATA_KEYS = Object.keys({
+  psdGroupId: true, psdRasterSourceId: true, psdSource: true, psdFolderPath: true,
+  colorizeMask: true, colorizeMaskEnabled: true, linked3dCorrection: true,
+} satisfies Readonly<Record<(typeof STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS)[number], true>>);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

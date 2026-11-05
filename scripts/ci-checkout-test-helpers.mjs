@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 /** 테스트가 사용하는 두 종류의 알려진 checkout 조건식만 해석한다. */
 export function sparsePatterns(block, { shard = "studio-editing", eventName = "workflow_dispatch" } = {}) {
@@ -30,4 +32,12 @@ export function fixtureGitEnvironment(root, additions = {}) {
     GIT_TERMINAL_PROMPT: "0",
     ...additions,
   };
+}
+
+/** 문서 본문을 체크아웃하지 않는 lane도 Git 추적 정본의 누락은 거부한다. */
+export function assertTrackedDocumentInputs(inputs, { cwd = fileURLToPath(new URL("../", import.meta.url)), env } = {}) {
+  const tracked = spawnSync("git", ["ls-files", "--error-unmatch", "--",
+    ...inputs.map((path) => `:(literal)${path.slice(1)}`)], { cwd, env, encoding: "utf8" });
+  assert.equal(tracked.status, 0,
+    `foundation 문서 정본이 Git 추적 목록에 없습니다: ${inputs.join(", ")}\n${tracked.error?.message ?? tracked.stderr}`);
 }

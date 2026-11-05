@@ -9,10 +9,11 @@ import { createLatentPigmentWebGlResource, type LatentPigmentWebGlOptions } from
 export * from "./latent-pigment-api";
 export { buildLatentPigmentWgsl, createLatentPigmentWebGlResource };
 
-/** 기본은 WebGL1·2 양쪽에서 읽을 2D 아틀라스용 GLSL ES 1.00이다. */
+/** 기본은 확장 없이 같은 Float32 바이트를 읽는 2D 보존 표와 GLSL100이다. */
 export function glsl(options: LatentPigmentGlslOptions = {}): string {
+  const textureEncoding = options.textureEncoding ?? (options.tableLayout === "texture-3d" ? "float32" : "packed-float32");
   // 공개 API의 알파는 CPU와 같은 독립 선형 보간이다. 재료용 coverage 함수는 별도로 유지한다.
-  return `${buildLatentPigmentGlsl({ version: 100, tableLayout: "atlas-2d", ...options })}
+  return `${buildLatentPigmentGlsl({ version: 100, tableLayout: "atlas-2d", ...options, textureEncoding })}
 highp vec3 toonstudio_pigment_lerp(highp vec3 a, highp vec3 b, highp float t) {
   return latent_pigment_mix(a, b, t);
 }
@@ -33,7 +34,8 @@ export function lutTexture(
   gl: WebGLRenderingContext | WebGL2RenderingContext,
   options: LatentPigmentWebGlOptions = {},
 ): WebGLTexture {
-  return createLatentPigmentWebGlResource(gl, { tableLayout: "atlas-2d", ...options }).texture;
+  const textureEncoding = options.textureEncoding ?? (options.tableLayout === "texture-3d" ? "float32" : "packed-float32");
+  return createLatentPigmentWebGlResource(gl, { tableLayout: "atlas-2d", ...options, textureEncoding }).texture;
 }
 
 export const toonstudioPigment = Object.freeze({ ...cpuPigment, glsl, lutTexture, wgsl: buildLatentPigmentWgsl });

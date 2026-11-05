@@ -28,6 +28,13 @@
 색 비율을 가중하므로 알파 계약이 다르다. 자체 7채널 배열은 원본 Mixbox의 잠재 데이터와
 교환할 수 없으며, API 모양의 대응을 출력 동일성으로 해석하지 않는다.
 
+공개 `glsl()`·`lutTexture()` 기본값은 자체 Float32 표의 비트를 RGBA8 atlas로 보관하는
+`packed-float32`다. WebGL1의 float 확장 없이도 실행하며 농도 양자화·표 해상도 하향은 하지 않는다.
+직접 resource를 만드는 경로는 지원 장치의 float 경로를 유지하고, 확장 부재나 자동 float atlas의
+폭 초과 시 같은 표의 byte 배치로 전환한다. resource의 실제 `textureEncoding`과 shader를
+함께 사용한다. 명시적인 WebGL2 3D 배치는 기존 float32 계약을 유지한다. 비트 저장 검증과 실제
+GPU의 산술·출력 오차 검증은 [검증 보고서](../reports/mixbox-internalization-verification-2026-11-05.md)에 구분한다.
+
 이 문서는 색을 "안료 4종의 농도 + 3채널 잔차"로 바꿔 섞는 독립 구현의 **현재 구현(current)**, 근거, 한계, 권리 상태를 나눠 적는다. 구현되지 않은 것을 현재 기능처럼 쓰지 않는다. 설계 근거는 [분석 보고서](../reports/mixbox-working-principle-analysis-2026-10-15.md)(역사 자료)의 구조 설명이며, 이 문서가 구현 이후의 현재 사실을 설명한다.
 
 ## 1. 상태 요약
