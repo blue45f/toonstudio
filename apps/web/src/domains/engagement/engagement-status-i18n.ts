@@ -15,6 +15,8 @@ import {
 } from "@/shared/lib/i18n";
 
 registerI18nLocaleEntries("ko", {
+  "engagement.status.release.scheduledTitle": "{title} 오늘 연재 예정",
+  "engagement.status.release.scheduledBody": "등록된 연재 요일 메타데이터 기준입니다. 새 회차 공개 여부는 제공 플랫폼에서 확인해 주세요.",
   "engagement.status.growthLab.diffUnavailable": "차이 확인 불가",
   "engagement.status.growthLab.loading": "성장 실험을 불러오는 중입니다…",
   "engagement.status.growthLab.emptyTitle": "아직 성장 실험이 없습니다",
@@ -44,6 +46,8 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "engagement.status.release.scheduledTitle": "{title} is scheduled for today",
+  "engagement.status.release.scheduledBody": "Based on the listed release weekdays. Check the provider platform to confirm whether a new episode is available.",
   "engagement.status.growthLab.diffUnavailable": "Difference unavailable",
   "engagement.status.growthLab.loading": "Loading growth experiments…",
   "engagement.status.growthLab.emptyTitle": "No growth experiments yet",

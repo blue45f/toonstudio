@@ -92,6 +92,71 @@ describe("engagement store", () => {
     expect(useEngagement.getState().availabilityHistory["title-1"]?.events).toHaveLength(2);
   });
 
+  it("연재 일정 갱신에서도 같은 알림의 읽음·보관·미루기 상태를 보존한다", () => {
+    const friday = new Date(2026, 8, 25);
+    const titles = ["read", "archived", "snoozed"].map((id) => ({ ...title(), id }));
+    useEngagement.getState().syncReleaseNotifications(titles, friday);
+    useEngagement.getState().markNotificationRead("release:2026-09-25:read");
+    useEngagement.getState().archiveNotification("release:2026-09-25:archived");
+    useEngagement.getState().snoozeNotification("release:2026-09-25:snoozed", "2099-01-01T00:00:00.000Z");
+    const before = useEngagement.getState().notifications;
+
+    useEngagement.getState().syncReleaseNotifications(
+      titles.map((item) => ({ ...item, title: "수정한 작품명" })),
+      friday,
+    );
+
+    const after = useEngagement.getState().notifications;
+    expect(after).toHaveLength(3);
+    for (const previous of before) {
+      expect(after.find((item) => item.id === previous.id)).toMatchObject({
+        title: "수정한 작품명 오늘 연재 예정",
+        readAt: previous.readAt,
+        archivedAt: previous.archivedAt,
+        snoozedUntil: previous.snoozedUntil,
+      });
+    }
+    expect(after.find((item) => item.id.endsWith(":read"))?.readAt).not.toBeNull();
+    expect(after.find((item) => item.id.endsWith(":archived"))?.archivedAt).not.toBeNull();
+  });
+
+  it("연재 요일이 바뀌거나 마지막 구독이 해제되면 예정 알림만 제거한다", () => {
+    const friday = new Date(2026, 8, 25);
+    const other = {
+      id: "other-release",
+      category: "release" as const,
+      title: "다른 알림",
+      body: "본문",
+      href: "/",
+      createdAt: friday.toISOString(),
+      readAt: null,
+      archivedAt: null,
+      snoozedUntil: null,
+      sourceKey: "another-source:release",
+    };
+    useEngagement.getState().upsertNotifications([other]);
+    useEngagement.getState().syncReleaseNotifications([title()], friday);
+    expect(useEngagement.getState().notifications).toHaveLength(2);
+
+    useEngagement.getState().syncReleaseNotifications([{ ...title(), updateDays: ["토"] }], friday);
+    expect(useEngagement.getState().notifications).toEqual([other]);
+
+    useEngagement.getState().syncReleaseNotifications([title()], friday);
+    useEngagement.getState().syncReleaseNotifications([], friday);
+    expect(useEngagement.getState().notifications).toEqual([other]);
+  });
+
+  it("날짜가 바뀌면 전날 예정 알림을 오늘 예정 목록으로 교체한다", () => {
+    const dailyTitle = { ...title(), updateDays: ["금", "토"] };
+    useEngagement.getState().syncReleaseNotifications([dailyTitle], new Date(2026, 8, 25));
+    useEngagement.getState().syncReleaseNotifications([dailyTitle], new Date(2026, 8, 26));
+    expect(useEngagement.getState().notifications.map((item) => item.id)).toEqual([
+      "release:2026-09-26:title-1",
+    ]);
+    useEngagement.getState().syncReleaseNotifications([dailyTitle], new Date(2026, 8, 27));
+    expect(useEngagement.getState().notifications).toHaveLength(0);
+  });
+
   it("advances the stored availability baseline for an origin-label change", () => {
     const baseline = title("free");
     useEngagement.getState().observeAvailability(baseline, "2026-09-25T00:00:00.000Z");
