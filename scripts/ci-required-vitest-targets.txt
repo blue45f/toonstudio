@@ -374,9 +374,11 @@ apps/web/src/domains/creator/brush/studio-native-brush-output-validation.test.ts
 apps/web/src/domains/creator/brush/studio-native-brush-probe.test.ts
 apps/web/src/domains/creator/brush/studio-pending-catalog-input.test.ts
 apps/web/src/domains/creator/brush/studio-stroke-surface-route-wiring-boundary.test.ts
+apps/web/src/domains/creator/brush/studio-wet-wash-live-pipeline.test.ts
 apps/web/src/domains/creator/brush/wet-paper/StudioDrawNode.dry-brush-live.test.tsx
 apps/web/src/domains/creator/brush/wet-paper/studio-dry-brush-live-lifecycle.test.ts
 apps/web/src/domains/creator/brush/wet-paper/studio-dry-brush-live-loading.test.ts
+apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-host.test.ts
 apps/web/src/domains/creator/canvas/StudioCanvasStatusRail.test.tsx
 apps/web/src/domains/creator/canvas/StudioCanvasStickyBanners.view-workspace.test.tsx
 apps/web/src/domains/creator/canvas/StudioLiveAdjustmentGroup.test.tsx
@@ -806,6 +808,7 @@ scripts/lib/studio-hokusai-preview-diagnostics.test.ts
 scripts/lib/studio-inapp-sweep-harness.test.ts
 scripts/lib/studio-memory-growth-policy.test.mjs
 scripts/lib/studio-p2p-failure-diagnostics.test.ts
+scripts/lib/studio-smart-shape-visible-grid.test.ts
 scripts/lib/studio-verify-shape-readiness.test.tsx
 scripts/pigment-dependency-install-policy.test.mjs
 scripts/plan-creator-bundle-deploy-cli.test.mjs
@@ -822,6 +825,7 @@ scripts/setup-toonstudio-blender-pipeline.test.mjs
 scripts/studio-bg3d-bundle-runtime-acl.test.mjs
 scripts/studio-production-realtime.test.ts
 scripts/sync-cloudflare-r2-assets.test.ts
+scripts/toonstudio-integration-disk-policy.test.mjs
 scripts/ux-audit/aggregate.test.mjs
 scripts/ux-audit/cli-args.test.mjs
 scripts/ux-audit/copy-heuristics.test.mjs
