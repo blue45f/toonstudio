@@ -107,6 +107,44 @@ function coldService(h: ReturnType<typeof preservedHarness>): StudioCrdtService 
 const upgradeError = () => ({ requiredReaderCapabilities: [PRESERVED] });
 
 describe("archive 없는 v7 보존 필드의 구 reader 차단", () => {
+  it("부모 전의 실제 v7 delta도 ACK·sync부터 보존 reader를 요구해 3단계 구 writer 손실을 막는다", async () => {
+    const h = preservedHarness(), child = wireBytes(oldReaderFixture.newV7Base64);
+    const pending = trackedDoc(); Y.applyUpdate(pending, child);
+    expect(pending.store.pendingStructs).not.toBeNull();
+    await expect(append(h.service, 51, child, oldFeatures)).rejects.toMatchObject(upgradeError());
+    expect(h.repository.receipts.size).toBe(0);
+    const first = await append(h.service, 52, child, newFeatures);
+    expect(first.serverSequence).toBe("1"); expect(first.requiredReaderCapabilities).toEqual([PRESERVED]);
+    await expect(h.service.syncBytes("work-one", null, oldFeatures)).rejects.toMatchObject(upgradeError());
+    await expect(append(h.service, 53, wireBytes(oldReaderFixture.oldDowngradeBase64), oldFeatures)).rejects.toMatchObject(upgradeError());
+    await expect(append(h.service, 54, wireBytes(oldReaderFixture.oldSeedBase64), oldFeatures)).rejects.toMatchObject(upgradeError());
+    expect(h.repository.receipts.size).toBe(1); expect(h.repository.nextSequence).toBe(2n);
+    const completed = await append(h.service, 55, wireBytes(oldReaderFixture.oldSeedBase64), newFeatures);
+    expect(completed.serverSequence).toBe("2"); expect(completed.requiredReaderCapabilities).toEqual([PRESERVED]);
+    const current = await serverDocument(h.service);
+    expect(current.store.pendingStructs).toBeNull(); expect(strokeRecord(current).get("payloadVersion")).toBe(7);
+    expect((strokeRecord(current).get("extensions") as Record<string, unknown>).psdGroupId).toBe("psd-group-one");
+  });
+
+  it.each([1, 2, 3, 4, 5, 6])("정상 v%s의 out-of-order 좌표·일반 JSON 값 7은 보존 요구로 오인하지 않는다", async (version) => {
+    const h = preservedHarness(), doc = trackedDoc(); Y.applyUpdate(doc, wireBytes(oldReaderFixture.oldSeedBase64));
+    const record = strokeRecord(doc); record.set("payloadVersion", version);
+    if (version < 6) record.delete("extensions");
+    const parent = Y.encodeStateAsUpdate(doc), vector = Y.encodeStateVector(doc);
+    record.set("strokeWidth", 7); record.set("shapeParams", { ordinaryValue: 7 });
+    const points = record.get("points"); if (!(points instanceof Y.Array)) throw new Error("시험용 좌표가 없습니다.");
+    points.delete(0, points.length); points.push([7, 2, 10, 20]);
+    const child = Y.encodeStateAsUpdate(doc, vector), pending = trackedDoc(); Y.applyUpdate(pending, child);
+    expect(pending.store.pendingStructs).not.toBeNull();
+    expect((await append(h.service, 61, child, oldFeatures)).requiredReaderCapabilities).toBeUndefined();
+    expect((await append(h.service, 62, parent, oldFeatures)).requiredReaderCapabilities).toBeUndefined();
+    const sync = await h.service.syncBytes("work-one", null, oldFeatures), current = trackedDoc(); Y.applyUpdate(current, sync.update);
+    expect(current.store.pendingStructs).toBeNull(); expect(strokeRecord(current).get("payloadVersion")).toBe(version);
+    expect(strokeRecord(current).get("strokeWidth")).toBe(7);
+    expect(strokeRecord(current).get("shapeParams")).toEqual({ ordinaryValue: 7 });
+    expect(h.repository.receipts.size).toBe(2); expect(h.repository.nextSequence).toBe(3n);
+  });
+
   it.each(["psdGroupId", "colorizeMaskEnabled"] as const)("첫 %s 도착도 candidate 단계에서 구 writer를 거절한다", async (field) => {
     const h = preservedHarness(), doc = preservedDoc(field);
     expect(strokeRecord(doc).get("payloadVersion")).toBe(7);

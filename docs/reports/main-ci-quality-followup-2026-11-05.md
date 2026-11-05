@@ -112,3 +112,7 @@ Linux는 아직 미검증 환경으로 실패하게 둔다. 원래 하한 미달
 검증 결과는 CI 배선 Node 4파일 61개, material engine 24개, 가상 fixture 3개, 청크 경계·보존 필드별 13개 통과와 `quality:imports` 성공이다. 마지막 13개는 필터한 실행이며 같은 파일의 저장·복구 검사를 반복한 결과로 세지 않는다. API 3개 TypeScript 구성도 통과했다. main 5165 통합 후 macOS/arm64 Chromium의 Chemy 실제 2회 그리기는 기존 픽셀·geometry·opacity와 비율 1.1323929288472774를 유지했지만 Linux 및 전체 34개 모델 성공을 뜻하지 않는다.
 
 최종 전체 하네스와 정확한 SHA의 hosted CI는 이 기록 이후 실행한다. 기존 원고·실제 CRDT·권한 정책·환경변수·운영 DB는 수정하지 않았으며 운영 배포는 수행하지 않는다.
+
+추가 독립 재현에서는 부모 seed 없이 실제 v7 증분을 먼저 받은 API가 이를 pendingStructs로 보관한 뒤 구 writer의 v6 덮어쓰기와 부모 seed를 sequence 1→2→3으로 승인하는 경로도 확인했다. 최종 원시 기록은 v6가 되고 보존 필드가 사라졌다. 이는 위 첫 수정 이후의 추가 결함이며 `/tmp/toonstudio-wire7-pending-audit/report.json`에 기록했다. Yjs 내부 pending V2 증분도 기존 capability 탐지에 포함하되 계약 모듈에 Yjs를 정적으로 추가하지 않는다. 일반 좌표·JSON의 숫자 7을 새 버전으로 추정하거나 모든 pending 변경을 거절하지 않는다. 정상 v1-v6 순서 역전과 보존 정보가 있는 pending의 송수신·ACK 경계를 별도 회귀로 검사한다.
+
+중간 통합 커밋 `e5a531e5a99c7846f8a522a7597cafe18de5666d`의 원래 비동기 CRDT 회귀 4파일 42개는 모두 통과했고 skip은 0이었다. 이 시점의 전체 하네스는 새 Web 페이지 fixture의 필수 속성 누락 5개와 capability 배열의 좁은 literal 추론 1개로 실패했다. 이를 정상 타입으로 교정하며 `any`·ignore로 덮지 않는다. 중간 238개 통과나 과거 main의 검증을 최종 하네스 성공으로 표시하지 않는다.

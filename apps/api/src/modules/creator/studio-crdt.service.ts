@@ -1,8 +1,8 @@
 import { StudioBg3dBundleService } from "./studio-bg3d-bundle.service";
 import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { assertStudioCrdtBg3dBundleAdmission, snapshotStudioCrdtBg3dBundles, STUDIO_BG3D_BUNDLE_REVISIONS_ROOT } from "./studio-crdt-bg3d-bundle";
-import { StudioBg3dReaderUpgradeRequiredError, isStudioBg3dReaderUpgradeRequired, studioReaderUpgradeRequiredCapabilities } from "./studio-bg3d-reader-capability";
-import { hasStudioPreservedDrawReaderCrdt, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+import { StudioBg3dReaderUpgradeRequiredError, isStudioBg3dReaderUpgradeRequired, studioReaderUpgradeRequiredCapabilities, hasStudioPreservedDrawReaderCrdt } from "./studio-bg3d-reader-capability";
+import { STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { assertStudioLegacyPigmentArchiveReader } from "./studio-legacy-pigment-archive-admission";
 import { StudioCrdtInvalidPayloadError, StudioCrdtUpdateIdConflictError, StudioCrdtDocumentTooLargeError, StudioCrdtBackpressureError, StudioCrdtStorageCorruptionError } from "./studio-crdt-service-contracts";
 import type { StudioCrdtServiceOptions, StudioCrdtSyncResult, StudioCrdtBinarySyncResult, StudioCrdtApplyUpdateInput, StudioCrdtApplyBinaryUpdateInput, StudioCrdtApplyUpdateResult, StudioCrdtApplyBinaryUpdateResult } from "./studio-crdt-service-contracts";

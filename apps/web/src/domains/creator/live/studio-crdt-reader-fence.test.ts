@@ -8,7 +8,8 @@ import { FakeRoom } from "./studio-crdt-room-binding.test-support";
 import { publishStudioCrdtSceneGraphDiff, publishStudioCrdtDrawGraphDiff } from "./studio-crdt-scene-publisher";
 import { StudioMemoryBroadcastHub, StudioBroadcastChannelTransport } from "./studio-live-collaboration-transport";
 import { StudioCrdtLocalReaderFence } from "./studio-crdt-local-reader-fence";
-import { applyStudioCrdtBg3dReaderUpdate, studioCrdtBg3dReaderMetadata, studioCrdtPeerSyncResponse } from "./studio-crdt-bg3d-reader-fence";
+import { asStudioCrdtDocumentHost } from "./studio-crdt-document-host";
+import { applyStudioCrdtBg3dReaderUpdate, studioCrdtBg3dReaderMetadata, studioCrdtPeerSyncResponse, studioCrdtBg3dPublishedRequest } from "./studio-crdt-bg3d-reader-fence";
 import { createStudioCrdtLocalWireMessage, encodeStudioCrdtUpdate, parseStudioCrdtLocalWireMessage, STUDIO_CRDT_PROTOCOL_VERSION,
   type StudioCrdtTransportMessage } from "./studio-crdt-protocol";
 import type { StudioLiveRoom } from "./studio-live-collaboration-room";
@@ -22,7 +23,7 @@ const message = { kind: "update" as const, workId: "work-a", senderSessionId: "a
 describe("archive 없는 v7 보존 획 reader 경계", () => {
   const preserved = "legacy-pigment-preservation.v1";
   function pages(preserve: boolean) {
-    return [{ id: "page-a", elements: [{ id: "draw-a", type: "draw" as const,
+    return [{ id: "page-a", bg: "#ffffff", bgGrad: null, canvasH: 1080, elements: [{ id: "draw-a", type: "draw" as const,
       points: [0, 0, 7, 8], stroke: "#000000", strokeWidth: 2,
       ...(preserve ? { colorizeMaskEnabled: false } : {}) }] }];
   }
@@ -85,6 +86,53 @@ describe("archive 없는 v7 보존 획 reader 경계", () => {
     fence.receiveAdvertisement({ brand: "toonspectrum:studio-crdt-readers:v1", workId: "work-a", senderSessionId: "old", readerCapabilities: [CAP] });
     expect(fence.accept(request)).toBeNull();
     expect(fence.accept(createStudioCrdtLocalWireMessage({ ...message, senderSessionId: "old" }))).toBeNull();
+  });
+  it("부모보다 먼저 받은 v7도 수신 전에 검사하고 sender metadata·peer sync에서 구 광고를 차단한다", () => {
+    const source = new StudioCrdtDocument(), receiver = new StudioCrdtDocument(), relay = new StudioCrdtDocument();
+    try {
+      publishStudioCrdtDrawGraphDiff(source, [], pages(false)); const parent = source.encodeStateAsUpdate(), vector = source.encodeStateVector();
+      publishStudioCrdtDrawGraphDiff(source, pages(false), pages(true)); const child = source.encodeStateAsUpdate(vector);
+      expect(() => applyStudioCrdtBg3dReaderUpdate(receiver, child, {}, "work-a", false,
+        { isActive: () => true, apply: () => receiver.applyUpdate(child) })).toThrow(/reader/);
+      expect(asStudioCrdtDocumentHost(receiver).doc.store.pendingStructs).toBeNull();
+      // 저장 복구 등으로 이미 존재하는 pending 원본도 송신 시 요구 메타를 잃지 않는다.
+      relay.applyUpdate(child); expect(asStudioCrdtDocumentHost(relay).doc.store.pendingStructs).not.toBeNull();
+      const metadata = studioCrdtBg3dReaderMetadata(relay);
+      expect(metadata.requiredReaderCapabilities).toEqual([preserved]);
+      expect(studioCrdtBg3dPublishedRequest(relay, update)).toMatchObject({ requiredReaderCapabilities: [preserved] });
+      const request = { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-a", requestId: "pending-sync", stateVector: "AA==", readerCapabilities: [CAP] };
+      expect(studioCrdtPeerSyncResponse({ document: relay, request, workId: "work-a", transferId: "pending", sequence: 1 })).toBeNull();
+      expect(studioCrdtPeerSyncResponse({ document: relay, request: { ...request, readerCapabilities: [CAP, preserved] }, workId: "work-a", transferId: "pending", sequence: 1 }))
+        .toMatchObject({ requiredReaderCapabilities: [preserved] });
+      expect(applyStudioCrdtBg3dReaderUpdate(receiver, child, { requiredReaderCapabilities: [preserved] }, "work-a", true,
+        { isActive: () => true, apply: () => receiver.applyUpdate(child) })).toBeNull();
+      expect(studioCrdtBg3dReaderMetadata(receiver).requiredReaderCapabilities).toEqual([preserved]);
+      expect(() => applyStudioCrdtBg3dReaderUpdate(receiver, parent, {}, "work-a", true,
+        { isActive: () => true, apply: () => receiver.applyUpdate(parent) })).toThrow(/reader/);
+      expect(applyStudioCrdtBg3dReaderUpdate(receiver, parent, { requiredReaderCapabilities: [preserved] }, "work-a", true,
+        { isActive: () => true, apply: () => receiver.applyUpdate(parent) })).toBeNull();
+      expect(receiver.getStroke("draw-a")?.payload).toMatchObject({ version: 7, extensions: { colorizeMaskEnabled: false } });
+    } finally { source.destroy(); receiver.destroy(); relay.destroy(); }
+  });
+  it("일반 v1 pending의 좌표·JSON 숫자 7은 old peer와 교환하고 부모 도착 뒤 정상 해석한다", () => {
+    const source = new StudioCrdtDocument(), receiver = new StudioCrdtDocument();
+    try {
+      const before = pages(false); publishStudioCrdtDrawGraphDiff(source, [], before);
+      const parent = source.encodeStateAsUpdate(), vector = source.encodeStateVector();
+      const after = before.map((page) => ({ ...page, elements: page.elements.map((element) => ({ ...element,
+        strokeWidth: 7, shapeParams: { ordinaryValue: 7 } })) }));
+      publishStudioCrdtDrawGraphDiff(source, before, after); const child = source.encodeStateAsUpdate(vector);
+      expect(applyStudioCrdtBg3dReaderUpdate(receiver, child, {}, "work-a", false,
+        { isActive: () => true, apply: () => receiver.applyUpdate(child) })).toBeNull();
+      expect(asStudioCrdtDocumentHost(receiver).doc.store.pendingStructs).not.toBeNull();
+      expect(studioCrdtBg3dReaderMetadata(receiver)).toEqual({});
+      expect(studioCrdtPeerSyncResponse({ document: receiver,
+        request: { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-a", requestId: "plain-sync", stateVector: "AA==", readerCapabilities: [CAP] },
+        workId: "work-a", transferId: "plain", sequence: 1 })).not.toBeNull();
+      expect(applyStudioCrdtBg3dReaderUpdate(receiver, parent, {}, "work-a", false,
+        { isActive: () => true, apply: () => receiver.applyUpdate(parent) })).toBeNull();
+      expect(receiver.getStroke("draw-a")?.payload).toMatchObject({ version: 1, strokeWidth: 7, shapeParams: { ordinaryValue: 7 } });
+    } finally { source.destroy(); receiver.destroy(); }
   });
 });
 

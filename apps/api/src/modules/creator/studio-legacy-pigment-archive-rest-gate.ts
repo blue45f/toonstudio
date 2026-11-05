@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
-import { hasStudioPreservedDrawReaderCrdt, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+import { STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+import { hasStudioPreservedDrawReaderCrdt } from "./studio-bg3d-reader-capability";
 import { ConflictException } from "@nestjs/common";
 import { materializeStudioAuthoringFromCrdt, readStudioCrdtScopedRecords } from "@toonstudio/contracts/studio-crdt-authoring";
 import { creatorWorks } from "../../platform/database";

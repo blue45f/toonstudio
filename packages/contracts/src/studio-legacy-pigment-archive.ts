@@ -30,6 +30,9 @@ export function hasStudioPreservedDrawReaderDocument(value: unknown): boolean {
   });
 }
 interface SharedReaderMap { get(key: string): unknown; values(): IterableIterator<unknown> }
+export interface StudioPreservedDrawPendingItem {
+  readonly key: string | null; readonly values: readonly unknown[];
+}
 function sharedReaderMap(value: unknown): SharedReaderMap | null {
   return value !== null && typeof value === "object" && "get" in value && typeof value.get === "function"
     && "values" in value && typeof value.values === "function" ? value as SharedReaderMap : null;
@@ -37,15 +40,18 @@ function sharedReaderMap(value: unknown): SharedReaderMap | null {
 /** Yjs를 정적으로 로드하지 않는다. raw 기록을 조사하므로 삭제된 획의 undo 자료도 포함한다. */
 export function hasStudioPreservedDrawReaderCrdt(document: {
   readonly share: ReadonlyMap<string, unknown>; getMap(name: string): unknown;
-}): boolean {
+  readonly store?: { readonly pendingStructs: { readonly update: Uint8Array } | null };
+}, decodePending?: (update: Uint8Array) => readonly StudioPreservedDrawPendingItem[]): boolean {
   const strokes = sharedReaderMap(document.share.has("strokes") ? document.getMap("strokes") : null);
-  if (!strokes) return false;
-  for (const value of strokes.values()) {
+  for (const value of strokes?.values() ?? []) {
     const stroke = sharedReaderMap(value);
     if (stroke && (stroke.get("payloadVersion") === STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION
       || hasStudioPreservedDrawReaderFields(stroke.get("extensions")))) return true;
   }
-  return false;
+  const pending = document.store?.pendingStructs;
+  return !!pending && !!decodePending && decodePending(pending.update).some((item) =>
+    item.key === "payloadVersion" && item.values.includes(STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION)
+    || item.values.some(hasStudioPreservedDrawReaderFields));
 }
 const KEYS = ["version", "sourceElementId", "sourceGroupId", "sourceIndex", "sourceHidden"];
 function record(value: unknown): Record<string, unknown> | null {

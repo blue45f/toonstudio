@@ -1,5 +1,5 @@
 import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
-import { hasStudioPreservedDrawReaderCrdt, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY, STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+import { hasStudioPreservedDrawReaderCrdt as hasPreservedReader, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY, STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import * as Y from "yjs";
 import { studioBg3dSixPassWorkReceiptsCover } from "../studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-work-receipts";
 import { asStudioCrdtDocumentHost } from "./studio-crdt-document-host";
@@ -10,6 +10,10 @@ import { STUDIO_CRDT_READER_CAPABILITIES, assertStudioCrdtSupportedReaders, requ
 import type { StudioCrdtDocument } from "./studio-crdt-document";
 
 const ROOT = "studio-bg3d-bundle-revisions-v1";
+function hasStudioPreservedDrawReaderCrdt(doc: Y.Doc): boolean {
+  return hasPreservedReader(doc, (update) => Y.decodeUpdateV2(update).structs.flatMap((item) =>
+    item instanceof Y.Item ? [{ key: item.parentSub, values: item.content.getContent() }] : []));
+}
 function registry(document: StudioCrdtDocument) { return asStudioCrdtDocumentHost(document).doc.getMap<string>(ROOT); }
 export function studioCrdtBg3dBundleArtifactScope(document: StudioCrdtDocument, workId: string): "origin" | "work" {
   const hashes = [...registry(document).values()].map((raw) => {
@@ -21,7 +25,7 @@ export function studioCrdtBg3dBundleArtifactScope(document: StudioCrdtDocument, 
 }
 export function studioCrdtBg3dReaderMetadata(document: StudioCrdtDocument, scope?: () => "origin" | "work"): StudioCrdtReaderMetadata {
   const bg3d = registry(document).size > 0;
-  const required = bg3d ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] : [];
+  const required: string[] = bg3d ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] : [];
   if (hasStudioPreservedDrawReaderCrdt(asStudioCrdtDocumentHost(document).doc)) required.push(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY);
   return required.length ? { readerCapabilities: STUDIO_CRDT_READER_CAPABILITIES,
     requiredReaderCapabilities: required, ...(bg3d ? { artifactScope: scope?.() ?? "origin" } : {}) } : {};
