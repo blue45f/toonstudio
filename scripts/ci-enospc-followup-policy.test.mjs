@@ -46,6 +46,11 @@ for (const [workflow, jobId, timeout, runner = "ubuntu-24.04"] of [
     assert.equal(job.steps.find((step) => step.uses?.startsWith("actions/setup-node@")).with.cache, "pnpm");
     assert(job.steps.some((step) => step.run === "pnpm install --frozen-lockfile --prefer-offline"));
     assert(job.steps.some((step) => step.run === "node --test scripts/ci-enospc-followup-policy.test.mjs"));
+    if (workflow === "main-full-qa-studio") {
+      const install = job.steps.findIndex((step) => step.run === "pnpm install --frozen-lockfile --prefer-offline");
+      const policy = job.steps.findIndex((step) => step.run === "node --test scripts/ci-enospc-followup-policy.test.mjs");
+      assert(install < policy, "YAML 파서가 필요한 정책 검사는 의존성 설치 뒤에 실행한다");
+    }
     // 피드백의 기존 결과 수집은 아래 엄격한 최종 집계 시험으로 검증한다.
     if (workflow !== "feedback-community-validation") assert.doesNotMatch(read(workflow), /continue-on-error/u);
   });
