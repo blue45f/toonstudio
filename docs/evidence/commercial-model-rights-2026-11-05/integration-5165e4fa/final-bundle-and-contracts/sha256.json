@@ -1,0 +1,78 @@
+{
+  "capturedAt": "2026-11-05T14:00:55.912817+00:00",
+  "baseRuntimeHead": "b063d8e52c00d6f500a3eea37c7cda80f05973f9",
+  "scope": "b063 complete runtime validation; following MJS-only command contract fix receipts; remote snapshot is b063 dated 13:55:40UTC, not a subsequent head CI result",
+  "files": [
+    {
+      "path": "final-program-comparison.json",
+      "bytes": 232,
+      "sha256": "f880ee430dba8f643ac97f1ee7ceb1f954224ead3a4a42f436f312d8afc2c91e"
+    },
+    {
+      "path": "final-result.json",
+      "bytes": 14059,
+      "sha256": "bb56209ffcec6fcedc631c644b48ba81b7e7e879fed2d35d90fd0d9bd2b8bda6"
+    },
+    {
+      "path": "followup-program-comparison.json",
+      "bytes": 2867,
+      "sha256": "7e7ed9e125ba9b938f8e699544590a71212b194d747ee4fe0aba1e29a3b2a07c"
+    },
+    {
+      "path": "harness-verify.exit",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "harness-verify.log",
+      "bytes": 1026,
+      "sha256": "f9f9e61499e7b4d5f13f8c3fa946e11d096da38ea510418c0401073e15ab1c66"
+    },
+    {
+      "path": "independent-contract-review.md",
+      "bytes": 3374,
+      "sha256": "fc0a5dfed1fe395e094b07f9a5cf8f547b8b772fbdfa741ac7afdf1abd26421f"
+    },
+    {
+      "path": "native-browser-cleanup-review.json",
+      "bytes": 405,
+      "sha256": "4df12e67f9a3ac70b08ed3d90844b89a26d8c36d8890be25231d4393a3ce97e5"
+    },
+    {
+      "path": "quality-imports-summary.json",
+      "bytes": 554,
+      "sha256": "238c6effa1f905e92a3b798eceec3e165d38f0618e6ced3d254bb0f3bb02cbca"
+    },
+    {
+      "path": "remote-b063-snapshot.json",
+      "bytes": 244670,
+      "sha256": "5383241f9f80f26f676c851523e39490ef58792909b79efeaa98115b5990ff4e"
+    },
+    {
+      "path": "report-digests.json",
+      "bytes": 553,
+      "sha256": "e4502f5ad4db1cab0c534635163446b4e883f5275fd43841da76fc6c26d159b7"
+    },
+    {
+      "path": "scene-and-integration-contracts.command.json",
+      "bytes": 2291,
+      "sha256": "fdd07ee3b3e90ff95433b98e7da77c7a1c0f9b7ade1c3488621ca080230853e5"
+    },
+    {
+      "path": "scene-and-integration-contracts.exit",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "scene-and-integration-contracts.log",
+      "bytes": 624,
+      "sha256": "e0104a998c5987b65f2f9fd7b478308cb3521cf657a71ca2bb945ef4081f2cd1"
+    },
+    {
+      "path": "type-coverage-summary.json",
+      "bytes": 388,
+      "sha256": "0d57a0cb3bedecac53856d0ffc536103ea2872777e87e756da7db5e014b06d77"
+    }
+  ],
+  "followupNote": "Only two MJS command-contract tests and documentation receipts changed; fresh Program identity remains exact471df/26272. This does not relabel b063 build/CI as a later head execution."
+}

@@ -1,0 +1,56 @@
+{
+  "head": "b063d8e52c00d6f500a3eea37c7cda80f05973f9",
+  "canonicalReportSha256": "77bb1e54cf45dd47c7eef7b6bdea41676b49a08aeff5e905df59c24e796def13",
+  "canonicalFingerprint": "471df5034f6389575901d72bf7761c56cda825c947ccc354b0839e61ba2395bb",
+  "currentFingerprint": "471df5034f6389575901d72bf7761c56cda825c947ccc354b0839e61ba2395bb",
+  "sameIdentity": true,
+  "sameFingerprint": true,
+  "files": 26272,
+  "roots": 16966,
+  "readInputs": 27075,
+  "strict": true,
+  "noEmit": true,
+  "sameOptions": true,
+  "sameRoots": true,
+  "sameReferences": true,
+  "sourceFreeze": {
+    "beforeFiles": 31156,
+    "afterFiles": 31165,
+    "added": [
+      "docs/evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/final-program-comparison.json",
+      "docs/evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/final-result.json",
+      "docs/evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/native-browser-cleanup-review.json",
+      "docs/evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/quality-imports-summary.json",
+      "docs/evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/remote-b063-snapshot.json",
+      "docs/evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/report-digests.json",
+      "docs/evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/scene-and-integration-contracts.command.json",
+      "docs/evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/sha256.json",
+      "docs/evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/type-coverage-summary.json"
+    ],
+    "removed": [],
+    "changed": [
+      "scripts/integration-test-runner-ci-policy.test.mjs",
+      "scripts/scene3d-output-ci-policy.test.mjs"
+    ],
+    "expectedChanged": [
+      "scripts/integration-test-runner-ci-policy.test.mjs",
+      "scripts/scene3d-output-ci-policy.test.mjs"
+    ],
+    "onlyExpectedMjsChanged": true,
+    "onlyDocumentationJsonAdded": true,
+    "newHashes": {
+      "scripts/integration-test-runner-ci-policy.test.mjs": "ad269fa585ddacca9bbc28491a0eeae229c92679161482bfc03788c2c22fbace",
+      "scripts/scene3d-output-ci-policy.test.mjs": "3dfba8ca6f56c68b5de14547d3d9f56f53bf33727569d2f4cd2eada813b5b3cc"
+    }
+  },
+  "changedTrackedPaths": [
+    "docs/reports/commercial-license-pr-readiness-2026-11-05.md",
+    "scripts/integration-test-runner-ci-policy.test.mjs",
+    "scripts/scene3d-output-ci-policy.test.mjs"
+  ],
+  "changedPathsInOriginalProgramInputsRootsOrFiles": [],
+  "inventoryOuterExit": 0,
+  "elapsedMs": 22708,
+  "peakRssBytes": 6231113728,
+  "noSourceChangesByValidator": true
+}

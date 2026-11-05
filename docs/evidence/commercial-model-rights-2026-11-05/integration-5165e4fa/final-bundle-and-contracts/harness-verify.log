@@ -1,0 +1,21 @@
+$ node scripts/agent-harness.mjs verify --base=HEAD
+에이전트 하네스 무결성 검사 통과
+✔ 저장소 하네스 필수 파일과 연결이 완전하다 (3.235565ms)
+✔ 루트 AGENTS.md는 REA 역공학 기본 엔진으로 Ghidra 강제 정책을 명시한다 (0.311679ms)
+✔ 문서 전용 변경은 무거운 코드 검증 대상으로 분류하지 않는다 (0.413011ms)
+✔ 웹 TypeScript 변경은 typecheck와 UI 후속 검증 대상으로 분류한다 (0.158058ms)
+✔ 의존성 변경은 architecture, typecheck, audit 대상으로 분류한다 (0.122475ms)
+✔ CLI 기본값과 상호 배타 옵션을 검증한다 (0.992382ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 61.716431
+pnpm lockfile importer integrity OK (20 importers)
+변경 파일 2개를 기준으로 검증합니다.
+lint:quick — 변경 파일 2개를 검사합니다.
+quality:secrets — 텍스트 파일 2개를 검사합니다.
+변경 범위 기반 하네스 검증 통과

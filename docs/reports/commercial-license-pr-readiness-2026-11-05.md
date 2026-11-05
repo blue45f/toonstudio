@@ -1,13 +1,36 @@
 # 상용 라이선스 후속 구현·PR 준비 기록 — 2026-11-05
 
-상태: **current / draft PR #2724 게시, main5165 통합 전체 타입·관련 검사 완료, 새 커밋 빌드 대기**.
+상태: **current / draft PR #2724 게시, main5165 통합 전체 타입·빌드·브라우저 검증 완료, 공통 import 실패·원격 CI 대기**.
 이 기록은 같은 날짜의 이전 감사·2c626df4 검증 보고서보다 후속 상태다. 기존 모델의
 권리 문제 또는 전체 상용화가 해결됐다는 뜻이 아니다. 이전 통과 기록의 SHA를 바꾸어 적지 않는다.
 
 ## 최신 main 5165 통합 상태
 
+`b063d8e52c00d6f500a3eea37c7cda80f05973f9`의 정상 build:bundle과 후속 검증을 완료했다.
+Studio bundle·Remotion manifest·CSP·실제 Chromium native probe가 통과하고, 기존 vips WASM 4개
+해시 잔재는 0이다. 빌드 후에도 전체 Program fingerprint와 소스·설정31,156개 해시가 동일하다.
+기존 CI scoped type-coverage는1,077,323/1,080,690 identifiers,99.68%로95% 기준을 통과했다.
+quality:imports는`/fixture.js`(`scripts/verify-latent-pigment-browser.mjs:176:26`) 1건으로 실패했으며,
+별도 UX 담당 수정 범위를 건드리지 않았다. 모델 감사는 실제 exit1(차단2·검토1)을 유지한다.
+
+원격b063의 Scene3D 계약은 이전 monolithic tsc 명령 문자열 기대값 때문에 실패했다.
+같은 이유로 실패할 integration runner의 build 명령 계약도 확인했다. 후속 변경은 두 MJS 테스트의
+기대값과 설명을 실제 전체 Program·웹/API·Vite 경로에 맞추며, workflow·timeout·검사 범위·
+build:bundle 및 pre/post 훅 조건은 유지한다. 실제 Scene3D 묶음과 integration 계약26파일270테스트,
+변경 범위 기반 정상 harness:verify가 통과했다. 후속 변경 뒤 새 inventory에서도26,272개 파일·
+16,966 roots·27,075 read inputs·strict/noEmit/options가 모두 같고 fingerprint471df5034…가 정확히
+유지됐다. 변경한 MJS·문서 중 원래 Program의 root/file/read input은 없다. 앞선 전체 검사와
+b063 빌드·CI 결과를 새 head에서 다시 실행한 결과로 바꾸어 적지 않는다.
+
+최초 native browser 실행 wrapper는 의도한 SIGTERM 서버 종료143을0으로 요구해exit1이었다.
+실제 probe의 모든 assertion은exit0이며, 별도 읽기 검토로 소유PID 종료·포트 닫힘을 확인했다.
+wrapper 원본 실패를 보존했고 assertion 변경이나 browser 재실행은 하지 않았다.
+[최종 번들·계약 영수증](../evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/final-bundle-and-contracts/)을 따른다.
+전체 Studio E2E·새 CWV·야간 full-scope identifier coverage는 미실행이다. Remotion·Mixbox
+유지 방침과 resize3.02–5.53배 지연·알파 차이·권리 차단2개는 그대로다.
+
 [draft PR #2724](https://github.com/blue45f/toonstudio/pull/2724)는 먼저 검증한 abd691ee를 head로 게시했다.
-이후 main5165e4fa의 별도 설정·Mixbox 내부화·동기화 회귀 변경을 feature에 통합한다. main branch를
+이후 main5165e4fa의 별도 설정·Mixbox 내부화·동기화 회귀 변경을 feature에 통합했다. main branch를
 병합한 것은 아니다. 4개 법률 문서 충돌과 자동 통합의 2개 수치 표기를 함께 정정했고, 두 제거 뒤
 기존 라이브러리 스냅샷은 115개(웹83)다. Mixbox 구현·테스트를 새로 바꾸지 않고 다른 담당의 제거와
 자체 안료 경계를 보존했다. Remotion은 설명된 개인 무료 자격 전제로 유지한다.
@@ -17,7 +40,8 @@
 유지한다. 최대 worker RSS는8,651,100,160 bytes다. 처음과 마지막 전체 fingerprint는
 `471df5034f6389575901d72bf7761c56cda825c947ccc354b0839e61ba2395bb`로 같다.
 소스·설정31,143개도 추가·삭제·변경0을 확인했다. [새 통합 영수증](../evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/)을 따른다.
-아래63dcf937/2c626df4 결과는 앞선 단계 기록이다. 새 커밋의 빌드·후속·원격 CI는 완료 후 별도로 기록한다.
+아래63dcf937/2c626df4 결과는 앞선 단계 기록이다. b063 빌드·후속 결과는 위의 최종 영수증을 따르며,
+후속 테스트 계약 변경 head의 원격 CI는 새 SHA를 기준으로 별도 확인한다.
 
 GitRPC push는 필수 훅이 모두 통과한 뒤 HTTP500으로 전송이 실패했다. 원격 미반영을 확인하고
 공식 Git Data API로31객체를 정확한 원래SHA로 전송했다. 최초 브랜치 생성의 자동승인 거부는

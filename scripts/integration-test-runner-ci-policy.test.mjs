@@ -137,10 +137,10 @@ describe("database integration runner CI policy", () => {
     expect(packageManifest.scripts?.["test:perf"]).toBe(
       "vitest run --config vitest.perf.config.ts",
     );
-    // The bundle-only build the browser gates use must be exactly the `vite build` half of
-    // `build`: tsc is `noEmit`, so the dist is byte-identical and `typecheck` proves the types.
+    // 브라우저 gate의 bundle 빌드는 build의 Vite 절반과 같아야 한다.
+    // 앞 절반은 noEmit 전체 Program을 검사하므로 생성할 dist를 변경하지 않는다.
     expect(packageManifest.scripts?.build).toBe(
-      "NODE_OPTIONS='--max-old-space-size=16384' tsc -p tsconfig.json --incremental false && NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts",
+      "pnpm run typecheck:web && NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts",
     );
     expect(packageManifest.scripts?.["build:bundle"]).toBe(
       "NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts",
