@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import type { StudioCrdtSceneGraphFrontier } from "./studio-crdt-history";
+import type { StudioCrdtSceneGraphFrontier, StudioCrdtSceneGraphChangedIds } from "./studio-crdt-history";
 import type { StudioCrdtSceneGraphRuntime } from "./StudioLiveCollaborationProvider";
 import { StudioCrdtDocument } from "./studio-crdt-document";
 import type { PageState } from "../studio-page-state";
@@ -58,4 +58,65 @@ it("봉인 전 검사도 동일 history 권위의 전체 pages와 현재 index�
   input.pagesHistoryRef.current.push([page, { ...page, id: "page-two" }]); input.pagesHiRef.current = 1;
   expect(readStudioCrdtBoundPageSnapshot(document)).toBe(input.pagesHistoryRef.current[1]);
   stop(); expect(readStudioCrdtBoundPageSnapshot(document)).toBeNull(); document.destroy();
+});
+
+function changes(id: string): StudioCrdtSceneGraphChangedIds {
+  return { strokeIds: new Set([`stroke-${id}`]), sceneElementIds: new Set([`element-${id}`]),
+    pageIds: new Set([`page-${id}`]), layerGroupIds: new Set([`group-${id}`]) };
+}
+function delayedHydration() {
+  const pending: { resolve(): void; reject(error: Error): void }[] = [];
+  hydrate.mockImplementation((frontier: StudioCrdtSceneGraphFrontier) => new Promise((resolve, reject) => {
+    pending.push({ resolve: () => resolve({ frontier, sources: new Map() }), reject });
+  }));
+  return pending;
+}
+function onFrontier(): (frontier: StudioCrdtSceneGraphFrontier, changedIds: StudioCrdtSceneGraphChangedIds | null) => void {
+  return offline.subscribe.mock.calls[0]![2];
+}
+
+it("최초 전체 복원을 생략해도 다음 frontier의 이력 재조정 범위는 null을 유지한다", async () => {
+  const { input, document } = fixture(); offline.read.mockReturnValue(bundle);
+  const pending = delayedHydration(), stop = bindStudioCrdtFrontierReconciliation(input);
+  await vi.waitFor(() => expect(pending).toHaveLength(1));
+  onFrontier()(bundle, changes("a"));
+  await vi.waitFor(() => expect(pending).toHaveLength(2));
+  pending[1]!.resolve();
+  await vi.waitFor(() => expect(offline.reconcile).toHaveBeenCalledOnce());
+  expect(offline.reconcile.mock.calls[0]![0].changedIds).toBeNull();
+  pending[0]!.resolve(); await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(offline.reconcile).toHaveBeenCalledOnce(); stop(); document.destroy();
+});
+
+it("복원 실패 뒤 다음 frontier가 네 종류의 미반영 변경 ID를 함께 적용한다", async () => {
+  const { input, document } = fixture(); offline.read.mockReturnValue(empty);
+  const pending = delayedHydration(), stop = bindStudioCrdtFrontierReconciliation(input);
+  offline.reconcile.mockClear();
+  onFrontier()(bundle, changes("a"));
+  await vi.waitFor(() => expect(pending).toHaveLength(1));
+  pending[0]!.reject(new Error("missing body"));
+  await vi.waitFor(() => expect(input.reportError).toHaveBeenCalledWith("missing body"));
+  onFrontier()(bundle, changes("b"));
+  await vi.waitFor(() => expect(pending).toHaveLength(2));
+  pending[1]!.resolve();
+  await vi.waitFor(() => expect(offline.reconcile).toHaveBeenCalledOnce());
+  expect(offline.reconcile.mock.calls[0]![0].changedIds).toEqual({
+    strokeIds: new Set(["stroke-a", "stroke-b"]), sceneElementIds: new Set(["element-a", "element-b"]),
+    pageIds: new Set(["page-a", "page-b"]), layerGroupIds: new Set(["group-a", "group-b"]),
+  });
+  // 적용 뒤 새 원격 변경에 이전 ID가 남아 로컬 undo 범위를 넓히지 않는다.
+  onFrontier()(empty, changes("c"));
+  expect(offline.reconcile.mock.calls[1]![0].changedIds).toEqual(changes("c")); stop(); document.destroy();
+});
+
+it("번들이 없는 frontier가 복원을 추월해도 미반영 ID를 반영하고 늦은 복원 결과를 버린다", async () => {
+  const { input, document } = fixture(); offline.read.mockReturnValue(empty);
+  const pending = delayedHydration(), stop = bindStudioCrdtFrontierReconciliation(input);
+  offline.reconcile.mockClear();
+  onFrontier()(bundle, changes("a"));
+  await vi.waitFor(() => expect(pending).toHaveLength(1));
+  onFrontier()(empty, changes("b"));
+  expect(offline.reconcile.mock.calls[0]![0].changedIds.sceneElementIds).toEqual(new Set(["element-a", "element-b"]));
+  pending[0]!.resolve(); await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(offline.reconcile).toHaveBeenCalledOnce(); stop(); document.destroy();
 });

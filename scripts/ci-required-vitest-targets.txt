@@ -481,10 +481,14 @@ apps/web/src/domains/creator/lettering/use-studio-translation-cards.test.tsx
 apps/web/src/domains/creator/live/huddle
 apps/web/src/domains/creator/live/studio-crdt-authoring-projection.test.ts
 apps/web/src/domains/creator/live/studio-crdt-bg3d-bundle.test.ts
+apps/web/src/domains/creator/live/studio-crdt-frontier-async-history.test.ts
+apps/web/src/domains/creator/live/studio-crdt-frontier-reconciliation-binding.test.ts
 apps/web/src/domains/creator/live/studio-crdt-history.test.ts
 apps/web/src/domains/creator/live/studio-crdt-page-bridge-structural-sharing.test.ts
+apps/web/src/domains/creator/live/studio-crdt-pending-frontier-history.test.ts
 apps/web/src/domains/creator/live/studio-crdt-reader-fence.test.ts
 apps/web/src/domains/creator/live/studio-crdt-room-binding.immutable-outbox.test.ts
+apps/web/src/domains/creator/live/studio-crdt-room-binding.remote-admission.test.ts
 apps/web/src/domains/creator/live/studio-crdt-write-context.test.ts
 apps/web/src/domains/creator/live/studio-live-acoustic-control.test.ts
 apps/web/src/domains/creator/live/studio-live-adaptive-cursor-transport.test.ts
