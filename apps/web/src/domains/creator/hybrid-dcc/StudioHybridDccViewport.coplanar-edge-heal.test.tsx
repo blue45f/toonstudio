@@ -3,6 +3,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { i18nDict, useI18n } from "@/shared/lib/i18n";
 
 import { decodeStudioMeshUvLayer, hashStudioMeshUvTopology } from "../mesh-uv/studio-mesh-uv-authority";
 import { serializeStudioCommandJournal } from "../studio-command-journal";
@@ -321,7 +322,7 @@ describe("실제 Viewport의 B 분할→C 공유 모서리 치유 연결", () =>
     const f = fixture(), hidden = workspaceSetAssetVisibility(f.current.workspace, "cube", false), before = controls(hidden);
     const view = render(<StudioHybridDccViewport {...f.props} workspace={hidden} />);
     expect(previewButton().hasAttribute("disabled")).toBe(true);
-    expect(screen.getByText("숨겨졌거나 표시할 수 없는 오브젝트에는 치유를 적용하지 않습니다.")).toBeTruthy();
+    expect(screen.getByText(need(i18nDict[useI18n.getState().lang]?.["studio.bg3dScene.coplanarEdgeHeal.unavailable.hiddenSource"]))).toBeTruthy();
     fireEvent.click(previewButton());
     expect(compute).not.toHaveBeenCalled(); expect(f.run).not.toHaveBeenCalled(); expect(controls(hidden)).toEqual(before);
     view.rerender(<StudioHybridDccViewport {...f.props} />);

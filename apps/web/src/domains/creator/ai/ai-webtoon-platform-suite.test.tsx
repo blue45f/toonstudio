@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -196,7 +196,7 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(rec.campaignPurpose).toBe("교육용 컷툰");
   });
 
-  it("StudioAiWebtoonPlatformSuitePanel UI에서 4개 플랫폼 탭 전환 및 대본 반영이 정상 동작한다", () => {
+  it("StudioAiWebtoonPlatformSuitePanel UI에서 4개 플랫폼 탭 전환 및 대본 반영이 정상 동작한다", async () => {
     const onApplyScript = vi.fn();
     render(
       <StudioAiWebtoonPlatformSuitePanel
@@ -238,6 +238,17 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(screen.getByTestId("wave39-41-ecosystem-domain-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave39-run-esports"));
     expect(screen.getByTestId("wave39-summary-output").textContent).toBeTruthy();
+
+    // 초기 안내·로딩 문자열 대신 네 비동기 실행의 완료 결과를 확인한 뒤 화면을 정리한다.
+    await waitFor(() => {
+      for (const id of ["wave18-run-sword", "wave42-run-dental", "wave21-run-crater", "wave39-run-esports"]) {
+        expect(screen.getByTestId(id)).toHaveProperty("disabled", false);
+      }
+      expect(screen.getByTestId("wave18-summary-output").textContent).toContain("[도검 코등이/칼집 · ");
+      expect(screen.getByTestId("wave42-summary-output").textContent).toContain("[치과/X-ray/AED · ");
+      expect(screen.getByTestId("wave21-summary-output").textContent).toContain("[파괴 크레이터 지속 · ");
+      expect(screen.getByTestId("wave39-summary-output").textContent).toContain("[e스포츠/장비 · ");
+    });
 
     fireEvent.click(screen.getByTestId("ecosystem-tab-cat-3-storyboard"));
     expect(screen.getByTestId("wave24-26-category34-consistency-bar")).toBeTruthy();

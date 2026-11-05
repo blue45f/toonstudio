@@ -134,3 +134,7 @@ Feedback 초기 CI의 첫 페이지는 HTML 서버 응답 대기 42,721ms 뒤 �
 2026-11-05 23:52 KST, `1dafc0168d1bb8ba6870eb0472b7bfc05c0d3403`의 Feedback 4파일 36개를 처음 존재하지 않는 고유 캐시 경로에서 실제 Chromium으로 실행해 모두 통과했다(exit 0, 43.4초, 전후 HEAD 동일·clean). 원래 45초·10초·120초·재시도 0과 모든 단언을 유지했다. 최초 임시 외부 config의 작업 디렉터리 오류는 Vite·브라우저·case 실행 전 1초에 종료됐고 별도 원문을 남겼으며, 원래 저장소 cwd를 명시한 다음 실행의 36개 결과와 구분한다. 기존 공유 캐시는 삭제하지 않았다. 이 macOS cold 검증을 Linux 효과나 모든 optimizer 오류 전파의 증거로 확대하지 않는다.
 
 2026-11-06 추가 actual room 회귀에서는 v6→v7→v6 publisher 변경 중 seq2 sync가 seq1 비동기 6패스 복원을 추월하면, seq1 본문은 stale로 적용되지 않는데 수신 요구 메모만 남아 정상 BG3D peer를 불필요하게 차단하는 현상을 재현했다. 본문·state vector·정상 v6 pending은 그대로였으며 데이터 손실·인가 우회는 재현하지 않았다. 내부 callback의 명시적 false로 적용 생략을 알려 메모를 복원하고 실제 적용은 true로 알린다. 기존 void callback과 정당한 중복 적용은 유지한다. 원래 비동기 회귀와 reader 회귀를 합친 5파일 62개가 통과했고 DB·fetch는 0이었다. 과거 250개와 겹치는 회귀이므로 합산하지 않는다.
+
+2026-11-06 `6e6808de844e4592a374722b2db89f7ccbbf5462`는 main `5165e4fa` 대비 전체 하네스와 정상 pre-push의 Web·API 타입·구조·lint·Secretlint를 통과한 뒤 같은 SHA로 PR #2726에 반영됐다. 새 원격 실행의 성공을 뜻하지 않으며 Draft를 유지한다.
+
+초기 `eb43690` Full Diagnostic의 Hybrid DCC 세 문구 실패를 최신 source에서 재현했다. 제품은 번역 정본의 현재 한국어를 표시하지만 검사는 과거 fallback 문구를 기대했다. 제품 변경 없이 정본과 정확히 비교하며 원본 hash·journal·undo·숨긴 객체의 실행 차단 검사는 유지했다. AI suite는 초기 안내가 존재하는지만 검사하고 네 동적 작업 완료 전에 테스트를 끝낼 수 있어 실제 결과와 버튼의 완료 상태를 기다리도록 강화했다. 별도 modal의 기존 role·label·text 조회는 해당 dialog와 콘티 tabpanel 내부로 한정했다. AI timeout과 teardown 오류는 제한된 로컬 재현에서 발생하지 않았으므로 확정 해결로 주장하지 않는다. 보완 후 해당 다섯 파일 전체 44개가 통과했고 시간 제한·재시도·제품 코드는 바꾸지 않았다.
