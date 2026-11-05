@@ -48,7 +48,7 @@
 
 첫 변환 보완 `bdba63889e35c72cc011026038d1d037c32bc543`의 새 냉간 실행에서는 Spectral 오류가 사라졌지만 `react-konva`의 실제 캔버스 진입점이 읽는 CommonJS `react-reconciler/constants.js`의 named export 오류로 다시 1개 통과·1개 실패했다. 따라서 첫 보완만으로 화면 진입이 해결됐다고 표시하지 않는다. 이어 진입점 전체를 사전 변환한 `da734a3b020089eb5c815a2a4cf79e965cad5529`도 Konva의 도형 등록이 분리돼 `Rect`·`Transformer`가 `Group`으로 대체되고 `tr.nodes` 오류가 나 1개 통과·1개 실패했다. 이 전체 변환 방식은 최종 설정에서 제거한다.
 
-최종 설정은 기존 Konva 모듈의 단일성을 유지하면서 Vite의 중첩 의존성 지정으로 `react-konva > react-reconciler`, 해당 `constants.js`, `react-konva > scheduler`의 세 CommonJS 경로만 변환한다. 설치된 Vite의 중첩 resolver와 실제 패키지 형식을 근거로 선택했으며, transitive 패키지를 앱에서 직접 import하거나 의존성·렌더러를 바꾸지 않는다. 후속 실제 완주 결과는 같은 방식으로 별도 확인한다.
+Konva 관련 최종 설정은 기존 모듈의 단일성을 유지하면서 Vite의 중첩 의존성 지정으로 `react-konva > react-reconciler`, 해당 `constants.js`, `react-konva > scheduler`의 세 CommonJS 경로만 변환한다. 설치된 Vite의 중첩 resolver와 실제 패키지 형식을 근거로 선택했으며, transitive 패키지를 앱에서 직접 import하거나 의존성·렌더러를 바꾸지 않는다. 후속 실제 완주 결과는 같은 방식으로 별도 확인한다.
 
 위 세 경로를 적용한 뒤 화면 진입은 가능했지만 실제 6컷은 binary sync 확인 120초에서 실패했다. HTTP 로그인·작품 조회·live auth ticket 발급은 성공했으며, 제한된 진단에 실제 협업 Socket 생성·ACK가 없었다. 별도 브라우저에서 연결 factory 모듈을 평가해 `debug@4.4.3/src/browser.js`의 default export 오류를 직접 재현했다. 인증 hook이 잡은 지연 import 실패로 접속 전에 막힌 것이며, 서버가 원고 저장을 거절하거나 데이터가 소실된 증거로 해석하지 않는다. `socket.io-client > debug`만 추가해 그 내부 `ms`까지 기존 optimizer가 변환하게 한다. 원시 frame·쿠키·토큰·요청 본문을 저장하지 않는 시작 실패 진단을 테스트에 추가했으며, 기존 120초·원래 성공 단언은 그대로다.
 
@@ -59,3 +59,19 @@
 다만 그 실행의 역사 기준 PNG 대비 2.62–4.05% 픽셀 차이와 한글 줄바꿈 차이를 별도로 확인했다. 직접 Skia 캡처를 평가한 결과 `module.default is not a function`으로 `unavailable`이었다. 제한된 변환 목록에 UMD인 `canvaskit-wasm`이 없었던 추가 공백이다. 이 상태의 현재 실행 내 RGBA 일치를 과거 외관 보존으로 확대하지 않는다. CanvasKit만 명시 변환 목록에 추가해 선호 렌더러를 복구하고, 후속 실제 6컷과 이전 기술 ZIP의 픽셀을 별도로 재비교한다. 기존 그림·폰트 계산이나 원고 저장 필드는 바꾸지 않는다.
 
 CanvasKit 변환을 적용한 직접 캡처는 실제 `skia-document`·1440×1440으로 성공했고 첫 컷은 이전 `4c14fece` 기술 ZIP과 RGBA 차이 0픽셀·최대 채널 차이 0이었다. 이는 한 컷의 분리 관측이며 여섯 컷 전체 완주와 합산하지 않는다. 기존 실계정 시험에는 UI에서 먼저 내려받은 여섯 PNG 각각을 선호 렌더러의 실제 RGBA와 비교하는 회귀를 추가했다. 선호 렌더러가 `unavailable`이거나 호환 경로와 픽셀이 다르면 실패하며, 준비를 미리 끝내 UI의 첫 냉간 내보내기를 가리지 않도록 이 확인은 UI 다운로드 뒤에 수행한다.
+
+## 2026-11-06 최종 로컬 검증과 사업계획서 활용 범위
+
+실행 source는 `74f82639af1c3d0331110d65b29087272aeeef40`이다. 새 Vite 캐시·새 브라우저 context·별도 결과 폴더에서 실제 계정 시험 **2개 통과·실패 0·skip 0**, process exit 0, 약 142.8초였다. source 61개 지문은 전후 동일했다. 여섯 컷의 실제 `skia-document` 영수증과 UI PNG의 RGBA가 일치했고, 검수·인계·재열기·재로그인·ZIP까지 같은 결과를 유지했다. 작업자 update ACK 7개·거절 0개다. 별도 guest UI 검사도 같은 source에서 다섯 단언 통과·page error 0이었다.
+
+직전 실제 검증 `4c14fece`의 기술 ZIP과 다시 비교한 결과, 여섯 1440×1440 원고 PNG 모두 변경 픽셀 0·최대 채널 차이 0이었다. **기술 ZIP 자체도 838,465 B, SHA-256 `ee2d8658436c270cc208fb6cad438806c114df24d704bf27c3aab3e587fce1ee`로 바이트까지 동일**했다. 첫 냉간 시도의 다른 외관은 원고나 폰트 변경 없이 CanvasKit 변환 복구로 해소됐다. 더 오래된 `8d315c85` 기준 PNG의 기존 차이는 별도 기록이며 모든 역사적 버전의 픽셀 일치를 주장하지 않는다.
+
+계정·쿠키·원시 Socket frame을 제외한 [실행 요약](evidence/2026-11-06-short-comic-recovery/verification-summary.json), [렌더러 영수증](evidence/2026-11-06-short-comic-recovery/renderer-receipts.json), [이전 패키지 비교](evidence/2026-11-06-short-comic-recovery/previous-package-comparison.json), [UI 인계 증거](evidence/2026-11-06-short-comic-recovery/ui-handoff-proof.json)를 공개 검토용으로 보존했다. 이 기록 이후 설명·증거 문서만 추가하며, 최종 원격 CI와 병합 상태는 해당 PR의 정확한 head에서 별도 확인한다.
+
+| 구분 | 사업계획서에서 사용할 수 있는 범위 |
+| --- | --- |
+| 구현 완료 | 회차·콘티·작화의 정본 연결과 인계, 게시 준비 상태 안내, 원래 저장 계약을 유지하는 협업 reader 보호, 새 캐시에서도 실제 원고·협업·내보내기 모듈을 준비하는 검증 환경 |
+| 실제 검증 완료 | 동일 6컷·57요소의 로컬 실제 계정/PG 시나리오와 별도 guest UI, 새 포인터 Undo/Redo/Undo, 두 계정 재열기·재로그인, 순서가 고정된 검수·다음 공정 인계, 이전과 동일한 기술 ZIP. 기획부터 빈 화면에서 연속 제작한 결과와 구분 |
+| 향후 개선·사람 확인 | 키가 미확정인 일반 JSON pending의 보수적 차단, 더 다양한 직군·인계 조합, 최초 Undo journal 복원, 실제 외부 메일·private storage, 모든 역사 버전·렌더러 간 외관 일치, 작품 품질·권리·등급·게시 승인 |
+
+정식 게시 버튼은 차단 상태이고 ZIP의 `validation-report.json.releaseAuthorized`는 `false`다. 기존 원고 JSON·PNG와 이전 기술 ZIP은 보존했으며 운영 배포·운영 DB·저장 형식 변경은 하지 않았다.

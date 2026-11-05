@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "executionSource": "74f82639af1c3d0331110d65b29087272aeeef40",
+  "originalPagesSha256": "e06fa6d22e86f9a6755832ed19df57fb918997d557da27ab30c7ab900bb37e10",
+  "assertions": {
+    "originalSixPagesImported": true,
+    "sameProjectDocumentEpisodeAndSixPages": true,
+    "reloadPreservesSixPages": true,
+    "handoffResponsiveAndAccessible": true,
+    "humanChecksRemainPendingAndExportBlocked": true
+  },
+  "pageErrorCount": 0,
+  "scope": "Independent guest UI path; does not replace the authenticated server scenario."
+}
