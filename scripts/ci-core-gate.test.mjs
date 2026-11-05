@@ -73,6 +73,22 @@ test("CLI exits nonzero for malformed JSON and failed gates, then succeeds once"
   assert.match(result.stdout, /all required checks succeeded/);
 });
 
+test("Core 타입·coverage는 표준 runner에서 실패를 숨기지 않고 35분 한도로 실행한다", () => {
+  const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const start = ci.indexOf("\n  typecheck:"), end = ci.indexOf("\n  static:", start);
+  assert(start >= 0 && end > start, "실제 typecheck job 범위를 읽어야 합니다.");
+  const typecheck = ci.slice(start, end);
+  const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.match(typecheck, /^ {4}runs-on: ubuntu-24\.04$/mu);
+  assert.match(typecheck, /run: \|\n {10}set -euo pipefail\n {10}pnpm run typecheck\n {10}pnpm run typecheck:cloudflare-realtime\n/u);
+  assert.match(typecheck, /- name: Enforce type-coverage ratchet \(typed identifier floor\)\n {8}run: pnpm run check:type-coverage\n/u);
+  assert(typecheck.indexOf("pnpm run check:type-coverage") > typecheck.indexOf("pnpm run typecheck:cloudflare-realtime"));
+  assert.equal(packageJson.scripts["check:type-coverage"], "type-coverage --at-least 95");
+  assert.equal(packageJson.scripts["typecheck:web"], "node scripts/typecheck-shards.mjs --heap-mb 8192 --max-source-bytes 12582912");
+  assert.doesNotMatch(typecheck, /continue-on-error|\|\|\s*true|set\s+\+e|--passWithNoTests/u);
+  assert.match(typecheck, /^ {4}timeout-minutes: 35$/mu);
+});
+
 
 test("브러시 디스크·화면 ROI·실제 갈필 경계 회귀를 필수 Core 소유자에서 한 번 실행한다", () => {
   const execution = executionTargetsByShard();

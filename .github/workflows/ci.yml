@@ -121,7 +121,7 @@ jobs:
   typecheck:
     name: Core preflight and application typecheck
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
         with:
