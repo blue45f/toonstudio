@@ -138,3 +138,5 @@ Feedback 초기 CI의 첫 페이지는 HTML 서버 응답 대기 42,721ms 뒤 �
 2026-11-06 `6e6808de844e4592a374722b2db89f7ccbbf5462`는 main `5165e4fa` 대비 전체 하네스와 정상 pre-push의 Web·API 타입·구조·lint·Secretlint를 통과한 뒤 같은 SHA로 PR #2726에 반영됐다. 새 원격 실행의 성공을 뜻하지 않으며 Draft를 유지한다.
 
 초기 `eb43690` Full Diagnostic의 Hybrid DCC 세 문구 실패를 최신 source에서 재현했다. 제품은 번역 정본의 현재 한국어를 표시하지만 검사는 과거 fallback 문구를 기대했다. 제품 변경 없이 정본과 정확히 비교하며 원본 hash·journal·undo·숨긴 객체의 실행 차단 검사는 유지했다. AI suite는 초기 안내가 존재하는지만 검사하고 네 동적 작업 완료 전에 테스트를 끝낼 수 있어 실제 결과와 버튼의 완료 상태를 기다리도록 강화했다. 별도 modal의 기존 role·label·text 조회는 해당 dialog와 콘티 tabpanel 내부로 한정했다. AI timeout과 teardown 오류는 제한된 로컬 재현에서 발생하지 않았으므로 확정 해결로 주장하지 않는다. 보완 후 해당 다섯 파일 전체 44개가 통과했고 시간 제한·재시도·제품 코드는 바꾸지 않았다.
+
+Full Diagnostic의 두 이력 source 계약도 오래된 함수 문구를 요구해 현재 source에서 실패했다. 제품의 P1 보완을 과거 구현으로 되돌리지 않고, 전체 복원·속성 선반영 양쪽에서 같은 이력을 ref → journal → state 순으로 발행하는지 검사한다. 최초 번들 없는 frontier가 editable paint 전 동기 경로로 준비 상태에 도달하는지도 호출 관계로 확인한다. 순서 역전·다른 이력 발행·비동기 전환은 음성 대조에서 거절하며, 두 파일 11개가 통과했다. 기존 실제 경합·이력 42개와 source 계약 검사의 범위는 구분한다.
