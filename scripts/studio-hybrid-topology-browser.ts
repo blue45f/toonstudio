@@ -4,10 +4,8 @@ import { createBrushStudioV6Program } from "../apps/web/src/domains/creator/brus
 import { mapBrushStudioV6Pressure, normalizeBrushStudioV6MaterialConfig } from "../apps/web/src/domains/creator/brush-lab/brush-studio-v6-material-engine";
 import { BRUSH_STUDIO_V6_TOPOLOGIES } from "../apps/web/src/domains/creator/brush-lab/brush-studio-v6-topology-catalog";
 
-import pressureBaseline from "./fixtures/studio-chemy-v1-pressure/baseline.json";
-import { checkLegacyChemyV1Pressure, chemySha256, inspectLegacyChemyPrimitives, observeChemyPixels, type ChemyPressureBaseline, type ChemyPressureEnvironment, type ChemyPressureObservation } from "./lib/studio-chemy-v1-pressure-policy";
-
-const CHEMY_PRESSURE_BASELINE: ChemyPressureBaseline = pressureBaseline;
+import { selectLegacyChemyV1PressureBaseline } from "./lib/studio-chemy-v1-pressure-baselines";
+import { checkLegacyChemyV1Pressure, chemySha256, inspectLegacyChemyPrimitives, observeChemyPixels, type ChemyPressureEnvironment, type ChemyPressureObservation } from "./lib/studio-chemy-v1-pressure-policy";
 
 function canvas(width = 640, height = 480) { const c = document.createElement("canvas"); c.width = width; c.height = height; return c; }
 function element(id: string, pressure?: number): StudioMaterialBrushElement {
@@ -94,9 +92,12 @@ async function collectLegacyChemyPressure(
   light: ReturnType<typeof draw>, heavy: ReturnType<typeof draw>,
 ) {
   if (!environment) throw new Error("legacy pixel environment metadata is required");
+  const selected = selectLegacyChemyV1PressureBaseline(environment);
+  if (!selected) throw new Error("legacy pixel environment unverified; frozen baseline unavailable");
+  const { baseline, fixtureDirectory } = selected;
   const lowMarks = planStudioMaterialBrush(lowSource), highMarks = planStudioMaterialBrush(highSource);
   const fixtureSha = async (name: string) => {
-    const response = await fetch("/scripts/fixtures/studio-chemy-v1-pressure/" + name + ".png");
+    const response = await fetch("/scripts/fixtures/studio-chemy-v1-pressure/" + fixtureDirectory + name + ".png");
     if (!response.ok) throw new Error(name + " frozen PNG fixture unavailable: " + response.status);
     return chemySha256(new Uint8Array(await response.arrayBuffer()));
   };
@@ -115,10 +116,10 @@ async function collectLegacyChemyPressure(
     geometrySha256: { low: await chemySha256(geometry(lowMarks)), high: await chemySha256(geometry(highMarks)) },
     pixels: { low: await observeChemyPixels(light.rgba, await fixtureSha("low")),
       high: await observeChemyPixels(heavy.rgba, await fixtureSha("high")) },
-    primitive: await inspectLegacyChemyPrimitives(lowMarks, highMarks, CHEMY_PRESSURE_BASELINE.snapshot.mappedPressures),
+    primitive: await inspectLegacyChemyPrimitives(lowMarks, highMarks, baseline.snapshot.mappedPressures),
     alphaMonotonicViolations,
   };
-  return { ...checkLegacyChemyV1Pressure(observation, CHEMY_PRESSURE_BASELINE), observation };
+  return { ...checkLegacyChemyV1Pressure(observation, baseline), observation };
 }
 
 /** 외부 검토용: 원래 640×480 low/high 두 draw만 실행한다. */

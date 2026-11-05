@@ -1,0 +1,113 @@
+{
+  "policy": "legacy-chemy-v1-raster-and-transfer-v1",
+  "contractChange": "Chemy V1의 최종 알파 질량 >1.15 하한을 더 이상 요구하지 않는다. 기존 외관·필압 경로 보존 계약으로 교체하며 동등하거나 강화된 압력 하한이 아니다.",
+  "status": "2026-11-06 같은 Linux job의 불변 과거 원본과 전체 픽셀 일치 검증 완료; 이 기준을 적용한 최종 CI는 별도 확인",
+  "provenance": {
+    "admission": "고정 과거 렌더러와 같은 Linux job의 현재 원본이 전체 RGBA까지 정확히 일치한 뒤 수동 등록. 자동 갱신·픽셀 허용 오차 없음.",
+    "referenceCommit": "289effabfebec9fcb215063bc1a6eddee989e98a",
+    "referenceTree": "682884bddd2c4be61b048483b825f26a138a76b8",
+    "currentHead": "a6d0a0744103345df752676167d0a29bb44e1394",
+    "actualCheckout": "30e2343de40a99a6074ed89d971578035c6a40a5",
+    "actualParents": [
+      "d23160182887b66baa3540f5c47430cc287fdcc4",
+      "a6d0a0744103345df752676167d0a29bb44e1394"
+    ],
+    "runId": 42082459826,
+    "jobId": 127438773190,
+    "artifactId": 13443795408,
+    "artifactZipSha256": "2607f2c4413502a312d2dc40012c5dc93e75e9184f5a4de01e540f41aa3e42af",
+    "recordedAt": "2026-11-05T18:41:04.983Z",
+    "requiredEnvironmentKeys": [
+      "browser",
+      "platform",
+      "architecture"
+    ],
+    "captureEnvironment": {
+      "recordedAt": "2026-11-05T18:41:04.983Z",
+      "browser": "156.0.8078.4",
+      "node": "v24.22.2",
+      "platform": "linux",
+      "architecture": "x64",
+      "cpu": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+      "memoryBytes": 16759308288
+    },
+    "environmentPolicy": "정확한 세 환경 키와 고정 입력·기하·절대 opacity·전체 RGBA를 검사한다. Node·CPU·메모리는 수집 출처이며 자동 기준 확대 근거가 아니다.",
+    "referenceSourceFiles": 57,
+    "observerSha256": "673f09cd8fe33e84c41c4956f0061f78fbd429041e54f672bd8440eedb1dc1f0",
+    "referenceReceiptExitCode": 0,
+    "originalCurrentChangedPixels": {
+      "low": 0,
+      "high": 0
+    },
+    "originalCurrentMaximumChannelDelta": 0,
+    "independentPngDecoders": [
+      "CI image-js",
+      "독립 Python CRC/zlib/filter",
+      "독립 Pillow"
+    ],
+    "pressureMinimumWaiver": "기존 2026-11-05 사용자 결정의 Chemy V1 15% 포기만 유지. 다른 33종 하한은 변경하지 않음."
+  },
+  "environment": {
+    "browser": "156.0.8078.4",
+    "platform": "linux",
+    "architecture": "x64"
+  },
+  "snapshot": {
+    "materialVersion": 1,
+    "carrier": "carrier-cpu-klecks-chemy-v1",
+    "seed": 20260909,
+    "sampleCount": 96,
+    "rawPressures": [
+      0.15,
+      0.85
+    ],
+    "mappedPressures": [
+      0.20096828688518137,
+      0.919047625504462
+    ],
+    "markCount": 1758,
+    "width": 640,
+    "height": 480
+  },
+  "sourceSha256": {
+    "low": "24c2aad648d5f6bd4d1ef946627ca5a5b77dbe1ee8f4474446298b865dcde801",
+    "high": "876b95d7568e30a0f6aa1464f550af254ade8dc33db5bbcc23d5820c8e789e1b"
+  },
+  "orderedGeometrySha256": "c3dc88ce69ac18a8bee5894bb3530bd65a8e521f02afc4b08f338515b381b643",
+  "geometrySerialization": "JSON.stringify(marks.map(({opacity,...mark})=>mark)); includes color and order",
+  "referenceLaw": "고정 mapped pressure의 sqrt 비례 관계. 4 EPS × ratio는 곱셈·나눗셈 IEEE754 경계이며 픽셀 골든은 정확 동일 요구.",
+  "pixels": {
+    "low": {
+      "rgbaSha256": "74540e0ccc12dbc498510822fd4eff4bb076a2b6c5b0b0c394ff936fea8a5afb",
+      "alphaMass": 12307470,
+      "visiblePixels": 57695,
+      "opaquePixels": 662,
+      "alphaAtLeast95PercentPixels": 33217,
+      "histogramSha256": "b6f80bfdb962184bbcfb4ea4c065f1296745fea25a54862623cf05658b96d270",
+      "fixturePngSha256": "5c09298a21841f9eadaad4b73541751199e4d95eb0a2c8e6e18935e62e25bbc5"
+    },
+    "high": {
+      "rgbaSha256": "feedec57875a354721759c936f86d0c29fb70575817c33be352b947723161c93",
+      "alphaMass": 13936892,
+      "visiblePixels": 57806,
+      "opaquePixels": 39694,
+      "alphaAtLeast95PercentPixels": 45343,
+      "histogramSha256": "63db9521e0bfa03a114ac3a3ebf291429e58f49ebc014cc5d203d25a380db545",
+      "fixturePngSha256": "4df0563aa84082faf463b428549c5d549efd7e6303428b8ffce07e704d36bc61"
+    }
+  },
+  "contract": {
+    "originalMinimumExclusive": 1.15,
+    "originalMinimumRetained": false,
+    "approvalStatus": "owner-approved-2026-11-05"
+  },
+  "opacitySha256": {
+    "low": "37e33b6de841d8ea0e3abbd273841f3473d196e40920857973ec33c182630332",
+    "high": "4693669be489e6a95dc7baf87b4e7c25be5028c76218ad72dba0827f80cc5c22"
+  },
+  "approval": {
+    "decidedAtKST": "2026-11-05 21:06",
+    "scope": "Chemy V1만 기존 픽셀·필압 경로 보존으로 교체하며 원래 15% 하한을 포기한다. 다른 33종·제품 렌더러·저장 형식·데이터·권한은 유지한다. Linux 검증과 전체 CI 통과 후 병합한다.",
+    "decision": "사용자가 제시한 변경안의 판단과 진행을 위임해 기존 외관 보존을 선택했다."
+  }
+}

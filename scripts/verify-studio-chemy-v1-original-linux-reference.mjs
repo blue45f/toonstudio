@@ -200,7 +200,10 @@ async function run() {
     const page = await context.newPage(); page.on("pageerror", (e) => receipt.diagnostics.push(e.message)); page.on("console", (m) => { if (m.type() === "error") receipt.diagnostics.push(m.text()); });
     timeout = setTimeout(() => { void browser?.close(); void vite?.close(); }, 150000);
     await page.goto(origin + "/__original_chemy__", { waitUntil: "load", timeout: 60000 });
-    const result = await page.evaluate(async (baseline) => { const qa = await import("/__qa/driver.ts"); return qa.capture(baseline); }, baseline);
+    const result = await page.evaluate(async ({ baseline, driverUrl }) => {
+      const qa = await import(driverUrl);
+      return qa.capture(baseline);
+    }, { baseline, driverUrl: "/__qa/driver.ts" });
     const referencePair = {};
     for (const side of ["low", "high"]) { const image = result[side]; check(image.inputSha256 === baseline.sourceSha256[side] && image.geometrySha256 === baseline.orderedGeometrySha256 && image.opacitySha256 === baseline.opacitySha256[side] && image.count === 1758 && image.width === 640 && image.height === 480 && image.mappedPressure === baseline.snapshot.mappedPressures[side === "low" ? 0 : 1], side + " 원본 입력/기하/opacity positive control 실패"); const raw = Buffer.from(image.raw), png = Buffer.from(image.png.split(",")[1], "base64"); check(raw.length === 1228800 && originalChemySha256(raw) === image.pixels.rgbaSha256, side + " 원래 raw 지문 불일치"); writeFileSync(join(output, "original-" + side + ".rgba"), raw); writeFileSync(join(output, "original-" + side + ".png"), png); writeFileSync(join(output, "original-" + side + ".input.json"), image.input); referencePair[side] = { inputSha256: image.inputSha256, geometrySha256: image.geometrySha256, opacitySha256: image.opacitySha256, raw, png }; delete image.raw; delete image.png; }
     check(result.primitive.invalidMarks === 0 && result.primitive.proportionalityViolations === 0 && !receipt.blocked.length && !receipt.diagnostics.length, "원래 참조 primitive/진단 경계 실패");

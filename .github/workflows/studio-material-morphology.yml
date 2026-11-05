@@ -18,6 +18,10 @@ on:
       - scripts/verify-studio-hybrid-topology.mjs
       - scripts/verify-studio-chemy-v1-original-linux-reference.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/original-source-manifest.json
+      - scripts/lib/studio-chemy-v1-pressure-baselines.ts
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/baseline.json
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/low.png
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/high.png
       - scripts/lib/studio-chemy-v1-pressure-policy.ts
       - scripts/fixtures/studio-chemy-v1-pressure/baseline.json
       - scripts/fixtures/studio-chemy-v1-pressure/low.png
@@ -35,6 +39,10 @@ on:
       - scripts/verify-studio-hybrid-topology.mjs
       - scripts/verify-studio-chemy-v1-original-linux-reference.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/original-source-manifest.json
+      - scripts/lib/studio-chemy-v1-pressure-baselines.ts
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/baseline.json
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/low.png
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/high.png
       - scripts/lib/studio-chemy-v1-pressure-policy.ts
       - scripts/fixtures/studio-chemy-v1-pressure/baseline.json
       - scripts/fixtures/studio-chemy-v1-pressure/low.png
