@@ -1,5 +1,7 @@
 import type { Availability, PlatformId, Pricing, Title } from "@/shared/lib/types";
 
+import { engagementStatusText } from "./engagement-status-i18n";
+
 export type EngagementNotificationCategory =
   | "release"
   | "availability"
@@ -344,8 +346,8 @@ export function releaseNotificationForTitle(
   return {
     id: `release:${dateKey}:${title.id}`,
     category: "release",
-    title: `${title.title} 연재일이에요`,
-    body: `${weekday}요일 연재 작품입니다. 새 회차 공개 여부는 제공 플랫폼에서 확인해 주세요.`,
+    title: engagementStatusText("engagement.status.release.scheduledTitle", { title: title.title }, "{title} 오늘 연재 예정"),
+    body: engagementStatusText("engagement.status.release.scheduledBody", "등록된 연재 요일 메타데이터 기준입니다. 새 회차 공개 여부는 제공 플랫폼에서 확인해 주세요."),
     href: `/title/${encodeURIComponent(title.slug)}`,
     createdAt: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8).toISOString(),
     readAt: null,

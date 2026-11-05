@@ -273,10 +273,7 @@ export const useEngagement = create<EngagementState>()(
           const item = releaseNotificationForTitle(title, date);
           return item ? [item] : [];
         });
-        if (notifications.length === 0) return;
-        set((state) => ({
-          notifications: upsertNotificationList(state.notifications, notifications),
-        }));
+        get().replaceNotificationsBySourcePrefix("catalog-release:", notifications);
       },
       setNotificationCategoryEnabled: (category, enabled) => set((state) => ({
         notificationCategorySettings: {

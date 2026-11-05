@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { apiFetch } from "@/platform/api";
+import { hasPendingSubscriptionWrites } from "@/shared/lib/store-api-post";
 
 import type { CollectionMergeHandle } from "@/shared/lib/collection-write-through";
 import type { HydratePayload } from "@/shared/lib/store";
@@ -25,7 +26,7 @@ import { useSession } from "@/domains/auth/public/session/auth-session-store";
 
 // 세션 ↔ 스토어 동기화: 로그인 시 userId 설정 + DB 데이터 하이드레이션, 로그아웃 시 해제
 export function StoreSync() {
-  const { data: session, status } = useSession();
+  const { data: session, ready, status } = useSession();
   const hydrated = useHydrated();
   const setSessionIdentity = useApp((s) => s.setSessionIdentity);
   const hydrate = useApp((s) => s.hydrateFromServer);
@@ -33,8 +34,8 @@ export function StoreSync() {
   const token = session?.token ?? null;
 
   useEffect(() => {
-    // persist 복원 후에만 — 게스트 로컬 데이터가 스토어에 올라온 뒤 병합해야 손실이 없다.
-    if (!hydrated) return;
+    // 복원·세션 확인 후에만 동기화해 미확정 로그아웃이 기존 계정 기록을 지우지 않게 한다.
+    if (!hydrated || !ready) return;
 
     const controller = new AbortController();
     let activeMerge: CollectionMergeHandle | null = null;
@@ -175,7 +176,11 @@ export function StoreSync() {
               }
               const collectionIdMap = data.collectionIdMap ?? {};
               discardGuestCollectionRecovery(initialFence.userId, collectionIdMap);
-              hydrate(data, {
+              const currentSubscriptions = useApp.getState().subscriptions;
+              const preserveSubscriptions = hasPendingSubscriptionWrites()
+                || currentSubscriptions !== local.subscriptions;
+              // 병합 도중 바꾼 구독은 유지하고 나머지 병합은 완료한 뒤 최신 스냅샷으로 확인한다.
+              hydrate(preserveSubscriptions ? { ...data, subscriptions: currentSubscriptions } : data, {
                 collectionRevision: initialFence.collectionRevision,
                 // Recovery commands represented in this merge response were removed above;
                 // any genuinely newer edit is still in the owner outbox and is rebased by hydrate.
@@ -190,7 +195,7 @@ export function StoreSync() {
               const replayFence = captureCollectionHydrationFence();
               if (replayFence && replayFence.userId === initialFence.userId) {
                 await replayPendingCollectionWrites(replayFence);
-                if (useApp.getState().collectionOutbox.some(
+                if (preserveSubscriptions || hasPendingSubscriptionWrites() || useApp.getState().collectionOutbox.some(
                   (entry) => entry.ownerId === replayFence.userId
                 )) {
                   scheduleRetry();
@@ -211,6 +216,11 @@ export function StoreSync() {
           if (!isCollectionAuthFenceCurrent(initialFence)) return;
           const hydrationFence = captureCollectionHydrationFence();
           if (!hydrationFence) return;
+          if (hasPendingSubscriptionWrites()) {
+            scheduleRetry();
+            return;
+          }
+          const subscriptionsAtRequest = useApp.getState().subscriptions;
           try {
             const result = await fetchSyncJson<HydratePayload>("/api/me", {
               headers: hydrationFence.sessionToken
@@ -223,6 +233,11 @@ export function StoreSync() {
             }
             const data = result.data;
             if (!isCollectionAuthFenceCurrent(hydrationFence)) return;
+            if (hasPendingSubscriptionWrites() || useApp.getState().subscriptions !== subscriptionsAtRequest) {
+              // 조회 도중 바뀐 구독을 늦은 스냅샷으로 덮지 않고 쓰기 완료 후 다시 조회한다.
+              scheduleRetry();
+              return;
+            }
             if (useApp.getState().collectionRevision !== hydrationFence.collectionRevision) {
               // A local command completed after this snapshot started. Applying the old response
               // could resurrect a deleted collection or overwrite an unrelated server edit, so
@@ -271,11 +286,26 @@ export function StoreSync() {
       clearRetryTimer();
       requestRun();
     };
+    let foregroundQueued = false;
+    const handleForeground = () => {
+      if (document.visibilityState !== "visible" || browserOffline() || foregroundQueued) return;
+      // 같은 복귀에서 발생한 focus·visibilitychange를 합치고 기존 직렬 동기화를 재사용한다.
+      foregroundQueued = true;
+      queueMicrotask(() => {
+        foregroundQueued = false;
+        clearRetryTimer();
+        requestRun();
+      });
+    };
 
     requestRun();
     window.addEventListener("online", handleOnline);
+    window.addEventListener("focus", handleForeground);
+    document.addEventListener("visibilitychange", handleForeground);
     return () => {
       window.removeEventListener("online", handleOnline);
+      window.removeEventListener("focus", handleForeground);
+      document.removeEventListener("visibilitychange", handleForeground);
       clearRetryTimer();
       controller.abort();
       if (activeMerge) {
@@ -283,7 +313,7 @@ export function StoreSync() {
         activeMerge = null;
       }
     };
-  }, [hydrated, status, uid, token, setSessionIdentity, hydrate]);
+  }, [hydrated, ready, status, uid, token, setSessionIdentity, hydrate]);
 
   return null;
 }

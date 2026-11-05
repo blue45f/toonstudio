@@ -76,6 +76,7 @@ const CONSUMERS = [
   "../engagement/PublicCollectionPage.tsx",
   "../engagement/TasteOnboardingPage.tsx",
   "../engagement/taste-spectrum-bar.tsx",
+  "../engagement/engagement-model.ts",
   "../market/components/CreatorMarketplaceCloudLibraryAction.tsx",
   "../market/components/CreatorMarketplaceReportAction.tsx",
   "../market/components/MarketAcquisitionModal.tsx",
@@ -105,9 +106,9 @@ function placeholders(value: string): string[] {
 }
 
 describe("c08 status 사전 (등록 모듈 4종)", () => {
-  it("ko/en 키가 패리티를 이루고 92키이며 en에 한글이 없다", () => {
+  it("ko/en 키가 패리티를 이루고 94키이며 en에 한글이 없다", () => {
     expect(Object.keys(DICTS.en).sort()).toEqual(ALL_KEYS);
-    expect(ALL_KEYS).toHaveLength(92);
+    expect(ALL_KEYS).toHaveLength(94);
     for (const mod of MODULES) {
       const parsed = parseRegisterModule(readSource(mod.file));
       expect(Object.keys(parsed.en).sort(), mod.file).toEqual(Object.keys(parsed.ko).sort());
@@ -129,7 +130,7 @@ describe("c08 status 사전 (등록 모듈 4종)", () => {
   });
 });
 
-describe("c08 status 소비 계약 (이관 27파일)", () => {
+describe("c08 status 소비 계약 (이관 27파일과 연재 예정 모델)", () => {
   it("등록된 전 키가 소비 파일에서 참조되고 미등록 참조가 없다", () => {
     const used = new Set(collectCalls().map((call) => call.key));
     expect([...used].sort()).toEqual(ALL_KEYS);
