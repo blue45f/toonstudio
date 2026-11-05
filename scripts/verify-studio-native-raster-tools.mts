@@ -38,6 +38,11 @@ import {
   type Page,
 } from "playwright";
 
+import { createCompanionPreviewApiDiagnostics } from "./lib/studio-companion-preview-diagnostics";
+import { captureStudioDocumentBeforeDeadline, captureStudioDocumentRoi } from "./lib/studio-document-pixel-capture.mjs";
+import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
+import { setStudioPrimaryColorThroughUi as setPrimaryColor } from "./lib/studio-primary-color-interactions";
 import {
   readDurableStudioAutosaveDocument,
   readDurableStudioAutosaveError,
@@ -149,6 +154,7 @@ const NATIVE_FIXTURE_POINTER_STEP_DELAY_MS = 2;
 interface BrowserErrorCollector {
   messages: string[];
   failedResponses: string[];
+  staticPreviewReadinessUnavailable: string[];
 }
 
 interface PersistedElementSummary {
@@ -419,12 +425,19 @@ function collectBrowserErrors(
   scenarioId: string,
   studioUrl: string,
 ): BrowserErrorCollector {
-  const collector: BrowserErrorCollector = { messages: [], failedResponses: [] };
+  const collector: BrowserErrorCollector = { messages: [], failedResponses: [], staticPreviewReadinessUnavailable: [] };
+  const ownedStaticPreview = !process.env.TOONSPECTRUM_VERIFY_ORIGIN?.trim();
+  const unavailableRequests = createCompanionPreviewApiDiagnostics(studioUrl);
+  const recordUnavailable = (message: string) => {
+    collector.staticPreviewReadinessUnavailable.push(`${scenarioId}: ${message}`);
+    appendFileSync(join(SCRATCH, "studio-native-raster-static-preview-api.jsonl"), `${JSON.stringify({ scenarioId, message })}\n`);
+  };
   page.on("console", (entry) => {
     if (entry.type() !== "error") return;
     const location = entry.location().url;
     const message = location ? `${entry.text()} @ ${location}` : entry.text();
-    if (!expectedStaticPreviewError(message, studioUrl)) {
+    if (ownedStaticPreview && isStaticPreviewReadinessUnavailable(message, studioUrl)) recordUnavailable(message);
+    else if (!expectedStaticPreviewError(message, studioUrl)) {
       collector.messages.push(`${scenarioId}: ${message}`);
     }
   });
@@ -432,9 +445,17 @@ function collectBrowserErrors(
   page.on("response", (response) => {
     if (response.status() < 500) return;
     const message = `${response.status()} ${response.url()}`;
-    if (!expectedStaticPreviewError(message, studioUrl)) {
+    if (ownedStaticPreview && isStaticPreviewReadinessResponse(response.status(), response.url(), studioUrl)) {
+      unavailableRequests.observeResponse(response.request(), response.status(), response.url());
+      recordUnavailable(message);
+    } else if (!expectedStaticPreviewError(message, studioUrl)) {
       collector.failedResponses.push(`${scenarioId}: ${message}`);
     }
+  });
+  page.on("requestfailed", (request) => {
+    const message = `${request.failure()?.errorText ?? "request failed"} ${request.url()}`;
+    if (ownedStaticPreview && unavailableRequests.observedUnavailableAbort(request)) recordUnavailable(message);
+    else collector.messages.push(`${scenarioId}: ${message}`);
   });
   return collector;
 }
@@ -518,10 +539,7 @@ async function prepareStudio(
     state: "visible",
     timeout: 18_000,
   });
-  const quickstart = page.locator('[data-studio-creative-starter="true"]');
-  if (await quickstart.isVisible({ timeout: 300 }).catch(() => false)) {
-    await quickstart.locator('[data-studio-quickstart-dismiss="true"]').click();
-  }
+  await waitForStudioDrawingReady(page, { requireWelcome: true });
   await page.keyboard.press("Escape").catch(() => undefined);
   const shell = await page.evaluate(() => ({
     textLength: document.body.innerText.trim().length,
@@ -1556,56 +1574,8 @@ async function captureClip(
 ): Promise<Buffer> {
   await page.mouse.move(4, 4);
   await page.waitForTimeout(settleMs);
-  const base64 = await page.evaluate((documentCorners) => {
-    interface BrowserKonvaTransform { point: (point: Point) => Point }
-    interface BrowserKonvaStage {
-      container: () => HTMLElement;
-      getAbsoluteTransform: () => BrowserKonvaTransform;
-      toCanvas: (config: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        pixelRatio: number;
-      }) => HTMLCanvasElement;
-    }
-    const runtime = (window as typeof window & {
-      Konva?: { stages?: BrowserKonvaStage[] };
-    }).Konva;
-    const stage = runtime?.stages?.find((candidate) => {
-      const content = candidate.container().querySelector<HTMLElement>(".konvajs-content");
-      const bounds = content?.getBoundingClientRect();
-      return content?.isConnected === true && Boolean(bounds && bounds.width > 0 && bounds.height > 0);
-    });
-    if (!stage) throw new Error("Studio Konva stage is unavailable for document evidence capture");
-    const transform = stage.getAbsoluteTransform();
-    const transformed = documentCorners.map((point) => transform.point(point));
-    const left = Math.min(transformed[0]!.x, transformed[1]!.x);
-    const top = Math.min(transformed[0]!.y, transformed[1]!.y);
-    const width = Math.abs(transformed[1]!.x - transformed[0]!.x);
-    const height = Math.abs(transformed[1]!.y - transformed[0]!.y);
-    const documentWidth = Math.abs(documentCorners[1]!.x - documentCorners[0]!.x);
-    if (width < 1 || height < 1 || documentWidth < 1) {
-      throw new Error("Studio document evidence region is degenerate");
-    }
-    const canvas = stage.toCanvas({
-      x: left,
-      y: top,
-      width,
-      height,
-      pixelRatio: documentWidth / width,
-    });
-    const encoded = canvas.toDataURL("image/png");
-    const separator = encoded.indexOf(",");
-    if (separator < 0) throw new Error("Studio document evidence capture did not encode");
-    return encoded.slice(separator + 1);
-  }, FIXTURE_CLIP_DOCUMENT_POINTS);
+  const base64 = await page.evaluate(captureStudioDocumentRoi, FIXTURE_CLIP_DOCUMENT_POINTS);
   return Buffer.from(base64, "base64");
-}
-
-async function setPrimaryColor(page: Page, color: string): Promise<void> {
-  const input = await visibleLocator(page.locator('input[type="color"][aria-label^="주 색 선택"]'));
-  await input.fill(color);
 }
 
 async function waitForNativeFixturePresentation(
@@ -1614,7 +1584,8 @@ async function waitForNativeFixturePresentation(
 ): Promise<Buffer> {
   const startedAt = Date.now();
   while (Date.now() - startedAt < 4_000) {
-    const screenshot = await captureClip(page, 80);
+    const screenshot = await captureStudioDocumentBeforeDeadline(() => captureClip(page, 80), startedAt + 4_000);
+    if (screenshot === null) break;
     if (meaningfulPixelChange(screenshotPixelDiff(blankBaseline, screenshot))) return screenshot;
   }
   throw new Error("native pointer fixture persisted but did not reach the Konva presentation");
