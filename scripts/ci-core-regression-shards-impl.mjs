@@ -97,6 +97,7 @@ export function shardForTarget(target) {
     || target === "apps/web/src/domains/creator/assistant/webtoon-tension-map-docs.test.ts"
     || target === "apps/web/src/domains/creator/charm/studio-charm-bar-host-contract.test.ts"
     || target === "apps/web/src/domains/learn/accessible-webtoon-guide-docs.test.ts"
+    || target === "tests/integration/web-api/domains/creator/virtual-space/studio-virtual-space-design-closure.test.ts"
     || target === "apps/web/src/domains/creator/ecosystem/reader-feedback-docs.test.ts"
     || target === "apps/web/src/domains/creator/branching-cuttoon/branching-cuttoon-docs.test.ts"
     || target === "apps/web/src/domains/creator/branching-cuttoon/model/branching-cuttoon-docs.test.ts"
