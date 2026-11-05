@@ -659,7 +659,7 @@ export function StudioCompetitorCapabilityPanel({
                 data-testid="toonstudio-sitewide-score-badge"
               >
                 {locale === "ko"
-                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (126,800,000,000,000만점 · ${siteWideScorecard.overallScore10} / 10)`
+                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (156,800,000,000,000만점 · ${siteWideScorecard.overallScore10} / 10)`
                   : `Overall ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`}
               </span>
             </div>
