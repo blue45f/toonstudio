@@ -107,7 +107,7 @@ flowchart TB
 | CanvasKit (Skia) | 정밀 벡터 렌더러 | 경로·글자·필터를 한 성숙한 그래픽 코어에서 제공해 기준 출력으로 삼기 좋다 | BSD-3-Clause | 운영 경로 |
 | Vello · ThorVG | GPU 벡터 렌더러와 SVG·Lottie 전문 엔진 | 페이지의 GPU 장치를 그대로 받아 써서 그림을 CPU로 되읽지 않는다 | Apache-2.0 OR MIT | 설정 필요 |
 | p5.brush | 수채 번짐·흐름선 같은 절차적 붓 | 절차적 질감을 처음부터 만들지 않고 가져다 쓴다 | MIT | 설정 필요 |
-| Mixbox | 물감처럼 섞이는 색(파랑+노랑=초록) | RGB 평균은 칙칙해지지만 안료 모델은 초록이 된다 | CC-BY-NC-4.0 | 운영 경로 |
+| ToonStudio 잠재 안료 혼색 | 자체 KM 합성 곡선으로 적합한 잠재 안료 혼합 | 기존 브러시 안료 슬롯과 혼색 브러시가 재사용한다. Mixbox와 같은 출력은 보장하지 않는다 | Project license(출처 분류), 방법·특허 권리 미확인 | 운영 경로 |
 | libmypaint | 비교 기준선이자 선택 획 변환 인스펙터에서 고르는 엔진(기본 선택) | .myb 생태계의 사실상 기준 구현(ADR-0006). 펜의 기본 그리기 엔진은 아니다 | ISC | 참고 연동 |
 | Google Ink | 직접 WASM으로 빌드한 잉크 브러시 | 동역학이 풍부해 전문 잉킹 후보, PoC 게이트 전에는 출하 경로에 올리지 않음(ADR-0005·0009) | Apache-2.0 | 실험 기능 |
 
@@ -334,7 +334,7 @@ flowchart LR
 
 | 항목 | 설치본·저장소가 말하는 것 | 이 페이지의 태도 |
 | --- | --- | --- |
-| Mixbox | `mixbox@2.0.0`은 CC-BY-NC-4.0. 저장소는 provider 권리 라벨·기본 프로파일 `noncommercial-full`·감사 핀으로 다룬다(`THIRD_PARTY_NOTICES.md`). 툴체인 카탈로그는 같은 패키지를 research-only·비실행으로 적어 서술이 어긋난다 | 상업 이용 조건은 별도 확인 |
+| Mixbox(과거 의존성) | `mixbox@2.0.0`은 CC-BY-NC-4.0. 2026-11-05 변경에서 외부 패키지 의존성·import와 툴체인 항목을 제거한다. 종전 기본 프로필은 `permissive-only`였으며, 런타임 권리 검사와 툴체인 비실행 표시는 번들 제외 보장이 아니었다. 자체 잠재 안료 구현의 출처는 [기능 문서](../features/latent-pigment-mixing.md)에 구분한다 | 패키지 제거와 운영 배포 갱신을 구분. 서면 합의와 방법·특허 권리는 미확인 |
 | wasm-vips | 래퍼 `package.json`은 MIT, 설치본 `THIRD-PARTY-NOTICES.md`는 libvips·glib·libheif 등을 LGPLv3로 적는다. 엔진 레지스트리는 같은 구성요소를 `LGPL-2.1-or-later`로 적어 설치본의 LGPLv3 표기와 다르고, "dev-only 후보·LGPL 격리 배포 필요"라고 덧붙인다. ADR-0008은 LGPL 계층의 배포 형태를 법무 검토 후 확정한다고 적는다. 고지 생성기는 `THIRD-PARTY-NOTICES.md`를 수집하지 않아 생성 고지에는 MIT로만 나온다 | 상업 이용 조건·고지 방식은 별도 확인 |
 | Remotion | 자체 라이선스(SPDX 아님, `package.json`은 `SEE LICENSE IN LICENSE.md`). 자격(개인·3인 이하 영리 조직·비영리·평가)이 되면 무료, 아니면 Company License. 저장소는 패키지·버전·라이선스 문구 해시를 고정해 감시한다 | 배포 법인의 자격은 저장소로 확인할 수 없어 별도 확인 |
 

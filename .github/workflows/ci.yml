@@ -698,6 +698,8 @@ jobs:
         run: node --test scripts/ci-checkout-inputs.test.mjs
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: 자체 안료·23종 브러시·GPU 공개 기능 검증
+        run: node scripts/verify-latent-pigment-browser.mjs
       - name: Run serious and critical accessibility smoke
         run: pnpm run test:a11y
       - name: 제작 작업 보드 실제 흐름과 반응형 접근성 검증
@@ -707,6 +709,13 @@ jobs:
         with:
           name: core-production-workflows-attempt-${{ github.run_attempt }}
           path: .qa/production-workflows
+          retention-days: 7
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: core-pigment-browser-attempt-${{ github.run_attempt }}
+          path: .qa/mixbox-internalization/browser-probe
           retention-days: 7
           if-no-files-found: warn
 
@@ -853,6 +862,12 @@ jobs:
           mkdir -p artifacts/core
           git rev-parse HEAD > artifacts/core/commit.txt
           (pnpm --filter @webtoon-nest/api build && test -s apps/api/dist/apps/api/src/main.js && node --check apps/api/dist/apps/api/src/main.js && pnpm run build:bundle && pnpm run check:studio-bundle && pnpm run check:product-tour-remotion-chunks && test -s dist/.vite/manifest.json) 2>&1 | tee artifacts/core/build.log
+      - name: 안료 번들 제외 검사와 지연 청크 원장 보존
+        run: |
+          test -s dist/legal/pigment-bundle-audit.json
+          mkdir -p artifacts/core/pigment-audit
+          cp dist/.vite/manifest.json artifacts/core/manifest.json
+          cp dist/legal/pigment-*.json artifacts/core/pigment-audit/
       - name: Verify Virtual Studio art integrity
         run: |
           set -euo pipefail

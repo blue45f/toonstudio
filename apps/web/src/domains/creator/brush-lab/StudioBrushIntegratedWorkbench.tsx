@@ -1,5 +1,6 @@
 import { loadBrushStudioSavedMaterial } from "./brush-studio-saved-material-loader";
 import { serializeBrushStudioV6Authoring } from "./brush-studio-v6-authoring-document";
+import { downloadBrushStudioSource } from "./brush-studio-source-download";
 import type { BrushStudioV6Program } from "./brush-studio-v6-engine";
 import { LoaderCircle } from "lucide-react";
 import { useLayoutEffect, useState } from "react";
@@ -27,10 +28,11 @@ export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: stri
   const [notice, setNotice] = useState("");
   const [loadError, setLoadError] = useState("");
   const [initialProgram, setInitialProgram] = useState<BrushStudioV6Program>();
+  const [pendingMigration, setPendingMigration] = useState<Awaited<ReturnType<typeof loadBrushStudioSavedMaterial>> | null>(null);
 
   useLayoutEffect(() => {
     let cancelled = false;
-    setReady(false); setLoadError(""); setInitialProgram(undefined); setSnapshot(null);
+    setReady(false); setLoadError(""); setInitialProgram(undefined); setSnapshot(null); setPendingMigration(null);
     const capture = (event: Event) => {
       if (!(event instanceof CustomEvent) || !event.detail || typeof event.detail !== "object") return;
       setSnapshot(event.detail);
@@ -61,8 +63,11 @@ export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: stri
             if (cancelled) return;
             try {
               if (window.localStorage.getItem(storageKey) === null) {
-                setInitialProgram(loaded.program); setSnapshot(loaded.program);
-                setNotice(`‘${loaded.program.name}’의 실제 재료 설정을 열었습니다. 원본은 보존하고 저장 시 새 브러시로 추가합니다.${loaded.persistent ? "" : " 현재 라이브러리는 세션 전용입니다."}`);
+                if (loaded.migration) setPendingMigration(loaded);
+                else {
+                  setInitialProgram(loaded.program); setSnapshot(loaded.program);
+                  setNotice(`‘${loaded.program.name}’의 실제 재료 설정을 열었습니다. 원본은 보존하고 저장 시 새 브러시로 추가합니다.${loaded.persistent ? "" : " 현재 라이브러리는 세션 전용입니다."}`);
+                }
               } else {
                 setNotice(translateNow("studio.brushCanvasStatus.brushLab.changedDuringLoad", "불러오는 동안 편집 내용이 변경되어 가장 최근의 저장된 편집 내용을 유지했습니다."));
               }
@@ -99,6 +104,29 @@ export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: stri
     <h2 className="font-bold">브러시 원본을 변경하지 않았습니다</h2><p>{loadError}</p>
     <a href="/studio/assets/brushes" className="inline-flex min-h-11 items-center">브러시 목록으로</a>
   </section>;
+
+  if (pendingMigration?.migration) {
+    const source = pendingMigration.migration.sourceSavedBrush;
+    return <section role="alert" className="space-y-3 rounded-xl border border-warning p-4">
+      <h2 className="font-bold">이전 Mixbox 브러시의 원본을 보존했습니다</h2>
+      <p className="text-sm">자체 잠재 안료로 가져오면 팁·입력·질감 설정은 보존하며 색 결과가 달라질 수 있습니다. 라이브러리 원본과 기존 원고 데이터를 수정하지 않고 저장 시 새 브러시로 추가합니다.</p>
+      <button type="button" className="min-h-11 rounded border px-3" onClick={() => downloadBrushStudioSource(source, "brush-original.json")}>원본 파일 내려받기</button>
+      <button type="button" className="min-h-11 rounded border px-3" onClick={() => {
+        try {
+          if (window.localStorage.getItem(brushStudioV6StorageKey(scope)) === null) {
+            setInitialProgram(pendingMigration.program); setSnapshot(pendingMigration.program);
+            setNotice("이전 브러시를 자체 잠재 안료로 가져왔습니다. 원본은 라이브러리에 보존되며 새 획의 색 결과는 달라질 수 있습니다.");
+          } else {
+            setNotice("이주를 준비하는 동안 저장된 편집 내용이 변경되어 가장 최근의 초안을 유지했습니다.");
+          }
+          setPendingMigration(null); setGeneration((current) => current + 1);
+        } catch {
+          setLoadError(t("studio.brushCanvasStatus.brushLab.storageCheckFailed", "편집 저장소를 확인하지 못했습니다. 원본은 변경하지 않았습니다."));
+        }
+      }}>자체 안료로 가져오기</button>
+      <a href="/studio/assets/brushes" className="inline-flex min-h-11 items-center">브러시 목록으로</a>
+    </section>;
+  }
 
   return (
     <>

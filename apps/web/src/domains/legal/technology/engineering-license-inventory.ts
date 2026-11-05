@@ -1,5 +1,9 @@
 /**
- * 실제로 설치해 쓰는 라이브러리의 라이선스 현황.
+ * 설치 라이브러리의 라이선스 기록.
+ *
+ * 2026-11-05 변경: 2026-10-07 스냅샷에서 제거한 mixbox 항목만 제외했다(잔존 116개).
+ * 전체 재수집 결과의 124개와 신규·버전 차분은 이 표에 아직 반영하지 않았다.
+ * 현재 전체 의존성 증거는 수집 스크립트와 빌드 생성 고지를 확인한다.
  *
  * 수집 기준 (2026-10-07 실측): 워크스페이스 전 패키지(루트, apps/*, packages/*,
  * tests/integration/*)의 package.json에서 직접 의존성(dependencies와
@@ -412,15 +416,6 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     url: "https://github.com/zeux/meshoptimizer",
     surface: "web",
     role: { ko: "3D 메시 압축과 최적화", en: "3D mesh compression and optimization" },
-  },
-  {
-    name: "mixbox",
-    version: "2.0.0",
-    license: "CC-BY-NC-4.0",
-    url: "https://scrtwpns.com/mixbox",
-    surface: "web",
-    flag: "noncommercial",
-    role: { ko: "안료 스펙트럴 혼합 — 브러시 V6 안료 provider가 정적으로 import하고, 라이선스 프로필이 비상업 조건을 게이트합니다(기본값 permissive-only, noncommercial-full은 명시 opt-in에서만)", en: "Spectral pigment mixing — statically imported by the Brush V6 pigment provider, with the license profile gating the non-commercial terms (default permissive-only; noncommercial-full only on explicit opt-in)" },
   },
   {
     name: "motion",

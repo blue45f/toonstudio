@@ -1,6 +1,6 @@
 import { StudioBrushV6DraftGuard } from "./StudioBrushV6DraftGuard";
 import { downloadBrushStudioSource } from "./brush-studio-source-download";
-import { serializeBrushStudioV6Authoring } from "./brush-studio-v6-authoring-document";
+import { migrateBrushStudioV6LegacyMixboxAuthoring, serializeBrushStudioV6Authoring, type BrushStudioV6LegacyPigmentAuthoringMigration } from "./brush-studio-v6-authoring-document";
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
@@ -116,7 +116,7 @@ const SINGLE_SLOTS: readonly { slot: SingleSlot; label: string; description: str
   { slot: "surface", label: "표면", description: "필름, 종이 이빨, 수채지, 캔버스, 실물 샘플" },
   { slot: "deposition", label: "도포", description: "잉크, 마커, 건식, 습식, 유화, 입자, 빛" },
   { slot: "pickup", label: "픽업", description: "강모 조합에서만 CPU 안료 저장량 보충·보조 색 혼합이 적용됩니다. 캔버스 아래색을 읽는 스머지는 지원하지 않습니다." },
-  { slot: "pigment", label: "안료", description: "Spectral.js·open-km 분광, ColorMix Lab 비교, 기존 WGM·Mixbox. 모델별 가정은 재료 탭에서 확인하세요." },
+  { slot: "pigment", label: "안료", description: "Spectral.js·open-km 분광, ColorMix Lab 비교, 자체 잠재 안료·기존 WGM. 모델별 가정은 재료 탭에서 확인하세요." },
   { slot: "pattern", label: "패턴", description: "톤, 해칭, 직조, 벽돌, 모티프, flow field" },
   { slot: "output", label: "출력 권위", description: "현재 획은 입력·설정을 저장하고 Canvas 접촉과 SVG 도형으로 재생합니다. 가져온 다른 출력 선택은 설계 기록으로 보관하며 실제 출력은 이 공통 경로를 사용합니다." },
 ];
@@ -330,6 +330,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
   const program = history.present;
   const [reference, setReference] = useState<BrushStudioV6Program>(program);
   const [saving, setSaving] = useState(false);
+  const [pendingMigration, setPendingMigration] = useState<{ readonly migration: BrushStudioV6LegacyPigmentAuthoringMigration; readonly filename: string } | null>(null);
   const [savedHref, setSavedHref] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("recipes");
   const [experience, setExperience] = useState<BrushStudioExperience>(readBrushStudioExperience);
@@ -411,6 +412,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
       editGenerationRef.current += 1;
       setSavedHref(null);
       dispatchHistory({ type });
+      setPendingMigration(null);
       setStatus(type === "undo" ? "이전 브러시 설정으로 되돌렸습니다." : "브러시 설정 변경을 다시 적용했습니다.");
     };
     const endGroup = () => dispatchHistory({ type: "end-group" });
@@ -429,6 +431,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
   const replace = (next: BrushStudioV6Program, message?: string, group?: string) => {
     editGenerationRef.current += 1;
     dispatchHistory({ type: "edit", program: next, group });
+    setPendingMigration(null);
     setSavedHref(null);
     if (message) setStatus(message);
   };
@@ -439,11 +442,19 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
   const importProgram = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (!file) return;
     const generation = ++editGenerationRef.current;
+    setPendingMigration(null);
     try {
       if (file.size > 1_048_576) throw new Error(t("studio.brushCanvasStatus.brushLab.v6FileTooLarge", "브러시 파일이 허용 크기를 초과했습니다."));
       const serialized = await file.text();
       if (generation !== editGenerationRef.current) return;
-      replace(parseBrushStudioV6Import(serialized), `${file.name}에서 브러시 설정을 가져왔습니다.`);
+      try {
+        replace(parseBrushStudioV6Import(serialized), `${file.name}에서 브러시 설정을 가져왔습니다.`);
+      } catch (error) {
+        const migration = migrateBrushStudioV6LegacyMixboxAuthoring(serialized);
+        if (!migration) throw error;
+        setPendingMigration({ migration, filename: file.name });
+        setStatus("이 파일의 이전 Mixbox 혼색을 자체 잠재 안료로 가져올 수 있습니다. 현재 브러시는 유지됩니다.");
+      }
     } catch (error) {
       if (generation === editGenerationRef.current) setStatus(t("studio.brushCanvasStatus.brushLab.v6ImportFailedKept", { message: error instanceof Error ? error.message : t("studio.brushCanvasStatus.brushLab.v5FileReadFailed", "브러시 파일을 읽지 못했습니다.") }, "{message} 현재 브러시 설정은 유지됩니다."));
     }
@@ -451,6 +462,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
 
   const moveHistory = (type: "undo" | "redo") => {
     editGenerationRef.current += 1;
+    setPendingMigration(null);
     setSavedHref(null);
     dispatchHistory({ type });
     setStatus(type === "undo" ? "이전 브러시 설정으로 되돌렸습니다." : "브러시 설정 변경을 다시 적용했습니다.");
@@ -514,6 +526,16 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
         </div>
         <p role="status" className="mt-3 rounded-xl border border-line bg-raised/55 px-3 py-2 text-xs text-fg-2">{status}</p>
       </div>
+
+      {pendingMigration ? <section aria-label="이전 안료 브러시 가져오기" className={CARD}>
+        <h3 className="text-sm font-black text-fg">자체 안료로 가져오기 확인</h3>
+        <p className="mt-2 text-xs leading-5 text-fg-2">이전 Mixbox 브러시는 자체 잠재 안료로 혼색하며 색 결과가 달라질 수 있습니다. 원본 파일을 내려받을 수 있고, 가져오기를 선택하기 전까지 현재 설정을 유지합니다. 원고의 예전 획은 별도 확인 후 원본을 보존한 자체 혼색 사본으로 전환합니다.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" className={BUTTON} onClick={() => downloadBrushStudioSource(pendingMigration.migration.sourceAuthoring, pendingMigration.filename)}>원본 파일 내려받기</button>
+          <button type="button" className={PRIMARY} onClick={() => replace(pendingMigration.migration.program, "자체 잠재 안료로 가져왔습니다. 새 획의 색은 이전 Mixbox 결과와 다를 수 있습니다.")}>자체 안료로 가져오기</button>
+          <button type="button" className={BUTTON} onClick={() => { setPendingMigration(null); setStatus("가져오기를 취소하고 현재 브러시를 유지했습니다."); }}>가져오기 취소</button>
+        </div>
+      </section> : null}
 
       <nav aria-label="브러시 스튜디오 영역" className="flex gap-2 overflow-x-auto rounded-2xl border border-line bg-card/45 p-2">
         {tabs.map((item) => <button key={item.id} type="button" aria-pressed={tab === item.id} onClick={() => setTab(item.id)} className={`min-h-[44px] shrink-0 rounded-xl px-3 text-xs font-black ${tab === item.id ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-raised"} ${STUDIO_FOCUS_RING}`}>{item.label}</button>)}

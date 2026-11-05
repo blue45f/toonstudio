@@ -65,7 +65,8 @@ describe("studio CRDT protocol", () => {
     expect(STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION).toBe(5);
     expect(STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION).toBe(6);
     expect(isStudioCrdtStrokePayloadVersion(6)).toBe(true);
-    expect(isStudioCrdtStrokePayloadVersion(7)).toBe(false);
+    expect(isStudioCrdtStrokePayloadVersion(7)).toBe(true);
+    expect(isStudioCrdtStrokePayloadVersion(8)).toBe(false);
   });
 
   it("accepts only canonical bounded base64 for incremental updates", () => {

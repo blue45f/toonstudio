@@ -1,3 +1,5 @@
+import { parseStudioLinked3dCorrectionProvenance, type StudioLinked3dCorrectionProvenance } from "@toonstudio/contracts/studio-linked-3d-correction";
+import { isStudioLegacyPigmentArchivedElement } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 /**
  * Page-owned canonical link between a Scene/Shot revision, OPFS-CAS line pass, Canvas layers, and
  * real artist DrawEl corrections.  The page remains the relationship authority, the Scene remains
@@ -52,18 +54,7 @@ export type StudioLinked3dCorrectionConflictCode =
   | "pass-revision-changed";
 
 /** Immutable provenance captured on the real DrawEl at pointer-down. */
-export interface StudioLinked3dCorrectionProvenance {
-  readonly kind: "toonstudio.linked-3d-correction";
-  readonly version: 1;
-  readonly bundleId: string;
-  readonly pass: "line";
-  readonly sourcePassRevision: number;
-  readonly sourceHash: `sha256:${string}`;
-  readonly baseGeometryHash: `sha256:${string}`;
-  readonly topologyHash: `sha256:${string}`;
-  readonly objectIdentityHash: `sha256:${string}`;
-  readonly basePassRootHash: `sha256:${string}`;
-}
+export type { StudioLinked3dCorrectionProvenance } from "@toonstudio/contracts/studio-linked-3d-correction";
 
 export interface StudioLinked3dRenderCorrectionReference {
   readonly elementId: string;
@@ -176,53 +167,7 @@ function safeRole(value: unknown): StudioBg3dLtLayerRole | null {
     : null;
 }
 
-export function parseStudioLinked3dCorrectionProvenance(
-  value: unknown,
-): StudioLinked3dCorrectionProvenance | null {
-  if (!isRecord(value) || !hasExactKeys(value, [
-    "kind",
-    "version",
-    "bundleId",
-    "pass",
-    "sourcePassRevision",
-    "sourceHash",
-    "baseGeometryHash",
-    "topologyHash",
-    "objectIdentityHash",
-    "basePassRootHash",
-  ])) return null;
-  const bundleId = safeId(value.bundleId);
-  const sourcePassRevision = safeRevision(value.sourcePassRevision);
-  const sourceHash = safeHash(value.sourceHash);
-  const baseGeometryHash = safeHash(value.baseGeometryHash);
-  const topologyHash = safeHash(value.topologyHash);
-  const objectIdentityHash = safeHash(value.objectIdentityHash);
-  const basePassRootHash = safeHash(value.basePassRootHash);
-  if (
-    value.kind !== "toonstudio.linked-3d-correction"
-    || value.version !== 1
-    || value.pass !== "line"
-    || !bundleId
-    || !sourcePassRevision
-    || !sourceHash
-    || !baseGeometryHash
-    || !topologyHash
-    || !objectIdentityHash
-    || !basePassRootHash
-  ) return null;
-  return Object.freeze({
-    kind: "toonstudio.linked-3d-correction",
-    version: 1,
-    bundleId,
-    pass: "line",
-    sourcePassRevision,
-    sourceHash,
-    baseGeometryHash,
-    topologyHash,
-    objectIdentityHash,
-    basePassRootHash,
-  });
-}
+export { parseStudioLinked3dCorrectionProvenance } from "@toonstudio/contracts/studio-linked-3d-correction";
 
 function frozenLayer(value: unknown): StudioLinked3dRenderLayerReference | null {
   if (!isRecord(value) || !hasExactKeys(value, ["elementId", "role"])) return null;
@@ -424,7 +369,7 @@ function correctionReferencesFor(
 ): readonly StudioLinked3dRenderCorrectionReference[] | null {
   const corrections: StudioLinked3dRenderCorrectionReference[] = [];
   for (const element of elements) {
-    if (element.linked3dCorrection === undefined) continue;
+    if (isStudioLegacyPigmentArchivedElement(element) || element.linked3dCorrection === undefined) continue;
     const provenance = parseStudioLinked3dCorrectionProvenance(element.linked3dCorrection);
     if (!provenance) return null;
     if (provenance.bundleId !== bundleId) continue;
@@ -575,6 +520,7 @@ export function validateStudioLinked3dReservedPageState(input: {
   };
   for (let elementIndex = 0; elementIndex < input.elements.length; elementIndex += 1) {
     const element = input.elements[elementIndex]!;
+    if (isStudioLegacyPigmentArchivedElement(element)) continue;
     visited = new WeakSet<object>();
     const invalidLocatorPath = findUnownedLocator(
       element,
@@ -759,7 +705,7 @@ export function detachStudioLinked3dCorrections<T extends StudioLinked3dRenderEl
   let changed = false;
   const next: T[] = [];
   for (const element of elements) {
-    if (element.linked3dCorrection === undefined) {
+    if (isStudioLegacyPigmentArchivedElement(element) || element.linked3dCorrection === undefined) {
       next.push(element);
       continue;
     }

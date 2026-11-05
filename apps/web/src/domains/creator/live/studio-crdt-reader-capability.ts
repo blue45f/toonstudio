@@ -1,6 +1,7 @@
+import { STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 
-export const STUDIO_CRDT_READER_CAPABILITIES: readonly string[] = Object.freeze([STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY]);
+export const STUDIO_CRDT_READER_CAPABILITIES: readonly string[] = Object.freeze([STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY]);
 export interface StudioCrdtReaderMetadata {
   readonly readerCapabilities?: readonly string[];
   readonly requiredReaderCapabilities?: readonly string[];
@@ -27,7 +28,7 @@ export function studioCrdtReaderMetadata(value: StudioCrdtReaderMetadata): Studi
 export function requiresStudioBg3dBundleReader(value: StudioCrdtReaderMetadata): boolean {
   return value.requiredReaderCapabilities?.includes(STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY) === true;
 }
-export function supportsStudioCrdtReaders(value: StudioCrdtReaderMetadata, required = STUDIO_CRDT_READER_CAPABILITIES): boolean {
+export function supportsStudioCrdtReaders(value: StudioCrdtReaderMetadata, required: readonly string[] = [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY]): boolean {
   return required.every((capability) => value.readerCapabilities?.includes(capability));
 }
 export function assertStudioCrdtSupportedReaders(value: StudioCrdtReaderMetadata): void {

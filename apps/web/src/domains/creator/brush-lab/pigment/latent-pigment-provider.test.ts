@@ -1,7 +1,6 @@
 /**
  * 자체 잠재 안료 제공자(toonstudio-latent-pigment-v1)의 등록·어댑터·종단 통합 시험.
- * Mixbox 경계(mixbox-js-v2, 비상업)가 그대로이고, 같은 안료 슬롯에서 permissive-only 프로필이 새 혼합기를
- * 고를 수 있음을 증명한다. 이 시험은 Mixbox 패키지를 호출하지 않는다.
+ * 외부 Mixbox 없이 같은 안료 슬롯과 예전 저장 노드가 자체 혼합기를 고를 수 있음을 증명한다.
  */
 import { describe, expect, it } from "vitest";
 
@@ -57,7 +56,7 @@ describe("라이선스 프로필과 제공자 매니페스트", () => {
       integration: "connected",
       productPath: "material-contact",
       materialExecution: "native",
-      nodeIds: [NODE_ID],
+      nodeIds: [NODE_ID, "pigment-mixbox"],
     });
     expect(brushStudioV6ProviderManifestForNode(NODE_ID)?.id).toBe(PROVIDER_ID);
     expect(brushStudioV6MaterialExecutionForNode(NODE_ID)).toBe("native");
@@ -79,16 +78,16 @@ describe("라이선스 프로필과 제공자 매니페스트", () => {
     }
   });
 
-  it("같은 슬롯의 Mixbox 경계는 그대로다(기본 프로필에서 차단, noncommercial-full 에서만 허용)", () => {
+  it("예전 Mixbox 저장 노드는 기본 프로필에서도 자체 제공자로 계획한다", () => {
     const blocked = planBrushStudioV6ProviderRuntime([node("pigment-mixbox")]);
-    expect(blocked.blockedNodes).toContainEqual(expect.objectContaining({ nodeId: "pigment-mixbox", reason: "license-profile" }));
-    expect(brushStudioV6ProviderManifestById("mixbox-js-v2")).toMatchObject({ license: "CC-BY-NC-4.0", rights: "noncommercial" });
+    expect(blocked.valid).toBe(true);
+    expect(brushStudioV6ProviderManifestById("mixbox-js-v2")).toBeNull();
     expect(planBrushStudioV6ProviderRuntime([node("pigment-mixbox")], "noncommercial-full").bindings.map((binding) => binding.providerId))
-      .toContain("mixbox-js-v2");
+      .toContain(PROVIDER_ID);
   });
 
   it("노드 식별자와 제공자 식별자는 매니페스트 안에서 유일하다", () => {
-    const manifestEntries = ["toonstudio-latent-pigment-v1", "mixbox-js-v2"].map((id) => brushStudioV6ProviderManifestById(id)?.nodeIds ?? []);
+    const manifestEntries = ["toonstudio-latent-pigment-v1"].map((id) => brushStudioV6ProviderManifestById(id)?.nodeIds ?? []);
     expect(new Set(manifestEntries.flat()).size).toBe(manifestEntries.flat().length);
   });
 });
@@ -109,10 +108,10 @@ describe("안료 슬롯과 엔진 노드", () => {
     expect(analysis.valid).toBe(true);
   });
 
-  it("같은 프로그램에서 Mixbox 를 고르면 기본 프로필의 계획이 막힌다(경계 대비)", () => {
+  it("같은 프로그램의 예전 Mixbox 노드도 자체 제공자로 실행한다", () => {
     const base = createBrushStudioV6Program("oil-hair-mixer");
     const withMixbox = replaceBrushStudioV6Slot(base, "pigment", "pigment-mixbox");
-    expect(analyzeBrushStudioV6Program(withMixbox, BRUSH_STUDIO_V6_FULL_CAPABILITIES).providerPlan.valid).toBe(false);
+    expect(analyzeBrushStudioV6Program(withMixbox, BRUSH_STUDIO_V6_FULL_CAPABILITIES).providerPlan.valid).toBe(true);
   });
 
   it("토폴로지 캐리어로 바꿔도 선택한 안료 노드를 유지한다", () => {

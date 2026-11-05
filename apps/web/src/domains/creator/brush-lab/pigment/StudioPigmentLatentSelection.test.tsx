@@ -34,7 +34,7 @@ describe("잠재 안료(자체) 비교 항목", () => {
     render(<StudioPigmentComparison primary="#ffe000" secondary="#0050dc" node="pigment-latent" secondaryActive onSelect={vi.fn()} />);
     expect(screen.getByRole("button", { name: "잠재 안료(자체) 선택" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: "기존 WGM 선택" }).getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByRole("button", { name: "Mixbox 선택" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByRole("button", { name: "Mixbox 선택" })).toBeNull();
   });
 
   it("중간 혼색 코드가 제공자 팔레트의 중앙 값과 같고 설명에 모델 성격이 적혀 있다", () => {
@@ -44,10 +44,14 @@ describe("잠재 안료(자체) 비교 항목", () => {
     expect(screen.getByText(/자체 K–M 모델/u)).toBeTruthy();
   });
 
-  it("기존 항목(Mixbox 포함)의 선택 동작은 그대로다", () => {
+  it("이전 Mixbox 노드의 자체 안료 실행을 알리고 명시적으로 자체 노드로 선택할 수 있다", () => {
     const onSelect = vi.fn();
-    render(<StudioPigmentComparison primary="#ffe000" secondary="#0050dc" node="pigment-latent" secondaryActive onSelect={onSelect} />);
-    fireEvent.click(screen.getByRole("button", { name: "Mixbox 선택" }));
-    expect(onSelect).toHaveBeenCalledExactlyOnceWith("pigment-mixbox");
+    render(<StudioPigmentComparison primary="#ffe000" secondary="#0050dc" node="pigment-mixbox" secondaryActive onSelect={onSelect} />);
+    expect(screen.getByRole("note").textContent).toContain("이전 Mixbox 브러시는 자체 잠재 안료로 혼색하며 색 결과가 달라질 수 있습니다");
+    const button = screen.getByRole("button", { name: "잠재 안료(자체) 선택" });
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.click(button);
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith("pigment-latent");
   });
 });

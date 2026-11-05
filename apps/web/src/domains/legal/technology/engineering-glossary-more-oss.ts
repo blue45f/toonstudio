@@ -35,8 +35,8 @@ export const GLOSSARY_MORE_OSS: readonly GlossaryTerm[] = [
       "Like recipe-sharing terms: ‘just credit me’ and ‘publish your changed recipe under the same terms’ are very different promises.",
     ),
     inToonstudio: t(
-      "인벤토리는 직접 의존성에 weak-copyleft·noncommercial·custom-license 깃발을 따로 답니다. 깃발이 달린 것은 MPL-2.0 3개(@resvg/resvg-wasm·web-ifc·web-push), LGPL-2.1-only 1개(opencascade.js), CC-BY-NC-4.0 1개(mixbox), Remotion License 2개입니다. ‘오픈소스’ 한 단어로 묶지 않고 도구마다 따로 검토하며, 의무의 충족 여부는 법률 판단이라 단정하지 않습니다.",
-      "The inventory flags direct dependencies as weak-copyleft, noncommercial or custom-license. Flagged are three MPL-2.0 packages (@resvg/resvg-wasm, web-ifc, web-push), one LGPL-2.1-only (opencascade.js), one CC-BY-NC-4.0 (mixbox) and two under the Remotion License. Tools are reviewed one by one rather than lumped as ‘open source’, and whether obligations are met is a legal judgment this page does not make.",
+      "인벤토리는 직접 의존성에 weak-copyleft·noncommercial·custom-license 깃발을 따로 답니다. 깃발이 달린 것은 MPL-2.0 3개(@resvg/resvg-wasm·web-ifc·web-push), LGPL-2.1-only 1개(opencascade.js), Remotion License 2개입니다. 비상업 mixbox 항목은 2026-11-05 외부 의존성을 제거하며 제외했습니다. ‘오픈소스’ 한 단어로 묶지 않고 도구마다 따로 검토하며, 의무의 충족 여부는 법률 판단이라 단정하지 않습니다.",
+      "The inventory flags direct dependencies as weak-copyleft, noncommercial or custom-license. Flagged are three MPL-2.0 packages (@resvg/resvg-wasm, web-ifc, web-push), one LGPL-2.1-only (opencascade.js), and two under the Remotion License. The non-commercial mixbox entry is removed with that external dependency in the 2026-11-05 change. Tools are reviewed one by one rather than lumped as ‘open source’, and whether obligations are met is a legal judgment this page does not make.",
     ),
     chapters: ["licenses", "open-source"],
     atlasIds: ["oss-license-notice-pipeline"],
@@ -72,8 +72,8 @@ export const GLOSSARY_MORE_OSS: readonly GlossaryTerm[] = [
       "Like a free exhibition ticket: viewing, crediting and sketching along are fine, selling the sketch is not.",
     ),
     inToonstudio: t(
-      "혼색 라이브러리 mixbox 2.0.0 이 CC-BY-NC-4.0 이라 인벤토리에서 noncommercial 깃발이 달립니다. mixbox 를 import 하는 곳은 테스트를 빼면 brush-lab 의 안료 공급자 한 곳이고, 그 공급자는 라이선스 프로파일(permissive-only / source-available / noncommercial-full)을 따로 두며 기본값이 permissive-only 입니다(brush-lab/brush-studio-v6-license-profile.ts). 혼색 브러시의 studio-spectral-wgm-mix-v1.ts 는 mixbox 를 쓰지 않습니다.",
-      "The colour-mixing library mixbox 2.0.0 is CC-BY-NC-4.0, so the inventory flags it noncommercial. Outside tests, mixbox is imported in just one place, the brush lab's pigment provider, which keeps a separate licence profile (permissive-only / source-available / noncommercial-full) defaulting to permissive-only (brush-lab/brush-studio-v6-license-profile.ts). The colour-mixing brush's studio-spectral-wgm-mix-v1.ts does not use mixbox.",
+      "외부 mixbox 2.0.0은 CC-BY-NC-4.0 조건이었으며 2026-11-05 변경에서 의존성을 제거했습니다. 이전 브러시의 안료 식별자는 자체 잠재 안료 엔진으로 연결하고 색 결과가 달라질 수 있음을 표시합니다. 런타임 프로필만으로 패키지가 빌드에 빠졌다고 판정하지 않으며 산출물을 따로 검사합니다.",
+      "The external mixbox 2.0.0 package carried CC-BY-NC-4.0 terms and is removed in the 2026-11-05 change. Former brush pigment identifiers use the project-authored latent pigment engine, with a warning that colors may change. A runtime profile alone does not establish package exclusion; build artifacts are checked separately.",
     ),
     chapters: ["licenses", "open-api-provenance"],
   },

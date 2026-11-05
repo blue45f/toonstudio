@@ -3,6 +3,8 @@ import { BadRequestException, ConflictException, ForbiddenException } from "@nes
 import { sql } from "drizzle-orm";
 import { assertStudioBg3dBundleReaderInTransaction } from "./studio-bg3d-bundle.repository";
 import { assertStudioBg3dRestDocumentInTransaction } from "./studio-bg3d-bundle-rest-gate";
+import { assertStudioLegacyPigmentArchiveTransition, assertStudioLegacyPigmentArchiveReader,
+  studioLegacyPigmentArchiveSourceAuthority } from "./studio-legacy-pigment-archive-admission";
 import { z } from "zod";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import { assertStudioLinked3dPassAssetRows } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
@@ -57,6 +59,9 @@ export async function saveStudioScopedRestDocument(input: {
         throw new BadRequestException({ code: "studio_scoped_document_only", message: "담당 원고는 문서 저장을 사용하세요. 표지·납품 이미지·작품 설정은 제작 관리자 권한입니다." });
       }
       const beforeDocument = await loadStudioScopedRestAuthority(transaction, input.workId, work.document);
+      assertStudioLegacyPigmentArchiveReader(work.document, input.readerCapabilities ?? []);
+      assertStudioLegacyPigmentArchiveReader(beforeDocument, input.readerCapabilities ?? []);
+      assertStudioLegacyPigmentArchiveTransition(studioLegacyPigmentArchiveSourceAuthority(work.document, beforeDocument, input.patch.doc), input.patch.doc);
       await assertStudioBg3dRestDocumentInTransaction(transaction, input.workId, input.patch.doc, input.readerCapabilities ?? [], beforeDocument);
       const admission = admitStudioScopedWriteEffects({ before: projectStudioScopedAuthoringDocument(beforeDocument),
         after: projectStudioScopedAuthoringDocument(input.patch.doc), context: authorization.context,

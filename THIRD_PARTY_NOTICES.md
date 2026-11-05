@@ -27,7 +27,6 @@ obscure, or claim ownership of these libraries.
 | `lazy-brush` | 2.0.2 | MIT | <https://github.com/dulnan/lazy-brush> |
 | `perfect-freehand` | 1.2.3 | MIT | <https://github.com/steveruizok/perfect-freehand> |
 | `p5.brush` standalone entry | 2.2.1 | MIT | <https://github.com/acamposuribe/p5.brush> |
-| `mixbox` | 2.0.0 | CC BY-NC 4.0 — non-commercial use only | <https://github.com/scrtwpns/mixbox> |
 | `remotion` | 4.0.536 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion> |
 | `@remotion/player` | 4.0.536 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion/tree/main/packages/player> |
 | `p5` peer resolution for `p5.brush` | 2.3.1 | LGPL-2.1 | <https://github.com/processing/p5.js> |
@@ -59,19 +58,15 @@ shipped beside xatlas, and records the exact MPL-2.0 source location for the
 unmodified resvg executable.
 
 
-`mixbox@2.0.0` is available only under an explicit non-commercial opt-in.
-Its CC BY-NC 4.0 terms do not permit a commercial product build. The default
-Brush Studio V6 license profile is fixed to `permissive-only` (license P0
-decision, 2026-10-14, in
-`apps/web/src/domains/creator/brush-lab/brush-studio-v6-license-profile.ts`),
-which rejects this provider; the Mixbox provider can run only when a saved
-program explicitly opts into the `noncommercial-full` profile. Any commercial
-deployment, paid distribution, or commercially licensed fork must keep the
-default profile (or otherwise disable/remove the Mixbox provider) or obtain a
-separate commercial license from Secret Weapons before release. The runtime
-marks this provider as `noncommercial`, and the exact
-package/version/license boundary is pinned by the release audit. See
-`third_party/mixbox/README.md`.
+2026-11-05 변경에서 `mixbox@2.0.0` 의존성과 외부 패키지 호출을 제거했다. 원본 라이선스는
+CC BY-NC 4.0이며 <https://github.com/scrtwpns/mixbox>에서 확인할 수 있다. 과거 도입·연구와
+미기재 서면 합의 기록은 `third_party/mixbox/README.md`와 `third_party/mixbox/LICENSE-GRANT.md`에
+보존한다. 운영 의존성 감사는 `mixbox` 재유입을 거부한다.
+
+기존 권리 프로필의 기본값 `permissive-only`는 실행 계획 검사였으며 번들 제외를 보장하지
+않았다. 브러시의 자체 잠재 안료·분광 혼색은 별도 구현이고 Mixbox와 같은 결과나 검증된
+상업 허가를 뜻하지 않는다. 자체 구현의 출처·한계는 `docs/features/latent-pigment-mixing.md`를
+참조한다. 이 소스 변경과 실제 운영 배포의 갱신 여부는 별도로 검증한다.
 
 The Product Tour runtime uses `remotion` and `@remotion/player` at exactly
 `4.0.536`. These packages use the custom Remotion License rather than a standard

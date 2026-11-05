@@ -1,3 +1,4 @@
+import { STUDIO_READER_CAPABILITIES, STUDIO_READER_CAPABILITY_HEADERS } from "@/platform/studio-reader-capabilities";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -425,7 +426,7 @@ describe("shared document requests", () => {
     });
     expect(apiGet).toHaveBeenCalledWith(
       "/creator/works/Shared%2FWORK%2001/team/document/meta",
-      { signal: controller.signal, headers: { "x-studio-reader-capabilities": '["bg3d-sixpass-bundle.v1"]' } }
+      { signal: controller.signal, headers: STUDIO_READER_CAPABILITY_HEADERS }
     );
   });
 
@@ -468,7 +469,7 @@ describe("shared document requests", () => {
     });
     expect(apiPatch).toHaveBeenCalledWith(
       "/creator/works/Shared%2FWORK%2001/team/document",
-      { baseRevision: 7, crdtServerSequence: "27", title: "새 제목", readerCapabilities: ["bg3d-sixpass-bundle.v1"] },
+      { baseRevision: 7, crdtServerSequence: "27", title: "새 제목", readerCapabilities: STUDIO_READER_CAPABILITIES },
       { signal: controller.signal }
     );
   });
@@ -608,7 +609,7 @@ describe("shared document requests", () => {
 
     expect(apiPatch).toHaveBeenCalledWith(
       "/creator/works/Shared%2FWORK%2001/team/document",
-      { baseRevision: 7, crdtServerSequence: "27", title: "공동 수정", readerCapabilities: ["bg3d-sixpass-bundle.v1"] },
+      { baseRevision: 7, crdtServerSequence: "27", title: "공동 수정", readerCapabilities: STUDIO_READER_CAPABILITIES },
       { signal: undefined }
     );
   });
@@ -630,7 +631,7 @@ describe("shared document requests", () => {
     expect(apiPatch).toHaveBeenCalledWith(
       "/creator/works/Shared%2FWORK%2001/team/document",
       {
-        baseRevision: 7, readerCapabilities: ["bg3d-sixpass-bundle.v1"],
+        baseRevision: 7, readerCapabilities: STUDIO_READER_CAPABILITIES,
         crdtServerSequence: "27",
         titleId: "catalog-1",
         status: "published",

@@ -11,10 +11,10 @@ import {
 } from "./brush-studio-v6-pigment-provider";
 
 describe("V6 pigment providers", () => {
-  it("runs Mixbox 2 latent pigment mixing instead of RGB or spectral substitution", () => {
+  it("자체 잠재 안료를 RGB·분광 대체 없이 실행한다", () => {
     const first = "#ffe000";
     const second = "#0050dc";
-    const mixbox = mixBrushStudioV6PigmentColors(first, second, 0.5, "mixbox-js-v2");
+    const mixbox = mixBrushStudioV6PigmentColors(first, second, 0.5, "toonstudio-latent-pigment-v1");
     const rgb = mixBrushStudioV6PigmentColors(first, second, 0.5, "rgb-linear-v1");
     const spectral = mixBrushStudioV6PigmentColors(first, second, 0.5, "spectral-wgm-v1");
     expect(mixbox).not.toBe(rgb);
@@ -31,7 +31,7 @@ describe("V6 pigment providers", () => {
     const palette = createBrushStudioV6PigmentPalette(
       "#f4d03f",
       "#2455d6",
-      "mixbox-js-v2",
+      "toonstudio-latent-pigment-v1",
     );
     expect(palette).toHaveLength(33);
     expect(palette[0]).toBe("#f4d03f");
@@ -40,7 +40,7 @@ describe("V6 pigment providers", () => {
     expect(createBrushStudioV6PigmentPalette(
       "#f4d03f",
       "#2455d6",
-      "mixbox-js-v2",
+      "toonstudio-latent-pigment-v1",
     )).toEqual(palette);
   });
 
@@ -48,12 +48,16 @@ describe("V6 pigment providers", () => {
     expect(new Set(BRUSH_STUDIO_V6_PIGMENT_PROVIDERS.map((entry) => entry.id)).size)
       .toBe(BRUSH_STUDIO_V6_PIGMENT_PROVIDERS.length);
     expect(brushStudioV6PigmentProviderForNode("pigment-mixbox")).toMatchObject({
-      id: "mixbox-js-v2",
-      version: "2.0.0",
-      rights: "noncommercial",
+      id: "toonstudio-latent-pigment-v1",
+      version: "1",
+      rights: "internal",
       execution: "native",
     });
     expect(brushStudioV6PigmentProviderForNode("pigment-unknown")).toBeNull();
+    expect(BRUSH_STUDIO_V6_PIGMENT_PROVIDERS.some((entry) => String(entry.id) === "mixbox-js-v2"))
+      .toBe(false);
+    expect(() => mixBrushStudioV6PigmentColors("#ffff00", "#0000ff", 0.5, "mixbox-js-v2" as never))
+      .toThrow(BrushStudioV6PigmentProviderUnavailableError);
     expect(() => createBrushStudioV6PigmentPalette(
       "#000000",
       "#ffffff",
@@ -61,7 +65,7 @@ describe("V6 pigment providers", () => {
     )).toThrow(BrushStudioV6PigmentProviderUnavailableError);
   });
 
-  it("mixes yellow and blue with commercial-safe chroma preservation and simulates multi-coat glazing", () => {
+  it("자체 안료의 채도를 보존하고 다중 코팅을 계산한다", () => {
     const mixed = mixBrushStudioV6PigmentChromaPreserving("#ffe600", "#0047db", 0.5);
     const parsed = Number.parseInt(mixed.slice(1), 16);
     const r = parsed >>> 16;

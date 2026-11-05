@@ -6,13 +6,13 @@ import {
 } from "./engineering-license-inventory";
 
 describe("라이브러리 라이선스 현황 데이터", () => {
-  it("직접 의존성 117개를 표면별로 빠짐없이 담는다", () => {
-    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(117);
+  it("기존 스냅샷에서 외부 Mixbox를 제외한 116개를 표면별로 담는다", () => {
+    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(116);
     const bySurface = new Map<string, number>();
     for (const library of ENGINEERING_LIBRARY_LICENSES) {
       bySurface.set(library.surface, (bySurface.get(library.surface) ?? 0) + 1);
     }
-    expect(bySurface.get("web")).toBe(85);
+    expect(bySurface.get("web")).toBe(84);
     expect(bySurface.get("api")).toBe(22);
     expect(bySurface.get("mobile")).toBe(8);
     expect(bySurface.get("labs")).toBe(2);
@@ -36,7 +36,7 @@ describe("라이브러리 라이선스 현황 데이터", () => {
     }
   });
 
-  it("별도 확인이 필요한 항목은 플래그와 함께 정확히 일곱 개다", () => {
+  it("별도 확인이 필요한 잔존 항목은 플래그와 함께 정확히 여섯 개다", () => {
     const flagged = ENGINEERING_LIBRARY_LICENSES.filter((library) => library.flag);
     expect(flagged.map((library) => [library.name, library.license, library.flag])).toEqual(
       expect.arrayContaining([
@@ -44,12 +44,12 @@ describe("라이브러리 라이선스 현황 데이터", () => {
         ["@resvg/resvg-wasm", "MPL-2.0", "weak-copyleft"],
         ["web-ifc", "MPL-2.0", "weak-copyleft"],
         ["web-push", "MPL-2.0", "weak-copyleft"],
-        ["mixbox", "CC-BY-NC-4.0", "noncommercial"],
         ["remotion", "Remotion License", "custom-license"],
         ["@remotion/player", "Remotion License", "custom-license"],
       ]),
     );
-    expect(flagged).toHaveLength(7);
+    expect(flagged).toHaveLength(6);
+    expect(ENGINEERING_LIBRARY_LICENSES.some((library) => library.name === "mixbox")).toBe(false);
   });
 });
 

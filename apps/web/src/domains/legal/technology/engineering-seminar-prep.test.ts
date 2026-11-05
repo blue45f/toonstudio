@@ -121,10 +121,11 @@ const PREP_FACTS: readonly PrepFact[] = [
     },
   },
   {
-    atlasId: "oss-license-notice-pipeline", needles: ["CC BY-NC 4.0", "Remotion", "wasm-vips", "THIRD_PARTY_NOTICES.md", "MIT OR Apache-2.0"],
+    atlasId: "oss-license-notice-pipeline", needles: ["자체 잠재 안료", "Remotion", "wasm-vips", "THIRD_PARTY_NOTICES.md", "MIT OR Apache-2.0"],
     check: () => {
       const notices = flat("THIRD_PARTY_NOTICES.md");
-      expect(notices).toMatch(/`mixbox` \| 2\.0\.0 \| CC BY-NC 4\.0/u);
+      expect(notices).not.toMatch(/`mixbox` \| 2\.0\.0 \| CC BY-NC 4\.0/u);
+      expect(readText("package.json")).not.toContain('"mixbox":');
       expect(notices).toContain("Remotion License");
       const card = cardText("oss-license-notice-pipeline");
       expect(card).toContain("wasm-vips");

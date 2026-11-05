@@ -1,4 +1,5 @@
 import { readStudioStageInDocumentView } from "../canvas/studio-stage-document-view";
+import { BrushStudioV6LegacyPigmentMigrationRequiredError, hasVisibleLegacyMixboxStrokes } from "../brush-lab/brush-studio-v6-legacy-pigment";
 import { CANVAS_W } from "../studio-assets";
 import { confirmStudioDestructiveAction } from "../studio-destructive-action-preview";
 import {
@@ -73,6 +74,8 @@ export interface StudioRasterExportOrchestrationInput {
   readonly activePage: PageState;
   readonly pages: readonly PageState[];
   readonly masterElements?: readonly El[];
+  readonly getMasterElements?: () => readonly El[];
+  readonly getDocumentGeneration?: () => number;
   readonly captureSkiaDocumentForExport?: typeof import(
     "./studio-skia-document-export"
   )["captureStudioSkiaDocumentForExport"];
@@ -129,6 +132,8 @@ export function createStudioRasterExportOrchestration({
   activePage,
   pages,
   masterElements = [],
+  getMasterElements,
+  getDocumentGeneration,
   captureSkiaDocumentForExport,
   currentPageId,
   masterEditMode,
@@ -151,9 +156,17 @@ export function createStudioRasterExportOrchestration({
   setCurrentPageId,
 }: StudioRasterExportOrchestrationInput): StudioRasterExportOrchestration {
   async function capturePage(page: PageState) {
+    const master = getMasterElements?.() ?? masterElements;
+    if (hasVisibleLegacyMixboxStrokes([...(page.hideMaster ? [] : master), ...page.elements], page.groups ?? [])) throw new BrushStudioV6LegacyPigmentMigrationRequiredError();
     let capturedPage = page;
     const stage = await captureReadyStageForPage(page, (readyPage) => { capturedPage = readyPage; });
-    return { stage, page: capturedPage };
+    const generation = getDocumentGeneration?.();
+    const assertCurrent = () => {
+      if ((getMasterElements && getMasterElements() !== master) || (getDocumentGeneration && getDocumentGeneration() !== generation)) throw new Error("캡처 중 마스터 또는 원고가 바뀌어 내보내기를 중단했어요.");
+    };
+    assertCurrent();
+    if (hasVisibleLegacyMixboxStrokes([...(capturedPage.hideMaster ? [] : master), ...capturedPage.elements], capturedPage.groups ?? [])) throw new BrushStudioV6LegacyPigmentMigrationRequiredError();
+    return { stage, page: capturedPage, master, assertCurrent };
   }
 
   async function captureRawPageAtScale(
@@ -167,14 +180,16 @@ export function createStudioRasterExportOrchestration({
         ?? (await import("./studio-skia-document-export")).captureStudioSkiaDocumentForExport;
       const skia = await capture({
         page: captured.page,
-        masterElements,
+        masterElements: captured.master,
         exportScale: scale,
         transparent,
       });
+      captured.assertCurrent();
       if (skia.status === "captured") {
         return { canvas: skia.canvas, page: captured.page };
       }
     } catch {
+      captured.assertCurrent();
       // The existing document renderer remains the exact compatibility authority.
     }
 
@@ -564,6 +579,7 @@ export function createStudioRasterExportOrchestration({
               setCurrentPageId(page.id);
               currentCapture = await capturePage(page);
             }
+            currentCapture.assertCurrent();
             const { stage, page: capturedPage } = currentCapture;
             if (Math.round(capturedPage.canvasH * exportScale) !== height) {
               throw new Error("캡처 준비 중 페이지 크기가 바뀌어 내보내기를 중단했어요.");
