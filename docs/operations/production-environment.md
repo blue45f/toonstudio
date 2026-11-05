@@ -20,6 +20,8 @@ Secrets에 보관하고 저장소에는 변수명·검증 규칙·자동화 코�
 - `VITE_` 접두사에는 공개 가능한 URL만 넣고 토큰·비밀번호·DB URL을 넣지 않는다.
 - 환경변수 변경 후에는 해당 runtime만 수동 재배포하고 readiness를 다시 검증한다.
 
+현재 로컬·클라우드 주입 경계와 profile 차이는 [배포 환경 계약](deployment-environment-contract.md)을 따른다. 아래 퇴역 공급자 절차를 onpod로 치환 실행하지 않는다.
+
 ## Render Core API
 
 (퇴역 기록, 2026-10-23 삭제) `render.yaml`의 `toonspectrum-core-api`는 `API_RUNTIME_ROLE=full`인 동적 권위였다. 서비스는
@@ -86,7 +88,7 @@ Render dashboard에서 암호화하여 저장하고 로컬 임시 파일은 전�
 
 ### 클라이언트 IP 전달
 
-상태: migration (2026-10-22, 기본은 꺼짐). onpod 같은 PaaS ingress는 `X-Forwarded-For`·`X-Real-IP`·`CF-Connecting-IP`를 앞단 주소로
+상태: current (2026-10-23 적용, 직접 확인 기록 2026-10-29; 소스 기본은 꺼짐). onpod 같은 PaaS ingress는 `X-Forwarded-For`·`X-Real-IP`·`CF-Connecting-IP`를 앞단 주소로
 덮어쓰고 소켓 피어 IP도 앱·호스트마다 달라 `AUTH_TRUSTED_PROXY_IPS`(정확한 IP 목록)를 유지할 수 없습니다. 임시 Worker 미리보기와 헤더
 에코 앱으로 실측한 결과 Worker 경유 요청의 표준 IP 헤더 네 개(`x-forwarded-for`의 첫 값, `x-real-ip`, `cf-connecting-ip`,
 `x-onpod-client-ip`)가 모두 Cloudflare 이그레스 주소(`2a06:98c0:3600::103`)였고, Worker가 보낸 커스텀 헤더 `x-toonstudio-client-ip`와
@@ -120,7 +122,7 @@ Render dashboard에서 암호화하여 저장하고 로컬 임시 파일은 전�
 
 ## 단일 소유자 DB 옵트인
 
-상태: migration (2026-10-22, 기본은 `separated`). 공식 설계는 마이그레이터(스키마 소유자)와 런타임 로그인 역할을 분리하고,
+상태: current (2026-10-23 onpod 적용, 직접 확인 기록 2026-10-29; 소스 기본은 `separated`). 공식 설계는 마이그레이터(스키마 소유자)와 런타임 로그인 역할을 분리하고,
 `/api/health/ready`는 마켓플레이스 표 여섯 개(`creator_marketplace_resource`·`…_library_item`·`…_package_moderation`·`…_publish_gate`·
 `…_report`·`…_report_gate`)에서 연결 역할(`current_user`)이 최소 권한이며 `WITH GRANT OPTION`이 없는지 검사합니다. 표 소유자는
 권한을 REVOKE해도 grant option을 항상 가져 이 검사를 통과할 수 없습니다(롤백 트랜잭션 실측). 별도 역할을 만들 수 없는 관리형 DB(예:

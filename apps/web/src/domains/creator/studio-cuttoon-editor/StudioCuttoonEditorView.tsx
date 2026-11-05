@@ -25,6 +25,7 @@ import { StudioCuttoonEditorWorkspace } from "./StudioCuttoonEditorWorkspace";
 import { StudioDrawingAppBar } from "./StudioDrawingAppBar";
 import { StudioScopedWriteTargetPicker } from "./StudioScopedWriteTargetPicker";
 import { StudioScopedWriteAuthorityContext } from "../studio-collab/studio-scoped-write-context";
+import { hasVisibleLegacyMixboxStrokes } from "../brush-lab/brush-studio-v6-legacy-pigment";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 import "../studio-shell/studio-visual-identity.css";
@@ -32,6 +33,7 @@ import "../studio-shell/studio-visual-identity-v2.css";
 
 const StudioDraftSaveCenter = lazy(() => import("../StudioDraftSaveCenter").then((module) => ({ default: module.StudioDraftSaveCenter })));
 const StudioSaveStatusChromeMount = lazy(() => import("../StudioSaveStatusChromeMount").then((module) => ({ default: module.StudioSaveStatusChromeMount })));
+const StudioLegacyPigmentStrokeMigration = lazy(() => import("../brush/StudioLegacyPigmentStrokeMigration"));
 
 export type { StudioCuttoonEditorViewSession };
 
@@ -66,6 +68,8 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
   } = s;
   const drawingPresentation = useStudioDrawingPresentation();
   const drawingAppPresentation = drawingPresentation === "app";
+  const legacyPagePigment = hasVisibleLegacyMixboxStrokes(s.elements, s.groups);
+  const legacyMasterPigment = !s.masterEditMode && !s.activePage.hideMaster && hasVisibleLegacyMixboxStrokes(s.master.elements, []);
 
   return (
     <StudioScopedWriteAuthorityContext.Provider value={s.scopedWriteRuntime?.authority ?? null}>
@@ -157,6 +161,9 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
         <StudioWorkspaceNavigator />
       )}
       <StudioCuttoonEditorHosts {...s} />
+      {legacyPagePigment || legacyMasterPigment ? <Suspense fallback={null}>
+        <StudioLegacyPigmentStrokeMigration session={s} />
+      </Suspense> : null}
       <StudioCuttoonEditorDialogs {...s} />
       <Container
         size="wide"

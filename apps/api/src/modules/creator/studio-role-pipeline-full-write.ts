@@ -1,6 +1,7 @@
 import { ForbiddenException, HttpException } from "@nestjs/common";
 import { sql } from "drizzle-orm";
 import { assertStudioBg3dRestDocumentInTransaction } from "./studio-bg3d-bundle-rest-gate";
+import { assertStudioLegacyPigmentArchiveRestDocumentInTransaction } from "./studio-legacy-pigment-archive-rest-gate";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import type { db } from "../../platform/database";
 import type { CreatorSharedDocumentPatch } from "./creator-collaboration.persistence-contract";
@@ -20,6 +21,7 @@ export async function withStudioRolePipelineFullDocumentUpdate<T extends { reado
 ): Promise<T | null> {
   if (!("rollback" in executor)) throw new Error("원고 저장에는 같은 transaction의 권한 검사가 필요합니다.");
   const { actorUserId, workId, baseRevision, patch, updatedAt, scoped } = input;
+  if (Object.hasOwn(patch, "doc")) await assertStudioLegacyPigmentArchiveRestDocumentInTransaction(executor, workId, patch.doc, undefined, input.readerCapabilities ?? []);
   await assertStudioBg3dRestDocumentInTransaction(executor, workId, patch.doc, input.readerCapabilities ?? []);
   const mapped = Object.hasOwn(patch, "doc") ? await admitStudioRolePipelineFullDocument(executor, actorUserId, workId, patch.doc, scoped?.writeContext) : null;
   const saved = (await update())[0];
@@ -35,7 +37,8 @@ export function isStudioRolePipelineBoundaryError(error: unknown): error is Http
   if (!(error instanceof HttpException)) return false;
   const response = error.getResponse();
   return response !== null && typeof response === "object" && "code" in response
-    && typeof response.code === "string" && (response.code.startsWith("studio_scoped_") || response.code.startsWith("studio_bg3d_"));
+    && typeof response.code === "string" && (response.code.startsWith("studio_scoped_") || response.code.startsWith("studio_bg3d_")
+      || response.code.startsWith("studio_legacy_pigment_archive_"));
 }
 
 /** 호출자는 원고 advisory/work 잠금을 먼저 보유한다. 전체 편집의 실제 매핑 구역만 재검사한다. */

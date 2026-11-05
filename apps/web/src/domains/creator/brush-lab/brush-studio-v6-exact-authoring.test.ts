@@ -12,11 +12,7 @@ const fixture = () => createBrushStudioV6MaterialReceipt(createBrushStudioV6Prog
 describe("exact material authoring instead of recipe approximation", () => {
   it.each(BRUSH_STUDIO_V6_RECIPES.map((recipe) => [recipe.id, recipe] as const))(
     "preserves %s through editor, JSON and product receipt", (_id, recipe) => {
-      // Recipes blocked under the default permissive-only profile (Mixbox,
-      // inkwash, copyleft nodes) can only be receipted under an explicit
-      // opt-in profile — the same partition the persistence suite applies.
-      // The default profile's refusal itself is covered there and in the
-      // commercial-block suite; this sweep verifies authoring fidelity.
+      // 다른 제한 제공자(inkwash·copyleft)의 프로필 검사는 유지하면서 편집 데이터의 왕복 보존을 검증한다.
       const created = recipe.create();
       const runnableByDefault = analyzeBrushStudioV6Program(created, BRUSH_STUDIO_V6_FULL_CAPABILITIES).providerPlan.valid;
       const original = runnableByDefault

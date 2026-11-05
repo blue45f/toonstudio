@@ -153,7 +153,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - name: Verify mandatory CI wiring before installing dependencies
-        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/ci-throughput-policy.test.mjs scripts/type-coverage-gate-contract.test.mjs scripts/code-structure-gates-contract.test.mjs scripts/check-source-file-size.test.mjs
+        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/deployment-preflight.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/ci-throughput-policy.test.mjs scripts/type-coverage-gate-contract.test.mjs scripts/code-structure-gates-contract.test.mjs scripts/check-source-file-size.test.mjs
       - name: Verify deduplicated PR workflow policy
         run: python3 scripts/verify-pr-workflow-fanout.py
       # 의존성 설치 전에 끝나는 파일 크기 래칫: 새 파일 줄 수 상한, 기록된 초과 파일 증가 금지, 새 @ts-nocheck 금지(상한 값은 기준선 한 곳에만 둔다).
@@ -712,6 +712,8 @@ jobs:
         run: node --test scripts/ci-checkout-inputs.test.mjs
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: 자체 안료·23종 브러시·GPU 공개 기능 검증
+        run: node scripts/verify-latent-pigment-browser.mjs
       - name: Run serious and critical accessibility smoke
         run: pnpm run test:a11y
       - name: 제작 작업 보드 실제 흐름과 반응형 접근성 검증
@@ -721,6 +723,13 @@ jobs:
         with:
           name: core-production-workflows-attempt-${{ github.run_attempt }}
           path: .qa/production-workflows
+          retention-days: 7
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: core-pigment-browser-attempt-${{ github.run_attempt }}
+          path: .qa/mixbox-internalization/browser-probe
           retention-days: 7
           if-no-files-found: warn
 
@@ -867,6 +876,12 @@ jobs:
           mkdir -p artifacts/core
           git rev-parse HEAD > artifacts/core/commit.txt
           (pnpm --filter @webtoon-nest/api build && test -s apps/api/dist/apps/api/src/main.js && node --check apps/api/dist/apps/api/src/main.js && pnpm run build:bundle && pnpm run check:studio-bundle && pnpm run check:product-tour-remotion-chunks && test -s dist/.vite/manifest.json) 2>&1 | tee artifacts/core/build.log
+      - name: 안료 번들 제외 검사와 지연 청크 원장 보존
+        run: |
+          test -s dist/legal/pigment-bundle-audit.json
+          mkdir -p artifacts/core/pigment-audit
+          cp dist/.vite/manifest.json artifacts/core/manifest.json
+          cp dist/legal/pigment-*.json artifacts/core/pigment-audit/
       - name: Verify Virtual Studio art integrity
         run: |
           set -euo pipefail

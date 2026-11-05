@@ -78,6 +78,14 @@ function expectConverged(
 }
 
 describe("섀도우 어댑터 — op 변환과 해시 대조", () => {
+  it("sparse 보관 획의 진단용 v1 투영은 원본 필드를 생성하지 않고도 같은 해시를 낸다", () => {
+    const source = payload({ version: 7 }); delete source.kind; delete source.mode;
+    const { adapter, logs } = makeAdapter(), strokes = [record("archived", { payload: source })];
+    adapter.ingest(change(strokes, ["archived"]));
+    expectConverged(adapter, strokes); expect(logs).toHaveLength(0);
+    expect(source).not.toHaveProperty("kind"); expect(source).not.toHaveProperty("mode");
+  });
+
   it("확정 스트로크 생성은 add로 변환되고 해시가 일치한다", () => {
     const { adapter, logs } = makeAdapter();
     const strokes = [record("s1")];

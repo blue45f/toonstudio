@@ -20,26 +20,26 @@ describe("bounded material pigment palettes", () => {
     ));
     expect(cache.statistics()).toEqual({ entries: 1, hits: 1000, misses: 1 });
     expect(cache.get("#aa3300", "#0033aa", "rgb-linear-v1")).not.toEqual(first);
-    expect(cache.get("#aa3300", "#0033aa", "mixbox-js-v2")).not.toEqual(first);
+    expect(cache.get("#aa3300", "#0033aa", "toonstudio-latent-pigment-v1")).not.toEqual(first);
   });
 
   it("evicts least-recently-used palettes instead of retaining arbitrary colors", () => {
     const cache = new BrushStudioV6MaterialPaletteCache(
       createBrushStudioV6PigmentPalette,
     );
-    const oldest = cache.get("#000000", "#ffffff", "mixbox-js-v2");
+    const oldest = cache.get("#000000", "#ffffff", "toonstudio-latent-pigment-v1");
     for (let index = 1; index < 32; index++) {
       cache.get(
         `#${index.toString(16).padStart(6, "0")}`,
         "#ffffff",
-        "mixbox-js-v2",
+        "toonstudio-latent-pigment-v1",
       );
     }
-    expect(cache.get("#000000", "#ffffff", "mixbox-js-v2")).toBe(oldest);
-    cache.get("#ff0000", "#ffffff", "mixbox-js-v2");
+    expect(cache.get("#000000", "#ffffff", "toonstudio-latent-pigment-v1")).toBe(oldest);
+    cache.get("#ff0000", "#ffffff", "toonstudio-latent-pigment-v1");
     expect(cache.statistics().entries).toBe(32);
     const misses = cache.statistics().misses;
-    cache.get("#000001", "#ffffff", "mixbox-js-v2");
+    cache.get("#000001", "#ffffff", "toonstudio-latent-pigment-v1");
     expect(cache.statistics().misses).toBe(misses + 1);
   });
 });

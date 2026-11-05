@@ -1,5 +1,6 @@
+import { STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 /** 저장된 편집 기능에 필요한 최소 reader. 렌더러를 로드하지 않는다. */
-export type StudioProjectFileVersion = 2 | 3 | 4 | 5;
+export type StudioProjectFileVersion = 2 | 3 | 4 | 5 | 6;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -42,11 +43,22 @@ function requiresSixPassBundleReader(value: unknown): boolean {
   return false;
 }
 
+export function hasStudioSixPassBundleProjectContent(pages: readonly unknown[], master: unknown): boolean {
+  return requiresSixPassBundleReader(pages) || requiresSixPassBundleReader(master);
+}
+
+function requiresPreservedDrawMetadataReader(elements: unknown): boolean {
+  return Array.isArray(elements) && elements.some((element) => isRecord(element) && (Object.hasOwn(element, "legacyPigmentArchive")
+    || (element.type === "draw" && STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS.some((key) => Object.hasOwn(element, key)))));
+}
+
 export function minimumStudioProjectFileVersion(
   pages: readonly unknown[],
   master: unknown,
 ): StudioProjectFileVersion {
-  if (requiresSixPassBundleReader(pages) || requiresSixPassBundleReader(master)) return 5;
+  if (pages.some((page) => isRecord(page) && requiresPreservedDrawMetadataReader(page.elements))
+    || (isRecord(master) && requiresPreservedDrawMetadataReader(master.elements))) return 6;
+  if (hasStudioSixPassBundleProjectContent(pages, master)) return 5;
   if (requiresSixPassReader(pages) || requiresSixPassReader(master)) return 4;
   return pages.some((page) => isRecord(page) && Array.isArray(page.elements)
       && page.elements.some(requiresTaperSpacingReader))
@@ -60,6 +72,7 @@ export function resolveStudioProjectFileVersion(
   pages: readonly unknown[], master: unknown, storedVersion?: unknown,
 ): StudioProjectFileVersion {
   const minimum = minimumStudioProjectFileVersion(pages, master);
+  if (storedVersion === 6 || minimum === 6) return 6;
   if (storedVersion === 5 || minimum === 5) return 5;
   if (storedVersion === 4 || minimum === 4) return 4;
   return storedVersion === 3 ? 3 : minimum;

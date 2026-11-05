@@ -5,6 +5,7 @@ import { isBrushStudioV7AdvancedSurface, sampleBrushStudioV7SurfaceContact } fro
 import { sampleBrushStudioV7BackrunLobes, sampleBrushStudioV7BristleBundle, sampleBrushStudioV7Sediment, sampleBrushStudioV7VectorField, shadeBrushStudioV7ReliefColor } from "./brush-studio-v7-advanced-physics";
 import { createBrushStudioV6TopologyStroke } from "./brush-studio-v6-topology-engine";
 import { brushStudioV6TopologyActiveTuning, brushStudioV6TopologyStep, paintBrushStudioV6TopologyPrimitive } from "./brush-studio-v6-topology-material";
+import { BrushStudioV6LegacyPigmentMigrationRequiredError, requiresLegacyMixboxStrokeMigration } from "./brush-studio-v6-legacy-pigment";
 import {
   normalizeStudioBrushMaterialProgramContract,
   type StudioBrushMaterialRuntimeContract,
@@ -39,7 +40,6 @@ export const BRUSH_STUDIO_V6_MATERIAL_ENGINE = Object.freeze({
     "spectral-js-v3", "open-km-spectral-v1", "colormix-lab-v3",
     "rgb-linear-v1",
     "spectral-wgm-v1",
-    "mixbox-js-v2",
     "toonstudio-latent-pigment-v1",
     "ks-reference-wgm-v1",
     "inkwash-density-wgm-v1",
@@ -220,6 +220,7 @@ export function createBrushStudioV6MaterialStroke(
   program: BrushStudioV6MaterialProgram,
   options: { readonly maxMarksPerPush?: number } = {},
 ): BrushStudioV6MaterialStroke {
+  if (requiresLegacyMixboxStrokeMigration(program)) throw new BrushStudioV6LegacyPigmentMigrationRequiredError();
   const t = program.tuning;
   const enhancedAdapters = usesEnhancedMaterialAdapters(program);
   // The V2 compatibility smudge adapter is explicit and persisted; it never impersonates canvas pickup.

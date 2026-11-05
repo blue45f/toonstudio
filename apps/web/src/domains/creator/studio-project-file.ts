@@ -1,3 +1,4 @@
+import { assertStudioLegacyPigmentArchiveElement } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { hasStudioBg3dSixPassImageMarker } from "./studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-persistence-markers";
 import { parseStudioPsdSource } from "./export/studio-psd-source";
 import { canonicalizeStudioBundleCreditElement } from "./catalog/studio-bundle-source-credit";
@@ -22,6 +23,7 @@ import { parseStudioDrawingAssistDocument } from "./brush/studio-drawing-assist-
 import { parseStudioDrawingPracticeDocument } from "./studio-drawing-practice-document";
 import {
   parseStudioLinked3dRenderDocument,
+  parseStudioLinked3dCorrectionProvenance,
   validateStudioLinked3dRenderDocumentAgainstPage,
   validateStudioLinked3dReservedPageState,
   type StudioLinked3dRenderElementLike,
@@ -30,7 +32,7 @@ import { resolveStudioLinked3dError } from "./status-i18n/studio-producer-error-
 import { normalizePageReviewState } from "./studio-page-review";
 import { parseStudioLayerComps } from "./layer/studio-layer-comps-document";
 import { studioPageToCrdtPage } from "./live/studio-crdt-page-payload";
-import { minimumStudioProjectFileVersion, resolveStudioProjectFileVersion } from "./studio-project-version";
+import { hasStudioSixPassBundleProjectContent, resolveStudioProjectFileVersion } from "./studio-project-version";
 import { parseStudioReferenceBoardDocument } from "./studio-reference-board";
 import { migrateStudioShared3dStageCollectionDocument } from "./studio-shared-3d-stage-collection";
 import {
@@ -94,7 +96,7 @@ const CommonProjectSchema = z.object({
 });
 
 const CurrentProjectSchema = CommonProjectSchema.extend({
-  version: z.union([z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+  version: z.union([z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
   savedAt: z.string().optional(),
   pagesList: z.array(ProjectPageSchema).min(1).max(STUDIO_PROJECT_MAX_PAGES),
 }).passthrough();
@@ -157,6 +159,9 @@ function canonicalizeVrmSceneElement(value: unknown): unknown {
 }
 
 function canonicalizeStudio3dSceneElement(value: unknown): unknown {
+  assertStudioLegacyPigmentArchiveElement(value);
+  if (isRecord(value) && value.legacyPigmentArchive !== undefined && value.linked3dCorrection !== undefined
+    && !parseStudioLinked3dCorrectionProvenance(value.linked3dCorrection)) throw new Error("보관 원본의 3D 보정 출처가 올바르지 않습니다.");
   value = canonicalizeStudioBundleCreditElement(value);
   if (isRecord(value) && value.psdSource !== undefined) {
     const source = parseStudioPsdSource(value.psdSource);
@@ -179,7 +184,7 @@ function canonicalizeBg3dSceneElements(value: unknown): unknown {
 
 function canonicalizeProjectBg3dScenes(project: StudioProjectFile): StudioProjectFile {
   const pagesList = project.pagesList.map((page) => {
-    if (page.elements.some(hasStudioBg3dSixPassImageMarker) && minimumStudioProjectFileVersion([page], null) !== 5) {
+    if (page.elements.some(hasStudioBg3dSixPassImageMarker) && !hasStudioSixPassBundleProjectContent([page], null)) {
       throw new Error("6패스 묶음 레이어에 보존된 v5 manifest가 없습니다.");
     }
     if (page.bg3dLtBundles !== undefined && !hasStudioBg3dSixPassBundleStateEnvelope(page.bg3dLtBundles)) {

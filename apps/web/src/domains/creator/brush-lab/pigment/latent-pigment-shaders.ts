@@ -214,6 +214,8 @@ fn latent_pigment_mix_linear_rgba(a: vec4f, b: vec4f, t: f32) -> vec4f {
 export type LatentPigmentGlslTableLayout = "texture-3d" | "atlas-2d";
 
 export interface LatentPigmentGlslOptions {
+  /** WebGL1은 100과 2D 아틀라스, WebGL2는 300을 사용한다. */
+  readonly version?: 100 | 300;
   /** `texture-3d`(기본): highp sampler3D, `atlas-2d`: 너비 N·N × 높이 N 의 highp sampler2D. */
   readonly tableLayout?: LatentPigmentGlslTableLayout;
   /** 표 샘플러 uniform 이름. 기본 `u_latentPigmentTable`. */
@@ -226,10 +228,13 @@ export interface LatentPigmentGlslOptions {
  * highp 를 붙였다. 표 텍스처는 RGBA32F(필터링 없음)로 올리고 texelFetch 로 읽는다.
  */
 export function buildLatentPigmentGlsl(options: LatentPigmentGlslOptions = {}): string {
-  const layout = options.tableLayout ?? "texture-3d";
+  const version = options.version ?? 300;
+  if (version !== 100 && version !== 300) throw new RangeError("GLSL 버전은 100 또는 300이어야 합니다.");
+  const layout = options.tableLayout ?? (version === 100 ? "atlas-2d" : "texture-3d");
   if (layout !== "texture-3d" && layout !== "atlas-2d") {
     throw new RangeError(`표 배치가 올바르지 않습니다(받은 값: ${String(layout)}).`);
   }
+  if (version === 100 && layout !== "atlas-2d") throw new RangeError("WebGL1은 2D 안료 아틀라스가 필요합니다.");
   const sampler = options.samplerName ?? "u_latentPigmentTable";
   if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(sampler) || sampler.startsWith("gl_")) {
     throw new RangeError(`샘플러 이름이 올바르지 않습니다(받은 값: ${sampler}).`);
@@ -239,7 +244,9 @@ export function buildLatentPigmentGlsl(options: LatentPigmentGlslOptions = {}): 
   const samplerDeclaration = layout === "texture-3d"
     ? `uniform highp sampler3D ${sampler};`
     : `uniform highp sampler2D ${sampler};`;
-  const texelFetch = layout === "texture-3d"
+  const texelFetch = version === 100
+    ? `  return texture2D(${sampler}, (vec2(float(i.x + i.z * LATENT_PIGMENT_TABLE_SIZE), float(i.y)) + 0.5) / vec2(float(LATENT_PIGMENT_TABLE_SIZE * LATENT_PIGMENT_TABLE_SIZE), float(LATENT_PIGMENT_TABLE_SIZE)));`
+    : layout === "texture-3d"
     ? `  return texelFetch(${sampler}, i, 0);`
     : `  return texelFetch(${sampler}, ivec2(i.x + i.z * LATENT_PIGMENT_TABLE_SIZE, i.y), 0);`;
   return `${header("glsl", size)}
@@ -318,14 +325,14 @@ highp vec3 latent_pigment_srgb_to_linear(highp vec3 c) {
   highp vec3 x = clamp(c, 0.0, 1.0);
   highp vec3 low = x / 12.92;
   highp vec3 high = pow((x + 0.055) / 1.055, vec3(2.4));
-  return mix(high, low, lessThanEqual(x, vec3(0.04045)));
+  return ${version === 100 ? "vec3(x.r <= 0.04045 ? low.r : high.r, x.g <= 0.04045 ? low.g : high.g, x.b <= 0.04045 ? low.b : high.b)" : "mix(high, low, lessThanEqual(x, vec3(0.04045)))"};
 }
 
 highp vec3 latent_pigment_linear_to_srgb(highp vec3 c) {
   highp vec3 x = clamp(c, 0.0, 1.0);
   highp vec3 low = x * 12.92;
   highp vec3 high = 1.055 * pow(x, vec3(1.0 / 2.4)) - 0.055;
-  return mix(high, low, lessThanEqual(x, vec3(0.0031308)));
+  return ${version === 100 ? "vec3(x.r <= 0.0031308 ? low.r : high.r, x.g <= 0.0031308 ? low.g : high.g, x.b <= 0.0031308 ? low.b : high.b)" : "mix(high, low, lessThanEqual(x, vec3(0.0031308)))"};
 }
 
 highp vec3 latent_pigment_mix_linear(highp vec3 a, highp vec3 b, highp float t) {

@@ -25,13 +25,12 @@ function nodes(program: BrushStudioV6Program) {
 }
 
 describe("Brush Studio V6 provider runtime", () => {
-  it("pins every Mixbox/Krita-compatible oil node without a fallback ladder", () => {
-    // Binding all three external adapters is only admissible under the
-    // noncommercial-full profile; the default profile is permissive-only (P0).
+  it("기존 유화의 자체 안료와 호환 어댑터를 별도 실행 정체성으로 기록한다", () => {
+    // 기존 유화의 다른 제한 어댑터는 해당 권리 프로필을 계속 요구한다.
     const plan = planBrushStudioV6ProviderRuntime(nodes(createBrushStudioV6Program("mixbox-oil-bristle")), "noncommercial-full");
     expect(plan).toMatchObject({ version: 2, fallbackPolicy: "none", valid: true, blockedNodeIds: [] });
     expect(plan.bindings.map((entry) => entry.providerId)).toEqual(expect.arrayContaining([
-      "mixbox-js-v2",
+      "toonstudio-latent-pigment-v1",
       "krita-contact-adapter-gpl-v1",
       "pigment-painter-contact-adapter-v1",
       "toonstudio-cpu-contact-v2",
@@ -56,11 +55,10 @@ describe("Brush Studio V6 provider runtime", () => {
     expect(permissive.blockedNodeIds).toEqual(expect.arrayContaining([
       "carrier-krita-hairy",
       "tip-pigment-normal",
-      "pigment-mixbox",
     ]));
 
     const sourceAvailable = planBrushStudioV6ProviderRuntime(nodes(program), "source-available");
-    expect(sourceAvailable.blockedNodeIds).toEqual(["pigment-mixbox"]);
+    expect(sourceAvailable.blockedNodeIds).toEqual([]);
 
     const noncommercial = planBrushStudioV6ProviderRuntime(nodes(program), "noncommercial-full");
     expect(noncommercial.valid).toBe(true);
@@ -90,8 +88,7 @@ describe("Brush Studio V6 provider runtime", () => {
   });
 
   it("keeps manifest and material execution admission in one source of truth", () => {
-    // Mixbox catalog recipes are admitted under their target profile
-    // (noncommercial-full); the default profile stays permissive-only (P0).
+    // 자체 안료를 사용해도 다른 제한 어댑터의 권리 프로필은 그대로 검사한다.
     for (const [recipeId, profile] of [
       ["clean-ink", undefined],
       ["natural-calligraphy", undefined],

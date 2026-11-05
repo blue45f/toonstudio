@@ -1,3 +1,4 @@
+import { STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { studioCrdtReaderMetadataKeys, validStudioCrdtReaderMetadata, studioCrdtReaderMetadata, type StudioCrdtReaderMetadata } from "./studio-crdt-reader-capability";
 import { STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION } from "../../../shared/lib/studio-brush-material-program-contract";
 import { fromUint8Array, toUint8Array } from "js-base64";
@@ -12,7 +13,8 @@ export const STUDIO_CRDT_LOCAL_WIRE_BRAND = "toonspectrum:studio-crdt:v8" as con
  * v2 adds renderer-significant `paintModel` semantics. v3 adds the paired material-pressure
  * model/geometry-floor snapshot and the dynamic-brush minimum-diameter geometry floor. v4 adds the
  * segmented causal-deposit continuation pipeline. v5 adds taper-aware station spacing.
- * v6 adds complete engine programs. New clients read v1-v6; protocol v8 excludes older peers.
+ * v6은 전체 실행 프로그램을 보존한다. v7은 원본 보관 출처 또는 명시 DrawEl 보존 필드를 싣는다.
+ * 새 클라이언트는 v1-v7을 읽으며 구버전은 v7을 거절해 출처·편집 필드의 손실을 막는다.
  */
 export const STUDIO_CRDT_LEGACY_STROKE_PAYLOAD_VERSION = 1 as const;
 export const STUDIO_CRDT_PAINT_STROKE_PAYLOAD_VERSION = 2 as const;
@@ -21,13 +23,15 @@ export const STUDIO_CRDT_STROKE_PAYLOAD_VERSION = 4 as const;
 /** Taper-aware spacing changes station identity; only newly authored V4 dynamics use wire v5. */
 export const STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION = 5 as const;
 export const STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION = STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION;
+export const STUDIO_CRDT_LEGACY_PIGMENT_ARCHIVE_STROKE_PAYLOAD_VERSION = STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION;
 export type StudioCrdtStrokePayloadVersion =
   | typeof STUDIO_CRDT_LEGACY_STROKE_PAYLOAD_VERSION
   | typeof STUDIO_CRDT_PAINT_STROKE_PAYLOAD_VERSION
   | typeof STUDIO_CRDT_MATERIAL_STROKE_PAYLOAD_VERSION
   | typeof STUDIO_CRDT_STROKE_PAYLOAD_VERSION
   | typeof STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION
-  | typeof STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION;
+  | typeof STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION
+  | typeof STUDIO_CRDT_LEGACY_PIGMENT_ARCHIVE_STROKE_PAYLOAD_VERSION;
 
 export function isStudioCrdtStrokePayloadVersion(value: unknown): value is StudioCrdtStrokePayloadVersion {
   return value === STUDIO_CRDT_LEGACY_STROKE_PAYLOAD_VERSION
@@ -39,10 +43,11 @@ export function isStudioCrdtStrokePayloadVersion(value: unknown): value is Studi
 /** Wire v5 retains the segmented-deposit, grain and geometry features introduced by wire v4. */
 export function studioCrdtStrokePayloadSupportsContinuation(
   value: unknown,
-): value is typeof STUDIO_CRDT_STROKE_PAYLOAD_VERSION | typeof STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION | typeof STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION {
+): value is typeof STUDIO_CRDT_STROKE_PAYLOAD_VERSION | typeof STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION | typeof STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION | typeof STUDIO_CRDT_LEGACY_PIGMENT_ARCHIVE_STROKE_PAYLOAD_VERSION {
   return value === STUDIO_CRDT_STROKE_PAYLOAD_VERSION
     || value === STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION
-    || value === STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION;
+    || value === STUDIO_CRDT_ENGINE_PROGRAM_STROKE_PAYLOAD_VERSION
+    || value === STUDIO_CRDT_LEGACY_PIGMENT_ARCHIVE_STROKE_PAYLOAD_VERSION;
 }
 export const STUDIO_CRDT_ORIGIN_LOCAL = Symbol("studio-crdt-local");
 export const STUDIO_CRDT_ORIGIN_REMOTE = Symbol("studio-crdt-remote");

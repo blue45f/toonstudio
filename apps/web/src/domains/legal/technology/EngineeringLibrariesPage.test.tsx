@@ -193,10 +193,10 @@ describe("EngineeringLibrariesPage", () => {
 
   it("조건이 까다로운 라이선스(비상업·카피레프트·자체 라이선스)는 경고 표시와 글자로 함께 알린다", () => {
     const { container } = renderPage();
-    const mixbox = container.querySelector("#library-mixbox summary") as HTMLElement;
-    expect(mixbox.textContent).toContain("CC-BY-NC-4.0");
-    expect(mixbox.textContent).toContain("조건 확인 필요");
-    const chip = [...mixbox.querySelectorAll<HTMLElement>("span[title]")].find((item) => item.textContent?.includes("CC-BY-NC-4.0"));
+    const constrained = container.querySelector("#library-remotion summary") as HTMLElement;
+    expect(constrained.textContent).toContain("Remotion License");
+    expect(constrained.textContent).toContain("조건 확인 필요");
+    const chip = [...constrained.querySelectorAll<HTMLElement>("span[title]")].find((item) => item.textContent?.includes("Remotion License"));
     expect(chip?.getAttribute("title")).toContain("법률 판단을 하지 않고");
 
     const plain = container.querySelector("#library-hokusai summary") as HTMLElement;

@@ -1,3 +1,4 @@
+import { hasValidStudioLegacyPigmentArchiveStroke, parseStudioLegacyPigmentArchive, STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { STUDIO_CRDT_BG3D_IMAGE_KEYS, validateStudioCrdtBg3dImageReference } from "./studio-crdt-bg3d-image-reference";
 import type { StudioBg3dSixPassBundleState } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
 import type { StudioBrushEngineProgramSet } from "../brush/studio-brush-engine-program-set";
@@ -175,6 +176,9 @@ export function studioCrdtStrokeToDrawElement(
   if (!hasValidStudioBrushEngineProgramExtension(payload.version, extensions.brushEnginePrograms)) {
     throw new StudioCrdtPageBridgeError("brush-program-version-incompatible");
   }
+  if (!hasValidStudioLegacyPigmentArchiveStroke(payload)) {
+    throw new StudioCrdtPageBridgeError("legacy-pigment-archive-invalid");
+  }
   const result: StudioCrdtCompatibleDrawElement = projectStudioCrdtDrawStroke(record);
   for (const key of EXTENSION_KEYS) {
     const value = extensions[key];
@@ -182,6 +186,11 @@ export function studioCrdtStrokeToDrawElement(
   }
   if (extensions.brushEnginePrograms !== undefined) {
     result.brushEnginePrograms = structuredClone(extensions.brushEnginePrograms) as unknown as StudioBrushEngineProgramSet;
+  }
+  if (extensions.legacyPigmentArchive !== undefined) {
+    const archive = parseStudioLegacyPigmentArchive(extensions.legacyPigmentArchive);
+    if (!archive) throw new StudioCrdtPageBridgeError("legacy-pigment-archive-invalid");
+    result.legacyPigmentArchive = archive;
   }
   const pressureModel = extensions.pressureModel;
   if (isStudioInkPressureModel(pressureModel)) result.pressureModel = pressureModel;
@@ -210,6 +219,7 @@ export function studioCrdtStrokeToDrawElement(
     payload.brushDynamics?.depositPipeline === STUDIO_DYNAMIC_BRUSH_DEPOSIT_PIPELINE_CAUSAL_V4
     && payload.version !== STUDIO_CRDT_TAPER_SPACING_STROKE_PAYLOAD_VERSION
     && payload.version !== STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION
+    && payload.version !== STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION
   ) {
     throw new StudioCrdtPageBridgeError("taper-spacing-version-required");
   }

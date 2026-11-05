@@ -120,10 +120,12 @@ Static Assets 무료 플랜은 배포 버전당 파일 **20,000개**가 한도�
 
 ## 수동 운영 배포
 
+현재 프로필과 오프라인 점검은 [배포 환경 계약](../../docs/operations/deployment-environment-contract.md)을 먼저 따른다. 아래 명령은 preflight 자체가 아니며 이 변경에서 실행하지 않았다.
+
 자동 Git 배포는 허용하지 않는다. 검토된 `main`의 깨끗한 worktree에서만 다음 명령을 실행한다.
 
 ```bash
-export CLOUDFLARE_CORE_API_ORIGIN=https://toonspectrum-core-api.onrender.com
+export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai
 export CLOUDFLARE_PUBLIC_READ_API_ORIGINS=https://<read-a>,https://<read-b>
 export CLOUDFLARE_SOCIAL_API_ORIGIN=https://<social-origin>
 export CLOUDFLARE_PLAYGROUND_API_ORIGIN=https://<playground-origin>
@@ -173,6 +175,6 @@ pnpm run generate:cloudflare-static-rules -- --check
 - 공개 읽기 replica 장애는 안전한 읽기 요청 안에서만 다른 replica를 시도한다.
 - core·social·playground·admin·realtime 권위는 임의의 다른 공급자로 자동 write failover하지 않는다.
 - 특정 기능 권위가 중단되어도 정적 앱과 로컬 OPFS 프로젝트는 계속 사용할 수 있어야 한다.
-- Vercel fallback은 제거되었으며 Cloudflare Worker/Static Assets와 Render의 직전 검증 version으로만 롤백한다.
+- Vercel·Render는 퇴역했다. 인프라 지도 6절의 컷오버 이후 검증된 Cloudflare 버전만 롤백 후보로 사용한다. pre-cutover Worker로 되돌리면 삭제된 Render를 가리키므로 금지한다. onpod 롤백은 환경변수 세대도 바꾸므로 별도 승인과 비밀 짝 확인이 필요하다.
 - 사용자 프로젝트 원본은 이 정적 배포 단위에 저장하지 않는다.
 - 사용 금지된 퇴역 공급자는 운영·fallback·복구 경로에 포함하지 않는다.

@@ -72,7 +72,7 @@ const NODE_LABELS: Readonly<Record<string, string>> = Object.freeze({
   "pickup-none": "No Pickup", "pickup-krita-smudge": "Krita Color Smudge",
   "pickup-pigment-reservoir": "Local Pigment Reservoir", "pigment-rgb": "RGB / OKLab",
   "pigment-spectral": "Spectral WGSL", "pigment-open-km": "Open K/S WGSL",
-  "pigment-painter-lut": "Pigment Painter LUT", "pigment-mixbox": "Mixbox Latent Pigment",
+  "pigment-painter-lut": "Pigment Painter LUT", "pigment-mixbox": "잠재 안료 (이전 Mixbox)",
   "pigment-inkwash-density": "Inkwash Optical Density", "physics-dry-contact": "Dry Contact",
   "physics-porous-paper": "Porous Paper", "physics-inkwash": "Inkwash Wet Flow",
   "physics-thin-film": "Thin-film Gravity", "physics-bristle": "Bristle Dynamics",
@@ -137,7 +137,7 @@ function nodeProvider(id: string): string {
   if (id.includes("hokusai")) return "Hokusai";
   if (id.includes("krita")) return "Krita";
   if (id.includes("p5-")) return "p5.brush";
-  if (id.includes("mixbox")) return "Mixbox";
+  if (id === "pigment-mixbox" || id === "pigment-latent") return "ToonStudio Latent Pigment";
   if (id.includes("open-km")) return "Open K/M";
   if (id.includes("painter")) return "Pigment.Painter";
   if (id.includes("inkwash")) return "Inkwash";
@@ -212,7 +212,7 @@ function v6Traits(seed: BrushStudioV6RecipeSeed, stages: readonly StudioBrushEng
   add(ids.includes("pattern-cross-hatch"), "교차 해칭");
   add(ids.includes("pattern-dot-tone"), "문서 고정 망점");
   add(ids.includes("pattern-rainbow"), "색 흐름");
-  add(ids.includes("pigment-mixbox"), "Mixbox 혼색");
+  add(ids.includes("pigment-mixbox") || ids.includes("pigment-latent"), "자체 잠재 안료 혼색");
   add(ids.includes("pigment-spectral") || ids.includes("pigment-open-km"), "실감 혼색");
   add(ids.includes("pigment-inkwash-density"), "먹 광학밀도");
   add(ids.includes("finish-edge-bloom"), "가장자리 농축");

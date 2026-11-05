@@ -34,6 +34,6 @@ describe("브러시·캔버스 사전 첫 로드", () => {
     expect(body.brushCanvasStatusText(key, "폴백")).toBe(DICT.en[key]);
     expect(body.brushCanvasStatusText(key, "폴백")).not.toMatch(/[가-힣]/u);
     expect(Object.keys(DICT.en).filter((key) => key.startsWith("studio.brushCanvasStatus.")))
-      .toHaveLength(110);
+      .toHaveLength(111);
   });
 });
