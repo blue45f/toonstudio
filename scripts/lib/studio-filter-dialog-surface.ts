@@ -60,4 +60,3 @@ export async function nudgeFirstParameterSlider(
   }
   return true;
 }
-
