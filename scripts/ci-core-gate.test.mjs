@@ -93,6 +93,7 @@ test("브러시 디스크·화면 ROI·실제 갈필 경계 회귀를 필수 Cor
     ["apps/web/tools/browser-harnesses/plasticine-materials/browser-png-csp.test.mjs", "studio-foundation"],
     ["tests/integration/api-web/api/modules/creator/studio-crdt-root-schema-boundary.test.ts", "studio-foundation"],
     ["apps/web/src/domains/creator/studio-companion-browser-harness-boundary.test.ts", "studio-foundation"],
+    ["apps/web/src/domains/creator/live/studio-crdt-archive-bridge.test.ts", "studio-foundation"],
     ["tests/integration/web-api/domains/creator/virtual-space/studio-virtual-space-design-closure.test.ts", "product"],
     ["apps/api/src/modules/creator/studio-crdt-bg3d-shape.test.ts", "product"],
     ["apps/web/src/domains/creator/brush/studio-wet-wash-live-pipeline.test.ts", "studio-editing"],

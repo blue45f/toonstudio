@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { BRUSH_STUDIO_V6_RECIPES, createBrushStudioV6Program, patchBrushStudioV6Tuning } from "./brush-studio-v6-engine";
 import { brushStudioV6MaterialActiveTuningKeys, brushStudioV6MaterialMarksToSvg, brushStudioV6MaterialNodeExecution, createBrushStudioV6MaterialStroke, isBrushStudioV6MaterialNodeImplemented, mapBrushStudioV6Pressure, mixBrushStudioV6MaterialColors, normalizeBrushStudioV6MaterialConfig, renderBrushStudioV6MaterialMarks, sampleBrushStudioV6PaperContact, type BrushStudioV6MaterialMark, type BrushStudioV6MaterialPoint } from "./brush-studio-v6-material-engine";
+import { brushStudioV6PigmentProviderForNode } from "./brush-studio-v6-pigment-provider";
 
 const line = (steps: number, length = 180): BrushStudioV6MaterialPoint[] => Array.from({ length: steps + 1 }, (_, index) => ({ x: index * length / steps, y: 30, pressure: 0.65, tilt: 0.3, twist: 20 }));
 function paint(id: string, points: readonly BrushStudioV6MaterialPoint[]): readonly BrushStudioV6MaterialMark[] {
@@ -288,8 +289,13 @@ describe("portable V6 material contacts", () => {
     expect(brushStudioV6MaterialNodeExecution("future-krita-node")).toBe("unavailable");
   });
 
-  it("applies deterministic dual-tip and stroke-local smudge adapters", () => {
-    const dual = createBrushStudioV6Program("mixbox-pastel-smudge");
+  it("자체 안료에서 결정적인 듀얼 팁·획 내부 smudge와 V1 호환 동작을 구분한다", () => {
+    const base = createBrushStudioV6Program("mixbox-pastel-smudge");
+    // 같은 자체 안료로 어댑터의 V1 호환 여부만 비교한다. 구형 외부 획의 재생 fixture가 아니다.
+    const dual = { ...base, slots: { ...base.slots, pigment: "pigment-latent" } };
+    expect(brushStudioV6PigmentProviderForNode(dual.slots.pigment)).toMatchObject({
+      id: "toonstudio-latent-pigment-v1", rights: "internal", execution: "native",
+    });
     const single = {
       ...dual,
       slots: { ...dual.slots, tip: "tip-grain-exemplar" },

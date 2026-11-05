@@ -2,6 +2,7 @@ import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { createBrushStudioV6Program } from "../brush-lab/brush-studio-v6-engine";
 import { normalizeBrushStudioV6MaterialConfig } from "../brush-lab/brush-studio-v6-material-engine";
+import { brushStudioV6PigmentProviderForNode } from "../brush-lab/brush-studio-v6-pigment-provider";
 import { exportPageToSvg } from "../export/studio-svg-export";
 import { loadStudioPerfectFreehandStroker } from "../studio-perfect-freehand";
 
@@ -217,7 +218,10 @@ function buildProductionDrawElementForCatalogItem(
     ? normalizeBrushStudioV6MaterialConfig({
         version: 1,
         seed: v6Program.seed,
-        slots: v6Program.slots,
+        // V1 접촉 호환 소크의 새 시험 설정은 자체 안료를 명시한다. 과거 외부 영수증을 재생하지 않는다.
+        slots: v6Program.slots.pigment === "pigment-mixbox"
+          ? { ...v6Program.slots, pigment: "pigment-latent" }
+          : v6Program.slots,
         tuning: v6Program.tuning,
         input: v6Program.input,
       })
@@ -313,6 +317,16 @@ describe("실제 서비스 전체 브러시 카탈로그 및 장시간 소크(Lo
         samplePoints,
         samplePressures,
       );
+      const recipeId = studioV6RecipeIdFromCatalogId(brushId);
+      if (recipeId) expect(element.brushEnginePrograms?.material, `${brushId}: V1 material fixture`).toBeDefined();
+      if (recipeId?.startsWith("mixbox-")) {
+        const material = element.brushEnginePrograms?.material;
+        expect(material?.version, `${brushId}: V1 contact compatibility`).toBe(1);
+        expect(material?.slots.pigment, `${brushId}: explicit internal pigment`).toBe("pigment-latent");
+        expect(brushStudioV6PigmentProviderForNode(material?.slots.pigment ?? "")).toMatchObject({
+          id: "toonstudio-latent-pigment-v1", rights: "internal", execution: "native",
+        });
+      }
       const exported = exportPageToSvg({
         width: 180,
         height: 96,

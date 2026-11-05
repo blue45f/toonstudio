@@ -172,8 +172,8 @@ async function within(promise, milliseconds, label) {
 }
 
 /** Playwright가 이 함수 전체를 브라우저로 직렬화하므로 내부 함수는 외부 클로저를 읽지 않는다. */
-async function inspectBrowserPigment(expectedIds) {
-  const m = await import("/fixture.js");
+async function inspectBrowserPigment({ expectedIds, fixtureModuleUrl }) {
+  const m = await import(fixtureModuleUrl);
   const tableStarted = performance.now();
   const table = m.bakeLatentPigmentTable(33);
   const tableBakeMs = performance.now() - tableStarted;
@@ -495,7 +495,9 @@ export async function runBrowserVerification() {
     const consoleErrors = [];
     page.on("pageerror", (error) => consoleErrors.push(error.message));
     await page.goto(`http://127.0.0.1:${port}/`, { timeout: BROWSER_TIMEOUT_MS });
-    const result = await within(page.evaluate(inspectBrowserPigment, EXPECTED_IDS), RESULT_TIMEOUT_MS, "안료 브라우저 검증");
+    const result = await within(page.evaluate(inspectBrowserPigment, {
+      expectedIds: EXPECTED_IDS, fixtureModuleUrl: new URL("fixture.js", page.url()).href,
+    }), RESULT_TIMEOUT_MS, "안료 브라우저 검증");
     Object.assign(result, { runId, sourceRevision, workingTreeDirty, verifierSha256, browserVersion: browser.version(), consoleErrors,
       browserFlags: ["--enable-unsafe-webgpu"], physicalGpuVerified: false, previousEvidence });
     const audit = await optionalJson(path.join(OUTPUT, "module-audit.json"));
