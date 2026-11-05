@@ -687,6 +687,8 @@ export default defineConfig(({ command, mode }) => ({
             "react-konva > react-reconciler",
             "react-konva > react-reconciler/constants.js",
             "react-konva > scheduler",
+            // 접속 모듈이 조용히 초기화 실패하지 않도록 Socket.IO 개발 경로의 CommonJS logger도 변환한다.
+            "socket.io-client > debug",
           ],
         }
       : {}),

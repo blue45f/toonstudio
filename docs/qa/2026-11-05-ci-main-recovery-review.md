@@ -49,3 +49,7 @@
 첫 변환 보완 `bdba63889e35c72cc011026038d1d037c32bc543`의 새 냉간 실행에서는 Spectral 오류가 사라졌지만 `react-konva`의 실제 캔버스 진입점이 읽는 CommonJS `react-reconciler/constants.js`의 named export 오류로 다시 1개 통과·1개 실패했다. 따라서 첫 보완만으로 화면 진입이 해결됐다고 표시하지 않는다. 이어 진입점 전체를 사전 변환한 `da734a3b020089eb5c815a2a4cf79e965cad5529`도 Konva의 도형 등록이 분리돼 `Rect`·`Transformer`가 `Group`으로 대체되고 `tr.nodes` 오류가 나 1개 통과·1개 실패했다. 이 전체 변환 방식은 최종 설정에서 제거한다.
 
 최종 설정은 기존 Konva 모듈의 단일성을 유지하면서 Vite의 중첩 의존성 지정으로 `react-konva > react-reconciler`, 해당 `constants.js`, `react-konva > scheduler`의 세 CommonJS 경로만 변환한다. 설치된 Vite의 중첩 resolver와 실제 패키지 형식을 근거로 선택했으며, transitive 패키지를 앱에서 직접 import하거나 의존성·렌더러를 바꾸지 않는다. 후속 실제 완주 결과는 같은 방식으로 별도 확인한다.
+
+위 세 경로를 적용한 뒤 화면 진입은 가능했지만 실제 6컷은 binary sync 확인 120초에서 실패했다. HTTP 로그인·작품 조회·live auth ticket 발급은 성공했으며, 제한된 진단에 실제 협업 Socket 생성·ACK가 없었다. 별도 브라우저에서 연결 factory 모듈을 평가해 `debug@4.4.3/src/browser.js`의 default export 오류를 직접 재현했다. 인증 hook이 잡은 지연 import 실패로 접속 전에 막힌 것이며, 서버가 원고 저장을 거절하거나 데이터가 소실된 증거로 해석하지 않는다. `socket.io-client > debug`만 추가해 그 내부 `ms`까지 기존 optimizer가 변환하게 한다. 원시 frame·쿠키·토큰·요청 본문을 저장하지 않는 시작 실패 진단을 테스트에 추가했으며, 기존 120초·원래 성공 단언은 그대로다.
+
+공통 `6e6808de844e4592a374722b2db89f7ccbbf5462`의 생략된 원격 적용 reader 메모 복원도 부모 커밋으로 보존했다. 알려진 일반 JSON 보완과 통합한 계약·서비스·Web fence·실제 room binding 회귀는 4파일 88개 통과했다. 실제 HTTP·DB·브라우저 성공 수치로 합산하지 않는다.
