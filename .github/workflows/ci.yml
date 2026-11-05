@@ -255,6 +255,9 @@ jobs:
             ${{ matrix.shard == 'product' && '/apps/web/public/vrm/LICENSES.md' || '' }}
             ${{ matrix.shard == 'product' && '/tests/benchmarks/results/app-startup-perf.json' || '' }}
             ${{ matrix.shard == 'product' && '/tests/benchmarks/results/i18n-fix.json' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/third-party/opencascade-lgpl.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/studio-bg3d-webgpu-engine-promotion-2026-08-29.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-boardroom-vertical-depth/background.png' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-cherry-path-vertical-depth/background.png' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/wuxia/gpt25-bg-wuxia-palace-courtyard-vertical-depth/background.png' || '' }}

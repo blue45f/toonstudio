@@ -289,7 +289,9 @@ describe("portable V6 material contacts", () => {
   });
 
   it("applies deterministic dual-tip and stroke-local smudge adapters", () => {
-    const dual = createBrushStudioV6Program("mixbox-pastel-smudge");
+    const configured = createBrushStudioV6Program("mixbox-pastel-smudge");
+    // 어댑터의 버전 비교는 동일한 지원 안료로 고정한다. 보관용 이전 혼색 획은 재생하지 않는다.
+    const dual = { ...configured, slots: { ...configured.slots, pigment: "pigment-spectral" } };
     const single = {
       ...dual,
       slots: { ...dual.slots, tip: "tip-grain-exemplar" },
