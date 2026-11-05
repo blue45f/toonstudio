@@ -46,4 +46,6 @@
 
 변환 목록에 `spectral.js`만 추가했다. 안료 계산·렌더러·저장 형식은 바꾸지 않는다. 동일 시험의 새 냉간 캐시·새 결과 폴더 실행은 별도 확인하고, 첫 실패의 원시 로그와 고정 소스 지문은 보존한다. 이 설정은 원고 브라우저 검증 서버에서 사용하는 기존 선택 모드이며 production 빌드나 운영 배포의 증거와 구분한다.
 
-첫 변환 보완 `bdba63889e35c72cc011026038d1d037c32bc543`의 새 냉간 실행에서는 Spectral 오류가 사라졌지만 `react-konva`의 실제 캔버스 진입점이 읽는 CommonJS `react-reconciler/constants.js`의 named export 오류로 다시 1개 통과·1개 실패했다. 따라서 첫 보완만으로 화면 진입이 해결됐다고 표시하지 않는다. 실제 앱이 import하는 `react-konva/lib/ReactKonvaCore`를 명시 변환 목록에 추가해 그 의존 경로 전체를 변환한다. 임의로 transitive 패키지를 직접 import하거나 의존성·렌더러를 바꾸지 않는다. 후속 실제 완주 결과는 같은 방식으로 별도 확인한다.
+첫 변환 보완 `bdba63889e35c72cc011026038d1d037c32bc543`의 새 냉간 실행에서는 Spectral 오류가 사라졌지만 `react-konva`의 실제 캔버스 진입점이 읽는 CommonJS `react-reconciler/constants.js`의 named export 오류로 다시 1개 통과·1개 실패했다. 따라서 첫 보완만으로 화면 진입이 해결됐다고 표시하지 않는다. 이어 진입점 전체를 사전 변환한 `da734a3b020089eb5c815a2a4cf79e965cad5529`도 Konva의 도형 등록이 분리돼 `Rect`·`Transformer`가 `Group`으로 대체되고 `tr.nodes` 오류가 나 1개 통과·1개 실패했다. 이 전체 변환 방식은 최종 설정에서 제거한다.
+
+최종 설정은 기존 Konva 모듈의 단일성을 유지하면서 Vite의 중첩 의존성 지정으로 `react-konva > react-reconciler`, 해당 `constants.js`, `react-konva > scheduler`의 세 CommonJS 경로만 변환한다. 설치된 Vite의 중첩 resolver와 실제 패키지 형식을 근거로 선택했으며, transitive 패키지를 앱에서 직접 import하거나 의존성·렌더러를 바꾸지 않는다. 후속 실제 완주 결과는 같은 방식으로 별도 확인한다.
