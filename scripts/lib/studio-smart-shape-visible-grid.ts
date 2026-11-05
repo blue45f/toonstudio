@@ -1,3 +1,7 @@
+import { isStaticPreviewReadinessResponse } from "./studio-preview-readiness";
+
+import type { Locator } from "playwright";
+
 export interface StudioSmartShapeRect {
   readonly left: number;
   readonly top: number;
@@ -69,7 +73,7 @@ export function placeStudioSmartShapeGrid<T extends FixtureGeometry>(fixtures: r
 }
 
 /** DOM 관측만 한다. overflow 경계와 실제 포인터를 받는 외부 controls를 모두 예약한다. */
-export function measureStudioSmartShapeCanvasSpace(stage: Element): StudioSmartShapeCanvasSpace {
+export function measureStudioSmartShapeCanvasSpace(stage: Element): StudioSmartShapeCanvasSpace & { readonly floating: StudioSmartShapeFloatingReadiness } {
   const rect = stage.getBoundingClientRect();
   const canvas = { left: Math.max(0, rect.left), top: Math.max(0, rect.top), right: Math.min(innerWidth, rect.right), bottom: Math.min(innerHeight, rect.bottom) };
   for (let ancestor = stage.parentElement; ancestor; ancestor = ancestor.parentElement) {
@@ -108,5 +112,76 @@ export function measureStudioSmartShapeCanvasSpace(stage: Element): StudioSmartS
         ?? element.getAttribute("aria-label") ?? element.tagName.toLowerCase(),
     });
   }
-  return { canvas, obstructions: [...obstructions.values()] };
+  const floating = {
+    connectivity: document.documentElement.dataset.studioConnectivity ?? null,
+    networkFeatures: document.documentElement.dataset.studioNetworkFeatures ?? null,
+    canvas,
+    targets: [...document.querySelectorAll('[data-studio-shell-floating-target="offline-readiness"], [data-studio-shell-floating-target="collaboration"]')]
+      .map((node) => {
+        const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
+        return {
+          id: node.getAttribute("data-studio-shell-floating-target"),
+          managed: node.getAttribute("data-studio-shell-layout-managed"),
+          hidden: node.getAttribute("data-studio-shell-layout-hidden"),
+          localOnly: node.querySelector("[data-studio-offline-panel]")?.getAttribute("data-studio-local-only") ?? null,
+          summary: node.querySelector("summary")?.textContent?.trim() ?? null,
+          visible: rect.width > 0 && rect.height > 0 && style.display !== "none"
+            && style.visibility !== "hidden" && style.visibility !== "collapse",
+          rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+        };
+      }),
+  };
+  return { canvas, obstructions: [...obstructions.values()], floating };
+}
+
+export interface StudioSmartShapeFloatingReadiness {
+  readonly connectivity: string | null;
+  readonly networkFeatures: string | null;
+  readonly canvas: StudioSmartShapeRect | null;
+  readonly targets: readonly {
+    readonly id: string | null;
+    readonly managed: string | null;
+    readonly hidden: string | null;
+    readonly localOnly: string | null;
+    readonly summary: string | null;
+    readonly visible: boolean;
+    readonly rect: StudioSmartShapeRect;
+  }[];
+}
+
+/** 부분 degraded와 정적 preview의 실제 API 부재를 혼동하지 않는다. */
+export function requiresStudioSmartShapeOfflinePanel(ownsStaticPreview: boolean, diagnostics: readonly string[], studioUrl: string): boolean {
+  const url = new URL("/api/health/capabilities", studioUrl).href;
+  return ownsStaticPreview && isStaticPreviewReadinessResponse(502, url, studioUrl)
+    && diagnostics.includes(`smart-shapes: 502 ${url}`);
+}
+
+export function studioSmartShapeFloatingReady(state: StudioSmartShapeFloatingReadiness, requiresOfflinePanel: boolean): boolean {
+  if (state.targets.some((target) => target.visible && (target.managed !== "true" || target.hidden !== "false" || !validRect(target.rect)))) return false;
+  if (!requiresOfflinePanel) return true;
+  const offline = state.targets.filter(({ id }) => id === "offline-readiness");
+  const target = offline[0], canvas = state.canvas;
+  // 새 context에는 사용자 저장 배치가 없다. checking 중의 화면 가장자리 배치를 확정하지 않는다.
+  return state.connectivity === "server-unavailable" && state.networkFeatures === "local-only"
+    && offline.length === 1 && Boolean(target?.visible) && target?.localOnly === "true"
+    && Boolean(canvas && validRect(canvas) && target && target.rect.left >= canvas.left
+      && target.rect.top >= canvas.top && target.rect.right <= canvas.right && target.rect.bottom <= canvas.bottom);
+}
+
+/** 새 대기 시간을 더하지 않고 기존 준비 기한 안에서 연속 프레임의 실제 배치를 확인한다. */
+export async function waitForStudioSmartShapeFloatingReady(stage: Locator, deadline: number, requiresOfflinePanel: () => boolean) {
+  let previous: string | null = null, stableFrames = 0;
+  while (Date.now() < deadline) {
+    const measurement = await stage.evaluate(measureStudioSmartShapeCanvasSpace);
+    const key = JSON.stringify(measurement.floating);
+    stableFrames = studioSmartShapeFloatingReady(measurement.floating, requiresOfflinePanel()) && key === previous ? stableFrames + 1 : 0;
+    if (stableFrames >= 2 && Date.now() < deadline) return measurement;
+    previous = key;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    const frame = await stage.page().waitForFunction(() => new Promise<boolean>((resolve) => requestAnimationFrame(() => resolve(true))),
+      undefined, { timeout: remaining });
+    await frame.dispose();
+  }
+  throw new Error("Smart Shape 초기 준비 기한 안에 연결 안내의 실제 표시·배치를 확인하지 못했습니다.");
 }
