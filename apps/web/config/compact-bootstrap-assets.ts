@@ -3,7 +3,10 @@ import path from "node:path";
 
 import { transformWithEsbuild } from "vite";
 
+import { compactSvgStructureWhitespace } from "./compact-svg-structure";
+
 const BOOTSTRAP_FILES = ["bootstrap-compat.js", "bootstrap-theme.js"] as const;
+const STRUCTURAL_SVG_FILES = ["brand/production-os-hero.svg", "brand/production-os-workspace.svg"] as const;
 
 /** 공개 원본은 유지하고, precache 크기·지문 계산 전에 빌드 복사본만 압축한다. */
 export async function compactBootstrapAssets(outDir: string): Promise<void> {
@@ -21,5 +24,9 @@ export async function compactBootstrapAssets(outDir: string): Promise<void> {
   }));
   for (const { filename, code } of outputs) {
     await writeFile(path.join(outDir, filename), code);
+  }
+  for (const filename of STRUCTURAL_SVG_FILES) {
+    const source = await readFile(path.join(outDir, filename), "utf8");
+    await writeFile(path.join(outDir, filename), compactSvgStructureWhitespace(source));
   }
 }

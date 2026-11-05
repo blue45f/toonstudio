@@ -376,20 +376,20 @@ export const CORE_SLIDES = [
       "Only routes verified as free open, in order; today's budget is reserved before each call, and ambiguous failures are never resent.",
     ),
     points: [
-      t("브라우저는 경로마다 하루 25회 · 예약 토큰 64,000 · 출력 1,024 — 우리가 건 안전 상한(UTC 기준, 공급자 한도 아님)", "In the browser, per route: 25 calls a day, 64,000 reserved tokens, 1,024 output — our own safety caps (UTC day, not provider limits)"),
+      t("브라우저는 같은 주소·모델·키마다 하루 25회 · 예약 토큰 64,000 · 출력 1,024 — 우리가 건 안전 상한(UTC 기준, 공급자 한도 아님)", "In the browser, per address, model and key: 25 calls a day, 64,000 reserved tokens, 1,024 output — our own safety caps (UTC day, not provider limits)"),
       t("시간 초과·5xx는 다른 길로 다시 보내지 않음 — 서버도 처리 여부가 모호한 작업은 재전송하지 않음", "Timeouts and 5xx are never replayed on another route — the server also refuses to resend a job whose outcome is ambiguous"),
       t("서버 공유 무료 풀은 ‘설정 필요’ — 이미지 도구는 기기 안 ONNX라 토큰을 쓰지 않음", "The server's shared free pool is ‘setup required’ — image tools run on-device with ONNX and spend no tokens"),
       t("유료 길은 내 키와 내 승인이 있어야 자동 순서에 들어옴", "A paid route joins the automatic order only with your key and your approval"),
     ],
     facts: [
-      { value: "25", label: t("브라우저 무료 AI 경로당 하루 요청 상한(UTC)", "Browser free-AI daily request cap per route (UTC)") },
-      { value: "64,000", label: t("경로당 하루 예약 토큰 상한", "Daily reserved-token cap per route") },
+      { value: "25", label: t("브라우저 무료 AI 주소·모델·키당 하루 요청 상한(UTC)", "Browser free-AI daily request cap per address, model and key (UTC)") },
+      { value: "64,000", label: t("주소·모델·키당 하루 예약 토큰 상한", "Daily reserved-token cap per address, model and key") },
       { value: "1,024", label: t("응답 최대 출력 토큰", "Maximum output tokens per response") },
     ],
     atlas: { id: "free-first-ai-routing", view: "diagram" },
     notes: t(
-      "AI는 내비게이션처럼 길을 제안할 뿐, 운전대는 사람이 잡습니다. 무료 우선은 공짜가 아니라 돈이 드는 지점을 숨기지 않는다는 뜻입니다.\n브라우저는 호출 전에 경로마다 하루 25회·예약 토큰 64,000·출력 1,024를 예약합니다. 공급자 한도가 아닌 우리의 안전 상한이고, 하루는 UTC 자정, 한국 시간 오전 9시에 바뀝니다. 시간 초과·5xx는 다시 보내지 않습니다. 근거는 free-ai-runtime-budget.ts입니다. 다음은 웹의 한계입니다. 질문이 나오면 ‘Quota ledger’ 카드를 엽니다.",
-      "AI is like a navigator: it suggests the route and a person holds the wheel. Free-first does not mean free; it means the points where money is spent stay visible.\nBefore each call the browser reserves against 25 calls a day, 64,000 reserved tokens and 1,024 output tokens, per route. These are our own safety caps, not provider limits, and the day rolls over at UTC midnight, 9 a.m. Korea time. Timeouts and 5xx are never resent. The basis is free-ai-runtime-budget.ts. Next, the web's limits. If asked, open the ‘Quota ledger’ card.",
+      "AI는 내비게이션처럼 길을 제안할 뿐, 운전대는 사람이 잡습니다. 무료 우선은 공짜가 아니라 돈이 드는 지점을 숨기지 않는다는 뜻입니다.\n브라우저는 호출 전에 같은 주소·모델·키마다 하루 25회·예약 토큰 64,000·출력 1,024를 예약합니다. 공급자 한도가 아닌 우리의 안전 상한이고, 하루는 UTC 자정, 한국 시간 오전 9시에 바뀝니다. 시간 초과·5xx는 다시 보내지 않습니다. 근거는 free-ai-runtime-budget.ts입니다. 다음은 웹의 한계입니다. 질문이 나오면 ‘Quota ledger’ 카드를 엽니다.",
+      "AI is like a navigator: it suggests the route and a person holds the wheel. Free-first does not mean free; it means the points where money is spent stay visible.\nBefore each call the browser reserves against 25 calls a day, 64,000 reserved tokens and 1,024 output tokens, per address, model and key. These are our own safety caps, not provider limits, and the day rolls over at UTC midnight, 9 a.m. Korea time. Timeouts and 5xx are never resent. The basis is free-ai-runtime-budget.ts. Next, the web's limits. If asked, open the ‘Quota ledger’ card.",
     ),
     chapterId: "free-ai-routing",
     evidence: [

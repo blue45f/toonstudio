@@ -23,7 +23,6 @@ import {
   type StudioFloatingSurfaceConstraints,
   type StudioFloatingSurfaceDock,
   type StudioFloatingSurfaceRect,
-  type StudioFloatingSurfaceViewport,
 } from "../studio-floating-surface";
 import {
   startStudioFloatingSurfacePointerSession,
@@ -44,6 +43,14 @@ import {
   subscribeStudioWorkspaceArranging,
 } from "../studio-workspace-arrangement";
 import { useStudioFloatingSurfaceLayout } from "../use-studio-floating-surface-layout";
+import {
+  observeStudioShellCanvasBounds,
+  readStudioShellFloatingViewport as readViewport,
+  resolveStudioShellDefaultSafeViewport,
+  studioShellLayoutForUserControl,
+  usesStudioShellDefaultSafeViewport,
+  type StudioShellCanvasBounds,
+} from "./studio-shell-default-safe-viewport";
 import { useStudioShellFloatingLayout } from "./studio-shell-floating-layout-context";
 import {
   studioShellFloatingSurfaceById,
@@ -105,39 +112,6 @@ function restoreStyle(node: HTMLElement, snapshot: StyleSnapshot): void {
     if (value) node.style.setProperty(property, value, priority);
     else node.style.removeProperty(property);
   }
-}
-
-function numericDatasetValue(value: string | undefined): number | null {
-  if (!value) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-}
-
-function readViewport(
-  definition: ReturnType<typeof studioShellFloatingSurfaceById>,
-  node: HTMLElement | null = null,
-): StudioFloatingSurfaceViewport {
-  const visual = typeof window === "undefined" ? null : window.visualViewport;
-  const offsetLeft = visual?.offsetLeft ?? 0;
-  const offsetTop = visual?.offsetTop ?? 0;
-  const authoredDockLeft = definition.id === "drawing-options"
-    ? numericDatasetValue(node?.dataset.studioDrawOptionsDockLeft)
-    : null;
-  const authoredDockRight = definition.id === "drawing-options"
-    ? numericDatasetValue(node?.dataset.studioDrawOptionsDockRight)
-    : null;
-  return {
-    width: offsetLeft + (visual?.width ?? globalThis.innerWidth ?? 1),
-    height: offsetTop + (visual?.height ?? globalThis.innerHeight ?? 1),
-    insetTop: offsetTop + definition.insetTop,
-    insetRight: authoredDockRight === null
-      ? definition.insetRight
-      : authoredDockRight + definition.insetRight,
-    insetBottom: definition.insetBottom,
-    insetLeft: offsetLeft + (authoredDockLeft === null
-      ? definition.insetLeft
-      : authoredDockLeft + definition.insetLeft),
-  };
 }
 
 function measuredSize(
@@ -234,6 +208,7 @@ export function StudioShellFloatingTarget({
     height: definition.defaultLayout.height,
   }));
   const [viewport, setViewport] = useState(() => readViewport(definition));
+  const [canvasBounds, setCanvasBounds] = useState<StudioShellCanvasBounds | null>(null);
   const [screenRect, setScreenRect] = useState<DOMRect | null>(null);
   const [dragging, setDragging] = useState(false);
   const [resizing, setResizing] = useState(false);
@@ -252,7 +227,7 @@ export function StudioShellFloatingTarget({
     studioFloatingSurfaceStackSnapshot,
     () => 0,
   );
-  const { layout, setLayout, resetLayout } = useStudioFloatingSurfaceLayout({
+  const { layout, layoutOverride, setLayout, resetLayout } = useStudioFloatingSurfaceLayout({
     surfaceId: stackSurfaceId,
     defaultLayout: definition.defaultLayout,
   });
@@ -278,12 +253,22 @@ export function StudioShellFloatingTarget({
     () => actualConstraints(definition, size),
     [definition, size],
   );
+  const displayViewport = useMemo(() => resolveStudioShellDefaultSafeViewport({
+    definition, viewport, canvas: canvasBounds, layout, layoutOverride, size,
+  }), [canvasBounds, definition, layout, layoutOverride, size, viewport]);
   const resolvedRect = useMemo(() => resolveStudioFloatingSurfaceRect(
     layout,
-    viewport,
+    displayViewport,
     constraints,
     definition.defaultLayout,
-  ), [constraints, definition.defaultLayout, layout, viewport]);
+  ), [constraints, definition.defaultLayout, displayViewport, layout]);
+  useLayoutEffect(() => {
+    if (!usesStudioShellDefaultSafeViewport(surfaceId)) return;
+    return observeStudioShellCanvasBounds((next) => setCanvasBounds((current) => (
+      current?.left === next?.left && current?.top === next?.top
+      && current?.right === next?.right && current?.bottom === next?.bottom ? current : next
+    )));
+  }, [surfaceId]);
   const resetRevision = shell.resetRevisions[surfaceId];
   const seenResetRevision = useRef(resetRevision);
 
@@ -443,7 +428,9 @@ export function StudioShellFloatingTarget({
     const locked = kind === "position"
       ? layout.positionLocked
       : layout.sizeLocked;
-    setLayout(setStudioFloatingSurfaceLock(layout, kind, !locked));
+    setLayout(setStudioFloatingSurfaceLock(studioShellLayoutForUserControl(
+      layout, viewport, displayViewport, constraints, resolvedRect,
+    ), kind, !locked));
   };
 
   const hideDockGuide = (): void => {
@@ -483,7 +470,9 @@ export function StudioShellFloatingTarget({
 
   const setDock = (dock: StudioFloatingSurfaceDock): void => {
     hideDockGuide();
-    setLayout(setStudioFloatingSurfaceDock(layout, dock));
+    setLayout(setStudioFloatingSurfaceDock(studioShellLayoutForUserControl(
+      layout, viewport, displayViewport, constraints, resolvedRect,
+    ), dock));
   };
 
   const begin = (

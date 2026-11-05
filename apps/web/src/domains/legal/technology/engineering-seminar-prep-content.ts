@@ -73,8 +73,8 @@ export const SEMINAR_PREP_QUESTIONS: readonly SeminarPrepQuestion[] = [
   {
     question: t("3D를 왜 넣었나요?", "Why include 3D?"),
     answer: t(
-      "보여주기용이 아니라 밑그림 재료입니다. 3D 화면을 한 장 찍어 색·깊이·법선을 읽고 컬러·톤·질감선·주선 네 레이어로 나누는 LT 변환은 AI 없이 같은 입력에 같은 결과를 내서, 작가가 그 위에 바로 펜을 댑니다. VRM은 모든 캐릭터가 같은 뼈 이름을 쓰는 약속이라 포즈 도구와 웹캠 추적이 같은 뼈대에 붙습니다.",
-      "Not for show but as underdrawing material. The LT conversion takes one capture of the 3D view, reads color, depth and normals and splits it into color, tone, texture-line and main-line layers; with no AI, the same input gives the same result, so the artist inks directly over it. VRM is a promise that every character uses the same bone names, so pose tools and webcam tracking attach to one skeleton.",
+      "3D는 밑그림 재료이며, 기본 LT 변환은 캡처의 색·깊이·법선에서 컬러 또는 톤, 질감선, 주선을 설정에 따라 만들고 6패스를 선택하면 컬러·톤·그림자·깊이·질감선·주선 여섯 역할로 분리합니다. AI 없이 같은 입력에 같은 결과를 내서 작가가 그 위에 바로 펜을 댑니다. VRM은 모든 캐릭터가 같은 뼈 이름을 쓰는 약속이라 포즈 도구와 웹캠 추적이 같은 뼈대에 붙습니다.",
+      "3D is underdrawing material: the default LT conversion reads color, depth and normals from a capture and produces color or tone, texture lines and main lines according to the settings; selecting six passes separates color, tone, shadow, depth, texture lines and main lines. With no AI, the same input gives the same result, so the artist inks directly over it. VRM is a promise that every character uses the same bone names, so pose tools and webcam tracking attach to one skeleton.",
     ),
     glossaryId: "lt-conversion",
     atlasId: "toon-shading-outline",

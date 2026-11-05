@@ -357,6 +357,7 @@ apps/web/src/domains/creator/brush/studio-brush-pack-runtime.test.ts
 apps/web/src/domains/creator/brush/studio-brush-quality-portfolio.test.ts
 apps/web/src/domains/creator/brush/studio-brush-selection-isolation.test.ts
 apps/web/src/domains/creator/brush/studio-brush-selection-snapshot.test.ts
+apps/web/src/domains/creator/brush/studio-brush-selection.prewarm.test.ts
 apps/web/src/domains/creator/brush/studio-brush-semantic-evidence.test.ts
 apps/web/src/domains/creator/brush/studio-brush-semantic-quality.test.ts
 apps/web/src/domains/creator/brush/studio-draw-object-transform*.test.ts
@@ -373,6 +374,9 @@ apps/web/src/domains/creator/brush/studio-native-brush-output-validation.test.ts
 apps/web/src/domains/creator/brush/studio-native-brush-probe.test.ts
 apps/web/src/domains/creator/brush/studio-pending-catalog-input.test.ts
 apps/web/src/domains/creator/brush/studio-stroke-surface-route-wiring-boundary.test.ts
+apps/web/src/domains/creator/brush/wet-paper/StudioDrawNode.dry-brush-live.test.tsx
+apps/web/src/domains/creator/brush/wet-paper/studio-dry-brush-live-lifecycle.test.ts
+apps/web/src/domains/creator/brush/wet-paper/studio-dry-brush-live-loading.test.ts
 apps/web/src/domains/creator/canvas/StudioCanvasStatusRail.test.tsx
 apps/web/src/domains/creator/canvas/StudioCanvasStickyBanners.view-workspace.test.tsx
 apps/web/src/domains/creator/canvas/StudioLiveAdjustmentGroup.test.tsx
@@ -644,6 +648,8 @@ apps/web/src/domains/creator/studio-shell/StudioRolePersonalizationCenter.test.t
 apps/web/src/domains/creator/studio-shell/StudioSaveStatusChromeMount.floating-suggestion.test.tsx
 apps/web/src/domains/creator/studio-shell/StudioVisualGuidance.test.tsx
 apps/web/src/domains/creator/studio-shell/studio-creator-lobby-layout.contract.test.ts
+apps/web/src/domains/creator/studio-shell/studio-shell-default-safe-viewport.test.ts
+apps/web/src/domains/creator/studio-shell/use-studio-floating-surface-layout.test.tsx
 apps/web/src/domains/creator/studio-shell/useStudioModalSheet.details.test.ts
 apps/web/src/domains/creator/studio-shell/useStudioProjectLibrary.test.tsx
 apps/web/src/domains/creator/studio-smart-filter-opacity.test.ts
@@ -790,11 +796,13 @@ scripts/free-infrastructure-policy.test.mjs
 scripts/generate-creator-bundle-theme-packs.test.mjs
 scripts/generate-latent-pigment-model.test.ts
 scripts/lib/character-psd-reference-compositor.test.mjs
+scripts/lib/compact-svg-structure.test.mjs
 scripts/lib/path-containment.test.ts
 scripts/lib/public-home-content-hrefs.test.mjs
 scripts/lib/studio-3d-production-audit-policy.test.mjs
 scripts/lib/studio-drawing-storage-capability.test.ts
 scripts/lib/studio-editor-a11y-audit.test.ts
+scripts/lib/studio-hokusai-preview-diagnostics.test.ts
 scripts/lib/studio-inapp-sweep-harness.test.ts
 scripts/lib/studio-memory-growth-policy.test.mjs
 scripts/lib/studio-p2p-failure-diagnostics.test.ts

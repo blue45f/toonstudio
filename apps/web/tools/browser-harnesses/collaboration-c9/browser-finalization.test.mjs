@@ -3,9 +3,10 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 import { assertNativeDnt, launchPrivateDntBrowser, persistAndReportFailure, reportBrowserFailure, runWithOwnedBrowser, runWithOwnedContexts } from './browser-finalization.mjs';
+
+const { test } = process.env.VITEST ? await import('vitest') : await import('node:test');
 
 function blankPage({ doNotTrack = '1', ownProperty = false, url = 'about:blank', evaluatedUrl = url, evaluationError = null, closeError = null } = {}) {
   const calls = [];
@@ -25,7 +26,7 @@ function blankPage({ doNotTrack = '1', ownProperty = false, url = 'about:blank',
 
 async function privateOutput(t) {
   const directory = await mkdtemp(join(tmpdir(), 'toon-c9-native-dnt-test-'));
-  t.after(() => rm(directory, { recursive: true, force: true }));
+  (t.onTestFinished ?? t.after.bind(t))(() => rm(directory, { recursive: true, force: true }));
   return directory;
 }
 

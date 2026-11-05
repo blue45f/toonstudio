@@ -145,6 +145,7 @@ import {
 } from "./brush/studio-brush-r8-grain-hydrator";
 import {
   materializeStudioBrushCatalogSelection,
+  preloadStudioBrushCatalogSelection,
   studioCoreBrushCatalogSelection,
   type StudioBrushCatalogSelection,
 } from "./brush/studio-brush-selection";
@@ -4981,6 +4982,7 @@ export function StudioCuttoonEditor({
     initialToolOperationMemory.paint.brushOpacity,
   );
   const [brush, setBrush] = useState<string>(initialToolOperationMemory.paint.brushId);
+  useEffect(() => { if (brush === "ink-wash--dry-brush") void preloadStudioBrushCatalogSelection(brush); }, [brush]);
   const [activeCatalogBrush, setActiveCatalogBrush] = useState(() => ({
     id: initialToolOperationMemory.paint.sourcePresetId
       ?? initialToolOperationMemory.paint.brushId,

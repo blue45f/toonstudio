@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import test from 'node:test';
 import { initialPreviewState, validateManuscriptManifest, validateManuscriptPreviewBatch,
   verifyManuscriptImageBytes } from './manuscript-contract.mjs';
+
+const { test } = process.env.VITEST ? await import('vitest') : await import('node:test');
 
 const NOW = Date.parse('2026-11-02T04:00:00.000Z');
 const ORIGIN = 'https://127.0.0.1:51901';

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 import { distAssetPath, verifyAssetBytes } from './asset-contract.mjs';
+
+const { test } = process.env.VITEST ? await import('vitest') : await import('node:test');
 
 test('lazy 자산의 결과 경로에서 query·fragment·signed URL 값을 제거한다', () => {
   assert.equal(distAssetPath('http://127.0.0.1:5199/assets/lazy-board.js?signature=not-a-real-secret#fragment', 'http://127.0.0.1:5199'), 'assets/lazy-board.js');

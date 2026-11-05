@@ -432,19 +432,20 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(read("apps/web/src/domains/creator/live/huddle/studio-p2p-huddle-protocol.ts")).toContain("HUDDLE_MAX_REMOTE_PEERS = 3;");
   });
 
-  it("AI: 우리가 건 안전 상한(경로마다, UTC 하루)과 모호한 실패 재전송 금지의 근거 테스트", () => {
+  it("AI: 우리가 건 안전 상한(같은 주소·모델·키마다, UTC 하루)과 모호한 실패 재전송 금지의 근거 테스트", () => {
     const slide = slideOf("talk-ai");
     const budget = read("apps/web/src/shared/ai/free-ai-runtime-budget.ts");
     expect(budget).toMatch(/MANAGED_FREE_DAILY_REQUEST_LIMIT = 25;/u);
     expect(budget).toMatch(/MANAGED_FREE_DAILY_RESERVED_TOKEN_LIMIT = 64_000;/u);
     expect(budget).toMatch(/MANAGED_FREE_MAX_OUTPUT_TOKENS = 1_024;/u);
     expect(budget).toContain("toISOString().slice(0, 10)");
-    expect(budget).toContain("return `${host}:${routeId}`");
+    expect(budget).toContain("key: `${`${host}:${model}`.slice(0, 211)}:${keyTag}`");
+    expect(budget).toContain("legacyKey: `${host}:${routeId}`.slice(0, 220)");
     expect(budget).toContain("not provider-advertised quotas");
-    expect(factOf(slide, 0, "경로당")).toBe("25");
-    expect(factOf(slide, 1, "경로당")).toBe("64,000");
+    expect(factOf(slide, 0, "주소·모델·키당")).toBe("25");
+    expect(factOf(slide, 1, "주소·모델·키당")).toBe("64,000");
     expect(factOf(slide, 2, "출력 토큰")).toBe("1,024");
-    expect(slide.points.map((point) => point.ko).join("\n")).toMatch(/경로마다 하루 25회 · 예약 토큰 64,000 · 출력 1,024/u);
+    expect(slide.points.map((point) => point.ko).join("\n")).toMatch(/같은 주소·모델·키마다 하루 25회 · 예약 토큰 64,000 · 출력 1,024/u);
     // 모호한 실패는 다른 키·모델로 다시 보내지 않는다 — 근거 테스트가 실제로 그 약속을 검사한다.
     // (서버 쪽 근거 테스트는 다른 앱 경로라 이 테스트가 직접 읽지 않고, 슬라이드의 근거 경로가 실제로 있는지만 아래에서 확인한다.)
     expect(read("apps/web/src/shared/ai/user-ai-transport.test.ts")).toContain("does not retry an ambiguous provider failure on another key or model");

@@ -511,3 +511,27 @@ test("6패스 원본 계약·GPU 계산·문서 복구·실제 DB 경계를 각�
     assert.deepEqual(SHARD_NAMES.filter((owner) => files[owner].includes(target)), [name], `6패스 회귀 실행 소유 누락·중복: ${target}`);
   }
 });
+
+test("갈필·기본 배치·진단 원문·SVG 보존 회귀를 소유 Core shard에서 정확히 한 번 실행한다", () => {
+  const execution = executionTargetsByShard();
+  const files = Object.fromEntries(SHARD_NAMES.map((name) => [name, resolveRequiredTargets(expandGlobTargets(execution[name]))]));
+  for (const [name, targets] of Object.entries({
+    "studio-editing": [
+      "apps/web/src/domains/creator/brush/wet-paper/StudioDrawNode.dry-brush-live.test.tsx",
+      "apps/web/src/domains/creator/brush/wet-paper/studio-dry-brush-live-lifecycle.test.ts",
+      "apps/web/src/domains/creator/brush/wet-paper/studio-dry-brush-live-loading.test.ts",
+      "apps/web/src/domains/creator/brush/studio-brush-selection.prewarm.test.ts",
+    ],
+    "studio-foundation": [
+      "apps/web/src/domains/creator/studio-shell/studio-shell-default-safe-viewport.test.ts",
+      "apps/web/src/domains/creator/studio-shell/use-studio-floating-surface-layout.test.tsx",
+      "scripts/lib/studio-hokusai-preview-diagnostics.test.ts",
+      "scripts/lib/compact-svg-structure.test.mjs",
+    ],
+  })) for (const target of targets) {
+    assert.ok(REQUIRED_VITEST_TARGETS.includes(target), `필수 목록 누락: ${target}`);
+    assert.equal(shardForTarget(target), name, target);
+    assert.deepEqual(SHARD_NAMES.filter((owner) => files[owner].includes(target)), [name], `회귀 실행 누락·중복: ${target}`);
+    assert.ok(!SERIAL_TEST_FILES.includes(target), `일반 shard가 수집하지 않는 성능 시험: ${target}`);
+  }
+});

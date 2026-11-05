@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { runInNewContext } from "node:vm";
@@ -12,7 +12,9 @@ import { planStudioServiceWorkerPrecache } from "../../apps/web/src/app/service-
 import { verifyStaticCspContract } from "../verify-static-csp.mjs";
 
 const root = new URL("../../", import.meta.url);
-const files = ["bootstrap-compat.js", "bootstrap-theme.js"];
+const bootstrapFiles = ["bootstrap-compat.js", "bootstrap-theme.js"];
+const svgFiles = ["brand/production-os-hero.svg", "brand/production-os-workspace.svg"];
+const files = [...bootstrapFiles, ...svgFiles];
 let directory;
 const original = {};
 const compact = {};
@@ -21,6 +23,7 @@ beforeAll(async () => {
   directory = await mkdtemp(path.join(tmpdir(), "bootstrap-assets-"));
   for (const file of files) {
     original[file] = await readFile(new URL(`apps/web/public/${file}`, root), "utf8");
+    await mkdir(path.dirname(path.join(directory, file)), { recursive: true });
     await writeFile(path.join(directory, file), original[file]);
   }
   await compactBootstrapAssets(directory);
@@ -67,15 +70,18 @@ function themeResult(source, state, pathname, dark, contrast, blocked) {
 }
 
 describe("빌드 bootstrap 압축 계약", () => {
-  it("원본과 경로를 유지하며 총 2,000바이트 이상 줄이고 산출물 지문을 갱신한다", async () => {
-    let saved = 0;
+  it("원본과 경로를 유지하며 bootstrap JS만 총 2,000바이트 이상 줄이고 산출물 지문을 갱신한다", async () => {
     for (const file of files) {
       expect(await readFile(new URL(`apps/web/public/${file}`, root), "utf8")).toBe(original[file]);
-      saved += Buffer.byteLength(original[file]) - Buffer.byteLength(compact[file]);
       const hash = (value) => createHash("sha256").update(value).digest("hex");
       expect(hash(compact[file])).not.toBe(hash(original[file]));
     }
+    const saved = bootstrapFiles.reduce((sum, file) => sum + Buffer.byteLength(original[file]) - Buffer.byteLength(compact[file]), 0);
     expect(saved).toBeGreaterThanOrEqual(2000);
+  });
+
+  it.each(svgFiles)("%s의 구조 공백 절감은 bootstrap JS 보증과 별도로 확인한다", (file) => {
+    expect(Buffer.byteLength(compact[file])).toBeLessThan(Buffer.byteLength(original[file]));
   });
 
   it("precache 계획이 압축된 실제 바이트와 fingerprint를 사용한다", async () => {

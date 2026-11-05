@@ -970,7 +970,9 @@ describe("CreatorService safety gates", () => {
       "work-1",
       7,
       BigInt(27),
-      { title: "수정", doc: { pagesList: [{ id: "page-2" }] } }
+      { title: "수정", doc: { pagesList: [{ id: "page-2" }] } },
+      undefined,
+      undefined
     );
   });
 

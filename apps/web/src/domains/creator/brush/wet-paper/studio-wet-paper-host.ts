@@ -1,37 +1,28 @@
 /**
- * 젖은 종이 정착 베이크 호스트(Canvas 경로): 결정적 캐시 + 시분할 작업 + 솔버 지연 로드 + 래스터 그리기.
- *
- * `studio-living-ink-settled-bake-v1.ts`의 요청 계약을 그대로 따른다.
- * - 렌더 본문은 `requestStudioWetPaperBake`를 부르고, 결과가 아직 없으면 null을 받아 이번 프레임은 베이스 워시
- *   (같은 레인의 라이브 dab)를 그린다. 작업이 끝나면 `onReady`가 한 번 불리고, 같은 입력으로 다시 부르면 굽힌
- *   래스터가 돌아온다. `renderGeneration`은 React Compiler가 메모한 호출 지점을 다시 실행시키는 용도다(값은 읽지
- *   않는다).
- * - 작업은 매크로태스크(setTimeout 0) 조각으로 나뉜다. 조각마다 예산(8 ms)을 확인하며 솔버 고정 스텝을 하나씩,
- *   합성은 몇 행씩 전진한다. 동기 베이크(`solveStudioWetPaperBakeUncached`·`compositeStudioWetPaperRaster`,
- *   SVG 내보내기)와 같은 create → advance(1)·N → finish 순서라 조각 나누기는 스케줄만 바꾸고 바이트는 바꾸지
- *   않는다.
- * - 솔버·합성 코드와 프로그램 표는 `studio-wet-paper-runtime.ts` 동적 import 뒤에 있어 Studio 진입 청크에 실리지
- *   않는다. 호스트는 요청 키(프로그램 id·시드·정착 게이트)만 정규화하고, 표는 런타임이 붙인다.
- * - 캐시: 베이크 결과(색과 무관한 광학 밀도)를 dab 서명으로, 합성 래스터(캔버스)를 색으로 나눠 보관한다.
- *   결과는 항목 수·총 셀 수, 래스터는 총 픽셀 수 상한이 있는 LRU다. 색만 바뀐 획은 다시 풀지 않고 합성만 한다.
- * - 요청자(요소 id·대칭 변형): 같은 요청자가 다른 입력(두께·노드 끌기·색 미리보기)을 요청하면, 아무도 기다리지
- *   않게 된 이전 작업을 버린다. 그러지 않으면 중간 모양마다 전체 풀이가 줄을 서 마지막 모양이 수십 초 늦었다.
- * - 핀: 최근(2초) 요청됐거나 막 보관한 결과·래스터와 합성 중인 결과는 소프트 상한 때문에 버리지 않는다. 대칭
- *   획처럼 한 화면이 상한보다 많이 쓰면 버린 것을 다시 만들고 또 버리는 무한 반복이 생겼다. 하드 상한을 넘으면
- *   새 것을 보관하지 않고 알리지도 않으며(베이스 워시 유지) 잠시 다시 걸지 않는다.
- * - 합성과 풀이는 단위마다 번갈아 진행한다(한쪽이 다른 쪽을 굶기지 않는다).
- * - `waitForStudioWetPaperBakesIdle`: 대기 작업이 모두 끝나면 풀리는 약속(캡처 준비가 기다린다).
+ * 정착 호스트: 지연 runtime·결정적 캐시·8ms 시분할로 최종 물리와 합성을 실행한다.
+ * create → advance(1)·N → finish 순서와 바이트는 동기 내보내기와 같다.
+ * 결과는 dab 수치 서명으로, 래스터는 색으로 구분하고 항목·셀·픽셀 LRU 상한을 지킨다.
+ * 최근 요청·합성 중 결과를 핀해 대칭 획의 재계산 루프를 막고, 하드 상한 거절은 잠시 기억한다.
+ * 같은 요청자의 새 입력은 이전 작업에서 빠지고, 언마운트한 소유자는 완료를 다시 게시하지 않는다.
+ * 갈필 침착 미리보기는 별도 lazy 캐시이며 최종 결과를 덮어쓰지 않는다.
+ * waitForStudioWetPaperBakesIdle은 최종 준비 완료 경계다. 아직 준비되지 않으면 리졸버가 대체 표면을 고른다.
  */
 
 import { normalizeStudioWetPaperBakeRequestKey } from "./studio-wet-paper-program-ids";
 
-import type { StudioWetPaperRaster, StudioWetPaperRasterJob } from "./studio-wet-paper-composite";
+import type { StudioWetPaperRaster } from "./studio-wet-paper-composite";
 import type { WetPaperInputDab } from "./studio-wet-paper-deposit";
+import type {
+  PendingCompositeJob, PendingSolveJob, PendingWaiters, RequesterState,
+  StudioWetPaperBakeHostLimits, WetPaperBakeCacheEntry,
+} from "./studio-wet-paper-host-types";
 import type {
   StudioWetPaperBakeProgramId,
   StudioWetPaperBakeRequestKey,
 } from "./studio-wet-paper-program-ids";
-import type { StudioWetPaperBakeResult, WetPaperSolve } from "./studio-wet-paper-solver";
+import type { StudioWetPaperBakeResult } from "./studio-wet-paper-solver";
+
+export type { StudioWetPaperBakeHostLimits } from "./studio-wet-paper-host-types";
 
 type WetPaperRuntime = typeof import("./studio-wet-paper-runtime");
 
@@ -54,63 +45,6 @@ export interface StudioWetPaperBakeRequest {
 export interface StudioWetPaperDrawContext {
   globalAlpha: number;
   drawImage(image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number): void;
-}
-
-interface WetPaperBakeCacheEntry {
-  readonly signature: Float64Array;
-  readonly result: StudioWetPaperBakeResult | null;
-  readonly cells: number;
-  /** 색 → 합성 캔버스(null = 해석할 수 없는 색이거나 캔버스를 만들 수 없음). */
-  readonly rasters: Map<string, StudioWetPaperCanvasBake | null>;
-  /** 마지막 요청 시각(ms)과 색별 래스터 요청 시각 — 핀 판정. */
-  requestedAt: number;
-  readonly rasterRequestedAt: Map<string, number>;
-}
-
-/** 기다리는 쪽: 리스너와 요청자. 요청자 없이 부른 호출(익명)이 있으면 요청자가 모두 떠나도 작업을 버리지 않는다. */
-interface PendingWaiters {
-  readonly listeners: Set<() => void>;
-  readonly requesters: Set<string>;
-  anonymous: boolean;
-}
-
-interface PendingSolveJob extends PendingWaiters {
-  readonly key: string;
-  readonly dabs: readonly WetPaperInputDab[];
-  readonly signature: Float64Array;
-  readonly request: StudioWetPaperBakeRequestKey;
-  /** 처음 요청한 획 색(익명 요청자는 풀이가 끝나면 이 색으로 곧바로 합성한다). */
-  readonly color: string;
-  solve: WetPaperSolve | null;
-  seeded: boolean;
-}
-
-interface PendingCompositeJob extends PendingWaiters {
-  readonly key: string;
-  /** 결과 캐시 키(합성 도중 결과가 LRU에서 밀려났는지 확인한다). */
-  readonly entryKey: string;
-  readonly color: string;
-  readonly entry: WetPaperBakeCacheEntry;
-  raster: StudioWetPaperRasterJob | null;
-  started: boolean;
-}
-
-/** 요청자(요소·변형)가 마지막으로 요청한 결과 키와 색. */
-interface RequesterState {
-  readonly key: string;
-  readonly color: string;
-}
-
-/** 캐시 상한. 소프트를 넘으면 핀이 아닌 오래된 것부터 버리고, 하드를 넘겨야 하면 새 것을 보관하지 않는다. */
-export interface StudioWetPaperBakeHostLimits {
-  /** 결과 항목 수·보관 셀 수(셀당 Float32 밀도 + Uint8 덮임·전선 ≈ 6 B → 소프트 약 24 MiB). */
-  readonly entrySoftCount: number;
-  readonly entryHardCount: number;
-  readonly cellSoftCount: number;
-  readonly cellHardCount: number;
-  /** 래스터(캔버스) 총 픽셀(RGBA8 → 소프트 약 24 MiB). */
-  readonly rasterSoftPixels: number;
-  readonly rasterHardPixels: number;
 }
 
 /** 하드 상한은 소프트의 2배: 한 화면이 함께 쓰는(핀) 것 때문에 버릴 것이 없을 때 여기까지만 넘친다. */
@@ -316,7 +250,7 @@ function createRasterCanvas(raster: StudioWetPaperRaster): CanvasImageSource | n
   return canvas;
 }
 
-function finishRaster(raster: StudioWetPaperRaster): StudioWetPaperCanvasBake | null {
+export function createStudioWetPaperCanvasBake(raster: StudioWetPaperRaster): StudioWetPaperCanvasBake | null {
   const image = createRasterCanvas(raster);
   return image
     ? Object.freeze({
@@ -372,6 +306,10 @@ function detachRequester<T extends PendingWaiters>(jobs: Map<string, T>, key: st
 /** 같은 요청자가 다른 결과·색을 요청하면 이전 대기 작업에서 떼어 낸다(아무도 안 기다리면 버린다). */
 function supersede(requester: string, key: string, color: string): void {
   const previous = requesterStates.get(requester);
+  if (previous?.key === key && previous.color === color) {
+    requesterStates.delete(requester); requesterStates.set(requester, previous); return;
+  }
+  if (previous) previous.ready = undefined;
   requesterStates.delete(requester);
   requesterStates.set(requester, { key, color });
   while (requesterStates.size > WET_PAPER_MAX_REQUESTERS) {
@@ -482,7 +420,7 @@ function advanceCompositeJob(loaded: WetPaperRuntime, job: PendingCompositeJob, 
   // 합성하는 사이 결과가 LRU에서 밀려났으면 래스터를 보관하지 않는다(다시 요청하면 처음부터 다시 굽는다).
   // 하드 상한으로 보관하지 못했으면 알리지 않는다(다시 그려도 같은 거절이라 헛돈다).
   if (bakeCache.get(job.entryKey) === job.entry
-    && !storeRaster(job.entryKey, job.entry, job.color, job.raster ? finishRaster(job.raster.raster) : null)) {
+    && !storeRaster(job.entryKey, job.entry, job.color, job.raster ? createStudioWetPaperCanvasBake(job.raster.raster) : null)) {
     return true;
   }
   for (const listener of job.listeners) ready.add(listener);
@@ -552,6 +490,12 @@ function requestBake(
   const key = cacheKey(bakeKey, dabs.length, signature);
   const now = nowMs();
   if (requester) supersede(requester, key, color);
+  const owner = requester ? requesterStates.get(requester) : undefined;
+  if (owner && requester) {
+    owner.ready = onReady;
+    owner.notify ??= () => { if (requesterStates.get(requester) === owner) owner.ready?.(); };
+    onReady = owner.notify;
+  }
   const requesters = requester ? [requester] : [];
   const entry = readEntry(key, signature);
   if (entry) {
@@ -669,6 +613,8 @@ export function rememberStudioWetPaperBakeResult(
 
 /** 테스트 격리: 캐시·대기 작업을 비운다(로드된 런타임은 유지). */
 export function resetStudioWetPaperBakeHostForTests(): void {
+  dryEpoch += 1; dryModule?.resetStudioDryBrushLiveHostForTests();
+  dryModule = null; dryLoad = null; dryFailed = false; dryWaiting.clear(); dryNotifying = false;
   bakeCache.clear();
   bakeCacheCells = 0;
   rasterPixels = 0;
@@ -701,4 +647,68 @@ export function studioWetPaperBakeHostStatsForTests(): {
     pendingSolves: solveJobs.size,
     pendingComposites: compositeJobs.size,
   };
+}
+
+type DryModule = typeof import("./studio-dry-brush-live-host");
+let dryModule: DryModule | null = null;
+let dryLoad: Promise<DryModule | null> | null = null;
+let dryFailed = false;
+let dryEpoch = 0;
+let dryNotifying = false;
+const dryWaiting = new Map<string | (() => void), () => void>();
+
+/** 선택 의도가 있을 때만 공용 강모와 지연 모듈을 준비한다. 준비 실패는 기존 워시로 복귀한다. */
+export async function prewarmStudioDryBrushLiveBake(): Promise<boolean> {
+  if (dryFailed) return false;
+  const epoch = dryEpoch;
+  dryLoad ??= import("./studio-dry-brush-live-host").then((module) => {
+    if (epoch !== dryEpoch) return null;
+    dryModule = module; return module;
+  }, () => { if (epoch === dryEpoch) dryFailed = true; return null; });
+  const module = await dryLoad;
+  if (!module || epoch !== dryEpoch) return false;
+  await module.prewarmStudioDryBrushLiveHost();
+  return epoch === dryEpoch;
+}
+
+export function requestStudioDryBrushLiveBake(
+  dabs: readonly WetPaperInputDab[], request: StudioWetPaperBakeRequest, color: string,
+  onReady: () => void, requester?: string, allowCreate = true,
+): StudioWetPaperCanvasBake | null {
+  if (dryModule) return dryModule.requestStudioDryBrushLiveHost(dabs, request, color, onReady, requester, allowCreate);
+  if (request.programId !== "chu-tai-dry-brush" || dabs.length === 0 || !Number.isFinite(request.seed) || dryFailed) {
+    dryWaiting.delete(requester ?? onReady); return null;
+  }
+  if (!allowCreate) { dryWaiting.delete(requester ?? onReady); return null; }
+  dryWaiting.set(requester ?? onReady, onReady);
+  while (dryWaiting.size > 128) { const oldest = dryWaiting.keys().next().value; if (oldest !== undefined) dryWaiting.delete(oldest); }
+  if (!dryNotifying) {
+    dryNotifying = true;
+    const epoch = dryEpoch;
+    void prewarmStudioDryBrushLiveBake().then((ready) => {
+      if (epoch !== dryEpoch) return;
+      dryNotifying = false;
+      const waiting = [...dryWaiting.values()]; dryWaiting.clear();
+      if (ready) for (const notify of waiting) notify();
+    });
+  }
+  return null;
+}
+
+/** 언마운트·취소한 렌더 소유자는 다른 소유자의 같은 키 완료에도 다시 게시하지 않는다. */
+export function releaseStudioWetPaperBakeRequesters(prefix: string): void {
+  const matches = (key: string) => key === prefix || key.startsWith(`${prefix}#`);
+  for (const [key, state] of requesterStates) if (matches(key)) {
+    state.ready = undefined;
+    detachRequester(solveJobs, state.key, key);
+    detachRequester(compositeJobs, `${state.key}|${state.color}`, key);
+    requesterStates.delete(key);
+  }
+  for (const key of dryWaiting.keys()) if (typeof key === "string" && matches(key)) dryWaiting.delete(key);
+  dryModule?.releaseStudioDryBrushLiveHost(prefix);
+  resolveIdleWaiters();
+}
+
+export function releaseStudioDryBrushLiveBakeRequester(requester?: string): void {
+  if (requester) { dryWaiting.delete(requester); dryModule?.releaseStudioDryBrushLiveHost(requester); }
 }
