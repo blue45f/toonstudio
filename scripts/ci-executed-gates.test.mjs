@@ -590,7 +590,7 @@ test("product 초기 checkout은 문서 정본을 포함하고 대형 아트는 
   assert.doesNotMatch(job("static"), /Restore documentation authority for product regressions/u);
 });
 
-test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 checkout에서 정확히 보존한다", () => {
+test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개 선언을 최초 checkout에서 정확히 보존한다", () => {
   const asset = "/apps/web/public/assets/";
   const foundationInputs = [
     "/apps/web/public/assets/3d/environments/bundle-v1/deploy-index.b90b58fd4c87e9fddb2e39a7f1cbeb75ce93f0bc19f4f1cc053ac696e55e377c.json",
@@ -649,6 +649,22 @@ test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 c
     "/apps/web/public/vrm/LICENSES.md",
     ...["Sendagaya_Shino", "Sendagaya_Shibu", "Kate", "Jennifer", "Erika", "Olivia", "Jimmy", "Anna", "Cyberpal"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
   ];
+  const routeVisualInputs = [
+    `${asset}studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-boardroom-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-cherry-path-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/wuxia/gpt25-bg-wuxia-palace-courtyard-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/daily/gpt25-bg-daily-convenience-store-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-space-station-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-cyber-alley-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/action/gpt25-bg-action-highway-chase-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-hospital-corridor-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-ferris-wheel-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/action/gpt25-bg-action-jungle-temple-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/wuxia/gpt25-bg-wuxia-traditional-market-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-research-lab-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/daily/gpt25-bg-daily-bedroom-night-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/fantasy/gpt25-bg-fantasy-dragon-cliff-vertical-depth/background.png`,
+  ];
   const owned = {
     product: ["/docs/", ...[
       "3d/outfits/README.md", "studio/cc0-20260906/README.md", "3d/LICENSES.md",
@@ -662,6 +678,7 @@ test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 c
       `${asset}virtual-studio/toon-office-v1/characters/`, `${asset}studio/illustration-20260926/`,
       `${asset}studio/bundle-renders-v1/`, `${asset}studio/bundle-scenes-v1/`, `${asset}virtual-studio/bundle-decor-v1/`,
       ...foundationInputs,
+      ...routeVisualInputs,
     ],
     "studio-editing": [],
     "studio-3d": [`${asset}3d/environments/authored-v1/`],
@@ -670,12 +687,23 @@ test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 c
   assert.equal(foundationInputs.length, 63);
   assert.equal(new Set(foundationInputs).size, 63);
   assert.ok(foundationInputs.every((path) => !path.endsWith("/")), "추가 입력은 개별 파일이어야 합니다.");
-  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 90, 0, 1, 7]);
+  assert.equal(routeVisualInputs.length, 14);
+  assert.equal(new Set(routeVisualInputs).size, 14);
+  assert.ok(routeVisualInputs.every((path) => path.endsWith("/background.png")), "페이지 시각 입력은 원본 PNG 개별 파일이어야 합니다.");
+  const routeVisualSet = new Set(routeVisualInputs);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !routeVisualSet.has(path)).length), [13, 90, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 104, 0, 1, 7]);
   const declarations = [...job("static").matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
   assert.match(job("static"), /persist-credentials: false/u);
   assert.match(job("static"), /sparse-checkout-cone-mode: false/u);
-  assert.equal(declarations.length, 111, "기존 48개와 foundation 63개 선언을 정확히 보존해야 합니다.");
-  assert.equal(new Set(declarations.map((match) => match[2])).size, 106, "라이선스와 character도 검사하는 네 VRM만 shard 사이에 공유합니다.");
+  const originalDeclarations = declarations.filter((match) => !routeVisualSet.has(match[2]));
+  const routeVisualDeclarations = declarations.filter((match) => routeVisualSet.has(match[2]));
+  assert.equal(originalDeclarations.length, 111, "기존 48개와 foundation 63개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(originalDeclarations.map((match) => match[2])).size, 106, "기존 라이선스와 네 VRM의 shard 공유만 유지합니다.");
+  assert.deepEqual(routeVisualDeclarations.map((match) => match[2]).sort(), [...routeVisualInputs].sort());
+  assert.ok(routeVisualDeclarations.every((match) => match[1] === "studio-foundation"), "페이지 시각 입력은 foundation만 소유해야 합니다.");
+  assert.equal(declarations.length, 125, "기존 111개와 원본 PNG 14개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(declarations.map((match) => match[2])).size, 120, "새 PNG 14개는 기존 입력이나 다른 shard와 중복하지 않습니다.");
   for (const [shard, paths] of Object.entries(owned)) {
     assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
   }

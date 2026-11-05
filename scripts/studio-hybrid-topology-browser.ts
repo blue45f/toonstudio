@@ -43,13 +43,21 @@ export async function captureStudioHybridPressureFailure(
     new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array(bytes))),
     (byte) => byte.toString(16).padStart(2, "0"),
   ).join("");
-  const capture = async (source: StudioMaterialBrushElement, image: ReturnType<typeof draw>) => ({
-    inputSha256: await sha256(new TextEncoder().encode(JSON.stringify(source))),
-    rawRgbaSha256: await sha256(image.rgba),
-    width: image.target.width, height: image.target.height,
-    alphaMass: image.mass, visiblePixels: image.visible,
-    pngDataUrl: image.target.toDataURL("image/png"),
-  });
+  const capture = async (source: StudioMaterialBrushElement, image: ReturnType<typeof draw>) => {
+    const marks = planStudioMaterialBrush(source);
+    return {
+      inputSha256: await sha256(new TextEncoder().encode(JSON.stringify(source))),
+      rawRgbaSha256: await sha256(image.rgba),
+      primitive: {
+        count: marks.length,
+        orderedGeometrySha256: await sha256(new TextEncoder().encode(JSON.stringify(marks.map(({ opacity: _opacity, ...mark }) => mark)))),
+        opacitySha256: await sha256(new TextEncoder().encode(JSON.stringify(marks.map((mark) => mark.opacity)))),
+      },
+      width: image.target.width, height: image.target.height,
+      alphaMass: image.mass, visiblePixels: image.visible,
+      pngDataUrl: image.target.toDataURL("image/png"),
+    };
+  };
   return { id, low: await capture(lowSource, low), high: await capture(highSource, high) };
 }
 
