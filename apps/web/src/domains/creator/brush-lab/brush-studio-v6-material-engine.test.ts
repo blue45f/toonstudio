@@ -318,9 +318,12 @@ describe("portable V6 material contacts", () => {
 
   it("이전 Mixbox V1 원고는 명시 전환 전 재생을 차단한다", () => {
     const legacy = { ...createBrushStudioV6Program("mixbox-pastel-smudge"), version: 1 as const };
+    const before = structuredClone(legacy);
     expect(() => createBrushStudioV6MaterialStroke(legacy)).toThrow(BrushStudioV6LegacyPigmentMigrationRequiredError);
+    expect(legacy).toEqual(before);
     const native = { ...legacy, slots: { ...legacy.slots, pigment: "pigment-latent" } };
     expect(() => createBrushStudioV6MaterialStroke(native)).not.toThrow();
+    expect(legacy).toEqual(before);
   });
 
 });
