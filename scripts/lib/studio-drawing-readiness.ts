@@ -1,5 +1,7 @@
 import { errors, type Locator, type Page } from "playwright";
 
+type PrepareStudioDrawingTarget = (timeoutMs: number) => Promise<void>;
+
 interface DrawingReadinessOptions {
   /** 빈 문서 진입/초기화에서는 지연 마운트될 안내의 실제 닫기까지 기다린다. */
   requireWelcome?: boolean;
@@ -10,6 +12,7 @@ async function reachDrawingUi(
   page: Page,
   { requireWelcome = false, timeoutMs = 60_000 }: DrawingReadinessOptions,
   target?: Locator,
+  prepareTarget?: PrepareStudioDrawingTarget,
 ): Promise<{ welcomeDismissed: boolean }> {
   const deadline = Date.now() + timeoutMs;
   const welcome = page.locator('[data-studio-cinematic-canvas-welcome="true"]');
@@ -57,7 +60,13 @@ async function reachDrawingUi(
         const blocked = await Promise.all(overlays.map(({ surface }) => surface.isVisible()));
         const remaining = deadline - Date.now();
         if (!blocked.some(Boolean) && remaining > 0) {
-          if (target) await target.click({ timeout: Math.min(1_000, remaining) });
+          if (target) {
+            // 안내를 닫는 정상 클릭이 도크 메뉴도 접을 수 있어 매 시도마다 같은 예산 안에서 복구한다.
+            if (prepareTarget) await prepareTarget(Math.min(1_000, remaining));
+            const clickRemaining = deadline - Date.now();
+            if (clickRemaining <= 0) break;
+            await target.click({ timeout: Math.min(1_000, clickRemaining) });
+          }
           if (Date.now() < deadline) return { welcomeDismissed };
         }
       }
@@ -108,6 +117,7 @@ export async function clickStudioControlAfterReadiness(
   page: Page,
   target: Locator,
   timeoutMs = 60_000,
+  prepareTarget?: PrepareStudioDrawingTarget,
 ): Promise<void> {
-  await reachDrawingUi(page, { timeoutMs }, target);
+  await reachDrawingUi(page, { timeoutMs }, target, prepareTarget);
 }
