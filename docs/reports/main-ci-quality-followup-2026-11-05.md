@@ -149,3 +149,7 @@ Full Diagnostic의 두 이력 source 계약도 오래된 함수 문구를 요구
 실제 catalogue의 정확한 한 행만 바꾼 격리 overlay에서 공개 선택이 15px·opacity 0.82·flow 0.57·기존 seed임을 확인했다. 원본·control·40조합 중 최소 energy 입력 세 개는 최대 차이 4로 통과했다. 저장된 0.46 snapshot 두 개와 snapshot 없는 legacy의 전체 RGBA는 원본 세 해시와 완전히 같았다. 최종 6draw 진단은 exit 0·console/page 오류 0이었다. 이전 진단의 자체 HMR 차단 오류 exit 1은 별도 보존했고, 정확한 자체 HMR만 허용한 후속의 여섯 픽셀 해시가 전부 같음을 확인했다. 이 제한 검증을 Linux·다른 필압/색상·장획·모든 seed의 보증으로 확대하지 않는다.
 
 저장 snapshot·사용자 flow를 재생 시 우선하며, snapshot 없는 원고와 구 slot은 기존 core replay-safe fallback을 사용한다. 활성 획도 시작 snapshot을 사용한다. catalogue flow에 의존하지 않는 tip atlas·renderer·필압 곡선·굵기·opacity·저장 형식·권한은 변경하지 않는다. 실제 source 적용 후 공개 선택의 세 UUID 경계·원래 0.46 및 사용자 0.21 보존과 기존 slot·재생·atlas 회귀 네 파일 167개가 통과했다. 전체 새 head의 hosted 품질·CI는 별도 확인한다. catalogue 행을 되돌려도 이미 저장된 각 획의 snapshot을 다시 쓰거나 변환하지 않는다.
+
+`502096134e`의 전체 하네스는 새 모바일 테스트의 `HTMLElement.hidden`이 `boolean | "until-found"`인데 boolean 배열에 직접 기록한 TS2345 한 건으로 실패했다. 제품을 바꾸거나 타입을 덮지 않고 `hidden === true`로 실제 숨김 여부를 명시해 교정했다. 같은 79개는 다시 통과했으며 정상 push는 일치하는 하네스 성공이 없어 실행 전에 중단됐다. `502096134e` 전체 하네스 통과로 보고하지 않고 후속 정확한 SHA에서 다시 확인한다.
+
+추출한 모바일 helper만 수정해도 같은 화면 검사가 실행되도록 브러시 stability workflow의 PR·main push 두 paths에 정확한 helper 경로를 추가한다. 현재 PR은 verifier도 바뀌므로 이미 실행되지만 향후 단독 helper 수정의 누락을 막는 보완이다. 기존 readiness 검사에 두 이벤트의 실제 YAML 소비를 검증하는 한 사례를 추가해 수정 전 1개 실패를 확인했고, 두 경로 연결 뒤 기존 25개를 포함한 26개가 통과했다. 기존 matrix·시간·러너·품질 기준·보호 규칙을 바꾸지 않는다.
