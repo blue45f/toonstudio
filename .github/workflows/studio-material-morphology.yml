@@ -16,6 +16,11 @@ on:
       - scripts/studio-material-atlas-boundary.test.ts
       - scripts/studio-hybrid-topology-browser.ts
       - scripts/verify-studio-hybrid-topology.mjs
+      - scripts/lib/studio-chemy-v1-pressure-policy.ts
+      - scripts/fixtures/studio-chemy-v1-pressure/baseline.json
+      - scripts/fixtures/studio-chemy-v1-pressure/low.png
+      - scripts/fixtures/studio-chemy-v1-pressure/high.png
+      - scripts/studio-brush-v6-pixel-quality.test.ts
       - .github/workflows/studio-material-morphology.yml
   push:
     branches: [main]
@@ -26,6 +31,11 @@ on:
       - scripts/*studio-material*
       - scripts/studio-hybrid-topology-browser.ts
       - scripts/verify-studio-hybrid-topology.mjs
+      - scripts/lib/studio-chemy-v1-pressure-policy.ts
+      - scripts/fixtures/studio-chemy-v1-pressure/baseline.json
+      - scripts/fixtures/studio-chemy-v1-pressure/low.png
+      - scripts/fixtures/studio-chemy-v1-pressure/high.png
+      - scripts/studio-brush-v6-pixel-quality.test.ts
       - .github/workflows/studio-material-morphology.yml
   workflow_dispatch:
 

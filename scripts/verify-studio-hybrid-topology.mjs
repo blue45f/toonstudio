@@ -33,10 +33,10 @@ try {
   const page = await browser.newPage({ viewport: { width: 1000, height: 900 } });
   page.on("pageerror", (error) => diagnostics.push(error.message));
   await page.goto(`http://127.0.0.1:${address.port}${harness}`);
-  const result = await page.evaluate(async () => {
+  const result = await page.evaluate(async (pressureEnvironment) => {
     const entry = await import("/scripts/studio-hybrid-topology-browser.ts");
-    return entry.auditStudioHybridTopology();
-  });
+    return entry.auditStudioHybridTopology(pressureEnvironment);
+  }, { browser: browser.version(), platform: platform(), architecture: arch() });
   for (const [index, png] of result.sheets.entries()) {
     writeFileSync(join(output, `materials-${index + 1}.png`), Buffer.from(png.split(",")[1], "base64"));
   }
