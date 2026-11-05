@@ -15,7 +15,7 @@ export interface StudioShellCanvasBounds {
   readonly bottom: number;
 }
 
-/** 캔버스가 전체 폭으로 남는 레이아웃에서도 실제 도킹 패널의 컨트롤은 제외한다. */
+/** 도킹 패널과 겹치는 캔버스 경계를 제외한다. */
 export function excludeDockedStudioInspector(canvas: StudioShellCanvasBounds, inspector: StudioShellCanvasBounds | null,
   dock: string | null, detached: boolean): StudioShellCanvasBounds {
   if (!inspector || detached || inspector.right <= inspector.left || inspector.bottom <= inspector.top
@@ -29,7 +29,7 @@ export function usesStudioShellDefaultSafeViewport(id: StudioShellFloatingSurfac
   return id === "offline-readiness" || id === "collaboration";
 }
 
-/** 자동 배치는 표시 범위만 바꾸며 저장된 비율이나 잠금 값은 수정하지 않는다. */
+/** 자동 배치는 표시 범위만 바꾼다. 저장 배치는 유지한다. */
 export function resolveStudioShellDefaultSafeViewport({ definition, viewport, canvas, layout, layoutOverride, size }: {
   definition: StudioShellFloatingSurfaceDefinition;
   viewport: StudioFloatingSurfaceViewport;
@@ -53,7 +53,7 @@ export function resolveStudioShellDefaultSafeViewport({ definition, viewport, ca
   return { ...viewport, insetLeft: left, insetTop: top, insetRight: viewport.width - right, insetBottom: viewport.height - bottom };
 }
 
-/** 첫 명시적 사용자 조작은 지금 보이는 위치를 기존 전체 화면 비율로 보존한다. */
+/** 첫 사용자 조작 때 표시 위치를 기존 화면 비율로 저장한다. */
 export function studioShellLayoutForUserControl(layout: StudioFloatingSurfaceLayout, viewport: StudioFloatingSurfaceViewport,
   displayViewport: StudioFloatingSurfaceViewport, constraints: StudioFloatingSurfaceConstraints, rect: StudioFloatingSurfaceRect): StudioFloatingSurfaceLayout {
   return displayViewport === viewport ? layout : createStudioFloatingSurfaceLayout(rect, viewport, constraints, {
@@ -67,7 +67,7 @@ function numericDatasetValue(value: string | undefined): number | null {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
-/** 기존 전체 화면 배치의 기준이며 사용자 이동·도킹 비율은 항상 이 범위로 저장한다. */
+/** 사용자 배치 저장에 쓰는 전체 화면 기준이다. */
 export function readStudioShellFloatingViewport(
   definition: StudioShellFloatingSurfaceDefinition,
   node: HTMLElement | null = null,
@@ -87,7 +87,7 @@ export function readStudioShellFloatingViewport(
   };
 }
 
-/** 패널 닫힘·도킹·너비 변경을 실제 캔버스 경계로 관찰하며 문서/배치 저장에는 쓰지 않는다. */
+/** 캔버스·패널 경계를 관찰한다. 저장 쓰기는 없다. */
 export function observeStudioShellCanvasBounds(listener: (bounds: StudioShellCanvasBounds | null) => void): () => void {
   let observed = new Set<HTMLElement>();
   let frame = 0;
@@ -100,7 +100,7 @@ export function observeStudioShellCanvasBounds(listener: (bounds: StudioShellCan
     for (const previous of observed) if (!targets.has(previous)) resize?.unobserve(previous);
     for (const target of targets) if (!observed.has(target)) resize?.observe(target);
     observed = targets;
-    // 숨겨진 채 유지된 캔버스도 관찰해 다시 표시될 때 같은 노드의 경계를 갱신한다.
+    // 숨겨진 캔버스도 관찰해 재표시 때 갱신한다.
     const canvas = canvases.find((element) => { const rect = element.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; });
     const rect = canvas?.getBoundingClientRect();
     const inspector = canvas?.closest('[data-studio-editor="true"]')?.querySelector<HTMLElement>("#studio-inspector");

@@ -25,7 +25,7 @@ export type StudioFloatingSurfaceLayoutAuthority =
   | "sqlite-opfs"
   | "session-only";
 
-/** 해당 surface의 저장·사용자 선택 출처이며 none만 기본 배치 자동 회피를 허용한다. */
+/** none은 저장·사용자 배치가 없음을 확인한 상태다. */
 export type StudioFloatingSurfaceLayoutOverride = "checking" | "none" | "present" | "unknown";
 
 export interface UseStudioFloatingSurfaceLayoutOptions {
@@ -85,11 +85,8 @@ async function acquireProductStudioFloatingSurfacePreferencesRepositoryDeferred(
   return acquireProductStudioFloatingSurfacePreferencesRepository();
 }
 
-/**
- * Synchronous UI continuity plus verified SQLite/OPFS durability for one persistent Studio panel.
- *
- * Session storage is only the same-tab startup cache. The shared V12 database remains the durable
- * authority, and a slow hydrate never overwrites a layout the artist already moved this session.
+/** 같은 탭의 세션은 시작 캐시이며 V12 SQLite/OPFS가 저장 권위다.
+ * 늦은 읽기는 사용자가 옮긴 배치를 덮지 않는다.
  */
 export function useStudioFloatingSurfaceLayout({
   surfaceId,
@@ -101,7 +98,7 @@ export function useStudioFloatingSurfaceLayout({
 }: UseStudioFloatingSurfaceLayoutOptions): UseStudioFloatingSurfaceLayoutResult {
   const { version, xRatio, yRatio, width, height, dock, positionLocked, sizeLocked } =
     normalizeStudioFloatingSurfaceLayout(defaultLayout, defaultLayout);
-  // 호출자가 매 렌더 새 객체를 전달해도 같은 기본값으로 저장소 읽기를 반복하지 않는다.
+  // 같은 기본값은 참조를 유지한다.
   const normalizedDefault = useMemo(
     () => Object.freeze({ version, xRatio, yRatio, width, height, dock, positionLocked, sizeLocked }),
     [version, xRatio, yRatio, width, height, dock, positionLocked, sizeLocked],
