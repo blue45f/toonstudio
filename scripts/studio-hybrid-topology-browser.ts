@@ -125,8 +125,19 @@ async function collectLegacyChemyPressure(
 export async function auditStudioLegacyChemyV1Pressure(environment: ChemyPressureEnvironment) {
   const lowSource = element("klecks-chemy", 0.15), highSource = element("klecks-chemy", 0.85);
   const light = draw(lowSource), heavy = draw(highSource);
-  return { ...(await collectLegacyChemyPressure(environment, lowSource, highSource, light, heavy)),
-    successfulDrawCalls: { low: 1, high: 1 }, reviewOnly: true };
+  // 환경·골든 판정이 실패해도 이미 그린 원본 두 Canvas를 진단 자료로 남긴다. 재그리기는 없다.
+  const captured = await captureStudioHybridPressureFailure("klecks-chemy", lowSource, highSource, light, heavy);
+  let policy: Awaited<ReturnType<typeof collectLegacyChemyPressure>> | { ok: false; evaluated: false; failures: string[] };
+  try { policy = await collectLegacyChemyPressure(environment, lowSource, highSource, light, heavy); }
+  catch (error) { policy = { ok: false, evaluated: false, failures: ["legacy pressure policy failed: " + String(error)] }; }
+  return { ...policy, backend: "real-browser-canvas2d", cases: [{ id: "klecks-chemy", legacyPressurePolicy: policy }],
+    successfulDrawCalls: { low: 1, high: 1 }, reviewOnly: true,
+    scope: "명시적 Chemy V1 압력 진단: 원래 low/high 두 draw만 수집하며 미평가 실패와 기존 판정을 유지한다.",
+    pressureFailureArtifacts: [{ ...captured,
+      low: { ...captured.low, input: lowSource, rawRgba: Array.from(light.rgba) },
+      high: { ...captured.high, input: highSource, rawRgba: Array.from(heavy.rgba) } }],
+    pressureFailureArtifactErrors: [],
+  };
 }
 
 export async function auditStudioHybridTopology(environment?: ChemyPressureEnvironment) {
