@@ -28,6 +28,11 @@ function job(name) {
   return block;
 }
 
+function assertTrackedRepositoryFile(path, root = repoRoot) {
+  const tracked = spawnSync("git", ["ls-files", "--error-unmatch", "--", path], { cwd: root, encoding: "utf8" });
+  assert.equal(tracked.status, 0, `저장소 Git 정본에 없는 입력: ${path}\n${tracked.stderr}`);
+}
+
 function targetExists(target) {
   const absoluteTarget = join(repoRoot, target);
   if (existsSync(absoluteTarget)) return true;
@@ -713,7 +718,7 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
   const foundationDocumentSet = new Set(foundationDocumentInputs);
   assert.equal(foundationDocumentSet.size, 16);
   assert.ok(foundationDocumentInputs.every((path) => path.endsWith(".md") && !path.includes("*")), "문서 입력은 정확한 개별 Markdown 파일이어야 합니다.");
-  for (const path of foundationDocumentInputs) assert.ok(existsSync(join(repoRoot, path.slice(1))), `foundation 문서 정본 누락: ${path}`);
+  for (const path of foundationDocumentInputs) assertTrackedRepositoryFile(path.slice(1));
   assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 90, 0, 1, 7]);
   assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 120, 0, 1, 7]);
   const declarations = [...job("static").matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
@@ -772,6 +777,19 @@ test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·�
       for (const file of unrelated) assert.equal(existsSync(join(root, file)), false, `${shard}: 무관한 대형 자산 ${file}`);
       for (const file of unrelatedDocuments) assert.equal(existsSync(join(root, file)), shard === "product", `${shard}: 기존 product 외의 무관한 문서 ${file}`);
     }
+    // preflight는 선언을 검사하고, 문서 본문 복원은 위의 실제 shard 행렬에서 검증한다.
+    writeFileSync(join(root, ".git/info/sparse-checkout"), `${sparsePatterns(job("typecheck")).join("\n")}\n`);
+    git("read-tree", "-mu", "HEAD");
+    for (const path of foundationDocumentInputs) {
+      assert.equal(existsSync(join(root, path.slice(1))), false, `preflight에 불필요한 문서 본문: ${path}`);
+      assertTrackedRepositoryFile(path.slice(1), root);
+    }
+    assert.throws(() => assertTrackedRepositoryFile("docs/adr/0003-one-primary-surface-owner-typo.md", root), /저장소 Git 정본에 없는 입력/u);
+    const untracked = "docs/adr/untracked-foundation.md";
+    mkdirSync(dirname(join(root, untracked)), { recursive: true });
+    writeFileSync(join(root, untracked), "untracked fixture\n");
+    assert.ok(existsSync(join(root, untracked)));
+    assert.throws(() => assertTrackedRepositoryFile(untracked, root), /저장소 Git 정본에 없는 입력/u);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
