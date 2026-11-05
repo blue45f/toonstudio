@@ -70,6 +70,8 @@ CanvasKit 변환을 적용한 직접 캡처는 실제 `skia-document`·1440×144
 
 후속 전체 하네스 `a6b9e78e`에서는 새 모바일 회귀의 `HTMLElement.hidden`이 `boolean | "until-found"`인 TypeScript 오류 한 건이 확인됐다. 공통 `f0d69841`의 `panel.hidden === true` 수정과 `0d73c5e4`의 helper 전용 CI 경로 회귀를 통합했다. 제품 코드와 위 6컷 실행 스크립트는 바뀌지 않았으며 최종 하네스·정상 pre-push에서 별도 확인한다. 실패한 하네스는 성공으로 계산하지 않는다.
 
+`69f5d30a`는 이후 전체 하네스·정상 pre-push를 통과했지만 원격 portfolio의 8파일 중 한 source 계약이 실패했다(111개 통과·1개 실패). 추출된 helper에 남은 primary action 제외 선택자를 종전 verifier에서만 찾던 문제였다. 공통 `49b6bfbe`·`e5a6d799`를 통합해 실제 helper의 전체 선택자·import·두 호출을 연결하고, 다른 두 검사도 삭제된 함수명 대신 실제 다음 함수까지의 유효한 범위만 읽게 했다. 기존 UI·품질·기한 단언은 유지한다. 같은 portfolio 8파일과 도형 경계 2파일을 합친 **실제 단일 실행 10파일 154개가 모두 통과**했다. 제품·저장 형식·6컷 실행 스크립트는 그대로이며 원격 최종 head는 새로 확인한다.
+
 직전 실제 검증 `4c14fece`의 기술 ZIP과 다시 비교한 결과, 여섯 1440×1440 원고 PNG 모두 변경 픽셀 0·최대 채널 차이 0이었다. **기술 ZIP 자체도 838,465 B, SHA-256 `ee2d8658436c270cc208fb6cad438806c114df24d704bf27c3aab3e587fce1ee`로 바이트까지 동일**했다. 첫 냉간 시도의 다른 외관은 원고나 폰트 변경 없이 CanvasKit 변환 복구로 해소됐다. 더 오래된 `8d315c85` 기준 PNG의 기존 차이는 별도 기록이며 모든 역사적 버전의 픽셀 일치를 주장하지 않는다.
 
 계정·쿠키·원시 Socket frame을 제외한 [실행 요약](evidence/2026-11-06-short-comic-recovery/verification-summary.json), [렌더러 영수증](evidence/2026-11-06-short-comic-recovery/renderer-receipts.json), [이전 패키지 비교](evidence/2026-11-06-short-comic-recovery/previous-package-comparison.json), [UI 인계 증거](evidence/2026-11-06-short-comic-recovery/ui-handoff-proof.json), [기존 로컬 데이터 보존](evidence/2026-11-06-short-comic-recovery/local-data-preservation.json)을 공개 검토용으로 보존했다. 실행 직후 추가한 파일은 설명·증거 문서다. 최종 원격 CI와 병합 상태 및 이후 source 변경은 해당 PR의 정확한 head에서 별도 확인한다.
@@ -81,3 +83,13 @@ CanvasKit 변환을 적용한 직접 캡처는 실제 `skia-document`·1440×144
 | 향후 개선·사람 확인 | 키가 미확정인 일반 JSON pending의 보수적 차단, 더 다양한 직군·인계 조합, 최초 Undo journal 복원, 실제 외부 메일·private storage, 모든 역사 버전·렌더러 간 외관 일치, 작품 품질·권리·등급·게시 승인 |
 
 정식 게시 버튼은 차단 상태이고 ZIP의 `validation-report.json.releaseAuthorized`는 `false`다. 기존 원고 JSON·PNG와 이전 기술 ZIP은 보존했으며 운영 배포·운영 DB·저장 형식 변경은 하지 않았다.
+
+## 2026-11-06 병합 뒤 남은 검사 보완
+
+PR #2727의 원격 `69f5d30a`는 CI의 11개 선행 검사와 같은 workflow의 `core`·`verify`가 모두 성공했다. 그러나 추가 QA 다섯 개는 위의 추출 전 소스 계약을 읽다 실패했으며, session-goals에는 AI 패널의 비동기 완료 뒤 테스트 환경이 먼저 닫혀 `window is not defined`가 발생한 오류도 네 건 있었다. 2026-11-06 02:23 KST에 해당 PR이 `663f83d464ab321795cd33269d9e2a781d1b467d`로 병합된 사실과 추가 QA 전체 완료는 구분한다. 이 병합에는 후속 `49b6bfbe`·`e5a6d799`와 아래 테스트 보완이 아직 들어 있지 않다.
+
+AI UI 테스트 한 곳에서 시작한 각 비동기 작업의 고유 완료 결과를 순차적으로 기다리게 했다. 결과 카드 하나를 공유하는 네 작업과 notice 하나를 공유하는 여섯 작업도 각각 확인하며, 기존 완료·재활성화 단언은 유지한다. 제품 코드·예외 처리·기한·mock·skip은 바꾸지 않는다. 변경 전 로컬 두 파일 28개도 통과했으므로 로컬 RED 재현으로 표시하지 않는다. 변경 후 AI 패널·상위 모달·브라우저 경계 세 파일 34개가 모두 통과했고 미처리 오류는 없었다. 원격 해당 워크플로의 최종 head 검증은 별도로 필요하다.
+
+후속 브랜치는 #2724까지 병합된 main `7c5ed4db7d739449312793ee3bc471131420f434`를 기준으로 준비했다. 해당 기준 대비 변경은 테스트 네 파일과 기록 두 파일이며 제품·저장·CI 기준은 그대로다. 후속 source `5d241c031062f3eaf71c560ec293a3a0c697f69b`에서 portfolio·도형 경계·AI 패널/모달을 한 번에 실행한 12파일 182개가 모두 통과했고 미처리 오류는 없었다. 위 6컷과 ZIP 증거의 실행 source는 계속 `f63dd7cf`이며, #2724의 내보내기 구현까지 같은 원고로 재검증했다는 뜻은 아니다.
+
+이 후속 source의 `pnpm harness:verify --base=origin/main`도 2026-11-06 02:51 KST에 exit 0으로 끝났다. 웹 전체 26,275개 파일의 타입 진단은 0개이며 API의 세 TypeScript 설정 검사도 통과했다. 검사 중 추가한 변경은 이 문서의 실행 범위 기록뿐이다. 실제 UI 변경은 없으며 브라우저 6컷 증거를 새 main으로 소급하지 않는다. 정상 pre-push와 후속 PR의 정확한 head CI는 별도 결과로 확인한다.
