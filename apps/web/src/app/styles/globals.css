@@ -4,22 +4,26 @@
 @source not "../../../../../scripts";
 @source not "../../../../../tools";
 @source not "../../../../../tests";
+@source not "../../../../../e2e";
+@source not "../../../../../crates";
+@source not "../../../../../third_party";
+@source not "../../../../../deploy";
 @source not "../../../../../apps/api";
 @source not "../../../../../apps/admin-web";
 @source not "../../../../../apps/character-lab";
 @source not "../../../../../apps/brush-lab";
+@source not "../../../../../apps/desktop-sync";
+@source not "../../../../../apps/mobile";
 @source not "../../../../../.claude-flow";
 @source not "../../../../../.remember";
 @source not "../../../../../.swarm";
+@source not "../../**/*.test.ts";
+@source not "../../**/*.test.tsx";
+@source not "../../**/*.spec.ts";
+@source not "../../**/*.spec.tsx";
 
-/* 스튜디오 전용 규칙은 이 파일에 두지 않는다 — `studio-route.css`가 정본이고 스튜디오 라우트
-   청크에서만 로드된다(공개 페이지 첫 페인트의 렌더 차단 CSS에서 제외). 근거·예산:
-   docs/perf/bundle-gate.md 의 CSS 예산 절. */
-
-/* ============================================================
-   툰스튜디오 — 활자와 스펙트럼 (Type & Spectrum)
-   따뜻한 잉크-블랙 위의 에디토리얼 다크. OKLCH 토큰.
-   ============================================================ */
+/* 스튜디오 전용 규칙은 `studio-route.css`가 정본이며 스튜디오 라우트 청크에서만 로드된다(docs/perf/bundle-gate.md). */
+/* 툰스튜디오 — 활자와 스펙트럼 (Type & Spectrum): 따뜻한 잉크-블랙 위의 에디토리얼 다크 OKLCH 토큰 */
 
 @theme {
   /* 중립 — 따뜻한 잉크(hue ~70), #000/#fff 금지 */
