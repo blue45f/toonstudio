@@ -6,13 +6,13 @@ import {
 } from "./engineering-license-inventory";
 
 describe("라이브러리 라이선스 현황 데이터", () => {
-  it("과거 직접 의존성 스냅샷에 wasm-vips 제거를 반영한 116개를 담는다", () => {
-    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(116);
+  it("과거 스냅샷에서 외부 Mixbox와 wasm-vips를 제외한 115개를 표면별로 담는다", () => {
+    expect(ENGINEERING_LIBRARY_LICENSES).toHaveLength(115);
     const bySurface = new Map<string, number>();
     for (const library of ENGINEERING_LIBRARY_LICENSES) {
       bySurface.set(library.surface, (bySurface.get(library.surface) ?? 0) + 1);
     }
-    expect(bySurface.get("web")).toBe(84);
+    expect(bySurface.get("web")).toBe(83);
     expect(bySurface.get("api")).toBe(22);
     expect(bySurface.get("mobile")).toBe(8);
     expect(bySurface.get("labs")).toBe(2);
@@ -36,7 +36,7 @@ describe("라이브러리 라이선스 현황 데이터", () => {
     }
   });
 
-  it("별도 확인이 필요한 항목은 플래그와 함께 정확히 일곱 개다", () => {
+  it("별도 확인이 필요한 잔존 항목은 플래그와 함께 정확히 여섯 개다", () => {
     const flagged = ENGINEERING_LIBRARY_LICENSES.filter((library) => library.flag);
     expect(flagged.map((library) => [library.name, library.license, library.flag])).toEqual(
       expect.arrayContaining([
@@ -44,24 +44,42 @@ describe("라이브러리 라이선스 현황 데이터", () => {
         ["@resvg/resvg-wasm", "MPL-2.0", "weak-copyleft"],
         ["web-ifc", "MPL-2.0", "weak-copyleft"],
         ["web-push", "MPL-2.0", "weak-copyleft"],
-        ["mixbox", "CC-BY-NC-4.0", "noncommercial"],
         ["remotion", "Remotion License", "custom-license"],
         ["@remotion/player", "Remotion License", "custom-license"],
       ]),
     );
-    expect(flagged).toHaveLength(7);
+    expect(flagged).toHaveLength(6);
+    expect(ENGINEERING_LIBRARY_LICENSES.some((library) => library.name === "mixbox")).toBe(false);
+    expect(ENGINEERING_LIBRARY_LICENSES.some((library) => library.name === "wasm-vips")).toBe(false);
   });
 });
 
 describe("AI 모델 자산 라이선스 데이터", () => {
   it("고지가 있는 모델 여섯 개의 크기·역할과 권리 상태를 담는다", () => {
     expect(ENGINEERING_MODEL_ASSET_LICENSES).toHaveLength(6);
+    const expectedLicenses = new Map([
+      ["u2netp.onnx", "Apache-2.0"],
+      ["tag2pix.onnx", "Non-commercial; redistribution restricted"],
+      ["teed.onnx", "MIT"],
+      ["realesrgan-anime-6b.onnx", "BSD-3-Clause"],
+      ["animegan2-paprika.onnx", "Unresolved upstream terms"],
+      ["animegan2-face-paint-512-v2.onnx", "MIT (repository checkpoint)"],
+    ]);
     for (const model of ENGINEERING_MODEL_ASSET_LICENSES) {
+      expect(model.license, model.file).toBe(expectedLicenses.get(model.file));
       expect(model.license.length, model.file).toBeGreaterThan(0);
       expect(model.bytes, model.file).toBeGreaterThan(0);
       expect(model.role.ko.length, model.file).toBeGreaterThan(0);
       expect(["declared-permissive", "restricted", "unverified"], model.file).toContain(model.rightsStatus);
     }
+  });
+
+  it("배포 차단 두 모델과 MIT 체크포인트의 출처 검토 한 모델을 구별한다", () => {
+    const blocked = ENGINEERING_MODEL_ASSET_LICENSES.filter((model) => model.rightsStatus !== "declared-permissive");
+    expect(blocked.map((model) => model.file)).toEqual(["tag2pix.onnx", "animegan2-paprika.onnx"]);
+    const checkpointReview = ENGINEERING_MODEL_ASSET_LICENSES.filter((model) => model.license === "MIT (repository checkpoint)");
+    expect(checkpointReview.map((model) => model.file)).toEqual(["animegan2-face-paint-512-v2.onnx"]);
+    expect(checkpointReview[0]?.note?.ko).toContain("추가 검토");
   });
 
   it("코드 MIT와 별개인 Tag2Pix 가중치의 비상업·재배포 제한을 드러낸다", () => {
@@ -73,6 +91,7 @@ describe("AI 모델 자산 라이선스 데이터", () => {
   });
 
   it("Paprika 원본 조건 충돌과 Face Paint의 MIT 체크포인트·학습 출처 검토를 구별한다", () => {
+    expect(ENGINEERING_MODEL_ASSET_LICENSES.filter((model) => model.file.startsWith("animegan2-"))).toHaveLength(2);
     const paprika = ENGINEERING_MODEL_ASSET_LICENSES.find((model) => model.file === "animegan2-paprika.onnx");
     const face = ENGINEERING_MODEL_ASSET_LICENSES.find((model) => model.file === "animegan2-face-paint-512-v2.onnx");
     expect(paprika?.rightsStatus).toBe("unverified");

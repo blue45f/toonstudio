@@ -1,5 +1,7 @@
 import * as Y from "yjs";
 
+import { hasValidStudioLegacyPigmentArchiveStroke, STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION } from "../studio-legacy-pigment-archive";
+
 import type { StudioCrdtProjectionStrokePayload } from "./element-projection";
 import type { StudioCrdtAuthoringGroupRecord, StudioCrdtAuthoringPageRecord, StudioCrdtAuthoringSceneRecord } from "./page-reconcile";
 
@@ -70,19 +72,23 @@ function activeOrder(entries: readonly unknown[], idKey: string): ReadonlyMap<st
 }
 function readStroke(record: Y.Map<unknown>): StudioCrdtDecodedStroke["payload"] {
   const version = record.get("payloadVersion"), strokeWidth = record.get("strokeWidth"), mode = record.get("mode");
-  if (![1, 2, 3, 4, 5, 6].includes(Number(version)) || record.get("type") !== "draw" ||
-    (mode !== "pen" && mode !== "eraser") || typeof strokeWidth !== "number" || !Number.isFinite(strokeWidth)) fail("지원하지 않는 획 페이로드입니다.");
+  const extensions = record.get("extensions");
+  const archive = version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && extensions !== null && typeof extensions === "object" && Object.hasOwn(extensions, "legacyPigmentArchive");
+  if (![1, 2, 3, 4, 5, 6, 7].includes(Number(version)) || record.get("type") !== "draw" ||
+    (!(archive && mode === undefined) && mode !== "pen" && mode !== "eraser") || typeof strokeWidth !== "number" || !Number.isFinite(strokeWidth)) fail("지원하지 않는 획 페이로드입니다.");
   const points = record.get("points");
   if (!(points instanceof Y.Array)) fail("획 좌표 채널이 없습니다.");
   const values = points.toArray();
   if (values.length % 2 || values.length > 200_000 || values.some((value) => typeof value !== "number" || !Number.isFinite(value))) fail("획 좌표 채널이 올바르지 않습니다.");
   const payload: StudioCrdtDecodedStroke["payload"] = {
-    version, type: "draw", kind: boundedText(record, "kind", 80), mode,
+    version, type: "draw",
+    ...(archive && !record.has("kind") ? {} : { kind: boundedText(record, "kind", 80) }),
+    ...(mode === undefined ? {} : { mode }),
     stroke: boundedText(record, "stroke", 256), strokeWidth, points: values as number[],
   };
   for (const [index, key] of SAMPLE_KEYS.entries()) {
     const value = record.get(key);
-    if (value === undefined && index >= 7) continue;
+    if (value === undefined && (index >= 7 || (archive && index > 0))) continue;
     if (!(value instanceof Y.Array)) fail("획 포인터 채널이 없습니다.");
     const channel = value.toArray();
     if ((index === 0 ? channel.length !== values.length : channel.length !== values.length / 2) || channel.some((item) => typeof item !== "number" || !Number.isFinite(item))) fail("획 포인터 채널이 좌표와 정렬되지 않았습니다.");
@@ -94,6 +100,7 @@ function readStroke(record: Y.Map<unknown>): StudioCrdtDecodedStroke["payload"] 
   }
   for (const key of STRING_KEYS) { const value = record.get(key); if (value !== undefined) { if (typeof value !== "string") fail("획 문자열이 올바르지 않습니다."); payload[key] = value; } }
   for (const key of JSON_KEYS) { const value = record.get(key); if (value !== undefined) payload[key] = authoringRecord(readStudioCrdtRawValue(value)); }
+  if (!hasValidStudioLegacyPigmentArchiveStroke(payload)) fail("외부 혼색 원본 출처가 올바르지 않습니다.");
   return payload;
 }
 

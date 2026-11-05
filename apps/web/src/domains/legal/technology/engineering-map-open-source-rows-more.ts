@@ -328,8 +328,8 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "검토한 카탈로그 25종 중 G'MIC·GEGL·Blender·Inkscape·FFmpeg 같은 19종은 서비스에 넣지 않고 사용자가 자기 PC에 설치한 것을 로컬 브리지로만 호출하고, 5종은 서비스 커넥터, 1종(Mixbox)은 선택 모듈이다.",
-        "Of 25 catalogued tools, 19 such as G'MIC, GEGL, Blender, Inkscape and FFmpeg are never shipped in the service; only the copies users installed on their own PC are called through a local bridge. Five are service connectors and one (Mixbox) is an optional module.",
+        "검토한 카탈로그 25종 중 G'MIC·GEGL·Blender·Inkscape·FFmpeg 같은 19종은 서비스에 넣지 않고 사용자가 자기 PC에 설치한 것을 로컬 브리지로만 호출하고, 5종은 서비스 커넥터이며 Mixbox 1종은 2026-11-05 외부 의존성 제거 기록으로 남긴다.",
+        "Of 25 catalogued tools, 19 such as G'MIC, GEGL, Blender, Inkscape and FFmpeg are never shipped in the service; only the copies users installed on their own PC are called through a local bridge. Five are service connectors; the remaining Mixbox entry records the removal of that external dependency on 2026-11-05.",
       ),
       license: t("혼합(GPL·AGPL·LGPL 등)", "Mixed (GPL, AGPL, LGPL, ...)"),
       mode: t("별도 프로세스 · 로컬 브리지", "Separate process · local bridge"),

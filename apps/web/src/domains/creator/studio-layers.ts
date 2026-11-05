@@ -8,6 +8,7 @@
  * 배열 연산은 전부 불변 — 입력을 변형하지 않고 새 배열을 반환하며, groupId가 바뀐 요소만
  * 새 객체({ ...item, groupId })로 만든다(바뀌지 않은 요소는 동일 참조 유지).
  */
+import { isStudioLegacyPigmentArchivedElement } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 
 // 레이어 그룹(폴더) — 패널에서 하나의 접이식 블록.
 export type LayerGroup = { id: string; name: string; collapsed?: boolean; hidden?: boolean; locked?: boolean };
@@ -56,9 +57,9 @@ export function isEffectivelyHidden(item: LayerItemLike, groups: LayerGroup[]): 
   return group?.hidden === true;
 }
 
-/** 유효 잠금 — 요소 자체가 locked 이거나 소속 그룹이 locked. */
+/** 그룹·요소 잠금과 보관 원본의 UI 편집 보호다. 서버 권한·무결성 검증을 대체하지 않는다. */
 export function isEffectivelyLocked(item: LayerItemLike, groups: LayerGroup[]): boolean {
-  if (item.locked) return true;
+  if (item.locked || isStudioLegacyPigmentArchivedElement(item)) return true;
   const group = groupOfItem(item, groups);
   return group?.locked === true;
 }

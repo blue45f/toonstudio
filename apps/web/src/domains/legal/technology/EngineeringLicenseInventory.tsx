@@ -35,8 +35,8 @@ const FLAG_NOTES: Record<EngineeringLicenseFlag, LocalizedText> = {
     en: "Copyleft applies at file or library scope. Modifying and redistributing that component can trigger source-disclosure duties for that part, so modification and combination are rechecked before release.",
   },
   "noncommercial": {
-    ko: "상업 이용이 허용되지 않는 조건입니다. 저장소는 이 구성 요소를 라이선스 프로필(기본값 permissive-only — Mixbox는 noncommercial-full 명시 opt-in에서만 허용)로 게이트하고, 상업 배포 전에는 제거·비활성화하거나 별도 상업 라이선스가 필요하다고 third_party/mixbox/README.md에 적어 둡니다. 이 페이지는 저장소의 처리 방식만 적으며 법률 판단이 아닙니다.",
-    en: "Commercial use is not permitted under these terms. The repository gates this component through the license profile (default permissive-only — Mixbox is allowed only under an explicit noncommercial-full opt-in) and records in third_party/mixbox/README.md that a commercial deployment must remove or disable it or obtain a separate commercial license. This page only records how the repository handles it and is not a legal judgment.",
+    ko: "상업 이용을 허용하지 않는 조건입니다. 외부 Mixbox 패키지는 2026-11-05 변경에서 제거했습니다. 실행 차단과 배포 산출물의 포함 검사는 별개이며, 이 페이지의 분류는 법률 판단이 아닙니다.",
+    en: "Commercial use is not permitted under these terms. The external Mixbox package is removed in the 2026-11-05 change. Runtime blocking and checking distribution artifacts are separate tasks; this page records classifications, not a legal judgment.",
   },
   "custom-license": {
     ko: "Remotion 4.0.536의 자체 라이선스는 개인 또는 직원 3명 이하 영리 조직의 무료 상업 사용을 허용합니다. 운영자가 설명한 개인·1인 운영 전제에 따라 유지합니다. 일반 FAQ는 조직 전체 3명 이하를 기준으로 안내하므로 개발자 한 명의 인원수로 대신하지 않으며, 실제 조직 인원은 독립 검증하지 않았습니다. 비상업 조건인 Tag2Pix 가중치와는 다른 항목입니다.",

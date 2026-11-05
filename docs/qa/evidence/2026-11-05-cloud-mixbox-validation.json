@@ -1,0 +1,112 @@
+{
+  "status": "migration; draft; native followups pending",
+  "recorded_at": "2026-11-05T21:03:44.127612+09:00",
+  "base_main": "63dcf937ca8658fbae52396595416daa1a796043",
+  "preserved_remote_source": "7d1ef53c01d2eb76777b72d14534434ff91491c0",
+  "validated_local_code_head": "9680b345c1681618f041fcb6328074d1b6569602",
+  "validated_source_tree": "c1de3a84ff2e956823bc6ee847b9a338aeb43fea",
+  "typecheck": {
+    "web": 0,
+    "api": 0
+  },
+  "related_tests": {
+    "files": 55,
+    "passed": 1151,
+    "failed": 0,
+    "exit_code": 0
+  },
+  "production_bundle": {
+    "command": "pnpm run build:bundle",
+    "exit_code": 0,
+    "separate_web_api_typecheck_exit_code": 0,
+    "bundle_gate_exit_code": 0,
+    "remotion_gate_exit_code": 0,
+    "critical_precache_urls": 82,
+    "critical_precache_bytes": 2585652,
+    "unchanged_max_bytes": 2588672
+  },
+  "pigment_distribution": {
+    "app_chunks": 2664,
+    "app_modules": 12857,
+    "worker_audit_count": 65,
+    "forbidden_modules": 0,
+    "app_audit_sha256": "279682081db90cbd78e89f3219c259e6c3eb5192a2f4f1d83928da24198443e3"
+  },
+  "pigment_browser": {
+    "exit_code": 0,
+    "brushes": 23,
+    "source_module_count": 188,
+    "source_drift_after_type_fixes": false,
+    "console_errors": [],
+    "webgpu": {
+      "available": true,
+      "count": 32,
+      "max_error": 3.305472267012277e-07,
+      "software_renderer": true,
+      "physical_gpu_verified": false
+    },
+    "live_input": "synthetic PointerEvent; not physical pen",
+    "pass": true
+  },
+  "audits": {
+    "security_exit_code": 0,
+    "licenses_exit_code": 0,
+    "i18n_builtins_check_exit_code": 0,
+    "eager_graph_exit_code": 0
+  },
+  "concrete_fix_files": [
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-legacy-pigment-stroke-migration.test.ts",
+      "sha256": "3a18df7cb59136f1a948213b23d9b4d37748e0473c0bef8de4d8ce7f167af94d"
+    },
+    {
+      "path": "apps/web/src/domains/creator/live/studio-crdt-archive-bridge.test.ts",
+      "sha256": "54beb23d1f91f793802d058b9f5a2aaf8148ee38a30614ca8e0e0d3ed1cd2c5a"
+    },
+    {
+      "path": "apps/web/src/domains/creator/live/studio-crdt-document-payload.ts",
+      "sha256": "e0a31a78a17633c33265723d92df7804a257d02654c6cfdecd0ef34defedf0e4"
+    },
+    {
+      "path": "apps/web/src/domains/creator/live/studio-crdt-page-bridge-error.ts",
+      "sha256": "1982846c40da5667ef724903156498096648e85f549b39b510462d9e1cb5965a"
+    },
+    {
+      "path": "apps/web/src/domains/creator/live/studio-crdt-page-bridge.ts",
+      "sha256": "46a7ec09415bc8168d7cc809c925b623055dece0fd556338f7b6b2ad1ff26959"
+    },
+    {
+      "path": "apps/web/src/domains/creator/scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-hydration.test.ts",
+      "sha256": "8772f627772ccb72c2c396aa10ea005ee29bf396a65a8a384f387ce957adde4e"
+    },
+    {
+      "path": "apps/web/src/domains/creator/scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-hydration.ts",
+      "sha256": "046e069038e8851eedc7b3e20e00ba594b0f1b15770223a693fcfe1cd411f3e1"
+    },
+    {
+      "path": "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-crdt.ts",
+      "sha256": "fc3996f6a22855fea917de42fa9308feeb94f390466ae7b248f9476b6da089d4"
+    },
+    {
+      "path": "apps/web/tools/browser-harnesses/brush-pigment-benchmark.ts",
+      "sha256": "ecd15b19eacd4ce64d9973ab9825cd803f3f7e08bb85a985c77da162931b8dc5"
+    }
+  ],
+  "pending_native_sources": [
+    "b24df26646ef4ada96aea286a156aa97df11edb5",
+    "994171298d3cd8462c4c740798472eb2c4054ade",
+    "2bd75726f83aaa1647373863167056f45a627c3a"
+  ],
+  "native_source_received": false,
+  "source_preservation_probe": {
+    "sketch_tests_failed": 3,
+    "failure_stage": "server root schema rejects sketch before element projection",
+    "product_fix_in_this_candidate": false,
+    "original_failure_evidence_preserved": true
+  },
+  "required_test_selector_registration": "archive-bridge test registration pending native followup count reconciliation",
+  "full_app_ui_matrix": "not verified",
+  "remote_ci": "not yet run",
+  "deployment_performed": false,
+  "main_merge_performed": false
+}

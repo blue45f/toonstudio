@@ -96,8 +96,8 @@ export function projectCrdtStrokePayload(
     // 코어 모델은 v1 부분집합이다. 버전 차이는 양쪽 투영에 동일 적용되므로 대조에 영향이 없다.
     version: 1,
     type: "draw",
-    kind: payload.kind,
-    mode: payload.mode,
+    kind: payload.kind ?? "freehand",
+    mode: payload.mode ?? "pen",
     stroke: payload.stroke,
     strokeWidth: payload.strokeWidth,
     points: [...payload.points],

@@ -1,0 +1,27 @@
+{
+  "cwd": "/workspace/scratch/toonstudio-commercial-main-validation",
+  "argv": [
+    "node",
+    "--test",
+    "--test-concurrency=1",
+    "scripts/ci-core-gate.test.mjs",
+    "scripts/agent-harness.test.mjs",
+    "scripts/deployment-preflight.test.mjs",
+    "scripts/ci-core-regression-shards.test.mjs",
+    "scripts/ci-executed-gates.test.mjs",
+    "scripts/lint-changed-policy.test.mjs",
+    "scripts/run-core-vitest.test.mjs",
+    "scripts/studio-bundle-temporary-allowance.test.mjs",
+    "scripts/ci-merge-reliability.test.mjs",
+    "scripts/ci-throughput-policy.test.mjs",
+    "scripts/type-coverage-gate-contract.test.mjs",
+    "scripts/code-structure-gates-contract.test.mjs",
+    "scripts/check-source-file-size.test.mjs"
+  ],
+  "envOverrides": {
+    "npm_config_manage_package_manager_versions": "false",
+    "PNPM_HOME": "/tmp/toonstudio-pnpm",
+    "XDG_DATA_HOME": "/tmp/toonstudio-xdg"
+  },
+  "started": "2026-11-05T13:12:29.855320+00:00"
+}

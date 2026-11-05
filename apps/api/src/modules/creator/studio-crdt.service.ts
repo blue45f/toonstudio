@@ -5,6 +5,7 @@ import { StudioBg3dReaderUpgradeRequiredError, isStudioBg3dReaderUpgradeRequired
 import { StudioCrdtInvalidPayloadError, StudioCrdtUpdateIdConflictError, StudioCrdtDocumentTooLargeError, StudioCrdtBackpressureError, StudioCrdtStorageCorruptionError } from "./studio-crdt-service-contracts";
 import type { StudioCrdtServiceOptions, StudioCrdtSyncResult, StudioCrdtBinarySyncResult, StudioCrdtApplyUpdateInput, StudioCrdtApplyBinaryUpdateInput, StudioCrdtApplyUpdateResult, StudioCrdtApplyBinaryUpdateResult } from "./studio-crdt-service-contracts";
 import { randomUUID } from "node:crypto";
+import { assertStudioLegacyPigmentArchiveCrdtAdmission } from "./studio-legacy-pigment-archive-crdt-admission";
 
 import { Inject, Injectable, Logger, OnModuleDestroy, Optional } from "@nestjs/common";
 import { fromUint8Array, toUint8Array } from "js-base64";
@@ -801,7 +802,7 @@ export class StudioCrdtService implements OnModuleDestroy {
     workId: string, doc: Y.Doc,
     update: Uint8Array,
     actorUserId: string,
-    transaction?: DrizzleStudioCrdtTransaction, validateAuthority?: StudioScopedCrdtProbeAdmission, readerCapabilities: readonly string[] = []
+    transaction?: DrizzleStudioCrdtTransaction, validateAuthority?: StudioScopedCrdtProbeAdmission, readerCapabilities: readonly string[] = [], baseline?: unknown
   ): Promise<StudioScopedWriteEffectAdmission | undefined> {
     const probe = new Y.Doc();
     const candidate = new Y.Doc();
@@ -822,6 +823,7 @@ export class StudioCrdtService implements OnModuleDestroy {
       if (!hasValidStudioCrdtRootSchema(probe)) {
         throw new StudioCrdtInvalidPayloadError("update violates the Studio CRDT root schema");
       }
+      await assertStudioLegacyPigmentArchiveCrdtAdmission({ workId, baseline, before: doc, after: probe, transaction });
       if (!preservesStudioCrdtDeletionRoots(deletionRootsBefore, probe)) {
         throw new StudioCrdtInvalidPayloadError(
           "update rewrites grow-only Studio deletion history"
@@ -987,7 +989,8 @@ export class StudioCrdtService implements OnModuleDestroy {
     try {
       if (requiresScopedAuthority && !authorization) throw new StudioScopedWriteDeniedError("policy");
       return await this.validateUpdateAgainstDocument(workId, durable.doc, update, actorUserId, transaction,
-        studioScopedRequiresEffectAdmission(authorization) ? (before, probe) => admitStudioScopedCrdtProbe(authorization, before, probe, transaction, update) : undefined, readerCapabilities);
+        studioScopedRequiresEffectAdmission(authorization) ? (before, probe) => admitStudioScopedCrdtProbe(authorization, before, probe, transaction, update) : undefined,
+        readerCapabilities, authorization?.work.document);
     } finally { durable.doc.destroy(); }
   }
 

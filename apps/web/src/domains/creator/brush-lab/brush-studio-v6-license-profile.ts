@@ -23,16 +23,8 @@ export type BrushStudioV6MaterialExecution =
   | "native"
   | "compatibility-adapter";
 
-// [라이선스 P0 확정 2026-10-14] 기본 프로필은 "permissive-only"로 고정한다.
-// 기존 기본값 "noncommercial-full"은 CC-BY-NC-4.0인 Mixbox(mixbox-js-v2)를
-// 별도 지정 없이 허용해, 프로필을 명시하지 않은 상용 빌드에 비상업 전용
-// 제공자가 그대로 들어갈 수 있었다. 소비처 실측(2026-10-14): 기본값은
-// provider-runtime·product-bridge·engine 정규화의 폴백으로만 쓰이며
-// 환경변수·빌드 시점 오버라이드는 없다. 즉 프로필을 지정하지 않은 모든
-// 프로그램은 이 기본값으로 판정된다. 무료·비상업 배포판이 필요하면 저장
-// 프로그램에 "noncommercial-full"을 명시적으로 opt-in 해야 한다.
-// 근거: 라이선스 감사 REPORT.md 문제 1, 검증 테스트
-// brush-studio-v6-license-profile.commercial-block.test.ts.
+// 기본 권리 검사는 유지한다. Mixbox 패키지 제거 뒤에도 다른 제한 제공자를
+// 프로필 지정 없이 실행하지 않으며, 이전 Mixbox 안료 노드는 자체 제공자에 명시적으로 연결한다.
 export const BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE =
   "permissive-only" as const satisfies BrushStudioV6LicenseProfile;
 
@@ -100,19 +92,14 @@ export const BRUSH_STUDIO_V6_PROVIDER_MANIFEST = Object.freeze([
     integration: "connected", productPath: "material-contact", materialExecution: "native",
     roles: ["pigment", "palette"], nodeIds: ["pigment-colormix-lab"],
   }),
-  provider({
-    id: "mixbox-js-v2", label: "Mixbox", version: "2.0.0",
-    license: "CC-BY-NC-4.0", rights: "noncommercial", runtime: "javascript",
-    integration: "connected", productPath: "material-contact", materialExecution: "native",
-    roles: ["pigment", "palette", "pickup"], nodeIds: ["pigment-mixbox"],
-  }),
   // 같은 안료 슬롯의 자체 구현. 코드·계수·격자표를 쓰지 않고 저장소의 KM 파이프라인에서 직접 적합했다.
   // 서면 합의 식별자·특허 확인이 끝나기 전까지 권리 상태는 문서(docs/features/latent-pigment-mixing.md)를 따른다.
   provider({
     id: "toonstudio-latent-pigment-v1", label: "ToonStudio Latent Pigment", version: "1",
     license: "Project license", rights: "internal", runtime: "javascript",
     integration: "connected", productPath: "material-contact", materialExecution: "native",
-    roles: ["pigment", "palette"], nodeIds: ["pigment-latent"],
+    // 이전 저장 노드 식별자는 보존하되 실행 영수증에는 자체 엔진의 정체성을 기록한다.
+    roles: ["pigment", "palette"], nodeIds: ["pigment-latent", "pigment-mixbox"],
   }),
   provider({
     id: "spectral-wgm-v1", label: "Spectral WGM", version: "1",

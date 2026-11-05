@@ -1,0 +1,31 @@
+{
+  "kind": "feature-latest-main-integration",
+  "featureParent": "abd691ee218a49a92b6ef170c152fa7415d23cf0",
+  "incomingMain": "5165e4faf796cebe255460ab38d1c13fde8972c4",
+  "mainBranchMerged": false,
+  "sourceConflictFiles": [
+    "engineering-atlas-open-data-oss.ts",
+    "engineering-license-inventory.test.ts",
+    "engineering-map-open-source.ts",
+    "engineering-seminar-prep-content.ts"
+  ],
+  "additionalCountFixes": [
+    "engineering-license-inventory.ts header115",
+    "EngineeringLicensesPage.test.tsx totals115"
+  ],
+  "latestMainMixboxInternalizationPreserved": true,
+  "mixboxImplementationEditedByThisTask": false,
+  "librarySnapshot115": true,
+  "nodeInstallFrozenExit": 0,
+  "sourceInputsFrozen": true,
+  "freshFullWebFiles": 26272,
+  "freshWebDiagnostics": 0,
+  "freshFingerprint": "471df5034f6389575901d72bf7761c56cda825c947ccc354b0839e61ba2395bb",
+  "apiProjectsPassed": 3,
+  "focusedVitestPassed": 357,
+  "focusedNodePassed": 13,
+  "ciContractPassed": 157,
+  "canonicalHarnessExit": 0,
+  "newHeadBuild": "pending integration commit then normal build",
+  "modelRelease": "2blocking/1review remains"
+}

@@ -29,7 +29,7 @@ export const LIBRARY_GUIDE_OVERVIEW: LibraryGuideOverview = {
         label: t("1 · 브러시 엔진", "1 · Brush engines"),
         sub: t("펜 한 획이 선·물감·자연매체가 되는 계산", "The math that turns a pen stroke into lines, paint and natural media"),
         tone: "local",
-        chips: ["Hokusai", "perfect-freehand", "CanvasKit", "Vello", "p5.brush", "Mixbox"],
+        chips: ["Hokusai", "perfect-freehand", "CanvasKit", "Vello", "p5.brush", "ToonStudio Latent Pigment"],
       },
       {
         id: "three-d",

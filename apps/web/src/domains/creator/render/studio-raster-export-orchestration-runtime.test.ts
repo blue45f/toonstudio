@@ -136,6 +136,49 @@ function orchestrationInput(
 }
 
 describe("raster export renderer migration", () => {
+  it("대형 출력의 다음 타일 전에 마스터가 바뀌면 이전 Stage를 다시 읽지 않는다", async () => {
+    const module = await import("../export/studio-export-presets"); const h = stageHarness();
+    const input = orchestrationInput(h.stage, vi.fn(async () => { throw new Error("전체 캡처 금지"); }));
+    const page = { ...input.activePage, canvasH: 20_000 }; let generation = 2;
+    const runtime = createStudioRasterExportOrchestration({ ...input, activePage: page, pages: [page], getDocumentGeneration: () => generation });
+    vi.mocked(h.stage.toCanvas).mockImplementation(() => ({ width: 8, height: 8,
+      getContext: () => ({ getImageData: () => ({ data: new Uint8ClampedArray(256) }) }),
+    }) as unknown as HTMLCanvasElement);
+    const exporter = vi.spyOn(module, "exportPresetSlices").mockImplementation(async (options) => {
+      const source = options.pages[0]; if (!source || !("kind" in source)) throw new Error("타일 원본 없음");
+      await source.readRegion({ x: 0, y: 0, width: 8, height: 8 }); generation += 1;
+      await source.readRegion({ x: 0, y: 8, width: 8, height: 8 });
+      throw new Error("바뀐 원고를 출력하면 안 됩니다.");
+    });
+    try {
+      const preset = module.findExportPreset("original"); if (!preset) throw new Error("프리셋 없음");
+      await expect(runtime.handleExportPresetSlices(null, { preset, format: "png", title: "원고" })).rejects.toThrow("마스터 또는 원고가 바뀌어");
+      expect(h.stage.toCanvas).toHaveBeenCalledTimes(1);
+    } finally { exporter.mockRestore(); }
+  });
+
+  it("캡처 준비를 기다리는 동안 최신 마스터가 바뀌면 닫힌 원소나 placeholder를 출력하지 않는다", async () => {
+    const h = stageHarness(); const capture = vi.fn(async () => ({ status: "unsupported" as const, reason: "gradient-page-background" }));
+    const input = orchestrationInput(h.stage, capture);
+    let master: readonly import("../studio-element-model").El[] = [];
+    const runtime = createStudioRasterExportOrchestration({ ...input, getMasterElements: () => master,
+      captureReadyStageForPage: async () => { master = []; return h.stage; } });
+    await expect(runtime.handleCapturePagesForPreset("current")).rejects.toThrow("마스터 또는 원고가 바뀌어");
+    expect(capture).not.toHaveBeenCalled(); expect(h.stage.toCanvas).not.toHaveBeenCalled();
+  });
+
+  it.each(["master", "generation"] as const)("Skia 준비 중 %s 변경은 호환 캡처 fallback으로 숨기지 않는다", async (changed) => {
+    const h = stageHarness(); let master: readonly import("../studio-element-model").El[] = []; let generation = 2;
+    const capture = vi.fn(async () => {
+      if (changed === "master") master = []; else generation += 1;
+      throw new Error("GPU 표면을 만들 수 없습니다.");
+    });
+    const runtime = createStudioRasterExportOrchestration({ ...orchestrationInput(h.stage, capture),
+      getMasterElements: () => master, getDocumentGeneration: () => generation });
+    await expect(runtime.handleCapturePagesForPreset("current")).rejects.toThrow("마스터 또는 원고가 바뀌어");
+    expect(h.stage.toCanvas).not.toHaveBeenCalled();
+  });
+
   it("대형 규격 출력은 전체 페이지 캔버스를 만들지 않고 같은 문서 renderer의 영역만 읽는다", async () => {
     const module = await import("../export/studio-export-presets");
     const h = stageHarness();

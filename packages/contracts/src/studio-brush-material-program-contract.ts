@@ -1,3 +1,4 @@
+import { STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION } from "./studio-legacy-pigment-archive";
 /** Pure material schema shared by browser replay and authoritative collaboration admission. */
 export const STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION = 6 as const;
 
@@ -159,14 +160,14 @@ export function isStudioBrushEngineProgramWireValue(value: unknown): boolean {
   return true;
 }
 
-/** v6 fails closed on old peers; older payloads must never smuggle renderer overrides. */
+/** 실행 프로그램은 v6 또는 출처·편집 필드를 보존하는 v7에서만 허용한다. */
 export function hasValidStudioBrushEngineProgramExtension(
   version: unknown,
   programs: unknown,
 ): boolean {
   return programs === undefined
     ? version !== STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION
-    : version === STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION
+    : (version === STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION || version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION)
       && isStudioBrushEngineProgramWireValue(programs);
 }
 

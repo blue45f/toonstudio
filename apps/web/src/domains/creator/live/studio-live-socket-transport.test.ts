@@ -1,3 +1,4 @@
+import { STUDIO_CRDT_READER_CAPABILITIES } from "./studio-crdt-reader-capability";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { STUDIO_ACOUSTIC_CONVERSATION_EVENT } from "@toonstudio/studio-project-model/world-conversation";
 import { STUDIO_LIVE_UNSUPPORTED_JAM_MESSAGE } from "./studio-live-admission-support";
@@ -747,7 +748,7 @@ describe("StudioLiveSocketTransport", () => {
     expect(socket.auth).toEqual({ sessionToken: TOKEN });
     expect(socket.emitted[0]).toEqual({
       event: "studio:join",
-      payload: { workId: "work-1", clientInstanceId: localParticipant.sessionId, readerCapabilities: ["bg3d-sixpass-bundle.v1"] },
+      payload: { workId: "work-1", clientInstanceId: localParticipant.sessionId, readerCapabilities: STUDIO_CRDT_READER_CAPABILITIES },
     });
     expect(JSON.stringify(socket.emitted)).not.toContain(TOKEN);
 
@@ -4445,7 +4446,7 @@ describe("StudioLiveSocketTransport", () => {
         event: "studio:join",
         payload: {
           workId: "work-1",
-          clientInstanceId: localParticipant.sessionId, readerCapabilities: ["bg3d-sixpass-bundle.v1"],
+          clientInstanceId: localParticipant.sessionId, readerCapabilities: STUDIO_CRDT_READER_CAPABILITIES,
         },
       },
       {

@@ -1,6 +1,7 @@
 // 작품 리비전 이력 — 목록/조회/비교/복원(낙관적 동시성 포함).
 import { and, desc, eq, lte, sql } from "drizzle-orm";
 import { assertStudioBg3dRestDocumentInTransaction } from "./studio-bg3d-bundle-rest-gate";
+import { assertStudioLegacyPigmentArchiveRestDocumentInTransaction } from "./studio-legacy-pigment-archive-rest-gate";
 
 import { withDatabaseCapability } from "../../platform/http/service-availability";
 import { creatorWorkRevisions, creatorWorks, db } from "../../platform/database";
@@ -183,6 +184,7 @@ export async function restoreWorkRevision(
       target.snapshot as CreatorWorkRevisionSnapshotSource
     );
     await admitStudioRolePipelineFullDocument(tx, userId, workId, snapshot.doc);
+    await assertStudioLegacyPigmentArchiveRestDocumentInTransaction(tx, workId, snapshot.doc, current.document, readerCapabilities, true);
     await assertStudioBg3dRestDocumentInTransaction(tx, workId, snapshot.doc, readerCapabilities, current.document);
     await assertCreatorWorkLinked3dPassAssetsInTransaction(tx, workId, {
       cover: snapshot.cover,

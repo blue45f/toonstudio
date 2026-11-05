@@ -39,6 +39,7 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
 }
 
 const BRUSH_CANVAS_STATUS_KEYS = [
+  "studio.brushCanvasStatus.canvas.legacyPigmentConfirm",
   "studio.brushCanvasStatus.brushLab.catalogueEmpty",
   "studio.brushCanvasStatus.brushLab.changedDuringLoad",
   "studio.brushCanvasStatus.brushLab.connecting",
@@ -152,6 +153,7 @@ const BRUSH_CANVAS_STATUS_KEYS = [
 ] as const;
 
 const CONSUMERS = [
+  "brush/StudioLegacyPigmentStrokePlaceholder.tsx",
   "brush-lab/StudioBrushIntegratedWorkbench.tsx",
   "brush-lab/StudioBrushProductCataloguePanel.tsx",
   "brush-lab/StudioBrushV5Composer.tsx",

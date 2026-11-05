@@ -76,13 +76,18 @@ describe("candidate discovery lifecycle", () => {
     vi.spyOn(Date, "now").mockImplementation(() => localNow);
     const result = { ...page("작가A"), observedAt: new Date(serverNow).toISOString(),
       items: [{ ...candidate("작가A"), expiresAt: new Date(serverNow + 60_000).toISOString() }] };
-    discover.mockResolvedValue(result); render(<HiringDiscovery slot={slot} />); search(); await screen.findByText("작가A");
+    const response = pending<HiringCandidatePage>();
+    discover.mockReturnValue(response.promise); render(<HiringDiscovery slot={slot} />); search();
+    // 응답으로 바뀐 page의 focus 구독까지 정착시킨 뒤 정확한 만료 경계를 검사한다.
+    await act(async () => response.resolve(result));
+    expect(screen.getByText("작가A")).toBeTruthy();
     const button = screen.getByRole<HTMLButtonElement>("button", { name: "이 조건으로 30분 유효 제안 보내기" });
+    expect(button.disabled).toBe(false);
     localNow += 59_999;
-    act(() => window.dispatchEvent(new Event("focus")));
+    await act(async () => { window.dispatchEvent(new Event("focus")); });
     expect(button.disabled).toBe(false);
     localNow += 1;
-    act(() => window.dispatchEvent(new Event("focus")));
+    await act(async () => { window.dispatchEvent(new Event("focus")); });
     expect(button.disabled).toBe(true); fireEvent.click(button); expect(send).not.toHaveBeenCalled();
   });
   it("포커스 갱신 전에 만료된 후보도 보내기 경로에서 차단한다", async () => {

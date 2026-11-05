@@ -145,5 +145,8 @@ export function parseBrushStudioV6Import(serialized: string): BrushStudioV6Progr
     || !("tuning" in source) || !source.tuning || typeof source.tuning !== "object") {
     throw new Error("지원하는 브러시 파일이 아닙니다. 현재 브러시 설정은 유지됩니다.");
   }
+  if ("pigment" in source.slots && source.slots.pigment === "pigment-mixbox") {
+    throw new Error("이전 Mixbox 설정은 색 결과가 달라질 수 있어 자체 안료로 명시적으로 가져와야 합니다.");
+  }
   return normalizeBrushStudioV6Program(source);
 }

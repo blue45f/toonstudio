@@ -38,20 +38,19 @@ describe("Brush Studio V6 quality authority", () => {
     }
   });
 
-  it("keeps every authored Mixbox recipe executable on the material-contact path", () => {
+  it("기존 Mixbox 레시피의 실행 구조를 보존하고 자체 안료 제공자로 기록한다", () => {
     for (const recipe of BRUSH_STUDIO_V6_RECIPES.filter((entry) => entry.id.startsWith("mixbox-"))) {
       const analysis = analyzeBrushStudioV6Program(
         recipe.create(),
         BRUSH_STUDIO_V6_FULL_CAPABILITIES,
-        // Authored Mixbox recipes target the noncommercial-full profile; the
-        // default profile is permissive-only (P0) and blocks them by design.
+        // 다른 copyleft·private-grant 어댑터의 기존 권리 경계는 보존한다.
         "noncommercial-full",
       );
       expect(analysis.providerPlan.valid, `${recipe.id}: ${analysis.providerPlan.blockedNodeIds.join(", ")}`)
         .toBe(true);
       expect(analysis.valid, `${recipe.id}: ${analysis.issues.map((entry) => entry.id).join(", ")}`)
         .toBe(true);
-      expect(analysis.providerPlan.bindings.some((entry) => entry.providerId === "mixbox-js-v2"))
+      expect(analysis.providerPlan.bindings.some((entry) => entry.providerId === "toonstudio-latent-pigment-v1"))
         .toBe(true);
     }
   });
@@ -93,7 +92,7 @@ describe("Brush Studio V6 quality authority", () => {
     expect(analysis.issues.some((entry) => entry.id === "prediction-authority")).toBe(true);
   });
 
-  it("keeps Mixbox active while treating optional comparison evidence as information", () => {
+  it("이전 안료 노드를 자체 혼색으로 실행하고 색 결과 변경을 알린다", () => {
     const mixbox = replaceBrushStudioV6Slot(
       createBrushStudioV6Program(),
       "pigment",
@@ -101,9 +100,9 @@ describe("Brush Studio V6 quality authority", () => {
     );
     const analysis = analyzeBrushStudioV6Program(mixbox, BRUSH_STUDIO_V6_FULL_CAPABILITIES, "noncommercial-full");
     expect(analysis.valid).toBe(true);
-    expect(analysis.rightsProfile).toBe("noncommercial");
+    expect(analysis.rightsProfile).toBe("commercial-safe");
     expect(analysis.issues.some((entry) =>
-      entry.id === "mixbox-quality-evidence" && entry.severity === "info"
+      entry.id === "legacy-pigment-internalized" && entry.severity === "info"
     )).toBe(true);
   });
 
@@ -116,7 +115,8 @@ describe("Brush Studio V6 quality authority", () => {
     );
     expect(permissive.valid).toBe(false);
     expect(permissive.issues.some((entry) => entry.id === "license-pigment-mixbox"))
-      .toBe(true);
+      .toBe(false);
+    expect(permissive.providerPlan.blockedNodeIds).toContain("physics-inkwash");
     // Copyleft exemplar is synthetic: the authored presets that used the
     // copyleft adapters were remapped to internal nodes (license resolution),
     // so no catalog preset is copyleft-only anymore.

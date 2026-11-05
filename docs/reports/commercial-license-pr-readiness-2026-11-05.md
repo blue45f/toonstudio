@@ -1,8 +1,30 @@
 # 상용 라이선스 후속 구현·PR 준비 기록 — 2026-11-05
 
-상태: **current / 구현 보존·권리 재분류·최신 base 로컬 검증 완료, draft PR 게시 준비**.
+상태: **current / draft PR #2724 게시, main5165 통합 전체 타입·관련 검사 완료, 새 커밋 빌드 대기**.
 이 기록은 같은 날짜의 이전 감사·2c626df4 검증 보고서보다 후속 상태다. 기존 모델의
 권리 문제 또는 전체 상용화가 해결됐다는 뜻이 아니다. 이전 통과 기록의 SHA를 바꾸어 적지 않는다.
+
+## 최신 main 5165 통합 상태
+
+[draft PR #2724](https://github.com/blue45f/toonstudio/pull/2724)는 먼저 검증한 abd691ee를 head로 게시했다.
+이후 main5165e4fa의 별도 설정·Mixbox 내부화·동기화 회귀 변경을 feature에 통합한다. main branch를
+병합한 것은 아니다. 4개 법률 문서 충돌과 자동 통합의 2개 수치 표기를 함께 정정했고, 두 제거 뒤
+기존 라이브러리 스냅샷은 115개(웹83)다. Mixbox 구현·테스트를 새로 바꾸지 않고 다른 담당의 제거와
+자체 안료 경계를 보존했다. Remotion은 설명된 개인 무료 자격 전제로 유지한다.
+
+최신 통합본의 관련 Vitest357·Node13·현행 CI 계약157·prebuild·정상 harness:verify는 모두 종료0이다.
+웹26,272/26,272개·진단0·16worker·재시도0·API3개 tsc가 통과했고, strict와 전체 원본 Program 문맥을
+유지한다. 최대 worker RSS는8,651,100,160 bytes다. 처음과 마지막 전체 fingerprint는
+`471df5034f6389575901d72bf7761c56cda825c947ccc354b0839e61ba2395bb`로 같다.
+소스·설정31,143개도 추가·삭제·변경0을 확인했다. [새 통합 영수증](../evidence/commercial-model-rights-2026-11-05/integration-5165e4fa/)을 따른다.
+아래63dcf937/2c626df4 결과는 앞선 단계 기록이다. 새 커밋의 빌드·후속·원격 CI는 완료 후 별도로 기록한다.
+
+GitRPC push는 필수 훅이 모두 통과한 뒤 HTTP500으로 전송이 실패했다. 원격 미반영을 확인하고
+공식 Git Data API로31객체를 정확한 원래SHA로 전송했다. 최초 브랜치 생성의 자동승인 거부는
+원 사용자 병합 요청·관리/push 권한을 확인한 뒤 같은 작업1회 재검토가 승인되어 해소했다.
+원격 branch head와 tree를 다시 확인하고 draft를 만들었다. main 병합·운영 배포는 미실행이다.
+최신53MB복구v2는 로컬에 보존됐으나 대용량 Library helper의 tools/list HTTP401로 업로드하지 못했다.
+기존 비공개 Library v1과 현재 PR branch의 코드·핵심 영수증은 환경 밖에 보존돼 있다.
 
 ## 작업 기준과 소유권
 

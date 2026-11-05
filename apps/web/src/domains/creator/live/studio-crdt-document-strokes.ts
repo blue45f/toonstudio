@@ -1,3 +1,4 @@
+import { STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import * as Y from "yjs";
 
 import { isStudioInkPressureModel } from "../brush/studio-ink-pressure-model";
@@ -193,7 +194,7 @@ export function upsertStroke(host: StudioCrdtDocumentHost,
         const nextValues = normalized[key];
         let target = yArray(existing, key);
         if (
-          (EXTENDED_INK_SAMPLE_ARRAY_KEYS as readonly string[]).includes(key)
+          ((EXTENDED_INK_SAMPLE_ARRAY_KEYS as readonly string[]).includes(key) || input.payload.version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && input.payload.extensions?.legacyPigmentArchive !== undefined)
           && nextValues === undefined
         ) {
           existing.delete(key);
@@ -201,7 +202,7 @@ export function upsertStroke(host: StudioCrdtDocumentHost,
         }
         if (
           !target
-          && (EXTENDED_INK_SAMPLE_ARRAY_KEYS as readonly string[]).includes(key)
+          && ((EXTENDED_INK_SAMPLE_ARRAY_KEYS as readonly string[]).includes(key) || input.payload.version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && input.payload.extensions?.legacyPigmentArchive !== undefined)
         ) {
           existing.set(key, createSampleArray([]));
           target = yArray(existing, key);
@@ -297,7 +298,7 @@ export function patchStroke(host: StudioCrdtDocumentHost, id: string, patch: Stu
           const nextValues = normalized?.[key];
           let target = yArray(record, key);
           if (
-            (EXTENDED_INK_SAMPLE_ARRAY_KEYS as readonly string[]).includes(key)
+            ((EXTENDED_INK_SAMPLE_ARRAY_KEYS as readonly string[]).includes(key) || payload.version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && payload.extensions?.legacyPigmentArchive !== undefined)
             && nextValues === undefined
           ) {
             record.delete(key);
@@ -305,7 +306,7 @@ export function patchStroke(host: StudioCrdtDocumentHost, id: string, patch: Stu
           }
           if (
             !target
-            && (EXTENDED_INK_SAMPLE_ARRAY_KEYS as readonly string[]).includes(key)
+            && ((EXTENDED_INK_SAMPLE_ARRAY_KEYS as readonly string[]).includes(key) || payload.version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && payload.extensions?.legacyPigmentArchive !== undefined)
           ) {
             record.set(key, createSampleArray([]));
             target = yArray(record, key);
@@ -406,6 +407,10 @@ export function assertStrokeInput(host: StudioCrdtDocumentHost, input: StudioCrd
   }
 
 export function withoutSamples(host: StudioCrdtDocumentHost, input: StudioCrdtStrokeInput): StudioCrdtStrokeInput {
+    if (input.payload.version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && input.payload.extensions?.legacyPigmentArchive !== undefined) {
+      return { ...input, payload: { ...input.payload,
+        ...Object.fromEntries(SAMPLE_ARRAY_KEYS.filter((key) => input.payload[key] !== undefined).map((key) => [key, []])) } };
+    }
     return {
       ...input,
       payload: {
