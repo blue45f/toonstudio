@@ -1,0 +1,22 @@
+{
+  "complete": true,
+  "fingerprint": "8114eca5062c95ab9d524e26bf866133b00b291a77937e5629f598ad4bfdf8ce",
+  "limits": {
+    "workerConcurrency": 1,
+    "heapMb": 8192,
+    "maxSourceBytes": 12582912
+  },
+  "typescriptVersion": "6.0.3",
+  "coverage": {
+    "checkedFiles": 26247,
+    "expectedFiles": 26247
+  },
+  "finalSnapshot": {
+    "fingerprint": "8114eca5062c95ab9d524e26bf866133b00b291a77937e5629f598ad4bfdf8ce"
+  },
+  "workers": 16,
+  "diagnostics": 0,
+  "maxWorkerRssBytes": 8642781184,
+  "retryWorkers": 0,
+  "reportSha256": "6afad357c6b2fe4d50ad2b20bbcb477d8004f220a2eb8cf13e18bc4ee2fca291"
+}

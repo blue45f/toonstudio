@@ -1,4 +1,7 @@
 import { eq } from "drizzle-orm";
+import { STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+import { hasStudioPreservedDrawReaderCrdt } from "./studio-bg3d-reader-capability";
+import { ConflictException } from "@nestjs/common";
 import { materializeStudioAuthoringFromCrdt, readStudioCrdtScopedRecords } from "@toonstudio/contracts/studio-crdt-authoring";
 import { creatorWorks } from "../../platform/database";
 import { loadStudioCrdtDocumentInTransaction, type DrizzleStudioCrdtTransaction } from "./studio-crdt.repository";
@@ -19,6 +22,12 @@ export async function assertStudioLegacyPigmentArchiveRestDocumentInTransaction(
     : lockedBaseline;
   const doc = hydrateStudioScopedCrdtDocument(await loadStudioCrdtDocumentInTransaction(transaction, workId));
   try {
+    assertStudioLegacyPigmentArchiveReader(baseline, readerCapabilities);
+    assertStudioLegacyPigmentArchiveReader(candidate, readerCapabilities);
+    if (hasStudioPreservedDrawReaderCrdt(doc) && !readerCapabilities.includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY)) {
+      throw new ConflictException({ code: "studio_legacy_pigment_archive_reader_upgrade_required",
+        message: "획의 원본·편집 정보를 유지하려면 최신 버전에서 원고를 동기화한 뒤 저장해 주세요." });
+    }
     if (!hasStudioLegacyPigmentArchives(baseline) && !hasStudioLegacyPigmentArchives(candidate)
       && !hasStudioCrdtLegacyPigmentArchives(doc)) return;
     const source = baseline ?? { pagesList: [] };

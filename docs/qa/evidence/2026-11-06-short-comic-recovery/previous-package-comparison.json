@@ -1,0 +1,61 @@
+{
+  "previousSource": "4c14fece2cfe3c72e511917b2ddf98fe4cd9576f",
+  "currentSource": "f63dd7cf3c90804c077bd31868ca68de2b54fca8",
+  "comparison": "직전 실검증 기술 패키지의 동일 여섯 컷 비교",
+  "results": [
+    {
+      "file": "우산을-돌려주는-날-episode-000-001.png",
+      "width": 1440,
+      "height": 1440,
+      "changedPixels": 0,
+      "maxChannelDelta": 0,
+      "encodedPngBytesAlsoEqual": true
+    },
+    {
+      "file": "우산을-돌려주는-날-episode-000-002.png",
+      "width": 1440,
+      "height": 1440,
+      "changedPixels": 0,
+      "maxChannelDelta": 0,
+      "encodedPngBytesAlsoEqual": true
+    },
+    {
+      "file": "우산을-돌려주는-날-episode-000-003.png",
+      "width": 1440,
+      "height": 1440,
+      "changedPixels": 0,
+      "maxChannelDelta": 0,
+      "encodedPngBytesAlsoEqual": true
+    },
+    {
+      "file": "우산을-돌려주는-날-episode-000-004.png",
+      "width": 1440,
+      "height": 1440,
+      "changedPixels": 0,
+      "maxChannelDelta": 0,
+      "encodedPngBytesAlsoEqual": true
+    },
+    {
+      "file": "우산을-돌려주는-날-episode-000-005.png",
+      "width": 1440,
+      "height": 1440,
+      "changedPixels": 0,
+      "maxChannelDelta": 0,
+      "encodedPngBytesAlsoEqual": true
+    },
+    {
+      "file": "우산을-돌려주는-날-episode-000-006.png",
+      "width": 1440,
+      "height": 1440,
+      "changedPixels": 0,
+      "maxChannelDelta": 0,
+      "encodedPngBytesAlsoEqual": true
+    }
+  ],
+  "allSixRgbaExact": true,
+  "entireZipBytesEqual": true,
+  "technicalZip": {
+    "bytes": 838465,
+    "sha256": "ee2d8658436c270cc208fb6cad438806c114df24d704bf27c3aab3e587fce1ee"
+  }
+}

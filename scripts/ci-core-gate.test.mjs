@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { assertCoreResults, REQUIRED_CORE_GATES } from "./ci-core-gate.mjs";
 import { REQUIRED_VITEST_TARGETS, SHARD_NAMES, executionTargetsByShard, expandGlobTargets } from "./ci-core-regression-shards.mjs";
 import { resolveRequiredTargets } from "./run-core-vitest.mjs";
 import { SERIAL_TEST_FILES } from "../vitest.serial-test-files.mjs";
-import { sparsePatterns } from "./ci-checkout-test-helpers.mjs";
+import { fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const success = () => Object.fromEntries(
@@ -112,4 +114,43 @@ test("브러시 디스크·화면 ROI·실제 갈필 경계 회귀를 필수 Cor
   const checkout = ci.slice(start, end);
   assert(sparsePatterns(checkout, { shard: "product" }).includes("/docs/"), "closure의 필수 문서는 소유 product shard에 있어야 합니다.");
   assert(!sparsePatterns(checkout, { shard: "studio-foundation" }).includes("/docs/"));
+});
+
+
+test("기반 회귀는 실제 페이지 시각 프로필의 이미지와 공통 영상을 체크아웃한다", () => {
+  const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const checkout = ci.slice(ci.indexOf("\n  static:"), ci.indexOf("\n  serial:"));
+  const visual = readFileSync(new URL("../apps/web/src/shared/lib/site-route-visual.ts", import.meta.url), "utf8");
+  const images = [...visual.matchAll(/image:\s*"(\/assets\/[^"\n]+)"/gu)].map((match) => `apps/web/public${match[1]}`);
+  const videos = [...visual.matchAll(/(?:src|portraitSrc): "(\/brand\/[^"\n]+)"/gu)].map((match) => `apps/web/public${match[1]}`);
+  assert(images.length > 0 && new Set(images).size === images.length, "실제 이미지 프로필이 중복 없이 필요합니다.");
+  assert(videos.length > 0 && /video: FILM\(/u.test(visual), "실제 선택되는 브랜드 영상이 필요합니다.");
+  const unrelated = "apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/unused/background.png";
+  const directory = mkdtempSync(join(tmpdir(), "foundation-route-visual-checkout-"));
+  const git = (...args) => execFileSync("git", args, {
+    cwd: directory, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: fixtureGitEnvironment(directory),
+  }).trim();
+  try {
+    git("init", "--quiet");
+    for (const file of [...images, ...videos, unrelated]) {
+      mkdirSync(dirname(join(directory, file)), { recursive: true });
+      writeFileSync(join(directory, file), "fixture\n");
+    }
+    git("add", "--all");
+    const tree = git("write-tree");
+    git("config", "core.sparseCheckout", "true");
+    git("config", "core.sparseCheckoutCone", "false");
+    for (const shard of SHARD_NAMES) {
+      const patterns = sparsePatterns(checkout, { shard });
+      const selectedImages = patterns.filter((pattern) => pattern.startsWith("/apps/web/public/assets/studio/generated-backgrounds/"));
+      assert.deepEqual(selectedImages.sort(), shard === "studio-foundation" ? images.map((file) => `/${file}`).sort() : [], `${shard}: 이미지 입력은 소유 shard의 정확한 파일만 선택해야 합니다.`);
+      writeFileSync(join(directory, ".git/info/sparse-checkout"), `${patterns.join("\n")}\n`);
+      git("read-tree", "-mu", tree);
+      for (const file of images) assert.equal(existsSync(join(directory, file)), shard === "studio-foundation", `${shard}: ${file}`);
+      for (const file of videos) assert(existsSync(join(directory, file)), `${shard}: 공통 영상 ${file}`);
+      assert(!existsSync(join(directory, unrelated)), `${shard}: 관련 없는 이미지까지 포함하면 안 됩니다.`);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

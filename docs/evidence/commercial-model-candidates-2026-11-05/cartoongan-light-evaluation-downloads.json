@@ -1,0 +1,98 @@
+{
+  "state": "isolated-evaluation-only-no-production-import",
+  "directory": "/tmp/toonstudio-light-paprika-evaluation",
+  "source_revision": "2f26a525f8b604b8e98fb84ebad0af5aef727944",
+  "retrieved": "2026-11-05",
+  "files": [
+    {
+      "path": "LICENSE",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/LICENSE",
+      "bytes": 11427,
+      "sha256": "4fe7df3f4b7c56ad62714ccfa020965ea6383ae106a7617ebe7c09fa50cfc557"
+    },
+    {
+      "path": "README.md",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/README.md",
+      "bytes": 16106,
+      "sha256": "4c8fc3f86807f92bdbf6c07f259e470b04e78696e337c4992299ea6b126c63de"
+    },
+    {
+      "path": "generator.py",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/generator.py",
+      "bytes": 4246,
+      "sha256": "9856cf4099c00475bc06b9ff1905daccc95fd0d9f4d37bf5ed690577118ed20c"
+    },
+    {
+      "path": "layers.py",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/layers.py",
+      "bytes": 8079,
+      "sha256": "de15a7447b486de81f7829f71a7255c2cec747acb419af50198a1cfef6086361"
+    },
+    {
+      "path": "export.py",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/export.py",
+      "bytes": 2051,
+      "sha256": "e4ef29d617a4daa75155ab793a38268d810fa1a2a40a0a5734f31a87a5d90267"
+    },
+    {
+      "path": "inference_with_ckpt.py",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/inference_with_ckpt.py",
+      "bytes": 1857,
+      "sha256": "ea93429200524151d5343514bebb802158f1a388d4da696f295240dac493d684"
+    },
+    {
+      "path": "inference_with_saved_model.py",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/inference_with_saved_model.py",
+      "bytes": 1494,
+      "sha256": "2660fb35c858217c5215a310a86a8f1e4213ba1e0a35d2eca06f97c4701af6df"
+    },
+    {
+      "path": "requirements_cpu.txt",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/requirements_cpu.txt",
+      "bytes": 107,
+      "sha256": "02d90d22cd63c0c3557ffb4753846d6dc1c3816a055f214054b8aae491a395a1"
+    },
+    {
+      "path": "light_paprika_ckpt/checkpoint",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/light_paprika_ckpt/checkpoint",
+      "bytes": 75,
+      "sha256": "935c4b2e9941a82485693a00a8b51fefc9c4383aac600eae789a8ca6bbde70a1"
+    },
+    {
+      "path": "light_paprika_ckpt/generator.data-00000-of-00001",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/light_paprika_ckpt/generator.data-00000-of-00001",
+      "bytes": 3643727,
+      "sha256": "044774f6ba811cd738a2b73ea65d71cdbc3756df68117b4a1c98cc18dceedceb"
+    },
+    {
+      "path": "light_paprika_ckpt/generator.index",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/light_paprika_ckpt/generator.index",
+      "bytes": 15265,
+      "sha256": "954d2b57795f9c6cd9b31497b36e494c90e236584e08dbd084f28bb4d39013c1"
+    },
+    {
+      "path": "exported_models/light_paprika_SavedModel/saved_model.pb",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/exported_models/light_paprika_SavedModel/saved_model.pb",
+      "bytes": 2082535,
+      "sha256": "59bd0f6ae50c7c84b703b404a02c88eb57ba273e721a78a9860d2c3c4cac6b33"
+    },
+    {
+      "path": "exported_models/light_paprika_SavedModel/variables/variables.data-00000-of-00002",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/exported_models/light_paprika_SavedModel/variables/variables.data-00000-of-00002",
+      "bytes": 3546892,
+      "sha256": "658059a798a9147bcc0615a1f41d376b23d4bb68d764cd2d8f4ca5305245927a"
+    },
+    {
+      "path": "exported_models/light_paprika_SavedModel/variables/variables.data-00001-of-00002",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/exported_models/light_paprika_SavedModel/variables/variables.data-00001-of-00002",
+      "bytes": 91081,
+      "sha256": "f2df6b1a2f6098ea770379ce218d25b686d25a16499ec962d1e11fe6b48df62f"
+    },
+    {
+      "path": "exported_models/light_paprika_SavedModel/variables/variables.index",
+      "source": "https://raw.githubusercontent.com/mnicnc404/CartoonGan-tensorflow/2f26a525f8b604b8e98fb84ebad0af5aef727944/exported_models/light_paprika_SavedModel/variables/variables.index",
+      "bytes": 15497,
+      "sha256": "bacebca19583e8c068fbde83d0fa812587cb47162c799f7a93a8b8f5a5f3c03b"
+    }
+  ]
+}

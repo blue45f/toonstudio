@@ -1,0 +1,50 @@
+[
+  {
+    "package": "@remotion/player",
+    "version": [
+      "4.0.536"
+    ],
+    "path": "node_modules/.pnpm/@remotion+player@4.0.536_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/@remotion/player/LICENSE.md",
+    "sha256": "bd65083b940f61904f6ef298aade918a7cad72a3e35bc406e36fab365844b673"
+  },
+  {
+    "package": "opencascade.js",
+    "version": [
+      "1.1.1"
+    ],
+    "path": "node_modules/.pnpm/opencascade.js@1.1.1/node_modules/opencascade.js/LICENSE",
+    "sha256": "20c17d8b8c48a600800dfd14f95d5cb9ff47066a9641ddeab48dc54aec96e331"
+  },
+  {
+    "package": "remotion",
+    "version": [
+      "4.0.536"
+    ],
+    "path": "node_modules/.pnpm/remotion@4.0.536_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/remotion/LICENSE.md",
+    "sha256": "bd65083b940f61904f6ef298aade918a7cad72a3e35bc406e36fab365844b673"
+  },
+  {
+    "package": "wasm-vips",
+    "version": [
+      "0.0.19"
+    ],
+    "path": "node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/LICENSE",
+    "sha256": "9cbb5847deb22dffbdd860fe659a122d61c144e52cbd3a97d4bb858c5fb9cef6"
+  },
+  {
+    "package": "wasm-vips",
+    "version": [
+      "0.0.19"
+    ],
+    "path": "node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/THIRD-PARTY-NOTICES.md",
+    "sha256": "0f52de00dd217125646ae85177def3e144de48d11f76368f257ba6468d3f7d8d"
+  },
+  {
+    "package": "wasm-vips",
+    "version": [
+      "0.0.19"
+    ],
+    "path": "node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/versions.json",
+    "sha256": "e1b6858d24d76de7c28c15a5765d02661a1638b8555625bbc74cb3c67f6f184d"
+  }
+]

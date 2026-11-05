@@ -82,7 +82,7 @@ function harness(baseline: unknown) {
   const service = new StudioCrdtService(repository, allowStoredRasterAssetReferences, allowStoredWorkAssetReferences, new MemoryStudioCrdtClusterLoadRepository());
   services.push(service); return { service, repository };
 }
-const update = (id: number, data: Uint8Array) => ({ workId: "work", actorUserId: "owner", updateId: `aaaaaaaa-aaaa-4aaa-8aaa-${String(id).padStart(12, "0")}`, data });
+const update = (id: number, data: Uint8Array) => ({ workId: "work", actorUserId: "owner", updateId: `aaaaaaaa-aaaa-4aaa-8aaa-${String(id).padStart(12, "0")}`, data, readerCapabilities: [CAP] });
 
 describe("이전 혼색 원본의 실제 Y·서버 append 보존", () => {
   it("실제 UI planner 결과가 wire v7과 서버 admission·영속 로그를 통과하고 복원 원본을 유지한다", async () => {
@@ -146,7 +146,7 @@ describe("이전 혼색 원본의 실제 Y·서버 append 보존", () => {
     latest.addPage(studioPageToCrdtPage(f.before.pagesList[0]!));
     latest.addStroke(studioDrawElementToCrdtStroke("page", { ...f.source, name: "먼저 저장한 팀 수정" }));
     durable.snapshot = latest.encodeStateAsUpdate();
-    await expect(assertStudioLegacyPigmentArchiveRestDocumentInTransaction({} as DrizzleStudioCrdtTransaction, "work", f.after, f.before)).rejects.toThrow(/원본과 일치/u);
+    await expect(assertStudioLegacyPigmentArchiveRestDocumentInTransaction({} as DrizzleStudioCrdtTransaction, "work", f.after, f.before, [CAP])).rejects.toThrow(/원본과 일치/u);
   });
   it("sparse 원문의 실제 v6 게시 뒤 v7 보관·원본 undo까지 기본 채널 생성과 원문 보존을 구분한다", async () => {
     const f = fixture(true), h = harness(f.before), local = new StudioCrdtDocument(); documents.push(local.doc);

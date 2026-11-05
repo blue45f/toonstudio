@@ -2,7 +2,7 @@ import { isDeepStrictEqual } from "node:util";
 import { ConflictException } from "@nestjs/common";
 import { isStudioLegacyPigmentArchiveSource, parseStudioLegacyPigmentArchive,
   STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY,
-  type StudioLegacyPigmentArchive } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+  hasStudioPreservedDrawReaderDocument, type StudioLegacyPigmentArchive } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import type { StudioCrdtScopedRecord } from "@toonstudio/contracts/studio-crdt-authoring";
 
 type JsonObject = Record<string, unknown>;
@@ -39,9 +39,9 @@ export function hasStudioLegacyPigmentArchives(document: unknown): boolean {
   });
 }
 export function assertStudioLegacyPigmentArchiveReader(document: unknown, readerCapabilities: readonly string[]): void {
-  if (hasStudioLegacyPigmentArchives(document) && !readerCapabilities.includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY)) {
+  if (hasStudioPreservedDrawReaderDocument(document) && !readerCapabilities.includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY)) {
     throw new ConflictException({ code: "studio_legacy_pigment_archive_reader_upgrade_required",
-      message: "이전 혼색 보관 원본을 유지하려면 최신 버전에서 원고를 동기화한 뒤 저장해 주세요." });
+      message: "획의 원본·편집 정보를 유지하려면 최신 버전에서 원고를 동기화한 뒤 저장해 주세요." });
   }
 }
 

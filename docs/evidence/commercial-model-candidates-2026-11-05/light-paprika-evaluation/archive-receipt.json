@@ -1,0 +1,14 @@
+{
+  "artifact": "/workspace/scratch/toonstudio-light-paprika-evaluation-artifacts.tar.gz",
+  "bytes": 12388496,
+  "sha256": "f06f13e944518a8e01150ff1db7f317442adfe634b9fbe821c7f2e8873bb5253",
+  "files": 52,
+  "excluded": [
+    "venv",
+    "pip-cache",
+    "installed TF/ORT packages",
+    "large intermediate tensors",
+    "restricted product/original converted weights"
+  ],
+  "state": "evaluation only; failed browser parity and quality acceptance"
+}

@@ -6,6 +6,23 @@ import type { StudioPublishPackageManifest } from "../../../apps/web/src/domains
 import type { Browser, Page } from "playwright";
 
 export interface LiveProof { synced: boolean; updateAcks: number; rejected: number }
+export interface SixPageRendererReceipt { status: string; backend: string | null; rgbaSha256: string | null; reason: string | null }
+
+/** UI 내보내기를 마친 뒤 선호 렌더러와 같은 픽셀인지 확인해 조용한 호환 경로 우회를 탐지한다. */
+export async function captureSixPageRendererReceipt(page: Page, source: unknown): Promise<SixPageRendererReceipt> {
+  return page.evaluate<SixPageRendererReceipt>(`(async () => {
+    const {captureStudioSkiaDocumentForExport: capture} = await import('/src/domains/creator/render/studio-skia-document-export.ts');
+    const result = await capture({page:${JSON.stringify(source)},masterElements:[],exportScale:2,transparent:false});
+    if (result.status !== 'captured') return {status:result.status,backend:null,rgbaSha256:null,reason:result.reason};
+    const context = result.canvas.getContext('2d');
+    if (!context) throw new Error('렌더러의 실제 픽셀을 읽지 못했습니다.');
+    const pixels = context.getImageData(0,0,result.canvas.width,result.canvas.height).data;
+    const hash = await crypto.subtle.digest('SHA-256',pixels.buffer);
+    return {status:result.status,backend:result.canvas.dataset.studioRasterExportBackend ?? null,
+      rgbaSha256:Array.from(new Uint8Array(hash),value=>value.toString(16).padStart(2,'0')).join(''),reason:null};
+  })()`);
+}
+
 export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, actor: Actor, workId: string, origin: string) {
   const context = await browser.newContext({ viewport: { width: 1600, height: 1100 }, locale: "ko-KR", serviceWorkers: "block" });
   await context.route("https://preview.invalid/**", async route => {
@@ -14,23 +31,56 @@ export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, acto
     await route.fulfill(bytes ? { status: 200, contentType: "image/png", body: bytes } : { status: 404, body: "없는 시험 객체" });
   });
   const page = await context.newPage(), proof: LiveProof = { synced: false, updateAcks: 0, rejected: 0 };
+  const network: { path: string; status: number }[] = [];
+  const acknowledgements: { event: string; ok: boolean | null; code?: string }[] = [];
+  const sockets: { path: string; closed: boolean; errors: number; sentFrames: number; receivedFrames: number; connectErrorCodes: string[] }[] = [];
+  page.on("response", response => {
+    const url = new URL(response.url());
+    if (url.origin === origin && url.pathname.startsWith("/api/")) {
+      network.push({ path: url.pathname, status: response.status() });
+      if (network.length > 100) network.shift();
+    }
+  });
   await page.bringToFront();
   page.on("websocket", socket => {
+    const state = { path: new URL(socket.url()).pathname, closed: false, errors: 0, sentFrames: 0, receivedFrames: 0, connectErrorCodes: [] as string[] };
+    sockets.push(state);
+    socket.on("close", () => { state.closed = true; });
+    socket.on("socketerror", () => { state.errors++; });
     const events = new Map<string, string>();
     socket.on("framesent", ({ payload }) => {
+      state.sentFrames++;
       if (typeof payload !== "string") return;
       const index = payload.indexOf("["), id = /,(\d+)$/u.exec(payload.slice(0, index))?.[1];
       if (index < 0 || !id) return;
       try { const wire: unknown = JSON.parse(payload.slice(index)); if (Array.isArray(wire) && typeof wire[0] === "string") events.set(id, wire[0]); } catch { /* 다른 Engine.IO frame은 이 영수증 대상이 아니다. */ }
     });
     socket.on("framereceived", ({ payload }) => {
+      state.receivedFrames++;
       if (typeof payload !== "string") return;
+      if (payload.startsWith("44")) {
+        const start = payload.indexOf("{");
+        try {
+          const value: unknown = start < 0 ? null : JSON.parse(payload.slice(start));
+          const data: unknown = value && typeof value === "object" ? Reflect.get(value, "data") : null;
+          const codes = [value, data].flatMap(item => item && typeof item === "object"
+            ? [Reflect.get(item, "code"), Reflect.get(item, "reason"), Reflect.get(item, "message")] : [])
+            .filter((code): code is string => typeof code === "string" && /^(?:auth|unauth|forbidden|studio|expired|invalid|origin|rate|session|permission|acl|work|reader|token|ticket)[a-z0-9_:.-]{0,60}$/iu.test(code));
+          state.connectErrorCodes.push(...(codes.length ? codes : ["unclassified-connect-error"]));
+        } catch { state.connectErrorCodes.push("unparseable-connect-error"); }
+      }
       const index = payload.indexOf("["), id = /,(\d+)$/u.exec(payload.slice(0, index))?.[1];
       if (index < 0 || !id) return;
       try {
         const wire: unknown = JSON.parse(payload.slice(index)), event = events.get(id);
         const ack: unknown = Array.isArray(wire) ? wire[0] : null;
         if (!ack || typeof ack !== "object") return;
+        if (event?.startsWith("studio:")) {
+          const ok = Reflect.get(ack, "ok"), code = Reflect.get(ack, "code");
+          acknowledgements.push({ event, ok: typeof ok === "boolean" ? ok : null,
+            ...(typeof code === "string" && /^[a-z0-9_:.-]{1,80}$/iu.test(code) ? { code } : {}) });
+          if (acknowledgements.length > 100) acknowledgements.shift();
+        }
         if (Reflect.get(ack, "ok") === true && event === "studio:crdt:sync:binary:v1") proof.synced = true;
         if (Reflect.get(ack, "ok") === true && event === "studio:crdt:update:binary:v1") proof.updateAcks++;
         if (Reflect.get(ack, "ok") === false) proof.rejected++;
@@ -43,7 +93,25 @@ export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, acto
   expect(login.status()).toBe(201);
   actor.cookie = (await context.cookies(origin)).map(c => `${c.name}=${c.value}`).join("; ");
   await page.goto(`${origin}/studio/work/${workId}/canvas`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-  await expect.poll(() => proof.synced, { timeout: 120_000 }).toBe(true);
+  try {
+    await expect.poll(() => proof.synced, { timeout: 120_000 }).toBe(true);
+  } catch (error) {
+    // 준비 도중 실패하면 호출자에게 페이지가 아직 반환되지 않아 기존 실패 훅으로 관측할 수 없다.
+    // 토큰·쿠키·요청 본문·원시 Socket frame은 기록하지 않는다.
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const output = process.env.TOONSTUDIO_SIX_PAGE_EVIDENCE_DIR ?? ".qa/short-comic-six-page-integration";
+    try {
+      await mkdir(output, { recursive: true });
+      const prefix = join(output, `canvas-startup-${crypto.randomUUID()}`);
+      await writeFile(`${prefix}.json`, JSON.stringify({ proof, network, acknowledgements, sockets,
+        pathname: new URL(page.url()).pathname, body: await page.locator("body").innerText({ timeout: 5_000 }) }, null, 2), { mode: 0o600 });
+      await page.screenshot({ path: `${prefix}.png`, timeout: 15_000 });
+    } catch {
+      console.error("6컷 캔버스 시작 실패의 진단 기록을 완료하지 못했습니다.");
+    }
+    throw error;
+  }
   await page.getByText("변경 동기화 완료", { exact: true }).first().waitFor({ timeout: 120_000 });
   await page.locator("[data-studio-post-processing-scope] .konvajs-content:visible").first().waitFor({ timeout: 120_000 });
   const quickStart = page.getByRole("button", { name: "빠른 시작 닫기 (Esc)", exact: true });

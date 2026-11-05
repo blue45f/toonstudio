@@ -5,7 +5,7 @@ import type { LibraryGuideArea } from "./engineering-library-guide-types";
  * 라이브러리 해설 · 영역 8 "만들고 검사하고 내보내기".
  * 사실의 정본은 오픈소스 지도(vite-vitest-playwright·pnpm-patches-overrides·wasm-vips·psd-pdf-formats·remotion 행),
  * pnpm-workspace.yaml(패치·override), tests/benchmarks/results/quality-lab.json(wasm-vips 선택 근거), ADR-0008과 코드다.
- * 라이선스가 까다로운 wasm-vips(LGPL 구성요소)·Remotion(자체 라이선스)은 설치본이 말하는 라이선스만 적고 적격성은 판단하지 않는다.
+ * 과거 wasm-vips 측정과 현재 자체 Lanczos3 구현을 구별하며, Remotion은 설명된 개인 운영 전제로 유지한다.
  * 수치는 engineering-library-guide-areas-b.test.ts 가 pnpm-workspace.yaml 등에서 읽어 대조한다. 기준일 2026-10-08.
  */
 
@@ -18,12 +18,12 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
   title: t("만들고 검사하고 내보내기", "Build, check and export"),
   question: t("빌드·테스트·내보내기는 무엇으로 하나?", "What do we build, test and export with?"),
   oneLine: t(
-    "Vite가 묶고, Vitest·Playwright가 지키고, 내보내기는 기기 안의 wasm-vips·ag-psd 등이 맡습니다.",
-    "Vite bundles, Vitest and Playwright guard, and on-device parts such as wasm-vips and ag-psd handle export.",
+    "Vite가 묶고, Vitest·Playwright가 지키고, 내보내기는 기기 안의 자체 Lanczos3·ag-psd 등이 맡습니다.",
+    "Vite bundles, Vitest and Playwright guard, and on-device parts such as ToonStudio Lanczos3 and ag-psd handle export.",
   ),
   easy: t(
-    "공장의 조립 라인과 검수대에 비유합니다. 부품을 조립하고(Vite) 검수대 세 곳(단위·브라우저·접근성)을 지나야 출고되며, 내보낼 때는 같은 공장의 포장 라인(wasm-vips·ag-psd)이 포장합니다. 손본 부품은 수정 기록표(패치·override)로 남깁니다.",
-    "Think of an assembly line and inspection desks in a factory. Parts are assembled (Vite) and must pass three inspection desks (unit, browser, accessibility) before shipping, and exports are packed on the packing line of the same factory (wasm-vips, ag-psd). Parts we modified stay on a change record (patches and overrides).",
+    "공장의 조립 라인과 검수대에 비유합니다. 부품을 조립하고(Vite) 검수대 세 곳(단위·브라우저·접근성)을 지나야 출고되며, 내보낼 때는 같은 공장의 포장 라인(자체 Lanczos3·ag-psd)이 포장합니다. 손본 부품은 수정 기록표(패치·override)로 남깁니다.",
+    "Think of an assembly line and inspection desks in a factory. Parts are assembled (Vite) and must pass three inspection desks (unit, browser, accessibility) before shipping, and exports are packed on the packing line of the same factory (ToonStudio Lanczos3, ag-psd). Parts we modified stay on a change record (patches and overrides).",
   ),
   designWhy: [
     {
@@ -43,15 +43,15 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
     {
       title: t("고쳐 쓴 곳은 기록으로 남긴다", "What we changed stays on record"),
       body: t(
-        "pnpm 패치 7개와 override 61개는 pnpm-workspace.yaml에 모았고, 대표 포크 2개(braces·wgpu-toon)는 저장소 안 폴더로 둡니다. 설치 때 자동 적용되고, 빌드가 라이선스 고지를 만들며 허용 목록 밖 라이선스는 감사에서 실패합니다(wasm-vips 내장 LGPL은 생성 고지에 MIT로만 나옵니다).",
-        "The 7 pnpm patches and 61 overrides are gathered in pnpm-workspace.yaml, and 2 representative forks (braces and wgpu-toon) live in folders inside the repository. They apply automatically at install, the build generates license notices, and a license outside the allowlist fails the audit (the LGPL parts bundled in wasm-vips appear in the generated notice only as MIT).",
+        "pnpm 패치 7개와 override 61개는 pnpm-workspace.yaml에 모았고, 대표 포크 2개(braces·wgpu-toon)는 저장소 안 폴더로 둡니다. 설치 때 자동 적용되고, 빌드가 라이선스 고지를 만들며 허용 목록 밖 라이선스는 감사에서 실패합니다(2026-11-05 수정으로 내장 라이브러리의 THIRD-PARTY-NOTICES.md도 수집합니다).",
+        "The 7 pnpm patches and 61 overrides are gathered in pnpm-workspace.yaml, and 2 representative forks (braces and wgpu-toon) live in folders inside the repository. They apply automatically at install, the build generates license notices, and a license outside the allowlist fails the audit (the 2026-11-05 fix also collects embedded-library THIRD-PARTY-NOTICES.md files).",
       ),
     },
     {
       title: t("내보내기는 기기 안에서, 까다로운 부품은 따로", "Export on the device, demanding parts apart"),
       body: t(
-        "초대형 페이지 축소·PSD·PDF 작업·영상 렌더 키트를 서버 없이 기기에서 만듭니다. LGPL 구성요소가 든 wasm-vips는 final 내보내기에서만 dynamic import로, Remotion은 /product-tour 경로에서만 불러오며, ADR-0008은 LGPL 계층의 배포 형태를 법무 검토 후 확정한다고 적습니다.",
-        "Huge-page downsizing, PSD, PDF work and video render kits are made on the device without a server. wasm-vips, which carries LGPL components, is loaded by dynamic import only for final export and Remotion only on the /product-tour route, and ADR-0008 says the distribution form of LGPL layers is settled after legal review.",
+        "초대형 페이지 축소·PSD·PDF 작업·영상 렌더 키트를 서버 없이 기기에서 만듭니다. 대형 페이지 축소는 자체 Lanczos3 엔진을 final 내보내기에서 지연 로드합니다. Remotion은 /product-tour 재생과 렌더 키트에 쓰며, ADR-0008의 LGPL 배포 검토는 남아 있는 해당 라이브러리에 적용됩니다.",
+        "Huge-page downsizing, PSD, PDF work and video render kits are made on the device without a server. The first-party Lanczos3 engine loads lazily for final export. Remotion remains in /product-tour playback and render kits; ADR-0008 distribution review still applies to remaining LGPL libraries.",
       ),
     },
   ],
@@ -64,8 +64,8 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
       "Source is installed with pnpm, bundled by Vite and passes the check gates to become a build, and exporting happens inside that app on the device itself.",
     ),
     alt: t(
-      "왼쪽에서 오른쪽으로 읽습니다. 소스 코드가 pnpm으로 설치되고(패치 7개와 override 61개 적용) Vite로 묶입니다. 검사는 서로 다른 곳을 봅니다. Vitest는 소스를 직접 돌리고, Playwright(axe)는 개발 서버를 열고, 번들 검사와 라이선스 고지는 빌드 결과를 확인합니다. 이 작업들이 병렬로 모두 통과해야 배포 후보가 됩니다. 사용자가 앱에서 작품을 내보낼 때는 서버 없이 기기에서 wasm-vips가 초대형 페이지를 줄이고 ag-psd가 PSD를 만듭니다. 작품의 PDF 내보내기는 라이브러리 없이 직접 조립하고, pdf-lib와 pdf.js는 이미 있는 PDF를 합치고 나누는 작업대에서, Remotion은 홍보 영상 편집기의 렌더 키트(ZIP) 생성과 /product-tour 재생에서 씁니다.",
-      "Read from left to right. Source code is installed with pnpm (7 patches and 61 overrides applied) and bundled by Vite. The checks look at different things: Vitest runs the source directly, Playwright with axe opens the dev server, and the bundle check and license notices inspect the build output. All of these jobs run in parallel and must pass for a commit to become a release candidate. When a user exports artwork in the app, on the device without a server wasm-vips shrinks huge pages and ag-psd builds the PSD. Exporting artwork to PDF is assembled by hand with no library; pdf-lib and pdf.js are used in the workbench for existing PDFs, and Remotion for the promo editor's render kit (ZIP) and the /product-tour playback.",
+      "왼쪽에서 오른쪽으로 읽습니다. 소스 코드가 pnpm으로 설치되고(패치 7개와 override 61개 적용) Vite로 묶입니다. 검사는 서로 다른 곳을 봅니다. Vitest는 소스를 직접 돌리고, Playwright(axe)는 개발 서버를 열고, 번들 검사와 라이선스 고지는 빌드 결과를 확인합니다. 이 작업들이 병렬로 모두 통과해야 배포 후보가 됩니다. 사용자가 앱에서 작품을 내보낼 때는 서버 없이 기기에서 자체 Lanczos3가 초대형 페이지를 줄이고 ag-psd가 PSD를 만듭니다. 작품의 PDF 내보내기는 라이브러리 없이 직접 조립하고, pdf-lib와 pdf.js는 이미 있는 PDF를 합치고 나누는 작업대에서, Remotion은 홍보 영상 편집기의 렌더 키트(ZIP) 생성과 /product-tour 재생에서 씁니다.",
+      "Read from left to right. Source code is installed with pnpm (7 patches and 61 overrides applied) and bundled by Vite. The checks look at different things: Vitest runs the source directly, Playwright with axe opens the dev server, and the bundle check and license notices inspect the build output. All of these jobs run in parallel and must pass for a commit to become a release candidate. When a user exports artwork in the app, on the device without a server ToonStudio Lanczos3 shrinks huge pages and ag-psd builds the PSD. Exporting artwork to PDF is assembled by hand with no library; pdf-lib and pdf.js are used in the workbench for existing PDFs, and Remotion for the promo editor's render kit (ZIP) and the /product-tour playback.",
     ),
     nodes: [
       { id: "source", label: t("소스 코드", "Source code"), sub: t("TypeScript · React", "TypeScript, React"), tone: "neutral", shape: "pill", at: [0, 1] },
@@ -75,7 +75,7 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
       { id: "playwright", label: t("Playwright", "Playwright"), sub: t("실제 브라우저 · axe", "Real browser, axe"), tone: "good", at: [1, 2] },
       { id: "dist", label: t("배포 파일", "Deployable build"), sub: t("번들 검사 · 고지문", "Bundle check, notices"), tone: "good", at: [4, 1] },
       { id: "export", label: t("작품 내보내기", "Export artwork"), sub: t("서버 없이 기기에서", "On the device"), tone: "local", shape: "pill", at: [4, 3] },
-      { id: "vips", label: t("wasm-vips", "wasm-vips"), sub: t("초대형 페이지 축소", "Shrink huge pages"), tone: "local", at: [3, 3] },
+      { id: "vips", label: t("자체 Lanczos3", "ToonStudio Lanczos3"), sub: t("초대형 페이지 축소", "Shrink huge pages"), tone: "local", at: [3, 3] },
       { id: "psd", label: t("ag-psd", "ag-psd"), sub: t("PSD 레이어", "PSD layers"), tone: "local", at: [3, 4] },
       { id: "pdf", label: t("pdf-lib", "pdf-lib"), sub: t("기존 PDF 합치기·분할", "Merge, split existing PDFs"), tone: "local", at: [4, 4] },
       { id: "remotion", label: t("Remotion", "Remotion"), sub: t("영상 재생·렌더 키트", "Video player, render kit"), tone: "local", at: [5, 3] },
@@ -197,33 +197,34 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
     },
     {
       id: "wasm-vips",
-      name: "wasm-vips",
-      kind: "library",
-      package: "wasm-vips",
-      oneLine: t("이미지 처리 라이브러리 libvips를 WASM으로 옮긴 것", "The image-processing library libvips compiled to WASM"),
+      name: "ToonStudio Lanczos3",
+      kind: "engine",
+      oneLine: t("픽셀 중심 좌표와 alpha를 보존하는 자체 이미지 축소 엔진", "A first-party image downsampler with pixel-center and alpha handling"),
       usedFor: t(
         "한 변이 8192px를 넘는 초대형 페이지를 최종 내보낼 때 Lanczos3 방식으로 줄입니다(16,384² 화소까지). 미리보기에는 쓰지 않습니다.",
         "Downsizes pages over 8192 px on a side with the Lanczos3 kernel during final export (up to 16,384² pixels). It is not used for previews.",
       ),
       why: t(
-        "Quality Lab 실측(2026-08-07, 2048→512 축소)에서 PSNR 27.26dB·SSIM 0.9887로 CanvasKit 두 방식(25.31/0.9834, 23.78/0.9768)보다 높았습니다. 그래서 큰 페이지의 최종 내보내기에만 씁니다.",
-        "In the Quality Lab measurement (2026-08-07, 2048 to 512 downscale) it scored PSNR 27.26 dB and SSIM 0.9887, above both CanvasKit methods (25.31/0.9834 and 23.78/0.9768). So it is used only for the final export of big pages.",
+        "2026-11-05 자체 구현으로 대형 페이지 축소·피라미드 기능을 이관합니다. 과거 wasm-vips의 Quality Lab 측정은 PSNR 27.26dB·SSIM 0.9887, CanvasKit은 25.31/0.9834·23.78/0.9768이었습니다. 이 과거 수치를 자체 엔진의 성능으로 재인용하지 않습니다.",
+        "The 2026-11-05 first-party implementation takes over large-page downsizing and pyramids. Historical wasm-vips Quality Lab results were PSNR 27.26 dB and SSIM 0.9887 versus CanvasKit 25.31/0.9834 and 23.78/0.9768. Those historical results are not attributed to the native engine.",
       ),
       alternatives: t(
-        "비교 후보는 CanvasKit 선형·cubic 축소입니다. Quality Lab 1회 측정은 15~30ms 대 124ms(Apple M2 Max 1대)였으나 워밍업 뒤 20회 측정에선 wasm-vips 축소가 p50 16.4ms였습니다. 실패해도 몰래 대체하지 않습니다.",
-        "The comparison candidates were CanvasKit linear and cubic downscaling. A single Quality Lab run took 15 to 30 ms versus 124 ms (one Apple M2 Max), but a warmed 20-run benchmark of the same resize put wasm-vips at a p50 of 16.4 ms. A failed export is never quietly replaced.",
+        "과거 비교는 CanvasKit 선형·cubic과 wasm-vips입니다. Quality Lab 1회는 15~30ms 대 124ms, 별도 워밍업 20회 wasm-vips p50은 16.4ms였습니다. 자체 구현의 속도는 별도 검증하며 이 수치를 승계하지 않습니다.",
+        "The historical comparison was CanvasKit linear and cubic versus wasm-vips: 15 to 30 ms versus 124 ms in one Quality Lab run, with a separate warmed 20-run wasm-vips p50 of 16.4 ms. The native implementation needs its own timing; it does not inherit those numbers.",
       ),
       cost: t(
-        "래퍼만 MIT이고 내장 libvips·glib·libheif 등은 LGPLv3이며 생성 고지에는 MIT로만 나옵니다. 레지스트리는 'dev-only 후보·LGPL 격리 배포 필요'라 적어, 상업 배포 조건은 별도 확인이 필요합니다.",
-        "Only the wrapper is MIT; the bundled libvips, glib, libheif and others are LGPLv3, and the generated notice shows only MIT. The registry says 'dev-only candidate, LGPL isolated deployment required', so commercial distribution terms need separate review.",
+        "표준 수식으로 독립 구현한 internal 코드입니다. 현 Linux 검증 호스트에서 20회 축소 p50은 69.344ms였으며 과거 Mac 측정과 직접 비교하지 않습니다. 크기별 시간·메모리 검증이 필요하고 저장된 wasm-vips-pipeline ID는 호환성을 위해 유지합니다.",
+        "This is independently authored internal code based on standard equations. A 20-run resize p50 was 69.344 ms on the current Linux test host; it is not a direct comparison with the historical Mac run. Time and memory need size-specific checks, and the saved wasm-vips-pipeline ID remains for compatibility.",
       ),
       paths: [
+        `${EXPORT}/studio-native-lanczos.ts`,
         `${EXPORT}/studio-vips-export.ts`,
         `${EXPORT}/studio-export-presets.ts`,
         "packages/studio-engine-registry/src/filter-providers.ts",
-        "docs/candidates/filters/capability-survey.md",
+        "docs/reports/native-filter-bench-2026-11-05.md",
       ],
-      license: "MIT",
+      license: "internal",
+      licenseSource: "packages/studio-engine-registry/src/filter-providers.ts",
       status: "live",
       mapRowId: "wasm-vips",
       atlasIds: ["oss-license-notice-pipeline"],
@@ -305,8 +306,8 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
         "Browser Canvas with MediaRecorder recording is real time and needs a visible tab, so the promo-video editor offers it alongside the Remotion ZIP.",
       ),
       cost: t(
-        "자체 라이선스(SPDX 아님): 자격이 되면 무료, 아니면 Company License입니다. 저장소는 패키지·버전·라이선스 문구 해시를 고정해 감시하지만 배포 법인의 자격은 별도 확인이 필요합니다.",
-        "A custom license (not an SPDX ID): free if eligible, otherwise a Company License. The repository pins and audits the package, version and license-text hash, but whether the distributing entity qualifies needs separate review.",
+        "4.0.536은 개인·직원 3명 이하 영리 조직의 무료 상업 사용을 허용합니다. 설명된 개인 운영 전제로 유지하며, 실제 조직 전체 인원은 독립 검증하지 않았습니다.",
+        "4.0.536: free commercial use for individuals or for-profit entities with up to 3 employees. Retained on the stated individual premise; total headcount unverified.",
       ),
       paths: [
         "apps/web/src/domains/marketing/ProductTourPlayer.tsx",
@@ -321,8 +322,8 @@ export const LIBRARY_AREA_BUILD_QUALITY_MEDIA: LibraryGuideArea = {
     },
   ],
   pitfall: t(
-    "wasm-vips(LGPL 구성요소)와 Remotion(자체 라이선스)은 설치본이 말하는 라이선스만 적었고 적격성은 판단하지 않았습니다. resvg·HarfBuzz는 모듈과 테스트만 있고 제품에 연결하지 않아(experimental) 카드에서 뺐습니다.",
-    "For wasm-vips (LGPL components) and Remotion (custom license) only what the installed package says is written, and eligibility is not judged. resvg and HarfBuzz have modules and tests but are not wired into the product (experimental), so they are left out of the cards.",
+    "wasm-vips의 과거 기록과 현재 자체 Lanczos3 구현을 구별합니다. Remotion은 설명된 개인·1인 운영 전제의 무료 상업 사용으로 유지합니다. 일반 FAQ의 인원 기준은 조직 전체 3명 이하이며 실제 인원은 독립 검증하지 않았습니다. resvg·HarfBuzz는 제품 미연결 실험이라 카드에서 뺐습니다.",
+    "Historical wasm-vips records are separate from the current first-party Lanczos3 implementation. Remotion is retained for free commercial use under the stated individual, one-person premise. The general FAQ uses total organizational headcount of up to 3 people; actual headcount is not independently verified. Unwired experimental resvg and HarfBuzz are omitted.",
   ),
   status: "live",
   atlasIds: [

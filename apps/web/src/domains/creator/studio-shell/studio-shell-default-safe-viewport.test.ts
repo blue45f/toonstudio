@@ -108,12 +108,52 @@ describe("저장하지 않은 두 상태 UI의 기본 표시 범위", () => {
 });
 
 describe("표시 경계 관찰의 변경·정리", () => {
+  it.each([
+    { id: "offline-readiness" as const, size: { width: 146.703125, height: 62 } },
+    { id: "collaboration" as const, size: { width: 101, height: 40 } },
+  ])("$id의 기본 배치는 실제 client 캔버스를 벗어나는 scrollbar gutter를 사용하지 않는다", ({ id, size: measured }) => {
+    document.body.innerHTML = '<div data-studio-editor="true"><div data-studio-canvas-viewport></div></div>';
+    const element = document.querySelector<HTMLElement>("[data-studio-canvas-viewport]");
+    if (!element) throw new Error("시험용 캔버스가 없습니다.");
+    // CI 실측: border box의 오른쪽 1093 중 10px는 stable scrollbar gutter다.
+    vi.spyOn(element, "getBoundingClientRect").mockReturnValue(DOMRect.fromRect({ x: 350, y: 331, width: 743, height: 769 }));
+    Object.defineProperties(element, { offsetWidth: { value: 743 }, offsetHeight: { value: 769 },
+      clientLeft: { value: 0 }, clientTop: { value: 0 }, clientWidth: { value: 733 }, clientHeight: { value: 769 } });
+    let bounds: StudioShellCanvasBounds | null = null;
+    const stop = observeStudioShellCanvasBounds((next) => { bounds = next; });
+    try {
+      const input = { ...options(id), viewport: { ...viewport, height: 1100 }, size: measured, canvas: bounds };
+      const fixedSize = { minWidth: measured.width, maxWidth: measured.width, minHeight: measured.height, maxHeight: measured.height };
+      const rect = resolveStudioFloatingSurfaceRect(input.layout, resolveStudioShellDefaultSafeViewport(input), fixedSize, input.definition.defaultLayout);
+      expect.soft(rect.x + measured.width).toBeLessThanOrEqual(1083);
+      expect(bounds).toEqual({ left: 350, top: 331, right: 1083, bottom: 1100 });
+    } finally { stop(); }
+  });
+
+  it("border·화면 배율과 조상 overflow의 실제 client 잘림을 함께 반영한다", () => {
+    document.body.innerHTML = '<div data-studio-editor="true"><main style="overflow-x:hidden;overflow-y:auto"><div data-studio-canvas-viewport></div></main></div>';
+    const element = document.querySelector<HTMLElement>("[data-studio-canvas-viewport]"), parent = document.querySelector("main");
+    if (!element || !parent) throw new Error("시험용 캔버스가 없습니다.");
+    vi.spyOn(element, "getBoundingClientRect").mockReturnValue(DOMRect.fromRect({ x: 320, y: 310, width: 1100, height: 900 }));
+    Object.defineProperties(element, { offsetWidth: { value: 1100 }, offsetHeight: { value: 900 },
+      clientLeft: { value: 0 }, clientTop: { value: 0 }, clientWidth: { value: 1100 }, clientHeight: { value: 900 } });
+    vi.spyOn(parent, "getBoundingClientRect").mockReturnValue(DOMRect.fromRect({ x: 340, y: 320, width: 950, height: 862.5 }));
+    Object.defineProperties(parent, { offsetWidth: { value: 760 }, offsetHeight: { value: 690 },
+      clientLeft: { value: 10 }, clientTop: { value: 11 }, clientWidth: { value: 733 }, clientHeight: { value: 664 } });
+    const observed: (StudioShellCanvasBounds | null)[] = [];
+    const stop = observeStudioShellCanvasBounds((bounds) => observed.push(bounds));
+    try { expect(observed).toEqual([{ left: 352.5, top: 333.75, right: 1268.75, bottom: 1163.75 }]); }
+    finally { stop(); }
+  });
+
   it("실제 캔버스 resize와 좌우 도킹 신호를 관찰하고 정리 뒤에는 호출하지 않는다", async () => {
     document.body.innerHTML = '<div data-studio-editor="true"><div data-studio-inspector-dock="right"><div data-studio-canvas-viewport></div><section id="studio-inspector"></section></div></div>';
     const element = document.querySelector<HTMLElement>("[data-studio-canvas-viewport]");
     if (!element) throw new Error("시험용 캔버스가 없습니다.");
     let rect = { ...canvas };
     vi.spyOn(element, "getBoundingClientRect").mockImplementation(() => DOMRect.fromRect({ x: rect.left, y: rect.top, width: rect.right - rect.left, height: rect.bottom - rect.top }));
+    Object.defineProperties(element, { offsetWidth: { get: () => rect.right - rect.left }, offsetHeight: { get: () => rect.bottom - rect.top },
+      clientLeft: { value: 0 }, clientTop: { value: 0 }, clientWidth: { get: () => rect.right - rect.left }, clientHeight: { get: () => rect.bottom - rect.top } });
     const inspector = document.querySelector<HTMLElement>("#studio-inspector");
     if (!inspector) throw new Error("시험용 작업 패널이 없습니다.");
     let inspectorRect = DOMRect.fromRect({ x: 1128, y: 330, width: 312, height: 670 });

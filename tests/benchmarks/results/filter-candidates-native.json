@@ -1,0 +1,183 @@
+{
+  "harness": "tests/benchmarks/harness/filter-candidates.ts",
+  "generatedAt": "2026-11-05T09:31:00.576Z",
+  "host": {
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "AMD EPYC 9V74 80-Core Processor",
+    "node": "v24.19.0"
+  },
+  "config": {
+    "warmup": 3,
+    "iterations": 20
+  },
+  "reports": [
+    {
+      "candidate": "opencv-js",
+      "version": "5.0.0-release.1 (@techstark/opencv-js)",
+      "loadMs": 465.6,
+      "operations": {
+        "canny-512": {
+          "p50Ms": 2.045,
+          "p95Ms": 2.233,
+          "meanMs": 2.061,
+          "samplesMs": [
+            2.233,
+            2.066,
+            2.029,
+            2.056,
+            2.104,
+            2.176,
+            2.054,
+            2.026,
+            2.042,
+            2.033,
+            2.049,
+            2.051,
+            2.041,
+            2.045,
+            2.04,
+            2.028,
+            2.04,
+            2.027,
+            2.047,
+            2.026
+          ],
+          "outputChecksum": 0,
+          "nonZeroBytes": 2956
+        },
+        "dilate-5x5-512": {
+          "p50Ms": 0.708,
+          "p95Ms": 0.73,
+          "meanMs": 0.707,
+          "samplesMs": [
+            0.712,
+            0.695,
+            0.705,
+            0.73,
+            0.712,
+            0.694,
+            0.715,
+            0.711,
+            0.693,
+            0.73,
+            0.708,
+            0.708,
+            0.694,
+            0.707,
+            0.72,
+            0.693,
+            0.714,
+            0.708,
+            0.706,
+            0.693
+          ],
+          "outputChecksum": 507757,
+          "nonZeroBytes": 261630
+        },
+        "gaussian-9x9-512": {
+          "p50Ms": 4.831,
+          "p95Ms": 4.945,
+          "meanMs": 4.838,
+          "samplesMs": [
+            4.861,
+            4.813,
+            4.846,
+            4.842,
+            4.82,
+            4.818,
+            4.93,
+            4.831,
+            4.845,
+            4.816,
+            4.811,
+            4.813,
+            4.818,
+            4.837,
+            4.813,
+            4.945,
+            4.85,
+            4.802,
+            4.837,
+            4.821
+          ],
+          "outputChecksum": 496251,
+          "nonZeroBytes": 260597
+        }
+      },
+      "notes": [
+        "analysis lane per matrix E16 — ALREADY a pinned production dependency with a",
+        "worker protocol (studio-opencv-image-worker-protocol.ts); this bench adds evidence"
+      ]
+    },
+    {
+      "candidate": "toonstudio-native-filters",
+      "version": "independent-lanczos3-gaussian-v1",
+      "loadMs": 0,
+      "operations": {
+        "resize-2048-to-512": {
+          "p50Ms": 69.344,
+          "p95Ms": 135.979,
+          "meanMs": 72.037,
+          "samplesMs": [
+            72.701,
+            68.777,
+            70.454,
+            69.837,
+            64.512,
+            88.747,
+            135.979,
+            64.332,
+            63.983,
+            67.953,
+            69.37,
+            63.775,
+            67.287,
+            69.474,
+            70.091,
+            64.284,
+            69.344,
+            72.279,
+            63.677,
+            63.879
+          ],
+          "outputChecksum": 2611113,
+          "nonZeroBytes": 1045471
+        },
+        "gaussblur-sigma4-2048": {
+          "p50Ms": 1106.588,
+          "p95Ms": 5285.787,
+          "meanMs": 1505.657,
+          "samplesMs": [
+            1075.503,
+            1080.838,
+            1144.26,
+            1114.2,
+            1128.45,
+            1103.031,
+            1068.412,
+            1096.217,
+            1101.197,
+            1085.293,
+            1096.174,
+            1103.261,
+            1117.198,
+            1085.467,
+            5285.787,
+            4963.455,
+            1115.819,
+            1106.588,
+            1125.282,
+            1116.7
+          ],
+          "outputChecksum": 41305613,
+          "nonZeroBytes": 16721851
+        }
+      },
+      "notes": [
+        "표준 Lanczos3와 반경 4 sigma Gaussian의 독립 구현, premultiplied alpha·clamp 경계",
+        "외부 WASM 초기화가 없는 동기 JavaScript 경로; 과거 wasm-vips 결과를 재명명하지 않음"
+      ]
+    }
+  ]
+}

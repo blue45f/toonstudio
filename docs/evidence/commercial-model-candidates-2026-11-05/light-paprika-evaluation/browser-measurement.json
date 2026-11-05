@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "/tmp/toonstudio-light-paprika-evaluation/browser_receipt.mjs"
+  ],
+  "exit_code": 1,
+  "wall_seconds": 14.780456033000064,
+  "max_rss_kib": 132264,
+  "user_seconds": 0.9779909999999999,
+  "system_seconds": 0.490044
+}

@@ -1,0 +1,12 @@
+{
+  "originalOrchestrationExit": 1,
+  "actualProbeOuterExit": 0,
+  "serverOuterExit": 143,
+  "intentionalSignal": "SIGTERM",
+  "ownedServerPid": 40491,
+  "pidGone": true,
+  "portClosed": true,
+  "classification": "cleanup-wrapper expected zero but Vite deliberately exited 143 after SIGTERM; product probe passed; original failure preserved",
+  "probeAssertionsChanged": false,
+  "probeRepeated": false
+}

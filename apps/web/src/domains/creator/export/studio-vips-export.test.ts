@@ -1,4 +1,4 @@
-// studio-vips-export 계약 테스트 — 실 wasm-vips 를 node 에서 로드해 검증한다
+// studio-vips-export 계약 테스트 — 자체 Lanczos3 런타임을 node에서 검증한다
 // (Quality Lab tests/benchmarks/harness/quality-lab.ts 가 동일 방식의 node 로드를 실증).
 // 품질 기준 수치는 tests/benchmarks/results/quality-lab.json(2026-08-07) 인용:
 //   downscale 2048→512 wasm-vips-lanczos3 PSNR 27.26dB / SSIM 0.9887 (1위),
@@ -200,15 +200,17 @@ describe("catalog parity (filter-providers descriptor)", () => {
     expect(wasmVipsPipelineDescriptor.capabilities).not.toContain(
       "filter.phase.preview",
     );
+    expect(wasmVipsPipelineDescriptor.capabilities).not.toContain("filter.op.gaussian-blur");
+    expect(wasmVipsPipelineDescriptor.capabilities).not.toContain("filter.op.thumbnail");
   });
 
-  it("passes the license gate only in isolated mode (LGPL, never bundled)", () => {
+  it("passes the internal license gate for the independently authored runtime", () => {
     expect(evaluateLicenseGate(STUDIO_VIPS_EXPORT_LICENSE)).toEqual({
-      mode: "isolated",
+      mode: "bundle",
     });
   });
 
-  it("loads wasm-vips through exactly one dynamic import and no static import", () => {
+  it("loads the independent runtime lazily without importing wasm-vips", () => {
     const source = readFileSync(moduleUrl, "utf8");
     const file = ts.createSourceFile(
       moduleUrl.pathname,
@@ -240,7 +242,7 @@ describe("catalog parity (filter-providers descriptor)", () => {
     };
     visit(file);
     expect(staticImports).not.toContain("wasm-vips");
-    expect(dynamicImports).toEqual(["wasm-vips"]);
+    expect(dynamicImports).toEqual(["./studio-native-resize-runtime"]);
   });
 });
 
@@ -423,7 +425,7 @@ describe("downscaleForExport", () => {
 
   it("keeps premultiplied alpha edges clean (no transparent-color fringe)", async () => {
     // 왼쪽 절반 불투명 빨강, 오른쪽 절반 완전투명 초록. 프리멀티플라이 없이
-    // 섞으면 경계 픽셀에 초록이 절반 수준(≈127)으로 번진다 — vips resize 는
+    // 섞으면 경계 픽셀에 초록이 절반 수준(≈127)으로 번진다 — 자체 resize는
     // 알파를 프리멀티플라이해 경계의 초록 오염이 잔물결 수준에 머문다.
     const source = makeRgba(8, 8, (x) =>
       x < 4 ? [255, 0, 0, 255] : [0, 255, 0, 0],

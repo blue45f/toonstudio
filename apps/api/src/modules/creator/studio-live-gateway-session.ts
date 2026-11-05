@@ -1,4 +1,4 @@
-import { studioBg3dReaderRoom } from "./studio-live-bg3d-reader-fence";
+import { studioAllReaderRooms } from "./studio-live-bg3d-reader-fence";
 import {
   STUDIO_LIVE_ACCESS_CACHE_MS,
   STUDIO_LIVE_MAX_CONNECTIONS_PER_USER,
@@ -96,7 +96,7 @@ export function beginCrdtBinarySelectionCleanup(
       }
     }
     await selection.socket.leave(studioLiveCrdtBinaryRoom(selection.workId));
-    await selection.socket.leave(studioBg3dReaderRoom(studioLiveCrdtBinaryRoom(selection.workId)));
+    for (const room of studioAllReaderRooms(studioLiveCrdtBinaryRoom(selection.workId))) await selection.socket.leave(room);
   })();
   selection.cleanup = cleanup;
   return cleanup;

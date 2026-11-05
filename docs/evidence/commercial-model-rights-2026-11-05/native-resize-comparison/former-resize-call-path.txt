@@ -1,0 +1,75 @@
+Original checkout HEAD: 8d315c85d6fde4a3a30255612c756d3e299a95b0
+Path: apps/web/src/domains/creator/export/studio-vips-export.ts
+Whole file SHA256: b96cfc5b926c1c47c3ac588521b974b26aa25f8509a8e3a6329f6f0fe7297abd
+
+function resampleWithVips(
+  source: VipsImageHandle,
+  sourceWidth: number,
+  sourceHeight: number,
+  targetWidth: number,
+  targetHeight: number,
+): StudioVipsRaster {
+  const resized = source.resize(targetWidth / sourceWidth, {
+    vscale: targetHeight / sourceHeight,
+  });
+  try {
+    // 조용한 손실 금지: libvips 의 목표 크기 반올림이 요청과 다르면 즉시 실패.
+    if (resized.width !== targetWidth || resized.height !== targetHeight) {
+      throw new Error(
+        `wasm-vips resize drifted to ${resized.width}x${resized.height} `
+        + `(requested ${targetWidth}x${targetHeight}); refusing silent size loss.`,
+      );
+    }
+    const memory = resized.writeToMemory();
+    const expectedBytes = targetWidth * targetHeight * RGBA_BANDS;
+    if (memory.length !== expectedBytes) {
+      throw new Error(
+        `wasm-vips returned ${memory.length} bytes for `
+        + `${targetWidth}x${targetHeight} RGBA8 (expected ${expectedBytes}).`,
+      );
+    }
+    // wasm 힙 뷰와의 수명 결합을 끊기 위해 JS 힙으로 복사해 반환한다.
+    return {
+      rgba: new Uint8Array(memory),
+      width: targetWidth,
+      height: targetHeight,
+    };
+  } finally {
+    resized.delete();
+  }
+}
+
+/**
+ * vips lanczos3(Quality Lab downscale 승자 설정 그대로)로 RGBA8 버퍼를
+ * 정확히 targetWidth×targetHeight 로 축소한다. 결정적이며(단일 스레드,
+ * 고정 커널), 동일 크기 요청은 재표본 없이 방어적 사본을 돌려준다.
+ */
+export async function downscaleForExport(
+  rgba: Uint8Array,
+  width: number,
+  height: number,
+  targetWidth: number,
+  targetHeight: number,
+  options: StudioVipsResampleOptions = {},
+): Promise<StudioVipsRaster> {
+  assertSourceRaster(rgba, width, height);
+  assertDownscaleTarget(width, height, targetWidth, targetHeight);
+  if (targetWidth === width && targetHeight === height) {
+    // 항등 요청은 무손실 사본 — wasm 로드 자체를 요구하지 않는다.
+    return { rgba: new Uint8Array(rgba), width, height };
+  }
+  const runtime = options.runtime ?? (await loadVipsForExport());
+  const image = runtime.vips.Image.newFromMemory(
+    rgba,
+    width,
+    height,
+    RGBA_BANDS,
+    VIPS_UCHAR_FORMAT,
+  );
+  try {
+    return resampleWithVips(image, width, height, targetWidth, targetHeight);
+  } finally {
+    image.delete();
+  }
+}
+

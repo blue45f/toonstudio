@@ -39,8 +39,8 @@ const FLAG_NOTES: Record<EngineeringLicenseFlag, LocalizedText> = {
     en: "Commercial use is not permitted under these terms. The external Mixbox package is removed in the 2026-11-05 change. Runtime blocking and checking distribution artifacts are separate tasks; this page records classifications, not a legal judgment.",
   },
   "custom-license": {
-    ko: "표준 오픈소스 라이선스가 아닌 자체 라이선스입니다. 조직 규모와 사용량에 따라 무료 사용 가능 여부와 회사 라이선스 필요 여부가 달라지며, 저장소 기록만으로는 자격 여부를 확인할 수 없어 출시 전에 공식 정책을 다시 확인합니다.",
-    en: "This is a custom license, not a standard open-source one. Free eligibility and company-license requirements depend on organization size and usage; eligibility cannot be confirmed from the repository alone, so the official policy is rechecked before release.",
+    ko: "Remotion 4.0.536의 자체 라이선스는 개인 또는 직원 3명 이하 영리 조직의 무료 상업 사용을 허용합니다. 운영자가 설명한 개인·1인 운영 전제에 따라 유지합니다. 일반 FAQ는 조직 전체 3명 이하를 기준으로 안내하므로 개발자 한 명의 인원수로 대신하지 않으며, 실제 조직 인원은 독립 검증하지 않았습니다. 비상업 조건인 Tag2Pix 가중치와는 다른 항목입니다.",
+    en: "Remotion 4.0.536 permits free commercial use by individuals and for-profit entities with up to 3 employees. It is retained under the operator's stated individual, one-person premise. The general FAQ uses total organizational headcount of up to 3 people, not just the number of developers; actual headcount was not independently verified. This differs from the non-commercial Tag2Pix weights.",
   },
 };
 
@@ -86,8 +86,8 @@ export function EngineeringLicenseInventory() {
       </h2>
       <p className="mt-4 max-w-3xl text-sm leading-7 text-fg-2">
         {bi(
-          `워크스페이스의 모든 패키지(루트, apps, packages)에서 선언한 직접 의존성 ${LIBRARIES.length}개입니다. 라이선스 명은 설치된 패키지의 메타데이터에서 확인했고, 버전은 lockfile이 고정한 값입니다(${ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT} 기준). 전이 의존성 전체와 개발 전용 도구는 배포 빌드가 생성하는 THIRD_PARTY_NOTICES와 라이선스 audit가 따로 맡습니다.`,
-          `These are the ${LIBRARIES.length} direct dependencies declared across every workspace package (root, apps, packages). License names were read from installed package metadata and versions are the values pinned by the lockfile (as of ${ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT}). The full transitive graph and development-only tools are covered separately by the build-generated THIRD_PARTY_NOTICES and the license audit.`,
+          `${ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT} 직접 의존성 스냅샷에 2026-11-05 wasm-vips 제거를 반영한 ${LIBRARIES.length}개 목록입니다. 나머지 버전·라이선스를 모두 현행 기준으로 재검토한 목록은 아닙니다. 현재 전체 인벤토리는 배포 빌드가 생성하는 THIRD_PARTY_NOTICES와 라이선스 audit를 확인합니다.`,
+          `This ${LIBRARIES.length}-entry list is the ${ENGINEERING_LIBRARY_LICENSE_REVIEWED_AT} direct-dependency snapshot with the 2026-11-05 removal of wasm-vips applied. All other versions and licenses have not been freshly re-reviewed here. Use the build-generated THIRD_PARTY_NOTICES and license audit for the current full inventory.`,
         )}
       </p>
 
@@ -191,7 +191,7 @@ export function EngineeringLicenseInventory() {
       <div className="mt-12">
         <h3 className="text-base font-black text-fg">{bi("브라우저에서 실행하는 AI 모델 자산", "AI model assets running in the browser")}</h3>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">
-          {bi("코드 라이브러리와 별개로, 모델 가중치는 자산 옆의 고지 파일(.LICENSE.md)로 출처와 라이선스를 고정합니다. 고지가 없는 모델은 싣지 않습니다. 각 파일은 내려받을 때 SHA-256 다이제스트가 등록값과 같은지 검사한 뒤에만 세션을 엽니다.", "Separately from code libraries, model weights pin their source and license in a notice file (.LICENSE.md) beside the asset; models without a notice are not shipped. Each file's SHA-256 digest is checked against the registered value before a session opens.")}
+          {bi("모델별 배포 라이선스와 학습 출처를 구분해 기록합니다. 아래 표는 현재 포함된 자산의 상태이며, 고지 파일이나 SHA-256 일치가 상용 이용 허가를 뜻하지 않습니다. Tag2Pix는 비상업·재배포 제한, Paprika는 원본 조건 충돌이 있습니다. Face Paint는 저장소의 MIT 체크포인트를 사용하며 학습 출처의 추가 검토가 남아 있습니다. 파일 해시는 세션 전에 검사합니다.", "Distribution licenses and training provenance are recorded per model. This table records currently included assets; a notice file or matching SHA-256 does not grant commercial permission. Tag2Pix has non-commercial and redistribution restrictions, and Paprika has conflicting upstream terms. Face Paint uses the repository's MIT checkpoint, with further training-provenance review remaining. File hashes are checked before a session opens.")}
         </p>
         <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-line/70 bg-panel/55">
           <div className="hidden grid-cols-[1.2fr_0.7fr_0.5fr_1.4fr] gap-5 border-b border-line bg-raised/70 px-6 py-3 font-display text-[0.64rem] font-black uppercase tracking-[0.12em] text-fg-3 lg:grid">
@@ -203,7 +203,11 @@ export function EngineeringLicenseInventory() {
           {ENGINEERING_MODEL_ASSET_LICENSES.map((model) => (
             <article key={model.file} className="grid gap-3 border-b border-line/70 px-5 py-4 last:border-b-0 sm:px-6 lg:grid-cols-[1.2fr_0.7fr_0.5fr_1.4fr] lg:gap-5">
               <p className="font-mono text-[0.82rem] font-bold text-fg">{model.file}</p>
-              <p className="text-xs font-bold text-fg-2">{model.license}</p>
+              <div className="text-xs font-bold text-fg-2">
+                <p>{model.license}</p>
+                {model.rightsStatus === "restricted" ? <p className="mt-1">{bi("이용·재배포 제한", "Use and redistribution restrictions")}</p> : null}
+                {model.rightsStatus === "unverified" ? <p className="mt-1">{bi("권리 확인 대기", "Rights verification pending")}</p> : null}
+              </div>
               <p className="font-mono text-[0.72rem] text-fg-3">{formatMegabytes(model.bytes)}</p>
               <div>
                 <p className="text-xs leading-6 text-fg-2">{bi(model.role.ko, model.role.en)}</p>

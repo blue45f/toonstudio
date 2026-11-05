@@ -388,14 +388,14 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
         "Restricted dependencies are pinned by name, version and license. Remotion packages pass only for reviewed combinations, including a license-text hash check. The external Mixbox dependency and its non-commercial exception are removed in the 2026-11-05 change. A CC-BY-NC package outside the list fails; this policy does not establish a legal conclusion.",
       ),
       t(
-        "빈틈 셋을 적습니다. ① 손으로 쓴 루트 THIRD_PARTY_NOTICES.md 는 일부 목록이라 직접 의존성 117개 중 22개만 싣고 95개는 빠져 있습니다. 완전한 목록은 빌드 산출 고지입니다. ② wasm-vips 패키지는 자체 THIRD-PARTY-NOTICES.md 에 LGPL 라이브러리를 적지만, 생성기는 LICENSE·COPYING·NOTICE 로 시작하는 파일만 모아 생성 고지에는 MIT 로만 나옵니다. ③ Mixbox의 정적 import와 연구 전용 설명이 어긋났던 경계는 외부 의존성을 제거하고 자체 안료로 연결했습니다. 실행 프로필 검증과 산출물 포함 검사는 별개입니다.",
-        "Three gaps are noted. 1 The hand-written root THIRD_PARTY_NOTICES.md is a partial list that carries only 22 of the 117 direct dependencies and omits 95; the full list is the build output. 2 The wasm-vips package lists LGPL libraries in its own THIRD-PARTY-NOTICES.md, but the generator only collects files named like LICENSE, COPYING or NOTICE, so the generated notice shows only MIT. 3 The mismatch between the static Mixbox import and research-only documentation is addressed by removing that external dependency and using the project mixer. Runtime profiles and artifact inclusion remain separate checks.",
+        "검토 지점 셋을 적습니다. ① 2026-10-07 스냅샷의 기존 검토는 수기 루트 THIRD_PARTY_NOTICES.md 가 직접 의존성 117개 중 22개만 싣고 95개를 누락했다고 기록했습니다. 완전한 목록은 빌드 산출 고지입니다. ② 현재 축소는 자체 JavaScript Lanczos3로 이관했고, 2026-11-05 수정으로 생성기는 THIRD-PARTY-NOTICES.md 같은 내장 고지도 수집합니다. 과거 wasm-vips의 LGPL 고지 누락을 해결한 것이며, 고지 수집만으로 source·교체 등 모든 배포 의무가 충족되는 것은 아닙니다. ③ Mixbox의 정적 import와 연구 전용 설명이 어긋났던 경계는 외부 의존성을 제거하고 자체 안료로 연결했습니다. 실행 프로필 검증과 산출물 포함 검사는 별개입니다.",
+        "Three review points are noted. 1 The existing review of the 2026-10-07 snapshot recorded that the hand-written root THIRD_PARTY_NOTICES.md carried only 22 of the 117 direct dependencies and omitted 95; the full list is the build output. 2 Downsizing now uses first-party JavaScript Lanczos3; after the 2026-11-05 fix the generator also collects embedded notices named like THIRD-PARTY-NOTICES.md. This fixes the former omission of wasm-vips LGPL notices; collecting notices alone does not fulfill every source and replacement obligation. 3 The mismatch between the static Mixbox import and research-only documentation is addressed by removing that external dependency and using the project mixer. Runtime profiles and artifact inclusion remain separate checks.",
       ),
     ],
     keyPoints: [
       t("빌드가 고지를 만들고 허용 목록 밖이면 실패한다", "The build writes the notice and fails outside the allowlist"),
       t("Remotion은 정확한 조합을 검사하고 외부 Mixbox는 제거", "Remotion combinations are checked; external Mixbox is removed"),
-      t("손으로 쓴 고지는 일부 목록: 직접 의존성 95/117 누락", "The hand-written notice is partial: 95 of 117 direct deps absent"),
+      t("수기 고지의 과거 검토: 2026-10-07 스냅샷 95/117 누락", "Historical notice review: 95 of 117 snapshot entries absent (2026-10-07)"),
     ],
     diagram: {
       id: "oss-license-notice-pipeline-diagram",
@@ -443,7 +443,7 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
       },
       {
         feature: t("기술 자료 · 라이선스 인벤토리", "Technology pages · license inventory"),
-        role: t("2026-10-07 스냅샷에서 Mixbox를 제외한 116개 기록과, 현재 설치 상태를 따로 수집·대조하는 스크립트가 있습니다.", "A 116-entry record after removing Mixbox from the 2026-10-07 snapshot, plus a script that separately collects and compares the current installed set."),
+        role: t("2026-10-07 스냅샷에서 외부 Mixbox와 wasm-vips를 제외한 115개 기록과, 현재 설치 상태를 따로 수집·대조하는 스크립트가 있습니다.", "A 115-entry record after removing external Mixbox and wasm-vips from the 2026-10-07 snapshot, plus a script that separately collects and compares the current installed set."),
         paths: ["apps/web/src/domains/legal/technology/engineering-license-inventory.ts", "scripts/collect-engineering-licenses.mjs"],
         route: "/about/technology/licenses",
       },
@@ -506,8 +506,8 @@ try {
         {
           question: t("GPL 은 하나도 없나요?", "Is there no GPL at all?"),
           answer: t(
-            "npm 직접 의존성에는 GPL·AGPL 이 없고 허용 목록에도 단독으로 들어 있지 않습니다. 다만 직접 의존성 opencascade.js 1.1.1(LGPL-2.1-only, 고지 파일과 docs/third-party/opencascade-lgpl.md 에 기록), wasm-vips 의 내장 LGPL 라이브러리, 외부 프로그램을 별도 프로세스로만 연결하는 ToonBridge 같은 맥락이 있어 전혀 없다고 말하지는 않습니다.",
-            "There is no GPL or AGPL among the direct npm dependencies, and neither appears alone in the allowlist. But with the direct dependency opencascade.js 1.1.1 (LGPL-2.1-only, recorded in the notice file and docs/third-party/opencascade-lgpl.md), LGPL libraries inside wasm-vips and external programs linked only as separate processes through ToonBridge, we do not claim there is none anywhere.",
+            "npm 직접 의존성에는 GPL·AGPL 이 없고 허용 목록에도 단독으로 들어 있지 않습니다. 다만 직접 의존성 opencascade.js 1.1.1(LGPL-2.1-only, 고지 파일과 docs/third-party/opencascade-lgpl.md 에 기록), wasm-vips 의 과거 내장 LGPL 라이브러리 사용 기록, 외부 프로그램을 별도 프로세스로만 연결하는 ToonBridge 같은 맥락이 있어 전혀 없다고 말하지는 않습니다.",
+            "There is no GPL or AGPL among the direct npm dependencies, and neither appears alone in the allowlist. But with the direct dependency opencascade.js 1.1.1 (LGPL-2.1-only, recorded in the notice file and docs/third-party/opencascade-lgpl.md), historical use of LGPL libraries inside wasm-vips and external programs linked only as separate processes through ToonBridge, we do not claim there is none anywhere.",
           ),
         },
         {
@@ -526,14 +526,14 @@ try {
         },
       ],
       pitfall: t(
-        "법률 판단을 하지 마세요. 이 카드는 저장소가 라이선스를 어떻게 처리하는지만 설명합니다. Remotion 을 배포 법인이 쓸 수 있는 자격인지는 저장소로 확인할 수 없고, Mixbox를 제거한 변경과 실제 운영 배포 여부는 별도 확인 대상이며, wasm-vips 의 LGPL 이 생성 고지에 나타나지 않는다는 점은 알려진 공백입니다.",
-        "Do not make legal judgments. This card explains only how the repository handles licenses. Whether the distributing entity is eligible to use Remotion cannot be confirmed from the repository, the Mixbox removal change and its actual production deployment are separate verification targets, and wasm-vips' LGPL not appearing in the generated notice is a known gap.",
+        "이 카드는 라이선스 처리와 확인 근거를 설명합니다. Remotion 4.0.536은 개인·직원 3명 이하 영리 조직의 무료 상업 사용을 허용해 설명된 개인·1인 운영 전제로 유지합니다. 일반 FAQ는 조직 전체 3명 이하가 기준이며 실제 인원은 독립 검증하지 않았습니다. Mixbox를 제거한 변경과 실제 운영 배포 여부는 별도 확인 대상이며, 내장 고지 수집 누락은 2026-11-05 수정했지만 그 사실만으로 배포 의무 충족을 확정할 수는 없습니다.",
+        "This card explains license handling and its evidence. Remotion 4.0.536 permits free commercial use by individuals and for-profit entities with up to 3 employees, so it is retained under the stated individual, one-person premise. The general FAQ uses total organizational headcount of up to 3 people; actual headcount is not independently verified. Separately, the Mixbox removal change and its actual production deployment are separate verification targets, and the omission of embedded notices was fixed on 2026-11-05, but that alone does not establish distribution compliance.",
       ),
     },
     technologies: ["SPDX", "Remotion", "ToonStudio Latent Pigment", "wasm-vips"],
     facts: [
       { value: "584", label: t("2026-10-08 audit:licenses 가 통과한 pnpm 항목 수", "pnpm entries passed by audit:licenses on 2026-10-08"), source: "scripts/generate-third-party-notices.mjs" },
-      { value: "117", label: t("직접 런타임 의존성 수", "Direct runtime dependencies"), source: "scripts/collect-engineering-licenses.mjs" },
+      { value: "115", label: t("Mixbox·wasm-vips 제외 후 스냅샷 잔존 기록 수", "Remaining snapshot entries after removing Mixbox and wasm-vips"), source: "apps/web/src/domains/legal/technology/engineering-license-inventory.ts" },
       { value: "95 / 117", label: t("손으로 쓴 고지 표에 실리지 않은 직접 의존성(표의 백틱 패키지명 대조, 2026-10-08)", "Direct dependencies missing from the hand-written notice table (backticked package-name match, 2026-10-08)"), source: "THIRD_PARTY_NOTICES.md" },
     ],
     reviewedAt: "2026-10-07",
@@ -685,7 +685,7 @@ export async function loadVerifiedModel(url: string, expected: { bytes: number; 
         {
           question: t("새 취약점이 나오면 어떻게 하나요?", "What happens when a new vulnerability appears?"),
           answer: t(
-            "audit:security 가 pnpm audit 를 예외 없이 돌리고, 전이 의존성은 overrides 로 고쳐진 버전으로 올립니다. overrides 는 현재 57개입니다.",
+            "audit:security 가 pnpm audit 를 예외 없이 돌리고, 전이 의존성은 overrides 로 고쳐진 버전으로 올립니다. overrides 는 현재 61개입니다.",
             "audit:security runs pnpm audit with no exceptions, and transitive dependencies are raised to fixed versions through overrides, 61 of them today.",
           ),
         },

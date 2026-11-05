@@ -1,7 +1,7 @@
 /**
  * 설치 라이브러리의 라이선스 기록.
  *
- * 2026-11-05 변경: 2026-10-07 스냅샷에서 제거한 mixbox 항목만 제외했다(잔존 116개).
+ * 2026-11-05 변경: 2026-10-07 스냅샷에서 외부 mixbox와 wasm-vips를 제외했다(잔존 115개).
  * 전체 재수집 결과의 124개와 신규·버전 차분은 이 표에 아직 반영하지 않았다.
  * 현재 전체 의존성 증거는 수집 스크립트와 빌드 생성 고지를 확인한다.
  *
@@ -11,6 +11,7 @@
  * 공식 링크(url)는 설치된 패키지의 package.json license·homepage·repository
  * 필드에서 확인했다. 버전은 pnpm-lock.yaml importers가 고정한 직접 resolved
  * version만 적는다 — 전이 관계로만 고정된 버전은 이 표에 넣지 않는다.
+ * 2026-11-05 자체 축소 구현 전환으로 wasm-vips 1개를 제거했다(나머지는 위 기준일 스냅샷).
  * 재측정과 차분 확인은 scripts/collect-engineering-licenses.mjs가 맡는다.
  * 전이 의존성과 개발 전용 도구(devDependencies: Vite, Vitest, Playwright, ESLint,
  * TypeScript 등)는 이 표의 범위가 아니며, 전이 의존성 전체는 배포 빌드가 생성하는
@@ -667,14 +668,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
     surface: "web",
     role: { ko: "메시 가속 구조(BVH)", en: "Mesh acceleration structure (BVH)" },
   },
-  {
-    name: "wasm-vips",
-    version: "0.0.18",
-    license: "MIT",
-    url: "https://github.com/kleisauke/wasm-vips",
-    surface: "web",
-    role: { ko: "대형 이미지 내보내기 처리(libvips WASM) — 래퍼는 MIT, 번들된 libvips·libheif 등은 LGPL이며 엔진 레지스트리는 'LGPL 격리 배포가 필요한 후보'로 기록합니다", en: "Large-image export processing (libvips WASM) — the wrapper is MIT while bundled libvips, libheif and others are LGPL; the engine registry records it as a candidate requiring LGPL-isolated deployment" },
-  },
+
   {
     name: "web-ifc",
     version: "0.0.77",

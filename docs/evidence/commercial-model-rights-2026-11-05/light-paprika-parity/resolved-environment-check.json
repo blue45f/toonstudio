@@ -1,0 +1,28 @@
+{
+  "onnxruntime_version": "1.30.0",
+  "onnxruntime_import_path": "/tmp/toonstudio-light-paprika-parity-followup/ort130/onnxruntime/__init__.py",
+  "protobuf_version": "4.25.8",
+  "protobuf_import_path": "/tmp/toonstudio-light-paprika-parity-followup/ort130/google/protobuf/__init__.py",
+  "required_dependencies": [
+    {
+      "requirement": "flatbuffers",
+      "resolved": "25.12.19",
+      "satisfied": true
+    },
+    {
+      "requirement": "numpy>=1.21.6",
+      "resolved": "1.26.4",
+      "satisfied": true
+    },
+    {
+      "requirement": "packaging",
+      "resolved": "26.3",
+      "satisfied": true
+    },
+    {
+      "requirement": "protobuf>=4.25.8",
+      "resolved": "4.25.8",
+      "satisfied": true
+    }
+  ]
+}

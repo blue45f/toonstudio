@@ -575,8 +575,8 @@ export const TOON_SHADING_OUTLINE: EngineeringAtlasEntry = {
   ),
   status: "live",
   tagline: t(
-    "3D 캡처의 색·깊이·법선을 읽어 컬러·톤·질감선·주선 네 레이어로 나눕니다.",
-    "It reads a 3D capture's colour, depth and normals and splits it into four layers.",
+    "기본 LT는 설정에 따라 컬러 또는 톤과 선을 만들고, 6패스는 그림자·깊이까지 여섯 역할로 나눕니다.",
+    "Default LT produces colour or tone and lines according to settings; six-pass LT separates six roles including shadow and depth.",
   ),
   background: [
     t(
@@ -588,8 +588,8 @@ export const TOON_SHADING_OUTLINE: EngineeringAtlasEntry = {
       "Lines are found by layering four clues: where brightness changes sharply (a Sobel filter), the border between an object and empty background (alpha silhouette), where depth changes like a step, and creases where the face direction (normal) bends. Depth contours have a trick. A gentle slope has equal changes toward the front and back, which cancel out, while a depth step is kept only on the occluding (nearer) surface so no halo forms on the far side. The strongest clue wins. For brightness edges only the single strongest pixel along the gradient direction is kept (non-maximum suppression) to thin them to a one-pixel centerline, and the centerline is painted to the chosen width by computing how much of each pixel it covers by distance (anti-aliasing) to make the main line. So the width value is a pixel thickness: equal to the setting on horizontal and vertical lines, and slightly thicker on slanted ones.",
     ),
     t(
-      "톤은 밝기를 2~8단계로 나눈 뒤 어두울수록 큰 점을 찍습니다. 점·선·교차선·노이즈 무늬 중에서 고르고, 격자를 기울여(기본 45°) 인쇄된 망점처럼 만듭니다. 점의 넓이가 곧 잉크의 양이라 밝기와 비례합니다. 결과는 컬러·톤·질감선·주선이 뒤에서 앞 순서인 한 묶음('3D LT 배경')으로 한꺼번에 들어가고, 중간에 실패해도 일부만 남지 않습니다. 같은 입력이면 같은 출력이며 AI는 쓰지 않습니다.",
-      "Tone splits brightness into 2 to 8 levels and prints bigger dots where it is darker. The pattern can be dots, lines, crosshatch or noise, and the grid is tilted (45° by default) to look like printed halftone. The dot's area is the amount of ink, so it follows brightness. The result goes in all at once as one bundle ('3D LT background') with colour, tone, texture line and main line from back to front, and a failure midway leaves nothing half-done. The same input gives the same output, and no AI is involved.",
+      "톤은 밝기를 2~8단계로 나눈 뒤 어두울수록 큰 점을 찍습니다. 점·선·교차선·노이즈 무늬 중에서 고르고, 격자를 기울여(기본 45°) 인쇄된 망점처럼 만듭니다. 점의 넓이가 곧 잉크의 양이라 밝기와 비례합니다. 기본 출력은 설정에 따라 컬러 또는 톤, 질감선, 주선을 만들며, 6패스는 컬러·톤·그림자·깊이·질감선·주선 순서로 분리합니다. 결과는 한 묶음('3D LT 배경')으로 한꺼번에 들어가고, 중간에 실패해도 일부만 남지 않습니다. 같은 입력이면 같은 출력이며 AI는 쓰지 않습니다.",
+      "Tone splits brightness into 2 to 8 levels and prints bigger dots where it is darker. The pattern can be dots, lines, crosshatch or noise, and the grid is tilted (45° by default) to look like printed halftone. The dot's area is the amount of ink, so it follows brightness. Default output creates colour or tone, texture lines and main lines according to settings; six-pass output separates colour, tone, shadow, depth, texture lines and main lines in that order. The result enters all at once as one bundle ('3D LT background'), and a failure midway leaves nothing half-done. The same input gives the same output, and no AI is involved.",
     ),
     t(
       "대안은 메시의 윤곽을 기하로 뽑는 방식입니다. 하지만 조명과 재질이 반영된 최종 화면의 선은 기하만으로 못 만들고 사진에도 같은 도구가 돌아야 해서 이미지 기반을 택했다고 검토 문서(2026-09-30)가 밝힙니다. 대가도 분명합니다. 결과는 벡터 선이 아니라 픽셀이고, 얇은 형태는 해상도와 부드러움 설정에 민감합니다. 캡처는 약 838만 화소 이내로 제한되고, 계산은 Worker에서 최대 120초까지 기다립니다.",
@@ -600,15 +600,15 @@ export const TOON_SHADING_OUTLINE: EngineeringAtlasEntry = {
     t("선은 밝기·실루엣·깊이·법선 네 단서 중 가장 센 값으로 정합니다", "A line takes the strongest of four clues: brightness, silhouette, depth, normal"),
     t("깊이 계단은 가리는 쪽에만 선을 남겨 후광을 막습니다", "A depth step keeps a line only on the occluding side, so no halo"),
     t("톤은 어두울수록 큰 점: 점의 넓이가 곧 잉크의 양입니다", "Tone prints bigger dots where darker: dot area is the amount of ink"),
-    t("컬러·톤·질감선·주선 네 레이어가 한 묶음으로 들어갑니다", "Colour, tone, texture and main lines enter as one four-layer bundle"),
+    t("기본 출력은 설정별 역할을, 6패스는 여섯 역할을 한 묶음으로 넣습니다", "Default output bundles the configured roles; six-pass output bundles six roles"),
   ],
   diagram: {
     id: "toon-shading-outline-diagram",
     kind: "graph",
     title: t("한 장의 캡처가 선 레이어와 톤 레이어로 갈라지는 길", "How one capture splits into line layers and a tone layer"),
     caption: t(
-      "위쪽은 선, 아래쪽은 톤입니다. 두 갈래는 같은 캡처에서 시작해 마지막에 한 묶음으로 합쳐집니다.",
-      "The top row is lines and the bottom row is tone. Both start from the same capture and join as one bundle at the end.",
+      "위쪽은 선, 아래쪽은 톤입니다. 설정에 따른 결과를 한 묶음으로 넣고, 6패스는 실제 밑색·그림자·선형 깊이 캡처도 사용합니다.",
+      "The top row is lines and the bottom row is tone. Configured results form one bundle; six-pass output also uses captured flat colour, shadow and linear depth.",
     ),
     alt: t(
       "3D 화면 캡처에서 두 길이 갈라집니다. 위쪽 길은 밝기, 실루엣, 깊이, 법선 네 단서를 합친 뒤 가장 센 값을 고르고 한 픽셀 중심선으로 얇게 만든 다음 설정한 굵기만큼 칠해 주선과 질감선 레이어를 만듭니다. 아래쪽 길은 밝기를 몇 단계로 나눈 뒤 기울인 점 격자로 어두울수록 큰 점을 찍어 톤 레이어를 만듭니다. 두 길의 결과는 마지막에 3D LT 배경 묶음으로 합쳐집니다.",
@@ -623,7 +623,7 @@ export const TOON_SHADING_OUTLINE: EngineeringAtlasEntry = {
       { id: "levels", label: t("밝기를 단계로", "Brightness to levels"), sub: t("2~8단계로 나눔", "Split into 2 to 8 levels"), tone: "local", at: [1, 1] },
       { id: "dots", label: t("기울인 점 격자", "Tilted dot grid"), sub: t("어두울수록 큰 점", "Darker means bigger dots"), tone: "local", at: [2, 1] },
       { id: "tone", label: t("톤 레이어", "Tone layer"), sub: t("스크린톤 알파", "Screentone alpha"), tone: "good", at: [3, 1] },
-      { id: "bundle", label: t("3D LT 배경 묶음", "3D LT background"), sub: t("네 레이어를 한 번에", "All four layers at once"), tone: "good", at: [4, 1] },
+      { id: "bundle", label: t("3D LT 배경 묶음", "3D LT background"), sub: t("설정별 역할 · 6패스는 여섯", "Configured roles; six in six-pass"), tone: "good", at: [4, 1] },
     ],
     edges: [
       { from: "capture", to: "clues" },
@@ -641,8 +641,8 @@ export const TOON_SHADING_OUTLINE: EngineeringAtlasEntry = {
     {
       feature: t("3D 배경 편집기 · LT 출력 패널", "3D background editor · LT output panel"),
       role: t(
-        "선(굵기·깊이 선·질감선)과 톤(방식·무늬·각도·빈도)을 정하고 내장 프리셋 5종을 고릅니다. 삽입하면 3D 장면이 컬러·톤·질감선·주선 레이어 묶음으로 들어갑니다.",
-        "Sets lines (width, depth lines, texture lines) and tone (mode, pattern, angle, frequency) and picks from 5 built-in presets. Inserting puts the 3D scene in as a bundle of colour, tone, texture-line and main-line layers.",
+        "선(굵기·깊이 선·질감선)과 톤(방식·무늬·각도·빈도)을 정하고 내장 프리셋 5종을 고릅니다. 기본 출력은 설정에 따라 컬러 또는 톤과 선을, 6패스 출력은 그림자·깊이까지 여섯 역할을 한 묶음으로 넣습니다.",
+        "Sets lines (width, depth lines, texture lines) and tone (mode, pattern, angle, frequency) and picks from 5 built-in presets. Default output bundles colour or tone and configured lines; six-pass output bundles six roles including shadow and depth.",
       ),
       paths: [
         `${BG3D_DIR}/StudioBg3dLtPanel.tsx`,
@@ -667,8 +667,8 @@ export const TOON_SHADING_OUTLINE: EngineeringAtlasEntry = {
     {
       feature: t("Worker 실행과 레이어 묶음 교체", "Worker execution and bundle replacement"),
       role: t(
-        "계산을 Web Worker로 보내 화면을 막지 않고, 결과를 네 역할의 레이어 묶음으로 한 번에 교체합니다. 실패하면 일부만 남지 않습니다.",
-        "Sends the computation to a Web Worker so the screen is not blocked, and swaps the result in as one four-role layer bundle. A failure leaves nothing partial.",
+        "계산을 Web Worker로 보내 화면을 막지 않고, 설정에 따라 생성된 역할의 레이어 묶음을 한 번에 교체합니다. 6패스는 여섯 역할을 유지하며 실패하면 일부만 남지 않습니다.",
+        "Sends the computation to a Web Worker so the screen is not blocked, and swaps the configured layer bundle in at once. Six-pass output keeps six roles; a failure leaves nothing partial.",
       ),
       paths: [
         `${BG3D_DIR}/studio-bg3d-lt-render-worker-client.ts`,
@@ -856,7 +856,7 @@ export function toneAlpha(luma: number, x: number, y: number, frequency = 60, an
   technologies: ["Three.js", "Web Workers", "Sobel", "Clip Studio Paint"],
   facts: [
     { value: "8,388,608 px", label: t("3D LT 한 번에 다루는 최대 화소 수", "Most pixels one 3D LT run handles"), source: `${BG3D_DIR}/studio-bg3d-lt-depth-edges.ts` },
-    { value: "4", label: t("한 묶음의 레이어 역할: 컬러·톤·질감선·주선", "Layer roles in one bundle: colour, tone, texture line, main line"), source: `${BG3D_DIR}/studio-bg3d-lt-layer-plan.ts` },
+    { value: "6", label: t("지원하는 레이어 역할: 컬러·톤·그림자·깊이·질감선·주선", "Supported layer roles: colour, tone, shadow, depth, texture line, main line"), source: `${BG3D_DIR}/studio-bg3d-lt-layer-plan.ts` },
     { value: "5", label: t("내장 LT 프리셋 수", "Built-in LT presets"), source: `${BG3D_DIR}/studio-bg3d-lt-presets.ts` },
     { value: "2~8", label: t("톤 단계 수의 허용 범위", "Allowed range of tone levels"), source: `${BG3D_DIR}/studio-bg3d-lt-render.ts` },
   ],

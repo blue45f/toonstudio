@@ -1,0 +1,142 @@
+{
+  "checkedAtUtc": "2026-11-05T11:37:55.079943+00:00",
+  "sourceSha256": {
+    "/workspace/toonstudio/scripts/check-restricted-model-distribution.mjs": "d6b55ceac944619eb53e09bb54e385ce6e0e39da04fccf381a5d1265116d386f",
+    "/workspace/toonstudio/scripts/check-restricted-model-distribution.test.mjs": "5187134e455b75310ec8acbda16d04fc38bb5009194401efa90002df6391be18"
+  },
+  "sourceUnchangedDuringReview": true,
+  "cliAndPolicyCases": [
+    {
+      "case": "safe",
+      "exit": 0,
+      "expectedExit": 0,
+      "passed": true,
+      "stdout": "{\n  \"scope\": \"selected-known-model-byte-hashes\",\n  \"filesVisited\": 1,\n  \"onnxFiles\": 1,\n  \"inspected\": 1,\n  \"matches\": [],\n  \"blockingMatches\": [],\n  \"reviewMatches\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "case": "root-link",
+      "exit": 2,
+      "expectedExit": 2,
+      "passed": true,
+      "stdout": "",
+      "stderr": "모델 배포 검사 실패: 검사 루트의 심볼릭 링크는 배포 검사 전에 해소하세요.. 경로와 파일 접근 권한을 확인하세요.\n"
+    },
+    {
+      "case": "bad-flag",
+      "exit": 2,
+      "expectedExit": 2,
+      "passed": true,
+      "stdout": "",
+      "stderr": "모델 배포 검사 실패: 사용법: node scripts/check-restricted-model-distribution.mjs [배포 디렉터리] [--json]. 경로와 파일 접근 권한을 확인하세요.\n"
+    },
+    {
+      "case": "missing",
+      "exit": 2,
+      "expectedExit": 2,
+      "passed": true,
+      "stdout": "",
+      "stderr": "모델 배포 검사 실패: ENOENT: no such file or directory, lstat '/tmp/toonstudio-model-checker-fix-confirm-cvgn2yoj/missing'. 경로와 파일 접근 권한을 확인하세요.\n"
+    },
+    {
+      "case": "file-root",
+      "exit": 2,
+      "expectedExit": 2,
+      "passed": true,
+      "stdout": "",
+      "stderr": "모델 배포 검사 실패: 모델 배포 검사 대상은 디렉터리여야 합니다.. 경로와 파일 접근 권한을 확인하세요.\n"
+    },
+    {
+      "case": "child-link",
+      "exit": 2,
+      "expectedExit": 2,
+      "passed": true,
+      "stderr": "모델 배포 검사 실패: 심볼릭 링크는 배포 검사 전에 해소하세요: child-link. 경로와 파일 접근 권한을 확인하세요.\n"
+    },
+    {
+      "case": "synthetic-blocking",
+      "exit": 1,
+      "expectedExit": 1,
+      "passed": true,
+      "result": {
+        "scope": "selected-known-model-byte-hashes",
+        "filesVisited": 1,
+        "onnxFiles": 1,
+        "inspected": 1,
+        "matches": [
+          {
+            "path": "safe.onnx",
+            "model": "Tag2Pix",
+            "sha256": "258c9f6ac20e73b46140ad8225fae16b09dc575c3cad909407b445bdd6b3561f",
+            "byteLength": 27,
+            "status": "noncommercial-and-redistribution-restricted",
+            "disposition": "block",
+            "source": "https://github.com/blandocs/Tag2Pix#license"
+          }
+        ],
+        "blockingMatches": [
+          {
+            "path": "safe.onnx",
+            "model": "Tag2Pix",
+            "sha256": "258c9f6ac20e73b46140ad8225fae16b09dc575c3cad909407b445bdd6b3561f",
+            "byteLength": 27,
+            "status": "noncommercial-and-redistribution-restricted",
+            "disposition": "block",
+            "source": "https://github.com/blandocs/Tag2Pix#license"
+          }
+        ],
+        "reviewMatches": []
+      },
+      "note": "synthetic digest/size substitution only in isolated process; no repository or checkpoint writes"
+    },
+    {
+      "case": "synthetic-review",
+      "exit": 0,
+      "expectedExit": 0,
+      "passed": true,
+      "result": {
+        "scope": "selected-known-model-byte-hashes",
+        "filesVisited": 1,
+        "onnxFiles": 1,
+        "inspected": 1,
+        "matches": [
+          {
+            "path": "safe.onnx",
+            "model": "AnimeGAN Face Paint v2",
+            "sha256": "258c9f6ac20e73b46140ad8225fae16b09dc575c3cad909407b445bdd6b3561f",
+            "byteLength": 27,
+            "status": "mit-repository-checkpoint-training-provenance-review",
+            "disposition": "review",
+            "source": "https://github.com/bryandlee/animegan2-pytorch#additional-model-weights"
+          }
+        ],
+        "blockingMatches": [],
+        "reviewMatches": [
+          {
+            "path": "safe.onnx",
+            "model": "AnimeGAN Face Paint v2",
+            "sha256": "258c9f6ac20e73b46140ad8225fae16b09dc575c3cad909407b445bdd6b3561f",
+            "byteLength": 27,
+            "status": "mit-repository-checkpoint-training-provenance-review",
+            "disposition": "review",
+            "source": "https://github.com/bryandlee/animegan2-pytorch#additional-model-weights"
+          }
+        ]
+      },
+      "note": "synthetic digest/size substitution only in isolated process; no repository or checkpoint writes"
+    },
+    {
+      "case": "duplicate-policy-digest",
+      "exit": 0,
+      "expectedExit": 0,
+      "passed": true,
+      "result": {
+        "duplicateRejected": true,
+        "message": "모델 검사 목록의 SHA-256은 중복될 수 없습니다."
+      }
+    }
+  ],
+  "allPassed": true,
+  "rootFilesEdited": false,
+  "actualModelWeightsReadOrCopied": false
+}

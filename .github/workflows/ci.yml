@@ -169,6 +169,8 @@ jobs:
           node scripts/sync-i18n-legacy-assets.mjs --check
           node scripts/generate-i18n-builtins.mjs --check
       - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Commercial audit and complete typechecker regression tests
+        run: node --test scripts/typecheck-shards.test.mjs scripts/check-restricted-model-distribution.test.mjs scripts/third-party-license-files.test.mjs
       # 빌드 없이 Studio 진입 그래프의 정적 성장을 원인 import 와 함께 알린다(typecheck 보다 먼저 몇 초 안에 실패).
       - name: Studio entry graph ratchet (static imports only, no build)
         run: pnpm run check:studio-eager-graph
@@ -255,6 +257,36 @@ jobs:
             ${{ matrix.shard == 'product' && '/apps/web/public/vrm/LICENSES.md' || '' }}
             ${{ matrix.shard == 'product' && '/tests/benchmarks/results/app-startup-perf.json' || '' }}
             ${{ matrix.shard == 'product' && '/tests/benchmarks/results/i18n-fix.json' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0003-one-primary-surface-owner.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0004-2d-baseline-canvaskit-plus-vello-cpu.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0005-inking-pipeline-staged.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0006-natural-media-hokusai-first.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0008-license-isolation-policy.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0009-google-ink-poc-gate-and-fallback.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0011-v12-frontier-quarantine-ledger.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0017-vello-gap-alternative-engine-lanes.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0018-no-automatic-engine-fallback-vello-primary.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0019-renderer-role-ledger-single-authority.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0022-studio-authority-identity-production-modes.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0025-skia-retained-document-migration.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/adr/0026-labs-experimental-apps-engine-selection-and-promotion.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/studio-bg3d-webgpu-engine-promotion-2026-08-29.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/candidates/engine-portfolio/capability-survey.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/third-party/opencascade-lgpl.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-boardroom-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-cherry-path-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/wuxia/gpt25-bg-wuxia-palace-courtyard-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/daily/gpt25-bg-daily-convenience-store-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-space-station-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-cyber-alley-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/action/gpt25-bg-action-highway-chase-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-hospital-corridor-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-ferris-wheel-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/action/gpt25-bg-action-jungle-temple-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/wuxia/gpt25-bg-wuxia-traditional-market-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-research-lab-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/daily/gpt25-bg-daily-bedroom-night-vertical-depth/background.png' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/fantasy/gpt25-bg-fantasy-dragon-cliff-vertical-depth/background.png' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/production-v2/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/living-world/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/drawn-characters-v1/' || '' }}

@@ -1,0 +1,10 @@
+{
+  "baseline_freeze_path": "/tmp/toonstudio-light-paprika-evaluation/pip-freeze.txt",
+  "baseline_package_lines": 45,
+  "current_package_lines": 45,
+  "added": [],
+  "removed": [],
+  "versions_identical": true,
+  "onnxruntime": "1.20.1",
+  "protobuf": "3.20.3"
+}

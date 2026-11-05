@@ -55,7 +55,7 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
     t("문·구역·NPC 는 '어디로 갈지'만 정하고, 쓸 자격은 도착한 기능이 따로 판단합니다.", "Doors, zones and NPCs only decide where to go; the feature you arrive at judges whether you may use it."),
     t("3D 는 별도 화면(/studio/bg3d, /studio/poser)에서 three.js 가 그리며 Phaser 캔버스를 쓰지 않습니다.", "3D is drawn by three.js on separate screens (/studio/bg3d, /studio/poser) and does not use the Phaser canvas."),
     t("그림 한 장은 규칙으로 GLB 가 되고, 가져온 3D 파일 9형식은 검증된 GLB 하나로 정규화됩니다.", "One image becomes a GLB by rules, and the nine importable 3D formats are normalized into one verified GLB."),
-    t("3D 장면은 캡처되어 컬러·톤·질감선·주선 네 레이어로 2D 작품에 들어갑니다.", "A 3D scene is captured and enters the 2D work as four layers: color, tone, texture lines and main lines."),
+    t("3D 캡처는 기본 LT 설정에 따라 컬러 또는 톤과 선을 만들고, 6패스 선택 시 컬러·톤·그림자·깊이·질감선·주선 여섯 역할로 2D 작품에 들어갑니다.", "Default LT creates color or tone and lines according to settings; selecting six passes inserts color, tone, shadow, depth, texture lines and main lines into the 2D work."),
   ],
   background: [
     t(
@@ -98,8 +98,8 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
     {
       what: t("3D 뷰포트와 LT 삽입", "3D viewport and LT insertion"),
       role: t(
-        "three.js·R3F 가 3D 장면을 그리고, 선과 톤 계산 결과를 네 레이어 묶음으로 2D 작품에 삽입",
-        "three.js and R3F draw the scene, and line-and-tone results are inserted into the 2D work as a four-layer bundle",
+        "three.js·R3F 가 3D 장면을 그리고, 기본 LT 설정에 따른 역할 또는 6패스의 여섯 역할을 한 묶음으로 2D 작품에 삽입",
+        "three.js and R3F draw the scene, then insert the roles from default LT settings or the six roles of six-pass output as one bundle into the 2D work",
       ),
       paths: [
         "apps/web/src/domains/creator/bg3d/StudioBg3dEditorViewport.tsx",

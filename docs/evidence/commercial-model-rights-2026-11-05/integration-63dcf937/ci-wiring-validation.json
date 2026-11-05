@@ -1,0 +1,9 @@
+{
+  "command": "node --test scripts/ci-core-gate.test.mjs scripts/ci-throughput-policy.test.mjs scripts/ci-merge-reliability.test.mjs scripts/type-coverage-gate-contract.test.mjs",
+  "exit": 0,
+  "testsPassed": 38,
+  "failed": 0,
+  "newWorkflowStep": "Commercial audit and complete typechecker regression tests",
+  "afterDependencyInstall": true,
+  "sourceProgramInputsChanged": false
+}

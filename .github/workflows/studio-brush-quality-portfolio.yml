@@ -90,6 +90,8 @@ jobs:
           apps/web/src/domains/creator/brush/studio-sub-tool-palette-data.ts
 
       - name: Typecheck
+        env:
+          NODE_OPTIONS: --max-old-space-size=16384
         run: pnpm exec tsc -p tsconfig.json --noEmit --incremental false
 
       - name: Build production Studio

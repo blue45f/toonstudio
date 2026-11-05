@@ -131,7 +131,7 @@ describe("wet-paper settled bake solver (MoXi / Curtis / Chu & Tai)", () => {
     }
   });
 
-  it("입자 침전 계수를 끄면 같은 물 흐름에서도 정착 안료 분포가 달라진다", () => {
+  it("입자 침전 계수를 끄면 같은 수분 수지에서도 정착 안료 분포가 달라진다", () => {
     const settings = settingsFor("curtis-granulating-wash");
     const dabs = lineDabs(40, 100, 60, 12, 0.6, 3);
     const [coarse, fine] = settings.program.pigments;

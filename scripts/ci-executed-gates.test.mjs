@@ -49,6 +49,14 @@ function targetExists(target) {
   return readdirSync(directory).some((entry) => expression.test(entry));
 }
 
+/** 문서 본문을 체크아웃하지 않는 lane도 Git 추적 정본의 누락은 거부한다. */
+function assertTrackedDocumentInputs(inputs, { cwd = repoRoot, env } = {}) {
+  const tracked = spawnSync("git", ["ls-files", "--error-unmatch", "--",
+    ...inputs.map((path) => `:(literal)${path.slice(1)}`)], { cwd, env, encoding: "utf8" });
+  assert.equal(tracked.status, 0,
+    `foundation 문서 정본이 Git 추적 목록에 없습니다: ${inputs.join(", ")}\n${tracked.error?.message ?? tracked.stderr}`);
+}
+
 test("checkout 조건식 파서는 알려진 literal 이외의 실행식과 조건을 거부한다", () => {
   const block = (expression) => `          sparse-checkout: |\n            /*\n            ${expression}\n`;
   assert.throws(() => sparsePatterns(block("${{ fromJSON(inputs.paths) }}")), /지원하지 않는 checkout 조건식/u);
@@ -590,7 +598,39 @@ test("product 초기 checkout은 문서 정본을 포함하고 대형 아트는 
   assert.doesNotMatch(job("static"), /Restore documentation authority for product regressions/u);
 });
 
-test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 checkout에서 정확히 보존한다", () => {
+test("문서 없는 typecheck checkout도 Git 추적 정본을 확인하고 미추적 물리 파일은 거부한다", () => {
+  const root = mkdtempSync(join(tmpdir(), "core-document-index-authority-"));
+  const env = fixtureGitEnvironment(root);
+  const path = "/docs/third-party/opencascade-lgpl.md";
+  const relative = path.slice(1), absolute = join(root, relative);
+  const git = (...args) => {
+    const result = spawnSync("git", args, { cwd: root, env, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  try {
+    git("init", "--quiet");
+    mkdirSync(dirname(absolute), { recursive: true });
+    writeFileSync(absolute, "정본 문서\n");
+    writeFileSync(join(root, "package.json"), "{}\n");
+    git("add", ".");
+    const tree = git("write-tree");
+    git("config", "core.sparseCheckout", "true");
+    git("config", "core.sparseCheckoutCone", "false");
+    writeFileSync(join(root, ".git/info/sparse-checkout"), `${sparsePatterns(job("typecheck")).join("\n")}\n`);
+    git("read-tree", "-mu", tree);
+    assert.equal(existsSync(absolute), false, "typecheck lane은 foundation 문서 본문을 내려받지 않습니다.");
+    assertTrackedDocumentInputs([path], { cwd: root, env });
+
+    git("update-index", "--force-remove", "--", relative);
+    mkdirSync(dirname(absolute), { recursive: true });
+    writeFileSync(absolute, "추적되지 않은 파일\n");
+    assert.equal(existsSync(absolute), true);
+    assert.throws(() => assertTrackedDocumentInputs([path], { cwd: root, env }), /foundation 문서 정본이 Git 추적 목록에 없습니다/u);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·문서 16개 선언을 최초 checkout에서 정확히 보존한다", () => {
   const asset = "/apps/web/public/assets/";
   const foundationInputs = [
     "/apps/web/public/assets/3d/environments/bundle-v1/deploy-index.b90b58fd4c87e9fddb2e39a7f1cbeb75ce93f0bc19f4f1cc053ac696e55e377c.json",
@@ -649,6 +689,40 @@ test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 c
     "/apps/web/public/vrm/LICENSES.md",
     ...["Sendagaya_Shino", "Sendagaya_Shibu", "Kate", "Jennifer", "Erika", "Olivia", "Jimmy", "Anna", "Cyberpal"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
   ];
+  const routeVisualInputs = [
+    `${asset}studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-boardroom-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-cherry-path-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/wuxia/gpt25-bg-wuxia-palace-courtyard-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/daily/gpt25-bg-daily-convenience-store-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-space-station-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-cyber-alley-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/action/gpt25-bg-action-highway-chase-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-hospital-corridor-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-ferris-wheel-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/action/gpt25-bg-action-jungle-temple-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/wuxia/gpt25-bg-wuxia-traditional-market-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/sf/gpt25-bg-sf-research-lab-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/daily/gpt25-bg-daily-bedroom-night-vertical-depth/background.png`,
+    `${asset}studio/generated-backgrounds/gpt25-v1/fantasy/gpt25-bg-fantasy-dragon-cliff-vertical-depth/background.png`,
+  ];
+  const foundationDocumentInputs = [
+    "/docs/adr/0003-one-primary-surface-owner.md",
+    "/docs/adr/0004-2d-baseline-canvaskit-plus-vello-cpu.md",
+    "/docs/adr/0005-inking-pipeline-staged.md",
+    "/docs/adr/0006-natural-media-hokusai-first.md",
+    "/docs/adr/0008-license-isolation-policy.md",
+    "/docs/adr/0009-google-ink-poc-gate-and-fallback.md",
+    "/docs/adr/0011-v12-frontier-quarantine-ledger.md",
+    "/docs/adr/0017-vello-gap-alternative-engine-lanes.md",
+    "/docs/adr/0018-no-automatic-engine-fallback-vello-primary.md",
+    "/docs/adr/0019-renderer-role-ledger-single-authority.md",
+    "/docs/adr/0022-studio-authority-identity-production-modes.md",
+    "/docs/adr/0025-skia-retained-document-migration.md",
+    "/docs/adr/0026-labs-experimental-apps-engine-selection-and-promotion.md",
+    "/docs/studio-bg3d-webgpu-engine-promotion-2026-08-29.md",
+    "/docs/candidates/engine-portfolio/capability-survey.md",
+    "/docs/third-party/opencascade-lgpl.md",
+  ];
   const owned = {
     product: ["/docs/", ...[
       "3d/outfits/README.md", "studio/cc0-20260906/README.md", "3d/LICENSES.md",
@@ -662,6 +736,8 @@ test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 c
       `${asset}virtual-studio/toon-office-v1/characters/`, `${asset}studio/illustration-20260926/`,
       `${asset}studio/bundle-renders-v1/`, `${asset}studio/bundle-scenes-v1/`, `${asset}virtual-studio/bundle-decor-v1/`,
       ...foundationInputs,
+      ...routeVisualInputs,
+      ...foundationDocumentInputs,
     ],
     "studio-editing": [],
     "studio-3d": [`${asset}3d/environments/authored-v1/`],
@@ -670,12 +746,30 @@ test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 c
   assert.equal(foundationInputs.length, 63);
   assert.equal(new Set(foundationInputs).size, 63);
   assert.ok(foundationInputs.every((path) => !path.endsWith("/")), "추가 입력은 개별 파일이어야 합니다.");
-  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 90, 0, 1, 7]);
+  assert.equal(routeVisualInputs.length, 14);
+  assert.equal(new Set(routeVisualInputs).size, 14);
+  assert.ok(routeVisualInputs.every((path) => path.endsWith("/background.png")), "페이지 시각 입력은 원본 PNG 개별 파일이어야 합니다.");
+  const routeVisualSet = new Set(routeVisualInputs);
+  const foundationDocumentSet = new Set(foundationDocumentInputs);
+  assert.equal(foundationDocumentSet.size, 16);
+  assert.ok(foundationDocumentInputs.every((path) => path.endsWith(".md") && !path.includes("*")), "문서 입력은 정확한 개별 Markdown 파일이어야 합니다.");
+  assertTrackedDocumentInputs(foundationDocumentInputs);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 90, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 120, 0, 1, 7]);
   const declarations = [...job("static").matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
   assert.match(job("static"), /persist-credentials: false/u);
   assert.match(job("static"), /sparse-checkout-cone-mode: false/u);
-  assert.equal(declarations.length, 111, "기존 48개와 foundation 63개 선언을 정확히 보존해야 합니다.");
-  assert.equal(new Set(declarations.map((match) => match[2])).size, 106, "라이선스와 character도 검사하는 네 VRM만 shard 사이에 공유합니다.");
+  const originalDeclarations = declarations.filter((match) => !routeVisualSet.has(match[2]) && !foundationDocumentSet.has(match[2]));
+  const routeVisualDeclarations = declarations.filter((match) => routeVisualSet.has(match[2]));
+  const foundationDocumentDeclarations = declarations.filter((match) => foundationDocumentSet.has(match[2]));
+  assert.equal(originalDeclarations.length, 111, "기존 48개와 foundation 63개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(originalDeclarations.map((match) => match[2])).size, 106, "기존 라이선스와 네 VRM의 shard 공유만 유지합니다.");
+  assert.deepEqual(routeVisualDeclarations.map((match) => match[2]).sort(), [...routeVisualInputs].sort());
+  assert.ok(routeVisualDeclarations.every((match) => match[1] === "studio-foundation"), "페이지 시각 입력은 foundation만 소유해야 합니다.");
+  assert.deepEqual(foundationDocumentDeclarations.map((match) => match[2]).sort(), [...foundationDocumentInputs].sort());
+  assert.ok(foundationDocumentDeclarations.every((match) => match[1] === "studio-foundation"), "추가 문서 선언은 foundation만 소유해야 합니다.");
+  assert.equal(declarations.length, 141, "기존 111개와 원본 PNG 14개·문서 16개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(declarations.map((match) => match[2])).size, 136, "새 PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
   for (const [shard, paths] of Object.entries(owned)) {
     assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
   }
@@ -690,9 +784,10 @@ test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 c
   const unrelated = ["apps/web/public/assets/unrelated/large.glb", "apps/web/public/vrm/unrelated.vrm", "artifacts/unrelated.bin",
     "apps/web/public/assets/virtual-studio/studio-art-v11/unrelated-large.webp",
     "apps/web/public/assets/3d/environments/bundle-v1/unrelated-large.glb"];
+  const unrelatedDocuments = ["docs/third-party/unrelated.md", "docs/adr/9999-unrelated.md", "docs/unrelated/large.bin"];
   try {
     git("init", "--quiet");
-    for (const file of [world, ...Object.values(owned).flat().map(input), ...unrelated, "package.json"]) {
+    for (const file of [world, ...Object.values(owned).flat().map(input), ...unrelated, ...unrelatedDocuments, "package.json"]) {
       mkdirSync(dirname(join(root, file)), { recursive: true });
       writeFileSync(join(root, file), "fixture\n");
     }
@@ -708,12 +803,28 @@ test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 c
         for (const path of paths) {
           // 3D 팩 전체에 속한 라이선스는 기존 팩 복원에도 포함되던 공통 입력이다.
           const sharedPackLicense = shard === "studio-3d" && path === `${asset}3d/environments/authored-v1/LICENSES.md`;
+          // product가 기존에 소유한 전체 문서는 foundation의 개별 입력 추가 뒤에도 유지한다.
+          const sharedProductDocument = shard === "product" && foundationDocumentSet.has(path);
           const ownedByShard = owned[shard].includes(path);
-          assert.equal(existsSync(join(root, input(path))), ownedByShard || sharedPackLicense, `${shard}: ${owner} 입력 경계 ${path}`);
+          assert.equal(existsSync(join(root, input(path))), ownedByShard || sharedPackLicense || sharedProductDocument, `${shard}: ${owner} 입력 경계 ${path}`);
         }
       }
       for (const file of unrelated) assert.equal(existsSync(join(root, file)), false, `${shard}: 무관한 대형 자산 ${file}`);
+      for (const file of unrelatedDocuments) assert.equal(existsSync(join(root, file)), shard === "product", `${shard}: 기존 product 외의 무관한 문서 ${file}`);
     }
+    // preflight는 선언을 검사하고, 문서 본문 복원은 위의 실제 shard 행렬에서 검증한다.
+    writeFileSync(join(root, ".git/info/sparse-checkout"), `${sparsePatterns(job("typecheck")).join("\n")}\n`);
+    git("read-tree", "-mu", "HEAD");
+    for (const path of foundationDocumentInputs) {
+      assert.equal(existsSync(join(root, path.slice(1))), false, `preflight에 불필요한 문서 본문: ${path}`);
+      assertTrackedDocumentInputs([path], { cwd: root, env });
+    }
+    assert.throws(() => assertTrackedDocumentInputs(["/docs/adr/0003-one-primary-surface-owner-typo.md"], { cwd: root, env }), /foundation 문서 정본이 Git 추적 목록에 없습니다/u);
+    const untracked = "docs/adr/untracked-foundation.md";
+    mkdirSync(dirname(join(root, untracked)), { recursive: true });
+    writeFileSync(join(root, untracked), "untracked fixture\n");
+    assert.ok(existsSync(join(root, untracked)));
+    assert.throws(() => assertTrackedDocumentInputs([`/${untracked}`], { cwd: root, env }), /foundation 문서 정본이 Git 추적 목록에 없습니다/u);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 

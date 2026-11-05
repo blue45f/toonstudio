@@ -350,6 +350,9 @@ test("each non-Vitest contract has one owning shard", () => {
   ]) {
     assert.equal(serialized.split(command).length - 1, 1, command);
   }
+  const packageScripts = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).scripts;
+  assert.equal(packageScripts["test:studio-material-brush"].split(/\s+/u).filter((arg) => arg === "scripts/studio-brush-v6-pixel-quality.test.ts").length, 1, "Chemy 정책 회귀는 기존 재질 시험 명령에 정확히 한 번 포함해야 합니다.");
+  assert(SHARD_COMMANDS["studio-editing"].some(({ argv }) => argv.some((arg) => arg.includes("pnpm run test:studio-material-brush"))), "재질 정책 회귀의 필수 소유 shard를 유지해야 합니다.");
 });
 
 test("list mode validates the manifest without installing dependencies", () => {

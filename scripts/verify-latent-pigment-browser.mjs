@@ -173,7 +173,8 @@ async function within(promise, milliseconds, label) {
 
 /** Playwright가 이 함수 전체를 브라우저로 직렬화하므로 내부 함수는 외부 클로저를 읽지 않는다. */
 async function inspectBrowserPigment(expectedIds) {
-  const m = await import("/fixture.js");
+  const fixtureUrl = new URL("/fixture.js", location.href).href;
+  const m = await import(fixtureUrl);
   const tableStarted = performance.now();
   const table = m.bakeLatentPigmentTable(33);
   const tableBakeMs = performance.now() - tableStarted;

@@ -1,0 +1,7261 @@
+[
+  {
+    "name": "@anthropic-ai/sdk",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@anthropic-ai+sdk@1.1.0_zod@4.6.7/node_modules/@anthropic-ai/sdk"
+    ],
+    "license": "Apache-2.0",
+    "author": "Anthropic",
+    "homepage": "github:anthropics/anthropic-sdk-typescript"
+  },
+  {
+    "name": "@automerge/automerge",
+    "versions": [
+      "3.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@automerge+automerge@3.5.0/node_modules/@automerge/automerge"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/automerge/automerge/tree/main/javascript"
+  },
+  {
+    "name": "@babel/runtime",
+    "versions": [
+      "7.29.10",
+      "7.29.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@babel+runtime@7.29.10/node_modules/@babel/runtime",
+      "node_modules/.pnpm/@babel+runtime@7.29.7/node_modules/@babel/runtime"
+    ],
+    "license": "MIT",
+    "author": "The Babel Team",
+    "homepage": "https://babel.dev/docs/en/next/babel-runtime"
+  },
+  {
+    "name": "@babylonjs/core",
+    "versions": [
+      "9.31.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@babylonjs+core@9.31.0/node_modules/@babylonjs/core"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://www.babylonjs.com"
+  },
+  {
+    "name": "@babylonjs/loaders",
+    "versions": [
+      "9.31.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@babylonjs+loaders@9.31.0_@babylonjs+core@9.31.0_babylonjs-gltf2interface@9.19.0/node_modules/@babylonjs/loaders"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://www.babylonjs.com"
+  },
+  {
+    "name": "@babylonjs/serializers",
+    "versions": [
+      "9.31.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@babylonjs+serializers@9.31.0_@babylonjs+core@9.31.0_babylonjs-gltf2interface@9.19.0/node_modules/@babylonjs/serializers"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://www.babylonjs.com"
+  },
+  {
+    "name": "@borewit/text-codec",
+    "versions": [
+      "0.2.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@borewit+text-codec@0.2.2/node_modules/@borewit/text-codec"
+    ],
+    "license": "MIT",
+    "author": "Borewit",
+    "homepage": "https://github.com/Borewit/text-codec"
+  },
+  {
+    "name": "@capacitor/android",
+    "versions": [
+      "8.5.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@capacitor+android@8.5.3_@capacitor+core@8.5.3/node_modules/@capacitor/android"
+    ],
+    "license": "MIT",
+    "author": "Ionic Team",
+    "homepage": "https://capacitorjs.com"
+  },
+  {
+    "name": "@capacitor/app",
+    "versions": [
+      "8.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@capacitor+app@8.1.2_@capacitor+core@8.5.3/node_modules/@capacitor/app"
+    ],
+    "license": "MIT",
+    "author": "Ionic",
+    "homepage": "https://github.com/ionic-team/capacitor-plugins"
+  },
+  {
+    "name": "@capacitor/browser",
+    "versions": [
+      "8.0.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@capacitor+browser@8.0.5_@capacitor+core@8.5.3/node_modules/@capacitor/browser"
+    ],
+    "license": "MIT",
+    "author": "Ionic",
+    "homepage": "https://github.com/ionic-team/capacitor-plugins"
+  },
+  {
+    "name": "@capacitor/core",
+    "versions": [
+      "8.5.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@capacitor+core@8.5.3/node_modules/@capacitor/core"
+    ],
+    "license": "MIT",
+    "author": "Ionic Team",
+    "homepage": "https://capacitorjs.com"
+  },
+  {
+    "name": "@capacitor/ios",
+    "versions": [
+      "8.5.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@capacitor+ios@8.5.3_@capacitor+core@8.5.3/node_modules/@capacitor/ios"
+    ],
+    "license": "MIT",
+    "author": "Ionic Team",
+    "homepage": "https://capacitorjs.com"
+  },
+  {
+    "name": "@capacitor/keyboard",
+    "versions": [
+      "8.0.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@capacitor+keyboard@8.0.6_@capacitor+core@8.5.3/node_modules/@capacitor/keyboard"
+    ],
+    "license": "MIT",
+    "author": "Ionic",
+    "homepage": "https://github.com/ionic-team/capacitor-keyboard"
+  },
+  {
+    "name": "@capacitor/splash-screen",
+    "versions": [
+      "8.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@capacitor+splash-screen@8.0.2_@capacitor+core@8.5.3/node_modules/@capacitor/splash-screen"
+    ],
+    "license": "MIT",
+    "author": "Ionic",
+    "homepage": "https://github.com/ionic-team/capacitor-plugins"
+  },
+  {
+    "name": "@capacitor/status-bar",
+    "versions": [
+      "8.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@capacitor+status-bar@8.0.4_@capacitor+core@8.5.3/node_modules/@capacitor/status-bar"
+    ],
+    "license": "MIT",
+    "author": "Ionic",
+    "homepage": "https://github.com/ionic-team/capacitor-plugins"
+  },
+  {
+    "name": "@davepagurek/bezier-path",
+    "versions": [
+      "0.0.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@davepagurek+bezier-path@0.0.7/node_modules/@davepagurek/bezier-path"
+    ],
+    "license": "MIT",
+    "author": "Dave Pagurek",
+    "homepage": "https://github.com/davepagurek/bezier-path"
+  },
+  {
+    "name": "@dimforge/rapier2d-compat",
+    "versions": [
+      "0.21.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@dimforge+rapier2d-compat@0.21.0/node_modules/@dimforge/rapier2d-compat"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://rapier.rs"
+  },
+  {
+    "name": "@dimforge/rapier3d-compat",
+    "versions": [
+      "0.12.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@dimforge+rapier3d-compat@0.12.0/node_modules/@dimforge/rapier3d-compat"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://rapier.rs"
+  },
+  {
+    "name": "@dimforge/rapier3d-deterministic-compat",
+    "versions": [
+      "0.21.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@dimforge+rapier3d-deterministic-compat@0.21.0/node_modules/@dimforge/rapier3d-deterministic-compat"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://rapier.rs"
+  },
+  {
+    "name": "@floating-ui/core",
+    "versions": [
+      "1.8.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@floating-ui+core@1.8.0/node_modules/@floating-ui/core"
+    ],
+    "license": "MIT",
+    "author": "atomiks",
+    "homepage": "https://floating-ui.com"
+  },
+  {
+    "name": "@floating-ui/dom",
+    "versions": [
+      "1.8.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@floating-ui+dom@1.8.0/node_modules/@floating-ui/dom"
+    ],
+    "license": "MIT",
+    "author": "atomiks",
+    "homepage": "https://floating-ui.com"
+  },
+  {
+    "name": "@floating-ui/react-dom",
+    "versions": [
+      "2.1.9"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@floating-ui+react-dom@2.1.9_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/@floating-ui/react-dom"
+    ],
+    "license": "MIT",
+    "author": "atomiks",
+    "homepage": "https://floating-ui.com/docs/react-dom"
+  },
+  {
+    "name": "@floating-ui/utils",
+    "versions": [
+      "0.2.12"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@floating-ui+utils@0.2.12/node_modules/@floating-ui/utils"
+    ],
+    "license": "MIT",
+    "author": "atomiks",
+    "homepage": "https://floating-ui.com"
+  },
+  {
+    "name": "@gltf-transform/core",
+    "versions": [
+      "4.5.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@gltf-transform+core@4.5.1/node_modules/@gltf-transform/core"
+    ],
+    "license": "MIT",
+    "author": "Don McCurdy",
+    "homepage": "https://gltf-transform.dev/"
+  },
+  {
+    "name": "@gltf-transform/extensions",
+    "versions": [
+      "4.5.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@gltf-transform+extensions@4.5.1/node_modules/@gltf-transform/extensions"
+    ],
+    "license": "MIT",
+    "author": "Don McCurdy",
+    "homepage": "https://gltf-transform.dev/extensions.html"
+  },
+  {
+    "name": "@gltf-transform/functions",
+    "versions": [
+      "4.4.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@gltf-transform+functions@4.4.2_patch_hash=6e750bb844d4b21f5b7ead6ab2063a25ce63953173b1_1ac0e6c618eef27989cf16ba1d274f07/node_modules/@gltf-transform/functions"
+    ],
+    "license": "MIT",
+    "author": "Don McCurdy",
+    "homepage": "https://gltf-transform.dev/functions.html"
+  },
+  {
+    "name": "@heejun/deskcloud",
+    "versions": [
+      "0.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@heejun+deskcloud@0.1.0_socket.io-client@4.8.4/node_modules/@heejun/deskcloud"
+    ],
+    "license": "MIT",
+    "author": "heejun",
+    "homepage": ""
+  },
+  {
+    "name": "@hookform/resolvers",
+    "versions": [
+      "5.9.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@hookform+resolvers@5.9.1_@standard-schema+spec@1.1.0_ajv@8.20.0_react-hook-form@7.90.0_d9ea0bdf5dccd62d2380614945851453/node_modules/@hookform/resolvers"
+    ],
+    "license": "MIT",
+    "author": "bluebill1049",
+    "homepage": "https://react-hook-form.com"
+  },
+  {
+    "name": "@huggingface/jinja",
+    "versions": [
+      "0.5.10"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@huggingface+jinja@0.5.10/node_modules/@huggingface/jinja"
+    ],
+    "license": "MIT",
+    "author": "Hugging Face",
+    "homepage": "https://github.com/huggingface/huggingface.js"
+  },
+  {
+    "name": "@huggingface/tokenizers",
+    "versions": [
+      "0.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@huggingface+tokenizers@0.2.0/node_modules/@huggingface/tokenizers"
+    ],
+    "license": "Apache-2.0",
+    "author": "Hugging Face",
+    "homepage": "https://github.com/huggingface/tokenizers.js#readme"
+  },
+  {
+    "name": "@huggingface/transformers",
+    "versions": [
+      "4.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@huggingface+transformers@4.3.1_@types+node@24.13.2/node_modules/@huggingface/transformers"
+    ],
+    "license": "Apache-2.0",
+    "author": "Hugging Face",
+    "homepage": "https://github.com/huggingface/transformers.js#readme"
+  },
+  {
+    "name": "@img/colour",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@img+colour@1.1.0/node_modules/@img/colour"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/lovell/colour"
+  },
+  {
+    "name": "@img/sharp-libvips-linux-x64",
+    "versions": [
+      "1.3.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@img+sharp-libvips-linux-x64@1.3.4/node_modules/@img/sharp-libvips-linux-x64"
+    ],
+    "license": "LGPL-3.0-or-later",
+    "author": "Lovell Fuller",
+    "homepage": "https://sharp.pixelplumbing.com"
+  },
+  {
+    "name": "@img/sharp-linux-x64",
+    "versions": [
+      "0.35.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@img+sharp-linux-x64@0.35.5/node_modules/@img/sharp-linux-x64"
+    ],
+    "license": "Apache-2.0",
+    "author": "Lovell Fuller",
+    "homepage": "https://sharp.pixelplumbing.com"
+  },
+  {
+    "name": "@japont/unicode-range",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@japont+unicode-range@1.0.0/node_modules/@japont/unicode-range"
+    ],
+    "license": "MIT",
+    "author": "3846masa",
+    "homepage": "git@github.com:Japont/unicode-range"
+  },
+  {
+    "name": "@jridgewell/resolve-uri",
+    "versions": [
+      "3.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@jridgewell+resolve-uri@3.1.2/node_modules/@jridgewell/resolve-uri"
+    ],
+    "license": "MIT",
+    "author": "Justin Ridgewell",
+    "homepage": "https://github.com/jridgewell/resolve-uri"
+  },
+  {
+    "name": "@jridgewell/sourcemap-codec",
+    "versions": [
+      "1.5.5",
+      "1.6.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@jridgewell+sourcemap-codec@1.5.5/node_modules/@jridgewell/sourcemap-codec",
+      "node_modules/.pnpm/@jridgewell+sourcemap-codec@1.6.0/node_modules/@jridgewell/sourcemap-codec"
+    ],
+    "license": "MIT",
+    "author": "Justin Ridgewell",
+    "homepage": "https://github.com/jridgewell/sourcemaps/tree/main/packages/sourcemap-codec"
+  },
+  {
+    "name": "@jridgewell/trace-mapping",
+    "versions": [
+      "0.3.31"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@jridgewell+trace-mapping@0.3.31/node_modules/@jridgewell/trace-mapping"
+    ],
+    "license": "MIT",
+    "author": "Justin Ridgewell",
+    "homepage": "https://github.com/jridgewell/sourcemaps/tree/main/packages/trace-mapping"
+  },
+  {
+    "name": "@jscadui/3mf-export",
+    "versions": [
+      "0.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@jscadui+3mf-export@0.5.0/node_modules/@jscadui/3mf-export"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": ""
+  },
+  {
+    "name": "@libsql/client",
+    "versions": [
+      "0.18.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@libsql+client@0.18.0/node_modules/@libsql/client"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/tursodatabase/libsql-client-ts"
+  },
+  {
+    "name": "@libsql/core",
+    "versions": [
+      "0.18.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@libsql+core@0.18.0/node_modules/@libsql/core"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/tursodatabase/libsql-client-ts"
+  },
+  {
+    "name": "@libsql/hrana-client",
+    "versions": [
+      "0.10.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@libsql+hrana-client@0.10.0/node_modules/@libsql/hrana-client"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/libsql/hrana-client-ts"
+  },
+  {
+    "name": "@libsql/isomorphic-ws",
+    "versions": [
+      "0.1.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@libsql+isomorphic-ws@0.1.5/node_modules/@libsql/isomorphic-ws"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/libsql/isomorphic-ts/tree/main/isomorphic-ws"
+  },
+  {
+    "name": "@libsql/linux-x64-gnu",
+    "versions": [
+      "0.5.29"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@libsql+linux-x64-gnu@0.5.29/node_modules/@libsql/linux-x64-gnu"
+    ],
+    "license": "MIT",
+    "author": "Pekka Enberg",
+    "homepage": "https://github.com/tursodatabase/libsql-js"
+  },
+  {
+    "name": "@lukeed/csprng",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@lukeed+csprng@1.1.0/node_modules/@lukeed/csprng"
+    ],
+    "license": "MIT",
+    "author": "Luke Edwards",
+    "homepage": "lukeed/csprng"
+  },
+  {
+    "name": "@mediapipe/tasks-vision",
+    "versions": [
+      "0.10.17",
+      "0.10.35"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@mediapipe+tasks-vision@0.10.17/node_modules/@mediapipe/tasks-vision",
+      "node_modules/.pnpm/@mediapipe+tasks-vision@0.10.35/node_modules/@mediapipe/tasks-vision"
+    ],
+    "license": "Apache-2.0",
+    "author": "mediapipe@google.com",
+    "homepage": "http://mediapipe.dev"
+  },
+  {
+    "name": "@monogrid/gainmap-js",
+    "versions": [
+      "3.4.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@monogrid+gainmap-js@3.4.0_three@0.186.1/node_modules/@monogrid/gainmap-js"
+    ],
+    "license": "MIT",
+    "author": "MONOGRID",
+    "homepage": "https://github.com/MONOGRID/gainmap-js#readme"
+  },
+  {
+    "name": "@msgpack/msgpack",
+    "versions": [
+      "2.8.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@msgpack+msgpack@2.8.0/node_modules/@msgpack/msgpack"
+    ],
+    "license": "ISC",
+    "author": "The MessagePack community",
+    "homepage": "https://msgpack.org/"
+  },
+  {
+    "name": "@napi-rs/canvas",
+    "versions": [
+      "1.0.10"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@napi-rs+canvas@1.0.10/node_modules/@napi-rs/canvas"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/Brooooooklyn/canvas"
+  },
+  {
+    "name": "@napi-rs/canvas-linux-x64-gnu",
+    "versions": [
+      "1.0.10"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@napi-rs+canvas-linux-x64-gnu@1.0.10/node_modules/@napi-rs/canvas-linux-x64-gnu"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/Brooooooklyn/canvas"
+  },
+  {
+    "name": "@napi-rs/keyring",
+    "versions": [
+      "1.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@napi-rs+keyring@1.3.0/node_modules/@napi-rs/keyring"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/Brooooooklyn/keyring-node"
+  },
+  {
+    "name": "@napi-rs/keyring-linux-x64-gnu",
+    "versions": [
+      "1.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@napi-rs+keyring-linux-x64-gnu@1.3.0/node_modules/@napi-rs/keyring-linux-x64-gnu"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/Brooooooklyn/keyring-node"
+  },
+  {
+    "name": "@neon-rs/load",
+    "versions": [
+      "0.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@neon-rs+load@0.0.4/node_modules/@neon-rs/load"
+    ],
+    "license": "MIT",
+    "author": "Dave Herman",
+    "homepage": "https://github.com/dherman/neon-rs#readme"
+  },
+  {
+    "name": "@nestjs/common",
+    "versions": [
+      "11.1.24"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@nestjs+common@11.1.24_reflect-metadata@0.2.2_rxjs@7.8.2/node_modules/@nestjs/common"
+    ],
+    "license": "MIT",
+    "author": "Kamil Mysliwiec",
+    "homepage": "https://nestjs.com"
+  },
+  {
+    "name": "@nestjs/core",
+    "versions": [
+      "11.1.24"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@nestjs+core@11.1.24_@nestjs+common@11.1.24_reflect-metadata@0.2.2_rxjs@7.8.2__@nestjs+_c5e0bba52ad066c78541169dc4f0f61b/node_modules/@nestjs/core"
+    ],
+    "license": "MIT",
+    "author": "Kamil Mysliwiec",
+    "homepage": "https://nestjs.com"
+  },
+  {
+    "name": "@nestjs/platform-express",
+    "versions": [
+      "11.1.24"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@nestjs+platform-express@11.1.24_@nestjs+common@11.1.24_reflect-metadata@0.2.2_rxjs@7.8.2__@nestjs+core@11.1.24/node_modules/@nestjs/platform-express"
+    ],
+    "license": "MIT",
+    "author": "Kamil Mysliwiec",
+    "homepage": "https://nestjs.com"
+  },
+  {
+    "name": "@nestjs/platform-socket.io",
+    "versions": [
+      "11.1.28"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@nestjs+platform-socket.io@11.1.28_@nestjs+common@11.1.24_reflect-metadata@0.2.2_rxjs@7_3927616cfbf98998b1734ff84071bf6a/node_modules/@nestjs/platform-socket.io"
+    ],
+    "license": "MIT",
+    "author": "Kamil Mysliwiec",
+    "homepage": "https://nestjs.com"
+  },
+  {
+    "name": "@nestjs/websockets",
+    "versions": [
+      "11.1.28"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@nestjs+websockets@11.1.28_@nestjs+common@11.1.24_reflect-metadata@0.2.2_rxjs@7.8.2__@n_e5bcc79bfcc8f893c6c8c36d87873c36/node_modules/@nestjs/websockets"
+    ],
+    "license": "MIT",
+    "author": "Kamil Mysliwiec",
+    "homepage": "https://github.com/nestjs/nest"
+  },
+  {
+    "name": "@nodable/entities",
+    "versions": [
+      "3.0.0",
+      "3.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@nodable+entities@3.0.0/node_modules/@nodable/entities",
+      "node_modules/.pnpm/@nodable+entities@3.1.0/node_modules/@nodable/entities"
+    ],
+    "license": "MIT",
+    "author": "Amit Gupta",
+    "homepage": "https://github.com/nodable/val-parsers"
+  },
+  {
+    "name": "@nuxt/opencollective",
+    "versions": [
+      "0.4.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@nuxt+opencollective@0.4.1/node_modules/@nuxt/opencollective"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "nuxt-contrib/opencollective"
+  },
+  {
+    "name": "@opentelemetry/api",
+    "versions": [
+      "1.10.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@opentelemetry+api@1.10.0/node_modules/@opentelemetry/api"
+    ],
+    "license": "Apache-2.0",
+    "author": "OpenTelemetry Authors",
+    "homepage": "https://github.com/open-telemetry/opentelemetry-js/tree/main/api"
+  },
+  {
+    "name": "@pdf-lib/standard-fonts",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pdf-lib+standard-fonts@1.0.0/node_modules/@pdf-lib/standard-fonts"
+    ],
+    "license": "MIT",
+    "author": "Andrew Dillon",
+    "homepage": "https://github.com/Hopding/standard-fonts"
+  },
+  {
+    "name": "@pdf-lib/upng",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pdf-lib+upng@1.0.1/node_modules/@pdf-lib/upng"
+    ],
+    "license": "MIT",
+    "author": "photopea",
+    "homepage": "https://github.com/Hopding/upng"
+  },
+  {
+    "name": "@pinojs/redact",
+    "versions": [
+      "0.4.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pinojs+redact@0.4.0/node_modules/@pinojs/redact"
+    ],
+    "license": "MIT",
+    "author": "Matteo Collina",
+    "homepage": "https://github.com/pinojs/redact#readme"
+  },
+  {
+    "name": "@pixi/colord",
+    "versions": [
+      "2.9.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixi+colord@2.9.6/node_modules/@pixi/colord"
+    ],
+    "license": "MIT",
+    "author": "Vlad Shilov",
+    "homepage": "omgovich/colord"
+  },
+  {
+    "name": "@pixiv/three-vrm",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+three-vrm@3.5.5_three@0.186.1/node_modules/@pixiv/three-vrm"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/three-vrm-core",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+three-vrm-core@3.5.5_three@0.186.1/node_modules/@pixiv/three-vrm-core"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/three-vrm-materials-hdr-emissive-multiplier",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+three-vrm-materials-hdr-emissive-multiplier@3.5.5_three@0.186.1/node_modules/@pixiv/three-vrm-materials-hdr-emissive-multiplier"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/three-vrm-materials-mtoon",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+three-vrm-materials-mtoon@3.5.5_three@0.186.1/node_modules/@pixiv/three-vrm-materials-mtoon"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/three-vrm-materials-v0compat",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+three-vrm-materials-v0compat@3.5.5_three@0.186.1/node_modules/@pixiv/three-vrm-materials-v0compat"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/three-vrm-node-constraint",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+three-vrm-node-constraint@3.5.5_three@0.186.1/node_modules/@pixiv/three-vrm-node-constraint"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/three-vrm-springbone",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+three-vrm-springbone@3.5.5_three@0.186.1/node_modules/@pixiv/three-vrm-springbone"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/types-vrm-0.0",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+types-vrm-0.0@3.5.5/node_modules/@pixiv/types-vrm-0.0"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/types-vrmc-materials-hdr-emissive-multiplier-1.0",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+types-vrmc-materials-hdr-emissive-multiplier-1.0@3.5.5/node_modules/@pixiv/types-vrmc-materials-hdr-emissive-multiplier-1.0"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/types-vrmc-materials-mtoon-1.0",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+types-vrmc-materials-mtoon-1.0@3.5.5/node_modules/@pixiv/types-vrmc-materials-mtoon-1.0"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/types-vrmc-node-constraint-1.0",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+types-vrmc-node-constraint-1.0@3.5.5/node_modules/@pixiv/types-vrmc-node-constraint-1.0"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/types-vrmc-springbone-1.0",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+types-vrmc-springbone-1.0@3.5.5/node_modules/@pixiv/types-vrmc-springbone-1.0"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/types-vrmc-springbone-extended-collider-1.0",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+types-vrmc-springbone-extended-collider-1.0@3.5.5/node_modules/@pixiv/types-vrmc-springbone-extended-collider-1.0"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@pixiv/types-vrmc-vrm-1.0",
+    "versions": [
+      "3.5.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@pixiv+types-vrmc-vrm-1.0@3.5.5/node_modules/@pixiv/types-vrmc-vrm-1.0"
+    ],
+    "license": "MIT",
+    "author": "pixiv",
+    "homepage": "https://github.com/pixiv/three-vrm"
+  },
+  {
+    "name": "@protobufjs/aspromise",
+    "versions": [
+      "1.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@protobufjs+aspromise@1.1.2/node_modules/@protobufjs/aspromise"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/dcodeIO/protobuf.js"
+  },
+  {
+    "name": "@protobufjs/base64",
+    "versions": [
+      "1.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@protobufjs+base64@1.1.2/node_modules/@protobufjs/base64"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/dcodeIO/protobuf.js"
+  },
+  {
+    "name": "@protobufjs/codegen",
+    "versions": [
+      "2.0.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@protobufjs+codegen@2.0.5/node_modules/@protobufjs/codegen"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/dcodeIO/protobuf.js"
+  },
+  {
+    "name": "@protobufjs/eventemitter",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@protobufjs+eventemitter@1.1.1/node_modules/@protobufjs/eventemitter"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/dcodeIO/protobuf.js"
+  },
+  {
+    "name": "@protobufjs/fetch",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@protobufjs+fetch@1.1.1/node_modules/@protobufjs/fetch"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/dcodeIO/protobuf.js"
+  },
+  {
+    "name": "@protobufjs/float",
+    "versions": [
+      "1.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@protobufjs+float@1.0.2/node_modules/@protobufjs/float"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/dcodeIO/protobuf.js"
+  },
+  {
+    "name": "@protobufjs/path",
+    "versions": [
+      "1.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@protobufjs+path@1.1.2/node_modules/@protobufjs/path"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/dcodeIO/protobuf.js"
+  },
+  {
+    "name": "@protobufjs/pool",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@protobufjs+pool@1.1.0/node_modules/@protobufjs/pool"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/dcodeIO/protobuf.js"
+  },
+  {
+    "name": "@protobufjs/utf8",
+    "versions": [
+      "1.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@protobufjs+utf8@1.1.2/node_modules/@protobufjs/utf8"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/protobufjs/protobuf.js"
+  },
+  {
+    "name": "@radix-ui/number",
+    "versions": [
+      "1.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+number@1.1.3/node_modules/@radix-ui/number"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/primitive",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+primitive@1.2.0/node_modules/@radix-ui/primitive"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-arrow",
+    "versions": [
+      "1.1.17"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-arrow@1.1.17_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_42c166494782f9339172e39dfcc4494e/node_modules/@radix-ui/react-arrow"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-collection",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-collection@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+re_6acb2d8ed0d1a5e2d86fa68fa86b38fc/node_modules/@radix-ui/react-collection"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-compose-refs",
+    "versions": [
+      "1.1.2",
+      "1.1.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-compose-refs@1.1.2_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-compose-refs",
+      "node_modules/.pnpm/@radix-ui+react-compose-refs@1.1.5_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-compose-refs"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-context",
+    "versions": [
+      "1.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-context@1.3.0_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-context"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-dialog",
+    "versions": [
+      "1.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-dialog@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_4dc34b117641e6b0d7103bbf4056ed99/node_modules/@radix-ui/react-dialog"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-direction",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-direction@1.2.0_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-direction"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-dismissable-layer",
+    "versions": [
+      "1.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-dismissable-layer@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@t_aa9a2defeade16af3bdfd2945af978c3/node_modules/@radix-ui/react-dismissable-layer"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-dropdown-menu",
+    "versions": [
+      "2.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-dropdown-menu@2.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types_59087697bb8d70fe27e0ede367aec154/node_modules/@radix-ui/react-dropdown-menu"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-focus-guards",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-focus-guards@1.2.0_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-focus-guards"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-focus-scope",
+    "versions": [
+      "1.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-focus-scope@1.3.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+r_6d7db95e6b4b16578fd42789685673fa/node_modules/@radix-ui/react-focus-scope"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-id",
+    "versions": [
+      "1.1.1",
+      "1.1.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-id@1.1.1_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-id",
+      "node_modules/.pnpm/@radix-ui+react-id@1.1.4_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-id"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-menu",
+    "versions": [
+      "2.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-menu@2.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@19_5b19b71a44c52a23e68bd8126ace118c/node_modules/@radix-ui/react-menu"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-popper",
+    "versions": [
+      "1.4.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-popper@1.4.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_8afc6f49a39cf3de4250aed01ab9dae8/node_modules/@radix-ui/react-popper"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-portal",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-portal@1.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_058d94c3625e9af8e54f0154a66c0818/node_modules/@radix-ui/react-portal"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-presence",
+    "versions": [
+      "1.1.11"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-presence@1.1.11_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_f62c16392ef5c0f7dddc17b4112d7eab/node_modules/@radix-ui/react-presence"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-primitive",
+    "versions": [
+      "2.1.4",
+      "2.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-primitive@2.1.4_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_152f1514d3a8650d7893528c70c9939e/node_modules/@radix-ui/react-primitive",
+      "node_modules/.pnpm/@radix-ui+react-primitive@2.2.0_@types+react-dom@19.3.0_@types+react@19.3.0__@types+rea_8110221bfe749bbb617b2ef4d8402995/node_modules/@radix-ui/react-primitive"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-roving-focus",
+    "versions": [
+      "1.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-roving-focus@1.2.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+_bed290ae4c554285fceef8952991064b/node_modules/@radix-ui/react-roving-focus"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-select",
+    "versions": [
+      "2.4.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-select@2.4.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@_e8fd14f43f640bf7754c8314026f8b0b/node_modules/@radix-ui/react-select"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-slot",
+    "versions": [
+      "1.2.4",
+      "1.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-slot@1.2.4_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-slot",
+      "node_modules/.pnpm/@radix-ui+react-slot@1.5.0_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-slot"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-use-callback-ref",
+    "versions": [
+      "1.1.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-use-callback-ref@1.1.5_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-use-callback-ref"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-use-controllable-state",
+    "versions": [
+      "1.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-use-controllable-state@1.3.0_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-use-controllable-state"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-use-effect-event",
+    "versions": [
+      "0.0.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-use-effect-event@0.0.5_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-use-effect-event"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-use-is-hydrated",
+    "versions": [
+      "0.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-use-is-hydrated@0.1.3_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-use-is-hydrated"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-use-layout-effect",
+    "versions": [
+      "1.1.1",
+      "1.1.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-use-layout-effect@1.1.1_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-use-layout-effect",
+      "node_modules/.pnpm/@radix-ui+react-use-layout-effect@1.1.4_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-use-layout-effect"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-use-rect",
+    "versions": [
+      "1.1.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-use-rect@1.1.4_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-use-rect"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-use-size",
+    "versions": [
+      "1.1.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-use-size@1.1.5_@types+react@19.3.0_react@19.3.1/node_modules/@radix-ui/react-use-size"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/react-visually-hidden",
+    "versions": [
+      "1.2.13"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+react-visually-hidden@1.2.13_@types+react-dom@19.3.0_@types+react@19.3.0__@ty_703f89cfbdd73455c4bf03a3c2fc4305/node_modules/@radix-ui/react-visually-hidden"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@radix-ui/rect",
+    "versions": [
+      "1.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@radix-ui+rect@1.1.3/node_modules/@radix-ui/rect"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://radix-ui.com/primitives"
+  },
+  {
+    "name": "@react-three/drei",
+    "versions": [
+      "10.7.9"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@react-three+drei@10.7.9_@react-three+fiber@9.6.1_patch_hash=68f1cb873dce662afa8148b10c_fbea1b88054f40bbee6f7b689c47a3f2/node_modules/@react-three/drei"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/pmndrs/drei"
+  },
+  {
+    "name": "@react-three/fiber",
+    "versions": [
+      "9.6.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@react-three+fiber@9.6.1_patch_hash=68f1cb873dce662afa8148b10c5896d9e74acdcf70313881d94_18d83797894d211156bce4f553d090b2/node_modules/@react-three/fiber"
+    ],
+    "license": "MIT",
+    "author": "Paul Henschel",
+    "homepage": "https://github.com/pmndrs/react-three-fiber#readme"
+  },
+  {
+    "name": "@recast-navigation/core",
+    "versions": [
+      "0.43.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@recast-navigation+core@0.43.1/node_modules/@recast-navigation/core"
+    ],
+    "license": "MIT",
+    "author": "Isaac Mason",
+    "homepage": "https://github.com/isaac-mason/recast-navigation-js"
+  },
+  {
+    "name": "@recast-navigation/generators",
+    "versions": [
+      "0.43.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@recast-navigation+generators@0.43.1/node_modules/@recast-navigation/generators"
+    ],
+    "license": "MIT",
+    "author": "Isaac Mason",
+    "homepage": "https://github.com/isaac-mason/recast-navigation-js"
+  },
+  {
+    "name": "@recast-navigation/wasm",
+    "versions": [
+      "0.43.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@recast-navigation+wasm@0.43.1/node_modules/@recast-navigation/wasm"
+    ],
+    "license": "MIT",
+    "author": "Isaac Mason",
+    "homepage": "https://github.com/isaac-mason/recast-navigation-js"
+  },
+  {
+    "name": "@remotion/player",
+    "versions": [
+      "4.0.536"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@remotion+player@4.0.536_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/@remotion/player"
+    ],
+    "license": "Remotion License",
+    "author": "Jonny Burger",
+    "homepage": "https://www.remotion.dev/docs/player"
+  },
+  {
+    "name": "@resvg/resvg-wasm",
+    "versions": [
+      "2.6.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@resvg+resvg-wasm@2.6.2/node_modules/@resvg/resvg-wasm"
+    ],
+    "license": "MPL-2.0",
+    "author": "",
+    "homepage": "git@github.com:yisibl/resvg-js"
+  },
+  {
+    "name": "@socket.io/component-emitter",
+    "versions": [
+      "3.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@socket.io+component-emitter@3.1.2/node_modules/@socket.io/component-emitter"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/socketio/emitter"
+  },
+  {
+    "name": "@socket.io/postgres-adapter",
+    "versions": [
+      "0.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@socket.io+postgres-adapter@0.5.0_socket.io-adapter@2.5.8/node_modules/@socket.io/postgres-adapter"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "git@github.com:socketio/socket.io-postgres-adapter"
+  },
+  {
+    "name": "@sparkjsdev/spark",
+    "versions": [
+      "2.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@sparkjsdev+spark@2.3.1_three@0.186.1/node_modules/@sparkjsdev/spark"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://sparkjs.dev/"
+  },
+  {
+    "name": "@sqlite.org/sqlite-wasm",
+    "versions": [
+      "3.53.0-build1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@sqlite.org+sqlite-wasm@3.53.0-build1/node_modules/@sqlite.org/sqlite-wasm"
+    ],
+    "license": "Apache-2.0",
+    "author": "Thomas Steiner",
+    "homepage": "https://github.com/sqlite/sqlite-wasm#readme"
+  },
+  {
+    "name": "@stablelib/base64",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@stablelib+base64@1.0.1/node_modules/@stablelib/base64"
+    ],
+    "license": "MIT",
+    "author": "Dmitry Chestnykh",
+    "homepage": "https://github.com/StableLib/stablelib/tree/master/packages/base64"
+  },
+  {
+    "name": "@standard-schema/spec",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@standard-schema+spec@1.1.0/node_modules/@standard-schema/spec"
+    ],
+    "license": "MIT",
+    "author": "Colin McDonnell",
+    "homepage": "https://standardschema.dev"
+  },
+  {
+    "name": "@standard-schema/utils",
+    "versions": [
+      "0.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@standard-schema+utils@0.3.0/node_modules/@standard-schema/utils"
+    ],
+    "license": "MIT",
+    "author": "Fabian Hiller",
+    "homepage": "https://github.com/standard-schema/standard-schema"
+  },
+  {
+    "name": "@tanstack/react-virtual",
+    "versions": [
+      "3.14.21"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@tanstack+react-virtual@3.14.21_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/@tanstack/react-virtual"
+    ],
+    "license": "MIT",
+    "author": "Tanner Linsley",
+    "homepage": "https://tanstack.com/virtual"
+  },
+  {
+    "name": "@tanstack/virtual-core",
+    "versions": [
+      "3.19.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@tanstack+virtual-core@3.19.6/node_modules/@tanstack/virtual-core"
+    ],
+    "license": "MIT",
+    "author": "Tanner Linsley",
+    "homepage": "https://tanstack.com/virtual"
+  },
+  {
+    "name": "@techstark/opencv-js",
+    "versions": [
+      "5.0.0-release.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@techstark+opencv-js@5.0.0-release.1/node_modules/@techstark/opencv-js"
+    ],
+    "license": "Apache-2.0",
+    "author": "Wilson",
+    "homepage": "https://github.com/TechStark/opencv-js#readme"
+  },
+  {
+    "name": "@thorvg/webcanvas",
+    "versions": [
+      "1.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@thorvg+webcanvas@1.1.3/node_modules/@thorvg/webcanvas"
+    ],
+    "license": "MIT",
+    "author": "Jinny You",
+    "homepage": "https://thorvg.org"
+  },
+  {
+    "name": "@tokenizer/inflate",
+    "versions": [
+      "0.4.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@tokenizer+inflate@0.4.1/node_modules/@tokenizer/inflate"
+    ],
+    "license": "MIT",
+    "author": "Borewit",
+    "homepage": "https://github.com/Borewit/tokenizer-inflate"
+  },
+  {
+    "name": "@tokenizer/token",
+    "versions": [
+      "0.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@tokenizer+token@0.3.0/node_modules/@tokenizer/token"
+    ],
+    "license": "MIT",
+    "author": "Borewit",
+    "homepage": "https://github.com/Borewit/tokenizer-token"
+  },
+  {
+    "name": "@tweenjs/tween.js",
+    "versions": [
+      "23.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@tweenjs+tween.js@23.1.3/node_modules/@tweenjs/tween.js"
+    ],
+    "license": "MIT",
+    "author": "tween.js contributors",
+    "homepage": "https://github.com/tweenjs/tween.js"
+  },
+  {
+    "name": "@types/cors",
+    "versions": [
+      "2.8.19"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+cors@2.8.19/node_modules/@types/cors"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/cors"
+  },
+  {
+    "name": "@types/draco3d",
+    "versions": [
+      "1.4.10"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+draco3d@1.4.10/node_modules/@types/draco3d"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/draco3d"
+  },
+  {
+    "name": "@types/earcut",
+    "versions": [
+      "3.2.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+earcut@3.2.4/node_modules/@types/earcut"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": ""
+  },
+  {
+    "name": "@types/ndarray",
+    "versions": [
+      "1.0.14"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+ndarray@1.0.14/node_modules/@types/ndarray"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ndarray"
+  },
+  {
+    "name": "@types/node",
+    "versions": [
+      "24.13.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+node@24.13.2/node_modules/@types/node"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node"
+  },
+  {
+    "name": "@types/offscreencanvas",
+    "versions": [
+      "2019.7.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+offscreencanvas@2019.7.3/node_modules/@types/offscreencanvas"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/offscreencanvas"
+  },
+  {
+    "name": "@types/pg",
+    "versions": [
+      "8.23.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+pg@8.23.1/node_modules/@types/pg"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/pg"
+  },
+  {
+    "name": "@types/react",
+    "versions": [
+      "19.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+react@19.3.0/node_modules/@types/react"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react"
+  },
+  {
+    "name": "@types/react-dom",
+    "versions": [
+      "19.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+react-dom@19.3.0_@types+react@19.3.0/node_modules/@types/react-dom"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react-dom"
+  },
+  {
+    "name": "@types/react-reconciler",
+    "versions": [
+      "0.28.9",
+      "0.34.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+react-reconciler@0.28.9_@types+react@19.3.0/node_modules/@types/react-reconciler",
+      "node_modules/.pnpm/@types+react-reconciler@0.34.0_@types+react@19.3.0/node_modules/@types/react-reconciler"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react-reconciler"
+  },
+  {
+    "name": "@types/stats.js",
+    "versions": [
+      "0.17.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+stats.js@0.17.4/node_modules/@types/stats.js"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/stats.js"
+  },
+  {
+    "name": "@types/three",
+    "versions": [
+      "0.186.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+three@0.186.0/node_modules/@types/three"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/three"
+  },
+  {
+    "name": "@types/webxr",
+    "versions": [
+      "0.5.24"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+webxr@0.5.24/node_modules/@types/webxr"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/webxr"
+  },
+  {
+    "name": "@types/ws",
+    "versions": [
+      "8.18.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@types+ws@8.18.2/node_modules/@types/ws"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ws"
+  },
+  {
+    "name": "@use-gesture/core",
+    "versions": [
+      "10.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@use-gesture+core@10.3.1/node_modules/@use-gesture/core"
+    ],
+    "license": "MIT",
+    "author": "Paul Henschel",
+    "homepage": "https://use-gesture.netlify.app"
+  },
+  {
+    "name": "@use-gesture/react",
+    "versions": [
+      "10.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@use-gesture+react@10.3.1_react@19.3.1/node_modules/@use-gesture/react"
+    ],
+    "license": "MIT",
+    "author": "Paul Henschel",
+    "homepage": "https://use-gesture.netlify.app"
+  },
+  {
+    "name": "@webgpu/types",
+    "versions": [
+      "0.1.21",
+      "0.1.74"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@webgpu+types@0.1.21/node_modules/@webgpu/types",
+      "node_modules/.pnpm/@webgpu+types@0.1.74/node_modules/@webgpu/types"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "",
+    "homepage": "https://github.com/gpuweb/types"
+  },
+  {
+    "name": "@xmldom/xmldom",
+    "versions": [
+      "0.8.15"
+    ],
+    "paths": [
+      "node_modules/.pnpm/@xmldom+xmldom@0.8.15/node_modules/@xmldom/xmldom"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/xmldom/xmldom"
+  },
+  {
+    "name": "accepts",
+    "versions": [
+      "1.3.8",
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/accepts@1.3.8/node_modules/accepts",
+      "node_modules/.pnpm/accepts@2.0.0/node_modules/accepts"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/accepts"
+  },
+  {
+    "name": "acorn",
+    "versions": [
+      "8.19.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/acorn@8.19.0/node_modules/acorn"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/acornjs/acorn"
+  },
+  {
+    "name": "acorn-walk",
+    "versions": [
+      "8.3.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/acorn-walk@8.3.5/node_modules/acorn-walk"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/acornjs/acorn"
+  },
+  {
+    "name": "adm-zip",
+    "versions": [
+      "0.6.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/adm-zip@0.6.1/node_modules/adm-zip"
+    ],
+    "license": "MIT",
+    "author": "Nasca Iacob",
+    "homepage": "https://github.com/cthackers/adm-zip"
+  },
+  {
+    "name": "ag-psd",
+    "versions": [
+      "31.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ag-psd@31.0.1_patch_hash=45b44b0b2c25317b0030248e3145d7abfd4e40c1620b98fc4a211b45341e6d2c/node_modules/ag-psd"
+    ],
+    "license": "MIT",
+    "author": "Agamnentzar",
+    "homepage": "https://github.com/Agamnentzar/ag-psd"
+  },
+  {
+    "name": "agent-base",
+    "versions": [
+      "7.1.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/agent-base@7.1.4/node_modules/agent-base"
+    ],
+    "license": "MIT",
+    "author": "Nathan Rajlich",
+    "homepage": "https://github.com/TooTallNate/proxy-agents"
+  },
+  {
+    "name": "ajv",
+    "versions": [
+      "8.20.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ajv@8.20.0/node_modules/ajv"
+    ],
+    "license": "MIT",
+    "author": "Evgeny Poberezkin",
+    "homepage": "https://ajv.js.org"
+  },
+  {
+    "name": "ansi-regex",
+    "versions": [
+      "5.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ansi-regex@5.0.1/node_modules/ansi-regex"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "chalk/ansi-regex"
+  },
+  {
+    "name": "ansi-styles",
+    "versions": [
+      "4.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ansi-styles@4.3.0/node_modules/ansi-styles"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "chalk/ansi-styles"
+  },
+  {
+    "name": "anynum",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/anynum@1.0.1/node_modules/anynum"
+    ],
+    "license": "MIT",
+    "author": "Amit Gupta",
+    "homepage": "https://github.com/NaturalIntelligence/anynum"
+  },
+  {
+    "name": "append-field",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/append-field@1.0.0/node_modules/append-field"
+    ],
+    "license": "MIT",
+    "author": "Linus Unnebäck",
+    "homepage": "http://github.com/LinusU/node-append-field"
+  },
+  {
+    "name": "aria-hidden",
+    "versions": [
+      "1.2.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden"
+    ],
+    "license": "MIT",
+    "author": "Anton Korzunov",
+    "homepage": "https://github.com/theKashey/aria-hidden#readme"
+  },
+  {
+    "name": "array-flatten",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/array-flatten@1.1.1/node_modules/array-flatten"
+    ],
+    "license": "MIT",
+    "author": "Blake Embrey",
+    "homepage": "https://github.com/blakeembrey/array-flatten"
+  },
+  {
+    "name": "asn1.js",
+    "versions": [
+      "5.4.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/asn1.js@5.4.1/node_modules/asn1.js"
+    ],
+    "license": "MIT",
+    "author": "Fedor Indutny",
+    "homepage": "https://github.com/indutny/asn1.js"
+  },
+  {
+    "name": "atomic-sleep",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/atomic-sleep@1.0.0/node_modules/atomic-sleep"
+    ],
+    "license": "MIT",
+    "author": "David Mark Clements",
+    "homepage": "https://github.com/davidmarkclements/atomic-sleep#readme"
+  },
+  {
+    "name": "babel-runtime",
+    "versions": [
+      "6.26.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/babel-runtime@6.26.0/node_modules/babel-runtime"
+    ],
+    "license": "MIT",
+    "author": "Sebastian McKenzie",
+    "homepage": "https://github.com/babel/babel/tree/master/packages/babel-runtime"
+  },
+  {
+    "name": "babylonjs-gltf2interface",
+    "versions": [
+      "9.19.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/babylonjs-gltf2interface@9.19.0/node_modules/babylonjs-gltf2interface"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://www.babylonjs.com"
+  },
+  {
+    "name": "base64-js",
+    "versions": [
+      "1.5.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/base64-js@1.5.1/node_modules/base64-js"
+    ],
+    "license": "MIT",
+    "author": "T. Jameson Little",
+    "homepage": "https://github.com/beatgammit/base64-js"
+  },
+  {
+    "name": "bezier-js",
+    "versions": [
+      "6.1.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/bezier-js@6.1.4/node_modules/bezier-js"
+    ],
+    "license": "MIT",
+    "author": "Pomax",
+    "homepage": "https://github.com/Pomax/bezierjs"
+  },
+  {
+    "name": "bidi-js",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/bidi-js@1.1.0/node_modules/bidi-js"
+    ],
+    "license": "MIT",
+    "author": "Jason Johnston",
+    "homepage": "https://github.com/lojjic/bidi-js"
+  },
+  {
+    "name": "bignumber.js",
+    "versions": [
+      "9.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/bignumber.js@9.3.1/node_modules/bignumber.js"
+    ],
+    "license": "MIT",
+    "author": "Michael Mclaughlin",
+    "homepage": "https://github.com/MikeMcl/bignumber.js"
+  },
+  {
+    "name": "binary-search",
+    "versions": [
+      "1.3.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/binary-search@1.3.6/node_modules/binary-search"
+    ],
+    "license": "CC0-1.0",
+    "author": "The Dark Sky Company, LLC",
+    "homepage": "https://github.com/darkskyapp/binary-search"
+  },
+  {
+    "name": "bn.js",
+    "versions": [
+      "4.12.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/bn.js@4.12.5/node_modules/bn.js"
+    ],
+    "license": "MIT",
+    "author": "Fedor Indutny",
+    "homepage": "https://github.com/indutny/bn.js"
+  },
+  {
+    "name": "body-parser",
+    "versions": [
+      "1.20.9",
+      "2.4.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/body-parser@1.20.9/node_modules/body-parser",
+      "node_modules/.pnpm/body-parser@2.4.0/node_modules/body-parser"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "expressjs/body-parser"
+  },
+  {
+    "name": "bresenham-zingl",
+    "versions": [
+      "0.2.8"
+    ],
+    "paths": [
+      "node_modules/.pnpm/bresenham-zingl@0.2.8/node_modules/bresenham-zingl"
+    ],
+    "license": "MIT",
+    "author": "Alois Zingl",
+    "homepage": "https://github.com/w8r/bresenham-zingl#readme"
+  },
+  {
+    "name": "buffer",
+    "versions": [
+      "6.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/buffer@6.0.3/node_modules/buffer"
+    ],
+    "license": "MIT",
+    "author": "Feross Aboukhadijeh",
+    "homepage": "https://github.com/feross/buffer"
+  },
+  {
+    "name": "buffer-equal-constant-time",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/buffer-equal-constant-time@1.0.1/node_modules/buffer-equal-constant-time"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "GoInstant Inc., a salesforce.com company",
+    "homepage": "git@github.com:goinstant/buffer-equal-constant-time"
+  },
+  {
+    "name": "busboy",
+    "versions": [
+      "1.6.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/busboy@1.6.0/node_modules/busboy"
+    ],
+    "license": "MIT",
+    "author": "Brian White",
+    "homepage": "http://github.com/mscdex/busboy"
+  },
+  {
+    "name": "bytes",
+    "versions": [
+      "3.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/bytes@3.1.2/node_modules/bytes"
+    ],
+    "license": "MIT",
+    "author": "TJ Holowaychuk",
+    "homepage": "visionmedia/bytes.js"
+  },
+  {
+    "name": "call-bind-apply-helpers",
+    "versions": [
+      "1.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/call-bind-apply-helpers#readme"
+  },
+  {
+    "name": "call-bound",
+    "versions": [
+      "1.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/call-bound@1.0.4/node_modules/call-bound"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/call-bound#readme"
+  },
+  {
+    "name": "camelcase",
+    "versions": [
+      "5.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/camelcase@5.3.1/node_modules/camelcase"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/camelcase"
+  },
+  {
+    "name": "camera-controls",
+    "versions": [
+      "3.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/camera-controls@3.1.2_three@0.186.1/node_modules/camera-controls"
+    ],
+    "license": "MIT",
+    "author": "Yomotsu",
+    "homepage": "yomotsu/camera-controls"
+  },
+  {
+    "name": "canvaskit-wasm",
+    "versions": [
+      "0.42.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/canvaskit-wasm@0.42.0/node_modules/canvaskit-wasm"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "",
+    "homepage": "https://github.com/google/skia/tree/main/modules/canvaskit"
+  },
+  {
+    "name": "cheminfo-types",
+    "versions": [
+      "1.16.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/cheminfo-types@1.16.0/node_modules/cheminfo-types"
+    ],
+    "license": "MIT",
+    "author": "cheminfo developers",
+    "homepage": "https://github.com/cheminfo/cheminfo-types#readme"
+  },
+  {
+    "name": "cliui",
+    "versions": [
+      "6.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/cliui@6.0.0/node_modules/cliui"
+    ],
+    "license": "ISC",
+    "author": "Ben Coe",
+    "homepage": "http://github.com/yargs/cliui"
+  },
+  {
+    "name": "closed-chain-ik",
+    "versions": [
+      "0.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/closed-chain-ik@0.0.3_three@0.186.1_urdf-loader@0.13.1_three@0.186.1_/node_modules/closed-chain-ik"
+    ],
+    "license": "Apache-2.0",
+    "author": "Garrett Johnson",
+    "homepage": "https://github.com/gkjohnson/closed-chain-ik-js#readme"
+  },
+  {
+    "name": "clsx",
+    "versions": [
+      "2.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/clsx@2.1.1/node_modules/clsx"
+    ],
+    "license": "MIT",
+    "author": "Luke Edwards",
+    "homepage": "lukeed/clsx"
+  },
+  {
+    "name": "cmdk",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/cmdk@1.1.1_@types+react-dom@19.3.0_@types+react@19.3.0__@types+react@19.3.0_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/cmdk"
+    ],
+    "license": "MIT",
+    "author": "Paco",
+    "homepage": "https://github.com/pacocoursey/cmdk#readme"
+  },
+  {
+    "name": "color-convert",
+    "versions": [
+      "2.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/color-convert@2.0.1/node_modules/color-convert"
+    ],
+    "license": "MIT",
+    "author": "Heather Arthur",
+    "homepage": "Qix-/color-convert"
+  },
+  {
+    "name": "color-name",
+    "versions": [
+      "1.1.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/color-name@1.1.4/node_modules/color-name"
+    ],
+    "license": "MIT",
+    "author": "DY",
+    "homepage": "https://github.com/colorjs/color-name"
+  },
+  {
+    "name": "colord",
+    "versions": [
+      "2.10.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/colord@2.10.0/node_modules/colord"
+    ],
+    "license": "MIT",
+    "author": "Vlad Shilov",
+    "homepage": "omgovich/colord"
+  },
+  {
+    "name": "colorjs.io",
+    "versions": [
+      "0.6.1",
+      "0.7.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/colorjs.io@0.6.1/node_modules/colorjs.io",
+      "node_modules/.pnpm/colorjs.io@0.7.1/node_modules/colorjs.io"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://colorjs.io"
+  },
+  {
+    "name": "colormix",
+    "versions": [
+      "3.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/colormix@3.2.0/node_modules/colormix"
+    ],
+    "license": "MIT",
+    "author": "Florent Schildknecht",
+    "homepage": "http://color-mix.it/"
+  },
+  {
+    "name": "comlink",
+    "versions": [
+      "4.4.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/comlink@4.4.2/node_modules/comlink"
+    ],
+    "license": "Apache-2.0",
+    "author": "Surma",
+    "homepage": "https://github.com/GoogleChromeLabs/comlink"
+  },
+  {
+    "name": "commander",
+    "versions": [
+      "13.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/commander@13.1.0/node_modules/commander"
+    ],
+    "license": "MIT",
+    "author": "TJ Holowaychuk",
+    "homepage": "https://github.com/tj/commander.js"
+  },
+  {
+    "name": "consola",
+    "versions": [
+      "3.4.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/consola@3.4.2/node_modules/consola"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "unjs/consola"
+  },
+  {
+    "name": "content-disposition",
+    "versions": [
+      "0.5.4",
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/content-disposition@0.5.4/node_modules/content-disposition",
+      "node_modules/.pnpm/content-disposition@1.1.0/node_modules/content-disposition"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "jshttp/content-disposition"
+  },
+  {
+    "name": "content-type",
+    "versions": [
+      "1.0.5",
+      "2.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/content-type@1.0.5/node_modules/content-type",
+      "node_modules/.pnpm/content-type@2.1.0/node_modules/content-type"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "jshttp/content-type"
+  },
+  {
+    "name": "convert-source-map",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/convert-source-map@2.0.0/node_modules/convert-source-map"
+    ],
+    "license": "MIT",
+    "author": "Thorsten Lorenz",
+    "homepage": "https://github.com/thlorenz/convert-source-map"
+  },
+  {
+    "name": "cookie",
+    "versions": [
+      "0.7.2",
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/cookie@0.7.2/node_modules/cookie",
+      "node_modules/.pnpm/cookie@1.1.1/node_modules/cookie"
+    ],
+    "license": "MIT",
+    "author": "Roman Shtylman",
+    "homepage": "jshttp/cookie"
+  },
+  {
+    "name": "cookie-signature",
+    "versions": [
+      "1.0.7",
+      "1.2.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/cookie-signature@1.0.7/node_modules/cookie-signature",
+      "node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature"
+    ],
+    "license": "MIT",
+    "author": "TJ Holowaychuk",
+    "homepage": "https://github.com/visionmedia/node-cookie-signature"
+  },
+  {
+    "name": "core-js",
+    "versions": [
+      "2.6.12"
+    ],
+    "paths": [
+      "node_modules/.pnpm/core-js@2.6.12/node_modules/core-js"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/zloirock/core-js"
+  },
+  {
+    "name": "cors",
+    "versions": [
+      "2.8.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/cors@2.8.6/node_modules/cors"
+    ],
+    "license": "MIT",
+    "author": "Troy Goode",
+    "homepage": "expressjs/cors"
+  },
+  {
+    "name": "cross-env",
+    "versions": [
+      "7.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/cross-env@7.0.3/node_modules/cross-env"
+    ],
+    "license": "MIT",
+    "author": "Kent C. Dodds",
+    "homepage": "https://github.com/kentcdodds/cross-env#readme"
+  },
+  {
+    "name": "cross-spawn",
+    "versions": [
+      "7.0.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/cross-spawn@7.0.6/node_modules/cross-spawn"
+    ],
+    "license": "MIT",
+    "author": "André Cruz",
+    "homepage": "https://github.com/moxystudio/node-cross-spawn"
+  },
+  {
+    "name": "csstype",
+    "versions": [
+      "3.2.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/csstype@3.2.3/node_modules/csstype"
+    ],
+    "license": "MIT",
+    "author": "Fredrik Nicol",
+    "homepage": "https://github.com/frenic/csstype"
+  },
+  {
+    "name": "culori",
+    "versions": [
+      "4.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/culori@4.0.2/node_modules/culori"
+    ],
+    "license": "MIT",
+    "author": "Dan Burzo",
+    "homepage": "git@github.com:Evercoder/culori"
+  },
+  {
+    "name": "cwise-compiler",
+    "versions": [
+      "1.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/cwise-compiler@1.1.3/node_modules/cwise-compiler"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/scijs/cwise-compiler"
+  },
+  {
+    "name": "data-uri-to-buffer",
+    "versions": [
+      "4.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/data-uri-to-buffer@4.0.1/node_modules/data-uri-to-buffer"
+    ],
+    "license": "MIT",
+    "author": "Nathan Rajlich",
+    "homepage": "https://github.com/TooTallNate/node-data-uri-to-buffer"
+  },
+  {
+    "name": "date-fns",
+    "versions": [
+      "4.4.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/date-fns@4.4.0/node_modules/date-fns"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/date-fns/date-fns"
+  },
+  {
+    "name": "debug",
+    "versions": [
+      "2.6.9",
+      "4.3.7",
+      "4.4.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/debug@2.6.9/node_modules/debug",
+      "node_modules/.pnpm/debug@4.3.7/node_modules/debug",
+      "node_modules/.pnpm/debug@4.4.3/node_modules/debug"
+    ],
+    "license": "MIT",
+    "author": "Josh Junon",
+    "homepage": "https://github.com/debug-js/debug"
+  },
+  {
+    "name": "decamelize",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/decamelize@1.2.0/node_modules/decamelize"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/decamelize"
+  },
+  {
+    "name": "define-data-property",
+    "versions": [
+      "1.1.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/define-data-property@1.1.4/node_modules/define-data-property"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/define-data-property#readme"
+  },
+  {
+    "name": "define-properties",
+    "versions": [
+      "1.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/define-properties@1.2.1/node_modules/define-properties"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/define-properties"
+  },
+  {
+    "name": "depd",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/depd@2.0.0/node_modules/depd"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "dougwilson/nodejs-depd"
+  },
+  {
+    "name": "destroy",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/destroy@1.2.0/node_modules/destroy"
+    ],
+    "license": "MIT",
+    "author": "Jonathan Ong",
+    "homepage": "stream-utils/destroy"
+  },
+  {
+    "name": "detect-gpu",
+    "versions": [
+      "5.0.70"
+    ],
+    "paths": [
+      "node_modules/.pnpm/detect-gpu@5.0.70/node_modules/detect-gpu"
+    ],
+    "license": "MIT",
+    "author": "Tim van Scherpenzeel",
+    "homepage": "https://github.com/pmndrs/detect-gpu#readme"
+  },
+  {
+    "name": "detect-libc",
+    "versions": [
+      "2.0.2",
+      "2.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/detect-libc@2.0.2/node_modules/detect-libc",
+      "node_modules/.pnpm/detect-libc@2.1.2/node_modules/detect-libc"
+    ],
+    "license": "Apache-2.0",
+    "author": "Lovell Fuller",
+    "homepage": "https://github.com/lovell/detect-libc"
+  },
+  {
+    "name": "detect-node-es",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/detect-node-es@1.1.0/node_modules/detect-node-es"
+    ],
+    "license": "MIT",
+    "author": "Ilya Kantor",
+    "homepage": "https://github.com/thekashey/detect-node"
+  },
+  {
+    "name": "diff",
+    "versions": [
+      "9.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/diff@9.0.0/node_modules/diff"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "",
+    "homepage": "https://github.com/kpdecker/jsdiff"
+  },
+  {
+    "name": "dijkstrajs",
+    "versions": [
+      "1.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/dijkstrajs@1.0.3/node_modules/dijkstrajs"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/tcort/dijkstrajs"
+  },
+  {
+    "name": "draco3d",
+    "versions": [
+      "1.5.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/draco3d@1.5.7/node_modules/draco3d"
+    ],
+    "license": "Apache-2.0",
+    "author": "Google Draco Team",
+    "homepage": "https://github.com/google/draco"
+  },
+  {
+    "name": "drizzle-orm",
+    "versions": [
+      "0.45.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/drizzle-orm@0.45.4_@libsql+client@0.18.0_@opentelemetry+api@1.10.0_@types+pg@8.23.1_pg@8.23.1/node_modules/drizzle-orm"
+    ],
+    "license": "Apache-2.0",
+    "author": "Drizzle Team",
+    "homepage": "https://orm.drizzle.team"
+  },
+  {
+    "name": "dunder-proto",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/dunder-proto@1.0.1/node_modules/dunder-proto"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/es-shims/dunder-proto#readme"
+  },
+  {
+    "name": "earcut",
+    "versions": [
+      "3.2.3",
+      "3.2.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/earcut@3.2.3/node_modules/earcut",
+      "node_modules/.pnpm/earcut@3.2.4/node_modules/earcut"
+    ],
+    "license": "ISC",
+    "author": "Volodymyr Agafonkin",
+    "homepage": "https://github.com/mapbox/earcut"
+  },
+  {
+    "name": "ecdsa-sig-formatter",
+    "versions": [
+      "1.0.11"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ecdsa-sig-formatter@1.0.11/node_modules/ecdsa-sig-formatter"
+    ],
+    "license": "Apache-2.0",
+    "author": "D2L Corporation",
+    "homepage": "https://github.com/Brightspace/node-ecdsa-sig-formatter#readme"
+  },
+  {
+    "name": "ee-first",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ee-first@1.1.1/node_modules/ee-first"
+    ],
+    "license": "MIT",
+    "author": "Jonathan Ong",
+    "homepage": "jonathanong/ee-first"
+  },
+  {
+    "name": "embla-carousel",
+    "versions": [
+      "8.6.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/embla-carousel@8.6.0/node_modules/embla-carousel"
+    ],
+    "license": "MIT",
+    "author": "David Jerleke",
+    "homepage": "https://www.embla-carousel.com"
+  },
+  {
+    "name": "embla-carousel-autoplay",
+    "versions": [
+      "8.6.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/embla-carousel-autoplay@8.6.0_embla-carousel@8.6.0/node_modules/embla-carousel-autoplay"
+    ],
+    "license": "MIT",
+    "author": "David Jerleke",
+    "homepage": "https://www.embla-carousel.com"
+  },
+  {
+    "name": "embla-carousel-react",
+    "versions": [
+      "8.6.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/embla-carousel-react@8.6.0_react@19.3.1/node_modules/embla-carousel-react"
+    ],
+    "license": "MIT",
+    "author": "David Jerleke",
+    "homepage": "https://www.embla-carousel.com"
+  },
+  {
+    "name": "embla-carousel-reactive-utils",
+    "versions": [
+      "8.6.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/embla-carousel-reactive-utils@8.6.0_embla-carousel@8.6.0/node_modules/embla-carousel-reactive-utils"
+    ],
+    "license": "MIT",
+    "author": "David Jerleke",
+    "homepage": "https://www.embla-carousel.com"
+  },
+  {
+    "name": "emoji-regex",
+    "versions": [
+      "8.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/emoji-regex@8.0.0/node_modules/emoji-regex"
+    ],
+    "license": "MIT",
+    "author": "Mathias Bynens",
+    "homepage": "https://mths.be/emoji-regex"
+  },
+  {
+    "name": "encodeurl",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/encodeurl@2.0.0/node_modules/encodeurl"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "pillarjs/encodeurl"
+  },
+  {
+    "name": "engine.io",
+    "versions": [
+      "6.6.10"
+    ],
+    "paths": [
+      "node_modules/.pnpm/engine.io@6.6.10/node_modules/engine.io"
+    ],
+    "license": "MIT",
+    "author": "Guillermo Rauch",
+    "homepage": "https://github.com/socketio/socket.io/tree/main/packages/engine.io#readme"
+  },
+  {
+    "name": "engine.io-client",
+    "versions": [
+      "6.6.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/engine.io-client@6.6.7/node_modules/engine.io-client"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/socketio/socket.io/tree/main/packages/engine.io-client#readme"
+  },
+  {
+    "name": "engine.io-parser",
+    "versions": [
+      "5.2.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/engine.io-parser@5.2.3/node_modules/engine.io-parser"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/socketio/socket.io/tree/main/packages/engine.io-parser#readme"
+  },
+  {
+    "name": "es-define-property",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/es-define-property@1.0.1/node_modules/es-define-property"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/es-define-property#readme"
+  },
+  {
+    "name": "es-errors",
+    "versions": [
+      "1.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/es-errors#readme"
+  },
+  {
+    "name": "es-hangul",
+    "versions": [
+      "2.4.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/es-hangul@2.4.0/node_modules/es-hangul"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "github:toss/es-hangul"
+  },
+  {
+    "name": "es-object-atoms",
+    "versions": [
+      "1.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/es-object-atoms@1.1.2/node_modules/es-object-atoms"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/es-object-atoms#readme"
+  },
+  {
+    "name": "esbuild-wasm",
+    "versions": [
+      "0.27.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/esbuild-wasm@0.27.7/node_modules/esbuild-wasm"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/evanw/esbuild"
+  },
+  {
+    "name": "escape-html",
+    "versions": [
+      "1.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/escape-html@1.0.3/node_modules/escape-html"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "component/escape-html"
+  },
+  {
+    "name": "escape-string-regexp",
+    "versions": [
+      "4.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/escape-string-regexp@4.0.0/node_modules/escape-string-regexp"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/escape-string-regexp"
+  },
+  {
+    "name": "escodegen",
+    "versions": [
+      "2.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/escodegen@2.1.0/node_modules/escodegen"
+    ],
+    "license": "BSD-2-Clause",
+    "author": "",
+    "homepage": "http://github.com/estools/escodegen"
+  },
+  {
+    "name": "esprima",
+    "versions": [
+      "4.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/esprima@4.0.1/node_modules/esprima"
+    ],
+    "license": "BSD-2-Clause",
+    "author": "Ariya Hidayat",
+    "homepage": "http://esprima.org"
+  },
+  {
+    "name": "estraverse",
+    "versions": [
+      "5.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/estraverse@5.3.0/node_modules/estraverse"
+    ],
+    "license": "BSD-2-Clause",
+    "author": "",
+    "homepage": "https://github.com/estools/estraverse"
+  },
+  {
+    "name": "esutils",
+    "versions": [
+      "2.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/esutils@2.0.3/node_modules/esutils"
+    ],
+    "license": "BSD-2-Clause",
+    "author": "",
+    "homepage": "https://github.com/estools/esutils"
+  },
+  {
+    "name": "etag",
+    "versions": [
+      "1.8.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/etag@1.8.1/node_modules/etag"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/etag"
+  },
+  {
+    "name": "eventemitter3",
+    "versions": [
+      "5.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/eventemitter3@5.0.4/node_modules/eventemitter3"
+    ],
+    "license": "MIT",
+    "author": "Arnout Kazemier",
+    "homepage": "https://github.com/primus/eventemitter3"
+  },
+  {
+    "name": "express",
+    "versions": [
+      "4.22.2",
+      "5.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/express@4.22.2/node_modules/express",
+      "node_modules/.pnpm/express@5.2.1/node_modules/express"
+    ],
+    "license": "MIT",
+    "author": "TJ Holowaychuk",
+    "homepage": "http://expressjs.com/"
+  },
+  {
+    "name": "extend",
+    "versions": [
+      "3.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/extend@3.0.2/node_modules/extend"
+    ],
+    "license": "MIT",
+    "author": "Stefan Thomas",
+    "homepage": "https://github.com/justmoon/node-extend"
+  },
+  {
+    "name": "fast-bmp",
+    "versions": [
+      "4.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fast-bmp@4.0.1/node_modules/fast-bmp"
+    ],
+    "license": "MIT",
+    "author": "Daniel Kostro",
+    "homepage": "https://image-js.github.io/fast-bmp/"
+  },
+  {
+    "name": "fast-deep-equal",
+    "versions": [
+      "3.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal"
+    ],
+    "license": "MIT",
+    "author": "Evgeny Poberezkin",
+    "homepage": "https://github.com/epoberezkin/fast-deep-equal#readme"
+  },
+  {
+    "name": "fast-jpeg",
+    "versions": [
+      "3.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fast-jpeg@3.0.1/node_modules/fast-jpeg"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://image-js.github.io/fast-jpeg/"
+  },
+  {
+    "name": "fast-png",
+    "versions": [
+      "8.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fast-png@8.0.0/node_modules/fast-png"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://image-js.github.io/fast-png/"
+  },
+  {
+    "name": "fast-safe-stringify",
+    "versions": [
+      "2.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fast-safe-stringify@2.1.1/node_modules/fast-safe-stringify"
+    ],
+    "license": "MIT",
+    "author": "David Mark Clements",
+    "homepage": "https://github.com/davidmarkclements/fast-safe-stringify#readme"
+  },
+  {
+    "name": "fast-sha256",
+    "versions": [
+      "1.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fast-sha256@1.3.0/node_modules/fast-sha256"
+    ],
+    "license": "Unlicense",
+    "author": "Dmitry Chestnykh",
+    "homepage": "https://github.com/dchest/fast-sha256-js"
+  },
+  {
+    "name": "fast-uri",
+    "versions": [
+      "3.1.9"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fast-uri@3.1.9/node_modules/fast-uri"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Vincent Le Goff",
+    "homepage": "https://github.com/fastify/fast-uri"
+  },
+  {
+    "name": "fast-xml-builder",
+    "versions": [
+      "1.3.0",
+      "1.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fast-xml-builder@1.3.0/node_modules/fast-xml-builder",
+      "node_modules/.pnpm/fast-xml-builder@1.3.1/node_modules/fast-xml-builder"
+    ],
+    "license": "MIT",
+    "author": "Amit Gupta",
+    "homepage": "https://github.com/NaturalIntelligence/fast-xml-builder"
+  },
+  {
+    "name": "fast-xml-parser",
+    "versions": [
+      "5.10.1",
+      "5.11.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fast-xml-parser@5.10.1/node_modules/fast-xml-parser",
+      "node_modules/.pnpm/fast-xml-parser@5.11.2/node_modules/fast-xml-parser"
+    ],
+    "license": "MIT",
+    "author": "Amit Gupta",
+    "homepage": "https://github.com/NaturalIntelligence/fast-xml-parser"
+  },
+  {
+    "name": "fetch-blob",
+    "versions": [
+      "3.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fetch-blob@3.2.0/node_modules/fetch-blob"
+    ],
+    "license": "MIT",
+    "author": "Jimmy Wärting",
+    "homepage": "https://github.com/node-fetch/fetch-blob#readme"
+  },
+  {
+    "name": "fflate",
+    "versions": [
+      "0.6.11",
+      "0.8.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fflate@0.6.11/node_modules/fflate",
+      "node_modules/.pnpm/fflate@0.8.3/node_modules/fflate"
+    ],
+    "license": "MIT",
+    "author": "Arjun Barrett",
+    "homepage": "https://101arrowz.github.io/fflate"
+  },
+  {
+    "name": "fft.js",
+    "versions": [
+      "4.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fft.js@4.0.4/node_modules/fft.js"
+    ],
+    "license": "MIT",
+    "author": "Fedor Indutny",
+    "homepage": "https://github.com/indutny/fft.js#readme"
+  },
+  {
+    "name": "file-type",
+    "versions": [
+      "10.11.0",
+      "21.3.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/file-type@10.11.0/node_modules/file-type",
+      "node_modules/.pnpm/file-type@21.3.4/node_modules/file-type"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/file-type"
+  },
+  {
+    "name": "finalhandler",
+    "versions": [
+      "1.3.2",
+      "2.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/finalhandler@1.3.2/node_modules/finalhandler",
+      "node_modules/.pnpm/finalhandler@2.1.1/node_modules/finalhandler"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "pillarjs/finalhandler"
+  },
+  {
+    "name": "find-up",
+    "versions": [
+      "4.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/find-up@4.1.0/node_modules/find-up"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/find-up"
+  },
+  {
+    "name": "fit-curve",
+    "versions": [
+      "0.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fit-curve@0.2.0/node_modules/fit-curve"
+    ],
+    "license": "MIT",
+    "author": "Philip J. Schneider",
+    "homepage": "https://github.com/soswow/fit-curve"
+  },
+  {
+    "name": "flatbuffers",
+    "versions": [
+      "25.9.23"
+    ],
+    "paths": [
+      "node_modules/.pnpm/flatbuffers@25.9.23/node_modules/flatbuffers"
+    ],
+    "license": "Apache-2.0",
+    "author": "The FlatBuffers project",
+    "homepage": "https://google.github.io/flatbuffers/"
+  },
+  {
+    "name": "follow-redirects",
+    "versions": [
+      "1.16.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/follow-redirects@1.16.2/node_modules/follow-redirects"
+    ],
+    "license": "MIT",
+    "author": "Ruben Verborgh",
+    "homepage": "https://github.com/follow-redirects/follow-redirects"
+  },
+  {
+    "name": "formdata-polyfill",
+    "versions": [
+      "4.0.10"
+    ],
+    "paths": [
+      "node_modules/.pnpm/formdata-polyfill@4.0.10/node_modules/formdata-polyfill"
+    ],
+    "license": "MIT",
+    "author": "Jimmy Wärting",
+    "homepage": "https://github.com/jimmywarting/FormData#readme"
+  },
+  {
+    "name": "forwarded",
+    "versions": [
+      "0.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/forwarded@0.2.0/node_modules/forwarded"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/forwarded"
+  },
+  {
+    "name": "framer-motion",
+    "versions": [
+      "12.40.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/framer-motion@12.40.0_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/framer-motion"
+    ],
+    "license": "MIT",
+    "author": "Matt Perry",
+    "homepage": "https://github.com/motiondivision/motion/"
+  },
+  {
+    "name": "fresh",
+    "versions": [
+      "0.5.2",
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fresh@0.5.2/node_modules/fresh",
+      "node_modules/.pnpm/fresh@2.0.0/node_modules/fresh"
+    ],
+    "license": "MIT",
+    "author": "TJ Holowaychuk",
+    "homepage": "jshttp/fresh"
+  },
+  {
+    "name": "function-bind",
+    "versions": [
+      "1.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind"
+    ],
+    "license": "MIT",
+    "author": "Raynos",
+    "homepage": "https://github.com/Raynos/function-bind"
+  },
+  {
+    "name": "fuse.js",
+    "versions": [
+      "7.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/fuse.js@7.5.0/node_modules/fuse.js"
+    ],
+    "license": "Apache-2.0",
+    "author": "Kiro Risk",
+    "homepage": "http://fusejs.io"
+  },
+  {
+    "name": "gaxios",
+    "versions": [
+      "7.1.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/gaxios@7.1.5/node_modules/gaxios"
+    ],
+    "license": "Apache-2.0",
+    "author": "Google, LLC",
+    "homepage": "https://github.com/googleapis/google-cloud-node-core/tree/main/packages/gaxios"
+  },
+  {
+    "name": "gcp-metadata",
+    "versions": [
+      "8.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata"
+    ],
+    "license": "Apache-2.0",
+    "author": "Google LLC",
+    "homepage": "https://github.com/googleapis/google-cloud-node-core/tree/main/packages/gcp-metadata"
+  },
+  {
+    "name": "get-caller-file",
+    "versions": [
+      "2.0.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/get-caller-file@2.0.5/node_modules/get-caller-file"
+    ],
+    "license": "ISC",
+    "author": "Stefan Penner",
+    "homepage": "https://github.com/stefanpenner/get-caller-file#readme"
+  },
+  {
+    "name": "get-intrinsic",
+    "versions": [
+      "1.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/get-intrinsic@1.3.0/node_modules/get-intrinsic"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/get-intrinsic#readme"
+  },
+  {
+    "name": "get-nonce",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/get-nonce@1.0.1/node_modules/get-nonce"
+    ],
+    "license": "MIT",
+    "author": "Anton Korzunov",
+    "homepage": "https://github.com/theKashey/get-nonce"
+  },
+  {
+    "name": "get-proto",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/get-proto#readme"
+  },
+  {
+    "name": "gifenc",
+    "versions": [
+      "1.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/gifenc@1.0.3/node_modules/gifenc"
+    ],
+    "license": "MIT",
+    "author": "Matt DesLauriers",
+    "homepage": "https://github.com/mattdesl/gifenc"
+  },
+  {
+    "name": "gifuct-js",
+    "versions": [
+      "2.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/gifuct-js@2.1.2/node_modules/gifuct-js"
+    ],
+    "license": "MIT",
+    "author": "Matt Way",
+    "homepage": "https://github.com/matt-way/gifuct-js"
+  },
+  {
+    "name": "gl-matrix",
+    "versions": [
+      "3.4.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/gl-matrix@3.4.4/node_modules/gl-matrix"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "http://glmatrix.net"
+  },
+  {
+    "name": "global-agent",
+    "versions": [
+      "4.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/global-agent@4.1.3/node_modules/global-agent"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Gajus Kuizinas",
+    "homepage": "https://github.com/gajus/global-agent"
+  },
+  {
+    "name": "globalthis",
+    "versions": [
+      "1.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/globalthis@1.0.4/node_modules/globalthis"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/System.global"
+  },
+  {
+    "name": "glsl-noise",
+    "versions": [
+      "0.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/glsl-noise@0.0.0/node_modules/glsl-noise"
+    ],
+    "license": "MIT",
+    "author": "Ian McEwan, Ashima Arts, Stefan Gustavson",
+    "homepage": "https://github.com/hughsk/glsl-noise"
+  },
+  {
+    "name": "google-auth-library",
+    "versions": [
+      "10.7.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/google-auth-library@10.7.0/node_modules/google-auth-library"
+    ],
+    "license": "Apache-2.0",
+    "author": "Google Inc.",
+    "homepage": "https://github.com/googleapis/google-cloud-node-core/tree/main/packages/google-auth-library-nodejs"
+  },
+  {
+    "name": "google-logging-utils",
+    "versions": [
+      "1.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/google-logging-utils@1.1.3/node_modules/google-logging-utils"
+    ],
+    "license": "Apache-2.0",
+    "author": "Google API Authors",
+    "homepage": "https://github.com/googleapis/google-cloud-node-core/tree/main/dev-packages/logging-utils"
+  },
+  {
+    "name": "gopd",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/gopd@1.2.0/node_modules/gopd"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/gopd#readme"
+  },
+  {
+    "name": "guid-typescript",
+    "versions": [
+      "1.0.9"
+    ],
+    "paths": [
+      "node_modules/.pnpm/guid-typescript@1.0.9/node_modules/guid-typescript"
+    ],
+    "license": "ISC",
+    "author": "nicolas",
+    "homepage": "https://github.com/NicolasDeveloper/guid-typescript"
+  },
+  {
+    "name": "hachure-fill",
+    "versions": [
+      "0.5.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/hachure-fill@0.5.2/node_modules/hachure-fill"
+    ],
+    "license": "MIT",
+    "author": "Preet Shihn",
+    "homepage": "https://github.com/pshihn/hachure-fill#readme"
+  },
+  {
+    "name": "harfbuzzjs",
+    "versions": [
+      "1.6.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/harfbuzzjs@1.6.3/node_modules/harfbuzzjs"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://harfbuzz.github.io/harfbuzzjs"
+  },
+  {
+    "name": "has-property-descriptors",
+    "versions": [
+      "1.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/has-property-descriptors@1.0.2/node_modules/has-property-descriptors"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/inspect-js/has-property-descriptors#readme"
+  },
+  {
+    "name": "has-symbols",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/has-symbols#readme"
+  },
+  {
+    "name": "hasown",
+    "versions": [
+      "2.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/hasown@2.0.4/node_modules/hasown"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/inspect-js/hasOwn#readme"
+  },
+  {
+    "name": "hls.js",
+    "versions": [
+      "1.7.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/hls.js@1.7.3/node_modules/hls.js"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://github.com/video-dev/hls.js"
+  },
+  {
+    "name": "html-to-image",
+    "versions": [
+      "1.11.13"
+    ],
+    "paths": [
+      "node_modules/.pnpm/html-to-image@1.11.13/node_modules/html-to-image"
+    ],
+    "license": "MIT",
+    "author": "bubkooo",
+    "homepage": "https://github.com/bubkoo/html-to-image#readme"
+  },
+  {
+    "name": "http_ece",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/http_ece@1.2.0/node_modules/http_ece"
+    ],
+    "license": "MIT",
+    "author": "Martin Thomson",
+    "homepage": "https://github.com/martinthomson/encrypted-content-encoding"
+  },
+  {
+    "name": "http-errors",
+    "versions": [
+      "2.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/http-errors@2.0.1/node_modules/http-errors"
+    ],
+    "license": "MIT",
+    "author": "Jonathan Ong",
+    "homepage": "jshttp/http-errors"
+  },
+  {
+    "name": "https-proxy-agent",
+    "versions": [
+      "7.0.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent"
+    ],
+    "license": "MIT",
+    "author": "Nathan Rajlich",
+    "homepage": "https://github.com/TooTallNate/proxy-agents"
+  },
+  {
+    "name": "i18next",
+    "versions": [
+      "19.9.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/i18next@19.9.2/node_modules/i18next"
+    ],
+    "license": "MIT",
+    "author": "Jan Mühlemann",
+    "homepage": "https://www.i18next.com"
+  },
+  {
+    "name": "i18next-browser-languagedetector",
+    "versions": [
+      "4.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/i18next-browser-languagedetector@4.3.1/node_modules/i18next-browser-languagedetector"
+    ],
+    "license": "MIT",
+    "author": "Jan Mühlemann",
+    "homepage": "https://github.com/i18next/i18next-browser-languageDetector"
+  },
+  {
+    "name": "iconv-lite",
+    "versions": [
+      "0.4.24",
+      "0.7.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/iconv-lite@0.4.24/node_modules/iconv-lite",
+      "node_modules/.pnpm/iconv-lite@0.7.3/node_modules/iconv-lite"
+    ],
+    "license": "MIT",
+    "author": "Alexander Shtuchkin",
+    "homepage": "https://github.com/ashtuchkin/iconv-lite"
+  },
+  {
+    "name": "ieee754",
+    "versions": [
+      "1.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ieee754@1.2.1/node_modules/ieee754"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Feross Aboukhadijeh",
+    "homepage": "https://github.com/feross/ieee754"
+  },
+  {
+    "name": "image-js",
+    "versions": [
+      "1.7.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/image-js@1.7.1/node_modules/image-js"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://github.com/image-js/image-js#readme"
+  },
+  {
+    "name": "image-type",
+    "versions": [
+      "4.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/image-type@4.1.0/node_modules/image-type"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/image-type"
+  },
+  {
+    "name": "immediate",
+    "versions": [
+      "3.0.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/immediate@3.0.6/node_modules/immediate"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/calvinmetcalf/immediate"
+  },
+  {
+    "name": "inherits",
+    "versions": [
+      "2.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/inherits@2.0.4/node_modules/inherits"
+    ],
+    "license": "ISC",
+    "author": "",
+    "homepage": "https://github.com/isaacs/inherits"
+  },
+  {
+    "name": "iobuffer",
+    "versions": [
+      "6.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/iobuffer@6.0.1/node_modules/iobuffer"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://image-js.github.io/iobuffer/"
+  },
+  {
+    "name": "iota-array",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/iota-array@1.0.0/node_modules/iota-array"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/iota-array"
+  },
+  {
+    "name": "ipaddr.js",
+    "versions": [
+      "1.9.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ipaddr.js@1.9.1/node_modules/ipaddr.js"
+    ],
+    "license": "MIT",
+    "author": "whitequark",
+    "homepage": "https://github.com/whitequark/ipaddr.js"
+  },
+  {
+    "name": "is-any-array",
+    "versions": [
+      "2.0.1",
+      "3.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/is-any-array@2.0.1/node_modules/is-any-array",
+      "node_modules/.pnpm/is-any-array@3.0.0/node_modules/is-any-array"
+    ],
+    "license": "MIT",
+    "author": "Luc Patiny",
+    "homepage": "https://github.com/cheminfo-js/is-any-array#readme"
+  },
+  {
+    "name": "is-buffer",
+    "versions": [
+      "1.1.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/is-buffer@1.1.6/node_modules/is-buffer"
+    ],
+    "license": "MIT",
+    "author": "Feross Aboukhadijeh",
+    "homepage": "https://github.com/feross/is-buffer"
+  },
+  {
+    "name": "is-fullwidth-code-point",
+    "versions": [
+      "3.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/is-fullwidth-code-point@3.0.0/node_modules/is-fullwidth-code-point"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/is-fullwidth-code-point"
+  },
+  {
+    "name": "is-promise",
+    "versions": [
+      "2.2.2",
+      "4.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/is-promise@2.2.2/node_modules/is-promise",
+      "node_modules/.pnpm/is-promise@4.0.0/node_modules/is-promise"
+    ],
+    "license": "MIT",
+    "author": "ForbesLindesay",
+    "homepage": "https://github.com/then/is-promise"
+  },
+  {
+    "name": "is-unsafe",
+    "versions": [
+      "2.0.0",
+      "2.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/is-unsafe@2.0.0/node_modules/is-unsafe",
+      "node_modules/.pnpm/is-unsafe@2.0.2/node_modules/is-unsafe"
+    ],
+    "license": "MIT",
+    "author": "Amit Gupta",
+    "homepage": "https://github.com/NaturalIntelligence/is-unsafe"
+  },
+  {
+    "name": "isexe",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe"
+    ],
+    "license": "ISC",
+    "author": "Isaac Z. Schlueter",
+    "homepage": "https://github.com/isaacs/isexe#readme"
+  },
+  {
+    "name": "ismobilejs",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ismobilejs@1.1.1/node_modules/ismobilejs"
+    ],
+    "license": "MIT",
+    "author": "Kai Mallea",
+    "homepage": "https://github.com/kaimallea/isMobile"
+  },
+  {
+    "name": "isomorphic.js",
+    "versions": [
+      "0.2.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/isomorphic.js@0.2.5/node_modules/isomorphic.js"
+    ],
+    "license": "MIT",
+    "author": "Kevin Jahns",
+    "homepage": "https://github.com/dmonad/isomorphic.js#readme"
+  },
+  {
+    "name": "iterare",
+    "versions": [
+      "1.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/iterare@1.2.1/node_modules/iterare"
+    ],
+    "license": "ISC",
+    "author": "Felix Becker",
+    "homepage": "https://github.com/felixfbecker/iterare"
+  },
+  {
+    "name": "its-fine",
+    "versions": [
+      "2.0.0",
+      "2.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/its-fine@2.0.0_@types+react@19.3.0_react@19.3.1/node_modules/its-fine",
+      "node_modules/.pnpm/its-fine@2.1.1_@types+react@19.3.0_react@19.3.1/node_modules/its-fine"
+    ],
+    "license": "MIT",
+    "author": "Cody Bennett",
+    "homepage": "https://github.com/pmndrs/its-fine"
+  },
+  {
+    "name": "jpeg-js",
+    "versions": [
+      "0.4.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/jpeg-js@0.4.4/node_modules/jpeg-js"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Eugene Ware",
+    "homepage": "https://github.com/eugeneware/jpeg-js"
+  },
+  {
+    "name": "js-base64",
+    "versions": [
+      "3.9.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/js-base64@3.9.4/node_modules/js-base64"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Dan Kogai",
+    "homepage": "https://github.com/dankogai/js-base64"
+  },
+  {
+    "name": "js-binary-schema-parser",
+    "versions": [
+      "2.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/js-binary-schema-parser@2.0.3/node_modules/js-binary-schema-parser"
+    ],
+    "license": "MIT",
+    "author": "Matt Way",
+    "homepage": "https://github.com/matt-way/jsBinarySchemaParser"
+  },
+  {
+    "name": "js-priority-queue",
+    "versions": [
+      "0.1.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/js-priority-queue@0.1.5/node_modules/js-priority-queue"
+    ],
+    "license": "Public Domain",
+    "author": "Adam Hooper",
+    "homepage": "https://github.com/adamhooper/js-priority-queue"
+  },
+  {
+    "name": "json-bigint",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/json-bigint@1.0.0/node_modules/json-bigint"
+    ],
+    "license": "MIT",
+    "author": "Andrey Sidorov",
+    "homepage": "git@github.com:sidorares/json-bigint"
+  },
+  {
+    "name": "json-schema-to-ts",
+    "versions": [
+      "3.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/json-schema-to-ts@3.1.1/node_modules/json-schema-to-ts"
+    ],
+    "license": "MIT",
+    "author": "Thomas Aribart",
+    "homepage": "https://github.com/ThomasAribart/json-schema-to-ts#readme"
+  },
+  {
+    "name": "json-schema-traverse",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/json-schema-traverse@1.0.0/node_modules/json-schema-traverse"
+    ],
+    "license": "MIT",
+    "author": "Evgeny Poberezkin",
+    "homepage": "https://github.com/epoberezkin/json-schema-traverse#readme"
+  },
+  {
+    "name": "jwa",
+    "versions": [
+      "2.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/jwa@2.0.1/node_modules/jwa"
+    ],
+    "license": "MIT",
+    "author": "Brian J. Brennan",
+    "homepage": "https://github.com/brianloveswords/node-jwa"
+  },
+  {
+    "name": "jws",
+    "versions": [
+      "4.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/jws@4.0.1/node_modules/jws"
+    ],
+    "license": "MIT",
+    "author": "Brian J Brennan",
+    "homepage": "https://github.com/brianloveswords/node-jws"
+  },
+  {
+    "name": "konva",
+    "versions": [
+      "10.9.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/konva@10.9.0_skia-canvas@3.0.8/node_modules/konva"
+    ],
+    "license": "MIT",
+    "author": "Anton Lavrenov",
+    "homepage": "https://konvajs.org/"
+  },
+  {
+    "name": "korean-lunar-calendar",
+    "versions": [
+      "0.4.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/korean-lunar-calendar@0.4.0/node_modules/korean-lunar-calendar"
+    ],
+    "license": "MIT",
+    "author": "Jinil Lee",
+    "homepage": "https://github.com/usingsky/korean_lunar_calendar_js#readme"
+  },
+  {
+    "name": "ktx-parse",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ktx-parse@1.1.0/node_modules/ktx-parse"
+    ],
+    "license": "MIT",
+    "author": "Don McCurdy",
+    "homepage": "github:donmccurdy/ktx-parse"
+  },
+  {
+    "name": "ktx2-encoder",
+    "versions": [
+      "0.6.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ktx2-encoder@0.6.0_patch_hash=20ab5cce62142bddaf85f69af8a41633b64f264f931b3ef71c8a57c3e0de5c74/node_modules/ktx2-encoder"
+    ],
+    "license": "MIT",
+    "author": "Hu Song",
+    "homepage": "github:gz65555/ktx2-encoder"
+  },
+  {
+    "name": "ky",
+    "versions": [
+      "2.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ky@2.2.0/node_modules/ky"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/ky"
+  },
+  {
+    "name": "lazy-brush",
+    "versions": [
+      "2.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/lazy-brush@2.0.2/node_modules/lazy-brush"
+    ],
+    "license": "MIT",
+    "author": "Jan Hug",
+    "homepage": "https://github.com/dulnan/lazy-brush"
+  },
+  {
+    "name": "lib0",
+    "versions": [
+      "0.2.119"
+    ],
+    "paths": [
+      "node_modules/.pnpm/lib0@0.2.119/node_modules/lib0"
+    ],
+    "license": "MIT",
+    "author": "Kevin Jahns",
+    "homepage": "https://github.com/dmonad/lib0#readme"
+  },
+  {
+    "name": "libsql",
+    "versions": [
+      "0.5.29"
+    ],
+    "paths": [
+      "node_modules/.pnpm/libsql@0.5.29/node_modules/libsql"
+    ],
+    "license": "MIT",
+    "author": "Pekka Enberg",
+    "homepage": "https://github.com/tursodatabase/libsql-js"
+  },
+  {
+    "name": "libtess",
+    "versions": [
+      "1.2.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/libtess@1.2.2/node_modules/libtess"
+    ],
+    "license": "SGI-B-2.0",
+    "author": "Brendan Kenny",
+    "homepage": "https://github.com/brendankenny/libtess.js/"
+  },
+  {
+    "name": "lie",
+    "versions": [
+      "3.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/lie@3.3.0/node_modules/lie"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/calvinmetcalf/lie"
+  },
+  {
+    "name": "linear-solve",
+    "versions": [
+      "1.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/linear-solve@1.2.1/node_modules/linear-solve"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/lovasoa/linear-solve"
+  },
+  {
+    "name": "load-esm",
+    "versions": [
+      "1.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/load-esm@1.0.3/node_modules/load-esm"
+    ],
+    "license": "MIT",
+    "author": "Borewit",
+    "homepage": "https://github.com/Borewit/load-esm#readme"
+  },
+  {
+    "name": "locate-path",
+    "versions": [
+      "5.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/locate-path@5.0.0/node_modules/locate-path"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/locate-path"
+  },
+  {
+    "name": "long",
+    "versions": [
+      "5.3.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/long@5.3.2/node_modules/long"
+    ],
+    "license": "Apache-2.0",
+    "author": "Daniel Wirtz",
+    "homepage": "https://github.com/dcodeIO/long.js"
+  },
+  {
+    "name": "lucide-react",
+    "versions": [
+      "1.58.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/lucide-react@1.58.0_@types+react@19.3.0_react@19.3.1/node_modules/lucide-react"
+    ],
+    "license": "ISC",
+    "author": "Eric Fennis",
+    "homepage": "https://lucide.dev"
+  },
+  {
+    "name": "lunar-typescript",
+    "versions": [
+      "1.8.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/lunar-typescript@1.8.6/node_modules/lunar-typescript"
+    ],
+    "license": "MIT",
+    "author": "6tail",
+    "homepage": "https://github.com/6tail/lunar-typescript"
+  },
+  {
+    "name": "maath",
+    "versions": [
+      "0.10.8"
+    ],
+    "paths": [
+      "node_modules/.pnpm/maath@0.10.8_@types+three@0.186.0_three@0.186.1/node_modules/maath"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": ""
+  },
+  {
+    "name": "magic-string",
+    "versions": [
+      "0.30.21"
+    ],
+    "paths": [
+      "node_modules/.pnpm/magic-string@0.30.21/node_modules/magic-string"
+    ],
+    "license": "MIT",
+    "author": "Rich Harris",
+    "homepage": "https://github.com/Rich-Harris/magic-string"
+  },
+  {
+    "name": "manifold-3d",
+    "versions": [
+      "3.5.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/manifold-3d@3.5.1_patch_hash=53990fc6cbf1cc1a3839a32a88a8a1d4b76e28d2699332b21e2afeca78_7e32e15a0a037b6b7078ece4f729c660/node_modules/manifold-3d"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://github.com/elalish/manifold#readme"
+  },
+  {
+    "name": "matcher",
+    "versions": [
+      "4.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/matcher@4.0.0/node_modules/matcher"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/matcher"
+  },
+  {
+    "name": "math-intrinsics",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/es-shims/math-intrinsics#readme"
+  },
+  {
+    "name": "media-typer",
+    "versions": [
+      "0.3.0",
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/media-typer@0.3.0/node_modules/media-typer",
+      "node_modules/.pnpm/media-typer@1.1.0/node_modules/media-typer"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "jshttp/media-typer"
+  },
+  {
+    "name": "median-quickselect",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/median-quickselect@1.0.1/node_modules/median-quickselect"
+    ],
+    "license": "ISC",
+    "author": "https://github.com/mad-gooze",
+    "homepage": "https://github.com/mad-gooze/median-quickselect#readme"
+  },
+  {
+    "name": "merge-descriptors",
+    "versions": [
+      "1.0.3",
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/merge-descriptors@1.0.3/node_modules/merge-descriptors",
+      "node_modules/.pnpm/merge-descriptors@2.0.0/node_modules/merge-descriptors"
+    ],
+    "license": "MIT",
+    "author": "Jonathan Ong",
+    "homepage": "sindresorhus/merge-descriptors"
+  },
+  {
+    "name": "meshline",
+    "versions": [
+      "3.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/meshline@3.3.1_three@0.186.1/node_modules/meshline"
+    ],
+    "license": "MIT",
+    "author": "Jaume Sanchez",
+    "homepage": "https://github.com/pmndrs/meshline#readme"
+  },
+  {
+    "name": "meshoptimizer",
+    "versions": [
+      "1.1.1",
+      "1.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/meshoptimizer@1.1.1/node_modules/meshoptimizer",
+      "node_modules/.pnpm/meshoptimizer@1.3.0/node_modules/meshoptimizer"
+    ],
+    "license": "MIT",
+    "author": "Arseny Kapoulkine",
+    "homepage": "https://github.com/zeux/meshoptimizer"
+  },
+  {
+    "name": "methods",
+    "versions": [
+      "1.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/methods@1.1.2/node_modules/methods"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/methods"
+  },
+  {
+    "name": "mime",
+    "versions": [
+      "1.6.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/mime@1.6.0/node_modules/mime"
+    ],
+    "license": "MIT",
+    "author": "Robert Kieffer",
+    "homepage": "https://github.com/broofa/node-mime"
+  },
+  {
+    "name": "mime-db",
+    "versions": [
+      "1.52.0",
+      "1.54.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/mime-db@1.52.0/node_modules/mime-db",
+      "node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/mime-db"
+  },
+  {
+    "name": "mime-types",
+    "versions": [
+      "2.1.35",
+      "3.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/mime-types@2.1.35/node_modules/mime-types",
+      "node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/mime-types"
+  },
+  {
+    "name": "minimalistic-assert",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/minimalistic-assert@1.0.1/node_modules/minimalistic-assert"
+    ],
+    "license": "ISC",
+    "author": "",
+    "homepage": "https://github.com/calvinmetcalf/minimalistic-assert"
+  },
+  {
+    "name": "minimist",
+    "versions": [
+      "1.2.8"
+    ],
+    "paths": [
+      "node_modules/.pnpm/minimist@1.2.8/node_modules/minimist"
+    ],
+    "license": "MIT",
+    "author": "James Halliday",
+    "homepage": "https://github.com/minimistjs/minimist"
+  },
+  {
+    "name": "ml-affine-transform",
+    "versions": [
+      "1.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-affine-transform@1.0.3/node_modules/ml-affine-transform"
+    ],
+    "license": "MIT",
+    "author": "Océane Patiny",
+    "homepage": "https://github.com/mljs/affine-transform#readme"
+  },
+  {
+    "name": "ml-array-max",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-array-max@2.0.0/node_modules/ml-array-max"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://github.com/mljs/array/tree/master/packages/array-max#readme"
+  },
+  {
+    "name": "ml-array-median",
+    "versions": [
+      "1.1.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-array-median@1.1.6/node_modules/ml-array-median"
+    ],
+    "license": "MIT",
+    "author": "Jefferson Hernández",
+    "homepage": "https://github.com/mljs/array/tree/master/packages/array-median#readme"
+  },
+  {
+    "name": "ml-array-min",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-array-min@2.0.0/node_modules/ml-array-min"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://github.com/mljs/array/tree/master/packages/array-min#readme"
+  },
+  {
+    "name": "ml-array-rescale",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-array-rescale@2.0.0/node_modules/ml-array-rescale"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://github.com/mljs/array/tree/master/packages/array-rescale#readme"
+  },
+  {
+    "name": "ml-convolution",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-convolution@2.0.0/node_modules/ml-convolution"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://github.com/mljs/convolution#readme"
+  },
+  {
+    "name": "ml-matrix",
+    "versions": [
+      "6.15.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-matrix@6.15.0/node_modules/ml-matrix"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://github.com/mljs/matrix"
+  },
+  {
+    "name": "ml-random",
+    "versions": [
+      "0.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-random@0.5.0/node_modules/ml-random"
+    ],
+    "license": "MIT",
+    "author": "Daniel Kostro",
+    "homepage": "https://github.com/mljs/random#readme"
+  },
+  {
+    "name": "ml-ransac",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-ransac@1.0.0/node_modules/ml-ransac"
+    ],
+    "license": "MIT",
+    "author": "Océane Patiny",
+    "homepage": "https://github.com/mljs/ransac#readme"
+  },
+  {
+    "name": "ml-regression-base",
+    "versions": [
+      "4.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-regression-base@4.0.1/node_modules/ml-regression-base"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://github.com/mljs/regression-base#readme"
+  },
+  {
+    "name": "ml-regression-multivariate-linear",
+    "versions": [
+      "2.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-regression-multivariate-linear@2.0.4/node_modules/ml-regression-multivariate-linear"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://github.com/mljs/regression-multivariate-linear#readme"
+  },
+  {
+    "name": "ml-regression-polynomial-2d",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-regression-polynomial-2d@1.0.0/node_modules/ml-regression-polynomial-2d"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/mljs/regression-polynomial-2d#readme"
+  },
+  {
+    "name": "ml-spectra-processing",
+    "versions": [
+      "14.35.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-spectra-processing@14.35.1/node_modules/ml-spectra-processing"
+    ],
+    "license": "MIT",
+    "author": "Luc Patiny",
+    "homepage": "https://github.com/mljs/spectra-processing#readme"
+  },
+  {
+    "name": "ml-xsadd",
+    "versions": [
+      "2.0.0",
+      "3.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ml-xsadd@2.0.0/node_modules/ml-xsadd",
+      "node_modules/.pnpm/ml-xsadd@3.0.1/node_modules/ml-xsadd"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://github.com/mljs/xsadd#readme"
+  },
+  {
+    "name": "motion",
+    "versions": [
+      "12.40.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/motion@12.40.0_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/motion"
+    ],
+    "license": "MIT",
+    "author": "Matt Perry",
+    "homepage": "https://github.com/motiondivision/motion"
+  },
+  {
+    "name": "motion-dom",
+    "versions": [
+      "12.40.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/motion-dom@12.40.0/node_modules/motion-dom"
+    ],
+    "license": "MIT",
+    "author": "Matt Perry",
+    "homepage": "https://github.com/motiondivision/motion"
+  },
+  {
+    "name": "motion-utils",
+    "versions": [
+      "12.39.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/motion-utils@12.39.0/node_modules/motion-utils"
+    ],
+    "license": "MIT",
+    "author": "Matt Perry",
+    "homepage": "https://github.com/motiondivision/motion"
+  },
+  {
+    "name": "ms",
+    "versions": [
+      "2.0.0",
+      "2.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ms@2.0.0/node_modules/ms",
+      "node_modules/.pnpm/ms@2.1.3/node_modules/ms"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "vercel/ms"
+  },
+  {
+    "name": "multer",
+    "versions": [
+      "2.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/multer@2.5.0/node_modules/multer"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/expressjs/multer"
+  },
+  {
+    "name": "multiformats",
+    "versions": [
+      "14.0.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/multiformats@14.0.5/node_modules/multiformats"
+    ],
+    "license": "Apache-2.0 OR MIT",
+    "author": "Mikeal Rogers",
+    "homepage": "https://github.com/multiformats/js-multiformats#readme"
+  },
+  {
+    "name": "ndarray",
+    "versions": [
+      "1.0.19"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ndarray@1.0.19/node_modules/ndarray"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/ndarray"
+  },
+  {
+    "name": "ndarray-lanczos",
+    "versions": [
+      "0.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ndarray-lanczos@0.3.0/node_modules/ndarray-lanczos"
+    ],
+    "license": "MIT",
+    "author": "Don McCurdy",
+    "homepage": "github:donmccurdy/ndarray-lanczos"
+  },
+  {
+    "name": "ndarray-ops",
+    "versions": [
+      "1.2.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ndarray-ops@1.2.2/node_modules/ndarray-ops"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/ndarray-ops"
+  },
+  {
+    "name": "ndarray-pixels",
+    "versions": [
+      "5.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ndarray-pixels@5.0.1_@types+node@24.13.2/node_modules/ndarray-pixels"
+    ],
+    "license": "MIT",
+    "author": "Don McCurdy",
+    "homepage": "github:donmccurdy/ndarray-pixels"
+  },
+  {
+    "name": "negotiator",
+    "versions": [
+      "0.6.3",
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/negotiator@0.6.3/node_modules/negotiator",
+      "node_modules/.pnpm/negotiator@1.1.0/node_modules/negotiator"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/negotiator"
+  },
+  {
+    "name": "nestjs-pino",
+    "versions": [
+      "5.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/nestjs-pino@5.3.1_@nestjs+common@11.1.24_reflect-metadata@0.2.2_rxjs@7.8.2__@nestjs+cor_b0f106845776e797e80400d52cc09d31/node_modules/nestjs-pino"
+    ],
+    "license": "MIT",
+    "author": "iamolegga",
+    "homepage": "https://github.com/iamolegga/nestjs-pino#readme"
+  },
+  {
+    "name": "nestjs-zod",
+    "versions": [
+      "5.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/nestjs-zod@5.5.0_@nestjs+common@11.1.24_reflect-metadata@0.2.2_rxjs@7.8.2__rxjs@7.8.2_zod@4.6.7/node_modules/nestjs-zod"
+    ],
+    "license": "MIT",
+    "author": "Ben Lorantfy",
+    "homepage": "git@github.com:BenLorantfy/nestjs-zod"
+  },
+  {
+    "name": "next-power-of-two",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/next-power-of-two@1.0.0/node_modules/next-power-of-two"
+    ],
+    "license": "MIT",
+    "author": "Matt DesLauriers",
+    "homepage": "https://github.com/mattdesl/next-power-of-two"
+  },
+  {
+    "name": "node-domexception",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/node-domexception@1.0.0/node_modules/node-domexception"
+    ],
+    "license": "MIT",
+    "author": "Jimmy Wärting",
+    "homepage": "https://github.com/jimmywarting/node-domexception#readme"
+  },
+  {
+    "name": "node-fetch",
+    "versions": [
+      "3.3.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch"
+    ],
+    "license": "MIT",
+    "author": "David Frank",
+    "homepage": "https://github.com/node-fetch/node-fetch"
+  },
+  {
+    "name": "object-assign",
+    "versions": [
+      "4.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/object-assign@4.1.1/node_modules/object-assign"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/object-assign"
+  },
+  {
+    "name": "object-hash",
+    "versions": [
+      "3.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/object-hash@3.0.0/node_modules/object-hash"
+    ],
+    "license": "MIT",
+    "author": "Scott Puleo",
+    "homepage": "https://github.com/puleos/object-hash"
+  },
+  {
+    "name": "object-inspect",
+    "versions": [
+      "1.13.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect"
+    ],
+    "license": "MIT",
+    "author": "James Halliday",
+    "homepage": "https://github.com/inspect-js/object-inspect"
+  },
+  {
+    "name": "object-keys",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/object-keys@1.1.1/node_modules/object-keys"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/object-keys"
+  },
+  {
+    "name": "omggif",
+    "versions": [
+      "1.0.10"
+    ],
+    "paths": [
+      "node_modules/.pnpm/omggif@1.0.10/node_modules/omggif"
+    ],
+    "license": "MIT",
+    "author": "Dean McNamee",
+    "homepage": "https://github.com/deanm/omggif"
+  },
+  {
+    "name": "on-exit-leak-free",
+    "versions": [
+      "2.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/on-exit-leak-free@2.1.2/node_modules/on-exit-leak-free"
+    ],
+    "license": "MIT",
+    "author": "Matteo Collina",
+    "homepage": "https://github.com/mcollina/on-exit-or-gc#readme"
+  },
+  {
+    "name": "on-finished",
+    "versions": [
+      "2.4.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/on-finished@2.4.1/node_modules/on-finished"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/on-finished"
+  },
+  {
+    "name": "once",
+    "versions": [
+      "1.4.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/once@1.4.0/node_modules/once"
+    ],
+    "license": "ISC",
+    "author": "Isaac Z. Schlueter",
+    "homepage": "https://github.com/isaacs/once"
+  },
+  {
+    "name": "onnxruntime-common",
+    "versions": [
+      "1.30.0",
+      "1.31.0-dev.20260911-2a43ec07e"
+    ],
+    "paths": [
+      "node_modules/.pnpm/onnxruntime-common@1.30.0/node_modules/onnxruntime-common",
+      "node_modules/.pnpm/onnxruntime-common@1.31.0-dev.20260911-2a43ec07e/node_modules/onnxruntime-common"
+    ],
+    "license": "MIT",
+    "author": "fs-eire",
+    "homepage": "https://github.com/Microsoft/onnxruntime"
+  },
+  {
+    "name": "onnxruntime-node",
+    "versions": [
+      "1.30.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/onnxruntime-node@1.30.0/node_modules/onnxruntime-node"
+    ],
+    "license": "MIT",
+    "author": "fs-eire",
+    "homepage": "https://github.com/Microsoft/onnxruntime"
+  },
+  {
+    "name": "onnxruntime-web",
+    "versions": [
+      "1.30.0",
+      "1.31.0-dev.20260914-8d85527a0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/onnxruntime-web@1.30.0/node_modules/onnxruntime-web",
+      "node_modules/.pnpm/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/node_modules/onnxruntime-web"
+    ],
+    "license": "MIT",
+    "author": "fs-eire",
+    "homepage": "https://github.com/Microsoft/onnxruntime"
+  },
+  {
+    "name": "opencascade.js",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/opencascade.js@1.1.1/node_modules/opencascade.js"
+    ],
+    "license": "LGPL-2.1-only",
+    "author": "Sebastian Alff",
+    "homepage": "github:donalffons/opencascade.js"
+  },
+  {
+    "name": "openskp",
+    "versions": [
+      "1.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/openskp@1.3.0_patch_hash=68b4e19d0b31d0fad5f13ae1e86d54b0e45a31ddc749fee45735a5dd5b01ddf1/node_modules/openskp"
+    ],
+    "license": "MIT",
+    "author": "Ahsan Mehmood",
+    "homepage": "https://openskp.com"
+  },
+  {
+    "name": "p-limit",
+    "versions": [
+      "2.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/p-limit@2.3.0/node_modules/p-limit"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/p-limit"
+  },
+  {
+    "name": "p-locate",
+    "versions": [
+      "4.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/p-locate@4.1.0/node_modules/p-locate"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/p-locate"
+  },
+  {
+    "name": "p-try",
+    "versions": [
+      "2.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/p-try@2.2.0/node_modules/p-try"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/p-try"
+  },
+  {
+    "name": "p5",
+    "versions": [
+      "2.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/p5@2.3.1/node_modules/p5"
+    ],
+    "license": "LGPL-2.1",
+    "author": "",
+    "homepage": "https://p5js.org"
+  },
+  {
+    "name": "p5.brush",
+    "versions": [
+      "2.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/p5.brush@2.2.1_patch_hash=6b307bc36f52c10edfb448c81f93799eeba30e77015abf4031960ce9907a78cb_p5@2.3.1/node_modules/p5.brush"
+    ],
+    "license": "MIT",
+    "author": "Alejandro Campos Uribe",
+    "homepage": "https://p5-brush.cargo.site/"
+  },
+  {
+    "name": "pako",
+    "versions": [
+      "1.0.11",
+      "2.1.0",
+      "2.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pako@1.0.11/node_modules/pako",
+      "node_modules/.pnpm/pako@2.1.0/node_modules/pako",
+      "node_modules/.pnpm/pako@2.2.0/node_modules/pako"
+    ],
+    "license": "(MIT AND Zlib)",
+    "author": "",
+    "homepage": "https://github.com/nodeca/pako"
+  },
+  {
+    "name": "paper",
+    "versions": [
+      "0.12.18"
+    ],
+    "paths": [
+      "node_modules/.pnpm/paper@0.12.18/node_modules/paper"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "http://paperjs.org"
+  },
+  {
+    "name": "parenthesis",
+    "versions": [
+      "3.1.8"
+    ],
+    "paths": [
+      "node_modules/.pnpm/parenthesis@3.1.8/node_modules/parenthesis"
+    ],
+    "license": "MIT",
+    "author": "Dmitry Yv",
+    "homepage": "https://github.com/dy/parenthesis"
+  },
+  {
+    "name": "parse-svg-path",
+    "versions": [
+      "0.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/parse-svg-path@0.2.0/node_modules/parse-svg-path"
+    ],
+    "license": "MIT",
+    "author": "Jake Rosoman",
+    "homepage": "https://github.com/jkroso/parse-svg-path"
+  },
+  {
+    "name": "parseurl",
+    "versions": [
+      "1.3.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/parseurl@1.3.3/node_modules/parseurl"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "pillarjs/parseurl"
+  },
+  {
+    "name": "path-data-parser",
+    "versions": [
+      "0.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/path-data-parser@0.1.0/node_modules/path-data-parser"
+    ],
+    "license": "MIT",
+    "author": "Preet Shihn",
+    "homepage": "https://github.com/pshihn/path-data-parser#readme"
+  },
+  {
+    "name": "path-exists",
+    "versions": [
+      "4.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/path-exists@4.0.0/node_modules/path-exists"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/path-exists"
+  },
+  {
+    "name": "path-expression-matcher",
+    "versions": [
+      "1.6.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/path-expression-matcher@1.6.2/node_modules/path-expression-matcher"
+    ],
+    "license": "MIT",
+    "author": "Amit Gupta",
+    "homepage": "https://github.com/NaturalIntelligence/path-expression-matcher#readme"
+  },
+  {
+    "name": "path-key",
+    "versions": [
+      "3.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/path-key@3.1.1/node_modules/path-key"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/path-key"
+  },
+  {
+    "name": "path-to-regexp",
+    "versions": [
+      "0.1.13",
+      "8.4.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/path-to-regexp@0.1.13/node_modules/path-to-regexp",
+      "node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/pillarjs/path-to-regexp"
+  },
+  {
+    "name": "pdf-lib",
+    "versions": [
+      "1.17.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pdf-lib@1.17.1/node_modules/pdf-lib"
+    ],
+    "license": "MIT",
+    "author": "Andrew Dillon",
+    "homepage": "https://pdf-lib.js.org"
+  },
+  {
+    "name": "pdfjs-dist",
+    "versions": [
+      "6.4.299"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pdfjs-dist@6.4.299/node_modules/pdfjs-dist"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://mozilla.github.io/pdf.js/"
+  },
+  {
+    "name": "perfect-freehand",
+    "versions": [
+      "1.2.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/perfect-freehand@1.2.3/node_modules/perfect-freehand"
+    ],
+    "license": "MIT",
+    "author": "Steve Ruiz",
+    "homepage": "https://github.com/steveruizok/perfect-freehand"
+  },
+  {
+    "name": "pg",
+    "versions": [
+      "8.23.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pg@8.23.1/node_modules/pg"
+    ],
+    "license": "MIT",
+    "author": "Brian Carlson",
+    "homepage": "https://github.com/brianc/node-postgres"
+  },
+  {
+    "name": "pg-cloudflare",
+    "versions": [
+      "1.4.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pg-cloudflare@1.4.1/node_modules/pg-cloudflare"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/brianc/node-postgres"
+  },
+  {
+    "name": "pg-connection-string",
+    "versions": [
+      "2.14.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pg-connection-string@2.14.1/node_modules/pg-connection-string"
+    ],
+    "license": "MIT",
+    "author": "Blaine Bublitz",
+    "homepage": "https://github.com/brianc/node-postgres/tree/master/packages/pg-connection-string"
+  },
+  {
+    "name": "pg-int8",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pg-int8@1.0.1/node_modules/pg-int8"
+    ],
+    "license": "ISC",
+    "author": "",
+    "homepage": "https://github.com/charmander/pg-int8"
+  },
+  {
+    "name": "pg-pool",
+    "versions": [
+      "3.14.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.1/node_modules/pg-pool"
+    ],
+    "license": "MIT",
+    "author": "Brian M. Carlson",
+    "homepage": "https://github.com/brianc/node-postgres/tree/master/packages/pg-pool#readme"
+  },
+  {
+    "name": "pg-protocol",
+    "versions": [
+      "1.16.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pg-protocol@1.16.1/node_modules/pg-protocol"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/brianc/node-postgres"
+  },
+  {
+    "name": "pg-types",
+    "versions": [
+      "2.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pg-types@2.2.0/node_modules/pg-types"
+    ],
+    "license": "MIT",
+    "author": "Brian M. Carlson",
+    "homepage": "https://github.com/brianc/node-pg-types"
+  },
+  {
+    "name": "pgpass",
+    "versions": [
+      "1.0.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pgpass@1.0.5/node_modules/pgpass"
+    ],
+    "license": "MIT",
+    "author": "Hannes Hörl",
+    "homepage": "https://github.com/hoegaarden/pgpass"
+  },
+  {
+    "name": "phaser",
+    "versions": [
+      "4.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/phaser@4.2.1/node_modules/phaser"
+    ],
+    "license": "MIT",
+    "author": "Richard Davey",
+    "homepage": "https://phaser.io"
+  },
+  {
+    "name": "pino",
+    "versions": [
+      "10.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pino@10.3.1/node_modules/pino"
+    ],
+    "license": "MIT",
+    "author": "Matteo Collina",
+    "homepage": "https://getpino.io"
+  },
+  {
+    "name": "pino-abstract-transport",
+    "versions": [
+      "3.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pino-abstract-transport@3.0.0/node_modules/pino-abstract-transport"
+    ],
+    "license": "MIT",
+    "author": "Matteo Collina",
+    "homepage": "https://github.com/pinojs/pino-abstract-transport#readme"
+  },
+  {
+    "name": "pino-http",
+    "versions": [
+      "11.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pino-http@11.0.0/node_modules/pino-http"
+    ],
+    "license": "MIT",
+    "author": "David Mark Clements",
+    "homepage": "https://github.com/pinojs/pino-http#readme"
+  },
+  {
+    "name": "pino-std-serializers",
+    "versions": [
+      "7.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers"
+    ],
+    "license": "MIT",
+    "author": "James Sumners",
+    "homepage": "https://github.com/pinojs/pino-std-serializers#readme"
+  },
+  {
+    "name": "pixi.js",
+    "versions": [
+      "8.22.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pixi.js@8.22.0/node_modules/pixi.js"
+    ],
+    "license": "MIT",
+    "author": "PixiJS Team",
+    "homepage": "http://pixijs.com/"
+  },
+  {
+    "name": "platform",
+    "versions": [
+      "1.3.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/platform@1.3.6/node_modules/platform"
+    ],
+    "license": "MIT",
+    "author": "Benjamin Tan",
+    "homepage": "bestiejs/platform.js"
+  },
+  {
+    "name": "pngjs",
+    "versions": [
+      "5.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/pngjs@5.0.0/node_modules/pngjs"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/lukeapage/pngjs"
+  },
+  {
+    "name": "points-on-curve",
+    "versions": [
+      "0.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/points-on-curve@0.2.0/node_modules/points-on-curve"
+    ],
+    "license": "MIT",
+    "author": "Preet Shihn",
+    "homepage": "https://github.com/pshihn/bezier-points#readme"
+  },
+  {
+    "name": "points-on-path",
+    "versions": [
+      "0.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/points-on-path@0.2.1/node_modules/points-on-path"
+    ],
+    "license": "MIT",
+    "author": "Preet Shihn",
+    "homepage": "https://github.com/pshihn/points-on-path#readme"
+  },
+  {
+    "name": "polygon-clipping",
+    "versions": [
+      "0.15.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/polygon-clipping@0.15.7/node_modules/polygon-clipping"
+    ],
+    "license": "MIT",
+    "author": "Mike Fogel",
+    "homepage": "github:mfogel/polygon-clipping"
+  },
+  {
+    "name": "postgres-array",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/postgres-array@2.0.0/node_modules/postgres-array"
+    ],
+    "license": "MIT",
+    "author": "Ben Drucker",
+    "homepage": "bendrucker/postgres-array"
+  },
+  {
+    "name": "postgres-bytea",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/postgres-bytea@1.0.1/node_modules/postgres-bytea"
+    ],
+    "license": "MIT",
+    "author": "Ben Drucker",
+    "homepage": "bendrucker/postgres-bytea"
+  },
+  {
+    "name": "postgres-date",
+    "versions": [
+      "1.0.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/postgres-date@1.0.7/node_modules/postgres-date"
+    ],
+    "license": "MIT",
+    "author": "Ben Drucker",
+    "homepage": "bendrucker/postgres-date"
+  },
+  {
+    "name": "postgres-interval",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/postgres-interval@1.2.0/node_modules/postgres-interval"
+    ],
+    "license": "MIT",
+    "author": "Ben Drucker",
+    "homepage": "bendrucker/postgres-interval"
+  },
+  {
+    "name": "potpack",
+    "versions": [
+      "1.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/potpack@1.0.2/node_modules/potpack"
+    ],
+    "license": "ISC",
+    "author": "Vladimir Agafonkin",
+    "homepage": "https://mapbox.github.io/potpack/"
+  },
+  {
+    "name": "process-warning",
+    "versions": [
+      "5.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/process-warning@5.0.0/node_modules/process-warning"
+    ],
+    "license": "MIT",
+    "author": "Tomas Della Vedova",
+    "homepage": "https://github.com/fastify/fastify-warning#readme"
+  },
+  {
+    "name": "promise-limit",
+    "versions": [
+      "2.7.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/promise-limit@2.7.0/node_modules/promise-limit"
+    ],
+    "license": "ISC",
+    "author": "Tim Macfarlane",
+    "homepage": "https://github.com/featurist/promise-limit#readme"
+  },
+  {
+    "name": "promise-worker-transferable",
+    "versions": [
+      "1.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/promise-worker-transferable@1.0.4/node_modules/promise-worker-transferable"
+    ],
+    "license": "Apache-2.0",
+    "author": "Roman Viskin",
+    "homepage": "https://github.com/terikon/promise-worker-transferable#readme"
+  },
+  {
+    "name": "property-graph",
+    "versions": [
+      "4.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/property-graph@4.1.0/node_modules/property-graph"
+    ],
+    "license": "MIT",
+    "author": "Don McCurdy",
+    "homepage": "github:donmccurdy/property-graph"
+  },
+  {
+    "name": "protobufjs",
+    "versions": [
+      "7.6.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/protobufjs@7.6.5/node_modules/protobufjs"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Daniel Wirtz",
+    "homepage": "https://protobufjs.github.io/protobuf.js/"
+  },
+  {
+    "name": "proxy-addr",
+    "versions": [
+      "2.0.8"
+    ],
+    "paths": [
+      "node_modules/.pnpm/proxy-addr@2.0.8/node_modules/proxy-addr"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "jshttp/proxy-addr"
+  },
+  {
+    "name": "qrcode",
+    "versions": [
+      "1.5.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/qrcode@1.5.4/node_modules/qrcode"
+    ],
+    "license": "MIT",
+    "author": "Ryan Day",
+    "homepage": "http://github.com/soldair/node-qrcode"
+  },
+  {
+    "name": "qs",
+    "versions": [
+      "6.16.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/qs@6.16.1/node_modules/qs"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "",
+    "homepage": "https://github.com/ljharb/qs"
+  },
+  {
+    "name": "quick-format-unescaped",
+    "versions": [
+      "4.0.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/quick-format-unescaped@4.0.4/node_modules/quick-format-unescaped"
+    ],
+    "license": "MIT",
+    "author": "David Mark Clements",
+    "homepage": "https://github.com/davidmarkclements/quick-format#readme"
+  },
+  {
+    "name": "quickselect",
+    "versions": [
+      "3.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/quickselect@3.0.0/node_modules/quickselect"
+    ],
+    "license": "ISC",
+    "author": "Vladimir Agafonkin",
+    "homepage": "github:mourner/quickselect"
+  },
+  {
+    "name": "range-parser",
+    "versions": [
+      "1.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/range-parser@1.2.1/node_modules/range-parser"
+    ],
+    "license": "MIT",
+    "author": "TJ Holowaychuk",
+    "homepage": "jshttp/range-parser"
+  },
+  {
+    "name": "raw-body",
+    "versions": [
+      "2.5.3",
+      "3.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/raw-body@2.5.3/node_modules/raw-body",
+      "node_modules/.pnpm/raw-body@3.0.2/node_modules/raw-body"
+    ],
+    "license": "MIT",
+    "author": "Jonathan Ong",
+    "homepage": "stream-utils/raw-body"
+  },
+  {
+    "name": "rbush",
+    "versions": [
+      "4.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/rbush@4.0.1/node_modules/rbush"
+    ],
+    "license": "MIT",
+    "author": "Volodymyr Agafonkin",
+    "homepage": "https://github.com/mourner/rbush"
+  },
+  {
+    "name": "react",
+    "versions": [
+      "19.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react@19.3.1/node_modules/react"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://react.dev/"
+  },
+  {
+    "name": "react-dom",
+    "versions": [
+      "19.3.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-dom@19.3.1_react@19.3.1/node_modules/react-dom"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://react.dev/"
+  },
+  {
+    "name": "react-hook-form",
+    "versions": [
+      "7.90.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-hook-form@7.90.0_@types+react@19.3.0_react@19.3.1/node_modules/react-hook-form"
+    ],
+    "license": "MIT",
+    "author": "Beier",
+    "homepage": "https://react-hook-form.com"
+  },
+  {
+    "name": "react-konva",
+    "versions": [
+      "19.3.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-konva@19.3.2_@types+react@19.3.0_konva@10.9.0_skia-canvas@3.0.8__react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/react-konva"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://konvajs.org/docs/react/index.html"
+  },
+  {
+    "name": "react-reconciler",
+    "versions": [
+      "0.34.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-reconciler@0.34.0_react@19.3.1/node_modules/react-reconciler"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://react.dev/"
+  },
+  {
+    "name": "react-remove-scroll",
+    "versions": [
+      "2.7.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@19.3.0_react@19.3.1/node_modules/react-remove-scroll"
+    ],
+    "license": "MIT",
+    "author": "Anton Korzunov",
+    "homepage": "https://github.com/theKashey/react-remove-scroll"
+  },
+  {
+    "name": "react-remove-scroll-bar",
+    "versions": [
+      "2.3.8"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@19.3.0_react@19.3.1/node_modules/react-remove-scroll-bar"
+    ],
+    "license": "MIT",
+    "author": "Anton Korzunov",
+    "homepage": "https://github.com/theKashey/react-remove-scroll-bar"
+  },
+  {
+    "name": "react-router",
+    "versions": [
+      "7.18.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-router@7.18.4_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/react-router"
+    ],
+    "license": "MIT",
+    "author": "Remix Software",
+    "homepage": "https://github.com/remix-run/react-router"
+  },
+  {
+    "name": "react-router-dom",
+    "versions": [
+      "7.18.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-router-dom@7.18.4_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/react-router-dom"
+    ],
+    "license": "MIT",
+    "author": "Remix Software",
+    "homepage": "https://github.com/remix-run/react-router"
+  },
+  {
+    "name": "react-style-singleton",
+    "versions": [
+      "2.2.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@19.3.0_react@19.3.1/node_modules/react-style-singleton"
+    ],
+    "license": "MIT",
+    "author": "Anton Korzunov",
+    "homepage": "https://github.com/theKashey/react-style-singleton#readme"
+  },
+  {
+    "name": "react-use-measure",
+    "versions": [
+      "2.1.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/react-use-measure@2.1.7_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/react-use-measure"
+    ],
+    "license": "MIT",
+    "author": "Paul Henschel",
+    "homepage": "https://github.com/pmndrs/react-use-measure"
+  },
+  {
+    "name": "real-require",
+    "versions": [
+      "0.2.0",
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/real-require@0.2.0/node_modules/real-require",
+      "node_modules/.pnpm/real-require@1.0.0/node_modules/real-require"
+    ],
+    "license": "MIT",
+    "author": "Paolo Insogna",
+    "homepage": "https://github.com/pinojs/real-require"
+  },
+  {
+    "name": "recast-navigation",
+    "versions": [
+      "0.43.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/recast-navigation@0.43.1/node_modules/recast-navigation"
+    ],
+    "license": "MIT",
+    "author": "Isaac Mason",
+    "homepage": "https://github.com/isaac-mason/recast-navigation-js"
+  },
+  {
+    "name": "reflect-metadata",
+    "versions": [
+      "0.2.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/reflect-metadata@0.2.2/node_modules/reflect-metadata"
+    ],
+    "license": "Apache-2.0",
+    "author": "Ron Buckton",
+    "homepage": "http://rbuckton.github.io/reflect-metadata"
+  },
+  {
+    "name": "regenerator-runtime",
+    "versions": [
+      "0.11.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/regenerator-runtime@0.11.1/node_modules/regenerator-runtime"
+    ],
+    "license": "MIT",
+    "author": "Ben Newman",
+    "homepage": "https://github.com/facebook/regenerator/tree/master/packages/regenerator-runtime"
+  },
+  {
+    "name": "remotion",
+    "versions": [
+      "4.0.536"
+    ],
+    "paths": [
+      "node_modules/.pnpm/remotion@4.0.536_react-dom@19.3.1_react@19.3.1__react@19.3.1/node_modules/remotion"
+    ],
+    "license": "Remotion License",
+    "author": "Jonny Burger",
+    "homepage": "https://www.remotion.dev/docs/remotion"
+  },
+  {
+    "name": "require-directory",
+    "versions": [
+      "2.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/require-directory@2.1.1/node_modules/require-directory"
+    ],
+    "license": "MIT",
+    "author": "Troy Goode",
+    "homepage": "https://github.com/troygoode/node-require-directory/"
+  },
+  {
+    "name": "require-from-string",
+    "versions": [
+      "2.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/require-from-string@2.0.2/node_modules/require-from-string"
+    ],
+    "license": "MIT",
+    "author": "Vsevolod Strukchinsky",
+    "homepage": "floatdrop/require-from-string"
+  },
+  {
+    "name": "require-main-filename",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/require-main-filename@2.0.0/node_modules/require-main-filename"
+    ],
+    "license": "ISC",
+    "author": "Ben Coe",
+    "homepage": "https://github.com/yargs/require-main-filename#readme"
+  },
+  {
+    "name": "rhino3dm",
+    "versions": [
+      "8.35.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/rhino3dm@8.35.0/node_modules/rhino3dm"
+    ],
+    "license": "MIT",
+    "author": "Robert McNeel & Associates and contributors",
+    "homepage": "https://github.com/mcneel/rhino3dm#readme"
+  },
+  {
+    "name": "robust-orientation",
+    "versions": [
+      "1.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/robust-orientation@1.2.1/node_modules/robust-orientation"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/robust-orientation"
+  },
+  {
+    "name": "robust-point-in-polygon",
+    "versions": [
+      "1.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/robust-point-in-polygon@1.0.3/node_modules/robust-point-in-polygon"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/robust-point-in-polygon"
+  },
+  {
+    "name": "robust-predicates",
+    "versions": [
+      "3.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/robust-predicates@3.0.3/node_modules/robust-predicates"
+    ],
+    "license": "Unlicense",
+    "author": "Vladimir Agafonkin",
+    "homepage": "https://github.com/mourner/robust-predicates"
+  },
+  {
+    "name": "robust-scale",
+    "versions": [
+      "1.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/robust-scale@1.0.2/node_modules/robust-scale"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/robust-scale"
+  },
+  {
+    "name": "robust-subtract",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/robust-subtract@1.0.0/node_modules/robust-subtract"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/robust-subtract"
+  },
+  {
+    "name": "robust-sum",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/robust-sum@1.0.0/node_modules/robust-sum"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/robust-sum"
+  },
+  {
+    "name": "roughjs",
+    "versions": [
+      "4.6.6"
+    ],
+    "paths": [
+      "node_modules/.pnpm/roughjs@4.6.6/node_modules/roughjs"
+    ],
+    "license": "MIT",
+    "author": "Preet Shihn",
+    "homepage": "https://roughjs.com"
+  },
+  {
+    "name": "router",
+    "versions": [
+      "2.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/router@2.2.0/node_modules/router"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "pillarjs/router"
+  },
+  {
+    "name": "rxjs",
+    "versions": [
+      "7.8.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/rxjs@7.8.2/node_modules/rxjs"
+    ],
+    "license": "Apache-2.0",
+    "author": "Ben Lesh",
+    "homepage": "https://rxjs.dev"
+  },
+  {
+    "name": "safe-buffer",
+    "versions": [
+      "5.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/safe-buffer@5.2.1/node_modules/safe-buffer"
+    ],
+    "license": "MIT",
+    "author": "Feross Aboukhadijeh",
+    "homepage": "https://github.com/feross/safe-buffer"
+  },
+  {
+    "name": "safe-stable-stringify",
+    "versions": [
+      "2.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/safe-stable-stringify@2.5.0/node_modules/safe-stable-stringify"
+    ],
+    "license": "MIT",
+    "author": "Ruben Bridgewater",
+    "homepage": "https://github.com/BridgeAR/safe-stable-stringify#readme"
+  },
+  {
+    "name": "safer-buffer",
+    "versions": [
+      "2.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/safer-buffer@2.1.2/node_modules/safer-buffer"
+    ],
+    "license": "MIT",
+    "author": "Nikita Skovoroda",
+    "homepage": "https://github.com/ChALkeR/safer-buffer"
+  },
+  {
+    "name": "scheduler",
+    "versions": [
+      "0.27.0",
+      "0.28.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler",
+      "node_modules/.pnpm/scheduler@0.28.0/node_modules/scheduler"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://react.dev/"
+  },
+  {
+    "name": "semver",
+    "versions": [
+      "7.8.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/semver@7.8.5/node_modules/semver"
+    ],
+    "license": "ISC",
+    "author": "GitHub Inc.",
+    "homepage": "https://github.com/npm/node-semver"
+  },
+  {
+    "name": "send",
+    "versions": [
+      "0.19.2",
+      "1.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/send@0.19.2/node_modules/send",
+      "node_modules/.pnpm/send@1.2.1/node_modules/send"
+    ],
+    "license": "MIT",
+    "author": "TJ Holowaychuk",
+    "homepage": "pillarjs/send"
+  },
+  {
+    "name": "serialize-error",
+    "versions": [
+      "8.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/serialize-error@8.1.0/node_modules/serialize-error"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/serialize-error"
+  },
+  {
+    "name": "serve-static",
+    "versions": [
+      "1.16.3",
+      "2.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/serve-static@1.16.3/node_modules/serve-static",
+      "node_modules/.pnpm/serve-static@2.2.1/node_modules/serve-static"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "expressjs/serve-static"
+  },
+  {
+    "name": "set-blocking",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/set-blocking@2.0.0/node_modules/set-blocking"
+    ],
+    "license": "ISC",
+    "author": "Ben Coe",
+    "homepage": "https://github.com/yargs/set-blocking#readme"
+  },
+  {
+    "name": "set-cookie-parser",
+    "versions": [
+      "2.7.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/set-cookie-parser@2.7.2/node_modules/set-cookie-parser"
+    ],
+    "license": "MIT",
+    "author": "Nathan Friedly",
+    "homepage": "https://github.com/nfriedly/set-cookie-parser"
+  },
+  {
+    "name": "setprototypeof",
+    "versions": [
+      "1.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/setprototypeof@1.2.0/node_modules/setprototypeof"
+    ],
+    "license": "ISC",
+    "author": "Wes Todd",
+    "homepage": "https://github.com/wesleytodd/setprototypeof"
+  },
+  {
+    "name": "sharp",
+    "versions": [
+      "0.35.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/sharp@0.35.5_@types+node@24.13.2/node_modules/sharp"
+    ],
+    "license": "Apache-2.0",
+    "author": "Lovell Fuller",
+    "homepage": "https://sharp.pixelplumbing.com"
+  },
+  {
+    "name": "shebang-command",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/shebang-command@2.0.0/node_modules/shebang-command"
+    ],
+    "license": "MIT",
+    "author": "Kevin Mårtensson",
+    "homepage": "kevva/shebang-command"
+  },
+  {
+    "name": "shebang-regex",
+    "versions": [
+      "3.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/shebang-regex@3.0.0/node_modules/shebang-regex"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/shebang-regex"
+  },
+  {
+    "name": "side-channel",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/side-channel@1.1.1/node_modules/side-channel"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/side-channel#readme"
+  },
+  {
+    "name": "side-channel-list",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/side-channel-list@1.0.1/node_modules/side-channel-list"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/side-channel-list#readme"
+  },
+  {
+    "name": "side-channel-map",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/side-channel-map@1.0.1/node_modules/side-channel-map"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/side-channel-map#readme"
+  },
+  {
+    "name": "side-channel-weakmap",
+    "versions": [
+      "1.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/side-channel-weakmap@1.0.2/node_modules/side-channel-weakmap"
+    ],
+    "license": "MIT",
+    "author": "Jordan Harband",
+    "homepage": "https://github.com/ljharb/side-channel-weakmap#readme"
+  },
+  {
+    "name": "simplex-noise",
+    "versions": [
+      "4.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/simplex-noise@4.0.3/node_modules/simplex-noise"
+    ],
+    "license": "MIT",
+    "author": "Jonas Wagner",
+    "homepage": "https://github.com/jwagner/simplex-noise.js"
+  },
+  {
+    "name": "simplify-js",
+    "versions": [
+      "1.2.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/simplify-js@1.2.4/node_modules/simplify-js"
+    ],
+    "license": "BSD-2-Clause",
+    "author": "Vladimir Agafonkin",
+    "homepage": "http://mourner.github.com/simplify-js/"
+  },
+  {
+    "name": "skia-canvas",
+    "versions": [
+      "3.0.8"
+    ],
+    "paths": [
+      "node_modules/.pnpm/skia-canvas@3.0.8/node_modules/skia-canvas"
+    ],
+    "license": "MIT",
+    "author": "Christian Swinehart",
+    "homepage": "https://skia-canvas.org"
+  },
+  {
+    "name": "socket.io",
+    "versions": [
+      "4.8.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/socket.io@4.8.4/node_modules/socket.io"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/socketio/socket.io/tree/main/packages/socket.io#readme"
+  },
+  {
+    "name": "socket.io-adapter",
+    "versions": [
+      "2.5.8"
+    ],
+    "paths": [
+      "node_modules/.pnpm/socket.io-adapter@2.5.8/node_modules/socket.io-adapter"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/socketio/socket.io/tree/main/packages/socket.io-adapter#readme"
+  },
+  {
+    "name": "socket.io-client",
+    "versions": [
+      "4.8.4"
+    ],
+    "paths": [
+      "node_modules/.pnpm/socket.io-client@4.8.4/node_modules/socket.io-client"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/socketio/socket.io/tree/main/packages/socket.io-client#readme"
+  },
+  {
+    "name": "socket.io-parser",
+    "versions": [
+      "4.2.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/socket.io-parser@4.2.7/node_modules/socket.io-parser"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/socketio/socket.io/tree/main/packages/socket.io-client#readme"
+  },
+  {
+    "name": "sonic-boom",
+    "versions": [
+      "4.2.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/sonic-boom@4.2.1/node_modules/sonic-boom"
+    ],
+    "license": "MIT",
+    "author": "Matteo Collina",
+    "homepage": "https://github.com/pinojs/sonic-boom#readme"
+  },
+  {
+    "name": "source-map",
+    "versions": [
+      "0.6.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/source-map@0.6.1/node_modules/source-map"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Nick Fitzgerald",
+    "homepage": "https://github.com/mozilla/source-map"
+  },
+  {
+    "name": "spectral.js",
+    "versions": [
+      "3.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/spectral.js@3.0.0/node_modules/spectral.js"
+    ],
+    "license": "MIT",
+    "author": "Ronald van Wijnen",
+    "homepage": "https://github.com/rvanwijnen/spectral.js#readme"
+  },
+  {
+    "name": "splaytree",
+    "versions": [
+      "3.2.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/splaytree@3.2.3/node_modules/splaytree"
+    ],
+    "license": "MIT",
+    "author": "Alexander Milevski",
+    "homepage": "https://github.com/w8r/splay-tree"
+  },
+  {
+    "name": "split2",
+    "versions": [
+      "4.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/split2@4.2.0/node_modules/split2"
+    ],
+    "license": "ISC",
+    "author": "Matteo Collina",
+    "homepage": "https://github.com/mcollina/split2"
+  },
+  {
+    "name": "ssim.js",
+    "versions": [
+      "3.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ssim.js@3.5.0/node_modules/ssim.js"
+    ],
+    "license": "MIT",
+    "author": "Oscar Bartra",
+    "homepage": "https://github.com/obartra/ssim#readme"
+  },
+  {
+    "name": "standardwebhooks",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/standardwebhooks@1.1.1/node_modules/standardwebhooks"
+    ],
+    "license": "MIT",
+    "author": "Standard Webhooks",
+    "homepage": "https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries/javascript"
+  },
+  {
+    "name": "stats-gl",
+    "versions": [
+      "2.4.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/stats-gl@2.4.2_@types+three@0.186.0_three@0.186.1/node_modules/stats-gl"
+    ],
+    "license": "MIT",
+    "author": "Renaud ROHLINGER",
+    "homepage": "https://github.com/RenaudRohlinger/stats-gl"
+  },
+  {
+    "name": "stats.js",
+    "versions": [
+      "0.17.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/stats.js@0.17.0/node_modules/stats.js"
+    ],
+    "license": "MIT",
+    "author": "mrdoob",
+    "homepage": "https://github.com/mrdoob/stats.js"
+  },
+  {
+    "name": "statuses",
+    "versions": [
+      "2.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/statuses@2.0.2/node_modules/statuses"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/statuses"
+  },
+  {
+    "name": "streamsearch",
+    "versions": [
+      "1.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/streamsearch@1.1.0/node_modules/streamsearch"
+    ],
+    "license": "MIT",
+    "author": "Brian White",
+    "homepage": "http://github.com/mscdex/streamsearch"
+  },
+  {
+    "name": "string-split-by",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/string-split-by@1.0.0/node_modules/string-split-by"
+    ],
+    "license": "MIT",
+    "author": "Dmitry Yv",
+    "homepage": "https://github.com/dy/string-split-by#readme"
+  },
+  {
+    "name": "string-width",
+    "versions": [
+      "4.2.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/string-width@4.2.3/node_modules/string-width"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/string-width"
+  },
+  {
+    "name": "strip-ansi",
+    "versions": [
+      "6.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/strip-ansi@6.0.1/node_modules/strip-ansi"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "chalk/strip-ansi"
+  },
+  {
+    "name": "strnum",
+    "versions": [
+      "2.4.1",
+      "2.5.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/strnum@2.4.1/node_modules/strnum",
+      "node_modules/.pnpm/strnum@2.5.1/node_modules/strnum"
+    ],
+    "license": "MIT",
+    "author": "Amit Gupta",
+    "homepage": "https://github.com/NaturalIntelligence/strnum"
+  },
+  {
+    "name": "strtok3",
+    "versions": [
+      "10.3.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/strtok3@10.3.5/node_modules/strtok3"
+    ],
+    "license": "MIT",
+    "author": "Borewit",
+    "homepage": "https://github.com/Borewit/strtok3"
+  },
+  {
+    "name": "suspend-react",
+    "versions": [
+      "0.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/suspend-react@0.1.3_react@19.3.1/node_modules/suspend-react"
+    ],
+    "license": "MIT",
+    "author": "Paul Henschel",
+    "homepage": "https://github.com/pmndrs/suspend-react#readme"
+  },
+  {
+    "name": "svd-js",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/svd-js@1.1.1/node_modules/svd-js"
+    ],
+    "license": "MIT",
+    "author": "Danilo Salvati",
+    "homepage": "https://github.com/danilosalvati/svd-js#readme"
+  },
+  {
+    "name": "tailwind-merge",
+    "versions": [
+      "3.7.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/tailwind-merge@3.7.0/node_modules/tailwind-merge"
+    ],
+    "license": "MIT",
+    "author": "Dany Castillo",
+    "homepage": "https://github.com/dcastil/tailwind-merge"
+  },
+  {
+    "name": "thread-stream",
+    "versions": [
+      "4.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/thread-stream@4.2.0/node_modules/thread-stream"
+    ],
+    "license": "MIT",
+    "author": "Matteo Collina",
+    "homepage": "https://github.com/mcollina/thread-stream#readme"
+  },
+  {
+    "name": "three",
+    "versions": [
+      "0.186.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/three@0.186.1/node_modules/three"
+    ],
+    "license": "MIT",
+    "author": "mrdoob",
+    "homepage": "https://threejs.org/"
+  },
+  {
+    "name": "three-bvh-csg",
+    "versions": [
+      "0.0.18"
+    ],
+    "paths": [
+      "node_modules/.pnpm/three-bvh-csg@0.0.18_three-mesh-bvh@0.9.16_three@0.186.1__three@0.186.1/node_modules/three-bvh-csg"
+    ],
+    "license": "MIT",
+    "author": "Garrett Johnson",
+    "homepage": "https://github.com/gkjohnson/three-bvh-csg#readme"
+  },
+  {
+    "name": "three-mesh-bvh",
+    "versions": [
+      "0.5.24",
+      "0.8.3",
+      "0.9.16"
+    ],
+    "paths": [
+      "node_modules/.pnpm/three-mesh-bvh@0.5.24_three@0.186.1/node_modules/three-mesh-bvh",
+      "node_modules/.pnpm/three-mesh-bvh@0.8.3_three@0.186.1/node_modules/three-mesh-bvh",
+      "node_modules/.pnpm/three-mesh-bvh@0.9.16_three@0.186.1/node_modules/three-mesh-bvh"
+    ],
+    "license": "MIT",
+    "author": "Garrett Johnson",
+    "homepage": "https://github.com/gkjohnson/three-mesh-bvh#readme"
+  },
+  {
+    "name": "three-stdlib",
+    "versions": [
+      "2.36.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/three-stdlib@2.36.1_three@0.186.1/node_modules/three-stdlib"
+    ],
+    "license": "MIT",
+    "author": "Paul Henschel",
+    "homepage": "https://github.com/pmndrs/three-stdlib"
+  },
+  {
+    "name": "tiff",
+    "versions": [
+      "7.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/tiff@7.1.3/node_modules/tiff"
+    ],
+    "license": "MIT",
+    "author": "Michaël Zasso",
+    "homepage": "https://image-js.github.io/tiff/"
+  },
+  {
+    "name": "tiny-lru",
+    "versions": [
+      "11.4.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/tiny-lru@11.4.7/node_modules/tiny-lru"
+    ],
+    "license": "BSD-3-Clause",
+    "author": "Jason Mulligan",
+    "homepage": "https://github.com/avoidwork/tiny-lru"
+  },
+  {
+    "name": "toidentifier",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/toidentifier@1.0.1/node_modules/toidentifier"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "component/toidentifier"
+  },
+  {
+    "name": "token-types",
+    "versions": [
+      "6.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/token-types@6.1.2/node_modules/token-types"
+    ],
+    "license": "MIT",
+    "author": "Borewit",
+    "homepage": "https://github.com/Borewit/token-types"
+  },
+  {
+    "name": "troika-three-text",
+    "versions": [
+      "0.52.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/troika-three-text@0.52.5_three@0.186.1/node_modules/troika-three-text"
+    ],
+    "license": "MIT",
+    "author": "Jason Johnston",
+    "homepage": "https://github.com/protectwise/troika"
+  },
+  {
+    "name": "troika-three-utils",
+    "versions": [
+      "0.52.5"
+    ],
+    "paths": [
+      "node_modules/.pnpm/troika-three-utils@0.52.5_three@0.186.1/node_modules/troika-three-utils"
+    ],
+    "license": "MIT",
+    "author": "Jason Johnston",
+    "homepage": "https://github.com/protectwise/troika"
+  },
+  {
+    "name": "troika-worker-utils",
+    "versions": [
+      "0.52.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/troika-worker-utils@0.52.0/node_modules/troika-worker-utils"
+    ],
+    "license": "MIT",
+    "author": "Jason Johnston",
+    "homepage": "https://github.com/protectwise/troika"
+  },
+  {
+    "name": "ts-algebra",
+    "versions": [
+      "2.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ts-algebra@2.0.0/node_modules/ts-algebra"
+    ],
+    "license": "MIT",
+    "author": "Thomas Aribart",
+    "homepage": "https://github.com/ThomasAribart/ts-algebra#readme"
+  },
+  {
+    "name": "ts-pattern",
+    "versions": [
+      "5.9.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ts-pattern@5.9.2/node_modules/ts-pattern"
+    ],
+    "license": "MIT",
+    "author": "Gabriel Vergnaud",
+    "homepage": "https://github.com/gvergnaud/ts-pattern#readme"
+  },
+  {
+    "name": "tslib",
+    "versions": [
+      "1.14.1",
+      "2.8.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/tslib@1.14.1/node_modules/tslib",
+      "node_modules/.pnpm/tslib@2.8.1/node_modules/tslib"
+    ],
+    "license": "0BSD",
+    "author": "Microsoft Corp.",
+    "homepage": "https://www.typescriptlang.org/"
+  },
+  {
+    "name": "tunnel-rat",
+    "versions": [
+      "0.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/tunnel-rat@0.1.2_@types+react@19.3.0_react@19.3.1/node_modules/tunnel-rat"
+    ],
+    "license": "MIT",
+    "author": "Paul Henschel",
+    "homepage": "https://github.com/pmndrs/tunnel-rat#readme"
+  },
+  {
+    "name": "two-product",
+    "versions": [
+      "1.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/two-product@1.0.2/node_modules/two-product"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/two-product"
+  },
+  {
+    "name": "two-sum",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/two-sum@1.0.0/node_modules/two-sum"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/two-sum"
+  },
+  {
+    "name": "type-fest",
+    "versions": [
+      "0.20.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/type-fest@0.20.2/node_modules/type-fest"
+    ],
+    "license": "(MIT OR CC0-1.0)",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/type-fest"
+  },
+  {
+    "name": "type-is",
+    "versions": [
+      "1.6.18",
+      "2.1.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/type-is@1.6.18/node_modules/type-is",
+      "node_modules/.pnpm/type-is@2.1.0/node_modules/type-is"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "jshttp/type-is"
+  },
+  {
+    "name": "uid",
+    "versions": [
+      "2.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/uid@2.0.2/node_modules/uid"
+    ],
+    "license": "MIT",
+    "author": "Luke Edwards",
+    "homepage": "lukeed/uid"
+  },
+  {
+    "name": "uint8-base64",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/uint8-base64@1.0.0/node_modules/uint8-base64"
+    ],
+    "license": "MIT",
+    "author": "Luc Patiny",
+    "homepage": "https://github.com/cheminfo/uint8-base64#readme"
+  },
+  {
+    "name": "uint8array-extras",
+    "versions": [
+      "1.5.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/uint8array-extras@1.5.0/node_modules/uint8array-extras"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "sindresorhus/uint8array-extras"
+  },
+  {
+    "name": "undici-types",
+    "versions": [
+      "7.18.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://undici.nodejs.org"
+  },
+  {
+    "name": "uniq",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/uniq@1.0.1/node_modules/uniq"
+    ],
+    "license": "MIT",
+    "author": "Mikola Lysenko",
+    "homepage": "https://github.com/mikolalysenko/uniq"
+  },
+  {
+    "name": "unpipe",
+    "versions": [
+      "1.0.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/unpipe@1.0.0/node_modules/unpipe"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "stream-utils/unpipe"
+  },
+  {
+    "name": "urdf-loader",
+    "versions": [
+      "0.13.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/urdf-loader@0.13.1_three@0.186.1/node_modules/urdf-loader"
+    ],
+    "license": "Apache-2.0",
+    "author": "",
+    "homepage": "https://github.com/gkjohnson/urdf-loaders#readme"
+  },
+  {
+    "name": "use-callback-ref",
+    "versions": [
+      "1.3.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/use-callback-ref@1.3.3_@types+react@19.3.0_react@19.3.1/node_modules/use-callback-ref"
+    ],
+    "license": "MIT",
+    "author": "theKashey",
+    "homepage": "https://github.com/theKashey/use-callback-ref/"
+  },
+  {
+    "name": "use-sidecar",
+    "versions": [
+      "1.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/use-sidecar@1.1.3_@types+react@19.3.0_react@19.3.1/node_modules/use-sidecar"
+    ],
+    "license": "MIT",
+    "author": "theKashey",
+    "homepage": "https://github.com/theKashey/use-sidecar"
+  },
+  {
+    "name": "use-sync-external-store",
+    "versions": [
+      "1.6.0",
+      "1.7.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/use-sync-external-store@1.6.0_react@19.3.1/node_modules/use-sync-external-store",
+      "node_modules/.pnpm/use-sync-external-store@1.7.0_react@19.3.1/node_modules/use-sync-external-store"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://github.com/facebook/react"
+  },
+  {
+    "name": "utility-types",
+    "versions": [
+      "3.11.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/utility-types@3.11.0/node_modules/utility-types"
+    ],
+    "license": "MIT",
+    "author": "Piotr Witek",
+    "homepage": "https://github.com/piotrwitek/utility-types"
+  },
+  {
+    "name": "utils-merge",
+    "versions": [
+      "1.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/utils-merge@1.0.1/node_modules/utils-merge"
+    ],
+    "license": "MIT",
+    "author": "Jared Hanson",
+    "homepage": "https://github.com/jaredhanson/utils-merge"
+  },
+  {
+    "name": "vary",
+    "versions": [
+      "1.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/vary@1.1.2/node_modules/vary"
+    ],
+    "license": "MIT",
+    "author": "Douglas Christopher Wilson",
+    "homepage": "jshttp/vary"
+  },
+  {
+    "name": "web-ifc",
+    "versions": [
+      "0.0.78"
+    ],
+    "paths": [
+      "node_modules/.pnpm/web-ifc@0.0.78/node_modules/web-ifc"
+    ],
+    "license": "MPL-2.0",
+    "author": "web-ifc",
+    "homepage": "https://github.com/ThatOpen/engine_web-ifc"
+  },
+  {
+    "name": "web-push",
+    "versions": [
+      "3.6.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/web-push@3.6.7/node_modules/web-push"
+    ],
+    "license": "MPL-2.0",
+    "author": "Marco Castelluccio",
+    "homepage": "https://github.com/web-push-libs/web-push#readme"
+  },
+  {
+    "name": "web-streams-polyfill",
+    "versions": [
+      "3.3.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/web-streams-polyfill@3.3.3/node_modules/web-streams-polyfill"
+    ],
+    "license": "MIT",
+    "author": "Mattias Buelens",
+    "homepage": "https://github.com/MattiasBuelens/web-streams-polyfill#readme"
+  },
+  {
+    "name": "webgl-constants",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/webgl-constants@1.1.1/node_modules/webgl-constants"
+    ],
+    "license": "MIT",
+    "author": "Tim van Scherpenzeel",
+    "homepage": ""
+  },
+  {
+    "name": "webgl-sdf-generator",
+    "versions": [
+      "1.1.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/webgl-sdf-generator@1.1.1/node_modules/webgl-sdf-generator"
+    ],
+    "license": "MIT",
+    "author": "Jason Johnston",
+    "homepage": "https://github.com/lojjic/webgl-sdf-generator"
+  },
+  {
+    "name": "which",
+    "versions": [
+      "2.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/which@2.0.2/node_modules/which"
+    ],
+    "license": "ISC",
+    "author": "Isaac Z. Schlueter",
+    "homepage": "https://github.com/isaacs/node-which"
+  },
+  {
+    "name": "which-module",
+    "versions": [
+      "2.0.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/which-module@2.0.1/node_modules/which-module"
+    ],
+    "license": "ISC",
+    "author": "nexdrew",
+    "homepage": "https://github.com/nexdrew/which-module#readme"
+  },
+  {
+    "name": "wrap-ansi",
+    "versions": [
+      "6.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/wrap-ansi@6.2.0/node_modules/wrap-ansi"
+    ],
+    "license": "MIT",
+    "author": "Sindre Sorhus",
+    "homepage": "chalk/wrap-ansi"
+  },
+  {
+    "name": "wrappy",
+    "versions": [
+      "1.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/wrappy@1.0.2/node_modules/wrappy"
+    ],
+    "license": "ISC",
+    "author": "Isaac Z. Schlueter",
+    "homepage": "https://github.com/npm/wrappy"
+  },
+  {
+    "name": "ws",
+    "versions": [
+      "8.22.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/ws@8.22.0/node_modules/ws"
+    ],
+    "license": "MIT",
+    "author": "Einar Otto Stangvik",
+    "homepage": "https://github.com/websockets/ws"
+  },
+  {
+    "name": "xatlasjs",
+    "versions": [
+      "0.2.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/xatlasjs@0.2.0/node_modules/xatlasjs"
+    ],
+    "license": "MIT",
+    "author": "Palash Bansal",
+    "homepage": "https://github.com/repalash/xatlas.js#readme"
+  },
+  {
+    "name": "xml-naming",
+    "versions": [
+      "0.3.0"
+    ],
+    "paths": [
+      "node_modules/.pnpm/xml-naming@0.3.0/node_modules/xml-naming"
+    ],
+    "license": "MIT",
+    "author": "Amit Gupta",
+    "homepage": "https://github.com/NaturalIntelligence/xml-naming"
+  },
+  {
+    "name": "xmlhttprequest-ssl",
+    "versions": [
+      "2.1.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/xmlhttprequest-ssl@2.1.2/node_modules/xmlhttprequest-ssl"
+    ],
+    "license": "MIT",
+    "author": "Michael de Wit",
+    "homepage": "https://github.com/mjwwit/node-XMLHttpRequest"
+  },
+  {
+    "name": "xtend",
+    "versions": [
+      "4.0.2"
+    ],
+    "paths": [
+      "node_modules/.pnpm/xtend@4.0.2/node_modules/xtend"
+    ],
+    "license": "MIT",
+    "author": "Raynos",
+    "homepage": "https://github.com/Raynos/xtend"
+  },
+  {
+    "name": "y18n",
+    "versions": [
+      "4.0.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/y18n@4.0.3/node_modules/y18n"
+    ],
+    "license": "ISC",
+    "author": "Ben Coe",
+    "homepage": "https://github.com/yargs/y18n"
+  },
+  {
+    "name": "yargs",
+    "versions": [
+      "15.4.1"
+    ],
+    "paths": [
+      "node_modules/.pnpm/yargs@15.4.1/node_modules/yargs"
+    ],
+    "license": "MIT",
+    "author": "",
+    "homepage": "https://yargs.js.org/"
+  },
+  {
+    "name": "yargs-parser",
+    "versions": [
+      "18.1.3"
+    ],
+    "paths": [
+      "node_modules/.pnpm/yargs-parser@18.1.3/node_modules/yargs-parser"
+    ],
+    "license": "ISC",
+    "author": "Ben Coe",
+    "homepage": "https://github.com/yargs/yargs-parser"
+  },
+  {
+    "name": "yjs",
+    "versions": [
+      "13.6.33"
+    ],
+    "paths": [
+      "node_modules/.pnpm/yjs@13.6.33/node_modules/yjs"
+    ],
+    "license": "MIT",
+    "author": "Kevin Jahns",
+    "homepage": "https://docs.yjs.dev"
+  },
+  {
+    "name": "zod",
+    "versions": [
+      "4.6.7"
+    ],
+    "paths": [
+      "node_modules/.pnpm/zod@4.6.7/node_modules/zod"
+    ],
+    "license": "MIT",
+    "author": "Colin McDonnell",
+    "homepage": "https://zod.dev"
+  },
+  {
+    "name": "zustand",
+    "versions": [
+      "4.5.7",
+      "5.0.15"
+    ],
+    "paths": [
+      "node_modules/.pnpm/zustand@4.5.7_@types+react@19.3.0_react@19.3.1/node_modules/zustand",
+      "node_modules/.pnpm/zustand@5.0.15_@types+react@19.3.0_react@19.3.1_use-sync-external-store@1.6.0_react@19.3.1_/node_modules/zustand",
+      "node_modules/.pnpm/zustand@5.0.15_@types+react@19.3.0_react@19.3.1_use-sync-external-store@1.7.0_react@19.3.1_/node_modules/zustand"
+    ],
+    "license": "MIT",
+    "author": "Paul Henschel",
+    "homepage": "https://github.com/pmndrs/zustand"
+  }
+]

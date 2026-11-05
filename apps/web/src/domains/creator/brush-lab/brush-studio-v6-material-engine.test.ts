@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { BrushStudioV6LegacyPigmentMigrationRequiredError } from "./brush-studio-v6-legacy-pigment";
 import { BRUSH_STUDIO_V6_RECIPES, createBrushStudioV6Program, patchBrushStudioV6Tuning } from "./brush-studio-v6-engine";
 import { brushStudioV6MaterialActiveTuningKeys, brushStudioV6MaterialMarksToSvg, brushStudioV6MaterialNodeExecution, createBrushStudioV6MaterialStroke, isBrushStudioV6MaterialNodeImplemented, mapBrushStudioV6Pressure, mixBrushStudioV6MaterialColors, normalizeBrushStudioV6MaterialConfig, renderBrushStudioV6MaterialMarks, sampleBrushStudioV6PaperContact, type BrushStudioV6MaterialMark, type BrushStudioV6MaterialPoint } from "./brush-studio-v6-material-engine";
 
@@ -262,7 +263,7 @@ describe("portable V6 material contacts", () => {
     expect(brushStudioV6MaterialMarksToSvg([mark])).toContain(`fill="${mark.color}"`);
     expect(brushStudioV6MaterialMarksToSvg([mark])).toContain('<ellipse');
   });
-  it("renders Mixbox through the selected provider without spectral substitution", () => {
+  it("선택한 자체 안료 제공자의 혼색을 유지한다", () => {
     const mixbox = createBrushStudioV6Program("mixbox-watercolor-bloom");
     const spectral = {
       ...mixbox,
@@ -288,8 +289,10 @@ describe("portable V6 material contacts", () => {
     expect(brushStudioV6MaterialNodeExecution("future-krita-node")).toBe("unavailable");
   });
 
-  it("applies deterministic dual-tip and stroke-local smudge adapters", () => {
-    const dual = createBrushStudioV6Program("mixbox-pastel-smudge");
+  it.each(["pigment-latent", "pigment-spectral"] as const)("%s 안료에서 듀얼 팁과 획 단위 스머지 어댑터를 결정적으로 적용한다", (pigment) => {
+    const configured = createBrushStudioV6Program("mixbox-pastel-smudge");
+    // 어댑터의 버전 비교는 동일한 지원 안료로 고정한다. 보관용 이전 혼색 획은 재생하지 않는다.
+    const dual = { ...configured, slots: { ...configured.slots, pigment } };
     const single = {
       ...dual,
       slots: { ...dual.slots, tip: "tip-grain-exemplar" },
@@ -311,6 +314,16 @@ describe("portable V6 material contacts", () => {
     });
     expect(dualMarks.map((mark) => [mark.color, mark.secondaryMix]))
       .not.toEqual(noSmudge.map((mark) => [mark.color, mark.secondaryMix]));
+  });
+
+  it("이전 Mixbox V1 원고는 명시 전환 전 재생을 차단한다", () => {
+    const legacy = { ...createBrushStudioV6Program("mixbox-pastel-smudge"), version: 1 as const };
+    const before = structuredClone(legacy);
+    expect(() => createBrushStudioV6MaterialStroke(legacy)).toThrow(BrushStudioV6LegacyPigmentMigrationRequiredError);
+    expect(legacy).toEqual(before);
+    const native = { ...legacy, slots: { ...legacy.slots, pigment: "pigment-latent" } };
+    expect(() => createBrushStudioV6MaterialStroke(native)).not.toThrow();
+    expect(legacy).toEqual(before);
   });
 
 });

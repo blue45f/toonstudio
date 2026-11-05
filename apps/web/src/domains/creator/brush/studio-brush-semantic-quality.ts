@@ -178,8 +178,8 @@ export interface StudioBrushSemanticAuditInput {
   /** 별도 플래너에서 실제 생성한 패턴/건식 스탬프 근거. */
   readonly patternResponse?: boolean;
   readonly dryStampResponse?: boolean;
-  /** 활성 정착 안료 커널의 골 침전 근거. */
-  readonly pigmentGranulationResponse?: boolean;
+  /** 실제 정착 프로그램의 종이 골·마루 비교에서 측정한 침착 응답. 분사 산포 근거는 아니다. */
+  readonly settledGranulationResponse?: boolean;
 }
 
 export type StudioBrushSemanticIssueSeverity = "error" | "warning";
@@ -222,7 +222,7 @@ const CLAIM_PATTERNS = Object.freeze({
   grain: /(?:그레인|과립|종이\s*결|공극|거친\s*결|백묵|분필|목탄|파스텔|크레용|흑연|grain|granulat|paper\s*tooth|chalk|charcoal|pastel|crayon|graphite)/iu,
   bristle: /(?:강모|붓결|필버트|팬\s*붓|갈퀴|bristle|filbert|fan\s*brush|rake)/iu,
   directional: /(?:평붓|평면|납작|치즐|칼끝|칼날|리본|사각|타원|측면|방향성|chisel|flat[\s-]*brush|flat[\s-]*nib|knife|ribbon|square|oval|side[\s-]*shade)/iu,
-  particle: /(?:입자|알갱이|가루|스프레이|스플래터|흩어|글리터|반짝|별|눈송이|먼지|particle|spray|splatter|scatter|glitter|spark|star|flake|dust)/iu,
+  particle: /(?:입자|알갱이|가루|산포|스프레이|스플래터|흩어|글리터|반짝|별|눈송이|먼지|particle|spray|splatter|scatter|glitter|spark|star|flake|dust)/iu,
   glow: /(?:네온|발광|후광|광선|글로우|neon|glow|halo|luminous)/iu,
   tone: /(?:망점|스크린톤|톤\s*도트|해칭|교차선|격자|그리드|패턴|screentone|halftone|cross[\s-]*hatch|hatch|grid|pattern)/iu,
   pressure: /(?:필압에\s*따라|압력에\s*따라|필압\s*반응|pressure[\s-]*(?:sensitive|response)|responds?\s*to\s*pressure)/iu,
@@ -393,11 +393,7 @@ export function auditStudioBrushSemanticClaims(
     || finite01(axes.particleScatter) >= 0.25
     || finiteNonNegative(material.meanScatterRatio) >= 0.08
     // 안료 가루는 넓은 산포와 별개다. 실제 종이 결/미세 공극이 있을 때만 인정한다.
-    || (/(?:가루|알갱이|입자)/u.test(text) && tip?.grainTip === true)
-    // 침전은 산포·장식 입자의 근거가 아니다.
-    || (/(?:가루|알갱이|입자)/u.test(text)
-      && input.pigmentGranulationResponse === true
-      && !/(?:산포|스프레이|스플래터|흩어|글리터|반짝|별|눈송이|먼지|spray|splatter|scatter|glitter|spark|star|flake|dust)/iu.test(text));
+    || (/(?:가루|알갱이|입자)/u.test(text) && tip?.grainTip === true);
   const supportsGlow =
     contract.engine === "neon-halo"
     || contract.engine === "glow-halo"
@@ -427,9 +423,13 @@ export function auditStudioBrushSemanticClaims(
     code: StudioBrushSemanticIssueCode,
     messageKo: string,
   ) => {
-    const claims = pattern === CLAIM_PATTERNS.particle
+    let claims = pattern === CLAIM_PATTERNS.particle
       ? text.replace(/입자\s*(?:간격\s*)?없(?:는|이)/gu, "")
       : text;
+    if (pattern === CLAIM_PATTERNS.particle && input.settledGranulationResponse === true) {
+      // 정착 솔버의 입자 침전만 충족한다. 같은 설명에 남은 입자·분사·산포 약속은 별도로 검증한다.
+      claims = claims.replace(/입자\s*침전/gu, "");
+    }
     if (pattern.test(claims) && !supported) {
       issues.push(issue(input, runtimeBrushId, "warning", code, messageKo));
     }

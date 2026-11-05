@@ -35,10 +35,10 @@ registerI18nLocaleEntries("en", {
 
 // ── export/studio-export-presets.ts
 registerI18nLocaleEntries("ko", {
-  "studio.frozenStatus6.exportPresets.vipsLoadFailed": "선택된 고품질 축소 엔진(wasm-vips)을 불러오지 못해 내보내기를 중단했어요.",
+  "studio.frozenStatus6.exportPresets.vipsLoadFailed": "선택된 고품질 축소 엔진(Lanczos3)을 불러오지 못해 내보내기를 중단했어요.",
 });
 registerI18nLocaleEntries("en", {
-  "studio.frozenStatus6.exportPresets.vipsLoadFailed": "Could not load the selected high-quality downscale engine (wasm-vips), so the export was stopped.",
+  "studio.frozenStatus6.exportPresets.vipsLoadFailed": "Could not load the selected high-quality downscale engine (Lanczos3), so the export was stopped.",
 });
 
 // ── studio-screen-share.ts

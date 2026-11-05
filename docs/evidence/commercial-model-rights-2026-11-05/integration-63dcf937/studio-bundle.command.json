@@ -1,0 +1,19 @@
+{
+  "cwd": "/workspace/scratch/toonstudio-commercial-main-validation",
+  "argv": [
+    "env",
+    "UPDATE_BUNDLE_BASELINE=0",
+    "TIGHTEN_BUNDLE_BASELINE=0",
+    "STUDIO_BUNDLE_RUNTIME=0",
+    "STUDIO_BUNDLE_PUBLIC_RUNTIME=0",
+    "pnpm",
+    "run",
+    "check:studio-bundle"
+  ],
+  "envOverrides": {
+    "npm_config_manage_package_manager_versions": "false",
+    "PNPM_HOME": "/tmp/toonstudio-pnpm",
+    "XDG_DATA_HOME": "/tmp/toonstudio-xdg"
+  },
+  "started": "2026-11-05T12:11:48.578860+00:00"
+}

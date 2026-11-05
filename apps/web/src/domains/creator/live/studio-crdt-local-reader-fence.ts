@@ -32,19 +32,20 @@ export class StudioCrdtLocalReaderFence {
     return true;
   }
   decorate(message: Parameters<typeof createStudioCrdtLocalWireMessage>[0]): StudioCrdtLocalWireMessage {
-    if (requiresStudioBg3dBundleReader(message.payload)) this.required = studioCrdtReaderMetadata(message.payload);
-    const meta = requiresStudioBg3dBundleReader(this.required) ? this.required : {};
+    if (message.payload.requiredReaderCapabilities?.length) this.required = studioCrdtReaderMetadata(message.payload);
+    const meta = this.required.requiredReaderCapabilities?.length ? this.required : {};
     if (message.kind === "sync-request") return createStudioCrdtLocalWireMessage({ ...message, ...meta, payload: { ...message.payload, ...meta } });
     if (message.kind === "sync-response") return createStudioCrdtLocalWireMessage({ ...message, ...meta, payload: { ...message.payload, ...meta } });
     return createStudioCrdtLocalWireMessage({ ...message, ...meta, payload: { ...message.payload, ...meta } });
   }
   accept(wire: StudioCrdtLocalWireMessage): StudioCrdtLocalWireMessage | null {
     try { assertStudioCrdtSupportedReaders(wire); } catch { return null; }
-    const feature = requiresStudioBg3dBundleReader(wire);
-    if (feature && (!supportsStudioCrdtReaders(wire) || !wire.artifactScope)) return null;
-    if (requiresStudioBg3dBundleReader(this.required) && !feature && wire.kind !== "sync-request") return null;
+    const feature = !!wire.requiredReaderCapabilities?.length;
+    if (feature && (!supportsStudioCrdtReaders(wire, wire.requiredReaderCapabilities)
+      || requiresStudioBg3dBundleReader(wire) && !wire.artifactScope)) return null;
+    if (this.required.requiredReaderCapabilities?.length && !feature && wire.kind !== "sync-request") return null;
     const readers = wire.readerCapabilities ?? this.peers.get(wire.senderSessionId);
-    if (requiresStudioBg3dBundleReader(this.required) && !supportsStudioCrdtReaders({ readerCapabilities: readers })) return null;
+    if (this.required.requiredReaderCapabilities?.length && !supportsStudioCrdtReaders({ readerCapabilities: readers }, this.required.requiredReaderCapabilities)) return null;
     if (feature) this.required = studioCrdtReaderMetadata(wire);
     if (wire.kind === "sync-request" && readers) return { ...wire, payload: { ...wire.payload, readerCapabilities: readers } };
     return wire;

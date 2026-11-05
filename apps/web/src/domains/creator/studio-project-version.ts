@@ -1,4 +1,5 @@
-import { STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+// 작은 버전 청크의 런타임 의존성을 만들지 않는다. 정본 필드와의 일치는 동작 회귀로 검사한다.
+const PRESERVED_DRAW_METADATA_KEYS = ["psdGroupId", "psdRasterSourceId", "psdSource", "psdFolderPath", "colorizeMask", "colorizeMaskEnabled", "linked3dCorrection"] as const;
 /** 저장된 편집 기능에 필요한 최소 reader. 렌더러를 로드하지 않는다. */
 export type StudioProjectFileVersion = 2 | 3 | 4 | 5 | 6;
 
@@ -49,7 +50,7 @@ export function hasStudioSixPassBundleProjectContent(pages: readonly unknown[], 
 
 function requiresPreservedDrawMetadataReader(elements: unknown): boolean {
   return Array.isArray(elements) && elements.some((element) => isRecord(element) && (Object.hasOwn(element, "legacyPigmentArchive")
-    || (element.type === "draw" && STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS.some((key) => Object.hasOwn(element, key)))));
+    || (element.type === "draw" && PRESERVED_DRAW_METADATA_KEYS.some((key) => Object.hasOwn(element, key)))));
 }
 
 export function minimumStudioProjectFileVersion(

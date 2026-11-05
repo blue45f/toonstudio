@@ -12,6 +12,49 @@ export const STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION = 7 as const;
 export const STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION = STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION;
 export const STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY = "legacy-pigment-preservation.v1";
 export const STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS = ["psdGroupId", "psdRasterSourceId", "psdSource", "psdFolderPath", "colorizeMask", "colorizeMaskEnabled", "linked3dCorrection"] as const;
+/** 값의 의미 검증과 별개로, 구 reader가 생략하면 안 되는 보존 필드의 존재를 조사한다. */
+export function hasStudioPreservedDrawReaderFields(value: unknown): boolean {
+  const source = record(value);
+  return source !== null && ["legacyPigmentArchive", ...STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS]
+    .some((key) => Object.hasOwn(source, key));
+}
+export function hasStudioPreservedDrawReaderDocument(value: unknown): boolean {
+  const source = record(value), master = record(source?.master);
+  const containers: unknown[] = [...(Array.isArray(source?.pagesList) ? source.pagesList : []), ...(master ? [master] : [])];
+  return containers.some((value) => {
+    const container = record(value);
+    return Array.isArray(container?.elements) && container.elements.some((value: unknown) => {
+      const element = record(value);
+      return element?.type === "draw" && hasStudioPreservedDrawReaderFields(element);
+    });
+  });
+}
+interface SharedReaderMap { get(key: string): unknown; values(): IterableIterator<unknown> }
+export interface StudioPreservedDrawPendingItem {
+  readonly key: string | null; readonly values: readonly unknown[];
+}
+function sharedReaderMap(value: unknown): SharedReaderMap | null {
+  return value !== null && typeof value === "object" && "get" in value && typeof value.get === "function"
+    && "values" in value && typeof value.values === "function" ? value as SharedReaderMap : null;
+}
+/** Yjs를 정적으로 로드하지 않는다. raw 기록을 조사하므로 삭제된 획의 undo 자료도 포함한다. */
+export function hasStudioPreservedDrawReaderCrdt(document: {
+  readonly share: ReadonlyMap<string, unknown>; getMap(name: string): unknown;
+  readonly store?: { readonly pendingStructs: { readonly update: Uint8Array } | null };
+}, decodePending?: (update: Uint8Array) => readonly StudioPreservedDrawPendingItem[]): boolean {
+  const strokes = sharedReaderMap(document.share.has("strokes") ? document.getMap("strokes") : null);
+  for (const value of strokes?.values() ?? []) {
+    const stroke = sharedReaderMap(value);
+    if (stroke && (stroke.get("payloadVersion") === STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION
+      || hasStudioPreservedDrawReaderFields(stroke.get("extensions")))) return true;
+  }
+  const pending = document.store?.pendingStructs;
+  // 알려진 일반 JSON 키는 extensions와 구분한다. 부모가 없어 상속 키가 null이면 보수적으로 보호한다.
+  // 따라서 키 미확정 일반 JSON의 이름 충돌까지 해소한 판정은 아니다.
+  return !!pending && !!decodePending && decodePending(pending.update).some((item) =>
+    item.key === "payloadVersion" && item.values.includes(STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION)
+    || ((item.key === "extensions" || item.key === null) && item.values.some(hasStudioPreservedDrawReaderFields)));
+}
 const KEYS = ["version", "sourceElementId", "sourceGroupId", "sourceIndex", "sourceHidden"];
 function record(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)

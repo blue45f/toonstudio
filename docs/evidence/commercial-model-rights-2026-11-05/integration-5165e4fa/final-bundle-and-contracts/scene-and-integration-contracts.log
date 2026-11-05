@@ -1,0 +1,12 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.12 /workspace/scratch/toonstudio-commercial-main-validation
+
+
+ Test Files  26 passed (26)
+      Tests  270 passed (270)
+   Start at  13:58:35
+   Duration  7.45s (transform 1.35s, setup 7.66s, import 1.91s, tests 2.38s, environment 2ms)
+

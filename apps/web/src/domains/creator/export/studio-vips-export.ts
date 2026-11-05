@@ -1,30 +1,21 @@
-// ToonStudio V12 게이트 매트릭스 Large image 행 — 초대형 이미지 최종 내보내기 provider.
-//
-// 근거(Quality Lab 실측, tests/benchmarks/results/quality-lab.json 2026-08-07):
-//   downscale 2048→512에서 wasm-vips lanczos3가 PSNR 27.26dB / SSIM 0.9887로 1위
-//   (canvaskit-linear-nomips 25.31dB/0.9834, canvaskit-cubic-mitchell 23.78dB/0.9768).
-// 카탈로그: packages/studio-engine-registry/src/filter-providers.ts 의
-//   wasm-vips-pipeline descriptor(capabilities: filter.op.resize/pyramid,
-//   filter.phase.final 전용, license LGPL-2.1-or-later → isolated 게이트).
-//
-// 절대 규칙:
-// - wasm-vips 는 반드시 dynamic import() 로만 로드한다(번들 게이트가 정적 import 를 잡는다).
-// - final/export 레인 전용 — preview 경로에서 호출 금지(descriptor 와 동일).
-// - 조용한 손실 금지: 크기 드리프트·버퍼 불일치·로드 실패는 전부 명시적 throw.
-//   호출자도 같은 내보내기를 다른 provider로 재실행하지 않는다.
+// 자체 Lanczos3 최종 내보내기 레인. 외부 wasm-vips 의존성을 사용하지 않는다.
+// 기존 vips 이름의 공개 식별자·route는 저장된 계약과 호출자의 호환성을 위해 보존한다.
+// 큰 축소는 정수 box prefilter와 3-lobe sinc, 알파는 premultiplied 필터링한다.
+// 기존 Quality Lab의 PSNR/SSIM 하한을 낮추지 않고 통과해야 한다.
+// final/export 전용이며 실패 시 다른 provider로 조용히 대체하지 않는다.
 
-export const STUDIO_VIPS_EXPORT_REVISION = 1 as const;
+export const STUDIO_VIPS_EXPORT_REVISION = 2 as const;
 
 /** 카탈로그 descriptor id — 테스트가 registry 와의 정합을 검증한다. */
 export const STUDIO_VIPS_EXPORT_PROVIDER_ID = "wasm-vips-pipeline" as const;
 
-/** Quality Lab 승자 설정 그대로: libvips resize 기본 커널(lanczos3), 단일 스레드. */
+/** 자체 Lanczos3 커널, 단일 스레드. */
 export const STUDIO_VIPS_EXPORT_KERNEL = "lanczos3" as const;
 export const STUDIO_VIPS_EXPORT_CONCURRENCY = 1 as const;
 
-/** descriptor 와 동일해야 하는 라이선스 표기 — LGPL 은 isolated 배포 모드 전용. */
-export const STUDIO_VIPS_EXPORT_LICENSE = "LGPL-2.1-or-later" as const;
-export const STUDIO_VIPS_EXPORT_ATTRIBUTION = "libvips / wasm-vips" as const;
+/** descriptor 와 동일해야 하는 라이선스 표기 — 자체 구현이므로 internal 정책을 따른다. */
+export const STUDIO_VIPS_EXPORT_LICENSE = "internal" as const;
+export const STUDIO_VIPS_EXPORT_ATTRIBUTION = "ToonStudio native Lanczos3" as const;
 
 /**
  * 단일 인코어 표면(Canvas2D 슬라이스 합성 레인)의 한 변 상한.
@@ -44,8 +35,8 @@ export const STUDIO_VIPS_EXPORT_SINGLE_SURFACE_PIXELS = 67_108_864 as const;
 /**
  * vips 레인이 한 번에 붙잡는 입력 픽셀 상한 = 16384²(1GiB RGBA).
  * 근거: 16384 는 studio-export.ts MAX_CANVAS_DIM(브라우저 캔버스 보수 상한)이고,
- * wasm 32-bit 힙(≈2GiB)에서 소스 사본 + 출력 + 파이프라인 스크래치가 공존하려면
- * 소스가 1GiB 를 넘을 수 없다. 초과분은 타일 기반
+ * 기존 입력 예산은 호환성을 위해 유지한다. 자체 구현은 전체 float 이미지 대신
+ * 필요한 수평 행만 보관하지만, 소스·출력 allocation은 여전히 필요하다. 초과분은 타일 기반
  * studio-out-of-core-export-provider 가 소유한다.
  */
 export const STUDIO_VIPS_EXPORT_MAX_INPUT_PIXELS = 268_435_456 as const;
@@ -54,7 +45,7 @@ export const STUDIO_VIPS_EXPORT_MAX_INPUT_PIXELS = 268_435_456 as const;
 export const STUDIO_VIPS_EXPORT_MAX_PYRAMID_LEVELS = 32 as const;
 
 /**
- * wasm-vips 로드/초기화 실패. 원인(cause)을 보존해 전달하며, 이 모듈과 호출자 모두
+ * ToonStudio native Lanczos3 로드/초기화 실패. 원인(cause)을 보존해 전달하며, 이 모듈과 호출자 모두
  * 같은 내보내기를 다른 provider로 조용히 대체하지 않는다.
  */
 export class VipsUnavailableError extends Error {
@@ -64,7 +55,7 @@ export class VipsUnavailableError extends Error {
   }
 }
 
-/** wasm-vips 인스턴스의 최소 구조 타입 — 정적 import 없이 호출면만 서술한다. */
+/** ToonStudio native Lanczos3 인스턴스의 최소 구조 타입 — 정적 import 없이 호출면만 서술한다. */
 interface VipsImageHandle {
   readonly width: number;
   readonly height: number;
@@ -92,7 +83,7 @@ export interface StudioVipsExportRuntime {
 
 export interface StudioVipsLoadOptions {
   /**
-   * 테스트/격리 배포용 주입점. 기본은 dynamic import("wasm-vips").
+   * 테스트/격리 배포용 주입점. 기본은 자체 resize runtime의 dynamic import.
    * 최초 성공 결과가 캐시되므로 이후 호출의 importVips 는 무시된다.
    */
   readonly importVips?: () => Promise<unknown>;
@@ -140,15 +131,15 @@ const VIPS_UCHAR_FORMAT = "uchar";
 let runtimeCache: Promise<StudioVipsExportRuntime> | null = null;
 
 function defaultImportVips(): Promise<unknown> {
-  // 번들 게이트 계약: wasm-vips 는 이 dynamic import 한 곳에서만 등장해야 한다.
-  return import("wasm-vips");
+  // 번들 게이트 계약: ToonStudio native Lanczos3 는 이 dynamic import 한 곳에서만 등장해야 한다.
+  return import("./studio-native-resize-runtime");
 }
 
 function isVipsModule(value: unknown): value is VipsModule {
   if (typeof value !== "object" || value === null) return false;
   const candidate = value as { Image?: unknown; concurrency?: unknown };
   if (typeof candidate.concurrency !== "function") return false;
-  // embind 는 Image 를 클래스(function)로 노출한다 — 정적 newFromMemory 만 계약.
+  // 기존 주입 런타임의 클래스 또는 자체 객체 모두 정적 newFromMemory 계약을 따른다.
   const image = candidate.Image;
   if (
     (typeof image !== "object" && typeof image !== "function")
@@ -169,41 +160,40 @@ async function initializeRuntime(
     moduleNamespace = await importVips();
   } catch (cause) {
     throw new VipsUnavailableError(
-      "wasm-vips module could not be imported for the export lane.",
+      "ToonStudio native Lanczos3 module could not be imported for the export lane.",
       { cause },
     );
   }
   const factory = (moduleNamespace as { default?: unknown } | null)?.default;
   if (typeof factory !== "function") {
     throw new VipsUnavailableError(
-      "wasm-vips module did not expose a default factory function.",
+      "ToonStudio native Lanczos3 module did not expose a default factory function.",
     );
   }
   let vips: unknown;
   try {
-    // Quality Lab 실사용과 동일: 동적 라이브러리(heif/jxl/resvg) 없이 코어만 초기화.
+    // 기존 주입점의 옵션 계약은 보존한다. 자체 런타임은 외부 동적 라이브러리를 사용하지 않는다.
     vips = await (factory as (options?: Record<string, unknown>) => Promise<unknown>)(
       { dynamicLibraries: [] },
     );
   } catch (cause) {
     throw new VipsUnavailableError(
-      "wasm-vips failed to initialize its WebAssembly runtime.",
+      "ToonStudio native Lanczos3 failed to initialize its JavaScript runtime.",
       { cause },
     );
   }
   if (!isVipsModule(vips)) {
     throw new VipsUnavailableError(
-      "wasm-vips initialized but its module shape is not the expected vips API.",
+      "ToonStudio native Lanczos3 initialized but its module shape is not the expected vips API.",
     );
   }
-  // 결정성 기준선(Quality Lab 과 동일): 단일 스레드. SMP 는 COOP/COEP 워커 전제라
-  // 이 레인에서는 켜지 않는다(descriptor limitations 참조).
+  // 결정성 기준선: 자체 구현은 단일 스레드로 동작한다.
   vips.concurrency(STUDIO_VIPS_EXPORT_CONCURRENCY);
   return Object.freeze({ vips });
 }
 
 /**
- * wasm-vips 를 dynamic import 로 1회 로드/초기화해 캐시한다.
+ * ToonStudio native Lanczos3 를 dynamic import 로 1회 로드/초기화해 캐시한다.
  * 동시 호출은 같은 초기화 프로미스를 공유하고, 실패 시 캐시를 비워
  * 다음 호출이 재시도할 수 있게 한다(실패 자체는 VipsUnavailableError 로 전달).
  */
@@ -278,10 +268,10 @@ function resampleWithVips(
     vscale: targetHeight / sourceHeight,
   });
   try {
-    // 조용한 손실 금지: libvips 의 목표 크기 반올림이 요청과 다르면 즉시 실패.
+    // 조용한 손실 금지: 자체 resize의 목표 크기 반올림이 요청과 다르면 즉시 실패.
     if (resized.width !== targetWidth || resized.height !== targetHeight) {
       throw new Error(
-        `wasm-vips resize drifted to ${resized.width}x${resized.height} `
+        `ToonStudio native Lanczos3 resize drifted to ${resized.width}x${resized.height} `
         + `(requested ${targetWidth}x${targetHeight}); refusing silent size loss.`,
       );
     }
@@ -289,11 +279,11 @@ function resampleWithVips(
     const expectedBytes = targetWidth * targetHeight * RGBA_BANDS;
     if (memory.length !== expectedBytes) {
       throw new Error(
-        `wasm-vips returned ${memory.length} bytes for `
+        `ToonStudio native Lanczos3 returned ${memory.length} bytes for `
         + `${targetWidth}x${targetHeight} RGBA8 (expected ${expectedBytes}).`,
       );
     }
-    // wasm 힙 뷰와의 수명 결합을 끊기 위해 JS 힙으로 복사해 반환한다.
+    // 주입 런타임의 buffer 수명과 결합하지 않도록 방어적 사본을 반환한다.
     return {
       rgba: new Uint8Array(memory),
       width: targetWidth,
@@ -305,7 +295,7 @@ function resampleWithVips(
 }
 
 /**
- * vips lanczos3(Quality Lab downscale 승자 설정 그대로)로 RGBA8 버퍼를
+ * 자체 lanczos3(기존 Quality Lab 품질 하한 유지)로 RGBA8 버퍼를
  * 정확히 targetWidth×targetHeight 로 축소한다. 결정적이며(단일 스레드,
  * 고정 커널), 동일 크기 요청은 재표본 없이 방어적 사본을 돌려준다.
  */
@@ -320,7 +310,7 @@ export async function downscaleForExport(
   assertSourceRaster(rgba, width, height);
   assertDownscaleTarget(width, height, targetWidth, targetHeight);
   if (targetWidth === width && targetHeight === height) {
-    // 항등 요청은 무손실 사본 — wasm 로드 자체를 요구하지 않는다.
+    // 항등 요청은 무손실 사본 — 런타임 로드를 요구하지 않는다.
     return { rgba: new Uint8Array(rgba), width, height };
   }
   const runtime = options.runtime ?? (await loadVipsForExport());
@@ -342,7 +332,7 @@ export async function downscaleForExport(
  * 웹툰 세로 스크롤용 mip 피라미드. 레벨 k 의 크기는
  * max(1, floor(width/2^k)) × max(1, floor(height/2^k)) — 각 축은 1 에서 클램프된다.
  * 누적 오차를 피하려고 모든 레벨을 원본에서 직접 lanczos3 로 재표본한다
- * (libvips resize 는 큰 축소도 내부 shrink+reduce 로 고품질 처리).
+ * (큰 축소는 자체 box prefilter + sinc로 처리).
  * 양 축이 모두 1 에 도달한 다음 레벨부터는 정보가 늘지 않으므로 잘라낸다 —
  * 결과 길이는 요청 levels 보다 짧을 수 있다.
  */
@@ -429,7 +419,7 @@ export function planVipsExportRoute(
       reason:
         `${width}x${height} exceeds the single in-core surface budget `
         + `(edge ${limits.singleSurfaceEdgePx}px / area `
-        + `${limits.singleSurfacePixels}px); the wasm-vips final lane owns it.`,
+        + `${limits.singleSurfacePixels}px); the ToonStudio native Lanczos3 final lane owns it.`,
     };
   }
   return {
