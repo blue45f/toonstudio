@@ -99,7 +99,11 @@
     "method": "실제 API와 실제 Web serializer로 초기화했으며, 빈 프로젝트에서 연속 UI 제작한 결과가 아니다.",
     "count": 63,
     "maxBytes": 4807,
-    "budgetUnchanged": true
+    "budgetUnchanged": true,
+    "authentication": "실제 인증 API로 로그인·로그아웃하고 새 브라우저 context에서 세션을 다시 열었다. 로그인 폼 UI 검증과 구분한다.",
+    "productionReview": "시험용 공정 설정·검수 승인은 API, 고정 검수본 생성·열람과 실제 다음 공정 인계는 브라우저 UI를 사용했다.",
+    "projectIdentity": "guest 로컬 프로젝트와 서버 작품의 ID는 별개다. 동일 6컷 원고 복사 검증이며 guest→server UI 이주는 미검증이다.",
+    "technicalZip": "정식 패키지 UI 차단을 확인한 뒤 브라우저의 제품 생성 함수로 검토용 초안을 만들었다."
   },
   "storageScope": {
     "database": "분리된 runtime 역할을 사용하는 독립 로컬 PostgreSQL",

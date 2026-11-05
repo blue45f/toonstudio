@@ -66,6 +66,10 @@ CanvasKit 변환을 적용한 직접 캡처는 실제 `skia-document`·1440×144
 
 통합된 Graphite 수정은 새 선택·명시 기본값 복원에서만 flow 0.46→0.57을 사용한다. 기존 저장 snapshot과 사용자 편집값을 재해석하지 않는다. 소유 소스의 재질 계획·저장 슬롯·기존 byte replay·초안 guard 4파일 133개도 통과했다. 이는 일반 pen 51개로 된 6컷 결과와 별개이며, 해당 흑연의 실제 Linux Canvas 가시성은 최종 원격 job에서 별도로 확인해야 한다.
 
+실행 방법의 경계도 유지한다. 로그인·로그아웃과 시험용 공정 설정·검수 승인은 실제 API를 사용했다. 고정 검수본 생성·열람, 공동 저장, 실제 다음 공정 인계는 브라우저 UI다. 정식 패키지 버튼의 차단을 확인한 뒤 기술 ZIP은 브라우저의 제품 생성 함수로 구성했다. guest 로컬 프로젝트와 서버 작품은 별도 ID에 같은 6컷을 복사한 경로이며, guest→server UI 이주나 빈 화면부터 연속 제작을 검증한 것은 아니다.
+
+후속 전체 하네스 `a6b9e78e`에서는 새 모바일 회귀의 `HTMLElement.hidden`이 `boolean | "until-found"`인 TypeScript 오류 한 건이 확인됐다. 공통 `f0d69841`의 `panel.hidden === true` 수정과 `0d73c5e4`의 helper 전용 CI 경로 회귀를 통합했다. 제품 코드와 위 6컷 실행 스크립트는 바뀌지 않았으며 최종 하네스·정상 pre-push에서 별도 확인한다. 실패한 하네스는 성공으로 계산하지 않는다.
+
 직전 실제 검증 `4c14fece`의 기술 ZIP과 다시 비교한 결과, 여섯 1440×1440 원고 PNG 모두 변경 픽셀 0·최대 채널 차이 0이었다. **기술 ZIP 자체도 838,465 B, SHA-256 `ee2d8658436c270cc208fb6cad438806c114df24d704bf27c3aab3e587fce1ee`로 바이트까지 동일**했다. 첫 냉간 시도의 다른 외관은 원고나 폰트 변경 없이 CanvasKit 변환 복구로 해소됐다. 더 오래된 `8d315c85` 기준 PNG의 기존 차이는 별도 기록이며 모든 역사적 버전의 픽셀 일치를 주장하지 않는다.
 
 계정·쿠키·원시 Socket frame을 제외한 [실행 요약](evidence/2026-11-06-short-comic-recovery/verification-summary.json), [렌더러 영수증](evidence/2026-11-06-short-comic-recovery/renderer-receipts.json), [이전 패키지 비교](evidence/2026-11-06-short-comic-recovery/previous-package-comparison.json), [UI 인계 증거](evidence/2026-11-06-short-comic-recovery/ui-handoff-proof.json), [기존 로컬 데이터 보존](evidence/2026-11-06-short-comic-recovery/local-data-preservation.json)을 공개 검토용으로 보존했다. 실행 직후 추가한 파일은 설명·증거 문서다. 최종 원격 CI와 병합 상태 및 이후 source 변경은 해당 PR의 정확한 head에서 별도 확인한다.
