@@ -1,0 +1,42 @@
+{
+  "capturedAt": "2026-11-05T11:56:05.567257+00:00",
+  "installedPackageReadOnly": true,
+  "noNewDependency": true,
+  "records": [
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/package.json",
+      "bytes": 1830,
+      "sha256": "04a3e2736eaf852515b49245eff9ac55315ef44cb04aa5acf415679fb311f2f0"
+    },
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/LICENSE",
+      "bytes": 1086,
+      "sha256": "9cbb5847deb22dffbdd860fe659a122d61c144e52cbd3a97d4bb858c5fb9cef6"
+    },
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/THIRD-PARTY-NOTICES.md",
+      "bytes": 3323,
+      "sha256": "0f52de00dd217125646ae85177def3e144de48d11f76368f257ba6468d3f7d8d"
+    },
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/versions.json",
+      "bytes": 434,
+      "sha256": "e1b6858d24d76de7c28c15a5765d02661a1638b8555625bbc74cb3c67f6f184d"
+    },
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/lib/vips-node.mjs",
+      "bytes": 90047,
+      "sha256": "ec5a7268a7e067e514a0e03f989de6456611e2826471fbe3d31a668438b0b932"
+    },
+    {
+      "path": "/workspace/toonstudio/node_modules/.pnpm/wasm-vips@0.0.19/node_modules/wasm-vips/lib/vips.wasm",
+      "bytes": 5154052,
+      "sha256": "36c25e290570757f911b45d67947e8262b01261028db438dadc09990ad978ff6"
+    },
+    {
+      "path": "/tmp/toonstudio-light-paprika-evaluation/inputs/usgs-mountain-lake-original.jpg",
+      "bytes": 192506,
+      "sha256": "14aeb5477e6d38c8513fa0db8fdf38944bbe826370063b04b24aa4bdb1de4007"
+    }
+  ]
+}

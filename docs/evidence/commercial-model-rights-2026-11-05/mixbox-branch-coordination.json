@@ -5,6 +5,7 @@
   "licenseBranch": "codex/commercial-model-license-audit-20261105",
   "licenseBase": "63dcf937ca8658fbae52396595416daa1a796043",
   "overlappingPaths": [
+    ".github/workflows/ci.yml",
     "apps/web/src/domains/legal/technology/EngineeringLicenseInventory.tsx",
     "apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx",
     "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
@@ -27,5 +28,21 @@
     "reason": "Resource not accessible by integration",
     "retry": false
   },
-  "localBranchesMerged": false
+  "localBranchesMerged": false,
+  "initialOverlappingPaths": [
+    "apps/web/src/domains/legal/technology/EngineeringLicenseInventory.tsx",
+    "apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx",
+    "apps/web/src/domains/legal/technology/engineering-atlas-open-data-oss.ts",
+    "apps/web/src/domains/legal/technology/engineering-library-guide-overview.ts",
+    "apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts",
+    "apps/web/src/domains/legal/technology/engineering-license-inventory.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source-rows-more.ts",
+    "apps/web/src/domains/legal/technology/engineering-map-open-source.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep-content.ts",
+    "apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts",
+    "package.json",
+    "pnpm-lock.yaml",
+    "scripts/generate-third-party-notices.mjs"
+  ],
+  "additionalCiOwnership": "라이선스·전체 타입 검사기 회귀 테스트 13개를 dependency 설치 후 기존 typecheck job에 추가하는 단독 step. 기존 gates/runner/brush/config hunk 변경 없음."
 }

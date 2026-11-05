@@ -6,8 +6,8 @@
 
 ## 보존 범위와 필요한 입력
 
-비공개 ChatGPT Library의 `toonstudio-commercial-deliverable-2026-11-05.tar.gz`에 검증 보존본을
-저장했다. [영수증](../evidence/commercial-model-rights-2026-11-05/recovery-library-receipt.json)은 해당
+비공개 ChatGPT Library에 첫 `toonstudio-commercial-deliverable-2026-11-05.tar.gz` 검증 보존본과
+후속 `toonstudio-commercial-recovery-2026-11-05.tar.gz` 버전을 저장했다. [영수증](../evidence/commercial-model-rights-2026-11-05/recovery-library-receipt.json)은 해당
 첫 버전의 해시·크기·파일 식별자를 기록한다. 후속 버전이 생기면 버전별 영수증과 내부 README를
 먼저 대조한다. 이름만 같다는 이유로 서로 다른 버전의 patch·신규 파일을 섞지 않는다.
 
@@ -21,7 +21,11 @@
 이 archive 자체에는 `.git`, 전체 base tree, 설치된 dependencies, `dist`, 실제 secret/env가 없다.
 따라서 **이 archive만으로 전체 저장소를 재구성할 수 없다**. 접근 권한이 있는
 `https://github.com/blue45f/toonstudio`의 정확한 base 객체 또는 별도로 승인된 base 백업이 필요하다.
-Git bundle은 원래 제한 모델·전체 이력을 포함할 수 있어 이 작업에서 새로 업로드하지 않았다.
+전체 이력을 담는 Git bundle은 원래 제한 모델을 포함할 수 있어 업로드하지 않았다.
+후속 버전 1에는 base63dcf937→head7a118fc4의 새 commit·객체만 담은 증분 Git bundle을 추가했다.
+원래 제품 모델 3종 blob이 새 객체에 포함되지 않았음을 별도로 검증했다. 버전 1의 내부 README에는
+bundle verify/fetch와 207개 변경 파일 전체 내용 overlay의 복구 방법이 있다. 이 또한 정확한 base
+객체는 별도로 필요하며, 뒤의 예시는 첫 보존본 v0에만 적용한다.
 후속 source overlay가 제공되면 변경 파일의 전체 내용을 base 접근과 별도로 읽어 복구할 수 있지만,
 그 overlay도 전체 앱 또는 완성된 독립 배포물은 아니다.
 

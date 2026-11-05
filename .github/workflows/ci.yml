@@ -169,6 +169,8 @@ jobs:
           node scripts/sync-i18n-legacy-assets.mjs --check
           node scripts/generate-i18n-builtins.mjs --check
       - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Commercial audit and complete typechecker regression tests
+        run: node --test scripts/typecheck-shards.test.mjs scripts/check-restricted-model-distribution.test.mjs scripts/third-party-license-files.test.mjs
       # 빌드 없이 Studio 진입 그래프의 정적 성장을 원인 import 와 함께 알린다(typecheck 보다 먼저 몇 초 안에 실패).
       - name: Studio entry graph ratchet (static imports only, no build)
         run: pnpm run check:studio-eager-graph

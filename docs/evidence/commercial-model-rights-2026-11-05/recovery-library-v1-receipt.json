@@ -1,0 +1,15 @@
+{
+  "status": "succeeded",
+  "library_file_id": "libfile_7a708bc76c68819183e287400297932b",
+  "file_id": "file_0000000021388230aca6dbe40c467fa6",
+  "file_name": "toonstudio-commercial-recovery-2026-11-05.tar.gz",
+  "current_version_number": 1,
+  "bytes": 29486546,
+  "sha256": "26e415453c1b35a07d49374967c358a5808da1d5503bbf831b5104477246ce21",
+  "head": "7a118fc4ea1c1dadd96090351a35580b0e93d3d1",
+  "base": "63dcf937ca8658fbae52396595416daa1a796043",
+  "source_overlay_files": 207,
+  "incremental_bundle_excludes_three_original_model_blobs": true,
+  "full_typecheck_and_CI": "진행 중",
+  "metadata_helper_exit": 0
+}

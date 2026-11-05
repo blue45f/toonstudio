@@ -1,0 +1,10 @@
+{
+  "kind": "evidence-source-packaging",
+  "executedSource": "/tmp/toonstudio-native-resize-same-environment/compare.mts",
+  "storedEvidence": "compare.mts.txt",
+  "sha256": "8878f941242fdce868cad40df56aaece36be6be19c1d9c497a3867c50437bc07",
+  "bytesUnchanged": true,
+  "reason": "증거 사본 .mts가 tsconfig root glob에 추가된 것을 후속 inventory가 감지했다. 실행 원본은 /tmp에 보존하고 증거 텍스트로 보관한다. tsconfig/검사 옵션/제품 source는 변경하지 않는다.",
+  "failedPostbuildComparisonPreserved": true,
+  "requiresFreshProgramFingerprintComparison": true
+}

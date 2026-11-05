@@ -1,0 +1,13 @@
+{
+  "cwd": "/workspace/scratch/toonstudio-commercial-main-validation",
+  "argv": [
+    "pnpm",
+    "audit:security"
+  ],
+  "envOverrides": {
+    "npm_config_manage_package_manager_versions": "false",
+    "PNPM_HOME": "/tmp/toonstudio-pnpm",
+    "XDG_DATA_HOME": "/tmp/toonstudio-xdg"
+  },
+  "started": "2026-11-05T12:15:43.887599+00:00"
+}

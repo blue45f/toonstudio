@@ -1,0 +1,7 @@
+{
+  "head": "7a118fc4ea1c1dadd96090351a35580b0e93d3d1",
+  "status": " M .github/workflows/ci.yml\n",
+  "ciYamlSha256": "7223030fca9d1d47d5f7b963ffc5123c0f93652606433da486d224713d6a3239",
+  "canonicalTypeFingerprint": "8114eca5062c95ab9d524e26bf866133b00b291a77937e5629f598ad4bfdf8ce",
+  "candidate": "committed audit/native replacement changes + uncommitted CI Node fixtures; not plain main"
+}

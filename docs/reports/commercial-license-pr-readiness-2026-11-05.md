@@ -1,6 +1,6 @@
 # 상용 라이선스 후속 구현·PR 준비 기록 — 2026-11-05
 
-상태: **current / 구현 보존·권리 재분류 완료, 최신 base 검증·draft PR 진행 중**.
+상태: **current / 구현 보존·권리 재분류·최신 base 로컬 검증 완료, draft PR 게시 준비**.
 이 기록은 같은 날짜의 이전 감사·2c626df4 검증 보고서보다 후속 상태다. 기존 모델의
 권리 문제 또는 전체 상용화가 해결됐다는 뜻이 아니다. 이전 통과 기록의 SHA를 바꾸어 적지 않는다.
 
@@ -18,7 +18,7 @@ Remotion은 설명된 개인 무료 자격 전제로 유지한다.
 
 Mixbox 브랜치 `codex/mixbox-internalization-ci-20261105`의 head는
 `7d1ef53c01d2eb76777b72d14534434ff91491c0`, 공통 base는 `994e5ba3`다.
-이번 변경과 13개 경로가 겹친다. 주로 legal 문서·테스트와 `package.json`, `pnpm-lock.yaml`,
+초기 변경과 13개 경로가 겹쳤으며, 라이선스·타입 검사 회귀를 CI에 연결한 후 14개 경로가 겹친다. 주로 legal 문서·테스트와 `package.json`, `pnpm-lock.yaml`,
 고지 생성기이며 같은 변경이라는 뜻은 아니다. 병합 순서가 바뀌면 각 담당의 hunk를 보존해 대조해야 한다.
 상세 목록과 읽기 전용 비교는
 [소유권 기록](../evidence/commercial-model-rights-2026-11-05/mixbox-branch-coordination.json)에 있다.
@@ -44,7 +44,11 @@ offline/no-key·lazy load 계약을 대체 수락 조건으로 유지한다.
 
 ## 대체 후보의 검증 결과
 
-기존 독자 Lanczos 리사이즈와 wasm-vips 제거는 유지한다. Remotion의 불필요한 수학 대체는
+기존 독자 Lanczos 리사이즈와 wasm-vips 제거는 유지한다. 같은 Node 환경의 5개 입력을 비교한
+후속 실측에서는 약 61–82ms로, 이전 WASM 11–24ms보다 중앙값 기준 3.02–5.53배 느렸다.
+불투명 입력 SSIM은 0.9994 이상이지만 고주파 최대 차이 14/255와 알파 합성 차이가 있고,
+속도 동등성·모든 입력의 전문가 시각 수락을 주장하지 않는다. [동일 환경 비교](native-resize-same-environment-followup-2026-11-05.md)를 따른다.
+ Remotion의 불필요한 수학 대체는
 이미 되돌리고 원본을 보존했다. 새 모델 adapter·placeholder를 넣거나 제한 가중치를 학습·증류하지 않았다.
 
 light_paprika는 CPU ORT 1.30.0 / Web 1.30.0으로 버전을 맞춰 실제 재평가했다. CPU는 기존
@@ -74,6 +78,24 @@ Tag2Pix/Paprika는 `blockingMatches`, FacePaint의 학습 출처 검토는 `revi
 그 당시 입력에 대한 기록이다. 현재 `63dcf937 + task` 검증을 별도로 실행 중이며 이전 결과로
 새 SHA의 CI를 통과 처리하지 않는다. 새 검사·draft PR·CI의 exact SHA와 결과는 후속 영수증에 남긴다.
 
+`63dcf937 + task`의 정식 `pnpm harness:verify --base=HEAD`는 outer exit 0으로 완료됐다.
+웹 26,247/26,247개·16그룹·진단 0·재시도 0이며 최종 입력 fingerprint는
+`8114eca5062c95ab9d524e26bf866133b00b291a77937e5629f598ad4bfdf8ce`다.
+최대 worker RSS는 8,642,781,184 bytes이며 API의 기존 3개 tsc도 통과했다. 관련 Vitest 250개,
+Node 13개, 별도 CI wiring 계약 38개가 통과했다. 13개 회귀 테스트를 기존 typecheck CI job의
+의존성 설치 후 단계에 연결했으며 기존 gate·runner·권한·brush/config 구현은 변경하지 않았다.
+
+정상 build:bundle lifecycle·CSP·구조 bundle·Remotion chunk 검사와 실제 Chromium 154 native
+probe도 통과했다. 20,153개 dist 파일에서 삭제한 4개 WASM 해시와 외부 vips manifest 잔재는 0개다.
+라이선스·보안 audit은 exit 0이며 모델 검사만 예상 exit 1(차단 2·출처 검토 1)이다.
+
+해결한 검증 실패도 보존한다. 증거 사본 compare.mts가 root에 추가돼 첫 postbuild fingerprint가
+달라졌고, 실행 원본과 바이트를 보존하며 사본을 compare.mts.txt로 고친 뒤 원래 전체 identity가
+정확히 복구됐다. tsconfig나 검사 옵션은 바꾸지 않았다. 첫 browser 시도는 미설치 Playwright
+bundle 경로로 launch 전에 실패했다. 설치된 /usr/bin/chromium을 확인하고 /tmp probe의 launch
+경로만 바꾼 실제 재시도는 통과했다. 이후 서버를 종료했다. 전체 Studio E2E·새 CWV 측정은 하지 않았다.
+[최신 base 영수증](../evidence/commercial-model-rights-2026-11-05/integration-63dcf937/)을 따른다.
+
 보호 브랜치의 required status checks API 읽기는 HTTP 403 `Resource not accessible by integration`으로
 실패했다. 동일 작업을 재시도하지 않았다. 소스 workflow의 `core`·`verify`와 실제 PR check 결과를
 확인하되 현재 보호 설정을 독립 조회한 것처럼 표현하지 않는다. main 병합·운영 반영은 미실행이다.
@@ -83,7 +105,10 @@ Tag2Pix/Paprika는 `blockingMatches`, FacePaint의 학습 출처 검토는 `revi
 이전 검증 보존본 22,228,586 bytes를 비공개 ChatGPT Library에 저장했다. SHA-256은
 `22ce7831d20896297b960f8ac70e7f42af3e331bd92efa6dfb62e6a5255b0912`다.
 [저장 영수증](../evidence/commercial-model-rights-2026-11-05/recovery-library-receipt.json)을 보존한다.
-현재 후속 결과는 다음 보존 버전에 포함한다. 복구 절차·정확한 base·도구·한계는
+후속 버전 1은 29,486,546 bytes이며 7a118fc4의 전체 변경 207개와 base63→head 증분 Git bundle을
+포함한다. bundle의 새 객체에서 원래 제품 모델 3종 blob을 제외했음을 검증했다. 전체 base 이력
+bundle은 올리지 않았다. [버전 1 영수증](../evidence/commercial-model-rights-2026-11-05/recovery-library-v1-receipt.json)에
+저장 당시 상태와 hash가 있다. 이후 로컬 검증·후속 CI/문서 변경은 다음 보존 버전에 포함한다. 복구 절차·정확한 base·도구·한계는
 [복구 안내](../engineering/commercial-checkpoint-recovery.md)를 따른다.
 
 보존본에는 실제 env·secret·세 제품 모델 binary가 없다. 별도 실패 후보의 허용된 평가 weights는

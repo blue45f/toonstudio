@@ -1,0 +1,32 @@
+{
+  "capturedAt": "2026-11-05T12:02:46.311530+00:00",
+  "commands": [
+    {
+      "cwd": "/workspace/toonstudio",
+      "command": "/tmp/toonstudio-light-paprika-evaluation/venv/bin/python /tmp/toonstudio-native-resize-same-environment/prepare-and-render.py",
+      "stage": "prepare USGS input",
+      "exitCode": 0
+    },
+    {
+      "cwd": "/workspace/scratch/toonstudio-commercial-main-validation",
+      "command": "timeout 120s node --expose-gc --max-old-space-size=256 --import tsx /tmp/toonstudio-native-resize-same-environment/compare.mts",
+      "stage": "compare both providers",
+      "exitCode": 0
+    },
+    {
+      "cwd": "/workspace/toonstudio",
+      "command": "/tmp/toonstudio-light-paprika-evaluation/venv/bin/python /tmp/toonstudio-native-resize-same-environment/prepare-and-render.py",
+      "stage": "render saved outputs",
+      "exitCode": 0
+    }
+  ],
+  "failures": [],
+  "unrun": [
+    "browser/device timing",
+    "whole-product runtime",
+    "large-canvas/out-of-core workloads",
+    "subjective image-review acceptance",
+    "full repository checks (parent owns)"
+  ],
+  "memoryBudget": "V8 heap cap 256 MiB, sequential cases; no hard whole-process RSS cap; observed peak 412304 KiB below requested ~1 GiB"
+}
