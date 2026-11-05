@@ -92,3 +92,23 @@ session goals의 추가 실패 중 발표 문구는 실제 required selector 880
 검토 후보의 기존 pixel-quality 파일 30개는 통과했고, 이 중 26개 음성 회귀는 관측 객체 변형 검사다. 실제 제품 엔진 소스에 오류를 주입해 탐지한 결과로 해석하지 않는다. 원래 macOS/arm64 Chromium 156 환경에서 저압·고압 실제 Canvas 각 1회만 그린 제한 검사는 종료 코드 0이고 원본 픽셀·입력·geometry·opacity 지문이 일치했다. 전체 34모델 실행과 Linux 픽셀 검증을 뜻하지 않는다. 승인 상태 메타데이터를 실제 결정으로 교정한 통합 후 관련 정책·의미 검사 2파일 42개도 통과했다.
 
 Linux는 아직 미검증 환경으로 실패하게 둔다. 원래 하한 미달의 두 Canvas와 raw RGBA·입력·primitive 개수·순서 geometry·opacity 지문을 별도 진단 산출물에 보존해 독립 대조한다. 같은 mass만으로 픽셀 동일성을 추정하지 않으며 독립 Linux 근거를 확인한 뒤 환경 계약을 확장한다. 최종 정확한 SHA의 전체 CI와 협업 검증을 통과하기 전에는 이 후속 PR을 병합하지 않는다. 검사 계약 변경을 되돌리면 기존 15% 하한과 현재 V1의 실패가 다시 나타나며 원고 변환이나 DB 변경은 필요하지 않다.
+
+## 2026-11-05 main 5165 통합 후 협업 보존 경계와 CI 입력 교정
+
+상태: `current` 로컬 재현·수정 기록. 비교 main은 `5165e4faf796cebe255460ab38d1c13fde8972c4`이고 최신 required selector는 918개다. 과거 880개 기록은 당시 시점의 사실이며 이번 통합에서 최신 manifest를 유지했다. 원격 CI·후속 PR·병합 상태는 정확한 head의 Checks로 별도 확인한다.
+
+실제 Git `63dcf937`의 reader·publisher와 `5165e4fa`의 서비스, MemoryRepo, 하나의 Yjs 인스턴스를 사용해 구 클라이언트의 보존 필드 손실을 재현했다. archive가 없어도 PSD 그룹 또는 `colorizeMaskEnabled: false`만으로 v7 획이 만들어지지만 구 reader는 이를 읽기 결과에서 제외했다. 원시 기록은 즉시 삭제되지 않았다. 이후 구 publisher가 같은 ID의 캐시된 v6 원고를 수정하면 서버가 이를 승인했고 PSD·마스크 필드가 원시 CRDT에서도 사라졌다. 이어진 undo/redo도 해당 필드를 복구하지 못했다. 독립 재현에서는 정규 형식의 PSD·마스크·linked3d 보존 필드 7개 전체가 같은 경로로 소실됐다. 최초 v7 커밋 응답의 요구 capability가 빈 배열인 경우도 확인했다. 삭제된 v7 기록에서는 구 편집이 명시적 복원 오류로 거절됐으며 부활이나 원시 필드 손실은 재현하지 못했다.
+
+이는 합성 문서·실제 코드·메모리 저장소의 서버 기록 손실 재현이다. 실제 사용자 피해나 운영 DB의 손상을 확인한 결과가 아니다. 네트워크와 실제 DB는 사용하지 않았다. 원본 실행 보고서의 경로 목록은 `/tmp/toonstudio-wire7-real-current.json`에 보관했다.
+
+수정은 기존 `legacy-pigment-preservation.v1` capability를 보존 필드 전체에 적용한다. cold sync, 입장, durable before·candidate의 원자적 append와 REST baseline·candidate·삭제 이력을 확인하며 첫 커밋 이후 실제 요구 목록을 다시 계산한다. 서버는 BG3D 전용·보존 전용·두 기능 교집합 수신 방을 구분하고 작품 전환·binary 선택 해제 때 모두 정리한다. 구 reader에게 지원하지 않는 본문을 보내지 않고 업그레이드 오류를 전달한다. Web의 권위 있는 서버 응답과 비권위 peer 광고를 구분하며 P2P의 모든 요구 기능도 확인한다.
+
+보존 정보 없는 v1-v6는 기존 경로를 유지한다. v7 보존 정보나 삭제 이력이 있는 문서는 구 버전 앱의 읽기·쓰기에 업그레이드가 필요하다. 최신 reader의 수정·실제 Y.UndoManager undo/redo·명시 삭제는 허용한다. 저장 wire·프로토콜 8·로컬 brand·DB schema·렌더러·권한과 revision/sequence/CAS 정책은 변경하지 않는다. 이 호환성 수정은 새 저장 형식이나 운영 변경을 도입하지 않는다.
+
+관련 8파일 238개 회귀가 통과했다. 포함된 서비스 10개 회귀는 실제 구 publisher 바이트를 합성 fixture로 고정하여 첫 v7, cold sync, 구 writer 거절·sequence 불변, 삭제 이력, 최신 undo/redo/삭제와 두 서비스의 제어된 beforeAppend 경합을 검사한다. 7필드 전체의 실재현 증거와 최소 필드 중심 자동 회귀의 범위는 구분한다. 전체 브라우저 UI undo 흐름을 실행한 결과로 확대하지 않는다. 로그는 `/tmp/wire7-consistency-final.log`와 `/tmp/wire7-real-regression-green.log`다.
+
+추가 CI 원인도 각각 독립적으로 교정했다. foundation shard에는 실제 소비하는 OpenCascade 고지·Studio promotion 문서·ADR 경로 3개만 포함하고 Git sparse 투영으로 검증했다. 가상 HTTP fixture의 동적 import는 실제 URL로 구성해 파일 시스템 import 검사 오탐을 해소했으며 allowlist나 검사 제외는 추가하지 않았다. 작은 프로젝트 버전 청크의 런타임 정본 import를 없애고 같은 7필드의 존재별 동작 회귀를 두어 저장 버전 판정과 청크 격리를 유지했다. 일반 dual-tip/smudge 비교는 지원하는 동일 안료로 고정하고 이전 Mixbox 획의 실행 거절은 유지했다.
+
+검증 결과는 CI 배선 Node 4파일 61개, material engine 24개, 가상 fixture 3개, 청크 경계·보존 필드별 13개 통과와 `quality:imports` 성공이다. 마지막 13개는 필터한 실행이며 같은 파일의 저장·복구 검사를 반복한 결과로 세지 않는다. API 3개 TypeScript 구성도 통과했다. main 5165 통합 후 macOS/arm64 Chromium의 Chemy 실제 2회 그리기는 기존 픽셀·geometry·opacity와 비율 1.1323929288472774를 유지했지만 Linux 및 전체 34개 모델 성공을 뜻하지 않는다.
+
+최종 전체 하네스와 정확한 SHA의 hosted CI는 이 기록 이후 실행한다. 기존 원고·실제 CRDT·권한 정책·환경변수·운영 DB는 수정하지 않았으며 운영 배포는 수행하지 않는다.
