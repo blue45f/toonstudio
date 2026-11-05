@@ -1,5 +1,6 @@
 # ToonStudio 배포 가이드
 
+> 로컬·클라우드 설정 계약과 읽기 전용 preflight: [배포 환경 계약](docs/operations/deployment-environment-contract.md). 현재 onpod와 generic-separated 예제는 서로 다른 프로필이다.
 > **2026-09-15 사용자 정책:** 자동 빌드·배포 금지. PR 병합은 배포 승인이 아닙니다.
 > 승인한 main SHA의 변경 배포 단위만 각 단위의 승인 범위에 따라 수동 반영합니다.
 > 현재 배포 위치는 Cloudflare와 onpod이며 Vercel·Render 런타임은 퇴역했습니다.
