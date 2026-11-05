@@ -36,11 +36,14 @@ import {
 } from "playwright";
 
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import { collectBrowserDiagnostics, mergeDiagnostics, type BrowserDiagnostics } from "./lib/studio-hokusai-preview-diagnostics";
 import {
   findFreePort,
   stopChildProcess,
   waitForServer,
 } from "./lib/studio-verify-preview-harness.mjs";
+
+export { expectedStaticPreviewDiagnostic } from "./lib/studio-hokusai-preview-diagnostics";
 
 export const STUDIO_HOKUSAI_LIVE_INTEGRATION_REPORT_SCHEMA_VERSION = 3 as const;
 
@@ -55,13 +58,6 @@ const CLEAN_SESSION_KEY = "toonstudio-hokusai-live-integration-cleaned";
 const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
 const MOBILE_HINT_KEY = "toonstudio-studio-mobile-hint-dismissed";
 const APP_SETTINGS_KEY = "toonstudio-studio-app-settings";
-const OPTIONAL_STATIC_PREVIEW_API_PATHS = [
-  "/api/health/ready",
-  "/api/auth/session",
-  "/api/kmas/merge-on-access",
-  "/api/studio-ai/status",
-  "/api/analytics/traffic/",
-] as const;
 const HASH_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const SOURCE_REVISION_PATTERN = /^hokusai-source-v1:[a-f0-9]{16}$/u;
 
@@ -73,13 +69,6 @@ export const STUDIO_HOKUSAI_SHELF_SCENARIOS = [
 
 type HokusaiFamilyId = (typeof STUDIO_HOKUSAI_SHELF_SCENARIOS)[number]["presetId"];
 
-interface BrowserDiagnostics {
-  readonly consoleErrors: string[];
-  readonly consoleWarnings: string[];
-  readonly pageErrors: string[];
-  readonly requestFailures: string[];
-  readonly fiveHundredResponses: string[];
-}
 interface WorkerBeginEvidence {
   readonly strokeId: string;
 }
@@ -444,114 +433,17 @@ export function validateStudioHokusaiLiveIntegrationResult(candidate: unknown): 
         issues.push(`browser diagnostics contain ${key}`);
       }
     }
+    const unavailable = diagnostics.staticPreviewApiUnavailable;
+    if (unavailable !== undefined && (
+      !record(unavailable) || unavailable.apiVerified !== false || !array(unavailable.observations)
+      || unavailable.observations.some((observation) => !record(observation)
+        || (observation.kind !== "response" && observation.kind !== "console-error" && observation.kind !== "request-failure")
+        || !string(observation.raw) || observation.raw.trim().length === 0)
+    )) {
+      issues.push("정적 preview API 부재 기록이 올바르지 않습니다");
+    }
   }
   return issues;
-}
-export function expectedStaticPreviewDiagnostic(message: string, studioUrl: string): boolean {
-  if (OPTIONAL_STATIC_PREVIEW_API_PATHS.some((path) => message.includes(path))) return true;
-  let previewUrl: URL;
-  try {
-    previewUrl = new URL(studioUrl);
-  } catch {
-    return false;
-  }
-  if (
-    previewUrl.protocol !== "http:"
-    || previewUrl.hostname !== "127.0.0.1"
-    || previewUrl.port.length === 0
-  ) return false;
-  const sourceSeparator = message.lastIndexOf(" @ ");
-  if (sourceSeparator > 0) {
-    const diagnostic = message.slice(0, sourceSeparator);
-    const source = message.slice(sourceSeparator + 3);
-    try {
-      const sourceUrl = new URL(source);
-      const expectedHeadlessGraphicsDiagnostic = diagnostic === "No available adapters."
-        || /^\[\.WebGL-0x[\da-f]+\]GL Driver Message \(OpenGL, Performance, GL_CLOSE_PATH_NV, High\): GPU stall due to ReadPixels$/iu.test(
-          diagnostic,
-        );
-      if (
-        expectedHeadlessGraphicsDiagnostic
-        && sourceUrl.origin === previewUrl.origin
-        && (sourceUrl.pathname === previewUrl.pathname
-          || /^\/assets\/[A-Za-z0-9._-]+\.js$/u.test(sourceUrl.pathname))
-        && [...sourceUrl.searchParams].every(([key, value]) => (
-          sourceUrl.pathname === previewUrl.pathname && key === "room"
-          && /^work-instant-[a-z0-9]+-[a-z0-9]+$/u.test(value)
-        ))
-        && sourceUrl.hash === ""
-      ) return true;
-    } catch {
-      // Continue to the strict static-preview WebSocket allowlist below.
-    }
-  }
-  const socketUrl =
-    `ws://127.0.0.1:${previewUrl.port}/socket.io/?EIO=4&transport=websocket`;
-  const expectedMessages = [
-    `WebSocket connection to '${socketUrl}' failed: Connection closed before receiving a handshake response`,
-    `WebSocket connection to '${socketUrl}' failed: Error during WebSocket handshake: Unexpected response code: 400`,
-  ];
-  if (expectedMessages.includes(message)) return true;
-  const sourcePrefix = expectedMessages
-    .map((expectedMessage) => `${expectedMessage} @ `)
-    .find((prefix) => message.startsWith(prefix));
-  if (!sourcePrefix) return false;
-  try {
-    const sourceUrl = new URL(message.slice(sourcePrefix.length));
-    return sourceUrl.origin === previewUrl.origin
-      && /^\/assets\/[A-Za-z0-9._-]+\.js$/u.test(sourceUrl.pathname)
-      && sourceUrl.search === ""
-      && sourceUrl.hash === "";
-  } catch {
-    return false;
-  }
-}
-function collectBrowserDiagnostics(
-  page: Page,
-  label: string,
-  studioUrl: string,
-): BrowserDiagnostics {
-  const diagnostics: BrowserDiagnostics = {
-    consoleErrors: [],
-    consoleWarnings: [],
-    pageErrors: [],
-    requestFailures: [],
-    fiveHundredResponses: [],
-  };
-  page.on("console", (entry) => {
-    if (entry.type() !== "error" && entry.type() !== "warning") return;
-    const location = entry.location().url;
-    const message = location ? `${entry.text()} @ ${location}` : entry.text();
-    if (expectedStaticPreviewDiagnostic(message, studioUrl)) return;
-    const target = entry.type() === "error"
-      ? diagnostics.consoleErrors
-      : diagnostics.consoleWarnings;
-    target.push(`${label}: ${message}`);
-  });
-  page.on("pageerror", (error) => {
-    diagnostics.pageErrors.push(`${label}: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
-  });
-  page.on("requestfailed", (request) => {
-    const message = `${request.method()} ${request.url()}: ${request.failure()?.errorText ?? "unknown"}`;
-    if (!expectedStaticPreviewDiagnostic(message, studioUrl)) {
-      diagnostics.requestFailures.push(`${label}: ${message}`);
-    }
-  });
-  page.on("response", (response) => {
-    if (response.status() < 500) return;
-    const message = `${response.status()} ${response.url()}`;
-    if (!expectedStaticPreviewDiagnostic(message, studioUrl)) {
-      diagnostics.fiveHundredResponses.push(`${label}: ${message}`);
-    }
-  });
-  return diagnostics;
-}
-function mergeDiagnostics(target: BrowserDiagnostics, source: BrowserDiagnostics): void {
-  target.consoleErrors.push(...source.consoleErrors);
-  target.consoleWarnings.push(...source.consoleWarnings);
-  target.pageErrors.push(...source.pageErrors);
-  target.requestFailures.push(...source.requestFailures);
-  target.fiveHundredResponses.push(...source.fiveHundredResponses);
 }
 /** Static production preview has no auth API. Make the unauthenticated session explicit so the
  * shipped local-durability gate evaluates the same guest boundary it receives in production.
@@ -1194,10 +1086,11 @@ async function runDefaultShelfScenario(
   studioUrl: string,
   scenario: (typeof STUDIO_HOKUSAI_SHELF_SCENARIOS)[number],
   aggregateDiagnostics: BrowserDiagnostics,
+  ownedStaticPreview: boolean,
 ): Promise<StudioHokusaiDefaultShelfIntegrationEvidence> {
   const context = await browser.newContext({ viewport: { width: 1_440, height: 1_000 } });
   const page = await context.newPage();
-  const diagnostics = collectBrowserDiagnostics(page, scenario.presetId, studioUrl);
+  const diagnostics = collectBrowserDiagnostics(page, scenario.presetId, studioUrl, ownedStaticPreview);
   const screenshot = join(SCRATCH, `${scenario.presetId}-blocked-shelf-vector.png`);
   try {
     await installStudioGuestSessionBoundary(page);
@@ -1261,12 +1154,13 @@ async function runExplicitInspectorScenario(
   browser: Browser,
   studioUrl: string,
   aggregateDiagnostics: BrowserDiagnostics,
+  ownedStaticPreview: boolean,
 ): Promise<StudioHokusaiExplicitInspectorIntegrationEvidence> {
   const context: BrowserContext = await browser.newContext({
     viewport: { width: 1_440, height: 1_000 },
   });
   const page = await context.newPage();
-  const diagnostics = collectBrowserDiagnostics(page, "explicit-inspector", studioUrl);
+  const diagnostics = collectBrowserDiagnostics(page, "explicit-inspector", studioUrl, ownedStaticPreview);
   const screenshotSelected = join(SCRATCH, "explicit-inspector-00-selected.png");
   const screenshotConverted = join(SCRATCH, "explicit-inspector-01-converted.png");
   const screenshotReloaded = join(SCRATCH, "explicit-inspector-02-reloaded.png");
@@ -1558,12 +1452,13 @@ async function main(): Promise<void> {
     await waitForServer(origin, {
       notReadyMessage: `production preview did not become ready: ${origin}`,
     });
+    const ownedStaticPreview = preview !== null && preview.exitCode === null && preview.signalCode === null;
     log(`production preview ready @ ${studioUrl}`);
     browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
     const shelf: StudioHokusaiDefaultShelfIntegrationEvidence[] = [];
     for (const scenario of STUDIO_HOKUSAI_SHELF_SCENARIOS) {
       log(`${scenario.presetId}: blocked-shelf direct-pointer scenario starting`);
-      shelf.push(await runDefaultShelfScenario(browser, studioUrl, scenario, diagnostics));
+      shelf.push(await runDefaultShelfScenario(browser, studioUrl, scenario, diagnostics, ownedStaticPreview));
       log(`${scenario.presetId}: exact vector fallback and zero Hokusai live traffic observed`);
     }
     log("explicit inspector: selected-stroke conversion scenario starting");
@@ -1571,6 +1466,7 @@ async function main(): Promise<void> {
       browser,
       studioUrl,
       diagnostics,
+      ownedStaticPreview,
     );
     log("explicit inspector: Worker receipt, pair, Undo/Redo, and reload observed");
     const candidate = {
