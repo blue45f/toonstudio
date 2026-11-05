@@ -37,6 +37,13 @@ const StudioWorkspaceContextCoach = lazyRetry(
   "StudioWorkspaceContextCoach",
 );
 
+const StudioEpisodeDocumentHandoff = lazyRetry(
+  () => import("../../planning/StudioEpisodeDocumentHandoff").then((module) => ({
+    default: module.StudioEpisodeDocumentHandoff,
+  })),
+  "StudioEpisodeDocumentHandoff",
+);
+
 export function StudioEditorRoute({ resolution }: {
   readonly resolution: StudioEditorRouteResolution;
 }) {
@@ -90,6 +97,11 @@ export function StudioEditorRoute({ resolution }: {
         draftSessionEpoch={draftScope.epoch}
         studioRoute={route}
       >
+        {route.workId === null && route.projectId && route.documentId && new URLSearchParams(location.search).has("episode") ? (
+          <Suspense fallback={null}>
+            <StudioEpisodeDocumentHandoff projectId={route.projectId} documentId={route.documentId} search={location.search} />
+          </Suspense>
+        ) : null}
         {route.surface === "poser" ? (
           <Suspense fallback={null}>
             <StudioWorkspaceContextCoach surface={route.surface} />

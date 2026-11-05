@@ -106,6 +106,8 @@ describe("useStudioCollaborationAccessRuntime invite role", () => {
       workId: null,
     });
     expect(result.current.studioLiveParticipant?.role).toBe("editor");
+    expect(result.current.joinedStudioLiveJam).toBe(true);
+    expect(result.current.collaborationDocumentLocked).toBe(true);
     unmount();
   });
 
@@ -118,6 +120,8 @@ describe("useStudioCollaborationAccessRuntime invite role", () => {
       workId: null,
     });
     expect(result.current.studioLiveParticipant?.role).toBe("editor");
+    expect(result.current.joinedStudioLiveJam).toBe(false);
+    expect(result.current.collaborationDocumentLocked).toBe(false);
     unmount();
   });
 

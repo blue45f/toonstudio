@@ -1,0 +1,129 @@
+{
+  "status": "passed",
+  "startedAt": "2026-11-05T10:31:37.611Z",
+  "baseSha": "bd012edace07073a8a9ad51ee34e70363429cf7c",
+  "baseMainSha": "994e5ba34df98b6bcf1cb46c567456924a89dd68",
+  "sourceFingerprint": "6c9e30fc14d0928cb1dd451989733bbee8441cc7e6d3132e5aa176c25b0fe5f4",
+  "sourceFiles": [
+    {
+      "path": "apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx",
+      "sha256": "4e355c487885253d44b13fc1815178886b65417093c48b8d8b44fbc9f1d8318b"
+    },
+    {
+      "path": "apps/web/src/domains/creator/StudioLazyPanelStack.tsx",
+      "sha256": "e6e933629fbcbee45528c056f77c47be7a89b4d37ae97f146dc0fbfd3c64e0f6"
+    },
+    {
+      "path": "apps/web/src/domains/creator/StudioPublishPackagePanel.tsx",
+      "sha256": "0353f75d6e3bd6972d8dd7c16c9967aece3e4f832ab46415f39359f7434ad89a"
+    },
+    {
+      "path": "apps/web/src/domains/creator/StudioStoryboardArtHandoffPanel.tsx",
+      "sha256": "d96d7282dbaea6e5c809b1c4e543e0122825de9d268e1c9e2d66c0a96efceed9"
+    },
+    {
+      "path": "apps/web/src/domains/creator/export/studio-publish-package-export.ts",
+      "sha256": "7f92570e1cd7a28cf725ca8bc007221cb3b4f50e4ffe050a95b5c086d6a1879d"
+    },
+    {
+      "path": "apps/web/src/domains/creator/live/studio-live-local-draft-owner.ts",
+      "sha256": "c1dcbd261ee871a065059bbb5ed2b02bfa0abd36bcc367231d807e6388543d82"
+    },
+    {
+      "path": "apps/web/src/domains/creator/planning/StudioEpisodeDocumentHandoff.tsx",
+      "sha256": "30cb4939d42e95c44e272685c52cd64edccce6103d67edda955118d5f67d271c"
+    },
+    {
+      "path": "apps/web/src/domains/creator/planning/StudioEpisodeStoryPage.tsx",
+      "sha256": "3df885212dd3ba1338606fae73c20fe739e0b967e3860f4ed2383aaaf8c42ffa"
+    },
+    {
+      "path": "apps/web/src/domains/creator/planning/StudioProjectStoryPlanning.tsx",
+      "sha256": "286692bf6df41ec9dc1c4dda32f7904e2a7a74af6a127d9028e60288d6bc171b"
+    },
+    {
+      "path": "apps/web/src/domains/creator/planning/studio-episode-document-handoff.ts",
+      "sha256": "3652084a6983fe73399bb0f75141bed290f2ac69ba1951cf39f4899e443bb6aa"
+    },
+    {
+      "path": "apps/web/src/domains/creator/planning/useStudioEpisodeDocumentTargets.ts",
+      "sha256": "f615dc250f2403cd6512766ac7c005a60073a3adb51c0ca392a1345e9dde4647"
+    },
+    {
+      "path": "apps/web/src/domains/creator/publish/StudioPublishPackageReadinessSummary.tsx",
+      "sha256": "888e45315931ec883784b40741327402fee376f6d70a2140928ea56dd02ae466"
+    },
+    {
+      "path": "apps/web/src/domains/creator/publish/studio-publish-package-readiness.ts",
+      "sha256": "9269dc7bf783352cabd4fd05259db7433347f19b1a63ced00abe63bc2de30de9"
+    },
+    {
+      "path": "apps/web/src/domains/creator/status-i18n/studio-frozen2-status-i18n.ts",
+      "sha256": "fe45f4f33372f44c16e4694ca33233adc0f728cec05cdd3c7f481e07d032b1f2"
+    },
+    {
+      "path": "apps/web/src/domains/creator/studio-router/StudioDocumentLayout.tsx",
+      "sha256": "ef11b8732f2e2c79b5efb2197d14cbb96f793e1560a846bedf6ba09bcc7af877"
+    },
+    {
+      "path": "apps/web/src/domains/creator/studio-router/routes/StudioEditorRoute.tsx",
+      "sha256": "7ecb690281725117832fdbed10883d19a91572cb3218c004110a1cfdb8438f02"
+    },
+    {
+      "path": "apps/web/src/domains/creator/studio-router/useStudioLocalDraftOwner.ts",
+      "sha256": "c2b6152ebaec072f7ccb0dd3e388f0f014a052992a259a35405bf07860dc7651"
+    }
+  ],
+  "originalPagesSha256": "e06fa6d22e86f9a6755832ed19df57fb918997d557da27ab30c7ab900bb37e10",
+  "assertions": {
+    "originalSixPagesImported": true,
+    "sameProjectDocumentEpisodeAndSixPages": true,
+    "reloadPreservesSixPages": true,
+    "handoffResponsiveAndAccessible": true,
+    "humanChecksRemainPendingAndExportBlocked": true
+  },
+  "pageErrors": [],
+  "observations": [
+    {
+      "kind": "handoff-layout",
+      "width": 1440,
+      "geometry": {
+        "left": 1044,
+        "right": 1428,
+        "viewport": 1440,
+        "overflow": 0
+      }
+    },
+    {
+      "kind": "handoff-layout",
+      "width": 320,
+      "geometry": {
+        "left": 12,
+        "right": 308,
+        "viewport": 320,
+        "overflow": 0
+      }
+    }
+  ],
+  "limitations": [
+    "기기 원고의 UI 연결 검증이며 실제 계정·DB 시험은 별도 실행",
+    "최종 사람 확인을 대신 체크하지 않음"
+  ],
+  "projectId": "6-u7ysnj",
+  "documentId": "ep01-16ywq95",
+  "storyboardRecovery": {
+    "recoveryMode": "automatic",
+    "recoveryBannerObserved": true,
+    "automaticRestoreObserved": true,
+    "automaticRestoreCompleted": true,
+    "restoreActionCompleted": false
+  },
+  "recovery": {
+    "recoveryMode": "automatic",
+    "recoveryBannerObserved": true,
+    "automaticRestoreObserved": true,
+    "automaticRestoreCompleted": true,
+    "restoreActionCompleted": false
+  },
+  "finishedAt": "2026-11-05T10:32:34.071Z"
+}

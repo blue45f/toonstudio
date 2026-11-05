@@ -1,0 +1,550 @@
+{
+  "schemaVersion": 1,
+  "status": "passed-with-human-publication-gate",
+  "verifiedAt": "2026-11-05",
+  "baseMainSha": "994e5ba34df98b6bcf1cb46c567456924a89dd68",
+  "candidateState": "최신 main 994e5ba34와 기존 최소수정을 무충돌 merge한 후보 bd012edac에서 재실행했다. 최종 문서·증거 commit, PR, main 병합, 운영 배포는 별도 기록한다.",
+  "execution": {
+    "command": "node node_modules/vitest/vitest.mjs run tests/integration/api-web/studio-six-page-lifecycle.integration.test.ts --maxWorkers=1",
+    "environmentVariableNames": [
+      "TEST_DATABASE_URL",
+      "STUDIO_LIVE_POSTGRES_INTEGRATION_URL",
+      "TOONSTUDIO_RBAC_RUNTIME_DATABASE_URL",
+      "TOONSTUDIO_RBAC_BROWSER_ORIGIN",
+      "API_LOCAL_ENV_FILE_ENABLED",
+      "TOONSTUDIO_SIX_PAGE_EVIDENCE_DIR"
+    ],
+    "localBrowserOrigin": "http://127.0.0.1:5511",
+    "localApiOrigin": "http://127.0.0.1:4111",
+    "runtimeDatabase": "별도 loopback PostgreSQL; 비소유자·비특권 runtime role",
+    "result": {
+      "success": true,
+      "passed": 2,
+      "failed": 0,
+      "total": 2,
+      "durationMs": 143467.5791015625
+    },
+    "selectedFixtureCases": 1,
+    "selectedLiveCases": 1,
+    "liveCaseSkipped": false,
+    "attempt": 8,
+    "utcStartedAt": "2026-11-05T10:31:09.687Z",
+    "utcEndedAt": "2026-11-05T10:33:33.154Z",
+    "liveCaseDurationMs": 131904.579125
+  },
+  "source": {
+    "title": "우산을 돌려주는 날",
+    "originalLocalProjectId": "6-2026-11-05-6orjqs",
+    "envelopeDocumentId": "draft:2876c965-36b5-47c7-a69e-43148add8f9b",
+    "envelopeSha256": "1fba0729a8bf1cb69b5a2c09505fa298c5a427ad7647270c59cdc475b31f633c",
+    "archiveSha256": "baaded64ba05b8c5fa095c8a5349b9a77c352b7869892aa2c144f9749c848305",
+    "pagesSha256": "e06fa6d22e86f9a6755832ed19df57fb918997d557da27ab30c7ab900bb37e10",
+    "pageIds": [
+      "jam-page-work-instant-mw3a5c2h-l4nv",
+      "7ed541c6-8018-4c4a-88ec-14120db66ecd",
+      "eb0f4de2-1dd5-4631-b800-3ebf424fa9d1",
+      "a6af11be-af66-4902-9221-6a568d2373de",
+      "b12d10e4-89f9-452a-8cbb-b821d7bb42de",
+      "2876c965-36b5-47c7-a69e-43148add8f9b"
+    ],
+    "note": "2026-11-05 실제 UI로 제작한 6페이지 원고의 원본 payload. 권리·등급 확인과 과거 Undo journal을 추가하지 않는다.",
+    "referencePngs": [
+      {
+        "fileName": "short-comic-cut-01.png",
+        "pageId": "jam-page-work-instant-mw3a5c2h-l4nv",
+        "sha256": "d04cd60068227aa67cc662286f4d3d104e26fcef3ad1a4273e95fe2da1a0eefa",
+        "rgbaSha256": "b48f117b27e27ded1601e16c29afb4591c5ed731b970b39ebb76a0e32fe7c8e5",
+        "width": 1440,
+        "height": 1440,
+        "backgroundPixels": 2008194,
+        "nonBackgroundPixels": 65406
+      },
+      {
+        "fileName": "short-comic-cut-02.png",
+        "pageId": "7ed541c6-8018-4c4a-88ec-14120db66ecd",
+        "sha256": "62f7cece8bdbca14ea887f3e6d737f8ea89933af764afb39eecd6de29018b3b1",
+        "rgbaSha256": "14b1feb0657be31425f1072ee5d3bb68efb9febc7082aeadc23bd08e036c7545",
+        "width": 1440,
+        "height": 1440,
+        "backgroundPixels": 1979647,
+        "nonBackgroundPixels": 93953
+      },
+      {
+        "fileName": "short-comic-cut-03.png",
+        "pageId": "eb0f4de2-1dd5-4631-b800-3ebf424fa9d1",
+        "sha256": "bb4ce472286a6f2d446996566499aa3c747b15790b50b8fe26657cf4a6884e34",
+        "rgbaSha256": "85ebfe18933f01ed832e20aed97893789e70f03b8ab3ab9bec152cbcc63a64fa",
+        "width": 1440,
+        "height": 1440,
+        "backgroundPixels": 1987230,
+        "nonBackgroundPixels": 86370
+      },
+      {
+        "fileName": "short-comic-cut-04.png",
+        "pageId": "a6af11be-af66-4902-9221-6a568d2373de",
+        "sha256": "7fc24577204ae111c55c0fc4442d7b97b4e0b5b3d799fec0d8a843845002736c",
+        "rgbaSha256": "a70673db7924f138582ff6866573b2deb5dab7435c6a5100ba2ea1798701d8a3",
+        "width": 1440,
+        "height": 1440,
+        "backgroundPixels": 1982862,
+        "nonBackgroundPixels": 90738
+      },
+      {
+        "fileName": "short-comic-cut-05.png",
+        "pageId": "b12d10e4-89f9-452a-8cbb-b821d7bb42de",
+        "sha256": "7293418d8a2fb6a488bd3f85329b371fd35aff02ae693af3597022ddd254b131",
+        "rgbaSha256": "36a9926425b5e9e454c5844a2b2d14d4c7b5253a9127f6dba90e3ba98b6da732",
+        "width": 1440,
+        "height": 1440,
+        "backgroundPixels": 1978902,
+        "nonBackgroundPixels": 94698
+      },
+      {
+        "fileName": "short-comic-cut-06.png",
+        "pageId": "2876c965-36b5-47c7-a69e-43148add8f9b",
+        "sha256": "825bba8661df341adfaa0dca3f4dde4ba86d12ff2e5d979b7f14d7292de227a9",
+        "rgbaSha256": "6b52d44417f7ccd8b7595d45a28f8caccfb56ad87e25aba0b80f0fe66b7d83cc",
+        "width": 1440,
+        "height": 1440,
+        "backgroundPixels": 1974517,
+        "nonBackgroundPixels": 99083
+      }
+    ]
+  },
+  "admission": "공개 API로 새 서버 작품에 등록했다. 원본 로컬 프로젝트와 같은 ID라는 주장이 아니다.",
+  "registeredServerWorkId": "8ee7a000-9b22-467c-b283-35cab486b2ff",
+  "initialCrdtUpdates": {
+    "count": 63,
+    "maxBytes": 4807,
+    "budgetUnchanged": true
+  },
+  "candidateCurrentBaseline": {
+    "payloadDifferenceFields": [
+      "savedAt"
+    ],
+    "pages": [
+      {
+        "pageId": "jam-page-work-instant-mw3a5c2h-l4nv",
+        "width": 1440,
+        "height": 1440,
+        "rgbaSha256": "961ce8e6d9a211776c7f2867d7fbf4ae26eaca5c566ac3c0fe971eb75f927bfc",
+        "historicalComparison": {
+          "changedPixels": 5955,
+          "changedRatio": 0.0028718171296296295,
+          "maxChannelDelta": 48,
+          "backgroundPixels": 2008181,
+          "nonBackgroundPixels": 65419,
+          "exactAcrossVersions": false
+        }
+      },
+      {
+        "pageId": "7ed541c6-8018-4c4a-88ec-14120db66ecd",
+        "width": 1440,
+        "height": 1440,
+        "rgbaSha256": "2c91905fe8c136d55d7b10177ab049fa7cec447f9447dd7029bd9afd75a04b02",
+        "historicalComparison": {
+          "changedPixels": 9222,
+          "changedRatio": 0.004447337962962963,
+          "maxChannelDelta": 64,
+          "backgroundPixels": 1979634,
+          "nonBackgroundPixels": 93966,
+          "exactAcrossVersions": false
+        }
+      },
+      {
+        "pageId": "eb0f4de2-1dd5-4631-b800-3ebf424fa9d1",
+        "width": 1440,
+        "height": 1440,
+        "rgbaSha256": "d3551dfe2fec1b346fc30d2a6bca212a5696cb47c10bb2a557f6a9716bd9f9ec",
+        "historicalComparison": {
+          "changedPixels": 9048,
+          "changedRatio": 0.004363425925925926,
+          "maxChannelDelta": 10,
+          "backgroundPixels": 1987182,
+          "nonBackgroundPixels": 86418,
+          "exactAcrossVersions": false
+        }
+      },
+      {
+        "pageId": "a6af11be-af66-4902-9221-6a568d2373de",
+        "width": 1440,
+        "height": 1440,
+        "rgbaSha256": "53c73cbd096398a189eb479c262baa355650b8ffd1033c8172aa6ceb0ef1a714",
+        "historicalComparison": {
+          "changedPixels": 8721,
+          "changedRatio": 0.004205729166666667,
+          "maxChannelDelta": 36,
+          "backgroundPixels": 1982860,
+          "nonBackgroundPixels": 90740,
+          "exactAcrossVersions": false
+        }
+      },
+      {
+        "pageId": "b12d10e4-89f9-452a-8cbb-b821d7bb42de",
+        "width": 1440,
+        "height": 1440,
+        "rgbaSha256": "9c3871677e7bdbb1e565992d9e51f9361c82f137ad28739626df898cc191ed80",
+        "historicalComparison": {
+          "changedPixels": 9076,
+          "changedRatio": 0.004376929012345679,
+          "maxChannelDelta": 8,
+          "backgroundPixels": 1978891,
+          "nonBackgroundPixels": 94709,
+          "exactAcrossVersions": false
+        }
+      },
+      {
+        "pageId": "2876c965-36b5-47c7-a69e-43148add8f9b",
+        "width": 1440,
+        "height": 1440,
+        "rgbaSha256": "deb509d4d19fa368e356fb6218502d1d323e1ec8c7e6f21393e9a00bcda69360",
+        "historicalComparison": {
+          "changedPixels": 8999,
+          "changedRatio": 0.004339795524691358,
+          "maxChannelDelta": 10,
+          "backgroundPixels": 1974525,
+          "nonBackgroundPixels": 99075,
+          "exactAcrossVersions": false
+        }
+      }
+    ],
+    "strictCurrentWorkflowComparison": true,
+    "crossVersionPixelEqualityClaimed": false,
+    "historicalBaselineMain": "8d315c85d6fde4a3a30255612c756d3e299a95b0"
+  },
+  "pagesDeepEqual": true,
+  "pixels": [
+    {
+      "pageId": "jam-page-work-instant-mw3a5c2h-l4nv",
+      "ordinal": 0,
+      "sha256": "a422e968bfeae84340befea62c9efa8c5f0448da9d877ed7882efab0e28c74fe",
+      "width": 1440,
+      "height": 1440,
+      "rgbaSha256": "961ce8e6d9a211776c7f2867d7fbf4ae26eaca5c566ac3c0fe971eb75f927bfc",
+      "matchesCurrentCandidateBaselinePixels": true
+    },
+    {
+      "pageId": "7ed541c6-8018-4c4a-88ec-14120db66ecd",
+      "ordinal": 1,
+      "sha256": "df21de39d1a431984a88315fae2d903780d2c93d092cbb1552c6421eb09ed808",
+      "width": 1440,
+      "height": 1440,
+      "rgbaSha256": "2c91905fe8c136d55d7b10177ab049fa7cec447f9447dd7029bd9afd75a04b02",
+      "matchesCurrentCandidateBaselinePixels": true
+    },
+    {
+      "pageId": "eb0f4de2-1dd5-4631-b800-3ebf424fa9d1",
+      "ordinal": 2,
+      "sha256": "890fcf0bb4003d8b53612906f86fdc7580024ea026f00987af6d50424236d5b9",
+      "width": 1440,
+      "height": 1440,
+      "rgbaSha256": "d3551dfe2fec1b346fc30d2a6bca212a5696cb47c10bb2a557f6a9716bd9f9ec",
+      "matchesCurrentCandidateBaselinePixels": true
+    },
+    {
+      "pageId": "a6af11be-af66-4902-9221-6a568d2373de",
+      "ordinal": 3,
+      "sha256": "bb73b723ddd7607dd9d1ac32325ff8daaa4a44924c2f3e628edcd594b4c9e079",
+      "width": 1440,
+      "height": 1440,
+      "rgbaSha256": "53c73cbd096398a189eb479c262baa355650b8ffd1033c8172aa6ceb0ef1a714",
+      "matchesCurrentCandidateBaselinePixels": true
+    },
+    {
+      "pageId": "b12d10e4-89f9-452a-8cbb-b821d7bb42de",
+      "ordinal": 4,
+      "sha256": "c25eb3e55ef299fc318041830769282be7a5bf965ed336acb1fed4df8bd28d10",
+      "width": 1440,
+      "height": 1440,
+      "rgbaSha256": "9c3871677e7bdbb1e565992d9e51f9361c82f137ad28739626df898cc191ed80",
+      "matchesCurrentCandidateBaselinePixels": true
+    },
+    {
+      "pageId": "2876c965-36b5-47c7-a69e-43148add8f9b",
+      "ordinal": 5,
+      "sha256": "bdf9df6c3c510472c63c3bafb031a0c8ad58ec86875a7c02a93df697796f3bdd",
+      "width": 1440,
+      "height": 1440,
+      "rgbaSha256": "deb509d4d19fa368e356fb6218502d1d323e1ec8c7e6f21393e9a00bcda69360",
+      "matchesCurrentCandidateBaselinePixels": true
+    }
+  ],
+  "pointerUndoRedoUndoRestored": true,
+  "workerLive": {
+    "synced": true,
+    "updateAcks": 9,
+    "rejected": 0
+  },
+  "bothAccountsReloadedAndRelogged": true,
+  "actualSixPageReview": {
+    "schemaVersion": 1,
+    "projectId": "review-project-7c3a7be6b39636c205de6b57c02774664d15badc7983b87ecc202f3f7eaccea0",
+    "workId": "8ee7a000-9b22-467c-b283-35cab486b2ff",
+    "artifactId": "review-manuscript-7c3a7be6b39636c205de6b57c02774664d15badc7983b87ecc202f3f7eaccea0",
+    "reviewId": "review-5e7668064e739ea502dc80de8255c29384119b28e371a9218f71bb617ff52007",
+    "revisionId": "review-snapshot-5e7668064e739ea502dc80de8255c29384119b28e371a9218f71bb617ff52007",
+    "rootGraphHash": "b9150936e92904310d0a03b28386197c4b415f406efb0591fdf338fa84e84e08"
+  },
+  "approvedSubmission": {
+    "submissionId": "six-submission-272b815b-c3cf-47fe-aaba-7b5514251628",
+    "revision": {
+      "id": "review-snapshot-5e7668064e739ea502dc80de8255c29384119b28e371a9218f71bb617ff52007",
+      "lineage": "visual",
+      "revision": 3,
+      "digest": "sha256:b9150936e92904310d0a03b28386197c4b415f406efb0591fdf338fa84e84e08",
+      "createdAt": "2026-11-05T10:32:51.728Z",
+      "productionSubmissionId": "six-submission-272b815b-c3cf-47fe-aaba-7b5514251628"
+    }
+  },
+  "approvalMeaning": "자동화된 픽셀·순서 보존 검사의 기술 검토 승인. 권리·등급·작품 품질의 사람 확인을 의미하지 않는다.",
+  "activeStage": "storyboard-conte",
+  "originalProvenancePreserved": true,
+  "sourceHistoryJournalPresent": false,
+  "humanPublicationChecksConfirmed": false,
+  "uiPackageBlocked": true,
+  "reloggedCanvasPixelsMatchCurrentBaseline": true,
+  "packagePixelsMatchCapturedCurrentBaseline": true,
+  "technicalPackage": {
+    "bytes": 838465,
+    "sha256": "ee2d8658436c270cc208fb6cad438806c114df24d704bf27c3aab3e587fce1ee",
+    "files": [
+      {
+        "fileName": "우산을-돌려주는-날-episode-000-001.png",
+        "mimeType": "image/png",
+        "byteSize": 98436,
+        "sha256": "e4a46c09a5ef8f16cc016dc436d2439ee877c30f59693f13cea6493c47cc885a"
+      },
+      {
+        "fileName": "우산을-돌려주는-날-episode-000-002.png",
+        "mimeType": "image/png",
+        "byteSize": 137270,
+        "sha256": "d2494be63a79324fc58e63581fa09500e40905873a8806b5adb0040bd1368562"
+      },
+      {
+        "fileName": "우산을-돌려주는-날-episode-000-003.png",
+        "mimeType": "image/png",
+        "byteSize": 129035,
+        "sha256": "3bc0605040f5bc2bb308dd7f03187eb8f7f75f14555955a16ffb649e716b45a6"
+      },
+      {
+        "fileName": "우산을-돌려주는-날-episode-000-004.png",
+        "mimeType": "image/png",
+        "byteSize": 133650,
+        "sha256": "ba924deb68f78eb33dd7a9c3c6f8e4adf63b81d305979e832b138c1de874020f"
+      },
+      {
+        "fileName": "우산을-돌려주는-날-episode-000-005.png",
+        "mimeType": "image/png",
+        "byteSize": 140256,
+        "sha256": "c1b8950116c5d76ff7506780e9ed5c071fe06de24888a454c5a83a1127e05d69"
+      },
+      {
+        "fileName": "우산을-돌려주는-날-episode-000-006.png",
+        "mimeType": "image/png",
+        "byteSize": 135458,
+        "sha256": "2d3c89cbc99bd684a0d4b06e08ff05b537a033242b7082b46fb0f405c193dbf8"
+      },
+      {
+        "fileName": "우산을-돌려주는-날-episode.png",
+        "mimeType": "image/png",
+        "byteSize": 60046,
+        "sha256": "b0b574ee7b0e3cf36d14f277a2991206ffd51807af8ed8e1fa169686998403b9"
+      },
+      {
+        "fileName": "validation-report.json",
+        "mimeType": "application/json",
+        "byteSize": 358,
+        "sha256": "d0705d6191a9a7a1a178adbe68287fe18ddbe38418442faec311a806ac217395"
+      }
+    ],
+    "manifest": {
+      "schema": "toonstudio.publish-package",
+      "version": 1,
+      "destination": "generic",
+      "preset": {
+        "id": "generic",
+        "revision": "generic-v1",
+        "policySnapshotDate": "2026-07-10",
+        "requiresCurrentPolicyReview": false
+      },
+      "publication": {
+        "seriesTitle": "우산을 돌려주는 날",
+        "episodeTitle": "동일 6컷 기술 검토"
+      },
+      "artifacts": [
+        {
+          "role": "episode-image",
+          "fileName": "우산을-돌려주는-날-episode-000-001.png",
+          "state": "ready",
+          "mimeType": "image/png",
+          "width": 1440,
+          "height": 1440,
+          "byteSize": 98436,
+          "sha256": "e4a46c09a5ef8f16cc016dc436d2439ee877c30f59693f13cea6493c47cc885a"
+        },
+        {
+          "role": "episode-image",
+          "fileName": "우산을-돌려주는-날-episode-000-002.png",
+          "state": "ready",
+          "mimeType": "image/png",
+          "width": 1440,
+          "height": 1440,
+          "byteSize": 137270,
+          "sha256": "d2494be63a79324fc58e63581fa09500e40905873a8806b5adb0040bd1368562"
+        },
+        {
+          "role": "episode-image",
+          "fileName": "우산을-돌려주는-날-episode-000-003.png",
+          "state": "ready",
+          "mimeType": "image/png",
+          "width": 1440,
+          "height": 1440,
+          "byteSize": 129035,
+          "sha256": "3bc0605040f5bc2bb308dd7f03187eb8f7f75f14555955a16ffb649e716b45a6"
+        },
+        {
+          "role": "episode-image",
+          "fileName": "우산을-돌려주는-날-episode-000-004.png",
+          "state": "ready",
+          "mimeType": "image/png",
+          "width": 1440,
+          "height": 1440,
+          "byteSize": 133650,
+          "sha256": "ba924deb68f78eb33dd7a9c3c6f8e4adf63b81d305979e832b138c1de874020f"
+        },
+        {
+          "role": "episode-image",
+          "fileName": "우산을-돌려주는-날-episode-000-005.png",
+          "state": "ready",
+          "mimeType": "image/png",
+          "width": 1440,
+          "height": 1440,
+          "byteSize": 140256,
+          "sha256": "c1b8950116c5d76ff7506780e9ed5c071fe06de24888a454c5a83a1127e05d69"
+        },
+        {
+          "role": "episode-image",
+          "fileName": "우산을-돌려주는-날-episode-000-006.png",
+          "state": "ready",
+          "mimeType": "image/png",
+          "width": 1440,
+          "height": 1440,
+          "byteSize": 135458,
+          "sha256": "2d3c89cbc99bd684a0d4b06e08ff05b537a033242b7082b46fb0f405c193dbf8"
+        },
+        {
+          "role": "thumbnail",
+          "slot": "episode",
+          "fileName": "우산을-돌려주는-날-episode.png",
+          "state": "ready",
+          "mimeType": "image/png",
+          "width": 1200,
+          "height": 630,
+          "byteSize": 60046,
+          "sha256": "b0b574ee7b0e3cf36d14f277a2991206ffd51807af8ed8e1fa169686998403b9"
+        },
+        {
+          "role": "validation-report",
+          "fileName": "validation-report.json",
+          "state": "ready",
+          "mimeType": "application/json",
+          "byteSize": 358,
+          "sha256": "d0705d6191a9a7a1a178adbe68287fe18ddbe38418442faec311a806ac217395"
+        },
+        {
+          "role": "manifest",
+          "fileName": "manifest.json",
+          "state": "planned",
+          "mimeType": "application/json"
+        }
+      ],
+      "totals": {
+        "episodeImageCount": 6,
+        "thumbnailCount": 1,
+        "knownEpisodeBytes": 774105
+      },
+      "ai": {
+        "usage": "none"
+      },
+      "rights": {
+        "aiTraining": "unspecified"
+      },
+      "creditsIncluded": false,
+      "validation": {
+        "canExport": true,
+        "errorCount": 0,
+        "warningCount": 2
+      }
+    }
+  },
+  "technicalPackageScope": "실제 UI가 캡처·업로드한 동일 6PNG를 기존 renderer·manifest·ZIP 생성기로 만든 technical-review-draft. 정식 게시 UI로 배포 가능한 패키지를 생성한 것이 아니다.",
+  "preservation": [
+    {
+      "table": "\"user\"",
+      "priorRows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "creator_work",
+      "priorRows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "creator_work_collaborator",
+      "priorRows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "creator_work_scoped_write_policy",
+      "priorRows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "studio_blob",
+      "priorRows": 28,
+      "unchanged": true
+    },
+    {
+      "table": "creator_asset_storage_object",
+      "priorRows": 56,
+      "unchanged": true
+    }
+  ],
+  "residue": {
+    "testUsersAndWorksRemoved": true,
+    "retainedNewFixtureMetadata": {
+      "blobs": 6,
+      "objects": 12
+    },
+    "sharedMetadataDeleted": false
+  },
+  "cleanup": {
+    "api4111Open": false,
+    "runtimeConnections": 0,
+    "testUsersAndWorksRemoved": true,
+    "clusterShutdownOwner": "root",
+    "vitest": {
+      "success": true,
+      "passed": 2,
+      "failed": 0,
+      "total": 2,
+      "durationMs": 143467.5791015625
+    }
+  },
+  "limitations": [
+    "외부 메일과 private object storage는 기존 시험 port",
+    "기술 ZIP은 공개 허가나 사람의 권리·등급 확인을 나타내지 않는다",
+    "실계정 프로젝트·회차·작업 초기 설정과 최초 원고 등록은 API fixture; 전체 기획 입력을 마우스로 반복한 시험이 아니다.",
+    "최초 CRDT 63개 증분은 실제 Web serializer로 생성한 뒤 하네스 서비스를 통해 등록했다. 브라우저 실제 Socket 수정·공동 저장은 그 뒤 검증했다.",
+    "원본의 과거 Undo journal은 없으므로 보존했다고 주장하지 않는다. 새 실제 포인터의 Undo/Redo/Undo와 서버 revision을 검사했다.",
+    "과거 8d315c85d PNG와 최신 후보의 픽셀 완전 일치는 검증되지 않았다. 현재 후보 내부의 협업 전 기준과 이후 검수·재로그인·ZIP 사이만 strict0로 확인했다.",
+    "메일과 private object storage는 기존 시험 port이며 운영 메일·R2 네트워크 영속성은 이 시험 밖이다."
+  ],
+  "candidateCommitSha": "bd012edace07073a8a9ad51ee34e70363429cf7c",
+  "previousCandidateBaselineComparison": {
+    "previousBaseMainSha": "2c626df4000fcfc32318faa793a61bea3ef0901b",
+    "currentBaseMainSha": "994e5ba34df98b6bcf1cb46c567456924a89dd68",
+    "allSixPngBytesIdentical": true,
+    "historical8dPixelMismatchRemainsSeparate": true
+  }
+}

@@ -11,7 +11,7 @@ import {
 export function useStudioLocalDraftOwner(input: {
   initialInstantWorkId: string; roomId: string | null; workId: string | null; remixId: string | null;
   ownerId: string | null; projectId: string | null; documentId: string | null; draftId: string | null;
-}): string {
+}): { readonly instantWorkId: string; readonly canPublishRoom: boolean } {
   const { initialInstantWorkId, workId, remixId } = input;
   const scope = studioLocalDraftOwnerScope(input);
   const room = input.roomId ?? initialInstantWorkId;
@@ -43,13 +43,21 @@ export function useStudioLocalDraftOwner(input: {
         });
       }
     }
+    const knownTabOwner = room === initialInstantWorkId || room === recoveredRoom;
+    // 새 페이지의 실제 선택된 초기 룸을 effect에서 확정한다. StrictMode가 initializer를
+    // 재호출하며 남긴 다른 난수 영수증을 URL에 게시한 룸의 소유 영수증으로 쓰지 않는다.
+    if (knownTabOwner && !workId && !remixId) adopt(room);
     return holdStudioLocalDraftOwnership({
       scope, room, workId, remixId, storage, locks,
-      knownTabOwner: room === initialInstantWorkId || room === recoveredRoom,
+      knownTabOwner,
       onRecovered: () => adopt(room),
     });
   }, [initialInstantWorkId, input.roomId, recoveredRoom, remixId, room, scope, workId]);
-  return !workId && !remixId && recovered?.scope === scope
+  const confirmed = !workId && !remixId && recovered?.scope === scope
     && (input.roomId === null || recovered.room === input.roomId)
-    ? recovered.room : initialInstantWorkId;
+    ? recovered : null;
+  return {
+    instantWorkId: confirmed?.room ?? initialInstantWorkId,
+    canPublishRoom: confirmed !== null,
+  };
 }

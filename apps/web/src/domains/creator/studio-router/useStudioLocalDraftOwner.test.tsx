@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
+import { StrictMode, useEffect, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -9,6 +10,7 @@ import {
   studioLocalDraftOwnerScope,
 } from "../live/studio-live-local-draft-owner";
 import { useStudioLocalDraftOwner } from "./useStudioLocalDraftOwner";
+import { isStudioJoinedLiveJamRoom, resolveStudioLiveInstantWorkIdForTab, STUDIO_LIVE_OWNER_ROOM_SESSION_KEY } from "../live/studio-live-jam-session";
 
 /**
  * F-B04-1 회귀 고정: 게스트 로컬 문서의 재진입 동선(문서 경로·스튜디오 홈 "이어서 작업"
@@ -73,6 +75,27 @@ class FakeLockManager {
 }
 
 let locks: FakeLockManager;
+let minted = 0;
+const publishedRooms: string[] = [];
+
+function usePublishedRoom() {
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [initialInstantWorkId] = useState(() => resolveStudioLiveInstantWorkIdForTab({
+    workId: null, remixId: null, roomId,
+    storage: window.sessionStorage, navigationType: "navigate",
+    now: () => 1000 + ++minted, random: () => 0.25,
+  }));
+  const owner = useStudioLocalDraftOwner({
+    initialInstantWorkId, roomId, workId: null, remixId: null,
+    ownerId: "guest-user", projectId: "project-1", documentId: "doc-1", draftId: null,
+  });
+  useEffect(() => {
+    if (!owner.canPublishRoom || roomId) return;
+    publishedRooms.push(owner.instantWorkId);
+    setRoomId(owner.instantWorkId);
+  }, [owner.canPublishRoom, owner.instantWorkId, roomId]);
+  return { ...owner, roomId };
+}
 
 function seedReceipt(room: string): void {
   window.localStorage.setItem(RECEIPT_KEY, JSON.stringify({ v: 1, scope: SCOPE, room }));
@@ -103,6 +126,8 @@ beforeEach(() => {
   Object.defineProperty(window.navigator, "locks", { configurable: true, value: locks });
   window.localStorage.clear();
   window.sessionStorage.clear();
+  minted = 0;
+  publishedRooms.length = 0;
 });
 
 afterEach(() => {
@@ -116,7 +141,7 @@ describe("useStudioLocalDraftOwner — 룸 없는 재진입의 직전 룸 해석
   it("resume=latest처럼 룸 없이 재진입하면 원점 영수증의 직전 룸으로 해석된다", async () => {
     seedReceipt(PREVIOUS_ROOM);
     const { result } = renderOwner();
-    await waitFor(() => expect(result.current).toBe(PREVIOUS_ROOM));
+    await waitFor(() => expect(result.current.instantWorkId).toBe(PREVIOUS_ROOM));
     expect(readReceiptRoom()).toBe(PREVIOUS_ROOM);
   });
 
@@ -125,46 +150,84 @@ describe("useStudioLocalDraftOwner — 룸 없는 재진입의 직전 룸 해석
     locks.held.add(LEASE_NAME);
     const { result } = renderOwner();
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(result.current).toBe(FRESH_ROOM);
+    expect(result.current.instantWorkId).toBe(FRESH_ROOM);
     expect(readReceiptRoom()).toBe(PREVIOUS_ROOM);
   });
 
   it("영수증이 없으면 새 룸이 원점이 되어 영수증에 등록된다", async () => {
     const { result } = renderOwner();
     await waitFor(() => expect(readReceiptRoom()).toBe(FRESH_ROOM));
-    expect(result.current).toBe(FRESH_ROOM);
+    expect(result.current.instantWorkId).toBe(FRESH_ROOM);
   });
 
   it("손상된 영수증은 직전 룸으로 취급하지 않고 새 룸으로 다시 등록한다", async () => {
     window.localStorage.setItem(RECEIPT_KEY, "corrupt");
     const { result } = renderOwner();
     await waitFor(() => expect(readReceiptRoom()).toBe(FRESH_ROOM));
-    expect(result.current).toBe(FRESH_ROOM);
+    expect(result.current.instantWorkId).toBe(FRESH_ROOM);
   });
 
   it("서버 작업(workId)이 있으면 영수증이 있어도 룸 채택을 하지 않는다", async () => {
     seedReceipt(PREVIOUS_ROOM);
     const { result } = renderOwner({ workId: "server-work-1" });
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(result.current).toBe(FRESH_ROOM);
+    expect(result.current.instantWorkId).toBe(FRESH_ROOM);
     expect(readReceiptRoom()).toBe(PREVIOUS_ROOM);
   });
 
   it("URL이 룸을 싣고 오면 기존대로 그 룸의 원점 회복을 검증한다", async () => {
     seedReceipt(PREVIOUS_ROOM);
     const { result } = renderOwner({ roomId: PREVIOUS_ROOM });
-    await waitFor(() => expect(result.current).toBe(PREVIOUS_ROOM));
+    await waitFor(() => expect(result.current.instantWorkId).toBe(PREVIOUS_ROOM));
   });
 
   it("다른 문서의 영수증은 이 문서의 직전 룸으로 해석되지 않는다", async () => {
     seedReceipt(PREVIOUS_ROOM);
     const { result } = renderOwner({ documentId: "doc-2" });
     await waitFor(() => expect(readReceiptRoom()).toBe(PREVIOUS_ROOM));
-    expect(result.current).toBe(FRESH_ROOM);
+    expect(result.current.instantWorkId).toBe(FRESH_ROOM);
   });
 });
 
 describe("useStudioLocalDraftOwner — 소유 탭 리스의 연속성", () => {
+  it("StrictMode의 이중 초기화 뒤 실제 게시 룸과 session owner를 일치시켜 재열기에 joiner가 되지 않는다", async () => {
+    const { result } = renderHook(usePublishedRoom, { wrapper: StrictMode });
+    await waitFor(() => expect(result.current.roomId).not.toBeNull());
+    expect(minted).toBeGreaterThanOrEqual(2);
+    expect(publishedRooms).toEqual([result.current.instantWorkId]);
+    expect(window.sessionStorage.getItem(STUDIO_LIVE_OWNER_ROOM_SESSION_KEY)).toBe(result.current.roomId);
+    const restartedStorage = {
+      getItem: (key: string) => window.sessionStorage.getItem(key),
+      setItem: (key: string, value: string) => window.sessionStorage.setItem(key, value),
+    };
+    const reloaded = resolveStudioLiveInstantWorkIdForTab({
+      workId: null, remixId: null, roomId: result.current.roomId,
+      storage: restartedStorage, navigationType: "reload",
+    });
+    expect(reloaded).toBe(result.current.roomId);
+    expect(isStudioJoinedLiveJamRoom({ roomId: result.current.roomId, instantWorkId: reloaded })).toBe(false);
+  });
+
+  it("기존 원점 복구 결정을 기다린 뒤 그 원점만 게시하고 새 초기 룸으로 영수증을 덮지 않는다", async () => {
+    seedReceipt(PREVIOUS_ROOM);
+    const { result } = renderHook(usePublishedRoom, { wrapper: StrictMode });
+    await waitFor(() => expect(result.current.roomId).toBe(PREVIOUS_ROOM));
+    expect(publishedRooms).toEqual([PREVIOUS_ROOM]);
+    expect(readReceiptRoom()).toBe(PREVIOUS_ROOM);
+    expect(window.sessionStorage.getItem(STUDIO_LIVE_OWNER_ROOM_SESSION_KEY)).toBe(PREVIOUS_ROOM);
+  });
+
+  it("살아 있는 타인 룸의 참가자는 게시 승인을 받거나 소유자로 바뀌지 않는다", async () => {
+    seedReceipt(PREVIOUS_ROOM);
+    locks.held.add(LEASE_NAME);
+    const { result } = renderOwner({ roomId: PREVIOUS_ROOM });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(result.current.canPublishRoom).toBe(false);
+    expect(isStudioJoinedLiveJamRoom({ roomId: PREVIOUS_ROOM, instantWorkId: result.current.instantWorkId })).toBe(true);
+    expect(readReceiptRoom()).toBe(PREVIOUS_ROOM);
+    expect(window.sessionStorage.getItem(STUDIO_LIVE_OWNER_ROOM_SESSION_KEY)).toBeNull();
+  });
+
   it("자기 룸을 ?room=으로 게시해 효과가 다시 돌아도 리스를 놓지 않아 복제 탭이 원점을 회복하지 못한다", async () => {
     const { result, rerender } = renderHook(
       ({ roomId }: { roomId: string | null }) => useStudioLocalDraftOwner({
@@ -201,7 +264,7 @@ describe("useStudioLocalDraftOwner — 소유 탭 리스의 연속성", () => {
     });
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(onDuplicateRecovered).not.toHaveBeenCalled();
-    expect(result.current).toBe(FRESH_ROOM);
+    expect(result.current.instantWorkId).toBe(FRESH_ROOM);
     closeDuplicate();
   });
 
@@ -220,13 +283,13 @@ describe("useStudioLocalDraftOwner — 소유 탭 리스의 연속성", () => {
       }),
       { initialProps: { roomId: null as string | null } },
     );
-    await waitFor(() => expect(result.current).toBe(PREVIOUS_ROOM));
+    await waitFor(() => expect(result.current.instantWorkId).toBe(PREVIOUS_ROOM));
 
     // StudioDocumentLayout이 회복한 룸을 ?room=으로 게시한 직후의 재렌더.
     rerender({ roomId: PREVIOUS_ROOM });
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(locks.held.has(LEASE_NAME)).toBe(true);
-    expect(result.current).toBe(PREVIOUS_ROOM);
+    expect(result.current.instantWorkId).toBe(PREVIOUS_ROOM);
 
     const onDuplicateRecovered = vi.fn();
     const closeDuplicate = holdStudioLocalDraftOwnership({

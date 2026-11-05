@@ -10,6 +10,9 @@ import { studioDocumentPersistenceWorkId } from "../../studio-document-persisten
 import { studioDocumentHref } from "../../studio-document-workspace";
 import { isStudioSourceHydrationPending } from "../../studio-editor-scope";
 import { createStudioProjectWithInitialDocument } from "../../studio-project-creation";
+import { readStudioProjectLibrary } from "../../studio-project-library-store";
+import { createInitialStudioProjectPlanning, writeStudioProjectPlanning } from "../../planning/studio-planning-store";
+import { studioEpisodeDocumentHref } from "../../planning/studio-episode-document-handoff";
 import { useStudioDocumentLayout } from "../studio-document-layout-context";
 import { resolveStudioRoute } from "../studio-route-manifest";
 
@@ -83,6 +86,61 @@ function open(href: string) {
 }
 
 describe("StudioEditorRoute local-source integration", () => {
+  it("실제 인계 UI가 같은 원고의 여섯 샷을 읽고 작화 전환·재진입에도 회차와 복구본을 유지한다", async () => {
+    const { project, document } = localFixture();
+    const planning = createInitialStudioProjectPlanning(project.id);
+    const plan = planning.plans[0];
+    if (!plan) throw new Error("회차 기획이 필요합니다.");
+    writeStudioProjectPlanning(localStorage, { ...planning, plans: [{ ...plan, turningPoints: ["발견", "이름", "추적", "대면", "수선", "귀가"] }] });
+    const href = studioEpisodeDocumentHref(document, plan.episodeId, "storyboard");
+    if (!href) throw new Error("기존 원고 경로가 필요합니다.");
+    const key = studioAutosaveKey({ userId: "owner", workId: document.id });
+    localStorage.setItem(key, "기존 여섯 페이지");
+    open(href);
+    await screen.findByTestId("editor");
+    const summary = await screen.findByText(`1화 컷 계획 · ${document.title}`);
+    fireEvent.click(summary);
+    expect(await screen.findByText("작화 샷 계획 — 저장된 회차 기준")).toBeTruthy();
+    expect(screen.getByText(/페이지를 자동 생성하거나 교체하지 않습니다/u)).toBeTruthy();
+    expect(screen.getByText(/샷 6개/u)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "draw" }));
+    fireEvent.click(screen.getByRole("link", { name: "이 회차 작화 시작하기" }));
+    await waitFor(() => expect(screen.getByLabelText("location").textContent).toContain("workspace=draw"));
+    const currentHref = screen.getByLabelText("location").textContent;
+    if (!currentHref) throw new Error("현재 경로가 필요합니다.");
+    const route = new URL(currentHref, "https://example.test");
+    expect(route.pathname).toBe(`/studio/p/${project.id}/d/${document.id}`);
+    expect(route.searchParams.get("episode")).toBe(plan.episodeId);
+    expect(screen.getByLabelText("ink").textContent).toBe("1");
+    expect(localStorage.getItem(key)).toBe("기존 여섯 페이지");
+    expect(readStudioProjectLibrary(localStorage).projects).toHaveLength(1);
+
+    cleanup();
+    open(currentHref);
+    await screen.findByTestId("editor");
+    fireEvent.click(await screen.findByText(`1화 컷 계획 · ${document.title}`));
+    expect(await screen.findByRole("link", { name: "이 회차 작화 시작하기" })).toBeTruthy();
+    expect(screen.getByText(/샷 6개/u)).toBeTruthy();
+    expect(screen.getByLabelText("recovery").textContent).toBe("기존 여섯 페이지");
+  });
+
+  it("다른 프로젝트의 episode 쿼리는 원고를 바꾸거나 작화 인계 링크로 승인하지 않는다", async () => {
+    const { project, document } = localFixture();
+    const foreign = createInitialStudioProjectPlanning("다른-프로젝트");
+    writeStudioProjectPlanning(localStorage, foreign);
+    const foreignPlan = foreign.plans[0];
+    if (!foreignPlan) throw new Error("다른 회차가 필요합니다.");
+    const href = studioEpisodeDocumentHref(document, foreignPlan.episodeId, "storyboard");
+    if (!href) throw new Error("기존 원고 경로가 필요합니다.");
+    open(href);
+    await screen.findByTestId("editor");
+    fireEvent.click(await screen.findByText("회차 연결 확인 필요"));
+    expect(await screen.findByText(/이 프로젝트의 회차와 기존 원고를 확인할 수 없습니다/u)).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "이 회차 작화 시작하기" })).toBeNull();
+    expect(screen.getByLabelText("location").textContent).toContain(`/studio/p/${project.id}/d/${document.id}?`);
+    expect(readStudioProjectLibrary(localStorage).projects).toHaveLength(1);
+  });
+
   it("passes a local source to both layout and editor while retaining the stored recovery key", async () => {
     const { href, document } = localFixture();
     const originalKey = studioAutosaveKey({ userId: "owner", workId: document.id });

@@ -6796,8 +6796,8 @@ export function StudioCuttoonEditor({
     );
   }
 
-  const publishPreflightProvenance = publishPreflightOpen ? collectPublishPreflightProvenance() : [];
-  const publishPreflightResult = publishPreflightOpen
+  const publishPreflightProvenance = publishPreflightOpen || publishPackageOpen ? collectPublishPreflightProvenance() : [];
+  const publishPreflightResult = publishPreflightOpen || publishPackageOpen
     ? validateStudioPublishPreflight(buildPublishPreflightInput(publishPreflightProvenance), publishProfile)
     : null;
   const publishComplianceResult = validateStudioPublishCompliance(publishCompliance, publishProfile, {

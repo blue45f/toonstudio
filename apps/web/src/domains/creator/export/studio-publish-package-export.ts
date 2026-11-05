@@ -31,11 +31,8 @@ import type { PageState } from "../studio-page-state";
 import type { WatermarkSettings } from "../studio-watermark";
 
 /**
- * Publish package export + preflight assembly, extracted from StudioPage.tsx (2026-08, B-04).
- * Every entry point is parameterized on a snapshot object the page captures at call time —
- * nothing here reads React state, and the original guard ordering (shared-document
- * availability, busy flag, capture completeness, destination re-validation) is preserved
- * verbatim so behavior stays byte-identical with the inline implementation.
+ * 캡처 시점의 스냅샷으로 게시 패키지를 만든다.
+ * 공동 문서·busy·캡처 완결성·목적지 재검사 순서를 유지한다.
  */
 
 /** 리뷰 스레드에서 편집 검수 카운트만 필요하다 — 구조 타입으로 결합을 줄인다. */
@@ -168,6 +165,7 @@ export async function executeStudioPublishPackageExport(
   } = snapshot;
   if (!ensureSharedDocumentAvailableForExport()) return;
   if (!publishPackagePlan?.canExport || publishPackageExportBusy) return;
+  const { resolveStudioPublishPackageReadiness } = await import("../publish/studio-publish-package-readiness");
   const structuralResult = validateStudioPublishPreflight(
     buildStudioPublishPreflightInput(
       snapshot,
@@ -181,8 +179,9 @@ export async function executeStudioPublishPackageExport(
     effectivePublishPackageSettings.destination,
     { aiUsage: effectivePublishPackageSettings.aiUsage }
   );
-  if (!structuralResult.canPublish || !complianceResult.readyForDestinationReview) {
-    const blockedCount = structuralResult.errors.length + complianceResult.errors.length;
+  const readiness = resolveStudioPublishPackageReadiness(publishPackagePlan, structuralResult, complianceResult);
+  if (!readiness.canExport) {
+    const blockedCount = readiness.blockingIssueCount;
     setPublishPackageExportStatus({
       tone: "bad",
       text: `게시 전 필수 점검 ${blockedCount}개를 해결해야 정식 패키지를 만들 수 있어요.`,

@@ -227,7 +227,7 @@ registerI18nLocaleEntries("en", {
 
 // ── StudioPublishPackagePanel
 registerI18nLocaleEntries("ko", {
-  "studio.frozenStatus2.publishPkg.noBlockingErrors": "내보내기를 막는 오류가 없습니다.",
+  "studio.frozenStatus2.publishPkg.noBlockingErrors": "파일 계획에 차단 오류가 없습니다.",
   "studio.frozenStatus2.publishPkg.noMoreWarnings": "추가로 확인할 경고가 없습니다.",
   "studio.frozenStatus2.publishPkg.sourceCanvasError": "오류 확인 필요",
   "studio.frozenStatus2.publishPkg.sourceCanvasMetaMissing": "메타데이터 없음",
@@ -243,7 +243,7 @@ registerI18nLocaleEntries("ko", {
   "studio.frozenStatus2.publishPkg.exportBlockedReason": "차단 오류 {count}건을 해결하면 실제 파일 생성을 시작할 수 있습니다.",
 });
 registerI18nLocaleEntries("en", {
-  "studio.frozenStatus2.publishPkg.noBlockingErrors": "There are no blocking errors for export.",
+  "studio.frozenStatus2.publishPkg.noBlockingErrors": "There are no blocking errors in the file plan.",
   "studio.frozenStatus2.publishPkg.noMoreWarnings": "There are no more warnings to review.",
   "studio.frozenStatus2.publishPkg.sourceCanvasError": "Error check needed",
   "studio.frozenStatus2.publishPkg.sourceCanvasMetaMissing": "No metadata",
