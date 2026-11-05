@@ -40,6 +40,23 @@ try {
   for (const [index, png] of result.sheets.entries()) {
     writeFileSync(join(output, `materials-${index + 1}.png`), Buffer.from(png.split(",")[1], "base64"));
   }
+  for (const artifact of result.pressureFailureArtifacts ?? []) {
+    for (const side of ["low", "high"]) {
+      const image = artifact[side];
+      try {
+        if (!/^[a-z0-9-]+$/u.test(artifact.id) || !image.pngDataUrl.startsWith("data:image/png;base64,")) {
+          throw new Error("압력 실패 진단 이미지 형식이 올바르지 않습니다.");
+        }
+        const filename = `pressure-${artifact.id}-${side}.png`;
+        writeFileSync(join(output, filename), Buffer.from(image.pngDataUrl.split(",")[1], "base64"));
+        image.pngFile = filename;
+      } catch (error) {
+        result.pressureFailureArtifactErrors.push({ id: `${artifact.id}/${side}`, error: String(error) });
+      } finally {
+        delete image.pngDataUrl;
+      }
+    }
+  }
   delete result.sheets;
   writeFileSync(join(output, "report.json"), `${JSON.stringify({ ...result, diagnostics, environment: { recordedAt: new Date().toISOString(), browser: browser.version(), node: process.version, platform: platform(), architecture: arch(), cpu: cpus()[0]?.model ?? "unknown", memoryBytes: totalmem() } }, null, 2)}\n`);
   if (diagnostics.length || result.failures.length) throw new Error([...diagnostics, ...result.failures].join("\n"));

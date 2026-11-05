@@ -34,6 +34,25 @@ function draw(source: StudioMaterialBrushElement, dpr = 1, live = false) {
   for (let i = 3; i < rgba.length; i += 4) { mass += rgba[i]!; if (rgba[i]! > 4) visible++; }
   return { target, rgba, mass, visible, submitMs };
 }
+/** 실패한 원래 입력과 Canvas만 보존한다. PNG 바이트와 raw RGBA 지문은 다른 값이다. */
+export async function captureStudioHybridPressureFailure(
+  id: string, lowSource: StudioMaterialBrushElement, highSource: StudioMaterialBrushElement,
+  low: ReturnType<typeof draw>, high: ReturnType<typeof draw>,
+) {
+  const sha256 = async (bytes: ArrayLike<number>) => Array.from(
+    new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array(bytes))),
+    (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("");
+  const capture = async (source: StudioMaterialBrushElement, image: ReturnType<typeof draw>) => ({
+    inputSha256: await sha256(new TextEncoder().encode(JSON.stringify(source))),
+    rawRgbaSha256: await sha256(image.rgba),
+    width: image.target.width, height: image.target.height,
+    alphaMass: image.mass, visiblePixels: image.visible,
+    pngDataUrl: image.target.toDataURL("image/png"),
+  });
+  return { id, low: await capture(lowSource, low), high: await capture(highSource, high) };
+}
+
 function difference(a: Uint8ClampedArray, b: Uint8ClampedArray) {
   if (a.length !== b.length) return Infinity;
   let sum = 0; for (let i = 0; i < a.length; i++) sum += Math.abs(a[i]! - b[i]!); return sum;
@@ -56,6 +75,8 @@ async function svgPixels(source: StudioMaterialBrushElement) {
 
 export async function auditStudioHybridTopology() {
   const failures: string[] = [], cases = [], times: number[] = [], planTimes: number[] = [];
+  const pressureFailureArtifacts: Awaited<ReturnType<typeof captureStudioHybridPressureFailure>>[] = [];
+  const pressureFailureArtifactErrors: { id: string; error: string }[] = [];
   const check = (ok: boolean, message: string) => { if (!ok) failures.push(message); };
   const sheet = canvas(1280, 1620), sheetCtx = sheet.getContext("2d")!;
   sheetCtx.fillStyle = "#fff"; sheetCtx.fillRect(0, 0, sheet.width, sheet.height);
@@ -72,9 +93,17 @@ export async function auditStudioHybridTopology() {
       const diff = difference(full.rgba, live.rgba); liveDifferences.push(diff);
       check(diff === 0, `${topology.recipeId}: DPR ${dpr} streaming mismatch (${diff})`);
     }
-    const light = draw(element(topology.recipeId, 0.15)), heavy = draw(element(topology.recipeId, 0.85));
+    const lowSource = element(topology.recipeId, 0.15), light = draw(lowSource);
+    const highSource = element(topology.recipeId, 0.85), heavy = draw(highSource);
     const pressureRatio = heavy.mass / Math.max(1, light.mass);
     check(pressureRatio > 1.15, `${topology.recipeId}: ineffective pressure (${pressureRatio})`);
+    if (!(pressureRatio > 1.15)) {
+      try {
+        pressureFailureArtifacts.push(await captureStudioHybridPressureFailure(topology.recipeId, lowSource, highSource, light, heavy));
+      } catch (error) {
+        pressureFailureArtifactErrors.push({ id: topology.recipeId, error: String(error) });
+      }
+    }
     const svgDistance = alphaDistance(retained.rgba, await svgPixels(source));
     check(svgDistance < 0.06, `${topology.recipeId}: SVG alpha-distance ${svgDistance}`);
     const hybridCases = [];
@@ -127,5 +156,5 @@ export async function auditStudioHybridTopology() {
   check(performanceResult.planningP95 < 33, "planner exceeds 33ms freeze guard");
   check(performanceResult.submissionP95 < 50, "submission exceeds 50ms freeze guard");
   return { backend: "real-browser-canvas2d", cases, distinctness: { pairs, minimumDistance, closestPair, opacityNormalized: true },
-    performance: performanceResult, failures, scope: "Synthetic input only; no physical pen, fluid-grid or WebGPU latency claim", sheets: [sheet.toDataURL("image/png")] };
+    performance: performanceResult, failures, pressureFailureArtifacts, pressureFailureArtifactErrors, scope: "Synthetic input only; no physical pen, fluid-grid or WebGPU latency claim", sheets: [sheet.toDataURL("image/png")] };
 }

@@ -61,3 +61,23 @@ canonical 보존 재검사는 기존 dirty source 9개의 SHA-256 일치를 확�
 원본·패치·해시·실행 명세는 `/tmp/pr2716-ci-additional-20261105/`, `/tmp/pr2716-dry-carrier-patch-manifest-20261105.json`, `/tmp/pr2716-full-boundary-manifest-20261105.json`, `/tmp/full-ui-guards-442add3-20261105-evidence.json`, `/tmp/pr2716-ai-modal-query-scope-manifest-20261105.json`, `/tmp/main442-smart-shapes-readiness-db0942-20261105/verification-summary.json`에 보존했다. 운영 DB 적용·배포 및 외부 전문 도구 호환성 검증은 이 교정에 포함하지 않았다.
 
 2026-11-05 PR #2718 병합 후 충돌 해결에서는 API facade와 root schema의 순수 shape 경로를 유지하고, main의 유효 filter mask 검증만 새 shape 함수로 이식했다. 동결 fixture/hash와 다른 함수 동등성·오류 경계는 보존하며, 해당 validator의 의도한 mask 확장을 별도 동작 비교로 검증한다. 이 범위에는 morphology 필압 진단이나 운영 변경을 포함하지 않는다.
+
+
+## 2026-11-05 PR #2717의 이미지 입력·실제 표시 경계 보완
+
+상태: `current` 로컬 보완 검증. 비교 head는 `289effabfebec9fcb215063bc1a6eddee989e98a`, main은 `994e5ba34df98b6bcf1cb46c567456924a89dd68`이다. 다음 두 수정은 선행 CI의 실패를 재현한 범위이며 새 head의 전체 CI 성공이나 병합을 뜻하지 않는다.
+
+- 기반 회귀의 route visual 소비자는 원본 배경 PNG 14개를 읽지만 해당 shard의 sparse checkout에 파일이 없었다. 실제 소비 경로를 따른 재현은 4개 성공·1개 실패였고 이미지 입력을 복원한 뒤 5개가 통과했다. 기존 원본 PNG 14개(54,701,774 B)만 `studio-foundation`에 조건부 포함한다. 공통 영상 2개는 이미 포함돼 추가하지 않았다. 소비 소스에서 경로를 읽고 Git sparse checkout을 5개 shard에 실제 투영하는 회귀 검사로 소유 shard의 정확한 이미지 포함과 다른 이미지 제외를 확인했다. 제품 asset·selector·영상·저장 형식 변경은 없다. 통합 폴더의 관련 Node 검사는 6개 성공·skip 0이다.
+- [선행 shapes 실패](https://github.com/blue45f/toonstudio/actions/runs/42008415687/job/127186551031)는 연결 상태가 정상적으로 `server-unavailable`/`local-only`가 된 뒤에도 60초 준비 기한을 넘겼다. 실제 client 캔버스 오른쪽은 1083px인데 제품 observer가 stable scrollbar gutter를 포함한 border box 1093px를 사용했다. 수정 전 회귀는 안내 패널 오른쪽 1084.703125px, 협업 패널 1085px로 CI 산출물과 같았고 신규 3개가 실패했다. observer만 실제 client 영역·화면 배율·조상 overflow의 잘림을 측정하도록 바꿨다. 관련 4파일 51개가 통과했으며 기존 사용자 배치 override·위치/크기 잠금·명시 도킹·좁은 화면 가드는 유지했다.
+- 별도 실제 Chromium DOM 검사에서도 같은 CSS gutter 10px·clientWidth 733px와 수정 전 좌표를 재현했다. 수정 후 패널 오른쪽은 각각 1074.703125px·1075px이며 기존 strict readiness는 `false → true`였다. 이는 실제 CSS 측정과 제품 helper의 경계를 확인하는 제한된 브라우저 검사다. 전체 Studio 앱의 Smart Shape 그리기·저장·Undo/Redo 완료로 확대하지 않으며 해당 흐름은 새 head의 hosted browser 검사로 확인한다. 준비 조건·60초 기한·도형 입력·픽셀·저장 검사는 변경하지 않았다.
+
+별도 Chemy 필압 검사는 기존 640px Canvas에서 총 알파 비율 1.1323929288472774로 현행 `>1.15` 기준을 충족하지 못했다. 같은 도형을 넓은 캔버스로 옮긴 경우도 1.1268981614405127로 실패했다. 입력 필압과 개별 도포 알파 반응은 존재하며 중첩 포화가 최종 합성 비율을 줄이므로 이를 필압 무효로 단정하지 않는다. 선행 hosted 보고서의 다른 topology 33종은 해당 기준을 통과했다. 기존 V1의 도포식 변경은 저장 획의 재생 외관에 영향을 주므로 적용하지 않았다. 임계값·입력·golden·fixture·검사 대상 변경도 없으며 현재 필압 실패와 PR 전체 미완료 상태를 유지한다.
+
+원문·수정 전후 근거는 `/tmp/pr2717-shell-client-bounds-{red,green}.log`, `/tmp/pr2717-shell-browser-probe.json`, `/tmp/pr2717-foundation-route-visual-inputs-1391-evidence.json`, `/tmp/pr2717-chemy-pressure-canvas1391-v2-evidence/report.json`에 구분했다. 이 보완은 운영 DB·기존 데이터·권한·시크릿을 바꾸지 않았고 운영 배포를 수행하지 않았다.
+
+
+20:22:18 KST GitHub 기록에서 `blue45f` 계정의 PR #2717 병합을 확인했다. 병합 SHA는 `63dcf937ca8658fbae52396595416daa1a796043`이며, 이 통합 채팅은 병합을 실행하지 않았다. 당시 head `289effab`의 전체 CI는 완료되지 않았고 material-morphology 및 session goals의 실패가 남아 있었다. 병합 부모에는 별도 PR #2719의 `f8cdc07f`도 포함돼 이전 head와 40파일 차이가 있으므로 이전 하네스·화면 결과를 새 main 전체의 증거로 승격하지 않는다. 남은 보완은 후속 PR에서 새 main과 통합해 검증한다.
+
+session goals의 추가 실패 중 발표 문구는 실제 required selector 880개와 한국어·영어의 876개 설명이 불일치했다. 원본 한 줄의 두 언어 수치만 880으로 고쳤으며 기존 숫자 대조 검사와 lint가 통과했다. 채용 후보의 focus 만료 검사는 CI에서 만료 시점의 버튼 비활성 단언이 실패했지만, 같은 원본의 로컬 14개는 통과해 제품 결함으로 확정하지 않았다. 응답을 명시적 pending promise로 두고 async `act` 안에서 완료해 화면 갱신·focus 구독이 반영된 뒤 시계를 전진하도록 검사 경계만 보완했다. 서버와 로컬의 5분 시계 차이, 59,999ms의 허용 및 60,000ms의 차단, 보내기 호출 0 단언은 모두 그대로며 보완 후 14개가 통과했다. 제품·권한·만료 정책은 변경하지 않았다.
+
+필압 기준을 바꾸기 전에 Linux 원본 픽셀을 별도로 확보하도록 실패 모델의 기존 저압·고압 Canvas PNG와 raw RGBA SHA-256, 원본 입력 JSON 지문만 CI 산출물에 추가한다. PNG 파일 hash와 raw RGBA hash는 구분하며, 캡처·파일 쓰기 오류는 원래 cases·failures를 덮지 않고 진단 오류로 남긴다. 기존 모델 순회·입력·렌더러·`>1.15` 검사와 그리기 순서를 보존했다. mock 캡처/쓰기 검증에서 독립 Node SHA 대조, PNG 바이트 보존, 경로 탈출 거절, 쓰기·인코딩 실패, 이전 보고서 필드 부재 호환성을 확인했다. 이는 실제 Linux 픽셀 수집 완료나 필압 기준 통과를 뜻하지 않는다. Chemy V1에 대한 검사 계약 교체 후보는 별도 검토 대상으로 두며 사용자 승인 전에는 후속 PR에도 적용하지 않는다.
