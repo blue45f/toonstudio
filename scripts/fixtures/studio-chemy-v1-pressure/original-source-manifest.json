@@ -1,0 +1,386 @@
+{
+  "sourceCommit": "289effabfebec9fcb215063bc1a6eddee989e98a",
+  "actualHistoricalCheckout": "39cf200634f55dcde823812e221bd072f66264c2",
+  "sourceTree": "682884bddd2c4be61b048483b825f26a138a76b8",
+  "files": [
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-material-brush-runtime.ts",
+      "gitBlobSha": "89a21dda6e339c1a89d82104d70e2488e57020cf",
+      "bytes": 15946,
+      "sha256": "693aca258f533f314fc2262a448739a1e69c1b8078744078cd764f4082371277"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-engine.ts",
+      "gitBlobSha": "f8e2c8448caefb67507f8ef0cffe38cc69c43c25",
+      "bytes": 53407,
+      "sha256": "be284acafe59c34eba8808778a2ae182bde4b9b305093e205532aa6eed11e20f"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-topology-catalog.ts",
+      "gitBlobSha": "7cd8da986dbf31f56c04d5600eac432e18a5be23",
+      "bytes": 5486,
+      "sha256": "f765741e61813e6d2f88277b707b25dcd1b2bad0dde9e724e2144133f84d8b55"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-material-input.ts",
+      "gitBlobSha": "24c4f954d9ff4612fef56993df3c0cfe58a2a4b2",
+      "bytes": 946,
+      "sha256": "789108cf94ffce37846920d391cfe275c44b1d5639bd240c81ac4c4ddd002d50"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-material-engine.ts",
+      "gitBlobSha": "77cdfa9065c88eec0b3055b7788fd79056d671ee",
+      "bytes": 45324,
+      "sha256": "cc777260d182f88ca52ff17278f0e781d3c29c7ddb079a189b24ff2bce1450b5"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-brush-symmetry.ts",
+      "gitBlobSha": "5620b22937426490ebd0773913538c608633b722",
+      "bytes": 7641,
+      "sha256": "426fdbc579f4bcc3a5265781aa1d2aa18b133422c94bea0dc5625963f5f64977"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-topology-material.ts",
+      "gitBlobSha": "cca1f909954baad18df875b931ace2dbd4d16bac",
+      "bytes": 6375,
+      "sha256": "243288db903252c05e79a0170e1e60db63eeeb46223dc00a255111b645b5ebfa"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v7-surface-library.ts",
+      "gitBlobSha": "b9c088985214748c1aa7291f443f95d3d0c8811c",
+      "bytes": 9189,
+      "sha256": "d25a14968962964c483bd51d22bd37f497b9ee833c7014dd6a48f95dac869c81"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-provider-runtime.ts",
+      "gitBlobSha": "d30bb9b453c1192a95c95540476faad7b20d3c8f",
+      "bytes": 4560,
+      "sha256": "2938df79013c57b3bba1b601f39aff7f81354366b9a1553acd9c7e83833ecf5c"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog.ts",
+      "gitBlobSha": "f9842a455afcdf0eced329111f1a7f8d4555813d",
+      "bytes": 2095,
+      "sha256": "119fae7612cac46d8a7f19bdd411857e3ab651f7c39cdeadc140d4303c46b07a"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-license-profile.ts",
+      "gitBlobSha": "cd9c2f794134f59be1354c61bed7bb082764a341",
+      "bytes": 15135,
+      "sha256": "9226616e4c6db912d40a2aafe39d5a1de9477548199d22d7318bc9b412930902"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-artistry-catalog.ts",
+      "gitBlobSha": "230af4d725b3e18d5b35a0e34908afa26a1ea7ae",
+      "bytes": 6555,
+      "sha256": "1f7c40c45413e25a97b3c87808693a60538aed1afa13d145f2397d389dcc0524"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-family-catalog.ts",
+      "gitBlobSha": "313856e677e20ba3aa235c88e5c779b1546a4212",
+      "bytes": 14396,
+      "sha256": "b6f7cf313a81163fc60c6721214e4cd06338ba2fcd6b2422f0b57c6eb7884697"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-material-palette-cache.ts",
+      "gitBlobSha": "8cc9c4bf90e495dee5cd7e949e9b6f582225ee95",
+      "bytes": 1557,
+      "sha256": "89d3a222fd79fb89d3b041da2ba42e4e6b57c9566dd258e3a1bb0f95745f9996"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v7-advanced-physics.ts",
+      "gitBlobSha": "2439ca47970027ba967dff75c57eb600d479fe4f",
+      "bytes": 10948,
+      "sha256": "40639fdcb3cca6405233b13cb63f080a037bca0a1ef52e078cda071e8c1d7746"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-topology-engine.ts",
+      "gitBlobSha": "7effdbb26742a6eb0be33c947a86881177581b85",
+      "bytes": 12526,
+      "sha256": "36d7093306d1d8b47857bac725f5da1133494e12e38d40e51d9627dbb611b469"
+    },
+    {
+      "path": "apps/web/src/shared/lib/studio-brush-material-program-contract.ts",
+      "gitBlobSha": "0986b7d499851c70d0876747392acf7fb6ad2b4b",
+      "bytes": 78,
+      "sha256": "b33eb58e1dbc2ce2ab1845f42bcfeae2c11c3f3fc07de728a7b84deb34326f60"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-pigment-provider.ts",
+      "gitBlobSha": "e97823c8be39fe95bd3742c832f798d44382e832",
+      "bytes": 9845,
+      "sha256": "1b9f93e51f4c5fe1501f3dd3246c1fab0ecddfedad26bff2c510bd9de2993dc6"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-core.ts",
+      "gitBlobSha": "ee63be519841a188b4172acae9e4024103895b67",
+      "bytes": 8022,
+      "sha256": "e51c0824ce9fcf8a5428abd4e6f19c947694658b162929a3844370ed5007b0f2"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-mixbox.ts",
+      "gitBlobSha": "169e2ba888eb4abbcba2c31baa91fa41d0b69470",
+      "bytes": 16935,
+      "sha256": "82205944b5b53371195441708e624a66c00d4bcc5ad3cd0137c0cba66ac6a17a"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-procedural.ts",
+      "gitBlobSha": "0d4bb1b71254bc3be57a4df1d49f4c8f8a1381a8",
+      "bytes": 1580,
+      "sha256": "0935bcef9c1a63f9a7bb73dec7f54f0d2ae18b7677bb78df21e2294db168468b"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-showcase.ts",
+      "gitBlobSha": "3124b73a9fdd9670f99e795faf4759e5ba55adc1",
+      "bytes": 6480,
+      "sha256": "40fbfc5c6785c7cfdf9a39255543f4ca9fe94f632e7aa1d073a6e85a819da20e"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-material-v7.ts",
+      "gitBlobSha": "c39bd873aeff8d6b74631b1529ced4662d89d631",
+      "bytes": 13774,
+      "sha256": "4d0738dd9e51137886710ab5e7e7b898ac19f11fe9029c1db6ca9c307edb23a4"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-material-v7-advanced.ts",
+      "gitBlobSha": "a1e8cb8911c047f3a0db35e942efaf37363fcad6",
+      "bytes": 16171,
+      "sha256": "9416129591395c4cb4f071a4978f3e216808c6beb94ad2acbf823cb044dccde4"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-v8.ts",
+      "gitBlobSha": "b0028518122b6c7248e6d0e9eed52cc157923b75",
+      "bytes": 3528,
+      "sha256": "c1f64397baef6c9da6902574041a103e6496fb3c576dec02799708b9fe4a1abe"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-texture.ts",
+      "gitBlobSha": "6e297ec2506389d9a627f39f48ecea54e468f620",
+      "bytes": 17569,
+      "sha256": "43b92c6973e968eb88ac28188be39016fcd20601fb3c3e00e5d4ce8a01e419aa"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-types.ts",
+      "gitBlobSha": "43dfde9ac75d771c7faba41c94701fd961b10c08",
+      "bytes": 525,
+      "sha256": "f936bec860952b3369f8657c2c3394aeb0c9ee90973d995c7c7e25de44654861"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-artistry-engine.ts",
+      "gitBlobSha": "3c6426a2de0a0a8d64320d4d63cf8cba2b57ce4f",
+      "bytes": 6788,
+      "sha256": "11295b3d2a9248622f4c9d5a4a8bdf9f8acb9eebef0b5373bbd5a6350347aecc"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-family-engine.ts",
+      "gitBlobSha": "56b994ca768482b1ba38957e8f47a556e7d14e0e",
+      "bytes": 2493,
+      "sha256": "93ccbdd3e2965f79790064a38863b834f0a5ec90243fee1c430b4d309dd0d84e"
+    },
+    {
+      "path": "packages/contracts/src/studio-brush-material-program-contract.ts",
+      "gitBlobSha": "e17a645a9baccb5134f302f902607bf8025cdd3e",
+      "bytes": 12310,
+      "sha256": "f6788cb29acbd1d72020067ed26a29da3d9473a3dc2cb2503efd2cbf1ee61f56"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/pigment/external-pigments.ts",
+      "gitBlobSha": "8d10f2f9985485d0d1f5f112f628f0e74e480877",
+      "bytes": 6659,
+      "sha256": "bbe0166591f9d07ab809c3e641c92d70ecfdda3ab0f885a595a7c7e99bd93208"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-mixer.ts",
+      "gitBlobSha": "1d77006c068193869a01f35689c7e80b04605af7",
+      "bytes": 34225,
+      "sha256": "2b965667c9c718464a75f19cca3e791f6b1789e812031cc3f41ed3319b6ca2bb"
+    },
+    {
+      "path": "apps/web/src/domains/creator/studio-spectral-wgm-mix-v1.ts",
+      "gitBlobSha": "ea1e6c39fcef7a3e85a4c585c996e7a0941aaeec",
+      "bytes": 12430,
+      "sha256": "798ee2706b15f8f504a60c404c7e5a293501ce37b49cb50b71f2f2191d3be6f2"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-brush-pattern-r8-grain-assets.ts",
+      "gitBlobSha": "b325eb72f9abf5eff60543044114fc5c832fe205",
+      "bytes": 10922,
+      "sha256": "e581cc66156aab4331b7198f1df4d29161bd2b7e5d9b7707b37b8ded08953cc1"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-brush-material-dynamics.ts",
+      "gitBlobSha": "90776e3d9327c1559ce23c113aa4300adf5da7ad",
+      "bytes": 25725,
+      "sha256": "f3e2d513d15bd46ebd073fe4d94c05e4bbdb65b0faa24e22a766fe0c2e39a0c2"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-brush-r8-grain-runtime.ts",
+      "gitBlobSha": "ca59df02a89556c6e014be9bdb64b1ca324db1eb",
+      "bytes": 21275,
+      "sha256": "055f090377afa49cd8bf86badb1daf2785a3d09ceee779d1ecfa92beff5152ea"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-artistry-motifs.ts",
+      "gitBlobSha": "6c575b0bd41e0dc099c69f9e2440856eccbd7c02",
+      "bytes": 5635,
+      "sha256": "e68dbe7a53695410fa05d7fefe4b117baefddb3e27458859f0c8765aa1df3649"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-concept-kernels.ts",
+      "gitBlobSha": "c775e5e45879a893115e5372a8c068c10264ce8c",
+      "bytes": 11204,
+      "sha256": "44e7a1306a279faefd2e8fbc5b9bef375e804d36b75074fbc14ad206f1dd7c29"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-harmony-kernels.ts",
+      "gitBlobSha": "825a11d70af027eea5a1abdf325af1dae93d82c6",
+      "bytes": 20604,
+      "sha256": "4532b59dd98697bf3a0ef32f62d9e8553e469894fd131688b7cd9dd5abc98251"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-klecks-kernels.ts",
+      "gitBlobSha": "04cb4a5a11c66e0841f8710d5b549d7199980b19",
+      "bytes": 9176,
+      "sha256": "0cdde51134b65b329619a9f50e8454be3227f533323bdc8a91d8fe6f181385a8"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-kit.ts",
+      "gitBlobSha": "287de8c0b66c63e1d0bf48a60eb29dbbd5a35880",
+      "bytes": 6912,
+      "sha256": "722caaa17d86941e1732eddeee5d6cf049002d8e3ecef79cf5557248eb67513f"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/pigment/km-layer-comparison.ts",
+      "gitBlobSha": "a110342f0675d35612289d1ecd5585d4130f794e",
+      "bytes": 3453,
+      "sha256": "0d66bde031021fb5d4be42b5a7d18b84b6f248388e4b24ab725e0fc3f0746f78"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/pigment/kubelka-munk.ts",
+      "gitBlobSha": "11a21155203345680725a3e79d44099165f29cfd",
+      "bytes": 3185,
+      "sha256": "5fd25b2f73ecec441b8ecc565a329e8fcd1d5328cfde32782fcf195fae54c8e8"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-basis.ts",
+      "gitBlobSha": "1d31e860f549e5c5628f4ee13fe06bf58c0950dd",
+      "bytes": 2464,
+      "sha256": "4b3df29af604c472cf96fbdbd7fad4a68f585697025a8d52247abbc2242acd6d"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-model.generated.ts",
+      "gitBlobSha": "64756efbaebf0652bb5ba07d69edb528f5bc0b68",
+      "bytes": 3189,
+      "sha256": "75090ccb2a0de859172c5d02fbd7f1d3fde887496fb18310c15430083f103d8d"
+    },
+    {
+      "path": "apps/web/src/domains/creator/studio-sha256.ts",
+      "gitBlobSha": "027bd72b476bf3079ed15eb5155e02edd40641fc",
+      "bytes": 323,
+      "sha256": "24745b6e21dbac00099bda79fea34c14046c8ebbd5db2c2e457e393fdcee0c41"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-paper-media-r8-grain-assets.ts",
+      "gitBlobSha": "6d7cddd50bd93152673b87c5527d2bbebbdad7ab",
+      "bytes": 12595,
+      "sha256": "5ed0fcaf7924c027f3cdca7a31067cfa41f04d7d257d2dbb99120722935baf9c"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-brush-r8-grain-asset-contract.ts",
+      "gitBlobSha": "3e691c24598483ec4d5854d00d860e66243b4686",
+      "bytes": 175,
+      "sha256": "223875ffe0cf8a3b39cb8a39da0c3845960e51a3a922455e759bb81b9bc92108"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-brush-texture-combine-v1.ts",
+      "gitBlobSha": "883f23dbe41b8c8966c48f6bcb63655671a505dc",
+      "bytes": 25013,
+      "sha256": "75d46ed0b26d089053ddcf977e4d6d7d8143ad45760d0c7409f4eb50653e520f"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/pigment/vendor/open-km.ts",
+      "gitBlobSha": "91ca32b9a2ebfdcac0c4e4c11dd744197ece3a63",
+      "bytes": 2024,
+      "sha256": "2384f7221c817f3ab799d489bbde0e8c5a2063087fd668a28570272de48efa40"
+    },
+    {
+      "path": "apps/web/src/shared/lib/sha256-portable.ts",
+      "gitBlobSha": "3b169f57b457a19759c3dc51d705f7b509c675fd",
+      "bytes": 55,
+      "sha256": "1b2851f6b8d5d5975735cba46402d84129060c5231acf55b27094d233c61722d"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/studio-paper-media-profile-v1.ts",
+      "gitBlobSha": "ba32f32b36b4343afc7107e1d053839be59000a1",
+      "bytes": 35551,
+      "sha256": "c2dc413efd16f97fda228c09cd2419baf72d6362bcf6d963366d6f2081b57b89"
+    },
+    {
+      "path": "apps/web/src/shared/lib/studio-brush-r8-grain-asset-contract.ts",
+      "gitBlobSha": "349dc805a5001e49374778074d0b1c8cb8ec7272",
+      "bytes": 76,
+      "sha256": "c02bf71b95d6a156b3d8c8cf7e750d1075b6241ffb8b73969251841d326bede8"
+    },
+    {
+      "path": "packages/contracts/src/sha256-portable.ts",
+      "gitBlobSha": "3dd585527bea6cb1ff70e97aac55062796b07843",
+      "bytes": 7191,
+      "sha256": "6a09d214f1732e843610496da989ee935996d2a50bfd40e55b3479f621f8fae5"
+    },
+    {
+      "path": "apps/web/src/domains/creator/studio-oss-brush-kernels.ts",
+      "gitBlobSha": "10ffd20ddb4f7820120bf7e739601a791a98800b",
+      "bytes": 22417,
+      "sha256": "f0b21e577009ce610d8d564c4962ae9b1146b7a54d48772d73a7b4b5483b6ade"
+    },
+    {
+      "path": "packages/contracts/src/studio-brush-r8-grain-asset-contract.ts",
+      "gitBlobSha": "8079199ec9c7e1cd3cd95c758f021cb20dc2a165",
+      "bytes": 6678,
+      "sha256": "f7554b965e6acb687c5ba582dd59e16169240c835fa4dec82bd28b669b6362bd"
+    },
+    {
+      "path": "scripts/studio-hybrid-topology-browser.ts",
+      "gitBlobSha": "a3baccd14888e378828afe800cdacd0220bab3e9",
+      "bytes": 9601,
+      "sha256": "16dc6f211d322f0585cc144c2277cac4ea9c372ca24242cab782474da2c958ec"
+    }
+  ],
+  "totalSourceBytes": 626941,
+  "schemaVersion": 1,
+  "entry": "scripts/studio-hybrid-topology-browser.ts",
+  "sourceFileCount": 57,
+  "referenceLock": {
+    "gitBlobSha": "33a1ece2b0063111283a6adf99a1e789ab043457",
+    "sha256": "8319a14850268bc51ee8300f9631cb7c2c265408dc5af3e3fca8f634446dd323"
+  },
+  "dependencies": {
+    "mixbox": {
+      "version": "2.0.0",
+      "integrity": "sha512-IfiwKB67dvzHv2XGjK/awiOOawNgi5VVoE+/ZMH8xedGrt9S8e91tvAIB2leq6fZPdlmGsG/j/nQTMAO8kKw2Q==",
+      "tarball": "https://registry.npmjs.org/mixbox/-/mixbox-2.0.0.tgz"
+    },
+    "spectral.js": {
+      "version": "3.0.0"
+    },
+    "colormix": {
+      "version": "3.2.0"
+    },
+    "vite": {
+      "version": "8.3.4"
+    },
+    "playwright": {
+      "version": "1.64.1"
+    }
+  },
+  "browser": {
+    "browser": "156.0.8078.4",
+    "platform": "linux",
+    "architecture": "x64"
+  },
+  "scope": "56 product files plus the original browser entry, 57 total; no old full audit or original aggregate-gate waiver.",
+  "positiveControls": {
+    "baselineSha256": "f058fd6bc648d228a437c905d39a582fe5aabb8b30ff565d973e7f3f897c21b7",
+    "observerSha256": "673f09cd8fe33e84c41c4956f0061f78fbd429041e54f672bd8440eedb1dc1f0"
+  }
+}
