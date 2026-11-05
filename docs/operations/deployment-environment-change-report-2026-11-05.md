@@ -24,7 +24,7 @@ secret 짝은 이름·목적지 계약이며 비교를 위해 원문을 클라�
 
 | 실행 | 결과 |
 | --- | --- |
-| `node --test scripts/deployment-preflight.test.mjs` | 14/14 통과 |
+| `node --test scripts/deployment-preflight.test.mjs` | 15/15 통과 |
 | `node --test scripts/agent-harness.test.mjs` | 6/6 통과 |
 | `node scripts/agent-harness.mjs check` | 통과 |
 | `node scripts/verify-pnpm-lockfile.mjs` | 20 importers 통과 |
@@ -32,7 +32,7 @@ secret 짝은 이름·목적지 계약이며 비교를 위해 원문을 클라�
 | 기존 `validate-production-database-url.test.mjs` | 저장소 Vitest 4.1.12에서 27/27 통과; 임시 Vitest 검사도 통과 |
 | 변경 파일 Secretlint | 저장소 harness의 13개 변경 파일 검사 통과; 임시 13.0.7 검사도 통과 |
 | `pnpm harness:verify` | 최신 main 기반 구조·하네스·lockfile·변경 ESLint·Secretlint 전체 통과 |
-| CI 설치 전 mandatory Node 검사와 새 preflight 테스트 | 155/155 통과 |
+| CI 설치 전 mandatory Node 검사와 새 preflight 테스트 | 156/156 통과 |
 | 저장소 custom GitHub secret pattern 검사 | 변경 파일 대상 통과 |
 | `git diff --check` 및 patch whitespace 검사 | 통과 |
 | secret 없는 실제 CLI | local은 offline 계약만 통과, onpod-current는 필수 이름 누락으로 blocked |

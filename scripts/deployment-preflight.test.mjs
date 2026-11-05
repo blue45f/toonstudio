@@ -127,3 +127,8 @@ test('provider token 공개 노출과 잘못된 profile/enum을 차단한다', (
   assert.ok(codes(inspectDeployment({ ...options, env: { ...fixture(), AUTH_RATE_LIMIT_MODE: 'invalid' } })).includes('INVALID_ENUM'));
   assert.ok(codes(inspectDeployment({ ...options, env: { VITE_ONPOD_TOKEN: 'fixture-value' } })).includes('SERVER_SECRET_IN_PUBLIC_ENV'));
 });
+
+test('DDL 직접 연결 검사는 local 프로필로도 TLS 계약을 우회할 수 없다', () => {
+  const env = { PRODUCTION_RUNTIME_DATABASE_ROLE: 'fixture_runtime', PRODUCTION_DATABASE_DIRECT_URL: `postgresql://${['fixture', 'fixture'].join(':')}@db.example.test/example?sslmode=require` };
+  assert.ok(codes(inspectDeployment({ ...options, profile: 'local', operation: 'database-migrations', env })).includes('INVALID_OR_UNSUPPORTED_DATABASE_TARGET'));
+});

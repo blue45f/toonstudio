@@ -72,7 +72,7 @@ export function inspectDeployment({ profile, sha, head, env = {}, operation = 'r
         }
         if (operation === 'database-migrations' && url.hostname.includes('.onpod.')) throw new Error();
         // onpod runtime TLS는 기존 기록만 설명한다. DDL 검증 계약을 완화하지 않는다.
-        if (production && profile !== 'onpod-current') validateProductionDatabaseUrl(value);
+        if (operation === 'database-migrations' || (production && profile !== 'onpod-current')) validateProductionDatabaseUrl(value);
       } catch { add('INVALID_OR_UNSUPPORTED_DATABASE_TARGET', [key]); }
     }
   }
