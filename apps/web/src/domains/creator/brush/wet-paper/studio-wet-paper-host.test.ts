@@ -137,13 +137,13 @@ describe("wet-paper settled bake host (time-sliced, cached)", () => {
     };
     await waitFor((onBakeReady) => resolveStudioWatercolorSettledSurface({ ...input, onBakeReady }));
     const batch = resolveStudioWatercolorSettledSurface(input).wetPaperBake;
-    const batchPixels = canvases.find((canvas) => canvas === batch?.image)?.pixels;
+    const batchPixels = canvases.find((canvas) => Object.is(canvas, batch?.image))?.pixels;
     expect(batchPixels?.some((channel) => channel > 0)).toBe(true);
     resetStudioWetPaperBakeHostForTests();
     await prewarmStudioDryBrushLiveBake();
     await waitFor((onBakeReady) => resolveStudioWatercolorSettledSurface({ ...input, liveMaterialDabs, onBakeReady }));
     const incremental = resolveStudioWatercolorSettledSurface({ ...input, liveMaterialDabs }).wetPaperBake;
-    expect(canvases.find((canvas) => canvas === incremental?.image)?.pixels).toEqual(batchPixels);
+    expect(canvases.find((canvas) => Object.is(canvas, incremental?.image))?.pixels).toEqual(batchPixels);
     expect(incremental).toMatchObject({ x: batch?.x, y: batch?.y, width: batch?.width, height: batch?.height });
   });
 
