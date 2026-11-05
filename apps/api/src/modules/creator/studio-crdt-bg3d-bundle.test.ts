@@ -8,6 +8,9 @@ import { assertStudioBg3dBundleJsonDocumentInTransaction, assertStudioCrdtBg3dBu
   hasValidStudioCrdtBg3dBundleRoots, snapshotStudioCrdtBg3dBundles, STUDIO_BG3D_BUNDLE_REVISIONS_ROOT as REVISIONS,
   STUDIO_BG3D_BUNDLE_ACTIVE_ROOT as HEADS } from "./studio-crdt-bg3d-bundle";
 import { hasValidStudioCrdtRootSchema } from "./studio-crdt-root-schema";
+import { STUDIO_CRDT_RASTER_SURFACES_ROOT } from "@toonstudio/contracts/studio-crdt-raster-document-contract";
+import { canonicalStudioRasterJson } from "@toonstudio/contracts/studio-crdt-raster-ops";
+import { createStudioFilterMaskSurfaceSpec } from "@toonstudio/contracts/studio-filter-mask-surface-contract";
 import type { StudioBg3dBundleRecord, StudioBg3dBundleTransaction } from "./studio-bg3d-bundle.repository";
 
 vi.mock("./studio-bg3d-bundle.repository", () => ({ assertStudioBg3dBundleReaderInTransaction: vi.fn(),
@@ -34,6 +37,51 @@ function fixture(clientId?: number) {
 function sealed() { return { state: "sealed", manifest, manifestHash, artifacts: Array.from({ length: 7 }, () => ({})) } as StudioBg3dBundleRecord; }
 beforeEach(() => { vi.resetAllMocks(); vi.mocked(readStudioBg3dBundleRecordInTransaction).mockResolvedValue(sealed()); });
 describe("봉인된 6패스 서버 문서 경계", () => {
+  it.each([true, false, undefined])("등록된 Magic Layer 마스크 연결을 원격 6패스 이미지에 적용한다 (enabled=%s)", async (enabled) => {
+    const before = fixture(11);
+    const surface = createStudioFilterMaskSurfaceSpec({
+      surfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", width: 1, height: 1,
+    });
+    before.getMap(STUDIO_CRDT_RASTER_SURFACES_ROOT).set(surface.surfaceId, canonicalStudioRasterJson(surface));
+    const sender = new Y.Doc(), receiver = new Y.Doc();
+    try {
+      const initial = Y.encodeStateAsUpdate(before), vector = Y.encodeStateVector(before);
+      Y.applyUpdate(sender, initial); Y.applyUpdate(receiver, initial);
+      expect(hasValidStudioCrdtRootSchema(receiver)).toBe(true);
+      const image = sender.getMap("scene-element:element-color");
+      sender.transact(() => {
+        image.set("prop:filterMaskSurfaceId", surface.surfaceId);
+        if (enabled !== undefined) image.set("prop:filterMaskEnabled", enabled);
+      });
+      const update = Y.encodeStateAsUpdate(sender, vector);
+      Y.applyUpdate(receiver, update);
+      expect(hasValidStudioCrdtRootSchema(receiver)).toBe(true);
+      await expect(assertStudioCrdtBg3dBundleAdmission(tx, "work-one", before, receiver, [CAP], undefined, update)).resolves.toBeUndefined();
+      const restored = snapshotStudioCrdtBg3dBundles(receiver).images.get("element-color");
+      expect(restored?.props.filterMaskSurfaceId).toBe(surface.surfaceId);
+      expect(restored?.props.filterMaskEnabled).toBe(enabled);
+      expect(restored?.ref).toEqual(snapshotStudioCrdtBg3dBundles(before).images.get("element-color")?.ref);
+    } finally { before.destroy(); sender.destroy(); receiver.destroy(); }
+  });
+  it.each([
+    { surfaceRegistered: true, maskProps: { filterMaskEnabled: true } },
+    { surfaceRegistered: true, maskProps: { filterMaskSurfaceId: "not-a-filter-mask" } },
+    { surfaceRegistered: true, maskProps: { filterMaskSurfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", filterMaskEnabled: "true" } },
+    { surfaceRegistered: false, maskProps: { filterMaskSurfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } },
+  ])("잘못된 마스크 계약 또는 등록되지 않은 surface 참조를 거부한다: %j", ({ surfaceRegistered, maskProps }) => {
+    const doc = fixture();
+    try {
+      if (surfaceRegistered) {
+        const surface = createStudioFilterMaskSurfaceSpec({
+          surfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", width: 1, height: 1,
+        });
+        doc.getMap(STUDIO_CRDT_RASTER_SURFACES_ROOT).set(surface.surfaceId, canonicalStudioRasterJson(surface));
+      }
+      const image = doc.getMap("scene-element:element-color");
+      for (const [key, value] of Object.entries(maskProps)) image.set(`prop:${key}`, value);
+      expect(hasValidStudioCrdtRootSchema(doc)).toBe(false);
+    } finally { doc.destroy(); }
+  });
   it("작은 참조와 registry만 있는 6개 레이어를 일반 root schema로 읽는다", () => {
     const doc = fixture(); expect(hasValidStudioCrdtRootSchema(doc)).toBe(true); doc.destroy();
   });

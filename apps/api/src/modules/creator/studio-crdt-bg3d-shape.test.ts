@@ -73,11 +73,12 @@ function body(source: ts.SourceFile, name: string): string {
 }
 
 describe("6패스 순수 shape 분리의 원본 동등성", () => {
-  it("원본 검사식·상수·예산을 고정하고 callback 전달 외 함수 본문을 그대로 옮긴다", () => {
+  it("원본 fixture·상수·예산과 마스크 계약 확장 외 순수 함수 본문을 그대로 유지한다", () => {
     expect(createHash("sha256").update(before).digest("hex")).toBe("4db06fecf624253c05a7124bd26012bf6bbf906dab62a0751345e6dfb137ddec");
     const current = readFileSync(new URL("./studio-crdt-bg3d-shape.ts", import.meta.url), "utf8");
     const file = ts.createSourceFile("shape.ts", current, ts.ScriptTarget.Latest, true);
-    for (const name of ["object", "map", "props", "sourceHash", "hasValidStudioBg3dImageReferenceProps", "isValidStudioBg3dImageReferenceCandidate"])
+    // PR #2718의 유효 마스크 허용은 아래 동작 검사로 구분하고, 추출 전 fixture는 바꾸지 않는다.
+    for (const name of ["object", "map", "props", "sourceHash", "isValidStudioBg3dImageReferenceCandidate"])
       expect(body(file, name), name).toBe(body(beforeFile, name));
     expect(body(file, "parseStudioCrdtBg3dRevision")).toBe(body(beforeFile, "parseRevision"));
     expect(body(file, "snapshotStudioCrdtBg3dShape")).toBe(body(beforeFile, "snapshotStudioCrdtBg3dBundles")
@@ -137,6 +138,46 @@ describe("6패스 순수 shape 분리의 원본 동등성", () => {
       expect(shape.hasValidStudioBg3dImageReferenceProps("other-id", values)).toBe(false);
       expect(shape.hasValidStudioBg3dImageReferenceProps("legacy", {})).toBeUndefined();
       expect(shape.isValidStudioBg3dImageReferenceCandidate("unknown", true)).toBeUndefined();
+    } finally { doc.destroy(); }
+  });
+
+  it.each([true, false, undefined])("PR #2718의 유효 마스크 계약 확장만 순수 shape와 기존 facade 양쪽에서 허용한다 (enabled=%s)", (enabled) => {
+    const doc = document();
+    try {
+      const image = doc.getMap("scene-element:element-color");
+      const original = Object.fromEntries([...image].filter(([key]) => key.startsWith("prop:")).map(([key, value]) => [key.slice(5), value]));
+      const mask = { filterMaskSurfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        ...(enabled === undefined ? {} : { filterMaskEnabled: enabled }) };
+      const changed = { ...original, ...mask };
+      expect(baseline.hasValidStudioBg3dImageReferenceProps("element-color", original)).toBe(true);
+      expect(baseline.hasValidStudioBg3dImageReferenceProps("element-color", changed)).toBe(false);
+      for (const validate of [shape.hasValidStudioBg3dImageReferenceProps, facade.hasValidStudioBg3dImageReferenceProps]) {
+        expect(validate("element-color", original)).toBe(true);
+        expect(validate("element-color", changed)).toBe(true);
+      }
+      for (const [key, value] of Object.entries(mask)) image.set(`prop:${key}`, value);
+      expect(shape.hasValidStudioCrdtBg3dBundleRoots(doc)).toBe(true);
+      expect(facade.snapshotStudioCrdtBg3dBundles(doc).images.get("element-color")?.props).toMatchObject(mask);
+    } finally { doc.destroy(); }
+  });
+
+  it.each([
+    { filterMaskEnabled: true },
+    { filterMaskSurfaceId: "not-a-filter-mask" },
+    { filterMaskSurfaceId: "filter-mask:v1:AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA" },
+    { filterMaskSurfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", filterMaskEnabled: "true" },
+    { filterMaskSurfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", filterMaskEnabled: null },
+    { filterMaskSurfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", filterMaskUnexpected: true },
+    { filterMaskSurfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", width: 0 },
+    { filterMaskSurfaceId: "filter-mask:v1:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", src: "https://example.test/image.png" },
+  ])("잘못된 마스크·미지원 속성·기존 이미지 계약 위반은 추출 전과 동일하게 거부한다: %j", (changes) => {
+    const doc = document();
+    try {
+      const original = Object.fromEntries([...doc.getMap("scene-element:element-color")]
+        .filter(([key]) => key.startsWith("prop:")).map(([key, value]) => [key.slice(5), value]));
+      const changed = { ...original, ...changes };
+      for (const validate of [baseline.hasValidStudioBg3dImageReferenceProps, shape.hasValidStudioBg3dImageReferenceProps, facade.hasValidStudioBg3dImageReferenceProps])
+        expect(validate("element-color", changed)).toBe(false);
     } finally { doc.destroy(); }
   });
 

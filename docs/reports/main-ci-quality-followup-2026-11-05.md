@@ -56,6 +56,8 @@ canonical 보존 재검사는 기존 dirty source 9개의 SHA-256 일치를 확�
 - AI modal은 제품 지연으로 단정하지 않는다. 같은 사례의 원본 로컬 8.79초 중 약 93%가 전역 DOM query였다. 같은 15개 단언·9개 동작·30초 기한을 유지한 범위 검색으로 최종 20개가 통과했고 해당 사례는 0.59초였다. 새 Full CI 결과는 별도다.
 - mesh는 GLB bytes가 아니라 257코너 실패 입력의 report hash 차이였다. 실행마다 삼각함수로 만들던 원래 8e445 좌표를 고정하고 매번 새 객체로 복사한다. 생산 digest·golden 파일·18개 기대값은 바꾸지 않았다. 삼각함수 호출을 금지한 RED 이후 2파일 36개가 통과했으며 Linux의 새 CI 결과를 별도로 확인한다.
 
-핵심 교정 대상은 총 876개 required selector에 고정했다. 문서가 필요한 closure만 기존 product 소유에 두고 실제 expanded owner·sparse 입력을 확인했다. 대상 삭제·skip 추가·serial 22개·timeout·성능/크기 기준 완화는 없다. 이 문서의 로컬 계측·선행 화면 통과를 새 head 전체의 통과로 합산하지 않는다.
+핵심 교정 대상은 최초 876개 required selector에 고정했으며, main `994e5ba34`의 CRDT 회귀 네 경로와 통합한 현재 합집합은 880개다. 문서가 필요한 closure만 기존 product 소유에 두고 실제 expanded owner·sparse 입력을 확인했다. 대상 삭제·skip 추가·serial 22개·timeout·성능/크기 기준 완화는 없다. 이 문서의 로컬 계측·선행 화면 통과를 새 head 전체의 통과로 합산하지 않는다.
 
 원본·패치·해시·실행 명세는 `/tmp/pr2716-ci-additional-20261105/`, `/tmp/pr2716-dry-carrier-patch-manifest-20261105.json`, `/tmp/pr2716-full-boundary-manifest-20261105.json`, `/tmp/full-ui-guards-442add3-20261105-evidence.json`, `/tmp/pr2716-ai-modal-query-scope-manifest-20261105.json`, `/tmp/main442-smart-shapes-readiness-db0942-20261105/verification-summary.json`에 보존했다. 운영 DB 적용·배포 및 외부 전문 도구 호환성 검증은 이 교정에 포함하지 않았다.
+
+2026-11-05 PR #2718 병합 후 충돌 해결에서는 API facade와 root schema의 순수 shape 경로를 유지하고, main의 유효 filter mask 검증만 새 shape 함수로 이식했다. 동결 fixture/hash와 다른 함수 동등성·오류 경계는 보존하며, 해당 validator의 의도한 mask 확장을 별도 동작 비교로 검증한다. 이 범위에는 morphology 필압 진단이나 운영 변경을 포함하지 않는다.
