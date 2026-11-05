@@ -14,6 +14,15 @@ export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, acto
     await route.fulfill(bytes ? { status: 200, contentType: "image/png", body: bytes } : { status: 404, body: "없는 시험 객체" });
   });
   const page = await context.newPage(), proof: LiveProof = { synced: false, updateAcks: 0, rejected: 0 };
+  const network: { path: string; status: number }[] = [];
+  const acknowledgements: { event: string; ok: boolean | null; code?: string }[] = [];
+  page.on("response", response => {
+    const url = new URL(response.url());
+    if (url.origin === origin && url.pathname.startsWith("/api/")) {
+      network.push({ path: url.pathname, status: response.status() });
+      if (network.length > 100) network.shift();
+    }
+  });
   await page.bringToFront();
   page.on("websocket", socket => {
     const events = new Map<string, string>();
@@ -31,6 +40,12 @@ export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, acto
         const wire: unknown = JSON.parse(payload.slice(index)), event = events.get(id);
         const ack: unknown = Array.isArray(wire) ? wire[0] : null;
         if (!ack || typeof ack !== "object") return;
+        if (event?.startsWith("studio:")) {
+          const ok = Reflect.get(ack, "ok"), code = Reflect.get(ack, "code");
+          acknowledgements.push({ event, ok: typeof ok === "boolean" ? ok : null,
+            ...(typeof code === "string" && /^[a-z0-9_:.-]{1,80}$/iu.test(code) ? { code } : {}) });
+          if (acknowledgements.length > 100) acknowledgements.shift();
+        }
         if (Reflect.get(ack, "ok") === true && event === "studio:crdt:sync:binary:v1") proof.synced = true;
         if (Reflect.get(ack, "ok") === true && event === "studio:crdt:update:binary:v1") proof.updateAcks++;
         if (Reflect.get(ack, "ok") === false) proof.rejected++;
@@ -43,7 +58,25 @@ export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, acto
   expect(login.status()).toBe(201);
   actor.cookie = (await context.cookies(origin)).map(c => `${c.name}=${c.value}`).join("; ");
   await page.goto(`${origin}/studio/work/${workId}/canvas`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-  await expect.poll(() => proof.synced, { timeout: 120_000 }).toBe(true);
+  try {
+    await expect.poll(() => proof.synced, { timeout: 120_000 }).toBe(true);
+  } catch (error) {
+    // 준비 도중 실패하면 호출자에게 페이지가 아직 반환되지 않아 기존 실패 훅으로 관측할 수 없다.
+    // 토큰·쿠키·요청 본문·원시 Socket frame은 기록하지 않는다.
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const output = process.env.TOONSTUDIO_SIX_PAGE_EVIDENCE_DIR ?? ".qa/short-comic-six-page-integration";
+    try {
+      await mkdir(output, { recursive: true });
+      const prefix = join(output, `canvas-startup-${crypto.randomUUID()}`);
+      await writeFile(`${prefix}.json`, JSON.stringify({ proof, network, acknowledgements,
+        pathname: new URL(page.url()).pathname, body: await page.locator("body").innerText({ timeout: 5_000 }) }, null, 2), { mode: 0o600 });
+      await page.screenshot({ path: `${prefix}.png`, timeout: 15_000 });
+    } catch {
+      console.error("6컷 캔버스 시작 실패의 진단 기록을 완료하지 못했습니다.");
+    }
+    throw error;
+  }
   await page.getByText("변경 동기화 완료", { exact: true }).first().waitFor({ timeout: 120_000 });
   await page.locator("[data-studio-post-processing-scope] .konvajs-content:visible").first().waitFor({ timeout: 120_000 });
   const quickStart = page.getByRole("button", { name: "빠른 시작 닫기 (Esc)", exact: true });
