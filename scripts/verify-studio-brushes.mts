@@ -101,6 +101,7 @@ import {
   prepareStudioDrawingUi,
   waitForStudioDrawingReady,
 } from "./lib/studio-drawing-readiness";
+import { openMobileBrushSettings } from "./lib/studio-mobile-brush-settings";
 import {
   isStaticPreviewReadinessResponse,
   isStaticPreviewReadinessUnavailable,
@@ -4610,19 +4611,6 @@ async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise
   }
 }
 
-async function openMobileBrushSettings(page: Page, dock: Locator): Promise<void> {
-  const toggle = dock.locator('[data-studio-mobile-workspace-toggle="true"]');
-  if (await toggle.getAttribute("aria-expanded") !== "true") {
-    await clickStudioControlAfterReadiness(page, toggle);
-  }
-  const tools = dock.locator('[data-studio-mobile-workspace-menu="true"]');
-  await tools.waitFor({ state: "visible" });
-  await clickStudioControlAfterReadiness(
-    page,
-    tools.locator('button[aria-controls="studio-mobile-draw-settings"]:not([data-studio-primary-action])'),
-  );
-  await tools.waitFor({ state: "hidden" });
-}
 
 async function runMobileTouchAudit(browser: Browser, studioUrl: string): Promise<MobileTouchResult> {
   const context = await browser.newContext({

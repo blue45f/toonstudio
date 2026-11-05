@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import ts from "typescript";
 
 import { describe, expect, it } from "vitest";
 
@@ -24,6 +25,32 @@ const savePipelineSource = readFileSync(
   new URL("./studio-page-save-pipeline.ts", import.meta.url),
   "utf8",
 );
+
+function assertRemoteHistoryPublication(source: string): number {
+  const ast = ts.createSourceFile("binding.ts", source, ts.ScriptTarget.Latest, true);
+  let count = 0;
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
+      && node.expression.expression.getText(ast) === "input" && node.expression.name.text === "rebase") {
+      let scope: ts.Node | undefined = node.parent;
+      while (scope && !ts.isBlock(scope)) scope = scope.parent;
+      if (!scope || !ts.isBlock(scope)) throw new Error("이력 재조정 block이 없습니다.");
+      const expressions = scope.statements.filter(ts.isExpressionStatement).map((statement) => statement.expression);
+      const assignment = expressions.find((expression): expression is ts.BinaryExpression => ts.isBinaryExpression(expression)
+        && expression.operatorToken.kind === ts.SyntaxKind.EqualsToken && expression.left.getText(ast) === "input.pagesHistoryRef.current");
+      const publication = expressions.find((expression): expression is ts.CallExpression => ts.isCallExpression(expression)
+        && expression.expression.getText(ast) === "input.setHistory");
+      if (!assignment || !publication || !publication.arguments[0]) throw new Error("ref와 state의 이력 발행이 함께 있어야 합니다.");
+      expect(assignment.getStart(ast)).toBeLessThan(node.getStart(ast));
+      expect(node.getStart(ast)).toBeLessThan(publication.getStart(ast));
+      expect(publication.arguments[0].getText(ast)).toBe(assignment.right.getText(ast));
+      count += 1;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  return count;
+}
 
 function sourceBetween(start: string, end: string): string {
   const startIndex = studioPageSource.indexOf(start);
@@ -102,7 +129,13 @@ describe("pending stroke lifecycle source contract", () => {
     expect(admission).toContain("commitStudioWorkAssetAdmittedHistory(pagesHistoryRef, admitted.history)");
     expect(admission).toContain("rebaseStudioHistoryJournal(");
     expect(remoteFrontier).toContain("const currentHistory = input.pagesHistoryRef.current");
-    expect(remoteFrontier).toContain("input.pagesHistoryRef.current = reconciled.history");
+    // 전체 복원과 속성 선반영 모두 동일한 최종 history를 ref → journal → state 순서로 발행한다.
+    expect(assertRemoteHistoryPublication(remoteFrontier)).toBe(2);
+    expect(studioPageSource).toMatch(/rebase:\s*rebaseStudioHistoryJournal/u);
+    for (const body of [
+      "input.rebase(pages, index); input.pagesHistoryRef.current = next; input.setHistory(next);",
+      "input.pagesHistoryRef.current = next; input.rebase(pages, index); input.setHistory(other);",
+    ]) expect(() => assertRemoteHistoryPublication(`function sample(input) { ${body} }`)).toThrow();
     expect(remoteFrontier).toContain('"remote CRDT reconciliation"');
     expect(remoteFrontier).not.toContain("setPagesHistoryState((history)");
     expect(hydratedAssets).toContain("const currentHistory = pagesHistoryRef.current");

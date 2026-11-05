@@ -395,26 +395,28 @@ describe("StudioAiSuperSuiteModal — 고도화 콘티 디렉터 (그림체·스
     ]);
 
     render(<StudioAiSuperSuiteModal open onClose={() => {}} />);
-    fireEvent.click(screen.getByRole("tab", { name: "콘티 자동 디렉터" }));
+    const dialog = within(screen.getByRole("dialog", { name: "AI + 스마트 웹툰 제작 스위트" }));
+    fireEvent.click(dialog.getByRole("tab", { name: "콘티 자동 디렉터" }));
+    const director = within(dialog.getByRole("tabpanel", { name: "콘티 자동 디렉터" }));
 
-    const styleSelect = screen.getByLabelText("그림체 모델 선택") as HTMLSelectElement;
+    const styleSelect = director.getByLabelText("그림체 모델 선택") as HTMLSelectElement;
     fireEvent.change(styleSelect, { target: { value: "lora-style-ktoon" } });
 
-    const applyStorylineButtons = screen.getAllByRole("button", {
+    const applyStorylineButtons = director.getAllByRole("button", {
       name: "스토리라인·대사·스케치 콘티에 반영",
     });
     expect(applyStorylineButtons.length).toBeGreaterThan(0);
     fireEvent.click(applyStorylineButtons[0]!);
 
-    const scriptTextarea = screen.getByLabelText("대본 / 시나리오 줄글 입력") as HTMLTextAreaElement;
+    const scriptTextarea = director.getByLabelText("대본 / 시나리오 줄글 입력") as HTMLTextAreaElement;
     expect(scriptTextarea.value).toContain("주인공:");
 
-    expect(screen.getAllByText(/작가 그림체 모델 프롬프트 \(K-액션 먹선 작가체\)/u).length).toBeGreaterThan(0);
-    expect(screen.getByText(/번역 말풍선 안전율:/u)).toBeTruthy();
+    expect(director.getAllByText(/작가 그림체 모델 프롬프트 \(K-액션 먹선 작가체\)/u).length).toBeGreaterThan(0);
+    expect(director.getByText(/번역 말풍선 안전율:/u)).toBeTruthy();
 
     // 대본이 비어 있어도 스케치 구도가 선택되어 있으면 스케치 단독 모드로 1컷 콘티를 유지한다.
     fireEvent.change(scriptTextarea, { target: { value: "   " } });
-    expect(screen.getByText(/자동 생성된 컷별 콘티 \(1개 컷\)/u)).toBeTruthy();
+    expect(director.getByText(/자동 생성된 컷별 콘티 \(1개 컷\)/u)).toBeTruthy();
   });
 
   it("BYOK 없이도 화풍 DNA·보조 화풍 블렌딩·1화 기승전결 4막 자동 설계·자유 스케치 스트로크 분석·다국어 프리뷰가 동작한다", () => {
