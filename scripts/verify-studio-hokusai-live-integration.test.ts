@@ -170,6 +170,40 @@ describe("Studio Hokusai production-preview integration evidence", () => {
     expect(validateStudioHokusaiLiveIntegrationResult(successfulResult())).toEqual([]);
   });
 
+  it("정적 API 부재 원문은 보존하되 다른 실패를 덮지 않는다", () => {
+    const result = successfulResult();
+    result.diagnostics.staticPreviewApiUnavailable = { apiVerified: false, observations: [
+      { kind: "response", raw: "fixture: 502 http://127.0.0.1:4179/api/health/capabilities" },
+    ] };
+    expect(validateStudioHokusaiLiveIntegrationResult(result)).toEqual([]);
+    result.diagnostics.requestFailures.push("fixture: POST /api/studio-realtime/tickets: net::ERR_CONNECTION_RESET");
+    expect(validateStudioHokusaiLiveIntegrationResult(result)).toContain("browser diagnostics contain requestFailures");
+  });
+
+  function roundTripStaticPreviewEvidence(value: unknown): unknown {
+    const result = successfulResult();
+    return JSON.parse(JSON.stringify({ ...result, diagnostics: { ...result.diagnostics, staticPreviewApiUnavailable: value } }));
+  }
+
+  it("JSON 재열기 뒤 API 검증 성공 주장은 거부한다", () => {
+    expect(validateStudioHokusaiLiveIntegrationResult(roundTripStaticPreviewEvidence({ apiVerified: true, observations: [] })))
+      .toContain("정적 preview API 부재 기록이 올바르지 않습니다");
+  });
+
+  it("JSON 재열기 뒤 관측 목록이 없거나 배열이 아니면 거부한다", () => {
+    for (const value of [{ apiVerified: false }, { apiVerified: false, observations: {} }]) {
+      expect(validateStudioHokusaiLiveIntegrationResult(roundTripStaticPreviewEvidence(value)))
+        .toContain("정적 preview API 부재 기록이 올바르지 않습니다");
+    }
+  });
+
+  it("JSON 재열기 뒤 관측 항목의 kind와 원문 형태를 확인한다", () => {
+    for (const observation of [null, { kind: "live-api-pass", raw: "fixture" }, { kind: "response", raw: 502 }, { kind: "response", raw: "" }, { kind: "response", raw: " " }]) {
+      expect(validateStudioHokusaiLiveIntegrationResult(roundTripStaticPreviewEvidence({ apiVerified: false, observations: [observation] })))
+        .toContain("정적 preview API 부재 기록이 올바르지 않습니다");
+    }
+  });
+
   it("rejects a normal shelf that starts Hokusai live or loses trusted vector input", () => {
     const result = successfulResult();
     result.shelf[0] = {

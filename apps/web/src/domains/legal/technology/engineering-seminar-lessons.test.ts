@@ -387,9 +387,13 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-scene3d", claim: "LT 변환은 컬러·톤·질감선·주선 4레이어", needles: ["네 레이어", "컬러", "주선"],
+    lesson: "seminar-scene3d", claim: "기본 LT는 설정별 역할, 6패스는 그림자·깊이까지 명시적으로 분리", needles: ["컬러 또는 톤", "6패스를 선택하면", "그림자·깊이", "여섯 역할"],
     check: () => {
-      expect(readText("apps", "web", "src", "domains", "creator", "bg3d", "studio-bg3d-lt-layer-plan.ts")).toContain('STUDIO_BG3D_LT_LAYER_ROLES = ["color", "tone", "texture-line", "main-line"]');
+      expect(readText("apps", "web", "src", "domains", "creator", "bg3d", "studio-bg3d-lt-layer-plan.ts")).toContain('STUDIO_BG3D_LT_LAYER_ROLES = ["color", "tone", "shadow", "depth", "texture-line", "main-line"]');
+      const render = readText("apps", "web", "src", "domains", "creator", "bg3d", "studio-bg3d-lt-render.ts");
+      expect(render).toContain('role: tone.type === "color" ? "color" : "tone"');
+      expect(render).toContain("if (settings.sixPassLt !== undefined) {");
+      expect(render).toContain("layers: assembleStudioBg3dSixPassLtLayers(rasterInput, settings.sixPassLt,");
     },
   },
   {

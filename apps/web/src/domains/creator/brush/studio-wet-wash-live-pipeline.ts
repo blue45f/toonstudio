@@ -7,7 +7,7 @@
  *
  * 결과는 배치 체인(`planCausalWatercolorBrushDabs` →
  * `applyStudioBrushAliasWatercolorMaterial` → `planStudioWetRibbonCarrier`)과 값으로 완전히
- * 같다 — 각 단계가 배치와 같은 함수를 같은 순서로 호출한다. wet-edge-bloom / living-ink bake
+ * 같다 — 각 단계가 배치와 같은 함수를 같은 순서로 호출한다. wet-edge-bloom / living-ink bake / 갈필
  * 프로그램이 핀된 레인은 전획 물리 단계가 있어 여기서 다루지 않고 `null` 을 돌려주며, 호출부가
  * 기존 배치 체인으로 그대로 내려간다(fail-closed). 커밋 렌더 역시 배치 체인을 유지해 후처리
  * 워커의 전면 치환 같은 내부 점 재작성에도 항상 정본을 그린다.
@@ -23,6 +23,7 @@ import {
   resolveStudioBrushAliasWatercolorMaterialStage,
   scaleStudioBrushAliasWatercolorMaterialDab,
 } from "./studio-brush-alias-profile";
+import { resolveStudioBrushEngineLaneWatercolorMaterial } from "./studio-brush-engine-lane-catalog";
 import { createStudioIncrementalWetRibbonCarrier } from "./studio-wet-ribbon-carrier";
 
 import type {
@@ -111,7 +112,10 @@ export function planStudioWetWashLivePipeline(
     params.brushId,
     params.enginePrograms,
   );
-  if (stage.wetEdgeBloomProgramId || stage.livingInkBakeProgramId) return null;
+  if (stage.wetEdgeBloomProgramId || stage.livingInkBakeProgramId || (
+    typeof params.brushId === "string"
+    && resolveStudioBrushEngineLaneWatercolorMaterial(params.brushId)?.wetPaperBakeProgramId === "chu-tai-dry-brush"
+  )) return null;
 
   const entry = obtainPipelineEntry(strokeKey);
   const plannedDabs = entry.planner.plan(params.input, false);

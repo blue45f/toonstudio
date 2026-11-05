@@ -7,6 +7,7 @@
  */
 
 export { advanceWetPaperBristleFieldBuild } from "./studio-wet-paper-bristle";
+export { applyWetPaperDepositEvent } from "./studio-wet-paper-deposit";
 export {
   advanceWetPaperSolve,
   createWetPaperSolve,

@@ -37,22 +37,24 @@ function workspaceManifests(): readonly Record<string, unknown>[] {
 const megabytes = (path: string): number => statSync(path).size / 1_000_000;
 
 describe("라이브러리 해설 영역 5~8 · 숫자 주장", () => {
-  it("pnpm 패치·override·포크 개수가 pnpm-workspace.yaml 과 저장소 폴더와 같다", () => {
+  it("pnpm 패치·override 전체와 대표 포크 두 개가 원본 설정·기능과 같다", () => {
     const workspace = parse(read("pnpm-workspace.yaml")) as { patchedDependencies?: Record<string, string>; overrides?: Record<string, string> };
     const patches = Object.keys(workspace.patchedDependencies ?? {}).length;
     const overrides = Object.keys(workspace.overrides ?? {}).length;
     const bracesFork = Object.entries(workspace.overrides ?? {}).some(([key, value]) => key.startsWith("braces@") && value === "file:patches/braces");
     expect(bracesFork, "braces 포크 override").toBe(true);
     expect(repoPathExists("patches/braces/package.json")).toBe(true);
-    const forks = [bracesFork, repoPathExists("crates/vendor/wgpu-toon")].filter(Boolean).length;
+    expect(repoPathExists("crates/vendor/wgpu-toon")).toBe(true);
+    expect(read("patches/braces/lib/constants.js")).toContain("MAX_DEPTH: 100,");
+    expect(read("crates/vendor/wgpu-toon/Cargo.toml")).toContain("toon-fabric = []");
 
     const build = area("build-quality-media");
     expect(build).toContain(`패치 ${patches}개`);
     expect(build).toContain(`override ${overrides}개`);
     expect(build).toContain(`${patches} patches`);
     expect(build).toContain(`${overrides} overrides`);
-    expect(build).toContain(`포크 ${forks}개`);
-    expect(build).toContain(`${forks} forks`);
+    expect(build).toContain("대표 포크 2개(braces·wgpu-toon)");
+    expect(build).toContain("2 representative forks (braces and wgpu-toon)");
     // 낡은 개수가 남지 않았는지: 본문에 적힌 "패치 N개"는 모두 현재 값이어야 한다.
     // (ag-psd 카드의 "pnpm 패치 1개"처럼 개별 패치를 가리키는 문장은 제외하고, 전체 묶음을 가리키는 문장만 본다.)
     for (const match of build.matchAll(/(?:라이브러리|pnpm) 패치 (\d+)개(?!로)/gu)) expect(Number(match[1])).toBe(patches);

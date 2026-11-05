@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 import { consumeCompletedResponse } from './request-lifecycle.mjs';
 import { runWithOwnedContexts } from './browser-finalization.mjs';
+
+const { test } = process.env.VITEST ? await import('vitest') : await import('node:test');
 
 function deferred() {
   let resolve;

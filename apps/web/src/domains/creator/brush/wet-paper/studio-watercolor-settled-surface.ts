@@ -6,7 +6,7 @@
  * - 리빙잉크 베이크 레인(커밋 렌더): 바이트 동일한 베이스 워시를 바로 그리고 시분할 캐시에서 증강 dab을 받는다
  *   (2026-08-14 정지 수정 그대로).
  * - 젖은 종이 레인(커밋 렌더): dab 계획은 다른 레인과 같은 재질 스케일 베이스 워시이고, 정착 시뮬레이션 래스터가
- *   준비되면 그 래스터가 획을 대신 그린다(`wetPaperBake`). 라이브 초안·썸네일은 언제나 베이스 워시다.
+ *   준비되면 그 래스터가 획을 대신 그린다(`wetPaperBake`). 갈필은 초안·정착 대기 중에 같은 침착 표면을 쓴다.
  * SVG 내보내기는 같은 프로그램 해석(`resolveStudioWetPaperBakeProgramIdForBrush`)을 쓰고 동기로 굽는다.
  */
 
@@ -21,13 +21,13 @@ import {
 } from "../studio-brush-alias-profile";
 import { resolveStudioBrushEngineLaneWatercolorMaterial } from "../studio-brush-engine-lane-catalog";
 
-import { requestStudioWetPaperBake } from "./studio-wet-paper-host";
+import { releaseStudioDryBrushLiveBakeRequester, requestStudioDryBrushLiveBake, requestStudioWetPaperBake } from "./studio-wet-paper-host";
 
 import type { StudioBrushEngineProgramSet } from "../studio-brush-engine-program-set";
 import type { StudioWetPaperCanvasBake } from "./studio-wet-paper-host";
 import type { StudioWetPaperBakeProgramId } from "./studio-wet-paper-program-ids";
 
-export { drawStudioWetPaperBake } from "./studio-wet-paper-host";
+export { drawStudioWetPaperBake, releaseStudioWetPaperBakeRequesters } from "./studio-wet-paper-host";
 
 /**
  * 브러시가 젖은 종이 정착 베이크를 쓰는가. 다른 웻 텍스처 프로그램(블룸·리빙잉크)이 해석되면 null —
@@ -50,7 +50,7 @@ export interface StudioWatercolorSettledSurfaceInput {
   /** 획 고정 시드(`watercolorBrushSeedFromKey(element.id)`). */
   readonly seed: number;
   readonly activeDraft: boolean;
-  /** 문서 렌더(커밋 획)만 베이크를 요청한다. */
+  /** 커밋 문서 렌더 여부. 갈필 초안은 별도로 같은 베이크를 요청한다. */
   readonly durableDocumentRender: boolean;
   readonly enginePrograms: StudioBrushEngineProgramSet | null;
   /** 획 색(젖은 종이 래스터 합성). */
@@ -72,6 +72,8 @@ export function resolveStudioWatercolorSettledSurface(
   input: StudioWatercolorSettledSurfaceInput,
 ): StudioWatercolorSettledSurface {
   const { brush, plannedDabs, seed, enginePrograms } = input;
+  const wetPaperProgramId = resolveStudioWetPaperBakeProgramIdForBrush(brush, enginePrograms);
+  if (wetPaperProgramId !== "chu-tai-dry-brush") releaseStudioDryBrushLiveBakeRequester(input.requester);
   const stage = resolveStudioBrushAliasWatercolorMaterialStage(brush, enginePrograms);
   const livingInkBakeProgram = input.durableDocumentRender && stage.livingInkBakeProgramId
     ? resolveStudioLivingInkSettledBakeProgram(stage.livingInkBakeProgramId)
@@ -93,10 +95,7 @@ export function resolveStudioWatercolorSettledSurface(
     input.activeDraft ? "live" : "settled",
     enginePrograms,
   );
-  const wetPaperProgramId = input.durableDocumentRender && !input.activeDraft
-    ? resolveStudioWetPaperBakeProgramIdForBrush(brush, enginePrograms)
-    : null;
-  const wetPaperBake = wetPaperProgramId
+  const wetPaperBake = wetPaperProgramId && input.durableDocumentRender && !input.activeDraft
     ? requestStudioWetPaperBake(
         dabs,
         { seed, programId: wetPaperProgramId },
@@ -106,5 +105,10 @@ export function resolveStudioWatercolorSettledSurface(
         input.requester,
       )
     : null;
-  return { dabs, wetPaperBake };
+  if (wetPaperBake) releaseStudioDryBrushLiveBakeRequester(input.requester);
+  const dryPreview = !wetPaperBake && wetPaperProgramId === "chu-tai-dry-brush"
+    && (input.activeDraft || input.durableDocumentRender)
+    ? requestStudioDryBrushLiveBake(dabs, { seed, programId: wetPaperProgramId }, input.color, input.onBakeReady, input.requester, input.activeDraft)
+    : null;
+  return { dabs, wetPaperBake: wetPaperBake ?? dryPreview };
 }

@@ -3,6 +3,7 @@
 - 상태: **current — 로컬 재현 및 수정 후보, 미병합·미배포**
 - 검증 날짜: 2026-11-05 KST
 - 기준 main SHA: `8d315c85d6fde4a3a30255612c756d3e299a95b0`
+- 최신 main 통합 기준: `2c626df4000fcfc32318faa793a61bea3ef0901b` (PR #2716 병합)
 - 브랜치: `codex/crdt-six-pass-consistency-20261105`
 - 대상: [PR #2710 미해결 리뷰](https://github.com/blue45f/toonstudio/pull/2710)
 - 제외: [PR #2711](https://github.com/blue45f/toonstudio/pull/2711)의 ZIP 저장·자동 저장 복구·DB 통합 검증 반복
@@ -112,6 +113,7 @@ pnpm harness:verify
 - 최종 `pnpm harness:verify`: 전체 Web/API 타입 검사와 범위 게이트를 포함해 종료 코드 **0**.
 - 후속 통합 회귀: **12파일 216개 통과**. 같은 속성·다른 속성 재편집과 복원 중 undo,
   전체 동기화 중첩, 원격 echo, 구조 전이 및 Stage visibility overlay 보존을 포함한다.
+- 최신 main 통합 후 관련 회귀 **12파일 216개**, CI manifest·경로 정책 **61개** 재검증 통과.
 - 신규 frontier·pending history·remote admission 테스트를 필수 core와 기존 협업 CI 목록에
   등록했다. CI manifest·경로 정책 테스트 **60개 통과**, workflow fanout 정책 통과.
 - 수정 전/후 원시 로그는 로컬 `/tmp/crdt-*`에 있으며 Git 추적 대상이 아니다.

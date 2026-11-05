@@ -2,9 +2,13 @@ import assert from 'node:assert/strict';
 import { createHash, X509Certificate } from 'node:crypto';
 import { copyFile, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import test, { after, before } from 'node:test';
 import { createStudioReviewQaCertificates } from '../../../../../scripts/studio-review-local-storage-runtime.mjs';
 import { prepareLocalQaTls } from './local-qa-tls.mjs';
+
+const runner = process.env.VITEST ? await import('vitest') : await import('node:test');
+const { test } = runner;
+const before = runner.beforeAll ?? runner.before;
+const after = runner.afterAll ?? runner.after;
 
 let generated;
 let infra;

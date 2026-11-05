@@ -222,20 +222,22 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 57개 — 대부분 보안 권고 대응, 일부는 도구 버전 통일, braces 한 줄은 저장소 포크로 대체). 설치할 때 pnpm이 자동으로 적용한다.",
-        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (57 overrides, mostly answering security advisories, some aligning tool versions, and one swapping braces for a repository fork). pnpm applies both automatically at install time.",
+        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 61개 — 보안 권고 대응·도구 버전 통일·저장소 보안 대체본 지정). 설치할 때 pnpm이 자동으로 적용한다.",
+        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (61 overrides for security advisories, tool-version alignment and repository security replacements). pnpm applies both automatically at install time.",
       ),
       license: t("원본 라이선스를 따름", "Follows each original"),
       mode: t("설치 단계(pnpm)", "Install step (pnpm)"),
       note: t(
-        "패치 7개: 운영 CSP 호환 3(manifold-3d·ktx2-encoder는 new Function 제거, glTF Transform은 지연 로드), 브라우저 호환 1(ag-psd), R3F 1, 결정성 1(p5.brush), 보안 호환 1(minimatch). braces는 수정 릴리스가 없어 패치 대신 저장소 포크(깊이 100 상한)로 대체. 상류 PR은 못 찾았다.",
-        "The 7 patches: production-CSP compatibility 3 (manifold-3d and ktx2-encoder drop new Function, glTF Transform defers loading), browser compatibility 1 (ag-psd), R3F 1, determinism 1 (p5.brush) and security compatibility 1 (minimatch). braces has no upstream fix, so a repository fork (depth cap 100) replaces it instead of a patch. No upstream PR found.",
+        "패치 7개: 운영 CSP 호환 3(manifold-3d·ktx2-encoder는 new Function 제거, glTF Transform은 지연 로드), 브라우저 호환 1(ag-psd), R3F 1, 결정성 1(p5.brush), 면 병합 출력 보존 1(openskp). minimatch는 저장소 보안 백포트로, braces는 깊이 100 가드 포크로 대체. 상류 PR은 못 찾았다.",
+        "The 7 patches: production-CSP compatibility 3 (manifold-3d and ktx2-encoder drop new Function, glTF Transform defers loading), browser compatibility 1 (ag-psd), R3F 1, determinism 1 (p5.brush) and face-merge output preservation 1 (openskp). Repository security backports replace minimatch; a depth-100 guard fork replaces braces. No upstream PR found.",
       ),
     },
     evidence: [
       "pnpm-workspace.yaml",
       "patches/@react-three__fiber@9.6.1.patch",
-      "patches/minimatch@3.1.5.patch",
+      "patches/openskp@1.3.0.patch",
+      "patches/minimatch-3-security/SECURITY-BACKPORT.md",
+      "patches/minimatch-10-security/SECURITY-BACKPORT.md",
       "scripts/minimatch-security-compat.test.mjs",
       "patches/braces/README.md",
       "scripts/braces-security-compat.test.mjs",
