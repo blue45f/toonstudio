@@ -253,16 +253,31 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     fireEvent.click(screen.getByTestId("ecosystem-tab-cat-3-storyboard"));
     expect(screen.getByTestId("wave24-26-category34-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave24-tool-btn-tankobon"));
+    await waitFor(() => {
+      expect(screen.getByTestId("wave24-26-result-card").textContent).toContain("단행본인쇄");
+    });
 
     fireEvent.click(screen.getByTestId("ecosystem-tab-cat-4-style-transfer"));
     expect(screen.getByTestId("wave27-29-category4-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave27-tool-btn-goreum"));
+    await waitFor(() => {
+      expect(screen.getByTestId("wave27-29-result-card").textContent).toContain("전통복식여밈");
+    });
     expect(screen.getByTestId("wave30-32-category4-osmu-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave30-tool-btn-lunar"));
+    await waitFor(() => {
+      expect(screen.getByTestId("wave27-29-result-card").textContent).toContain("천문달위상");
+    });
     expect(screen.getByTestId("wave33-35-category4-optics-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave33-tool-btn-gacha-rpg"));
+    await waitFor(() => {
+      expect(screen.getByTestId("wave27-29-result-card").textContent).toContain("SSR스플래시·궁극기");
+    });
     expect(screen.getByTestId("wave36-38-category4-mystery-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave36-tool-btn-forensic-luminol"));
+    await waitFor(() => {
+      expect(screen.getByTestId("wave27-29-result-card").textContent).toContain("루미놀청백광·취조거울");
+    });
 
     render(
       <StudioRea15PlatformsWorkbenchPanel
@@ -290,6 +305,14 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(screen.getByTestId("wave54-56-domain-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave54-age-of-sail-btn"));
     fireEvent.click(screen.getByTestId("wave56-omniverse-1080-btn"));
+    await waitFor(() => {
+      expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[갓\/비녀\/카타나 \(/u));
+      expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[무협문파 \(/u));
+      expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[고대신화 \(/u));
+      expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[1020대수프림메타 \(/u));
+      expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[대항해범선 \(/u));
+      expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[1080대옴니버스 \(/u));
+    });
 
     render(
       <StudioWebtoonMasterPipelineCard
