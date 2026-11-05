@@ -507,6 +507,7 @@ describe("bootstrap SQL and repository contract", () => {
     expect(contract.fingerprint).toMatch(/^[0-9a-f]{64}$/u);
     expect(contract.fingerprintPaths).toEqual(expect.arrayContaining([
       "scripts/bootstrap-forward-migration-boundary.mjs",
+      "scripts/production-database-connection.mjs",
       "apps/api/src/platform/database/creator-asset-platform.schema.ts",
       "apps/api/src/platform/database/creator-asset-processing.schema.ts",
       "apps/api/src/platform/database/creator-asset-rights-evidence.schema.ts",

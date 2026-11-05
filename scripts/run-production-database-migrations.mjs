@@ -8,7 +8,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { spawnSync } from "node:child_process";
+import { psql, queryScalar } from "./production-database-connection.mjs";
+export { psql, queryScalar };
 
 import { buildFortuneSnapshotRuntimeAclSql } from "./fortune-snapshot-database-contract.mjs";
 import { buildHiringCapabilitySql, buildHiringRuntimeAclSql } from "./creator-hiring-database-contract.mjs";
@@ -21,7 +22,6 @@ import {
   buildCommunityCafeRuntimeAclSql,
 } from "./community-cafe-database-contract.mjs";
 import {
-  createPsqlEnvironment,
   validateProductionDatabaseUrl,
 } from "./validate-production-database-url.mjs";
 import {
@@ -2766,34 +2766,7 @@ function adoptionMarkerChecksum(manifest) {
   return checksum(historicalContract);
 }
 
-function psql(databaseUrl, sql, { tuplesOnly = false } = {}) {
-  const arguments_ = ["-X", "-v", "ON_ERROR_STOP=1"];
-  if (tuplesOnly) arguments_.push("-A", "-q", "-t");
-  const result = spawnSync("psql", arguments_, {
-    cwd: REPOSITORY_ROOT,
-    encoding: "utf8",
-    env: createPsqlEnvironment(databaseUrl, {
-      allowLoopback: true,
-      baseEnvironment: { ...process.env, PSQLRC: "/dev/null" },
-    }),
-    input: sql,
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  if (result.error) {
-    fail("Unable to execute psql", result.error);
-  }
-  if (result.status !== 0) {
-    const details = (result.stderr || result.stdout || "").trim();
-    fail(details ? `PostgreSQL command failed: ${details}` : "PostgreSQL command failed");
-  }
-  return (result.stdout || "").trim();
-}
-
-function queryScalar(databaseUrl, sql) {
-  return psql(databaseUrl, sql, { tuplesOnly: true }).split(/\r?\n/u)[0]?.trim() ?? "";
-}
-
-function ledgerExists(databaseUrl) {
+export function ledgerExists(databaseUrl) {
   return (
     queryScalar(
       databaseUrl,
@@ -2802,7 +2775,7 @@ function ledgerExists(databaseUrl) {
   );
 }
 
-function requireProvisionedBase(databaseUrl) {
+export function requireProvisionedBase(databaseUrl) {
   const ready = queryScalar(
     databaseUrl,
     `
@@ -2819,7 +2792,7 @@ function requireProvisionedBase(databaseUrl) {
   }
 }
 
-function requireMigrationRoleSeparation(
+export function requireMigrationRoleSeparation(
   databaseUrl,
   runtimeDatabaseRole,
   { requireRuntimeLogin = true } = {},
@@ -3042,7 +3015,7 @@ function verifyHistoricalAdoptionCapabilities(databaseUrl) {
   psql(databaseUrl, buildHistoricalAdoptionVerificationSql());
 }
 
-function readLedger(databaseUrl) {
+export function readLedger(databaseUrl) {
   const output = psql(
     databaseUrl,
     `
@@ -3146,7 +3119,7 @@ export function buildRepairLockTakeoverSql(staleLockOwnerToken = "") {
   `;
 }
 
-function acquireRunnerLock(
+export function acquireRunnerLock(
   databaseUrl,
   releaseSha,
   mode,
@@ -3198,7 +3171,7 @@ function acquireRunnerLock(
   return ownerToken;
 }
 
-function releaseRunnerLock(databaseUrl, ownerToken) {
+export function releaseRunnerLock(databaseUrl, ownerToken) {
   psql(
     databaseUrl,
     `
@@ -3210,7 +3183,7 @@ function releaseRunnerLock(databaseUrl, ownerToken) {
   );
 }
 
-function claimMigration(databaseUrl, migration, releaseSha, action) {
+export function claimMigration(databaseUrl, migration, releaseSha, action) {
   const overwriteIncomplete = action === "repair";
   const result = queryScalar(
     databaseUrl,
@@ -3254,7 +3227,7 @@ function claimMigration(databaseUrl, migration, releaseSha, action) {
   }
 }
 
-function markMigrationApplied(databaseUrl, migration, releaseSha) {
+export function markMigrationApplied(databaseUrl, migration, releaseSha) {
   const updated = queryScalar(
     databaseUrl,
     `
@@ -3275,7 +3248,7 @@ function markMigrationApplied(databaseUrl, migration, releaseSha) {
   }
 }
 
-function markMigrationFailed(databaseUrl, migration, releaseSha) {
+export function markMigrationFailed(databaseUrl, migration, releaseSha) {
   try {
     psql(
       databaseUrl,
@@ -3452,7 +3425,7 @@ function recordAdoptionMarker(databaseUrl, manifest, releaseSha) {
   }
 }
 
-function validateAdoptionMarker(ledger, manifest) {
+export function validateAdoptionMarker(ledger, manifest) {
   const marker = ledger.get(ADOPTION_MARKER_ID);
   if (!marker) return false;
   if (
