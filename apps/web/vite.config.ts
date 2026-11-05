@@ -681,6 +681,8 @@ export default defineConfig(({ command, mode }) => ({
             "lucide-react",
             // QRCode's browser entry is CommonJS; prebundle it for the manuscript acceptance harness.
             "qrcode",
+            // 자동 탐색을 끈 원고 검증에서도 Spectral의 CommonJS 진입점을 브라우저 모듈로 변환한다.
+            "spectral.js",
           ],
         }
       : {}),
