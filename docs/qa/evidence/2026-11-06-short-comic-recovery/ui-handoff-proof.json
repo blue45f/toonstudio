@@ -10,5 +10,5 @@
     "humanChecksRemainPendingAndExportBlocked": true
   },
   "pageErrorCount": 0,
-  "scope": "Independent guest UI path; does not replace the authenticated server scenario."
+  "scope": "독립 guest UI 경로이며 인증된 서버 시나리오를 대신하지 않는다."
 }

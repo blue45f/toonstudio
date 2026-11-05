@@ -82,15 +82,15 @@
     "error": null
   },
   "preparation": {
-    "method": "actual API and actual Web serializer; not continuous UI authoring from a blank project",
+    "method": "실제 API와 실제 Web serializer로 초기화했으며, 빈 프로젝트에서 연속 UI 제작한 결과가 아니다.",
     "count": 63,
     "maxBytes": 4807,
     "budgetUnchanged": true
   },
   "storageScope": {
-    "database": "isolated local PostgreSQL with separate runtime role",
-    "externalMail": "test port",
-    "privateObjectStorage": "test port"
+    "database": "분리된 runtime 역할을 사용하는 독립 로컬 PostgreSQL",
+    "externalMail": "시험 port",
+    "privateObjectStorage": "시험 port"
   },
   "verified": {
     "pagesDeepEqual": true,
@@ -115,11 +115,11 @@
     "sha256": "ee2d8658436c270cc208fb6cad438806c114df24d704bf27c3aab3e587fce1ee"
   },
   "allSixMatchPreviousVerifiedPackage": true,
-  "hostedCi": "final remote head must be checked separately",
+  "hostedCi": "최종 원격 head에서 별도 확인",
   "productionDeploymentPerformed": false,
   "limitations": [
-    "Only a new pointer gesture was verified with Undo/Redo/Undo; the original history journal is absent.",
-    "Actual publication, human rights/rating/quality approval, production SMTP and private storage are not verified.",
-    "The older 8d315c85 reference PNG discrepancy remains separately documented; equality here is against the prior verified 4c14fece technical package."
+    "새 포인터 입력만 Undo/Redo/Undo로 검증했으며 원래 이력 journal은 없다.",
+    "정식 게시, 사람의 권리·등급·품질 승인, 운영 SMTP·private storage는 미검증이다.",
+    "더 오래된 8d315c85 기준 PNG의 차이는 별도 기록이며 여기서의 일치는 직전 4c14fece 기술 패키지와 비교한 결과다."
   ]
 }

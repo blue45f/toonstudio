@@ -1,0 +1,44 @@
+{
+  "scope": "독립 로컬 시험 DB의 기존 행과 권한 보존; 운영 DB 보증으로 확대하지 않는다.",
+  "executionSource": "74f82639af1c3d0331110d65b29087272aeeef40",
+  "priorRows": [
+    {
+      "table": "\"user\"",
+      "priorRows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "creator_work",
+      "priorRows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "creator_work_collaborator",
+      "priorRows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "creator_work_scoped_write_policy",
+      "priorRows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "studio_blob",
+      "priorRows": 40,
+      "unchanged": true
+    },
+    {
+      "table": "creator_asset_storage_object",
+      "priorRows": 80,
+      "unchanged": true
+    }
+  ],
+  "fixtureCleanup": {
+    "testUsersAndWorksRemoved": true,
+    "retainedNewFixtureMetadata": {
+      "blobs": 6,
+      "objects": 12
+    },
+    "sharedMetadataDeleted": false
+  }
+}

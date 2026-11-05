@@ -66,7 +66,7 @@ CanvasKit 변환을 적용한 직접 캡처는 실제 `skia-document`·1440×144
 
 직전 실제 검증 `4c14fece`의 기술 ZIP과 다시 비교한 결과, 여섯 1440×1440 원고 PNG 모두 변경 픽셀 0·최대 채널 차이 0이었다. **기술 ZIP 자체도 838,465 B, SHA-256 `ee2d8658436c270cc208fb6cad438806c114df24d704bf27c3aab3e587fce1ee`로 바이트까지 동일**했다. 첫 냉간 시도의 다른 외관은 원고나 폰트 변경 없이 CanvasKit 변환 복구로 해소됐다. 더 오래된 `8d315c85` 기준 PNG의 기존 차이는 별도 기록이며 모든 역사적 버전의 픽셀 일치를 주장하지 않는다.
 
-계정·쿠키·원시 Socket frame을 제외한 [실행 요약](evidence/2026-11-06-short-comic-recovery/verification-summary.json), [렌더러 영수증](evidence/2026-11-06-short-comic-recovery/renderer-receipts.json), [이전 패키지 비교](evidence/2026-11-06-short-comic-recovery/previous-package-comparison.json), [UI 인계 증거](evidence/2026-11-06-short-comic-recovery/ui-handoff-proof.json)를 공개 검토용으로 보존했다. 이 기록 이후 설명·증거 문서만 추가하며, 최종 원격 CI와 병합 상태는 해당 PR의 정확한 head에서 별도 확인한다.
+계정·쿠키·원시 Socket frame을 제외한 [실행 요약](evidence/2026-11-06-short-comic-recovery/verification-summary.json), [렌더러 영수증](evidence/2026-11-06-short-comic-recovery/renderer-receipts.json), [이전 패키지 비교](evidence/2026-11-06-short-comic-recovery/previous-package-comparison.json), [UI 인계 증거](evidence/2026-11-06-short-comic-recovery/ui-handoff-proof.json), [기존 로컬 데이터 보존](evidence/2026-11-06-short-comic-recovery/local-data-preservation.json)을 공개 검토용으로 보존했다. 실행 직후 추가한 파일은 설명·증거 문서다. 최종 원격 CI와 병합 상태 및 이후 source 변경은 해당 PR의 정확한 head에서 별도 확인한다.
 
 | 구분 | 사업계획서에서 사용할 수 있는 범위 |
 | --- | --- |
