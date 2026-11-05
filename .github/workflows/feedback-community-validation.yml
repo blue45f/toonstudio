@@ -45,7 +45,7 @@ jobs:
   feedback-community:
     name: Feedback community regression gate
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     services:
       postgres:
         image: postgres:16

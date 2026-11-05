@@ -12,7 +12,7 @@ for (const [workflow, jobId, timeout, runner = "ubuntu-24.04"] of [
   ["full-test-diagnostic", "full-test", 90],
   ["studio-finishing-quality", "quality-static", 45],
   ["studio-finishing-quality", "finishing-quality", 60],
-  ["feedback-community-validation", "feedback-community", 40, "ubuntu-latest"],
+  ["feedback-community-validation", "feedback-community", 60, "ubuntu-latest"],
   ["kmas-reference-library", "references", 20, "ubuntu-latest"],
   ["non-studio-experience-quality", "non-studio-quality", 45],
   ["main-full-qa-studio", "studio-audit", 240],
