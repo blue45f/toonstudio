@@ -24,8 +24,9 @@ import { appendFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { chromium, type Browser, type Page } from "playwright";
+import { chromium, type Browser, type Page, type Request } from "playwright";
 
+import { createStudioInAppPreviewApiDiagnostics } from "./lib/studio-inapp-sweep-harness.mjs";
 import {
   cleanScratchDir,
   findFreePort,
@@ -354,6 +355,12 @@ async function runRoute(
   await installGuestSessionBoundary(page);
 
   const consoleErrors: string[] = [];
+  const previewApis = createStudioInAppPreviewApiDiagnostics(baseUrl);
+  const responseStatuses = new WeakMap<Request, number>();
+  page.on("response", (response) => {
+    responseStatuses.set(response.request(), response.status());
+    previewApis.recordResponse(response.status(), response.url(), response.request().method());
+  });
   // A failed subresource logs "Failed to load resource: …" with the URL only in the message's
   // location, never in its text — filtering on the text alone would let every sandboxed font
   // fetch fail the gate and drown the product signal it exists to surface.
@@ -363,11 +370,16 @@ async function runRoute(
     consoleErrors.push(subject);
   };
   page.on("console", (message) => {
-    if (message.type() === "error") record(message.text(), message.location().url);
+    if (message.type() !== "error") return;
+    const url = message.location().url;
+    if (!previewApis.recordConsole(message.text(), url)) record(message.text(), url);
   });
   page.on("pageerror", (error) => record(`pageerror: ${error.message}`));
   page.on("requestfailed", (request) => {
-    record(`request failed: ${request.failure()?.errorText ?? "unknown"}`, request.url());
+    const failure = request.failure()?.errorText ?? "unknown";
+    if (!previewApis.recordCancelledRequest(request.url(), request.method(), request.resourceType(), failure, responseStatuses.get(request))) {
+      record(`request failed: ${failure}`, request.url());
+    }
   });
 
   const hardFailures: string[] = [];
@@ -413,6 +425,7 @@ async function runRoute(
     warnings.push(`unnamed control: ${issue.label} ${issue.detail}`);
   }
 
+  warnings.push(...previewApis.unavailable.map((message) => `static preview API unavailable: ${message}`));
   const ok = hardFailures.length === 0;
   log(
     `${profile.id}/${route.id}: ${metrics.viewportWidth}x${metrics.viewportHeight} ` +

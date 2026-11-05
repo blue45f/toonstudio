@@ -2,7 +2,7 @@
  * Production-preview E2E for the real multi-window Studio companion.
  *
  * This deliberately does not mock BroadcastChannel or render multiple React roots in one
- * document. It opens the shipped Studio, follows the user-visible View menu into an actual popup,
+ * document. It opens the shipped Studio, expands the advanced View tools into an actual popup,
  * verifies bidirectional tool commands across two top-level pages, opens a dedicated Navigator
  * window, and proves close/reopen recovery.
  *
@@ -21,6 +21,7 @@ import {
 } from "playwright";
 import { preview, type PreviewServer } from "vite";
 
+import { createCompanionPreviewApiDiagnostics } from "./lib/studio-companion-preview-diagnostics";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
@@ -29,17 +30,12 @@ const LANGUAGE_KEY = "toonstudio-lang";
 const SCRATCH =
   process.env.TOONSPECTRUM_COMPANION_VERIFY_DIR
   ?? join(tmpdir(), "toonstudio-studio-companion");
-const OPTIONAL_STATIC_PREVIEW_API_PATHS = [
-  "/api/auth/session",
-  "/api/kmas/merge-on-access",
-  "/api/studio-ai/status",
-  "/api/analytics/traffic/",
-] as const;
 
 type PageDiagnostics = {
   consoleErrors: string[];
   failedResponses: string[];
   pageErrors: string[];
+  staticPreviewApiUnavailable: string[];
 };
 
 type VerificationResult = {
@@ -73,17 +69,6 @@ function staticPreviewUrl(value: string): URL | null {
   }
 }
 
-function isExpectedStaticPreviewApiUrl(value: string, previewBaseUrl: string): boolean {
-  const parsed = staticPreviewUrl(value);
-  const preview = staticPreviewUrl(previewBaseUrl);
-  return parsed !== null
-    && preview !== null
-    && parsed.origin === preview.origin
-    && parsed.search === ""
-    && parsed.hash === ""
-    && OPTIONAL_STATIC_PREVIEW_API_PATHS.some((path) => path === parsed.pathname);
-}
-
 function isExpectedStaticPreviewSocketIoHandshakeClose(
   message: string,
   previewBaseUrl: string,
@@ -103,12 +88,6 @@ function isExpectedStaticPreviewConsoleError(
 ): boolean {
   const text = message.text();
   const location = message.location().url;
-  if (
-    isExpectedStaticPreviewApiUrl(location, previewBaseUrl)
-    && text.startsWith("Failed to load resource:")
-  ) {
-    return true;
-  }
   if (!isExpectedStaticPreviewSocketIoHandshakeClose(text, previewBaseUrl)) return false;
   if (!location) return true;
   const preview = staticPreviewUrl(previewBaseUrl);
@@ -138,11 +117,14 @@ function observePage(
     consoleErrors: [],
     failedResponses: [],
     pageErrors: [],
+    staticPreviewApiUnavailable: [],
   };
+  const apiDiagnostics = createCompanionPreviewApiDiagnostics(previewBaseUrl);
   page.on("console", (message) => {
     if (message.type() !== "error") return;
     const value = messageWithLocation(message);
-    if (!isExpectedStaticPreviewConsoleError(message, previewBaseUrl)) {
+    if (apiDiagnostics.consoleUnavailable(value)) diagnostics.staticPreviewApiUnavailable.push(value);
+    else if (!isExpectedStaticPreviewConsoleError(message, previewBaseUrl)) {
       diagnostics.consoleErrors.push(value);
     }
   });
@@ -150,17 +132,18 @@ function observePage(
     diagnostics.pageErrors.push(String(error));
   });
   page.on("response", (response) => {
-    if (response.status() < 500) return;
+    if (response.status() < 400) return;
     const value = `${response.status()} ${response.url()}`;
-    if (!isExpectedStaticPreviewApiUrl(response.url(), previewBaseUrl)) {
+    if (apiDiagnostics.observeResponse(response.request(), response.status(), response.url())) {
+      diagnostics.staticPreviewApiUnavailable.push(value);
+    } else {
       diagnostics.failedResponses.push(value);
     }
   });
   page.on("requestfailed", (request) => {
-    if (isExpectedStaticPreviewApiUrl(request.url(), previewBaseUrl)) return;
-    diagnostics.failedResponses.push(
-      `${request.failure()?.errorText ?? "request failed"} ${request.url()}`,
-    );
+    const value = `${request.failure()?.errorText ?? "request failed"} ${request.url()}`;
+    if (apiDiagnostics.observedUnavailableAbort(request)) diagnostics.staticPreviewApiUnavailable.push(value);
+    else diagnostics.failedResponses.push(value);
   });
   page.on("close", () => {
     log(`${label} window closed`);
@@ -223,6 +206,9 @@ async function openWorkspaceCompanion(
     name: "멀티 디스플레이 작업공간…",
     exact: true,
   });
+  if (!await launcher.isVisible()) {
+    await menu.getByRole("menuitem", { name: /^고급 도구 펼치기/u }).click();
+  }
   await launcher.waitFor({ state: "visible", timeout: 5_000 });
   const popupPromise = primary.waitForEvent("popup", { timeout: 15_000 });
   await launcher.click();
@@ -323,7 +309,7 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
   try {
     const primary = await context.newPage();
     diagnostics.primary = observePage(primary, "primary", baseUrl);
-    await primary.goto(`${baseUrl}/studio`, {
+    await primary.goto(`${baseUrl}/studio/canvas`, {
       waitUntil: "domcontentloaded",
       timeout: 30_000,
     });

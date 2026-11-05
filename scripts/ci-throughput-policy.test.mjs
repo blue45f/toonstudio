@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { isProtectedActionsRun, selectSupersededActionsRuns } from "./cleanup-superseded-actions-runs.mjs";
@@ -41,6 +41,23 @@ function validatePolicy(files) {
 test("CI throughput policy preserves one full PR suite and bounded nightly diagnostics", () => {
   validatePolicy(workflows);
   assert.match(workflows["ci.yml"], /scripts\/ci-throughput-policy\.test\.mjs/u);
+});
+
+test("야간 개별 회귀 행렬은 이동 후에도 실제 테스트 파일을 실행한다", () => {
+  const workflow = workflows["main-full-qa-fast-diagnostics.yml"];
+  const targets = [...workflow.matchAll(/^ {10}- ((?:apps|tests)\/\S+\.test\.tsx?)$/gmu)]
+    .map((match) => match[1]);
+  assert.ok(targets.length > 0, "개별 회귀 대상이 누락되면 실패해야 한다");
+  for (const target of targets) {
+    assert.ok(existsSync(new URL(`../${target}`, import.meta.url)), `없는 회귀 대상: ${target}`);
+  }
+});
+
+test("야간 독립 검증은 미리보기를 직접 열고 AI 예시를 평가기 계약으로만 표시한다", () => {
+  const text = workflows["main-full-qa-studio.yml"];
+  assert.match(text, /long-stroke\|TOONSPECTRUM_LONG_STROKE_SPAWN_PREVIEW=1 pnpm run verify:studio-long-stroke/u);
+  assert.match(text, /ai-quality-evaluator-contract\|pnpm exec vitest run apps\/web\/src\/domains\/creator\/ai\/studio-ai-quality-benchmark\.test\.ts && pnpm run verify:studio-ai-quality --input tests\/benchmarks\/fixtures\/studio-ai-quality\.example\.json/u);
+  assert.doesNotMatch(text, /ai-quality\|pnpm run verify:studio-ai-quality\s*$/mu);
 });
 
 test("throughput policy rejects another automatic full-suite copy under any filename", () => {

@@ -80,6 +80,8 @@ async function main(): Promise<void> {
   const viteServer = await createViteServer({
     root: WEB_ROOT,
     configFile: WEB_VITE_CONFIG,
+    // React preset의 import.meta.resolve가 CJS 설정 번들에서 사라지지 않도록 ESM으로 읽는다.
+    configLoader: "runner",
     logLevel: "warn",
     server: { port, strictPort: true, host: "127.0.0.1" },
     appType: "custom",

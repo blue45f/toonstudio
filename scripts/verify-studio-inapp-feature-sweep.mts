@@ -835,6 +835,7 @@ interface ProfileReport {
   readonly profile: string;
   readonly steps: readonly StudioInAppStepOutcome[];
   readonly errors: readonly StudioInAppRuntimeError[];
+  readonly unavailablePreviewApis: readonly string[];
   readonly scriptRequests: readonly {
     step: string;
     url: string;
@@ -856,7 +857,6 @@ interface ProfileReport {
     adapterReloadAttempted: boolean;
   }[];
 }
-
 async function sweepProfile(
   profile: StudioInAppProfile,
   baseUrl: string,
@@ -873,7 +873,7 @@ async function sweepProfile(
   });
   const page = await context.newPage();
   page.setDefaultTimeout(15_000);
-  const collector = await collectStudioInAppRuntimeErrors(page);
+  const collector = await collectStudioInAppRuntimeErrors(page, process.env.TOONSPECTRUM_SWEEP_BASE_URL ? {} : { staticPreviewUrl: baseUrl });
   let currentStep = "boot";
   const scriptRequests: Array<ProfileReport["scriptRequests"][number]> = [];
   const navigations: Array<ProfileReport["navigations"][number]> = [];
@@ -996,7 +996,7 @@ async function sweepProfile(
   }
 
   await context.close();
-  return { profile: profile.id, steps: outcomes, errors: collector.errors, scriptRequests, navigations, routeState };
+  return { profile: profile.id, steps: outcomes, errors: collector.errors, unavailablePreviewApis: collector.unavailablePreviewApis, scriptRequests, navigations, routeState };
 }
 
 async function main(): Promise<void> {

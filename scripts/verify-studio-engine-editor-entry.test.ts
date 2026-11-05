@@ -23,6 +23,23 @@ describe("production engine verifier entry", () => {
     expect(resolveStudioRoute({ pathname: "/studio" }).kind).not.toBe("editor");
   });
 
+  it.each([
+    "verify-studio-brush-media.mts",
+    "verify-studio-hokusai-live-integration.mts",
+    "verify-studio-living-ink-integration.mts",
+  ])("%s는 도킹 패널을 확장하고 해당 팝업의 닫힘만 기다린다", (file) => {
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
+    expect(source).toContain("await waitForStudioDrawingReady(page");
+    expect(source).toContain('[data-studio-brush-workbench-dock="true"]');
+    expect(source).toContain('await dock.waitFor({ state: "visible" })');
+    expect(source).toContain('await dock.getByRole("button", { name: "확장 보기", exact: true }).click()');
+    if (file === "verify-studio-brush-media.mts") {
+      expect(source).toContain('const catalog = page.getByRole("dialog", { name: "브러시 전체 라이브러리" })');
+    } else {
+      expect(source).toMatch(/page\.locator\('\[role="dialog"\]\[data-studio-brush-floating\]'\)\s*\.locator\('\[data-studio-brush-catalog-session="true"\]'\)/u);
+    }
+  });
+
   it("builds the exact production bundle before engine preview probes", () => {
     const workflow = readFileSync(new URL("../.github/workflows/main-full-qa-fast-diagnostics.yml", import.meta.url), "utf8");
     const job = workflow.split("  engine-extended:")[1]?.split("  studio-browser-core:")[0] ?? "";

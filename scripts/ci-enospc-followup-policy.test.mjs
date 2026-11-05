@@ -15,6 +15,7 @@ for (const [workflow, jobId, timeout, runner = "ubuntu-24.04"] of [
   ["feedback-community-validation", "feedback-community", 40, "ubuntu-latest"],
   ["kmas-reference-library", "references", 20, "ubuntu-latest"],
   ["non-studio-experience-quality", "non-studio-quality", 45],
+  ["main-full-qa-studio", "studio-audit", 240],
 ]) {
   test(`${workflow}/${jobId}는 기존 Core SDK 정리 안전 경계를 체크아웃 전에 사용한다`, () => {
     const job = parse(read(workflow)).jobs[jobId];
