@@ -689,6 +689,8 @@ export default defineConfig(({ command, mode }) => ({
             "react-konva > scheduler",
             // 접속 모듈이 조용히 초기화 실패하지 않도록 Socket.IO 개발 경로의 CommonJS logger도 변환한다.
             "socket.io-client > debug",
+            // 내보내기 엔진이 초기화 누락으로 호환 렌더러에 조용히 우회하지 않도록 한다.
+            "canvaskit-wasm",
           ],
         }
       : {}),
