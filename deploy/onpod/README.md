@@ -1,5 +1,6 @@
 # deploy/onpod — onpod 서울 재구축 도구
 
+> 로컬·클라우드 설정 계약과 읽기 전용 preflight: [배포 환경 계약](../../docs/operations/deployment-environment-contract.md). 현재 onpod와 generic-separated 예제는 서로 다른 프로필이다.
 - 문서 상태: **current** — 도구 설명. 아래 스키마 재구축 절차는 2026-10-22 고정 커밋의 재현 기록이다. Core API·DB는 2026-10-23 컷오버를 마쳤으며, 현재 구성의 정본은 [`docs/operations/infrastructure-map.md`](../../docs/operations/infrastructure-map.md)이고 결정 근거는 [`docs/adr/0030-seoul-origin-hybrid-infrastructure.md`](../../docs/adr/0030-seoul-origin-hybrid-infrastructure.md)다.
 - 이 디렉터리는 **상시 승인 배포 단위가 아니다**(`deploy/STANDING_APPROVAL.json` 범위 밖). 소유자가 승인한 onpod 신규 구성(DB·Core API)을 다시 만들 수 있게 하는 도구와 기록이다. 자동 배포나 CI에 연결하지 않는다.
 - 비밀값은 이 디렉터리에 없다. 스크립트는 주 작업트리 루트의 `.env.infrastructure.local`(`ENVF`)에서만 값을 읽고 출력에서 가린다.
