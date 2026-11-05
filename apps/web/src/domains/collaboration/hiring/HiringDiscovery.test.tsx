@@ -76,7 +76,11 @@ describe("candidate discovery lifecycle", () => {
     vi.spyOn(Date, "now").mockImplementation(() => localNow);
     const result = { ...page("작가A"), observedAt: new Date(serverNow).toISOString(),
       items: [{ ...candidate("작가A"), expiresAt: new Date(serverNow + 60_000).toISOString() }] };
-    discover.mockResolvedValue(result); render(<HiringDiscovery slot={slot} />); search(); await screen.findByText("작가A");
+    const response = pending<HiringCandidatePage>();
+    discover.mockReturnValue(response.promise); render(<HiringDiscovery slot={slot} />); search();
+    // 응답의 화면 갱신과 focus 구독을 모두 반영한 뒤 만료 시계를 전진한다.
+    await act(async () => { response.resolve(result); });
+    await screen.findByText("작가A");
     const button = screen.getByRole<HTMLButtonElement>("button", { name: "이 조건으로 30분 유효 제안 보내기" });
     localNow += 59_999;
     act(() => window.dispatchEvent(new Event("focus")));
