@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 import { normalizeSnapshot } from './snapshot-contract.mjs';
 import { unchangedDb } from './shared.mjs';
+
+const { test } = process.env.VITEST ? await import('vitest') : await import('node:test');
 
 function raw() {
   return { projectId: 'c9-pure-test-project', workId: 'c9-pure-test-work', revision: 0, aggregateSha256: 'unchanged', eventCount: 0, mutationReceiptCount: 0,

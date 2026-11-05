@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import test from 'node:test';
 import { ACTUAL_PROFILE, actualCounts, restoreActorContext, validateActualInput, verifyActorSession, verifyActualProjectRead } from './actual-input.mjs';
+
+const { test } = process.env.VITEST ? await import('vitest') : await import('node:test');
 
 test('실제 로그인 세션을 세 계정의 별도 context에 복원하고 서버 GET으로 각각 확인한다', async () => {
   const observed = [], contexts = [], states = ['owner', 'editor', 'viewer'].map((role) => ({ cookies: [{ name: 'fixture-session', value: role }], origins: [] }));
