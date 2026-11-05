@@ -131,6 +131,36 @@ describe("wet-paper settled bake solver (MoXi / Curtis / Chu & Tai)", () => {
     }
   });
 
+  it("입자 침전 계수를 끄면 같은 물 흐름에서도 정착 안료 분포가 달라진다", () => {
+    const settings = settingsFor("curtis-granulating-wash");
+    const dabs = lineDabs(40, 100, 60, 12, 0.6, 3);
+    const [coarse, fine] = settings.program.pigments;
+    const granular = solveStudioWetPaperBakeUncached(dabs, settings);
+    const smooth = solveStudioWetPaperBakeUncached(dabs, {
+      ...settings,
+      program: {
+        ...settings.program,
+        pigments: [{ ...coarse, granulation: 0 }, { ...fine, granulation: 0 }],
+      },
+    });
+    if (!granular || !smooth) throw new Error("입자 침전 대조군 베이크 실패");
+    expect([granular.width, granular.height, granular.originXPx, granular.originYPx, granular.cellPx])
+      .toEqual([smooth.width, smooth.height, smooth.originXPx, smooth.originYPx, smooth.cellPx]);
+    expect(granular.ledger.waterIn).toBe(smooth.ledger.waterIn);
+    expect(granular.ledger.waterEvaporated).toBe(smooth.ledger.waterEvaporated);
+    expect(granular.ledger.waterRemaining).toBe(smooth.ledger.waterRemaining);
+    expect(granular.ledger.pigmentIn).toBe(smooth.ledger.pigmentIn);
+    let difference = 0;
+    for (const [index, density] of granular.density.entries()) {
+      difference += Math.abs(density - (smooth.density[index] ?? 0));
+    }
+    // 합성 무늬(grainDetail)가 적용되기 전 솔버 밀도 자체에 유의한 차이가 있어야 한다.
+    expect(difference / granular.ledger.pigmentIn).toBeGreaterThan(0.01);
+    for (const { ledger } of [granular, smooth]) {
+      expect(Math.abs(ledger.pigmentIn - ledger.pigmentOut) / ledger.pigmentIn).toBeLessThan(1e-5);
+    }
+  });
+
   it("darkens the rim of a drying wash (Curtis edge darkening: rim > interior)", () => {
     const programId = "curtis-watercolor-backrun";
     const settings = settingsFor(programId);

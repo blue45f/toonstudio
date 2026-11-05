@@ -178,6 +178,8 @@ export interface StudioBrushSemanticAuditInput {
   /** 별도 플래너에서 실제 생성한 패턴/건식 스탬프 근거. */
   readonly patternResponse?: boolean;
   readonly dryStampResponse?: boolean;
+  /** 활성 정착 안료 커널의 골 침전 근거. */
+  readonly pigmentGranulationResponse?: boolean;
 }
 
 export type StudioBrushSemanticIssueSeverity = "error" | "warning";
@@ -391,7 +393,11 @@ export function auditStudioBrushSemanticClaims(
     || finite01(axes.particleScatter) >= 0.25
     || finiteNonNegative(material.meanScatterRatio) >= 0.08
     // 안료 가루는 넓은 산포와 별개다. 실제 종이 결/미세 공극이 있을 때만 인정한다.
-    || (/(?:가루|알갱이|입자)/u.test(text) && tip?.grainTip === true);
+    || (/(?:가루|알갱이|입자)/u.test(text) && tip?.grainTip === true)
+    // 침전은 산포·장식 입자의 근거가 아니다.
+    || (/(?:가루|알갱이|입자)/u.test(text)
+      && input.pigmentGranulationResponse === true
+      && !/(?:산포|스프레이|스플래터|흩어|글리터|반짝|별|눈송이|먼지|spray|splatter|scatter|glitter|spark|star|flake|dust)/iu.test(text));
   const supportsGlow =
     contract.engine === "neon-halo"
     || contract.engine === "glow-halo"

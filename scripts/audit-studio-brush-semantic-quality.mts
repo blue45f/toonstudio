@@ -43,6 +43,7 @@ import {
   type StudioBrushSemanticAuditResult,
 } from "../apps/web/src/domains/creator/brush/studio-brush-semantic-quality";
 import { resolveStudioStampBrushKind } from "../apps/web/src/domains/creator/brush/studio-brush-stamp-engine";
+import { profileStudioWetPaperSemanticEvidence } from "../apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-semantic-evidence";
 import { planStudioWebAssistSamplesForBrush } from "../apps/web/src/domains/creator/studio-web-drawing-assist-kit";
 import { planStudioWebColoringSamplesForBrush } from "../apps/web/src/domains/creator/studio-web-drawing-coloring-kit";
 import { planStudioWebCompetitiveSamplesForBrush } from "../apps/web/src/domains/creator/studio-web-drawing-competitive-kit";
@@ -74,6 +75,7 @@ interface AuditedRow {
   readonly texture: string | null;
   readonly dynamics: string | null;
   readonly pressureResponsive: boolean;
+  readonly wetPaper: ReturnType<typeof profileStudioWetPaperSemanticEvidence>;
   readonly materialFingerprint: string | null;
   readonly semantic: StudioBrushSemanticAuditResult;
 }
@@ -153,6 +155,7 @@ for (const item of STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS) {
     planStudioWebCompetitiveSamplesForBrush(item.id, probePoints),
   ].some((samples) => samples.length > 0);
   const stampKind = resolveStudioStampBrushKind(item.id);
+  const wetPaper = profileStudioWetPaperSemanticEvidence(runtimeBrushId);
   const semantic = auditStudioBrushSemanticClaims({
     catalogId: item.id,
     runtimeBrushId,
@@ -166,6 +169,7 @@ for (const item of STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS) {
     tipEvidence: dynamics ? profileStudioBrushTipSemanticEvidence(dynamics) : null,
     patternResponse,
     dryStampResponse: ["pencil", "pastel", "charcoal", "crayon", "chalk"].includes(stampKind ?? ""),
+    pigmentGranulationResponse: wetPaper?.pigmentGranulationResponse,
     axes: portfolio
       ? {
           ...STUDIO_BRUSH_TEXTURE_PROFILES[portfolio.textureProfile].axes,
@@ -197,6 +201,7 @@ for (const item of STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS) {
     texture: contract?.texture ?? null,
     dynamics: contract?.dynamics ?? null,
     pressureResponsive,
+    wetPaper,
     materialFingerprint: materialProfile?.behaviorFingerprint ?? null,
     semantic,
   });
