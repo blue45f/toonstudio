@@ -44,6 +44,10 @@ import { assertStudioFilterCanonicalEvidence, assertStudioFilterCanonicalUnchang
 import { studioFilterComparisonBandHeight } from "./lib/studio-filter-comparison-region";
 import { installStudioFilterConnectionFault } from "./lib/studio-filter-connection-fault";
 import {
+  nudgeFirstParameterSlider, prepareStudioFilterGalleryForVerification,
+  STUDIO_FILTER_TARGET_DESCRIPTION, studioFilterDialogSurface, studioFilterTargetFromDescription,
+} from "./lib/studio-filter-dialog-surface";
+import {
   measureStudioFilterResponsiveLayout, studioFilterResponsiveLayoutIssues, waitForStudioFilterLayoutSettled,
   type StudioFilterResponsiveLayout,
 } from "./lib/studio-filter-responsive-layout";
@@ -85,8 +89,6 @@ const FILTER_CASES = [
   { label: "노이즈 추가", group: "texture" },
   { label: "비네트", group: "texture" },
 ] as const;
-
-const SLIDER_NUDGE_STEPS = 15;
 
 /** Survey mode: TOONSPECTRUM_FILTER_DIALOG_SURVEY=1 drives every menu kind, not just the five representatives. */
 const SURVEY_MODE = process.env.TOONSPECTRUM_FILTER_DIALOG_SURVEY === "1";
@@ -145,6 +147,7 @@ interface FilterCaseResult {
   undoDiff: PixelDiff | null;
   persistedUndoRestored?: boolean;
   responsiveViewports?: StudioFilterResponsiveLayout[];
+  galleryActiveEntries?: number;
   denialFrames?: { before: { x: number; y: number; width: number; height: number };
     after: { x: number; y: number; width: number; height: number };
     alignedClip: { x: number; y: number; width: number; height: number }; dismissedDiff: PixelDiff };
@@ -445,33 +448,8 @@ async function openMainMenuGroup(page: Page, label: string): Promise<void> {
     .waitFor({ state: "visible", timeout: 5_000 });
 }
 
-function filterDialog(page: Page): ReturnType<Page["locator"]> {
-  return page.locator('[aria-labelledby="studio-filter-dialog-title"]');
-}
-
-async function nudgeFirstParameterSlider(
-  page: Page,
-  dialog: ReturnType<Page["locator"]>,
-): Promise<boolean> {
-  const slider = dialog.locator('input[type="range"]').locator("visible=true").first();
-  if ((await slider.count()) > 0) {
-    await slider.focus();
-    for (let step = 0; step < SLIDER_NUDGE_STEPS; step += 1) {
-      await slider.press("ArrowUp");
-    }
-    return true;
-  }
-  // 색상 커브처럼 range 슬라이더 대신 커브 에디터로 값을 바꾸는 필터도 있다.
-  // 슬라이더 부재를 "값을 바꿀 수 없음"으로 보면 필터 렌더 결함으로 오판한다.
-  const curvePoint = dialog.locator('[data-studio-curve-point-hit-target="true"]').locator("visible=true").first();
-  if ((await curvePoint.count()) === 0) return false;
-  // 포인터 클릭은 곡선을 선택만 하고 값은 키보드로 바꾼다.
-  await curvePoint.click({ timeout: 5_000 });
-  await curvePoint.focus();
-  for (let step = 0; step < SLIDER_NUDGE_STEPS; step += 1) {
-    await curvePoint.press("ArrowUp");
-  }
-  return true;
+function filterDialog(page: Page, label?: string): ReturnType<Page["locator"]> {
+  return page.locator(studioFilterDialogSurface(label).selector);
 }
 
 /**
@@ -964,19 +942,19 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
         await openMainMenuGroup(page, "효과");
         await menuItemByLabel(page, filterCase.label).click({ timeout: 5_000 });
 
-        const dialog = filterDialog(page);
+        const surface = studioFilterDialogSurface(filterCase.label);
+        const dialog = filterDialog(page, filterCase.label);
         await dialog.waitFor({ state: "visible", timeout: 45_000 });
         result.openMs = Date.now() - openStartedAt;
-        result.target = (await dialog
-          .getByText(/비파괴 필터로 적용합니다|합성 레이어로 만들고/)
-          .first()
-          .textContent()
-          .catch(() => null))
-          ?.includes("비파괴") ? "image" : "page-composite";
+        result.target = studioFilterTargetFromDescription(await dialog
+          .getByText(STUDIO_FILTER_TARGET_DESCRIPTION).first().textContent());
+        if (surface.gallery) {
+          result.galleryActiveEntries = await prepareStudioFilterGalleryForVerification(dialog);
+        }
         invariant(result.target === (AUTHENTICATED ? "image" : "page-composite"),
           `${filterCase.label}: 검증하려는 실제 필터 대상과 다릅니다`);
 
-        const nudged = await nudgeFirstParameterSlider(page, dialog);
+        const nudged = surface.gallery ? false : await nudgeFirstParameterSlider(page, dialog);
         log(`${filterCase.label}: dialog open in ${result.openMs}ms `
           + `(target=${result.target}, slider nudged=${nudged})`);
         await page.waitForTimeout(500);

@@ -1624,7 +1624,7 @@ export function StudioFilterDialog({
               onClick={onClose}
               className={buttonClass({
                 variant: "ghost",
-                className: "min-h-11 sm:min-h-10 pointer-coarse:min-h-11",
+                className: "min-h-11 pointer-coarse:min-h-11",
               })}
             >
               취소
@@ -1644,7 +1644,7 @@ export function StudioFilterDialog({
               }}
               className={buttonClass({
                 variant: "solid",
-                className: "min-h-11 sm:min-h-10 pointer-coarse:min-h-11",
+                className: "min-h-11 pointer-coarse:min-h-11",
               })}
             >
               {applying
