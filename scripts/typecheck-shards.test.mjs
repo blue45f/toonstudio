@@ -3,7 +3,6 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import ts from "typescript";
@@ -16,6 +15,8 @@ import {
   verifyInShards,
 } from "./typecheck-shards.mjs";
 import { loadFullProgram, runWorker, serializeDiagnostic } from "./typecheck-shards-worker.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 function fixture(files, options = {}) {
   const root = mkdtempSync(join(tmpdir(), "toonstudio-full-typecheck-"));

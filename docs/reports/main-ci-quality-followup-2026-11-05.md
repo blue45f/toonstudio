@@ -223,3 +223,16 @@ Feedback job 한 곳을 40→60분으로 늘리고 기존 정책 회귀의 대�
 Web 전체 Program 두 번·API/tool·모든 테스트·runner·heap·worker·retry·명령·입력·내부 기한·품질 및 성능 assertion·기존 evidence 수집과 여덟 outcome 전부 success를 요구하는 최종 집계는 유지한다. 권한·계정·DB·제품 source·저장 형식·렌더러·기존 원고를 바꾸지 않는다. 현재 131357의 Full·CodeQL·Brush도 끝까지 확인해 추가 문제가 있으면 함께 최소 보완한 다음, 새 고정 head의 전체 CI가 실제 통과한 뒤에만 main에 병합한다. 운영 배포는 하지 않는다.
 
 적용한 workflow는 중복 키를 거절하는 YAML 파서로 확인했다. job 상한을 원래 40으로 되돌리면 workflow 전체 바이트가 같고, 정책 tuple도 숫자 하나를 되돌리면 원본 전체 바이트와 같다. 관련 기존 Node 네 파일 55개는 모두 통과했고 skip은 0이다. 현재 원격 131357의 남은 세 workflow 결과를 확보하기 전에는 다음 head를 push하지 않으며, 새 범위 하네스와 정상 pre-push 및 전체 CI 결과를 별도로 기록한다.
+
+
+## 2026-11-06 07:18 Full의 수집 등록과 임시 경로 보호 실패
+
+상태: `current` 131357d1의 모든 CI 종료 결과와 로컬 RED/GREEN. 20 workflow는 18성공·Full 실패 1·Feedback 취소 1이며 check는 50성공·1실패·1취소다. Full run 42106549063/job 127523352346은 시간 제한 취소가 아니라 root suite의 비정상 종료로 실패했다. 실제 PostgreSQL 직렬 단계는 28파일·502성공·기존 skip 1이었고, 이어 root는 8,747파일 중 8,723성공·기존 skip 20·4실패, 101,006개 사례 중 100,906성공·기존 skip 99·1실패였다. 뒤 performance 단계는 앞 단계 실패로 실행하지 않았다. 일부 통과를 전체 성공으로 표시하지 않는다.
+
+원문 한 번을 읽어 로컬 전용 3,561,333B·SHA-256 `4f7e665bfafc2b33e17a775cc8e8af2b60d50838acd1a5f65c66d478c706f716`로 보존했다. 세 실패 suite는 check-restricted-model-distribution·third-party-license-files·typecheck-shards의 정적 `node:test` 등록 때문에 Vitest에서 `No test suite found`가 된 경우였다. 나머지 한 실패는 기존 predictable-temp-path guard가 verify-studio-legacy-pigment-banner의 `tmpdir()`+`Date.now()` 이름을 잡은 경우였다. 원래 비동기 AI 환경 종료 오류는 이번 실패 요약에 없었으며, 이를 운영 사용자 데이터 손상 재현으로 해석하지 않는다.
+
+로컬에서도 같은 네 파일의 Vitest 실행이 4파일 실패·기존 guard 1실패로 재현됐고, 별도 Node 직접 실행은 기존 13개가 모두 통과했다. 세 파일은 저장소의 기존 dual-runner 패턴으로 Vitest 환경에서는 Vitest의 test를, Node 직접 실행에서는 node:test를 사용한다. 제한 모델 hash·고지/LGPL·전체 타입 Program·coverage/실패 종료·CLI 등의 본문·이름·fixture·단언·heap·기한은 모두 유지한다. 수집 제외·skip·빈 suite 허용을 추가하지 않는다. 같은 13개가 전체 Vitest에도 실제 등록된다.
+
+안료 안내 QA 스크립트는 fs/promises의 mkdtemp import와 기본 출력식 두 줄만 바꿔 임시 디렉터리를 원자적으로 생성한다. 명시적인 TOONSTUDIO_LEGACY_BANNER_VERIFY_DIR의 nullish/path.resolve 동작과 결과 파일명·보고서 보존·root/dist·fixture·브라우저/preview 정상 종료·모든 UI 단언은 그대로다. 기존 출력이나 원고 파일을 삭제하지 않는다. 보호 guard의 source·기대값·allowlist는 변경하지 않았다.
+
+수정 뒤 같은 Vitest 네 파일 41개와 Node 직접 실행 13개는 모두 통과했고 skip은 0이다. QA 스크립트 node --check 및 diff 공백 검사도 통과했다. 브라우저 전체 UI를 새로 실행한 결과로 확대하지 않으며 제품 렌더러·저장·CRDT·권한·기존 원고의 source는 이 보완에서 변경하지 않는다. Feedback 60분 보완과 함께 새 고정 head를 정상 하네스·pre-push·전체 CI로 검증하고, 그 결과가 모두 통과한 뒤에만 main에 병합한다. 운영 배포는 하지 않는다.
