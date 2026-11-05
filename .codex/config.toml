@@ -1,4 +1,6 @@
 # OPENWIKI:MCP:START
+model_verbosity = "low"
+model_reasoning_summary = "none"
 [mcp_servers.openwiki]
 command = "openwiki"
 args = ["mcp", "--host", "codex"]

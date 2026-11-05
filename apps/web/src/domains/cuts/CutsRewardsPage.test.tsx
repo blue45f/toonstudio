@@ -32,6 +32,10 @@ describe("CutsRewardsPage", () => {
   it("게스트에게는 데모 안내를, 요약에는 예상 정산액을 보여준다", async () => {
     renderPage();
     expect(screen.getByText(/게스트로 데모 정산을 보는 중/)).toBeTruthy();
+    expect(screen.getByTestId("cuts-rewards-rea-rpm-simulator")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("cuts-rewards-rea-model-tiktok-creator-rewards"));
+    fireEvent.click(screen.getByTestId("cuts-rewards-rea-tier-loop-100"));
+    expect(screen.getByTestId("cuts-rewards-rea-rpm-status").textContent).toContain("TikTok Creator Rewards");
     const summary = await screen.findByLabelText("정산 요약");
     expect(within(summary).getByText("예상 정산액")).toBeTruthy();
     expect(summary.textContent).toMatch(/[\d,]+원/);

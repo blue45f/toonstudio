@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HiringPublicPositions } from "./HiringPositionsPage";
+import { HiringPositionsPage, HiringPublicPositions } from "./HiringPositionsPage";
 import { emptyTerms } from "./hiring-form-values";
 
 import type { HiringPositionPage } from "../../../../../../packages/contracts/src/creator-hiring";
@@ -134,5 +134,15 @@ describe("public hiring search recovery and request identity", () => {
     fireEvent.click(screen.getByRole("button", { name: "다음 페이지" }));
     await screen.findByRole("heading", { name: "다음 공고" });
     expect((screen.getByRole("button", { name: "다음 페이지" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("renders the REA role rate and 3-stage escrow calculator on HiringPositionsPage", async () => {
+    get.mockResolvedValue(page("공개 공고"));
+    render(<MemoryRouter><HiringPositionsPage /></MemoryRouter>);
+    expect(screen.getByTestId("hiring-rea-rate-escrow-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("hiring-rea-role-bg3d-lt-artist"));
+    fireEvent.click(screen.getByTestId("hiring-rea-cuts-85"));
+    expect(screen.getByTestId("hiring-rea-rate-escrow-status").textContent).toContain("85컷 총액");
+    await screen.findByRole("heading", { name: "공개 공고" });
   });
 });

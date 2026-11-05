@@ -186,12 +186,12 @@ describe("StudioCompetitorCapabilityPanel", () => {
     rerender(<StudioCompetitorCapabilityPanel locale="en" />);
     const enMatrix = screen.getByTestId("competitor-page-by-page-matrix");
     expect(enMatrix.textContent).toContain("3D & Brush Asset Market");
-    expect(enMatrix.textContent).toContain("Domain 1028000000000000000 / 100");
+    expect(enMatrix.textContent).toContain("Domain 1228000000000000000 / 100");
     expect(screen.getByTestId("competitor-page-sub-enhancements")).toBeTruthy();
     expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
     const enScorecard = screen.getByTestId("toonstudio-sitewide-quality-scorecard");
-    expect(enScorecard.textContent).toContain("Overall 1068000000000000000 / 100 (106800000000000000 / 10)");
-    expect(enScorecard.textContent).toContain("26 Frontend Domains · 1000 REA Evidences · 770 Services");
+    expect(enScorecard.textContent).toContain("Overall 1268000000000000000 / 100 (126800000000000000 / 10)");
+    expect(enScorecard.textContent).toContain("26 Frontend Domains · 1100 REA Evidences · 840 Services");
     expect(screen.getByTestId("competitor-active-sub-enhancement-inspector")).toBeTruthy();
     fireEvent.click(screen.getByTestId("competitor-sub-enhancement-market-morisawa-fontworks-tileable-pbr"));
     expect(screen.getByTestId("competitor-active-sub-enhancement-inspector").textContent).toContain("Morisawa/Fontworks LETS/Monotype Comic Fonts");
@@ -209,7 +209,7 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(enScorecard.textContent).not.toMatch(/[가-힣]/u);
   });
 
-  it("모든 평가 축·7대 도메인·35개 세부 고도화 항목이 100점 만점에 100000000000000만점(1e18)을 초과한다", async () => {
+  it("모든 평가 축·7대 도메인·63개 세부 고도화 항목이 100점 만점에 120000000000000만점(1.2e18)을 초과한다", async () => {
     const {
       STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
       computeToonStudioSiteWideQualityScorecard,
@@ -217,28 +217,28 @@ describe("StudioCompetitorCapabilityPanel", () => {
     } = await import("../studio-workspace-recommendation");
 
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBe(1000);
-    expect(scorecard.internalizedCompetitorServicesCount).toBe(770);
+    expect(scorecard.totalReaEvidenceRecords).toBe(1100);
+    expect(scorecard.internalizedCompetitorServicesCount).toBe(840);
     expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(true);
     expect(scorecard.meetsTargetTenMillionScore).toBe(true);
     expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(true);
-    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
-    expect(scorecard.featureInternalizationScore).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
-    expect(scorecard.uiUxDesignUnityScore).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
-    expect(scorecard.intuitivenessScore).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
-    expect(scorecard.usabilityErgonomicsScore).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
-    expect(scorecard.domPerformanceBudgetScore).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
+    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(1_260_000_000_000_000_000);
+    expect(scorecard.featureInternalizationScore).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
+    expect(scorecard.uiUxDesignUnityScore).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
+    expect(scorecard.intuitivenessScore).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
+    expect(scorecard.usabilityErgonomicsScore).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
+    expect(scorecard.domPerformanceBudgetScore).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
 
     for (const axis of scorecard.axisBreakdowns) {
-      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
+      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
     }
 
     const uniqueServices = new Set<string>();
     for (const domain of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
-      expect(domain.domainScoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
-      expect(domain.subEnhancements.length).toBe(8);
+      expect(domain.domainScoreOutOf100).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
+      expect(domain.subEnhancements.length).toBe(9);
       for (const sub of domain.subEnhancements) {
-        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
+        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
         expect(sub.reaMechanismKo.length).toBeGreaterThan(10);
         expect(sub.reaMechanismEn.length).toBeGreaterThan(10);
       }
@@ -247,7 +247,7 @@ describe("StudioCompetitorCapabilityPanel", () => {
         expect(matchStudioCompetitorWorkflowPreset(svc).length).toBeGreaterThan(0);
       }
     }
-    expect(uniqueServices.size).toBe(770);
+    expect(uniqueServices.size).toBe(840);
   });
 
   it("LlamaGen·투닝플러스·Mangaplay·젠툰·인서툰·Mantra 스토리→웹툰 & 다국어 OCR 워크벤치를 한·영으로 동작시킨다", () => {
