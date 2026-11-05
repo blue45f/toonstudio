@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { applyStudioBrushAliasWatercolorMaterial } from "../studio-brush-alias-profile";
+import { STUDIO_BRUSH_ENGINE_PROGRAM_SET_VERSION } from "../studio-brush-engine-program-set";
 
 import { resolveStudioWatercolorSettledSurface } from "./studio-watercolor-settled-surface";
 import {
@@ -78,6 +79,72 @@ describe("wet-paper settled bake host (time-sliced, cached)", () => {
   afterEach(() => {
     resetStudioWetPaperBakeHostForTests();
     vi.unstubAllGlobals();
+  });
+
+  it("증분 갈필 재질 입력은 활성 갈필에서만 수용하고 다른 권위는 원래 재질을 적용한다", () => {
+    const liveMaterialDabs = applyStudioBrushAliasWatercolorMaterial("ink-wash--dry-brush", DABS, 13, "live");
+    const input = {
+      brush: "ink-wash--dry-brush", plannedDabs: DABS, liveMaterialDabs, seed: 13,
+      activeDraft: true, durableDocumentRender: true, enginePrograms: null,
+      color: "#7653bf", onBakeReady: () => {}, bakeGeneration: 0, requester: "material-input#0",
+    };
+    expect(resolveStudioWatercolorSettledSurface(input).dabs).toBe(liveMaterialDabs);
+    expect(resolveStudioWatercolorSettledSurface({ ...input, activeDraft: false }).dabs).not.toBe(liveMaterialDabs);
+    expect(resolveStudioWatercolorSettledSurface({ ...input, brush: "ink-wash--moxi-bake" }).dabs).toEqual(
+      applyStudioBrushAliasWatercolorMaterial("ink-wash--moxi-bake", DABS, 13, "live"),
+    );
+    expect(resolveStudioWatercolorSettledSurface({ ...input, brush: "watercolor--granular" }).dabs).not.toBe(liveMaterialDabs);
+    for (const watercolor of [{ wetEdgeBloomProgramId: "edge-bloom" }, { livingInkBakeProgramId: "sumi-flow-bake" }]) {
+      const enginePrograms = { version: STUDIO_BRUSH_ENGINE_PROGRAM_SET_VERSION, watercolor };
+      expect(resolveStudioWatercolorSettledSurface({ ...input, enginePrograms }).dabs).toEqual(
+        applyStudioBrushAliasWatercolorMaterial(input.brush, DABS, 13, "live", enginePrograms),
+      );
+    }
+  });
+
+  it("갈필 침착은 8ms 논리 기한마다 양보하고 다음 작업에서 완료한다", async () => {
+    installFakeDocument();
+    await prewarmStudioDryBrushLiveBake();
+    const runtime = await import("./studio-wet-paper-runtime");
+    const deposit = vi.spyOn(runtime, "applyWetPaperDepositEvent");
+    const onReady = vi.fn();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    let clock = 0;
+    const elapsed = vi.spyOn(performance, "now").mockImplementation(() => (clock += 4));
+    try {
+      const { requestStudioDryBrushLiveBake } = await import("./studio-wet-paper-host");
+      requestStudioDryBrushLiveBake(DABS, { seed: 13, programId: "chu-tai-dry-brush" }, "#7653bf", onReady, "slice#0");
+      vi.advanceTimersToNextTimer();
+      expect(deposit).toHaveBeenCalledTimes(1);
+      expect(studioDryBrushLiveHostStatsForTests().jobs).toBe(1);
+      expect(onReady).not.toHaveBeenCalled();
+      await vi.runAllTimersAsync();
+      expect(onReady).toHaveBeenCalledTimes(1);
+      expect(studioDryBrushLiveHostStatsForTests().jobs).toBe(0);
+    } finally {
+      elapsed.mockRestore(); deposit.mockRestore(); vi.useRealTimers();
+    }
+  });
+
+  it("증분 입력과 배치 재질 경로의 갈필 미리보기 픽셀이 동일하다", async () => {
+    const canvases = installFakeDocument();
+    await prewarmStudioDryBrushLiveBake();
+    const liveMaterialDabs = applyStudioBrushAliasWatercolorMaterial("ink-wash--dry-brush", DABS, 13, "live");
+    const input = {
+      brush: "ink-wash--dry-brush", plannedDabs: DABS, seed: 13, activeDraft: true,
+      durableDocumentRender: true, enginePrograms: null, color: "#7653bf", bakeGeneration: 0,
+      requester: "material-pixels#0", onBakeReady: () => {},
+    };
+    await waitFor((onBakeReady) => resolveStudioWatercolorSettledSurface({ ...input, onBakeReady }));
+    const batch = resolveStudioWatercolorSettledSurface(input).wetPaperBake;
+    const batchPixels = canvases.find((canvas) => canvas === batch?.image)?.pixels;
+    expect(batchPixels?.some((channel) => channel > 0)).toBe(true);
+    resetStudioWetPaperBakeHostForTests();
+    await prewarmStudioDryBrushLiveBake();
+    await waitFor((onBakeReady) => resolveStudioWatercolorSettledSurface({ ...input, liveMaterialDabs, onBakeReady }));
+    const incremental = resolveStudioWatercolorSettledSurface({ ...input, liveMaterialDabs }).wetPaperBake;
+    expect(canvases.find((canvas) => canvas === incremental?.image)?.pixels).toEqual(batchPixels);
+    expect(incremental).toMatchObject({ x: batch?.x, y: batch?.y, width: batch?.width, height: batch?.height });
   });
 
   it("returns null first, bakes in slices, then serves bytes identical to the synchronous bake", async () => {

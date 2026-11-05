@@ -120,7 +120,7 @@
  * tail — and read x1.2 (glow, 2.4 ms at n=3200) and x1.1 (neon, 0.14 ms). The lesson generalises:
  * a probe that ends at a lane's first incremental stage certifies that stage, not the lane.
  */
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   createStudioIncrementalCalligraphySegmentBuilder,
@@ -176,7 +176,7 @@ import {
 import { createStudioIncrementalRetainedMediaCurveBuilder } from "../studio-retained-media-pressure";
 import { planStudioRetainedMediaRibbon } from "../studio-retained-media-ribbon";
 
-import { mapStudioBrushAliasPressure, resolveStudioBrushAliasWatercolorPlanSettings } from "./studio-brush-alias-profile";
+import { mapStudioBrushAliasPressure, mapStudioBrushAliasPressureSamples, resolveStudioBrushAliasWatercolorPlanSettings } from "./studio-brush-alias-profile";
 import {
   resolveStudioCapturedBrushDynamicsPresetId,
   studioDynamicBrushDepositPipelineUsesContinuation,
@@ -205,6 +205,7 @@ import {
 } from "./studio-perf-calibration";
 import { createStudioIncrementalAngledNibCoverageBuilder } from "./studio-stroke-local-coverage";
 import { planStudioWetWashLivePipeline } from "./studio-wet-wash-live-pipeline";
+import { watercolorBrushSeedFromKey } from "./studio-watercolor-brush";
 
 import type { DrawEl } from "../studio-element-model";
 
@@ -1384,6 +1385,80 @@ describe("long-stroke per-move planning cost", () => {
   beforeAll(async () => {
     // Lazy dynamic import in production too: a page-load cost, not a per-move cost.
     perfectStroker = await loadStudioPerfectFreehandStroker();
+  });
+
+  it("갈필의 실제 요청·침착 비용과 cap 포화를 증분 carrier의 flat 판정과 분리한다", async () => {
+    const host = await import("./wet-paper/studio-wet-paper-host");
+    const live = await import("./wet-paper/studio-dry-brush-live-host");
+    const { resolveStudioWatercolorSettledSurface } = await import("./wet-paper/studio-watercolor-settled-surface");
+    host.resetStudioWetPaperBakeHostForTests();
+    vi.stubGlobal("document", { createElement: () => ({
+      width: 0, height: 0, getContext: () => ({
+        createImageData: (width: number, height: number) => ({ data: new Uint8ClampedArray(width * height * 4) }),
+        putImageData: () => {},
+      }),
+    }) });
+    const nativeTimer = globalThis.setTimeout;
+    let cpu = 0, turns = 0, longestTurn = 0;
+    vi.stubGlobal("setTimeout", (callback: (...args: unknown[]) => void, delay?: number, ...args: unknown[]) => nativeTimer(() => {
+      const started = performance.now();
+      try { callback(...args); } finally {
+        if (callback.name === "run") { const elapsed = performance.now() - started; cpu += elapsed; turns += 1; longestTurn = Math.max(longestTurn, elapsed); }
+      }
+    }, delay));
+    const selected = "ink-wash--dry-brush";
+    const settings = resolveStudioBrushAliasWatercolorPlanSettings(selected, 24);
+    if (!settings) throw new Error("갈필의 정식 계획 설정이 없습니다.");
+    const seed = watercolorBrushSeedFromKey(ELEMENT_ID);
+    const render = (key: string, stroke: StrokePrefix, onBakeReady: () => void) => {
+      const started = performance.now();
+      const plan = planStudioWetWashLivePipeline(key, {
+        brushId: selected, carrierSeed: seed,
+        input: { points: stroke.points, pressures: mapStudioBrushAliasPressureSamples(selected, stroke.pressures, stroke.pointCount, 0.55),
+          ...settings, seed, maxDabs: DEFAULT_STUDIO_CAUSAL_WATERCOLOR_MAX_DABS, previewEndpoint: true },
+      });
+      if (!plan || plan.carrierPlan.footprintCount === 0) throw new Error("갈필의 실제 증분 워시가 없습니다.");
+      const surface = resolveStudioWatercolorSettledSurface({ brush: selected, plannedDabs: plan.dabs, liveMaterialDabs: plan.dabs,
+        seed, activeDraft: true, durableDocumentRender: true, enginePrograms: null,
+        color: STROKE_COLOR, onBakeReady, bakeGeneration: 0, requester: key });
+      return { syncMs: performance.now() - started, dabs: surface.dabs.length, ready: !!surface.wetPaperBake };
+    };
+    const rows: Array<{ points: number; dabs: number; syncMs: number; asyncCpuMs: number; wallMs: number; turns: number; maxTurnMs: number; cacheHit: boolean }> = [];
+    try {
+      const coldStarted = performance.now();
+      expect(render("cold-preview#0", buildStroke(448), () => {}).ready).toBe(false);
+      expect(await host.prewarmStudioDryBrushLiveBake()).toBe(true);
+      const coldPrewarmMs = performance.now() - coldStarted;
+      const complete = async (key: string, stroke: StrokePrefix) => {
+        let notify: () => void = () => {};
+        const ready = new Promise<void>((resolve) => { notify = resolve; });
+        const started = performance.now(), initialCpu = cpu, initialTurns = turns;
+        longestTurn = 0;
+        const result = render(key, stroke, notify);
+        if (!result.ready) await ready;
+        const measured = { points: stroke.pointCount, dabs: result.dabs, syncMs: result.syncMs,
+          asyncCpuMs: cpu - initialCpu, wallMs: performance.now() - started,
+          turns: turns - initialTurns, maxTurnMs: longestTurn, cacheHit: result.ready };
+        expect(render(key, stroke, () => {}).ready, "완료 알림 뒤 실제 갈필 래스터가 없습니다.").toBe(true);
+        return measured;
+      };
+      for (let rep = 0; rep < 3; rep += 1) for (const points of [448, 3584, 1000, 8000]) {
+        live.resetStudioDryBrushLiveHostForTests();
+        const key = `actual-dry-${rep}-${points}#0`;
+        await complete(key, buildStroke(points - MOVE_STEP));
+        const measured = await complete(key, buildStroke(points));
+        rows.push(measured);
+        expect(host.studioWetPaperBakeHostStatsForTests().pendingSolves).toBe(0);
+        if (points < 8000) { expect(measured.cacheHit).toBe(false); expect(measured.turns).toBeGreaterThan(0); expect(measured.asyncCpuMs).toBeGreaterThan(0); }
+        else { expect(measured.dabs).toBe(DEFAULT_STUDIO_CAUSAL_WATERCOLOR_MAX_DABS); expect(measured.cacheHit).toBe(true); expect(measured.turns).toBe(0); }
+      }
+      for (const points of [448, 3584, 1000, 8000]) {
+        const measured = rows.filter((row) => row.points === points);
+        expect(Math.min(...measured.map((row) => row.syncMs)), `갈필 실제 요청 n=${points} ${JSON.stringify(measured)}`).toBeLessThan(PER_MOVE_CEILING_MS);
+      }
+      expect(rows.find((row) => row.points === 3584)?.dabs).toBeGreaterThan(7 * (rows.find((row) => row.points === 448)?.dabs ?? 0));
+      process.stdout.write(`\n갈필 실제 요청 비용(전체 prefix signature/copy·침착은 flat 판정 제외, cap 포화는 cache hit): ${JSON.stringify({ coldPrewarmMs, rows })}\n`);
+    } finally { host.resetStudioWetPaperBakeHostForTests(); vi.unstubAllGlobals(); }
   });
 
   it("probes or explicitly skips every engine lane in the catalog", () => {
