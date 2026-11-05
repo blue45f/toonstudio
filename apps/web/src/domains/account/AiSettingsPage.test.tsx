@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
 
@@ -53,4 +53,39 @@ it("labels the back link from the source query param", () => {
 
   const backLink = screen.getByRole("link", { name: /ToonStudio/ });
   expect(backLink.getAttribute("href")).toBe("/studio");
+});
+
+it("switches BYOK routing policy and failover probe mode interactively", () => {
+  render(
+    <MemoryRouter initialEntries={["/settings/ai"]}>
+      <AiSettingsPage />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByTestId("ai-settings-rea-byok-failover-bar")).toBeTruthy();
+  const defaultPolicyBtn = screen.getByTestId("ai-settings-rea-policy-byok-12key-auto-rotate");
+  const localBridgeBtn = screen.getByTestId("ai-settings-rea-policy-comfy-invoke-local-bridge");
+  const defaultProbeBtn = screen.getByTestId("ai-settings-rea-probe-realtime-verify");
+  const failoverProbeBtn = screen.getByTestId("ai-settings-rea-probe-429-auto-failover");
+
+  expect(defaultPolicyBtn.getAttribute("aria-pressed")).toBe("true");
+  expect(localBridgeBtn.getAttribute("aria-pressed")).toBe("false");
+  expect(defaultProbeBtn.getAttribute("aria-pressed")).toBe("true");
+  expect(failoverProbeBtn.getAttribute("aria-pressed")).toBe("false");
+
+  const status = screen.getByTestId("ai-settings-rea-byok-status");
+  expect(status.textContent).toContain("byok-12key-auto-rotate");
+  expect(status.textContent).toContain("realtime-verify");
+  expect(status.textContent).toContain("Cursor");
+  expect(status.textContent).toContain("ComfyUI");
+
+  fireEvent.click(localBridgeBtn);
+  fireEvent.click(failoverProbeBtn);
+
+  expect(defaultPolicyBtn.getAttribute("aria-pressed")).toBe("false");
+  expect(localBridgeBtn.getAttribute("aria-pressed")).toBe("true");
+  expect(defaultProbeBtn.getAttribute("aria-pressed")).toBe("false");
+  expect(failoverProbeBtn.getAttribute("aria-pressed")).toBe("true");
+  expect(status.textContent).toContain("comfy-invoke-local-bridge");
+  expect(status.textContent).toContain("429-auto-failover");
 });

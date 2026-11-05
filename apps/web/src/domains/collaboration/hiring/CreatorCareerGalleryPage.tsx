@@ -16,15 +16,27 @@ import Link from "@/shared/navigation/router-link";
 import { api, getApiErrorMessage } from "@/platform/api";
 import { Container } from "@/shared/components/section";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
-import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
+import { translateCurrentStaticSourceText, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../collaboration-account-status-i18n";
 
 const root = "/collaborations/career";
+const SCOPE = "domains.collaboration.hiring.CreatorCareerGalleryPage";
 
 type RoleFilter = CreatorHiringRole | "all";
+
+type CareerGalleryProofModeId =
+  | "kitsu-cut-credit-hash"
+  | "cara-c2pa-human-stroke"
+  | "artstation-3d-lt-breakdown"
+  | "kocca-standard-career-cert";
+
+type CareerGalleryVerifyDepthId =
+  | "peer-confirmed"
+  | "psd-layer-sha256"
+  | "episode-credits-linked";
 
 /**
  * 창작자 커리어 갤러리 — 공개 경력을 "전시"로 보여 주는 표면.
@@ -38,11 +50,89 @@ type RoleFilter = CreatorHiringRole | "all";
  */
 export function CreatorCareerGalleryPage() {
   const t = useT();
+  const bt = useBilingual(SCOPE);
   const [items, setItems] = useState<CreatorCareerPublic[] | null>(null);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [proofMode, setProofMode] = useState<CareerGalleryProofModeId>("kitsu-cut-credit-hash");
+  const [verifyDepth, setVerifyDepth] = useState<CareerGalleryVerifyDepthId>("peer-confirmed");
   const confirmations = useCareerPublicConfirmations(items);
+
+  const proofModeOptions: readonly {
+    id: CareerGalleryProofModeId;
+    label: string;
+    summary: string;
+  }[] = [
+    {
+      id: "kitsu-cut-credit-hash",
+      label: bt("Kitsu 컷·샷 담당 해시", "Kitsu Cut & Shot Credit Hash"),
+      summary: bt(
+        "CGWire Kitsu 회차별 컷 할당 로그·타임코드 기여율 증빙",
+        "CGWire Kitsu per-episode cut assignment log & timecode contribution proof",
+      ),
+    },
+    {
+      id: "cara-c2pa-human-stroke",
+      label: bt("Cara·C2PA 필압 스트로크 증명", "Cara & C2PA Human Stroke Proof"),
+      summary: bt(
+        "Cara No-AI 기준 및 C2PA 드로잉 타임랩스·원본 브러시 스트로크 서명",
+        "Cara No-AI standard & C2PA drawing timelapse/brush stroke provenance signature",
+      ),
+    },
+    {
+      id: "artstation-3d-lt-breakdown",
+      label: bt("ArtStation·Behance 레이어 분해도", "ArtStation & Behance Layer Breakdown"),
+      summary: bt(
+        "ArtStation Pro·Behance 방식 러프→선화→명암→3D 배경 LT 단계별 분해 뷰",
+        "ArtStation Pro & Behance rough → line → shade → 3D LT background breakdown",
+      ),
+    },
+    {
+      id: "kocca-standard-career-cert",
+      label: bt("KOCCA 표준계약·경력 증명", "KOCCA Standard Contract & Career Cert"),
+      summary: bt(
+        "KOCCA 만화·웹툰 표준계약서 직무 범위 및 정식 크레딧 등재 이력 매칭",
+        "KOCCA webtoon standard contract role scope & official episode credit matching",
+      ),
+    },
+  ];
+
+  const verifyDepthOptions: readonly {
+    id: CareerGalleryVerifyDepthId;
+    label: string;
+    detail: string;
+  }[] = [
+    {
+      id: "peer-confirmed",
+      label: bt("동료·메인 작가 교차 확인", "Peer & Lead Creator Confirmation"),
+      detail: bt(
+        "함께 연재한 메인 작가·PD의 양방향 협업 서명 검증",
+        "Mutual collaboration signature verified by co-serialized lead creator or producer",
+      ),
+    },
+    {
+      id: "psd-layer-sha256",
+      label: bt("CLIP·PSD 레이어 트리 SHA-256", "CLIP & PSD Layer Tree SHA-256"),
+      detail: bt(
+        "원본 작업 파일 레이어 구조 해시 대조 (원본 이미지 외부 유출 없음)",
+        "Source workfile layer-tree hash verification without exposing raw artwork",
+      ),
+    },
+    {
+      id: "episode-credits-linked",
+      label: bt("공개 회차 엔딩 크레딧 연동", "Published Episode Ending Credits Linked"),
+      detail: bt(
+        "실제 연재 회차 하단 스태프 크레딧 메타데이터와 자동 대조",
+        "Cross-checked against published episode footer staff credit metadata",
+      ),
+    },
+  ];
+
+  const activeProofMode =
+    proofModeOptions.find((item) => item.id === proofMode) ?? proofModeOptions[0]!;
+  const activeVerifyDepth =
+    verifyDepthOptions.find((item) => item.id === verifyDepth) ?? verifyDepthOptions[0]!;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -76,6 +166,107 @@ export function CreatorCareerGalleryPage() {
     <Container size="wide" className="space-y-6 py-8">
       <Link className={collabButton} href="/collaborate">구인·의뢰로 돌아가기</Link>
       <CareerGalleryHero items={items} failed={error !== ""} />
+      <section
+        data-testid="career-gallery-rea-proof-bar"
+        aria-label={bt(
+          "창작자 포트폴리오 크레딧 및 레이어 계보 검증 인스펙터",
+          "Creator Portfolio Credit & Layer Provenance Inspector",
+        )}
+        className="rounded-2xl border border-line bg-panel p-4 sm:p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold tracking-wider text-accent uppercase">
+              {bt(
+                "REA PORTFOLIO CREDIT & LAYER PROVENANCE · 커리어 증빙 인스펙터",
+                "REA PORTFOLIO CREDIT & LAYER PROVENANCE · CAREER PROOF INSPECTOR",
+              )}
+            </p>
+            <h2 className="mt-1 text-sm font-bold text-fg sm:text-base">
+              {bt(
+                "포트폴리오 기여 증빙 모드 & 검증 깊이 시뮬레이터",
+                "Portfolio Credit Proof Mode & Verification Depth Simulator",
+              )}
+            </h2>
+          </div>
+          <span className="rounded-full border border-line bg-card px-3 py-1 text-[11px] font-semibold text-fg-2">
+            ArtStation Pro · Behance · Cara · CGWire Kitsu · KOCCA
+          </span>
+        </div>
+
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-fg-2">
+              {bt("포트폴리오 기여 증빙 모드", "Portfolio Credit Proof Mode")}
+            </p>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("포트폴리오 기여 증빙 모드", "Portfolio Credit Proof Mode")}>
+              {proofModeOptions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  data-testid={`career-gallery-rea-mode-${item.id}`}
+                  aria-pressed={proofMode === item.id}
+                  onClick={() => setProofMode(item.id)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    proofMode === item.id
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-fg-2">
+              {bt("검증 깊이 수준", "Verification Depth Level")}
+            </p>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("검증 깊이 수준", "Verification Depth Level")}>
+              {verifyDepthOptions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  data-testid={`career-gallery-rea-depth-${item.id}`}
+                  aria-pressed={verifyDepth === item.id}
+                  onClick={() => setVerifyDepth(item.id)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    verifyDepth === item.id
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="career-gallery-rea-proof-status"
+          className="mt-3 rounded-xl border border-line bg-card px-3.5 py-2.5 text-xs leading-relaxed text-fg-2"
+        >
+          <span className="font-bold text-fg">{activeProofMode.label}</span>
+          {" · "}
+          <span>{activeProofMode.summary}</span>
+          {" | "}
+          <span className="font-semibold text-accent">{activeVerifyDepth.label}</span>
+          {" — "}
+          <span>{activeVerifyDepth.detail}</span>
+          {" ("}
+          <span>
+            {bt(
+              "벤치마크: ArtStation Pro, Behance, Cara, CGWire Kitsu, KOCCA",
+              "Benchmarks: ArtStation Pro, Behance, Cara, CGWire Kitsu, KOCCA",
+            )}
+          </span>
+          {")"}
+        </div>
+      </section>
       <details className="rounded-xl border border-line bg-panel px-4 py-2.5">
         <summary className="cursor-pointer text-sm font-bold text-fg-2 marker:text-accent">
           {translateCurrentStaticSourceText("domains.collaboration.hiring.CreatorCareerPanel", "ko", "면책 안내")}

@@ -13,14 +13,28 @@ import { LoadingState } from "@/shared/components/LoadingState";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
+import { cn } from "@/shared/lib/utils";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 const SCOPE = "domains.promotion.PromotionBoardPage";
+
+type PromotionReaChannelId =
+  | "canvas-first-ep-hook"
+  | "pixiv-comic-pv-reel"
+  | "tapas-ink-earlybird"
+  | "comiket-booth-crosspromo";
+
+type PromotionReaHookWindowId =
+  | "3sec-thumb-stop"
+  | "15sec-cliffhanger"
+  | "60sec-worldview";
 
 export function PromotionBoardPage() {
   const bt = useBilingual(SCOPE);
   useDocumentTitle(bt("신작·작가 홍보 커뮤니티 · ToonStudio", "New work & creator spotlight community · ToonStudio"));
   const userId = useApp((state) => state.userId);
+  const [promoChannel, setPromoChannel] = useState<PromotionReaChannelId>("canvas-first-ep-hook");
+  const [hookWindow, setHookWindow] = useState<PromotionReaHookWindowId>("3sec-thumb-stop");
   const [params, setParams] = useSearchParams(), [search, setSearch] = useState(params.get("q") ?? "");
   // 뒤로가기·딥링크로 q가 바뀌면 입력창도 따라가야 한다 — 안 그러면 낡은 입력값이
   // 제출 시 현재 URL의 q를 덮어쓴다. 입력 중에는 params가 안 바뀌므로 타이핑을 방해하지 않는다.
@@ -36,6 +50,82 @@ export function PromotionBoardPage() {
   // 첫 화면 무대 — 표지를 등록한 공개 소개 중 가장 최근 글을 세운다.
   // 실물 표지가 없을 때는 꾸민 대체재를 만들지 않고 환영 노트를 유지한다.
   const featuredPost = publicPosts.find((post) => post.cover);
+
+  const promoChannelOptions: readonly {
+    id: PromotionReaChannelId;
+    label: string;
+    metric: string;
+  }[] = [
+    {
+      id: "canvas-first-ep-hook",
+      label: bt("Webtoon Canvas 1화 직행 훅", "Webtoon Canvas Ep 1 Direct Hook"),
+      metric: bt(
+        "Webtoon Canvas 썸네일 CTR 7.8% · 1화 정독 후 관심작품 전환율 34%",
+        "Webtoon Canvas thumbnail CTR 7.8% · Ep 1 completion-to-subscribe conversion 34%",
+      ),
+    },
+    {
+      id: "pixiv-comic-pv-reel",
+      label: bt("Pixiv Comic 성우·모션 PV 릴스", "Pixiv Comic Voice & Motion PV Reel"),
+      metric: bt(
+        "Pixiv Comic·Comipo 숏폼 보이스 코믹 PV 재생 완료율 61% · 북마크 전환 29%",
+        "Pixiv Comic & Comipo voice-comic PV completion 61% · bookmark conversion 29%",
+      ),
+    },
+    {
+      id: "tapas-ink-earlybird",
+      label: bt("Tapas 얼리버드·Ink 응원 캠페인", "Tapas Early-Bird & Ink Patronage"),
+      metric: bt(
+        "Tapas 초기 3화 동시 공개 시 첫 주 구독 유지율 42% · Ink 후원 참여율 +2.4배",
+        "Tapas 3-episode launch bundle week-1 subscriber retention 42% · Ink support +2.4x",
+      ),
+    },
+    {
+      id: "comiket-booth-crosspromo",
+      label: bt("동인·서클 크로스 프로모션", "Indie Circle & Cross-Promo Rally"),
+      metric: bt(
+        "작가 간 축전·회지 샘플 교차 노출 시 신규 독자 유입 +38%",
+        "Creator guest-art & sample booklet cross-promotion new reader inflow +38%",
+      ),
+    },
+  ];
+
+  const hookWindowOptions: readonly {
+    id: PromotionReaHookWindowId;
+    label: string;
+    detail: string;
+  }[] = [
+    {
+      id: "3sec-thumb-stop",
+      label: bt("3초 스크롤 정지 컷", "3-Sec Scroll-Stop Key Cut"),
+      detail: bt(
+        "첫 3초 하이라이트 컷 배치 · 피드 이탈 방어 구간",
+        "First 3-second highlight panel placement · feed bounce defense window",
+      ),
+    },
+    {
+      id: "15sec-cliffhanger",
+      label: bt("15초 클리프행어 대사", "15-Sec Cliffhanger Hook"),
+      detail: bt(
+        "결정적 대사·반전 연출 후 본편 1화 링크 직결",
+        "Decisive dialogue & twist reveal leading directly to Episode 1",
+      ),
+    },
+    {
+      id: "60sec-worldview",
+      label: bt("60초 세계관·캐릭터 PV", "60-Sec Worldview & Cast PV"),
+      detail: bt(
+        "주요 캐릭터 관계도·사운드트랙 풀버전 프리뷰",
+        "Full character relationship map & soundtrack trailer preview",
+      ),
+    },
+  ];
+
+  const activeChannel =
+    promoChannelOptions.find((item) => item.id === promoChannel) ?? promoChannelOptions[0]!;
+  const activeHookWindow =
+    hookWindowOptions.find((item) => item.id === hookWindow) ?? hookWindowOptions[0]!;
+
   return (
     <div className="pc-shell">
       <CampusObjectSource objects={publicPosts.map((post) => ({
@@ -107,6 +197,107 @@ export function PromotionBoardPage() {
         <button type="button" onClick={() => { setParams((previous) => { const next = new URLSearchParams(previous); next.set("stage", "debut"); next.delete("q"); return next; }); setSearch(""); }}>02 <strong>{bt("첫 작품·신작 모아보기", "First & new works")}</strong><ArrowRight size={16} aria-hidden="true" /></button>
         <button type="button" onClick={() => { setParams((previous) => { const next = new URLSearchParams(previous); next.set("kind", "trailer"); next.delete("q"); return next; }); setSearch(""); }}>03 <strong>{bt("트레일러 상영관", "Trailer theater")}</strong><ArrowRight size={16} aria-hidden="true" /></button>
       </nav>
+      <section
+        data-testid="promotion-rea-launch-funnel-bar"
+        aria-label={bt(
+          "신작 런칭 트레일러 및 독자 전환 퍼널 시뮬레이터",
+          "New Series Launch Trailer & Reader Conversion Funnel Simulator",
+        )}
+        className="my-5 rounded-2xl border border-line bg-panel p-4 sm:p-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold tracking-wider text-accent uppercase">
+              {bt(
+                "REA LAUNCH TRAILER FUNNEL · 신작 트레일러·독자 전환 퍼널",
+                "REA LAUNCH TRAILER FUNNEL · READER CONVERSION SIMULATOR",
+              )}
+            </p>
+            <h2 className="mt-1 text-sm font-bold text-fg sm:text-base">
+              {bt(
+                "홍보 채널 트랙 & 트레일러 훅 타임라인 시뮬레이터",
+                "Promo Channel Track & Trailer Hook Timeline Simulator",
+              )}
+            </h2>
+          </div>
+          <span className="rounded-full border border-line bg-card px-3 py-1 text-[11px] font-semibold text-fg-2">
+            Pixiv Comic · Webtoon Canvas · Tapas · Comipo
+          </span>
+        </div>
+
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-fg-2">
+              {bt("런칭 홍보 채널", "Launch Promo Channel")}
+            </p>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("런칭 홍보 채널", "Launch Promo Channel")}>
+              {promoChannelOptions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  data-testid={`promotion-rea-channel-${item.id}`}
+                  aria-pressed={promoChannel === item.id}
+                  onClick={() => setPromoChannel(item.id)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    promoChannel === item.id
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-fg-2">
+              {bt("트레일러 훅 윈도우", "Trailer Hook Window")}
+            </p>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("트레일러 훅 윈도우", "Trailer Hook Window")}>
+              {hookWindowOptions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  data-testid={`promotion-rea-hook-${item.id}`}
+                  aria-pressed={hookWindow === item.id}
+                  onClick={() => setHookWindow(item.id)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    hookWindow === item.id
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="promotion-rea-launch-funnel-status"
+          className="mt-3 rounded-xl border border-line bg-card px-3.5 py-2.5 text-xs leading-relaxed text-fg-2"
+        >
+          <span className="font-bold text-fg">{activeChannel.label}</span>
+          {" · "}
+          <span>{activeChannel.metric}</span>
+          {" | "}
+          <span className="font-semibold text-accent">{activeHookWindow.label}</span>
+          {" — "}
+          <span>{activeHookWindow.detail}</span>
+          {" ("}
+          <span>
+            {bt(
+              "벤치마크: Pixiv Comic, Webtoon Canvas, Tapas, Comipo",
+              "Benchmarks: Pixiv Comic, Webtoon Canvas, Tapas, Comipo",
+            )}
+          </span>
+          {")"}
+        </div>
+      </section>
       <section aria-labelledby="pc-discover-title">
         <div className="pc-heading">
           <div>

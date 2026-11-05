@@ -15,7 +15,9 @@ export type StoryToWebtoonEngineModeId =
   | "clo3d-acon-worldlabs-3dgs-stage"
   | "rask-heygen-audio2face-130lang-dub"
   | "comicstudio-vellum-comiket-print-preflight"
-  | "smartling-crowdin-glossary-720locale-qa";
+  | "smartling-crowdin-glossary-720locale-qa"
+  | "cascadeur-plask-live2d-mocap-rig"
+  | "kitsu-shotgrid-c2pa-escrow-delivery";
 
 export type StoryToWebtoonLayoutFormatId =
   | "vertical-webtoon-scroll"
@@ -272,6 +274,8 @@ export function StudioStoryToWebtoonStartupWorkbench({
   const [dubbingMasterPreset, setDubbingMasterPreset] = useState<"lufs14-duck12" | "audio2face-60fps">("lufs14-duck12");
   const [printPortalSpec, setPrintPortalSpec] = useState<"webtoon-800" | "jump-b4-600dpi" | "comiket-a5-cmyk">("webtoon-800");
   const [loreGlossaryLocked, setLoreGlossaryLocked] = useState<boolean>(true);
+  const [mocapPhysicsPreset, setMocapPhysicsPreset] = useState<"cascadeur-com-ik" | "plask-webcam-60fps" | "live2d-mesh-deform">("cascadeur-com-ik");
+  const [escrowDeliveryGate, setEscrowDeliveryGate] = useState<"kitsu-30-30-40-c2pa" | "shotgrid-p4-lock" | "c2pa-ed25519-manifest">("kitsu-30-30-40-c2pa");
   const [customScript, setCustomScript] = useState<string>("");
   const [simulreleaseLang, setSimulreleaseLang] = useState<
     "KO" | "EN" | "JA" | "ZH" | "ZH-TW" | "ES" | "FR" | "DE" | "PT" | "ID" | "TH" | "VI" | "AR" | "HI" | "RU" | "TR" | "IT" | "PL"
@@ -523,6 +527,26 @@ export function StudioStoryToWebtoonStartupWorkbench({
           <Wand2 size={12} aria-hidden="true" />
           {ko ? "⑩ 세계관 고유명사 글로서리 잠금 & 720+ 국가/75개 언어 QA (Smartling · Crowdin · MemoQ)" : "10. Lore Glossary Lock & 720+ Country / 75-Language QA (Smartling · Crowdin · MemoQ)"}
         </button>
+        <button
+          type="button"
+          data-testid="story-to-webtoon-mode-cascadeur-plask-live2d-mocap-rig"
+          aria-pressed={engineMode === "cascadeur-plask-live2d-mocap-rig"}
+          onClick={() => setEngineMode("cascadeur-plask-live2d-mocap-rig")}
+          className={cn("inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors", engineMode === "cascadeur-plask-live2d-mocap-rig" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:border-accent/40")}
+        >
+          <Clapperboard size={12} aria-hidden="true" />
+          {ko ? "⑪ 웹캠 모션캡처·물리 무게중심 IK & Live2D 메쉬 리깅 (Cascadeur · Plask AI · Live2D)" : "11. Webcam Mocap, Physics CoM IK & Live2D Mesh Rigging (Cascadeur · Plask AI · Live2D)"}
+        </button>
+        <button
+          type="button"
+          data-testid="story-to-webtoon-mode-kitsu-shotgrid-c2pa-escrow-delivery"
+          aria-pressed={engineMode === "kitsu-shotgrid-c2pa-escrow-delivery"}
+          onClick={() => setEngineMode("kitsu-shotgrid-c2pa-escrow-delivery")}
+          className={cn("inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors", engineMode === "kitsu-shotgrid-c2pa-escrow-delivery" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:border-accent/40")}
+        >
+          <Lock size={12} aria-hidden="true" />
+          {ko ? "⑫ 8단계 공정 샷 승인·30/30/40 에스크로 & C2PA Ed25519 서명 납품 (Kitsu · ShotGrid · C2PA)" : "12. 8-Stage Shot Sign-Off, 30/30/40 Escrow & C2PA Ed25519 Delivery (Kitsu · ShotGrid · C2PA)"}
+        </button>
       </div>
 
       {/* Story Genre Presets + Format & DNA Controls */}
@@ -574,57 +598,31 @@ export function StudioStoryToWebtoonStartupWorkbench({
             aria-label={ko ? "다국어 식자 동시 조판 언어" : "Multilingual lettering language"}
             className="inline-flex flex-wrap items-center gap-0.5 rounded-md border border-line bg-card p-0.5"
           >
-            {(
-              ["KO", "EN", "JA", "ZH", "ZH-TW", "ES", "FR", "DE", "PT", "ID", "TH", "VI", "AR", "HI", "RU", "TR", "IT", "PL"] as const
-            ).map((lang) => (
+            {(["KO", "EN", "JA", "ZH", "ZH-TW", "ES", "FR", "DE", "PT", "ID", "TH", "VI", "AR", "HI", "RU", "TR", "IT", "PL"] as const).map((lang) => (
               <button
                 key={lang}
                 type="button"
                 data-testid={`story-to-webtoon-lang-${lang}`}
                 aria-pressed={simulreleaseLang === lang}
                 onClick={() => setSimulreleaseLang(lang)}
-                className={cn(
-                  "rounded px-1.5 py-0.5 font-mono text-[0.56rem] font-bold transition-colors",
-                  simulreleaseLang === lang
-                    ? "bg-accent text-on-accent"
-                    : "text-fg-3 hover:text-fg",
-                )}
+                className={cn("rounded px-1.5 py-0.5 font-mono text-[0.56rem] font-bold transition-colors", simulreleaseLang === lang ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg")}
               >
                 {lang}
               </button>
             ))}
           </div>
-          {(
-            [
-              {
-                id: "vertical-webtoon-scroll",
-                ko: "세로 스크롤 웹툰 (Dashtoon 800px)",
-                en: "Vertical Scroll (Dashtoon 800px)",
-              },
-              {
-                id: "manga-page-spread",
-                ko: "만화 페이지 분할 (Komiko · Anifusion)",
-                en: "Manga Spread (Komiko · Anifusion)",
-              },
-              {
-                id: "instatoon-4cut-reels",
-                ko: "인스타툰·릴스 (GenToon · Insertoon)",
-                en: "Instatoon & Reels (GenToon · Insertoon)",
-              },
-            ] as const
-          ).map((fmt) => (
+          {([
+            { id: "vertical-webtoon-scroll", ko: "세로 스크롤 웹툰 (Dashtoon 800px)", en: "Vertical Scroll (Dashtoon 800px)" },
+            { id: "manga-page-spread", ko: "만화 페이지 분할 (Komiko · Anifusion)", en: "Manga Spread (Komiko · Anifusion)" },
+            { id: "instatoon-4cut-reels", ko: "인스타툰·릴스 (GenToon · Insertoon)", en: "Instatoon & Reels (GenToon · Insertoon)" },
+          ] as const).map((fmt) => (
             <button
               key={fmt.id}
               type="button"
               data-testid={`story-to-webtoon-format-${fmt.id}`}
               aria-pressed={layoutFormat === fmt.id}
               onClick={() => setLayoutFormat(fmt.id)}
-              className={cn(
-                "rounded-md border px-2 py-0.5 text-[0.6rem] font-bold transition-colors",
-                layoutFormat === fmt.id
-                  ? "border-accent bg-accent-soft text-accent"
-                  : "border-line bg-card text-fg-3 hover:border-accent/40",
-              )}
+              className={cn("rounded-md border px-2 py-0.5 text-[0.6rem] font-bold transition-colors", layoutFormat === fmt.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-3 hover:border-accent/40")}
             >
               {ko ? fmt.ko : fmt.en}
             </button>
@@ -632,10 +630,7 @@ export function StudioStoryToWebtoonStartupWorkbench({
         </div>
       </div>
 
-      <div
-        data-testid="story-to-webtoon-deep-engine-controls"
-        className="mt-2 flex flex-wrap items-center justify-between gap-1.5 rounded-lg border border-line bg-card/90 px-2.5 py-1.5 text-[0.58rem]"
-      >
+      <div data-testid="story-to-webtoon-deep-engine-controls" className="mt-2 flex flex-wrap items-center justify-between gap-1.5 rounded-lg border border-line bg-card/90 px-2.5 py-1.5 text-[0.58rem]">
         <div className="flex flex-wrap items-center gap-1">
           <span className="font-bold text-accent">{ko ? "심층 파이프라인 프리셋:" : "Deep Pipeline Presets:"}</span>
           <button type="button" data-testid="story-to-webtoon-lens-toggle" onClick={() => setLens6PassPreset((p) => (p === "35mm-6pass" ? "18mm-6pass" : p === "18mm-6pass" ? "85mm-rim" : "35mm-6pass"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
@@ -650,6 +645,12 @@ export function StudioStoryToWebtoonStartupWorkbench({
           <button type="button" data-testid="story-to-webtoon-glossary-toggle" aria-pressed={loreGlossaryLocked} onClick={() => setLoreGlossaryLocked((v) => !v)} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-success hover:border-accent/40">
             {loreGlossaryLocked ? (ko ? "용어집(Glossary) 잠금 ON · 75개 언어 무결성" : "Lore Glossary Lock ON · 75-Lang QA") : (ko ? "용어집 자유 번역" : "Glossary Unlocked")}
           </button>
+          <button type="button" data-testid="story-to-webtoon-mocap-toggle" onClick={() => setMocapPhysicsPreset((p) => (p === "cascadeur-com-ik" ? "plask-webcam-60fps" : p === "plask-webcam-60fps" ? "live2d-mesh-deform" : "cascadeur-com-ik"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
+            {ko ? `모션·리깅: ${mocapPhysicsPreset === "cascadeur-com-ik" ? "Cascadeur 무게중심 물리 IK" : mocapPhysicsPreset === "plask-webcam-60fps" ? "Plask 웹캠 60fps 모션캡처" : "Live2D 2.5D 메쉬 디포머"}` : `Mocap/Rig: ${mocapPhysicsPreset}`}
+          </button>
+          <button type="button" data-testid="story-to-webtoon-escrow-toggle" onClick={() => setEscrowDeliveryGate((p) => (p === "kitsu-30-30-40-c2pa" ? "shotgrid-p4-lock" : p === "shotgrid-p4-lock" ? "c2pa-ed25519-manifest" : "kitsu-30-30-40-c2pa"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
+            {ko ? `검수·납품: ${escrowDeliveryGate === "kitsu-30-30-40-c2pa" ? "Kitsu 30/30/40 에스크로+C2PA" : escrowDeliveryGate === "shotgrid-p4-lock" ? "ShotGrid+P4 바이너리 잠금" : "C2PA Ed25519 무결성 매니페스트"}` : `Delivery/Escrow: ${escrowDeliveryGate}`}
+          </button>
         </div>
         <span className="font-mono text-[0.55rem] text-fg-3">
           {ko ? `활성 엔진: ${engineMode} · 모아레 0%` : `Active Engine: ${engineMode} · Moire 0%`}
@@ -659,26 +660,12 @@ export function StudioStoryToWebtoonStartupWorkbench({
       <div className="mt-2.5 grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
         <div className="flex flex-col justify-between rounded-lg border border-line bg-card p-2.5">
           <div>
-            <label
-              htmlFor="story-to-webtoon-script-textarea"
-              className="block text-[0.64rem] font-bold text-fg"
-            >
+            <label htmlFor="story-to-webtoon-script-textarea" className="block text-[0.64rem] font-bold text-fg">
               {engineMode === "mangaplay-fountain-markup"
-                ? ko
-                  ? "Mangaplay Fountain 코믹 마크업 대본 입력 (타이핑 즉시 우측 콘티 변환)"
-                  : "Mangaplay Fountain Comic Markup Input (Live Storyboard Sync)"
-                : ko
-                  ? "줄거리·시나리오·웹소설 원문 입력 (자동 컷 분할 & 3D 카메라 매칭)"
-                  : "Story Logline or Novel Input (Auto Panel Breakdown & 3D Camera Match)"}
+                ? ko ? "Mangaplay Fountain 코믹 마크업 대본 입력 (타이핑 즉시 우측 콘티 변환)" : "Mangaplay Fountain Comic Markup Input (Live Storyboard Sync)"
+                : ko ? "줄거리·시나리오·웹소설 원문 입력 (자동 컷 분할 & 3D 카메라 매칭)" : "Story Logline or Novel Input (Auto Panel Breakdown & 3D Camera Match)"}
             </label>
-            <textarea
-              id="story-to-webtoon-script-textarea"
-              data-testid="story-to-webtoon-input"
-              rows={5}
-              value={displayedInputText}
-              onChange={(e) => setCustomScript(e.target.value)}
-              className="mt-1.5 w-full rounded-md border border-line bg-panel p-2 font-mono text-[0.62rem] leading-4 text-fg focus:border-accent focus:outline-none"
-            />
+            <textarea id="story-to-webtoon-script-textarea" data-testid="story-to-webtoon-input" rows={5} value={displayedInputText} onChange={(e) => setCustomScript(e.target.value)} className="mt-1.5 w-full rounded-md border border-line bg-panel p-2 font-mono text-[0.62rem] leading-4 text-fg focus:border-accent focus:outline-none" />
           </div>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-[0.6rem] text-fg-3">
             <span>
@@ -687,12 +674,7 @@ export function StudioStoryToWebtoonStartupWorkbench({
                 : `Auto-split ${generatedCuts.length} panels · Format: ${layoutFormat} · Shorts duration ${generatedCuts.reduce((acc, c) => acc + c.shortsDurationSec, 0).toFixed(1)}s`}
             </span>
             {onSelectWorkspacePreset ? (
-              <button
-                type="button"
-                data-testid="story-to-webtoon-apply-canvas"
-                onClick={() => onSelectWorkspacePreset("storyboard")}
-                className="rounded-md bg-accent px-2.5 py-1 text-[0.62rem] font-bold text-on-accent hover:opacity-95"
-              >
+              <button type="button" data-testid="story-to-webtoon-apply-canvas" onClick={() => onSelectWorkspacePreset("storyboard")} className="rounded-md bg-accent px-2.5 py-1 text-[0.62rem] font-bold text-on-accent hover:opacity-95">
                 {ko ? "이 컷 구성을 스튜디오 캔버스로 열기" : "Open Panel Plan in Studio Canvas"}
               </button>
             ) : null}
@@ -700,81 +682,34 @@ export function StudioStoryToWebtoonStartupWorkbench({
         </div>
 
         {/* Live Webtoon / Storyboard Cut Cards */}
-        <div
-          data-testid="story-to-webtoon-strip-preview"
-          className={cn(
-            "grid gap-2",
-            layoutFormat === "vertical-webtoon-scroll"
-              ? "grid-cols-1 sm:grid-cols-2"
-              : "grid-cols-2",
-          )}
-        >
+        <div data-testid="story-to-webtoon-strip-preview" className={cn("grid gap-2", layoutFormat === "vertical-webtoon-scroll" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2")}>
           {generatedCuts.map((cut) => {
             const isInpainted = inpaintedCutIndex === cut.cutNumber;
             return (
-              <div
-                key={cut.cutNumber}
-                data-testid={`story-to-webtoon-cut-${cut.cutNumber}`}
-                className={cn(
-                  "flex flex-col justify-between rounded-lg border p-2 text-[0.62rem] transition-colors",
-                  isInpainted
-                    ? "border-accent bg-accent-soft/25"
-                    : "border-line bg-card",
-                )}
-              >
+              <div key={cut.cutNumber} data-testid={`story-to-webtoon-cut-${cut.cutNumber}`} className={cn("flex flex-col justify-between rounded-lg border p-2 text-[0.62rem] transition-colors", isInpainted ? "border-accent bg-accent-soft/25" : "border-line bg-card")}>
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-1">
-                    <span className="font-black text-accent">
-                      {ko ? `CUT 0${cut.cutNumber} · ${cut.aspectRatio}` : `CUT 0${cut.cutNumber} · ${cut.aspectRatio}`}
-                    </span>
+                    <span className="font-black text-accent">{`CUT 0${cut.cutNumber} · ${cut.aspectRatio}`}</span>
                     <div className="flex items-center gap-1">
-                      <span
-                        data-testid={`story-to-webtoon-koma-tension-${cut.cutNumber}`}
-                        className="rounded bg-success/15 px-1.5 py-0.5 font-mono text-[0.55rem] font-bold text-success"
-                      >
-                        {ko
-                          ? `코마 텐션 ${92 + cut.cutNumber}% · ${simulreleaseLang} 식자`
-                          : `Koma Tension ${92 + cut.cutNumber}% · ${simulreleaseLang} Lettering`}
+                      <span data-testid={`story-to-webtoon-koma-tension-${cut.cutNumber}`} className="rounded bg-success/15 px-1.5 py-0.5 font-mono text-[0.55rem] font-bold text-success">
+                        {ko ? `코마 텐션 ${92 + cut.cutNumber}% · ${simulreleaseLang} 식자` : `Koma Tension ${92 + cut.cutNumber}% · ${simulreleaseLang} Lettering`}
                       </span>
-                      <span className="rounded bg-panel px-1.5 py-0.5 font-mono text-[0.56rem] text-fg-3">
-                        {characterDnaLocked ? cut.characterDnaSeed : "DNA-FREE"}
-                      </span>
+                      <span className="rounded bg-panel px-1.5 py-0.5 font-mono text-[0.56rem] text-fg-3">{characterDnaLocked ? cut.characterDnaSeed : "DNA-FREE"}</span>
                     </div>
                   </div>
                   <div className="mt-1 flex flex-wrap gap-1 text-[0.58rem] text-fg-2">
-                    <span className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold">
-                      {ko ? cut.shotAngleKo : cut.shotAngleEn}
-                    </span>
-                    <span className="rounded border border-line bg-panel px-1.5 py-0.5">
-                      {ko ? cut.pose3dPresetKo : cut.pose3dPresetEn}
-                    </span>
+                    <span className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold">{ko ? cut.shotAngleKo : cut.shotAngleEn}</span>
+                    <span className="rounded border border-line bg-panel px-1.5 py-0.5">{ko ? cut.pose3dPresetKo : cut.pose3dPresetEn}</span>
                   </div>
                   <div className="mt-1.5 rounded-md border border-line/80 bg-panel/80 px-2 py-1">
-                    <span className="font-bold text-fg">
-                      {ko ? cut.speakerKo : cut.speakerEn}:{" "}
-                    </span>
-                    <span className="text-fg-2">
-                      {ko ? cut.dialogueKo : cut.dialogueEn}
-                    </span>
+                    <span className="font-bold text-fg">{ko ? cut.speakerKo : cut.speakerEn}: </span>
+                    <span className="text-fg-2">{ko ? cut.dialogueKo : cut.dialogueEn}</span>
                   </div>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between gap-1 pt-1">
-                  <span className="font-mono text-[0.58rem] font-extrabold text-accent">
-                    SFX: {ko ? cut.sfxKo : cut.sfxEn} · {cut.shortsDurationSec.toFixed(1)}s
-                  </span>
-                  <button
-                    type="button"
-                    data-testid={`story-to-webtoon-inpaint-cut-${cut.cutNumber}`}
-                    onClick={() => setInpaintedCutIndex(cut.cutNumber)}
-                    className="rounded border border-line bg-panel px-1.5 py-0.5 text-[0.56rem] font-bold text-fg-2 hover:border-accent/50 hover:text-accent"
-                  >
-                    {isInpainted
-                      ? ko
-                        ? "Komiko 부분 인페인팅 완료"
-                        : "Komiko Inpaint Applied"
-                      : ko
-                        ? "부분 인페인팅 보정"
-                        : "Inpaint Region"}
+                  <span className="font-mono text-[0.58rem] font-extrabold text-accent">SFX: {ko ? cut.sfxKo : cut.sfxEn} · {cut.shortsDurationSec.toFixed(1)}s</span>
+                  <button type="button" data-testid={`story-to-webtoon-inpaint-cut-${cut.cutNumber}`} onClick={() => setInpaintedCutIndex(cut.cutNumber)} className="rounded border border-line bg-panel px-1.5 py-0.5 text-[0.56rem] font-bold text-fg-2 hover:border-accent/50 hover:text-accent">
+                    {isInpainted ? (ko ? "Komiko 부분 인페인팅 완료" : "Komiko Inpaint Applied") : (ko ? "부분 인페인팅 보정" : "Inpaint Region")}
                   </button>
                 </div>
               </div>

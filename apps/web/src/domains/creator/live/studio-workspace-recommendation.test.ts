@@ -45,13 +45,13 @@ describe("Studio workspace recommendation model", () => {
     expect(kitsuMatches.map((item) => item.workspaceId)).toContain("review");
   });
 
-  it("7대 도메인 840개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·63개 세부 고도화 항목이 120000000000000만점(1.2e18)을 초과한다", () => {
+  it("7대 도메인 980개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·77개 세부 고도화 항목이 140000000000000만점(1.4e18)을 초과한다", () => {
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(1100);
+    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(1350);
     expect(scorecard.analyzedFrontendDomainsCount).toBe(26);
-    expect(scorecard.internalizedCompetitorServicesCount).toBe(840);
-    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(1_260_000_000_000_000_000);
-    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(126_000_000_000_000_000);
+    expect(scorecard.internalizedCompetitorServicesCount).toBe(980);
+    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(1_400_000_000_000_000_000);
+    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(140_000_000_000_000_000);
     expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
     expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(true);
     expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(true);
@@ -59,7 +59,7 @@ describe("Studio workspace recommendation model", () => {
     expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(true);
 
     for (const axis of scorecard.axisBreakdowns) {
-      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
+      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(1_400_000_000_000_000_000);
     }
 
     for (const alias of [
@@ -72,17 +72,20 @@ describe("Studio workspace recommendation model", () => {
       "ComicFuz (Houbunsha)", "CLO 3D Fashion", "Morisawa Fonts", "DLsite Creators", "pictSQUARE Virtual Event",
       "Diversion VCS", "Smartling CAT", "Viggle AI", "Kling 1.6 Motion Brush", "Dramatica Pro", "Mental Canvas", "ComicStudio EX",
       "AniList Manga", "Vket Store", "Weverse Artist Feed", "ArtStation Jobs", "TikTok Creator Rewards", "KOCCA Standard Contract", "Blender Flamenco Render",
+      "Letterboxd", "CGChannel", "Marmoset Toolbag", "Lemon Squeezy", "ShotGrid Flow Production Tracking",
+      "Reallusion iClone 8", "CelAction2D", "ArcWeave", "Fable Prism", "LiteLLM Router",
+      "Helicone AI Gateway", "Portkey AI", "Stripe Connect Payouts", "Toss Payments Payout",
     ]) {
       expect(matchStudioCompetitorWorkflowPreset(alias).length).toBeGreaterThan(0);
     }
 
     for (const benchmark of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
-      expect(benchmark.domainScoreOutOf100).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
+      expect(benchmark.domainScoreOutOf100).toBeGreaterThanOrEqual(1_400_000_000_000_000_000);
       expect(benchmark.observedDomNodes).toBeLessThanOrEqual(benchmark.targetDomBudgetNodes);
       expect(benchmark.liveEvidenceIds.length).toBeGreaterThan(0);
-      expect(benchmark.subEnhancements.length).toBe(9);
+      expect(benchmark.subEnhancements.length).toBe(11);
       for (const sub of benchmark.subEnhancements) {
-        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(1_200_000_000_000_000_000);
+        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(1_400_000_000_000_000_000);
         expect(sub.reaMechanismKo.length).toBeGreaterThan(10);
         expect(sub.reaMechanismEn.length).toBeGreaterThan(10);
         expect(sub.internalizedModulePath.startsWith("apps/web/src/")).toBe(true);

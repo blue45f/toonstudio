@@ -34,6 +34,14 @@ import "./cuts.css";
 
 type StudioStep = "select" | "preview" | "done";
 
+type StudioEnginePreset =
+  | "gsap-parallax-25d"
+  | "rive-spine-state-rig"
+  | "vrew-insertoon-beat-sync"
+  | "elevenlabs-typecast-lufs14";
+
+type StudioTargetFps = "60fps-webgpu" | "120fps-promotion" | "24fps-anime-cel";
+
 const STEP_LABELS = [
   { id: "select", ko: "1. 회차 선택", en: "1. Pick an episode" },
   { id: "preview", ko: "2. 변환 미리보기", en: "2. Preview conversion" },
@@ -293,6 +301,8 @@ export function CutsStudioPage() {
   const [selected, setSelected] = useState<EpisodeSource | null>(remixEpisode);
   const [publishedId, setPublishedId] = useState<string | null>(null);
   const [publishBlocked, setPublishBlocked] = useState(false);
+  const [studioEngine, setStudioEngine] = useState<StudioEnginePreset>("gsap-parallax-25d");
+  const [targetFps, setTargetFps] = useState<StudioTargetFps>("60fps-webgpu");
 
   // 선택한 회차가 리믹스 진입 대상과 같을 때만 리믹스 초안으로 만든다.
   const isRemixDraft =
@@ -408,6 +418,99 @@ export function CutsStudioPage() {
           ))}
         </div>
       </div>
+
+      <section
+        data-testid="cuts-studio-rea-engine-controller"
+        aria-label={t(
+          "REA 무빙툰 렌더 엔진 및 프레임레이트 컨트롤러",
+          "REA Movingtoon Render Engine & Frame-Rate Controller",
+        )}
+        className="my-3 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div
+            className="flex flex-wrap items-center gap-1.5"
+            role="group"
+            aria-label={t("무빙툰 렌더 엔진 선택", "Movingtoon Render Engine Selection")}
+          >
+            <span className="font-extrabold text-accent">
+              {t("렌더 엔진:", "Render Engine:")}
+            </span>
+            {([
+              {
+                id: "gsap-parallax-25d",
+                ko: "GSAP 2.5D 패럴랙스 깊이 루프",
+                en: "GSAP 2.5D Parallax Depth Loop",
+              },
+              {
+                id: "rive-spine-state-rig",
+                ko: "Rive·Spine·Live2D 상태머신 리깅",
+                en: "Rive/Spine/Live2D State Machine Rig",
+              },
+              {
+                id: "vrew-insertoon-beat-sync",
+                ko: "Vrew·오노마AI 인서툰 비트 자막 싱크",
+                en: "Vrew & Onoma AI Insertoon Beat Sync",
+              },
+              {
+                id: "elevenlabs-typecast-lufs14",
+                ko: "ElevenLabs·타입캐스트 -14 LUFS 마스터링",
+                en: "ElevenLabs & Typecast -14 LUFS Mastering",
+              },
+            ] as const).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`cuts-studio-rea-engine-${item.id}`}
+                aria-pressed={studioEngine === item.id}
+                onClick={() => setStudioEngine(item.id)}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  studioEngine === item.id
+                    ? "border-accent bg-accent text-white"
+                    : "border-line bg-panel text-fg-2 hover:border-accent/50"
+                }`}
+              >
+                {t(item.ko, item.en)}
+              </button>
+            ))}
+          </div>
+          <div
+            className="flex flex-wrap items-center gap-1.5"
+            role="group"
+            aria-label={t("목표 프레임레이트 선택", "Target Frame-Rate Selection")}
+          >
+            <span className="font-extrabold text-accent">
+              {t("타깃 FPS:", "Target FPS:")}
+            </span>
+            {([
+              { id: "60fps-webgpu", ko: "60fps WebGPU 표준", en: "60fps WebGPU Standard" },
+              { id: "120fps-promotion", ko: "120fps ProMotion 고주사율", en: "120fps ProMotion High-Refresh" },
+              { id: "24fps-anime-cel", ko: "24fps 애니 작화 셀", en: "24fps Anime Cel Cadence" },
+            ] as const).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`cuts-studio-rea-fps-${item.id}`}
+                aria-pressed={targetFps === item.id}
+                onClick={() => setTargetFps(item.id)}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  targetFps === item.id
+                    ? "border-accent bg-accent text-white"
+                    : "border-line bg-panel text-fg-2 hover:border-accent/50"
+                }`}
+              >
+                {t(item.ko, item.en)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p data-testid="cuts-studio-rea-engine-status" className="mt-2 text-[11px] text-fg-2">
+          {t(
+            `[활성 렌더 파이프라인] 엔진: ${studioEngine} · 주사율: ${targetFps} · Rive, Spine, Live2D, Vrew, Onoma AI Insertoon, ElevenLabs 무빙툰 규격 호환`,
+            `[Active Render Pipeline] Engine: ${studioEngine} · Frame-Rate: ${targetFps} · Rive, Spine, Live2D, Vrew, Onoma AI Insertoon, ElevenLabs movingtoon spec ready`,
+          )}
+        </p>
+      </section>
 
       {remixParamInvalid ? (
         <p className="cuts-studio__notice" role="note">

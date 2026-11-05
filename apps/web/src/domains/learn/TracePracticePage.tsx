@@ -1,9 +1,19 @@
 import { ArrowRight, Eye, FlipHorizontal2, ImagePlus, Layers3, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { MotionIllustration, MotionStepFlow, MotionReveal, type MotionIllustrationName } from "@/shared/motion-assets";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
+
+type DrillPreset =
+  | "posemaniacs-30s-gesture"
+  | "lineofaction-2m-anatomy"
+  | "csp-3d-perspective-snap"
+  | "procreate-quickshape-clean";
+
+type GuideOpacityPreset = "25pct-ghost" | "50pct-onion" | "invert-value-check";
 
 const STEPS: readonly {
   readonly icon: typeof ImagePlus;
@@ -32,6 +42,9 @@ const STEPS: readonly {
 ] as const;
 
 export function TracePracticePage() {
+  const t = useBilingual("domains.learn.TracePracticePage");
+  const [drillPreset, setDrillPreset] = useState<DrillPreset>("posemaniacs-30s-gesture");
+  const [guideOpacity, setGuideOpacity] = useState<GuideOpacityPreset>("50pct-onion");
   useDocumentTitle("따라 그리기 연습");
   return <Container size="wide" className="py-7 sm:py-10 lg:py-12">
     <header className="rounded-3xl border border-line bg-panel p-6 sm:p-8">
@@ -48,6 +61,98 @@ export function TracePracticePage() {
         <Link to="/learn/recipes" className={buttonClass({ size: "lg", variant: "outline" })}>다른 실습 보기</Link>
       </div>
     </header>
+    <section
+      data-testid="trace-practice-rea-drill-bar"
+      aria-label={t(
+        "REA 제스처 타이머 및 어니언스킨 가이드 시뮬레이터",
+        "REA Gesture Timer & Onion-Skin Guide Simulator",
+      )}
+      className="mt-6 rounded-2xl border border-line bg-panel p-4 text-xs"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          className="flex flex-wrap items-center gap-1.5"
+          role="group"
+          aria-label={t("드로잉 드릴 타이머 프리셋", "Drawing Drill Timer Presets")}
+        >
+          <span className="font-extrabold text-accent">
+            {t("드릴 프리셋:", "Drill Preset:")}
+          </span>
+          {([
+            {
+              id: "posemaniacs-30s-gesture",
+              ko: "Posemaniacs 30초 크로키 제스처",
+              en: "Posemaniacs 30s Gesture Croquis",
+            },
+            {
+              id: "lineofaction-2m-anatomy",
+              ko: "Line of Action 2분 해부학 동세",
+              en: "Line of Action 2m Anatomy Flow",
+            },
+            {
+              id: "csp-3d-perspective-snap",
+              ko: "Clip Studio Paint 3D 투시 스냅",
+              en: "Clip Studio Paint 3D Perspective Snap",
+            },
+            {
+              id: "procreate-quickshape-clean",
+              ko: "Procreate QuickShape 클린업",
+              en: "Procreate QuickShape Clean-Up",
+            },
+          ] as const).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`trace-practice-rea-drill-${item.id}`}
+              aria-pressed={drillPreset === item.id}
+              onClick={() => setDrillPreset(item.id)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                drillPreset === item.id
+                  ? "border-accent bg-accent text-white"
+                  : "border-line bg-card text-fg-2 hover:border-accent/50"
+              }`}
+            >
+              {t(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <div
+          className="flex flex-wrap items-center gap-1.5"
+          role="group"
+          aria-label={t("어니언스킨 가이드 농도", "Onion-Skin Guide Opacity")}
+        >
+          <span className="font-extrabold text-accent">
+            {t("가이드 농도:", "Guide Opacity:")}
+          </span>
+          {([
+            { id: "25pct-ghost", ko: "25% 고스트 트레이스", en: "25% Ghost Trace" },
+            { id: "50pct-onion", ko: "50% 어니언스킨 표준", en: "50% Onion-Skin Standard" },
+            { id: "invert-value-check", ko: "흑백·좌우반전 명도 점검", en: "Invert & Grayscale Value Check" },
+          ] as const).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`trace-practice-rea-opacity-${item.id}`}
+              aria-pressed={guideOpacity === item.id}
+              onClick={() => setGuideOpacity(item.id)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                guideOpacity === item.id
+                  ? "border-accent bg-accent text-white"
+                  : "border-line bg-card text-fg-2 hover:border-accent/50"
+              }`}
+            >
+              {t(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p data-testid="trace-practice-rea-drill-status" className="mt-2 text-[11px] text-fg-2">
+        {t(
+          `[드릴 가이드 활성] 타이머: ${drillPreset} · 가이드 농도: ${guideOpacity} · Posemaniacs, Line of Action, SketchDaily, Procreate, Clip Studio Paint 비파괴 트레이싱 표준 적용`,
+          `[Active Drill Guide] Timer: ${drillPreset} · Guide Opacity: ${guideOpacity} · Posemaniacs, Line of Action, SketchDaily, Procreate, Clip Studio Paint non-destructive trace standard`,
+        )}
+      </p>
+    </section>
     {/* 10초 이해 원칙 — 연습 흐름을 한 눈에 보여주는 단계 다이어그램. */}
     <MotionReveal className="mt-6">
       <section className="rounded-3xl border border-line bg-panel p-6 sm:p-8" aria-label="따라 그리기 흐름 한눈에 보기">
