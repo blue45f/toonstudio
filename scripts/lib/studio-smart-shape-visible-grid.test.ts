@@ -244,7 +244,11 @@ function preparationStage(states: readonly StudioSmartShapeFloatingReadiness[]) 
 describe("Smart Shape 초기 배치는 기존 deadline 안의 실제 연속 프레임만 채택한다", () => {
   it("응답 listener는 prepare 전에 설치하고 준비 완료 뒤 최종 stageBox와 그리드를 한 번만 결정한다", () => {
     const source = readFileSync(new URL("../verify-studio-brushes.mts", import.meta.url), "utf8");
-    const shape = source.slice(source.indexOf("async function runSmartShapeMatrix("), source.indexOf("async function openMobileBrushSettings("));
+    const start = source.indexOf("async function runSmartShapeMatrix(");
+    const end = source.indexOf("async function runMobileTouchAudit(", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const shape = source.slice(start, end);
     for (const token of ["collectBrowserErrors(page", "const preparationDeadline = Date.now() + 60_000", "await prepareStudioPage(",
       "await waitForStudioSmartShapeFloatingReady(", "const stageBox = await stage.boundingBox()", "const fixtureDefinitions:"]) expect(shape).toContain(token);
     expect(shape.indexOf("collectBrowserErrors(page")).toBeLessThan(shape.indexOf("await prepareStudioPage("));
