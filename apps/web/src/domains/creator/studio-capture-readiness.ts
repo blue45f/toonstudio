@@ -1,4 +1,5 @@
 import { parseStudioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
+import { BrushStudioV6LegacyPigmentMigrationRequiredError, hasVisibleLegacyMixboxStrokes } from "./brush-lab/brush-studio-v6-legacy-pigment";
 /**
  * Deterministic capture readiness gate for the React-Konva studio.
  *
@@ -58,6 +59,8 @@ export type StudioCaptureLinked3dPassRasterSourceResolver = (
 interface StudioCaptureDocumentPage {
   readonly id: string;
   readonly elements: readonly unknown[];
+  readonly groups?: readonly unknown[];
+  readonly hideMaster?: boolean;
 }
 
 /** The live overlay is not a document raster. The existing flush owns GPU receipts/publication. */
@@ -88,6 +91,10 @@ export interface StudioCaptureReadinessOptions<
   getRenderedPageId: () => string | null;
   getStage: () => TStage | null;
   assetSources?: readonly string[];
+  sourcePage?: TPage;
+  getMaster?: () => unknown;
+  getDocumentGeneration?: () => number;
+  expectedDocumentGeneration?: number;
   /** Present for current-document exports; historical timelapse snapshots keep their own inputs. */
   document?: StudioCaptureDocumentReadiness<TPage>;
   timeoutMs?: number;
@@ -135,6 +142,7 @@ export function flushStudioDocumentInkForExport(document: StudioDocumentInkReadi
 function prepareDocumentCapture<TPage extends StudioCaptureDocumentPage>(
   pageId: string,
   document: StudioCaptureDocumentReadiness<TPage>,
+  master: unknown,
 ) {
   const assertInkSettled = flushStudioDocumentInkForExport(document);
   const history = document.pagesHistoryRef.current;
@@ -142,7 +150,8 @@ function prepareDocumentCapture<TPage extends StudioCaptureDocumentPage>(
   const page = history[historyIndex]?.find((candidate) => candidate.id === pageId);
   if (!page) throw new StudioCaptureReadinessError("stale-page", "캡처할 페이지가 현재 원고에 없어요.");
   return {
-    sources: collectStudioCaptureAssetSources(page, document.master),
+    page,
+    sources: collectStudioCaptureAssetSources(page, master),
     assertCurrent() {
       assertInkSettled();
       if (document.pagesHistoryRef.current !== history || document.pagesHiRef.current !== historyIndex) {
@@ -459,11 +468,26 @@ export async function waitForStudioCaptureReady<
 
   return withTimeout(async (operationSignal) => {
     throwIfAborted(operationSignal);
-    const document = options.document ? prepareDocumentCapture(pageId, options.document) : undefined;
+    if (options.expectedDocumentGeneration !== undefined && options.getDocumentGeneration?.() !== options.expectedDocumentGeneration) {
+      throw new StudioCaptureReadinessError("stale-page", "캡처를 시작하기 전에 원고가 바뀌어 내보내기를 중단했어요.");
+    }
+    const master = options.getMaster?.() ?? options.document?.master;
+    const document = options.document ? prepareDocumentCapture(pageId, options.document, master) : undefined;
+    // 내보내기가 직접 확정한 마지막 획은 새 스냅샷에 포함하고, 그 뒤의 변경부터 차단한다.
+    const generation = options.getDocumentGeneration?.();
     const sources = document?.sources ?? uniqueAssetSources(options.assetSources ?? []);
     const assertCurrent = () => {
       throwIfAborted(operationSignal);
       document?.assertCurrent();
+      if ((options.getMaster && options.getMaster() !== master)
+        || (options.getDocumentGeneration && options.getDocumentGeneration() !== generation)) {
+        throw new StudioCaptureReadinessError("stale-page", "캡처 준비 중 마스터 또는 원고가 바뀌어 내보내기를 중단했어요.");
+      }
+      const page = document?.page ?? options.sourcePage;
+      if (page && hasVisibleLegacyMixboxStrokes([...page.elements,
+        ...(!page.hideMaster && isRecord(master) && Array.isArray(master.elements) ? master.elements : [])], page.groups ?? [])) {
+        throw new BrushStudioV6LegacyPigmentMigrationRequiredError();
+      }
     };
     assertCurrent();
     while (options.getRenderedPageId() !== pageId || !options.getStage() || document?.isRendered() === false) {

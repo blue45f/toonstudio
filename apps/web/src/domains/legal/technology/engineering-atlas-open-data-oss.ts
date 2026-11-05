@@ -384,17 +384,17 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
         "scripts/generate-third-party-notices.mjs runs in two modes. --check (pnpm audit:licenses) only inspects, while --output (the build's postbuild) writes dist/legal/THIRD_PARTY_NOTICES.generated.md. It compares each installed package's SPDX expression with an allowlist, gathers 431 license texts with hashes, and merges the inventories of Rust crates such as Vello and Hokusai and of three self-built WASM modules. A check run on 2026-10-08 passed with 584 entries.",
       ),
       t(
-        "제한이 있는 의존성은 이름·버전·라이선스를 핀으로 고정합니다. mixbox 2.0.0(CC-BY-NC-4.0)과 remotion·@remotion/player 4.0.536(Remotion License, 표준 SPDX 아님)는 그 조합일 때만 통과하고, 버전이나 표기가 바뀌면 빌드가 실패합니다. 목록에 없는 CC-BY-NC 패키지가 새로 들어와도 실패합니다. 이 카드는 저장소가 어떻게 처리하는지만 설명하며 법률 판단은 하지 않습니다.",
-        "Restricted dependencies are pinned by name, version and license. mixbox 2.0.0 (CC-BY-NC-4.0) and remotion and @remotion/player 4.0.536 (Remotion License, not a standard SPDX id) pass only in exactly that combination, and the build fails if the version or label changes. A new CC-BY-NC package outside that list also fails. This card describes only how the repository handles them and makes no legal judgment.",
+        "제한이 있는 의존성은 이름·버전·라이선스를 핀으로 고정합니다. Remotion 계열은 검토한 조합에서만 통과하고 라이선스 원문 해시도 검사합니다. 외부 Mixbox 의존성과 비상업 예외는 2026-11-05 변경에서 제거했습니다. 목록에 없는 CC-BY-NC 패키지가 들어오면 실패하며, 이 처리 자체가 법률 판단을 뜻하지는 않습니다.",
+        "Restricted dependencies are pinned by name, version and license. Remotion packages pass only for reviewed combinations, including a license-text hash check. The external Mixbox dependency and its non-commercial exception are removed in the 2026-11-05 change. A CC-BY-NC package outside the list fails; this policy does not establish a legal conclusion.",
       ),
       t(
-        "빈틈 셋을 적습니다. ① 손으로 쓴 루트 THIRD_PARTY_NOTICES.md 는 일부 목록이라 직접 의존성 117개 중 22개만 싣고 95개는 빠져 있습니다. 완전한 목록은 빌드 산출 고지입니다. ② wasm-vips 패키지는 자체 THIRD-PARTY-NOTICES.md 에 LGPL 라이브러리를 적지만, 생성기는 LICENSE·COPYING·NOTICE 로 시작하는 파일만 모아 생성 고지에는 MIT 로만 나옵니다. ③ mixbox 는 브러시 코드가 정적 import 하고 허용 여부는 런타임 라이선스 프로필이 판정하는데, 툴체인 문서는 같은 mixbox 를 연구 전용·비실행으로 적습니다.",
-        "Three gaps are noted. 1 The hand-written root THIRD_PARTY_NOTICES.md is a partial list that carries only 22 of the 117 direct dependencies and omits 95; the full list is the build output. 2 The wasm-vips package lists LGPL libraries in its own THIRD-PARTY-NOTICES.md, but the generator only collects files named like LICENSE, COPYING or NOTICE, so the generated notice shows only MIT. 3 The brush code imports mixbox statically and a runtime license profile decides its use, while the toolchain document calls the same mixbox research-only and non-executable.",
+        "빈틈 셋을 적습니다. ① 손으로 쓴 루트 THIRD_PARTY_NOTICES.md 는 일부 목록이라 직접 의존성 117개 중 22개만 싣고 95개는 빠져 있습니다. 완전한 목록은 빌드 산출 고지입니다. ② wasm-vips 패키지는 자체 THIRD-PARTY-NOTICES.md 에 LGPL 라이브러리를 적지만, 생성기는 LICENSE·COPYING·NOTICE 로 시작하는 파일만 모아 생성 고지에는 MIT 로만 나옵니다. ③ Mixbox의 정적 import와 연구 전용 설명이 어긋났던 경계는 외부 의존성을 제거하고 자체 안료로 연결했습니다. 실행 프로필 검증과 산출물 포함 검사는 별개입니다.",
+        "Three gaps are noted. 1 The hand-written root THIRD_PARTY_NOTICES.md is a partial list that carries only 22 of the 117 direct dependencies and omits 95; the full list is the build output. 2 The wasm-vips package lists LGPL libraries in its own THIRD-PARTY-NOTICES.md, but the generator only collects files named like LICENSE, COPYING or NOTICE, so the generated notice shows only MIT. 3 The mismatch between the static Mixbox import and research-only documentation is addressed by removing that external dependency and using the project mixer. Runtime profiles and artifact inclusion remain separate checks.",
       ),
     ],
     keyPoints: [
       t("빌드가 고지를 만들고 허용 목록 밖이면 실패한다", "The build writes the notice and fails outside the allowlist"),
-      t("제한 의존성(mixbox·Remotion)은 이름·버전·라이선스를 고정", "Restricted deps (mixbox, Remotion) are pinned by name, version, license"),
+      t("Remotion은 정확한 조합을 검사하고 외부 Mixbox는 제거", "Remotion combinations are checked; external Mixbox is removed"),
       t("손으로 쓴 고지는 일부 목록: 직접 의존성 95/117 누락", "The hand-written notice is partial: 95 of 117 direct deps absent"),
     ],
     diagram: {
@@ -437,13 +437,13 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
         route: "/studio",
       },
       {
-        feature: t("제한 라이선스 처리 (mixbox·Remotion)", "Restricted licenses (mixbox, Remotion)"),
-        role: t("mixbox 는 provider rights 라벨과 라이선스 프로필로, Remotion 은 패키지명·버전·라이선스 텍스트 해시 고정으로 다룹니다.", "mixbox is handled by a provider rights label and a license profile, Remotion by pinning package name, version and license-text hash."),
+        feature: t("제한 라이선스 처리와 외부 의존성 제거", "Restricted-license handling and dependency removal"),
+        role: t("외부 mixbox는 제거하고 자체 안료로 연결하며, Remotion은 패키지명·버전·라이선스 텍스트 해시를 고정합니다.", "External mixbox is removed in favor of the project mixer; Remotion is pinned by package name, version and license-text hash."),
         paths: ["apps/web/src/domains/creator/brush-lab/brush-studio-v6-license-profile.ts", "apps/web/src/domains/creator/brush-lab/brush-studio-v6-pigment-provider.ts", "scripts/generate-third-party-notices.mjs#REVIEWED_RESTRICTED_PRODUCTION_DEPENDENCIES"],
       },
       {
         feature: t("기술 자료 · 라이선스 인벤토리", "Technology pages · license inventory"),
-        role: t("직접 의존성 117개의 버전·SPDX 를 정리한 목록과, 설치 상태와 대조하는 수집 스크립트가 있습니다.", "A list of the 117 direct dependencies' versions and SPDX ids, plus a collection script that compares it with what is installed."),
+        role: t("2026-10-07 스냅샷에서 Mixbox를 제외한 116개 기록과, 현재 설치 상태를 따로 수집·대조하는 스크립트가 있습니다.", "A 116-entry record after removing Mixbox from the 2026-10-07 snapshot, plus a script that separately collects and compares the current installed set."),
         paths: ["apps/web/src/domains/legal/technology/engineering-license-inventory.ts", "scripts/collect-engineering-licenses.mjs"],
         route: "/about/technology/licenses",
       },
@@ -458,7 +458,7 @@ type Restricted = { version: string; license: string };
 
 //~ 허용 목록에 없는 CC-BY-NC 패키지, 또는 검토한 버전이 바뀐 패키지는 빌드를 멈춘다. ## A CC-BY-NC package outside the list, or a reviewed package whose version changed, stops the build.
 const REVIEWED: Record<string, Restricted> = {
-  mixbox: { version: "2.0.0", license: "CC-BY-NC-4.0" },
+  remotion: { version: "4.0.536", license: "Remotion License" },
 };
 
 function assertReviewed(name: string, versions: readonly string[], license: string): void {
@@ -469,7 +469,7 @@ function assertReviewed(name: string, versions: readonly string[], license: stri
   }
 }
 
-assertReviewed("mixbox", ["2.0.0"], "CC-BY-NC-4.0"); //~ 통과 ## passes
+assertReviewed("remotion", ["4.0.536"], "Remotion License"); //~ 통과 ## passes
 try {
   assertReviewed("other-nc-lib", ["1.0.0"], "CC-BY-NC-4.0"); //~ 목록에 없는 비상업 패키지 ## a non-commercial package that is not on the list
 } catch (error) {
@@ -513,8 +513,8 @@ try {
         {
           question: t("mixbox 같은 비상업 라이선스는 어떻게 다루나요?", "How is a non-commercial license like mixbox handled?"),
           answer: t(
-            "저장소는 provider 의 rights 라벨, 기본 라이선스 프로필, 감사의 이름·버전 핀으로 다룹니다. 그 처리가 서비스에 충분한지는 법률 판단이라 이 카드에서 하지 않으며, 소유자가 확정할 사항입니다.",
-            "The repository uses the provider's rights label, a default license profile and the audit's name-and-version pin. Whether that is enough for the service is a legal judgment this card does not make; it is for the owner to settle.",
+            "외부 Mixbox 패키지와 비상업 예외는 제거했습니다. 실행 차단만으로 배포물의 포함 여부를 판단하지 않고 의존성 그래프와 산출물을 따로 확인합니다. 자체 엔진의 출처 분류와 방법·특허 권리 검토도 별개입니다.",
+            "The external Mixbox package and its non-commercial exception have been removed. Runtime blocking alone does not establish distribution contents; the dependency graph and artifacts are checked separately. Classifying the project engine's provenance is separate from reviewing method and patent rights.",
           ),
         },
         {
@@ -526,11 +526,11 @@ try {
         },
       ],
       pitfall: t(
-        "법률 판단을 하지 마세요. 이 카드는 저장소가 라이선스를 어떻게 처리하는지만 설명합니다. Remotion 을 배포 법인이 쓸 수 있는 자격인지는 저장소로 확인할 수 없고, 툴체인 문서와 코드의 mixbox 서술이 서로 다르며, wasm-vips 의 LGPL 이 생성 고지에 나타나지 않는다는 점은 알려진 공백입니다.",
-        "Do not make legal judgments. This card explains only how the repository handles licenses. Whether the distributing entity is eligible to use Remotion cannot be confirmed from the repository, the toolchain document and the code describe mixbox differently, and wasm-vips' LGPL not appearing in the generated notice is a known gap.",
+        "법률 판단을 하지 마세요. 이 카드는 저장소가 라이선스를 어떻게 처리하는지만 설명합니다. Remotion 을 배포 법인이 쓸 수 있는 자격인지는 저장소로 확인할 수 없고, Mixbox를 제거한 변경과 실제 운영 배포 여부는 별도 확인 대상이며, wasm-vips 의 LGPL 이 생성 고지에 나타나지 않는다는 점은 알려진 공백입니다.",
+        "Do not make legal judgments. This card explains only how the repository handles licenses. Whether the distributing entity is eligible to use Remotion cannot be confirmed from the repository, the Mixbox removal change and its actual production deployment are separate verification targets, and wasm-vips' LGPL not appearing in the generated notice is a known gap.",
       ),
     },
-    technologies: ["SPDX", "Remotion", "Mixbox", "wasm-vips"],
+    technologies: ["SPDX", "Remotion", "ToonStudio Latent Pigment", "wasm-vips"],
     facts: [
       { value: "584", label: t("2026-10-08 audit:licenses 가 통과한 pnpm 항목 수", "pnpm entries passed by audit:licenses on 2026-10-08"), source: "scripts/generate-third-party-notices.mjs" },
       { value: "117", label: t("직접 런타임 의존성 수", "Direct runtime dependencies"), source: "scripts/collect-engineering-licenses.mjs" },

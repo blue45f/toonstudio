@@ -1,3 +1,4 @@
+import type { StudioLegacyPigmentArchive } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import type { StudioSavedSelectionLibrary } from "./studio-saved-selections";
 import type { StudioBg3dSixPassBundleImageReference } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import type { StudioBundleSourceCredit } from "./catalog/studio-bundle-source-credit";
@@ -458,6 +459,8 @@ export function normalizeStudioBrushCatalogIdentityMetadata(
 }
 
 export interface DrawEl extends StudioBrushCatalogIdentityMetadata, StudioElementLayerMetadata {
+  /** 외부 혼색 원본의 식별자·그룹·순서·숨김 상태를 명시 전환 이전대로 복원한다. */
+  legacyPigmentArchive?: StudioLegacyPigmentArchive;
   id: string;
   type: "draw";
   kind?: "freehand" | DrawShapeKind;

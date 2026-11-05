@@ -426,6 +426,16 @@
       "types": "./src/studio-bg3d-six-pass-reference.ts",
       "import": "./src/studio-bg3d-six-pass-reference.ts",
       "default": "./src/studio-bg3d-six-pass-reference.ts"
+    },
+    "./studio-legacy-pigment-archive": {
+      "types": "./src/studio-legacy-pigment-archive.ts",
+      "import": "./src/studio-legacy-pigment-archive.ts",
+      "default": "./src/studio-legacy-pigment-archive.ts"
+    },
+    "./studio-linked-3d-correction": {
+      "types": "./src/studio-linked-3d-correction.ts",
+      "import": "./src/studio-linked-3d-correction.ts",
+      "default": "./src/studio-linked-3d-correction.ts"
     }
   },
   "dependencies": {

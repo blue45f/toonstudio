@@ -76,7 +76,7 @@ const OPEN_SOURCE = sourcedTable(
     ["canvaskit", t("CanvasKit (Skia)", "CanvasKit (Skia)"), t("정밀 벡터·글자 렌더(WASM)", "Precise vector and text rendering (WASM)"), t("BSD-3-Clause", "BSD-3-Clause"), statusCell("live")],
     ["onnxruntime-web", t("ONNX Runtime Web", "ONNX Runtime Web"), t("AI 모델을 내 기기에서 실행", "Runs AI models on the user's device"), t("MIT (모델은 파일별)", "MIT (models per file)"), statusCell("live")],
     ["google-ink", t("Google Ink", "Google Ink"), t("WASM 직접 빌드 — 확정 획엔 미연결, 예측 꼬리 미리보기 접점만", "In-house WASM — not in committed strokes, only a predicted-tail preview hook"), t("Apache-2.0", "Apache-2.0"), statusCell("experimental")],
-    ["mixbox", t("Mixbox", "Mixbox"), t("물감처럼 섞이는 혼색", "Pigment-like color mixing"), t("CC-BY-NC-4.0 · 별도 확인", "CC-BY-NC-4.0 · check separately"), statusCell("live")],
+    ["mixbox", t("ToonStudio Latent Pigment", "ToonStudio Latent Pigment"), t("자체 잠재 안료 혼색", "Project-authored latent pigment mixing"), t("Project license", "Project license"), statusCell("live")],
   ],
   t(
     "직접 가져다 쓴 117곳 중 대표 8곳 · 라이선스는 지도의 기록을 옮긴 것이며 의미는 판단하지 않습니다",
@@ -322,8 +322,8 @@ export const OPENING_SLIDES = [
     points: [],
     table: OPEN_SOURCE.table,
     notes: t(
-      "직접 쓰는 오픈소스 117개 중 역할이 큰 8개만 봅니다. 라이선스는 지도의 기록을 옮겼고, 비상업 조건의 Mixbox는 ‘별도 확인’입니다.\n비유: 레고 상자입니다. 고쳐 쓴 블록은 pnpm 패치와 포크로 기록합니다. 근거는 engineering-map-open-source.ts이고, 손으로 쓴 THIRD_PARTY_NOTICES.md는 일부만 담은 목록입니다. 다음은 핵심 기술입니다. 질문이 나오면 ‘Third-party notices’ 카드를 엽니다.",
-      "Of the 117 open-source packages we use directly, we look at the 8 with the biggest roles. Licenses are transcribed from the map, and Mixbox, which has non-commercial terms, is marked ‘check separately’.\nAnalogy: a box of Lego, where every block we modified is recorded as a pnpm patch or a fork. The basis is engineering-map-open-source.ts; the hand-written THIRD_PARTY_NOTICES.md is only a partial list. Next, the core technology. If asked, open the ‘Third-party notices’ card.",
+      "직접 쓰는 오픈소스 117개 중 역할이 큰 8개만 봅니다. 라이선스는 지도의 기록을 옮겼고, 외부 Mixbox는 제거하고 자체 잠재 안료로 연결했습니다.\n비유: 레고 상자입니다. 고쳐 쓴 블록은 pnpm 패치와 포크로 기록합니다. 근거는 engineering-map-open-source.ts이고, 손으로 쓴 THIRD_PARTY_NOTICES.md는 일부만 담은 목록입니다. 다음은 핵심 기술입니다. 질문이 나오면 ‘Third-party notices’ 카드를 엽니다.",
+      "Of the 117 open-source packages we use directly, we look at the 8 with the biggest roles. Licenses are transcribed from the map, and the external Mixbox package has been removed in favor of the project-authored latent pigment engine.\nAnalogy: a box of Lego, where every block we modified is recorded as a pnpm patch or a fork. The basis is engineering-map-open-source.ts; the hand-written THIRD_PARTY_NOTICES.md is only a partial list. Next, the core technology. If asked, open the ‘Third-party notices’ card.",
     ),
     chapterId: "open-source",
     evidence: [

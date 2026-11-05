@@ -1,0 +1,449 @@
+{
+  "version": 1,
+  "status": "current",
+  "evidenceDate": "2026-10-29",
+  "runtimeSchema": "apps/api/src/config/env.ts",
+  "scope": "배포 경계와 조건부 필수 계약. API 개별 변수 type/범위의 정본은 runtimeSchema, Worker 기본값/자원은 IaC 참조. 원격 상태 확인 아님.",
+  "iac": [
+    "deploy/cloudflare-static/wrangler.jsonc",
+    "deploy/cloudflare-realtime/wrangler.jsonc",
+    "deploy/onpod/README.md",
+    "deploy/cloudflare-analytics/src/index.ts"
+  ],
+  "profiles": {
+    "local": {
+      "status": "current",
+      "production": false,
+      "settings": {
+        "NODE_ENV": "development",
+        "DATABASE_RUNTIME_ROLE_MODE": "separated",
+        "STUDIO_LIVE_CLUSTER_ADAPTER": "memory",
+        "TRAFFIC_ANALYTICS_STORE": "postgres"
+      }
+    },
+    "onpod-current": {
+      "status": "current",
+      "production": true,
+      "settings": {
+        "NODE_ENV": "production",
+        "CORE_API_ORIGIN": "https://toonstudio-api.onpod.ai",
+        "DATABASE_RUNTIME_ROLE_MODE": "single-owner",
+        "AUTH_RATE_LIMIT_MODE": "single-instance-local",
+        "AUTH_EDGE_CLIENT_IP_ENABLED": "true",
+        "STUDIO_LIVE_CLUSTER_ADAPTER": "memory",
+        "TRAFFIC_ANALYTICS_STORE": "d1"
+      }
+    },
+    "generic-separated": {
+      "status": "target",
+      "production": true,
+      "settings": {
+        "NODE_ENV": "production",
+        "DATABASE_RUNTIME_ROLE_MODE": "separated",
+        "AUTH_RATE_LIMIT_MODE": "distributed",
+        "UPSTASH_COORDINATION_ENABLED": "true",
+        "STUDIO_LIVE_CLUSTER_ADAPTER": "memory",
+        "TRAFFIC_ANALYTICS_STORE": "postgres"
+      }
+    }
+  },
+  "variables": {
+    "NODE_ENV": {
+      "purpose": "실행 환경",
+      "type": [
+        "development",
+        "test",
+        "production"
+      ],
+      "visibility": "server-config",
+      "required": "optional",
+      "default": "development",
+      "unit": "api"
+    },
+    "DATABASE_RUNTIME_ROLE_MODE": {
+      "purpose": "DB 역할 분리",
+      "type": [
+        "separated",
+        "single-owner"
+      ],
+      "visibility": "server-config",
+      "required": "optional",
+      "default": "separated",
+      "unit": "api"
+    },
+    "AUTH_RATE_LIMIT_MODE": {
+      "purpose": "인증 제한 topology",
+      "type": [
+        "distributed",
+        "single-instance-local"
+      ],
+      "visibility": "server-config",
+      "required": "optional",
+      "default": null,
+      "unit": "api"
+    },
+    "AUTH_EDGE_CLIENT_IP_ENABLED": {
+      "purpose": "증명된 에지 IP 신뢰",
+      "type": [
+        "true",
+        "false"
+      ],
+      "visibility": "server-config",
+      "required": "optional",
+      "default": "false",
+      "unit": "api"
+    },
+    "STUDIO_LIVE_CLUSTER_ADAPTER": {
+      "purpose": "장기 실행 협업 adapter",
+      "type": [
+        "memory",
+        "postgres"
+      ],
+      "visibility": "server-config",
+      "required": "optional",
+      "default": "memory",
+      "unit": "api"
+    },
+    "TRAFFIC_ANALYTICS_STORE": {
+      "purpose": "분석 저장소",
+      "type": [
+        "postgres",
+        "d1"
+      ],
+      "visibility": "server-config",
+      "required": "optional",
+      "default": "postgres",
+      "unit": "api"
+    },
+    "UPSTASH_COORDINATION_ENABLED": {
+      "purpose": "분산 카운터 활성",
+      "type": [
+        "true",
+        "false"
+      ],
+      "visibility": "server-config",
+      "required": "AUTH_RATE_LIMIT_MODE=distributed",
+      "default": "false",
+      "unit": "api"
+    },
+    "CORE_API_ORIGIN": {
+      "purpose": "Worker Core API origin",
+      "type": "origin",
+      "visibility": "server-config",
+      "required": "production",
+      "default": null,
+      "unit": "static-worker"
+    },
+    "TRAFFIC_ANALYTICS_D1_RPC_URL": {
+      "purpose": "D1 Worker query endpoint",
+      "type": "https-url",
+      "visibility": "server-config",
+      "required": "TRAFFIC_ANALYTICS_STORE=d1",
+      "default": null,
+      "unit": "api"
+    },
+    "UPSTASH_COORDINATION_REST_URL": {
+      "purpose": "분산 제한 endpoint",
+      "type": "https-url",
+      "visibility": "server-config",
+      "required": "AUTH_RATE_LIMIT_MODE=distributed",
+      "default": null,
+      "unit": "api"
+    },
+    "VITE_STUDIO_REALTIME_ORIGIN": {
+      "purpose": "브라우저 실시간 Worker origin",
+      "type": "origin",
+      "visibility": "public",
+      "required": "optional",
+      "default": null,
+      "unit": "build"
+    },
+    "VITE_STUDIO_LIVE_ORIGIN": {
+      "purpose": "브라우저 협업 gateway origin",
+      "type": "origin",
+      "visibility": "public",
+      "required": "optional",
+      "default": null,
+      "unit": "build"
+    },
+    "DATABASE_URL": {
+      "purpose": "API 원장 DSN",
+      "type": "postgres-url",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "api"
+    },
+    "AUTH_SESSION_SECRET": {
+      "purpose": "세션 HMAC",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "api"
+    },
+    "AUTH_STATE_SECRET": {
+      "purpose": "OAuth state HMAC",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "api"
+    },
+    "CLOUDFLARE_EDGE_ORIGIN_SECRET": {
+      "purpose": "API 에지 출처 검증",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "api"
+    },
+    "CORE_ORIGIN_SECRET": {
+      "purpose": "Worker 에지 출처 증명",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "static-worker"
+    },
+    "TRAFFIC_ANALYTICS_D1_RPC_TOKEN": {
+      "purpose": "D1 RPC 인증",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "TRAFFIC_ANALYTICS_STORE=d1",
+      "default": null,
+      "unit": "api"
+    },
+    "UPSTASH_COORDINATION_REST_TOKEN": {
+      "purpose": "분산 카운터 인증",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "AUTH_RATE_LIMIT_MODE=distributed",
+      "default": null,
+      "unit": "api"
+    },
+    "UPSTASH_COORDINATION_KEY_HASH_SECRET": {
+      "purpose": "제한 키 익명화",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "AUTH_RATE_LIMIT_MODE=distributed",
+      "default": null,
+      "unit": "api"
+    },
+    "STUDIO_REALTIME_CLOUDFLARE_TICKET_SECRET": {
+      "purpose": "API 실시간 티켓 서명",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "api"
+    },
+    "REALTIME_TICKET_SECRET": {
+      "purpose": "Worker 실시간 티켓 검증",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "realtime-worker"
+    },
+    "STUDIO_REALTIME_CLOUDFLARE_CONTROL_SECRET": {
+      "purpose": "API 실시간 제어 서명",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "api"
+    },
+    "REALTIME_CONTROL_SECRET": {
+      "purpose": "Worker 실시간 제어 검증",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "realtime-worker"
+    },
+    "STUDIO_LIVE_POSTGRES_URL": {
+      "purpose": "다중 협업 LISTEN 연결",
+      "type": "postgres-url",
+      "visibility": "server-secret",
+      "required": "STUDIO_LIVE_CLUSTER_ADAPTER=postgres",
+      "default": null,
+      "unit": "api"
+    },
+    "ANALYTICS_RPC_TOKEN": {
+      "purpose": "분석 Worker RPC 검증",
+      "type": "secret32",
+      "visibility": "server-secret",
+      "required": "production",
+      "default": null,
+      "unit": "analytics-worker"
+    },
+    "PRODUCTION_DATABASE_DIRECT_URL": {
+      "purpose": "generic 전용 DDL 직접 연결; onpod 미지원",
+      "type": "postgres-url",
+      "visibility": "server-secret",
+      "required": "operation:database-migrations",
+      "default": null,
+      "unit": "api"
+    },
+    "PRODUCTION_RUNTIME_DATABASE_ROLE": {
+      "purpose": "generic 전용 비소유 runtime 역할",
+      "type": "role",
+      "visibility": "server-config",
+      "required": "operation:database-migrations",
+      "default": null,
+      "unit": "api"
+    },
+    "VITE_KAKAO_JAVASCRIPT_KEY": {
+      "purpose": "브라우저 Kakao JavaScript SDK 공개 키; REST/admin 키와 다름",
+      "type": "string",
+      "visibility": "public",
+      "required": "optional",
+      "default": null,
+      "unit": "build"
+    },
+    "CLOUDFLARE_API_TOKEN": {
+      "purpose": "Cloudflare 작업 인증; 실행 목적에 필요한 API 권한만",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "operator"
+    },
+    "ONPOD_TOKEN": {
+      "purpose": "onpod 앱 이미지 작업용 제한 인증",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "operator"
+    },
+    "GH_TOKEN": {
+      "purpose": "컨테이너 릴리스 GitHub 인증",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "operator"
+    },
+    "GITHUB_TOKEN": {
+      "purpose": "컨테이너 릴리스 GitHub 인증 대체 이름",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "operator"
+    },
+    "CLOUDFLARE_ACCOUNT_ID": {
+      "purpose": "Cloudflare 대상 계정 식별",
+      "type": "string",
+      "visibility": "server-config",
+      "required": "optional",
+      "default": null,
+      "unit": "operator"
+    },
+    "TOSS_PAYMENTS_SECRET_KEY": {
+      "purpose": "결제 서버 인증; 브라우저 공개 금지",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "api",
+      "source": "apps/api/src/modules/creator-support/creator-support.config.ts"
+    },
+    "PERSONAL_CLOUD_TOKEN_ENCRYPTION_KEY": {
+      "purpose": "개인 클라우드 토큰 암호화; 브라우저 공개 금지",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "api",
+      "source": "apps/api/src/modules/personal-cloud/personal-cloud.config.ts"
+    },
+    "SUPABASE_OBJECT_STORAGE_SECRET_KEY": {
+      "purpose": "저장소 서버 인증의 신규 키; 브라우저 공개 금지",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "api",
+      "source": "apps/api/src/platform/adapters/supabase-object-storage/supabase-object-storage.config.ts"
+    }
+  },
+  "pairs": [
+    [
+      "CLOUDFLARE_EDGE_ORIGIN_SECRET",
+      "CORE_ORIGIN_SECRET"
+    ],
+    [
+      "STUDIO_REALTIME_CLOUDFLARE_TICKET_SECRET",
+      "REALTIME_TICKET_SECRET"
+    ],
+    [
+      "STUDIO_REALTIME_CLOUDFLARE_CONTROL_SECRET",
+      "REALTIME_CONTROL_SECRET"
+    ],
+    [
+      "TRAFFIC_ANALYTICS_D1_RPC_TOKEN",
+      "ANALYTICS_RPC_TOKEN"
+    ]
+  ],
+  "retiredTargets": [
+    "onrender.com",
+    "vercel.app",
+    "neon.tech"
+  ],
+  "operations": {
+    "runtime-config": {
+      "purpose": "한 runtime 단위의 명시적 env 계약만 검사",
+      "providerAuth": []
+    },
+    "container-release": {
+      "purpose": "컨테이너 릴리스 인증 이름만 검사; runtime secret 불필요",
+      "providerAuth": [
+        [
+          "GH_TOKEN",
+          "GITHUB_TOKEN"
+        ]
+      ]
+    },
+    "onpod-image-update": {
+      "purpose": "기존 remote env 보존 이미지 교체의 인증 이름만 검사",
+      "providerAuth": [
+        [
+          "ONPOD_TOKEN"
+        ]
+      ]
+    },
+    "static-deploy": {
+      "purpose": "기존 Worker secret 보존 경로의 인증 이름만 검사; 실제 지원 경로는 별도 확인",
+      "providerAuth": [
+        [
+          "CLOUDFLARE_API_TOKEN"
+        ],
+        [
+          "CLOUDFLARE_ACCOUNT_ID"
+        ]
+      ]
+    },
+    "r2-assets": {
+      "purpose": "현재 REST 기반 동기화 인증 이름만 검사; bucket-only S3 credential과 다름",
+      "providerAuth": [
+        [
+          "CLOUDFLARE_API_TOKEN"
+        ],
+        [
+          "CLOUDFLARE_ACCOUNT_ID"
+        ]
+      ]
+    },
+    "database-migrations": {
+      "purpose": "generic 직접 연결·분리 역할; onpod 미지원",
+      "providerAuth": []
+    },
+    "health-recovery": {
+      "purpose": "기존 target 퇴역으로 미지원",
+      "providerAuth": []
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { STUDIO_READER_CAPABILITIES } from "@/platform/studio-reader-capabilities";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -219,7 +220,7 @@ describe("creator draft collaboration client", () => {
           expectedWorkRevision: 2,
           finalStatus: "published",
           clientMutationId: PROMOTION_MUTATION_ID,
-          readerCapabilities: ["bg3d-sixpass-bundle.v1"],
+          readerCapabilities: STUDIO_READER_CAPABILITIES,
         },
       })
     );

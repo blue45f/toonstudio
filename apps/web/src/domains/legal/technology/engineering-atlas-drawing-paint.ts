@@ -31,14 +31,14 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
         "So that rule changes do not alter old artwork, only brush lanes with the opt-in pin (spectral-wgm-v1) use this mixing, and unpinned lanes keep the old linear blend byte for byte. The oil ribbon and wet-into-wet oil default to spectral-wgm, and the oil-pastel 'wgm-mix' lane carries the pin.",
       ),
       t(
-        "Mixbox(안료를 잠재 공간에서 보간하는 고품질 방식)는 CC BY-NC 4.0(비상업) 라이선스라 제품 라이브 혼색에 쓰지 않고, 브러시 스튜디오(제작 도구)의 비교 provider 한 곳에만 격리했습니다. 라이선스 프로필 기본값은 permissive-only 로 고정돼 있어 기본 빌드에서는 차단되고, noncommercial-full 을 명시적으로 opt-in 한 프로그램에서만 쓸 수 있습니다. 이 카드는 법률 판단을 하지 않고 저장소의 처리 방식만 설명합니다.",
-        "Mixbox, a high-quality method that interpolates pigments in a latent space, is CC BY-NC 4.0 (non-commercial), so it is not used for live mixing in the product and is isolated in a single comparison provider of the brush studio (an authoring tool). The default license profile is fixed to permissive-only, so it is blocked in default builds and can be used only by programs that explicitly opt into noncommercial-full. This card gives no legal judgment; it only describes how the repository handles it.",
+        "2026-11-05 변경에서 외부 Mixbox 의존성을 제거하고 자체 잠재 안료 엔진으로 통합했습니다. 합성 안료 곡선으로 만든 K–M 모델의 4종 농도와 RGB 잔차를 보간하며 외부 코드·LUT는 사용하지 않습니다. 이전 브러시 식별자와 형상·입력 설정은 보존하지만 새 혼색 결과가 원본 Mixbox와 같다는 보장은 없습니다.",
+        "The 2026-11-05 change removes the external Mixbox dependency and integrates the project-authored latent pigment engine. It interpolates four concentrations and RGB residuals from a K–M model fitted to synthetic pigment curves, without external code or LUTs. Former brush identifiers, geometry and input settings remain, but newly mixed colors are not guaranteed to match Mixbox.",
       ),
     ],
     keyPoints: [
       t("RGB 평균 대신 분광 반사율의 가중 기하평균", "Weighted geometric mean of spectra, not an RGB average"),
       t("라이브 혼색은 libmypaint 포팅(ISC), 핀이 있는 레인만", "Live mixing is a libmypaint port (ISC), pinned lanes only"),
-      t("Mixbox(CC BY-NC)는 제작 도구의 한 곳에 격리", "Mixbox (CC BY-NC) is isolated in one authoring-tool file"),
+      t("자체 잠재 안료로 이전 브러시 기능과 설정 유지", "Project-authored latent pigment preserves former brush functions and settings"),
     ],
     diagram: {
       id: "spectral-color-mixing-mixbox-diagram",
@@ -97,13 +97,14 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
       {
         feature: t("브러시 스튜디오 · 안료 비교 패널(제작 도구)", "Brush studio · pigment comparison panel (authoring tool)"),
         role: t(
-          "RGB·분광 WGM·Mixbox 등 여러 혼색을 나란히 비교합니다. Mixbox 는 이 provider 한 곳에서만 import 되고 비상업으로 분류됩니다.",
-          "Compares RGB, spectral WGM, Mixbox and others side by side. Mixbox is imported only in this provider and classified as non-commercial.",
+          "분광 WGM·Spectral.js·open-km·ColorMix Lab과 자체 잠재 안료의 혼색을 나란히 비교합니다. 이전 Mixbox 안료 노드는 자체 엔진에 연결하고 변경 사실을 표시합니다.",
+          "Compares spectral WGM, Spectral.js, open-km, ColorMix Lab and project-authored latent pigment. Former Mixbox pigment nodes use the project engine and display the change.",
         ),
         paths: [
           "apps/web/src/domains/creator/brush-lab/brush-studio-v6-pigment-provider.ts",
           "apps/web/src/domains/creator/brush-lab/brush-studio-v6-license-profile.ts",
-          "third_party/mixbox/README.md",
+          "apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-mixer.ts",
+          "docs/features/latent-pigment-mixing.md",
           "THIRD_PARTY_NOTICES.md",
         ],
         route: "/studio/assets/brushes/new",
@@ -167,8 +168,8 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
     chapterIds: ["brush-engine", "licenses"],
     talk: {
       pitch: t(
-        "RGB 는 빛을 더하는 방식이라 파랑과 노랑을 평균 내면 탁해집니다. 물감은 반사율이 곱해지는 방식이라 초록이 됩니다. 유화 붓은 libmypaint 의 10밴드 분광 혼색을 포팅해 이 느낌을 내고, 라이선스가 까다로운 Mixbox 는 제작 도구의 비교 기능 한 곳에만 격리했습니다.",
-        "RGB adds light, so averaging blue and yellow turns muddy; paint multiplies reflectances, so it turns green. The oil brush ports libmypaint's 10-band spectral mixing for that feel, and Mixbox, with its demanding license, is isolated to one comparison feature in an authoring tool.",
+        "RGB 평균과 안료 모델은 다른 색을 만듭니다. 유화 레인의 libmypaint 10밴드 분광 혼색을 유지하며, 브러시 스튜디오에는 합성 안료 곡선 기반의 자체 잠재 안료 혼색을 연결했습니다. 외부 Mixbox 패키지는 사용하지 않습니다.",
+        "RGB averaging and pigment models yield different colors. Oil lanes retain the libmypaint 10-band spectral port, while Brush Studio uses a project-authored latent pigment mixer fitted to synthetic pigment curves. The external Mixbox package is no longer used.",
       ),
       analogy: t(
         "색 셀로판 안경 두 개를 겹쳐 보는 것과 같습니다. 파란 안경과 노란 안경을 겹치면 둘 다 통과시키는 초록빛만 남습니다.",
@@ -178,15 +179,15 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
         {
           question: t("Mixbox 를 쓰나요?", "Do you use Mixbox?"),
           answer: t(
-            "제품 라이브 혼색은 libmypaint 포팅(ISC)입니다. Mixbox 는 브러시 스튜디오의 비교 provider 한 곳에서만 import 되고, 비상업으로 분류돼 허용형(permissive-only)·소스공개형 프로필 빌드에서는 거부됩니다.",
-            "Live mixing in the product is the libmypaint port (ISC). Mixbox is imported in just one comparison provider of the brush studio and is classified non-commercial, so permissive-only and source-available profile builds reject it.",
+            "외부 Mixbox 패키지는 사용하지 않습니다. 이전 pigment-mixbox 식별자는 자체 잠재 안료 엔진으로 연결하며, 새 획의 색이 달라질 수 있음을 화면에 표시합니다. 기존 WGM 유화 레인의 동작은 유지합니다.",
+            "The external Mixbox package is no longer used. Former pigment-mixbox identifiers use the project-authored latent pigment engine, and the interface explains that new stroke colors may change. Existing WGM oil lanes retain their behavior.",
           ),
         },
         {
           question: t("Mixbox 를 상업적으로 써도 되나요?", "Can Mixbox be used commercially?"),
           answer: t(
-            "법률 판단은 이 카드의 범위 밖입니다. 저장소 문서는 상업·유료 배포나 상업 포크에서는 provider 를 제거하거나 별도 라이선스가 필요하다고 적고, 기본 프로필이 permissive-only 로 고정돼 있어 Mixbox는 noncommercial-full 명시 opt-in 없이는 운영 배포에 들어가지 않는다고 둡니다.",
-            "Legal judgment is outside this card. The repository states that commercial or paid distribution and commercial forks must remove the provider or obtain a separate license, and since the default profile is fixed to permissive-only, Mixbox cannot enter a production release without an explicit noncommercial-full opt-in.",
+            "원본 Mixbox 패키지는 CC BY-NC 4.0이며 이 저장소에서 상업 이용 서면 허가는 확인되지 않았습니다. 이번 변경은 외부 패키지 실행을 제거합니다. 자체 엔진의 출처 분류와 원본 방법·특허 권리 검토는 별개이며, 실행 프로필 검사만으로 배포물의 권리 문제가 해소되지는 않습니다.",
+            "The original Mixbox package is CC BY-NC 4.0, and no written commercial grant has been confirmed in this repository. This change removes execution of the external package. Classifying the project engine's provenance is separate from reviewing method and patent rights; a runtime profile check alone does not resolve distribution rights.",
           ),
         },
         {
@@ -198,16 +199,16 @@ export const ENGINEERING_ATLAS_DRAWING_PAINT: readonly EngineeringAtlasEntry[] =
         },
       ],
       pitfall: t(
-        "세미나 자료에서 Mixbox 나 spectral.js 를 라이브 혼색 도구처럼 앞세우면 사실과 다릅니다. 본문 수치는 요청 비율 0.5 기준이며 물감 50:50 이 아닙니다(알파 가중으로 스펙트럼 비율은 1:2). 실제 화면의 체감 색은 이 카드에서 확인하지 못했습니다.",
-        "Presenting Mixbox or spectral.js as the live mixing tool contradicts the code. The figures here are for a requested ratio of 0.5, which is not a 50:50 paint mix (alpha weighting makes the spectral ratio 1:2). The perceived color on a real screen was not verified for this card.",
+        "본문 수치는 기존 WGM 레인의 요청 비율 0.5 기준이며 물감 50:50 이 아닙니다(알파 가중으로 스펙트럼 비율은 1:2). 자체 잠재 안료와 원본 Mixbox의 시각·성능 동등성은 확인하지 않았습니다. 저장된 획과 새 혼색 출력도 구분합니다.",
+        "The figures here refer to the existing WGM lane at a requested ratio of 0.5, not a 50:50 paint mix (alpha weighting makes the spectral ratio 1:2). Visual and performance equivalence between the project mixer and Mixbox has not been established. Stored strokes and newly mixed output must also be distinguished.",
       ),
     },
-    technologies: ["libmypaint", "Mixbox", "spectral.js"],
+    technologies: ["libmypaint", "ToonStudio Latent Pigment", "spectral.js"],
     facts: [
       { value: "10", label: t("분광 혼색의 밴드(반사율 칸) 수", "Number of spectral bands used for mixing"), source: SPECTRAL },
       { value: "(45,124,19) vs (126,122,67)", label: t("같은 요청(0.5)의 파랑(0,33,133)+노랑(252,211,0): 분광 혼색 vs 선형 보간 — 함수를 직접 실행한 값", "Blue (0,33,133) + yellow (252,211,0) at the same 0.5 request: spectral vs linear, from running the function directly"), source: SPECTRAL },
     ],
-    reviewedAt: "2026-10-07",
+    reviewedAt: "2026-11-05",
   },
   {
     id: "material-physics-paper-tooth",

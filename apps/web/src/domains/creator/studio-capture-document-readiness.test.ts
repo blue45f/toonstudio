@@ -64,6 +64,15 @@ function editor() {
 }
 
 describe("document capture includes accepted deferred ink", () => {
+  it("내보내기가 직접 확정한 마지막 획의 세대 증가는 현재 스냅샷에 포함한다", async () => {
+    const state = editor(); let generation = 2;
+    const flush = state.document.flushPendingStrokes.getMockImplementation()!;
+    state.document.flushPendingStrokes.mockImplementation(() => { flush(); generation += 1; });
+    const stage = await waitForStudioCaptureReady({ ...state.options,
+      getDocumentGeneration: () => generation, expectedDocumentGeneration: 2 });
+    expect(stage.toCanvas().elementIds).toEqual([state.acceptedStroke.id]);
+  });
+
   it("flushes before taking the page snapshot and exports the accepted stroke without its idle timer", async () => {
     const state = editor();
     const onReady = vi.fn();

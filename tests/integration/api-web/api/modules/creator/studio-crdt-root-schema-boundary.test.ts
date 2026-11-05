@@ -61,6 +61,9 @@ describe("Studio CRDT root schema ownership boundary", () => {
 
     expect(service.valueImports).toContain("./studio-crdt-root-schema");
     expect(schema.valueImports).toEqual([
+      "./studio-crdt-psd-metadata",
+      "@toonstudio/contracts/studio-linked-3d-correction",
+      "@toonstudio/contracts/studio-legacy-pigment-archive",
       "./studio-crdt-identifiers",
       "./studio-crdt-bg3d-shape",
       "@toonstudio/contracts/studio-brush-material-program-contract",
@@ -122,9 +125,19 @@ describe("Studio CRDT root schema ownership boundary", () => {
 
     const r8 = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-r8-reference-snapshot.ts");
     expect(schema).toContain('export { snapshotStudioCrdtR8GrainReferences, type StudioCrdtR8GrainReferenceSnapshot } from "./studio-crdt-r8-reference-snapshot"');
-    expect(r8.source).toContain("function snapshotStudioCrdtR8GrainReferences");
+    expect(r8.source).toContain("export function snapshotStudioCrdtR8GrainReferences");
     expect(service).not.toContain("function snapshotStudioCrdtR8GrainReferences");
     expect(r8.valueImports).toEqual(["yjs", "@toonstudio/contracts/studio-brush-r8-grain-asset-contract", "./studio-crdt-identifiers"]);
+    expect(r8.dynamicImports).toEqual([]);
+
+    const contractModule = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-service-contracts.ts");
+    expect(service).toContain('from "./studio-crdt-service-contracts"');
+    for (const errorClass of ["class StudioCrdtInvalidPayloadError", "class StudioCrdtStorageCorruptionError"]) {
+      expect(contractModule.source).toContain(errorClass);
+      expect(schema).not.toContain(errorClass);
+    }
+    expect(contractModule.valueImports.some((specifier) => specifier.includes("web/src"))).toBe(false);
+    expect(contractModule.dynamicImports).toEqual([]);
 
     for (const serviceResponsibility of [
       "class StudioCrdtService",

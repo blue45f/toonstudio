@@ -19,6 +19,11 @@
       "import": "./src/renderer-roles.ts",
       "default": "./src/renderer-roles.ts"
     },
+    "./wgsl-variants": {
+      "types": "./src/wgsl-variants.ts",
+      "import": "./src/wgsl-variants.ts",
+      "default": "./src/wgsl-variants.ts"
+    },
     "./wesl-compile": {
       "types": "./src/wesl-compile.ts",
       "import": "./src/wesl-compile.ts",

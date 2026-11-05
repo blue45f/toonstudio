@@ -1,5 +1,6 @@
 import { parseStudioBg3dSixPassBundleImageReference } from "../studio-bg3d-six-pass-reference";
 import { STUDIO_FILTER_MASK_REFERENCE_EDIT_KEYS, isStudioFilterMaskReferenceProps } from "../studio-filter-mask-surface-contract";
+import { parseStudioLegacyPigmentArchive, STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION, STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS } from "../studio-legacy-pigment-archive";
 import { STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS, STUDIO_WORK_ASSET_TYPES, parseStudioWorkAssetSourceUri, studioWorkAssetSourceUri } from "../studio-work-asset-contract";
 
 import type { StudioCrdtCompatibleElement, StudioCrdtAuthoringSceneRecord, StudioCrdtAuthoringGroupRecord } from "./page-reconcile";
@@ -9,7 +10,7 @@ export interface StudioCrdtProjectedDrawElement extends StudioCrdtProjectedEleme
   type: "draw"; points: number[]; stroke: string; strokeWidth: number;
 }
 export interface StudioCrdtProjectionStrokePayload {
-  points: number[]; stroke: string; strokeWidth: number; extensions?: Record<string, unknown>;
+  points: number[]; stroke: string; strokeWidth: number; version?: unknown; extensions?: Record<string, unknown>;
 }
 const ARRAY_KEYS = ["points", "pressures", "tiltXs", "tiltYs", "twists", "speeds", "tangentialPressures", "altitudeAngles", "azimuthAngles", "contactWidths", "contactHeights", "sampleTimeOffsets"] as const;
 const SCALAR_KEYS = ["kind", "mode", "opacity", "fill", "gradient", "pattern", "brush", "brushCatalogId", "brushCatalogName", "sampleSpacing", "brushDynamics", "brushTip", "strokeStyle", "shapeParams", "symmetry", "blendMode"] as const;
@@ -21,12 +22,21 @@ export function projectStudioCrdtDrawStroke(record: { id: string; layerId: strin
   const result: StudioCrdtProjectedDrawElement = { id: record.id, type: "draw", points: [...payload.points], stroke: payload.stroke, strokeWidth: payload.strokeWidth };
   for (const key of ARRAY_KEYS) {
     const value: unknown = Reflect.get(payload, key);
+    if (payload.version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION && payload.extensions?.legacyPigmentArchive !== undefined && value === undefined) continue;
     Object.assign(result, { [key]: value === undefined ? undefined : Array.isArray(value) ? [...value] : fail("획 샘플 채널이 배열이 아닙니다.") });
   }
-  for (const key of SCALAR_KEYS) result[key] = Reflect.get(payload, key);
+  for (const key of SCALAR_KEYS) {
+    const value: unknown = Reflect.get(payload, key);
+    if (payload.version !== STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION || payload.extensions?.legacyPigmentArchive === undefined || value !== undefined) result[key] = value;
+  }
   for (const key of EXTENSION_KEYS) {
     const value = payload.extensions?.[key];
     if (value !== undefined) result[key] = value;
+  }
+  if (payload.version === STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION) {
+    for (const key of STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS) {
+      if (payload.extensions?.[key] !== undefined) result[key] = structuredClone(payload.extensions[key]);
+    }
   }
   return result;
 }
@@ -35,6 +45,11 @@ export function projectStudioCrdtDrawStroke(record: { id: string; layerId: strin
 export function projectValidatedStudioCrdtDrawStroke(record: { id: string; layerId: string; payload: StudioCrdtProjectionStrokePayload }): StudioCrdtProjectedDrawElement {
   const result = projectStudioCrdtDrawStroke(record), extensions = record.payload.extensions ?? {};
   for (const key of ["brushEnginePrograms", "outlineStroke", "inkInput"] as const) if (extensions[key] !== undefined) result[key] = structuredClone(extensions[key]);
+  if (extensions.legacyPigmentArchive !== undefined) {
+    const archive = parseStudioLegacyPigmentArchive(extensions.legacyPigmentArchive);
+    if (!archive) fail("외부 혼색 원본 출처가 올바르지 않습니다.");
+    result.legacyPigmentArchive = archive;
+  }
   if (["linear-full-v1", "linear-residual-v2", "linear-residual-path-v3"].includes(String(extensions.pressureModel))) result.pressureModel = extensions.pressureModel;
   if (extensions.paperModel === "contact-tooth-v2") result.paperModel = extensions.paperModel;
   if (extensions.materialPressureModel !== undefined || extensions.materialMinimumDiameterRatio !== undefined) {

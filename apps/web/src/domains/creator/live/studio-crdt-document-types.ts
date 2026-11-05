@@ -50,8 +50,9 @@ export interface StudioCrdtStrokeSamples {
 export interface StudioCrdtDrawStrokePayload extends StudioCrdtStrokeSamples {
   version: StudioCrdtStrokePayloadVersion;
   type: "draw";
-  kind: string;
-  mode: "pen" | "eraser";
+  /** v1-v6은 필수, 비실행 원본 보관 v7만 저장 당시 부재를 유지한다. */
+  kind?: string;
+  mode?: "pen" | "eraser";
   stroke: string;
   strokeWidth: number;
   opacity?: number;

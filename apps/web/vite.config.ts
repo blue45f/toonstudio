@@ -12,6 +12,7 @@ import { build as viteBuild, createLogger, defineConfig, type Logger, type Plugi
 
 import { compactBootstrapAssets } from "./config/compact-bootstrap-assets";
 import { createStudioManualChunks } from "./config/vite-manual-chunks";
+import { pigmentLicenseBoundaryPlugin } from "./config/vite-pigment-license-boundary";
 import { STUDIO_I18N_NAMESPACES } from "./src/shared/lib/i18n-asset-manifest";
 import {
   STUDIO_SERVICE_WORKER_STATIC_CRITICAL_URLS,
@@ -606,6 +607,7 @@ export default defineConfig(({ command, mode }) => ({
   ...(command === "build" ? { customLogger: createStudioBuildLogger() } : {}),
   ...viteServeCacheConfig(command),
   plugins: [
+    pigmentLicenseBoundaryPlugin(),
     preferImplementationOverTestModulePlugin(),
     studioCrossOriginIsolationPlugin(),
     studioServiceWorkerPlugin(),
@@ -657,6 +659,7 @@ export default defineConfig(({ command, mode }) => ({
   // remains valid instead of failing the production build with INVALID_OPTION.
   worker: {
     format: "es",
+    plugins: () => [pigmentLicenseBoundaryPlugin("worker")],
   },
   optimizeDeps: {
     // Browser acceptance needs only the exercised route graph. Disabling discovery there avoids

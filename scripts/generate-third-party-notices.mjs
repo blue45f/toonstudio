@@ -297,10 +297,6 @@ const REVIEWED_RESTRICTED_PRODUCTION_DEPENDENCIES = Object.freeze({
       "Unknown",
     ]),
   }),
-  mixbox: Object.freeze({
-    version: "2.0.0",
-    license: "CC-BY-NC-4.0",
-  }),
 });
 
 function validateReviewedRestrictedProductionDependency(
@@ -308,6 +304,9 @@ function validateReviewedRestrictedProductionDependency(
   versions,
   license,
 ) {
+  if (name === "mixbox") {
+    throw new Error("제거한 Mixbox 패키지를 운영 의존성에 다시 포함할 수 없습니다.");
+  }
   const policy = REVIEWED_RESTRICTED_PRODUCTION_DEPENDENCIES[name];
   if (
     !policy
@@ -357,7 +356,6 @@ const HYBRID_PROVIDER_DEPENDENCIES = Object.freeze({
   "@techstark/opencv-js": "5.0.0-release.1",
   harfbuzzjs: "1.6.3",
   "manifold-3d": "3.5.1",
-  mixbox: "2.0.0",
   "onnxruntime-web": "1.30.0",
   "opencascade.js": "1.1.1",
   "p5.brush": "2.2.1",
@@ -1939,10 +1937,6 @@ function validateRepositoryPolicy() {
     "https://github.com/dulnan/lazy-brush",
     "https://github.com/steveruizok/perfect-freehand",
     "https://github.com/acamposuribe/p5.brush",
-    "https://github.com/scrtwpns/mixbox",
-    "mixbox@2.0.0",
-    "CC BY-NC 4.0",
-    "third_party/mixbox/README.md",
     "acknowledgeRemotionLicense",
     REMOTION_LICENSE_SHA256,
     "https://github.com/processing/p5.js",
