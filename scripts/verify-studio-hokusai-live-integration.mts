@@ -881,13 +881,18 @@ async function selectBrush(
 }
 
 async function openLayerNavigator(page: Page): Promise<void> {
+  const deadline = Date.now() + 10_000;
+  const remaining = () => {
+    const milliseconds = deadline - Date.now();
+    invariant(milliseconds > 0, "레이어 탐색기 준비 기한 10000ms를 넘었습니다.");
+    return milliseconds;
+  };
   const splitPane = page.locator('[data-studio-inspector-layers-split="true"]');
-  if (await splitPane.isVisible().catch(() => false)) return;
-  const navigator = page.getByTestId("studio-inspector-navigator");
-  await navigator.waitFor({ state: "visible" });
-  const layers = navigator.locator('[data-studio-inspector-primary-tab="layers"]');
-  await layers.waitFor({ state: "visible" });
-  if (await layers.getAttribute("aria-selected") !== "true") await layers.click();
+  const layers = page.getByTestId("studio-inspector-navigator").locator('[data-studio-inspector-primary-tab="layers"]');
+  // 재열기 중 split pane가 늦게 붙으면 제거된 중복 탭만 기다리지 않는다.
+  await splitPane.or(layers).filter({ visible: true }).first().waitFor({ state: "visible", timeout: remaining() });
+  if (await splitPane.isVisible()) return;
+  if (await layers.getAttribute("aria-selected", { timeout: remaining() }) !== "true") await layers.click({ timeout: remaining() });
 }
 
 async function waitForLayerCount(page: Page, expected: number): Promise<number> {

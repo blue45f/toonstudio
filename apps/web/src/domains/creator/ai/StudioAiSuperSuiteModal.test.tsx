@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_WORKBENCH_PREFS_STORAGE_KEY } from "../studio-workbench-prefs";
@@ -419,41 +419,49 @@ describe("StudioAiSuperSuiteModal — 고도화 콘티 디렉터 (그림체·스
 
   it("BYOK 없이도 화풍 DNA·보조 화풍 블렌딩·1화 기승전결 4막 자동 설계·자유 스케치 스트로크 분석·다국어 프리뷰가 동작한다", () => {
     render(<StudioAiSuperSuiteModal open onClose={() => {}} />);
-    fireEvent.click(screen.getByRole("tab", { name: "콘티 자동 디렉터" }));
+    const dialog = within(screen.getByRole("dialog", { name: "AI + 스마트 웹툰 제작 스위트" }));
+    fireEvent.click(dialog.getByRole("tab", { name: "콘티 자동 디렉터" }));
+    const director = within(dialog.getByRole("tabpanel", { name: "콘티 자동 디렉터" }));
 
-    expect(screen.getByTestId("storyboard-ai-engine-mode-badge")).toBeTruthy();
-    expect(screen.getByTestId("artist-style-dna-summary").textContent).toContain("화풍 DNA 분석:");
-    expect(screen.getByTestId("storyboard-style-consistency-badge").textContent).toContain("화풍 일관성");
+    expect(director.getByTestId("storyboard-ai-engine-mode-badge")).toBeTruthy();
+    expect(director.getByTestId("artist-style-dna-summary").textContent).toContain("화풍 DNA 분석:");
+    expect(director.getByTestId("storyboard-style-consistency-badge").textContent).toContain("화풍 일관성");
 
-    const secondarySelect = screen.getByLabelText("보조 화풍 블렌딩 선택") as HTMLSelectElement;
+    const secondarySelect = director.getByRole("combobox", { name: "보조 화풍 블렌딩 선택" }) as HTMLSelectElement;
     fireEvent.change(secondarySelect, { target: { value: "preset-k-noir-thriller" } });
-    expect(screen.getByTestId("artist-style-dna-summary").textContent).toContain("블렌딩(");
+    expect(director.getByTestId("artist-style-dna-summary").textContent).toContain("블렌딩(");
 
-    fireEvent.click(screen.getByTestId("generate-episode-arc-btn"));
-    const scriptTextarea = screen.getByLabelText("대본 / 시나리오 줄글 입력") as HTMLTextAreaElement;
+    fireEvent.click(director.getByTestId("generate-episode-arc-btn"));
+    const scriptTextarea = director.getByRole("textbox", { name: "대본 / 시나리오 줄글 입력" }) as HTMLTextAreaElement;
     expect(scriptTextarea.value.split("\n").length).toBeGreaterThanOrEqual(4);
 
-    fireEvent.click(screen.getByRole("button", { name: "대각선 돌진 액션 스케치" }));
-    expect(screen.getByTestId("freehand-sketch-geometry-note").textContent).toContain("스트로크 기하 분석");
+    const sketchTemplates = within(director.getByRole("group", { name: "자유 드로잉 스케치 스트로크 템플릿" }));
+    fireEvent.click(sketchTemplates.getByRole("button", { name: "대각선 돌진 액션 스케치" }));
+    expect(director.getByTestId("freehand-sketch-geometry-note").textContent).toContain("스트로크 기하 분석");
 
-    const expandButtons = screen.getAllByRole("button", { name: "이 컷 추천 대사·나레이션 보기" });
+    const firstCut = director.getByText("컷 #1", { exact: true }).closest("li");
+    if (!firstCut) throw new Error("대사 추천을 펼칠 첫 번째 컷이 없습니다.");
+    const expandButtons = within(firstCut).getAllByRole("button", { name: "이 컷 추천 대사·나레이션 보기" });
     fireEvent.click(expandButtons[0]!);
-    expect(screen.getByTestId("cut-global-locale-preview-1").textContent).toContain("EN");
+    expect(director.getByTestId("cut-global-locale-preview-1").textContent).toContain("EN");
 
-    expect(screen.getByTestId("studio-webtoon-master-pipeline-card")).toBeTruthy();
-    expect(screen.getByTestId("dataset-dna-auto-caption").textContent).toContain("자동 학습 캡션 예시:");
-    fireEvent.click(screen.getByRole("button", { name: "로판·사극 귀족 (격식체)" }));
-    fireEvent.click(screen.getByTestId("apply-voice-exchange-script-btn"));
+    expect(director.getByTestId("studio-webtoon-master-pipeline-card")).toBeTruthy();
+    const master = within(director.getByRole("region", { name: "K-웹툰 마스터 파이프라인 및 캐릭터 대사·클리프행어 진단" }));
+    expect(master.getByTestId("dataset-dna-auto-caption").textContent).toContain("자동 학습 캡션 예시:");
+    const voiceChoices = master.getByText("로판·사극 귀족 (격식체)", { exact: true }).parentElement;
+    if (!voiceChoices) throw new Error("캐릭터 말투 선택 영역이 없습니다.");
+    fireEvent.click(within(voiceChoices).getByRole("button", { name: "로판·사극 귀족 (격식체)" }));
+    fireEvent.click(master.getByTestId("apply-voice-exchange-script-btn"));
     expect(scriptTextarea.value).toContain("가문의 이름으로 끝까지 책임을 묻겠습니다");
 
     // 오노마AI 페뷸레이터 5단계 서사 체인 & 라이언로켓 젠버스 포즈 가이드 & AI 수석 PD 코칭 검증
-    expect(screen.getByTestId("genvas-pose-guide").textContent).toContain("투시·동세 가이드:");
-    fireEvent.click(screen.getByTestId("apply-fabulator-chain-script-btn"));
+    expect(master.getByTestId("genvas-pose-guide").textContent).toContain("투시·동세 가이드:");
+    fireEvent.click(master.getByTestId("apply-fabulator-chain-script-btn"));
     expect(scriptTextarea.value.split("\n").length).toBeGreaterThanOrEqual(4);
 
-    expect(screen.getByTestId("claude-storyboard-assist-panel")).toBeTruthy();
-    expect(screen.getByTestId("ai-assist-cliffhanger-line").textContent).toContain("추천 엔딩 대사:");
-    fireEvent.click(screen.getByTestId("apply-claude-cliffhanger-btn"));
+    expect(master.getByTestId("claude-storyboard-assist-panel")).toBeTruthy();
+    expect(master.getByTestId("ai-assist-cliffhanger-line").textContent).toContain("추천 엔딩 대사:");
+    fireEvent.click(master.getByTestId("apply-claude-cliffhanger-btn"));
     expect(scriptTextarea.value).toContain("(클리프행어 훅)");
   });
 });

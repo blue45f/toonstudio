@@ -62,6 +62,22 @@ describe("공유 표면 planner와 8e445 GLB 계약", () => {
     }
   });
 
+  it("257코너 기준 입력은 실행 환경의 삼각함수 없이 같은 진단 hash를 재생한다", () => {
+    const sin = vi.spyOn(Math, "sin").mockImplementation(() => { throw new Error("플랫폼 삼각함수를 호출했습니다."); });
+    const cos = vi.spyOn(Math, "cos").mockImplementation(() => { throw new Error("플랫폼 삼각함수를 호출했습니다."); });
+    try {
+      const first = surfaceRegressionInputs().find(({ assetId }) => assetId === "over-corners");
+      const second = surfaceRegressionInputs().find(({ assetId }) => assetId === "over-corners");
+      if (!first || !second) throw new Error("257코너 기준 입력이 없습니다.");
+      expect(first.mesh.vertices).toHaveLength(257);
+      expect(first.mesh.vertices[0]?.position).not.toBe(second.mesh.vertices[0]?.position);
+      const result = exportStudioHybridDccMeshGlb(first);
+      expect(result.ok).toBe(false);
+      expect(createHash("sha256").update(JSON.stringify(result.report)).digest("hex"))
+        .toBe("0cc76551f488a108a9b81544364066aae5bf1bbb197c4f05d3d4280d10cb2ade");
+    } finally { sin.mockRestore(); cos.mockRestore(); }
+  });
+
   it("원본 corner ID와 실제 GLB 삼각형 대응을 유지하여 0.3 UV 보간 차이를 없앤다", () => {
     const mesh = surfaceTestQuad(), before = hashStudioEditableMesh(mesh), plan = planned(mesh), render = projectStudioMeshSurfaceForRender(mesh, plan), glb = glbStreams(mesh);
     expect(plan.triangles.map(({ vertexIds }) => vertexIds)).toEqual([[3, 0, 1], [1, 2, 3]]);

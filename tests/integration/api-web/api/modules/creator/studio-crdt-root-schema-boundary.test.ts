@@ -1,10 +1,11 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import { hasValidStudioCrdtRootSchema as directRootValidator } from "../../../../../../apps/api/src/modules/creator/studio-crdt-root-schema";
-import { hasValidStudioCrdtRootSchema as compatibilityRootValidator } from "../../../../../../apps/api/src/modules/creator/studio-crdt.service";
+import { StudioCrdtInvalidPayloadError, StudioCrdtStorageCorruptionError } from "../../../../../../apps/api/src/modules/creator/studio-crdt-service-contracts";
+import { hasValidStudioCrdtRootSchema as compatibilityRootValidator, StudioCrdtInvalidPayloadError as compatibilityPayloadError, StudioCrdtStorageCorruptionError as compatibilityStorageError } from "../../../../../../apps/api/src/modules/creator/studio-crdt.service";
 
 function moduleImports(fileName: string) {
   const fileUrl = new URL(fileName, import.meta.url);
@@ -18,8 +19,13 @@ function moduleImports(fileName: string) {
   );
   const valueImports: string[] = [];
   const dynamicImports: string[] = [];
+  const valueExports: string[] = [];
 
   function visit(node: ts.Node) {
+    if (
+      ts.isExportDeclaration(node) && !node.isTypeOnly && node.moduleSpecifier
+      && ts.isStringLiteral(node.moduleSpecifier)
+    ) valueExports.push(node.moduleSpecifier.text);
     if (
       ts.isImportDeclaration(node) &&
       ts.isStringLiteral(node.moduleSpecifier) &&
@@ -39,12 +45,14 @@ function moduleImports(fileName: string) {
   }
 
   visit(file);
-  return { dynamicImports, source, valueImports };
+  return { dynamicImports, source, valueImports, valueExports };
 }
 
 describe("Studio CRDT root schema ownership boundary", () => {
   it("preserves the service's public validator export", () => {
     expect(compatibilityRootValidator).toBe(directRootValidator);
+    expect(compatibilityPayloadError).toBe(StudioCrdtInvalidPayloadError);
+    expect(compatibilityStorageError).toBe(StudioCrdtStorageCorruptionError);
   });
 
   it("keeps validation pure and one-way from the service", () => {
@@ -53,6 +61,8 @@ describe("Studio CRDT root schema ownership boundary", () => {
 
     expect(service.valueImports).toContain("./studio-crdt-root-schema");
     expect(schema.valueImports).toEqual([
+      "./studio-crdt-identifiers",
+      "./studio-crdt-bg3d-shape",
       "@toonstudio/contracts/studio-brush-material-program-contract",
       "yjs",
       "@toonstudio/contracts/studio-brush-r8-grain-asset-contract",
@@ -68,6 +78,32 @@ describe("Studio CRDT root schema ownership boundary", () => {
     expect(schema.source).not.toMatch(/@Injectable|@Inject\(|\bLogger\b|\bOnModuleDestroy\b/u);
   });
 
+  it("순수 validator의 간접 import·재export에도 Nest·DB·서비스가 들어오지 않는다", () => {
+    const pending = [new URL("../../../../../../apps/api/src/modules/creator/studio-crdt-root-schema.ts", import.meta.url)];
+    const visited = new Set<string>();
+    while (pending.length) {
+      const url = pending.pop()!;
+      if (visited.has(url.href)) continue;
+      visited.add(url.href);
+      const parsed = moduleImports(url.href);
+      expect(parsed.dynamicImports, url.pathname).toEqual([]);
+      expect(parsed.source, url.pathname).not.toMatch(/@Injectable|@Inject\(|\bLogger\b|\bOnModuleDestroy\b/u);
+      for (const specifier of [...parsed.valueImports, ...parsed.valueExports]) {
+        expect(specifier, url.pathname).not.toMatch(/@nestjs|(?:^|\/)(?:pg|postgres|drizzle-orm)(?:\/|$)|(?:service|repository)$|(?:^|\/)database(?:\/|$)|web\/src/u);
+        if (specifier.startsWith(".") || specifier.startsWith("@toonstudio/contracts/")) {
+          const dependency = specifier.startsWith(".") ? new URL(specifier, url)
+            : new URL(`../../../../../../packages/contracts/src/${specifier.slice("@toonstudio/contracts/".length)}`, import.meta.url);
+          const suffix = /\.[cm]?[jt]s$/u.test(dependency.pathname) ? "" : ".ts";
+          const file = new URL(dependency.href.replace(/\.js$/u, ".ts") + suffix);
+          expect(existsSync(file), `${url.pathname} → ${specifier}`).toBe(true);
+          pending.push(file);
+        } else expect(specifier, url.pathname).toMatch(/^(?:yjs|zod(?:\/.*)?|node:crypto)$/u);
+      }
+    }
+    expect([...visited].some((url) => url.endsWith("/studio-crdt-bg3d-shape.ts"))).toBe(true);
+    expect([...visited].some((url) => url.endsWith("/studio-crdt-r8-reference-snapshot.ts"))).toBe(true);
+  });
+
   it("leaves hydration, queues, compaction, and errors in the service owner", () => {
     const schema = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-root-schema.ts").source;
     const service = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt.service.ts").source;
@@ -78,16 +114,19 @@ describe("Studio CRDT root schema ownership boundary", () => {
       "function validateLayerGroupRoot",
       "function validateStrokeRoot",
       "function validateStudioCrdtDeletionRoots",
-      "function snapshotStudioCrdtR8GrainReferences",
       "function snapshotStudioWorkAssetReferences",
     ]) {
       expect(schema).toContain(declaration);
       expect(service).not.toContain(declaration);
     }
 
+    const r8 = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-r8-reference-snapshot.ts");
+    expect(schema).toContain('export { snapshotStudioCrdtR8GrainReferences, type StudioCrdtR8GrainReferenceSnapshot } from "./studio-crdt-r8-reference-snapshot"');
+    expect(r8.source).toContain("function snapshotStudioCrdtR8GrainReferences");
+    expect(service).not.toContain("function snapshotStudioCrdtR8GrainReferences");
+    expect(r8.valueImports).toEqual(["yjs", "@toonstudio/contracts/studio-brush-r8-grain-asset-contract", "./studio-crdt-identifiers"]);
+
     for (const serviceResponsibility of [
-      "class StudioCrdtInvalidPayloadError",
-      "class StudioCrdtStorageCorruptionError",
       "class StudioCrdtService",
       "private async catchUpDocument",
       "private async maybeCompact",
@@ -96,5 +135,13 @@ describe("Studio CRDT root schema ownership boundary", () => {
       expect(service).toContain(serviceResponsibility);
       expect(schema).not.toContain(serviceResponsibility);
     }
+    const contracts = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-service-contracts.ts").source;
+    for (const name of ["StudioCrdtInvalidPayloadError", "StudioCrdtStorageCorruptionError"]) {
+      expect(contracts).toContain(`class ${name}`);
+      expect(service).toContain(`throw new ${name}`);
+      expect(service).not.toContain(`class ${name}`);
+      expect(schema).not.toContain(`class ${name}`);
+    }
+    expect(service).toContain('export * from "./studio-crdt-service-contracts"');
   });
 });

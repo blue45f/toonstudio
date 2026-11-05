@@ -191,7 +191,7 @@ import {
   traceStudioWetRibbonCarrierBatch,
 } from "./studio-wet-ribbon-carrier";
 import { planStudioWetWashLivePipeline } from "./studio-wet-wash-live-pipeline";
-import { drawStudioWetPaperBake, releaseStudioWetPaperBakeRequesters, resolveStudioWatercolorSettledSurface } from "./wet-paper/studio-watercolor-settled-surface";
+import { drawStudioWetPaperBake, releaseStudioWetPaperBakeRequesters, resolveStudioWatercolorSettledSurface, resolveStudioWetPaperBakeProgramIdForBrush } from "./wet-paper/studio-watercolor-settled-surface";
 
 import type { CalligraphyStylusInput } from "../studio-brush";
 import type { DrawEl } from "../studio-element-model";
@@ -1830,12 +1830,8 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               // stations stay prefix-stable, while pointer-up no longer grows the visible stroke.
               previewEndpoint: causalWatercolor && activeDraft,
             };
-            // 활성 초안은 점 배열이 append 전용이므로 요소 id 로 키된 증분 파이프라인이
-            // 플래너·재질 스케일·습식 리본 캐리어의 안정 prefix 를 함께 보관해 새 표본만 걷는다
-            // (이동당 O(1) — 장획 게이트 wet-dabs). 웻 텍스처 프로그램이 핀된 레인은 전획 물리
-            // 단계 때문에 파이프라인이 null 을 돌려주고 아래 배치 체인으로 내려간다. 커밋 렌더는
-            // 오늘처럼 배치 리플레이를 유지해 후처리 워커의 전면 치환 같은 내부 점 재작성에도
-            // 항상 정본을 그린다.
+            // 초안의 플래너·재질·carrier는 요소별 안정 prefix를 재사용한다. 갈필의 침착 표면은
+            // 같은 재질 입력을 별도로 받으며, bloom·living-ink와 커밋은 기존 배치 경로를 쓴다.
             const liveWetWashPlan = causalWatercolor && activeDraft
               // 변형 인덱스로 키 격리 — 변형 간 내부 보관 배열 공유 금지(P2 리뷰).
               ? planStudioWetWashLivePipeline(`${el.id}#${index}`, {
@@ -1861,10 +1857,12 @@ export const StudioDrawNode = memo(function StudioDrawNode({
             // 커스텀 프로그램 우선권과 정착 권위는 리졸버가 맡는다. 갈필은 초안·최종 대기 중에 같은
             // 침착 표면을 쓰고, 커밋의 전체 물리가 준비되면 최종 래스터로 바뀐다. 다른 레인은 기존 워시다.
             const settledSurface = liveWetWashPlan
+              && resolveStudioWetPaperBakeProgramIdForBrush(brush, runtimeEnginePrograms) !== "chu-tai-dry-brush"
               ? null
               : resolveStudioWatercolorSettledSurface({
                   brush,
                   plannedDabs,
+                  liveMaterialDabs: liveWetWashPlan?.dabs,
                   seed: watercolorSeed,
                   activeDraft,
                   durableDocumentRender,

@@ -42,7 +42,6 @@ import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
-
 import { decodePng } from "image-js";
 import {
   chromium,
@@ -106,6 +105,7 @@ import {
   isStaticPreviewReadinessResponse,
   isStaticPreviewReadinessUnavailable,
 } from "./lib/studio-preview-readiness";
+import { measureStudioSmartShapeCanvasSpace, placeStudioSmartShapeGrid, requiresStudioSmartShapeOfflinePanel, waitForStudioSmartShapeFloatingReady } from "./lib/studio-smart-shape-visible-grid";
 import { meetsStudioMinimumTouchTarget } from "./lib/studio-touch-target-measurement.mjs";
 import {
   readDurableStudioAutosaveDocument,
@@ -715,6 +715,7 @@ async function captureBrushStageFailure(
     browserErrors,
     durableDrawElements: await persistedDrawElements(page).catch(() => []),
     liveReadiness: await studioShapeLiveReadinessEvidence(page).catch(() => null),
+    floatingReadiness: await page.locator(".konvajs-content").first().evaluate(measureStudioSmartShapeCanvasSpace).catch(() => null),
     keyboardFocus: await page.evaluate(() => ({ tag: document.activeElement?.tagName, label: document.activeElement?.getAttribute("aria-label"), boundary: Boolean(document.activeElement?.closest("[data-studio-shortcut-boundary='true'], [aria-modal='true']")) })).catch(() => null),
     rendererDiagnostics: await page.evaluate(() => (globalThis as typeof globalThis & { __studioShapeGpuDiagnostics?: unknown }).__studioShapeGpuDiagnostics).catch(() => null),
     rendererReasons: await page.locator("[data-studio-canonical-vnext-dry-media-reason]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-studio-canonical-vnext-dry-media-reason"))).catch(() => []),
@@ -4369,7 +4370,6 @@ async function runCurrentStrokeCorrection(page: Page, toScreen: (x: number, y: n
   writeFileSync(join(SCRATCH, "studio-smart-shape-extreme-views.json"), JSON.stringify(viewEvidence, null, 2));
   log("current stroke correction: kind/point preview, cancel, commit, canvas point drag with Shift, Undo/Redo, cold reload, exact restore and 320px controls OK");
 }
-
 async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise<SmartShapeResult> {
   const shapeDpr = Number(process.env.TOONSPECTRUM_BRUSH_VERIFY_DPR ?? "1");
   invariant(Number.isFinite(shapeDpr) && shapeDpr > 0 && shapeDpr <= 3, "Smart Shape DPR must be in (0, 3]");
@@ -4391,8 +4391,8 @@ async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise
   const page = await context.newPage();
   const errors = collectBrowserErrors(page, "smart-shapes", studioUrl);
   const screenshot = join(SCRATCH, "studio-smart-shape-desktop.png");
-
   try {
+    const preparationDeadline = Date.now() + 60_000;
     await prepareStudioPage(page, studioUrl);
     if (process.env.TOONSPECTRUM_BRUSH_VERIFY_GPU === "1") {
       const adapter = await page.evaluate(async () => {
@@ -4408,21 +4408,21 @@ async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise
     await activateDesktopPen(page);
     await enableSmartShape(page);
     const stage = page.locator(".konvajs-content").first();
+    writeFileSync(join(SCRATCH, "studio-smart-shape-floating-initial.json"), JSON.stringify(await stage.evaluate(measureStudioSmartShapeCanvasSpace), null, 2));
+    const prepared = await waitForStudioSmartShapeFloatingReady(stage, preparationDeadline, () => requiresStudioSmartShapeOfflinePanel(!process.env.TOONSPECTRUM_VERIFY_ORIGIN?.trim(), errors.optionalReadinessFailures, studioUrl));
+    writeFileSync(join(SCRATCH, "studio-smart-shape-floating-settled.json"), JSON.stringify(prepared, null, 2));
     const stageBox = await stage.boundingBox();
     const viewport = page.viewportSize();
     invariant(stageBox && viewport, "could not measure canvas for Smart Shape");
-
     const left = Math.max(stageBox.x + 65, viewport.width * 0.33);
     const right = Math.min(stageBox.x + stageBox.width - 65, viewport.width * 0.70);
     const top = Math.max(stageBox.y + 90, viewport.height * 0.16); // 실제 상단 협업·작업 버튼 아래의 노출 문서에서 제스처한다.
-    // 상단 상태 배너·하단 상태 줄과 무관하게 실제 노출된 캔버스 영역 안에 도형 픽스처를 배치한다.
     const bottom = Math.min(stageBox.y + stageBox.height - 65, viewport.height * 0.76);
     invariant(right - left >= 480, "visible canvas is too narrow for Smart Shape fixtures");
     invariant(bottom - top >= 380, "visible canvas is too short for Smart Shape fixtures");
-
     const triangleBox = { left: left + 20, top: top + 180, right: left + 320, bottom: top + 275 };
     const polygonBox = { left: right - 130, top: top + 180, right: right - 20, bottom: top + 380 };
-    const fixtures: Array<{
+    const fixtureDefinitions: Array<{
       expectedKind: SmartShapeExpectedKind;
       expectedPolygonSides?: number;
       box: { left: number; top: number; right: number; bottom: number };
@@ -4489,7 +4489,9 @@ async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise
         enforceExtent: true,
       },
     ];
-
+    const visibleGrid = placeStudioSmartShapeGrid(fixtureDefinitions, await stage.evaluate(measureStudioSmartShapeCanvasSpace));
+    const fixtures = visibleGrid.fixtures;
+    writeFileSync(join(SCRATCH, "studio-smart-shape-visible-grid.json"), JSON.stringify(visibleGrid, null, 2));
     const evidence: SmartShapeEvidence[] = [];
     const fixtureStageFrames: NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>[] = [];
     for (const fixture of fixtures) {
@@ -4548,7 +4550,6 @@ async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise
       });
       log(`Smart Shape ${fixture.expectedKind}: visible bounds ${widthCoverage.toFixed(2)}×${heightCoverage.toFixed(2)} OK`);
     }
-
     await waitForPersistedDrawCount(page, fixtures.length);
     const persisted = (await persistedDrawElements(page)).slice(-fixtures.length);
     invariant(persisted.length === fixtures.length, `autosave contains ${persisted.length}/${fixtures.length} Smart Shapes`);
@@ -4570,7 +4571,6 @@ async function runSmartShapeMatrix(browser: Browser, studioUrl: string): Promise
           + `samples=${(saved?.points.length ?? 0) / 2})`,
       );
     }
-
     // Calibrate page coordinates from a user-drawn rectangular fixture at this unchanged camera.
     const calibration = persisted[1]!.points;
     const xs = calibration.filter((_, index) => index % 2 === 0);

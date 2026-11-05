@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+const { describe, it } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 import { scanGitHubSecretScanningContent } from "./secretlint-files.mjs";
 

@@ -5,7 +5,7 @@ import {
   planCausalWatercolorBrushDabs,
 } from "../studio-causal-watercolor-brush";
 
-import { applyStudioBrushAliasWatercolorMaterial } from "./studio-brush-alias-profile";
+import { applyStudioBrushAliasWatercolorMaterial, resolveStudioBrushAliasWatercolorPlanSettings } from "./studio-brush-alias-profile";
 import {
   createStudioIncrementalWetRibbonCarrier,
   planStudioWetRibbonCarrier,
@@ -98,6 +98,27 @@ describe("planStudioWetWashLivePipeline", () => {
       expect(live!.dabs).toEqual(batch.dabs);
       expect(live!.carrierPlan).toEqual(batch.carrierPlan);
     }
+  });
+
+  it("갈필의 증분 재질·carrier는 성장·축소·재작성·설정 변경에도 배치와 값이 같다", () => {
+    const brush = "ink-wash--dry-brush";
+    const settings = resolveStudioBrushAliasWatercolorPlanSettings(brush, 24);
+    expect(settings).not.toBeNull();
+    const { points, pressures } = growingStroke(mulberry32(0xd12), 90);
+    const compare = (count: number, rewrite = false, seed = CARRIER_SEED) => {
+      const prefix = points.slice(0, count * 2);
+      if (rewrite) prefix[prefix.length - 2] = (prefix.at(-2) ?? 0) + 13;
+      const input = { ...granularDraftInput(prefix, pressures.slice(0, count)), ...settings, seed };
+      const live = planStudioWetWashLivePipeline("dry-growth", { brushId: brush, input, carrierSeed: seed });
+      const scaled = applyStudioBrushAliasWatercolorMaterial(brush, planCausalWatercolorBrushDabs(input, false), seed, "live");
+      expect(live).not.toBeNull();
+      expect(live?.dabs).toEqual(scaled);
+      expect(live?.carrierPlan).toEqual(planStudioWetRibbonCarrier(scaled, { seed }));
+    };
+    for (let count = 1; count <= 90; count += 3) compare(count);
+    compare(30);
+    compare(30, true);
+    compare(45, false, CARRIER_SEED + 1);
   });
 
   it("rebuilds to exact parity on undo shrink and last-point rewrite", () => {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LanguagePicker } from "./LanguagePicker";
@@ -48,24 +48,31 @@ describe("LanguagePicker", () => {
     render(<LanguagePicker value="ko" onChange={() => undefined} />);
 
     fireEvent.click(screen.getByRole("button", { name: "언어 선택" }));
+    const choices = within(screen.getByRole("dialog", { name: "언어 선택" }));
+    const localeOption = (code: string) => {
+      const option = choices.getByText(code, { exact: true }).closest('[role="option"]');
+      if (!option) throw new Error(`${code} 언어 선택지가 없습니다.`);
+      return option;
+    };
     // (G7 종결 이후 af·ja·de·fr·zh-hant 등 게시된 75종 로케일은 모두 90%를 넘어 번역 완료로 표시된다.)
     fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
       target: { value: "Afrikaans" },
     });
-    const afrikaans = screen.getByRole("option");
+    expect(choices.getAllByRole("option").length).toBeGreaterThan(1);
+    const afrikaans = localeOption("af");
     expect(afrikaans.textContent).not.toContain("번역 진행 중");
 
     fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
       target: { value: "한국어" },
     });
-    const korean = screen.getByRole("option");
+    const korean = localeOption("ko");
     expect(korean.textContent).not.toContain("번역 진행 중");
 
     // A locale with no published dictionary at all is labelled too, never left unmarked.
     fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
       target: { value: "tlh" },
     });
-    const klingon = screen.getByRole("option");
+    const klingon = localeOption("tlh");
     expect(klingon.textContent).toContain("번역 진행 중");
     expect(klingon.textContent).toContain("0%");
   });

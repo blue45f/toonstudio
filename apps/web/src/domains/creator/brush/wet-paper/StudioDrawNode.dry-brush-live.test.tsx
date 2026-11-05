@@ -3,6 +3,10 @@ import { cleanup, render, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import * as material from "../studio-brush-alias-profile";
+import * as carrier from "../studio-wet-ribbon-carrier";
+import * as surface from "./studio-watercolor-settled-surface";
+
 import { STUDIO_BRUSH_ENGINE_PROGRAM_SET_VERSION } from "../studio-brush-engine-program-set";
 import { resetStudioWetWashLivePipelineCacheForTests } from "../studio-wet-wash-live-pipeline";
 import { StudioDrawNode } from "../StudioDrawNode";
@@ -48,6 +52,19 @@ describe("실제 causal 획 렌더의 갈필 베이크 배선", () => {
     mounted.unmount();
     await Promise.resolve();
     expect(studioDryBrushLiveHostStatsForTests()).toMatchObject({ owners: 0, jobs: 0 });
+  });
+
+  it("갈필 초안은 증분 재질을 한 번만 적용하며 배치 fallback을 다시 계획하지 않는다", async () => {
+    await prewarmStudioDryBrushLiveBake();
+    const materialSpy = vi.spyOn(material, "applyStudioBrushAliasWatercolorMaterial");
+    const carrierSpy = vi.spyOn(carrier, "planStudioWetRibbonCarrier");
+    const surfaceSpy = vi.spyOn(surface, "resolveStudioWatercolorSettledSurface");
+    render(<StudioDrawNode activeDraft el={dryEl()} />);
+    expect(surfaceSpy).toHaveBeenCalledTimes(1);
+    expect(surfaceSpy.mock.calls[0]?.[0].liveMaterialDabs).toBeDefined();
+    expect(materialSpy).not.toHaveBeenCalled();
+    expect(carrierSpy).not.toHaveBeenCalled();
+    expect(studioDryBrushLiveHostStatsForTests()).toMatchObject({ owners: 1, jobs: 1 });
   });
 
   it.each(["ink-wash--moxi-bake", "watercolor--curtis-bake", "watercolor--granulating-bake"])(

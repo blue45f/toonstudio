@@ -71,9 +71,30 @@ describe("candidate discovery lifecycle", () => {
     expect(screen.queryByText(/조회 시점에 조건과 작업 여력이 맞는 공개 후보가 없어요/u)).toBeNull();
   });
   it("checks expiry on focus before allowing a new offer", async () => {
-    const result=page("작가A"); discover.mockResolvedValue(result); render(<HiringDiscovery slot={slot} />); search(); await screen.findByText("작가A");
-    vi.spyOn(Date,"now").mockReturnValue(Date.parse(result.observedAt)+120000); fireEvent.focus(window);
-    const button=screen.getByRole("button",{name:"이 조건으로 30분 유효 제안 보내기"}); expect((button as HTMLButtonElement).disabled).toBe(true); fireEvent.click(button); expect(send).not.toHaveBeenCalled();
+    const serverNow = Date.parse("2026-11-05T00:00:00.000Z");
+    let localNow = serverNow - 300_000;
+    vi.spyOn(Date, "now").mockImplementation(() => localNow);
+    const result = { ...page("작가A"), observedAt: new Date(serverNow).toISOString(),
+      items: [{ ...candidate("작가A"), expiresAt: new Date(serverNow + 60_000).toISOString() }] };
+    discover.mockResolvedValue(result); render(<HiringDiscovery slot={slot} />); search(); await screen.findByText("작가A");
+    const button = screen.getByRole<HTMLButtonElement>("button", { name: "이 조건으로 30분 유효 제안 보내기" });
+    localNow += 59_999;
+    act(() => window.dispatchEvent(new Event("focus")));
+    expect(button.disabled).toBe(false);
+    localNow += 1;
+    act(() => window.dispatchEvent(new Event("focus")));
+    expect(button.disabled).toBe(true); fireEvent.click(button); expect(send).not.toHaveBeenCalled();
+  });
+  it("포커스 갱신 전에 만료된 후보도 보내기 경로에서 차단한다", async () => {
+    const result = page("작가A");
+    let localNow = Date.parse(result.observedAt);
+    vi.spyOn(Date, "now").mockImplementation(() => localNow);
+    discover.mockResolvedValue(result); render(<HiringDiscovery slot={slot} />); search(); await screen.findByText("작가A");
+    const button = screen.getByRole<HTMLButtonElement>("button", { name: "이 조건으로 30분 유효 제안 보내기" });
+    expect(button.disabled).toBe(false);
+    localNow += 120_000;
+    fireEvent.click(button);
+    expect(send).not.toHaveBeenCalled();
   });
   it("allows only one pending send and discards its late response after unmount", async () => {
     const result=pending<unknown>(); send.mockReturnValue(result.promise); discover.mockResolvedValue(page("작가A"));

@@ -22,7 +22,7 @@
 | 후속 CI 배선 패치 | 누락 8개 추가로 필수 855개. Node 27개·Vitest 18파일 323개·lint·Secretlint 통과. 940개와 중복 합산하지 않음 |
 | 실제 API·두 계정 검증 | peer의 교정된 3c8 context에서 Canvas editor·viewer 2/2와 직군·담당 HTTP 1/1 통과, skip 0·exit 0. 원격 후속 PR·CI·병합은 이 기록 이후 확인 |
 
-후속 메타데이터는 CI 대상 목록·배선 검사·해설 집계 숫자를 다루는 3파일과 이 검증 기록 1파일입니다. CI 배선 패치는 3c8 기준 별도 작업 폴더에서 검증됐으며 대상 삭제·serial 경계·임계값·제품 실행 코드 변경은 없습니다. 제품 빌드·화면 결과는 3c8에, 855개 배선 결과는 해당 패치에 각각 귀속하며 최종 커밋 전체의 동일 산출물 검증으로 합치지 않습니다.
+14:35 체크포인트에서의 후속 메타데이터는 CI 대상 목록·배선 검사·해설 집계 숫자를 다루는 3파일과 이 검증 기록 1파일입니다. CI 배선 패치는 3c8 기준 별도 작업 폴더에서 검증됐으며 대상 삭제·serial 경계·임계값·제품 실행 코드 변경은 없습니다. 제품 빌드·화면 결과는 3c8에, 855개 배선 결과는 해당 패치에 각각 귀속하며 최종 커밋 전체의 동일 산출물 검증으로 합치지 않습니다.
 
 peer Canvas의 첫 실행은 wrapper의 `VITE_API_BASE=/api`가 `/api/api` 요청을 만든 환경 실패였습니다. `passed=false` 원문을 보존하고 제품 오류 확정이나 성공으로 세지 않았습니다. 로컬 검사 서버를 모두 종료한 뒤 빈 prefix·새 context로 재실행해 2/2 Canvas와 1/1 HTTP 검사가 통과했습니다. 포인터 22 samples의 편집·공동 저장·인계·승인 뒤 REST 403/live forbidden·refresh/relogin을 확인했습니다. 기존 행·권한 8개 지문과 관련 소스 435개, 실행 전후 3c8 SHA·clean 상태가 같았고 시험 서버·소유 브라우저는 종료했습니다. 이 검증은 별도 시험 DB/API의 권한 경계 증거이며 Hokusai 정적 preview의 API 미검증을 대신하지 않습니다.
 
@@ -39,3 +39,25 @@ Hokusai는 로컬 production preview에서 선택한 획의 명시적 변환을 
 canonical 보존 재검사는 기존 dirty source 9개의 SHA-256 일치를 확인했습니다. canonical은 다른 경로에서 main `84ea914a`로 이동했고 별도 `.codex/config.toml` dirty 1개가 있으나 이 채팅의 canonical 변경은 0입니다. 운영 DB 적용·배포도 이 채팅에서 0이며 다른 담당 채팅의 승인을 확대하지 않습니다.
 
 근거: `/tmp/main-followup-3c8-validation-summary.json`, `/tmp/main3c8-dry-brush-quality-summary-20261105.json`, `/tmp/main3c8-hokusai-live-verified-20261105/{source-binding-after.json,studio-hokusai-live-integration.json}`, `/tmp/main-ci-canonical-preservation-final-20261105.json`. CI 배선 근거는 `/tmp/main-followup-core-pins-855-20261105.{patch,json}`입니다. 이 문서는 검증 시점의 기록으로 유지하며 원격 CI·병합 결과가 나올 때마다 문서 수정 커밋을 추가하지 않습니다. 최종 상태는 해당 PR Checks·병합 메타데이터와 별도 실행 산출물로 확인합니다.
+
+
+## 2026-11-05 원격 진단 이후의 교정
+
+상태: `current` 검증 기록. 다음은 `db0942abc9f3b2b0246c28b76ee22e77862315cd` 원격 실행의 실패와 이후 교정을 구분한 기록이다. 새 통합 head의 하네스·빌드·화면·원격 CI와 병합은 PR Checks 및 해당 head의 실행 산출물로 별도 확인한다.
+
+- [Core 41976218987](https://github.com/blue45f/toonstudio/actions/runs/41976218987)은 실제 검사 10개 성공, 성능 1개 실패와 집계 2개 실패였다. 기존 갈필 probe가 새 분기에서 carrier를 받지 못했으며, 별도 계측에서 3,200점 fallback 전체 계산 약 43.5ms도 확인했다.
+- `f6de9e810090c68969b18d18a438ed8b8002dfe4`는 기존 증분 planner·재질·carrier를 재사용하면서 실제 활성 갈필 침착 표면도 요청한다. 원본 2배·8ms 기준의 22파일 435개와 관련 단위 7파일 132개가 통과했다. 최종 40스텝 RGBA는 전후 동일하다. 전체 호스트의 prefix 복사·서명은 O(n)이고, 8ms는 작업 분할 목표이며 실제 atomic turn 초과와 cap 이후 cache hit은 별도로 기록했다.
+- 브러시 desktop은 4,874,542,315B artifact 수신 중 `Free space left: 0 MB`로 제품 검사 전 실패했다. 기존 Core의 SDK 두 경로 정리·20GiB gate를 같은 표준 Ubuntu 24.04 runner에 재사용한다. 전체 checkout·public·artifact·7개 matrix·시간 기준을 보존한다. 로컬에서 실제 SDK 삭제는 하지 않았다.
+- Smart Shape는 뒤늦게 관리 위치로 이동한 접힌 오프라인 안내와 고정 polygon 좌표가 겹쳤다. 첫 ROI 보완도 실제 실행에서 실패해 원문을 보존했다. 제품 `db0942`/검사기 `442add3a`의 다음 단독 실행은 정상 안내·관리 상태와 실측 위치 정착 후 전체 그리드를 같은 크기로 왼쪽 67px 옮겨 6개 도형·저장·보정·Undo/Redo·냉간 재열기와 같은 ID 6개 복원을 확인했다. 정적 API 부재는 `staticApiVerified:false`이며 다른 브러시 matrix 결과는 포함하지 않는다.
+- filters는 정상 갤러리를 열고 일반 parameter dialog를 기다리는 검사기 불일치가 있었다. 실제 갤러리의 활성 효과 스택을 선택해 기존 적용·픽셀·Undo·내구 저장 검증으로 연결한다. 반응형 40px 버튼은 DOMRect에서 39.999969px로 관측됐으므로 기준을 낮추지 않고 기존 모바일·고대비 44px 목표를 desktop에도 통일한다. 실제 새 화면 검증은 별도다.
+- [Full Diagnostic 41976218977](https://github.com/blue45f/toonstudio/actions/runs/41976218977)은 root 8,674파일·100,157테스트 성공과 15파일 실패·12테스트 실패·98기존 skip으로 종료했다. 무수집 Node suite 4개를 포함하며 전체 통과가 아니다. 선행 API 28파일은 502성공·1기존 skip이었고, root 실패 뒤 serial 단계는 실행되지 않았다.
+- Node/Vitest 연결은 기존 단언과 30초 인자를 유지한다. 경계 검사는 실제 helper·route 정본을 따라 검증한다. CRDT root가 Nest/DB 혼합 모듈을 가져오던 실제 경계는 `71ea20a7bdd78b3a23e47270a248203ece8c5291`에서 순수 모듈로 분리했다. 원본 비교 16개를 포함한 9파일 60개와 Node 12개가 통과했으며 서로 겹치는 실행은 합산하지 않는다. admission·REST 본문, 409/code/message, JSON SyntaxError, clone·공유 reference, 상수·예산·저장 shape/version·ACL·DB는 보존한다.
+- 누락 route 분류, 정본 오류의 다음 행동과 말투, 언어 지역 옵션·접근 이름·서버 시계 차이/만료 focus 회귀를 교정했다. 관련 9파일 128개·번역 43개·문구 정책 13개가 통과했고 가드·허용목록은 그대로다. 채용의 기존 CI 실패는 조용한 로컬에서 재현되지 않았으므로 새 CI로 확인해야 한다.
+- AI modal은 제품 지연으로 단정하지 않는다. 같은 사례의 원본 로컬 8.79초 중 약 93%가 전역 DOM query였다. 같은 15개 단언·9개 동작·30초 기한을 유지한 범위 검색으로 최종 20개가 통과했고 해당 사례는 0.59초였다. 새 Full CI 결과는 별도다.
+- mesh는 GLB bytes가 아니라 257코너 실패 입력의 report hash 차이였다. 실행마다 삼각함수로 만들던 원래 8e445 좌표를 고정하고 매번 새 객체로 복사한다. 생산 digest·golden 파일·18개 기대값은 바꾸지 않았다. 삼각함수 호출을 금지한 RED 이후 2파일 36개가 통과했으며 Linux의 새 CI 결과를 별도로 확인한다.
+
+핵심 교정 대상은 최초 876개 required selector에 고정했으며, main `994e5ba34`의 CRDT 회귀 네 경로와 통합한 현재 합집합은 880개다. 문서가 필요한 closure만 기존 product 소유에 두고 실제 expanded owner·sparse 입력을 확인했다. 대상 삭제·skip 추가·serial 22개·timeout·성능/크기 기준 완화는 없다. 이 문서의 로컬 계측·선행 화면 통과를 새 head 전체의 통과로 합산하지 않는다.
+
+원본·패치·해시·실행 명세는 `/tmp/pr2716-ci-additional-20261105/`, `/tmp/pr2716-dry-carrier-patch-manifest-20261105.json`, `/tmp/pr2716-full-boundary-manifest-20261105.json`, `/tmp/full-ui-guards-442add3-20261105-evidence.json`, `/tmp/pr2716-ai-modal-query-scope-manifest-20261105.json`, `/tmp/main442-smart-shapes-readiness-db0942-20261105/verification-summary.json`에 보존했다. 운영 DB 적용·배포 및 외부 전문 도구 호환성 검증은 이 교정에 포함하지 않았다.
+
+2026-11-05 PR #2718 병합 후 충돌 해결에서는 API facade와 root schema의 순수 shape 경로를 유지하고, main의 유효 filter mask 검증만 새 shape 함수로 이식했다. 동결 fixture/hash와 다른 함수 동등성·오류 경계는 보존하며, 해당 validator의 의도한 mask 확장을 별도 동작 비교로 검증한다. 이 범위에는 morphology 필압 진단이나 운영 변경을 포함하지 않는다.

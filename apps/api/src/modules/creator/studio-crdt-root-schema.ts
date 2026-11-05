@@ -1,5 +1,5 @@
 import { isBoundedStudioCrdtId } from "./studio-crdt-identifiers";
-import { STUDIO_BG3D_IMAGE_PROPERTIES, hasValidStudioBg3dImageReferenceProps, isValidStudioBg3dImageReferenceCandidate, hasValidStudioCrdtBg3dBundleRoots } from "./studio-crdt-bg3d-bundle";
+import { STUDIO_BG3D_IMAGE_PROPERTIES, hasValidStudioBg3dImageReferenceProps, isValidStudioBg3dImageReferenceCandidate, hasValidStudioCrdtBg3dBundleRoots } from "./studio-crdt-bg3d-shape";
 import { hasValidStudioBrushEngineProgramExtension, STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION } from "@toonstudio/contracts/studio-brush-material-program-contract";
 import * as Y from "yjs";
 

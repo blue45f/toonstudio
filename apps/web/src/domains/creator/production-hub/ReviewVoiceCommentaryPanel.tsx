@@ -300,7 +300,7 @@ export function ReviewVoiceCommentaryPanel({
     attemptRef.current = null;
     if (!mountedRef.current) return;
     setRecorder(current
-      ? { kind: "error", message: t("productionHub.status.voiceRecordingFailed", "녹음을 마치지 못했어요. 마이크 상태를 확인한 뒤 다시 녹화해 주세요.") }
+      ? { kind: "error", message: t("productionHub.status.voiceRecordingFailed", "녹음을 마치지 못했어요. 마이크 상태를 확인해 주세요. 확인한 뒤 다시 녹화해 주세요.") }
       : { kind: "idle" });
   };
 
@@ -348,14 +348,14 @@ export function ReviewVoiceCommentaryPanel({
     }
     if (!finalization.onSaveTrack) {
       if (blobUrl) URL.revokeObjectURL(blobUrl);
-      setRecorder({ kind: "error", message: t("productionHub.status.voiceRecordingFailed", "녹음을 마치지 못했어요. 마이크 상태를 확인한 뒤 다시 녹화해 주세요.") });
+      setRecorder({ kind: "error", message: t("productionHub.status.voiceRecordingFailed", "녹음을 마치지 못했어요. 마이크 상태를 확인해 주세요. 확인한 뒤 다시 녹화해 주세요.") });
       return;
     }
     // callback이 정상 반환하면 호스트가 탭 보관본과 URL의 수명을 인수한다.
     try { finalization.onSaveTrack(finishedTrack, blob); }
     catch {
       if (blobUrl) URL.revokeObjectURL(blobUrl);
-      setRecorder({ kind: "error", message: t("productionHub.status.voiceRecordingFailed", "녹음을 마치지 못했어요. 마이크 상태를 확인한 뒤 다시 녹화해 주세요.") });
+      setRecorder({ kind: "error", message: t("productionHub.status.voiceRecordingFailed", "녹음을 마치지 못했어요. 마이크 상태를 확인해 주세요. 확인한 뒤 다시 녹화해 주세요.") });
       return;
     }
     setSelectedId(finishedTrack.id);
@@ -571,7 +571,7 @@ export function ReviewVoiceCommentaryPanel({
     } catch {
       if (controller.signal.aborted || playbackRef.current !== controller || !mountedRef.current) return;
       setPlaying(false);
-      setPlaybackError(t("productionHub.status.voicePlaybackFailed", "해설을 재생하지 못했어요. 접근 권한과 연결을 확인한 뒤 다시 재생해 주세요."));
+      setPlaybackError(t("productionHub.status.voicePlaybackFailed", "해설을 재생하지 못했어요. 연결 상태와 이 해설의 접근 권한을 확인해 주세요. 확인한 뒤 다시 재생해 주세요."));
     } finally {
       if (playbackRef.current === controller) {
         playbackRef.current = null;
@@ -637,7 +637,7 @@ export function ReviewVoiceCommentaryPanel({
             </button>
             <span aria-live="polite">{recorder.kind === "ended"
               ? t("productionHub.status.voiceRecordingEnded", "마이크 입력이 종료되었어요. 녹화 종료를 누르면 방금 녹음을 보관해요.")
-              : t("productionHub.voice.recording", "녹화 중 — 비교·원고 화면을 이동하면 그 위치가 해설에 함께 기록됩니다.")}</span>
+              : t("productionHub.voice.recording", "녹화 중 — 비교·원고 화면을 이동하면 그 위치가 해설에 함께 기록돼요.")}</span>
           </div>
         ) : (
           <div>
@@ -707,7 +707,7 @@ export function ReviewVoiceCommentaryPanel({
                 cancelPlayback();
                 setPreparingPlayback(false);
                 setPlaying(false);
-                setPlaybackError(t("productionHub.status.voicePlaybackFailed", "해설을 재생하지 못했어요. 접근 권한과 연결을 확인한 뒤 다시 재생해 주세요."));
+                setPlaybackError(t("productionHub.status.voicePlaybackFailed", "해설을 재생하지 못했어요. 연결 상태와 이 해설의 접근 권한을 확인해 주세요. 확인한 뒤 다시 재생해 주세요."));
               }}
             >
               <track

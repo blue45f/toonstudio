@@ -1,10 +1,11 @@
 # 6패스 CRDT 비동기 협업 일관성 검증
 
-- 상태: **current — 로컬 재현 및 수정 후보, 미병합·미배포**
+- 상태: **current — PR #2718 main 병합, PR #2717 분리 구조 통합 검증 중·운영 미배포**
 - 검증 날짜: 2026-11-05 KST
 - 기준 main SHA: `8d315c85d6fde4a3a30255612c756d3e299a95b0`
-- 최신 main 통합 기준: `2c626df4000fcfc32318faa793a61bea3ef0901b` (PR #2716 병합)
-- 브랜치: `codex/crdt-six-pass-consistency-20261105`
+- 1차 main 통합 기준: `2c626df4000fcfc32318faa793a61bea3ef0901b` (PR #2716 병합)
+- CRDT 수정 브랜치: `codex/crdt-six-pass-consistency-20261105`
+- 후속 충돌 해결 기준: main `994e5ba34df98b6bcf1cb46c567456924a89dd68`와 PR #2717 head `1391d200a1f3015d2cdc0cefe4d090f2ad2b8935`
 - 대상: [PR #2710 미해결 리뷰](https://github.com/blue45f/toonstudio/pull/2710)
 - 제외: [PR #2711](https://github.com/blue45f/toonstudio/pull/2711)의 ZIP 저장·자동 저장 복구·DB 통합 검증 반복
 
@@ -127,3 +128,19 @@ surface는 계속 거절한다. 일회성 이력 교정·migration·데이터 �
 2026-11-05 후속 요청은 검증된 변경의 커밋·push·PR 생성·CI 확인을 승인했다. 병합·리뷰 스레드
 resolve·운영 배포는 이 요청 범위에 포함하지 않는다. 운영 배포 또는 저장 형식 변경을 추가하려면
 구체적인 변경 범위·영향을 제시하고 별도 사용자 승인을 받아야 한다.
+
+## PR #2717 충돌 해결 — 2026-11-05
+
+PR #2718은 사용자에 의해 main `994e5ba34df98b6bcf1cb46c567456924a89dd68`로 병합됐다.
+이후 PR #2717의 API 순수 검사 추출과 충돌해 기존 facade·root schema의 shape 직접 import를
+유지하고, 이미 main에 들어간 mask 허용을 `studio-crdt-bg3d-shape.ts`로 보존 이식했다.
+
+동결 fixture 및 SHA-256은 변경하지 않았다. 다른 함수 본문·상수·예산·malformed 입력 검사는
+유지하고, 해당 validator의 의도한 유효 mask 확장만 별도 동작 비교로 구분했다.
+유효 mask 세 경우는 이전 함수가 거절하고 새 shape·facade가 허용하며, 잘못된 mask와 이미지
+계약 여덟 경우는 계속 거절한다. shape·bundle·root schema boundary·reader gate 4파일 59개가 통과했다.
+
+바이트 대조에서 main의 live 파일 493개와 contracts 투영 파일은 모두 그대로이며, facade의
+transaction·admission·REST 본문과 root schema는 PR #2717 원본과 같다. 필수 CI 선택자는
+기존 876개와 main 859개의 정확한 합집합인 880개이며, 협업 workflow의 신규 회귀 네 경로도 유지했다.
+이 변경은 conflict 해결과 검증·normal fast-forward push 범위이며 ready·main 병합·운영 배포는 실행하지 않는다.

@@ -47,6 +47,8 @@ export interface StudioWatercolorSettledSurfaceInput {
   readonly brush: string;
   /** 플래너 dab(재질 스케일 전). */
   readonly plannedDabs: readonly StudioBrushAliasWatercolorDab[];
+  /** 활성 갈필의 증분 파이프라인이 이미 스케일한 재질. 다른 권위에서는 무시한다. */
+  readonly liveMaterialDabs?: readonly StudioBrushAliasWatercolorDab[];
   /** 획 고정 시드(`watercolorBrushSeedFromKey(element.id)`). */
   readonly seed: number;
   readonly activeDraft: boolean;
@@ -88,7 +90,9 @@ export function resolveStudioWatercolorSettledSurface(
     );
     return { dabs: baked ?? baseDabs, wetPaperBake: null };
   }
-  const dabs = applyStudioBrushAliasWatercolorMaterial(
+  const dabs = input.activeDraft && wetPaperProgramId === "chu-tai-dry-brush" && input.liveMaterialDabs
+    ? input.liveMaterialDabs
+    : applyStudioBrushAliasWatercolorMaterial(
     brush,
     plannedDabs,
     seed,
