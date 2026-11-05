@@ -343,6 +343,7 @@ apps/web/src/domains/creator/brush-lab/pigment/external-pigments.test.ts
 apps/web/src/domains/creator/brush-lab/pigment/km-layer-comparison.test.ts
 apps/web/src/domains/creator/brush-lab/pigment/kubelka-munk.test.ts
 apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-api.test.ts
+apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-float32-atlas.test.ts
 apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-mixer.test.ts
 apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-model.test.ts
 apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-provider.test.ts
@@ -508,6 +509,7 @@ apps/web/src/domains/creator/lettering/studio-translation-register.test.ts
 apps/web/src/domains/creator/lettering/use-studio-translation-cards.test.tsx
 apps/web/src/domains/creator/live/huddle
 apps/web/src/domains/creator/live/merge/stroke-merge-shadow-adapter.test.ts
+apps/web/src/domains/creator/live/studio-crdt-archive-bridge.test.ts
 apps/web/src/domains/creator/live/studio-crdt-authoring-projection.test.ts
 apps/web/src/domains/creator/live/studio-crdt-bg3d-bundle.test.ts
 apps/web/src/domains/creator/live/studio-crdt-frontier-async-history.test.ts

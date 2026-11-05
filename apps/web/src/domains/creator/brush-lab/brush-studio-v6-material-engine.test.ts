@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { BrushStudioV6LegacyPigmentMigrationRequiredError } from "./brush-studio-v6-legacy-pigment";
+import { brushStudioV6PigmentProviderForNode } from "./brush-studio-v6-pigment-provider";
 import { BRUSH_STUDIO_V6_RECIPES, createBrushStudioV6Program, patchBrushStudioV6Tuning } from "./brush-studio-v6-engine";
 import { brushStudioV6MaterialActiveTuningKeys, brushStudioV6MaterialMarksToSvg, brushStudioV6MaterialNodeExecution, createBrushStudioV6MaterialStroke, isBrushStudioV6MaterialNodeImplemented, mapBrushStudioV6Pressure, mixBrushStudioV6MaterialColors, normalizeBrushStudioV6MaterialConfig, renderBrushStudioV6MaterialMarks, sampleBrushStudioV6PaperContact, type BrushStudioV6MaterialMark, type BrushStudioV6MaterialPoint } from "./brush-studio-v6-material-engine";
 
@@ -293,6 +294,11 @@ describe("portable V6 material contacts", () => {
     const configured = createBrushStudioV6Program("mixbox-pastel-smudge");
     // 어댑터의 버전 비교는 동일한 지원 안료로 고정한다. 보관용 이전 혼색 획은 재생하지 않는다.
     const dual = { ...configured, slots: { ...configured.slots, pigment } };
+    if (pigment === "pigment-latent") {
+      expect(brushStudioV6PigmentProviderForNode(pigment)).toMatchObject({
+        id: "toonstudio-latent-pigment-v1", rights: "internal", execution: "native",
+      });
+    }
     const single = {
       ...dual,
       slots: { ...dual.slots, tip: "tip-grain-exemplar" },

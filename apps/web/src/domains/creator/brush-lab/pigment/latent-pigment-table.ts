@@ -171,7 +171,7 @@ export function isLatentPigmentTableBaked(): boolean {
   return defaultTable !== null;
 }
 
-function assertTable(table: LatentPigmentTable): LatentPigmentTable {
+export function assertLatentPigmentTable(table: LatentPigmentTable): LatentPigmentTable {
   const size = table?.size;
   if (
     typeof table !== "object"
@@ -287,7 +287,7 @@ export function latentPigmentFromRgbTable(
   const model = getKernel();
   const concentrations = new Float64Array(VARIABLES);
   const residual = new Float64Array(CHANNELS);
-  latentInto(model, assertTable(table), red, green, blue, concentrations, residual);
+  latentInto(model, assertLatentPigmentTable(table), red, green, blue, concentrations, residual);
   return Object.freeze({
     concentrations: Object.freeze([concentrations[0], concentrations[1], concentrations[2], concentrations[3]] as const),
     residual: frozenRgb(residual),
@@ -308,7 +308,7 @@ export function mixRgbLatentPigmentTable(
   const b = readUnitRgb(second, "둘째 색");
   if (typeof t !== "number" || !Number.isFinite(t)) throw new RangeError(`혼합 비율은 유한한 수여야 합니다(받은 값: ${String(t)}).`);
   const out = new Float64Array(CHANNELS);
-  mixUnitInto(assertTable(table), a[0], a[1], a[2], b[0], b[1], b[2], clamp01(t), out);
+  mixUnitInto(assertLatentPigmentTable(table), a[0], a[1], a[2], b[0], b[1], b[2], clamp01(t), out);
   return frozenRgb(out);
 }
 
@@ -388,7 +388,7 @@ export function mixRgbLatentPigmentsTable(
   if (!(largest > 0)) throw new RangeError("가중치 합이 0보다 커야 합니다.");
   const scaled = checked.map((entry) => entry.weight / largest);
   const total = scaled.reduce((sum, weight) => sum + weight, 0);
-  const verified = assertTable(table);
+  const verified = assertLatentPigmentTable(table);
   const model = getKernel();
   const concentrations = new Float64Array(VARIABLES);
   const residual = new Float64Array(CHANNELS);
@@ -410,7 +410,7 @@ export function mixRgbLatentPigmentsTable(
  * 3D 표의 (r, g, b) 와 같은 값이다.
  */
 export function packLatentPigmentTableAtlas2d(table: LatentPigmentTable = getLatentPigmentTable()): Float32Array {
-  const { size, concentrations } = assertTable(table);
+  const { size, concentrations } = assertLatentPigmentTable(table);
   const width = size * size;
   const atlas = new Float32Array(width * size * LATENT_PIGMENT_TABLE_COMPONENTS);
   for (let blue = 0; blue < size; blue += 1) {

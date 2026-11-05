@@ -180,6 +180,58 @@ describe("archive 없는 v7 보존 획 reader 경계", () => {
       expect(apply).not.toHaveBeenCalled(); expect(studioCrdtBg3dReaderMetadata(receiver)).toEqual({});
     } finally { source.destroy(); receiver.destroy(); }
   });
+  it.each([false, true])("관측자 예외 뒤 실제 반영된 색상 pending은 중복=%s라도 요구를 유지한다", (duplicate) => {
+    const source = new StudioCrdtDocument(), receiver = new StudioCrdtDocument();
+    const doc = asStudioCrdtDocumentHost(receiver).doc;
+    const failObserver = () => { throw new Error("수신 관측자 실패 대조"); };
+    try {
+      const before = pages(true); publishStudioCrdtDrawGraphDiff(source, [], before);
+      const parent = source.encodeStateAsUpdate(), vector = source.encodeStateVector();
+      publishStudioCrdtDrawGraphDiff(source, before, before.map((page) => ({ ...page,
+        elements: page.elements.map((element) => ({ ...element, stroke: "#abcdef" })) })));
+      const child = source.encodeStateAsUpdate(vector), metadata = studioCrdtBg3dReaderMetadata(source);
+      if (duplicate) receiver.applyUpdate(child);
+      const previousPending = doc.store.pendingStructs?.update, snapshot = receiver.encodeStateAsUpdate(), stateVector = receiver.encodeStateVector();
+      expect(studioCrdtBg3dReaderMetadata(receiver)).toEqual({});
+      doc.on("afterTransaction", failObserver);
+      try {
+        expect(() => applyStudioCrdtBg3dReaderUpdate(receiver, child, metadata, "work-a", false,
+          { isActive: () => true, apply: () => receiver.applyUpdate(child) })).toThrow("수신 관측자 실패 대조");
+      } finally { doc.off("afterTransaction", failObserver); }
+      expect(doc.store.pendingStructs).not.toBeNull();
+      expect(doc.store.pendingStructs?.update).not.toBe(previousPending);
+      expect(receiver.encodeStateVector()).toEqual(stateVector);
+      if (duplicate) expect(receiver.encodeStateAsUpdate()).toEqual(snapshot);
+      expect(studioCrdtBg3dReaderMetadata(receiver).requiredReaderCapabilities).toEqual([preserved]);
+      const request = { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-a", requestId: "observer-sync", stateVector: "AA==", readerCapabilities: [CAP] };
+      expect(studioCrdtPeerSyncResponse({ document: receiver, request, workId: "work-a", transferId: "observer", sequence: 1 })).toBeNull();
+      expect(studioCrdtPeerSyncResponse({ document: receiver, request: { ...request, readerCapabilities: [CAP, preserved] },
+        workId: "work-a", transferId: "observer", sequence: 1 })).toMatchObject({ requiredReaderCapabilities: [preserved] });
+      expect(applyStudioCrdtBg3dReaderUpdate(receiver, parent, metadata, "work-a", false,
+        { isActive: () => true, apply: () => receiver.applyUpdate(parent) })).toBeNull();
+      expect(doc.store.pendingStructs).toBeNull();
+      expect(receiver.getStroke("draw-a")?.payload).toMatchObject({ version: 7, stroke: "#abcdef", extensions: { colorizeMaskEnabled: false } });
+    } finally { doc.off("afterTransaction", failObserver); source.destroy(); receiver.destroy(); }
+  });
+  it("적용 전 예외는 기존 정상 pending의 바이트와 요구 없는 상태를 유지한다", () => {
+    const source = new StudioCrdtDocument(), receiver = new StudioCrdtDocument(), preservedSource = new StudioCrdtDocument();
+    try {
+      const before = pages(false); publishStudioCrdtDrawGraphDiff(source, [], before); const vector = source.encodeStateVector();
+      publishStudioCrdtDrawGraphDiff(source, before, before.map((page) => ({ ...page,
+        elements: page.elements.map((element) => ({ ...element, stroke: "#abcdef" })) })));
+      receiver.applyUpdate(source.encodeStateAsUpdate(vector));
+      const doc = asStudioCrdtDocumentHost(receiver).doc, pending = doc.store.pendingStructs?.update;
+      const snapshot = receiver.encodeStateAsUpdate();
+      expect(pending).toBeDefined(); expect(studioCrdtBg3dReaderMetadata(receiver)).toEqual({});
+      publishStudioCrdtDrawGraphDiff(preservedSource, [], pages(true));
+      expect(() => applyStudioCrdtBg3dReaderUpdate(receiver, preservedSource.encodeStateAsUpdate(), studioCrdtBg3dReaderMetadata(preservedSource), "work-a", false,
+        { isActive: () => true, apply: () => { throw new Error("본문 적용 전 실패 대조"); } })).toThrow("본문 적용 전 실패 대조");
+      expect(doc.store.pendingStructs?.update).toBe(pending); expect(receiver.encodeStateAsUpdate()).toEqual(snapshot);
+      expect(studioCrdtBg3dReaderMetadata(receiver)).toEqual({});
+      expect(studioCrdtPeerSyncResponse({ document: receiver, workId: "work-a", transferId: "unchanged", sequence: 1,
+        request: { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-a", requestId: "unchanged-sync", stateVector: "AA==", readerCapabilities: [CAP] } })).not.toBeNull();
+    } finally { source.destroy(); receiver.destroy(); preservedSource.destroy(); }
+  });
   it("과잉 요구로 받은 정상 v6 pending이 풀리면 기억을 해제해 old peer를 영구 차단하지 않는다", () => {
     const source = new StudioCrdtDocument(), receiver = new StudioCrdtDocument();
     try {

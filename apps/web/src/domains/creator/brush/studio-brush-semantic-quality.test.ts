@@ -9,6 +9,7 @@ import { STUDIO_WET_PAPER_BAKE_PROGRAMS } from "./wet-paper/studio-wet-paper-pro
 
 import {
   STUDIO_DEFAULT_QUALITY_BRUSH_CATALOG_ITEMS,
+  STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS,
 } from "./studio-brush-catalog";
 import { studioBrushPackDescriptorById } from "./studio-brush-pack-index";
 import {
@@ -113,16 +114,26 @@ describe("Studio brush semantic-claim audit", () => {
     ]));
   });
 
-  it("정착 입자 침전 근거로 분사·산포나 일반 입자 약속을 대신 인정하지 않는다", () => {
-    for (const name of [
-      "수채 · 입자 침전 산포", "수채 · 입자 침전 spray", "수채 · 입자 침전 scatter",
-      "수채 · 입자 침전 스플래터", "수채 · 입자 침전 일반 입자", "수채 · 산포",
-    ]) {
+  it.each([
+    "수채 · 입자 침전 산포", "수채 · 입자 침전 spray", "수채 · 입자 침전 scatter",
+    "수채 · 입자 침전 스플래터", "수채 · 입자 침전 일반 입자", "수채 · 산포",
+  ])("정착 입자 침전 근거로 분사·산포나 일반 입자 약속을 대신 인정하지 않는다: %s", (name) => {
+    const result = auditStudioBrushSemanticClaims({
+      catalogId: "watercolor--granulating-bake", name, operation: "paint",
+      settledGranulationResponse: true,
+    });
+    expect(result.issues, name).toContainEqual(expect.objectContaining({
+      code: "particle-claim-without-particle-response",
+    }));
+  });
+
+  it("다른 설명 필드의 분사·장식 입자 약속도 침전 근거로 대신하지 않는다", () => {
+    for (const hint of ["산포", "스프레이", "스플래터", "흩어짐", "글리터", "반짝", "spray", "scatter", "splatter", "glitter"]) {
       const result = auditStudioBrushSemanticClaims({
-        catalogId: "watercolor--granulating-bake", name, operation: "paint",
+        catalogId: "watercolor--granulating-bake", name: "안료 입자 침전", hint,
         settledGranulationResponse: true,
       });
-      expect(result.issues, name).toContainEqual(expect.objectContaining({
+      expect(result.issues, hint).toContainEqual(expect.objectContaining({
         code: "particle-claim-without-particle-response",
       }));
     }
@@ -181,16 +192,25 @@ describe("정착 수채 입자 침전 감사 증거", () => {
   });
 
   it("실제 연결된 입자 침전 약속을 일반 분사 산포와 구분한다", () => {
-    const evidence = profileStudioBrushSettledGranulationEvidence(GRANULATING_BRUSH);
+    const item = STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS.find(({ id }) => id === GRANULATING_BRUSH);
+    if (!item) throw new Error("입자 침전 브러시 누락");
+    const evidence = profileStudioBrushSettledGranulationEvidence(item.id);
     const result = auditStudioBrushSemanticClaims({
-      catalogId: GRANULATING_BRUSH, name: "수채 · 입자 침전", operation: "paint",
+      ...item, catalogId: item.id,
       settledGranulationResponse: evidence?.responsive,
     });
     expect(result.issues).toEqual([]);
+    for (const settledGranulationResponse of [undefined, false]) {
+      expect(auditStudioBrushSemanticClaims({
+        ...item, catalogId: item.id, settledGranulationResponse,
+      }).issues).toContainEqual(expect.objectContaining({
+        code: "particle-claim-without-particle-response",
+      }));
+    }
   });
 
   it("문구와 기본 watercolor 계약만으로 입자 침전 약속을 인정하지 않는다", () => {
-    for (const id of ["watercolor", "pen"]) {
+    for (const id of ["watercolor", "pen", "watercolor--granulating", "dry-media"]) {
       expect(profileStudioBrushSettledGranulationEvidence(id)).toBeNull();
       const result = auditStudioBrushSemanticClaims({
         catalogId: id, name: "입자 침전", operation: "paint",
@@ -217,14 +237,17 @@ describe("정착 수채 입자 침전 감사 증거", () => {
     }
   });
 
-  it("granulation 또는 침착률을 제거한 변형은 같은 종이에서도 침전 근거가 되지 못한다", () => {
-    for (const change of [{ granulation: 0 }, { settleRate: 0 }]) {
+  it("granulation·침착률·활성 안료를 제거한 변형은 같은 종이에서도 침전 근거가 되지 못한다", () => {
+    const [coarse, fine] = GRANULATING_PROGRAM.pigments;
+    for (const pigments of [
+      [{ ...coarse, granulation: 0 }, { ...fine, granulation: 0 }],
+      [{ ...coarse, settleRate: 0 }, { ...fine, settleRate: 0 }],
+      [{ ...coarse, share: 0 }, { ...fine, share: 0 }],
+      [{ ...coarse, share: 0 }, { ...fine, share: 1, granulation: 0 }],
+    ] as const) {
       const evidence = measureStudioWetPaperGranulationResponse({
         ...GRANULATING_PROGRAM,
-        pigments: [
-          { ...GRANULATING_PROGRAM.pigments[0], ...change },
-          { ...GRANULATING_PROGRAM.pigments[1], ...change },
-        ],
+        pigments,
       });
       expect(evidence.valleyCaptureExcess).toBe(0);
       expect(evidence.responsive).toBe(false);

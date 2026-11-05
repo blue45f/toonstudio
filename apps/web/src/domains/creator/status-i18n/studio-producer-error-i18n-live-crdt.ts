@@ -1,6 +1,6 @@
 /**
  * 생산자 구조화 에러 해석 모듈 — live CRDT 구간: studio-crdt-outbox 코드 21종
- * (도메인 liveOutbox) + studio-crdt-page-bridge 코드 19종 (livePageBridge) +
+ * (도메인 liveOutbox) + studio-crdt-page-bridge 코드 20종 (livePageBridge) +
  * studio-crdt-scene-publisher 코드 5종·표시 키 2종 (liveScene) (A4 D4, R13).
  *
  * 코어 모듈(studio-producer-error-i18n.ts)의 형제 모듈이다. 계약은 코어와

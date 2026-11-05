@@ -32,7 +32,8 @@ afterEach(() => { services.splice(0).forEach((service) => service.onModuleDestro
 
 function fixture(sparse = false, retainLayerMetadata = false) {
   const program = createBrushStudioV6Program("mixbox-pigment-spray");
-  const metadata: Pick<DrawEl, "psdGroupId" | "psdRasterSourceId" | "psdSource" | "psdFolderPath" | "colorizeMask" | "colorizeMaskEnabled" | "linked3dCorrection"> = {
+  const metadata: Pick<DrawEl, "psdGroupId" | "psdRasterSourceId" | "psdSource" | "psdFolderPath" | "colorizeMask" | "colorizeMaskEnabled" | "linked3dCorrection" | "sketch"> = {
+    sketch: { enabled: true, roughness: 2, bowing: 1.5, fillStyle: "cross-hatch" },
     psdGroupId: "psd-folder", psdRasterSourceId: "original-raster",
     psdSource: { version: 1, hash: `sha256:${"a".repeat(64)}`, name: "original.psd", bytes: 100 },
     psdFolderPath: [{ id: "psd-folder", name: "원본 폴더" }],
@@ -82,14 +83,24 @@ function harness(baseline: unknown) {
   const service = new StudioCrdtService(repository, allowStoredRasterAssetReferences, allowStoredWorkAssetReferences, new MemoryStudioCrdtClusterLoadRepository());
   services.push(service); return { service, repository };
 }
-const update = (id: number, data: Uint8Array) => ({ workId: "work", actorUserId: "owner", updateId: `aaaaaaaa-aaaa-4aaa-8aaa-${String(id).padStart(12, "0")}`, data, readerCapabilities: [CAP] });
+const update = (id: number, data: Uint8Array, readerCapabilities: readonly string[] = [CAP]) => ({
+  workId: "work", actorUserId: "owner", updateId: `aaaaaaaa-aaaa-4aaa-8aaa-${String(id).padStart(12, "0")}`, data, readerCapabilities,
+});
 
 describe("이전 혼색 원본의 실제 Y·서버 append 보존", () => {
   it("실제 UI planner 결과가 wire v7과 서버 admission·영속 로그를 통과하고 복원 원본을 유지한다", async () => {
     const f = fixture(), h = harness(f.before);
     expect(f.local.getStroke(f.plan.archiveIds[0]!)?.payload.version).toBe(7);
     expect(hasValidStudioCrdtRootSchema(f.local.doc)).toBe(true);
-    await expect(h.service.applyUpdateBytes(update(1, f.local.encodeStateAsUpdate()))).resolves.toMatchObject({ duplicate: false });
+    const data = f.local.encodeStateAsUpdate();
+    await expect(h.service.applyUpdateBytes(update(1, data, []))).rejects.toMatchObject({
+      name: "StudioBg3dReaderUpgradeRequiredError", requiredReaderCapabilities: [CAP],
+    });
+    expect(h.repository.receipts.size).toBe(0); expect(h.repository.updates.size).toBe(0);
+    expect(h.repository.nextSequence).toBe(1n);
+    await expect(h.service.applyUpdateBytes(update(1, data))).resolves.toMatchObject({
+      duplicate: false, serverSequence: "1", requiredReaderCapabilities: [CAP],
+    });
     const stored = new Y.Doc(); documents.push(stored);
     for (const row of h.repository.updates.get("work") ?? []) Y.applyUpdate(stored, row.payload);
     const persisted = materializeStudioAuthoringFromCrdt({ baseline: f.before, doc: stored });

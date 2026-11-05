@@ -163,16 +163,15 @@ export async function auditStudioHybridTopology(environment?: ChemyPressureEnvir
     const lowSource = element(topology.recipeId, 0.15), light = draw(lowSource);
     const highSource = element(topology.recipeId, 0.85), heavy = draw(highSource);
     const pressureRatio = heavy.mass / Math.max(1, light.mass);
+    check(pressureRatio > 1.15, `${topology.recipeId}: ineffective pressure (${pressureRatio})`);
     let legacyPressurePolicy: Awaited<ReturnType<typeof collectLegacyChemyPressure>> | undefined;
     if (topology.recipeId === "klecks-chemy") {
       try {
         legacyPressurePolicy = await collectLegacyChemyPressure(environment, lowSource, highSource, light, heavy);
         for (const failure of legacyPressurePolicy.failures) check(false, topology.recipeId + ": " + failure);
       } catch (error) { check(false, topology.recipeId + ": legacy pressure policy failed: " + String(error)); }
-    } else {
-      check(pressureRatio > 1.15, `${topology.recipeId}: ineffective pressure (${pressureRatio})`);
     }
-    // 이전 하한 미달의 원본 증거는 승인된 계약과 별도로 계속 보존한다.
+    // 원래 하한은 모든 모델에 적용하고, 미달한 원본은 추가 진단 자료로 보존한다.
     if (!(pressureRatio > 1.15)) {
       try {
         pressureFailureArtifacts.push(await captureStudioHybridPressureFailure(topology.recipeId, lowSource, highSource, light, heavy));
@@ -233,6 +232,6 @@ export async function auditStudioHybridTopology(environment?: ChemyPressureEnvir
   check(performanceResult.submissionP95 < 50, "submission exceeds 50ms freeze guard");
   return { backend: "real-browser-canvas2d", cases, distinctness: { pairs, minimumDistance, closestPair, opacityNormalized: true },
     performance: performanceResult, failures, pressureFailureArtifacts, pressureFailureArtifactErrors,
-    chemyPressurePolicy: { originalMinimumExclusive: 1.15, originalMinimumRetained: false, approvalStatus: "owner-approved-2026-11-05" },
-    scope: "Chemy V1 preserves legacy pixels instead of its former 15% floor. Synthetic input only; no physical pen, fluid-grid or WebGPU latency claim", sheets: [sheet.toDataURL("image/png")] };
+    chemyPressurePolicy: { originalMinimumExclusive: 1.15, originalMinimumRetained: true, approvalStatus: "waiver-approval-unverified" },
+    scope: "Chemy V1을 포함한 모든 모델에 원래 15% 초과 하한을 적용한다. 별도 legacy 픽셀 진단은 이 조건을 대체하지 않으며 면제 승인은 확인되지 않았다. Synthetic input only; no physical pen, fluid-grid or WebGPU latency claim", sheets: [sheet.toDataURL("image/png")] };
 }

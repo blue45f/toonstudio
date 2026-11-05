@@ -75,8 +75,9 @@ export function applyStudioCrdtBg3dReaderUpdate(document: StudioCrdtDocument, by
     const retained = pendingReaderRequirements(host.doc), previous = receivedPendingReaders.get(host.doc);
     const required = [...new Set([...retained, ...(requiresPreserved ? [STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY] : [])])];
     if (!required.length) { application.apply(); return; }
+    const pendingStructs = host.doc.store.pendingStructs?.update, pendingDs = host.doc.store.pendingDs;
     const incoming = { required, applying: true };
-    // Yjs update 구독자가 apply 안에서 재전파해도 검증한 요구 메타를 잃지 않는다. 실패 시 원래 기억을 복원한다.
+    // Yjs update 구독자가 apply 안에서 재전파해도 검증한 요구 메타를 잃지 않는다.
     receivedPendingReaders.set(host.doc, incoming);
     try {
       const applied = application.apply();
@@ -87,7 +88,10 @@ export function applyStudioCrdtBg3dReaderUpdate(document: StudioCrdtDocument, by
       }
     } catch (error) {
       if (receivedPendingReaders.get(host.doc) === incoming) {
-        if (previous) receivedPendingReaders.set(host.doc, previous); else receivedPendingReaders.delete(host.doc);
+        // 관측자 예외는 이미 반영된 Yjs pending을 되돌리지 않는다. 중복 merge도 배열 참조는 교체한다.
+        const pendingChanged = host.doc.store.pendingStructs?.update !== pendingStructs || host.doc.store.pendingDs !== pendingDs;
+        if (pendingChanged && (host.doc.store.pendingStructs !== null || host.doc.store.pendingDs !== null)) receivedPendingReaders.set(host.doc, { required, applying: false });
+        else if (previous) receivedPendingReaders.set(host.doc, previous); else receivedPendingReaders.delete(host.doc);
       }
       throw error;
     }
