@@ -2,12 +2,12 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { encodeStudioFloatingSurfaceLayout } from "./studio-floating-surface";
-import { createStudioFloatingSurfacePreferencesRepository } from "./studio-floating-surface-preferences-sqlite";
-import { studioFloatingSurfaceSessionKey, useStudioFloatingSurfaceLayout } from "./use-studio-floating-surface-layout";
+import { encodeStudioFloatingSurfaceLayout } from "../studio-floating-surface";
+import { createStudioFloatingSurfacePreferencesRepository } from "../studio-floating-surface-preferences-sqlite";
+import { studioFloatingSurfaceSessionKey, useStudioFloatingSurfaceLayout } from "../use-studio-floating-surface-layout";
 
-import type { StudioFloatingSurfaceLayout } from "./studio-floating-surface";
-import type { StudioFloatingSurfacePreferencesRepository } from "./studio-floating-surface-preferences-sqlite";
+import type { StudioFloatingSurfaceLayout } from "../studio-floating-surface";
+import type { StudioFloatingSurfacePreferencesRepository } from "../studio-floating-surface-preferences-sqlite";
 
 const fallback: StudioFloatingSurfaceLayout = {
   version: 2, xRatio: 1, yRatio: 0.72, width: 400, height: 58, dock: "right",
