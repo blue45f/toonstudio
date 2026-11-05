@@ -5,9 +5,10 @@ import * as line from "../studio-linked-3d-pass-product-authority";
 import { StudioCrdtDocument } from "./studio-crdt-document";
 import { StudioCrdtRoomBinding } from "./studio-crdt-room-binding";
 import { FakeRoom } from "./studio-crdt-room-binding.test-support";
-import { publishStudioCrdtSceneGraphDiff } from "./studio-crdt-scene-publisher";
+import { publishStudioCrdtSceneGraphDiff, publishStudioCrdtDrawGraphDiff } from "./studio-crdt-scene-publisher";
 import { StudioMemoryBroadcastHub, StudioBroadcastChannelTransport } from "./studio-live-collaboration-transport";
 import { StudioCrdtLocalReaderFence } from "./studio-crdt-local-reader-fence";
+import { applyStudioCrdtBg3dReaderUpdate, studioCrdtBg3dReaderMetadata, studioCrdtPeerSyncResponse } from "./studio-crdt-bg3d-reader-fence";
 import { createStudioCrdtLocalWireMessage, encodeStudioCrdtUpdate, parseStudioCrdtLocalWireMessage, STUDIO_CRDT_PROTOCOL_VERSION,
   type StudioCrdtTransportMessage } from "./studio-crdt-protocol";
 import type { StudioLiveRoom } from "./studio-live-collaboration-room";
@@ -17,6 +18,75 @@ const CAP = "bg3d-sixpass-bundle.v1";
 const meta = { readerCapabilities: [CAP], requiredReaderCapabilities: [CAP], artifactScope: "origin" as const };
 const update = { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-a", updateId: "00000000-0000-4000-8000-000000000004", serverSequence: "0", update: "AAA=" };
 const message = { kind: "update" as const, workId: "work-a", senderSessionId: "alice", targetSessionId: null, payload: update };
+
+describe("archive 없는 v7 보존 획 reader 경계", () => {
+  const preserved = "legacy-pigment-preservation.v1";
+  function pages(preserve: boolean) {
+    return [{ id: "page-a", elements: [{ id: "draw-a", type: "draw" as const,
+      points: [0, 0, 7, 8], stroke: "#000000", strokeWidth: 2,
+      ...(preserve ? { colorizeMaskEnabled: false } : {}) }] }];
+  }
+  it("raw v7과 삭제 이력의 요구 capability를 광고하고 구 peer의 sync를 본문 없이 거부한다", () => {
+    const source = new StudioCrdtDocument();
+    try {
+      publishStudioCrdtDrawGraphDiff(source, [], pages(true));
+      for (const deleted of [false, true]) {
+        if (deleted) source.deleteStroke("draw-a");
+        const metadata = studioCrdtBg3dReaderMetadata(source);
+        expect(metadata.requiredReaderCapabilities).toEqual([preserved]); expect(metadata).not.toHaveProperty("artifactScope");
+        const input = { document: source, workId: "work-a", transferId: "transfer", sequence: 1,
+          request: { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-a", requestId: "sync-a", stateVector: "AA==", readerCapabilities: [CAP] } };
+        expect(studioCrdtPeerSyncResponse(input)).toBeNull();
+        expect(studioCrdtPeerSyncResponse({ ...input, request: { ...input.request, readerCapabilities: [CAP, preserved] } }))
+          .toMatchObject({ requiredReaderCapabilities: [preserved] });
+      }
+    } finally { source.destroy(); }
+  });
+  it("부모 key가 생략된 v1→v7 증분도 실제 적용 전에 요구 메타를 확인한다", () => {
+    const source = new StudioCrdtDocument(), target = new StudioCrdtDocument();
+    try {
+      publishStudioCrdtDrawGraphDiff(source, [], pages(false)); target.applyUpdate(source.encodeStateAsUpdate());
+      const vector = target.encodeStateVector();
+      publishStudioCrdtDrawGraphDiff(source, pages(false), pages(true));
+      expect(source.getStroke("draw-a")?.payload.version).toBe(7);
+      const bytes = source.encodeStateAsUpdate(vector), apply = vi.fn(() => target.applyUpdate(bytes));
+      expect(() => applyStudioCrdtBg3dReaderUpdate(target, bytes, {}, "work-a", false, { isActive: () => true, apply })).toThrow(/reader/);
+      expect(apply).not.toHaveBeenCalled(); expect(target.getStroke("draw-a")?.payload.version).toBe(1);
+      expect(applyStudioCrdtBg3dReaderUpdate(target, bytes, studioCrdtBg3dReaderMetadata(source), "work-a", false,
+        { isActive: () => true, apply })).toBeNull();
+      expect(target.getStroke("draw-a")?.payload).toMatchObject({ version: 7, extensions: { colorizeMaskEnabled: false } });
+    } finally { source.destroy(); target.destroy(); }
+  });
+  it("일반 좌표값 7은 v7 요구로 오인하지 않고 기존 동기 적용을 유지한다", () => {
+    const source = new StudioCrdtDocument(), target = new StudioCrdtDocument();
+    try {
+      publishStudioCrdtDrawGraphDiff(source, [], pages(false)); const bytes = source.encodeStateAsUpdate();
+      expect(applyStudioCrdtBg3dReaderUpdate(target, bytes, {}, "work-a", false,
+        { isActive: () => true, apply: () => target.applyUpdate(bytes) })).toBeNull();
+      expect(target.getStroke("draw-a")?.payload.version).toBe(1);
+    } finally { source.destroy(); target.destroy(); }
+  });
+  it.each([false, true])("sender 광고 없는 요구 계약은 authoritative=%s일 때 서버 응답으로만 받는다", (authoritative) => {
+    const source = new StudioCrdtDocument(), target = new StudioCrdtDocument();
+    try {
+      publishStudioCrdtDrawGraphDiff(source, [], pages(true)); const bytes = source.encodeStateAsUpdate();
+      const apply = () => applyStudioCrdtBg3dReaderUpdate(target, bytes, { requiredReaderCapabilities: [preserved] }, "work-a", authoritative,
+        { isActive: () => true, apply: () => target.applyUpdate(bytes) });
+      if (authoritative) { expect(apply()).toBeNull(); expect(target.getStroke("draw-a")?.payload.version).toBe(7); }
+      else { expect(apply).toThrow(/reader/); expect(target.getStrokes()).toEqual([]); }
+    } finally { source.destroy(); target.destroy(); }
+  });
+  it("로컬 봉투도 BG3D만 지원하는 광고와 요구 메타 없는 구 update를 거부한다", () => {
+    const fence = new StudioCrdtLocalReaderFence("work-a", "alice", () => {});
+    const metadata = { readerCapabilities: [CAP, preserved], requiredReaderCapabilities: [preserved] };
+    expect(fence.decorate({ ...message, payload: { ...update, ...metadata } })).toMatchObject(metadata);
+    const request = createStudioCrdtLocalWireMessage({ kind: "sync-request", workId: "work-a", senderSessionId: "old", targetSessionId: null,
+      payload: { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: "work-a", requestId: "sync-old", stateVector: "AA==" } });
+    fence.receiveAdvertisement({ brand: "toonspectrum:studio-crdt-readers:v1", workId: "work-a", senderSessionId: "old", readerCapabilities: [CAP] });
+    expect(fence.accept(request)).toBeNull();
+    expect(fence.accept(createStudioCrdtLocalWireMessage({ ...message, senderSessionId: "old" }))).toBeNull();
+  });
+});
 
 describe("구 reader와 신규 6패스 reader 경계", () => {
   it("일반 v8 메시지 키는 유지하고 새 기능 봉투는 구 exact-key reader가 거절한다", () => {

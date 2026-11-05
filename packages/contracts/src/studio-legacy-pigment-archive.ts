@@ -12,6 +12,41 @@ export const STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION = 7 as const;
 export const STUDIO_LEGACY_PIGMENT_ARCHIVE_STROKE_VERSION = STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION;
 export const STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY = "legacy-pigment-preservation.v1";
 export const STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS = ["psdGroupId", "psdRasterSourceId", "psdSource", "psdFolderPath", "colorizeMask", "colorizeMaskEnabled", "linked3dCorrection"] as const;
+/** 값의 의미 검증과 별개로, 구 reader가 생략하면 안 되는 보존 필드의 존재를 조사한다. */
+export function hasStudioPreservedDrawReaderFields(value: unknown): boolean {
+  const source = record(value);
+  return source !== null && ["legacyPigmentArchive", ...STUDIO_LEGACY_PIGMENT_ARCHIVE_ELEMENT_EXTENSION_KEYS]
+    .some((key) => Object.hasOwn(source, key));
+}
+export function hasStudioPreservedDrawReaderDocument(value: unknown): boolean {
+  const source = record(value), master = record(source?.master);
+  const containers: unknown[] = [...(Array.isArray(source?.pagesList) ? source.pagesList : []), ...(master ? [master] : [])];
+  return containers.some((value) => {
+    const container = record(value);
+    return Array.isArray(container?.elements) && container.elements.some((value: unknown) => {
+      const element = record(value);
+      return element?.type === "draw" && hasStudioPreservedDrawReaderFields(element);
+    });
+  });
+}
+interface SharedReaderMap { get(key: string): unknown; values(): IterableIterator<unknown> }
+function sharedReaderMap(value: unknown): SharedReaderMap | null {
+  return value !== null && typeof value === "object" && "get" in value && typeof value.get === "function"
+    && "values" in value && typeof value.values === "function" ? value as SharedReaderMap : null;
+}
+/** Yjs를 정적으로 로드하지 않는다. raw 기록을 조사하므로 삭제된 획의 undo 자료도 포함한다. */
+export function hasStudioPreservedDrawReaderCrdt(document: {
+  readonly share: ReadonlyMap<string, unknown>; getMap(name: string): unknown;
+}): boolean {
+  const strokes = sharedReaderMap(document.share.has("strokes") ? document.getMap("strokes") : null);
+  if (!strokes) return false;
+  for (const value of strokes.values()) {
+    const stroke = sharedReaderMap(value);
+    if (stroke && (stroke.get("payloadVersion") === STUDIO_PRESERVED_DRAW_METADATA_STROKE_VERSION
+      || hasStudioPreservedDrawReaderFields(stroke.get("extensions")))) return true;
+  }
+  return false;
+}
 const KEYS = ["version", "sourceElementId", "sourceGroupId", "sourceIndex", "sourceHidden"];
 function record(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)

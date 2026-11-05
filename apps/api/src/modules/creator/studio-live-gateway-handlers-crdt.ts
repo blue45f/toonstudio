@@ -1,5 +1,4 @@
-import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
-import { studioBg3dReaderRoom, broadcastStudioBg3dReaderSafe } from "./studio-live-bg3d-reader-fence";
+import { studioSupportedReaderRooms, broadcastStudioBg3dReaderSafe } from "./studio-live-bg3d-reader-fence";
 import {
   encodeStudioCrdtBinaryEnvelope,
   fragmentStudioCrdtBinarySyncEnvelope,
@@ -197,8 +196,7 @@ export async function selectCrdtBinaryWire(
     try {
       selection.pendingJoin ??= (async () => {
         await client.join(studioLiveCrdtBinaryRoom(parsed.data.workId));
-        if (client.data.studioReaderCapabilities?.includes(STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY))
-          await client.join(studioBg3dReaderRoom(studioLiveCrdtBinaryRoom(parsed.data.workId)));
+        for (const room of studioSupportedReaderRooms(studioLiveCrdtBinaryRoom(parsed.data.workId), client.data.studioReaderCapabilities)) await client.join(room);
       })();
       await selection.pendingJoin;
     } catch {

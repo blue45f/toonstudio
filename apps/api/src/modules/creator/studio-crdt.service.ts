@@ -1,7 +1,9 @@
 import { StudioBg3dBundleService } from "./studio-bg3d-bundle.service";
 import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { assertStudioCrdtBg3dBundleAdmission, snapshotStudioCrdtBg3dBundles, STUDIO_BG3D_BUNDLE_REVISIONS_ROOT } from "./studio-crdt-bg3d-bundle";
-import { StudioBg3dReaderUpgradeRequiredError, isStudioBg3dReaderUpgradeRequired } from "./studio-bg3d-reader-capability";
+import { StudioBg3dReaderUpgradeRequiredError, isStudioBg3dReaderUpgradeRequired, studioReaderUpgradeRequiredCapabilities } from "./studio-bg3d-reader-capability";
+import { hasStudioPreservedDrawReaderCrdt, STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY } from "@toonstudio/contracts/studio-legacy-pigment-archive";
+import { assertStudioLegacyPigmentArchiveReader } from "./studio-legacy-pigment-archive-admission";
 import { StudioCrdtInvalidPayloadError, StudioCrdtUpdateIdConflictError, StudioCrdtDocumentTooLargeError, StudioCrdtBackpressureError, StudioCrdtStorageCorruptionError } from "./studio-crdt-service-contracts";
 import type { StudioCrdtServiceOptions, StudioCrdtSyncResult, StudioCrdtBinarySyncResult, StudioCrdtApplyUpdateInput, StudioCrdtApplyBinaryUpdateInput, StudioCrdtApplyUpdateResult, StudioCrdtApplyBinaryUpdateResult } from "./studio-crdt-service-contracts";
 import { randomUUID } from "node:crypto";
@@ -407,13 +409,24 @@ export class StudioCrdtService implements OnModuleDestroy {
   }
 
   async assertReaderCapability(workId: string, features: readonly string[] = []): Promise<void> {
-    if (this.hasCachedBg3dBundle(workId) && !features.includes(STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY)) throw new StudioBg3dReaderUpgradeRequiredError();
+    return this.withWorkLock(workId, async () => this.assertDocumentReaderCapability(workId, (await this.getCaughtUpDocument(workId)).doc, features));
+  }
+
+  private async assertDocumentReaderCapability(workId: string, doc: Y.Doc, features: readonly string[]): Promise<void> {
+    const required = await this.documentReaderCapabilities(workId, doc);
+    if (required.some((capability) => !features.includes(capability))) throw new StudioBg3dReaderUpgradeRequiredError(required);
     try { await this.bg3dBundles?.assertReaderCapability(workId, features); }
-    catch (error) { if (isStudioBg3dReaderUpgradeRequired(error)) throw new StudioBg3dReaderUpgradeRequiredError(); throw error; }
+    catch (error) { if (isStudioBg3dReaderUpgradeRequired(error)) throw new StudioBg3dReaderUpgradeRequiredError(studioReaderUpgradeRequiredCapabilities(error)); throw error; }
   }
 
   async requiredReaderCapabilities(workId: string): Promise<readonly string[]> {
-    return this.hasCachedBg3dBundle(workId) || await this.bg3dBundles?.hasRetainedBundles(workId) ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] : [];
+    return this.withWorkLock(workId, async () => this.documentReaderCapabilities(workId, (await this.getCaughtUpDocument(workId)).doc));
+  }
+
+  private async documentReaderCapabilities(workId: string, doc: Y.Doc): Promise<readonly string[]> {
+    const required: string[] = this.hasCachedBg3dBundle(workId) || await this.bg3dBundles?.hasRetainedBundles(workId) ? [STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY] : [];
+    if (hasStudioPreservedDrawReaderCrdt(doc)) required.push(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY);
+    return required;
   }
 
   async sync(workId: string, stateVectorBase64?: string | null, readerCapabilities: readonly string[] = []): Promise<StudioCrdtSyncResult> {
@@ -451,8 +464,8 @@ export class StudioCrdtService implements OnModuleDestroy {
           );
     return this.withWorkLock(workId, async () => {
       const entry = await this.getCaughtUpDocument(workId);
-      await this.assertReaderCapability(workId, readerCapabilities);
-      const required = await this.requiredReaderCapabilities(workId);
+      await this.assertDocumentReaderCapability(workId, entry.doc, readerCapabilities);
+      const required = await this.documentReaderCapabilities(workId, entry.doc);
       let diff: Uint8Array;
       try {
         diff = stateVector
@@ -509,8 +522,7 @@ export class StudioCrdtService implements OnModuleDestroy {
     );
     return this.withWorkLock(input.workId, async () => {
       const entry = await this.getCaughtUpDocument(input.workId);
-      await this.assertReaderCapability(input.workId, input.readerCapabilities);
-      const required = await this.requiredReaderCapabilities(input.workId);
+      await this.assertDocumentReaderCapability(input.workId, entry.doc, input.readerCapabilities ?? []);
       const persisted = await this.repository.appendUpdate(
         {
           workId: input.workId,
@@ -537,6 +549,7 @@ export class StudioCrdtService implements OnModuleDestroy {
 
       // 다른 API의 동시 커밋까지 포함하도록 영속 sequence에서 캐시를 다시 읽는다.
       await this.catchUpDocument(input.workId, entry);
+      const required = await this.documentReaderCapabilities(input.workId, entry.doc);
       entry.lastAccessedAt = this.now().getTime();
       await this.maybeCompact(input.workId, entry);
       await this.rasterCheckpointCoordinator?.maybeEnqueue(
@@ -812,6 +825,10 @@ export class StudioCrdtService implements OnModuleDestroy {
     const workAssetReferencesBefore = snapshotStudioWorkAssetReferences(doc);
     const r8GrainReferencesBefore = snapshotStudioCrdtR8GrainReferences(doc);
     try {
+      assertStudioLegacyPigmentArchiveReader(baseline, readerCapabilities);
+      if (hasStudioPreservedDrawReaderCrdt(doc) && !readerCapabilities.includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY)) {
+        throw new StudioBg3dReaderUpgradeRequiredError([STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY]);
+      }
       Y.applyUpdate(candidate, update, "server-validation-candidate");
       if (conflictsWithStudioCrdtRasterRootSnapshot(rasterRootsBefore, candidate)) {
         throw new StudioCrdtInvalidPayloadError(
@@ -822,6 +839,10 @@ export class StudioCrdtService implements OnModuleDestroy {
       Y.applyUpdate(probe, update, "server-validation-update");
       if (!hasValidStudioCrdtRootSchema(probe)) {
         throw new StudioCrdtInvalidPayloadError("update violates the Studio CRDT root schema");
+      }
+      if (hasStudioPreservedDrawReaderCrdt(probe)
+        && !readerCapabilities.includes(STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY)) {
+        throw new StudioBg3dReaderUpgradeRequiredError([STUDIO_LEGACY_PIGMENT_PRESERVATION_CAPABILITY]);
       }
       await assertStudioLegacyPigmentArchiveCrdtAdmission({ workId, baseline, before: doc, after: probe, transaction });
       if (!preservesStudioCrdtDeletionRoots(deletionRootsBefore, probe)) {
@@ -966,7 +987,7 @@ export class StudioCrdtService implements OnModuleDestroy {
       else if (snapshotStudioCrdtBg3dBundles(probe).revisions.size) throw new StudioCrdtInvalidPayloadError("6패스 봉인 검증 권위가 없습니다.");
       return await validateAuthority?.(doc, probe);
     } catch (error) {
-      if (isStudioBg3dReaderUpgradeRequired(error)) throw new StudioBg3dReaderUpgradeRequiredError();
+      if (isStudioBg3dReaderUpgradeRequired(error)) throw new StudioBg3dReaderUpgradeRequiredError(studioReaderUpgradeRequiredCapabilities(error));
       if (
         error instanceof StudioScopedWriteDeniedError || error instanceof StudioCrdtDocumentTooLargeError ||
         error instanceof StudioCrdtInvalidPayloadError
