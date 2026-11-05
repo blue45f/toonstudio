@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  createStudioInAppPreviewApiDiagnostics,
   dismissStudioInAppFirstRunSurfaces,
   installStudioInAppFirstRunState,
   installStudioInAppGuestBoundary,
@@ -283,5 +284,103 @@ describe("in-app brush selection transition", () => {
     await expect(selectStudioInAppInactiveBrush(state.library, state.interaction))
       .rejects.toThrow("control click failed; hit-test=overlay");
     expect(state.interaction.settle).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("인앱 정적 프리뷰 API 진단 경계", () => {
+  const origin = "http://127.0.0.1:5291";
+  const missingApi = "Failed to load resource: the server responded with a status of 502 (Bad Gateway)";
+  it.each(["/api/health/ready", "/api/health/capabilities", "/api/studio-realtime/tickets"])(
+    "정확한 격리 프리뷰 502 %s를 성공 API와 구분해 기록한다", (path) => {
+      const diagnostics = createStudioInAppPreviewApiDiagnostics(origin);
+      expect(diagnostics.recordConsole(missingApi, origin + path)).toBe(true);
+      expect(diagnostics.unavailable).toEqual([`${missingApi} @ ${origin}${path}`]);
+    },
+  );
+  it.each([undefined, "https://www.toonstudio.cloud", "http://localhost:5291", "http://127.0.0.1", "invalid"])(
+    "격리 프리뷰가 아닌 %s에는 환경 예외를 적용하지 않는다", (url) => {
+      const diagnostics = createStudioInAppPreviewApiDiagnostics(url);
+      expect(diagnostics.recordConsole(missingApi, `${origin}/api/health/capabilities`)).toBe(false);
+      diagnostics.recordResponse(502, `${origin}/api/creator/role-workspaces/global`, "GET");
+      expect(diagnostics.recordConsole(missingApi, `${origin}/api/creator/role-workspaces/global`)).toBe(false);
+      expect(diagnostics.unavailable).toEqual([]);
+    },
+  );
+  it.each([401, 403, 404, 500, 503])("상태 %i와 API 권한 오류는 계속 실패한다", (status) => {
+    const diagnostics = createStudioInAppPreviewApiDiagnostics(origin);
+    expect(diagnostics.recordConsole(missingApi.replace("502 (Bad Gateway)", `${status} (Error)`),
+      `${origin}/api/health/capabilities`)).toBe(false);
+  });
+  it("직무 기본값 조회는 실제 같은 오리진 GET 502 응답이 있을 때만 분리한다", () => {
+    const diagnostics = createStudioInAppPreviewApiDiagnostics(origin);
+    const path = `${origin}/api/creator/role-workspaces/global`;
+    expect(diagnostics.recordConsole(missingApi, path)).toBe(false);
+    diagnostics.recordResponse(502, path, "PUT");
+    diagnostics.recordResponse(500, path, "GET");
+    expect(diagnostics.recordConsole(missingApi, path)).toBe(false);
+    diagnostics.recordResponse(502, path, "GET");
+    expect(diagnostics.recordConsole(missingApi, path)).toBe(true);
+    expect(diagnostics.unavailable).toEqual([`${missingApi} @ ${path}`]);
+    // 이전 GET 실패를 근거로 이후 PUT 쓰기 실패까지 제외하지 않는다.
+    diagnostics.recordResponse(502, path, "PUT");
+    expect(diagnostics.recordConsole(missingApi, path)).toBe(false);
+    diagnostics.recordResponse(502, path, "GET");
+    diagnostics.recordResponse(502, path, "PUT");
+    expect(diagnostics.recordConsole(missingApi, path)).toBe(false);
+  });
+  it.each(["/api/creator/works/save", "/api/creator/role-workspaces/global?write=1", "/api/health/capabilities?probe=1", "/assets/editor.js"])(
+    "문서 쓰기와 다른 경로 %s의 502는 계속 실패한다", (path) => {
+      const diagnostics = createStudioInAppPreviewApiDiagnostics(origin);
+      diagnostics.recordResponse(502, origin + path, "GET");
+      expect(diagnostics.recordConsole(missingApi, origin + path)).toBe(false);
+      expect(diagnostics.unavailable).toEqual([]);
+    },
+  );
+  it("다른 로컬 서비스와 외부 API의 동일 경로는 계속 실패한다", () => {
+    const diagnostics = createStudioInAppPreviewApiDiagnostics(origin);
+    for (const foreign of ["http://127.0.0.1:5292", "https://www.toonstudio.cloud"]) {
+      diagnostics.recordResponse(502, `${foreign}/api/creator/role-workspaces/global`, "GET");
+      expect(diagnostics.recordConsole(missingApi, `${foreign}/api/creator/role-workspaces/global`)).toBe(false);
+      expect(diagnostics.recordConsole(missingApi, `${foreign}/api/health/capabilities`)).toBe(false);
+    }
+  });
+});
+
+
+describe("인앱 격리 프리뷰 입장권 요청 취소 경계", () => {
+  const origin = "http://127.0.0.1:5291";
+  const url = `${origin}/api/studio-realtime/tickets`;
+  it("같은 프리뷰의 POST fetch 입장권 중단만 미확인 환경 진단으로 기록한다", () => {
+    const diagnostics = createStudioInAppPreviewApiDiagnostics(origin);
+    expect(diagnostics.recordCancelledRequest(url, "POST", "fetch", "net::ERR_ABORTED", 502)).toBe(true);
+    expect(diagnostics.unavailable).toEqual([`입장권 요청 취소: POST ${url} — net::ERR_ABORTED`]);
+  });
+  it.each([
+    [url, "GET", "fetch", "net::ERR_ABORTED"],
+    [url, "PUT", "fetch", "net::ERR_ABORTED"],
+    [url, "POST", "xhr", "net::ERR_ABORTED"],
+    [url, "POST", "script", "net::ERR_ABORTED"],
+    [url, "POST", "fetch", "net::ERR_FAILED"],
+    [url, "POST", "fetch", "net::ERR_CONNECTION_REFUSED"],
+    [url + "?room=real", "POST", "fetch", "net::ERR_ABORTED"],
+    [url + "/", "POST", "fetch", "net::ERR_ABORTED"],
+    [`${origin}/api/creator/works/save`, "POST", "fetch", "net::ERR_ABORTED"],
+    ["http://127.0.0.1:5292/api/studio-realtime/tickets", "POST", "fetch", "net::ERR_ABORTED"],
+    ["https://www.toonstudio.cloud/api/studio-realtime/tickets", "POST", "fetch", "net::ERR_ABORTED"],
+  ])("다른 요청 %s %s %s %s의 실패는 제외하지 않는다", (path, method, type, failure) => {
+    const diagnostics = createStudioInAppPreviewApiDiagnostics(origin);
+    expect(diagnostics.recordCancelledRequest(path, method, type, failure, 502)).toBe(false);
+    expect(diagnostics.unavailable).toEqual([]);
+  });
+  it.each([undefined, 200, 401, 403, 500, 503])("실제 502 응답이 아닌 %s의 중단은 제외하지 않는다", (status) => {
+    const diagnostics = createStudioInAppPreviewApiDiagnostics(origin);
+    expect(diagnostics.recordCancelledRequest(url, "POST", "fetch", "net::ERR_ABORTED", status)).toBe(false);
+    expect(diagnostics.unavailable).toEqual([]);
+  });
+  it.each([undefined, "https://www.toonstudio.cloud"])("외부 검사 %s에는 적용하지 않는다", (preview) => {
+    const diagnostics = createStudioInAppPreviewApiDiagnostics(preview);
+    expect(diagnostics.recordCancelledRequest(url, "POST", "fetch", "net::ERR_ABORTED", 502)).toBe(false);
+    expect(diagnostics.unavailable).toEqual([]);
   });
 });

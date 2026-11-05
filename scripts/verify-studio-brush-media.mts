@@ -1,18 +1,6 @@
 /**
  * Browser quality gate for representative shipped Studio brush media.
- *
- * Unlike the exhaustive catalogue verifier, this gate inspects a small, intentional cross-section
- * deeply: pencil, G-pen, airbrush, wet/granular watercolor, fibrous texture, oil/bristle, and
- * highlighter. Each medium is drawn through the production `/studio` UI on an isolated page,
- * captured live, settled after pointerup, undone, redone, and accumulated over three identical
- * curved passes.
- *
- * Run after `pnpm build`:
- *   pnpm run verify:studio-brush-media
- *
- * Evidence:
- *   TOONSPECTRUM_BRUSH_MEDIA_VERIFY_DIR=/tmp/my-run \
- *     pnpm run verify:studio-brush-media
+ * 프로덕션 빌드를 마친 뒤 실행한다.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { writeFileSync, appendFileSync } from "node:fs";
@@ -34,6 +22,11 @@ import {
   type StudioBrushCatalogItem,
 } from "../apps/web/src/domains/creator/brush/studio-brush-catalog";
 
+import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import {
+  isStaticPreviewReadinessResponse,
+  isStaticPreviewReadinessUnavailable,
+} from "./lib/studio-preview-readiness";
 import {
   enabledStudioHistoryControl,
 } from "./lib/studio-verify-history-controls.mjs";
@@ -77,19 +70,16 @@ const OPTIONAL_STATIC_PREVIEW_PATHS = [
   "/socket.io/",
 ] as const;
 const SETTLE_MS = 340;
-
 interface ScreenPoint {
   readonly x: number;
   readonly y: number;
 }
-
 interface ScreenshotClip {
   readonly x: number;
   readonly y: number;
   readonly width: number;
   readonly height: number;
 }
-
 interface BrowserFrameMetrics extends StudioBrushMediaFrameMetrics {
   readonly bounds: Readonly<{
     left: number;
@@ -98,7 +88,6 @@ interface BrowserFrameMetrics extends StudioBrushMediaFrameMetrics {
     bottom: number;
   }> | null;
 }
-
 interface BrushRoute {
   readonly points: readonly ScreenPoint[];
   readonly localPoints: readonly ScreenPoint[];
@@ -107,11 +96,11 @@ interface BrushRoute {
   readonly crossSectionRadius: number;
   readonly cursorIgnoreRadius: number;
 }
-
 interface BrowserErrors {
   readonly console: string[];
   readonly page: string[];
   readonly responses: string[];
+  readonly staticPreviewReadinessUnavailable: string[];
 }
 
 interface BrushMediaArtifacts {
@@ -162,14 +151,17 @@ function expectedStaticPreviewFailure(message: string): boolean {
   return OPTIONAL_STATIC_PREVIEW_PATHS.some((path) => message.includes(path));
 }
 
-function collectBrowserErrors(page: Page, label: string): BrowserErrors {
-  const errors: BrowserErrors = { console: [], page: [], responses: [] };
+function collectBrowserErrors(page: Page, label: string, studioUrl: string): BrowserErrors {
+  const errors: BrowserErrors = { console: [], page: [], responses: [], staticPreviewReadinessUnavailable: [] };
+  const ownedStaticPreview = !process.env.TOONSPECTRUM_VERIFY_ORIGIN?.trim();
   page.on("console", (entry) => {
     if (entry.type() !== "error") return;
     const message = entry.location().url
       ? `${entry.text()} @ ${entry.location().url}`
       : entry.text();
-    if (!expectedStaticPreviewFailure(message)) errors.console.push(`${label}: ${message}`);
+    if (ownedStaticPreview && isStaticPreviewReadinessUnavailable(message, studioUrl)) {
+      errors.staticPreviewReadinessUnavailable.push(`${label}: ${message}`);
+    } else if (!expectedStaticPreviewFailure(message)) errors.console.push(`${label}: ${message}`);
   });
   page.on("pageerror", (error) => {
     errors.page.push(`${label}: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
@@ -177,7 +169,9 @@ function collectBrowserErrors(page: Page, label: string): BrowserErrors {
   page.on("response", (response) => {
     if (response.status() < 500) return;
     const message = `${response.status()} ${response.url()}`;
-    if (!expectedStaticPreviewFailure(message)) errors.responses.push(`${label}: ${message}`);
+    if (ownedStaticPreview && isStaticPreviewReadinessResponse(response.status(), response.url(), studioUrl)) {
+      errors.staticPreviewReadinessUnavailable.push(`${label}: ${message}`);
+    } else if (!expectedStaticPreviewFailure(message)) errors.responses.push(`${label}: ${message}`);
   });
   return errors;
 }
@@ -214,6 +208,7 @@ async function prepareStudioPage(page: Page, studioUrl: string): Promise<void> {
   await page.evaluate("globalThis.__name ??= (target) => target");
   const stage = page.locator(".konvajs-content").first();
   await stage.waitFor({ state: "visible", timeout: 15_000 });
+  await waitForStudioDrawingReady(page, { requireWelcome: true });
   await page.keyboard.press("b");
   const toolbar = page.getByRole("toolbar", { name: /그리기 옵션/u });
   await toolbar.waitFor({ state: "visible", timeout: 10_000 });
@@ -242,7 +237,12 @@ async function selectBrush(
   brush: Pick<StudioBrushCatalogItem, "id" | "name">,
 ): Promise<void> {
   const toolbar = page.getByRole("toolbar", { name: /그리기 옵션/u });
-  await toolbar.getByRole("button", { name: /브러시 선택 열기$/u }).click();
+  const dock = page.locator('[data-studio-brush-workbench-dock="true"]');
+  if (!await dock.isVisible()) {
+    await toolbar.getByRole("button", { name: /브러시 선택 열기$/u }).click();
+  }
+  await dock.waitFor({ state: "visible" });
+  await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
   const catalog = page.getByRole("dialog", { name: "브러시 전체 라이브러리" });
   await catalog.waitFor({ state: "visible" });
   await catalog.getByRole("searchbox", { name: "전체 브러시 검색" }).fill(brush.id);
@@ -911,7 +911,7 @@ async function runBrushMedium(
     deviceScaleFactor: 1,
   });
   const page = await context.newPage();
-  const browserErrors = collectBrowserErrors(page, policy.id);
+  const browserErrors = collectBrowserErrors(page, policy.id, studioUrl);
 
   try {
     await prepareStudioPage(page, studioUrl);

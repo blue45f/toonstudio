@@ -184,7 +184,6 @@ export interface StudioMainMenuUiActions extends StudioMainMenuSurfaceActions {
   /** §15.3 Brush ▸ Natural Media — the hokusai natural-media engines section. */
   openNaturalMediaBrushes: () => unknown;
 }
-
 /** What every per-group item module receives. Read-only projection of the host. */
 export interface StudioMainMenuItemContext {
   readonly state: StudioMainMenuBuilderState;

@@ -8,12 +8,6 @@
  * While physical mode is retired, the admission gate instead proves absent controls/workers and
  * independently editable watercolor strokes with Undo/Redo on desktop and mobile. Its distinct
  * report schema does not satisfy the historical physical-mode validator below.
- *
- * Run only after a production build already exists:
- *   pnpm exec tsx scripts/verify-studio-living-ink-integration.mts
- * Reuse an existing production preview:
- *   TOONSPECTRUM_VERIFY_ORIGIN=http://127.0.0.1:5199 \
- *     pnpm exec tsx scripts/verify-studio-living-ink-integration.mts
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -42,6 +36,7 @@ import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosa
 import { STUDIO_LIVING_INK_NEW_PHYSICAL_STROKES_ENABLED } from "../apps/web/src/domains/creator/studio-living-ink-brush-admission";
 
 import { DIST_DIR } from "./lib/repo-paths.mjs";
+import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import {
   findFreePort,
@@ -78,7 +73,6 @@ const OPTIONAL_STATIC_PREVIEW_API_PATHS = [
   "/api/studio-ai/status",
   "/api/analytics/traffic/",
 ] as const;
-
 interface BrowserDiagnostics {
   readonly consoleErrors: string[];
   readonly consoleWarnings: string[];
@@ -86,7 +80,6 @@ interface BrowserDiagnostics {
   readonly requestFailures: string[];
   readonly fiveHundredResponses: string[];
 }
-
 interface WorkerRequestEvidence {
   readonly requestId: number | null;
   readonly type: string;
@@ -1249,10 +1242,7 @@ async function prepareStudio(page: Page, studioUrl: string): Promise<void> {
   await page.goto(studioUrl, { waitUntil: "domcontentloaded", timeout: 25_000 });
   await page.locator('[data-studio-editor="true"]').waitFor({ state: "visible", timeout: 15_000 });
   await page.locator(".konvajs-content").first().waitFor({ state: "visible", timeout: 15_000 });
-  const starter = page.locator('[data-studio-creative-starter="true"]');
-  if (await starter.waitFor({ state: "visible", timeout: 3_000 }).then(() => true).catch(() => false)) {
-    await starter.locator('[data-studio-quickstart-dismiss="true"]').click();
-  }
+  await waitForStudioDrawingReady(page);
 }
 
 async function activatePenAndWatercolor(
@@ -1290,8 +1280,18 @@ async function activatePenAndWatercolor(
       : '[data-studio-brush-active-pill="true"]',
   );
   await catalogTrigger.waitFor({ state: "visible" });
-  await catalogTrigger.click();
-  const catalogue = page.locator('[data-studio-brush-catalog-session="true"]');
+  if (mobileDockVisible) {
+    await catalogTrigger.click();
+  } else {
+    const dock = page.locator('[data-studio-brush-workbench-dock="true"]');
+    if (!await dock.isVisible()) await catalogTrigger.click();
+    await dock.waitFor({ state: "visible" });
+    await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
+  }
+  const catalogue = mobileDockVisible
+    ? page.locator('[data-studio-brush-catalog-session="true"]')
+    : page.locator('[role="dialog"][data-studio-brush-floating]')
+      .locator('[data-studio-brush-catalog-session="true"]');
   await catalogue.waitFor({ state: "visible" });
   await catalogue.getByRole("searchbox", { name: "전체 브러시 검색" }).fill(BRUSH.id);
   await catalogue.getByRole("button", { name: `${BRUSH.name} 선택`, exact: true }).click();

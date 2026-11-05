@@ -1,6 +1,5 @@
 /**
  * Production-preview brush input-to-pixel latency gate.
- *
  * The browser-side probe timestamps trusted pointer events with performance.now(), then samples a
  * small compositor patch on each requestAnimationFrame. Probe patches sit behind the moving cursor,
  * so cursor motion is not mistaken for ink. The default command is a hard per-stroke smoke gate;
@@ -25,6 +24,8 @@ import {
   type StudioBrushCatalogItem,
 } from "../apps/web/src/domains/creator/brush/studio-brush-catalog";
 
+import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import {
   cleanScratchDir,
   findFreePort,
@@ -78,25 +79,22 @@ const OPTIONAL_LOOPBACK_PREVIEW_PATHS = new Set([
   "/api/analytics/traffic/page-view",
   "/api/analytics/traffic/heartbeat",
 ]);
-
 interface ScreenPoint {
   readonly x: number;
   readonly y: number;
 }
-
 interface ScreenshotClip {
   readonly x: number;
   readonly y: number;
   readonly width: number;
   readonly height: number;
 }
-
 interface BrowserErrors {
   readonly console: string[];
   readonly page: string[];
   readonly responses: string[];
+  readonly staticPreviewReadinessUnavailable: string[];
 }
-
 interface BrushLatencyResult {
   readonly id: StudioBrushLatencyId;
   readonly name: string;
@@ -112,9 +110,7 @@ interface BrushLatencyResult {
   readonly artifacts: Readonly<{ live: string; settled: string }>;
   readonly browserErrors: BrowserErrors;
 }
-
 const COMPETITIVE_LONG_STROKE_FLAG = "--competitive-long-stroke";
-
 function log(message: string): void {
   const line = `[verify-studio-brush-latency] ${message}`;
   console.log(line);
@@ -171,13 +167,16 @@ export function expectedStudioBrushLatencyPreviewFailure(
 }
 
 function collectBrowserErrors(page: Page, label: string, studioUrl: string): BrowserErrors {
-  const errors: BrowserErrors = { console: [], page: [], responses: [] };
+  const errors: BrowserErrors = { console: [], page: [], responses: [], staticPreviewReadinessUnavailable: [] };
+  const ownedStaticPreview = !process.env.TOONSPECTRUM_VERIFY_ORIGIN?.trim();
   page.on("console", (entry) => {
     if (entry.type() !== "error") return;
     const message = entry.location().url
       ? `${entry.text()} @ ${entry.location().url}`
       : entry.text();
-    if (!expectedStudioBrushLatencyPreviewFailure(message, studioUrl)) {
+    if (ownedStaticPreview && isStaticPreviewReadinessUnavailable(message, studioUrl)) {
+      errors.staticPreviewReadinessUnavailable.push(`${label}: ${message}`);
+    } else if (!expectedStudioBrushLatencyPreviewFailure(message, studioUrl)) {
       errors.console.push(`${label}: ${message}`);
     }
   });
@@ -187,7 +186,9 @@ function collectBrowserErrors(page: Page, label: string, studioUrl: string): Bro
   page.on("response", (response) => {
     if (response.status() < 500) return;
     const message = `${response.status()} ${response.url()}`;
-    if (!expectedStudioBrushLatencyPreviewFailure(message, studioUrl)) {
+    if (ownedStaticPreview && isStaticPreviewReadinessResponse(response.status(), response.url(), studioUrl)) {
+      errors.staticPreviewReadinessUnavailable.push(`${label}: ${message}`);
+    } else if (!expectedStudioBrushLatencyPreviewFailure(message, studioUrl)) {
       errors.responses.push(`${label}: ${message}`);
     }
   });
@@ -218,6 +219,7 @@ async function prepareStudio(page: Page, studioUrl: string): Promise<void> {
     state: "visible",
     timeout: 15_000,
   });
+  await waitForStudioDrawingReady(page, { requireWelcome: true });
   await page.keyboard.press("b");
   const toolbar = page.getByRole("toolbar", { name: /그리기 옵션/u });
   await toolbar.waitFor({ state: "visible" });
@@ -243,9 +245,14 @@ async function selectBrush(
       ?.getAttribute("data-studio-active-draw-mode") === expectedMode,
     nextMode,
   );
-  await toolbar.getByRole("button", {
+  const dock = page.locator('[data-studio-brush-workbench-dock="true"]');
+  if (!await dock.isVisible()) await toolbar.getByRole("button", {
     name: brush.operation === "erase" ? /지우개 선택 열기$/u : /브러시 선택 열기$/u,
   }).click();
+  await dock.waitFor({ state: "visible" });
+  await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
+  const floating = page.locator('[role="dialog"][data-studio-brush-floating]');
+  await floating.waitFor({ state: "visible" });
   const catalog = page.getByRole("dialog", {
     name: brush.operation === "erase" ? "지우개 선택" : "브러시 전체 라이브러리",
   });
@@ -701,7 +708,6 @@ async function runBrushLatency(
     await armInputProbe(page, "pointerdown", 0, first, route.patchSize);
     await page.mouse.down();
     const pointerDown = await inputProbeResult(page);
-
     const pointerMoves: StudioBrushInputLatencySample[] = [];
     for (let index = 1; index < route.points.length; index += 1) {
       const previous = route.points[index - 1]!;
@@ -714,7 +720,6 @@ async function runBrushLatency(
       await page.mouse.move(next.x, next.y);
       pointerMoves.push(await inputProbeResult(page));
     }
-
     await page.screenshot({
       path: livePath,
       animations: "disabled",
@@ -729,7 +734,6 @@ async function runBrushLatency(
       animations: "disabled",
       clip: route.clip,
     });
-
     const metrics: StudioBrushLatencyCaseMetrics = {
       id,
       pointerDown,
@@ -828,7 +832,6 @@ async function runBrushLatency(
     await context.close();
   }
 }
-
 async function runCompetitiveLongSessionResourceProbe(
   browser: Browser,
   studioUrl: string,
@@ -858,7 +861,6 @@ async function runCompetitiveLongSessionResourceProbe(
     await context.close();
   }
 }
-
 async function main(): Promise<void> {
   cleanScratchDir({
     directory: SCRATCH,
@@ -898,7 +900,7 @@ async function main(): Promise<void> {
   const origin = externalOrigin
     ? `${externalOrigin.replace(/\/+$/u, "")}/`
     : `http://127.0.0.1:${port}/`;
-  const studioUrl = `${origin}studio`;
+  const studioUrl = `${origin}studio/canvas`;
   const server: ChildProcess | null = externalOrigin
     ? null
     : spawn(process.execPath, [
@@ -912,7 +914,6 @@ async function main(): Promise<void> {
       ], { stdio: ["ignore", "pipe", "pipe"] });
   server?.stdout?.on("data", (chunk) => appendFileSync(LOG_PATH, String(chunk)));
   server?.stderr?.on("data", (chunk) => appendFileSync(LOG_PATH, String(chunk)));
-
   let browser: Browser | null = null;
   const results: BrushLatencyResult[] = [];
   const executionFailures: Array<{ caseId: string; message: string }> = [];
@@ -1029,7 +1030,6 @@ async function main(): Promise<void> {
     if (server) await stopChildProcess(server, { releaseStdio: false }).catch(() => undefined);
   }
 }
-
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   void main().then(
     () => process.exit(0),

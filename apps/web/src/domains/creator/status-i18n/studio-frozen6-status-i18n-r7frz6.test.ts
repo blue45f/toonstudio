@@ -109,6 +109,8 @@ function extractFrozenCalls(source: string): Array<[string, string]> {
 
 const MODULE_FILE = "status-i18n/studio-frozen6-status-i18n.ts";
 const PREFIX = "studio.frozenStatus6.";
+// 공통 페이지 사전 검사로 분리된 키도 소비·폴백 검증에 포함한다. 기존 파일 줄 수 기준은 유지한다.
+const EXTRACTED_CONSUMERS = ["page/studio-page-set-commit-admission.ts"] as const;
 const CONSUMERS = [
   "studio-pdf-conformance-profile.ts",
   "export/studio-export-presets.ts",
@@ -214,7 +216,7 @@ describe("frozen non-tsx status i18n r7frz6", () => {
   });
 
   it("전 키가 소비 파일에서 참조되고 미등록 참조가 없다", () => {
-    const consumerSource = CONSUMERS.map((file) => readSource(file)).join("\n");
+    const consumerSource = [...CONSUMERS, ...EXTRACTED_CONSUMERS].map((file) => readSource(file)).join("\n");
     for (const key of ALL_KEYS) {
       expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
     }
@@ -227,7 +229,7 @@ describe("frozen non-tsx status i18n r7frz6", () => {
   });
 
   it("소비 파일의 폴백 인자가 등록된 ko 원문과 일치한다", () => {
-    for (const file of CONSUMERS) {
+    for (const file of [...CONSUMERS, ...EXTRACTED_CONSUMERS]) {
       for (const [key, fallback] of extractFrozenCalls(readSource(file))) {
         expect(fallback, `${file}: fallback mismatch for ${key}`).toBe(blocks.ko[key]);
       }

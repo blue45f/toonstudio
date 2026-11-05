@@ -31,6 +31,8 @@ import { planStudioDrawObjectTransform } from "../apps/web/src/domains/creator/b
 import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosave";
 import { STUDIO_DRAFT_CANVAS_PATHNAME } from "../apps/web/src/domains/creator/studio-workspace-route";
 
+import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import { setStudioPrimaryColorThroughUi } from "./lib/studio-primary-color-interactions";
 import {
   readDurableStudioAutosaveDocument,
   readDurableStudioAutosaveError,
@@ -401,6 +403,7 @@ async function prepareStudioPage(page: Page, studioUrl: string): Promise<void> {
     state: "visible",
     timeout: 15_000,
   });
+  await waitForStudioDrawingReady(page, { requireWelcome: true });
   await dismissTransientChrome(page);
   const shellState = await page.evaluate(() => ({
     bodyTextLength: document.body.innerText.trim().length,
@@ -1894,10 +1897,7 @@ async function createMixedFixture(
 ): Promise<{ drawPath: ScreenPoint[]; initial: PersistedSnapshot }> {
   await page.keyboard.press("b");
   await page.locator('[data-studio-draw-options="true"]').waitFor({ state: "visible" });
-  const primaryColor = await visible(
-    page.locator('input[type="color"][aria-label^="주 색 선택"]'),
-  );
-  await primaryColor.fill(LIVE_DRAW_STROKE);
+  await setStudioPrimaryColorThroughUi(page, LIVE_DRAW_STROKE);
   const stage = page.locator(".konvajs-content").first();
   const stageBox = await stage.boundingBox();
   const viewport = page.viewportSize();
@@ -1929,9 +1929,9 @@ async function createMixedFixture(
 
   // Text insertion inherits Studio's primary colour. Reset it so the native SceneCanvas sentinel
   // scan can attribute every green pixel to the draw fixture instead of unioning a distant glyph.
-  await primaryColor.fill(FIXTURE_TEXT_FILL);
+  await setStudioPrimaryColorThroughUi(page, FIXTURE_TEXT_FILL);
   invariant(
-    (await primaryColor.inputValue()).toLowerCase() === FIXTURE_TEXT_FILL,
+    (await page.locator('[data-studio-draw-options="true"] [data-studio-dual-color-well="true"]').getAttribute("data-studio-primary-color")) === FIXTURE_TEXT_FILL,
     "fixture primary colour did not leave the draw pixel sentinel",
   );
   const addText = await visible(

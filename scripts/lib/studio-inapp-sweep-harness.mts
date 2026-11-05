@@ -11,7 +11,46 @@
  * things tells you an error happened; it does not tell you which affordance is broken. Each error
  * carries the step id that was in flight when it arrived.
  */
-import { chromium, type Browser, type ConsoleMessage, type Locator, type Page } from "playwright";
+import { chromium, type Browser, type ConsoleMessage, type Locator, type Page, type Request } from "playwright";
+
+import { isStaticPreviewReadinessUnavailable } from "./studio-preview-readiness";
+
+/** API가 없는 격리 프리뷰의 정확한 502만 별도 기록한다. 운영 오류와 저장 요청은 제외하지 않는다. */
+export function createStudioInAppPreviewApiDiagnostics(previewUrl?: string) {
+  const unavailable: string[] = [];
+  const workspaceResponses = new Map<string, boolean>();
+  let origin: string | null = null;
+  try {
+    const url = new URL(previewUrl ?? "");
+    if (url.protocol === "http:" && url.hostname === "127.0.0.1" && url.port
+      && !url.username && !url.password) origin = url.origin;
+  } catch { /* 실제 프리뷰 URL이 없으면 환경 예외를 적용하지 않는다. */ }
+  return {
+    unavailable,
+    recordResponse(status: number, url: string, method: string): void {
+      // 직무 설정 조회는 로컬 기본값으로 복구된다. PUT 등 실제 쓰기 실패는 그대로 실패한다.
+      if (origin && url === `${origin}/api/creator/role-workspaces/global`) {
+        workspaceResponses.set(url, status === 502 && method === "GET");
+      }
+    },
+    recordCancelledRequest(url: string, method: string, resourceType: string, failure: string, responseStatus?: number): boolean {
+      if (!origin || url !== `${origin}/api/studio-realtime/tickets` || method !== "POST"
+        || resourceType !== "fetch" || failure !== "net::ERR_ABORTED" || responseStatus !== 502) return false;
+      // API 없는 프리뷰의 짧은 입장권 요청 취소다. 발급 성공이나 서버 연결 검증을 뜻하지 않는다.
+      unavailable.push(`입장권 요청 취소: ${method} ${url} — ${failure}`);
+      return true;
+    },
+    recordConsole(text: string, url: string): boolean {
+      const subject = `${text} @ ${url}`;
+      const missingWorkspace = workspaceResponses.get(url) === true
+        && text === "Failed to load resource: the server responded with a status of 502 (Bad Gateway)";
+      if (!previewUrl || (!isStaticPreviewReadinessUnavailable(subject, previewUrl) && !missingWorkspace)) return false;
+      workspaceResponses.delete(url);
+      unavailable.push(subject);
+      return true;
+    },
+  };
+}
 
 /** A phone-sized embedded WebView. Heights exclude the native bars that eat the viewport. */
 export interface StudioInAppProfile {
@@ -118,6 +157,7 @@ export interface StudioInAppStep {
 
 export interface StudioInAppErrorCollector {
   readonly errors: StudioInAppRuntimeError[];
+  readonly unavailablePreviewApis: readonly string[];
   setStep: (step: string) => void;
   drain: () => StudioInAppRuntimeError[];
 }
@@ -131,8 +171,15 @@ export interface StudioInAppErrorCollector {
  */
 export async function collectStudioInAppRuntimeErrors(
   page: Page,
+  options: { readonly staticPreviewUrl?: string } = {},
 ): Promise<StudioInAppErrorCollector> {
   const errors: StudioInAppRuntimeError[] = [];
+  const previewApis = createStudioInAppPreviewApiDiagnostics(options.staticPreviewUrl);
+  const responseStatuses = new WeakMap<Request, number>();
+  page.on("response", (response) => {
+    responseStatuses.set(response.request(), response.status());
+    previewApis.recordResponse(response.status(), response.url(), response.request().method());
+  });
   let currentStep = "boot";
   let drained = 0;
 
@@ -151,12 +198,14 @@ export async function collectStudioInAppRuntimeErrors(
   page.on("console", (message: ConsoleMessage) => {
     if (message.type() !== "error") return;
     const location = message.location();
+    if (previewApis.recordConsole(message.text(), location.url)) return;
     const where = location.url ? ` @ ${location.url}:${location.lineNumber}` : "";
     push("console", `${message.text()}${where}`, null);
   });
   page.on("requestfailed", (request) => {
     const failure = request.failure();
     const errorText = failure?.errorText ?? "failed";
+    if (previewApis.recordCancelledRequest(request.url(), request.method(), request.resourceType(), errorText, responseStatuses.get(request))) return;
     // net::ERR_ABORTED 는 브라우저가 시킨 대로 한 결과다 — 사용자가 화면을 떠나면 진행 중이던
     // 다운로드는 취소된다. 이 스윕은 라우트를 빠르게 옮겨 다니므로 몇 MB짜리 VRM 을 매번
     // 중간에 끊는데, 그건 제품 결함이 아니다. 진짜로 없는 리소스는 404(console)나
@@ -227,6 +276,7 @@ export async function collectStudioInAppRuntimeErrors(
 
   return {
     errors,
+    unavailablePreviewApis: previewApis.unavailable,
     setStep: (step: string) => {
       currentStep = step;
     },

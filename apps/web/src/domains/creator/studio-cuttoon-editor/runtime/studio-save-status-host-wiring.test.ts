@@ -52,7 +52,7 @@ describe("studio save-status + first-screen host wiring", () => {
   it("view mounts the save-status chrome from the host session and retries via the autosave nonce", () => {
     const host = read(HOST);
     expect(host).toContain("saveSyncStore={saveSyncStore}");
-    expect(host).toContain("requestSaveFlush={() => setAutosaveRetryNonce((current) => current + 1)}");
+    expect(host).toContain('requestSaveFlush={() => { if (scopedDraftSaveState.pendingConfirmation || (collaborationDocumentLocked && scopedDraftSaveState.available)) void handleSave("draft", { preserveEditor: true }); else setAutosaveRetryNonce((current) => current + 1); }}');
     const view = read(VIEW);
     expect(view).toContain("<StudioSaveStatusChromeMount");
     expect(view).toContain("store={s.saveSyncStore}");

@@ -57,6 +57,8 @@ describe("studio work-mode host wiring", () => {
     for (const region of FOLDED_SOMEWHERE) {
       if (region === "tool-rail") {
         expect(workspace, region).toContain('uiChromeExposure("tool-rail")');
+      } else if (region === "workflow-guide") {
+        expect(read(CHROME), region).toContain('studioUiDensityAllows(uiDensityMode, "workflow-guide")');
       } else {
         expect(groups, region).toContain(`allows("${region}")`);
       }

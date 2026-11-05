@@ -13,7 +13,7 @@ const templateSwitchHostSource = readFileSync(
 describe("BG3D built-in template switch runtime boundary", () => {
   it("overrides the legacy scene-ops command before downstream hosts capture it", () => {
     const sceneOps = attachHostsSource.indexOf("attachStudioBg3dEditorSceneOpsHost(h)");
-    const templateSwitch = attachHostsSource.indexOf("attachStudioBg3dEditorTemplateSwitchHost(h)");
+    const templateSwitch = attachHostsSource.indexOf("attachStudioBg3dEditorTemplateSwitchHost(");
     const transform = attachHostsSource.indexOf("attachStudioBg3dEditorTransformHost(h)");
 
     expect(sceneOps).toBeGreaterThan(-1);

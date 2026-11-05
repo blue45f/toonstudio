@@ -139,7 +139,7 @@ describe("inventory stays in sync with the owning modules (drift contract)", () 
     expect(read("./studio-opfs-sync-access-store.ts")).toContain(
       '"toonstudio-studio-large-documents"',
     );
-    expect(read("./studio-pages-history-durable-runtime.ts")).toContain(
+    expect(read("./studio-cuttoon-editor/runtime/history/studio-pages-history-durable-factory.ts")).toContain(
       'rootName: "toonstudio-studio-history-recovery"',
     );
     expect(read("./vrm/studio-vrm-asset-sqlite-opfs-repository.ts")).toContain(

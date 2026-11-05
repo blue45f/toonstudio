@@ -1,10 +1,8 @@
 /**
  * Production-preview vertical-slice gate for Studio's Hokusai product boundary.
- *
  * The committed full-size quality/throughput evidence intentionally blocks automatic Hokusai live
  * promotion. This verifier therefore proves two distinct shipped contracts without injecting
  * raster input or bypassing product policy:
- *
  * 1. Selecting pencil, charcoal, or oil from the normal shelf keeps the exact existing vector
  *    route. One trusted pointer gesture persists as one visible DrawEl, and no Hokusai live Worker
  *    may become ready or receive begin/frame/complete traffic.
@@ -37,6 +35,7 @@ import {
   type Page,
 } from "playwright";
 
+import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import {
   findFreePort,
   stopChildProcess,
@@ -985,10 +984,7 @@ async function prepareStudio(page: Page, studioUrl: string): Promise<void> {
     state: "visible",
     timeout: 15_000,
   });
-  const quickstart = page.locator('[data-studio-creative-starter="true"]');
-  if (await quickstart.isVisible({ timeout: 250 }).catch(() => false)) {
-    await quickstart.locator('[data-studio-quickstart-dismiss="true"]').click();
-  }
+  await waitForStudioDrawingReady(page, { requireWelcome: true });
 }
 
 async function activatePen(page: Page): Promise<void> {
@@ -1007,8 +1003,12 @@ async function selectBrush(
   brush: Readonly<{ brushId: string; brushName: string }>,
 ): Promise<void> {
   const toolbar = page.locator('[data-studio-draw-options="true"]');
-  await toolbar.locator('[data-studio-brush-active-pill="true"]').click();
-  const catalogue = page.locator('[data-studio-brush-catalog-session="true"]');
+  const dock = page.locator('[data-studio-brush-workbench-dock="true"]');
+  if (!await dock.isVisible()) await toolbar.locator('[data-studio-brush-active-pill="true"]').click();
+  await dock.waitFor({ state: "visible" });
+  await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
+  const catalogue = page.locator('[role="dialog"][data-studio-brush-floating]')
+    .locator('[data-studio-brush-catalog-session="true"]');
   await catalogue.waitFor({ state: "visible" });
   await catalogue.getByRole("searchbox", { name: "전체 브러시 검색" }).fill(brush.brushName);
   await catalogue.getByRole("button", {

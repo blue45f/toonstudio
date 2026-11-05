@@ -206,7 +206,7 @@ describe("shared character/background 3D scene integration boundary", () => {
 
   it("hides only receipt-confirmed sources in the same Studio document transition", () => {
     expect(pageSource).toContain("planStudioShared3dCapturedSourceLayerVisibility({");
-    expect(pageSource).toContain("let nextElements = [...sharedCharacterVisibility.nextElements]");
+    expect(pageSource).toContain("let nextElements = previousBundle ? preserveStudioBg3dSixPassArtistLayers(sharedCharacterVisibility.nextElements, elements, plan.bundleId) : [...sharedCharacterVisibility.nextElements]");
     expect(pageSource).toContain("hiddenElementIds.length > 0");
   });
 });

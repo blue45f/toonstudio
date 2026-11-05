@@ -212,7 +212,7 @@ describe("Varco3dProvider", () => {
     const service = new Studio3dGenerationService();
     service.setVarco3dFetchForTesting(fetchImpl);
 
-    expect(service.status().supportedProviders).toEqual(["hyper3d-rodin", "varco-3d"]);
+    expect(service.status().supportedProviders).toEqual(["hyper3d-rodin", "varco-3d", "tripo-3d"]);
 
     const created = await service.create(
       "user-varco-1",

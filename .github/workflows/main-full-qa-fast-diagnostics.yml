@@ -72,7 +72,7 @@ jobs:
           - apps/web/src/domains/creator/filter/studio-adjustment-effect-graph.test.ts
           - apps/web/src/domains/creator/layer/studio-layer-effects-graph-adapter.test.ts
           - tests/integration/web-api/domains/creator/studio-large-epics-product-wiring.test.ts
-          - apps/web/src/domains/creator/studio-soft-proofing.test.ts
+          - apps/web/src/domains/creator/studio-cuttoon-editor/studio-soft-proofing.test.ts
     steps:
       - uses: actions/checkout@v7
         with:
@@ -201,7 +201,9 @@ jobs:
         run: |
           pnpm run verify:studio-bg3d-physics
           pnpm run verify:studio-character-shaper
-          pnpm run verify:studio-ai-quality
+          # 예시 점수는 평가기 계약만 확인한다. 실제 공급자·모델 품질 검증으로 취급하지 않는다.
+          pnpm exec vitest run apps/web/src/domains/creator/ai/studio-ai-quality-benchmark.test.ts
+          pnpm run verify:studio-ai-quality --input tests/benchmarks/fixtures/studio-ai-quality.example.json
           pnpm run verify:studio-glb-export
           pnpm run verify:studio-vello-candidate
           pnpm run verify:studio-canvaskit-quality-worker

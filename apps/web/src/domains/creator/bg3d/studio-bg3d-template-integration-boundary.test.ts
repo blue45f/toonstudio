@@ -16,6 +16,9 @@ const modelImportActionsSource = readFileSync(
   new URL("./studio-bg3d-editor-model-import-actions.ts", import.meta.url),
   "utf8",
 );
+const measurementTemplateSource = readFileSync(
+  new URL("./studio-bg3d-measurement-template.ts", import.meta.url), "utf8",
+);
 const MODEL_IMPORT_ACTIONS_TAIL =
   "return { handleDeleteModelFromLibrary, handleUploadModelFiles, importModelFiles };";
 
@@ -46,13 +49,25 @@ describe("Studio BG3D user-template integration boundary", () => {
       "const handleDeleteTemplate = async",
     );
 
-    expect(save).toContain("tryAdaptStudioBg3dRuntimeToDocument({");
-    expect(save).toContain("if (!adaptation.ok)");
-    expect(save).toContain("const adapted = adaptation.value");
-    expect(save).toContain("adapted.diagnostics.length > 0");
-    expect(save).toContain("adapted.omittedDiagnosticCount > 0");
-    expect(save).toContain("adapted.counts.droppedPrimitives > 0");
-    expect(save).toContain("adapted.counts.droppedCustomModels > 0");
+    expectInOrder(save, [
+      "const snapshot = physicsRuntimeSourceRef.current",
+      "if (!hasStudioBg3dTemplateContent(snapshot)) return false",
+      "adapted = prepareStudioBg3dTemplateSave({",
+      "camera: viewportApiRef.current?.readView() ?? snapshot.document.camera",
+      "attachmentByStorageModelId: attachmentByStorageModelIdRef.current",
+      "setIsSavingTemplate(true)",
+      "await saveBg3dTemplate({",
+    ]);
+    const lossless = sourceBetweenIn(measurementTemplateSource,
+      "function losslessTemplateDocument(", "export function prepareStudioBg3dTemplateSave(");
+    expect(lossless).toContain("tryAdaptStudioBg3dRuntimeToDocument(input)");
+    expect(lossless).toContain("if (!attempt.ok) rejectTemplate()");
+    expect(lossless).toContain("const result = attempt.value");
+    expect(lossless).toContain("result.diagnostics.length !== 0");
+    expect(lossless).toContain("result.omittedDiagnosticCount !== 0");
+    expect(lossless).toContain("result.counts.droppedPrimitives !== 0");
+    expect(lossless).toContain("result.counts.droppedCustomModels !== 0");
+    expect(measurementTemplateSource).toContain("return losslessTemplateDocument({");
     expect(save).toContain("document: adapted.document");
     expect(save).toContain("setTemplateLibraryNotice(null)");
     expect(save).not.toContain("commercialUse: true");
@@ -81,8 +96,15 @@ describe("Studio BG3D user-template integration boundary", () => {
     expect(stagedBinding).toBeGreaterThan(admission);
     expect(hydration).toBeGreaterThan(stagedBinding);
     expect(canonicalCommit).toBeGreaterThan(hydration);
-    expect(apply).toContain("primitives: nextPrimitives");
-    expect(apply).toContain("customModels: nextCustomModels");
+    expectInOrder(apply, [
+      "assertStudioBg3dTemplateHydration(instantiated.document, hydrated)",
+      "const next = prepareStudioBg3dMeasurementTemplateInsertion({",
+      "current, template: prepared.templateDocument",
+      "insertedPrimitives: prepared.primitives, insertedModels: prepared.customModels",
+      "replaceCanonicalDocumentState({",
+      "primitives: next.primitives",
+      "customModels: next.customModels",
+    ]);
     expect(apply).not.toContain("physicsRuntimeSourceRef.current =");
     expect(apply).not.toContain("setPrimitives(nextPrimitives)");
     expect(apply).not.toContain("setCustomModels(nextCustomModels)");
@@ -90,7 +112,12 @@ describe("Studio BG3D user-template integration boundary", () => {
     expect(apply).toContain('templateFailure.message === "template-attachment-missing"');
     expect(apply).toContain("현재 기기에서 찾을 수 없습니다");
     expect(apply).toContain("모델 라이브러리에서 원본을 다시 가져온 뒤 재시도해 주세요");
-    expect(apply).toContain("hydrated.diagnostics.length > 0");
+    const hydrationGuard = sourceBetweenIn(measurementTemplateSource,
+      "export function assertStudioBg3dTemplateHydration(", "export function mergeStudioBg3dTemplateAttachmentMaps(");
+    expect(hydrationGuard).toContain("!hydrated.ok || hydrated.diagnostics.length !== 0");
+    expect(hydrationGuard).toContain("hydrated.omittedDiagnosticCount !== 0");
+    expect(hydrationGuard).toContain("hydrated.counts.droppedPrimitives !== 0");
+    expect(hydrationGuard).toContain("hydrated.counts.droppedCustomModels !== 0");
     expect(apply).toContain("if (!committed)");
     expect(apply).toContain("ownedEntry.dispose()");
   });

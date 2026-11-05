@@ -93,6 +93,13 @@ const VRM_PANEL_STATUS_KEYS = [
 ] as const;
 
 const BG3D_PANEL_STATUS_KEYS = [
+  "studio.bg3dPanelStatus.measurement.document-rejected",
+  "studio.bg3dPanelStatus.measurement.measurement-invalid",
+  "studio.bg3dPanelStatus.measurement.scene-unavailable",
+  "studio.bg3dPanelStatus.measurement.source-changed",
+  "studio.bg3dPanelStatus.skpImport.guideTitle",
+  "studio.bg3dPanelStatus.skpImport.importedReport",
+  "studio.bg3dPanelStatus.skpImport.resultsLabel",
   "studio.bg3dPanelStatus.immersive.insecureContext",
   "studio.bg3dPanelStatus.immersive.unavailable",
   "studio.bg3dPanelStatus.immersive.unsupported",
@@ -342,7 +349,14 @@ describe("studio vrm/bg3d panel status i18n batch3", () => {
   it("studio.bg3dPanelStatus 키가 소비 파일에서 실제로 참조되고 미등록 참조가 없다", () => {
     const consumerSource = BG3D_CONSUMERS.map((file) => readSource(file)).join("\n");
     for (const key of BG3D_PANEL_STATUS_KEYS) {
-      expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
+      if (/^studio\.bg3dPanelStatus\.measurement\.(?:document-rejected|measurement-invalid|scene-unavailable|source-changed)$/u.test(key)) {
+        const code = key.slice("studio.bg3dPanelStatus.measurement.".length);
+        const measurementPanel = readSource("bg3d/StudioBg3dMeasurementPanel.tsx");
+        expect(measurementPanel).toContain("t(`studio.bg3dPanelStatus.measurement.${committed.code}`, fallback)");
+        expect(measurementPanel).toContain(`"${code}":`);
+      } else {
+        expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
+      }
     }
     const referenced = new Set(
       [...consumerSource.matchAll(/"(studio\.bg3dPanelStatus\.[A-Za-z0-9.]+)"/g)].map(

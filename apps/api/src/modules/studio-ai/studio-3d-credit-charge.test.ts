@@ -107,10 +107,14 @@ describe("studio-3d-credit-charge 예약·정산", () => {
       mode: "image-to-3d",
       providerApiKey: undefined,
       operatorFunded: true,
-    });
+    }, GATE_ON);
+    expect(charge.charged).toBe(true);
+    expect(charge.reservationId).toBe("res-3d-1");
+    expect(calls.reserve).toBe(1);
     await settleStudio3dCreditCharge(wallet, charge, { submitted: false });
     expect(calls.capture).toBe(0);
     expect(calls.release).toBe(1);
+    expect(wallet.releaseCreditReservation).toHaveBeenCalledWith("res-3d-1");
   });
 
   it("BYOK 경로는 예약하지 않는다", async () => {

@@ -19,6 +19,7 @@ import { studioLiveRetainedMediaOverlaySupportsElement } from "../apps/web/src/d
 import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosave";
 
 import { collectStudioInAppRuntimeErrors, installStudioInAppFirstRunState, launchStudioInAppBrowser } from "./lib/studio-inapp-sweep-harness.mjs";
+import { isStaticPreviewReadinessResponse } from "./lib/studio-preview-readiness";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
@@ -72,7 +73,8 @@ function optionalApiRequestUrl(value: string, origin: string): boolean {
 }
 
 function optionalApi502(entry: Pick<HttpDiagnostic, "url" | "status">, origin: string): boolean {
-  return entry.status === 502 && optionalApiRequestUrl(entry.url, origin);
+  return entry.status === 502 && optionalApiRequestUrl(entry.url, origin)
+    || !externalOrigin && isStaticPreviewReadinessResponse(entry.status, entry.url, origin);
 }
 
 function classifyDiagnostics(report: ScenarioReport, origin: string): void {
@@ -131,7 +133,7 @@ async function runScenario(browser: Browser, origin: string, scenario: Scenario)
     });
     activePage.on("requestfailed", request => report.requestFailures.push({ step: currentStep, url: request.url(), error: request.failure()?.errorText ?? "request failed", responseStatus: responseStatuses.get(request) ?? null, cancellationScope }));
     await installStudioInAppFirstRunState(activePage);
-    await activePage.goto(`${origin}/studio`, { waitUntil: "domcontentloaded" });
+    await activePage.goto(`${origin}/studio/canvas`, { waitUntil: "domcontentloaded" });
     const viewport = activePage.locator('[data-studio-canvas-viewport="true"]').first();
     try {
       await viewport.waitFor({ state: "visible", timeout: 3_000 });
@@ -207,7 +209,10 @@ async function runScenario(browser: Browser, origin: string, scenario: Scenario)
     }
     async function menu(group: string, id: string): Promise<void> {
       await activePage.locator(`[data-studio-main-menu-trigger="${group}"]`).click();
-      await activePage.locator('[data-studio-main-menu-panel="true"]').locator(`[data-studio-menu-item-id="${id}"]`).click();
+      const panel = activePage.locator('[data-studio-main-menu-panel="true"]');
+      const item = panel.locator(`[data-studio-menu-item-id="${id}"]`);
+      if (!await item.isVisible()) await panel.getByRole("menuitem", { name: /^고급 도구 펼치기/u }).click();
+      await item.click();
     }
     async function scenarioDialog() {
       await menu("ai", "ai-assist");
@@ -296,8 +301,8 @@ async function runScenario(browser: Browser, origin: string, scenario: Scenario)
       await assets.waitFor();
       await assets.getByRole("tab", { name: "내 에셋", exact: true }).click();
       await assets.getByRole("button", { name: "보관함 · 마켓", exact: true }).click();
-      await assets.getByRole("button", { name: "내 에셋", exact: true }).click();
-      await assets.getByLabel("이미지 에셋 업로드", { exact: true }).setInputFiles(resolve("apps/web/public/favicon-32.png"));
+      await assets.getByRole("button", { name: "내 소재", exact: true }).click();
+      await assets.getByLabel("이미지 소재 업로드", { exact: true }).setInputFiles(resolve("apps/web/public/favicon-32.png"));
       await assets.getByText("favicon-32", { exact: true }).first().waitFor();
       await activePage.keyboard.press("Escape");
       await assets.waitFor({ state: "hidden" });
@@ -324,8 +329,11 @@ async function runScenario(browser: Browser, origin: string, scenario: Scenario)
       });
     } else {
       await check("select-supported-pencil", async () => {
-        await activePage.locator('[data-studio-brush-active-pill="true"]').click();
-        const catalog = activePage.locator('[data-studio-brush-catalog-session="true"]');
+        const dock = activePage.locator('[data-studio-brush-workbench-dock="true"]');
+        if (!await dock.isVisible()) await activePage.locator('[data-studio-brush-active-pill="true"]').click();
+        await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
+        const catalog = activePage.locator('[role="dialog"][data-studio-brush-floating]')
+          .locator('[data-studio-brush-catalog-session="true"]');
         await catalog.waitFor();
         await catalog.getByRole("tab", { name: "전체", exact: true }).click();
         await catalog.getByRole("searchbox").fill("연필");
@@ -382,7 +390,6 @@ async function runScenario(browser: Browser, origin: string, scenario: Scenario)
         assert.ok(originalInk);
         await activePage.keyboard.press("Escape");
         await activePage.mouse.move(1, 1);
-        await activePage.locator('[data-studio-inspector-primary-tab="layers"]').click();
         await activePage.locator('[aria-label="전문 레이어 내비게이터"]').waitFor({ state: "visible" });
         await activePage.locator(`[id="studio-layer-${originalInk.id}"]`).waitFor({ state: "visible" });
         const revivedRows = await activePage.locator(`[id="studio-layer-${stroke.id}"]`).count();

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
 import { useState } from "react";
@@ -127,7 +128,9 @@ describe("표면 그리기 마운트", () => {
     expect(screen.getByRole("button", { name: /표면에 직접 그리기/u })).toBeTruthy();
     // 다른 탭에서는 숨긴다(다른 섹션과 같은 hideOnTab 계약).
     rerender(<StudioBg3dGlbTexturePaintMount h={{ primitiveTexturePaint: bagWith(box("a")), hideOnTab: () => true }} />);
-    expect(screen.getByRole("region", { name: "도형 표면 그리기", hidden: true }).hidden).toBe(true);
+    expect(section.isConnected).toBe(true);
+    expect(section.hidden).toBe(true);
+    expect(screen.queryByRole("region", { name: "도형 표면 그리기" })).toBeNull();
     rerender(<StudioBg3dGlbTexturePaintMount h={{ primitiveTexturePaint: bagWith(null), hideOnTab: () => false }} />);
     expect(container.textContent).toBe("");
   });
@@ -140,7 +143,7 @@ describe("표면 그리기 마운트", () => {
 });
 
 describe("편집기·장면 그래프 배선(5파일 밖)", () => {
-  const read = (file: string) => readFileSync(new URL(`./${file}`, import.meta.url), "utf8");
+  const read = (file: string) => readFileSync(resolve(import.meta.dirname, file), "utf8");
 
   it("편집기 훅이 도형 표면 그리기 호스트를 만들고 장면 그래프가 읽기 전에 핸들러를 싣는다", () => {
     const editor = read("useStudioBg3dEditor.ts");

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { StudioSmartFiltersPanel } from "../StudioSmartFiltersPanel";
 import { studioSmartFilterMutationError } from "../studio-smart-filter-mutation";
+import { STUDIO_ADJUSTMENT_ADDABLE_ENGINE_IDS } from "../studio-adjustment-stack";
 
 describe("StudioSmartFiltersPanel", () => {
   // Catalogue titles are the #771 (c9ef0ff7) vocabulary; the former names remain search keywords.
@@ -15,7 +16,8 @@ describe("StudioSmartFiltersPanel", () => {
     expect(html).toContain("효과 작업공간");
     expect(html).toContain("웹툰 레시피 · 렌더 진단");
     expect(html).toContain("전체 15개 레시피 보기");
-    expect(html).toContain("사용 가능한 필터 77개");
+    expect(STUDIO_ADJUSTMENT_ADDABLE_ENGINE_IDS.length).toBeGreaterThanOrEqual(77);
+    expect(html).toContain(`사용 가능한 필터 ${STUDIO_ADJUSTMENT_ADDABLE_ENGINE_IDS.length}개`);
     expect(html).toContain("섀도우/하이라이트");
     expect(html).toContain("노출 / 감마 / 오프셋");
     expect(html).toContain("언샤프 마스크");
@@ -69,7 +71,7 @@ describe("StudioSmartFiltersPanel", () => {
     );
     expect(html).toContain("101개");
     expect(html).not.toContain("스택이 가득 찼습니다");
-    expect(html).toContain("사용 가능한 필터 77개");
+    expect(html).toContain(`사용 가능한 필터 ${STUDIO_ADJUSTMENT_ADDABLE_ENGINE_IDS.length}개`);
   });
 
   it("renders bounded controls for all advanced blur engines", () => {

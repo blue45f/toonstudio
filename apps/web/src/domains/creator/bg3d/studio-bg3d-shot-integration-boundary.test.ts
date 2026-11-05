@@ -256,7 +256,11 @@ describe("Studio BG3D shot UI integration boundary", () => {
       "authorizeBeforeCommit: async () => {",
       "await assertRecoveryAccess()",
       "const authorizedAt = Date.now()",
-      "isLocallyCurrent: () => componentActiveRef.current",
+      "isLocallyCurrent: () => {",
+      "assertStudioBg3dCaptureEnvironmentCurrent(shotArtifacts, expectedEnvironmentFingerprint)",
+      "return componentActiveRef.current && !controller.signal.aborted",
+      "shotBatchAbortRef.current === controller",
+      "shotBatchAuthorizationEpochRef.current === authorizationEpoch",
       "images.push(...shotArtifacts.images)",
     ]);
     expect(handler).toContain("if (activeRunToken && !recoveryAccessRevoked)");

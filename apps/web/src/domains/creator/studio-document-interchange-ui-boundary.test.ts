@@ -29,6 +29,7 @@ const archiveApply = source("./studio-archive-import-apply.ts");
 const deviceProfile = source("./studio-document-import-device-profile.ts");
 const interchangeCommit = source("./studio-document-interchange-commit.ts");
 const interchangePreview = source("./studio-document-interchange-preview.ts");
+const pageSetAdmission = source("./page/studio-page-set-commit-admission.ts");
 
 describe("Studio document interchange UI boundary", () => {
   // 회귀 가드(2026-07-24): 가져오기 파일 입력이 "프로젝트 도구" 패널(projectActionsOpen) 조건 안에
@@ -190,8 +191,10 @@ describe("Studio document interchange UI boundary", () => {
     expect(studioPage).toContain("openRasterLimits: deviceProfile.openRasterLimits");
     expect(studioPage).toContain("cbzLimits: deviceProfile.cbzLimits");
     expect(studioPage).toContain("maxEmbeddedBytes: deviceProfile.maxEmbeddedBytes");
-    expect(studioPage).toContain("nextPages.length > STUDIO_PROJECT_MAX_PAGES");
-    expect(studioPage).toContain("page.canvasH > STUDIO_PROJECT_MAX_CANVAS_HEIGHT");
+    expect(studioPage).toContain("const pageSetError = studioPageSetCommitAdmissionError(pagesHistoryRef.current[pagesHiRef.current] ?? pages, nextPages)");
+    expect(studioPage).toContain("if (pageSetError)");
+    expect(pageSetAdmission).toContain("after.length > STUDIO_PROJECT_MAX_PAGES");
+    expect(pageSetAdmission).toContain("page.canvasH > STUDIO_PROJECT_MAX_CANVAS_HEIGHT");
     expect(deviceProfile).toContain("(mobile ? 64 : 128) * MiB");
     expect(deviceProfile).toContain("Math.floor(maxEmbeddedBytes * 3 / 4) - 64 * 1024");
     expect(deviceProfile).toContain("STUDIO_PROJECT_MAX_PAGES - currentPageCount");
