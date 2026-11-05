@@ -517,6 +517,7 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/studio-workspace-arrangement.ts", "durable-storage-write", '`${STUDIO_WORKSPACE_ARRANGEMENT_KEY}:${id}`', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/studio-workspace-arrangement.ts", "durable-storage-write", '"toonspectrum:studio:arrangement:v1"', 1, UI_ONLY, UI_PROOF),
 
+  allow("apps/web/src/domains/creator/brush-lab/StudioBrushV6DraftGuard.tsx", "local-storage-write", '`${key}:source-mixbox`', 1, "사용자가 명시적으로 이전 Mixbox 초안을 전환하기 전에 exact 원문을 충돌 없는 별도 키에 보관하는 필수 원문 백업이다. 기존 초안의 호환 이주만 소유하며 원고·자동 저장·복구의 새 browser-KV 권위나 선택적 UI 상태가 아니다.", "StudioBrushV6DraftGuard.test.tsx가 사용자 선택 전 쓰기 없음, namespace·collision 사본 보존, exact 원문 재해석, readback·source mismatch·quota 실패 시 편집기 미개방, 100 suffix 상한에서 기존 사본의 무삭제·무덮어쓰기를 검증한다. 아래 AST finding 계약은 정확한 sourceAuthoring 쓰기 1회만 소유한다."),
   allow("apps/web/src/domains/creator/brush-lab/StudioBrushIntegratedWorkbench.tsx", "local-storage-write", "brushStudioV6StorageKey(scope)", 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
   allow("apps/web/src/domains/creator/brush-lab/StudioBrushV5Composer.tsx", "local-storage-write", '"toonstudio.brush-studio-v5.library"', 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
   allow("apps/web/src/domains/creator/brush-lab/StudioBrushV5Composer.tsx", "local-storage-write", '`${DRAFT_KEY_PREFIX}${encodeURIComponent(scope)}`', 1, OPTIONAL_LOCAL_TOOL_STATE, OPTIONAL_LOCAL_TOOL_STATE_PROOF),
@@ -872,6 +873,25 @@ describe("Studio browser-KV authority boundary", () => {
       expect.stringContaining("local-storage-write"),
       expect.stringContaining("stale allowance"),
     ]));
+  });
+
+
+  it("명시적 초안 원문 백업은 정확한 owner·key·sourceAuthoring 쓰기만 소유한다", () => {
+    const file = "apps/web/src/domains/creator/brush-lab/StudioBrushV6DraftGuard.tsx";
+    const source = readFileSync(resolve(WORKSPACE_ROOT, file), "utf8");
+    const exact = (text: string) => {
+      const findings = analyzeBrowserKvSource(file, text);
+      expect(findings).toHaveLength(1);
+      expect(findings[0]).toMatchObject({ file, kind: "local-storage-write", key: '`${key}:source-mixbox`',
+        call: "globalThis.localStorage.setItem(backupKey,migration.sourceAuthoring)" });
+      expect(unauthorizedFindings(findings, ALLOWANCES.filter((allowance) => allowance.file === file))).toEqual([]);
+    };
+    exact(source);
+    expect(() => exact(source.replace("migration.sourceAuthoring);", "migration.program);"))).toThrow();
+    expect(() => exact(source.replace("`${key}:source-mixbox`", "`${key}:new-authority`"))).toThrow();
+    expect(() => exact(`${source}\nlocalStorage.setItem("studio-project", payload);`)).toThrow();
+    const otherOwner = analyzeBrowserKvSource("apps/web/src/domains/creator/other-owner.tsx", source);
+    expect(unauthorizedFindings(otherOwner, ALLOWANCES.filter((allowance) => allowance.file === file))).not.toEqual([]);
   });
 
   it("keeps every allowance narrow, justified, and reviewable", () => {
