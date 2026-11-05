@@ -7,6 +7,7 @@ import { STUDIO_BG3D_SIX_PASS_BUNDLE_CAPABILITY, isStudioBg3dSixPassContentHash,
   isStudioBg3dSixPassImageBlendMode, isStudioBg3dSixPassRole, parseStudioBg3dSixPassArtifactSourceUri,
   parseStudioBg3dSixPassBundleImageReference } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS, StudioWorkAssetElementSchema } from "@toonstudio/contracts/studio-work-asset-contract";
+import { STUDIO_FILTER_MASK_REFERENCE_EDIT_KEYS, isStudioFilterMaskReferenceProps } from "@toonstudio/contracts/studio-filter-mask-surface-contract";
 import * as Y from "yjs";
 import { assertStudioBg3dBundleReaderInTransaction, readStudioBg3dBundleRecordInTransaction,
   verifyStudioBg3dSealedReferencesInTransaction } from "./studio-bg3d-bundle.repository";
@@ -67,12 +68,15 @@ export function hasValidStudioBg3dImageReferenceProps(id: string, value: Record<
     || (ref.role !== "main-line" && parseStudioBg3dSixPassArtifactSourceUri(value.src) === null)
     || !isStudioBg3dSixPassImageBlendMode(value.blendMode)) return false;
   const edit: Record<string, unknown> = { id, type: "image" };
+  const mask: Record<string, unknown> = {};
   for (const [key, entry] of Object.entries(value)) {
     if (key === "elementType" || (STUDIO_BG3D_IMAGE_PROPERTIES as readonly string[]).includes(key)) continue;
+    if ((STUDIO_FILTER_MASK_REFERENCE_EDIT_KEYS as readonly string[]).includes(key)) { mask[key] = entry; continue; }
     if (!(STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS as readonly string[]).includes(key)) return false;
     edit[key] = entry;
   }
-  return StudioWorkAssetElementSchema.safeParse(edit).success;
+  return (Object.keys(mask).length === 0 || isStudioFilterMaskReferenceProps(mask))
+    && StudioWorkAssetElementSchema.safeParse(edit).success;
 }
 export function isValidStudioBg3dImageReferenceCandidate(property: string, value: unknown): boolean | undefined {
   if (property === "bg3dLtBundleReference") return parseStudioBg3dSixPassBundleImageReference(value) !== null;
