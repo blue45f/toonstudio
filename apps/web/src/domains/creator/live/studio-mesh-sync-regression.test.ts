@@ -127,7 +127,7 @@ class DocumentRoom {
   syncRequests = 0;
   nextSyncBarrier: Promise<void> | null = null;
   readonly publications: StudioCrdtUpdateRequest[] = [];
-  readonly crdtListeners = new Set<(event: StudioLiveCrdtRoomEvent) => void>();
+  readonly crdtListeners = new Set<(event: StudioLiveCrdtRoomEvent) => void | Promise<void>>();
   readonly roomListeners = new Set<(event: StudioLiveRoomEvent) => void>();
 
   constructor(
@@ -135,7 +135,7 @@ class DocumentRoom {
     readonly crdtFanout: "mesh" | "authoritative" = "mesh",
   ) {}
 
-  subscribeCrdt(listener: (event: StudioLiveCrdtRoomEvent) => void): () => void {
+  subscribeCrdt(listener: (event: StudioLiveCrdtRoomEvent) => void | Promise<void>): () => void {
     this.crdtListeners.add(listener);
     return () => this.crdtListeners.delete(listener);
   }
@@ -171,10 +171,9 @@ class DocumentRoom {
     };
   }
   respondCrdtSync(): boolean { return true; }
-  remote(update: StudioCrdtRemoteUpdate): void {
-    for (const listener of this.crdtListeners) {
-      listener({ type: "update", update, senderSessionId: REMOTE.sessionId });
-    }
+  async remote(update: StudioCrdtRemoteUpdate): Promise<void> {
+    await Promise.all([...this.crdtListeners].map((listener) =>
+      listener({ type: "update", update, senderSessionId: REMOTE.sessionId })));
   }
   connected(): void {
     for (const listener of this.roomListeners) {
@@ -194,8 +193,8 @@ function bind(room: DocumentRoom, client: StudioCrdtDocument, options: Partial<S
   return value;
 }
 
-function remoteUpdate(target: DocumentRoom, peer: StudioCrdtDocument, id: number, sequence: string): void {
-  target.remote({
+function remoteUpdate(target: DocumentRoom, peer: StudioCrdtDocument, id: number, sequence: string): Promise<void> {
+  return target.remote({
     protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: WORK_ID,
     updateId: `00000000-0000-4000-8000-${String(id).padStart(12, "0")}`,
     serverSequence: sequence, update: encodeStudioCrdtUpdate(peer.encodeStateAsUpdate()),
@@ -203,7 +202,7 @@ function remoteUpdate(target: DocumentRoom, peer: StudioCrdtDocument, id: number
 }
 
 describe("mesh document synchronization regressions", () => {
-  it("applies each zero-sequence peer stroke immediately after a nonzero peer snapshot", async () => {
+  it("0이 아닌 peer snapshot 뒤에도 0 순번의 각 획을 재동기화 없이 적용한다", async () => {
     const peer = document();
     const client = document();
     stroke(peer, "initial");
@@ -212,11 +211,38 @@ describe("mesh document synchronization regressions", () => {
     expect(client.getStroke("initial")).not.toBeNull();
     for (const id of [2, 3]) {
       stroke(peer, `live-${id}`, id);
-      remoteUpdate(room, peer, id, "0");
-      // Synchronous, with no reload, timer, or background snapshot to hide a dropped update.
+      // 수신 큐의 적용 완료만 기다리며 reload·timer·추가 snapshot으로 누락을 가리지 않는다.
+      await remoteUpdate(room, peer, id, "0");
       expect(client.getStroke(`live-${id}`)).not.toBeNull();
     }
     expect(room.syncRequests).toBe(1);
+  });
+
+  it("0 순번 peer 업데이트를 연속 수신해도 timer 없이 각 획을 수신 순서대로 적용한다", async () => {
+    vi.useFakeTimers();
+    const peer = document();
+    const firstPeer = document();
+    const secondPeer = document();
+    const client = document();
+    stroke(peer, "initial");
+    const room = new DocumentRoom(peer);
+    await bind(room, client, { canEdit: false }).start();
+    const applied: string[][] = [];
+    client.subscribe(() => {
+      applied.push(["burst-2", "burst-3"].filter((id) => client.getStroke(id) !== null));
+    });
+    // 서로 독립된 본문이므로 뒤의 snapshot이 앞서 누락된 획을 복구할 수 없다.
+    stroke(firstPeer, "burst-2", 2);
+    const first = remoteUpdate(room, firstPeer, 2, "0");
+    stroke(secondPeer, "burst-3", 3);
+    const second = remoteUpdate(room, secondPeer, 3, "0");
+    await Promise.all([first, second]);
+    expect(applied).toEqual([["burst-2"], ["burst-2", "burst-3"]]);
+    expect(client.getStroke("initial")).not.toBeNull();
+    expect(client.getStroke("burst-2")).not.toBeNull();
+    expect(client.getStroke("burst-3")).not.toBeNull();
+    expect(room.syncRequests).toBe(1);
+    expect(room.publications).toHaveLength(0);
   });
 
   it("does not compare independent peers' counters as a global ordering fence", async () => {
@@ -227,7 +253,7 @@ describe("mesh document synchronization regressions", () => {
     room.sequence = 400;
     await bind(room, client, { canEdit: false }).start();
     stroke(second, "second-peer-first-edit");
-    remoteUpdate(room, second, 24, "1");
+    await remoteUpdate(room, second, 24, "1");
     expect(client.getStroke("second-peer-first-edit")).not.toBeNull();
     expect(room.syncRequests).toBe(1);
   });
@@ -239,7 +265,7 @@ describe("mesh document synchronization regressions", () => {
     const room = new DocumentRoom(server, "authoritative");
     await bind(room, client, { canEdit: false }).start();
     stroke(stale, "stale-replay");
-    remoteUpdate(room, stale, 45, "0");
+    await remoteUpdate(room, stale, 45, "0");
     expect(client.getStroke("stale-replay")).toBeNull();
   });
 
