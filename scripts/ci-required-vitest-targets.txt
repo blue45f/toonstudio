@@ -765,6 +765,7 @@ packages/studio-project-model/src/__tests__/world-acoustic.test.ts
 packages/studio-project-model/src/__tests__/world-conversation.test.ts
 packages/studio-project-model/src/__tests__/world-publication.test.ts
 packages/studio-project-model/src/__tests__/world-tilemap.test.ts
+scripts/bg3d-preserving-acl-contract.test.mjs
 scripts/bootstrap-empty-production-database.test.mjs
 scripts/browser-core-entry-isolation.test.ts
 scripts/check-studio-eager-graph.test.mjs
@@ -803,6 +804,7 @@ scripts/plan-creator-bundle-deploy-cli.test.mjs
 scripts/plan-creator-bundle-deploy.test.mjs
 scripts/prepare-cloudflare-static-assets.test.ts
 scripts/prepare-managed-database-bootstrap.test.mjs
+scripts/production-database-connection.test.mjs
 scripts/provision-cloudflare-free-data-plane.test.mjs
 scripts/provision-gcp-free-data-plane.test.mjs
 scripts/rebuild-creator-bundle-local-ingest.test.mjs
