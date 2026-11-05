@@ -9,7 +9,7 @@ import { STUDIO_ALL_BRUSH_CATALOG_ITEMS } from "./studio-brush-catalog";
 
 const root = resolve(import.meta.dirname, "../../../../../../");
 const harness = readFileSync(resolve(root, "scripts/verify-studio-brushes.mts"), "utf8");
-const mobileSettings = readFileSync(resolve(root, "scripts/lib/studio-mobile-brush-settings.ts"), "utf8");
+const mobileBrushSettings = readFileSync(resolve(root, "scripts/lib/studio-mobile-brush-settings.ts"), "utf8");
 
 describe("Studio brush browser harness catalogue boundary", () => {
   it("keeps the full product catalogue unique and its core partition identical to BRUSH_PRESETS", () => {
@@ -137,12 +137,28 @@ describe("Studio brush browser harness catalogue boundary", () => {
     expect(harness).toContain('[role="dialog"][data-studio-brush-floating]');
     expect(harness).toContain('await catalog.getAttribute("role") === "region"');
     expect(harness).toContain("await closeDesktopCatalog(page, catalog)");
-    expect(mobileSettings).toContain('button[aria-controls="studio-mobile-draw-settings"]:not([data-studio-primary-action])');
-    expect(harness).toMatch(/import\s*\{\s*openMobileBrushSettings\s*\}\s*from\s*"\.\/lib\/studio-mobile-brush-settings"/u);
-    expect(harness.match(/await openMobileBrushSettings\(page, dock\)/gu)).toHaveLength(2);
     expect(harness).toContain("TOONSPECTRUM_BRUSH_STABILITY_ROUNDS");
     expect(harness).toContain("captureBrushStageFailure(page, \"durability\", error, errors)");
     expect(harness).not.toContain('catalog.waitFor({ state: "detached" }).catch(() => {})');
+  });
+
+  it("모바일 브러시 설정은 추출된 helper의 정상 재준비·클릭·숨김 확인을 거친다", () => {
+    expect(harness).toContain('import { openMobileBrushSettings } from "./lib/studio-mobile-brush-settings";');
+    expect(harness.match(/await openMobileBrushSettings\(page, dock\)/gu)).toHaveLength(2);
+    const start = harness.indexOf("async function runMobileTouchAudit(");
+    const end = harness.indexOf("async function readEmergencyAutosave(", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const mobileAudit = harness.slice(start, end);
+    expect(mobileAudit.match(/await openMobileBrushSettings\(page, dock\)/gu)).toHaveLength(2);
+    expect(mobileBrushSettings).toContain('import { clickStudioControlAfterReadiness } from "./studio-drawing-readiness";');
+    expect(mobileBrushSettings).toMatch(/await clickStudioControlAfterReadiness\(\s*page,\s*tools\.locator\('button\[aria-controls="studio-mobile-draw-settings"\]:not\(\[data-studio-primary-action\]\)'\),/u);
+    expect(mobileBrushSettings).toContain('await toggle.getAttribute("aria-expanded", { timeout: timeoutMs })');
+    expect(mobileBrushSettings).toContain('if (expanded !== "true" && remaining > 0) await toggle.click({ timeout: remaining });');
+    expect(mobileBrushSettings).toContain("const deadline = Date.now() + 60_000;");
+    expect(mobileBrushSettings).toContain("const remaining = deadline - Date.now();");
+    expect(mobileBrushSettings).toContain('await tools.waitFor({ state: "hidden", timeout: remaining });');
+    expect(mobileBrushSettings).not.toMatch(/force:\s*true|\.evaluate\(|\.dispatchEvent\(/u);
   });
 
   it("treats named erasers as destructive operations with a real paint baseline", () => {

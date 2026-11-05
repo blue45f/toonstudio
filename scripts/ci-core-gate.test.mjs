@@ -9,7 +9,7 @@ import { assertCoreResults, REQUIRED_CORE_GATES } from "./ci-core-gate.mjs";
 import { REQUIRED_VITEST_TARGETS, SHARD_NAMES, executionTargetsByShard, expandGlobTargets } from "./ci-core-regression-shards.mjs";
 import { resolveRequiredTargets } from "./run-core-vitest.mjs";
 import { SERIAL_TEST_FILES } from "../vitest.serial-test-files.mjs";
-import { fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
+import { assertTrackedDocumentInputs, fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const success = () => Object.fromEntries(
@@ -111,6 +111,8 @@ test("브러시 디스크·화면 ROI·실제 갈필 경계 회귀를 필수 Cor
     ["apps/web/tools/browser-harnesses/plasticine-materials/browser-png-csp.test.mjs", "studio-foundation"],
     ["tests/integration/api-web/api/modules/creator/studio-crdt-root-schema-boundary.test.ts", "studio-foundation"],
     ["apps/web/src/domains/creator/studio-companion-browser-harness-boundary.test.ts", "studio-foundation"],
+    ["apps/web/src/domains/creator/live/studio-crdt-archive-bridge.test.ts", "studio-foundation"],
+    ["apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-float32-atlas.test.ts", "studio-editing"],
     ["tests/integration/web-api/domains/creator/virtual-space/studio-virtual-space-design-closure.test.ts", "product"],
     ["apps/api/src/modules/creator/studio-crdt-bg3d-shape.test.ts", "product"],
     ["apps/web/src/domains/creator/brush/studio-wet-wash-live-pipeline.test.ts", "studio-editing"],
@@ -132,6 +134,43 @@ test("브러시 디스크·화면 ROI·실제 갈필 경계 회귀를 필수 Cor
   assert(!sparsePatterns(checkout, { shard: "studio-foundation" }).includes("/docs/"));
 });
 
+test("foundation의 라이선스·기술 해설 검증에 필요한 원문만 sparse checkout에 복원한다", () => {
+  const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const start = ci.indexOf("\n  static:"), end = ci.indexOf("\n  serial:", start);
+  const patterns = sparsePatterns(ci.slice(start, end), { shard: "studio-foundation" });
+  const guideRoot = "../apps/web/src/domains/legal/technology/";
+  const guideIndex = readFileSync(new URL(`${guideRoot}engineering-library-guide-areas-a.ts`, import.meta.url), "utf8");
+  const guideFiles = [...guideIndex.matchAll(/from "\.\/(engineering-library-guide-areas-a-[^"]+)"/gu)]
+    .map((match) => `${match[1]}.ts`);
+  const guide = [...guideFiles, "engineering-library-guide-overview.ts"]
+    .map((file) => readFileSync(new URL(`${guideRoot}${file}`, import.meta.url), "utf8")).join("\n");
+  const numbers = new Set();
+  for (const match of guide.matchAll(/ADR-(\d{4})((?:·\d{4})*)/gu)) {
+    numbers.add(match[1]);
+    for (const number of match[2].split("·").filter(Boolean)) numbers.add(number);
+  }
+  assert(numbers.size > 8);
+  const adrFiles = execFileSync("git", ["ls-files", "-z", "--", ":(glob)docs/adr/*.md"], {
+    cwd: fileURLToPath(new URL("../", import.meta.url)), encoding: "utf8",
+  }).split("\0").filter(Boolean);
+  const coversDocument = (document) => patterns.includes(`/${document}`);
+  for (const number of numbers) {
+    const documents = adrFiles.filter((file) => file.startsWith(`docs/adr/${number}-`) && file.endsWith(".md"));
+    assert(documents.length > 0, `ADR-${number} 저장소 원문 누락`);
+    for (const document of documents) assert(coversDocument(document), `ADR-${number} 원문 누락`);
+  }
+  const guideTest = readFileSync(new URL(`${guideRoot}engineering-library-guide-areas-a.test.ts`, import.meta.url), "utf8");
+  for (const [, document] of guideTest.matchAll(/read\("(docs\/[^"\n]+)"\)/gu)) {
+    assertTrackedDocumentInputs([`/${document}`]);
+    assert(coversDocument(document), `${document} 원문 누락`);
+  }
+  const licenseDocument = "docs/third-party/opencascade-lgpl.md";
+  assert(readFileSync(new URL("./generate-third-party-notices.mjs", import.meta.url), "utf8").includes(licenseDocument));
+  assert(patterns.includes(`/${licenseDocument}`), "OpenCascade 라이선스 경계 원문 누락");
+  for (const pattern of patterns.filter((entry) => entry.startsWith("/docs/"))) {
+    assert(pattern.endsWith(".md") && !pattern.includes("*"), `문서는 정확한 개별 파일만 복원해야 합니다: ${pattern}`);
+  }
+});
 
 test("기반 회귀는 실제 페이지 시각 프로필의 이미지와 공통 영상을 체크아웃한다", () => {
   const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");

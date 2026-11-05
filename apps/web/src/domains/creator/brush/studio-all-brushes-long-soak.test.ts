@@ -1,6 +1,8 @@
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import { createBrushStudioV6Program } from "../brush-lab/brush-studio-v6-engine";
+import { BRUSH_STUDIO_V6_RECIPES, createBrushStudioV6Program } from "../brush-lab/brush-studio-v6-engine";
+import { createBrushStudioV6MaterialStroke, normalizeBrushStudioV6MaterialConfig } from "../brush-lab/brush-studio-v6-material-engine";
+import { brushStudioV6PigmentProviderForNode } from "../brush-lab/brush-studio-v6-pigment-provider";
 import { createBrushStudioV6MaterialReceipt } from "../brush-lab/brush-studio-v6-material-receipt";
 import { exportPageToSvg } from "../export/studio-svg-export";
 import { loadStudioPerfectFreehandStroker } from "../studio-perfect-freehand";
@@ -281,6 +283,31 @@ describe("실제 서비스 전체 브러시 카탈로그 및 장시간 소크(Lo
     resetStudioInkwashWash();
     resetStudioDryMediaKernelTipCacheForTests();
     resetStudioWetWashLivePipelineCacheForTests();
+  });
+
+  it("새 자체 안료 V1 호환 설정은 모든 재료 레시피에서 원본 변경 없이 재생한다", () => {
+    expect(brushStudioV6PigmentProviderForNode("pigment-latent")).toMatchObject({
+      id: "toonstudio-latent-pigment-v1", rights: "internal", execution: "native",
+    });
+    for (const recipe of BRUSH_STUDIO_V6_RECIPES) {
+      const program = createBrushStudioV6Program(recipe.id);
+      // 과거 외부 혼색 영수증이 아닌 새 호환 fixture다. 제품의 V2 실행 영수증 소크는 별도로 유지한다.
+      const fixture = {
+        version: 1, seed: program.seed,
+        slots: { ...program.slots, pigment: "pigment-latent" },
+        tuning: program.tuning, input: program.input,
+      };
+      const before = structuredClone(fixture);
+      const material = normalizeBrushStudioV6MaterialConfig(fixture);
+      if (!material) throw new Error(`${recipe.id}: 자체 안료 V1 호환 설정이 올바르지 않습니다.`);
+      const stroke = createBrushStudioV6MaterialStroke(material);
+      const marks = Array.from({ length: 9 }, (_, index) => ({
+        x: 24 + index * 6, y: 36, pressure: 0.6,
+      })).flatMap((point) => stroke.push(point));
+      expect(marks.length, recipe.id).toBeGreaterThan(0);
+      expect(marks.every(({ x, y, opacity }) => [x, y, opacity].every(Number.isFinite)), recipe.id).toBe(true);
+      expect(fixture, recipe.id).toEqual(before);
+    }
   });
 
   it("전체 브러시 516종이 명시적 검사 프로필에서 실제 포인터 시작 계획·캔버스·SVG 렌더 파이프라인을 통과한다", () => {

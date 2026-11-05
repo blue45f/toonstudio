@@ -366,7 +366,48 @@ describe("그리기 검증기 UI readiness", () => {
     expect(f.targetClick.mock.calls.map(([options]) => options.timeout)).toEqual([1_000, 350]);
   });
 
-  it.each(["visibility", "close", "target", "reset"] as const)("%s의 비 timeout 오류를 즉시 원형 전달한다", async (operation) => {
+  it("대상 재준비가 소비한 시간을 빼고 남은 예산만 정상 클릭에 전달한다", async () => {
+    const f = fakePage();
+    const prepareTarget = vi.fn(async () => { await pause(400); });
+    const started = Date.now();
+    const result = clickStudioControlAfterReadiness(f.page, f.target, 600, prepareTarget);
+    await vi.runAllTimersAsync();
+    await result;
+    expect(prepareTarget).toHaveBeenCalledExactlyOnceWith(600);
+    expect(f.targetClick).toHaveBeenCalledExactlyOnceWith({ timeout: 200 });
+    expect(Date.now() - started).toBe(400);
+  });
+
+  it("대상 재준비의 timeout 뒤 늦은 안내를 닫고 같은 deadline 안에서 다시 준비한다", async () => {
+    const f = fakePage();
+    const prepareTarget = vi.fn(async (_timeoutMs: number) => {});
+    prepareTarget.mockImplementationOnce(async (timeoutMs) => {
+      f.visible.notice = true;
+      await pause(timeoutMs);
+      throw new errors.TimeoutError("안내가 도크 재준비를 가림");
+    });
+    const started = Date.now();
+    const result = clickStudioControlAfterReadiness(f.page, f.target, 1_500, prepareTarget);
+    await vi.runAllTimersAsync();
+    await result;
+    expect(prepareTarget.mock.calls.map(([timeoutMs]) => timeoutMs)).toEqual([1_000, 300]);
+    expect(f.calls.map(({ surface }) => surface)).toEqual(["notice", "target"]);
+    expect(f.targetClick).toHaveBeenCalledExactlyOnceWith({ timeout: 300 });
+    expect(Date.now() - started).toBe(1_200);
+  });
+
+  it("재준비가 전체 deadline을 소모하면 대상 클릭을 새 예산으로 시작하지 않는다", async () => {
+    const f = fakePage();
+    const started = Date.now();
+    const result = expect(clickStudioControlAfterReadiness(f.page, f.target, 600, pause))
+      .rejects.toThrow("600ms 초과");
+    await vi.runAllTimersAsync();
+    await result;
+    expect(f.targetClick).not.toHaveBeenCalled();
+    expect(Date.now() - started).toBe(600);
+  });
+
+  it.each(["visibility", "close", "prepare", "target", "reset"] as const)("%s의 비 timeout 오류를 즉시 원형 전달한다", async (operation) => {
     const f = fakePage();
     const failure = new Error("브라우저 연결 종료 또는 selector 오류");
     const started = Date.now();
@@ -378,8 +419,8 @@ describe("그리기 검증기 UI readiness", () => {
     if (operation === "target") f.targetClick.mockRejectedValue(failure);
     const result = operation === "reset"
       ? prepareStudioDrawingUi(f.page, async () => { throw failure; })
-      : operation === "target"
-        ? clickStudioControlAfterReadiness(f.page, f.target)
+      : operation === "target" || operation === "prepare"
+        ? clickStudioControlAfterReadiness(f.page, f.target, 60_000, operation === "prepare" ? async () => { throw failure; } : undefined)
         : waitForStudioDrawingReady(f.page);
     await expect(result).rejects.toBe(failure);
     expect(Date.now()).toBe(started);

@@ -189,3 +189,7 @@ PR #2724가 먼저 main에 적용한 vips 제거·native Lanczos3 최종 내보�
 새 QA 입력은 공통 scripts checkout의 기존 규칙에 포함되므로 foundation의 141선언·136고유 경로·기존 PNG 14개·문서 16개 목록을 바꾸지 않는다. 설치 전 Node/Git 검사로 새 JSON·PNG·selector 네 실제 Git 입력이 다섯 static shard와 typecheck/lint에 보존되고 무관한 public 자산은 제외됨을 추가 확인한다. morphology PR/push 경로에는 네 입력을 각각 정확히 연결한다.
 
 a6 strict lint의 별도 실패는 `quality:imports`가 브라우저 가상 모듈 `/__qa/driver.ts`를 Node 의존성으로 읽은 한 건이었다. 같은 local RED를 재현하고 URL을 `page.evaluate`의 실행 인자로 전달해 브라우저 문맥을 명확히 했다. 검사기 ignore·정책 변경·새 의존성 없이 같은 명령이 통과했다. 원래 소스·가상 경로·접근 범위·렌더링은 그대로이며 최종 소스에서도 전체 CI를 확인한다. 새 main `8498d0bc`의 제품 보완은 ordinary merge로 보존하고, 승인 미확인이라는 다른 세션의 QA 해석은 이 대화의 2026-11-05 21:06 KST 구체적 사용자 위임 및 실제 원본 대조와 구분해 조정한다.
+
+2026-11-06 04시대에 main `8498d0bc09f083fcbbfcd759bb153f674f539012`를 일반 merge로 통합했다. WebGL1/Float32 atlas·관측자 예외 뒤 pending reader 요구 보존·editor·공유 키의 type-only 프로젝트 버전 연결과 새 필수 타깃·CI 입력 계약 추출은 원본 main을 유지한다. 저장 버전은 기존 `2|3|4|5|6`이고 공통 보존 키 일곱 개도 같다. 현재 app/API/contracts의 제품 코드와 의존성·DB는 해당 main과 같은 내용을 보존하며 추가 제품 변경을 도입하지 않는다. 같은 두 계약 사례의 중복은 원래 본문을 유지해 제거한다.
+
+main에 함께 들어온 Chemy 전체 `>1.15`·승인 미확인 QA 해석은 이 대화의 실제 위임과 상충하므로 Chemy 하나만 검증 원본 정책을 사용하고 다른 33종 하한을 유지하도록 합친다. 바뀐 observer는 실행 코드가 아닌 주석 한 줄뿐이었으므로 고정 지문을 새 값으로 갱신하지 않고 승인 설명과 `673f09cd…` 원본을 보존했다. 새 main의 AST·VM 시험 두 개도 삭제하지 않는다. 실제 if/else 배선에서 일반 topology의 원래 경계값을 검사하고, Chemy의 고정 정책 수집 및 실패 전달을 가짜 응답으로 확인하도록 승인 범위에 맞췄다. 이 VM 응답을 실제 renderer 증거로 사용하지 않는다. 기존 74개와 이 두 사례 76개를 포함한 합병 관련 13파일 228개, CI·전체 타입 검사·공통 입력·라이선스 Node 4파일 49개가 통과했다. 별도의 실제 Mac 원본·최종 Linux·전체 CI는 정확한 후속 head에서 확인한다.

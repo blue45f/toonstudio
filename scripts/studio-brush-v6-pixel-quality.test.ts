@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 
 import { decodePng, encodePng } from "image-js";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { parseDocument } from "yaml";
 
@@ -47,6 +49,93 @@ describe("V6 material pixel comparison", () => {
     expect(brushV6RelativeInkError(paper, original, [155, 255, 255, 155])).toBe(2);
     expect(brushV6RelativeInkError(paper, original, [255, 55, 255, 255])).toBe(1);
     expect(() => brushV6RelativeInkError(paper, original, [])).toThrow("matching dimensions");
+  });
+});
+
+describe("전체 topology의 다른 33종 하한과 승인한 Chemy 배선 계약: AST·가짜 VM 응답", () => {
+  const file = ts.createSourceFile("studio-hybrid-topology-browser.ts",
+    readFileSync(new URL("./studio-hybrid-topology-browser.ts", import.meta.url), "utf8"), ts.ScriptTarget.Latest, true);
+  const audit = file.statements.find((node): node is ts.FunctionDeclaration =>
+    ts.isFunctionDeclaration(node) && node.name?.text === "auditStudioHybridTopology");
+  const loop = audit?.body?.statements.find((node): node is ts.ForOfStatement =>
+    ts.isForOfStatement(node) && node.expression.getText(file) === "BRUSH_STUDIO_V6_TOPOLOGIES.entries()");
+  const isPressureGate = (node: ts.Statement) => {
+    if (!ts.isExpressionStatement(node) || !ts.isCallExpression(node.expression)) return false;
+    const [condition] = node.expression.arguments;
+    return node.expression.expression.getText(file) === "check" && !!condition && ts.isBinaryExpression(condition)
+      && condition.left.getText(file) === "pressureRatio";
+  };
+
+  it("실제 AST의 하한·수집·실패 전달 분기를 가짜 정책 응답으로 검사하며 engine 픽셀 검증은 아니다", async () => {
+    if (!loop || !ts.isBlock(loop.statement)) throw new Error("전체 topology 감사 루프가 필요합니다.");
+    expect(loop.statement.statements.filter(isPressureGate)).toHaveLength(0);
+    const branches = loop.statement.statements.filter((node): node is ts.IfStatement =>
+      ts.isIfStatement(node) && ts.isBinaryExpression(node.expression)
+      && node.expression.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken
+      && node.expression.left.getText(file) === "topology.recipeId"
+      && ts.isStringLiteral(node.expression.right) && node.expression.right.text === "klecks-chemy");
+    expect(branches).toHaveLength(1);
+    const branch = branches[0];
+    if (!branch || !ts.isBlock(branch.thenStatement) || !branch.elseStatement || !ts.isBlock(branch.elseStatement)) {
+      throw new Error("Chemy 고정 정책과 다른 topology의 하한을 나누는 실제 if/else가 필요합니다.");
+    }
+    const pressureGates = branch.elseStatement.statements.filter(isPressureGate);
+    expect(pressureGates).toHaveLength(1);
+    const gate = pressureGates[0];
+    if (!gate) throw new Error("다른 33종의 실제 압력 gate가 필요합니다.");
+    const ratios = [[1, false], [1.1323929288472774, false], [1.15, false],
+      [1.150001, true], [NaN, false]] as const;
+    // 실제 else 문장을 실행한다. Chemy에 옛 15% 하한을 다시 적용하지 않는다.
+    for (const [pressureRatio, expected] of ratios) {
+      const checks: boolean[] = [];
+      runInNewContext(gate.getText(file), {
+        topology: { recipeId: "control-topology" }, pressureRatio,
+        check: (ok: boolean) => { checks.push(ok); },
+      });
+      expect(checks, "control-topology: " + pressureRatio).toEqual([expected]);
+    }
+    // 아래 VM은 정책 응답만 가짜다. 실제 renderer·PNG·원본 참조의 증거로 계산하지 않는다.
+    for (const [pressureRatio] of ratios) {
+      for (const mode of ["valid", "RGBchanged", "throw"] as const) {
+        const checks: { ok: boolean; message: string }[] = [], collected: unknown[][] = [];
+        const environment = { browser: "fake", platform: "fake", architecture: "fake" };
+        const lowSource = { name: "low-source" }, highSource = { name: "high-source" };
+        const light = { name: "low-canvas" }, heavy = { name: "high-canvas" };
+        const inputs = [environment, lowSource, highSource, light, heavy];
+        await runInNewContext("(async () => { " + branch.getText(file) + " })()", {
+          topology: { recipeId: "klecks-chemy" }, pressureRatio, environment, lowSource, highSource, light, heavy,
+          legacyPressurePolicy: undefined,
+          collectLegacyChemyPressure: async (...args: unknown[]) => {
+            collected.push(args);
+            if (mode === "throw") throw new Error("collection failed");
+            return { failures: mode === "RGBchanged" ? ["RGBchanged"] : [] };
+          },
+          check: (ok: boolean, message: string) => { checks.push({ ok, message }); },
+        });
+        expect(collected, mode + ": " + pressureRatio).toHaveLength(1);
+        expect(collected[0]).toHaveLength(inputs.length);
+        for (const [index, input] of inputs.entries()) expect(collected[0]?.[index]).toBe(input);
+        if (mode === "valid") {
+          expect(checks, "가짜 valid 정책에는 옛 aggregate 하한을 적용하지 않는다: " + pressureRatio).toEqual([]);
+        } else if (mode === "RGBchanged") {
+          expect(checks).toEqual([{ ok: false, message: "klecks-chemy: RGBchanged" }]);
+        } else {
+          expect(checks).toEqual([{ ok: false,
+            message: "klecks-chemy: legacy pressure policy failed: Error: collection failed" }]);
+        }
+      }
+    }
+  });
+
+  it("전체 보고서는 승인한 Chemy만 원래 하한을 포기한 고정 정책으로 기록한다", () => {
+    const result = audit?.body?.statements.find(ts.isReturnStatement)?.expression;
+    if (!result || !ts.isObjectLiteralExpression(result)) throw new Error("전체 감사 보고서가 필요합니다.");
+    const policy = result.properties.find((node): node is ts.PropertyAssignment =>
+      ts.isPropertyAssignment(node) && node.name.getText(file) === "chemyPressurePolicy");
+    if (!policy) throw new Error("전체 감사의 압력 계약 보고가 필요합니다.");
+    expect(runInNewContext("(" + policy.initializer.getText(file) + ")")).toEqual({
+      originalMinimumExclusive: 1.15, originalMinimumRetained: false, approvalStatus: "owner-approved-2026-11-05",
+    });
   });
 });
 

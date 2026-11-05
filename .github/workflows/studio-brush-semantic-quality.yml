@@ -23,6 +23,7 @@ on:
       - "apps/web/src/domains/creator/brush/studio-brush-pressure-curve-quality.ts"
       - "apps/web/src/domains/creator/brush/studio-brush-semantic-quality.test.ts"
       - "apps/web/src/domains/creator/brush/studio-brush-semantic-quality.ts"
+      - "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-solver.test.ts"
       - ".github/workflows/studio-brush-semantic-quality.yml"
   push:
     branches: [main]
@@ -77,6 +78,7 @@ jobs:
           apps/web/src/domains/creator/brush/studio-brush-engine-mix.test.ts
           apps/web/src/domains/creator/brush/StudioBrushEngineMixer.test.tsx
           apps/web/src/domains/creator/brush/StudioBrushEngineProgramControls.test.tsx
+          apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-solver.test.ts
 
       - name: Audit every listed name and material response
         run: >-
@@ -111,14 +113,13 @@ jobs:
           apps/web/src/domains/creator/brush/studio-brush-pressure-curve-quality.ts
           apps/web/src/domains/creator/brush/studio-brush-semantic-quality.test.ts
           apps/web/src/domains/creator/brush/studio-brush-semantic-quality.ts
+          apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-solver.test.ts
 
       - name: Typecheck
-        env:
-          NODE_OPTIONS: --max-old-space-size=16384
-        run: pnpm exec tsc -p tsconfig.json --noEmit --incremental false
+        run: pnpm run typecheck:web
 
       - name: Build production Studio
-        run: pnpm run build
+        run: pnpm run build:bundle
 
       - name: Upload semantic, material and pressure receipts
         if: ${{ always() }}

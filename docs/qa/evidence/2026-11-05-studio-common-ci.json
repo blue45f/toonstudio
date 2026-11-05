@@ -1,0 +1,40 @@
+{
+  "state": "current",
+  "date": "2026-11-05",
+  "base": "5165e4faf796cebe255460ab38d1c13fde8972c4",
+  "validated_code_commit": "7ee0b1276731ccc4b4ea555d3b7ffa570a96ab95",
+  "preserved_registration_commit": "be1df48ee7d87524749502b1e0fb691e360bca6a",
+  "verification": {
+    "harness_verify": { "exit_code": 0, "base": "origin/main", "full_web_and_api_types": true },
+    "quality_imports": { "exit_code": 0, "config_or_exclusions_changed": false },
+    "legacy_fixture_red": { "files": 2, "passed": 26, "failed": 2 },
+    "legacy_fixture_green": { "files": 2, "passed": 28 },
+    "legacy_related": { "files": 4, "passed": 87 },
+    "registration_node": { "passed": 26 },
+    "registration_vitest": { "files": 4, "passed": 86, "overlaps_node_scope": true },
+    "verifier_unit": { "passed": 3 },
+    "chromium": {
+      "exit_code": 0,
+      "webgl_paths": 3,
+      "webgpu_samples": 32,
+      "software_renderer": true,
+      "brushes": 23,
+      "synthetic_pointer_events": 234,
+      "console_errors": 0,
+      "module_hashes_match": 188,
+      "source_drift": false
+    }
+  },
+  "unchanged_browser_artifacts": [
+    { "name": "fixture.ts", "bytes": 1052, "sha256": "c97913e1ba614873f319fa43292cc07ae2fcf13572c5e4568320f4f994dbbb5b" },
+    { "name": "fixture.js", "bytes": 499401, "sha256": "f65ea1b9c7bf17f7001754e1d3cea2c2e21f2336ff9e7d2fc873d5cba20725ff" },
+    { "name": "module-audit.json", "bytes": 35212, "sha256": "4fd63259ffe508089b2a657b6e87d5abfefcb3709f584138a5a4c6c6894cd72e" },
+    { "name": "brushes-23.png", "bytes": 895832, "sha256": "f4177a10e034758479b6e3cdaa845aca4564b8bacb11944973acc623b3df807a" }
+  ],
+  "required_vitest_targets": { "before": 918, "after": 919, "archive_bridge_owner": "studio-foundation", "owner_assignments": 1 },
+  "product_guards_changed": false,
+  "quality_thresholds_changed": false,
+  "skipped_or_deleted_tests": false,
+  "limitations": ["remote exact-head CI pending", "production build not repeated in this scope", "physical GPU and pen untested", "original UX source and approved PNG unavailable"],
+  "merge_revert_or_deploy_performed": false
+}

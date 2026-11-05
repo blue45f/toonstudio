@@ -161,9 +161,15 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
         <StudioWorkspaceNavigator />
       )}
       <StudioCuttoonEditorHosts {...s} />
-      {legacyPagePigment || legacyMasterPigment ? <Suspense fallback={null}>
-        <StudioLegacyPigmentStrokeMigration session={s} />
-      </Suspense> : null}
+      {legacyPagePigment || legacyMasterPigment ? <div
+        data-studio-legacy-pigment-notice="true"
+        className={cn("min-w-0 shrink-0", mobileImmersive && !canvasOnlyMode &&
+          "relative max-lg:z-[31] max-lg:mt-[var(--studio-immersive-menubar-block,4.25rem)]")}
+      >
+        <Suspense fallback={null}>
+          <StudioLegacyPigmentStrokeMigration session={s} />
+        </Suspense>
+      </div> : null}
       <StudioCuttoonEditorDialogs {...s} />
       <Container
         size="wide"
