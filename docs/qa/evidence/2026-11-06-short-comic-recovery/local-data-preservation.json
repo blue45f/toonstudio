@@ -1,6 +1,6 @@
 {
   "scope": "독립 로컬 시험 DB의 기존 행과 권한 보존; 운영 DB 보증으로 확대하지 않는다.",
-  "executionSource": "74f82639af1c3d0331110d65b29087272aeeef40",
+  "executionSource": "f63dd7cf3c90804c077bd31868ca68de2b54fca8",
   "priorRows": [
     {
       "table": "\"user\"",
@@ -24,12 +24,12 @@
     },
     {
       "table": "studio_blob",
-      "priorRows": 40,
+      "priorRows": 46,
       "unchanged": true
     },
     {
       "table": "creator_asset_storage_object",
-      "priorRows": 80,
+      "priorRows": 92,
       "unchanged": true
     }
   ],
