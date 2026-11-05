@@ -7,6 +7,7 @@ on:
     paths:
       - "scripts/audit-studio-brush-pressure-curves.mts"
       - "scripts/audit-studio-brush-semantic-quality.mts"
+      - "scripts/lib/studio-brush-settled-granulation-evidence.ts"
       - "apps/web/src/domains/creator/StudioActiveBrushSummary.test.tsx"
       - "apps/web/src/domains/creator/StudioActiveBrushSummary.tsx"
       - "apps/web/src/domains/creator/brush/StudioBrushEngineMixer.test.tsx"
@@ -28,6 +29,7 @@ on:
     paths:
       - "scripts/audit-studio-brush-pressure-curves.mts"
       - "scripts/audit-studio-brush-semantic-quality.mts"
+      - "scripts/lib/studio-brush-settled-granulation-evidence.ts"
       - "apps/web/src/domains/creator/StudioActiveBrushSummary.test.tsx"
       - "apps/web/src/domains/creator/StudioActiveBrushSummary.tsx"
       - "apps/web/src/domains/creator/brush/**"
@@ -93,6 +95,7 @@ jobs:
           pnpm exec eslint --max-warnings=0
           scripts/audit-studio-brush-pressure-curves.mts
           scripts/audit-studio-brush-semantic-quality.mts
+          scripts/lib/studio-brush-settled-granulation-evidence.ts
           apps/web/src/domains/creator/StudioActiveBrushSummary.test.tsx
           apps/web/src/domains/creator/StudioActiveBrushSummary.tsx
           apps/web/src/domains/creator/brush/StudioBrushEngineMixer.test.tsx

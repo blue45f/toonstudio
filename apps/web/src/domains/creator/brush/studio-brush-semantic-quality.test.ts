@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  measureStudioWetPaperGranulationResponse,
+  profileStudioBrushSettledGranulationEvidence,
+} from "../../../../../../scripts/lib/studio-brush-settled-granulation-evidence";
+import { STUDIO_BRUSH_ENGINE_PROGRAM_SET_VERSION } from "./studio-brush-engine-program-set";
+import { STUDIO_WET_PAPER_BAKE_PROGRAMS } from "./wet-paper/studio-wet-paper-programs";
+
+import {
   STUDIO_DEFAULT_QUALITY_BRUSH_CATALOG_ITEMS,
 } from "./studio-brush-catalog";
 import { studioBrushPackDescriptorById } from "./studio-brush-pack-index";
@@ -106,6 +113,21 @@ describe("Studio brush semantic-claim audit", () => {
     ]));
   });
 
+  it("정착 입자 침전 근거로 분사·산포나 일반 입자 약속을 대신 인정하지 않는다", () => {
+    for (const name of [
+      "수채 · 입자 침전 산포", "수채 · 입자 침전 spray", "수채 · 입자 침전 scatter",
+      "수채 · 입자 침전 스플래터", "수채 · 입자 침전 일반 입자", "수채 · 산포",
+    ]) {
+      const result = auditStudioBrushSemanticClaims({
+        catalogId: "watercolor--granulating-bake", name, operation: "paint",
+        settledGranulationResponse: true,
+      });
+      expect(result.issues, name).toContainEqual(expect.objectContaining({
+        code: "particle-claim-without-particle-response",
+      }));
+    }
+  });
+
   it("accepts runtime-backed wet, bristle, particle, glow and tone promises", () => {
     const cases = [
       ["watercolor", "수채 워시"],
@@ -144,5 +166,74 @@ describe("Studio brush semantic-claim audit", () => {
     expect(results.flatMap(({ issues }) => (
       issues.filter(({ severity }) => severity === "error")
     ))).toEqual([]);
+  });
+});
+
+const GRANULATING_BRUSH = "watercolor--granulating-bake";
+const GRANULATING_PROGRAM = STUDIO_WET_PAPER_BAKE_PROGRAMS["curtis-granulating-wash"];
+
+describe("정착 수채 입자 침전 감사 증거", () => {
+  it("실제 기본 정착 프로그램의 종이 골에 더 많은 안료가 침착됨을 측정한다", () => {
+    const evidence = profileStudioBrushSettledGranulationEvidence(GRANULATING_BRUSH);
+    expect(evidence).toMatchObject({ programId: "curtis-granulating-wash", responsive: true });
+    expect(evidence?.valleyCaptureExcess).toBeGreaterThan(0);
+    expect(evidence?.ridgeSettledMass).toBeGreaterThan(0);
+  });
+
+  it("실제 연결된 입자 침전 약속을 일반 분사 산포와 구분한다", () => {
+    const evidence = profileStudioBrushSettledGranulationEvidence(GRANULATING_BRUSH);
+    const result = auditStudioBrushSemanticClaims({
+      catalogId: GRANULATING_BRUSH, name: "수채 · 입자 침전", operation: "paint",
+      settledGranulationResponse: evidence?.responsive,
+    });
+    expect(result.issues).toEqual([]);
+  });
+
+  it("문구와 기본 watercolor 계약만으로 입자 침전 약속을 인정하지 않는다", () => {
+    for (const id of ["watercolor", "pen"]) {
+      expect(profileStudioBrushSettledGranulationEvidence(id)).toBeNull();
+      const result = auditStudioBrushSemanticClaims({
+        catalogId: id, name: "입자 침전", operation: "paint",
+      });
+      expect(result.issues).toContainEqual(expect.objectContaining({
+        code: "particle-claim-without-particle-response",
+      }));
+    }
+  });
+
+  it("블룸·리빙잉크 오버라이드로 정착 경로가 바뀌면 기본 핀의 근거를 빌리지 않는다", () => {
+    for (const watercolor of [
+      { wetEdgeBloomProgramId: "edge-bloom" },
+      { livingInkBakeProgramId: "sumi-flow-bake" },
+    ]) {
+      const evidence = profileStudioBrushSettledGranulationEvidence(GRANULATING_BRUSH, {
+        version: STUDIO_BRUSH_ENGINE_PROGRAM_SET_VERSION, watercolor,
+      });
+      expect(evidence).toBeNull();
+      expect(auditStudioBrushSemanticClaims({
+        catalogId: GRANULATING_BRUSH, name: "수채 · 입자 침전", operation: "paint",
+        settledGranulationResponse: evidence?.responsive,
+      }).warningCount).toBe(1);
+    }
+  });
+
+  it("granulation 또는 침착률을 제거한 변형은 같은 종이에서도 침전 근거가 되지 못한다", () => {
+    for (const change of [{ granulation: 0 }, { settleRate: 0 }]) {
+      const evidence = measureStudioWetPaperGranulationResponse({
+        ...GRANULATING_PROGRAM,
+        pigments: [
+          { ...GRANULATING_PROGRAM.pigments[0], ...change },
+          { ...GRANULATING_PROGRAM.pigments[1], ...change },
+        ],
+      });
+      expect(evidence.valleyCaptureExcess).toBe(0);
+      expect(evidence.responsive).toBe(false);
+      expect(auditStudioBrushSemanticClaims({
+        catalogId: GRANULATING_BRUSH, name: "수채 · 입자 침전", operation: "paint",
+        settledGranulationResponse: evidence.responsive,
+      }).issues).toContainEqual(expect.objectContaining({
+        code: "particle-claim-without-particle-response",
+      }));
+    }
   });
 });
