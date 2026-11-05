@@ -16,6 +16,7 @@ export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, acto
   const page = await context.newPage(), proof: LiveProof = { synced: false, updateAcks: 0, rejected: 0 };
   const network: { path: string; status: number }[] = [];
   const acknowledgements: { event: string; ok: boolean | null; code?: string }[] = [];
+  const sockets: { path: string; closed: boolean; errors: number; sentFrames: number; receivedFrames: number; connectErrorCodes: string[] }[] = [];
   page.on("response", response => {
     const url = new URL(response.url());
     if (url.origin === origin && url.pathname.startsWith("/api/")) {
@@ -25,15 +26,32 @@ export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, acto
   });
   await page.bringToFront();
   page.on("websocket", socket => {
+    const state = { path: new URL(socket.url()).pathname, closed: false, errors: 0, sentFrames: 0, receivedFrames: 0, connectErrorCodes: [] as string[] };
+    sockets.push(state);
+    socket.on("close", () => { state.closed = true; });
+    socket.on("socketerror", () => { state.errors++; });
     const events = new Map<string, string>();
     socket.on("framesent", ({ payload }) => {
+      state.sentFrames++;
       if (typeof payload !== "string") return;
       const index = payload.indexOf("["), id = /,(\d+)$/u.exec(payload.slice(0, index))?.[1];
       if (index < 0 || !id) return;
       try { const wire: unknown = JSON.parse(payload.slice(index)); if (Array.isArray(wire) && typeof wire[0] === "string") events.set(id, wire[0]); } catch { /* 다른 Engine.IO frame은 이 영수증 대상이 아니다. */ }
     });
     socket.on("framereceived", ({ payload }) => {
+      state.receivedFrames++;
       if (typeof payload !== "string") return;
+      if (payload.startsWith("44")) {
+        const start = payload.indexOf("{");
+        try {
+          const value: unknown = start < 0 ? null : JSON.parse(payload.slice(start));
+          const data: unknown = value && typeof value === "object" ? Reflect.get(value, "data") : null;
+          const codes = [value, data].flatMap(item => item && typeof item === "object"
+            ? [Reflect.get(item, "code"), Reflect.get(item, "reason"), Reflect.get(item, "message")] : [])
+            .filter((code): code is string => typeof code === "string" && /^(?:auth|unauth|forbidden|studio|expired|invalid|origin|rate|session|permission|acl|work|reader|token|ticket)[a-z0-9_:.-]{0,60}$/iu.test(code));
+          state.connectErrorCodes.push(...(codes.length ? codes : ["unclassified-connect-error"]));
+        } catch { state.connectErrorCodes.push("unparseable-connect-error"); }
+      }
       const index = payload.indexOf("["), id = /,(\d+)$/u.exec(payload.slice(0, index))?.[1];
       if (index < 0 || !id) return;
       try {
@@ -69,7 +87,7 @@ export async function openSixPageCanvas(browser: Browser, h: CanvasHarness, acto
     try {
       await mkdir(output, { recursive: true });
       const prefix = join(output, `canvas-startup-${crypto.randomUUID()}`);
-      await writeFile(`${prefix}.json`, JSON.stringify({ proof, network, acknowledgements,
+      await writeFile(`${prefix}.json`, JSON.stringify({ proof, network, acknowledgements, sockets,
         pathname: new URL(page.url()).pathname, body: await page.locator("body").innerText({ timeout: 5_000 }) }, null, 2), { mode: 0o600 });
       await page.screenshot({ path: `${prefix}.png`, timeout: 15_000 });
     } catch {
