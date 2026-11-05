@@ -16,6 +16,7 @@ import {
 import { decodePublicCollectionSnapshot, encodePublicCollectionSnapshot } from "./public-list-share";
 
 import type { Title } from "@/shared/lib/types";
+import { useI18n } from "@/shared/lib/i18n";
 
 function title(overrides: Partial<Title> = {}): Title {
   return {
@@ -51,6 +52,20 @@ function title(overrides: Partial<Title> = {}): Title {
 }
 
 describe("engagement model", () => {
+  it("예정 문구의 영어 번역과 누락 언어 폴백도 신규 회차 공개를 단정하지 않는다", () => {
+    const previous = useI18n.getState().lang;
+    try {
+      useI18n.setState({ lang: "en" });
+      expect(releaseNotificationForTitle(title(), new Date(2026, 8, 25))).toMatchObject({
+        title: "작품 하나 is scheduled for today",
+        body: expect.stringContaining("confirm whether a new episode is available"),
+      });
+      useI18n.setState({ lang: "ja" });
+      expect(releaseNotificationForTitle(title(), new Date(2026, 8, 25))?.title).toContain("is scheduled for today");
+    } finally {
+      useI18n.setState({ lang: previous });
+    }
+  });
   it("creates deterministic release notifications only on the configured weekday", () => {
     // releaseNotificationForTitle는 로컬 시간 기준(getDay/localDateKey)이라
     // 고정 오프셋을 박으면 러너 시간대에 따라 같은 instant의 요일이 달라진다.
@@ -58,7 +73,17 @@ describe("engagement model", () => {
     const friday = new Date(2026, 8, 25);
     const notification = releaseNotificationForTitle(title(), friday);
     expect(notification?.id).toBe("release:2026-09-25:title-1");
+    expect(notification?.title).toBe("작품 하나 오늘 연재 예정");
+    expect(notification?.body).toBe("등록된 연재 요일 메타데이터 기준입니다. 새 회차 공개 여부는 제공 플랫폼에서 확인해 주세요.");
     expect(releaseNotificationForTitle(title(), new Date(2026, 8, 24))).toBeNull();
+  });
+
+  it("휴재·완결 작품과 연재 요일이 없는 작품을 예정 목록에서 제외한다", () => {
+    const friday = new Date(2026, 8, 25);
+    expect(releaseNotificationForTitle(title({ status: "hiatus" }), friday)).toBeNull();
+    expect(releaseNotificationForTitle(title({ status: "completed" }), friday)).toBeNull();
+    expect(releaseNotificationForTitle(title({ updateDays: undefined }), friday)).toBeNull();
+    expect(releaseNotificationForTitle(title({ updateDays: [] }), friday)).toBeNull();
   });
 
   it("explains observed availability changes without inventing historical facts", () => {

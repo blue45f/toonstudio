@@ -1,15 +1,16 @@
 import { apiFetch } from "@/platform/api";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { EngagementNotification } from "./engagement-model";
-import { useEngagement } from "./engagement-store";
+import { localDateKey } from "./engagement-model";
+import { useEngagement, useEngagementHydrated } from "./engagement-store";
 
 import type { Title } from "@/shared/lib/types";
 import type { CreatorMarketplaceCloudLibraryItem } from "@/shared/lib/creator-marketplace-cloud-library-contract";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { getProductionPersonalInbox } from "@/domains/creator/public/production-projects";
-import { useApp } from "@/shared/lib/store";
+import { useApp, useHydrated } from "@/shared/lib/store";
 import { listCreatorMarketplaceCloudLibrary } from "@/platform/creator-marketplace-client";
 
 const TITLE_CHUNK_SIZE = 80;
@@ -24,9 +25,10 @@ async function fetchTitles(ids: readonly string[], signal: AbortSignal): Promise
       cache: "no-store",
       signal,
     });
-    if (!response.ok) return [] as Title[];
+    if (!response.ok) throw new Error(`연재 예정 작품 조회 실패 (${response.status})`);
     const payload = await response.json() as { items?: Title[] };
-    return Array.isArray(payload.items) ? payload.items : [];
+    if (!Array.isArray(payload.items)) throw new Error("연재 예정 작품 응답 형식이 올바르지 않습니다.");
+    return payload.items;
   }));
   return responses.flat();
 }
@@ -101,7 +103,17 @@ function marketNotification(item: CreatorMarketplaceCloudLibraryItem): Engagemen
 /** Synchronize durable reader signals and the authenticated production inbox into one presentation inbox. */
 export function useEngagementNotificationSync(): void {
   const subscriptions = useApp((state) => state.subscriptions);
-  const { ready, status } = useSession();
+  const userId = useApp((state) => state.userId);
+  const libraryOwnerId = useApp((state) => state.libraryOwnerId);
+  const libraryMergeOwnerId = useApp((state) => state.libraryMergeOwnerId);
+  const authGeneration = useApp((state) => state.authGeneration);
+  const appHydrated = useHydrated();
+  const engagementHydrated = useEngagementHydrated();
+  const activeOwnerId = useEngagement((state) => state.activeOwnerId);
+  const { ready, status, data: session } = useSession();
+  const sessionOwnerId = session?.user.id ?? null;
+  const sessionToken = session?.token ?? null;
+  const [releaseRefresh, setReleaseRefresh] = useState(0);
   const syncReleaseNotifications = useEngagement((state) => state.syncReleaseNotifications);
   const replaceNotificationsBySourcePrefix = useEngagement(
     (state) => state.replaceNotificationsBySourcePrefix,
@@ -110,35 +122,37 @@ export function useEngagementNotificationSync(): void {
   const notificationSyncNonce = useEngagement((state) => state.notificationSyncNonce);
 
   const pendingRef = useRef(0);
-  const failedRef = useRef(false);
+  const failedSourcesRef = useRef(new Set<string>());
   const generationRef = useRef(0);
 
   type FinishResult = "ok" | "failed" | "cancelled";
 
-  const finishRequest = useCallback((generation: number, result: FinishResult) => {
+  const finishRequest = useCallback((generation: number, source: string, result: FinishResult) => {
     if (generation !== generationRef.current) return;
-    if (result === "failed") failedRef.current = true;
+    if (result === "failed") failedSourcesRef.current.add(source);
     pendingRef.current = Math.max(0, pendingRef.current - 1);
     if (pendingRef.current === 0) {
-      setNotificationSyncStatus(failedRef.current ? "error" : "idle");
+      setNotificationSyncStatus(failedSourcesRef.current.size > 0 ? "error" : "idle");
     }
   }, [setNotificationSyncStatus]);
 
   const trackRequest = useCallback(
-    <T,>(promise: Promise<T>): Promise<T | undefined> => {
+    <T,>(promise: Promise<T>, source: "release" | "production" | "market", signal?: AbortSignal): Promise<T | undefined> => {
       const generation = generationRef.current;
+      failedSourcesRef.current.delete(source);
       pendingRef.current += 1;
       setNotificationSyncStatus("loading");
       return promise.then(
         (value) => {
-          finishRequest(generation, "ok");
-          return value;
+          finishRequest(generation, source, "ok");
+          return generation === generationRef.current && !signal?.aborted ? value : undefined;
         },
         (error: unknown) => {
           // 취소(abort)는 실패로 집계하지 않는다.
           finishRequest(
             generation,
-            error instanceof DOMException && error.name === "AbortError" ? "cancelled" : "failed",
+            source,
+            signal?.aborted || (error instanceof DOMException && error.name === "AbortError") ? "cancelled" : "failed",
           );
           return undefined;
         },
@@ -147,12 +161,44 @@ export function useEngagementNotificationSync(): void {
     [finishRequest, setNotificationSyncStatus],
   );
 
-  // 재시도(nonce 변경)마다 세대와 실패 플래그를 초기화한다. 데이터 이펙트보다 먼저
+  // 재시도와 세션 변경마다 세대와 실패 목록을 초기화한다. 데이터 이펙트보다 먼저
   // 선언해 같은 배치의 첫 이펙트보다 먼저 실행되도록 한다.
   useEffect(() => {
     generationRef.current += 1;
-    failedRef.current = false;
-  }, [notificationSyncNonce]);
+    pendingRef.current = 0;
+    failedSourcesRef.current.clear();
+    setNotificationSyncStatus("idle");
+    return () => { generationRef.current += 1; };
+  }, [notificationSyncNonce, ready, status, sessionOwnerId, sessionToken, setNotificationSyncStatus]);
+
+  // 브라우저의 로컬 날짜를 사용한다. 잠든 탭은 화면 복귀 시 현재 날짜로 다시 계산한다.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const scheduleMidnight = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      timer = setTimeout(refresh, midnight.getTime() - now.getTime() + 50);
+    };
+    const refresh = () => {
+      clearTimeout(timer);
+      setReleaseRefresh((value) => value + 1);
+      scheduleMidnight();
+    };
+    const handleVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    scheduleMidnight();
+    window.addEventListener("focus", handleVisible);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", handleVisible);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", handleVisible);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", handleVisible);
+    };
+  }, []);
 
   const subscriptionIds = useMemo(
     () => Object.entries(subscriptions)
@@ -161,17 +207,42 @@ export function useEngagementNotificationSync(): void {
       .sort((left, right) => left.localeCompare(right)),
     [subscriptions],
   );
-  const subscriptionKey = subscriptionIds.join(",");
-
   useEffect(() => {
-    if (!subscriptionKey) return;
+    if (!ready || !appHydrated || !engagementHydrated
+      || userId !== sessionOwnerId || libraryOwnerId !== sessionOwnerId
+      || (sessionOwnerId === null && libraryMergeOwnerId !== null)
+      || activeOwnerId !== sessionOwnerId) return;
+
+    const dateKey = localDateKey(new Date());
+    const sourceKeys = new Set(subscriptionIds.map((id) => `catalog-release:${id}:${dateKey}`));
+    // 구독 해제와 날짜 전환은 네트워크 성공을 기다리지 않고 즉시 반영한다.
+    replaceNotificationsBySourcePrefix("catalog-release:", useEngagement.getState().notifications
+      .filter((item) => sourceKeys.has(item.sourceKey)));
+    if (subscriptionIds.length === 0) {
+      failedSourcesRef.current.delete("release");
+      if (pendingRef.current === 0) {
+        setNotificationSyncStatus(failedSourcesRef.current.size > 0 ? "error" : "idle");
+      }
+      return;
+    }
+
     const controller = new AbortController();
-    void trackRequest(fetchTitles(subscriptionIds, controller.signal))
+    void trackRequest(fetchTitles(subscriptionIds, controller.signal), "release", controller.signal)
       .then((titles) => {
-        if (titles) syncReleaseNotifications(titles);
+        const current = useApp.getState();
+        if (!titles || controller.signal.aborted
+          || current.authGeneration !== authGeneration
+          || current.subscriptions !== subscriptions
+          || useEngagement.getState().activeOwnerId !== sessionOwnerId
+          || localDateKey(new Date()) !== dateKey) return;
+        const subscribed = new Set(subscriptionIds);
+        syncReleaseNotifications(titles.filter((title) => subscribed.has(title.id)));
       });
     return () => controller.abort();
-  }, [notificationSyncNonce, subscriptionIds, subscriptionKey, syncReleaseNotifications, trackRequest]);
+  }, [notificationSyncNonce, releaseRefresh, subscriptionIds, subscriptions, ready, appHydrated,
+    engagementHydrated, userId, libraryOwnerId, libraryMergeOwnerId, activeOwnerId, sessionOwnerId,
+    sessionToken, status, authGeneration,
+    replaceNotificationsBySourcePrefix, syncReleaseNotifications, setNotificationSyncStatus, trackRequest]);
 
   useEffect(() => {
     if (!ready || status !== "authenticated") {
@@ -179,7 +250,7 @@ export function useEngagementNotificationSync(): void {
       return;
     }
     let active = true;
-    void trackRequest(getProductionPersonalInbox())
+    void trackRequest(getProductionPersonalInbox(), "production")
       .then((response) => {
         if (!active || !response) return;
         replaceNotificationsBySourcePrefix(
@@ -190,7 +261,7 @@ export function useEngagementNotificationSync(): void {
     return () => {
       active = false;
     };
-  }, [notificationSyncNonce, ready, replaceNotificationsBySourcePrefix, status, trackRequest]);
+  }, [notificationSyncNonce, ready, replaceNotificationsBySourcePrefix, status, sessionOwnerId, sessionToken, trackRequest]);
 
   useEffect(() => {
     if (!ready || status !== "authenticated") {
@@ -198,9 +269,9 @@ export function useEngagementNotificationSync(): void {
       return;
     }
     const controller = new AbortController();
-    void trackRequest(listMarketUpdates(controller.signal))
+    void trackRequest(listMarketUpdates(controller.signal), "market", controller.signal)
       .then((items) => {
-        if (!items) return;
+        if (!items || controller.signal.aborted) return;
         replaceNotificationsBySourcePrefix(
           "market-library-update:",
           items.flatMap((item) => {
@@ -210,5 +281,5 @@ export function useEngagementNotificationSync(): void {
         );
       });
     return () => controller.abort();
-  }, [notificationSyncNonce, ready, replaceNotificationsBySourcePrefix, status, trackRequest]);
+  }, [notificationSyncNonce, ready, replaceNotificationsBySourcePrefix, status, sessionOwnerId, sessionToken, trackRequest]);
 }

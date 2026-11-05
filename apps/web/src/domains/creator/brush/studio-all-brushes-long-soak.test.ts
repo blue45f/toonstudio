@@ -299,7 +299,7 @@ describe("실제 서비스 전체 브러시 카탈로그 및 장시간 소크(Lo
       };
       const before = structuredClone(fixture);
       const material = normalizeBrushStudioV6MaterialConfig(fixture);
-      expect(material, recipe.id).not.toBeNull();
+      if (!material) throw new Error(`${recipe.id}: 자체 안료 V1 호환 설정이 올바르지 않습니다.`);
       const stroke = createBrushStudioV6MaterialStroke(material);
       const marks = Array.from({ length: 9 }, (_, index) => ({
         x: 24 + index * 6, y: 36, pressure: 0.6,
