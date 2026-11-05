@@ -55,8 +55,8 @@ async function fillWorkspace() {
   fireEvent.click(screen.getByRole("button", { name: /팀 · 스튜디오/ }));
   fireEvent.click(screen.getByRole("button", { name: /현업 · 전문/ }));
   fireEvent.click(screen.getByRole("button", { name: "다음" }));
-  fireEvent.click(screen.getByRole("button", { name: /글작가/ }));
-  fireEvent.click(screen.getByRole("button", { name: /어시스턴트/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^글작가/u }));
+  fireEvent.click(screen.getByRole("button", { name: /^어시스턴트/u }));
   fireEvent.change(screen.getByLabelText("대표 역할"), { target: { value: "story" } });
   fireEvent.click(screen.getByRole("button", { name: "다음" }));
   fireEvent.click(screen.getByRole("button", { name: "스토리·대본 집필" }));

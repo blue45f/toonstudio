@@ -491,7 +491,7 @@ describe("StudioCommentsPanel review rail contract", () => {
 
   it("cancels pin placement explicitly and never marks an entire clustered pin as read", () => {
     // 의도된 변경(2026-08, B-06): Esc 취소 안내는 추출된 keydown 디스패처의 분기다.
-    expect(studioShortcutDispatcherSource).toContain('announceDrawingShortcut("댓글 핀 배치 취소")');
+    expect(studioShortcutDispatcherSource).toContain('announceDrawingShortcut({ code: "commentPinCancelled" })');
     expect(studioPageSource).toContain("studioCommentFocusRequestSequenceRef");
     expect(studioPageSource).toContain('setStudioCommentPlacementPhase("idle")');
     expect(studioPageSource).toContain(

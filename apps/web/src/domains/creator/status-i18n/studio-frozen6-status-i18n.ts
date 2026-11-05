@@ -109,7 +109,6 @@ registerI18nLocaleEntries("en", {
 
 // ── bg3d/studio-bg3d-editor-scene-ops-host.ts
 registerI18nLocaleEntries("ko", {
-  "studio.frozenStatus6.sceneOps.budgetExceeded": "현재 장면이 안전 예산을 초과해 템플릿 저장을 시작하지 않았습니다. 장면을 나누거나 일부 오브젝트를 정리해 주세요.",
   "studio.frozenStatus6.sceneOps.losslessSourceUnavailable": "현재 장면을 손실 없는 템플릿 원본으로 만들 수 없습니다. 문제가 있는 도형이나 모델을 확인해 주세요.",
   "studio.frozenStatus6.sceneOps.templateSaveFailed": "현재 장면 템플릿을 저장하지 못했습니다. 저장 공간을 확인한 뒤 다시 시도해 주세요.",
   "studio.frozenStatus6.sceneOps.templateDeleteFailed": "템플릿을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.",
@@ -121,7 +120,6 @@ registerI18nLocaleEntries("ko", {
   "studio.frozenStatus6.sceneOps.generatedPartsRejected": "저장 가능한 장면 용량이나 도형 정보의 범위를 초과해 배치하지 못했습니다.",
 });
 registerI18nLocaleEntries("en", {
-  "studio.frozenStatus6.sceneOps.budgetExceeded": "The current scene exceeds the safety budget, so template saving was not started. Split the scene or remove some objects.",
   "studio.frozenStatus6.sceneOps.losslessSourceUnavailable": "The current scene cannot be made into a lossless template source. Check the shapes or models causing the problem.",
   "studio.frozenStatus6.sceneOps.templateSaveFailed": "Could not save the current scene template. Check the storage space and try again.",
   "studio.frozenStatus6.sceneOps.templateDeleteFailed": "Could not delete the template. Please try again shortly.",

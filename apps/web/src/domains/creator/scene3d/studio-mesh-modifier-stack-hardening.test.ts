@@ -188,7 +188,10 @@ describe("modifier parameter contracts", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.mesh.vertices).toHaveLength(6);
-    expect(result.value.mesh.faces).toHaveLength(4);
+    // 대칭은 원본 quad를 보존하고, 렌더링 삼각화에서만 네 삼각형을 만든다.
+    expect(result.value.mesh.faces).toHaveLength(2);
+    expect(result.value.mesh.halfEdges).toHaveLength(8);
+    expect(studioEditableMeshToTriangleSoup(result.value.mesh).indices).toHaveLength(12);
     expect(result.value.mesh.vertices.filter(({ position }) => position.x === 0)).toHaveLength(2);
     expect(result.value.mesh.vertices.some(({ position }) => position.x === -1)).toBe(true);
   });

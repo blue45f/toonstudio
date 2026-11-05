@@ -165,11 +165,19 @@ describe("Studio BG3D model placement and persistent deletion integration", () =
       "commitImmediateHistoryTransition(",
       "replaceCanonicalDocumentState(",
     ]);
+    expectInOrder(template, [
+      "const bindings = mergeStudioBg3dTemplateAttachmentMaps({",
+      "currentAttachments: attachmentByStorageModelIdRef.current",
+      "templateAttachments: prepared.nextAttachmentByStorageId",
+      "insertedModels: prepared.customModels",
+      "assertStudioBg3dModelAttachmentAdmission({",
+    ]);
     const templateCommit = template.lastIndexOf("assertStudioBg3dModelAttachmentAdmission({");
     expect(templateCommit).toBeGreaterThan(-1);
     expectInOrder(template.slice(templateCommit), [
       "models: current.customModels",
-      "candidateAttachments: preparedAttachments",
+      "attachments: bindings.attachments",
+      "candidateAttachments: bindings.candidates",
       "maximumCumulativeBytes: current.document.budgets.complexity.maxModelBytes",
       "attachmentByStorageModelIdRef.current.clear()",
       "replaceCanonicalDocumentState(",

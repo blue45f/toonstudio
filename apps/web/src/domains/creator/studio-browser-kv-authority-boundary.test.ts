@@ -21,7 +21,7 @@ const WORKSPACE_ROOT = resolve(HERE, "../../../../../");
 const CREATOR_ROOT = resolve(WORKSPACE_ROOT, "apps/web/src/domains/creator");
 const PACKAGE_ROOT = resolve(WORKSPACE_ROOT, "packages");
 const PAGES_HISTORY_DURABLE_RUNTIME_SOURCE = readFileSync(
-  resolve(CREATOR_ROOT, "studio-pages-history-durable-runtime.ts"),
+  resolve(CREATOR_ROOT, "studio-cuttoon-editor/runtime/history/studio-pages-history-durable-factory.ts"),
   "utf8",
 );
 const COMPANION_PAGE_SOURCE = readFileSync(

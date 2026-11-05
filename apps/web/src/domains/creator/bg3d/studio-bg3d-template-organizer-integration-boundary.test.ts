@@ -15,6 +15,7 @@ const userTemplatePanelSource = source("./StudioBg3dUserTemplateLibraryPanel.tsx
 const effectsSource = source("./useStudioBg3dEditorEffects.ts");
 const runtimeBindingsSource = source("./studio-bg3d-editor-runtime-bindings.ts");
 const organizerRuntimeSource = source("./studio-bg3d-template-organizer-runtime.ts");
+const measurementTemplateSource = source("./studio-bg3d-measurement-template.ts");
 
 function expectInOrder(value: string, markers: readonly string[]): void {
   let cursor = -1;
@@ -47,11 +48,26 @@ describe("Studio BG3D template organizer integration boundary", () => {
     const applyTemplate = placementSource.slice(start, end);
 
     expectInOrder(applyTemplate, [
-      "const templateInstanceAllocation = allocateStudioBg3dTemplateInstanceNodeIds({",
-      'sourceKind: "user"',
+      "const templateNodeIds = allocateStudioBg3dMeasurementTemplateNodeIds({",
+      "document: entry.document",
+      "sourceId: entry.id",
+      'if (!templateNodeIds) throw new Error("template-instance-id")',
       "instantiateBg3dTemplateDocument(",
+      '() => templateNodeIds[templateNodeOrdinal++] ?? ""',
       "hydrateStudioBg3dDocumentToRuntime({",
       "orderStudioBg3dHierarchySelectionRootsFirst(insertedEntities)",
+    ]);
+    const allocate = measurementTemplateSource.slice(
+      measurementTemplateSource.indexOf("export function allocateStudioBg3dMeasurementTemplateNodeIds("),
+      measurementTemplateSource.indexOf("export function assertStudioBg3dTemplateHydration("),
+    );
+    expectInOrder(allocate, [
+      "if (input.document.nodes.length === 0)",
+      "readStudioBg3dSceneMeasurements(input.document).guides.length > 0 ? [] : null",
+      "return allocateStudioBg3dTemplateInstanceNodeIds({",
+      'sourceKind: "user"',
+      "nodeCount: input.document.nodes.length",
+      "occupiedNodeIds: input.occupiedNodeIds",
     ]);
   });
 
