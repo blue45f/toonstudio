@@ -33,6 +33,12 @@ on:
       - 'scripts/ci-executed-gates.test.mjs'
       - 'scripts/studio-quality-bundle-leaves.test.mjs'
       - 'scripts/ci-enospc-followup-policy.test.mjs'
+      - 'scripts/ci-shared-typecheck.mjs'
+      - 'scripts/ci-shared-typecheck.test.mjs'
+      - 'scripts/ci-typecheck-receipt.mjs'
+      - 'scripts/ci-typecheck-receipt.test.mjs'
+      - 'scripts/ci-typecheck-lookup.mjs'
+      - 'scripts/ci-typecheck-lookup.test.mjs'
       - '.github/workflows/studio-finishing-quality.yml'
   push:
     branches: ["main", "release/salvage-integration-20260908"]
@@ -65,6 +71,12 @@ on:
       - 'scripts/ci-executed-gates.test.mjs'
       - 'scripts/studio-quality-bundle-leaves.test.mjs'
       - 'scripts/ci-enospc-followup-policy.test.mjs'
+      - 'scripts/ci-shared-typecheck.mjs'
+      - 'scripts/ci-shared-typecheck.test.mjs'
+      - 'scripts/ci-typecheck-receipt.mjs'
+      - 'scripts/ci-typecheck-receipt.test.mjs'
+      - 'scripts/ci-typecheck-lookup.mjs'
+      - 'scripts/ci-typecheck-lookup.test.mjs'
       - '.github/workflows/studio-finishing-quality.yml'
   workflow_dispatch:
 
@@ -83,6 +95,9 @@ jobs:
   quality-static:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
     env:
       CI: 'true'
       NODE_OPTIONS: --max-old-space-size=8192
@@ -174,9 +189,11 @@ jobs:
           pnpm run validate:architecture 2>&1 | tee "$RUNNER_TEMP/quality-static/architecture.log"
           pnpm run lint:strict 2>&1 | tee "$RUNNER_TEMP/quality-static/lint.log"
       - name: Frontend and API type contracts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          pnpm run typecheck 2>&1 | tee "$RUNNER_TEMP/quality-static/typecheck.log"
+          node scripts/ci-shared-typecheck.mjs reuse-or-run 2>&1 | tee "$RUNNER_TEMP/quality-static/typecheck.log"
       - uses: actions/upload-artifact@v7
         if: always()
         with:

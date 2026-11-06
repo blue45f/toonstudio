@@ -153,7 +153,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - name: Verify mandatory CI wiring before installing dependencies
-        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/deployment-preflight.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/ci-throughput-policy.test.mjs scripts/type-coverage-gate-contract.test.mjs scripts/code-structure-gates-contract.test.mjs scripts/check-source-file-size.test.mjs
+        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/deployment-preflight.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/ci-throughput-policy.test.mjs scripts/type-coverage-gate-contract.test.mjs scripts/code-structure-gates-contract.test.mjs scripts/check-source-file-size.test.mjs scripts/ci-shared-typecheck.test.mjs scripts/ci-typecheck-receipt.test.mjs scripts/ci-typecheck-lookup.test.mjs
       - name: Verify deduplicated PR workflow policy
         run: python3 scripts/verify-pr-workflow-fanout.py
       # 의존성 설치 전에 끝나는 파일 크기 래칫: 새 파일 줄 수 상한, 기록된 초과 파일 증가 금지, 새 @ts-nocheck 금지(상한 값은 기준선 한 곳에만 둔다).
@@ -190,6 +190,15 @@ jobs:
           pnpm run typecheck:cloudflare-realtime
       - name: Enforce type-coverage ratchet (typed identifier floor)
         run: pnpm run check:type-coverage
+      - name: 완료한 Core 타입 검사 영수증 기록
+        run: node scripts/ci-shared-typecheck.mjs publish "$RUNNER_TEMP/core-typecheck/receipt.json"
+      - name: 동일 입력의 도메인 검사용 타입 검사 영수증 공유
+        uses: actions/upload-artifact@v7
+        with:
+          name: core-typecheck-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/core-typecheck/receipt.json
+          if-no-files-found: error
+          retention-days: 1
       - name: Save TypeScript incremental state on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.typescript-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
