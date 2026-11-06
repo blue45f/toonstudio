@@ -144,7 +144,7 @@ describe("Google Identity Services 로그인 버튼", () => {
     ).toBeTruthy();
   });
 
-  it("discloses the redirect fallback only after GIS failure when discovery authorized it", async () => {
+  it("검증된 discovery가 허용한 대체 경로를 GIS 오류 뒤에도 제공한다", async () => {
     const onRedirectFallback = vi.fn();
     signInWithGoogleIdToken.mockResolvedValue({
       ok: false,
@@ -212,6 +212,116 @@ describe("Google Identity Services 로그인 버튼", () => {
     await act(async () => { rejectCredential(new Error("aborted")); });
     expect(onSuccess).not.toHaveBeenCalled();
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("GIS 응답이 없어도 준비된 화면에서 설명이 연결된 대체 로그인을 제공한다", async () => {
+    const onRedirectFallback = vi.fn();
+    render(<GoogleIdentityButton clientId="client.apps.googleusercontent.com" onSuccess={vi.fn()} onRedirectFallback={onRedirectFallback} />);
+    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
+    const fallback = screen.getByRole("button", { name: "다른 방식으로 Google 로그인" });
+    expect(fallback.getAttribute("type")).toBe("button");
+    expect(fallback.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    const descriptionId = fallback.getAttribute("aria-describedby");
+    expect(descriptionId).toBeTruthy();
+    expect(document.getElementById(descriptionId ?? "")?.textContent).toBe("Google 버튼이 반응하지 않으면 로그인 페이지로 이동해 계속할 수 있어요.");
+    fallback.focus();
+    expect(document.activeElement).toBe(fallback);
+    expect(onRedirectFallback).not.toHaveBeenCalled();
+    expect(signInWithGoogleIdToken).not.toHaveBeenCalled();
+  });
+
+  it("discovery가 대체 경로를 허용하지 않으면 준비 상태에서도 표시하지 않는다", async () => {
+    render(<GoogleIdentityButton clientId="client.apps.googleusercontent.com" onSuccess={vi.fn()} />);
+    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("button", { name: "다른 방식으로 Google 로그인" })).toBeNull();
+  });
+
+  it("대체 경로 중복 클릭과 늦은 GIS credential을 무시한다", async () => {
+    const onSuccess = vi.fn();
+    const onRedirectFallback = vi.fn();
+    render(<GoogleIdentityButton clientId="client.apps.googleusercontent.com" onSuccess={onSuccess} onRedirectFallback={onRedirectFallback} />);
+    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
+    const fallback = screen.getByRole("button", { name: "다른 방식으로 Google 로그인" });
+    fireEvent.click(fallback);
+    fireEvent.click(fallback);
+    await act(async () => { credentialCallback?.({ credential: "late.token.signature" }); });
+    expect(onRedirectFallback).toHaveBeenCalledTimes(1);
+    expect(signInWithGoogleIdToken).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(fallback.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("status").textContent).toBe("Google 로그인 페이지로 이동 중…");
+  });
+
+  it("credential 확인 중 대체 경로를 차단하고 실패하면 다시 허용한다", async () => {
+    const onRedirectFallback = vi.fn();
+    let finishCredential: ((value: { ok: boolean; error: string }) => void) | undefined;
+    signInWithGoogleIdToken.mockImplementation(() => new Promise((resolve) => { finishCredential = resolve; }));
+    render(<GoogleIdentityButton clientId="client.apps.googleusercontent.com" onSuccess={vi.fn()} onRedirectFallback={onRedirectFallback} />);
+    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
+    await act(async () => { credentialCallback?.({ credential: "pending.token.signature" }); });
+    const fallback = screen.getByRole("button", { name: "다른 방식으로 Google 로그인" });
+    expect(fallback.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(fallback);
+    expect(onRedirectFallback).not.toHaveBeenCalled();
+    await act(async () => { finishCredential?.({ ok: false, error: "다시 시도해 주세요." }); });
+    expect(fallback.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(fallback);
+    expect(onRedirectFallback).toHaveBeenCalledTimes(1);
+  });
+
+  it("대체 경로에서 뒤로 돌아온 BFCache 화면에서 로그인을 다시 허용한다", async () => {
+    const onRedirectFallback = vi.fn();
+    render(<GoogleIdentityButton clientId="client.apps.googleusercontent.com" onSuccess={vi.fn()} onRedirectFallback={onRedirectFallback} />);
+    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "다른 방식으로 Google 로그인" }));
+    fireEvent(window, new PageTransitionEvent("pageshow", { persisted: true }));
+    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(2));
+    const fallback = screen.getByRole("button", { name: "다른 방식으로 Google 로그인" });
+    expect(fallback.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(fallback);
+    expect(onRedirectFallback).toHaveBeenCalledTimes(2);
+  });
+
+  it("대체 경로 시작이 동기적으로 실패하면 안전한 오류와 재시도를 제공한다", async () => {
+    const onRedirectFallback = vi.fn().mockImplementationOnce(() => { throw new Error("private-navigation-error"); });
+    render(<GoogleIdentityButton clientId="client.apps.googleusercontent.com" onSuccess={vi.fn()} onRedirectFallback={onRedirectFallback} />);
+    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "다른 방식으로 Google 로그인" }));
+    expect(screen.getByRole("alert").textContent).toContain("Google 로그인을 완료하지 못했어요.");
+    expect(screen.queryByText("private-navigation-error")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "다른 방식으로 Google 로그인" }));
+    expect(onRedirectFallback).toHaveBeenCalledTimes(2);
+  });
+
+  it("GIS 로딩 중에도 대체 경로를 제공하고 늦은 모듈 로드가 상태를 덮지 않는다", async () => {
+    delete window.google;
+    const onRedirectFallback = vi.fn();
+    render(<GoogleIdentityButton clientId="client.apps.googleusercontent.com" onSuccess={vi.fn()} onRedirectFallback={onRedirectFallback} />);
+    const fallback = screen.getByRole("button", { name: "다른 방식으로 Google 로그인" });
+    fireEvent.click(fallback);
+    const script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    expect(script).not.toBeNull();
+    window.google = { accounts: { id: { initialize, renderButton } } };
+    if (script) await act(async () => { fireEvent.load(script); });
+    expect(onRedirectFallback).toHaveBeenCalledTimes(1);
+    expect(renderButton).not.toHaveBeenCalled();
+    expect(screen.getByRole("status").textContent).toBe("Google 로그인 페이지로 이동 중…");
+  });
+
+  it("같은 렌더 안에 credential과 대체 클릭이 겹쳐도 로그인 흐름을 하나만 시작한다", async () => {
+    const onRedirectFallback = vi.fn();
+    signInWithGoogleIdToken.mockImplementation(() => new Promise(() => {}));
+    render(<GoogleIdentityButton clientId="client.apps.googleusercontent.com" onSuccess={vi.fn()} onRedirectFallback={onRedirectFallback} />);
+    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
+    const fallback = screen.getByRole("button", { name: "다른 방식으로 Google 로그인" });
+    act(() => {
+      credentialCallback?.({ credential: "pending.token.signature" });
+      fallback.click();
+    });
+    expect(signInWithGoogleIdToken).toHaveBeenCalledTimes(1);
+    expect(onRedirectFallback).not.toHaveBeenCalled();
   });
 
 });

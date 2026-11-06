@@ -1,5 +1,5 @@
 import { authRestStatusText } from "./auth-rest-status-i18n";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { signInWithGoogleIdToken } from "@/domains/auth/public/session/auth-session-store";
 
@@ -120,7 +120,7 @@ type GoogleIdentityButtonProps = {
 };
 
 type GoogleIdentityState =
-  | { status: "loading" | "ready" | "submitting" }
+  | { status: "loading" | "ready" | "submitting" | "redirecting" }
   | {
       status: "error";
       phase: "load" | "signin";
@@ -134,6 +134,9 @@ export function GoogleIdentityButton({
   onRedirectFallback,
 }: GoogleIdentityButtonProps) {
   const holderRef = useRef<HTMLDivElement | null>(null);
+  const redirectStartedRef = useRef(false);
+  const credentialInFlightRef = useRef(false);
+  const fallbackDescriptionId = useId();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<GoogleIdentityState>({ status: "loading" });
 
@@ -144,20 +147,23 @@ export function GoogleIdentityButton({
     let observer: ResizeObserver | null = null;
     const requestController = new AbortController();
 
+    redirectStartedRef.current = false;
+    credentialInFlightRef.current = false;
     setState({ status: "loading" });
 
     const fail = (phase: "load" | "signin", message: string) => {
-      if (!active) return;
+      if (!active || redirectStartedRef.current) return;
       setState({ status: "error", phase, message });
     };
 
     const handleCredential = async (credential?: string) => {
-      if (!active || inFlight) return;
+      if (!active || inFlight || redirectStartedRef.current) return;
       if (!credential) {
         fail("signin", authRestStatusText("authRest.status.google.emptyResponse", "Google 로그인 응답이 비어 있어요. 다시 시도해 주세요."));
         return;
       }
       inFlight = true;
+      credentialInFlightRef.current = true;
       setState({ status: "submitting" });
       try {
         const result = submitCredential
@@ -180,6 +186,7 @@ export function GoogleIdentityButton({
         fail("signin", authRestStatusText("authRest.status.google.signInFailed", "Google 로그인을 완료하지 못했어요. 잠시 후 다시 시도해 주세요."));
       } finally {
         inFlight = false;
+        if (active) credentialInFlightRef.current = false;
       }
     };
 
@@ -203,7 +210,7 @@ export function GoogleIdentityButton({
 
     void loadGoogleIdentityServices()
       .then(() => {
-        if (!active) return;
+        if (!active || redirectStartedRef.current) return;
         initializeGoogleIdentity(clientId);
         activeCredentialHandler = handleCredential;
         renderButton();
@@ -223,63 +230,102 @@ export function GoogleIdentityButton({
 
     return () => {
       active = false;
+      credentialInFlightRef.current = false;
       requestController.abort();
       observer?.disconnect();
       if (activeCredentialHandler === handleCredential) activeCredentialHandler = null;
     };
   }, [attempt, clientId, onSuccess, submitCredential]);
 
+  useEffect(() => {
+    const restoreAfterBack = (event: PageTransitionEvent) => {
+      if (!event.persisted || !redirectStartedRef.current) return;
+      redirectStartedRef.current = false;
+      setAttempt((value) => value + 1);
+    };
+    window.addEventListener("pageshow", restoreAfterBack);
+    return () => window.removeEventListener("pageshow", restoreAfterBack);
+  }, []);
+
+  const startRedirect = () => {
+    if (!onRedirectFallback || redirectStartedRef.current || credentialInFlightRef.current) return;
+    redirectStartedRef.current = true;
+    setState({ status: "redirecting" });
+    try {
+      onRedirectFallback();
+    } catch {
+      redirectStartedRef.current = false;
+      setState({
+        status: "error",
+        phase: "signin",
+        message: authRestStatusText("authRest.status.google.signInFailed", "Google 로그인을 완료하지 못했어요. 잠시 후 다시 시도해 주세요."),
+      });
+    }
+  };
+
   const buttonVisible = state.status === "ready" || state.status === "submitting";
+  const busy = state.status === "submitting" || state.status === "redirecting";
 
   return (
-    <div
-      className="relative min-h-11 w-full overflow-hidden rounded-xl"
-      aria-busy={state.status === "loading" || state.status === "submitting"}
-    >
-      <div
-        ref={holderRef}
-        hidden={!buttonVisible}
-        className={state.status === "submitting" ? "pointer-events-none flex justify-center opacity-45" : "flex justify-center"}
-      />
-      {state.status === "loading" && (
+    <div className="min-h-11 w-full space-y-2">
+      <div className="relative overflow-hidden rounded-xl" aria-busy={state.status === "loading" || busy}>
         <div
-          className="flex h-11 w-full animate-pulse items-center justify-center rounded-xl border border-line bg-card text-xs text-fg-3"
-          role="status"
-        >
-          {authRestStatusText("authRest.status.google.preparing", "Google 로그인 준비 중…")}
-        </div>
-      )}
-      {state.status === "submitting" && (
-        <div
-          className="absolute inset-0 flex items-center justify-center rounded-xl bg-card/80 text-xs font-semibold text-fg-2 backdrop-blur-[1px]"
-          role="status"
-        >
-          {authRestStatusText("authRest.status.google.checkingAccount", "Google 계정 확인 중…")}
-        </div>
-      )}
-      {state.status === "error" && (
-        <div className="rounded-xl border border-bad/35 bg-bad/5 p-3 text-center">
-          <p className="text-xs leading-relaxed text-bad" role="alert">
-            {state.message}
-          </p>
-          <button
-            type="button"
-            onClick={() => setAttempt((value) => value + 1)}
-            className="mt-2 min-h-9 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+          ref={holderRef}
+          hidden={!buttonVisible}
+          className={state.status === "submitting" ? "pointer-events-none flex justify-center opacity-45" : "flex justify-center"}
+        />
+        {state.status === "loading" && (
+          <div
+            className="flex h-11 w-full animate-pulse items-center justify-center rounded-xl border border-line bg-card text-xs text-fg-3"
+            role="status"
           >
-            {state.phase === "load"
-              ? authRestStatusText("authRest.status.google.retryLoadModule", "Google 로그인 모듈 다시 불러오기")
-              : authRestStatusText("authRest.status.google.retry", "Google로 다시 시도")}
-          </button>
-          {onRedirectFallback && (
+            {authRestStatusText("authRest.status.google.preparing", "Google 로그인 준비 중…")}
+          </div>
+        )}
+        {state.status === "submitting" && (
+          <div
+            className="absolute inset-0 flex items-center justify-center rounded-xl bg-card/80 text-xs font-semibold text-fg-2 backdrop-blur-[1px]"
+            role="status"
+          >
+            {authRestStatusText("authRest.status.google.checkingAccount", "Google 계정 확인 중…")}
+          </div>
+        )}
+        {state.status === "redirecting" && (
+          <p className="py-3 text-center text-xs text-fg-2" role="status">
+            {authRestStatusText("authRest.status.google.redirecting", "Google 로그인 페이지로 이동 중…")}
+          </p>
+        )}
+        {state.status === "error" && (
+          <div className="rounded-xl border border-bad/35 bg-bad/5 p-3 text-center">
+            <p className="text-xs leading-relaxed text-bad" role="alert">
+              {state.message}
+            </p>
             <button
               type="button"
-              onClick={onRedirectFallback}
-              className="mt-2 block min-h-8 w-full text-xs font-semibold text-fg-2 underline decoration-line-strong underline-offset-4 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              onClick={() => setAttempt((value) => value + 1)}
+              className="mt-2 min-h-9 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
             >
-              다른 방식으로 Google 로그인
+              {state.phase === "load"
+                ? authRestStatusText("authRest.status.google.retryLoadModule", "Google 로그인 모듈 다시 불러오기")
+                : authRestStatusText("authRest.status.google.retry", "Google로 다시 시도")}
             </button>
-          )}
+          </div>
+        )}
+      </div>
+      {onRedirectFallback && (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={startRedirect}
+            disabled={busy}
+            aria-describedby={fallbackDescriptionId}
+            className="min-h-11 w-full rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:cursor-wait disabled:opacity-50"
+          >
+            {authRestStatusText("authRest.status.google.redirectFallback", "다른 방식으로 Google 로그인")}
+          </button>
+          <p id={fallbackDescriptionId} className="mt-1 text-balance break-keep text-xs leading-relaxed text-fg-3">
+            {authRestStatusText("authRest.status.google.redirectHint", "Google 버튼이 반응하지 않으면 로그인 페이지로 이동해 계속할 수 있어요.")}
+          </p>
         </div>
       )}
     </div>

@@ -7,7 +7,7 @@
  * placeholder는 대상이 아니며 로딩·실패·빈 상태 문구만 다룬다.
  *
  * 진입 그래프(앱 셸·Studio 첫 청크) 소비 파일이 쓰는 키 1개와 해석 헬퍼는 `./auth-rest-status-i18n-core` 로 옮겼다.
- * 이 모듈은 지연 표면 전용 키 15개만 등록하고 코어를 함께 불러오므로, 지연 소비 파일의 import 경로와 호출은
+ * 이 모듈은 지연 표면 전용 키만 등록하고 코어를 함께 불러오므로, 지연 소비 파일의 import 경로와 호출은
  * 그대로다. 진입 그래프에 닿는 파일에서는 이 모듈 대신 코어를 import 한다.
  */
 import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
@@ -27,6 +27,9 @@ registerI18nLocaleEntries("ko", {
   "authRest.status.google.checkingAccount": "Google 계정 확인 중…",
   "authRest.status.google.retryLoadModule": "Google 로그인 모듈 다시 불러오기",
   "authRest.status.google.retry": "Google로 다시 시도",
+  "authRest.status.google.redirectFallback": "다른 방식으로 Google 로그인",
+  "authRest.status.google.redirectHint": "Google 버튼이 반응하지 않으면 로그인 페이지로 이동해 계속할 수 있어요.",
+  "authRest.status.google.redirecting": "Google 로그인 페이지로 이동 중…",
   "authRest.status.authMenu.signOutCheckFailed": "로그아웃 확인에 실패했어요. 연결을 확인한 뒤 다시 시도해 주세요.",
   "authRest.status.authMenu.cleaningUp": "실시간 연결 정리 중…",
   "authRest.status.authMenu.signOutRetry": "로그아웃 다시 시도",
@@ -45,6 +48,9 @@ registerI18nLocaleEntries("en", {
   "authRest.status.google.checkingAccount": "Verifying your Google account…",
   "authRest.status.google.retryLoadModule": "Reload the Google sign-in module",
   "authRest.status.google.retry": "Try again with Google",
+  "authRest.status.google.redirectFallback": "Use another Google sign-in method",
+  "authRest.status.google.redirectHint": "If the Google button does not respond, continue on the Google sign-in page.",
+  "authRest.status.google.redirecting": "Opening the Google sign-in page…",
   "authRest.status.authMenu.signOutCheckFailed": "Could not confirm sign-out. Check your connection and try again.",
   "authRest.status.authMenu.cleaningUp": "Closing live connections…",
   "authRest.status.authMenu.signOutRetry": "Retry sign-out",
