@@ -15,6 +15,9 @@ on:
       - 'apps/web/src/domains/creator/studio-image-filter*'
       - 'apps/web/src/domains/creator/studio-detail*'
       - 'scripts/verify-studio-brushes.mts'
+      - 'scripts/verify-studio-graphite-coverage.mjs'
+      - 'scripts/studio-graphite-coverage-browser.mts'
+      - 'scripts/verify-studio-graphite-coverage.test.mjs'
       - 'scripts/verify-studio-filter-dialog.mts'
       - 'scripts/lib/studio-filter-*'
       - 'scripts/lib/studio-drawing-readiness*'
@@ -48,6 +51,9 @@ on:
       - 'apps/web/src/domains/creator/studio-image-filter*'
       - 'apps/web/src/domains/creator/studio-detail*'
       - 'scripts/verify-studio-brushes.mts'
+      - 'scripts/verify-studio-graphite-coverage.mjs'
+      - 'scripts/studio-graphite-coverage-browser.mts'
+      - 'scripts/verify-studio-graphite-coverage.test.mjs'
       - 'scripts/verify-studio-filter-dialog.mts'
       - 'scripts/lib/studio-filter-*'
       - 'scripts/lib/studio-drawing-readiness*'
@@ -190,6 +196,7 @@ jobs:
             apps/web/src/domains/creator/studio-detail.test.ts \
             apps/web/src/domains/creator/studio-detail-median-stability.test.ts \
             scripts/studio-review-host-qa-runtime.test.mjs \
+            scripts/verify-studio-graphite-coverage.test.mjs \
             scripts/isolated-market-api.test.ts \
             scripts/lib/studio-filter-canonical-evidence.test.ts \
             scripts/lib/studio-filter-connection-fault.test.ts \
@@ -407,6 +414,9 @@ jobs:
           TOONSPECTRUM_BRUSH_SURVEY: '1'
           TOONSPECTRUM_ALL_BRUSH_LONG_MATRIX: '1'
         run: pnpm run verify:studio-brushes
+      - name: 흑연의 두 합성 표면·64개 소수 배치에서 실제 화면 가시성 검증
+        if: ${{ !cancelled() && matrix.suite == 'desktop' }}
+        run: node scripts/verify-studio-graphite-coverage.mjs
       - name: Manuscript source retries, authentication ordering and fail-closed UI
         if: matrix.suite == 'source'
         run: pnpm exec tsx scripts/verify-studio-source-hydration.mts
