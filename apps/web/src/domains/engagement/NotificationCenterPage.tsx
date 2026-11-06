@@ -17,6 +17,7 @@ import type { EngagementNotification, EngagementNotificationCategory } from "./e
 import {
   NOTIFICATION_DATE_BUCKET_LABEL,
   groupNotificationsByDate,
+  notificationDisplayText,
 } from "./engagement-model";
 import { NOTIFICATION_CATEGORY_META } from "./notification-categories";
 import { activeEngagementNotifications, useEngagement, useEngagementHydrated } from "./engagement-store";
@@ -174,13 +175,14 @@ function NotificationCard({
   readonly onSnooze: () => void;
   readonly onArchive: () => void;
 }) {
+  const display = notificationDisplayText(notification);
   const meta = NOTIFICATION_CATEGORY_META[notification.category];
   const Icon = meta.icon;
   const read = Boolean(notification.readAt);
   const t = useBilingual("domains.engagement.NotificationCenterPage");
   return (
     <article
-      aria-label={notification.title}
+      aria-label={display.title}
       className={cn(
         "rounded-2xl border bg-card p-4 transition-colors sm:p-5",
         read ? "border-line" : "border-accent/35 ring-1 ring-accent/10",
@@ -202,8 +204,8 @@ function NotificationCard({
             ) : null}
             {!read && !isNew ? <span className="size-2 rounded-full bg-accent" aria-label="읽지 않음" /> : null}
           </div>
-          <h3 className="mt-2 text-base font-black text-fg">{notification.title}</h3>
-          <p className="mt-1 text-sm leading-6 text-fg-2">{notification.body}</p>
+          <h3 className="mt-2 text-base font-black text-fg">{display.title}</h3>
+          <p className="mt-1 text-sm leading-6 text-fg-2">{display.body}</p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Link
               href={notification.href}

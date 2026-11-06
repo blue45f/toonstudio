@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 import { apiFetch } from "@/platform/api";
-import { hasPendingSubscriptionWrites } from "@/shared/lib/store-api-post";
+import { hasPendingLibraryWrites } from "@/shared/lib/store-api-post";
 
 import type { CollectionMergeHandle } from "@/shared/lib/collection-write-through";
 import type { HydratePayload } from "@/shared/lib/store";
@@ -23,6 +23,14 @@ import {
   useHydrated,
 } from "@/shared/lib/store";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
+
+const librarySlices = ["subscriptions", "reads", "ratings", "reviews", "likedReviews"] as const;
+function librarySnapshot(state: Pick<HydratePayload, typeof librarySlices[number]>) {
+  return {
+    subscriptions: state.subscriptions, reads: state.reads, ratings: state.ratings,
+    reviews: state.reviews, likedReviews: state.likedReviews,
+  };
+}
 
 // 세션 ↔ 스토어 동기화: 로그인 시 userId 설정 + DB 데이터 하이드레이션, 로그아웃 시 해제
 export function StoreSync() {
@@ -176,11 +184,11 @@ export function StoreSync() {
               }
               const collectionIdMap = data.collectionIdMap ?? {};
               discardGuestCollectionRecovery(initialFence.userId, collectionIdMap);
-              const currentSubscriptions = useApp.getState().subscriptions;
-              const preserveSubscriptions = hasPendingSubscriptionWrites()
-                || currentSubscriptions !== local.subscriptions;
-              // 병합 도중 바꾼 구독은 유지하고 나머지 병합은 완료한 뒤 최신 스냅샷으로 확인한다.
-              hydrate(preserveSubscriptions ? { ...data, subscriptions: currentSubscriptions } : data, {
+              const current = useApp.getState();
+              const preserveLibrary = hasPendingLibraryWrites()
+                || librarySlices.some((slice) => current[slice] !== local[slice]);
+              // 병합 도중 바꾼 서재 기록은 유지하고 컬렉션 병합 후 최신 스냅샷으로 확인한다.
+              hydrate(preserveLibrary ? { ...data, ...librarySnapshot(current) } : data, {
                 collectionRevision: initialFence.collectionRevision,
                 // Recovery commands represented in this merge response were removed above;
                 // any genuinely newer edit is still in the owner outbox and is rebased by hydrate.
@@ -195,7 +203,7 @@ export function StoreSync() {
               const replayFence = captureCollectionHydrationFence();
               if (replayFence && replayFence.userId === initialFence.userId) {
                 await replayPendingCollectionWrites(replayFence);
-                if (preserveSubscriptions || hasPendingSubscriptionWrites() || useApp.getState().collectionOutbox.some(
+                if (preserveLibrary || hasPendingLibraryWrites() || useApp.getState().collectionOutbox.some(
                   (entry) => entry.ownerId === replayFence.userId
                 )) {
                   scheduleRetry();
@@ -216,11 +224,11 @@ export function StoreSync() {
           if (!isCollectionAuthFenceCurrent(initialFence)) return;
           const hydrationFence = captureCollectionHydrationFence();
           if (!hydrationFence) return;
-          if (hasPendingSubscriptionWrites()) {
+          if (hasPendingLibraryWrites()) {
             scheduleRetry();
             return;
           }
-          const subscriptionsAtRequest = useApp.getState().subscriptions;
+          const libraryAtRequest = librarySnapshot(useApp.getState());
           try {
             const result = await fetchSyncJson<HydratePayload>("/api/me", {
               headers: hydrationFence.sessionToken
@@ -233,8 +241,8 @@ export function StoreSync() {
             }
             const data = result.data;
             if (!isCollectionAuthFenceCurrent(hydrationFence)) return;
-            if (hasPendingSubscriptionWrites() || useApp.getState().subscriptions !== subscriptionsAtRequest) {
-              // 조회 도중 바뀐 구독을 늦은 스냅샷으로 덮지 않고 쓰기 완료 후 다시 조회한다.
+            if (hasPendingLibraryWrites() || librarySlices.some((slice) => useApp.getState()[slice] !== libraryAtRequest[slice])) {
+              // 조회 도중 바뀐 서재 기록을 늦은 스냅샷으로 덮지 않고 쓰기 완료 후 다시 조회한다.
               scheduleRetry();
               return;
             }

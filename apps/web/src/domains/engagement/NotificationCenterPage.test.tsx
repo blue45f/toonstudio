@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useI18n } from "@/shared/lib/i18n";
 
 import type { EngagementNotification } from "./engagement-model";
 import { useEngagement } from "./engagement-store";
@@ -195,5 +197,27 @@ describe("NotificationCenterPage 직군 알림 설정 연동", () => {
 
     expect(screen.getByText("제작 알림 review")).toBeTruthy();
     expect(screen.queryByText(/직군 알림 설정으로/)).toBeNull();
+  });
+});
+
+describe("저장된 연재 예정 알림의 언어", () => {
+  it("네트워크 없이 영어에서 한국어로 바꾸고 기존 상태를 보존한다", () => {
+    const previous = useI18n.getState().lang;
+    try {
+      useI18n.setState({ lang: "en" });
+      const notice: EngagementNotification = {
+        ...makeNotification(1), category: "release", sourceKey: "catalog-release:title:2026-11-05",
+        title: "My title is scheduled for today", body: "Based on the listed serialization schedule.",
+        readAt: "2026-11-05T00:00:00Z", archivedAt: null, snoozedUntil: null,
+      };
+      useEngagement.getState().upsertNotifications([notice]);
+      renderPage();
+      expect(screen.getByRole("article", { name: notice.title })).toBeTruthy();
+      const stored = useEngagement.getState().notifications;
+      act(() => useI18n.setState({ lang: "ko" }));
+      expect(screen.getByRole("article", { name: "My title 오늘 연재 예정" })).toBeTruthy();
+      expect(screen.getByText("등록된 연재 요일 메타데이터 기준입니다. 새 회차 공개 여부는 제공 플랫폼에서 확인해 주세요.")).toBeTruthy();
+      expect(useEngagement.getState().notifications).toBe(stored);
+    } finally { act(() => useI18n.setState({ lang: previous })); }
   });
 });

@@ -59,7 +59,8 @@ export const useApp = (create<AppState>()(
 
       setSessionIdentity: (userId, sessionToken) =>
         set((state) => {
-          if (state.userId === userId && state.sessionToken === sessionToken) return state;
+          if (state.userId === userId && state.sessionToken === sessionToken
+            && (state.libraryOwnerId ?? state.libraryMergeOwnerId ?? userId) === userId) return state;
           if (state.userId !== userId && typeof globalThis.dispatchEvent === "function") {
             globalThis.dispatchEvent(new Event("toonspectrum:session-ended"));
           }
@@ -183,6 +184,8 @@ export const useApp = (create<AppState>()(
         if (get().userId) apiPost("/api/me/review-like", { reviewId });
       },
       toggleSubscription: (titleId) => {
+        // 복원된 계정의 세션이 확인되기 전에는 소유자를 추측해 변경하지 않는다.
+        if (!get().userId && (get().libraryOwnerId !== null || get().libraryMergeOwnerId !== null)) return;
         set((s) => ({
           subscriptions: { ...s.subscriptions, [titleId]: !s.subscriptions[titleId] },
         }));
