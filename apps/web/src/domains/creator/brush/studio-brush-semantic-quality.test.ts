@@ -239,11 +239,23 @@ describe("정착 수채 입자 침전 감사 증거", () => {
 
   it("granulation·침착률·활성 안료를 제거한 변형은 같은 종이에서도 침전 근거가 되지 못한다", () => {
     const [coarse, fine] = GRANULATING_PROGRAM.pigments;
-    for (const pigments of [
-      [{ ...coarse, granulation: 0 }, { ...fine, granulation: 0 }],
-      [{ ...coarse, settleRate: 0 }, { ...fine, settleRate: 0 }],
-      [{ ...coarse, share: 0 }, { ...fine, share: 0 }],
-      [{ ...coarse, share: 0 }, { ...fine, share: 1, granulation: 0 }],
+    for (const { pigments, expectedSettledMass } of [
+      {
+        pigments: [{ ...coarse, granulation: 0 }, { ...fine, granulation: 0 }],
+        expectedSettledMass: null,
+      },
+      {
+        pigments: [{ ...coarse, settleRate: 0 }, { ...fine, settleRate: 0 }],
+        expectedSettledMass: null,
+      },
+      {
+        pigments: [{ ...coarse, share: 0 }, { ...fine, share: 0 }],
+        expectedSettledMass: "zero",
+      },
+      {
+        pigments: [{ ...coarse, share: 0, granulation: 1 }, { ...fine, share: 1, granulation: 0 }],
+        expectedSettledMass: "positive",
+      },
     ] as const) {
       const evidence = measureStudioWetPaperGranulationResponse({
         ...GRANULATING_PROGRAM,
@@ -251,6 +263,13 @@ describe("정착 수채 입자 침전 감사 증거", () => {
       });
       expect(evidence.valleyCaptureExcess).toBe(0);
       expect(evidence.responsive).toBe(false);
+      if (expectedSettledMass === "zero") {
+        expect(evidence.valleySettledMass).toBe(0);
+        expect(evidence.ridgeSettledMass).toBe(0);
+      } else if (expectedSettledMass === "positive") {
+        expect(evidence.valleySettledMass).toBeGreaterThan(0);
+        expect(evidence.ridgeSettledMass).toBeGreaterThan(0);
+      }
       expect(auditStudioBrushSemanticClaims({
         catalogId: GRANULATING_BRUSH, name: "수채 · 입자 침전", operation: "paint",
         settledGranulationResponse: evidence.responsive,
