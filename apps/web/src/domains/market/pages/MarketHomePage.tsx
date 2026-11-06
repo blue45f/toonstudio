@@ -212,7 +212,7 @@ export function MarketHomePage() {
                 {t("창작 단계별 소재 프리셋 & 스튜디오 1-Click 장착", "Workflow asset presets & 1-click Studio mount")}
               </h2>
             </div>
-            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t("에셋 프리셋 선택", "Select asset preset")}>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("에셋 프리셋 선택", "Select asset preset")}>
               {MARKET_ECOSYSTEM_PRESETS.map((preset) => {
                 const selected = preset.id === activePresetId;
                 return (
@@ -220,15 +220,14 @@ export function MarketHomePage() {
                     key={preset.id}
                     ref={preset.id === "all" ? allPresetRef : undefined}
                     type="button"
-                    role="tab"
-                    aria-selected={selected}
+                    aria-pressed={selected}
                     onClick={() => {
                       runSameDocumentViewTransition(() => {
                         setActivePresetId(preset.id);
                       });
                     }}
                     className={cn(
-                      "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors",
+                      "inline-flex min-h-11 [min-block-size:2.75rem]! items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                       selected
                         ? "border-accent bg-accent text-canvas shadow-sm"
                         : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
