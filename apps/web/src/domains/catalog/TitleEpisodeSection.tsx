@@ -272,7 +272,7 @@ export function TitleEpisodeSection({
               placeholder={bi("회차 번호·제목 검색", "Filter episode # or title")}
               aria-label={bi("회차 번호 또는 제목 검색", "Search episode number or title")}
               data-testid="episodes-search-input"
-              className="h-9 w-40 rounded-full border border-line bg-card px-3 text-xs text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent sm:w-48"
+              className="h-11 w-40 rounded-full border border-line bg-card px-3 text-xs text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent sm:w-48"
             />
             <div className="flex rounded-full border border-line bg-card p-0.5" role="group" aria-label={bi("회차 정렬", "Episode order")}>
               {(
@@ -287,7 +287,7 @@ export function TitleEpisodeSection({
                   aria-pressed={order === option.value}
                   onClick={() => setOrder(option.value)}
                   className={cn(
-                    "min-h-9 rounded-full px-3.5 text-xs font-semibold transition-colors duration-150",
+                    "min-h-11 [min-block-size:2.75rem]! rounded-full px-3.5 text-xs font-semibold transition-colors duration-150",
                     order === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
                   )}
                 >
@@ -317,7 +317,7 @@ export function TitleEpisodeSection({
                     });
                   }}
                   className={cn(
-                    "min-h-9 rounded-full px-3 text-xs font-semibold transition-colors duration-150",
+                    "min-h-11 [min-block-size:2.75rem]! rounded-full px-3 text-xs font-semibold transition-colors duration-150",
                     viewMode === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
                   )}
                 >
@@ -337,7 +337,7 @@ export function TitleEpisodeSection({
           <p className="min-w-0 flex-1 text-sm font-medium text-fg">{continueTarget.label}</p>
           <Link
             href={`/title/${encodeURIComponent(title.slug)}/read/${continueTarget.episode}`}
-            className="inline-flex min-h-10 items-center rounded-full bg-accent px-4 text-xs font-bold text-on-accent transition-colors hover:bg-accent/90"
+            className="inline-flex min-h-11 [min-block-size:2.75rem]! items-center rounded-full bg-accent px-4 text-xs font-bold text-on-accent transition-colors hover:bg-accent/90"
           >
             {continueTarget.action}
           </Link>
@@ -403,8 +403,8 @@ export function TitleEpisodeSection({
                       )}
                       className={
                         index === 0
-                          ? "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90"
-                          : "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                          ? "inline-flex min-h-11 [min-block-size:2.75rem]! items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90"
+                          : "inline-flex min-h-11 [min-block-size:2.75rem]! items-center gap-1.5 rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
                       }
                     >
                       {formatI18nTemplate(bi("{v0}에서 보기", "View on {v0}"), { v0: platformName })}
@@ -416,7 +416,7 @@ export function TitleEpisodeSection({
                 {hiddenExternalLinkCount > 0 && (
                   <a
                     href="#title-availability"
-                    className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+                    className="inline-flex min-h-11 [min-block-size:2.75rem]! items-center px-2 text-sm font-semibold text-accent transition-colors hover:text-accent-2"
                   >
                     {formatI18nTemplate(
                       bi("다른 플랫폼 {v0}곳 더 보기", "See {v0} more platforms"),

@@ -271,3 +271,19 @@ describe("회차 이어보기 공개 상태", () => {
       .toBe("/title/fog-signal/read/3");
   });
 });
+
+
+describe("회차 탐색의 모바일 터치 영역", () => {
+  it("검색과 정렬·표시 방식 전환을 최소 44px 높이로 제공한다", () => {
+    renderSection(makeTitle(), EPISODES);
+    expect(screen.getByRole("searchbox").className).toContain("h-11");
+    for (const label of ["최신부터", "첫 화부터", "리스트형", "컴팩트형"]) {
+      expect(screen.getByRole("button", { name: label }).className).toContain("min-h-11");
+    }
+    fireEvent.click(screen.getByRole("button", { name: "컴팩트형" }));
+    expect(screen.getByRole("button", { name: "컴팩트형" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "안개" } });
+    expect(screen.getByRole("link", { name: /안개가 짙어지면/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /신호의 시작/ })).toBeNull();
+  });
+});
