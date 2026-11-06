@@ -153,3 +153,86 @@ Full Diagnostic의 두 이력 source 계약도 오래된 함수 문구를 요구
 `502096134e`의 전체 하네스는 새 모바일 테스트의 `HTMLElement.hidden`이 `boolean | "until-found"`인데 boolean 배열에 직접 기록한 TS2345 한 건으로 실패했다. 제품을 바꾸거나 타입을 덮지 않고 `hidden === true`로 실제 숨김 여부를 명시해 교정했다. 같은 79개는 다시 통과했으며 정상 push는 일치하는 하네스 성공이 없어 실행 전에 중단됐다. `502096134e` 전체 하네스 통과로 보고하지 않고 후속 정확한 SHA에서 다시 확인한다.
 
 추출한 모바일 helper만 수정해도 같은 화면 검사가 실행되도록 브러시 stability workflow의 PR·main push 두 paths에 정확한 helper 경로를 추가한다. 현재 PR은 verifier도 바뀌므로 이미 실행되지만 향후 단독 helper 수정의 누락을 막는 보완이다. 기존 readiness 검사에 두 이벤트의 실제 YAML 소비를 검증하는 한 사례를 추가해 수정 전 1개 실패를 확인했고, 두 경로 연결 뒤 기존 25개를 포함한 26개가 통과했다. 기존 matrix·시간·러너·품질 기준·보호 규칙을 바꾸지 않는다.
+
+원격 `f0d69841` portfolio는 catalogue 계약 8파일 112개 중 모바일 선택자를 종전 verifier 파일에서만 찾는 한 source 계약으로 실패했다. 선택자는 새 helper에 보존돼 있었으므로 제품 선택자를 되돌리지 않고 실제 helper의 전체 선택자와 verifier의 import·두 호출 연결을 함께 검증한다. 같은 실패 한 건을 로컬에서 재현한 뒤 해당 경계 파일의 검사 6개가 모두 통과했다. 기존 카탈로그 수·선택·지우개·저장 및 품질 단언은 유지한다.
+
+같은 함수 추출의 다른 소비자 두 곳은 삭제된 함수명을 끝 경계로 사용해 `end=-1`이어도 뒤의 다른 검사 영역까지 읽을 수 있었다. 처음·끝 인덱스가 유효하고 올바른 순서인지 단언해 두 사례의 실패를 확인한 뒤 실제 다음 함수로 경계를 옮겼다. 기존 도형 좌표·단일 배치·준비 순서·deadline·정상 안내 닫기 단언은 유지하며 관련 두 파일 42개가 모두 통과했다. 이를 제품 결함이나 실제 사용자 데이터 손상으로 분류하지 않는다.
+
+Linux 원격 `6e6808de`의 두 압력 raw를 artifact 13430803684에서 한 번 수집했다(4,036,192B, ZIP SHA-256 `9e9ebdc2c7fe822fb63c0c412483b52a1550600793afcd65932d9ab96415bbb1`). 실제 checkout `830504c667786725ca6895e6739bdeb0c35637d5`의 tree는 head와 같은 `36639abc2eae5edfed8725aba2a72d816d0289da`임을 job 로그와 Git 객체로 확인했다. 같은 입력·도형/color·절대 opacity·전 픽셀 alpha·질량·histogram이지만 Mac과 low 15픽셀/19 RGB 채널, high 15픽셀/23 RGB 채널이 최대 1씩 달랐다. PNG 독립 decode는 각각 자기 raw와 일치했다. 현재 strict 실패를 정상으로 유지하며 RGB 허용 오차나 Linux 허용 목록을 추가하지 않았다. 과거 Linux artifact에도 동일한 원래 15% 실패 비율은 있으나 low/high raw가 없어 원래 Linux 픽셀의 대체 근거로 쓰지 않는다.
+
+이를 확인할 CI 진단은 같은 Linux job의 현재 두 raw를 재사용하고, 고정 원래 `289effab`의 57소스·626,941B와 원래 lock을 검증해 원래 두 Canvas만 추가한다. 원본 entry에는 메모리에서 기존 함수의 export 선언만 추가한다. 공개 저장소의 sparse·partial Git과 고정 Mixbox 2.0.0 tarball(254,935B·원래 lock SHA-512)을 별도 임시 경로에 쓰며 lifecycle script·제품 의존성·lock 변경은 없다. 원본 Git metadata는 Mac 사전 검증에서 7.3MiB였다. 목록 밖 소스와 외부 요청은 거절한다. 입력·geometry·절대 opacity와 양쪽 raw의 정확 일치를 요구하며 각 PNG도 디코딩해 자기 raw와 대조한다. 압축 바이트의 동일성을 새 품질 조건으로 추가하지 않는다.
+
+진단은 기존 failure-only 두 Canvas 단계 직후에만 실행하고, 180초 명령 기한과 10초 강제 정리 유예·기존 Ubuntu 24.04/35분 job·always artifact를 유지한다. PR/push의 두 새 입력 경로도 연결한다. 원래 실패·각 source fence·browser/server 정리·receipt 저장 실패를 독립적으로 수집하고 모두 시도한 뒤 nonzero로 전달한다. baseline·환경 목록·golden은 자동 갱신하지 않는다. 기존 QA 30개와 manifest·계측·RGB 1 차이 거절·PNG decode·namespace·실패 전달·workflow 회귀 16개, source 적용 뒤 46개가 모두 통과했다.
+
+Mac 사전 검증은 2026-11-06 01:43:35~01:43:42 KST에 원래 소스의 두 draw만 실행해 7.3초·exit 0으로 완료했다. 원래 57소스 전후 지문과 입력·geometry·opacity가 같았고 두 raw는 기존 Mac 기준에 정확히 일치했다. 브라우저·서버 정상 종료와 자체 port 52317 LISTEN 0도 확인했다. 최종 정리 helper는 그 뒤 순수 단위로 보강했으므로 이를 최종 Linux CLI 실행 성공으로 확대하지 않는다. 전체 workspace 전후 fence는 수집하지 않았으며 원래 57소스와 공유 baseline/observer의 고정 지문 범위로 구분한다. 새로운 Linux 비교 결과를 확보한 뒤에만 해당 환경의 원래 픽셀 보존 여부와 기준 확장을 판정한다.
+
+2026-11-06 02:24 KST에 main이 `7c5ed4db7d739449312793ee3bc471131420f434`로 진전했다. PR #2727을 거쳐 기존 f0 보완의 대부분이 이미 main에 포함됐으며 PR #2726 자체의 미병합과 구분한다. 이를 ordinary merge로 보존 통합하면서 일반 pending JSON과 실제 extensions/null 보호를 구분하는 최신 계약, 원본 불변 단언, 문서 Git index 정본과 전체 Program 타입 검사 정책을 유지했다. 충돌 관련 8파일 205개와 Node 정책 4파일 42개, 최신 native resize/export 및 registry 4파일 60개가 통과했다. 각 실행은 겹칠 수 있어 합산하지 않으며 새로운 통합 커밋의 전체 하네스·최종 hosted CI 성공을 대신하지 않는다.
+
+PR #2724가 먼저 main에 적용한 vips 제거·native Lanczos3 최종 내보내기와 모델 권리 고지는 되돌리지 않았다. 현재 native 회귀 성공을 과거 vips 출력의 픽셀 동일성 보장으로 확대하지 않는다. 원래 Chemy 57소스 경로에는 resize/vips가 없고, 실제 참조 호스트의 관련 package pin과 원본 baseline·observer 지문은 유지된다. 후속 PR에 남은 것은 검사 소비 경계·회귀 및 동결 원본 Linux 비교이며 새 렌더러·저장 형식·권한 정책 변경이 아니다.
+
+2026-11-06 03:15 KST에 `a6d0a0744103345df752676167d0a29bb44e1394`의 전체 하네스와 정상 pre-push가 각각 exit 0으로 끝났고 정상 push 후 원격 동일 SHA를 확인했다. Web 전체 Program은 두 실행에서 각각 26,275/26,275개·진단 0이며 API 세 구성·구조·lint·Secretlint도 통과했다. 이 head는 원래 Linux 소스 대조를 보내기 위한 진단 단계로, 최종 CI 합격이나 main 병합으로 승격하지 않는다. 이후 알림·auth store-sync·공용 POST 보완과 라이선스 문서의 main `d23160182887b66baa3540f5c47430cc287fdcc4`도 별도의 정상 merge로 보존 통합했다.
+
+이전 f0 Full job 127369494681은 root 8,740파일 중 기존 선택자 계약 한 건 실패와 추가 unhandled 네 건으로 실패했다. 네 stack은 AI 테스트가 goreum·lunar·gacha-rpg·forensic-luminol을 누른 뒤 각각의 완료를 기다리지 않아 환경 종료 뒤 같은 결과 카드의 상태를 갱신하는 경로와 대응한다. 로컬 수정 전 동일 파일 8개는 통과했고 unhandled를 재현하지 못했으므로, 안정적인 로컬 RED나 제품 데이터 결함으로 주장하지 않는다. 각 클릭 뒤 고유 완료 badge를 순차 확인하고, 탭 전환 전 tankobon과 뒤에 시작한 Rea15 여섯 callback의 고유 prefix도 기다리도록 기존 테스트에 23행을 추가했다. 후자의 일곱 건은 소스상의 완료 누락 후보이며 CI 오류로 추가 재현됐다는 근거가 없다. 제품 코드·기본 대기 기한·mock·기존 단언·skip·retry는 바꾸지 않았다.
+
+계약 테스트는 main 원본과 같은 두 사례가 자동 merge에서 두 번 남아 있었으므로 뒤의 동일 블록 24행만 제거했다. 원본 사례와 pending JSON 회귀를 모두 유지해 해당 파일을 main blob과 동일하게 만들었다. 앞선 205개는 이 중복 두 사례를 포함한 실행 수이며 고유 205개라는 뜻이 아니다. AI 완료 대기와 중복 정리 뒤 두 파일 36개가 통과했고 unhandled는 없었다. 실제 원격 Full에서 새 head로 다시 확인해야 한다. Discovery job 127395008586은 시스템 의존성 다운로드가 105MB/31분 52초로 지연돼 45분 job 한도로 취소됐으며, 대표 brush/undo 성공과 미완료 SQLite를 구분한다. 기한·runner·기준을 완화하지 않고 다음 실행을 확인한다.
+
+새 a6 Session job 127438769883도 211파일·1,679개는 모두 통과했지만 lunar·gacha-rpg·forensic-luminol의 같은 unhandled 세 건으로 실패했다. 이 원격 RED와 앞선 로컬 미재현을 구분한다. 다른 세션도 동일 AI 보완을 작성한 사실을 확인해 중복 PR #2731을 #2726으로 통합하기로 소유권을 조정했다. 검증된 `3dd6f6c53ce3e727759af0c8502e5dc730f9b490`를 ordinary merge하고, 그쪽의 고유 UI 결과 11개 순차 대기와 이쪽의 Rea15 callback prefix 단언 여섯 개를 모두 보존한다. 합친 AI·모달·보존 계약 3파일 56개와 CI·전체 타입 검사·라이선스 정책 Node 4파일 47개가 통과했다. 취소·대체될 #2731 실행을 성공으로 세지 않는다.
+
+같은 세션이 확인한 main `7c5ed4db` CI run 42074282323의 typecheck job 127422865949는 전체 Web·API·도구 타입 검사에 성공한 뒤 `type-coverage --at-least 95`를 시작하고 약 17초 만에 전체 25분 한도로 취소됐다. 95% 미달이나 타입 오류로 판정하지 않으며 coverage 완료도 주장하지 않는다. 이 job 한 곳만 35분으로 늘리고 typed identifier 95%·명령·heap·표준 Ubuntu runner·선행 11개와 core/verify의 실제 성공 요구를 유지한다. 10분의 실행 여유 추가이며 성능 개선이나 최악 실행 시간 보장은 아니다. 새 최종 head에서 coverage와 전체 CI가 실제 끝나는지 확인한다. 상세 원문과 분리 검증은 `docs/qa/2026-11-06-ai-completion-ci-followup.md`에 보존한다.
+
+2026-11-06 03:41 KST의 a6 morphology run 42082459826/job 127438773190에서 같은 Linux job의 불변 과거 소스 비교가 exit 0으로 완료됐다. 실제 checkout은 head a6 자체가 아니라 `30e2343de40a99a6074ed89d971578035c6a40a5`이며 parents는 d231+a6, tree는 `66542dbce5975850e25843067bb5e165357db877`이다. artifact 13443795408을 한 번 내려받아 4,389,719B·ZIP SHA-256 `2607f2c4413502a312d2dc40012c5dc93e75e9184f5a4de01e540f41aa3e42af`와 38개 추출 파일을 확인했다. 실제 관측의 whole tree를 a6와 같다고 표시하지 않는다.
+
+원래 `289effab`와 현재 Linux의 low/high raw는 각각 1,228,800B 전체가 같고 변경 픽셀·최대 채널 차이는 0이다. PNG 네 장을 CI image-js 외에 독립 Python CRC/zlib/filter와 별도 Pillow로 디코딩해 각각 자기 raw와 정확히 일치함을 확인했다. 입력 JSON bytes·geometry/color/order·절대 opacity, 독립 raw 알파 통계·단조성·비율 `1.1323929288472774`도 같다. 57개 과거 Git blob/지문·소스 전후 일치·원래 lock·export만 추가한 계측·종료 영수증을 확인했으며 blocked/diagnostics/finalizationFailures는 비어 있고 browser/server 종료가 정상이다. 현재 두 draw와 전체 34종의 실패는 미검증 환경 및 Mac low/high RGBA 불일치 세 개뿐이다. 다른 33종의 최소 비율은 `2.178962970922912 > 1.15`이고 JSON·DPR streaming·170개 hybrid·68개 symmetry의 차이는 0이었다. 이 측정은 고정 입력의 실제 실행 범위이며 모든 필압 입력이나 물리 펜의 보편적 보장이 아니다.
+
+이 근거와 기존 사용자 위임 범위를 적용해 별도 Linux 원본 PNG 두 장과 정적 baseline을 수동 등록한다. 기존 Mac JSON·PNG와 관측 정책 `673f09cd…`·원래 소스 manifest `ba746dde…`는 수정하지 않는다. browser 전체 버전 `156.0.8078.4`·platform·architecture 세 키가 정확히 일치한 darwin/arm64 또는 linux/x64만 각 원본을 선택하며, 누락·다른 버전·다른 조합은 실패한다. Node·CPU·메모리는 수집 출처로 보존하고, 어떤 환경에서도 원래 입력·기하·절대 opacity·전체 RGBA는 오차 없이 검사한다. Mac/Linux의 low/high 단일 RGB 변화와 교차 OS metadata 위장도 거절한다. 자동 golden 갱신·환경 확대·원본 렌더러 변경은 없다. 원래 Chemy의 15% 미달 표시는 유지하고 다른 33종의 하한은 바꾸지 않는다. 기존 46개와 새 28개, 총 74개가 통과했으며 마지막 workflow 소비 단언도 신규 네 경로에 연결한다.
+
+새 QA 입력은 공통 scripts checkout의 기존 규칙에 포함되므로 foundation의 141선언·136고유 경로·기존 PNG 14개·문서 16개 목록을 바꾸지 않는다. 설치 전 Node/Git 검사로 새 JSON·PNG·selector 네 실제 Git 입력이 다섯 static shard와 typecheck/lint에 보존되고 무관한 public 자산은 제외됨을 추가 확인한다. morphology PR/push 경로에는 네 입력을 각각 정확히 연결한다.
+
+a6 strict lint의 별도 실패는 `quality:imports`가 브라우저 가상 모듈 `/__qa/driver.ts`를 Node 의존성으로 읽은 한 건이었다. 같은 local RED를 재현하고 URL을 `page.evaluate`의 실행 인자로 전달해 브라우저 문맥을 명확히 했다. 검사기 ignore·정책 변경·새 의존성 없이 같은 명령이 통과했다. 원래 소스·가상 경로·접근 범위·렌더링은 그대로이며 최종 소스에서도 전체 CI를 확인한다. 새 main `8498d0bc`의 제품 보완은 ordinary merge로 보존하고, 승인 미확인이라는 다른 세션의 QA 해석은 이 대화의 2026-11-05 21:06 KST 구체적 사용자 위임 및 실제 원본 대조와 구분해 조정한다.
+
+2026-11-06 04시대에 main `8498d0bc09f083fcbbfcd759bb153f674f539012`를 일반 merge로 통합했다. WebGL1/Float32 atlas·관측자 예외 뒤 pending reader 요구 보존·editor·공유 키의 type-only 프로젝트 버전 연결과 새 필수 타깃·CI 입력 계약 추출은 원본 main을 유지한다. 저장 버전은 기존 `2|3|4|5|6`이고 공통 보존 키 일곱 개도 같다. 현재 app/API/contracts의 제품 코드와 의존성·DB는 해당 main과 같은 내용을 보존하며 추가 제품 변경을 도입하지 않는다. 같은 두 계약 사례의 중복은 원래 본문을 유지해 제거한다.
+
+main에 함께 들어온 Chemy 전체 `>1.15`·승인 미확인 QA 해석은 이 대화의 실제 위임과 상충하므로 Chemy 하나만 검증 원본 정책을 사용하고 다른 33종 하한을 유지하도록 합친다. 바뀐 observer는 실행 코드가 아닌 주석 한 줄뿐이었으므로 고정 지문을 새 값으로 갱신하지 않고 승인 설명과 `673f09cd…` 원본을 보존했다. 새 main의 AST·VM 시험 두 개도 삭제하지 않는다. 실제 if/else 배선에서 일반 topology의 원래 경계값을 검사하고, Chemy의 고정 정책 수집 및 실패 전달을 가짜 응답으로 확인하도록 승인 범위에 맞췄다. 이 VM 응답을 실제 renderer 증거로 사용하지 않는다. 기존 74개와 이 두 사례 76개를 포함한 합병 관련 13파일 228개, CI·전체 타입 검사·공통 입력·라이선스 Node 4파일 49개가 통과했다. 별도의 실제 Mac 원본·최종 Linux·전체 CI는 정확한 후속 head에서 확인한다.
+
+통합 `60f8cefc`의 실제 Mac 현재 두 draw는 2026-11-06 04:16 KST에 exit 0으로 끝났다. 원래 Mac 두 RGBA에 각각 정확히 일치했고 원래 15% 미충족을 유지했다. HEAD/tree/clean 상태와 실제 사용 14개 경로의 SHA가 전후 같았고 종료한 자체 Node의 LISTEN은 0이었다. 이는 현재 Mac 두 입력의 실행이며 원래 Linux 재실행이나 전체 34종 성공을 뜻하지 않는다. 최종 Linux에서는 전체 34종과 독립 현재 두 draw가 모두 실제 exit 0으로 끝나도록 현재 두 Canvas 단계만 취소 외의 성공·실패 경로에서 실행한다. 이전 실패를 무시하지 않고 기한·명령·검사 기준은 유지하며, 고정 원래 소스의 추가 두 draw는 계속 실패 진단으로만 실행한다.
+
+
+## 2026-11-06 05시대 최종 CI 준비 시간과 미완료 검사 보존
+
+상태: `current` 재현된 시간 한도 취소의 최소 보완. 기준 head는 `33fe55c9421078f049b1d5c9de80f56f03334226`, 실제 PR merge checkout은 `851f7bdbec54c4c3ed1f5a4863e371bfa2db9e15`이며 두 tree는 `6c467a23dc6618a000e45c03894eefb183c0533d`로 같다. 이 head의 전체 하네스와 정상 pre-push/push는 각각 04:34·04:45 KST에 exit 0으로 끝났고 Web 26,278/26,278개·진단 0, API 세 구성·구조·lint·Secretlint를 통과했다. hosted Core run 42096911855의 실제 선행 11개와 같은 workflow의 core/verify도 모두 성공했다. 다른 workflow의 미완료 결과를 Core 성공으로 대체하지 않으며 PR은 아직 병합하지 않았다.
+
+시간 한도에 도달한 네 작업의 원문과 완료 단계를 별도로 확인했다. Scene3D run 42096911636/job 127489227589는 기존 네 테스트 묶음(각 219·82·208·108개)이 통과한 뒤 전체 타입 검사 중 20분 한도로 취소됐다. 완료된 14,458/26,278개는 진단 0이지만 남은 Web·API 검사는 미완료다. job 한 곳만 35분으로 늘리고 ARM 표준 runner·12GiB 환경·전체 canonical 명령을 유지한다. 기존 회귀의 한도 기대를 대응시키고 runner·heap·실패 무시 부재도 함께 검사한다.
+
+Market run 42096911747/job 127489227408은 SDK 정리 약 110초와 fetch 약 769초 뒤 전체 42,325파일 checkout 85%에서 15분 한도로 취소됐다. 의존성 설치와 제품 검사는 미도달이다. 네트워크 오류나 일시 장애라고 확정하지 않는다. job 한 곳만 35분으로 늘리고 full checkout과 모든 자산·라이선스·카탈로그·모델·12개 시험을 유지한다. 검증되지 않은 partial/sparse 입력 축소는 도입하지 않는다.
+
+Finishing run 42096911520의 quality-static job 127489232474는 준비 약 15분 49초 뒤 Web 타입 검사 11,286/26,278개·진단 0 상태에서 25분 한도로 취소됐다. 같은 run의 finishing-quality job 127489232659는 Web 전체 26,278개·진단 0으로 실제 완료한 뒤 Vite transforming 도중 30분 한도로 취소됐다. 후자의 Web 검사만 22분 34초가 걸렸으며 bundle gate·Chromium 설치·실제 메뉴/rail/popover/workspace/export/캔버스 resize 검사는 미도달이다. 두 작업을 각각 45분·60분으로 늘리고 기존 정책 테이블의 대응 값만 맞춘다. 로그에서 OOM·FATAL·TS 진단은 관찰하지 못했으며 이를 전체 build나 API 검사 성공으로 확대하지 않는다.
+
+이 네 조정은 준비와 남은 필수 검사에 유한한 실행 여유를 주며, 성능 개선이나 해당 시간 내 완료를 보장하지 않는다. 실제 사용 시간이 길어지면 표준 runner 사용 시간도 늘 수 있다. 실행 서버 등급·heap·명령·입력·검사 기준·성능 assertion·내부 timeout·후속 단계는 유지한다. 네 job이 검사 끝까지 실제 통과하는지 새 고정 head의 전체 CI에서 확인한다. 기존 시간 초과 취소는 성공으로 바꾸지 않는다. 제품 source·원고·저장 형식·CRDT·권한·운영 설정은 이 보완으로 변경하지 않으며 운영 배포는 하지 않는다.
+
+적용한 YAML 세 파일은 중복 키를 거절하는 파서로 확인했으며, 네 한도 외의 모든 파싱 값이 기준 33fe와 같았다. 관련 기존 Node 네 파일 55개와 Scene3D 정책 한 파일 8개가 모두 통과했고 skip은 0이다. 하네스 시작 진단과 diff 공백 검사도 통과했다. 새 커밋의 범위 하네스·정상 pre-push·hosted CI는 이 기록 뒤 실행하며 이전 head의 성공으로 대체하지 않는다.
+
+
+## 2026-11-06 06:29 Feedback의 두 번째 전체 타입 검사 시간 한도
+
+상태: `current` 최종 131357d1 CI의 추가 취소와 최소 보완. Core run 42106548750의 선행 11개와 core/verify 13개, 앞서 보완한 네 작업은 모두 성공했다. 그러나 Feedback run 42106548489/job 127522771427은 40분 job 상한에 도달해 취소됐고 최종 엄격한 집계는 `PRODUCTION: cancelled`를 실패로 반영했다. 이 취소를 다른 build 성공이나 집계 성공으로 바꾸지 않으며 PR은 아직 병합하지 않았다.
+
+root가 원문을 한 번 읽어 로컬 전용 증거로 보존하고 독립 읽기로 대조했다. 첫 Web 전체 26,278/26,278개·진단 0과 API/tool 타입 검사는 약 18분 21초에 완료됐다. 단위 78개·PostgreSQL 13시나리오·브라우저 36개와 분리 리뷰 번들 16.76초도 성공했다. job 시작 약 24분 18초에 production build를 시작했으며 두 번째 전체 Web Program 15,380/26,278개가 진단 0으로 끝난 뒤 다음 10,407개 묶음 도중 취소됐다. production Vite 및 postbuild의 고지·CSP는 미도달이다. 완료 worker의 peak RSS는 7.58~8.07GiB이며 명시적 TS error/OOM 표시는 관찰하지 못했지만 미완료 worker의 오류 부재까지 확정하지 않는다.
+
+Feedback job 한 곳을 40→60분으로 늘리고 기존 정책 회귀의 대응 숫자만 맞춘다. 같은 production 시작 시점을 가정하면 약 35분 42초를 남기며, 관측한 첫 Web 검사 약 17분 55초를 다시 배정한 뒤에도 prebuild·Vite·고지/CSP·업로드·집계에 약 17분 48초가 남는 유한한 후보이다. 미실행 Vite의 소요를 측정하지 못했으므로 60분 이내 완료나 실행 성능 개선을 보장하지 않는다. 75분으로 늘릴 추가 근거는 없어 선택하지 않았다. 오래 실행되는 경우 표준 runner 사용 시간이 늘 수 있다.
+
+Web 전체 Program 두 번·API/tool·모든 테스트·runner·heap·worker·retry·명령·입력·내부 기한·품질 및 성능 assertion·기존 evidence 수집과 여덟 outcome 전부 success를 요구하는 최종 집계는 유지한다. 권한·계정·DB·제품 source·저장 형식·렌더러·기존 원고를 바꾸지 않는다. 현재 131357의 Full·CodeQL·Brush도 끝까지 확인해 추가 문제가 있으면 함께 최소 보완한 다음, 새 고정 head의 전체 CI가 실제 통과한 뒤에만 main에 병합한다. 운영 배포는 하지 않는다.
+
+적용한 workflow는 중복 키를 거절하는 YAML 파서로 확인했다. job 상한을 원래 40으로 되돌리면 workflow 전체 바이트가 같고, 정책 tuple도 숫자 하나를 되돌리면 원본 전체 바이트와 같다. 관련 기존 Node 네 파일 55개는 모두 통과했고 skip은 0이다. 현재 원격 131357의 남은 세 workflow 결과를 확보하기 전에는 다음 head를 push하지 않으며, 새 범위 하네스와 정상 pre-push 및 전체 CI 결과를 별도로 기록한다.
+
+
+## 2026-11-06 07:18 Full의 수집 등록과 임시 경로 보호 실패
+
+상태: `current` 131357d1의 모든 CI 종료 결과와 로컬 RED/GREEN. 20 workflow는 18성공·Full 실패 1·Feedback 취소 1이며 check는 50성공·1실패·1취소다. Full run 42106549063/job 127523352346은 시간 제한 취소가 아니라 root suite의 비정상 종료로 실패했다. 실제 PostgreSQL 직렬 단계는 28파일·502성공·기존 skip 1이었고, 이어 root는 8,747파일 중 8,723성공·기존 skip 20·4실패, 101,006개 사례 중 100,906성공·기존 skip 99·1실패였다. 뒤 performance 단계는 앞 단계 실패로 실행하지 않았다. 일부 통과를 전체 성공으로 표시하지 않는다.
+
+원문 한 번을 읽어 로컬 전용 3,561,333B·SHA-256 `4f7e665bfafc2b33e17a775cc8e8af2b60d50838acd1a5f65c66d478c706f716`로 보존했다. 세 실패 suite는 check-restricted-model-distribution·third-party-license-files·typecheck-shards의 정적 `node:test` 등록 때문에 Vitest에서 `No test suite found`가 된 경우였다. 나머지 한 실패는 기존 predictable-temp-path guard가 verify-studio-legacy-pigment-banner의 `tmpdir()`+`Date.now()` 이름을 잡은 경우였다. 원래 비동기 AI 환경 종료 오류는 이번 실패 요약에 없었으며, 이를 운영 사용자 데이터 손상 재현으로 해석하지 않는다.
+
+로컬에서도 같은 네 파일의 Vitest 실행이 4파일 실패·기존 guard 1실패로 재현됐고, 별도 Node 직접 실행은 기존 13개가 모두 통과했다. 세 파일은 저장소의 기존 dual-runner 패턴으로 Vitest 환경에서는 Vitest의 test를, Node 직접 실행에서는 node:test를 사용한다. 제한 모델 hash·고지/LGPL·전체 타입 Program·coverage/실패 종료·CLI 등의 본문·이름·fixture·단언·heap·기한은 모두 유지한다. 수집 제외·skip·빈 suite 허용을 추가하지 않는다. 같은 13개가 전체 Vitest에도 실제 등록된다.
+
+안료 안내 QA 스크립트는 fs/promises의 mkdtemp import와 기본 출력식 두 줄만 바꿔 임시 디렉터리를 원자적으로 생성한다. 명시적인 TOONSTUDIO_LEGACY_BANNER_VERIFY_DIR의 nullish/path.resolve 동작과 결과 파일명·보고서 보존·root/dist·fixture·브라우저/preview 정상 종료·모든 UI 단언은 그대로다. 기존 출력이나 원고 파일을 삭제하지 않는다. 보호 guard의 source·기대값·allowlist는 변경하지 않았다.
+
+수정 뒤 같은 Vitest 네 파일 41개와 Node 직접 실행 13개는 모두 통과했고 skip은 0이다. QA 스크립트 node --check 및 diff 공백 검사도 통과했다. 브라우저 전체 UI를 새로 실행한 결과로 확대하지 않으며 제품 렌더러·저장·CRDT·권한·기존 원고의 source는 이 보완에서 변경하지 않는다. Feedback 60분 보완과 함께 새 고정 head를 정상 하네스·pre-push·전체 CI로 검증하고, 그 결과가 모두 통과한 뒤에만 main에 병합한다. 운영 배포는 하지 않는다.

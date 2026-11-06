@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,7 +19,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 process.chdir(root);
 const dist = path.resolve(process.env.TOONSTUDIO_LEGACY_BANNER_DIST_DIR ?? path.join(root, "dist"));
 const output = path.resolve(process.env.TOONSTUDIO_LEGACY_BANNER_VERIFY_DIR
-  ?? path.join(tmpdir(), `toonstudio-legacy-banner-${Date.now()}`));
+  ?? await mkdtemp(path.join(tmpdir(), "toonstudio-legacy-banner-")));
 await mkdir(output, { recursive: true });
 const fixturePath = path.join(root, "tests/corpus/studio/legacy-pigment-project-v2.json");
 const fixtureBytes = await readFile(fixturePath);

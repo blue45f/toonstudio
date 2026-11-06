@@ -20,7 +20,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 35
     steps:
       - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
         shell: bash

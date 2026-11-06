@@ -402,7 +402,10 @@ describe("StudioAiSuperSuiteModal — 고도화 콘티 디렉터 (그림체·스
     const styleSelect = director.getByLabelText("그림체 모델 선택") as HTMLSelectElement;
     fireEvent.change(styleSelect, { target: { value: "lora-style-ktoon" } });
 
-    const applyStorylineButtons = director.getAllByRole("button", {
+    const storylineGenres = director.getByRole("group", { name: "스토리라인 추천 장르" });
+    const storylineCard = storylineGenres.parentElement?.parentElement;
+    if (!storylineCard) throw new Error("스토리라인 추천 카드를 찾을 수 없습니다.");
+    const applyStorylineButtons = within(storylineCard).getAllByRole("button", {
       name: "스토리라인·대사·스케치 콘티에 반영",
     });
     expect(applyStorylineButtons.length).toBeGreaterThan(0);

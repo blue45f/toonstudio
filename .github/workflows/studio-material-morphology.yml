@@ -16,6 +16,12 @@ on:
       - scripts/studio-material-atlas-boundary.test.ts
       - scripts/studio-hybrid-topology-browser.ts
       - scripts/verify-studio-hybrid-topology.mjs
+      - scripts/verify-studio-chemy-v1-original-linux-reference.mjs
+      - scripts/fixtures/studio-chemy-v1-pressure/original-source-manifest.json
+      - scripts/lib/studio-chemy-v1-pressure-baselines.ts
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/baseline.json
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/low.png
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/high.png
       - scripts/lib/studio-chemy-v1-pressure-policy.ts
       - scripts/fixtures/studio-chemy-v1-pressure/baseline.json
       - scripts/fixtures/studio-chemy-v1-pressure/low.png
@@ -31,6 +37,12 @@ on:
       - scripts/*studio-material*
       - scripts/studio-hybrid-topology-browser.ts
       - scripts/verify-studio-hybrid-topology.mjs
+      - scripts/verify-studio-chemy-v1-original-linux-reference.mjs
+      - scripts/fixtures/studio-chemy-v1-pressure/original-source-manifest.json
+      - scripts/lib/studio-chemy-v1-pressure-baselines.ts
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/baseline.json
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/low.png
+      - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/high.png
       - scripts/lib/studio-chemy-v1-pressure-policy.ts
       - scripts/fixtures/studio-chemy-v1-pressure/baseline.json
       - scripts/fixtures/studio-chemy-v1-pressure/low.png
@@ -111,12 +123,20 @@ jobs:
         if: failure()
         timeout-minutes: 5
         run: pnpm exec playwright install --with-deps chromium
-      - name: 실패 뒤 Chemy V1 원본 두 Canvas 수집
-        if: failure()
+      - name: Chemy V1 원본 두 Canvas 검증·수집
+        if: ${{ !cancelled() }}
         timeout-minutes: 5
         env:
           TOONSPECTRUM_HYBRID_VERIFY_DIR: ${{ runner.temp }}/studio-material-morphology/legacy-chemy-pressure-only
         run: timeout --signal=TERM --kill-after=10s 180s node scripts/verify-studio-hybrid-topology.mjs --legacy-chemy-pressure-only
+      - name: 같은 Linux job에서 고정 원래 Chemy 소스 두 Canvas 비교
+        if: failure()
+        timeout-minutes: 5
+        run: >-
+          timeout --signal=TERM --kill-after=10s 180s
+          node scripts/verify-studio-chemy-v1-original-linux-reference.mjs
+          --current "$RUNNER_TEMP/studio-material-morphology/legacy-chemy-pressure-only"
+          --out "$RUNNER_TEMP/studio-material-morphology/original-linux-reference"
       - name: Upload real-renderer images, pressure, performance and test receipts
         if: always()
         uses: actions/upload-artifact@v7

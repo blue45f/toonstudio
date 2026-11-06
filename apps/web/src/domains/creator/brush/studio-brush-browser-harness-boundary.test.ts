@@ -144,6 +144,7 @@ describe("Studio brush browser harness catalogue boundary", () => {
 
   it("모바일 브러시 설정은 추출된 helper의 정상 재준비·클릭·숨김 확인을 거친다", () => {
     expect(harness).toContain('import { openMobileBrushSettings } from "./lib/studio-mobile-brush-settings";');
+    expect(harness.match(/await openMobileBrushSettings\(page, dock\)/gu)).toHaveLength(2);
     const start = harness.indexOf("async function runMobileTouchAudit(");
     const end = harness.indexOf("async function readEmergencyAutosave(", start);
     expect(start).toBeGreaterThan(-1);

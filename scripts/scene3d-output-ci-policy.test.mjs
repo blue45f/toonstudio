@@ -23,7 +23,10 @@ describe("Scene3D output CI inputs", () => {
     const core = workflow("ci.yml").jobs.typecheck;
     expect(scene.steps.some((step) => step.run === "pnpm run typecheck")).toBe(true);
     expect(core.steps.some((step) => step.run?.includes("pnpm run typecheck"))).toBe(true);
-    expect(scene["timeout-minutes"]).toBe(20);
+    expect(scene["timeout-minutes"]).toBe(35);
+    expect(scene["runs-on"]).toBe("ubuntu-24.04-arm");
+    expect(scene.env.NODE_OPTIONS).toBe("--max-old-space-size=12288");
+    for (const step of scene.steps) expect(step["continue-on-error"]).toBeUndefined();
     const scripts = JSON.parse(readFileSync(new URL("package.json", repoRoot), "utf8")).scripts;
     expect(scripts.typecheck).toBe(
       "node scripts/verify-workspace-package-links.mjs && pnpm run typecheck:web && pnpm --filter @webtoon-nest/api run typecheck",

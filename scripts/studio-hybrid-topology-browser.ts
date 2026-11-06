@@ -4,10 +4,8 @@ import { createBrushStudioV6Program } from "../apps/web/src/domains/creator/brus
 import { mapBrushStudioV6Pressure, normalizeBrushStudioV6MaterialConfig } from "../apps/web/src/domains/creator/brush-lab/brush-studio-v6-material-engine";
 import { BRUSH_STUDIO_V6_TOPOLOGIES } from "../apps/web/src/domains/creator/brush-lab/brush-studio-v6-topology-catalog";
 
-import pressureBaseline from "./fixtures/studio-chemy-v1-pressure/baseline.json";
-import { checkLegacyChemyV1Pressure, chemySha256, inspectLegacyChemyPrimitives, observeChemyPixels, type ChemyPressureBaseline, type ChemyPressureEnvironment, type ChemyPressureObservation } from "./lib/studio-chemy-v1-pressure-policy";
-
-const CHEMY_PRESSURE_BASELINE: ChemyPressureBaseline = pressureBaseline;
+import { selectLegacyChemyV1PressureBaseline } from "./lib/studio-chemy-v1-pressure-baselines";
+import { checkLegacyChemyV1Pressure, chemySha256, inspectLegacyChemyPrimitives, observeChemyPixels, type ChemyPressureEnvironment, type ChemyPressureObservation } from "./lib/studio-chemy-v1-pressure-policy";
 
 function canvas(width = 640, height = 480) { const c = document.createElement("canvas"); c.width = width; c.height = height; return c; }
 function element(id: string, pressure?: number): StudioMaterialBrushElement {
@@ -94,9 +92,12 @@ async function collectLegacyChemyPressure(
   light: ReturnType<typeof draw>, heavy: ReturnType<typeof draw>,
 ) {
   if (!environment) throw new Error("legacy pixel environment metadata is required");
+  const selected = selectLegacyChemyV1PressureBaseline(environment);
+  if (!selected) throw new Error("legacy pixel environment unverified; frozen baseline unavailable");
+  const { baseline, fixtureDirectory } = selected;
   const lowMarks = planStudioMaterialBrush(lowSource), highMarks = planStudioMaterialBrush(highSource);
   const fixtureSha = async (name: string) => {
-    const response = await fetch("/scripts/fixtures/studio-chemy-v1-pressure/" + name + ".png");
+    const response = await fetch("/scripts/fixtures/studio-chemy-v1-pressure/" + fixtureDirectory + name + ".png");
     if (!response.ok) throw new Error(name + " frozen PNG fixture unavailable: " + response.status);
     return chemySha256(new Uint8Array(await response.arrayBuffer()));
   };
@@ -115,10 +116,10 @@ async function collectLegacyChemyPressure(
     geometrySha256: { low: await chemySha256(geometry(lowMarks)), high: await chemySha256(geometry(highMarks)) },
     pixels: { low: await observeChemyPixels(light.rgba, await fixtureSha("low")),
       high: await observeChemyPixels(heavy.rgba, await fixtureSha("high")) },
-    primitive: await inspectLegacyChemyPrimitives(lowMarks, highMarks, CHEMY_PRESSURE_BASELINE.snapshot.mappedPressures),
+    primitive: await inspectLegacyChemyPrimitives(lowMarks, highMarks, baseline.snapshot.mappedPressures),
     alphaMonotonicViolations,
   };
-  return { ...checkLegacyChemyV1Pressure(observation, CHEMY_PRESSURE_BASELINE), observation };
+  return { ...checkLegacyChemyV1Pressure(observation, baseline), observation };
 }
 
 /** 외부 검토용: 원래 640×480 low/high 두 draw만 실행한다. */
@@ -163,15 +164,16 @@ export async function auditStudioHybridTopology(environment?: ChemyPressureEnvir
     const lowSource = element(topology.recipeId, 0.15), light = draw(lowSource);
     const highSource = element(topology.recipeId, 0.85), heavy = draw(highSource);
     const pressureRatio = heavy.mass / Math.max(1, light.mass);
-    check(pressureRatio > 1.15, `${topology.recipeId}: ineffective pressure (${pressureRatio})`);
     let legacyPressurePolicy: Awaited<ReturnType<typeof collectLegacyChemyPressure>> | undefined;
     if (topology.recipeId === "klecks-chemy") {
       try {
         legacyPressurePolicy = await collectLegacyChemyPressure(environment, lowSource, highSource, light, heavy);
         for (const failure of legacyPressurePolicy.failures) check(false, topology.recipeId + ": " + failure);
       } catch (error) { check(false, topology.recipeId + ": legacy pressure policy failed: " + String(error)); }
+    } else {
+      check(pressureRatio > 1.15, `${topology.recipeId}: ineffective pressure (${pressureRatio})`);
     }
-    // 원래 하한은 모든 모델에 적용하고, 미달한 원본은 추가 진단 자료로 보존한다.
+    // 이전 하한 미달의 원본 증거는 승인된 계약과 별도로 계속 보존한다.
     if (!(pressureRatio > 1.15)) {
       try {
         pressureFailureArtifacts.push(await captureStudioHybridPressureFailure(topology.recipeId, lowSource, highSource, light, heavy));
@@ -232,6 +234,6 @@ export async function auditStudioHybridTopology(environment?: ChemyPressureEnvir
   check(performanceResult.submissionP95 < 50, "submission exceeds 50ms freeze guard");
   return { backend: "real-browser-canvas2d", cases, distinctness: { pairs, minimumDistance, closestPair, opacityNormalized: true },
     performance: performanceResult, failures, pressureFailureArtifacts, pressureFailureArtifactErrors,
-    chemyPressurePolicy: { originalMinimumExclusive: 1.15, originalMinimumRetained: true, approvalStatus: "waiver-approval-unverified" },
-    scope: "Chemy V1을 포함한 모든 모델에 원래 15% 초과 하한을 적용한다. 별도 legacy 픽셀 진단은 이 조건을 대체하지 않으며 면제 승인은 확인되지 않았다. Synthetic input only; no physical pen, fluid-grid or WebGPU latency claim", sheets: [sheet.toDataURL("image/png")] };
+    chemyPressurePolicy: { originalMinimumExclusive: 1.15, originalMinimumRetained: false, approvalStatus: "owner-approved-2026-11-05" },
+    scope: "Chemy V1 preserves legacy pixels instead of its former 15% floor. Synthetic input only; no physical pen, fluid-grid or WebGPU latency claim", sheets: [sheet.toDataURL("image/png")] };
 }

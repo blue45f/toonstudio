@@ -1,4 +1,4 @@
-/** 보관된 픽셀 정책의 관측 진단이다. 이 기록은 하한 포기의 승인 근거가 아니며 전체 감사의 >1.15 검사는 별도로 유지한다. */
+/** 2026-11-05 사용자 결정: 기존 외관 보존을 위해 Chemy V1의 15% 하한 포기. 기존 압력 하한과 동등·강화된 검사가 아니다. */
 export interface ChemyPressureEnvironment { browser: string; platform: string; architecture: string }
 export interface ChemyPressureMark { x: number; y: number; opacity: number; secondaryMix: number }
 export interface ChemyPressurePixels {

@@ -6,7 +6,7 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { REQUIRED_CORE_GATES } from "./ci-core-gate.mjs";
-import { CORE_DATABASE_VITEST_TARGETS } from "./ci-core-regression-shards.mjs";
+import { CORE_DATABASE_VITEST_TARGETS, SHARD_NAMES } from "./ci-core-regression-shards.mjs";
 import { fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 import { assertStaticCheckoutInputContract, assertTrackedDocumentCheckoutContract } from "./ci-static-checkout-input-contract.mjs";
 
@@ -592,6 +592,57 @@ test("product 초기 checkout은 문서 정본을 포함하고 대형 아트는 
 
 test("문서 없는 typecheck checkout도 Git 추적 정본을 확인하고 미추적 물리 파일은 거부한다", () => {
   assertTrackedDocumentCheckoutContract(job("typecheck"));
+});
+
+test("공통 scripts checkout은 Linux Chemy 골든과 selector를 다섯 shard와 preflight에 보존한다", () => {
+  const inputs = [
+    "scripts/lib/studio-chemy-v1-pressure-baselines.ts",
+    "scripts/fixtures/studio-chemy-v1-pressure/linux-x64/baseline.json",
+    "scripts/fixtures/studio-chemy-v1-pressure/linux-x64/low.png",
+    "scripts/fixtures/studio-chemy-v1-pressure/linux-x64/high.png",
+  ];
+  const tracked = spawnSync("git", ["ls-files", "--error-unmatch", "--",
+    ...inputs.map((path) => `:(literal)${path}`)], {
+    cwd: repoRoot, env: fixtureGitEnvironment(repoRoot), encoding: "utf8",
+  });
+  assert.equal(tracked.status, 0,
+    `Linux Chemy 소비 입력이 Git 정본에 없습니다: ${tracked.error?.message ?? tracked.stderr}`);
+  const payloads = inputs.map((path) => ({ path, bytes: readFileSync(join(repoRoot, path)) }));
+  const root = mkdtempSync(join(tmpdir(), "core-shared-chemy-inputs-"));
+  const env = fixtureGitEnvironment(root);
+  const git = (...args) => {
+    const result = spawnSync("git", args, { cwd: root, env, encoding: "utf8" });
+    assert.equal(result.status, 0, result.error?.message ?? result.stderr);
+    return result.stdout.trim();
+  };
+  const unrelatedAsset = "apps/web/public/assets/unrelated/large.bin";
+  try {
+    git("init", "--quiet");
+    for (const { path, bytes } of payloads) {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), bytes);
+    }
+    mkdirSync(dirname(join(root, unrelatedAsset)), { recursive: true });
+    writeFileSync(join(root, unrelatedAsset), "무관한 대형 자산\n");
+    writeFileSync(join(root, "package.json"), "{}\n");
+    git("add", ".");
+    const tree = git("write-tree");
+    git("config", "core.sparseCheckout", "true");
+    git("config", "core.sparseCheckoutCone", "false");
+    const checkouts = [
+      ...SHARD_NAMES.map((shard) => ({ label: shard, patterns: sparsePatterns(job("static"), { shard }) })),
+      ...["typecheck", "lint"].map((name) => ({ label: name, patterns: sparsePatterns(job(name)) })),
+    ];
+    for (const { label, patterns } of checkouts) {
+      writeFileSync(join(root, ".git/info/sparse-checkout"), `${patterns.join("\n")}\n`);
+      git("read-tree", "-mu", tree);
+      for (const { path, bytes } of payloads) {
+        assert.ok(existsSync(join(root, path)), `${label}: Linux Chemy 소비 입력 누락 ${path}`);
+        assert.deepEqual(readFileSync(join(root, path)), bytes, `${label}: Linux Chemy 소비 입력 변경 ${path}`);
+      }
+      assert.equal(existsSync(join(root, unrelatedAsset)), false, `${label}: 무관한 대형 자산을 복원하면 안 됩니다.`);
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·문서 16개 선언을 최초 checkout에서 정확히 보존한다", () => {

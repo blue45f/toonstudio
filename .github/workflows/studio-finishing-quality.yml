@@ -82,7 +82,7 @@ concurrency:
 jobs:
   quality-static:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 45
     env:
       CI: 'true'
       NODE_OPTIONS: --max-old-space-size=8192
@@ -187,7 +187,7 @@ jobs:
 
   finishing-quality:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       CI: 'true'
       NODE_OPTIONS: --max-old-space-size=8192

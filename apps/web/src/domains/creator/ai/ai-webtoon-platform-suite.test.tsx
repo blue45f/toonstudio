@@ -198,6 +198,10 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
 
   it("StudioAiWebtoonPlatformSuitePanel UI에서 4개 플랫폼 탭 전환 및 대본 반영이 정상 동작한다", async () => {
     const onApplyScript = vi.fn();
+    const clickAndWaitForResult = async (buttonId: string, resultId: string, completedText: string) => {
+      fireEvent.click(screen.getByTestId(buttonId));
+      await waitFor(() => expect(screen.getByTestId(resultId).textContent).toContain(completedText));
+    };
     render(
       <StudioAiWebtoonPlatformSuitePanel
         scriptInput="1컷 테스트 대사\n2컷 테스트 대사"
@@ -252,17 +256,18 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
 
     fireEvent.click(screen.getByTestId("ecosystem-tab-cat-3-storyboard"));
     expect(screen.getByTestId("wave24-26-category34-consistency-bar")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("wave24-tool-btn-tankobon"));
+    await clickAndWaitForResult("wave24-tool-btn-tankobon", "wave24-26-result-card", "단행본인쇄");
 
     fireEvent.click(screen.getByTestId("ecosystem-tab-cat-4-style-transfer"));
     expect(screen.getByTestId("wave27-29-category4-consistency-bar")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("wave27-tool-btn-goreum"));
+    // 같은 결과 카드를 공유하므로 각 비동기 결과를 확인한 뒤 다음 동작을 시작한다.
+    await clickAndWaitForResult("wave27-tool-btn-goreum", "wave27-29-result-card", "전통복식여밈");
     expect(screen.getByTestId("wave30-32-category4-osmu-bar")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("wave30-tool-btn-lunar"));
+    await clickAndWaitForResult("wave30-tool-btn-lunar", "wave27-29-result-card", "천문달위상");
     expect(screen.getByTestId("wave33-35-category4-optics-bar")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("wave33-tool-btn-gacha-rpg"));
+    await clickAndWaitForResult("wave33-tool-btn-gacha-rpg", "wave27-29-result-card", "SSR스플래시·궁극기");
     expect(screen.getByTestId("wave36-38-category4-mystery-bar")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("wave36-tool-btn-forensic-luminol"));
+    await clickAndWaitForResult("wave36-tool-btn-forensic-luminol", "wave27-29-result-card", "루미놀청백광·취조거울");
 
     render(
       <StudioRea15PlatformsWorkbenchPanel
@@ -281,15 +286,21 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
       />,
     );
     expect(screen.getByTestId("wave45-47-domain-consistency-bar")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("wave45-joseon-gat-katana-btn"));
+    await clickAndWaitForResult("wave45-joseon-gat-katana-btn", "wave45-47-domain-notice", "[갓/비녀/카타나 (");
     expect(screen.getByTestId("wave48-50-domain-consistency-bar")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("wave48-murim-plum-bagua-btn"));
+    await clickAndWaitForResult("wave48-murim-plum-bagua-btn", "wave45-47-domain-notice", "[무협문파 (");
     expect(screen.getByTestId("wave51-53-domain-consistency-bar")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("wave51-ancient-mythology-btn"));
-    fireEvent.click(screen.getByTestId("wave53-supreme-1020-meta-btn"));
+    await clickAndWaitForResult("wave51-ancient-mythology-btn", "wave45-47-domain-notice", "[고대신화 (");
+    await clickAndWaitForResult("wave53-supreme-1020-meta-btn", "wave45-47-domain-notice", "[1020대수프림메타 (");
     expect(screen.getByTestId("wave54-56-domain-consistency-bar")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("wave54-age-of-sail-btn"));
-    fireEvent.click(screen.getByTestId("wave56-omniverse-1080-btn"));
+    await clickAndWaitForResult("wave54-age-of-sail-btn", "wave45-47-domain-notice", "[대항해범선 (");
+    await clickAndWaitForResult("wave56-omniverse-1080-btn", "wave45-47-domain-notice", "[1080대옴니버스 (");
+    expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[갓\/비녀\/카타나 \(/u));
+    expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[무협문파 \(/u));
+    expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[고대신화 \(/u));
+    expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[1020대수프림메타 \(/u));
+    expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[대항해범선 \(/u));
+    expect(onApplyScript).toHaveBeenCalledWith(expect.stringMatching(/^\[1080대옴니버스 \(/u));
 
     render(
       <StudioWebtoonMasterPipelineCard

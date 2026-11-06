@@ -3,9 +3,10 @@ import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
 
 import { inspectRestrictedModels } from "./check-restricted-model-distribution.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("이름이 바뀌어도 해시가 같은 제한 가중치를 찾고 다른 바이트는 혼동하지 않는다", async () => {
   const root = await mkdtemp(join(tmpdir(), "toonstudio-model-distribution-"));
