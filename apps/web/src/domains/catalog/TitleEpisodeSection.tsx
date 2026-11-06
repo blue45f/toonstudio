@@ -1,5 +1,5 @@
 import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, Heart, ListOrdered } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Title } from "@/shared/lib/types";
 
@@ -172,6 +172,7 @@ export function TitleEpisodeSection({
   const [order, setOrder] = useState<EpisodeSortOrder>("latest");
   const [viewMode, setViewMode] = useState<EpisodeViewMode>("list");
   const [episodeQuery, setEpisodeQuery] = useState("");
+  const episodeSearchRef = useRef<HTMLInputElement>(null);
   const [progress] = useState(() => getReaderProgress(title.slug));
   const total = resolveTotalEpisodes(title, episodes);
   const sorted = episodes ? sortEpisodes(episodes, order) : undefined;
@@ -267,6 +268,7 @@ export function TitleEpisodeSection({
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="search"
+              ref={episodeSearchRef}
               value={episodeQuery}
               onChange={(event) => setEpisodeQuery(event.target.value)}
               placeholder={bi("회차 번호·제목 검색", "Filter episode # or title")}
@@ -344,7 +346,26 @@ export function TitleEpisodeSection({
         </div>
       )}
 
-      {hasEpisodes && filteredEpisodes ? (
+      {hasEpisodes && filteredEpisodes?.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-line bg-card/50 p-5 sm:p-6">
+          <p role="status" className="font-semibold text-fg">
+            {bi("검색 결과가 없어요", "No matching episodes")}
+          </p>
+          <p className="mt-1 text-sm text-fg-2">
+            {bi("다른 회차 번호나 제목으로 찾아보세요.", "Try a different episode number or title.")}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setEpisodeQuery("");
+              episodeSearchRef.current?.focus();
+            }}
+            className="mt-3 inline-flex min-h-11 [min-block-size:2.75rem]! items-center rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg transition-colors hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {bi("검색 지우기", "Clear search")}
+          </button>
+        </div>
+      ) : hasEpisodes && filteredEpisodes ? (
         <ol className={cn("grid gap-2.5", viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
           {filteredEpisodes.map((episode) => (
             <EpisodeRow

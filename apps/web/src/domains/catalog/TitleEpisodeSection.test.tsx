@@ -287,3 +287,19 @@ describe("회차 탐색의 모바일 터치 영역", () => {
     expect(screen.queryByRole("link", { name: /신호의 시작/ })).toBeNull();
   });
 });
+
+
+it("검색 결과가 없으면 안내하고 검색을 지워 원래 회차 목록으로 돌아간다", () => {
+  renderSection(makeTitle(), EPISODES);
+  fireEvent.change(screen.getByRole("searchbox"), { target: { value: "없는 회차" } });
+  expect(screen.getByRole("status").textContent).toContain("검색 결과가 없어요");
+  expect(screen.queryByTestId("title-episodes-empty")).toBeNull();
+  expect(screen.queryByRole("list")).toBeNull();
+  const clear = screen.getByRole("button", { name: "검색 지우기" });
+  expect(clear.className).toContain("min-h-11");
+  fireEvent.click(clear);
+  expect(screen.queryByRole("status")).toBeNull();
+  expect(screen.getByRole("searchbox").getAttribute("value")).toBe("");
+  expect(screen.getAllByRole("listitem")).toHaveLength(EPISODES.length);
+  expect(document.activeElement).toBe(screen.getByRole("searchbox"));
+});
