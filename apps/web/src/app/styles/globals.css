@@ -21,6 +21,12 @@
 @source not "../../**/*.test.tsx";
 @source not "../../**/*.spec.ts";
 @source not "../../**/*.spec.tsx";
+@source not "../../**/__tests__";
+@source not "../../../public";
+@source not "../../../tools";
+@source not "../../../../../services";
+@source not "../../../../../packages/**/*.test.ts";
+@source not "../../../../../packages/**/*.test.tsx";
 
 /* 스튜디오 전용 규칙은 `studio-route.css`가 정본이며 스튜디오 라우트 청크에서만 로드된다(docs/perf/bundle-gate.md). */
 /* 툰스튜디오 — 활자와 스펙트럼 (Type & Spectrum): 따뜻한 잉크-블랙 위의 에디토리얼 다크 OKLCH 토큰 */
