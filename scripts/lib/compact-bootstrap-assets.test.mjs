@@ -13,8 +13,15 @@ import { verifyStaticCspContract } from "../verify-static-csp.mjs";
 
 const root = new URL("../../", import.meta.url);
 const bootstrapFiles = ["bootstrap-compat.js", "bootstrap-theme.js"];
+const offlineDrawFiles = [
+  "offline-draw/model.js",
+  "offline-draw/storage.js",
+  "offline-draw/editor.js",
+  "offline-draw/cache.js",
+  "offline-draw/bootstrap.js",
+];
 const svgFiles = ["brand/production-os-hero.svg", "brand/production-os-workspace.svg"];
-const files = [...bootstrapFiles, ...svgFiles];
+const files = [...bootstrapFiles, ...offlineDrawFiles, ...svgFiles];
 let directory;
 const original = {};
 const compact = {};
