@@ -15,7 +15,7 @@ const BOOLEAN_FIELDS = [
   "pageObjectMatches", "exporting", "masterEditMode", "fontsReady", "assetsReady", "wetPaperWaited",
   "skiaInjected", "snapshotUnavailable",
 ] as const;
-const ALLOWED_PHASES = new Set<string>(PHASES);
+const ALLOWED_PHASES = /* @__PURE__ */ new Set<string>(PHASES);
 const MAX_RETAINED_MARKS = 64;
 
 export type StudioCaptureDiagnosticPhase = typeof PHASES[number];
@@ -27,7 +27,7 @@ export interface StudioCaptureDiagnostics {
   mark(phase: StudioCaptureDiagnosticPhase, fields?: StudioCaptureDiagnosticFields): void;
 }
 
-const DISABLED_DIAGNOSTICS: StudioCaptureDiagnostics = Object.freeze({
+const DISABLED_DIAGNOSTICS: StudioCaptureDiagnostics = /* @__PURE__ */ Object.freeze({
   enabled: false,
   mark() {},
 });

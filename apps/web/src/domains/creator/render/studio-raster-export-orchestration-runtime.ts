@@ -174,34 +174,33 @@ export function createStudioRasterExportOrchestration({
     page: PageState,
     scale: number,
     transparent: boolean,
-    diagnostics: StudioCaptureDiagnostics = beginStudioCaptureDiagnostics("raster-export"),
+    diagnostics: StudioCaptureDiagnostics | undefined = import.meta.env.DEV ? beginStudioCaptureDiagnostics("raster-export") : undefined,
   ): Promise<{ canvas: HTMLCanvasElement; page: PageState }> {
-    diagnostics.mark("readiness-wait");
+    if (import.meta.env.DEV) diagnostics?.mark("readiness-wait");
     try {
       const captured = await capturePage(page);
-      diagnostics.mark("readiness-ready");
+      if (import.meta.env.DEV) diagnostics?.mark("readiness-ready");
       try {
         let capture = captureSkiaDocumentForExport;
         if (capture === undefined || capture === null) {
-          diagnostics.mark("skia-import-wait");
+          if (import.meta.env.DEV) diagnostics?.mark("skia-import-wait");
           capture = (await import("./studio-skia-document-export")).captureStudioSkiaDocumentForExport;
-          diagnostics.mark("skia-import-ready");
+          if (import.meta.env.DEV) diagnostics?.mark("skia-import-ready");
         }
-        diagnostics.mark("skia-capture-wait", { skiaInjected: Boolean(captureSkiaDocumentForExport) });
+        if (import.meta.env.DEV) diagnostics?.mark("skia-capture-wait", { skiaInjected: Boolean(captureSkiaDocumentForExport) });
         const skia = await capture({
           page: captured.page,
           masterElements: captured.master,
           exportScale: scale,
           transparent,
         });
-        diagnostics.mark(skia.status === "captured" ? "skia-captured"
-          : skia.status === "unsupported" ? "skia-unsupported" : "skia-unavailable");
+        if (import.meta.env.DEV) diagnostics?.mark(skia.status === "captured" ? "skia-captured" : skia.status === "unsupported" ? "skia-unsupported" : "skia-unavailable");
         captured.assertCurrent();
         if (skia.status === "captured") {
           return { canvas: skia.canvas, page: captured.page };
         }
       } catch {
-        diagnostics.mark("skia-failed");
+        if (import.meta.env.DEV) diagnostics?.mark("skia-failed");
         captured.assertCurrent();
         // The existing document renderer remains the exact compatibility authority.
       }
@@ -212,13 +211,13 @@ export function createStudioRasterExportOrchestration({
         captured.stage.batchDraw();
       }
       try {
-        diagnostics.mark("compatibility-capture-start");
+        if (import.meta.env.DEV) diagnostics?.mark("compatibility-capture-start");
         const canvas = captureStudioRasterAtExportScale(
           captured.stage,
           effectiveScale,
           scale,
         );
-        diagnostics.mark("compatibility-capture-ready");
+        if (import.meta.env.DEV) diagnostics?.mark("compatibility-capture-ready");
         if (canvas.dataset) {
           canvas.dataset.studioRasterExportBackend = "konva-compatibility";
         }
@@ -230,7 +229,7 @@ export function createStudioRasterExportOrchestration({
         }
       }
     } catch (error) {
-      diagnostics.mark("failed");
+      if (import.meta.env.DEV) diagnostics?.mark("failed");
       throw error;
     }
   }
@@ -242,12 +241,12 @@ export function createStudioRasterExportOrchestration({
     diagnostics?: StudioCaptureDiagnostics,
   ): Promise<{ canvas: HTMLCanvasElement; page: PageState }> {
     const captured = await captureRawPageAtScale(page, scale, transparent, diagnostics);
-    diagnostics?.mark("grade-start");
+    if (import.meta.env.DEV) diagnostics?.mark("grade-start");
     const canvas = bakeStudioPageGradeIntoCanvas(
       captured.canvas,
       normalizePageGrade(captured.page.grade),
     );
-    diagnostics?.mark("grade-ready");
+    if (import.meta.env.DEV) diagnostics?.mark("grade-ready");
     return {
       canvas,
       page: captured.page,
@@ -255,15 +254,15 @@ export function createStudioRasterExportOrchestration({
   }
 
   async function handleDownload() {
-    const diagnostics = beginStudioCaptureDiagnostics("raster-export");
-    diagnostics.mark("started");
+    const diagnostics = import.meta.env.DEV ? beginStudioCaptureDiagnostics("raster-export") : undefined;
+    if (import.meta.env.DEV) diagnostics?.mark("started");
     if (!ensureSharedDocumentAvailableForExport()) {
-      diagnostics.mark("shared-document-blocked");
+      if (import.meta.env.DEV) diagnostics?.mark("shared-document-blocked");
       return;
     }
-    diagnostics.mark("watermark-wait");
+    if (import.meta.env.DEV) diagnostics?.mark("watermark-wait");
     const watermarkForExport = await ensureWatermarkLoaded();
-    diagnostics.mark("watermark-ready");
+    if (import.meta.env.DEV) diagnostics?.mark("watermark-ready");
     setExportMenuOpen(false);
     setSelectedId(null);
     const originalMasterEditMode = masterEditMode;
@@ -279,10 +278,10 @@ export function createStudioRasterExportOrchestration({
         transparent,
         diagnostics,
       );
-      diagnostics.mark("watermark-draw-start");
+      if (import.meta.env.DEV) diagnostics?.mark("watermark-draw-start");
       drawWatermarkOnCanvas(canvas, watermarkForExport);
-      diagnostics.mark("watermark-draw-ready");
-      diagnostics.mark("encode-module-wait");
+      if (import.meta.env.DEV) diagnostics?.mark("watermark-draw-ready");
+      if (import.meta.env.DEV) diagnostics?.mark("encode-module-wait");
       const {
         canvasToBlob,
         downloadBlob,
@@ -290,24 +289,24 @@ export function createStudioRasterExportOrchestration({
         exportQuality,
         pageExportFileName,
       } = await import("../export/studio-export");
-      diagnostics.mark("encode-module-ready");
-      diagnostics.mark("encode-start");
+      if (import.meta.env.DEV) diagnostics?.mark("encode-module-ready");
+      if (import.meta.env.DEV) diagnostics?.mark("encode-start");
       const blob = await canvasToBlob(
         canvas,
         exportMimeType(exportFormat),
         exportQuality(exportFormat)
       );
-      diagnostics.mark("encode-ready");
-      diagnostics.mark("download-start");
+      if (import.meta.env.DEV) diagnostics?.mark("encode-ready");
+      if (import.meta.env.DEV) diagnostics?.mark("download-start");
       downloadBlob(blob, pageExportFileName(
         title,
         exportFormat,
         transparent,
         { revision: exportRevision, exportedAt },
       ));
-      diagnostics.mark("download-dispatched");
+      if (import.meta.env.DEV) diagnostics?.mark("download-dispatched");
     } catch (error) {
-      diagnostics.mark("failed");
+      if (import.meta.env.DEV) diagnostics?.mark("failed");
       setError(error instanceof Error ? error.message : "이미지 내보내기에 실패했어요.");
     } finally {
       setMasterEditMode(originalMasterEditMode);
