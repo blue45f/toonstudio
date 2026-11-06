@@ -1373,6 +1373,8 @@ import type {
 import { useStudioModalSheet } from "./useStudioModalSheet";
 import { useStudioProDrawPrefs } from "./useStudioProDrawPrefs";
 import { useStudioProjectArchiveOrchestration } from "./useStudioProjectArchiveOrchestration";
+import { studioProjectBackupUnavailableReason } from "./save-first/backup-readiness";
+import { createStudioInitialRecoveryAdmission, guardStudioInitialRecoveryPointer } from "./save-first/initial-recovery";
 import { useStudioRasterExportOrchestration } from "./useStudioRasterExportOrchestration";
 import { StudioPendingStrokeAdmissionQueue } from "./live/studio-pending-stroke-admission";
 import { hasUnpersistedStudioPendingStrokeCheckpoints } from "./studio-rejected-stroke-recovery";
@@ -4049,7 +4051,34 @@ export function StudioCuttoonEditor({
   // 임시저장 복구 여부 상태
   const [hasAutosave, setHasAutosave] = useState(false);
   const [autosaveChecked, setAutosaveChecked] = useState(false);
+  const [autosaveCheckedDocumentKey, setAutosaveCheckedDocumentKey] = useState<string | null>(null);
+  const [autosaveCheckFailed, setAutosaveCheckFailed] = useState(false);
   const [autosaveRetryNonce, setAutosaveRetryNonce] = useState(0);
+  const projectBackupSnapshot = {
+    documentKey: autosaveKey, workHydrated, autosaveChecked, autosaveCheckedDocumentKey, autosaveCheckFailed, hasAutosave,
+  };
+  const projectBackupUnavailableReason = studioProjectBackupUnavailableReason(projectBackupSnapshot);
+  // B covers standalone local drafts only; shared/scoped writers retain their existing policy.
+  const initialRecoveryLocalDraft = Boolean(studioRoute.draftId) && !workId && !remixId
+    && !expectsSharedDocument && !joinedStudioLiveJam;
+  const [initialRecoveryChecked, setInitialRecoveryChecked] = useState(false);
+  const [initialRecoveryAdmission] = useState(() => createStudioInitialRecoveryAdmission(
+    initialRecoveryLocalDraft ? autosaveKey : null,
+  ));
+  const initialRecoveryReady = !initialRecoveryLocalDraft
+    || (initialRecoveryChecked && projectBackupUnavailableReason === null);
+  const initialRecoveryBlocked = initialRecoveryAdmission.renderBlocked(autosaveKey, initialRecoveryReady);
+  useLayoutEffect(() => {
+    initialRecoveryAdmission.commit(autosaveKey, initialRecoveryReady);
+  }, [initialRecoveryAdmission, autosaveKey, initialRecoveryReady]);
+  const projectBackupReadinessRef = useRef(projectBackupSnapshot);
+  useLayoutEffect(() => { projectBackupReadinessRef.current = projectBackupSnapshot; });
+  // 동적 내보내기 준비가 끝날 때도 최신 복구 상태와 원래 문서 범위를 다시 확인한다.
+  function ensureProjectBackupAvailable(): boolean {
+    const reason = studioProjectBackupUnavailableReason(projectBackupReadinessRef.current, autosaveKey);
+    if (reason) { setError(reason); return false; }
+    return true;
+  }
   const autosaveRecoveryCandidateRef = useRef<
     import("./studio-autosave-opfs-session").StudioAutosaveRecoveryCandidate | null
   >(null);
@@ -7330,6 +7359,8 @@ export function StudioCuttoonEditor({
     // 복구 배너가 떠 있는 동안(복구/비우기 결정 전)은 저장하지 않는다 — 가드가 없으면
     // 재진입 1.5초 뒤 빈 초기 상태가 직전 작업을 덮어써 "복구하기"가 빈 캔버스를 복원한다.
     if (hasAutosave) return;
+    const initialWriteAllowed = initialRecoveryAdmission.captureWrite(autosaveKey);
+    if (!initialWriteAllowed()) return;
     const pendingBatch = pendingStrokeCommitsRef.current;
     const durablePages = resolveStudioDurableProjectPages({
       pagesHistory: pagesHistoryRef.current,
@@ -7368,6 +7399,7 @@ export function StudioCuttoonEditor({
       session: autosaveOpfsSessionRef.current,
     }));
     const canPublishSnapshot = () => editorMountedRef.current
+      && initialWriteAllowed()
       && !collaborationAccessRef.current.locked
       && snapshotIsCurrent();
     const busyRetry = createStudioAutosaveBusyRetry({
@@ -7592,6 +7624,8 @@ export function StudioCuttoonEditor({
     collaborationDocumentLocked,
     autosaveChecked,
     autosaveRetryNonce,
+    initialRecoveryAdmission,
+    initialRecoveryBlocked,
     collaborationAccessRef,
     editorMountedRef,
     hasAutosave,
@@ -7660,12 +7694,17 @@ export function StudioCuttoonEditor({
   useEffect(() => {
     if (!workHydrated) return;
     autosaveRecoveryCandidateRef.current = null;
+    setInitialRecoveryChecked(false);
     if (collaborationDocumentLocked) {
       setHasAutosave(false);
       setAutosaveRestoreBlockedReason(null);
+      setAutosaveCheckFailed(false);
+      setAutosaveCheckedDocumentKey(autosaveKey);
       setAutosaveChecked(true);
       return;
     }
+    setAutosaveCheckFailed(false);
+    setAutosaveCheckedDocumentKey(null);
     setAutosaveChecked(false);
     let cancelled = false;
     const sessionPromise = autosaveOpfsSessionRef.current;
@@ -7675,6 +7714,7 @@ export function StudioCuttoonEditor({
         let saved:
           | import("./studio-autosave-opfs-session").StudioAutosaveRecoveryCandidate
           | null;
+        let recoveryCheckFailed: boolean;
         try {
           const [
             { reconcileStudioAutosaveWithOpfsPrimary },
@@ -7693,6 +7733,7 @@ export function StudioCuttoonEditor({
             allowLegacy: false,
           });
           saved = reconciliation.candidate;
+          recoveryCheckFailed = reconciliation.authority === null;
         } catch (cause) {
           let compatibility: ReturnType<typeof readStudioAutosave> = null;
           try {
@@ -7714,12 +7755,14 @@ export function StudioCuttoonEditor({
                 payload: compatibility.payload,
               })
             : null;
+          recoveryCheckFailed = saved === null;
           reportStudioSaveAuthorityDegraded(cause);
           if (import.meta.env.DEV) {
             console.warn("Studio OPFS autosave reconciliation fell back.", cause);
           }
         }
         if (cancelled) return;
+        setInitialRecoveryChecked(!recoveryCheckFailed);
         autosaveRecoveryCandidateRef.current = saved;
         const compatibilityOnly =
           saved?.authority === "browser-storage-compatibility";
@@ -7745,6 +7788,8 @@ export function StudioCuttoonEditor({
           );
         }
         setHasAutosave(Boolean(saved));
+        setAutosaveCheckFailed(recoveryCheckFailed);
+        setAutosaveCheckedDocumentKey(autosaveKey);
         setAutosaveChecked(true);
       })();
     });
@@ -9621,9 +9666,10 @@ export function StudioCuttoonEditor({
     || documentReloadRequired
     || sourceHydrationPending
     || workHydrationFailed
-    || collaborationDocumentUnavailable;
+    || collaborationDocumentUnavailable
+    || initialRecoveryBlocked;
   scopedCanvasBoundaryRef.current = { pageId: activePage.id, locked: masterEditMode || pageEditLocked || !persistLeadershipAllowsDraw || hardCanvasInteractionBlock || timelapseCapturing };
-  const canvasInteractionBlocked = isStudioCanvasInteractionBlocked({
+  const canvasInteractionBlocked = initialRecoveryBlocked || isStudioCanvasInteractionBlocked({
     activeSurfaceReviewLocked,
     commentPinArmed,
     canCreateStudioComment,
@@ -23177,8 +23223,13 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
   });
   // The extracted stage API is intentionally bridged through a ref so the live-surface adapter can
   // be bound before the stage pointer callbacks are initialized.
+  const onStageDown = guardStudioInitialRecoveryPointer(
+    () => initialRecoveryAdmission.blocked(autosaveKey),
+    () => setError("저장된 그림을 확인한 뒤 그릴 수 있어요. 복구 안내에서 다시 이어 열거나, 확인에 실패했다면 새로고침해 주세요."),
+    (event: Parameters<typeof onReadyStageDown>[0]) => onReadyStageDown(event),
+  );
   const {
-    onStageDown,
+    onStageDown: onReadyStageDown,
     onStageMove,
     onStagePointerCancel,
     onStageUp,
@@ -23632,10 +23683,11 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
   finishQueuedStudioDrawingPointerRef.current = stageFinishDrawingPointer;
   useEffect(() => {
     pendingCatalogInputRef.current?.replayReady(activeCatalogBrush.id, catalogInputScope, (gesture) => {
+      if (initialRecoveryAdmission.blocked(autosaveKey)) return false;
       if ((canvasInteractionBlocked && !canStartStudioScopedDrawing(collaborationAccessRef, scopedCanvasBoundaryRef, tool)) || tool !== "draw") return false;
       return replayPendingCatalogGesture(gesture);
     });
-  }, [activeCatalogBrush.id, catalogInputScope, catalogSelectionRevision, canvasInteractionBlocked, collaborationAccessRef, tool, replayPendingCatalogGesture]);
+  }, [activeCatalogBrush.id, catalogInputScope, catalogSelectionRevision, canvasInteractionBlocked, collaborationAccessRef, tool, replayPendingCatalogGesture, initialRecoveryAdmission, autosaveKey]);
 
 
   function startCanvasEditText(id: string) {
@@ -25404,6 +25456,7 @@ function clearSelectionForEdit() {
           collaborationDocumentLocked, scopedDraftSaveAvailable: scopedDraftSaveState.available, scopedPendingSaveConfirmation: scopedDraftSaveState.pendingConfirmation,
           hasWorkId: Boolean(workId),
           projectArchiveBusy,
+          projectBackupUnavailableReason,
           interchangeImportBusy: interchangeImportBusy || psdImportBusy,
           psdImportBusy: psdImportBusy || interchangeImportBusy,
           edit: {
@@ -25581,6 +25634,7 @@ function clearSelectionForEdit() {
       pageSequenceOpen,
       perspectiveRulerActive,
       projectArchiveBusy,
+      projectBackupUnavailableReason,
       interchangeImportBusy,
       psdImportBusy,
       quickAccessPaletteLoading,
@@ -26092,6 +26146,10 @@ function clearSelectionForEdit() {
       studioRevisionProjectGenerationRef.current
       > studioLifecycleDurableGenerationRef.current;
     if (!hasDirtyPendingState && !hasDirtyStableState) return;
+    // Initial contact admission is closed before a stroke exists. This gate permanently retires
+    // after the first ready commit/navigation; it must not discard later accepted input.
+    const initialWriteAllowed = initialRecoveryAdmission.captureWrite(autosaveKey);
+    if (!initialWriteAllowed()) return;
     if (!workHydrated || collaborationDocumentLocked) return;
     if (autosaveDocumentLeaseRef.current?.role === "follower") return;
     // A shared route must carry the exact hydrated revision. Treating a not-yet-hydrated work as
@@ -26143,6 +26201,7 @@ function clearSelectionForEdit() {
         if (sessionPromise) {
           durableWrites.push(sessionPromise.then(async (session) => {
             if (!session) throw new Error("OPFS autosave authority is unavailable");
+            if (!initialWriteAllowed()) throw new Error("Initial recovery write was not admitted");
             const receipt = await session.write(emergency.payload);
             return receipt.authority;
           }));
@@ -26161,6 +26220,7 @@ function clearSelectionForEdit() {
               ? applyLeadership(acquiredSqlite, autosaveDocumentLeaseRef.current)
               : acquiredSqlite;
             if (!sqlite) throw new Error("SQLite autosave authority is unavailable");
+            if (!initialWriteAllowed()) throw new Error("Initial recovery write was not admitted");
             await sqlite.write(autosaveKey, emergency.payload, { mode: "emergency" });
             return "sqlite-fallback" as const;
           }));
@@ -26172,6 +26232,7 @@ function clearSelectionForEdit() {
             );
         void durabilityAttempt
           .then((authority) => {
+            if (!initialWriteAllowed()) return;
             studioLifecycleDurableGenerationRef.current = Math.max(
               studioLifecycleDurableGenerationRef.current,
               emergencyGeneration
@@ -26581,6 +26642,7 @@ function clearSelectionForEdit() {
     revisionProjectGenerationRef: studioRevisionProjectGenerationRef,
     projectDocumentSessionRef: studioProjectDocumentSessionRef,
     ensureSharedDocumentAvailableForExport,
+    ensureProjectBackupAvailable,
     prepareDocumentForExport: async () => (await loadStudioCaptureReadinessRuntime()).flushStudioDocumentInkForExport({
       drawingRef, drawingPointerTransportRef, pendingStrokeCommitsRef,
       flushPendingStrokes: () => flushSync(() => flushPendingStrokeCommitsRef.current()),

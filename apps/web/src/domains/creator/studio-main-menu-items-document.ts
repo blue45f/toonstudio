@@ -143,6 +143,7 @@ export function buildStudioFileMenuItems({
       commandId: "file.export-backup",
       label: "백업 (.json)",
       icon: Download,
+      disabled: Boolean(state.projectBackupUnavailableReason),
       onSelect: () => {
         editor.exportProject();
       },
@@ -152,7 +153,7 @@ export function buildStudioFileMenuItems({
       commandId: "file.export-archive",
       label: "아카이브 백업",
       icon: Package,
-      disabled: state.projectArchiveBusy,
+      disabled: state.projectArchiveBusy || Boolean(state.projectBackupUnavailableReason),
       onSelect: () => {
         void editor.exportProjectArchive();
       },

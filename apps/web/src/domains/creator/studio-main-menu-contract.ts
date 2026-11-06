@@ -46,6 +46,8 @@ export interface StudioMainMenuBuilderState extends StudioMainMenuSurfaceState {
   scopedDraftSaveAvailable?: boolean; scopedPendingSaveConfirmation?: boolean;
   hasWorkId: boolean;
   projectArchiveBusy: boolean;
+  /** 문서 복구를 소유한 호스트가 제공하는 사용자 백업 차단 사유. */
+  projectBackupUnavailableReason?: string | null;
   interchangeImportBusy: boolean;
   psdImportBusy: boolean;
   edit: StudioMainMenuEditAvailability;

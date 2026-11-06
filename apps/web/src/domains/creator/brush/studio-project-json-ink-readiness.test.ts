@@ -39,6 +39,7 @@ function exportSession(pending = true, blocked = false) {
     },
   }));
   const setError = vi.fn();
+  const ensureProjectBackupAvailable = vi.fn(() => true);
   const files: Blob[] = [];
   const click = vi.fn();
   vi.spyOn(URL, "createObjectURL").mockImplementation((value) => { files.push(value as Blob); return "blob:json"; });
@@ -50,11 +51,11 @@ function exportSession(pending = true, blocked = false) {
     workId: null, remixId: null, currentPageId: "A", title: "session", isMobile: false,
     projectArchiveBusy: false, sharedDocumentRevision: null, projectDocumentSessionScopeKey: "scope",
     revisionProjectGenerationRef, projectDocumentSessionRef,
-    ensureSharedDocumentAvailableForExport: () => true,
+    ensureSharedDocumentAvailableForExport: () => true, ensureProjectBackupAvailable,
     currentStudioProjectSnapshot, prepareDocumentForExport, setError,
   } as unknown as StudioProjectArchiveOrchestrationInput;
   const orchestration = createStudioProjectArchiveOrchestration(input);
-  return { orchestration, original, files, click, prepareDocumentForExport, currentStudioProjectSnapshot, setError, stroke, projectDocumentSessionRef };
+  return { orchestration, original, files, click, ensureProjectBackupAvailable, revisionProjectGenerationRef, prepareDocumentForExport, currentStudioProjectSnapshot, setError, stroke, projectDocumentSessionRef };
 }
 
 describe("current project JSON does not reuse a pre-stroke envelope", () => {
@@ -91,5 +92,70 @@ describe("current project JSON does not reuse a pre-stroke envelope", () => {
     expect(state.files).toHaveLength(1);
     expect(await state.files[0]!.text()).toBe(serializeCanonicalStudioDocumentEnvelope(state.original));
     expect(state.currentStudioProjectSnapshot).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("사용자 JSON 백업은 복구 중 bootstrap을 내보내지 않는다", () => {
+  it("복구 확인 전에는 snapshot과 원본 session을 건드리지 않는다", async () => {
+    const state = exportSession(false);
+    const originalSession = state.projectDocumentSessionRef.current;
+    state.ensureProjectBackupAvailable.mockReturnValue(false);
+    await state.orchestration.handleExportProject();
+    expect(state.prepareDocumentForExport).not.toHaveBeenCalled();
+    expect(state.currentStudioProjectSnapshot).not.toHaveBeenCalled();
+    expect(state.files).toHaveLength(0);
+    expect(state.projectDocumentSessionRef.current).toBe(originalSession);
+  });
+
+  it("archive 핸들러도 메뉴를 우회한 복구 미결 요청을 거부한다", async () => {
+    const state = exportSession(false);
+    state.ensureProjectBackupAvailable.mockReturnValue(false);
+    await state.orchestration.handleExportProjectArchive();
+    expect(state.currentStudioProjectSnapshot).not.toHaveBeenCalled();
+    expect(state.files).toHaveLength(0);
+  });
+
+  it("준비 도중 복구가 다시 미결 상태가 되면 snapshot 전에 중단한다", async () => {
+    const state = exportSession();
+    state.ensureProjectBackupAvailable.mockReturnValueOnce(true).mockReturnValue(false);
+    await state.orchestration.handleExportProject();
+    expect(state.prepareDocumentForExport).toHaveBeenCalledOnce();
+    expect(state.currentStudioProjectSnapshot).not.toHaveBeenCalled();
+    expect(state.files).toHaveLength(0);
+  });
+
+  it("비동기 검사 뒤 최종 가드가 거부하면 정상 JSON 다운로드와 session 갱신이 없다", async () => {
+    const state = exportSession();
+    const originalSession = state.projectDocumentSessionRef.current;
+    state.ensureProjectBackupAvailable.mockReturnValueOnce(true).mockReturnValueOnce(true).mockReturnValue(false);
+    await state.orchestration.handleExportProject();
+    expect(state.currentStudioProjectSnapshot).toHaveBeenCalledOnce();
+    expect(state.files).toHaveLength(0);
+    expect(state.click).not.toHaveBeenCalled();
+    expect(state.projectDocumentSessionRef.current).toBe(originalSession);
+  });
+
+  it("비동기 검사 뒤 문서 세대가 바뀌어도 이전 snapshot을 내보내지 않는다", async () => {
+    const state = exportSession();
+    state.ensureProjectBackupAvailable.mockReturnValueOnce(true).mockReturnValueOnce(true).mockImplementation(() => {
+      state.revisionProjectGenerationRef.current += 1;
+      return true;
+    });
+    await state.orchestration.handleExportProject();
+    expect(state.files).toHaveLength(0);
+    expect(state.setError).toHaveBeenCalledWith(expect.stringContaining("그림이 바뀌어"));
+  });
+
+  it("복구 미결로 거부된 뒤 정본 확인을 마치면 같은 경로로 다시 백업한다", async () => {
+    const state = exportSession();
+    state.ensureProjectBackupAvailable.mockReturnValue(false);
+    await state.orchestration.handleExportProject();
+    expect(state.files).toHaveLength(0);
+    state.ensureProjectBackupAvailable.mockReturnValue(true);
+    await state.orchestration.handleExportProject();
+    expect(state.files).toHaveLength(1);
+    const data = JSON.parse(await state.files[0]!.text());
+    expect(data.payload.data.pagesList[0].elements).toEqual([state.stroke]);
   });
 });
