@@ -122,7 +122,7 @@ function MobileFullEditNoticeContent({
           aria-controls={detailsId}
           onClick={() => setExpanded((value) => !value)}
           onKeyDown={handleEscape}
-          className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-left text-sm font-bold hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+          className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-left text-sm font-bold hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent motion-reduce:transition-none"
         >
           <MonitorSmartphone className="size-4 shrink-0 text-accent" aria-hidden="true" />
           <span>{bt("기기 안내", "Device guide")}</span>
@@ -136,7 +136,7 @@ function MobileFullEditNoticeContent({
             onClick={close}
             onKeyDown={handleEscape}
             aria-label={bt("모바일 편집 안내 닫기", "Dismiss mobile editing notice")}
-            className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent motion-reduce:transition-none"
           >
             <X className="size-4" aria-hidden="true" />
           </button>
@@ -144,7 +144,7 @@ function MobileFullEditNoticeContent({
       </div>
       <div className="min-h-0 overflow-y-auto overscroll-contain px-3">
         {!compact ? (
-          <p className="pb-3 text-xs leading-5 text-fg-2">
+          <p className="pb-2 text-xs leading-snug text-fg-2">
             <strong className="block font-semibold text-fg">{bt(surfaceLabel.ko, surfaceLabel.en)}</strong>
             {!expanded ? (firstLimitation
               ? bt(firstLimitation.ko, firstLimitation.en)
@@ -180,7 +180,7 @@ function MobileFullEditNoticeContent({
             type="button"
             onClick={close}
             onKeyDown={handleEscape}
-            className="my-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-accent px-3 text-sm font-bold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+            className="my-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-accent px-3 text-sm font-bold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent motion-reduce:transition-none"
           >
             {bt("안내 접고 계속하기", "Close guide and continue")}
           </button>

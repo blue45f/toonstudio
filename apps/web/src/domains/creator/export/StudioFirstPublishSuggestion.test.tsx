@@ -211,3 +211,114 @@ describe("StudioFirstPublishSuggestion", () => {
     expect(screen.queryByRole("button", { name: "게시 준비 확인하기" })).toBeNull();
   });
 });
+
+describe("게시 준비 제안의 작은 기본 카드와 설명 펼치기", () => {
+  const props = {
+    firstSaveCompleted: true,
+    cutCount: 0,
+    scope: "doc-disclosure",
+    onCheckPublishReady: vi.fn(),
+  };
+
+  beforeEach(() => props.onCheckPublishReady.mockClear());
+
+  it("바로 게시되지 않음을 항상 알리고 설명은 접으며 작업 포커스를 가져가지 않는다", () => {
+    render(<button type="button">그리기</button>);
+    const drawing = screen.getByRole("button", { name: "그리기" });
+    drawing.focus();
+    render(<StudioFirstPublishSuggestion {...props} />);
+    const toggle = screen.getByRole("button", { name: "게시 준비 설명 보기" });
+    const details = document.getElementById(toggle.getAttribute("aria-controls") ?? "");
+    expect(details?.hidden).toBe(true);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByText("게시는 확인 후 따로 진행해요.").closest("[hidden]")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(drawing);
+    expect(props.onCheckPublishReady).not.toHaveBeenCalled();
+  });
+
+  it("설명 반복 펼치기와 접기는 실제 행동이나 일회성 기억을 바꾸지 않는다", () => {
+    render(<StudioFirstPublishSuggestion {...props} />);
+    const toggle = screen.getByRole("button", { name: "게시 준비 설명 보기" });
+    const details = document.getElementById(toggle.getAttribute("aria-controls") ?? "");
+    for (let index = 0; index < 2; index += 1) {
+      fireEvent.click(toggle);
+      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+      expect(details?.hidden).toBe(false);
+      expect(details?.textContent).toContain("게시는 확인 뒤에 따로 진행돼요.");
+      fireEvent.click(toggle);
+      expect(details?.hidden).toBe(true);
+    }
+    expect(props.onCheckPublishReady).not.toHaveBeenCalled();
+    expect(readFirstPublishSuggestionDismissed(window.localStorage, props.scope)).toBe(false);
+  });
+
+  it("펼친 안내 안의 Escape만 설명을 접고 설명 버튼에 포커스를 돌린다", () => {
+    const parentKeyDown = vi.fn();
+    document.addEventListener("keydown", parentKeyDown);
+    try {
+      render(<StudioFirstPublishSuggestion {...props} />);
+      const toggle = screen.getByRole("button", { name: "게시 준비 설명 보기" });
+      fireEvent.click(toggle);
+      const close = screen.getByRole("button", { name: "게시 준비 제안 닫기" });
+      close.focus();
+      fireEvent.keyDown(close, { key: "Escape" });
+      expect(document.activeElement).toBe(toggle);
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+      expect(parentKeyDown).not.toHaveBeenCalled();
+      fireEvent.keyDown(toggle, { key: "Escape" });
+      expect(parentKeyDown).toHaveBeenCalledOnce();
+      expect(props.onCheckPublishReady).not.toHaveBeenCalled();
+      expect(readFirstPublishSuggestionDismissed(window.localStorage, props.scope)).toBe(false);
+    } finally {
+      document.removeEventListener("keydown", parentKeyDown);
+    }
+  });
+
+  it("설명을 펼친 뒤 닫아도 같은 문서에서 다시 나타나지 않는다", () => {
+    const view = render(<StudioFirstPublishSuggestion {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "게시 준비 설명 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "게시 준비 제안 닫기" }));
+    expect(props.onCheckPublishReady).not.toHaveBeenCalled();
+    view.unmount();
+    render(<StudioFirstPublishSuggestion {...props} />);
+    expect(screen.queryByRole("region", { name: "게시 준비 제안" })).toBeNull();
+  });
+
+  it("기기 저장이 막혀도 실제 확인 행동은 한 번 실행하고 카드를 닫는다", () => {
+    const write = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+    try {
+      render(<StudioFirstPublishSuggestion {...props} />);
+      fireEvent.click(screen.getByRole("button", { name: "게시 준비 설명 보기" }));
+      fireEvent.click(screen.getByRole("button", { name: "게시 준비 확인하기" }));
+      expect(props.onCheckPublishReady).toHaveBeenCalledOnce();
+      expect(screen.queryByRole("region", { name: "게시 준비 제안" })).toBeNull();
+    } finally {
+      write.mockRestore();
+    }
+  });
+
+  it("영문 기본 안내와 설명에서도 게시가 별도 단계임을 보존한다", () => {
+    useI18n.getState().setLang("en");
+    render(<StudioFirstPublishSuggestion {...props} />);
+    expect(screen.getByRole("button", { name: "Check publish readiness" })).toBeTruthy();
+    expect(screen.getByText("Publishing is a separate step after the check.").closest("[hidden]")).toBeNull();
+    const toggle = screen.getByRole("button", { name: "Show publish readiness details" });
+    fireEvent.click(toggle);
+    expect(document.getElementById(toggle.getAttribute("aria-controls") ?? "")?.textContent)
+      .toContain("Publishing itself happens separately, after the check.");
+    expect(props.onCheckPublishReady).not.toHaveBeenCalled();
+  });
+
+  it("세 버튼 모두 44px 대상과 focus·reduced-motion 스타일을 갖는다", () => {
+    render(<StudioFirstPublishSuggestion {...props} />);
+    expect(screen.getByRole("button", { name: "게시 준비 확인하기" }).className).toContain("h-11");
+    for (const button of screen.getAllByRole("button")) {
+      expect(button.className).toMatch(/(?:size-11|min-h-11)/);
+      expect(button.className).toContain("focus-visible:outline");
+      expect(button.className).toContain("motion-reduce:transition-none");
+    }
+  });
+});

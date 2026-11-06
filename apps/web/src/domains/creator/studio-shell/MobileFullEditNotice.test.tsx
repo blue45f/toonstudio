@@ -197,3 +197,27 @@ describe("모바일 편집 안내의 기기 경계", () => {
     expect(guide.getAttribute("data-studio-mobile-touch-tier")).toBe("desktop-required");
   });
 });
+
+describe("좁은 기기 안내의 정보 보존", () => {
+  it("좁은 요약에서도 첫 한계 원문과 표면 이름을 자르거나 숨기지 않는다", () => {
+    render(notice());
+    const plan = resolveStudioMobileTouchPlan("canvas");
+    const summary = screen.getByRole("complementary").querySelector("p");
+    expect(summary?.textContent).toContain(plan.label.ko);
+    expect(summary?.textContent).toContain(plan.cannotDo[0]?.ko);
+    expect(summary?.closest("[hidden]")).toBeNull();
+    expect(summary?.className).not.toMatch(/truncate|line-clamp|overflow-hidden/);
+  });
+
+  it("영문 요약에도 동일한 첫 한계를 보이고 모든 버튼은 reduced-motion을 따른다", () => {
+    language.value = "en";
+    render(notice());
+    expect(screen.getByRole("complementary").querySelector("p")?.textContent)
+      .toContain(resolveStudioMobileTouchPlan("canvas").cannotDo[0]?.en);
+    fireEvent.click(screen.getByRole("button", { name: "Device guide View available tasks" }));
+    for (const button of screen.getAllByRole("button")) {
+      expect(button.className).toMatch(/(?:size-11|min-h-11)/);
+      expect(button.className).toContain("motion-reduce:transition-none");
+    }
+  });
+});
