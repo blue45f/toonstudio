@@ -15,6 +15,12 @@ on:
       - '*feedback*.ts'
       - '.github/workflows/feedback-community-validation.yml'
       - 'scripts/ci-enospc-followup-policy.test.mjs'
+      - 'scripts/ci-shared-typecheck.mjs'
+      - 'scripts/ci-shared-typecheck.test.mjs'
+      - 'scripts/ci-typecheck-receipt.mjs'
+      - 'scripts/ci-typecheck-receipt.test.mjs'
+      - 'scripts/ci-typecheck-lookup.mjs'
+      - 'scripts/ci-typecheck-lookup.test.mjs'
   push:
     branches: ["main", "release/salvage-integration-20260908"]
     paths:
@@ -29,6 +35,12 @@ on:
       - '*feedback*.ts'
       - '.github/workflows/feedback-community-validation.yml'
       - 'scripts/ci-enospc-followup-policy.test.mjs'
+      - 'scripts/ci-shared-typecheck.mjs'
+      - 'scripts/ci-shared-typecheck.test.mjs'
+      - 'scripts/ci-typecheck-receipt.mjs'
+      - 'scripts/ci-typecheck-receipt.test.mjs'
+      - 'scripts/ci-typecheck-lookup.mjs'
+      - 'scripts/ci-typecheck-lookup.test.mjs'
   workflow_dispatch:
   workflow_call:
 permissions:
@@ -46,6 +58,9 @@ jobs:
     name: Feedback community regression gate
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
     services:
       postgres:
         image: postgres:16
@@ -189,7 +204,9 @@ jobs:
       - name: Typecheck web and API
         id: types
         continue-on-error: true
-        run: pnpm run typecheck 2>&1 | tee artifacts/feedback/typecheck.log
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-shared-typecheck.mjs reuse-or-run 2>&1 | tee artifacts/feedback/typecheck.log
       - name: Shared input and response contract tests
         id: unit
         continue-on-error: true
