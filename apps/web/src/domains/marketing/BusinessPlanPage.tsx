@@ -83,7 +83,7 @@ export function BusinessPlanPage() {
               협업 업무툴, 툰스튜디오.
             </>
           }
-          lede="기획·콘티·작화·배경·채색·검수·연재를 한 파일·한 화면에서 잇는 방향을, 문제 인식부터 성장전략과 향후 발전방안까지 문항 순서대로 정리했다. 작성자 김희준(1인 예비창업자, 팀 없음), 멘토 정진호, 멘토기관 한국핀테크지원센터."
+          lede="기획·콘티·작화·배경·채색·검수·연재를 한 파일·한 화면에서 잇는 방향을, 문제 인식부터 성장전략과 향후 발전방안까지 문항 순서대로 정리했다. 작성자 김희준(1인 예비창업자, 팀 없음), 멘토기관 한국핀테크지원센터."
         />
         <section aria-labelledby="business-plan-download-title" className="mt-6 rounded-2xl border p-4 sm:p-5">
           <h2 id="business-plan-download-title" className="text-base font-bold">

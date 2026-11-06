@@ -47,6 +47,14 @@ function loadPdfFonts(): BusinessPlanPdfFontBytes {
   };
 }
 
+/** 공개 파일은 작성자·기관만 유지하고 두 비공개 표기를 되살리지 않는다. */
+function expectPublicIdentity(text: string): void {
+  expect(text).not.toMatch(/멘토\s*[:·]?\s+[가-힣]{2,4}\s*[,·]/);
+  expect(text).not.toMatch(/사업자\s*등록/);
+  expect(text).toContain("멘토기관 한국핀테크지원센터");
+  expect(text).toContain("작성자 김희준 (1인 예비창업자, 팀 없음)");
+}
+
 async function extractPdfText(bytes: Uint8Array): Promise<string> {
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const loading = getDocument({ data: bytes });
@@ -72,6 +80,10 @@ describe("사업계획서 DOCX 내려받기", () => {
     expect(documentXml).toContain('w:w="11907"');
     expect(documentXml).toContain('w:h="16839"');
     expect(documentXml).toContain("맑은 고딕");
+    expectPublicIdentity(documentXml);
+    const coreXml = new TextDecoder().decode(files["docProps/core.xml"]);
+    expect(coreXml).toContain("<dc:creator>김희준</dc:creator>");
+    expect(coreXml).not.toMatch(/사업자\s*등록|멘토\s*[:·]?\s+[가-힣]{2,4}\s*[,·]/);
     for (const heading of EXPECTED_HEADINGS) {
       expect(documentXml).toContain(heading);
     }
@@ -105,6 +117,11 @@ describe("사업계획서 PDF 내려받기", () => {
     expect(firstPage.getWidth()).toBeCloseTo(595.28, 1);
     expect(firstPage.getHeight()).toBeCloseTo(841.89, 1);
     const text = await extractPdfText(bytes);
+    expectPublicIdentity(text);
+    expect(loaded.getAuthor()).toBe("김희준");
+    expect(loaded.getSubject()).toBe(
+      "웹툰 제작 전 과정의 협업 업무툴 — 작성 기준 2026-11-04 고도화 초안 v11",
+    );
     for (const heading of EXPECTED_HEADINGS) {
       expect(text).toContain(heading);
     }
