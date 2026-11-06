@@ -9,19 +9,25 @@ import {
   type StudioAutosavePayload,
 } from "../studio-autosave";
 import {
+  archiveStudioProjectDocument,
   createStudioProjectDocument,
   readStudioProjectDocuments,
+  STUDIO_PROJECT_DOCUMENTS_UPDATED_EVENT,
+  studioDocumentWorkspaces,
   studioProjectDocumentHref,
   studioProjectDocumentStorageKey,
+  trashStudioProjectDocument,
   type StudioDocumentKind,
   type StudioDocumentWorkspace,
   type StudioProjectDocumentEntry,
 } from "../studio-project-document-store";
 import {
+  archiveStudioProject,
   createStudioProject,
   markStudioProjectOpened,
   readStudioProjectLibrary,
   STUDIO_PROJECT_LIBRARY_STORAGE_KEY,
+  STUDIO_PROJECT_LIBRARY_UPDATED_EVENT,
   updateStudioProjectThumbnailUrl,
   type StudioProjectKind,
   type StudioProjectLibraryEntry,
@@ -30,9 +36,13 @@ import { readStudioZipArchive } from "../studio-zip-reader";
 import {
   ensureStudioSaveProfile,
   markStudioStorageBindingSynced,
+  readStudioSaveProfiles,
   recordStudioManualSave,
   STUDIO_SAVE_PROFILE_STORAGE_KEY,
   upsertStudioStorageBinding,
+  writeStudioSaveProfiles,
+  type StudioAccessMode,
+  type StudioDistributionState,
 } from "./studio-save-profile";
 import {
   restoreStudioSubmissionsForImportedProject,
@@ -53,6 +63,18 @@ const REQUIRED_ENTRIES = Object.freeze([
 ]);
 const PACKAGE_ENTRY_PATTERN = /^(?:manifest\.json|README\.txt|project\/(?:project|documents)\.json|storage\/profile\.json|distribution\/submissions\.json|workspace\/documents\/(?:index\.json|document-\d{4}\.autosave\.json))$/u;
 const decoder = new TextDecoder("utf-8", { fatal: true });
+const VALID_ACCESS_MODES = new Set<StudioAccessMode>([
+  "owner-only",
+  "collaborators",
+  "review-link",
+  "public",
+]);
+const VALID_DISTRIBUTION_STATES = new Set<StudioDistributionState>([
+  "none",
+  "exported",
+  "submitted",
+  "published",
+]);
 
 interface PackageManifest {
   readonly format: "toonstudio-project";
@@ -77,6 +99,12 @@ interface ParsedProjectPackage {
   readonly snapshots: ReadonlyMap<string, StudioAutosavePayload>;
   readonly autoSave: boolean;
   readonly createVersions: boolean;
+  readonly accessMode: StudioAccessMode;
+  readonly distributionState: StudioDistributionState;
+  readonly revision: number;
+  readonly lastExportAt: string | null;
+  readonly lastSubmissionAt: string | null;
+  readonly lastPublicationAt: string | null;
   /** distribution/submissions.json 원본 항목 — 복원은 기록 스토어가 검증·재연결한다. */
   readonly submissions: readonly unknown[];
 }
@@ -111,6 +139,10 @@ function stringValue(value: unknown, label: string): string {
     throw new Error(`ToonStudio 프로젝트 패키지의 ${label} 값이 올바르지 않습니다.`);
   }
   return value;
+}
+
+function optionalIsoTimestamp(value: unknown): string | null {
+  return typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : null;
 }
 
 function jsonValue(bytes: Uint8Array, path: string): unknown {
@@ -167,6 +199,7 @@ function parseWorkspaceIndex(value: unknown): WorkspaceIndex {
 
 function importedProject(value: unknown): StudioProjectLibraryEntry {
   const project = record(value);
+  stringValue(project.id, "프로젝트 ID");
   return project as unknown as StudioProjectLibraryEntry;
 }
 
@@ -174,7 +207,11 @@ function importedDocuments(value: unknown): readonly StudioProjectDocumentEntry[
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error("ToonStudio 프로젝트 패키지에 작업 문서가 없습니다.");
   }
-  return Object.freeze(value.map((item) => record(item) as unknown as StudioProjectDocumentEntry));
+  return Object.freeze(value.map((item) => {
+    const doc = record(item);
+    stringValue(doc.id, "원고 문서 ID");
+    return doc as unknown as StudioProjectDocumentEntry;
+  }));
 }
 
 async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPackage> {
@@ -263,6 +300,18 @@ async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPacka
     snapshots,
     autoSave: profile.autoSave !== false,
     createVersions: profile.createVersions !== false,
+    accessMode: VALID_ACCESS_MODES.has(profile.accessMode as StudioAccessMode)
+      ? (profile.accessMode as StudioAccessMode)
+      : "owner-only",
+    distributionState: VALID_DISTRIBUTION_STATES.has(profile.distributionState as StudioDistributionState)
+      ? (profile.distributionState as StudioDistributionState)
+      : "none",
+    revision: Number.isSafeInteger(profile.revision) && Number(profile.revision) >= 0
+      ? Number(profile.revision)
+      : 0,
+    lastExportAt: optionalIsoTimestamp(profile.lastExportAt),
+    lastSubmissionAt: optionalIsoTimestamp(profile.lastSubmissionAt),
+    lastPublicationAt: optionalIsoTimestamp(profile.lastPublicationAt),
     submissions: Object.freeze([...submissionsRaw]),
   });
 }
@@ -276,8 +325,20 @@ function generatedImportDocumentId(factory: () => string): string {
 }
 
 function restoreRaw(storage: Storage, key: string, value: string | null): void {
-  if (value === null) storage.removeItem(key);
-  else storage.setItem(key, value);
+  try {
+    if (value === null) storage.removeItem(key);
+    else storage.setItem(key, value);
+  } catch {
+    // 롤백 중 스토리지 할당량 예외가 다른 키 복원을 중단시키지 않도록 방어한다.
+  }
+}
+
+function removeKeySafely(storage: Storage, key: string): void {
+  try {
+    storage.removeItem(key);
+  } catch {
+    // 무시하고 다음 키 정리를 진행한다.
+  }
 }
 
 export async function importStudioProjectPackage(
@@ -319,7 +380,7 @@ export async function importStudioProjectPackage(
   const submissionsBefore = options.storage.getItem(STUDIO_SUBMISSION_STORAGE_KEY);
   const createdAutosaveKeys: string[] = [];
   try {
-    const project = createStudioProject(options.storage, {
+    let project = createStudioProject(options.storage, {
       id: projectId,
       title: parsed.project.title,
       kind: parsed.project.kind as StudioProjectKind,
@@ -329,6 +390,12 @@ export async function importStudioProjectPackage(
       definition: parsed.project.definition,
       createdAt: now,
     }, { target: options.target });
+    if (parsed.project.status === "archived") {
+      project = archiveStudioProject(options.storage, project.id, {
+        at: now,
+        target: options.target,
+      });
+    }
     // 썸네일 왕복 (C5): createStudioProject는 썸네일을 항상 null로 시작하므로
     // 패키지에 실린 값을 별도 갱신으로 되살린다. 단 blob: 같은 기기 로컬 참조는
     // 다른 기기에서 깨진 링크가 되므로(음성 해설 blob 정책과 동일) 복원하지 않는다.
@@ -341,32 +408,63 @@ export async function importStudioProjectPackage(
         target: options.target,
       });
     }
-    const restoredDocuments = parsed.documents.map((sourceDocument) => ({
-      sourceDocumentId: sourceDocument.id,
-      document: createStudioProjectDocument(
+    const restoredDocuments = parsed.documents.map((sourceDocument) => {
+      const kind = sourceDocument.kind as StudioDocumentKind;
+      const allowedWorkspaces = studioDocumentWorkspaces(kind) ?? [];
+      const defaultWorkspace = allowedWorkspaces.includes(sourceDocument.defaultWorkspace as StudioDocumentWorkspace)
+        ? (sourceDocument.defaultWorkspace as StudioDocumentWorkspace)
+        : allowedWorkspaces[0];
+      let document = createStudioProjectDocument(
         options.storage,
         project.id,
         {
           id: documentIdBySource.get(sourceDocument.id),
           title: sourceDocument.title,
-          kind: sourceDocument.kind as StudioDocumentKind,
-          defaultWorkspace: sourceDocument.defaultWorkspace as StudioDocumentWorkspace,
+          kind,
+          defaultWorkspace,
           width: sourceDocument.width,
           height: sourceDocument.height,
           pageCount: sourceDocument.pageCount,
           createdAt: now,
         },
         { target: options.target },
-      ),
-    }));
+      );
+      if (sourceDocument.status === "archived") {
+        document = archiveStudioProjectDocument(options.storage, project.id, document.id, {
+          at: now,
+          target: options.target,
+        });
+      } else if (sourceDocument.status === "trashed") {
+        if (sourceDocument.statusBeforeTrash === "archived") {
+          document = archiveStudioProjectDocument(options.storage, project.id, document.id, {
+            at: now,
+            target: options.target,
+          });
+        }
+        document = trashStudioProjectDocument(options.storage, project.id, document.id, {
+          at: now,
+          target: options.target,
+        });
+      }
+      return {
+        sourceDocumentId: sourceDocument.id,
+        document,
+      };
+    });
     const documents = restoredDocuments.map((restored) => restored.document);
     const opened = restoredDocuments.find((restored) => (
       restored.sourceDocumentId === parsed.project.lastOpenedDocumentId
-    ))?.document ?? documents[0]!;
-    markStudioProjectOpened(options.storage, project.id, opened.id, {
-      at: now,
-      target: options.target,
-    });
+      && restored.document.status !== "trashed"
+    ))?.document
+      ?? documents.find((document) => document.status === "active")
+      ?? documents.find((document) => document.status !== "trashed")
+      ?? null;
+    if (opened) {
+      markStudioProjectOpened(options.storage, project.id, opened.id, {
+        at: now,
+        target: options.target,
+      });
+    }
 
     for (const restored of restoredDocuments) {
       const snapshot = parsed.snapshots.get(restored.sourceDocumentId);
@@ -397,6 +495,7 @@ export async function importStudioProjectPackage(
       now,
       target: options.target,
     });
+    const targetRevision = Math.max(saved.revision, parsed.revision);
     markStudioStorageBindingSynced(
       options.storage,
       project.id,
@@ -404,7 +503,7 @@ export async function importStudioProjectPackage(
       {
         remotePath: file.name,
         byteLength: file.size,
-        revision: saved.revision,
+        revision: targetRevision,
       },
       { now, target: options.target },
     );
@@ -418,6 +517,32 @@ export async function importStudioProjectPackage(
       },
       { now, target: options.target },
     );
+    const profileState = readStudioSaveProfiles(options.storage);
+    const currentProfile = profileState.profiles[project.id];
+    if (currentProfile) {
+      writeStudioSaveProfiles(options.storage, Object.freeze({
+        schemaVersion: 1,
+        profiles: Object.freeze({
+          ...profileState.profiles,
+          [project.id]: Object.freeze({
+            ...currentProfile,
+            accessMode: parsed.accessMode,
+            distributionState: parsed.distributionState,
+            revision: targetRevision,
+            lastExportAt: parsed.lastExportAt ?? currentProfile.lastExportAt,
+            lastSubmissionAt: parsed.lastSubmissionAt ?? currentProfile.lastSubmissionAt,
+            lastPublicationAt: parsed.lastPublicationAt ?? currentProfile.lastPublicationAt,
+            updatedAt: now,
+          }),
+        }),
+        updatedAt: now,
+      }), options.target);
+    }
+    const openedWorkspace = opened
+      ? (opened.allowedWorkspaces.includes(opened.defaultWorkspace)
+        ? opened.defaultWorkspace
+        : opened.allowedWorkspaces[0])
+      : undefined;
     return Object.freeze({
       project: readStudioProjectLibrary(options.storage).projects.find(
         (candidate) => candidate.id === project.id,
@@ -425,16 +550,33 @@ export async function importStudioProjectPackage(
       documents: Object.freeze(documents),
       restoredSnapshotCount: createdAutosaveKeys.length,
       restoredSubmissionCount: restoredSubmissions.length,
-      href: studioProjectDocumentHref(opened),
+      href: opened
+        ? studioProjectDocumentHref(opened, openedWorkspace)
+        : `/studio/p/${encodeURIComponent(project.id)}/overview`,
     });
   } catch (cause) {
+    removeKeySafely(options.storage, studioProjectDocumentStorageKey(projectId));
+    for (const key of createdAutosaveKeys) {
+      removeKeySafely(options.storage, key);
+      removeKeySafely(options.storage, studioLifecycleAutosaveSidecarKey(key));
+    }
     restoreRaw(options.storage, STUDIO_PROJECT_LIBRARY_STORAGE_KEY, libraryBefore);
     restoreRaw(options.storage, STUDIO_SAVE_PROFILE_STORAGE_KEY, profilesBefore);
     restoreRaw(options.storage, STUDIO_SUBMISSION_STORAGE_KEY, submissionsBefore);
-    options.storage.removeItem(studioProjectDocumentStorageKey(projectId));
-    for (const key of createdAutosaveKeys) {
-      options.storage.removeItem(key);
-      options.storage.removeItem(studioLifecycleAutosaveSidecarKey(key));
+    const rollbackTarget = options.target ?? (typeof window !== "undefined" ? window : undefined);
+    try {
+      rollbackTarget?.dispatchEvent(
+        new CustomEvent(STUDIO_PROJECT_LIBRARY_UPDATED_EVENT, {
+          detail: readStudioProjectLibrary(options.storage),
+        }),
+      );
+      rollbackTarget?.dispatchEvent(
+        new CustomEvent(STUDIO_PROJECT_DOCUMENTS_UPDATED_EVENT, {
+          detail: readStudioProjectDocuments(options.storage, projectId),
+        }),
+      );
+    } catch {
+      // 이벤트 발행 실패는 원래 예외 전파를 막지 않는다.
     }
     throw cause;
   }

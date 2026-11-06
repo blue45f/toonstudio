@@ -621,5 +621,13 @@ describe("V12 recovery package bounded hostile import", () => {
         { signal: midAbort.signal },
       ),
     ).rejects.toMatchObject({ name: "AbortError" });
+
+    await expectCode(
+      restoreStudioV12RecoveryPackage(null as unknown as Awaited<ReturnType<typeof importStudioV12RecoveryPackage>>, {
+        history: source.store,
+      }),
+      "INVALID_INPUT",
+    );
   });
 });
+

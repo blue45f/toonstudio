@@ -412,4 +412,16 @@ describe("renderPagesToPdf — print 옵션 경유", () => {
     });
     expect(result.pageCount).toBe(2);
   });
+
+  it("소수점 캔버스 크기도 정수 픽셀로 정규화해 CMYK 변환 오류를 일으키지 않는다", async () => {
+    const result = await renderPagesToPdf({
+      pages: [asPrintCanvas(new PrintFakeCanvas(4.4, 2.6))],
+      title: "소수점CMYK",
+      createCanvas: (width, height) => asPrintCanvas(new PrintFakeCanvas(width, height)),
+      toJpeg: () => Promise.resolve(fakeJpeg(7)),
+      print: { colorMode: "cmyk" },
+    });
+    expect(result.pageCount).toBe(1);
+  });
 });
+

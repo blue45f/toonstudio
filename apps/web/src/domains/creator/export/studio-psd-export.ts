@@ -1367,7 +1367,7 @@ export async function exportPagePsd(
           top: 0,
           opacity: clampOpacity(el.opacity),
           blendMode: mapBlendMode(el.blendMode),
-          clipping: !!(el.clipToBelow ?? el.clipBelow),
+          clipping: Boolean(el.clipToBelow || el.clipBelow),
           adjustment: converted.adjustment,
         };
         // 가져올 때 래스터 마스크로 변환된 조정 마스크(maskSrc)는 네이티브 마스크로

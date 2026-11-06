@@ -96,6 +96,17 @@ describe("local project document source isolation", () => {
       setItem: () => undefined,
     })).toBe(original);
   });
+
+  it("allows archived local documents to open locally without remote hydration", () => {
+    const store = storage();
+    const doc = localDocument(store);
+    store.setItem(
+      `toonstudio-studio-project-documents:v1:${doc.projectId}`,
+      JSON.stringify({ version: 1, documents: [{ ...doc, status: "archived" }] }),
+    );
+    const resolved = resolveStudioEditorDocumentRoute(projectRoute(), store);
+    expect(resolved.workId).toBeNull();
+  });
 });
 
 describe("existing document recovery key compatibility", () => {

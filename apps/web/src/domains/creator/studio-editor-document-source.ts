@@ -1,11 +1,12 @@
 import { readStudioProjectDocuments } from "./studio-project-document-reader";
+import { readStudioProjectLibrary } from "./studio-project-library-reader";
 
 import type { StudioProjectDocumentStorage } from "./studio-project-document-reader";
 import type { StudioWorkspaceRoute } from "./studio-workspace-route";
 
 /**
  * A project-library document is local metadata, not a creator API work. Only a
- * matching, active local record may opt out of remote hydration. Unknown links,
+ * matching, non-trashed local record may opt out of remote hydration. Unknown links,
  * legacy work links and unavailable storage keep the existing fail-closed path.
  * Never infer locality from an id prefix or from a failed server request.
  */
@@ -28,10 +29,14 @@ export function resolveStudioEditorDocumentRoute(
       ? typeof window === "undefined" ? null : window.localStorage
       : storage;
     if (!localStorage) return route;
+    const project = readStudioProjectLibrary(localStorage).projects.find(
+      (entry) => entry.id === route.projectId,
+    );
+    if (project?.status === "trashed") return route;
     const document = readStudioProjectDocuments(localStorage, route.projectId).documents.find(
       (entry) => entry.id === route.documentId && entry.projectId === route.projectId,
     );
-    if (!document || document.status !== "active") return route;
+    if (!document || document.status === "trashed") return route;
     return Object.freeze({ ...route, workId: null });
   } catch {
     // Storage denial or corruption must not turn an unverified work into a blank draft.

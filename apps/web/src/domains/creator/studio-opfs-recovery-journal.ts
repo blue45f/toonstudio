@@ -1379,10 +1379,8 @@ export class StudioOpfsRecoveryJournal {
         const candidate = await this.#readCandidate(slot, signal);
         if (candidate) candidates.push(candidate);
       } catch (error) {
-        if (
-          error instanceof StudioOpfsRecoveryJournalError
-          && error.code === "UNSUPPORTED_VERSION"
-        ) {
+        if (error instanceof StudioOpfsRecoveryJournalError && error.code === "ABORTED") throw error;
+        if (error instanceof StudioOpfsRecoveryJournalError && error.code === "UNSUPPORTED_VERSION") {
           unsupportedError = error;
         }
         ignoredSlots.push(slot);
@@ -1391,10 +1389,7 @@ export class StudioOpfsRecoveryJournal {
     if (unsupportedError) throw unsupportedError;
     if (candidates.length === 0) {
       if (foundHead) {
-        journalError(
-          "CORRUPT_MANIFEST",
-          "corruptManifestBothHeadsTorn",
-        );
+        journalError("CORRUPT_MANIFEST", "corruptManifestBothHeadsTorn");
       }
       const manifest = emptyManifest(this.#identity);
       return {
@@ -1422,10 +1417,7 @@ export class StudioOpfsRecoveryJournal {
       && calculateStudioCrc32(candidates[0]!.manifestBytes)
         !== calculateStudioCrc32(candidates[1]!.manifestBytes)
     ) {
-      journalError(
-        "CORRUPT_MANIFEST",
-        "corruptManifestSameGenerationConflict",
-      );
+      journalError("CORRUPT_MANIFEST", "corruptManifestSameGenerationConflict");
     }
     const selected = candidates[0]!;
     const entries: StudioOpfsRecoveryEntry[] = [];
@@ -1488,17 +1480,14 @@ export class StudioOpfsRecoveryJournal {
     return this.#adapter.withExclusiveLock(this.#lockName, input.signal, async () => {
       throwIfAborted(input.signal);
       const now = this.#now();
-      const existing = await this.#readLease(input.signal);
+      const existing = await this.#readLease(input.signal).catch((error) => {
+        if (error instanceof StudioOpfsRecoveryJournalError && error.code === "CORRUPT_ENTRY") return null;
+        throw error;
+      });
       if (existing && existing.expiresAt > now) {
-        journalError(
-          "LEASE_BUSY",
-          "leaseBusyOtherTab", undefined,
-          {
-            diagnostics:
-              `lease ownerId=${existing.ownerId} epoch=${existing.epoch}`
-              + ` expiresInMs=${existing.expiresAt - now}`,
-          },
-        );
+        journalError("LEASE_BUSY", "leaseBusyOtherTab", undefined, {
+          diagnostics: `lease ownerId=${existing.ownerId} epoch=${existing.epoch} expiresInMs=${existing.expiresAt - now}`,
+        });
       }
       const scan = await this.#scanInternal(input.signal);
       const previousEpoch = Math.max(existing?.epoch ?? 0, scan.publicScan.writerEpoch);

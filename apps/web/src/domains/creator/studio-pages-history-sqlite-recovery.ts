@@ -290,13 +290,23 @@ export class StudioPagesHistorySqliteRecovery implements StudioPagesHistoryRecov
       }
     }
     validSnapshots.sort((left, right) => left.stored.sequence - right.stored.sequence);
-    const checkpoint = validSnapshots.at(-1) ?? null;
+    let checkpoint = validSnapshots.at(-1) ?? null;
 
     const rows = await this.#database.listJournalEntries(this.#projectId);
     const parsedRows = new Map<number, ValidatedSqliteHistoryEntry>();
     for (const row of rows) {
       const parsed = parseStoredEntry(row.payload, row.crc32, this.#identity, null);
       if (parsed && parsed.stored.sequence === row.seq) parsedRows.set(row.seq, parsed);
+    }
+    if (!checkpoint) {
+      for (const parsed of parsedRows.values()) {
+        if (
+          parsed.stored.kind === "checkpoint"
+          && (!checkpoint || parsed.stored.sequence > checkpoint.stored.sequence)
+        ) {
+          checkpoint = parsed;
+        }
+      }
     }
 
     const entries: ValidatedSqliteHistoryEntry[] = checkpoint ? [checkpoint] : [];
@@ -414,9 +424,15 @@ export class StudioPagesHistorySqliteRecovery implements StudioPagesHistoryRecov
         payloadCrc32,
       });
       const serialized = JSON.stringify(stored);
+      let checkpointSlotNum: 0 | 1 | null = null;
       if (kind === "checkpoint") {
+        const existingSnapshots = await this.#database.listJournalSnapshots(this.#projectId);
+        const latestSnapshot = [...existingSnapshots].sort((a, b) => b.seq - a.seq)[0];
+        checkpointSlotNum = latestSnapshot
+          ? (latestSnapshot.slot === 0 ? 1 : 0)
+          : (sequence % 2 === 0 ? 0 : 1);
         await this.#database.putJournalSnapshot(this.#projectId, {
-          slot: sequence % 2 === 0 ? 0 : 1,
+          slot: checkpointSlotNum,
           seq: sequence,
           payload: serialized,
           crc32: payloadCrc32,
@@ -428,14 +444,15 @@ export class StudioPagesHistorySqliteRecovery implements StudioPagesHistoryRecov
         crc32: payloadCrc32,
       });
       if (kind === "checkpoint") {
-        await this.#database.deleteJournalEntriesBefore(this.#projectId, sequence);
+        const pruneBeforeSeq = Math.min(sequence, stored.compactThroughSequence ?? sequence);
+        await this.#database.deleteJournalEntriesBefore(this.#projectId, pruneBeforeSeq);
       }
       this.#lastPayload = bytes.slice();
       return toRecoveryEntry(this.#projectId, {
         stored,
         payload: bytes,
         descriptorCrc32: calculateStudioCrc32(TEXT_ENCODER.encode(serialized)),
-        snapshotSlot: kind === "checkpoint" ? (sequence % 2 === 0 ? "a" : "b") : null,
+        snapshotSlot: checkpointSlotNum === null ? null : (checkpointSlotNum === 0 ? "a" : "b"),
       });
     });
   }

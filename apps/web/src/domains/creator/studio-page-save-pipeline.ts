@@ -388,6 +388,7 @@ export async function runStudioPageSavePipeline(
   setSelectedId(null);
   const originalPageId = currentPageId;
   const originalMasterEditMode = masterEditMode;
+  let stageViewMutated = true;
   setMasterEditMode(false);
   preserveStudioViewBeforeCapture();
   hideStrokeGuide();
@@ -492,6 +493,7 @@ export async function runStudioPageSavePipeline(
     // 모든 픽셀을 pageImages에 고정했으므로 여기서는 추가 sleep이 필요 없다.
     setCurrentPageId(originalPageId);
     setMasterEditMode(originalMasterEditMode);
+    stageViewMutated = false;
 
     const { prepareStudioSavePublicationBase } = await import("./export/studio-save-publication-boundary");
     const publicationDocumentBase = await prepareStudioSavePublicationBase({
@@ -755,7 +757,7 @@ export async function runStudioPageSavePipeline(
       keepSharedEditorOpen = sharedDocument.role !== "owner";
       setSharedDocumentScope((current) =>
         current &&
-        current.authScopeKey === studioAuthUserId &&
+        current.authScopeKey === saveAuthScopeKey &&
         current.workId === workId
           ? {
               ...current,
@@ -878,7 +880,7 @@ export async function runStudioPageSavePipeline(
     try {
       localStorage.removeItem(autosaveKey);
       localStorage.removeItem(studioLifecycleAutosaveSidecarKey(autosaveKey));
-      if (!workId && !remixId) localStorage.removeItem(LEGACY_STUDIO_AUTOSAVE_KEY);
+      if (!workId && !remixId && autosaveKey.endsWith(":new")) localStorage.removeItem(LEGACY_STUDIO_AUTOSAVE_KEY);
       studioLifecycleDurableGenerationRef.current =
         studioRevisionProjectGenerationRef.current;
       studioLifecycleDurablePendingFingerprintRef.current = "";
@@ -948,14 +950,9 @@ export async function runStudioPageSavePipeline(
       }
     }
   } finally {
-    if (
-      !linkedCloudSaveCommitted
-      && linkedCloudUploadWorkId
-      && linkedCloudUploadReceipts.length > 0
-    ) {
+    if (!linkedCloudSaveCommitted && linkedCloudUploadWorkId && linkedCloudUploadReceipts.length > 0) {
       try {
-        const { compensateStudioLinked3dPassCloudUploads } = await import("./studio-linked-3d-pass-cloud-sync"
-        );
+        const { compensateStudioLinked3dPassCloudUploads } = await import("./studio-linked-3d-pass-cloud-sync");
         await compensateStudioLinked3dPassCloudUploads({
           workId: linkedCloudUploadWorkId,
           receipts: linkedCloudUploadReceipts,
@@ -971,8 +968,7 @@ export async function runStudioPageSavePipeline(
     }
     documentSaveInFlightRef.current = false;
     if (editorMountedRef.current) {
-      setCurrentPageId(originalPageId);
-      setMasterEditMode(originalMasterEditMode);
+      if (stageViewMutated) { setCurrentPageId(originalPageId); setMasterEditMode(originalMasterEditMode); }
       setSaving(false);
       setIsExporting(false);
     }

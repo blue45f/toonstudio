@@ -58,9 +58,10 @@ export function resolveStudioLocalDocumentSource(
       const documents = readStudioProjectDocuments(storage, project.id).documents;
       if (project.id === route.workId) {
         const document = project.lastOpenedDocumentId
-          ? documents.find((entry) => entry.id === project.lastOpenedDocumentId)
-          : documents.find((entry) => entry.status === "active");
-        if (document && document.status !== "trashed") candidates.push(document);
+          ? documents.find((entry) => entry.id === project.lastOpenedDocumentId && entry.status !== "trashed")
+          : (documents.find((entry) => entry.status === "active")
+            ?? documents.find((entry) => entry.status !== "trashed"));
+        if (document) candidates.push(document);
       } else {
         candidates.push(...documents.filter(
           (entry) => entry.id === route.workId && entry.status !== "trashed",

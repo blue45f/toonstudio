@@ -727,7 +727,7 @@ export function preflightStudioExportPackage(
     ? resolveStudioExportPageRange(input.pageCount, input.pageRange)
     : selection.ok
       ? selection
-      : { ok: false as const, issues: [issue("PAGE_RANGE_INVALID", "error", selection.message)] };
+      : { ok: false as const, issues: [issue(input.pageCount < 1 ? "PAGE_COUNT_INVALID" : "PAGE_RANGE_INVALID", "error", selection.message)] };
   let pageIndices: number[] = [];
   if (!range.ok) {
     issues.push(...range.issues);
@@ -754,7 +754,7 @@ export function preflightStudioExportPackage(
         trimWidthMm,
         trimHeightMm,
         ...(input.geometry.bleedMm != null ? { bleedMm: input.geometry.bleedMm } : {}),
-        exportScale: input.exportScale != null && input.exportScale > 0 ? input.exportScale : 1,
+        exportScale: input.exportScale != null && Number.isFinite(input.exportScale) && input.exportScale > 0 ? input.exportScale : 1,
       });
       // An error-severity resolution issue has to block. Showing a red "300DPI를 만들 수
       // 없습니다" next to a green "통과" chip is the same dishonesty in a different place.

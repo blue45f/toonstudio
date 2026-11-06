@@ -65,6 +65,7 @@ export function useStudioAutosaveDocumentRuntime({
 
   useEffect(() => {
     let disposed = false;
+    setAutosaveDocumentLeadership(null);
     const openedPromise = import("./studio-autosave-opfs-session")
       .then((studioAutosaveOpfsSessionModule) => {
         const {
@@ -99,9 +100,20 @@ export function useStudioAutosaveDocumentRuntime({
                     session: opened.session,
                     autosaveKey,
                     documentLease: opened.lease,
+                  }).catch((cause: unknown) => {
+                    if (import.meta.env.DEV) {
+                      console.warn("Studio OPFS autosave leadership migration failed.", cause);
+                    }
+                    return null;
                   });
                 autosaveOpfsSessionRef.current = promotedSessionPromise;
                 const promotedSession = await promotedSessionPromise;
+                if (!promotedSession) {
+                  if (autosaveOpfsSessionRef.current === promotedSessionPromise) {
+                    autosaveOpfsSessionRef.current = Promise.resolve(opened.session);
+                  }
+                  return;
+                }
                 if (
                   disposed
                   || autosaveOpfsSessionRef.current !== promotedSessionPromise
@@ -125,6 +137,9 @@ export function useStudioAutosaveDocumentRuntime({
         return opened;
       })
       .catch((cause: unknown) => {
+        if (!disposed) {
+          setAutosaveDocumentLeadership(null);
+        }
         if (import.meta.env.DEV) {
           console.warn("Studio OPFS autosave session is unavailable.", cause);
         }
@@ -135,11 +150,17 @@ export function useStudioAutosaveDocumentRuntime({
     return () => {
       disposed = true;
       const activeSessionPromise = autosaveOpfsSessionRef.current;
-      if (autosaveOpfsSessionRef.current === sessionPromise) {
+      if (
+        autosaveOpfsSessionRef.current === sessionPromise
+        || autosaveOpfsSessionRef.current === activeSessionPromise
+      ) {
         autosaveOpfsSessionRef.current = null;
       }
       autosaveDocumentLeaseRef.current = null;
-      void Promise.all([openedPromise, activeSessionPromise]).then(async ([opened, activeSession]) => {
+      void Promise.all([
+        openedPromise,
+        activeSessionPromise ? activeSessionPromise.catch(() => null) : Promise.resolve(null),
+      ]).then(async ([opened, activeSession]) => {
         if (opened?.session !== activeSession) {
           await opened?.session?.dispose();
         }

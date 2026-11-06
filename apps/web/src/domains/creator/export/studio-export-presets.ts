@@ -537,7 +537,7 @@ export async function prepareVipsRoutedPresetPages(
   > = {}
 ): Promise<PresetVipsPreparedPages> {
   // 슬라이스 합성 루프와 같은 인덱스 규약: layouts[k] ↔ pages[k].
-  const drawPages = pages.slice();
+  const drawPages = pages.filter((p) => p.width > 0 && p.height > 0);
   const layouts = plan.pages.slice();
   const tiledPages = new Map<number, StudioPresetTiledRasterSource>();
 
@@ -545,7 +545,7 @@ export async function prepareVipsRoutedPresetPages(
   const routedIndices: number[] = [];
   layouts.forEach((layout, index) => {
     const route = planVipsExportRoute(layout.sourceWidth, layout.sourceHeight, options.vipsLimits).route;
-    const page = pages[index];
+    const page = drawPages[index];
     if (page && ("kind" in page || route === "out-of-core")) {
       tiledPages.set(index, "kind" in page ? page : studioPresetCanvasTileSource(page));
       return;

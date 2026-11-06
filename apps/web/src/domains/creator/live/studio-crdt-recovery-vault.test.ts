@@ -285,4 +285,26 @@ describe("Studio CRDT recovery vault", () => {
       /^toonstudio-work-c-crdt-recovery-/
     );
   });
+
+  it("serializes concurrent preserve calls for the same rejected update without duplicating entries", async () => {
+    let seq = 0;
+    const vault = new PersistentStudioCrdtRecoveryVault(
+      new MemoryPersistence(),
+      () => 6_000 + seq++,
+      () => `vault-concurrent-${seq}`
+    );
+    const input = {
+      scope: "user-concurrent",
+      workId: "work-concurrent",
+      failureCode: "conflict_rejected",
+      failureMessage: "concurrent failure",
+      rejectedUpdateId: "44444444-4444-4444-8444-444444444444",
+      updates: [request("44444444-4444-4444-8444-444444444444", "work-concurrent")],
+    };
+    const [first, second] = await Promise.all([vault.preserve(input), vault.preserve(input)]);
+    expect(first.vaultId).toBe(second.vaultId);
+    const entries = await vault.list("user-concurrent", "work-concurrent");
+    expect(entries).toHaveLength(1);
+  });
 });
+

@@ -494,6 +494,12 @@ function randomVaultId(): string {
  * Entries remain separate from the resend outbox so opening the work cannot silently replay them.
  */
 export class PersistentStudioCrdtRecoveryVault implements StudioCrdtRecoveryVault {
+  #writeChain: Promise<unknown> = Promise.resolve();
+  #serialize<T>(task: () => Promise<T>): Promise<T> {
+    const next = this.#writeChain.then(task, task);
+    this.#writeChain = next.then(() => undefined, () => undefined);
+    return next;
+  }
   constructor(
     private readonly persistence: StudioCrdtRecoveryVaultPersistence =
       createStudioCrdtRecoverySqlitePersistence(),
@@ -575,55 +581,57 @@ export class PersistentStudioCrdtRecoveryVault implements StudioCrdtRecoveryVaul
       if (!parsed) throw new Error("CRDT 복구 frontier에 잘못된 업데이트가 있습니다.");
       return parsed;
     });
-    const existing = (await this.list(scope, workId)).find((entry) =>
-      entry.updates.some(({ updateId }) => updateId === input.rejectedUpdateId)
-    );
-    if (existing) return existing;
+    return this.#serialize(async () => {
+      const existing = (await this.list(scope, workId)).find((entry) =>
+        entry.updates.some(({ updateId }) => updateId === input.rejectedUpdateId)
+      );
+      if (existing) return existing;
 
-    const vaultId = this.randomId();
-    const createdAt = this.now();
-    const chunks = chunkRecoveryRequests(updates);
-    for (const [chunkIndex, chunkUpdates] of chunks.entries()) {
-      await this.persistence.put({
-        kind: "frontier-chunk",
-        key: recoveryChunkKey(scope, workId, vaultId, chunkIndex),
+      const vaultId = this.randomId();
+      const createdAt = this.now();
+      const chunks = chunkRecoveryRequests(updates);
+      for (const [chunkIndex, chunkUpdates] of chunks.entries()) {
+        await this.persistence.put({
+          kind: "frontier-chunk",
+          key: recoveryChunkKey(scope, workId, vaultId, chunkIndex),
+          vaultId,
+          scope,
+          workId,
+          chunkIndex,
+          updates: chunkUpdates,
+        });
+      }
+      // The manifest commits last. A crash during chunk writes therefore cannot expose a partial
+      // frontier as exportable; the permanent-rejection marker keeps the resend outbox locked.
+      const stored: StoredStudioCrdtRecoveryManifest = {
+        kind: "frontier-manifest",
+        key: vaultKey(scope, workId, vaultId),
         vaultId,
         scope,
         workId,
-        chunkIndex,
-        updates: chunkUpdates,
-      });
-    }
-    // The manifest commits last. A crash during chunk writes therefore cannot expose a partial
-    // frontier as exportable; the permanent-rejection marker keeps the resend outbox locked.
-    const stored: StoredStudioCrdtRecoveryManifest = {
-      kind: "frontier-manifest",
-      key: vaultKey(scope, workId, vaultId),
-      vaultId,
-      scope,
-      workId,
-      status: "pending-export",
-      failureCode: input.failureCode.slice(0, 80),
-      failureMessage: input.failureMessage.slice(0, 1_000),
-      rejectedUpdateId: input.rejectedUpdateId,
-      chunkCount: chunks.length,
-      updateCount: updates.length,
-      createdAt,
-      exportedAt: null,
-    };
-    await this.persistence.put(stored);
-    return {
-      vaultId,
-      scope,
-      workId,
-      status: "pending-export",
-      failureCode: stored.failureCode,
-      failureMessage: stored.failureMessage,
-      rejectedUpdateId: stored.rejectedUpdateId,
-      updates: updates.map((request) => ({ ...request })),
-      createdAt,
-      exportedAt: null,
-    };
+        status: "pending-export",
+        failureCode: input.failureCode.slice(0, 80),
+        failureMessage: input.failureMessage.slice(0, 1_000),
+        rejectedUpdateId: input.rejectedUpdateId,
+        chunkCount: chunks.length,
+        updateCount: updates.length,
+        createdAt,
+        exportedAt: null,
+      };
+      await this.persistence.put(stored);
+      return {
+        vaultId,
+        scope,
+        workId,
+        status: "pending-export",
+        failureCode: stored.failureCode,
+        failureMessage: stored.failureMessage,
+        rejectedUpdateId: stored.rejectedUpdateId,
+        updates: updates.map((request) => ({ ...request })),
+        createdAt,
+        exportedAt: null,
+      };
+    });
   }
 
   async list(scope: string, workId: string): Promise<StudioCrdtRecoveryVaultEntry[]> {
@@ -681,20 +689,22 @@ export class PersistentStudioCrdtRecoveryVault implements StudioCrdtRecoveryVaul
   }
 
   async markExported(scope: string, workId: string, vaultId: string): Promise<void> {
-    const key = vaultKey(scope, workId, vaultId);
-    const value = await this.persistence.get(scope, workId, key);
-    if (
-      !(isStoredEntry(value) || isStoredManifest(value)) ||
-      value.scope !== scope ||
-      value.workId !== workId
-    ) {
-      throw new Error("내보낼 CRDT 복구 frontier를 찾지 못했습니다.");
-    }
-    if (value.status === "exported") return;
-    await this.persistence.put({
-      ...value,
-      status: "exported",
-      exportedAt: this.now(),
+    return this.#serialize(async () => {
+      const key = vaultKey(scope, workId, vaultId);
+      const value = await this.persistence.get(scope, workId, key);
+      if (
+        !(isStoredEntry(value) || isStoredManifest(value)) ||
+        value.scope !== scope ||
+        value.workId !== workId
+      ) {
+        throw new Error("내보낼 CRDT 복구 frontier를 찾지 못했습니다.");
+      }
+      if (value.status === "exported") return;
+      await this.persistence.put({
+        ...value,
+        status: "exported",
+        exportedAt: this.now(),
+      });
     });
   }
 }

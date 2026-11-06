@@ -182,6 +182,8 @@ export interface StudioAutosaveRestoreContext {
   readonly workId: string | null;
 }
 
+const restoreInFlightCandidateRefs = new WeakSet<object>();
+
 /**
  * 복구 배너의 "복구하기". 내구 권위에서 조정된 후보만 문서로 되돌리고, 준비 도중 시작된
  * 획/원고 변경은 적용을 취소한다.
@@ -235,11 +237,13 @@ export async function restoreStudioAutosaveRecovery(
     sharedDocument,
     workId,
   } = ctx;
+    if (restoreInFlightCandidateRefs.has(autosaveRecoveryCandidateRef)) return;
     if (collaborationDocumentLocked) {
       setError(collaborationLockMessage());
       return;
     }
     if (!prepareStudioDocumentReplacement("임시저장본을 복구", { flushPending: true })) return;
+    restoreInFlightCandidateRefs.add(autosaveRecoveryCandidateRef);
     const mutationTicket = captureStudioMutationTicket();
     try {
       const saved = autosaveRecoveryCandidateRef.current;
@@ -273,6 +277,10 @@ export async function restoreStudioAutosaveRecovery(
         const parsed = saved.payload;
         if (hasStudioBg3dSixPassAutosaveMarkers(parsed)) {
           await (await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-autosave-restore")).verifyStudioBg3dSixPassAutosaveRestore(parsed);
+          if (!canApplyStudioMutation(mutationTicket) || autosaveRecoveryCandidateRef.current !== saved) {
+            setError("그림이 바뀌어 이어 열기를 멈췄어요. 다시 확인해 주세요.");
+            return;
+          }
         }
         const [
           { normalizeStudioReleaseSchedule },
@@ -383,6 +391,8 @@ export async function restoreStudioAutosaveRecovery(
       }
     } catch {
       setError("이전 그림을 열지 못했어요.");
+    } finally {
+      restoreInFlightCandidateRefs.delete(autosaveRecoveryCandidateRef);
     }
 }
 

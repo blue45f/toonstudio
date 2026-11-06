@@ -42,6 +42,7 @@ export interface StudioProjectPackageWritableFileHandle {
   createWritable(): Promise<{
     write(data: Blob): Promise<void>;
     close(): Promise<void>;
+    abort?(): Promise<void>;
   }>;
 }
 
@@ -302,8 +303,13 @@ export async function writeStudioProjectPackageToTarget(
 ): Promise<"file-picker" | "download"> {
   if (target.kind === "file-handle") {
     const writable = await target.handle.createWritable();
-    await writable.write(result.blob);
-    await writable.close();
+    try {
+      await writable.write(result.blob);
+      await writable.close();
+    } catch (cause) {
+      await writable.abort?.().catch(() => undefined);
+      throw cause;
+    }
     return "file-picker";
   }
 

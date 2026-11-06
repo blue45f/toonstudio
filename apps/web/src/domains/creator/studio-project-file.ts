@@ -298,20 +298,31 @@ export function parseStudioProjectFile(value: unknown): StudioProjectFile {
   if (current.success) return canonicalizeProjectBg3dScenes(current.data);
   const legacy = LegacyProjectSchema.safeParse(value);
   if (!legacy.success) throw new Error("올바르지 않은 ToonStudio 프로젝트 파일입니다.");
-  return canonicalizeProjectBg3dScenes({
+  const { pages, version: _legacyVersion, ...restLegacy } = legacy.data;
+  const upgraded = CurrentProjectSchema.parse({
+    ...restLegacy,
     version: 2,
     title: legacy.data.title,
-    description: "",
-    tagsText: "",
-    pagesList: legacy.data.pages,
+    description: typeof restLegacy.description === "string" ? restLegacy.description : "",
+    tagsText: typeof restLegacy.tagsText === "string" ? restLegacy.tagsText : "",
+    pagesList: pages,
     master: legacy.data.master,
     writerRoom: legacy.data.writerRoom,
     aiProvenance: legacy.data.aiProvenance,
-    aiImageReferences: undefined,
-    currentPageId: legacy.data.pages[0].id,
-    webtoonTheme: "classic",
-    panelGutter: 24,
+    currentPageId:
+      typeof restLegacy.currentPageId === "string" && restLegacy.currentPageId.trim().length > 0
+        ? restLegacy.currentPageId
+        : pages[0].id,
+    webtoonTheme:
+      restLegacy.webtoonTheme === "soft" || restLegacy.webtoonTheme === "vivid"
+        ? restLegacy.webtoonTheme
+        : "classic",
+    panelGutter:
+      typeof restLegacy.panelGutter === "number" && Number.isFinite(restLegacy.panelGutter)
+        ? restLegacy.panelGutter
+        : 24,
   });
+  return canonicalizeProjectBg3dScenes(upgraded);
 }
 
 /** Serializes an importable project using the same bounded, hash-only provenance policy. */

@@ -315,4 +315,63 @@ describe("Studio pages history SQLite recovery", () => {
     })).resolves.toMatchObject({ sequence: 1 });
     await recovery.abort();
   });
+
+  it("alternates snapshot slots across checkpoints and falls back to checkpoint journal entry when snapshots are missing", async () => {
+    const database = await openMemoryDatabase();
+    const recovery = createStudioPagesHistorySqliteRecovery({
+      database,
+      identity: IDENTITY,
+      now: () => 30_000,
+    });
+    await recovery.acquireWriter({ ownerId: "slot-writer" });
+    await recovery.appendCommand({
+      id: "op-1",
+      pageId: "page-sqlite",
+      revision: 1,
+      payload: new Uint8Array([1]),
+    });
+    await recovery.compact({
+      id: "cp-2",
+      pageId: "page-sqlite",
+      revision: 2,
+      payload: new Uint8Array([1, 2]),
+      compactThroughSequence: 1,
+    });
+    await recovery.appendCommand({
+      id: "op-3",
+      pageId: "page-sqlite",
+      revision: 3,
+      payload: new Uint8Array([3]),
+    });
+    await recovery.compact({
+      id: "cp-4",
+      pageId: "page-sqlite",
+      revision: 4,
+      payload: new Uint8Array([3, 4]),
+      compactThroughSequence: 3,
+    });
+    const reopened = createStudioPagesHistorySqliteRecovery({
+      database,
+      identity: IDENTITY,
+    });
+    const scanWithSnapshots = await reopened.scanLatest();
+    expect(scanWithSnapshots.selectedSlot).toBe("b");
+    await database.putJournalSnapshot(`history:${IDENTITY.documentId}`, {
+      slot: 0,
+      seq: 2,
+      payload: "corrupt",
+      crc32: 0,
+    });
+    await database.putJournalSnapshot(`history:${IDENTITY.documentId}`, {
+      slot: 1,
+      seq: 4,
+      payload: "corrupt",
+      crc32: 0,
+    });
+    const scanFallback = await reopened.scanLatest();
+    expect(scanFallback.lastSequence).toBe(4);
+    expect([...((await reopened.readLatestPayload()) ?? [])]).toEqual([3, 4]);
+    await recovery.abort();
+  });
 });
+

@@ -537,4 +537,29 @@ describe("studio project canonical document boundary", () => {
     expect(loaded.source).toBe("canonical-envelope");
     expect(loaded.project.title).toBe("동적 계약");
   });
+
+  it("preserves optional metadata when migrating a legacy v1 project and syncs envelope format.version when inner project upgrades past v2", async () => {
+    const legacyV1WithMeta = JSON.stringify({
+      version: "1.0",
+      title: "레거시 메타 보존",
+      description: "작품 설명",
+      tagsText: "판타지, 액션",
+      webtoonTheme: "vivid",
+      panelGutter: 36,
+      characterBible: { version: 1, characters: [{ id: "c1", name: "주인공" }] },
+      comments: { version: 1, threads: [{ id: "t1" }] },
+      pages: [page()],
+    });
+    const migratedRaw = await parseStudioProjectDocument(legacyV1WithMeta);
+    expect(migratedRaw.project).toMatchObject({
+      version: 2,
+      title: "레거시 메타 보존",
+      description: "작품 설명",
+      tagsText: "판타지, 액션",
+      webtoonTheme: "vivid",
+      panelGutter: 36,
+      characterBible: { version: 1, characters: [{ id: "c1", name: "주인공" }] },
+      comments: { version: 1, threads: [{ id: "t1" }] },
+    });
+  });
 });

@@ -53,7 +53,20 @@ describe("Studio import compatibility", () => {
   it("uses trusted MIME fallbacks only when the extension is absent", () => {
     expect(detectStudioImportFormat({ name: "clipboard", mimeType: "image/png" })).toBe("png");
     expect(detectStudioImportFormat({ name: "voice", mimeType: "audio/mpeg" })).toBe("mp3");
+    expect(detectStudioImportFormat({ name: "project-archive", mimeType: "application/vnd.toonstudio.project+zip" })).toBe("json");
+    expect(detectStudioImportFormat({ name: "project-package", mimeType: "application/vnd.toonstudio.package+zip" })).toBe("toonstudio");
     expect(detectStudioImportFormat({ name: "unknown", mimeType: "application/octet-stream" })).toBe("unknown");
+  });
+
+  it("accepts .toonproject.zip archives instead of rejecting them as generic .zip", () => {
+    const plan = planStudioImport([
+      { name: "episode-01.toonproject.zip", sizeBytes: 4096, mimeType: "application/zip" },
+    ]);
+    expect(plan.status).toBe("accepted");
+    expect(plan.items[0]).toMatchObject({
+      format: "json",
+      safeAction: "open",
+    });
   });
 
   it("rejects malformed descriptors and empty batches", () => {

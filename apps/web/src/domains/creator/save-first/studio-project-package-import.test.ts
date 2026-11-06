@@ -166,4 +166,112 @@ describe("ToonStudio project package import", () => {
     })).rejects.toThrow(/필수 파일|원고/u);
     expect(readStudioProjectLibrary(target).projects).toEqual([]);
   });
+
+  it("preserves archived/trashed statuses, skips trashed documents when selecting initial href, and restores profile fields", async () => {
+    const target = storage();
+    const trashedDoc: StudioProjectDocumentEntry = {
+      ...sourceDocument,
+      id: "episode-1",
+      status: "trashed",
+      statusBeforeTrash: "archived",
+    };
+    const archivedDoc: StudioProjectDocumentEntry = {
+      ...sourceDocument,
+      id: "episode-2",
+      title: "EP02 보관 원고",
+      status: "archived",
+      statusBeforeTrash: null,
+      defaultWorkspace: "3d" as StudioProjectDocumentEntry["defaultWorkspace"],
+      allowedWorkspaces: ["draw", "comic"] as const,
+    };
+    const archivedProject: StudioProjectLibraryEntry = {
+      ...sourceProject,
+      status: "archived",
+      lastOpenedDocumentId: trashedDoc.id,
+    };
+    const baseProfile = {
+      ...createDefaultStudioSaveProfile(sourceProject.id, { now: sourceProject.createdAt }),
+      accessMode: "collaborators" as const,
+      distributionState: "published" as const,
+      revision: 7,
+      lastExportAt: "2026-09-16T00:40:00.000Z",
+    };
+    const pkg = buildStudioProjectPackage({
+      project: archivedProject,
+      documents: [trashedDoc, archivedDoc],
+      profile: baseProfile,
+      exportedAt: "2026-09-16T01:00:00.000Z",
+      additionalEntries: buildStudioProjectWorkspacePackageEntries([trashedDoc, archivedDoc], [
+        {
+          documentId: trashedDoc.id,
+          key: "trashed-autosave",
+          authority: "memory-current",
+          savedAt: sourceSnapshot.savedAt,
+          payload: sourceSnapshot,
+        },
+        {
+          documentId: archivedDoc.id,
+          key: "archived-autosave",
+          authority: "memory-current",
+          savedAt: sourceSnapshot.savedAt,
+          payload: sourceSnapshot,
+        },
+      ]),
+    });
+    const file = new File([pkg.blob], pkg.fileName, { type: pkg.blob.type });
+    let docSeq = 0;
+    const result = await importStudioProjectPackage(file, {
+      storage: target,
+      authUserId: "artist-1",
+      now: "2026-09-16T02:00:00.000Z",
+      createProjectId: () => "archived-proj",
+      createDocumentId: () => `doc-${++docSeq}`,
+    });
+
+    expect(result.project.status).toBe("archived");
+    expect(result.project.lastOpenedDocumentId).toBe("import-document-doc-2");
+    expect(result.href).toContain("/studio/p/import-archived-proj/d/import-document-doc-2?workspace=comic");
+    const docs = readStudioProjectDocuments(target, result.project.id).documents;
+    expect(docs.find((d) => d.id === "import-document-doc-1")).toMatchObject({
+      status: "trashed",
+      statusBeforeTrash: "archived",
+    });
+    expect(docs.find((d) => d.id === "import-document-doc-2")).toMatchObject({
+      status: "archived",
+      defaultWorkspace: "comic",
+    });
+    const restoredProfile = studioSaveProfileForProject(target, result.project.id);
+    expect(restoredProfile.accessMode).toBe("collaborators");
+    expect(restoredProfile.distributionState).toBe("published");
+    expect(restoredProfile.revision).toBe(7);
+  });
+
+  it("rolls back newly created keys and restores previous storage when a write fails mid-import", async () => {
+    const base = storage();
+    let failWrites = false;
+    const quotaStorage: Storage = {
+      get length() { return base.length; },
+      clear: () => base.clear(),
+      getItem: (k) => base.getItem(k),
+      key: (i) => base.key(i),
+      removeItem: (k) => base.removeItem(k),
+      setItem: (k, v) => {
+        if (failWrites && k.includes("autosave")) {
+          const err = new Error("QuotaExceededError");
+          err.name = "QuotaExceededError";
+          throw err;
+        }
+        base.setItem(k, v);
+      },
+    };
+    failWrites = true;
+    await expect(importStudioProjectPackage(packageFile(), {
+      storage: quotaStorage,
+      authUserId: "artist-1",
+      createProjectId: () => "rollback-id",
+      createDocumentId: () => "rollback-doc",
+    })).rejects.toThrow(/QuotaExceededError/);
+    expect(readStudioProjectLibrary(base).projects).toEqual([]);
+    expect(readStudioProjectDocuments(base, "import-rollback-id").documents).toEqual([]);
+  });
 });

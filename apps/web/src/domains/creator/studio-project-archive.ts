@@ -2110,6 +2110,7 @@ export async function buildStudioProjectArchive(
   }
 
   const canonicalProject = parseStudioProjectFile(canonicalProjectValue);
+  canonicalProjectValue.version = canonicalProject.version;
   const linked3dCoveredPointers = await linked3dArchiveCoverage(
     canonicalProject,
     [...archiveAttachmentEvidence].map(([sha256, evidence]) => ({ sha256, ...evidence })),
