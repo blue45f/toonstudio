@@ -98,6 +98,7 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
   let pipeline: StrokePipeline | null = null;
   let inStroke = false;
   let latency: readonly LatencyRecord[] = [];
+  let pendingAbort: StrokeAbortReceipt | null = null;
   let disposed = false;
   let extraReasons: readonly LaneReasonCode[] = [];
   let binner: ExternalBinner | null = null;
@@ -127,6 +128,7 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
     async init(e: LaneEnvironment, config: LaneInit): Promise<void> {
       if (disposed) throw new InvalidStateError(`${variant.id} 레인은 dispose됐다`);
       if (!probeResult || env !== e) await this.probe(e);
+      if (disposed) throw new InvalidStateError(`${variant.id} 레인은 dispose됐다`);
       const result = probeResult;
       if (!result || result.status !== "supported" || !adapter) {
         const code = result?.reasons[0] ?? "adapter-unavailable";
@@ -156,6 +158,10 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
         },
       });
       const created = requested.device;
+      if (disposed) {
+        created.destroy();
+        throw new InvalidStateError(`${variant.id} 레인은 dispose됐다`);
+      }
       device = created;
       const gpu = e.gpu;
       try {
@@ -172,11 +178,14 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
           presentCanvas: config.presentCanvas,
           presentFormat: config.presentCanvas && gpu ? gpu.getPreferredCanvasFormat() : undefined,
         });
+        if (disposed) throw new InvalidStateError(`${variant.id} 레인은 dispose됐다`);
         if (variant.extra) {
           extraResource?.dispose();
           extraResource = await variant.extra.create(e);
+          if (disposed) throw new InvalidStateError(`${variant.id} 레인은 dispose됐다`);
           binner = extraResource.createBinner(runtime.tilesX, runtime.tilesY);
         }
+        pendingAbort = null;
       } catch (error) {
         // 장치를 만든 뒤 실패하면 호출자가 dispose하지 않아도 장치·자원이 남지 않게 되돌린다.
         runtime?.dispose();
@@ -192,6 +201,7 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
     beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
       const emitterOptions = strokeEmitterOptions(options);
       const rt = requireRuntime();
+      pendingAbort = null;
       rt.beginStroke(program, seed);
       const paper = program.paper.enabled ? paperFor(program.paper) : null;
       pipeline = new StrokePipeline(program, seed, undefined, paper, emitterOptions);
@@ -217,12 +227,14 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
       const rt = requireRuntime();
       if (!pipeline || !inStroke) throw new InvalidStateError("beginStroke 전에 endStroke를 호출했다");
       const currentPipeline = pipeline;
+      let enteredRuntimeEnd = false;
       let r: Awaited<ReturnType<SumiComputeRuntime["endStroke"]>>;
       try {
         const tail = currentPipeline.finish();
         rt.submitBatch(tail, binner ?? undefined);
         latency = currentPipeline.stats().latency;
         pipeline = null;
+        enteredRuntimeEnd = true;
         r = await rt.endStroke();
         inStroke = false;
       } catch (error) {
@@ -230,9 +242,19 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
         if (inStroke) {
           inStroke = false;
           try {
-            rt.abortStroke();
+            const aborted = rt.abortStroke();
+            if (enteredRuntimeEnd && aborted.documentPreserved) {
+              pendingAbort = abortReceipt(
+                aborted.discardedDabs,
+                false,
+                "endStroke가 GPU 굽기 도중 실패해 문서 보존을 보장할 수 없다",
+              );
+            } else {
+              pendingAbort = abortReceipt(aborted.discardedDabs, aborted.documentPreserved, aborted.reasonKo);
+            }
           } catch {
-            // 장치가 이미 손실·해제된 경우 원래 오류를 우선한다.
+            // 장치가 이미 손실·해제된 경우 원래 오류를 우선하되 문서 미보존을 기록한다.
+            pendingAbort = abortReceipt(0, false, "endStroke가 GPU 굽기 도중 실패해 문서 보존을 보장할 수 없다");
           }
         }
         throw error;
@@ -260,6 +282,13 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
      */
     abortStroke(): StrokeAbortReceipt {
       if (disposed) throw new InvalidStateError(`${variant.id} 레인은 dispose됐다`);
+      if (pendingAbort) {
+        const r = pendingAbort;
+        pendingAbort = null;
+        pipeline = null;
+        inStroke = false;
+        return r;
+      }
       if (!runtime) return noStrokeAbortReceipt();
       const result = runtime.abortStroke();
       pipeline = null;
@@ -284,6 +313,7 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
       if (disposed) return;
       disposed = true;
       pipeline = null;
+      pendingAbort = null;
       inStroke = false;
       runtime?.dispose();
       runtime = null;

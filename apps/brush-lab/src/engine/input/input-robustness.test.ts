@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Pcg32 } from "../core/rng";
 import { presetById } from "../presets/catalog";
 import { renderStroke } from "../raster/reference-renderer";
+import { lineStroke, zigzagStroke } from "../testing/synthetic-strokes";
 
 import { DEFAULT_INPUT_CONFIG, InputPipeline } from "./input-pipeline";
 import { applyStrokeStream } from "./stages/chain";
@@ -294,3 +295,371 @@ describe("R-A-2 정점 재방출 시각·속도·잉크 보존", () => {
     });
   }
 });
+
+/**
+ * 엔진 경계(`boundary.test.ts`: `engine/**`는 `platform/**`를 import하지 않음)를 지키면서
+ * `SpeedPressureSimulator` 규약을 동일하게 검증하는 테스트 전용 순수 시뮬레이터.
+ */
+interface TestSpeedPressureSimulator {
+  apply(samples: readonly RawSample[]): RawSample[];
+  reset(): void;
+}
+
+function createTestSpeedPressureSimulator(): TestSpeedPressureSimulator {
+  const slowSpeed = 0.15;
+  const fastSpeed = 2.5;
+  const maxPressure = 0.9;
+  const minPressure = 0.12;
+  const speedSmoothing = 0.35;
+  const pressureSmoothing = 0.4;
+  const fadeInSamples = 4;
+  const startPressure = 0.55;
+
+  let prev: { x: number; y: number; tMs: number } | null = null;
+  let speed = 0;
+  let pressure = startPressure;
+  let count = 0;
+
+  const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const speedToP = (v: number): number => {
+    const t = clamp01((v - slowSpeed) / (fastSpeed - slowSpeed));
+    const smooth = t * t * (3 - 2 * t);
+    return maxPressure + (minPressure - maxPressure) * smooth;
+  };
+
+  const reset = (): void => {
+    prev = null;
+    speed = 0;
+    pressure = startPressure;
+    count = 0;
+  };
+
+  const apply = (samples: readonly RawSample[]): RawSample[] => {
+    const out: RawSample[] = [];
+    for (const s of samples) {
+      if (s.pointerType !== "mouse" || s.source === "predicted") {
+        out.push(s);
+        continue;
+      }
+      if (s.phase === "down") reset();
+      if (s.phase === "up") {
+        out.push({ ...s, pressure });
+        reset();
+        continue;
+      }
+      if (prev) {
+        const dt = s.tMs - prev.tMs;
+        if (dt <= 0) {
+          out.push({ ...s, pressure });
+          continue;
+        }
+        const inst = Math.hypot(s.x - prev.x, s.y - prev.y) / dt;
+        speed = count <= 1 ? inst : speed + (inst - speed) * speedSmoothing;
+      }
+      prev = { x: s.x, y: s.y, tMs: s.tMs };
+      count += 1;
+      const target = s.phase === "down" ? startPressure : speedToP(speed);
+      const blend = clamp01(count / fadeInSamples);
+      const goal = startPressure + (target - startPressure) * blend;
+      pressure = s.phase === "down" ? startPressure : pressure + (goal - pressure) * pressureSmoothing;
+      out.push({ ...s, pressure });
+    }
+    return out;
+  };
+
+  return { apply, reset };
+}
+
+/**
+ * 시드로부터 동일 시각(`dt = 0`), 역행 시각(`dt < 0`), coalesced 버스트, 예측 표본 혼입을 포함한
+ * 적대적 획 표본열을 결정적으로 생성한다(합성 포인터 이벤트 스트림 리플레이 — 실기기 펜 하드웨어 검증 아님).
+ */
+function generateSeededAdversarialStroke(
+  seed: number,
+  opts: { canceled?: boolean; pointerType?: RawSample["pointerType"] } = {},
+): RawSample[] {
+  const rng = new Pcg32(seed, 0x91e);
+  const pointerType = opts.pointerType ?? (seed % 2 === 0 ? "mouse" : "pen");
+  const steps = 14 + (rng.nextU32() % 18);
+  let x = 20 + (rng.nextU32() % 80);
+  let y = 20 + (rng.nextU32() % 80);
+  let tMs = 100 + (rng.nextU32() % 500);
+
+  const out: RawSample[] = [
+    {
+      x,
+      y,
+      tMs,
+      pressure: 0.45,
+      tiltXDeg: 4,
+      tiltYDeg: -3,
+      twistDeg: 0,
+      pointerType,
+      phase: "down",
+      source: "raw",
+    },
+  ];
+
+  for (let i = 1; i <= steps; i += 1) {
+    const mode = rng.nextF32();
+    let sampleTMs: number;
+    if (mode < 0.22) {
+      // 동일 타임스탬프 (dt = 0)
+      sampleTMs = tMs;
+    } else if (mode < 0.42) {
+      // 역행 타임스탬프 (dt < 0)
+      sampleTMs = Math.max(1, tMs - (1 + (rng.nextU32() % 35)));
+    } else {
+      tMs += 2 + (rng.nextU32() % 12);
+      sampleTMs = tMs;
+    }
+
+    // 모서리와 직선 이동을 모두 포함하도록 걸음을 갱신한다
+    const angle = i % 5 === 0 ? ((rng.nextF32() - 0.5) * Math.PI * 1.4) : (rng.nextF32() - 0.3) * 0.4;
+    const dist = 2 + rng.nextF32() * 14;
+    x = Math.max(5, Math.min(240, x + Math.cos(angle) * dist));
+    y = Math.max(5, Math.min(240, y + Math.sin(angle) * dist));
+    const pressure = 0.15 + rng.nextF32() * 0.75;
+
+    // coalesced 버스트 모사
+    if (rng.nextF32() < 0.35) {
+      out.push({
+        x: x - 1.5,
+        y: y - 1.5,
+        tMs: sampleTMs,
+        pressure,
+        tiltXDeg: 2,
+        tiltYDeg: -1,
+        twistDeg: 0,
+        pointerType,
+        phase: "move",
+        source: "coalesced",
+      });
+    }
+
+    out.push({
+      x,
+      y,
+      tMs: sampleTMs,
+      pressure,
+      tiltXDeg: 3,
+      tiltYDeg: -2,
+      twistDeg: 0,
+      pointerType,
+      phase: "move",
+      source: "raw",
+    });
+
+    // 표시 전용 predicted 표본 혼입(정본 상태를 오염시키면 안 됨)
+    if (rng.nextF32() < 0.25) {
+      out.push({
+        x: x + 12,
+        y: y - 12,
+        tMs: sampleTMs + 4,
+        pressure,
+        tiltXDeg: 3,
+        tiltYDeg: -2,
+        twistDeg: 0,
+        pointerType,
+        phase: "move",
+        source: "predicted",
+      });
+    }
+  }
+
+  if (!opts.canceled) {
+    const endMode = rng.nextF32();
+    const upTMs = endMode < 0.25 ? tMs : endMode < 0.45 ? Math.max(1, tMs - 15) : tMs + 6;
+    out.push({
+      x: x + 2,
+      y: y + 2,
+      tMs: upTMs,
+      pressure: 0.3,
+      tiltXDeg: 0,
+      tiltYDeg: 0,
+      twistDeg: 0,
+      pointerType,
+      phase: "up",
+      source: "raw",
+    });
+  }
+
+  return out;
+}
+
+describe("합성 포인터 이벤트 스트림 리플레이 — 실기기 펜 하드웨어 검증 아님: dt=0·dt<0·취소 재시작·정본 보존", () => {
+  it("시드 1..64 적대적 스트림(dt=0, dt<0, coalesced 버스트): 모든 단계·파이프라인 출력이 유한하고 시각이 단조 비감소다", () => {
+    for (let seed = 1; seed <= 64; seed += 1) {
+      const raw = generateSeededAdversarialStroke(seed, { canceled: false });
+      const speedSim = createTestSpeedPressureSimulator();
+      const pressured = speedSim.apply(raw);
+
+      const lazy = createLazyBrushStageFromPct(70);
+      const pen = createPenSpringStageFromPct(70);
+      const lazyGate = createCornerGateStage(createLazyBrushStageFromPct(70));
+      const penGate = createCornerGateStage(createPenSpringStageFromPct(70));
+
+      const outLazy = applyStrokeStream(lazy, pressured).filter((s) => s.source !== "predicted");
+      const outPen = applyStrokeStream(pen, pressured).filter((s) => s.source !== "predicted");
+      const outLazyGate = applyStrokeStream(lazyGate, pressured).filter((s) => s.source !== "predicted");
+      const outPenGate = applyStrokeStream(penGate, pressured).filter((s) => s.source !== "predicted");
+      const pipeline = new InputPipeline(DEFAULT_INPUT_CONFIG);
+      const outPipeline: ModeledSample[] = [];
+      for (let i = 0; i < pressured.length; i += 4) {
+        outPipeline.push(...pipeline.push(pressured.slice(i, i + 4)).committed);
+      }
+      outPipeline.push(...pipeline.finish());
+
+      for (const [label, seq] of [
+        ["lazy", outLazy],
+        ["pen", outPen],
+        ["lazyGate", outLazyGate],
+        ["penGate", outPenGate],
+      ] as const) {
+        expect(seq.length, `seed=${seed} ${label}`).toBeGreaterThanOrEqual(2);
+        expect(seq[0]?.phase, `seed=${seed} ${label} start`).toBe("down");
+        expect(seq[seq.length - 1]?.phase, `seed=${seed} ${label} end`).toBe("up");
+        expect(seq.filter((s) => s.phase === "up").length, `seed=${seed} ${label} single up`).toBe(1);
+        for (let i = 0; i < seq.length; i += 1) {
+          const s = seq[i];
+          expect(Number.isFinite(s?.x), `seed=${seed} ${label} x`).toBe(true);
+          expect(Number.isFinite(s?.y), `seed=${seed} ${label} y`).toBe(true);
+          expect(Number.isFinite(s?.tMs), `seed=${seed} ${label} tMs`).toBe(true);
+          expect(Number.isFinite(s?.pressure), `seed=${seed} ${label} pressure`).toBe(true);
+          if (i > 0) {
+            expect(s?.tMs, `seed=${seed} ${label} monotonic i=${i}`).toBeGreaterThanOrEqual(seq[i - 1]?.tMs ?? 0);
+          }
+        }
+      }
+
+      expect(outPipeline.length, `seed=${seed} pipeline`).toBeGreaterThanOrEqual(2);
+      expect(outPipeline[0]?.phase).toBe("down");
+      expect(outPipeline[outPipeline.length - 1]?.phase).toBe("up");
+      for (let i = 0; i < outPipeline.length; i += 1) {
+        const m = outPipeline[i];
+        expect(Number.isFinite(m?.x), `seed=${seed} pipeline x`).toBe(true);
+        expect(Number.isFinite(m?.y), `seed=${seed} pipeline y`).toBe(true);
+        expect(Number.isFinite(m?.tMs), `seed=${seed} pipeline tMs`).toBe(true);
+        expect(Number.isFinite(m?.pressure), `seed=${seed} pipeline pressure`).toBe(true);
+        expect(Number.isFinite(m?.velocity), `seed=${seed} pipeline velocity`).toBe(true);
+        expect(Number.isFinite(m?.curvature), `seed=${seed} pipeline curvature`).toBe(true);
+        if (i > 0) {
+          expect(m?.tMs, `seed=${seed} pipeline monotonic i=${i}`).toBeGreaterThanOrEqual(outPipeline[i - 1]?.tMs ?? 0);
+        }
+      }
+    }
+  });
+
+  it("획 도중 취소(reset) 후 즉시 새 획 시작 시 이전 취소 획의 잔여 표본·상태 누수가 0이다(새 인스턴스와 비트 동일)", () => {
+    for (let seed = 1; seed <= 32; seed += 1) {
+      const canceledStroke = generateSeededAdversarialStroke(seed, { canceled: true, pointerType: "mouse" });
+      const nextStroke = generateSeededAdversarialStroke(seed + 1000, { canceled: false, pointerType: "mouse" });
+
+      // 1. SpeedPressureSimulator: 중도 취소 후 reset() + 다음 획 vs 깨끗한 인스턴스
+      const dirtySpeed = createTestSpeedPressureSimulator();
+      dirtySpeed.apply(canceledStroke);
+      dirtySpeed.reset();
+      const afterCancelSpeed = dirtySpeed.apply(nextStroke);
+      const cleanSpeed = createTestSpeedPressureSimulator().apply(nextStroke);
+      expect(afterCancelSpeed, `seed=${seed} speedSim`).toEqual(cleanSpeed);
+
+      // 2. LazyBrushStage / PenSpringStage / CornerGateStage: 중도 취소 후 reset() + flush()는 빈 배열이고 다음 획은 새 인스턴스와 비트 동일
+      const dirtyLazy = createLazyBrushStageFromPct(80);
+      const dirtyPen = createPenSpringStageFromPct(80);
+      const dirtyLazyGate = createCornerGateStage(createLazyBrushStageFromPct(80));
+      const dirtyPenGate = createCornerGateStage(createPenSpringStageFromPct(80));
+
+      dirtyLazy.apply(canceledStroke);
+      dirtyLazy.reset();
+      expect(dirtyLazy.flush()).toEqual([]);
+
+      dirtyPen.apply(canceledStroke);
+      dirtyPen.reset();
+      expect(dirtyPen.flush()).toEqual([]);
+
+      dirtyLazyGate.apply(canceledStroke);
+      dirtyLazyGate.reset();
+      expect(dirtyLazyGate.flush()).toEqual([]);
+      expect(dirtyLazyGate.corners).toBe(0);
+
+      dirtyPenGate.apply(canceledStroke);
+      dirtyPenGate.reset();
+      expect(dirtyPenGate.flush()).toEqual([]);
+      expect(dirtyPenGate.corners).toBe(0);
+
+      expect(applyStrokeStream(dirtyLazy, nextStroke), `seed=${seed} lazy`).toEqual(
+        applyStrokeStream(createLazyBrushStageFromPct(80), nextStroke),
+      );
+      expect(applyStrokeStream(dirtyPen, nextStroke), `seed=${seed} pen`).toEqual(
+        applyStrokeStream(createPenSpringStageFromPct(80), nextStroke),
+      );
+      expect(applyStrokeStream(dirtyLazyGate, nextStroke), `seed=${seed} lazyGate`).toEqual(
+        applyStrokeStream(createCornerGateStage(createLazyBrushStageFromPct(80)), nextStroke),
+      );
+      expect(applyStrokeStream(dirtyPenGate, nextStroke), `seed=${seed} penGate`).toEqual(
+        applyStrokeStream(createCornerGateStage(createPenSpringStageFromPct(80)), nextStroke),
+      );
+
+      // 3. InputPipeline: 중도 취소 후 reset() -> finish()는 빈 배열이고 다음 획 출력은 새 파이프라인과 비트 동일
+      const dirtyPipeline = new InputPipeline(DEFAULT_INPUT_CONFIG);
+      dirtyPipeline.push(canceledStroke);
+      dirtyPipeline.reset();
+      expect(dirtyPipeline.finish()).toEqual([]);
+      expect(dirtyPipeline.latency()).toEqual([]);
+
+      const cleanPipeline = new InputPipeline(DEFAULT_INPUT_CONFIG);
+      const dirtyOut = [...dirtyPipeline.push(nextStroke).committed, ...dirtyPipeline.finish()];
+      const cleanOut = [...cleanPipeline.push(nextStroke).committed, ...cleanPipeline.finish()];
+      expect(dirtyOut, `seed=${seed} pipeline`).toEqual(cleanOut);
+    }
+  });
+
+  it("정본 fixture(lineStroke, zigzagStroke)의 파이프라인 및 단계 출력이 100% 보존된다", () => {
+    const canonicalLine = lineStroke(16, 24, 220, 180, 0.65, { durationMs: 500, sampleRateHz: 240 });
+    const canonicalZigzag = zigzagStroke(256, { durationMs: 600, sampleRateHz: 240 });
+
+    for (const [name, fixture] of [
+      ["lineStroke", canonicalLine],
+      ["zigzagStroke", canonicalZigzag],
+    ] as const) {
+      // 새 인스턴스 기준선
+      const basePipeline = runPipeline(fixture);
+      const baseLazy = applyStrokeStream(createCornerGateStage(createLazyBrushStageFromPct(50)), fixture);
+      const basePen = applyStrokeStream(createCornerGateStage(createPenSpringStageFromPct(50)), fixture);
+
+      // 직전에 적대적 취소 획을 거친 인스턴스에서도 기준선과 비트 단위로 100% 동일해야 한다
+      const reusedPipeline = new InputPipeline(DEFAULT_INPUT_CONFIG);
+      reusedPipeline.push(generateSeededAdversarialStroke(77, { canceled: true }));
+      reusedPipeline.reset();
+      const frames = new Map<number, RawSample[]>();
+      for (const s of fixture) {
+        const k = Math.floor(s.tMs / 16.67);
+        const bucket = frames.get(k) ?? [];
+        bucket.push(s);
+        frames.set(k, bucket);
+      }
+      const reusedPipelineOut: ModeledSample[] = [];
+      for (const key of Array.from(frames.keys()).sort((a, b) => a - b)) {
+        reusedPipelineOut.push(...reusedPipeline.push(frames.get(key) ?? []).committed);
+      }
+      reusedPipelineOut.push(...reusedPipeline.finish());
+
+      const reusedLazyStage = createCornerGateStage(createLazyBrushStageFromPct(50));
+      reusedLazyStage.apply(generateSeededAdversarialStroke(77, { canceled: true }));
+      reusedLazyStage.reset();
+
+      const reusedPenStage = createCornerGateStage(createPenSpringStageFromPct(50));
+      reusedPenStage.apply(generateSeededAdversarialStroke(77, { canceled: true }));
+      reusedPenStage.reset();
+
+      expect(reusedPipelineOut, `${name} pipeline`).toEqual(basePipeline);
+      expect(applyStrokeStream(reusedLazyStage, fixture), `${name} lazyGate`).toEqual(baseLazy);
+      expect(applyStrokeStream(reusedPenStage, fixture), `${name} penGate`).toEqual(basePen);
+      expect(basePipeline[0]?.x).toBeCloseTo(fixture[0]?.x ?? 0, 6);
+      expect(basePipeline[0]?.y).toBeCloseTo(fixture[0]?.y ?? 0, 6);
+      expect(basePipeline[basePipeline.length - 1]?.x).toBeCloseTo(fixture[fixture.length - 1]?.x ?? 0, 6);
+      expect(basePipeline[basePipeline.length - 1]?.y).toBeCloseTo(fixture[fixture.length - 1]?.y ?? 0, 6);
+    }
+  });
+});
+

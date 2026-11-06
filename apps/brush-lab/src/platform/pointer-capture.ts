@@ -140,6 +140,7 @@ export function attachPointerCapture(
   let lastY = 0;
   let lastTMs = 0;
   let lastPointerType: PointerKind = "mouse";
+  let detached = false;
 
   const mapper: Mapper = {
     toLocal: (clientX, clientY) => {
@@ -156,7 +157,9 @@ export function attachPointerCapture(
   el.style.touchAction = "none";
 
   const notePen = (ev: PointerEvent): void => {
-    if (ev.pointerType === "pen") lastPenTMs = ev.timeStamp;
+    if (ev.pointerType === "pen" && Number.isFinite(ev.timeStamp)) {
+      lastPenTMs = Math.max(lastPenTMs, ev.timeStamp);
+    }
   };
 
   const isPalm = (ev: PointerEvent): boolean => {
@@ -166,28 +169,42 @@ export function attachPointerCapture(
     return false;
   };
 
-  const track = (ev: PointerEvent, kind: PointerKind): void => {
+  const track = (ev: PointerEvent, kind: PointerKind, resetTime = false): void => {
     const p = mapper.toLocal(ev.clientX, ev.clientY);
     lastX = p.x;
     lastY = p.y;
-    lastTMs = ev.timeStamp;
+    if (Number.isFinite(ev.timeStamp)) {
+      lastTMs = resetTime ? ev.timeStamp : Math.max(lastTMs, ev.timeStamp);
+    }
     lastPointerType = kind;
   };
 
-  const onDown = (ev: PointerEvent): void => {
-    notePen(ev);
-    if (ownerId !== null) {
-      // 예전 획이 조용히 끝난 뒤(창 밖 up 분실 등) 한참 뒤의 새 down이면 예전 획을 합성 종료하고 새로 시작한다.
-      // 얼마 안 된 down은 멀티터치 두 번째 손가락으로 보고 무시한다(보조 버튼은 기본 동작만 막는다).
-      if (ev.timeStamp - lastTMs > STALE_TAKEOVER_MS) {
-        ownerId = null;
-        onSamples([{ x: lastX, y: lastY, tMs: ev.timeStamp, pressure: lastPressure, tiltXDeg: 0, tiltYDeg: 0, twistDeg: 0, pointerType: lastPointerType, phase: "up", source: "raw" }]);
-      } else {
-        if (ev.pointerType === "mouse" && ev.button !== 0) ev.preventDefault();
-        return;
+  const releaseCapture = (id: number): void => {
+    try {
+      if (
+        typeof el.hasPointerCapture === "function" &&
+        typeof el.releasePointerCapture === "function" &&
+        el.hasPointerCapture(id)
+      ) {
+        el.releasePointerCapture(id);
       }
+    } catch {
+      // 이미 해제되었거나 비활성 포인터여서 브라우저가 던져도 무시한다.
     }
-    if (!ev.isPrimary) return;
+  };
+
+  const onDown = (ev: PointerEvent): void => {
+    if (detached) return;
+    notePen(ev);
+    if (ownerId !== null && !(ev.timeStamp - lastTMs > STALE_TAKEOVER_MS)) {
+      // 얼마 안 된 down은 멀티터치 두 번째 손가락으로 보고 무시한다(보조 버튼은 기본 동작만 막는다).
+      if (ev.pointerType === "mouse" && ev.button !== 0) ev.preventDefault();
+      return;
+    }
+    if (!ev.isPrimary) {
+      if (ownerId !== null && ev.pointerType === "mouse" && ev.button !== 0) ev.preventDefault();
+      return;
+    }
     if (opts.primaryButtonOnly === true && ev.pointerType === "mouse" && ev.button !== 0) {
       ev.preventDefault();
       return;
@@ -213,14 +230,41 @@ export function attachPointerCapture(
       }
       return;
     }
+    if (ownerId !== null) {
+      // 예전 획이 조용히 끝난 뒤(창 밖 up 분실 등) 한참 뒤의 유효한 새 down이고 캡처도 확보됐으므로
+      // 예전 획을 합성 종료한 뒤 새 획을 시작한다.
+      const prevOwner = ownerId;
+      if (prevOwner !== ev.pointerId) releaseCapture(prevOwner);
+      ownerId = null;
+      const upTMs = Math.max(lastTMs, Number.isFinite(ev.timeStamp) ? ev.timeStamp : lastTMs);
+      onSamples([
+        {
+          x: lastX,
+          y: lastY,
+          tMs: upTMs,
+          pressure: lastPressure,
+          tiltXDeg: 0,
+          tiltYDeg: 0,
+          twistDeg: 0,
+          pointerType: lastPointerType,
+          phase: "up",
+          source: "raw",
+        },
+      ]);
+      if (detached) {
+        releaseCapture(ev.pointerId);
+        return;
+      }
+    }
     ownerId = ev.pointerId;
-    lastPressure = ev.pressure;
-    track(ev, pointerKindOf(ev.pointerType));
+    lastPressure = numberOr(ev.pressure, 0);
+    track(ev, pointerKindOf(ev.pointerType), true);
     ev.preventDefault();
     onSamples([sampleFromPointerEvent(ev, "down", "raw", mapper)]);
   };
 
   const onMove = (ev: PointerEvent): void => {
+    if (detached) return;
     notePen(ev);
     if (ownerId === null) {
       if (opts.onHover && ev.buttons === 0) {
@@ -230,17 +274,20 @@ export function attachPointerCapture(
       return;
     }
     if (ev.pointerId !== ownerId) return;
-    track(ev, pointerKindOf(ev.pointerType));
     const out: RawSample[] = [];
     if (!useRaw) {
+      const kind = pointerKindOf(ev.pointerType);
       const coalesced = coalescedOf(ev);
       for (let i = 0; i < coalesced.length; i += 1) {
         const c = coalesced[i];
         if (!c) continue;
+        track(c, kind);
+        lastPressure = numberOr(c.pressure, 0);
         const source: Source = i === coalesced.length - 1 ? "raw" : "coalesced";
         out.push(sampleFromPointerEvent(c, "move", source, mapper));
       }
-      lastPressure = ev.pressure;
+      track(ev, kind);
+      lastPressure = numberOr(ev.pressure, 0);
     }
     for (const p of predictedOf(ev)) {
       out.push(sampleFromPointerEvent(p, "move", "predicted", mapper));
@@ -250,24 +297,20 @@ export function attachPointerCapture(
 
   // `pointerrawupdate`는 HTMLElementEventMap에 없으므로 Event → PointerEvent 판별 후 처리한다.
   const onRawUpdate = (ev: Event): void => {
-    if (!isPointerEvent(ev)) return;
+    if (detached || !isPointerEvent(ev)) return;
+    notePen(ev);
     if (ownerId === null || ev.pointerId !== ownerId) return;
-    lastPressure = ev.pressure;
+    lastPressure = numberOr(ev.pressure, 0);
     track(ev, pointerKindOf(ev.pointerType));
     onSamples([sampleFromPointerEvent(ev, "move", "raw", mapper)]);
   };
 
   const finish = (ev: PointerEvent): void => {
+    if (detached) return;
     notePen(ev);
     if (ownerId === null || ev.pointerId !== ownerId) return;
     ownerId = null;
-    if (
-      typeof el.hasPointerCapture === "function" &&
-      typeof el.releasePointerCapture === "function" &&
-      el.hasPointerCapture(ev.pointerId)
-    ) {
-      el.releasePointerCapture(ev.pointerId);
-    }
+    releaseCapture(ev.pointerId);
     // up 표본은 마지막 접촉 압력을 쓴다(브라우저는 up에서 0을 준다).
     const sample = sampleFromPointerEvent(ev, "up", "raw", mapper);
     sample.pressure = lastPressure;
@@ -304,6 +347,12 @@ export function attachPointerCapture(
   if (useRaw) el.addEventListener("pointerrawupdate", onRawUpdate);
 
   return () => {
+    if (detached) return;
+    detached = true;
+    if (ownerId !== null) {
+      releaseCapture(ownerId);
+      ownerId = null;
+    }
     el.removeEventListener("pointerdown", onDown);
     el.removeEventListener("pointermove", onMove);
     el.removeEventListener("pointerup", finish);
@@ -313,7 +362,6 @@ export function attachPointerCapture(
     if (blockMenu) el.removeEventListener("contextmenu", onContextMenu);
     if (useRaw) el.removeEventListener("pointerrawupdate", onRawUpdate);
     el.style.touchAction = previousTouchAction;
-    ownerId = null;
   };
 }
 

@@ -73,6 +73,7 @@ export function createWasmCpuLane(): WasmCpuLane {
   let frameIndex = 0;
   let frameTimes: number[] = [];
   let latency: readonly LatencyRecord[] = [];
+  let pendingAbort: StrokeAbortReceipt | null = null;
   let disposed = false;
   const stats: LaneStats = emptyLaneStats();
 
@@ -109,12 +110,15 @@ export function createWasmCpuLane(): WasmCpuLane {
       if (config.tileSize !== 16) {
         throw new LaneUnavailableError("limit-exceeded", `tileSize ${config.tileSize}는 지원하지 않는다(16만)`);
       }
+      let loaded: SumiKernel;
       try {
-        kernel = await loadWasmKernelForEnv(env);
+        loaded = await loadWasmKernelForEnv(env);
       } catch (error) {
         if (error instanceof LaneUnavailableError) throw error;
         throw new LaneUnavailableError("wasm-artifact-missing", `wasm 커널 로드 실패: ${String(error)}`);
       }
+      if (disposed) throw new InvalidStateError("init: dispose된 레인이다");
+      kernel = loaded;
       const opts: { strokeCapacityTiles?: number; wetCapacityTiles?: number } = {};
       if (config.strokeCapacityTiles !== undefined) opts.strokeCapacityTiles = config.strokeCapacityTiles;
       if (config.wetCapacityTiles !== undefined) opts.wetCapacityTiles = config.wetCapacityTiles;
@@ -122,11 +126,13 @@ export function createWasmCpuLane(): WasmCpuLane {
       surface = new WasmSurface(kernel, config.width, config.height, opts);
       clock = env.clock;
       pipeline = null;
+      pendingAbort = null;
     },
     beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
       const emitterOptions = strokeEmitterOptions(options);
       const s = requireSurface("beginStroke");
       if (pipeline) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
+      pendingAbort = null;
       s.beginStroke(program, seed);
       pipeline = new StrokePipeline(program, seed, undefined, s.paperField(), emitterOptions);
       frameIndex = 0;
@@ -161,8 +167,10 @@ export function createWasmCpuLane(): WasmCpuLane {
         s.addDabs(finished.finish());
         cpu = s.endStroke();
       } catch (error) {
-        // 획 마감이 실패하면 그 획은 버린다: 습식 저널·표면 체크포인트까지 되돌려 다음 획에 섞이지 않게 한다.
-        s.abortStroke();
+        // 획 마감이 실패하면 그 획은 버린다: 습식 저널·표면 체크포인트까지 되돌려 다음 획에 섞이지 않게 하고,
+        // 직후 abortStroke 호출자에게는 복원 가능 여부(합성 도중 실패 시 documentPreserved: false)를 돌려준다.
+        const aborted = s.abortStroke();
+        pendingAbort = aborted.aborted ? abortReceipt(aborted.discardedDabs, aborted.restored, aborted.reasonKo) : null;
         throw error;
       } finally {
         // pipeline이 남으면 다음 beginStroke가 '이전 획이 endStroke되지 않았다'로 영구히 실패한다.
@@ -188,6 +196,12 @@ export function createWasmCpuLane(): WasmCpuLane {
     },
     abortStroke(): StrokeAbortReceipt {
       if (disposed) throw new InvalidStateError("abortStroke: dispose된 레인이다");
+      if (pendingAbort) {
+        const r = pendingAbort;
+        pendingAbort = null;
+        pipeline = null;
+        return r;
+      }
       if (!surface) return noStrokeAbortReceipt();
       // WasmSurface는 CPU Surface를 상속하므로 타일 단위 copy-on-write 저널 복원(습식 층·높이 포함)을 그대로 쓴다.
       const result = surface.abortStroke();
@@ -214,6 +228,7 @@ export function createWasmCpuLane(): WasmCpuLane {
       surface?.dispose();
       surface = null;
       pipeline = null;
+      pendingAbort = null;
       kernel = null;
       clock = null;
       disposed = true;

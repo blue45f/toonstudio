@@ -46,6 +46,7 @@ export class CpuReferenceLane implements BrushEngineLane {
   private frameTimes: number[] = [];
   private frameDabs = 0;
   private latency: readonly LatencyRecord[] = [];
+  private pendingAbort: StrokeAbortReceipt | null = null;
   private disposed = false;
   private readonly lifetime: LaneStats = emptyLaneStats();
 
@@ -61,12 +62,14 @@ export class CpuReferenceLane implements BrushEngineLane {
     this.surface = new Surface(config.width, config.height, opts);
     this.clock = env.clock;
     this.pipeline = null;
+    this.pendingAbort = null;
   }
 
   beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
     const emitterOptions = strokeEmitterOptions(options);
     const surface = this.requireSurface("beginStroke");
     if (this.pipeline) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
+    this.pendingAbort = null;
     surface.beginStroke(program, seed);
     this.pipeline = new StrokePipeline(program, seed, undefined, surface.paperField(), emitterOptions);
     this.frameIndex = 0;
@@ -108,8 +111,10 @@ export class CpuReferenceLane implements BrushEngineLane {
       surface.addDabs(pipeline.finish());
       cpu = surface.endStroke();
     } catch (error) {
-      // 획 마감이 실패하면 그 획은 버린다: 습식 저널·표면 체크포인트까지 되돌려 다음 획에 섞이지 않게 한다.
-      surface.abortStroke();
+      // 획 마감이 실패하면 그 획은 버린다: 습식 저널·표면 체크포인트까지 되돌려 다음 획에 섞이지 않게 하고,
+      // 직후 abortStroke 호출자에게는 복원 가능 여부(합성 도중 실패 시 documentPreserved: false)를 돌려준다.
+      const aborted = surface.abortStroke();
+      this.pendingAbort = aborted.aborted ? abortReceipt(aborted.discardedDabs, aborted.restored, aborted.reasonKo) : null;
       throw error;
     } finally {
       // pipeline이 남으면 다음 beginStroke가 '이전 획이 endStroke되지 않았다'로 영구히 실패한다.
@@ -141,6 +146,13 @@ export class CpuReferenceLane implements BrushEngineLane {
    */
   abortStroke(): StrokeAbortReceipt {
     this.assertAlive("abortStroke");
+    if (this.pendingAbort) {
+      const r = this.pendingAbort;
+      this.pendingAbort = null;
+      this.pipeline = null;
+      this.frameDabs = 0;
+      return r;
+    }
     const surface = this.surface;
     if (!surface) return noStrokeAbortReceipt();
     const result = surface.abortStroke();
@@ -175,6 +187,7 @@ export class CpuReferenceLane implements BrushEngineLane {
   dispose(): void {
     this.surface = null;
     this.pipeline = null;
+    this.pendingAbort = null;
     this.clock = null;
     this.disposed = true;
   }

@@ -620,3 +620,157 @@ describe("abortStroke GPU 계약: webgl2-instanced", () => {
     expect(() => lane.abortStroke()).toThrow(InvalidStateError);
   });
 });
+
+// ---- endStroke 실패 후 abortStroke 정직한 영수증 (실제 CPU/WASM 픽셀 vs 모의 GPU) ----------------------------------------------
+
+describe.each([
+  { name: "cpu-reference", create: createCpuReferenceLane },
+  { name: "wasm-cpu", create: createWasmCpuLane },
+])("endStroke 실패 후 abortStroke 영수증 보존(실제 CPU/WASM 픽셀 검증): $name", ({ create }) => {
+  const program = presetById("ink-g-pen");
+
+  it("endStroke가 합성 도중 던지면 첫 abortStroke()가 documentPreserved: false를 돌려주고 두 번째는 no-op이다", async () => {
+    const lane = create() as BrushEngineLane & {
+      currentSurface(): { stroke: { tiles(): Iterable<[number, Float32Array]> } };
+    };
+    await lane.init(fakeEnv(), INIT);
+    await drawFull(lane, program, STROKE_1, 1);
+
+    const surface = lane.currentSurface();
+    const origTiles = surface.stroke.tiles.bind(surface.stroke);
+    surface.stroke.tiles = function* failingTiles(): Iterable<[number, Float32Array]> {
+      for (const entry of origTiles()) {
+        yield entry;
+        throw new Error("합성 도중 실패");
+      }
+    };
+
+    lane.beginStroke(program, 2);
+    const fed = feed(lane, STROKE_2, 10);
+    expect(fed).toBeGreaterThan(0);
+    await expect(lane.endStroke()).rejects.toThrow("합성 도중 실패");
+
+    surface.stroke.tiles = origTiles;
+    const firstAbort = lane.abortStroke();
+    expect(firstAbort.documentPreserved).toBe(false);
+    expect(firstAbort.reasonKo).toBeTruthy();
+    expect(lane.abortStroke()).toEqual({ discardedDabs: 0, documentPreserved: true });
+    lane.dispose();
+  });
+
+  it("endStroke가 합성 진입 전(꼬리 스탬프 단계)에 던지면 첫 abortStroke()가 documentPreserved: true와 폐기된 dab 수를 돌려준다", async () => {
+    const lane = create() as BrushEngineLane & {
+      currentSurface(): { addDabs(batch: unknown): unknown };
+    };
+    await lane.init(fakeEnv(), INIT);
+    await drawFull(lane, program, STROKE_1, 1);
+    const h1 = hashOf(await lane.readback());
+
+    lane.beginStroke(program, 2);
+    const fed = feed(lane, STROKE_2, 10);
+    expect(fed).toBeGreaterThan(0);
+
+    const surface = lane.currentSurface();
+    const origAddDabs = surface.addDabs.bind(surface);
+    surface.addDabs = () => {
+      throw new Error("꼬리 스탬프 실패");
+    };
+    await expect(lane.endStroke()).rejects.toThrow("꼬리 스탬프 실패");
+    surface.addDabs = origAddDabs;
+
+    const receipt = lane.abortStroke();
+    expect(receipt.documentPreserved).toBe(true);
+    expect(receipt.discardedDabs).toBe(fed);
+    expect(hashOf(await lane.readback())).toBe(h1);
+    expect(lane.abortStroke()).toEqual({ discardedDabs: 0, documentPreserved: true });
+    lane.dispose();
+  });
+});
+
+describe("endStroke 실패 후 abortStroke 및 init 도중 dispose(모의 GPU 검증)", () => {
+  it("webgpu-compute(모의 GPU): endStroke 도중 장치 손실로 실패하면 첫 abortStroke()가 documentPreserved: false를 돌려준다", async () => {
+    const { adapter, gpu } = createMockAdapter({ info: { vendor: "mock", description: "SwiftShader" }, features: ["timestamp-query"] });
+    const lane = createWebgpuComputeLane();
+    await lane.init(gpuEnv(createMockGpuApi(adapter)), GPU_INIT);
+    const program = presetById("ink-g-pen");
+
+    lane.beginStroke(program, 1);
+    feed(lane, GPU_STROKE, 4);
+    gpu.loseDevice("unknown", "mid-endStroke lost");
+    await Promise.resolve();
+    await Promise.resolve();
+
+    await expect(lane.endStroke()).rejects.toThrow();
+    const receipt = lane.abortStroke();
+    expect(receipt.documentPreserved).toBe(false);
+    expect(lane.abortStroke()).toEqual({ discardedDabs: 0, documentPreserved: true });
+    lane.dispose();
+  });
+
+  it("webgpu-instanced(모의 GPU): endStroke 도중 장치 손실로 실패하면 첫 abortStroke()가 documentPreserved: false이고 다음 획에서 영구 잠기지 않는다", async () => {
+    const { adapter, gpu } = createMockAdapter({ info: { vendor: "mock", description: "SwiftShader" }, features: ["timestamp-query"] });
+    const lane = createWebgpuInstancedLane();
+    await lane.init(gpuEnv(createMockGpuApi(adapter)), GPU_INIT);
+    const program = presetById("ink-g-pen");
+
+    lane.beginStroke(program, 1);
+    feed(lane, GPU_STROKE, 4);
+    gpu.loseDevice("unknown", "mid-endStroke lost");
+    await Promise.resolve();
+    await Promise.resolve();
+
+    await expect(lane.endStroke()).rejects.toThrow();
+    const receipt = lane.abortStroke();
+    expect(receipt.documentPreserved).toBe(false);
+    expect(lane.abortStroke()).toEqual({ discardedDabs: 0, documentPreserved: true });
+    lane.dispose();
+  });
+
+  it("webgl2-instanced(모의 WebGL2): endStroke가 GPU 굽기 도중 실패하면 첫 abortStroke()가 documentPreserved: false를 돌려준다", async () => {
+    const mock = createMockWebgl2();
+    let t = 0;
+    const env: LaneEnvironment = {
+      clock: { now: () => (t += 1) },
+      createCanvas: (w, h) => createMockWebgl2Canvas(mock, w, h),
+    };
+    const lane = createWebgl2InstancedLane();
+    await lane.init(env, { ...INIT, width: 64, height: 64 });
+    const program = presetById("ink-g-pen");
+
+    lane.beginStroke(program, 1);
+    const fed = feed(lane, STROKE_1, 10);
+    expect(fed).toBeGreaterThan(0);
+
+    const origDrawArrays = mock.gl.drawArrays.bind(mock.gl);
+    let drawCallsInEnd = 0;
+    mock.gl.drawArrays = (mode: number, first: number, count: number) => {
+      drawCallsInEnd += 1;
+      // 1번째 drawArrays는 꼬리 프레임(submitBatch)의 encode이고, 2번째가 rt.endStroke()의 문서 bake 패스다.
+      if (drawCallsInEnd === 2) {
+        throw new Error("WebGL2 굽기 실패");
+      }
+      origDrawArrays(mode, first, count);
+    };
+
+    await expect(lane.endStroke()).rejects.toThrow("WebGL2 굽기 실패");
+    mock.gl.drawArrays = origDrawArrays;
+    const receipt = lane.abortStroke();
+    expect(receipt.documentPreserved).toBe(false);
+    expect(lane.abortStroke()).toEqual({ discardedDabs: 0, documentPreserved: true });
+    lane.dispose();
+  });
+
+  it("webgpu-compute / webgpu-instanced(모의 GPU): init() 장치 생성 대기 도중 dispose()하면 생성된 장치를 즉시 파괴하고 InvalidStateError로 거부한다", async () => {
+    for (const create of [createWebgpuComputeLane, createWebgpuInstancedLane]) {
+      const { adapter, gpu } = createMockAdapter({ info: { vendor: "mock", description: "SwiftShader" }, features: ["timestamp-query"] });
+      const lane = create();
+      const env = gpuEnv(createMockGpuApi(adapter));
+      await lane.probe(env);
+      const initPromise = lane.init(env, GPU_INIT);
+      lane.dispose();
+      await expect(initPromise).rejects.toBeInstanceOf(InvalidStateError);
+      expect(gpu.destroyed).toBe(true);
+    }
+  });
+});
+

@@ -458,6 +458,7 @@ export abstract class BristleLaneBase implements BrushEngineLane {
   private clock: Clock | null = null;
   private makeWorld: (() => PhysicsWorld2D) | null = null;
   private session: Session | null = null;
+  private pendingAbort: StrokeAbortReceipt | null = null;
   private disposed = false;
   private readonly lifetime: LaneStats = emptyLaneStats();
 
@@ -469,6 +470,10 @@ export abstract class BristleLaneBase implements BrushEngineLane {
 
   /** init에서 불리며 월드 팩토리를 돌려준다. 외부 모듈 로드·초기화가 있으면 여기서 하고 실패는 `LaneUnavailableError`로 던진다. */
   protected abstract prepareWorldFactory(env: LaneEnvironment): Promise<() => PhysicsWorld2D>;
+
+  protected isDisposed(): boolean {
+    return this.disposed;
+  }
 
   async init(env: LaneEnvironment, config: LaneInit): Promise<void> {
     this.assertAlive("init");
@@ -483,9 +488,11 @@ export abstract class BristleLaneBase implements BrushEngineLane {
     this.closeSession();
     // 외부 모듈 로드가 실패하면 표면을 만들기 전에 던진다(반쯤 초기화된 레인을 남기지 않는다).
     const factory = await this.prepareWorldFactory(env);
+    this.assertAlive("init");
     this.surface = new Surface(config.width, config.height, opts);
     this.makeWorld = factory;
     this.clock = env.clock;
+    this.pendingAbort = null;
   }
 
   beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
@@ -496,6 +503,7 @@ export abstract class BristleLaneBase implements BrushEngineLane {
     const reason = unsupportedBristleReason(program);
     if (reason) throw new LaneUnavailableError("not-implemented", reason, { laneId: this.id, presetId: program.id });
     const mapping = mapProgramToBristle(program, this.laneOptions);
+    this.pendingAbort = null;
     surface.beginStroke(program, seed);
     this.session = {
       program,
@@ -623,8 +631,11 @@ export abstract class BristleLaneBase implements BrushEngineLane {
       this.lifetime.lastReceipt = receipt;
       return receipt;
     } catch (error) {
-      // 획 마감이 실패하면 그 획은 버린다: 부분 누적된 획 타일을 비워 다음 획에 섞여 합성되지 않게 한다.
-      surface.stroke.clear();
+      // 획 마감이 실패하면 그 획은 버린다: 표면의 되돌림 저널로 복원을 시도하고, 직후 abortStroke 호출자에게는
+      // 복원 가능 여부(합성 도중 실패 시 documentPreserved: false)를 돌려준다.
+      const unsubmitted = session.synth?.pending() ?? 0;
+      const aborted = surface.abortStroke();
+      this.pendingAbort = aborted.aborted ? abortReceipt(aborted.discardedDabs + unsubmitted, aborted.restored, aborted.reasonKo) : null;
       throw error;
     } finally {
       // 성공이든 실패든 세션은 닫는다(남기면 다음 beginStroke가 '이전 획이 endStroke되지 않았다'로 영구히 실패한다).
@@ -638,10 +649,14 @@ export abstract class BristleLaneBase implements BrushEngineLane {
    */
   abortStroke(): StrokeAbortReceipt {
     this.assertAlive("abortStroke");
+    if (this.pendingAbort) {
+      const r = this.pendingAbort;
+      this.pendingAbort = null;
+      this.closeSession();
+      return r;
+    }
     const surface = this.surface;
     if (!surface) return noStrokeAbortReceipt();
-    // 세션이 없어도 표면에 묻는다: endStroke가 문서 합성 도중 실패하면 세션은 이미 닫혔지만 표면에는 되돌림 기준점이 남아 있고,
-    // 그 문서는 일부 바뀌었다. 세션 유무로 조기 반환하면 `documentPreserved: true`를 거짓으로 말하게 된다(cpu-reference와 같은 방식).
     const unsubmitted = this.session?.synth?.pending() ?? 0;
     const result = surface.abortStroke();
     this.closeSession();
@@ -670,6 +685,7 @@ export abstract class BristleLaneBase implements BrushEngineLane {
     this.closeSession();
     this.surface = null;
     this.makeWorld = null;
+    this.pendingAbort = null;
     this.clock = null;
     this.disposed = true;
   }
