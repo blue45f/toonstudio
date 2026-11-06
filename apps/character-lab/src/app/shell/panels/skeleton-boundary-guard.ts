@@ -43,7 +43,35 @@ export function diagnoseSkeletonData(skeleton: SkeletonData | null | undefined, 
     if (!bone || typeof bone.name !== "string" || bone.name.length === 0) {
       return failVisible("skeleton-invalid-input", "스켈레톤 본 항목이 손상되었거나 본 이름이 비어 있습니다.", bone, now);
     }
-    if (!Array.isArray(bone.restTranslation) || bone.restTranslation.length < 3 || !v3IsFinite(bone.restTranslation)) {
+    if (parentByName.has(bone.name)) {
+      return failVisible(
+        "skeleton-invalid-input",
+        `스켈레톤 본 이름 "${bone.name}"이(가) 중복되어 있습니다.`,
+        { bone: bone.name },
+        now,
+      );
+    }
+    if (bone.parent !== null && (typeof bone.parent !== "string" || bone.parent.length === 0)) {
+      return failVisible(
+        "skeleton-invalid-input",
+        `본 "${bone.name}"의 parent 형식이 올바르지 않습니다.`,
+        { bone: bone.name, parent: bone.parent },
+        now,
+      );
+    }
+    if (
+      !Array.isArray(bone.restTranslation) ||
+      bone.restTranslation.length < 3 ||
+      bone.restTranslation.slice(0, 3).some((v: unknown) => typeof v !== "number")
+    ) {
+      return failVisible(
+        "skeleton-invalid-input",
+        `본 "${bone.name}"의 restTranslation 형식이 올바르지 않습니다.`,
+        { bone: bone.name, restTranslation: bone.restTranslation },
+        now,
+      );
+    }
+    if (!v3IsFinite(bone.restTranslation)) {
       return failVisible(
         "skeleton-non-finite-rest",
         `본 "${bone.name}"의 restTranslation이 유한하지 않습니다.`,
@@ -51,7 +79,12 @@ export function diagnoseSkeletonData(skeleton: SkeletonData | null | undefined, 
         now,
       );
     }
-    if (!Array.isArray(bone.restRotation) || bone.restRotation.length < 4) {
+    if (
+      !Array.isArray(bone.restRotation) ||
+      bone.restRotation.length < 4 ||
+      bone.restRotation.slice(0, 4).some((v: unknown) => typeof v !== "number" || !Number.isFinite(v)) ||
+      Math.hypot(bone.restRotation[0], bone.restRotation[1], bone.restRotation[2], bone.restRotation[3]) < 1e-8
+    ) {
       return failVisible(
         "skeleton-invalid-input",
         `본 "${bone.name}"의 restRotation 형식이 올바르지 않습니다.`,
@@ -59,7 +92,7 @@ export function diagnoseSkeletonData(skeleton: SkeletonData | null | undefined, 
         now,
       );
     }
-    parentByName.set(bone.name, bone.parent ?? null);
+    parentByName.set(bone.name, bone.parent);
   }
 
   // O(N) 부모 사슬 순환 검사
