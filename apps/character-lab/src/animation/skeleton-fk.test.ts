@@ -6,6 +6,7 @@ import {
   degToRad,
   qAngle,
   qConjugate,
+  qDot,
   qFromAxisAngle,
   qLength,
   qMultiply,
@@ -16,12 +17,19 @@ import {
 } from "../shared/math";
 import { createPrng } from "../shared/prng";
 
+import { SPINE_IK_CHAIN, fingerIkChain, fingerTipLocal, solveChainIk } from "./fabrik";
+import { solveIkGoal } from "./ik-apply";
+import { dragJointDetailed } from "./joint-drag";
+import { poseLimitViolations } from "./joint-limits";
+import { HAND_POSE_PRESETS, POSE_PRESETS, findHandPosePreset, findPosePreset } from "./presets";
 import { createReferenceSkeleton } from "./reference-skeleton";
 import { boneAxisLocal, boneWorldPosition, composeLocalRotation, computeWorldTransforms, poseRotationFromWorld } from "./skeleton-fk";
 
+import type { DragCamera } from "./joint-drag";
+import type { WorldTransformMap } from "./skeleton-fk";
 import type { HumanoidBoneName } from "../contracts/bones";
 import type { SkeletonData } from "../contracts/mesh-data";
-import type { Pose, Quat, Vec3 } from "../contracts/pose";
+import type { IkGoal, Pose, Quat, Vec3 } from "../contracts/pose";
 
 function randomUnitVec3(prng: ReturnType<typeof createPrng>): Vec3 {
   for (let attempt = 0; attempt < 16; attempt += 1) {
@@ -312,6 +320,205 @@ describe("boneAxisLocal", () => {
 
     const unknownAxis = boneAxisLocal(degenerateSkeleton, "missingBone");
     expect(unknownAxis).toEqual([0, 1, 0]);
+  });
+});
+
+function clonePose(pose: Pose): Pose {
+  const copy: Pose = {};
+  for (const [bone, q] of Object.entries(pose) as [HumanoidBoneName, Quat | undefined][]) {
+    if (q) copy[bone] = [q[0], q[1], q[2], q[3]];
+  }
+  return copy;
+}
+
+function snapshotWorldTransforms(
+  transforms: WorldTransformMap,
+): ReadonlyArray<readonly [string, { readonly position: Vec3; readonly rotation: Quat }]> {
+  return Array.from(transforms.entries(), ([name, t]) => [
+    name,
+    {
+      position: [t.position[0], t.position[1], t.position[2]] as const,
+      rotation: [t.rotation[0], t.rotation[1], t.rotation[2], t.rotation[3]] as const,
+    },
+  ]);
+}
+
+describe("caller integration contract: preset corpus & exception state preservation", () => {
+  const skeleton = createReferenceSkeleton();
+
+  it("실제 프리셋 코퍼스(POSE_PRESETS × HAND_POSE_PRESETS) 전체에서 FK 월드 변환·poseRotationFromWorld 역산 동치·재FK 불변성을 만족한다", () => {
+    expect(POSE_PRESETS.length).toBeGreaterThan(0);
+    expect(HAND_POSE_PRESETS.length).toBeGreaterThan(0);
+
+    const nonUnitScales = [0.04, 18.5, -2.75, 0.35] as const;
+
+    for (const posePreset of POSE_PRESETS) {
+      for (const handPreset of HAND_POSE_PRESETS) {
+        const mergedPose: Pose = {
+          ...posePreset.pose,
+          ...handPreset.left,
+          ...handPreset.right,
+        };
+
+        const scaledPose: Pose = {};
+        let idx = 0;
+        for (const [bone, q] of Object.entries(mergedPose) as [HumanoidBoneName, Quat | undefined][]) {
+          if (!q) continue;
+          const s = nonUnitScales[idx % nonUnitScales.length] ?? 1;
+          idx += 1;
+          scaledPose[bone] = scaleQuat(q, s);
+        }
+
+        for (const inputPose of [mergedPose, scaledPose]) {
+          const worldMap = computeWorldTransforms(skeleton, inputPose);
+          expect(worldMap.size).toBe(HUMANOID_BONE_NAMES.length);
+
+          const recoveredPose: Pose = {};
+          for (const bone of skeleton.bones) {
+            const world = worldMap.get(bone.name);
+            expect(world).toBeDefined();
+            if (!world) continue;
+
+            expect(v3IsFinite(world.position)).toBe(true);
+            expect(Math.abs(qLength(world.rotation) - 1)).toBeLessThanOrEqual(1e-6);
+
+            const parentWorldRot = bone.parent ? (worldMap.get(bone.parent)?.rotation ?? IDENTITY_QUAT) : IDENTITY_QUAT;
+            const recovered = poseRotationFromWorld(parentWorldRot, bone.restRotation, world.rotation);
+            expect(Math.abs(qLength(recovered) - 1)).toBeLessThanOrEqual(1e-6);
+
+            const rawInput = inputPose[bone.name as HumanoidBoneName] ?? IDENTITY_QUAT;
+            const expected = qNormalize(rawInput);
+            expect(Math.abs(qDot(recovered, expected))).toBeGreaterThanOrEqual(1 - 1e-6);
+
+            recoveredPose[bone.name as HumanoidBoneName] = recovered;
+          }
+
+          const roundtripMap = computeWorldTransforms(skeleton, recoveredPose);
+          for (const bone of skeleton.bones) {
+            const before = worldMap.get(bone.name);
+            const after = roundtripMap.get(bone.name);
+            expect(before).toBeDefined();
+            expect(after).toBeDefined();
+            if (!before || !after) continue;
+            expect(v3Distance(before.position, after.position)).toBeLessThanOrEqual(1e-6);
+            expect(qAngle(before.rotation, after.rotation)).toBeLessThanOrEqual(1e-6);
+            expect(Math.abs(qDot(before.rotation, after.rotation))).toBeGreaterThanOrEqual(1 - 1e-6);
+          }
+        }
+      }
+    }
+  });
+
+  it("상위 호출자(solveIkGoal, dragJointDetailed, solveChainIk) 연동 중 손상된 스켈레톤(NaN/Infinity restTranslation, 순환 부모) 예외 발생 전후로 pose·WorldTransformMap을 100% 보존하고 즉시 복구된다", () => {
+    const idlePreset = findPosePreset("idle");
+    const wavePreset = findPosePreset("wave");
+    const relaxedHand = findHandPosePreset("relaxed");
+    const pointHand = findHandPosePreset("point");
+
+    const idlePose: Pose = { ...idlePreset.pose, ...relaxedHand.left, ...relaxedHand.right };
+    const activePose: Pose = { ...wavePreset.pose, ...pointHand.left, ...pointHand.right };
+
+    const idlePoseSnapshot = clonePose(idlePose);
+    const activePoseSnapshot = clonePose(activePose);
+
+    const baselineWorld = computeWorldTransforms(skeleton, activePose);
+    const baselineWorldSnapshot = snapshotWorldTransforms(baselineWorld);
+
+    // 1. 정상 상위 호출자 동작 확인 (idle 및 wave 프리셋)
+    const ikGoal: IkGoal = {
+      chain: "leftArm",
+      target: [0.34, 1.15, 0.26],
+      pole: [0.3, 0.9, -0.25],
+    };
+    expect(v3IsFinite(ikGoal.target)).toBe(true);
+
+    const idleIk = solveIkGoal(idlePose, skeleton, ikGoal);
+    expect(Number.isFinite(idleIk.error)).toBe(true);
+    expect(poseLimitViolations(idleIk.pose, skeleton)).toEqual([]);
+    expect(idlePose).toEqual(idlePoseSnapshot);
+
+    const baselineIk = solveIkGoal(activePose, skeleton, ikGoal);
+    expect(Number.isFinite(baselineIk.error)).toBe(true);
+    expect(poseLimitViolations(baselineIk.pose, skeleton)).toEqual([]);
+    expect(activePose).toEqual(activePoseSnapshot);
+
+    const dragCamera: DragCamera = { position: [0, 1.35, 2.8], forward: [0, 0, -1] };
+    const dragFrom: Vec3 = baselineWorld.get("leftHand")?.position ?? [0.2, 1.0, 0.1];
+    const dragTo: Vec3 = [dragFrom[0] + 0.12, dragFrom[1] + 0.18, dragFrom[2]];
+    const baselineDrag = dragJointDetailed(activePose, skeleton, "leftUpperArm", dragFrom, dragTo, dragCamera);
+    expect(Number.isFinite(baselineDrag.requestedDeg)).toBe(true);
+    expect(poseLimitViolations(baselineDrag.pose, skeleton)).toEqual([]);
+    expect(activePose).toEqual(activePoseSnapshot);
+
+    const headPos = baselineWorld.get("head")?.position ?? [0, 1.49, 0];
+    const spineTarget: Vec3 = [headPos[0] + 0.03, headPos[1] - 0.02, headPos[2] + 0.08];
+    expect(v3IsFinite(spineTarget)).toBe(true);
+    const baselineSpineIk = solveChainIk(activePose, skeleton, SPINE_IK_CHAIN, spineTarget);
+    expect(Number.isFinite(baselineSpineIk.error)).toBe(true);
+    expect(poseLimitViolations(baselineSpineIk.pose, skeleton)).toEqual([]);
+    expect(activePose).toEqual(activePoseSnapshot);
+
+    const rightIndexChain = fingerIkChain("right", "Index");
+    const rightIndexTip = fingerTipLocal(skeleton, "rightIndexDistal");
+    const rightIndexProximalPos = baselineWorld.get("rightIndexProximal")?.position ?? [-0.4, 1.3, 0.1];
+    const fingerTarget: Vec3 = [rightIndexProximalPos[0] - 0.04, rightIndexProximalPos[1] - 0.04, rightIndexProximalPos[2] + 0.02];
+    expect(v3IsFinite(fingerTarget)).toBe(true);
+    const baselineFingerIk = solveChainIk(activePose, skeleton, rightIndexChain, fingerTarget, { tipLocal: rightIndexTip });
+    expect(Number.isFinite(baselineFingerIk.error)).toBe(true);
+    expect(poseLimitViolations(baselineFingerIk.pose, skeleton)).toEqual([]);
+    expect(activePose).toEqual(activePoseSnapshot);
+
+    // 2. 손상된 스켈레톤 픽스처 2종 (비유한 restTranslation / 순환 부모 참조 a -> b -> a)
+    const nanTranslationSkeleton: SkeletonData = {
+      bones: skeleton.bones.map((bone) =>
+        bone.name === "spine" ? { ...bone, restTranslation: [0, Number.NaN, 0] } : bone,
+      ),
+    };
+    const infTranslationSkeleton: SkeletonData = {
+      bones: skeleton.bones.map((bone) =>
+        bone.name === "leftUpperArm" ? { ...bone, restTranslation: [Number.POSITIVE_INFINITY, 0, 0] } : bone,
+      ),
+    };
+    const cycleAbSkeleton: SkeletonData = {
+      bones: [
+        { name: "a", parent: "b", restTranslation: [0, 0.1, 0], restRotation: [0, 0, 0, 1] },
+        { name: "b", parent: "a", restTranslation: [0, 0.1, 0], restRotation: [0, 0, 0, 1] },
+        ...skeleton.bones,
+      ],
+    };
+    const cycleHipsSpineSkeleton: SkeletonData = {
+      bones: skeleton.bones.map((bone) => {
+        if (bone.name === "hips") return { ...bone, parent: "spine" };
+        if (bone.name === "spine") return { ...bone, parent: "hips" };
+        return bone;
+      }),
+    };
+
+    for (const corrupted of [nanTranslationSkeleton, infTranslationSkeleton, cycleAbSkeleton, cycleHipsSpineSkeleton]) {
+      expect(() => computeWorldTransforms(corrupted, activePose)).toThrow(Error);
+      expect(() => solveIkGoal(activePose, corrupted, ikGoal)).toThrow(Error);
+      expect(() => dragJointDetailed(activePose, corrupted, "leftUpperArm", dragFrom, dragTo, dragCamera)).toThrow(Error);
+      expect(() => solveChainIk(activePose, corrupted, SPINE_IK_CHAIN, spineTarget)).toThrow(Error);
+      expect(() => solveChainIk(activePose, corrupted, rightIndexChain, fingerTarget, { tipLocal: rightIndexTip })).toThrow(Error);
+
+      // 예외 발생 전후 입력 pose와 기존 WorldTransformMap 스냅샷은 부분 변경 없이 100% 보존되어야 한다
+      expect(activePose).toEqual(activePoseSnapshot);
+      expect(snapshotWorldTransforms(baselineWorld)).toEqual(baselineWorldSnapshot);
+    }
+
+    // 3. 실패 후 복구(recovery): 동일한 activePose와 정상 스켈레톤으로 재호출 시 이전 정상 결과와 완벽히 일치
+    const recoveredWorld = computeWorldTransforms(skeleton, activePose);
+    const recoveredIk = solveIkGoal(activePose, skeleton, ikGoal);
+    const recoveredDrag = dragJointDetailed(activePose, skeleton, "leftUpperArm", dragFrom, dragTo, dragCamera);
+    const recoveredSpineIk = solveChainIk(activePose, skeleton, SPINE_IK_CHAIN, spineTarget);
+    const recoveredFingerIk = solveChainIk(activePose, skeleton, rightIndexChain, fingerTarget, { tipLocal: rightIndexTip });
+
+    expect(snapshotWorldTransforms(recoveredWorld)).toEqual(baselineWorldSnapshot);
+    expect(recoveredIk).toEqual(baselineIk);
+    expect(recoveredDrag).toEqual(baselineDrag);
+    expect(recoveredSpineIk).toEqual(baselineSpineIk);
+    expect(recoveredFingerIk).toEqual(baselineFingerIk);
+    expect(activePose).toEqual(activePoseSnapshot);
   });
 });
 

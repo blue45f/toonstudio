@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import { createPrng } from "../../../shared/prng";
+import { commitCapsuleSet, createCapsuleSet, resetCapsuleHistory, writeCapsule } from "../collision/capsule";
 import { hasNonFinite, normalizeQuat } from "../core/vec";
-import { chainInputFixture } from "../fixtures";
+import { chainAnchorFixture, chainInputFixture, headColliderFixture } from "../fixtures";
+import { createPbdChainSolver } from "../pbd-chain";
 
 import { backSolveChainRotations, forwardKinematicsFromRotations } from "./back-solve";
-import { compileChainModel, createChainState } from "./chain-model";
+import { chainInputsFromAnchors, compileChainModel, createChainState } from "./chain-model";
 import { settleChains } from "./chain-settle";
+import { createChainScratch, stepChainsInto } from "./chain-solver";
 
-import type { ChainState, Quat, Vec3 } from "../../../contracts";
+import type { ChainBoneRotation } from "./back-solve";
+import type { ChainScratch } from "./chain-solver";
+import type { CapsuleCollider, ChainAnchor, ChainState, Quat, Vec3, WindInput } from "../../../contracts";
 
 function randomUnitVec3(prng: ReturnType<typeof createPrng>): Vec3 {
   for (let attempt = 0; attempt < 16; attempt += 1) {
@@ -321,6 +326,341 @@ describe("physics/chain 역산 회전", () => {
     const fk = forwardKinematicsFromRotations(compiled.compiled, state, 0, unnormalizedRotations);
     expect(hasNonFinite(fk)).toBe(false);
     expect(fk[0]).toBeCloseTo(compiled.compiled.restPositions[0] ?? 0, 5);
+  });
+});
+
+interface ScratchSnapshot {
+  readonly lambdaDist: Float32Array;
+  readonly lambdaBend: Float32Array;
+  readonly rootStart: Float32Array;
+  readonly restDirWorld: Float32Array;
+  readonly startPos: Float32Array;
+}
+
+function snapshotScratch(scratch: ChainScratch): ScratchSnapshot {
+  return {
+    lambdaDist: scratch.lambdaDist.slice(),
+    lambdaBend: scratch.lambdaBend.slice(),
+    rootStart: scratch.rootStart.slice(),
+    restDirWorld: scratch.restDirWorld.slice(),
+    startPos: scratch.startPos.slice(),
+  };
+}
+
+function cloneRotations(rotations: readonly ChainBoneRotation[]): ChainBoneRotation[] {
+  return rotations.map((rot) => ({
+    bone: rot.bone,
+    local: [rot.local[0], rot.local[1], rot.local[2], rot.local[3]] as const,
+    world: [rot.world[0], rot.world[1], rot.world[2], rot.world[3]] as const,
+  }));
+}
+
+describe("caller integration contract: pbd-chain / chain-solver buffer isolation & recovery", () => {
+  const multiChainAnchors: readonly ChainAnchor[] = [
+    chainAnchorFixture({
+      id: "hair-front-l",
+      role: "hair",
+      root: [0.08, 1.68, 0.06],
+      segments: 5,
+      segmentLength: 0.05,
+      direction: [0.1, -0.98, 0.17],
+    }),
+    chainAnchorFixture({
+      id: "hair-back",
+      role: "hair",
+      root: [0, 1.66, -0.08],
+      segments: 6,
+      segmentLength: 0.06,
+      direction: [0, -0.95, -0.31],
+    }),
+    chainAnchorFixture({
+      id: "skirt-hemline",
+      role: "skirt",
+      root: [0, 0.92, 0.04],
+      segments: 4,
+      segmentLength: 0.07,
+      direction: [0.15, -0.97, 0.19],
+    }),
+  ];
+
+  const multiChainColliders: readonly CapsuleCollider[] = [
+    headColliderFixture(0.09),
+    { bone: "hips", a: [0, -0.05, 0], b: [0, 0.08, 0], radius: 0.11 },
+  ];
+
+  const windFixture: WindInput = { dir: [1, 0, 0.25], strength: 0.85, seed: 20261106 };
+
+  it("저수준 stepChainsInto · settleChains 파이프라인에서 RangeError 예외 발생 전후로 state · scratch · 콜라이더 · 부모 회전 버퍼가 100% 보존되고 다음 프레임에서 대조군과 완벽히 일치한다", () => {
+    const compiledRes = compileChainModel(chainInputsFromAnchors(multiChainAnchors));
+    expect(compiledRes.ok).toBe(true);
+    if (!compiledRes.ok) return;
+    const { compiled } = compiledRes;
+    expect(compiled.model.chainCount).toBe(3);
+
+    // 실험군(예외 주입)과 대조군(clean control run) 상태·스크래치·콜라이더 준비
+    let state = createChainState(compiled);
+    let controlState = createChainState(compiled);
+    const scratch = createChainScratch(compiled);
+    const controlScratch = createChainScratch(compiled);
+
+    const capsules = createCapsuleSet(2);
+    const controlCapsules = createCapsuleSet(2);
+    for (const set of [capsules, controlCapsules]) {
+      writeCapsule(set, 0, [0, 1.62, 0], [0, 1.74, 0], 0.09);
+      writeCapsule(set, 1, [0, 0.88, 0], [0, 1.01, 0], 0.11);
+      resetCapsuleHistory(set);
+    }
+
+    const rootPositions = new Float32Array([
+      0.02, 1.65, -0.09,
+      0.09, 1.67, 0.07,
+      0.01, 0.92, 0.05,
+    ]);
+    const yaw15 = normalizeQuat([0, Math.sin(Math.PI / 24), 0, Math.cos(Math.PI / 24)]);
+    const pitch10 = normalizeQuat([Math.sin(Math.PI / 36), 0, 0, Math.cos(Math.PI / 36)]);
+    const roll8 = normalizeQuat([0, 0, Math.sin(Math.PI / 45), Math.cos(Math.PI / 45)]);
+    const rootRotations = new Float32Array([...yaw15, ...pitch10, ...roll8]);
+    const rootParentRotations = new Float32Array([...yaw15, ...pitch10, ...roll8]);
+
+    const dt = 1 / 120;
+    const substeps = 2;
+    const iterations = 2;
+
+    // 1. 초기 settle + 2프레임 step 실행 (실험군 & 대조군 동일 진행)
+    state = settleChains(
+      compiled,
+      state,
+      { dt, substeps, iterations, rootPositions, rootRotations, capsules, wind: windFixture },
+      { maxSteps: 24 },
+      scratch,
+    ).state;
+    controlState = settleChains(
+      compiled,
+      controlState,
+      { dt, substeps, iterations, rootPositions, rootRotations, capsules: controlCapsules, wind: windFixture },
+      { maxSteps: 24 },
+      controlScratch,
+    ).state;
+
+    for (let frame = 0; frame < 2; frame += 1) {
+      const headShift: Vec3 = [0.01 * (frame + 1), 1.62, 0.005 * (frame + 1)];
+      const tailShift: Vec3 = [0.01 * (frame + 1), 1.74, 0.005 * (frame + 1)];
+      writeCapsule(capsules, 0, headShift, tailShift, 0.09);
+      writeCapsule(controlCapsules, 0, headShift, tailShift, 0.09);
+
+      stepChainsInto(
+        compiled,
+        state,
+        { dt, substeps, iterations, rootPositions, rootRotations, capsules, wind: windFixture },
+        { pos: state.pos, prev: state.prev },
+        scratch,
+      );
+      state = { pos: state.pos, prev: state.prev, stepIndex: state.stepIndex + 1 };
+      commitCapsuleSet(capsules);
+
+      stepChainsInto(
+        compiled,
+        controlState,
+        { dt, substeps, iterations, rootPositions, rootRotations, capsules: controlCapsules, wind: windFixture },
+        { pos: controlState.pos, prev: controlState.prev },
+        controlScratch,
+      );
+      controlState = { pos: controlState.pos, prev: controlState.prev, stepIndex: controlState.stepIndex + 1 };
+      commitCapsuleSet(controlCapsules);
+    }
+
+    const baselineRotations = [0, 1, 2].map((c) =>
+      backSolveChainRotations(compiled, state, c, { rootParentRotations }),
+    );
+    const baselineFk = [0, 1, 2].map((c) =>
+      forwardKinematicsFromRotations(compiled, state, c, baselineRotations[c] ?? []),
+    );
+
+    // 예외 발생 전 전체 버퍼 스냅샷
+    const posBefore = state.pos.slice();
+    const prevBefore = state.prev.slice();
+    const stepIndexBefore = state.stepIndex;
+    const scratchBefore = snapshotScratch(scratch);
+    const capsuleHeadBefore = capsules.head.slice();
+    const capsuleTailBefore = capsules.tail.slice();
+    const capsulePrevHeadBefore = capsules.prevHead.slice();
+    const capsulePrevTailBefore = capsules.prevTail.slice();
+    const capsuleRadiusBefore = capsules.radius.slice();
+    const rootPositionsBefore = rootPositions.slice();
+    const rootRotationsBefore = rootRotations.slice();
+    const rootParentRotationsBefore = rootParentRotations.slice();
+    const rotationsBefore = baselineRotations.map(cloneRotations);
+    const fkBefore = baselineFk.map((arr) => arr.slice());
+
+    // 2. 잘못된 체인 인덱스 주입 → RangeError
+    const invalidChainIndices = [
+      -1,
+      compiled.model.chainCount,
+      compiled.model.chainCount + 5,
+      1.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+    ];
+    for (const invalidIndex of invalidChainIndices) {
+      expect(() => backSolveChainRotations(compiled, state, invalidIndex, { rootParentRotations })).toThrow(RangeError);
+      expect(() =>
+        forwardKinematicsFromRotations(compiled, state, invalidIndex, baselineRotations[0] ?? []),
+      ).toThrow(RangeError);
+    }
+
+    // 3. 예외 발생 전후 모든 상태·스크래치·콜라이더·입력·출력 버퍼 무오염 검증
+    expect(state.pos).toEqual(posBefore);
+    expect(state.prev).toEqual(prevBefore);
+    expect(state.stepIndex).toBe(stepIndexBefore);
+    expect(snapshotScratch(scratch)).toEqual(scratchBefore);
+    expect(capsules.head).toEqual(capsuleHeadBefore);
+    expect(capsules.tail).toEqual(capsuleTailBefore);
+    expect(capsules.prevHead).toEqual(capsulePrevHeadBefore);
+    expect(capsules.prevTail).toEqual(capsulePrevTailBefore);
+    expect(capsules.radius).toEqual(capsuleRadiusBefore);
+    expect(rootPositions).toEqual(rootPositionsBefore);
+    expect(rootRotations).toEqual(rootRotationsBefore);
+    expect(rootParentRotations).toEqual(rootParentRotationsBefore);
+    expect(baselineRotations).toEqual(rotationsBefore);
+    expect(baselineFk).toEqual(fkBefore);
+
+    // 4. 실패 후 다음 정상 프레임 완벽 복구 검증 (동일 state & scratch 재사용 vs 대조군)
+    const nextRootPositions = new Float32Array([
+      0.04, 1.65, -0.07,
+      0.11, 1.67, 0.08,
+      0.02, 0.92, 0.06,
+    ]);
+    stepChainsInto(
+      compiled,
+      state,
+      { dt, substeps, iterations, rootPositions: nextRootPositions, rootRotations, capsules, wind: windFixture },
+      { pos: state.pos, prev: state.prev },
+      scratch,
+    );
+    state = { pos: state.pos, prev: state.prev, stepIndex: state.stepIndex + 1 };
+
+    stepChainsInto(
+      compiled,
+      controlState,
+      {
+        dt,
+        substeps,
+        iterations,
+        rootPositions: nextRootPositions,
+        rootRotations,
+        capsules: controlCapsules,
+        wind: windFixture,
+      },
+      { pos: controlState.pos, prev: controlState.prev },
+      controlScratch,
+    );
+    controlState = { pos: controlState.pos, prev: controlState.prev, stepIndex: controlState.stepIndex + 1 };
+
+    expect(state.pos).toEqual(controlState.pos);
+    expect(state.prev).toEqual(controlState.prev);
+    expect(state.stepIndex).toBe(controlState.stepIndex);
+    expect(snapshotScratch(scratch)).toEqual(snapshotScratch(controlScratch));
+
+    for (let c = 0; c < compiled.model.chainCount; c += 1) {
+      const recoveredRot = backSolveChainRotations(compiled, state, c, { rootParentRotations });
+      const controlRot = backSolveChainRotations(compiled, controlState, c, { rootParentRotations });
+      expect(recoveredRot).toEqual(controlRot);
+
+      const recoveredFk = forwardKinematicsFromRotations(compiled, state, c, recoveredRot);
+      const controlFk = forwardKinematicsFromRotations(compiled, controlState, c, controlRot);
+      expect(recoveredFk).toEqual(controlFk);
+      expect(hasNonFinite(recoveredFk)).toBe(false);
+    }
+  });
+
+  it("고수준 createPbdChainSolver 파사드에서 미존재 체인 조회(Error) 및 하위 RangeError 발생 후에도 솔버 상태·해시·본 회전이 대조군과 100% 일치한다", () => {
+    const solverRes = createPbdChainSolver(multiChainAnchors, multiChainColliders, {
+      dt: 1 / 120,
+      substeps: 2,
+      iterations: 2,
+      wind: windFixture,
+    });
+    const controlRes = createPbdChainSolver(multiChainAnchors, multiChainColliders, {
+      dt: 1 / 120,
+      substeps: 2,
+      iterations: 2,
+      wind: windFixture,
+    });
+    expect(solverRes.ok).toBe(true);
+    expect(controlRes.ok).toBe(true);
+    if (!solverRes.ok || !controlRes.ok) return;
+
+    const { solver } = solverRes;
+    const { solver: controlSolver } = controlRes;
+    const chainIds = ["hair-front-l", "hair-back", "skirt-hemline"] as const;
+
+    const applyBoneTransforms = (target: typeof solver, yawRad: number, shiftX: number): void => {
+      const q = normalizeQuat([0, Math.sin(yawRad * 0.5), 0, Math.cos(yawRad * 0.5)]);
+      target.setBoneWorld("head", [shiftX, 1.62, 0], q);
+      target.setBoneWorld("hips", [shiftX * 0.5, 0.95, 0], q);
+      for (const anchor of multiChainAnchors) {
+        const rootBone = anchor.boneNames[0] ?? anchor.id;
+        const rootPos = anchor.restPoints[0] ?? [0, 1.5, 0];
+        target.setBoneWorld(rootBone, [rootPos[0] + shiftX, rootPos[1], rootPos[2]], q);
+      }
+    };
+
+    // 1. 정상 시뮬레이션(settle + step)
+    applyBoneTransforms(solver, 0.25, 0.02);
+    applyBoneTransforms(controlSolver, 0.25, 0.02);
+    expect(solver.pendingColliderBones()).toEqual([]);
+
+    const settleReceipt = solver.settle(20);
+    const controlSettleReceipt = controlSolver.settle(20);
+    expect(settleReceipt).toEqual(controlSettleReceipt);
+
+    applyBoneTransforms(solver, 0.35, 0.04);
+    applyBoneTransforms(controlSolver, 0.35, 0.04);
+    expect(solver.step()).toEqual(controlSolver.step());
+
+    // 예외 발생 전 스냅샷
+    const stateBefore = solver.state();
+    const positionsBefore = solver.positions();
+    const hashBefore = solver.stateHash();
+    const rotationsBefore = chainIds.map((id) => cloneRotations(solver.boneRotations(id)));
+    const sliceBefore = chainIds.map((id) => solver.readChainPositions(id).slice());
+
+    // 2. 잘못된 체인 id 및 인덱스 예외 주입
+    expect(() => solver.boneRotations("non-existent-chain")).toThrow(Error);
+    expect(() => solver.boneRotations("")).toThrow(Error);
+    expect(() => solver.readChainPositions("non-existent-chain")).toThrow(Error);
+    for (const invalidIndex of [-1, solver.compiled.model.chainCount, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => backSolveChainRotations(solver.compiled, stateBefore, invalidIndex)).toThrow(RangeError);
+      expect(() =>
+        forwardKinematicsFromRotations(solver.compiled, stateBefore, invalidIndex, rotationsBefore[0] ?? []),
+      ).toThrow(RangeError);
+    }
+
+    // 3. 예외 직후 솔버 내부 버퍼 및 스냅샷 무결성 확인
+    expect(solver.state()).toEqual(stateBefore);
+    expect(solver.positions()).toEqual(positionsBefore);
+    expect(solver.stateHash()).toBe(hashBefore);
+    chainIds.forEach((id, idx) => {
+      expect(solver.boneRotations(id)).toEqual(rotationsBefore[idx]);
+      expect(solver.readChainPositions(id)).toEqual(sliceBefore[idx]);
+    });
+
+    // 4. 다음 프레임 step + settle 복구 및 대조군(clean control) 일치 검증
+    applyBoneTransforms(solver, -0.2, -0.03);
+    applyBoneTransforms(controlSolver, -0.2, -0.03);
+    expect(solver.step()).toEqual(controlSolver.step());
+    expect(solver.settle(16)).toEqual(controlSolver.settle(16));
+
+    expect(solver.state()).toEqual(controlSolver.state());
+    expect(solver.positions()).toEqual(controlSolver.positions());
+    expect(solver.stateHash()).toBe(controlSolver.stateHash());
+    for (const id of chainIds) {
+      const recovered = solver.boneRotations(id);
+      const control = controlSolver.boneRotations(id);
+      expect(recovered).toEqual(control);
+      expect(solver.readChainPositions(id)).toEqual(controlSolver.readChainPositions(id));
+    }
   });
 });
 

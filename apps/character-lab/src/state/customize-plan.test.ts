@@ -6,22 +6,39 @@ import {
   DEFAULT_ACCESSORY_OFFSET,
   DERIVED_CHANNEL_KEYS,
   FACS_UNITS,
+  LOOK_V2_IDENTITY,
   NO_CUSTOM_CAPABILITIES,
+  PART_ROLES,
   createDefaultRecipe,
+  createInitialLabState,
   createKitDefaultRecipe,
   createPresetCatalog,
   customReasonKey,
+  mergeLook,
+  resolveChannelColors,
+  rolePartId,
 } from "../contracts";
 import { createPrng } from "../shared/prng";
 import { stableStringify } from "../shared/stable-json";
-import { vocabularyCatalogEntries } from "../testing/recipe-fixtures";
+import { presetEntryFixture, vocabularyCatalogEntries } from "../testing/recipe-fixtures";
 
-import { materialPresetFor, presetUnavailableReasonKo } from "./apply-plan";
+import {
+  DEFAULT_PART_LAYOUT,
+  createApplyPlanner,
+  materialPresetFor,
+  planApply,
+  planWithPreset,
+  presetUnavailableReasonKo,
+} from "./apply-plan";
 import { addNeutralFacs, layerUnavailableReasonKo, planCustomization } from "./customize-plan";
 import { FACS_ANTAGONISTS, relaxAntagonists } from "./facs-antagonists";
+import { createLabStore } from "./lab-store";
 
 import type {
   AccessoryAnchor,
+  AccessoryInstanceId,
+  ApplyPlan,
+  ArtStylePack,
   ChannelColors,
   CharacterRecipe,
   CustomCapabilities,
@@ -30,6 +47,9 @@ import type {
   PartParams,
   PartScope,
   PartShapeValues,
+  PresetId,
+  RecipeCommand,
+  SlotCapabilityMap,
   Surfaces,
   WardrobeLayer,
 } from "../contracts";
@@ -657,5 +677,549 @@ describe("state/customize-plan & facs-antagonists", () => {
       }
     });
   });
+
+  describe("caller integration contract: apply-plan & lab-store consumption boundary", () => {
+    const SAMPLE_PROPORTION = {
+      headsTall: 7.2,
+      legRatio: 0.5,
+      armRatio: 0.4,
+      shoulderHeads: 1.55,
+      headWidthRatio: 0.84,
+      handScale: 1,
+    } as const;
+
+    function createIntegrationCatalog() {
+      return createPresetCatalog(
+        vocabularyCatalogEntries().map((entry) => {
+          if (entry.id === "eyes/wide") {
+            return presetEntryFixture(entry.id, { patch: { face: { eyeSize: 0.4 } } });
+          }
+          if (entry.id === "top/blazer") {
+            return presetEntryFixture(entry.id, {
+              patch: { body: { shoulderWidth: 0.2 }, colors: { top: "#1f2a44" } },
+            });
+          }
+          return entry;
+        }),
+      );
+    }
+
+    function createSampleStylePack(): ArtStylePack {
+      return {
+        id: "kr-webtoon-romance",
+        revision: 2,
+        labelKo: "웹툰 로맨스",
+        labelEn: "Webtoon romance",
+        proportion: {
+          feminine: SAMPLE_PROPORTION,
+          masculine: { ...SAMPLE_PROPORTION, headsTall: 8.2 },
+        },
+        face: {
+          eyeFamily: "webtoon-almond",
+          eyeWidthToFace: 0.22,
+          eyeOpenRatio: 0.55,
+          irisToEye: 0.5,
+          eyeLine: 0.5,
+          lash: "liner",
+        },
+        toon: { rampSteps: 2, rim: false, outline: "hull" },
+        look: mergeLook(LOOK_V2_IDENTITY, { ramp: { softness: 0.2 }, rim: { strength: 0 } }),
+        palette: { skin: ["#f3d3bd", "#e8bfa5"], hair: ["#2b1d16", "#4a2f24"], saturation: 0.95 },
+      };
+    }
+
+    function planWithoutRevision(plan: ApplyPlan): ApplyPlan {
+      return { ...plan, revision: 0 };
+    }
+
+    it("planCustomization + addNeutralFacs → createApplyPlanner / planApply / planWithPreset 통합 소비 계약을 만족한다", () => {
+      const catalog = createIntegrationCatalog();
+      const custom: CustomCapabilities = {
+        ...NO_CUSTOM_CAPABILITIES,
+        channels: ["lip", "top-trim"],
+        shapes: {
+          hair: ["bangLength", "sideWave"],
+          top: ["waistTaper"],
+          "acc-1": ["lensRound"],
+        },
+        layers: ["inner", "legwear"],
+        anchors: ["face", "head-top"],
+        patternUv: false,
+        hairFlow: false,
+        proportion: "available",
+        reasonsKo: {
+          [customReasonKey("shape", "hair")]: "헤어 미선언 형태 커스텀 사유",
+          [customReasonKey("channel", "outer-accent")]: "아우터 포인트 채널 미지원",
+          [customReasonKey("anchor", "hair")]: "헤어 앵커 미지원",
+          [customReasonKey("patternUv")]: "패턴 UV1 미제공",
+          [customReasonKey("hairFlow")]: "헤어 흐름 UV1 미제공",
+        },
+      };
+
+      const planner = createApplyPlanner({
+        partLayout: DEFAULT_PART_LAYOUT,
+        custom,
+        settleSteps: 12,
+      });
+
+      const base = createKitDefaultRecipe();
+      const recipe: CharacterRecipe = {
+        ...base,
+        slots: {
+          ...base.slots,
+          hair: "hair/soft-bob",
+          top: "top/tee",
+          bottom: "bottom/jeans",
+          shoes: "shoes/sneakers",
+        },
+        body: { height: 0.3 },
+        face: { eyeSize: 0.2 },
+        expression: { mouthFrown: 0.8, browDown: 0.7 },
+        style: {
+          packId: "kr-webtoon-romance",
+          packRevision: 2,
+          proportion: SAMPLE_PROPORTION,
+          neutralFacs: { mouthSmile: 0.25, browInnerUp: 0.3, eyeSquint: 0.2 },
+        },
+        colors: {
+          ...base.colors,
+          lip: "#d06070",
+          "top-trim": "#223344",
+          "outer-accent": "#ffaa00",
+        },
+        wardrobe: {
+          inner: "top/tee",
+          outer: null,
+          legwear: "bottom/shorts",
+          accessories: [
+            { id: "acc-1", presetId: "accessory/glasses", anchor: "face", offset: DEFAULT_ACCESSORY_OFFSET },
+            { id: "acc-2", presetId: "accessory/ribbon", anchor: "hair", offset: DEFAULT_ACCESSORY_OFFSET },
+          ],
+        },
+        partParams: {
+          hair: {
+            unknownCurl: 0.6,
+            bangLength: 0.5,
+            sideWave: -0.35,
+            zeroShape: 0,
+            nanShape: Number.NaN,
+          },
+          top: {
+            undeclaredFlare: 0.45,
+            waistTaper: 0.4,
+          },
+          // 비활성 옷장 층(outer: null)에 남아 있는 형태 값은 partMorphWeights와 unsupportedCustom 모두에서 제외되어야 한다
+          outer: {
+            lapelWidth: 0.9,
+            ventOpen: -0.5,
+          },
+          "acc-1": {
+            lensRound: -0.5,
+          },
+          // 미지원 앵커로 visible=false인 소품(acc-2)의 형태 값도 제외되어야 한다
+          "acc-2": {
+            bowSize: 0.7,
+          },
+        },
+        surfaces: {
+          top: {
+            material: "cloth-silk",
+            pattern: { kind: "stripe", scaleCm: 4, angleDeg: 0, ratio: 0.5, inkChannel: "top-trim" },
+          },
+          hair: {
+            material: "hair-aniso",
+            pattern: null,
+          },
+        },
+        hairColor: {
+          gradient: [0.3, 0.85],
+          tipMix: 0.5,
+          accent: "streak",
+        },
+        physics: {
+          provider: "rapier",
+        },
+      };
+
+      const planBefore = planner(recipe, ALL_AVAILABLE_CAPABILITIES, catalog);
+      const defaultPlan = planApply(recipe, ALL_AVAILABLE_CAPABILITIES, catalog);
+
+      // 1-a. 길항 중립 표정(mouthSmile, browInnerUp)은 억제되고 비길항 중립(eyeSquint)과 명시 표정(mouthFrown, browDown)만 반영된다
+      expect(planBefore.morphWeights["facs:mouthSmile"]).toBeUndefined();
+      expect(planBefore.morphWeights["facs:browInnerUp"]).toBeUndefined();
+      expect(planBefore.morphWeights).toEqual({
+        "param:height:+": 0.3,
+        "param:eyeSize:+": 0.2,
+        "facs:browDown": 0.7,
+        "facs:eyeSquint": 0.2,
+        "facs:mouthFrown": 0.8,
+      });
+      expect(defaultPlan.morphWeights).toEqual(planBefore.morphWeights);
+
+      // 1-b. expression 슬롯 능력이 unavailable일 때 명시·중립 FACS 모두 morphWeights에서 제외되고 unsupported에 기록된다
+      const unavailableExpCaps: SlotCapabilityMap = {
+        ...ALL_AVAILABLE_CAPABILITIES,
+        expression: { status: "unavailable", reasonKo: "표정 슬롯 미지원" },
+      };
+      const planNoExp = planner(recipe, unavailableExpCaps, catalog);
+      expect(Object.keys(planNoExp.morphWeights).filter((key) => key.startsWith("facs:"))).toEqual([]);
+      expect(planNoExp.morphWeights).toEqual({
+        "param:height:+": 0.3,
+        "param:eyeSize:+": 0.2,
+      });
+      expect(planNoExp.unsupported).toEqual([
+        { slot: "expression", presetId: "expression/neutral", reasonKo: "표정 슬롯 미지원" },
+      ]);
+
+      // 1-c. 표면·형태·옷장·액세서리·물리·비례가 ApplyPlan에 계약대로 투영된다
+      expect(planBefore.parts).toHaveLength(PART_ROLES.length);
+      const resolvedColors = resolveChannelColors(recipe.colors);
+      const partByRole = Object.fromEntries(DEFAULT_PART_LAYOUT.map((entry, idx) => [entry.role, planBefore.parts[idx]]));
+      expect(partByRole.top).toEqual({
+        partId: rolePartId("top"),
+        visible: true,
+        materialPreset: "cloth-silk",
+        color: recipe.colors.top,
+      });
+      expect(partByRole.inner).toEqual({
+        partId: rolePartId("inner"),
+        visible: true,
+        materialPreset: "cloth-cotton",
+        color: resolvedColors.inner,
+      });
+      expect(partByRole.outer).toEqual({
+        partId: rolePartId("outer"),
+        visible: false,
+        materialPreset: "cloth-cotton",
+        color: resolvedColors.outer,
+      });
+      expect(partByRole.legwear).toEqual({
+        partId: rolePartId("legwear"),
+        visible: true,
+        materialPreset: "cloth-denim",
+        color: resolvedColors.legwear,
+      });
+
+      expect(planBefore.partMorphWeights).toEqual({
+        "acc-1": { "shape:lensRound:-": 0.5 },
+        hair: { "shape:bangLength:+": 0.5, "shape:sideWave:-": 0.35 },
+        top: { "shape:waistTaper:+": 0.4 },
+      });
+      expect(planBefore.partMorphWeights?.outer).toBeUndefined();
+      expect(planBefore.partMorphWeights?.["acc-2"]).toBeUndefined();
+
+      expect(planBefore.surfaces).toEqual(recipe.surfaces);
+      expect(planBefore.hairColor).toEqual(recipe.hairColor);
+      expect(planBefore.physics).toEqual({ provider: "rapier", settleSteps: 12 });
+      expect(planBefore.proportion).toEqual(SAMPLE_PROPORTION);
+      expect(planBefore.accessories).toEqual([
+        {
+          id: "acc-1",
+          presetId: "accessory/glasses",
+          anchor: "face",
+          offset: DEFAULT_ACCESSORY_OFFSET,
+          materialPreset: "metal",
+          visible: true,
+        },
+        {
+          id: "acc-2",
+          presetId: "accessory/ribbon",
+          anchor: "hair",
+          offset: DEFAULT_ACCESSORY_OFFSET,
+          materialPreset: "cloth-silk",
+          visible: false,
+        },
+      ]);
+      expect(planBefore.unsupportedCustom).toEqual([
+        { kind: "accessory", key: "acc-2", reasonKo: "헤어 앵커 미지원" },
+        { kind: "shape", key: "hair/unknownCurl", reasonKo: "헤어 미선언 형태 커스텀 사유" },
+        { kind: "shape", key: "top/undeclaredFlare", reasonKo: "이 파츠(top)에는 형태 키 undeclaredFlare이(가) 없습니다." },
+        { kind: "channel", key: "outer-accent", reasonKo: "아우터 포인트 채널 미지원" },
+        { kind: "surface", key: "top", reasonKo: "패턴 UV1 미제공" },
+        { kind: "hair-color", key: "hairColor", reasonKo: "헤어 흐름 UV1 미제공" },
+      ]);
+
+      // 1-d. planWithPreset 호출 시 원본 recipe와 이전 ApplyPlan(planBefore)이 변형되지 않는다
+      deepFreeze(recipe);
+      deepFreeze(planBefore);
+      const recipeBeforeJson = stableStringify(recipe);
+      const planBeforeJson = stableStringify(planBefore);
+
+      const previewPlan = planWithPreset(recipe, "top/blazer", ALL_AVAILABLE_CAPABILITIES, catalog, planner);
+      expect(previewPlan.morphWeights["param:shoulderWidth:+"]).toBe(0.2);
+      expect(previewPlan.colors.top).toBe("#1f2a44");
+      expect(stableStringify(recipe)).toBe(recipeBeforeJson);
+      expect(stableStringify(planBefore)).toBe(planBeforeJson);
+    });
+
+    it("createLabStore 소비 경로에서 실패 명령은 기존 상태·ApplyPlan 캐시를 오염시키지 않고 이후 apply/undo/redo 계약을 유지한다", () => {
+      const catalog = createIntegrationCatalog();
+      const custom: CustomCapabilities = {
+        ...NO_CUSTOM_CAPABILITIES,
+        channels: ["lip", "top-trim"],
+        shapes: {
+          hair: ["bangLength", "shapeB", "shapeC", "shapeD", "shapeE", "shapeF", "shapeG", "shapeH"],
+          top: ["waistTaper"],
+          "acc-1": ["lensRound"],
+        },
+        layers: ["inner", "outer", "legwear"],
+        anchors: ["face", "head-top"],
+        patternUv: false,
+        hairFlow: true,
+        proportion: "available",
+        reasonsKo: {
+          [customReasonKey("patternUv")]: "패턴 UV1 미제공",
+        },
+      };
+      const planner = createApplyPlanner({ custom });
+      const stylePack = createSampleStylePack();
+
+      let nowMs = 10_000;
+      const store = createLabStore({
+        catalog,
+        planner,
+        initial: createInitialLabState(createKitDefaultRecipe(), ALL_AVAILABLE_CAPABILITIES),
+        now: () => {
+          nowMs += 1_000;
+          return nowMs;
+        },
+      });
+
+      // 초기 정상 커스터마이징 명령 적용 (hair 범위에는 최대 한도인 8개 형태 키를 채워 9번째 키 추가 실패도 함께 검증)
+      const validSetupCommands: readonly RecipeCommand[] = [
+        { type: "slot/apply", slot: "hair", presetId: "hair/soft-bob" },
+        { type: "slot/apply", slot: "top", presetId: "top/tee" },
+        {
+          type: "style/apply",
+          pack: stylePack,
+          scope: { look: true, proportion: true, face: true, palette: true },
+          figure: "feminine",
+          face: {
+            slots: { eyes: "eyes/wide" },
+            face: { eyeSize: 0.35 },
+            neutralFacs: { mouthSmile: 0.25, browInnerUp: 0.3, eyeSquint: 0.2 },
+          },
+        },
+        { type: "expression/set", weights: { mouthFrown: 0.8, browDown: 0.7 }, merge: false },
+        {
+          type: "surface/set",
+          channel: "top",
+          surface: {
+            material: "cloth-silk",
+            pattern: { kind: "stripe", scaleCm: 4, angleDeg: 0, ratio: 0.5, inkChannel: "top-trim" },
+          },
+        },
+        { type: "part-param/set", scope: "hair", shape: "bangLength", value: 0.5 },
+        { type: "part-param/set", scope: "hair", shape: "shapeB", value: 0.1 },
+        { type: "part-param/set", scope: "hair", shape: "shapeC", value: 0.15 },
+        { type: "part-param/set", scope: "hair", shape: "shapeD", value: -0.2 },
+        { type: "part-param/set", scope: "hair", shape: "shapeE", value: 0.25 },
+        { type: "part-param/set", scope: "hair", shape: "shapeF", value: -0.3 },
+        { type: "part-param/set", scope: "hair", shape: "shapeG", value: 0.35 },
+        { type: "part-param/set", scope: "hair", shape: "shapeH", value: -0.4 },
+        { type: "wardrobe/set", layer: "inner", presetId: "top/tee" },
+        { type: "accessory/add", presetId: "accessory/glasses", anchor: "face" },
+      ];
+
+      for (const cmd of validSetupCommands) {
+        store.dispatch(cmd);
+      }
+      expect(store.getState().failures).toEqual([]);
+
+      const validRecipeRef = deepFreeze(store.getState().recipe);
+      const validRecipeJson = stableStringify(validRecipeRef);
+      const validHistorySnapshot = { ...store.getState().history };
+      const validPastCount = store.getHistory().depth();
+      const validFutureCount = store.getHistory().redoDepth();
+      const validPlanBefore = deepFreeze(store.getPlan());
+      const validPlanJson = stableStringify(validPlanBefore);
+
+      expect(validPlanBefore.morphWeights).toMatchObject({
+        "param:eyeSize:+": 0.35,
+        "facs:browDown": 0.7,
+        "facs:eyeSquint": 0.2,
+        "facs:mouthFrown": 0.8,
+      });
+      expect(validPlanBefore.morphWeights["facs:mouthSmile"]).toBeUndefined();
+      expect(validPlanBefore.morphWeights["facs:browInnerUp"]).toBeUndefined();
+
+      // 연속 실패 명령 디스패치 시나리오 (1~7)
+      const invalidStylePack = {
+        ...stylePack,
+        revision: 0,
+        look: {
+          ...stylePack.look,
+          line: { ...stylePack.look.line, widthMm: Number.NaN },
+        },
+      } as ArtStylePack;
+
+      const failingCases: ReadonlyArray<{ readonly command: RecipeCommand; readonly expectedCode: string }> = [
+        // 1. 잘못된 슬롯 프리셋 적용
+        {
+          command: { type: "slot/apply", slot: "hair", presetId: "hair/non-existent-preset" as PresetId },
+          expectedCode: "command-preset-unknown",
+        },
+        // 2. 잘못된 채널 색상 형식 및 기본 채널 null 해제 시도
+        {
+          command: { type: "channel/set", key: "hair", value: "not-a-hex-color" },
+          expectedCode: "command-color-invalid",
+        },
+        {
+          command: { type: "channel/set", key: "hairBase" as "hair", value: "#112233" },
+          expectedCode: "command-channel-key",
+        },
+        {
+          command: { type: "channel/set", key: "skin", value: null },
+          expectedCode: "command-channel-required",
+        },
+        // 3. 표면 본색과 윤곽선(패턴 inkChannel) 채널 충돌
+        {
+          command: {
+            type: "surface/set",
+            channel: "hair",
+            surface: {
+              material: "hair-aniso",
+              pattern: { kind: "stripe", scaleCm: 3, angleDeg: 0, ratio: 0.5, inkChannel: "hair" },
+            },
+          },
+          expectedCode: "command-surface-ink",
+        },
+        // 4. 형태 파라미터 비유한 값(NaN) 및 한 부위 8개 초과(9번째 키 추가)
+        {
+          command: { type: "part-param/set", scope: "hair", shape: "bangLength", value: Number.NaN },
+          expectedCode: "command-param-value",
+        },
+        {
+          command: { type: "part-param/set", scope: "hair", shape: "ninthShapeKey", value: 0.45 },
+          expectedCode: "command-part-param-limit",
+        },
+        // 5. 옷장 층과 맞지 않는 슬롯 프리셋
+        {
+          command: { type: "wardrobe/set", layer: "outer", presetId: "shoes/sneakers" },
+          expectedCode: "command-slot-mismatch",
+        },
+        // 6. 존재하지 않는 액세서리 삭제/수정
+        {
+          command: { type: "accessory/remove", id: "missing-acc-id" as AccessoryInstanceId },
+          expectedCode: "command-accessory-unknown",
+        },
+        {
+          command: { type: "accessory/set", id: "acc-99", anchor: "neck" },
+          expectedCode: "command-accessory-unknown",
+        },
+        // 7. 잘못된 화풍 팩 적용
+        {
+          command: {
+            type: "style/apply",
+            pack: invalidStylePack,
+            scope: { look: true, proportion: false, face: false, palette: false },
+            figure: "feminine",
+          },
+          expectedCode: "command-style-pack-invalid",
+        },
+      ];
+
+      for (let i = 0; i < failingCases.length; i += 1) {
+        const { command, expectedCode } = failingCases[i]!;
+        expect(() => store.dispatch(command)).not.toThrow();
+
+        const stateAfterFail = store.getState();
+        expect(stateAfterFail.failures).toHaveLength(i + 1);
+        const latestFailure = stateAfterFail.failures[i]!;
+        expect(latestFailure.code).toBe(expectedCode);
+        expect(latestFailure.reasonKo).toMatch(/[가-힣]/u);
+
+        // 레시피·히스토리·ApplyPlan 참조 및 직렬화 바이트 100% 보존 확인
+        expect(stateAfterFail.recipe).toBe(validRecipeRef);
+        expect(stableStringify(stateAfterFail.recipe)).toBe(validRecipeJson);
+        expect(stateAfterFail.history).toEqual(validHistorySnapshot);
+        expect(store.getHistory().depth()).toBe(validPastCount);
+        expect(store.getHistory().redoDepth()).toBe(validFutureCount);
+
+        const planAfterFail = store.getPlan();
+        expect(planAfterFail).toBe(validPlanBefore);
+        expect(stableStringify(planAfterFail)).toBe(validPlanJson);
+      }
+
+      // 실패 이후 정상 명령(expression/set → surface/set → part-param/set) 및 history/undo · history/redo 복원 계약 검증
+      store.dispatch({
+        type: "expression/set",
+        weights: { jawOpen: 0.6, eyeWide: 0.5 },
+        merge: false,
+      });
+      const recipeStep1 = deepFreeze(store.getState().recipe);
+      const planStep1 = deepFreeze(store.getPlan());
+      expect(planStep1.morphWeights["facs:jawOpen"]).toBe(0.6);
+      expect(planStep1.morphWeights["facs:eyeWide"]).toBe(0.5);
+      // eyeWide와 길항인 중립 eyeSquint는 억제되고, mouthFrown이 해제되었으므로 중립 mouthSmile(0.25)·browInnerUp(0.3)은 복원된다
+      expect(planStep1.morphWeights["facs:eyeSquint"]).toBeUndefined();
+      expect(planStep1.morphWeights["facs:mouthSmile"]).toBe(0.25);
+      expect(planStep1.morphWeights["facs:browInnerUp"]).toBe(0.3);
+
+      store.dispatch({
+        type: "surface/set",
+        channel: "top",
+        surface: { material: "cloth-denim", pattern: null },
+      });
+      const recipeStep2 = deepFreeze(store.getState().recipe);
+      const planStep2 = deepFreeze(store.getPlan());
+      expect(planStep2.surfaces?.top).toEqual({ material: "cloth-denim", pattern: null });
+      expect(planStep2.parts.find((p) => p.partId === rolePartId("top"))?.materialPreset).toBe("cloth-denim");
+      expect(planStep2.unsupportedCustom).toEqual([]);
+
+      store.dispatch({
+        type: "part-param/set",
+        scope: "hair",
+        shape: "bangLength",
+        value: -0.65,
+      });
+      const recipeStep3 = deepFreeze(store.getState().recipe);
+      const planStep3 = deepFreeze(store.getPlan());
+      expect(planStep3.partMorphWeights?.hair?.["shape:bangLength:-"]).toBe(0.65);
+      expect(planStep3.partMorphWeights?.hair?.["shape:bangLength:+"]).toBeUndefined();
+      expect(store.getHistory().depth()).toBe(validPastCount + 3);
+      expect(store.getHistory().redoDepth()).toBe(0);
+
+      // 단계별 history/undo: Step3 → Step2 → Step1 → validPlanBefore
+      store.dispatch({ type: "history/undo" });
+      expect(store.getState().recipe).toBe(recipeStep2);
+      expect(planWithoutRevision(store.getPlan())).toEqual(planWithoutRevision(planStep2));
+      expect(store.getHistory().depth()).toBe(validPastCount + 2);
+      expect(store.getHistory().redoDepth()).toBe(1);
+
+      store.dispatch({ type: "history/undo" });
+      expect(store.getState().recipe).toBe(recipeStep1);
+      expect(planWithoutRevision(store.getPlan())).toEqual(planWithoutRevision(planStep1));
+      expect(store.getHistory().depth()).toBe(validPastCount + 1);
+      expect(store.getHistory().redoDepth()).toBe(2);
+
+      store.dispatch({ type: "history/undo" });
+      expect(store.getState().recipe).toBe(validRecipeRef);
+      expect(planWithoutRevision(store.getPlan())).toEqual(planWithoutRevision(validPlanBefore));
+      expect(store.getHistory().depth()).toBe(validPastCount);
+      expect(store.getHistory().redoDepth()).toBe(3);
+
+      // 단계별 history/redo: validPlanBefore → Step1 → Step2 → Step3
+      store.dispatch({ type: "history/redo" });
+      expect(store.getState().recipe).toBe(recipeStep1);
+      expect(planWithoutRevision(store.getPlan())).toEqual(planWithoutRevision(planStep1));
+      expect(store.getHistory().depth()).toBe(validPastCount + 1);
+      expect(store.getHistory().redoDepth()).toBe(2);
+
+      store.dispatch({ type: "history/redo" });
+      expect(store.getState().recipe).toBe(recipeStep2);
+      expect(planWithoutRevision(store.getPlan())).toEqual(planWithoutRevision(planStep2));
+      expect(store.getHistory().depth()).toBe(validPastCount + 2);
+      expect(store.getHistory().redoDepth()).toBe(1);
+
+      store.dispatch({ type: "history/redo" });
+      expect(store.getState().recipe).toBe(recipeStep3);
+      expect(planWithoutRevision(store.getPlan())).toEqual(planWithoutRevision(planStep3));
+      expect(store.getState().history.canRedo).toBe(false);
+      expect(store.getHistory().depth()).toBe(validPastCount + 3);
+      expect(store.getHistory().redoDepth()).toBe(0);
+    });
+  });
 });
+
 
