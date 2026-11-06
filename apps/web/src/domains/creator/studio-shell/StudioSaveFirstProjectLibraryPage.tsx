@@ -565,9 +565,9 @@ export function StudioSaveFirstProjectLibraryPage({
                         <button type="button" onClick={() => { void savePackage(project); }} disabled={busyProjectId === project.id} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}><Download size={15} aria-hidden="true" />{locale === "ko" ? "저장" : "Save"}</button>
                         <button type="button" onClick={() => duplicateProject(project)} aria-label={locale === "ko" ? "프로젝트 복제" : "Duplicate project"} className={buttonClass({ variant: "quiet", size: "icon" })}><Copy size={15} aria-hidden="true" /></button>
                       </div>
-                      <div className="mt-2 flex flex-wrap justify-end gap-2">
-                        <button type="button" onClick={() => { library.archive(project.id); }} className="text-[0.68rem] font-semibold text-fg-3 hover:text-fg">{bt("보관", "Archive")}</button>
-                        <button type="button" onClick={() => { library.trash(project.id); }} className="text-[0.68rem] font-semibold text-danger">{bt("휴지통", "Trash")}</button>
+                      <div className="mt-2 flex flex-wrap items-center justify-end gap-1.5">
+                        <button type="button" onClick={() => { library.archive(project.id); }} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-fg-3 hover:bg-raised hover:text-fg">{bt("보관", "Archive")}</button>
+                        <button type="button" onClick={() => { library.trash(project.id); }} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-danger hover:bg-danger-soft/20">{bt("휴지통", "Trash")}</button>
                       </div>
                     </article>
                   );

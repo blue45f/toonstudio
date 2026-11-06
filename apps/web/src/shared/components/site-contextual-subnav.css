@@ -129,6 +129,61 @@
   }
 }
 
+@media (max-width: 1023px) {
+  .site-contextual-subnav {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .site-contextual-subnav__list {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .site-contextual-subnav__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .site-contextual-subnav__list > li {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 639px) {
+  .site-contextual-subnav {
+    gap: 6px;
+    min-height: 48px;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .site-contextual-subnav__header {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 6px;
+    font-size: 0.6875rem;
+    white-space: normal;
+  }
+
+  .site-contextual-subnav__simplicity {
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .site-contextual-subnav__link {
+    min-height: 38px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+}
+
 /* 서피스별 시각 이펙트 프리셋 (Aurora Glass, Cinema Shimmer, Studio Neon Prism 등) */
 .site-contextual-subnav[data-visual-preset="aurora-glass-spotlight"] {
   background:

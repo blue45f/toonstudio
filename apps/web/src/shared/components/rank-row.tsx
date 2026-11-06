@@ -45,7 +45,7 @@ export function MiniPoster({
           className="absolute inset-0 size-full object-cover contrast-[1.03] saturate-[1.04]"
         />
       ) : (
-        <span className="relative">{title.title.charAt(0)}</span>
+        <span aria-hidden="true" className="relative">{title.title.charAt(0)}</span>
       )}
       <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,oklch(0.13_0.012_70/0.62),transparent_58%)]" />
       <span className="pointer-events-none absolute inset-x-1.5 top-1.5 h-px bg-[oklch(0.95_0.01_85/0.24)]" />

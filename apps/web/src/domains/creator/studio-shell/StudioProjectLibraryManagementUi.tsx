@@ -326,14 +326,14 @@ export function StudioProjectLibraryCard({
           <Copy size={15} aria-hidden="true" />
         </button>
       </div>
-      <div className="mt-2 flex flex-wrap justify-end gap-3">
-        <Link href={overviewHref} className="text-[0.68rem] font-semibold text-accent hover:underline">
+      <div className="mt-2 flex flex-wrap items-center justify-end gap-1.5">
+        <Link href={overviewHref} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-accent hover:bg-accent-soft/30 hover:underline">
           {bi("프로젝트 관리", "Manage project")}
         </Link>
-        <button type="button" onClick={onArchive} className="text-[0.68rem] font-semibold text-fg-3 hover:text-fg">
+        <button type="button" onClick={onArchive} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-fg-3 hover:bg-raised hover:text-fg">
           {bi("보관", "Archive")}
         </button>
-        <button type="button" onClick={onTrash} className="text-[0.68rem] font-semibold text-danger">
+        <button type="button" onClick={onTrash} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-danger hover:bg-danger-soft/20">
           {bi("휴지통", "Trash")}
         </button>
       </div>

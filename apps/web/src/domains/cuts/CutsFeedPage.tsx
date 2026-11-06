@@ -447,14 +447,14 @@ export function CutsFeedPage() {
           <span className="hidden rounded-full bg-black/45 px-2.5 py-1 text-[0.72rem] font-medium text-white/75 md:inline-block">
             {t("↑/↓ 클립 이동 · M 음소거 토글", "↑/↓ move · M toggle mute")}
           </span>
-          <Link href="/showcase/promo" className="cuts-feed__rewards">
+          <Link href="/showcase/promo" className="cuts-feed__rewards whitespace-nowrap">
             {t("예고편 스튜디오", "Promo studio")}
           </Link>
-          <Link href="/cuts/rewards" className="cuts-feed__rewards">
+          <Link href="/cuts/rewards" className="cuts-feed__rewards whitespace-nowrap">
             <Coins size={15} aria-hidden="true" />
             {t("리워드", "Rewards")}
           </Link>
-          <Link href="/cuts/studio" className="cuts-feed__make">
+          <Link href="/cuts/studio" className="cuts-feed__make whitespace-nowrap">
             <Clapperboard size={16} aria-hidden="true" />
             {t("클립 만들기", "Create clip")}
           </Link>
@@ -469,7 +469,7 @@ export function CutsFeedPage() {
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("모션 엔진 선택", "Motion Engine Selection")}>
-              <span className="bg-card font-extrabold text-warn">{t("모션 엔진:", "Motion Engine:")}</span>
+              <span className="shrink-0 whitespace-nowrap rounded-md bg-white/10 px-2 py-0.5 font-extrabold text-warn">{t("모션 엔진:", "Motion Engine:")}</span>
               {([
                 { id: "rive-statemachine", ko: "Rive 60fps 상태머신·Spine 2.5D", en: "Rive 60fps State Machine & Spine 2.5D" },
                 { id: "kling-pikaframes", ko: "Kling 1.6 모션브러시·Pikaframes", en: "Kling 1.6 Motion Brush & Pikaframes" },
@@ -490,7 +490,7 @@ export function CutsFeedPage() {
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("더빙 및 음향 마스터링", "Dubbing & Audio Mastering")}>
-              <span className="bg-card font-extrabold text-cool">{t("더빙·사운드:", "Dubbing & Audio:")}</span>
+              <span className="shrink-0 whitespace-nowrap rounded-md bg-white/10 px-2 py-0.5 font-extrabold text-cool">{t("더빙·사운드:", "Dubbing & Audio:")}</span>
               {([
                 { id: "rask-heygen-130lang", ko: "Rask·HeyGen 130개국어 보이스클로닝", en: "Rask/HeyGen 130-Lang Voice Clone" },
                 { id: "audio2face-rhubarb", ko: "Audio2Face·Rhubarb 6음소 립싱크", en: "Audio2Face/Rhubarb 6-Viseme Lip-Sync" },

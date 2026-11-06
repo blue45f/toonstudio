@@ -450,7 +450,7 @@ export function CalendarPage() {
             <div
               role="tablist"
               aria-label={bt("요일 선택", "Choose a day")}
-              className="rail -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1"
+              className="rail -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-7 sm:overflow-visible sm:px-0"
             >
               {days.map(({ day, items }, index) => {
                 const on = index === selDay;
@@ -467,7 +467,7 @@ export function CalendarPage() {
                     onKeyDown={(event) => onDayKey(event, index)}
                     onClick={() => setSelectedDayIdx(index)}
                     className={cn(
-                      "relative inline-flex min-h-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border px-4 py-2 transition-colors",
+                      "relative inline-flex min-h-12 shrink-0 flex-col items-center justify-center gap-0.5 whitespace-nowrap rounded-xl border px-4 py-2 transition-colors sm:px-2",
                       on
                         ? "border-accent/60 text-fg"
                         : "border-line bg-panel/30 text-fg-2 hover:bg-raised"

@@ -393,7 +393,7 @@ export function ExplorePage() {
                     }}
                     aria-pressed={active}
                     className={cn(
-                      "inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 text-sm font-medium",
+                      "inline-flex min-h-11 items-center whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium",
                       "transition-[transform,background-color,border-color,box-shadow] duration-200 ease-out-expo",
                       "hover:-translate-y-px active:scale-[0.96]",
                       active && "ring-1",
@@ -416,7 +416,7 @@ export function ExplorePage() {
                 <button
                   type="button"
                   onClick={() => setShowAllGenres(true)}
-                  className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
+                  className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
                 >
                   {formatI18nTemplate(bt("모든 장르 보기 · {v0}개", "Show all genres · {v0}"), { v0: GENRES.length - visibleGenres.length })}
                 </button>
@@ -424,7 +424,7 @@ export function ExplorePage() {
                 <button
                   type="button"
                   onClick={() => setShowAllGenres(false)}
-                  className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
+                  className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
                 >
                   {bt("자주 쓰는 장르만 보기", "Show common genres only")}
                 </button>
@@ -469,7 +469,7 @@ export function ExplorePage() {
                   }}
                   aria-pressed={active}
                   className={cn(
-                    "group inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.96]",
+                    "group inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.96]",
                     active
                       ? "border-accent/60 bg-accent-soft text-accent shadow-[0_4px_16px_-8px_oklch(0.72_0.185_42/0.5)]"
                       : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
@@ -493,7 +493,7 @@ export function ExplorePage() {
               <button
                 type="button"
                 onClick={() => setShowAllTags(true)}
-                className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
               >
                 {formatI18nTemplate(bt("태그 더 보기 · {v0}개", "Show more tags · {v0}"), { v0: hiddenTagCount })}
               </button>
@@ -501,7 +501,7 @@ export function ExplorePage() {
               <button
                 type="button"
                 onClick={() => setShowAllTags(false)}
-                className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
+                className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
               >
                 {bt("주요 태그만 보기", "Show main tags only")}
               </button>
@@ -534,7 +534,7 @@ export function ExplorePage() {
                     }
                     aria-pressed={active}
                     className={cn(
-                      "min-h-11 rounded-md px-3 py-1 text-sm font-medium transition-colors duration-150",
+                      "min-h-11 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors duration-150",
                       active
                         ? "bg-accent text-on-accent"
                         : "text-fg-2 hover:text-fg",
@@ -546,7 +546,7 @@ export function ExplorePage() {
               })}
             </div>
 
-            <div className="flex items-center gap-1" role="group" aria-label={bt("정렬", "Sort")}>
+            <div className="flex flex-wrap items-center gap-1" role="group" aria-label={bt("정렬", "Sort")}>
               {SORTS.map((entry) => {
                 const active = entry.key === sort;
                 return (
@@ -556,7 +556,7 @@ export function ExplorePage() {
                     onClick={() => changeSort(entry.key)}
                     aria-pressed={active}
                     className={cn(
-                      "min-h-11 rounded-md px-2.5 py-1 text-sm transition-colors duration-150",
+                      "min-h-11 whitespace-nowrap rounded-md px-2.5 py-1 text-sm transition-colors duration-150",
                       active
                         ? "font-semibold text-fg"
                         : "font-medium text-fg-3 hover:text-fg-2",

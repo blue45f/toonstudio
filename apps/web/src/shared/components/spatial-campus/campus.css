@@ -90,10 +90,22 @@
  .fortune-campus-directory button{flex:none}
 }
 
+@media(min-width:761px) and (max-width:1100px){
+ .campus-controls{flex-wrap:nowrap;gap:6px}
+ .campus-controls>.campus-control:first-child{min-width:44px;padding-inline:10px}
+ .campus-controls>.campus-control:first-child>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+ .campus-controls>select{max-width:200px}
+ .campus-privacy-toggle{white-space:nowrap;flex-shrink:0}
+}
 @media(max-width:760px){
+ .campus-controls{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+ .campus-controls::-webkit-scrollbar{display:none}
+ .campus-controls>*{flex-shrink:0}
  .campus-controls>select{display:none}
- .campus-controls>.campus-control:first-child{max-width:calc(100% - 156px)}
+ .campus-controls>.campus-control:first-child{flex:0 1 auto;min-width:44px;max-width:calc(100% - 196px)}
  .campus-controls>.campus-control:first-child>span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+ .campus-privacy-toggle{min-width:44px;padding-inline:10px;white-space:nowrap}
+ .campus-privacy-toggle>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
  .campus-room>header{display:none}
  .campus-room-art{grid-row:1;grid-column:1/-1;min-height:120px;height:120px}
  .campus-room-destinations{grid-row:2;grid-column:1/-1;padding-top:6px}

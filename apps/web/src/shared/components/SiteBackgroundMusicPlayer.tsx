@@ -118,8 +118,20 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
   const focusedTask = taskRoute?.chrome === "focused";
   const [dock, setDock] = useState<HTMLElement | null>(null);
   useEffect(() => {
-    setDock(taskRoute && !focusedTask ? document.getElementById("workspace-audio-dock") : null);
-  }, [focusedTask, taskRoute]);
+    if (focusedTask) {
+      setDock(null);
+      return;
+    }
+    const syncDock = () => {
+      const next = document.getElementById("workspace-audio-dock");
+      setDock((current) => (current === next ? current : next));
+    };
+    syncDock();
+    if (typeof MutationObserver === "undefined" || !document.body) return;
+    const observer = new MutationObserver(syncDock);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [focusedTask, pathname, search, taskRoute]);
   const lang = useI18n((state) => state.lang);
   const korean = lang.startsWith("ko");
   const experience = useMemo(() => resolveSiteBgmExperience(pathname), [pathname]);
