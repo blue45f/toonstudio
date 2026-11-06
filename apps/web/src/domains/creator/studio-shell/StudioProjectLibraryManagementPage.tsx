@@ -48,16 +48,26 @@ function StudioLibraryPersonalizeDetails() {
 
 export function StudioProjectLibraryManagementPage() {
   const controller = useStudioProjectLibraryManagementController();
+  const bt = useBilingual("StudioProjectLibraryManagementPage");
   return (
     <div data-studio-illustrated-surface="library" data-route-ready="studio-project-library" className="studio-visual-identity-page min-h-[calc(100vh-4rem)] min-w-0 bg-bg">
       <Suspense fallback={null}>
         <VoiceGuideButton scriptId="studio" variant="fixed" />
       </Suspense>
       <Container size="wide" className="min-w-0 py-7 sm:py-11">
-        {controller.view === "active" ? <StudioCreatorLobby controller={controller} /> : null}
         <StudioProjectLibraryManagementHeader controller={controller} />
         <StudioProjectLibraryManagementContent controller={controller} />
-        {controller.view === "active" ? <StudioLibraryPersonalizeDetails /> : null}
+        {controller.view === "active" ? (
+          <>
+            <details className="mt-6 min-w-0 rounded-2xl border border-line bg-card p-4">
+              <summary className="min-h-11 cursor-pointer rounded-lg py-3 text-sm font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+                {bt("시작 가이드와 추천 도구", "Getting started and recommended tools")}
+              </summary>
+              <StudioCreatorLobby controller={controller} />
+            </details>
+            <StudioLibraryPersonalizeDetails />
+          </>
+        ) : null}
       </Container>
       <StudioProjectLibraryManagementDialogs controller={controller} />
     </div>

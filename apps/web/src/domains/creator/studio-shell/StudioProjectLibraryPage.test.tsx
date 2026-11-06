@@ -41,6 +41,32 @@ afterEach(() => {
 });
 
 describe("StudioProjectLibraryPage", () => {
+  it("기본 접힌 시작 안내보다 작업과 핵심 동선을 먼저 보여 준다", () => {
+    render(
+      <MemoryRouter initialEntries={["/studio"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+
+    const title = screen.getByRole("heading", { level: 1, name: /내 작업|My work/u });
+    const summary = screen.getByText(/시작 가이드와 추천 도구|Getting started and recommended tools/u);
+    const guide = summary.closest("details");
+    expect(guide?.open).toBe(false);
+    expect(title.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const toolbar = title.closest("section");
+    if (!toolbar) throw new Error("내 작업 제목을 포함한 도구 영역이 없습니다.");
+    expect(within(toolbar).getByRole("link", { name: /^새 작업$|^New work$/u }).getAttribute("href")).toBe("/create");
+    expect(within(toolbar).getByRole("link", { name: /^파일 가져오기$|^Import files$/u }).getAttribute("href")).toBe("/studio/import");
+
+    fireEvent.click(summary);
+    expect(guide?.open).toBe(true);
+    expect(screen.getByRole("heading", { level: 2, name: /오늘은 어떤 이야기를 만들까요|What story will you create today/u })).toBeTruthy();
+    fireEvent.click(summary);
+    expect(guide?.open).toBe(false);
+    fireEvent.click(summary);
+    expect(guide?.open).toBe(true);
+  });
+
   it("separates temporary autosaves and opens destination choice on the first explicit save", async () => {
     createStudioProject(window.localStorage, {
       id: "series-alpha",
@@ -215,6 +241,7 @@ describe("StudioProjectLibraryPage", () => {
         .toEqual([EXAMPLE_PROJECT_ID, SAMPLE_PROJECT_ID].sort());
     });
     // 로비는 심긴 작품도 같은 규칙으로 "최근 프로젝트"에 올린다.
+    fireEvent.click(screen.getByText(/시작 가이드와 추천 도구|Getting started and recommended tools/u));
     const lobby = screen.getByRole("region", { name: /툰스튜디오 크리에이터 로비|ToonStudio creator lobby/u });
     const recent = await within(lobby).findByRole("region", { name: /최근 프로젝트|Recent projects/u });
     await waitFor(() => {

@@ -6,6 +6,7 @@ import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
+import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 import { STUDIO_LIBRARY_SECTION_ID } from "./studio-creator-lobby-model";
 import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryManagementViewHref, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
@@ -36,15 +37,9 @@ export function StudioProjectLibraryManagementHeader({
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-accent">{translateCurrentStaticSourceText("domains.creator.studio.shell.StudioProjectLibraryManagementHeader", "en", "TOONSTUDIO")}</p>
-          {view === "active" ? (
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-fg sm:text-4xl">
-              {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
-            </h2>
-          ) : (
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-fg sm:text-4xl">
-              {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
-            </h1>
-          )}
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-fg sm:text-4xl">
+            {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
+          </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2 sm:text-base">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
           </p>
@@ -53,18 +48,13 @@ export function StudioProjectLibraryManagementHeader({
           <Link href="/production" className={buttonClass({ variant: "quiet" })}>
             {bi("제작 관리", "Production management")}
           </Link>
-          {/* 활성 뷰에서는 바로 위 로비가 같은 시작 동선(새 작품·가져오기)을 제공하므로 여기서는 중복 버튼을 두지 않는다. */}
-          {view !== "active" ? (
-            <>
-              <Link href="/studio/import" className={buttonClass({ variant: "outline" })}>
-                {bi("파일 가져오기", "Import files")}
-              </Link>
-              <Link href="/studio/new" className={buttonClass({ className: "gap-2" })}>
-                <Plus size={16} aria-hidden="true" />
-                {bi("새 작업", "New work")}
-              </Link>
-            </>
-          ) : null}
+          <Link href="/studio/import" className={buttonClass({ variant: "outline" })}>
+            {bi("파일 가져오기", "Import files")}
+          </Link>
+          <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"} className={buttonClass({ className: "gap-2" })}>
+            <Plus size={16} aria-hidden="true" />
+            {bi("새 작업", "New work")}
+          </Link>
         </div>
       </header>
 

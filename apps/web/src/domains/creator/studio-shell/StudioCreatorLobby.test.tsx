@@ -39,12 +39,14 @@ function LocationProbe() {
 }
 
 function renderHome() {
-  return render(
+  const result = render(
     <MemoryRouter initialEntries={["/studio"]}>
       <StudioProjectLibraryPage />
       <LocationProbe />
     </MemoryRouter>,
   );
+  fireEvent.click(screen.getByText(/시작 가이드와 추천 도구|Getting started and recommended tools/u));
+  return result;
 }
 
 function lobby(): HTMLElement {
