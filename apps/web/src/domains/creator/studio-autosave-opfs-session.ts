@@ -703,6 +703,17 @@ function discardAutosaveBrowserCompatibility(
   }
 }
 
+function isAbortError(cause: unknown): boolean {
+  if (!cause || typeof cause !== "object") return false;
+  return (cause as { name?: unknown }).name === "AbortError" || (cause as { code?: unknown }).code === "ABORTED";
+}
+
+function throwIfSignalAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  if (isAbortError(signal.reason)) throw signal.reason;
+  throw new DOMException("Studio autosave operation was aborted.", "AbortError");
+}
+
 export async function persistStudioAutosaveWithOpfsPrimary(input: {
   readonly session: StudioAutosaveOpfsSession | null;
   readonly sqlite?: StudioAutosaveSqlitePort | null;
@@ -718,8 +729,9 @@ export async function persistStudioAutosaveWithOpfsPrimary(input: {
    */
   readonly onDurableAuthorityDegraded?: (cause: unknown) => void;
 }): Promise<StudioAutosavePersistenceReceipt> {
-  const snapshotIsCurrent = () => input.isCurrent?.() !== false;
+  const snapshotIsCurrent = () => input.isCurrent?.() !== false && !input.signal?.aborted;
   const throwIfSnapshotStale = () => {
+    throwIfSignalAborted(input.signal);
     if (!snapshotIsCurrent()) {
       throw new DOMException("Studio autosave snapshot was superseded.", "AbortError");
     }
@@ -742,7 +754,7 @@ export async function persistStudioAutosaveWithOpfsPrimary(input: {
       if (snapshotIsCurrent()) discardAutosaveBrowserCompatibility(input.storage, input.key);
       return receipt;
     } catch (cause: unknown) {
-      if (cause instanceof StudioAutosaveUnsupportedVersionError) throw cause;
+      if (cause instanceof StudioAutosaveUnsupportedVersionError || isAbortError(cause)) throw cause;
       if (studioAutosaveDocumentBusy(cause)) {
         // 다른 탭이 이 원고의 leader다. SQLite 우회는 포크를 만든다. Jam 팔로워에게는
         // 예상된 상태이므로 저장 실패 배너를 올리지 않고 busy만 전파한다.
@@ -750,6 +762,7 @@ export async function persistStudioAutosaveWithOpfsPrimary(input: {
           ? cause
           : new StudioAutosaveDocumentBusyError(cause);
       }
+      throwIfSignalAborted(input.signal);
       durableFailure = cause;
     }
   }
@@ -767,12 +780,11 @@ export async function persistStudioAutosaveWithOpfsPrimary(input: {
         revision: null,
       });
     } catch (cause: unknown) {
+      if (isAbortError(cause)) throw cause;
+      throwIfSignalAborted(input.signal);
       durableFailure = durableFailure === null
         ? cause
-        : new AggregateError(
-            [durableFailure, cause],
-            "OPFS journal and SQLite autosave authorities both failed",
-          );
+        : new AggregateError([durableFailure, cause], "OPFS journal and SQLite autosave authorities both failed");
     }
   }
   throwIfSnapshotStale();
@@ -794,13 +806,10 @@ export async function reconcileStudioAutosaveWithOpfsPrimary(input: {
   readonly allowLegacy?: boolean;
   readonly signal?: AbortSignal;
 }): Promise<StudioAutosaveReconciliation> {
+  throwIfSignalAborted(input.signal);
   let compatibilityCandidate: StudioAutosaveRecoveryCandidate | null = null;
   try {
-    compatibilityCandidate = browserRecoveryCandidate(readStudioAutosave(
-      input.storage,
-      input.key,
-      input.allowLegacy ?? false,
-    ));
+    compatibilityCandidate = browserRecoveryCandidate(readStudioAutosave(input.storage, input.key, input.allowLegacy ?? false));
   } catch (cause) {
     if (cause instanceof StudioAutosaveUnsupportedVersionError) throw cause;
     // Browser storage is a compatibility input only. Its denial must never hide OPFS/SQLite data.
@@ -818,49 +827,42 @@ export async function reconcileStudioAutosaveWithOpfsPrimary(input: {
   let sqliteReadable = false;
   if (input.sqlite) {
     try {
+      throwIfSignalAborted(input.signal);
       const sqliteResult: StudioAutosaveSqliteReadResult = await input.sqlite.read(input.key);
+      throwIfSignalAborted(input.signal);
       sqliteReadable = true;
       if (sqliteResult) {
         candidates.push(Object.freeze({
-          key: input.key,
-          source: "sqlite-fallback",
-          state: sqliteResult.state,
-          savedAt: sqliteResult.savedAt,
-          payload: sqliteResult.state === "snapshot" ? sqliteResult.payload : null,
-          sequence: null,
-          revision: null,
+          key: input.key, source: "sqlite-fallback", state: sqliteResult.state, savedAt: sqliteResult.savedAt,
+          payload: sqliteResult.state === "snapshot" ? sqliteResult.payload : null, sequence: null, revision: null,
         }));
       }
     } catch (cause) {
-      if (cause instanceof StudioAutosaveUnsupportedVersionError) throw cause;
+      if (cause instanceof StudioAutosaveUnsupportedVersionError || isAbortError(cause)) throw cause;
+      throwIfSignalAborted(input.signal);
       // 손상/개방 실패 SQLite 행은 덮어쓰지 않고 다른 권위로 복구한다.
     }
   }
   let opfsReadable = false;
   if (input.session) {
     try {
+      throwIfSignalAborted(input.signal);
       const durable = await input.session.readLatest(input.signal);
+      throwIfSignalAborted(input.signal);
       opfsReadable = true;
       if (durable) {
         candidates.push(Object.freeze({
-          key: input.key,
-          source: "opfs-journal",
-          state: durable.state,
-          savedAt: durable.savedAt,
-          payload: durable.state === "snapshot" ? durable.payload : null,
-          sequence: durable.sequence,
-          revision: durable.revision,
+          key: input.key, source: "opfs-journal", state: durable.state, savedAt: durable.savedAt,
+          payload: durable.state === "snapshot" ? durable.payload : null, sequence: durable.sequence, revision: durable.revision,
         }));
       }
     } catch (cause) {
-      if (cause instanceof StudioAutosaveUnsupportedVersionError) throw cause;
+      if (cause instanceof StudioAutosaveUnsupportedVersionError || isAbortError(cause)) throw cause;
+      throwIfSignalAborted(input.signal);
       // SQLite와 브라우저 슬롯을 계속 평가한다.
     }
   }
-  const sourceRank: Record<StudioAutosaveDurableAuthority, number> = {
-    "opfs-journal": 3,
-    "sqlite-fallback": 2,
-  };
+  const sourceRank: Record<StudioAutosaveDurableAuthority, number> = { "opfs-journal": 3, "sqlite-fallback": 2 };
   candidates.sort((left, right) => (
     timestamp(right.savedAt) - timestamp(left.savedAt)
     || Number(right.state === "cleared") - Number(left.state === "cleared")
@@ -871,17 +873,15 @@ export async function reconcileStudioAutosaveWithOpfsPrimary(input: {
 
   if (winner && input.session && opfsReadable && winner.source === "sqlite-fallback") {
     try {
+      throwIfSignalAborted(input.signal);
       const receipt = winner.state === "snapshot"
         ? await input.session.write(winner.payload!, input.signal)
         : await input.session.clear(winner.savedAt, input.signal);
-      winner = Object.freeze({
-        ...winner,
-        source: "opfs-journal",
-        sequence: receipt.sequence,
-        revision: receipt.revision,
-      });
+      winner = Object.freeze({ ...winner, source: "opfs-journal", sequence: receipt.sequence, revision: receipt.revision });
       migratedToOpfs = true;
-    } catch {
+    } catch (cause) {
+      if (isAbortError(cause)) throw cause;
+      throwIfSignalAborted(input.signal);
       // 원래 SQLite 승자를 그대로 유지한다.
     }
   }

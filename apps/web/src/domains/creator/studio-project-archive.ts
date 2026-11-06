@@ -306,6 +306,7 @@ export interface ImportStudioProjectArchiveOptions {
    * Set false on memory-constrained mobile flows and resolve the returned Blob map lazily instead.
    */
   rehydrateDataUrls?: boolean;
+  signal?: AbortSignal;
 }
 
 export interface ImportStudioProjectArchiveResult {
@@ -422,6 +423,7 @@ interface BuildContext {
   attachmentCandidates: number;
   processedAttachmentBytes: number;
   references: number;
+  signal?: AbortSignal;
 }
 
 function sha256Prefixed(sha256: string): string {
@@ -1148,6 +1150,7 @@ async function addAttachmentCandidate(
   context: BuildContext,
   input: StudioProjectArchiveAttachmentInput
 ): Promise<MutableAttachment> {
+  context.signal?.throwIfAborted();
   context.attachmentCandidates += 1;
   if (context.attachmentCandidates > context.limits.maxAttachments) {
     fail("ATTACHMENT_COUNT_LIMIT", "projectAttachmentCountExceeded");
@@ -1164,11 +1167,13 @@ async function addAttachmentCandidate(
     fail("ATTACHMENT_SIZE_LIMIT", "attachmentInputTotalTooLarge");
   }
   const bytes = new Uint8Array(await blob.arrayBuffer());
+  context.signal?.throwIfAborted();
   if (bytes.byteLength !== blob.size) {
     fail("ATTACHMENT_SIZE_LIMIT", "reportedSizeMismatch");
   }
   const detectedMimeType = inspectAttachmentBytes(bytes, input.kind, declaredMime, context.diagnostics);
   const sha256 = await sha256Bytes(bytes);
+  context.signal?.throwIfAborted();
   const existing = context.attachments.get(sha256);
   if (existing) {
     if (rasterMimeType(bytes) === null && existing.detectedMimeType !== detectedMimeType
@@ -1998,6 +2003,7 @@ export async function buildStudioProjectArchive(
     attachmentCandidates: 0,
     processedAttachmentBytes: 0,
     references: 0,
+    signal: options.signal,
   };
   await extractEmbeddedAssets(canonicalProjectValue, "", context);
 
@@ -2380,10 +2386,11 @@ export async function importStudioProjectArchive(
   source: StudioPackageArchiveSource,
   options: ImportStudioProjectArchiveOptions = {}
 ): Promise<ImportStudioProjectArchiveResult> {
+  options.signal?.throwIfAborted();
   let limits = resolveLimits(options.limits, true);
   const diagnostics: StudioProjectArchiveDiagnostic[] = [];
   const reader = createZipReader(source, limits);
-  const zipEntries = await parseZipEntries(reader, limits);
+  const zipEntries = await parseZipEntries(reader, limits, options.signal);
   const byPath = new Map(zipEntries.map((entry) => [entry.path, entry]));
   const manifestEntry = byPath.get("manifest.json");
   if (!manifestEntry) fail("MANIFEST_INVALID", "manifestMissing");
@@ -2391,7 +2398,7 @@ export async function importStudioProjectArchive(
     fail("MANIFEST_INVALID", "manifestTooLarge");
   }
   const manifest = parseCanonicalJson(
-    await readVerifiedEntry(reader, manifestEntry),
+    await readVerifiedEntry(reader, manifestEntry, options.signal),
     ManifestSchema,
     "MANIFEST_INVALID",
     "manifest.json"
@@ -2413,10 +2420,11 @@ export async function importStudioProjectArchive(
   if (projectEntry.uncompressedBytes !== manifest.project.byteSize || projectEntry.uncompressedBytes > limits.maxProjectBytes) {
     fail("PROJECT_SIZE_LIMIT", "projectSizeDiffersFromManifest");
   }
-  const projectBytes = await readVerifiedEntry(reader, projectEntry);
+  const projectBytes = await readVerifiedEntry(reader, projectEntry, options.signal);
   if (await sha256Bytes(projectBytes) !== manifest.project.sha256) {
     fail("HASH_MISMATCH", "projectHashFailed", { path: manifest.project.path });
   }
+  options.signal?.throwIfAborted();
   const parsedProject = parseCanonicalProject(
     projectBytes,
     limits,
@@ -2463,15 +2471,17 @@ export async function importStudioProjectArchive(
   let bg3dCumulativeBytes = 0;
 
   for (const metadata of manifest.attachments) {
+    options.signal?.throwIfAborted();
     const entry = byPath.get(metadata.path);
     if (!entry) fail("ATTACHMENT_MISSING", "fileAbsent", { path: metadata.path });
     if (entry.uncompressedBytes !== metadata.byteSize) {
       fail("ATTACHMENT_SIZE_LIMIT", "sizeDiffersFromManifest", { path: metadata.path });
     }
-    const bytes = await readVerifiedEntry(reader, entry);
+    const bytes = await readVerifiedEntry(reader, entry, options.signal);
     if (await sha256Bytes(bytes) !== metadata.sha256) {
       fail("HASH_MISMATCH", "attachmentHashFailed", { path: metadata.path });
     }
+    options.signal?.throwIfAborted();
     if (!manifestMimeAllowed(metadata.mimeType, metadata.kinds)) {
       fail("MIME_MISMATCH", "vrmMimeInvalid", { path: metadata.path });
     }

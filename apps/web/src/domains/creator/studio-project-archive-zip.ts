@@ -29,7 +29,7 @@ const ZIP_EOCD_BYTES = 22;
 
 export interface ZipReader {
   size: number;
-  read(offset: number, length: number): Promise<Uint8Array>;
+  read(offset: number, length: number, signal?: AbortSignal): Promise<Uint8Array>;
   slice(offset: number, length: number, mimeType: string): Blob;
 }
 
@@ -75,11 +75,13 @@ export function createZipReader(source: StudioPackageArchiveSource, limits: Stud
     }
     return {
       size: source.size,
-      async read(offset, length) {
+      async read(offset, length, signal) {
+        signal?.throwIfAborted();
         if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > source.size) {
           fail("ARCHIVE_INVALID", "zipRangeInvalid");
         }
         const bytes = new Uint8Array(await source.slice(offset, offset + length).arrayBuffer());
+        signal?.throwIfAborted();
         if (bytes.byteLength !== length) fail("ARCHIVE_INVALID", "zipReadIncomplete");
         return bytes;
       },
@@ -99,7 +101,8 @@ export function createZipReader(source: StudioPackageArchiveSource, limits: Stud
   }
   return {
     size: bytes.byteLength,
-    async read(offset, length) {
+    async read(offset, length, signal) {
+      signal?.throwIfAborted();
       if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > bytes.byteLength) {
         fail("ARCHIVE_INVALID", "zipRangeInvalid");
       }
@@ -136,10 +139,15 @@ function validateImportedPath(value: string, limits: StudioProjectArchiveLimits)
   return value;
 }
 
-export async function parseZipEntries(reader: ZipReader, limits: StudioProjectArchiveLimits): Promise<ParsedZipEntry[]> {
+export async function parseZipEntries(
+  reader: ZipReader,
+  limits: StudioProjectArchiveLimits,
+  signal?: AbortSignal,
+): Promise<ParsedZipEntry[]> {
+  signal?.throwIfAborted();
   if (reader.size < ZIP_EOCD_BYTES) fail("ARCHIVE_INVALID", "zipEndRecordMissing");
   const eocdOffset = reader.size - ZIP_EOCD_BYTES;
-  const eocd = await reader.read(eocdOffset, ZIP_EOCD_BYTES);
+  const eocd = await reader.read(eocdOffset, ZIP_EOCD_BYTES, signal);
   if (uint32(eocd, 0) !== ZIP_EOCD_SIGNATURE || uint16(eocd, 20) !== 0) {
     fail("ARCHIVE_INVALID", "zipTrailingData");
   }
@@ -155,7 +163,7 @@ export async function parseZipEntries(reader: ZipReader, limits: StudioProjectAr
   if (centralOffset + centralBytes !== eocdOffset || centralBytes > entryCount * (ZIP_CENTRAL_HEADER_BYTES + limits.maxPathBytes)) {
     fail("ARCHIVE_INVALID", "zipCentralRangeInvalid");
   }
-  const central = await reader.read(centralOffset, centralBytes);
+  const central = await reader.read(centralOffset, centralBytes, signal);
   const entries: ParsedZipEntry[] = [];
   const seen = new Set<string>();
   let cursor = 0;
@@ -166,6 +174,7 @@ export async function parseZipEntries(reader: ZipReader, limits: StudioProjectAr
     limits.maxManifestBytes
   );
   for (let index = 0; index < entryCount; index += 1) {
+    signal?.throwIfAborted();
     if (cursor + ZIP_CENTRAL_HEADER_BYTES > central.length || uint32(central, cursor) !== ZIP_CENTRAL_SIGNATURE) {
       fail("ARCHIVE_INVALID", "zipCentralEntryCorrupt");
     }
@@ -206,7 +215,7 @@ export async function parseZipEntries(reader: ZipReader, limits: StudioProjectAr
     if (seen.has(comparisonKey)) fail("DUPLICATE_PATH", "zipDuplicatePath", { path });
     seen.add(comparisonKey);
 
-    const localHeader = await reader.read(localHeaderOffset, ZIP_LOCAL_HEADER_BYTES + nameBytes);
+    const localHeader = await reader.read(localHeaderOffset, ZIP_LOCAL_HEADER_BYTES + nameBytes, signal);
     if (
       uint32(localHeader, 0) !== ZIP_LOCAL_SIGNATURE
       || uint16(localHeader, 6) !== flags
@@ -249,8 +258,12 @@ export async function parseZipEntries(reader: ZipReader, limits: StudioProjectAr
   return entries;
 }
 
-export async function readVerifiedEntry(reader: ZipReader, entry: ParsedZipEntry): Promise<Uint8Array> {
-  const bytes = await reader.read(entry.dataOffset, entry.uncompressedBytes);
+export async function readVerifiedEntry(
+  reader: ZipReader,
+  entry: ParsedZipEntry,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
+  const bytes = await reader.read(entry.dataOffset, entry.uncompressedBytes, signal);
   if (crc32(bytes) !== entry.crc32) {
     fail("CRC_MISMATCH", "zipEntryCrcFailed", { path: entry.path });
   }
