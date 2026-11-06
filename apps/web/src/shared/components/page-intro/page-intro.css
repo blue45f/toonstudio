@@ -25,7 +25,9 @@
   animation: page-intro-veil-in 200ms ease-out both;
 }
 
-.page-intro__veil.is-leaving {
+.page-intro__veil.is-leaving,
+.page-intro__veil[data-phase="leaving"] {
+  pointer-events: none;
   animation: page-intro-veil-out 200ms ease-in both;
 }
 

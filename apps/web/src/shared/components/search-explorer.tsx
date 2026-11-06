@@ -643,11 +643,8 @@ export function SearchExplorer({
               value={sort}
               onValueChange={(value) => setSort(value as SortKey)}
               ariaLabel={t("search.explorer.sort.label")}
-              triggerClassName="h-8 rounded-lg border border-line bg-card px-2.5 text-[0.8125rem] text-fg-2"
-              options={SORTS.map((entry) => ({
-                value: entry.value,
-                label: t(entry.labelKey),
-              }))}
+              triggerClassName="h-8 rounded-lg border border-line bg-card px-2.5 text-[0.8125rem] text-fg-2 max-md:min-h-11 pointer-coarse:min-h-11"
+              options={SORTS.map((entry) => ({ value: entry.value, label: t(entry.labelKey) }))}
             />
 
             <button
@@ -655,7 +652,7 @@ export function SearchExplorer({
               onClick={() => setSavedOnly((current) => !current)}
               aria-pressed={savedOnly}
               className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[0.8125rem] font-medium transition-colors",
+                "inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[0.8125rem] font-medium transition-colors max-md:min-h-11 pointer-coarse:min-h-11",
                 savedOnly
                   ? "border-accent/55 bg-accent-soft text-accent"
                   : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
@@ -670,30 +667,16 @@ export function SearchExplorer({
               value={view}
               onChange={(value) => setView(value)}
               items={[
-                {
-                  value: "grid",
-                  label: <LayoutGrid size={14} />,
-                  hint: t("search.explorer.view.grid"),
-                },
-                {
-                  value: "list",
-                  label: <List size={14} />,
-                  hint: t("search.explorer.view.list"),
-                },
+                { value: "grid", label: <LayoutGrid size={14} />, hint: t("search.explorer.view.grid") },
+                { value: "list", label: <List size={14} />, hint: t("search.explorer.view.list") },
               ]}
               className="ml-auto [&>button]:grid [&>button]:size-11 [&>button]:place-items-center"
             />
 
             <button
               type="button"
-              onClick={() => {
-                setRetryKey((value) => value + 1);
-              }}
-              className={buttonClass({
-                size: "sm",
-                variant: "quiet",
-                className: "gap-1.5",
-              })}
+              onClick={() => setRetryKey((value) => value + 1)}
+              className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1.5" })}
             >
               <RefreshCw size={14} />
               {t("search.explorer.refresh")}
@@ -713,9 +696,7 @@ export function SearchExplorer({
             <span className="truncate">{resultText}</span>
             <span className="h-1 w-1 rounded-full bg-line-strong" />
             <span className="truncate">
-              {loading || textSettling
-                ? t("search.explorer.loading")
-                : typeSummary}
+              {loading || textSettling ? t("search.explorer.loading") : typeSummary}
             </span>
           </div>
 
@@ -737,18 +718,15 @@ export function SearchExplorer({
                       setQ(entry);
                       if (sort === "popular") setSort("relevance");
                     }}
-                    className="py-1 pl-2.5 pr-1.5 font-medium transition-colors hover:text-fg"
+                    className="inline-flex min-h-11 items-center px-3 py-1 font-medium transition-colors hover:text-fg"
                   >
                     {entry}
                   </button>
                   <button
                     type="button"
                     onClick={() => removeRecentSearch(entry)}
-                    aria-label={t("search.explorer.recent.delete").replace(
-                      "{query}",
-                      `"${entry}"`,
-                    )}
-                    className="grid h-full place-items-center py-1 pl-0.5 pr-2 text-fg-3 transition-colors hover:text-bad"
+                    aria-label={t("search.explorer.recent.delete").replace("{query}", `"${entry}"`)}
+                    className="grid min-h-11 min-w-11 place-items-center text-fg-3 transition-colors hover:text-bad"
                   >
                     <X size={12} />
                   </button>
@@ -757,7 +735,7 @@ export function SearchExplorer({
               <button
                 type="button"
                 onClick={clearRecentSearches}
-                className="ml-0.5 rounded-full px-2 py-1 text-[0.72rem] text-fg-3 underline-offset-2 transition-colors hover:text-fg hover:underline"
+                className="ml-0.5 inline-flex min-h-11 items-center rounded-full px-2.5 py-1 text-[0.72rem] text-fg-3 underline-offset-2 transition-colors hover:text-fg hover:underline"
               >
                 {t("search.explorer.recent.clearAll")}
               </button>
@@ -799,10 +777,7 @@ export function SearchExplorer({
                 )}
               </div>
               <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[0.72rem] text-fg-3 sm:justify-end">
-                {(filteredCoverage.length
-                  ? filteredCoverage
-                  : catalogCoverage
-                ).map((entry) => (
+                {(filteredCoverage.length ? filteredCoverage : catalogCoverage).map((entry) => (
                   <span
                     key={entry.id}
                     className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-line bg-card px-2.5"
@@ -813,9 +788,7 @@ export function SearchExplorer({
                       style={{ backgroundColor: platformColor(entry.id) }}
                     />
                     {platformName(entry.id)}
-                    <span className="numeral text-fg">
-                      {compactNumber(entry.count)}
-                    </span>
+                    <span className="numeral text-fg">{compactNumber(entry.count)}</span>
                   </span>
                 ))}
               </div>
@@ -832,11 +805,8 @@ export function SearchExplorer({
                   type="button"
                   key={`${token.key}:${token.category}`}
                   onClick={() => removeToken(token)}
-                  className="inline-flex items-center gap-1 rounded-full border border-line bg-panel/45 px-2.5 py-1 text-[0.7rem] text-fg-2 transition-all duration-150 hover:border-accent/50 hover:text-fg"
-                  aria-label={t("search.explorer.token.remove").replace(
-                    "{label}",
-                    token.label,
-                  )}
+                  className="inline-flex items-center gap-1 rounded-full border border-line bg-panel/45 px-2.5 py-1 text-[0.7rem] text-fg-2 transition-all duration-150 hover:border-accent/50 hover:text-fg max-md:min-h-11 pointer-coarse:min-h-11"
+                  aria-label={t("search.explorer.token.remove").replace("{label}", token.label)}
                 >
                   <span>{token.label}</span>
                   <span aria-hidden>×</span>
@@ -873,27 +843,32 @@ export function SearchExplorer({
             >
               <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
                 <div>
-                  <h2
-                    id="search-mobile-filter-title"
-                    className="text-base font-bold text-fg"
-                  >
+                  <h2 id="search-mobile-filter-title" className="text-base font-bold text-fg">
                     {t("search.explorer.filter")}
                   </h2>
                   <p className="mt-0.5 text-xs text-fg-3">
-                    {activeCount > 0
-                      ? `${activeCount}개 조건 적용 중`
-                      : "원하는 조건을 골라 결과를 좁히세요."}
+                    {activeCount > 0 ? `${activeCount}개 조건 적용 중` : "원하는 조건을 골라 결과를 좁히세요."}
                   </p>
                 </div>
-                {activeCount > 0 ? (
+                <div className="flex items-center gap-1">
+                  {activeCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={reset}
+                      className="min-h-11 rounded-xl px-3 text-xs font-semibold text-accent"
+                    >
+                      {t("search.explorer.filterReset")}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={reset}
-                    className="min-h-11 rounded-xl px-3 text-xs font-semibold text-accent"
+                    aria-label={t("common.close")}
+                    onClick={() => setShowFilters(false)}
+                    className="grid size-11 shrink-0 place-items-center rounded-xl text-fg-3 transition-colors hover:bg-raised hover:text-fg"
                   >
-                    {t("search.explorer.filterReset")}
+                    <X size={18} />
                   </button>
-                ) : null}
+                </div>
               </header>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2">
                 {facets}

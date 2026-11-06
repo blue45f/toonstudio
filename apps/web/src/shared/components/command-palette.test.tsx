@@ -149,12 +149,13 @@ describe("CommandPalette", () => {
     });
   });
 
-  it("닫기 버튼(배경) 클릭 시 onOpenChange(false)를 호출한다", () => {
+  it("닫기 버튼 클릭 시 onOpenChange(false)를 호출하며 44x44px 터치 타깃을 갖는다", () => {
     const onOpenChange = vi.fn();
     render(<CommandPalette open={true} onOpenChange={onOpenChange} />);
 
-    const backdrop = screen.getByRole("button", { name: /close|닫기/i });
-    fireEvent.click(backdrop);
+    const closeBtn = screen.getByRole("button", { name: /close|닫기/i });
+    expect(closeBtn.className).toContain("size-11");
+    fireEvent.click(closeBtn);
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
@@ -180,6 +181,18 @@ describe("CommandPaletteHost", () => {
     expect(useUi.getState().commandPaletteOpen).toBe(true);
 
     fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(useUi.getState().commandPaletteOpen).toBe(false);
+  });
+
+  it("브라우저 뒤로가기(popstate) 발생 시 열린 팔레트를 닫는다", () => {
+    render(<CommandPaletteHost />);
+
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(useUi.getState().commandPaletteOpen).toBe(true);
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
     expect(useUi.getState().commandPaletteOpen).toBe(false);
   });
 

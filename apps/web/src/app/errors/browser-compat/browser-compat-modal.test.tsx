@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { BrowserCompatModal } from "./browser-compat-modal";
@@ -27,5 +27,18 @@ describe("BrowserCompatModal touch targets", () => {
       expect(classTokens(button)).toContain("min-h-11");
       expect(classTokens(button)).not.toContain("h-10");
     }
+  });
+
+  it("makes the dialog vertically scrollable on compact viewports and closes on Escape when non-blocking", async () => {
+    const onClose = vi.fn();
+    render(<BrowserCompatModal isOpen onClose={onClose} />);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(classTokens(dialog)).toContain("overflow-y-auto");
+    expect(classTokens(dialog)).toContain("overscroll-contain");
+    expect(classTokens(dialog)).toContain("max-h-[calc(100dvh-2rem)]");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

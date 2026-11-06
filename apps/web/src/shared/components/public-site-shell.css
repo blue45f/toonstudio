@@ -175,9 +175,11 @@
 @media (width < 400px) {
   .site-header__brand-copy { display: none; }
   .site-header__brand { min-width: 44px; }
-  .site-menu-actions { gap: 8px; }
+  .site-menu-actions { flex-direction: column; align-items: stretch; gap: 8px; }
   .site-menu-actions a { gap: 8px; padding-inline: 12px; }
-  .site-menu-actions__create small { max-width: 17ch; }
+  .site-menu-actions__create,
+  .site-menu-actions__projects { width: 100%; justify-content: center; }
+  .site-menu-actions__create small { max-width: none; }
   .site-menu-actions__create > svg:last-child { display: none; }
 }
 

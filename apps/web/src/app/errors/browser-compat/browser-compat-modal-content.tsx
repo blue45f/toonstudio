@@ -19,6 +19,7 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
   // 언마운트 뒤 setState 를 막는다. 이 모달은 새로고침 버튼과 같은 화면에 있어 실제로 사라진다.
   const copyStateRef = useRef(true);
   const copyResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     copyStateRef.current = true;
     return () => {
@@ -26,6 +27,25 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
       if (copyResetRef.current !== null) clearTimeout(copyResetRef.current);
     };
   }, []);
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const initialTarget = dialogRef.current?.querySelector<HTMLElement>("button, a[href]");
+    initialTarget?.focus();
+    const onWindowKeyDown = (event: KeyboardEvent) => {
+      if (!isBlocking && event.key === "Escape") {
+        event.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onWindowKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onWindowKeyDown);
+      if (previousFocus && document.contains(previousFocus)) {
+        previousFocus.focus();
+      }
+    };
+  }, [isBlocking, isOpen, onClose]);
   if (!isOpen) return null;
 
   const browser = getBrowserInfo();
@@ -69,7 +89,7 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
       />
 
       {/* 모달 팝업 컨테이너 */}
-      <div role="dialog" aria-modal="true" aria-labelledby="browser-compat-title" aria-describedby="browser-compat-description" data-stable-contrast="true" className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-line-strong bg-panel/95 p-6 sm:p-8 text-fg shadow-2xl backdrop-blur-xl transition-all">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="browser-compat-title" aria-describedby="browser-compat-description" data-stable-contrast="true" className="relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-3xl border border-line-strong bg-panel/95 p-5 sm:p-8 text-fg shadow-2xl backdrop-blur-xl transition-all">
         {/* 닫기 버튼 (비블로킹 모드일 때만 표시) */}
         {!isBlocking && (
           <button
@@ -83,7 +103,7 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
         )}
 
         {/* 메인 헤더 & 아이콘 */}
-        <div className="flex items-start gap-4 mb-6">
+        <div className={`flex items-start gap-4 mb-6 ${!isBlocking ? "pr-12" : ""}`}>
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-warning-soft border border-warning/50 text-warning shadow-inner">
             <Monitor size={28} />
           </div>

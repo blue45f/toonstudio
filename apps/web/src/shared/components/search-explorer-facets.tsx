@@ -105,6 +105,7 @@ export function SearchFacetPanel({
               key={genre}
               onClick={() => setGenres((prev) => toggle(prev, genre))}
               aria-pressed={genres.includes(genre)}
+              className="inline-flex items-center max-lg:min-h-11 pointer-coarse:min-h-11"
             >
               <GenreChip genre={genre} active={genres.includes(genre)} size="sm" />
             </button>
@@ -120,7 +121,7 @@ export function SearchFacetPanel({
               label={tag}
               active={tags.includes(tag)}
               onClick={() => setTags((prev) => toggle(prev, tag))}
-              className="h-7"
+              className="lg:h-7 lg:min-h-0"
             />
           ))}
         </div>
@@ -173,7 +174,7 @@ export function SearchFacetPanel({
               onClick={() => setPlatforms((prev) => toggle(prev, entry.id))}
               aria-pressed={platforms.includes(entry.id)}
               className={cn(
-                "flex items-center gap-2 rounded-lg border px-2 py-1.5 text-sm transition-colors",
+                "flex items-center gap-2 rounded-lg border px-2 py-1.5 text-sm transition-colors max-lg:min-h-11 pointer-coarse:min-h-11",
                 platforms.includes(entry.id)
                   ? "border-accent/55 bg-accent-soft text-accent"
                   : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg"
@@ -224,7 +225,7 @@ export function SearchFacetPanel({
             type="button"
             onClick={() => setFreeOnly((current) => !current)}
             className={cn(
-              "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors max-lg:min-h-11 pointer-coarse:min-h-11",
               freeOnly
                 ? "border-good/45 bg-[oklch(0.8_0.15_150/0.14)] text-good border border-good/35"
                 : "border-line bg-card text-fg-2 hover:text-fg"
@@ -238,7 +239,7 @@ export function SearchFacetPanel({
             type="button"
             onClick={() => setAdaptedOnly((current) => !current)}
             className={cn(
-              "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors max-lg:min-h-11 pointer-coarse:min-h-11",
               adaptedOnly
                 ? "border-accent/55 bg-accent-soft text-accent border"
                 : "border-line bg-card text-fg-2 hover:text-fg"

@@ -45,7 +45,7 @@
   align-items: end;
   gap: 24px;
   min-height: clamp(420px, 52dvh, 560px);
-  padding: clamp(24px, 4vw, 48px);
+  padding: clamp(16px, 4vw, 48px);
 }
 :where(.spectacle-hero-inner):has(> :nth-child(2)) {
   grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
@@ -86,7 +86,7 @@
 }
 @media (max-width: 899px) {
   :where(.spectacle-hero-inner) { min-height: 0; align-items: start; }
-  :where(.spectacle-hero-title) { font-size: 38px; }
+  :where(.spectacle-hero-title) { font-size: clamp(1.75rem, 6vw, 2.375rem); overflow-wrap: anywhere; }
 }
 
 /* CoverCard — 표지 중심 구성의 기본 단위 (§6.2 (2)). 비율 3:4, 마켓 변형 16:10. */

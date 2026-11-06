@@ -62,7 +62,7 @@ export function NowCard({
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
-    <div data-now-card={tone} className={cx("relative rounded-2xl border p-4", TONE_CLASS[tone], className)}>
+    <div data-now-card={tone} className={cx("relative rounded-2xl border p-4", dismissible && "pr-12", TONE_CLASS[tone], className)}>
       <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em] text-fg-3">{eyebrow}</p>
       <p className="mt-1 text-base font-black text-fg">{title}</p>
       <p className="mt-1 line-clamp-2 text-xs leading-5 text-fg-2">{reason}</p>
@@ -76,7 +76,7 @@ export function NowCard({
             setDismissed(true);
             onDismiss?.();
           }}
-          className="absolute right-2 top-2 grid size-8 place-items-center rounded-lg text-fg-3 outline-none transition-colors hover:bg-raised hover:text-fg focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
+          className="absolute right-1.5 top-1.5 grid size-11 place-items-center rounded-lg text-fg-3 outline-none transition-colors hover:bg-raised hover:text-fg focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
         >
           {/* 닫기 글리프는 인라인 SVG로 그린다 — lucide `X`를 새로 끌어오면
               이 카드를 쓰는 표면의 진입 청크가 아이콘 1개분 늘어나

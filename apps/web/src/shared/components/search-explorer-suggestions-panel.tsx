@@ -62,7 +62,7 @@ export function SearchEmptyQuerySuggestionsPanel({
             <button
               type="button"
               onClick={onRetry}
-              className="rounded-full border border-line bg-card px-2.5 py-1 text-[0.72rem] font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+              className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 py-1 text-[0.72rem] font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
             >
               {t("search.explorer.retry")}
             </button>
@@ -79,7 +79,7 @@ export function SearchEmptyQuerySuggestionsPanel({
                   term,
                 )}
                 className={cn(
-                  "inline-flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-1",
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1",
                   "text-[0.72rem] font-medium text-fg-2 transition-colors hover:border-accent/50 hover:text-fg",
                 )}
               >
@@ -108,6 +108,7 @@ export function SearchEmptyQuerySuggestionsPanel({
                 key={genre}
                 type="button"
                 onClick={() => onPickGenre(genre)}
+                className="inline-flex min-h-11 items-center"
                 aria-label={t("search.explorer.suggestions.genreFilter").replace(
                   "{genre}",
                   genre,

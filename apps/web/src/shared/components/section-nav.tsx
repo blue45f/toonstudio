@@ -265,6 +265,7 @@ function TabsNav({
       aria-label={label}
       data-section-nav="tabs"
       data-site-section-tabs={segmented ? "segmented" : "scroll"}
+      data-own-control-size=""
       className={cn(
         "scroll-mt-24",
         segmented
@@ -293,7 +294,7 @@ function TabsNav({
               "border text-sm transition-[background-color,border-color,color] duration-150",
               segmented
                 ? "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center leading-tight"
-                : "inline-flex min-h-11 shrink-0 snap-start items-center gap-2 whitespace-nowrap rounded-full px-4",
+                : "inline-flex min-h-11 sm:min-h-9 pointer-coarse:min-h-11 shrink-0 snap-start items-center gap-2 whitespace-nowrap rounded-full px-4",
               "lg:min-h-10 lg:w-full lg:flex-row lg:justify-start lg:gap-2 lg:rounded-[0.4rem] lg:px-[0.6rem] lg:py-[0.35rem] lg:text-left lg:text-[0.8rem]",
               ITEM_FOCUS,
               active

@@ -36,7 +36,13 @@ export function useWorkspaceScrollRestoration(
     const prior = previous.current;
     previous.current = { pathname, search };
     const scroller = scrollerRef.current;
-    if (!enabled || !scroller) return;
+    if (
+      !enabled ||
+      !scroller ||
+      scroller.style.overflowY === "visible" ||
+      ((window.matchMedia?.("(max-width: 767px)").matches || window.innerWidth < 768) &&
+        window.getComputedStyle(scroller).overflowY === "visible")
+    ) return;
 
     const saved = navigation === "POP" ? memory.get(key) : undefined;
     const anchorId = hash.length > 1 ? safeDecodeRouteText(hash.slice(1)) : "";

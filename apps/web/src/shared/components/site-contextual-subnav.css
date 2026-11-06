@@ -18,13 +18,21 @@
 
 .site-contextual-subnav__header {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
+  min-width: 0;
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   color: var(--color-fg-2, currentColor);
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.site-contextual-subnav__description {
+  min-width: 0;
+  white-space: normal;
 }
 
 .site-contextual-subnav__dot {
@@ -49,7 +57,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: var(--site-control-size, 44px);
   padding: 6px 12px;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -178,7 +186,7 @@
   }
 
   .site-contextual-subnav__link {
-    min-height: 38px;
+    min-height: var(--site-control-size, 44px);
     padding: 5px 10px;
     font-size: 0.75rem;
   }

@@ -44,7 +44,8 @@ function toggle<T>(arr: T[], value: T): T[] {
 
 function chip(active: boolean) {
   return cn(
-    "inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border px-3 text-[0.72rem] transition-colors",
+    "inline-flex min-h-11 items-center gap-1 rounded-full border px-3 text-[0.72rem] transition-colors",
+    "whitespace-nowrap",
     active
       ? "border-accent/60 bg-accent-soft/60 text-fg"
       : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg"
@@ -140,7 +141,7 @@ export function TitleFilterPanel({
               onClick={onToggleRemember}
               role="checkbox"
               aria-checked={!!remember}
-              className="inline-flex items-center gap-1.5 text-[0.72rem] text-fg-3 hover:text-fg"
+              className="inline-flex min-h-11 items-center gap-1.5 px-2 text-[0.72rem] text-fg-3 hover:text-fg"
               title={t("titleFilter.rememberTitle")}
             >
               <span
@@ -158,7 +159,7 @@ export function TitleFilterPanel({
             <button
               type="button"
               onClick={() => onChange({ ...value, ...emptyExceptSort(value) })}
-              className="inline-flex items-center gap-1 text-[0.72rem] text-fg-3 hover:text-fg"
+              className="inline-flex min-h-11 items-center gap-1 px-2 text-[0.72rem] text-fg-3 hover:text-fg"
             >
               <X size={12} /> {t("titleFilter.reset")}
             </button>

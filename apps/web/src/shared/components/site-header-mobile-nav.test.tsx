@@ -126,4 +126,22 @@ describe("모바일 전체 메뉴", () => {
     render(tabs(false));
     expect(screen.queryByRole("navigation", { name: "nav.quickAccess" })).toBeNull();
   });
+
+  it("현재 경로를 가리키는 링크를 눌러도 전체 메뉴를 닫고 유틸리티 라벨 말줄임을 유지한다", () => {
+    const closeMenu = vi.fn();
+    render(menu(true, closeMenu, "/market"));
+    const dialog = screen.getByRole("dialog", { name: "nav.allMenu" });
+    expect(dialog.parentElement?.className).toContain("z-[110]");
+
+    const currentRouteLink = dialog.querySelector<HTMLAnchorElement>('a[href="/market"]');
+    expect(currentRouteLink).not.toBeNull();
+    expect(currentRouteLink?.getAttribute("aria-current")).toBe("page");
+    fireEvent.click(currentRouteLink!);
+    expect(closeMenu).toHaveBeenCalledOnce();
+
+    const notificationsLink = dialog.querySelector<HTMLAnchorElement>('a[href="/notifications"]');
+    const labelSpan = notificationsLink?.querySelector("span");
+    expect(labelSpan?.className).toContain("min-w-0");
+    expect(labelSpan?.className).toContain("truncate");
+  });
 });

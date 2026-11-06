@@ -10,7 +10,7 @@ import { useApp, useHydrated } from "@/shared/lib/store";
 // 신원 확인이 아닌 자가 확인. 19+ 표지 배지(시각 표시)는 인증과 무관하게 유지된다.
 // 모달 셸은 Radix Dialog(포커스 트랩·Escape·백드롭 클릭·aria-modal)로 제공 — 시각은 기존 OKLCH 토큰 그대로.
 const SELECT_CLASS =
-  "w-full rounded-lg border border-line bg-raised px-2.5 py-2 text-sm text-fg focus:border-accent/60 focus:outline-none";
+  "min-h-11 w-full rounded-lg border border-line bg-raised px-2.5 py-2 text-sm text-fg focus:border-accent/60 focus:outline-none";
 
 export function AgeGateModal() {
   const hydrated = useHydrated();
@@ -43,11 +43,11 @@ export function AgeGateModal() {
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && close()}>
       <Dialog.Portal>
-        <Dialog.Overlay data-slot="dialog-overlay" className="fixed inset-0 z-[60] bg-[oklch(0.12_0.012_70/0.72)] backdrop-blur-sm" />
+        <Dialog.Overlay data-slot="dialog-overlay" className="fixed inset-0 z-[180] bg-[oklch(0.12_0.012_70/0.72)] backdrop-blur-sm" />
         <Dialog.Content
           data-slot="dialog-content"
           aria-describedby={undefined}
-          className="fixed left-1/2 top-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-line bg-panel p-6 text-left shadow-2xl focus:outline-none"
+          className="fixed left-1/2 top-1/2 z-[181] max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-2xl border border-line bg-panel p-4 text-left shadow-2xl focus:outline-none sm:p-6"
         >
           <ShieldCheck className="text-accent" size={26} />
           <Dialog.Title data-slot="dialog-title" className="mt-3 font-display text-lg font-bold text-fg">{t("ageGate.title")}</Dialog.Title>
@@ -118,7 +118,7 @@ export function AgeGateModal() {
             <Dialog.Close data-slot="dialog-close" asChild>
               <button
                 type="button"
-                className="rounded-lg border border-line px-3.5 py-2 text-sm font-medium text-fg-2 transition-colors hover:bg-raised"
+                className="min-h-11 rounded-lg border border-line px-3.5 py-2 text-sm font-medium text-fg-2 transition-colors hover:bg-raised"
               >
                 {t("ageGate.cancel")}
               </button>
@@ -127,7 +127,7 @@ export function AgeGateModal() {
               type="button"
               onClick={submit}
               disabled={!complete}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90 disabled:opacity-40"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               <Check size={15} aria-hidden="true" />
               {t("ageGate.confirm")}

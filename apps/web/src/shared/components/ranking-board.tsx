@@ -369,13 +369,13 @@ export function RankingBoard({
             value={genre}
             onValueChange={setGenre}
             ariaLabel="장르 필터"
-            triggerClassName="h-10 min-w-36 rounded-lg border border-line bg-card px-2.5 text-sm text-fg-2"
+            triggerClassName="min-h-11 min-w-36 rounded-lg border border-line bg-card px-2.5 text-sm text-fg-2"
             options={[
               { value: "all", label: "전체 장르" },
               ...GENRES.map((g) => ({ value: g, label: g })),
             ]}
           />
-          <div className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-card px-3 text-xs text-fg-2 transition-colors focus-within:border-accent/50">
+          <div className="inline-flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-lg border border-line bg-card px-3 text-xs text-fg-2 transition-colors focus-within:border-accent/50 sm:justify-start">
             <span className="whitespace-nowrap text-fg-3">플랫폼</span>
             {(() => {
               // 카탈로그에 실존하는 플랫폼만 노출(빈 플랫폼 옵션 방지). 커버리지 미수신 시 전체 노출.
@@ -422,7 +422,7 @@ export function RankingBoard({
               { value: "paid", label: "유료" },
             ]}
           />
-          <label className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-card px-3 text-xs text-fg-2">
+          <label className="inline-flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-lg border border-line bg-card px-3 text-xs text-fg-2 sm:justify-start">
             <Star size={14} className="text-accent" />
             <span className="whitespace-nowrap">평점 {minRating.toFixed(1)}+</span>
             <input
@@ -441,7 +441,7 @@ export function RankingBoard({
             aria-pressed={risingOnly}
             onClick={() => setRisingOnly((current) => !current)}
             className={cn(
-              "inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-xs font-medium transition-colors",
+              "inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-xs font-medium transition-colors",
               risingOnly
                 ? "border-good/40 bg-[oklch(0.8_0.15_150/0.12)] text-good"
                 : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg"
@@ -454,7 +454,7 @@ export function RankingBoard({
         <div className="grid min-w-0 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end xl:justify-end">
           <div
             className={cn(
-              "inline-flex h-10 min-w-0 items-center gap-2 rounded-full border border-line bg-card/90 px-3 text-xs text-fg-3",
+              "inline-flex min-h-11 min-w-0 items-center gap-2 rounded-full border border-line bg-card/90 px-3 text-xs text-fg-3",
               state === "error" && "border-bad/40 bg-[oklch(0.66_0.2_25/0.12)] text-bad"
             )}
           >
@@ -472,13 +472,13 @@ export function RankingBoard({
           <button
             type="button"
             onClick={retry}
-            className="inline-flex size-10 items-center justify-center rounded-xl border border-line bg-card text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+            className="inline-flex size-11 items-center justify-center rounded-xl border border-line bg-card text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
             title="랭킹 새로고침"
             aria-label="랭킹 새로고침"
           >
             <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} />
           </button>
-          <span className="inline-flex h-10 items-center rounded-xl border border-line bg-card px-3 text-sm text-fg-3" aria-live="polite">
+          <span className="inline-flex min-h-11 flex-wrap items-center rounded-xl border border-line bg-card px-3 py-1.5 text-xs text-fg-3 sm:text-sm" aria-live="polite">
             <span className="mr-1 text-fg">다음 갱신:</span>
             <span className="numeral mr-1 text-fg"><RefreshCountdown nextRefreshAt={nextRefreshAt} /></span>
             {ranked.length > 0 ? (
@@ -495,7 +495,7 @@ export function RankingBoard({
             aria-expanded={showFilters}
             aria-controls="ranking-client-filters"
             className={cn(
-              "inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors",
+              "inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors",
               showFilters || clientFilterCount > 0
                 ? "border-accent/45 bg-accent-soft text-accent"
                 : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg"
@@ -638,14 +638,14 @@ export function RankingBoard({
               onClick={() =>
                 setWindowLimit((prev) => Math.min(visibleRanked.length, prev + RANKING_WINDOW_STEP))
               }
-              className="inline-flex min-h-9 items-center rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-on-accent"
+              className="inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-on-accent"
             >
               {Math.min(RANKING_WINDOW_STEP, visibleRanked.length - windowLimit)}편 더 보기
             </button>
             <button
               type="button"
               onClick={() => setWindowLimit(visibleRanked.length)}
-              className="inline-flex min-h-9 items-center rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-fg"
+              className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-fg"
             >
               전체 {visibleRanked.length}편 펼치기
             </button>

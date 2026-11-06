@@ -31,7 +31,7 @@ export function RecommendationFeedbackCard({
         <button
           type="button"
           onClick={onSeen}
-          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2 font-semibold text-fg-2 transition-colors hover:border-good/45 hover:text-good focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2 font-semibold text-fg-2 transition-colors hover:border-good/45 hover:text-good focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           aria-label={`${title.title} 이미 본 작품으로 표시`}
         >
           <CheckCircle2 size={13} aria-hidden="true" />
@@ -40,7 +40,7 @@ export function RecommendationFeedbackCard({
         <button
           type="button"
           onClick={onHide}
-          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2 font-semibold text-fg-2 transition-colors hover:border-bad/45 hover:text-bad focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2 font-semibold text-fg-2 transition-colors hover:border-bad/45 hover:text-bad focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           aria-label={`${title.title} 추천에서 숨기기`}
         >
           <EyeOff size={13} aria-hidden="true" />
@@ -50,7 +50,7 @@ export function RecommendationFeedbackCard({
           <button
             type="button"
             onClick={onSimilar}
-            className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:col-span-2"
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:col-span-2"
             aria-label={`${title.title}와 비슷한 작품 찾기`}
           >
             <GitCompareArrows size={13} aria-hidden="true" />

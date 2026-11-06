@@ -114,7 +114,7 @@ export function CompareView({ initialA, initialB }: { initialA?: string; initial
   if (loading) {
     return (
       <div
-        className="grid grid-cols-2 gap-6 sm:grid-cols-[1fr_auto_1fr]"
+        className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_auto_1fr]"
         role="status"
         aria-label={restStatusText("rest.status.compare.loading", "작품 비교 불러오는 중")}
       >
@@ -224,18 +224,18 @@ export function CompareView({ initialA, initialB }: { initialA?: string; initial
                       i % 2 === 1 && "bg-card/20"
                     )}
                   >
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
                       {/* Left value (A) */}
-                      <div className={cn("text-right numeral text-lg font-bold transition-all", aWin ? "text-accent text-xl" : "text-fg-2")}>
+                      <div className={cn("min-w-0 truncate text-right numeral text-base font-bold transition-all sm:text-xl", aWin ? "text-accent" : "text-fg-2")}>
                         {aEst && <span className="text-fg-3" aria-hidden>≈</span>}
                         {m.fmt(va)}
                       </div>
 
                       {/* Metric Label */}
-                      <div className="w-24 text-center text-xs font-semibold text-fg-3">{m.label}</div>
+                      <div className="w-16 text-center text-xs font-semibold text-fg-3 sm:w-24">{m.label}</div>
 
                       {/* Right value (B) */}
-                      <div className={cn("text-left numeral text-lg font-bold transition-all", bWin ? "text-accent text-xl" : "text-fg-2")}>
+                      <div className={cn("min-w-0 truncate text-left numeral text-base font-bold transition-all sm:text-xl", bWin ? "text-accent" : "text-fg-2")}>
                         {bEst && <span className="text-fg-3" aria-hidden>≈</span>}
                         {m.fmt(vb)}
                       </div>
@@ -283,7 +283,7 @@ export function CompareView({ initialA, initialB }: { initialA?: string; initial
           {/* 에디토리얼 요약 및 플랫폼 가용성 가격 비교 표 */}
           <div className="grid gap-6 md:grid-cols-2">
             {/* 작품 A 디테일 */}
-            <div className="rounded-2xl border border-line bg-card/30 p-5 space-y-4">
+            <div className="rounded-2xl border border-line bg-card/30 p-3.5 sm:p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-line/45 pb-3">
                 <span className="text-xs font-bold text-accent">작품 A</span>
                 <span className="text-xs text-fg-3">{STATUS_LABEL[a.status]}</span>
@@ -293,7 +293,7 @@ export function CompareView({ initialA, initialB }: { initialA?: string; initial
             </div>
 
             {/* 작품 B 디테일 */}
-            <div className="rounded-2xl border border-line bg-card/30 p-5 space-y-4">
+            <div className="rounded-2xl border border-line bg-card/30 p-3.5 sm:p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-line/45 pb-3">
                 <span className="text-xs font-bold text-accent">작품 B</span>
                 <span className="text-xs text-fg-3">{STATUS_LABEL[b.status]}</span>
@@ -388,7 +388,7 @@ function ComparePlatformPrice({ t }: { t: Title }) {
           const platName = PLATFORM_NAMES[av.platformId] ?? av.platformId;
           const badge = PRICING_BADGES[av.pricing] ?? { label: av.pricing, className: "border-line bg-card" };
           return (
-            <div key={av.platformId} className="flex items-center justify-between py-2 first:pt-0 last:pb-0 text-xs">
+            <div key={av.platformId} className="flex flex-wrap items-center justify-between gap-1.5 min-w-0 py-2 first:pt-0 last:pb-0 text-xs">
               <span className="font-semibold text-fg">{platName}</span>
               <div className="flex items-center gap-2">
                 <span className={cn("rounded border px-1.5 py-0.5 text-[0.62rem] font-medium uppercase tracking-wide", badge.className)}>
