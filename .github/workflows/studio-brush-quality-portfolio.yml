@@ -37,7 +37,7 @@ jobs:
   quality-portfolio:
     name: quality-portfolio
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       NODE_OPTIONS: --max-old-space-size=12288
     steps:

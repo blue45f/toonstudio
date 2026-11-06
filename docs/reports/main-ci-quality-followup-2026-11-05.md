@@ -236,3 +236,27 @@ Web 전체 Program 두 번·API/tool·모든 테스트·runner·heap·worker·re
 안료 안내 QA 스크립트는 fs/promises의 mkdtemp import와 기본 출력식 두 줄만 바꿔 임시 디렉터리를 원자적으로 생성한다. 명시적인 TOONSTUDIO_LEGACY_BANNER_VERIFY_DIR의 nullish/path.resolve 동작과 결과 파일명·보고서 보존·root/dist·fixture·브라우저/preview 정상 종료·모든 UI 단언은 그대로다. 기존 출력이나 원고 파일을 삭제하지 않는다. 보호 guard의 source·기대값·allowlist는 변경하지 않았다.
 
 수정 뒤 같은 Vitest 네 파일 41개와 Node 직접 실행 13개는 모두 통과했고 skip은 0이다. QA 스크립트 node --check 및 diff 공백 검사도 통과했다. 브라우저 전체 UI를 새로 실행한 결과로 확대하지 않으며 제품 렌더러·저장·CRDT·권한·기존 원고의 source는 이 보완에서 변경하지 않는다. Feedback 60분 보완과 함께 새 고정 head를 정상 하네스·pre-push·전체 CI로 검증하고, 그 결과가 모두 통과한 뒤에만 main에 병합한다. 운영 배포는 하지 않는다.
+
+## 2026-11-06 상태별 실행 조회 경합과 Portfolio 시간 상한 보완
+
+상태: `current`. 기준 main은 `5d416b22bb3a000d579bc75cd73fc342db3514ff`이며, 아래 두 문제의 원인과 재현 범위를 분리한다. PR #2726은 2026-11-06 10:37:13 KST에 전체 CI 완료 전에 다른 경로에서 병합됐다. 이후 확인한 병합 커밋 `1781fd59`의 필수 CI 13개 성공을 병합 전 완료로 소급하지 않는다.
+
+### 상태 snapshot 중복에 대한 제어된 경합 재현
+
+정리 스크립트는 `pending`·`queued`·`in_progress` 목록을 서로 다른 API 요청으로 조회한다. 상태 전환으로 같은 실행 ID가 둘 이상에 포함된 입력을 실제 selector에 주면, 기존 grouping의 `bucket.slice(1)`이 최신 실행의 두 번째 복사본을 `superseded` 취소 대상으로 고른다. 고유 최신 실행 하나는 선택하지 않고 서로 다른 old/new ID에서는 old만 고르지만, 동일 최신 ID의 queued/running 복사본에서는 최신 ID 자체를 선택하는 제어된 재현을 확인했다. 실제 GitHub 응답 중복 발생이나 특정 원격 실행의 취소 원인까지 입증한 것은 아니다.
+
+grouping 전에 숫자 실행 ID를 Map으로 한 번만 남기고 뒤 상태 snapshot을 사용한다. 정당한 이전 실행 선택, main CI·CodeQL·수동 실행·병합 후 정리 보호, 닫힌 PR 재실행 예외, 6시간 대기 기준, 권한과 취소 API는 유지한다.
+
+같은 ID 중복·old와 중복 new·세 상태 모의 API를 거친 apply 경로에서 취소 POST가 없는지 확인하는 세 회귀를 추가했다. 원본 selector에서는 새 세 개가 실패하고 기존 18개는 통과했다. 최소 수정 후 관련 세 Vitest 파일 48개가 모두 통과했으며, 실제 원격 API·취소·강제 취소는 호출하지 않았다. 두 파일의 Node 구문 검사와 diff 공백 검사도 통과했다. 이 로컬 결과를 새 원격 CI 성공으로 표시하지 않는다.
+
+### 원격 Portfolio의 35분 상한 초과
+
+[6affe의 Portfolio 실행 42148190896/job127665068332](https://github.com/blue45f/toonstudio/actions/runs/42148190896/job/127665068332)은 check annotation에 `The job has exceeded the maximum execution time of 35m0s`를 남겼다. 이 취소는 위 selector 경합의 실제 사례로 분류하지 않는다. 원문과 annotation은 각각 한 번만 조회해 별도 보존했다.
+
+해당 실행은 8파일·113테스트, 정적 감사, lint와 독립 TypeScript 검사를 통과했다. 이후 기존 `pnpm run build` 내부 Web 타입 검사까지 수행한 뒤 작업 시작 약 31분 43초에 Vite 변환을 시작했고, 약 3분 31초 후 상한에 도달했다. 제품 빌드 완료나 브라우저 검증 통과를 주장하지 않는다.
+
+Portfolio job의 바깥 시간 상한 한 필드만 35분에서 45분으로 조정한다. 이 필드를 35로 되돌리면 workflow 전체 bytes가 원본과 같다. 표준 Ubuntu 24.04 runner, Node·pnpm·heap, 기존 여덟 테스트 파일, 감사·lint·독립 타입 검사·build 내부 타입 검사·제품 빌드, 판정 기준·기한·권한·artifact 설정은 유지한다. 최대 실행 시간이 10분 늘 수 있으며 유료 runner·플랜 변경은 없다.
+
+같은 제품 source인 6affe의 Brush build에서 통과한 `build:bundle` 단계는 5분 11초였다. 원래 Portfolio의 Vite 시작 시점을 기준으로 45분 상한은 약 13분 17초를 남긴다. 다른 job의 측정값을 참고한 유한 예산이며, 이 Portfolio가 45분 안에 완료된다는 보장은 아니다. 새 고정 head의 실제 Portfolio와 전체 필수 CI를 끝까지 확인해야 한다.
+
+이 보완의 수정 대상은 CI 정리 helper·해당 회귀·Portfolio workflow·이 기록뿐이다. 원고 외관·CRDT·저장 형식·DB schema·권한 정책·렌더러·필압 판정은 바꾸지 않으며 운영 배포를 하지 않는다. 하네스·정상 hooks·원격 CI·후속 PR 병합 결과는 해당 실행의 최종 SHA와 Checks에 별도로 기록한다.
