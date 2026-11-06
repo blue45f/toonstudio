@@ -32,7 +32,9 @@ export function selectSupersededActionsRuns(
   } = {},
 ) {
   const current = Number(currentRunId);
-  const active = runs.filter((run) =>
+  // 상태별 조회에 겹친 실행은 한 번만 비교하고 뒤 상태 스냅샷을 유지한다.
+  const uniqueRuns = new Map(runs.map((run) => [Number(run.id), run]));
+  const active = [...uniqueRuns.values()].filter((run) =>
     Number(run.id) !== current &&
     ACTIVE_EVENTS.has(run.event) &&
     !isProtectedActionsRun(run),

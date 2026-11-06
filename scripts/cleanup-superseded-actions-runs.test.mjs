@@ -74,6 +74,36 @@ function createCleanupFetch(forceCancelStatus) {
 }
 
 describe("selectSupersededActionsRuns", () => {
+  it("상태 조회에 중복된 최신 실행을 자기 자신의 후속 실행으로 취급하지 않는다", () => {
+    const newest = run({
+      id: 2,
+      event: "push",
+      branch: "main",
+      createdAt: "2026-11-06T02:00:00Z",
+    });
+    const selected = selectSupersededActionsRuns([
+      { ...newest, status: "queued" },
+      { ...newest, status: "in_progress" },
+    ]);
+    expect(selected).toEqual([]);
+  });
+
+  it("최신 실행이 여러 상태에 중복돼도 서로 다른 이전 실행만 취소 대상으로 고른다", () => {
+    const newest = run({
+      id: 2,
+      event: "push",
+      branch: "main",
+      createdAt: "2026-11-06T02:00:00Z",
+    });
+    const selected = selectSupersededActionsRuns([
+      run({ id: 1, event: "push", branch: "main", createdAt: "2026-11-06T01:50:00Z" }),
+      { ...newest, status: "queued" },
+      { ...newest, status: "in_progress" },
+    ]);
+    expect(selected).toMatchObject([{ run: { id: 1 }, reason: "superseded" }]);
+    expect(selected).toHaveLength(1);
+  });
+
   it("keeps only the newest run for the same workflow, event and branch", () => {
     const selected = selectSupersededActionsRuns(
       [
@@ -297,6 +327,39 @@ describe("selectSupersededActionsRuns", () => {
 });
 
 describe("cleanupSupersededActionsRuns", () => {
+  it("세 상태 API가 같은 실행을 반환해도 최신 실행의 취소 API를 호출하지 않는다", async () => {
+    const calls = [];
+    const newest = run({
+      id: 2,
+      event: "push",
+      branch: "main",
+      createdAt: "2026-11-06T02:00:00Z",
+    });
+    const report = await cleanupSupersededActionsRuns({
+      token: "test-token",
+      repository: "owner/repository",
+      currentRunId: 999,
+      apply: true,
+      now: Date.parse("2026-11-06T02:10:00Z"),
+      fetchImpl: async (url, init = {}) => {
+        const request = new URL(url);
+        calls.push({ method: init.method ?? "GET", path: request.pathname, status: request.searchParams.get("status") });
+        const status = request.searchParams.get("status");
+        if (["pending", "queued", "in_progress"].includes(status)) {
+          return jsonResponse({ workflow_runs: [{ ...newest, status }] });
+        }
+        if (request.pathname.endsWith("/pulls")) return jsonResponse([]);
+        if (init.method === "POST") return jsonResponse(null, 204);
+        throw new Error(`예상하지 못한 모의 요청: ${request}`);
+      },
+    });
+
+    expect(calls.filter(({ status }) => status).map(({ status }) => status).sort()).toEqual(["in_progress", "pending", "queued"]);
+    expect(report.planned).toEqual([]);
+    expect(report.cancelled).toEqual([]);
+    expect(calls.filter(({ method }) => method === "POST")).toEqual([]);
+  });
+
   it.each([
     {
       name: "falls back to force-cancel after GitHub rejects ordinary cancel",
