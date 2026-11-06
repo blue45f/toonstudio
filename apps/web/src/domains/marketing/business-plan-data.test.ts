@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
@@ -32,6 +35,32 @@ describe("사업계획서 페이지 본문 데이터", () => {
     const serialized = JSON.stringify(BUSINESS_PLAN_SECTIONS);
     for (const name of FORBIDDEN_TEAM_NAMES) {
       expect(serialized).not.toContain(name);
+    }
+  });
+
+  it("공개 본문에는 멘토 실명과 사업자 등록 상태 없이 작성자와 기관을 남긴다", () => {
+    const serialized = JSON.stringify(BUSINESS_PLAN_SECTIONS);
+    expect(serialized).not.toMatch(/멘토\s*[:·]?\s+[가-힣]{2,4}\s*[,·]/);
+    expect(serialized).not.toMatch(/사업자\s*등록/);
+    const appendix = BUSINESS_PLAN_SECTIONS.find((section) => section.id === "appendix");
+    expect(appendix?.note).toContain(
+      "멘토기관: 한국핀테크지원센터, 작성자: 김희준(1인 예비창업자, 팀 없음).",
+    );
+  });
+
+  it("페이지 소개와 폰트 재생성 원본에도 공개하지 않는 개인 표기를 남기지 않는다", () => {
+    const root = process.cwd();
+    for (const path of [
+      "apps/web/src/domains/marketing/BusinessPlanPage.tsx",
+      "apps/web/scripts/generate-business-plan-font-subset.py",
+    ]) {
+      const source = readFileSync(join(root, path), "utf8");
+      expect(source).not.toMatch(/멘토\s+[가-힣]{2,4}\s*[,·]/);
+      expect(source).not.toMatch(/멘토\s+[가-힣]{2,4}\s+멘토기관/);
+      expect(source).not.toMatch(/사업자\s*등록/);
+      expect(source).toContain("한국핀테크지원센터");
+      expect(source).toContain("김희준");
+      expect(source).toContain("팀 없음");
     }
   });
 
