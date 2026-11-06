@@ -52,3 +52,17 @@
 @media (prefers-reduced-motion: reduce) {
   .learn-home-page .learn-classroom-feature, .learn-home-page .learn-classroom-art { animation: none; transition: none; }
 }
+
+/* Keep the four learning destinations legible rather than stacking words in narrow columns. */
+.learn-home-page .learn-hub-tabs > [role="tablist"] { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+#main-content .learn-home-page .learn-hub-tabs > [role="tablist"] > [role="tab"] { flex-direction: row; min-height: 44px; min-block-size: 44px; gap: 6px; padding: 8px; border-radius: 10px; }
+.learn-home-page .learn-hub-tabs > [role="tablist"] > [role="tab"] > span { flex-wrap: nowrap; }
+@media (min-width: 641px) and (max-width: 1023px) {
+  .learn-home-page .learn-classroom-feature { grid-template-columns: minmax(0, 1fr); }
+  .learn-home-page .learn-classroom-art .workflow-illustration,
+  .learn-home-page .learn-classroom-art img { height: 160px; min-height: 0; aspect-ratio: auto; object-fit: contain; }
+  .learn-home-page .learn-classroom-feature .learn-primary { width: 100%; justify-content: center; }
+}
+@media (max-width: 640px) {
+  .learn-home-page .learn-hub-tabs > [role="tablist"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

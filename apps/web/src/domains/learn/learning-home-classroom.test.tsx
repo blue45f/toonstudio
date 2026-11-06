@@ -32,6 +32,21 @@ describe("다음 실습 우선 학습 홈",()=>{
     expect(session.compareDocumentPosition(roadmap)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getAllByRole("tab")).toHaveLength(4);
   });
+  it("키보드로 네 학습 목적지를 순환하고 오늘의 학습으로 돌아온다",()=>{
+    mount();
+    const today=screen.getByRole("tab",{name:"오늘의 학습"});
+    today.focus();
+    fireEvent.keyDown(today,{key:"ArrowRight"});
+    const paths=screen.getByRole("tab",{name:/학습 경로/});
+    expect(paths.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(paths);
+    fireEvent.keyDown(paths,{key:"End"});
+    const skills=screen.getByRole("tab",{name:"역량 지도"});
+    expect(skills.getAttribute("aria-selected")).toBe("true");
+    fireEvent.keyDown(skills,{key:"Home"});
+    expect(today.getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("link",{name:"시작하기"})).toBeTruthy();
+  });
   it("설정 열기와 역할·목표·경험·시간 편집을 유지한다",()=>{
     mount(); fireEvent.click(screen.getByRole("button",{name:"학습 설정 바꾸기"}));
     expect(document.querySelector<HTMLDetailsElement>("#learn-plan")?.open).toBe(true);
