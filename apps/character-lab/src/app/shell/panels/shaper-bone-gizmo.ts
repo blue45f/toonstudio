@@ -3,13 +3,27 @@
  * `HeadPartsManager 0x02000038`, `BodyPartsManager 0x0200000c`) 및 `BuiltInData/Presets/*.preset`
  * 역공학 근거를 바탕으로 구성한 클린룸 본 기즈모·대칭 조작·네이티브 프리셋 브리지 모듈.
  */
-import { computeWorldTransforms } from "../../../animation/skeleton-fk";
 import { HUMANOID_BONE_PARENTS, clampParam, isHumanoidBoneName } from "../../../contracts";
-import { qNormalize, type Quat, type Vec3 } from "../../../shared/math";
+import { qNormalize, v3IsFinite, type Quat, type Vec3 } from "../../../shared/math";
 
+import {
+  diagnoseSkeletonData,
+  isFinitePixelPair,
+  reportBoundaryFailure,
+  safeComputeWorldTransforms,
+  type SkeletonBoundaryOptions,
+} from "./skeleton-boundary-guard";
 import { resolveDragPivot, type DragPivot } from "./viewport-interactions";
 
 import type { BodyParamKey, FaceParamKey, HumanoidBoneName, JointDragHandle, ParamValues, Pose, SkeletonData } from "../../../contracts";
+
+export {
+  diagnoseSkeletonData,
+  isFinitePixelPair,
+  reportBoundaryFailure,
+  safeComputeWorldTransforms,
+  type SkeletonBoundaryOptions,
+} from "./skeleton-boundary-guard";
 
 /** SHAPER `BoneManager.pivotIKMode`에 대응하는 관절 조작 피벗 모드 */
 export type ShaperPivotMode = "parent" | "direct";
@@ -27,6 +41,16 @@ export interface BoneLinkSegment {
 
 function cleanZero(value: number): number {
   return Object.is(value, -0) || Math.abs(value) < 1e-12 ? 0 : value;
+}
+
+function isValidRotationQuat(rotation: Quat): boolean {
+  if (!Array.isArray(rotation) || rotation.length < 4) return false;
+  const [x, y, z, w] = rotation;
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z) || !Number.isFinite(w)) {
+    return false;
+  }
+  const norm = Math.hypot(x, y, z, w);
+  return Number.isFinite(norm) && norm >= 1e-6;
 }
 
 /**
@@ -69,17 +93,21 @@ export function applySymmetryToPose(
   rotation: Quat,
   symmetryEnabled: boolean,
 ): Pose {
+  if (!isValidRotationQuat(rotation) || !isHumanoidBoneName(pivotBone)) {
+    return { ...basePose };
+  }
+  const safeRotation: Quat = [rotation[0], rotation[1], rotation[2], rotation[3]];
   if (!symmetryEnabled) {
-    return { ...basePose, [pivotBone]: rotation };
+    return { ...basePose, [pivotBone]: safeRotation };
   }
   const mirrorBone = resolveMirrorHumanoidBone(pivotBone);
   if (!mirrorBone) {
-    return { ...basePose, [pivotBone]: rotation };
+    return { ...basePose, [pivotBone]: safeRotation };
   }
   return {
     ...basePose,
-    [pivotBone]: rotation,
-    [mirrorBone]: mirrorHumanoidBoneRotation(rotation),
+    [pivotBone]: safeRotation,
+    [mirrorBone]: mirrorHumanoidBoneRotation(safeRotation),
   };
 }
 
@@ -93,15 +121,19 @@ export function resolveDragPivotWithMode(
   pose: Pose,
   handleBone: HumanoidBoneName,
   pivotMode: ShaperPivotMode = "parent",
+  options?: SkeletonBoundaryOptions,
 ): DragPivot | null {
   if (pivotMode === "parent") {
-    return resolveDragPivot(skeleton, pose, handleBone);
+    return resolveDragPivot(skeleton, pose, handleBone, options);
   }
-  const world = computeWorldTransforms(skeleton, pose).get(handleBone);
-  if (!world) return null;
+  const fkResult = safeComputeWorldTransforms(skeleton, pose, options);
+  if (!fkResult.ok) return null;
+  if (!isHumanoidBoneName(handleBone)) return null;
+  const world = fkResult.transforms.get(handleBone);
+  if (!world || !v3IsFinite(world.position)) return null;
   return {
     pivotBone: handleBone,
-    pivotWorld: world.position,
+    pivotWorld: [...world.position],
   };
 }
 
@@ -118,25 +150,35 @@ function classifyBoneSide(bone: HumanoidBoneName): "center" | "left" | "right" {
 export function computeVisibleBoneLinks(
   handles: readonly JointDragHandle[],
   skeleton?: SkeletonData | null,
+  options?: SkeletonBoundaryOptions,
 ): readonly BoneLinkSegment[] {
   const byBone = new Map<HumanoidBoneName, JointDragHandle>();
   for (const handle of handles) {
-    if (isHumanoidBoneName(handle.bone)) byBone.set(handle.bone, handle);
+    if (!handle || !isHumanoidBoneName(handle.bone) || !isFinitePixelPair(handle.screen)) continue;
+    byBone.set(handle.bone, handle);
   }
   const parentLookup = new Map<string, string | null>();
-  if (skeleton) {
-    for (const bone of skeleton.bones) {
-      parentLookup.set(bone.name, bone.parent);
+  if (skeleton !== undefined && skeleton !== null) {
+    const failure = diagnoseSkeletonData(skeleton, options?.now);
+    if (failure) {
+      reportBoundaryFailure(failure, options);
+    } else {
+      for (const bone of skeleton.bones) {
+        parentLookup.set(bone.name, bone.parent);
+      }
     }
   }
 
   const segments: BoneLinkSegment[] = [];
   for (const handle of handles) {
-    if (!isHumanoidBoneName(handle.bone)) continue;
+    if (!handle || !isHumanoidBoneName(handle.bone) || !isFinitePixelPair(handle.screen)) continue;
+    const visited = new Set<string>([handle.bone]);
     let cursor = parentLookup.get(handle.bone) ?? HUMANOID_BONE_PARENTS[handle.bone] ?? null;
     let parentHandle: JointDragHandle | undefined;
     let parentBoneName: HumanoidBoneName | null = null;
     while (cursor) {
+      if (visited.has(cursor)) break;
+      visited.add(cursor);
       if (isHumanoidBoneName(cursor)) {
         parentHandle = byBone.get(cursor);
         if (parentHandle) {

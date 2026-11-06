@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createReferenceSkeleton } from "../../../animation/reference-skeleton";
 import { computeWorldTransforms } from "../../../animation/skeleton-fk";
-import { HUMANOID_BONE_NAMES } from "../../../contracts";
+import { HUMANOID_BONE_NAMES, isLabFailure } from "../../../contracts";
 import { projectToPixel } from "../../../render/viewport-math";
 import { qRotateVec3, v3Add, v3Length, v3Sub } from "../../../shared/math";
 
@@ -44,7 +44,7 @@ import {
 } from "./viewport-interactions";
 
 import type { ShaperHistoryStack } from "./viewport-interactions";
-import type { HumanoidBoneName, HudSample, JointDragHandle, Pose, Quat, Vec3 } from "../../../contracts";
+import type { HumanoidBoneName, HudSample, JointDragHandle, LabFailure, Pose, Quat, SkeletonData, Vec3 } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 
 const SKELETON = createReferenceSkeleton();
@@ -529,5 +529,215 @@ describe("SHAPER 뷰포트 단축키 및 프리셋 수식키(UIManager / ApplyHe
     expect(transformed.pitchDeg).toBe(90); // 80 + 36 -> clamped to 90
     expect(transformed.zoom).toBeCloseTo(1, 5);
     expect(transformed.scale).toEqual([10, 10, 10]); // 10^1 = 10
+  });
+});
+
+describe("skeleton & pointer boundary safety — 손상 스켈레톤 격리·진단 구별·포즈/Undo 보존·정상 회복", () => {
+  const nanRestSkeleton: SkeletonData = {
+    bones: [
+      { name: "hips", parent: null, restTranslation: [0, 1, 0], restRotation: [0, 0, 0, 1] },
+      { name: "spine", parent: "hips", restTranslation: [0, Number.NaN, 0], restRotation: [0, 0, 0, 1] },
+      { name: "head", parent: "spine", restTranslation: [0, 0.3, 0], restRotation: [0, 0, 0, 1] },
+    ],
+  };
+
+  const infRestSkeleton: SkeletonData = {
+    bones: [
+      { name: "hips", parent: null, restTranslation: [Number.POSITIVE_INFINITY, 0, 0], restRotation: [0, 0, 0, 1] },
+      { name: "spine", parent: "hips", restTranslation: [0, 0.2, 0], restRotation: [0, 0, 0, 1] },
+    ],
+  };
+
+  const cycleHumanoidSkeleton: SkeletonData = {
+    bones: [
+      { name: "hips", parent: "spine", restTranslation: [0, 1, 0], restRotation: [0, 0, 0, 1] },
+      { name: "spine", parent: "hips", restTranslation: [0, 0.2, 0], restRotation: [0, 0, 0, 1] },
+    ],
+  };
+
+  const cycleAuxiliarySkeleton: SkeletonData = {
+    bones: [
+      { name: "hips", parent: null, restTranslation: [0, 1, 0], restRotation: [0, 0, 0, 1] },
+      { name: "aux_1", parent: "aux_2", restTranslation: [0, 0.1, 0], restRotation: [0, 0, 0, 1], auxiliary: true },
+      { name: "aux_2", parent: "aux_1", restTranslation: [0, 0.1, 0], restRotation: [0, 0, 0, 1], auxiliary: true },
+      { name: "spine", parent: "aux_1", restTranslation: [0, 0.2, 0], restRotation: [0, 0, 0, 1] },
+    ],
+  };
+
+  it("resolveDragPivot: NaN/Infinity restTranslation 및 휴머노이드·보조 본 순환에서 throw/무한루프 없이 null을 반환하고 LabFailure를 보고한다", () => {
+    const failures: LabFailure[] = [];
+
+    expect(resolveDragPivot(nanRestSkeleton, {}, "head", { onFailure: (f) => failures.push(f), now: 1700000000001 })).toBeNull();
+    expect(resolveDragPivot(infRestSkeleton, {}, "spine", { onFailure: (f) => failures.push(f), now: 1700000000002 })).toBeNull();
+    expect(failures).toHaveLength(2);
+    expect(isLabFailure(failures[0])).toBe(true);
+    expect(failures[0]?.code).toBe("skeleton-non-finite-rest");
+    expect(failures[1]?.code).toBe("skeleton-non-finite-rest");
+
+    const cycleFailures: LabFailure[] = [];
+    expect(resolveDragPivot(cycleHumanoidSkeleton, {}, "spine", { onFailure: (f) => cycleFailures.push(f), now: 1700000000003 })).toBeNull();
+    expect(resolveDragPivot(cycleAuxiliarySkeleton, {}, "spine", { onFailure: (f) => cycleFailures.push(f), now: 1700000000004 })).toBeNull();
+    expect(cycleFailures).toHaveLength(2);
+    expect(cycleFailures[0]?.code).toBe("skeleton-cycle");
+    expect(cycleFailures[1]?.code).toBe("skeleton-cycle");
+
+    // 정상 빈 스켈레톤이나 미존재 본 조회는 null을 반환하되 onFailure를 호출하지 않아야 함 (원인 구별)
+    const cleanFailures: LabFailure[] = [];
+    expect(resolveDragPivot({ bones: [] }, {}, "head", { onFailure: (f) => cleanFailures.push(f) })).toBeNull();
+    const partialSkeleton: SkeletonData = {
+      bones: [{ name: "hips", parent: null, restTranslation: [0, 1, 0], restRotation: [0, 0, 0, 1] }],
+    };
+    expect(resolveDragPivot(partialSkeleton, {}, "head", { onFailure: (f) => cleanFailures.push(f) })).toBeNull();
+    expect(cleanFailures).toHaveLength(0);
+  });
+
+  it("computeJointDrag: 손상 스켈레톤·비유한 pivotWorld·비유한 픽셀을 격리해 진단하고, 카메라 뒤쪽 정상 기하 실패와 구별한다", () => {
+    const validPivot = resolveDragPivot(SKELETON, {}, "leftLowerArm");
+    expect(validPivot).not.toBeNull();
+    if (!validPivot) return;
+
+    const failures: LabFailure[] = [];
+    expect(
+      computeJointDrag({
+        skeleton: nanRestSkeleton,
+        startPose: {},
+        pivot: validPivot,
+        camera: CAMERA,
+        startPixel: [400, 300],
+        currentPixel: [420, 320],
+        onFailure: (f) => failures.push(f),
+      }),
+    ).toBeNull();
+    expect(
+      computeJointDrag({
+        skeleton: cycleHumanoidSkeleton,
+        startPose: {},
+        pivot: validPivot,
+        camera: CAMERA,
+        startPixel: [400, 300],
+        currentPixel: [420, 320],
+        onFailure: (f) => failures.push(f),
+      }),
+    ).toBeNull();
+    expect(
+      computeJointDrag({
+        skeleton: SKELETON,
+        startPose: {},
+        pivot: { pivotBone: "leftUpperArm", pivotWorld: [Number.NaN, 1, 0] },
+        camera: CAMERA,
+        startPixel: [400, 300],
+        currentPixel: [420, 320],
+        onFailure: (f) => failures.push(f),
+      }),
+    ).toBeNull();
+    expect(
+      computeJointDrag({
+        skeleton: SKELETON,
+        startPose: {},
+        pivot: validPivot,
+        camera: CAMERA,
+        startPixel: [Number.NaN, 300],
+        currentPixel: [420, 320],
+        onFailure: (f) => failures.push(f),
+      }),
+    ).toBeNull();
+
+    expect(failures.map((f) => f.code)).toEqual([
+      "skeleton-non-finite-rest",
+      "skeleton-cycle",
+      "skeleton-invalid-input",
+      "skeleton-invalid-input",
+    ]);
+
+    // 카메라 뒤쪽 피벗 역투영 불가는 null을 반환하되 onFailure를 호출하지 않음
+    const geomFailures: LabFailure[] = [];
+    const behindCamera: ViewportCameraInfo = { ...CAMERA, position: [0, 1.1, -4] };
+    expect(
+      computeJointDrag({
+        skeleton: SKELETON,
+        startPose: {},
+        pivot: validPivot,
+        camera: behindCamera,
+        startPixel: [400, 300],
+        currentPixel: [420, 320],
+        onFailure: (f) => geomFailures.push(f),
+      }),
+    ).toBeNull();
+    expect(geomFailures).toHaveLength(0);
+  });
+
+  it("clampShaperGizmoDelta & visibleHandles: 비유한 델타와 비유한 화면 좌표를 격리한다", () => {
+    expect(clampShaperGizmoDelta(Number.NaN, 1.5)).toBe(0);
+    expect(clampShaperGizmoDelta(0.5, Number.NaN)).toBe(0);
+    expect(clampShaperGizmoDelta(Number.POSITIVE_INFINITY, 1.5)).toBe(0);
+
+    const handles: readonly JointDragHandle[] = [
+      { bone: "hips", screen: [100, 200], world: [0, 1, 0] },
+      { bone: "spine", screen: [Number.NaN, 10], world: [0, 1.1, 0] },
+      { bone: "head", screen: [10, Number.POSITIVE_INFINITY], world: [0, 1.5, 0] },
+    ];
+    expect(visibleHandles(handles, { fingers: true }).map((h) => h.bone)).toEqual(["hips"]);
+    expect(handlesKey(handles)).toBe("hips:100.0,200.0|spine:nan|head:nan");
+  });
+
+  it("손상 스켈레톤 드래그 실패 시 이전 정상 포즈·Undo 히스토리가 보존되고 직후 정상 드래그가 즉시 회복된다", () => {
+    const initialPose: Pose = { head: [0, 0.1, 0, 0.995] };
+    const startPoseSnapshot: Pose = { head: [...(initialPose.head as Quat)] };
+    let history: ShaperHistoryStack<Pose> = { entries: [], curPos: -1 };
+    history = pushShaperHistoryEntry(history, { type: "selectPoseControlPoints", payload: initialPose });
+    const historySnapshot = { curPos: history.curPos, entries: [...history.entries] };
+
+    const failures: LabFailure[] = [];
+    const failedPivot = resolveDragPivot(nanRestSkeleton, initialPose, "leftLowerArm", {
+      onFailure: (f) => failures.push(f),
+    });
+    expect(failedPivot).toBeNull();
+
+    const validPivot = resolveDragPivot(SKELETON, initialPose, "leftLowerArm");
+    expect(validPivot).not.toBeNull();
+    if (!validPivot) return;
+
+    const failedOutcome = computeJointDrag({
+      skeleton: cycleHumanoidSkeleton,
+      startPose: initialPose,
+      pivot: validPivot,
+      camera: CAMERA,
+      startPixel: [400, 300],
+      currentPixel: [430, 340],
+      onFailure: (f) => failures.push(f),
+    });
+    expect(failedOutcome).toBeNull();
+    expect(failures).toHaveLength(2);
+
+    // 기존 정상 포즈 및 Undo 히스토리 스택 무결성 검증
+    expect(initialPose).toEqual(startPoseSnapshot);
+    expect(history.curPos).toBe(historySnapshot.curPos);
+    expect(history.entries).toEqual(historySnapshot.entries);
+
+    // 실패 직후 정상 SKELETON으로 재시도 시 정상 회전 결과 및 히스토리 푸시/Undo 즉시 회복
+    const elbow = worldOf(initialPose, "leftLowerArm");
+    const startPx = pixelOf(elbow);
+    const recoveredOutcome = computeJointDrag({
+      skeleton: SKELETON,
+      startPose: initialPose,
+      pivot: validPivot,
+      camera: CAMERA,
+      startPixel: startPx,
+      currentPixel: [startPx[0] + 25, startPx[1] + 45],
+      onFailure: (f) => failures.push(f),
+    });
+    expect(recoveredOutcome).not.toBeNull();
+    expect(failures).toHaveLength(2);
+    if (!recoveredOutcome) return;
+
+    expect(recoveredOutcome.pivotBone).toBe("leftUpperArm");
+    expect(recoveredOutcome.pose.head).toEqual(initialPose.head);
+    expect(recoveredOutcome.pose.leftUpperArm).toBeDefined();
+
+    history = pushShaperHistoryEntry(history, { type: "selectPoseControlPoints", payload: recoveredOutcome.pose });
+    expect(history.curPos).toBe(1);
+    const undone = stepShaperHistoryCursor(history, -1);
+    expect(undone.stack.curPos).toBe(0);
+    expect(undone.appliedEntry?.payload).toEqual(initialPose);
   });
 });

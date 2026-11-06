@@ -5,16 +5,22 @@
  */
 import { SPINE_IK_CHAIN, solveChainIk } from "../../../animation/fabrik";
 import { solveIkGoal } from "../../../animation/ik-apply";
-import { computeWorldTransforms } from "../../../animation/skeleton-fk";
-import { BODY_PARAM_LABELS_KO, FACE_PARAM_LABELS_KO, clampParam } from "../../../contracts";
+import { BODY_PARAM_LABELS_KO, FACE_PARAM_LABELS_KO, clampParam, failVisible } from "../../../contracts";
 import { projectToPixel, unprojectToViewPlane } from "../../../render/viewport-math";
-import { qRotateVec3, v3Add, type Vec3 } from "../../../shared/math";
+import { qRotateVec3, v3Add, v3IsFinite, type Vec3 } from "../../../shared/math";
 
 import { applySymmetryToPose, resolveDragPivotWithMode } from "./shaper-bone-gizmo";
+import {
+  classifySkeletonBoundaryError,
+  isFinitePixelPair,
+  reportBoundaryFailure,
+  safeComputeWorldTransforms,
+  type SkeletonBoundaryOptions,
+} from "./skeleton-boundary-guard";
 import { clampShaperGizmoDelta, computeJointDrag } from "./viewport-interactions";
 
 import type { ShaperPivotMode } from "./shaper-bone-gizmo";
-import type { BodyParamKey, FaceParamKey, HumanoidBoneName, IkChainId, ParamValues, Pose, SkeletonData } from "../../../contracts";
+import type { BodyParamKey, FaceParamKey, HumanoidBoneName, IkChainId, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 
 export {
@@ -233,15 +239,19 @@ export function computeShaperControlPoints(
   skeleton: SkeletonData,
   pose: Pose,
   camera: ViewportCameraInfo,
+  options?: SkeletonBoundaryOptions,
 ): readonly ShaperProjectedControlPoint[] {
-  const transforms = computeWorldTransforms(skeleton, pose);
+  const fkResult = safeComputeWorldTransforms(skeleton, pose, options);
+  if (!fkResult.ok) return [];
+  const { transforms } = fkResult;
   const projected: ShaperProjectedControlPoint[] = [];
   for (const spec of SHAPER_CONTROL_POINT_SPECS) {
     const anchor = transforms.get(spec.anchorBone);
-    if (!anchor) continue;
+    if (!anchor || !v3IsFinite(anchor.position)) continue;
     const world = v3Add(anchor.position, qRotateVec3(anchor.rotation, spec.localOffset));
+    if (!v3IsFinite(world)) continue;
     const screen = projectToPixel(camera, world);
-    if (!screen) continue;
+    if (!isFinitePixelPair(screen)) continue;
     projected.push({ ...spec, world, screen });
   }
   return projected;
@@ -276,18 +286,31 @@ export function computeShaperControlPointDrag(input: {
   readonly baseFace: ParamValues<FaceParamKey>;
   readonly baseBody: ParamValues<BodyParamKey>;
 }): ShaperControlPointDragOutcome {
-  const spanX = Math.max(120, input.renderWidth * 0.22);
-  const spanY = Math.max(120, input.renderHeight * 0.22);
-  const normDx = clampShaperGizmoDelta((input.currentPixel[0] - input.startPixel[0]) / spanX, 1.5);
-  const normDy = clampShaperGizmoDelta((input.startPixel[1] - input.currentPixel[1]) / spanY, 1.5);
+  const validPixels = isFinitePixelPair(input.startPixel) && isFinitePixelPair(input.currentPixel);
+  const validSize =
+    Number.isFinite(input.renderWidth) &&
+    input.renderWidth > 0 &&
+    Number.isFinite(input.renderHeight) &&
+    input.renderHeight > 0;
+  let normDx = 0;
+  let normDy = 0;
+  if (validPixels && validSize) {
+    const spanX = Math.max(120, input.renderWidth * 0.22);
+    const spanY = Math.max(120, input.renderHeight * 0.22);
+    const rawDx = (input.currentPixel[0] - input.startPixel[0]) / spanX;
+    const rawDy = (input.startPixel[1] - input.currentPixel[1]) / spanY;
+    normDx = Number.isFinite(rawDx) ? clampShaperGizmoDelta(rawDx, 1.5) : 0;
+    normDy = Number.isFinite(rawDy) ? clampShaperGizmoDelta(rawDy, 1.5) : 0;
+  }
 
   const nextFace: Record<string, number> = { ...input.baseFace };
   const nextBody: Record<string, number> = { ...input.baseBody };
   const changeMap = new Map<string, ShaperControlPointParamChange>();
 
   const applyAxis = (binding: ShaperControlPointAxisBinding | undefined, deltaNorm: number): void => {
-    if (!binding || Math.abs(deltaNorm) < 1e-4) return;
-    const currentBase = binding.group === "face" ? (nextFace[binding.key] ?? 0) : (nextBody[binding.key] ?? 0);
+    if (!binding || !Number.isFinite(deltaNorm) || Math.abs(deltaNorm) < 1e-4) return;
+    const rawBase = binding.group === "face" ? nextFace[binding.key] : nextBody[binding.key];
+    const currentBase = typeof rawBase === "number" && Number.isFinite(rawBase) ? rawBase : 0;
     const nextVal = Number(clampParam(currentBase + deltaNorm * binding.sensitivity).toFixed(3));
     if (binding.group === "face") nextFace[binding.key] = nextVal;
     else nextBody[binding.key] = nextVal;
@@ -344,14 +367,31 @@ export function computeShaperIkHandleDrag(input: {
   readonly currentPixel: readonly [number, number];
   readonly symmetryEnabled?: boolean;
   readonly pivotMode?: ShaperPivotMode;
+  readonly onFailure?: (failure: LabFailure) => void;
+  readonly now?: number;
 }): ShaperIkDragOutcome | null {
-  const transforms = computeWorldTransforms(input.skeleton, input.startPose);
+  if (!isFinitePixelPair(input.startPixel) || !isFinitePixelPair(input.currentPixel)) {
+    reportBoundaryFailure(
+      failVisible(
+        "skeleton-invalid-input",
+        "IK 드래그 픽셀 좌표가 유한하지 않습니다.",
+        { startPixel: input.startPixel, currentPixel: input.currentPixel },
+        input.now,
+      ),
+      input,
+    );
+    return null;
+  }
+
+  const fkResult = safeComputeWorldTransforms(input.skeleton, input.startPose, input);
+  if (!fkResult.ok) return null;
+  const { transforms } = fkResult;
   const handleTransform = transforms.get(input.handleBone);
-  if (!handleTransform) return null;
+  if (!handleTransform || !v3IsFinite(handleTransform.position)) return null;
 
   const startWorld = unprojectToViewPlane(input.camera, input.startPixel[0], input.startPixel[1], handleTransform.position);
   const currentWorld = unprojectToViewPlane(input.camera, input.currentPixel[0], input.currentPixel[1], handleTransform.position);
-  if (!startWorld || !currentWorld) return null;
+  if (!startWorld || !currentWorld || !v3IsFinite(startWorld) || !v3IsFinite(currentWorld)) return null;
 
   const deltaWorld: Vec3 = [currentWorld[0] - startWorld[0], currentWorld[1] - startWorld[1], currentWorld[2] - startWorld[2]];
   const limbChainId = BONE_TO_IK_CHAIN[input.handleBone];
@@ -360,28 +400,55 @@ export function computeShaperIkHandleDrag(input: {
       limbChainId === "leftArm" ? "leftHand" : limbChainId === "rightArm" ? "rightHand" : limbChainId === "leftLeg" ? "leftFoot" : "rightFoot";
     const endOrigin = transforms.get(endBone)?.position ?? handleTransform.position;
     const targetWorld: Vec3 = [endOrigin[0] + deltaWorld[0], endOrigin[1] + deltaWorld[1], endOrigin[2] + deltaWorld[2]];
-    const solved = solveIkGoal(input.startPose, input.skeleton, { chain: limbChainId, target: targetWorld });
-    let nextPose = solved.pose;
-    if (input.symmetryEnabled) {
-      for (const chainBone of solved.chain) {
-        const rot = nextPose[chainBone];
-        if (rot) nextPose = applySymmetryToPose(nextPose, chainBone, rot, true);
+    try {
+      const solved = solveIkGoal(input.startPose, input.skeleton, { chain: limbChainId, target: targetWorld });
+      let nextPose = solved.pose;
+      if (input.symmetryEnabled) {
+        for (const chainBone of solved.chain) {
+          const rot = nextPose[chainBone];
+          if (rot) nextPose = applySymmetryToPose(nextPose, chainBone, rot, true);
+        }
       }
+      return { pose: nextPose, targetWorld, labelKo: `IK 이동 (${limbChainId})`, ...(solved.reasonKo ? { reasonKo: solved.reasonKo } : {}) };
+    } catch (error) {
+      const classified = classifySkeletonBoundaryError(error, input.now);
+      if (classified) {
+        reportBoundaryFailure(classified, input);
+        return null;
+      }
+      throw error;
     }
-    return { pose: nextPose, targetWorld, labelKo: `IK 이동 (${limbChainId})`, ...(solved.reasonKo ? { reasonKo: solved.reasonKo } : {}) };
   }
 
   const spineIdx = SPINE_IK_CHAIN.indexOf(input.handleBone);
   if (spineIdx >= 1) {
     const subChain = SPINE_IK_CHAIN.slice(0, spineIdx + 1);
     const targetWorld: Vec3 = [handleTransform.position[0] + deltaWorld[0], handleTransform.position[1] + deltaWorld[1], handleTransform.position[2] + deltaWorld[2]];
-    const solved = solveChainIk(input.startPose, input.skeleton, subChain, targetWorld);
-    return { pose: solved.pose, targetWorld, labelKo: `척추 IK 이동 (${input.handleBone})`, ...(solved.reasonKo ? { reasonKo: solved.reasonKo } : {}) };
+    try {
+      const solved = solveChainIk(input.startPose, input.skeleton, subChain, targetWorld);
+      return { pose: solved.pose, targetWorld, labelKo: `척추 IK 이동 (${input.handleBone})`, ...(solved.reasonKo ? { reasonKo: solved.reasonKo } : {}) };
+    } catch (error) {
+      const classified = classifySkeletonBoundaryError(error, input.now);
+      if (classified) {
+        reportBoundaryFailure(classified, input);
+        return null;
+      }
+      throw error;
+    }
   }
 
-  const pivot = resolveDragPivotWithMode(input.skeleton, input.startPose, input.handleBone, input.pivotMode ?? "parent");
+  const pivot = resolveDragPivotWithMode(input.skeleton, input.startPose, input.handleBone, input.pivotMode ?? "parent", input);
   if (!pivot) return null;
-  const fk = computeJointDrag({ skeleton: input.skeleton, startPose: input.startPose, pivot, camera: input.camera, startPixel: input.startPixel, currentPixel: input.currentPixel });
+  const fk = computeJointDrag({
+    skeleton: input.skeleton,
+    startPose: input.startPose,
+    pivot,
+    camera: input.camera,
+    startPixel: input.startPixel,
+    currentPixel: input.currentPixel,
+    onFailure: input.onFailure,
+    now: input.now,
+  });
   if (!fk) return null;
   const rot = fk.pose[fk.pivotBone];
   const pose = rot && input.symmetryEnabled ? applySymmetryToPose(fk.pose, fk.pivotBone, rot, true) : fk.pose;
@@ -426,11 +493,22 @@ export function computeShaperBoneScaleDrag(input: {
   readonly baseBody: ParamValues<BodyParamKey>;
 }): ShaperBoneScaleDragOutcome {
   const key = BONE_TO_BODY_SCALE_PARAM[input.handleBone] ?? "height";
-  const span = Math.max(120, Math.min(input.renderWidth, input.renderHeight) * 0.25);
-  const dx = (input.currentPixel[0] - input.startPixel[0]) / span;
-  const dy = (input.startPixel[1] - input.currentPixel[1]) / span;
-  const delta = clampShaperGizmoDelta(dx + dy, 1.5);
-  const baseValue = input.baseBody[key] ?? 0;
+  const validPixels = isFinitePixelPair(input.startPixel) && isFinitePixelPair(input.currentPixel);
+  const validSize =
+    Number.isFinite(input.renderWidth) &&
+    input.renderWidth > 0 &&
+    Number.isFinite(input.renderHeight) &&
+    input.renderHeight > 0;
+  let delta = 0;
+  if (validPixels && validSize) {
+    const span = Math.max(120, Math.min(input.renderWidth, input.renderHeight) * 0.25);
+    const dx = (input.currentPixel[0] - input.startPixel[0]) / span;
+    const dy = (input.startPixel[1] - input.currentPixel[1]) / span;
+    const rawDelta = dx + dy;
+    delta = Number.isFinite(rawDelta) ? clampShaperGizmoDelta(rawDelta, 1.5) : 0;
+  }
+  const rawBase = input.baseBody[key];
+  const baseValue = typeof rawBase === "number" && Number.isFinite(rawBase) ? rawBase : 0;
   const value = Number(clampParam(baseValue + delta).toFixed(3));
   const labelKo = BODY_PARAM_LABELS_KO[key];
   return {

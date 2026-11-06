@@ -8,33 +8,30 @@
  * 스켈레톤은 엔진의 포즈 프레임 스켈레톤(`render/pose-skeleton`)이라 절차·패키지 소스 모두 같은 식으로 계산된다.
  */
 import { dragJointDetailed } from "../../../animation/joint-drag";
-import { computeWorldTransforms, indexBones } from "../../../animation/skeleton-fk";
-import { FINGER_BONE_NAMES, isHumanoidBoneName } from "../../../contracts";
+import { indexBones } from "../../../animation/skeleton-fk";
+import { FINGER_BONE_NAMES, failVisible, isHumanoidBoneName } from "../../../contracts";
 import { unprojectToViewPlane } from "../../../render/viewport-math";
+import { v3IsFinite } from "../../../shared/math";
 
-import type { HumanoidBoneName, HudSample, JointDragHandle, Pose, SkeletonData, Vec3 } from "../../../contracts";
+import {
+  classifySkeletonBoundaryError,
+  diagnoseSkeletonData,
+  isFinitePixelPair,
+  reportBoundaryFailure,
+  reportInvalidPivotWorld,
+  safeComputeWorldTransforms,
+} from "./skeleton-boundary-guard";
+
+import type { SkeletonBoundaryOptions } from "./skeleton-boundary-guard";
+import type { HumanoidBoneName, HudSample, JointDragHandle, LabFailure, Pose, SkeletonData, Vec3 } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 
 // ---------------------------------------------------------------- 라벨
 
 const SIDE_LABELS_KO = { left: "왼쪽", right: "오른쪽" } as const;
 const BODY_LABELS_KO: Readonly<Record<string, string>> = {
-  hips: "골반",
-  spine: "척추",
-  chest: "가슴",
-  upperChest: "상흉부",
-  neck: "목",
-  head: "머리",
-  jaw: "턱",
-  Eye: "눈",
-  Shoulder: "어깨",
-  UpperArm: "위팔",
-  LowerArm: "아래팔",
-  Hand: "손",
-  UpperLeg: "허벅지",
-  LowerLeg: "종아리",
-  Foot: "발",
-  Toes: "발가락",
+  hips: "골반", spine: "척추", chest: "가슴", upperChest: "상흉부", neck: "목", head: "머리", jaw: "턱", Eye: "눈",
+  Shoulder: "어깨", UpperArm: "위팔", LowerArm: "아래팔", Hand: "손", UpperLeg: "허벅지", LowerLeg: "종아리", Foot: "발", Toes: "발가락",
 };
 const FINGER_LABELS_KO: Readonly<Record<string, string>> = { Thumb: "엄지", Index: "검지", Middle: "중지", Ring: "약지", Little: "소지" };
 const SEGMENT_LABELS_KO: Readonly<Record<string, string>> = { Metacarpal: "중수", Proximal: "1마디", Intermediate: "2마디", Distal: "끝마디" };
@@ -68,14 +65,18 @@ export function isFingerBone(bone: string): boolean {
   return FINGER_SET.has(bone);
 }
 
-/** 표시할 핸들: 눈·턱 제외, 손가락은 옵션. */
+/** 표시할 핸들: 비유한 화면 좌표(NaN/Infinity)·눈·턱 제외, 손가락은 옵션. */
 export function visibleHandles(handles: readonly JointDragHandle[], filter: HandleFilter): readonly JointDragHandle[] {
-  return handles.filter((handle) => !NO_HANDLE.has(handle.bone) && (filter.fingers || !FINGER_SET.has(handle.bone)));
+  return handles.filter(
+    (handle) => isFinitePixelPair(handle.screen) && !NO_HANDLE.has(handle.bone) && (filter.fingers || !FINGER_SET.has(handle.bone)),
+  );
 }
 
 /** 핸들 목록의 변화 감지용 키(렌더 픽셀을 소수 첫째 자리까지, 본 순서 포함). 같으면 React 상태를 갱신하지 않는다. */
 export function handlesKey(handles: readonly JointDragHandle[]): string {
-  return handles.map((handle) => `${handle.bone}:${handle.screen[0].toFixed(1)},${handle.screen[1].toFixed(1)}`).join("|");
+  return handles
+    .map((handle) => (isFinitePixelPair(handle.screen) ? `${handle.bone}:${handle.screen[0].toFixed(1)},${handle.screen[1].toFixed(1)}` : `${handle.bone}:nan`))
+    .join("|");
 }
 
 // ---------------------------------------------------------------- 관절 드래그
@@ -89,19 +90,36 @@ export interface DragPivot {
 
 /**
  * 핸들 본에서 드래그 피벗을 정한다. 스켈레톤에서 부모 사슬을 거슬러 처음 만나는 휴머노이드 본이 피벗이다
- * (보조 본은 건너뛴다). 휴머노이드 본이 아니거나 스켈레톤에 없으면 null.
+ * (보조 본은 건너뛴다). 휴머노이드 본이 아니거나 스켈레톤에 없으면 null, 손상 스켈레톤이면 진단 후 null.
  */
-export function resolveDragPivot(skeleton: SkeletonData, pose: Pose, handleBone: HumanoidBoneName): DragPivot | null {
+export function resolveDragPivot(
+  skeleton: SkeletonData,
+  pose: Pose,
+  handleBone: HumanoidBoneName,
+  options?: SkeletonBoundaryOptions,
+): DragPivot | null {
+  const precheck = diagnoseSkeletonData(skeleton, options?.now);
+  if (precheck) {
+    reportBoundaryFailure(precheck, options);
+    return null;
+  }
   const byName = indexBones(skeleton);
   const handle = byName.get(handleBone);
   if (!handle) return null;
+  const visited = new Set<string>([handleBone]);
   let pivot = handle.parent !== null ? byName.get(handle.parent) : undefined;
-  while (pivot && !isHumanoidBoneName(pivot.name)) pivot = pivot.parent !== null ? byName.get(pivot.parent) : undefined;
+  while (pivot && !isHumanoidBoneName(pivot.name)) {
+    if (visited.has(pivot.name)) return null;
+    visited.add(pivot.name);
+    pivot = pivot.parent !== null ? byName.get(pivot.parent) : undefined;
+  }
   const pivotName = pivot?.name ?? handleBone;
   if (!isHumanoidBoneName(pivotName)) return null;
-  const world = computeWorldTransforms(skeleton, pose).get(pivotName);
+  const fkResult = safeComputeWorldTransforms(skeleton, pose, options);
+  if (!fkResult.ok) return null;
+  const world = fkResult.transforms.get(pivotName);
   if (!world) return null;
-  return { pivotBone: pivotName, pivotWorld: world.position };
+  return { pivotBone: pivotName, pivotWorld: [...world.position] };
 }
 
 export interface JointDragInput {
@@ -112,6 +130,8 @@ export interface JointDragInput {
   readonly camera: ViewportCameraInfo;
   readonly startPixel: readonly [number, number];
   readonly currentPixel: readonly [number, number];
+  readonly onFailure?: (failure: LabFailure) => void;
+  readonly now?: number;
 }
 
 export interface JointDragOutcome {
@@ -125,15 +145,40 @@ export interface JointDragOutcome {
 
 /**
  * 시작 포즈에서 포인터 이동량만큼 피벗을 돌린 결과. 매번 시작 포즈에서 계산하므로 오차가 누적되지 않는다.
- * 역투영이 불가능하면(피벗이 카메라 뒤쪽·시선과 평행) null.
+ * 역투영이 불가능하면(피벗이 카메라 뒤쪽·시선과 평행) null. 손상 스켈레톤·비유한 좌표는 진단 보고 후 null.
  */
 export function computeJointDrag(input: JointDragInput): JointDragOutcome | null {
   const { camera, pivot } = input;
+  if (!pivot || !v3IsFinite(pivot.pivotWorld)) {
+    reportInvalidPivotWorld(pivot?.pivotWorld ?? [Number.NaN, Number.NaN, Number.NaN], input);
+    return null;
+  }
+  if (!isFinitePixelPair(input.startPixel) || !isFinitePixelPair(input.currentPixel)) {
+    reportBoundaryFailure(
+      failVisible("skeleton-invalid-input", "관절 드래그 픽셀 좌표가 유한하지 않습니다.", { startPixel: input.startPixel, currentPixel: input.currentPixel }, input.now),
+      input,
+    );
+    return null;
+  }
+  const precheck = diagnoseSkeletonData(input.skeleton, input.now);
+  if (precheck) {
+    reportBoundaryFailure(precheck, input);
+    return null;
+  }
   const from = unprojectToViewPlane(camera, input.startPixel[0], input.startPixel[1], pivot.pivotWorld);
   const to = unprojectToViewPlane(camera, input.currentPixel[0], input.currentPixel[1], pivot.pivotWorld);
-  if (!from || !to) return null;
-  const result = dragJointDetailed(input.startPose, input.skeleton, pivot.pivotBone, from, to, { position: camera.position, forward: camera.forward });
-  return { pose: result.pose, pivotBone: pivot.pivotBone, requestedDeg: result.requestedDeg, clamped: result.clamped };
+  if (from === null || to === null) return null;
+  try {
+    const result = dragJointDetailed(input.startPose, input.skeleton, pivot.pivotBone, from, to, { position: camera.position, forward: camera.forward });
+    return { pose: result.pose, pivotBone: pivot.pivotBone, requestedDeg: result.requestedDeg, clamped: result.clamped };
+  } catch (error) {
+    const classified = classifySkeletonBoundaryError(error, input.now);
+    if (classified) {
+      reportBoundaryFailure(classified, input);
+      return null;
+    }
+    throw error;
+  }
 }
 
 // ---------------------------------------------------------------- HUD
@@ -374,55 +419,32 @@ export function classifyShaperTrackpadTwoFingerGesture(options: {
   readonly camPivotZ?: number;
   readonly lockedMode?: "orbit" | "zoom";
 }): ShaperTrackpadTwoFingerState {
-  const {
-    prevTouch0,
-    prevTouch1,
-    curTouch0,
-    curTouch1,
-    camPivotZ = -3,
-    lockedMode,
-  } = options;
-
+  const { prevTouch0, prevTouch1, curTouch0, curTouch1, camPivotZ = -3, lockedMode } = options;
   const prevMidX = (prevTouch0[0] + prevTouch1[0]) * 0.5;
   const prevMidY = (prevTouch0[1] + prevTouch1[1]) * 0.5;
   const curMidX = (curTouch0[0] + curTouch1[0]) * 0.5;
   const curMidY = (curTouch0[1] + curTouch1[1]) * 0.5;
-
   const moveDeltaX = prevMidX - curMidX;
   const moveDeltaY = prevMidY - curMidY;
-
   const prevDist = Math.hypot(prevTouch0[0] - prevTouch1[0], prevTouch0[1] - prevTouch1[1]);
   const curDist = Math.hypot(curTouch0[0] - curTouch1[0], curTouch0[1] - curTouch1[1]);
   const zoomDelta = prevDist - curDist;
-
   const gestureMode: "orbit" | "zoom" =
-    lockedMode ??
-    ((Math.abs(moveDeltaX) + Math.abs(moveDeltaY)) * 0.5 > Math.abs(zoomDelta)
-      ? "orbit"
-      : "zoom");
-
+    lockedMode ?? ((Math.abs(moveDeltaX) + Math.abs(moveDeltaY)) * 0.5 > Math.abs(zoomDelta) ? "orbit" : "zoom");
   const orbitInputDelta: readonly [number, number] =
     gestureMode === "orbit" ? [moveDeltaX * -0.25, moveDeltaY * -0.25] : [0, 0];
   const zoomInputDelta = gestureMode === "zoom" ? zoomDelta * 0.25 : 0;
   const nextCamPivotZ = Math.min(2, camPivotZ + zoomInputDelta);
   const orthographicSize = 15 - (60 - nextCamPivotZ) * 0.25;
-
-  return {
-    gestureMode,
-    moveDelta: [moveDeltaX, moveDeltaY],
-    zoomDelta,
-    orbitInputDelta,
-    zoomInputDelta,
-    nextCamPivotZ,
-    orthographicSize,
-  };
+  return { gestureMode, moveDelta: [moveDeltaX, moveDeltaY], zoomDelta, orbitInputDelta, zoomInputDelta, nextCamPivotZ, orthographicSize };
 }
 
 /**
  * SHAPER PivotManager::FixMaxValue (0x06000285) 역공학 내재화:
- * 기즈모 레이캐스트 델타 폭주를 방지하기 위해 값을 `[-maxAbs, +maxAbs]` 범위로 클램프한다.
+ * 기즈모 레이캐스트 델타 폭주를 방지하기 위해 값을 `[-maxAbs, +maxAbs]` 범위로 클램프한다. 비유한 입력은 0으로 격리한다.
  */
 export function clampShaperGizmoDelta(value: number, maxAbs: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(maxAbs)) return 0;
   const limit = Math.abs(maxAbs);
   if (value > limit) return limit;
   if (value < -limit) return -limit;
@@ -433,10 +455,7 @@ export function clampShaperGizmoDelta(value: number, maxAbs: number): number {
  * SHAPER PivotManager::AlignMouseCastPlanes (0x06000280) 역공학 내재화:
  * 기즈모 드래그 축(`x` | `y` | `z`)에 따라 마우스 레이캐스트 평면이 카메라를 바라보도록 월드 오일러 각도를 정렬한다.
  */
-export function resolveShaperGizmoCastPlaneEuler(
-  axis: "x" | "y" | "z",
-  cameraEulerDeg: Vec3,
-): Vec3 {
+export function resolveShaperGizmoCastPlaneEuler(axis: "x" | "y" | "z", cameraEulerDeg: Vec3): Vec3 {
   if (axis === "x") return [cameraEulerDeg[0], 0, 0];
   if (axis === "y") return [0, cameraEulerDeg[1], 0];
   return [0, 0, cameraEulerDeg[2]];
@@ -477,21 +496,10 @@ export function computeShaperPartThumbnailCameraFrame(
   input: ShaperPartThumbnailFramingInput,
 ): ShaperPartThumbnailCameraFrame {
   const {
-    tabIndex,
-    headRootPosition = [0, 1.5, 0],
-    partCenterOffset = [0, 0, 0],
-    partMinPos = [-0.5, -0.5, -0.5],
-    partMaxPos = [0.5, 0.5, 0.5],
-    controlBoneRootPosition = [0, 0.9, 0],
-    boundsCenter = [0, 1.0, 0],
-    boundsSize = [1, 1, 1],
-    handTargetPosition = [-0.4, 1.0, 0],
-    includePoseCam = false,
-    activeCameraPivotPosition = [0, 1.0, 0],
-    activeCameraPivotYawDeg = 0,
-    activeCameraPivotPitchDeg = 0,
-    activeCameraFovDeg = 30,
-    activeCameraDistance = 120,
+    tabIndex, headRootPosition = [0, 1.5, 0], partCenterOffset = [0, 0, 0], partMinPos = [-0.5, -0.5, -0.5], partMaxPos = [0.5, 0.5, 0.5],
+    controlBoneRootPosition = [0, 0.9, 0], boundsCenter = [0, 1.0, 0], boundsSize = [1, 1, 1], handTargetPosition = [-0.4, 1.0, 0],
+    includePoseCam = false, activeCameraPivotPosition = [0, 1.0, 0], activeCameraPivotYawDeg = 0, activeCameraPivotPitchDeg = 0,
+    activeCameraFovDeg = 30, activeCameraDistance = 120,
   } = input;
 
   if (tabIndex === 12 && includePoseCam) {
@@ -514,100 +522,40 @@ export function computeShaperPartThumbnailCameraFrame(
       headRootPosition[1] + partCenterOffset[1],
       headRootPosition[2] + partCenterOffset[2],
     ];
-    const spanX = partMaxPos[0] - partMinPos[0];
-    const spanY = partMaxPos[1] - partMinPos[1];
-    const span = Math.max(spanX, spanY) * 3;
-    return {
-      pivotPosition,
-      pivotYawDeg,
-      pivotPitchDeg,
-      fovDeg,
-      distance: 5 + span,
-    };
+    const span = Math.max(partMaxPos[0] - partMinPos[0], partMaxPos[1] - partMinPos[1]) * 3;
+    return { pivotPosition, pivotYawDeg, pivotPitchDeg, fovDeg, distance: 5 + span };
   }
 
   if (tabIndex === 6) {
-    return {
-      pivotPosition: [...headRootPosition] as Vec3,
-      pivotYawDeg,
-      pivotPitchDeg,
-      fovDeg,
-      distance: 75,
-    };
+    return { pivotPosition: [...headRootPosition] as Vec3, pivotYawDeg, pivotPitchDeg, fovDeg, distance: 75 };
   }
 
   if (tabIndex === 7 || tabIndex === 12) {
-    return {
-      pivotPosition: [...controlBoneRootPosition] as Vec3,
-      pivotYawDeg,
-      pivotPitchDeg,
-      fovDeg,
-      distance: 600,
-    };
+    return { pivotPosition: [...controlBoneRootPosition] as Vec3, pivotYawDeg, pivotPitchDeg, fovDeg, distance: 600 };
   }
 
   if (tabIndex >= 8 && tabIndex <= 10) {
     const maxExtent = Math.max(boundsSize[0], boundsSize[1], boundsSize[2]);
-    return {
-      pivotPosition: [...boundsCenter] as Vec3,
-      pivotYawDeg,
-      pivotPitchDeg,
-      fovDeg,
-      distance: maxExtent * 3,
-    };
+    return { pivotPosition: [...boundsCenter] as Vec3, pivotYawDeg, pivotPitchDeg, fovDeg, distance: maxExtent * 3 };
   }
 
   if (tabIndex === 11) {
     const maxExtent = Math.max(boundsSize[0], boundsSize[1], boundsSize[2]);
-    return {
-      pivotPosition: [...boundsCenter] as Vec3,
-      pivotYawDeg,
-      pivotPitchDeg,
-      fovDeg,
-      distance: maxExtent * 4,
-    };
+    return { pivotPosition: [...boundsCenter] as Vec3, pivotYawDeg, pivotPitchDeg, fovDeg, distance: maxExtent * 4 };
   }
 
-  return {
-    pivotPosition: [...handTargetPosition] as Vec3,
-    pivotYawDeg,
-    pivotPitchDeg,
-    fovDeg,
-    distance: 70,
-  };
+  return { pivotPosition: [...handTargetPosition] as Vec3, pivotYawDeg, pivotPitchDeg, fovDeg, distance: 70 };
 }
 
 export type ShaperHistoryType =
-  | "selectControlPoints"
-  | "selectHairControlPoints"
-  | "selectPoseControlPoints"
-  | "selectBodyControlPoints"
-  | "selectCostumeTransform"
-  | "createLine"
-  | "removeLine"
-  | "createHair"
-  | "removeHair"
-  | "changeInputField"
-  | "changeDropdown"
-  | "changeToggle"
-  | "changeColor"
-  | "changePart";
+  | "selectControlPoints" | "selectHairControlPoints" | "selectPoseControlPoints" | "selectBodyControlPoints"
+  | "selectCostumeTransform" | "createLine" | "removeLine" | "createHair" | "removeHair"
+  | "changeInputField" | "changeDropdown" | "changeToggle" | "changeColor" | "changePart";
 
 export const SHAPER_HISTORY_TYPE_ORDER: readonly ShaperHistoryType[] = [
-  "selectControlPoints",
-  "selectHairControlPoints",
-  "selectPoseControlPoints",
-  "selectBodyControlPoints",
-  "selectCostumeTransform",
-  "createLine",
-  "removeLine",
-  "createHair",
-  "removeHair",
-  "changeInputField",
-  "changeDropdown",
-  "changeToggle",
-  "changeColor",
-  "changePart",
+  "selectControlPoints", "selectHairControlPoints", "selectPoseControlPoints", "selectBodyControlPoints",
+  "selectCostumeTransform", "createLine", "removeLine", "createHair", "removeHair",
+  "changeInputField", "changeDropdown", "changeToggle", "changeColor", "changePart",
 ];
 
 export interface ShaperHistoryEntry<TPayload = unknown> {
@@ -639,10 +587,7 @@ export function pushShaperHistoryEntry<TPayload>(
       ? stack.entries.slice(0, Math.max(0, stack.curPos + 1))
       : [...stack.entries];
   truncated.push(entry);
-  return {
-    entries: truncated,
-    curPos: truncated.length - 1,
-  };
+  return { entries: truncated, curPos: truncated.length - 1 };
 }
 
 /**
@@ -654,20 +599,10 @@ export function stepShaperHistoryCursor<TPayload>(
   stack: ShaperHistoryStack<TPayload>,
   delta: -1 | 1,
 ): ShaperHistoryStepResult<TPayload> {
-  if (stack.entries.length === 0) {
-    return { stack, appliedEntry: null };
-  }
+  if (stack.entries.length === 0) return { stack, appliedEntry: null };
   const nextPos = Math.max(0, Math.min(stack.entries.length - 1, stack.curPos + delta));
-  if (nextPos === stack.curPos) {
-    return { stack, appliedEntry: null };
-  }
-  return {
-    stack: {
-      entries: stack.entries,
-      curPos: nextPos,
-    },
-    appliedEntry: stack.entries[nextPos] ?? null,
-  };
+  if (nextPos === stack.curPos) return { stack, appliedEntry: null };
+  return { stack: { entries: stack.entries, curPos: nextPos }, appliedEntry: stack.entries[nextPos] ?? null };
 }
 
 const HANGUL_CHO = [
@@ -790,3 +725,5 @@ export { SHAPER_TRACKPAD_MAX_FINGERS, SHAPER_TRACKPAD_RING_BUFFER_CAPACITY, SHAP
 export type { ShaperColorPalettePickerInput, ShaperColorPalettePickerResult, ShaperContextStatusBarGuide, ShaperKeycapShortcutItem, ShaperModelControllerInput, ShaperModelControllerOutput, ShaperNativeWindowStateInput, ShaperPresetGridItemLayout, ShaperRawTrackpadTouchEvent, ShaperResizeCursorKind, ShaperTrackpadFingerSlot, ShaperTrackpadTouchPhase, ShaperTrackpadTouchRecord, ShaperTrackpadTouchTracker, ShaperUniWinCFileFilterGroup, ShaperUniWinCFileFilterSpec, ShaperUniWinCTransparentType, ShaperWebcamPopupLayout } from "./shaper-trackpad-plugin";
 export { SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeVisibleBoneLinks, mirrorHumanoidBoneRotation, parseShaperNativePreset, resolveDragPivotWithMode, resolveMirrorHumanoidBone } from "./shaper-bone-gizmo";
 export type { BoneLinkSegment, ShaperNativeBodyPreset, ShaperNativeHeadPreset, ShaperNativePosePreset, ShaperNativePreset, ShaperNativePresetKind, ShaperPivotMode } from "./shaper-bone-gizmo";
+export { classifySkeletonBoundaryError, diagnoseSkeletonData, isFinitePixelPair, reportBoundaryFailure, reportInvalidPivotWorld, safeComputeWorldTransforms } from "./skeleton-boundary-guard";
+export type { SkeletonBoundaryFailureCode, SkeletonBoundaryOptions } from "./skeleton-boundary-guard";
