@@ -58,7 +58,6 @@ type CanvasContextCapture = {
   scale: ReturnType<typeof vi.fn>;
   translate: ReturnType<typeof vi.fn>;
 };
-
 class TestImage {
   height = 48;
   naturalHeight = 48;
@@ -68,7 +67,6 @@ class TestImage {
   src = "";
   width = 64;
 }
-
 type TestCachedParent = {
   cache: ReturnType<typeof vi.fn>;
   cachedImage?: CanvasImageSource;
@@ -76,6 +74,7 @@ type TestCachedParent = {
   getClientRect: () => { width: number; height: number };
   getLayer: () => { batchDraw: () => void };
   getParent: () => null;
+  getStage: () => object;
   isCached: () => boolean;
 };
 
@@ -97,6 +96,7 @@ const konvaCapture = vi.hoisted(() => {
     parent: null as TestCachedParent | null,
     drawListeners,
     layer,
+    stage: {},
     node: {
       cache: vi.fn(),
       clearCache: vi.fn(),
@@ -118,7 +118,6 @@ const konvaCapture = vi.hoisted(() => {
   };
   return capture;
 });
-
 
 const filterCapture = vi.hoisted(() => ({
   build: vi.fn(),
@@ -158,6 +157,7 @@ vi.mock("react-konva/lib/ReactKonvaCore", async () => {
         getClientRect: () => ({ width: 200, height: 200 }),
         getLayer: () => konvaCapture.layer,
         getParent: () => null,
+        getStage: () => konvaCapture.stage,
         isCached: () => cached,
       };
       return parent;
