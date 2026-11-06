@@ -54,7 +54,7 @@ export function StudioProjectLibraryManagementPage() {
       <Suspense fallback={null}>
         <VoiceGuideButton scriptId="studio" variant="fixed" />
       </Suspense>
-      <Container size="wide" className="min-w-0 py-7 sm:py-11">
+      <Container size="wide" className="min-w-0 py-3 sm:py-11">
         <StudioProjectLibraryManagementHeader controller={controller} />
         <StudioProjectLibraryManagementContent controller={controller} />
         {controller.view === "active" ? (

@@ -41,6 +41,63 @@ afterEach(() => {
 });
 
 describe("StudioProjectLibraryPage", () => {
+  it("핵심 생성과 가져오기는 유지하고 부가 관리 도구만 접는다", () => {
+    render(
+      <MemoryRouter initialEntries={["/studio"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+    const title = screen.getByRole("heading", { level: 1, name: /내 작업|My work/u });
+    const toolbar = title.closest("section");
+    if (!toolbar) throw new Error("내 작업 도구 영역이 없습니다.");
+    const tools = within(toolbar);
+    const create = tools.getByRole("link", { name: /^새 작업$|^New work$/u });
+    const importFiles = tools.getByRole("link", { name: /^파일 가져오기$|^Import files$/u });
+    expect(create.closest("details")).toBeNull();
+    expect(importFiles.closest("details")).toBeNull();
+    expect(create.compareDocumentPosition(importFiles) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const summary = tools.getByText(/저장·내보내기·제작 관리|Save, export and production/u);
+    const details = summary.closest("details");
+    if (!details) throw new Error("부가 관리 도구 접기 영역이 없습니다.");
+    expect(details.open).toBe(false);
+    fireEvent.click(summary);
+    expect(details.open).toBe(true);
+    expect(within(details).getByRole("link", { name: /저장·백업|Save & backup/u }).getAttribute("href")).toBe("/studio?view=storage");
+    expect(within(details).getByRole("link", { name: /^제작 관리$|^Production management$/u }).getAttribute("href")).toBe("/production");
+    fireEvent.click(summary);
+    expect(details.open).toBe(false);
+    expect(tools.getByRole("textbox", { name: /프로젝트 검색|Search projects/u }).closest("details")).toBeNull();
+  });
+
+  it("예제 시딩은 유지하면서 두 연습 안내보다 실제 작업을 먼저 보여 준다", async () => {
+    createStudioProject(window.localStorage, {
+      id: "work-before-guides",
+      title: "안내보다 먼저 볼 작업",
+      kind: "webtoon",
+      createdAt: "2026-09-12T00:00:00.000Z",
+    });
+
+    const { rerender } = render(
+      <MemoryRouter initialEntries={["/studio"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+    const work = await screen.findByRole("heading", { name: "안내보다 먼저 볼 작업" });
+    const example = await screen.findByRole("heading", { name: /예제 프로젝트로 한 컷을 완주해 보세요|Finish one panel with the example project/u });
+    const sample = await screen.findByRole("heading", { name: /완성 원고를 뜯어보고, 따라 그려 보세요|Take a finished manuscript apart, then trace it/u });
+    expect(work.compareDocumentPosition(example) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(work.compareDocumentPosition(sample) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    rerender(
+      <MemoryRouter initialEntries={["/studio"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { name: "안내보다 먼저 볼 작업" })).toBe(work);
+    expect(screen.getByRole("heading", { name: /예제 프로젝트로 한 컷을 완주해 보세요|Finish one panel with the example project/u })).toBe(example);
+    expect(screen.getByRole("heading", { name: /완성 원고를 뜯어보고, 따라 그려 보세요|Take a finished manuscript apart, then trace it/u })).toBe(sample);
+  });
+
   it("기본 접힌 시작 안내보다 작업과 핵심 동선을 먼저 보여 준다", () => {
     render(
       <MemoryRouter initialEntries={["/studio"]}>
