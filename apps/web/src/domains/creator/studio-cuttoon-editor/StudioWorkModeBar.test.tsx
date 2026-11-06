@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { StudioWorkModeBar } from "../StudioWorkModeBar";
 
 describe("StudioWorkModeBar", () => {
-  it("모드 7종 버튼과 현재 모드 설명을 렌더한다", () => {
+  it("모드 7종 버튼은 유지하고 현재 모드 설명은 처음에 접는다", () => {
     const html = renderToStaticMarkup(
       <StudioWorkModeBar mode="draw" onModeChange={() => undefined} />,
     );
@@ -14,7 +14,8 @@ describe("StudioWorkModeBar", () => {
     }
     expect(html.match(/role="tab"/g)?.length ?? 0).toBe(7);
     expect(html).toContain('aria-selected="true"');
-    expect(html).toContain("그리는 단계예요");
+    expect(html).not.toContain("그리는 단계예요");
+    expect(html).toContain("가이드 보기");
   });
 
   it("다음 단계 버튼은 파이프라인 다음 모드를 가리킨다", () => {
@@ -57,7 +58,7 @@ describe("StudioWorkModeBar", () => {
     expect(html).not.toContain("바꿀까요?");
   });
 
-  it("단계 번호(①~⑥)와 단계별 핵심 단축키 & 입문자 팁 코칭 스트립을 표시한다", () => {
+  it("단계 번호는 유지하고 입문자 코칭은 기본 화면에서 접는다", () => {
     const html = renderToStaticMarkup(
       <StudioWorkModeBar mode="storyboard" onModeChange={() => undefined} />,
     );
@@ -65,9 +66,9 @@ describe("StudioWorkModeBar", () => {
       expect(html).toContain(badge);
     }
     expect(html).toContain('data-work-mode="storyboard"');
-    expect(html).toContain("단계별 핵심 단축키 &amp; 입문자 팁");
-    expect(html).toContain("가이드 숨기기");
-    expect(html).toContain("<kbd");
-    expect(html).toContain("① 콘티 단계에서는 세부 묘사보다 세로 스크롤 호흡");
+    expect(html).not.toContain("단계별 핵심 단축키 &amp; 입문자 팁");
+    expect(html).toContain("가이드 보기");
+    expect(html).not.toContain("<kbd");
+    expect(html).not.toContain("① 콘티 단계에서는 세부 묘사보다 세로 스크롤 호흡");
   });
 });
