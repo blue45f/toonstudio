@@ -22,8 +22,11 @@ import { STUDIO_BRUSH_SIZE_RANGE } from "./studio-draw-ux";
 
 import { cn } from "@/shared/lib/utils";
 
+const START_GUIDE_SELECTOR = "[data-studio-cinematic-canvas-welcome]";
+
 /** Popovers, docks and dialogs the HUD refuses to sit under. */
 const OBSTACLE_SELECTOR = [
+  START_GUIDE_SELECTOR,
   "[data-studio-draw-options-dock]",
   "[data-studio-tool-popover]",
   "[data-studio-point-comment-composer]",
@@ -185,10 +188,15 @@ export const StudioBrushHud = memo(function StudioBrushHud({
      * that actually matters — "is the pointer on the canvas?" — and costs no
      * layout read, which matters on a per-frame listener.
      */
+    const insideStartGuide = (target: EventTarget | null): boolean =>
+      target instanceof Element && target.closest(START_GUIDE_SELECTOR) !== null;
+
     const overCanvas = (target: EventTarget | null): boolean =>
-      target instanceof Node && host.contains(target);
+      target instanceof Node && host.contains(target) && !insideStartGuide(target);
 
     const onPointerMove = (event: PointerEvent) => {
+      // 시작 도크는 캔버스의 DOM 자식이지만 잉크 영역이 아니다. 근접 latch보다 UI 판정을 우선한다.
+      if (insideStartGuide(event.target)) { onDismiss(); return; }
       tetherRef.current = stepStudioBrushHudTether(tetherRef.current, {
         type: "pointer",
         point: { x: event.clientX, y: event.clientY },
@@ -200,12 +208,14 @@ export const StudioBrushHud = memo(function StudioBrushHud({
 
     const onPointerDown = (event: PointerEvent) => {
       if (insideHud(event.target)) return;
+      if (insideStartGuide(event.target)) { onDismiss(); return; }
       tetherRef.current = stepStudioBrushHudTether(tetherRef.current, { type: "stroke-start" });
       schedule();
     };
 
     const onPointerUp = (event: PointerEvent) => {
       if (insideHud(event.target)) return;
+      if (insideStartGuide(event.target)) { onDismiss(); return; }
       const point = { x: event.clientX, y: event.clientY };
       tetherRef.current = stepStudioBrushHudTether(tetherRef.current, {
         type: "stroke-end",

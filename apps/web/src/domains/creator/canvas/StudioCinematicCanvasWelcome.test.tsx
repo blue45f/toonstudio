@@ -11,12 +11,13 @@ import { shouldShowStudioCinematicCanvasWelcome } from "./studio-cinematic-canva
 
 const HEADING = "첫 장면을 어떻게 시작할까요?";
 
-function openWays() {
+async function openWays() {
   fireEvent.click(screen.getByRole("button", { name: "다른 시작 방법" }));
+  await screen.findByRole("heading", { name: HEADING });
 }
 
-function openExampleScenes() {
-  if (screen.getByRole("button", { name: "다른 시작 방법" }).getAttribute("aria-expanded") === "false") openWays();
+async function openExampleScenes() {
+  if (screen.getByRole("button", { name: "다른 시작 방법" }).getAttribute("aria-expanded") === "false") await openWays();
   fireEvent.click(screen.getByRole("button", { name: /예시 장면/u }));
 }
 
@@ -49,10 +50,10 @@ describe("StudioCinematicCanvasWelcome", () => {
     })).toBe(false);
   });
 
-  it("shows six starting paths as a non-modal dock and reveals labelled example scenes on request", () => {
+  it("shows six starting paths as a non-modal dock and reveals labelled example scenes on request", async () => {
     const { container } = render(<StudioCinematicCanvasWelcome pageKey="page-1" visible />);
 
-    openWays();
+    await openWays();
     expect(screen.getByRole("heading", { name: HEADING })).toBeTruthy();
     // 캔버스를 막는 대화상자가 아니라 캔버스 위의 안내 영역이다.
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -61,7 +62,7 @@ describe("StudioCinematicCanvasWelcome", () => {
     ))).toHaveLength(6);
     expect(container.querySelectorAll("[data-canvas-scene-example]")).toHaveLength(0);
 
-    openExampleScenes();
+    await openExampleScenes();
 
     expect(screen.getByRole("button", { name: /예시 장면/u }).getAttribute("aria-expanded")).toBe("true");
     const examples = screen.getByRole("list", { name: "예시 장면" });
@@ -71,12 +72,12 @@ describe("StudioCinematicCanvasWelcome", () => {
     expect(examples.textContent?.match(/예시/gu)).toHaveLength(6);
   });
 
-  it("requests a creation mode and dismisses after selection", () => {
+  it("requests a creation mode and dismisses after selection", async () => {
     const listener = vi.fn();
     window.addEventListener(STUDIO_CREATION_MODE_EVENT, listener);
     render(<StudioCinematicCanvasWelcome pageKey="page-1" visible />);
 
-    openWays();
+    await openWays();
     fireEvent.click(screen.getByRole("button", { name: /캐릭터 배치/ }));
 
     expect(listener).toHaveBeenCalledTimes(1);
@@ -84,12 +85,12 @@ describe("StudioCinematicCanvasWelcome", () => {
     window.removeEventListener(STUDIO_CREATION_MODE_EVENT, listener);
   });
 
-  it("opens the background workspace from the single background action beside the examples", () => {
+  it("opens the background workspace from the single background action beside the examples", async () => {
     const listener = vi.fn();
     window.addEventListener(STUDIO_CREATION_MODE_EVENT, listener);
     render(<StudioCinematicCanvasWelcome pageKey="page-1" visible />);
 
-    openExampleScenes();
+    await openExampleScenes();
     fireEvent.click(screen.getByRole("button", { name: /배경 도구 열기/u }));
 
     expect(listener).toHaveBeenCalledTimes(1);
@@ -131,7 +132,7 @@ describe("StudioCinematicCanvasWelcome", () => {
     expect(screen.queryByRole("heading", { name: HEADING })).toBeNull();
   });
 
-  it("remembers a dismissal and only offers a compact start button on the next blank page", () => {
+  it("remembers a dismissal and only offers a compact start button on the next blank page", async () => {
     render(<StudioCinematicCanvasWelcome pageKey="page-1" visible />);
     fireEvent.click(screen.getByRole("button", { name: "시작 안내 닫기" }));
     expect(window.localStorage.getItem(STUDIO_CANVAS_START_DOCK_STORAGE_KEY)).toBe("collapsed");
@@ -144,6 +145,7 @@ describe("StudioCinematicCanvasWelcome", () => {
     const reopen = screen.getByRole("button", { name: /시작 방법 보기/u });
     expect(reopen.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(reopen);
+    await screen.findByRole("heading", { name: HEADING });
     expect(screen.getByRole("heading", { name: HEADING })).toBeTruthy();
   });
 });
@@ -163,11 +165,11 @@ it("시작 안내 안에서 Escape로 캔버스 편집에 돌아간다", () => {
   expect(screen.queryByRole("region", { name: "빈 캔버스 시작 방법" })).toBeNull();
 });
 
-it("장면 미리보기에서 원본 PNG를 내려받지 않는다", () => {
+it("장면 미리보기에서 원본 PNG를 내려받지 않는다", async () => {
   const { container } = render(<StudioCinematicCanvasWelcome pageKey="preview" visible />);
   // 장면 이미지는 사용자가 펼치기 전에는 요청하지 않는다.
   expect(container.querySelectorAll("[style]")).toHaveLength(0);
-  openExampleScenes();
+  await openExampleScenes();
   const backgrounds = Array.from(container.querySelectorAll<HTMLElement>("[style]"))
     .map((element) => element.style.backgroundImage).filter(Boolean);
   expect(backgrounds).toHaveLength(6);
@@ -175,12 +177,13 @@ it("장면 미리보기에서 원본 PNG를 내려받지 않는다", () => {
   expect(backgrounds.some((url) => url.includes("background.png"))).toBe(false);
 });
 
-it("바로 그리기 집중 화면에서는 시작 안내를 접고 사용자가 필요할 때 펼친다", () => {
+it("바로 그리기 집중 화면에서는 시작 안내를 접고 사용자가 필요할 때 펼친다", async () => {
   render(<StudioCinematicCanvasWelcome pageKey="quick-drawing" visible initiallyCollapsed />);
   expect(screen.queryByRole("heading", { name: HEADING })).toBeNull();
   const open = screen.getByRole("button", { name: /빈 캔버스 · 시작 방법 보기/u });
   expect(open.getAttribute("aria-expanded")).toBe("false");
   fireEvent.click(open);
+  await screen.findByRole("heading", { name: HEADING });
   expect(screen.getByRole("heading", { name: HEADING })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "시작 안내 닫기" }));
   expect(screen.queryByRole("heading", { name: HEADING })).toBeNull();

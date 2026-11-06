@@ -177,3 +177,84 @@ describe("StudioBrushHud", () => {
     expect(document.querySelector('[data-studio-brush-hud="true"]')).toBeNull();
   });
 });
+
+function mountStartGuide(host: HTMLElement, state = "true") {
+  const guide = document.createElement("section");
+  guide.dataset.studioCinematicCanvasWelcome = state;
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  label.textContent = "다른 시작 방법";
+  button.append(label);
+  guide.append(button);
+  host.append(guide);
+  return { guide, button, label };
+}
+
+describe("시작 도크와 실제 그리기 영역 구분", () => {
+  it.each(["true", "collapsed"])("%s 시작 도크의 중첩 버튼 이동·클릭으로 HUD를 띄우지 않는다", (state) => {
+    const { host } = renderHud();
+    const { button, label } = mountStartGuide(host, state);
+    const clicked = vi.fn();
+    button.addEventListener("click", clicked);
+    expect(fireEvent.pointerMove(label, { clientX: 600, clientY: 400 })).toBe(true);
+    flushFrames();
+    expect(hudNode().style.visibility).toBe("hidden");
+    expect(fireEvent.pointerDown(label, { clientX: 600, clientY: 400 })).toBe(true);
+    flushFrames();
+    expect(fireEvent.pointerUp(label, { clientX: 600, clientY: 400 })).toBe(true);
+    flushFrames();
+    fireEvent.click(label);
+    expect(clicked).toHaveBeenCalledOnce();
+    expect(hudNode().style.visibility).toBe("hidden");
+    expect(hudNode().style.pointerEvents).toBe("none");
+  });
+
+  it("이미 커서를 따르던 HUD의 근접 latch보다 시작 도크 UI를 우선한다", () => {
+    const { host } = renderHud();
+    const { label } = mountStartGuide(host);
+    revealHud(host);
+    expect(hudNode().style.visibility).toBe("visible");
+    fireEvent.pointerMove(label, { clientX: 600, clientY: 400 });
+    flushFrames();
+    expect(hudNode().style.visibility).toBe("hidden");
+    fireEvent.pointerDown(label, { clientX: 600, clientY: 400 });
+    fireEvent.pointerUp(label, { clientX: 600, clientY: 400 });
+    flushFrames();
+    expect(hudNode().style.visibility).toBe("hidden");
+  });
+
+  it("도크에서 벗어나면 실제 캔버스 추적과 스트로크 동안 숨김을 그대로 복구한다", () => {
+    const { host } = renderHud();
+    const { label } = mountStartGuide(host);
+    revealHud(host);
+    fireEvent.pointerMove(label, { clientX: 600, clientY: 400 });
+    flushFrames();
+    revealHud(host);
+    expect(hudNode().style.visibility).toBe("visible");
+    fireEvent.pointerDown(host, { clientX: 600, clientY: 400 });
+    flushFrames();
+    expect(hudNode().style.visibility).toBe("hidden");
+    fireEvent.pointerMove(host, { clientX: 640, clientY: 440 });
+    flushFrames();
+    expect(hudNode().style.visibility).toBe("hidden");
+    fireEvent.pointerUp(host, { clientX: 640, clientY: 440 });
+    flushFrames();
+    expect(hudNode().style.visibility).toBe("visible");
+  });
+
+  it("시작 도크의 실측 사각형도 HUD 배치 장애물로 고려한다", () => {
+    vi.spyOn(performance, "now").mockReturnValue(1000);
+    const { host } = renderHud();
+    const { guide } = mountStartGuide(host);
+    guide.getBoundingClientRect = () => new DOMRect(550, 300, 100, 90);
+    revealHud(host);
+    const values = hudNode().style.transform.match(/translate3d\(([-\d]+)px, ([-\d]+)px/u);
+    expect(values).not.toBeNull();
+    if (!values) throw new Error("HUD 위치가 없습니다.");
+    const left = Number(values[1]), top = Number(values[2]);
+    const size = Number.parseFloat(hudNode().style.width);
+    const overlap = Math.max(0, Math.min(left + size, 650) - Math.max(left, 550))
+      * Math.max(0, Math.min(top + size, 390) - Math.max(top, 300));
+    expect(overlap).toBe(0);
+  });
+});

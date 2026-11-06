@@ -1,0 +1,31 @@
+/* CommunityPage 전용 배치. 전역 내비게이션과 FanCafePanel 스타일은 변경하지 않는다. */
+.community-layout-header { display: grid; gap: 1rem; }
+.community-layout-header h1 { margin: .5rem 0; font-size: clamp(1.5rem, 3vw, 2.25rem); line-height: 1.2; font-weight: 800; text-wrap: balance; }
+.community-layout-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.community-layout-disclosure { margin-top: 1rem; border: 1px solid var(--color-line, currentColor); border-radius: 1rem; padding: 0 1rem; }
+.community-layout-disclosure > summary { min-height: 44px; padding: .75rem 0; cursor: pointer; font-weight: 700; }
+.community-layout-disclosure-body { padding-bottom: 1rem; min-width: 0; }
+.community-layout-art { width: 100%; max-height: 22rem; object-fit: cover; border-radius: 1rem; }
+.community-layout > div[role="group"] button,
+.community-layout > div > div[role="group"] button,
+.community-layout-header a,
+.community-layout-disclosure a,
+.community-layout-disclosure button { min-height: 44px; }
+.community-layout-disclosure [data-testid="community-rea-creator-showcase-bar"] a { display: inline-flex; align-items: center; }
+.community-layout :is(a, button, summary):focus-visible { outline: 3px solid var(--color-accent, Highlight); outline-offset: 3px; }
+@media (min-width: 960px) {
+  .community-layout-header { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .community-layout, .community-layout * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* 전역 #main-content의 768px 이상 40px보다 버튼·링크·접기 대상의 44px 계약을 우선한다.
+   입력 요소는 기존 wrapper/label 터치 영역을 유지하며 체크박스 자체를 확대하지 않는다. */
+#main-content .community-layout button,
+#main-content .community-layout summary,
+#main-content .community-layout a[href],
+#main-content .community-layout [role="button"] {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+}

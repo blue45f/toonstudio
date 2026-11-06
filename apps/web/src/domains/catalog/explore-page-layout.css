@@ -1,0 +1,141 @@
+/* /explore에만 적용한다. 공유 배너·내비·카드의 전역 규칙은 바꾸지 않는다. */
+.explore-page-layout {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1rem;
+  padding-block: 1.5rem 3rem;
+}
+.explore-page-heading-wrap,
+.explore-page-layout > section,
+.explore-page-disclosure {
+  min-width: 0;
+}
+.explore-page-heading h1 {
+  margin: 0.35rem 0;
+  color: var(--color-fg);
+  font-size: clamp(1.4rem, 3.3vw, 2rem);
+  font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.explore-page-heading p {
+  margin: 0;
+  color: var(--color-fg-2);
+  font-size: 0.875rem;
+}
+.explore-page-heading .explore-page-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.explore-page-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  max-width: 48rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  padding: 0.2rem;
+  background: var(--color-card);
+}
+.explore-page-modes a {
+  display: flex;
+  min-height: 44px;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.55rem;
+  padding: 0.25rem 0.35rem;
+  color: var(--color-fg-2);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.explore-page-modes a[aria-current="page"] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.explore-page-spectrum {
+  height: 3px;
+  border-radius: 999px;
+  margin-bottom: 0.65rem;
+}
+.explore-page-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.explore-page-disclosure {
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background: var(--color-card);
+}
+.explore-page-disclosure > summary {
+  min-height: 44px;
+  padding: 0.65rem 0.85rem;
+  color: var(--color-fg);
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.explore-page-selection-count {
+  margin-inline-start: 0.65rem;
+  color: var(--color-accent);
+  font-size: 0.75rem;
+}
+.explore-page-disclosure-body {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+  padding: 0.8rem;
+  border-top: 1px solid var(--color-line);
+}
+.explore-page-toolbar {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  border-block: 1px solid var(--color-line);
+  padding-block: 0.65rem;
+}
+.explore-page-toolbar > div { min-width: 0; flex-wrap: wrap; }
+.explore-page-results-title {
+  margin: 0 0 0.8rem;
+  color: var(--color-fg);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+/* 전역 #main-content의 데스크톱 min-block-size(40px)보다 이 화면의 44px 계약을 우선한다. */
+#main-content .explore-page-layout :is(button, summary) {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+}
+.explore-page-guide a { min-height: 44px; }
+.explore-page-layout :is(a, button, summary):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+@media (max-width: 639px) {
+  .explore-page-layout { gap: 0.75rem; padding-block: 1rem 2rem; }
+  .explore-page-modes a { font-size: 0.75rem; }
+  .explore-page-genres button { padding-inline: 0.65rem; font-size: 0.8125rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .explore-page-layout *,
+  .explore-page-layout *::before,
+  .explore-page-layout *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

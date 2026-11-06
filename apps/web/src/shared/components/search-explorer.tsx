@@ -28,6 +28,7 @@ import {
   AGE_LABEL_KEY,
 } from "./search-explorer-constants";
 import { SearchFacetPanel } from "./search-explorer-facets";
+import { SearchResultSummary } from "./search-result-summary";
 
 // search.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
 import "./search-i18n";
@@ -277,7 +278,6 @@ export function SearchExplorer({
   const results = search.items;
   const loading = search.loading;
   const error = search.failed ? t("search.explorer.error.description") : null;
-  const typeCount = search.data?.typeCount ?? { webtoon: 0, webnovel: 0 };
   // `?? []` 는 데이터가 없을 때 렌더마다 새 배열이라 아래 emptyQuerySuggestions 메모가 매번 깨진다.
   const searchTopTags = search.data?.topTags;
   const topTags = useMemo(() => searchTopTags ?? [], [searchTopTags]);
@@ -316,13 +316,6 @@ export function SearchExplorer({
 
   const shown = results;
   const hasResult = Boolean(shown.length);
-  const resultText =
-    search.total > 0
-      ? t("search.explorer.resultCount").replace(
-          "{count}",
-          compactNumber(search.total),
-        )
-      : t("search.explorer.noResult");
   const catalogCoverage = catalog?.platformCoverage.slice(0, 5) ?? [];
   const filteredCoverage = catalog?.filteredPlatformCoverage.slice(0, 4) ?? [];
   // 플랫폼 필터는 카탈로그에 실제로 존재하는 플랫폼만 노출(빈 슬롯 방지). 커버리지 정보가
@@ -507,20 +500,6 @@ export function SearchExplorer({
     setRetryKey((value) => value + 1);
   };
 
-  const typeSummary =
-    typeCount.webtoon === 0 && typeCount.webnovel === 0
-      ? t("search.explorer.typeSummary.empty")
-      : [
-          typeCount.webtoon
-            ? `${t("search.explorer.type.webtoon")} ${compactNumber(typeCount.webtoon)}`
-            : "",
-          typeCount.webnovel
-            ? `${t("search.explorer.type.webnovel")} ${compactNumber(typeCount.webnovel)}`
-            : "",
-        ]
-          .filter(Boolean)
-          .join(t("search.explorer.separator"));
-
   const mobileCount = activeCount;
 
   const facets = (
@@ -683,22 +662,10 @@ export function SearchExplorer({
             </button>
           </div>
 
-          <div
-            className="mt-3 flex flex-wrap items-center gap-2 text-xs text-fg-3"
-            role="status"
-            aria-live="polite"
-          >
-            <span className="truncate">
-              {t("search.explorer.search.label")}:{" "}
-              <strong>{q ? `"${q}"` : t("search.queryAll")}</strong>
-            </span>
-            <span className="h-1 w-1 rounded-full bg-line-strong" />
-            <span className="truncate">{resultText}</span>
-            <span className="h-1 w-1 rounded-full bg-line-strong" />
-            <span className="truncate">
-              {loading || textSettling ? t("search.explorer.loading") : typeSummary}
-            </span>
-          </div>
+          <SearchResultSummary
+            query={q} search={search} textSettling={textSettling}
+            hasConditions={activeCount > 0 || savedOnly}
+          />
 
           {/* 최근 검색어 — 입력이 비었을 때만 노출, 칩 클릭으로 즉시 복귀(각 칩은 개별 삭제 가능). */}
           {!q && recentSearches.length > 0 && (
