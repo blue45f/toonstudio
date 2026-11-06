@@ -45,3 +45,15 @@ pnpm harness:verify --base=origin/main
 CI 전용 변경은 위 새 Node 회귀 7개와 별도로 기존 merge reliability·throughput policy·type coverage 계약·Core shard 소유권 네 파일을 실행해 **54개 모두 통과·skip 0·exit 0**을 확인했다. 과거 다른 묶음의 시험 수와 합산하지 않는다. 최종 구조 검사·정상 pre-push와 원격 CI는 최종 head에서 별도로 확인한다.
 
 실행 로그와 시작·종료·exit code·source 영수증은 Git에서 제외된 `.qa/ci-main-recovery-20261106-ai-only/`에 로컬 전용 권한으로 보관한다. 전체 하네스·정상 commit hook·정상 pre-push 결과는 해당 로컬 영수증과 PR의 검증란에서 확인하며, 원격 CI와 병합은 별개다.
+
+## 2026-11-06 09:16 전체 종료 결과와 AI 모달 조회 범위
+
+상태: `current` e48390e2의 전체 CI는 20 workflow 중 18성공·2실패로 종료했다. 실제 51 job은 49성공·2실패이며 CodeQL 집계를 포함한 52 check는 50성공·2실패다. Core의 선행 11개와 core/verify 13개, Feedback의 여덟 검사와 strict 집계, Morphology 및 Brush filters는 성공했다. Feedback은 57분 23초, production build는 23분 12초 실제 완료했다. PR #2726은 아직 병합하지 않았다.
+
+Full run 42123161385/job 127580471612에서 이전 세 등록 파일과 임시 경로 guard는 통과했다. 새 실패는 `StudioAiSuperSuiteModal.test.tsx:373`의 스토리라인 적용 사례 하나의 기존 30초 timeout이다. root는 8,747파일 중 1실패·8,726성공·기존 skip 20, 101,019사례 중 1실패·100,919성공·기존 skip 99였으며 후속 performance는 미실행이다. 원문은 한 번 읽어 로컬 전용 3,572,975B·SHA-256 `0ae50aa92ee7d354a63f5acbef734318434c6e84652a60592dfdc15b7fa0d54d`로 보존했다. 이전 131357의 같은 사례는 26.164초에 성공했고 관련 제품·테스트 다섯 파일 bytes는 같다. 동기 callback이며 외부 추론·clipboard 완료를 기다리는 사례는 아니다.
+
+로컬 원본 파일의 20개는 모두 통과했고 해당 사례는 4.949초였다. hosted 실패는 확인했지만 로컬에서 30초 실패를 재현했다고 주장하지 않는다. 별도 임시 계측 사본에서 추천 버튼 조회는 1.874541초, 동일 role·accessible name으로 소유 카드 안을 조회하면 0.012932초였다. 계측 사본은 실행 후 제거했고 이 시간을 CI 보장으로 확대하지 않는다.
+
+테스트는 기존 이름 있는 `스토리라인 추천 장르` group의 소유 카드 안으로 조회 범위만 좁힌다. 같은 `getAllByRole("button", { name })`, 버튼 수 기대·동일 첫 버튼 클릭과 모든 후속 입력·기대값을 유지한다. 제품·DOM·mock·가시성 옵션·30초 기한은 그대로이며 카드 구조가 없으면 명시적으로 실패한다. 수정한 파일의 20개도 모두 통과·skip 0, 해당 사례는 3.612초였다. 새 head 전체 CI는 별도 확인한다.
+
+나머지 Brush desktop 실패는 Graphite 짧은 획 한 사례의 실제 화면 변화 최대 3/255가 기존 가시성 조건에 못 미친 경우다. AI 조회와 독립 조사하며 계획 성공을 픽셀 성공으로 간주하거나 Chemy의 필압 예외를 확대하지 않는다. 원인과 최소 범위를 확인하기 전 제품·flow·렌더러·가시성 기준은 변경하지 않는다. 운영 배포는 하지 않는다.
