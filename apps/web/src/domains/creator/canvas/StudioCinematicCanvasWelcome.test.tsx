@@ -11,7 +11,12 @@ import { shouldShowStudioCinematicCanvasWelcome } from "./studio-cinematic-canva
 
 const HEADING = "첫 장면을 어떻게 시작할까요?";
 
+function openWays() {
+  fireEvent.click(screen.getByRole("button", { name: "다른 시작 방법" }));
+}
+
 function openExampleScenes() {
+  if (screen.getByRole("button", { name: "다른 시작 방법" }).getAttribute("aria-expanded") === "false") openWays();
   fireEvent.click(screen.getByRole("button", { name: /예시 장면/u }));
 }
 
@@ -47,6 +52,7 @@ describe("StudioCinematicCanvasWelcome", () => {
   it("shows six starting paths as a non-modal dock and reveals labelled example scenes on request", () => {
     const { container } = render(<StudioCinematicCanvasWelcome pageKey="page-1" visible />);
 
+    openWays();
     expect(screen.getByRole("heading", { name: HEADING })).toBeTruthy();
     // 캔버스를 막는 대화상자가 아니라 캔버스 위의 안내 영역이다.
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -70,6 +76,7 @@ describe("StudioCinematicCanvasWelcome", () => {
     window.addEventListener(STUDIO_CREATION_MODE_EVENT, listener);
     render(<StudioCinematicCanvasWelcome pageKey="page-1" visible />);
 
+    openWays();
     fireEvent.click(screen.getByRole("button", { name: /캐릭터 배치/ }));
 
     expect(listener).toHaveBeenCalledTimes(1);
@@ -96,7 +103,7 @@ describe("StudioCinematicCanvasWelcome", () => {
     const onOpenTutorial = vi.fn();
     render(<StudioCinematicCanvasWelcome pageKey="page-1" visible onOpenTutorial={onOpenTutorial} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /처음이라면 사용법 따라 하기/u }));
+    fireEvent.click(screen.getByRole("button", { name: "사용법 따라 하기" }));
 
     expect(onOpenTutorial).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("heading", { name: HEADING })).toBeNull();
@@ -143,7 +150,7 @@ describe("StudioCinematicCanvasWelcome", () => {
 
 it("같은 편집 세션의 다음 빈 페이지에서는 접힌 시작 버튼만 보여 준다", () => {
   const { rerender } = render(<StudioCinematicCanvasWelcome pageKey="page-1" visible />);
-  fireEvent.click(screen.getByRole("button", { name: /직접 그리기/u }));
+  fireEvent.click(screen.getByRole("button", { name: "바로 그리기" }));
   rerender(<StudioCinematicCanvasWelcome pageKey="page-2" visible />);
 
   expect(screen.queryByRole("heading", { name: HEADING })).toBeNull();

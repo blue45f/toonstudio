@@ -92,6 +92,16 @@ function renderPage() {
   );
 }
 
+function openDiscoveryTools() {
+  const tools = screen.getByText("더 많은 탐색 도구").closest("details");
+  if (!tools) throw new Error("탐색 도구 접기가 없습니다.");
+  expect(tools.open).toBe(false);
+  tools.open = true;
+  fireEvent(tools, new Event("toggle"));
+  expect(tools.open).toBe(true);
+  return tools;
+}
+
 beforeEach(() => {
   resource.read.mockReset();
   resource.reload.mockReset();
@@ -104,7 +114,7 @@ describe("DiscoverHubPage", () => {
     renderPage();
 
     expect(resource.read).toHaveBeenCalledWith("/data/home.json", expect.any(String));
-    expect(screen.getByRole("heading", { level: 1, name: "다음 컷의 영감은, 새로운 이야기에서." })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "새로운 이야기를 발견하세요" })).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "오늘 업데이트되는 웹툰" }, { timeout: 4000 })).toBeTruthy();
     expect(within(screen.getByRole("list", { name: "평점 랭킹 상위 작품" })).getByRole("link", { name: "작품-rated" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /무료 작품 더 보기/ }).getAttribute("href")).toBe("/search?pricing=free,wait-free");
@@ -154,6 +164,7 @@ describe("DiscoverHubPage", () => {
     expect(alert.textContent).toContain("추천 작품을 불러오지 못했어요");
     fireEvent.click(within(alert).getByRole("button"));
     expect(resource.reload).toHaveBeenCalledTimes(1);
+    openDiscoveryTools();
     expect(screen.getByRole("link", { name: /두 작품 비교/ }).getAttribute("href")).toBe("/compare");
     expect(screen.getByRole("link", { name: "#로맨스" }).getAttribute("href")).toBe(`/explore?genre=${encodeURIComponent("로맨스")}`);
   });
@@ -162,15 +173,19 @@ describe("DiscoverHubPage", () => {
     mockResource({ data: snapshot(currentKstWeekDay()) });
     renderPage();
 
+    openDiscoveryTools();
     // 작품을 찾은 뒤의 다음 행동: 이야기 나누기(커뮤니티)와 내 장면의 참고자료(리서치 데스크).
     expect(screen.getByRole("link", { name: /작품 이야기 나누기/ }).getAttribute("href")).toBe("/community");
-    // 리서치 진입점은 머리말 행동과 도구 타일 두 곳이며 모두 같은 목적지로 이어진다.
+    // 중복 머리말 행동 대신 펼친 도구 타일 하나로 리서치 목적지를 유지한다.
     const researchLinks = screen.getAllByRole("link", { name: /참고자료 찾기/ });
-    expect(researchLinks).toHaveLength(2);
+    expect(researchLinks).toHaveLength(1);
     expect(researchLinks.every((link) => link.getAttribute("href") === "/research")).toBe(true);
     // 30초 안내는 처음에는 접혀 있다(모바일 길이 관리).
     const guide = screen.getByText("처음이라면 30초 안내").closest("details") as HTMLDetailsElement;
     expect(guide.open).toBe(false);
+    guide.open = true;
+    fireEvent(guide, new Event("toggle"));
+    expect(guide.open).toBe(true);
     expect(within(guide).getAllByRole("listitem")).toHaveLength(3);
     // 상황별 빠른 탐색 프리셋 바에서 완결 정주행·숏폼 컷츠·AI 캐릭터 토크로 바로 진입한다.
     const presetNav = screen.getByRole("navigation", { name: "상황별 빠른 탐색" });
@@ -181,6 +196,34 @@ describe("DiscoverHubPage", () => {
       "/cuts",
     );
   });
+  it("보조 도구를 펼치면 모든 목적지와 빠른 조건에 접근할 수 있다", () => {
+    mockResource({ data: snapshot(currentKstWeekDay()) });
+    renderPage();
+    openDiscoveryTools();
+    const destinations = [
+      ["정확히 검색", "/search"], ["조건으로 탐색", "/explore"],
+      ["맞춤 추천", "/recommend"], ["통합 랭킹", "/ranking"],
+      ["연재 캘린더", "/calendar"], ["랜덤 발견", "/random"],
+      ["두 작품 비교", "/compare"], ["내 서재", "/library"],
+      ["숏폼 컷츠", "/cuts"], ["캐릭터 토크", "/character-chat"],
+      ["작품 이야기 나누기", "/community"], ["참고자료 찾기", "/research"],
+    ];
+    for (const [label, href] of destinations) {
+      const links = screen.getAllByRole("link", { name: new RegExp(label) });
+      expect(links.some((link) => link.getAttribute("href") === href)).toBe(true);
+    }
+    const presets = within(screen.getByRole("navigation", { name: "상황별 빠른 탐색" }));
+    for (const [label, href] of [
+      ["연재중 인기작", "/explore?status=ongoing&sort=popular"],
+      ["완결 정주행", "/explore?status=completed&sort=binge"],
+      ["평점 4.5+ 명작", "/explore?minRating=4.5&sort=rating"],
+      ["숏폼 컷츠", "/cuts"], ["AI 캐릭터 토크", "/character-chat"],
+    ]) {
+      expect(presets.getByRole("link", { name: label }).getAttribute("href")).toBe(href);
+    }
+    expect(screen.getByRole("link", { name: "데이터 출처" }).getAttribute("href")).toBe("/about/data");
+  });
+
   it("folds the memory finder and only loads it once the reader opens it", async () => {
     mockResource({ data: snapshot(currentKstWeekDay()) });
     renderPage();

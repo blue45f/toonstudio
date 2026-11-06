@@ -447,3 +447,17 @@ body:has([data-studio-cinematic-canvas-welcome="true"]) [data-studio-shell-float
     outline-color: Highlight;
   }
 }
+
+
+/* 초회에는 그림과 안내 진입만 남기고 여섯 시작 경로는 요청할 때 펼친다. */
+.studio-canvas-start__quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.studio-canvas-start__quick-actions + div:not([hidden]) {
+  display: grid;
+  gap: 0.6rem;
+}

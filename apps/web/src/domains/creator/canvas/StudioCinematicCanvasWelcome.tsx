@@ -11,7 +11,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useId, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -90,6 +90,11 @@ export function StudioCinematicCanvasWelcome({
   const bt = useBilingual("StudioCinematicCanvasWelcome");
   const headingId = useId();
   const scenesId = useId();
+  const waysId = useId();
+  const reopenRef = useRef<HTMLButtonElement>(null);
+  const waysRef = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+  const [waysOpen, setWaysOpen] = useState(false);
   const [dismissedPageKey, setDismissedPageKey] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(() => !initiallyCollapsed && !readStudioCanvasStartDockCollapsed());
   const [scenesOpen, setScenesOpen] = useState(false);
@@ -104,7 +109,22 @@ export function StudioCinematicCanvasWelcome({
     return () => setStudioCanvasStartDockExpanded(false);
   }, [dockOpen]);
 
+  useEffect(() => {
+    if (restoreFocus.current) {
+      (expanded ? waysRef : reopenRef).current?.focus({ preventScroll: true });
+      restoreFocus.current = false;
+    }
+  }, [expanded]);
+
   if (!shown) return null;
+
+  const collapseGuide = () => {
+    restoreFocus.current = true;
+    setExpanded(false);
+    setWaysOpen(false);
+    setScenesOpen(false);
+    rememberStudioCanvasStartDockCollapsed();
+  };
 
   const closeForPage = () => {
     setDismissedPageKey(pageKey);
@@ -129,7 +149,7 @@ export function StudioCinematicCanvasWelcome({
     if (event.key !== "Escape") return;
     event.preventDefault();
     event.stopPropagation();
-    closeForPage();
+    collapseGuide();
   };
 
   if (!expanded) {
@@ -137,9 +157,10 @@ export function StudioCinematicCanvasWelcome({
       <div className="studio-canvas-start studio-canvas-start--collapsed" data-studio-cinematic-canvas-welcome="collapsed">
         <button
           type="button"
+          ref={reopenRef}
           className="studio-canvas-start__pill"
           aria-expanded={false}
-          onClick={() => setExpanded(true)}
+          onClick={() => { restoreFocus.current = true; setWaysOpen(true); setExpanded(true); }}
         >
           <Sparkles size={14} aria-hidden="true" />
           <span className="studio-canvas-start__pill-long">{bt("빈 캔버스 · 시작 방법 보기", "Blank canvas · Show ways to start")}</span>
@@ -164,6 +185,23 @@ export function StudioCinematicCanvasWelcome({
       data-studio-cinematic-canvas-welcome="true"
       data-studio-mobile-coach="true"
     >
+      <div className="studio-canvas-start__quick-actions">
+        <button type="button" className="studio-canvas-start__tutorial" onKeyDown={closeWithEscape} onClick={() => launch("draw")}>
+          <Brush size={14} aria-hidden="true" />{bt("바로 그리기", "Draw now")}
+        </button>
+        {onOpenTutorial ? (
+          <button type="button" className="studio-canvas-start__tutorial" onKeyDown={closeWithEscape} onClick={openTutorial}>
+            <GraduationCap size={14} aria-hidden="true" />{bt("사용법 따라 하기", "Guided tour")}
+          </button>
+        ) : null}
+        <button ref={waysRef} type="button" className="studio-canvas-start__scenes-toggle" aria-expanded={waysOpen} aria-controls={waysId} onKeyDown={closeWithEscape} onClick={() => setWaysOpen((value) => !value)}>
+          {bt("다른 시작 방법", "More ways to start")}<ChevronDown size={14} aria-hidden="true" />
+        </button>
+        <button type="button" className="studio-canvas-start__pill-close" aria-label={bt("시작 안내 닫기", "Close start guide")} onClick={collapseGuide} onKeyDown={closeWithEscape}>
+          <X size={16} aria-hidden="true" />
+        </button>
+      </div>
+      <div id={waysId} hidden={!waysOpen}>
       <header className="studio-canvas-start__header">
         <div className="studio-canvas-start__title">
           <span className="studio-canvas-start__eyebrow">
@@ -189,17 +227,7 @@ export function StudioCinematicCanvasWelcome({
             {bt("예시 장면", "Example scenes")}
             <ChevronDown size={14} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            className="studio-canvas-start__close"
-            onKeyDown={closeWithEscape}
-            aria-label={bt("시작 안내 닫기", "Close start guide")}
-            aria-keyshortcuts="Escape"
-            title={bt("시작 안내 닫기 (Esc)", "Close start guide (Esc)")}
-            onClick={closeForPage}
-          >
-            <X size={16} aria-hidden="true" />
-          </button>
+
         </div>
       </header>
 
@@ -284,6 +312,7 @@ export function StudioCinematicCanvasWelcome({
             {bt("처음이라면 사용법 따라 하기", "New here? Follow the guided tour")}
           </button>
         ) : null}
+      </div>
       </div>
     </section>
   );
