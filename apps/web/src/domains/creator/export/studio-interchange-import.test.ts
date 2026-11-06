@@ -116,4 +116,16 @@ describe("PSD import operation ownership", () => {
     expect(input.commitPages).not.toHaveBeenCalled();
     expect(input.setPsdImportBusy).toHaveBeenLastCalledWith(false);
   });
+
+  it("surfaces PSD decode failures to both setPsdImportStatus and setError", async () => {
+    const { input, handlers } = setup();
+    importPsd.mockRejectedValueOnce(new Error("손상된 PSD 헤더"));
+    await handlers.handleImportPsd(fileEvent());
+    expect(input.setPsdImportStatus).toHaveBeenCalledWith({
+      text: "손상된 PSD 헤더",
+      tone: "warn",
+    });
+    expect(input.setError).toHaveBeenCalledWith("손상된 PSD 헤더");
+    expect(input.setPsdImportBusy).toHaveBeenLastCalledWith(false);
+  });
 });

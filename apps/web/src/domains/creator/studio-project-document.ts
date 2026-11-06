@@ -257,17 +257,20 @@ const legacyProjectDocumentRegistry = createStudioDocumentMigratorRegistry([
         id: "studio-project.v1-to-v2",
         fromVersion: 1,
         toVersion: 2,
-        migrate: (envelope) => ({
-          ...envelope,
-          format: {
-            ...envelope.format,
-            version: 2,
-          },
-          payload: {
-            ...envelope.payload,
-            data: detachedProjectJson(envelope.payload.data),
-          },
-        }),
+        migrate: (envelope) => {
+          const data = detachedProjectJson(envelope.payload.data);
+          return {
+            ...envelope,
+            format: {
+              ...envelope.format,
+              version: Math.max(2, data.version),
+            },
+            payload: {
+              ...envelope.payload,
+              data,
+            },
+          };
+        },
       },
     ],
   },

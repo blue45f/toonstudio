@@ -496,4 +496,17 @@ describe("preflightStudioExportPackage — print resolution honesty", () => {
     expect(result.printPlan).toBeNull();
     expect(result.errors.some((issue) => issue.code.startsWith("PRINT_DPI_"))).toBe(false);
   });
+
+  it("blocks export when pageCount is 0 even if pageSelection is provided and sanitizes NaN exportScale", () => {
+    const result = preflightStudioExportPackage({
+      pageCount: 0,
+      pageSelection: "1-2",
+      geometry: a4Geometry,
+      exportScale: Number.NaN,
+    });
+    expect(result.canExport).toBe(false);
+    expect(result.errors.some((issue) => issue.code === "PAGE_COUNT_INVALID")).toBe(true);
+    expect(result.printPlan?.currentScale).toBe(1);
+  });
 });
+

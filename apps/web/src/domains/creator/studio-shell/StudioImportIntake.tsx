@@ -1,6 +1,6 @@
 import { translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { AlertTriangle, CheckCircle2, FileUp, ShieldCheck } from "lucide-react";
-import { useState, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -56,6 +56,7 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
   const [selection, setSelection] = useState<Selection | null>(null);
   const [message, setMessage] = useState("");
   const [importing, setImporting] = useState(false);
+  const continuingRef = useRef(false);
 
   const selectFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0] ?? null;
@@ -76,34 +77,39 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
   };
 
   const continueImport = async () => {
-    if (!selection || selection.item.status === "blocked" || importing) return;
-    if (selection.item.format === "toonstudio") {
-      setImporting(true);
-      setMessage("");
-      try {
-        const restored = await importStudioProjectPackage(selection.file, {
-          storage: window.localStorage,
-          target: window,
-          authUserId: session?.user?.id ?? null,
-        });
-        navigate(restored.href, { replace: true });
-      } catch (error) {
-        setMessage(error instanceof Error
-          ? error.message
-          : bi("ToonStudio 프로젝트 파일을 복원하지 못했습니다.", "The ToonStudio project file could not be restored."));
-        setImporting(false);
-      }
-      return;
-    }
-    if (!studioImportHandoffTargetForFormat(selection.item.format)) {
-      setMessage(bi("이 형식은 아래 전용 작업공간에서 가져와야 합니다. 파일은 전송하거나 저장하지 않았습니다.", "This format must be imported in its dedicated workspace. The file was not uploaded or stored."));
-      return;
-    }
+    if (!selection || selection.item.status === "blocked" || importing || continuingRef.current) return;
+    continuingRef.current = true;
     try {
-      const handoff = registerStudioImportHandoff(selection.file, selection.item.format);
-      navigate(studioImportHandoffHref(handoff));
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Import handoff failed.");
+      if (selection.item.format === "toonstudio") {
+        setImporting(true);
+        setMessage("");
+        try {
+          const restored = await importStudioProjectPackage(selection.file, {
+            storage: window.localStorage,
+            target: window,
+            authUserId: session?.user?.id ?? null,
+          });
+          navigate(restored.href, { replace: true });
+        } catch (error) {
+          setMessage(error instanceof Error
+            ? error.message
+            : bi("ToonStudio 프로젝트 파일을 복원하지 못했습니다.", "The ToonStudio project file could not be restored."));
+          setImporting(false);
+        }
+        return;
+      }
+      if (!studioImportHandoffTargetForFormat(selection.item.format)) {
+        setMessage(bi("이 형식은 아래 전용 작업공간에서 가져와야 합니다. 파일은 전송하거나 저장하지 않았습니다.", "This format must be imported in its dedicated workspace. The file was not uploaded or stored."));
+        return;
+      }
+      try {
+        const handoff = registerStudioImportHandoff(selection.file, selection.item.format);
+        navigate(studioImportHandoffHref(handoff));
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Import handoff failed.");
+      }
+    } finally {
+      continuingRef.current = false;
     }
   };
 

@@ -337,4 +337,18 @@ describe("Studio project archive v3", () => {
       "workspace-inside-content",
     );
   });
+
+  it("falls back to the first page when currentPageId is empty and preserves projection", () => {
+    const migrated = migrate({ ...snapshot(), currentPageId: "   " });
+    expect(migrated.workspace.currentPageId).toBe("page-1");
+
+    const projected = projectStudioArchiveV3ToV2Snapshot({
+      archive: migrated.archive,
+      workspace: migrated.workspace,
+    });
+    expect(projected.currentPageId).toBe("page-1");
+    expect(projected.characterBible?.characters).toHaveLength(
+      snapshot().characterBible?.characters.length ?? 0,
+    );
+  });
 });

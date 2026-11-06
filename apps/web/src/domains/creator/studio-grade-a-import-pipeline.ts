@@ -116,28 +116,6 @@ export function importStudioGradeAAsset(input: {
   readonly format?: StudioGradeAFormat;
 }): StudioGradeAImportResult {
   const format = input.format ?? detectFormat(input.fileName, input.bytes);
-  if (
-    format === "stl"
-    || format === "ply"
-    || format === "dae"
-    || format === "dxf"
-  ) {
-    const adapted = importStudioMeshByExtension(
-      input.fileName.endsWith(`.${format}`)
-        ? input.fileName
-        : `${input.fileName}.${format}`,
-      input.bytes,
-    );
-    if (adapted) {
-      return {
-        format,
-        report: adapted.report,
-        scene: adapted.scene,
-        commitHash: adapted.commitHash,
-        committed: adapted.meshes.length > 0,
-      };
-    }
-  }
   if (!format) {
     const empty: StudioImportSceneIR = {
       format: "unknown",
@@ -168,7 +146,10 @@ export function importStudioGradeAAsset(input: {
     || format === "dae"
     || format === "dxf"
   ) {
-    const adapted = importStudioMeshByExtension(input.fileName, input.bytes);
+    const normalizedFileName = input.fileName.toLowerCase().endsWith(`.${format}`)
+      ? input.fileName
+      : `${input.fileName}.${format}`;
+    const adapted = importStudioMeshByExtension(normalizedFileName, input.bytes);
     if (!adapted) {
       const empty: StudioImportSceneIR = {
         format: "unknown",
@@ -218,19 +199,25 @@ export function importStudioGradeAAsset(input: {
   if (format === "obj") {
     const text = new TextDecoder().decode(input.bytes);
     const scene = parseStudioObjToSceneIR(text);
+    const hasVertices = scene.meshes.some((mesh) => mesh.vertexCount > 0);
     const report = buildStudioImportCompatibilityReport({
       parser: "studio-grade-a-import-pipeline/obj",
       sourceBytes: input.bytes,
       scene,
-      committed: true,
+      committed: hasVertices,
     });
     const commit = commitStudioImportToDocument(report, scene);
     return {
       format: "obj",
-      report,
+      report: hasVertices
+        ? report
+        : {
+            ...report,
+            warnings: [...report.warnings, "OBJ contains no valid vertices."],
+          },
       scene,
       commitHash: commit.commitHash,
-      committed: true,
+      committed: hasVertices,
     };
   }
 
@@ -288,12 +275,17 @@ export function importStudioGradeAAsset(input: {
   }
 
   if (format === "png") {
+    const validPng = input.bytes.byteLength >= 8
+      && input.bytes[0] === 0x89
+      && input.bytes[1] === 0x50
+      && input.bytes[2] === 0x4e
+      && input.bytes[3] === 0x47;
     const scene = pngScene(input.bytes);
     const report = buildStudioImportCompatibilityReport({
       parser: "studio-grade-a-import-pipeline/png",
       sourceBytes: input.bytes,
       scene,
-      committed: true,
+      committed: validPng,
     });
     return {
       format: "png",
@@ -301,24 +293,30 @@ export function importStudioGradeAAsset(input: {
         ...report,
         fidelity: {
           geometry: "X",
-          material: "A",
+          material: validPng ? "A" : "X",
           rigAnimation: "X",
           semanticHistory: "P",
         },
+        warnings: validPng ? report.warnings : [...report.warnings, "Invalid or empty PNG signature."],
       },
       scene,
       commitHash: `sha256:${sha256HexPortable(input.bytes)}`,
-      committed: true,
+      committed: validPng,
     };
   }
 
   // psd
+  const validPsd = input.bytes.byteLength >= 26
+    && input.bytes[0] === 0x38
+    && input.bytes[1] === 0x42
+    && input.bytes[2] === 0x50
+    && input.bytes[3] === 0x53;
   const scene = psdScene(input.bytes);
   const report = buildStudioImportCompatibilityReport({
     parser: "studio-grade-a-import-pipeline/psd",
     sourceBytes: input.bytes,
     scene,
-    committed: true,
+    committed: validPsd,
   });
   return {
     format: "psd",
@@ -326,18 +324,19 @@ export function importStudioGradeAAsset(input: {
       ...report,
       fidelity: {
         geometry: "X",
-        material: "B",
+        material: validPsd ? "B" : "X",
         rigAnimation: "X",
-        semanticHistory: "B",
+        semanticHistory: validPsd ? "B" : "X",
       },
       warnings: [
         ...report.warnings,
+        ...(validPsd ? [] : ["Invalid or truncated PSD header."]),
         "Full PSD layer fidelity via studio-psd-import / ag-psd write path",
       ],
     },
     scene,
     commitHash: report.sourceHash,
-    committed: true,
+    committed: validPsd,
   };
 }
 

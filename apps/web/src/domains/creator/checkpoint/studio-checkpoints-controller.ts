@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   createDurableStudioCheckpoint,
@@ -82,16 +82,27 @@ export function useStudioCheckpoints({
     void saveNamedCheckpoint(name);
   }
 
+  const restoreInFlightRef = useRef(false);
+
   async function restoreNamedCheckpoint(checkpoint: StudioCheckpoint) {
-    const restoreRequest = studioRestoreCheckpointRequest({
-      checkpointName: checkpoint.name,
-      currentPageCount: pages.length,
-    });
-    if (!(await confirmStudioDestructiveAction(restoreRequest))) return;
+    if (restoreInFlightRef.current) return;
+    restoreInFlightRef.current = true;
     try {
-      const applied = await applyStudioProjectSnapshot(
-        parseStudioProjectFile(checkpoint.payload)
-      );
+      let parsedProject: StudioProjectFile;
+      try {
+        parsedProject = parseStudioProjectFile(checkpoint.payload);
+      } catch (error) {
+        setCheckpointError(
+          error instanceof Error ? error.message : "복구 지점을 읽지 못했어요."
+        );
+        return;
+      }
+      const restoreRequest = studioRestoreCheckpointRequest({
+        checkpointName: checkpoint.name,
+        currentPageCount: pages.length,
+      });
+      if (!(await confirmStudioDestructiveAction(restoreRequest))) return;
+      const applied = await applyStudioProjectSnapshot(parsedProject);
       if (!settleStudioDestructiveCommit(restoreRequest, applied, undo)) return;
       setCheckpointPanelOpen(false);
       setCheckpointError(null);
@@ -99,6 +110,8 @@ export function useStudioCheckpoints({
       setCheckpointError(
         error instanceof Error ? error.message : "복구 지점을 읽지 못했어요."
       );
+    } finally {
+      restoreInFlightRef.current = false;
     }
   }
 

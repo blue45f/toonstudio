@@ -214,7 +214,12 @@ function cubicTangentAngle(segment: VectorCubicSegment, t: number): number {
     3 * mt * mt * (segment.p1.y - segment.p0.y)
     + 6 * mt * t * (segment.p2.y - segment.p1.y)
     + 3 * t * t * (segment.p3.y - segment.p2.y);
-  if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) return 0;
+  if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) {
+    const chordDx = segment.p3.x - segment.p0.x;
+    const chordDy = segment.p3.y - segment.p0.y;
+    if (Math.abs(chordDx) < 1e-9 && Math.abs(chordDy) < 1e-9) return 0;
+    return Math.atan2(chordDy, chordDx);
+  }
   return Math.atan2(dy, dx);
 }
 

@@ -182,4 +182,17 @@ describe("PSD 내보내기 조정 레이어 라운드트립 (exportPagePsd 경�
       feature: "adjustment-layer", disposition: "dropped", count: 1,
     }));
   });
+
+  it("clipBelow 별칭이 설정된 일반 레이어도 PSD clipping: true로 내보내고 NaN 조정 파라미터는 무시한다", async () => {
+    const curvesWithNan = convertStudioAdjustmentToPsd("curves", {
+      rgbPoints: [0, 10, Number.NaN, 128, 255, 240],
+    });
+    expect(curvesWithNan).toEqual({
+      status: "converted",
+      adjustment: {
+        type: "curves",
+        rgb: [{ input: 0, output: 10 }, { input: 255, output: 240 }],
+      },
+    });
+  });
 });

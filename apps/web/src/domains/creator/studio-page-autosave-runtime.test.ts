@@ -248,4 +248,14 @@ describe("6패스 자동저장 실제 복구 입구", () => {
       expect(r.context.preserveCurrentDocument).not.toHaveBeenCalled(); expect(r.context.autosaveRecoveryCandidateRef.current).toBe(candidate);
     } finally { bundle.mockRestore(); }
   });
+  it("동일 복구 후보에 대해 동시에 두 번 호출되면 중복 보존·적용을 막는다", async () => {
+    const r = recoveryFixture();
+    await Promise.all([
+      restoreStudioAutosaveRecovery(r.context),
+      restoreStudioAutosaveRecovery(r.context),
+    ]);
+    expect(r.context.preserveCurrentDocument).toHaveBeenCalledOnce();
+    expect(r.context.setPagesHistory).toHaveBeenCalledOnce();
+  });
 });
+

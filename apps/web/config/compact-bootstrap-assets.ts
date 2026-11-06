@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -6,6 +7,13 @@ import { transformWithEsbuild } from "vite";
 import { compactSvgStructureWhitespace } from "./compact-svg-structure";
 
 const BOOTSTRAP_FILES = ["bootstrap-compat.js", "bootstrap-theme.js"] as const;
+const OFFLINE_DRAW_JS_FILES = [
+  "offline-draw/model.js",
+  "offline-draw/storage.js",
+  "offline-draw/editor.js",
+  "offline-draw/cache.js",
+  "offline-draw/bootstrap.js",
+] as const;
 const STRUCTURAL_SVG_FILES = ["brand/production-os-hero.svg", "brand/production-os-workspace.svg"] as const;
 
 /** 공개 원본은 유지하고, precache 크기·지문 계산 전에 빌드 복사본만 압축한다. */
@@ -23,6 +31,22 @@ export async function compactBootstrapAssets(outDir: string): Promise<void> {
     return { filename, code: result.code };
   }));
   for (const { filename, code } of outputs) {
+    await writeFile(path.join(outDir, filename), code);
+  }
+  const presentOfflineDrawFiles = OFFLINE_DRAW_JS_FILES.filter((filename) =>
+    existsSync(path.join(outDir, filename)),
+  );
+  const offlineDrawOutputs = await Promise.all(presentOfflineDrawFiles.map(async (filename) => {
+    const source = await readFile(path.join(outDir, filename), "utf8");
+    const result = await transformWithEsbuild(source, filename, {
+      target: "es2020",
+      minify: true,
+      legalComments: "inline",
+      sourcemap: false,
+    });
+    return { filename, code: result.code };
+  }));
+  for (const { filename, code } of offlineDrawOutputs) {
     await writeFile(path.join(outDir, filename), code);
   }
   for (const filename of STRUCTURAL_SVG_FILES) {

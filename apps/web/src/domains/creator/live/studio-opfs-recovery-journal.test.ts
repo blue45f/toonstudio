@@ -652,5 +652,17 @@ describe("StudioOpfsRecoveryJournal compaction and quota eviction", () => {
       "operation-1",
       "operation-after-eviction",
     ]);
+
+    harness.adapter.files.set(
+      "recovery-journals/document-1/writer-lease.bin",
+      new Uint8Array([0, 1, 2]),
+    );
+    await expect(
+      harness.journal.acquireWriter({ ownerId: "writer-after-corrupt-lease" }),
+    ).resolves.toMatchObject({
+      ownerId: "writer-after-corrupt-lease",
+      epoch: 2,
+    });
   });
 });
+

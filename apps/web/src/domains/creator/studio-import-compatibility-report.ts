@@ -166,7 +166,7 @@ export function buildStudioImportCompatibilityReport(
     const extraBones = bones
       .filter((b) => b.humanoid && !required.includes(b.humanoid as (typeof required)[number]))
       .map((b) => b.name);
-    const humanoidMapped = missingBones.length < required.length;
+    const humanoidMapped = required.length > 0 && missingBones.length === 0;
     rigGrade = humanoidMapped ? "A" : "B";
     semanticGrade = "A";
     vrm = {

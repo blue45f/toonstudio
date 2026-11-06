@@ -144,4 +144,25 @@ describe("exportVectorLayerToSvg", () => {
     );
     expect(result.svg).toContain('opacity="1"');
   });
+
+  it("4자리 헥스 색상(#RGBA)을 유지하고 닫히지 않은 함수형 색상은 차단하며 닫힌 세그먼트 경로에 Z를 붙인다", () => {
+    const base = pointsToVectorStroke(
+      [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 10, y: 10 },
+      ],
+      { baseWidth: 4, color: "#f0a8" }
+    )!;
+    const closedStroke = { ...base, closed: true };
+    const unclosedColorStroke = { ...base, id: "s2", color: "rgb(255, 0, 0" };
+    const result = exportVectorLayerToSvg(
+      createVectorLayer({ id: "l1", strokes: [closedStroke, unclosedColorStroke] }),
+      { mode: "segments" }
+    );
+    expect(result.svg).toContain('stroke="#f0a8"');
+    expect(result.svg).toContain('stroke="#000000"');
+    expect(result.svg).toContain('L0 0Z"');
+  });
 });
+

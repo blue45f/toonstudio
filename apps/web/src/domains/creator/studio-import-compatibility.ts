@@ -141,6 +141,7 @@ const PROFILE_BY_FORMAT: Readonly<Record<StudioImportFormat, StudioImportFormatP
 
 function extension(name: string): string {
   const normalized = name.trim().toLowerCase();
+  if (normalized.endsWith(".toonproject.zip")) return "json";
   const lastDot = normalized.lastIndexOf(".");
   return lastDot > -1 ? normalized.slice(lastDot + 1) : "";
 }
@@ -153,6 +154,9 @@ export function detectStudioImportFormat(
     return fileExtension as StudioImportFormat;
   }
   const mime = file.mimeType.toLowerCase();
+  if (mime === "application/vnd.toonstudio.project+zip") return "json";
+  if (mime === "application/vnd.toonstudio.package+zip") return "toonstudio";
+  if (mime === "application/json") return "json";
   if (mime === "image/jpeg") return "jpg";
   if (mime === "image/png") return "png";
   if (mime === "image/webp") return "webp";

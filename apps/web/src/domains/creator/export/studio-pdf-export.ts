@@ -364,37 +364,39 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
       ) {
         throw new Error(`PDF 페이지 ${sourceIndex + 1}의 준비된 크기가 올바르지 않아요.`);
       }
-      flat = createCanvas(page.width, page.height);
+      const width = Math.max(1, Math.round(page.width));
+      const height = Math.max(1, Math.round(page.height));
+      flat = createCanvas(width, height);
       const ctx = flat.getContext("2d");
       if (!ctx) throw new Error("PDF 페이지 캔버스를 만들지 못했어요. 다시 시도해주세요.");
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, page.width, page.height);
+      ctx.fillRect(0, 0, width, height);
       ctx.drawImage(page, 0, 0);
       if (options.watermark) drawWatermarkOnSlice(flat, options.watermark);
       if (options.print?.colorMode === "cmyk") {
         // CMYK는 JPEG로 재인코딩할 수 없어 평탄화된 픽셀을 그대로 변환한다.
-        const pixels = ctx.getImageData(0, 0, page.width, page.height);
+        const pixels = ctx.getImageData(0, 0, width, height);
         printPages.push({
           kind: "cmyk-raster",
           cmykBytes: rgbaToCmykBytes(pixels.data),
-          width: page.width,
-          height: page.height,
+          width,
+          height,
         });
       } else if (options.book) {
         bookPages.push({
           jpegBytes: await toJpeg(flat, quality),
-          width: page.width,
-          height: page.height,
+          width,
+          height,
         });
       } else if (options.print) {
         printPages.push({
           kind: "jpeg",
           jpegBytes: await toJpeg(flat, quality),
-          width: page.width,
-          height: page.height,
+          width,
+          height,
         });
       } else {
-        jpegPages.push({ jpegBytes: await toJpeg(flat, quality), width: page.width, height: page.height });
+        jpegPages.push({ jpegBytes: await toJpeg(flat, quality), width, height });
       }
     } finally {
       if (flat) {
@@ -432,11 +434,17 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
       coverPages = 1;
     }
     if (options.book) {
-      // 호출자는 요소 목록을 본문 쪽 기준으로 준다. 표지가 맨 앞에 붙으면 본문이 한 칸씩 밀리므로
-      // 목록도 같이 밀어, 안전 영역 경고가 엉뚱한 쪽에 붙지 않게 한다.
+      // 호출자는 요소 목록을 본문 쪽 기준으로 준다. 0크기 페이지가 제외되었으면 유효 페이지 인덱스로 맞추고,
+      // 표지가 맨 앞에 붙으면 본문이 한 칸씩 밀리므로 목록도 같이 밀어 안전 영역 경고가 엉뚱한 쪽에 붙지 않게 한다.
+      const filteredElementsByPage = options.book.elementsByPage
+        ? valid.map(({ sourceIndex }) => options.book!.elementsByPage![sourceIndex])
+        : undefined;
       const request: BookPrintRequest =
-        coverPages > 0 && options.book.elementsByPage
-          ? { ...options.book, elementsByPage: [undefined, ...options.book.elementsByPage] }
+        filteredElementsByPage
+          ? {
+              ...options.book,
+              elementsByPage: coverPages > 0 ? [undefined, ...filteredElementsByPage] : filteredElementsByPage,
+            }
           : options.book;
       const built = buildBookPrintPdf(bookPages, request, { title: options.title });
       pdfBytes = built.bytes;

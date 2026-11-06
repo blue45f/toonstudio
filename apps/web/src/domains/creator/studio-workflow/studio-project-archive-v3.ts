@@ -412,7 +412,10 @@ export function migrateStudioProjectSnapshotV2ToArchiveV3(input: {
   const workspace: StudioProjectWorkspaceStateV1 = {
     version: 1,
     workScope: input.workScope,
-    currentPageId: input.snapshot.currentPageId,
+    currentPageId:
+      typeof input.snapshot.currentPageId === "string" && input.snapshot.currentPageId.trim().length > 0
+        ? input.snapshot.currentPageId
+        : (input.snapshot.pagesList[0]?.id ?? "page-1"),
     selectedElementIds,
     primarySelectionId,
     zoom: input.zoom ?? 1,
@@ -455,6 +458,32 @@ export function projectStudioArchiveV3ToV2Snapshot(input: {
   if (!validTimestamp(savedAt)) {
     throw new Error("Studio v2 projection requires a canonical savedAt timestamp.");
   }
+  const projectedCharacterBible =
+    archive.compatibility.characterBibleV1 === undefined && archive.bible.characterBible.characters.length > 0
+      ? {
+          version: 1 as const,
+          characters: archive.bible.characterBible.characters.map((character) => {
+            const canonical =
+              character.versions.find((v) => v.id === character.canonicalVersionId)
+              ?? character.versions[0];
+            return {
+              id: character.id,
+              name: character.name,
+              role: character.role,
+              appearance: canonical?.appearance.summary ?? "",
+              costume: canonical?.defaultCostume ?? "",
+              colors: (canonical?.palette ?? []).map((p) => p.sourceText || p.value || p.label),
+              voice: canonical?.voice ?? "",
+              goal: canonical?.goal ?? "",
+              relationships: character.relationships.map((r) => r.description),
+              props: [...(canonical?.props ?? [])],
+              lockedFields: Object.keys(canonical?.locks ?? {}) as Array<
+                "name" | "role" | "appearance" | "costume" | "colors" | "voice" | "goal" | "relationships" | "props"
+              >,
+            };
+          }),
+        }
+      : archive.compatibility.characterBibleV1;
   return {
     version: 2,
     savedAt,
@@ -466,7 +495,7 @@ export function projectStudioArchiveV3ToV2Snapshot(input: {
     linkedChallengeId: archive.metadata.linkedChallengeId,
     pagesList: [...archive.content.pagesList],
     master: archive.content.master,
-    characterBible: archive.compatibility.characterBibleV1,
+    characterBible: projectedCharacterBible,
     writerRoom: archive.story.writerRoom,
     aiProvenance: archive.provenance.ai,
     comments: archive.localDrafts.comments,

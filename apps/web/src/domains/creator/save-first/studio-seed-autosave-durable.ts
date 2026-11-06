@@ -1,6 +1,7 @@
 import {
   parseStudioAutosave,
   studioAutosaveKey,
+  studioLifecycleAutosaveSidecarKey,
   type StudioAutosavePayload,
   type StudioAutosaveStorage,
 } from "../studio-autosave";
@@ -73,14 +74,28 @@ function browserRecordState(
   seed: StudioSeedAutosave,
 ): BrowserRecordState {
   let raw: string | null;
+  let sidecarRaw: string | null;
   try {
     raw = storage.getItem(key);
+    sidecarRaw = storage.getItem(studioLifecycleAutosaveSidecarKey(key));
   } catch {
     return "unreadable"; // 있는지 알 수 없는 기록 위에는 쓰지 않는다.
   }
-  if (raw === null) return "absent";
-  const existing = parseStudioAutosave(raw);
-  return existing !== null && sameSeedBody(existing, seed.build()) ? "untouched-seed" : "user-record";
+  const builtSeed = raw !== null || sidecarRaw !== null ? seed.build() : null;
+  if (raw !== null && builtSeed !== null) {
+    const existing = parseStudioAutosave(raw);
+    if (existing === null || !sameSeedBody(existing, builtSeed)) {
+      return "user-record";
+    }
+  }
+  if (sidecarRaw !== null && builtSeed !== null) {
+    const sidecarExisting = parseStudioAutosave(sidecarRaw);
+    if (sidecarExisting === null || !sameSeedBody(sidecarExisting, builtSeed)) {
+      return "user-record";
+    }
+    return "untouched-seed";
+  }
+  return raw === null ? "absent" : "untouched-seed";
 }
 
 export async function persistSeedAutosaveDurably(input: {

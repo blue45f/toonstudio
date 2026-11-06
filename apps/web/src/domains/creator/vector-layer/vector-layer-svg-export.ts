@@ -58,9 +58,9 @@ function escapeAttribute(value: string): string {
 
 function isPlausibleColor(color: string): boolean {
   return (
-    /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(color)
-    || /^rgba?\(/.test(color)
-    || /^hsla?\(/.test(color)
+    /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(color)
+    || /^rgba?\([^()"<>]+\)$/.test(color)
+    || /^hsla?\([^()"<>]+\)$/.test(color)
     || /^[a-zA-Z]+$/.test(color)
   );
 }
@@ -169,17 +169,26 @@ function strokeToSegmentPaths(
     Math.min(1, Math.max(0, finiteNumber(stroke.opacity, 1))),
     3
   );
-  return stroke.segments.map((segment, index) => {
+  const paths = stroke.segments.map((segment, index) => {
     const widthStart = stroke.widths[index] ?? 1;
     const widthEnd = stroke.widths[index + 1] ?? widthStart;
     const width = formatNumber(Math.max((widthStart + widthEnd) / 2, 0.01), decimals);
+    const isLastClosed = stroke.closed === true && index === stroke.segments.length - 1;
+    const first = stroke.segments[0]?.p0;
+    const closeSuffix = isLastClosed && first
+      ? (Math.abs(segment.p3.x - first.x) < 1e-6 && Math.abs(segment.p3.y - first.y) < 1e-6
+          ? "Z"
+          : `L${fmt(first.x)} ${fmt(first.y)}Z`)
+      : "";
     const d =
       `M${fmt(segment.p0.x)} ${fmt(segment.p0.y)}`
       + `C${fmt(segment.p1.x)} ${fmt(segment.p1.y)}`
       + ` ${fmt(segment.p2.x)} ${fmt(segment.p2.y)}`
-      + ` ${fmt(segment.p3.x)} ${fmt(segment.p3.y)}`;
+      + ` ${fmt(segment.p3.x)} ${fmt(segment.p3.y)}`
+      + closeSuffix;
     return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" opacity="${opacity}"/>`;
   });
+  return paths;
 }
 
 function strokeToOutlineElement(

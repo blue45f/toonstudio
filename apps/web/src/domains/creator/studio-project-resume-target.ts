@@ -21,20 +21,28 @@ export function resolveStudioProjectResumeTarget(
   project: StudioProjectLibraryEntry,
   locale: "ko" | "en",
 ): StudioProjectResumeTarget {
-  const fallback = {
-    href: `/studio/p/${encodeURIComponent(project.id)}/overview`,
-    documentId: project.lastOpenedDocumentId,
-    summary: null,
-    exact: false,
-  } satisfies StudioProjectResumeTarget;
+  const overviewHref = `/studio/p/${encodeURIComponent(project.id)}/overview`;
   try {
     const documents = readStudioProjectDocuments(storage, project.id).documents;
     const document = documents.find((candidate) =>
       candidate.id === project.lastOpenedDocumentId && candidate.status === "active")
       ?? documents.find((candidate) => candidate.status === "active")
+      ?? documents.find((candidate) =>
+        candidate.id === project.lastOpenedDocumentId && candidate.status !== "trashed")
+      ?? documents.find((candidate) => candidate.status !== "trashed")
       ?? null;
-    if (!document) return fallback;
-    const context = readStudioExactResumeContext(storage, project.id, document.id);
+    if (!document) {
+      return {
+        href: overviewHref,
+        documentId: null,
+        summary: null,
+        exact: false,
+      };
+    }
+    const rawContext = readStudioExactResumeContext(storage, project.id, document.id);
+    const context = rawContext && document.allowedWorkspaces.includes(rawContext.workspace)
+      ? rawContext
+      : null;
     const workspace = context?.workspace ?? document.defaultWorkspace;
     const workspaceDefinition = studioDocumentWorkspaceById(workspace);
     return {
@@ -51,6 +59,11 @@ export function resolveStudioProjectResumeTarget(
       exact: Boolean(context),
     };
   } catch {
-    return fallback;
+    return {
+      href: overviewHref,
+      documentId: null,
+      summary: null,
+      exact: false,
+    };
   }
 }

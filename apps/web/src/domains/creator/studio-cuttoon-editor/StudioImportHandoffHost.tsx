@@ -36,13 +36,10 @@ function removeHandoffQuery(): void {
 }
 
 function targetBusy(target: StudioImportHandoffTarget, props: StudioImportHandoffHostProps): boolean {
+  if (props.collaborationDocumentLocked || props.projectArchiveBusy) return true;
   if (target === "brush-pack") return props.brushPackImporting;
-  if (target === "project-json") return props.projectArchiveBusy || props.collaborationDocumentLocked;
-  if (target === "psd") {
-    return props.psdImportBusy || props.interchangeImportBusy || props.collaborationDocumentLocked;
-  }
-  if (target === "interchange") {
-    return props.interchangeImportBusy || props.psdImportBusy || props.collaborationDocumentLocked;
+  if (target === "psd" || target === "interchange") {
+    return props.psdImportBusy || props.interchangeImportBusy;
   }
   return false;
 }
@@ -78,7 +75,11 @@ export function StudioImportHandoffHost(props: StudioImportHandoffHostProps): Re
       return;
     }
     if (targetBusy(pending.target, props)) {
-      setStatus({ state: "waiting", fileName: pending.file.name });
+      setStatus((prev) => (
+        prev.state === "waiting" && prev.fileName === pending.file.name
+          ? prev
+          : { state: "waiting", fileName: pending.file.name }
+      ));
       return;
     }
 

@@ -338,10 +338,12 @@ export function createStudioInterchangeImportOrchestration(
       // A4 D4 (R15): psd 생산자는 구조화 코드만 방출하므로 지연 로드한 리졸버로 해석한다.
       const { resolveStudioPsdImportErrorFromCause } = await import("../status-i18n/studio-producer-error-i18n-psd-import");
       if (controller.signal.aborted || documentImportEpochRef.current !== importEpoch) return;
+      const message = resolveStudioPsdImportErrorFromCause(err) ?? (err instanceof Error ? err.message : "PSD 파일을 읽지 못했어요.");
       setPsdImportStatus({
         tone: "warn",
-        text: resolveStudioPsdImportErrorFromCause(err) ?? (err instanceof Error ? err.message : "PSD 파일을 읽지 못했어요."),
+        text: message,
       });
+      setError(message);
     } finally {
       if (
         interchangeImportAbortRef.current === controller &&
@@ -522,11 +524,18 @@ export function createStudioInterchangeImportOrchestration(
       setPendingInterchangeImport(null);
       setError(null);
     } catch (cause) {
-      if (controller.signal.aborted) return;
-      // A4 D4 (R15): will 생산자는 구조화 코드만 방출하므로 지연 로드한 리졸버로 해석한다.
-      const { resolveStudioWillV1ImportErrorFromCause } = await import("../status-i18n/studio-producer-error-i18n-will-import");
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || documentImportEpochRef.current !== applyEpoch) return;
+      // A4 D4 (R15): will 및 psd 생산자는 구조화 코드만 방출하므로 지연 로드한 리졸버로 해석한다.
+      const [
+        { resolveStudioWillV1ImportErrorFromCause },
+        { resolveStudioPsdImportErrorFromCause },
+      ] = await Promise.all([
+        import("../status-i18n/studio-producer-error-i18n-will-import"),
+        import("../status-i18n/studio-producer-error-i18n-psd-import"),
+      ]);
+      if (controller.signal.aborted || documentImportEpochRef.current !== applyEpoch) return;
       const message = resolveStudioWillV1ImportErrorFromCause(cause)
+        ?? resolveStudioPsdImportErrorFromCause(cause)
         ?? (cause instanceof Error ? cause.message : "문서 가져오기를 적용하지 못했어요.");
       setInterchangeImportStatus({ tone: "bad", text: message });
       setError(message);

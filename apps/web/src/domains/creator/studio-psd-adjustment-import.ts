@@ -69,7 +69,10 @@ function colorToHex(color: Color | undefined): string | undefined {
   if (
     typeof candidate.r !== "number" ||
     typeof candidate.g !== "number" ||
-    typeof candidate.b !== "number"
+    typeof candidate.b !== "number" ||
+    !Number.isFinite(candidate.r) ||
+    !Number.isFinite(candidate.g) ||
+    !Number.isFinite(candidate.b)
   ) {
     return undefined;
   }

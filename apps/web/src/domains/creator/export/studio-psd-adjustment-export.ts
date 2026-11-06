@@ -110,9 +110,13 @@ function convertCurves(
     const flat = parameters[`${channel}Points`];
     if (!Array.isArray(flat) || flat.length < 2) continue;
     const points: { input: number; output: number }[] = [];
-    // 평탄 배열 [in0, out0, in1, out1, ...] — 홀수 꼬리는 점으로 성립하지 않아 버린다.
+    // 평탄 배열 [in0, out0, in1, out1, ...] — 홀수 꼬리와 비유한 수치는 버린다.
     for (let i = 0; i + 1 < flat.length; i += 2) {
-      points.push({ input: flat[i]!, output: flat[i + 1]! });
+      const input = flat[i]!;
+      const output = flat[i + 1]!;
+      if (Number.isFinite(input) && Number.isFinite(output)) {
+        points.push({ input, output });
+      }
     }
     if (points.length > 0) adjustment[channel] = points;
   }
@@ -140,6 +144,7 @@ function convertHueSaturation(
   for (const name of HSL_RANGES) {
     const range = parameters[`range.${name}`];
     if (!Array.isArray(range) || range.length < 7) continue;
+    if (!range.slice(0, 7).every((item) => typeof item === "number" && Number.isFinite(item))) continue;
     adjustment[name] = {
       a: range[0]!, b: range[1]!, c: range[2]!, d: range[3]!,
       hue: range[4]!, saturation: range[5]!, lightness: range[6]!,
@@ -341,6 +346,7 @@ function convertSelectiveColor(
   for (const name of SELECTIVE_RANGES) {
     const range = parameters[`range.${name}`];
     if (!Array.isArray(range) || range.length < 4) continue;
+    if (!range.slice(0, 4).every((item) => typeof item === "number" && Number.isFinite(item))) continue;
     adjustment[name] = { c: range[0]!, m: range[1]!, y: range[2]!, k: range[3]! };
   }
   return adjustment;

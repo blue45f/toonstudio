@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createDefaultStudioSaveProfile } from "./studio-save-profile";
-import { buildStudioProjectPackage, studioPackageCrc32 } from "./studio-project-package";
+import {
+  buildStudioProjectPackage,
+  studioPackageCrc32,
+  writeStudioProjectPackageToTarget,
+} from "./studio-project-package";
 
 const project = {
   id: "project-1",
@@ -60,4 +64,29 @@ it("6패스 묶음 원고는 불완전한 구형 package를 만들지 않고 실
     additionalEntries: { "documents/document-0001.autosave.json": JSON.stringify({ pagesList: [{ id: "p", elements: [], bg3dLtBundles: {} }] }) } })).toThrow(/\.toonproject\.zip/);
   expect(() => buildStudioProjectPackage({ project, documents: [], profile: createDefaultStudioSaveProfile(project.id),
     additionalEntries: { "documents/document-0001.autosave.json": JSON.stringify({ pagesList: [{ id: "p", note: "bg3dLtBundles 사용 설명", elements: [] }] }) } })).not.toThrow();
+});
+
+it("writeStudioProjectPackageToTarget는 스트림 쓰기 실패 시 writable.abort()를 호출해 파일 핸들 잠금을 해제한다", async () => {
+  const pkg = buildStudioProjectPackage({
+    project,
+    documents: [],
+    profile: createDefaultStudioSaveProfile(project.id),
+  });
+  const abort = vi.fn().mockResolvedValue(undefined);
+  const close = vi.fn().mockResolvedValue(undefined);
+  const handle = {
+    kind: "file" as const,
+    name: "비공개 원고.toonstudio",
+    createWritable: async () => ({
+      write: async () => {
+        throw new Error("disk full");
+      },
+      close,
+      abort,
+    }),
+  };
+
+  await expect(writeStudioProjectPackageToTarget(pkg, { kind: "file-handle", handle })).rejects.toThrow("disk full");
+  expect(abort).toHaveBeenCalledTimes(1);
+  expect(close).not.toHaveBeenCalled();
 });

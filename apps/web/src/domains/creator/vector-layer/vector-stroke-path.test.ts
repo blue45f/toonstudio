@@ -194,4 +194,29 @@ describe("vectorStrokeAnchorAngles", () => {
     expect(angles[0]).toBeCloseTo(Math.PI / 2, 9);
     expect(angles[1]).toBeCloseTo(Math.PI / 2, 9);
   });
+
+  it("제어점이 앵커와 일치하는 삼차 베지어 구간에서도 현 각도를 반환한다", () => {
+    const stroke = pointsToVectorStroke(
+      [
+        { x: 0, y: 0 },
+        { x: 0, y: 10 },
+      ],
+      { baseWidth: 4 }
+    )!;
+    const degenerateCubic = {
+      ...stroke,
+      segments: [
+        {
+          p0: { x: 0, y: 0 },
+          p1: { x: 0, y: 0 },
+          p2: { x: 0, y: 10 },
+          p3: { x: 0, y: 10 },
+        },
+      ],
+    };
+    const samples = sampleVectorStrokePath(degenerateCubic, 2);
+    expect(samples[0]!.angle).toBeCloseTo(Math.PI / 2, 9);
+    expect(samples[samples.length - 1]!.angle).toBeCloseTo(Math.PI / 2, 9);
+  });
 });
+

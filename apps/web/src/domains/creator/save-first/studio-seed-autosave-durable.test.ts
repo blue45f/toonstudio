@@ -449,4 +449,23 @@ describe("persistSeedAutosaveDurably", () => {
     expect(outcome).toBe("written");
     expect(lease.releasedCount()).toBe(1);
   });
+
+  it("기본 키 없이 :lifecycle 사이드카에만 사용자 편집 기록이 있어도 덮어쓰지 않고 보존한다", async () => {
+    const opfs = opfsFake();
+    const storage = memoryStorage();
+    const sidecarKey = `${KEY}:lifecycle`;
+    const touched = serializeStudioAutosave(body(OLD_AT, "user-lifecycle-only"));
+    storage.setItem(sidecarKey, touched);
+
+    const outcome = await persistSeedAutosaveDurably({
+      seed,
+      authUserId: USER_ID,
+      storage,
+      ports: portsOf({ opfs, sqlite: sqliteFake() }),
+    });
+
+    expect(outcome).toBe("kept-existing");
+    expect(opfs.writes).toHaveLength(0);
+    expect(storage.getItem(sidecarKey)).toBe(touched);
+  });
 });

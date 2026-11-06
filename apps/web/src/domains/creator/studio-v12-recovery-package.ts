@@ -1456,11 +1456,11 @@ export async function restoreStudioV12RecoveryPackage(
   imported: ImportStudioV12RecoveryPackageResult,
   options: RestoreStudioV12RecoveryPackageOptions,
 ): Promise<{ project: ProjectStateIR; seq: number; recovery: RecoveryReport }> {
-  throwIfAborted(options.signal);
-  const [entries, snapshots] = await Promise.all([
-    options.history.readEntries(),
-    options.history.readSnapshots(),
-  ]);
+  throwIfAborted(options?.signal);
+  if (!imported || typeof imported !== "object" || !options || typeof options !== "object" || !options.history) {
+    failure("INVALID_INPUT", "복구 패키지 결과와 대상 history가 필요합니다.");
+  }
+  const [entries, snapshots] = await Promise.all([options.history.readEntries(), options.history.readSnapshots()]);
   if (entries.length > 0 || snapshots.length > 0) {
     failure("DESTINATION_NOT_EMPTY", "복구 대상 history는 비어 있어야 합니다.");
   }
