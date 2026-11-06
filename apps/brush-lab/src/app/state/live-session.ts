@@ -96,6 +96,8 @@ export interface LiveSessionOptions {
   /** 생략 시 `globalThis.requestAnimationFrame` 기반 스케줄러. */
   scheduler?: FrameScheduler;
   onPreview?: (points: PreviewPoint[]) => void;
+  /** 취소·오류·세션 교체로 누적 궤적 미리보기를 비워야 할 때 호출된다. */
+  onPreviewReset?: () => void;
   /** 정본 표본(raw·coalesced)이 들어올 때마다(스케줄러 큐 전). 입력 궤적 미리보기용. */
   onCanonical?: (samples: readonly RawSample[]) => void;
   onFrame?: (receipt: DabBatchReceipt) => void;
@@ -116,6 +118,8 @@ export class LiveStrokeSession {
   /** 진행 중인 획의 addSamples 소요(ms). */
   private addSamplesMs: number[] = [];
   private inStroke = false;
+  /** beginStroke·addSamples 실패로 버려진 물리 포인터 제스처인가(다음 down 전까지 잔여 move/up 미리보기 차단). */
+  private strokeRejected = false;
   private strokeCount = 0;
   private strokeSeed = 0;
   private strokeSamples: RawSample[] = [];
@@ -295,9 +299,11 @@ export class LiveStrokeSession {
     this.laneReleased = false;
     this.laneMidStroke = false;
     this.inStroke = false;
+    this.strokeRejected = false;
     this.strokeSamples = [];
     this.frames = [];
     this.addSamplesMs = [];
+    if (this.opts.onPreviewReset) this.opts.onPreviewReset();
   }
 
   /** 현재 레인을 한 번만 해제한다. */
@@ -309,12 +315,24 @@ export class LiveStrokeSession {
 
   private onSamples(rawInput: RawSample[]): void {
     if (this.disposed) return;
+    const hasDown = rawInput.some((s) => s.phase === "down");
+    if (this.strokeRejected && !hasDown) {
+      for (const s of rawInput) {
+        if (s.phase === "up") {
+          this.pointerDown = false;
+          this.strokeRejected = false;
+        }
+      }
+      this.cancelNextUp = false;
+      return;
+    }
     const transformed = this.opts.transformSamples ? this.opts.transformSamples(rawInput) : rawInput;
     const raw = this.inputStage ? applyStrokeStream(this.inputStage, transformed) : transformed;
     const { canonical, predicted } = splitPredicted(raw);
     for (const s of canonical) {
       if (s.phase === "down") {
         this.pointerDown = true;
+        this.strokeRejected = false;
         this.strokeMaxButtons = s.buttons ?? 0;
         // 이전 획의 정상 종료 뒤 따라온 lostpointercapture가 남긴 단서는 새 획과 무관하므로 버린다.
         this.pendingCancel = null;
@@ -373,9 +391,12 @@ export class LiveStrokeSession {
     const strokeKo = this.strokeDetailKo();
     this.pendingCancel = null;
     this.inStroke = false;
+    if (this.pointerDown) this.strokeRejected = true;
     this.strokeSamples = [];
     this.frames = [];
     this.addSamplesMs = [];
+    if (this.opts.onPreviewReset) this.opts.onPreviewReset();
+    if (this.opts.onPreview) this.opts.onPreview([]);
     const failures: unknown[] = [error];
     let abort: LiveStrokeAbort | null = null;
     if (this.laneMidStroke) abort = await this.discardLaneStroke("error", failures, strokeKo, null);
@@ -401,14 +422,20 @@ export class LiveStrokeSession {
       if (pending.source === "lostpointercapture") strokeKo += "·캡처상실";
     }
     this.inStroke = false;
+    this.strokeRejected = false;
     this.strokeSamples = [];
     this.frames = [];
     this.addSamplesMs = [];
-    if (!this.laneMidStroke) return;
+    if (!this.laneMidStroke) {
+      if (this.opts.onPreviewReset) this.opts.onPreviewReset();
+      if (this.opts.onPreview) this.opts.onPreview([]);
+      return;
+    }
     const failures: unknown[] = [];
     const source = pending?.source ?? "pointercancel";
     const abort = await this.discardLaneStroke("pointercancel", failures, strokeKo, source);
     if (!abort.laneReplaced && failures.length === 0) {
+      if (this.opts.onPreviewReset) this.opts.onPreviewReset();
       if (this.opts.onPreview) this.opts.onPreview([]);
       if (this.opts.onStrokeAbort) this.opts.onStrokeAbort(abort);
       return;
@@ -418,6 +445,7 @@ export class LiveStrokeSession {
         new SumiError("document-not-preserved", `포인터 취소로 획을 버렸지만 레인이 문서를 보존하지 못해 교체했다: ${abort.receipt?.reasonKo ?? "사유 없음"}`),
       );
     }
+    if (this.opts.onPreviewReset) this.opts.onPreviewReset();
     if (this.opts.onPreview) this.opts.onPreview([]);
     const onError = this.opts.onError;
     if (!onError) throw failures[0];

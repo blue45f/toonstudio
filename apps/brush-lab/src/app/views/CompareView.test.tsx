@@ -247,10 +247,18 @@ describe("CompareView", { timeout: 30_000 }, () => {
     expect(screen.getByTestId("lab-wave36-pigment-ratio-slider").getAttribute("aria-valuetext")).toContain("65%");
     expect(screen.getByTestId("lab-wave36-live-readout").textContent).toContain("Spectral38 OKLab");
 
+    const workflowBar = screen.getByTestId("lab-workflow-bar");
+    const activeSteps = workflowBar.querySelectorAll(".lab-workflow-step--active");
+    expect(activeSteps).toHaveLength(1);
+    expect(activeSteps[0]?.getAttribute("aria-current")).toBe("step");
+
     fireEvent.click(screen.getByTestId("lab-apply-optimal-profile-btn"));
     expect(store.get().presetId).toBe("watercolor-wet");
     expect(store.get().overrides.paperRoughness).toBe(0.65);
     expect(screen.getByTestId("lab-optimal-applied-status").textContent).toContain("적용했습니다");
+
+    fireEvent.click(screen.getByRole("tab", { name: "그리기" }));
+    expect((screen.getByLabelText("종이 질감 켜기") as HTMLInputElement).checked).toBe(true);
   });
 });
 

@@ -252,8 +252,9 @@ export function DrawParamPanel() {
             onChange={(e) => {
               if (!isPaperKind(e.target.value)) return;
               drawActions.setPaperKind(e.target.value);
-              // 종류를 고르면 질감을 켠다(끄려면 위 스위치를 끈다).
+              // 종류를 고르면 질감을 켠다(끄려면 위 스위치를 끈다). 브러시 기본으로 돌리면 강제 켜기를 해제한다.
               if (e.target.value !== "preset") set({ grain: true });
+              else set({ grain: undefined });
             }}
           >
             {DRAW_PAPER_KINDS.map((p) => (

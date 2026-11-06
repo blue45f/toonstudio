@@ -427,5 +427,48 @@ describe("V6 brush experiments in the workbench", () => {
     ).toBeTruthy();
   });
 
+  it("슬라이더 드래그 중 수식키(Shift)를 떼어도 실행 취소 그룹이 분리되지 않고, 색상 피커 연속 변경도 하나의 실행 취소 단계로 묶인다", () => {
+    render(<StudioBrushV6Workbench scope="test" />);
+    fireEvent.click(screen.getByRole("button", { name: "재료·질감" }));
+    const slider = screen.getByRole("slider", { name: /도포 유량/u });
+    const initialFlow = stored().tuning.flow;
+    fireEvent.change(slider, { target: { value: "0.25" } });
+    fireEvent.keyUp(slider, { key: "Shift" });
+    fireEvent.change(slider, { target: { value: "0.45" } });
+    fireEvent.pointerUp(slider);
+    fireEvent.click(screen.getByRole("button", { name: "실행 취소" }));
+    expect(stored().tuning.flow).toBe(initialFlow);
+
+    const primaryColor = screen.getByLabelText("기본 색") as HTMLInputElement;
+    const initialColor = stored().tuning.primaryColor;
+    fireEvent.change(primaryColor, { target: { value: "#112233" } });
+    fireEvent.change(primaryColor, { target: { value: "#445566" } });
+    fireEvent.pointerUp(primaryColor);
+    expect(stored().tuning.primaryColor).toBe("#445566");
+    fireEvent.click(screen.getByRole("button", { name: "실행 취소" }));
+    expect(stored().tuning.primaryColor).toBe(initialColor);
+  });
+
+  it("동일 레시피를 다시 선택하면 변경된 슬라이더 값이 레시피 초기값으로 복원되고, 상단 WGSL 커널·스타일러스 이벤트가 실제 브러시 설정에 반영된다", () => {
+    render(<StudioBrushV6Workbench scope="test" />);
+    fireEvent.click(screen.getByRole("button", { name: "재료·질감" }));
+    fireEvent.change(screen.getByRole("slider", { name: /도포 유량/u }), { target: { value: "0.19" } });
+    expect(stored().tuning.flow).toBe(0.19);
+    fireEvent.click(screen.getByRole("button", { name: /^시작 레시피/u }));
+    fireEvent.click(screen.getByRole("button", { name: /클린 잉크/u }));
+    expect(stored().tuning.flow).toBe(createBrushStudioV6Program("clean-ink").tuning.flow);
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("toonspectrum:brush-lab-rea-preset", {
+          detail: { kernelMode: "rebelle-wet-pigment", stylusCurve: "heavy-chisel-tilt" },
+        }),
+      );
+    });
+    expect(stored().slots.deposition).toBe("deposit-wet");
+    expect(stored().slots.tip).toBe("tip-chisel-sdf");
+    expect(stored().input.pressureGamma).toBe(1.45);
+  });
+
 });
 

@@ -151,3 +151,48 @@ it("preserves the existing bitmap when the canvas resizes between strokes in a l
   f.send("pointerup", { clientX: 140, pressure: 0 });
 });
 
+it("리사이즈 컨트롤러(resize) 호출 시 그려진 캔버스 비트맵을 지우지 않고 보존한다", () => {
+  const f = fixture();
+  f.send("pointerdown");
+  f.send("pointerup", { clientX: 90, pressure: 0 });
+  const beforeResizeDraws = f.context.drawImage.mock.calls.length;
+  Object.defineProperty(f.canvas, "clientWidth", { value: 520, configurable: true });
+  f.controller.resize?.();
+  expect(f.canvas.width).toBe(520);
+  expect(f.context.drawImage.mock.calls.length).toBeGreaterThanOrEqual(beforeResizeDraws + 2);
+});
+
+it("CSS 배율 스케일링(rect.width !== clientWidth)이 적용되어도 포인터 좌표를 내부 캔버스 비율로 정확히 보정한다", () => {
+  const f = fixture();
+  f.canvas.getBoundingClientRect = () => ({ left: 10, top: 20, width: 800, height: 400 } as DOMRect);
+  f.send("pointerdown", { clientX: 210, clientY: 120 });
+  expect(calls.strokes[0]!.points[0]).toMatchObject({ x: 100, y: 50 });
+});
+
+it("획 입력 도중 창 포커스 이탈(window blur) 또는 문서 숨김(visibilitychange)이 발생하면 획을 안전하게 롤백하고 캡처를 해제한다", () => {
+  const f = fixture();
+  f.send("pointerdown");
+  f.send("pointermove", { clientX: 110 });
+  const beforeBlurDraws = f.context.drawImage.mock.calls.length;
+  window.dispatchEvent(new Event("blur"));
+  expect(f.context.drawImage.mock.calls.length).toBeGreaterThan(beforeBlurDraws);
+  expect(f.capture.size).toBe(0);
+
+  // 다음 획을 시작한 뒤 visibilitychange(hidden) 발생 시에도 동일하게 복구된다
+  f.send("pointerdown", { clientX: 50, clientY: 60 });
+  Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+  document.dispatchEvent(new Event("visibilitychange"));
+  expect(f.capture.size).toBe(0);
+  Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+});
+
+it("포인터 캡처가 거부되거나 해제된 상태에서 화면 밖 pointerup 누락 후 같은 포인터로 다시 pointerdown이 오면 이전 획을 정리하고 새 획을 시작한다", () => {
+  const f = fixture();
+  f.canvas.setPointerCapture = () => { throw new DOMException("No capture", "NotFoundError"); };
+  f.send("pointerdown", { clientX: 40, clientY: 60 });
+  f.send("pointermove", { clientX: 80, clientY: 60 });
+  expect(calls.strokes).toHaveLength(1);
+  // 화면 밖에서 마우스를 뗐다가 다시 캔버스 안에서 누른 상황 시뮬레이션
+  f.send("pointerdown", { clientX: 60, clientY: 70 });
+  expect(calls.strokes).toHaveLength(2);
+});

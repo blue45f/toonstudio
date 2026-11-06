@@ -66,17 +66,38 @@ describe("drawStore", () => {
     expect(fresh.get().laneId).toBe("cpu-reference");
   });
 
-  it("브러시를 바꾸면 오버라이드·안정화·종이 종류는 기본으로 돌아가고 색은 유지되며 최근 사용에 쌓인다", () => {
+  it("브러시를 바꾸거나 기본값으로 돌리면 오버라이드·안정화 방식/강도·코너 게이트·종이 종류는 기본으로 돌아가고 색은 유지되며 최근 사용에 쌓인다", () => {
     const store = createDrawStore();
     const a = createDrawActions(store);
     a.setColor("#336699");
     a.setOverride({ sizePx: 20 });
     a.setOverride({ opacity: 0.4 });
+    a.setStabilizerMode("lazy-brush");
     a.setStabilizerPct(70);
+    a.setCornerGate(false);
     a.setPaperKind("rough");
     expect(store.get().overrides).toEqual({ sizePx: 20, opacity: 0.4 });
     a.setPreset("charcoal");
-    expect(store.get()).toMatchObject({ presetId: "charcoal", overrides: {}, stabilizerPct: null, paperKind: "preset", color: "#336699" });
+    expect(store.get()).toMatchObject({
+      presetId: "charcoal",
+      overrides: {},
+      stabilizerMode: "one-euro",
+      stabilizerPct: null,
+      cornerGate: true,
+      paperKind: "preset",
+      color: "#336699",
+    });
+    a.setStabilizerMode("off");
+    a.setCornerGate(false);
+    a.setOverride({ sizePx: 44 });
+    a.resetOverrides();
+    expect(store.get()).toMatchObject({
+      overrides: {},
+      stabilizerMode: "one-euro",
+      stabilizerPct: null,
+      cornerGate: true,
+      paperKind: "preset",
+    });
     a.setPreset("watercolor-wet");
     a.setPreset("charcoal");
     expect(store.get().recentPresetIds).toEqual(["charcoal", "watercolor-wet"]);

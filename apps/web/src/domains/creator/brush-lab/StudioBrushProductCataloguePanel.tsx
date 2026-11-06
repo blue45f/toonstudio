@@ -1,5 +1,6 @@
 import { ArrowRight, Cpu, Library, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
 import { useT } from "@/shared/lib/i18n";
@@ -66,6 +67,11 @@ export function StudioBrushProductCataloguePanel({
   readonly baseHref: string;
 }) {
   const t = useT();
+  const location = useLocation();
+  const selectedProductBrush = useMemo(
+    () => new URLSearchParams(location.search).get("productBrush"),
+    [location.search],
+  );
   const [open, setOpen] = useState(true);
   const [query, setQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
@@ -210,12 +216,18 @@ export function StudioBrushProductCataloguePanel({
               const href = recipeId
                 ? editorHref(baseHref, entry.id, recipeId)
                 : pickerHref(entry.id);
+              const isSelected = selectedProductBrush === entry.id;
               return (
                 <Link
                   key={entry.id}
                   href={href}
+                  aria-current={isSelected ? "true" : undefined}
                   data-studio-brush-product-target={entry.id}
-                  className="group rounded-2xl border border-line bg-panel/55 p-3.5 transition-colors hover:border-accent/45 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                  className={`group rounded-2xl border p-3.5 transition-colors hover:border-accent/45 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 ${
+                    isSelected
+                      ? "border-accent/65 bg-accent/10"
+                      : "border-line bg-panel/55"
+                  }`}
                 >
                   <span className="flex items-start justify-between gap-3">
                     <span>

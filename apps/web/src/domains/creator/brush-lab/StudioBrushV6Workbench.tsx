@@ -391,7 +391,9 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
     if (!canvas) return;
     const controller = attachBrushStudioV6LivePreview(canvas, () => currentRef.current, setTelemetry);
     controllerRef.current = controller;
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => controller.clear());
+    const observer = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(() => (controller.resize ? controller.resize() : controller.clear()));
     observer?.observe(canvas);
     return () => { observer?.disconnect(); controller.destroy(); if (controllerRef.current === controller) controllerRef.current = null; };
   }, []);
@@ -416,13 +418,17 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
       setStatus(type === "undo" ? "이전 브러시 설정으로 되돌렸습니다." : "브러시 설정 변경을 다시 적용했습니다.");
     };
     const endGroup = () => dispatchHistory({ type: "end-group" });
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Shift" || event.key === "Control" || event.key === "Alt" || event.key === "Meta") return;
+      endGroup();
+    };
     root.addEventListener("keydown", onKeyDown);
-    root.addEventListener("keyup", endGroup);
+    root.addEventListener("keyup", onKeyUp);
     root.addEventListener("pointerup", endGroup);
     root.addEventListener("focusout", endGroup);
     return () => {
       root.removeEventListener("keydown", onKeyDown);
-      root.removeEventListener("keyup", endGroup);
+      root.removeEventListener("keyup", onKeyUp);
       root.removeEventListener("pointerup", endGroup);
       root.removeEventListener("focusout", endGroup);
     };
@@ -435,10 +441,41 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
     setSavedHref(null);
     if (message) setStatus(message);
   };
+  useEffect(() => {
+    const onReaPreset = (event: Event) => {
+      if (!(event instanceof CustomEvent) || !event.detail || typeof event.detail !== "object") return;
+      const detail = event.detail as { kernelMode?: string; stylusCurve?: string };
+      let next = currentRef.current;
+      let message = "";
+      if (detail.kernelMode === "dual-tip-multiply") {
+        next = patchBrushStudioV6Tuning(replaceBrushStudioV6Slot(replaceBrushStudioV6Slot(next, "tip", "tip-krita-dual"), "deposition", "deposit-ink"), { surfaceTooth: 0.45 });
+        message = "듀얼 팁 Multiply 합성 커널을 브러시 설정에 적용했습니다.";
+      } else if (detail.kernelMode === "rebelle-wet-pigment") {
+        next = patchBrushStudioV6Tuning(replaceBrushStudioV6Slot(next, "deposition", "deposit-wet"), { wetness: 0.72, diffusion: 0.58, granulation: 0.44 });
+        message = "Rebelle 습식 안료 확산 커널을 브러시 설정에 적용했습니다.";
+      } else if (detail.kernelMode === "gpen-velocity-taper") {
+        next = patchBrushStudioV6Tuning(replaceBrushStudioV6Slot(replaceBrushStudioV6Slot(next, "tip", "tip-round-sdf"), "deposition", "deposit-ink"), { spacing: 0.06, flow: 0.92 });
+        message = "G펜 속도 감응 칼끝 테이퍼 커널을 브러시 설정에 적용했습니다.";
+      }
+      if (detail.stylusCurve === "scurve-soft-ink") {
+        next = patchBrushStudioV6Input(next, { pressureOnset: 0.04, pressureSaturation: 0.88, pressureGamma: 0.85, tiltEnabled: true });
+        message = message || "S-커브 소프트 잉크 필압 곡선을 적용했습니다.";
+      } else if (detail.stylusCurve === "linear-precision") {
+        next = patchBrushStudioV6Input(next, { pressureOnset: 0, pressureSaturation: 1, pressureGamma: 1, tiltEnabled: false });
+        message = message || "선형 정밀 드로잉 응답 곡선을 적용했습니다.";
+      } else if (detail.stylusCurve === "heavy-chisel-tilt") {
+        next = patchBrushStudioV6Input(replaceBrushStudioV6Slot(next, "tip", "tip-chisel-sdf"), { pressureOnset: 0.12, pressureSaturation: 0.95, pressureGamma: 1.45, tiltEnabled: true, tiltDeadZoneDeg: 4 });
+        message = message || "고필압 치즐 기울기 보정 곡선을 적용했습니다.";
+      }
+      if (next !== currentRef.current) replace(next, message);
+    };
+    globalThis.addEventListener?.("toonspectrum:brush-lab-rea-preset", onReaPreset);
+    return () => globalThis.removeEventListener?.("toonspectrum:brush-lab-rea-preset", onReaPreset);
+  }, []);
   const patchInput = (delta: Partial<BrushStudioV6InputPolicy>) => replace(patchBrushStudioV6Input(program, delta), undefined, `input:${Object.keys(delta).join(",")}`);
   const patchTuning = (key: NumericKey, value: number) => replace(patchBrushStudioV6Tuning(program, { [key]: value }), undefined, `tuning:${key}`);
   const choose = (slot: SingleSlot, id: string) => replace(replaceBrushStudioV6Slot(program, slot, id));
-  const chooseRecipe = (id: string) => { const recipe = BRUSH_STUDIO_V6_RECIPES.find((entry) => entry.id === id); if (!recipe) return; replace(recipe.create(), `${recipe.label} 레시피를 불러왔습니다.`); setTab("material"); };
+  const chooseRecipe = (id: string) => { const recipe = BRUSH_STUDIO_V6_RECIPES.find((entry) => entry.id === id); if (!recipe) return; controllerRef.current?.clear(); setTelemetry(EMPTY_TELEMETRY); replace(recipe.create(), `${recipe.label} 레시피를 불러왔습니다.`); setTab("material"); };
   const importProgram = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (!file) return;
     const generation = ++editGenerationRef.current;
@@ -557,7 +594,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
             { key: "pressureOnset", label: "접촉 시작", min: 0, max: 0.4, step: 0.01 }, { key: "pressureSaturation", label: "포화", min: 0.5, max: 1, step: 0.01 }, { key: "pressureGamma", label: "감마", min: 0.2, max: 3, step: 0.01 }, { key: "tiltDeadZoneDeg", label: "틸트 데드존", min: 0, max: 20, step: 0.5 },
           ].map((spec) => <label key={spec.key} htmlFor={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "en", "brush-v6-input-{v0}"), { v0: String(spec.key) })} className={SUB}><span className="flex justify-between text-xs font-bold text-fg-2"><span>{spec.label}</span><span>{Number(program.input[spec.key as keyof BrushStudioV6InputPolicy]).toFixed(2)}</span></span><input id={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "en", "brush-v6-input-{v0}"), { v0: String(spec.key) })} type="range" min={spec.min} max={spec.max} step={spec.step} value={Number(program.input[spec.key as keyof BrushStudioV6InputPolicy])} onChange={(event: ChangeEvent<HTMLInputElement>) => patchInput({ [spec.key]: event.currentTarget.valueAsNumber })} className="mt-2 min-h-8 w-full accent-accent" /></label>)}</div></Panel></> : null}
 
-          {tab === "material" ? <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "재료·표면")} description={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "종이 접촉, 도포, 안료 pickup과 높이 표현을 직접 조절합니다.")}><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{MATERIAL.map((spec) => <Slider key={spec.key} spec={spec} value={program.tuning[spec.key]} inactive={!activeTuning.has(spec.key)} onChange={(value) => patchTuning(spec.key, value)} />)}<label htmlFor="brush-v6-primary" className={SUB}><span className="text-xs font-bold text-fg-2">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "기본 색")}</span><input id="brush-v6-primary" type="color" value={program.tuning.primaryColor} onChange={(event: ChangeEvent<HTMLInputElement>) => replace(patchBrushStudioV6Tuning(program, { primaryColor: event.currentTarget.value }))} className="mt-2 h-10 w-full rounded-lg" /></label><label htmlFor="brush-v6-secondary" className={SUB}><span className="text-xs font-bold text-fg-2">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "혼합·패턴 색")}</span><input id="brush-v6-secondary" type="color" value={program.tuning.secondaryColor} disabled={!activeTuning.has("secondaryColor")} aria-describedby={!activeTuning.has("secondaryColor") ? translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "en", "brush-v6-secondary-inactive") : undefined} onChange={(event: ChangeEvent<HTMLInputElement>) => replace(patchBrushStudioV6Tuning(program, { secondaryColor: event.currentTarget.value }))} className="mt-2 h-10 w-full rounded-lg disabled:opacity-55" />{!activeTuning.has("secondaryColor") ? <span id="brush-v6-secondary-inactive" className="mt-1 block text-[0.65rem] leading-4 text-fg-3">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "현재 재료 조합에서 사용하지 않음")}</span> : null}</label></div></Panel> : null}
+          {tab === "material" ? <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "재료·표면")} description={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "종이 접촉, 도포, 안료 pickup과 높이 표현을 직접 조절합니다.")}><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{MATERIAL.map((spec) => <Slider key={spec.key} spec={spec} value={program.tuning[spec.key]} inactive={!activeTuning.has(spec.key)} onChange={(value) => patchTuning(spec.key, value)} />)}<label htmlFor="brush-v6-primary" className={SUB}><span className="text-xs font-bold text-fg-2">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "기본 색")}</span><input id="brush-v6-primary" type="color" value={program.tuning.primaryColor} onChange={(event: ChangeEvent<HTMLInputElement>) => replace(patchBrushStudioV6Tuning(program, { primaryColor: event.currentTarget.value }), undefined, "tuning:primaryColor")} className="mt-2 h-10 w-full rounded-lg" /></label><label htmlFor="brush-v6-secondary" className={SUB}><span className="text-xs font-bold text-fg-2">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "혼합·패턴 색")}</span><input id="brush-v6-secondary" type="color" value={program.tuning.secondaryColor} disabled={!activeTuning.has("secondaryColor")} aria-describedby={!activeTuning.has("secondaryColor") ? translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "en", "brush-v6-secondary-inactive") : undefined} onChange={(event: ChangeEvent<HTMLInputElement>) => replace(patchBrushStudioV6Tuning(program, { secondaryColor: event.currentTarget.value }), undefined, "tuning:secondaryColor")} className="mt-2 h-10 w-full rounded-lg disabled:opacity-55" />{!activeTuning.has("secondaryColor") ? <span id="brush-v6-secondary-inactive" className="mt-1 block text-[0.65rem] leading-4 text-fg-3">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "현재 재료 조합에서 사용하지 않음")}</span> : null}</label></div></Panel> : null}
 
           {tab === "material" ? <StudioPigmentComparison primary={program.tuning.primaryColor}
             secondary={program.tuning.secondaryColor} node={program.slots.pigment}
@@ -640,6 +677,19 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
               `클립스튜디오 통합 팔레트에서 기본 색(${hex.toUpperCase()})을 적용했습니다.`,
             )
           }
+          onSelectBrushShapePreset={(presetId) => {
+            const wet = presetId === "watercolor" || presetId === "rough_watercolor" || presetId === "gouache";
+            const dry = presetId === "chalk" || presetId === "pencil_v3_1" || presetId === "dry_india_ink";
+            const chisel = presetId === "flat_marker";
+            const nextTip = chisel ? "tip-chisel-sdf" : dry ? "tip-grain-exemplar" : "tip-round-sdf";
+            const nextDeposition = wet ? "deposit-wet" : dry ? "deposit-dry" : presetId === "flat_marker" ? "deposit-marker" : "deposit-ink";
+            const nextSpacing = presetId === "dotted_line" ? 0.55 : presetId === "dashed_line" ? 0.25 : 0.08;
+            const next = patchBrushStudioV6Tuning(
+              replaceBrushStudioV6Slot(replaceBrushStudioV6Slot(program, "tip", nextTip), "deposition", nextDeposition),
+              { spacing: nextSpacing, wetness: wet ? 0.68 : program.tuning.wetness, surfaceTooth: dry ? 0.58 : program.tuning.surfaceTooth },
+            );
+            replace(next, `클립스튜디오 브러시 모양 프리셋(${presetId})을 적용했습니다.`);
+          }}
         />
       ) : null}
     </section>

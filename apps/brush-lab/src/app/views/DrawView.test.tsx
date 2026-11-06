@@ -344,7 +344,7 @@ describe("DrawView", { timeout: 30_000 }, () => {
     expect(screen.getByTestId("lab-draw-config-hash").textContent).toMatch(/[0-9a-f]{16}/u);
   });
 
-  it("종이 질감 켜기/끄기가 반영된다", async () => {
+  it("종이 질감 켜기/끄기 및 종이 종류 '브러시 기본' 복귀 시 강제 질감 오버라이드 해제가 반영된다", async () => {
     const h = makeHarness(defaultDescriptors);
     renderDraw(h, { autoProbe: false });
     const stage = await ready(h);
@@ -353,6 +353,14 @@ describe("DrawView", { timeout: 30_000 }, () => {
     fireEvent.click(paper);
     await drawStroke(h, stage, 1);
     expect(h.programs.at(-1)?.paper.enabled).toBe(false);
+
+    // 기본 종이 질감이 꺼져 있는 G펜으로 전환 후 종이 종류를 거친 종이 → 브러시 기본으로 되돌리면 다시 질감이 꺼진다
+    fireEvent.click(screen.getByTestId("lab-draw-brush-ink-g-pen"));
+    expect((screen.getByLabelText("종이 질감 켜기") as HTMLInputElement).checked).toBe(false);
+    fireEvent.change(screen.getByLabelText("종이 종류"), { target: { value: "rough" } });
+    expect((screen.getByLabelText("종이 질감 켜기") as HTMLInputElement).checked).toBe(true);
+    fireEvent.change(screen.getByLabelText("종이 종류"), { target: { value: "preset" } });
+    expect((screen.getByLabelText("종이 질감 켜기") as HTMLInputElement).checked).toBe(false);
   });
 
   it("입력 보정 선택기: 방식 4종(1€ 기본·끈 당김·물리 펜·끔)과 방식별 슬라이더 문구, 코너 게이트 토글은 끈 당김·물리 펜에서만 보인다", async () => {

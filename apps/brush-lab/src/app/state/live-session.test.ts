@@ -785,6 +785,88 @@ describe("LiveStrokeSession — 획 되돌리기(abortStroke) 경로", () => {
       for (let i = 3; i < withCancel.final.data.length; i += 4) if ((withCancel.final.data[i] ?? 0) > 0) inked += 1;
       expect(inked).toBeGreaterThan(0);
     });
+
+    it("같은 프레임에 down·move·pointercancel이 오면 onPreviewReset과 빈 onPreview를 호출해 미리보기 잔상을 지운다", async () => {
+      const fr = fakeRaf();
+      const env = mockEnvironment();
+      const previews: PreviewPoint[][] = [];
+      let previewResets = 0;
+      const sessionInstance = await LiveStrokeSession.create({
+        createLane: () => createMockLane({ id: "cpu-reference" }),
+        env,
+        program: presetById("pencil-hb"),
+        seed: 7,
+        width: 32,
+        height: 32,
+        scheduler: new FrameScheduler(fr.raf, env.clock, fr.caf),
+        onPreview: (pts) => previews.push(pts),
+        onPreviewReset: () => {
+          previewResets += 1;
+        },
+      });
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+      sessionInstance.attach(el);
+      el.dispatchEvent(pointerEvent("pointerdown", { clientX: 5, clientY: 5, timeStamp: 1 }));
+      el.dispatchEvent(pointerEvent("pointermove", { clientX: 8, clientY: 8, timeStamp: 5 }));
+      el.dispatchEvent(pointerEvent("pointercancel", { clientX: 8, clientY: 8, timeStamp: 9 }));
+      fr.tick();
+      await flush();
+      expect(previewResets).toBeGreaterThanOrEqual(1);
+      expect(previews.at(-1)).toEqual([]);
+      sessionInstance.dispose();
+    });
+
+    it("beginStroke 실패 뒤 포인터를 떼기 전까지 이어지는 move·up은 onCanonical·onPreview를 호출하지 않아 유령 궤적이 남지 않는다", async () => {
+      const fr = fakeRaf();
+      const env = mockEnvironment();
+      let failBegin = true;
+      const canonicalBatches: number[] = [];
+      let previewResets = 0;
+      const sessionInstance = await LiveStrokeSession.create({
+        createLane: () => {
+          const lane = createMockLane({ id: "cpu-reference" });
+          const orig = lane.beginStroke.bind(lane);
+          lane.beginStroke = (prog, s) => {
+            if (failBegin) {
+              failBegin = false;
+              throw new Error("not-implemented");
+            }
+            orig(prog, s);
+          };
+          return lane;
+        },
+        env,
+        program: presetById("pencil-hb"),
+        seed: 7,
+        width: 32,
+        height: 32,
+        scheduler: new FrameScheduler(fr.raf, env.clock, fr.caf),
+        onCanonical: (samples) => canonicalBatches.push(samples.length),
+        onPreviewReset: () => {
+          previewResets += 1;
+        },
+        onError: () => undefined,
+      });
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+      sessionInstance.attach(el);
+      el.dispatchEvent(pointerEvent("pointerdown", { clientX: 5, clientY: 5, timeStamp: 1 }));
+      fr.tick();
+      await flush();
+      expect(previewResets).toBeGreaterThanOrEqual(1);
+      const countAfterFailure = canonicalBatches.length;
+      // 아직 포인터를 떼지 않고 움직이다가 뗀다: 거부된 제스처의 잔여 이벤트이므로 정본 궤적에 쌓이지 않아야 한다.
+      el.dispatchEvent(pointerEvent("pointermove", { clientX: 12, clientY: 12, timeStamp: 10 }));
+      el.dispatchEvent(pointerEvent("pointerup", { clientX: 15, clientY: 15, timeStamp: 20 }));
+      fr.tick();
+      await flush();
+      expect(canonicalBatches.length).toBe(countAfterFailure);
+      // 다음 새 down은 정상 수신된다.
+      el.dispatchEvent(pointerEvent("pointerdown", { clientX: 3, clientY: 3, timeStamp: 30 }));
+      expect(canonicalBatches.length).toBe(countAfterFailure + 1);
+      sessionInstance.dispose();
+    });
   });
 });
 

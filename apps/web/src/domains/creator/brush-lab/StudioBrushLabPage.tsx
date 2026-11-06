@@ -292,7 +292,14 @@ export function StudioBrushLabPage() {
               type="button"
               data-testid={`brush-lab-rea-kernel-${item.id}`}
               aria-pressed={kernelMode === item.id}
-              onClick={() => setKernelMode(item.id)}
+              onClick={() => {
+                setKernelMode(item.id);
+                globalThis.dispatchEvent?.(
+                  new CustomEvent("toonspectrum:brush-lab-rea-preset", {
+                    detail: { kernelMode: item.id },
+                  }),
+                );
+              }}
               className={
                 kernelMode === item.id
                   ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
@@ -313,7 +320,14 @@ export function StudioBrushLabPage() {
               type="button"
               data-testid={`brush-lab-rea-curve-${item.id}`}
               aria-pressed={stylusCurve === item.id}
-              onClick={() => setStylusCurve(item.id)}
+              onClick={() => {
+                setStylusCurve(item.id);
+                globalThis.dispatchEvent?.(
+                  new CustomEvent("toonspectrum:brush-lab-rea-preset", {
+                    detail: { stylusCurve: item.id },
+                  }),
+                );
+              }}
               className={
                 stylusCurve === item.id
                   ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"

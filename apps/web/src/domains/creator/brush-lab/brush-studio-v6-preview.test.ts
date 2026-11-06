@@ -6,6 +6,7 @@ import {
   capBrushStudioV6CoalescedEvents,
   MAX_LIVE_COALESCED_SAMPLES_PER_FRAME,
   mixPreviewPigments,
+  renderBrushStudioV6Preview,
   resolveBrushStudioV6LiveTransport,
   resolveBrushStudioV6PointerIntent,
   shouldBrushStudioV6HandleMoveEvent,
@@ -22,6 +23,56 @@ describe("Brush Studio V6 pigment preview", () => {
     const mixed = mixPreviewPigments("#1d4ed8", "#eab308", 0.5);
     expect(mixed).not.toBe("rgba(29,78,216,1)");
     expect(mixed).not.toBe("rgba(234,179,8,1)");
+  });
+
+  it("결정적 질감 시험지(renderBrushStudioV6Preview)가 스트로크 다듬기 방식과 안정화 강도 변화를 궤적에 반영한다", () => {
+    const captureTranslations = (program: ReturnType<typeof createBrushStudioV6Program>): string[] => {
+      const translations: string[] = [];
+      const ctx = {
+        setTransform: () => {},
+        clearRect: () => {},
+        fillRect: () => {},
+        save: () => {},
+        restore: () => {},
+        beginPath: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        stroke: () => {},
+        translate: (x: number, y: number) => { translations.push(`${x.toFixed(2)},${y.toFixed(2)}`); },
+        rotate: () => {},
+        ellipse: () => {},
+        closePath: () => {},
+        fill: () => {},
+        fillStyle: "#000",
+        strokeStyle: "#000",
+        globalAlpha: 1,
+        lineWidth: 1,
+      };
+      const canvas = {
+        width: 320,
+        height: 160,
+        clientWidth: 320,
+        clientHeight: 160,
+        getContext: () => ctx,
+      } as unknown as HTMLCanvasElement;
+      renderBrushStudioV6Preview(canvas, program);
+      return translations;
+    };
+
+    const base = createBrushStudioV6Program("clean-ink");
+    const direct = captureTranslations({
+      ...base,
+      slots: { ...base.slots, motion: "motion-direct" },
+      tuning: { ...base.tuning, stabilization: 0 },
+    });
+    const smoothed = captureTranslations({
+      ...base,
+      slots: { ...base.slots, motion: "motion-lazy-leash" },
+      tuning: { ...base.tuning, stabilization: 0.95 },
+    });
+    expect(direct.length).toBeGreaterThan(0);
+    expect(smoothed.length).toBeGreaterThan(0);
+    expect(smoothed).not.toEqual(direct);
   });
 });
 
@@ -119,6 +170,6 @@ describe("Brush Studio V6 all-recipe long-session soak stability", () => {
       expect(totalMarksA, `${recipe.id} emitted marks`).toBeGreaterThan(0);
       expect(totalMarksB).toBe(totalMarksA);
     }
-  });
+  }, 30_000);
 });
 

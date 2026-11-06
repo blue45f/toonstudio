@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { LAB_SCHEMA_VERSION } from "../../engine/core/version";
-import { presentPreview } from "../../platform/canvas-present";
+import { documentTileCount, MAX_DOCUMENT_TILES, presentPreview } from "../../platform/canvas-present";
 import { useLab, useLabSelector } from "../shell/lab-context";
+import { emptyLiveStats } from "../state/lab-store";
 import { findDescriptor } from "../state/lane-helpers";
 import { LiveStrokeSession } from "../state/live-session";
 import { pixelHashOf } from "../state/pixel-hash";
@@ -15,6 +16,7 @@ import { LaneSelector } from "../ui/LaneSelector";
 import { MetricsTable } from "../ui/MetricsTable";
 import { ReportPanel } from "../ui/ReportPanel";
 
+import type { BrushProgram } from "../../engine/presets/program-schema";
 import type { PreviewPoint } from "../../platform/canvas-present";
 import type { RunResult } from "../state/bench-types";
 import type { LiveStrokeResult } from "../state/live-session";
@@ -89,7 +91,10 @@ export function CompareView() {
   const overrides = useLabSelector((s) => s.overrides);
   const resolved = useMemo(() => resolveProgram({ presetId, overrides }), [presetId, overrides]);
   const program = resolved.program;
-  const programHash = resolved.hash;
+  const programRef = useRef<BrushProgram | null>(program);
+  if (program) programRef.current = program;
+  const resolvedErrorRef = useRef<string | null>(resolved.error);
+  resolvedErrorRef.current = resolved.error;
 
   const descA = findDescriptor(registry, laneA);
   const descB = findDescriptor(registry, laneB);
@@ -98,11 +103,18 @@ export function CompareView() {
   const sessionRef = useRef<LiveStrokeSession | null>(null);
   const trailRef = useRef<PreviewPoint[]>([]);
 
-  // 실시간 세션 생명주기: 토글·레인 A·프로그램 해시·캔버스 크기·시드가 바뀌면 다시 만든다.
+  useEffect(() => {
+    if (program && sessionRef.current) {
+      sessionRef.current.setProgram(program);
+    }
+  }, [program]);
+
+  // 실시간 세션 생명주기: 토글·레인 A·캔버스 크기·시드가 바뀔 때만 다시 만들고, 프로그램 변경은 setProgram으로 유지한다.
   useEffect(() => {
     if (!liveCapture) return;
-    if (!program || !programHash) {
-      actions.pushError({ laneId: null, code: "program-invalid", message: resolved.error ?? "프로그램 해석 실패" });
+    const initialProgram = programRef.current;
+    if (!initialProgram) {
+      actions.pushError({ laneId: null, code: "program-invalid", message: resolvedErrorRef.current ?? "프로그램 해석 실패" });
       actions.setLiveCapture(false);
       return;
     }
@@ -115,12 +127,12 @@ export function CompareView() {
     let cancelled = false;
     let session: LiveStrokeSession | null = null;
     let detach: (() => void) | null = null;
-    const radius = program.tip.sizePx / 2;
     const drawPreview = (predicted: PreviewPoint[]): void => {
       const canvas = previewA.current;
       if (!canvas) return;
       try {
-        presentPreview(canvas, [...trailRef.current, ...predicted], radius);
+        const activeProgram = programRef.current ?? initialProgram;
+        presentPreview(canvas, [...trailRef.current, ...predicted], activeProgram.tip.sizePx / 2);
       } catch (error) {
         actions.pushError({ laneId: laneA, code: codeOf(error), message: `미리보기 표시 실패: ${messageOf(error)}` });
       }
@@ -130,12 +142,13 @@ export function CompareView() {
       drawPreview([]);
       const capability = store.get().capability[laneA];
       if (!capability) return;
+      const activeProgram = programRef.current ?? initialProgram;
       const runResult: RunResult = {
         laneId: lane.id,
         engineVersion: lane.engineVersion,
         fixtureId: "captured:live",
         fixtureSeed: 0,
-        presetId: program.id,
+        presetId: activeProgram.id,
         seed: res.seed,
         canvas: { width: canvasSize, height: canvasSize, dpr: 1 },
         frameMs: 1000 / 60,
@@ -168,10 +181,11 @@ export function CompareView() {
       const created = await LiveStrokeSession.create({
         createLane: () => desc.create(),
         env,
-        program,
+        program: programRef.current ?? initialProgram,
         seed,
         width: canvasSize,
         height: canvasSize,
+        wetCapacityTiles: Math.min(MAX_DOCUMENT_TILES, Math.max(2048, documentTileCount({ width: canvasSize, height: canvasSize }))),
         onCanonical: (samples) => {
           for (const s of samples) {
             if (s.phase === "down") trailRef.current = [];
@@ -179,9 +193,17 @@ export function CompareView() {
           }
         },
         onPreview: drawPreview,
+        onPreviewReset: () => {
+          trailRef.current = [];
+          drawPreview([]);
+        },
         onStrokeEnd: (res) => {
           if (!session) return;
           onStrokeEnd(res, session.strokes, session.currentLane);
+        },
+        onStrokeAbort: () => {
+          trailRef.current = [];
+          drawPreview([]);
         },
         onError: (error) =>
           actions.pushError({ laneId: laneA, code: codeOf(error), message: `실시간 세션 오류: ${messageOf(error)}` }),
@@ -192,6 +214,7 @@ export function CompareView() {
       }
       session = created;
       sessionRef.current = created;
+      if (programRef.current) created.setProgram(programRef.current);
       const stage = stageA.current;
       if (stage) detach = created.attach(stage);
     };
@@ -205,7 +228,7 @@ export function CompareView() {
       if (session) session.dispose();
       sessionRef.current = null;
     };
-  }, [liveCapture, laneA, program, programHash, canvasSize, seed, registry, env, store, actions, resolved.error]);
+  }, [liveCapture, laneA, canvasSize, seed, registry, env, store, actions]);
 
   const onRun = (): void => {
     void runCompare({ registry, env, runner: ctx.runner, store, actions });
@@ -213,9 +236,21 @@ export function CompareView() {
   const onClearLive = (): void => {
     const session = sessionRef.current;
     if (!session) return;
+    trailRef.current = [];
+    const canvas = previewA.current;
+    if (canvas) {
+      try {
+        presentPreview(canvas, [], 1);
+      } catch {
+        // 미리보기 초기화 실패는 무시
+      }
+    }
     session
       .clear()
-      .then(() => actions.clearResults())
+      .then(() => {
+        actions.clearResults();
+        actions.setLiveStats(emptyLiveStats());
+      })
       .catch((error: unknown) =>
         actions.pushError({ laneId: laneA, code: codeOf(error), message: `실시간 캔버스 비우기 실패: ${messageOf(error)}` }),
       );
