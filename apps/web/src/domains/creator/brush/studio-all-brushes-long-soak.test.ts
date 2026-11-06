@@ -335,6 +335,12 @@ describe("실제 서비스 전체 브러시 카탈로그 및 장시간 소크(Lo
         samplePoints,
         samplePressures,
       );
+      const recipeId = studioV6RecipeIdFromCatalogId(brushId);
+      if (recipeId) {
+        const material = element.brushEnginePrograms?.material;
+        expect(material, `${brushId}: material receipt`).toBeDefined();
+        expect(material?.version, `${brushId}: V2 material receipt`).toBe(2);
+      }
       const exported = exportPageToSvg({
         width: 180,
         height: 96,
