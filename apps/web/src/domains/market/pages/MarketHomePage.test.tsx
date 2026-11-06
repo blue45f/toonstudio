@@ -235,3 +235,29 @@ it("웹툰 5대 공정별 필수 에셋 스타터 가이드를 통해 공정별 
     .toBe("/market/browse?kind=brush");
 });
 
+
+
+it("선택 유형이 없으면 다른 소재로 대체하지 않고 전체 보기로 복귀한다", () => {
+  useResources.mockReturnValue(marketPage({ items: [{ ...cachedRecord, kind: "palette" }] }));
+  render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+  fireEvent.click(screen.getByRole("tab", { name: /2D 펜 · 브러시 · 선화/ }));
+  expect(screen.queryByTestId("resource-cached-resource")).toBeNull();
+  expect(screen.getByText("선택한 유형의 최근 소재가 없어요")).toBeTruthy();
+  expect(screen.queryByText("아직 공유된 리소스가 없어요")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "최근 소재 전체 보기" }));
+  expect(screen.getByTestId("resource-cached-resource")).toBeTruthy();
+  expect(screen.getByRole("tab", { name: /전체 창작 소재/ }).getAttribute("aria-selected")).toBe("true");
+  expect(document.activeElement).toBe(screen.getByRole("tab", { name: /전체 창작 소재/ }));
+});
+
+it("선택 유형의 실제 일치 결과만 표시한다", () => {
+  useResources.mockReturnValue(marketPage({ items: [
+    { ...cachedRecord, kind: "palette" },
+    { ...cachedRecord, id: "brush-resource", kind: "brush" },
+  ] }));
+  render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+  fireEvent.click(screen.getByRole("tab", { name: /2D 펜 · 브러시 · 선화/ }));
+  expect(screen.getByTestId("resource-brush-resource")).toBeTruthy();
+  expect(screen.queryByTestId("resource-cached-resource")).toBeNull();
+  expect(screen.queryByText("선택한 유형의 최근 소재가 없어요")).toBeNull();
+});

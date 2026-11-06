@@ -12,7 +12,7 @@ import {
   Store,
   Upload,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MarketCategoryTiles } from "../components/MarketCategoryTiles";
 import { MarketHomeSearch } from "../components/MarketHomeSearch";
@@ -114,6 +114,7 @@ export function MarketHomePage() {
   const materials3D = latest.items.filter(
     (item) => item.kind === "3d-asset" || item.kind === "3d-preset",
   );
+  const allPresetRef = useRef<HTMLButtonElement>(null);
   const [activePresetId, setActivePresetId] = useState<MarketEcosystemPresetId>("all");
   const [quickPreviewRecord, setQuickPreviewRecord] =
     useState<CreatorMarketplaceResourceRecord | null>(null);
@@ -134,7 +135,7 @@ export function MarketHomePage() {
       }
       return true;
     });
-    return matched.length > 0 ? matched : latest.items;
+    return matched;
   }, [activePresetId, latest.items]);
 
   const recentMore = useMobileShowMore(presetFilteredItems.length, MOBILE_RECENT_LIMIT);
@@ -217,6 +218,7 @@ export function MarketHomePage() {
                 return (
                   <button
                     key={preset.id}
+                    ref={preset.id === "all" ? allPresetRef : undefined}
                     type="button"
                     role="tab"
                     aria-selected={selected}
@@ -352,6 +354,17 @@ export function MarketHomePage() {
               onClick={recentMore.expand}
               label={t(`최근 공유 ${recentMore.remaining}개 더 보기`, `Show ${recentMore.remaining} more`)}
             />
+            {!latest.loading && hasLatestItems && presetFilteredItems.length === 0 ? (
+              <div role="status" className="mt-6 rounded-2xl border border-dashed border-line bg-panel p-6 text-center">
+                <PackageSearch className="mx-auto size-8 text-fg-3" aria-hidden="true" />
+                <h3 className="mt-3 text-base font-bold text-fg">{t("선택한 유형의 최근 소재가 없어요", "No recent materials match this type")}</h3>
+                <p className="mt-2 text-sm text-fg-2">{t("최근 공개된 소재 안에서 찾은 결과입니다. 전체 카탈로그에서 더 찾아보거나 유형을 바꿔 보세요.", "These results cover recently published materials. Browse the full catalog or choose another type.")}</p>
+                <div className="mt-4 flex flex-wrap justify-center gap-3">
+                  <button type="button" onClick={() => { setActivePresetId("all"); allPresetRef.current?.focus({ preventScroll: true }); }} className={buttonClass({ variant: "solid", size: "md", className: "min-h-11" })}>{t("최근 소재 전체 보기", "Show all recent materials")}</button>
+                  <Link href="/market/browse" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>{t("전체 에셋 카탈로그", "Full asset catalog")}</Link>
+                </div>
+              </div>
+            ) : null}
             {!latest.loading && latest.items.length === 0 ? (
               <div className="mt-6 rounded-2xl border border-dashed border-line bg-panel p-8 text-center sm:p-10">
                 <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-raised text-fg-3">
