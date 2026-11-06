@@ -79,6 +79,8 @@ export interface FaultInjectionLane extends BrushEngineLane {
   readonly activeInFlightCount: number;
   /** 지정한 연산의 `onCall`번째(생략 시 다음 호출)를 보류하는 게이트를 걸고 돌려준다. */
   holdNext(op: FaultOp, onCall?: number): HeldCallGate;
+  /** 지정한 연산의 `onCall`번째(생략 시 다음 호출)를 `delayMs`만큼 지연한 뒤 자동 완료(`resolve`) 또는 거부(`reject`)한다. */
+  delayNext(op: FaultOp, delayMs: number, outcome?: "resolve" | "reject", error?: unknown, onCall?: number): Promise<void>;
   /** 지정한 연산의 `onCall`번째(생략 시 다음 호출)에서 동기 예외를 던지게 한다. */
   failNextSync(op: FaultOp, error: unknown, onCall?: number): void;
   /** 지정한 연산의 `onCall`번째(생략 시 다음 호출)에서 거부된 Promise를 돌려주게 한다. */
@@ -247,6 +249,13 @@ export function createFaultInjectionLane(opts: FaultInjectionLaneOptions = {}): 
     rules.set(op, list);
   };
 
+  const holdNext = (op: FaultOp, onCall?: number): HeldCallGate => {
+    const predictedCall = onCall ?? (opCounts.get(op) ?? 0) + 1;
+    const gate = createHeldCallGate(op, predictedCall);
+    addRule(op, { kind: "hold", onCall, gate });
+    return gate;
+  };
+
   return {
     get id() {
       return inner.id;
@@ -273,11 +282,29 @@ export function createFaultInjectionLane(opts: FaultInjectionLaneOptions = {}): 
     get activeInFlightCount(): number {
       return activeInFlightCount;
     },
-    holdNext(op: FaultOp, onCall?: number): HeldCallGate {
-      const predictedCall = onCall ?? (opCounts.get(op) ?? 0) + 1;
-      const gate = createHeldCallGate(op, predictedCall);
-      addRule(op, { kind: "hold", onCall, gate });
-      return gate;
+    holdNext,
+    delayNext(
+      op: FaultOp,
+      delayMs: number,
+      outcome: "resolve" | "reject" = "resolve",
+      error?: unknown,
+      onCall?: number,
+    ): Promise<void> {
+      const gate = holdNext(op, onCall);
+      const clampedMs = Math.max(0, delayMs);
+      return gate.entered.then(
+        () =>
+          new Promise<void>((resolve) => {
+            setTimeout(() => {
+              if (outcome === "reject") {
+                gate.reject(error ?? new Error(`${op} 지연 실패`));
+              } else {
+                gate.resolve();
+              }
+              resolve();
+            }, clampedMs);
+          }),
+      );
     },
     failNextSync(op: FaultOp, error: unknown, onCall?: number): void {
       addRule(op, { kind: "throw-sync", error, onCall });

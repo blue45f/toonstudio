@@ -613,13 +613,198 @@ describe("LiveStrokeSession: 실제 CPU/WASM 레인 endStroke 합성 도중 실�
       expect(h.lanes).toHaveLength(2);
       expect(h.session.currentLane).toBe(h.lanes[1]);
 
-      // 교체된 레인 1에서 다음 획이 정상 동작한다
+      // 교체된 레인 1에서 다음 획이 정상 동작하며 strokeCount·seed도 새 레인의 첫 획(1, seed=11)으로 초기화된다
       dispatchStroke(h.el, 200, { x0: 10, y0: 10, x1: 32, y1: 32 });
       h.fr.tick();
       await flushMicrotasks(20);
       expect(h.results).toHaveLength(2);
+      expect(h.session.strokes).toBe(1);
+      expect(h.results[1]!.seed).toBe(11);
 
       h.session.dispose();
     },
   );
 });
+
+describe("LiveStrokeSession 회귀 검증 B1: 완료된 획 이후 clear() / delayNext 중 strokeCount·seed·픽셀 기준선 일치", () => {
+  const DELAYED_OPS: ReadonlyArray<FaultOp> = ["beginStroke", "addSamples", "endStroke"];
+
+  it.each(DELAYED_OPS)(
+    "[실제 CPU 레인 + delayNext 검증] 획 #1 완료(strokes=1) → 획 #2의 %s 타이머 지연 중 clear() → 획 #3 실행 시 strokes=1·seed=opts.seed+0·imageHash·receipt가 깨끗한 1획 기준선과 일치한다",
+    async (op) => {
+      // 기준선: 새 세션에서 획 #3과 동일한 궤적을 첫 획(seed 11)으로 1회 그린 결과
+      const ref = await createHarness({ createInnerLane: () => createCpuReferenceLane() });
+      dispatchStroke(ref.el, 300, { x0: 8, y0: 38, x1: 40, y1: 12 });
+      ref.fr.tick();
+      await flushMicrotasks(20);
+      expect(ref.results).toHaveLength(1);
+      expect(ref.session.strokes).toBe(1);
+      const baseline = ref.results[0]!;
+      const baselineHash = imageHash(baseline.image);
+      ref.session.dispose();
+
+      // 시험 대상: 획 #1 완료 후 획 #2의 op를 delayNext로 지연시킨 상태에서 clear() + 획 #3 입력
+      const h = await createHarness({ createInnerLane: () => createCpuReferenceLane() });
+      const lane0 = h.lanes[0]!;
+
+      // 1. 획 #1 완료 (session.strokes === 1)
+      dispatchStroke(h.el, 10, { x0: 4, y0: 4, x1: 24, y1: 24 });
+      h.fr.tick();
+      await flushMicrotasks(20);
+      expect(h.session.strokes).toBe(1);
+      expect(h.results).toHaveLength(1);
+      expect(h.results[0]!.seed).toBe(11);
+
+      // 2. 획 #2 시작 및 op를 타이머 지연(delayNext)
+      const delayedSettle = lane0.delayNext(op, 12, "resolve");
+      dispatchStroke(h.el, 100, { x0: 2, y0: 20, x1: 30, y1: 20 });
+      h.fr.tick();
+      await flushMicrotasks(4);
+
+      // 3. 획 #2가 지연 중인 상태에서 clear() 호출 (동기 시점에도 strokes === 0으로 리셋)
+      const clearing = h.session.clear();
+      expect(h.session.strokes).toBe(0);
+
+      // 4. 새로 비워진 레인에 그려질 획 #3 입력
+      dispatchStroke(h.el, 300, { x0: 8, y0: 38, x1: 40, y1: 12 });
+      h.fr.tick();
+
+      // 5. 지연된 획 #2 정산 및 clear + 획 #3 완료 대기
+      await delayedSettle;
+      await clearing;
+      await flushMicrotasks(25);
+
+      expect(h.errors).toEqual([]);
+      expect(h.aborts).toEqual([]);
+      expect(h.lanes).toHaveLength(2);
+      expect(h.session.currentLane).toBe(h.lanes[1]);
+
+      // 핵심 검증(B1): clear() 후 첫 획이므로 strokes === 1이고 seed === 11(opts.seed + 0)이며 픽셀·영수증이 기준선과 일치한다!
+      expect(h.session.strokes).toBe(1);
+      expect(h.results).toHaveLength(2);
+      const afterClear = h.results.at(-1)!;
+      expect(afterClear.seed).toBe(11);
+      expect(afterClear.receipt).toEqual(baseline.receipt);
+      expect(imageHash(afterClear.image)).toBe(baselineHash);
+      expect(afterClear.linear).toEqual(baseline.linear);
+
+      h.session.dispose();
+    },
+  );
+});
+
+describe("LiveStrokeSession 회귀 검증 B2: 획 도중 detach() → 재연결 attach(el) 3회 반복 시 부분 획 abort 및 기준선 픽셀 일치", () => {
+  it("[실제 CPU 레인 픽셀 검증] attach(el) → 획 시작(down+move 레인 반영) → 획 도중 detach() → 재연결 attach(el) 3회 사이클 후 정상 획이 기준선 픽셀·획 수·영수증과 비트 동일하다", async () => {
+    const makeStage = () => composeStages([createLazyBrushStage({ radiusPx: 6 }), createPenSpringStage({ lagMs: 12 })]);
+
+    // 기준선: 깨끗한 세션에서 마지막 정상 획과 동일한 궤적을 1회 그린 결과
+    const ref = await createHarness({
+      createInnerLane: () => createCpuReferenceLane(),
+      inputStage: makeStage(),
+    });
+    dispatchStroke(ref.el, 500, { x0: 10, y0: 36, x1: 38, y1: 10 });
+    ref.fr.tick();
+    await flushMicrotasks(20);
+    expect(ref.results).toHaveLength(1);
+    const baseline = ref.results[0]!;
+    const baselineHash = imageHash(baseline.image);
+    ref.session.dispose();
+
+    // 시험 대상: 3회 반복으로 획 도중 detach() → 재연결 attach(el) 수행
+    const h = await createHarness({
+      createInnerLane: () => createCpuReferenceLane(),
+      inputStage: makeStage(),
+    });
+    const lane0 = h.lanes[0]!;
+    const blankImage = await lane0.readback();
+    const blankHash = imageHash(blankImage);
+
+    let currentDetach = h.detach;
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      const tBase = 20 + cycle * 100;
+      h.el.dispatchEvent(
+        pointerEvent("pointerdown", {
+          pointerId: cycle + 1,
+          clientX: 4,
+          clientY: 4 + cycle * 4,
+          timeStamp: tBase,
+          pressure: 0.85,
+        }),
+      );
+      for (let step = 1; step <= 5; step += 1) {
+        h.el.dispatchEvent(
+          pointerEvent("pointermove", {
+            pointerId: cycle + 1,
+            clientX: 4 + step * 8,
+            clientY: 4 + cycle * 4 + step * 6,
+            timeStamp: tBase + step * 8,
+            pressure: 0.9,
+          }),
+        );
+      }
+      h.fr.tick();
+      await flushMicrotasks(10);
+
+      // 포인터가 아직 눌려 있고 레인이 획 도중(beginStroke + addSamples 완료)인 상태에서 detach() 호출(멱등 2회 호출 포함)
+      currentDetach();
+      currentDetach();
+
+      // detach()가 넣은 합성 취소 up이 다음 프레임에서 처리되어 부분 획을 abortStroke()로 되돌린다
+      h.fr.tick();
+      await flushMicrotasks(15);
+
+      expect(h.errors).toEqual([]);
+      expect(h.results).toHaveLength(0);
+      expect(h.session.strokes).toBe(0);
+      expect(h.aborts).toHaveLength(cycle + 1);
+      expect(h.aborts[cycle]).toMatchObject({
+        cause: "pointercancel",
+        cancelSource: "lostpointercapture",
+        laneReplaced: false,
+        receipt: { documentPreserved: true },
+      });
+      expect(h.aborts[cycle]!.receipt!.discardedDabs).toBeGreaterThan(0);
+
+      // 문서에는 잔여 dab이 전혀 남지 않아야 한다(빈 캔버스 해시와 일치)
+      const afterAbortImage = await lane0.readback();
+      expect(imageHash(afterAbortImage)).toBe(blankHash);
+
+      // 같은 요소에 다시 attach(el)
+      currentDetach = h.session.attach(h.el);
+    }
+
+    // 3회 사이클 후 재연결된 상태에서 정상 획 1회 완주
+    dispatchStroke(h.el, 500, { x0: 10, y0: 36, x1: 38, y1: 10 });
+    h.fr.tick();
+    await flushMicrotasks(20);
+
+    expect(h.errors).toEqual([]);
+    expect(h.lanes).toHaveLength(1);
+    expect(h.session.strokes).toBe(1);
+    expect(h.results).toHaveLength(1);
+    const finalResult = h.results[0]!;
+    expect(finalResult.seed).toBe(baseline.seed);
+    expect(finalResult.receipt).toEqual(baseline.receipt);
+    expect(imageHash(finalResult.image)).toBe(baselineHash);
+    expect(finalResult.linear).toEqual(baseline.linear);
+
+    currentDetach();
+    h.session.dispose();
+  });
+
+  it("획 도중 lostpointercapture가 발생했으나 정상 pointerup으로 완주한 경우 pendingCancel이 정리된다", async () => {
+    const h = await createHarness({ createInnerLane: () => createCpuReferenceLane() });
+    h.el.dispatchEvent(pointerEvent("pointerdown", { pointerId: 1, clientX: 6, clientY: 6, timeStamp: 10, buttons: 1 }));
+    h.el.dispatchEvent(pointerEvent("pointermove", { pointerId: 1, clientX: 16, clientY: 16, timeStamp: 18, buttons: 3 }));
+    h.el.dispatchEvent(pointerEvent("lostpointercapture", { pointerId: 1, clientX: 16, clientY: 16, timeStamp: 20, buttons: 1 }));
+    h.el.dispatchEvent(pointerEvent("pointerup", { pointerId: 1, clientX: 24, clientY: 24, timeStamp: 28, buttons: 0 }));
+    h.fr.tick();
+    await flushMicrotasks(20);
+
+    expect(h.aborts).toHaveLength(0);
+    expect(h.results).toHaveLength(1);
+    expect(h.session.strokes).toBe(1);
+    h.session.dispose();
+  });
+});
+

@@ -299,7 +299,11 @@ export class LiveStrokeSession {
       ...captureOpts,
     });
     el.addEventListener("pointercancel", clearMark);
+    let detached = false;
     const off = (): void => {
+      if (detached) return;
+      detached = true;
+      const wasDown = this.pointerDown;
       el.removeEventListener("pointerdown", onPreDown);
       el.removeEventListener("pointerup", onPreUp);
       el.removeEventListener("pointercancel", markCancel);
@@ -307,8 +311,38 @@ export class LiveStrokeSession {
       offCapture();
       el.removeEventListener("pointercancel", clearMark);
       this.cancelNextUp = false;
+      this.pendingCancel = null;
       this.ownerPointerId = null;
       this.lastDownPointerId = null;
+      if (!this.disposed && wasDown) {
+        this.pointerDown = false;
+        this.strokeRejected = false;
+        this.rejectedGestureId = -1;
+        this.inputStage?.reset();
+        this.opts.onPreviewReset?.();
+        this.opts.onPreview?.([]);
+        const synthUp: RawSample = {
+          x: 0,
+          y: 0,
+          tMs: this.opts.env.clock.now(),
+          pressure: 0,
+          tiltXDeg: 0,
+          tiltYDeg: 0,
+          twistDeg: 0,
+          pointerType: "pen",
+          phase: "up",
+          source: "raw",
+        };
+        this.sampleEpoch.set(synthUp, this.clearEpoch);
+        this.sampleGestureId.set(synthUp, this.inputGestureId);
+        this.canceledUps.set(synthUp, {
+          source: "lostpointercapture",
+          buttons: 0,
+          hasFocus: typeof document !== "undefined" ? document.hasFocus() : true,
+          maxButtons: this.strokeMaxButtons,
+        });
+        this.scheduler.enqueue([synthUp]);
+      }
     };
     this.detach = off;
     return () => {
@@ -325,6 +359,7 @@ export class LiveStrokeSession {
   clear(): Promise<void> {
     this.clearEpoch += 1;
     const targetEpoch = this.clearEpoch;
+    this.strokeCount = 0;
     this.cancelNextUp = false;
     this.pendingCancel = null;
     if (this.pointerDown) {
@@ -367,6 +402,7 @@ export class LiveStrokeSession {
     this.laneReleased = false;
     this.laneMidStroke = false;
     this.inStroke = false;
+    this.strokeCount = 0;
     if (!(this.pointerDown && this.rejectedGestureId === this.inputGestureId)) {
       this.strokeRejected = false;
       this.rejectedGestureId = -1;
@@ -431,6 +467,7 @@ export class LiveStrokeSession {
         this.pointerDown = false;
         this.ownerPointerId = null;
         if (typeof s.buttons === "number") this.strokeMaxButtons = Math.max(this.strokeMaxButtons, s.buttons);
+        if (!this.cancelNextUp) this.pendingCancel = null;
       } else if (typeof s.buttons === "number") {
         this.strokeMaxButtons = Math.max(this.strokeMaxButtons, s.buttons);
       }
