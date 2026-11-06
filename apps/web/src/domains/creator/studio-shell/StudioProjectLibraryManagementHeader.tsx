@@ -92,6 +92,9 @@ export function StudioProjectLibraryManagementHeader({
           </div>
         </nav>
         <nav className="flex flex-wrap items-center gap-1" aria-label={bi("저장과 배포", "Storage and distribution")}>
+          <Link href="/studio/import" className="inline-flex min-h-10 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+            {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
+          </Link>
           <Link href="/studio?view=storage" className="inline-flex min-h-10 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
             {bi("저장·백업", "Save & backup")}
           </Link>
@@ -113,6 +116,11 @@ export function StudioProjectLibraryManagementHeader({
                 {notice.actionLabel}
               </button>
             ) : null}
+            {notice.actionHref && notice.actionLabel ? (
+              <Link href={notice.actionHref} className="text-xs font-black text-accent underline underline-offset-4">
+                {notice.actionLabel}
+              </Link>
+            ) : null}
             <button type="button" onClick={() => setNotice(null)} className="text-xs underline underline-offset-4">
               {bi("닫기", "Dismiss")}
             </button>
@@ -123,32 +131,57 @@ export function StudioProjectLibraryManagementHeader({
       {library.error || profiles.error ? (
         <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/35 bg-danger-soft/15 px-3 py-2 text-sm font-semibold text-danger">
           <span className="min-w-0 break-words">{library.error ?? profiles.error}</span>
-          <button
-            type="button"
-            onClick={() => {
-              library.reload();
-              profiles.reload();
-            }}
-            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-xs font-black text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            <RotateCcw size={14} aria-hidden="true" />
-            {bi("다시 시도", "Try again")}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                library.reload();
+                profiles.reload();
+              }}
+              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-xs font-black text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              <RotateCcw size={14} aria-hidden="true" />
+              {bi("다시 시도", "Try again")}
+            </button>
+            <Link
+              href="/studio/import"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {bi("파일에서 열기", "Open from file")}
+            </Link>
+            <Link
+              href="/studio/new"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {bi("새 작업 시작", "Start new work")}
+            </Link>
+          </div>
         </div>
       ) : null}
 
       <section className="mt-7 rounded-2xl border border-line bg-card p-3 sm:p-4" aria-label={bi("프로젝트 찾기와 선택", "Find and select projects")}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <label className="relative block min-w-0 flex-1 lg:max-w-xl">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" size={16} aria-hidden="true" />
-            <span className="sr-only">{bi("프로젝트 검색", "Search projects")}</span>
-            <input
-              value={query}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-              placeholder={bi("제목·종류·설명 검색", "Search title, type or description")}
-              className="min-h-11 w-full rounded-xl border border-line bg-panel pl-10 pr-3 text-sm text-fg outline-none focus:border-accent"
-            />
-          </label>
+          <div className="flex min-w-0 flex-1 items-center gap-2 lg:max-w-xl">
+            <label className="relative block min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" size={16} aria-hidden="true" />
+              <span className="sr-only">{bi("프로젝트 검색", "Search projects")}</span>
+              <input
+                value={query}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+                placeholder={bi("제목·종류·설명 검색", "Search title, type or description")}
+                className="min-h-11 w-full rounded-xl border border-line bg-panel pl-10 pr-3 text-sm text-fg outline-none focus:border-accent"
+              />
+            </label>
+            {query.trim().length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 shrink-0" })}
+              >
+                {bi("검색어 지우기", "Clear search")}
+              </button>
+            ) : null}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <label className="text-xs font-semibold text-fg-3">
               <span className="sr-only">{bi("정렬", "Sort")}</span>

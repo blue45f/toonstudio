@@ -1,6 +1,9 @@
 import { formatI18nTemplate, translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { FolderOpen, HardDrive } from "lucide-react";
 
+import Link from "@/shared/navigation/router-link";
+import { buttonClass } from "@/shared/components/ui/button-utils";
+
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
 import {
   StudioProjectLibraryCard,
@@ -21,7 +24,7 @@ export function StudioProjectLibraryManagementContent({
 }) {
   useBilingualI18nRevision();
   const {
-    locale, authUserId, view, library, profiles, query, selectedIds, setSelection,
+    locale, authUserId, view, library, profiles, query, setQuery, selectedIds, setSelection,
     busyProjectId, setSaveTarget, setDeleteRequest,
     visibleProjects, temporaryProjects, savedProjects, archiveProjects,
     trashProjects, restoreProjects, duplicateProject, savePackage,
@@ -97,12 +100,45 @@ export function StudioProjectLibraryManagementContent({
                 : bi("표시할 작업이 없습니다", "No work to show")}
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-fg-3">
-              {view === "archived"
-                ? bi("보관한 프로젝트가 없습니다.", "There are no archived projects.")
-                : view === "trash"
-                  ? bi("휴지통이 비어 있습니다.", "Trash is empty.")
-                  : bi("검색어를 바꾸거나 필터를 초기화해 보세요.", "Try another search or clear the filters.")}
+              {query
+                ? bi("검색어를 바꾸거나 필터를 초기화해 보세요.", "Try another search or clear the filters.")
+                : view === "archived"
+                  ? bi("보관한 프로젝트가 없습니다. 진행 중인 작업을 정리할 때 보관함으로 옮겨 두면 이곳에서 언제든 복원할 수 있습니다.", "There are no archived projects. Move active work here whenever you want to tidy up and restore it later.")
+                  : bi("휴지통이 비어 있습니다. 삭제한 작업은 완전 삭제 전까지 이곳에서 복원할 수 있습니다.", "Trash is empty. Deleted work stays here until you permanently remove it.")}
             </p>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              {query ? (
+                <>
+                  <button type="button" onClick={() => setQuery("")} className={buttonClass({ size: "sm" })}>
+                    {bi("검색어 지우기", "Clear search")}
+                  </button>
+                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm" })}>
+                    {bi("새 작업 시작", "Start new work")}
+                  </Link>
+                  <Link href="/studio/import" className={buttonClass({ variant: "quiet", size: "sm" })}>
+                    {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
+                  </Link>
+                </>
+              ) : view === "archived" ? (
+                <>
+                  <Link href="/studio" className={buttonClass({ size: "sm" })}>
+                    {bi("내 작업으로 돌아가기", "Back to My work")}
+                  </Link>
+                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm" })}>
+                    {bi("새 작업 시작", "Start new work")}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/studio" className={buttonClass({ size: "sm" })}>
+                    {bi("내 작업으로 돌아가기", "Back to My work")}
+                  </Link>
+                  <Link href="/studio/import" className={buttonClass({ variant: "outline", size: "sm" })}>
+                    {bi("백업 파일 열기", "Open backup file")}
+                  </Link>
+                </>
+              )}
+            </div>
           </section>
         )
       ) : view === "active" ? (
@@ -132,14 +168,19 @@ export function StudioProjectLibraryManagementContent({
 
           {savedProjects.length > 0 ? (
             <section aria-labelledby="saved-projects-title">
-              <div>
-                <h2 id="saved-projects-title" className="text-xl font-black text-fg">
-                  {bi("프로젝트", "Projects")}
-                  <span className="ml-2 text-sm font-bold text-fg-3">{savedProjects.length}</span>
-                </h2>
-                <p className="mt-1 text-xs leading-5 text-fg-3">
-                  {bi("파일 또는 개인 저장소와 연결한 정식 프로젝트입니다.", "Formally saved projects connected to a file or personal storage.")}
-                </p>
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 id="saved-projects-title" className="text-xl font-black text-fg">
+                    {bi("프로젝트", "Projects")}
+                    <span className="ml-2 text-sm font-bold text-fg-3">{savedProjects.length}</span>
+                  </h2>
+                  <p className="mt-1 text-xs leading-5 text-fg-3">
+                    {bi("파일 또는 개인 저장소와 연결한 정식 프로젝트입니다. 저장한 .toonstudio 파일은 파일 가져오기에서 언제든 다시 열 수 있습니다.", "Formally saved projects connected to a file or personal storage. Saved .toonstudio files can be reopened anytime from Open .toonstudio file.")}
+                  </p>
+                </div>
+                <Link href="/studio/import" className="text-xs font-bold text-accent underline underline-offset-4">
+                  {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
+                </Link>
               </div>
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {savedProjects.map((project) => renderProjectCard(project, false))}

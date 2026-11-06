@@ -19,7 +19,8 @@ import { chooseStudioProjectPackageSaveTarget, studioProjectPackageFileName, wri
 import { buildStudioProjectPackageWithWorkspace } from "../save-first/studio-project-package-with-workspace";
 import { studioSaveSafetySummary, type StudioSaveProfile } from "../save-first/studio-save-profile";
 import { readStudioSubmissions } from "../save-first/studio-submission-store";
-import { ensureInitialStudioProjectDocument, readStudioProjectDocuments } from "../studio-project-document-store";
+import { removeStudioExactResumeContext } from "../studio-exact-resume-context";
+import { ensureInitialStudioProjectDocument, readStudioProjectDocuments, studioProjectDocumentStorageKey } from "../studio-project-document-store";
 import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
 import type { StudioProjectLibraryEntry, StudioProjectStatus } from "../studio-project-library-store";
 import { PersonalCloudConnectionPanel } from "./PersonalCloudConnectionPanel";
@@ -157,6 +158,11 @@ export function StudioSaveFirstProjectLibraryPage({
   const reloadCloudConnections = cloud.reload;
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [messageAction, setMessageAction] = useState<{
+    readonly label: string;
+    readonly onClick?: () => void;
+    readonly href?: string;
+  } | null>(null);
   const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
   const [cloudUpload, setCloudUpload] = useState<ActiveCloudUpload | null>(null);
 
@@ -166,6 +172,7 @@ export function StudioSaveFirstProjectLibraryPage({
     const rawProvider = searchParams.get("provider");
     const provider = PERSONAL_CLOUD_PROVIDER_IDS.find((value) => value === rawProvider);
     const label = provider ? personalCloudProviderLabel(provider) : "개인 저장소";
+    setMessageAction(null);
     if (result === "connected") {
       setMessage(bt(`${label} 개인 계정을 연결했습니다. 이제 프로젝트를 직접 저장할 수 있습니다.`, `${label} is connected. Projects can now be saved directly.`));
       void reloadCloudConnections();
@@ -235,9 +242,17 @@ export function StudioSaveFirstProjectLibraryPage({
       setMessage(method === "file-picker"
         ? bt(`“${project.title}”을 선택한 파일·동기화 폴더에 저장했습니다.`, `Saved “${project.title}” to the selected file or synced folder.`)
         : bt(`“${project.title}” 프로젝트 파일을 다운로드했습니다.`, `Downloaded the “${project.title}” project file.`));
+      setMessageAction({
+        label: bt("저장한 파일 열기·복원", "Open or restore saved file"),
+        href: "/studio/import",
+      });
     } catch (cause) {
       if (!(cause instanceof DOMException && cause.name === "AbortError")) {
-        setMessage(bt("프로젝트 파일을 저장하지 못했습니다.", "The project file could not be saved."));
+        setMessage(bt("프로젝트 파일을 저장하지 못했습니다. 임시 자동저장본은 그대로 유지됩니다.", "The project file could not be saved. The temporary autosave remains intact."));
+        setMessageAction({
+          label: bt("다시 시도", "Try again"),
+          onClick: () => { void savePackage(project); },
+        });
       }
     } finally {
       setBusyProjectId(null);
@@ -249,6 +264,7 @@ export function StudioSaveFirstProjectLibraryPage({
   ) => {
     const connection = cloud.statusFor(provider);
     if (!connection?.configured) {
+      setMessageAction(null);
       setMessage(bt(`${personalCloudProviderLabel(provider)} OAuth 서버 설정이 필요합니다.`, `${personalCloudProviderLabel(provider)} OAuth server configuration is required.`));
       return;
     }
@@ -301,6 +317,7 @@ export function StudioSaveFirstProjectLibraryPage({
         byteLength: uploaded.byteLength,
         revision: saved.revision,
       });
+      setMessageAction(null);
       setMessage(bt(`“${project.title}”을 ${personalCloudProviderLabel(provider)}에 저장했습니다.`, `Saved “${project.title}” to ${personalCloudProviderLabel(provider)}.`));
     } catch (cause) {
       const detail = uploadFailureMessage(cause, bt);
@@ -316,6 +333,7 @@ export function StudioSaveFirstProjectLibraryPage({
         error: detail,
       });
       if (unauthorized) void cloud.reload();
+      setMessageAction(null);
       setMessage(detail);
     } finally {
       setCloudUpload(null);
@@ -346,21 +364,37 @@ export function StudioSaveFirstProjectLibraryPage({
 
   const duplicateProject = (project: StudioProjectLibraryEntry) => {
     if (typeof window === "undefined") return;
-    const duplicate = library.duplicate(project.id);
-    if (!duplicate) return;
-    ensureInitialStudioProjectDocument(window.localStorage, {
-      projectId: duplicate.id,
-      projectTitle: duplicate.title,
-      projectKind: duplicate.kind,
-      templateId: duplicate.templateId,
-      target: window,
-    });
-    profiles.ensure(duplicate.id, {
-      provider: "browser",
-      autoSave: true,
-      createVersions: true,
-    });
-    setMessage(bt(`“${project.title}”의 새 비공개 복사본을 만들었습니다.`, `Created a new private copy of “${project.title}”.`));
+    try {
+      const duplicate = library.duplicate(project.id);
+      if (!duplicate) {
+        setMessage(bt("프로젝트 복사본을 만들지 못했습니다. 저장 공간을 확인한 뒤 다시 시도하세요.", "Could not create a project copy. Check storage availability and try again."));
+        setMessageAction({
+          label: bt("다시 시도", "Try again"),
+          onClick: () => duplicateProject(project),
+        });
+        return;
+      }
+      ensureInitialStudioProjectDocument(window.localStorage, {
+        projectId: duplicate.id,
+        projectTitle: duplicate.title,
+        projectKind: duplicate.kind,
+        templateId: duplicate.templateId,
+        target: window,
+      });
+      profiles.ensure(duplicate.id, {
+        provider: "browser",
+        autoSave: true,
+        createVersions: true,
+      });
+      setMessageAction(null);
+      setMessage(bt(`“${project.title}”의 새 비공개 복사본을 만들었습니다.`, `Created a new private copy of “${project.title}”.`));
+    } catch {
+      setMessage(bt("프로젝트 복사본을 만들지 못했습니다. 저장 공간을 확인한 뒤 다시 시도하세요.", "Could not create a project copy. Check storage availability and try again."));
+      setMessageAction({
+        label: bt("다시 시도", "Try again"),
+        onClick: () => duplicateProject(project),
+      });
+    }
   };
 
   const primaryNavigation: readonly LibraryView[] = ["active", "archived", "trash"];
@@ -419,31 +453,59 @@ export function StudioSaveFirstProjectLibraryPage({
         </div>
 
         {message ? (
-          <div role="status" className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft/20 px-3 py-2 text-sm font-semibold text-fg">
-            <span>{message}</span><button type="button" onClick={() => setMessage(null)} className="text-xs underline">{bt("닫기", "Dismiss")}</button>
+          <div role="status" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft/20 px-3 py-2 text-sm font-semibold text-fg">
+            <span>{message}</span>
+            <div className="flex flex-wrap items-center gap-3">
+              {messageAction?.onClick ? (
+                <button type="button" onClick={messageAction.onClick} className="text-xs font-black text-accent underline underline-offset-4">{messageAction.label}</button>
+              ) : messageAction?.href ? (
+                <Link href={messageAction.href} className="text-xs font-black text-accent underline underline-offset-4">{messageAction.label}</Link>
+              ) : null}
+              <button type="button" onClick={() => { setMessage(null); setMessageAction(null); }} className="text-xs underline">{bt("닫기", "Dismiss")}</button>
+            </div>
           </div>
         ) : null}
-        {library.error || profiles.error ? <p role="alert" className="mt-4 rounded-xl border border-danger/35 bg-danger-soft/15 px-3 py-2 text-sm font-semibold text-danger">{library.error ?? profiles.error}</p> : null}
+        {library.error || profiles.error ? (
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/35 bg-danger-soft/15 px-3 py-2 text-sm font-semibold text-danger">
+            <span className="min-w-0 break-words">{library.error ?? profiles.error}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={() => { library.reload(); profiles.reload(); void cloud.reload(); }} className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-xs font-black text-danger hover:bg-danger-soft/20">
+                <RotateCcw size={14} aria-hidden="true" />{bt("다시 시도", "Try again")}
+              </button>
+              <Link href="/studio" className="text-xs font-bold text-danger underline underline-offset-4">{bt("내 작업으로 이동", "Go to My work")}</Link>
+              <Link href="/studio/import" className="text-xs font-bold text-danger underline underline-offset-4">{bt("파일에서 복원", "Restore from file")}</Link>
+            </div>
+          </div>
+        ) : null}
 
         {view === "active" ? <StudioQuickStart locale={legacyLocale} /> : null}
 
         {(view === "active" || view === "archived" || view === "trash") ? (
           <section className="mt-7">
-            <label className="relative block max-w-md">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" size={16} aria-hidden="true" />
-              <span className="sr-only">{bt("프로젝트 검색", "Search projects")}</span>
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={bt("내 작업 검색", "Search my work")} className="min-h-11 w-full rounded-xl border border-line bg-card pl-10 pr-3 text-sm text-fg outline-none focus:border-accent" />
-            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="relative block min-w-0 flex-1 max-w-md">
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" size={16} aria-hidden="true" />
+                <span className="sr-only">{bt("프로젝트 검색", "Search projects")}</span>
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={bt("내 작업 검색", "Search my work")} className="min-h-11 w-full rounded-xl border border-line bg-card pl-10 pr-3 text-sm text-fg outline-none focus:border-accent" />
+              </label>
+              {query.trim().length > 0 ? (
+                <button type="button" onClick={() => setQuery("")} className={buttonClass({ variant: "outline", size: "sm" })}>{bt("검색어 지우기", "Clear search")}</button>
+              ) : null}
+            </div>
             {filteredProjects.length === 0 ? (
               <div className="mt-5 rounded-3xl border border-dashed border-line bg-card/60 px-5 py-14 text-center">
                 <FolderOpen size={24} className="mx-auto text-fg-3" aria-hidden="true" />
                 <h2 className="mt-3 text-xl font-black text-fg">{bt("표시할 작업이 없습니다", "No work to show")}</h2>
-                {view === "active" ? (
-                  <Link href="/studio/new" className={buttonClass({ className: "mt-5 gap-2" })}>
-                    <Plus size={16} aria-hidden="true" />
-                    {bt("새 작품 만들기", "Create new work")}
-                  </Link>
-                ) : null}
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                  {query.trim().length > 0 ? (
+                    <button type="button" onClick={() => setQuery("")} className={buttonClass({ variant: "outline", size: "sm" })}>{bt("검색어 지우기", "Clear search")}</button>
+                  ) : null}
+                  {view === "active" ? (
+                    <Link href="/studio/new" className={buttonClass({ className: "gap-2" })}><Plus size={16} aria-hidden="true" />{bt("새 작품 만들기", "Create new work")}</Link>
+                  ) : (
+                    <Link href="/studio" className={buttonClass({ variant: "outline", size: "sm" })}>{bt("내 작업으로 돌아가기", "Back to My work")}</Link>
+                  )}
+                </div>
               </div>
             ) : view === "active" ? (
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -452,11 +514,7 @@ export function StudioSaveFirstProjectLibraryPage({
                   const resumeTarget = resolveStudioProjectResumeTarget(window.localStorage, project, locale);
                   return (
                     <article key={project.id} className="overflow-hidden rounded-2xl border border-line bg-card p-4 shadow-sm">
-                      <StudioProjectCardThumbnail
-                        authUserId={authUserId}
-                        locale={legacyLocale}
-                        project={project}
-                      />
+                      <StudioProjectCardThumbnail authUserId={authUserId} locale={legacyLocale} project={project} />
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex min-h-7 items-center gap-1 rounded-full bg-accent-soft px-2.5 text-[0.68rem] font-black text-accent"><ShieldCheck size={13} aria-hidden="true" />{bt("나만 보기", "Owner only")}</span>
                         <SaveBadge profile={profile} locale={locale} />
@@ -464,17 +522,8 @@ export function StudioSaveFirstProjectLibraryPage({
                       <h2 className="mt-3 truncate text-lg font-black text-fg">{project.title}</h2>
                       <p className="mt-1 text-xs text-fg-3">{locale === "ko" ? "마지막 작업" : "Last opened"} {dateLabel(project.lastOpenedAt, locale, bt)}</p>
                       {resumeTarget.summary ? (
-                        <div className={cn(
-                          "mt-2 rounded-xl border px-3 py-2 text-[0.68rem] leading-5",
-                          resumeTarget.exact
-                            ? "border-accent/30 bg-accent-soft/20 text-fg-2"
-                            : "border-line bg-panel/55 text-fg-3",
-                        )}>
-                          <p className="font-black text-fg">
-                            {resumeTarget.exact
-                              ? locale === "ko" ? "최근 위치 기억됨" : "Recent position remembered"
-                              : locale === "ko" ? "최근 문서로 이동" : "Continue in recent document"}
-                          </p>
+                        <div className={cn("mt-2 rounded-xl border px-3 py-2 text-[0.68rem] leading-5", resumeTarget.exact ? "border-accent/30 bg-accent-soft/20 text-fg-2" : "border-line bg-panel/55 text-fg-3")}>
+                          <p className="font-black text-fg">{resumeTarget.exact ? (locale === "ko" ? "최근 위치 기억됨" : "Recent position remembered") : (locale === "ko" ? "최근 문서로 이동" : "Continue in recent document")}</p>
                           <p className="mt-0.5 break-words">{resumeTarget.summary}</p>
                         </div>
                       ) : null}
@@ -483,81 +532,31 @@ export function StudioSaveFirstProjectLibraryPage({
                         <div><p className="font-semibold text-fg-3">{bt("배포", "Distribution")}</p><p className="mt-1 font-black text-fg">{distributionLabel(profile, bt)}</p></div>
                       </div>
                       <details className="mt-3 rounded-xl border border-line bg-panel/55">
-                        <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-black text-fg [&::-webkit-details-marker]:hidden">
-                          {bt("저장 위치 관리", "Manage storage")}
-                        </summary>
+                        <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-black text-fg [&::-webkit-details-marker]:hidden">{bt("저장 위치 관리", "Manage storage")}</summary>
                         <div className="border-t border-line p-3">
                           <div className="space-y-2">
                             {profile.bindings.map((binding) => (
                               <div key={binding.id} className="rounded-lg bg-card px-2.5 py-2">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="min-w-0">
-                                    <p className="truncate text-[0.7rem] font-bold text-fg-2">
-                                      {binding.label}
-                                    </p>
+                                    <p className="truncate text-[0.7rem] font-bold text-fg-2">{binding.label}</p>
                                     <p className="mt-1 text-[0.64rem] text-fg-3">
-                                      {binding.lastSyncedAt
-                                        ? `${bt("마지막 저장", "Last saved")} ${dateLabel(binding.lastSyncedAt, locale, bt)}`
-                                        : binding.connectionRequired
-                                          ? bt("계정 연결 필요", "Account connection required")
-                                          : bt("작업 사본", "Working copy")}
+                                      {binding.lastSyncedAt ? `${bt("마지막 저장", "Last saved")} ${dateLabel(binding.lastSyncedAt, locale, bt)}` : binding.connectionRequired ? bt("계정 연결 필요", "Account connection required") : bt("작업 사본", "Working copy")}
                                     </p>
                                   </div>
-                                  <span className={cn(
-                                    "shrink-0 rounded-full px-2 py-1 text-[0.6rem] font-bold",
-                                    binding.syncState === "synced"
-                                      ? "bg-success-soft/20 text-success"
-                                      : binding.syncState === "error" || binding.syncState === "conflict"
-                                        ? "bg-danger-soft/20 text-danger"
-                                        : "bg-warning-soft/20 text-warning",
-                                  )}>
-                                    {binding.syncState === "synced"
-                                      ? bt("저장됨", "Saved")
-                                      : binding.syncState === "syncing"
-                                        ? bt("저장 중", "Saving")
-                                        : binding.syncState === "conflict"
-                                          ? bt("충돌", "Conflict")
-                                          : binding.syncState === "error"
-                                            ? bt("오류", "Error")
-                                            : bt("대기", "Pending")}
+                                  <span className={cn("shrink-0 rounded-full px-2 py-1 text-[0.6rem] font-bold", binding.syncState === "synced" ? "bg-success-soft/20 text-success" : binding.syncState === "error" || binding.syncState === "conflict" ? "bg-danger-soft/20 text-danger" : "bg-warning-soft/20 text-warning")}>
+                                    {binding.syncState === "synced" ? bt("저장됨", "Saved") : binding.syncState === "syncing" ? bt("저장 중", "Saving") : binding.syncState === "conflict" ? bt("충돌", "Conflict") : binding.syncState === "error" ? bt("오류", "Error") : bt("대기", "Pending")}
                                   </span>
                                 </div>
-                                {binding.error ? (
-                                  <p className="mt-2 text-[0.64rem] leading-4 text-danger">
-                                    {binding.error}
-                                  </p>
-                                ) : null}
-                                {binding.webUrl ? (
-                                  <a
-                                    href={binding.webUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="mt-2 inline-flex items-center gap-1 text-[0.65rem] font-bold text-accent"
-                                  >
-                                    {bt("원격 파일 열기", "Open remote file")}
-                                    <ExternalLink size={11} aria-hidden="true" />
-                                  </a>
-                                ) : null}
+                                {binding.error ? <p className="mt-2 text-[0.64rem] leading-4 text-danger">{binding.error}</p> : null}
+                                {binding.webUrl ? <a href={binding.webUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[0.65rem] font-bold text-accent">{bt("원격 파일 열기", "Open remote file")}<ExternalLink size={11} aria-hidden="true" /></a> : null}
                               </div>
                             ))}
                           </div>
                           <div className="mt-3 border-t border-line pt-3">
-                            <PersonalCloudUploadActions
-                              locale={legacyLocale}
-                              connections={cloud.connections}
-                              busyProvider={cloudUpload?.projectId === project.id
-                                ? cloudUpload.provider
-                                : cloud.busyProvider}
-                              progress={cloudUpload?.projectId === project.id ? cloudUpload : null}
-                              disabled={Boolean(busyProjectId && busyProjectId !== project.id)}
-                              onAction={(provider) => {
-                                void connectOrUpload(project, provider);
-                              }}
-                            />
+                            <PersonalCloudUploadActions locale={legacyLocale} connections={cloud.connections} busyProvider={cloudUpload?.projectId === project.id ? cloudUpload.provider : cloud.busyProvider} progress={cloudUpload?.projectId === project.id ? cloudUpload : null} disabled={Boolean(busyProjectId && busyProjectId !== project.id)} onAction={(provider) => { void connectOrUpload(project, provider); }} />
                           </div>
-                          <p className="mt-3 text-[0.64rem] leading-4 text-fg-3">
-                            {bt("WebDAV·S3 직접 연결은 자격 증명 보관 방식을 선택한 뒤 별도 설정에서 제공합니다. 연결되지 않은 저장소를 백업 완료로 표시하지 않습니다.", "WebDAV and S3 direct connections remain in advanced settings. Unconnected storage is never shown as a completed backup.")}
-                          </p>
+                          <p className="mt-3 text-[0.64rem] leading-4 text-fg-3">{bt("WebDAV·S3 직접 연결은 자격 증명 보관 방식을 선택한 뒤 별도 설정에서 제공합니다. 연결되지 않은 저장소를 백업 완료로 표시하지 않습니다.", "WebDAV and S3 direct connections remain in advanced settings. Unconnected storage is never shown as a completed backup.")}</p>
                         </div>
                       </details>
                       <div className="mt-4 flex gap-2 border-t border-line pt-3">
@@ -580,7 +579,26 @@ export function StudioSaveFirstProjectLibraryPage({
                     <div><h2 className="font-black text-fg">{project.title}</h2><p className="mt-1 text-xs text-fg-3">{dateLabel(project.updatedAt, locale, bt)}</p></div>
                     <div className="flex gap-2">
                       <button type="button" onClick={() => { if (view === "archived") library.activate(project.id); else library.restore(project.id); }} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}><RotateCcw size={14} aria-hidden="true" />{bt("복원", "Restore")}</button>
-                      {view === "trash" ? <button type="button" onClick={() => { if (library.removePermanently(project.id)) profiles.remove(project.id); }} className={buttonClass({ variant: "quiet", size: "sm", className: "text-danger" })}><Trash2 size={14} aria-hidden="true" />{bt("완전 삭제", "Delete")}</button> : null}
+                      {view === "trash" ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!library.removePermanently(project.id)) return;
+                            profiles.remove(project.id);
+                            if (typeof window !== "undefined") {
+                              for (const document of readStudioProjectDocuments(window.localStorage, project.id).documents) {
+                                removeStudioExactResumeContext(window.localStorage, project.id, document.id);
+                              }
+                              window.localStorage.removeItem(studioProjectDocumentStorageKey(project.id));
+                            }
+                            setMessageAction(null);
+                            setMessage(bt("프로젝트를 완전히 삭제했습니다.", "Permanently deleted the project."));
+                          }}
+                          className={buttonClass({ variant: "quiet", size: "sm", className: "text-danger" })}
+                        >
+                          <Trash2 size={14} aria-hidden="true" />{bt("완전 삭제", "Delete")}
+                        </button>
+                      ) : null}
                     </div>
                   </article>
                 ))}
@@ -594,23 +612,21 @@ export function StudioSaveFirstProjectLibraryPage({
             <PersonalCloudConnectionPanel locale={legacyLocale} controller={cloud} />
             <section className="rounded-2xl border border-line bg-card p-5">
               <div className="flex items-start gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-                  <HardDrive size={18} aria-hidden="true" />
-                </span>
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><HardDrive size={18} aria-hidden="true" /></span>
                 <div>
-                  <h2 className="text-lg font-black text-fg">
-                    {bt("프로젝트 저장 위치", "Project storage locations")}
-                  </h2>
-                  <p className="mt-1 text-xs leading-5 text-fg-3">
-                    {bt("로컬 파일 백업과 연결한 개인 드라이브 업로드를 프로젝트별로 관리합니다.", "Manage local file backups and connected personal-drive uploads per project.")}
-                  </p>
+                  <h2 className="text-lg font-black text-fg">{bt("프로젝트 저장 위치", "Project storage locations")}</h2>
+                  <p className="mt-1 text-xs leading-5 text-fg-3">{bt("로컬 파일 백업과 연결한 개인 드라이브 업로드를 프로젝트별로 관리합니다.", "Manage local file backups and connected personal-drive uploads per project.")}</p>
                 </div>
               </div>
-
               {activeProjects.length === 0 ? (
-                <p className="mt-5 rounded-xl bg-panel/60 px-4 py-6 text-center text-sm text-fg-3">
-                  {bt("저장할 비공개 작업이 없습니다.", "There are no private projects to save.")}
-                </p>
+                <div className="mt-5 rounded-xl bg-panel/60 px-4 py-6 text-center">
+                  <p className="text-sm text-fg-3">{bt("저장할 비공개 작업이 없습니다.", "There are no private projects to save.")}</p>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    <Link href="/studio/new" className={buttonClass({ size: "sm", className: "gap-1.5" })}><Plus size={15} aria-hidden="true" />{bt("새 작품 만들기", "Create new work")}</Link>
+                    <Link href="/studio/import" className={buttonClass({ variant: "outline", size: "sm" })}>{bt(".toonstudio 파일 열기", "Open .toonstudio file")}</Link>
+                    <Link href="/studio" className={buttonClass({ variant: "quiet", size: "sm" })}>{bt("내 작업으로 이동", "Go to My work")}</Link>
+                  </div>
+                </div>
               ) : (
                 <div className="mt-5 space-y-3">
                   {activeProjects.map((project) => {
@@ -621,39 +637,15 @@ export function StudioSaveFirstProjectLibraryPage({
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <h3 className="font-black text-fg">{project.title}</h3>
-                            <p className={cn(
-                              "mt-1 text-xs font-semibold",
-                              summary.needsBackup ? "text-warning" : "text-success",
-                            )}>
-                              {summary.headline}
-                            </p>
-                            <p className="mt-1 text-[0.66rem] text-fg-3">
-                              {bt("마지막 수동 저장", "Last manual save")} {dateLabel(profile.lastManualSaveAt, locale, bt)}
-                            </p>
+                            <p className={cn("mt-1 text-xs font-semibold", summary.needsBackup ? "text-warning" : "text-success")}>{summary.headline}</p>
+                            <p className="mt-1 text-[0.66rem] text-fg-3">{bt("마지막 수동 저장", "Last manual save")} {dateLabel(profile.lastManualSaveAt, locale, bt)}</p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => { void savePackage(project); }}
-                            disabled={busyProjectId === project.id}
-                            className={buttonClass({ variant: "outline", size: "sm", className: "gap-2" })}
-                          >
-                            <FileArchive size={15} aria-hidden="true" />
-                            {bt(".toonstudio 파일 저장", "Save .toonstudio file")}
+                          <button type="button" onClick={() => { void savePackage(project); }} disabled={busyProjectId === project.id} className={buttonClass({ variant: "outline", size: "sm", className: "gap-2" })}>
+                            <FileArchive size={15} aria-hidden="true" />{bt(".toonstudio 파일 저장", "Save .toonstudio file")}
                           </button>
                         </div>
                         <div className="mt-4 border-t border-line pt-3">
-                          <PersonalCloudUploadActions
-                            locale={legacyLocale}
-                            connections={cloud.connections}
-                            busyProvider={cloudUpload?.projectId === project.id
-                              ? cloudUpload.provider
-                              : cloud.busyProvider}
-                            progress={cloudUpload?.projectId === project.id ? cloudUpload : null}
-                            disabled={Boolean(busyProjectId && busyProjectId !== project.id)}
-                            onAction={(provider) => {
-                              void connectOrUpload(project, provider);
-                            }}
-                          />
+                          <PersonalCloudUploadActions locale={legacyLocale} connections={cloud.connections} busyProvider={cloudUpload?.projectId === project.id ? cloudUpload.provider : cloud.busyProvider} progress={cloudUpload?.projectId === project.id ? cloudUpload : null} disabled={Boolean(busyProjectId && busyProjectId !== project.id)} onAction={(provider) => { void connectOrUpload(project, provider); }} />
                         </div>
                       </article>
                     );
@@ -666,7 +658,20 @@ export function StudioSaveFirstProjectLibraryPage({
 
         {view === "exports" ? (
           <section className="mt-7 grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-            <div className="rounded-2xl border border-line bg-card p-5"><h2 className="text-lg font-black text-fg">{bt("플랫폼별 내보내기", "Platform exports")}</h2><div className="mt-4 space-y-3">{STUDIO_EXPORT_PRESETS.map((preset) => <article key={preset.id} className="flex flex-col gap-3 rounded-xl border border-line bg-panel/55 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-black text-fg">{preset.labelKo}</h3><p className="mt-1 text-xs text-fg-3">{preset.exactWidth ? `${preset.exactWidth}px` : `max ${preset.maxWidth ?? "—"}px`} · {preset.formats.join("/").toUpperCase()}</p></div>{activeProjects[0] ? <Link href={`/studio/p/${encodeURIComponent(activeProjects[0].id)}/export?preset=${encodeURIComponent(preset.id)}`} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}><Upload size={14} aria-hidden="true" />{bt("내보내기 열기", "Open export")}</Link> : null}</article>)}</div></div>
+            <div className="rounded-2xl border border-line bg-card p-5">
+              <h2 className="text-lg font-black text-fg">{bt("플랫폼별 내보내기", "Platform exports")}</h2>
+              {activeProjects.length === 0 ? (
+                <div className="mt-4 rounded-xl border border-dashed border-line bg-panel/60 p-4">
+                  <p className="text-sm leading-6 text-fg-2">{bt("내보낼 진행 중 작품이 없습니다. 새 작품을 시작하거나 .toonstudio 파일을 가져오면 각 플랫폼 규격으로 바로 내보낼 수 있습니다.", "There are no active projects to export. Start new work or import a .toonstudio file to export directly in each platform preset.")}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Link href="/studio/new" className={buttonClass({ size: "sm", className: "gap-1.5" })}><Plus size={15} aria-hidden="true" />{bt("새 작품 만들기", "Create new work")}</Link>
+                    <Link href="/studio/import" className={buttonClass({ variant: "outline", size: "sm" })}>{bt("파일 가져오기", "Import files")}</Link>
+                    <Link href="/studio" className={buttonClass({ variant: "quiet", size: "sm" })}>{bt("내 작업으로 이동", "Go to My work")}</Link>
+                  </div>
+                </div>
+              ) : null}
+              <div className="mt-4 space-y-3">{STUDIO_EXPORT_PRESETS.map((preset) => <article key={preset.id} className="flex flex-col gap-3 rounded-xl border border-line bg-panel/55 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-black text-fg">{preset.labelKo}</h3><p className="mt-1 text-xs text-fg-3">{preset.exactWidth ? `${preset.exactWidth}px` : `max ${preset.maxWidth ?? "—"}px`} · {preset.formats.join("/").toUpperCase()}</p></div>{activeProjects[0] ? <Link href={`/studio/p/${encodeURIComponent(activeProjects[0].id)}/export?preset=${encodeURIComponent(preset.id)}`} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}><Upload size={14} aria-hidden="true" />{bt("내보내기 열기", "Open export")}</Link> : null}</article>)}</div>
+            </div>
             <div className="rounded-2xl border border-line bg-card p-5"><h2 className="text-lg font-black text-fg">{bt("외부 제출 기록", "External submissions")}</h2>{submissions.length === 0 ? <p className="mt-3 text-sm leading-6 text-fg-3">{bt("아직 제출 기록이 없습니다.", "No submissions yet.")}</p> : <div className="mt-3 space-y-2">{submissions.slice().reverse().map((submission) => <article key={submission.id} className="rounded-xl bg-panel/60 p-3"><p className="text-xs font-black text-fg">{submission.platform}</p><p className="mt-1 text-[0.68rem] text-fg-3">{submission.status} · revision {submission.sourceRevision}</p>{submission.externalUrl ? <a href={submission.externalUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-accent">{bt("외부 작품 열기", "Open external work")}<ExternalLink size={12} aria-hidden="true" /></a> : null}</article>)}</div>}</div>
           </section>
         ) : null}
@@ -674,7 +679,18 @@ export function StudioSaveFirstProjectLibraryPage({
         {view === "publications" ? (
           <section className="mt-7 rounded-2xl border border-line bg-card p-5">
             <div className="flex items-start gap-3"><span className="grid size-11 place-items-center rounded-xl bg-panel text-fg-2"><Send size={19} aria-hidden="true" /></span><div><h2 className="text-lg font-black text-fg">{bt("게시는 선택 사항입니다", "Publishing is optional")}</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-fg-2">{bt("저장된 원본과 게시물은 별개입니다. 게시를 중단해도 비공개 원본은 유지됩니다.", "Saved originals and publications are separate. Unpublishing keeps the private original.")}</p></div></div>
-            <div className="mt-5 space-y-3">{activeProjects.map((project) => { const profile = profiles.profileFor(project.id); return <article key={project.id} className="flex flex-col gap-3 rounded-xl border border-line bg-panel/50 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-black text-fg">{project.title}</h3><p className="mt-1 text-xs text-fg-3">{distributionLabel(profile, bt)} · {profile.accessMode === "public" ? "공개" : "나만 보기"}</p></div><Link href={`/studio/p/${encodeURIComponent(project.id)}/export?intent=publish`} className={buttonClass({ variant: "outline", size: "sm" })}>{bt("배포 옵션 열기", "Open distribution options")}</Link></article>; })}</div>
+            {activeProjects.length === 0 ? (
+              <div className="mt-5 rounded-xl border border-dashed border-line bg-panel/50 p-5 text-center">
+                <p className="mx-auto max-w-xl text-sm leading-6 text-fg-2">{bt("게시할 진행 중 작품이 없습니다. 새 작품을 만들거나 저장한 프로젝트 파일을 열어 작업을 시작한 뒤 원하는 시점에 게시하세요.", "There are no active projects to publish. Create new work or open a saved project file first, then publish whenever you are ready.")}</p>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  <Link href="/studio/new" className={buttonClass({ size: "sm", className: "gap-1.5" })}><Plus size={15} aria-hidden="true" />{bt("새 작품 만들기", "Create new work")}</Link>
+                  <Link href="/studio/import" className={buttonClass({ variant: "outline", size: "sm" })}>{bt("파일 가져오기", "Import files")}</Link>
+                  <Link href="/studio" className={buttonClass({ variant: "quiet", size: "sm" })}>{bt("내 작업으로 이동", "Go to My work")}</Link>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 space-y-3">{activeProjects.map((project) => { const profile = profiles.profileFor(project.id); return <article key={project.id} className="flex flex-col gap-3 rounded-xl border border-line bg-panel/50 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-black text-fg">{project.title}</h3><p className="mt-1 text-xs text-fg-3">{distributionLabel(profile, bt)} · {profile.accessMode === "public" ? "공개" : "나만 보기"}</p></div><Link href={`/studio/p/${encodeURIComponent(project.id)}/export?intent=publish`} className={buttonClass({ variant: "outline", size: "sm" })}>{bt("배포 옵션 열기", "Open distribution options")}</Link></article>; })}</div>
+            )}
           </section>
         ) : null}
 
