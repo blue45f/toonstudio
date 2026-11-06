@@ -40,8 +40,9 @@ describe("blend modes composite once per element", () => {
   it("puts the composite on the group that gets cached, not on a child", () => {
     const group = source("./BlendIsolationGroup.tsx");
     // Caching is what makes Konva draw the subtree as one bitmap and apply the mode a single time.
-    expect(group).toContain("node.cache()");
+    expect(group).toContain("node.cache({ pixelRatio: cachePixelRatio })");
     expect(group).toContain("node.clearCache()");
+    expect(group).toContain("if (rect.width > 0 && rect.height > 0)");
     // The ref'd (cached) Group must be the one carrying the composite. ClipMaskGroup deliberately
     // does the opposite — composite on a child, cache to contain it — and copying that arrangement
     // here would isolate the stroke without ever blending it into the layer below.
@@ -49,7 +50,7 @@ describe("blend modes composite once per element", () => {
     expect(groupTag).not.toBe("");
     expect(groupTag).toContain("globalCompositeOperation={composite}");
     expect(groupTag).toContain("{...studioKonvaPanelClip(clip)}");
-    expect(group).toContain("node.cache(studioFrameClipCacheBounds(rect, currentClip))");
+    expect(group).toContain("node.cache({ ...studioFrameClipCacheBounds(rect, currentClip), pixelRatio: cachePixelRatio })");
   });
 
   it("re-caches when the element's rendered result changes", () => {
@@ -60,7 +61,7 @@ describe("blend modes composite once per element", () => {
     expect(group).toContain("const clipKey = JSON.stringify(clip)");
     expect(group).toContain("useLayoutEffect(() => { clipRef.current = clip; }, [clip])");
     expect(viewport).toMatch(
-      /\[\s*el\.id,\s*composite,\s*pagesHi,\s*previewSequence\s*\?\?\s*"authoritative",\s*JSON\.stringify\(elBounds\(el\)\),\s*\]\.join\("\|"\)/u,
+      /\[\s*el\.id,\s*studioLiveAdjustmentObjectRevision\(el\),\s*nodeEditDraft\s*&&\s*nodeEditDraft\.elId\s*===\s*el\.id\s*\?\s*studioLiveAdjustmentObjectRevision\(nodeEditDraft\)\s*:\s*"authoritative",\s*composite,\s*pagesHi,\s*previewSequence\s*\?\?\s*"authoritative",\s*JSON\.stringify\(elBounds\(el\)\),\s*\]\.join\("\|"\)/u,
     );
   });
 

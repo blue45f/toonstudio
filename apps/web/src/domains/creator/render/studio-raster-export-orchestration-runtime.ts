@@ -1,6 +1,7 @@
 import { readStudioStageInDocumentView } from "../canvas/studio-stage-document-view";
 import { BrushStudioV6LegacyPigmentMigrationRequiredError, hasVisibleLegacyMixboxStrokes } from "../brush-lab/brush-studio-v6-legacy-pigment";
 import { CANVAS_W } from "../studio-assets";
+import { beginStudioCaptureDiagnostics, type StudioCaptureDiagnostics } from "./studio-capture-diagnostics";
 import { confirmStudioDestructiveAction } from "../studio-destructive-action-preview";
 import {
   studioExportSplitChoiceRequest,
@@ -173,46 +174,64 @@ export function createStudioRasterExportOrchestration({
     page: PageState,
     scale: number,
     transparent: boolean,
+    diagnostics: StudioCaptureDiagnostics = beginStudioCaptureDiagnostics("raster-export"),
   ): Promise<{ canvas: HTMLCanvasElement; page: PageState }> {
-    const captured = await capturePage(page);
+    diagnostics.mark("readiness-wait");
     try {
-      const capture = captureSkiaDocumentForExport
-        ?? (await import("./studio-skia-document-export")).captureStudioSkiaDocumentForExport;
-      const skia = await capture({
-        page: captured.page,
-        masterElements: captured.master,
-        exportScale: scale,
-        transparent,
-      });
-      captured.assertCurrent();
-      if (skia.status === "captured") {
-        return { canvas: skia.canvas, page: captured.page };
+      const captured = await capturePage(page);
+      diagnostics.mark("readiness-ready");
+      try {
+        let capture = captureSkiaDocumentForExport;
+        if (capture === undefined || capture === null) {
+          diagnostics.mark("skia-import-wait");
+          capture = (await import("./studio-skia-document-export")).captureStudioSkiaDocumentForExport;
+          diagnostics.mark("skia-import-ready");
+        }
+        diagnostics.mark("skia-capture-wait", { skiaInjected: Boolean(captureSkiaDocumentForExport) });
+        const skia = await capture({
+          page: captured.page,
+          masterElements: captured.master,
+          exportScale: scale,
+          transparent,
+        });
+        diagnostics.mark(skia.status === "captured" ? "skia-captured"
+          : skia.status === "unsupported" ? "skia-unsupported" : "skia-unavailable");
+        captured.assertCurrent();
+        if (skia.status === "captured") {
+          return { canvas: skia.canvas, page: captured.page };
+        }
+      } catch {
+        diagnostics.mark("skia-failed");
+        captured.assertCurrent();
+        // The existing document renderer remains the exact compatibility authority.
       }
-    } catch {
-      captured.assertCurrent();
-      // The existing document renderer remains the exact compatibility authority.
-    }
 
-    const backgroundNode = transparent ? captured.stage.findOne(".bg") : null;
-    if (backgroundNode) {
-      backgroundNode.hide();
-      captured.stage.batchDraw();
-    }
-    try {
-      const canvas = captureStudioRasterAtExportScale(
-        captured.stage,
-        effectiveScale,
-        scale,
-      );
-      if (canvas.dataset) {
-        canvas.dataset.studioRasterExportBackend = "konva-compatibility";
-      }
-      return { canvas, page: captured.page };
-    } finally {
+      const backgroundNode = transparent ? captured.stage.findOne(".bg") : null;
       if (backgroundNode) {
-        backgroundNode.show();
+        backgroundNode.hide();
         captured.stage.batchDraw();
       }
+      try {
+        diagnostics.mark("compatibility-capture-start");
+        const canvas = captureStudioRasterAtExportScale(
+          captured.stage,
+          effectiveScale,
+          scale,
+        );
+        diagnostics.mark("compatibility-capture-ready");
+        if (canvas.dataset) {
+          canvas.dataset.studioRasterExportBackend = "konva-compatibility";
+        }
+        return { canvas, page: captured.page };
+      } finally {
+        if (backgroundNode) {
+          backgroundNode.show();
+          captured.stage.batchDraw();
+        }
+      }
+    } catch (error) {
+      diagnostics.mark("failed");
+      throw error;
     }
   }
 
@@ -220,20 +239,31 @@ export function createStudioRasterExportOrchestration({
     page: PageState,
     scale: number,
     transparent = false,
+    diagnostics?: StudioCaptureDiagnostics,
   ): Promise<{ canvas: HTMLCanvasElement; page: PageState }> {
-    const captured = await captureRawPageAtScale(page, scale, transparent);
+    const captured = await captureRawPageAtScale(page, scale, transparent, diagnostics);
+    diagnostics?.mark("grade-start");
+    const canvas = bakeStudioPageGradeIntoCanvas(
+      captured.canvas,
+      normalizePageGrade(captured.page.grade),
+    );
+    diagnostics?.mark("grade-ready");
     return {
-      canvas: bakeStudioPageGradeIntoCanvas(
-        captured.canvas,
-        normalizePageGrade(captured.page.grade),
-      ),
+      canvas,
       page: captured.page,
     };
   }
 
   async function handleDownload() {
-    if (!ensureSharedDocumentAvailableForExport()) return;
+    const diagnostics = beginStudioCaptureDiagnostics("raster-export");
+    diagnostics.mark("started");
+    if (!ensureSharedDocumentAvailableForExport()) {
+      diagnostics.mark("shared-document-blocked");
+      return;
+    }
+    diagnostics.mark("watermark-wait");
     const watermarkForExport = await ensureWatermarkLoaded();
+    diagnostics.mark("watermark-ready");
     setExportMenuOpen(false);
     setSelectedId(null);
     const originalMasterEditMode = masterEditMode;
@@ -247,8 +277,12 @@ export function createStudioRasterExportOrchestration({
         activePage,
         exportScale,
         transparent,
+        diagnostics,
       );
+      diagnostics.mark("watermark-draw-start");
       drawWatermarkOnCanvas(canvas, watermarkForExport);
+      diagnostics.mark("watermark-draw-ready");
+      diagnostics.mark("encode-module-wait");
       const {
         canvasToBlob,
         downloadBlob,
@@ -256,18 +290,24 @@ export function createStudioRasterExportOrchestration({
         exportQuality,
         pageExportFileName,
       } = await import("../export/studio-export");
+      diagnostics.mark("encode-module-ready");
+      diagnostics.mark("encode-start");
       const blob = await canvasToBlob(
         canvas,
         exportMimeType(exportFormat),
         exportQuality(exportFormat)
       );
+      diagnostics.mark("encode-ready");
+      diagnostics.mark("download-start");
       downloadBlob(blob, pageExportFileName(
         title,
         exportFormat,
         transparent,
         { revision: exportRevision, exportedAt },
       ));
+      diagnostics.mark("download-dispatched");
     } catch (error) {
+      diagnostics.mark("failed");
       setError(error instanceof Error ? error.message : "이미지 내보내기에 실패했어요.");
     } finally {
       setMasterEditMode(originalMasterEditMode);

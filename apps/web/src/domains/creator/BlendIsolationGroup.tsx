@@ -25,7 +25,12 @@ import { Group } from "react-konva/lib/ReactKonvaCore";
 import { studioFrameClipCacheBounds, type StudioFrameClip } from "@toonstudio/studio-project-model/frame-clip";
 import { studioKonvaPanelClip } from "./canvas/studio-konva-panel-clip";
 
-import { registerStudioRasterPresentationCache } from "./render/studio-raster-presentation-cache";
+import { beginStudioRasterCacheDiagnostics, type StudioRasterCacheDiagnosticReason } from "./render/studio-raster-cache-diagnostics";
+import {
+  refreshStudioRasterPresentationCaches,
+  registerStudioRasterCapturePreparation,
+  registerStudioRasterPresentationCache,
+} from "./render/studio-raster-presentation-cache";
 
 import type Konva from "konva";
 import type { ReactNode } from "react";
@@ -47,10 +52,15 @@ export function BlendIsolationGroup({
   useLayoutEffect(() => { clipRef.current = clip; }, [clip]);
 
   useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
     let cancelled = false; const currentClip = clipRef.current;
-    const recache = () => {
-      const node = ref.current;
-      if (cancelled || !node) return false;
+    // undefined는 기존 Konva.pixelRatio/DPR 기본값이며 출력 뒤에도 이 상태로 복원한다.
+    let cachePixelRatio: number | undefined;
+    const recache = (reason: StudioRasterCacheDiagnosticReason = "raster") => {
+      if (cancelled) return false;
+      const diagnostics = beginStudioRasterCacheDiagnostics("blend", reason);
+      let failed = false;
       node.clearCache();
       // 자식 이미지가 아직 로드 전이면 그룹 크기가 0 — 이때 cache()는 Konva 경고를 낸다.
       // 크기가 생긴 뒤(지연 재캐시)에만 캐시한다. 캐시 실패 시에는 캐시 없이 그리는데,
@@ -59,20 +69,62 @@ export function BlendIsolationGroup({
       const rect = node.getClientRect({ skipTransform: true });
       if (rect.width > 0 && rect.height > 0) {
         try {
-          if (currentClip) node.cache(studioFrameClipCacheBounds(rect, currentClip));
-          else node.cache();
+          if (currentClip) node.cache({ ...studioFrameClipCacheBounds(rect, currentClip), pixelRatio: cachePixelRatio });
+          else node.cache({ pixelRatio: cachePixelRatio });
         } catch {
+          failed = true;
           node.clearCache();
         }
       }
       node.getLayer()?.batchDraw();
-      return node.isCached();
+      const isCached = node.isCached();
+      diagnostics.finish(rect, isCached, failed);
+      return isCached;
     };
-    const unregister = registerStudioRasterPresentationCache(ref.current, recache);
-    recache();
-    const timers = [120, 350, 700, 1200].map((ms) => globalThis.setTimeout(recache, ms));
+    // owner callback 자체는 조상 refresh를 재귀 호출하지 않는다. 로컬 변경만 바깥으로 전파한다.
+    const refreshLocal = (reason: StudioRasterCacheDiagnosticReason) => {
+      const cached = recache(reason);
+      const ancestorsRefreshed = refreshStudioRasterPresentationCaches(node);
+      return cached && ancestorsRefreshed;
+    };
+    const unregister = registerStudioRasterPresentationCache(node, recache);
+    const unregisterCapture = registerStudioRasterCapturePreparation(node, (requestedDensity) => {
+      if (!node.isCached()) {
+        const rect = node.getClientRect({ skipTransform: true });
+        // 0 rect로 보고돼 원래 bitmap이 없던 경로는 유지한다. 양수 rect의 cache 실패는 숨기지 않는다.
+        if (rect.width === 0 || rect.height === 0) return () => undefined;
+        throw new Error("합성 그룹의 화면 캐시가 준비되지 않아 출력하지 않았어요.");
+      }
+      const previous = cachePixelRatio;
+      const target = Math.max(1, requestedDensity);
+      if (target === previous) return () => undefined;
+      const restore = () => {
+        cachePixelRatio = previous;
+        // 실패한 부모가 먼저 복원됐더라도, 자식 복원 뒤 조상 bitmap을 다시 갱신한다.
+        if (!recache("raster") || !refreshStudioRasterPresentationCaches(node)) {
+          throw new Error("합성 그룹의 화면 캐시를 복원하지 못했어요.");
+        }
+      };
+      cachePixelRatio = target;
+      try {
+        if (!recache("raster")) throw new Error("요청한 출력 배율의 합성 캐시를 만들지 못해 출력하지 않았어요.");
+      } catch (error) {
+        try { restore(); }
+        catch (cacheRestoreError) {
+          throw Object.assign(new Error("출력 준비와 화면 캐시 복원에 실패해 출력하지 않았어요."), {
+            cause: error, cacheRestoreError,
+          });
+        }
+        throw error;
+      }
+      // registry가 중첩 owner를 children→parent 순서로 준비·복원한다.
+      return restore;
+    });
+    refreshLocal("initial");
+    const timers = [120, 350, 700, 1200].map((ms) => globalThis.setTimeout(() => refreshLocal("timer"), ms));
     return () => {
       cancelled = true;
+      unregisterCapture();
       unregister();
       timers.forEach((t) => globalThis.clearTimeout(t));
     };

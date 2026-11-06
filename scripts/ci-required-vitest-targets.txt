@@ -339,6 +339,7 @@ apps/web/src/domains/creator/brush-lab/brush-studio-v6-provider-runtime.test.ts
 apps/web/src/domains/creator/brush-lab/brush-studio-version-integration.test.ts
 apps/web/src/domains/creator/brush-lab/pigment/StudioPigmentComparison.test.tsx
 apps/web/src/domains/creator/brush-lab/pigment/StudioPigmentLatentSelection.test.tsx
+apps/web/src/domains/creator/brush-lab/pigment/__tests__/latent-pigment-packed-address.test.mjs
 apps/web/src/domains/creator/brush-lab/pigment/external-pigments.test.ts
 apps/web/src/domains/creator/brush-lab/pigment/km-layer-comparison.test.ts
 apps/web/src/domains/creator/brush-lab/pigment/kubelka-munk.test.ts
@@ -528,6 +529,7 @@ apps/web/src/domains/creator/live/studio-live-bg3d-reader-capability.test.ts
 apps/web/src/domains/creator/live/studio-live-collaboration-room.test.ts
 apps/web/src/domains/creator/live/studio-live-gesture-preview-studio-page-wiring.test.ts
 apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport.test.ts
+apps/web/src/domains/creator/live/studio-live-p2p-reader-requirements.test.ts
 apps/web/src/domains/creator/live/studio-live-purpose-routed-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-transform-*.test.ts
@@ -575,11 +577,17 @@ apps/web/src/domains/creator/production-hub/ProductionStudioRevisionBridgePanel.
 apps/web/src/domains/creator/production-hub/production-automation-execution.test.ts
 apps/web/src/domains/creator/production-hub/production-manuscript-version-share-api.ky.test.ts
 apps/web/src/domains/creator/project-graph/studio-project-graph-client.test.ts
+apps/web/src/domains/creator/render/studio-capture-diagnostics.test.ts
 apps/web/src/domains/creator/render/studio-capture-legacy-pigment.test.ts
+apps/web/src/domains/creator/render/studio-konva-image-node-boundary.test.ts
+apps/web/src/domains/creator/render/studio-konva-image-node-density.test.ts
 apps/web/src/domains/creator/render/studio-raster-asset-elements.test.ts
 apps/web/src/domains/creator/render/studio-raster-asset-integrity.test.ts
 apps/web/src/domains/creator/render/studio-raster-assets.test.ts
+apps/web/src/domains/creator/render/studio-raster-cache-diagnostics.test.ts
 apps/web/src/domains/creator/render/studio-raster-export-orchestration-runtime.test.ts
+apps/web/src/domains/creator/render/studio-raster-image-presentation.test.ts
+apps/web/src/domains/creator/render/studio-raster-presentation-cache.test.ts
 apps/web/src/domains/creator/render/studio-raster-source-lease.test.ts
 apps/web/src/domains/creator/render/studio-raster-thumbnail-source.test.ts
 apps/web/src/domains/creator/render/studio-thumbnail-native-blend.test.tsx
@@ -611,6 +619,7 @@ apps/web/src/domains/creator/studio-autosave-opfs-session.test.ts
 apps/web/src/domains/creator/studio-autosave-snapshot-fence.test.ts
 apps/web/src/domains/creator/studio-autosave-sqlite-store.test.ts
 apps/web/src/domains/creator/studio-batch-rename.test.ts
+apps/web/src/domains/creator/studio-blend-isolation-boundary.test.ts
 apps/web/src/domains/creator/studio-bundle-asset-delivery.test.ts
 apps/web/src/domains/creator/studio-capture-document-readiness.test.ts
 apps/web/src/domains/creator/studio-collab/studio-role-pipeline-mutation.test.ts
@@ -854,6 +863,8 @@ scripts/lib/compact-svg-structure.test.mjs
 scripts/lib/path-containment.test.ts
 scripts/lib/public-home-content-hrefs.test.mjs
 scripts/lib/studio-3d-production-audit-policy.test.mjs
+scripts/lib/studio-capture-cpu-profile.test.ts
+scripts/lib/studio-capture-native-trace.test.ts
 scripts/lib/studio-drawing-storage-capability.test.ts
 scripts/lib/studio-editor-a11y-audit.test.ts
 scripts/lib/studio-filter-dialog-surface.test.ts

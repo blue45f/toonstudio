@@ -17,7 +17,7 @@
   `mixbox` 패키지 재유입을 거부하며, 실제 빌드 포함 여부는 산출물로 따로 검사한다.
 - **legacy exception**: 종전 Mixbox 제공자는 비상업 권리 프로필에서만 허용되는 실행 계획과
   별개로 정적 import를 가지고 있었다. 권리 프로필 검사만으로 번들 제외를 보장한다고 해석하지 않는다.
-- **운영 관찰**: 2026-11-05 공개 운영 청크에 원본 Mixbox의 데이터·GLSL이 포함됨을
+- **운영 관찰**: 2026-11-05와 2026-11-06 재확인에서 공개 운영 청크에 원본 Mixbox의 데이터·GLSL이 포함됨을
   [검증 보고서](../reports/mixbox-internalization-verification-2026-11-05.md)의 해시 대조로 확인했다.
   이 변경안의 운영 반영·계정 실행, 원본과의 시각·성능 동등성, 방법·특허 권리는 미확인이다.
   10장의 권리 상태는 그대로 유지한다.
@@ -35,6 +35,14 @@
 함께 사용한다. 명시적인 WebGL2 3D 배치는 기존 float32 계약을 유지한다. 비트 저장 검증과 실제
 GPU의 산술·출력 오차 검증은 [검증 보고서](../reports/mixbox-internalization-verification-2026-11-05.md)에 구분한다.
 
+2026-11-06 기능 대응 감사에서 공개 역할 12개(CPU 9개·상수 1개·GLSL/texture 2개)의 실제 계산과
+브러시 연결을 확인했다. 다만 공개 함수 40표본 비교에서 원본과 자체 모델의 최대 RGB 채널 차이는
+55/255였다. 청색/황색 50%는 원본 `#4ba949`, 자체 `#277258`이며, API 대응을 원본 혼색
+재현의 완료로 해석하지 않는다. 2026-11-06 사용자는 **원본 혼색 결과까지 재현**하는 것을
+완료 기준으로 선택했다. 따라서 현재 자체 모델의 색 차이는 수용된 결과가 아니며 원본 재현은
+**target(미달)**이다. 기존 관찰값을 자체 계수 적합이나 제품 시험의 golden으로 사용하지 않았고,
+이 결정만으로 계수·LUT·기존 저장 원고의 실행 모델을 바꾸지 않았다.
+
 이 문서는 색을 "안료 4종의 농도 + 3채널 잔차"로 바꿔 섞는 독립 구현의 **현재 구현(current)**, 근거, 한계, 권리 상태를 나눠 적는다. 구현되지 않은 것을 현재 기능처럼 쓰지 않는다. 설계 근거는 [분석 보고서](../reports/mixbox-working-principle-analysis-2026-10-15.md)(역사 자료)의 구조 설명이며, 이 문서가 구현 이후의 현재 사실을 설명한다.
 
 ## 1. 상태 요약
@@ -44,6 +52,7 @@ GPU의 산술·출력 오차 검증은 [검증 보고서](../reports/mixbox-inte
 | 순방향 모델(농도 4개 → sRGB, 3차 20항 다항식 계수) | current | `apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-model.generated.ts` |
 | 모델 생성기(개발 전용, 결정적, `--check` 지원) | current | `scripts/generate-latent-pigment-model.mts` |
 | 혼합기 4개 함수와 지연 초기화 | current | `pigment/latent-pigment-mixer.ts` |
+| 공개 CPU 9개 함수의 byte·float·linear·RGBA 입력 | current, 단위·공개 동작 비교 | `pigment/latent-pigment-api.ts`. 저수준 RGB 혼합기와 달리 alpha·선형 RGB 변환을 제공한다 |
 | 제공자 등록(`internal`, `Project license`)과 `permissive-only` 허용 | current | `brush-studio-v6-license-profile.ts` |
 | 안료 슬롯 어댑터(팔레트·두 색 혼합)와 비교 패널 항목 | current | `brush-studio-v6-pigment-provider.ts`, `pigment/StudioPigmentComparison.tsx` |
 | 실측 도료 데이터 기반 안료 | target | 지금은 직접 작성한 합성 곡선이다(4장) |
@@ -51,7 +60,7 @@ GPU의 산술·출력 오차 검증은 [검증 보고서](../reports/mixbox-inte
 | 특허 | 미확인 | 이 작업에서 확인하지 못했다(10장) |
 | 상업 배포 전 법무 확인 | 열림 | 10장 |
 | 표 고속 경로(RGB→농도 33³ 표, 첫 사용 때 굽기) | current, Node 검증 | `pigment/latent-pigment-table.ts`, 14장 |
-| WGSL·GLSL ES 3.0 셰이더 모듈과 TS 재현 | current, Node 검증(구문 해석·산술 재현). **실기기 GPU 픽셀 미검증** | `pigment/latent-pigment-shaders.ts`, `pigment/latent-pigment-shader-mirror.ts`, 14장 |
+| WGSL·GLSL ES 1.0/3.0 셰이더 모듈과 TS 재현 | current, Node 및 Chromium/SwiftShader standalone 실행 검증. **실물 GPU 픽셀 미검증** | `pigment/latent-pigment-shaders.ts`, `pigment/latent-pigment-shader-mirror.ts`, 14장과 후속 검증 보고서 |
 | 제품 캔버스 혼색: 혼색 브러시 `latent-pigment` 방식과 섞는 방식 선택 UI | current, 단위·컴포넌트 시험. 브라우저 화면 미검증 | `brush/studio-wet-mix.ts`, `StudioWetMixPanel.tsx`, 14.5장 |
 | 제품 GPU 렌더러에서 잠재 안료 셰이더 사용 | target(미연결) | 14.6장 |
 
@@ -73,7 +82,8 @@ mixLatentPigments([{ latent, weight }, ...])  // → latent
 mixRgbPigments([{ rgb, weight }, ...])        // → rgb01
 ```
 
-RGB는 감마 인코딩된 sRGB(0~1)다. 선형 RGB와 알파는 다루지 않는다(호출자가 변환한다).
+이 절의 저수준 4개 함수는 감마 인코딩된 RGB 3채널(0~1)을 다룬다. 공개 경계
+`latent-pigment-api.ts`는 이 계산을 감싸 alpha 독립 보간과 선형 RGB 전달함수 변환을 제공한다.
 
 ### 2.1 농도 → 색 (순방향)
 
@@ -241,7 +251,9 @@ pnpm exec vitest run apps/web/src/domains/creator/brush-lab/pigment scripts/gene
 4. **다항식 오차**: 최대 28.95/255(흰색+노랑 변). 평균 2.5.
 5. **접힌 면**: 다항식의 상이 접혀 있어 같은 색에 농도 해가 여럿일 수 있다. 시작점 2개로 색역 안 색 2만 개 중 1개(오차 5e-4)를 놓쳤다. 입력이 접힘 경계를 넘는 곳에서는 농도가 갑자기 달라질 수 있다. 왕복은 잔차가 보정하므로 안전하지만 다른 색과 섞은 결과는 그 경계에서 달라질 수 있다.
 6. **sRGB 경계**: 채널이 0이나 1인 색은 경계로 정규화되어 표시 오차 8e-3(약 2/255) 이내로 풀린다(누설 클램프의 결과).
-7. **알파·선형 RGB**: 지원하지 않는다.
+7. **알파·선형 RGB**: 이 문서 2장의 저수준 RGB 혼합기에는 저장하지 않는다. 공개 CPU 경계의
+   `lerp*`는 RGBA와 독립 alpha 보간을, `*LinearFloat*`는 선형 RGB 변환을 지원한다. 기존 GPU
+   `mix_rgba`의 coverage 가중 혼합과 공개 façade의 독립 alpha 계약은 구분한다.
 8. **성능**: 반복 풀이는 한 호출에 수십 마이크로초이므로 도장마다 부르는 경로에는 쓰지 않는다. 도장마다 섞어야 하는 혼색 브러시는 14장의 표 고속 경로(혼합 1건 약 0.7µs)를 쓴다.
 9. **다른 구현과의 차이**: 아래 11장의 참고 수치처럼 보색에 가까운 쌍에서 결과가 크게 다를 수 있다. 어느 쪽이 실제 물감에 가까운지는 판정하지 않았다.
 
@@ -257,6 +269,10 @@ pnpm exec vitest run apps/web/src/domains/creator/brush-lab/pigment scripts/gene
   [`third_party/mixbox/README.md`](../../third_party/mixbox/README.md).
 
 ### clean-room 기록
+
+아래는 2026-10-15 최초 모델 구현 당시의 열람 기록이다. 2026-11-05~06의 배포물 해시 대조와
+공개 API 관찰 범위는 후속 검증 보고서에 별도로 적는다. 아래의 미열람 기록을 그 이후 감사의
+범위까지 확대하거나, 코드 출처 분류를 상업적 사용 권한의 확인으로 해석하지 않는다.
 
 - 읽은 것: 분석 보고서, `third_party/mixbox/README.md`, `third_party/mixbox/LICENSE-GRANT.md`(소유자가 작성할 합의 기록 양식이며 코드·데이터가 아니다. 작업 지시가 허용한 열람 범위는 README와 분석 보고서였으므로 범위를 넘어 열람했음을 밝힌다), 저장소의 KM 구현(`kubelka-munk.ts`, `external-pigments.ts`, `vendor/open-km.*`, `studio-spectral-pigment-mixing-provider.ts`), 안료 제공자 경계 파일(`brush-studio-v6-pigment-provider.ts`의 Mixbox 호출 지점)과 라이선스 프로필.
 - 열지 않은 것: `node_modules/mixbox`와 하위 파일, Mixbox 소스 사본, 웹의 Mixbox 구현·격자표·계수.

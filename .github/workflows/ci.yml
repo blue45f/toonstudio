@@ -4,6 +4,32 @@ name: CI
 # Broad repository QA remains diagnostic; a green core is not a full-suite claim.
 on:
   workflow_dispatch:
+    inputs:
+      pigment_diagnostics:
+        description: "자체 안료 브라우저 진단만 실행합니다. 전체 core/verify 성공을 대신하지 않습니다."
+        type: boolean
+        required: false
+        default: false
+      profile_capture_cpu:
+        description: "비 main 안료 부분 진단에서만 PNG CPU 표본을 수집합니다. 제품 검증 결과를 바꾸지 않습니다."
+        type: boolean
+        required: false
+        default: false
+      trace_capture_frames:
+        description: "비 main 안료 부분 진단의 V2 PNG 한 번에만 브라우저 프레임 추적을 수집합니다."
+        type: boolean
+        required: false
+        default: false
+      capture_new_headless:
+        description: "비 main 안료 부분 진단에서만 Chromium 새 headless 경로를 비교합니다."
+        type: boolean
+        required: false
+        default: false
+      capture_without_dom_snapshots:
+        description: "비 main 안료 부분 진단에서만 Playwright DOM snapshot과 HAR 수집을 함께 끕니다."
+        type: boolean
+        required: false
+        default: false
   pull_request:
     branches: [main]
   push:
@@ -26,6 +52,7 @@ env:
 jobs:
   lint:
     name: Core strict lint
+    if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -120,6 +147,7 @@ jobs:
 
   typecheck:
     name: Core preflight and application typecheck
+    if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -209,8 +237,10 @@ jobs:
 
   static:
     name: Core regression shard / ${{ matrix.shard }}
+    if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    # 설정·회귀 약 6분 뒤 전체 typecheck 약 22분을 다시 수행하는 수동 editing 하네스의 작업 예산이다.
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && matrix.shard == 'studio-editing' && 40 || 25 }}
     strategy:
       fail-fast: false
       matrix:
@@ -235,6 +265,7 @@ jobs:
             /apps/web/public/assets/3d/environments/refined-v6/render-passes-report.json
             /apps/web/public/assets/3d/environments/expansion-v1/manifest.json
             /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
+            /apps/web/public/assets/3d/environments/mcp-free-v1/manifest.json
             /apps/web/public/assets/3d/environments/authored-v1/manifest.json
             /apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json
             /apps/web/public/assets/virtual-studio/bundle-v1/manifest.json
@@ -395,7 +426,7 @@ jobs:
             ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Jimmy.vrm' || '' }}
             ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Jennifer.vrm' || '' }}
       - name: Restore documentation inputs for product contracts
-        if: matrix.shard == 'product'
+        if: matrix.shard == 'product' || (github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing')
         # 동적 문서 링크에 필요한 읽기 인증은 이 단계의 Git 자식에만 전달하고 저장하지 않는다.
         env:
           TOONSTUDIO_CHECKOUT_TOKEN: ${{ github.token }}
@@ -407,7 +438,16 @@ jobs:
             !f() { if test "$1" = get && test -n "${TOONSTUDIO_CHECKOUT_TOKEN:-}"; then
             printf '%s\n' 'username=x-access-token' "password=$TOONSTUDIO_CHECKOUT_TOKEN"; fi; }; f
           GIT_TERMINAL_PROMPT: "0"
-        run: node scripts/restore-documentation-checkout.mjs
+        run: |
+          set -euo pipefail
+          if test "$GITHUB_EVENT_NAME" = workflow_dispatch && test "${{ matrix.shard }}" = studio-editing; then
+            harness_history_flag=""
+            if test "$(git rev-parse --is-shallow-repository)" = true; then
+              harness_history_flag=--unshallow
+            fi
+            git fetch --no-tags --filter=blob:none ${harness_history_flag:+"$harness_history_flag"} origin "$GITHUB_SHA" refs/heads/main:refs/remotes/origin/main
+          fi
+          node scripts/restore-documentation-checkout.mjs
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -431,9 +471,19 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_studio_asset_glb.py' -v
       - name: Run semantic regression shard
         run: node scripts/ci-core-regression-shards.mjs "${{ matrix.shard }}"
+      - name: 수동 후보의 전체 하네스 검증
+        if: github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing'
+        # 로컬 대형 검증을 대신하는 수동 실행이다. PR·main의 기존 필수 검사는 유지한다.
+        run: |
+          set -euo pipefail
+          HARNESS_BASE=$(git rev-parse refs/remotes/origin/main)
+          git merge-base --is-ancestor "$HARNESS_BASE" HEAD
+          printf '하네스 비교 기준: %s\n' "$HARNESS_BASE"
+          pnpm harness:verify --base="$HARNESS_BASE"
 
   serial:
     name: Core serial performance regressions
+    if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -582,7 +632,8 @@ jobs:
   a11y:
     name: Core accessibility smoke
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # 접근성·제작·GPU 검사 뒤 제품 검증이 20분 상한에 닿아 비 main 수동 실행만 예산을 늘린다.
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && 35 || 20 }}
     steps:
       - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
         shell: bash
@@ -736,15 +787,37 @@ jobs:
             fi
           fi
       - name: 접근성 체크아웃 입력 계약 검증
-        run: node --test scripts/ci-checkout-inputs.test.mjs
+        run: node --test scripts/ci-checkout-inputs.test.mjs scripts/ci-pigment-diagnostics.node-check.mjs
       - name: Install Chromium
+        id: chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: 자체 안료·23종 브러시·GPU 공개 기능 검증
         run: node scripts/verify-latent-pigment-browser.mjs
       - name: Run serious and critical accessibility smoke
+        if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
         run: pnpm run test:a11y
       - name: 제작 작업 보드 실제 흐름과 반응형 접근성 검증
+        if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
         run: pnpm exec playwright test --config playwright.production-workflows.config.ts
+      - name: 자체 안료 실제 제품 UI·저장·재열기·명시 전환
+        if: ${{ !cancelled() && steps.chromium.outcome == 'success' }}
+        timeout-minutes: 10
+        env:
+          PLAYWRIGHT_CHANNEL: ${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && inputs.capture_new_headless == true && github.ref != 'refs/heads/main' && 'chromium' || '' }}
+          TOONSTUDIO_PROFILE_CAPTURE_CPU: ${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && inputs.profile_capture_cpu == true && github.ref != 'refs/heads/main' && '1' || '0' }}
+          TOONSTUDIO_TRACE_CAPTURE_FRAMES: ${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && inputs.trace_capture_frames == true && github.ref != 'refs/heads/main' && '1' || '0' }}
+          TOONSTUDIO_CAPTURE_WITHOUT_DOM_SNAPSHOTS: ${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && inputs.capture_without_dom_snapshots == true && github.ref != 'refs/heads/main' && '1' || '0' }}
+          # 수동 부분 진단은 V2 clipping 입력 대조만 선택한다. 일반·main 실행은 원래 세 시험을 유지한다.
+          TOONSTUDIO_PIGMENT_CLIP_CONTRAST: ${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && github.ref != 'refs/heads/main' && '1' || '0' }}
+          TOONSTUDIO_PIGMENT_TEST_FILTER: "${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && github.ref != 'refs/heads/main' && '(^| )분리 진단: V2 클리핑 교차 픽셀 의미' || '.*' }}"
+        run: pnpm exec playwright test --config playwright.pigment-product.config.ts --project=chromium --workers=1 --retries=0 --global-timeout=540000 --grep "$TOONSTUDIO_PIGMENT_TEST_FILTER"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: core-pigment-product-workflow-attempt-${{ github.run_attempt }}
+          path: .qa/mixbox-internalization/product-workflow
+          retention-days: 7
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -762,6 +835,7 @@ jobs:
 
   build:
     name: Core production build
+    if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -905,10 +979,13 @@ jobs:
           (pnpm --filter @webtoon-nest/api build && test -s apps/api/dist/apps/api/src/main.js && node --check apps/api/dist/apps/api/src/main.js && pnpm run build:bundle && pnpm run check:studio-bundle && pnpm run check:product-tour-remotion-chunks && test -s dist/.vite/manifest.json) 2>&1 | tee artifacts/core/build.log
       - name: 안료 번들 제외 검사와 지연 청크 원장 보존
         run: |
+          set -euo pipefail
           test -s dist/legal/pigment-bundle-audit.json
           mkdir -p artifacts/core/pigment-audit
           cp dist/.vite/manifest.json artifacts/core/manifest.json
           cp dist/legal/pigment-*.json artifacts/core/pigment-audit/
+          node --test scripts/preserve-pigment-bundle-evidence.node-check.mjs
+          node scripts/preserve-pigment-bundle-evidence.mjs
       - name: Verify Virtual Studio art integrity
         run: |
           set -euo pipefail
@@ -924,6 +1001,7 @@ jobs:
 
   database:
     name: Core review database invariants
+    if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:

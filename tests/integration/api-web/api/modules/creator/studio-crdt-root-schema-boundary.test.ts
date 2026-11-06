@@ -130,15 +130,6 @@ describe("Studio CRDT root schema ownership boundary", () => {
     expect(r8.valueImports).toEqual(["yjs", "@toonstudio/contracts/studio-brush-r8-grain-asset-contract", "./studio-crdt-identifiers"]);
     expect(r8.dynamicImports).toEqual([]);
 
-    const contractModule = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-service-contracts.ts");
-    expect(service).toContain('from "./studio-crdt-service-contracts"');
-    for (const errorClass of ["class StudioCrdtInvalidPayloadError", "class StudioCrdtStorageCorruptionError"]) {
-      expect(contractModule.source).toContain(errorClass);
-      expect(schema).not.toContain(errorClass);
-    }
-    expect(contractModule.valueImports.some((specifier) => specifier.includes("web/src"))).toBe(false);
-    expect(contractModule.dynamicImports).toEqual([]);
-
     for (const serviceResponsibility of [
       "class StudioCrdtService",
       "private async catchUpDocument",
@@ -148,13 +139,16 @@ describe("Studio CRDT root schema ownership boundary", () => {
       expect(service).toContain(serviceResponsibility);
       expect(schema).not.toContain(serviceResponsibility);
     }
-    const contracts = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-service-contracts.ts").source;
+    const contracts = moduleImports("../../../../../../apps/api/src/modules/creator/studio-crdt-service-contracts.ts");
+    expect(service).toContain('from "./studio-crdt-service-contracts"');
     for (const name of ["StudioCrdtInvalidPayloadError", "StudioCrdtStorageCorruptionError"]) {
-      expect(contracts).toContain(`class ${name}`);
+      expect(contracts.source).toContain(`class ${name}`);
       expect(service).toContain(`throw new ${name}`);
       expect(service).not.toContain(`class ${name}`);
       expect(schema).not.toContain(`class ${name}`);
     }
+    expect(contracts.valueImports.some((specifier) => specifier.includes("web/src"))).toBe(false);
+    expect(contracts.dynamicImports).toEqual([]);
     expect(service).toContain('export * from "./studio-crdt-service-contracts"');
   });
 });

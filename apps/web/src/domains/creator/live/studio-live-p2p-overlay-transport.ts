@@ -1,5 +1,5 @@
 import { respondStudioP2pCrdtSync } from "./studio-live-p2p-bg3d-reader";
-import { STUDIO_CRDT_READER_CAPABILITIES, requiresStudioBg3dBundleReader, studioCrdtReaderMetadata, supportsStudioCrdtReaders } from "./studio-crdt-reader-capability";
+import { STUDIO_CRDT_READER_CAPABILITIES, studioCrdtReaderMetadata, supportsStudioCrdtReaders } from "./studio-crdt-reader-capability";
 import {
   createStudioCrdtLocalWireMessage,
   isStudioCrdtLocalWireCandidate,
@@ -646,8 +646,8 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     message: Parameters<typeof createStudioCrdtLocalWireMessage>[0],
   ): boolean {
     if (this.closed || this.peers.size === 0 || message.payload.artifactScope === "origin") return false;
-    if (requiresStudioBg3dBundleReader(message.payload) && [...this.peers.values()].some((peer) =>
-      (!message.targetSessionId || peer.sessionId === message.targetSessionId) && !supportsStudioCrdtReaders(peer))) return false;
+    if ([...this.peers.values()].some((peer) =>
+      (!message.targetSessionId || peer.sessionId === message.targetSessionId) && !supportsStudioCrdtReaders(peer, message.payload.requiredReaderCapabilities ?? []))) return false;
     let delivered = 0;
     const serialized = JSON.stringify(createStudioCrdtLocalWireMessage({ ...message, ...studioCrdtReaderMetadata(message.payload) }));
     const target = message.targetSessionId;

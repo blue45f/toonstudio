@@ -647,6 +647,8 @@ test("공통 scripts checkout은 Linux Chemy 골든과 selector를 다섯 shard�
 
 test("다섯 shard는 기존 48개·foundation 63개·페이지 시각 14개·문서 16개 선언을 최초 checkout에서 정확히 보존한다", () => {
   assertStaticCheckoutInputContract(job("static"), repoRoot, job("typecheck"));
+  const foundationDocuments = [...job("static").matchAll(/\$\{\{ matrix\.shard == 'studio-foundation' && '(\/docs\/[^']+)' \|\| '' \}\}/gu)];
+  assert.equal(foundationDocuments.length, 16, "foundation 문서 선언은 정확히 16개여야 합니다.");
 });
 
 test("static regression checkout retains all imported 3D manifests but excludes their model payloads", () => {

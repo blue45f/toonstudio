@@ -1,5 +1,6 @@
 import { parseStudioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { BrushStudioV6LegacyPigmentMigrationRequiredError, hasVisibleLegacyMixboxStrokes } from "./brush-lab/brush-studio-v6-legacy-pigment";
+import { beginStudioCaptureDiagnostics, type StudioCaptureDiagnosticFields } from "./render/studio-capture-diagnostics";
 /**
  * Deterministic capture readiness gate for the React-Konva studio.
  *
@@ -143,6 +144,7 @@ function prepareDocumentCapture<TPage extends StudioCaptureDocumentPage>(
   pageId: string,
   document: StudioCaptureDocumentReadiness<TPage>,
   master: unknown,
+  observeCommit?: (fields: StudioCaptureDiagnosticFields) => void,
 ) {
   const assertInkSettled = flushStudioDocumentInkForExport(document);
   const history = document.pagesHistoryRef.current;
@@ -160,8 +162,23 @@ function prepareDocumentCapture<TPage extends StudioCaptureDocumentPage>(
     },
     isRendered() {
       const rendered = document.captureCommitRef.current;
-      return rendered.pageId === page.id && rendered.historyIndex === historyIndex
-        && rendered.page === page;
+      const commitPageMatches = rendered.pageId === page.id;
+      const historyIndexMatches = commitPageMatches ? rendered.historyIndex === historyIndex : undefined;
+      const pageObjectMatches = historyIndexMatches ? rendered.page === page : undefined;
+      observeCommit?.({ commitChecked: true, commitPageMatches, historyIndexMatches, pageObjectMatches });
+      return commitPageMatches && historyIndexMatches === true && pageObjectMatches === true;
+    },
+    diagnosticSnapshot(): StudioCaptureDiagnosticFields {
+      const rendered = document.captureCommitRef.current;
+      const exporting = "exporting" in rendered ? rendered.exporting : undefined;
+      const masterEditMode = "masterEditMode" in rendered ? rendered.masterEditMode : undefined;
+      return {
+        commitPageMatches: rendered.pageId === page.id,
+        historyIndexMatches: rendered.historyIndex === historyIndex,
+        pageObjectMatches: rendered.page === page,
+        exporting: typeof exporting === "boolean" ? exporting : undefined,
+        masterEditMode: typeof masterEditMode === "boolean" ? masterEditMode : undefined,
+      };
     },
     ready() { document.onReady?.(page); },
   };
@@ -465,87 +482,157 @@ export async function waitForStudioCaptureReady<
     ?? waitForStudioRasterImagePresentations;
   const waitForWetPaperBakes = options.waitForWetPaperBakes ?? defaultWaitForWetPaperBakes;
   const startedAt = captureNow();
-
-  return withTimeout(async (operationSignal) => {
-    throwIfAborted(operationSignal);
-    if (options.expectedDocumentGeneration !== undefined && options.getDocumentGeneration?.() !== options.expectedDocumentGeneration) {
-      throw new StudioCaptureReadinessError("stale-page", "캡처를 시작하기 전에 원고가 바뀌어 내보내기를 중단했어요.");
+  const diagnostics = beginStudioCaptureDiagnostics("readiness");
+  let diagnosticSnapshot: (() => StudioCaptureDiagnosticFields) | undefined;
+  const observed: { -readonly [K in keyof StudioCaptureDiagnosticFields]?: StudioCaptureDiagnosticFields[K] } = {
+    timeoutMs, frameCount: 0, commitChecked: false,
+  };
+  diagnostics.mark("started", observed);
+  const observeCommit = (fields: StudioCaptureDiagnosticFields) => {
+    const changed = Object.entries(fields).some(([key, value]) => Reflect.get(observed, key) !== value);
+    Object.assign(observed, fields);
+    if (changed) diagnostics.mark("commit-observed", observed);
+  };
+  // 기존 getter의 단락 평가를 보존하고 진단을 위해 다시 호출하지 않는다.
+  const renderedPageId = () => {
+    const rendered = options.getRenderedPageId();
+    const matches = rendered === pageId;
+    if (observed.renderedPageMatches !== matches) {
+      observed.renderedPageMatches = matches;
+      diagnostics.mark("commit-observed", observed);
     }
-    const master = options.getMaster?.() ?? options.document?.master;
-    const document = options.document ? prepareDocumentCapture(pageId, options.document, master) : undefined;
-    // 내보내기가 직접 확정한 마지막 획은 새 스냅샷에 포함하고, 그 뒤의 변경부터 차단한다.
-    const generation = options.getDocumentGeneration?.();
-    const sources = document?.sources ?? uniqueAssetSources(options.assetSources ?? []);
-    const assertCurrent = () => {
-      throwIfAborted(operationSignal);
-      document?.assertCurrent();
-      if ((options.getMaster && options.getMaster() !== master)
-        || (options.getDocumentGeneration && options.getDocumentGeneration() !== generation)) {
-        throw new StudioCaptureReadinessError("stale-page", "캡처 준비 중 마스터 또는 원고가 바뀌어 내보내기를 중단했어요.");
-      }
-      const page = document?.page ?? options.sourcePage;
-      if (page && hasVisibleLegacyMixboxStrokes([...page.elements,
-        ...(!page.hideMaster && isRecord(master) && Array.isArray(master.elements) ? master.elements : [])], page.groups ?? [])) {
-        throw new BrushStudioV6LegacyPigmentMigrationRequiredError();
-      }
-    };
-    assertCurrent();
-    while (options.getRenderedPageId() !== pageId || !options.getStage() || document?.isRendered() === false) {
-      await nextFrame();
-      assertCurrent();
-    }
-
-    await Promise.all([
-      waitForFonts(),
-      preloadAssets(
-        sources,
-        preloadImage,
-        resolveLinked3dPassRasterSource,
-        options.linked3dPassAuthority,
-        operationSignal,
-      ),
-    ]);
-
-    // Preloading warms the browser cache; React-Konva image components still need paint frames to
-    // receive their own onload state and draw the cached bitmap into the Stage.
-    await nextFrame();
-    await nextFrame();
-    assertCurrent();
-    if (options.getRenderedPageId() !== pageId || document?.isRendered() === false) {
-      throw new StudioCaptureReadinessError(
-        "stale-page",
-        "캡처 준비 중 선택 페이지가 바뀌어 내보내기를 중단했어요."
-      );
-    }
+    return rendered;
+  };
+  const captureStage = () => {
     const stage = options.getStage();
-    if (!stage) {
-      throw new StudioCaptureReadinessError("stale-page", "캡처할 캔버스를 찾지 못했어요.");
+    if (observed.stagePresent !== Boolean(stage)) {
+      observed.stagePresent = Boolean(stage);
+      diagnostics.mark("commit-observed", observed);
     }
-    // 커밋된 젖은 종이 획이 굽힌 래스터로 다시 그려지도록 남은 시간의 절반 안에서 기다린다. 기다렸으면 다시 렌더된
-    // 노드가 그려지게 두 프레임을 더 준다. 굽기가 늦으면 베이스 워시로 캡처한다(캡처 실패 사유가 아니다).
-    if (await waitForWetPaperBakes(operationSignal, Math.floor((timeoutMs - (captureNow() - startedAt)) / 2))) {
-      await nextFrame();
-      await nextFrame();
-      assertCurrent();
-    }
-    const rasterPresentationIdentities = options.rasterPresentationIdentities
-      ?? snapshotStudioMountedRasterImagePresentations();
-    await waitForRasterPresentations(
-      rasterPresentationIdentities,
-      () => stage.batchDraw(),
-      operationSignal,
-    );
-    await nextFrame();
-    assertCurrent();
-    if (options.getRenderedPageId() !== pageId || options.getStage() !== stage || document?.isRendered() === false) {
-      throw new StudioCaptureReadinessError(
-        "stale-page",
-        "캡처 직전에 페이지가 바뀌어 잘못된 출력 생성을 막았어요."
-      );
-    }
-    document?.ready();
     return stage;
-  }, timeoutMs, options.signal);
+  };
+
+  try {
+    return await withTimeout(async (operationSignal) => {
+      throwIfAborted(operationSignal);
+      if (options.expectedDocumentGeneration !== undefined && options.getDocumentGeneration?.() !== options.expectedDocumentGeneration) {
+        throw new StudioCaptureReadinessError("stale-page", "캡처를 시작하기 전에 원고가 바뀌어 내보내기를 중단했어요.");
+      }
+      const master = options.getMaster?.() ?? options.document?.master;
+      const document = options.document ? prepareDocumentCapture(pageId, options.document, master, observeCommit) : undefined;
+      diagnosticSnapshot = document?.diagnosticSnapshot;
+      // 내보내기가 직접 확정한 마지막 획은 새 스냅샷에 포함하고, 그 뒤의 변경부터 차단한다.
+      const generation = options.getDocumentGeneration?.();
+      const sources = document?.sources ?? uniqueAssetSources(options.assetSources ?? []);
+      observed.assetCount = sources.length;
+      const assertCurrent = () => {
+        throwIfAborted(operationSignal);
+        document?.assertCurrent();
+        if ((options.getMaster && options.getMaster() !== master)
+          || (options.getDocumentGeneration && options.getDocumentGeneration() !== generation)) {
+          throw new StudioCaptureReadinessError("stale-page", "캡처 준비 중 마스터 또는 원고가 바뀌어 내보내기를 중단했어요.");
+        }
+        const page = document?.page ?? options.sourcePage;
+        if (page && hasVisibleLegacyMixboxStrokes([...page.elements,
+          ...(!page.hideMaster && isRecord(master) && Array.isArray(master.elements) ? master.elements : [])], page.groups ?? [])) {
+          throw new BrushStudioV6LegacyPigmentMigrationRequiredError();
+        }
+      };
+      assertCurrent();
+      diagnostics.mark("commit-stage-wait", observed);
+      while (renderedPageId() !== pageId || !captureStage() || document?.isRendered() === false) {
+        await nextFrame();
+        observed.frameCount = (observed.frameCount ?? 0) + 1;
+        assertCurrent();
+      }
+
+      observed.fontsReady = false;
+      observed.assetsReady = false;
+      diagnostics.mark("fonts-assets-wait", observed);
+      await Promise.all([
+        waitForFonts().then(() => {
+          observed.fontsReady = true;
+          if (!operationSignal.aborted) diagnostics.mark("fonts-ready", observed);
+        }),
+        preloadAssets(
+          sources,
+          preloadImage,
+          resolveLinked3dPassRasterSource,
+          options.linked3dPassAuthority,
+          operationSignal,
+        ).then(() => {
+          observed.assetsReady = true;
+          if (!operationSignal.aborted) diagnostics.mark("assets-ready", observed);
+        }),
+      ]);
+
+      // Preloading warms the browser cache; React-Konva image components still need paint frames to
+      // receive their own onload state and draw the cached bitmap into the Stage.
+      diagnostics.mark("paint-wait", observed);
+      await nextFrame();
+      observed.frameCount = (observed.frameCount ?? 0) + 1;
+      await nextFrame();
+      observed.frameCount = (observed.frameCount ?? 0) + 1;
+      assertCurrent();
+      if (renderedPageId() !== pageId || document?.isRendered() === false) {
+        throw new StudioCaptureReadinessError(
+          "stale-page",
+          "캡처 준비 중 선택 페이지가 바뀌어 내보내기를 중단했어요."
+        );
+      }
+      const stage = captureStage();
+      if (!stage) {
+        throw new StudioCaptureReadinessError("stale-page", "캡처할 캔버스를 찾지 못했어요.");
+      }
+      // 커밋된 젖은 종이 획이 굽힌 래스터로 다시 그려지도록 남은 시간의 절반 안에서 기다린다. 기다렸으면 다시 렌더된
+      // 노드가 그려지게 두 프레임을 더 준다. 굽기가 늦으면 베이스 워시로 캡처한다(캡처 실패 사유가 아니다).
+      diagnostics.mark("wet-paper-wait", observed);
+      const wetPaperWaited = await waitForWetPaperBakes(operationSignal, Math.floor((timeoutMs - (captureNow() - startedAt)) / 2));
+      observed.wetPaperWaited = wetPaperWaited;
+      diagnostics.mark("wet-paper-ready", observed);
+      if (wetPaperWaited) {
+        await nextFrame();
+        observed.frameCount = (observed.frameCount ?? 0) + 1;
+        await nextFrame();
+        observed.frameCount = (observed.frameCount ?? 0) + 1;
+        assertCurrent();
+      }
+      const rasterPresentationIdentities = options.rasterPresentationIdentities
+        ?? snapshotStudioMountedRasterImagePresentations();
+      observed.rasterCount = rasterPresentationIdentities.length;
+      diagnostics.mark("raster-wait", observed);
+      await waitForRasterPresentations(
+        rasterPresentationIdentities,
+        () => stage.batchDraw(),
+        operationSignal,
+      );
+      diagnostics.mark("raster-ready", observed);
+      await nextFrame();
+      observed.frameCount = (observed.frameCount ?? 0) + 1;
+      assertCurrent();
+      if (renderedPageId() !== pageId || captureStage() !== stage || document?.isRendered() === false) {
+        throw new StudioCaptureReadinessError(
+          "stale-page",
+          "캡처 직전에 페이지가 바뀌어 잘못된 출력 생성을 막았어요."
+        );
+      }
+      document?.ready();
+      diagnostics.mark("ready", observed);
+      return stage;
+    }, timeoutMs, options.signal);
+  } catch (error) {
+    // 실패할 때만 plain ref의 모드 플래그를 읽는다. Host getter는 추가 호출하지 않는다.
+    if (diagnostics.enabled) {
+      try {
+        Object.assign(observed, diagnosticSnapshot?.());
+      } catch {
+        // 관측 실패는 원래 캡처 오류를 바꾸지 않는다.
+        observed.snapshotUnavailable = true;
+      }
+    }
+    diagnostics.mark("failed", observed);
+    throw error;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -296,11 +296,11 @@ export function StudioCanvasViewportDocumentLayer({
                     studioLiveGesturePreviewRenderPlan.previewSequenceByElementId.get(el.id);
                   const blendCacheKey = isolatedComposite
                     ? [
-                        el.id,
-                        composite,
-                        pagesHi,
-                        previewSequence ?? "authoritative",
-                        JSON.stringify(elBounds(el)),
+                        el.id, studioLiveAdjustmentObjectRevision(el),
+                        nodeEditDraft && nodeEditDraft.elId === el.id
+                          ? studioLiveAdjustmentObjectRevision(nodeEditDraft) : "authoritative",
+                        composite, pagesHi,
+                        previewSequence ?? "authoritative", JSON.stringify(elBounds(el)),
                       ].join("|")
                     : "";
                   const clippedNode = <StudioPanelClipGroup key={el.id} isolated={isolatedComposite}
@@ -805,8 +805,8 @@ export function StudioCanvasViewportDocumentLayer({
                       flippedY: imgEl.flippedY,
                     } as ImageEl;
                     const mck = [
-                      el.id,
-                      "mask",
+                      el.id, "mask",
+                      studioLiveAdjustmentObjectRevision(el),
                       studioLiveGesturePreviewRenderPlan.previewSequenceByElementId.get(el.id)
                         ?? "authoritative",
                       maskSrc,
@@ -843,18 +843,18 @@ export function StudioCanvasViewportDocumentLayer({
                   if (base && !isEffectivelyHidden(base, groups) && !localHiddenElementIds.has(base.id)) {
                     // 알파 정밀 클리핑: 베이스 사본(마스크) + 자식(source-in)을 캐시 그룹에 담아 베이스 알파로만 자른다.
                     const ck = [
-                      el.id,
-                      base.id,
+                      el.id, base.id,
+                      studioLiveAdjustmentObjectRevision(el), studioLiveAdjustmentObjectRevision(base),
+                      nodeEditDraft && (nodeEditDraft.elId === el.id || nodeEditDraft.elId === base.id)
+                        ? studioLiveAdjustmentObjectRevision(nodeEditDraft) : "authoritative",
                       studioLiveGesturePreviewRenderPlan.previewSequenceByElementId.get(el.id)
                         ?? "authoritative",
                       studioLiveGesturePreviewRenderPlan.previewSequenceByElementId.get(base.id)
                         ?? "authoritative",
-                      imageFilterCacheKey(el as ImageEl),
-                      imageFilterCacheKey(base as ImageEl),
+                      imageFilterCacheKey(el as ImageEl), imageFilterCacheKey(base as ImageEl),
                       (el as { src?: string }).src ?? "",
                       (base as { src?: string }).src ?? "",
-                      JSON.stringify(elBounds(el)),
-                      JSON.stringify(elBounds(base)),
+                      JSON.stringify(elBounds(el)), JSON.stringify(elBounds(base)),
                       (el as { rotation?: number }).rotation ?? 0,
                       (base as { rotation?: number }).rotation ?? 0,
                       maskOn ? ((el as El).maskSrc ?? "") : "", // 마스크가 캐시 키에도 반영되게.

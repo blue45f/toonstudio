@@ -231,9 +231,13 @@ export interface LatentPigmentGlslOptions {
  * highp 를 붙였다. 표 텍스처는 RGBA32F(필터링 없음)로 올리고 texelFetch 로 읽는다.
  */
 function packedAtlasTexelStatements(size: number): string {
-  return `  highp float index = ((float(i.z) * ${size}.0 + float(i.y)) * ${size}.0 + float(i.x)) * 4.0;
-  return vec4(latent_pigment_packed_float(index), latent_pigment_packed_float(index + 1.0),
-    latent_pigment_packed_float(index + 2.0), latent_pigment_packed_float(index + 3.0));`;
+  return `  highp vec2 address = latent_pigment_packed_carry(float(i.z) * ${size}.0 + float(i.y));
+  highp vec2 next = latent_pigment_packed_carry(address.x * ${size}.0 + float(i.x));
+  address = vec2(next.x, address.y * ${size}.0 + next.y);
+  next = latent_pigment_packed_carry(address.x * 4.0);
+  address = vec2(next.x, address.y * 4.0 + next.y);
+  return vec4(latent_pigment_packed_float(address, 0.0), latent_pigment_packed_float(address, 1.0),
+    latent_pigment_packed_float(address, 2.0), latent_pigment_packed_float(address, 3.0));`;
 }
 
 /** GLSL100에도 비트 연산이나 부동소수 텍스처 확장을 요구하지 않는 명시적 IEEE754 복호화다. */
@@ -242,16 +246,30 @@ function packedAtlasDecoder(size: number, version: 100 | 300, sampler: string): 
   const sample = version === 100
     ? `texture2D(${sampler}, (vec2(column, row) + 0.5) / vec2(${width}.0, ${height}.0))`
     : `texelFetch(${sampler}, ivec2(column, row), 0)`;
+  // 기존 scalar helper 호출 모양은 유지하고 내부 texel 경로는 큰 scalar index를 만들지 않는다.
   return `
-highp float latent_pigment_packed_float(highp float index) {
-  highp float column = mod(index, ${width}.0);
-  highp float row = floor(index / ${width}.0);
+highp vec2 latent_pigment_packed_carry(highp float value) {
+  highp float row = floor(value / ${width}.0);
+  highp float column = value - row * ${width}.0;
+  if (column < 0.0) { column += ${width}.0; row -= 1.0; }
+  if (column >= ${width}.0) { column -= ${width}.0; row += 1.0; }
+  return vec2(column, row);
+}
+
+highp float latent_pigment_packed_float(highp vec2 base, highp float component) {
+  highp vec2 offset = latent_pigment_packed_carry(base.x + component);
+  highp float column = offset.x;
+  highp float row = base.y + offset.y;
   highp vec4 bytes = floor(${sample} * 255.0 + 0.5);
   highp float sign_value = 1.0 - 2.0 * floor(bytes.w / 128.0);
   highp float exponent = mod(bytes.w, 128.0) * 2.0 + floor(bytes.z / 128.0);
   highp float mantissa = mod(bytes.z, 128.0) * 65536.0 + bytes.y * 256.0 + bytes.x;
   if (exponent == 0.0) return sign_value * (mantissa / 8388608.0) * exp2(-126.0);
   return sign_value * (1.0 + mantissa / 8388608.0) * exp2(exponent - 127.0);
+}
+
+highp float latent_pigment_packed_float(highp float index) {
+  return latent_pigment_packed_float(vec2(mod(index, ${width}.0), floor(index / ${width}.0)), 0.0);
 }
 `;
 }

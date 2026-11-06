@@ -16,7 +16,7 @@ test("접근성 체크아웃은 화면·글꼴·브랜드 영상과 검증 소�
   const checkout = job.steps.find((step) => step.uses?.startsWith("actions/checkout@"));
   assert.equal(checkout.with.filter, "blob:none");
   assert.equal(checkout.with["sparse-checkout-cone-mode"], false);
-  assert.equal(job["timeout-minutes"], 20);
+  assert.equal(job["timeout-minutes"], "${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && 35 || 20 }}");
   for (const command of ["pnpm run test:a11y", "pnpm exec playwright test --config playwright.production-workflows.config.ts"]) {
     assert(job.steps.some((step) => step.run === command), command);
   }
@@ -95,6 +95,39 @@ test("기반 회귀는 실제 씬 카탈로그의 모든 CC0 VRM 원본을 최�
     git("read-tree", "-mu", tree);
     for (const file of [...models, "apps/web/public/vrm/LICENSES.md"]) assert((await fs.stat(path.join(directory, file))).isFile(), file);
     await assert.rejects(fs.access(path.join(directory, "apps/web/public/vrm/unrelated.vrm")), { code: "ENOENT" });
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("편집 하네스는 전체 타입 검사에서 import하는 MCP 환경 JSON을 보존한다", async () => {
+  const workflow = await fs.readFile(path.join(root, ".github/workflows/ci.yml"), "utf8");
+  const block = workflow.slice(workflow.indexOf("\n  static:\n"), workflow.indexOf("\n  serial:\n"));
+  const patterns = sparsePatterns(block, { shard: "studio-editing" });
+  const imported = "apps/web/public/assets/3d/environments/mcp-free-v1/manifest.json";
+  const omitted = "apps/web/public/assets/3d/environments/mcp-free-v1/models/fixture.glb";
+  const source = await fs.readFile(path.join(root,
+    "apps/web/src/domains/creator/bg3d/studio-bg3d-environment-mcp-free-v1.test.ts"), "utf8");
+  assert(source.includes('import mcpManifest from "../../../../public/assets/3d/environments/mcp-free-v1/manifest.json";'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "editing-harness-checkout-"));
+  const git = (...args) => execFileSync("git", args, {
+    cwd: directory, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
+    env: fixtureGitEnvironment(directory),
+  }).trim();
+  try {
+    git("init", "--quiet");
+    for (const file of [imported, omitted]) {
+      await fs.mkdir(path.dirname(path.join(directory, file)), { recursive: true });
+      await fs.writeFile(path.join(directory, file), "fixture\n");
+    }
+    git("add", "--all");
+    const tree = git("write-tree");
+    git("config", "core.sparseCheckout", "true");
+    git("config", "core.sparseCheckoutCone", "false");
+    await fs.writeFile(path.join(directory, ".git/info/sparse-checkout"), `${patterns.join("\n")}\n`);
+    git("read-tree", "-mu", tree);
+    assert((await fs.stat(path.join(directory, imported))).isFile(), imported);
+    await assert.rejects(fs.access(path.join(directory, omitted)), { code: "ENOENT" });
   } finally {
     await fs.rm(directory, { recursive: true, force: true });
   }

@@ -19,6 +19,19 @@ const requiredPortfolio = new Set(
     .filter(Boolean),
 );
 
+function workflowStep(name) {
+  const step = workflow.split(/(?=^ {6}- |^ {2}[a-z][a-z0-9-]*:\n)/mu)
+    .find((entry) => entry.startsWith(`      - name: ${name}\n`));
+  assert.ok(step, `필수 CI 단계가 없습니다: ${name}`);
+  return step;
+}
+
+function workflowRun(step) {
+  const body = step.match(/^ {8}run: \|\n((?: {10}[^\n]*\n)+)/mu)?.[1];
+  assert.ok(body, "실제 workflow의 여러 줄 실행 본문이 필요합니다.");
+  return body.split("\n").filter(Boolean).map((line) => line.slice(10)).join("\n");
+}
+
 test("runtime follow-up tests and the long-running API artifact remain mandatory", () => {
   assert.match(
     workflow,
@@ -44,9 +57,12 @@ test("product 문서 계약 전에 추적 문서와 내부 링크 입력을 복�
   const restoration = workflow.indexOf("      - name: Restore documentation inputs for product contracts\n");
   const execution = workflow.indexOf("      - name: Run semantic regression shard\n");
   assert.ok(restoration >= 0 && execution > restoration);
-  const step = workflow.slice(restoration, execution);
-  assert.match(step, /if: matrix\.shard == 'product'/u);
-  assert.match(step, /run: node scripts\/restore-documentation-checkout\.mjs/u);
+  const step = workflowStep("Restore documentation inputs for product contracts");
+  assert.match(step, /^ {8}if: matrix\.shard == 'product' \|\| \(github\.event_name == 'workflow_dispatch' && matrix\.shard == 'studio-editing'\)$/mu);
+  const run = workflowRun(step);
+  assert.match(run, /^set -euo pipefail\n/u);
+  assert.equal(run.split("node scripts/restore-documentation-checkout.mjs").length - 1, 1);
+  assert.match(run, /\nnode scripts\/restore-documentation-checkout\.mjs$/u);
   assert.match(step, /TOONSTUDIO_CHECKOUT_TOKEN: \$\{\{ github\.token \}\}/u);
   assert.match(step, /GIT_CONFIG_COUNT: ['"]2['"]/u);
   assert.match(step, /GIT_CONFIG_KEY_0: credential\.helper/u);
@@ -55,10 +71,76 @@ test("product 문서 계약 전에 추적 문서와 내부 링크 입력을 복�
   assert.match(step, /GIT_TERMINAL_PROMPT: ['"]0['"]/u);
 });
 
+test("문서 복원은 product를 유지하고 수동 editing에서만 필터된 전체 이력을 먼저 확보한다", () => {
+  const step = workflowStep("Restore documentation inputs for product contracts");
+  const condition = step.match(/^ {8}if: (.+)$/mu)?.[1];
+  assert.equal(condition, "matrix.shard == 'product' || (github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing')");
+  const run = workflowRun(step);
+  const selected = (event, shard) => {
+    const [product, manual] = condition.split(" || ");
+    assert.equal(product, "matrix.shard == 'product'");
+    assert.equal(manual, "(github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing')");
+    return shard === "product" || (event === "workflow_dispatch" && shard === "studio-editing");
+  };
+  const root = mkdtempSync(join(tmpdir(), "documentation-history-scope-"));
+  const bin = join(root, "bin"), calls = join(root, "calls");
+  mkdirSync(bin);
+  writeFileSync(join(bin, "git"), `#!/bin/bash
+printf 'git:%s\\n' "$*" >> "$DOCUMENTATION_POLICY_CALLS"
+if test "$1" = rev-parse && test "$2" = --is-shallow-repository; then
+  printf '%s\\n' "$DOCUMENTATION_POLICY_SHALLOW"
+elif test "$1" != fetch; then
+  exit 9
+fi
+`, { mode: 0o700 });
+  writeFileSync(join(bin, "node"), `#!/bin/bash
+printf 'node:%s\\n' "$*" >> "$DOCUMENTATION_POLICY_CALLS"
+test "$#" = 1 && test "$1" = scripts/restore-documentation-checkout.mjs
+`, { mode: 0o700 });
+  const sourceSha = "a".repeat(40);
+  try {
+    for (const event of ["pull_request", "push", "merge_group", "workflow_dispatch"]) {
+      for (const shard of ["product", "studio-editing", "studio-foundation"]) {
+        for (const shallow of ["true", "false"]) {
+          writeFileSync(calls, "");
+          if (selected(event, shard)) {
+            const result = spawnSync("bash", ["-c", run.replaceAll("${{ matrix.shard }}", shard)], {
+              cwd: root, encoding: "utf8", env: fixtureGitEnvironment(root, {
+                PATH: `${bin}:${process.env.PATH}`, GITHUB_EVENT_NAME: event, GITHUB_SHA: sourceSha,
+                DOCUMENTATION_POLICY_CALLS: calls, DOCUMENTATION_POLICY_SHALLOW: shallow,
+              }),
+            });
+            assert.equal(result.status, 0, `${event}/${shard}/${shallow}: ${result.stderr}`);
+          }
+          const actual = readFileSync(calls, "utf8").trim().split("\n").filter(Boolean);
+          const expected = shard === "product" ? ["node:scripts/restore-documentation-checkout.mjs"]
+            : event === "workflow_dispatch" && shard === "studio-editing" ? [
+              "git:rev-parse --is-shallow-repository",
+              `git:fetch --no-tags --filter=blob:none${shallow === "true" ? " --unshallow" : ""} origin ${sourceSha} refs/heads/main:refs/remotes/origin/main`,
+              "node:scripts/restore-documentation-checkout.mjs",
+            ] : [];
+          assert.deepEqual(actual, expected, `${event}/${shard}/${shallow}`);
+        }
+      }
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("수동 전체 하네스 단계는 이미 확보한 main만 쓰고 토큰·문서 복원을 다시 받지 않는다", () => {
+  const step = workflowStep("수동 후보의 전체 하네스 검증");
+  assert.match(step, /^ {8}if: github\.event_name == 'workflow_dispatch' && matrix\.shard == 'studio-editing'$/mu);
+  assert.doesNotMatch(step, /env:|TOONSTUDIO_CHECKOUT_TOKEN|GIT_CONFIG_|GIT_TERMINAL_PROMPT|credential|git fetch|restore-documentation-checkout|\bunset\b/u);
+  assert.deepEqual(workflowRun(step).split("\n"), [
+    "set -euo pipefail",
+    "HARNESS_BASE=$(git rev-parse refs/remotes/origin/main)",
+    'git merge-base --is-ancestor "$HARNESS_BASE" HEAD',
+    'printf \'하네스 비교 기준: %s\\n\' "$HARNESS_BASE"',
+    'pnpm harness:verify --base="$HARNESS_BASE"',
+  ]);
+});
+
 test("문서 복원의 실제 credential helper는 GitHub HTTPS get만 허용하고 사용자 설정과 저장을 건드리지 않는다", () => {
-  const step = workflow.split(/(?=^ {6}- )/mu)
-    .find((entry) => entry.startsWith("      - name: Restore documentation inputs for product contracts\n"));
-  assert.ok(step);
+  const step = workflowStep("Restore documentation inputs for product contracts");
   const helper = step.match(/^ {10}GIT_CONFIG_VALUE_1: >-\n((?: {12}[^\n]*\n)+)/mu)?.[1]
     .split("\n").filter(Boolean).map((line) => line.slice(12)).join(" ");
   assert.ok(helper, "workflow의 실제 folded helper를 실행해야 합니다.");
