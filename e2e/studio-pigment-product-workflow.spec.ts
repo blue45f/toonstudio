@@ -19,6 +19,7 @@ import {
 
 import { expect, test } from "./fixtures/non-studio-test";
 import { installGuestOfflineEnvironment, waitForEditorSettled } from "./helpers/studio-editor-a11y";
+import { restoreIfPrompted, waitForStudioPageRestored } from "./helpers/studio-editor-restore-readiness";
 
 import type { BrushStudioV6MaterialConfig } from "../apps/web/src/domains/creator/brush-lab/brush-studio-v6-material-engine";
 import type { DrawEl } from "../apps/web/src/domains/creator/studio-element-model";
@@ -243,14 +244,6 @@ async function pixelsChanged(page: Page, before: Buffer, after: Buffer): Promise
     return changed;
   }, { first: [...before], second: [...after] });
 }
-async function restoreIfPrompted(page: Page, ready: () => Promise<boolean>): Promise<void> {
-  let clicked = false;
-  await expect.poll(async () => {
-    const restore = page.getByRole("button", { name: "이어서 그리기", exact: true });
-    if (!clicked && await restore.isVisible()) { await restore.click(); clicked = true; }
-    return ready();
-  }, { timeout: 60_000 }).toBe(true);
-}
 
 async function attachCaptureState(page: Page, testInfo: TestInfo, name: string): Promise<void> {
   if (page.isClosed()) {
@@ -351,10 +344,8 @@ test("기본 권리 차단과 자체 안료 선택·SQLite 저장·재열기·�
   expect(material(drawn)).toEqual(expectedMaterial);
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await restoreIfPrompted(page, async () => {
-    const backup = await readDurableStudioAutosaveDocument(page, key);
-    return !!backup?.pagesList.some((candidate) => candidate.id === committedPage.id);
-  });
+  await waitForStudioPageRestored(page, committedPage);
+  expect(currentKey(page)).toBe(key);
   await waitForEditorSettled(page);
   expect(page.url()).toBe(originalUrl);
   expect((await savedPage(page, key, String(committedPage.id))).elements).toEqual(committedPage.elements);
@@ -465,7 +456,8 @@ for (const version of [1, 2] as const) {
     await expect(warning).toHaveCount(0);
     await expect.poll(async () => (await savedPage(page, key, fixture.page.id)).elements).toEqual(converted.elements);
     await page.reload({ waitUntil: "domcontentloaded" });
-    await restoreIfPrompted(page, () => page.locator("[data-studio-canvas-viewport]").first().isVisible());
+    await waitForStudioPageRestored(page, converted);
+    expect(currentKey(page)).toBe(key);
     await waitForEditorSettled(page);
     const project = await downloadBackup(page, testInfo, `v${version}-converted-project.json`);
     const reopened = records(project.pagesList).find((candidate) => candidate.id === fixture.page.id);
@@ -542,7 +534,8 @@ if (process.env.TOONSTUDIO_PIGMENT_CLIP_CONTRAST === "1") {
       await expect(warning).toHaveCount(0);
       await expect.poll(async () => (await savedPage(page, key, fixture.page.id)).elements).toEqual(converted.elements);
       await page.reload({ waitUntil: "domcontentloaded" });
-      await restoreIfPrompted(page, () => page.locator("[data-studio-canvas-viewport]").first().isVisible());
+      await waitForStudioPageRestored(page, converted);
+      expect(currentKey(page)).toBe(key);
       await waitForEditorSettled(page);
       expect(page.url()).toBe(originalUrl);
       const project = await downloadBackup(page, testInfo, `v2-clip-${label}-converted-project.json`);

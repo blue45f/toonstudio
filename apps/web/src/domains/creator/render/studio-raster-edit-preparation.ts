@@ -2,11 +2,9 @@ import { studioMaterialBrushBounds } from "../brush/studio-material-brush-runtim
 /**
  * Non-destructive "editable raster copy" preparation.
  *
- * The compatibility planner uses the exact Studio SVG serializer as a fidelity preflight. The
- * async retouch path instead reuses one Worker export for that preflight and the shared SVG -> PNG
- * rasterizer, avoiding a duplicate main-thread serialization. The original document elements are
- * never removed or patched by this module. Callers materialize one new full-page ImageEl only
- * after an explicit confirmation or an operation whose contract says it creates a merged copy.
+ * SVG 충실도 사전 검사와 Worker 래스터 복사를 준비하며 원본 요소는 수정하지 않는다.
+ * 명시 전환이 필요한 획은 집계에 남기되 geometry/SVG 재생에서 제외하고 복사를 차단한다.
+ * 새 ImageEl은 사용자가 요청한 복사 작업에서만 생성한다.
  */
 
 import {
@@ -29,6 +27,7 @@ import type {
 import type { StudioVectorReferenceSourceBudgetReceipt } from "../studio-vector-reference-source-budget-receipt";
 
 import { StudioRasterEditError, type StudioRasterEditReason } from "./studio-raster-edit-error";
+import { partitionStudioRasterMigrationSources } from "./studio-raster-migration-sources";
 
 export { StudioRasterEditError } from "./studio-raster-edit-error";
 export type { StudioRasterEditErrorCode, StudioRasterEditReason, StudioRasterEditReasonCode } from "./studio-raster-edit-error";
@@ -126,7 +125,7 @@ export interface StudioEditablePageRasterContext {
 export interface StudioRasterPreparationSourceSummary {
   /** Full-page image-local frame shared by rect/ellipse/lasso/brush/wand selection tools. */
   readonly frame: StudioRasterPreparationFrame;
-  /** Clipped union of visible, non-transparent authored source geometry; null means no ink/object. */
+  /** 보이는 원본 경계. 전환 전 geometry는 전체 페이지로 보수적으로 잡고 null은 빈 원고를 뜻한다. */
   readonly sourceBounds: StudioRasterPreparationBounds | null;
   /** Stable BACK -> FRONT order used by both the SVG preflight and the raster result. */
   readonly orderedVisibleSourceIds: readonly string[];
@@ -789,9 +788,10 @@ function analyzeStudioRasterPreparationSources(
   const visibleLinked3dPreviewCount = visibleContributing.filter(
     (element) => element.type === "image" && Boolean(element.bg3dScene || element.vrmScene),
   ).length;
+  const migration = partitionStudioRasterMigrationSources(visibleContributing);
   const frame = studioRasterPreparationFrame(input.width, input.height);
   const sourceBounds = validDimensions(input.width, input.height)
-    ? unionSourceBounds(visibleContributing, frame)
+    ? migration.unsupported.size > 0 ? { x: 0, y: 0, width: frame.width, height: frame.height } : unionSourceBounds(migration.replayable, frame)
     : null;
   const orderedVisibleSourceIds = visibleContributing.map((element) => element.id);
   const lockedVisibleSourceIds = visibleContributing
@@ -831,7 +831,7 @@ function analyzeStudioRasterPreparationSources(
     if (seenElementIds.has(element.id)) duplicateElementIds.add(element.id);
     seenElementIds.add(element.id);
   }
-  const structurallyUnsupported = new Map<string, string>();
+  const structurallyUnsupported = new Map(migration.unsupported);
   for (const element of visibleContributing) {
     const invalidGeometry = invalidElementGeometryReason(element);
     if (invalidGeometry) {
@@ -856,7 +856,7 @@ function analyzeStudioRasterPreparationSources(
   const exported = preparedExport ?? exportPageToSvg({
     width: input.width,
     height: input.height,
-    elements: svgExportElements(visibleContributing),
+    elements: svgExportElements(migration.replayable),
     groups,
     theme: input.theme, wetPaperBake,
     transparentBg: !(input.hasPageBackground ?? true),
