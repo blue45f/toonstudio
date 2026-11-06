@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useI18n } from "@/shared/lib/i18n";
 
 import { MotionWebtoonPage } from "./MotionWebtoonPage";
 import type { MotionEpisode } from "./motion-webtoon-model";
@@ -17,12 +19,14 @@ function makeEpisode(id: string, titleKo = "공유 회차"): MotionEpisode {
 }
 
 beforeEach(() => {
+  useI18n.setState({ lang: "ko" });
   window.localStorage.clear();
   window.history.replaceState(null, "", window.location.pathname);
 });
 
 afterEach(() => {
   cleanup();
+  useI18n.setState({ lang: "ko" });
   window.localStorage.clear();
   window.history.replaceState(null, "", window.location.pathname);
   vi.restoreAllMocks();
@@ -106,5 +110,36 @@ describe("MotionWebtoonPage", () => {
   it("문서 제목을 모션 웹툰으로 설정한다", () => {
     render(<MotionWebtoonPage />);
     expect(document.title).toContain("모션 웹툰");
+  });
+
+  it("REA 패럴랙스 워크벤치에서 스크롤 리그·동기화 페이싱을 전환하고 en 로케일에서 한글을 포함하지 않는다", () => {
+    render(<MotionWebtoonPage />);
+    const bar = screen.getByTestId("motion-webtoon-rea-parallax-bar");
+    expect(bar.textContent).toContain("Rive · Spine 2D · Live2D Cubism · Naver Smartoon/Effectoon");
+    expect(screen.getByTestId("motion-rea-rig-zdepth-5layer-parallax").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("motion-rea-pacing-scroll-velocity-1to1").getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByTestId("motion-rea-rig-spring-balloon-physics"));
+    expect(screen.getByTestId("motion-rea-rig-spring-balloon-physics").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("motion-rea-rig-zdepth-5layer-parallax").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("motion-webtoon-rea-status").textContent).toContain("spring-balloon-physics");
+
+    fireEvent.click(screen.getByTestId("motion-rea-rig-camera-shake-haptic"));
+    expect(screen.getByTestId("motion-rea-rig-camera-shake-haptic").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("motion-webtoon-rea-status").textContent).toContain("camera-shake-haptic");
+
+    fireEvent.click(screen.getByTestId("motion-rea-pacing-viewport-dwell-trigger"));
+    expect(screen.getByTestId("motion-rea-pacing-viewport-dwell-trigger").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("motion-rea-pacing-scroll-velocity-1to1").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("motion-webtoon-rea-status").textContent).toContain("viewport-dwell-trigger");
+
+    fireEvent.click(screen.getByTestId("motion-rea-pacing-reduced-motion-safe"));
+    expect(screen.getByTestId("motion-rea-pacing-reduced-motion-safe").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("motion-webtoon-rea-status").textContent).toContain("reduced-motion-safe");
+
+    act(() => {
+      useI18n.setState({ lang: "en" });
+    });
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
   });
 });

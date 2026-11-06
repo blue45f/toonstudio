@@ -217,5 +217,60 @@ describe("영어 로케일", () => {
     const clone = view.container.cloneNode(true) as HTMLElement;
     clone.querySelectorAll('[lang="ko"]').forEach((node) => node.remove());
     expect(clone.textContent?.match(HANGUL)?.[0]).toBeUndefined();
+
+    const bar = screen.getByTestId("accessible-guide-rea-wcag-bar");
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    fireEvent.click(screen.getByTestId("a11y-guide-rea-vision-screenreader-alt-script"));
+    fireEvent.click(screen.getByTestId("a11y-guide-rea-aid-dyslexia-line-height"));
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("accessible-guide-rea-status").textContent).toContain("Screen Reader Alt Script");
+    expect(screen.getByTestId("accessible-guide-rea-status").textContent).toContain("Dyslexia-Friendly Spacing");
+  });
+});
+
+describe("REA 배리어프리 WCAG 워크벤치", () => {
+  it("시각 시뮬레이션과 읽기 보조 규격 상태를 전환하고 실시간 안내를 갱신한다", () => {
+    renderGuide();
+
+    const bar = screen.getByTestId("accessible-guide-rea-wcag-bar");
+    expect(bar.textContent).toContain("W3C WCAG 2.2 AA · Naver Barrier-Free Webtoon · Audio Webtoon Standard");
+
+    const visContrast = screen.getByTestId("a11y-guide-rea-vision-wcag-aa-contrast-45");
+    const visDeuter = screen.getByTestId("a11y-guide-rea-vision-deuteranopia-safe");
+    const visAlt = screen.getByTestId("a11y-guide-rea-vision-screenreader-alt-script");
+
+    expect(visContrast.getAttribute("aria-pressed")).toBe("true");
+    expect(visDeuter.getAttribute("aria-pressed")).toBe("false");
+    expect(visAlt.getAttribute("aria-pressed")).toBe("false");
+
+    const aidFlow = screen.getByTestId("a11y-guide-rea-aid-panel-order-aria-flow");
+    const aidSfx = screen.getByTestId("a11y-guide-rea-aid-sfx-caption-brackets");
+    const aidDyslexia = screen.getByTestId("a11y-guide-rea-aid-dyslexia-line-height");
+
+    expect(aidFlow.getAttribute("aria-pressed")).toBe("true");
+    expect(aidSfx.getAttribute("aria-pressed")).toBe("false");
+    expect(aidDyslexia.getAttribute("aria-pressed")).toBe("false");
+
+    const status = screen.getByTestId("accessible-guide-rea-status");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.textContent).toContain("WCAG 4.5:1 명도 대비 검증");
+    expect(status.textContent).toContain("컷 읽기 순서 ARIA 흐름");
+
+    fireEvent.click(visDeuter);
+    expect(visDeuter.getAttribute("aria-pressed")).toBe("true");
+    expect(visContrast.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("적록 색각이상 안전 팔레트");
+
+    fireEvent.click(aidSfx);
+    expect(aidSfx.getAttribute("aria-pressed")).toBe("true");
+    expect(aidFlow.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("효과음(SFX) 대괄호 자막");
+
+    fireEvent.click(visAlt);
+    fireEvent.click(aidDyslexia);
+    expect(visAlt.getAttribute("aria-pressed")).toBe("true");
+    expect(aidDyslexia.getAttribute("aria-pressed")).toBe("true");
+    expect(status.textContent).toContain("스크린리더 상황해설 대본");
+    expect(status.textContent).toContain("난독증 친화 행간·자간");
   });
 });

@@ -45,21 +45,24 @@ describe("Studio workspace recommendation model", () => {
     expect(kitsuMatches.map((item) => item.workspaceId)).toContain("review");
   });
 
-  it("7대 도메인 1,050개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·84개 세부 고도화 항목이 160000000000000만점(1.6e18)을 초과한다", () => {
+  it("7대 도메인 1,050개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·84개 세부 고도화 항목이 0~100점 표준 범위 내에 있다", () => {
     const scorecard = computeToonStudioSiteWideQualityScorecard();
     expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(1500);
     expect(scorecard.analyzedFrontendDomainsCount).toBe(26);
     expect(scorecard.internalizedCompetitorServicesCount).toBe(1050);
-    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
-    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(160_000_000_000_000_000);
+    expect(scorecard.overallScore100).toBe(92);
+    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(0);
+    expect(scorecard.overallScore100).toBeLessThanOrEqual(100);
+    expect(scorecard.overallScore10).toBe(9.2);
     expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
-    expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(true);
-    expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(true);
-    expect(scorecard.meetsTargetTenMillionScore).toBe(true);
-    expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(true);
+    expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(false);
+    expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(false);
+    expect(scorecard.meetsTargetTenMillionScore).toBe(false);
+    expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(false);
 
     for (const axis of scorecard.axisBreakdowns) {
-      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
+      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(85);
+      expect(axis.scoreOutOf100).toBeLessThanOrEqual(100);
     }
 
     for (const alias of [
@@ -80,12 +83,14 @@ describe("Studio workspace recommendation model", () => {
     }
 
     for (const benchmark of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
-      expect(benchmark.domainScoreOutOf100).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
+      expect(benchmark.domainScoreOutOf100).toBeGreaterThanOrEqual(85);
+      expect(benchmark.domainScoreOutOf100).toBeLessThanOrEqual(100);
       expect(benchmark.observedDomNodes).toBeLessThanOrEqual(benchmark.targetDomBudgetNodes);
       expect(benchmark.liveEvidenceIds.length).toBeGreaterThan(0);
       expect(benchmark.subEnhancements.length).toBe(12);
       for (const sub of benchmark.subEnhancements) {
-        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
+        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(85);
+        expect(sub.scoreOutOf100).toBeLessThanOrEqual(100);
         expect(sub.reaMechanismKo.length).toBeGreaterThan(10);
         expect(sub.reaMechanismEn.length).toBeGreaterThan(10);
         expect(sub.internalizedModulePath.startsWith("apps/web/src/")).toBe(true);

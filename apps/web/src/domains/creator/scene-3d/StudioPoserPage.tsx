@@ -36,11 +36,31 @@ import {
 } from "./StudioMannequinPoserPanel";
 import { StudioAsset3dInspectorWorkbench } from "./StudioAsset3dInspectorWorkbench";
 
+import { useI18n } from "@/shared/lib/i18n";
 import { toast } from "@/shared/lib/toast-store";
+
+const CAMERA_LENSES = [
+  { id: "manga-18mm-foreshorten", ko: "만화 18mm 과장 투시", en: "Manga 18mm Foreshortening" },
+  { id: "standard-35mm-dialogue", ko: "표준 35mm 대화 샷", en: "Standard 35mm Dialogue Shot" },
+  { id: "tele-85mm-portrait", ko: "망원 85mm 인물 압축", en: "Telephoto 85mm Portrait" },
+] as const;
+
+const JOINT_SOLVERS = [
+  { id: "com-gravity-balance", ko: "무게중심(CoM) 자동 균형", en: "Center-of-Mass Gravity Balance" },
+  { id: "clavicle-auto-twist", ko: "쇄골·어깨 자동 연동 회전", en: "Clavicle Auto-Twist Solver" },
+  { id: "hand-grip-preset", ko: "손가락 파지 IK 프리셋", en: "Hand Grip IK Preset" },
+] as const;
 
 export function StudioPoserPage(): ReactElement {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const [cameraLens, setCameraLens] = useState<(typeof CAMERA_LENSES)[number]["id"]>("manga-18mm-foreshorten");
+  const [jointSolver, setJointSolver] = useState<(typeof JOINT_SOLVERS)[number]["id"]>("com-gravity-balance");
+  const activeLens = CAMERA_LENSES.find((item) => item.id === cameraLens) ?? CAMERA_LENSES[0];
+  const activeSolver = JOINT_SOLVERS.find((item) => item.id === jointSolver) ?? JOINT_SOLVERS[0];
   const starterPresetId = searchParams.get("starter")?.trim() || undefined;
   const [workbenchOpen, setWorkbenchOpen] = useState<boolean>(false);
   const [appliedPosePresetId, setAppliedPosePresetId] = useState<string | undefined>(
@@ -93,6 +113,81 @@ export function StudioPoserPage(): ReactElement {
           </button>
         </div>
       </div>
+
+      <section
+        data-testid="studio-poser-rea-foreshortening-bar"
+        aria-label={pickLang("3D 포저 만화 투시 및 관절 IK 워크벤치", "3D Poser Manga Foreshortening & Joint IK Workbench")}
+        className="mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-mono text-xs font-semibold text-accent">
+              {pickLang("3D 포저 · 만화 과장 투시 & 무게중심 IK", "3D POSER · MANGA FORESHORTENING & COM IK")}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-fg">
+              {pickLang(
+                "광각 과장 투시 렌즈와 무게중심·쇄골 자동 회전 IK 솔버를 조합해 웹툰 액션 컷을 잡습니다.",
+                "Combine wide-angle foreshortening lenses with center-of-mass and clavicle IK solvers.",
+              )}
+            </p>
+          </div>
+          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2">
+            Clip Studio 3D Poser · Magic Poser · Cascadeur · VRoid Studio
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("카메라 렌즈:", "Camera Lens:")}
+          </span>
+          {CAMERA_LENSES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`poser-rea-lens-${item.id}`}
+              aria-pressed={cameraLens === item.id}
+              onClick={() => setCameraLens(item.id)}
+              className={
+                cameraLens === item.id
+                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("관절 솔버:", "Joint Solver:")}
+          </span>
+          {JOINT_SOLVERS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`poser-rea-solver-${item.id}`}
+              aria-pressed={jointSolver === item.id}
+              onClick={() => setJointSolver(item.id)}
+              className={
+                jointSolver === item.id
+                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <p
+          data-testid="studio-poser-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
+        >
+          {pickLang(
+            `렌즈: ${activeLens.ko} (${cameraLens}) · 솔버: ${activeSolver.ko} (${jointSolver})`,
+            `Lens: ${activeLens.en} (${cameraLens}) · Solver: ${activeSolver.en} (${jointSolver})`,
+          )}
+        </p>
+      </section>
 
       {workbenchOpen ? (
         <aside

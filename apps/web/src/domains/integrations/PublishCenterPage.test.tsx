@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PublishCenterPage } from "./PublishCenterPage";
 
 const mocks = vi.hoisted(() => ({
+  lang: "ko",
   catalog: vi.fn(),
   buildPublishPackage: vi.fn(),
   buildFeedPreview: vi.fn(),
@@ -19,7 +20,7 @@ vi.mock("./integration-platform-client", () => ({
 vi.mock("@/shared/lib/i18n", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   // 상태 문구 사전 모듈이 import 시점에 등록 함수를, 렌더 중에는 번역 해석 함수를 쓴다 — 번역기만 바꾸고 나머지는 실제 모듈을 쓴다.
-  useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: "ko" }),
+  useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: mocks.lang }),
   // 공용 LoadingState가 useT를 쓴다 — 라벨을 명시 전달하므로 키 반환 스텁으로 충분하다.
   useT: () => (key: string) => key,
 }));
@@ -102,6 +103,7 @@ function renderPage(initialPath = "/publish") {
 describe("PublishCenterPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.lang = "ko";
     mocks.catalog.mockResolvedValue(catalogFixture);
     mocks.buildPublishPackage.mockResolvedValue(packageFixture);
     mocks.buildFeedPreview.mockResolvedValue({
@@ -186,5 +188,66 @@ describe("PublishCenterPage", () => {
     });
     const request = mocks.buildPublishPackage.mock.calls[0]?.[0] as { projectId: string };
     expect(request.projectId).toBe("project-hdtxl4");
+  });
+
+  it("REA 멀티플랫폼 컷 분할·발행 창구 워크벤치를 렌더링하고 양방향 상태를 전환한다", async () => {
+    renderPage();
+    await screen.findByText("외부 웹툰 플랫폼");
+
+    const bar = screen.getByTestId("publish-center-rea-multispec-bar");
+    expect(bar.textContent).toContain("Naver Webtoon(690px) · Kakao Webtoon(720px) · WEBTOON Global(800px) · Piccoma");
+
+    const sliceNaver = screen.getByTestId("publish-rea-slice-naver-690px-smart");
+    const sliceKakao = screen.getByTestId("publish-rea-slice-kakao-720px-alive");
+    const sliceGlobal = screen.getByTestId("publish-rea-slice-global-800px-2mb");
+
+    expect(sliceNaver.getAttribute("aria-pressed")).toBe("true");
+    expect(sliceKakao.getAttribute("aria-pressed")).toBe("false");
+    expect(sliceGlobal.getAttribute("aria-pressed")).toBe("false");
+
+    const winKst = screen.getByTestId("publish-rea-window-kst-2300-prime");
+    const winGlobal = screen.getByTestId("publish-rea-window-global-6tz-simulcast");
+    const winEmbargo = screen.getByTestId("publish-rea-window-embargo-preview-holdback");
+
+    expect(winKst.getAttribute("aria-pressed")).toBe("true");
+    expect(winGlobal.getAttribute("aria-pressed")).toBe("false");
+    expect(winEmbargo.getAttribute("aria-pressed")).toBe("false");
+
+    const status = screen.getByTestId("publish-center-rea-status");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.textContent).toContain("네이버 690px 스마트 컷분할");
+    expect(status.textContent).toContain("KST 23:00 프라임 예약");
+
+    fireEvent.click(sliceKakao);
+    expect(sliceKakao.getAttribute("aria-pressed")).toBe("true");
+    expect(sliceNaver.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("카카오 720px 얼라이브 규격");
+
+    fireEvent.click(winGlobal);
+    expect(winGlobal.getAttribute("aria-pressed")).toBe("true");
+    expect(winKst.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("글로벌 6개 시간대 동시 연재");
+
+    fireEvent.click(sliceGlobal);
+    fireEvent.click(winEmbargo);
+    expect(sliceGlobal.getAttribute("aria-pressed")).toBe("true");
+    expect(winEmbargo.getAttribute("aria-pressed")).toBe("true");
+    expect(status.textContent).toContain("글로벌 800px · 2MB 슬라이스");
+    expect(status.textContent).toContain("유료 미리보기 엠바고 홀드백");
+  });
+
+  it("영어 로케일(en)에서 REA 워크벤치에 한글이 섞이지 않는다", async () => {
+    mocks.lang = "en";
+    renderPage();
+    await screen.findByText("외부 웹툰 플랫폼");
+
+    const bar = screen.getByTestId("publish-center-rea-multispec-bar");
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+
+    fireEvent.click(screen.getByTestId("publish-rea-slice-global-800px-2mb"));
+    fireEvent.click(screen.getByTestId("publish-rea-window-embargo-preview-holdback"));
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("publish-center-rea-status").textContent).toContain("Global 800px 2MB Slice");
+    expect(screen.getByTestId("publish-center-rea-status").textContent).toContain("Preview Embargo Holdback");
   });
 });

@@ -11,6 +11,8 @@ import { STORYWORLD_DEMO_PROJECT } from "./studio-storyworld-causality";
 import { storyworldIssueDispositionKey } from "./studio-storyworld-issue-dispositions";
 import { StudioStoryworldLabPage } from "./StudioStoryworldLabPage";
 
+import { useI18n } from "@/shared/lib/i18n";
+
 const db = vi.hoisted(() => ({ rows: new Map<string, string>(), kvGet: vi.fn(), kvSet: vi.fn() }));
 vi.mock("../studio-local-database-runtime", () => ({ acquireStudioLocalDatabase: async () => db }));
 const key = (id: string) => `toonspectrum:storyworld-lab:v1:work:${id}`;
@@ -403,5 +405,40 @@ describe("Storyworld world board layer", () => {
     expect(screen.getByText("홀로 있는 장면")).toBeTruthy();
     expect(view.container.querySelector(".storyworld-board-graph")).toBeNull();
     expect(view.container.querySelector(".storyworld-board-note")).toBeNull();
+  });
+
+  it("REA 연속성 워크벤치에서 점검 렌즈·정사 범위를 전환하고 en 로케일에서 한글을 포함하지 않는다", async () => {
+    useI18n.setState({ lang: "ko" });
+    await open("work-rea-continuity");
+    const bar = screen.getByTestId("storyworld-rea-continuity-bar");
+    expect(bar.textContent).toContain("World Anvil · Campfire · Plottr · Scrivener");
+    expect(screen.getByTestId("storyworld-rea-lens-timeline-paradox-guard").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("storyworld-rea-scope-season1-main-arc").getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByTestId("storyworld-rea-lens-faction-relation-matrix"));
+    expect(screen.getByTestId("storyworld-rea-lens-faction-relation-matrix").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("storyworld-rea-lens-timeline-paradox-guard").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("storyworld-rea-status").textContent).toContain("faction-relation-matrix");
+
+    fireEvent.click(screen.getByTestId("storyworld-rea-lens-dialogue-45char-pacing"));
+    expect(screen.getByTestId("storyworld-rea-lens-dialogue-45char-pacing").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("storyworld-rea-status").textContent).toContain("dialogue-45char-pacing");
+
+    fireEvent.click(screen.getByTestId("storyworld-rea-scope-spinoff-multiverse"));
+    expect(screen.getByTestId("storyworld-rea-scope-spinoff-multiverse").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("storyworld-rea-scope-season1-main-arc").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("storyworld-rea-status").textContent).toContain("spinoff-multiverse");
+
+    fireEvent.click(screen.getByTestId("storyworld-rea-scope-foreshadow-payoff-ledger"));
+    expect(screen.getByTestId("storyworld-rea-scope-foreshadow-payoff-ledger").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("storyworld-rea-status").textContent).toContain("foreshadow-payoff-ledger");
+
+    act(() => {
+      useI18n.setState({ lang: "en" });
+    });
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    act(() => {
+      useI18n.setState({ lang: "ko" });
+    });
   });
 });

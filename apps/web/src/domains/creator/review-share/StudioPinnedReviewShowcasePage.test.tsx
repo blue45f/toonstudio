@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioPinnedReviewShowcasePage } from "./StudioPinnedReviewShowcasePage";
+import { useI18n } from "@/shared/lib/i18n";
 
 const mocks = vi.hoisted(() => ({ list: vi.fn(), page: vi.fn() }));
 vi.mock("./studio-pinned-review-share-client", () => ({
@@ -26,7 +27,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.page.mockRejectedValue(new Error("cover unavailable"));
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); useI18n.getState().setLang("ko"); });
 
 describe("approved immutable review showcase", () => {
   it("lists only the server-approved public snapshots and links to their public ids", async () => {
@@ -76,5 +77,74 @@ describe("approved immutable review showcase", () => {
     render(<MemoryRouter><StudioPinnedReviewShowcasePage /></MemoryRouter>);
     expect(await screen.findByRole("heading", { name: "현재 공개 중인 승인본이 없습니다" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "일반 작품 전시로 돌아가기" }).getAttribute("href")).toBe("/showcase");
+  });
+
+  it("toggles diffMode and watermarkPolicy in pinned-review-rea-ab-diff-bar with aria-pressed", async () => {
+    mocks.list.mockResolvedValue({ items: [first], nextCursor: null });
+    render(<MemoryRouter><StudioPinnedReviewShowcasePage /></MemoryRouter>);
+    await screen.findByRole("heading", { name: first.title });
+
+    const bar = screen.getByTestId("pinned-review-rea-ab-diff-bar");
+    expect(bar.textContent).toContain("Frame.io · Ziflow · PageProof · Chromatic Visual Diff");
+
+    const syncBtn = screen.getByTestId("pinned-review-rea-diff-side-by-side-sync");
+    const onionBtn = screen.getByTestId("pinned-review-rea-diff-onion-skin-50pct");
+    const heatmapBtn = screen.getByTestId("pinned-review-rea-diff-pixel-delta-heatmap");
+
+    expect(syncBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(onionBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(heatmapBtn.getAttribute("aria-pressed")).toBe("false");
+
+    const c2paBtn = screen.getByTestId("pinned-review-rea-watermark-c2pa-public-verified");
+    const traceBtn = screen.getByTestId("pinned-review-rea-watermark-reviewer-id-trace");
+    const cleanBtn = screen.getByTestId("pinned-review-rea-watermark-clean-press-kit");
+
+    expect(c2paBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(traceBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(cleanBtn.getAttribute("aria-pressed")).toBe("false");
+
+    const status = screen.getByTestId("pinned-review-rea-status");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.textContent).toContain("좌우 동기화 비교");
+    expect(status.textContent).toContain("로컬 리비전 해시·출처 배지 미리보기");
+
+    fireEvent.click(onionBtn);
+    expect(onionBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(syncBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("어니언 스킨 50% 오버레이");
+
+    fireEvent.click(heatmapBtn);
+    expect(heatmapBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(onionBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("픽셀 델타 히트맵");
+
+    fireEvent.click(traceBtn);
+    expect(traceBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(c2paBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("검수자 세션 포렌식 추적");
+
+    fireEvent.click(cleanBtn);
+    expect(cleanBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(traceBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("프레스킷 클린 뷰");
+  });
+
+  it("maintains English purity inside pinned-review-rea-ab-diff-bar when locale is en", async () => {
+    useI18n.getState().setLang("en");
+    mocks.list.mockResolvedValue({ items: [first], nextCursor: null });
+    render(<MemoryRouter><StudioPinnedReviewShowcasePage /></MemoryRouter>);
+    await screen.findByRole("heading", { name: first.title });
+
+    const bar = screen.getByTestId("pinned-review-rea-ab-diff-bar");
+    expect(bar.textContent ?? "").not.toMatch(/[가-힣]/u);
+
+    const withinBar = within(bar);
+    fireEvent.click(withinBar.getByTestId("pinned-review-rea-diff-pixel-delta-heatmap"));
+    fireEvent.click(withinBar.getByTestId("pinned-review-rea-watermark-clean-press-kit"));
+
+    const status = withinBar.getByTestId("pinned-review-rea-status");
+    expect(status.textContent).toContain("Pixel Delta Heatmap");
+    expect(status.textContent).toContain("Clean Press-Kit View");
+    expect(bar.textContent ?? "").not.toMatch(/[가-힣]/u);
   });
 });

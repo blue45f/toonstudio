@@ -346,19 +346,19 @@ export function StudioStoryToWebtoonStartupWorkbench({
           >
             {provenanceShieldLocked
               ? ko
-                ? "Glaze · Nightshade · C2PA 화풍·출처 보호 ON"
-                : "Glaze · Nightshade · C2PA Style & Provenance Shield ON"
+                ? "로컬 출처·No-AI 메타데이터 배지 ON (비암호화 프리뷰 · Glaze · Nightshade · C2PA 참조)"
+                : "Local Provenance & No-AI Metadata Badge ON (Non-Cryptographic Preview · Glaze · Nightshade · C2PA Ref)"
               : ko
-                ? "C2PA · Glaze 보호 일시 해제"
-                : "C2PA · Glaze Shield Paused"}
+                ? "로컬 출처·No-AI 메타데이터 배지 일시 해제 (비암호화 프리뷰)"
+                : "Local Provenance & No-AI Metadata Badge Paused (Non-Cryptographic Preview)"}
           </span>
         </div>
       </div>
 
       <p className="mt-1 text-[0.64rem] leading-4 text-fg-2">
         {ko
-          ? "한 줄 줄거리(LlamaGen·투닝플러스 Stories)나 100% AI-Free 코믹 마크업 대본(Mangaplay Fountain)을 입력하면 3D 카메라·포즈 연출, 캐릭터 일관성 시드(젠툰·KomikoAI), 6개국어 OCR/식자(Mantra·Ichigo·Mokuro·letr.ai) 및 숏폼 릴스 타임코드(오노마AI 인서툰)까지 즉시 웹툰 컷으로 변환합니다."
-          : "Enter a story logline (LlamaGen / Tooning Plus Stories) or 100% AI-free comic markup (Mangaplay Fountain) to instantly generate webtoon panels with 3D camera/pose framing, Character DNA locks (GenToon / KomikoAI), 6-language OCR typesetting (Mantra / Ichigo / Mokuro / LETR AI), and Shorts/Reels timecodes (Onoma AI Insertoon)."}
+          ? "한 줄 줄거리(LlamaGen·투닝플러스 Stories)나 AI-Free 코믹 마크업 대본(Mangaplay Fountain)을 입력하면 3D 카메라·포즈 연출, 캐릭터 일관성 시드(젠툰·KomikoAI), 6개국어 OCR/식자(Mantra·Ichigo·Mokuro·letr.ai) 및 숏폼 릴스 타임코드(오노마AI 인서툰)까지 즉시 웹툰 컷으로 변환합니다."
+          : "Enter a story logline (LlamaGen / Tooning Plus Stories) or AI-Free comic markup (Mangaplay Fountain) to instantly generate webtoon panels with 3D camera/pose framing, Character DNA locks (GenToon / KomikoAI), 6-language OCR typesetting (Mantra / Ichigo / Mokuro / LETR AI), and Shorts/Reels timecodes (Onoma AI Insertoon)."}
       </p>
 
       {/* Engine Mode Selector */}
@@ -404,8 +404,8 @@ export function StudioStoryToWebtoonStartupWorkbench({
         >
           <Code2 size={12} aria-hidden="true" />
           {ko
-            ? "② 100% AI-Free 실시간 마크업 콘티 (Mangaplay · Storyboarder)"
-            : "2. 100% AI-Free Live Markup Storyboard (Mangaplay · Storyboarder)"}
+            ? "② AI-Free 실시간 마크업 콘티 (Mangaplay · Storyboarder)"
+            : "2. AI-Free Live Markup Storyboard (Mangaplay · Storyboarder)"}
         </button>
         <button
           type="button"
@@ -545,7 +545,7 @@ export function StudioStoryToWebtoonStartupWorkbench({
           className={cn("inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors", engineMode === "kitsu-shotgrid-c2pa-escrow-delivery" ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:border-accent/40")}
         >
           <Lock size={12} aria-hidden="true" />
-          {ko ? "⑫ 8단계 공정 샷 승인·30/30/40 에스크로 & C2PA Ed25519 서명 납품 (Kitsu · ShotGrid · C2PA)" : "12. 8-Stage Shot Sign-Off, 30/30/40 Escrow & C2PA Ed25519 Delivery (Kitsu · ShotGrid · C2PA)"}
+          {ko ? "⑫ 8단계 공정 샷 승인·30/30/40 에스크로 & 로컬 해시 납품 점검표 (Kitsu · ShotGrid 참조 프리뷰)" : "12. 8-Stage Shot Sign-Off, 30/30/40 Escrow & Local Hash Delivery Checklist (Kitsu · ShotGrid Preview)"}
         </button>
       </div>
 
@@ -591,7 +591,7 @@ export function StudioStoryToWebtoonStartupWorkbench({
             onClick={() => setProvenanceShieldLocked((prev) => !prev)}
             className="rounded-md border border-line bg-card px-2 py-0.5 text-[0.6rem] font-bold text-fg-2 hover:border-accent/40"
           >
-            {ko ? "C2PA·Glaze 보호 전환" : "Toggle C2PA/Glaze Shield"}
+            {ko ? "로컬 출처·No-AI 배지 전환" : "Toggle Local Provenance/No-AI Badge"}
           </button>
           <div
             role="group"
@@ -634,22 +634,22 @@ export function StudioStoryToWebtoonStartupWorkbench({
         <div className="flex flex-wrap items-center gap-1">
           <span className="font-bold text-accent">{ko ? "심층 파이프라인 프리셋:" : "Deep Pipeline Presets:"}</span>
           <button type="button" data-testid="story-to-webtoon-lens-toggle" onClick={() => setLens6PassPreset((p) => (p === "35mm-6pass" ? "18mm-6pass" : p === "18mm-6pass" ? "85mm-rim" : "35mm-6pass"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
-            {ko ? `3D·LT: ${lens6PassPreset === "35mm-6pass" ? "35mm 표준 6패스 은선+AO" : lens6PassPreset === "18mm-6pass" ? "18mm 광각 배경 투시+3DGS" : "85mm 인물 림라이트+CLO의상"}` : `3D/LT: ${lens6PassPreset}`}
+            {ko ? `3D·LT: ${lens6PassPreset === "35mm-6pass" ? "35mm 표준 6패스 은선+AO 프리뷰" : lens6PassPreset === "18mm-6pass" ? "18mm 광각 배경 투시+3DGS 프리뷰" : "85mm 인물 림라이트+CLO의상 프리뷰"}` : `3D/LT: ${lens6PassPreset === "35mm-6pass" ? "35mm 6-Pass Line+AO Preview" : lens6PassPreset === "18mm-6pass" ? "18mm Wide BG+3DGS Preview" : "85mm Rim-Light+Garment Preview"}`}
           </button>
           <button type="button" data-testid="story-to-webtoon-dubbing-toggle" onClick={() => setDubbingMasterPreset((p) => (p === "lufs14-duck12" ? "audio2face-60fps" : "lufs14-duck12"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
-            {ko ? `더빙·음향: ${dubbingMasterPreset === "lufs14-duck12" ? "-14 LUFS · BGM -12dB 오토더킹" : "Audio2Face 60fps 안면립싱크"}` : `Dub/Audio: ${dubbingMasterPreset}`}
+            {ko ? `더빙·음향: ${dubbingMasterPreset === "lufs14-duck12" ? "-14 LUFS · BGM -12dB 오토더킹 프리뷰" : "Audio2Face 60fps 안면립싱크 프리뷰"}` : `Dub/Audio: ${dubbingMasterPreset === "lufs14-duck12" ? "-14 LUFS · BGM -12dB Auto-Duck Preview" : "Audio2Face 60fps Lip-Sync Preview"}`}
           </button>
           <button type="button" data-testid="story-to-webtoon-print-toggle" onClick={() => setPrintPortalSpec((p) => (p === "webtoon-800" ? "jump-b4-600dpi" : p === "jump-b4-600dpi" ? "comiket-a5-cmyk" : "webtoon-800"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
-            {ko ? `조판·투고: ${printPortalSpec === "webtoon-800" ? "웹툰 800×1280px RGB" : printPortalSpec === "jump-b4-600dpi" ? "점프+/DAYS NEO B4 600DPI" : "코미케/단행본 A5 350DPI CMYK"}` : `Print/Spec: ${printPortalSpec}`}
+            {ko ? `조판·투고: ${printPortalSpec === "webtoon-800" ? "웹툰 800×1280px RGB 규격" : printPortalSpec === "jump-b4-600dpi" ? "점프+/DAYS NEO B4 600DPI 규격" : "코미케/단행본 A5 350DPI CMYK 규격"}` : `Print/Spec: ${printPortalSpec === "webtoon-800" ? "Webtoon 800x1280px RGB Spec" : printPortalSpec === "jump-b4-600dpi" ? "Jump+/DAYS NEO B4 600DPI Spec" : "Comiket/Book A5 350DPI CMYK Spec"}`}
           </button>
           <button type="button" data-testid="story-to-webtoon-glossary-toggle" aria-pressed={loreGlossaryLocked} onClick={() => setLoreGlossaryLocked((v) => !v)} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-success hover:border-accent/40">
-            {loreGlossaryLocked ? (ko ? "용어집(Glossary) 잠금 ON · 75개 언어 무결성" : "Lore Glossary Lock ON · 75-Lang QA") : (ko ? "용어집 자유 번역" : "Glossary Unlocked")}
+            {loreGlossaryLocked ? (ko ? "용어집(Glossary) 잠금 ON · 75개 언어 점검" : "Lore Glossary Lock ON · 75-Lang Check") : (ko ? "용어집 자유 번역 모드" : "Free Translation Mode")}
           </button>
           <button type="button" data-testid="story-to-webtoon-mocap-toggle" onClick={() => setMocapPhysicsPreset((p) => (p === "cascadeur-com-ik" ? "plask-webcam-60fps" : p === "plask-webcam-60fps" ? "live2d-mesh-deform" : "cascadeur-com-ik"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
-            {ko ? `모션·리깅: ${mocapPhysicsPreset === "cascadeur-com-ik" ? "Cascadeur 무게중심 물리 IK" : mocapPhysicsPreset === "plask-webcam-60fps" ? "Plask 웹캠 60fps 모션캡처" : "Live2D 2.5D 메쉬 디포머"}` : `Mocap/Rig: ${mocapPhysicsPreset}`}
+            {ko ? `모션·리깅: ${mocapPhysicsPreset === "cascadeur-com-ik" ? "Cascadeur 무게중심 물리 IK 프리뷰" : mocapPhysicsPreset === "plask-webcam-60fps" ? "Plask 웹캠 60fps 모션캡처 프리뷰" : "Live2D 2.5D 메쉬 디포머 프리뷰"}` : `Mocap/Rig: ${mocapPhysicsPreset === "cascadeur-com-ik" ? "Cascadeur CoM IK Preview" : mocapPhysicsPreset === "plask-webcam-60fps" ? "Plask Webcam 60fps Mocap Preview" : "Live2D 2.5D Mesh Deform Preview"}`}
           </button>
           <button type="button" data-testid="story-to-webtoon-escrow-toggle" onClick={() => setEscrowDeliveryGate((p) => (p === "kitsu-30-30-40-c2pa" ? "shotgrid-p4-lock" : p === "shotgrid-p4-lock" ? "c2pa-ed25519-manifest" : "kitsu-30-30-40-c2pa"))} className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold text-fg-2 hover:border-accent/40">
-            {ko ? `검수·납품: ${escrowDeliveryGate === "kitsu-30-30-40-c2pa" ? "Kitsu 30/30/40 에스크로+C2PA" : escrowDeliveryGate === "shotgrid-p4-lock" ? "ShotGrid+P4 바이너리 잠금" : "C2PA Ed25519 무결성 매니페스트"}` : `Delivery/Escrow: ${escrowDeliveryGate}`}
+            {ko ? `검수·납품: ${escrowDeliveryGate === "kitsu-30-30-40-c2pa" ? "Kitsu 30/30/40 에스크로+출처배지 프리뷰" : escrowDeliveryGate === "shotgrid-p4-lock" ? "ShotGrid+P4 바이너리 잠금 프리뷰" : "로컬 해시 납품 점검표 미리보기"}` : `Delivery/Escrow: ${escrowDeliveryGate === "kitsu-30-30-40-c2pa" ? "Kitsu 30/30/40 Escrow+Provenance Badge Preview" : escrowDeliveryGate === "shotgrid-p4-lock" ? "ShotGrid+P4 Binary Lock Preview" : "Local Hash Delivery Checklist Preview"}`}
           </button>
         </div>
         <span className="font-mono text-[0.55rem] text-fg-3">

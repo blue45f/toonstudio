@@ -23,6 +23,7 @@ import { Fragment, useId, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -357,10 +358,81 @@ function ReferencesSection() {
   );
 }
 
+type VisionSimId = "wcag-aa-contrast-45" | "deuteranopia-safe" | "screenreader-alt-script";
+type ReadingAidId = "panel-order-aria-flow" | "sfx-caption-brackets" | "dyslexia-line-height";
+
+const VISION_SIM_OPTIONS: readonly {
+  readonly id: VisionSimId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "wcag-aa-contrast-45",
+    ko: "WCAG 4.5:1 명도 대비 검증",
+    en: "WCAG 4.5:1 Contrast Check",
+    detailKo: "말풍선 바탕과 대사 글자색의 명도 대비가 본문 4.5:1 · 큰 글씨 3:1 이상인지 점검합니다.",
+    detailEn: "Verifies speech balloon background and dialogue text meet 4.5:1 body and 3:1 large text contrast.",
+  },
+  {
+    id: "deuteranopia-safe",
+    ko: "적록 색각이상 안전 팔레트",
+    en: "Deuteranopia-Safe Palette",
+    detailKo: "적록 색각이상(Deuteranopia) 독자도 캐릭터 진영과 감정 이펙트를 명도·패턴으로 구분하게 합니다.",
+    detailEn: "Ensures faction colors and emotion effects remain distinguishable via luminance and pattern cues.",
+  },
+  {
+    id: "screenreader-alt-script",
+    ko: "스크린리더 상황해설 대본",
+    en: "Screen Reader Alt Script",
+    detailKo: "시각장애 독자를 위해 배경·인물 표정·행동을 컷 단위 대체 텍스트 대본으로 구조화합니다.",
+    detailEn: "Structures scene descriptions, facial expressions, and actions into per-panel alt-text scripts.",
+  },
+];
+
+const READING_AID_OPTIONS: readonly {
+  readonly id: ReadingAidId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "panel-order-aria-flow",
+    ko: "컷 읽기 순서 ARIA 흐름",
+    en: "Panel Order ARIA Flow",
+    detailKo: "복잡한 연출 컷에서도 스크린리더와 키보드 초점이 의도한 대사 순서대로 이동하도록 고정합니다.",
+    detailEn: "Locks DOM and ARIA reading order so assistive focus follows intended panel and balloon sequence.",
+  },
+  {
+    id: "sfx-caption-brackets",
+    ko: "효과음(SFX) 대괄호 자막",
+    en: "SFX Bracket Captions",
+    detailKo: "손글씨 효과음을 [쾅], [바스락] 형태의 텍스트 자막으로 병기해 청각·시각 보조기기에 전달합니다.",
+    detailEn: "Pairs hand-lettered sound effects with bracketed text captions like [THUD] and [RUSTLE].",
+  },
+  {
+    id: "dyslexia-line-height",
+    ko: "난독증 친화 행간·자간",
+    en: "Dyslexia-Friendly Spacing",
+    detailKo: "세로쓰기 대신 가로 정렬과 1.6배 이상 줄간격을 확보해 인지 피로를 줄입니다.",
+    detailEn: "Enforces horizontal alignment with 1.6x+ line spacing to reduce reading cognitive load.",
+  },
+];
+
 export function AccessibleWebtoonGuidePage() {
   const t = useBilingual(SCOPE);
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
   const titleId = useId();
   useDocumentTitle(t("접근성 있는 웹툰 만들기 · 툰스튜디오", "Making webtoons accessible · ToonStudio"));
+  const [visionSim, setVisionSim] = useState<VisionSimId>("wcag-aa-contrast-45");
+  const [readingAid, setReadingAid] = useState<ReadingAidId>("panel-order-aria-flow");
+
+  const activeVision = VISION_SIM_OPTIONS.find((item) => item.id === visionSim) ?? VISION_SIM_OPTIONS[0];
+  const activeAid = READING_AID_OPTIONS.find((item) => item.id === readingAid) ?? READING_AID_OPTIONS[0];
 
   const statuses: readonly GuideStatus[] = ["available", "partial", "planned"];
   const toc = [
@@ -417,6 +489,87 @@ export function AccessibleWebtoonGuidePage() {
           </ol>
         </nav>
       </header>
+
+      <section
+        data-testid="accessible-guide-rea-wcag-bar"
+        aria-label={pickLang("배리어프리 웹툰 WCAG 벤치마크 워크벤치", "Barrier-free webtoon WCAG benchmark workbench")}
+        className="mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-accent">
+            {pickLang("REA 시각 시뮬레이션 · 읽기 보조 규격 워크벤치", "REA Vision Simulation & Reading Aid Workbench")}
+          </span>
+          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+            W3C WCAG 2.2 AA · Naver Barrier-Free Webtoon · Audio Webtoon Standard
+          </span>
+        </div>
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("시각 접근성 시뮬레이션", "Vision accessibility simulation")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("시각 검증", "Vision Sim")}
+          </span>
+          {VISION_SIM_OPTIONS.map((item) => {
+            const active = item.id === visionSim;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`a11y-guide-rea-vision-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setVisionSim(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          className="mt-2 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("읽기 보조 규칙", "Reading aid rule")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("읽기 보조", "Reading Aid")}
+          </span>
+          {READING_AID_OPTIONS.map((item) => {
+            const active = item.id === readingAid;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`a11y-guide-rea-aid-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setReadingAid(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <p
+          data-testid="accessible-guide-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+        >
+          {pickLang(
+            `${activeVision.ko} + ${activeAid.ko} · ${activeVision.detailKo} (${activeAid.detailKo})`,
+            `${activeVision.en} + ${activeAid.en} · ${activeVision.detailEn} (${activeAid.detailEn})`,
+          )}
+        </p>
+      </section>
 
       {GUIDE_SECTIONS.map((section) => (
         <GuideSectionBlock key={section.id} section={section} />

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
+import { useI18n } from "@/shared/lib/i18n";
 import catalogData from "./material-atlas/catalog.json";
 import {
   filterMaterials, makeMaterialBoard, materialSelectionFromParams, materialShareUrl,
@@ -31,6 +32,69 @@ import { r5ResourcesStatusText } from "./r5-cat1-status-i18n";
 const CATALOG = parseMaterialCatalog(catalogData);
 const PAGE_SIZE = 24;
 const TRENDING = CATALOG ? buildTrendingMaterials(CATALOG.assets, 8) : [];
+
+type ShaderPassId = "cel-step-2tone" | "hatching-screentone-lt" | "pbr-wet-specular";
+type TileScaleId = "1k-mobile-fast" | "2k-webtoon-standard" | "4k-print-master";
+
+const SHADER_PASS_OPTIONS: readonly {
+  readonly id: ShaderPassId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "cel-step-2tone",
+    ko: "2단 셀 음영 툰 패스",
+    en: "2-Tone Cel Shader Pass",
+    detailKo: "PBR 알베도·노멀 맵을 웹툰 배경용 2단 셀 셰이딩 음영으로 양자화합니다.",
+    detailEn: "Quantizes PBR albedo and normal maps into clean 2-step cel-shaded webtoon shadow bands.",
+  },
+  {
+    id: "hatching-screentone-lt",
+    ko: "선화·스크린톤 LT 추출",
+    en: "Hatching Screentone LT",
+    detailKo: "깊이·곡률 경계에서 외곽선과 망점 스크린톤(LT) 레이어를 분리 추출합니다.",
+    detailEn: "Extracts contour linework and halftone screentone LT layers from depth and curvature edges.",
+  },
+  {
+    id: "pbr-wet-specular",
+    ko: "젖은 노면 PBR 하이라이트",
+    en: "PBR Wet Specular Pass",
+    detailKo: "야경·우천 씬을 위해 거칠기(Roughness) 맵 기반 수면 반사 하이라이트를 강조합니다.",
+    detailEn: "Boosts roughness-driven wet surface specular highlights for rain and night alley scenes.",
+  },
+];
+
+const TILE_SCALE_OPTIONS: readonly {
+  readonly id: TileScaleId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "1k-mobile-fast",
+    ko: "1K 모바일 경량 타일",
+    en: "1K Mobile Fast Tile",
+    detailKo: "1024px 심리스 반복 타일 · 원거리 배경 및 모바일 브라우저 고속 프리뷰용",
+    detailEn: "1024px seamless repeat tile optimized for distant backdrops and mobile canvas preview",
+  },
+  {
+    id: "2k-webtoon-standard",
+    ko: "2K 웹툰 원고 표준",
+    en: "2K Webtoon Standard",
+    detailKo: "2048px 표준 해상도 · 가로 690~800px 세로 스크롤 웹툰 본편 클로즈업 대응",
+    detailEn: "2048px standard resolution matched to 690-800px vertical-scroll webtoon close-ups",
+  },
+  {
+    id: "4k-print-master",
+    ko: "4K 단행본 인쇄 마스터",
+    en: "4K Print Master",
+    detailKo: "4096px 무손실 디테일 · 300~600dpi 단행본 인쇄 및 키비주얼 포스터 원고용",
+    detailEn: "4096px master detail suitable for 300-600dpi print volumes and key visual posters",
+  },
+];
 function downloadMaterialFile(name: string, text: string, type: string) {
   const url = URL.createObjectURL(new Blob([text], { type }));
   const anchor = document.createElement("a");
@@ -66,6 +130,13 @@ function MaterialCard({ asset, selected, previews, onToggle, onSendToStudio }: {
   </article>;
 }
 function MaterialAtlasWorkspace({ catalog }: { catalog: MaterialCatalog }) {
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const [shaderPass, setShaderPass] = useState<ShaderPassId>("cel-step-2tone");
+  const [tileScale, setTileScale] = useState<TileScaleId>("1k-mobile-fast");
+  const activePass = SHADER_PASS_OPTIONS.find((item) => item.id === shaderPass) ?? SHADER_PASS_OPTIONS[0];
+  const activeScale = TILE_SCALE_OPTIONS.find((item) => item.id === tileScale) ?? TILE_SCALE_OPTIONS[0];
   const [params, setParams] = useSearchParams();
   const [previews, setPreviews] = useState(false);
   const [note, setNote] = useState("");
@@ -141,6 +212,86 @@ function MaterialAtlasWorkspace({ catalog }: { catalog: MaterialCatalog }) {
   };
   return <ResourceLayout title="무료 배경·소품 소재 도감" intro="Poly Haven과 ambientCG의 공개 API 자료로 만든 작은 CC0 소재 카탈로그입니다. 재질, 3D 소품, 빛과 환경을 한글로 찾아 장면별 소재 목록과 출처 명세서로 정리하세요.">
     <MaterialAdvantageBanner assetCount={catalog.assets.length} providerCount={Object.keys(MATERIAL_PROVIDERS).length} />
+    <section
+      data-testid="material-atlas-rea-pbr-toon-bar"
+      aria-label={pickLang("PBR-툰 셰이더·타일 해상도 워크벤치", "PBR-to-toon shader and tile resolution workbench")}
+      className="mb-5 rounded-2xl border border-line bg-card p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-accent">
+          {pickLang("REA PBR-툰 셰이더 패스 · 타일 배율 시뮬레이터", "REA PBR-to-Toon Shader & Tile Scale Simulator")}
+        </span>
+        <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+          Poly Haven · AmbientCG · Quixel Megascans · Clip Studio Material
+        </span>
+      </div>
+      <div
+        className="mt-3 flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label={pickLang("툰 셰이더 변환 패스", "Toon shader conversion pass")}
+      >
+        <span className="text-xs font-semibold text-fg-2">
+          {pickLang("셰이더 패스", "Shader Pass")}
+        </span>
+        {SHADER_PASS_OPTIONS.map((item) => {
+          const active = item.id === shaderPass;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`material-rea-pass-${item.id}`}
+              aria-pressed={active}
+              onClick={() => setShaderPass(item.id)}
+              className={
+                active
+                  ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          );
+        })}
+      </div>
+      <div
+        className="mt-2 flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label={pickLang("타일 해상도 배율", "Tile resolution scale")}
+      >
+        <span className="text-xs font-semibold text-fg-2">
+          {pickLang("타일 배율", "Tile Scale")}
+        </span>
+        {TILE_SCALE_OPTIONS.map((item) => {
+          const active = item.id === tileScale;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`material-rea-scale-${item.id}`}
+              aria-pressed={active}
+              onClick={() => setTileScale(item.id)}
+              className={
+                active
+                  ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          );
+        })}
+      </div>
+      <p
+        data-testid="material-atlas-rea-status"
+        aria-live="polite"
+        className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+      >
+        {pickLang(
+          `${activePass.ko} + ${activeScale.ko} · ${activePass.detailKo} (${activeScale.detailKo})`,
+          `${activePass.en} + ${activeScale.en} · ${activePass.detailEn} (${activeScale.detailEn})`,
+        )}
+      </p>
+    </section>
     <section className="grid gap-5 rounded-3xl border border-accent/30 bg-gradient-to-br from-accent-soft via-panel to-raised p-5 sm:p-7 md:grid-cols-[minmax(0,1fr)_auto]" aria-labelledby="material-free-title">
       <div className="min-w-0"><p className="text-xs font-bold tracking-widest text-accent">OPEN MATERIALS / API SNAPSHOT</p><h2 id="material-free-title" className="mt-3 text-xl font-bold">유료 생성 API 없이, 실제 제작 자료로</h2>
         <p className="mt-3 text-sm leading-7 text-fg-2">{catalog.assets.length}개 소재 · 제공처 2곳 · 제작 가이드 {MATERIAL_STUDIES.length}종. 검색·선택·문서 내보내기는 브라우저에서 처리합니다. 실시간 전체 검색이 아닌 확인 시점의 선별 목록입니다.</p>

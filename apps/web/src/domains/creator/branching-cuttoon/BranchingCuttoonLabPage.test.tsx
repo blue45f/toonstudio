@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import {
   BRANCHING_CUTTOON_LIMITS,
   serializeBranchingCuttoon,
@@ -576,5 +576,36 @@ describe("분기형 컷툰 실험실 — 언어", () => {
     expect(screen.getByRole("button", { name: tNow("branchingCuttoon.page.loadSample") })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "샘플 불러오기" })).toBeNull();
     expect(tNow("branchingCuttoon.page.title")).not.toBe("분기형 컷툰");
+  });
+
+  it("REA 서사 그래프 워크벤치에서 토폴로지·감사 규칙을 전환하고 en 로케일에서 한글을 포함하지 않는다", () => {
+    renderPage();
+    const bar = screen.getByTestId("branching-cuttoon-rea-graph-bar");
+    expect(bar.textContent).toContain("Twine · Inkle Ink · Episode · WEBTOON Interactive");
+    expect(screen.getByTestId("branching-rea-topology-diamond-convergence").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("branching-rea-audit-deadend-zero-check").getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByTestId("branching-rea-topology-multi-ending-tree"));
+    expect(screen.getByTestId("branching-rea-topology-multi-ending-tree").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("branching-rea-topology-diamond-convergence").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("branching-cuttoon-rea-status").textContent).toContain("multi-ending-tree");
+
+    fireEvent.click(screen.getByTestId("branching-rea-topology-affection-state-gate"));
+    expect(screen.getByTestId("branching-rea-topology-affection-state-gate").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("branching-cuttoon-rea-status").textContent).toContain("affection-state-gate");
+
+    fireEvent.click(screen.getByTestId("branching-rea-audit-choice-reach-balance"));
+    expect(screen.getByTestId("branching-rea-audit-choice-reach-balance").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("branching-rea-audit-deadend-zero-check").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("branching-cuttoon-rea-status").textContent).toContain("choice-reach-balance");
+
+    fireEvent.click(screen.getByTestId("branching-rea-audit-memory-flag-budget"));
+    expect(screen.getByTestId("branching-rea-audit-memory-flag-budget").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("branching-cuttoon-rea-status").textContent).toContain("memory-flag-budget");
+
+    act(() => {
+      useI18n.getState().setLang("en");
+    });
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
   });
 });

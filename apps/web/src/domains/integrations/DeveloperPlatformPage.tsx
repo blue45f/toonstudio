@@ -103,13 +103,83 @@ function DeveloperStartGuide({ ko }: { ko: boolean }) {
   );
 }
 
+type WebhookEventId = "episode-published-hmac" | "asset-bundle-verified" | "crdt-snapshot-sealed";
+type SandboxScopeId = "readonly-canvas-ast" | "layer-filter-worker" | "signed-export-webhook";
+
+const WEBHOOK_EVENT_OPTIONS: readonly {
+  readonly id: WebhookEventId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "episode-published-hmac",
+    ko: "회차 발행 HMAC 서명 웹훅",
+    en: "Episode Published HMAC",
+    detailKo: "신규 회차 패키지 발행 시 X-ToonStudio-Signature-256 헤더로 서명된 이벤트를 전송합니다.",
+    detailEn: "Dispatches X-ToonStudio-Signature-256 signed payloads when an episode package is published.",
+  },
+  {
+    id: "asset-bundle-verified",
+    ko: "에셋 번들 무결성 검증",
+    en: "Asset Bundle Verified",
+    detailKo: "3D 배경·브러시 번들의 SHA-256 해시와 라이선스 메타데이터 검증 완료 이벤트를 알립니다.",
+    detailEn: "Emits SHA-256 digest and license verification events for 3D and brush asset bundles.",
+  },
+  {
+    id: "crdt-snapshot-sealed",
+    ko: "CRDT 캔버스 스냅샷 봉인",
+    en: "CRDT Snapshot Sealed",
+    detailKo: "공동 작업 캔버스의 리비전 스냅샷이 불변 체크포인트로 봉인될 때 트리거됩니다.",
+    detailEn: "Triggers when a collaborative canvas CRDT revision is sealed as an immutable checkpoint.",
+  },
+];
+
+const SANDBOX_SCOPE_OPTIONS: readonly {
+  readonly id: SandboxScopeId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "readonly-canvas-ast",
+    ko: "읽기 전용 캔버스 AST",
+    en: "Read-Only Canvas AST",
+    detailKo: "원본 비트맵 반출 없이 컷·말풍선·레이어 트리 구조만 읽는 최소 권한 샌드박스",
+    detailEn: "Least-privilege sandbox reading panel, balloon, and layer AST nodes without raw bitmaps",
+  },
+  {
+    id: "layer-filter-worker",
+    ko: "레이어 필터 WebWorker",
+    en: "Layer Filter Worker",
+    detailKo: "격리된 WebWorker에서 선택 레이어에 톤·하프톤·색보정 필터만 수행하는 플러그인 범위",
+    detailEn: "Isolated WebWorker scope applying screentone and color grading filters to active layers",
+  },
+  {
+    id: "signed-export-webhook",
+    ko: "서명된 내보내기 웹훅",
+    en: "Signed Export Webhook",
+    detailKo: "사용자 명시 승인 후 생성된 배포 매니페스트 URL만 외부 CI/CD 파이프라인에 전달",
+    detailEn: "Delivers signed export manifest URLs to external CI/CD pipelines after explicit user consent",
+  },
+];
+
 export function DeveloperPlatformPage() {
   const lang = useI18n((state) => state.lang);
-  const ko = lang.startsWith("ko");
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const ko = isKo;
   useDocumentTitle(ko ? "개발자 플랫폼 · ToonStudio" : "Developer platform · ToonStudio");
   const [manifest, setManifest] = useState<DeveloperManifestResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reloadCount, setReloadCount] = useState(0);
+  const [webhookEvent, setWebhookEvent] = useState<WebhookEventId>("episode-published-hmac");
+  const [sandboxScope, setSandboxScope] = useState<SandboxScopeId>("readonly-canvas-ast");
+
+  const activeEvent = WEBHOOK_EVENT_OPTIONS.find((item) => item.id === webhookEvent) ?? WEBHOOK_EVENT_OPTIONS[0];
+  const activeScope = SANDBOX_SCOPE_OPTIONS.find((item) => item.id === sandboxScope) ?? SANDBOX_SCOPE_OPTIONS[0];
 
   useEffect(() => {
     let cancelled = false;
@@ -151,6 +221,86 @@ export function DeveloperPlatformPage() {
         </figcaption>
       </figure>
       <DeveloperStartGuide ko={ko} />
+      <section
+        data-testid="developer-platform-rea-webhook-bar"
+        aria-label={pickLang("개발자 웹훅·플러그인 샌드박스 워크벤치", "Developer webhook and plugin sandbox workbench")}
+        className="mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-accent">
+            {pickLang("REA 서명 웹훅 · 플러그인 샌드박스 시뮬레이터", "REA Signed Webhook & Plugin Sandbox Simulator")}
+          </span>
+          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+            Figma Plugin API · Blender Python · GitHub Webhooks · Stripe Events
+          </span>
+        </div>
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("서명 웹훅 이벤트", "Signed webhook event")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("웹훅 이벤트", "Webhook Event")}
+          </span>
+          {WEBHOOK_EVENT_OPTIONS.map((item) => {
+            const active = item.id === webhookEvent;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`dev-platform-rea-event-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setWebhookEvent(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          className="mt-2 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("샌드박스 권한 범위", "Sandbox permission scope")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("권한 범위", "Sandbox Scope")}
+          </span>
+          {SANDBOX_SCOPE_OPTIONS.map((item) => {
+            const active = item.id === sandboxScope;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`dev-platform-rea-scope-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setSandboxScope(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <p
+          data-testid="developer-platform-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+        >
+          {pickLang(
+            `${activeEvent.ko} + ${activeScope.ko} · ${activeEvent.detailKo} (${activeScope.detailKo})`,
+            `${activeEvent.en} + ${activeScope.en} · ${activeEvent.detailEn} (${activeScope.detailEn})`,
+          )}
+        </p>
+      </section>
       {!manifest && !error ? <IntegrationLoading message={ko ? "개발자 계약을 불러오고 있습니다." : "Loading developer contract."} /> : null}
       {error ? <IntegrationError message={error} onRetry={retry} /> : null}
       {manifest ? (

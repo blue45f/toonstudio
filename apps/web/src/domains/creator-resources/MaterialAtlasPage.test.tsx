@@ -4,11 +4,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 
+import { useI18n } from "@/shared/lib/i18n";
+
 import { MaterialAtlasPage } from "./MaterialAtlasPage";
 import snapshot from "./material-atlas/catalog.json";
 
 vi.mock("./ResourceLayout", () => ({ ResourceLayout: ({ title, children }: { title: string; children: ReactNode }) => <main><h1>{title}</h1>{children}</main> }));
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); useI18n.setState({ lang: "ko" }); });
 function open(search = "") { return render(<MemoryRouter initialEntries={[`/research/materials${search}`]}><MaterialAtlasPage /></MemoryRouter>); }
 
 describe("material atlas independent browser workflow", () => {
@@ -96,5 +98,65 @@ describe("material atlas independent browser workflow", () => {
     expect(screen.getByRole("note", { name: /첫 방문 안내/ })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "안내 닫기" }));
     expect(screen.queryByRole("note")).toBeNull();
+  });
+
+  it("renders the REA PBR-to-toon shader & tile scale workbench and toggles states", () => {
+    useI18n.setState({ lang: "ko" });
+    open();
+
+    const bar = screen.getByTestId("material-atlas-rea-pbr-toon-bar");
+    expect(bar.textContent).toContain("Poly Haven · AmbientCG · Quixel Megascans · Clip Studio Material");
+
+    const passCel = screen.getByTestId("material-rea-pass-cel-step-2tone");
+    const passLt = screen.getByTestId("material-rea-pass-hatching-screentone-lt");
+    const passWet = screen.getByTestId("material-rea-pass-pbr-wet-specular");
+
+    expect(passCel.getAttribute("aria-pressed")).toBe("true");
+    expect(passLt.getAttribute("aria-pressed")).toBe("false");
+    expect(passWet.getAttribute("aria-pressed")).toBe("false");
+
+    const scale1k = screen.getByTestId("material-rea-scale-1k-mobile-fast");
+    const scale2k = screen.getByTestId("material-rea-scale-2k-webtoon-standard");
+    const scale4k = screen.getByTestId("material-rea-scale-4k-print-master");
+
+    expect(scale1k.getAttribute("aria-pressed")).toBe("true");
+    expect(scale2k.getAttribute("aria-pressed")).toBe("false");
+    expect(scale4k.getAttribute("aria-pressed")).toBe("false");
+
+    const status = screen.getByTestId("material-atlas-rea-status");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.textContent).toContain("2단 셀 음영 툰 패스");
+    expect(status.textContent).toContain("1K 모바일 경량 타일");
+
+    fireEvent.click(passLt);
+    expect(passLt.getAttribute("aria-pressed")).toBe("true");
+    expect(passCel.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("선화·스크린톤 LT 추출");
+
+    fireEvent.click(scale2k);
+    expect(scale2k.getAttribute("aria-pressed")).toBe("true");
+    expect(scale1k.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("2K 웹툰 원고 표준");
+
+    fireEvent.click(passWet);
+    fireEvent.click(scale4k);
+    expect(passWet.getAttribute("aria-pressed")).toBe("true");
+    expect(scale4k.getAttribute("aria-pressed")).toBe("true");
+    expect(status.textContent).toContain("젖은 노면 PBR 하이라이트");
+    expect(status.textContent).toContain("4K 단행본 인쇄 마스터");
+  });
+
+  it("keeps the REA workbench 100% pure English in en locale", () => {
+    useI18n.setState({ lang: "en" });
+    open();
+
+    const bar = screen.getByTestId("material-atlas-rea-pbr-toon-bar");
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+
+    fireEvent.click(screen.getByTestId("material-rea-pass-pbr-wet-specular"));
+    fireEvent.click(screen.getByTestId("material-rea-scale-4k-print-master"));
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("material-atlas-rea-status").textContent).toContain("PBR Wet Specular Pass");
+    expect(screen.getByTestId("material-atlas-rea-status").textContent).toContain("4K Print Master");
   });
 });

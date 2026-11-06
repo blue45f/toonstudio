@@ -31,6 +31,7 @@ import {
 } from "react";
 
 import { Container } from "@/shared/components/section";
+import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
@@ -65,8 +66,27 @@ import { renderPdfPageThumbnail } from "./pdf-workbench-thumbnails";
 
 const THUMBNAIL_WIDTH = 220;
 
+const TRIM_SPECS = [
+  { id: "b5-manga-bleed3mm", ko: "B5 만화 원고 3mm 도련", en: "B5 Manga 3mm Bleed" },
+  { id: "a5-tankobon-spread", ko: "A5 단행본 펼침면", en: "A5 Tankobon Spread" },
+  { id: "webtoon-scroll-to-page", ko: "웹툰 스크롤 → 지면 분할", en: "Webtoon Scroll-to-Page" },
+] as const;
+
+const INK_PROFILES = [
+  { id: "cmyk-japan-color-300pct", ko: "CMYK Japan Color 총잉크 300%", en: "CMYK Japan Color TAC 300%" },
+  { id: "monochrome-600dpi-screentone", ko: "흑백 600dpi 망점 보존", en: "Monochrome 600dpi Screentone" },
+  { id: "pdfx4-font-outline", ko: "PDF/X-4 폰트 아웃라인", en: "PDF/X-4 Font Outline" },
+] as const;
+
 export function PdfWorkbenchPage() {
   const bt = useBilingual("PdfWorkbenchPage");
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const [trimSpec, setTrimSpec] = useState<(typeof TRIM_SPECS)[number]["id"]>("b5-manga-bleed3mm");
+  const [inkProfile, setInkProfile] = useState<(typeof INK_PROFILES)[number]["id"]>("cmyk-japan-color-300pct");
+  const activeTrim = TRIM_SPECS.find((item) => item.id === trimSpec) ?? TRIM_SPECS[0];
+  const activeInk = INK_PROFILES.find((item) => item.id === inkProfile) ?? INK_PROFILES[0];
   const [wb, setWb] = useState<PdfWorkbenchState>(() => createPdfWorkbenchState());
   const [thumbs, setThumbs] = useState<ReadonlyMap<string, string>>(() => new Map());
   const [adding, setAdding] = useState(false);
@@ -279,6 +299,81 @@ export function PdfWorkbenchPage() {
           )}
         </p>
       </header>
+
+      <section
+        data-testid="pdf-workbench-rea-cmyk-bleed-bar"
+        aria-label={pickLang("PDF 워크벤치 인쇄 도련 및 CMYK 프로파일 점검", "PDF Workbench Print Bleed & CMYK Profile Preflight")}
+        className="mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-mono text-xs font-semibold text-accent">
+              {pickLang("단행본 인쇄 프리플라이트 · 도련 & CMYK 잉크", "PRINT PREFLIGHT · BLEED & CMYK INK PROFILE")}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-fg">
+              {pickLang(
+                "B5·A5 단행본 재단선·도련 규격과 CMYK 총잉크량·600dpi 망점 프로파일을 대조합니다.",
+                "Verify B5/A5 tankobon trim & bleed specs against CMYK total area coverage and 600dpi screentone profiles.",
+              )}
+            </p>
+          </div>
+          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2">
+            Clip Studio EX Multi-Page · Affinity Publisher · Adobe InDesign Print Preflight
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("재단·도련 규격:", "Trim & Bleed Spec:")}
+          </span>
+          {TRIM_SPECS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`pdf-rea-trim-${item.id}`}
+              aria-pressed={trimSpec === item.id}
+              onClick={() => setTrimSpec(item.id)}
+              className={
+                trimSpec === item.id
+                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("잉크 프로파일:", "Ink Profile:")}
+          </span>
+          {INK_PROFILES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`pdf-rea-ink-${item.id}`}
+              aria-pressed={inkProfile === item.id}
+              onClick={() => setInkProfile(item.id)}
+              className={
+                inkProfile === item.id
+                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <p
+          data-testid="pdf-workbench-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
+        >
+          {pickLang(
+            `규격: ${activeTrim.ko} (${trimSpec}) · 프로파일: ${activeInk.ko} (${inkProfile})`,
+            `Trim: ${activeTrim.en} (${trimSpec}) · Profile: ${activeInk.en} (${inkProfile})`,
+          )}
+        </p>
+      </section>
 
       {error ? (
         <p role="alert" className="rounded-2xl border border-bad/40 bg-bad-soft px-4 py-3 text-sm">

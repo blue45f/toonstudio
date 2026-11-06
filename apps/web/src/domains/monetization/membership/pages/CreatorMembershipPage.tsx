@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
-import { useT } from "@/shared/lib/i18n";
+import { useI18n, useT } from "@/shared/lib/i18n";
 import { defineBilingualText } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import { LoadingState } from "@/shared/components/LoadingState";
@@ -39,12 +39,166 @@ const REVENUE_CTA = defineBilingualText(
   "Revenue dashboard",
 );
 
+type TierPerkId = "early-access-3ep" | "psd-layer-vault" | "director-cut-commentary";
+type RetentionGuardId = "annual-16pct-discount" | "pause-grace-30d" | "anniversary-badge-drop";
+
+const TIER_PERK_OPTIONS: readonly {
+  readonly id: TierPerkId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "early-access-3ep",
+    ko: "3화 선공개 패스",
+    en: "3-Episode Early Access",
+    detailKo: "정식 연재 전 최대 3화 분량의 선공개 원고를 후원 등급별로 잠금 해제합니다.",
+    detailEn: "Unlocks up to 3 preview episodes ahead of public release for active tier patrons.",
+  },
+  {
+    id: "psd-layer-vault",
+    ko: "원본 PSD·클립 금고",
+    en: "PSD & CLIP Layer Vault",
+    detailKo: "선화·채색·조명 레이어가 분리된 고해상도 PSD/CLIP 작업 파일 금고를 제공합니다.",
+    detailEn: "Grants access to high-resolution layered PSD and CLIP source files with lighting passes.",
+  },
+  {
+    id: "director-cut-commentary",
+    ko: "디렉터스 컷 코멘터리",
+    en: "Director's Cut Commentary",
+    detailKo: "삭제 컷·연출 의도·콘티 메모가 담긴 작가 코멘터리 보드를 전용 공개합니다.",
+    detailEn: "Shares exclusive creator commentary boards with deleted panels and storyboard notes.",
+  },
+];
+
+const RETENTION_GUARD_OPTIONS: readonly {
+  readonly id: RetentionGuardId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "annual-16pct-discount",
+    ko: "연간 구독 16% 할인",
+    en: "Annual 16% Discount",
+    detailKo: "12개월 선결제 시 2개월분(약 16%) 할인 혜택으로 장기 구독 전환을 유도합니다.",
+    detailEn: "Applies a 16% annual billing discount (2 months free) to boost long-term patron retention.",
+  },
+  {
+    id: "pause-grace-30d",
+    ko: "결제 유예·일시정지 30일",
+    en: "30-Day Pause & Grace",
+    detailKo: "휴재·결제 실패 시 누적 후원 개월 수를 잃지 않도록 30일 유예 기간을 보장합니다.",
+    detailEn: "Preserves patron streak tenure for 30 days during creator hiatus or payment retry.",
+  },
+  {
+    id: "anniversary-badge-drop",
+    ko: "구독 기념 배지 드롭",
+    en: "Anniversary Badge Drop",
+    detailKo: "3·6·12개월 누적 후원 달성 시 펜카페·댓글 전용 한정판 엠블럼을 지급합니다.",
+    detailEn: "Drops milestone supporter badges at 3, 6, and 12 months for Pencafe and comment profiles.",
+  },
+];
+
 export function CreatorMembershipPage() {
   const t = useT();
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
   const { data: session, ready, status } = useSession();
   const [tiers, setTiers] = useState<readonly MembershipTier[]>([]);
   const [showEditor, setShowEditor] = useState(false);
   const [editingTier, setEditingTier] = useState<MembershipTier | null>(null);
+  const [tierPerks, setTierPerks] = useState<TierPerkId>("early-access-3ep");
+  const [retentionGuard, setRetentionGuard] = useState<RetentionGuardId>("annual-16pct-discount");
+
+  const activePerk = TIER_PERK_OPTIONS.find((item) => item.id === tierPerks) ?? TIER_PERK_OPTIONS[0];
+  const activeGuard = RETENTION_GUARD_OPTIONS.find((item) => item.id === retentionGuard) ?? RETENTION_GUARD_OPTIONS[0];
+
+  const reaChurnBar = (
+    <section
+      data-testid="creator-membership-rea-churn-bar"
+      aria-label={pickLang("멤버십 리텐션·혜택 설계 워크벤치", "Membership retention and perk design workbench")}
+      className="mb-5 rounded-2xl border border-line bg-card p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-accent">
+          {pickLang("REA 멤버십 혜택 · 이탈 방지 시뮬레이터", "REA Membership Perks & Churn Guard Simulator")}
+        </span>
+        <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+          Pixiv Fanbox · Patreon · Naver Preview · Kakao Wait-Free
+        </span>
+      </div>
+      <div
+        className="mt-3 flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label={pickLang("핵심 티어 혜택", "Core tier perks")}
+      >
+        <span className="text-xs font-semibold text-fg-2">
+          {pickLang("티어 혜택", "Tier Perks")}
+        </span>
+        {TIER_PERK_OPTIONS.map((item) => {
+          const active = item.id === tierPerks;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`membership-rea-perk-${item.id}`}
+              aria-pressed={active}
+              onClick={() => setTierPerks(item.id)}
+              className={
+                active
+                  ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          );
+        })}
+      </div>
+      <div
+        className="mt-2 flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label={pickLang("구독 유지 가드", "Retention guard")}
+      >
+        <span className="text-xs font-semibold text-fg-2">
+          {pickLang("이탈 방지", "Retention Guard")}
+        </span>
+        {RETENTION_GUARD_OPTIONS.map((item) => {
+          const active = item.id === retentionGuard;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`membership-rea-guard-${item.id}`}
+              aria-pressed={active}
+              onClick={() => setRetentionGuard(item.id)}
+              className={
+                active
+                  ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          );
+        })}
+      </div>
+      <p
+        data-testid="creator-membership-rea-status"
+        aria-live="polite"
+        className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+      >
+        {pickLang(
+          `${activePerk.ko} + ${activeGuard.ko} · ${activePerk.detailKo} (${activeGuard.detailKo})`,
+          `${activePerk.en} + ${activeGuard.en} · ${activePerk.detailEn} (${activeGuard.detailEn})`,
+        )}
+      </p>
+    </section>
+  );
 
   const creatorId = session?.user.id ?? null;
   const authenticated = ready && status === "authenticated" && Boolean(creatorId);
@@ -78,6 +232,7 @@ export function CreatorMembershipPage() {
     return (
       <Container className="py-10">
         <CreatorMonetizationNav current="/creator/membership" />
+        {reaChurnBar}
         <div className="py-8 text-center">
           <Crown className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
           <h1 className="mt-3 text-xl font-bold text-fg">{t("membership.creatorPage.title")}</h1>
@@ -99,6 +254,7 @@ export function CreatorMembershipPage() {
   return (
     <Container className="py-8">
       <CreatorMonetizationNav current="/creator/membership" />
+      {reaChurnBar}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-fg">

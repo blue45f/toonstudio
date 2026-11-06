@@ -18,6 +18,7 @@ import { getAuthSession } from "@/domains/auth/public/session/auth-session-state
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
 import { Container } from "@/shared/components/section";
+import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { NOINDEX_PRIVATE_ROBOTS } from "@/shared/lib/seo-route-policy";
 import { formatCount } from "@/shared/lib/utils";
@@ -39,6 +40,68 @@ import { useNewsletterStore } from "./newsletter-store";
 import type { NewsletterIssue, SendIssueFailureReason } from "./newsletter-types";
 
 type Notice = { readonly kind: "success" | "error"; readonly text: string } | null;
+type CampaignTemplateId = "new-episode-drop" | "behind-the-scenes-sketch" | "hiatus-return-notice";
+type AudienceSegmentId = "all-subscribers" | "superfan-top10pct" | "dormant-30d-winback";
+
+const CAMPAIGN_TEMPLATE_OPTIONS: readonly {
+  readonly id: CampaignTemplateId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "new-episode-drop",
+    ko: "신규 회차 업로드 알림",
+    en: "New Episode Drop",
+    detailKo: "새 에피소드 대표 컷 미리보기와 바로 읽기 CTA를 포함한 주간 연재 발송 포맷",
+    detailEn: "Weekly release digest featuring key panel preview and direct episode reader CTA",
+  },
+  {
+    id: "behind-the-scenes-sketch",
+    ko: "비하인드 콘티·스케치 노트",
+    en: "Behind-the-Scenes Sketch",
+    detailKo: "러프 콘티·초기 캐릭터 시트·작가 후기 에세이를 묶은 팬레터 전용 템플릿",
+    detailEn: "Creator essay format bundling rough storyboards, character sheets, and studio notes",
+  },
+  {
+    id: "hiatus-return-notice",
+    ko: "휴재 복귀·시즌 예고장",
+    en: "Hiatus Return Notice",
+    detailKo: "시즌 복귀 일정·연재 재개 카운트다운·정주행 요약 링크를 전하는 공지 포맷",
+    detailEn: "Season return announcement with countdown schedule and recap binge links",
+  },
+];
+
+const AUDIENCE_SEGMENT_OPTIONS: readonly {
+  readonly id: AudienceSegmentId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "all-subscribers",
+    ko: "전체 구독 독자 발송",
+    en: "All Subscribers",
+    detailKo: "필명을 구독한 모든 활성 독자 이메일 목록에 동시 발송합니다.",
+    detailEn: "Broadcasts to all active reader email addresses subscribed to your pen name.",
+  },
+  {
+    id: "superfan-top10pct",
+    ko: "상위 10% 열혈 팬 세그먼트",
+    en: "Top 10% Superfans",
+    detailKo: "최근 5회 연속 열람·완독률을 기록한 상위 10% 코어 독자층에 우선 발송합니다.",
+    detailEn: "Targets the top 10% core readers with 5+ consecutive issue opens and full reads.",
+  },
+  {
+    id: "dormant-30d-winback",
+    ko: "30일 미열람 독자 재활성",
+    en: "30-Day Dormant Winback",
+    detailKo: "최근 30일간 열람 이력이 없는 휴면 구독자에게 하이라이트 요약본을 보냅니다.",
+    detailEn: "Re-engages subscribers inactive for 30+ days with a curated story highlight digest.",
+  },
+];
 
 /**
  * 뉴스레터 스토어는 IndexedDB 비동기 persist라, 복원이 끝나기 전에 화면을 열면
@@ -55,10 +118,20 @@ function useNewsletterHydrated(): boolean {
 
 export function NewsletterComposePage() {
   const t = useBilingual("newsletter");
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
   const actorId = useAuthActorId();
   useDocumentTitle("뉴스레터 작성");
   useMetaRobots(NOINDEX_PRIVATE_ROBOTS);
   const hydrated = useNewsletterHydrated();
+  const [campaignTemplate, setCampaignTemplate] = useState<CampaignTemplateId>("new-episode-drop");
+  const [audienceSegment, setAudienceSegment] = useState<AudienceSegmentId>("all-subscribers");
+
+  const activeTemplate =
+    CAMPAIGN_TEMPLATE_OPTIONS.find((item) => item.id === campaignTemplate) ?? CAMPAIGN_TEMPLATE_OPTIONS[0];
+  const activeSegment =
+    AUDIENCE_SEGMENT_OPTIONS.find((item) => item.id === audienceSegment) ?? AUDIENCE_SEGMENT_OPTIONS[0];
 
   const legacyPenName = useNewsletterStore((state) => state.penName);
   const penNames = useNewsletterStore((state) => state.penNames);
@@ -275,6 +348,87 @@ export function NewsletterComposePage() {
           </a>
         </nav>
       </header>
+
+      <section
+        data-testid="newsletter-compose-rea-openrate-bar"
+        aria-label={pickLang("뉴스레터 오픈율·세그먼트 벤치마크 워크벤치", "Newsletter open-rate and segment benchmark workbench")}
+        className="mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-accent">
+            {pickLang("REA 캠페인 템플릿 · 독자 세그먼트 시뮬레이터", "REA Campaign Template & Reader Segment Simulator")}
+          </span>
+          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+            Substack · Ghost · Beehiiv · Stibee
+          </span>
+        </div>
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("캠페인 템플릿", "Campaign template")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("캠페인 템플릿", "Template")}
+          </span>
+          {CAMPAIGN_TEMPLATE_OPTIONS.map((item) => {
+            const active = item.id === campaignTemplate;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`newsletter-rea-tpl-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setCampaignTemplate(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          className="mt-2 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("수신 독자 세그먼트", "Audience segment")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("독자 세그먼트", "Segment")}
+          </span>
+          {AUDIENCE_SEGMENT_OPTIONS.map((item) => {
+            const active = item.id === audienceSegment;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`newsletter-rea-seg-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setAudienceSegment(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <p
+          data-testid="newsletter-compose-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+        >
+          {pickLang(
+            `${activeTemplate.ko} + ${activeSegment.ko} · ${activeTemplate.detailKo} (${activeSegment.detailKo})`,
+            `${activeTemplate.en} + ${activeSegment.en} · ${activeTemplate.detailEn} (${activeSegment.detailEn})`,
+          )}
+        </p>
+      </section>
 
       {!actorId ? (
         <section className="rounded-2xl border border-line bg-panel/50 p-6">

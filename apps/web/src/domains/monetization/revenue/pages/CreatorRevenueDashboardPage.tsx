@@ -11,7 +11,7 @@ import { useMemo, useState } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
-import { useT } from "@/shared/lib/i18n";
+import { useI18n, useT } from "@/shared/lib/i18n";
 import { defineBilingualText } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
@@ -47,6 +47,68 @@ import { EpisodeTipRanking } from "@/domains/monetization/tipping/components/Epi
 import { CreatorMonetizationNav } from "../../components/CreatorMonetizationNav";
 
 type PeriodKey = "month" | "3m" | "6m";
+type RevenueMixId = "fastpass-cookie-pps" | "fanbox-patreon-membership" | "3d-brush-asset-royalty";
+type TaxRegimeId = "kr-withholding-33pct" | "us-w8ben-treaty" | "studio-split-70-30";
+
+const REVENUE_MIX_OPTIONS: readonly {
+  readonly id: RevenueMixId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "fastpass-cookie-pps",
+    ko: "미리보기 쿠키·PPS 정산",
+    en: "FastPass Cookie & PPS",
+    detailKo: "유료 미리보기 쿠키와 페이지 수익 배분(PPS)을 합산해 월간 정산 주기를 시뮬레이션합니다.",
+    detailEn: "Simulates monthly settlement combining FastPass preview cookies and PPS page revenue share.",
+  },
+  {
+    id: "fanbox-patreon-membership",
+    ko: "팬박스·패트리온 구독",
+    en: "Fanbox & Patreon Tiers",
+    detailKo: "월 정기 멤버십 구독료와 회차별 팬 후원 팁의 실수령 정산 비율을 계산합니다.",
+    detailEn: "Calculates net creator payout across recurring membership tiers and episode fan tips.",
+  },
+  {
+    id: "3d-brush-asset-royalty",
+    ko: "3D 배경·브러시 로열티",
+    en: "3D Asset & Brush Royalty",
+    detailKo: "스튜디오 마켓에 등록한 3D 배경·브러시 소재 라이선스 판매 로열티를 집계합니다.",
+    detailEn: "Aggregates licensing royalties from 3D backgrounds and custom brushes sold on the Studio market.",
+  },
+];
+
+const TAX_REGIME_OPTIONS: readonly {
+  readonly id: TaxRegimeId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "kr-withholding-33pct",
+    ko: "국내 원천징수 3.3%",
+    en: "KR Withholding 3.3%",
+    detailKo: "국내 프리랜서 창작자 사업소득 원천징수(소득세 3% + 지방소득세 0.3%) 기준",
+    detailEn: "Korean freelance creator withholding tax (3.0% income + 0.3% local tax) baseline",
+  },
+  {
+    id: "us-w8ben-treaty",
+    ko: "미국 W-8BEN 조세조약",
+    en: "US W-8BEN Treaty",
+    detailKo: "글로벌 플랫폼 W-8BEN 제출 시 한미 조세조약 저작권 로열티 감면 세율 기준",
+    detailEn: "Global platform W-8BEN copyright royalty treaty rate for cross-border payouts",
+  },
+  {
+    id: "studio-split-70-30",
+    ko: "스튜디오 7:3 배분",
+    en: "Studio 70:30 Split",
+    detailKo: "메인 작가 70% · 선화·채색·배경 어시스턴트 파트너 풀 30% 자동 배분 기준",
+    detailEn: "70% lead creator and 30% line/color/background assistant pool split baseline",
+  },
+];
 
 const EMPTY_BODY = defineBilingualText(
   "creatorRevenueDashboardPage",
@@ -83,9 +145,100 @@ function sourceLabelKey(sourceId: RevenueSourceId): string {
 
 export function CreatorRevenueDashboardPage() {
   const t = useT();
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
   const { data: session, ready, status } = useSession();
   const [periodKey, setPeriodKey] = useState<PeriodKey>("month");
   const [payoutOpen, setPayoutOpen] = useState(false);
+  const [revenueMix, setRevenueMix] = useState<RevenueMixId>("fastpass-cookie-pps");
+  const [taxRegime, setTaxRegime] = useState<TaxRegimeId>("kr-withholding-33pct");
+
+  const activeMix = REVENUE_MIX_OPTIONS.find((item) => item.id === revenueMix) ?? REVENUE_MIX_OPTIONS[0];
+  const activeTax = TAX_REGIME_OPTIONS.find((item) => item.id === taxRegime) ?? TAX_REGIME_OPTIONS[0];
+
+  const reaPayoutBar = (
+    <section
+      data-testid="revenue-dashboard-rea-payout-bar"
+      aria-label={pickLang("창작자 수익 정산 벤치마크 워크벤치", "Creator revenue settlement benchmark workbench")}
+      className="mb-5 rounded-2xl border border-line bg-card p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-accent">
+          {pickLang("REA 수익원 믹스 · 세무 정산 시뮬레이터", "REA Revenue Mix & Tax Settlement Simulator")}
+        </span>
+        <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+          Patreon · Pixiv Fanbox · Gumroad · Naver PPS · Postype
+        </span>
+      </div>
+      <div
+        className="mt-3 flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label={pickLang("수익원 믹스 모델", "Revenue mix model")}
+      >
+        <span className="text-xs font-semibold text-fg-2">
+          {pickLang("수익 모델", "Revenue Mix")}
+        </span>
+        {REVENUE_MIX_OPTIONS.map((item) => {
+          const active = item.id === revenueMix;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`revenue-rea-mix-${item.id}`}
+              aria-pressed={active}
+              onClick={() => setRevenueMix(item.id)}
+              className={
+                active
+                  ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          );
+        })}
+      </div>
+      <div
+        className="mt-2 flex flex-wrap items-center gap-2"
+        role="group"
+        aria-label={pickLang("세무·배분 체계", "Tax and split regime")}
+      >
+        <span className="text-xs font-semibold text-fg-2">
+          {pickLang("세무·배분", "Tax Regime")}
+        </span>
+        {TAX_REGIME_OPTIONS.map((item) => {
+          const active = item.id === taxRegime;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`revenue-rea-tax-${item.id}`}
+              aria-pressed={active}
+              onClick={() => setTaxRegime(item.id)}
+              className={
+                active
+                  ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          );
+        })}
+      </div>
+      <p
+        data-testid="revenue-dashboard-rea-status"
+        aria-live="polite"
+        className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+      >
+        {pickLang(
+          `${activeMix.ko} + ${activeTax.ko} · ${activeMix.detailKo} (${activeTax.detailKo})`,
+          `${activeMix.en} + ${activeTax.en} · ${activeMix.detailEn} (${activeTax.detailEn})`,
+        )}
+      </p>
+    </section>
+  );
 
   const creatorId = session?.user.id ?? null;
   const authenticated = ready && status === "authenticated" && Boolean(creatorId);
@@ -137,6 +290,7 @@ export function CreatorRevenueDashboardPage() {
     return (
       <Container className="py-10">
         <CreatorMonetizationNav current="/creator/revenue" />
+        {reaPayoutBar}
         <div className="py-8 text-center">
           <ChartColumn className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
           <h1 className="mt-3 text-xl font-bold text-fg">{t("revenue.dashboard.title")}</h1>
@@ -168,6 +322,7 @@ export function CreatorRevenueDashboardPage() {
   return (
     <Container className="py-8">
       <CreatorMonetizationNav current="/creator/revenue" />
+      {reaPayoutBar}
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-fg">

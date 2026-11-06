@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { initialOperationPolicy, resolveOperationPolicy } from "@toonstudio/contracts/operation-policy";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FREE_USAGE_POLICY } from "@toonstudio/contracts/production-workspace";
 import { TeamWorkspacePage } from "./TeamWorkspacePage";
 import { TeamWorkspaceJoinPage } from "./TeamWorkspaceJoinPage";
 import { saveCollaborationOnboarding } from "@/shared/lib/collaboration-onboarding";
+import { useI18n } from "@/shared/lib/i18n";
 
 const mocks = vi.hoisted(() => ({ userId: "owner" as string | null,
   list: vi.fn(), detail: vi.fn(), usage: vi.fn(), create: vi.fn(), command: vi.fn(), accept: vi.fn(), preview: vi.fn(), projects: vi.fn(), operation: vi.fn(), projectInvite: vi.fn(), team: vi.fn() }));
@@ -49,7 +50,7 @@ beforeEach(() => {
   // 이 스위트는 조각 취급 자체를 검증한다 — 미리보기는 기본적으로 닿지 않는 상태로 둔다.
   mocks.preview.mockRejectedValue(new Error("미리보기를 사용할 수 없습니다."));
 });
-afterEach(() => { cleanup(); sessionStorage.clear(); window.history.replaceState({}, "", "/"); });
+afterEach(() => { cleanup(); sessionStorage.clear(); window.history.replaceState({}, "", "/"); useI18n.getState().setLang("ko"); });
 describe("free team workspace UI", () => {
   it("does not fetch private team data when signed out", () => {
     mocks.userId = null; render(<App />);
@@ -248,5 +249,72 @@ describe("free team workspace UI", () => {
     fireEvent.click(screen.getByRole("button", { name: "초대 수락하기" }));
     await waitFor(() => expect(mocks.accept).toHaveBeenCalledWith("b".repeat(43)));
     await screen.findByText("team-lobby-destination");
+  });
+
+  it("toggles sprintCadence and rebalanceRule in team-workspace-rea-bottleneck-bar with aria-pressed", async () => {
+    mocks.userId = null;
+    render(<App />);
+
+    const bar = screen.getByTestId("team-workspace-rea-bottleneck-bar");
+    expect(bar.textContent).toContain("Linear Cycles · Asana Workload · Kitsu · ShotGrid");
+
+    const weeklyBtn = screen.getByTestId("team-workspace-rea-cadence-weekly-serial-7d");
+    const biweeklyBtn = screen.getByTestId("team-workspace-rea-cadence-biweekly-buffer-14d");
+    const crunchBtn = screen.getByTestId("team-workspace-rea-cadence-season-launch-crunch");
+
+    expect(weeklyBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(biweeklyBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(crunchBtn.getAttribute("aria-pressed")).toBe("false");
+
+    const bg3dBtn = screen.getByTestId("team-workspace-rea-rule-auto-shift-bg3d-assist");
+    const flatBtn = screen.getByTestId("team-workspace-rea-rule-flat-color-overflow-pool");
+    const letteringBtn = screen.getByTestId("team-workspace-rea-rule-lettering-qa-parallel");
+
+    expect(bg3dBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(flatBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(letteringBtn.getAttribute("aria-pressed")).toBe("false");
+
+    const status = screen.getByTestId("team-workspace-rea-status");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.textContent).toContain("주간 연재 7일 사이클");
+    expect(status.textContent).toContain("배경 3D 어시스트 자동 재배치");
+
+    fireEvent.click(biweeklyBtn);
+    expect(biweeklyBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(weeklyBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("격주 버퍼 14일 사이클");
+
+    fireEvent.click(crunchBtn);
+    expect(crunchBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(biweeklyBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("시즌 런칭 집중 주간");
+
+    fireEvent.click(flatBtn);
+    expect(flatBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(bg3dBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("밑색 오버플로 풀 가동");
+
+    fireEvent.click(letteringBtn);
+    expect(letteringBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(flatBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("식자·현지화 QA 병렬화");
+  });
+
+  it("maintains English purity inside team-workspace-rea-bottleneck-bar when locale is en", () => {
+    useI18n.getState().setLang("en");
+    mocks.userId = null;
+    render(<App />);
+
+    const bar = screen.getByTestId("team-workspace-rea-bottleneck-bar");
+    expect(bar.textContent ?? "").not.toMatch(/[가-힣]/u);
+
+    const withinBar = within(bar);
+    fireEvent.click(withinBar.getByTestId("team-workspace-rea-cadence-season-launch-crunch"));
+    fireEvent.click(withinBar.getByTestId("team-workspace-rea-rule-lettering-qa-parallel"));
+
+    const status = withinBar.getByTestId("team-workspace-rea-status");
+    expect(status.textContent).toContain("Season Launch Crunch");
+    expect(status.textContent).toContain("Parallel Lettering & QA");
+    expect(bar.textContent ?? "").not.toMatch(/[가-힣]/u);
   });
 });

@@ -10,9 +10,10 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
+import { useI18n } from "@/shared/lib/i18n";
 import Link from "@/shared/navigation/router-link";
 
 import { registerStudioBrushGrainSourcesV1 } from "../brush/studio-brush-grain-source-catalog-v1";
@@ -53,10 +54,29 @@ const STEPS = [
   },
 ] as const;
 
+const KERNEL_MODES = [
+  { id: "dual-tip-multiply", ko: "듀얼 팁 Multiply 합성", en: "Dual-Tip Multiply Kernel" },
+  { id: "rebelle-wet-pigment", ko: "Rebelle 습식 안료 확산", en: "Rebelle Wet-Pigment Diffusion" },
+  { id: "gpen-velocity-taper", ko: "G펜 속도 감응 칼끝 테이퍼", en: "G-Pen Velocity Taper" },
+] as const;
+
+const STYLUS_CURVES = [
+  { id: "scurve-soft-ink", ko: "S-커브 소프트 잉크 필압", en: "S-Curve Soft Ink Pressure" },
+  { id: "linear-precision", ko: "선형 정밀 드로잉 응답", en: "Linear Precision Response" },
+  { id: "heavy-chisel-tilt", ko: "고필압 치즐 기울기 보정", en: "Heavy Chisel Tilt Curve" },
+] as const;
+
 /** Render the canonical full editor for the single Brush Studio product. */
 export function StudioBrushLabPage() {
   const params = useParams<{ workId?: string; sourceWorkId?: string; brushId?: string }>();
   const location = useLocation();
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const [kernelMode, setKernelMode] = useState<(typeof KERNEL_MODES)[number]["id"]>("dual-tip-multiply");
+  const [stylusCurve, setStylusCurve] = useState<(typeof STYLUS_CURVES)[number]["id"]>("scurve-soft-ink");
+  const activeKernel = KERNEL_MODES.find((item) => item.id === kernelMode) ?? KERNEL_MODES[0];
+  const activeCurve = STYLUS_CURVES.find((item) => item.id === stylusCurve) ?? STYLUS_CURVES[0];
   const context = resolveStudioBrushEditorContext(params, location.search);
   // 브러시 랩 초기화 — 종이 6종 + 패턴 4종 R8 그레인 타일을 공유 레지스트리에 등록한다.
   // 등록 영수증(소스 해시)은 카탈로그 메모에 남아 그레인 소스 선택 표면이 그대로 표시한다.
@@ -240,6 +260,81 @@ export function StudioBrushLabPage() {
           </div>
         </section>
       </header>
+
+      <section
+        data-testid="brush-lab-rea-wetmix-wgsl-bar"
+        aria-label={pickLang("브러시 랩 WGSL 습식 안료 및 스타일러스 커브 워크벤치", "Brush Lab WGSL Wet-Mix & Stylus Curve Workbench")}
+        className="mt-3 mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-mono text-xs font-semibold text-accent">
+              {pickLang("브러시 엔진 · WGSL 습식 혼색 & 스타일러스 커브", "BRUSH ENGINE · WGSL WET-MIX & STYLUS CURVE")}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-fg">
+              {pickLang(
+                "듀얼 팁·습식 안료 커널과 필압·기울기 응답 곡선을 조합해 실제 획감을 조율합니다.",
+                "Tune dual-tip and wet-pigment WGSL kernels with stylus pressure and tilt curves.",
+              )}
+            </p>
+          </div>
+          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2">
+            Procreate Brush Studio · Clip Studio .sut · Krita .kpp · Rebelle 7 Wet Mix
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("커널 모드:", "Kernel Mode:")}
+          </span>
+          {KERNEL_MODES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`brush-lab-rea-kernel-${item.id}`}
+              aria-pressed={kernelMode === item.id}
+              onClick={() => setKernelMode(item.id)}
+              className={
+                kernelMode === item.id
+                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("스타일러스 곡선:", "Stylus Curve:")}
+          </span>
+          {STYLUS_CURVES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`brush-lab-rea-curve-${item.id}`}
+              aria-pressed={stylusCurve === item.id}
+              onClick={() => setStylusCurve(item.id)}
+              className={
+                stylusCurve === item.id
+                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <p
+          data-testid="brush-lab-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
+        >
+          {pickLang(
+            `커널: ${activeKernel.ko} (${kernelMode}) · 곡선: ${activeCurve.ko} (${stylusCurve})`,
+            `Kernel: ${activeKernel.en} (${kernelMode}) · Curve: ${activeCurve.en} (${stylusCurve})`,
+          )}
+        </p>
+      </section>
 
       <div className="mt-5 space-y-5">
         {!editingSavedBrush ? <StudioBrushProductCataloguePanel baseHref={context.baseHref} /> : null}

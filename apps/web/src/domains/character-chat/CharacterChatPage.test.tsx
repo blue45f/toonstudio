@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CharacterChatPage } from "./CharacterChatPage";
 import { useCharacterChatStore } from "./character-chat-store";
+import { useI18n } from "@/shared/lib/i18n";
 import type {
   CharacterChatEngineInput,
   CharacterChatEngineResult,
@@ -40,6 +41,7 @@ function renderPage(route = "/character-chat") {
 
 beforeEach(() => {
   window.localStorage.clear();
+  useI18n.setState({ lang: "ko" });
   useCharacterChatStore.getState().resetForTests();
   engineState.ready = false;
   engineState.generateReply.mockReset();
@@ -47,6 +49,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  useI18n.setState({ lang: "ko" });
 });
 
 describe("CharacterChatPage", () => {
@@ -116,5 +119,64 @@ describe("CharacterChatPage", () => {
     const searchInput = screen.getByRole("searchbox", { name: "대화할 캐릭터 검색" });
     fireEvent.change(searchInput, { target: { value: "하루" } });
     expect(screen.getByRole("button", { name: /하루/ })).toBeTruthy();
+  });
+
+  it("REA 로어북 스포일러 펜스·페르소나 톤 워크벤치를 렌더링하고 양방향 상태를 전환한다", () => {
+    renderPage();
+
+    const bar = screen.getByTestId("character-chat-rea-lorebook-bar");
+    expect(bar.textContent).toContain("Character.AI · Zeta · Wrtn · SillyTavern Lorebook");
+
+    const fenceEp10 = screen.getByTestId("char-chat-rea-fence-ep10-canon-lock");
+    const fenceS1 = screen.getByTestId("char-chat-rea-fence-season1-finale-sync");
+    const fenceAu = screen.getByTestId("char-chat-rea-fence-au-whatif-sandbox");
+
+    expect(fenceEp10.getAttribute("aria-pressed")).toBe("true");
+    expect(fenceS1.getAttribute("aria-pressed")).toBe("false");
+    expect(fenceAu.getAttribute("aria-pressed")).toBe("false");
+
+    const toneStrict = screen.getByTestId("char-chat-rea-tone-canon-dialogue-strict");
+    const toneAffection = screen.getByTestId("char-chat-rea-tone-affection-stage-reactive");
+    const toneTts = screen.getByTestId("char-chat-rea-tone-voice-tts-prosody");
+
+    expect(toneStrict.getAttribute("aria-pressed")).toBe("true");
+    expect(toneAffection.getAttribute("aria-pressed")).toBe("false");
+    expect(toneTts.getAttribute("aria-pressed")).toBe("false");
+
+    const status = screen.getByTestId("character-chat-rea-status");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.textContent).toContain("10화 정사 스포일러 잠금");
+    expect(status.textContent).toContain("원작 대사 말투 고정");
+
+    fireEvent.click(fenceS1);
+    expect(fenceS1.getAttribute("aria-pressed")).toBe("true");
+    expect(fenceEp10.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("시즌1 완결 기억 동기화");
+
+    fireEvent.click(toneAffection);
+    expect(toneAffection.getAttribute("aria-pressed")).toBe("true");
+    expect(toneStrict.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("호감도 단계별 반응");
+
+    fireEvent.click(fenceAu);
+    fireEvent.click(toneTts);
+    expect(fenceAu.getAttribute("aria-pressed")).toBe("true");
+    expect(toneTts.getAttribute("aria-pressed")).toBe("true");
+    expect(status.textContent).toContain("IF 외전 멀티버스 샌드박스");
+    expect(status.textContent).toContain("보이스 TTS 감정 운율");
+  });
+
+  it("영어 로케일(en)에서 REA 워크벤치에 한글이 섞이지 않는다", () => {
+    useI18n.setState({ lang: "en" });
+    renderPage();
+
+    const bar = screen.getByTestId("character-chat-rea-lorebook-bar");
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+
+    fireEvent.click(screen.getByTestId("char-chat-rea-fence-au-whatif-sandbox"));
+    fireEvent.click(screen.getByTestId("char-chat-rea-tone-voice-tts-prosody"));
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("character-chat-rea-status").textContent).toContain("AU What-If Sandbox");
+    expect(screen.getByTestId("character-chat-rea-status").textContent).toContain("Voice TTS Prosody");
   });
 });

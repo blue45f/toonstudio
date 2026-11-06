@@ -63,9 +63,36 @@ import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { FlowProgress } from "@/shared/components/layout/FlowProgress";
 import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { getCurrentUiLocale, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { cn } from "@/shared/lib/utils";
+
+type RedlineLayerId = "anatomical-pose-fix" | "balloon-tail-lead" | "lighting-continuity";
+type HandoffGateId = "zero-blocking-threads" | "pd-art-dual-signoff" | "emergency-hotfix-lane";
+
+const REDLINE_LAYER_OPTIONS: ReadonlyArray<{
+  readonly id: RedlineLayerId;
+  readonly ko: string;
+  readonly en: string;
+  readonly slaKo: string;
+  readonly slaEn: string;
+}> = [
+  { id: "anatomical-pose-fix", ko: "인체·동세 레드라인", en: "Anatomical Pose Redline", slaKo: "작화 리드 4h 이내 반영", slaEn: "Art lead turnaround <= 4h" },
+  { id: "balloon-tail-lead", ko: "말풍선 꼬리·시선 유도", en: "Balloon Tail & Eye-Lead", slaKo: "식자·콘티 공동 2h 검증", slaEn: "Lettering + storyboard 2h check" },
+  { id: "lighting-continuity", ko: "조명·색온도 연속성", en: "Lighting & Color Continuity", slaKo: "채색·후보정 LUT 동기화 3h", slaEn: "Color + post LUT sync <= 3h" },
+];
+
+const HANDOFF_GATE_OPTIONS: ReadonlyArray<{
+  readonly id: HandoffGateId;
+  readonly ko: string;
+  readonly en: string;
+  readonly slaKo: string;
+  readonly slaEn: string;
+}> = [
+  { id: "zero-blocking-threads", ko: "미해결 블로커 0건 잠금", en: "Zero Blocking Threads Lock", slaKo: "블로커 해소가 끝날 때까지 다음 공정 이관 보류", slaEn: "Hold downstream handoff until all blockers resolve" },
+  { id: "pd-art-dual-signoff", ko: "PD·작화 이중 승인", en: "PD & Art Dual Sign-Off", slaKo: "PD 및 작화 감독 교차 서명 후 게시 큐 이동", slaEn: "Require PD + Art Director dual sign-off before publish queue" },
+  { id: "emergency-hotfix-lane", ko: "긴급 핫픽스 패스트트랙", en: "Emergency Hotfix Fast-Track", slaKo: "연재 마감 임박 시 30m 조건부 선반영·사후 감사", slaEn: "30m conditional fast-track with post-handoff audit log" },
+];
 
 function RoomState({ children, kind }: { readonly children: ReactNode; readonly kind: "pending" | "error" | "blocked" }) {
   return (
@@ -93,7 +120,13 @@ export function ProductionEpisodeRoomPage() {
   const project = useProductionProjectSession(params.projectId, actorId, productionDemoAdapter, { authReady });
   const [roleLens, setRoleLens] = usePreferredRoleLens("art");
   const [planningOpen, setPlanningOpen] = useState(false);
+  const [redlineLayer, setRedlineLayer] = useState<RedlineLayerId>("anatomical-pose-fix");
+  const [handoffGate, setHandoffGate] = useState<HandoffGateId>("zero-blocking-threads");
   const bt = useBilingual("ProductionEpisodeRoomPage");
+  const isKo = getCurrentUiLocale().startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const activeLayerOption = REDLINE_LAYER_OPTIONS.find((item) => item.id === redlineLayer) ?? REDLINE_LAYER_OPTIONS[0];
+  const activeGateOption = HANDOFF_GATE_OPTIONS.find((item) => item.id === handoffGate) ?? HANDOFF_GATE_OPTIONS[0];
 
   // 비교 검수 실데이터: 원고·버전 표면(ProductionManuscriptWorkspace)과 같은 로드 패턴으로
   // 이 회차의 공정·리비전을 불러와 룸의 비교 탭에 넘긴다. 실패해도 룸 전체를 막지 않는다
@@ -328,6 +361,77 @@ export function ProductionEpisodeRoomPage() {
             {project.notice}
           </div>
         ) : null}
+
+        <section
+          data-testid="episode-room-rea-redline-bar"
+          aria-label={pickLang("프레임별 레드라인 및 인계 준비도 워크벤치", "Frame-by-Frame Redline & Handoff Readiness Workbench")}
+          className="mt-4 rounded-2xl border border-line bg-card p-4"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold text-accent">
+                SyncSketch · Frame.io · ShotGrid Review · Kitsu
+              </p>
+              <h2 className="mt-1 text-sm font-bold text-fg">
+                {pickLang(
+                  "프레임별 레드라인 레이어 & 인계 준비도 게이트",
+                  "Frame-by-Frame Redline Layer & Handoff Readiness Gate",
+                )}
+              </h2>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {REDLINE_LAYER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  data-testid={`episode-room-rea-layer-${opt.id}`}
+                  aria-pressed={redlineLayer === opt.id}
+                  onClick={() => setRedlineLayer(opt.id)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                    redlineLayer === opt.id
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-line bg-panel text-fg-2"
+                  }`}
+                >
+                  {pickLang(opt.ko, opt.en)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-fg-2">
+              {pickLang("인계 승인 게이트", "Handoff Gate Policy")}
+            </span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {HANDOFF_GATE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  data-testid={`episode-room-rea-gate-${opt.id}`}
+                  aria-pressed={handoffGate === opt.id}
+                  onClick={() => setHandoffGate(opt.id)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                    handoffGate === opt.id
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-line bg-panel text-fg-2"
+                  }`}
+                >
+                  {pickLang(opt.ko, opt.en)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p
+            data-testid="episode-room-rea-status"
+            aria-live="polite"
+            className="mt-2 rounded-xl border border-line bg-panel p-2.5 font-mono text-xs text-fg-2"
+          >
+            {pickLang(
+              `활성 레이어: ${activeLayerOption.ko} (${activeLayerOption.slaKo}) · 게이트: ${activeGateOption.ko} · SLA 영향: ${activeGateOption.slaKo}`,
+              `Active layer: ${activeLayerOption.en} (${activeLayerOption.slaEn}) · Gate: ${activeGateOption.en} · SLA impact: ${activeGateOption.slaEn}`,
+            )}
+          </p>
+        </section>
 
         <ProductionEpisodeReviewRoom
           aggregate={aggregate}

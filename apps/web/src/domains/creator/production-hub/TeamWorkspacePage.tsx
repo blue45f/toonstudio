@@ -20,11 +20,38 @@ import { TeamAccessGuide } from "./TeamAccessGuide";
 import { TeamPeopleOverviewSkeleton, TeamPeopleOverviewStrip } from "./TeamPeopleOverview";
 import { TeamSceneArt } from "./TeamSceneArt";
 import { ProductionAvatar } from "./production-ui";
-import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { getCurrentUiLocale, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   createStudioSpatialInviteFragment,
   type StudioSpatialInviteContext,
 } from "../virtual-space/studio-spatial-invite-context";
+
+type SprintCadenceId = "weekly-serial-7d" | "biweekly-buffer-14d" | "season-launch-crunch";
+type RebalanceRuleId = "auto-shift-bg3d-assist" | "flat-color-overflow-pool" | "lettering-qa-parallel";
+
+const SPRINT_CADENCE_OPTIONS: ReadonlyArray<{
+  readonly id: SprintCadenceId;
+  readonly ko: string;
+  readonly en: string;
+  readonly loadKo: string;
+  readonly loadEn: string;
+}> = [
+  { id: "weekly-serial-7d", ko: "주간 연재 7일 사이클", en: "Weekly Serial 7d Cycle", loadKo: "컷당 리드타임 18h · 세이브 원고 1.5화 유지", loadEn: "18h cut lead time · 1.5 ep buffer target" },
+  { id: "biweekly-buffer-14d", ko: "격주 버퍼 14일 사이클", en: "Biweekly Buffer 14d Cycle", loadKo: "컷당 리드타임 32h · 세이브 원고 3화 확보", loadEn: "32h cut lead time · 3 ep safety buffer" },
+  { id: "season-launch-crunch", ko: "시즌 런칭 집중 주간", en: "Season Launch Crunch", loadKo: "동시 오픈 5화 병렬 파이프라인 가동", loadEn: "5-episode parallel launch pipeline active" },
+];
+
+const REBALANCE_RULE_OPTIONS: ReadonlyArray<{
+  readonly id: RebalanceRuleId;
+  readonly ko: string;
+  readonly en: string;
+  readonly effectKo: string;
+  readonly effectEn: string;
+}> = [
+  { id: "auto-shift-bg3d-assist", ko: "배경 3D 어시스트 자동 재배치", en: "Auto-Shift 3D BG Assist", effectKo: "선화 과부하 시 스케치업·블렌더 배경 어시스트로 28% 분산", effectEn: "Offloads 28% scene load to 3D background assist pool" },
+  { id: "flat-color-overflow-pool", ko: "밑색 오버플로 풀 가동", en: "Flat-Color Overflow Pool", effectKo: "채색 병목 구간에서 외주 밑색 풀 자동 호출", effectEn: "Routes flat-color queue overflow to auxiliary colorists" },
+  { id: "lettering-qa-parallel", ko: "식자·현지화 QA 병렬화", en: "Parallel Lettering & QA", effectKo: "승인된 컷부터 식자·다국어 검수 즉시 선행 착수", effectEn: "Starts lettering & localization QA on approved cuts in parallel" },
+];
 
 interface BilingualCopy {
   readonly ko: string;
@@ -184,6 +211,12 @@ export function TeamWorkspacePage() {
 }
 function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
   const bt = useBilingual("TeamWorkspacePage");
+  const isKo = getCurrentUiLocale().startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const [sprintCadence, setSprintCadence] = useState<SprintCadenceId>("weekly-serial-7d");
+  const [rebalanceRule, setRebalanceRule] = useState<RebalanceRuleId>("auto-shift-bg3d-assist");
+  const activeCadenceOption = SPRINT_CADENCE_OPTIONS.find((item) => item.id === sprintCadence) ?? SPRINT_CADENCE_OPTIONS[0];
+  const activeRuleOption = REBALANCE_RULE_OPTIONS.find((item) => item.id === rebalanceRule) ?? REBALANCE_RULE_OPTIONS[0];
   const session = useSession();
   // 구성원 계약에는 사진 필드가 없어 다른 구성원은 모노그램이 정직한 기본값이다.
   // 본인 행에만 세션 프로필 사진(실재하는 경우)을 연결한다.
@@ -297,7 +330,75 @@ function TeamWorkspaceConsole({ userId }: { userId: string | null }) {
     <header className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-panel p-5 sm:p-6">
       <div><p className="eyebrow text-accent">TEAM · PEOPLE & ACCESS</p><h1 className="mt-2 text-2xl font-black">{bt("사람·권한 관리", "People & access")}</h1><p className="mt-2 text-sm text-fg-2">{operationPolicy?.notice ?? bt("팀 소속과 프로젝트 접근 권한을 한 흐름에서 관리합니다.", "Manage team membership and project access in one flow.")}</p></div>
       <nav aria-label={bt("팀 관리", "Team management")} className="flex flex-wrap gap-3"><Link to="/team">{bt("협업 홈", "Collaboration home")}</Link><Link to="/team/people">{bt("전체 팀", "All teams")}</Link><Link to="/team/organization">{bt("조직 홈", "Organization home")}</Link><Link to="/team/people/join">{bt("초대 수락", "Accept invite")}</Link></nav>
-    </header>{error && <div role="alert" className="rounded-xl border border-bad p-4">{error}<button className="ml-3 underline" onClick={() => setRefresh((value) => value + 1)}>{bt("새로고침", "Refresh")}</button></div>}
+    </header>
+    <section
+      data-testid="team-workspace-rea-bottleneck-bar"
+      aria-label={pickLang("다중 역할 작업 부하 및 병목 시뮬레이터", "Multi-Role Workload & Bottleneck Simulator")}
+      className="mt-4 rounded-2xl border border-line bg-card p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold text-accent">
+            Linear Cycles · Asana Workload · Kitsu · ShotGrid
+          </p>
+          <p className="mt-1 text-sm font-bold text-fg">
+            {pickLang("다중 역할 부하 및 공정 병목 시뮬레이터", "Multi-Role Workload & Stage Bottleneck Simulator")}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {SPRINT_CADENCE_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              data-testid={`team-workspace-rea-cadence-${opt.id}`}
+              aria-pressed={sprintCadence === opt.id}
+              onClick={() => setSprintCadence(opt.id)}
+              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                sprintCadence === opt.id
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-line bg-panel text-fg-2"
+              }`}
+            >
+              {pickLang(opt.ko, opt.en)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-fg-2">
+          {pickLang("병목 자동 재배치 규칙", "Bottleneck Rebalance Rule")}
+        </span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {REBALANCE_RULE_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              data-testid={`team-workspace-rea-rule-${opt.id}`}
+              aria-pressed={rebalanceRule === opt.id}
+              onClick={() => setRebalanceRule(opt.id)}
+              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                rebalanceRule === opt.id
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-line bg-panel text-fg-2"
+              }`}
+            >
+              {pickLang(opt.ko, opt.en)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p
+        data-testid="team-workspace-rea-status"
+        aria-live="polite"
+        className="mt-2 rounded-xl border border-line bg-panel p-2.5 font-mono text-xs text-fg-2"
+      >
+        {pickLang(
+          `활성 사이클: ${activeCadenceOption.ko} (${activeCadenceOption.loadKo}) · 재배치 규칙: ${activeRuleOption.ko} · 효과: ${activeRuleOption.effectKo}`,
+          `Active cadence: ${activeCadenceOption.en} (${activeCadenceOption.loadEn}) · Rebalance rule: ${activeRuleOption.en} · Effect: ${activeRuleOption.effectEn}`,
+        )}
+      </p>
+    </section>
+    {error && <div role="alert" className="rounded-xl border border-bad p-4">{error}<button className="ml-3 underline" onClick={() => setRefresh((value) => value + 1)}>{bt("새로고침", "Refresh")}</button></div>}
     {notice && <p role="status">{notice}</p>}
     {operationPolicy && !operationPolicy.features["team-workspace"].enabled && <p role="status">{operationPolicy.features["team-workspace"].reason} {bt("기존 자료 조회와 접근 회수는 유지됩니다.", "Existing data reads and access recovery remain available.")}</p>}
     {!userId ? <SignedOutTeamIntro /> : <>

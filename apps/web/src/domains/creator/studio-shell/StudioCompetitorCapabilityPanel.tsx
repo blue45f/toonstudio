@@ -585,7 +585,7 @@ export function StudioCompetitorCapabilityPanel({
                     <strong className="text-fg-2">{activeSubEnhancement.referenceServices.join(", ")}</strong>
                   </span>
                   <span className="font-mono font-bold text-success">
-                    {locale === "ko" ? "내재화·검증 완료" : "Internalized & Verified"} ({activeSubEnhancement.scoreOutOf100} / 100)
+                    {locale === "ko" ? "프리뷰·점검표 구성" : "Preview & Checklist Ready"} ({activeSubEnhancement.scoreOutOf100} / 100)
                   </span>
                 </div>
               </div>
@@ -651,7 +651,7 @@ export function StudioCompetitorCapabilityPanel({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <strong className="text-[0.68rem] font-extrabold text-fg">
                 {locale === "ko"
-                  ? `사이트 전체 REA 완성도 스코어카드 (${siteWideScorecard.analyzedFrontendDomainsCount}개 프론트엔드 도메인 · ${siteWideScorecard.totalReaEvidenceRecords}건 REA 증거 · ${siteWideScorecard.internalizedCompetitorServicesCount}개 서비스 내재화)`
+                  ? `사이트 전체 REA 완성도 스코어카드 (${siteWideScorecard.analyzedFrontendDomainsCount}개 프론트엔드 도메인 · ${siteWideScorecard.totalReaEvidenceRecords}건 REA 증거 · ${siteWideScorecard.internalizedCompetitorServicesCount}개 참조 서비스)`
                   : `Site-Wide REA Quality Scorecard (${siteWideScorecard.analyzedFrontendDomainsCount} Frontend Domains · ${siteWideScorecard.totalReaEvidenceRecords} REA Evidences · ${siteWideScorecard.internalizedCompetitorServicesCount} Services)`}
               </strong>
               <span
@@ -659,8 +659,8 @@ export function StudioCompetitorCapabilityPanel({
                 data-testid="toonstudio-sitewide-score-badge"
               >
                 {locale === "ko"
-                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (166,800,000,000,000만점 · ${siteWideScorecard.overallScore10} / 10)`
-                  : `Overall ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`}
+                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10 · 내부 UI·프리뷰 기준)`
+                  : `Overall ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10 · Internal UI & Preview Score)`}
               </span>
             </div>
             <div
@@ -669,8 +669,8 @@ export function StudioCompetitorCapabilityPanel({
             >
               <span className="font-bold text-accent">
                 {locale === "ko"
-                  ? "REA 6.8.0 라이브 CDP & 정적 AST 역공학 증거 체인 (22개 메인·서브페이지 100% 커버):"
-                  : "REA 6.8.0 Live CDP & Static AST Evidence Chain (22 Main & Sub-Pages 100% Covered):"}
+                  ? "REA 6.8.0 라이브 CDP & 정적 AST 역공학 증거 체인 (주요 메인·서브페이지 프리뷰 연계):"
+                  : "REA 6.8.0 Live CDP & Static AST Evidence Chain (Main & Sub-Page Preview Linked):"}
               </span>
               <span className="font-mono text-fg-2">
                 {locale === "ko"

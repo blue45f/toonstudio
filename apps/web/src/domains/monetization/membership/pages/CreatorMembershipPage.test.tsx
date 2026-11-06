@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -53,5 +53,64 @@ describe("CreatorMembershipPage", () => {
     const anchor = screen.getByRole("link", { name: "독자 뷰 전체 미리보기" });
     expect(anchor.getAttribute("href")).toBe("#creator-membership-preview");
     expect(container.querySelector("#creator-membership-preview")).not.toBeNull();
+  });
+
+  it("REA 멤버십 혜택·이탈 방지 워크벤치를 렌더링하고 양방향 상태를 전환한다", () => {
+    render(<CreatorMembershipPage />);
+
+    const bar = screen.getByTestId("creator-membership-rea-churn-bar");
+    expect(bar.textContent).toContain("Pixiv Fanbox · Patreon · Naver Preview · Kakao Wait-Free");
+
+    const perkEarly = screen.getByTestId("membership-rea-perk-early-access-3ep");
+    const perkVault = screen.getByTestId("membership-rea-perk-psd-layer-vault");
+    const perkCommentary = screen.getByTestId("membership-rea-perk-director-cut-commentary");
+
+    expect(perkEarly.getAttribute("aria-pressed")).toBe("true");
+    expect(perkVault.getAttribute("aria-pressed")).toBe("false");
+    expect(perkCommentary.getAttribute("aria-pressed")).toBe("false");
+
+    const guardAnnual = screen.getByTestId("membership-rea-guard-annual-16pct-discount");
+    const guardPause = screen.getByTestId("membership-rea-guard-pause-grace-30d");
+    const guardBadge = screen.getByTestId("membership-rea-guard-anniversary-badge-drop");
+
+    expect(guardAnnual.getAttribute("aria-pressed")).toBe("true");
+    expect(guardPause.getAttribute("aria-pressed")).toBe("false");
+    expect(guardBadge.getAttribute("aria-pressed")).toBe("false");
+
+    const status = screen.getByTestId("creator-membership-rea-status");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.textContent).toContain("3화 선공개 패스");
+    expect(status.textContent).toContain("연간 구독 16% 할인");
+
+    fireEvent.click(perkVault);
+    expect(perkVault.getAttribute("aria-pressed")).toBe("true");
+    expect(perkEarly.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("원본 PSD·클립 금고");
+
+    fireEvent.click(guardPause);
+    expect(guardPause.getAttribute("aria-pressed")).toBe("true");
+    expect(guardAnnual.getAttribute("aria-pressed")).toBe("false");
+    expect(status.textContent).toContain("결제 유예·일시정지 30일");
+
+    fireEvent.click(perkCommentary);
+    fireEvent.click(guardBadge);
+    expect(perkCommentary.getAttribute("aria-pressed")).toBe("true");
+    expect(guardBadge.getAttribute("aria-pressed")).toBe("true");
+    expect(status.textContent).toContain("디렉터스 컷 코멘터리");
+    expect(status.textContent).toContain("구독 기념 배지 드롭");
+  });
+
+  it("영어 로케일(en)에서 REA 워크벤치에 한글이 섞이지 않는다", () => {
+    useI18n.setState({ lang: "en" });
+    render(<CreatorMembershipPage />);
+
+    const bar = screen.getByTestId("creator-membership-rea-churn-bar");
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+
+    fireEvent.click(screen.getByTestId("membership-rea-perk-director-cut-commentary"));
+    fireEvent.click(screen.getByTestId("membership-rea-guard-anniversary-badge-drop"));
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("creator-membership-rea-status").textContent).toContain("Director's Cut Commentary");
+    expect(screen.getByTestId("creator-membership-rea-status").textContent).toContain("Anniversary Badge Drop");
   });
 });

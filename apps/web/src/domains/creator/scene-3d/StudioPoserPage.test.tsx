@@ -1,14 +1,18 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { StudioPoserPage } from "./StudioPoserPage";
 
+import { useI18n } from "@/shared/lib/i18n";
 import { useToastStore } from "@/shared/lib/toast-store";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  useI18n.setState({ lang: "ko" });
+});
 
 vi.mock("./StudioMannequinPoserPanel", () => ({
   StudioMannequinPoserPanel: ({
@@ -130,5 +134,37 @@ describe("StudioPoserPage (/studio/poser)", () => {
     expect(updatedToasts).toHaveLength(2);
     expect(updatedToasts[1]?.message).toContain("로판 악녀 황후 여주인공");
     useToastStore.setState({ toasts: [] });
+  });
+
+  it("REA 포저 투시 워크벤치에서 카메라 렌즈·관절 솔버를 전환하고 en 로케일에서 한글을 포함하지 않는다", () => {
+    useI18n.setState({ lang: "ko" });
+    renderPage();
+    const bar = screen.getByTestId("studio-poser-rea-foreshortening-bar");
+    expect(bar.textContent).toContain("Clip Studio 3D Poser · Magic Poser · Cascadeur · VRoid Studio");
+    expect(screen.getByTestId("poser-rea-lens-manga-18mm-foreshorten").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("poser-rea-solver-com-gravity-balance").getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByTestId("poser-rea-lens-standard-35mm-dialogue"));
+    expect(screen.getByTestId("poser-rea-lens-standard-35mm-dialogue").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("poser-rea-lens-manga-18mm-foreshorten").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("standard-35mm-dialogue");
+
+    fireEvent.click(screen.getByTestId("poser-rea-lens-tele-85mm-portrait"));
+    expect(screen.getByTestId("poser-rea-lens-tele-85mm-portrait").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("tele-85mm-portrait");
+
+    fireEvent.click(screen.getByTestId("poser-rea-solver-clavicle-auto-twist"));
+    expect(screen.getByTestId("poser-rea-solver-clavicle-auto-twist").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("poser-rea-solver-com-gravity-balance").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("clavicle-auto-twist");
+
+    fireEvent.click(screen.getByTestId("poser-rea-solver-hand-grip-preset"));
+    expect(screen.getByTestId("poser-rea-solver-hand-grip-preset").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("hand-grip-preset");
+
+    act(() => {
+      useI18n.setState({ lang: "en" });
+    });
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
   });
 });

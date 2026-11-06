@@ -55,9 +55,78 @@ function providerDotColor(providerId: string): string {
   return `oklch(0.62 0.14 ${hash})`;
 }
 
+type SliceTargetId = "naver-690px-smart" | "kakao-720px-alive" | "global-800px-2mb";
+type ReleaseWindowId = "kst-2300-prime" | "global-6tz-simulcast" | "embargo-preview-holdback";
+
+const SLICE_TARGET_OPTIONS: readonly {
+  readonly id: SliceTargetId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "naver-690px-smart",
+    ko: "네이버 690px 스마트 컷분할",
+    en: "Naver 690px Smart Slice",
+    detailKo: "가로 690px 고정 · 말풍선 경계 회피 자동 슬라이스 · 컷당 20MB 이하 규격 검사",
+    detailEn: "690px width · balloon-safe auto-slicing · under 20MB per slice validation",
+  },
+  {
+    id: "kakao-720px-alive",
+    ko: "카카오 720px 얼라이브 규격",
+    en: "Kakao 720px Alive Spec",
+    detailKo: "가로 720px · 상하 여백 400px 패딩 · 대표 썸네일 3:4 비율 동시 검증",
+    detailEn: "720px width · 400px top/bottom scroll padding · 3:4 key art ratio check",
+  },
+  {
+    id: "global-800px-2mb",
+    ko: "글로벌 800px · 2MB 슬라이스",
+    en: "Global 800px 2MB Slice",
+    detailKo: "가로 800px · 높이 1280px 분할 · 개별 JPG 2MB 및 총합 20MB 한도 검사",
+    detailEn: "800x1280px slice grid · 2MB per JPG and 20MB total bundle cap check",
+  },
+];
+
+const RELEASE_WINDOW_OPTIONS: readonly {
+  readonly id: ReleaseWindowId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "kst-2300-prime",
+    ko: "KST 23:00 프라임 예약",
+    en: "KST 23:00 Prime Slot",
+    detailKo: "국내 요일 웹툰 야간 오픈 시간대(23:00 KST) 기준 원고 마감 카운트다운",
+    detailEn: "Korean prime-time nightly release slot (23:00 KST) deadline lock",
+  },
+  {
+    id: "global-6tz-simulcast",
+    ko: "글로벌 6개 시간대 동시 연재",
+    en: "Global 6-TZ Simulcast",
+    detailKo: "KST·JST·UTC·EST·PST·CET 6개 권역 식자본 동시 배포 타임라인 동기화",
+    detailEn: "Synchronized simulcast release across KST, JST, UTC, EST, PST, and CET",
+  },
+  {
+    id: "embargo-preview-holdback",
+    ko: "유료 미리보기 엠바고 홀드백",
+    en: "Preview Embargo Holdback",
+    detailKo: "유료 미리보기 3~5화 선공개 기간 동안 무료 공개 피드 자동 홀드백 잠금",
+    detailEn: "Holds back public RSS and free channels during 3-to-5 episode FastPass window",
+  },
+];
+
 export function PublishCenterPage() {
   const lang = useI18n((state) => state.lang);
-  const ko = lang.startsWith("ko");
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const ko = isKo;
+  const [sliceTarget, setSliceTarget] = useState<SliceTargetId>("naver-690px-smart");
+  const [releaseWindow, setReleaseWindow] = useState<ReleaseWindowId>("kst-2300-prime");
+  const activeSlice = SLICE_TARGET_OPTIONS.find((item) => item.id === sliceTarget) ?? SLICE_TARGET_OPTIONS[0];
+  const activeWindow = RELEASE_WINDOW_OPTIONS.find((item) => item.id === releaseWindow) ?? RELEASE_WINDOW_OPTIONS[0];
   const { catalog, error, loading, refresh } = useIntegrationCatalog();
   const publishingProviders = useMemo(
     () => catalog?.providers.filter((provider) => provider.category === "publishing") ?? [],
@@ -187,6 +256,86 @@ export function PublishCenterPage() {
     >
       <SiteContextualSubNav pathnameOverride="/studio/publish" className="mb-5" />
       <PublishSurfaceGuide surface="serial" />
+      <section
+        data-testid="publish-center-rea-multispec-bar"
+        aria-label={pickLang("멀티플랫폼 원고 규격·릴리스 워크벤치", "Multi-platform manuscript spec and release workbench")}
+        className="mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-accent">
+            {pickLang("REA 멀티플랫폼 컷 분할 · 글로벌 연재 시뮬레이터", "REA Multi-Spec Slicer & Release Window Simulator")}
+          </span>
+          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+            Naver Webtoon(690px) · Kakao Webtoon(720px) · WEBTOON Global(800px) · Piccoma
+          </span>
+        </div>
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("플랫폼 컷 분할 규격", "Platform slice specification")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("원고 규격", "Slice Spec")}
+          </span>
+          {SLICE_TARGET_OPTIONS.map((item) => {
+            const active = item.id === sliceTarget;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`publish-rea-slice-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setSliceTarget(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          className="mt-2 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("연재 오픈 타임라인", "Release window timeline")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("발행 창구", "Release Window")}
+          </span>
+          {RELEASE_WINDOW_OPTIONS.map((item) => {
+            const active = item.id === releaseWindow;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`publish-rea-window-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setReleaseWindow(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <p
+          data-testid="publish-center-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+        >
+          {pickLang(
+            `${activeSlice.ko} + ${activeWindow.ko} · ${activeSlice.detailKo} (${activeWindow.detailKo})`,
+            `${activeSlice.en} + ${activeWindow.en} · ${activeSlice.detailEn} (${activeWindow.detailEn})`,
+          )}
+        </p>
+      </section>
       <div className="mb-6">
         <SerialCenterOverview
           ko={ko}

@@ -26,6 +26,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type ReactNode,
 } from "react";
 
 import { loadStoryworldIssueDispositions, saveStoryworldIssueDispositions } from "./disposition-store";
@@ -64,9 +65,22 @@ import {
 import "./studio-storyworld-lab.css";
 import "../studio-shell/creator-workflow-surfaces.css";
 
+import { useI18n } from "@/shared/lib/i18n";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
+
+const CHECKER_LENSES = [
+  { id: "timeline-paradox-guard", ko: "타임라인 역설 가드", en: "Timeline Paradox Guard" },
+  { id: "faction-relation-matrix", ko: "세력 관계 매트릭스", en: "Faction Relation Matrix" },
+  { id: "dialogue-45char-pacing", ko: "말풍선 45자 호흡 점검", en: "45-Char Balloon Pacing" },
+] as const;
+
+const CANON_SCOPES = [
+  { id: "season1-main-arc", ko: "시즌 1 본편 정사", en: "Season 1 Main Canon" },
+  { id: "spinoff-multiverse", ko: "외전·멀티버스 분기", en: "Spinoff Multiverse" },
+  { id: "foreshadow-payoff-ledger", ko: "복선 회수 원장", en: "Foreshadow Payoff Ledger" },
+] as const;
 
 // 개연성 점검 허브는 처음 열 때 내려받는다. 랩의 다른 탭을 쓰는 사람의 첫 화면을 무겁게 하지 않기 위해서다.
 const StudioStoryPlausibilityHub = lazyRetry(
@@ -154,12 +168,112 @@ function downloadJson(filename: string, value: unknown): void {
   URL.revokeObjectURL(url);
 }
 
+type CheckerLensId = (typeof CHECKER_LENSES)[number]["id"];
+type CanonScopeId = (typeof CANON_SCOPES)[number]["id"];
+
+function StoryworldReaContinuityBar({
+  checkerLens,
+  setCheckerLens,
+  canonScope,
+  setCanonScope,
+}: {
+  readonly checkerLens: CheckerLensId;
+  readonly setCheckerLens: (next: CheckerLensId) => void;
+  readonly canonScope: CanonScopeId;
+  readonly setCanonScope: (next: CanonScopeId) => void;
+}) {
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const activeLens = CHECKER_LENSES.find((item) => item.id === checkerLens) ?? CHECKER_LENSES[0];
+  const activeScope = CANON_SCOPES.find((item) => item.id === canonScope) ?? CANON_SCOPES[0];
+
+  return (
+    <section
+      data-testid="storyworld-rea-continuity-bar"
+      aria-label={pickLang("스토리월드 연속성 및 정사 범위 워크벤치", "Storyworld Continuity & Canon Scope Workbench")}
+      className="mb-5 rounded-2xl border border-line bg-card p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="font-mono text-xs font-semibold text-accent">
+            {pickLang("세계관 연속성 · 인과 역설 & 복선 원장", "STORYWORLD CONTINUITY · CAUSALITY & FORESHADOW LEDGER")}
+          </p>
+          <p className="mt-2 text-xs font-semibold text-fg">
+            {pickLang(
+              "타임라인 역설·세력 관계·말풍선 호흡 렌즈와 정사·멀티버스 범위를 교차 점검합니다.",
+              "Cross-check timeline paradoxes, faction matrices, and 45-char pacing across canon scopes.",
+            )}
+          </p>
+        </div>
+        <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2">
+          World Anvil · Campfire · Plottr · Scrivener
+        </span>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-fg-2">
+          {pickLang("점검 렌즈:", "Checker Lens:")}
+        </span>
+        {CHECKER_LENSES.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            data-testid={`storyworld-rea-lens-${item.id}`}
+            aria-pressed={checkerLens === item.id}
+            onClick={() => setCheckerLens(item.id)}
+            className={
+              checkerLens === item.id
+                ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+            }
+          >
+            {pickLang(item.ko, item.en)}
+          </button>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-fg-2">
+          {pickLang("정사 범위:", "Canon Scope:")}
+        </span>
+        {CANON_SCOPES.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            data-testid={`storyworld-rea-scope-${item.id}`}
+            aria-pressed={canonScope === item.id}
+            onClick={() => setCanonScope(item.id)}
+            className={
+              canonScope === item.id
+                ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+            }
+          >
+            {pickLang(item.ko, item.en)}
+          </button>
+        ))}
+      </div>
+      <p
+        data-testid="storyworld-rea-status"
+        aria-live="polite"
+        className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
+      >
+        {pickLang(
+          `렌즈: ${activeLens.ko} (${checkerLens}) · 범위: ${activeScope.ko} (${canonScope})`,
+          `Lens: ${activeLens.en} (${checkerLens}) · Scope: ${activeScope.en} (${canonScope})`,
+        )}
+      </p>
+    </section>
+  );
+}
+
 export function StudioStoryworldLabPage(props: StudioStoryworldLabPageProps) {
   useDocumentTitle("스토리월드 인과관계 랩 · Studio");
   const key = projectStorageKey(props.workId, props.remixSourceWorkId);
   const [loaded, setLoaded] = useState<{ key: string; project: StoryworldProject } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [checkerLens, setCheckerLens] = useState<CheckerLensId>("timeline-paradox-guard");
+  const [canonScope, setCanonScope] = useState<CanonScopeId>("season1-main-arc");
   useEffect(() => {
     let active = true;
     setLoaded(null);
@@ -171,10 +285,19 @@ export function StudioStoryworldLabPage(props: StudioStoryworldLabPageProps) {
     });
     return () => { active = false; };
   }, [key, attempt]);
+  const reaBar = (
+    <StoryworldReaContinuityBar
+      checkerLens={checkerLens}
+      setCheckerLens={setCheckerLens}
+      canonScope={canonScope}
+      setCanonScope={setCanonScope}
+    />
+  );
   if (loaded === null || loaded.key !== key) {
     return (
       <div className="storyworld-main storyworld-recovery" aria-busy={error === null}>
         <h1>스토리월드 인과관계 랩</h1>
+        {reaBar}
         <p role={error === null ? "status" : "alert"}>
           {error === null ? frozenStatus2Text("studio.frozenStatus2.world.loadingSettings", "저장된 세계관 설정을 불러오는 중입니다.") : frozenStatus2Text("studio.frozenStatus2.world.loadSettingsFailed", "저장된 설정을 불러오지 못했습니다. 저장된 내용은 그대로 두었습니다. 아래 ‘다시 불러오기’를 눌러 주세요. 계속 실패하면 편집기로 돌아가 다시 시작할 수 있습니다.")}
         </p>
@@ -183,7 +306,7 @@ export function StudioStoryworldLabPage(props: StudioStoryworldLabPageProps) {
       </div>
     );
   }
-  return <StudioStoryworldLabEditor key={key} {...props} initialProject={loaded.project} />;
+  return <StudioStoryworldLabEditor key={key} {...props} initialProject={loaded.project} reaBar={reaBar} />;
 }
 
 function StudioStoryworldLabEditor({
@@ -191,7 +314,8 @@ function StudioStoryworldLabEditor({
   remixSourceWorkId,
   initialProject,
   initialView = null,
-}: StudioStoryworldLabPageProps & { readonly initialProject: StoryworldProject }) {
+  reaBar,
+}: StudioStoryworldLabPageProps & { readonly initialProject: StoryworldProject; readonly reaBar: ReactNode }) {
   const storageKey = useMemo(() => projectStorageKey(workId, remixSourceWorkId), [workId, remixSourceWorkId]);
   const [project, setProject] = useState<StoryworldProject>(initialProject);
   const [activeTab, setActiveTab] = useState<StoryworldTab>(initialView === "plausibility" ? "plausibility" : "overview");
@@ -389,6 +513,8 @@ function StudioStoryworldLabEditor({
               <span>확인할 점 <strong>{result.issues.length}개</strong></span>
             </div>
           </div>
+
+          {reaBar}
 
           {activeTab === "plausibility" ? (
             <Suspense fallback={<p className="storyworld-empty" role="status">{frozenStatus2Text("studio.frozenStatus2.world.plausibilityLoading", "개연성 점검을 여는 중입니다.")}</p>}>

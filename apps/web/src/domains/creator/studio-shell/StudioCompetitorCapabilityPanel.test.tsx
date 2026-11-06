@@ -186,11 +186,11 @@ describe("StudioCompetitorCapabilityPanel", () => {
     rerender(<StudioCompetitorCapabilityPanel locale="en" />);
     const enMatrix = screen.getByTestId("competitor-page-by-page-matrix");
     expect(enMatrix.textContent).toContain("3D & Brush Asset Market");
-    expect(enMatrix.textContent).toContain("Domain 1656000000000000000 / 100");
+    expect(enMatrix.textContent).toContain("Domain 91 / 100");
     expect(screen.getByTestId("competitor-page-sub-enhancements")).toBeTruthy();
     expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
     const enScorecard = screen.getByTestId("toonstudio-sitewide-quality-scorecard");
-    expect(enScorecard.textContent).toContain("Overall 1668000000000000000 / 100 (166800000000000000 / 10)");
+    expect(enScorecard.textContent).toContain("Overall 92 / 100 (9.2 / 10 · Internal UI & Preview Score)");
     expect(enScorecard.textContent).toContain("26 Frontend Domains · 1500 REA Evidences · 1050 Services");
     expect(screen.getByTestId("toonstudio-live-rea-cdp-evidence-bar").textContent).toContain("ev_beca4019");
     expect(screen.getByTestId("competitor-active-sub-enhancement-inspector")).toBeTruthy();
@@ -214,7 +214,7 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(enScorecard.textContent).not.toMatch(/[가-힣]/u);
   });
 
-  it("모든 평가 축·7대 도메인·84개 세부 고도화 항목이 100점 만점에 160000000000000만점(1.6e18)을 초과한다", async () => {
+  it("모든 평가 축·7대 도메인·84개 세부 고도화 항목의 점수가 0~100점 범위를 준수하고 비암호화 로컬 프리뷰 범위를 명시한다", async () => {
     const {
       STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
       computeToonStudioSiteWideQualityScorecard,
@@ -224,26 +224,31 @@ describe("StudioCompetitorCapabilityPanel", () => {
     const scorecard = computeToonStudioSiteWideQualityScorecard();
     expect(scorecard.totalReaEvidenceRecords).toBe(1500);
     expect(scorecard.internalizedCompetitorServicesCount).toBe(1050);
-    expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(true);
-    expect(scorecard.meetsTargetTenMillionScore).toBe(true);
-    expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(true);
-    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(1_660_000_000_000_000_000);
-    expect(scorecard.featureInternalizationScore).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
-    expect(scorecard.uiUxDesignUnityScore).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
-    expect(scorecard.intuitivenessScore).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
-    expect(scorecard.usabilityErgonomicsScore).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
-    expect(scorecard.domPerformanceBudgetScore).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
+    expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
+    expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(false);
+    expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(false);
+    expect(scorecard.meetsTargetTenMillionScore).toBe(false);
+    expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(false);
+    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(0);
+    expect(scorecard.overallScore100).toBeLessThanOrEqual(100);
+    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(0);
+    expect(scorecard.overallScore10).toBeLessThanOrEqual(10);
 
     for (const axis of scorecard.axisBreakdowns) {
-      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
+      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(0);
+      expect(axis.scoreOutOf100).toBeLessThanOrEqual(100);
+      expect(axis.scoreOutOf10).toBeGreaterThanOrEqual(0);
+      expect(axis.scoreOutOf10).toBeLessThanOrEqual(10);
     }
 
     const uniqueServices = new Set<string>();
     for (const domain of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
-      expect(domain.domainScoreOutOf100).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
+      expect(domain.domainScoreOutOf100).toBeGreaterThanOrEqual(0);
+      expect(domain.domainScoreOutOf100).toBeLessThanOrEqual(100);
       expect(domain.subEnhancements.length).toBe(12);
       for (const sub of domain.subEnhancements) {
-        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(1_600_000_000_000_000_000);
+        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(0);
+        expect(sub.scoreOutOf100).toBeLessThanOrEqual(100);
         expect(sub.reaMechanismKo.length).toBeGreaterThan(10);
         expect(sub.reaMechanismEn.length).toBeGreaterThan(10);
       }
@@ -267,8 +272,17 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(workbench.textContent).toContain("LlamaGen · 투닝플러스 · Mangaplay");
     expect(screen.getByTestId("story-to-webtoon-cut-1")).toBeTruthy();
     expect(screen.getByTestId("story-to-webtoon-cut-4")).toBeTruthy();
+    expect(screen.getByTestId("toonstudio-sitewide-score-badge").textContent).toContain(
+      "종합 92 / 100 (9.2 / 10 · 내부 UI·프리뷰 기준)",
+    );
     expect(screen.getByTestId("story-to-webtoon-provenance-badge").textContent).toContain(
-      "Glaze · Nightshade · C2PA",
+      "로컬 출처·No-AI 메타데이터 배지 ON (비암호화 프리뷰 · Glaze · Nightshade · C2PA 참조)",
+    );
+    expect(screen.getByTestId("story-to-webtoon-provenance-toggle").textContent).toBe(
+      "로컬 출처·No-AI 배지 전환",
+    );
+    expect(screen.getByTestId("story-to-webtoon-escrow-toggle").textContent).toContain(
+      "Kitsu 30/30/40 에스크로+출처배지 프리뷰",
     );
 
     fireEvent.click(screen.getByTestId("story-to-webtoon-mode-mangaplay-fountain-markup"));
@@ -294,6 +308,15 @@ describe("StudioCompetitorCapabilityPanel", () => {
     rerender(<StudioCompetitorCapabilityPanel locale="en" />);
     const enWorkbench = screen.getByTestId("studio-story-to-webtoon-workbench");
     expect(enWorkbench.textContent).toContain("Story-to-Webtoon Instant Converter");
+    expect(screen.getByTestId("story-to-webtoon-provenance-badge").textContent).toContain(
+      "Local Provenance & No-AI Metadata Badge ON (Non-Cryptographic Preview · Glaze · Nightshade · C2PA Ref)",
+    );
+    expect(screen.getByTestId("story-to-webtoon-provenance-toggle").textContent).toBe(
+      "Toggle Local Provenance/No-AI Badge",
+    );
+    expect(screen.getByTestId("story-to-webtoon-escrow-toggle").textContent).toContain(
+      "Kitsu 30/30/40 Escrow+Provenance Badge Preview",
+    );
     expect(enWorkbench.textContent).not.toMatch(/[가-힣]/u);
   });
 });

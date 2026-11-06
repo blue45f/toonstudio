@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useI18n } from "@/shared/lib/i18n";
 
 import { parseSpatialBook, type SpatialBook } from "./spatial-book";
 import { StudioSpatialReaderPage } from "./StudioSpatialReaderPage";
@@ -39,12 +41,14 @@ function renderPage() {
 }
 
 beforeEach(() => {
+  useI18n.setState({ lang: "ko" });
   window.localStorage.clear();
   sample.create.mockResolvedValue(sampleBook());
 });
 
 afterEach(() => {
   cleanup();
+  useI18n.setState({ lang: "ko" });
   vi.clearAllMocks();
 });
 
@@ -102,5 +106,36 @@ describe("StudioSpatialReaderPage", () => {
     const file = new File(['{"format":"other"}'], "broken.json", { type: "application/json" });
     fireEvent.change(input, { target: { files: [file] } });
     expect((await screen.findByRole("alert")).textContent).toContain("1~32컷의 공간 웹툰 파일을 사용해 주세요.");
+  });
+
+  it("REA 공간 리더 워크벤치에서 곡률 모드·시선 포커스를 전환하고 en 로케일에서 한글을 포함하지 않는다", () => {
+    renderPage();
+    const bar = screen.getByTestId("spatial-reader-rea-webxr-fov-bar");
+    expect(bar.textContent).toContain("Apple Vision Pro visionOS · Meta Quest WebXR · Spline Spatial");
+    expect(screen.getByTestId("spatial-rea-curve-cylinder-90deg-canopy").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-rea-gaze-foveated-depth-dof").getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByTestId("spatial-rea-curve-dome-120deg-cinema"));
+    expect(screen.getByTestId("spatial-rea-curve-dome-120deg-cinema").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-rea-curve-cylinder-90deg-canopy").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("dome-120deg-cinema");
+
+    fireEvent.click(screen.getByTestId("spatial-rea-curve-floating-panel-stack"));
+    expect(screen.getByTestId("spatial-rea-curve-floating-panel-stack").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("floating-panel-stack");
+
+    fireEvent.click(screen.getByTestId("spatial-rea-gaze-spatial-binaural-pan"));
+    expect(screen.getByTestId("spatial-rea-gaze-spatial-binaural-pan").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-rea-gaze-foveated-depth-dof").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("spatial-binaural-pan");
+
+    fireEvent.click(screen.getByTestId("spatial-rea-gaze-comfort-vignette-lock"));
+    expect(screen.getByTestId("spatial-rea-gaze-comfort-vignette-lock").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-reader-rea-status").textContent).toContain("comfort-vignette-lock");
+
+    act(() => {
+      useI18n.setState({ lang: "en" });
+    });
+    expect(bar.textContent).not.toMatch(/[가-힣]/u);
   });
 });

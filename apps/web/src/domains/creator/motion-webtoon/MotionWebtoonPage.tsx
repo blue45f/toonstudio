@@ -8,6 +8,7 @@
 import type { JSX } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
@@ -27,6 +28,18 @@ import {
 import "./motion-webtoon.css";
 
 const L = MOTION_WEBTOON_UI_LABELS;
+
+const SCROLL_RIGS = [
+  { id: "zdepth-5layer-parallax", ko: "5레이어 Z-Depth 패럴랙스", en: "5-Layer Z-Depth Parallax" },
+  { id: "spring-balloon-physics", ko: "스프링 말풍선 물리", en: "Spring Balloon Physics" },
+  { id: "camera-shake-haptic", ko: "카메라 셰이크·햅틱 연출", en: "Camera Shake & Haptic Cue" },
+] as const;
+
+const SYNC_PACINGS = [
+  { id: "scroll-velocity-1to1", ko: "스크롤 속도 1:1 동기화", en: "1:1 Scroll Velocity Sync" },
+  { id: "viewport-dwell-trigger", ko: "뷰포트 체류 트리거", en: "Viewport Dwell Trigger" },
+  { id: "reduced-motion-safe", ko: "모션 감소 안전 폴백", en: "Reduced-Motion Safe Fallback" },
+] as const;
 
 type PageNotice =
   | { readonly kind: "restored" }
@@ -82,6 +95,13 @@ function resolveInitialState(): InitialState {
 
 export function MotionWebtoonPage(): JSX.Element {
   const t = useBilingual("motion-webtoon");
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
+  const [scrollRig, setScrollRig] = useState<(typeof SCROLL_RIGS)[number]["id"]>("zdepth-5layer-parallax");
+  const [syncPacing, setSyncPacing] = useState<(typeof SYNC_PACINGS)[number]["id"]>("scroll-velocity-1to1");
+  const activeRig = SCROLL_RIGS.find((item) => item.id === scrollRig) ?? SCROLL_RIGS[0];
+  const activePacing = SYNC_PACINGS.find((item) => item.id === syncPacing) ?? SYNC_PACINGS[0];
   useDocumentTitle(t("모션 웹툰", "Motion webtoon"));
   const [initial] = useState<InitialState>(resolveInitialState);
   const [notice, setNotice] = useState<PageNotice>(initial.notice);
@@ -150,6 +170,80 @@ export function MotionWebtoonPage(): JSX.Element {
           )}
         </p>
       )}
+      <section
+        data-testid="motion-webtoon-rea-parallax-bar"
+        aria-label={pickLang("모션 웹툰 패럴랙스 및 스크롤 리그 워크벤치", "Motion Webtoon Parallax & Scroll Rig Workbench")}
+        className="mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-mono text-xs font-semibold text-accent">
+              {pickLang("모션 웹툰 · 스크롤 패럴랙스 리그", "MOTION WEBTOON · SCROLL PARALLAX RIG")}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-fg">
+              {pickLang(
+                "Z-Depth 다층 패럴랙스와 스크롤 속도·체류 시간 동기화 페이싱을 실시간으로 조합합니다.",
+                "Compose multi-layer Z-depth parallax rigs with scroll velocity and viewport dwell pacing.",
+              )}
+            </p>
+          </div>
+          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2">
+            Rive · Spine 2D · Live2D Cubism · Naver Smartoon/Effectoon
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("스크롤 리그:", "Scroll Rig:")}
+          </span>
+          {SCROLL_RIGS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`motion-rea-rig-${item.id}`}
+              aria-pressed={scrollRig === item.id}
+              onClick={() => setScrollRig(item.id)}
+              className={
+                scrollRig === item.id
+                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("동기화 페이싱:", "Sync Pacing:")}
+          </span>
+          {SYNC_PACINGS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={`motion-rea-pacing-${item.id}`}
+              aria-pressed={syncPacing === item.id}
+              onClick={() => setSyncPacing(item.id)}
+              className={
+                syncPacing === item.id
+                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+              }
+            >
+              {pickLang(item.ko, item.en)}
+            </button>
+          ))}
+        </div>
+        <p
+          data-testid="motion-webtoon-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
+        >
+          {pickLang(
+            `리그: ${activeRig.ko} (${scrollRig}) · 페이싱: ${activePacing.ko} (${syncPacing})`,
+            `Rig: ${activeRig.en} (${scrollRig}) · Pacing: ${activePacing.en} (${syncPacing})`,
+          )}
+        </p>
+      </section>
       <MotionWebtoonAnimeToonWizard
         onOpenDraft={(draft) => {
           setOpenedDraft(draft);

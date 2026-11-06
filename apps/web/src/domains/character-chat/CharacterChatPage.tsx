@@ -17,6 +17,7 @@ import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { USER_AI_SETTINGS_HREF } from "@/shared/ai/user-ai-types";
+import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
@@ -28,13 +29,84 @@ import {
 import { useCharacterChatHydrated, useCharacterChatStore } from "./character-chat-store";
 import { useCharacterChatEngine } from "./use-character-chat-engine";
 
+type SpoilerFenceId = "ep10-canon-lock" | "season1-finale-sync" | "au-whatif-sandbox";
+type PersonaToneId = "canon-dialogue-strict" | "affection-stage-reactive" | "voice-tts-prosody";
+
+const SPOILER_FENCE_OPTIONS: readonly {
+  readonly id: SpoilerFenceId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "ep10-canon-lock",
+    ko: "10화 정사 스포일러 잠금",
+    en: "Ep.10 Canon Spoiler Lock",
+    detailKo: "10화 이전 공개 설정만 로어북에 주입하고 이후 전개 복선은 차단합니다.",
+    detailEn: "Injects lorebook facts up to Episode 10 only and blocks later plot twists.",
+  },
+  {
+    id: "season1-finale-sync",
+    ko: "시즌1 완결 기억 동기화",
+    en: "Season 1 Finale Memory Sync",
+    detailKo: "시즌1 완결 시점의 관계 변화와 사건 기억을 모두 열어 깊은 대화를 지원합니다.",
+    detailEn: "Unlocks full Season 1 finale relationship shifts and episodic memories.",
+  },
+  {
+    id: "au-whatif-sandbox",
+    ko: "IF 외전 멀티버스 샌드박스",
+    en: "AU What-If Sandbox",
+    detailKo: "본편 정사를 해치지 않는 독립 IF 세계관 분기에서 자유로운 상황극을 허용합니다.",
+    detailEn: "Allows alternate-universe roleplay in an isolated branch without mutating canon.",
+  },
+];
+
+const PERSONA_TONE_OPTIONS: readonly {
+  readonly id: PersonaToneId;
+  readonly ko: string;
+  readonly en: string;
+  readonly detailKo: string;
+  readonly detailEn: string;
+}[] = [
+  {
+    id: "canon-dialogue-strict",
+    ko: "원작 대사 말투 고정",
+    en: "Strict Canon Dialogue",
+    detailKo: "작가가 승인한 어미·호칭·금칙어 가드레일을 엄격히 유지합니다.",
+    detailEn: "Strictly enforces author-approved honorifics, speech endings, and taboo filters.",
+  },
+  {
+    id: "affection-stage-reactive",
+    ko: "호감도 단계별 반응",
+    en: "Affection-Stage Reactive",
+    detailKo: "누적 대화 친밀도에 따라 경계심에서 신뢰 단계로 말투 온도를 전환합니다.",
+    detailEn: "Gradually shifts persona warmth from guarded to trusted based on chat affinity.",
+  },
+  {
+    id: "voice-tts-prosody",
+    ko: "보이스 TTS 감정 운율",
+    en: "Voice TTS Prosody",
+    detailKo: "캐릭터 보이스 낭독을 위한 호흡·감정 태그와 짧은 호흡 문장 구조를 최적화합니다.",
+    detailEn: "Optimizes sentence cadence and emotion tags for expressive character TTS playback.",
+  },
+];
+
 export function CharacterChatPage() {
   const t = useBilingual("characterChat");
+  const lang = useI18n((state) => state.lang);
+  const isKo = lang.startsWith("ko");
+  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
   const { engine, ready } = useCharacterChatEngine();
   const hydrated = useCharacterChatHydrated();
   const [searchParams] = useSearchParams();
   const profiles = useCharacterChatStore((state) => state.profiles);
   const [characterQuery, setCharacterQuery] = useState("");
+  const [spoilerFence, setSpoilerFence] = useState<SpoilerFenceId>("ep10-canon-lock");
+  const [personaTone, setPersonaTone] = useState<PersonaToneId>("canon-dialogue-strict");
+
+  const activeFence = SPOILER_FENCE_OPTIONS.find((item) => item.id === spoilerFence) ?? SPOILER_FENCE_OPTIONS[0];
+  const activeTone = PERSONA_TONE_OPTIONS.find((item) => item.id === personaTone) ?? PERSONA_TONE_OPTIONS[0];
 
   const publicProfiles = useMemo(
     () => selectPublicCharacterChatProfiles(profiles),
@@ -97,6 +169,87 @@ export function CharacterChatPage() {
           {t("작가이신가요? 캐릭터 챗 열기", "Are you an author? Open a character chat")}
         </Link>
       </header>
+
+      <section
+        data-testid="character-chat-rea-lorebook-bar"
+        aria-label={pickLang("캐릭터 로어북·페르소나 제어 워크벤치", "Character lorebook and persona control workbench")}
+        className="mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-accent">
+            {pickLang("REA 로어북 스포일러 펜스 · 페르소나 톤 제어", "REA Lorebook Spoiler Fence & Persona Tone Control")}
+          </span>
+          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+            Character.AI · Zeta · Wrtn · SillyTavern Lorebook
+          </span>
+        </div>
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("회차 스포일러 펜스", "Episode spoiler fence")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("스포일러 펜스", "Spoiler Fence")}
+          </span>
+          {SPOILER_FENCE_OPTIONS.map((item) => {
+            const active = item.id === spoilerFence;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`char-chat-rea-fence-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setSpoilerFence(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          className="mt-2 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("페르소나 발화 톤", "Persona speech tone")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("페르소나 톤", "Persona Tone")}
+          </span>
+          {PERSONA_TONE_OPTIONS.map((item) => {
+            const active = item.id === personaTone;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`char-chat-rea-tone-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setPersonaTone(item.id)}
+                className={
+                  active
+                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <p
+          data-testid="character-chat-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+        >
+          {pickLang(
+            `${activeFence.ko} + ${activeTone.ko} · ${activeFence.detailKo} (${activeTone.detailKo})`,
+            `${activeFence.en} + ${activeTone.en} · ${activeFence.detailEn} (${activeTone.detailEn})`,
+          )}
+        </p>
+      </section>
 
       {!ready ? (
         <section
