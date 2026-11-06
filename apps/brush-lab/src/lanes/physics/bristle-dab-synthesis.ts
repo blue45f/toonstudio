@@ -215,6 +215,61 @@ export class BristleDabSynthesizer implements BristleTickSink {
     const flowBase = lifted ? 0 : this.flowBase(tick.pressure, tick.spreadRadiusPx, rad, speed);
     const hx = tick.headingX ?? 1;
     const hy = tick.headingY ?? 0;
+    let estimatedDabs = 0;
+    if (!lifted) {
+      for (let i = 0; i < this.count; i += 1) {
+        const x0 = tick.prevX[i] ?? 0;
+        const y0 = tick.prevY[i] ?? 0;
+        const dx = (tick.curX[i] ?? 0) - x0;
+        const dy = (tick.curY[i] ?? 0) - y0;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len <= 0) continue;
+        const carried = this.carry[i] ?? 0;
+        if (carried + len >= step) {
+          estimatedDabs += Math.floor((carried + len) / step);
+        }
+      }
+    }
+    if (lifted || estimatedDabs <= BRISTLE_FRAME_DAB_BUDGET - this.frameDabs) {
+      for (let i = 0; i < this.count; i += 1) {
+        const x0 = tick.prevX[i] ?? 0;
+        const y0 = tick.prevY[i] ?? 0;
+        const dx = (tick.curX[i] ?? 0) - x0;
+        const dy = (tick.curY[i] ?? 0) - y0;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len <= 0) continue;
+        let carried = this.carry[i] ?? 0;
+        if (carried + len < step) {
+          this.carry[i] = carried + len;
+          continue;
+        }
+        // 이 구간에서 간격마다 dab를 둔다. 프레임 예산을 넘으면 경로는 따라가되 dab는 건너뛴다.
+        let pos = step - carried;
+        while (pos <= len) {
+          const t = pos / len;
+          if (lifted) this.stats.skippedLift += 1;
+          else if (this.frameDabs >= BRISTLE_FRAME_DAB_BUDGET) this.stats.budgetSkipped += 1;
+          else {
+            this.place(i, x0 + dx * t, y0 + dy * t, tick.load[i] ?? 0, tick.pressure, flowBase, rad, hx, hy, speed);
+            this.frameDabs += 1;
+          }
+          pos += step;
+        }
+        carried = len - (pos - step);
+        this.carry[i] = carried;
+      }
+      return;
+    }
+
+    // 한 틱에 남은 프레임 예산을 넘기는 고속 도약: 가닥 간 라운드로빈으로 골고루 방출하고 조기 중단된 가닥의 carry는 stepBase로 상한을 둔다.
+    const x0Arr = new Float64Array(this.count);
+    const y0Arr = new Float64Array(this.count);
+    const dxArr = new Float64Array(this.count);
+    const dyArr = new Float64Array(this.count);
+    const lenArr = new Float64Array(this.count);
+    const posArr = new Float64Array(this.count);
+    const active = new Uint8Array(this.count);
+    let activeCount = 0;
     for (let i = 0; i < this.count; i += 1) {
       const x0 = tick.prevX[i] ?? 0;
       const y0 = tick.prevY[i] ?? 0;
@@ -222,25 +277,60 @@ export class BristleDabSynthesizer implements BristleTickSink {
       const dy = (tick.curY[i] ?? 0) - y0;
       const len = Math.sqrt(dx * dx + dy * dy);
       if (len <= 0) continue;
-      let carried = this.carry[i] ?? 0;
+      const carried = this.carry[i] ?? 0;
       if (carried + len < step) {
         this.carry[i] = carried + len;
         continue;
       }
-      // 이 구간에서 간격마다 dab를 둔다. 프레임 예산을 넘으면 경로는 따라가되 dab는 건너뛴다.
-      let pos = step - carried;
-      while (pos <= len) {
-        const t = pos / len;
-        if (lifted) this.stats.skippedLift += 1;
-        else if (this.frameDabs >= BRISTLE_FRAME_DAB_BUDGET) this.stats.budgetSkipped += 1;
-        else {
-          this.place(i, x0 + dx * t, y0 + dy * t, tick.load[i] ?? 0, tick.pressure, flowBase, rad, hx, hy, speed);
+      x0Arr[i] = x0;
+      y0Arr[i] = y0;
+      dxArr[i] = dx;
+      dyArr[i] = dy;
+      lenArr[i] = len;
+      posArr[i] = step - carried;
+      active[i] = 1;
+      activeCount += 1;
+    }
+    while (activeCount > 0) {
+      for (let i = 0; i < this.count; i += 1) {
+        if (active[i] === 0) continue;
+        const len = lenArr[i] ?? 0;
+        let pos = posArr[i] ?? 0;
+        if (this.frameDabs < BRISTLE_FRAME_DAB_BUDGET) {
+          const t = pos / len;
+          this.place(
+            i,
+            (x0Arr[i] ?? 0) + (dxArr[i] ?? 0) * t,
+            (y0Arr[i] ?? 0) + (dyArr[i] ?? 0) * t,
+            tick.load[i] ?? 0,
+            tick.pressure,
+            flowBase,
+            rad,
+            hx,
+            hy,
+            speed,
+          );
           this.frameDabs += 1;
+          pos += step;
+          posArr[i] = pos;
+          if (pos > len) {
+            this.carry[i] = len - (pos - step);
+            active[i] = 0;
+            activeCount -= 1;
+          }
+        } else {
+          const unemittedDist = len - (pos - step);
+          let skipped = 0;
+          while (pos <= len) {
+            skipped += 1;
+            pos += step;
+          }
+          this.stats.budgetSkipped += skipped;
+          this.carry[i] = Math.min(stepBase, unemittedDist);
+          active[i] = 0;
+          activeCount -= 1;
         }
-        pos += step;
       }
-      carried = len - (pos - step);
-      this.carry[i] = carried;
     }
   }
 

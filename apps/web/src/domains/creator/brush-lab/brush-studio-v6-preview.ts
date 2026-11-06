@@ -6,7 +6,7 @@ import type {
   BrushStudioV6TouchPolicy,
 } from "./brush-studio-v6-engine";
 import { createBrushStudioV6MaterialStroke, mapBrushStudioV6Pressure, mapBrushStudioV6Tilt, mixBrushStudioV6MaterialColors, renderBrushStudioV6MaterialMarks, type BrushStudioV6MaterialStroke } from "./brush-studio-v6-material-engine";
-import { createBrushStudioV6MotionFilter } from "./brush-studio-v6-motion-runtime";
+import { createBrushStudioV6MotionFilter, type BrushStudioV6MotionFilter } from "./brush-studio-v6-motion-runtime";
 
 export interface BrushStudioV6Telemetry {
   readonly pointerType: string;
@@ -272,6 +272,7 @@ interface LivePoint {
 interface LiveStroke {
   readonly intent: "draw" | "water";
   readonly point: LivePoint;
+  readonly motion: BrushStudioV6MotionFilter;
   readonly material: BrushStudioV6MaterialStroke;
   readonly program: BrushStudioV6Program;
   readonly transport: BrushStudioV6ResolvedTransport;
@@ -380,7 +381,6 @@ export function attachBrushStudioV6LivePreview(
     }
   };
   const draw = (stroke: LiveStroke, point: LivePoint): void => {
-    if (stroke.intent === "water") return;
     const drawContext = canvas.getContext("2d");
     if (!drawContext) return;
     const devicePixelRatio = Math.min(2, Math.max(1, globalThis.devicePixelRatio || 1));
@@ -401,7 +401,20 @@ export function attachBrushStudioV6LivePreview(
       emitIgnoredTelemetry(event, intent, transport, onTelemetry);
       return;
     }
-    if (!fit(canvas, program)) return;
+    const activeProgram: BrushStudioV6Program = intent === "water"
+      ? {
+          ...program,
+          tuning: {
+            ...program.tuning,
+            primaryColor: "#f8f4ea",
+            secondaryColor: program.tuning.primaryColor,
+            opacity: Math.min(0.35, Math.max(0.12, program.tuning.opacity * 0.4)),
+            wetness: Math.max(0.85, program.tuning.wetness),
+            diffusion: Math.max(0.75, program.tuning.diffusion),
+          },
+        }
+      : program;
+    if (!fit(canvas, activeProgram)) return;
     // A single writer owns one pre-stroke bitmap, released on every exit path.
     const previousSurface = canvas.ownerDocument.createElement("canvas");
     previousSurface.width = canvas.width;
@@ -416,11 +429,20 @@ export function attachBrushStudioV6LivePreview(
     }
     const lastContactPressure = normalizeStudioMaterialPointerPressure(event.pointerType, event.pressure);
     try {
-      const point = eventPoint(canvas, event, program, lastContactPressure);
-      const stroke: LiveStroke = { intent, point, program, transport, lastContactPressure,
-        previousSurface, material: createBrushStudioV6MaterialStroke(program) };
+      const point = eventPoint(canvas, event, activeProgram, lastContactPressure);
+      const motion = createBrushStudioV6MotionFilter(activeProgram);
+      const stroke: LiveStroke = {
+        intent,
+        point,
+        motion,
+        program: activeProgram,
+        transport,
+        lastContactPressure,
+        previousSurface,
+        material: createBrushStudioV6MaterialStroke(activeProgram),
+      };
       active.set(event.pointerId, stroke);
-      draw(stroke, point);
+      draw(stroke, stroke.motion.push(point) as LivePoint);
     } catch (error) {
       if (active.has(event.pointerId)) retire(event.pointerId, true);
       else {
@@ -456,7 +478,7 @@ export function attachBrushStudioV6LivePreview(
       for (const source of sourceEvents) {
         lastContactPressure = normalizeStudioMaterialPointerPressure(source.pointerType, source.pressure);
         point = eventPoint(canvas, source, stroke.program, lastContactPressure);
-        draw(stroke, point);
+        draw(stroke, stroke.motion.push(point) as LivePoint);
         samples += 1;
       }
     } catch (error) {
@@ -481,7 +503,19 @@ export function attachBrushStudioV6LivePreview(
     try {
       const pressure = resolveStudioMaterialReleasePressure(event.pointerType, event.pressure, stroke.lastContactPressure);
       const point = eventPoint(canvas, event, stroke.program, pressure);
-      if (point.x !== stroke.point.x || point.y !== stroke.point.y) draw(stroke, point);
+      if (point.x !== stroke.point.x || point.y !== stroke.point.y) {
+        draw(stroke, stroke.motion.push(point) as LivePoint);
+      }
+      for (const catchUpPoint of stroke.motion.flush(point)) {
+        draw(stroke, catchUpPoint as LivePoint);
+      }
+      if (typeof stroke.material.marks === "function" && stroke.material.marks().length === 0) {
+        stroke.material.reset();
+        draw(stroke, {
+          ...point,
+          pressure: Math.max(point.pressure, stroke.program.input.pressureOnset + 0.05),
+        });
+      }
       completed = true;
     } finally { retire(event.pointerId, !completed); }
   };

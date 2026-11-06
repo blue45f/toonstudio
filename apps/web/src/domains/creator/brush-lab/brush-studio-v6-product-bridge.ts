@@ -11,6 +11,7 @@ import {
   BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE,
   type BrushStudioV6LicenseProfile,
 } from "./brush-studio-v6-license-profile";
+import { brushStudioV6TextureRecipeGrainSettings } from "./brush-studio-v6-recipe-catalog-texture";
 import { type BrushStudioV6Program } from "./brush-studio-v6-engine";
 
 /** A real brush-library snapshot, consumed by the same pointer-start path as every saved brush. */
@@ -19,6 +20,7 @@ export function createBrushStudioV6ProductBrush(
   licenseProfile: BrushStudioV6LicenseProfile = program.licenseProfile ?? BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE,
 ): StudioSavedBrush {
   const material = createBrushStudioV6MaterialReceipt(program, licenseProfile);
+  const textureGrain = brushStudioV6TextureRecipeGrainSettings(program.id);
   return createBrush(program.name, {
     ...DEFAULT_STUDIO_BRUSH_SNAPSHOT,
     brushId: "brush",
@@ -33,6 +35,14 @@ export function createBrushStudioV6ProductBrush(
     tiltEnabled: material.input.tiltEnabled,
     stabilizer: 0,
     postCorrection: 0,
+    ...(textureGrain
+      ? {
+          brushDynamics: {
+            ...DEFAULT_STUDIO_BRUSH_SNAPSHOT.brushDynamics,
+            grain: textureGrain,
+          },
+        }
+      : {}),
     enginePrograms: studioBrushEngineProgramSetFromMaterial(material),
   });
 }

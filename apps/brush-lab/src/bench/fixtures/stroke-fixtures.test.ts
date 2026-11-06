@@ -119,7 +119,7 @@ describe("획 fixture 9종", () => {
     expect(() => parseStrokeFixture({ ...fixture, width: 0 })).toThrow();
   });
 
-  it("캡처 획 스키마: 버전 불일치 거부, fixture 변환 시 표본율은 중앙 간격으로 추정한다", () => {
+  it("캡처 획 스키마: 버전 불일치·크기 상한(2048)·표본 수 상한(100,000) 거부, fixture 변환 시 표본율은 중앙 간격으로 추정한다", () => {
     const base = buildFixture("line", CANVAS);
     const captured: CapturedStroke = {
       version: "1.0.0",
@@ -132,6 +132,12 @@ describe("획 fixture 9종", () => {
     };
     expect(parseCapturedStroke(JSON.parse(serializeCapturedStroke(captured)))).toEqual(captured);
     expect(() => parseCapturedStroke({ ...captured, version: "0.9.0" })).toThrow();
+    expect(() => parseCapturedStroke({ ...captured, width: 2049 })).toThrow();
+    expect(() => parseCapturedStroke({ ...captured, height: 2049 })).toThrow();
+    expect(parseCapturedStroke({ ...captured, width: 2048, height: 2048 }).width).toBe(2048);
+    // 100,001개 배열은 z.array().max(100_000) 상한 검사를 넘어 거부된다.
+    const tooManySamples = Array.from({ length: 100_001 }, () => captured.samples[0]!);
+    expect(() => parseCapturedStroke({ ...captured, samples: tooManySamples })).toThrow();
     const fixture = capturedStrokeToFixture(captured, "live");
     expect(fixture.id).toBe("captured:live");
     expect(fixture.sampleRateHz).toBeCloseTo(125, 6);

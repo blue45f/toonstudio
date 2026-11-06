@@ -70,10 +70,20 @@ function contactMode(program: BrushStudioV6MaterialProgram): "bristle" | "partic
   return wet ? "wet" : "ink";
 }
 
+const activeTuningKeysCache = new WeakMap<
+  BrushStudioV6MaterialProgram,
+  ReadonlySet<keyof BrushStudioV6Tuning>
+>();
+
 /** Workbench controls use the same branch decision as the contact solver. */
 export function brushStudioV6MaterialActiveTuningKeys(program: BrushStudioV6MaterialProgram): ReadonlySet<keyof BrushStudioV6Tuning> {
+  const cached = activeTuningKeysCache.get(program);
+  if (cached) return cached;
   const topologyKeys = brushStudioV6TopologyActiveTuning(program);
-  if (topologyKeys) return topologyKeys;
+  if (topologyKeys) {
+    activeTuningKeysCache.set(program, topologyKeys);
+    return topologyKeys;
+  }
   const result = new Set<keyof BrushStudioV6Tuning>(["size", "opacity", "flow", "spacing", "primaryColor"]);
   const mode = contactMode(program);
   const enhancedAdapters = usesEnhancedMaterialAdapters(program);
@@ -108,7 +118,10 @@ export function brushStudioV6MaterialActiveTuningKeys(program: BrushStudioV6Mate
   if (program.slots.physics.includes("physics-pigment-sedimentation")) for (const key of ["granulation", "absorbency"] as const) result.add(key);
   if (program.slots.physics.includes("physics-bristle-split-merge")) for (const key of ["bristleStrands", "friction", "viscosity"] as const) result.add(key);
   if (program.slots.finish.includes("finish-directional-relief")) for (const key of ["relief", "gloss"] as const) result.add(key);
-  if (pattern && mode !== "particle") return result;
+  if (pattern && mode !== "particle") {
+    activeTuningKeysCache.set(program, result);
+    return result;
+  }
   const modeKeys: Readonly<Record<typeof mode, readonly (keyof BrushStudioV6Tuning)[]>> = {
     bristle: ["bristleStrands", "friction", "viscosity", "reservoir", ...(bristlePickup ? ["pickup"] as const : []), "relief", "surfaceTooth"],
     particle: ["particleCount", "patternJitter", ...(program.slots.physics.includes("physics-reaction") ? ["reactionRate"] as const : [])],
@@ -122,6 +135,7 @@ export function brushStudioV6MaterialActiveTuningKeys(program: BrushStudioV6Mate
     ink: program.slots.deposition === "deposit-marker" ? ["edgeDarkening"] : [],
   };
   for (const key of modeKeys[mode]) result.add(key);
+  activeTuningKeysCache.set(program, result);
   return result;
 }
 export interface BrushStudioV6MaterialPoint {
@@ -155,6 +169,7 @@ export interface BrushStudioV6MaterialStatistics {
 }
 export interface BrushStudioV6MaterialStroke {
   push(point: BrushStudioV6MaterialPoint): readonly BrushStudioV6MaterialMark[];
+  marks(): readonly BrushStudioV6MaterialMark[];
   reset(): void;
   statistics(): BrushStudioV6MaterialStatistics;
 }
@@ -215,35 +230,38 @@ const materialPaletteCache = new BrushStudioV6MaterialPaletteCache(
   createBrushStudioV6PigmentPalette,
 );
 
-/** Fixed work per append, fixed memory per stroke, and no event-count RNG. */
-export function createBrushStudioV6MaterialStroke(
-  program: BrushStudioV6MaterialProgram,
-  options: { readonly maxMarksPerPush?: number } = {},
-): BrushStudioV6MaterialStroke {
-  if (requiresLegacyMixboxStrokeMigration(program)) throw new BrushStudioV6LegacyPigmentMigrationRequiredError();
+export interface BrushStudioV6ResolvedTipProfile {
+  readonly enhancedAdapters: boolean; readonly pickup: number; readonly smudgeAdapter: boolean;
+  readonly size: number; readonly mode: "bristle" | "particle" | "grain" | "relief" | "wet" | "ink";
+  readonly spacing: number; readonly step: number; readonly seed: number; readonly physics: ReadonlySet<string>;
+  readonly backrun: boolean; readonly sedimentation: boolean; readonly splitMerge: boolean; readonly directionalRelief: boolean;
+  readonly bristle: boolean; readonly wet: boolean; readonly knife: boolean; readonly particles: boolean;
+  readonly chisel: boolean; readonly dualTip: boolean; readonly motifTip: boolean; readonly luminousDeposit: boolean;
+  readonly wetSheen: boolean; readonly chromaFringe: boolean; readonly patternId: string; readonly nativeVectorPattern: boolean;
+  readonly laneCount: number; readonly maxPatternMarks: number; readonly palette: readonly string[];
+  readonly roundness: number; readonly angleRad: number; readonly hardness: number;
+}
+
+const profileCache = new WeakMap<BrushStudioV6MaterialProgram, BrushStudioV6ResolvedTipProfile>();
+
+export function resolveTipProfile(program: BrushStudioV6MaterialProgram): BrushStudioV6ResolvedTipProfile {
+  const cached = profileCache.get(program);
+  if (cached) return cached;
   const t = program.tuning;
   const enhancedAdapters = usesEnhancedMaterialAdapters(program);
-  // The V2 compatibility smudge adapter is explicit and persisted; it never impersonates canvas pickup.
-  const pickup = program.slots.pickup === "pickup-pigment-reservoir"
-    || (enhancedAdapters && program.slots.pickup === "pickup-krita-smudge")
-    ? unit(t.pickup)
-    : 0;
+  const pickup = program.slots.pickup === "pickup-pigment-reservoir" || (enhancedAdapters && program.slots.pickup === "pickup-krita-smudge") ? unit(t.pickup) : 0;
   const smudgeAdapter = enhancedAdapters && program.slots.pickup === "pickup-krita-smudge";
   const size = bounded(t.size, 1, 240);
   const mode = contactMode(program);
   const spacing = mode === "relief" && t.spacing <= 0.3 ? Math.min(t.spacing, 0.035) : t.spacing;
   const step = brushStudioV6TopologyStep(program, bounded(size * spacing, 0.35, 96));
-  const markBudget = Math.round(bounded(options.maxMarksPerPush ?? 8192, 64, 32768));
   const seed = finite(program.seed) | 0;
   const physics = new Set(program.slots.physics);
   const backrun = enhancedAdapters && physics.has("physics-backrun-capillary");
   const sedimentation = enhancedAdapters && physics.has("physics-pigment-sedimentation");
   const splitMerge = enhancedAdapters && physics.has("physics-bristle-split-merge");
   const directionalRelief = enhancedAdapters && program.slots.finish.includes("finish-directional-relief");
-  const bristle = mode === "bristle";
-  const wet = mode === "wet";
-  const knife = mode === "relief";
-  const particles = mode === "particle";
+  const bristle = mode === "bristle", wet = mode === "wet", knife = mode === "relief", particles = mode === "particle";
   const chisel = program.slots.tip === "tip-chisel-sdf";
   const dualTip = enhancedAdapters && program.slots.tip === "tip-krita-dual";
   const motifTip = enhancedAdapters && program.slots.tip === "tip-motif-atlas";
@@ -254,41 +272,53 @@ export function createBrushStudioV6MaterialStroke(
   const nativeVectorPattern = ["pattern-vector-flow", "pattern-vector-vortex", "pattern-vector-contour", "pattern-textile-satin", "pattern-textile-twill"].includes(patternId);
   const laneCount = Math.round(bounded(t.bristleStrands, 8, 128));
   const maxPatternMarks = ["pattern-dot-tone", "pattern-cross-hatch", "pattern-brick"].includes(patternId) ? 169 : patternId === "pattern-weave" ? 338 : patternId === "pattern-stitch" ? 1 : nativeVectorPattern ? 18 : 6;
+  const pigmentProvider = brushStudioV6PigmentProviderForNode(program.slots.pigment);
+  if (!pigmentProvider) throw new Error(`안료 노드 ${program.slots.pigment}는 제품 재료 엔진에 연결되지 않았습니다.`);
+  const palette = materialPaletteCache.get(t.primaryColor, t.secondaryColor, pigmentProvider.id);
+  const profile: BrushStudioV6ResolvedTipProfile = Object.freeze({
+    enhancedAdapters, pickup, smudgeAdapter, size, mode, spacing, step, seed, physics,
+    backrun, sedimentation, splitMerge, directionalRelief, bristle, wet, knife, particles,
+    chisel, dualTip, motifTip, luminousDeposit, wetSheen, chromaFringe, patternId,
+    nativeVectorPattern, laneCount, maxPatternMarks, palette,
+    roundness: chisel ? 0.28 : 1, angleRad: chisel || knife ? Math.PI / 4 : 0, hardness: program.slots.deposition === "deposit-marker" ? 0.65 : 1,
+  });
+  profileCache.set(program, profile);
+  return profile;
+}
+
+/** Fixed work per append, fixed memory per stroke, and no event-count RNG. */
+export function createBrushStudioV6MaterialStroke(
+  program: BrushStudioV6MaterialProgram,
+  options: { readonly maxMarksPerPush?: number } = {},
+): BrushStudioV6MaterialStroke {
+  if (requiresLegacyMixboxStrokeMigration(program)) throw new BrushStudioV6LegacyPigmentMigrationRequiredError();
+  const t = program.tuning;
+  const {
+    pickup, smudgeAdapter, size, mode, step, seed, physics, backrun, sedimentation, splitMerge,
+    directionalRelief, bristle, wet, knife, particles, chisel, dualTip, motifTip,
+    luminousDeposit, wetSheen, chromaFringe, patternId, nativeVectorPattern, laneCount, maxPatternMarks, palette,
+  } = resolveTipProfile(program);
+  const markBudget = Math.round(bounded(options.maxMarksPerPush ?? 8192, 64, 32768));
   const topology = createBrushStudioV6TopologyStroke(program, step);
   const advancedWetMarks = (backrun ? 4 : 0) + (sedimentation ? 5 : 0);
   const directionalReliefMarks = directionalRelief && mode === "relief" ? 5 : 0;
   const bristleMarks = bristle ? laneCount * (splitMerge ? 2 : 1) : 0;
   const baseMarksPerDab = topology ? topology.maxPrimitivesPerDab * 3 : (patternId !== "pattern-none" ? maxPatternMarks + (particles ? 36 : 0) : bristle ? bristleMarks : mode === "grain" ? 36 : particles ? 36 : 6) + 4 + advancedWetMarks + directionalReliefMarks;
   const marksPerDab = baseMarksPerDab * (1 + (dualTip ? 1 : 0) + (motifTip ? 1 : 0));
-  const pigmentProvider = brushStudioV6PigmentProviderForNode(program.slots.pigment);
-  if (!pigmentProvider) {
-    throw new Error(`안료 노드 ${program.slots.pigment}는 제품 재료 엔진에 연결되지 않았습니다.`);
-  }
-  const palette = materialPaletteCache.get(
-    t.primaryColor,
-    t.secondaryColor,
-    pigmentProvider.id,
-  );
-  const laneX = new Float64Array(topology ? 0 : laneCount);
-  const laneY = new Float64Array(topology ? 0 : laneCount);
-  const reservoir = new Float64Array(topology ? 0 : laneCount);
-  const wetEdges = new Float64Array(topology ? 0 : 4);
+  const laneX = new Float64Array(topology ? 0 : laneCount), laneY = new Float64Array(topology ? 0 : laneCount);
+  const reservoir = new Float64Array(topology ? 0 : laneCount), wetEdges = new Float64Array(topology ? 0 : 4);
+  const strokeMarks: BrushStudioV6MaterialMark[] = [];
   let previous: BrushStudioV6MaterialPoint | null = null;
-  let remaining = step;
-  let pathLength = 0;
-  let emittedMarks = 0;
-  let dabIndex = 0;
-  let clippedDabs = 0;
-  let initializedBristles = false;
-  let initializedWetEdges = false;
-  let smudgeMix = 0;
+  let remaining = step, pathLength = 0, emittedMarks = 0, dabIndex = 0, clippedDabs = 0;
+  let initializedBristles = false, initializedWetEdges = false, smudgeMix = 0;
 
   function deposit(point: BrushStudioV6MaterialPoint, direction: number, marks: BrushStudioV6MaterialMark[], densityMultiplier = 1, directional = true): void {
+    const tipProfile = resolveTipProfile(program);
     const index = dabIndex++;
     const pressure = unit(point.pressure);
     if (pressure === 0 || t.flow <= 0 || t.opacity <= 0) { topology?.reset(); return; }
     const tilt = program.input.tiltEnabled ? unit(point.tilt ?? 0) : 0;
-    const angle = chisel || knife ? (finite(point.twist ?? 0) * Math.PI / 180 + Math.PI / 4) : direction;
+    const angle = chisel || knife ? (finite(point.twist ?? 0) * Math.PI / 180 + tipProfile.angleRad) : direction;
     const widthPressure = program.slots.carrier === "carrier-perfect-outline" ? pressure * pressure : pressure;
     const radius = size * (0.035 + widthPressure * 0.465) * (1 + tilt * 0.7);
     // Optical density per unit distance prevents darker high-Hz input streams.
@@ -593,45 +623,12 @@ export function createBrushStudioV6MaterialStroke(
       const normalX = -Math.sin(direction);
       const normalY = Math.cos(direction);
       if (wetSheen) {
-        emit(
-          "wet",
-          point.x - normalX * radius * 0.16,
-          point.y - normalY * radius * 0.16,
-          radius * 0.72,
-          Math.max(0.16, radius * 0.16),
-          direction,
-          alpha * unit(t.wetness) * 0.2,
-          0.82,
-          0,
-          "ellipse",
-        );
+        emit("wet", point.x - normalX * radius * 0.16, point.y - normalY * radius * 0.16, radius * 0.72, Math.max(0.16, radius * 0.16), direction, alpha * unit(t.wetness) * 0.2, 0.82, 0, "ellipse");
       }
       if (chromaFringe && directional) {
         const fringe = radius * spread * (0.08 + unit(t.diffusion) * 0.12);
-        emit(
-          "wet",
-          point.x + normalX * fringe,
-          point.y + normalY * fringe,
-          radius * 1.05,
-          Math.max(0.18, radius * 0.2),
-          direction,
-          alpha * 0.13,
-          1,
-          0,
-          "capsule",
-        );
-        emit(
-          "wet",
-          point.x - normalX * fringe,
-          point.y - normalY * fringe,
-          radius,
-          Math.max(0.18, radius * 0.16),
-          direction,
-          alpha * 0.08,
-          0.42,
-          0,
-          "capsule",
-        );
+        emit("wet", point.x + normalX * fringe, point.y + normalY * fringe, radius * 1.05, Math.max(0.18, radius * 0.2), direction, alpha * 0.13, 1, 0, "capsule");
+        emit("wet", point.x - normalX * fringe, point.y - normalY * fringe, radius, Math.max(0.18, radius * 0.16), direction, alpha * 0.08, 0.42, 0, "capsule");
       }
       if (program.slots.finish.includes("finish-edge-bloom")
         && t.edgeDarkening > 0 && directional) {
@@ -659,21 +656,22 @@ export function createBrushStudioV6MaterialStroke(
 
     const marker = program.slots.deposition === "deposit-marker";
     const advancedSurface = isBrushStudioV7AdvancedSurface(program.slots.surface);
+    const adjustedRoundness = chisel ? tipProfile.roundness + tilt * 0.2 : tipProfile.roundness;
     if (advancedSurface) {
       const surfaceContact = sampleBrushStudioV7SurfaceContact(program.slots.surface, point.x, point.y, seed);
       const fiberInfluence = surfaceContact.anisotropy * (marker ? 0.24 : 0.1);
       const contactAngle = angle + Math.sin(surfaceContact.fiberAngle - angle) * fiberInfluence;
       const bleed = marker ? 1 + surfaceContact.localAbsorbency * unit(t.absorbency) * 0.2 : 1;
       const toothGain = 1 - surfaceContact.tooth * unit(t.surfaceTooth) * 0.14;
-      const aspect = chisel ? 0.28 + tilt * 0.2 : 1 - surfaceContact.anisotropy * 0.09;
+      const aspect = chisel ? adjustedRoundness : adjustedRoundness - surfaceContact.anisotropy * 0.09;
       emit("ink", point.x, point.y, radius * bleed, radius * aspect, contactAngle,
-        alpha * (marker ? 0.65 : 1) * toothGain, 0, 0, chisel ? "rect" : "ellipse");
+        alpha * tipProfile.hardness * toothGain, 0, 0, chisel ? "rect" : "ellipse");
       if (marker && t.edgeDarkening > 0) {
         emit("ink", point.x, point.y, radius * bleed, radius * 0.42, contactAngle,
           alpha * t.edgeDarkening * (0.82 + surfaceContact.localAbsorbency * 0.24), 0, 0, "ring");
       }
     } else {
-      emit("ink", point.x, point.y, radius, radius * (chisel ? 0.28 + tilt * 0.2 : 1), angle, alpha * (marker ? 0.65 : 1), 0, 0, chisel ? "rect" : "ellipse");
+      emit("ink", point.x, point.y, radius, radius * adjustedRoundness, angle, alpha * tipProfile.hardness, 0, 0, chisel ? "rect" : "ellipse");
       if (marker && t.edgeDarkening > 0) emit("ink", point.x, point.y, radius, radius * 0.42, angle, alpha * t.edgeDarkening, 0, 0, "ring");
     }
   }
@@ -683,7 +681,13 @@ export function createBrushStudioV6MaterialStroke(
       if (![input.x, input.y, input.pressure].every(Number.isFinite)) return [];
       const point = { ...input, pressure: unit(input.pressure), tilt: unit(input.tilt ?? 0), twist: finite(input.twist ?? 0) };
       const marks: BrushStudioV6MaterialMark[] = [];
-      if (!previous) { deposit(point, 0, marks, 1, false); previous = point; emittedMarks += marks.length; return marks; }
+      if (!previous) {
+        deposit(point, 0, marks, 1, false);
+        previous = point;
+        emittedMarks += marks.length;
+        if (strokeMarks.length < markBudget) strokeMarks.push(...marks.slice(0, markBudget - strokeMarks.length));
+        return marks;
+      }
       const dx = point.x - previous.x;
       const dy = point.y - previous.y;
       const distance = Math.hypot(dx, dy);
@@ -708,9 +712,11 @@ export function createBrushStudioV6MaterialStroke(
       remaining = Math.max(0, remaining + totalDabs * step - distance);
       previous = point;
       emittedMarks += marks.length;
+      if (strokeMarks.length < markBudget) strokeMarks.push(...marks.slice(0, markBudget - strokeMarks.length));
       return marks;
     },
-    reset(): void { topology?.reset(); previous = null; remaining = step; pathLength = 0; emittedMarks = 0; dabIndex = 0; clippedDabs = 0; initializedBristles = false; initializedWetEdges = false; smudgeMix = 0; },
+    marks: () => strokeMarks,
+    reset(): void { topology?.reset(); strokeMarks.length = 0; previous = null; remaining = step; pathLength = 0; emittedMarks = 0; dabIndex = 0; clippedDabs = 0; initializedBristles = false; initializedWetEdges = false; smudgeMix = 0; },
     statistics: () => ({ pathLength, emittedMarks, resampledDabs: dabIndex, clippedDabs }),
   };
 }

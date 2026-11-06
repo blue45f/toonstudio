@@ -790,7 +790,7 @@ export class SumiComputeRuntime {
   private uploadPaper(program: BrushProgram, override: Uint8Array | null | undefined): void {
     if (override === null) return;
     if (!override && !program.paper.enabled) return;
-    const key = override ? null : `${program.paper.seed}|${program.paper.roughness}|${program.paper.absorbency}`;
+    const key = override ? null : `${program.paper.seed}|${program.paper.roughness}|${program.paper.absorbency}|${program.paper.tooth ?? 0}`;
     if (key && this.paperKeyLoaded === key) return;
     const size = PAPER_TEXTURE_SIZE;
     if (override && override.length !== size * size * 4) throw new RangeError(`paper texture must be ${size}²×4 bytes`);
@@ -818,7 +818,7 @@ export class SumiComputeRuntime {
    */
   private uploadPaperWet(program: BrushProgram): void {
     if (!program.paper.enabled) return;
-    const key = `${program.paper.seed}|${program.paper.roughness}|${program.paper.absorbency}`;
+    const key = `${program.paper.seed}|${program.paper.roughness}|${program.paper.absorbency}|${program.paper.tooth ?? 0}`;
     if (this.paperWetKeyLoaded === key) return;
     this.device.queue.writeBuffer(this.buffers.paperWet, 0, encodePaperWet(paperFor(program.paper)));
     this.paperWetKeyLoaded = key;

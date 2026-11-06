@@ -405,7 +405,8 @@ export class SumiInstancedRuntime {
       this.tipKeyLoaded = tipKey;
     }
     if (program.paper.enabled) {
-      const key = `${program.paper.seed}|${program.paper.roughness}|${program.paper.absorbency}`;
+      const spec = program.paper;
+      const key = `${spec.seed}|${spec.roughness}|${spec.absorbency}|${spec.tooth ?? 0}`;
       if (this.paperKeyLoaded !== key) {
         const data = encodePaperTexture(paperFor(program.paper));
         const size = PAPER_TEXTURE_SIZE;

@@ -14,6 +14,7 @@ import { FixturePicker } from "../ui/FixturePicker";
 import { LaneCanvas } from "../ui/LaneCanvas";
 import { LaneSelector } from "../ui/LaneSelector";
 import { MetricsTable } from "../ui/MetricsTable";
+import { ReceiptMapping } from "../ui/ReceiptMapping";
 import { ReportPanel } from "../ui/ReportPanel";
 
 import type { BrushProgram } from "../../engine/presets/program-schema";
@@ -40,36 +41,39 @@ function LiveStatsPanel() {
     .map((f) => f.inputToSubmitMs)
     .filter((v): v is number => typeof v === "number");
   return (
-    <dl className="lab-stats" aria-label="실시간 입력 통계">
-      <div>
-        <dt>획 수</dt>
-        <dd>{live.strokes}</dd>
-      </div>
-      <div>
-        <dt>마지막 획 dab</dt>
-        <dd>{receipt ? receipt.dabCount : "—"}</dd>
-      </div>
-      <div>
-        <dt>프레임 p50 / p95 (ms)</dt>
-        <dd>
-          {receipt ? `${fmt(percentile(receipt.frameTimesMs, 50))} / ${fmt(percentile(receipt.frameTimesMs, 95))}` : "—"}
-        </dd>
-      </div>
-      <div>
-        <dt>입력→제출 p95 (ms)</dt>
-        <dd>{fmt(percentile(inputToSubmit, 95))}</dd>
-      </div>
-      <div>
-        <dt>GPU 시간 / 출처</dt>
-        <dd>{receipt ? `${fmt(receipt.gpuTimeMs)} / ${receipt.timingSource}` : "—"}</dd>
-      </div>
-      <div>
-        <dt>비닝 초과 dab</dt>
-        <dd className={receipt && receipt.overflowDabs > 0 ? "lab-verdict-FAIL" : undefined}>
-          {receipt ? receipt.overflowDabs : "—"}
-        </dd>
-      </div>
-    </dl>
+    <>
+      <dl className="lab-stats" aria-label="실시간 입력 통계">
+        <div>
+          <dt>획 수</dt>
+          <dd>{live.strokes}</dd>
+        </div>
+        <div>
+          <dt>마지막 획 dab</dt>
+          <dd>{receipt ? receipt.dabCount : "—"}</dd>
+        </div>
+        <div>
+          <dt>프레임 p50 / p95 (ms)</dt>
+          <dd>
+            {receipt ? `${fmt(percentile(receipt.frameTimesMs, 50))} / ${fmt(percentile(receipt.frameTimesMs, 95))}` : "—"}
+          </dd>
+        </div>
+        <div>
+          <dt>입력→제출 p95 (ms)</dt>
+          <dd>{fmt(percentile(inputToSubmit, 95))}</dd>
+        </div>
+        <div>
+          <dt>GPU 시간 / 출처</dt>
+          <dd>{receipt ? `${fmt(receipt.gpuTimeMs)} / ${receipt.timingSource}` : "—"}</dd>
+        </div>
+        <div>
+          <dt>비닝 초과 dab</dt>
+          <dd className={receipt && receipt.overflowDabs > 0 ? "lab-verdict-FAIL" : undefined}>
+            {receipt ? receipt.overflowDabs : "—"}
+          </dd>
+        </div>
+      </dl>
+      <ReceiptMapping receipt={receipt} />
+    </>
   );
 }
 
@@ -82,6 +86,8 @@ export function CompareView() {
   const { registry, env, store, actions } = ctx;
   const laneA = useLabSelector((s) => s.laneA);
   const laneB = useLabSelector((s) => s.laneB);
+  const fixtureSource = useLabSelector((s) => s.fixtureSource);
+  const captured = useLabSelector((s) => s.captured);
   const liveCapture = useLabSelector((s) => s.liveCapture);
   const running = useLabSelector((s) => s.running);
   const results = useLabSelector((s) => s.results);
@@ -132,7 +138,7 @@ export function CompareView() {
       if (!canvas) return;
       try {
         const activeProgram = programRef.current ?? initialProgram;
-        presentPreview(canvas, [...trailRef.current, ...predicted], activeProgram.tip.sizePx / 2);
+        presentPreview(canvas, trailRef.current, activeProgram.tip.sizePx / 2, predicted);
       } catch (error) {
         actions.pushError({ laneId: laneA, code: codeOf(error), message: `미리보기 표시 실패: ${messageOf(error)}` });
       }
@@ -201,9 +207,13 @@ export function CompareView() {
           if (!session) return;
           onStrokeEnd(res, session.strokes, session.currentLane);
         },
-        onStrokeAbort: () => {
+        onStrokeAbort: (abort) => {
           trailRef.current = [];
           drawPreview([]);
+          if (abort.laneReplaced) {
+            actions.clearResults();
+            actions.setLiveStats(emptyLiveStats());
+          }
         },
         onError: (error) =>
           actions.pushError({ laneId: laneA, code: codeOf(error), message: `실시간 세션 오류: ${messageOf(error)}` }),
@@ -275,6 +285,7 @@ export function CompareView() {
   const hashB = results.reportB?.pixelHash ?? (results.b ? pixelHashOf(results.b.image) : null);
   const labelA = descA ? descA.label : laneA;
   const labelB = descB ? descB.label : laneB;
+  const displaySize = results.a?.image.width ?? (fixtureSource === "captured" && captured ? captured.width : canvasSize);
 
   const benchmarkScenarios = [
     { id: "ink-g-pen", label: "클립스튜디오 G펜 기준선" },
@@ -351,7 +362,7 @@ export function CompareView() {
             slot="A"
             laneLabel={labelA}
             image={results.a?.image ?? null}
-            size={canvasSize}
+            size={displaySize}
             pixelHash={hashA}
             live={liveCapture}
             stageRef={(el) => {
@@ -366,9 +377,12 @@ export function CompareView() {
                 미리보기 레이어에는 입력 궤적과 예측 표본만 그린다(정본 아님). 획을 떼면 레인 readback 결과로 바뀐다.
               </p>
             ) : null}
+            <ReceiptMapping receipt={results.a?.receipt} />
           </LaneCanvas>
-          <LaneCanvas slot="B" laneLabel={labelB} image={results.b?.image ?? null} size={canvasSize} pixelHash={hashB} />
-          <DiffHeatmap image={results.comparison?.heatmap ?? null} size={canvasSize} />
+          <LaneCanvas slot="B" laneLabel={labelB} image={results.b?.image ?? null} size={displaySize} pixelHash={hashB}>
+            <ReceiptMapping receipt={results.b?.receipt} />
+          </LaneCanvas>
+          <DiffHeatmap image={results.comparison?.heatmap ?? null} size={displaySize} />
         </div>
         {liveCapture ? <LiveStatsPanel /> : null}
       </section>

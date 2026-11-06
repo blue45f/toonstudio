@@ -340,11 +340,12 @@ export class CornerGuard<T extends TimedPt = TimedPt> {
    * 앵커 위치의 기록 표본부터 지금 표본 `next` 직전까지의 이력 중 꺾임점(앵커-지금 표본 현에서 가장 먼 표본, 동률이면 앞선 쪽).
    * 앵커 표본이 이력에서 밀려났으면(시각 역행·긴 공백) null이다: 호출자는 모서리로 치지 않는다.
    */
-  pickVertex(anchor: Pt, next: Pt): T | null {
+  pickVertex(anchor: Pt & { readonly tMs?: number }, next: Pt): T | null {
     let at = -1;
+    const hasTMs = anchor.tMs !== undefined && !Number.isNaN(anchor.tMs);
     for (let i = this.pts.length - 1; i >= 0; i -= 1) {
       const q = this.pts[i];
-      if (q && q.x === anchor.x && q.y === anchor.y) {
+      if (q && q.x === anchor.x && q.y === anchor.y && (!hasTMs || q.tMs === anchor.tMs)) {
         at = i;
         break;
       }

@@ -2,11 +2,45 @@ import type { BrushStudioV6MaterialPoint } from "./brush-studio-v6-material-engi
 
 export interface BrushStudioV6MotionFilter {
   push(point: BrushStudioV6MaterialPoint): BrushStudioV6MaterialPoint;
+  flush(point: BrushStudioV6MaterialPoint): BrushStudioV6MaterialPoint[];
   reset(): void;
 }
 
+export type BrushStudioV6MotionFilterInput =
+  | {
+      readonly motionId: string;
+      readonly stabilization: number;
+      readonly size: number;
+      readonly friction: number;
+    }
+  | {
+      readonly slots: { readonly motion: string };
+      readonly tuning: {
+        readonly stabilization: number;
+        readonly size: number;
+        readonly friction: number;
+      };
+    };
+
 const finite = (value: number, fallback = 0): number => Number.isFinite(value) ? value : fallback;
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, finite(value, min)));
+
+function resolveMotionConfig(input: BrushStudioV6MotionFilterInput): {
+  readonly motionId: string;
+  readonly stabilization: number;
+  readonly size: number;
+  readonly friction: number;
+} {
+  if ("slots" in input) {
+    return {
+      motionId: input.slots.motion,
+      stabilization: input.tuning.stabilization,
+      size: input.tuning.size,
+      friction: input.tuning.friction,
+    };
+  }
+  return input;
+}
 
 function normalized(point: BrushStudioV6MaterialPoint): BrushStudioV6MaterialPoint {
   return Object.freeze({
@@ -65,18 +99,19 @@ export function estimateBrushStudioV6MotionResponseLength(input: {
   if (input.motionId === "motion-spring") {
     return Math.max(0.6, size * (0.07 + strength * 0.2));
   }
+  if (input.motionId === "motion-google-ink") {
+    return Math.max(0.45, size * (0.05 + strength * 0.22));
+  }
   if (input.motionId === "motion-lazy-leash") {
     return size * (0.12 + strength * 0.82);
   }
   return 0;
 }
 
-export function createBrushStudioV6MotionFilter(input: {
-  readonly motionId: string;
-  readonly stabilization: number;
-  readonly size: number;
-  readonly friction: number;
-}): BrushStudioV6MotionFilter {
+export function createBrushStudioV6MotionFilter(
+  rawInput: BrushStudioV6MotionFilterInput,
+): BrushStudioV6MotionFilter {
+  const input = resolveMotionConfig(rawInput);
   const strength = clamp(input.stabilization, 0, 1);
   const size = clamp(input.size, 1, 240);
   const friction = clamp(input.friction, 0, 1);
@@ -117,22 +152,11 @@ export function createBrushStudioV6MotionFilter(input: {
       // smoothing tail here would repaint behind the already committed bounded segment.
       if (distance > size * 64) return direct(point);
 
-      if (input.motionId === "motion-adaptive-ema") {
-        output = advanceDistanceLag({
-          output,
-          target,
-          point,
-          distance,
-          unitX,
-          unitY,
-          responseLength: estimateBrushStudioV6MotionResponseLength({
-            motionId: input.motionId,
-            stabilization: strength,
-            size,
-            friction,
-          }),
-        });
-      } else if (input.motionId === "motion-brush-inertia") {
+      if (
+        input.motionId === "motion-adaptive-ema"
+        || input.motionId === "motion-brush-inertia"
+        || input.motionId === "motion-google-ink"
+      ) {
         output = advanceDistanceLag({
           output,
           target,
@@ -194,6 +218,76 @@ export function createBrushStudioV6MotionFilter(input: {
       }
       target = point;
       return output;
+    },
+    flush(inputPoint): BrushStudioV6MaterialPoint[] {
+      if (
+        !inputPoint
+        || !output
+        || !target
+        || input.motionId === "motion-direct"
+      ) {
+        return [];
+      }
+      if (
+        input.motionId !== "motion-adaptive-ema"
+        && input.motionId !== "motion-brush-inertia"
+        && input.motionId !== "motion-spring"
+        && input.motionId !== "motion-google-ink"
+        && input.motionId !== "motion-lazy-leash"
+      ) {
+        return [];
+      }
+      const point = normalized(inputPoint);
+      let x = output.x;
+      let y = output.y;
+      if (Math.hypot(point.x - x, point.y - y) <= 0.5) {
+        if (x === point.x && y === point.y) {
+          target = point;
+          return [];
+        }
+        output = point;
+        target = point;
+        springDerivativeX = 0;
+        springDerivativeY = 0;
+        return [point];
+      }
+      const responseLength = Math.max(
+        0.35,
+        estimateBrushStudioV6MotionResponseLength({
+          motionId: input.motionId,
+          stabilization: strength,
+          size,
+          friction,
+        }),
+      );
+      const stepFactor =
+        input.motionId === "motion-lazy-leash"
+          ? clamp(0.42 - strength * 0.16, 0.22, 0.45)
+          : input.motionId === "motion-spring"
+            ? clamp(1 - Math.exp(-Math.max(1.5, responseLength * 0.55) / responseLength), 0.25, 0.5)
+            : clamp(1 - Math.exp(-Math.max(1.5, responseLength * 0.65) / responseLength), 0.28, 0.55);
+      const catchUp: BrushStudioV6MaterialPoint[] = [];
+      for (let step = 0; step < 16; step += 1) {
+        const dx = point.x - x;
+        const dy = point.y - y;
+        if (Math.hypot(dx, dy) <= 0.5) break;
+        x += dx * stepFactor;
+        y += dy * stepFactor;
+        if (Math.hypot(point.x - x, point.y - y) <= 0.5) {
+          catchUp.push(point);
+          break;
+        }
+        catchUp.push(moved(point, x, y));
+      }
+      const last = catchUp[catchUp.length - 1];
+      if (!last || last.x !== point.x || last.y !== point.y) {
+        catchUp.push(point);
+      }
+      output = point;
+      target = point;
+      springDerivativeX = 0;
+      springDerivativeY = 0;
+      return catchUp;
     },
     reset,
   };

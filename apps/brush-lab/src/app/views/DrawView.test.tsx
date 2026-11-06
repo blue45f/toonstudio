@@ -1025,5 +1025,18 @@ describe("DrawView", { timeout: 30_000 }, () => {
     // 첫 획 이후 온보딩 문구 사라짐
     await drawStroke(h, stage, 1);
     expect(screen.queryByTestId("lab-draw-hud-onboarding")).toBeNull();
+
+    // 고급 파라미터 안에 중복 configHash 푸터가 없고, '브러시 기본값으로' 버튼이 보정 방식·코너 게이트까지 되돌린다
+    expect(screen.queryByTestId("draw-config-hash")).toBeNull();
+    fireEvent.change(screen.getByLabelText("보정 방식"), { target: { value: "lazy-brush" } });
+    fireEvent.click(screen.getByTestId("lab-draw-corner-gate"));
+    expect(h.drawStore.get()).toMatchObject({ stabilizerMode: "lazy-brush", cornerGate: false });
+    fireEvent.click(screen.getByTestId("lab-draw-reset-params"));
+    expect(h.drawStore.get()).toMatchObject({
+      overrides: {},
+      stabilizerMode: "one-euro",
+      stabilizerPct: null,
+      cornerGate: true,
+    });
   });
 });

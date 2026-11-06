@@ -313,11 +313,13 @@ export function createPenSpringStage(opts: PenSpringStageOptions): PenSpringStag
   let started = false;
   let lastOut: RawSample | null = null;
   let heldUp: RawSample | null = null;
+  let lastEmittedTMs = Number.NEGATIVE_INFINITY;
 
   const reset = (): void => {
     started = false;
     lastOut = null;
     heldUp = null;
+    lastEmittedTMs = Number.NEGATIVE_INFINITY;
   };
 
   const apply = (samples: readonly RawSample[]): RawSample[] => {
@@ -334,6 +336,7 @@ export function createPenSpringStage(opts: PenSpringStageOptions): PenSpringStag
         if (s.phase !== "up") {
           const o = withPosition(s, s.x, s.y, s.tMs, s.phase);
           lastOut = o;
+          lastEmittedTMs = Math.max(lastEmittedTMs, o.tMs);
           out.push(o);
           continue;
         }
@@ -344,8 +347,10 @@ export function createPenSpringStage(opts: PenSpringStageOptions): PenSpringStag
         continue;
       }
       const p = driver.positionAt(s.tMs);
-      const o = withPosition(s, p.x, p.y, s.tMs, s.phase);
+      const emitTMs = Number.isFinite(lastEmittedTMs) ? Math.max(s.tMs, lastEmittedTMs) : s.tMs;
+      const o = withPosition(s, p.x, p.y, emitTMs, s.phase);
       lastOut = o;
+      lastEmittedTMs = o.tMs;
       out.push(o);
     }
     return out;
@@ -355,14 +360,15 @@ export function createPenSpringStage(opts: PenSpringStageOptions): PenSpringStag
     const up = heldUp;
     if (!up) return [];
     const out: RawSample[] = [];
-    let t = lastOut ? Math.max(lastOut.tMs, driver.simTimeMs) : up.tMs;
+    let t = lastOut ? Math.max(lastOut.tMs, lastEmittedTMs, driver.simTimeMs) : up.tMs;
     for (let i = 0; i < maxSettleTicks; i += 1) {
       if (driver.spring.isAtRest(up.x, up.y)) break;
       driver.settleStep(up.x, up.y);
       t += PEN_SPRING_SUBSTEP_MS;
       out.push(withPosition(up, driver.spring.x, driver.spring.y, t, "move"));
     }
-    out.push(withPosition(up, up.x, up.y, Math.max(t, up.tMs) + (out.length > 0 ? PEN_SPRING_SUBSTEP_MS : 0), "up"));
+    const finalTMs = Math.max(up.tMs, t) + (out.length > 0 ? PEN_SPRING_SUBSTEP_MS : 0);
+    out.push(withPosition(up, up.x, up.y, finalTMs, "up"));
     reset();
     return out;
   };

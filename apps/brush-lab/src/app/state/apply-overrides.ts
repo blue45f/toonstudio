@@ -1,3 +1,4 @@
+import { stabilizerPctToOneEuro } from "../../engine/input/stabilizer-map";
 import { normalizeProgram } from "../../engine/presets/program-schema";
 import { DEFAULT_WET_PARAMS } from "../../engine/wet/params";
 
@@ -10,34 +11,33 @@ import type { BrushDepositionSpec, BrushProgram, BrushTipSpec } from "../../engi
  * 결과는 `normalizeProgram`으로 다시 검증하므로 범위 밖 값은 ZodError로 드러난다(무음 보정 없음).
  */
 
-function lerp(a: number, b: number, t: number): number {
-  // 끝점(t=0, t=1)에서 정확히 a·b가 되도록 가중합 형태를 쓴다(부동소수 오차 방지).
-  return a * (1 - t) + b * t;
-}
-
 /**
- * 안정화 강도 0..1 → 위치 1€ 필터 파라미터(보충 설계 §2.3).
- * `minCutoff = lerp(3.0, 0.5, s)`, `β = lerp(0.05, 0.005, s)`, `dCutoff = 1.0`.
- * 0.6 초과 구간은 설계상 spring 팔로워 백엔드 위임 대상이지만 이 랩에는 없으므로 같은 1€ 매핑을 쓴다
- * (패널에 표시).
+ * 안정화 강도 0..1 → 위치 1€ 필터 파라미터(로그 매핑 `stabilizerPctToOneEuro`: 30 Hz → 0.4 Hz, β 0.12 → 0.006, dCutoff 1.0).
+ * 그리기 패널(`DrawParamPanel`)과 A/B 비교 패널(`BrushParamPanel`)이 같은 로그 척도를 공유한다.
+ * 0.6 초과 구간은 설계상 spring 팔로워 백엔드 위임 대상이지만 이 랩에는 없으므로 같은 1€ 매핑을 쓴다(패널에 표시).
  */
 export function stabilizerToOneEuro(strength: number): OneEuroParams {
-  const s = strength < 0 ? 0 : strength > 1 ? 1 : strength;
-  return { minCutoff: lerp(3.0, 0.5, s), beta: lerp(0.05, 0.005, s), dCutoff: 1.0 };
+  return stabilizerPctToOneEuro(strength * 100);
 }
 
 export const STABILIZER_BACKEND_LIMIT = 0.6;
 
 function pickTip(base: BrushTipSpec, o: LabOverrides): BrushTipSpec {
+  const hardness = o.hardness ?? base.hardness;
+  const aspect = o.aspect ?? base.aspect;
+  const params =
+    o.params !== undefined || o.hardness !== undefined || o.aspect !== undefined
+      ? { ...base.params, ...o.params, hardness, aspect }
+      : base.params;
   return {
     kind: o.kind ?? base.kind,
     sizePx: o.sizePx ?? base.sizePx,
-    hardness: o.hardness ?? base.hardness,
-    aspect: o.aspect ?? base.aspect,
+    hardness,
+    aspect,
     angleRad: o.angleRad ?? base.angleRad,
     shapeExp: o.shapeExp ?? base.shapeExp,
     seed: o.seed ?? base.seed,
-    params: o.params ?? base.params,
+    params,
   };
 }
 

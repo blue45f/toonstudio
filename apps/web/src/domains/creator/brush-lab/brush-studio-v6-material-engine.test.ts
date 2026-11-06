@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { BrushStudioV6LegacyPigmentMigrationRequiredError } from "./brush-studio-v6-legacy-pigment";
 import { brushStudioV6PigmentProviderForNode } from "./brush-studio-v6-pigment-provider";
 import { BRUSH_STUDIO_V6_RECIPES, createBrushStudioV6Program, patchBrushStudioV6Tuning } from "./brush-studio-v6-engine";
-import { brushStudioV6MaterialActiveTuningKeys, brushStudioV6MaterialMarksToSvg, brushStudioV6MaterialNodeExecution, createBrushStudioV6MaterialStroke, isBrushStudioV6MaterialNodeImplemented, mapBrushStudioV6Pressure, mixBrushStudioV6MaterialColors, normalizeBrushStudioV6MaterialConfig, renderBrushStudioV6MaterialMarks, sampleBrushStudioV6PaperContact, type BrushStudioV6MaterialMark, type BrushStudioV6MaterialPoint } from "./brush-studio-v6-material-engine";
+import { brushStudioV6MaterialActiveTuningKeys, brushStudioV6MaterialMarksToSvg, brushStudioV6MaterialNodeExecution, createBrushStudioV6MaterialStroke, isBrushStudioV6MaterialNodeImplemented, mapBrushStudioV6Pressure, mixBrushStudioV6MaterialColors, normalizeBrushStudioV6MaterialConfig, renderBrushStudioV6MaterialMarks, resolveTipProfile, sampleBrushStudioV6PaperContact, type BrushStudioV6MaterialMark, type BrushStudioV6MaterialPoint } from "./brush-studio-v6-material-engine";
 
 const line = (steps: number, length = 180): BrushStudioV6MaterialPoint[] => Array.from({ length: steps + 1 }, (_, index) => ({ x: index * length / steps, y: 30, pressure: 0.65, tilt: 0.3, twist: 20 }));
 function paint(id: string, points: readonly BrushStudioV6MaterialPoint[]): readonly BrushStudioV6MaterialMark[] {
@@ -330,6 +330,23 @@ describe("portable V6 material contacts", () => {
     const native = { ...legacy, slots: { ...legacy.slots, pigment: "pigment-latent" } };
     expect(() => createBrushStudioV6MaterialStroke(native)).not.toThrow();
     expect(legacy).toEqual(before);
+  });
+
+  it("동일한 프로그램 참조에 대해 resolveTipProfile WeakMap 캐시를 재사용하고 동일한 마크를 생성한다", () => {
+    const program = createBrushStudioV6Program("clean-ink");
+    const firstProfile = resolveTipProfile(program);
+    const secondProfile = resolveTipProfile(program);
+    expect(secondProfile).toBe(firstProfile);
+
+    const strokeA = createBrushStudioV6MaterialStroke(program);
+    const strokeB = createBrushStudioV6MaterialStroke(program);
+    const points = line(16);
+    const marksA = points.flatMap((point) => strokeA.push(point));
+    const marksB = points.flatMap((point) => strokeB.push(point));
+    expect(marksB).toEqual(marksA);
+    expect(strokeA.marks()).toEqual(marksA);
+    strokeA.reset();
+    expect(strokeA.marks()).toEqual([]);
   });
 
 });

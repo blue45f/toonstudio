@@ -94,12 +94,14 @@ export function createLazyBrushStage(opts: LazyBrushStageOptions): LazyBrushStag
         if (catchUp && radius > 0) {
           heldUp = s;
         } else {
-          out.push(withPosition(s, brush.x, brush.y, s.tMs, "up"));
+          const upTMs = lastOut ? Math.max(s.tMs, lastOut.tMs) : s.tMs;
+          out.push(withPosition(s, brush.x, brush.y, upTMs, "up"));
           reset();
         }
         continue;
       }
-      const o = withPosition(s, brush.x, brush.y, s.tMs, s.phase);
+      const emitTMs = lastOut ? Math.max(s.tMs, lastOut.tMs) : s.tMs;
+      const o = withPosition(s, brush.x, brush.y, emitTMs, s.phase);
       out.push(o);
       lastOut = o;
     }
@@ -120,15 +122,19 @@ export function createLazyBrushStage(opts: LazyBrushStageOptions): LazyBrushStag
       const wanted = Math.max(2, Math.round(span / intervals.medianMs()));
       const steps = Math.min(wanted, LAZY_CATCH_UP_MAX_STEPS);
       const dt = wanted > LAZY_CATCH_UP_MAX_STEPS ? span / LAZY_CATCH_UP_MAX_STEPS : intervals.medianMs();
+      let lastEmittedTMs = t0;
       for (let i = 1; i <= steps; i += 1) {
         const w = smoothstep01(i / steps);
         const isLast = i === steps;
+        const stepTMs = t0 + dt * i;
+        const sampleTMs = isLast ? Math.max(up.tMs, stepTMs, lastEmittedTMs) : stepTMs;
+        lastEmittedTMs = sampleTMs;
         out.push(
           withPosition(
             up,
             isLast ? up.x : from.x + (up.x - from.x) * w,
             isLast ? up.y : from.y + (up.y - from.y) * w,
-            t0 + dt * i,
+            sampleTMs,
             isLast ? "up" : "move",
           ),
         );

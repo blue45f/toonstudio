@@ -4,8 +4,11 @@
  * 둥근 털 dab 결과를 그 브러시의 모습으로 오해한다. 공통 `StrokeReceipt`에는 이 필드가 없어 구조를 확인하고 읽는다.
  */
 
-/** 영수증에서 문자열 배열 필드(`unmappedKo`·`mappedKo`·`notesKo`)를 꺼낸다. 없거나 모양이 다르면 빈 배열. */
-export function receiptStringList(receipt: unknown, key: "unmappedKo" | "mappedKo" | "notesKo"): string[] {
+/** 영수증에서 문자열 배열 필드(`unmappedKo`·`approximatedKo`·`mappedKo`·`notesKo`)를 꺼낸다. 없거나 모양이 다르면 빈 배열. */
+export function receiptStringList(
+  receipt: unknown,
+  key: "unmappedKo" | "approximatedKo" | "mappedKo" | "notesKo",
+): string[] {
   if (typeof receipt !== "object" || receipt === null) return [];
   const value = (receipt as Record<string, unknown>)[key];
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
@@ -15,11 +18,12 @@ export interface ReceiptMappingProps {
   receipt: unknown;
 }
 
-/** 옮기지 못한 항목(`unmappedKo`)과 옮긴 항목(`mappedKo`)을 접이식으로 보인다. 둘 다 없으면 아무것도 그리지 않는다. */
+/** 옮기지 못한 항목(`unmappedKo`)·근사 매핑(`approximatedKo`)·옮긴 항목(`mappedKo`)을 접이식으로 보인다. 모두 없으면 아무것도 그리지 않는다. */
 export function ReceiptMapping({ receipt }: ReceiptMappingProps) {
   const unmapped = receiptStringList(receipt, "unmappedKo");
+  const approximated = receiptStringList(receipt, "approximatedKo");
   const mapped = receiptStringList(receipt, "mappedKo");
-  if (unmapped.length === 0 && mapped.length === 0) return null;
+  if (unmapped.length === 0 && approximated.length === 0 && mapped.length === 0) return null;
   return (
     <div className="lab-receipt-mapping" data-testid="lab-draw-hud-mapping">
       {unmapped.length > 0 ? (
@@ -27,6 +31,16 @@ export function ReceiptMapping({ receipt }: ReceiptMappingProps) {
           <summary>이 레인이 옮기지 못한 항목 {unmapped.length}건 — 이 브러시의 일부만 그려졌다</summary>
           <ul className="lab-muted">
             {unmapped.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+      {approximated.length > 0 ? (
+        <details data-testid="lab-draw-hud-approximated">
+          <summary>근사 매핑 {approximated.length}건</summary>
+          <ul className="lab-muted">
+            {approximated.map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>

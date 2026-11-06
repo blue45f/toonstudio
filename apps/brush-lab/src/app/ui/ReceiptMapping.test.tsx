@@ -27,11 +27,29 @@ describe("ReceiptMapping: 레인 영수증의 옮기지 못한 항목 표시(R-B
     expect(none.container.innerHTML).toBe("");
   });
 
-  it("옮기지 못한 항목과 옮긴 항목을 한글 요약과 함께 보인다", () => {
-    render(<ReceiptMapping receipt={{ unmappedKo: ["산포", "테이퍼"], mappedKo: ["팁 지름"] }} />);
+  it("옮기지 못한 항목·근사 매핑·옮긴 항목을 한글 요약과 함께 보인다", () => {
+    render(
+      <ReceiptMapping
+        receipt={{
+          unmappedKo: ["산포", "테이퍼"],
+          approximatedKo: ["경도 곡선 로그 근사"],
+          mappedKo: ["팁 지름"],
+        }}
+      />,
+    );
     expect(screen.getByTestId("lab-draw-hud-unmapped").textContent).toContain("옮기지 못한 항목 2건");
     expect(screen.getByTestId("lab-draw-hud-unmapped").textContent).toContain("산포");
+    expect(screen.getByTestId("lab-draw-hud-approximated").textContent).toContain("근사 매핑 1건");
+    expect(screen.getByTestId("lab-draw-hud-approximated").textContent).toContain("경도 곡선 로그 근사");
     expect(screen.getByTestId("lab-draw-hud-mapped").textContent).toContain("팁 지름");
+  });
+
+  it("approximatedKo만 있어도 근사 매핑 섹션을 그린다", () => {
+    render(<ReceiptMapping receipt={{ approximatedKo: ["간격 상한 클램프"] }} />);
+    expect(screen.getByTestId("lab-draw-hud-approximated").textContent).toContain("근사 매핑 1건");
+    expect(screen.getByTestId("lab-draw-hud-approximated").textContent).toContain("간격 상한 클램프");
+    expect(screen.queryByTestId("lab-draw-hud-unmapped")).toBeNull();
+    expect(screen.queryByTestId("lab-draw-hud-mapped")).toBeNull();
   });
 
   it("실제 붓털 레인 영수증(에어브러시 근사)의 unmappedKo가 모델 이름과 함께 화면에 나온다", async () => {

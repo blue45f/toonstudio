@@ -205,11 +205,11 @@ export class InputPipeline {
     const target: RawSample | null = up ?? null;
     const endX = target ? target.x : (last?.x ?? 0);
     const endY = target ? target.y : (last?.y ?? 0);
-    const endT = target ? target.tMs : (last?.tMs ?? 0);
     const endPressure = last ? last.pressure : 0;
     const startX = last ? last.x : endX;
     const startY = last ? last.y : endY;
-    const startT = last ? last.tMs : endT;
+    const startT = last ? last.tMs : (target ? target.tMs : 0);
+    const endT = target ? Math.max(startT, target.tMs) : startT;
     const n = Math.max(1, Math.floor(this.config.endpointTailSamples));
     const tail: ModeledSample[] = [];
     for (let i = 1; i <= n; i += 1) {
@@ -354,10 +354,12 @@ export class InputPipeline {
       }
     }
     this.velocity = velocity;
+    const startT = last ? last.tMs : s.tMs;
+    const endT = Math.max(startT, s.tMs);
     return {
       x,
       y,
-      tMs: s.tMs,
+      tMs: endT,
       inputTMs: s.tMs,
       pressure: pressure < 0 ? 0 : pressure > 1 ? 1 : pressure,
       velocity,

@@ -121,6 +121,9 @@ export interface StrokeReceipt {
   /** fail-visible: 비닝 한도 초과로 건너뛴 dab 수. */
   overflowDabs: number;
   poolTilesUsed: number;
+  readonly mappedKo?: readonly string[];
+  readonly approximatedKo?: readonly string[];
+  readonly unmappedKo?: readonly string[];
 }
 
 /**

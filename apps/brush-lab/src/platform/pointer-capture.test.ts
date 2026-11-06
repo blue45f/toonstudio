@@ -295,4 +295,36 @@ describe("attachPointerCapture: 캡처 상실·컨텍스트 메뉴", () => {
     expect(batches).toHaveLength(1);
     detach();
   });
+
+  it("useRawUpdate 활성 시 pointerrawupdate가 마지막 위치·시각을 갱신해 stale takeover 합성 up에 반영한다", () => {
+    const el = document.createElement("div");
+    Object.defineProperty(el, "onpointerrawupdate", { value: null, configurable: true });
+    document.body.appendChild(el);
+    const batches: RawSample[][] = [];
+    const detach = attachPointerCapture(el, (raw) => batches.push(raw), { useRawUpdate: true });
+
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 10, clientY: 20, pressure: 0.3, timeStamp: 1000 }));
+    el.dispatchEvent(pointerEvent("pointerrawupdate", { clientX: 45, clientY: 65, pressure: 0.8, timeStamp: 2500 }));
+    expect(batches).toHaveLength(2);
+
+    // pointerrawupdate 시각(2500ms)으로부터 1500ms 뒤(4000ms)의 다른 포인터 down은 아직 2초 미만이므로 무시되어야 한다.
+    el.dispatchEvent(pointerEvent("pointerdown", { pointerId: 2, clientX: 90, clientY: 90, pressure: 0.5, timeStamp: 4000 }));
+    expect(batches).toHaveLength(2);
+
+    // 2500ms로부터 2초가 넘은 5000ms 시점의 새 down은 마지막 pointerrawupdate 위치(45, 65)로 합성 up을 내야 한다.
+    el.dispatchEvent(pointerEvent("pointerdown", { pointerId: 2, clientX: 90, clientY: 90, pressure: 0.5, timeStamp: 5000 }));
+    expect(batches).toHaveLength(4);
+    expect(batches[2]?.[0]).toEqual(
+      expect.objectContaining({
+        phase: "up",
+        x: 45,
+        y: 65,
+        tMs: 5000,
+      }),
+    );
+    expect(batches[2]?.[0]?.pressure).toBeCloseTo(0.8, 5);
+    expect(batches[3]?.[0]).toEqual(expect.objectContaining({ phase: "down", x: 90, y: 90, tMs: 5000 }));
+    detach();
+  });
 });
+

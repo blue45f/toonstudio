@@ -181,6 +181,13 @@ export abstract class IsolatedStrokeLane implements BrushEngineLane {
         frameTimesMs: [...this.frameTimes],
         overflowDabs: 0,
         poolTilesUsed: tiles,
+        ...(this.lastReceipt
+          ? {
+              mappedKo: this.lastReceipt.mapped,
+              approximatedKo: this.lastReceipt.approximated,
+              unmappedKo: this.lastReceipt.unmapped,
+            }
+          : {}),
       };
       this.lifetime.strokes += 1;
       this.lifetime.dabs += this.acceptedSamples;

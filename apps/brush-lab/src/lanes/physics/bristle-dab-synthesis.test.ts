@@ -689,4 +689,29 @@ describe("BL-4a 프리셋 응답 합성: dab 반경·경도·그레인·흐름",
     expect(s.stats.dabs).toBeGreaterThan(capped);
     s.flush();
   });
+
+  it("단일 틱이 프레임 dab 예산(2048)을 초과해도 앞쪽 가닥이 예산을 독식하지 않고 모든 가닥이 폭 전체에 고르게 dab를 방출한다", () => {
+    const { surface, dabs } = stubSurface();
+    const n = 16;
+    const s = synth(surface, n, 2, 0.3);
+    // 한 틱에 16가닥이 각각 500px 이동 -> 가닥당 수백 개 dab 요청(총합 >> 2048)
+    s.onTick(moveTick(n, 0, 500));
+    s.flush();
+    expect(dabs).toHaveLength(BRISTLE_FRAME_DAB_BUDGET);
+    expect(s.stats.budgetSkipped).toBeGreaterThan(0);
+
+    // 각 가닥은 y = 10 * i 위치에서 움직이므로 방출된 dab의 y 좌표로 가닥별 방출 수를 집계한다.
+    const countsByStrand = new Array<number>(n).fill(0);
+    for (const d of dabs) {
+      const idx = Math.round(d.y / 10);
+      if (idx >= 0 && idx < n) {
+        countsByStrand[idx] = (countsByStrand[idx] ?? 0) + 1;
+      }
+    }
+    const expectedPerStrand = BRISTLE_FRAME_DAB_BUDGET / n;
+    for (let i = 0; i < n; i += 1) {
+      expect(countsByStrand[i]).toBe(expectedPerStrand);
+    }
+  });
 });
+

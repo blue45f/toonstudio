@@ -273,9 +273,11 @@ export function replaceBrushStudioV6Slot(program: BrushStudioV6Program, slot: Ex
   if (slot === "carrier" && brushStudioV6Topology(id)) {
     // Explicit carrier changes shed unsupported graph nodes; imported receipts remain untouched.
     return normalizeBrushStudioV6Program(patch(program, { slots: {
-      carrier: id, motion: "motion-direct", pickup: "pickup-none", physics: [], pattern: "pattern-none",
+      carrier: id, motion: "motion-direct",
+      pickup: isBrushStudioV6TopologyNodeCompatible(program.slots.pickup) ? program.slots.pickup : "pickup-none",
+      physics: [], pattern: "pattern-none",
       finish: program.slots.finish.filter((node) => node === "finish-neon"), output: "output-contact-canvas-svg",
-      tip: ["tip-round-sdf", "tip-chisel-sdf", "tip-grain-exemplar"].includes(program.slots.tip) ? program.slots.tip : "tip-round-sdf",
+      tip: isBrushStudioV6TopologyNodeCompatible(program.slots.tip) ? program.slots.tip : "tip-round-sdf",
       deposition: ["deposit-ink", "deposit-marker", "deposit-dry", "deposit-wet", "deposit-oil"].includes(program.slots.deposition) ? program.slots.deposition : "deposit-ink",
       pigment: ["pigment-rgb", "pigment-spectral", "pigment-mixbox", "pigment-spectral-js", "pigment-open-km-spectral", "pigment-colormix-lab", "pigment-latent"].includes(program.slots.pigment) ? program.slots.pigment : "pigment-spectral",
     } }));

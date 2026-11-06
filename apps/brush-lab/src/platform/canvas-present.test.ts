@@ -54,10 +54,10 @@ describe("canvas-present", () => {
     expect(() => presentPreview(canvas, [], 4)).toThrow(expect.objectContaining({ code: "canvas-2d-unavailable" }));
   });
 
-  it("presentPreview는 먼저 지우고 예측 점마다 arc를 그리며, 빈 목록이면 지우기만 한다", () => {
+  it("presentPreview는 먼저 지우고 정본·예측 점마다 arc를 그리며, 둘 다 빈 목록이면 지우기만 한다", () => {
     stub = installCanvasStub();
     const canvas = document.createElement("canvas");
-    presentPreview(canvas, [], 5);
+    presentPreview(canvas, [], 5, []);
     expect(stub.clearRectCalls).toBe(1);
     expect(stub.arcCalls).toBe(0);
     presentPreview(
@@ -65,9 +65,9 @@ describe("canvas-present", () => {
       [
         { x: 1, y: 1, pressure: 0.5 },
         { x: 2, y: 2, pressure: 0 },
-        { x: 3, y: 3, pressure: 1 },
       ],
       5,
+      [{ x: 3, y: 3, pressure: 1 }],
     );
     expect(stub.clearRectCalls).toBe(2);
     expect(stub.arcCalls).toBe(3);

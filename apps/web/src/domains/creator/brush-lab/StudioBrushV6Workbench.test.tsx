@@ -158,6 +158,32 @@ describe("V6 brush experiments in the workbench", () => {
     expect(stored().tuning.flow).toBe(0.3);
   });
 
+  it("컬러 피커 드래그 시 primaryColor와 secondaryColor 변경을 단일 실행 취소 그룹으로 묶는다", () => {
+    localStorage.setItem("toonstudio.brush-program-v6:test", JSON.stringify(createBrushStudioV6Program("mineral-bloom")));
+    render(<StudioBrushV6Workbench scope="test" />);
+    fireEvent.click(screen.getByRole("button", { name: "재료·질감" }));
+    const initialPrimary = stored().tuning.primaryColor;
+    const initialSecondary = stored().tuning.secondaryColor;
+    const primaryInput = screen.getByLabelText("기본 색");
+    const secondaryInput = screen.getByLabelText("혼합·패턴 색");
+
+    fireEvent.change(primaryInput, { target: { value: "#112233" } });
+    fireEvent.change(primaryInput, { target: { value: "#223344" } });
+    fireEvent.change(primaryInput, { target: { value: "#334455" } });
+    expect(stored().tuning.primaryColor).toBe("#334455");
+
+    fireEvent.change(secondaryInput, { target: { value: "#aa1122" } });
+    fireEvent.change(secondaryInput, { target: { value: "#bb2233" } });
+    expect(stored().tuning.secondaryColor).toBe("#bb2233");
+
+    fireEvent.click(screen.getByRole("button", { name: "실행 취소" }));
+    expect(stored().tuning.secondaryColor).toBe(initialSecondary);
+    expect(stored().tuning.primaryColor).toBe("#334455");
+
+    fireEvent.click(screen.getByRole("button", { name: "실행 취소" }));
+    expect(stored().tuning.primaryColor).toBe(initialPrimary);
+  });
+
   it("only offers physically active experiment fields when changing materials", () => {
     localStorage.setItem("toonstudio.brush-program-v6:test", JSON.stringify(createBrushStudioV6Program("oil-hair-mixer")));
     render(<StudioBrushV6Workbench scope="test" />);

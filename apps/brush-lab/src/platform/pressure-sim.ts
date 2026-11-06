@@ -90,10 +90,12 @@ export function createSpeedPressureSimulator(opts: SpeedPressureOptions = {}): S
       }
       if (prev) {
         const dt = s.tMs - prev.tMs;
-        if (dt > 0) {
-          const inst = Math.hypot(s.x - prev.x, s.y - prev.y) / dt;
-          speed = count <= 1 ? inst : speed + (inst - speed) * o.speedSmoothing;
+        if (dt <= 0) {
+          out.push({ ...s, pressure });
+          continue;
         }
+        const inst = Math.hypot(s.x - prev.x, s.y - prev.y) / dt;
+        speed = count <= 1 ? inst : speed + (inst - speed) * o.speedSmoothing;
       }
       prev = { x: s.x, y: s.y, tMs: s.tMs };
       count += 1;

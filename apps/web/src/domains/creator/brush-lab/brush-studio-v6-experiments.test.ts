@@ -82,4 +82,25 @@ describe("V6 reversible material experiments", () => {
     expect(parseBrushStudioV6Import(JSON.stringify(program))).toEqual(program);
     expect(parseBrushStudioV6Import(JSON.stringify({ kind: "toonstudio.brush-program-v6", program }))).toEqual(program);
   });
+
+  it("비교 대상 중 한쪽에만 존재하는 선택적 필드도 누락 없이 '(없음)'으로 표시한다", () => {
+    const base = createBrushStudioV6Program("clean-ink");
+    const withoutLicense = { ...base };
+    delete (withoutLicense as { licenseProfile?: unknown }).licenseProfile;
+    const withLicense = { ...base, licenseProfile: "permissive-only" as const };
+
+    const added = compareBrushStudioV6Programs(withoutLicense, withLicense);
+    expect(added).toContainEqual({
+      path: "licenseProfile",
+      before: "(없음)",
+      after: "permissive-only",
+    });
+
+    const removed = compareBrushStudioV6Programs(withLicense, withoutLicense);
+    expect(removed).toContainEqual({
+      path: "licenseProfile",
+      before: "permissive-only",
+      after: "(없음)",
+    });
+  });
 });

@@ -368,7 +368,8 @@ export class Webgl2InstancedRuntime {
       this.tipKeyLoaded = tipKey;
     }
     if (program.paper.enabled) {
-      const key = `${program.paper.seed}|${program.paper.roughness}|${program.paper.absorbency}`;
+      const spec = program.paper;
+      const key = `${spec.seed}|${spec.roughness}|${spec.absorbency}|${spec.tooth ?? 0}`;
       if (this.paperKeyLoaded !== key) {
         const data = encodePaperTexture(paperFor(program.paper));
         gl.bindTexture(GL.TEXTURE_2D, this.paperTex);

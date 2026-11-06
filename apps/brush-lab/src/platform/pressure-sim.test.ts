@@ -95,4 +95,27 @@ describe("createSpeedPressureSimulator", () => {
       expect(s.pressure).toBeLessThanOrEqual(0.9 + 1e-9);
     }
   });
+
+  it("dt <= 0인 move 표본은 속도·압력·표본 수·직전 위치를 오염시키지 않고 직전 압력을 유지한다", () => {
+    const sim = createSpeedPressureSimulator();
+    // down 직후 첫 move가 dt=0일 때 maxPressure(0.9) 쪽으로 튀지 않고 START_PRESSURE(0.55)를 유지해야 한다.
+    const downAndZeroDtMove = sim.apply([
+      sample({ x: 0, y: 0, tMs: 100, phase: "down" }),
+      sample({ x: 5, y: 0, tMs: 100, phase: "move" }),
+      sample({ x: 10, y: 0, tMs: 95, phase: "move" }),
+    ]);
+    expect(downAndZeroDtMove[0]?.pressure).toBeCloseTo(0.55, 12);
+    expect(downAndZeroDtMove[1]?.pressure).toBeCloseTo(0.55, 12);
+    expect(downAndZeroDtMove[2]?.pressure).toBeCloseTo(0.55, 12);
+
+    // 이후 정상 move가 오면 down(x=0, tMs=100)을 기준으로 속도와 fadeInSamples가 계산되어야 한다.
+    const nextMove = sim.apply([sample({ x: 24, y: 0, tMs: 108, phase: "move" })]);
+    const cleanSim = createSpeedPressureSimulator();
+    const cleanOut = cleanSim.apply([
+      sample({ x: 0, y: 0, tMs: 100, phase: "down" }),
+      sample({ x: 24, y: 0, tMs: 108, phase: "move" }),
+    ]);
+    expect(nextMove[0]?.pressure).toBe(cleanOut[1]?.pressure);
+  });
 });
+

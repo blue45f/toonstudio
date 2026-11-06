@@ -225,4 +225,34 @@ describe("Brush Studio V6 quality authority", () => {
   it("preserves deterministic recipe output", () => {
     expect(createBrushStudioV6Program("kaleido-swarm")).toEqual(createBrushStudioV6Program("kaleido-swarm"));
   });
+
+  it("토폴로지 캐리어로 전환할 때 호환되는 pickup과 tip 노드를 유지하고 비호환 노드는 기본값으로 대체한다", () => {
+    const base = createBrushStudioV6Program("clean-ink");
+    const withCompatible = replaceBrushStudioV6Slot(
+      replaceBrushStudioV6Slot(base, "pickup", "pickup-krita-smudge"),
+      "tip",
+      "tip-krita-dual",
+    );
+    const switchedCompatible = replaceBrushStudioV6Slot(
+      withCompatible,
+      "carrier",
+      "carrier-cpu-spring-filaments-v1",
+    );
+    expect(switchedCompatible.slots.carrier).toBe("carrier-cpu-spring-filaments-v1");
+    expect(switchedCompatible.slots.pickup).toBe("pickup-krita-smudge");
+    expect(switchedCompatible.slots.tip).toBe("tip-krita-dual");
+
+    const withIncompatible = replaceBrushStudioV6Slot(
+      replaceBrushStudioV6Slot(base, "pickup", "pickup-pigment-reservoir"),
+      "tip",
+      "tip-motif-atlas",
+    );
+    const switchedIncompatible = replaceBrushStudioV6Slot(
+      withIncompatible,
+      "carrier",
+      "carrier-cpu-spring-filaments-v1",
+    );
+    expect(switchedIncompatible.slots.pickup).toBe("pickup-none");
+    expect(switchedIncompatible.slots.tip).toBe("tip-round-sdf");
+  });
 });
