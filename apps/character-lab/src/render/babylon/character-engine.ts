@@ -1180,7 +1180,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return featureActive(`마지막 내보내기: ${describeSparseMorphReport(report)}`);
   }
 
-
   betaFeatures(): BetaFeatureReport {
     return this.beta.report();
   }
@@ -1227,7 +1226,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     if (this.deps.disposeEngine) this.deps.disposeEngine();
     else this.engine.dispose();
   }
-
 
   /** 엔진을 계속 쓸 수 있는 실패를 앱에 알린다. 보고 콜백이 던져도 렌더 루프·로드를 깨지 않는다. */
   private reportFailure(error: unknown, code: string, reasonKo: string): void {

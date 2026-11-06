@@ -346,4 +346,44 @@ describe("ParamPanel — 색 팔레트", () => {
     expect(swatch.getAttribute("data-hex")).toBe("#4a2c1b");
     expect(swatch.style.backgroundColor).toBe("rgb(74, 44, 27)");
   });
+
+  it("화풍 팩·비례 목표·파츠 형태·헤어 색 흐름·파생 색 채널·표면 무늬를 v3 명령으로 dispatch한다", () => {
+    const dispatched = setup();
+    fireEvent.click(screen.getByTestId("style-pack-apply-kr-webtoon-romance"));
+    expect(dispatched.at(-1)?.type).toBe("style/apply");
+
+    fireEvent.change(screen.getByTestId("proportion-input-headsTall"), { target: { value: "7.8" } });
+    expect(dispatched.at(-1)).toMatchObject({ type: "proportion/set", coalesceKey: "proportion:headsTall" });
+
+    fireEvent.change(screen.getByTestId("part-param-slider-hair-bangs"), { target: { value: "0.4" } });
+    expect(dispatched.at(-1)).toEqual({
+      type: "part-param/set",
+      scope: "hair",
+      shape: "bangs",
+      value: 0.4,
+      coalesceKey: "part-param:hair:bangs",
+    });
+
+    fireEvent.change(screen.getByTestId("hair-color-tip-mix"), { target: { value: "0.6" } });
+    expect(dispatched.at(-1)).toEqual({
+      type: "hair-color/set",
+      patch: { tipMix: 0.6 },
+      coalesceKey: "hair-color:tipMix",
+    });
+
+    fireEvent.change(screen.getByTestId("derived-channel-color-input"), { target: { value: "#e11d48" } });
+    expect(dispatched.at(-1)).toEqual({
+      type: "channel/set",
+      key: "lip",
+      value: "#e11d48",
+      coalesceKey: "channel:lip",
+    });
+
+    fireEvent.change(screen.getByTestId("surface-pattern-select"), { target: { value: "plaid" } });
+    expect(dispatched.at(-1)).toMatchObject({
+      type: "surface/set",
+      channel: "top",
+    });
+  });
 });
+

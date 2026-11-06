@@ -15,6 +15,8 @@ import type { CapturedDepth, CapturedRaster } from "../contracts";
 
 export interface LineArtInput {
   readonly lit: CapturedRaster;
+  readonly flat?: CapturedRaster;
+  readonly outline?: CapturedRaster;
   readonly depth?: CapturedDepth;
   /** 법선 패스(rgb = n·0.5+0.5) */
   readonly normal?: CapturedRaster;
@@ -285,30 +287,83 @@ export function countLinePixels(mask: Uint8ClampedArray): number {
   return count;
 }
 
+export interface LuminanceToAlphaOptions {
+  /** 밑색(flat) 패스 — 제공되면 flat 밖의 외곽 셸(hull)과 내부 경계선만 선화로 추출해 내부 면이 검게 칠해지지 않게 한다 */
+  readonly flat?: CapturedRaster;
+  /** 별도 외곽선(outline) 패스 — 불투명/유효 픽셀이 있으면 이 패스에서 우선 추출한다 */
+  readonly outline?: CapturedRaster;
+  /** 이미 계산된 엣지 마스크(0..255) — 내부 픽셀에서 선화 위치를 제한한다 */
+  readonly edgeMask?: Uint8ClampedArray;
+}
+
+function hasOpaqueOrVisiblePixels(raster: CapturedRaster | undefined): boolean {
+  if (!raster) return false;
+  for (let i = 3; i < raster.rgba.length; i += 4) {
+    if ((raster.rgba[i] ?? 0) > 0) return true;
+  }
+  return false;
+}
+
+function pixelLuma255(rgba: Uint8ClampedArray, index: number): number {
+  const r = rgba[index] ?? 255;
+  const g = rgba[index + 1] ?? r;
+  const b = rgba[index + 2] ?? r;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
 /**
  * SHAPER ExportManager::ExportPSD(0x0600018a)의 OutLine 패스 휘도-알파(Luminance-to-Alpha) 변환 공식:
- * - 흰 배경 위에 렌더링된 외곽선 패스에서 불투명 픽셀(c.a >= 255, 정규화 1.0)에 대해
- *   Color(0, 0, 0, 1 - c.r) = RGBA(lineColor, 255 - R)로 변환해 배경 흰색 번짐(halo)이 전혀 없는 순수 투명 선화를 추출한다.
+ * - 흰 배경(또는 투명 배경) 위에 렌더링된 외곽선 패스에서 Color(0, 0, 0, 1 - Y)로 변환해 배경 흰색 번짐(halo)이 전혀 없는 순수 투명 선화를 추출한다.
+ * - 별도 outline 패스 없이 lit/flat에서 추출할 때는 외곽 셸(flat 알파=0, lit 알파>0)과 고주파 엣지 픽셀에서만 휘도를 알파로 변환하여
+ *   캐릭터 내부 면(피부·의상·헤어)이 검은 먹물로 덮이지 않게 한다.
  */
 export function extractOutlinePassLuminanceToAlpha(
   outlinePass: CapturedRaster,
   lineColor: readonly [number, number, number] = [0, 0, 0],
+  options: LuminanceToAlphaOptions = {},
 ): CapturedRaster {
-  const { width, height } = outlinePass;
+  const source = hasOpaqueOrVisiblePixels(options.outline) ? (options.outline as CapturedRaster) : outlinePass;
+  const { width, height } = source;
   const rgba = new Uint8ClampedArray(width * height * 4);
+  const useEdgeFilter = !hasOpaqueOrVisiblePixels(options.outline) && (options.flat !== undefined || options.edgeMask !== undefined);
+  const flat = options.flat;
+  const fallbackEdges =
+    useEdgeFilter && !options.edgeMask
+      ? extractLineArt({ lit: source, ...(flat ? { flat } : {}), width, height })
+      : options.edgeMask;
+
   for (let p = 0; p < width * height; p += 1) {
     const i = p * 4;
-    const a = outlinePass.rgba[i + 3] ?? 0;
-    if (a >= 255) {
-      const r = outlinePass.rgba[i] ?? 255;
-      const lineAlpha = Math.min(255, Math.max(0, 255 - r));
-      if (lineAlpha > 0) {
-        rgba[i] = lineColor[0];
-        rgba[i + 1] = lineColor[1];
-        rgba[i + 2] = lineColor[2];
-        rgba[i + 3] = lineAlpha;
+    const a = source.rgba[i + 3] ?? 0;
+    if (a <= 0) continue;
+    const luma = pixelLuma255(source.rgba, i);
+    let lineAlpha = 0;
+    if (useEdgeFilter) {
+      const flatAlpha = flat ? (flat.rgba[i + 3] ?? 0) : 0;
+      const isExteriorHull = flat !== undefined && flatAlpha === 0;
+      if (isExteriorHull) {
+        lineAlpha = Math.min(255, Math.max(0, Math.round(((255 - luma) / 255) * a)));
+      } else {
+        const edgeWeight = (fallbackEdges?.[p] ?? 0) / 255;
+        if (edgeWeight > 0) {
+          const flatLuma = flat && flatAlpha > 0 ? pixelLuma255(flat.rgba, i) : 255;
+          const contrastDrop = Math.max(0, flatLuma - luma);
+          const inkStrength = Math.max(255 - luma, contrastDrop);
+          lineAlpha = Math.min(255, Math.max(0, Math.round((inkStrength / 255) * a * edgeWeight)));
+        }
       }
+    } else if (a >= 255) {
+      lineAlpha = Math.min(255, Math.max(0, Math.round(255 - luma)));
+    } else {
+      lineAlpha = Math.min(255, Math.max(0, Math.round(((255 - luma) / 255) * a)));
+    }
+    if (lineAlpha > 0) {
+      rgba[i] = lineColor[0];
+      rgba[i + 1] = lineColor[1];
+      rgba[i + 2] = lineColor[2];
+      rgba[i + 3] = lineAlpha;
     }
   }
   return { width, height, rgba };
 }
+

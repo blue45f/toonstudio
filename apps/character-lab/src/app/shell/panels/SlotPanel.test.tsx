@@ -328,5 +328,40 @@ describe("SlotPanel — 프리셋 단위 미제공(unavailablePresets)", () => {
       value: createDefaultRecipe().colors.skin,
     });
   });
+
+  it("겹쳐 입기 층·추가 소품·코디 세트를 v3 명령으로 dispatch하고 Ctrl+클릭은 실제 store에서 1단계로 병합한다", () => {
+    const baseCat = catalog();
+    const roundBase = baseCat.get("face-shape/round")!;
+    const customCat = createPresetCatalog([
+      ...baseCat.entries.filter((e) => e.id !== "face-shape/round"),
+      {
+        ...roundBase,
+        patch: { ...roundBase.patch, colors: { skin: "#abcdef" } },
+      },
+    ]);
+    const store = createLabStore({ catalog: customCat, initial: createInitialLabState(createDefaultRecipe(), capabilities()) });
+    render(
+      <MockLabProvider catalog={customCat} store={store}>
+        <SlotPanel />
+      </MockLabProvider>,
+    );
+    fireEvent.click(card("둥근형"), { ctrlKey: true });
+    expect(store.getState().history.depth).toBe(1);
+
+    fireEvent.change(screen.getByTestId("wardrobe-layer-outer"), { target: { value: "top/blazer" } });
+    expect(store.getState().recipe.wardrobe.outer).toBe("top/blazer");
+
+    fireEvent.click(screen.getByTestId("extra-accessory-add-btn"));
+    expect(store.getState().recipe.wardrobe.accessories).toHaveLength(1);
+    expect(store.getState().recipe.wardrobe.accessories[0]?.id).toBe("acc-1");
+
+    fireEvent.click(screen.getByTestId("extra-accessory-remove-acc-1"));
+    expect(store.getState().recipe.wardrobe.accessories).toHaveLength(0);
+
+    fireEvent.click(screen.getByTestId("look-set-apply-school-blazer-plaid"));
+    expect(store.getState().recipe.slots.top).toBe("top/shirt");
+    expect(store.getState().recipe.wardrobe.outer).toBe("top/blazer");
+  });
 });
+
 

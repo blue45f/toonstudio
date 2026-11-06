@@ -82,7 +82,44 @@ describe("vision/landmarks-to-pose", () => {
     expect(result.pose.leftUpperLeg).toBeUndefined();
     expect(controllableBones("arms-hands")).toEqual(["leftUpperArm", "leftLowerArm", "leftHand", "rightUpperArm", "rightLowerArm", "rightHand"]);
     expect(controllableBones("full")).toContain("hips");
+    expect(controllableBones("full")).toHaveLength(14);
     expect(controllableBones("upper")).not.toContain("hips");
+    expect(controllableBones("upper")).toContain("spine");
+    expect(controllableBones("upper")).toContain("chest");
+  });
+
+  it("upper 스코프에서도 상체 기울기(torso lean)를 spine·chest에 분배하여 자연스러운 상체 기울기와 어깨·목 기준 프레임을 유지한다", () => {
+    const body = tPoseBody();
+    const leanRad = degToRad(24);
+    const pivotY = 0.95;
+    const tiltForward = (p: readonly [number, number, number]): [number, number, number] => {
+      const dy = p[1] - pivotY;
+      const dz = p[2];
+      return [p[0], pivotY + dy * Math.cos(leanRad) - dz * Math.sin(leanRad), dy * Math.sin(leanRad) + dz * Math.cos(leanRad)];
+    };
+    const leaning = {
+      ...body,
+      left_shoulder: tiltForward(body.left_shoulder),
+      right_shoulder: tiltForward(body.right_shoulder),
+      left_elbow: tiltForward(body.left_elbow),
+      right_elbow: tiltForward(body.right_elbow),
+      left_wrist: tiltForward(body.left_wrist),
+      right_wrist: tiltForward(body.right_wrist),
+      nose: tiltForward(body.nose),
+      left_ear: tiltForward(body.left_ear),
+      right_ear: tiltForward(body.right_ear),
+    };
+
+    const fullResult = landmarksToPose(toWorldLandmarks(leaning), { scope: "full", space: "world" });
+    expect(angleDeg(fullResult, "hips")).toBeCloseTo(24, 1);
+
+    const upperResult = landmarksToPose(toWorldLandmarks(leaning), { scope: "upper", space: "world" });
+    expect(upperResult.pose.hips).toBeUndefined();
+    expect(angleDeg(upperResult, "spine")).toBeGreaterThan(10);
+    expect(angleDeg(upperResult, "chest")).toBeGreaterThan(10);
+    // 상체와 함께 기울어진 T-pose 팔은 chest 프레임 기준 로컬 회전이 거의 0°여야 한다
+    expect(angleDeg(upperResult, "leftUpperArm")).toBeLessThan(1);
+    expect(angleDeg(upperResult, "rightUpperArm")).toBeLessThan(1);
   });
 
   it("머리를 왼쪽으로 돌린 픽스처는 head에 Y축 회전(요)을 낸다", () => {

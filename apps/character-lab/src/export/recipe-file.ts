@@ -2,7 +2,7 @@
  * 레시피 JSON 파일 저장·불러오기. 파싱은 contracts/recipe.ts `parseRecipe`(strict zod, 미래 버전 거부)를 쓴다.
  * 페인트 레이어는 PNG base64 레코드로 레시피에 포함한다.
  */
-import { createDefaultRecipe, failVisible, parseRecipe, recipeDigest } from "../contracts";
+import { createDefaultRecipe, failVisible, parseRecipe, pickBaseChannelColors, recipeDigest } from "../contracts";
 import { stableStringify } from "../shared/stable-json";
 
 import { decodePaintLayerRecord, encodePaintLayerRecord } from "./paint-layer-record";
@@ -270,11 +270,12 @@ export function shaperPresetToCharacterRecipe(options: {
   readonly part?: ShaperPartPresetData;
   readonly baseRecipe?: CharacterRecipe;
 }): CharacterRecipe {
-  const base = options.baseRecipe ?? createDefaultRecipe();
+  const defaults = createDefaultRecipe();
+  const base = options.baseRecipe ?? defaults;
   const { style, part } = options;
 
   const colors = {
-    ...base.colors,
+    ...pickBaseChannelColors(base.colors),
     ...(style?.skinColorHex !== undefined ? { skin: style.skinColorHex } : {}),
     ...(style?.hairColorHex !== undefined ? { hair: style.hairColorHex, brow: style.hairColorHex } : {}),
     ...(part?.colorsHex[0] !== undefined ? { top: part.colorsHex[0] } : {}),
@@ -295,7 +296,7 @@ export function shaperPresetToCharacterRecipe(options: {
   const lineWidthMm =
     style?.outlineThickness !== undefined && Number.isFinite(style.outlineThickness)
       ? Math.min(20, Math.max(0, style.outlineThickness * 4))
-      : base.shading.look.line.widthMm;
+      : defaults.shading.look.line.widthMm;
 
   const shadeRgb = style?.shadeColorHex !== undefined ? hexToUnitRgb(style.shadeColorHex) : undefined;
   const outlineRgb = style?.outlineColorHex !== undefined ? hexToUnitRgb(style.outlineColorHex) : undefined;
@@ -304,11 +305,21 @@ export function shaperPresetToCharacterRecipe(options: {
     ...base,
     colors,
     body,
+    style: defaults.style,
+    wardrobe: defaults.wardrobe,
+    partParams: defaults.partParams,
+    surfaces: defaults.surfaces,
+    hairColor: defaults.hairColor,
+    paint: defaults.paint,
     shading: {
       ...base.shading,
       mode: style !== undefined ? "toon" : base.shading.mode,
+      toon: {
+        ...base.shading.toon,
+        ...(style?.outlinePressure !== undefined ? { outlinePressure: style.outlinePressure } : {}),
+      },
       look: {
-        ...base.shading.look,
+        ...defaults.shading.look,
         shade:
           shadeRgb !== undefined
             ? {
@@ -316,14 +327,17 @@ export function shaperPresetToCharacterRecipe(options: {
                 hair: { kind: "multiply", rgb: [shadeRgb[0], shadeRgb[1], shadeRgb[2]] },
                 other: { kind: "multiply", rgb: [shadeRgb[0], shadeRgb[1], shadeRgb[2]] },
               }
-            : base.shading.look.shade,
+            : defaults.shading.look.shade,
         line: {
-          ...base.shading.look.line,
+          ...defaults.shading.look.line,
           widthMm: lineWidthMm,
           color:
             outlineRgb !== undefined
               ? { mode: "fixed", rgb: [outlineRgb[0], outlineRgb[1], outlineRgb[2]] }
-              : base.shading.look.line.color,
+              : defaults.shading.look.line.color,
+          ...(style?.disableHairInline !== undefined
+            ? { inner: { ...defaults.shading.look.line.inner, enabled: !style.disableHairInline } }
+            : {}),
         },
       },
     },
@@ -532,7 +546,7 @@ export function characterRecipeToShaperProjectState(recipe: CharacterRecipe): Sh
       shadeColorHex,
       outlineColorHex,
       outlineThickness,
-      outlinePressure: true,
+      outlinePressure: recipe.shading.toon.outlinePressure === true,
       disableHairInline: false,
       shadowType: recipe.shading.mode === "toon" ? 0 : 1,
     },

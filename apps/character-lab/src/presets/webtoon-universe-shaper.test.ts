@@ -35,6 +35,13 @@ describe("presets/webtoon-universe-shaper", () => {
         expect(characterRecipeSchema.safeParse(procComposed.recipe).success).toBe(true);
         expect(procComposed.recipe.shading.mode).toBe("toon");
         expect(procComposed.recipe.style.packId).toBe(preset.artStyleId);
+        // style.neutralFacs에 기본 표정을 담고 recipe.expression은 비워 두어 FACS 가중치가 2배로 중복 합산되지 않도록 보장한다
+        expect(procComposed.recipe.expression).toEqual({});
+        expect(procComposed.recipe.style.neutralFacs).toEqual(preset.expression);
+        for (const [unit, weight] of Object.entries(preset.expression)) {
+          const effective = (procComposed.recipe.expression[unit as keyof typeof preset.expression] ?? 0) + (procComposed.recipe.style.neutralFacs[unit as keyof typeof preset.expression] ?? 0);
+          expect(effective).toBeCloseTo(weight ?? 0, 6);
+        }
       }
 
       const kitComposed = composeWebtoonUniverseRecipe(id, kitBase);
@@ -42,6 +49,8 @@ describe("presets/webtoon-universe-shaper", () => {
       if (kitComposed.ok) {
         expect(characterRecipeSchema.safeParse(kitComposed.recipe).success).toBe(true);
         expect(kitComposed.recipe.source.kind).toBe("kit");
+        expect(kitComposed.recipe.expression).toEqual({});
+        expect(kitComposed.recipe.style.neutralFacs).toEqual(preset.expression);
       }
     }
   });

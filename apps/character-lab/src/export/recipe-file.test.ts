@@ -211,22 +211,41 @@ describe("recipe-file", () => {
 
   it("characterRecipeToShaperProjectState와 parseShaperPresetTextToRecipe 및 서버 프리셋/UI 보조 수식을 검증한다", () => {
     const base = createDefaultRecipe();
-    const project = characterRecipeToShaperProjectState({
+    const dirtyBase = {
       ...base,
-      colors: { ...base.colors, skin: "#ffe0cc", hair: "#223344" },
+      colors: { ...base.colors, skin: "#ffe0cc", hair: "#223344", outer: "#990000" },
       body: { shoulderWidth: 0.5, hip: -0.5 },
-    });
+      shading: { ...base.shading, toon: { ...base.shading.toon, outlinePressure: true } },
+      wardrobe: { inner: "top/shirt" as const, outer: null, legwear: null, accessories: [] },
+      partParams: { hair: { bangs: 0.6 } },
+      surfaces: { top: { material: "cloth-silk" as const, pattern: null } },
+      hairColor: { gradient: [0.3, 0.9] as [number, number], tipMix: 0.8, accent: "streak" as const },
+    };
+    const project = characterRecipeToShaperProjectState(dirtyBase);
     expect(project.style?.skinColorHex).toBe("#ffe0cc");
     expect(project.style?.hairColorHex).toBe("#223344");
+    expect(project.style?.outlinePressure).toBe(true);
     expect(project.bodyPart?.muscle).toBeCloseTo(0.75, 5);
     expect(project.bodyPart?.fat).toBeCloseTo(0.25, 5);
 
+    const projectNoPressure = characterRecipeToShaperProjectState({
+      ...base,
+      shading: { ...base.shading, toon: { ...base.shading.toon, outlinePressure: false } },
+    });
+    expect(projectNoPressure.style?.outlinePressure).toBe(false);
+
     const presetText = serializeShaperStylePreset(project.style!);
-    const parsedFromPreset = parseShaperPresetTextToRecipe(presetText, base);
+    const parsedFromPreset = parseShaperPresetTextToRecipe(presetText, dirtyBase);
     expect(parsedFromPreset.ok).toBe(true);
     if (parsedFromPreset.ok) {
       expect(parsedFromPreset.recipe.colors.skin).toBe("#ffe0cc");
       expect(parsedFromPreset.recipe.colors.hair).toBe("#223344");
+      expect(parsedFromPreset.recipe.colors.outer).toBeUndefined();
+      expect(parsedFromPreset.recipe.shading.toon.outlinePressure).toBe(true);
+      expect(parsedFromPreset.recipe.wardrobe).toEqual(base.wardrobe);
+      expect(parsedFromPreset.recipe.partParams).toEqual(base.partParams);
+      expect(parsedFromPreset.recipe.surfaces).toEqual(base.surfaces);
+      expect(parsedFromPreset.recipe.hairColor).toEqual(base.hairColor);
     }
 
     const assetChecks = evaluateShaperPresetAssetUpdates({

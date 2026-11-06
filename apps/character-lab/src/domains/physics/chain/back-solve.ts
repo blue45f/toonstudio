@@ -41,8 +41,9 @@ export function backSolveChainRotations(compiled: CompiledChains, state: ChainSt
         options.rootParentRotations[chainIndex * 4 + 3],
       ])
     : [0, 0, 0, 1];
+  const baseRoot: Quat = options.rootParentRotations ? normalizeQuat(multiplyQuat(parentWorld, restRoot)) : restRoot;
   const out: ChainBoneRotation[] = [];
-  let lastWorld: Quat = restRoot;
+  let lastWorld: Quat = baseRoot;
   for (let j = 0; j < count; j += 1) {
     const i = start + j;
     let world: Quat;
@@ -51,9 +52,9 @@ export function backSolveChainRotations(compiled: CompiledChains, state: ChainSt
       const b = (i + 1) * 3;
       const simDir = normalizeVec3([state.pos[b] - state.pos[a], state.pos[b + 1] - state.pos[a + 1], state.pos[b + 2] - state.pos[a + 2]]);
       const restLocal: Vec3 = [model.restDirLocal[b], model.restDirLocal[b + 1], model.restDirLocal[b + 2]];
-      const restDirWorld = rotateVec3(restRoot, restLocal);
+      const restDirWorld = rotateVec3(baseRoot, restLocal);
       const swing = quatFromUnitVectors(restDirWorld, simDir);
-      world = normalizeQuat(multiplyQuat(swing, restRoot));
+      world = normalizeQuat(multiplyQuat(swing, baseRoot));
     } else {
       world = lastWorld;
     }

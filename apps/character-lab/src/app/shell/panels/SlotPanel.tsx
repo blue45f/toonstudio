@@ -18,11 +18,12 @@ import { useEffect, useRef } from "react";
 
 import { CHARACTER_SLOT_KINDS, SLOT_GROUPS, SLOT_GROUP_LABELS_KO, SLOT_LABELS_KO } from "../../../contracts";
 import { presetConflicts, presetUnavailableReasonKo } from "../../../state/apply-plan";
-import { useApplyPlan, useCatalog, useDispatch, useLabState, useUiActions, useUiState } from "../lab-store-context";
+import { useApplyPlan, useCatalog, useDispatch, useLabState, useLabStore, useUiActions, useUiState } from "../lab-store-context";
 
+import { SlotCustomizeSections } from "./slot-customize-sections";
 import { resolveShaperPresetClickModifiers } from "./viewport-interactions";
 
-import type { CapturedRaster, PresetEntry, PresetId, RecipeColorKey, SlotCapability, SlotGroup, SlotKind, ThumbnailEntry, UnsupportedSlot } from "../../../contracts";
+import type { CapturedRaster, LabStore, PresetEntry, PresetId, RecipeColorKey, SlotCapability, SlotGroup, SlotKind, ThumbnailEntry, UnsupportedSlot } from "../../../contracts";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
 /** 비울 수 있는 슬롯("없음" 카드 표시) */
@@ -128,6 +129,7 @@ function PresetCard({ entry, selected, capability, conflicts, unsupported, thumb
 }
 
 export function SlotPanel() {
+  const store = useLabStore() as LabStore & { readonly withCoalesceKey?: <T>(key: string, fn: () => T) => T };
   const state = useLabState();
   const dispatch = useDispatch();
   const catalog = useCatalog();
@@ -140,6 +142,14 @@ export function SlotPanel() {
   const selectedId = state.recipe.slots[slot];
   const { recipe, thumbnails, history } = state;
   const unsupportedForSlot = plan?.unsupported.find((item) => item.slot === slot);
+
+  const runCoalesced = (key: string, fn: () => void): void => {
+    if (store.withCoalesceKey) {
+      store.withCoalesceKey(key, fn);
+    } else {
+      fn();
+    }
+  };
 
   const apply = (presetId: PresetId | null, event?: ReactMouseEvent<HTMLButtonElement>): void => {
     if (presetId !== null && event && (event.shiftKey || event.ctrlKey || event.metaKey)) {
@@ -154,17 +164,21 @@ export function SlotPanel() {
       const entry = catalog.get(presetId);
       const patchColors = entry?.patch.colors;
       if (policy.keepExistingLines && !(event.ctrlKey || event.metaKey) && patchColors) {
-        for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
-          if (value !== undefined) dispatch({ type: "color/set", key, value });
-        }
+        runCoalesced(`slot-mod:${slot}:${presetId}`, () => {
+          for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
+            if (value !== undefined) dispatch({ type: "color/set", key, value });
+          }
+        });
         return;
       }
       if ((event.ctrlKey || event.metaKey) && !policy.keepExistingLines && patchColors) {
         const prevColors = { ...recipe.colors };
-        dispatch({ type: "slot/apply", slot, presetId });
-        for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
-          if (value !== undefined) dispatch({ type: "color/set", key, value: prevColors[key] });
-        }
+        runCoalesced(`slot-mod:${slot}:${presetId}`, () => {
+          dispatch({ type: "slot/apply", slot, presetId });
+          for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
+            if (value !== undefined) dispatch({ type: "color/set", key, value: prevColors[key] });
+          }
+        });
         return;
       }
     }
@@ -253,6 +267,7 @@ export function SlotPanel() {
           {entries.length === 0 ? <p className="cl-slot-empty">이 슬롯에 등록된 프리셋이 없습니다.</p> : null}
         </div>
       </div>
+      <SlotCustomizeSections />
       <p className="cl-slot-footer">
         슬롯 {CHARACTER_SLOT_KINDS.length}개 · 프리셋 {catalog.entries.length}개
       </p>

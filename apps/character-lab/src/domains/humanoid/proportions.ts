@@ -6,12 +6,22 @@
  * 좌표계: 우수·Y-up·+x = 캐릭터 왼쪽(VRM), 발바닥 y=0, T-포즈(팔은 ±x로 수평, 손바닥 아래).
  * 원리 참고: Hyun 2005(스윕 로프트), SMPL 구조(형상 후 관절 회귀, 개념만), Anny(표현형 → 보간) — 코드 복제 없음.
  */
-import { clampParam, type BodyParamKey, type ParamValues } from "../../contracts";
+import { PROPORTION_KEYS, clampParam, type BodyParamKey, type ParamValues, type Proportion } from "../../contracts";
 
 import type { Vec3 } from "../../shared/math";
 
 /** 기본 키(m). 7등신 스타일. */
 export const BASE_HEIGHT = 1.62;
+
+/** 기본 스타일 비례 스펙(`recipe.style.proportion`이 null/생략일 때의 기준값) */
+export const DEFAULT_PROPORTION_SPEC: Proportion = {
+  headsTall: 6.5,
+  legRatio: 0.48,
+  armRatio: 0.42,
+  shoulderHeads: 1.85,
+  headWidthRatio: 0.72,
+  handScale: 1.0,
+};
 
 export interface FingerLengths {
   readonly proximal: number;
@@ -24,6 +34,8 @@ export interface HeadFrame {
   readonly center: Vec3;
   /** 머리 로컬(단위 반경 ≈ 1) → 모델 공간 배율(m) */
   readonly scale: number;
+  /** 머리 가로(x) 폭 배율(기본 1 = headWidthRatio 0.72) */
+  readonly widthScale?: number;
 }
 
 export interface BodyProportions {
@@ -83,8 +95,29 @@ function param(values: ParamValues<BodyParamKey>, key: BodyParamKey): number {
   return clampParam(values[key] ?? 0);
 }
 
-/** 체형 파라미터 → 비례. 모든 값은 결정적이며 파라미터에 대해 연속이다. */
-export function resolveProportions(values: ParamValues<BodyParamKey>): BodyProportions {
+function styleRatio(value: number | undefined, baseline: number, min = 0.2, max = 3.0): number {
+  if (value === undefined || !Number.isFinite(value) || Math.abs(value - baseline) < 1e-9) return 1;
+  return Math.min(max, Math.max(min, value / baseline));
+}
+
+/** 스타일 비례가 기본값(`DEFAULT_PROPORTION_SPEC`)과 동일한지 판정한다. */
+export function isDefaultProportion(styleProportion?: Partial<Proportion> | null): boolean {
+  if (!styleProportion) return true;
+  for (const key of PROPORTION_KEYS) {
+    const val = styleProportion[key];
+    if (val !== undefined && Math.abs(val - DEFAULT_PROPORTION_SPEC[key]) >= 1e-9) return false;
+  }
+  return true;
+}
+
+/** 스타일 비례를 결정적 문자열로 직렬화한다(기본값이면 빈 문자열). */
+export function proportionKeyOf(styleProportion?: Partial<Proportion> | null): string {
+  if (isDefaultProportion(styleProportion)) return "";
+  return PROPORTION_KEYS.map((key) => `${key}=${Number((styleProportion?.[key] ?? DEFAULT_PROPORTION_SPEC[key]).toFixed(4))}`).join(",");
+}
+
+/** 체형 파라미터(및 선택적 스타일 비례) → 비례. 모든 값은 결정적이며 파라미터에 대해 연속이다. */
+export function resolveProportions(values: ParamValues<BodyParamKey>, styleProportion?: Partial<Proportion> | null): BodyProportions {
   const height = param(values, "height");
   const shoulderWidth = param(values, "shoulderWidth");
   const chestDepth = param(values, "chestDepth");
@@ -95,8 +128,20 @@ export function resolveProportions(values: ParamValues<BodyParamKey>): BodyPropo
   const headSize = param(values, "headSize");
   const neckLength = param(values, "neckLength");
 
+  const headsTallFactor =
+    styleProportion?.headsTall !== undefined &&
+    Number.isFinite(styleProportion.headsTall) &&
+    Math.abs(styleProportion.headsTall - DEFAULT_PROPORTION_SPEC.headsTall) >= 1e-9
+      ? Math.min(2.5, Math.max(0.4, DEFAULT_PROPORTION_SPEC.headsTall / Math.max(2, styleProportion.headsTall)))
+      : 1;
+  const legStyleFactor = styleRatio(styleProportion?.legRatio, DEFAULT_PROPORTION_SPEC.legRatio);
+  const armStyleFactor = styleRatio(styleProportion?.armRatio, DEFAULT_PROPORTION_SPEC.armRatio);
+  const shoulderStyleFactor = styleRatio(styleProportion?.shoulderHeads, DEFAULT_PROPORTION_SPEC.shoulderHeads);
+  const headWidthScale = styleRatio(styleProportion?.headWidthRatio, DEFAULT_PROPORTION_SPEC.headWidthRatio);
+  const handStyleFactor = styleRatio(styleProportion?.handScale, DEFAULT_PROPORTION_SPEC.handScale);
+
   const scale = 1 + 0.08 * height;
-  const legFactor = 1 + 0.1 * legLength;
+  const legFactor = legStyleFactor === 1 ? 1 + 0.1 * legLength : (1 + 0.1 * legLength) * legStyleFactor;
   const ankleY = 0.08;
   const lowerLegLength = 0.39 * legFactor;
   const upperLegLength = 0.39 * legFactor;
@@ -109,14 +154,16 @@ export function resolveProportions(values: ParamValues<BodyParamKey>): BodyPropo
   const shoulderJointY = hipsBoneY + 0.47;
   const neckBaseY = hipsBoneY + 0.57;
   const neckLen = 0.06 * (1 + 0.4 * neckLength);
-  const headScale = 0.105 * (1 + 0.12 * headSize);
+  const baseHeadScale = 0.105 * (1 + 0.12 * headSize);
+  const headScale = headsTallFactor === 1 ? baseHeadScale : baseHeadScale * headsTallFactor;
   const headCenterY = neckBaseY + neckLen;
 
-  const armFactor = 1 + 0.12 * armLength;
-  const shoulderFactor = 1 + 0.2 * shoulderWidth;
+  const armFactor = armStyleFactor === 1 ? 1 + 0.12 * armLength : (1 + 0.12 * armLength) * armStyleFactor;
+  const shoulderFactor = shoulderStyleFactor === 1 ? 1 + 0.2 * shoulderWidth : (1 + 0.2 * shoulderWidth) * shoulderStyleFactor;
 
   const s = (v: number): number => v * scale;
-  const finger = (p: number, i: number, d: number): FingerLengths => ({ proximal: s(p), intermediate: s(i), distal: s(d) });
+  const sh = (v: number): number => (handStyleFactor === 1 ? s(v) : s(v * handStyleFactor));
+  const finger = (p: number, i: number, d: number): FingerLengths => ({ proximal: sh(p), intermediate: sh(i), distal: sh(d) });
 
   return {
     scale,
@@ -145,10 +192,10 @@ export function resolveProportions(values: ParamValues<BodyParamKey>): BodyPropo
     upperArmRadius: s(0.04),
     elbowRadius: s(0.034),
     wristRadius: s(0.024),
-    palmLength: s(0.085),
-    handWidth: s(0.085),
-    handThickness: s(0.026),
-    fingerRadius: s(0.0085),
+    palmLength: sh(0.085),
+    handWidth: sh(0.085),
+    handThickness: sh(0.026),
+    fingerRadius: sh(0.0085),
     fingers: [finger(0.038, 0.024, 0.02), finger(0.042, 0.027, 0.021), finger(0.038, 0.025, 0.02), finger(0.03, 0.019, 0.017)],
     thumb: finger(0.04, 0.03, 0.025),
     legJointX: s(0.085 * (1 + 0.15 * hip)),
@@ -161,9 +208,12 @@ export function resolveProportions(values: ParamValues<BodyParamKey>): BodyPropo
     ankleRadius: s(0.034),
     footLength: s(0.22),
     footHalfWidth: s(0.04),
-    head: { center: [0, s(headCenterY), 0], scale: s(headScale) },
+    head: headWidthScale === 1 ? { center: [0, s(headCenterY), 0], scale: s(headScale) } : { center: [0, s(headCenterY), 0], scale: s(headScale), widthScale: headWidthScale },
   };
 }
+
+/** `resolveProportions` 별칭(스타일 비례 스펙을 함께 평가할 때 사용) */
+export const evaluateProportions = resolveProportions;
 
 /** 손 끝 링에서 손가락이 차지하지 않는 가장자리 비율(손 너비 기준) */
 export const HAND_END_MARGIN_RATIO = 0.075;
@@ -203,12 +253,14 @@ export const LEFT_THUMB_AXIS: Vec3 = (() => {
 
 /** 머리 로컬 좌표(단위 반경) → 모델 공간 */
 export function headLocalToWorld(frame: HeadFrame, p: Vec3): Vec3 {
-  return [frame.center[0] + p[0] * frame.scale, frame.center[1] + p[1] * frame.scale, frame.center[2] + p[2] * frame.scale];
+  const sx = frame.widthScale === undefined || frame.widthScale === 1 ? frame.scale : frame.scale * frame.widthScale;
+  return [frame.center[0] + p[0] * sx, frame.center[1] + p[1] * frame.scale, frame.center[2] + p[2] * frame.scale];
 }
 
 /** 모델 공간 → 머리 로컬 좌표 */
 export function worldToHeadLocal(frame: HeadFrame, p: Vec3): Vec3 {
-  return [(p[0] - frame.center[0]) / frame.scale, (p[1] - frame.center[1]) / frame.scale, (p[2] - frame.center[2]) / frame.scale];
+  const sx = frame.widthScale === undefined || frame.widthScale === 1 ? frame.scale : frame.scale * frame.widthScale;
+  return [(p[0] - frame.center[0]) / sx, (p[1] - frame.center[1]) / frame.scale, (p[2] - frame.center[2]) / frame.scale];
 }
 
 /**
@@ -217,8 +269,12 @@ export function worldToHeadLocal(frame: HeadFrame, p: Vec3): Vec3 {
  */
 export function headFrameDelta(from: HeadFrame, to: HeadFrame, p: Vec3): Vec3 {
   const k = to.scale / from.scale;
+  const kx =
+    (from.widthScale === undefined || from.widthScale === 1) && (to.widthScale === undefined || to.widthScale === 1)
+      ? k
+      : (to.scale * (to.widthScale ?? 1)) / (from.scale * (from.widthScale ?? 1));
   return [
-    to.center[0] + (p[0] - from.center[0]) * k - p[0],
+    to.center[0] + (p[0] - from.center[0]) * kx - p[0],
     to.center[1] + (p[1] - from.center[1]) * k - p[1],
     to.center[2] + (p[2] - from.center[2]) * k - p[2],
   ];

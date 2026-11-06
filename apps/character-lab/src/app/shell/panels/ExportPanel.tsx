@@ -216,11 +216,13 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
       if (migrationNotice !== null) importNotices.push(migrationNotice);
       // recipe/load는 스토어가 이전 레이어를 가리키는 페인트 undo 이력을 비운다. 엔진 텍스처는 여기서 새 세션과 맞춘다.
       dispatch({ type: "recipe/load", recipe: parsed.recipe });
-      const previousLayers = session.layersForExport();
-      session.replaceLayers(paint.layers);
-      const engine = engineSession.engine();
-      // 새 파일에 없는 부위의 이전 칠이 뷰포트에 남지 않도록 사라진 부위는 빈 레이어로 비운다(엔진 페인트 텍스처에는 제거 API가 없다).
-      if (engine) uploadReplacedLayers(previousLayers, session.layersForExport(), (layer) => engine.updatePaintTexture(layer));
+      if (!isShaperPreset || paint.layers.length > 0) {
+        const previousLayers = session.layersForExport();
+        session.replaceLayers(paint.layers);
+        const engine = engineSession.engine();
+        // 새 파일에 없는 부위의 이전 칠이 뷰포트에 남지 않도록 사라진 부위는 빈 레이어로 비운다(엔진 페인트 텍스처에는 제거 API가 없다).
+        if (engine) uploadReplacedLayers(previousLayers, session.layersForExport(), (layer) => engine.updatePaintTexture(layer));
+      }
       for (const warning of kitPaintWarningsForLayers(parsed.recipe.source.kind, paint.layers)) {
         importNotices.push(`이미 칠한 ${PART_ROLE_LABELS_KO[warning.part]} 레이어: ${warning.messageKo}`);
       }
@@ -323,7 +325,21 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         </button>
         <label className="cl-export-file" htmlFor={`${ids}-file`}>
           레시피 불러오기
-          <input id={`${ids}-file`} type="file" accept={`${RECIPE_FILE_SUFFIX},.json,.preset,application/json,text/plain`} disabled={busy !== null} onChange={(event) => onRecipeFile(event.target.files?.[0])} />
+          <input
+            id={`${ids}-file`}
+            type="file"
+            accept={`${RECIPE_FILE_SUFFIX},.json,.preset,application/json,text/plain`}
+            disabled={busy !== null}
+            onChange={(event) => {
+              const input = event.currentTarget;
+              const selected = input.files?.[0];
+              try {
+                onRecipeFile(selected);
+              } finally {
+                input.value = "";
+              }
+            }}
+          />
         </label>
       </div>
       <fieldset className="cl-export-psd">

@@ -90,4 +90,24 @@ describe("clampBoneRotation / clampPoseToLimits", () => {
     expect(poseLimitViolations(clamped, skeleton)).toEqual([]);
     for (let i = 0; i < 4; i += 1) expect(clamped.head?.[i]).toBeCloseTo(pose.head[i] ?? 0, 9);
   });
+
+  it("머리(head)의 순수 Y축 요(65°)는 swing 결합(피치·롤 왜곡) 없이 twist 한계(70°) 안에서 그대로 보존된다", () => {
+    const yaw65 = qFromAxisAngle([0, 1, 0], degToRad(65));
+    const headAngles = swingTwistAnglesDeg(yaw65, [0, 1, 0]);
+    expect(headAngles.twistDeg).toBeCloseTo(65, 6);
+    expect(headAngles.swingDeg).toBeCloseTo(0, 6);
+    expect(poseLimitViolations({ head: yaw65 }, skeleton)).toEqual([]);
+    const clampedHead = clampBoneRotation(skeleton, "head", yaw65);
+    expect(clampedHead[0]).toBeCloseTo(0, 9);
+    expect(clampedHead[2]).toBeCloseTo(0, 9);
+    for (let i = 0; i < 4; i += 1) expect(clampedHead[i]).toBeCloseTo(yaw65[i] ?? 0, 9);
+
+    // 손목(leftHand / rightHand)도 [±1, 0, 0] twist 축을 사용해 순수 X축 회전이 swing 없이 twist로 분해·클램프된다
+    const wristTwist = qFromAxisAngle([1, 0, 0], degToRad(40));
+    const clampedLeftWrist = clampBoneRotation(skeleton, "leftHand", wristTwist);
+    const leftWristAngles = swingTwistAnglesDeg(clampedLeftWrist, [1, 0, 0]);
+    expect(leftWristAngles.swingDeg).toBeCloseTo(0, 6);
+    expect(leftWristAngles.twistDeg).toBeCloseTo(JOINT_LIMITS_DEG.leftHand.twist, 4);
+  });
 });
+

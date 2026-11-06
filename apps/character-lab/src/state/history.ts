@@ -7,7 +7,14 @@
  *   (`before`는 첫 항목의 것을 유지하므로 undo 한 번에 드래그 전체가 되돌아간다).
  * - undo 스택이 `limit`를 넘으면 가장 오래된 항목을 버린다.
  */
+import { stableStringify } from "../shared/stable-json";
+
 import type { CharacterRecipe, PaintUndoToken, SlotCapabilityMap } from "../contracts";
+
+function recipesEqual(a: CharacterRecipe, b: CharacterRecipe): boolean {
+  if (a === b) return true;
+  return stableStringify({ ...a, paint: undefined }) === stableStringify({ ...b, paint: undefined });
+}
 
 export const HISTORY_DEFAULT_LIMIT = 200;
 export const HISTORY_COALESCE_WINDOW_MS = 250;
@@ -94,7 +101,11 @@ export function createHistory(limitOrOptions: number | HistoryOptions = HISTORY_
       if (entry.kind === "recipe" && entry.coalesceKey !== undefined && top?.kind === "recipe" && entry.coalesceMode === top.coalesceMode && canCoalesce(entry.coalesceKey, entry.at)) {
         // param/set·expression/set만 병합 대상이므로 capabilities는 첫 항목의 것을 유지한다.
         const merged: RecipeHistoryEntry = { ...top, after: entry.after, at: entry.at, labelKo: entry.labelKo };
-        undoStack[undoStack.length - 1] = merged;
+        if (recipesEqual(merged.before, merged.after)) {
+          undoStack.pop();
+        } else {
+          undoStack[undoStack.length - 1] = merged;
+        }
         return "coalesced";
       }
       coalesceInterrupted = false;

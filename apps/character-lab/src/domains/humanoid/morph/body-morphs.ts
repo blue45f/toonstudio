@@ -5,7 +5,7 @@
  * 관절 오프셋(jointOffsets)은 ±1 스켈레톤의 rest 평행이동 차다.
  * 원리: SMPL "형상 델타 후 관절 회귀"(개념만).
  */
-import { BODY_PARAM_KEYS, HUMANOID_BONE_NAMES, paramMorphName, type BodyParamKey, type HumanoidBoneName, type MorphTargetName, type ParamValues } from "../../../contracts";
+import { BODY_PARAM_KEYS, HUMANOID_BONE_NAMES, paramMorphName, type BodyParamKey, type HumanoidBoneName, type MorphTargetName, type ParamValues, type Proportion } from "../../../contracts";
 import { buildBodyCage, type BodyCage } from "../geometry/cage";
 import { buildHeadCage, type HeadCage } from "../geometry/head-cage";
 import { liftAttribute, type SubdivisionPlan } from "../geometry/subdivision";
@@ -42,12 +42,13 @@ export interface BodyMorphInputs {
   readonly headCage: HeadCage;
   readonly bodyPlan: SubdivisionPlan;
   readonly headPlan: SubdivisionPlan;
+  readonly styleProportion?: Partial<Proportion> | null;
 }
 
-function jointOffsets(base: ParamValues<BodyParamKey>, variant: ParamValues<BodyParamKey>): JointOffsets {
+function jointOffsets(base: ParamValues<BodyParamKey>, variant: ParamValues<BodyParamKey>, styleProportion?: Partial<Proportion> | null): JointOffsets {
   // 스켈레톤은 비례만 필요하므로 케이지를 다시 만들지 않는다(조립기 1회당 케이지 36회 절감).
-  const a = buildHumanoidSkeleton(resolveProportions(base));
-  const b = buildHumanoidSkeleton(resolveProportions(variant));
+  const a = buildHumanoidSkeleton(resolveProportions(base, styleProportion));
+  const b = buildHumanoidSkeleton(resolveProportions(variant, styleProportion));
   const out: JointOffsets = {};
   HUMANOID_BONE_NAMES.forEach((name, i) => {
     const ta = a.bones[i].restTranslation;
@@ -60,7 +61,7 @@ function jointOffsets(base: ParamValues<BodyParamKey>, variant: ParamValues<Body
 
 /** 스펙 공개 API: 체형 9 파라미터 × ± = 18 morph(용접 정점 델타) + 관절 오프셋 */
 export function buildBodyMorphs(inputs: BodyMorphInputs): BodyMorphSet {
-  const { baseParams, bodyCage, headCage, bodyPlan, headPlan } = inputs;
+  const { baseParams, bodyCage, headCage, bodyPlan, headPlan, styleProportion } = inputs;
   const baseBody = liftAttribute(bodyPlan, bodyCage.mesh.positions, 3);
   const baseHead = liftAttribute(headPlan, headCage.mesh.positions, 3);
   const targets: BodyMorphTarget[] = [];
@@ -73,13 +74,13 @@ export function buildBodyMorphs(inputs: BodyMorphInputs): BodyMorphSet {
     const pair: { plus: JointOffsets; minus: JointOffsets } = { plus: {}, minus: {} };
     for (const [sign, value] of variants) {
       const params: ParamValues<BodyParamKey> = { ...baseParams, [key]: value };
-      const body = buildBodyCage(params);
-      const head = buildHeadCage(params);
+      const body = buildBodyCage(params, styleProportion);
+      const head = buildHeadCage(params, styleProportion);
       const bodyDelta = subtractArrays(liftAttribute(bodyPlan, body.mesh.positions, 3), baseBody);
       const headDelta = subtractArrays(liftAttribute(headPlan, head.mesh.positions, 3), baseHead);
       targets.push({ key, sign, name: paramMorphName(key, sign), bodyDelta, headDelta, headFrame: head.frame });
-      if (sign === "+") pair.plus = jointOffsets(baseParams, params);
-      else pair.minus = jointOffsets(baseParams, params);
+      if (sign === "+") pair.plus = jointOffsets(baseParams, params, styleProportion);
+      else pair.minus = jointOffsets(baseParams, params, styleProportion);
     }
     offsets[key] = pair;
   }

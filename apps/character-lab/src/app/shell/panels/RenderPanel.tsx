@@ -451,7 +451,33 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
             data-testid="shaper-tripo-hair-inline-toggle"
             type="checkbox"
             checked={disableHairInline}
-            onChange={(event) => setDisableHairInline(event.target.checked)}
+            onChange={(event) => {
+              const checked = event.target.checked;
+              setDisableHairInline(checked);
+              dispatch({ type: "look/set", patch: { line: { inner: { enabled: !checked } } } });
+            }}
+          />
+        </div>
+        <div className="cl-render-row">
+          <label htmlFor={`${ids}-look-line-width`}>화풍 외곽선 두께(mm)</label>
+          <input
+            id={`${ids}-look-line-width`}
+            data-testid="look-line-width-input"
+            type="number"
+            min={0}
+            max={20}
+            step={0.5}
+            value={shading.look.line.widthMm}
+            onChange={(event) => {
+              const num = Number(event.target.value);
+              if (Number.isFinite(num)) {
+                dispatch({
+                  type: "look/set",
+                  patch: { line: { widthMm: Math.min(20, Math.max(0, num)) } },
+                  coalesceKey: "look:line.widthMm",
+                });
+              }
+            }}
           />
         </div>
         {(() => {

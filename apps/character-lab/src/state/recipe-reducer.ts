@@ -9,9 +9,11 @@
  * - 레시피 v3 커스터마이즈 명령(화풍·look·비례·채널·표면·형태·옷장·소품·헤어 색·룩 적용)은 `customize-reducer.ts`가 처리한다(2026-10-23 CORE-1).
  */
 import {
+  LEFT_FINGER_BONE_NAMES,
   PHYSICS_PROVIDER_LABELS_KO,
   RECIPE_COLOR_KEYS,
   RECIPE_VERSION,
+  RIGHT_FINGER_BONE_NAMES,
   SLOT_LABELS_KO,
   applyKitToonDefaults,
   bonesInScope,
@@ -62,6 +64,18 @@ export function isRecipeCommand(command: LabCommand): command is RecipeCommand {
 }
 
 const COLOR_KEY_SET: ReadonlySet<string> = new Set(RECIPE_COLOR_KEYS);
+const LEFT_FINGER_BONE_SET: ReadonlySet<string> = new Set(LEFT_FINGER_BONE_NAMES);
+const RIGHT_FINGER_BONE_SET: ReadonlySet<string> = new Set(RIGHT_FINGER_BONE_NAMES);
+
+function syncHandSide(currentSide: Pose, nextPose: Pose, fingerBones: readonly HumanoidBoneName[]): Pose {
+  const synced: Partial<Record<HumanoidBoneName, Quat>> = { ...currentSide };
+  for (const bone of fingerBones) {
+    const quat = nextPose[bone];
+    if (quat) synced[bone] = quat;
+    else delete synced[bone];
+  }
+  return synced;
+}
 
 /** 이보다 짧은 쿼터니언은 방향이 없으므로 거부한다(`qNormalize`는 0 길이에서 항등을 돌려주므로 직접 검사). */
 export const QUAT_MIN_LENGTH = 1e-6;
@@ -208,8 +222,25 @@ export function reduceRecipe(recipe: CharacterRecipe, command: RecipeCommand, ca
       const eyeGaze = resolveEyeGaze(checked.data);
       return stableStringify(eyeGaze) === stableStringify(recipe.eyeGaze) ? recipe : { ...recipe, eyeGaze };
     }
-    case "pose/set":
-      return { ...recipe, pose: mergePoseScoped(recipe.pose, command.pose, command.scope) };
+    case "pose/set": {
+      const pose = mergePoseScoped(recipe.pose, command.pose, command.scope);
+      const touchesLeft =
+        command.scope === "left-hand" ||
+        command.scope === "arms-hands" ||
+        Object.keys(command.pose).some((bone) => LEFT_FINGER_BONE_SET.has(bone));
+      const touchesRight =
+        command.scope === "right-hand" ||
+        command.scope === "arms-hands" ||
+        Object.keys(command.pose).some((bone) => RIGHT_FINGER_BONE_SET.has(bone));
+      if (!touchesLeft && !touchesRight) {
+        return { ...recipe, pose };
+      }
+      const handPose: HandPosePair = {
+        left: touchesLeft ? syncHandSide(recipe.handPose.left, pose, LEFT_FINGER_BONE_NAMES) : recipe.handPose.left,
+        right: touchesRight ? syncHandSide(recipe.handPose.right, pose, RIGHT_FINGER_BONE_NAMES) : recipe.handPose.right,
+      };
+      return { ...recipe, pose, handPose };
+    }
     case "hand-pose/set":
       return reduceHandPoseSet(recipe, command, catalog);
     case "shading/set": {

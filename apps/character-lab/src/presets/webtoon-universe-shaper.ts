@@ -330,7 +330,7 @@ export function composeWebtoonUniverseRecipe(
     face: normalizeParamValues(preset.face),
     body: normalizeParamValues(preset.body),
     colors: mergedColors,
-    expression: { ...preset.expression },
+    expression: {},
     wardrobe: lookPayload.wardrobe ? structuredClone(lookPayload.wardrobe) : structuredClone(baseRecipe.wardrobe),
     partParams: cleanPartParams(preset.partParams),
     surfaces: lookPayload.surfaces ? structuredClone(lookPayload.surfaces) : structuredClone(baseRecipe.surfaces),

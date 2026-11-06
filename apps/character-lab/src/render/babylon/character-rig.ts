@@ -8,7 +8,7 @@
  *   모델 공간 델타이므로 local = Rp⁻¹ ∘ pose ∘ Rp ∘ restLocal (Rp = 부모 본의 절대 rest 회전). 두 식은 rest가
  *   전부 항등이면 같다. 본 회전은 TransformNode.rotationQuaternion으로 적용한다(본은 노드에 링크).
  */
-import { IDENTITY_QUAT } from "../../contracts";
+import { IDENTITY_QUAT, PROPORTION_KEYS, clampProportion } from "../../contracts";
 import { qConjugate, qMultiply, qNormalize } from "../../shared/math";
 import { resolvePartColorHex } from "../material-presets";
 import { buildPoseFrameSkeleton } from "../pose-skeleton";
@@ -28,6 +28,10 @@ import type {
   MaterialPresetId,
   PartIdPalette,
   PartRole,
+  PartScope,
+  Proportion,
+  ProportionKey,
+  ProportionReceipt,
   Quat,
   RecipeColorKey,
   SkeletonData,
@@ -194,6 +198,71 @@ export interface ApplyRigPlanOptions {
   readonly outlinesVisible: boolean;
 }
 
+function applyRigPartMorphs(
+  rig: CharacterRig,
+  partMorphWeights: Readonly<Partial<Record<PartScope, Readonly<Record<string, number>>>>> | undefined,
+): { readonly applied: number; readonly skippedShapes: readonly string[] } {
+  if (!partMorphWeights) return { applied: 0, skippedShapes: [] };
+  let applied = 0;
+  const skippedShapes: string[] = [];
+  for (const [scope, shapeMap] of Object.entries(partMorphWeights) as Array<[PartScope, Readonly<Record<string, number>> | undefined]>) {
+    if (!shapeMap) continue;
+    const scopeParts = rig.parts.filter((part) => part.role === scope || part.id === scope || part.id.startsWith(`${scope}:`));
+    for (const [morphName, weight] of Object.entries(shapeMap)) {
+      const influence = Number.isFinite(weight) ? Math.min(1, Math.max(0, weight)) : 0;
+      const scopedTargets: MorphTarget[] = [];
+      for (const part of scopeParts) {
+        for (const mesh of part.meshes) {
+          const manager = mesh.morphTargetManager;
+          if (!manager) continue;
+          for (let i = 0; i < manager.numTargets; i += 1) {
+            const target = manager.getTarget(i);
+            if (target.name === morphName) scopedTargets.push(target);
+          }
+        }
+      }
+      const fallbackTargets = scopedTargets.length > 0 ? scopedTargets : (rig.morphs.get(morphName) ?? []);
+      if (fallbackTargets.length === 0) {
+        skippedShapes.push(`${scope}/${morphName}`);
+        continue;
+      }
+      for (const target of fallbackTargets) target.influence = influence;
+      applied += 1;
+    }
+  }
+  return { applied, skippedShapes };
+}
+
+function applyRigProportion(rig: CharacterRig, target: Proportion | null | undefined): ProportionReceipt | undefined {
+  const headBone = rig.humanoid.get("head");
+  const leftHandBone = rig.humanoid.get("leftHand");
+  const rightHandBone = rig.humanoid.get("rightHand");
+  if (!target) {
+    if (rig.kind === "kit") {
+      headBone?.node.scaling.set(1, 1, 1);
+      leftHandBone?.node.scaling.set(1, 1, 1);
+      rightHandBone?.node.scaling.set(1, 1, 1);
+    }
+    return undefined;
+  }
+  const achieved: Record<ProportionKey, number> = { ...target };
+  const clamped: ProportionKey[] = [];
+  for (const key of PROPORTION_KEYS) {
+    const c = clampProportion(key, target[key]);
+    achieved[key] = c;
+    if (Math.abs(c - target[key]) > 1e-6) clamped.push(key);
+  }
+  if (rig.kind === "kit") {
+    const headScale = Math.min(1.8, Math.max(0.6, 6.5 / Math.max(2.5, achieved.headsTall)));
+    const headWidth = Math.min(1.4, Math.max(0.7, achieved.headWidthRatio / 0.72));
+    headBone?.node.scaling.set(headScale * headWidth, headScale, headScale);
+    const handScale = Math.min(1.4, Math.max(0.6, achieved.handScale));
+    leftHandBone?.node.scaling.set(handScale, handScale, handScale);
+    rightHandBone?.node.scaling.set(handScale, handScale, handScale);
+  }
+  return { target, achieved, clamped };
+}
+
 /** 플랜을 리그에 적용한다. 엔진 계약 ApplyReceipt를 돌려준다. */
 export function applyRigPlan(rig: CharacterRig, plan: ApplyPlan, options: ApplyRigPlanOptions): ApplyReceipt {
   let appliedMorphs = 0;
@@ -211,6 +280,8 @@ export function applyRigPlan(rig: CharacterRig, plan: ApplyPlan, options: ApplyR
     for (const target of targets) target.influence = influence;
     appliedMorphs += 1;
   }
+  const partMorphResult = applyRigPartMorphs(rig, plan.partMorphWeights);
+  appliedMorphs += partMorphResult.applied;
   // 체형 morph로 정점이 움직인 만큼 관절(본 rest)도 옮기고 역바인드를 다시 만든다 — 같은 가중치, 같은 시점.
   rig.jointOffsets?.apply(plan.morphWeights);
 
@@ -229,6 +300,7 @@ export function applyRigPlan(rig: CharacterRig, plan: ApplyPlan, options: ApplyR
     appliedBones += 1;
   }
   for (const [name, rb] of rig.humanoid) if (!posed.has(name)) applyBoneRotation(rig, rb, undefined);
+  const proportionReceipt = applyRigProportion(rig, plan.proportion);
 
   for (const planPart of plan.parts) {
     const part = rig.partById.get(planPart.partId);
@@ -245,7 +317,15 @@ export function applyRigPlan(rig: CharacterRig, plan: ApplyPlan, options: ApplyR
       rig.materials.applyColor(part, hex);
     }
   }
-  return { revision: plan.revision, appliedMorphs, appliedBones, skippedMorphs, skippedBones };
+  return {
+    revision: plan.revision,
+    appliedMorphs,
+    appliedBones,
+    skippedMorphs,
+    skippedBones,
+    ...(partMorphResult.skippedShapes.length > 0 ? { skippedShapes: partMorphResult.skippedShapes } : {}),
+    ...(proportionReceipt ? { proportion: proportionReceipt } : {}),
+  };
 }
 
 /** 플랜 적용 전 상태 스냅샷(썸네일처럼 일시 적용 뒤 정확히 되돌릴 때 쓴다) */

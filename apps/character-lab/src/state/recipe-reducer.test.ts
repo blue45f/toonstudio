@@ -132,6 +132,37 @@ describe("state/recipe-reducer", () => {
     expect(Object.keys(preset.pose)).toEqual(["leftUpperArm"]);
   });
 
+  it("pose/set이 손가락 본이나 손 스코프(left-hand·right-hand·arms-hands)를 포함하면 handPose를 동기화해 이전 손 포즈가 덮어쓰지 않게 한다", () => {
+    const withFist = reduceRecipe(createDefaultRecipe(), { type: "hand-pose/set", side: "left", presetId: "hand-pose/fist" }, catalog);
+    expect(withFist.handPose.left.leftIndexProximal).toBeDefined();
+
+    const trackedLeft = reduceRecipe(
+      withFist,
+      {
+        type: "pose/set",
+        pose: { leftThumbProximal: [0, 0, 0, 2] },
+        scope: "left-hand",
+        labelKo: "왼손 추적",
+      },
+      catalog,
+    );
+    expect(trackedLeft.pose.leftThumbProximal).toEqual([0, 0, 0, 1]);
+    expect(trackedLeft.handPose.left.leftThumbProximal).toEqual([0, 0, 0, 1]);
+    expect(trackedLeft.handPose.left.leftIndexProximal).toBeUndefined();
+
+    const fullWithRightFinger = reduceRecipe(
+      trackedLeft,
+      {
+        type: "pose/set",
+        pose: { rightIndexProximal: [0, 2, 0, 2] },
+        scope: "full",
+        labelKo: "오른손 검지",
+      },
+      catalog,
+    );
+    expect(fullWithRightFinger.handPose.right.rightIndexProximal?.map((v) => Number(v.toFixed(6)))).toEqual([0, 0.707107, 0, 0.707107]);
+  });
+
   it("hand-pose/set은 한쪽 손만 바꾼다", () => {
     const base = createDefaultRecipe();
     const left = reduceRecipe(base, { type: "hand-pose/set", side: "left", presetId: "hand-pose/fist" }, catalog);

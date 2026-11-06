@@ -76,7 +76,8 @@ export function validateExportDimensions(width: number, height: number, max: num
 export function exportFileName(kind: Exclude<ExportKind, "recipe" | "shaper-preset">, digest: string, width: number, height: number): string {
   const suffix = kind === "glb" ? "glb" : kind;
   const size = kind === "glb" ? "" : `-${width}x${height}`;
-  return `character-${digest.slice(0, 8)}${size}.${suffix}`;
+  const cleanDigest = digest.replace(/^plan-\d+-/u, "");
+  return `character-${cleanDigest.slice(0, 8)}${size}.${suffix}`;
 }
 
 export function buildCaptureRequest(options: ExportCaptureOptions, passes: readonly RenderPassId[]): CaptureRequest {
@@ -111,7 +112,7 @@ async function capture(engine: CharacterEngine, options: ExportCaptureOptions, p
     }
   }
   try {
-    const result = await engine.renderPasses(request);
+    const result = await engine.renderPasses({ ...request, settleSteps: 0 });
     if (result.width !== request.width || result.height !== request.height) {
       return {
         ok: false as const,

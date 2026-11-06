@@ -380,8 +380,11 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
     paintChildren.push(raster(`${PART_ROLE_LABELS_KO[layer.part]} (UV 공간${factor > 1 ? ` 1/${factor}` : ""})`, "normal", data, true));
   }
 
+  const outlinePass = (capture.passes as { readonly outline?: CapturedRaster }).outline;
   const lineInput = {
     lit,
+    flat,
+    ...(outlinePass ? { outline: outlinePass } : {}),
     width,
     height,
     ...(capture.depth ? { depth: capture.depth } : {}),
@@ -391,13 +394,17 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
   };
   let lineArtPixels = 0;
   let fullLineRaster: CapturedRaster;
+  const lineMask = extractLineArt(lineInput, options.lineArt ?? {});
   if (options.lineArt?.useLuminanceToAlpha) {
-    fullLineRaster = extractOutlinePassLuminanceToAlpha(lit);
+    fullLineRaster = extractOutlinePassLuminanceToAlpha(lit, [0, 0, 0], {
+      flat,
+      ...(outlinePass ? { outline: outlinePass } : {}),
+      edgeMask: lineMask,
+    });
     for (let i = 3; i < fullLineRaster.rgba.length; i += 4) {
       if ((fullLineRaster.rgba[i] ?? 0) > 0) lineArtPixels += 1;
     }
   } else {
-    const lineMask = extractLineArt(lineInput, options.lineArt ?? {});
     for (let p = 0; p < lineMask.length; p += 1) if ((lineMask[p] ?? 0) > 0) lineArtPixels += 1;
     fullLineRaster = lineArtToRaster(lineMask, width, height);
   }

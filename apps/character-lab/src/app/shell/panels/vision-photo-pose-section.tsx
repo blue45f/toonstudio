@@ -169,7 +169,9 @@ export function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) 
   const applyHand = (index: number, hand: HandDetection): void => {
     const side = sideOf(index, hand);
     if (!side) return;
-    const result = handLandmarksToPose(hand.landmarks, { side, mirror, space: "image", aspectRatio: pose.phase === "ready" ? pose.image.width / pose.image.height : 1 });
+    const handSpace: LandmarkSpace = effectiveSpace === "world" && hand.worldLandmarks ? "world" : "image";
+    const landmarks = handSpace === "world" && hand.worldLandmarks ? hand.worldLandmarks : hand.landmarks;
+    const result = handLandmarksToPose(landmarks, { side, mirror, space: handSpace, aspectRatio: pose.phase === "ready" ? pose.image.width / pose.image.height : 1 });
     dispatch({ type: "pose/set", pose: result.pose, scope: result.side === "left" ? "left-hand" : "right-hand", labelKo: `${pose.phase === "ready" && pose.inputSource === "camera" ? "카메라" : "사진"} 손 포즈(${result.side === "left" ? "왼손" : "오른손"})` });
   };
 

@@ -12,6 +12,7 @@
  */
 import { KIT_DEFAULT_SLOTS, KIT_PART_SLOTS, failVisible, isLabFailure, isPresetId, kitGeometryKey } from "../../contracts";
 import { stableStringify } from "../../shared/stable-json";
+import { createApplyPlanner } from "../../state/apply-plan";
 
 import type {
   ApplyPlan,
@@ -142,6 +143,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
   let appliedCapabilities: LabState["capabilities"] | null = null;
   let shadingKey: string | null = null;
   let providerKey: string | null = null;
+  let loadedCapabilities: SourceCapabilities | null = null;
   /** 소스 로드와 첫 적용 단계가 끝난 엔진 */
   let settledEngine: CharacterEngine | null = null;
   /** 이 엔진에서 이미 실패한 소스(같은 키면 다시 만들지 않는다) */
@@ -155,7 +157,12 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
     if (source.kind === "procedural" && deps.proceduralGeometryKey) {
       return stableStringify({ kind: "procedural", geometry: deps.proceduralGeometryKey(recipe) });
     }
-    if (source.kind === "kit") return kitSourceKey(source.kitId, source.kitVersion, source.baseId, kitGeometryKey(recipe));
+    if (source.kind === "kit") {
+      const w = recipe.wardrobe;
+      const hasWardrobe = Boolean(w && (w.inner || w.outer || w.legwear || w.accessories.length > 0));
+      const geom = hasWardrobe ? `${kitGeometryKey(recipe)}|w:${stableStringify(w)}` : kitGeometryKey(recipe);
+      return kitSourceKey(source.kitId, source.kitVersion, source.baseId, geom);
+    }
     return stableStringify(source);
   };
 
@@ -207,6 +214,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
         // 레시피가 이전 소스로 돌아가면 다시 올리게 한다. 같은 실패 키는 값이 바뀔 때까지 재시도하지 않는다.
         loadedEngine = null;
         loadedSourceKey = null;
+        loadedCapabilities = null;
         settledEngine = null;
         failedSource = { engine, key: sourceKey };
         report("source-build-failed", "캐릭터 소스를 만들거나 올리지 못했습니다.", error);
@@ -215,6 +223,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       }
       loadedEngine = engine;
       loadedSourceKey = sourceKey;
+      loadedCapabilities = loaded;
       resetForEngine();
       // 엔진이 보고한 능력 맵이 스토어와 다르면(기본 절차 소스, 레시피 불러오기로 소스가 바뀐 경우) 스토어를 맞춘다(history 밖 이벤트).
       if (!sameCapabilities(loaded.capabilities, state.capabilities)) {
@@ -254,7 +263,19 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
     }
     try {
       // 플래너는 revision을 알 수 없어 0을 돌려준다(state/apply-plan) — 스토어 getPlan과 같이 history revision으로 덮어쓴다.
-      const plan: ApplyPlan = { ...deps.planner(recipe, state.capabilities, deps.catalog), revision };
+      const basePlan = deps.planner(recipe, state.capabilities, deps.catalog);
+      const customPlan =
+        loadedCapabilities?.custom !== undefined
+          ? createApplyPlanner({
+              custom: loadedCapabilities.custom,
+              features: { morphNames: loadedCapabilities.morphNames, boneNames: loadedCapabilities.boneNames },
+            })(recipe, state.capabilities, deps.catalog)
+          : null;
+      const plan: ApplyPlan = {
+        ...basePlan,
+        ...(customPlan?.unsupportedCustom ? { unsupportedCustom: customPlan.unsupportedCustom } : {}),
+        revision,
+      };
       lastReceipt = engine.applyPlan(plan);
       lastPlan = plan;
       appliedRevision = revision;

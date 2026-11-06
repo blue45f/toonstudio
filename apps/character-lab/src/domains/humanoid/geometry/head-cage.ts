@@ -10,7 +10,7 @@
  * 위 입술(머리)과 아래 입술(턱)이 서로 다른 정점이라 턱 열림에서 틈이 벌어지고 치아·혀가 보인다. 구 위상(오일러 2)은 유지된다.
  * 원리: Blanz-Vetter 1999 고정 토폴로지 + 선형 델타 공간(개념만).
  */
-import { bodyRegionIndex, type BodyParamKey, type ParamValues } from "../../../contracts";
+import { bodyRegionIndex, type BodyParamKey, type ParamValues, type Proportion } from "../../../contracts";
 import { v3Normalize, type Vec3 } from "../../../shared/math";
 import { HEAD_LANDMARKS, headLocalToWorld, resolveProportions, type BodyProportions, type HeadFrame } from "../proportions";
 
@@ -310,8 +310,8 @@ export function earLocalPoint(dir: Vec3): Vec3 {
 }
 
 /** 스펙 공개 API: 체형 파라미터로 머리 케이지를 만든다(머리 프레임만 파라미터에 의존). */
-export function buildHeadCage(params: ParamValues<BodyParamKey>): HeadCage {
-  const p = resolveProportions(params);
+export function buildHeadCage(params: ParamValues<BodyParamKey>, styleProportion?: Partial<Proportion> | null): HeadCage {
+  const p = resolveProportions(params, styleProportion);
   const frame = p.head;
   const builder = new QuadMeshBuilder();
   const region = bodyRegionIndex("head");

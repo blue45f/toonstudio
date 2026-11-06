@@ -10,7 +10,7 @@
  * UV는 uv-layout.ts의 섬에 배치하고 정점 영역(BODY_REGIONS)을 태그한다.
  * 원리: Hyun 2005 스윕 로프트·Thiery 2013 스피어-메시 프록시(개념만, 코드 복제 없음).
  */
-import { BODY_REGIONS, bodyRegionIndex, type BodyParamKey, type BodyRegion, type ParamValues } from "../../../contracts";
+import { BODY_REGIONS, bodyRegionIndex, type BodyParamKey, type BodyRegion, type ParamValues, type Proportion } from "../../../contracts";
 import { v3Add, v3Cross, v3Normalize, v3Scale, v3Sub, type Vec3 } from "../../../shared/math";
 import { HAND_END_MARGIN_RATIO, LEFT_THUMB_AXIS, fingerCenterZ, leftThumbBase, resolveProportions, type BodyProportions } from "../proportions";
 
@@ -369,8 +369,8 @@ function buildLeg(asm: CageAssembler, p: BodyProportions, side: Side, loop: read
 }
 
 /** 스펙 공개 API: 체형 파라미터로 몸 케이지(닫힌 쿼드 다양체)를 만든다. 토폴로지는 파라미터와 무관하다. */
-export function buildBodyCage(params: ParamValues<BodyParamKey>): BodyCage {
-  const p = resolveProportions(params);
+export function buildBodyCage(params: ParamValues<BodyParamKey>, styleProportion?: Partial<Proportion> | null): BodyCage {
+  const p = resolveProportions(params, styleProportion);
   const asm = new CageAssembler();
   const specs = torsoRingSpecs(p);
   const torsoRings = specs.map((spec) =>

@@ -527,5 +527,17 @@ describe("베타 기능 토글", () => {
 
     fireEvent.click(getByTestId("shaper-tripo-hair-inline-toggle"));
     expect(getByTestId("shaper-tripo-pipeline-summary").textContent).toContain("simpleMatCapShader");
+    expect(dispatched.at(-1)).toEqual({
+      type: "look/set",
+      patch: { line: { inner: { enabled: true } } },
+    });
+
+    fireEvent.change(getByTestId("look-line-width-input"), { target: { value: "5.5" } });
+    expect(dispatched.at(-1)).toEqual({
+      type: "look/set",
+      patch: { line: { widthMm: 5.5 } },
+      coalesceKey: "look:line.widthMm",
+    });
   });
 });
+

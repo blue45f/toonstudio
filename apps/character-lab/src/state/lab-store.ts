@@ -55,6 +55,8 @@ export interface LabStoreHandle extends LabStore {
   /** 프리셋을 임시 적용한 플랜(썸네일 스케줄러 `planForPreset`에 연결) */
   planForPreset(presetId: PresetId): ApplyPlan;
   getHistory(): History;
+  /** 복수 동기 dispatch를 단일 undo 단계로 병합한다(예: Shift/Ctrl 수식키 프리셋 클릭) */
+  withCoalesceKey(key: string, fn: () => void): void;
 }
 
 /** 이벤트를 LabState에 반영한다(testing/mock-store.tsx의 참조 구현과 동일 의미). */
@@ -105,12 +107,13 @@ export function createLabStore(options: LabStoreOptions): LabStoreHandle {
 
   let state: LabState = { ...createInitialLabState(createDefaultRecipe(), ALL_UNAVAILABLE_CAPABILITIES), ...options.initial };
   let planCache: { recipe: CharacterRecipe; capabilities: SlotCapabilityMap; revision: number; plan: ApplyPlan } | null = null;
+  let activeCoalesceKey: string | undefined;
 
   const historyInfo = (revision: number): HistoryInfo => ({
     canUndo: history.canUndo(),
     canRedo: history.canRedo(),
-    depth: history.depth(),
     revision,
+    depth: history.depth(),
   });
 
   const notify = (): void => {
@@ -145,7 +148,11 @@ export function createLabStore(options: LabStoreOptions): LabStoreHandle {
       return;
     }
 
-    const coalesceKey = commandCoalesceKey(command);
+    const explicitKey =
+      "coalesceKey" in command && typeof (command as { coalesceKey?: unknown }).coalesceKey === "string"
+        ? (command as { coalesceKey: string }).coalesceKey
+        : undefined;
+    const coalesceKey = commandCoalesceKey(command) ?? explicitKey ?? activeCoalesceKey;
     const entry: RecipeHistoryEntry = {
       kind: "recipe",
       before: state.recipe,
@@ -257,5 +264,14 @@ export function createLabStore(options: LabStoreOptions): LabStoreHandle {
       return { ...planWithPreset(state.recipe, presetId, state.capabilities, catalog, planner), revision: state.history.revision };
     },
     getHistory: () => history,
+    withCoalesceKey(key, fn) {
+      const prev = activeCoalesceKey;
+      activeCoalesceKey = key;
+      try {
+        fn();
+      } finally {
+        activeCoalesceKey = prev;
+      }
+    },
   };
 }

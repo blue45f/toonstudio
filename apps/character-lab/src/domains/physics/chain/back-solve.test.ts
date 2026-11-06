@@ -40,4 +40,17 @@ describe("physics/chain 역산 회전", () => {
       expect(Math.abs(rot.local[3])).toBeCloseTo(1, 5);
     }
   });
+
+  it("부모(머리·골반)가 Y축으로 회전해도 수직 아래(-Y)로 늘어진 체인 본의 로컬 회전은 역회전(비틀림)하지 않는다", () => {
+    const compiled = compileChainModel([chainInputFixture({ segments: 4, direction: [0, -1, 0] })]);
+    if (!compiled.ok) throw new Error(compiled.failure.reasonKo);
+    const yaw90 = new Float32Array([0, Math.SQRT1_2, 0, Math.SQRT1_2]);
+    const rotations = backSolveChainRotations(compiled.compiled, createChainState(compiled.compiled), 0, { rootParentRotations: yaw90 });
+    for (const rot of rotations) {
+      expect(Math.abs(rot.local[0])).toBeLessThan(1e-5);
+      expect(Math.abs(rot.local[1])).toBeLessThan(1e-5);
+      expect(Math.abs(rot.local[2])).toBeLessThan(1e-5);
+      expect(Math.abs(rot.local[3])).toBeCloseTo(1, 5);
+    }
+  });
 });

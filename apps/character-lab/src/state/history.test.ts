@@ -84,6 +84,19 @@ describe("state/history", () => {
     expect(top?.at).toBe(400);
   });
 
+  it("같은 coalesceKey로 드래그했다가 원래 레시피로 돌아오면 no-op 항목을 남기지 않고 스택에서 뺀다", () => {
+    const history = createHistory({ coalesceWindowMs: 250 });
+    const a = createDefaultRecipe();
+    const b = withHeight(a, 0.3);
+    const aCopy = structuredClone(a);
+    expect(history.push(entry(a, b, 100, "body:height"))).toBe("pushed");
+    expect(history.depth()).toBe(1);
+    expect(history.push(entry(b, aCopy, 200, "body:height"))).toBe("coalesced");
+    expect(history.depth()).toBe(0);
+    expect(history.canUndo()).toBe(false);
+    expect(history.peekUndo()).toBeUndefined();
+  });
+
   it("윈도우 밖·다른 키·키 없음·paint 항목 뒤에는 병합하지 않는다", () => {
     const history = createHistory({ coalesceWindowMs: 250 });
     const a = createDefaultRecipe();

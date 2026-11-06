@@ -25,6 +25,8 @@ import {
   shapeToMorphWeights,
 } from "../contracts";
 
+import { relaxAntagonists } from "./facs-antagonists";
+
 import type {
   ApplyPlanAccessory,
   ChannelKey,
@@ -48,11 +50,12 @@ import type {
 /** 층 역할 → 옷장 층 */
 export const LAYER_OF_ROLE: Readonly<Partial<Record<PartRole, WardrobeLayer>>> = { inner: "inner", outer: "outer", legwear: "legwear" };
 
-/** 표정 + 화풍 중립 표정(같은 유닛은 더하고 1로 자른다) */
+/** 표정 + 화풍 중립 표정(명시 표정과 길항 관계인 중립 표정은 억제하고, 같은 유닛은 더한 뒤 1로 자른다) */
 export function addNeutralFacs(expression: ExpressionWeights, neutral: ExpressionWeights): ExpressionWeights {
+  const relaxedNeutral = relaxAntagonists(neutral, expression);
   const result: ExpressionWeights = {};
   for (const unit of FACS_UNITS) {
-    const value = (expression[unit] ?? 0) + (neutral[unit] ?? 0);
+    const value = (expression[unit] ?? 0) + (relaxedNeutral[unit] ?? 0);
     if (value > 0) result[unit] = Math.min(1, value);
   }
   return result;

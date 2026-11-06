@@ -74,12 +74,25 @@ export function boneWorldPosition(transforms: WorldTransformMap, name: string): 
   return t.position;
 }
 
+const VEC3_X: Vec3 = [1, 0, 0];
+const VEC3_NEG_X: Vec3 = [-1, 0, 0];
+
 /**
- * 본의 축(본 로컬 프레임, 자식 방향). 휴머노이드 자식 rest 오프셋의 평균을 쓰고,
- * 자식이 없으면 부모 기준 자기 rest 오프셋 방향(부모 프레임 ≈ 자기 프레임, rest 회전이 항등일 때)을,
- * 그것도 없으면 +Y를 돌려준다. swing-twist 분해의 twist 축이다.
+ * 본의 축(본 로컬 프레임, 자식 방향). 머리는 수직(+Y), 손목은 중지 중수골 자식(있으면) 또는 해부학적 전완 연장축(±X)을 쓰고,
+ * 그 외 본은 휴머노이드 자식 rest 오프셋의 평균, 자식이 없으면 부모 기준 자기 rest 오프셋 방향, 그것도 없으면 +Y를 돌려준다.
+ * swing-twist 분해의 twist 축이다.
  */
 export function boneAxisLocal(skeleton: SkeletonData, name: string): Vec3 {
+  if (name === "head") return VEC3_Y;
+  if (name === "leftHand" || name === "rightHand") {
+    const middleMetacarpal = name === "leftHand" ? "leftMiddleMetacarpal" : "rightMiddleMetacarpal";
+    const child = skeleton.bones.find((bone) => bone.name === middleMetacarpal && bone.parent === name && !bone.auxiliary);
+    if (child) {
+      const axis = v3Normalize(child.restTranslation);
+      if (axis[0] !== 0 || axis[1] !== 0 || axis[2] !== 0) return axis;
+    }
+    return name === "leftHand" ? VEC3_X : VEC3_NEG_X;
+  }
   let sum: Vec3 = [0, 0, 0];
   let count = 0;
   for (const bone of skeleton.bones) {
@@ -98,3 +111,4 @@ export function boneAxisLocal(skeleton: SkeletonData, name: string): Vec3 {
   }
   return VEC3_Y;
 }
+

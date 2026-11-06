@@ -114,7 +114,7 @@ describe("관절 오프셋 소비(§4.1): 실제 휴머노이드 모델 × 엔�
     const rig = h.engine.inspectRig();
     const available = new Set(rig?.morphNames ?? []);
     const names = Object.keys(model.jointOffsets);
-    expect(names.length).toBe(18);
+    expect(names.length).toBe(20);
     for (const name of names) expect(available.has(name), name).toBe(true);
     // 보고의 morph 수는 오프셋이 하나라도 있는 항목만 센다(허리 등 관절 이동이 없는 체형 morph는 빈 항목).
     const withOffsets = Object.values(model.jointOffsets).filter((perBone) => perBone !== undefined && Object.keys(perBone).length > 0).length;

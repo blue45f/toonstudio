@@ -24,6 +24,8 @@ import { resolveProportions } from "../../../domains/humanoid/proportions";
 import { WEBTOON_UNIVERSE_SHAPER_PRESETS, composeWebtoonUniverseRecipe, resolveCharacterLabVarco3dPreviewSettings } from "../../../presets";
 import { useDispatch, useKitPlans, useLabState } from "../lab-store-context";
 
+import { ParamCustomizeSections } from "./param-customize-sections";
+
 import type { BodyParamKey, FaceParamKey, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/humanoid/palette";
 import type { WebtoonUniverseShaperId } from "../../../presets";
@@ -276,7 +278,7 @@ export function ParamPanel() {
   const isProportionPresetActive = (preset: QuickProportionPreset): boolean =>
     PROPORTION_PRESET_KEYS.every((key) => Math.abs(bodyValue(key) - preset.values[key]) < 1e-6);
 
-  const proportions = resolveProportions(recipe.body);
+  const proportions = resolveProportions(recipe.body, recipe.style.proportion);
   const headCount = proportions.height / (proportions.head.scale * 2);
   const armLength = proportions.upperArmLength + proportions.lowerArmLength;
   const legLength = proportions.upperLegLength + proportions.lowerLegLength;
@@ -415,6 +417,7 @@ export function ParamPanel() {
           <PaletteRow key={spec.key} spec={spec} current={recipe.colors[spec.key]} onPick={(key, hex) => dispatch({ type: "color/set", key, value: hex })} />
         ))}
       </div>
+      <ParamCustomizeSections />
       <p className="cl-param-hint">색은 적용 플랜으로 즉시 반영되며 소스를 다시 만들지 않습니다. 눈썹색은 속눈썹에도 쓰입니다.</p>
     </section>
   );

@@ -8,20 +8,25 @@ import { createReferenceSkeleton } from "../../../animation/reference-skeleton";
 import { computeWorldTransforms } from "../../../animation/skeleton-fk";
 import { ALL_AVAILABLE_CAPABILITIES, createDefaultRecipe } from "../../../contracts";
 import { degToRad, qFromAxisAngle, v3Distance } from "../../../shared/math";
-import { MockLabProvider } from "../../../testing/mock-store";
+import { createMockEngine, mockDiagnostics } from "../../../testing/mock-engine";
+import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
 
 import { PosePanel, describeIkOutcome, ikEndPosition, ikStatusTone, parseCoords } from "./PosePanel";
 
-import type { CharacterRecipe, LabCommand, SlotCapabilityMap } from "../../../contracts";
+import type { CharacterRecipe, EngineSession, LabCommand, SkeletonData, SlotCapabilityMap } from "../../../contracts";
 
 afterEach(cleanup);
 
 const skeleton = createReferenceSkeleton();
 
-function setup(options: { recipe?: CharacterRecipe; capabilities?: SlotCapabilityMap } = {}): LabCommand[] {
+function setup(options: { recipe?: CharacterRecipe; capabilities?: SlotCapabilityMap; engineSession?: EngineSession } = {}): LabCommand[] {
   const dispatched: LabCommand[] = [];
   render(
-    <MockLabProvider initialState={{ capabilities: options.capabilities ?? ALL_AVAILABLE_CAPABILITIES, ...(options.recipe ? { recipe: options.recipe } : {}) }} dispatchSpy={(command) => dispatched.push(command)}>
+    <MockLabProvider
+      initialState={{ capabilities: options.capabilities ?? ALL_AVAILABLE_CAPABILITIES, ...(options.recipe ? { recipe: options.recipe } : {}) }}
+      dispatchSpy={(command) => dispatched.push(command)}
+      {...(options.engineSession ? { engineSession: options.engineSession } : {})}
+    >
       <PosePanel />
     </MockLabProvider>,
   );
@@ -47,6 +52,17 @@ describe("PosePanel 프리셋", () => {
     expect(card("포즈 프리셋", "A 포즈").getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(card("포즈 프리셋", "서기"));
     expect(dispatched).toEqual([{ type: "slot/apply", slot: "pose", presetId: "pose/idle" }]);
+  });
+
+  it("빠른 스탠스 칩 4종이 모두 유효한 POSE_PRESETS ID와 연결되어 클릭 시 프리셋을 적용한다", () => {
+    const dispatched = setup();
+    const quickGroup = screen.getByTestId("pose-tripo-quick-chips");
+    const buttons = within(quickGroup).getAllByRole("button");
+    expect(buttons).toHaveLength(4);
+    fireEvent.click(screen.getByTestId("pose-quick-chip-hands-on-hips"));
+    expect(dispatched[0]).toEqual({ type: "slot/apply", slot: "pose", presetId: "pose/hands-on-hips" });
+    fireEvent.click(screen.getByTestId("pose-quick-chip-run"));
+    expect(dispatched[1]).toEqual({ type: "slot/apply", slot: "pose", presetId: "pose/run" });
   });
 
   it("범위를 상체로 바꾸면 카드 클릭이 pose/set(스코프 병합)이 되고 선택 표시가 꺼진다", () => {
@@ -105,6 +121,38 @@ describe("PosePanel IK", () => {
     expect(poseLimitViolations(command.pose, skeleton)).toEqual([]);
     const status = screen.getByText(/왼손 목표 도달 \(오차 0\.0 mm\)/u);
     expect(status.getAttribute("data-status")).toBe("reached");
+  });
+
+  it("엔진이 poseSkeleton()을 제공하면 활성 스켈레톤 기준으로 초기 좌표·신장·척추 체인(upperChest 생략 포함) IK를 계산한다", () => {
+    // upperChest가 없고 neck의 부모가 chest이며 루트 높이가 +0.2m 높은 라이브 스켈레톤
+    const customSkeleton: SkeletonData = {
+      bones: skeleton.bones
+        .filter((b) => b.name !== "upperChest")
+        .map((b) => {
+          if (b.name === "hips") return { ...b, restTranslation: [b.restTranslation[0], b.restTranslation[1] + 0.2, b.restTranslation[2]] as const };
+          if (b.parent === "upperChest") return { ...b, parent: "chest" };
+          return b;
+        }),
+    };
+    const session = createMockEngineSession({ phase: "ready", backend: "webgpu", diagnostics: mockDiagnostics("webgpu") });
+    session.setEngine(Object.assign(createMockEngine({ backend: "webgpu" }), { poseSkeleton: () => customSkeleton }));
+    const dispatched = setup({ engineSession: session });
+
+    const expectedHand = ikEndPosition({}, "leftArm", customSkeleton);
+    expect(screen.getByLabelText("목표 Y")).toHaveProperty("value", expectedHand[1].toFixed(3));
+
+    fireEvent.change(screen.getByLabelText("부위"), { target: { value: "head" } });
+    const headRest = ikEndPosition({}, "head", customSkeleton);
+    expect(screen.getByLabelText("목표 Y")).toHaveProperty("value", headRest[1].toFixed(3));
+    const target = [headRest[0] + 0.02, headRest[1] - 0.03, headRest[2] + 0.1] as const;
+    setTarget(target[0].toFixed(3), target[1].toFixed(3), target[2].toFixed(3));
+    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    expect(dispatched).toHaveLength(1);
+    const command = dispatched[0];
+    if (command?.type !== "pose/set") throw new Error("pose/set 기대");
+    expect(command.pose.upperChest).toBeUndefined();
+    const solvedHead = computeWorldTransforms(customSkeleton, command.pose).get("head")?.position ?? [0, 0, 0];
+    expect(v3Distance(solvedHead, target)).toBeLessThanOrEqual(2e-3);
   });
 
   it("폴 벡터를 지정하면 팔꿈치가 폴 쪽으로 가고, 좌표가 비수치면 dispatch 없이 사유를 보여준다", () => {
@@ -246,3 +294,4 @@ describe("PosePanel 헬퍼", () => {
     }
   });
 });
+

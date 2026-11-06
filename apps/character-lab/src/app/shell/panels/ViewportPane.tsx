@@ -299,9 +299,11 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       if (ctrlOrMeta && !event.altKey) {
         if (lowerKey === "z" && !event.shiftKey) {
           event.preventDefault();
+          cancelDrag();
           dispatch({ type: "history/undo" });
         } else if ((lowerKey === "z" && event.shiftKey) || lowerKey === "y") {
           event.preventDefault();
+          cancelDrag();
           dispatch({ type: "history/redo" });
         }
         return;
@@ -447,13 +449,13 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     }
 
     if (session.mode === 1) {
-      const ikOut = computeShaperIkHandleDrag({ skeleton: session.skeleton, startPose: session.startPose, handleBone: session.handle.bone as HumanoidBoneName, camera, startPixel: session.startPixel, currentPixel, symmetryEnabled: symmetryRef.current || event.altKey, pivotMode: pivotModeRef.current });
+      const ikOut = computeShaperIkHandleDrag({ skeleton: session.skeleton, startPose: poseRef.current, handleBone: session.handle.bone as HumanoidBoneName, camera, startPixel: session.startPixel, currentPixel, symmetryEnabled: symmetryRef.current || event.altKey, pivotMode: pivotModeRef.current });
       if (!ikOut) return;
       session.ikOutcome = { pose: ikOut.pose, labelKo: ikOut.labelKo };
       setNotice(ikOut.reasonKo ?? `${ikOut.labelKo} 미리보기`);
       if (session.basePlan) {
         try {
-          session.engine.applyPlan({ ...session.basePlan, boneRotations: ikOut.pose });
+          session.engine.applyPlan({ ...session.basePlan, boneRotations: { ...session.basePlan.boneRotations, ...ikOut.pose } });
           syncHandles(session.engine);
         } catch (error) {
           setNotice(failureText(error, "IK 미리보기를 적용하지 못했습니다."));
@@ -542,7 +544,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     if (!camera || !currentPixel) return;
     const outcome = computeShaperControlPointDrag({ controlPoint: session.controlPoint, startPixel: session.startPixel, currentPixel, renderWidth: camera.width, renderHeight: camera.height, baseFace: session.baseFace, baseBody: session.baseBody });
     for (const change of outcome.changes) {
-      dispatch({ type: "param/set", group: change.group, key: change.key, value: change.value, coalesceKey: `shaper-cp:${session.controlPoint.id}:${change.key}` });
+      dispatch({ type: "param/set", group: change.group, key: change.key, value: change.value, coalesceKey: `shaper-cp:${session.controlPoint.id}` });
     }
     setNotice(outcome.summaryKo);
   };

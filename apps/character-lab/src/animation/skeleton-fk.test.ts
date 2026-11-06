@@ -67,12 +67,24 @@ describe("computeWorldTransforms", () => {
 describe("boneAxisLocal", () => {
   const skeleton = createReferenceSkeleton();
 
-  it("자식 방향을 본 축으로 쓴다(상완 +X, 대퇴 -Y, 손은 손가락 평균)", () => {
+  it("자식 방향을 본 축으로 쓰고, 머리는 수직(+Y), 손목은 해부학적 축(±X 또는 중지 중수골)을 쓴다", () => {
     expect(boneAxisLocal(skeleton, "leftUpperArm")).toEqual([1, 0, 0]);
     expect(boneAxisLocal(skeleton, "rightUpperArm")).toEqual([-1, 0, 0]);
     expect(boneAxisLocal(skeleton, "leftUpperLeg")).toEqual([0, -1, 0]);
-    const hand = boneAxisLocal(skeleton, "leftHand");
-    expect(hand[0]).toBeGreaterThan(0.9);
+    expect(boneAxisLocal(skeleton, "head")).toEqual([0, 1, 0]);
+    expect(boneAxisLocal(skeleton, "leftHand")).toEqual([1, 0, 0]);
+    expect(boneAxisLocal(skeleton, "rightHand")).toEqual([-1, 0, 0]);
+
+    const withMiddleMetacarpal: SkeletonData = {
+      bones: [
+        { name: "leftHand", parent: null, restTranslation: [0.25, 0, 0], restRotation: [0, 0, 0, 1] },
+        { name: "leftMiddleMetacarpal", parent: "leftHand", restTranslation: [0.08, 0.06, 0], restRotation: [0, 0, 0, 1] },
+      ],
+    };
+    const customHandAxis = boneAxisLocal(withMiddleMetacarpal, "leftHand");
+    expect(customHandAxis[0]).toBeCloseTo(0.8, 6);
+    expect(customHandAxis[1]).toBeCloseTo(0.6, 6);
+    expect(customHandAxis[2]).toBeCloseTo(0, 6);
   });
 
   it("자식이 없는 말단 본은 자기 rest 오프셋 방향을 쓰고, 그것도 없으면 +Y", () => {
@@ -82,3 +94,4 @@ describe("boneAxisLocal", () => {
     expect(boneAxisLocal(lonely, "hips")).toEqual([0, 1, 0]);
   });
 });
+

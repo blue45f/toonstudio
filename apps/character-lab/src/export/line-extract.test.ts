@@ -137,4 +137,23 @@ describe("extractLineArt", () => {
     expect(Array.from(out.rgba.subarray(4, 8))).toEqual([10, 20, 30, 200]);
     expect(Array.from(out.rgba.subarray(8, 12))).toEqual([0, 0, 0, 0]);
   });
+
+  it("lit/flat 기반 휘도-알파 변환 시 내부 음영 면은 투명(알파 0)으로 두고 외곽 hull·경계선만 순수 먹선으로 추출한다", () => {
+    const w = 12;
+    const h = 12;
+    const flat = rectRaster(w, h, 3, 3, 9, 9, [200, 160, 140, 255]);
+    const lit = fillRaster(w, h, (x, y) => {
+      if (x >= 3 && x < 9 && y >= 3 && y < 9) return [120, 90, 80, 255]; // 어두운 내부 음영 면
+      if (x >= 2 && x < 10 && y >= 2 && y < 10) return [20, 20, 25, 200]; // flat 밖 외곽 hull 선
+      return [0, 0, 0, 0];
+    });
+    const out = extractOutlinePassLuminanceToAlpha(lit, [0, 0, 0], { flat });
+    // 내부 중앙(6, 6)은 어두운 음영이어도 선이 아니므로 투명이어야 한다
+    expect(out.rgba[(6 * w + 6) * 4 + 3]).toBe(0);
+    // flat 밖 외곽 hull(2, 5)은 먹선 알파 > 0
+    expect(out.rgba[(5 * w + 2) * 4 + 3]).toBeGreaterThan(150);
+    // 실루엣 경계(3, 5)도 먹선 알파 > 0
+    expect(out.rgba[(5 * w + 3) * 4 + 3]).toBeGreaterThan(0);
+  });
 });
+

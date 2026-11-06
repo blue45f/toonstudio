@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { blendExpressionPresets, relaxAntagonists } from "../../../animation/expression-blend";
 import { findExpressionPreset } from "../../../animation/presets";
 import { ALL_AVAILABLE_CAPABILITIES, FACS_LABELS_KO, FACS_UNITS, createDefaultRecipe } from "../../../contracts";
-import { MockLabProvider } from "../../../testing/mock-store";
+import { MockLabProvider, createMockLabStore } from "../../../testing/mock-store";
 
 import { ExpressionPanel, expressionsEqual } from "./ExpressionPanel";
 
@@ -77,7 +77,7 @@ describe("ExpressionPanel", () => {
     expect(screen.getByLabelText("프리셋 세기")).toHaveProperty("value", "1");
   });
 
-  it("초기화는 빈 표정으로 교체하고, 모순 유닛 완화는 길항 쌍이 있을 때만 활성이다", () => {
+  it("초기화는 빈 표정으로 교체하고, 모순 유닛 완화는 길항 쌍이 있을 때만 활성이며 로컬 오버라이드를 비운다", () => {
     const dispatched = setup();
     const relaxButton = screen.getByRole("button", { name: "모순 유닛 완화" }) as HTMLButtonElement;
     expect(relaxButton.disabled).toBe(true);
@@ -86,13 +86,49 @@ describe("ExpressionPanel", () => {
     cleanup();
 
     const recipe = createDefaultRecipe();
+    recipe.slots.expression = "expression/smile";
     recipe.expression = { mouthSmile: 1, mouthFrown: 0.5 };
     const dispatched2 = setup({ recipe });
+    // 슬라이더로 jawOpen 오버라이드를 만든 뒤 모순 유닛 완화를 누르면 오버라이드도 초기화된다
+    fireEvent.change(screen.getByLabelText("턱 열기"), { target: { value: "0.75" } });
     const enabled = screen.getByRole("button", { name: "모순 유닛 완화" }) as HTMLButtonElement;
     expect(enabled.disabled).toBe(false);
     fireEvent.click(enabled);
-    expect(dispatched2).toEqual([{ type: "expression/set", weights: relaxAntagonists(recipe.expression), merge: false }]);
-    expect(dispatched2[0]).toMatchObject({ weights: { mouthSmile: 0.5 } });
+    expect(dispatched2[1]).toEqual({ type: "expression/set", weights: relaxAntagonists(recipe.expression), merge: false });
+    expect(dispatched2[1]).toMatchObject({ weights: { mouthSmile: 0.5 } });
+    // 이후 프리셋 세기를 조절할 때 이전 jawOpen 오버라이드가 섞이지 않는다
+    fireEvent.change(screen.getByLabelText("프리셋 세기"), { target: { value: "0.5" } });
+    const afterRelax = dispatched2[2];
+    if (afterRelax?.type !== "expression/set") throw new Error("expression/set 기대");
+    expect(afterRelax.weights.jawOpen).toBeUndefined();
+  });
+
+  it("외부(Undo/Redo 등)에서 recipe.expression이 바뀌면 로컬 슬라이더 오버라이드를 동기화·초기화한다", () => {
+    const dispatched: LabCommand[] = [];
+    const store = createMockLabStore(undefined, (cmd) => dispatched.push(cmd));
+    const recipe = createDefaultRecipe();
+    recipe.slots.expression = "expression/joy";
+    recipe.expression = { ...findExpressionPreset("joy").weights };
+    store.setState({ ...store.getState(), recipe });
+
+    render(
+      <MockLabProvider store={store}>
+        <ExpressionPanel />
+      </MockLabProvider>,
+    );
+    fireEvent.change(screen.getByLabelText("턱 열기"), { target: { value: "0.8" } });
+    // 외부(예: Undo)로 표정이 원래 joy로 돌아옴
+    const restoredRecipe = createDefaultRecipe();
+    restoredRecipe.slots.expression = "expression/joy";
+    restoredRecipe.expression = { ...findExpressionPreset("joy").weights };
+    act(() => {
+      store.setState({ ...store.getState(), recipe: restoredRecipe });
+    });
+    expect(screen.getByLabelText("턱 열기")).toHaveProperty("value", String(restoredRecipe.expression.jawOpen ?? 0));
+    fireEvent.change(screen.getByLabelText("프리셋 세기"), { target: { value: "0.5" } });
+    const last = dispatched.at(-1);
+    if (last?.type !== "expression/set") throw new Error("expression/set 기대");
+    expect(last.weights.jawOpen).toBeCloseTo((restoredRecipe.expression.jawOpen ?? 0) * 0.5, 6);
   });
 
   it("미지원 슬롯은 카드·슬라이더·버튼이 disabled이고 사유를 보여준다", () => {

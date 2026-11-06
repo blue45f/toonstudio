@@ -20,9 +20,10 @@ import { createReferenceSkeleton } from "../../../animation/reference-skeleton";
 import { computeWorldTransforms } from "../../../animation/skeleton-fk";
 import { computeGroundedBodyHeight } from "../../../animation/two-bone-ik";
 import { IK_CHAINS, POSE_SCOPE_LABELS_KO } from "../../../contracts";
-import { useApplyPlan, useDispatch, useLabState } from "../lab-store-context";
+import { readPoseSkeleton } from "../../../render/pose-skeleton";
+import { useApplyPlan, useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
-import type { HandPosePreset, HumanoidBoneName, IkChainId, Pose, PosePreset, PoseScope, Quat, Vec3 } from "../../../contracts";
+import type { HandPosePreset, HumanoidBoneName, IkChainId, Pose, PosePreset, PoseScope, Quat, SkeletonData, Vec3 } from "../../../contracts";
 
 /** 패널에서 고를 수 있는 적용 범위(손 전용 스코프는 손 포즈 섹션이 맡는다) */
 export const POSE_PANEL_SCOPES: readonly PoseScope[] = ["full", "upper", "arms-hands", "lower"];
@@ -89,13 +90,13 @@ function midBoneOf(target: IkTargetId): HumanoidBoneName {
   return target === "head" ? "chest" : IK_CHAINS[target][1];
 }
 
-/** 참조 스켈레톤 기준 현재 포즈의 말단(손·발·머리) 월드 위치 */
-export function ikEndPosition(pose: Pose, target: IkTargetId): Vec3 {
-  return computeWorldTransforms(REFERENCE_SKELETON, pose).get(endBoneOf(target))?.position ?? [0, 0, 0];
+/** 스켈레톤(기본: 참조 스켈레톤) 기준 현재 포즈의 말단(손·발·머리) 월드 위치 */
+export function ikEndPosition(pose: Pose, target: IkTargetId, skeleton: SkeletonData = REFERENCE_SKELETON): Vec3 {
+  return computeWorldTransforms(skeleton, pose).get(endBoneOf(target))?.position ?? [0, 0, 0];
 }
 
-function midPosition(pose: Pose, target: IkTargetId): Vec3 {
-  return computeWorldTransforms(REFERENCE_SKELETON, pose).get(midBoneOf(target))?.position ?? [0, 0, 0];
+function midPosition(pose: Pose, target: IkTargetId, skeleton: SkeletonData = REFERENCE_SKELETON): Vec3 {
+  return computeWorldTransforms(skeleton, pose).get(midBoneOf(target))?.position ?? [0, 0, 0];
 }
 
 function toCoords(v: Vec3): Coords {
@@ -168,14 +169,17 @@ export function PosePanel() {
   const { recipe, capabilities } = useLabState();
   const dispatch = useDispatch();
   const plan = useApplyPlan();
+  const engineSession = useEngineSession();
+  const engine = engineSession.engine();
+  const activeSkeleton = (engine ? readPoseSkeleton(engine) : null) ?? REFERENCE_SKELETON;
   const ids = useId();
 
   const [scope, setScope] = useState<PoseScope>("full");
   const [handSide, setHandSide] = useState<HandSide>("both");
   const [ikTarget, setIkTarget] = useState<IkTargetId>("leftArm");
-  const [coords, setCoords] = useState<Coords>(() => toCoords(ikEndPosition(recipe.pose, "leftArm")));
+  const [coords, setCoords] = useState<Coords>(() => toCoords(ikEndPosition(recipe.pose, "leftArm", activeSkeleton)));
   const [usePole, setUsePole] = useState(false);
-  const [pole, setPole] = useState<Coords>(() => toCoords(midPosition(recipe.pose, "leftArm")));
+  const [pole, setPole] = useState<Coords>(() => toCoords(midPosition(recipe.pose, "leftArm", activeSkeleton)));
   const [ikStatus, setIkStatus] = useState<IkStatusLine | null>(null);
 
   const poseCapability = capabilities.pose;
@@ -184,11 +188,12 @@ export function PosePanel() {
   const handDisabled = handCapability.status === "unavailable";
   const unsupportedPose = plan?.unsupported.find((item) => item.slot === "pose");
   const unsupportedHand = plan?.unsupported.find((item) => item.slot === "hand-pose");
-  const violations = useMemo(() => poseLimitViolations(recipe.pose, REFERENCE_SKELETON), [recipe.pose]);
+  const violations = useMemo(() => poseLimitViolations(recipe.pose, activeSkeleton), [recipe.pose, activeSkeleton]);
   const boneCount = Object.keys(recipe.pose).length;
   const groundedHeight = useMemo(() => {
-    const world = computeWorldTransforms(REFERENCE_SKELETON, recipe.pose);
-    const defaultAnkleY = REST_WORLD_TRANSFORMS.get("leftFoot")?.position[1] ?? 0.08;
+    const restWorld = activeSkeleton === REFERENCE_SKELETON ? REST_WORLD_TRANSFORMS : computeWorldTransforms(activeSkeleton, {});
+    const world = computeWorldTransforms(activeSkeleton, recipe.pose);
+    const defaultAnkleY = restWorld.get("leftFoot")?.position[1] ?? 0.08;
     const ankleLeftY = world.get("leftFoot")?.position[1] ?? defaultAnkleY;
     const ankleRightY = world.get("rightFoot")?.position[1] ?? defaultAnkleY;
     const rootPosition = world.get("hips")?.position ?? [0, 0.9, 0];
@@ -202,7 +207,7 @@ export function PosePanel() {
       headBoneY,
       headMeshMaxLocalY: 0.18,
     });
-  }, [recipe.pose]);
+  }, [activeSkeleton, recipe.pose]);
 
   const applyPosePreset = (preset: PosePreset, altMirror = false): void => {
     if (altMirror) {
@@ -231,14 +236,14 @@ export function PosePanel() {
 
   const selectIkTarget = (next: IkTargetId): void => {
     setIkTarget(next);
-    setCoords(toCoords(ikEndPosition(recipe.pose, next)));
-    setPole(toCoords(midPosition(recipe.pose, next)));
+    setCoords(toCoords(ikEndPosition(recipe.pose, next, activeSkeleton)));
+    setPole(toCoords(midPosition(recipe.pose, next, activeSkeleton)));
     setIkStatus(null);
   };
 
   const readCurrent = (): void => {
-    setCoords(toCoords(ikEndPosition(recipe.pose, ikTarget)));
-    setPole(toCoords(midPosition(recipe.pose, ikTarget)));
+    setCoords(toCoords(ikEndPosition(recipe.pose, ikTarget, activeSkeleton)));
+    setPole(toCoords(midPosition(recipe.pose, ikTarget, activeSkeleton)));
     setIkStatus(null);
   };
 
@@ -251,7 +256,10 @@ export function PosePanel() {
     const label = IK_TARGET_LABELS_KO[ikTarget];
     const where = `(${target.map((v) => v.toFixed(2)).join(", ")})`;
     if (ikTarget === "head") {
-      const result = solveChainIk(recipe.pose, REFERENCE_SKELETON, SPINE_IK_CHAIN, target);
+      const boneNames = new Set(activeSkeleton.bones.map((bone) => bone.name));
+      const activeSpineChain = SPINE_IK_CHAIN.filter((bone) => boneNames.has(bone));
+      const spineChain = activeSpineChain.length >= 2 ? activeSpineChain : SPINE_IK_CHAIN;
+      const result = solveChainIk(recipe.pose, activeSkeleton, spineChain, target);
       dispatch({ type: "pose/set", pose: result.pose, scope: "full", labelKo: `IK ${label} → ${where}` });
       setIkStatus({ text: describeIkOutcome(label, result), status: ikStatusTone(result) });
       return;
@@ -265,7 +273,7 @@ export function PosePanel() {
       }
       poleVec = parsed;
     }
-    const result = solveIkGoal(recipe.pose, REFERENCE_SKELETON, { chain: ikTarget, target, ...(poleVec ? { pole: poleVec } : {}) });
+    const result = solveIkGoal(recipe.pose, activeSkeleton, { chain: ikTarget, target, ...(poleVec ? { pole: poleVec } : {}) });
     dispatch({ type: "pose/set", pose: result.pose, scope: "full", labelKo: `IK ${label} → ${where}` });
     setIkStatus({ text: describeIkOutcome(label, result), status: ikStatusTone(result) });
   };
@@ -275,7 +283,7 @@ export function PosePanel() {
   };
 
   const clampPose = (): void => {
-    dispatch({ type: "pose/set", pose: clampPoseToLimits(recipe.pose, REFERENCE_SKELETON), scope: "full", labelKo: "관절 제한으로 클램프" });
+    dispatch({ type: "pose/set", pose: clampPoseToLimits(recipe.pose, activeSkeleton), scope: "full", labelKo: "관절 제한으로 클램프" });
   };
 
   const mirrorCurrentPose = (): void => {
@@ -345,8 +353,8 @@ export function PosePanel() {
           [
             { id: "pose/a-pose", label: "A-Pose 리깅 기준" },
             { id: "pose/t-pose", label: "T-Pose VRM 기준" },
-            { id: "pose/action-ready", label: "액션 전투 스탠스" },
-            { id: "pose/walk", label: "Text-to-Motion 워킹" },
+            { id: "pose/hands-on-hips", label: "액션 전투 스탠스" },
+            { id: "pose/run", label: "Text-to-Motion 워킹" },
           ] as const
         ).map((quick) => {
           const matched = POSE_PRESETS.find((item) => item.id === quick.id);
@@ -455,7 +463,7 @@ export function PosePanel() {
               type="button"
               className="cl-preset-chip"
               onClick={() => {
-                const base = parseCoords(coords) ?? ikEndPosition(recipe.pose, ikTarget);
+                const base = parseCoords(coords) ?? ikEndPosition(recipe.pose, ikTarget, activeSkeleton);
                 setCoords(toCoords([base[0] + item.delta[0], base[1] + item.delta[1], base[2] + item.delta[2]]));
               }}
             >

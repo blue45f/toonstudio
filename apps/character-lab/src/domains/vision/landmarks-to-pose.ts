@@ -12,7 +12,7 @@
  * 스코프 밖 본은 결과 pose에 넣지 않는다(reducer가 스코프 안 본만 교체한다).
  */
 import { HUMANOID_BONE_NAMES, HUMANOID_BONE_PARENTS, JOINT_LIMITS_DEG, LANDMARK_VISIBILITY_MIN, bonesInScope } from "../../contracts";
-import { QUAT_IDENTITY, degToRad, qClampAngle, qFromAxisAngle, qInverse, qMultiply, qNormalize, quatFromTo, swingTwist, v3Cross, v3Dot, v3Normalize, v3Scale, v3Sub } from "../../shared/math";
+import { QUAT_IDENTITY, degToRad, qClampAngle, qFromAxisAngle, qInverse, qMultiply, qNormalize, qSlerp, quatFromTo, swingTwist, v3Cross, v3Dot, v3Normalize, v3Scale, v3Sub } from "../../shared/math";
 
 import { landmarkIndexOf, midpoint, preparePoseLandmarks, segmentDirection } from "./landmark-space";
 
@@ -57,7 +57,7 @@ const FOOT_REST: Vec3 = v3Normalize([0, -0.06, 0.13]);
 /** 중립 머리에서 귀 중점→코(끝) 선이 수평 아래로 기운 각(도). MediaPipe 귀(이주)·코끝 랜드마크 기준 근사값. */
 export const HEAD_FORWARD_REST_PITCH_DEG = 6;
 
-/** 본 → 랜드마크 세그먼트. 어깨·척추·목은 방향 정보가 없어 항등(부모 프레임 상속). */
+/** 본 → 랜드마크 세그먼트. 어깨·목은 방향 정보가 없어 항등(부모 프레임 상속). */
 export const POSE_SEGMENTS: Readonly<Partial<Record<HumanoidBoneName, SegmentSpec>>> = {
   leftUpperArm: { from: "left_shoulder", to: "left_elbow", rest: [1, 0, 0] },
   leftLowerArm: { from: "left_elbow", to: "left_wrist", rest: [1, 0, 0] },
@@ -73,9 +73,13 @@ export const POSE_SEGMENTS: Readonly<Partial<Record<HumanoidBoneName, SegmentSpe
   rightFoot: { from: "right_ankle", to: "right_foot_index", rest: FOOT_REST },
 };
 
-/** 프레임(3점)으로 회전을 구하는 본과 필요한 랜드마크 */
-const FRAME_LANDMARKS: Readonly<Record<"hips" | "head", readonly PoseLandmarkName[]>> = {
-  hips: ["left_hip", "right_hip", "left_shoulder", "right_shoulder"],
+const TORSO_LANDMARKS: readonly PoseLandmarkName[] = ["left_hip", "right_hip", "left_shoulder", "right_shoulder"];
+
+/** 프레임(3~4점)으로 회전을 구하는 본과 필요한 랜드마크 */
+const FRAME_LANDMARKS: Readonly<Record<"hips" | "spine" | "chest" | "head", readonly PoseLandmarkName[]>> = {
+  hips: TORSO_LANDMARKS,
+  spine: TORSO_LANDMARKS,
+  chest: TORSO_LANDMARKS,
   head: ["left_ear", "right_ear", "nose"],
 };
 
@@ -157,17 +161,12 @@ export function landmarksToPose(landmarks: readonly PoseLandmark[], options: Lan
     return { local: qNormalize(qMultiply(swingOut, twistOut)), clamped };
   };
 
-  const frameOutcome = (bone: "hips" | "head", parentWorld: Quat): BoneOutcome => {
+  const frameOutcome = (bone: "hips" | "spine" | "chest" | "head", parentWorld: Quat): BoneOutcome => {
     const names = FRAME_LANDMARKS[bone];
     const missing = invisibleNames(names);
     if (missing.length > 0) return { kind: "skipped", reasonKo: `가시성 ${visibilityMin} 미만 랜드마크: ${missing.join(", ")}` };
-    let x: Vec3;
-    let up: Vec3;
-    if (bone === "hips") {
-      x = v3Normalize(v3Sub(point("left_hip"), point("right_hip")));
-      up = v3Normalize(v3Sub(midpoint(point("left_shoulder"), point("right_shoulder")), midpoint(point("left_hip"), point("right_hip"))));
-    } else {
-      x = v3Normalize(v3Sub(point("left_ear"), point("right_ear")));
+    if (bone === "head") {
+      const x = v3Normalize(v3Sub(point("left_ear"), point("right_ear")));
       const forward = v3Sub(point("nose"), midpoint(point("left_ear"), point("right_ear")));
       const z = v3Normalize(v3Sub(forward, v3Scale(x, v3Dot(forward, x))));
       if (z[0] === 0 && z[1] === 0 && z[2] === 0) return { kind: "skipped", reasonKo: "코와 귀 중점이 겹쳐 머리 방향을 정할 수 없습니다." };
@@ -178,14 +177,29 @@ export function landmarksToPose(landmarks: readonly PoseLandmark[], options: Lan
       const { local, clamped } = finishLocal(bone, parentWorld, target, [0, 1, 0], true);
       return { kind: "applied", local, clamped };
     }
+    const x = v3Normalize(v3Sub(point("left_hip"), point("right_hip")));
+    const up = v3Normalize(v3Sub(midpoint(point("left_shoulder"), point("right_shoulder")), midpoint(point("left_hip"), point("right_hip"))));
     if ((x[0] === 0 && x[1] === 0 && x[2] === 0) || (up[0] === 0 && up[1] === 0 && up[2] === 0)) {
       return { kind: "skipped", reasonKo: "엉덩이·어깨 랜드마크가 겹쳐 몸통 프레임을 정할 수 없습니다." };
     }
     const z = v3Normalize(v3Cross(x, up));
-    if (z[0] === 0 && z[1] === 0 && z[2] === 0) return { kind: "skipped", reasonKo: "엉덩이 선과 몸통 축이 평행해 프레임을 정할 수 없습니다." };
+    if (z[0] === 0 && z[1] === 0 && z[2] === 0) {
+      return { kind: "skipped", reasonKo: "엉덩이 선과 몸통 축이 평행해 프레임을 정할 수 없습니다." };
+    }
     const y = v3Normalize(v3Cross(z, x));
-    const target = quatFromBasis(x, y, z);
-    const { local, clamped } = finishLocal(bone, parentWorld, target, [0, 1, 0], true);
+    const torsoTarget = quatFromBasis(x, y, z);
+
+    if (bone === "hips") {
+      const { local, clamped } = finishLocal("hips", parentWorld, torsoTarget, [0, 1, 0], true);
+      return { kind: "applied", local, clamped };
+    }
+    if (bone === "spine") {
+      // hips가 스코프 밖(upper 스코프)일 때 상체 기울기·회전을 spine과 chest에 절반씩 분배해 관절 한계 내에서 상체 프레임을 유지한다.
+      const spineTarget = qSlerp(parentWorld, torsoTarget, 0.5);
+      const { local, clamped } = finishLocal("spine", parentWorld, spineTarget, [0, 1, 0], true);
+      return { kind: "applied", local, clamped };
+    }
+    const { local, clamped } = finishLocal("chest", parentWorld, torsoTarget, [0, 1, 0], true);
     return { kind: "applied", local, clamped };
   };
 
@@ -200,13 +214,16 @@ export function landmarksToPose(landmarks: readonly PoseLandmark[], options: Lan
     return { kind: "applied", local, clamped };
   };
 
+  const hasHips = scopeBones.has("hips");
   for (const bone of HUMANOID_BONE_NAMES) {
     const parent = HUMANOID_BONE_PARENTS[bone];
     const parentWorld = parent ? (world.get(parent) ?? QUAT_IDENTITY) : QUAT_IDENTITY;
     let local: Quat = QUAT_IDENTITY;
     if (scopeBones.has(bone)) {
       let outcome: BoneOutcome | null = null;
+      const isUpperTorsoSpine = (bone === "spine" || bone === "chest") && !hasHips;
       if (bone === "hips" || bone === "head") outcome = frameOutcome(bone, parentWorld);
+      else if (isUpperTorsoSpine) outcome = frameOutcome(bone, parentWorld);
       else {
         const spec = POSE_SEGMENTS[bone];
         if (spec) outcome = segmentOutcome(bone, spec, parentWorld);
@@ -229,7 +246,12 @@ export function landmarksToPose(landmarks: readonly PoseLandmark[], options: Lan
 /** 스코프에서 랜드마크로 제어 가능한 본 목록(세그먼트·프레임이 정의된 것만) */
 export function controllableBones(scope: LandmarkApplyScope): readonly HumanoidBoneName[] {
   const inScope = new Set<HumanoidBoneName>(bonesInScope(scope));
-  return HUMANOID_BONE_NAMES.filter((bone) => inScope.has(bone) && (bone === "hips" || bone === "head" || POSE_SEGMENTS[bone] !== undefined));
+  const hasHips = inScope.has("hips");
+  return HUMANOID_BONE_NAMES.filter((bone) => {
+    if (!inScope.has(bone)) return false;
+    if (bone === "spine" || bone === "chest") return !hasHips;
+    return bone in FRAME_LANDMARKS || POSE_SEGMENTS[bone] !== undefined;
+  });
 }
 
 /**

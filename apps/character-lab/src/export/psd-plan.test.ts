@@ -406,4 +406,24 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
       expect(compositePixel(result.plan.layers, 0, 0)[3]).toBe(255);
     }
   });
+
+  it("useLuminanceToAlpha=true일 때 주선 레이어의 캐릭터 내부 면은 투명하고 경계/외곽선에만 먹선이 생성된다", () => {
+    const capture = captureResultFixture({
+      width: 16,
+      height: 16,
+      depth: { width: 16, height: 16, depth: new Float32Array(256).fill(0.5), near: 0.1, far: 10 },
+    });
+    const result = planCharacterPsd(capture, [], {
+      includeIdMasks: false,
+      includeReferencePasses: false,
+      lineArt: { useLuminanceToAlpha: true },
+    });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    const lineLayer = rasterLayer(result.plan.layers, "주선");
+    // 캐릭터 내부 중앙 픽셀(8, 8)은 검은 얼룩이 되지 않고 투명(알파 0)이어야 한다
+    expect(pixelAt(lineLayer.raster, 8, 8)[3]).toBe(0);
+    // 경계선 픽셀은 존재해야 한다
+    expect(result.plan.receipt.lineArtPixels).toBeGreaterThan(0);
+  });
 });
+

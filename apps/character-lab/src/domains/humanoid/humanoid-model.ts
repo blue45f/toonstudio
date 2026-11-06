@@ -79,34 +79,29 @@ import { buildTeeth, buildTongue, isLowerTeethPoint } from "./geometry/mouth-bui
 import { catmullClark, subdividedToTriMesh } from "./geometry/subdivision";
 import { computeVertexNormals } from "./geometry/tri-mesh";
 import { buildBodyMorphs, headAttachedBodyDelta } from "./morph/body-morphs";
+import { EYE_SPACING_LOCAL_SHIFT, type FaceMorphScope } from "./morph/face-fields";
 import { buildFaceParamDeltas, buildFacsDeltas } from "./morph/face-morphs";
 import { deltaNormals, expandDeltas, isNegligibleDelta } from "./morph/morph-utils";
-import { worldToHeadLocal } from "./proportions";
+import { proportionKeyOf, worldToHeadLocal, type BodyProportions, type HeadFrame } from "./proportions";
 import { blendJawWeights } from "./skeleton/jaw-weights";
 import { collidersFromSkeleton } from "./skeleton/pose-math";
 import { boneCapsuleRadii, boneCapsules, boneWorldPositions, buildHumanoidSkeleton } from "./skeleton/skeleton-builder";
-import { buildAdjacency, computeSkinWeights, expandSkinWeights, rigidSkinWeights, selectSkinWeights } from "./skeleton/skin-weights";
+import { buildAdjacency, computeSkinWeights, expandSkinWeights, rigidSkinWeights, selectSkinWeights, type SkinWeights } from "./skeleton/skin-weights";
 
 import type { SplitTriMesh, SubdividedMesh } from "./geometry/subdivision";
 import type { TriMesh } from "./geometry/tri-mesh";
 import type { BodyMorphTarget, JointOffsets } from "./morph/body-morphs";
-import type { FaceMorphScope } from "./morph/face-fields";
-import type { BodyProportions, HeadFrame } from "./proportions";
-import type { SkinWeights } from "./skeleton/skin-weights";
-
-// ---------------------------------------------------------------- 공개 타입
 
 export type SubdivisionLevels = 0 | 1 | 2;
 
 export interface HumanoidBuildOptions {
   readonly subdivisionLevels: SubdivisionLevels;
-  /** 결정성 시드(outfit 포트에 그대로 전달) */
   readonly seed: number;
   readonly outfit: OutfitBuilderPort;
 }
 
 /** 조립기가 읽는 레시피 필드(core는 CharacterRecipe 전체를 넘긴다) */
-export type HumanoidModelRecipe = Pick<CharacterRecipe, "body" | "face" | "slots" | "colors">;
+export type HumanoidModelRecipe = Pick<CharacterRecipe, "body" | "face" | "slots" | "colors"> & Partial<Pick<CharacterRecipe, "style" | "wardrobe">>;
 
 /** 절차 모델 지오메트리를 바꾸는 슬롯. core가 절차 소스 재생성 키에 포함해야 하는 집합이다. */
 export const GEOMETRY_SLOT_KINDS = ["eyes", "irises", "hair", "top", "bottom", "shoes", "accessory"] as const satisfies readonly SlotKind[];
@@ -622,12 +617,12 @@ interface HumanoidBase {
   readonly assumedBodyPivotMap: Readonly<Partial<Record<string, Vec3>>>;
 }
 
-const baseCache = new Map<SubdivisionLevels, HumanoidBase>();
+const baseCache = new Map<string, HumanoidBase>();
 
-function createBase(levels: SubdivisionLevels, now: number): HumanoidBase {
+function createBase(levels: SubdivisionLevels, now: number, styleProportion?: Partial<CharacterRecipe["style"]["proportion"]> | null): HumanoidBase {
   // 1. 케이지 → 세분 → 삼각 메시(기준 형상은 파라미터 0)
-  const bodyCage = buildBodyCage({});
-  const headCage = buildHeadCage({});
+  const bodyCage = buildBodyCage({}, styleProportion);
+  const headCage = buildHeadCage({}, styleProportion);
   const proportions = bodyCage.proportions;
   const frame = headCage.frame;
   const bodySub = catmullClark(bodyCage.mesh, levels);
@@ -641,7 +636,7 @@ function createBase(levels: SubdivisionLevels, now: number): HumanoidBase {
   const head = buildSkinnedCage(headSub, skeleton, capsules, (weights) => blendJawWeights(headSub.positions, weights, frame, boneIndexOf("head"), boneIndexOf("jaw")));
 
   // 3. morph: 체형 18(케이지 재생성 → 스텐실 리프트) + 얼굴 30 + FACS 16(머리 표면 필드)
-  const bodyMorphSet = buildBodyMorphs({ baseParams: {}, bodyCage, headCage, bodyPlan: bodySub.plan, headPlan: headSub.plan });
+  const bodyMorphSet = buildBodyMorphs({ baseParams: {}, bodyCage, headCage, bodyPlan: bodySub.plan, headPlan: headSub.plan, styleProportion });
   const bodyTargets = bodyMorphSet.targets;
   const skinRaw: RawMorph[] = bodyTargets.map((target) => ({ name: target.name, deltaPositions: target.bodyDelta }));
   const headRaw: RawMorph[] = [
@@ -664,13 +659,16 @@ function createBase(levels: SubdivisionLevels, now: number): HumanoidBase {
     return { name: target.name, deltaPositions: delta };
   });
   const restWorld = boneWorldPositions(proportions);
-  const jointOffsets: Partial<Record<ParamMorphTargetName, JointOffsets>> = {};
+  const eyeDx = EYE_SPACING_LOCAL_SHIFT * frame.scale * (frame.widthScale ?? 1);
+  const jointOffsets: Partial<Record<ParamMorphTargetName, JointOffsets>> = {
+    "param:eyeSpacing:+": { leftEye: [eyeDx, 0, 0], rightEye: [-eyeDx, 0, 0] },
+    "param:eyeSpacing:-": { leftEye: [-eyeDx, 0, 0], rightEye: [eyeDx, 0, 0] },
+  };
   for (const key of BODY_PARAM_KEYS) {
     const pair = bodyMorphSet.jointOffsets[key];
     jointOffsets[`param:${key}:+`] = pair.plus;
     jointOffsets[`param:${key}:-`] = pair.minus;
   }
-  // partId는 조립 시 역할로 배정하므로(0) 검사에서는 역할 id를 임시로 붙인다.
   const failure = [skinPart, headPart].map((part) => validateMeshPartData({ ...part, partId: partIdOfRole(part.role) }, now)).find((item) => item !== null);
   if (failure) throw failVisible("humanoid-part-invalid", `절차 휴머노이드 기준 파츠 정합성 위반: ${failure.reasonKo}`, undefined, now);
   return {
@@ -691,11 +689,12 @@ function createBase(levels: SubdivisionLevels, now: number): HumanoidBase {
   };
 }
 
-function getBase(levels: SubdivisionLevels, now: number): HumanoidBase {
-  const cached = baseCache.get(levels);
+function getBase(levels: SubdivisionLevels, now: number, styleProportion?: Partial<CharacterRecipe["style"]["proportion"]> | null): HumanoidBase {
+  const key = `${levels}:${proportionKeyOf(styleProportion)}`;
+  const cached = baseCache.get(key);
   if (cached) return cached;
-  const created = createBase(levels, now);
-  baseCache.set(levels, created);
+  const created = createBase(levels, now, styleProportion);
+  baseCache.set(key, created);
   return created;
 }
 
@@ -739,12 +738,13 @@ function cloneJointOffsets(offsets: Readonly<Partial<Record<ParamMorphTargetName
   return out;
 }
 
-/**
- * 절차 모델의 지오메트리를 정하는 슬롯 id만 모은 키. 같은 키면 `buildHumanoidModel`은 같은 모델을 낸다(시드·세분 단계 동일 가정).
- * core(apply-loop)는 절차 소스의 재생성 키에 이 값을 포함해야 한다(헤어·의상·눈 스타일 변경 = 소스 재생성, 나머지 슬롯·파라미터·색은 플랜만).
- */
-export function geometryKeyOf(recipe: Pick<CharacterRecipe, "slots">): string {
-  return GEOMETRY_SLOT_KINDS.map((slot) => `${slot}=${recipe.slots[slot] ?? "-"}`).join(";");
+/** 절차 모델의 지오메트리를 정하는 슬롯·비례·옷장 키. */
+export function geometryKeyOf(recipe: Pick<CharacterRecipe, "slots"> & Partial<Pick<CharacterRecipe, "style" | "wardrobe">>): string {
+  const slotKey = GEOMETRY_SLOT_KINDS.map((slot) => `${slot}=${recipe.slots[slot] ?? "-"}`).join(";");
+  const propKey = proportionKeyOf(recipe.style?.proportion);
+  const w = recipe.wardrobe;
+  const wKey = w && (w.inner || w.outer || w.legwear || w.accessories.length > 0) ? `;w=${w.inner ?? "-"},${w.outer ?? "-"},${w.legwear ?? "-"},${w.accessories.length}` : "";
+  return `${slotKey}${propKey ? `;prop=${propKey}` : ""}${wKey}`;
 }
 
 /** 역할 → partId(PART_ROLES 인덱스 + 1). `state/apply-plan.ts`의 DEFAULT_PART_LAYOUT과 같은 규칙이다. */
@@ -754,15 +754,12 @@ export function partIdOfRole(role: PartRole): number {
 
 // ---------------------------------------------------------------- 조립
 
-/**
- * 스펙 공개 API: 레시피와 outfit 포트로 절차 휴머노이드 전체를 조립한다(동기, 결정적).
- * core의 `HumanoidModelBuilder` 시그니처(`(recipe, { subdivisionLevels, seed, outfit })`)와 호환된다.
- */
+/** 스펙 공개 API: 레시피와 outfit 포트로 절차 휴머노이드 전체를 조립한다(동기, 결정적). */
 export function buildHumanoidModel(recipe: HumanoidModelRecipe, options: HumanoidBuildOptions): ProceduralHumanoidModel {
   const now = Date.now();
   const styles = resolveStyles(recipe, now);
   const levels = options.subdivisionLevels;
-  const base = getBase(levels, now);
+  const base = getBase(levels, now, recipe.style?.proportion);
   const headCtx: HeadContext = { frame: base.frame, bodyTargets: base.bodyTargets };
 
   // 눈·눈썹·속눈썹·치아·혀(슬롯 의존: 눈·홍채 스타일) + outfit(DI): 헤어·의상 → 보조 본 보정·인덱스 합치기

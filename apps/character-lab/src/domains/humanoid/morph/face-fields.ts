@@ -121,11 +121,14 @@ function radial(p: Vec3, k: number): Vec3 {
   return [(p[0] / len) * k, (p[1] / len) * k, (p[2] / len) * k];
 }
 
+/** 안구 간격 파라미터(eyeSpacing = +1)일 때 머리 로컬 x 변위(단위 반경 기준) */
+export const EYE_SPACING_LOCAL_SHIFT = 0.08;
+
 /** 눈 강체 변위(안구 스코프): 크기·간격·기울기 */
 function eyeRigid(p: Vec3, side: number, kind: "size" | "spacing" | "tilt"): Vec3 {
   const c: Vec3 = [side * L.eye[0], L.eye[1], L.eye[2]];
   if (kind === "size") return scale([p[0] - c[0], p[1] - c[1], p[2] - c[2]], 0.2);
-  if (kind === "spacing") return [0.08 * side, 0, 0];
+  if (kind === "spacing") return [EYE_SPACING_LOCAL_SHIFT * side, 0, 0];
   return rotationDelta(p, c, 2, side * 0.25);
 }
 
@@ -188,7 +191,7 @@ const FACE_PARAM_FIELD_DEFS: Readonly<Record<FaceParamKey, FaceField>> = {
     const side = scopeSide(scope);
     if (side !== null) return eyeRigid(p, side, "spacing");
     if (scope !== "surface") return ZERO;
-    return [0.08 * lateral(p[0]) * bumpMirrored(p, L.eye, EYE_MASK_RADIUS + 0.05), 0, 0];
+    return [EYE_SPACING_LOCAL_SHIFT * lateral(p[0]) * bumpMirrored(p, L.eye, EYE_MASK_RADIUS + 0.05), 0, 0];
   },
   eyeTilt: (p, scope) => {
     const side = scopeSide(scope);
@@ -220,8 +223,9 @@ const FACE_PARAM_FIELD_DEFS: Readonly<Record<FaceParamKey, FaceField>> = {
   },
 };
 
-/** 턱 마스크의 세로 전환 반폭: 입 구멍 안(|x| ≤ 0.26)은 위·아래 입술 사이에서 급히, 볼·턱선 쪽은 완만히 */
-const JAW_BAND_MIN = 0.016;
+/** 턱 마스크의 세로 전환 구간: 입 구멍 안(|x| ≤ 0.28)은 위 입술(y ≥ MOUTH_Y)을 고정하고 아래 입술(y ≤ -0.434)은 완전히 따라오며, 볼·턱선 쪽은 완만히 */
+const JAW_BAND_UPPER = -0.0005;
+const JAW_BAND_LOWER_MIN = 0.0045;
 const JAW_BAND_SPREAD = 0.2;
 
 /**
@@ -229,8 +233,8 @@ const JAW_BAND_SPREAD = 0.2;
  * FACS 턱 열림 필드와 머리 파츠의 jaw 본 스킨 웨이트(`skeleton/jaw-weights.ts`)가 같은 마스크를 쓴다.
  */
 export function jawMaskLocal(p: Vec3): number {
-  const band = JAW_BAND_MIN + JAW_BAND_SPREAD * smooth01(Math.abs(p[0]), 0.26, 0.6);
-  return smooth01(MOUTH_Y - p[1], -band, band) * smooth01(p[2], -0.5, -0.2);
+  const spread = smooth01(Math.abs(p[0]), 0.28, 0.6);
+  return smooth01(MOUTH_Y - p[1], JAW_BAND_UPPER, JAW_BAND_LOWER_MIN + JAW_BAND_SPREAD * spread) * smooth01(p[2], -0.5, -0.2);
 }
 
 function jawRotation(p: Vec3, m: number, angle = 0.35): Vec3 {
@@ -273,8 +277,8 @@ const FACS_FIELD_DEFS: Readonly<Record<FacsUnit, FaceField>> = {
   noseSneer: (p, scope) => (scope === "surface" ? [0, 0.08 * nearMirrored(p, [NOSE_WING[0], -0.15, NOSE_WING[2]], 0.22), 0] : ZERO),
   jawOpen: (p, scope) => {
     if (scope === "surface") return jawRotation(p, jawMaskLocal(p));
-    if (scope === "teeth") return p[1] < MOUTH_Y ? jawRotation(p, 1) : ZERO;
-    if (scope === "tongue") return jawRotation(p, 1);
+    if (scope === "teeth") return p[1] < MOUTH_Y ? jawRotation(p, 0.8) : ZERO;
+    if (scope === "tongue") return jawRotation(p, 0.8);
     return ZERO;
   },
   mouthSmile: (p, scope) => {

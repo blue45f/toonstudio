@@ -329,7 +329,7 @@ describe("buildHumanoidModel — 기본 레시피(세분 1, 기본 레시피는 
   });
 
   it("관절 오프셋: 체형 morph ±와 같은 이름으로 팔 길이 + 시 손목이 바깥으로 움직인다", () => {
-    expect(Object.keys(model.jointOffsets)).toHaveLength(18);
+    expect(Object.keys(model.jointOffsets)).toHaveLength(20);
     expect(model.jointOffsets["param:armLength:+"]?.leftHand?.[0]).toBeGreaterThan(0.01);
     expect(model.jointOffsets["param:armLength:+"]?.rightHand?.[0]).toBeLessThan(-0.01);
     expect(model.jointOffsets["param:armLength:-"]?.leftHand?.[0]).toBeLessThan(-0.01);

@@ -10,7 +10,7 @@
  *   (`param/set`과 같은 규칙, state/lab-store가 처리). 프리셋 카드·세기·초기화·완화는 각각 1단계다.
  * - 스타일 접두 `cl-expression-`(core의 character-lab.css가 정의).
  */
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { blendExpression, blendExpressionPresets, expressionToMorphWeights, relaxAntagonists } from "../../../animation/expression-blend";
 import { EXPRESSION_PRESETS } from "../../../animation/presets";
@@ -37,6 +37,24 @@ export function ExpressionPanel() {
   /** 이 패널에서 슬라이더로 만진 유닛(프리셋 세기 변경 시 보존) */
   const [overrides, setOverrides] = useState<ExpressionWeights>({});
   const [influence, setInfluence] = useState(1);
+  const prevExprRef = useRef<ExpressionWeights>(recipe.expression);
+  const prevSlotRef = useRef<string | undefined>(recipe.slots.expression);
+  const expectedExprRef = useRef<ExpressionWeights | null>(null);
+
+  let effectiveOverrides = overrides;
+  if (prevExprRef.current !== recipe.expression || prevSlotRef.current !== recipe.slots.expression) {
+    const slotChanged = prevSlotRef.current !== recipe.slots.expression;
+    const isInternal = !slotChanged && expectedExprRef.current !== null && expressionsEqual(recipe.expression, expectedExprRef.current);
+    prevExprRef.current = recipe.expression;
+    prevSlotRef.current = recipe.slots.expression;
+    expectedExprRef.current = null;
+    if (!isInternal) {
+      effectiveOverrides = {};
+      if (Object.keys(overrides).length > 0) setOverrides({});
+      if (slotChanged && influence !== 1) setInfluence(1);
+    }
+  }
+
   const session = useEngineSession();
   const eyeGaze = recipe.eyeGaze ?? DEFAULT_EYE_GAZE;
   const editableGaze: EyeGaze = { mode: eyeGaze.mode, symmetry: eyeGaze.symmetry, left: eyeGaze.left, right: eyeGaze.right };
@@ -77,27 +95,35 @@ export function ExpressionPanel() {
   const applyPreset = (preset: ExpressionPreset): void => {
     setOverrides({});
     setInfluence(1);
+    expectedExprRef.current = null;
     dispatch({ type: "slot/apply", slot: "expression", presetId: preset.id });
   };
 
   const setUnit = (unit: FacsUnit, value: number): void => {
-    setOverrides((previous) => ({ ...previous, [unit]: value }));
+    const nextOverrides = { ...effectiveOverrides, [unit]: value };
+    expectedExprRef.current = { ...recipe.expression, [unit]: value };
+    setOverrides(nextOverrides);
     dispatch({ type: "expression/set", weights: { [unit]: value }, merge: true, coalesceKey: unit });
   };
 
   const setPresetInfluence = (value: number): void => {
     setInfluence(value);
     const base = blendExpressionPresets([{ weights: currentPreset?.weights ?? {}, influence: value }]);
-    dispatch({ type: "expression/set", weights: blendExpression(base, overrides), merge: false });
+    const merged = blendExpression(base, effectiveOverrides);
+    expectedExprRef.current = merged;
+    dispatch({ type: "expression/set", weights: merged, merge: false });
   };
 
   const reset = (): void => {
     setOverrides({});
     setInfluence(1);
+    expectedExprRef.current = null;
     dispatch({ type: "expression/set", weights: {}, merge: false });
   };
 
   const relax = (): void => {
+    setOverrides({});
+    expectedExprRef.current = null;
     dispatch({ type: "expression/set", weights: relaxed, merge: false });
   };
 

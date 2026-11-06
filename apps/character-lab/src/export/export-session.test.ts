@@ -36,7 +36,7 @@ describe("exportTransparentPng", () => {
     expect(settle?.args).toEqual([10]);
     const passes = engine.calls.find((c) => c.method === "renderPasses");
     const request = passes?.args[0] as CaptureRequest;
-    expect(request).toMatchObject({ width: 32, height: 24, passes: ["lit"], transparentBackground: true, settleSteps: 10 });
+    expect(request).toMatchObject({ width: 32, height: 24, passes: ["lit"], transparentBackground: true, settleSteps: 0 });
     expect(request.camera?.mode).toBe("full-body");
   });
 
@@ -116,6 +116,8 @@ describe("exportGlb / exportRecipe", () => {
     const thrown = await exportGlb(engine, recipe);
     expect(!thrown.ok && thrown.failure.code).toBe("export-glb");
     expect(exportFileName("png", "abcdef0123", 10, 20)).toBe("character-abcdef01-10x20.png");
+    expect(exportFileName("png", "plan-0-8f3a1b2c9d", 1024, 1024)).toBe("character-8f3a1b2c-1024x1024.png");
+    expect(exportFileName("psd", "plan-12-9a8b7c6d5e", 512, 512)).toBe("character-9a8b7c6d-512x512.psd");
   });
 
   it("레시피 JSON은 페인트 레이어를 포함하고 다시 파싱된다", async () => {

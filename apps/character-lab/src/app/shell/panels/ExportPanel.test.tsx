@@ -79,9 +79,9 @@ describe("ExportPanel", () => {
     expect(calls[0]?.fileName).toBe("character-mock-48x32.png");
     expect(isPng(calls[0]?.bytes ?? new Uint8Array())).toBe(true);
     const request = engine.calls.find((c) => c.method === "renderPasses")?.args[0] as { width: number; height: number; camera?: { mode: string }; settleSteps: number };
-    expect(request).toMatchObject({ width: 48, height: 32, settleSteps: 5 });
+    expect(request).toMatchObject({ width: 48, height: 32, settleSteps: 0 });
     expect(request.camera?.mode).toBe("bust");
-    expect(engine.calls.some((c) => c.method === "settle")).toBe(true);
+    expect(engine.calls.find((c) => c.method === "settle")?.args).toEqual([5]);
     expect(screen.getByText(/저장됨: character-mock-48x32\.png/u)).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
   });
@@ -311,7 +311,7 @@ describe("ExportPanel", () => {
     await waitFor(() => expect(calls).toHaveLength(1));
   });
 
-  it("SHAPER 프리셋 저장 및 .preset 파일 불러오기·헤어 3-레이어 분리 PSD 옵션을 지원한다", async () => {
+  it("SHAPER 프리셋 저장 및 .preset 파일 불러오기·헤어 3-레이어 분리 PSD 옵션을 지원하고 기존 페인트 레이어와 input.value 초기화를 보장한다", async () => {
     const calls: SaveCall[] = [];
     const dispatched: LabCommand[] = [];
     const engine = createMockEngine({ partIdPalette: { 1: { role: "hair", labelKo: "머리" } } });
@@ -325,11 +325,15 @@ describe("ExportPanel", () => {
       for (let i = 0; i < rgba.length; i += 4) rgba[i] = rgba[i + 1] = rgba[i + 2] = rgba[i + 3] ? 255 : 0;
       return { ...result, hairOwnership: { status: "available", raster: { ...lit, rgba }, samples: 1, classification: "majority-visible-samples", limitationsKo: [] } };
     };
+    const paintSession = createPaintSession({ layerSize: 8, brush: { radiusPx: 2, hardness: 1, opacity: 1 } });
+    paintSession.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "skin");
+    paintSession.endStroke();
+    expect(paintSession.layersForExport()).toHaveLength(1);
     let presetText = "";
     render(
       <MockLabProvider engineSession={readySession(engine)} dispatchSpy={(command) => dispatched.push(command)}>
         <ExportPanel
-          session={createPaintSession({ layerSize: 8 })}
+          session={paintSession}
           deps={{
             save: (fileName, bytes, mime) => {
               if (fileName.endsWith(".preset")) {
@@ -353,6 +357,9 @@ describe("ExportPanel", () => {
     });
     await waitFor(() => expect(dispatched).toHaveLength(1));
     expect(dispatched[0]?.type).toBe("recipe/load");
+    // .preset 불러오기 후에도 기존 칠한 페인트 레이어가 지워지지 않고 유지되어야 하며 input.value는 빈 문자열로 초기화된다
+    expect(paintSession.layersForExport()).toHaveLength(1);
+    expect(input.value).toBe("");
     expect(screen.getByRole("list", { name: "레시피 불러오기 안내" }).textContent).toContain(
       "SHAPER 프리셋 파일을 현재 형식(v3)으로 변환해 열었습니다.",
     );
@@ -366,3 +373,4 @@ describe("ExportPanel", () => {
     expect(calls[1]?.fileName).toBe("character-mock-24x24.psd");
   });
 });
+
