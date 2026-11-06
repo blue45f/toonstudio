@@ -10,7 +10,7 @@ export function toggle<T>(arr: T[], value: T): T[] {
 
 export function facetClass(active: boolean) {
   return cn(
-    "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+    "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors max-lg:min-h-11 pointer-coarse:min-h-11",
     active
       ? "border-accent/60 bg-accent-soft text-accent"
       : "border-line bg-card text-fg-2 hover:text-fg hover:border-line-strong"
@@ -20,7 +20,7 @@ export function facetClass(active: boolean) {
 export function tinyPill(active: boolean) {
   return cn(
     // 좁은 화면에서도 읽히고 누르기 편하도록 최소 높이(32px)·12px 본문 + 한 줄 유지(줄바꿈 방지).
-    "inline-flex min-h-8 items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors",
+    "inline-flex min-h-8 items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors max-lg:min-h-11 pointer-coarse:min-h-11",
     active
       ? "border-accent/55 bg-accent-soft text-accent"
       : "border-line bg-card text-fg-3 hover:text-fg hover:border-line-strong"

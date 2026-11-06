@@ -164,7 +164,8 @@ describe("직군 시트·제스처 매핑", () => {
     expect(office2dCharacterForNpc("npc-editor")).toBe("editor");
     expect(office2dGestureForEmote("wave")).toBe("wave");
     expect(office2dGestureForEmote("party")).toBe("cheer");
-    expect(office2dGestureForEmote("coffee")).toBeNull();
+    expect(office2dGestureForEmote("coffee")).toBe("thumbs");
+    expect(office2dGestureForEmote("unknown-emote")).toBeNull();
   });
 });
 

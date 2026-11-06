@@ -18,13 +18,21 @@
 
 .site-contextual-subnav__header {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
+  min-width: 0;
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   color: var(--color-fg-2, currentColor);
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.site-contextual-subnav__description {
+  min-width: 0;
+  white-space: normal;
 }
 
 .site-contextual-subnav__dot {
@@ -49,7 +57,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: var(--site-control-size, 44px);
   padding: 6px 12px;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -126,6 +134,61 @@
 @media (min-width: 1100px) {
   .site-contextual-subnav__simplicity-goal {
     display: inline;
+  }
+}
+
+@media (max-width: 1023px) {
+  .site-contextual-subnav {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .site-contextual-subnav__list {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .site-contextual-subnav__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .site-contextual-subnav__list > li {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 639px) {
+  .site-contextual-subnav {
+    gap: 6px;
+    min-height: 48px;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .site-contextual-subnav__header {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 6px;
+    font-size: 0.6875rem;
+    white-space: normal;
+  }
+
+  .site-contextual-subnav__simplicity {
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .site-contextual-subnav__link {
+    min-height: var(--site-control-size, 44px);
+    padding: 5px 10px;
+    font-size: 0.75rem;
   }
 }
 

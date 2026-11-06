@@ -22,7 +22,7 @@ export function ScaleSwitcher({ className }: { className?: string }) {
           onClick={() => setScale(s)}
           aria-pressed={scale === s}
           className={cn(
-            "rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+            "min-h-11 rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
             scale === s ? "bg-raised text-fg" : "text-fg-3 hover:text-fg-2"
           )}
         >
@@ -54,21 +54,21 @@ export function RatingInput({
           {Array.from({ length: 5 }).map((_, i) => {
             const base = i + 1;
             return (
-              <span key={i} className="relative">
+              <span key={i} className="relative inline-flex min-h-11 items-center">
                 {/* 왼쪽 절반 = 0.5 */}
                 <button
                   type="button"
                   aria-label={`${base - 0.5}점`}
                   onMouseEnter={() => setHover(base - 0.5)}
                   onClick={() => onChange(base - 0.5)}
-                  className="absolute inset-y-0 left-0 z-10 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="absolute inset-y-0 left-0 z-10 min-h-11 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 />
                 <button
                   type="button"
                   aria-label={`${base}점`}
                   onMouseEnter={() => setHover(base)}
                   onClick={() => onChange(base)}
-                  className="absolute inset-y-0 right-0 z-10 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="absolute inset-y-0 right-0 z-10 min-h-11 w-1/2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 />
                 <span className="relative block px-0.5">
                   <Star size={30} className="text-line-strong" strokeWidth={1.5} />
@@ -94,7 +94,7 @@ export function RatingInput({
   if (scale === "ten") {
     return (
       <div className={cn("flex flex-col gap-2", className)} role="group" aria-label="10점 평점 입력">
-        <div className="flex gap-1" onMouseLeave={() => setHover(null)}>
+        <div className="grid grid-cols-5 gap-1.5 sm:flex sm:gap-1" onMouseLeave={() => setHover(null)}>
           {Array.from({ length: 10 }).map((_, i) => {
             const pt = i + 1;
             const active = shown * 2 >= pt;
@@ -106,7 +106,7 @@ export function RatingInput({
                 onMouseEnter={() => setHover(pt / 2)}
                 onClick={() => onChange(pt / 2)}
                 className={cn(
-                  "h-8 flex-1 rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas",
+                  "h-8 min-h-11 flex-1 rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas",
                   active ? "border-accent bg-accent" : "border-line bg-raised hover:border-line-strong"
                 )}
               />

@@ -1,5 +1,5 @@
 import { FolderHeart, Check, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { CollectionIcon } from "./visual-marks";
 import { COLLECTION_ICON_OPTIONS } from "./visual-marks-utils";
@@ -14,9 +14,22 @@ export function CollectionAdd({ titleId }: { titleId: string }) {
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const collections = useApp((s) => s.collections);
   const toggle = useApp((s) => s.toggleInCollection);
   const create = useApp((s) => s.createCollection);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
 
   const inCount = hydrated
     ? collections.filter((c) => c.titleIds.includes(titleId)).length
@@ -25,9 +38,13 @@ export function CollectionAdd({ titleId }: { titleId: string }) {
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="dialog"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-medium transition-colors",
+          "flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-medium transition-colors",
           inCount > 0
             ? "border-accent/40 bg-accent-soft text-accent"
             : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg"
@@ -39,7 +56,7 @@ export function CollectionAdd({ titleId }: { titleId: string }) {
 
       {open && (
         <>
-          <button className="fixed inset-0 z-10" aria-label="닫기" onClick={() => setOpen(false)} />
+          <button type="button" className="fixed inset-0 z-10" aria-label="닫기" onClick={() => setOpen(false)} />
           <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-xl border border-line-strong bg-panel p-2 shadow-xl shadow-[oklch(0.1_0.02_70/0.42)]">
             <div className="max-h-52 overflow-y-auto">
               {collections.map((c) => {
@@ -47,8 +64,9 @@ export function CollectionAdd({ titleId }: { titleId: string }) {
                 return (
                   <button
                     key={c.id}
+                    type="button"
                     onClick={() => toggle(c.id, titleId)}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-raised"
+                    className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-raised"
                   >
                     <CollectionIcon value={c.emoji} size="sm" />
                     <span className="flex-1 truncate text-left text-fg-2">{c.name}</span>
@@ -64,7 +82,7 @@ export function CollectionAdd({ titleId }: { titleId: string }) {
                 aria-label="새 컬렉션 이름"
                 placeholder="새 컬렉션"
                 maxLength={MAX_COLLECTION_NAME_LENGTH}
-                className="h-8 flex-1 rounded-lg border border-line bg-canvas px-2.5 text-sm outline-none focus:border-accent/50"
+                className="min-h-11 flex-1 rounded-lg border border-line bg-canvas px-2.5 text-sm outline-none focus:border-accent/50"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && newName.trim()) {
                     const id = create(newName.trim(), DEFAULT_COLLECTION_ICON);
@@ -74,6 +92,7 @@ export function CollectionAdd({ titleId }: { titleId: string }) {
                 }}
               />
               <button
+                type="button"
                 onClick={() => {
                   if (newName.trim()) {
                     const id = create(newName.trim(), DEFAULT_COLLECTION_ICON);

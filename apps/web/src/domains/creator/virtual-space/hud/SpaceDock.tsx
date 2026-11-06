@@ -32,6 +32,7 @@ import { SpacePopover } from "./SpacePopover";
 import { SpaceStatusMenu } from "./SpaceStatusMenu";
 import {
   spaceStatusOption,
+  useSpaceStatusExtras,
   type SpaceDockMenuItem,
   type SpaceDockPopover,
   type SpaceStatusExpiryMinutes,
@@ -135,6 +136,7 @@ export const SpaceDock = memo(function SpaceDock({
   const reactRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const status = spaceStatusOption(self.activity, self.userStatus);
+  const statusExtras = useSpaceStatusExtras();
   const mediaReason = media.available ? null : bt("팀 프로젝트 공간에서 대화가 연결되면 쓸 수 있어요", "Available once a team project space conversation is connected");
   const toggle = (next: SpaceDockPopover) => onPopover(popover === next ? null : next);
   const chatOpen = panel === "chat" || panel === "board" || panel === "annotation";
@@ -149,6 +151,7 @@ export const SpaceDock = memo(function SpaceDock({
         <span className="space-dock__me-text" aria-hidden>
           <strong>{self.name}</strong>
           <small><span className="space-status-dot" data-activity={self.activity} data-status={status.id}
+            data-urgency={statusExtras.statusUrgency === "normal" ? undefined : statusExtras.statusUrgency}
             data-range={proximityRange === "standard" ? undefined : proximityRange} />{bt(status.labelKo, status.labelEn)}</small>
         </span>
         <ChevronDown size={14} aria-hidden />

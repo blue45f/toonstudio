@@ -95,19 +95,19 @@ export function StudioVirtualSpaceRtcPanel({ live, entryOnly = false, spotlight 
       <div><strong>{status === "ready" ? bt("실시간 팀 연결 준비됨", "Live team connection ready") : bt(copy?.[0] ?? "연결 상태를 확인해 주세요.", copy?.[1] ?? "Check the connection status.")}</strong>
         {status === "ready" ? <small>{bt("텍스트·P2P 데이터는 준비됐습니다. 회의 참여와 미디어 장치는 각각 명시적으로 선택합니다.", "Text and P2P data are ready. Meeting participation and media devices remain explicit choices.")}</small> : null}</div>
     </div> : null}
-    {spotlight?.active ? <div className="studio-vspace-live-status" data-status="ready">
+    {spotlight?.active ? <div className="studio-vspace-live-status" data-status="fallback">
       <Presentation size={17} aria-hidden />
       <div><strong>{bt("스포트라이트 우선 송출", "Spotlight priority send")}</strong>
-        <small>{bt(`발표자 ${spotlight.presenterLabel}의 음성·화면을 우선합니다. 청중은 자동 음소거됩니다.`, `Prioritizing ${spotlight.presenterLabel}'s audio and screen. The audience is auto-muted.`)}</small></div>
+        <small>{bt(`발표자 ${spotlight.presenterLabel}로 로컬 지정된 상태입니다. 원격 자동 음소거·우선 송출은 아직 연결되지 않았습니다.`, `${spotlight.presenterLabel} is designated as presenter locally. Remote auto-mute and priority send are not connected yet.`)}</small></div>
     </div> : null}
-    {!entryOnly && screenShare ? <div className="studio-vspace-live-status" data-status={screenShare.status === "previewing" ? "ready" : screenShare.status === "failed" ? "error" : "connecting"}>
+    {!entryOnly && screenShare ? <div className="studio-vspace-live-status" data-status={screenShare.status === "previewing" ? "fallback" : screenShare.status === "failed" ? "error" : screenShare.status === "requesting" ? "connecting" : "idle"}>
       {screenShare.status === "previewing" ? <ScreenShare size={17} aria-hidden /> : <ScreenShareOff size={17} aria-hidden />}
       <div><strong>{bt("화면 공유", "Screen sharing")}</strong>
         <small>{screenShareStatusCopy(screenShare.status, screenShare.error, bt)}</small>
         {screenShare.status === "previewing" && screenShare.scope
           ? <small>{screenShare.scope === "broadcast"
-            ? bt("방송 경로 · 전체 청중에게 공유", "Broadcast route · shared to the whole audience")
-            : bt("버블 경로 · 주변 그룹에게 공유", "Bubble route · shared to the nearby group")}</small>
+            ? bt("방송 경로 미리보기 · 실제 원격 송출 미연결", "Broadcast route preview · remote broadcast not connected")
+            : bt("버블 경로 미리보기 · 실제 원격 송출 미연결", "Bubble route preview · remote broadcast not connected")}</small>
           : null}
       </div>
       {screenShare.onScopeChange ? <div className="studio-vspace-rtc-share-options" role="group" aria-label={bt("공유 경로", "Share route")}>
@@ -132,8 +132,8 @@ export function StudioVirtualSpaceRtcPanel({ live, entryOnly = false, spotlight 
         </select>
       </label> : null}
       {screenShare.status === "previewing"
-        ? <button type="button" onClick={screenShare.onStop}>{bt("공유 중지", "Stop sharing")}</button>
-        : <button type="button" onClick={screenShare.onStart} disabled={!screenShare.canShare || screenShare.status === "requesting"}>{bt("화면 공유 시작", "Start screen sharing")}</button>}
+        ? <button type="button" onClick={screenShare.onStop}>{bt("화면 미리보기 중지", "Stop screen preview")}</button>
+        : <button type="button" onClick={screenShare.onStart} disabled={!screenShare.canShare || screenShare.status === "requesting"}>{bt("화면 미리보기 시작", "Start screen preview")}</button>}
     </div> : null}
   </section>;
 }

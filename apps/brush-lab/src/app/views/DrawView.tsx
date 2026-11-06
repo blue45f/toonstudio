@@ -310,6 +310,10 @@ export function DrawView() {
           }
         },
         onPreview: drawPreview,
+        onPreviewReset: () => {
+          trailRef.current = [];
+          drawPreview([]);
+        },
         onStrokeEnd,
         onStrokeAbort,
         onError: (error) => drawActions.pushNotice(codeOf(error), describeLaneError(error)),

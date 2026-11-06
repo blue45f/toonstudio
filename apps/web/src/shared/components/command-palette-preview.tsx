@@ -182,7 +182,7 @@ export function CommandPalettePreview({
           <button
             type="button"
             onClick={onExecute}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
           >
             <span>상세 보기</span>
             <CornerDownLeft size={13} />
@@ -254,7 +254,7 @@ export function CommandPalettePreview({
         <button
           type="button"
           onClick={onExecute}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
         >
           <span>명령 실행</span>
           <CornerDownLeft size={13} />
@@ -308,7 +308,7 @@ export function CommandPalettePreview({
         <button
           type="button"
           onClick={onExecute}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
         >
           <span>도구 선택 / 스튜디오 열기</span>
           <CornerDownLeft size={13} />
@@ -360,7 +360,7 @@ export function CommandPalettePreview({
         <button
           type="button"
           onClick={onExecute}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
         >
           <span>페이지로 이동</span>
           <CornerDownLeft size={13} />
@@ -387,7 +387,7 @@ export function CommandPalettePreview({
         <button
           type="button"
           onClick={onExecute}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent shadow-lg shadow-accent/20 transition-all hover:bg-accent-2 active:scale-[0.98]"
         >
           <span>검색 실행</span>
           <CornerDownLeft size={13} />

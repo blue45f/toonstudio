@@ -219,7 +219,7 @@ export function MobileHeaderNavigation({
       {menuOpen && (
         <div
           ref={overlayRef}
-          className="fixed inset-0 z-[60] min-[1180px]:hidden"
+          className="fixed inset-0 z-[110] min-[1180px]:hidden"
         >
           <div
             aria-hidden="true"
@@ -235,7 +235,15 @@ export function MobileHeaderNavigation({
             aria-label={t("nav.allMenu")}
             tabIndex={-1}
             data-site-product={navigationContext}
-            className="absolute inset-x-0 top-0 max-h-[100dvh] overflow-y-auto overscroll-contain border-b border-line-strong bg-canvas/95 shadow-2xl backdrop-blur-2xl motion-safe:animate-fade-up"
+            onClickCapture={(event) => {
+              if (
+                !event.defaultPrevented &&
+                (event.target as HTMLElement | null)?.closest("a[href]")
+              ) {
+                closeMenu();
+              }
+            }}
+            className="absolute inset-x-0 top-0 z-[110] max-h-[100dvh] overflow-y-auto overscroll-contain border-b border-line-strong bg-canvas/95 shadow-2xl backdrop-blur-2xl motion-safe:animate-fade-up"
           >
             <div className="sticky top-0 z-10 border-b border-line/60 bg-canvas/92 backdrop-blur-2xl">
               <div className="mx-auto flex min-h-[4.5rem] max-w-[1320px] items-center justify-between gap-4 px-4 sm:px-6">
@@ -395,7 +403,7 @@ export function MobileHeaderNavigation({
                             : "text-fg-3 group-hover:text-accent"
                         }
                       />
-                      <span>{label}</span>
+                      <span className="min-w-0 truncate">{label}</span>
                       <span
                         aria-hidden="true"
                         className={cx(
@@ -460,7 +468,7 @@ export function MobileHeaderNavigation({
                       className="relative"
                     />
                   </span>
-                  <span>{label}</span>
+                  <span className="min-w-0 max-w-full truncate">{label}</span>
                 </Link>
               );
             })}

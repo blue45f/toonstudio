@@ -211,7 +211,7 @@ export function StudioExampleProjectBanner() {
         </Link>
       </div>
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <div
           className="h-2 min-w-24 flex-1 overflow-hidden rounded-full bg-line/60"
           role="progressbar"
@@ -222,12 +222,12 @@ export function StudioExampleProjectBanner() {
         >
           <div className="h-full bg-fg" style={{ width: `${Math.round(progress.ratio * 100)}%` }} />
         </div>
-        <span className="text-xs font-bold text-fg-3">
+        <span className="shrink-0 whitespace-nowrap text-xs font-bold text-fg-3">
           {bt("완주까지", "To the finish")} {progress.done}/{progress.total}
         </span>
         <button
           type="button"
-          className="text-xs font-bold text-fg-3 underline underline-offset-2"
+          className="shrink-0 whitespace-nowrap text-xs font-bold text-fg-3 underline underline-offset-2"
           onClick={() => {
             try {
               const next = setExampleJourneyDismissed(window.localStorage, true);

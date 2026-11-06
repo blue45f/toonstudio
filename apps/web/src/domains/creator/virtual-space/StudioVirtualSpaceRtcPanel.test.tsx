@@ -25,10 +25,12 @@ describe("StudioVirtualSpaceRtcPanel", () => {
     expect(screen.queryByText("스포트라이트 우선 송출")).toBeNull();
   });
 
-  it("스포트라이트가 활성화되면 발표자 우선 송출 상태를 표시한다", () => {
-    render(<StudioVirtualSpaceRtcPanel spotlight={{ active: true, presenterLabel: "준 작가" }} />);
+  it("스포트라이트가 활성화되면 로컬 발표자 지정 상태와 원격 미연결 폴백 안내를 표시한다", () => {
+    const { container } = render(<StudioVirtualSpaceRtcPanel spotlight={{ active: true, presenterLabel: "준 작가" }} />);
     expect(screen.getByText("스포트라이트 우선 송출")).toBeTruthy();
     expect(screen.getByText(/준 작가/)).toBeTruthy();
+    expect(screen.getByText(/원격 자동 음소거·우선 송출은 아직 연결되지 않았습니다/)).toBeTruthy();
+    expect(container.querySelector('.studio-vspace-live-status[data-status="fallback"]')).toBeTruthy();
   });
 
   it("스포트라이트가 비활성화되면 우선 송출 표시를 숨긴다", () => {
@@ -41,15 +43,16 @@ describe("StudioVirtualSpaceRtcPanel 화면 공유", () => {
   it("screenShare prop이 없으면 화면 공유 UI를 표시하지 않는다", () => {
     render(<StudioVirtualSpaceRtcPanel />);
     expect(screen.queryByText("화면 공유")).toBeNull();
-    expect(screen.queryByText("화면 공유 시작")).toBeNull();
+    expect(screen.queryByText("화면 미리보기 시작")).toBeNull();
   });
 
-  it("대기 상태에서는 시작 버튼을 보여주고 클릭하면 onStart를 호출한다", () => {
+  it("대기 상태에서는 data-status=idle과 시작 버튼을 보여주고 클릭하면 onStart를 호출한다", () => {
     const share = idleScreenShare();
-    render(<StudioVirtualSpaceRtcPanel screenShare={share} />);
+    const { container } = render(<StudioVirtualSpaceRtcPanel screenShare={share} />);
     expect(screen.getByText("화면 공유")).toBeTruthy();
     expect(screen.getByText("이 브라우저에서만 보이는 로컬 미리보기로 공유됩니다. 실제 송출이 아닙니다.")).toBeTruthy();
-    const button = screen.getByRole("button", { name: "화면 공유 시작" });
+    expect(container.querySelector('.studio-vspace-live-status[data-status="idle"]')).toBeTruthy();
+    const button = screen.getByRole("button", { name: "화면 미리보기 시작" });
     fireEvent.click(button);
     expect(share.onStart).toHaveBeenCalledTimes(1);
     expect(share.onStop).not.toHaveBeenCalled();
@@ -57,21 +60,26 @@ describe("StudioVirtualSpaceRtcPanel 화면 공유", () => {
 
   it("화면 선택 중에는 시작 버튼을 비활성화한다", () => {
     render(<StudioVirtualSpaceRtcPanel screenShare={idleScreenShare({ status: "requesting" })} />);
-    expect((screen.getByRole("button", { name: "화면 공유 시작" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "화면 미리보기 시작" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("공유할 수 없을 때는 시작 버튼을 비활성화한다", () => {
     render(<StudioVirtualSpaceRtcPanel screenShare={idleScreenShare({ canShare: false })} />);
-    expect((screen.getByRole("button", { name: "화면 공유 시작" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "화면 미리보기 시작" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("미리보기 공유 중에는 중지 버튼을 보여주고 클릭하면 onStop을 호출한다", () => {
-    const share = idleScreenShare({ status: "previewing" });
-    render(<StudioVirtualSpaceRtcPanel screenShare={share} />);
-    const button = screen.getByRole("button", { name: "공유 중지" });
+  it("미리보기 공유 중에는 data-status=fallback과 원격 송출 미연결 안내 및 중지 버튼을 보여준다", () => {
+    const share = idleScreenShare({ status: "previewing", scope: "broadcast" });
+    const { container, rerender } = render(<StudioVirtualSpaceRtcPanel screenShare={share} />);
+    expect(container.querySelector('.studio-vspace-live-status[data-status="fallback"]')).toBeTruthy();
+    expect(screen.getByText("방송 경로 미리보기 · 실제 원격 송출 미연결")).toBeTruthy();
+    const button = screen.getByRole("button", { name: "화면 미리보기 중지" });
     fireEvent.click(button);
     expect(share.onStop).toHaveBeenCalledTimes(1);
     expect(share.onStart).not.toHaveBeenCalled();
+
+    rerender(<StudioVirtualSpaceRtcPanel screenShare={idleScreenShare({ status: "previewing", scope: "bubble" })} />);
+    expect(screen.getByText("버블 경로 미리보기 · 실제 원격 송출 미연결")).toBeTruthy();
   });
 
   it("실패 상태에서는 원인별 폴백 안내를 표시한다", () => {

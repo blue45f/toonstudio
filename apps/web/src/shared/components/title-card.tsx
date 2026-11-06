@@ -85,7 +85,7 @@ export function TitleCard({
   const saved = useIsBookmarked(title.id);
   const bookmarkReveal = saved
     ? "opacity-100"
-    : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100";
+    : "opacity-0 pointer-coarse:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100";
 
   if (feature) {
     return (

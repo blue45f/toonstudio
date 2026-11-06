@@ -84,15 +84,16 @@ export function CollectionsTab({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-card p-3">
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1.5">
           {COLLECTION_ICON_OPTIONS.map((option) => (
             <button
               key={option.value}
+              type="button"
               onClick={() => setEmoji(option.value)}
               title={option.label}
               aria-label={`${option.label} 아이콘`}
               className={cn(
-                "grid size-10 place-items-center rounded-xl transition-colors",
+                "grid size-11 place-items-center rounded-xl transition-colors",
                 emoji === option.value ? "bg-accent-soft ring-1 ring-accent/45" : "hover:bg-raised"
               )}
             >
@@ -106,16 +107,17 @@ export function CollectionsTab({
           aria-label="새 컬렉션 이름"
           placeholder="새 컬렉션 이름"
           maxLength={MAX_COLLECTION_NAME_LENGTH}
-          className="h-10 min-w-40 flex-1 rounded-lg border border-line bg-canvas px-3 text-sm outline-none focus:border-accent/50"
+          className="min-h-11 min-w-40 flex-1 rounded-lg border border-line bg-canvas px-3 text-sm outline-none focus:border-accent/50"
         />
         <button
+          type="button"
           onClick={() => {
             if (name.trim()) {
               onCreate(name.trim(), emoji);
               setName("");
             }
           }}
-          className="flex h-10 items-center gap-1.5 rounded-lg bg-accent px-4 text-sm font-medium text-on-accent disabled:opacity-50"
+          className="flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-4 text-sm font-medium text-on-accent disabled:opacity-50"
           disabled={!name.trim()}
         >
           <Plus size={16} /> 만들기
@@ -173,11 +175,12 @@ export function CollectionsTab({
                       <Share2 size={14} />
                     </button>
                     {editingId === c.id ? (
-                      <button onClick={commitRename} aria-label="이름 저장" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-fg-3 transition-colors hover:text-good">
+                      <button type="button" onClick={commitRename} aria-label="이름 저장" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-fg-3 transition-colors hover:text-good">
                         <Check size={15} />
                       </button>
                     ) : (
                       <button
+                        type="button"
                         onClick={() => {
                           setEditingId(c.id);
                           setEditName(c.name);
@@ -189,13 +192,13 @@ export function CollectionsTab({
                         <Pencil size={14} />
                       </button>
                     )}
-                    <button onClick={() => onDelete(c.id)} aria-label="컬렉션 삭제" title="삭제" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-fg-3 transition-colors hover:text-bad">
+                    <button type="button" onClick={() => onDelete(c.id)} aria-label="컬렉션 삭제" title="삭제" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-fg-3 transition-colors hover:text-bad">
                       <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
                 {titles.length > 0 ? (
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     {titles.map((t) => (
                       <Link key={t!.id} href={`/title/${t!.slug}`} className="w-12">
                         <MiniPoster title={t!} className="w-full" />

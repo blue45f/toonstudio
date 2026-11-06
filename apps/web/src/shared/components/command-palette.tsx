@@ -505,18 +505,14 @@ export function CommandPalette({
       onEscapeKeyDown={(event) => {
         if (event.isComposing || event.keyCode === 229) event.preventDefault();
       }}
-      className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[8vh] sm:pt-[10vh]"
+      className="fixed inset-0 z-[100] flex items-start justify-center px-3 pt-3 pb-3 sm:px-4 sm:pt-[10dvh]"
     >
       <Dialog.Title data-slot="dialog-title" className="sr-only">{t("command.palette.label")}</Dialog.Title>
       {/* Backdrop */}
-      <button
+      <div
         data-slot="dialog-overlay"
-        type="button"
-        aria-label={t("common.close")}
-        onClick={() => {
-          playSfx("close");
-          onOpenChange(false);
-        }}
+        aria-hidden="true"
+        onClick={() => { playSfx("close"); onOpenChange(false); }}
         className="absolute inset-0 bg-[oklch(0.12_0.012_70/0.75)] backdrop-blur-md transition-opacity"
         style={{ animation: "fade-up 0.18s ease-out" }}
       />
@@ -531,11 +527,19 @@ export function CommandPalette({
         onValueChange={setActiveValue}
         label={t("command.palette.label")}
         onKeyDown={handleKeyDown}
-        className="pf-popup-open relative flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-line-strong bg-panel shadow-2xl shadow-[oklch(0.1_0.02_70/0.65)] ring-1 ring-[oklch(0.95_0.01_85/0.08)]"
+        className="pf-popup-open relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-line-strong bg-panel shadow-2xl shadow-[oklch(0.1_0.02_70/0.65)] ring-1 ring-[oklch(0.95_0.01_85/0.08)] sm:max-h-[calc(100dvh-12dvh)]"
         style={{ animation: "fade-up 0.22s var(--ease-out-expo)" }}
       >
         {/* Search Header */}
         <div className="flex items-center gap-3 border-b border-line px-4">
+          <button
+            type="button"
+            aria-label={t("common.close")}
+            onClick={() => { playSfx("close"); onOpenChange(false); }}
+            className="order-last grid size-11 shrink-0 place-items-center rounded-lg text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <X size={16} />
+          </button>
           <Search size={18} className="text-accent shrink-0" />
 
           {/* Mode prefix pill if active */}
@@ -543,13 +547,7 @@ export function CommandPalette({
             <span className="flex items-center gap-1 rounded border border-accent/40 bg-accent-soft px-1.5 py-0.5 font-mono text-xs font-semibold text-accent">
               {activePrefix}
               <span className="text-[10px] font-normal">
-                {activeMode === "commands"
-                  ? "명령"
-                  : activeMode === "titles"
-                  ? "작품"
-                  : activeMode === "studio"
-                  ? "도구"
-                  : "태그"}
+                {activeMode === "commands" ? "명령" : activeMode === "titles" ? "작품" : activeMode === "studio" ? "도구" : "태그"}
               </span>
             </span>
           )}
@@ -571,13 +569,9 @@ export function CommandPalette({
           {q && (
             <button
               type="button"
-              onClick={() => {
-                setQ("");
-                setResults([]);
-                inputRef.current?.focus();
-              }}
+              onClick={() => { setQ(""); setResults([]); inputRef.current?.focus(); }}
               aria-label="검색어 지우기"
-              className="flex size-10 items-center justify-center rounded-xl text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="flex size-11 shrink-0 items-center justify-center rounded-xl text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               title="검색어 지우기"
             >
               <X size={15} />
@@ -605,33 +599,26 @@ export function CommandPalette({
                 onClick={() => handleSelectTab(tab.id)}
                 onKeyDown={(event) => handleModeTabKeyDown(event, tab.id)}
                 className={cn(
-                  "flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                  "flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                   isActive
                     ? "bg-raised text-accent shadow-sm ring-1 ring-accent/30 font-semibold"
                     : "text-fg-3 hover:bg-card hover:text-fg"
                 )}
               >
                 <span>{tab.label}</span>
-                {tab.prefix && (
-                  <span className="font-mono text-[10px] opacity-60">
-                    {tab.prefix}
-                  </span>
-                )}
+                {tab.prefix && <span className="font-mono text-[10px] opacity-60">{tab.prefix}</span>}
               </button>
             );
           })}
         </div>
 
         {/* Two-Pane Body */}
-        <div className="flex h-[56vh] max-h-[520px] min-h-[380px] divide-x divide-line">
+        <div className="flex h-[56dvh] max-h-[520px] min-h-0 flex-1 divide-x divide-line sm:min-h-[320px]">
           {/* Left: Command List */}
           <Command.List className="flex-1 overflow-y-auto overscroll-contain p-2 scrollbar-thin">
             {/* Loading Indicator — DESIGN.md 스켈레톤 원칙(스피너 금지) */}
             {effectiveQuery && isSearching && (
-              <LoadingState
-                label={t("common.loading.search")}
-                className="px-4 py-12"
-              />
+              <LoadingState label={t("common.loading.search")} className="px-4 py-12" />
             )}
 
             {/* Empty Search Result */}
@@ -642,19 +629,14 @@ export function CommandPalette({
               visibleStudioTools.length === 0 &&
               visiblePages.length === 0 && (
                 <div className="px-4 py-12 text-center text-sm text-fg-3">
-                  <p>
-                    {t("common.notFoundWithQuery").replace(
-                      "{query}",
-                      `'${effectiveQuery}'`
-                    )}
-                  </p>
+                  <p>{t("common.notFoundWithQuery").replace("{query}", `'${effectiveQuery}'`)}</p>
                   <p className="mt-1 text-xs text-fg-3">
                     다른 키워드나 접두사(<code>&gt;</code> 명령어, <code>/</code> 도구)를 시도해보세요.
                   </p>
                   <button
                     type="button"
                     onClick={() => go(`/search?q=${encodeURIComponent(effectiveQuery)}`)}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent hover:text-on-accent pointer-coarse:min-h-11"
+                    className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent hover:text-on-accent"
                   >
                     <span>통합 검색 결과 열기</span>
                     <ExternalLink size={12} />
@@ -674,12 +656,8 @@ export function CommandPalette({
                     <button
                       key={item.tag}
                       type="button"
-                      onClick={() => {
-                        playSfx("tick");
-                        setQ(item.tag);
-                        setMode("titles");
-                      }}
-                      className="rounded-md border border-line bg-card px-2 py-0.5 text-xs text-fg-2 transition-all hover:border-accent hover:text-accent"
+                      onClick={() => { playSfx("tick"); setQ(item.tag); setMode("titles"); }}
+                      className="inline-flex min-h-11 items-center rounded-md border border-line bg-card px-3 py-1.5 text-xs text-fg-2 transition-all hover:border-accent hover:text-accent"
                     >
                       {item.label}
                     </button>
@@ -699,11 +677,8 @@ export function CommandPalette({
                     </span>
                     <button
                       type="button"
-                      onClick={() => {
-                        clearRecentSearches();
-                        playSfx("tick");
-                      }}
-                      className="text-[10px] text-fg-3 hover:text-bad"
+                      onClick={() => { clearRecentSearches(); playSfx("tick"); }}
+                      className="inline-flex min-h-11 items-center px-2 text-xs text-fg-3 hover:text-bad"
                     >
                       전체 삭제
                     </button>
@@ -715,12 +690,8 @@ export function CommandPalette({
                     forceMount
                     key={`search-${searchQuery}`}
                     value={`recent-query-${searchQuery}`}
-                    onSelect={() => {
-                      setQ(searchQuery);
-                      setMode("titles");
-                      playSfx("tick");
-                    }}
-                    className="group flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-xs transition-colors data-[selected=true]:bg-raised"
+                    onSelect={() => { setQ(searchQuery); setMode("titles"); playSfx("tick"); }}
+                    className="group flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-xs transition-colors data-[selected=true]:bg-raised"
                   >
                     <div className="flex items-center gap-2">
                       <Clock size={13} className="text-fg-3" />
@@ -728,12 +699,13 @@ export function CommandPalette({
                     </div>
                     <button
                       type="button"
+                      aria-label={`${searchQuery} 검색어 삭제`}
                       onClick={(e) => {
                         e.stopPropagation();
                         removeRecentSearch(searchQuery);
                         playSfx("tick");
                       }}
-                      className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-bad"
+                      className="grid size-11 shrink-0 place-items-center rounded-lg text-fg-3 opacity-100 transition-opacity hover:text-bad focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                       title="검색어 삭제"
                     >
                       <X size={13} />
@@ -759,7 +731,7 @@ export function CommandPalette({
                     key={`recent-${item.id}`}
                     value={`title-${item.id}`}
                     onSelect={() => go(`/title/${item.slug}`, item.title)}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors data-[selected=true]:bg-raised"
+                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors data-[selected=true]:bg-raised"
                   >
                     <MiniPoster title={item} className="w-8 shrink-0" />
                     <div className="min-w-0 flex-1">
@@ -773,15 +745,8 @@ export function CommandPalette({
                         · {item.author}
                       </span>
                     </div>
-                    <RatingInline
-                      value={item.stats.ratingAvg}
-                      estimated={statsAreEstimated(item)}
-                      size="xs"
-                    />
-                    <CornerDownLeft
-                      size={13}
-                      className="text-fg-3 opacity-0 group-data-[selected=true]:opacity-100"
-                    />
+                    <RatingInline value={item.stats.ratingAvg} estimated={statsAreEstimated(item)} size="xs" />
+                    <CornerDownLeft size={13} className="text-fg-3 opacity-0 group-data-[selected=true]:opacity-100" />
                   </Command.Item>
                 ))}
               </Command.Group>
@@ -806,7 +771,7 @@ export function CommandPalette({
                       key={cmd.id}
                       value={cmd.id}
                       onSelect={() => executeCommand(cmd.id)}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
+                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
                     >
                       <div className="flex size-7 items-center justify-center rounded-lg border border-line bg-card text-accent">
                         <Icon size={15} />
@@ -834,10 +799,7 @@ export function CommandPalette({
                           ))}
                         </div>
                       )}
-                      <CornerDownLeft
-                        size={13}
-                        className="text-fg-3 opacity-0 data-[selected=true]:opacity-100"
-                      />
+                      <CornerDownLeft size={13} className="text-fg-3 opacity-0 data-[selected=true]:opacity-100" />
                     </Command.Item>
                   );
                 })}
@@ -862,7 +824,7 @@ export function CommandPalette({
                       key={tool.id}
                       value={tool.id}
                       onSelect={() => executeStudioTool(tool.id)}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
+                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
                     >
                       <div className="flex size-7 items-center justify-center rounded-lg border border-line bg-card text-accent">
                         <Icon size={15} />
@@ -898,7 +860,7 @@ export function CommandPalette({
                     key={`search-res-${item.id}`}
                     value={`title-${item.id}`}
                     onSelect={() => go(`/title/${item.slug}`, item.title)}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors data-[selected=true]:bg-raised"
+                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors data-[selected=true]:bg-raised"
                   >
                     <MiniPoster title={item} className="w-8 shrink-0" />
                     <div className="min-w-0 flex-1">
@@ -912,15 +874,8 @@ export function CommandPalette({
                         · {item.author}
                       </span>
                     </div>
-                    <RatingInline
-                      value={item.stats.ratingAvg}
-                      estimated={statsAreEstimated(item)}
-                      size="xs"
-                    />
-                    <CornerDownLeft
-                      size={13}
-                      className="text-fg-3 opacity-0 data-[selected=true]:opacity-100"
-                    />
+                    <RatingInline value={item.stats.ratingAvg} estimated={statsAreEstimated(item)} size="xs" />
+                    <CornerDownLeft size={13} className="text-fg-3 opacity-0 data-[selected=true]:opacity-100" />
                   </Command.Item>
                 ))}
 
@@ -928,7 +883,7 @@ export function CommandPalette({
                   forceMount
                   value="__all-search"
                   onSelect={() => go(`/search?q=${encodeURIComponent(effectiveQuery)}`, effectiveQuery)}
-                  className="mt-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold text-accent transition-colors data-[selected=true]:bg-accent-soft"
+                  className="mt-1 flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold text-accent transition-colors data-[selected=true]:bg-accent-soft"
                 >
                   <span>'{effectiveQuery}' 전체 검색 페이지 열기</span>
                   <ExternalLink size={12} />
@@ -1108,42 +1063,30 @@ export function CommandPalette({
         </div>
 
         {/* Footer Navigation Bar */}
-        <div className="flex items-center justify-between border-t border-line bg-panel/80 px-4 py-2 text-[11px] text-fg-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-panel/80 px-4 py-2 text-[11px] text-fg-3">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[10px] text-fg-2">
-                ←→
-              </kbd>
+              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[10px] text-fg-2">←→</kbd>
               <span>분류 전환</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">
-                &gt;
-              </kbd>
-              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">
-                /
-              </kbd>
+              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">&gt;</kbd>
+              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">/</kbd>
               <span>접두사 필터</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-3 sm:flex">
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">
-                ↑↓
-              </kbd>
+              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">↑↓</kbd>
               <span>이동</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">
-                ↵
-              </kbd>
+              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">↵</kbd>
               <span>실행</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">
-                Esc
-              </kbd>
+              <kbd className="rounded border border-line bg-card px-1 py-0.5 font-mono text-[9px] text-fg-2">Esc</kbd>
               <span>닫기</span>
             </span>
           </div>

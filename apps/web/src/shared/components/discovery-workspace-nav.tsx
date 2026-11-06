@@ -100,7 +100,7 @@ export function DiscoveryWorkspaceNav({
                 <Icon size={17} aria-hidden="true" />
               </span>
               <span className="min-w-0 max-w-full">
-                <strong className="block truncate text-[0.68rem] font-bold sm:text-sm">
+                <strong className="block line-clamp-2 whitespace-normal leading-tight text-[0.68rem] font-bold sm:truncate sm:text-sm">
                   {bi(destination.ko, destination.en)}
                 </strong>
                 <span className="mt-0.5 hidden truncate text-[0.7rem] text-fg-3 sm:block">
@@ -122,7 +122,7 @@ export function DiscoveryWorkspaceNav({
           <Link
             key={surface.href}
             href={surface.href}
-            className="inline-flex min-h-8 items-center rounded-full border border-line bg-card/65 px-2.5 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-flex min-h-11 items-center rounded-full border border-line bg-card/65 px-2.5 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {bi(surface.ko, surface.en)}
           </Link>

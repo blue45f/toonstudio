@@ -331,7 +331,7 @@ export function RecommendView({
           <button
             type="button"
             onClick={() => setReloadKey((k) => k + 1)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line px-3 text-xs font-medium text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <RefreshCw size={14} aria-hidden="true" />
             {restStatusText("rest.status.common.retry", "다시 시도")}
@@ -359,7 +359,7 @@ export function RecommendView({
                 aria-pressed={diversity === option}
                 onClick={() => setDiversity(option)}
                 className={cn(
-                  "min-h-9 rounded-lg px-3 text-xs font-semibold transition-colors",
+                  "min-h-11 rounded-lg px-3 text-xs font-semibold transition-colors",
                   diversity === option
                     ? "bg-accent text-on-accent"
                     : "text-fg-2 hover:bg-raised hover:text-fg",
@@ -389,7 +389,7 @@ export function RecommendView({
           onClick={() => setShowFilters((v) => !v)}
           aria-expanded={showFilters}
           className={cn(
-            "inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+            "inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
             showFilters || activeFilters > 0
               ? "border-accent/60 bg-accent-soft/60 text-fg"
               : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
@@ -451,7 +451,7 @@ export function RecommendView({
                   )
                 }
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-sm font-medium transition-transform duration-150 hover:scale-105",
+                  "inline-flex min-h-11 items-center rounded-full border px-3 text-sm font-medium transition-transform duration-150 hover:scale-105",
                   on && "ring-1",
                 )}
                 style={{
@@ -468,7 +468,7 @@ export function RecommendView({
             <button
               type="button"
               onClick={() => setPicked([])}
-              className="rounded-full border border-line px-3 py-1.5 text-sm text-fg-3 hover:text-fg"
+              className="inline-flex min-h-11 items-center rounded-full border border-line px-3 text-sm text-fg-3 hover:text-fg"
             >
               초기화
             </button>

@@ -60,6 +60,17 @@ describe("useSpaceProximityMedia", () => {
     expect(result.current.viewer).toBe(true);
     expect(subscriptions()).toBe(0);
   });
+
+  it("컨트롤러가 없거나 화면 캡처가 시작되지 않으면 startScreenShare가 screen-share-unavailable을 던진다", async () => {
+    const { port } = fakePort();
+    const { result } = renderHook(() => useSpaceProximityMedia({
+      participant: alice, port, available: true, scopeIds: [],
+    }));
+    await expect(result.current.startScreenShare()).rejects.toThrow("screen-share-unavailable");
+    act(() => result.current.start({ camera: false, mic: false }));
+    await expect(result.current.startScreenShare()).rejects.toThrow("screen-share-unavailable");
+    expect(result.current.snapshot?.sharing).toBe(false);
+  });
 });
 
 describe("SpaceProximityVideo", () => {

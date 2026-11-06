@@ -3,16 +3,21 @@
  * 보여주고 클릭하면 UI 상태의 활성 슬롯이 바뀐다(SlotPanel·썸네일 드라이버가 이를 읽는다).
  * 미지원 슬롯도 숨기지 않는다 — 사유를 그대로 보여준다.
  */
+import { useCallback } from "react";
+
 import { SLOT_GROUPS, SLOT_GROUP_LABELS_KO, SLOT_LABELS_KO, presetName } from "../../contracts";
 
-import { useCatalog, useLabState, useUiActions, useUiState } from "./lab-store-context";
+import { shallowEqual, useCatalog, useLabSelector, useUiActions, useUiState } from "./lab-store-context";
 
 import type { SlotGroup } from "../../contracts";
 
 const GROUP_ORDER: readonly SlotGroup[] = ["identity", "figure", "performance"];
 
 export function SlotRail() {
-  const state = useLabState();
+  const { slots, capabilities } = useLabSelector(
+    useCallback((s) => ({ slots: s.recipe.slots, capabilities: s.capabilities }), []),
+    shallowEqual,
+  );
   const catalog = useCatalog();
   const ui = useUiState();
   const { setActiveSlot } = useUiActions();
@@ -24,8 +29,8 @@ export function SlotRail() {
           <h2 className="cl-slot-group-title">{SLOT_GROUP_LABELS_KO[group]}</h2>
           <ul className="cl-slot-list">
             {SLOT_GROUPS[group].map((slot) => {
-              const capability = state.capabilities[slot];
-              const presetId = state.recipe.slots[slot];
+              const capability = capabilities[slot];
+              const presetId = slots[slot];
               const entry = presetId ? catalog.get(presetId) : undefined;
               const presetLabel = entry?.labelKo ?? (presetId ? presetName(presetId) : "없음");
               const active = ui.activeSlot === slot;

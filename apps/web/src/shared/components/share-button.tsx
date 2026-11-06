@@ -37,7 +37,7 @@ export function ShareButton({
           type="button"
           aria-label={t("share.triggerAria")}
           className={cn(
-            "inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-sm font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+            "inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-sm font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:min-h-9 pointer-coarse:min-h-11",
             className,
           )}
         >

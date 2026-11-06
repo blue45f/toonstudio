@@ -68,9 +68,19 @@ function probeWebgl2(env: LaneEnvironment): WebGL2RenderingContext | null {
   }
 }
 
+function releaseOffscreenWebgl2(gl: WebGL2RenderingContext): void {
+  try {
+    const ext = gl.getExtension("WEBGL_lose_context") as { loseContext?: () => void } | null;
+    if (ext && typeof ext.loseContext === "function") ext.loseContext();
+  } catch {
+    // 일부 모의·브라우저 환경에서 loseContext 호출 실패는 무시한다.
+  }
+}
+
 export function createWebgl2InstancedLane(): BrushEngineLane {
   let env: LaneEnvironment | null = null;
   let runtime: Webgl2InstancedRuntime | null = null;
+  let offscreenGl: WebGL2RenderingContext | null = null;
   let pipeline: StrokePipeline | null = null;
   let disposed = false;
   const stats: LaneStats = emptyLaneStats();
@@ -91,14 +101,18 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
       env = e;
       const gl = probeWebgl2(e);
       if (!gl) return unavailableReport(WEBGL2_INSTANCED_LANE_ID, ["webgl2-unavailable"]);
-      const report = supportedReport(WEBGL2_INSTANCED_LANE_ID);
-      if (!gl.getExtension(WEBGL2_REQUIRED_EXTENSION)) {
-        return { ...unavailableReport(WEBGL2_INSTANCED_LANE_ID, ["feature-missing"]), features: [] };
+      try {
+        const report = supportedReport(WEBGL2_INSTANCED_LANE_ID);
+        if (!gl.getExtension(WEBGL2_REQUIRED_EXTENSION)) {
+          return { ...unavailableReport(WEBGL2_INSTANCED_LANE_ID, ["feature-missing"]), features: [] };
+        }
+        report.features = [WEBGL2_REQUIRED_EXTENSION];
+        report.adapterInfo = webglAdapterInfo(gl);
+        report.softwareRenderer = detectSoftwareRenderer(report.adapterInfo, undefined);
+        return report;
+      } finally {
+        releaseOffscreenWebgl2(gl);
       }
-      report.features = [WEBGL2_REQUIRED_EXTENSION];
-      report.adapterInfo = webglAdapterInfo(gl);
-      report.softwareRenderer = detectSoftwareRenderer(report.adapterInfo, undefined);
-      return report;
     },
     async init(e: LaneEnvironment, config: LaneInit): Promise<void> {
       if (disposed) throw new InvalidStateError("webgl2-instanced 레인은 dispose됐다");
@@ -107,6 +121,7 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
       if (!canvas) throw new LaneUnavailableError("webgl2-unavailable", "webgl2-instanced 레인을 쓸 수 없다(캔버스 생성 불가)");
       const gl = getWebgl2(canvas);
       if (!gl) throw new LaneUnavailableError("webgl2-unavailable", "WebGL2 컨텍스트를 만들 수 없다");
+      offscreenGl = config.presentCanvas ? null : gl;
       runtime = Webgl2InstancedRuntime.create(gl, {
         width: config.width,
         height: config.height,
@@ -180,6 +195,10 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
       pipeline = null;
       runtime?.dispose();
       runtime = null;
+      if (offscreenGl) {
+        releaseOffscreenWebgl2(offscreenGl);
+        offscreenGl = null;
+      }
     },
   };
 }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createBrushStudioV6Program } from "./brush-studio-v6-engine";
-import { createBrushStudioV6ProductBrush, saveBrushStudioV6ProductBrush } from "./brush-studio-v6-product-bridge";
+import { brushStudioV6ProductBrushHref, createBrushStudioV6ProductBrush, saveBrushStudioV6ProductBrush } from "./brush-studio-v6-product-bridge";
 
 const { repository, product } = vi.hoisted(() => {
   const repository = { put: vi.fn(), getById: vi.fn() };
@@ -85,6 +85,21 @@ describe("Brush Editor product save", () => {
     const saved = createBrushStudioV6ProductBrush(program);
     expect(saved.brushOpacity).toBe(0);
     expect(saved.enginePrograms?.material?.tuning.opacity).toBe(0);
+  });
+
+  it("document·work·remix·기본 범위에 맞는 원고 복귀 링크를 생성한다", () => {
+    expect(brushStudioV6ProductBrushHref("b-1", "document:proj-9:doc-3")).toBe(
+      "/studio/p/proj-9/d/doc-3?materialBrush=b-1",
+    );
+    expect(brushStudioV6ProductBrushHref("b-1", "work:w-7")).toBe(
+      "/studio/work/w-7/canvas?materialBrush=b-1",
+    );
+    expect(brushStudioV6ProductBrushHref("b-1", "remix:src-4")).toBe(
+      "/studio/remix/src-4/canvas?materialBrush=b-1",
+    );
+    expect(brushStudioV6ProductBrushHref("b-1", "global")).toBe(
+      "/studio/canvas?materialBrush=b-1",
+    );
   });
 
 });

@@ -9,6 +9,8 @@
  */
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
+import { shallowEqual, useLabStoreSelector, type EqualityFn } from "../../state/useLabStore";
+
 import { createPackagePlanRegistry } from "./package-plan-registry";
 import { createUiStateStore } from "./ui-state";
 import { createViewportRegistry } from "./viewport-registry";
@@ -20,6 +22,8 @@ import type { ThumbnailScheduler } from "./thumbnail-scheduler";
 import type { UiState, UiStateStore } from "./ui-state";
 import type { ViewportRegistry } from "./viewport-registry";
 import type { ApplyPlan, EngineSession, LabCommand, LabState, LabStore, PresetCatalog } from "../../contracts";
+
+export { shallowEqual, type EqualityFn };
 
 export interface LabContextValue {
   readonly store: LabStore;
@@ -85,17 +89,36 @@ export function useLabStore(): LabStore {
   return useLabContext().store;
 }
 
-/** 전체 상태 구독(참조가 바뀔 때만 리렌더). */
-export function useLabState(): LabState {
-  const store = useLabStore();
-  return useSyncExternalStore(store.subscribe, store.getState, store.getState);
+const identityState = (state: LabState): LabState => state;
+
+function isSameCoreLabState(a: LabState, b: LabState): boolean {
+  return (
+    a.recipe === b.recipe &&
+    a.capabilities === b.capabilities &&
+    a.history === b.history &&
+    a.engine === b.engine &&
+    a.physics === b.physics &&
+    a.vision === b.vision &&
+    a.failures === b.failures
+  );
 }
 
-/** 선택자 구독. 선택 결과가 원시값이거나 안정 참조여야 불필요한 리렌더가 없다. */
-export function useLabSelector<T>(selector: (state: LabState) => T): T {
+/**
+ * 전체 상태 구독.
+ * 기본적으로 백그라운드 썸네일(`thumbnails`)만 갱신될 때는 리렌더를 건너뛰어 64개 프리셋 썸네일 일괄 갱신 시
+ * 썸네일을 읽지 않는 패널·상단 바·뷰포트가 128회 불필요하게 리렌더되는 현상을 막는다.
+ * 썸네일 전체 맵 변경까지 구독하려면 `{ includeThumbnails: true }` 또는 `useLabSelector`를 쓴다.
+ */
+export function useLabState(options?: { readonly includeThumbnails?: boolean }): LabState {
   const store = useLabStore();
-  const getSnapshot = useCallback(() => selector(store.getState()), [selector, store]);
-  return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
+  const isEqual = options?.includeThumbnails ? Object.is : isSameCoreLabState;
+  return useLabStoreSelector(store, identityState, isEqual);
+}
+
+/** 선택자 구독. `isEqual`(기본 `Object.is`, 배열·객체는 `shallowEqual` 전달 가능)이 참이면 이전 스냅샷을 유지해 리렌더를 막는다. */
+export function useLabSelector<T>(selector: (state: LabState) => T, isEqual: EqualityFn<T> = Object.is): T {
+  const store = useLabStore();
+  return useLabStoreSelector(store, selector, isEqual);
 }
 
 export function useDispatch(): (command: LabCommand) => void {

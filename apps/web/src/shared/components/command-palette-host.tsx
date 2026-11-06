@@ -1,8 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
-
-import {
-  requestStudioCommandSearchFromAppShell,
-} from "@/shared/lib/studio-command-search-bridge";
+import { requestStudioCommandSearchFromAppShell } from "@/shared/lib/studio-command-search-bridge";
 import { useUi } from "@/shared/lib/ui-store";
 
 const CommandPalette = lazy(() => import("./command-palette").then((mod) => ({ default: mod.CommandPalette })));
@@ -22,10 +19,7 @@ export function CommandPaletteHost() {
       // If the Studio host is not mounted yet, retain the global palette as a reliable fallback.
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        if (
-          isStudioPathname(window.location.pathname)
-          && requestStudioCommandSearchFromAppShell({ scope: "all" })
-        ) {
+        if (isStudioPathname(window.location.pathname) && requestStudioCommandSearchFromAppShell({ scope: "all" })) {
           setOpen(false);
           return;
         }
@@ -34,34 +28,25 @@ export function CommandPaletteHost() {
       }
 
       // 2. '/' shortcut outside of editable fields and studio canvas
-      if (
-        e.key === "/" &&
-        !e.metaKey &&
-        !e.ctrlKey &&
-        !e.altKey &&
-        typeof window !== "undefined" &&
-        !window.location.pathname.startsWith("/studio")
-      ) {
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && typeof window !== "undefined" && !window.location.pathname.startsWith("/studio")) {
         const target = e.target as HTMLElement | null;
-        const tagName = target?.tagName;
-        const isEditable =
-          Boolean(target?.isContentEditable) ||
-          tagName === "INPUT" ||
-          tagName === "TEXTAREA" ||
-          tagName === "SELECT";
-
-        if (!isEditable) {
+        const tag = target?.tagName;
+        if (!(target?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT")) {
           e.preventDefault();
           setOpen(true);
         }
       }
     };
-
     window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [toggle, setOpen]);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("popstate", close);
+    return () => window.removeEventListener("popstate", close);
+  }, [open, setOpen]);
 
   if (!open) return null;
 

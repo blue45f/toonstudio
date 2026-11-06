@@ -133,12 +133,15 @@ export function office2dActorAssetPlan(preferred: Office2dCharacterKey): { reado
   return { critical, deferred: [...new Set(deferred)].filter((url) => !critical.includes(url)) };
 }
 
-/** 이모트 → 몸짓. 몸짓이 없는 이모트(하트·커피 등)는 null이라 말풍선 이모지만 뜬다. */
+/** 이모트 → 몸짓. 몸짓이 없는 이모트(수면·전신 웃음 등)는 null이라 말풍선·전신 표정만 쓴다. */
 const EMOTE_GESTURE: Readonly<Record<string, Office2dGesture>> = Object.freeze({
-  wave: "wave", "raise-hand": "wave",
+  wave: "wave", "raise-hand": "wave", moonwalk: "wave",
   party: "cheer", cheer: "cheer", clap: "cheer", dance: "cheer", fire: "cheer",
-  "thumbs-up": "thumbs", check: "thumbs", heart: "thumbs",
+  cheers: "cheer", fireworks: "cheer", sparkles: "cheer", wow: "cheer",
+  "kpop-dance": "cheer", shuffle: "cheer", calisthenics: "cheer",
+  "thumbs-up": "thumbs", check: "thumbs", heart: "thumbs", coffee: "thumbs", exclaim: "thumbs",
   think: "think", question: "think", idea: "think", eyes: "think",
+  yoga: "think", "tai-chi": "think", "neck-stretch": "think", music: "think",
 });
 
 export function office2dGestureForEmote(kind: string | null | undefined): Office2dGesture | null {

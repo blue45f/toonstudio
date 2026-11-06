@@ -4,11 +4,7 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
-  readSpaceActiveDccId,
-  readSpaceCompanionId,
   readSpaceProximityPreferences,
-  readSpaceStatusHatId,
-  readSpaceStatusUrgency,
   SPACE_ACTIVE_DCC_OPTIONS,
   SPACE_BUBBLE_SOUND_OPTIONS,
   SPACE_COMPANION_OPTIONS,
@@ -22,6 +18,8 @@ import {
   writeSpaceProximityPreferences,
   writeSpaceStatusHatId,
   writeSpaceStatusUrgency,
+  emitSpaceStatusExtrasChange,
+  useSpaceStatusExtras,
   type SpaceActiveDccId,
   type SpaceBubbleSoundMode,
   type SpaceCompanionId,
@@ -76,35 +74,32 @@ export function SpaceStatusMenu({
   const bt = useBilingual("SpaceStatusMenu");
   const group = useRef<HTMLDivElement>(null);
   const rangeGroup = useRef<HTMLDivElement>(null);
-  const [localUrgency, setLocalUrgency] = useState<SpaceStatusUrgency>(() => readSpaceStatusUrgency());
-  const [localCompanion, setLocalCompanion] = useState<SpaceCompanionId>(() => readSpaceCompanionId());
+  const extras = useSpaceStatusExtras();
   const [localPrefs, setLocalPrefs] = useState<SpaceProximityPreferences>(() => readSpaceProximityPreferences());
-  const [localHat, setLocalHat] = useState<SpaceStatusHatId>(() => readSpaceStatusHatId());
-  const [localDcc, setLocalDcc] = useState<SpaceActiveDccId>(() => readSpaceActiveDccId());
-  const activeUrgency = statusUrgency ?? localUrgency;
-  const activeCompanion = companionId ?? localCompanion;
+  const activeUrgency = statusUrgency ?? extras.statusUrgency;
+  const activeCompanion = companionId ?? extras.companionId;
   const activePrefs = proximityPreferences ?? localPrefs;
-  const activeHat = statusHatId ?? localHat;
-  const activeDcc = activeDccId ?? localDcc;
+  const activeHat = statusHatId ?? extras.statusHatId;
+  const activeDcc = activeDccId ?? extras.activeDccId;
 
   const selectUrgency = (next: SpaceStatusUrgency) => {
-    setLocalUrgency(next);
     writeSpaceStatusUrgency(next);
+    emitSpaceStatusExtrasChange();
     onStatusUrgency?.(next);
   };
   const selectCompanion = (next: SpaceCompanionId) => {
-    setLocalCompanion(next);
     writeSpaceCompanionId(next);
+    emitSpaceStatusExtrasChange();
     onCompanionChange?.(next);
   };
   const selectHat = (next: SpaceStatusHatId) => {
-    setLocalHat(next);
     writeSpaceStatusHatId(next);
+    emitSpaceStatusExtrasChange();
     onStatusHatChange?.(next);
   };
   const selectDcc = (next: SpaceActiveDccId) => {
-    setLocalDcc(next);
     writeSpaceActiveDccId(next);
+    emitSpaceStatusExtrasChange();
     onActiveDccChange?.(next);
   };
   const updatePrefs = (patch: Partial<SpaceProximityPreferences>) => {

@@ -1,20 +1,97 @@
 import { readStudioVirtualAvatarProfile } from "../studio-virtual-space-avatar-store";
-import type { StudioVirtualAvatarProfile, StudioVirtualSpaceFacing } from "../studio-virtual-space-model";
+import { readStudioVirtualCharacterCustomization } from "../studio-virtual-space-customization";
+import {
+  studioVirtualAvatarProfile,
+  type StudioVirtualAvatarAccessory,
+  type StudioVirtualAvatarProfile,
+  type StudioVirtualSpaceFacing,
+} from "../studio-virtual-space-model";
 import { onSpriteSheetConfigChanged } from "../studio-virtual-space-sprite-sheet";
 import type { Office2dCanvas2D } from "./office2d-procedural-art";
 import { office2dRoundRect } from "./office2d-procedural-art";
 
+export type Office2dAvatarAccessory =
+  | StudioVirtualAvatarAccessory
+  | "crown"
+  | "cat-ears"
+  | "halo";
+
+export function mapOffice2dCustomizationAccessory(
+  accessoryKey: string | null | undefined,
+): Office2dAvatarAccessory {
+  switch (accessoryKey) {
+    case "headset":
+    case "music-beam":
+      return "headphones";
+    case "beret":
+    case "beret-ink":
+      return "beret";
+    case "crown":
+    case "crown-gold":
+      return "crown";
+    case "visor-neon":
+    case "glasses":
+      return "glasses";
+    case "vr-visor":
+      return "sunglasses";
+    case "cat-ears":
+      return "cat-ears";
+    case "halo":
+    case "halo-star":
+      return "halo";
+    case "flower-pin":
+    case "flower-crown":
+    case "flower":
+      return "flower";
+    case "cap":
+      return "cap";
+    case "beanie":
+    case "coffee-cup":
+      return "beanie";
+    case "star":
+      return "star";
+    case "sprout":
+      return "leaf";
+    case "pen-wing":
+      return "bow";
+    case "deadline-fire":
+      return "headband";
+    case "angel-wings":
+      return "backpack";
+    default:
+      return "none";
+  }
+}
+
+function resolveOffice2dAvatarProfile(): StudioVirtualAvatarProfile | null {
+  const base = readStudioVirtualAvatarProfile();
+  if (base && base.accessory !== "none") return base;
+  const mapped = mapOffice2dCustomizationAccessory(
+    readStudioVirtualCharacterCustomization().accessoryKey,
+  );
+  if (mapped === "none") return base;
+  const fallback = base ?? studioVirtualAvatarProfile("local");
+  return {
+    ...fallback,
+    accessory: mapped as StudioVirtualAvatarAccessory,
+  };
+}
+
 /** 기존 꾸미기 저장/초기화 알림을 재사용하고 프레임마다 저장소를 읽지 않는다. */
 export function createOffice2dAvatarProfileSource(): {
   readonly get: () => StudioVirtualAvatarProfile | null;
+  readonly refresh: () => void;
   readonly dispose: () => void;
 } {
-  let profile = readStudioVirtualAvatarProfile();
-  const refresh = () => { profile = readStudioVirtualAvatarProfile(); };
+  let profile = resolveOffice2dAvatarProfile();
+  const refresh = () => {
+    profile = resolveOffice2dAvatarProfile();
+  };
   const unsubscribe = onSpriteSheetConfigChanged(refresh);
   if (typeof window !== "undefined") window.addEventListener("storage", refresh);
   return {
     get: () => profile,
+    refresh,
     dispose: () => {
       unsubscribe();
       if (typeof window !== "undefined") window.removeEventListener("storage", refresh);
@@ -35,7 +112,7 @@ export interface Office2dAccessoryPlacement {
 /** 보행/작업 시트와 같은 128×192 셀·발끝(188px) 기준으로 액세서리를 합성한다. */
 export function paintOffice2dAvatarAccessory(
   ctx: Office2dCanvas2D,
-  profile: StudioVirtualAvatarProfile,
+  profile: Omit<StudioVirtualAvatarProfile, "accessory"> & { readonly accessory: Office2dAvatarAccessory },
   placement: Office2dAccessoryPlacement,
 ): void {
   const kind = profile.accessory;
@@ -67,6 +144,18 @@ export function paintOffice2dAvatarAccessory(
       ellipse(side ? 63 : 58, 19, side ? 25 : 31, 12);
       box(59, 4, 6, 9, 2);
       break;
+    case "crown":
+      ctx.fillStyle = "#facc15";
+      ctx.beginPath();
+      ctx.moveTo(38, 28); ctx.lineTo(42, 8); ctx.lineTo(53, 19); ctx.lineTo(64, 4);
+      ctx.lineTo(75, 19); ctx.lineTo(86, 8); ctx.lineTo(90, 28); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      break;
+    case "halo":
+      ctx.strokeStyle = "#fde047";
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.ellipse(64, 2, 26, 7, 0, 0, Math.PI * 2); ctx.stroke();
+      break;
     case "cap":
     case "beanie":
       ctx.beginPath(); ctx.moveTo(31, 31); ctx.quadraticCurveTo(31, 4, 64, 7);
@@ -88,6 +177,7 @@ export function paintOffice2dAvatarAccessory(
       box(side ? 55 : 92, 47, 13, 23, 6);
       break;
     case "cat":
+    case "cat-ears":
       ctx.beginPath(); ctx.moveTo(31, 31); ctx.lineTo(30, 6); ctx.lineTo(51, 22); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(79, 22); ctx.lineTo(99, 6); ctx.lineTo(96, 32); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.fillStyle = "#f7b5c4";

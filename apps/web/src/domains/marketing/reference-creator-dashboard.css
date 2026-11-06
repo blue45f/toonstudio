@@ -55,15 +55,15 @@
 
 /* 아이디어 입력 — 만들기의 시작점 */
 .rd-idea { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; margin-top: 14px; padding: 6px; border: 1px solid color-mix(in srgb, var(--rd-accent) 55%, transparent); border-radius: 999px; background: var(--rd-on-art); color: var(--rd-on-paper); box-shadow: 0 0 32px color-mix(in srgb, var(--rd-accent) 26%, transparent); }
-.reference-dashboard .rd-idea input { flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--rd-on-paper); font: 15px/1.4 var(--font-sans), sans-serif; }
-.rd-idea input::placeholder { color: var(--rd-on-paper-muted); }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea input { flex: 1; min-width: 0; min-height: 44px; padding-inline: 10px; border: 0 !important; border-radius: 0; background: transparent !important; color: var(--rd-on-paper) !important; font: 15px/1.4 var(--font-sans), sans-serif; box-shadow: none !important; }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea input::placeholder { color: var(--rd-on-paper-muted) !important; }
 .rd-idea input:focus-visible { outline: none; }
 .rd-idea:focus-within { outline: 3px solid var(--rd-cyan); outline-offset: 3px; }
-.rd-idea-submit { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 46px; padding: 0 20px; border: 0; border-radius: 999px; background: linear-gradient(120deg, var(--rd-accent), color-mix(in srgb, var(--rd-accent) 55%, var(--rd-cyan))); color: var(--color-on-accent); font-size: 15px; font-weight: 800; }
+.rd-idea-submit { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 46px; padding: 0 20px; border: 0; border-radius: 999px; background: linear-gradient(120deg, var(--rd-accent), color-mix(in srgb, var(--rd-accent) 55%, var(--rd-cyan))); color: var(--color-on-accent); font-size: 15px; font-weight: 800; white-space: nowrap; }
 
 /* 통합 입력 모드 — 만들기(기본)와 작품 찾기의 분기를 별도 단으로 쌓지 않고 입력 바 안에 접어 넣는다. 바가 밝은 면이라 토글은 종이 톤으로 맞춘다. */
 .rd-idea-modes { display: inline-flex; flex: none; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in oklch, var(--rd-on-paper) 9%, transparent); }
-.rd-idea-modes > button { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--rd-on-paper-muted); font-size: 13px; font-weight: 700; }
+.rd-idea-modes > button { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--rd-on-paper-muted); font-size: 13px; font-weight: 700; white-space: nowrap; }
 .rd-idea-modes > button[aria-pressed="true"] { background: var(--rd-on-paper); color: var(--rd-paper); }
 .rd-idea-modes > button:not([aria-pressed="true"]):hover { color: var(--rd-on-paper); }
 
@@ -97,8 +97,8 @@
 .rd-luna-chips a > svg { flex: none; color: var(--rd-cyan); }
 .rd-luna-form { display: flex; align-items: center; gap: 8px; padding: 5px 5px 5px 14px; border: 1px solid color-mix(in oklch, var(--rd-art-line) 75%, transparent); border-radius: 999px; background: color-mix(in oklch, var(--rd-art-scrim) 88%, transparent); }
 .rd-luna-form:focus-within { border-color: var(--rd-accent); }
-.reference-dashboard .rd-luna-form input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--rd-on-art); font: 13.5px/1.4 var(--font-sans), sans-serif; }
-.rd-luna-form input::placeholder { color: var(--rd-on-art-2); }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-luna-form input { flex: 1; min-width: 0; border: 0 !important; border-radius: 0; background: transparent !important; color: var(--rd-on-art) !important; font: 13.5px/1.4 var(--font-sans), sans-serif; box-shadow: none !important; }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-luna-form input::placeholder { color: var(--rd-on-art-2) !important; }
 .rd-luna-form input:focus-visible { outline: none; }
 .rd-luna-form > button { display: grid; flex: none; width: 38px; min-width: 38px; height: 38px; min-height: 38px; place-items: center; border: 0; border-radius: 50%; background: linear-gradient(135deg, var(--rd-accent), color-mix(in srgb, var(--rd-accent) 55%, var(--rd-cyan))); color: var(--color-on-accent); }
 .rd-luna-form > button:disabled { opacity: .45; cursor: default; }
@@ -167,6 +167,7 @@
 .rd-editor-color > i:nth-child(3) { background: var(--rd-accent); }
 .rd-editor-color > i:nth-child(4) { background: var(--rd-cyan); }
 .rd-editor-color > i:nth-child(5) { background: var(--color-warn, var(--rd-accent)); }
+
 .rd-editor-layers { min-width: 0; color: var(--rd-muted); }
 .rd-editor-layers strong { display: flex; align-items: center; gap: 5px; padding-block: 4px 8px; color: var(--rd-fg); font-size: 13px; }
 .rd-editor-layers > small { display: block; padding-block: 5px; border-block: 1px solid var(--rd-border); font-size: 12px; }
@@ -184,7 +185,7 @@
 .rd-dialogue { display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0 12px 8px; padding-left: 10px; border: 1px solid var(--rd-border); border-radius: 10px; background: var(--rd-surface); color: var(--rd-muted); font-size: 12px; }
 .rd-dialogue > svg,
 .rd-dialogue > span { flex: none; }
-.reference-dashboard .rd-dialogue input { width: 100%; min-width: 0; padding: 6px 8px; border: 0; background: transparent; color: var(--rd-fg); font: 14px/1.4 var(--font-sans), sans-serif; }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-dialogue input { width: 100%; min-width: 0; padding: 6px 8px; border: 0 !important; border-radius: 0; background: transparent !important; color: var(--rd-fg) !important; font: 14px/1.4 var(--font-sans), sans-serif; box-shadow: none !important; }
 .rd-editor figcaption { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 12px; padding: 8px 10px; border-top: 1px solid var(--rd-border); background: linear-gradient(100deg, color-mix(in srgb, var(--rd-accent) 10%, transparent), transparent, color-mix(in srgb, var(--rd-cyan) 10%, transparent)); text-align: center; }
 .rd-editor figcaption strong { font-size: 14px; }
 .rd-editor figcaption small { color: var(--rd-muted); font-size: 12px; }
@@ -259,6 +260,8 @@
   .rd-story { align-content: start; }
   .rd-luna { width: 100%; }
   .reference-dashboard .rd-poster h1 { font-size: 38px; }
+  .rd-quick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rd-example-shelf { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .rd-editor { width: 100%; max-width: 780px; margin-inline: auto; }
   .rd-editor-body { grid-template-columns: 44px minmax(0, 1fr) 104px; }
   .rd-editor-layers { display: block; }
@@ -273,12 +276,13 @@
   .reference-dashboard .rd-eyebrow { font-size: 13px; }
   .reference-dashboard .rd-poster h1 { margin-top: 10px; font-size: clamp(29px, 8.6vw, 36px); }
   .reference-dashboard .rd-intro { max-width: 32ch; font-size: 14px; line-height: 1.6; }
-  .rd-idea { min-height: 54px; margin-top: 12px; }
+  .rd-idea { flex-wrap: wrap; gap: 6px; min-height: 54px; margin-top: 12px; padding: 8px; border-radius: 20px; }
+  :is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea input { order: -1; flex: 1 1 100%; padding-inline: 8px; border-bottom: 1px solid color-mix(in oklch, var(--rd-on-paper) 12%, transparent) !important; }
   .rd-idea-modes > button { padding: 0 10px; }
   /* 아이콘만 남기되 이름은 남긴다: display:none은 접근성 트리에서 이름까지 지워
      button-name 위반을 만든다. 저장소 공통 시각 숨김 패턴으로 접는다. */
   .rd-idea-modes > button > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .rd-idea-submit { padding: 0 14px; }
+  .rd-idea-submit { margin-left: auto; padding: 0 16px; }
   .rd-luna { max-width: none; }
   .rd-luna-card { max-height: 430px; }
   .rd-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -301,7 +305,7 @@
   .rd-editor-bubble { max-width: 76%; padding: 10px; font-size: 12px; }
   .rd-editor-strip { grid-template-columns: repeat(6, minmax(44px, 1fr)); gap: 5px; padding-inline: 8px; overflow-x: auto; }
   .rd-dialogue { flex-wrap: wrap; gap: 0 6px; padding: 6px 10px 0; }
-  .reference-dashboard .rd-dialogue input { flex-basis: 100%; padding-inline: 0; font-size: 16px; }
+  :is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-dialogue input { flex-basis: 100%; padding-inline: 0; font-size: 16px; }
   .rd-core-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .rd-core-card { grid-template-columns: 112px minmax(0, 1fr); grid-template-rows: auto; }
   .creator-home .reference-dashboard .rd-core-card > img { height: 100%; block-size: 100%; min-height: 150px; }

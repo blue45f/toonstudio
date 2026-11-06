@@ -379,11 +379,13 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
   const indexRequested = useRef(false);
   const kitRequested = useRef<string | null>(null);
   const kitFetchSeq = useRef(0);
+  const sourceOpSeq = useRef(0);
 
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
+      sourceOpSeq.current += 1;
     };
   }, []);
 
@@ -462,6 +464,8 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
 
   const loadPackage = useCallback(
     async (entry: AuthoredIndexEntry): Promise<void> => {
+      sourceOpSeq.current += 1;
+      const op = sourceOpSeq.current;
       const id = entry.characterId;
       setPackage(id, { phase: "loading", step: "manifest·slot-mapping·GLB 받는 중" });
       let result: AuthoredPackageLoadResult;
@@ -472,15 +476,20 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
       }
       if (!result.ok) {
         setPackage(id, { phase: "failed", failure: result.failure });
-        reportFailure(result.failure);
+        if (mounted.current && sourceOpSeq.current === op) reportFailure(result.failure);
         return;
       }
       const parsedVrm = parseVrmFromGlb(result.detail.glbBytes);
       const vrm = parsedVrm.ok ? parsedVrm.info : null;
       const vrmNoteKo = parsedVrm.ok ? (parsedVrm.info ? "" : "GLB에 VRM 확장 없음(humanoid·표정 bind는 manifest.json이 담당)") : `GLB JSON 청크를 읽지 못함: ${parsedVrm.reasonKo}`;
 
-      setPackage(id, { phase: "loading", step: "플랜 등록·엔진 적용" });
       packagePlans.register(result.plan);
+      if (!mounted.current || sourceOpSeq.current !== op) {
+        setPackage(id, { phase: "ready", result, vrm, vrmNoteKo, applied: "registry" });
+        return;
+      }
+
+      setPackage(id, { phase: "loading", step: "플랜 등록·엔진 적용" });
       let capabilities = result.plan.capabilities;
       let applied: "engine" | "registry" = "registry";
       if (engineSession.engine()) {
@@ -491,11 +500,16 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
             applied = "engine";
           }
         } catch (error) {
+          if (!mounted.current || sourceOpSeq.current !== op) return;
           const failure = isLabFailure(error) ? error : failVisible("package-engine-load-failed", `엔진이 제작 패키지 '${id}' GLB를 올리지 못했습니다.`, error, now());
           setPackage(id, { phase: "failed", failure });
           reportFailure(failure);
           return;
         }
+      }
+      if (!mounted.current || sourceOpSeq.current !== op) {
+        setPackage(id, { phase: "ready", result, vrm, vrmNoteKo, applied: "registry" });
+        return;
       }
       dispatch({ type: "source/set", source: { kind: "package", characterId: result.plan.manifest.characterId, sha256: result.plan.glbSha256 }, capabilities });
       setPackage(id, { phase: "ready", result, vrm, vrmNoteKo, applied });
@@ -504,6 +518,7 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
   );
 
   const backToProcedural = useCallback((): void => {
+    sourceOpSeq.current += 1;
     setKitNotice(null);
     setKitFailuresHiddenBefore(now());
     dispatch({ type: "source/set", source: { kind: "procedural" }, capabilities: ALL_AVAILABLE_CAPABILITIES });
@@ -515,23 +530,28 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
    */
   const pickBase = useCallback(
     async (baseId: KitBaseId): Promise<void> => {
+      sourceOpSeq.current += 1;
+      const op = sourceOpSeq.current;
       setKitNotice(null);
-      const recipe = store.getState().recipe;
-      const current = recipe.source;
+      const initialRecipe = store.getState().recipe;
+      const current = initialRecipe.source;
       const request: KitRecipeSource = current.kind === "kit" ? { ...current, baseId } : { ...DEFAULT_KIT_LOOKUP, baseId };
       let picked: KitManifest | undefined = kitPlans?.peek(request);
       if (picked === undefined) {
         const loaded = await fetchKit(request);
+        if (!mounted.current || sourceOpSeq.current !== op) return;
         if (!loaded.ok) {
           reportFailure(loaded.failure);
           return;
         }
         picked = loaded.manifest;
       }
+      if (!mounted.current || sourceOpSeq.current !== op) return;
       if (picked.bases[baseId] === undefined) {
         reportFailure(failVisible("kit-base-missing", `키트에 ${KIT_BASE_LABELS_KO[baseId]} 베이스가 없습니다.`, undefined, now()));
         return;
       }
+      const recipe = store.getState().recipe;
       const capabilities = deriveKitCapabilities(picked, baseId);
       const blocked: string[] = [];
       for (const slot of KIT_PART_SLOTS) {

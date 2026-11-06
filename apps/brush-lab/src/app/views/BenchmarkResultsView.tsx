@@ -97,15 +97,17 @@ export function BenchmarkResultsView() {
   } as CSSProperties;
 
   const handleApplyOptimalToSandbox = (): void => {
-    actions.setPreset("watercolor-wet");
-    actions.setOverride({
+    const optimalOverrides = {
       grain: true,
       paperRoughness: optimalProfile.recommendedPaperTooth01,
       wetBeta: true,
       kmBeta: true,
-      filter: "anisotropic",
-    });
+      filter: "anisotropic" as const,
+    };
+    actions.setPreset("watercolor-wet");
+    actions.setOverride(optimalOverrides);
     drawActions.setPreset("watercolor-wet");
+    drawActions.setOverride(optimalOverrides);
     setAppliedBanner(
       `실서비스 최적 프로파일(${optimalProfile.profileId} · 종합 ${optimalProfile.verifiedCompositeScore100}점)을 브러시 랩 샌드박스 및 A/B 비교 설정에 적용했습니다.`,
     );

@@ -295,4 +295,112 @@ describe("StudioProjectLibraryPage", () => {
     expect(window.localStorage.getItem(studioProjectDocumentStorageKey("series-beta"))).toBeNull();
     expect(resumeKeys.every((key) => window.localStorage.getItem(key) === null)).toBe(true);
   });
+
+  it("recovers from an empty search filter in one click and exposes start and reopen links", async () => {
+    createStudioProject(window.localStorage, {
+      id: "series-alpha",
+      title: "검색 대상 작품",
+      kind: "webtoon",
+      createdAt: "2026-09-12T00:00:00.000Z",
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/studio"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "검색 대상 작품" })).toBeTruthy();
+
+    const searchInput = screen.getByPlaceholderText(/제목·종류·설명 검색|Search title, type or description/u);
+    fireEvent.change(searchInput, { target: { value: "일치하지않는검색어" } });
+
+    expect(await screen.findByRole("heading", { name: /검색 결과가 없습니다|No matching projects/u })).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: /\.toonstudio 파일 열기|Open \.toonstudio file/u }).length).toBeGreaterThan(0);
+
+    const clearButtons = screen.getAllByRole("button", { name: /검색어 지우기|Clear search/u });
+    expect(clearButtons.length).toBeGreaterThan(0);
+    fireEvent.click(clearButtons[0]!);
+
+    expect(await screen.findByRole("heading", { name: "검색 대상 작품" })).toBeTruthy();
+  });
+
+  it("provides clear next actions when Archive or Trash is empty", async () => {
+    const { unmount } = render(
+      <MemoryRouter initialEntries={["/studio?view=archived"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/보관한 프로젝트가 없습니다|There are no archived projects/u)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /내 작업으로 돌아가기|Back to My work/u }).getAttribute("href")).toBe("/studio");
+    expect(screen.getByRole("link", { name: /새 작업 시작|Start new work/u }).getAttribute("href")).toBe("/studio/new");
+    unmount();
+
+    render(
+      <MemoryRouter initialEntries={["/studio?view=trash"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/휴지통이 비어 있습니다|Trash is empty/u)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /내 작업으로 돌아가기|Back to My work/u }).getAttribute("href")).toBe("/studio");
+    expect(screen.getByRole("link", { name: /백업 파일 열기|Open backup file/u }).getAttribute("href")).toBe("/studio/import");
+  });
+
+  it("preserves temporary autosaves and offers a retry action when saving a .toonstudio package fails", async () => {
+    createStudioProject(window.localStorage, {
+      id: "series-save-fail",
+      title: "저장 실패 복구 작품",
+      kind: "webtoon",
+      createdAt: "2026-09-12T00:00:00.000Z",
+    });
+    ensureStudioSaveProfile(window.localStorage, "series-save-fail", {
+      provider: "browser",
+      now: "2026-09-12T00:00:00.000Z",
+    });
+
+    const targetWindow = window as Window & { showSaveFilePicker?: () => Promise<unknown> };
+    const originalPicker = targetWindow.showSaveFilePicker;
+    targetWindow.showSaveFilePicker = () => Promise.reject(new Error("Disk write failed"));
+
+    try {
+      render(
+        <MemoryRouter initialEntries={["/studio"]}>
+          <StudioProjectLibraryPage />
+        </MemoryRouter>,
+      );
+
+      const card = (await screen.findByRole("heading", { name: "저장 실패 복구 작품" })).closest("article");
+      expect(card).not.toBeNull();
+      fireEvent.click(within(card as HTMLElement).getByRole("button", { name: /^정식 저장$|^Save$/u }));
+
+      const dialog = await screen.findByRole("dialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: /파일·동기화 폴더|File or synced folder/u }));
+
+      const status = await screen.findByRole("status");
+      expect(within(status).getByText(/프로젝트 파일을 저장하지 못했습니다|The project file could not be saved/u)).toBeTruthy();
+      expect(within(status).getByRole("button", { name: /다시 시도|Try again/u })).toBeTruthy();
+      expect(within(temporaryWorkRegion()).getByText("저장 실패 복구 작품")).toBeTruthy();
+    } finally {
+      if (originalPicker) targetWindow.showSaveFilePicker = originalPicker;
+      else delete targetWindow.showSaveFilePicker;
+    }
+  });
+
+  it("shows empty-state guidance and next actions across storage, exports, and publications views", async () => {
+    for (const view of ["storage", "exports", "publications"] as const) {
+      const { unmount } = render(
+        <MemoryRouter initialEntries={[`/studio?view=${view}`]}>
+          <StudioProjectLibraryPage />
+        </MemoryRouter>,
+      );
+
+      expect((await screen.findAllByRole("link", { name: /새 작품 만들기|Create new work/u })).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole("link", { name: /파일 가져오기|\.toonstudio 파일 열기|Import files|Open \.toonstudio file/u }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole("link", { name: /내 작업으로 이동|Go to My work/u }).length).toBeGreaterThan(0);
+      unmount();
+    }
+  });
 });
+

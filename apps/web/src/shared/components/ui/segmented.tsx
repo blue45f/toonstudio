@@ -48,6 +48,7 @@ export function Segmented<T extends string>({
     <div
       data-slot="tabs-list"
       data-variant="segmented"
+      data-own-control-size=""
       className={cn(
         // 좁은 화면에서 알약 탭이 많아도 가로 스크롤(스크롤바 숨김)로 흘러 페이지 가로 넘침을 막는다.
         "relative inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-line bg-panel p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
@@ -70,7 +71,7 @@ export function Segmented<T extends string>({
             onKeyDown={(e) => handleTabKeys(e, items, value, onChange)}
             title={it.hint}
             className={cn(
-              "relative z-10 shrink-0 whitespace-nowrap rounded-full font-medium transition-colors duration-150",
+              "relative z-10 inline-flex min-h-11 sm:min-h-9 pointer-coarse:min-h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full font-medium transition-colors duration-150",
               size === "sm" ? "px-3 py-1.5 text-[0.8rem]" : "px-3.5 py-2 text-sm",
               active ? "text-on-accent" : "text-fg-2 hover:text-fg"
             )}
@@ -108,6 +109,7 @@ export function UnderlineTabs<T extends string>({
     <div
       data-slot="tabs-list"
       data-variant="underline"
+      data-own-control-size=""
       className={cn(
         // 탭이 좁은 화면 폭을 넘으면 가로 스크롤(스크롤바 숨김)로 흘려 페이지 가로 넘침을 방지.
         // 하단 보더는 컨테이너에 두되 스크롤 영역 전체 폭을 따라가도록 한다.
@@ -129,7 +131,7 @@ export function UnderlineTabs<T extends string>({
             onClick={() => onChange(it.value)}
             onKeyDown={(e) => handleTabKeys(e, items, value, onChange)}
             className={cn(
-              "relative shrink-0 whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-colors duration-150",
+              "relative inline-flex min-h-11 sm:min-h-9 pointer-coarse:min-h-11 shrink-0 items-center justify-center whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-colors duration-150",
               active ? "text-fg" : "text-fg-3 hover:text-fg-2"
             )}
           >

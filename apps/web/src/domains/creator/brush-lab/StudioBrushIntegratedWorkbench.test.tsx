@@ -81,4 +81,25 @@ describe("saved material editor routing", () => {
     expect(screen.getByTestId("editor").textContent).toBe("brush:saved · stored-draft");
     expect(localStorage.getItem("toonstudio.brush-program-v6:brush%3Asaved")).toBe("newer-draft");
   });
+
+  it("카탈로그에서 현재 선택된 제품 브러시 카드를 aria-current=true로 표시하고 다시 클릭하면 변경된 초안을 해당 레시피로 다시 초기화한다", async () => {
+    const { StudioBrushProductCataloguePanel } = await import("./StudioBrushProductCataloguePanel");
+    const { BRUSH_QUALITY_CATALOG } = await import("./brush-studio-v5-quality-catalog");
+    const { resolveProductBrushV6RecipeId } = await import("./brush-studio-version-integration");
+    const first = BRUSH_QUALITY_CATALOG.find((item) => resolveProductBrushV6RecipeId(item))!;
+    const recipeId = resolveProductBrushV6RecipeId(first)!;
+    render(
+      <MemoryRouter initialEntries={[`/studio/assets/brushes/new?applyRecipe=1&productBrush=${first.id}&recipe=${recipeId}`]}>
+        <StudioBrushProductCataloguePanel baseHref="/studio/assets/brushes/new" />
+        <StudioBrushIntegratedWorkbench scope="new" />
+      </MemoryRouter>,
+    );
+    const card = document.querySelector(`[data-studio-brush-product-target="${first.id}"]`) as HTMLElement;
+    expect(card).toBeTruthy();
+    expect(card.getAttribute("aria-current")).toBe("true");
+    localStorage.setItem("toonstudio.brush-program-v6:new", "modified-by-user");
+    fireEvent.click(card);
+    expect(localStorage.getItem("toonstudio.brush-program-v6:new")).not.toBe("modified-by-user");
+    expect(localStorage.getItem("toonstudio.brush-program-v6:new")).toContain(recipeId);
+  });
 });

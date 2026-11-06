@@ -77,6 +77,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   const [hud, setHud] = useState<HudSample | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
   const featuresKeyRef = useRef("");
+  const hudKeyRef = useRef("");
   const [beta, setBeta] = useState<BetaFeatureReport | null>(null);
   const betaKeyRef = useRef("");
   const [betaPending, setBetaPending] = useState<ReadonlySet<BetaFeatureId>>(() => new Set());
@@ -104,6 +105,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
       setHud(null);
       setBeta(null);
       featuresKeyRef.current = "";
+      hudKeyRef.current = "";
       betaKeyRef.current = "";
       return;
     }
@@ -120,8 +122,13 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         betaKeyRef.current = betaKey;
         setBeta(betaReport);
       }
-      setHud(engine.readHud());
-      setPollError(null);
+      const nextHud = engine.readHud();
+      const nextHudKey = JSON.stringify(nextHud);
+      if (nextHudKey !== hudKeyRef.current) {
+        hudKeyRef.current = nextHudKey;
+        setHud(nextHud);
+      }
+      setPollError((prev) => (prev === null ? prev : null));
     } catch (error) {
       setPollError(error instanceof Error ? error.message : "엔진 상태를 읽지 못했습니다.");
     }

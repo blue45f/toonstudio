@@ -37,23 +37,42 @@ export function ExpressionPanel() {
   /** 이 패널에서 슬라이더로 만진 유닛(프리셋 세기 변경 시 보존) */
   const [overrides, setOverrides] = useState<ExpressionWeights>({});
   const [influence, setInfluence] = useState(1);
-  const prevExprRef = useRef<ExpressionWeights>(recipe.expression);
-  const prevSlotRef = useRef<string | undefined>(recipe.slots.expression);
-  const expectedExprRef = useRef<ExpressionWeights | null>(null);
+  const prevSlotRef = useRef(recipe.slots.expression);
+  const prevExpressionRef = useRef(recipe.expression);
 
-  let effectiveOverrides = overrides;
-  if (prevExprRef.current !== recipe.expression || prevSlotRef.current !== recipe.slots.expression) {
-    const slotChanged = prevSlotRef.current !== recipe.slots.expression;
-    const isInternal = !slotChanged && expectedExprRef.current !== null && expressionsEqual(recipe.expression, expectedExprRef.current);
-    prevExprRef.current = recipe.expression;
-    prevSlotRef.current = recipe.slots.expression;
-    expectedExprRef.current = null;
-    if (!isInternal) {
-      effectiveOverrides = {};
-      if (Object.keys(overrides).length > 0) setOverrides({});
-      if (slotChanged && influence !== 1) setInfluence(1);
+  useEffect(() => {
+    if (recipe.slots.expression !== prevSlotRef.current) {
+      prevSlotRef.current = recipe.slots.expression;
+      prevExpressionRef.current = recipe.expression;
+      setOverrides({});
+      setInfluence(1);
+      return;
     }
-  }
+    if (recipe.expression !== prevExpressionRef.current) {
+      prevExpressionRef.current = recipe.expression;
+      const hasAnyActive = FACS_UNITS.some((unit) => (recipe.expression[unit] ?? 0) > 0);
+      if (!hasAnyActive) {
+        setOverrides({});
+        setInfluence(1);
+        return;
+      }
+      setOverrides((previous) => {
+        const keys = Object.keys(previous) as FacsUnit[];
+        if (keys.length === 0) return previous;
+        let changed = false;
+        const next: Partial<Record<FacsUnit, number>> = {};
+        for (const unit of keys) {
+          const currentVal = recipe.expression[unit] ?? 0;
+          if (Math.abs(currentVal - (previous[unit] ?? 0)) < 1e-6) {
+            next[unit] = previous[unit];
+          } else {
+            changed = true;
+          }
+        }
+        return changed ? next : previous;
+      });
+    }
+  }, [recipe.slots.expression, recipe.expression]);
 
   const session = useEngineSession();
   const eyeGaze = recipe.eyeGaze ?? DEFAULT_EYE_GAZE;
@@ -95,35 +114,29 @@ export function ExpressionPanel() {
   const applyPreset = (preset: ExpressionPreset): void => {
     setOverrides({});
     setInfluence(1);
-    expectedExprRef.current = null;
     dispatch({ type: "slot/apply", slot: "expression", presetId: preset.id });
   };
 
   const setUnit = (unit: FacsUnit, value: number): void => {
-    const nextOverrides = { ...effectiveOverrides, [unit]: value };
-    expectedExprRef.current = { ...recipe.expression, [unit]: value };
-    setOverrides(nextOverrides);
+    setOverrides((previous) => ({ ...previous, [unit]: value }));
     dispatch({ type: "expression/set", weights: { [unit]: value }, merge: true, coalesceKey: unit });
   };
 
   const setPresetInfluence = (value: number): void => {
     setInfluence(value);
     const base = blendExpressionPresets([{ weights: currentPreset?.weights ?? {}, influence: value }]);
-    const merged = blendExpression(base, effectiveOverrides);
-    expectedExprRef.current = merged;
+    const merged = blendExpression(base, overrides);
     dispatch({ type: "expression/set", weights: merged, merge: false });
   };
 
   const reset = (): void => {
     setOverrides({});
     setInfluence(1);
-    expectedExprRef.current = null;
     dispatch({ type: "expression/set", weights: {}, merge: false });
   };
 
   const relax = (): void => {
     setOverrides({});
-    expectedExprRef.current = null;
     dispatch({ type: "expression/set", weights: relaxed, merge: false });
   };
 

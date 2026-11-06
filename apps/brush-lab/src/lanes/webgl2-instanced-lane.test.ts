@@ -109,11 +109,15 @@ describe("webgl2-instanced 레인", () => {
     }
   });
 
-  it("잘못된 색은 GL 호출 전에 InvalidStateError로 거부한다", async () => {
-    const mock = createMockWebgl2();
+  it("잘못된 색은 GL 호출 전에 InvalidStateError로 거부하고 오프스크린 dispose·probe는 WEBGL_lose_context로 컨텍스트를 반환한다", async () => {
+    const mock = createMockWebgl2({ extensions: ["EXT_color_buffer_float", "WEBGL_lose_context"] });
     const lane = createWebgl2InstancedLane();
+    await lane.probe(envWith(mock));
+    expect(mock.extensionsAsked).toContain("WEBGL_lose_context");
     await lane.init(envWith(mock), { width: 32, height: 32, dpr: 1, tileSize: 16, seed: 1 });
     expect(() => lane.beginStroke(presetById("ink-g-pen"), 1, { color: [0, 0, 0, Number.NaN] })).toThrow(InvalidStateError);
+    const askedBeforeDispose = mock.extensionsAsked.filter((e) => e === "WEBGL_lose_context").length;
     lane.dispose();
+    expect(mock.extensionsAsked.filter((e) => e === "WEBGL_lose_context").length).toBeGreaterThan(askedBeforeDispose);
   });
 });

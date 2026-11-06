@@ -51,7 +51,7 @@ export function Select<T extends string>({
           // 셀렉트 표준(2026-10-02): 기본 높이·좌우 패딩을 컴포넌트가 보장한다.
           // 텍스트↔chevron 간격은 gap-2(8px), chevron 우측 여백은 px-3(12px)가 기본값이며
           // 소비처 className(twMerge)이 명시하면 그쪽이 이긴다.
-          "group inline-flex h-9 items-center justify-between gap-2 rounded-lg px-3 outline-none transition-colors",
+          "group inline-flex h-9 min-h-11 sm:min-h-9 pointer-coarse:min-h-11 items-center justify-between gap-2 rounded-lg px-3 outline-none transition-colors",
           "data-[placeholder]:text-fg-3 focus-visible:border-accent/60 data-[state=open]:border-accent/50",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
           "aria-invalid:border-bad/70 disabled:pointer-events-none disabled:opacity-45",
@@ -91,7 +91,7 @@ export function Select<T extends string>({
                 value={option.value}
                 textValue={option.textValue}
                 className={cn(
-                  "relative flex cursor-pointer select-none items-center gap-2 rounded-lg py-1.5 pl-2.5 pr-8 text-sm text-fg-2 outline-none",
+                  "relative flex min-h-11 sm:min-h-9 pointer-coarse:min-h-11 cursor-pointer select-none items-center gap-2 rounded-lg py-1.5 pl-2.5 pr-8 text-sm text-fg-2 outline-none",
                   "transition-colors data-[highlighted]:bg-raised data-[highlighted]:text-fg",
                   "data-[state=checked]:bg-accent-soft data-[state=checked]:text-accent data-[state=checked]:font-medium",
                   "data-[disabled]:pointer-events-none data-[disabled]:opacity-45"

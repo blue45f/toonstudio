@@ -45,7 +45,7 @@ export function MiniPoster({
           className="absolute inset-0 size-full object-cover contrast-[1.03] saturate-[1.04]"
         />
       ) : (
-        <span className="relative">{title.title.charAt(0)}</span>
+        <span aria-hidden="true" className="relative">{title.title.charAt(0)}</span>
       )}
       <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,oklch(0.13_0.012_70/0.62),transparent_58%)]" />
       <span className="pointer-events-none absolute inset-x-1.5 top-1.5 h-px bg-[oklch(0.95_0.01_85/0.24)]" />
@@ -132,7 +132,7 @@ export const RankRow = memo(function RankRow({
       )}
     >
       {/* Main Row Content — 좁은 화면(320px)에선 표지/메트릭 칼럼을 좁히고 gap을 줄여 제목 폭을 확보 */}
-      <div className="grid grid-cols-[2.5rem_2.25rem_1fr_auto] items-center gap-2 px-2 py-2.5 sm:grid-cols-[2.75rem_2.5rem_1fr_auto] sm:gap-4 sm:px-3">
+      <div className="grid grid-cols-[2rem_2rem_1fr_auto] items-center gap-2 px-2 py-2.5 sm:grid-cols-[2.5rem_2.25rem_1fr_auto] sm:gap-4 sm:px-3">
         {/* 인덱스 넘버럴 */}
         <button
           type="button"
@@ -164,8 +164,8 @@ export const RankRow = memo(function RankRow({
           )}
         </button>
 
-        <Link href={`/title/${title.slug}`} className="w-9 sm:w-10" aria-label={`${title.title} 작품 상세`}>
-          <MiniPoster title={title} className="w-9 transition-transform group-hover/row:scale-105 sm:w-10" />
+        <Link href={`/title/${title.slug}`} className="w-8 sm:w-10" aria-label={`${title.title} 작품 상세`}>
+          <MiniPoster title={title} className="w-8 transition-transform group-hover/row:scale-105 sm:w-10" />
         </Link>
 
         <Link href={`/title/${title.slug}`} className="min-w-0 flex-1">
@@ -173,7 +173,7 @@ export const RankRow = memo(function RankRow({
             <h3 className="truncate text-sm font-semibold text-fg transition-colors group-hover/row:text-accent">
               {title.title}
             </h3>
-            <span className="shrink-0 rounded-full border border-line bg-canvas/45 px-1.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-wide text-fg-3">
+            <span className="hidden shrink-0 rounded-full border border-line bg-canvas/45 px-1.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-wide text-fg-3 sm:inline-flex">
               {TYPE_LABEL[title.type]}
             </span>
           </div>
@@ -210,7 +210,7 @@ export const RankRow = memo(function RankRow({
             aria-expanded={expanded}
             aria-controls={detailId}
             className={cn(
-              "flex items-center gap-2 rounded-md border text-right px-2 py-1 transition-all cursor-pointer hover:border-accent hover:bg-accent-soft/20",
+              "flex min-h-11 items-center gap-2 rounded-md border text-right px-2 py-1 transition-all cursor-pointer hover:border-accent hover:bg-accent-soft/20",
               expanded ? "border-accent/40 bg-accent-soft/20" : "border-line/70 bg-canvas/30"
             )}
           >

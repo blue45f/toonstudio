@@ -32,7 +32,6 @@ import { Office2dResolutionGovernor } from "./office2d-quality";
 import { office2dSceneFor, office2dSceneSpriteKeys } from "./office2d-scene";
 import { Office2dRuntime, type Office2dRuntimeCallbacks, type Office2dStageProps } from "./office2d-runtime";
 import {
-  findOffice2dQuickEmote,
   playOffice2dSpatialCue,
   readOffice2dClaimedSeatId,
   readOffice2dSoundMuted,
@@ -74,6 +73,9 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const runtimeRef = useRef<Office2dRuntime | null>(null);
+  const storeRef = useRef<Office2dSpriteStore<HTMLImageElement> | null>(null);
+  const refreshFloorRef = useRef<(() => void) | null>(null);
+  const avatarProfileSourceRef = useRef<ReturnType<typeof createOffice2dAvatarProfileSource> | null>(null);
   const decorAssetsRef = useRef<Office2dDecorAssetLoader | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -176,7 +178,9 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     let disposed = false;
     let frameId = 0;
     const store = new Office2dSpriteStore<HTMLImageElement>(office2dBrowserImageLoader);
+    storeRef.current = store;
     const avatarProfileSource = createOffice2dAvatarProfileSource();
+    avatarProfileSourceRef.current = avatarProfileSource;
     const host: Office2dRendererHost = {
       selfAvatarProfile: avatarProfileSource.get,
       createSurface(width, height) {
@@ -271,6 +275,7 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     bridge.setFocusHandler(() => canvas.focus({ preventScroll: true }));
     const scene = office2dSceneFor(manifest);
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
       const active = document.activeElement;
       const reclaim = studioWorldShouldReclaimFocus({
         active,
@@ -283,14 +288,6 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       if (reclaim) canvas.focus({ preventScroll: true });
       else if (!studioWorldMayTakeFocus(active, container)) return;
       if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
-      // 1~6: 이모트 전송은 페이지 이모트 키맵이 맡고, 여기서는 웹툰 의성어 팝업과 짧은 효과음만 덧붙인다(WA EmoteStore 즐겨찾기 슬롯).
-      const quickEmote = findOffice2dQuickEmote(event.code);
-      if (quickEmote && !event.repeat) {
-        const selfPt = runtime.debugState().self;
-        runtime.extensions.pushComicBurst(documentLanguage() === "en" ? quickEmote.sfxEn : quickEmote.sfxKo, quickEmote.color, selfPt.x, selfPt.y - 48);
-        playOffice2dSpatialCue("emote", { muted: soundMutedRef.current, roomId: roomIdRef.current });
-        return;
-      }
       if (!WORLD_KEY_CODES.has(event.code)) return;
       if (PREVENT_DEFAULT_CODES.has(event.code)) event.preventDefault();
       if (!event.repeat) runtime.keyDown(event.code);
@@ -425,6 +422,7 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     window.addEventListener("focus", handleWindowFocus);
     window.addEventListener("blur", handleWindowBlur);
     const refreshFloor = () => { if (!disposed) runtime.renderer.invalidateFloor(); };
+    refreshFloorRef.current = refreshFloor;
     const decorAssets = createOffice2dDecorAssetLoader(store, ASSET_TIMEOUT_MS, refreshFloor);
     decorAssetsRef.current = decorAssets;
     void Promise.all([
@@ -443,6 +441,9 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       disposed = true;
       decorAssets.dispose();
       if (decorAssetsRef.current === decorAssets) decorAssetsRef.current = null;
+      if (storeRef.current === store) storeRef.current = null;
+      if (refreshFloorRef.current === refreshFloor) refreshFloorRef.current = null;
+      if (avatarProfileSourceRef.current === avatarProfileSource) avatarProfileSourceRef.current = null;
       avatarProfileSource.dispose();
       runtimeRef.current = null;
       stopLoop();
@@ -468,6 +469,23 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
   useEffect(() => {
     void decorAssetsRef.current?.load(props.decorations, props.placedFixtures);
   }, [props.decorations, props.placedFixtures]);
+
+  // 캐릭터 스킨(avatarIndex)이 바뀌면 새 직군 시트의 필수·지연 에셋을 추가로 적재한다.
+  useEffect(() => {
+    const store = storeRef.current;
+    if (!store) return;
+    const plan = office2dActorAssetPlan(office2dCharacterForAvatarSkin(props.snapshot.self.avatarIndex, selfIdentity));
+    const notify = () => refreshFloorRef.current?.();
+    void store.loadAll(plan.critical, ASSET_TIMEOUT_MS, notify).then(() => {
+      if (storeRef.current === store) {
+        void store.loadAll(plan.deferred, ASSET_TIMEOUT_MS * 2, notify);
+      }
+    });
+  }, [props.snapshot.self.avatarIndex, selfIdentity]);
+
+  useEffect(() => {
+    avatarProfileSourceRef.current?.refresh?.();
+  }, [props.snapshot.self.appearance]);
 
   const activeWorkstation =
     (selectedWorkstationId

@@ -14,11 +14,11 @@
  *   생성 요청은 셸의 thumbnail-driver가 활성 슬롯 기준으로 한다(패널은 요청하지 않는다).
  * - 스타일 클래스 접두는 `cl-slot-`이며 app/styles/character-lab.css(core)가 정의한다.
  */
-import { useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 
 import { CHARACTER_SLOT_KINDS, SLOT_GROUPS, SLOT_GROUP_LABELS_KO, SLOT_LABELS_KO } from "../../../contracts";
 import { presetConflicts, presetUnavailableReasonKo } from "../../../state/apply-plan";
-import { useApplyPlan, useCatalog, useDispatch, useLabState, useLabStore, useUiActions, useUiState } from "../lab-store-context";
+import { shallowEqual, useApplyPlan, useCatalog, useDispatch, useLabSelector, useLabState, useLabStore, useUiActions, useUiState } from "../lab-store-context";
 
 import { SlotCustomizeSections } from "./slot-customize-sections";
 import { resolveShaperPresetClickModifiers } from "./viewport-interactions";
@@ -89,7 +89,7 @@ interface PresetCardProps {
   readonly onApply: (presetId: PresetId, event?: ReactMouseEvent<HTMLButtonElement>) => void;
 }
 
-function PresetCard({ entry, selected, capability, conflicts, unsupported, thumbnail, onApply }: PresetCardProps) {
+const PresetCard = memo(function PresetCard({ entry, selected, capability, conflicts, unsupported, thumbnail, onApply }: PresetCardProps) {
   const slotUnavailable = capability.status === "unavailable";
   // 슬롯 전체가 미지원이면 슬롯 사유가 먼저다(플래너와 같은 순서). 프리셋 단위 미제공은 그 외 슬롯에서만 판정한다.
   const presetReason = slotUnavailable ? null : presetUnavailableReasonKo(capability, entry.id);
@@ -126,7 +126,7 @@ function PresetCard({ entry, selected, capability, conflicts, unsupported, thumb
       {unsupportedText ? <span className="cl-slot-card-reason">{unsupportedText}</span> : null}
     </button>
   );
-}
+});
 
 export function SlotPanel() {
   const store = useLabStore() as LabStore & { readonly withCoalesceKey?: <T>(key: string, fn: () => T) => T };
@@ -138,52 +138,58 @@ export function SlotPanel() {
   const plan = useApplyPlan();
 
   const entries = catalog.bySlot(slot);
+  const slotThumbnails = useLabSelector(
+    useCallback((s) => entries.map((entry) => s.thumbnails[entry.id]), [entries]),
+    shallowEqual,
+  );
   const capability = state.capabilities[slot];
   const selectedId = state.recipe.slots[slot];
-  const { recipe, thumbnails, history } = state;
+  const { recipe, history } = state;
   const unsupportedForSlot = plan?.unsupported.find((item) => item.slot === slot);
 
-  const runCoalesced = (key: string, fn: () => void): void => {
-    if (store.withCoalesceKey) {
-      store.withCoalesceKey(key, fn);
-    } else {
-      fn();
-    }
-  };
-
-  const apply = (presetId: PresetId | null, event?: ReactMouseEvent<HTMLButtonElement>): void => {
-    if (presetId !== null && event && (event.shiftKey || event.ctrlKey || event.metaKey)) {
-      const policy = resolveShaperPresetClickModifiers(
-        {
-          shift: event.shiftKey,
-          ctrl: event.ctrlKey || event.metaKey,
-          alt: event.altKey,
-        },
-        slot === "pose" ? "pose" : "part",
-      );
-      const entry = catalog.get(presetId);
-      const patchColors = entry?.patch.colors;
-      if (policy.keepExistingLines && !(event.ctrlKey || event.metaKey) && patchColors) {
-        runCoalesced(`slot-mod:${slot}:${presetId}`, () => {
-          for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
-            if (value !== undefined) dispatch({ type: "color/set", key, value });
-          }
-        });
-        return;
+  const apply = useCallback(
+    (presetId: PresetId | null, event?: ReactMouseEvent<HTMLButtonElement>): void => {
+      const runCoalesced = (key: string, fn: () => void): void => {
+        if (store.withCoalesceKey) {
+          store.withCoalesceKey(key, fn);
+        } else {
+          fn();
+        }
+      };
+      if (presetId !== null && event && (event.shiftKey || event.ctrlKey || event.metaKey)) {
+        const policy = resolveShaperPresetClickModifiers(
+          {
+            shift: event.shiftKey,
+            ctrl: event.ctrlKey || event.metaKey,
+            alt: event.altKey,
+          },
+          slot === "pose" ? "pose" : "part",
+        );
+        const entry = catalog.get(presetId);
+        const patchColors = entry?.patch.colors;
+        if (policy.keepExistingLines && !(event.ctrlKey || event.metaKey) && patchColors) {
+          runCoalesced(`slot-mod:${slot}:${presetId}`, () => {
+            for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
+              if (value !== undefined) dispatch({ type: "color/set", key, value });
+            }
+          });
+          return;
+        }
+        if ((event.ctrlKey || event.metaKey) && !policy.keepExistingLines && patchColors) {
+          const prevColors = { ...recipe.colors };
+          runCoalesced(`slot-mod:${slot}:${presetId}`, () => {
+            dispatch({ type: "slot/apply", slot, presetId });
+            for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
+              if (value !== undefined) dispatch({ type: "color/set", key, value: prevColors[key] });
+            }
+          });
+          return;
+        }
       }
-      if ((event.ctrlKey || event.metaKey) && !policy.keepExistingLines && patchColors) {
-        const prevColors = { ...recipe.colors };
-        runCoalesced(`slot-mod:${slot}:${presetId}`, () => {
-          dispatch({ type: "slot/apply", slot, presetId });
-          for (const [key, value] of Object.entries(patchColors) as Array<[RecipeColorKey, string | undefined]>) {
-            if (value !== undefined) dispatch({ type: "color/set", key, value: prevColors[key] });
-          }
-        });
-        return;
-      }
-    }
-    dispatch({ type: "slot/apply", slot, presetId });
-  };
+      dispatch({ type: "slot/apply", slot, presetId });
+    },
+    [catalog, dispatch, recipe.colors, slot, store],
+  );
 
   return (
     <section className="cl-slot-panel" aria-label="슬롯 프리셋">
@@ -252,7 +258,7 @@ export function SlotPanel() {
               <span className="cl-slot-card-label">없음</span>
             </button>
           ) : null}
-          {entries.map((entry) => (
+          {entries.map((entry, index) => (
             <PresetCard
               key={entry.id}
               entry={entry}
@@ -260,7 +266,7 @@ export function SlotPanel() {
               capability={capability}
               conflicts={presetConflicts(entry, recipe, catalog)}
               unsupported={unsupportedForSlot && unsupportedForSlot.presetId === entry.id ? unsupportedForSlot : undefined}
-              thumbnail={thumbnails[entry.id]}
+              thumbnail={slotThumbnails[index]}
               onApply={apply}
             />
           ))}

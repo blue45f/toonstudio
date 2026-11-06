@@ -118,8 +118,25 @@ export function useSpaceProximityMedia({ participant, port, available, scopeIds 
     return controller.setMicrophone(next);
   }), [run]);
   const toggleScreen = useCallback(() => run((controller) => controller.setVideo(controller.snapshot().sharing ? null : "screen")), [run]);
+  const startScreenShare = useCallback(async () => {
+    const controller = controllerRef.current;
+    if (!controller) throw new Error("screen-share-unavailable");
+    if (!controller.snapshot().sharing) {
+      setBusy(true);
+      try {
+        const customStart = (controller as unknown as { readonly startScreen?: () => Promise<void> }).startScreen;
+        if (typeof customStart === "function") await customStart.call(controller);
+        else await controller.setVideo("screen");
+      } finally {
+        if (controllerRef.current === controller) setBusy(false);
+      }
+    }
+    if (controller.snapshot().sharing !== true) {
+      throw new Error("screen-share-unavailable");
+    }
+  }, []);
   const phase: SpaceProximityMediaPhase = !enabled ? "off" : ready && snapshot ? "live" : "waiting";
-  return { phase, enabled, snapshot, busy, viewer, start, stop, toggleCamera, toggleMic, toggleScreen };
+  return { phase, enabled, snapshot, busy, viewer, start, stop, toggleCamera, toggleMic, toggleScreen, startScreenShare };
 }
 
 export interface SpaceProximityScopePeerSample {

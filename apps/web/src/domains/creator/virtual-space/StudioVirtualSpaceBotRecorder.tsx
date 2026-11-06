@@ -112,10 +112,10 @@ export function StudioVirtualSpaceBotRecorder({
         </div>
         <span aria-live="polite">{statusCopy}</span>
       </header>
-      <p>
+      <p role="note">
         {bt(
-          "회의실·검수실에 Bot을 고정 배치해 그 시점의 논의·검수 과정을 기록합니다. 검수 회의 기록을 프로젝트 에셋으로 남길 수 있습니다. 이 패널은 클라이언트 녹화 준비 상태이며, 실제 캡처(MediaRecorder) 스트림 연결은 후속 작업에서 연동됩니다.",
-          "Pin a Bot in a meeting or review room to record the discussion and review process from its point of view. Review session recordings can be kept as project assets. This panel is client-recording ready only; the actual capture (MediaRecorder) stream wiring is a follow-up.",
+          "회의실·검수실에 Bot을 고정 배치해 그 시점의 논의·검수 과정을 기록합니다. 현재 원격 미디어 스트림 캡처 파이프라인이나 서버 녹화 저장소가 연결되지 않은 로컬 기록 시뮬레이션이므로 실제 회의 영상·음성이 서버에 녹화되지 않습니다. 실제 캡처(MediaRecorder) 스트림 연결은 후속 작업에서 연동됩니다.",
+          "Pin a Bot in a meeting or review room to record the discussion and review process from its point of view. This is a local recording simulation without a connected remote media stream capture pipeline or server storage, so actual meeting video and audio are not recorded to a server. The actual capture (MediaRecorder) stream wiring is a follow-up.",
         )}
       </p>
 

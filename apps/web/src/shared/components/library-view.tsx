@@ -236,7 +236,7 @@ export function LibraryView({
             />
           ) : (
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm text-fg-3">
                   평가한 작품 <span className="numeral text-fg">{ratedIds.length}</span>편
                 </span>

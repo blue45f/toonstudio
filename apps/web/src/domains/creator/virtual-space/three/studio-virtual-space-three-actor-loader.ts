@@ -1,3 +1,4 @@
+import type { VRM } from "@pixiv/three-vrm";
 import * as THREE from "three";
 import type { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
@@ -14,7 +15,7 @@ export interface StudioThreeActorController extends StudioThreePendingController
 interface StudioThreeActorLoaderOptions {
   readonly resolveUrl: (index: number) => string;
   readonly isVerifiedUrl: (url: string) => boolean;
-  readonly applyPosture: (node: StudioThreeActorNode, scene: THREE.Object3D) => void;
+  readonly applyPosture: (node: StudioThreeActorNode, scene: THREE.Object3D, vrm?: VRM) => void;
 }
 
 function clearVrmBones(node: StudioThreeActorNode): void {
@@ -82,7 +83,7 @@ export function createStudioThreeActorLoader(
           child.scale.setScalar(0);
         }
       });
-      const extensions: unknown = gltf.parser.json.extensions;
+      const extensions: unknown = gltf.parser?.json?.extensions;
       const isVrm1 = typeof extensions === "object" && extensions !== null
         && "VRMC_vrm" in extensions && Boolean(extensions.VRMC_vrm);
       vrmScene.rotation.y = isVrm1 ? 0 : Math.PI;
@@ -111,11 +112,14 @@ export function createStudioThreeActorLoader(
         }
       });
 
+      const rawVrm: unknown = gltf.userData?.vrm;
+      const vrm = typeof rawVrm === "object" && rawVrm !== null ? (rawVrm as VRM) : undefined;
+
       // 준비 실패·늦은 응답이 현재 avatar의 본 참조와 모션을 손상시키지 않는다.
-      const preparedNode = { ...node };
+      const preparedNode: StudioThreeActorNode = { ...node, vrm };
       clearVrmBones(preparedNode);
       try {
-        options.applyPosture(preparedNode, vrmScene);
+        options.applyPosture(preparedNode, vrmScene, vrm);
         vrmScene.updateMatrixWorld(true);
         const size = new THREE.Box3().setFromObject(vrmScene).getSize(new THREE.Vector3());
         vrmScene.scale.setScalar(1.86 / Math.max(0.1, size.y));
@@ -136,6 +140,7 @@ export function createStudioThreeActorLoader(
       for (const child of [...node.rigGroup.children]) previousRig.add(child);
       node.rigGroup.add(vrmScene);
       copyVrmBones(node, preparedNode);
+      node.vrm = preparedNode.vrm;
       node.vrmLoaded = true;
       // ring·shadow는 actor 전체 수명까지 유지하고 교체한 body만 해제한다.
       disposeStudioThreeOwnedModel(previousRig);

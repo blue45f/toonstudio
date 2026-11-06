@@ -225,6 +225,10 @@ export interface StudioThreeActorNode {
   targetYaw: number;
   moving: boolean;
   vrmLoaded: boolean;
+  seated?: boolean;
+  emoteId?: string | null;
+  emoteStartedAt?: number;
+  emoteUntil?: number;
 }
 
 function createArchitecturalTileTexture(
@@ -365,6 +369,10 @@ export function createStylized3DCharacterNode(
     targetYaw: 0,
     moving: false,
     vrmLoaded: false,
+    seated: false,
+    emoteId: null,
+    emoteStartedAt: 0,
+    emoteUntil: 0,
   };
 }
 
@@ -565,6 +573,7 @@ export function applyNaturalVrmPosture(
   vrmScene: THREE.Object3D,
   vrm?: VRM,
 ): void {
+  if (vrm) node.vrm = vrm;
   let leftUpperArm: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("leftUpperArm");
   let rightUpperArm: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("rightUpperArm");
   let leftLowerArm: THREE.Object3D | null | undefined = vrm?.humanoid?.getNormalizedBoneNode("leftLowerArm");
@@ -626,9 +635,11 @@ export function applyNaturalVrmPosture(
   }
   if (leftLowerArm) {
     leftLowerArm.rotation.y = -0.14;
+    node.vrmLeftLowerArm = leftLowerArm;
   }
   if (rightLowerArm) {
     rightLowerArm.rotation.y = 0.14;
+    node.vrmRightLowerArm = rightLowerArm;
   }
   if (leftUpperLeg) node.vrmLeftUpperLeg = leftUpperLeg;
   if (rightUpperLeg) node.vrmRightUpperLeg = rightUpperLeg;

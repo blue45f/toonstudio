@@ -289,7 +289,7 @@ export function MarketHomePage() {
             <h2 className="eyebrow text-fg-3">{t("최근 공유", "Recently shared")}</h2>
             <p className="mt-1 text-xs leading-5 text-fg-3">{t("최근 공개된 리소스를 실제 미리보기와 함께 확인합니다.", "Browse recently published resources with real previews.")}</p>
           </div>
-          <Link href="/market/browse" className="inline-flex min-h-11 items-center text-sm text-accent hover:text-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
+          <Link href="/market/browse" className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap text-sm text-accent hover:text-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
             {t("전체 보기", "View all")} <ArrowRight size={14} aria-hidden="true" className="ml-1" />
           </Link>
         </div>

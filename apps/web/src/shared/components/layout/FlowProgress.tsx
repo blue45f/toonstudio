@@ -91,7 +91,7 @@ export function FlowProgress({
               <a
                 href={step.href}
                 className={cx(
-                  "mt-2 flex items-center gap-1 text-[0.6875rem] font-semibold hover:underline",
+                  "mt-2 flex min-h-11 items-center gap-1 py-2 text-[0.6875rem] font-semibold hover:underline",
                   STEP_LABEL_CLASS[step.state],
                 )}
               >
@@ -101,7 +101,7 @@ export function FlowProgress({
             ) : (
               <p
                 className={cx(
-                  "mt-2 flex items-center gap-1 text-[0.6875rem] font-semibold",
+                  "mt-2 flex min-h-11 items-center gap-1 py-2 text-[0.6875rem] font-semibold",
                   STEP_LABEL_CLASS[step.state],
                 )}
               >

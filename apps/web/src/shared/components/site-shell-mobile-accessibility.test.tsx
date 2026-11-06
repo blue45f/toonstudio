@@ -4,11 +4,20 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { FloatingControls } from "./FloatingControls";
+import { SiteContextualSubNav } from "./site-contextual-subnav";
 import { SiteFooter } from "./site-footer";
 import { SiteHeader } from "./site-header";
 
 import { NORMALIZED_LOCALE_OPTIONS, useI18n } from "@/shared/lib/i18n";
+
+const contextualSubnavCss = readFileSync(
+  resolve(__dirname, "./site-contextual-subnav.css"),
+  "utf8"
+);
 
 vi.mock("../../domains/auth/components/auth-menu-shell", () => ({
   AuthMenuShell: () => <button type="button">계정</button>,
@@ -213,5 +222,54 @@ describe("mobile site shell accessibility", () => {
       "pb-[calc(3.75rem+env(safe-area-inset-bottom))]"
     );
     expect(footer?.className).toContain("md:pb-0");
+  });
+
+  it("closes the mobile full-menu when clicking a link that points to the current pathname", async () => {
+    render(
+      <MemoryRouter initialEntries={["/market"]}>
+        <SiteHeader />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "전체 메뉴" }));
+    const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
+    const currentLink = within(dialog).getByRole("link", { name: "소재 마켓" });
+    expect(currentLink.getAttribute("aria-current")).toBe("page");
+
+    fireEvent.click(currentLink);
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "전체 메뉴" })).toBeNull());
+  });
+
+  it("reopens a desktop primary nav submenu with ArrowDown after Escape and enforces 44px subnav touch targets", () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={["/discover"]}>
+        <SiteHeader />
+        <SiteContextualSubNav pathnameOverride="/ranking" />
+      </MemoryRouter>
+    );
+
+    const primaryNavigation = container.querySelector<HTMLElement>('nav[aria-label="주요 메뉴"]')!;
+    const exploreTrigger = within(primaryNavigation).getByRole("link", { name: "탐색" });
+    fireEvent.focus(exploreTrigger);
+    expect(exploreTrigger.getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.keyDown(exploreTrigger, { key: "Escape" });
+    expect(exploreTrigger.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(exploreTrigger);
+
+    fireEvent.keyDown(exploreTrigger, { key: "ArrowDown" });
+    expect(exploreTrigger.getAttribute("aria-expanded")).toBe("true");
+    const firstSubmenuLink = exploreTrigger.parentElement?.querySelector<HTMLElement>("ul a");
+    expect(document.activeElement).toBe(firstSubmenuLink);
+
+    const subnav = container.querySelector<HTMLElement>('[data-contextual-subnav="discover-hub"]')!;
+    expect(subnav).not.toBeNull();
+    const subnavLinks = within(subnav).getAllByRole("link");
+    expect(subnavLinks.length).toBeGreaterThan(0);
+    for (const link of subnavLinks) {
+      expect(link.classList.contains("site-contextual-subnav__link")).toBe(true);
+    }
+    expect(contextualSubnavCss).toContain("min-height: var(--site-control-size, 44px);");
+    expect(contextualSubnavCss).toContain("flex-wrap: wrap;");
   });
 });

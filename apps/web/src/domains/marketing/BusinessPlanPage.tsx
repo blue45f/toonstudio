@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import type { PlanTable } from "./business-plan-data";
 import { BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
 
@@ -48,6 +50,26 @@ export function BusinessPlanPage() {
   useMetaDescription(
     "툰스튜디오 사업계획서: 문제 인식, 실현 가능성, 성장전략, 향후 발전방안을 문항 순서대로 정리한 페이지. 팀 가격은 미결정이며 검증 목표는 결과로 적지 않는다.",
   );
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<"pdf" | "docx" | null>(null);
+
+  async function handleDownload(kind: "pdf" | "docx"): Promise<void> {
+    setDownloading(kind);
+    setDownloadStatus(kind === "pdf" ? "PDF를 만들고 있습니다…" : "DOCX를 만들고 있습니다…");
+    try {
+      // docx·pdf-lib·폰트킷은 내려받기를 누를 때만 불러와 첫 화면 번들을 키우지 않는다.
+      const downloads = await import("./business-plan-download");
+      const filename =
+        kind === "pdf"
+          ? await downloads.downloadBusinessPlanPdf()
+          : await downloads.downloadBusinessPlanDocx();
+      setDownloadStatus(`${filename} 내려받기를 시작했습니다.`);
+    } catch {
+      setDownloadStatus("파일을 만들지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setDownloading(null);
+    }
+  }
 
   return (
     <div className="min-h-[calc(100dvh-var(--site-header-height,4.25rem))] py-5 sm:py-8 lg:py-10">
@@ -63,6 +85,39 @@ export function BusinessPlanPage() {
           }
           lede="기획·콘티·작화·배경·채색·검수·연재를 한 파일·한 화면에서 잇는 방향을, 문제 인식부터 성장전략과 향후 발전방안까지 문항 순서대로 정리했다. 작성자 김희준(1인 예비창업자, 팀 없음), 멘토 정진호, 멘토기관 한국핀테크지원센터."
         />
+        <section aria-labelledby="business-plan-download-title" className="mt-6 rounded-2xl border p-4 sm:p-5">
+          <h2 id="business-plan-download-title" className="text-base font-bold">
+            사업계획서 내려받기
+          </h2>
+          <p className="mt-1 text-sm">
+            이 페이지와 같은 내용으로 PDF·DOCX 파일을 내려받는다. 파일은 누를 때 이 페이지의
+            내용에서 바로 만들며, A4·본문 12pt·줄 간격 160%·표 10pt 형식을 따른다. HWP는 만들
+            방법이 확인되지 않아 제공하지 않는다.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void handleDownload("pdf")}
+              disabled={downloading !== null}
+              className="rounded-full border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              PDF로 내려받기
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDownload("docx")}
+              disabled={downloading !== null}
+              className="rounded-full border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              DOCX로 내려받기
+            </button>
+          </div>
+          {downloadStatus !== null && (
+            <p aria-live="polite" className="mt-2 text-sm">
+              {downloadStatus}
+            </p>
+          )}
+        </section>
         <nav aria-label="사업계획서 문항 바로가기" className="mt-6 flex flex-wrap gap-2">
           {BUSINESS_PLAN_SECTIONS.map((section) => (
             <a key={section.id} href={`#${section.id}`} className="rounded-full border px-3 py-1 text-sm">

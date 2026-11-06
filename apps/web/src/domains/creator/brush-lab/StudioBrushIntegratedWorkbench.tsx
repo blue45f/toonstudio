@@ -89,7 +89,7 @@ export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: stri
     }
     setReady(true);
     return () => { cancelled = true; window.removeEventListener(BRUSH_V6_PROGRAM_EVENT, capture); };
-  }, [location.search, scope]);
+  }, [location.key, location.search, scope]);
 
   if (!ready) {
     return (

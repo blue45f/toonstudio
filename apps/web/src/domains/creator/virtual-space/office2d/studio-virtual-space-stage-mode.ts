@@ -10,10 +10,49 @@ export type StudioVirtualStageMode = "2d" | "3d" | "legacy";
 export type StudioVirtualStageKind = "office2d" | "three" | "legacy";
 
 export const STUDIO_VIRTUAL_STAGE_QUERY = "stage";
+export const STUDIO_VIRTUAL_STAGE_STORAGE_KEY = "toonstudio:virtual-space-stage-mode:v1";
+
+export function readStudioVirtualPreferredEngineMode(search?: string): "2d" | "3d" {
+  if (typeof search === "string" && search.length > 0) {
+    const explicit = new URLSearchParams(search).get(STUDIO_VIRTUAL_STAGE_QUERY);
+    if (explicit === "3d") return "3d";
+    if (explicit === "2d" || explicit === "legacy") return "2d";
+  }
+  if (typeof window === "undefined") return "2d";
+  try {
+    const saved = window.localStorage.getItem(STUDIO_VIRTUAL_STAGE_STORAGE_KEY);
+    return saved === "3d" ? "3d" : "2d";
+  } catch {
+    return "2d";
+  }
+}
+
+export function writeStudioVirtualPreferredEngineMode(mode: "2d" | "3d"): boolean {
+  if ((mode !== "2d" && mode !== "3d") || typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(STUDIO_VIRTUAL_STAGE_STORAGE_KEY, mode);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function applyStudioVirtualStageSearch(search: string, mode: "2d" | "3d"): string {
+  const params = new URLSearchParams(search);
+  if (mode === "3d") {
+    params.set(STUDIO_VIRTUAL_STAGE_QUERY, "3d");
+  } else {
+    params.delete(STUDIO_VIRTUAL_STAGE_QUERY);
+  }
+  const value = params.toString();
+  return value ? `?${value}` : "";
+}
 
 export function readStudioVirtualStageMode(search: string): StudioVirtualStageMode {
   const value = new URLSearchParams(search).get(STUDIO_VIRTUAL_STAGE_QUERY);
-  return value === "3d" || value === "legacy" ? value : "2d";
+  if (value === "3d" || value === "legacy" || value === "2d") return value;
+  if (value === null) return readStudioVirtualPreferredEngineMode();
+  return "2d";
 }
 
 export function resolveStudioVirtualStageKind(input: {

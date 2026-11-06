@@ -24,6 +24,7 @@ import {
 import { OFFICE2D_ACTOR_HEIGHT, OFFICE2D_FOOT_RATIO, office2dActorFoot } from "./office2d-actor-geometry";
 import { paintOffice2dAvatarAccessory } from "./office2d-avatar-appearance";
 import { office2dAtlasDrawFrame, office2dAtlasImageMatches } from "./office2d-atlas-frames";
+import { resolveOffice2dEmoteTransform } from "./office2d-emote-motion";
 import { resolveOffice2dStandingExpression } from "./office2d-standing-expression";
 import type { Office2dCamera } from "./office2d-camera";
 import { office2dSignAlpha, type Office2dLabelBox } from "./office2d-label-layout";
@@ -343,17 +344,7 @@ export class Office2dRenderer {
     if (!size.image) return;
     const cropTop = 0.56;
     const cropRatio = 1 - cropTop;
-    ctx.drawImage(
-      size.image,
-      0,
-      size.image.height * cropTop,
-      size.image.width,
-      size.image.height * cropRatio,
-      x - width / 2,
-      baseY - size.height * cropRatio,
-      width,
-      size.height * cropRatio,
-    );
+    ctx.drawImage(size.image, 0, size.image.height * cropTop, size.image.width, size.image.height * cropRatio, x - width / 2, baseY - size.height * cropRatio, width, size.height * cropRatio);
   }
 
   private drawPortals(ctx: Office2dCanvas2D, frame: Office2dRenderFrame): void {
@@ -394,31 +385,12 @@ export class Office2dRenderer {
       const actorAlpha = office2dActorOpacity(actor, frame.now);
       const isGhost = actor.id === frame.selfId && frame.ghost;
       const contact = resolveStudioHdGroundContactSpec({
-        tier: "ultra",
-        moving: actor.moving,
-        seated: false,
-        ghost: isGhost,
-        reducedMotion: frame.reducedMotion,
-        distance: actor.stride,
-        stride: OFFICE2D_GAIT_DISTANCE,
+        tier: "ultra", moving: actor.moving, seated: false, ghost: isGhost,
+        reducedMotion: frame.reducedMotion, distance: actor.stride, stride: OFFICE2D_GAIT_DISTANCE,
       });
       if (!contact.visible) continue;
-      paintOffice2dShadow(
-        ctx,
-        actor.x,
-        actor.y + 1.5,
-        17 * bob.shadowScale * contact.penumbraScaleX,
-        6.2 * bob.shadowScale,
-        contact.penumbraAlpha * actorAlpha,
-      );
-      paintOffice2dShadow(
-        ctx,
-        actor.x,
-        actor.y + 0.8,
-        contact.coreWidth * 0.52 * bob.shadowScale,
-        contact.coreHeight * 0.55 * bob.shadowScale,
-        contact.coreAlpha * actorAlpha,
-      );
+      paintOffice2dShadow(ctx, actor.x, actor.y + 1.5, 17 * bob.shadowScale * contact.penumbraScaleX, 6.2 * bob.shadowScale, contact.penumbraAlpha * actorAlpha);
+      paintOffice2dShadow(ctx, actor.x, actor.y + 0.8, contact.coreWidth * 0.52 * bob.shadowScale, contact.coreHeight * 0.55 * bob.shadowScale, contact.coreAlpha * actorAlpha);
     }
   }
 
@@ -543,8 +515,14 @@ export class Office2dRenderer {
     const opacity = office2dActorOpacity(actor, frame.now) * (actor.id === frame.selfId && frame.ghost ? 0.5 : 1);
     if (opacity <= 0.01) return;
     const avatarProfile = actor.id === frame.selfId ? this.host.selfAvatarProfile?.() : null;
-    const pose = office2dPoseFrame(actor, frame.time, frame.now, frame.reducedMotion);
-    const walkFrame = pose.sheet === "walk" ? pose : office2dActorFrame(actor);
+    const seated = actor.seat !== null;
+    const emoteTransform = resolveOffice2dEmoteTransform(actor, frame.now, frame.reducedMotion);
+    const effectiveFacing = !actor.moving && !seated && emoteTransform.facingOverride ? emoteTransform.facingOverride : actor.facing;
+    const poseActor = effectiveFacing !== actor.facing
+      ? { ...actor, facing: effectiveFacing, gesture: effectiveFacing === "down" ? actor.gesture : null }
+      : actor;
+    const pose = office2dPoseFrame(poseActor, frame.time, frame.now, frame.reducedMotion);
+    const walkFrame = pose.sheet === "walk" ? pose : office2dActorFrame(poseActor);
     const workCandidate = pose.sheet === "work" ? this.host.image(office2dWorkSheetUrl(actor.character)) : null;
     const generatedWorkImage = workCandidate && office2dAtlasImageMatches(actor.character, "work", pose.row, pose.col, workCandidate) ? workCandidate : null;
     const workImage = generatedWorkImage ?? (pose.sheet === "work" ? this.host.image(office2dLegacyWorkSheetUrl(actor.character)) : null);
@@ -553,9 +531,8 @@ export class Office2dRenderer {
     const walkImage = generatedWalkImage ?? (workImage ? null : this.host.image(office2dLegacyCharacterUrl(actor.character)));
     // 작업 자세 시트가 없으면(로딩 실패) 보행 시트의 같은 방향 정지 프레임으로 대신한다.
     const bob = office2dActorBob(actor, frame.time, frame.reducedMotion);
-    const seated = actor.seat !== null;
     const foot = office2dActorFoot(actor);
-    const footX = foot.x;
+    const footX = foot.x + emoteTransform.offsetX;
     const footY = seated ? foot.y : actor.y + 3;
     const height = ACTOR_HEIGHT * bob.scaleY;
     const width = ACTOR_HEIGHT * (OFFICE2D_CHARACTER_CELL.width / OFFICE2D_CHARACTER_CELL.height) * (seated ? 1 : bob.scaleX);
@@ -577,11 +554,11 @@ export class Office2dRenderer {
       ctx.ellipse(footX, footY - 2, 18, 7, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
-    const anchorY = footY + bob.offsetY;
-    const reaction = resolveOffice2dStandingExpression(actor, pose, frame, (url) => this.host.image(url));
+    const anchorY = footY + bob.offsetY + emoteTransform.offsetY;
+    const reaction = resolveOffice2dStandingExpression(poseActor, pose, frame, (url) => this.host.image(url));
     const image = reaction?.image ?? workImage ?? walkImage;
     const drawHeight = seated && !workImage ? height * 0.9 : height;
-    const tilt = !seated && !workImage ? bob.tiltRad : 0;
+    const tilt = (!seated && !workImage ? bob.tiltRad : 0) + emoteTransform.tiltRad;
 
     // 전력 질주 잔상(Afterimage Ghost Trail) 렌더링
     if (!frame.reducedMotion && !seated && actor.afterimages && actor.afterimages.length > 0) {
@@ -599,22 +576,10 @@ export class Office2dRenderer {
         if (walkImage) {
           const ghostFrame = office2dActorFrame({ facing: ghost.facing, moving: true, stride: ghost.stride, seat: null });
           const ghostDraw = office2dAtlasDrawFrame(actor.character, "walk", ghostFrame.row, ghostFrame.col, walkImage, 1, Boolean(generatedWalkImage));
-          const gs = ghostDraw.source;
-          const gt = ghostDraw.destination;
-          const gw = width * ghostScale;
-          const gh = drawHeight * ghostScale;
+          const gs = ghostDraw.source, gt = ghostDraw.destination;
+          const gw = width * ghostScale, gh = drawHeight * ghostScale;
           ctx.translate(ghost.x, ghost.y + 3);
-          ctx.drawImage(
-            walkImage,
-            gs.x,
-            gs.y,
-            gs.width,
-            gs.height,
-            -gw / 2 + (gt.x / 128) * gw,
-            -gh * FOOT_RATIO + (gt.y / 192) * gh,
-            (gt.width / 128) * gw,
-            (gt.height / 192) * gh,
-          );
+          ctx.drawImage(walkImage, gs.x, gs.y, gs.width, gs.height, -gw / 2 + (gt.x / 128) * gw, -gh * FOOT_RATIO + (gt.y / 192) * gh, (gt.width / 128) * gw, (gt.height / 192) * gh);
         }
         ctx.restore();
       }
@@ -640,12 +605,12 @@ export class Office2dRenderer {
           target.width / 128 * width, target.height / 192 * drawHeight);
       } finally { ctx.restore(); }
     } else {
-      paintOffice2dFallbackActor(ctx, footX, anchorY, height, actor.accent, actor.facing, actor.stride / 10);
+      paintOffice2dFallbackActor(ctx, footX, anchorY, height, actor.accent, effectiveFacing, actor.stride / 10);
     }
 
     // 고유 위상 기반 자연스러운 눈 깜빡임(Micro Eye Blink) 오버레이
     const blink = office2dActorBlink(actor, frame.time, frame.reducedMotion);
-    const activeFacing = actor.seat?.facing ?? actor.facing;
+    const activeFacing = actor.seat?.facing ?? effectiveFacing;
     if (blink > 0.35 && activeFacing !== "up" && !reaction) {
       ctx.save();
       ctx.translate(footX, anchorY);
@@ -671,7 +636,7 @@ export class Office2dRenderer {
     }
 
     if (avatarProfile) paintOffice2dAvatarAccessory(ctx, avatarProfile, {
-      facing: actor.seat?.facing ?? actor.facing, footX, footY: anchorY, width,
+      facing: activeFacing, footX, footY: anchorY, width,
       height: drawHeight, tiltRad: tilt, offset: accessoryOffset,
     });
     ctx.globalAlpha = 1;

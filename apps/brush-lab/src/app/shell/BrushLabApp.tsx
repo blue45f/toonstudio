@@ -148,7 +148,7 @@ export function BrushLabApp(props: BrushLabAppProps) {
             <button
               key={step.id}
               type="button"
-              className="lab-workflow-step"
+              className={`lab-workflow-step${tab === step.id ? " lab-workflow-step--active" : ""}`}
               aria-current={tab === step.id ? "step" : undefined}
               onClick={() => actions.setTab(step.id)}
             >

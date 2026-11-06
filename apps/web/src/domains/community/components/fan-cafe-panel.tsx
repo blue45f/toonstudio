@@ -621,7 +621,7 @@ export function FanCafePanel({
           type="button"
           onClick={() => setSelectedTagFilter(null)}
           className={cn(
-            "inline-flex h-11 items-center gap-1 rounded-xl border border-line bg-raised/45 px-2.5 text-xs font-medium transition-colors",
+            "inline-flex h-11 items-center gap-1 whitespace-nowrap rounded-xl border border-line bg-raised/45 px-2.5 text-xs font-medium transition-colors",
             selectedTag === null ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-canvas/55 hover:text-fg"
           )}
         >
@@ -639,7 +639,7 @@ export function FanCafePanel({
                 setSort(option.value);
               }}
               className={cn(
-                "px-3 text-xs font-medium transition-colors first:rounded-l-xl last:rounded-r-xl",
+                "whitespace-nowrap px-3 text-xs font-medium transition-colors first:rounded-l-xl last:rounded-r-xl",
                 sort === option.value ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-canvas/55 hover:text-fg"
               )}
             >
@@ -659,7 +659,7 @@ export function FanCafePanel({
                 type="button"
                 onClick={() => setSelectedTagFilter(active ? null : tag)}
                 className={cn(
-                  "inline-flex min-h-11 items-center rounded-full border px-3 text-xs transition-colors",
+                  "inline-flex min-h-11 items-center whitespace-nowrap rounded-full border px-3 text-xs transition-colors",
                   active
                     ? "border-accent/55 bg-accent-soft text-accent"
                     : "border-line bg-canvas/50 text-fg-3 hover:text-fg"
@@ -702,7 +702,7 @@ export function FanCafePanel({
                   setFilterKind(item.value);
                 }}
                 className={cn(
-                  "min-h-[44px] min-w-[44px] rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                  "min-h-[44px] min-w-[44px] whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                   filterKind === item.value
                     ? "border-accent/55 bg-accent-soft text-accent"
                     : "border-line bg-raised/45 text-fg-3 hover:text-fg"

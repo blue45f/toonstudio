@@ -57,6 +57,12 @@ export async function saveBrushStudioV6ProductBrush(program: BrushStudioV6Progra
 
 export function brushStudioV6ProductBrushHref(id: string, scope: string): string {
   const params = new URLSearchParams({ materialBrush: id });
+  if (scope.startsWith("document:")) {
+    const [, projectId = "", documentId = ""] = scope.split(":");
+    if (projectId && documentId) {
+      return `/studio/p/${encodeURIComponent(projectId)}/d/${encodeURIComponent(documentId)}?${params}`;
+    }
+  }
   if (scope.startsWith("work:")) return `/studio/work/${encodeURIComponent(scope.slice(5))}/canvas?${params}`;
   if (scope.startsWith("remix:")) return `/studio/remix/${encodeURIComponent(scope.slice(6))}/canvas?${params}`;
   return `/studio/canvas?${params}`;

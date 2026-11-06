@@ -154,28 +154,45 @@ function ReferenceSection({ session, deps, now }: ReferenceSectionProps) {
   const [reference, setReference] = useState<ReferenceState>({ phase: "idle" });
   const cache = useRef(createThumbnailEmbeddingCache());
   const mounted = useRef(true);
+  const requestEpoch = useRef(0);
   const images = useImageLifecycle();
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
+      requestEpoch.current += 1;
     };
   }, []);
 
   const analyze = useCallback(
     async (file: Blob): Promise<void> => {
+      requestEpoch.current += 1;
+      const epoch = requestEpoch.current;
+      const current = (): boolean => mounted.current && requestEpoch.current === epoch;
       const update = (next: ReferenceState): void => {
-        if (mounted.current) setReference(next);
+        if (current()) setReference(next);
       };
       let image: DecodedImage | null = null;
       try {
         update({ phase: "working", step: "이미지 디코드" });
         image = await deps.decodeImage(file);
         if (!images.track(image)) return;
+        if (!current()) {
+          images.discard(image);
+          return;
+        }
         update({ phase: "working", step: "이미지 임베더 로드" });
         const embedder = await session.ensure("imageEmbedder");
+        if (!current()) {
+          images.discard(image);
+          return;
+        }
         update({ phase: "working", step: "참고 이미지 임베딩" });
         const queryEmbedding = await embedder.port.embed(image.source);
+        if (!current()) {
+          images.discard(image);
+          return;
+        }
         const small = downsampleRgba({ width: image.width, height: image.height, rgba: image.rgba }, PALETTE_MAX_SIDE);
         const palette = extractPalette(small.rgba, { k: PALETTE_K, seed: PALETTE_SEED });
         const colors = recommendColors(palette);
@@ -188,9 +205,14 @@ function ReferenceSection({ session, deps, now }: ReferenceSectionProps) {
           cache: cache.current,
           onProgress: (done, total) => update({ phase: "working", step: `프리셋 썸네일 임베딩 ${done}/${total}` }),
         });
+        if (!current()) {
+          images.discard(image);
+          return;
+        }
         update({ phase: "ready", image, palette, colors, recommendation });
       } catch (error) {
         if (image) images.discard(image);
+        if (!current()) return;
         const failure = toFailure("vision-reference-failed", "참고 이미지 분석에 실패했습니다.", error, now());
         update({ phase: "failed", failure });
         store.applyEvent({ type: "failure", failure });
@@ -204,6 +226,7 @@ function ReferenceSection({ session, deps, now }: ReferenceSectionProps) {
 
   const onFile = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (file) void analyze(file);
   };
 

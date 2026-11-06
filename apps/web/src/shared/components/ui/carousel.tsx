@@ -47,7 +47,7 @@ export function Carousel({
       onKeyDown={onKeyDown}
     >
       {/* viewport — overflow-hidden. 음수 마진 없이 좌우 패딩으로 가장자리 peek 여백 확보. */}
-      <div className={cn("overflow-hidden", edgePaddingClassName)} ref={emblaRef}>
+      <div className={cn("overflow-hidden rounded-xl", edgePaddingClassName)} ref={emblaRef}>
         <div className={cn("flex", gapClassName)}>
           {items.map((child, i) => (
             <div key={i} className={cn("min-w-0 shrink-0", itemClassName)} aria-roledescription="slide">
@@ -65,7 +65,7 @@ export function Carousel({
             aria-label="이전"
             disabled={!canPrev}
             onClick={scrollPrev}
-            className="absolute -left-3 top-[42%] z-10 hidden -translate-y-1/2 place-items-center rounded-full border border-line-strong bg-panel/95 p-1.5 text-fg-2 shadow-[0_8px_24px_-12px_oklch(0_0_0/0.5)] backdrop-blur-sm transition-[opacity,background,color] duration-150 hover:bg-raised hover:text-fg disabled:pointer-events-none disabled:opacity-0 sm:grid"
+            className="absolute left-1 top-[42%] z-10 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-line-strong bg-panel/95 text-fg-2 shadow-[0_8px_24px_-12px_oklch(0_0_0/0.5)] backdrop-blur-sm transition-[opacity,background,color] duration-150 hover:bg-raised hover:text-fg disabled:pointer-events-none disabled:opacity-0 sm:-left-2 sm:grid"
           >
             <ChevronLeft size={18} />
           </button>
@@ -74,7 +74,7 @@ export function Carousel({
             aria-label="다음"
             disabled={!canNext}
             onClick={scrollNext}
-            className="absolute -right-3 top-[42%] z-10 hidden -translate-y-1/2 place-items-center rounded-full border border-line-strong bg-panel/95 p-1.5 text-fg-2 shadow-[0_8px_24px_-12px_oklch(0_0_0/0.5)] backdrop-blur-sm transition-[opacity,background,color] duration-150 hover:bg-raised hover:text-fg disabled:pointer-events-none disabled:opacity-0 sm:grid"
+            className="absolute right-1 top-[42%] z-10 hidden size-11 -translate-y-1/2 place-items-center rounded-full border border-line-strong bg-panel/95 text-fg-2 shadow-[0_8px_24px_-12px_oklch(0_0_0/0.5)] backdrop-blur-sm transition-[opacity,background,color] duration-150 hover:bg-raised hover:text-fg disabled:pointer-events-none disabled:opacity-0 sm:-right-2 sm:grid"
           >
             <ChevronRight size={18} />
           </button>
@@ -90,8 +90,8 @@ export function Carousel({
                 aria-current={i === selectedIndex}
                 aria-selected={i === selectedIndex}
                 onClick={() => scrollTo(i)}
-                // 탭 영역은 24px 이상(터치 타겟), 보이는 점은 내부 span 으로 작게 유지.
-                className="group/dot grid size-6 place-items-center"
+                // 탭 영역은 44px 이상(터치 타겟), 보이는 점은 내부 span 으로 작게 유지.
+                className="group/dot grid min-h-11 min-w-11 place-items-center"
               >
                 <span
                   aria-hidden

@@ -681,6 +681,11 @@
   .studio-lobby[data-density="compact"] .studio-lobby-hero__art {
     display: none;
   }
+
+  /* 480~900px 태블릿 폭에서는 가로형 compact 카드(썸네일+글+화살표)를 3열로 두면 글 열이 65px까지 좁아지므로 2열로 배치한다. */
+  .studio-lobby[data-density="compact"] .studio-lobby-quick ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 600px) {

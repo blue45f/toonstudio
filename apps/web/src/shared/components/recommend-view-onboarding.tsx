@@ -40,7 +40,7 @@ export function RecommendOnboarding({
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-panel/75 p-6 sm:p-8 max-w-2xl mx-auto my-6 space-y-6 shadow-xl relative overflow-hidden backdrop-blur-md animate-fade-in">
+    <div className="rounded-2xl border border-line bg-panel/75 p-4 sm:p-8 max-w-2xl mx-auto my-6 space-y-6 shadow-xl relative overflow-hidden backdrop-blur-md animate-fade-in">
       {/* Progress Bar */}
       <div className="flex items-center justify-between text-xs text-fg-3">
         <span className="font-semibold text-accent flex items-center gap-1">
@@ -95,12 +95,12 @@ export function RecommendOnboarding({
             })}
           </div>
 
-          <div className="flex justify-between pt-4 border-t border-line/45">
+          <div className="flex flex-wrap justify-between gap-2 pt-4 border-t border-line/45">
             {onCancel ? (
               <button
                 type="button"
                 onClick={onCancel}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-5 py-2.5 text-xs font-semibold text-fg-2 hover:bg-raised cursor-pointer transition-all"
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-5 py-2.5 text-xs font-semibold text-fg-2 hover:bg-raised cursor-pointer transition-all"
               >
                 <X size={13} aria-hidden="true" />
                 닫기
@@ -110,7 +110,7 @@ export function RecommendOnboarding({
               type="button"
               disabled={selectedGenres.length < 2}
               onClick={() => setOnboardingStep(2)}
-              className="inline-flex items-center justify-center rounded-xl bg-accent px-6 py-2.5 text-xs font-semibold text-on-accent shadow-md hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-6 py-2.5 text-xs font-semibold text-on-accent shadow-md hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
             >
               다음 단계로
             </button>
@@ -162,18 +162,18 @@ export function RecommendOnboarding({
             <p className="text-xs text-fg-3 py-10 text-center">선택 가능한 작품 데이터를 조회하고 있습니다...</p>
           )}
 
-          <div className="flex justify-between pt-4 border-t border-line/45">
+          <div className="flex flex-wrap justify-between gap-2 pt-4 border-t border-line/45">
             <button
               type="button"
               onClick={() => setOnboardingStep(1)}
-              className="inline-flex items-center justify-center rounded-xl border border-line bg-card px-5 py-2.5 text-xs font-semibold text-fg-2 hover:bg-raised cursor-pointer transition-all"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-line bg-card px-5 py-2.5 text-xs font-semibold text-fg-2 hover:bg-raised cursor-pointer transition-all"
             >
               이전으로
             </button>
             <button
               type="button"
               onClick={() => setOnboardingStep(3)}
-              className="inline-flex items-center justify-center rounded-xl bg-accent px-6 py-2.5 text-xs font-semibold text-on-accent shadow-md hover:bg-accent/90 cursor-pointer transition-all"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-6 py-2.5 text-xs font-semibold text-on-accent shadow-md hover:bg-accent/90 cursor-pointer transition-all"
             >
               {selectedTitles.length > 0 ? "다음 단계로" : "선택 없이 건너뛰기"}
             </button>
@@ -191,7 +191,7 @@ export function RecommendOnboarding({
           <div className="space-y-4">
             <div className="space-y-2">
               <span className="block text-xs font-semibold text-fg-3">선호 포맷</span>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {[
                   { value: "all", label: "웹툰 & 웹소설" },
                   { value: "webtoon", label: "웹툰만" },
@@ -202,7 +202,7 @@ export function RecommendOnboarding({
                     type="button"
                     onClick={() => setSelectedFormat(opt.value as "all" | "webtoon" | "webnovel")}
                     className={cn(
-                      "flex-1 rounded-xl border p-3 text-xs font-semibold transition-all cursor-pointer",
+                      "min-h-11 flex-1 rounded-xl border p-3 text-xs font-semibold transition-all cursor-pointer",
                       selectedFormat === opt.value
                         ? "border-accent bg-accent-soft/30 text-accent shadow-sm"
                         : "border-line bg-card text-fg-2 hover:bg-raised"
@@ -216,7 +216,7 @@ export function RecommendOnboarding({
 
             <div className="space-y-2">
               <span className="block text-xs font-semibold text-fg-3">선호 상태</span>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {[
                   { value: "all", label: "전체 상태" },
                   { value: "completed", label: "정주행 완결작" },
@@ -227,7 +227,7 @@ export function RecommendOnboarding({
                     type="button"
                     onClick={() => setSelectedStatus(opt.value as "all" | "ongoing" | "completed")}
                     className={cn(
-                      "flex-1 rounded-xl border p-3 text-xs font-semibold transition-all cursor-pointer",
+                      "min-h-11 flex-1 rounded-xl border p-3 text-xs font-semibold transition-all cursor-pointer",
                       selectedStatus === opt.value
                         ? "border-accent bg-accent-soft/30 text-accent shadow-sm"
                         : "border-line bg-card text-fg-2 hover:bg-raised"
@@ -240,18 +240,18 @@ export function RecommendOnboarding({
             </div>
           </div>
 
-          <div className="flex justify-between pt-4 border-t border-line/45">
+          <div className="flex flex-wrap justify-between gap-2 pt-4 border-t border-line/45">
             <button
               type="button"
               onClick={() => setOnboardingStep(2)}
-              className="inline-flex items-center justify-center rounded-xl border border-line bg-card px-5 py-2.5 text-xs font-semibold text-fg-2 hover:bg-raised cursor-pointer transition-all"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-line bg-card px-5 py-2.5 text-xs font-semibold text-fg-2 hover:bg-raised cursor-pointer transition-all"
             >
               이전으로
             </button>
             <button
               type="button"
               onClick={handleComplete}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-accent px-6 py-2.5 text-xs font-bold text-on-accent shadow-lg hover:bg-accent/90 cursor-pointer transition-all animate-pulse-soft"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-accent px-6 py-2.5 text-xs font-bold text-on-accent shadow-lg hover:bg-accent/90 cursor-pointer transition-all animate-pulse-soft"
             >
               <Wand2 size={13} />
               취향 분석 완료 및 추천받기

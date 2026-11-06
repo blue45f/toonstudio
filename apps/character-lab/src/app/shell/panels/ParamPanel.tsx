@@ -16,7 +16,7 @@
  *   키트에서는 눈·코·입·귀 슬롯이 부분 지원이면 그 사유(없는 축)도 이 패널에 보인다(해당 슬라이더가 형상에 안 닿을 수 있다).
  * - 스타일 접두 `cl-param-`(core의 character-lab.css가 정의; 추가 클래스는 docs/parity/humanoid.md §4 요청).
  */
-import { useCallback, useId, useState, useSyncExternalStore } from "react";
+import { memo, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
 import { BODY_PARAM_KEYS, BODY_PARAM_LABELS_KO, FACE_PARAM_KEYS, FACE_PARAM_LABELS_KO, PARAM_MAX, PARAM_MIN, clampParam } from "../../../contracts";
 import { HAIR_COLORS, IRIS_COLORS, SKIN_TONES, findPaletteEntry } from "../../../domains/humanoid/palette";
@@ -26,9 +26,9 @@ import { useDispatch, useKitPlans, useLabState } from "../lab-store-context";
 
 import { ParamCustomizeSections } from "./param-customize-sections";
 
-import type { BodyParamKey, FaceParamKey, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
+import type { BodyParamKey, CharacterRecipe, FaceParamKey, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/humanoid/palette";
-import type { WebtoonUniverseShaperId } from "../../../presets";
+import type { WebtoonUniverseShaperId, WebtoonUniverseShaperPreset } from "../../../presets";
 
 export type ParamGroup = "body" | "face";
 
@@ -87,6 +87,14 @@ export const QUICK_PROPORTION_PRESETS: readonly QuickProportionPreset[] = [
 
 const PROPORTION_PRESET_KEYS = ["height", "headSize", "legLength", "shoulderWidth"] as const;
 
+export function isWebtoonUniversePresetActive(preset: WebtoonUniverseShaperPreset, recipe: CharacterRecipe): boolean {
+  if (recipe.style.packId !== preset.artStyleId) return false;
+  for (const [slot, presetId] of Object.entries(preset.slots)) {
+    if (presetId !== undefined && recipe.slots[slot as SlotKind] !== presetId) return false;
+  }
+  return true;
+}
+
 /** 소수 2자리 문자열. -0·-0.00을 만들지 않는다. */
 export function formatParam(value: number): string {
   const rounded = Math.round(value * 100) / 100;
@@ -101,16 +109,37 @@ export function describeParamValue(value: number, poles: readonly [string, strin
 }
 
 interface ParamRowProps {
+  readonly group: ParamGroup;
   readonly paramKey: ParamKey;
   readonly labelKo: string;
   readonly value: number;
-  readonly onChange: (value: number) => void;
-  readonly onReset: () => void;
+  readonly resetEpoch: number;
+  readonly onParamChange: (group: ParamGroup, key: BodyParamKey | FaceParamKey, value: number) => void;
+  readonly onParamReset: (group: ParamGroup, key: BodyParamKey | FaceParamKey) => void;
 }
 
-function ParamRow({ paramKey, labelKo, value, onChange, onReset }: ParamRowProps) {
+const ParamRow = memo(function ParamRow({ group, paramKey, labelKo, value, resetEpoch, onParamChange, onParamReset }: ParamRowProps) {
   const ids = useId();
   const [draft, setDraft] = useState<string | null>(null);
+  const lastCommittedFromDraftRef = useRef<number | null>(null);
+  const prevValueRef = useRef(value);
+  const prevResetEpochRef = useRef(resetEpoch);
+
+  useEffect(() => {
+    if (resetEpoch !== prevResetEpochRef.current) {
+      prevResetEpochRef.current = resetEpoch;
+      lastCommittedFromDraftRef.current = null;
+      if (draft !== null) setDraft(null);
+    }
+    if (value !== prevValueRef.current) {
+      prevValueRef.current = value;
+      if (value !== lastCommittedFromDraftRef.current && draft !== null) {
+        setDraft(null);
+      }
+      lastCommittedFromDraftRef.current = null;
+    }
+  }, [value, resetEpoch, draft]);
+
   const poles = PARAM_POLES_KO[paramKey];
   const parsedDraft = draft === null ? null : Number(draft);
   const outOfRange = parsedDraft !== null && Number.isFinite(parsedDraft) && draft?.trim() !== "" && (parsedDraft < PARAM_MIN || parsedDraft > PARAM_MAX);
@@ -130,8 +159,9 @@ function ParamRow({ paramKey, labelKo, value, onChange, onReset }: ParamRowProps
         value={value}
         aria-valuetext={describeParamValue(value, poles)}
         onChange={(event) => {
-          setDraft(null);
-          onChange(Number(event.target.value));
+          lastCommittedFromDraftRef.current = null;
+          if (draft !== null) setDraft(null);
+          onParamChange(group, paramKey, Number(event.target.value));
         }}
       />
       <span className="cl-param-pole cl-param-pole--positive" aria-hidden="true">
@@ -150,25 +180,32 @@ function ParamRow({ paramKey, labelKo, value, onChange, onReset }: ParamRowProps
           const text = event.target.value;
           setDraft(text);
           const parsed = Number(text);
-          if (text.trim() !== "" && Number.isFinite(parsed)) onChange(parsed);
+          if (text.trim() !== "" && Number.isFinite(parsed)) {
+            lastCommittedFromDraftRef.current = clampParam(parsed);
+            onParamChange(group, paramKey, parsed);
+          }
         }}
-        onBlur={() => setDraft(null)}
+        onBlur={() => {
+          lastCommittedFromDraftRef.current = null;
+          setDraft(null);
+        }}
       />
       <button
         type="button"
         className="cl-param-reset"
         aria-label={`${labelKo} 초기화`}
-        disabled={value === 0}
+        disabled={value === 0 && draft === null}
         onClick={() => {
+          lastCommittedFromDraftRef.current = null;
           setDraft(null);
-          onReset();
+          if (value !== 0) onParamReset(group, paramKey);
         }}
       >
         초기화
       </button>
     </div>
   );
-}
+});
 
 interface PaletteRowProps {
   readonly spec: PaletteRowSpec;
@@ -176,7 +213,7 @@ interface PaletteRowProps {
   readonly onPick: (key: RecipeColorKey, hex: string) => void;
 }
 
-function PaletteRow({ spec, current, onPick }: PaletteRowProps) {
+const PaletteRow = memo(function PaletteRow({ spec, current, onPick }: PaletteRowProps) {
   const matched = findPaletteEntry(spec.entries, current);
   return (
     <div className="cl-param-palette-row" data-color-key={spec.key}>
@@ -202,7 +239,7 @@ function PaletteRow({ spec, current, onPick }: PaletteRowProps) {
       <span className="cl-param-palette-name">{matched ? `${matched.labelKo} (${matched.hex})` : `직접 지정 (${current})`}</span>
     </div>
   );
-}
+});
 
 /** 슬롯 능력이 완전하지 않을 때의 사유 줄(체형·얼굴형 슬롯 기준) */
 const CAPABILITY_SLOTS: readonly { readonly slot: SlotKind; readonly labelKo: string }[] = [
@@ -241,10 +278,35 @@ export function ParamPanel() {
   const { recipe, capabilities } = useLabState();
   const dispatch = useDispatch();
   const [selectedUniverseId, setSelectedUniverseId] = useState<WebtoonUniverseShaperId>("school-romance");
+  const [resetEpoch, setResetEpoch] = useState(0);
 
-  const setParam = (group: ParamGroup, key: BodyParamKey | FaceParamKey, value: number, options: { readonly coalesceKey?: string } = {}): void => {
-    dispatch({ type: "param/set", group, key, value: clampParam(value), ...(options.coalesceKey !== undefined ? { coalesceKey: options.coalesceKey } : {}) });
-  };
+  const setParam = useCallback(
+    (group: ParamGroup, key: BodyParamKey | FaceParamKey, value: number, options: { readonly coalesceKey?: string } = {}): void => {
+      dispatch({ type: "param/set", group, key, value: clampParam(value), ...(options.coalesceKey !== undefined ? { coalesceKey: options.coalesceKey } : {}) });
+    },
+    [dispatch],
+  );
+
+  const onParamChange = useCallback(
+    (group: ParamGroup, key: BodyParamKey | FaceParamKey, value: number): void => {
+      setParam(group, key, value, { coalesceKey: `${group}:${key}` });
+    },
+    [setParam],
+  );
+
+  const onParamReset = useCallback(
+    (group: ParamGroup, key: BodyParamKey | FaceParamKey): void => {
+      setParam(group, key, 0);
+    },
+    [setParam],
+  );
+
+  const onPickColor = useCallback(
+    (key: RecipeColorKey, hex: string): void => {
+      dispatch({ type: "color/set", key, value: hex });
+    },
+    [dispatch],
+  );
 
   const applyWebtoonUniversePreset = (presetId: WebtoonUniverseShaperId): void => {
     setSelectedUniverseId(presetId);
@@ -254,7 +316,11 @@ export function ParamPanel() {
     }
   };
 
-  const activeUniversePreset = WEBTOON_UNIVERSE_SHAPER_PRESETS.find((item) => item.id === selectedUniverseId) ?? WEBTOON_UNIVERSE_SHAPER_PRESETS[0]!;
+  const matchedUniversePreset = WEBTOON_UNIVERSE_SHAPER_PRESETS.find((item) => isWebtoonUniversePresetActive(item, recipe));
+  const activeUniversePreset =
+    matchedUniversePreset ??
+    WEBTOON_UNIVERSE_SHAPER_PRESETS.find((item) => item.id === selectedUniverseId) ??
+    WEBTOON_UNIVERSE_SHAPER_PRESETS[0]!;
   const activeVarcoPreview = resolveCharacterLabVarco3dPreviewSettings(activeUniversePreset.id);
 
   const bodyValue = (key: BodyParamKey): number => recipe.body[key] ?? 0;
@@ -263,6 +329,7 @@ export function ParamPanel() {
   const activeFace = FACE_PARAM_KEYS.filter((key) => faceValue(key) !== 0);
 
   const resetGroup = (which: ParamGroup | "all"): void => {
+    setResetEpoch((prev) => prev + 1);
     const coalesceKey = `reset:${which}`;
     if (which !== "face") for (const key of activeBody) setParam("body", key, 0, { coalesceKey });
     if (which !== "body") for (const key of activeFace) setParam("face", key, 0, { coalesceKey });
@@ -358,7 +425,7 @@ export function ParamPanel() {
               key={preset.id}
               type="button"
               className="cl-button cl-button-small"
-              aria-pressed={selectedUniverseId === preset.id && recipe.style.packId === preset.artStyleId}
+              aria-pressed={isWebtoonUniversePresetActive(preset, recipe)}
               data-testid={`param-varco3d-preset-${preset.id}`}
               onClick={() => applyWebtoonUniversePreset(preset.id)}
             >
@@ -388,11 +455,13 @@ export function ParamPanel() {
         {BODY_PARAM_KEYS.map((key) => (
           <ParamRow
             key={key}
+            group="body"
             paramKey={key}
             labelKo={BODY_PARAM_LABELS_KO[key]}
             value={bodyValue(key)}
-            onChange={(value) => setParam("body", key, value, { coalesceKey: `body:${key}` })}
-            onReset={() => setParam("body", key, 0)}
+            resetEpoch={resetEpoch}
+            onParamChange={onParamChange}
+            onParamReset={onParamReset}
           />
         ))}
       </div>
@@ -402,11 +471,13 @@ export function ParamPanel() {
         {FACE_PARAM_KEYS.map((key) => (
           <ParamRow
             key={key}
+            group="face"
             paramKey={key}
             labelKo={FACE_PARAM_LABELS_KO[key]}
             value={faceValue(key)}
-            onChange={(value) => setParam("face", key, value, { coalesceKey: `face:${key}` })}
-            onReset={() => setParam("face", key, 0)}
+            resetEpoch={resetEpoch}
+            onParamChange={onParamChange}
+            onParamReset={onParamReset}
           />
         ))}
       </div>
@@ -414,7 +485,7 @@ export function ParamPanel() {
       <div className="cl-param-group" role="group" aria-label="색 팔레트">
         <h3 className="cl-param-subtitle">색 팔레트</h3>
         {PALETTE_ROWS.map((spec) => (
-          <PaletteRow key={spec.key} spec={spec} current={recipe.colors[spec.key]} onPick={(key, hex) => dispatch({ type: "color/set", key, value: hex })} />
+          <PaletteRow key={spec.key} spec={spec} current={recipe.colors[spec.key]} onPick={onPickColor} />
         ))}
       </div>
       <ParamCustomizeSections />

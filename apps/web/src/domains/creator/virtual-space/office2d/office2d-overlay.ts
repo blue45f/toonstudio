@@ -79,7 +79,7 @@ export function planOffice2dOverlay(ctx: Office2dCanvas2D, frame: Office2dOverla
     const head = camera.worldToScreen({ x: foot.x, y: office2dActorHeadY(actor) });
     if (head.x < -80 || head.x > viewport.width + 80 || head.y < -60 || head.y > viewport.height + 120) continue;
     const name = truncate(actor.name, 18);
-    const status = actor.status ? truncate(actor.status, 16) : null;
+    const status = actor.status ? truncate(actor.status, 24) : null;
     const size = plateSize(ctx, name, status);
     requests.push({ id: actor.id, anchorX: head.x, bottom: head.y - 4, width: size.width, height: size.height, priority: PRIORITY[actor.kind], distance });
     candidates.set(actor.id, { actor, opacity, head, name, status });
@@ -94,6 +94,17 @@ export function planOffice2dOverlay(ctx: Office2dCanvas2D, frame: Office2dOverla
     if (placement.alpha >= 1) boxes.push(placement.box);
   }
   return { actors, boxes };
+}
+
+export function office2dStatusDotColor(status: string | null | undefined): string | null {
+  if (!status) return null;
+  if (status.startsWith("🟢")) return "#22c55e";
+  if (status.startsWith("🔴")) return "#ef4444";
+  if (status.startsWith("🎤")) return "#a855f7";
+  if (status.startsWith("🎯")) return "#3b82f6";
+  if (status.startsWith("🟡")) return "#eab308";
+  if (status.startsWith("☕")) return "#f97316";
+  return null;
 }
 
 export function drawOffice2dKeycap(ctx: Office2dCanvas2D, x: number, y: number, key: string): void {
@@ -162,7 +173,7 @@ function drawNamePlate(ctx: Office2dCanvas2D, box: Office2dLabelBox, name: strin
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }
-  ctx.fillStyle = npcLike ? "#c4b5fd" : actor.accent;
+  ctx.fillStyle = office2dStatusDotColor(status ?? actor.status) ?? (npcLike ? "#c4b5fd" : actor.accent);
   ctx.beginPath();
   ctx.arc(box.x + 10, box.y + 10, 3.5, 0, Math.PI * 2);
   ctx.fill();

@@ -49,7 +49,7 @@ export function ToastHost() {
             className="pointer-events-auto flex max-w-[20rem] animate-fade-up items-center gap-2.5 rounded-xl border border-line-strong bg-panel/95 py-2.5 pl-3 pr-2 text-sm text-fg shadow-[0_14px_40px_-16px_oklch(0.1_0.02_70/0.6)] backdrop-blur-md"
           >
             <Icon size={16} className={cn("shrink-0", toneClass[t.tone])} />
-            <span className="min-w-0 flex-1 truncate">{t.message}</span>
+            <span className="min-w-0 flex-1 line-clamp-2 break-words">{t.message}</span>
             <button
               type="button"
               onClick={() => dismiss(t.id)}

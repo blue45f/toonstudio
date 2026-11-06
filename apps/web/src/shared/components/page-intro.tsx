@@ -44,10 +44,15 @@ export function PageIntro({ children, variant = "restrained", className, ...rest
       className={cn("page-intro", className)}
       data-variant={variant}
       data-skipped={skipped}
-      onClick={skip}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") skip();
-      }}
+      onClick={skipped ? undefined : skip}
+      onKeyDown={
+        skipped
+          ? undefined
+          : (event) => {
+              if (event.target !== event.currentTarget) return;
+              if (event.key === "Enter" || event.key === " ") skip();
+            }
+      }
       role="presentation"
       {...rest}
     >

@@ -6,6 +6,7 @@ import type {
   BrushStudioV6TouchPolicy,
 } from "./brush-studio-v6-engine";
 import { createBrushStudioV6MaterialStroke, mapBrushStudioV6Pressure, mapBrushStudioV6Tilt, mixBrushStudioV6MaterialColors, renderBrushStudioV6MaterialMarks, type BrushStudioV6MaterialStroke } from "./brush-studio-v6-material-engine";
+import { createBrushStudioV6MotionFilter } from "./brush-studio-v6-motion-runtime";
 
 export interface BrushStudioV6Telemetry {
   readonly pointerType: string;
@@ -19,6 +20,7 @@ export interface BrushStudioV6Telemetry {
 
 export interface BrushStudioV6LiveController {
   clear(): void;
+  resize?(): void;
   destroy(): void;
 }
 
@@ -240,15 +242,22 @@ export function renderBrushStudioV6Preview(
   const width = canvas.clientWidth || canvas.width;
   const height = canvas.clientHeight || canvas.height;
   const material = createBrushStudioV6MaterialStroke(program);
+  const motion = createBrushStudioV6MotionFilter({
+    motionId: program.slots.motion,
+    stabilization: program.tuning.stabilization,
+    size: program.tuning.size,
+    friction: program.tuning.friction,
+  });
   for (let index = 0; index <= 100; index++) {
     const progress = index / 100;
-    renderBrushStudioV6MaterialMarks(context, material.push({
+    const rawPoint = {
       x: width * (0.08 + progress * 0.84),
       y: height * (0.52 + Math.sin(progress * Math.PI * 2.15) * 0.25),
       pressure: mapBrushStudioV6Pressure(0.12 + Math.sin(progress * Math.PI) * 0.86, program.input),
       tilt: mapBrushStudioV6Tilt(18, program.input),
       twist: 15,
-    }));
+    };
+    renderBrushStudioV6MaterialMarks(context, material.push(motion.push(rawPoint)));
   }
 }
 
@@ -281,9 +290,17 @@ function eventPoint(
   const safeClientY = Number.isFinite(event.clientY) ? event.clientY : 0;
   const safeLeft = Number.isFinite(rect.left) ? rect.left : 0;
   const safeTop = Number.isFinite(rect.top) ? rect.top : 0;
+  const borderLeft = canvas.clientLeft || 0;
+  const borderTop = canvas.clientTop || 0;
+  const cssWidth = canvas.clientWidth;
+  const cssHeight = canvas.clientHeight;
+  const rectContentWidth = (Number.isFinite(rect.width) ? rect.width : 0) - borderLeft * 2;
+  const rectContentHeight = (Number.isFinite(rect.height) ? rect.height : 0) - borderTop * 2;
+  const scaleX = cssWidth > 0 && rectContentWidth > 0 ? cssWidth / rectContentWidth : 1;
+  const scaleY = cssHeight > 0 && rectContentHeight > 0 ? cssHeight / rectContentHeight : 1;
   return mapBrushStudioMaterialInput({
-    x: safeClientX - safeLeft - (canvas.clientLeft || 0),
-    y: safeClientY - safeTop - (canvas.clientTop || 0),
+    x: (safeClientX - safeLeft - borderLeft) * scaleX,
+    y: (safeClientY - safeTop - borderTop) * scaleY,
     pressure: Number.isFinite(pressure) ? pressure : 0.5,
     tiltX: Number.isFinite(event.tiltX) ? event.tiltX : 0,
     tiltY: Number.isFinite(event.tiltY) ? event.tiltY : 0,
@@ -372,7 +389,11 @@ export function attachBrushStudioV6LivePreview(
   };
 
   const down = (event: PointerEvent): void => {
-    if (disposed || active.size > 0 || event.button !== 0 || event.isPrimary === false) return;
+    if (disposed || event.button !== 0 || event.isPrimary === false) return;
+    if (active.has(event.pointerId) && !canvas.hasPointerCapture(event.pointerId)) {
+      retire(event.pointerId, false);
+    }
+    if (active.size > 0) return;
     const program = getProgram();
     const transport = resolveBrushStudioV6LiveTransport(program.input.transport, capabilities);
     const intent = resolveBrushStudioV6PointerIntent(event, program.input.touchPolicy, program.input.palmRejection);
@@ -470,6 +491,14 @@ export function attachBrushStudioV6LivePreview(
     // active so later move/up samples can still finish it normally.
     if (disposed || !active.has(event.pointerId)) return;
   };
+  const onWindowBlur = (): void => {
+    if (disposed) return;
+    for (const pointerId of [...active.keys()]) retire(pointerId, true);
+  };
+  const onVisibilityChange = (): void => {
+    if (disposed || canvas.ownerDocument.visibilityState !== "hidden") return;
+    for (const pointerId of [...active.keys()]) retire(pointerId, true);
+  };
 
   canvas.addEventListener("pointerdown", down);
   canvas.addEventListener("pointermove", move);
@@ -477,6 +506,8 @@ export function attachBrushStudioV6LivePreview(
   canvas.addEventListener("pointerup", up);
   canvas.addEventListener("pointercancel", cancel);
   canvas.addEventListener("lostpointercapture", onCaptureLoss);
+  canvas.ownerDocument.defaultView?.addEventListener("blur", onWindowBlur);
+  canvas.ownerDocument.addEventListener("visibilitychange", onVisibilityChange);
 
   return {
     clear(): void {
@@ -484,6 +515,10 @@ export function attachBrushStudioV6LivePreview(
       for (const pointerId of [...active.keys()]) retire(pointerId, false);
       const clearContext = fit(canvas);
       if (clearContext) clearPaper(clearContext, canvas, getProgram());
+    },
+    resize(): void {
+      if (disposed) return;
+      fit(canvas, getProgram());
     },
     destroy(): void {
       if (disposed) return;
@@ -494,6 +529,8 @@ export function attachBrushStudioV6LivePreview(
       canvas.removeEventListener("pointerup", up);
       canvas.removeEventListener("pointercancel", cancel);
       canvas.removeEventListener("lostpointercapture", onCaptureLoss);
+      canvas.ownerDocument.defaultView?.removeEventListener("blur", onWindowBlur);
+      canvas.ownerDocument.removeEventListener("visibilitychange", onVisibilityChange);
       try {
         for (const pointerId of [...active.keys()]) retire(pointerId, true);
       } finally { canvas.style.touchAction = previousTouchAction; }

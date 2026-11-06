@@ -328,7 +328,7 @@
   .appearance-theme-group[data-theme-group="accessibility"] .appearance-grid { grid-template-columns: minmax(0, 1fr); }
   .appearance-dialog { padding: 1rem; max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem); }
   .appearance-scope { display: flex; width: 100%; }
-  .appearance-scope button { flex: 1 1 8rem; padding-inline: 0.75rem; }
+  .appearance-scope button { flex: 1 1 0; padding-inline: 0.75rem; }
 }
 @media (forced-colors: active) {
   .appearance-card[data-selected="true"] { border-color: Highlight; }
@@ -450,6 +450,13 @@
   .appearance-grid,
   .appearance-theme-group[data-theme-group="accessibility"] .appearance-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .appearance-dialog {
+    padding: 1rem;
+    scrollbar-gutter: auto;
+  }
+  .appearance-scope button {
+    flex: 1 1 0;
   }
 }
 
