@@ -221,5 +221,17 @@
   "branchingCuttoon.sample.choiceIgnoreHome": "வீட்டை நோக்கித் தொடர்ந்து செல்லவும்",
   "branchingCuttoon.sample.choiceKeyLocker": "குறிச்சீட்டில் உள்ள லாக்கரைத் தேடவும்",
   "branchingCuttoon.sample.choiceKeyReturn": "சாவியைக் குழந்தையிடம் திருப்பித் தரவும்",
-  "branchingCuttoon.sample.choiceWalkEnd": "குழந்தையை முழுவதும் வழியனுப்பவும்"
+  "branchingCuttoon.sample.choiceWalkEnd": "குழந்தையை முழுவதும் வழியனுப்பவும்",
+  "branchingCuttoon.rea.topology.diamondConvergence": "Diamond Convergence",
+  "branchingCuttoon.rea.topology.multiEndingTree": "Multi-Ending Tree",
+  "branchingCuttoon.rea.topology.affectionStateGate": "Affection State Gate",
+  "branchingCuttoon.rea.audit.deadEnd": "Zero Dead-End Check",
+  "branchingCuttoon.rea.audit.choiceReach": "Choice Reach Balance",
+  "branchingCuttoon.rea.audit.memoryBudget": "Memory Flag Budget",
+  "branchingCuttoon.rea.label": "Branching Cuttoon Graph Topology Workbench",
+  "branchingCuttoon.rea.eyebrow": "INTERACTIVE NARRATIVE GRAPH · INTEGRITY AUDIT",
+  "branchingCuttoon.rea.description": "Validate diamond convergence, multi-ending trees, and zero dead-end / memory flag budgets.",
+  "branchingCuttoon.rea.topologyLabel": "Topology Mode:",
+  "branchingCuttoon.rea.auditLabel": "Audit Rule:",
+  "branchingCuttoon.rea.status": "Topology: {topology} ({topologyId}) · Audit: {audit} ({auditId}) · {count} nodes"
 }

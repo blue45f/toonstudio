@@ -12,7 +12,6 @@ import { FileJson, FlaskConical, Pencil, Play } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 
 import { Container } from "@/shared/components/container";
-import { useI18n } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 import { type BranchingJumpRequest } from "./branching-cuttoon-dom";
@@ -40,15 +39,15 @@ import type { StorageResolver } from "@/shared/lib/browser-preferences";
 const DRAFT_WORK_ID = "draft";
 
 const TOPOLOGY_MODES = [
-  { id: "diamond-convergence", ko: "다이아몬드 수렴 분기", en: "Diamond Convergence" },
-  { id: "multi-ending-tree", ko: "다중 엔딩 트리", en: "Multi-Ending Tree" },
-  { id: "affection-state-gate", ko: "호감도 상태 게이트", en: "Affection State Gate" },
+  { id: "diamond-convergence", labelKey: "branchingCuttoon.rea.topology.diamondConvergence" },
+  { id: "multi-ending-tree", labelKey: "branchingCuttoon.rea.topology.multiEndingTree" },
+  { id: "affection-state-gate", labelKey: "branchingCuttoon.rea.topology.affectionStateGate" },
 ] as const;
 
 const AUDIT_RULES = [
-  { id: "deadend-zero-check", ko: "막다른 컷 0건 검증", en: "Zero Dead-End Check" },
-  { id: "choice-reach-balance", ko: "선택지 도달 균형", en: "Choice Reach Balance" },
-  { id: "memory-flag-budget", ko: "기억 플래그 예산", en: "Memory Flag Budget" },
+  { id: "deadend-zero-check", labelKey: "branchingCuttoon.rea.audit.deadEnd" },
+  { id: "choice-reach-balance", labelKey: "branchingCuttoon.rea.audit.choiceReach" },
+  { id: "memory-flag-budget", labelKey: "branchingCuttoon.rea.audit.memoryBudget" },
 ] as const;
 
 type Mode = "edit" | "play";
@@ -82,9 +81,6 @@ function isPristine(graph: BranchingCuttoonGraph): boolean {
  */
 export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProps): ReactElement {
   const t = useBranchingT();
-  const lang = useI18n((state) => state.lang);
-  const isKo = lang.startsWith("ko");
-  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
   const [topologyMode, setTopologyMode] = useState<(typeof TOPOLOGY_MODES)[number]["id"]>("diamond-convergence");
   const [auditRule, setAuditRule] = useState<(typeof AUDIT_RULES)[number]["id"]>("deadend-zero-check");
   const activeTopology = TOPOLOGY_MODES.find((item) => item.id === topologyMode) ?? TOPOLOGY_MODES[0];
@@ -197,19 +193,16 @@ export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProp
 
         <section
           data-testid="branching-cuttoon-rea-graph-bar"
-          aria-label={pickLang("분기형 컷툰 그래프 토폴로지 워크벤치", "Branching Cuttoon Graph Topology Workbench")}
+          aria-label={t("branchingCuttoon.rea.label")}
           className="mt-3 mb-5 rounded-2xl border border-line bg-card p-4"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="font-mono text-xs font-semibold text-accent">
-                {pickLang("인터랙티브 서사 분기 그래프 · 무결성 감사", "INTERACTIVE NARRATIVE GRAPH · INTEGRITY AUDIT")}
+                {t("branchingCuttoon.rea.eyebrow")}
               </p>
               <p className="mt-2 text-xs font-semibold text-fg">
-                {pickLang(
-                  "다이아몬드 수렴·다중 엔딩 토폴로지와 막다른 컷 0건·플래그 예산 규칙을 실시간으로 대조합니다.",
-                  "Validate diamond convergence, multi-ending trees, and zero dead-end / memory flag budgets.",
-                )}
+                {t("branchingCuttoon.rea.description")}
               </p>
             </div>
             <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2">
@@ -218,7 +211,7 @@ export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProp
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-fg-2">
-              {pickLang("토폴로지 모드:", "Topology Mode:")}
+              {t("branchingCuttoon.rea.topologyLabel")}
             </span>
             {TOPOLOGY_MODES.map((item) => (
               <button
@@ -233,13 +226,13 @@ export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProp
                     : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
                 }
               >
-                {pickLang(item.ko, item.en)}
+                {t(item.labelKey)}
               </button>
             ))}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-fg-2">
-              {pickLang("감사 규칙:", "Audit Rule:")}
+              {t("branchingCuttoon.rea.auditLabel")}
             </span>
             {AUDIT_RULES.map((item) => (
               <button
@@ -254,7 +247,7 @@ export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProp
                     : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
                 }
               >
-                {pickLang(item.ko, item.en)}
+                {t(item.labelKey)}
               </button>
             ))}
           </div>
@@ -263,10 +256,13 @@ export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProp
             aria-live="polite"
             className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
           >
-            {pickLang(
-              `토폴로지: ${activeTopology.ko} (${topologyMode}) · 감사: ${activeAudit.ko} (${auditRule}) · 장면 ${graph.nodes.length}개`,
-              `Topology: ${activeTopology.en} (${topologyMode}) · Audit: ${activeAudit.en} (${auditRule}) · ${graph.nodes.length} nodes`,
-            )}
+            {t("branchingCuttoon.rea.status", {
+              topology: t(activeTopology.labelKey),
+              topologyId: topologyMode,
+              audit: t(activeAudit.labelKey),
+              auditId: auditRule,
+              count: graph.nodes.length,
+            })}
           </p>
         </section>
 

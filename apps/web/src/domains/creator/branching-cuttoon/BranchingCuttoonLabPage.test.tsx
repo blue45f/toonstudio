@@ -608,4 +608,24 @@ describe("분기형 컷툰 실험실 — 언어", () => {
     });
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
   });
+  it("워크벤치 언어를 반복 전환해도 선택과 장면 수를 보존하고 미번역 로케일은 영어로 안내한다", () => {
+    const { store } = renderWithSample();
+    const before = savedDraft(store);
+    fireEvent.click(screen.getByTestId("branching-rea-topology-multi-ending-tree"));
+    fireEvent.click(screen.getByTestId("branching-rea-audit-choice-reach-balance"));
+    const status = screen.getByTestId("branching-cuttoon-rea-status");
+    expect(status.textContent).toBe("토폴로지: 다중 엔딩 트리 (multi-ending-tree) · 감사: 선택지 도달 균형 (choice-reach-balance) · 장면 8개");
+    for (const locale of ["en", "ja", "en"] as const) {
+      act(() => { useI18n.getState().setLang(locale); });
+      expect(status.textContent).toBe("Topology: Multi-Ending Tree (multi-ending-tree) · Audit: Choice Reach Balance (choice-reach-balance) · 8 nodes");
+      expect(screen.getByRole("region", { name: "Branching Cuttoon Graph Topology Workbench" })).toBeTruthy();
+      expect(screen.getByTestId("branching-cuttoon-rea-graph-bar").textContent).not.toMatch(/[가-힣]/u);
+      expect(screen.getByTestId("branching-rea-topology-multi-ending-tree").getAttribute("aria-pressed")).toBe("true");
+      expect(screen.getByTestId("branching-rea-audit-choice-reach-balance").getAttribute("aria-pressed")).toBe("true");
+    }
+    act(() => { useI18n.getState().setLang("ko"); });
+    expect(status.textContent).toBe("토폴로지: 다중 엔딩 트리 (multi-ending-tree) · 감사: 선택지 도달 균형 (choice-reach-balance) · 장면 8개");
+    expect(savedDraft(store)).toEqual(before);
+  });
+
 });

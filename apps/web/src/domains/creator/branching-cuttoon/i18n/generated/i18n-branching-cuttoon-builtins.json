@@ -222,7 +222,19 @@
     "branchingCuttoon.sample.choiceIgnoreHome": "Keep going home",
     "branchingCuttoon.sample.choiceKeyLocker": "Look for the locker on the tag",
     "branchingCuttoon.sample.choiceKeyReturn": "Give the key back to the child",
-    "branchingCuttoon.sample.choiceWalkEnd": "See the child all the way"
+    "branchingCuttoon.sample.choiceWalkEnd": "See the child all the way",
+    "branchingCuttoon.rea.topology.diamondConvergence": "Diamond Convergence",
+    "branchingCuttoon.rea.topology.multiEndingTree": "Multi-Ending Tree",
+    "branchingCuttoon.rea.topology.affectionStateGate": "Affection State Gate",
+    "branchingCuttoon.rea.audit.deadEnd": "Zero Dead-End Check",
+    "branchingCuttoon.rea.audit.choiceReach": "Choice Reach Balance",
+    "branchingCuttoon.rea.audit.memoryBudget": "Memory Flag Budget",
+    "branchingCuttoon.rea.label": "Branching Cuttoon Graph Topology Workbench",
+    "branchingCuttoon.rea.eyebrow": "INTERACTIVE NARRATIVE GRAPH · INTEGRITY AUDIT",
+    "branchingCuttoon.rea.description": "Validate diamond convergence, multi-ending trees, and zero dead-end / memory flag budgets.",
+    "branchingCuttoon.rea.topologyLabel": "Topology Mode:",
+    "branchingCuttoon.rea.auditLabel": "Audit Rule:",
+    "branchingCuttoon.rea.status": "Topology: {topology} ({topologyId}) · Audit: {audit} ({auditId}) · {count} nodes"
   },
   "ko": {
     "branchingCuttoon.common.cancel": "취소",
@@ -447,6 +459,18 @@
     "branchingCuttoon.sample.choiceIgnoreHome": "그대로 집으로 가요",
     "branchingCuttoon.sample.choiceKeyLocker": "번호표의 사물함을 찾아가요",
     "branchingCuttoon.sample.choiceKeyReturn": "열쇠를 아이에게 돌려줘요",
-    "branchingCuttoon.sample.choiceWalkEnd": "끝까지 바래다줘요"
+    "branchingCuttoon.sample.choiceWalkEnd": "끝까지 바래다줘요",
+    "branchingCuttoon.rea.topology.diamondConvergence": "다이아몬드 수렴 분기",
+    "branchingCuttoon.rea.topology.multiEndingTree": "다중 엔딩 트리",
+    "branchingCuttoon.rea.topology.affectionStateGate": "호감도 상태 게이트",
+    "branchingCuttoon.rea.audit.deadEnd": "막다른 컷 0건 검증",
+    "branchingCuttoon.rea.audit.choiceReach": "선택지 도달 균형",
+    "branchingCuttoon.rea.audit.memoryBudget": "기억 플래그 예산",
+    "branchingCuttoon.rea.label": "분기형 컷툰 그래프 토폴로지 워크벤치",
+    "branchingCuttoon.rea.eyebrow": "인터랙티브 서사 분기 그래프 · 무결성 감사",
+    "branchingCuttoon.rea.description": "다이아몬드 수렴·다중 엔딩 토폴로지와 막다른 컷 0건·플래그 예산 규칙을 실시간으로 대조합니다.",
+    "branchingCuttoon.rea.topologyLabel": "토폴로지 모드:",
+    "branchingCuttoon.rea.auditLabel": "감사 규칙:",
+    "branchingCuttoon.rea.status": "토폴로지: {topology} ({topologyId}) · 감사: {audit} ({auditId}) · 장면 {count}개"
   }
 }

@@ -221,5 +221,17 @@
   "branchingCuttoon.sample.choiceIgnoreHome": "그대로 집으로 가요",
   "branchingCuttoon.sample.choiceKeyLocker": "번호표의 사물함을 찾아가요",
   "branchingCuttoon.sample.choiceKeyReturn": "열쇠를 아이에게 돌려줘요",
-  "branchingCuttoon.sample.choiceWalkEnd": "끝까지 바래다줘요"
+  "branchingCuttoon.sample.choiceWalkEnd": "끝까지 바래다줘요",
+  "branchingCuttoon.rea.topology.diamondConvergence": "다이아몬드 수렴 분기",
+  "branchingCuttoon.rea.topology.multiEndingTree": "다중 엔딩 트리",
+  "branchingCuttoon.rea.topology.affectionStateGate": "호감도 상태 게이트",
+  "branchingCuttoon.rea.audit.deadEnd": "막다른 컷 0건 검증",
+  "branchingCuttoon.rea.audit.choiceReach": "선택지 도달 균형",
+  "branchingCuttoon.rea.audit.memoryBudget": "기억 플래그 예산",
+  "branchingCuttoon.rea.label": "분기형 컷툰 그래프 토폴로지 워크벤치",
+  "branchingCuttoon.rea.eyebrow": "인터랙티브 서사 분기 그래프 · 무결성 감사",
+  "branchingCuttoon.rea.description": "다이아몬드 수렴·다중 엔딩 토폴로지와 막다른 컷 0건·플래그 예산 규칙을 실시간으로 대조합니다.",
+  "branchingCuttoon.rea.topologyLabel": "토폴로지 모드:",
+  "branchingCuttoon.rea.auditLabel": "감사 규칙:",
+  "branchingCuttoon.rea.status": "토폴로지: {topology} ({topologyId}) · 감사: {audit} ({auditId}) · 장면 {count}개"
 }
