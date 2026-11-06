@@ -221,7 +221,12 @@ export function TitleEpisodeSection({
         action: bi("이어서 읽기", "Continue reading"),
       };
     }
-    if (progress.ratio >= 0.98 && (total == null || progress.episode < total)) {
+    const nextEpisode = episodes?.find((episode) => episode.number === progress.episode + 1);
+    if (
+      progress.ratio >= 0.98 &&
+      (total == null || progress.episode < total) &&
+      nextEpisode?.status !== "scheduled"
+    ) {
       return {
         episode: progress.episode + 1,
         label: formatI18nTemplate(bi("{v0}화를 다 읽었어요", "You finished episode {v0}"), {

@@ -249,3 +249,25 @@ describe("TitleEpisodeSection — 회차 데이터가 있을 때", () => {
   });
 });
 
+
+
+describe("회차 이어보기 공개 상태", () => {
+  it("다 읽은 회차 다음이 공개 예정이면 다음 화 버튼을 만들지 않는다", () => {
+    window.localStorage.setItem(
+      "toonstudio.reader-progress.v1.guest",
+      JSON.stringify({ "fog-signal": { episode: 3, ratio: 1, updatedAt: Date.now() } }),
+    );
+    renderSection(makeTitle(), EPISODES);
+    expect(screen.queryByRole("link", { name: "다음 화 보기" })).toBeNull();
+  });
+
+  it("다음 회차가 공개 상태면 기존 다음 화 동선을 유지한다", () => {
+    window.localStorage.setItem(
+      "toonstudio.reader-progress.v1.guest",
+      JSON.stringify({ "fog-signal": { episode: 2, ratio: 1, updatedAt: Date.now() } }),
+    );
+    renderSection(makeTitle(), EPISODES);
+    expect(screen.getByRole("link", { name: "다음 화 보기" }).getAttribute("href"))
+      .toBe("/title/fog-signal/read/3");
+  });
+});
