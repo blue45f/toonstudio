@@ -181,4 +181,51 @@ describe("BetaOpenEventGate", () => {
     fireEvent.click(screen.getByRole("button", { name: "본문 조작" }));
     expect(screen.getByRole("region", { name: "베타 오픈 혜택" })).toBeTruthy();
   });
+  it.each([
+    ["연결 상태", "data-service-degraded-banner", "warming"],
+    ["음악 패널", "data-site-ost-expanded", "true"],
+    ["동기화 상태", "class", "pwa-pulse"],
+  ])("%s 안내가 있으면 홍보를 유예하고 해소 후 사용자가 다시 조작할 때 재개한다", async (_, attribute, value) => {
+    renderGate();
+    const priority = document.createElement("div");
+    priority.setAttribute(attribute, value);
+    document.body.append(priority);
+    try {
+      act(() => vi.advanceTimersByTime(32_000));
+      fireEvent.scroll(window);
+      expect(screen.queryByRole("region", { name: "베타 오픈 혜택" })).toBeNull();
+      expect(window.localStorage.getItem(eventSeenStorageKey(BETA_OPEN_EVENT.id))).toBeNull();
+      await act(async () => { priority.remove(); });
+      expect(screen.queryByRole("region", { name: "베타 오픈 혜택" })).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "작품 둘러보기" }));
+      expect(screen.getByRole("region", { name: "베타 오픈 혜택" })).toBeTruthy();
+      await act(async () => { document.body.append(priority); });
+      expect(screen.queryByRole("region", { name: "베타 오픈 혜택" })).toBeNull();
+    } finally {
+      await act(async () => { priority.remove(); });
+    }
+    fireEvent.click(screen.getByRole("button", { name: "작품 둘러보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "베타 혜택 닫기" }));
+    expect(window.localStorage.getItem(eventSeenStorageKey(BETA_OPEN_EVENT.id))).toBe("1");
+  });
+
+  it("접힌 음악 조작은 유지하고 펼친 동안에만 홍보를 숨긴다", async () => {
+    const player = document.createElement("aside");
+    player.setAttribute("data-site-ost", "mounted");
+    document.body.append(player);
+    try {
+      renderGate();
+      act(() => vi.advanceTimersByTime(32_000));
+      expect(screen.getByRole("region", { name: "베타 오픈 혜택" })).toBeTruthy();
+      await act(async () => { player.setAttribute("data-site-ost-expanded", "true"); });
+      expect(screen.queryByRole("region", { name: "베타 오픈 혜택" })).toBeNull();
+      await act(async () => { player.removeAttribute("data-site-ost-expanded"); });
+      expect(screen.queryByRole("region", { name: "베타 오픈 혜택" })).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "작품 둘러보기" }));
+      expect(screen.getByRole("region", { name: "베타 오픈 혜택" })).toBeTruthy();
+    } finally {
+      await act(async () => { player.remove(); });
+    }
+  });
+
 });
