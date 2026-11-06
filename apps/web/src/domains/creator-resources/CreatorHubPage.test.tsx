@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { Link, MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreatorHubPage } from "./CreatorHubPage";
@@ -47,6 +47,12 @@ function renderPage(entry = "/research") {
   return render(<MemoryRouter initialEntries={[entry]}><CreatorHubPage /><LocationProbe /></MemoryRouter>);
 }
 
+function openSourceTools() {
+  const summary = screen.getByText("자료 도구·공정별 추천 펼치기");
+  fireEvent.click(summary);
+  expect(summary.closest("details")?.open).toBe(true);
+}
+
 function openDeskTab(name: RegExp | string) {
   fireEvent.click(screen.getByRole("tab", { name }));
 }
@@ -66,6 +72,72 @@ afterEach(() => {
 });
 
 describe("research command center", () => {
+  it.each(["#%E0%A4%A", "#missing-research-target", "#saved-board"])("%s 는 도구 밖이거나 잘못된 앵커이므로 안내를 열지 않는다", async (hash) => {
+    const { container } = renderPage(`/research?view=board${hash}`);
+    await waitFor(() => expect(screen.getByRole("tab", { name: /저장 보드/u }).getAttribute("aria-selected")).toBe("true"));
+    expect(container.querySelector<HTMLDetailsElement>("[data-research-tools-disclosure]")?.open).toBe(false);
+    if (hash !== "#saved-board") expect(screen.getByTestId("location").textContent).toBe(`/research?view=board${hash}`);
+  });
+
+  it("자료 도구가 닫혀도 로컬 저장 안내와 읽기 실패를 숨기거나 원본을 덮지 않는다", async () => {
+    localStorage.setItem(GUEST_WORKSPACE_KEY, "invalid-synthetic-backup");
+    const { container } = renderPage();
+    const tools = container.querySelector<HTMLDetailsElement>("[data-research-tools-disclosure]")!;
+    expect(tools.open).toBe(false);
+    const notice = screen.getByText(/자료와 기획서는 이 브라우저에만 저장됩니다/u);
+    expect(notice.closest("details")).toBeNull();
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("저장 보드를 읽을 수 없습니다");
+    expect(alert.closest("details")).toBeNull();
+    expect(localStorage.getItem(GUEST_WORKSPACE_KEY)).toBe("invalid-synthetic-backup");
+    expect(screen.getAllByRole("tab")).toHaveLength(4);
+  });
+
+  it.each(["research-categories", "research-recipes", "research-recipe-bg3d", "%72esearch%2Drecipes", "research%2Drecipe-bg3d"])("%s 앵커는 자료 도구만 열고 저장 보드 탭과 URL을 보존한다", async (anchor) => {
+    const { container } = renderPage(`/research?view=board#${anchor}`);
+    await waitFor(() => expect(container.querySelector<HTMLDetailsElement>("[data-research-tools-disclosure]")?.open).toBe(true));
+    expect(screen.getByRole("tab", { name: /저장 보드/u }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("location").textContent).toBe(`/research?view=board#${anchor}`);
+    expect(document.getElementById(decodeURIComponent(anchor))).toBeTruthy();
+  });
+
+  it("Router 링크로 자료 앵커에 이동하면 닫힌 도구를 열고 현재 탭을 유지한다", async () => {
+    const { container } = render(<MemoryRouter initialEntries={["/research?view=board"]}><CreatorHubPage /><Link to="/research?view=board#research-categories">자료 범주로 이동</Link><LocationProbe /></MemoryRouter>);
+    const tools = container.querySelector<HTMLDetailsElement>("[data-research-tools-disclosure]")!;
+    expect(tools.open).toBe(false);
+    fireEvent.click(screen.getByRole("link", { name: "자료 범주로 이동" }));
+    await waitFor(() => expect(tools.open).toBe(true));
+    expect(screen.getByRole("list", { name: "리서치 자료 범주" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /저장 보드/u }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("location").textContent).toBe("/research?view=board#research-categories");
+  });
+
+
+  it("검색 다음에 작업 탭을 두고 부가 자료를 접어도 입력과 링크를 보존한다", async () => {
+    const { container } = renderPage();
+    const workspaceRegion = screen.getByRole("region", { name: "내 리서치 작업공간" });
+    const tools = container.querySelector<HTMLDetailsElement>("[data-research-tools-disclosure]")!;
+    expect(tools.open).toBe(false);
+    expect(workspaceRegion.compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const guide = screen.getByText("장면으로 시작하기 · 처음이면 이 3단계로").closest("details")!;
+    expect(guide.open).toBe(false);
+    const tabs = screen.getByRole("tablist", { name: "리서치 데스크 작업 영역" });
+    expect(tabs.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByRole("tab")).toHaveLength(4);
+    openDeskTab("리서치 초점");
+    const title = screen.getByLabelText<HTMLInputElement>("리서치 이름");
+    fireEvent.change(title, { target: { value: "합성 리서치 초점" } });
+    openSourceTools();
+    expect(screen.getByRole("link", { name: /작품 메타데이터를 비교하려면/u }).getAttribute("href")).toBe("/research/catalog");
+    fireEvent.click(screen.getByText("자료 도구·공정별 추천 펼치기"));
+    expect(tools.open).toBe(false);
+    openDeskTab("진행 현황");
+    openDeskTab("리서치 초점");
+    expect(screen.getByLabelText<HTMLInputElement>("리서치 이름").value).toBe("합성 리서치 초점");
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(RESEARCH_DESK_SESSION_KEY)!).title).toBe("합성 리서치 초점"));
+  });
+
+
   it("starts with an honest empty state, validates a query, and navigates to the selected provider workflow", async () => {
     renderPage();
     expect(screen.getByRole("heading", { name: "창작 리서치 데스크" })).toBeTruthy();
@@ -142,7 +214,11 @@ describe("research command center", () => {
     const overview = screen.getByText("저장한 자료").closest("div")!;
     await waitFor(() => expect(within(overview).getByText("3")).toBeTruthy());
     expect(screen.getByRole("heading", { name: "다시 볼 자료" })).toBeTruthy();
+    const checks = screen.getByText("리서치 흐름·근거 공백·출처 점검 자세히").closest("details")!;
+    fireEvent.click(within(checks).getByText("리서치 흐름·근거 공백·출처 점검 자세히"));
+    expect(checks.open).toBe(true);
     expect(screen.getByRole("heading", { name: "자료가 많은가보다 무엇이 비어 있는가" })).toBeTruthy();
+    openSourceTools();
     expect(container.querySelector('img[src="https://images.metmuseum.org/CRDImages/as/original/DP251139.jpg"]')).toBeTruthy();
     expect(screen.getByRole("heading", { name: "무엇을 찾을 수 있나요" })).toBeTruthy();
     // 범주 타일은 이 브라우저에 저장한 자료 수를 제공처 기준으로 함께 보여 준다(Met 1개).
@@ -195,7 +271,7 @@ describe("research command center", () => {
     expect(restored.story.protagonist).toBe("Backup protagonist");
   });
 
-  it("leads with searchable categories and task recipes, and keeps every workspace area one tab away", async () => {
+  it("keeps source tools available on demand and every workspace area one tab away", async () => {
     localStorage.setItem(GUEST_WORKSPACE_KEY, JSON.stringify(workspace({
       saved: [
         resource({ id: "met:one", provider: "met", title: "One" }),
@@ -207,7 +283,8 @@ describe("research command center", () => {
     })));
     renderPage("/research#saved-board");
 
-    // 첫 화면: 통합 검색 + 범주 타일(제공처 수·이용 조건) + 작업별 추천 조합.
+    // 검색과 작업 탭을 먼저 두고, 범주·추천은 펼쳐서 접근한다.
+    openSourceTools();
     expect(screen.getByRole("searchbox", { name: "시각 레퍼런스 검색" })).toBeTruthy();
     const categories = screen.getByRole("list", { name: "리서치 자료 범주" });
     expect(within(categories).getAllByRole("link").length).toBeGreaterThanOrEqual(10);
@@ -249,6 +326,7 @@ describe("research command center", () => {
   it("공정별 맞춤 리소스 추천 선택기를 통해 현재 제작 단계에 맞는 도구와 레퍼런스 DB를 즉시 제안한다", () => {
     renderPage("/research");
 
+    openSourceTools();
     const recommender = screen.getByRole("region", {
       name: "지금 어느 작업 단계이신가요? 공정별 맞춤 리소스 추천",
     });

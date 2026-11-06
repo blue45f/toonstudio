@@ -102,10 +102,10 @@ export function TitleDetailHero({
           무대감만 만들고, 주인공은 아래의 선명한 포스터다. */}
       <ArtBackdrop title={title} />
 
-      <div className="flex flex-col gap-7 pb-8 pt-10 sm:pt-12 lg:flex-row lg:items-end lg:gap-10 lg:pb-10">
+      <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-4 pb-6 pt-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-x-6 sm:pt-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-x-8 lg:pb-8">
         {/* 표지 무대의 주인공 — 원본 비율 그대로 크게 세운 포스터.
             표지 없음·로드 실패·킬스위치에서는 타이포그래픽 포스터가 같은 자리를 차지한다. */}
-        <div className="w-40 shrink-0 motion-safe:animate-fade-up sm:w-52 lg:w-72">
+        <div className="row-span-2 w-full motion-safe:animate-fade-up lg:row-span-6">
           <TitlePoster
             title={title}
             size="hero"
@@ -114,8 +114,8 @@ export function TitleDetailHero({
             className="shadow-[0_28px_64px_-18px_oklch(0.05_0.01_70/0.85)]"
           />
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="contents">
+        <div className="col-start-2 flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="rounded-md bg-[oklch(0.62_0.19_295)] px-2 py-0.5 text-[0.7rem] font-bold text-white">
             {TYPE_LABEL[title.type]}
           </span>
@@ -139,8 +139,8 @@ export function TitleDetailHero({
           )}
         </div>
 
-        <div>
-          <h1 className="max-w-3xl text-pretty text-[clamp(2rem,6vw,3.4rem)] font-bold leading-[1.08] tracking-tight text-white [word-break:keep-all]">
+        <div className="col-start-2 min-w-0">
+          <h1 className="max-w-3xl text-pretty text-[clamp(1.5rem,4vw,2.75rem)] font-bold leading-[1.08] tracking-tight text-white [word-break:keep-all]">
             {title.title}
           </h1>
           {title.altTitles && title.altTitles.length > 0 && (
@@ -158,7 +158,7 @@ export function TitleDetailHero({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div className="col-span-2 flex flex-wrap items-center gap-x-5 gap-y-2 lg:col-span-1 lg:col-start-2">
           <span className="flex items-center gap-2">
             <span className="numeral text-3xl font-bold text-white">{reviewAvg.toFixed(1)}</span>
             <span className="flex flex-col gap-0.5">
@@ -189,12 +189,17 @@ export function TitleDetailHero({
         </div>
 
         {showSynopsis && title.synopsis && (
-          <p className="max-w-2xl text-pretty text-[0.95rem] leading-relaxed text-white/85">
-            {title.synopsis}
-          </p>
+          <details className="col-span-2 min-w-0 rounded-xl border border-white/15 bg-white/5 px-3 lg:col-span-1 lg:col-start-2">
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-white/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+              {bi("작품 소개", "About this story")}
+            </summary>
+            <p className="max-w-2xl pb-3 text-pretty text-[0.95rem] leading-relaxed text-white/85">
+              {title.synopsis}
+            </p>
+          </details>
         )}
 
-        <div className="mt-1 flex flex-wrap items-center gap-2.5">
+        <div className="col-span-2 mt-1 flex flex-wrap items-center gap-2.5 lg:col-span-1 lg:col-start-2">
           {firstEpisodeHref && (
             <Link
               href={firstEpisodeHref}
@@ -210,7 +215,7 @@ export function TitleDetailHero({
             onClick={handleSaveToggle}
             aria-pressed={saved}
             className={cn(
-              "inline-flex min-h-12 items-center gap-2 rounded-full border px-5 text-sm font-semibold backdrop-blur-sm transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+              "inline-flex min-h-12 [min-block-size:3rem]! items-center gap-2 rounded-full border px-5 text-sm font-semibold backdrop-blur-sm transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
               saved
                 ? "border-white/50 bg-white/20 text-white"
                 : "border-white/30 bg-white/10 text-white hover:bg-white/20",
@@ -224,7 +229,7 @@ export function TitleDetailHero({
         <nav
           data-testid="title-detail-section-nav"
           aria-label={bi("작품 상세 섹션 바로가기", "Jump to title section")}
-          className="mt-2 flex flex-wrap items-center gap-1.5 pt-2"
+          className="col-span-2 flex flex-wrap items-center gap-1.5 pt-2 lg:col-span-1 lg:col-start-2"
         >
           {(
             [
@@ -238,7 +243,7 @@ export function TitleDetailHero({
             <a
               key={item.href}
               href={item.href}
-              className="inline-flex min-h-8 items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm transition-colors hover:border-white/45 hover:bg-white/20"
+              className="inline-flex min-h-11 items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm transition-colors hover:border-white/45 hover:bg-white/20"
             >
               {bi(item.ko, item.en)}
             </a>

@@ -113,3 +113,14 @@ describe("연재 캘린더 오늘 표시", () => {
     expect(screen.queryByText("월요일")).toBeNull();
   });
 });
+
+
+describe("API failure must not mean zero releases", () => {
+  it.each([{error:"local backend unavailable"},{loading:true}])("keeps unknown counts distinct from zero: %o", (state) => {
+    mockResource(state); renderPage();
+    const lede = screen.getByText("수요일").closest("p");
+    expect(lede?.textContent).not.toContain("0편");
+    expect(screen.queryByText("전체 연재")).toBeNull();
+    expect(screen.getByRole("button", {name:/내보내기/}).hasAttribute("disabled")).toBe(true);
+  });
+});

@@ -53,3 +53,15 @@ describe("통합 랭킹 페이지", () => {
   });
 });
 
+
+it("보드 뒤에 스트림과 산식 도구를 접어 두고 기존 도구를 유지한다", () => {
+  renderPage();
+  const board = screen.getByTestId("ranking-board");
+  const tools = screen.getByTestId("ranking-rea-formula-simulator-bar");
+  const disclosure = tools.closest("details");
+  expect(disclosure?.open).toBe(false);
+  expect(board.compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(tools.querySelectorAll('[data-testid^="ranking-rea-engine-"]')).toHaveLength(4);
+  expect(tools.querySelectorAll('[data-testid^="ranking-rea-window-"]')).toHaveLength(3);
+  expect(screen.getByTestId("ranking-rea-stream-modes").querySelectorAll("a")).toHaveLength(4);
+});

@@ -1,0 +1,18 @@
+/* Page-owned scope: do not change shared controls or global density rules. */
+:is(.calendar-page-layout, .ranking-page-layout) :is(button, summary, select, input[type="range"], [role="checkbox"], [role="tab"]) {
+  min-block-size: 44px !important;
+  min-inline-size: 44px !important;
+}
+.ranking-page-layout #ranking-board a[href="/guide"] {
+  min-block-size: 44px !important;
+  align-items: center;
+}
+.ranking-page-layout #ranking-board .group\/row > .grid > a:first-of-type {
+  display: inline-flex;
+  align-items: center;
+  min-inline-size: 44px !important;
+  min-block-size: 44px !important;
+}
+.ranking-page-layout #ranking-board .group\/row > .grid {
+  grid-template-columns: 44px 44px minmax(0, 1fr) auto;
+}

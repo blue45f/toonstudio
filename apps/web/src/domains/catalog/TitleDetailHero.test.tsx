@@ -140,3 +140,28 @@ describe("TitleDetailHero", () => {
     expect(nav.querySelector('a[href="#title-reviews"]')?.textContent).toBe("독자 리뷰");
   });
 });
+
+describe("TitleDetailHero — 접힌 소개와 핵심 동선", () => {
+  it("줄거리만 접고 제목·읽기·저장·섹션 동선은 밖에 유지한다", () => {
+    renderHero(makeTitle());
+    const synopsis = screen.getByText(/안개 낀 항구 도시에서/);
+    const details = synopsis.closest("details");
+    expect(details?.open).toBe(false);
+    expect(screen.getByRole("heading", { level: 1 }).closest("details")).toBeNull();
+    expect(screen.getByRole("link", { name: /첫 화부터 읽기/ }).closest("details")).toBeNull();
+    expect(screen.getByRole("button", { name: /서재에 담기/ }).closest("details")).toBeNull();
+    expect(screen.getByTestId("title-detail-section-nav").closest("details")).toBeNull();
+    if (!details) throw new Error("줄거리 disclosure 누락");
+    const summary = details.querySelector("summary");
+    if (!summary) throw new Error("줄거리 summary 누락");
+    for (let i = 0; i < 3; i += 1) { fireEvent.click(summary); }
+    expect(synopsis.textContent).toBe(makeTitle().synopsis);
+  });
+});
+
+it("저장 버튼은 전역 데스크톱 바닥보다 48px 논리 최소크기를 우선하고 작가 링크는 인라인으로 남긴다 (실측 아님)", () => {
+  renderHero(makeTitle());
+  const save = screen.getByRole("button", { name: /서재에 담기/ });
+  expect(save.classList.contains("[min-block-size:3rem]!")).toBe(true);
+  expect(screen.getByRole("link", { name: "김작가" }).classList.contains("min-h-11")).toBe(false);
+});

@@ -1,3 +1,4 @@
+import "./catalog-page-controls.css";
 import { Calculator, ChevronRight, Compass, GitCompare, ListFilter, Trophy, type LucideIcon } from "lucide-react";
 import { useState, type MouseEvent } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -79,7 +80,7 @@ export function RankingPage() {
 
   return (
     <PageEntrance variant="slide">
-    <Container size="wide" className="py-6 sm:py-10">
+    <Container size="wide" className="ranking-page-layout py-6 sm:py-10">
       <SiteContextualSubNav pathnameOverride="/ranking" className="mb-5" />
       <SitePageHeader
         className="mb-6 sm:mb-8"
@@ -116,6 +117,35 @@ export function RankingPage() {
         }
       />
 
+      <section id="ranking-board" aria-labelledby="ranking-board-title">
+        <h2 id="ranking-board-title" className="sr-only">{tx("랭킹 보드")}</h2>
+        <RankingBoard initialAxis={axis} initialPlatform={platform} />
+      </section>
+
+
+
+      <nav className="mt-10 grid grid-cols-1 gap-2.5 sm:mt-12 md:grid-cols-3" aria-label={bt("랭킹 다음 행동", "After the ranking")}>
+        {NEXT_STEPS.map((step) => (
+          <SiteLinkCard key={step.href} layout="compact" href={step.href} icon={step.icon} title={bt(...step.title)} description={bt(...step.body)} />
+        ))}
+      </nav>
+
+      <SiteDisclosure
+        className="mt-6"
+        icon={Calculator}
+        title={bt("순위는 어떻게 계산하나요?", "How is the ranking calculated?")}
+        summary={formatI18nTemplate(bt("{v0}가지 관점의 산식과 데이터 한계를 확인하세요.", "See the formulas behind the {v0} views and the data limits."), { v0: RANK_AXES.length })}
+        bodyClassName="p-3 sm:p-4"
+      >
+        <RankingMethod />
+      </SiteDisclosure>
+      <SiteDisclosure
+        className="mt-6"
+        icon={Calculator}
+        title={bt("랭킹 스트림 · 산식 시뮬레이터", "Ranking streams and formula simulator")}
+        summary={bt("빠른 관점 전환과 산식 설명을 펼쳐보세요.", "Expand quick views and formula explanations.")}
+        bodyClassName="p-3 sm:p-4 [&_button]:min-h-11 [&_a]:min-h-11"
+      >
       <SiteArtSurfaceSpotlight cardId="nb-ranking-constellation" compact className="mb-5" />
 
       <div
@@ -228,25 +258,6 @@ export function RankingPage() {
         </div>
       </section>
 
-      <section id="ranking-board" aria-labelledby="ranking-board-title">
-        <h2 id="ranking-board-title" className="sr-only">{tx("랭킹 보드")}</h2>
-        <RankingBoard initialAxis={axis} initialPlatform={platform} />
-      </section>
-
-      <nav className="mt-10 grid grid-cols-1 gap-2.5 sm:mt-12 md:grid-cols-3" aria-label={bt("랭킹 다음 행동", "After the ranking")}>
-        {NEXT_STEPS.map((step) => (
-          <SiteLinkCard key={step.href} layout="compact" href={step.href} icon={step.icon} title={bt(...step.title)} description={bt(...step.body)} />
-        ))}
-      </nav>
-
-      <SiteDisclosure
-        className="mt-6"
-        icon={Calculator}
-        title={bt("순위는 어떻게 계산하나요?", "How is the ranking calculated?")}
-        summary={formatI18nTemplate(bt("{v0}가지 관점의 산식과 데이터 한계를 확인하세요.", "See the formulas behind the {v0} views and the data limits."), { v0: RANK_AXES.length })}
-        bodyClassName="p-3 sm:p-4"
-      >
-        <RankingMethod />
       </SiteDisclosure>
     </Container>
     </PageEntrance>

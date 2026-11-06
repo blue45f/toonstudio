@@ -249,7 +249,7 @@ export function RankingBoard({
   );
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="ranking-board-content-first flex flex-col gap-3">
       {/* 축 선택 */}
       <section className="rounded-2xl border border-line bg-panel/60 p-4 surface-hl sm:p-5">
         <div className="mb-3 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
@@ -264,7 +264,7 @@ export function RankingBoard({
           </span>
         </div>
 
-        <label className="grid gap-1.5 sm:hidden">
+        <label className="grid gap-1.5">
           <span className="text-[0.68rem] font-bold text-fg-3">랭킹 기준 선택</span>
           <select
             aria-label="랭킹 산식 축"
@@ -278,64 +278,12 @@ export function RankingBoard({
           </select>
         </label>
 
-        <div className="hidden gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-4">
-          {RANK_AXES.map((a) => {
-            const active = a.key === axis;
-            const Icon = axisIcons[a.key];
-            return (
-              <button
-                key={a.key}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setAxis(a.key)}
-                className={cn(
-                  "group flex min-w-36 shrink-0 items-center gap-3 rounded-2xl border px-3.5 py-3 text-left text-sm font-medium transition-[background,border-color,color,transform,box-shadow] duration-150 ease-out-expo sm:min-w-0",
-                  active
-                    ? "border-accent/55 bg-accent-soft text-accent shadow-[0_10px_30px_-18px_oklch(0.72_0.185_42/0.75)]"
-                    : "border-line bg-card text-fg-2 hover:-translate-y-0.5 hover:border-line-strong hover:text-fg"
-                )}
-              >
-                <span
-                  className={cn(
-                    "grid size-9 shrink-0 place-items-center rounded-xl border transition-colors duration-150",
-                    active ? "border-accent/45 bg-canvas/45" : "border-line bg-raised/60"
-                  )}
-                >
-                  <Icon size={17} aria-hidden="true" />
-                </span>
-                <span className="min-w-0 leading-tight">
-                  <span>{a.label}</span>
-                  <span className="mt-0.5 hidden truncate text-[0.72rem] font-normal text-fg-3 sm:block">
-                    {a.desc}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </section>
 
-      <SignalWorkbench insights={insights} meta={rankingMeta} />
+
 
       {/* 산식 + 기간/유형 */}
-      <section className="grid gap-3 rounded-2xl border border-line bg-panel/40 p-4 surface-hl lg:grid-cols-[1fr_auto] lg:items-center sm:p-5">
-        <div className="flex min-w-0 items-start gap-2.5">
-          <FunctionSquare size={16} className="mt-0.5 shrink-0 text-accent" />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">{axisDetail.desc}</p>
-            <p className="mt-0.5 font-mono text-xs leading-relaxed text-fg-3">
-              <span className="eyebrow mr-1.5 text-[0.6rem] text-accent">산식</span>
-              {axisDetail.formula}
-            </p>
-            <Link
-              href="/guide"
-              className="mt-1 inline-flex items-center gap-1 text-[0.72rem] font-medium text-accent hover:underline"
-            >
-              산정 방식 자세히 보기
-              <ArrowUpRight size={12} />
-            </Link>
-          </div>
-        </div>
+      <section className="grid gap-3 rounded-2xl border border-line bg-panel/40 p-4 surface-hl sm:p-5">
         <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
           <Segmented
             size="sm"
@@ -400,6 +348,9 @@ export function RankingBoard({
               );
             })()}
           </div>
+          <details className="min-w-0 rounded-xl border border-line bg-card px-3">
+            <summary className="flex min-h-11 cursor-pointer items-center text-xs font-medium">상태·가격·평점·상승 조건</summary>
+            <div className="flex flex-wrap items-center gap-2 pb-3">
           <Segmented
             size="sm"
             value={status}
@@ -450,25 +401,10 @@ export function RankingBoard({
             <TrendingUp size={14} />
             상승작
           </button>
+            </div>
+          </details>
         </div>
         <div className="grid min-w-0 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end xl:justify-end">
-          <div
-            className={cn(
-              "inline-flex min-h-11 min-w-0 items-center gap-2 rounded-full border border-line bg-card/90 px-3 text-xs text-fg-3",
-              state === "error" && "border-bad/40 bg-[oklch(0.66_0.2_25/0.12)] text-bad"
-            )}
-          >
-            {state === "error" ? (
-              <AlertCircle size={14} className="shrink-0" />
-            ) : (
-              <Grid2X2 size={14} className="shrink-0 text-fg-2" />
-            )}
-            <span className="truncate">
-              {state === "error"
-                ? error
-                : `스냅샷 산식 · 신뢰 ${rankingMeta?.reliability.confidence ?? 0}/100 · 업데이트 ${formatUpdatedAt(rankingMeta?.generatedAt)}`}
-            </span>
-          </div>
           <button
             type="button"
             onClick={retry}
@@ -478,17 +414,6 @@ export function RankingBoard({
           >
             <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} />
           </button>
-          <span className="inline-flex min-h-11 flex-wrap items-center rounded-xl border border-line bg-card px-3 py-1.5 text-xs text-fg-3 sm:text-sm" aria-live="polite">
-            <span className="mr-1 text-fg">다음 갱신:</span>
-            <span className="numeral mr-1 text-fg"><RefreshCountdown nextRefreshAt={nextRefreshAt} /></span>
-            {ranked.length > 0 ? (
-              <>
-                <span>·</span>
-                <span className="numeral mr-1 text-fg">{visibleRanked.length}</span>편
-                {clientFilterCount > 0 && <span className="ml-1 text-fg-3">/ {ranked.length}</span>}
-              </>
-            ) : null}
-          </span>
           <button
             type="button"
             onClick={() => setShowFilters((current) => !current)}
@@ -652,6 +577,97 @@ export function RankingBoard({
           </div>
         </div>
       ) : null}
+      <details data-testid="ranking-supporting-details" className="rounded-2xl border border-line bg-panel/40 p-4">
+        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">랭킹 신호·산식·모든 기준</summary>
+        <div className="mt-3 flex flex-col gap-4">
+      <SignalWorkbench insights={insights} meta={rankingMeta} />
+        <div className="flex min-w-0 items-start gap-2.5">
+          <FunctionSquare size={16} className="mt-0.5 shrink-0 text-accent" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-fg">{axisDetail.desc}</p>
+            <p className="mt-0.5 font-mono text-xs leading-relaxed text-fg-3">
+              <span className="eyebrow mr-1.5 text-[0.6rem] text-accent">산식</span>
+              {axisDetail.formula}
+            </p>
+            <Link
+              href="/guide"
+              className="mt-1 inline-flex items-center gap-1 text-[0.72rem] font-medium text-accent hover:underline"
+            >
+              산정 방식 자세히 보기
+              <ArrowUpRight size={12} />
+            </Link>
+          </div>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {RANK_AXES.map((a) => {
+            const active = a.key === axis;
+            const Icon = axisIcons[a.key];
+            return (
+              <button
+                key={a.key}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setAxis(a.key)}
+                className={cn(
+                  "group flex min-w-36 shrink-0 items-center gap-3 rounded-2xl border px-3.5 py-3 text-left text-sm font-medium transition-[background,border-color,color,transform,box-shadow] duration-150 ease-out-expo sm:min-w-0",
+                  active
+                    ? "border-accent/55 bg-accent-soft text-accent shadow-[0_10px_30px_-18px_oklch(0.72_0.185_42/0.75)]"
+                    : "border-line bg-card text-fg-2 hover:-translate-y-0.5 hover:border-line-strong hover:text-fg"
+                )}
+              >
+                <span
+                  className={cn(
+                    "grid size-9 shrink-0 place-items-center rounded-xl border transition-colors duration-150",
+                    active ? "border-accent/45 bg-canvas/45" : "border-line bg-raised/60"
+                  )}
+                >
+                  <Icon size={17} aria-hidden="true" />
+                </span>
+                <span className="min-w-0 leading-tight">
+                  <span>{a.label}</span>
+                  <span className="mt-0.5 hidden truncate text-[0.72rem] font-normal text-fg-3 sm:block">
+                    {a.desc}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        </div>
+      </details>
+      <details className="rounded-2xl border border-line bg-panel/40 px-4">
+        <summary className="flex min-h-11 cursor-pointer items-center text-xs font-medium">데이터 출처·갱신 정보</summary>
+        <div className="flex flex-wrap items-center gap-2 pb-4">
+          <div
+            className={cn(
+              "inline-flex min-h-11 min-w-0 items-center gap-2 rounded-full border border-line bg-card/90 px-3 text-xs text-fg-3",
+              state === "error" && "border-bad/40 bg-[oklch(0.66_0.2_25/0.12)] text-bad"
+            )}
+          >
+            {state === "error" ? (
+              <AlertCircle size={14} className="shrink-0" />
+            ) : (
+              <Grid2X2 size={14} className="shrink-0 text-fg-2" />
+            )}
+            <span className="truncate">
+              {state === "error"
+                ? error
+                : `스냅샷 산식 · 신뢰 ${rankingMeta?.reliability.confidence ?? 0}/100 · 업데이트 ${formatUpdatedAt(rankingMeta?.generatedAt)}`}
+            </span>
+          </div>
+          <span className="inline-flex min-h-11 flex-wrap items-center rounded-xl border border-line bg-card px-3 py-1.5 text-xs text-fg-3 sm:text-sm" aria-live="polite">
+            <span className="mr-1 text-fg">다음 갱신:</span>
+            <span className="numeral mr-1 text-fg"><RefreshCountdown nextRefreshAt={nextRefreshAt} /></span>
+            {ranked.length > 0 ? (
+              <>
+                <span>·</span>
+                <span className="numeral mr-1 text-fg">{visibleRanked.length}</span>편
+                {clientFilterCount > 0 && <span className="ml-1 text-fg-3">/ {ranked.length}</span>}
+              </>
+            ) : null}
+          </span>
+        </div>
+      </details>
     </div>
   );
 }
