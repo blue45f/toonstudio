@@ -880,13 +880,21 @@ describe("접근성", () => {
     expect(store.getState().failures).toHaveLength(0);
     expect(screen.getByText(/이 소스에는 스켈레톤이 없어 표시할 관절 핸들이 없습니다/u)).toBeTruthy();
 
-    // 2. 부모 순환 스켈레톤: 렌더 및 핸들 드래그 시 skeleton-cycle이 중복 없이 1회 기록되고 dispatch하지 않는다
+    // 2. 부모 순환 스켈레톤: 렌더 및 핸들 드래그 시 skeleton-cycle이 중복 없이 1회 기록되고 모든 기즈모 모드에서 dispatch하지 않는다
     currentSkeleton = cycleSkeleton;
     currentHandles = handlesFor({});
     flushFrames();
+    expect(handle("leftLowerArm").getAttribute("aria-disabled")).toBe("true");
     fireEvent.pointerDown(handle("leftLowerArm"), { clientX: 100, clientY: 100, pointerId: 21, button: 0 });
     fireEvent.pointerMove(handle("leftLowerArm"), { clientX: 120, clientY: 110, pointerId: 21 });
     fireEvent.pointerUp(handle("leftLowerArm"), { clientX: 120, clientY: 110, pointerId: 21 });
+    const gizmoSelect = screen.getByLabelText("기즈모 조작 모드") as HTMLSelectElement;
+    fireEvent.change(gizmoSelect, { target: { value: "0" } });
+    fireEvent.pointerDown(handle("leftLowerArm"), { clientX: 100, clientY: 100, pointerId: 25, button: 0 });
+    fireEvent.change(gizmoSelect, { target: { value: "3" } });
+    fireEvent.pointerDown(handle("spine"), { clientX: 100, clientY: 100, pointerId: 26, button: 0 });
+    fireEvent.pointerMove(handle("spine"), { clientX: 130, clientY: 110, pointerId: 26 });
+    fireEvent.pointerUp(handle("spine"), { clientX: 130, clientY: 110, pointerId: 26 });
     expect(store.getState().failures).toHaveLength(1);
     expect(store.getState().failures[0]?.code).toBe("skeleton-cycle");
     expect(screen.getByText(/\[skeleton-cycle\]/u)).toBeTruthy();
@@ -895,7 +903,6 @@ describe("접근성", () => {
     // 3. NaN restTranslation 스켈레톤: IK 드래그 중 손상 주입 시에도 skeleton-non-finite-rest가 기록되고 크래시하지 않는다
     currentSkeleton = SKELETON;
     flushFrames();
-    const gizmoSelect = screen.getByLabelText("기즈모 조작 모드") as HTMLSelectElement;
     fireEvent.change(gizmoSelect, { target: { value: "1" } });
     const handStart = projectToPixel(CAMERA, worldOf({}, "leftHand"));
     if (!handStart) throw new Error("투영 불가");
@@ -908,9 +915,10 @@ describe("접근성", () => {
     expect(screen.getByText(/\[skeleton-non-finite-rest\]/u)).toBeTruthy();
     expect(store.dispatched).toEqual([]);
 
-    // 4. 정상 스켈레톤 복구 후 정상 드래그 커밋 확인
+    // 4. 정상 스켈레톤 복구 후 aria-disabled가 해제되고 정상 드래그 커밋 확인
     currentSkeleton = SKELETON;
     fireEvent.change(gizmoSelect, { target: { value: "2" } });
+    expect(handle("leftLowerArm").getAttribute("aria-disabled")).toBeNull();
     const elbowStart = projectToPixel(CAMERA, worldOf({}, "leftLowerArm"));
     const pivotWorld = worldOf({}, "leftUpperArm");
     const elbowEnd = projectToPixel(CAMERA, [pivotWorld[0], pivotWorld[1] - 0.25, pivotWorld[2]]);

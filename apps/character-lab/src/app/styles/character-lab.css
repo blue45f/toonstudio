@@ -27,13 +27,17 @@
 body {
   margin: 0;
   min-width: 320px;
+  max-width: 100vw;
   min-height: 100vh;
+  overflow-x: hidden;
   background: var(--lab-canvas);
 }
 
 #root,
 .cl-app {
   min-height: 100vh;
+  max-width: 100vw;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -84,6 +88,11 @@ dd {
 
 .cl-button {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--lab-line);
   border-radius: 8px;
   background: var(--lab-panel-2);
@@ -111,7 +120,7 @@ dd {
 }
 
 .cl-button-small {
-  padding: 2px 8px;
+  padding: 4px 10px;
   font-size: 0.75rem;
 }
 
@@ -124,6 +133,9 @@ dd {
 }
 
 .cl-select {
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 100%;
   border: 1px solid var(--lab-line);
   border-radius: 8px;
   background: var(--lab-panel-2);
@@ -137,6 +149,7 @@ dd {
 :where(button, input, select, textarea, summary, a, [tabindex]):focus-visible {
   outline: 2px solid var(--lab-accent);
   outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(124, 104, 236, 0.32);
 }
 
 /* ---------- TopBar */
@@ -304,12 +317,16 @@ dd {
   display: grid;
   grid-template-columns: 280px minmax(320px, 1fr) 380px;
   gap: 0;
+  min-width: 0;
   min-height: 0;
 }
 
 .cl-workbench-left,
 .cl-workbench-right {
-  overflow: auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 12px;
   background: var(--lab-panel);
 }
@@ -326,6 +343,8 @@ dd {
   position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
   min-height: 420px;
   background: var(--lab-canvas);
 }
@@ -380,7 +399,7 @@ dd {
 
 @media (max-width: 1180px) {
   .cl-workbench {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(260px, 45vh) auto auto;
   }
 
@@ -430,6 +449,8 @@ dd {
 .cl-slot-cell {
   position: relative;
   width: 100%;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -489,6 +510,8 @@ dd {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .cl-inspector-tabs {
@@ -499,11 +522,16 @@ dd {
 
 .cl-inspector-tab {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--lab-line);
   border-radius: 999px;
   background: transparent;
   color: var(--lab-muted);
-  padding: 4px 10px;
+  padding: 6px 12px;
   font: inherit;
   font-size: 0.78rem;
   cursor: pointer;
@@ -522,6 +550,8 @@ dd {
 
 .cl-inspector-body {
   min-height: 200px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* ---------- 조립 실패 화면 */
@@ -559,6 +589,8 @@ dd {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
   font-size: 0.85rem;
 }
 
@@ -590,6 +622,7 @@ dd {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 10px;
+  min-width: 0;
 }
 
 .cl-paint-row label,
@@ -619,7 +652,6 @@ dd {
 
 .cl-paint-row input[type="number"],
 .cl-export-row input[type="number"],
-.cl-pose-coord,
 .cl-physics-row input[type="number"],
 .cl-render-row input[type="number"] {
   width: 5.5em;
@@ -647,14 +679,21 @@ dd {
 .cl-pose-panel select,
 .cl-param-panel select,
 .cl-physics-panel select {
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--lab-line);
   border-radius: 8px;
   background: var(--lab-panel-2);
   color: var(--lab-fg);
-  padding: 4px 8px;
+  padding: 6px 10px;
   font: inherit;
   font-size: 0.82rem;
   max-width: 100%;
+}
+
+.cl-pose-panel select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* 버튼 묶음 및 빠른 프리셋 칩 */
@@ -687,11 +726,16 @@ dd {
 .cl-vision-actions button,
 .cl-package-actions button {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--lab-line);
   border-radius: 8px;
   background: var(--lab-panel-2);
   color: var(--lab-fg);
-  padding: 5px 10px;
+  padding: 6px 12px;
   font: inherit;
   font-size: 0.82rem;
   cursor: pointer;
@@ -877,11 +921,16 @@ dd {
 .cl-slot-tab {
   appearance: none;
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--lab-line);
   border-radius: 999px;
   background: transparent;
   color: var(--lab-muted);
-  padding: 3px 9px;
+  padding: 5px 10px;
   font: inherit;
   font-size: 0.76rem;
   cursor: pointer;
@@ -1068,15 +1117,20 @@ dd {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 104px), 1fr));
   gap: 6px;
+  width: 100%;
+  min-width: 0;
 }
 
 .cl-expression-card,
 .cl-pose-card {
   width: 100%;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 2px;
   padding: 6px 8px;
   border: 1px solid var(--lab-line);
@@ -1124,6 +1178,19 @@ dd {
   flex: 1;
 }
 
+.cl-pose-primary-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--lab-line);
+  border-radius: var(--lab-radius);
+  background: color-mix(in oklab, var(--lab-panel-2) 65%, transparent);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cl-pose-panel fieldset,
 .cl-pose-scope,
 .cl-pose-hand,
 .cl-pose-ik {
@@ -1131,26 +1198,116 @@ dd {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 10px;
+  margin: 0;
   padding: 8px 10px;
+  min-width: 0;
+  max-width: 100%;
   border: 1px dashed var(--lab-line);
   border-radius: var(--lab-radius);
+}
+
+.cl-pose-hand,
+.cl-pose-ik {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
 }
 
 .cl-pose-radio {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: var(--lab-muted);
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  background: var(--lab-panel-2);
+  color: var(--lab-fg);
+  cursor: pointer;
+  max-width: 100%;
 }
 
 .cl-pose-radio input {
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0;
   accent-color: var(--lab-accent);
 }
 
+.cl-pose-radio:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .cl-pose-coords {
-  display: inline-flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.cl-pose-coord {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.cl-pose-coord input[type="number"] {
+  width: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  background: var(--lab-panel-2);
+  color: var(--lab-fg);
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.cl-pose-coord input[type="number"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cl-pose-advanced-diagnostics {
+  border: 1px solid var(--lab-line);
+  border-radius: var(--lab-radius);
+  background: var(--lab-panel-2);
+  padding: 4px 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cl-pose-diagnostics-summary {
+  display: flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--lab-fg);
+}
+
+.cl-pose-diagnostics-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0 8px;
+  border-top: 1px dashed var(--lab-line);
+}
+
+.cl-pose-grounded {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--lab-fg);
 }
 
 /* ---------- ParamPanel: 체형 9·얼굴 15 슬라이더 + 색 팔레트 */
@@ -2001,25 +2158,37 @@ dd {
 .cl-viewport-toolbar {
   right: 8px;
   max-width: calc(100% - 16px);
+  max-height: calc(100% - 64px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .cl-viewport-group {
-  flex-wrap: wrap;
-  max-width: 100%;
+  display: contents;
 }
 
 .cl-viewport-button,
 .cl-viewport-select {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--lab-line);
   border-radius: 8px;
   background: rgba(18, 26, 43, 0.86);
   color: var(--lab-fg);
-  padding: 4px 10px;
+  padding: 4px 8px;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   cursor: pointer;
   max-width: 100%;
+  text-overflow: ellipsis;
+}
+
+.cl-viewport-select[aria-label="SHAPER 내장 프리셋"] {
+  max-width: 148px;
 }
 
 .cl-viewport-button:hover:not(:disabled),
@@ -2103,7 +2272,7 @@ dd {
 }
 
 .cl-viewport-handles {
-  z-index: 2;
+  z-index: 4;
 }
 
 .cl-viewport-handle {
@@ -2118,6 +2287,11 @@ dd {
 
 .cl-viewport-handle[data-dragging="true"] {
   fill: var(--lab-warn);
+}
+
+.cl-viewport-handle[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .cl-viewport-draw-layer {
@@ -2171,22 +2345,28 @@ dd {
   gap: 8px;
 }
 
-/* ---------- 태블릿·모바일 터치 조작성(Character Labs 전용) */
+/* ---------- 태블릿·모바일 터치 조작성(Character Labs 전용, 최소 44px 터치 타깃) */
 @media (pointer: coarse), (max-width: 768px) {
   .cl-button,
   .cl-preset-chip,
   .cl-inspector-tab,
   .cl-slot-tab,
   .cl-viewport-button,
-  .cl-viewport-select {
-    min-height: 36px;
+  .cl-viewport-select,
+  .cl-pose-card,
+  .cl-pose-actions button,
+  .cl-pose-panel select,
+  .cl-pose-radio,
+  .cl-pose-diagnostics-summary {
+    min-width: 44px;
+    min-height: 44px;
     display: inline-flex;
     align-items: center;
   }
 
   .cl-param-swatch {
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 

@@ -28,7 +28,7 @@ import {
   computeShaperControlPoints,
   computeShaperIkHandleDrag,
 } from "./shaper-control-points";
-import { postSkeletonFailureOnce } from "./skeleton-boundary-guard";
+import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
 import {
   SHAPER_BUILTIN_BODY_PRESETS,
   SHAPER_BUILTIN_FACE_PRESETS,
@@ -431,6 +431,11 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       setNotice("관절 드래그를 쓸 수 없습니다: 이 엔진·소스는 스켈레톤(포즈 프레임)을 제공하지 않습니다.");
       return;
     }
+    const skelErr = diagnoseSkeletonData(skeleton);
+    if (skelErr) {
+      reportSkeletonFailure(skelErr);
+      return;
+    }
     const mode = gizmoModeRef.current;
     if (mode === 0) {
       setDraggingBone(handle.bone);
@@ -612,6 +617,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const ratio = typeof window !== "undefined" ? viewportPixelRatio(window.devicePixelRatio) : 1;
   const noHandleReason = engine && showHandles && handles.length === 0 ? "이 소스에는 스켈레톤이 없어 표시할 관절 핸들이 없습니다." : null;
   const poseSkeleton = engine && (showHandles || showControlPoints) ? readPoseSkeleton(engine) : null;
+  const skeletonCorrupted = Boolean(poseSkeleton && diagnoseSkeletonData(poseSkeleton));
   const activeCamera = engine && showControlPoints ? readViewportCamera(engine) : null;
   renderFailureRef.current = null;
   const onRenderFailure = (failure: LabFailure): void => { renderFailureRef.current = failure; };
@@ -694,20 +700,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       {engine && (showHandles || showControlPoints) ? (
         <svg ref={svgRef} className="cl-viewport-handles" role="group" aria-label="관절 핸들" data-gizmo-mode={gizmoMode} viewBox={viewBox} preserveAspectRatio="none" style={NO_POINTER}>
           {boneLinks.map((link) => (
-            <line
-              key={`${link.fromBone}->${link.toBone}`}
-              className="cl-viewport-bone-link"
-              data-from={link.fromBone}
-              data-to={link.toBone}
-              data-side={link.side}
-              x1={link.x1}
-              y1={link.y1}
-              x2={link.x2}
-              y2={link.y2}
-              stroke={link.side === "left" ? "rgba(255, 107, 107, 0.72)" : link.side === "right" ? "rgba(77, 171, 247, 0.72)" : "rgba(105, 219, 124, 0.72)"}
-              strokeWidth={Math.max(1.5, 1.8 * ratio)}
-              strokeLinecap="round"
-            />
+            <line key={`${link.fromBone}->${link.toBone}`} className="cl-viewport-bone-link" data-from={link.fromBone} data-to={link.toBone} data-side={link.side} x1={link.x1} y1={link.y1} x2={link.x2} y2={link.y2} stroke={link.side === "left" ? "rgba(255, 107, 107, 0.72)" : link.side === "right" ? "rgba(77, 171, 247, 0.72)" : "rgba(105, 219, 124, 0.72)"} strokeWidth={Math.max(1.5, 1.8 * ratio)} strokeLinecap="round" />
           ))}
           {activeHandle ? (
             <circle className="cl-viewport-gizmo-ring" data-gizmo-ring={activeHandle.bone} cx={activeHandle.screen[0]} cy={activeHandle.screen[1]} r={22 * Math.max(1, ratio)} fill="none" stroke="rgba(255, 212, 59, 0.9)" strokeWidth={Math.max(1.5, 2 * ratio)} strokeDasharray="4 3" />
@@ -719,11 +712,12 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
                   className="cl-viewport-handle"
                   data-bone={handle.bone}
                   data-dragging={draggingBone === handle.bone ? "true" : undefined}
+                  aria-disabled={skeletonCorrupted ? "true" : undefined}
                   aria-label={`${jointLabelKo(handle.bone)} 관절 핸들`}
                   cx={handle.screen[0]}
                   cy={handle.screen[1]}
                   r={(draggingBone === handle.bone ? 8 : 6) * Math.max(1, ratio)}
-                  style={{ pointerEvents: "all", cursor: draggingBone === handle.bone ? "grabbing" : "grab", touchAction: "none" }}
+                  style={{ pointerEvents: "all", cursor: skeletonCorrupted ? "not-allowed" : draggingBone === handle.bone ? "grabbing" : "grab", touchAction: "none" }}
                   onPointerDown={(event) => onHandleDown(event, handle)}
                   onPointerMove={onHandleMove}
                   onPointerUp={(event) => finishDrag(event, true)}
