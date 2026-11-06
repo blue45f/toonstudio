@@ -278,3 +278,18 @@ it("소재 필터는 탭 패널을 가장하지 않고 선택 상태를 알리�
   expect(buttons[1].getAttribute("aria-pressed")).toBe("true");
   expect(buttons[0].getAttribute("aria-pressed")).toBe("false");
 });
+
+it("짧은 유형 이름 뒤에 상세 안내를 접어 두되 장착과 카탈로그 진입은 유지한다", () => {
+  useResources.mockReturnValue(marketPage());
+  render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+  const section = screen.getByTestId("market-rea-ecosystem-presets");
+  const details = section.querySelector("details");
+  expect(details?.open).toBe(false);
+  expect(details?.textContent).toContain("ALL ASSETS");
+  expect(within(section).getByText("브러시").getAttribute("aria-hidden")).toBe("true");
+  expect(within(section).getByRole("link", { name: "스튜디오 보관함 열기" }).getAttribute("href")).toBe("/studio/assets");
+  fireEvent.click(within(section).getByRole("button", { name: "2D 펜 · 브러시 · 선화" }));
+  expect(details?.textContent).toContain("펜선, 수채, 이펙트 브러시");
+  expect(within(section).getByRole("link", { name: "브러시 관리자로 장착" }).getAttribute("href")).toBe("/studio/brushes");
+  expect(within(section).getByRole("link", { name: "전체 에셋 카탈로그" }).getAttribute("href")).toBe("/market/browse");
+});
