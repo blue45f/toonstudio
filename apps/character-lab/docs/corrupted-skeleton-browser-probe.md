@@ -23,10 +23,10 @@ scripts/corrupted-skeleton-probe.mjs
   │    ├─ Path 1: DIRECT_API_CALL (브라우저 내 실제 Vite ES 모듈 직접 호출)
   │    ├─ Path 2: SYNTHETIC_INJECTION (공식 PackagePanel UI를 통한 손상 GLB·매핑 패키지 주입)
   │    └─ Path 3: REAL_DOM_POINTER (실제 page.mouse 드래그·원자성·복구 후 Undo/Redo 검증)
-  └─ [Track B] LIVE_APP_CALLER_DEFECT_AUDIT (공식 PackagePanel 진입점만 사용한 라이브 .tsx 결함 감사)
-       ├─ viewport-pane-onfailure-unwired (ViewportPane.tsx onFailure 미전달)
-       ├─ pose-panel-direct-fk-cycle-crash (PosePanel.tsx 순환 스켈레톤 pageerror)
-       ├─ pose-panel-direct-fk-nan-rest-crash (PosePanel.tsx 비유한 restTranslation pageerror)
+  └─ [Track B] LIVE_APP_CALLER_DEFECT_AUDIT (공식 PackagePanel 진입점만 사용한 라이브 .tsx 호출부 감사 · 전수 RESOLVED 검증)
+       ├─ viewport-pane-onfailure-unwired (ViewportPane.tsx onFailure 배선 및 중복 배너 억제: status="RESOLVED")
+       ├─ pose-panel-direct-fk-cycle-crash (PosePanel.tsx 순환 스켈레톤 경계 가드·원자성·복구: status="RESOLVED")
+       ├─ pose-panel-direct-fk-nan-rest-crash (PosePanel.tsx 비유한 restTranslation 경계 가드·원자성·복구: status="RESOLVED")
        └─ importFlowBoundaries (Recipe JSON · Kit manifest · Authored Package 도달 가능성 명세)
 ```
 
@@ -41,7 +41,7 @@ scripts/corrupted-skeleton-probe.mjs
 CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/corrupted-skeleton-probe.mjs \
   --software --out /tmp/corrupted-skeleton-probe-report.json
 
-# 2) 라이브 앱 .tsx 미해결 결함(REPRODUCED_DEFECT)이 하나라도 있으면 종료 코드 1로 실패시키는 엄격 모드
+# 2) 라이브 앱 .tsx 호출부 결함 3건이 모두 RESOLVED(reproducedDefectCount: 0)인지 강제하는 엄격 모드 (통과 시 exit 0, 회귀 시 exit 1)
 CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/corrupted-skeleton-probe.mjs \
   --software --strict-app-defects --out /tmp/corrupted-skeleton-probe-strict.json
 
@@ -59,7 +59,7 @@ CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/corrupted-skeleton
 | 옵션 | 기본값 | 설명 |
 | --- | --- | --- |
 | `--software` | `false` | Linux 컨테이너용 SwiftShader 플래그(`--no-sandbox`, `--enable-features=Vulkan`, `--use-angle=swiftshader`, `--use-webgpu-adapter=swiftshader`)를 추가하고 리포트에 `softwareRenderer: true` 및 하드웨어 미검증 고지를 기록한다 |
-| `--strict-app-defects` | `false` | Track B에서 재현된 라이브 앱 `.tsx` 호출부 결함(`REPRODUCED_DEFECT`)이 남아 있으면 종료 코드 `1`을 반환한다(기본 모드에서는 Track A 통과 시 `0`을 반환하고 결함을 리포트에 정직하게 기록한다) |
+| `--strict-app-defects` | `false` | Track B의 라이브 앱 `.tsx` 호출부 결함 감사 항목 3건이 모두 `status: "RESOLVED"`(`reproduced: false`, `reproducedDefectCount: 0`)이고 Track A가 통과할 때 종료 코드 `0`을 반환하며, 어느 하나라도 미해결(`REPRODUCED_DEFECT`)로 회귀하거나 누락되면 종료 코드 `1`로 실패시킨다 |
 | `--negative-control` | `false` | 경계 가드가 깨진 가짜 리포트 6종을 평가기에 주입해 모두 실패로 거부되는지 검증하고, 음성 대조군 계약에 따라 종료 코드 `1`로 끝난다 |
 | `--out <path>` | 없음 | 전체 JSON 리포트를 지정한 경로에 저장한다(부모 폴더가 없으면 생성) |
 | `--url <url>` | 자체 기동 | 이미 실행 중인 Vite 개발 서버 주소를 사용한다. 생략하면 스크립트가 빈 포트에 Vite 개발 서버를 직접 띄우고 종료 시 정리한다 |
@@ -69,8 +69,8 @@ CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/corrupted-skeleton
 
 | 종료 코드 | 의미 |
 | --- | --- |
-| `0` | Track A 모든 경계 검증 통과(또는 `CHARACTER_LAB_BROWSER_PROBE !== "1"`로 게이트 건너뜀) |
-| `1` | Track A 검증 실패, `--strict-app-defects`에서 미해결 앱 결함 존재, 또는 `--negative-control` 실행 완료 |
+| `0` | Track A 모든 경계 검증 통과(및 `--strict-app-defects`에서 Track B 호출부 결함 3건 모두 `RESOLVED` 확인, 또는 `CHARACTER_LAB_BROWSER_PROBE !== "1"`로 게이트 건너뜀) |
+| `1` | Track A 검증 실패, `--strict-app-defects`에서 라이브 앱 호출부 결함 회귀(`REPRODUCED_DEFECT`) 또는 누락, 또는 `--negative-control` 실행 완료 |
 | `2` | `playwright` 패키지 또는 Chromium 실행 파일 부재(구조적 skip) |
 
 ---
@@ -140,15 +140,15 @@ CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/corrupted-skeleton
 
 ## 6. Track B: 공식 `PackagePanel` 진입점 기반 라이브 호출부 결함 감사 (`LIVE_APP_CALLER_DEFECT_AUDIT`)
 
-Track B는 백도어나 테스트 훅 없이 **오직 공식 `PackagePanel` UI 진입점**으로 `corrupt-cycle-rig`와 `corrupt-nan-rest-rig`를 로드한 상태에서 라이브 `.tsx` 컴포넌트의 미해결 호출부 결함을 정직하게 기록한다.
+Track B는 백도어나 테스트 훅 없이 **오직 공식 `PackagePanel` UI 진입점**으로 `corrupt-cycle-rig`와 `corrupt-nan-rest-rig`를 로드한 상태에서 라이브 `.tsx` 컴포넌트(`ViewportPane.tsx`, `PosePanel.tsx`)의 호출부 경계 배선이 정상 작동하는지 감사한다. 현재 3건의 호출부 경계가 모두 연결·검증되어 `status: "RESOLVED"`, `reproduced: false`, `reproducedDefectCount: 0`이며, `--strict-app-defects` 모드는 3건 모두 `RESOLVED`로 유지될 때 종료 코드 `0`, 어느 하나라도 회귀(`REPRODUCED_DEFECT`)하거나 누락되면 종료 코드 `1`을 반환한다.
 
-### 6.1 재현된 라이브 앱 결함 3건 (`REPRODUCED_DEFECT`)
+### 6.1 해결·검증된 라이브 앱 호출부 경계 3건 (`status: "RESOLVED"`, `reproducedDefectCount: 0`)
 
-| 결함 ID | 위치 | 현상 및 원인 |
+| 감사 ID | 위치 | 해결 및 실브라우저 검증 계약 |
 | --- | --- | --- |
-| `viewport-pane-onfailure-unwired` | `src/app/shell/panels/ViewportPane.tsx` (lines 437, 464, 481, 609, 610) | `resolveDragPivotWithMode`, `computeShaperIkHandleDrag`, `computeJointDrag`, `computeVisibleBoneLinks`, `computeShaperControlPoints` 호출 시 `{ onFailure }` 콜백을 넘기지 않아, 손상 스켈레톤이 들어와도 상단 `.cl-banner-item`(`FailureBanner`)에 `[skeleton-cycle]` 또는 `[skeleton-non-finite-rest]` 배너가 게시되지 않는다 |
-| `pose-panel-direct-fk-cycle-crash` | `src/app/shell/panels/PosePanel.tsx` (lines 95, 99, 174, 180, 182, 194-195) | `PackagePanel`에서 `corrupt-cycle-rig`를 로드한 뒤 우측 `"포즈"` 인스펙터 탭을 클릭하면 `PosePanel`이 마운트되면서 `safeComputeWorldTransforms` 대신 가드 없는 `computeWorldTransforms(activeSkeleton, ...)`를 직접 호출해 처리되지 않은 `pageerror`(`"스켈레톤에 순환 부모 관계가 있습니다"`)로 크래시한다 |
-| `pose-panel-direct-fk-nan-rest-crash` | `src/app/shell/panels/PosePanel.tsx` (lines 95, 99, 174, 180, 182, 194-195) | 페이지를 새로고침하고 `"WebGL2"` 선택 후 `PackagePanel`에서 `corrupt-nan-rest-rig`를 로드한 뒤 `"포즈"` 인스펙터 탭을 클릭하면 `PosePanel`이 가드 없는 `computeWorldTransforms(activeSkeleton, ...)`를 호출해 처리되지 않은 `pageerror`(`"restTranslation이 유한하지 않습니다"`)로 크래시한다 |
+| `viewport-pane-onfailure-unwired` | `src/app/shell/panels/ViewportPane.tsx` (lines 437, 464, 481, 609, 610) | `resolveDragPivotWithMode`, `computeShaperIkHandleDrag`, `computeJointDrag`, `computeVisibleBoneLinks`, `computeShaperControlPoints` 호출부에 `{ onFailure }` 콜백과 중복 억제 가드가 연결되어, `corrupt-cycle-rig` 로드·드래그 시 `.cl-banner-item`에 `[skeleton-cycle]`이 정확히 1건(`cycleBannerDuplicateCount === 1`), `corrupt-nan-rest-rig` 로드·드래그 시 `[skeleton-non-finite-rest]`가 정확히 1건(`nanBannerDuplicateCount === 1`) 게시됨을 검증한다 |
+| `pose-panel-direct-fk-cycle-crash` | `src/app/shell/panels/PosePanel.tsx` (lines 95, 99, 174, 180, 182, 194-195) | `PackagePanel`에서 `corrupt-cycle-rig` 로드 후 `"포즈"` 인스펙터 탭(`PosePanel`) 진입 및 `"현재 위치 읽기"`·`"IK 적용"` 클릭 시 미처리 `pageerror` 0건, `.cl-pose-panel` 또는 `.cl-banner-item`에 `[skeleton-cycle]` 진단 노출, Undo 히스토리 깊이 보존(원자성), 그리고 `valid-humanoid-rig` 복구 후 `"IK 적용"`(`+1`)·`"실행 취소"`(`-1`) 동작을 검증한다 |
+| `pose-panel-direct-fk-nan-rest-crash` | `src/app/shell/panels/PosePanel.tsx` (lines 95, 99, 174, 180, 182, 194-195) | 페이지 새로고침 및 `"WebGL2"` 선택 후 `PackagePanel`에서 `corrupt-nan-rest-rig`를 로드하고 `"포즈"` 인스펙터 탭(`PosePanel`) 진입 및 `"현재 위치 읽기"`·`"IK 적용"` 클릭 시 미처리 `pageerror` 0건, `[skeleton-non-finite-rest]` 진단 노출, Undo 히스토리 깊이 보존(원자성), 그리고 `valid-humanoid-rig` 복구 후 `"IK 적용"`(`+1`)·`"실행 취소"`(`-1`) 동작을 검증한다 |
 
 ### 6.2 공식 가져오기 경계별 도달 가능성 (`importFlowBoundaries`)
 
@@ -164,11 +164,11 @@ Track B는 백도어나 테스트 훅 없이 **오직 공식 `PackagePanel` UI �
 
 프로브가 항상 통과(무조건 exit `0`)하는 허위 테스트가 아님을 보장하기 위해, `--negative-control` 모드는 `runNegativeControlSuite()`를 실행한다.
 
-- 정상 통과 기준선 리포트에서 각 필수 불변식을 인위적으로 깨뜨린 **변이 리포트(mutated reports)** 를 `evaluateCorruptedSkeletonProbeReport()`에 넣는다:
+- 정상 통과 기준선 리포트(표준 모드 및 `--strict-app-defects` 모드 모두 `exitCode === 0`)에서 각 필수 불변식을 인위적으로 깨뜨린 **변이 리포트(mutated reports)** 를 `evaluateCorruptedSkeletonProbeReport()`에 넣는다:
   1. `missing-nan-rest-case`: 필수 케이스(`nan-rest`) 누락
   2. `normal-empty-false-positive`: 정상 빈 스켈레톤(`normal-empty`)에서 `failureCount > 0` 오탐 발생
   3. `swallowed-programming-error`: 예기치 않은 `TypeError`가 다시 던져지지 않고 삼켜짐
   4. `broken-atomicity`: 손상 드래그 후 Undo 히스토리 깊이나 포즈 상태가 오염됨
   5. `failed-dom-recovery`: 복구 후 실제 DOM 포인터 드래그 또는 실행 취소가 실패함
-  6. `strict-mode-unresolved-app-defect`: `strictAppDefects: true`에서 미해결 `REPRODUCED_DEFECT`가 존재함
+  6. `strict-mode-unresolved-app-defect`: `strictAppDefects: true`에서 호출부 감사 항목이 `REPRODUCED_DEFECT`(`reproduced: true`)로 회귀함
 - 모든 변이 리포트가 `ok === false` 및 `exitCode === 1`로 거부되는지 확인한 뒤, 음성 대조군 CLI 계약에 따라 프로세스 자체도 **종료 코드 `1`** 로 종료한다.

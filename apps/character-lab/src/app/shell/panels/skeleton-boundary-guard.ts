@@ -179,3 +179,20 @@ export function safeComputeWorldTransforms(
     throw error;
   }
 }
+
+export interface FailureEventSink {
+  getState(): { readonly failures: readonly LabFailure[] };
+  applyEvent(event: { readonly type: "failure"; readonly failure: LabFailure }): void;
+}
+
+/**
+ * 동일한 실패(code + reasonKo)가 이미 활성 failures 목록에 있으면 중복 게시하지 않고,
+ * 없을 때만 store에 failure 이벤트를 기록한다(과도한 반복 배너 방지).
+ */
+export function postSkeletonFailureOnce(store: FailureEventSink, failure: LabFailure): boolean {
+  const exists = store.getState().failures.some((item) => item.code === failure.code && item.reasonKo === failure.reasonKo);
+  if (exists) return false;
+  store.applyEvent({ type: "failure", failure });
+  return true;
+}
+

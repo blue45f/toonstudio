@@ -28,6 +28,7 @@ import {
   computeShaperControlPoints,
   computeShaperIkHandleDrag,
 } from "./shaper-control-points";
+import { postSkeletonFailureOnce } from "./skeleton-boundary-guard";
 import {
   SHAPER_BUILTIN_BODY_PRESETS,
   SHAPER_BUILTIN_FACE_PRESETS,
@@ -44,7 +45,7 @@ import {
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, ParamValues, Pose, SkeletonData } from "../../../contracts";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -140,6 +141,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const symmetryRef = useRef(symmetryMode);
   const pivotModeRef = useRef<ShaperPivotMode>(pivotMode);
   const gizmoModeRef = useRef<ShaperGizmoMode>(gizmoMode);
+  const renderFailureRef = useRef<LabFailure | null>(null);
+  const reportSkeletonFailure = useCallback((failure: LabFailure): void => { postSkeletonFailureOnce(store, failure); setNotice(failureText(failure, failure.reasonKo)); }, [store]);
 
   useEffect(() => {
     planRef.current = plan;
@@ -148,6 +151,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     symmetryRef.current = symmetryMode;
     pivotModeRef.current = pivotMode;
     gizmoModeRef.current = gizmoMode;
+    if (renderFailureRef.current) postSkeletonFailureOnce(store, renderFailureRef.current);
   });
 
   const registerCanvas = useCallback(
@@ -434,10 +438,13 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       return;
     }
     const startPose = planRef.current?.boneRotations ?? poseRef.current;
-    const pivot = resolveDragPivotWithMode(skeleton, startPose, handle.bone as HumanoidBoneName, pivotModeRef.current);
+    let pivotFailure: LabFailure | null = null;
+    const pivot = resolveDragPivotWithMode(skeleton, startPose, handle.bone as HumanoidBoneName, pivotModeRef.current, {
+      onFailure: (failure) => { pivotFailure = failure; postSkeletonFailureOnce(store, failure); },
+    });
     const startPixel = pixelOf(event, camera);
     if (!pivot || !startPixel) {
-      setNotice(`${jointLabelKo(handle.bone)} 핸들은 회전 관절을 찾지 못해 끌 수 없습니다.`);
+      setNotice(pivotFailure ? `${jointLabelKo(handle.bone)} 핸들은 회전 관절을 찾지 못해 끌 수 없습니다: ${failureText(pivotFailure, (pivotFailure as LabFailure).reasonKo)}` : `${jointLabelKo(handle.bone)} 핸들은 회전 관절을 찾지 못해 끌 수 없습니다.`);
       return;
     }
     if (typeof event.currentTarget.setPointerCapture === "function") event.currentTarget.setPointerCapture(event.pointerId);
@@ -461,7 +468,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     }
 
     if (session.mode === 1) {
-      const ikOut = computeShaperIkHandleDrag({ skeleton: session.skeleton, startPose: poseRef.current, handleBone: session.handle.bone as HumanoidBoneName, camera, startPixel: session.startPixel, currentPixel, symmetryEnabled: symmetryRef.current || event.altKey, pivotMode: pivotModeRef.current });
+      const ikOut = computeShaperIkHandleDrag({ skeleton: session.skeleton, startPose: poseRef.current, handleBone: session.handle.bone as HumanoidBoneName, camera, startPixel: session.startPixel, currentPixel, symmetryEnabled: symmetryRef.current || event.altKey, pivotMode: pivotModeRef.current, onFailure: reportSkeletonFailure });
       if (!ikOut) return;
       session.ikOutcome = { pose: ikOut.pose, labelKo: ikOut.labelKo };
       setNotice(ikOut.reasonKo ?? `${ikOut.labelKo} 미리보기`);
@@ -478,7 +485,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
     let outcome: JointDragOutcome | null;
     try {
-      outcome = computeJointDrag({ skeleton: session.skeleton, startPose: session.startPose, pivot: session.pivot, camera, startPixel: session.startPixel, currentPixel });
+      outcome = computeJointDrag({ skeleton: session.skeleton, startPose: session.startPose, pivot: session.pivot, camera, startPixel: session.startPixel, currentPixel, onFailure: reportSkeletonFailure });
     } catch (error) {
       setNotice(failureText(error, `관절 드래그 계산에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`));
       return;
@@ -606,8 +613,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const noHandleReason = engine && showHandles && handles.length === 0 ? "이 소스에는 스켈레톤이 없어 표시할 관절 핸들이 없습니다." : null;
   const poseSkeleton = engine && (showHandles || showControlPoints) ? readPoseSkeleton(engine) : null;
   const activeCamera = engine && showControlPoints ? readViewportCamera(engine) : null;
-  const boneLinks = engine && showHandles && handles.length > 0 ? computeVisibleBoneLinks(handles, poseSkeleton) : [];
-  const controlPoints = engine && showControlPoints && poseSkeleton && activeCamera ? computeShaperControlPoints(poseSkeleton, plan?.boneRotations ?? labState.recipe.pose, activeCamera) : [];
+  renderFailureRef.current = null;
+  const onRenderFailure = (failure: LabFailure): void => { renderFailureRef.current = failure; };
+  const boneLinks = engine && showHandles && poseSkeleton ? computeVisibleBoneLinks(handles, poseSkeleton, { onFailure: onRenderFailure }) : [];
+  const controlPoints = engine && showControlPoints && poseSkeleton && activeCamera ? computeShaperControlPoints(poseSkeleton, plan?.boneRotations ?? labState.recipe.pose, activeCamera, { onFailure: onRenderFailure }) : [];
   const activeHandle = draggingBone ? handles.find((entry) => entry.bone === draggingBone) ?? null : null;
 
   return (

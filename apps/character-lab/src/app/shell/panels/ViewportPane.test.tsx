@@ -10,7 +10,7 @@ import { createPaintSession } from "../../../paint/paint-session";
 import { projectToPixel } from "../../../render/viewport-math";
 import { v3Length, v3Sub } from "../../../shared/math";
 import { createMockEngine, mockDiagnostics } from "../../../testing/mock-engine";
-import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
+import { MockLabProvider, createMockEngineSession, createMockLabStore } from "../../../testing/mock-store";
 import { applyPlanFixture } from "../../../testing/recipe-fixtures";
 import { TopBar } from "../TopBar";
 import { createUiStateStore } from "../ui-state";
@@ -18,7 +18,7 @@ import { createViewportRegistry } from "../viewport-registry";
 
 import { ViewportPane } from "./ViewportPane";
 
-import type { ApplyPlan, EngineBackend, EngineSession, EngineStatus, HudSample, JointDragHandle, LabCommand, PickHit, Pose, Vec3 } from "../../../contracts";
+import type { ApplyPlan, EngineBackend, EngineSession, EngineStatus, HudSample, JointDragHandle, LabCommand, PickHit, Pose, SkeletonData, Vec3 } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 import type { MockEngine } from "../../../testing/mock-engine";
 import type { ApplyLoop } from "../apply-loop";
@@ -841,4 +841,85 @@ describe("접근성", () => {
     expect(store.getState().recipe).toEqual(initialRecipe);
     expect(presetSelect.value).toBe("");
   });
+
+  it("손상된 스켈레톤(부모 순환·NaN restTranslation)은 store.failures에 중복 없이 진단 게시되고 정상 빈 스켈레톤은 실패를 게시하지 않으며 복구 후 드래그가 정상 동작한다", () => {
+    const cycleSkeleton: SkeletonData = {
+      bones: SKELETON.bones.map((b) => {
+        if (b.name === "hips") return { ...b, parent: "spine" };
+        if (b.name === "spine") return { ...b, parent: "hips" };
+        return b;
+      }),
+    };
+    const nanSkeleton: SkeletonData = {
+      bones: SKELETON.bones.map((b) =>
+        b.name === "hips" ? { ...b, restTranslation: [Number.NaN, 1, 0] as const } : b,
+      ),
+    };
+
+    let currentSkeleton: SkeletonData | null = { bones: [] };
+    let currentHandles: readonly JointDragHandle[] = [];
+    const base = createMockEngine({ backend: "webgpu" });
+    const engine: TestEngine = Object.assign(base, {
+      viewportCamera: () => CAMERA,
+      poseSkeleton: () => currentSkeleton,
+      jointHandles: () => currentHandles,
+    });
+    const store = createMockLabStore({ engine: READY });
+    const session = createMockEngineSession(READY);
+    session.setEngine(engine);
+    const plan = applyPlanFixture({ revision: 1 });
+
+    render(
+      <MockLabProvider store={store} engineSession={session} shell={{ viewport: createViewportRegistry(), ui: createUiStateStore(), applyLoop: fakeApplyLoop(plan) }}>
+        <ViewportPane hudIntervalMs={0} initialOverlays={{ handles: true, controlPoints: true }} />
+      </MockLabProvider>,
+    );
+    flushFrames();
+
+    // 1. normal-empty ({ bones: [] })는 failures를 기록하지 않고 안내 문구를 유지한다
+    expect(store.getState().failures).toHaveLength(0);
+    expect(screen.getByText(/이 소스에는 스켈레톤이 없어 표시할 관절 핸들이 없습니다/u)).toBeTruthy();
+
+    // 2. 부모 순환 스켈레톤: 렌더 및 핸들 드래그 시 skeleton-cycle이 중복 없이 1회 기록되고 dispatch하지 않는다
+    currentSkeleton = cycleSkeleton;
+    currentHandles = handlesFor({});
+    flushFrames();
+    fireEvent.pointerDown(handle("leftLowerArm"), { clientX: 100, clientY: 100, pointerId: 21, button: 0 });
+    fireEvent.pointerMove(handle("leftLowerArm"), { clientX: 120, clientY: 110, pointerId: 21 });
+    fireEvent.pointerUp(handle("leftLowerArm"), { clientX: 120, clientY: 110, pointerId: 21 });
+    expect(store.getState().failures).toHaveLength(1);
+    expect(store.getState().failures[0]?.code).toBe("skeleton-cycle");
+    expect(screen.getByText(/\[skeleton-cycle\]/u)).toBeTruthy();
+    expect(store.dispatched).toEqual([]);
+
+    // 3. NaN restTranslation 스켈레톤: IK 드래그 중 손상 주입 시에도 skeleton-non-finite-rest가 기록되고 크래시하지 않는다
+    currentSkeleton = SKELETON;
+    flushFrames();
+    const gizmoSelect = screen.getByLabelText("기즈모 조작 모드") as HTMLSelectElement;
+    fireEvent.change(gizmoSelect, { target: { value: "1" } });
+    const handStart = projectToPixel(CAMERA, worldOf({}, "leftHand"));
+    if (!handStart) throw new Error("투영 불가");
+    fireEvent.pointerDown(handle("leftHand"), { ...toClient(handStart), pointerId: 22, button: 0 });
+    // pointerMove 시점에 세션 스켈레톤이 손상된 경우 시뮬레이션
+    currentSkeleton = nanSkeleton;
+    fireEvent.pointerUp(handle("leftHand"), { ...toClient(handStart), pointerId: 22 });
+    fireEvent.pointerDown(handle("leftHand"), { ...toClient(handStart), pointerId: 23, button: 0 });
+    expect(store.getState().failures.some((f) => f.code === "skeleton-non-finite-rest")).toBe(true);
+    expect(screen.getByText(/\[skeleton-non-finite-rest\]/u)).toBeTruthy();
+    expect(store.dispatched).toEqual([]);
+
+    // 4. 정상 스켈레톤 복구 후 정상 드래그 커밋 확인
+    currentSkeleton = SKELETON;
+    fireEvent.change(gizmoSelect, { target: { value: "2" } });
+    const elbowStart = projectToPixel(CAMERA, worldOf({}, "leftLowerArm"));
+    const pivotWorld = worldOf({}, "leftUpperArm");
+    const elbowEnd = projectToPixel(CAMERA, [pivotWorld[0], pivotWorld[1] - 0.25, pivotWorld[2]]);
+    if (!elbowStart || !elbowEnd) throw new Error("투영 불가");
+    fireEvent.pointerDown(handle("leftLowerArm"), { ...toClient(elbowStart), pointerId: 24, button: 0 });
+    fireEvent.pointerMove(handle("leftLowerArm"), { ...toClient(elbowEnd), pointerId: 24 });
+    fireEvent.pointerUp(handle("leftLowerArm"), { ...toClient(elbowEnd), pointerId: 24 });
+    expect(store.dispatched).toHaveLength(1);
+    expect(store.dispatched[0]?.type).toBe("pose/set");
+  });
 });
+

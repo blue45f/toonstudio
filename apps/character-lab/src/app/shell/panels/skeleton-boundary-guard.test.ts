@@ -6,6 +6,7 @@ import {
   classifySkeletonBoundaryError,
   diagnoseSkeletonData,
   isFinitePixelPair,
+  postSkeletonFailureOnce,
   reportInvalidPivotWorld,
   safeComputeWorldTransforms,
 } from "./skeleton-boundary-guard";
@@ -287,4 +288,33 @@ describe("skeleton-boundary-guard — diagnoseSkeletonData & safeComputeWorldTra
     expect(pivotFailure.code).toBe("skeleton-invalid-input");
     expect(pivotFailures).toHaveLength(1);
   });
+
+  it("postSkeletonFailureOnce는 동일(code + reasonKo) 실패를 중복 게시하지 않고 다른 실패나 해제 후 재발생은 기록한다", () => {
+    const failures: LabFailure[] = [];
+    const sink = {
+      getState: () => ({ failures }),
+      applyEvent: (event: { readonly type: "failure"; readonly failure: LabFailure }) => {
+        failures.push(event.failure);
+      },
+    };
+
+    const cycle1 = failVisible("skeleton-cycle", '스켈레톤 본 "hips"의 부모 관계에 순환이 있습니다.', null, FIXED_NOW);
+    const cycle1Duplicate = failVisible("skeleton-cycle", '스켈레톤 본 "hips"의 부모 관계에 순환이 있습니다.', null, FIXED_NOW + 100);
+    const nanRest = failVisible("skeleton-non-finite-rest", '본 "hips"의 restTranslation이 유한하지 않습니다.', null, FIXED_NOW + 200);
+    const cycle2DifferentReason = failVisible("skeleton-cycle", '스켈레톤 본 "spine"의 부모 관계에 순환이 있습니다.', null, FIXED_NOW + 300);
+
+    expect(postSkeletonFailureOnce(sink, cycle1)).toBe(true);
+    expect(postSkeletonFailureOnce(sink, cycle1Duplicate)).toBe(false);
+    expect(failures).toHaveLength(1);
+
+    expect(postSkeletonFailureOnce(sink, nanRest)).toBe(true);
+    expect(postSkeletonFailureOnce(sink, cycle2DifferentReason)).toBe(true);
+    expect(failures).toHaveLength(3);
+
+    // failures 목록이 비워지면(배너 닫기 등) 다시 기록 가능
+    failures.length = 0;
+    expect(postSkeletonFailureOnce(sink, cycle1Duplicate)).toBe(true);
+    expect(failures).toHaveLength(1);
+  });
 });
+

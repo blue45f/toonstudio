@@ -496,6 +496,12 @@ const REQUIRED_DIRECT_CASE_IDS = [
   "malformed-non-finite-rest-rotation", "malformed-duplicate-bone-masking-cycle",
 ];
 
+const REQUIRED_CALLER_DEFECT_IDS = [
+  "viewport-pane-onfailure-unwired",
+  "pose-panel-direct-fk-cycle-crash",
+  "pose-panel-direct-fk-nan-rest-crash",
+];
+
 /** 프로브 리포트(표준 모드 / --strict-app-defects 모드)를 검증하고 종료 코드(0 또는 1)를 판정한다. */
 export function evaluateCorruptedSkeletonProbeReport(report, options = {}) {
   const strictAppDefects = Boolean(options.strictAppDefects ?? report?.strictAppDefects);
@@ -537,9 +543,15 @@ export function evaluateCorruptedSkeletonProbeReport(report, options = {}) {
   }
 
   const defects = audit?.defects ?? report?.reproducedDefects ?? [];
+  const defectMap = new Map(Array.isArray(defects) ? defects.map((d) => [d.id, d]) : []);
   if (!audit || audit.officialEntryOnly !== true || !Array.isArray(defects) || defects.length === 0) {
     reasons.push("Track B 라이브 앱 호출부 결함 감사(LIVE_APP_CALLER_DEFECT_AUDIT) 기록이 누락되었습니다.");
   } else {
+    for (const reqDefectId of REQUIRED_CALLER_DEFECT_IDS) {
+      if (!defectMap.has(reqDefectId)) {
+        reasons.push(`Track B 필수 호출부 감사 항목 누락: ${reqDefectId}`);
+      }
+    }
     for (const defect of defects) {
       if (defect.reproduced && defect.classification !== "REPRODUCED_DEFECT") {
         reasons.push(`재현된 라이브 앱 결함(${defect.id})은 반드시 REPRODUCED_DEFECT로 분류되어야 합니다(현재: ${String(defect.classification)}).`);
@@ -547,9 +559,17 @@ export function evaluateCorruptedSkeletonProbeReport(report, options = {}) {
     }
   }
 
-  const reproducedDefects = defects.filter((d) => d.reproduced || d.status === "REPRODUCED_DEFECT");
-  if (strictAppDefects && reproducedDefects.length > 0) {
-    reasons.push(`--strict-app-defects 모드에서 미해결 라이브 앱 호출부 결함 ${reproducedDefects.length}건이 존재합니다: ${reproducedDefects.map((d) => d.id).join(", ")}`);
+  const reproducedDefects = Array.isArray(defects) ? defects.filter((d) => d.reproduced || d.status === "REPRODUCED_DEFECT") : [];
+  if (strictAppDefects) {
+    if (reproducedDefects.length > 0) {
+      reasons.push(`--strict-app-defects 모드에서 미해결 라이브 앱 호출부 결함 ${reproducedDefects.length}건이 존재합니다: ${reproducedDefects.map((d) => d.id).join(", ")}`);
+    }
+    for (const reqDefectId of REQUIRED_CALLER_DEFECT_IDS) {
+      const defect = defectMap.get(reqDefectId);
+      if (!defect || defect.status !== "RESOLVED" || defect.reproduced !== false) {
+        reasons.push(`--strict-app-defects 모드에서 필수 호출부 결함(${reqDefectId})이 RESOLVED(reproduced=false) 상태가 아닙니다.`);
+      }
+    }
   }
 
   const ok = reasons.length === 0;
@@ -608,16 +628,22 @@ export async function runNegativeControlSuite(options = {}) {
     liveAppCallerDefectAudit: {
       track: "LIVE_APP_CALLER_DEFECT_AUDIT",
       officialEntryOnly: true,
-      reproducedDefectCount: 3,
+      reproducedDefectCount: 0,
       defects: [
-        { id: "viewport-pane-onfailure-unwired", classification: "REPRODUCED_DEFECT", status: "REPRODUCED_DEFECT", reproduced: true },
-        { id: "pose-panel-direct-fk-cycle-crash", classification: "REPRODUCED_DEFECT", status: "REPRODUCED_DEFECT", reproduced: true },
-        { id: "pose-panel-direct-fk-nan-rest-crash", classification: "REPRODUCED_DEFECT", status: "REPRODUCED_DEFECT", reproduced: true },
+        { id: "viewport-pane-onfailure-unwired", classification: "RESOLVED", status: "RESOLVED", reproduced: false },
+        { id: "pose-panel-direct-fk-cycle-crash", classification: "RESOLVED", status: "RESOLVED", reproduced: false },
+        { id: "pose-panel-direct-fk-nan-rest-crash", classification: "RESOLVED", status: "RESOLVED", reproduced: false },
       ],
     },
   };
 
-  const baselineEvaluation = evaluate(baselineReport, { strictAppDefects: false });
+  const baselineStandardEvaluation = evaluate(baselineReport, { strictAppDefects: false });
+  const baselineStrictEvaluation = evaluate(baselineReport, { strictAppDefects: true });
+  const baselinePassed =
+    baselineStandardEvaluation.ok === true &&
+    baselineStandardEvaluation.exitCode === 0 &&
+    baselineStrictEvaluation.ok === true &&
+    baselineStrictEvaluation.exitCode === 0;
   const clone = (obj) => JSON.parse(JSON.stringify(obj));
   const mutations = [
     ["missing-nan-rest-case", "비유한 restTranslation(nan-rest) 가드 누락 시 실패", (r) => { r.directApiCall.cases = r.directApiCall.cases.filter((c) => c.id !== "nan-rest"); }, { strictAppDefects: false }],
@@ -625,7 +651,20 @@ export async function runNegativeControlSuite(options = {}) {
     ["swallowed-programming-error", "예기치 않은 TypeError가 삼켜지면(rethrew=false) 실패", (r) => { r.directApiCall.unexpectedProgrammingError.rethrew = false; }, { strictAppDefects: false }],
     ["broken-atomicity", "손상 드래그 실패 후 기존 포즈·히스토리 상태 오염 시 실패", (r) => { r.directApiCall.atomicityAndRecovery.posePreserved = false; }, { strictAppDefects: false }],
     ["failed-dom-recovery", "손상 입력 이후 실제 DOM 포인터 복구 드래그·Undo 실패 시 거부", (r) => { r.realDomPointer.recoveryValidHumanoidDrag.passed = false; }, { strictAppDefects: false }],
-    ["strict-mode-unresolved-app-defect", "--strict-app-defects 모드에서 미해결 REPRODUCED_DEFECT 존재 시 실패", () => undefined, { strictAppDefects: true }],
+    [
+      "strict-mode-unresolved-app-defect",
+      "--strict-app-defects 모드에서 미해결 REPRODUCED_DEFECT 존재 시 실패",
+      (r) => {
+        r.liveAppCallerDefectAudit.defects[0] = {
+          ...r.liveAppCallerDefectAudit.defects[0],
+          reproduced: true,
+          status: "REPRODUCED_DEFECT",
+          classification: "REPRODUCED_DEFECT",
+        };
+        r.liveAppCallerDefectAudit.reproducedDefectCount = 1;
+      },
+      { strictAppDefects: true },
+    ],
   ].map(([id, descriptionKo, mutate, evalOptions]) => ({ id, descriptionKo, mutate, evalOptions }));
 
   const cases = mutations.map((m) => {
@@ -636,6 +675,6 @@ export async function runNegativeControlSuite(options = {}) {
     return { id: m.id, descriptionKo: m.descriptionKo, rejected, observedExitCode: evaluation.exitCode, reasons: evaluation.reasons };
   });
 
-  const allRejected = baselineEvaluation.ok === true && baselineEvaluation.exitCode === 0 && cases.every((c) => c.rejected);
-  return { ok: allRejected, allRejected, baselinePassed: baselineEvaluation.ok === true && baselineEvaluation.exitCode === 0, exitCode: 1, cases };
+  const allRejected = baselinePassed && cases.every((c) => c.rejected);
+  return { ok: allRejected, allRejected, baselinePassed, exitCode: 1, cases };
 }

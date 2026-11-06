@@ -24,7 +24,7 @@ const CANDIDATE_CHROMIUM_PATHS = [
   "/usr/bin/google-chrome",
   "/usr/local/manual-bin/chromium",
 ];
-const REQUIRED_ANCESTOR_COMMITS = ["f8a04aee", "06d95bc8", "39976d11"];
+const REQUIRED_ANCESTOR_COMMITS = ["f8a04aee", "06d95bc8", "39976d11", "eac1fb45"];
 const CHROMIUM_TMPDIR_RESERVE_BYTES = 64;
 const SOCKET_PATH_LIMIT_BYTES = 104;
 const HARDWARE_DISCLAIMER_KO =
@@ -118,15 +118,7 @@ if (Number.isInteger(parent) && parent > 1) {
 
 function killGroup(child, signal = "SIGTERM") {
   if (!child || child.pid === undefined) return;
-  try {
-    process.kill(-child.pid, signal);
-  } catch {
-    try {
-      child.kill(signal);
-    } catch {
-      // 이미 종료됨
-    }
-  }
+  try { process.kill(-child.pid, signal); } catch { try { child.kill(signal); } catch { /* ignore */ } }
 }
 
 async function freePort() {
@@ -141,11 +133,7 @@ async function freePort() {
 }
 
 function safeTail(filePath, lines = 12) {
-  try {
-    return readFileSync(filePath, "utf8").split("\n").slice(-lines).join("\n");
-  } catch {
-    return "(로그 없음)";
-  }
+  try { return readFileSync(filePath, "utf8").split("\n").slice(-lines).join("\n"); } catch { return "(로그 없음)"; }
 }
 
 async function startViteDevServer(timeoutSec) {
@@ -160,25 +148,17 @@ async function startViteDevServer(timeoutSec) {
   const port = await freePort();
   const viteArgs = ["--import", pathToFileURL(watchdogPath).href, viteBin, "--config", "vite.config.ts", "--host", "127.0.0.1", "--port", String(port), "--strictPort", "--clearScreen", "false"];
   const child = spawn(process.execPath, viteArgs, {
-    cwd: labRoot,
-    detached: true,
-    stdio: ["ignore", logFd, logFd],
+    cwd: labRoot, detached: true, stdio: ["ignore", logFd, logFd],
     env: { ...process.env, NO_COLOR: "1", BROWSER: "none", CHARACTER_LAB_PROBE_PARENT_PID: String(process.pid), CHARACTER_LAB_PROBE_TEMP_DIR: tempDir },
   });
   closeSync(logFd);
   child.unref();
   let exited = false;
-  child.once("exit", () => {
-    exited = true;
-  });
+  child.once("exit", () => { exited = true; });
   const stop = () => {
     killGroup(child, "SIGTERM");
     setTimeout(() => killGroup(child, "SIGKILL"), 250).unref();
-    try {
-      rmSync(tempDir, { recursive: true, force: true });
-    } catch {
-      // 임시 폴더 정리 실패 무시
-    }
+    try { rmSync(tempDir, { recursive: true, force: true }); } catch { /* ignore */ }
   };
   const url = `http://127.0.0.1:${port}/`;
   const attempts = Math.max(40, Math.ceil((timeoutSec * 1000) / 500));
@@ -187,11 +167,7 @@ async function startViteDevServer(timeoutSec) {
       stop();
       throw new Error(`Vite 개발 서버가 조기 종료됐습니다.\n${safeTail(logPath)}`);
     }
-    try {
-      if ((await fetch(url)).ok) return { url, stop, child, tempDir };
-    } catch {
-      // 서버 기동 대기 중
-    }
+    try { if ((await fetch(url)).ok) return { url, stop, child, tempDir }; } catch { /* wait */ }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   stop();
@@ -199,9 +175,7 @@ async function startViteDevServer(timeoutSec) {
 }
 
 function resolveChromiumPath() {
-  const fromEnv = process.env.CHARACTER_LAB_CHROMIUM_PATH;
-  if (fromEnv) return fromEnv;
-  return CANDIDATE_CHROMIUM_PATHS.find((candidate) => existsSync(candidate));
+  return process.env.CHARACTER_LAB_CHROMIUM_PATH || CANDIDATE_CHROMIUM_PATHS.find((candidate) => existsSync(candidate));
 }
 
 function chromiumArgs(options) {
@@ -228,11 +202,7 @@ async function readOwnedBrowserIdentity(browser, executablePath, args) {
     identity.observationError = String(error?.message ?? error).slice(0, 300);
   } finally {
     if (session) {
-      try {
-        await session.detach();
-      } catch (error) {
-        identity.detachError = String(error?.message ?? error).slice(0, 200);
-      }
+      try { await session.detach(); } catch (error) { identity.detachError = String(error?.message ?? error).slice(0, 200); }
     }
   }
   return identity;
@@ -241,36 +211,7 @@ async function readOwnedBrowserIdentity(browser, executablePath, args) {
 function lookupCatalogRoute(catalog, pathname) {
   if (!catalog) return null;
   if (typeof catalog.resolveRoute === "function") return catalog.resolveRoute(pathname);
-  if (typeof catalog.matchRoute === "function") return catalog.matchRoute(pathname);
-  if (catalog.routes instanceof Map && catalog.routes.has(pathname)) return catalog.routes.get(pathname);
-  if (catalog.routes && typeof catalog.routes === "object" && pathname in catalog.routes) return catalog.routes[pathname];
-  if (catalog.byPath instanceof Map && catalog.byPath.has(pathname)) return catalog.byPath.get(pathname);
-  if (catalog.byPath && typeof catalog.byPath === "object" && pathname in catalog.byPath) return catalog.byPath[pathname];
-
-  const normalized = pathname.replace(/^\/+/u, "/");
-  if (normalized === "/assets/characters/index.json" && catalog.indexJson) {
-    return { status: 200, contentType: "application/json; charset=utf-8", body: JSON.stringify(catalog.indexJson) };
-  }
-  const match = /^\/assets\/characters\/([^/]+)\/([^/]+)$/u.exec(normalized);
-  if (!match) return null;
-  const [, id, fileName] = match;
-  const pkg =
-    catalog.packages instanceof Map
-      ? catalog.packages.get(id)
-      : Array.isArray(catalog.packages)
-        ? catalog.packages.find((item) => item.characterId === id || item.id === id)
-        : catalog.packages?.[id];
-  if (!pkg) return null;
-  if (fileName === "manifest.json" && (pkg.manifest || pkg.manifestJson)) {
-    return { status: 200, contentType: "application/json; charset=utf-8", body: JSON.stringify(pkg.manifest ?? pkg.manifestJson) };
-  }
-  if (fileName === "slot-mapping.json" && (pkg.slotMapping || pkg.slotMappingJson)) {
-    return { status: 200, contentType: "application/json; charset=utf-8", body: JSON.stringify(pkg.slotMapping ?? pkg.slotMappingJson) };
-  }
-  if (fileName === `${id}.glb` && (pkg.glbBytes || pkg.glbBuffer || pkg.glb)) {
-    return { status: 200, contentType: "model/gltf-binary", body: Buffer.from(pkg.glbBytes ?? pkg.glbBuffer ?? pkg.glb) };
-  }
-  return null;
+  return catalog.routes?.[pathname] ?? catalog.byPath?.get?.(pathname) ?? null;
 }
 
 async function installSyntheticPackageRoutes(page, catalog) {
@@ -278,10 +219,7 @@ async function installSyntheticPackageRoutes(page, catalog) {
   await page.route("**/assets/characters/**", async (route) => {
     const requestUrl = new URL(route.request().url());
     const entry = lookupCatalogRoute(catalog, requestUrl.pathname);
-    if (!entry) {
-      await route.continue();
-      return;
-    }
+    if (!entry) return await route.continue();
     servedUrls.push(requestUrl.pathname);
     const contentType = entry.contentType ?? (requestUrl.pathname.endsWith(".glb") ? "model/gltf-binary" : "application/json; charset=utf-8");
     const rawBody = entry.body ?? entry.bytes ?? entry.json;
@@ -305,24 +243,18 @@ function writeJsonReport(outPath, report) {
 
 const IMPORT_FLOW_BOUNDARIES = [
   {
-    flow: "recipe-json-import",
-    entryModule: "src/export/recipe-file.ts -> src/contracts/recipe.ts (parseRecipeFile / parseRecipe)",
-    reachesSkeletonBoundary: false,
-    verdict: "BLOCKED_UPSTREAM",
+    flow: "recipe-json-import", entryModule: "src/export/recipe-file.ts -> src/contracts/recipe.ts (parseRecipeFile / parseRecipe)",
+    reachesSkeletonBoundary: false, verdict: "BLOCKED_UPSTREAM",
     reasonKo: "JSON.parse가 NaN/Infinity 토큰을 구문 단계에서 거부하고, Recipe 스키마는 본 회전(pose)만 포함하며 SkeletonData.bones 배열을 전달하지 않는다.",
   },
   {
-    flow: "kit-manifest-and-glb",
-    entryModule: "src/domains/authored/kit-load-flow.ts + src/render/babylon/kit-loader.ts (parseKitManifest + diffJoints)",
-    reachesSkeletonBoundary: false,
-    verdict: "BLOCKED_UPSTREAM",
+    flow: "kit-manifest-and-glb", entryModule: "src/domains/authored/kit-load-flow.ts + src/render/babylon/kit-loader.ts (parseKitManifest + diffJoints)",
+    reachesSkeletonBoundary: false, verdict: "BLOCKED_UPSTREAM",
     reasonKo: "parseKitManifest와 loadKitRig의 diffJoints가 계약 상수 KIT_SKELETON_JOINTS 및 부모 맵과 비교해 조인트 불일치를 kit-joint-mismatch로 사전 차단한다.",
   },
   {
-    flow: "authored-package-panel",
-    entryModule: "src/app/shell/panels/PackagePanel.tsx -> src/render/babylon/package-loader.ts -> src/render/pose-skeleton.ts (poseSkeleton)",
-    reachesSkeletonBoundary: true,
-    verdict: "REACHES_POSE_SKELETON_BOUNDARY",
+    flow: "authored-package-panel", entryModule: "src/app/shell/panels/PackagePanel.tsx -> src/render/babylon/package-loader.ts -> src/render/pose-skeleton.ts (poseSkeleton)",
+    reachesSkeletonBoundary: true, verdict: "REACHES_POSE_SKELETON_BOUNDARY",
     reachableCorruptions: ["parent-cycle-humanoid (corrupt-cycle-rig)", "nan-restTranslation (corrupt-nan-rest-rig)", "normal-empty (normal-empty-rig)"],
     directApiOnlyCorruptions: ["non-array bones ({ bones: null }) — buildPoseFrameSkeleton은 항상 배열을 생성하므로 DIRECT_API_CALL로만 도달"],
     reasonKo: "PackagePanel을 통해 로드된 GLB+slot-mapping에서 다중 본 노드의 동일 휴머노이드 이름 매핑으로 부모 순환(hips <-> spine)이, 극단 평행이동 차감(Infinity - Infinity)으로 NaN restTranslation이 poseSkeleton()에 실제 도달한다.",
@@ -434,7 +366,8 @@ async function runDomAndCallerAudit(page, serverUrl, timeoutMs, pageErrors) {
   const depthAfterCycleDrag = await readHistoryDepth();
   const cycleViewportNotice = ((await page.locator(".cl-viewport-notice").textContent().catch(() => "")) ?? "").trim();
   const cycleBannerTexts = await page.locator(".cl-banner-item").allTextContents();
-  const cycleBannerHasSkeletonCode = cycleBannerTexts.some((text) => /\[skeleton-cycle\]|\[skeleton-non-finite-rest\]/u.test(text));
+  const cycleBannerHasSkeletonCode = cycleBannerTexts.some((t) => /\[skeleton-cycle\]/u.test(t));
+  const cycleBannerDuplicateCount = cycleBannerTexts.filter((t) => /\[skeleton-cycle\]/u.test(t)).length;
   const cycleViewportPageErrors = pageErrors.slice(errorsBeforeCycle);
 
   const errorsBeforeNan = pageErrors.length;
@@ -446,7 +379,8 @@ async function runDomAndCallerAudit(page, serverUrl, timeoutMs, pageErrors) {
   const nanDragAttempt = await dragVisibleHandle(["spine", "chest", "head", "leftLowerArm", "hips"]);
   const depthAfterNanDrag = await readHistoryDepth();
   const nanBannerTexts = await page.locator(".cl-banner-item").allTextContents();
-  const nanBannerHasSkeletonCode = nanBannerTexts.some((text) => /\[skeleton-cycle\]|\[skeleton-non-finite-rest\]/u.test(text));
+  const nanBannerHasSkeletonCode = nanBannerTexts.some((t) => /\[skeleton-non-finite-rest\]/u.test(t));
+  const nanBannerDuplicateCount = nanBannerTexts.filter((t) => /\[skeleton-non-finite-rest\]/u.test(t)).length;
   const nanViewportPageErrors = pageErrors.slice(errorsBeforeNan);
 
   const errorsBeforeRecovery = pageErrors.length;
@@ -471,23 +405,77 @@ async function runDomAndCallerAudit(page, serverUrl, timeoutMs, pageErrors) {
   const depthAfterRecoveryUndo = await readHistoryDepth();
   const recoveryPageErrors = pageErrors.slice(errorsBeforeRecovery);
 
-  await loadPackageById("corrupt-cycle-rig");
-  const errorsBeforePoseCycle = pageErrors.length;
-  await page.getByRole("tablist", { name: "인스펙터" }).getByRole("tab", { name: "포즈", exact: true }).click();
-  await page.waitForTimeout(300);
-  const poseCycleErrors = pageErrors.slice(errorsBeforePoseCycle);
-  const poseCycleCrashed = poseCycleErrors.some((msg) => /순환 부모 관계|순환/u.test(msg));
+  const clickEnabledInPose = async (name) => {
+    const btn = page.locator(".cl-pose-panel").getByRole("button", { name, exact: true });
+    if ((await btn.count()) > 0 && (await btn.isEnabled())) {
+      await btn.click();
+      await page.waitForTimeout(150);
+    }
+  };
+  const auditPosePanelFlow = async (characterId, codeRegex) => {
+    await openPackageTab();
+    await loadPackageById(characterId);
+    const depthBefore = await readHistoryDepth();
+    const errorsStart = pageErrors.length;
+    await page.getByRole("tablist", { name: "인스펙터" }).getByRole("tab", { name: "포즈", exact: true }).click();
+    await page.waitForTimeout(300);
+    await clickEnabledInPose("현재 위치 읽기");
+    await clickEnabledInPose("IK 적용");
+    const depthAfter = await readHistoryDepth();
+    const panelText = ((await page.locator(".cl-pose-panel").textContent().catch(() => "")) ?? "").trim();
+    const banners = await page.locator(".cl-banner-item").allTextContents();
+    const diagnosticShown = codeRegex.test(panelText) || banners.some((t) => codeRegex.test(t));
+    const errors = pageErrors.slice(errorsStart);
+    let recoveryPassed;
+    const recErrStart = pageErrors.length;
+    try {
+      await openPackageTab();
+      await loadPackageById("valid-humanoid-rig");
+      await page.getByRole("tablist", { name: "인스펙터" }).getByRole("tab", { name: "포즈", exact: true }).click();
+      await page.waitForTimeout(250);
+      const recDepthBefore = await readHistoryDepth();
+      await clickEnabledInPose("위로 +10cm");
+      await clickEnabledInPose("IK 적용");
+      let recDepthAfterIk = await readHistoryDepth();
+      if (recDepthAfterIk !== recDepthBefore + 1) {
+        const presetBtn = page.locator('.cl-pose-panel .cl-pose-card:not([aria-pressed="true"])').first();
+        if ((await presetBtn.count()) > 0 && (await presetBtn.isEnabled())) {
+          await presetBtn.click();
+          await page.waitForTimeout(150);
+          recDepthAfterIk = await readHistoryDepth();
+        }
+      }
+      const undoBtn = page.getByRole("group", { name: "히스토리" }).getByRole("button", { name: "실행 취소", exact: true });
+      if (await undoBtn.isEnabled()) {
+        await undoBtn.click();
+        await page.waitForTimeout(200);
+      }
+      const recDepthAfterUndo = await readHistoryDepth();
+      recoveryPassed = pageErrors.slice(recErrStart).length === 0 && recDepthAfterIk === recDepthBefore + 1 && recDepthAfterUndo === recDepthBefore;
+    } catch {
+      recoveryPassed = false;
+    }
+    return { depthBefore, depthAfter, diagnosticShown, errors, recoveryPassed };
+  };
+
+  const {
+    depthBefore: depthBeforePoseCycle, depthAfter: depthAfterPoseCycle,
+    diagnosticShown: poseCycleDiagnosticShown, errors: poseCycleErrors, recoveryPassed: poseCycleRecoveryPassed,
+  } = await auditPosePanelFlow("corrupt-cycle-rig", /\[skeleton-cycle\]/u);
+  const poseCycleResolved =
+    poseCycleErrors.length === 0 && poseCycleDiagnosticShown && depthAfterPoseCycle === depthBeforePoseCycle && poseCycleRecoveryPassed;
 
   await page.goto(serverUrl, { waitUntil: "load" });
   await page.getByRole("button", { name: "WebGL2", exact: true }).click();
   await waitEngineReady();
-  await openPackageTab();
-  await loadPackageById("corrupt-nan-rest-rig");
-  const errorsBeforePoseNan = pageErrors.length;
-  await page.getByRole("tablist", { name: "인스펙터" }).getByRole("tab", { name: "포즈", exact: true }).click();
-  await page.waitForTimeout(300);
-  const poseNanErrors = pageErrors.slice(errorsBeforePoseNan);
-  const poseNanCrashed = poseNanErrors.some((msg) => /restTranslation이 유한하지 않습니다|유한하지/u.test(msg));
+  const {
+    depthBefore: depthBeforePoseNan, depthAfter: depthAfterPoseNan,
+    diagnosticShown: poseNanDiagnosticShown, errors: poseNanErrors, recoveryPassed: poseNanRecoveryPassed,
+  } = await auditPosePanelFlow("corrupt-nan-rest-rig", /\[skeleton-non-finite-rest\]/u);
+  const poseNanResolved =
+    poseNanErrors.length === 0 && poseNanDiagnosticShown && depthAfterPoseNan === depthBeforePoseNan && poseNanRecoveryPassed;
+  const viewportOnFailureResolved =
+    cycleBannerHasSkeletonCode && nanBannerHasSkeletonCode && cycleBannerDuplicateCount === 1 && nanBannerDuplicateCount === 1;
 
   const syntheticInjection = {
     executionPath: "SYNTHETIC_INJECTION",
@@ -500,6 +488,7 @@ async function runDomAndCallerAudit(page, serverUrl, timeoutMs, pageErrors) {
     corruptCycleRig: {
       characterId: "corrupt-cycle-rig", handleCount: cycleHandleCount, controlPointCount: cycleControlPointCount,
       viewportPageErrorCount: cycleViewportPageErrors.length, viewportNotice: cycleViewportNotice,
+      bannerHasSkeletonCode: cycleBannerHasSkeletonCode, bannerDuplicateCount: cycleBannerDuplicateCount,
       historyDepthBefore: depthBeforeCycleDrag, historyDepthAfter: depthAfterCycleDrag,
       atomicityPreserved: depthAfterCycleDrag === depthBeforeCycleDrag,
       passed: cycleViewportPageErrors.length === 0 && cycleControlPointCount === 0 && depthAfterCycleDrag === depthBeforeCycleDrag,
@@ -507,6 +496,7 @@ async function runDomAndCallerAudit(page, serverUrl, timeoutMs, pageErrors) {
     corruptNanRestRig: {
       characterId: "corrupt-nan-rest-rig", handleCount: nanHandleCount, controlPointCount: nanControlPointCount,
       viewportPageErrorCount: nanViewportPageErrors.length,
+      bannerHasSkeletonCode: nanBannerHasSkeletonCode, bannerDuplicateCount: nanBannerDuplicateCount,
       historyDepthBefore: depthBeforeNanDrag, historyDepthAfter: depthAfterNanDrag,
       atomicityPreserved: depthAfterNanDrag === depthBeforeNanDrag,
       passed: nanViewportPageErrors.length === 0 && nanControlPointCount === 0 && depthAfterNanDrag === depthBeforeNanDrag,
@@ -546,41 +536,52 @@ async function runDomAndCallerAudit(page, serverUrl, timeoutMs, pageErrors) {
   const callerDefects = [
     {
       id: "viewport-pane-onfailure-unwired",
-      classification: "REPRODUCED_DEFECT",
-      status: !cycleBannerHasSkeletonCode && !nanBannerHasSkeletonCode ? "REPRODUCED_DEFECT" : "RESOLVED",
-      reproduced: !cycleBannerHasSkeletonCode && !nanBannerHasSkeletonCode,
+      classification: viewportOnFailureResolved ? "RESOLVED" : "REPRODUCED_DEFECT",
+      status: viewportOnFailureResolved ? "RESOLVED" : "REPRODUCED_DEFECT",
+      reproduced: !viewportOnFailureResolved,
       entrySurface: "PackagePanel -> ViewportPane",
       sourceFile: "apps/character-lab/src/app/shell/panels/ViewportPane.tsx",
       lines: [437, 464, 481, 609, 610],
-      unwiredCallSites: [
-        "resolveDragPivotWithMode (line 437)", "computeShaperIkHandleDrag (line 464)",
-        "computeJointDrag (line 481)", "computeVisibleBoneLinks (line 609)", "computeShaperControlPoints (line 610)",
-      ],
+      unwiredCallSites: viewportOnFailureResolved
+        ? []
+        : ["resolveDragPivotWithMode (line 437)", "computeShaperIkHandleDrag (line 464)", "computeJointDrag (line 481)", "computeVisibleBoneLinks (line 609)", "computeShaperControlPoints (line 610)"],
       observedBannerItemsOnCycle: cycleBannerTexts,
       observedBannerItemsOnNanRest: nanBannerTexts,
-      summaryKo: "ViewportPane.tsx(437, 464, 481, 609, 610행)가 스켈레톤 경계 함수 호출 시 { onFailure } 콜백을 전달하지 않아, 손상 스켈레톤이 로드되어도 .cl-banner-item에 [skeleton-cycle] 또는 [skeleton-non-finite-rest]가 표시되지 않는다.",
+      cycleBannerDuplicateCount,
+      nanBannerDuplicateCount,
+      summaryKo: viewportOnFailureResolved
+        ? "ViewportPane.tsx의 스켈레톤 경계 호출부가 { onFailure }로 연결되어 손상 스켈레톤당 정확히 1건의 [skeleton-cycle] / [skeleton-non-finite-rest] 배너를 게시한다."
+        : "ViewportPane.tsx가 스켈레톤 경계 함수 호출 시 { onFailure } 콜백을 전달하지 않거나 배너 중복 억제(1건) 조건을 충족하지 못했다.",
     },
     {
       id: "pose-panel-direct-fk-cycle-crash",
-      classification: "REPRODUCED_DEFECT",
-      status: poseCycleCrashed ? "REPRODUCED_DEFECT" : "RESOLVED",
-      reproduced: poseCycleCrashed,
+      classification: poseCycleResolved ? "RESOLVED" : "REPRODUCED_DEFECT",
+      status: poseCycleResolved ? "RESOLVED" : "REPRODUCED_DEFECT",
+      reproduced: !poseCycleResolved,
       entrySurface: "PackagePanel (corrupt-cycle-rig) -> Inspector Tab '포즈' (PosePanel)",
       sourceFile: "apps/character-lab/src/app/shell/panels/PosePanel.tsx",
       lines: [95, 99, 174, 180, 182, 194, 195],
-      observedPageErrors: poseCycleErrors,
-      summaryKo: "PackagePanel에서 corrupt-cycle-rig를 로드한 뒤 '포즈' 탭을 클릭하면 PosePanel.tsx(95, 99, 174, 180, 182, 194-195행)가 가드 없는 computeWorldTransforms(activeSkeleton, ...)를 직접 호출해 미처리 pageerror('스켈레톤에 순환 부모 관계가 있습니다')를 던진다.",
+      observedPageErrors: poseCycleErrors, diagnosticShown: poseCycleDiagnosticShown,
+      historyDepthBefore: depthBeforePoseCycle, historyDepthAfter: depthAfterPoseCycle,
+      atomicityPreserved: depthAfterPoseCycle === depthBeforePoseCycle, recoveryPassed: poseCycleRecoveryPassed,
+      summaryKo: poseCycleResolved
+        ? "PackagePanel에서 corrupt-cycle-rig 로드 후 '포즈' 탭 진입 및 '현재 위치 읽기'·'IK 적용' 클릭 시 pageerror 없이 [skeleton-cycle] 진단이 표시되고 히스토리 원자성과 정상 소스 복구 후 IK 적용·실행 취소가 동작한다."
+        : "PackagePanel에서 corrupt-cycle-rig 로드 후 '포즈' 탭 진입 또는 조작 시 미처리 pageerror·진단 누락·히스토리 오염·복구 실패가 발생했다.",
     },
     {
       id: "pose-panel-direct-fk-nan-rest-crash",
-      classification: "REPRODUCED_DEFECT",
-      status: poseNanCrashed ? "REPRODUCED_DEFECT" : "RESOLVED",
-      reproduced: poseNanCrashed,
+      classification: poseNanResolved ? "RESOLVED" : "REPRODUCED_DEFECT",
+      status: poseNanResolved ? "RESOLVED" : "REPRODUCED_DEFECT",
+      reproduced: !poseNanResolved,
       entrySurface: "PackagePanel (corrupt-nan-rest-rig) -> Inspector Tab '포즈' (PosePanel)",
       sourceFile: "apps/character-lab/src/app/shell/panels/PosePanel.tsx",
       lines: [95, 99, 174, 180, 182, 194, 195],
-      observedPageErrors: poseNanErrors,
-      summaryKo: "페이지 새로고침 후 WebGL2를 선택하고 PackagePanel에서 corrupt-nan-rest-rig를 로드한 뒤 '포즈' 탭을 클릭하면 PosePanel.tsx가 가드 없는 computeWorldTransforms(activeSkeleton, ...)를 호출해 미처리 pageerror('restTranslation이 유한하지 않습니다')를 던진다.",
+      observedPageErrors: poseNanErrors, diagnosticShown: poseNanDiagnosticShown,
+      historyDepthBefore: depthBeforePoseNan, historyDepthAfter: depthAfterPoseNan,
+      atomicityPreserved: depthAfterPoseNan === depthBeforePoseNan, recoveryPassed: poseNanRecoveryPassed,
+      summaryKo: poseNanResolved
+        ? "페이지 새로고침 후 WebGL2 선택 및 corrupt-nan-rest-rig 로드 뒤 '포즈' 탭 진입·'현재 위치 읽기'·'IK 적용' 클릭 시 pageerror 없이 [skeleton-non-finite-rest] 진단이 표시되고 히스토리 원자성과 정상 소스 복구 후 IK 적용·실행 취소가 동작한다."
+        : "PackagePanel에서 corrupt-nan-rest-rig 로드 후 '포즈' 탭 진입 또는 조작 시 미처리 pageerror·진단 누락·히스토리 오염·복구 실패가 발생했다.",
     },
   ];
 
@@ -606,12 +607,8 @@ async function main() {
       evaluateReport: evaluateCorruptedSkeletonProbeReport,
     });
     const report = {
-      schema: "character-lab-corrupted-skeleton-probe/v1",
-      mode: "negative-control",
-      generatedAt: new Date().toISOString(),
-      provenance,
-      negativeControl,
-      exitCode: 1,
+      schema: "character-lab-corrupted-skeleton-probe/v1", mode: "negative-control",
+      generatedAt: new Date().toISOString(), provenance, negativeControl, exitCode: 1,
     };
     writeJsonReport(options.out, report);
     log(`음성 대조군 결과: 변이 케이스 ${negativeControl?.cases?.length ?? 0}개 · 모두 실패로 거부됨=${Boolean(negativeControl?.allRejected ?? negativeControl?.ok)} (종료 코드 1)`);
@@ -650,16 +647,8 @@ async function main() {
     if (cleaned) return;
     cleaned = true;
     pendingCleanups.delete(cleanup);
-    try {
-      await browser.close();
-    } catch {
-      // 브라우저 종료 실패 무시
-    }
-    try {
-      server.stop();
-    } catch {
-      // 서버 종료 실패 무시
-    }
+    try { await browser.close(); } catch { /* ignore */ }
+    try { server.stop(); } catch { /* ignore */ }
   };
   pendingCleanups.add(cleanup);
   for (const signal of ["SIGINT", "SIGTERM"]) {
@@ -713,15 +702,12 @@ async function main() {
       softwareRenderer: Boolean(options.software),
       strictAppDefects: Boolean(options.strictAppDefects),
       environment: {
-        node: process.version,
-        platform: process.platform,
-        softwareRenderer: Boolean(options.software),
+        node: process.version, platform: process.platform, softwareRenderer: Boolean(options.software),
         hardwareDisclaimerKo: options.software ? HARDWARE_DISCLAIMER_KO : null,
         unverifiedHardware: options.software
           ? ["physical-gpu-webgpu-webgl2", "webcam-mediapipe-stream", "mobile-tablet-touch-device", "native-frame-time-budget"]
           : [],
-        tmpdirGuard: tmp,
-        browserIdentity,
+        tmpdirGuard: tmp, browserIdentity,
       },
       provenance,
       fixtureKeys: Object.keys(fixtures ?? {}),
@@ -753,9 +739,7 @@ async function main() {
     const computedExitCode =
       typeof evaluation?.exitCode === "number"
         ? evaluation.exitCode
-        : !trackAPassed || (options.strictAppDefects && hasReproducedAppDefects)
-          ? 1
-          : 0;
+        : !trackAPassed || (options.strictAppDefects && hasReproducedAppDefects) ? 1 : 0;
 
     report = { ...rawReport, evaluation, exitCode: computedExitCode };
   } finally {
@@ -764,7 +748,7 @@ async function main() {
 
   writeJsonReport(options.out, report);
   log(
-    `완료: Track A(Direct=${Boolean(report.directApiCall?.passed ?? report.directApiCall?.ok)}, Synthetic=${report.syntheticInjection.passed}, Pointer=${report.realDomPointer.passed}) · Track B 재현 결함=${report.liveAppCallerDefectAudit.reproducedDefectCount}건 · 종료 코드=${report.exitCode}`,
+    `완료: Track A(Direct=${Boolean(report.directApiCall?.passed ?? report.directApiCall?.ok)}, Synthetic=${report.syntheticInjection.passed}, Pointer=${report.syntheticInjection && report.realDomPointer.passed}) · Track B 재현 결함=${report.liveAppCallerDefectAudit.reproducedDefectCount}건 · 종료 코드=${report.exitCode}`,
   );
   return report.exitCode;
 }

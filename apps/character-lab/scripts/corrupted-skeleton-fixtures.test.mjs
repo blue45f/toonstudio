@@ -158,9 +158,8 @@ describe("runBrowserDirectApiProbe, evaluateCorruptedSkeletonProbeReport & runNe
       expect(entry.reasons.length).toBeGreaterThan(0);
     }
 
-    // 라이브 결함을 pass나 expected_failure로 은폐한 경우에도 거부하는지 확인
     const directApiCall = await runBrowserDirectApiProbe();
-    const disguisedReport = {
+    const resolvedBaseReport = {
       directApiCall,
       syntheticInjection: {
         passed: true,
@@ -176,7 +175,61 @@ describe("runBrowserDirectApiProbe, evaluateCorruptedSkeletonProbeReport & runNe
       },
       liveAppCallerDefectAudit: {
         officialEntryOnly: true,
-        defects: [{ id: "pose-panel-direct-fk-cycle-crash", reproduced: true, classification: "expected_failure" }],
+        reproducedDefectCount: 0,
+        defects: [
+          { id: "viewport-pane-onfailure-unwired", reproduced: false, status: "RESOLVED", classification: "RESOLVED" },
+          { id: "pose-panel-direct-fk-cycle-crash", reproduced: false, status: "RESOLVED", classification: "RESOLVED" },
+          { id: "pose-panel-direct-fk-nan-rest-crash", reproduced: false, status: "RESOLVED", classification: "RESOLVED" },
+        ],
+      },
+    };
+
+    const strictResolvedEval = evaluateCorruptedSkeletonProbeReport(resolvedBaseReport, { strictAppDefects: true });
+    expect(strictResolvedEval.ok).toBe(true);
+    expect(strictResolvedEval.exitCode).toBe(0);
+
+    for (const targetId of [
+      "viewport-pane-onfailure-unwired",
+      "pose-panel-direct-fk-cycle-crash",
+      "pose-panel-direct-fk-nan-rest-crash",
+    ]) {
+      const regressedReport = {
+        ...resolvedBaseReport,
+        liveAppCallerDefectAudit: {
+          officialEntryOnly: true,
+          reproducedDefectCount: 1,
+          defects: resolvedBaseReport.liveAppCallerDefectAudit.defects.map((d) =>
+            d.id === targetId ? { ...d, reproduced: true, status: "REPRODUCED_DEFECT", classification: "REPRODUCED_DEFECT" } : d,
+          ),
+        },
+      };
+      const strictRegressedEval = evaluateCorruptedSkeletonProbeReport(regressedReport, { strictAppDefects: true });
+      expect(strictRegressedEval.ok).toBe(false);
+      expect(strictRegressedEval.exitCode).toBe(1);
+
+      const missingDefectReport = {
+        ...resolvedBaseReport,
+        liveAppCallerDefectAudit: {
+          officialEntryOnly: true,
+          reproducedDefectCount: 0,
+          defects: resolvedBaseReport.liveAppCallerDefectAudit.defects.filter((d) => d.id !== targetId),
+        },
+      };
+      const missingEval = evaluateCorruptedSkeletonProbeReport(missingDefectReport, { strictAppDefects: true });
+      expect(missingEval.ok).toBe(false);
+      expect(missingEval.exitCode).toBe(1);
+    }
+
+    // 라이브 결함을 pass나 expected_failure로 은폐한 경우에도 거부하는지 확인
+    const disguisedReport = {
+      ...resolvedBaseReport,
+      liveAppCallerDefectAudit: {
+        officialEntryOnly: true,
+        defects: [
+          { id: "viewport-pane-onfailure-unwired", reproduced: false, status: "RESOLVED", classification: "RESOLVED" },
+          { id: "pose-panel-direct-fk-cycle-crash", reproduced: true, status: "REPRODUCED_DEFECT", classification: "expected_failure" },
+          { id: "pose-panel-direct-fk-nan-rest-crash", reproduced: false, status: "RESOLVED", classification: "RESOLVED" },
+        ],
       },
     };
     const disguisedEval = evaluateCorruptedSkeletonProbeReport(disguisedReport);
