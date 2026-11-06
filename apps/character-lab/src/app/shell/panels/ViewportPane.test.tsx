@@ -796,5 +796,49 @@ describe("접근성", () => {
     fireEvent.pointerMove(handle("spine"), { clientX: spineStart[0] / 2 + 30, clientY: spineStart[1] / 2 - 20, pointerId: 13 });
     fireEvent.pointerUp(handle("spine"), { clientX: spineStart[0] / 2 + 30, clientY: spineStart[1] / 2 - 20, pointerId: 13 });
     expect(view.dispatched.some((c) => c.type === "param/set" && c.group === "body" && c.key === "waist")).toBe(true);
+
+    // Ctrl+Q / Ctrl+W / Ctrl+R 등 브라우저 조합키는 기즈모 모드를 가로채지 않는다
+    expect(gizmoSelect.value).toBe("3");
+    fireEvent.keyDown(window, { key: "q", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "w", metaKey: true });
+    expect(gizmoSelect.value).toBe("3");
+  });
+
+  it("SHAPER 풀세트 아키타입 적용 시 모든 슬롯·파라미터·색·포즈 명령이 같은 coalesceKey를 가져 단일 Undo로 복원되고 선택기가 초기화된다", async () => {
+    const { PERFORMANCE_PRESETS } = await import("../../../animation/presets");
+    const { ALL_AVAILABLE_CAPABILITIES, createDefaultRecipe, createPresetCatalog } = await import("../../../contracts");
+    const { APPEARANCE_PRESETS } = await import("../../../presets");
+    const { createLabStore } = await import("../../../state/lab-store");
+    let tick = 1_000;
+    const store = createLabStore({
+      catalog: createPresetCatalog([...APPEARANCE_PRESETS, ...PERFORMANCE_PRESETS]),
+      now: () => {
+        tick += 1;
+        return tick;
+      },
+      initial: { recipe: createDefaultRecipe(), capabilities: ALL_AVAILABLE_CAPABILITIES, engine: READY },
+    });
+    const initialRecipe = store.getState().recipe;
+    const session = createMockEngineSession(READY);
+    session.setEngine(createTestEngine());
+    render(
+      <MockLabProvider store={store} engineSession={session}>
+        <ViewportPane hudIntervalMs={0} />
+      </MockLabProvider>,
+    );
+
+    const presetSelect = screen.getByLabelText("SHAPER 내장 프리셋") as HTMLSelectElement;
+    fireEvent.change(presetSelect, { target: { value: "shaper-archetype-survivor-male" } });
+    expect(presetSelect.value).toBe("shaper-archetype-survivor-male");
+    expect(store.getState().recipe.slots.hair).toBe("hair/wolf-layered");
+    expect(store.getState().recipe.colors.skin).toBe("#ffecce");
+    // 35개 이상의 명령이 모두 하나의 히스토리 단계(depth === 1)로 병합되어야 한다
+    expect(store.getState().history.depth).toBe(1);
+
+    // Ctrl+Z 1회로 헤어·의상·색·파라미터·포즈 전체가 초기 레시피로 복원되고 드롭다운도 초기화된다
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(store.getState().history.depth).toBe(0);
+    expect(store.getState().recipe).toEqual(initialRecipe);
+    expect(presetSelect.value).toBe("");
   });
 });

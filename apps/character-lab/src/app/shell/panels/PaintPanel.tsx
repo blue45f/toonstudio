@@ -119,7 +119,11 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
             key={preset.id}
             type="button"
             className="cl-preset-chip"
-            aria-pressed={state.brush.radiusPx === preset.radiusPx}
+            aria-pressed={
+              state.brush.radiusPx === preset.radiusPx &&
+              Math.abs(state.brush.opacity - preset.opacity) < 1e-4 &&
+              Math.abs(state.brush.hardness - preset.hardness) < 1e-4
+            }
             onClick={() => session.setBrush({ radiusPx: preset.radiusPx, opacity: preset.opacity, hardness: preset.hardness })}
           >
             {preset.label}

@@ -6,6 +6,7 @@ import { DEFAULT_SHADING, QUALITY_PRESETS, applyQualityPreset, createDefaultReci
 import { mockDiagnostics } from "../../testing/mock-engine";
 import { createMockEngineSession, createMockLabStore, MockLabProvider } from "../../testing/mock-store";
 
+import { ViewportPane } from "./panels/ViewportPane";
 import { detectQualityPreset, TopBar } from "./TopBar";
 import { createUiStateStore } from "./ui-state";
 import { createViewportRegistry } from "./viewport-registry";
@@ -70,18 +71,21 @@ describe("app/shell/TopBar", () => {
     render(
       <MockLabProvider store={store}>
         <TopBar />
+        <ViewportPane hudIntervalMs={0} />
         <input aria-label="입력" />
       </MockLabProvider>,
     );
     fireEvent.keyDown(window, { key: "z", ctrlKey: true });
     fireEvent.keyDown(window, { key: "Z", ctrlKey: true, shiftKey: true });
+    fireEvent.keyDown(window, { key: "y", ctrlKey: true });
     fireEvent.keyDown(screen.getByLabelText("입력"), { key: "z", ctrlKey: true });
-    expect(store.dispatched).toEqual([{ type: "history/undo" }, { type: "history/redo" }]);
+    expect(store.dispatched).toEqual([{ type: "history/undo" }, { type: "history/redo" }, { type: "history/redo" }]);
     act(() => {
       store.setState({ history: { canUndo: false, canRedo: false, depth: 0, revision: 2 } });
     });
     fireEvent.keyDown(window, { key: "z", ctrlKey: true });
-    expect(store.dispatched).toHaveLength(2);
+    fireEvent.keyDown(window, { key: "y", ctrlKey: true });
+    expect(store.dispatched).toHaveLength(3);
   });
 
   it("빠른 스타일 프리셋 버튼과 단축키·가이드 토글 및 숫자키 탭 전환이 동작한다", () => {

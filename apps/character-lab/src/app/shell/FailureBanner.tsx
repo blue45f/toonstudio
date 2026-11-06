@@ -3,10 +3,12 @@
  * 슬롯 능력(partial/unavailable) 사유, 마지막 플랜의 미적용 슬롯, failure 이벤트 목록을 전부 보여준다.
  * 닫기만 가능하고 자동 재시도·자동 대체는 없다.
  */
+import { useCallback } from "react";
+
 import { PHYSICS_PROVIDER_LABELS_KO, SLOT_LABELS_KO } from "../../contracts";
 
 import { describeEngineStatus } from "./engine-status-text";
-import { useApplyPlan, useLabState, useLabStore } from "./lab-store-context";
+import { shallowEqual, useApplyPlan, useLabSelector, useLabStore } from "./lab-store-context";
 
 import type { LabFailure, SlotCapabilityMap, SlotKind } from "../../contracts";
 
@@ -41,7 +43,19 @@ interface BannerItem {
 }
 
 export function FailureBanner() {
-  const state = useLabState();
+  const state = useLabSelector(
+    useCallback(
+      (s) => ({
+        engine: s.engine,
+        capabilities: s.capabilities,
+        physics: s.physics,
+        vision: s.vision,
+        failures: s.failures,
+      }),
+      [],
+    ),
+    shallowEqual,
+  );
   const store = useLabStore();
   const plan = useApplyPlan();
   const engine = describeEngineStatus(state.engine);

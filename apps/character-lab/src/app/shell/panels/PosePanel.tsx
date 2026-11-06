@@ -356,6 +356,7 @@ export function PosePanel() {
               key={quick.id}
               type="button"
               className="cl-preset-chip"
+              aria-pressed={scope === "full" && recipe.slots.pose === quick.id}
               disabled={poseDisabled}
               data-testid={`pose-quick-chip-${quick.id.replace("pose/", "")}`}
               onClick={() => applyPosePreset(matched, false)}

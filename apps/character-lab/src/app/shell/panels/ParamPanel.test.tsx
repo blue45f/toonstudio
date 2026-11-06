@@ -309,6 +309,49 @@ describe("ParamPanel — 요약·사유", () => {
     }
     expect(screen.getByTestId("param-varco3d-binding-summary").textContent).toContain("shaper-rofan-tiara.glb");
   });
+
+  it("숫자 입력에 범위 밖 초안('2')이 남아 있을 때 체형 초기화나 Undo가 발생하면 초안과 aria-invalid가 즉시 해소된다", () => {
+    const store = createLabStore({
+      catalog: createPresetCatalog([]),
+      now: steadyClock(),
+      initial: { recipe: recipeWith({ body: { waist: 0.4 } }), capabilities: ALL_AVAILABLE_CAPABILITIES },
+    });
+    render(
+      <MockLabProvider store={store}>
+        <ParamPanel />
+      </MockLabProvider>,
+    );
+    const input = numberInput("허리");
+    fireEvent.change(input, { target: { value: "2" } });
+    expect(input.value).toBe("2");
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+
+    // 체형 초기화 클릭 시 초안('2')이 남아 있지 않고 '0.00'으로 동기화된다
+    fireEvent.click(screen.getByRole("button", { name: "체형 초기화" }));
+    expect(input.value).toBe("0.00");
+    expect(input.getAttribute("aria-invalid")).toBeNull();
+  });
+
+  it("화풍 팩만 같고 슬롯 구성이 다른 레시피는 웹툰 세계관 프리셋을 거짓 선택(aria-pressed)으로 표시하지 않는다", () => {
+    const styleOnlyRecipe = createDefaultRecipe();
+    styleOnlyRecipe.style = { ...styleOnlyRecipe.style, packId: "kr-webtoon-romance", packRevision: 1 };
+    const store = createLabStore({
+      catalog: createPresetCatalog([]),
+      now: steadyClock(),
+      initial: { recipe: styleOnlyRecipe, capabilities: ALL_AVAILABLE_CAPABILITIES },
+    });
+    render(
+      <MockLabProvider store={store}>
+        <ParamPanel />
+      </MockLabProvider>,
+    );
+    const schoolBtn = screen.getByTestId("param-varco3d-preset-school-romance");
+    expect(schoolBtn.getAttribute("aria-pressed")).toBe("false");
+
+    // 실제 세계관 프리셋 적용 후에는 aria-pressed="true"가 된다
+    fireEvent.click(schoolBtn);
+    expect(schoolBtn.getAttribute("aria-pressed")).toBe("true");
+  });
 });
 
 describe("ParamPanel — 색 팔레트", () => {

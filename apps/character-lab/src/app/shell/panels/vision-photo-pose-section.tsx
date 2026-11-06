@@ -137,6 +137,7 @@ export function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) 
 
   const onFile = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (file) { stopCamera(); void analyze(() => deps.decodeImage(file)); }
   };
 

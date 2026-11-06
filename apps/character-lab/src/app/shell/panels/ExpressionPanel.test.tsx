@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { blendExpressionPresets, relaxAntagonists } from "../../../animation/expression-blend";
@@ -122,5 +122,39 @@ describe("ExpressionPanel", () => {
       expect(screen.getByRole("radio", { name }).closest("fieldset")?.disabled).toBe(true);
     }
     expect(screen.getByText(/독립 하이라이트 방향 제어는 현재 렌더러가 지원하지 않습니다/u)).toBeTruthy();
+  });
+
+  it("실제 store에서 FACS 슬라이더 조작 후 Undo하면 로컬 overrides도 정리되어 프리셋 세기 변경 시 취소된 값이 되살아나지 않는다", async () => {
+    const { PERFORMANCE_PRESETS } = await import("../../../animation/presets");
+    const { createPresetCatalog } = await import("../../../contracts");
+    const { APPEARANCE_PRESETS } = await import("../../../presets");
+    const { createLabStore } = await import("../../../state/lab-store");
+    let tick = 1_000;
+    const store = createLabStore({
+      catalog: createPresetCatalog([...APPEARANCE_PRESETS, ...PERFORMANCE_PRESETS]),
+      now: () => {
+        tick += 1;
+        return tick;
+      },
+      initial: { capabilities: ALL_AVAILABLE_CAPABILITIES },
+    });
+    render(
+      <MockLabProvider store={store}>
+        <ExpressionPanel />
+      </MockLabProvider>,
+    );
+    fireEvent.click(card("미소"));
+    fireEvent.change(screen.getByLabelText("턱 열기"), { target: { value: "0.8" } });
+    expect(store.getState().recipe.expression.jawOpen).toBe(0.8);
+
+    // 턱 열기 조작을 Undo로 취소
+    act(() => {
+      store.dispatch({ type: "history/undo" });
+    });
+    expect(store.getState().recipe.expression.jawOpen).toBeUndefined();
+
+    // 이후 프리셋 세기를 조절해도 취소된 jawOpen(0.8)이 부활하지 않아야 한다
+    fireEvent.change(screen.getByLabelText("프리셋 세기"), { target: { value: "0.5" } });
+    expect(store.getState().recipe.expression.jawOpen).toBeUndefined();
   });
 });

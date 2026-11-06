@@ -28,7 +28,7 @@ import type { PresetId, SlotCapabilityMap, SlotKind } from "./slots";
 import type { VisionStatus } from "./vision";
 
 export type LabCommand =
-  | { readonly type: "slot/apply"; readonly slot: SlotKind; readonly presetId: PresetId | null }
+  | { readonly type: "slot/apply"; readonly slot: SlotKind; readonly presetId: PresetId | null; readonly coalesceKey?: string }
   | {
       readonly type: "param/set";
       readonly group: "body" | "face";
@@ -38,7 +38,7 @@ export type LabCommand =
       readonly coalesceKey?: string;
     }
   /** 기본 8채널 색(v2 명령, 그대로 유지). 상속 채널까지 다루려면 `channel/set`을 쓴다. */
-  | { readonly type: "color/set"; readonly key: RecipeColorKey; readonly value: string }
+  | { readonly type: "color/set"; readonly key: RecipeColorKey; readonly value: string; readonly coalesceKey?: string }
   | {
       readonly type: "expression/set";
       readonly weights: ExpressionWeights;

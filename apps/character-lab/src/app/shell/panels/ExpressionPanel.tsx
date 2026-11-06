@@ -10,7 +10,7 @@
  *   (`param/set`과 같은 규칙, state/lab-store가 처리). 프리셋 카드·세기·초기화·완화는 각각 1단계다.
  * - 스타일 접두 `cl-expression-`(core의 character-lab.css가 정의).
  */
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { blendExpression, blendExpressionPresets, expressionToMorphWeights, relaxAntagonists } from "../../../animation/expression-blend";
 import { EXPRESSION_PRESETS } from "../../../animation/presets";
@@ -37,6 +37,43 @@ export function ExpressionPanel() {
   /** 이 패널에서 슬라이더로 만진 유닛(프리셋 세기 변경 시 보존) */
   const [overrides, setOverrides] = useState<ExpressionWeights>({});
   const [influence, setInfluence] = useState(1);
+  const prevSlotRef = useRef(recipe.slots.expression);
+  const prevExpressionRef = useRef(recipe.expression);
+
+  useEffect(() => {
+    if (recipe.slots.expression !== prevSlotRef.current) {
+      prevSlotRef.current = recipe.slots.expression;
+      prevExpressionRef.current = recipe.expression;
+      setOverrides({});
+      setInfluence(1);
+      return;
+    }
+    if (recipe.expression !== prevExpressionRef.current) {
+      prevExpressionRef.current = recipe.expression;
+      const hasAnyActive = FACS_UNITS.some((unit) => (recipe.expression[unit] ?? 0) > 0);
+      if (!hasAnyActive) {
+        setOverrides({});
+        setInfluence(1);
+        return;
+      }
+      setOverrides((previous) => {
+        const keys = Object.keys(previous) as FacsUnit[];
+        if (keys.length === 0) return previous;
+        let changed = false;
+        const next: Partial<Record<FacsUnit, number>> = {};
+        for (const unit of keys) {
+          const currentVal = recipe.expression[unit] ?? 0;
+          if (Math.abs(currentVal - (previous[unit] ?? 0)) < 1e-6) {
+            next[unit] = previous[unit];
+          } else {
+            changed = true;
+          }
+        }
+        return changed ? next : previous;
+      });
+    }
+  }, [recipe.slots.expression, recipe.expression]);
+
   const session = useEngineSession();
   const eyeGaze = recipe.eyeGaze ?? DEFAULT_EYE_GAZE;
   const editableGaze: EyeGaze = { mode: eyeGaze.mode, symmetry: eyeGaze.symmetry, left: eyeGaze.left, right: eyeGaze.right };
@@ -98,6 +135,14 @@ export function ExpressionPanel() {
   };
 
   const relax = (): void => {
+    setOverrides((previous) => {
+      const next: Partial<Record<FacsUnit, number>> = {};
+      for (const unit of Object.keys(previous) as FacsUnit[]) {
+        const relaxedVal = relaxed[unit];
+        if (relaxedVal !== undefined) next[unit] = relaxedVal;
+      }
+      return next;
+    });
     dispatch({ type: "expression/set", weights: relaxed, merge: false });
   };
 

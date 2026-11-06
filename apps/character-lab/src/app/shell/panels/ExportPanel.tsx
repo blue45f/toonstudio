@@ -97,11 +97,13 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const finish = useCallback(
     (outcome: { ok: true; bytes: Uint8Array; receipt: ExportReceipt } | { ok: false; failure: LabFailure }): void => {
       if (!outcome.ok) {
+        setReceipt(null);
         setFailure(outcome.failure);
         return;
       }
       const saved = save(outcome.receipt.fileName, outcome.bytes, outcome.receipt.mime);
       if (!saved.ok) {
+        setReceipt(null);
         setFailure(saved.failure);
         return;
       }
@@ -113,7 +115,10 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
 
   const requireEngine = useCallback(() => {
     const engine = engineSession.engine();
-    if (!engine) setFailure(failVisible("export-no-engine", "엔진이 준비되지 않아 내보낼 수 없습니다. 먼저 렌더 backend를 선택하세요.", undefined, now()));
+    if (!engine) {
+      setReceipt(null);
+      setFailure(failVisible("export-no-engine", "엔진이 준비되지 않아 내보낼 수 없습니다. 먼저 렌더 backend를 선택하세요.", undefined, now()));
+    }
     return engine;
   }, [engineSession, now]);
 
@@ -121,6 +126,8 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     async (kind: ExportKind | "import", task: () => Promise<void>): Promise<void> => {
       if (busy) return;
       setNotices([]);
+      setReceipt(null);
+      setFailure(null);
       setBusy(kind);
       try {
         await task();
@@ -256,10 +263,11 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
             key={preset.id}
             type="button"
             className="cl-preset-chip"
-            aria-pressed={width === preset.w && height === preset.h}
+            aria-pressed={width === preset.w && height === preset.h && framing === "full-body"}
             onClick={() => {
               setWidth(preset.w);
               setHeight(preset.h);
+              setFraming("full-body");
             }}
           >
             {preset.label}
@@ -323,7 +331,17 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         </button>
         <label className="cl-export-file" htmlFor={`${ids}-file`}>
           레시피 불러오기
-          <input id={`${ids}-file`} type="file" accept={`${RECIPE_FILE_SUFFIX},.json,.preset,application/json,text/plain`} disabled={busy !== null} onChange={(event) => onRecipeFile(event.target.files?.[0])} />
+          <input
+            id={`${ids}-file`}
+            type="file"
+            accept={`${RECIPE_FILE_SUFFIX},.json,.preset,application/json,text/plain`}
+            disabled={busy !== null}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              onRecipeFile(file);
+            }}
+          />
         </label>
       </div>
       <fieldset className="cl-export-psd">

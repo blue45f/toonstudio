@@ -259,24 +259,25 @@ export function buildShaperPresetCommands(presetKey: string): {
   if (presetKey in SHAPER_BUILTIN_ARCHETYPE_PRESETS) {
     const preset = SHAPER_BUILTIN_ARCHETYPE_PRESETS[presetKey];
     if (!preset) return null;
+    const coalesceKey = `shaper-archetype:${preset.id}`;
     const commands: LabCommand[] = [];
     for (const [slot, presetId] of Object.entries(preset.slots)) {
-      if (presetId) commands.push({ type: "slot/apply", slot: slot as SlotKind, presetId });
+      if (presetId) commands.push({ type: "slot/apply", slot: slot as SlotKind, presetId, coalesceKey });
     }
     for (const [key, value] of Object.entries(preset.bodyParams)) {
       if (typeof value === "number") {
-        commands.push({ type: "param/set", group: "body", key: key as BodyParamKey, value, coalesceKey: `shaper-archetype:${preset.id}` });
+        commands.push({ type: "param/set", group: "body", key: key as BodyParamKey, value, coalesceKey });
       }
     }
     for (const [key, value] of Object.entries(preset.faceParams)) {
       if (typeof value === "number") {
-        commands.push({ type: "param/set", group: "face", key: key as FaceParamKey, value, coalesceKey: `shaper-archetype:${preset.id}` });
+        commands.push({ type: "param/set", group: "face", key: key as FaceParamKey, value, coalesceKey });
       }
     }
     for (const [colorKey, hex] of Object.entries(preset.colors)) {
-      if (typeof hex === "string") commands.push({ type: "color/set", key: colorKey as RecipeColorKey, value: hex });
+      if (typeof hex === "string") commands.push({ type: "color/set", key: colorKey as RecipeColorKey, value: hex, coalesceKey });
     }
-    commands.push({ type: "pose/set", pose: preset.pose, scope: "full", labelKo: preset.labelKo });
+    commands.push({ type: "pose/set", pose: preset.pose, scope: "full", labelKo: preset.labelKo, coalesceKey });
     return {
       commands,
       noticeKo: `${preset.labelKo} (헤어·의상·두상·체형·포즈·웹툰 피부톤)을 일괄 적용했습니다.`,
@@ -286,7 +287,7 @@ export function buildShaperPresetCommands(presetKey: string): {
   if (presetKey in SHAPER_BUILTIN_POSE_PRESETS) {
     const preset = SHAPER_BUILTIN_POSE_PRESETS[presetKey as keyof typeof SHAPER_BUILTIN_POSE_PRESETS];
     return {
-      commands: [{ type: "pose/set", pose: preset.pose, scope: "full", labelKo: preset.labelKo }],
+      commands: [{ type: "pose/set", pose: preset.pose, scope: "full", labelKo: preset.labelKo, coalesceKey: `shaper-pose:${preset.id}` }],
       noticeKo: `${preset.labelKo}을 적용했습니다.`,
     };
   }
@@ -294,15 +295,16 @@ export function buildShaperPresetCommands(presetKey: string): {
   if (presetKey in SHAPER_BUILTIN_PART_PRESETS) {
     const preset = SHAPER_BUILTIN_PART_PRESETS[presetKey];
     if (!preset) return null;
+    const coalesceKey = `shaper-part:${preset.id}`;
     const commands: LabCommand[] = [];
     if (preset.slots) {
       for (const [slot, presetId] of Object.entries(preset.slots)) {
-        if (presetId) commands.push({ type: "slot/apply", slot: slot as SlotKind, presetId });
+        if (presetId) commands.push({ type: "slot/apply", slot: slot as SlotKind, presetId, coalesceKey });
       }
     }
     for (const [key, value] of Object.entries(preset.faceParams)) {
       if (typeof value === "number") {
-        commands.push({ type: "param/set", group: "face", key: key as FaceParamKey, value, coalesceKey: `shaper-part:${preset.id}` });
+        commands.push({ type: "param/set", group: "face", key: key as FaceParamKey, value, coalesceKey });
       }
     }
     return {

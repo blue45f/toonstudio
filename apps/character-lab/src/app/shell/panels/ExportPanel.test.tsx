@@ -273,21 +273,44 @@ describe("ExportPanel", () => {
     expect(screen.queryByRole("list", { name: "레시피 불러오기 안내" })).toBeNull();
   });
 
-  it("빠른 해상도 프리셋 버튼을 클릭하면 너비와 높이 입력값이 즉시 변경된다", () => {
+  it("빠른 해상도 프리셋과 VRM 프레이밍 프리셋의 선택 표시(aria-pressed)가 서로 일관되고 실패 시 이전 저장 영수증을 지우며 입력값을 보존한다", async () => {
+    const calls: SaveCall[] = [];
+    const engine = createMockEngine();
     render(
-      <MockLabProvider>
-        <ExportPanel session={createPaintSession({ layerSize: 8 })} />
+      <MockLabProvider engineSession={readySession(engine)}>
+        <ExportPanel session={createPaintSession({ layerSize: 8 })} deps={{ save: fakeSave(calls), now: () => 1 }} />
       </MockLabProvider>,
     );
     const group = screen.getByTestId("export-resolution-presets");
+    const squareBtn = within(group).getByRole("button", { name: "정방형 기본 (1024×1024)" });
+    expect(squareBtn.getAttribute("aria-pressed")).toBe("true");
+
     fireEvent.click(within(group).getByRole("button", { name: "웹툰 컷 (800×1200)" }));
     expect((screen.getByLabelText("너비(px)") as HTMLInputElement).value).toBe("800");
     expect((screen.getByLabelText("높이(px)") as HTMLInputElement).value).toBe("1200");
 
-    fireEvent.click(screen.getByTestId("export-preset-vrm-face"));
+    const vrmFaceBtn = screen.getByTestId("export-preset-vrm-face");
+    fireEvent.click(vrmFaceBtn);
     expect((screen.getByLabelText("너비(px)") as HTMLInputElement).value).toBe("1024");
     expect((screen.getByLabelText("높이(px)") as HTMLInputElement).value).toBe("1024");
     expect((screen.getByLabelText("프레이밍") as HTMLSelectElement).value).toBe("face");
+    expect(vrmFaceBtn.getAttribute("aria-pressed")).toBe("true");
+    // face 프레이밍일 때는 전신 정방형 기본 버튼이 동시에 눌린 것으로 표시되지 않는다
+    expect(squareBtn.getAttribute("aria-pressed")).toBe("false");
+
+    // 다시 정방형 기본 클릭 시 full-body 프레이밍으로 복원된다
+    fireEvent.click(squareBtn);
+    expect((screen.getByLabelText("프레이밍") as HTMLSelectElement).value).toBe("full-body");
+    expect(squareBtn.getAttribute("aria-pressed")).toBe("true");
+
+    // 성공 저장 후 이어서 실패가 발생하면 이전 '저장됨:' 영수증은 지워지고 사용자 입력(너비/높이)은 그대로 보존된다
+    fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));
+    await waitFor(() => expect(screen.getByText(/저장됨:/u)).toBeTruthy());
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "4000" } });
+    fireEvent.click(screen.getByRole("button", { name: "레이어 PSD 저장" }));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/export-size/u));
+    expect(screen.queryByText(/저장됨:/u)).toBeNull();
+    expect((screen.getByLabelText("너비(px)") as HTMLInputElement).value).toBe("4000");
   });
 
   it("readTextFile은 File 내용을 읽는다", async () => {

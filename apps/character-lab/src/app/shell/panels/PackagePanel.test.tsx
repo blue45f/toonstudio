@@ -518,4 +518,42 @@ describe("PackagePanel — 모듈식 키트", () => {
     expect(document.querySelector('td[data-base="male"]')).toBeNull();
     expect(screen.queryByTestId("shaper-package-asset-check")).toBeNull();
   });
+
+  it("패키지 비동기 로드 도중 사용자가 소스를 전환하면 뒤늦게 도착한 이전 패키지 응답이 현재 소스를 덮어쓰지 않는다", async () => {
+    const base = fsLoader();
+    type LoadRes = Awaited<ReturnType<PackagePanelLoader["loadPackage"]>>;
+    let resolveDelayed!: (value: LoadRes) => void;
+    const delayedPromise = new Promise<LoadRes>((resolve) => {
+      resolveDelayed = resolve;
+    });
+    const slowLoader: PackagePanelLoader = {
+      loadIndex: () => base.loadIndex(),
+      loadPackage: (entry) => (entry.characterId === "avatar-orion-authored" ? delayedPromise : base.loadPackage(entry, {})),
+    };
+    const store = createMockLabStore({ recipe: kitRecipe() });
+    render(
+      <MockLabProvider store={store} shell={{ kitPlans: fakeKit().registry }}>
+        <PackagePanel loader={slowLoader} autoLoadKit={false} now={() => 100} />
+      </MockLabProvider>,
+    );
+    await screen.findByText("Avatar Orion · Authored Toon");
+    fireEvent.click(screen.getByRole("button", { name: "Avatar Orion · Authored Toon 불러오기" }));
+    expect(screen.getByText(/받는 중/u)).toBeTruthy();
+
+    // 로드 중에 사용자가 '절차 소스로 전환'을 클릭
+    fireEvent.click(screen.getByRole("button", { name: "절차 소스로 전환" }));
+    expect(store.dispatched).toEqual([{ type: "source/set", source: { kind: "procedural" }, capabilities: ALL_AVAILABLE_CAPABILITIES }]);
+
+    // 뒤늦게 avatar-orion-authored 패키지 로드가 완료되어도 source/set이 추가로 발생하지 않아야 한다
+    const indexRes = await base.loadIndex();
+    if (!indexRes.ok) throw new Error("index fixture failed");
+    const orionEntry = indexRes.entries.find((e) => e.characterId === "avatar-orion-authored")!;
+    const realLoaded = await base.loadPackage(orionEntry, {});
+    await act(async () => {
+      resolveDelayed(realLoaded);
+      await delayedPromise;
+    });
+    expect(store.dispatched).toHaveLength(1);
+    expect(store.dispatched[0]?.type === "source/set" && store.dispatched[0].source.kind).toBe("procedural");
+  });
 });

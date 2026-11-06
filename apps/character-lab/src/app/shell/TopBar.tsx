@@ -71,14 +71,24 @@ export function TopBar() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (isEditableTarget(event.target)) return;
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
-        const history = store.getState().history;
-        const redo = event.shiftKey;
-        if (redo ? !history.canRedo : !history.canUndo) return;
-        event.preventDefault();
-        dispatch({ type: redo ? "history/redo" : "history/undo" });
-        return;
+      if (event.defaultPrevented || isEditableTarget(event.target)) return;
+      const lowerKey = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+        if (lowerKey === "z") {
+          event.preventDefault();
+          const history = store.getState().history;
+          const redo = event.shiftKey;
+          if (redo ? !history.canRedo : !history.canUndo) return;
+          dispatch({ type: redo ? "history/redo" : "history/undo" });
+          return;
+        }
+        if (lowerKey === "y" && !event.shiftKey) {
+          event.preventDefault();
+          const history = store.getState().history;
+          if (!history.canRedo) return;
+          dispatch({ type: "history/redo" });
+          return;
+        }
       }
       if (event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.key === "?") {

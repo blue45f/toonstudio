@@ -290,8 +290,17 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     }
   }, [engine, framing]);
 
+  const presetRecipeRef = useRef(labState.recipe);
+
+  useEffect(() => {
+    if (shaperPresetId && labState.recipe !== presetRecipeRef.current) {
+      setShaperPresetId("");
+    }
+  }, [labState.recipe, shaperPresetId]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented) return;
       const target = event.target;
       if (target instanceof HTMLElement && (target.isContentEditable || target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
       const ctrlOrMeta = event.ctrlKey || event.metaKey;
@@ -306,7 +315,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         }
         return;
       }
-      if (!engine || event.altKey) return;
+      if (!engine || ctrlOrMeta || event.altKey) return;
       const shaperAction = resolveShaperViewportKeyShortcut(event.key, { shift: event.shiftKey, ctrl: ctrlOrMeta, alt: event.altKey });
       if (shaperAction?.kind === "reset-camera") {
         onResetView();
@@ -346,6 +355,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       const batch = buildShaperPresetCommands(presetKey);
       if (batch) {
         for (const cmd of batch.commands) dispatch(cmd);
+        presetRecipeRef.current = store.getState().recipe;
         setNotice(batch.noticeKo);
         return;
       }
@@ -354,6 +364,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         for (const [key, value] of Object.entries(entry.bodyParams)) {
           if (typeof value === "number") dispatch({ type: "param/set", group: "body", key: key as BodyParamKey, value, coalesceKey: `shaper-preset:${entry.id}` });
         }
+        presetRecipeRef.current = store.getState().recipe;
         setNotice(`${entry.labelKo} 체형 비율을 적용했습니다.`);
         return;
       }
@@ -362,10 +373,11 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         for (const [key, value] of Object.entries(entry.faceParams)) {
           if (typeof value === "number") dispatch({ type: "param/set", group: "face", key: key as FaceParamKey, value, coalesceKey: `shaper-preset:${entry.id}` });
         }
+        presetRecipeRef.current = store.getState().recipe;
         setNotice(`${entry.labelKo} 두상 비율을 적용했습니다.`);
       }
     },
-    [dispatch],
+    [dispatch, store],
   );
 
   const cancelDrag = useCallback((): void => {
