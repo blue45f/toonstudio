@@ -2,8 +2,8 @@
  * UI-facing bridge from retained Studio freehand elements to the bounded,
  * clean-room WILL v1 Annex B document Worker.
  *
- * The small path-preparation bridge stays in Studio's stable graph. The OPC/ZIP protocol and its
- * Worker client load only after an explicit export request; none of that optional interchange
+ * The path-preparation bridge, OPC/ZIP protocol and Worker client load only after an explicit
+ * export request; none of that optional interchange
  * graph is needed to open or draw in Studio. This is a ToonStudio-owned public-specification
  * profile, not Wacom SDK output, vendor certification, or trademark authorization.
  */

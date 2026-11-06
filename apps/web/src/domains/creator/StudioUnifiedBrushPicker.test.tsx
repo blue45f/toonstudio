@@ -180,6 +180,20 @@ describe("StudioUnifiedBrushPicker", () => {
     expect(html.match(/size-11/g)?.length).toBeGreaterThan(10);
   });
 
+  it("keeps focused brush docking session-only without overwriting density or saved layout", () => {
+    const handler = studioPageSource.slice(
+      studioPageSource.indexOf("  function toggleDrawingBrushDock()"),
+      studioPageSource.indexOf("  const studioOptionsBarsHandlers"),
+    );
+    expect(handler).not.toContain("setStudioUiDensity");
+    expect(handler).toContain('if (uiDensityMode === "focus")');
+    expect(handler.indexOf("return;")).toBeLessThan(handler.indexOf("setDrawingPaletteLayout"));
+    expect(studioPageSource).toContain("focusBrushDockOwner === currentWorkspaceOwnerScope");
+    expect(studioPageSource).toContain("}, [uiDensityMode, currentWorkspaceOwnerScope]);");
+    expect(studioPageSource).toContain("libraryDockOpen: focusBrushDockOpen ||");
+    expect(studioPageSource).toContain("brushCatalogOpen: focusBrushDockOpen ||");
+  });
+
   it("keeps the mobile catalogue open while settings inspect a non-drawing tool", () => {
     expect(studioPageSource).toContain(
       'brushCatalogSession.placement === "mobile-sheet"',

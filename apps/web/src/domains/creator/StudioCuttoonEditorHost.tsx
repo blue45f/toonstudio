@@ -487,6 +487,7 @@ import { StudioWebtoonAssistantModal } from "./assistant/StudioWebtoonAssistantM
 import { buildStudioWebtoonAssistantDocumentAnalysis } from "./assistant/studio-webtoon-assistant-document";
 import {
   loadStudioPsdExportModule,
+  loadStudioWillExportModule,
   loadStudioSvgExportWorkerClientModule,
 } from "./export/studio-document-export-loaders";
 import { createStudioInterchangeImportOrchestration } from "./export/studio-interchange-import";
@@ -1299,7 +1300,6 @@ import {
   WET_MIX_STRENGTH_DEFAULT,
   WET_MIX_WETNESS_DEFAULT,
 } from "./brush/studio-wet-mix";
-import { exportStudioPageToWillV1 } from "./export/studio-will-v1-export-bridge";
 import type { StudioWillV1PageExportResult } from "./export/studio-will-v1-export-bridge";
 import {
   studioWorkAssetDestructiveEditReason,
@@ -3284,6 +3284,13 @@ export function StudioCuttoonEditor({
     useState<StudioDrawingPaletteLayout>(
       () => workspaceState.liveLayout.drawingPalettes
     );
+  // A focused artist may open one brush panel without changing their saved layout or mode.
+  const [focusBrushDockOwner, setFocusBrushDockOwner] = useState<string | null>(null);
+  const focusBrushDockOpen = uiDensityMode === "focus"
+    && focusBrushDockOwner === currentWorkspaceOwnerScope;
+  useEffect(() => {
+    setFocusBrushDockOwner(null);
+  }, [uiDensityMode, currentWorkspaceOwnerScope]);
   const [drawingPaletteDragging, setDrawingPaletteDragging] = useState(false);
   const drawingPaletteDraggingRef = useRef(false);
   const [drawingPaletteCancelEpoch, setDrawingPaletteCancelEpoch] = useState(0);
@@ -25958,12 +25965,9 @@ function clearSelectionForEdit() {
       (element): element is DrawEl =>
         element.type === "draw" && !isEffectivelyHidden(element, pageGroups),
     );
-    return exportStudioPageToWillV1({
-      width: CANVAS_W,
-      height: canvasH,
-      title,
-      elements: drawElements,
-    });
+    const snapshot = { width: CANVAS_W, height: canvasH, title, elements: drawElements };
+    const { exportStudioPageToWillV1 } = await loadStudioWillExportModule();
+    return exportStudioPageToWillV1(snapshot);
   }
 
   // 현재 페이지 → 요소별 레이어를 가진 PSD. exportPagePsd 는 숨김 요소를 스스로 거르지 않으므로
@@ -27705,9 +27709,12 @@ function clearSelectionForEdit() {
   }
 
   function toggleDrawingBrushDock() {
-    if (uiDensityMode === "focus") setStudioUiDensity("simple");
     setBrushCatalogSession(null);
-    setDrawingPaletteLayout((previous) => ({ ...previous, libraryDockOpen: uiDensityMode === "focus" || !previous.libraryDockOpen }));
+    if (uiDensityMode === "focus") {
+      setFocusBrushDockOwner((owner) => owner === currentWorkspaceOwnerScope ? null : currentWorkspaceOwnerScope);
+      return;
+    }
+    setDrawingPaletteLayout((previous) => ({ ...previous, libraryDockOpen: !previous.libraryDockOpen }));
   }
   const studioOptionsBarsHandlers = useStudioStableHandlers<StudioOptionsBarsHandlers>({
     openQuickAccess: (point) => { setQuickAccessLaunchPoint(point ?? null); void openStudioQuickAccessPalette(); },
@@ -27852,9 +27859,9 @@ function clearSelectionForEdit() {
       brushId: brush,
       workbenchVisible: !canvasOnlyMode,
       workspaceOwnerScope: currentWorkspaceOwnerScope,
-      libraryDockOpen: drawingPaletteLayout.libraryDockOpen === true && uiDensityMode !== "focus",
+      libraryDockOpen: focusBrushDockOpen || (drawingPaletteLayout.libraryDockOpen === true && uiDensityMode !== "focus"),
       layoutRestoreAvailable: drawingLayoutRestorePoint?.ownerScope === currentWorkspaceOwnerScope,
-      brushCatalogOpen: (drawingPaletteLayout.libraryDockOpen === true && uiDensityMode !== "focus") || brushCatalogSession?.placement === "desktop-dock",
+      brushCatalogOpen: focusBrushDockOpen || (drawingPaletteLayout.libraryDockOpen === true && uiDensityMode !== "focus") || brushCatalogSession?.placement === "desktop-dock",
       brushDefaultRestore: {
         available: brushBaselineController.restoreState.available,
         loading: brushBaselineController.restoreState.loading,
@@ -27923,6 +27930,7 @@ function clearSelectionForEdit() {
       currentWorkspaceOwnerScope,
       drawingLayoutRestorePoint,
       drawingPaletteLayout.libraryDockOpen,
+      focusBrushDockOpen,
       brushBaselineController.restoreState.available,
       brushBaselineController.restoreState.loading,
       brushBaselineController.restoreState.modifiedCount,

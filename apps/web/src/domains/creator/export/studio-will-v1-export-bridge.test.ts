@@ -58,18 +58,13 @@ beforeEach(() => {
 });
 
 describe("Studio WILL v1 page export bridge", () => {
-  it("keeps the Studio click path on a static bridge import instead of an unbounded chunk request", () => {
-    const studioPage = readFileSync(
-      new URL("../StudioCuttoonEditorHost.tsx", import.meta.url),
-      "utf8",
-    );
-
-    expect(studioPage).toMatch(
-      /import\s*\{\s*exportStudioPageToWillV1\s*\}\s*from\s*["']\.\/export\/studio-will-v1-export-bridge["']/,
-    );
-    expect(studioPage).not.toContain(
-      'await import("./export/studio-will-v1-export-bridge")',
-    );
+  it("keeps the Studio click path on a bounded retryable intent loader", () => {
+    const studioPage = readFileSync(new URL("../StudioCuttoonEditorHost.tsx", import.meta.url), "utf8");
+    const loader = readFileSync(new URL("./studio-document-export-loaders.ts", import.meta.url), "utf8");
+    expect(studioPage).toContain("await loadStudioWillExportModule()");
+    expect(loader).toContain('import("./studio-will-v1-export-bridge").then(resolve, reject)');
+    expect(loader).toContain("30_000");
+    expect(loader).toContain("willExportModulePromise = null");
   });
 
   it("loads OPC and its Worker client only after an explicit export request", () => {
