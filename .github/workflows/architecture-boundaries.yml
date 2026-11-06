@@ -35,6 +35,11 @@ on:
 permissions:
   contents: read
 
+# 같은 PR의 이전 head만 취소하고, main 등 다른 이벤트의 실행·대기열은 run_id로 분리해 보존한다.
+concurrency:
+  group: architecture-boundaries-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   boundaries:
     runs-on: ubuntu-latest
