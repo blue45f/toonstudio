@@ -58,6 +58,16 @@ describe("CommunityPage 대화 우선 배치", () => {
       const details = disclosure(label); expect(details.open).toBe(false); expect(precedes(feed,details)).toBe(true);
     }
   });
+  it("시안의 네 범주 레일과 피드를 먼저 보여 주고 문맥 안내는 길잡이에 보존한다", () => {
+    page();
+    const directory = screen.getByRole("navigation", { name: "어떤 이야기부터 나눌까요?" });
+    expect(directory.className).toBe("community-layout-directory");
+    expect(directory.querySelectorAll("a")).toHaveLength(4);
+    expect(precedes(directory, screen.getByTestId("fan-cafe-boundary"))).toBe(true);
+    expect(screen.getByRole("navigation", { name: "문맥 안내", hidden: true }).closest("details"))
+      .toBe(disclosure("커뮤니티 빠른 길잡이"));
+    expect(screen.getByRole("link", { name: "영감을 내 웹툰으로" }).getAttribute("href")).toBe("/studio/new");
+  });
   it("네 가지 구역 전환과 명시적으로 선택한 리그·홍보 진입을 보존한다", () => {
     page();
     fireEvent.click(screen.getByRole("button",{name:"승격 리그 · 활동"}));

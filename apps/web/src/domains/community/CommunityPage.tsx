@@ -36,7 +36,6 @@ import { Container, Section } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { COMMUNITY_SCOPE_DIRECTORIES } from "@/shared/lib/community-ui";
 import Link from "@/shared/navigation/router-link";
@@ -246,8 +245,7 @@ export function CommunityPage() {
   const showPromote = sectionView === "all" || sectionView === "promote";
 
   return (
-    <Container size="wide" className="community-layout py-7 sm:py-10 lg:py-12">
-      <SiteContextualSubNav pathnameOverride="/community" className="mb-5" />
+    <Container size="wide" className="community-layout py-5 sm:py-7 lg:py-8">
       <div>
       <header className="community-layout-header">
         <div>
@@ -268,13 +266,15 @@ export function CommunityPage() {
               <CalendarDays size={16} aria-hidden="true" />
               {t(COPY.ctaEvents)}
             </Link>
-
+            <Link href="/studio/new" className={buttonClass({ variant: "ghost", size: "md", className: "min-h-11" })}>
+              {t(COPY.directoriesCta)}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
         </div>
       </header>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-center text-xs font-black uppercase tracking-[0.28em] text-fg-3 lg:text-left">
+        <p className="sr-only">
           {t(COPY.tagline)}
         </p>
         <div role="group" aria-label={t(COPY.sectionView)} className="flex flex-wrap gap-1.5">
@@ -305,33 +305,25 @@ export function CommunityPage() {
 
       {showFeed ? (
       <>
-      <Section
-        className="mt-6"
-        eyebrow={t(COPY.directoriesEyebrow)}
-        title={t(COPY.directoriesTitle)}
-        desc={t(COPY.directoriesDescription)}
-        action={{ label: t(COPY.directoriesCta), href: "/studio/new" }}
-      >
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-          {COMMUNITY_SCOPE_DIRECTORIES.map((entry, index) => (
-            <div key={entry.value} {...introItemProps(index)}>
-              <SiteLinkCard
-                layout="tile"
-                className="h-full"
-                href={entry.href}
-                icon={COMMUNITY_SCOPE_ICONS[entry.value]}
-                title={t(COMMUNITY_SCOPE_DIRECTORY_LABEL_KEYS[entry.value])}
-                description={t(COMMUNITY_SCOPE_DIRECTORY_DESCRIPTION_KEYS[entry.value])}
-              />
-            </div>
-          ))}
-        </div>
-      </Section>
+      <nav className="community-layout-directory" aria-labelledby="community-directory-heading">
+        <h2 id="community-directory-heading" className="sr-only">{t(COPY.directoriesTitle)}</h2>
+        {COMMUNITY_SCOPE_DIRECTORIES.map((entry) => {
+          const Icon = COMMUNITY_SCOPE_ICONS[entry.value];
+          return (
+            <Link key={entry.value} href={entry.href} className="community-layout-directory-link">
+              <Icon size={22} aria-hidden="true" />
+              <span>{t(COMMUNITY_SCOPE_DIRECTORY_LABEL_KEYS[entry.value])}</span>
+              <span className="sr-only">{t(COMMUNITY_SCOPE_DIRECTORY_DESCRIPTION_KEYS[entry.value])}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
       <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1" aria-label={t(COPY.unifiedFeedRegion)}>
         <FanCafePanel scope="all" targetLabel={t(COPY.unifiedFeedLabel)} compact hideSpaceGuide />
       </section>
       <CommunityDisclosure title={t(COPY.guideSection)}>
+      <SiteContextualSubNav pathnameOverride="/community" className="mt-4" />
       <section
         aria-label="커뮤니티 빠른 길잡이"
         data-testid="community-quick-guide"
