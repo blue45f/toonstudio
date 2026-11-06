@@ -424,6 +424,8 @@ export class LiveStrokeSession {
 
   private onSamples(rawInput: RawSample[]): void {
     if (this.disposed) return;
+    rawInput = rawInput.filter((s) => Number.isFinite(s.x) && Number.isFinite(s.y) && Number.isFinite(s.tMs));
+    if (rawInput.length === 0) return;
     const hasDown = rawInput.some((s) => s.phase === "down");
     if (this.strokeRejected && !hasDown) {
       for (const s of rawInput) {

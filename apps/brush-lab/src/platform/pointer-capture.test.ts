@@ -7,7 +7,14 @@ import { createCornerGateStage } from "../engine/input/stages/corner-gate";
 import { createLazyBrushStageFromPct } from "../engine/input/stages/lazy-brush";
 import { createPenSpringStageFromPct } from "../engine/input/stages/pen-spring";
 
-import { attachPointerCapture, splitPredicted } from "./pointer-capture";
+import { displayScale, fitDocumentSize } from "./canvas-present";
+import {
+  attachPointerCapture,
+  MAX_SAFE_DOCUMENT_COORD_PX,
+  MIN_VALID_RECT_SIDE_PX,
+  resolveSurfaceMapping,
+  splitPredicted,
+} from "./pointer-capture";
 import {
   createInstrumentedPointerSurface,
   MAX_HEAP_DELTA_BYTES,
@@ -26,9 +33,9 @@ interface SyntheticInit extends PointerEventInit {
   predicted?: PointerEvent[];
 }
 
-/** jsdom PointerEvent에 coalesced/predicted·timeStamp를 모의로 붙인다. */
+/** jsdom PointerEvent에 coalesced/predicted·timeStamp·비정수/비유한 좌표를 모의로 붙인다. */
 function pointerEvent(type: string, init: SyntheticInit = {}): PointerEvent {
-  const { timeStamp, coalesced, predicted, ...rest } = init;
+  const { timeStamp, coalesced, predicted, clientX, clientY, ...rest } = init;
   const ev = new PointerEvent(type, {
     bubbles: true,
     cancelable: true,
@@ -36,8 +43,16 @@ function pointerEvent(type: string, init: SyntheticInit = {}): PointerEvent {
     pointerId: 1,
     pointerType: "pen",
     pressure: 0.5,
+    clientX: typeof clientX === "number" && Number.isFinite(clientX) ? clientX : 0,
+    clientY: typeof clientY === "number" && Number.isFinite(clientY) ? clientY : 0,
     ...rest,
   });
+  if (typeof clientX === "number") {
+    Object.defineProperty(ev, "clientX", { value: clientX });
+  }
+  if (typeof clientY === "number") {
+    Object.defineProperty(ev, "clientY", { value: clientY });
+  }
   if (typeof timeStamp === "number") {
     Object.defineProperty(ev, "timeStamp", { value: timeStamp });
   }
@@ -731,5 +746,285 @@ describe("attachPointerCapture: 경합 조건 회귀 및 결정적 재현(합성
     expect(heapDeltaBytes).toBeLessThan(MAX_HEAP_DELTA_BYTES);
   });
 });
+
+function setRect(el: HTMLElement, rect: { left: number; top: number; width: number; height: number }): void {
+  el.getBoundingClientRect = () =>
+    ({
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      right: rect.left + rect.width,
+      bottom: rect.top + rect.height,
+      x: rect.left,
+      y: rect.top,
+      toJSON: () => ({}),
+    }) as DOMRect;
+}
+
+describe("좌표 공간 계약: DPR·크기 변경·배율·0 크기·숨김·비유한·과대 값", () => {
+  it("DPR 1 / 2 / 3과 고정·화면맞춤 문서에서 이중 DPR 곱셈 없이 정규화 위치 (0,0)·(0.5,0.5)·(1,1)이 정확한 문서 좌표에 매핑된다", () => {
+    const fixedDoc = { width: 1024, height: 640 };
+    for (const dpr of [1, 2, 3]) {
+      // 고정 문서: 컨테이너 폭 768px에 맞춘 CSS 크기
+      const scale = displayScale(fixedDoc, 768);
+      const cssW = Math.round(fixedDoc.width * scale);
+      const cssH = Math.round(fixedDoc.height * scale);
+      const el = document.createElement("div");
+      setRect(el, { left: 40, top: 80, width: cssW, height: cssH });
+
+      const mapping = resolveSurfaceMapping(el, fixedDoc);
+      expect(mapping.valid).toBe(true);
+      expect(mapping.toLocal(40, 80)).toEqual({ x: 0, y: 0 });
+      expect(mapping.toLocal(40 + cssW * 0.5, 80 + cssH * 0.5)).toEqual({
+        x: fixedDoc.width * 0.5,
+        y: fixedDoc.height * 0.5,
+      });
+      expect(mapping.toLocal(40 + cssW, 80 + cssH)).toEqual({
+        x: fixedDoc.width,
+        y: fixedDoc.height,
+      });
+
+      // 화면 맞춤 문서: fitDocumentSize(600, 400, dpr)
+      const fit = fitDocumentSize(600, 400, dpr);
+      const fitEl = document.createElement("div");
+      setRect(fitEl, { left: 24, top: 36, width: fit.css.width, height: fit.css.height });
+      const fitMapping = resolveSurfaceMapping(fitEl, fit.document);
+      expect(fitMapping.valid).toBe(true);
+      expect(fitMapping.toLocal(24, 36)).toEqual({ x: 0, y: 0 });
+      expect(fitMapping.toLocal(24 + fit.css.width * 0.5, 36 + fit.css.height * 0.5)).toEqual({
+        x: fit.document.width * 0.5,
+        y: fit.document.height * 0.5,
+      });
+      expect(fitMapping.toLocal(24 + fit.css.width, 36 + fit.css.height)).toEqual({
+        x: fit.document.width,
+        y: fit.document.height,
+      });
+    }
+  });
+
+  it("뷰포트 크기 변경(1440 -> 768 -> 390 -> 320), 스크롤/오프셋 이동, CSS 배율(0.5x·0.75x·1.25x)에서도 기준점·중앙 교차선·외곽 획 오차가 0이다", () => {
+    const doc = { width: 1024, height: 640 };
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const batches: RawSample[][] = [];
+    const detach = attachPointerCapture(el, (raw) => batches.push(raw), { logicalSize: doc });
+
+    const layouts = [
+      { viewportW: 1440, left: 260, top: 96, cssScale: 1.0 },
+      { viewportW: 768, left: 24, top: 140, cssScale: 0.75 },
+      { viewportW: 390, left: 12, top: 220, cssScale: 0.5 },
+      { viewportW: 320, left: 8, top: 48, cssScale: 1.25 },
+    ];
+
+    const normalizedTargets: [number, number][] = [
+      [0, 0],
+      [0.5, 0.5],
+      [1, 1],
+      [0.25, 0.75],
+      [0.75, 0.25],
+    ];
+
+    let t = 100;
+    for (const layout of layouts) {
+      const baseScale = displayScale(doc, layout.viewportW - 32);
+      const rectW = doc.width * baseScale * layout.cssScale;
+      const rectH = doc.height * baseScale * layout.cssScale;
+      setRect(el, { left: layout.left, top: layout.top, width: rectW, height: rectH });
+
+      batches.length = 0;
+      const first = normalizedTargets[0]!;
+      el.dispatchEvent(
+        pointerEvent("pointerdown", {
+          clientX: layout.left + first[0] * rectW,
+          clientY: layout.top + first[1] * rectH,
+          timeStamp: (t += 10),
+        }),
+      );
+      for (let i = 1; i < normalizedTargets.length - 1; i += 1) {
+        const u = normalizedTargets[i]!;
+        el.dispatchEvent(
+          pointerEvent("pointermove", {
+            clientX: layout.left + u[0] * rectW,
+            clientY: layout.top + u[1] * rectH,
+            timeStamp: (t += 10),
+          }),
+        );
+      }
+      const last = normalizedTargets[normalizedTargets.length - 1]!;
+      el.dispatchEvent(
+        pointerEvent("pointerup", {
+          clientX: layout.left + last[0] * rectW,
+          clientY: layout.top + last[1] * rectH,
+          timeStamp: (t += 10),
+        }),
+      );
+
+      const samples = batches.flat();
+      expect(samples).toHaveLength(normalizedTargets.length);
+      for (let i = 0; i < normalizedTargets.length; i += 1) {
+        const expectedX = normalizedTargets[i]![0] * doc.width;
+        const expectedY = normalizedTargets[i]![1] * doc.height;
+        const err = Math.hypot((samples[i]?.x ?? 0) - expectedX, (samples[i]?.y ?? 0) - expectedY);
+        expect(err).toBeLessThan(1e-9);
+      }
+    }
+    detach();
+  });
+
+  it("0×0 사각형·숨김(display:none / visibility:hidden / hidden)·비유한 사각형에서는 획을 시작하지 않고, 복구 후 정상 동작한다", () => {
+    const doc = { width: 640, height: 400 };
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const batches: RawSample[][] = [];
+    const hovers: [number, number][] = [];
+    const detach = attachPointerCapture(el, (raw) => batches.push(raw), {
+      logicalSize: doc,
+      onHover: (x, y) => hovers.push([x, y]),
+    });
+
+    // 1. 0×0 사각형에서 pointerdown + hover -> 무시
+    setRect(el, { left: 10, top: 10, width: 0, height: 0 });
+    expect(resolveSurfaceMapping(el, doc).reason).toBe("zero-rect");
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: 20, clientY: 20, buttons: 0, timeStamp: 10 }));
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 20, clientY: 20, timeStamp: 20 }));
+    expect(hovers).toHaveLength(0);
+    expect(batches).toHaveLength(0);
+
+    // 2. 미소 사각형(1e-300 < MIN_VALID_RECT_SIDE_PX)에서 pointerdown -> 배율 폭주 없이 zero-rect로 거부
+    setRect(el, { left: 10, top: 10, width: 1e-300, height: 1e-300 });
+    expect(resolveSurfaceMapping(el, doc).reason).toBe("zero-rect");
+    expect(MIN_VALID_RECT_SIDE_PX).toBe(1e-3);
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 20, clientY: 20, timeStamp: 30 }));
+    expect(batches).toHaveLength(0);
+
+    // 3. 음수 사각형 및 비유한(NaN / Infinity) 사각형 -> 거부
+    setRect(el, { left: 0, top: 0, width: -100, height: 200 });
+    expect(resolveSurfaceMapping(el, doc).reason).toBe("negative-rect");
+    setRect(el, { left: Number.NaN, top: 0, width: 320, height: 200 });
+    expect(resolveSurfaceMapping(el, doc).reason).toBe("non-finite-rect");
+    setRect(el, { left: 0, top: 0, width: Number.POSITIVE_INFINITY, height: 200 });
+    expect(resolveSurfaceMapping(el, doc).reason).toBe("non-finite-rect");
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 20, clientY: 20, timeStamp: 40 }));
+    expect(batches).toHaveLength(0);
+
+    // 4. 숨김(display: none / visibility: hidden / hidden = true) -> 거부
+    setRect(el, { left: 10, top: 20, width: 320, height: 200 });
+    el.style.display = "none";
+    expect(resolveSurfaceMapping(el, doc).reason).toBe("surface-hidden");
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 50, clientY: 60, timeStamp: 50 }));
+    expect(batches).toHaveLength(0);
+
+    el.style.display = "block";
+    el.style.visibility = "hidden";
+    expect(resolveSurfaceMapping(el, doc).reason).toBe("surface-hidden");
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 50, clientY: 60, timeStamp: 60 }));
+    expect(batches).toHaveLength(0);
+
+    el.style.visibility = "visible";
+    el.hidden = true;
+    expect(resolveSurfaceMapping(el, doc).reason).toBe("surface-hidden");
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 50, clientY: 60, timeStamp: 70 }));
+    expect(batches).toHaveLength(0);
+
+    // 5. 재표시(hidden = false, 320×200) 후 정상 획 시작·종료
+    el.hidden = false;
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 170, clientY: 120, timeStamp: 80 }));
+    el.dispatchEvent(pointerEvent("pointerup", { clientX: 330, clientY: 220, timeStamp: 90 }));
+    expect(batches).toHaveLength(2);
+    expect(batches[0]?.[0]).toEqual(expect.objectContaining({ phase: "down", x: 320, y: 200 }));
+    expect(batches[1]?.[0]).toEqual(expect.objectContaining({ phase: "up", x: 640, y: 400 }));
+    detach();
+  });
+
+  it("획 도중 요소가 0×0 또는 display:none으로 무너지면 중간 move를 무시하고 pointerup은 마지막 유효 좌표에서 깔끔히 닫힌다", () => {
+    const doc = { width: 400, height: 200 };
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    setRect(el, { left: 0, top: 0, width: 200, height: 100 });
+    const batches: RawSample[][] = [];
+    const detach = attachPointerCapture(el, (raw) => batches.push(raw), { logicalSize: doc });
+
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 50, clientY: 25, timeStamp: 100 }));
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: 100, clientY: 50, timeStamp: 110 }));
+    expect(batches).toHaveLength(2);
+
+    // 획 도중 0×0 붕괴 -> move는 무시되고 pointerup은 마지막 유효 문서 좌표(200, 100)로 종료
+    setRect(el, { left: 0, top: 0, width: 0, height: 0 });
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: 180, clientY: 90, timeStamp: 120 }));
+    expect(batches).toHaveLength(2);
+    el.dispatchEvent(pointerEvent("pointerup", { clientX: 190, clientY: 95, timeStamp: 130 }));
+    expect(batches).toHaveLength(3);
+    expect(batches[2]?.[0]).toEqual(expect.objectContaining({ phase: "up", x: 200, y: 100 }));
+
+    // 크기 복구 후 다음 획이 정상 시작된다(유령 획 없음).
+    setRect(el, { left: 0, top: 0, width: 200, height: 100 });
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 25, clientY: 10, timeStamp: 140 }));
+    expect(batches).toHaveLength(4);
+    expect(batches[3]?.[0]).toEqual(expect.objectContaining({ phase: "down", x: 50, y: 20 }));
+    detach();
+  });
+
+  it("극단 유한 좌표(±1e308)는 ±MAX_SAFE_DOCUMENT_COORD_PX(±16384)로 클램프되고 비유한 clientX/clientY(NaN·Infinity)는 폐기된다", () => {
+    const doc = { width: 1024, height: 640 };
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    setRect(el, { left: 10, top: 20, width: 512, height: 320 });
+    const batches: RawSample[][] = [];
+    const detach = attachPointerCapture(el, (raw) => batches.push(raw), { logicalSize: doc });
+
+    // NaN pointerdown은 시작하지 않는다.
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: Number.NaN, clientY: 50, timeStamp: 10 }));
+    expect(batches).toHaveLength(0);
+
+    // 정상 시작 후 극단 유한값(1e308, -1e308) 및 비유한 move
+    el.dispatchEvent(pointerEvent("pointerdown", { clientX: 10, clientY: 20, timeStamp: 20 }));
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: 1e308, clientY: -1e308, timeStamp: 30 }));
+    el.dispatchEvent(pointerEvent("pointermove", { clientX: Number.POSITIVE_INFINITY, clientY: 40, timeStamp: 40 }));
+    el.dispatchEvent(pointerEvent("pointerup", { clientX: 266, clientY: 180, timeStamp: 50 }));
+
+    expect(batches).toHaveLength(3);
+    expect(batches[1]?.[0]).toEqual(
+      expect.objectContaining({
+        phase: "move",
+        x: MAX_SAFE_DOCUMENT_COORD_PX,
+        y: -MAX_SAFE_DOCUMENT_COORD_PX,
+      }),
+    );
+    expect(batches[2]?.[0]).toEqual(expect.objectContaining({ phase: "up", x: 512, y: 320 }));
+    detach();
+  });
+
+  it("음성 대조군(Negative Control): 이중 DPR 곱셈 또는 오프셋 미보정 매퍼는 50px 이상의 좌표 오차를 발생시켜 계약을 위반한다", () => {
+    const doc = { width: 1024, height: 640 };
+    const rect = { left: 120, top: 80, width: 512, height: 320 };
+    const dpr = 2;
+    const el = document.createElement("div");
+    setRect(el, rect);
+
+    const correct = resolveSurfaceMapping(el, doc);
+    const clientX = rect.left + rect.width * 0.5;
+    const clientY = rect.top + rect.height * 0.5;
+    const goodPt = correct.toLocal(clientX, clientY)!;
+    expect(goodPt).toEqual({ x: 512, y: 320 });
+
+    // 의도적 결함 1: 이중 DPR 곱셈
+    const buggyDoubleDprPt = {
+      x: (clientX - rect.left) * (doc.width / rect.width) * dpr,
+      y: (clientY - rect.top) * (doc.height / rect.height) * dpr,
+    };
+    const doubleDprErrorPx = Math.hypot(buggyDoubleDprPt.x - goodPt.x, buggyDoubleDprPt.y - goodPt.y);
+    expect(doubleDprErrorPx).toBeGreaterThan(50);
+
+    // 의도적 결함 2: 스크롤/바운딩 오프셋(rect.left, rect.top) 미차감
+    const buggyOffsetPt = {
+      x: clientX * (doc.width / rect.width),
+      y: clientY * (doc.height / rect.height),
+    };
+    const offsetErrorPx = Math.hypot(buggyOffsetPt.x - goodPt.x, buggyOffsetPt.y - goodPt.y);
+    expect(offsetErrorPx).toBeGreaterThan(50);
+  });
+});
+
 
 

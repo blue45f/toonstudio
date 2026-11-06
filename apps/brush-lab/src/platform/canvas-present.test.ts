@@ -129,6 +129,27 @@ describe("그리기 화면: 문서 크기·표시 스케일", () => {
     expect(fitDocumentSize(10, 10, 1).document).toEqual({ width: 64, height: 64 });
   });
 
+  it("fitDocumentSize와 displayScale은 NaN·±Infinity·음수·0·초거대(1e20) 입력에서도 항상 유한한 안전 범위 값을 돌려준다", () => {
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -500, 0, 1e20]) {
+      const r = fitDocumentSize(bad, bad, bad);
+      expect(Number.isInteger(r.document.width)).toBe(true);
+      expect(Number.isInteger(r.document.height)).toBe(true);
+      expect(r.document.width).toBeGreaterThanOrEqual(64);
+      expect(r.document.height).toBeGreaterThanOrEqual(64);
+      expect(r.document.width).toBeLessThanOrEqual(MAX_DOCUMENT_SIDE_PX);
+      expect(r.document.height).toBeLessThanOrEqual(MAX_DOCUMENT_SIDE_PX);
+      expect(documentTileCount(r.document)).toBeLessThanOrEqual(MAX_DOCUMENT_TILES);
+      expect(Number.isFinite(r.css.width)).toBe(true);
+      expect(Number.isFinite(r.css.height)).toBe(true);
+    }
+    expect(displayScale({ width: Number.NaN, height: 640 }, 512)).toBe(1);
+    expect(displayScale({ width: Number.POSITIVE_INFINITY, height: 640 }, 512)).toBe(1);
+    expect(displayScale({ width: -100, height: 640 }, 512)).toBe(1);
+    expect(displayScale({ width: 1024, height: 640 }, Number.NaN)).toBe(1);
+    expect(displayScale({ width: 1024, height: 640 }, Number.POSITIVE_INFINITY)).toBe(1);
+    expect(displayScale({ width: 1024, height: 640 }, -200)).toBe(1);
+  });
+
   it("documentTileCount는 16 px 타일을 올림으로 센다", () => {
     expect(documentTileCount({ width: 1024, height: 640 })).toBe(64 * 40);
     expect(documentTileCount({ width: 17, height: 1 })).toBe(2);

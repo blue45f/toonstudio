@@ -108,6 +108,8 @@ export function configureWebGpuCanvas(
 export const MAX_DOCUMENT_SIDE_PX = 2048;
 /** 문서 타일 수 상한. 습식 풀(확장 23채널)을 `wetCapacityTiles`로 올려도 SwiftShader에서 실제 장치가 받은 6000타일을 넘기지 않는다. */
 export const MAX_DOCUMENT_TILES = 6000;
+/** CSS 가용 영역 한 변 안전 상한(px). 비정상 거대 레이아웃 값이 정수·부동소수점 한계를 넘지 않게 막는다. */
+export const MAX_SAFE_CSS_SIDE_PX = 16384;
 const TILE_PX = 16;
 
 export interface DocumentSize {
@@ -129,15 +131,20 @@ export interface FitDocumentResult {
   reduced: boolean;
 }
 
+function clampAvailableCssSide(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 64;
+  return Math.min(MAX_SAFE_CSS_SIDE_PX, Math.max(64, Math.floor(value)));
+}
+
 /**
  * "화면 맞춤": 사용할 수 있는 CSS 영역(`availCssWidth` × `availCssHeight`)을 `dpr` 배율의 문서 픽셀로 채운다.
  * 한 변 2048 px·6000 타일 한도를 넘으면 같은 종횡비로 줄이고 `reduced`로 알린다(무음 축소 아님). dpr은 1..2로 클램프한다.
- * 최소 한 변은 64 px.
+ * 최소 한 변은 64 px, 최대 CSS 한 변은 `MAX_SAFE_CSS_SIDE_PX`(16384 px)로 유한 정수를 보장한다.
  */
 export function fitDocumentSize(availCssWidth: number, availCssHeight: number, dpr: number): FitDocumentResult {
   const scale = Math.min(2, Math.max(1, Number.isFinite(dpr) ? dpr : 1));
-  const cssW = Math.max(64, Math.floor(availCssWidth));
-  const cssH = Math.max(64, Math.floor(availCssHeight));
+  const cssW = clampAvailableCssSide(availCssWidth);
+  const cssH = clampAvailableCssSide(availCssHeight);
   let width = Math.round(cssW * scale);
   let height = Math.round(cssH * scale);
   let reduced = false;
@@ -157,7 +164,7 @@ export function fitDocumentSize(availCssWidth: number, availCssHeight: number, d
 
 /** 고정 크기 문서를 `maxCssWidth` 안에 비율을 지켜 맞춘 표시 크기(CSS px). 확대하지 않는다(최대 1배). */
 export function displayScale(doc: DocumentSize, maxCssWidth: number): number {
-  if (!(maxCssWidth > 0) || !(doc.width > 0)) return 1;
+  if (!Number.isFinite(maxCssWidth) || !(maxCssWidth > 0) || !Number.isFinite(doc.width) || !(doc.width > 0)) return 1;
   return Math.min(1, maxCssWidth / doc.width);
 }
 
