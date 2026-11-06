@@ -225,4 +225,24 @@ describe("InputPipeline", () => {
     expect(p.preview()).toEqual([]);
     expect(p.finish().length).toBe(1);
   });
+
+  it("역행하는 move·up 시각이 들어와도 model()과 finish()의 출력 tMs는 절대 뒤로 가지 않는다", () => {
+    const base = lineStroke(0, 0, 60, 0, 0.5, { durationMs: 60 });
+    const first = base[0];
+    if (!first) throw new Error("empty");
+    const samples: RawSample[] = [
+      { ...first, x: 0, y: 0, tMs: 100, phase: "down" },
+      { ...first, x: 20, y: 0, tMs: 120, phase: "move" },
+      { ...first, x: 40, y: 0, tMs: 110, phase: "move" }, // 역행 move
+      { ...first, x: 60, y: 0, tMs: 90, phase: "up" }, // 역행 up
+    ];
+    const pipeline = new InputPipeline();
+    const out = [...pipeline.push(samples).committed, ...pipeline.finish()];
+    for (let i = 1; i < out.length; i += 1) {
+      expect(out[i]?.tMs).toBeGreaterThanOrEqual(out[i - 1]?.tMs ?? 0);
+    }
+    expect(out[out.length - 1]?.phase).toBe("up");
+    expect(out[out.length - 1]?.tMs).toBe(120);
+  });
 });
+

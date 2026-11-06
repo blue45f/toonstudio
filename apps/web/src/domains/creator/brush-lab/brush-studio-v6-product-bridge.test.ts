@@ -102,4 +102,21 @@ describe("Brush Editor product save", () => {
     );
   });
 
+  it("질감(texture-*) 레시피를 제품 브러시로 변환할 때 brushDynamics.grain 설정을 병합한다", () => {
+    const program = createBrushStudioV6Program("texture-chalk");
+    const saved = createBrushStudioV6ProductBrush(program);
+    expect(saved.brushDynamics?.grain).toMatchObject({
+      space: "canvas-fixed",
+      amount: 0.06,
+      scale: 96,
+      contrast: 0.35,
+      source: {
+        kind: "r8-texture-v1",
+      },
+      texture: {
+        mode: "height",
+        depth: 0.06,
+      },
+    });
+  });
 });

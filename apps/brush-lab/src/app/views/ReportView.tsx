@@ -13,7 +13,8 @@ export function ReportView() {
   const { runner, actions, registry } = useLab();
   const reports = useLabSelector((s) => s.reports);
   const [selected, setSelected] = useState<number>(0);
-  const current = reports[selected] ?? reports[reports.length - 1] ?? null;
+  const activeIndex = reports[selected] !== undefined ? selected : Math.max(0, reports.length - 1);
+  const current = reports[activeIndex] ?? null;
   const summary = summarizeCertification(reports, registry);
   const rawNote = current ? rawVerdictNoteKo(findDescriptor(registry, current.laneId)) : null;
   let raw: string | null = null;
@@ -83,7 +84,7 @@ export function ReportView() {
               </thead>
               <tbody>
                 {reports.map((r, i) => (
-                  <tr key={`${r.createdAt}-${i}`} aria-selected={i === selected}>
+                  <tr key={`${r.createdAt}-${i}`} aria-selected={i === activeIndex}>
                     <td>{i + 1}</td>
                     <td>{r.presetId}</td>
                     <td className="lab-mono">{r.laneId}</td>
@@ -121,7 +122,15 @@ export function ReportView() {
           >
             선택 리포트 JSON 다운로드
           </button>
-          <button type="button" className="lab-button" disabled={reports.length === 0} onClick={() => actions.clearReports()}>
+          <button
+            type="button"
+            className="lab-button"
+            disabled={reports.length === 0}
+            onClick={() => {
+              setSelected(0);
+              actions.clearReports();
+            }}
+          >
             목록 비우기
           </button>
         </div>

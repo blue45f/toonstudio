@@ -223,6 +223,26 @@ describe("DabEmitter", () => {
     );
     expect(withTrail.dabs.length).toBeGreaterThan(withoutTrail.dabs.length);
   });
+
+  it("strokeProgress 동역학: 긴 단일 선분 안에서도 progress가 0..1 범위에서 포화 없이 단조 증가한다", () => {
+    const prog = program({
+      strokeDynamics: {
+        flow: [{ input: "strokeProgress", curve: [0.1, 1], min: 0, max: 1 }],
+      },
+    });
+    // 첫 표본(0,0) → 두 번째 표본(100,0) 단일 선분: this.pathLen이 아직 0일 때 여러 dab이 방출되어도 progress가 1로 포화되지 않아야 한다.
+    const samples = [sample(0, 0, 0), sample(100, 0, 20)];
+    const { dabs } = run(prog, samples, [FP, FP]);
+    expect(dabs.length).toBeGreaterThan(5);
+    expect(dabs[0]?.flow).toBeCloseTo(0.1, 5);
+    for (let i = 1; i < dabs.length; i += 1) {
+      const prevFlow = dabs[i - 1]?.flow ?? 0;
+      const curFlow = dabs[i]?.flow ?? 0;
+      expect(curFlow).toBeGreaterThan(prevFlow);
+      expect(curFlow).toBeGreaterThanOrEqual(0.1 - 1e-6);
+      expect(curFlow).toBeLessThanOrEqual(1 + 1e-6);
+    }
+  });
 });
 
 describe("StrokePipeline", () => {

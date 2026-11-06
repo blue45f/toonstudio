@@ -59,6 +59,32 @@ describe("Brush Studio V6 motion runtime", () => {
     const result = runtime.push({ x: 30, y: 8, pressure: 0.9, tilt: 0.7, twist: 270 });
     expect(result).toMatchObject({ pressure: 0.9, tilt: 0.7, twist: 270 });
   });
+
+  it("motion-direct에서는 flush가 빈 배열을 반환한다", () => {
+    const runtime = filter("motion-direct");
+    runtime.push(point(0, 0));
+    runtime.push(point(32, 16));
+    expect(runtime.flush(point(32, 16))).toEqual([]);
+  });
+
+  it.each([
+    "motion-adaptive-ema",
+    "motion-brush-inertia",
+    "motion-spring",
+    "motion-google-ink",
+    "motion-lazy-leash",
+  ])("%s 모드에서 flush 호출 시 포인터 해제 좌표까지 따라잡는 점들을 방출한다", (motionId) => {
+    const runtime = filter(motionId, 0.85);
+    runtime.push(point(0, 0));
+    const mid = runtime.push(point(48, 12));
+    expect(mid.x).toBeLessThan(48);
+
+    const catchUp = runtime.flush(point(48, 12));
+    expect(catchUp.length).toBeGreaterThan(0);
+    expect(catchUp.length).toBeLessThanOrEqual(17);
+    expect(catchUp[catchUp.length - 1]).toEqual(point(48, 12));
+    expect(runtime.flush(point(48, 12))).toEqual([]);
+  });
 });
 
 describe("estimateBrushStudioV6MotionResponseLength", () => {

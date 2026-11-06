@@ -108,8 +108,8 @@ export class CpuReferenceLane implements BrushEngineLane {
       surface.addDabs(pipeline.finish());
       cpu = surface.endStroke();
     } catch (error) {
-      // 획 마감이 실패하면 그 획은 버린다: 부분 누적된 획 타일을 비워 다음 획에 섞여 합성되지 않게 한다.
-      surface.stroke.clear();
+      // 획 마감이 실패하면 그 획은 버린다: 습식 저널·표면 체크포인트까지 되돌려 다음 획에 섞이지 않게 한다.
+      surface.abortStroke();
       throw error;
     } finally {
       // pipeline이 남으면 다음 beginStroke가 '이전 획이 endStroke되지 않았다'로 영구히 실패한다.

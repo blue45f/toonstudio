@@ -536,11 +536,11 @@ export class LiveStrokeSession {
   private async finishStroke(): Promise<void> {
     this.inStroke = false;
     this.strokeCount += 1;
-    // endStroke 안의 실패는 레인이 스스로 정리한다(획 타일 비우기·상태 리셋). 여기서부터는 레인을 유지한다.
-    this.laneMidStroke = false;
     const clock = this.opts.env.clock;
     const tEnd = clock.now();
+    // endStroke가 던지면(예: 꼬리 dab·GPU 예산 초과) 아직 획 도중이므로 handleFailure가 abortStroke/replaceLane으로 정리한다.
     const receipt = await this.lane.endStroke();
+    this.laneMidStroke = false;
     const tRead = clock.now();
     const image = await this.lane.readback();
     const linear = this.opts.skipLinear ? null : await this.lane.readbackLinear();

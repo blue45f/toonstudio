@@ -138,4 +138,30 @@ describe("끈 당김 단계(LazyBrushStage)", () => {
     tracker.push(0.9);
     expect(tracker.medianMs()).toBeCloseTo(0.5, 9);
   });
+
+  it("포인터가 멈춘 뒤 한참 뒤에 뗀 up이나 시각이 역행한 up에서도 마지막 방출 표본 시각은 단조 증가한다", () => {
+    const paused = createLazyBrushStage({ radiusPx: 20, catchUpMs: 20 });
+    const pausedOut = applyStrokeStream(paused, [
+      rawSample(0, 0, 0, "down"),
+      rawSample(50, 0, 10, "move"),
+      rawSample(50, 0, 500, "up"), // 따라잡기 구간(10 + 20ms)보다 훨씬 늦은 up
+    ]);
+    const lastPaused = pausedOut[pausedOut.length - 1];
+    expect(lastPaused?.phase).toBe("up");
+    expect(lastPaused?.tMs).toBeGreaterThanOrEqual(500);
+    for (let i = 1; i < pausedOut.length; i += 1) {
+      expect(pausedOut[i]?.tMs).toBeGreaterThanOrEqual(pausedOut[i - 1]?.tMs ?? 0);
+    }
+
+    const backward = createLazyBrushStage({ radiusPx: 20, catchUpMs: 20 });
+    const backwardOut = applyStrokeStream(backward, [
+      rawSample(0, 0, 100, "down"),
+      rawSample(50, 0, 120, "move"),
+      rawSample(50, 0, 80, "up"), // 역행 up
+    ]);
+    for (let i = 1; i < backwardOut.length; i += 1) {
+      expect(backwardOut[i]?.tMs).toBeGreaterThanOrEqual(backwardOut[i - 1]?.tMs ?? 0);
+    }
+  });
 });
+

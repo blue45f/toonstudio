@@ -267,4 +267,15 @@ describe("cpu-reference 레인: 빠른 획(프레임당 표본 1개, 큰 도약)
     await lane.endStroke();
     lane.dispose();
   });
+
+  it("paper.tooth 변경 시 종이 캐시가 무효화되어 그레인 브러시의 렌더링 결과가 달라진다", async () => {
+    const base = presetById("pencil-hb");
+    const progTooth0 = { ...base, paper: { ...base.paper, enabled: true, tooth: 0 } };
+    const progTooth1 = { ...base, paper: { ...base.paper, enabled: true, tooth: 0.9 } };
+    const fixture = buildFixture("line", { width: 64, height: 64 });
+    const run0 = await runFixture({ lane: new CpuReferenceLane(), env: fakeEnv(), fixture, program: progTooth0, seed: 1 });
+    const run1 = await runFixture({ lane: new CpuReferenceLane(), env: fakeEnv(), fixture, program: progTooth1, seed: 1 });
+    expect(pixelHash(run0.image)).not.toBe(pixelHash(run1.image));
+  });
 });
+

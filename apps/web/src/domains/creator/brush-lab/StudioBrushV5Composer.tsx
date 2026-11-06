@@ -44,6 +44,7 @@ import {
   type BrushStudioV5TiltTarget,
 } from "./brush-studio-v5-model";
 import { renderBrushStudioV5Preview } from "./brush-studio-v5-preview";
+import { downloadBrushStudioSource } from "./brush-studio-source-download";
 
 const CARD = "rounded-2xl border border-line bg-card/55 p-4 shadow-sm";
 const INPUT = `min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg ${STUDIO_FOCUS_RING}`;
@@ -118,14 +119,8 @@ function downloadJson(program: BrushStudioV5Draft): void {
     exportedAt: new Date().toISOString(),
     program,
   }, null, 2);
-  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `${program.name.replace(/[^a-z0-9가-힣_-]+/giu, "-") || "brush"}.brush-v5.json`;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 5_000);
+  const filename = `${program.name.replace(/[^a-z0-9가-힣_-]+/giu, "-") || "brush"}.brush-v5.json`;
+  downloadBrushStudioSource(text, filename);
 }
 
 function SectionCard({ title, description, children, defaultOpen = false }: {
@@ -167,7 +162,7 @@ function ChoiceGrid<Id extends string>({
             className={`min-h-[92px] rounded-xl border p-3 text-left transition-colors ${STUDIO_FOCUS_RING} ${
               active
                 ? "border-accent/60 bg-accent-soft text-fg"
-                : "border-line bg-bg-2/45 text-fg-2 hover:border-line-strong hover:bg-raised"
+                : "border-line bg-panel/45 text-fg-2 hover:border-line-strong hover:bg-raised"
             }`}
           >
             <span className="block text-sm font-bold">{option.label}</span>
@@ -203,7 +198,7 @@ function MultiChoiceGrid<Id extends string>({
             className={`min-h-[96px] rounded-xl border p-3 text-left transition-colors ${STUDIO_FOCUS_RING} ${
               active
                 ? "border-accent/60 bg-accent-soft text-fg"
-                : "border-line bg-bg-2/45 text-fg-2 hover:border-line-strong hover:bg-raised"
+                : "border-line bg-panel/45 text-fg-2 hover:border-line-strong hover:bg-raised"
             }`}
           >
             <span className="flex items-center justify-between gap-2">
@@ -223,7 +218,7 @@ function MultiChoiceGrid<Id extends string>({
 
 function ScoreCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-line bg-bg-2/55 p-3">
+    <div className="rounded-xl border border-line bg-panel/55 p-3">
       <div className="flex items-center justify-between gap-2 text-xs font-semibold text-fg-3">
         <span>{label}</span><span className="tabular-nums text-fg">{value}</span>
       </div>
@@ -245,7 +240,7 @@ function Slider({ label, value, minimum, maximum, step, display, onChange }: {
 }) {
   const inputId = `brush-v5-slider-${label.replace(/[^a-z0-9가-힣]+/giu, "-").toLowerCase()}`;
   return (
-    <div className="block rounded-xl border border-line bg-bg-2/45 p-3 text-xs font-semibold text-fg-2">
+    <div className="block rounded-xl border border-line bg-panel/45 p-3 text-xs font-semibold text-fg-2">
       <div className="flex items-center justify-between gap-3">
         <label htmlFor={inputId}>{label}</label>
         <span className="tabular-nums text-fg-3">{display ?? value.toFixed(2)}</span>
@@ -388,7 +383,7 @@ export function StudioBrushV5Composer({ scope }: { scope: string }) {
 
         <canvas ref={canvasRef} className="mt-4 h-[360px] w-full rounded-2xl border border-line bg-canvas" aria-label="현재 브러시 조합 미리보기" />
         <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="rounded-xl border border-line bg-bg-2/45 p-3 text-xs font-semibold text-fg-2">
+          <div className="rounded-xl border border-line bg-panel/45 p-3 text-xs font-semibold text-fg-2">
             <div className="flex items-center justify-between">
               <label htmlFor="brush-v5-settle-progress">물리 정착 시간</label>
               <span className="tabular-nums text-fg-3">{Math.round(settleProgress * 100)}%</span>
@@ -407,9 +402,9 @@ export function StudioBrushV5Composer({ scope }: { scope: string }) {
           </div>
           <div className="grid grid-cols-2 gap-2 text-[0.65rem] font-semibold">
             <span className={`rounded-xl border px-3 py-2 ${capabilities.webgpu ? "border-good/40 bg-good/5 text-good" : "border-warn/35 bg-warn/5 text-warn"}`}>WebGPU {capabilities.webgpu ? "지원" : "미지원"}</span>
-            <span className="rounded-xl border border-line bg-bg-2/45 px-3 py-2 text-fg-3">Raw {capabilities.pointerRawUpdate ? "지원" : "대체"}</span>
-            <span className="rounded-xl border border-line bg-bg-2/45 px-3 py-2 text-fg-3">Coalesced {capabilities.coalescedEvents ? "지원" : "대체"}</span>
-            <span className="rounded-xl border border-line bg-bg-2/45 px-3 py-2 text-fg-3">Prediction {capabilities.predictedEvents ? "지원" : "대체"}</span>
+            <span className="rounded-xl border border-line bg-panel/45 px-3 py-2 text-fg-3">Raw {capabilities.pointerRawUpdate ? "지원" : "대체"}</span>
+            <span className="rounded-xl border border-line bg-panel/45 px-3 py-2 text-fg-3">Coalesced {capabilities.coalescedEvents ? "지원" : "대체"}</span>
+            <span className="rounded-xl border border-line bg-panel/45 px-3 py-2 text-fg-3">Prediction {capabilities.predictedEvents ? "지원" : "대체"}</span>
           </div>
         </div>
       </section>
@@ -419,7 +414,7 @@ export function StudioBrushV5Composer({ scope }: { scope: string }) {
           <SectionCard title="시그니처 레시피" description="서로 다른 엔진과 물리 시스템을 실제로 구분되는 조합으로 시작합니다." defaultOpen>
             <div className="grid gap-2 md:grid-cols-2">
               {BRUSH_STUDIO_V5_RECIPES.map((recipe) => (
-                <button key={recipe.id} type="button" className={`rounded-xl border border-line bg-bg-2/45 p-3 text-left hover:border-accent/45 hover:bg-accent-soft/35 ${STUDIO_FOCUS_RING}`} onClick={() => replace(applyBrushStudioV5Recipe(draft, recipe.id), `"${recipe.name}" 레시피를 적용했습니다.`)}>
+                <button key={recipe.id} type="button" className={`rounded-xl border border-line bg-panel/45 p-3 text-left hover:border-accent/45 hover:bg-accent-soft/35 ${STUDIO_FOCUS_RING}`} onClick={() => replace(applyBrushStudioV5Recipe(draft, recipe.id), `"${recipe.name}" 레시피를 적용했습니다.`)}>
                   <span className="text-sm font-bold text-fg">{recipe.name}</span>
                   <span className="mt-1 block text-xs leading-relaxed text-fg-3">{recipe.description}</span>
                 </button>
@@ -468,7 +463,7 @@ export function StudioBrushV5Composer({ scope }: { scope: string }) {
               <label className="text-xs font-semibold text-fg-2">주 색상<input type="color" className="mt-2 h-11 w-full rounded-xl border border-line bg-card p-1" value={draft.primaryColor} onChange={(event) => patch("primaryColor", event.currentTarget.value)} /></label>
               <label className="text-xs font-semibold text-fg-2">보조 색상<input type="color" className="mt-2 h-11 w-full rounded-xl border border-line bg-card p-1" value={draft.secondaryColor} onChange={(event) => patch("secondaryColor", event.currentTarget.value)} /></label>
             </div>
-            <fieldset className="mt-4"><legend className="text-xs font-bold text-fg-2">품질</legend><div className="mt-2 grid grid-cols-3 gap-1">{(["draft", "balanced", "pro"] as const).map((quality) => <button key={quality} type="button" aria-pressed={draft.quality === quality} onClick={() => patch("quality", quality)} className={`min-h-10 rounded-lg border px-2 text-xs font-semibold ${STUDIO_FOCUS_RING} ${draft.quality === quality ? "border-accent bg-accent-soft text-fg" : "border-line bg-bg-2/45 text-fg-3"}`}>{quality}</button>)}</div></fieldset>
+            <fieldset className="mt-4"><legend className="text-xs font-bold text-fg-2">품질</legend><div className="mt-2 grid grid-cols-3 gap-1">{(["draft", "balanced", "pro"] as const).map((quality) => <button key={quality} type="button" aria-pressed={draft.quality === quality} onClick={() => patch("quality", quality)} className={`min-h-10 rounded-lg border px-2 text-xs font-semibold ${STUDIO_FOCUS_RING} ${draft.quality === quality ? "border-accent bg-accent-soft text-fg" : "border-line bg-panel/45 text-fg-3"}`}>{quality}</button>)}</div></fieldset>
           </section>
 
           <section className={CARD}>
@@ -504,12 +499,12 @@ export function StudioBrushV5Composer({ scope }: { scope: string }) {
               <ScoreCard label="개성" value={analysis.uniquenessScore} />
               <ScoreCard label="복잡도" value={analysis.complexityScore} />
             </div>
-            {analysis.issues.length ? <ul className="mt-3 space-y-2">{analysis.issues.map((issue) => <li key={issue.id} className={`rounded-xl border p-3 text-xs leading-relaxed ${issue.severity === "error" ? "border-warn/50 bg-warn/5 text-warn" : issue.severity === "warning" ? "border-line-strong bg-raised/55 text-fg-2" : "border-line bg-bg-2/45 text-fg-3"}`}><strong className="block text-fg">{issue.title}</strong>{issue.description}</li>)}</ul> : <p className="mt-3 rounded-xl border border-good/35 bg-good/5 p-3 text-xs font-semibold text-good">{t("studio.brushCanvasStatus.brushLab.v5NoBlockingIssues", "현재 조합에서 즉시 차단할 충돌이 없습니다.")}</p>}
+            {analysis.issues.length ? <ul className="mt-3 space-y-2">{analysis.issues.map((issue) => <li key={issue.id} className={`rounded-xl border p-3 text-xs leading-relaxed ${issue.severity === "error" ? "border-warn/50 bg-warn/5 text-warn" : issue.severity === "warning" ? "border-line-strong bg-raised/55 text-fg-2" : "border-line bg-panel/45 text-fg-3"}`}><strong className="block text-fg">{issue.title}</strong>{issue.description}</li>)}</ul> : <p className="mt-3 rounded-xl border border-good/35 bg-good/5 p-3 text-xs font-semibold text-good">{t("studio.brushCanvasStatus.brushLab.v5NoBlockingIssues", "현재 조합에서 즉시 차단할 충돌이 없습니다.")}</p>}
           </section>
 
           <section className={CARD}>
             <h2 className="text-base font-bold text-fg">실행 스택 · {analysis.selectedModuleCount} 모듈</h2>
-            <ol className="mt-3 space-y-1.5">{analysis.executionPlan.map((entry, index) => <li key={`${entry}-${index}`} className="flex gap-2 rounded-lg border border-line bg-bg-2/45 px-3 py-2 text-xs text-fg-2"><span className="font-bold tabular-nums text-accent">{String(index + 1).padStart(2, "0")}</span><span>{entry}</span></li>)}</ol>
+            <ol className="mt-3 space-y-1.5">{analysis.executionPlan.map((entry, index) => <li key={`${entry}-${index}`} className="flex gap-2 rounded-lg border border-line bg-panel/45 px-3 py-2 text-xs text-fg-2"><span className="font-bold tabular-nums text-accent">{String(index + 1).padStart(2, "0")}</span><span>{entry}</span></li>)}</ol>
           </section>
 
           <section className={CARD}>
@@ -518,10 +513,10 @@ export function StudioBrushV5Composer({ scope }: { scope: string }) {
             <div className="mt-3 grid gap-2"><button type="button" className={PRIMARY_BUTTON} disabled={!analysis.valid} onClick={saveToLibrary}>내 브러시에 저장</button><button type="button" className={BUTTON} onClick={duplicateProgram}>새 ID로 복제</button><button type="button" className={BUTTON} onClick={() => downloadJson(draft)}>JSON 내보내기</button><button type="button" className={BUTTON} onClick={() => importRef.current?.click()}>JSON 가져오기</button><button type="button" className={BUTTON} onClick={() => replace(createDefaultBrushStudioV5Draft(), "새 기본 브러시로 초기화했습니다.")}>새로 만들기</button></div>
             <input ref={importRef} type="file" accept="application/json,.json" className="sr-only" onChange={(event) => void importProgram(event)} />
             {importError ? <p role="alert" className="mt-2 text-xs text-warn">{importError}</p> : null}
-            <p className="mt-3 rounded-xl border border-line bg-bg-2/45 p-3 text-xs leading-relaxed text-fg-3" aria-live="polite">{message}</p>
+            <p className="mt-3 rounded-xl border border-line bg-panel/45 p-3 text-xs leading-relaxed text-fg-3" aria-live="polite">{message}</p>
           </section>
 
-          {library.length ? <section className={CARD}><h2 className="text-base font-bold text-fg">내 브러시 · {library.length}</h2><ul className="mt-3 space-y-2">{library.map((entry) => <li key={entry.id} className="rounded-xl border border-line bg-bg-2/45 p-3"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><strong className="block truncate text-sm text-fg">{entry.name}</strong><span className="mt-0.5 block text-[0.62rem] text-fg-3">{new Date(entry.updatedAt).toLocaleString()}</span></div><button type="button" className={`min-h-9 rounded-lg border border-line px-2 text-xs text-fg-3 hover:text-warn ${STUDIO_FOCUS_RING}`} onClick={() => deleteProgram(entry.id)}>삭제</button></div><button type="button" className={`${BUTTON} mt-2 w-full`} onClick={() => replace(entry.program, `"${entry.name}"을 불러왔습니다.`)}>불러오기</button></li>)}</ul></section> : null}
+          {library.length ? <section className={CARD}><h2 className="text-base font-bold text-fg">내 브러시 · {library.length}</h2><ul className="mt-3 space-y-2">{library.map((entry) => <li key={entry.id} className="rounded-xl border border-line bg-panel/45 p-3"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><strong className="block truncate text-sm text-fg">{entry.name}</strong><span className="mt-0.5 block text-[0.62rem] text-fg-3">{new Date(entry.updatedAt).toLocaleString()}</span></div><button type="button" className={`min-h-9 rounded-lg border border-line px-2 text-xs text-fg-3 hover:text-warn ${STUDIO_FOCUS_RING}`} onClick={() => deleteProgram(entry.id)}>삭제</button></div><button type="button" className={`${BUTTON} mt-2 w-full`} onClick={() => replace(entry.program, `"${entry.name}"을 불러왔습니다.`)}>불러오기</button></li>)}</ul></section> : null}
 
           <section className={CARD}>
             <h2 className="text-sm font-bold text-fg">현재 선택 요약</h2>

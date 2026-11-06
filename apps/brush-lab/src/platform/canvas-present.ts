@@ -37,19 +37,21 @@ export interface PreviewPoint {
 
 /**
  * 예측 표본 미리보기(scratch 레이어). 정본 레이어와 분리된 캔버스에 반투명 점·선으로 그린다.
- * `radiusPx`는 현재 브러시 반경(압력 1 기준).
+ * `radiusPx`는 현재 브러시 반경(압력 1 기준). `predicted`를 4번째 인자로 넘기면 배열 병합 할당 없이 이어서 그린다.
  */
 export function presentPreview(
   canvas: HTMLCanvasElement,
   points: readonly PreviewPoint[],
   radiusPx: number,
+  predicted?: readonly PreviewPoint[],
 ): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     throw new SumiError("canvas-2d-unavailable", "캔버스 2D 컨텍스트를 만들 수 없다");
   }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (points.length === 0) return;
+  const predLen = predicted ? predicted.length : 0;
+  if (points.length === 0 && predLen === 0) return;
   ctx.save();
   ctx.globalAlpha = 0.35;
   ctx.fillStyle = "#7c68ec";
@@ -58,6 +60,14 @@ export function presentPreview(
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     ctx.fill();
+  }
+  if (predicted) {
+    for (const p of predicted) {
+      const r = Math.max(0.75, radiusPx * Math.max(0.05, p.pressure));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   ctx.restore();
 }

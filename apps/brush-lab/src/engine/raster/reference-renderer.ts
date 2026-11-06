@@ -150,7 +150,7 @@ export function tipChainFor(kind: TipKind, seed: number, params: TipParams): Tip
 
 /** 종이 필드(프로세스 LRU 캐시, 결정적). */
 export function paperFor(spec: PaperSpec): PaperField {
-  const key = `${spec.seed}|${spec.roughness}|${spec.absorbency}`;
+  const key = `${spec.seed}|${spec.roughness}|${spec.absorbency}|${spec.tooth ?? 0}`;
   const hit = lruGet(paperCache, key);
   if (hit) return hit;
   const field = generatePaper(spec, PAPER_FIELD_SIZE);

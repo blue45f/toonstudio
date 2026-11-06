@@ -96,6 +96,7 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
   let device: GPUDevice | null = null;
   let runtime: SumiComputeRuntime | null = null;
   let pipeline: StrokePipeline | null = null;
+  let inStroke = false;
   let latency: readonly LatencyRecord[] = [];
   let disposed = false;
   let extraReasons: readonly LaneReasonCode[] = [];
@@ -194,11 +195,12 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
       rt.beginStroke(program, seed);
       const paper = program.paper.enabled ? paperFor(program.paper) : null;
       pipeline = new StrokePipeline(program, seed, undefined, paper, emitterOptions);
+      inStroke = true;
       latency = [];
     },
     addSamples(samples: readonly RawSample[]): DabBatchReceipt {
       const rt = requireRuntime();
-      if (!pipeline) throw new InvalidStateError("beginStroke 전에 addSamples를 호출했다");
+      if (!pipeline || !inStroke) throw new InvalidStateError("beginStroke 전에 addSamples를 호출했다");
       const t0 = env?.clock.now() ?? null;
       const batch = pipeline.push(samples);
       const receipt = rt.submitBatch(batch, binner ?? undefined);
@@ -213,12 +215,28 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
     },
     async endStroke(): Promise<StrokeReceipt> {
       const rt = requireRuntime();
-      if (!pipeline) throw new InvalidStateError("beginStroke 전에 endStroke를 호출했다");
-      const tail = pipeline.finish();
-      rt.submitBatch(tail, binner ?? undefined);
-      latency = pipeline.stats().latency;
-      pipeline = null;
-      const r = await rt.endStroke();
+      if (!pipeline || !inStroke) throw new InvalidStateError("beginStroke 전에 endStroke를 호출했다");
+      const currentPipeline = pipeline;
+      let r: Awaited<ReturnType<SumiComputeRuntime["endStroke"]>>;
+      try {
+        const tail = currentPipeline.finish();
+        rt.submitBatch(tail, binner ?? undefined);
+        latency = currentPipeline.stats().latency;
+        pipeline = null;
+        r = await rt.endStroke();
+        inStroke = false;
+      } catch (error) {
+        pipeline = null;
+        if (inStroke) {
+          inStroke = false;
+          try {
+            rt.abortStroke();
+          } catch {
+            // 장치가 이미 손실·해제된 경우 원래 오류를 우선한다.
+          }
+        }
+        throw error;
+      }
       const receipt: StrokeReceipt = {
         dabCount: r.dabCount,
         submitCount: r.submitCount,
@@ -245,6 +263,7 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
       if (!runtime) return noStrokeAbortReceipt();
       const result = runtime.abortStroke();
       pipeline = null;
+      inStroke = false;
       return abortReceipt(result.discardedDabs, result.documentPreserved, result.reasonKo);
     },
     /** 마지막 획의 입력 파이프라인 지연 기록(cpu-reference 레인과 같은 보조 API). */
@@ -265,6 +284,7 @@ export function createGpuComputeLane(variant: GpuComputeLaneVariant): WebgpuComp
       if (disposed) return;
       disposed = true;
       pipeline = null;
+      inStroke = false;
       runtime?.dispose();
       runtime = null;
       extraResource?.dispose();

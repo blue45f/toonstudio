@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { parseReport } from "../../bench/report/report-schema";
@@ -259,6 +259,69 @@ describe("CompareView", { timeout: 30_000 }, () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "그리기" }));
     expect((screen.getByLabelText("종이 질감 켜기") as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("캡처 JSON 불러오기: 5 MiB 초과 파일은 읽지 않고 거부하며, 캡처 출처일 때 캔버스 선택기를 잠그고 캡처 해상도로 표시한다", async () => {
+    const store = createLabStore({ tab: "compare", laneA: "cpu-reference", laneB: "canvas2d", canvasSize: 256 });
+    renderCompare(store);
+    const fileInput = screen.getByLabelText(/캡처 JSON 불러오기/u) as HTMLInputElement;
+    const textSpy = vi.fn(() => Promise.resolve("{}"));
+    const hugeFile = new File(["{}"], "huge.json", { type: "application/json" });
+    Object.defineProperty(hugeFile, "size", { value: 5 * 1024 * 1024 + 1 });
+    Object.defineProperty(hugeFile, "text", { value: textSpy });
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [hugeFile] } });
+    });
+    expect(textSpy).not.toHaveBeenCalled();
+    expect(store.get().errors.at(-1)?.code).toBe("captured-parse-error");
+    expect(store.get().errors.at(-1)?.message).toContain("5 MiB");
+
+    // 캡처 획이 설정되면 캔버스 크기 선택기가 비활성화되고 캔버스 표시 크기가 캡처 폭(512)을 따른다.
+    act(() => {
+      store.set({
+        fixtureSource: "captured",
+        captured: {
+          version: "1.0.0",
+          userAgent: "vitest",
+          pointerType: "pen",
+          width: 512,
+          height: 512,
+          capturedAt: "2026-10-01",
+          samples: [
+            { x: 10, y: 10, tMs: 0, pressure: 0.5, tiltXDeg: 0, tiltYDeg: 0, twistDeg: 0, pointerType: "pen", phase: "down", source: "raw" },
+            { x: 20, y: 20, tMs: 16, pressure: 0.5, tiltXDeg: 0, tiltYDeg: 0, twistDeg: 0, pointerType: "pen", phase: "up", source: "raw" },
+          ],
+        },
+      });
+    });
+    expect((screen.getByLabelText("캔버스") as HTMLSelectElement).disabled).toBe(true);
+    expect((screen.getByTestId("lab-preview-A") as HTMLCanvasElement).width).toBe(512);
+  });
+
+  it("리포트 탭에서 2번째 행을 고른 뒤 목록을 비우고 다시 리포트가 들어오면 첫 행이 선택된다", async () => {
+    const store = createLabStore({ tab: "compare", laneA: "cpu-reference", laneB: "canvas2d", canvasSize: 256 });
+    renderCompare(store);
+    await screen.findByText(/probe 4\/4/u);
+    fireEvent.click(screen.getByRole("button", { name: "A/B 실행" }));
+    await waitFor(() => expect(store.get().running).toBe(false), { timeout: 10_000 });
+    const savedReports = [...store.get().reports];
+    expect(savedReports).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("tab", { name: "리포트" }));
+    const reportTable = () => screen.getByRole("table", { name: "세션 리포트 목록" });
+    const viewButtons = within(reportTable()).getAllByRole("button", { name: "보기" });
+    fireEvent.click(viewButtons[1]!);
+    const rowsBefore = within(reportTable()).getAllByRole("row");
+    expect(rowsBefore[2]?.getAttribute("aria-selected")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "목록 비우기" }));
+    expect(store.get().reports).toHaveLength(0);
+
+    act(() => {
+      store.set({ reports: savedReports });
+    });
+    const rowsAfter = within(reportTable()).getAllByRole("row");
+    expect(rowsAfter[1]?.getAttribute("aria-selected")).toBe("true");
   });
 });
 

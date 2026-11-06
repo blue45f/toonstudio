@@ -132,6 +132,9 @@ describe("libmypaint 레인: 영수증·색", () => {
     expect(receipt.gpuTimeMs).toBeNull();
     expect(receipt.overflowDabs).toBe(0);
     expect(receipt.frameTimesMs).toHaveLength(frames + 1);
+    expect(receipt.mappedKo?.length).toBeGreaterThan(0);
+    expect(Array.isArray(receipt.approximatedKo)).toBe(true);
+    expect(Array.isArray(receipt.unmappedKo)).toBe(true);
     expect(lane.stats().strokes).toBe(1);
     expect(lane.stats().lastReceipt).toEqual(receipt);
     lane.dispose();

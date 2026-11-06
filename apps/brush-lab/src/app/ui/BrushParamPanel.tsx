@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { PRESET_CATALOG } from "../../engine/presets/catalog";
-import { TIP_KINDS } from "../../engine/presets/program-schema";
+import { brushConfigHashSync, TIP_KINDS } from "../../engine/presets/program-schema";
 import { SAMPLING_FILTERS } from "../../engine/texture/sampling";
 import { useLab, useLabSelector } from "../shell/lab-context";
 import { STABILIZER_BACKEND_LIMIT } from "../state/apply-overrides";
@@ -74,16 +74,32 @@ export interface BrushParamFieldsProps {
   idPrefix?: string;
   /** 숨길 숫자 슬라이더(다른 곳에서 편집하는 값). */
   hideKeys?: readonly NumericKey[];
+  /** 상위 패널이 이미 해석한 프로그램. 주어지면 자체 `resolveProgram` 대신 쓴다. */
+  resolvedProgram?: BrushProgram;
+  /** 하단 오버라이드 초기화 버튼과 configHash 푸터 표시 여부. 기본 true. */
+  showFooter?: boolean;
 }
 
 /**
  * 최소 브러시 파라미터 패널. 값은 프리셋 위에 오버라이드로 얹히고 `normalizeProgram`으로 재검증된다.
  * 범위 밖 값은 해시 대신 오류로 표시한다(무음 보정 없음).
  */
-export function BrushParamFields({ binding, idPrefix = "lab", hideKeys = [] }: BrushParamFieldsProps) {
+export function BrushParamFields({
+  binding,
+  idPrefix = "lab",
+  hideKeys = [],
+  resolvedProgram,
+  showFooter = true,
+}: BrushParamFieldsProps) {
   const { presetId, overrides, disabled: running, setPreset } = binding;
   const base = useMemo(() => resolveProgram({ presetId, overrides: {} }).program, [presetId]);
-  const resolved = useMemo(() => resolveProgram({ presetId, overrides }), [presetId, overrides]);
+  const resolved = useMemo(
+    () =>
+      resolvedProgram
+        ? { program: resolvedProgram, hash: brushConfigHashSync(resolvedProgram), error: null }
+        : resolveProgram({ presetId, overrides }),
+    [resolvedProgram, presetId, overrides],
+  );
   const set = (patch: LabOverrides): void => binding.setOverride(patch);
   const stabilizer = overrides.stabilizer;
   return (
@@ -198,15 +214,17 @@ export function BrushParamFields({ binding, idPrefix = "lab", hideKeys = [] }: B
         />
         Kubelka-Munk 혼색 베타
       </label>
-      <div className="lab-button-row">
-        <button type="button" className="lab-button" disabled={running} onClick={() => binding.resetOverrides()}>
-          오버라이드 초기화
-        </button>
-        <span className="lab-muted" data-testid={`${idPrefix}-config-hash`}>
-          configHash(fnv1a64):{" "}
-          {resolved.hash ? <span className="lab-mono">{resolved.hash}</span> : <span role="alert">{resolved.error}</span>}
-        </span>
-      </div>
+      {showFooter ? (
+        <div className="lab-button-row">
+          <button type="button" className="lab-button" disabled={running} onClick={() => binding.resetOverrides()}>
+            오버라이드 초기화
+          </button>
+          <span className="lab-muted" data-testid={`${idPrefix}-config-hash`}>
+            configHash(fnv1a64):{" "}
+            {resolved.hash ? <span className="lab-mono">{resolved.hash}</span> : <span role="alert">{resolved.error}</span>}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }

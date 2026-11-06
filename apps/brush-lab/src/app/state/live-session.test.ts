@@ -632,6 +632,60 @@ describe("LiveStrokeSession — 획 되돌리기(abortStroke) 경로", () => {
     s.session.dispose();
   });
 
+  it("endStroke가 던지면 laneMidStroke가 유지돼 abortStroke·replaceLane(복원 불가 시)·onStrokeAbort를 거친다", async () => {
+    // (1) 복원 가능한 레인: endStroke 실패 시 abortStroke 호출 후 레인 유지, onStrokeAbort(laneReplaced: false)
+    const restoreSession = await makeAbortSession({ abort: "restore" });
+    const restoreLane = restoreSession.lanes[0]!;
+    const origRestoreEnd = restoreLane.endStroke.bind(restoreLane);
+    let restoreFailed = false;
+    restoreLane.endStroke = async () => {
+      if (!restoreFailed) {
+        restoreFailed = true;
+        throw new Error("endStroke 꼬리 dab 예산 초과");
+      }
+      return origRestoreEnd();
+    };
+    await fullStroke(restoreSession, 1);
+    expect(restoreSession.errors).toHaveLength(1);
+    expect(String(restoreSession.errors[0])).toContain("endStroke 꼬리 dab 예산 초과");
+    expect(restoreLane.calls.filter((c) => c === "abortStroke")).toHaveLength(1);
+    expect(restoreSession.lanes).toHaveLength(1);
+    expect(restoreSession.aborts).toEqual([
+      {
+        cause: "error",
+        receipt: { discardedDabs: 2, documentPreserved: true },
+        laneReplaced: false,
+        strokeKo: "펜·표본 2개·8ms",
+        cancelSource: null,
+      },
+    ]);
+    await fullStroke(restoreSession, 100);
+    expect(restoreSession.results).toHaveLength(1);
+    restoreSession.session.dispose();
+
+    // (2) 복원 불가 레인(documentPreserved: false): endStroke 실패 시 abortStroke → replaceLane → onStrokeAbort(laneReplaced: true)
+    const lossySession = await makeAbortSession({ abort: "lossy" });
+    const lossyLane = lossySession.lanes[0]!;
+    lossyLane.endStroke = () => Promise.reject(new Error("endStroke GPU 예산 초과"));
+    await fullStroke(lossySession, 1);
+    expect(lossySession.errors).toHaveLength(1);
+    expect(String(lossySession.errors[0])).toContain("endStroke GPU 예산 초과");
+    expect(lossyLane.calls.slice(-2)).toEqual(["abortStroke", "dispose"]);
+    expect(lossySession.lanes).toHaveLength(2);
+    expect(lossySession.aborts).toEqual([
+      {
+        cause: "error",
+        receipt: expect.objectContaining({ documentPreserved: false }) as unknown,
+        laneReplaced: true,
+        strokeKo: "펜·표본 2개·8ms",
+        cancelSource: null,
+      },
+    ]);
+    await fullStroke(lossySession, 100);
+    expect(lossySession.results).toHaveLength(1);
+    lossySession.session.dispose();
+  });
+
   describe("포인터 취소(pointercancel)", () => {
     it("진행 중인 획을 합성하지 않고 abortStroke로 버린다: endStroke·onStrokeEnd·onError 없음, 레인 유지, 다음 획 정상", async () => {
       const s = await makeAbortSession();

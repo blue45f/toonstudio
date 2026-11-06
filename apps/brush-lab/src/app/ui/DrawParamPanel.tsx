@@ -120,6 +120,7 @@ export function DrawParamPanel() {
     () => resolveDrawProgram({ presetId, overrides, paperKind, stabilizerMode: mode, stabilizerPct: pct }),
     [presetId, overrides, paperKind, mode, pct],
   );
+  const program = resolved.program ?? undefined;
 
   const sizePx = overrides.sizePx ?? base?.tip.sizePx ?? 8;
   const opacity = overrides.opacity ?? base?.deposition.opacity ?? 1;
@@ -284,7 +285,13 @@ export function DrawParamPanel() {
       )}
       <details className="lab-draw-details">
         <summary>고급 파라미터(경도·간격·산포·팁·필터·베타)</summary>
-        <BrushParamFields binding={binding} idPrefix="draw" hideKeys={["sizePx", "opacity", "flow", "stabilizer"]} />
+        <BrushParamFields
+          binding={binding}
+          idPrefix="draw"
+          hideKeys={["sizePx", "opacity", "flow", "stabilizer"]}
+          resolvedProgram={program}
+          showFooter={false}
+        />
       </details>
       <div className="lab-button-row">
         <button

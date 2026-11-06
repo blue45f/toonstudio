@@ -129,8 +129,14 @@ export function compareBrushStudioV6Programs(
   };
   const before = flatten(reference);
   const after = flatten(current);
-  return Object.keys(before).filter((path) => before[path] !== after[path])
-    .map((path) => ({ path, before: before[path]!, after: after[path]! }));
+  const allPaths = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]));
+  return allPaths
+    .filter((path) => before[path] !== after[path])
+    .map((path) => ({
+      path,
+      before: before[path] ?? "(없음)",
+      after: after[path] ?? "(없음)",
+    }));
 }
 
 /** Refuse unrelated/future files before normalization can replace the user's work with defaults. */

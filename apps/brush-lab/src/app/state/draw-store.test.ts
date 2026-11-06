@@ -76,7 +76,29 @@ describe("drawStore", () => {
     a.setStabilizerPct(70);
     a.setCornerGate(false);
     a.setPaperKind("rough");
-    expect(store.get().overrides).toEqual({ sizePx: 20, opacity: 0.4 });
+    expect(store.get()).toMatchObject({
+      overrides: { sizePx: 20, opacity: 0.4 },
+      stabilizerMode: "lazy-brush",
+      stabilizerPct: 70,
+      cornerGate: false,
+      paperKind: "rough",
+    });
+
+    a.resetOverrides();
+    expect(store.get()).toMatchObject({
+      overrides: {},
+      paperKind: "preset",
+      stabilizerMode: "one-euro",
+      stabilizerPct: null,
+      cornerGate: true,
+      color: "#336699",
+    });
+
+    a.setOverride({ sizePx: 32 });
+    a.setStabilizerMode("pen-spring");
+    a.setStabilizerPct(55);
+    a.setCornerGate(false);
+    a.setPaperKind("watercolor");
     a.setPreset("charcoal");
     expect(store.get()).toMatchObject({
       presetId: "charcoal",

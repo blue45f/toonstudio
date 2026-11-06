@@ -7,6 +7,8 @@ import { messageOf } from "../state/run-compare";
 
 import type { ChangeEvent } from "react";
 
+const MAX_CAPTURED_FILE_BYTES = 5 * 1024 * 1024;
+
 function dateStamp(): string {
   return new Date().toISOString().slice(0, 10).replace(/-/g, "");
 }
@@ -30,6 +32,9 @@ export function FixturePicker() {
     const file = input.files?.[0];
     if (!file) return;
     try {
+      if (file.size > MAX_CAPTURED_FILE_BYTES) {
+        throw new Error(`파일 크기가 5 MiB 한도를 초과했다(${file.size}바이트 > ${MAX_CAPTURED_FILE_BYTES}바이트)`);
+      }
       const text = await file.text();
       const parsed = parseCapturedStroke(JSON.parse(text));
       actions.setCaptured(parsed);
@@ -84,7 +89,7 @@ export function FixturePicker() {
         <select
           id="lab-canvas-size"
           value={String(canvasSize)}
-          disabled={running}
+          disabled={running || fixtureSource === "captured"}
           onChange={(e) => actions.setCanvasSize(Number(e.target.value))}
         >
           {CANVAS_PRESET_IDS.map((id) => (

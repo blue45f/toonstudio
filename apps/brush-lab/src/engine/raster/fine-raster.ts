@@ -217,6 +217,7 @@ export function shadeDabPixel(
   px: number,
   py: number,
   out: DabPixelShade,
+  paperBump?: number,
 ): boolean {
   const dx = px - dab.x;
   const dy = py - dab.y;
@@ -244,7 +245,7 @@ export function shadeDabPixel(
   }
   let grain = 1;
   if (dab.grain > 0 && ctx.paper) {
-    const bump = samplePaper(ctx.paper, px, py, ctx.program.paper).bump;
+    const bump = paperBump !== undefined ? paperBump : samplePaper(ctx.paper, px, py, ctx.program.paper).bump;
     grain = f(1 - dab.grain * (1 - bump));
   }
   out.cov = cov;
@@ -354,6 +355,29 @@ export function rasterizeTile(
   const smudgeStrength = SMUDGE_STRENGTH;
   const smudgeColors = ctx.smudgeColors ?? (dabs.some((d) => d.smudge) ? computeSmudgeColors(dabs, ctx) : null);
   const shade: DabPixelShade = { cov: 0, mask: 1, grain: 1 };
+  let tilePaperBump: Float32Array | null = null;
+  if (ctx.paper) {
+    let needsPaperBump = false;
+    for (let k = 0; k < refs.length; k += 1) {
+      const dab = dabs[refs[k] ?? 0];
+      if (dab && !dab.impasto && dab.grain > 0) {
+        needsPaperBump = true;
+        break;
+      }
+    }
+    if (needsPaperBump) {
+      tilePaperBump = new Float32Array(TILE_PIXELS);
+      const paperField = ctx.paper;
+      const paperSpec = ctx.program.paper;
+      for (let ly = 0; ly < TILE_SIZE; ly += 1) {
+        const py = py0 + ly + 0.5;
+        const rowOffset = ly * TILE_SIZE;
+        for (let lx = 0; lx < TILE_SIZE; lx += 1) {
+          tilePaperBump[rowOffset + lx] = samplePaper(paperField, px0 + lx + 0.5, py, paperSpec).bump;
+        }
+      }
+    }
+  }
 
   for (let k = 0; k < refs.length; k += 1) {
     const dabIndex = refs[k] ?? 0;
@@ -387,11 +411,13 @@ export function rasterizeTile(
       const py = py0 + ly + 0.5;
       const dy = py - dab.y;
       if (dy > e || dy < -e) continue;
+      const rowOffset = ly * TILE_SIZE;
       for (let lx = 0; lx < TILE_SIZE; lx += 1) {
         const px = px0 + lx + 0.5;
         const dx = px - dab.x;
         if (dx > e || dx < -e) continue;
-        if (!shadeDabPixel(dab, prep, ctx, px, py, shade)) continue;
+        const paperBump = tilePaperBump ? tilePaperBump[rowOffset + lx] : undefined;
+        if (!shadeDabPixel(dab, prep, ctx, px, py, shade, paperBump)) continue;
         let cov = shade.cov;
         const m = shade.mask;
         const grainResp = shade.grain;

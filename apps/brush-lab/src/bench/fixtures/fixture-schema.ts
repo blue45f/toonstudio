@@ -60,11 +60,11 @@ export const capturedStrokeSchema = z.object({
   version: z.literal(LAB_SCHEMA_VERSION),
   userAgent: z.string(),
   pointerType: z.enum(POINTER_KINDS),
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
+  width: z.number().int().positive().max(2048),
+  height: z.number().int().positive().max(2048),
   /** YYYY-MM-DD 또는 ISO 일시. 없으면 null. */
   capturedAt: z.string().nullable().default(null),
-  samples: z.array(rawSampleSchema).min(2),
+  samples: z.array(rawSampleSchema).min(2).max(100_000),
 });
 export type CapturedStroke = z.infer<typeof capturedStrokeSchema>;
 

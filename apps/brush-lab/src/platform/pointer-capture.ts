@@ -253,6 +253,7 @@ export function attachPointerCapture(
     if (!isPointerEvent(ev)) return;
     if (ownerId === null || ev.pointerId !== ownerId) return;
     lastPressure = ev.pressure;
+    track(ev, pointerKindOf(ev.pointerType));
     onSamples([sampleFromPointerEvent(ev, "move", "raw", mapper)]);
   };
 

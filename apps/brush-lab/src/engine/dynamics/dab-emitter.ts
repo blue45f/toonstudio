@@ -219,13 +219,18 @@ export class DabEmitter {
   private emitTrail(x0: number, y0: number, x1: number, y1: number, fp: ContactFootprint, out: DabBatch): number {
     const prog = this.program;
     const spacing = Math.max(MIN_SPACING_PX, trailSpacingFor(prog, fp));
-    const segLen = Math.hypot(x1 - x0, y1 - y0);
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const segLen = Math.hypot(dx, dy);
     const nTrail = Math.floor(segLen / spacing);
+    if (nTrail <= 0 || segLen <= 0) return 0;
+    const dirX = dx / segLen;
+    const dirY = dy / segLen;
     let added = 0;
     for (let i = 1; i <= nTrail; i += 1) {
       const t = i / (nTrail + 1);
-      const tx = x0 + (x1 - x0) * t;
-      const ty = y0 + (y1 - y0) * t;
+      const tx = x0 + dx * t;
+      const ty = y0 + dy * t;
       // 트레일 끝(현재 지점)으로 갈수록 불투명도와 크기가 줄어든다.
       const fade = 1 - i / (nTrail + 1);
       const sample: ModeledSample = {
@@ -237,8 +242,8 @@ export class DabEmitter {
         velocity: 0,
         altitudeDeg: 90,
         azimuthDeg: 0,
-        dirX: x1 - x0,
-        dirY: y1 - y0,
+        dirX,
+        dirY,
         curvature: 0,
         phase: "move",
         source: "raw",
@@ -271,7 +276,7 @@ export class DabEmitter {
       const u = this.rng.nextF32();
       if (u < fp.breakup * prog.edge.dryBreakup) return 0;
     }
-    const progress = Math.min(1, pathPos / Math.max(1, this.pathLen + 1));
+    const progress = Math.min(1, pathPos / Math.max(1, Math.max(this.pathLen, pathPos) + 1));
     const sizeScale = evaluateMappingProduct(prog.strokeDynamics.size, sample, progress, this.rng);
     const flowScale = evaluateMappingProduct(prog.strokeDynamics.flow, sample, progress, this.rng);
     let taper = 1;

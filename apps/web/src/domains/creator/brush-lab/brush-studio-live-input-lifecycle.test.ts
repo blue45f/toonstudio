@@ -35,7 +35,11 @@ function fixture() {
   vi.stubGlobal("PointerEvent", PointerMock);
   vi.stubGlobal("devicePixelRatio", 1);
   const initial = createBrushStudioV6Program("clean-ink");
-  let program: BrushStudioV6Program = { ...initial, input: { ...initial.input, transport: "move-basic" } };
+  let program: BrushStudioV6Program = {
+    ...initial,
+    slots: { ...initial.slots, motion: "motion-direct" },
+    input: { ...initial.input, transport: "move-basic" },
+  };
   const telemetry = vi.fn();
   const controller = attachBrushStudioV6LivePreview(canvas, () => program, telemetry);
   cleanups.push(() => controller.destroy());

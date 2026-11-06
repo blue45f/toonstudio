@@ -251,6 +251,21 @@ describe("물리 펜 단계(PenSpringStage)", () => {
     expect(lagOf(100)).toBeGreaterThan(55);
     expect(lagOf(100)).toBeLessThan(65);
   });
+
+  it("표본 시각이나 up 시각이 역행해도 flush가 내보내는 마지막 up 시각은 단조 증가(>= 직전 방출 시각)한다", () => {
+    const stage = createPenSpringStage({ lagMs: 20 });
+    const out = applyStrokeStream(stage, [
+      rawSample(0, 0, 100, "down"),
+      rawSample(80, 0, 120, "move"),
+      rawSample(90, 0, 110, "move"), // 역행 move
+      rawSample(100, 0, 90, "up"), // 역행 up
+    ]);
+    const last = out[out.length - 1];
+    expect(last?.phase).toBe("up");
+    for (let i = 1; i < out.length; i += 1) {
+      expect(out[i]?.tMs).toBeGreaterThanOrEqual(out[i - 1]?.tMs ?? 0);
+    }
+  });
 });
 
 describe("R-A-5 안정 영역: 불안정 (지연, 감쇠비) 조합은 RangeError다", () => {

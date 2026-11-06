@@ -220,7 +220,7 @@ export function DrawView() {
           return;
         }
         const program = programRef.current;
-        presentPreview(canvas, [...trailRef.current, ...predicted], program ? program.tip.sizePx / 2 : 4);
+        presentPreview(canvas, trailRef.current, program ? program.tip.sizePx / 2 : 4, predicted);
       } catch (error) {
         drawActions.pushNotice(codeOf(error), `미리보기 표시 실패: ${messageOf(error)}`);
       }
