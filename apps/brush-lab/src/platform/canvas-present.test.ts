@@ -11,12 +11,14 @@ import {
   documentTileCount,
   fitDocumentSize,
   flattenOnWhite,
+  getPresentRollbackDiagnostics,
   MAX_DOCUMENT_SIDE_PX,
   MAX_DOCUMENT_TILES,
   MAX_LAB_IMAGE_BYTES,
   MAX_LAB_IMAGE_PIXELS,
   MAX_LAB_IMAGE_SIDE_PX,
   presentLabImage,
+  presentLabImageWithReceipt,
   presentPreview,
   validateLabImage,
 } from "./canvas-present";
@@ -63,6 +65,70 @@ describe("canvas-present", () => {
     expect(stub.lastImage?.width).toBe(8);
     expect(stub.lastImage?.data[0]).toBe(200);
     expect(stub.lastImage?.data.length).toBe(8 * 6 * 4);
+  });
+
+  it("presentLabImageWithReceipt는 동일 크기·교차 크기 메모리 예산과 원자성 영수증을 정확히 기록한다", () => {
+    stub = installCanvasStub();
+    const canvas = document.createElement("canvas");
+    canvas.width = 8;
+    canvas.height = 6;
+    const sameReceipt = presentLabImageWithReceipt(canvas, image(8, 6, 150));
+    expect(sameReceipt).toEqual({
+      committed: true,
+      crossSize: false,
+      prevWidth: 8,
+      prevHeight: 6,
+      width: 8,
+      height: 6,
+      snapshotCaptured: false,
+      snapshotBytes: 0,
+      stagedBytes: 192,
+      peakStagingBytes: 192,
+      atomicityStatus: "committed-same-size",
+    });
+    expect(stub.putImageDataCalls).toBe(1);
+    stub.restore();
+    stub = null;
+
+    let putCalls = 0;
+    const origGetContext = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, "getContext");
+    Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+      configurable: true,
+      writable: true,
+      value: () => ({
+        createImageData: (w: number, h: number) => ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }),
+        getImageData: (x: number, y: number, w: number, h: number) => ({
+          width: w - x,
+          height: h - y,
+          data: new Uint8ClampedArray(w * h * 4).fill(77),
+        }),
+        putImageData: (): void => {
+          putCalls += 1;
+        },
+      }),
+    });
+    try {
+      const crossCanvas = document.createElement("canvas");
+      crossCanvas.width = 4;
+      crossCanvas.height = 4;
+      const crossReceipt = presentLabImageWithReceipt(crossCanvas, image(8, 6, 200));
+      expect(crossReceipt).toEqual({
+        committed: true,
+        crossSize: true,
+        prevWidth: 4,
+        prevHeight: 4,
+        width: 8,
+        height: 6,
+        snapshotCaptured: true,
+        snapshotBytes: 64,
+        stagedBytes: 192,
+        peakStagingBytes: 256,
+        atomicityStatus: "committed-cross-size",
+      });
+      expect(putCalls).toBe(1);
+    } finally {
+      if (origGetContext) Object.defineProperty(HTMLCanvasElement.prototype, "getContext", origGetContext);
+    }
   });
 
   it("2D 컨텍스트가 없으면 SumiError(canvas-2d-unavailable)로 드러낸다(무음 대체 없음)", () => {
@@ -200,6 +266,7 @@ describe("LabImage 도메인 예산 및 입력 검증 계약", () => {
     expect(canvas.height).toBe(6);
     expect(stub.putImageDataCalls).toBe(1);
     expect(stub.lastImage?.data).toEqual(preservedRendered);
+    expect(getPresentRollbackDiagnostics(null)).toBeNull();
 
     // 2) getContext("2d") -> null 실패 시(다른 크기의 유효 이미지 16×14를 넘겨도) 캔버스 크기 8×6 보존
     stub.restore();
@@ -213,7 +280,7 @@ describe("LabImage 도메인 예산 및 입력 검증 계약", () => {
     expect(canvas.height).toBe(6);
     expect(validNextSize.data).toEqual(validNextSnap);
 
-    // 3) createImageData가 예외를 던져도 canvas.width/height 변경 전이므로 8×6 보존
+    // 3) createImageData가 예외를 던져도 canvas.width/height 변경 전이므로 8×6 보존 + preserved-pre-resize 진단
     const origGetContext = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, "getContext");
     Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
       configurable: true,
@@ -226,7 +293,29 @@ describe("LabImage 도메인 예산 및 입력 검증 계약", () => {
       }),
     });
     try {
-      expect(() => presentLabImage(canvas, validNextSize)).toThrow(/createImageData allocation failure/u);
+      let caughtStaging: unknown;
+      try {
+        presentLabImage(canvas, validNextSize);
+      } catch (err) {
+        caughtStaging = err;
+      }
+      expect(caughtStaging).toBeInstanceOf(Error);
+      expect((caughtStaging as Error).message).toMatch(/createImageData allocation failure/u);
+      expect(getPresentRollbackDiagnostics(caughtStaging)).toEqual({
+        committed: false,
+        crossSize: true,
+        prevWidth: 8,
+        prevHeight: 6,
+        targetWidth: 16,
+        targetHeight: 14,
+        snapshotCaptured: false,
+        snapshotBytes: 0,
+        stagedBytes: 0,
+        peakStagingBytes: 0,
+        dimensionsRestored: true,
+        pixelsRestored: true,
+        atomicityStatus: "preserved-pre-resize",
+      });
       expect(canvas.width).toBe(8);
       expect(canvas.height).toBe(6);
       expect(initial.data).toEqual(initialSnap);
@@ -246,9 +335,16 @@ describe("LabImage 도메인 예산 및 입력 검증 계약", () => {
     expect(stub.lastImage?.data[0]).toBe(231);
   });
 
-  it("putImageData 자체 예외 시 동일 크기에서는 기존 크기·픽셀이 유지되고, 교차 크기에서는 새 유효 치수로 갱신된 뒤 예외가 전파된다", () => {
-    const state: { shouldThrowPut: boolean; lastCommitted: LabImage | null } = {
-      shouldThrowPut: false,
+  it("putImageData 일시 실패 시 교차 크기에서도 스냅샷 롤백(restored-from-snapshot)으로 이전 크기·픽셀을 복원하고 재시도 시 복구한다", () => {
+    const state: {
+      throwNextTargetPut: boolean;
+      throwAllPut: boolean;
+      disableSnapshot: boolean;
+      lastCommitted: LabImage | null;
+    } = {
+      throwNextTargetPut: false,
+      throwAllPut: false,
+      disableSnapshot: false,
       lastCommitted: null,
     };
     const original = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, "getContext");
@@ -261,8 +357,20 @@ describe("LabImage 도메인 예산 및 입력 검증 계약", () => {
           height: h,
           data: new Uint8ClampedArray(w * h * 4),
         }),
+        getImageData: (x: number, y: number, w: number, h: number) => {
+          if (state.disableSnapshot) throw new Error("SecurityError: tainted canvas");
+          const src = state.lastCommitted;
+          if (!src || src.width !== w - x || src.height !== h - y) {
+            return { width: w - x, height: h - y, data: new Uint8ClampedArray((w - x) * (h - y) * 4) };
+          }
+          return { width: src.width, height: src.height, data: new Uint8ClampedArray(src.data) };
+        },
         putImageData: (img: LabImage): void => {
-          if (state.shouldThrowPut) throw new Error("putImageData failure");
+          if (state.throwAllPut) throw new Error("persistent putImageData failure");
+          if (state.throwNextTargetPut) {
+            state.throwNextTargetPut = false;
+            throw new Error("transient putImageData failure");
+          }
           state.lastCommitted = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
         },
       }),
@@ -274,17 +382,116 @@ describe("LabImage 도메인 예산 및 입력 검증 계약", () => {
       expect(canvas.height).toBe(4);
       expect(state.lastCommitted?.data[0]).toBe(111);
 
-      // 동일 크기(6×4)에서 putImageData 예외 -> 기존 커밋 픽셀과 크기 보존
-      state.shouldThrowPut = true;
-      expect(() => presentLabImage(canvas, image(6, 4, 222))).toThrow(/putImageData failure/u);
+      // 1) 동일 크기(6×4)에서 putImageData 예외 -> preserved-same-size
+      state.throwNextTargetPut = true;
+      let sameErr: unknown;
+      try {
+        presentLabImage(canvas, image(6, 4, 222));
+      } catch (err) {
+        sameErr = err;
+      }
+      expect(getPresentRollbackDiagnostics(sameErr)).toEqual({
+        committed: false,
+        crossSize: false,
+        prevWidth: 6,
+        prevHeight: 4,
+        targetWidth: 6,
+        targetHeight: 4,
+        snapshotCaptured: false,
+        snapshotBytes: 0,
+        stagedBytes: 96,
+        peakStagingBytes: 96,
+        dimensionsRestored: true,
+        pixelsRestored: true,
+        atomicityStatus: "preserved-same-size",
+      });
       expect(canvas.width).toBe(6);
       expect(canvas.height).toBe(4);
       expect(state.lastCommitted?.data[0]).toBe(111);
 
-      // 교차 크기(10×8)에서 putImageData 예외 -> 검증·ImageData 생성 후 canvas.width/height가 10×8로 갱신된 상태에서 예외 전파
-      expect(() => presentLabImage(canvas, image(10, 8, 222))).toThrow(/putImageData failure/u);
+      // 2) 교차 크기(6×4 -> 10×8) 일시적 putImageData 실패 -> 스냅샷으로 6×4 및 픽셀(111) 완전 복원
+      state.throwNextTargetPut = true;
+      let crossTransientErr: unknown;
+      try {
+        presentLabImage(canvas, image(10, 8, 222));
+      } catch (err) {
+        crossTransientErr = err;
+      }
+      expect((crossTransientErr as Error).message).toMatch(/transient putImageData failure/u);
+      expect(canvas.width).toBe(6);
+      expect(canvas.height).toBe(4);
+      expect(state.lastCommitted?.width).toBe(6);
+      expect(state.lastCommitted?.height).toBe(4);
+      expect(state.lastCommitted?.data[0]).toBe(111);
+      expect(getPresentRollbackDiagnostics(crossTransientErr)).toEqual({
+        committed: false,
+        crossSize: true,
+        prevWidth: 6,
+        prevHeight: 4,
+        targetWidth: 10,
+        targetHeight: 8,
+        snapshotCaptured: true,
+        snapshotBytes: 96,
+        stagedBytes: 320,
+        peakStagingBytes: 416,
+        dimensionsRestored: true,
+        pixelsRestored: true,
+        atomicityStatus: "restored-from-snapshot",
+      });
+
+      // 3) 일시 장애 해소 후 재호출(10×8) 시 즉시 복구 후 6×4로 재설정하여 잔여 경계 검증
+      presentLabImage(canvas, image(10, 8, 222));
       expect(canvas.width).toBe(10);
       expect(canvas.height).toBe(8);
+      expect(state.lastCommitted?.data[0]).toBe(222);
+      presentLabImage(canvas, image(6, 4, 111));
+
+      // 4) 잔여 비원자 경계 A: 커밋과 롤백 putImageData가 모두 영구 실패 -> dimensions-only-rollback-put-failed
+      state.throwAllPut = true;
+      let rollbackFailErr: unknown;
+      try {
+        presentLabImage(canvas, image(10, 8, 222));
+      } catch (err) {
+        rollbackFailErr = err;
+      }
+      expect(canvas.width).toBe(6);
+      expect(canvas.height).toBe(4);
+      expect(getPresentRollbackDiagnostics(rollbackFailErr)).toMatchObject({
+        committed: false,
+        crossSize: true,
+        prevWidth: 6,
+        prevHeight: 4,
+        targetWidth: 10,
+        targetHeight: 8,
+        snapshotCaptured: true,
+        dimensionsRestored: true,
+        pixelsRestored: false,
+        atomicityStatus: "dimensions-only-rollback-put-failed",
+      });
+
+      // 5) 잔여 비원자 경계 B: getImageData 스냅샷 불가(SecurityError 등) + 교차 크기 putImageData 실패 -> dimensions-only-snapshot-unavailable
+      state.disableSnapshot = true;
+      let noSnapErr: unknown;
+      try {
+        presentLabImage(canvas, image(10, 8, 222));
+      } catch (err) {
+        noSnapErr = err;
+      }
+      expect(canvas.width).toBe(6);
+      expect(canvas.height).toBe(4);
+      expect(getPresentRollbackDiagnostics(noSnapErr)).toMatchObject({
+        committed: false,
+        crossSize: true,
+        prevWidth: 6,
+        prevHeight: 4,
+        targetWidth: 10,
+        targetHeight: 8,
+        snapshotCaptured: false,
+        snapshotBytes: 0,
+        dimensionsRestored: true,
+        pixelsRestored: false,
+        atomicityStatus: "dimensions-only-snapshot-unavailable",
+      });
     } finally {
       if (original) Object.defineProperty(HTMLCanvasElement.prototype, "getContext", original);
     }

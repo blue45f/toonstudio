@@ -43,101 +43,200 @@ export interface ValidatedLabImageSpec {
  */
 export function validateLabImage(img: unknown): ValidatedLabImageSpec {
   if (!img || typeof img !== "object") {
-    throw new SumiError("lab-image-invalid", "LabImage 객체가 유효하지 않다", {
-      reason: "invalid-image-object",
-    });
+    throw new SumiError("lab-image-invalid", "LabImage 객체가 유효하지 않다", { reason: "invalid-image-object" });
   }
-  const candidate = img as Partial<Record<"width" | "height" | "data", unknown>>;
-  const { width, height, data } = candidate;
-  if (
-    typeof width !== "number" ||
-    typeof height !== "number" ||
-    !Number.isFinite(width) ||
-    !Number.isFinite(height) ||
-    !Number.isInteger(width) ||
-    !Number.isInteger(height)
-  ) {
-    throw new SumiError(
-      "lab-image-invalid",
-      `LabImage 크기는 유한한 정수여야 한다(${String(width)}×${String(height)})`,
-      { reason: "non-integer-dimensions", width, height },
-    );
+  const { width, height, data } = img as Partial<Record<"width" | "height" | "data", unknown>>;
+  if (typeof width !== "number" || typeof height !== "number" || !Number.isInteger(width) || !Number.isInteger(height)) {
+    throw new SumiError("lab-image-invalid", `LabImage 크기는 유한한 정수여야 한다(${String(width)}×${String(height)})`, { reason: "non-integer-dimensions", width, height });
   }
   if (width <= 0 || height <= 0) {
-    throw new SumiError(
-      "lab-image-invalid",
-      `LabImage 크기는 1 이상이어야 한다(${width}×${height})`,
-      { reason: "non-positive-dimensions", width, height },
-    );
+    throw new SumiError("lab-image-invalid", `LabImage 크기는 1 이상이어야 한다(${width}×${height})`, { reason: "non-positive-dimensions", width, height });
   }
   const pixels = width * height;
   const expectedByteLength = pixels * 4;
-  if (
-    width > MAX_LAB_IMAGE_SIDE_PX ||
-    height > MAX_LAB_IMAGE_SIDE_PX ||
-    !Number.isSafeInteger(pixels) ||
-    pixels > MAX_LAB_IMAGE_PIXELS ||
-    !Number.isSafeInteger(expectedByteLength) ||
-    expectedByteLength > MAX_LAB_IMAGE_BYTES
-  ) {
+  if (width > MAX_LAB_IMAGE_SIDE_PX || height > MAX_LAB_IMAGE_SIDE_PX || !Number.isSafeInteger(pixels) || pixels > MAX_LAB_IMAGE_PIXELS || !Number.isSafeInteger(expectedByteLength) || expectedByteLength > MAX_LAB_IMAGE_BYTES) {
     throw new SumiError(
       "lab-image-invalid",
       `LabImage 크기(${width}×${height})가 지원 한도(${MAX_LAB_IMAGE_SIDE_PX}×${MAX_LAB_IMAGE_SIDE_PX}, ${MAX_LAB_IMAGE_BYTES}B)를 초과한다`,
-      {
-        reason: "dimensions-exceed-budget",
-        width,
-        height,
-        maxSidePx: MAX_LAB_IMAGE_SIDE_PX,
-        maxPixels: MAX_LAB_IMAGE_PIXELS,
-        maxBytes: MAX_LAB_IMAGE_BYTES,
-      },
+      { reason: "dimensions-exceed-budget", width, height, maxSidePx: MAX_LAB_IMAGE_SIDE_PX, maxPixels: MAX_LAB_IMAGE_PIXELS, maxBytes: MAX_LAB_IMAGE_BYTES },
     );
   }
   if (!(data instanceof Uint8ClampedArray)) {
-    throw new SumiError("lab-image-invalid", "LabImage.data는 Uint8ClampedArray여야 한다", {
-      reason: "invalid-buffer-type",
-    });
+    throw new SumiError("lab-image-invalid", "LabImage.data는 Uint8ClampedArray여야 한다", { reason: "invalid-buffer-type" });
   }
   if (data.length !== expectedByteLength) {
     throw new SumiError(
       "lab-image-invalid",
       `LabImage.data 길이(${data.length})가 ${width}×${height}×4(${expectedByteLength})와 일치하지 않는다`,
-      {
-        reason: "buffer-length-mismatch",
-        width,
-        height,
-        actualLength: data.length,
-        expectedLength: expectedByteLength,
-      },
+      { reason: "buffer-length-mismatch", width, height, actualLength: data.length, expectedLength: expectedByteLength },
     );
   }
   return { width, height, pixels, expectedByteLength, data };
 }
 
+export type PresentAtomicityStatus =
+  | "committed-same-size"
+  | "committed-cross-size"
+  | "preserved-pre-resize"
+  | "preserved-same-size"
+  | "restored-from-snapshot"
+  | "dimensions-only-snapshot-unavailable"
+  | "dimensions-only-rollback-put-failed";
+
+export interface PresentCommitReceipt {
+  readonly committed: true;
+  readonly crossSize: boolean;
+  readonly prevWidth: number;
+  readonly prevHeight: number;
+  readonly width: number;
+  readonly height: number;
+  readonly snapshotCaptured: boolean;
+  readonly snapshotBytes: number;
+  readonly stagedBytes: number;
+  readonly peakStagingBytes: number;
+  readonly atomicityStatus: "committed-same-size" | "committed-cross-size";
+}
+
+export interface PresentRollbackDiagnostics {
+  readonly committed: false;
+  readonly crossSize: boolean;
+  readonly prevWidth: number;
+  readonly prevHeight: number;
+  readonly targetWidth: number;
+  readonly targetHeight: number;
+  readonly snapshotCaptured: boolean;
+  readonly snapshotBytes: number;
+  readonly stagedBytes: number;
+  readonly peakStagingBytes: number;
+  readonly dimensionsRestored: boolean;
+  readonly pixelsRestored: boolean;
+  readonly atomicityStatus: Exclude<PresentAtomicityStatus, "committed-same-size" | "committed-cross-size">;
+}
+
+function attachPresentRollback(error: unknown, diagnostics: PresentRollbackDiagnostics): void {
+  if (error && typeof error === "object") (error as { presentRollback?: PresentRollbackDiagnostics }).presentRollback = diagnostics;
+}
+
+/** `presentLabImage`·`presentLabImageWithReceipt` 예외에 첨부된 롤백·원자성 진단을 읽는다. */
+export function getPresentRollbackDiagnostics(error: unknown): PresentRollbackDiagnostics | null {
+  if (!error || typeof error !== "object") return null;
+  return (error as { presentRollback?: PresentRollbackDiagnostics }).presentRollback ?? null;
+}
+
 /**
- * 검증된 `LabImage`를 2D 캔버스에 표시한다.
- * 입력 검증·2D 컨텍스트 확보·`ImageData` 생성을 모두 마친 뒤에만 `canvas.width`/`height`를 갱신하여,
- * 실패 시 기존 캔버스 크기와 픽셀을 파괴하지 않는다.
+ * 검증된 `LabImage`를 오프스크린 `ImageData`에 스테이징한 뒤 2D 캔버스에 커밋하고 영수증을 돌려준다.
+ * 교차 크기(`crossSize === true`)일 때만 리사이즈 전 기존 캔버스 스냅샷을 캡처해,
+ * `putImageData` 실패 시 치수·픽셀 롤백을 시도하고 복구 불능 경계를 진단으로 남긴다.
  */
-export function presentLabImage(canvas: HTMLCanvasElement, img: LabImage): void {
+export function presentLabImageWithReceipt(canvas: HTMLCanvasElement, img: LabImage): PresentCommitReceipt {
   const spec = validateLabImage(img);
   const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new SumiError("canvas-2d-unavailable", "캔버스 2D 컨텍스트를 만들 수 없다");
+  if (!ctx) throw new SumiError("canvas-2d-unavailable", "캔버스 2D 컨텍스트를 만들 수 없다");
+  const prevWidth = canvas.width;
+  const prevHeight = canvas.height;
+  const crossSize = prevWidth !== spec.width || prevHeight !== spec.height;
+  const baseDiag = { committed: false as const, crossSize, prevWidth, prevHeight, targetWidth: spec.width, targetHeight: spec.height };
+
+  let stagedImageData: ImageData;
+  try {
+    stagedImageData = ctx.createImageData(spec.width, spec.height);
+    stagedImageData.data.set(spec.data);
+  } catch (stagingError) {
+    attachPresentRollback(stagingError, {
+      ...baseDiag,
+      snapshotCaptured: false,
+      snapshotBytes: 0,
+      stagedBytes: 0,
+      peakStagingBytes: 0,
+      dimensionsRestored: canvas.width === prevWidth && canvas.height === prevHeight,
+      pixelsRestored: true,
+      atomicityStatus: "preserved-pre-resize",
+    });
+    throw stagingError;
   }
-  const imageData = ctx.createImageData(spec.width, spec.height);
-  imageData.data.set(spec.data);
-  if (canvas.width !== spec.width) canvas.width = spec.width;
-  if (canvas.height !== spec.height) canvas.height = spec.height;
-  ctx.putImageData(imageData, 0, 0);
+
+  let prevSnapshot: ImageData | null = null;
+  let snapshotBytes = 0;
+  const canReadPrev =
+    crossSize &&
+    prevWidth >= 1 &&
+    prevHeight >= 1 &&
+    prevWidth <= MAX_LAB_IMAGE_SIDE_PX &&
+    prevHeight <= MAX_LAB_IMAGE_SIDE_PX &&
+    prevWidth * prevHeight <= MAX_LAB_IMAGE_PIXELS &&
+    typeof (ctx as Partial<CanvasRenderingContext2D>).getImageData === "function";
+  if (canReadPrev) {
+    try {
+      const snap = ctx.getImageData(0, 0, prevWidth, prevHeight);
+      if (snap && snap.width === prevWidth && snap.height === prevHeight && snap.data instanceof Uint8ClampedArray && snap.data.byteLength === prevWidth * prevHeight * 4) {
+        prevSnapshot = snap;
+        snapshotBytes = snap.data.byteLength;
+      }
+    } catch {
+      prevSnapshot = null;
+    }
+  }
+
+  const stagedBytes = spec.expectedByteLength;
+  const peakStagingBytes = snapshotBytes + stagedBytes;
+  const budgetStats = { snapshotCaptured: prevSnapshot !== null, snapshotBytes, stagedBytes, peakStagingBytes };
+  if (crossSize) {
+    if (canvas.width !== spec.width) canvas.width = spec.width;
+    if (canvas.height !== spec.height) canvas.height = spec.height;
+  }
+
+  try {
+    ctx.putImageData(stagedImageData, 0, 0);
+  } catch (commitError) {
+    const commitDiag = { ...baseDiag, ...budgetStats };
+    if (!crossSize) {
+      attachPresentRollback(commitError, {
+        ...commitDiag,
+        dimensionsRestored: canvas.width === prevWidth && canvas.height === prevHeight,
+        pixelsRestored: true,
+        atomicityStatus: "preserved-same-size",
+      });
+      throw commitError;
+    }
+    if (canvas.width !== prevWidth) canvas.width = prevWidth;
+    if (canvas.height !== prevHeight) canvas.height = prevHeight;
+    const dimensionsRestored = canvas.width === prevWidth && canvas.height === prevHeight;
+    let pixelsRestored = false;
+    let atomicityStatus: PresentRollbackDiagnostics["atomicityStatus"] = "dimensions-only-snapshot-unavailable";
+    if (prevSnapshot !== null) {
+      try {
+        ctx.putImageData(prevSnapshot, 0, 0);
+        pixelsRestored = true;
+        atomicityStatus = "restored-from-snapshot";
+      } catch {
+        atomicityStatus = "dimensions-only-rollback-put-failed";
+      }
+    }
+    attachPresentRollback(commitError, { ...commitDiag, dimensionsRestored, pixelsRestored, atomicityStatus });
+    throw commitError;
+  }
+
+  return {
+    committed: true,
+    crossSize,
+    prevWidth,
+    prevHeight,
+    width: spec.width,
+    height: spec.height,
+    ...budgetStats,
+    atomicityStatus: crossSize ? "committed-cross-size" : "committed-same-size",
+  };
+}
+
+/** 검증된 `LabImage`를 2D 캔버스에 표시한다. 교차 크기 실패 시 스냅샷 롤백으로 기존 캔버스 크기와 픽셀을 복원한다. */
+export function presentLabImage(canvas: HTMLCanvasElement, img: LabImage): void {
+  presentLabImageWithReceipt(canvas, img);
 }
 
 /** 캔버스를 비운다. */
 export function clearCanvas(canvas: HTMLCanvasElement): void {
   const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new SumiError("canvas-2d-unavailable", "캔버스 2D 컨텍스트를 만들 수 없다");
-  }
+  if (!ctx) throw new SumiError("canvas-2d-unavailable", "캔버스 2D 컨텍스트를 만들 수 없다");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -158,9 +257,7 @@ export function presentPreview(
   predicted?: readonly PreviewPoint[],
 ): void {
   const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new SumiError("canvas-2d-unavailable", "캔버스 2D 컨텍스트를 만들 수 없다");
-  }
+  if (!ctx) throw new SumiError("canvas-2d-unavailable", "캔버스 2D 컨텍스트를 만들 수 없다");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const predLen = predicted ? predicted.length : 0;
   if (points.length === 0 && predLen === 0) return;
@@ -168,16 +265,14 @@ export function presentPreview(
   ctx.globalAlpha = 0.35;
   ctx.fillStyle = "#7c68ec";
   for (const p of points) {
-    const r = Math.max(0.75, radiusPx * Math.max(0.05, p.pressure));
     ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, Math.max(0.75, radiusPx * Math.max(0.05, p.pressure)), 0, Math.PI * 2);
     ctx.fill();
   }
   if (predicted) {
     for (const p of predicted) {
-      const r = Math.max(0.75, radiusPx * Math.max(0.05, p.pressure));
       ctx.beginPath();
-      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, Math.max(0.75, radiusPx * Math.max(0.05, p.pressure)), 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -199,9 +294,7 @@ export function configureWebGpuCanvas(
   format: GPUTextureFormat,
 ): GPUCanvasContext {
   const ctx = canvas.getContext("webgpu");
-  if (!ctx) {
-    throw new SumiError("webgpu-canvas-unavailable", "WebGPU 캔버스 컨텍스트를 만들 수 없다");
-  }
+  if (!ctx) throw new SumiError("webgpu-canvas-unavailable", "WebGPU 캔버스 컨텍스트를 만들 수 없다");
   if (!isGpuCanvasContext(ctx)) {
     throw new SumiError(
       "webgpu-canvas-unavailable",
