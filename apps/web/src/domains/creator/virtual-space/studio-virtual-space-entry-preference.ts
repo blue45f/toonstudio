@@ -1,7 +1,9 @@
 import { STUDIO_CHARACTER_SKINS } from "./studio-virtual-space-character-skins";
+import { STUDIO_VIRTUAL_SPACE_AUTO_AVATAR } from "./studio-virtual-space-model";
 
 export const STUDIO_VIRTUAL_SPACE_AVATAR_STORAGE_KEY = "toonspectrum:virtual-space-avatar:v1";
 export const STUDIO_VIRTUAL_SPACE_ENTRY_STORAGE_KEY = "toonspectrum:virtual-space-entry:v2";
+export const STUDIO_VIRTUAL_SPACE_NICKNAME_STORAGE_KEY = "toonspectrum:virtual-space-nickname:v1";
 export const STUDIO_VIRTUAL_SPACE_TOUR_STORAGE_KEY = "toonspectrum:virtual-space-tour:v1";
 export const STUDIO_VIRTUAL_SPACE_NICKNAME_MAX_GRAPHEMES = 16;
 export const STUDIO_VIRTUAL_SPACE_NICKNAME_MIN_GRAPHEMES = 2;
@@ -47,31 +49,43 @@ export function validStudioVirtualSpaceAvatarIndex(value: unknown): value is num
     && Number(value) < STUDIO_CHARACTER_SKINS.length;
 }
 
+export function validStudioVirtualSpaceStoredAvatarIndex(value: unknown): value is number {
+  return value === STUDIO_VIRTUAL_SPACE_AUTO_AVATAR || validStudioVirtualSpaceAvatarIndex(value);
+}
+
 export function readStudioVirtualSpaceEntryPreference(): StudioVirtualSpaceEntryPreference {
   if (typeof window === "undefined") {
-    return { avatarIndex: -1, confirmed: false, nickname: "" };
+    return { avatarIndex: STUDIO_VIRTUAL_SPACE_AUTO_AVATAR, confirmed: false, nickname: "" };
   }
   try {
+    const fallbackNickname = normalizeStudioVirtualSpaceNickname(
+      window.localStorage.getItem(STUDIO_VIRTUAL_SPACE_NICKNAME_STORAGE_KEY),
+    ) ?? "";
     const saved = window.localStorage.getItem(STUDIO_VIRTUAL_SPACE_ENTRY_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved) as Record<string, unknown>;
-      if (parsed.version === 2 && parsed.confirmed === true && validStudioVirtualSpaceAvatarIndex(parsed.avatarIndex)) {
+      if (parsed.version === 2 && parsed.confirmed === true && validStudioVirtualSpaceStoredAvatarIndex(parsed.avatarIndex)) {
         return {
           avatarIndex: Number(parsed.avatarIndex),
           confirmed: true,
-          nickname: normalizeStudioVirtualSpaceNickname(parsed.nickname) ?? "",
+          nickname: normalizeStudioVirtualSpaceNickname(parsed.nickname) ?? fallbackNickname,
         };
       }
     }
     const legacy = window.localStorage.getItem(STUDIO_VIRTUAL_SPACE_AVATAR_STORAGE_KEY);
-    if (legacy !== null) {
+    if (legacy !== null && legacy.trim() !== "") {
       const avatarIndex = Number(legacy);
-      if (validStudioVirtualSpaceAvatarIndex(avatarIndex)) return { avatarIndex, confirmed: true, nickname: "" };
+      if (validStudioVirtualSpaceStoredAvatarIndex(avatarIndex)) {
+        return { avatarIndex, confirmed: true, nickname: fallbackNickname };
+      }
+    }
+    if (fallbackNickname) {
+      return { avatarIndex: STUDIO_VIRTUAL_SPACE_AUTO_AVATAR, confirmed: false, nickname: fallbackNickname };
     }
   } catch {
     // Private browsing or storage denial leaves the character unconfirmed.
   }
-  return { avatarIndex: -1, confirmed: false, nickname: "" };
+  return { avatarIndex: STUDIO_VIRTUAL_SPACE_AUTO_AVATAR, confirmed: false, nickname: "" };
 }
 
 export function readStudioVirtualSpaceAvatarIndex(): number {
@@ -79,7 +93,7 @@ export function readStudioVirtualSpaceAvatarIndex(): number {
 }
 
 export function writeStudioVirtualSpaceEntryPreference(avatarIndex: number, nickname?: string): boolean {
-  if (!validStudioVirtualSpaceAvatarIndex(avatarIndex) || typeof window === "undefined") return false;
+  if (!validStudioVirtualSpaceStoredAvatarIndex(avatarIndex) || typeof window === "undefined") return false;
   const current = readStudioVirtualSpaceEntryPreference();
   const resolvedNickname = nickname === undefined
     ? normalizeStudioVirtualSpaceNickname(current.nickname)
@@ -93,14 +107,17 @@ export function writeStudioVirtualSpaceEntryPreference(avatarIndex: number, nick
       ...(resolvedNickname ? { nickname: resolvedNickname } : {}),
     }));
     window.localStorage.setItem(STUDIO_VIRTUAL_SPACE_AVATAR_STORAGE_KEY, String(avatarIndex));
+    if (resolvedNickname) {
+      window.localStorage.setItem(STUDIO_VIRTUAL_SPACE_NICKNAME_STORAGE_KEY, resolvedNickname);
+    }
     return true;
   } catch {
     return false;
   }
 }
 
-export function writeStudioVirtualSpaceAvatarIndex(avatarIndex: number): void {
-  void writeStudioVirtualSpaceEntryPreference(avatarIndex);
+export function writeStudioVirtualSpaceAvatarIndex(avatarIndex: number): boolean {
+  return writeStudioVirtualSpaceEntryPreference(avatarIndex);
 }
 
 /** 첫 방문 3단계 미니 투어를 이미 봤는지(또는 다시 보지 않기로 했는지). */

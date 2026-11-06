@@ -36,18 +36,37 @@ export function projectStudioThreeOverlays(input: StudioThreeOverlayProjection):
     const sx = (vector.x * 0.5 + 0.5) * width, sy = (-vector.y * 0.5 + 0.5) * height;
     return { x: sx, y: sy, visible: sx >= -60 && sx <= width + 60 && sy >= -40 && sy <= height + 40 };
   };
+  const nowWall = Date.now();
   const selfHead = projectPoint(selfNode.group.position.x, 2.04, selfNode.group.position.z);
   if (selfHead.visible) {
-    const badge = formatParticipantOverlayBadge(snapshot.self, isEn, "3D 아바타", "3D Avatar");
+    const selfChatText = snapshot.selfChatBubble && snapshot.selfChatBubble.expiresAt > nowWall
+      ? snapshot.selfChatBubble.text
+      : null;
+    const selfReactionId = snapshot.selfReaction ?? (selfNode.emoteId ?? null);
+    const badge = formatParticipantOverlayBadge(snapshot.self, isEn, "3D 아바타", "3D Avatar", {
+      chatBubbleText: selfChatText,
+      reactionId: selfReactionId,
+      chatTyping: Boolean(snapshot.self.typing),
+    });
     projected.push({ id: "self", label: selfLabel, sublabel: badge.sublabel, kind: "self", x: selfHead.x, y: selfHead.y, accent: badge.accent });
   }
   for (const peer of snapshot.peers) {
-    const node = actorNodes.get(`peer:${peer.participant.sessionId}`);
+    const sessionId = peer.participant.sessionId;
+    const node = actorNodes.get(`peer:${sessionId}`);
     if (!node) continue;
     const head = projectPoint(node.group.position.x, 2.04, node.group.position.z);
     if (head.visible) {
-      const badge = formatParticipantOverlayBadge(peer.state, isEn, "동료", "Peer");
-      projected.push({ id: `peer:${peer.participant.sessionId}`, label: peer.participant.displayName, sublabel: badge.sublabel, kind: "peer", x: head.x, y: head.y, accent: badge.accent });
+      const peerChatText = snapshot.chatBubbles?.find((b) => b.sessionId === sessionId && b.expiresAt > nowWall)?.text ?? null;
+      const peerReactionId = snapshot.peerReactions?.find((r) => r.sessionId === sessionId && r.expiresAt > nowWall)?.reaction ?? (node.emoteId ?? null);
+      const peerTyping = Boolean(
+        peer.state.typing || snapshot.peerTyping?.some((t) => t.sessionId === sessionId && t.expiresAt > nowWall),
+      );
+      const badge = formatParticipantOverlayBadge(peer.state, isEn, "동료", "Peer", {
+        chatBubbleText: peerChatText,
+        reactionId: peerReactionId,
+        chatTyping: peerTyping,
+      });
+      projected.push({ id: `peer:${sessionId}`, label: peer.participant.displayName, sublabel: badge.sublabel, kind: "peer", x: head.x, y: head.y, accent: badge.accent });
     }
   }
   for (const npc of manifest.npcs ?? []) {

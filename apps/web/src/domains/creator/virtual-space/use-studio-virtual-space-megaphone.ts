@@ -64,15 +64,22 @@ export function useStudioVirtualSpaceMegaphone(
         session.fail("메가폰 방송 권한이 없습니다. / No megaphone permission.");
         return;
       }
-      if (options.shareScreen === true && media) {
+      if (options.shareScreen === true) {
+        if (!media) {
+          session.fail("screen-share-failed");
+          return;
+        }
         try {
           await media.startScreenShare({ scope: "broadcast", bandwidth: options.bandwidth ?? "balanced" });
         } catch (error) {
-          session.fail(error instanceof Error ? error.message : "screen share failed");
+          const message = error instanceof Error && error.message && error.message !== "screen-share-unavailable"
+            ? error.message
+            : "screen-share-failed";
+          session.fail(message);
           return;
         }
       }
-      session.start({ scope, broadcasterName, shareScreen: options.shareScreen === true && media != null });
+      session.start({ scope, broadcasterName, shareScreen: options.shareScreen === true });
     },
     stop: () => {
       if (session.getSnapshot().sharingScreen) {

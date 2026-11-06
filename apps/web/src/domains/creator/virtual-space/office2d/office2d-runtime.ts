@@ -32,9 +32,10 @@ import {
   type StudioWorldPortalDefinition,
 } from "../studio-virtual-space-world-manifest";
 import { studioVirtualWorldPresentation } from "../studio-virtual-space-world-presentation";
-import { advanceOffice2dActor, createOffice2dActor, office2dEmoteGlyph, type Office2dActor } from "./office2d-actors";
+import { advanceOffice2dActor, createOffice2dActor, type Office2dActor } from "./office2d-actors";
 import { Office2dCamera, office2dBaseZoom } from "./office2d-camera";
 import { Office2dCoworkerCrowd } from "./office2d-coworkers";
+import { applyOffice2dActorEmote, office2dEmoteBurstLabel } from "./office2d-emote-motion";
 import { createOffice2dNpc, stepOffice2dNpc, type Office2dNpcState } from "./office2d-npc";
 import { Office2dParticles } from "./office2d-particles";
 import { OFFICE2D_CATEGORY, Office2dPhysicsWorld } from "./office2d-physics";
@@ -43,20 +44,8 @@ import { Office2dRenderer, type Office2dPropVisual, type Office2dRendererHost } 
 import { office2dSceneFor, type Office2dScene, type Office2dSeatVisual } from "./office2d-scene";
 import { studioUserStatusLabel } from "./office2d-status";
 import { Office2dTeleportVeil } from "./office2d-teleport-veil";
-import {
-  office2dAccentFor,
-  office2dCharacterForAvatar,
-  office2dCharacterForNpc,
-  office2dGestureForEmote,
-  office2dHashIndex,
-  type Office2dCharacterKey,
-} from "./office2d-sprite-catalog";
-import {
-  kickOffice2dNearbyProp,
-  office2dDaylight,
-  office2dPathSpeedMultiplier,
-  Office2dStageExtensions,
-} from "./office2d-stage-extensions";
+import { office2dAccentFor, office2dCharacterForAvatar, office2dCharacterForNpc, office2dHashIndex, type Office2dCharacterKey } from "./office2d-sprite-catalog";
+import { kickOffice2dNearbyProp, office2dDaylight, office2dPathSpeedMultiplier, Office2dStageExtensions } from "./office2d-stage-extensions";
 
 export type Office2dRuntimeCallbacks = Pick<StudioVirtualSpacePhaserCanvasProps,
   | "onLocalState" | "onInteract" | "onNearbyInteractionChange" | "onPeerSelect" | "onCancelFollow" | "onPortal" | "onZoneChange"
@@ -201,9 +190,10 @@ export class Office2dRuntime {
   private resolveStart(snapshot: StudioVirtualSpaceSnapshot): StudioVirtualSpacePoint {
     const { manifest } = this.options;
     const saved = snapshot.self;
-    const candidate = Number.isFinite(saved.x) && Number.isFinite(saved.y) && (saved.x > 0 || saved.y > 0) && studioWorldRoomAt(manifest, saved) === saved.zoneId
-      ? { x: saved.x, y: saved.y }
-      : studioWorldSpawn(manifest).point;
+    const inBounds = Number.isFinite(saved.x) && Number.isFinite(saved.y) && (saved.x > 0 || saved.y > 0) && saved.x >= 0 && saved.x <= manifest.width && saved.y >= 0 && saved.y <= manifest.height;
+    const inRoom = inBounds && manifest.rooms.some((r) => saved.x >= r.x && saved.x <= r.x + r.width && saved.y >= r.y && saved.y <= r.y + r.height);
+    const room = inBounds ? studioWorldRoomAt(manifest, saved) : undefined;
+    const candidate = inBounds && (room === null || !inRoom || room === saved.zoneId) ? { x: saved.x, y: saved.y } : studioWorldSpawn(manifest).point;
     return this.physics.nearestFreePoint(candidate.x, candidate.y, SELF_RADIUS) ?? studioWorldSpawn(manifest).point;
   }
 
@@ -224,7 +214,7 @@ export class Office2dRuntime {
   keyDown(code: string): void {
     this.keys.add(code);
     if (STUDIO_INTERACT_KEY_CODES.has(code)) this.options.bridge.requestInteract();
-    if (code === "Space" || code === "KeyF") this.kickNearbyProp();
+    if (code === "Space") this.kickNearbyProp();
     if (code === "KeyG") {
       const enabled = this.options.bridge.toggleGhostMode();
       this.options.getCallbacks().onGhostModeChange?.(enabled);
@@ -301,6 +291,7 @@ export class Office2dRuntime {
     if (!free) return;
     if (this.options.bridge.getFollowingPeer()) this.options.getCallbacks().onCancelFollow();
     const route = findStudioWorldPath(this.options.manifest, this.self, free);
+    if (route.length === 0 && !this.physics.canOccupyCircle((this.self.x + free.x) / 2, (this.self.y + free.y) / 2, SELF_RADIUS)) return;
     this.path = (route.length ? route : [free]).filter((point) => length(point.x - this.self.x, point.y - this.self.y) > 6).map((point) => ({ x: point.x, y: point.y }));
     this.destination = free;
     this.pending = pending;
@@ -333,7 +324,11 @@ export class Office2dRuntime {
     }
     if (bridge.consumeUnstuck()) this.teleport(studioWorldSpawn(manifest).point);
     const emote = bridge.consumeEmote();
-    if (emote) this.showEmote(this.self, emote, nowMs);
+    if (emote) {
+      this.showEmote(this.self, emote, nowMs);
+      const burst = office2dEmoteBurstLabel(emote, this.options.getLanguage());
+      if (burst) this.extensions.pushComicBurst(burst, this.self.accent, this.self.x, this.self.y - 48, nowMs);
+    }
     const effect = bridge.consumeEnvironmentEffect();
     if (effect) this.particles.emit("confetti", effect.point.x, effect.point.y - 30, 24, 1.2);
   }
@@ -354,12 +349,7 @@ export class Office2dRuntime {
   }
 
   private showEmote(actor: Office2dActor, kind: string, nowMs: number): void {
-    const glyph = office2dEmoteGlyph(kind);
-    if (!glyph) return;
-    actor.emote = { glyph, until: nowMs + 2600, kind };
-    // 몸짓이 있는 이모트는 서서 멈춘 동안 작업 자세 시트의 제스처 프레임으로도 보인다(걷기 시작하면 바로 끊긴다).
-    const gesture = office2dGestureForEmote(kind);
-    actor.gesture = gesture ? { kind: gesture, until: nowMs + 2200 } : null;
+    if (!applyOffice2dActorEmote(actor, kind, nowMs)) return;
     this.particles.emitComboBurst("emote", actor.x, actor.y, 0.85);
   }
 
@@ -464,6 +454,7 @@ export class Office2dRuntime {
     const snapshot = this.options.getSnapshot();
     this.self.character = this.avatarCharacter(snapshot.self.avatarIndex, this.options.selfIdentity);
     this.self.bubble = snapshot.selfChatBubble && snapshot.selfChatBubble.expiresAt > nowMs ? snapshot.selfChatBubble.text : snapshot.self.bubble ?? null;
+    this.self.typing = snapshot.self.typing === true;
     this.self.status = studioUserStatusLabel(snapshot.self.userStatus, snapshot.self.activity, this.options.getLanguage());
 
     // 5) 엔진 이벤트·스테이지 확장
@@ -479,17 +470,10 @@ export class Office2dRuntime {
     const viewport = this.camera.getViewport();
     const zoom = office2dBaseZoom(viewport) * bridge.userZoom.get() * (conversation ? 1.15 : 1);
     const pan = this.cameraPan.sample({
-      deltaSeconds: dt,
-      available: true,
-      directed: Boolean(conversation),
-      snap: this.snapCamera,
-      reducedMotion: this.options.getReducedMotion(),
-      moving: this.self.moving,
-      cssToWorld: 1 / Math.max(0.2, zoom),
-      base: focus,
-      center: { x: this.camera.x, y: this.camera.y },
-      view: { width: viewport.width / zoom, height: viewport.height / zoom },
-      world: { width: this.scene.width, height: this.scene.height },
+      deltaSeconds: dt, available: true, directed: Boolean(conversation), snap: this.snapCamera,
+      reducedMotion: this.options.getReducedMotion(), moving: this.self.moving, cssToWorld: 1 / Math.max(0.2, zoom),
+      base: focus, center: { x: this.camera.x, y: this.camera.y },
+      view: { width: viewport.width / zoom, height: viewport.height / zoom }, world: { width: this.scene.width, height: this.scene.height },
     });
     const lead = body && !conversation && !pan.direct ? { x: body.vx * 0.12, y: body.vy * 0.1 } : { x: 0, y: 0 };
     this.camera.follow({ x: focus.x + pan.x, y: focus.y + pan.y }, dt, { zoom, leadX: lead.x, leadY: lead.y, snap: this.snapCamera || pan.direct });
@@ -589,8 +573,14 @@ export class Office2dRuntime {
       const candidate = this.seatFor(this.self, 18);
       if (candidate && !peerSeatIds.has(candidate.id)) selfSeat = candidate;
     }
+    const prevSeatId = this.self.seat?.id ?? null;
     this.self.seat = selfSeat;
     if (selfSeat) this.self.facing = selfSeat.facing;
+    if (prevSeatId !== (selfSeat?.id ?? null)) {
+      this.self.previousSeated = selfSeat !== null;
+      this.self.poseTransition = 1;
+      if (selfSeat && !this.options.getReducedMotion()) this.particles.emitComboBurst("seat", selfSeat.anchor.x, selfSeat.anchor.y, 0.7);
+    }
   }
 
   /** 상주 동료: 팀원 수만큼 줄이고, 누가 자리 가까이 오거나 앉으면 비켰다가 자리가 비면 돌아온다(office2d-coworkers). */
@@ -691,7 +681,7 @@ export class Office2dRuntime {
     if (this.stuck.sample({ time: nowMs, directional, point: this.self })) callbacks.onStuckChange?.(this.stuck.value);
 
     const point = { x: Math.round(this.self.x), y: Math.round(this.self.y) };
-    const pose = bridge.getPose();
+    const pose = this.self.seat ? "sit" : bridge.getPose();
     const key = `${point.x}:${point.y}:${this.self.facing}:${this.self.moving}:${pose}`;
     if (key !== this.lastLocalKey && nowMs - this.lastLocalStateAt >= LOCAL_STATE_INTERVAL_MS) {
       this.lastLocalKey = key;

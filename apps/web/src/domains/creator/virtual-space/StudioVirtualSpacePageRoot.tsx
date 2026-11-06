@@ -14,11 +14,15 @@ import { resolveStudioVirtualBuiltinWorld } from "./studio-virtual-space-campus-
 import { parseCodeInviteFragment } from "./studio-virtual-space-entry-code";
 import {
   normalizeStudioVirtualSpaceNickname,
+  readStudioVirtualSpaceAvatarIndex,
   readStudioVirtualSpaceEntryPreference,
   studioVirtualSpaceNicknameFromAccount,
   validStudioVirtualSpaceAvatarIndex,
+  validStudioVirtualSpaceStoredAvatarIndex,
   writeStudioVirtualSpaceEntryPreference,
 } from "./studio-virtual-space-entry-preference";
+import { readStudioVirtualExperiencePreference } from "./studio-virtual-space-experience-preference";
+import { STUDIO_VIRTUAL_SPACE_AUTO_AVATAR } from "./studio-virtual-space-model";
 import {
   clearStudioGuestSession,
   createStudioGuestSession,
@@ -227,7 +231,12 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
   if (!entryOpen && !resumeGate) enteredRef.current = true;
   // 같은 장소 복원은 묻지 않는다: Experience가 마운트되기 전, 렌더 단계에서 세션 위치로 심어 둔다.
   const seededResumeRef = useRef<string | null>(null);
-  if (!personal && resumeRecord && resumeDecision === "silent") {
+  if (
+    !personal
+    && resumeRecord
+    && resumeDecision === "silent"
+    && readStudioVirtualExperiencePreference().startLocation === "last"
+  ) {
     const seedKey = `${resumeRecord.placeId}:${resumeRecord.point.x}:${resumeRecord.point.y}`;
     if (seededResumeRef.current !== seedKey) {
       seededResumeRef.current = seedKey;
@@ -378,10 +387,16 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
           onNicknameChange={(value) => {
             const resolvedNickname = normalizeStudioVirtualSpaceNickname(value);
             if (!resolvedNickname) return;
+            const latestPreference = readStudioVirtualSpaceEntryPreference();
+            const storedAvatarIndex = readStudioVirtualSpaceAvatarIndex();
+            const nextAvatarIndex = latestPreference.confirmed && validStudioVirtualSpaceStoredAvatarIndex(storedAvatarIndex)
+              ? storedAvatarIndex
+              : validStudioVirtualSpaceStoredAvatarIndex(entryAvatarIndex)
+                ? entryAvatarIndex
+                : STUDIO_VIRTUAL_SPACE_AUTO_AVATAR;
             setEntryNickname(resolvedNickname);
-            if (validStudioVirtualSpaceAvatarIndex(entryAvatarIndex)) {
-              void writeStudioVirtualSpaceEntryPreference(entryAvatarIndex, resolvedNickname);
-            }
+            setEntryAvatarIndex(nextAvatarIndex);
+            void writeStudioVirtualSpaceEntryPreference(nextAvatarIndex, resolvedNickname);
           }}
           homeHeader={homeHeader}
           personal={personal}

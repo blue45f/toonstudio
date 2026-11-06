@@ -6,6 +6,7 @@
  *   유연하게 수렴시켜 공중에서 발이 멈추거나 갑자기 튀는 현상을 막는다.
  * - 가감속 스쿼시 앤 스트레치(부피 보존 scaleX·scaleY), 주행·선회 기울기(leanAngle), 방향 전환 히스테리시스를 순수 함수로 계산한다.
  */
+import { studioSpaceEmoteById } from "../studio-virtual-space-emote-catalog";
 import type { StudioVirtualSpaceFacing } from "../studio-virtual-space-model";
 import type { Office2dCharacterKey, Office2dGesture } from "./office2d-sprite-catalog";
 import { OFFICE2D_CHARACTER_ROWS, OFFICE2D_CHARACTER_WALK_FRAMES, office2dHashIndex } from "./office2d-sprite-catalog";
@@ -65,7 +66,7 @@ export interface Office2dActor {
   alpha: number;
   bubble: string | null;
   typing: boolean;
-  emote: { readonly glyph: string; readonly until: number; readonly kind: string } | null;
+  emote: { readonly glyph: string; readonly until: number; readonly kind: string; readonly startedAt?: number } | null;
   /** 이모트에 딸린 몸짓(손 흔들기·만세·엄지·생각). 서서 멈춰 있을 때만 작업 자세 시트 제스처 행으로 보인다. */
   gesture: { readonly kind: Office2dGesture; readonly until: number } | null;
   /** 대화 가능 NPC 강조. */
@@ -372,5 +373,5 @@ const EMOTE_GLYPHS: Readonly<Record<string, string>> = Object.freeze({
 
 export function office2dEmoteGlyph(kind: string | null | undefined): string | null {
   if (!kind) return null;
-  return EMOTE_GLYPHS[kind] ?? "✨";
+  return studioSpaceEmoteById(kind)?.glyph ?? EMOTE_GLYPHS[kind] ?? "✨";
 }

@@ -58,4 +58,16 @@ describe("useStudioVirtualSpaceMegaphone", () => {
     expect(result.current.snapshot.status).toBe("failed");
     expect(result.current.snapshot.error).toBe("denied");
   });
+
+  it("근접 미디어 화면 공유가 불가능하면 screen-share-failed를 설정하고 허위 화면 공유 방송을 시작하지 않는다", async () => {
+    const media = makeMedia();
+    media.startScreenShare.mockRejectedValueOnce(new Error("screen-share-unavailable"));
+    const { result } = renderHook(() => useStudioVirtualSpaceMegaphone({
+      role: "owner", broadcasterName: "김선생", media,
+    }));
+    await act(async () => { await result.current.start("world", { shareScreen: true }); });
+    expect(result.current.snapshot.status).toBe("failed");
+    expect(result.current.snapshot.error).toBe("screen-share-failed");
+    expect(result.current.snapshot.sharingScreen).toBe(false);
+  });
 });

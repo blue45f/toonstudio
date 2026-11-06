@@ -1,12 +1,14 @@
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-import { studioEmoteDefinition } from "../studio-virtual-space-emotes";
+import { studioSpaceEmoteById } from "../studio-virtual-space-emote-catalog";
+import { studioEmoteDefinition, type StudioEmoteKind } from "../studio-virtual-space-emotes";
 import type { StudioVirtualSpacePoint, StudioVirtualSpacePresenceState } from "../studio-virtual-space-model";
 import { userStatusBadge } from "../studio-virtual-space-user-status";
 import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
 import { STUDIO_THREE_SCALE, worldToThree } from "./studio-virtual-space-three-scene";
 import { disposeStudioThreeOwnedModel } from "./studio-virtual-space-three-asset-loader";
+import { studioThreeFillLightIntensity } from "./studio-virtual-space-three-motion";
 import { StudioThreePendingLoads, type StudioThreePendingController } from "./studio-virtual-space-three-runtime-policy";
 
 import type { StudioThreeLightingPreset } from "./studio-virtual-space-three-hdri-controller";
@@ -498,7 +500,7 @@ export const DUPLICATE_ARCADE_IDS: ReadonlySet<string> = new Set([
   "campus-arcade-cabinet-4",
 ]);
 
-/** 조명 프리셋 전환 시 씬 배경·안개·직사광·노출값을 동기화한다. */
+/** 조명 프리셋 전환 시 씬 배경·안개·직사광·보조광·노출값을 동기화한다. */
 export function applyStudioLightingPresetToScene(
   preset: StudioThreeLightingPreset,
   scene: THREE.Scene,
@@ -506,6 +508,7 @@ export function applyStudioLightingPresetToScene(
   hemiLight: THREE.HemisphereLight,
   dirLight: THREE.DirectionalLight,
   postPipeline: StudioThreeChromePostPipeline,
+  fillLight?: THREE.DirectionalLight,
 ): void {
   const bgHex = preset === "night" ? 0x0f172a : preset === "studio" ? 0x1e293b : 0xdbe4ef;
   scene.background = new THREE.Color(bgHex);
@@ -515,6 +518,9 @@ export function applyStudioLightingPresetToScene(
   hemiLight.intensity = preset === "night" ? 0.56 : preset === "studio" ? 0.74 : 0.8;
   dirLight.color.setHex(preset === "night" ? 0xc4b5fd : preset === "studio" ? 0xf8fafc : 0xfffbeb);
   dirLight.intensity = preset === "night" ? 0.76 : preset === "studio" ? 0.98 : 1.08;
+  if (fillLight) {
+    fillLight.intensity = studioThreeFillLightIntensity(preset);
+  }
   renderer.toneMappingExposure = preset === "night" ? 0.9 : preset === "studio" ? 0.95 : 0.96;
   postPipeline.setBloomStrength(preset === "night" ? 0.28 : 0.16);
 }
@@ -581,12 +587,19 @@ export function getOverlayBadgeStyle(
   };
 }
 
+export interface ParticipantOverlayRealtimeExtras {
+  readonly reactionId?: string | null;
+  readonly chatBubbleText?: string | null;
+  readonly chatTyping?: boolean;
+}
+
 /** 참가자(본인·동료)의 상태·이모트·말풍선·집중모드를 3D 배지용 텍스트와 강조 색상으로 변환한다. */
 export function formatParticipantOverlayBadge(
   state: StudioVirtualSpacePresenceState,
   isEn: boolean,
   fallbackKo: string,
   fallbackEn: string,
+  extras?: ParticipantOverlayRealtimeExtras,
 ): { readonly sublabel: string; readonly accent: string } {
   const accent =
     state.userStatus === "in-meeting" || state.userStatus === "presenting"
@@ -599,17 +612,22 @@ export function formatParticipantOverlayBadge(
             ? "#06b6d4"
             : "#10b981";
 
-  const trimmedBubble = state.bubble?.trim();
+  const trimmedBubble = extras?.chatBubbleText?.trim() || state.bubble?.trim();
   if (trimmedBubble) {
     return { sublabel: `💬 ${trimmedBubble}`, accent };
   }
-  if (state.typing) {
+  if (extras?.chatTyping || state.typing) {
     return { sublabel: isEn ? "💬 Typing..." : "💬 입력 중...", accent };
   }
-  if (state.emote) {
-    const emoteDef = studioEmoteDefinition(state.emote);
+  const activeEmote = extras?.reactionId ?? state.emote;
+  if (activeEmote) {
+    const emoteDef = studioEmoteDefinition(activeEmote as StudioEmoteKind);
     if (emoteDef) {
       return { sublabel: `${emoteDef.icon} ${isEn ? emoteDef.labelEn : emoteDef.labelKo}`, accent };
+    }
+    const catalogEmote = studioSpaceEmoteById(activeEmote);
+    if (catalogEmote) {
+      return { sublabel: `${catalogEmote.glyph} ${isEn ? catalogEmote.labelEn : catalogEmote.labelKo}`, accent };
     }
   }
   if (state.userStatus) {

@@ -372,8 +372,8 @@ describe("Office2dRuntime", () => {
     expect(office2dActorFrame(actor).col).toBe(0);
   });
 
-  it("빈 책상 좌석 위치에 멈추면 상주 동료가 양보하고 자동으로 착석 자세로 전환된다", () => {
-    const { runtime, bridge, run } = setup();
+  it("빈 책상 좌석 위치에 멈추면 상주 동료가 양보하고 자동으로 착석 자세로 전환되며 onLocalState에 sit을 보고한다", () => {
+    const { runtime, bridge, callbacks, run } = setup({ reducedMotion: false });
     runtime.start();
     const deskSeat = runtime.scene.seats.find((seat) => seat.chair === "chair-back");
     expect(deskSeat).toBeDefined();
@@ -382,5 +382,66 @@ describe("Office2dRuntime", () => {
     run(0.3);
     expect(runtime.debugState().seated).toBe(true);
     expect(runtime.debugState().facing).toBe("up");
+    const lastLocal = callbacks.onLocalState.mock.calls.at(-1)?.[0];
+    expect(lastLocal?.pose).toBe("sit");
+  });
+
+  it("로컬 채팅 말풍선이 만료되면 즉시 사라지고 self.typing 상태를 반영한다", () => {
+    const { runtime, run, setSnapshot } = setup();
+    runtime.start();
+    const activeBubbleSnap: StudioVirtualSpaceSnapshot = {
+      ...snapshot(),
+      self: { ...selfState(336, 1470), typing: true },
+      selfChatBubble: {
+        sessionId: "me",
+        text: "안녕하세요!",
+        expiresAt: Date.UTC(2026, 9, 28, 3, 0, 1),
+      },
+    };
+    setSnapshot(activeBubbleSnap);
+    run(0.1);
+    const selfActor = (runtime as unknown as { self: { bubble: string | null; typing: boolean } }).self;
+    expect(selfActor.bubble).toBe("안녕하세요!");
+    expect(selfActor.typing).toBe(true);
+
+    // 만료 시각 이후에는 이전 말풍선이 영구히 남지 않고 null로 정리된다.
+    setSnapshot({
+      ...activeBubbleSnap,
+      self: { ...selfState(336, 1470), typing: false },
+    });
+    run(1.2);
+    expect(selfActor.bubble).toBeNull();
+    expect(selfActor.typing).toBe(false);
+  });
+
+  it("이모트 실행 시 카탈로그 지속시간·글리프·코믹 버스트를 띄우고 KeyF는 물리 소품을 차지 않는다", () => {
+    const { runtime, bridge, run } = setup();
+    runtime.start();
+    bridge.requestEmote("fireworks");
+    run(1 / 60);
+    const selfActor = (runtime as unknown as { self: { emote: { glyph: string; kind: string; startedAt?: number } | null } }).self;
+    expect(selfActor.emote).toMatchObject({ glyph: "🎆", kind: "fireworks" });
+    expect(selfActor.emote?.startedAt).toBeTypeOf("number");
+    expect(runtime.extensions.comicBursts.at(-1)?.text).toBe("🎆 폭죽");
+
+    const prop = TOON_HQ_PHYSICS_PROPS[0]!;
+    bridge.requestTeleport({ x: prop.x - 24, y: prop.y });
+    run(1 / 60);
+    const beforeF = runtime.debugState().props[0]!;
+    runtime.keyDown("KeyF");
+    run(0.1);
+    const afterF = runtime.debugState().props[0]!;
+    expect(Math.hypot(afterF.x - beforeF.x, afterF.y - beforeF.y)).toBeLessThan(1);
+  });
+
+  it("3D에서 복도(방 밖 영역 또는 복도 구역) 좌표에 있다가 2D로 전환해도 스폰으로 리셋되지 않고 위치를 유지한다", () => {
+    const corridorSnap: StudioVirtualSpaceSnapshot = {
+      ...snapshot([], 1200, 24),
+      self: { ...selfState(1200, 24), zoneId: "lobby" },
+    };
+    const { runtime } = setup({ snapshot: corridorSnap });
+    const pos = runtime.debugState().self;
+    expect(Math.abs(pos.x - 1200)).toBeLessThan(30);
+    expect(pos.y).toBeLessThan(200);
   });
 });

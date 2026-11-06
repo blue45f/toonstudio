@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import type { StudioVirtualSpaceActivity } from "../studio-virtual-space-model";
@@ -320,4 +321,41 @@ export function writeSpaceActiveDccId(id: SpaceActiveDccId): void {
   try {
     globalThis.localStorage?.setItem(SPACE_ACTIVE_DCC_STORAGE_KEY, id);
   } catch { /* 저장소 비활성 환경에서는 메모리 상태만 유지한다 */ }
+}
+
+export const SPACE_STATUS_EXTRAS_CHANGE_EVENT = "toonstudio:space-status-extras-change";
+
+export interface SpaceStatusExtrasSnapshot {
+  readonly statusUrgency: SpaceStatusUrgency;
+  readonly companionId: SpaceCompanionId;
+  readonly statusHatId: SpaceStatusHatId;
+  readonly activeDccId: SpaceActiveDccId;
+}
+
+function readSpaceStatusExtrasSnapshot(): SpaceStatusExtrasSnapshot {
+  return {
+    statusUrgency: readSpaceStatusUrgency(),
+    companionId: readSpaceCompanionId(),
+    statusHatId: readSpaceStatusHatId(),
+    activeDccId: readSpaceActiveDccId(),
+  };
+}
+
+export function emitSpaceStatusExtrasChange(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(SPACE_STATUS_EXTRAS_CHANGE_EVENT));
+}
+
+export function useSpaceStatusExtras(): SpaceStatusExtrasSnapshot {
+  const [extras, setExtras] = useState<SpaceStatusExtrasSnapshot>(readSpaceStatusExtrasSnapshot);
+  useEffect(() => {
+    const sync = () => setExtras(readSpaceStatusExtrasSnapshot());
+    window.addEventListener(SPACE_STATUS_EXTRAS_CHANGE_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(SPACE_STATUS_EXTRAS_CHANGE_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  return extras;
 }

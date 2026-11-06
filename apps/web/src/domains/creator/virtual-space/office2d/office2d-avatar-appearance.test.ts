@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearStudioVirtualAvatarProfile, writeStudioVirtualAvatarProfile } from "../studio-virtual-space-avatar-store";
+import { writeStudioVirtualCharacterCustomization } from "../studio-virtual-space-customization";
 import { STUDIO_AVATAR_ACCESSORY_OPTIONS } from "../studio-virtual-space-avatar-options";
 import { studioVirtualAvatarProfile, type StudioVirtualAvatarProfile } from "../studio-virtual-space-model";
 import { advanceOffice2dActor, createOffice2dActor, office2dActorBob, type Office2dActor } from "./office2d-actors";
@@ -71,6 +72,36 @@ describe("2D 오피스의 기존 아바타 꾸미기 연결", () => {
       clearStudioVirtualAvatarProfile();
       expect(source.get()).toBe(cached);
     } finally { source.dispose(); }
+  });
+
+  it("avatarProfile.accessory가 none일 때 꾸미기 패널의 accessoryKey(crown, headset, cat-ears 등)를 매핑해 즉시 그린다", () => {
+    localStorage.clear();
+    writeStudioVirtualAvatarProfile({ ...profile, accessory: "none" });
+    writeStudioVirtualCharacterCustomization({
+      accessoryKey: "crown",
+      auraKey: "none",
+      trailKey: "none",
+      nameplateKey: "violet",
+    });
+    const source = createOffice2dAvatarProfileSource();
+    try {
+      expect(source.get()?.accessory).toBe("crown");
+      expect(avatarAppearance.mapOffice2dCustomizationAccessory("headset")).toBe("headphones");
+      expect(avatarAppearance.mapOffice2dCustomizationAccessory("beret-ink")).toBe("beret");
+      expect(avatarAppearance.mapOffice2dCustomizationAccessory("crown-gold")).toBe("crown");
+      expect(avatarAppearance.mapOffice2dCustomizationAccessory("visor-neon")).toBe("glasses");
+      expect(avatarAppearance.mapOffice2dCustomizationAccessory("cat-ears")).toBe("cat-ears");
+      expect(avatarAppearance.mapOffice2dCustomizationAccessory("halo-star")).toBe("halo");
+      expect(avatarAppearance.mapOffice2dCustomizationAccessory("flower-pin")).toBe("flower");
+      for (const extra of ["crown", "cat-ears", "halo"] as const) {
+        const record = recordingContext();
+        paintOffice2dAvatarAccessory(record.ctx, { ...profile, accessory: extra }, placement);
+        expect(record.save).toHaveBeenCalledOnce();
+        expect(record.restore).toHaveBeenCalledOnce();
+      }
+    } finally {
+      source.dispose();
+    }
   });
 
   it("기존 16종 선택을 모두 처리하고 없음은 아무 장식도 그리지 않는다", () => {

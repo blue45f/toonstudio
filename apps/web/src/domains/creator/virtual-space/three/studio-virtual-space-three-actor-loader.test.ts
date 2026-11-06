@@ -356,4 +356,26 @@ describe("실제 Three actor와 지연 GLB 응답 수명", () => {
     expect(actor.armDownZLeft).toBe(1.16);
     controller.dispose();
   });
+
+  it("gltf.userData.vrm이 존재하면 applyPosture의 3번째 인자로 전달하고 node.vrm에 연결한다", async () => {
+    const world = actorWorld(["self"]);
+    const actor = world.actor("self");
+    const deferred = deferredLoader();
+    const applyPosture = vi.fn();
+    const controller = createStudioThreeActorLoader(deferred.loader, world.actors, () => false, {
+      ...options, applyPosture,
+    });
+    const model = await loadedModel("with-vrm", true);
+    const mockVrm = { humanoid: { update: vi.fn() }, update: vi.fn() };
+    model.gltf.userData = { vrm: mockVrm };
+    controller.load("self", 0);
+    deferred.request(0).complete(model.gltf);
+    expect(applyPosture).toHaveBeenCalledTimes(1);
+    expect(applyPosture.mock.calls[0]?.[1]).toBe(model.gltf.scene);
+    expect(applyPosture.mock.calls[0]?.[2]).toBe(mockVrm);
+    expect(actor.vrm).toBe(mockVrm);
+    controller.dispose();
+    expect(actor.vrm).toBeUndefined();
+  });
 });
+

@@ -54,7 +54,7 @@ import { StudioVirtualSpaceNpcDialoguePanel, type StudioNpcDialogueAction } from
 import { StudioVirtualSpaceOfficeStart } from "./StudioVirtualSpaceOfficeStart";
 import { StudioVirtualSpacePanelGate } from "./StudioVirtualSpacePanelGate";
 import type { StudioVirtualSpaceEngineLocalState } from "./studio-virtual-space-stage-state";
-import { readStudioVirtualStageMode, resolveStudioVirtualStageKind } from "./office2d/studio-virtual-space-stage-mode";
+import { applyStudioVirtualStageSearch, readStudioVirtualStageMode, resolveStudioVirtualStageKind, writeStudioVirtualPreferredEngineMode } from "./office2d/studio-virtual-space-stage-mode";
 import { StudioVirtualSpaceStageSurface } from "./StudioVirtualSpaceStageSurface";
 import { VirtualThreeThemeProvider } from "./three/ui/VirtualThreeThemeProvider";
 import { VirtualThreeThemePanel } from "./three/ui/VirtualThreeThemePanel";
@@ -210,7 +210,7 @@ import { SpaceMovementStatus } from "./hud/SpaceMovementStatus";
 import { SpaceToasts } from "./hud/SpaceToasts";
 import { SpaceTownBanner } from "./hud/SpaceTownBanner";
 import { SpaceWorkLauncher } from "./hud/SpaceWorkLauncher";
-import { spaceStatusOptionById, type SpaceDockPopover, type SpaceStatusOption } from "./hud/space-dock-model";
+import { emitSpaceStatusExtrasChange, spaceStatusOptionById, useSpaceStatusExtras, writeSpaceStatusUrgency, type SpaceDockPopover, type SpaceStatusOption } from "./hud/space-dock-model";
 import { spaceMoreItems } from "./hud/space-more-items";
 import { useSpaceAttentionLoss } from "./hud/use-space-attention-loss";
 import { useSpaceConnectionStatus } from "./hud/use-space-connection-status";
@@ -343,8 +343,8 @@ export function VirtualSpaceExperience({
   const controllerRef = useRef<StudioVirtualSpacePresenceController | null>(null);
   const fallbackIdentity = live.room?.participant.sessionId ?? `space:${projectId}`;
   const decorationScope = JSON.stringify([projectId, activeWorldScope, authoringMode]);
-  const [engineMode, setEngineMode] = useState<"2d" | "3d">(() => readStudioVirtualStageMode(typeof window === "undefined" ? "" : window.location.search) === "3d" ? "3d" : "2d");
-  const stageKind = resolveStudioVirtualStageKind({ engineMode, authoringMode, search: typeof window === "undefined" ? "" : window.location.search });
+  const [engineMode, setEngineMode] = useState<"2d" | "3d">(() => readStudioVirtualStageMode(location.search || (typeof window === "undefined" ? "" : window.location.search)) === "3d" ? "3d" : "2d");
+  const stageKind = resolveStudioVirtualStageKind({ engineMode, authoringMode, search: location.search || (typeof window === "undefined" ? "" : window.location.search) });
   const preferences = useSpacePreferences({ initialArtStyle: initialArtStyleOverride, decorationScope, notify });
   const {
     artStyle, selectArtStyle, characterCustomization, selectCharacterCustomization, rewardInventory, claimReward, equipReward,
@@ -365,10 +365,13 @@ export function VirtualSpaceExperience({
     studioVirtualSpaceState(initial, "down", "available", false, initialAvatarIndex),
   ));
   const mergedPlacedFixtures = useStudioVirtualSpacePeerFixtures({ controllerRef, snapshot, selfSessionId: fallbackIdentity, localRequests: placedFixtureRequests });
-  const {
-    chatOpen, setChatOpen, chatSnapshot, chatTypingNames,
-    sendSpaceChat, sendSpaceChatTyping, sendChatMessage, setChatTyping,
-  } = useStudioSpaceChat({ snapshot, setSnapshot, controllerRef, nickname });
+  const { chatOpen, setChatOpen, chatSnapshot, chatTypingNames, sendSpaceChat, sendSpaceChatTyping, sendChatMessage, setChatTyping } =
+    useStudioSpaceChat({ snapshot, setSnapshot, controllerRef, nickname });
+  const statusExtras = useSpaceStatusExtras();
+  const onChatInputChange = useCallback((typing: boolean) => {
+    setChatTyping(typing); controllerRef.current?.setTyping(typing);
+    setSnapshot((cur) => cur.self.typing === (typing || undefined) ? cur : { ...cur, self: (selfRef.current = Object.freeze({ ...cur.self, typing: typing || undefined })) });
+  }, [setChatTyping]);
   const [activity, setActivity] = useState<StudioVirtualSpaceActivity>("available");
   const [avatarIndex, setAvatarIndex] = useState(initialAvatarIndex);
   const [runtimeMetrics, setRuntimeMetrics] = useState<StudioVirtualRuntimeMetrics>(EMPTY_STUDIO_VIRTUAL_RUNTIME_METRICS);
@@ -549,13 +552,16 @@ export function VirtualSpaceExperience({
       const activeManifest = storedDraft?.manifest ?? manifest;
       setDraftBaseRevision(storedDraft ? storedDraft.basePublishedRevisionId : publishedWorld?.publication.revisionId ?? null);
       const spawn = studioWorldSpawn(activeManifest, resolved?.spawnId).point;
-      // 주소에 장소가 명시되면(딥링크·하위 맵 복귀) 저장 위치보다 그 장소 입구를 우선한다.
-      // 단, 이어서 시작(resume=1)에서는 방금 심어 둔 저장 위치가 우선한다.
+      const actor = studioTownDeskPodForActor(fallbackIdentity, participantRole);
+      const preferStart = !guestSpawn && !resumeRequestedRef.current;
+      // 주소에 장소가 명시되거나 시작 위치 설정('로비'/'내 작업석')이 있으면 저장 위치보다 우선한다.
       const point = publishedWorld
         ? resolveStudioWorldSpawn(activeManifest, studioWorldSpawn(activeManifest).point)
-        : resolved && explicitPlaceRef.current && !guestSpawn && !resumeRequestedRef.current
+        : (resolved && explicitPlaceRef.current && preferStart) || (preferStart && startLocation === "lobby")
           ? resolveStudioWorldSpawn(activeManifest, spawn)
-          : resolveStudioVirtualSpaceSessionPoint(positionScope, activeManifest, guestSpawn ?? spawn);
+          : preferStart && startLocation === "desk"
+            ? resolveStudioWorldSpawn(activeManifest, actor?.point ?? spawn)
+            : resolveStudioVirtualSpaceSessionPoint(positionScope, activeManifest, guestSpawn ?? spawn);
       setWorldManifest(activeManifest);
       setAuthoringDraft(activeManifest);
       setCurrentInteraction(null);
@@ -572,7 +578,7 @@ export function VirtualSpaceExperience({
       setWorldLoaded(true);
     });
     return () => abortController.abort();
-  }, [authoringMode, builtinKey, engineBridge, positionScope, positionScopeKey, projectId, publishedWorld, guestSpawn, setFollowingPeerId]);
+  }, [authoringMode, builtinKey, engineBridge, fallbackIdentity, guestSpawn, participantRole, positionScope, positionScopeKey, projectId, publishedWorld, setFollowingPeerId, startLocation]);
 
 
   const applyAuthoringManifest = useCallback((nextManifest: StudioVirtualSpaceWorldManifest) => {
@@ -1420,17 +1426,8 @@ export function VirtualSpaceExperience({
   // bgm은 기존 BGM 시스템과 충돌해 이 배선에서 다루지 않는다.
   const appPresence = useStudioVirtualSpaceAppPresence(tileEffects, { x: snapshot.self.x, y: snapshot.self.y });
   const megaphone = useStudioVirtualSpaceMegaphone({
-    role: participantRole ?? "viewer",
-    broadcasterName: localName,
-    // 화면 공유 연결부: 근접 미디어의 토글을 시작/종료 의미로 어댑트한다.
-    media: {
-      startScreenShare: async () => {
-        if (proximity.snapshot && !proximity.snapshot.sharing) proximity.toggleScreen();
-      },
-      stopScreenShare: () => {
-        if (proximity.snapshot?.sharing) proximity.toggleScreen();
-      },
-    },
+    role: participantRole ?? "viewer", broadcasterName: localName,
+    media: { startScreenShare: proximity.startScreenShare, stopScreenShare: () => { if (proximity.snapshot?.sharing) proximity.toggleScreen(); } },
   });
   const [megaphoneBannerDismissed, setMegaphoneBannerDismissed] = useState(false);
   useEffect(() => {
@@ -1924,7 +1921,7 @@ export function VirtualSpaceExperience({
             connection={personal ? null : connection} onExit={exitSpace}
             pulse={worldReady && !authoringMode ? atelierPulse : null}
             engineMode={authoringMode ? undefined : engineMode}
-            onToggleEngineMode={() => setEngineMode((current) => (current === "3d" ? "2d" : "3d"))}
+            onToggleEngineMode={() => setEngineMode((cur) => { const next = cur === "3d" ? "2d" : "3d"; writeStudioVirtualPreferredEngineMode(next); navigate({ pathname: location.pathname, search: applyStudioVirtualStageSearch(location.search, next) }, { replace: true }); return next; })}
             onQuickAction={handleAtelierPulseAction}
             onOpenSearch={() => { setDockPopover(null); setSearchOpen(true); }} />
           {homeHeader}
@@ -1975,7 +1972,8 @@ export function VirtualSpaceExperience({
             </div> : null}
             <SpaceMovementStatus followingName={followingPeer?.participant.displayName ?? null} sharedActivity={sharedActivity}
               socialRequests={socialSnapshot.requests} config={followConfig} cameraPan={engineBridge.cameraPan}
-              whisperPeerName={whisperPeerName} proximityRange={personal ? "standard" : proximityRange}
+              whisperPeerName={whisperPeerName} proximityRange={personal ? "standard" : proximityRange} statusUrgency={statusExtras.statusUrgency}
+              onResetStatusUrgency={() => { writeSpaceStatusUrgency("normal"); emitSpaceStatusExtrasChange(); }}
               onStopFollowing={cancelFollowing} onStopLeading={finishSharedActivity}
               onStopWhisper={() => setWhisperPeerId(null)} onResetProximityRange={() => setProximityRange("standard")}
               onConfig={updateFollowConfig} onRecentered={() => engineBridge.focusWorld()} />
@@ -1992,7 +1990,7 @@ export function VirtualSpaceExperience({
               onAccept={acceptSuggestion} onDismiss={dismissSuggestion} /> : null}
             {worldReady ? <SpaceInteractPrompt target={interactTarget} touch={touch} onActivate={activateInteractPrompt} /> : null}
             {worldReady ? <SpaceChatInput blocked={spaceHudChatHintBlocked({ surfaceOpen: blockingSurfaceOpen || panel !== null || dockPopover !== null || mapOpen || helpOpen, chatPanelOpen: chatOpen, touch })}
-              touch={touch} onTypingChange={setChatTyping} onSend={sendChatMessage}
+              touch={touch} onTypingChange={onChatInputChange} onSend={sendChatMessage}
               onClosed={() => engineBridge.focusWorld()} /> : null}
           </div>
           {dock}
@@ -2008,7 +2006,7 @@ export function VirtualSpaceExperience({
         </SpaceSidePanel>}
       />
       {worldReady ? <SpaceChatPanel messages={chatSnapshot.chatMessages} typingNames={chatTypingNames} open={chatOpen}
-        onOpenChange={setChatOpen} onSend={sendSpaceChat} onTyping={sendSpaceChatTyping}
+        onOpenChange={setChatOpen} onSend={sendSpaceChat} onTyping={(scope, typing) => { sendSpaceChatTyping(scope, typing); onChatInputChange(typing); }}
         onReturnFocus={() => engineBridge.focusWorld()} /> : null}
       {worldReady ? <SpacePopover open={mapOpen} sheet={!desktop} onClose={() => { setMapOpen(false); engineBridge.focusWorld(); }}
         title={builtin?.kind === "campus" ? bt("캠퍼스 전체 지도", "Campus map") : bt("전체 지도", "Full map")}

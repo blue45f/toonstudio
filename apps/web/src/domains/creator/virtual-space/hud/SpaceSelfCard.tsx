@@ -7,15 +7,12 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioVirtualSpacePresenceState } from "../studio-virtual-space-model";
 import { SpaceAvatar } from "./SpaceAvatar";
 import {
-  readSpaceActiveDccId,
-  readSpaceCompanionId,
-  readSpaceStatusHatId,
-  readSpaceStatusUrgency,
   spaceActiveDccOptionById,
   spaceCompanionOptionById,
   spaceStatusHatOptionById,
   spaceStatusOption,
   spaceStatusUrgencyOptionById,
+  useSpaceStatusExtras,
   type SpaceActiveDccId,
   type SpaceCompanionId,
   type SpaceStatusHatId,
@@ -43,11 +40,12 @@ export const SpaceSelfCard = memo(function SpaceSelfCard({
   readonly activeDccId?: SpaceActiveDccId;
 }) {
   const bt = useBilingual("SpaceSelfCard");
+  const extras = useSpaceStatusExtras();
   const status = spaceStatusOption(self.activity, self.userStatus);
-  const companion = spaceCompanionOptionById(companionId ?? readSpaceCompanionId());
-  const urgency = spaceStatusUrgencyOptionById(statusUrgency ?? readSpaceStatusUrgency());
-  const hat = spaceStatusHatOptionById(statusHatId ?? readSpaceStatusHatId());
-  const dcc = spaceActiveDccOptionById(activeDccId ?? readSpaceActiveDccId());
+  const companion = spaceCompanionOptionById(companionId ?? extras.companionId);
+  const urgency = spaceStatusUrgencyOptionById(statusUrgency ?? extras.statusUrgency);
+  const hat = spaceStatusHatOptionById(statusHatId ?? extras.statusHatId);
+  const dcc = spaceActiveDccOptionById(activeDccId ?? extras.activeDccId);
   return <section className="space-panel-section space-self-card" aria-label={bt("나", "Me")}>
     <SpaceAvatar stageKind={stageKind} artStyle={artStyle} identity={identity} activity={self.activity} avatarIndex={self.avatarIndex} appearance={self.appearance} self size="lg" />
     <div>

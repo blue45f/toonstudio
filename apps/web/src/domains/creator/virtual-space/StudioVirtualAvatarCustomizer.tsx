@@ -7,6 +7,7 @@ import type { StudioSpriteDirection } from "./studio-virtual-space-sprite";
 import { StudioVirtualAvatarFigure } from "./StudioVirtualAvatarFigure";
 import { StudioVirtualSpriteSheetCustomizer } from "./StudioVirtualSpriteSheetCustomizer";
 import {
+  STUDIO_AVATAR_ACCENT_OPTIONS,
   STUDIO_AVATAR_ACCESSORY_OPTIONS,
   STUDIO_AVATAR_EXPRESSION_OPTIONS,
   STUDIO_AVATAR_HAIR_COLOR_OPTIONS,
@@ -151,6 +152,7 @@ export function StudioVirtualAvatarCustomizer({ identity }: { readonly identity:
   const update = (patch: Partial<StudioVirtualAvatarProfile>) => {
     save({ ...profile, ...patch });
   };
+  const setDraft = update;
 
   const applyRandom = () => {
     save(randomStudioVirtualAvatarProfile());
@@ -308,6 +310,13 @@ export function StudioVirtualAvatarCustomizer({ identity }: { readonly identity:
         options={STUDIO_AVATAR_OUTFIT_COLOR_OPTIONS}
         value={profile.outfit}
         onSelect={(outfit) => update({ outfit })}
+        bt={bt}
+      />
+      <ColorSwatchGroup
+        legend={bt("강조색", "Accent color")}
+        options={STUDIO_AVATAR_ACCENT_OPTIONS}
+        value={profile.accent}
+        onSelect={(accent) => setDraft({ accent })}
         bt={bt}
       />
       <ChipGroup

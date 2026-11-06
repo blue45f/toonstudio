@@ -1,3 +1,4 @@
+import { VRMLoaderPlugin } from "@pixiv/three-vrm";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
@@ -8,7 +9,9 @@ import { StudioThreePendingLoads, type StudioThreePendingController } from "./st
 
 /** 이 모듈 전체가 선택형 3D stage 안에 있으므로 decoder WASM도 3D 선택 시에만 내려받는다. */
 export function createStudioThreeGlbLoader(): GLTFLoader {
-  return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  loader.register((parser) => new VRMLoaderPlugin(parser));
+  return loader;
 }
 
 export interface StudioThreeModelController extends StudioThreePendingController {

@@ -129,9 +129,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
   const [cameraFov, setCameraFov] = useState<number>(35);
   const [lightingPreset, setLightingPreset] = useState<string>("사이버 네온 역광");
   const [collabLog, setCollabLog] = useState<readonly string[]>([
-    "박서준 총괄PD: 34화 18컷 주인공 눈빛 하이라이트 조금만 더 살려주세요!",
-    "한소율 선화작가: 듀얼 신티크 포드에서 펜선 레이어 수정본 방금 푸시했습니다 ✒️",
-    "윤채린 채색아티스트: 역광 마법진 글로우 블렌딩 모드 Add로 적용 완료 ✨",
+    "[로컬 스테이션 기록] 이 워크스테이션의 스케치·스탬프·공정 변경은 현재 화면에서만 동작하는 로컬 시뮬레이션입니다.",
   ]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -274,7 +272,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
     playProceduralWorkstationSfx("stamp");
     triggerIllustrated2dVfxBurst(stampLabel, station.accentColor);
     setCollabLog((prev) => [
-      `[실시간 합평] ${station.titleKo}에서 ‘${stampLabel}’ 판정 스탬프를 날인했습니다.`,
+      `[로컬 스테이션 기록] ${station.titleKo}에서 ‘${stampLabel}’ 판정 스탬프를 적용했습니다.`,
       ...prev.slice(0, 5),
     ]);
   };
@@ -289,7 +287,8 @@ export function StudioVirtualSpaceWorkstationLiveModal({
       }),
     );
     playProceduralWorkstationSfx("handoff");
-    triggerIllustrated2dVfxBurst("컷 공정 인계 완료! ✨", 0x38bdf8);
+    triggerIllustrated2dVfxBurst("로컬 공정 보드 단계 변경 ✨", 0x38bdf8);
+    setCollabLog((prev) => [`[로컬 공정 보드 단계 변경] ${cutId} 컷을 다음 공정 단계로 전환했습니다.`, ...prev.slice(0, 5)]);
   };
 
   const triggerWorldSfxBurst = (
@@ -300,7 +299,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
     playProceduralWorkstationSfx(sfxKind);
     triggerIllustrated2dVfxBurst(label, color);
     setCollabLog((prev) => [
-      `[사운드·특수효과] 2D 스튜디오 전역에 ‘${label}’ 이펙트와 공간 음향을 송출했습니다.`,
+      `[로컬 스테이션 기록] ‘${label}’ — 현재 화면에 이펙트와 공간 음향을 재생했습니다.`,
       ...prev.slice(0, 5),
     ]);
   };
