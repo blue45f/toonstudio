@@ -1,6 +1,6 @@
 import { pathBounds, sceneIRSchema } from "@toonstudio/studio-project-model";
 
-import { matchPaintUrl, scanTransformCalls } from "./svg-syntax-scan";
+import { matchPaintUrl, resolveViewBoxRootCtm, scanTransformCalls } from "./svg-syntax-scan";
 
 import type {
   BlendModeIR,
@@ -1674,19 +1674,9 @@ function resolveViewport(
   if (widthAttr === null && heightAttr === null && viewBox === null) {
     warn("svg has neither width/height nor viewBox; defaulting to 300x150");
   }
-  let rootCtm: Mat = IDENTITY;
-  if (viewBox) {
-    const scaleX = sceneWidth / viewBox.width;
-    const scaleY = sceneHeight / viewBox.height;
-    rootCtm = [scaleX, 0, 0, scaleY, -viewBox.minX * scaleX, -viewBox.minY * scaleY];
-    if (Math.abs(scaleX - scaleY) > 1e-6 * Math.max(scaleX, scaleY)) {
-      warn("viewBox aspect ratio differs from width/height; content stretched non-uniformly");
-      const par = root.attrs["preserveAspectRatio"];
-      if (par !== undefined && par.trim() !== "none") {
-        unsupportedFeature("attr:preserveAspectRatio");
-      }
-    }
-  }
+  const rootCtm: Mat = viewBox
+    ? resolveViewBoxRootCtm(viewBox, sceneWidth, sceneHeight, root.attrs["preserveAspectRatio"], warn, unsupportedFeature)
+    : IDENTITY;
   return {
     sceneWidth,
     sceneHeight,

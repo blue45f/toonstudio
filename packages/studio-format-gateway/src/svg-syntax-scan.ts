@@ -86,3 +86,60 @@ export function matchPaintUrl(value: string): PaintUrlMatch | null {
   // 원래 식의 `.` 는 줄 끝 문자를 읽지 못해 `$` 에 닿지 못하고 통째로 실패한다.
   return hasLineTerminator(rest) ? null : { target, rest };
 }
+
+export interface ViewportAspectRatio {
+  mode: "none" | "meet" | "slice";
+  alignX: number;
+  alignY: number;
+}
+
+export function parseViewportAspectRatio(
+  raw: string | undefined,
+  warn: (message: string) => void,
+  unsupportedFeature: (entry: string) => void,
+): ViewportAspectRatio {
+  const fallback: ViewportAspectRatio = { mode: "meet", alignX: 0.5, alignY: 0.5 };
+  if (raw === undefined) return fallback;
+  // SVG 1.1의 defer는 루트 SVG에서 참조 이미지가 없으므로 정렬에 영향을 주지 않는다.
+  const value = raw.trim().replace(/^defer\s+/, "");
+  if (/^none(?:\s+(?:meet|slice))?$/.test(value)) {
+    return { mode: "none", alignX: 0, alignY: 0 };
+  }
+  const match = /^x(Min|Mid|Max)Y(Min|Mid|Max)(?:\s+(meet|slice))?$/.exec(value);
+  if (!match) {
+    warn(`unparseable preserveAspectRatio="${raw}"; using xMidYMid meet`);
+    unsupportedFeature("attr:preserveAspectRatio");
+    return fallback;
+  }
+  const alignment = (token: string | undefined): number => (token === "Min" ? 0 : token === "Max" ? 1 : 0.5);
+  return {
+    mode: match[3] === "slice" ? "slice" : "meet",
+    alignX: alignment(match[1]),
+    alignY: alignment(match[2]),
+  };
+}
+
+export function resolveViewBoxRootCtm(
+  viewBox: { minX: number; minY: number; width: number; height: number },
+  sceneWidth: number,
+  sceneHeight: number,
+  preserveAspectRatioRaw: string | undefined,
+  warn: (message: string) => void,
+  unsupportedFeature: (entry: string) => void,
+): [number, number, number, number, number, number] {
+  const scaleX = sceneWidth / viewBox.width;
+  const scaleY = sceneHeight / viewBox.height;
+  const aspectRatio = parseViewportAspectRatio(preserveAspectRatioRaw, warn, unsupportedFeature);
+  if (aspectRatio.mode === "none") {
+    return [scaleX, 0, 0, scaleY, -viewBox.minX * scaleX, -viewBox.minY * scaleY];
+  }
+  const scale = aspectRatio.mode === "slice" ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
+  return [
+    scale,
+    0,
+    0,
+    scale,
+    -viewBox.minX * scale + (sceneWidth - viewBox.width * scale) * aspectRatio.alignX,
+    -viewBox.minY * scale + (sceneHeight - viewBox.height * scale) * aspectRatio.alignY,
+  ];
+}
