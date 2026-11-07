@@ -1,21 +1,14 @@
 import {
-  Archive,
-  ArrowLeft,
   BellOff,
   Check,
-  CircleSlash2,
   Flag,
-  Inbox,
   LoaderCircle,
   Mail,
   MessageSquareText,
-  MoreHorizontal,
   RefreshCw,
   Send,
   Settings2,
   ShieldAlert,
-  Volume2,
-  VolumeX,
   X,
 } from "lucide-react";
 import {
@@ -29,7 +22,6 @@ import {
 } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-import Link from "@/shared/navigation/router-link";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -56,25 +48,10 @@ import { MessageBubble, MessageDayDivider } from "./MessageBubble";
 import { messageDayKey, messageDayLabel } from "./message-time";
 import { MessagingSettingsPanel } from "./MessagingSettingsPanel";
 import { ConversationSkeleton, ThreadListSkeleton } from "./MessagingSkeletons";
-import { UserAvatar } from "./MessagingUserAvatar";
+import { MessagesConversationHeader } from "./MessagesConversationHeader";
+import { MessagesInboxTabs } from "./MessagesInboxTabs";
+import { MESSAGES_INBOX_PANEL_ID, messagesInboxTabId } from "./messages-inbox-navigation";
 
-
-const TAB_OPTIONS: ReadonlyArray<{
-  value: InboxTab;
-  label: string;
-  icon: typeof Mail;
-}> = [
-  { value: "active", label: "대화", icon: MessageSquareText },
-  { value: "requests", label: "메시지 요청", icon: Inbox },
-  { value: "archived", label: "보관함", icon: Archive },
-];
-
-const CATEGORY_LABELS = {
-  feedback: "작품 피드백",
-  collaboration: "협업 제안",
-  business: "비즈니스 문의",
-  general: "일반 문의",
-} as const;
 
 const REPORT_OPTIONS: ReadonlyArray<{
   value: MessagingReportReason;
@@ -488,28 +465,8 @@ export function MessagesPage() {
 
       <div className="relative min-h-[620px] overflow-hidden rounded-3xl border border-line bg-panel shadow-sm lg:grid lg:grid-cols-[22rem_minmax(0,1fr)]">
         <aside className={cn("border-r border-line bg-card", showMobileList ? "block" : "hidden lg:block")}>
-          <div role="tablist" aria-label="메시지함" className="grid grid-cols-3 border-b border-line p-2">
-            {TAB_OPTIONS.map((option) => {
-              const Icon = option.icon;
-              const active = option.value === tab;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setTab(option.value)}
-                  className={cn(
-                    "flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-semibold transition-colors",
-                    active ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-raised hover:text-fg"
-                  )}
-                >
-                  <Icon size={14} />
-                  <span>{option.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          <MessagesInboxTabs tab={tab} onChange={setTab} />
+          <div id={MESSAGES_INBOX_PANEL_ID} role="tabpanel" aria-labelledby={messagesInboxTabId(tab)} tabIndex={0} className="focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent">
           {listError && threads.length > 0 && (
             <div role="alert" className="m-3 flex flex-wrap items-center gap-2 rounded-xl border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger">
               <span>{listError}</span>
@@ -543,6 +500,7 @@ export function MessagesPage() {
               ))}
             </div>
           )}
+          </div>
         </aside>
 
         <div className={cn("relative min-w-0 bg-bg", showMobileList ? "hidden lg:block" : "block")}>
@@ -569,48 +527,14 @@ export function MessagesPage() {
             </div>
           ) : detail && selectedThread ? (
             <div className="flex min-h-[620px] flex-col">
-              <header className="flex min-h-16 items-center gap-3 border-b border-line bg-card px-3 py-2 sm:px-5">
-                <Link href="/messages" className="grid size-9 shrink-0 place-items-center rounded-xl hover:bg-raised lg:hidden" aria-label="대화 목록으로">
-                  <ArrowLeft size={17} />
-                </Link>
-                <UserAvatar user={selectedThread.otherUser} />
-                <div className="min-w-0 flex-1">
-                  <Link href={`/u/${encodeURIComponent(selectedThread.otherUser.id)}`} className="truncate text-sm font-semibold hover:underline">
-                    {selectedThread.otherUser.name}
-                  </Link>
-                  <p className="mt-0.5 truncate text-xs text-fg-2">
-                    {CATEGORY_LABELS[selectedThread.category]}
-                    {selectedThread.context.label
-                      ? selectedThread.context.href
-                        ? (
-                          <>
-                            {" · "}
-                            <Link href={selectedThread.context.href} className="font-semibold text-accent hover:underline" aria-label={`${selectedThread.context.label} 맥락으로 이동`}>
-                              {selectedThread.context.label}
-                            </Link>
-                          </>
-                        )
-                        : ` · ${selectedThread.context.label}`
-                      : ""}
-                  </p>
-                </div>
-                <button type="button" onClick={() => void toggleMute()} disabled={Boolean(busy)} className="grid size-9 place-items-center rounded-xl hover:bg-raised" aria-label={selectedThread.mutedUntil ? "알림 켜기" : "8시간 알림 끄기"}>
-                  {selectedThread.mutedUntil ? <VolumeX size={17} /> : <Volume2 size={17} />}
-                </button>
-                <button type="button" onClick={() => void toggleArchive()} disabled={Boolean(busy)} className="grid size-9 place-items-center rounded-xl hover:bg-raised" aria-label={selectedThread.archivedAt ? "보관 해제" : "대화 보관"}>
-                  <Archive size={17} />
-                </button>
-                <div className="relative group/actions">
-                  <button type="button" className="grid size-9 place-items-center rounded-xl hover:bg-raised" aria-label="대화 메뉴">
-                    <MoreHorizontal size={18} />
-                  </button>
-                  <div className="invisible absolute right-0 top-9 z-10 w-36 translate-y-1 rounded-xl border border-line bg-card p-1 opacity-0 shadow-lg transition group-focus-within/actions:visible group-focus-within/actions:translate-y-0 group-focus-within/actions:opacity-100 group-hover/actions:visible group-hover/actions:translate-y-0 group-hover/actions:opacity-100">
-                    <button type="button" onClick={() => void blockOtherUser()} disabled={selectedThread.blocked || Boolean(busy)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-danger hover:bg-danger-soft disabled:opacity-50">
-                      <CircleSlash2 size={14} />{selectedThread.blocked ? "차단됨" : "회원 차단"}
-                    </button>
-                  </div>
-                </div>
-              </header>
+              <MessagesConversationHeader
+                thread={selectedThread}
+                tab={tab}
+                busy={Boolean(busy)}
+                onToggleMute={() => void toggleMute()}
+                onToggleArchive={() => void toggleArchive()}
+                onBlock={() => void blockOtherUser()}
+              />
 
               {detailError && (
                 <p role="alert" className="border-b border-danger/30 bg-danger-soft px-4 py-2 text-xs text-danger">{detailError}</p>

@@ -1,6 +1,6 @@
-import { translateCurrentStaticSourceText, formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { Archive, Clock3, FolderOpen, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -27,13 +27,16 @@ export function StudioProjectLibraryManagementHeader({
     setSelectedIds, notice, setNotice, setDeleteRequest, listedProjects,
     viewCounts, visibleProjects, selectedProjects, allVisibleSelected,
     toggleVisibleSelection, archiveProjects, trashProjects, restoreProjects,
-    continueProjectHref, projectResumeTarget,
+    projectResumeTarget,
   } = controller;
+  const hasSearchQuery = query.trim().length > 0;
   const userProjects = listedProjects.filter(
     (project) => project.id !== EXAMPLE_PROJECT_ID && project.id !== SAMPLE_PROJECT_ID,
   );
   const recentCandidates = userProjects.length > 0 ? userProjects : listedProjects;
-  const recentProject = view === "active" ? studioLobbyRecentProjects(recentCandidates, 1)[0] ?? null : null;
+  const recentProject = view === "active" && !hasSearchQuery
+    ? studioLobbyRecentProjects(recentCandidates, 1)[0] ?? null
+    : null;
   const recentResumeTarget = recentProject ? projectResumeTarget(recentProject) : null;
   return (
     <section
@@ -45,7 +48,7 @@ export function StudioProjectLibraryManagementHeader({
     >
       <header className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <p className="hidden text-[0.68rem] font-black uppercase sm:block tracking-[0.18em] text-accent">{translateCurrentStaticSourceText("domains.creator.studio.shell.StudioProjectLibraryManagementHeader", "en", "TOONSTUDIO")}</p>
+          <p className="hidden text-[0.68rem] font-black uppercase sm:block tracking-[0.18em] text-accent">TOONSTUDIO</p>
           <h1 className="text-2xl font-black tracking-tight text-fg sm:mt-2 sm:text-4xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
           </h1>
@@ -94,7 +97,7 @@ export function StudioProjectLibraryManagementHeader({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={continueProjectHref(recentProject)}
+              href={recentResumeTarget.href}
               onClick={() => {
                 library.touch(recentProject.id, recentResumeTarget.documentId);
               }}
@@ -103,13 +106,6 @@ export function StudioProjectLibraryManagementHeader({
             >
               <FolderOpen size={14} aria-hidden="true" />
               {bi("최근 작업 열기", "Open recent work")}
-            </Link>
-            <Link
-              href="/studio/import"
-              data-studio-open-package-shortcut="true"
-              className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 shrink-0 text-xs font-bold text-accent sm:min-h-9" })}
-            >
-              {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
             </Link>
           </div>
         </div>
@@ -201,7 +197,22 @@ export function StudioProjectLibraryManagementHeader({
               <span className="sr-only">{bi("프로젝트 검색", "Search projects")}</span>
               <input
                 value={query}
+                data-studio-library-search-input="true"
                 onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+                onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+                  if (event.nativeEvent.isComposing) return;
+                  if (event.key === "Escape" && query.length > 0) {
+                    event.stopPropagation();
+                    setQuery("");
+                    return;
+                  }
+                  if (event.key === "Enter" && visibleProjects.length > 0) {
+                    event.preventDefault();
+                    document
+                      .querySelector<HTMLElement>('[data-studio-project-card="true"] a[data-studio-card-continue="true"]')
+                      ?.focus();
+                  }
+                }}
                 placeholder={bi("제목·종류·설명 검색", "Search title, type or description")}
                 className="min-h-11 w-full rounded-xl border border-line bg-panel pl-10 pr-3 text-sm text-fg outline-none focus:border-accent"
               />

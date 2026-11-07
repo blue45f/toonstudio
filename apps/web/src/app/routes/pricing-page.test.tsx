@@ -110,4 +110,30 @@ describe("pricing polish integration", () => {
     renderPricing();
     expect(document.querySelectorAll('[data-testid="pulse-ring"]')).toHaveLength(0);
   });
+
+  it("uses semantic text-on-accent on the Pro recommended badge instead of hardcoded text-white (GAP-R4-03)", () => {
+    renderPricing();
+    const pro = screen.getByRole("article", { name: "Pro" });
+    const badge = within(pro).getByText("추천");
+    expect(badge.className).toContain("bg-accent");
+    expect(badge.className).toContain("text-on-accent");
+    expect(badge.className).not.toContain("text-white");
+  });
+
+  it("renders FAQ summaries with 44px touch target, focus-visible indicator, and accessible disclosure icon (GAP-R4-03)", () => {
+    renderPricing();
+    const summaries = Array.from(document.querySelectorAll("#faq details > summary"));
+    expect(summaries).toHaveLength(4);
+    for (const summary of summaries) {
+      expect(summary.className).toContain("min-h-11");
+      expect(summary.className).toContain("focus-visible:outline-2");
+      expect(summary.className).toContain("focus-visible:outline-accent");
+      expect(summary.className).toContain("focus-visible:ring-2");
+      const icon = summary.querySelector("svg");
+      expect(icon).toBeTruthy();
+      expect(icon?.getAttribute("aria-hidden")).toBe("true");
+      expect(icon?.getAttribute("class") ?? "").toContain("group-open:rotate-180");
+      expect(icon?.getAttribute("class") ?? "").toContain("motion-reduce:transition-none");
+    }
+  });
 });

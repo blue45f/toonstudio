@@ -39,7 +39,7 @@ function AuthorNames({ raw }: { raw: string }) {
           ) : (
             <Link
               href={`/author/${encodeURIComponent(name)}`}
-              className="underline-offset-2 transition-colors hover:text-white hover:underline"
+              className="rounded-sm underline-offset-2 transition-colors hover:text-white hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               {name}
             </Link>
@@ -118,7 +118,7 @@ export function TitleDetailHero({
             className="shadow-[0_28px_64px_-18px_oklch(0.05_0.01_70/0.85)]"
           />
         </div>
-        <div className="contents">
+        <div className="contents [overflow-wrap:anywhere]">
         <div className="col-start-2 flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="rounded-md bg-[oklch(0.62_0.19_295)] px-2 py-0.5 text-[0.7rem] font-bold text-white">
             {TYPE_LABEL[title.type]}
@@ -247,7 +247,7 @@ export function TitleDetailHero({
             <a
               key={item.href}
               href={item.href}
-              className="inline-flex min-h-11 items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm transition-colors hover:border-white/45 hover:bg-white/20"
+              className="inline-flex min-h-11 items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm transition-colors hover:border-white/45 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               {bi(item.ko, item.en)}
             </a>

@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -11,7 +11,7 @@ import { chooseStudioProjectPackageSaveTarget, studioProjectPackageFileName, wri
 import { readStudioSubmissions } from "../save-first/studio-submission-store";
 import { ensureInitialStudioProjectDocument, readStudioProjectDocuments, studioProjectDocumentStorageKey } from "../studio-project-document-store";
 import { removeStudioExactResumeContext } from "../studio-exact-resume-context";
-import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
+import { createStudioProjectLibraryResumeCache } from "./studio-project-library-resume-cache";
 import { activateStudioProjectsBulk, archiveStudioProjectsBulk, permanentlyDeleteStudioProjectsBulk, restoreStudioProjectsBulk, trashStudioProjectsBulk, type StudioProjectBulkMutationResult } from "../studio-project-library-bulk";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
 import { resolveStudioProjectLibraryManagementView, sortStudioProjectLibraryProjects, studioProjectIsTemporaryWork, studioProjectLibraryLocale, studioProjectLibrarySearchText, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
@@ -62,20 +62,42 @@ export function useStudioProjectLibraryManagementController() {
       trash: projects.filter((project) => project.status === "trashed").length,
     } as const;
   }, [library.state]);
+  const searchIndexByProjectId = useMemo(() => {
+    const index = new Map<string, string>();
+    for (const project of listedProjects) {
+      index.set(project.id, studioProjectLibrarySearchText(project, locale));
+    }
+    return index;
+  }, [listedProjects, locale]);
+
   const visibleProjects = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase();
-    const filtered = normalized
-      ? listedProjects.filter((project) => studioProjectLibrarySearchText(project, locale).includes(normalized))
+    const normalized = query.normalize("NFC").trim().toLocaleLowerCase();
+    const tokens = normalized ? normalized.split(/\s+/u).filter(Boolean) : [];
+    const filtered = tokens.length > 0
+      ? listedProjects.filter((project) => {
+          const haystack = searchIndexByProjectId.get(project.id) ?? studioProjectLibrarySearchText(project, locale);
+          return tokens.every((token) => haystack.includes(token));
+        })
       : listedProjects;
     return sortStudioProjectLibraryProjects(filtered, sort);
-  }, [listedProjects, locale, query, sort]);
+  }, [listedProjects, locale, query, searchIndexByProjectId, sort]);
 
+  const profileFor = profiles.profileFor;
+  const temporaryProjectIdSet = useMemo(() => {
+    const ids = new Set<string>();
+    for (const project of listedProjects) {
+      if (studioProjectIsTemporaryWork(profileFor(project.id))) {
+        ids.add(project.id);
+      }
+    }
+    return ids;
+  }, [listedProjects, profileFor]);
   const temporaryProjects = useMemo(() => view === "active"
-    ? visibleProjects.filter((project) => studioProjectIsTemporaryWork(profiles.profileFor(project.id)))
-    : [], [profiles, view, visibleProjects]);
+    ? visibleProjects.filter((project) => temporaryProjectIdSet.has(project.id))
+    : [], [temporaryProjectIdSet, view, visibleProjects]);
   const savedProjects = useMemo(() => view === "active"
-    ? visibleProjects.filter((project) => !studioProjectIsTemporaryWork(profiles.profileFor(project.id)))
-    : visibleProjects, [profiles, view, visibleProjects]);
+    ? visibleProjects.filter((project) => !temporaryProjectIdSet.has(project.id))
+    : visibleProjects, [temporaryProjectIdSet, view, visibleProjects]);
 
   const selectedProjects = useMemo(
     () => listedProjects.filter((project) => selectedIds.has(project.id)),
@@ -89,15 +111,23 @@ export function useStudioProjectLibraryManagementController() {
   }, [view, query]);
 
   useEffect(() => {
-    if (!saveTarget && !deleteRequest) return undefined;
+    if (!saveTarget && !deleteRequest && selectedIds.size === 0) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setSaveTarget(null);
-      setDeleteRequest(null);
+      if (event.key !== "Escape" || event.isComposing) return;
+      if (saveTarget || deleteRequest) {
+        setSaveTarget(null);
+        setDeleteRequest(null);
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (target instanceof HTMLInputElement && target.value.length > 0) return;
+      if (selectedIds.size > 0) {
+        setSelectedIds(new Set());
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [deleteRequest, saveTarget]);
+  }, [deleteRequest, saveTarget, selectedIds.size]);
 
   const setSelection = useCallback((projectId: string, selected: boolean) => {
     setSelectedIds((current) => {
@@ -382,20 +412,22 @@ export function useStudioProjectLibraryManagementController() {
     `/studio/p/${encodeURIComponent(project.id)}/overview`
   );
 
-  const projectResumeTarget = (project: StudioProjectLibraryEntry) => {
-    if (typeof window === "undefined") {
-      return {
-        href: projectOverviewHref(project),
-        documentId: project.lastOpenedDocumentId,
-        summary: null,
-        exact: false,
-      };
-    }
-    return resolveStudioProjectResumeTarget(window.localStorage, project, locale === "ko" ? "ko" : "en");
-  };
-  const continueProjectHref = (project: StudioProjectLibraryEntry): string => (
-    projectResumeTarget(project).href
+  const resumeTargetCache = useMemo(() => createStudioProjectLibraryResumeCache({
+    projects: listedProjects,
+    locale: locale === "ko" ? "ko" : "en",
+    readStorage: () => window.localStorage,
+    host: typeof window === "undefined" ? undefined : window,
+  }), [listedProjects, locale]);
+  const resumeRevision = useSyncExternalStore(
+    resumeTargetCache.subscribe, resumeTargetCache.getSnapshot, resumeTargetCache.getServerSnapshot,
   );
+  const projectResumeTarget = useCallback((project: StudioProjectLibraryEntry) => {
+    void resumeRevision;
+    return resumeTargetCache.resolve(project);
+  }, [resumeRevision, resumeTargetCache]);
+  const continueProjectHref = useCallback((project: StudioProjectLibraryEntry): string => (
+    projectResumeTarget(project).href
+  ), [projectResumeTarget]);
   return {
     locale,
     authUserId,

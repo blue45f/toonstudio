@@ -750,11 +750,21 @@ export function StudioCreatorLobby({
   readonly controller: StudioProjectLibraryManagementController;
 }) {
   useBilingualI18nRevision();
-  const recentProjects = studioLobbyRecentProjects(controller.library.projects);
-  const temporaryCount = controller.library.projects.filter(
-    (project) => project.status === "active"
-      && studioProjectIsTemporaryWork(controller.profiles.profileFor(project.id)),
-  ).length;
+  const libraryProjects = controller.library.projects;
+  const profileFor = controller.profiles.profileFor;
+  const recentProjects = useMemo(
+    () => studioLobbyRecentProjects(libraryProjects),
+    [libraryProjects],
+  );
+  const temporaryCount = useMemo(
+    () =>
+      libraryProjects.filter(
+        (project) =>
+          project.status === "active"
+          && studioProjectIsTemporaryWork(profileFor(project.id)),
+      ).length,
+    [libraryProjects, profileFor],
+  );
 
   return (
     <section

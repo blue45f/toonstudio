@@ -520,14 +520,15 @@ describe("StudioProjectLibraryPage", () => {
     expect(within(recentBar).getByText(longTitle).getAttribute("title")).toBe(longTitle);
     const openRecentLink = within(recentBar).getByRole("link", { name: /^최근 작업 열기$|^Open recent work$/u });
     expect(openRecentLink.getAttribute("href")).toContain("/studio/p/series-recent/");
-    const openPackageLink = within(recentBar).getByRole("link", { name: /\.toonstudio 파일 열기|Open \.toonstudio file/u });
-    expect(openPackageLink.getAttribute("href")).toBe("/studio/import");
+    expect(within(recentBar).queryByRole("link", { name: /\.toonstudio 파일 열기|Open \.toonstudio file/u })).toBeNull();
 
     const recentHeading = await screen.findByRole("heading", { name: longTitle });
     expect(recentHeading.getAttribute("data-studio-project-title")).toBe("true");
     expect(recentHeading.getAttribute("title")).toBe(longTitle);
     expect(recentHeading.className).toContain("line-clamp-2");
     expect(recentHeading.className).toContain("break-words");
+    const titleLink = within(recentHeading).getByRole("link", { name: longTitle });
+    expect(titleLink.getAttribute("href")).toContain("/studio/p/series-recent/");
 
     const recentCard = recentHeading.closest("article") as HTMLElement | null;
     expect(recentCard).not.toBeNull();
@@ -544,6 +545,142 @@ describe("StudioProjectLibraryPage", () => {
       expect(fallback?.getAttribute("data-project-preview-state")).toBe("fallback");
     });
   });
+
+  it("handles 200 synthetic projects with windowed initial render, Korean IME search, 0-result focus recovery, and keyboard selection", async () => {
+    const baseMs = Date.parse("2026-11-07T12:00:00.000Z");
+    const projects = [];
+    const profiles: Record<string, unknown> = {};
+
+    for (let i = 0; i < 200; i += 1) {
+      const id = `proj-scale-${String(i + 1).padStart(3, "0")}`;
+      const isTemporary = i % 2 === 0;
+      const isLongKorean = i % 3 === 0;
+      const updatedIso = new Date(baseMs - i * 60_000).toISOString();
+      const createdIso = new Date(baseMs - (i + 500) * 60_000).toISOString();
+      const title = isLongKorean
+        ? `[합성${i + 1}] 초장문 한국어 웹툰 프로젝트 제목 — 왕립 마법학교 옥상에서 마주친 회귀자들과 계절학기 마감 직전의 야간 콘티 검수 기록 제${i + 1}화`
+        : `합성${i + 1} 에피소드 작업본 (${isTemporary ? "임시" : "보관"})`;
+
+      projects.push({
+        id,
+        title,
+        kind: i % 5 === 0 ? "illustration" : "webtoon",
+        status: "active",
+        statusBeforeTrash: null,
+        templateId: null,
+        description: `합성픽스처 그룹${(i % 10) + 1}`,
+        primaryLocale: "ko-KR",
+        createdAt: createdIso,
+        updatedAt: updatedIso,
+        lastOpenedAt: updatedIso,
+        lastOpenedDocumentId: null,
+        thumbnailUrl: i % 4 === 0 ? "data:image/svg+xml;utf8,<svg broken" : null,
+      });
+
+      if (!isTemporary) {
+        profiles[id] = {
+          schemaVersion: 1,
+          projectId: id,
+          accessMode: "owner-only",
+          storageMode: "hybrid",
+          distributionState: "none",
+          autoSave: true,
+          createVersions: true,
+          revision: 1,
+          bindings: [
+            {
+              id: `bind-browser-${i + 1}`,
+              provider: "browser",
+              role: "working-copy",
+              label: "브라우저 작업본",
+              syncState: "synced",
+              lastSyncedAt: updatedIso,
+            },
+            {
+              id: `bind-file-${i + 1}`,
+              provider: "local-file",
+              role: "canonical",
+              label: `synthetic-${i + 1}.toonstudio`,
+              remotePath: `synthetic-${i + 1}.toonstudio`,
+              syncState: "synced",
+              lastSyncedAt: updatedIso,
+            },
+          ],
+          lastManualSaveAt: updatedIso,
+          lastExportAt: null,
+          lastSubmissionAt: null,
+          lastPublicationAt: null,
+          updatedAt: updatedIso,
+        };
+      }
+    }
+
+    window.localStorage.setItem(
+      "toonspectrum:studio-project-library:v1",
+      JSON.stringify({
+        schemaVersion: 1,
+        projects,
+        updatedAt: new Date(baseMs).toISOString(),
+      }),
+    );
+    window.localStorage.setItem(
+      "toonstudio.save-profiles.v1",
+      JSON.stringify({
+        schemaVersion: 1,
+        profiles,
+        updatedAt: new Date(baseMs).toISOString(),
+      }),
+    );
+
+    const { container } = render(
+      <MemoryRouter initialEntries={["/studio"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+
+    const initialCards = container.querySelectorAll('[data-studio-project-card="true"]');
+    expect(initialCards.length).toBe(24);
+
+    const loadMoreTemporary = container.querySelector<HTMLButtonElement>('[data-studio-load-more="temporary"]');
+    const loadMoreSaved = container.querySelector<HTMLButtonElement>('[data-studio-load-more="saved"]');
+    expect(loadMoreTemporary).not.toBeNull();
+    expect(loadMoreSaved).not.toBeNull();
+
+    fireEvent.click(loadMoreTemporary!);
+    expect(container.querySelectorAll('[data-studio-project-card="true"]').length).toBe(48);
+
+    // Keyboard selection navigation (ArrowDown ->ArrowUp) and Escape to clear selection
+    const checkboxes = container.querySelectorAll<HTMLButtonElement>('[data-studio-selection-checkbox="true"]');
+    expect(checkboxes.length).toBe(48);
+    checkboxes[0]!.focus();
+    fireEvent.keyDown(checkboxes[0]!, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(checkboxes[1]);
+    fireEvent.click(checkboxes[1]!);
+    expect(checkboxes[1]!.getAttribute("aria-checked")).toBe("true");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(checkboxes[1]!.getAttribute("aria-checked")).toBe("false");
+
+    // Korean IME search composition and 0-result focus recovery
+    const searchInput = screen.getByRole("textbox", { name: /프로젝트 검색|Search projects/u }) as HTMLInputElement;
+    fireEvent.compositionStart(searchInput, { data: "합성199" });
+    fireEvent.change(searchInput, { target: { value: "합성199" } });
+    fireEvent.compositionEnd(searchInput, { data: "합성199" });
+
+    expect(container.querySelector('[data-studio-recent-work-bar="true"]')).toBeNull();
+    expect(container.querySelectorAll('[data-studio-project-card="true"]').length).toBe(1);
+    expect(screen.getByRole("heading", { name: /합성199/u })).toBeTruthy();
+
+    fireEvent.change(searchInput, { target: { value: "존재하지않는작품999" } });
+    const emptySearchSection = container.querySelector('[data-studio-empty-state="search"]');
+    expect(emptySearchSection).not.toBeNull();
+
+    const clearButton = within(emptySearchSection as HTMLElement).getByRole("button", {
+      name: /검색어 지우기|Clear search/u,
+    });
+    fireEvent.click(clearButton);
+    expect(searchInput.value).toBe("");
+    expect(document.activeElement).toBe(searchInput);
+    expect(container.querySelectorAll('[data-studio-project-card="true"]').length).toBe(24);
+  });
 });
-
-

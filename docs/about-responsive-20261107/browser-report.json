@@ -1,0 +1,425 @@
+{
+  "base": "http://127.0.0.1:4197",
+  "results": [
+    {
+      "id": "mobile-320",
+      "theme": "starlight",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 138,
+            "height": 123
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 138,
+            "height": 123
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 138,
+            "height": 147
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 138,
+            "height": 147
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 48
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "mobile-390",
+      "theme": "starlight",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 173,
+            "height": 123
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 48
+      },
+      "keyboard": "passed",
+      "history": "passed",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "tablet-768",
+      "theme": "starlight",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 354,
+            "height": 123
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 354,
+            "height": 123
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 354,
+            "height": 123
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 354,
+            "height": 123
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 48
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "desktop-1440",
+      "theme": "starlight",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 305,
+            "height": 123
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 305,
+            "height": 123
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 305,
+            "height": 123
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 305,
+            "height": 123
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 48
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "desktop-zoom200",
+      "theme": "starlight",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 310,
+            "height": 246
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 310,
+            "height": 246
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 310,
+            "height": 246
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 310,
+            "height": 246
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 116
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "mobile-light",
+      "theme": "light",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 173,
+            "height": 123
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 48
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "mobile-contrast",
+      "theme": "contrast",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 173,
+            "height": 123
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 48
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "desktop-reduced-motion",
+      "theme": "starlight",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 305,
+            "height": 123
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 305,
+            "height": 123
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 305,
+            "height": 123
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 305,
+            "height": 123
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 48
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "mobile-forced-colors",
+      "theme": "starlight",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 173,
+            "height": 123
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 48
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "mobile-english",
+      "theme": "starlight",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01PlanCast sheet · synopsis",
+            "width": 173,
+            "height": 147
+          },
+          {
+            "text": "02CreatePanels · balloons · 3D framing",
+            "width": 173,
+            "height": 147
+          },
+          {
+            "text": "03Review togetherRevisions · approved version",
+            "width": 173,
+            "height": 171
+          },
+          {
+            "text": "04Save and publishExport files · release",
+            "width": 173,
+            "height": 171
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 58
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    },
+    {
+      "id": "mobile-image-error",
+      "theme": "starlight",
+      "metrics": {
+        "bodyOverflow": false,
+        "steps": [
+          {
+            "text": "01기획인물표·시놉시스",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "02제작컷·말풍선·3D 구도",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "03협업·검토수정 요청·승인본",
+            "width": 173,
+            "height": 123
+          },
+          {
+            "text": "04저장·발행내보내기 파일·게시본",
+            "width": 173,
+            "height": 123
+          }
+        ],
+        "filmCount": 2,
+        "resourceCount": 11,
+        "promises": 3,
+        "clippedRails": [],
+        "jumpMinHeight": 48
+      },
+      "keyboard": "passed",
+      "history": "not-run",
+      "axe": [],
+      "errors": []
+    }
+  ],
+  "zoomMethod": "CSS zoom 2; OS browser zoom not tested",
+  "dataMode": "API 503 fixture; guest page only"
+}
