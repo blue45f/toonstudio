@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 
 import type { Title } from "@/shared/lib/types";
 
+import { primaryAuthorName } from "./local-catalog-fallback";
 import { getReaderProgress, isResumable } from "./reader-progress";
 import { resolveExternalPlatformGuide } from "./title-episode-empty-guide";
 import {
@@ -470,12 +471,17 @@ export function TitleEpisodeSection({
             {/* 외부로 나가지 않아도 흐름이 끊기지 않게 하는 내부 후속 동선.
                 외부 링크 유무와 무관하게 항상 제공한다. */}
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-              <Link
-                href={`/author/${encodeURIComponent(title.author)}`}
-                className="inline-flex min-h-10 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
-              >
-                {formatI18nTemplate(bi("{v0}의 다른 작품", "More by {v0}"), { v0: title.author })}
-              </Link>
+              {(() => {
+                const leadAuthor = primaryAuthorName(title.author);
+                return leadAuthor ? (
+                  <Link
+                    href={`/author/${encodeURIComponent(leadAuthor)}`}
+                    className="inline-flex min-h-10 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+                  >
+                    {formatI18nTemplate(bi("{v0}의 다른 작품", "More by {v0}"), { v0: leadAuthor })}
+                  </Link>
+                ) : null;
+              })()}
               <Link
                 href="/explore"
                 className="inline-flex min-h-10 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"

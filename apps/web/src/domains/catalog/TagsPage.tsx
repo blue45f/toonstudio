@@ -196,7 +196,7 @@ export function TagsPage() {
           <h2 className="mt-3 font-display text-lg font-bold text-fg">
             {query
               ? catalogStatusText("catalog.status.tags.searchEmpty", "일치하는 태그가 없습니다.")
-              : catalogStatusText("catalog.status.tags.empty", "등록된 태그가 없습니다.")}
+              : "등록된 태그가 없습니다."}
           </h2>
           <p className="mt-2 text-sm leading-6 text-fg-3">
             {query

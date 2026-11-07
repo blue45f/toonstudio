@@ -3,26 +3,38 @@ import { useCallback, useEffect, useState } from "react";
 import type { DiscoverHomeSnapshot } from "./discover-home";
 import {
   collectDiscoverLocalMatches,
+  computeLocalPlatformCoverage,
   type DiscoverLocalMatchResult,
   filterTitlesByLocalQuery,
+  isPlaceholderAuthorName,
   matchesHangulAwareQuery,
   normalizePlatformId,
+  primaryAuthorName,
   sanitizeCatalogApiData,
   sanitizeDiscoverHomeSnapshot,
+  sanitizeExternalCatalogUrl,
+  sanitizePlatformCoverageList,
   sanitizeTitleArray,
   sanitizeTitleRecord,
+  splitAuthorNames,
 } from "./local-catalog-sanitize";
 import type { PlatformId, SerialStatus, Title, WorkType } from "@/shared/lib/types";
 
 export {
   collectDiscoverLocalMatches,
+  computeLocalPlatformCoverage,
   type DiscoverLocalMatchResult,
   filterTitlesByLocalQuery,
+  isPlaceholderAuthorName,
   matchesHangulAwareQuery,
   normalizePlatformId,
+  primaryAuthorName,
   sanitizeCatalogApiData,
   sanitizeDiscoverHomeSnapshot,
+  sanitizeExternalCatalogUrl,
+  sanitizePlatformCoverageList,
   sanitizeTitleRecord,
+  splitAuthorNames,
 };
 
 const STATIC_DIRECT_FILES: Record<string, string> = {
@@ -36,6 +48,7 @@ const STATIC_DIRECT_FILES: Record<string, string> = {
 interface LightweightLocalPool {
   readonly titles: Title[];
   readonly tags: { readonly tag: string; readonly count: number }[];
+  readonly generatedAt: string;
   readonly anySourceLoaded: boolean;
 }
 
@@ -73,7 +86,7 @@ async function loadLightweightLocalPool(): Promise<LightweightLocalPool> {
       if (!anySourceLoaded) {
         // 모든 정적 소스가 실패한 경우 캐시를 고정하지 않고 다음 재시도에서 다시 요청하도록 비운다.
         cachedLocalPoolPromise = null;
-        return { titles: [], tags: [], anySourceLoaded: false };
+        return { titles: [], tags: [], generatedAt: "", anySourceLoaded: false };
       }
 
       const pool: Title[] = [];
@@ -120,9 +133,15 @@ async function loadLightweightLocalPool(): Promise<LightweightLocalPool> {
               .slice(0, 18)
           : [];
 
+      const generatedAt =
+        typeof homeSnap?.generatedAt === "string" && homeSnap.generatedAt.trim().length > 0
+          ? homeSnap.generatedAt.trim()
+          : "";
+
       return {
         titles: pool,
         tags: sanitizedTags,
+        generatedAt,
         anySourceLoaded: true,
       };
     })();
@@ -154,7 +173,7 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
 
   if (pathname === "/api/explore") {
     const [
-      { titles, tags, anySourceLoaded },
+      { titles, tags, generatedAt, anySourceLoaded },
       { normalizeExploreParams, EXPLORE_PAGE_SIZE },
       { searchTitles },
       { GENRES },
@@ -195,6 +214,8 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
       Math.max(matched.length, EXPLORE_PAGE_SIZE),
     );
     const shown = matched.slice(0, showCount);
+    const platformCoverage = computeLocalPlatformCoverage(titles);
+    const filteredPlatformCoverage = computeLocalPlatformCoverage(matched);
 
     return {
       filters,
@@ -211,13 +232,20 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
       pageSize: EXPLORE_PAGE_SIZE,
       tags,
       genres: GENRES,
-      generatedAt: new Date().toISOString(),
+      catalog: {
+        source: "local-static-fallback",
+        titleCount: titles.length,
+        loadedAt: generatedAt || null,
+        platformCoverage,
+        filteredPlatformCoverage,
+      },
+      generatedAt,
       source: "local-static-fallback",
     } as unknown as T;
   }
 
   if (pathname === "/api/search") {
-    const [{ titles, tags, anySourceLoaded }, { searchTitles }] = await Promise.all([
+    const [{ titles, tags, generatedAt, anySourceLoaded }, { searchTitles }] = await Promise.all([
       loadLightweightLocalPool(),
       import("@/shared/lib/search"),
     ]);
@@ -245,7 +273,13 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
     const status = splitCsv(searchParams.get("status")).filter(
       (v): v is SerialStatus => v === "ongoing" || v === "completed" || v === "hiatus",
     );
-    const platforms = splitCsv(searchParams.get("platforms")) as PlatformId[];
+    const platforms = [
+      ...new Set(
+        splitCsv(searchParams.get("platforms"))
+          .map((v) => normalizePlatformId(v))
+          .filter((id): id is PlatformId => id !== null),
+      ),
+    ];
     const ageRatings = splitCsv(searchParams.get("ages")).filter(
       (v): v is Title["ageRating"] => v === "all" || v === "12" || v === "15" || v === "19",
     );
@@ -297,11 +331,13 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
       },
       catalog: {
         source: "local-static-fallback",
-        platformCoverage: [],
-        filteredPlatformCoverage: [],
+        titleCount: titles.length,
+        loadedAt: generatedAt || null,
+        platformCoverage: computeLocalPlatformCoverage(titles),
+        filteredPlatformCoverage: computeLocalPlatformCoverage(matched),
       },
       topTags: tags.map((t) => t.tag),
-      generatedAt: new Date().toISOString(),
+      generatedAt,
     } as unknown as T;
   }
 
@@ -321,10 +357,16 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
   }
 
   if (pathname.startsWith("/api/authors/")) {
-    const authorName = decodeURIComponent(pathname.slice("/api/authors/".length));
-    const { titles, anySourceLoaded } = await loadLightweightLocalPool();
-    if (!anySourceLoaded) return null;
-    const works = titles.filter((item) => item.author === authorName || item.artist === authorName);
+    const authorName = decodeURIComponent(pathname.slice("/api/authors/".length)).trim();
+    const { titles, generatedAt, anySourceLoaded } = await loadLightweightLocalPool();
+    if (!anySourceLoaded || isPlaceholderAuthorName(authorName)) return null;
+    const works = titles.filter(
+      (item) =>
+        item.author === authorName ||
+        item.artist === authorName ||
+        splitAuthorNames(item.author).includes(authorName) ||
+        splitAuthorNames(item.artist).includes(authorName),
+    );
     if (works.length > 0) {
       const genres = [...new Set(works.flatMap((w) => w.genres ?? []))].slice(0, 6);
       const tags = [...new Set(works.flatMap((w) => w.tags ?? []))].slice(0, 10);
@@ -351,10 +393,62 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
         genres,
         tags,
         platforms,
-        generatedAt: new Date().toISOString(),
+        generatedAt,
         source: "local-static-fallback",
       } as unknown as T;
     }
+  }
+
+  if (pathname.startsWith("/api/titles/") && !pathname.endsWith("/episodes")) {
+    const rawSlug = decodeURIComponent(pathname.slice("/api/titles/".length)).trim();
+    if (!rawSlug) return null;
+    const { titles, generatedAt, anySourceLoaded } = await loadLightweightLocalPool();
+    if (!anySourceLoaded) return null;
+    const title = titles.find((item) => item.slug === rawSlug || item.id === rawSlug) ?? null;
+    if (!title) return null;
+    const primaryAuthor = primaryAuthorName(title.author);
+    const byAuthor = primaryAuthor
+      ? titles
+          .filter(
+            (item) =>
+              item.id !== title.id &&
+              (item.author === primaryAuthor ||
+                splitAuthorNames(item.author).includes(primaryAuthor) ||
+                splitAuthorNames(item.artist).includes(primaryAuthor)),
+          )
+          .slice(0, 6)
+      : [];
+    const titleGenreSet = new Set(title.genres ?? []);
+    const similar = titles
+      .filter(
+        (item) =>
+          item.id !== title.id &&
+          (item.genres ?? []).some((genre) => titleGenreSet.has(genre)),
+      )
+      .slice(0, 6);
+    const original = title.adaptedFrom
+      ? titles.find((item) => item.id === title.adaptedFrom || item.slug === title.adaptedFrom) ??
+        title
+      : title;
+    const adaptations = titles.filter(
+      (item) =>
+        item.id !== title.id &&
+        (item.adaptedFrom === title.id || item.adaptedFrom === title.slug),
+    );
+    return {
+      title,
+      reviews: [],
+      reviewsStatus: "unavailable",
+      similar,
+      byAuthor,
+      original,
+      adaptations,
+      hasFamily: original.id !== title.id || adaptations.length > 0,
+      reviewAvg: title.stats?.ratingAvg ?? 0,
+      reviewCount: title.stats?.ratingCount ?? 0,
+      generatedAt,
+      source: "local-static-fallback",
+    } as unknown as T;
   }
 
   try {
@@ -410,7 +504,16 @@ function installLocalSearchBridgeOnWindow(targetWindow: Window & typeof globalTh
       const response = await currentFetch.call(targetWindow, input, init);
       const ct = response.headers.get("content-type") ?? "";
       if (response.ok && ct.includes("application/json")) {
-        return response;
+        try {
+          const rawJson = await response.clone().json();
+          const sanitizedJson = sanitizeCatalogApiData(parsed.pathname, rawJson);
+          return new Response(JSON.stringify(sanitizedJson), {
+            status: response.status,
+            headers: { "content-type": "application/json" },
+          });
+        } catch {
+          // 응답 JSON이 손상된 경우 로컬 정적 카탈로그 폴백으로 복구한다.
+        }
       }
       const fallbackData = await resolveFromLocalStaticCatalog(
         `${parsed.pathname}${parsed.search}`,

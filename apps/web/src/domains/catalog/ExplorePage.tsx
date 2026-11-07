@@ -17,7 +17,8 @@ import { TitleCard } from "@/shared/components/title-card";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 
 import { ExploreReaDirectoryBar } from "./ExploreReaDirectoryBar";
-import { filterTitlesByLocalQuery, useLocalCatalogFallback } from "./local-catalog-fallback";
+import { snapshotDateLabel } from "./discover-home";
+import { filterTitlesByLocalQuery, normalizePlatformId, useLocalCatalogFallback } from "./local-catalog-fallback";
 import { genreBorder, genreColor, genreTextColor, genreTint, spectrumGradient } from "@/shared/lib/genre-color";
 import { catalogDiscoveryHref, parseCatalogDiscoveryState, writeCatalogDiscoveryState } from "@/shared/lib/catalog-discovery-state";
 import { formatI18nTemplate, useBilingual, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
@@ -164,16 +165,24 @@ export function ExplorePage() {
     rawResource,
   );
   const rawResults = data?.results ?? [];
-  // 서버가 적용하지 못한 클라 전용 facet(가격 정밀·내 찜만) 및 로컬 키워드 필터를 결과에 추가 적용.
-  const clientFilteredResults = applyClientOnlyFilters(rawResults, filters, savedIds);
+  const activePlatforms = filters.platforms
+    .map((p) => normalizePlatformId(p))
+    .filter((p): p is PlatformId => p !== null);
+  // 서버가 적용하지 못한 클라 전용 facet(가격 정밀·내 찜만·플랫폼 정합) 및 로컬 키워드 필터를 결과에 추가 적용.
+  const baseClientResults = applyClientOnlyFilters(rawResults, filters, savedIds);
+  const clientFilteredResults =
+    activePlatforms.length === 0
+      ? baseClientResults
+      : baseClientResults.filter((title) =>
+          (title.availability ?? []).some((a) => {
+            const pid = normalizePlatformId(a?.platformId);
+            return pid !== null && activePlatforms.includes(pid);
+          }),
+        );
   const trimmedLocalQuery = localQuery.trim();
-  const results = useMemo(
-    () =>
-      trimmedLocalQuery
-        ? filterTitlesByLocalQuery(clientFilteredResults, trimmedLocalQuery)
-        : clientFilteredResults,
-    [clientFilteredResults, trimmedLocalQuery],
-  );
+  const results = trimmedLocalQuery
+    ? filterTitlesByLocalQuery(clientFilteredResults, trimmedLocalQuery)
+    : clientFilteredResults;
   const showCount = data?.showCount ?? 40;
   const pageSize = data?.pageSize ?? 40;
   const shown = results.slice(0, showCount);
@@ -190,10 +199,13 @@ export function ExplorePage() {
         ]).values(),
       ];
   const hiddenTagCount = Math.max(0, tags.length - visibleTags.length);
-  // 데이터에 존재하는 플랫폼만 패널에 노출(빈 플랫폼 숨김).
-  const platformOptions = data?.catalog?.platformCoverage?.map(
-    (entry) => entry.id,
-  );
+  // 데이터에 존재하는 유효 플랫폼만 정규화·중복 제거하여 노출(빈 배열이면 기본 플랫폼 목록 유지).
+  const rawCoverageIds = (data?.catalog?.platformCoverage ?? [])
+    .filter((entry) => Boolean(entry) && (entry.count ?? 1) > 0)
+    .map((entry) => normalizePlatformId(entry.id))
+    .filter((id): id is PlatformId => id !== null);
+  const mergedPlatformOptions = [...new Set([...rawCoverageIds, ...activePlatforms])];
+  const platformOptions = mergedPlatformOptions.length > 0 ? mergedPlatformOptions : undefined;
   const hasFilter = sortExplicit || activeFilters > 0 || trimmedLocalQuery.length > 0;
 
   // 무한 스크롤 — 하단 센티넬이 보이면 자동으로 다음 페이지 로드(더보기 버튼 누를 필요 없음).
@@ -536,6 +548,11 @@ export function ExplorePage() {
               {bt("편", "")}
               </>}
             </p>
+            {!loading && !error && data && (
+              <span data-testid="catalog-provenance-meta" className="text-xs text-fg-3">
+                {snapshotDateLabel(data.generatedAt) ? <>{snapshotDateLabel(data.generatedAt)} {bt("기준 공개 스냅샷", "public snapshot")}</> : bt("공개 카탈로그 스냅샷", "Public catalog snapshot")}
+              </span>
+            )}
             <button
               type="button"
               onClick={reload}

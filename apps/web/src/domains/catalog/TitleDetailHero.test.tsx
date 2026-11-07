@@ -165,3 +165,30 @@ it("저장 버튼은 전역 데스크톱 바닥보다 48px 논리 최소크기�
   expect(save.classList.contains("[min-block-size:3rem]!")).toBe(true);
   expect(screen.getByRole("link", { name: "김작가" }).classList.contains("min-h-11")).toBe(false);
 });
+
+describe("TitleDetailHero — 빈 작가·미상·다중 작가·초장문 이름 방어", () => {
+  it("작가 미상·익명·빈 문자열은 깨진 작가 링크를 만들지 않고 평문으로 표시한다", () => {
+    const { unmount } = renderHero(makeTitle({ author: "작가 미상", artist: "익명" }));
+    expect(screen.queryByRole("link", { name: "작가 미상" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "익명" })).toBeNull();
+    expect(screen.getByText("작가 미상")).toBeTruthy();
+    unmount();
+
+    renderHero(makeTitle({ author: "", artist: "" }));
+    expect(screen.getByText("작가 미상")).toBeTruthy();
+  });
+
+  it("쉼표·슬래시로 구분된 다중 작가는 개별 작가 상세 링크로 연결하고 초장문 이름은 줄바꿈 클래스를 유지한다", () => {
+    const longTitle = "초장문제목_".repeat(20) + "끝";
+    renderHero(makeTitle({ title: longTitle, author: "채은, 고다고 / 미상" }));
+    const heading = screen.getByRole("heading", { level: 1, name: longTitle });
+    expect(heading.className).toContain("[overflow-wrap:anywhere]");
+    expect(screen.getByRole("link", { name: "채은" }).getAttribute("href")).toBe(
+      "/author/%EC%B1%84%EC%9D%80",
+    );
+    expect(screen.getByRole("link", { name: "고다고" }).getAttribute("href")).toBe(
+      "/author/%EA%B3%A0%EB%8B%A4%EA%B3%A0",
+    );
+    expect(screen.queryByRole("link", { name: "미상" })).toBeNull();
+  });
+});

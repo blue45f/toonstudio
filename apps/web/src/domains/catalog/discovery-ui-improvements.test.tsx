@@ -16,7 +16,9 @@ import { TagsPage } from "./TagsPage";
 import type { DiscoverHomeSnapshot } from "./discover-home";
 import {
   collectDiscoverLocalMatches,
+  computeLocalPlatformCoverage,
   filterTitlesByLocalQuery,
+  isPlaceholderAuthorName,
   matchesHangulAwareQuery,
   resetLocalCatalogFallbackCache,
   resolveFromLocalStaticCatalog,
@@ -24,6 +26,7 @@ import {
   sanitizeDiscoverHomeSnapshot,
   sanitizeTitleRecord,
 } from "./local-catalog-fallback";
+import { sanitizeTitleArray } from "./local-catalog-sanitize";
 import { filterTagDirectory } from "./tag-directory";
 
 const resource = vi.hoisted(() => ({ read: vi.fn(), reload: vi.fn() }));
@@ -278,6 +281,7 @@ describe("탐색 페이지 간격·검색·카드 밀도·이미지 fallback 및
         { pricing: "free" },
         { platformId: "naver-webtoon", pricing: "invalid" },
         { platform: "naver", pricing: "wait-free" },
+        { platform: "kakao", pricing: "wait-free" },
         { platform: "legacy", pricing: "free" },
       ],
       stats: null,
@@ -288,7 +292,7 @@ describe("탐색 페이지 간격·검색·카드 밀도·이미지 fallback 및
     expect(corruptedTitle?.cover).toHaveLength(2);
     expect(corruptedTitle?.availability).toEqual([
       { platformId: "naver-webtoon", pricing: "free" },
-      { platformId: "naver-webtoon", pricing: "wait-free" },
+      { platformId: "kakao-page", pricing: "wait-free" },
     ]);
     expect(corruptedTitle?.stats.ratingAvg).toBe(0);
 
@@ -586,5 +590,210 @@ describe("탐색 페이지 간격·검색·카드 밀도·이미지 fallback 및
     expect(screen.getByText("등록된 태그가 없습니다.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(resource.reload).toHaveBeenCalled();
+  });
+
+  it("Round 4: 로컬 크롤링 스냅샷의 실제 수집시점(generatedAt)·출처·플랫폼 커버리지와 작가→작품→원출처 연결을 보존하고 허위 실시간 시각을 만들지 않는다", async () => {
+    resetLocalCatalogFallbackCache();
+    const originalFetch = globalThis.fetch;
+    const snapshotGeneratedAt = "2026-11-07T05:12:01.730Z";
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/data/home.json")) {
+        return new Response(
+          JSON.stringify({
+            featured: [
+              makeTitle("work-multi", {
+                slug: "moonlight-knight",
+                title: "달빛 기사의 귀환",
+                author: "채은, 고다고",
+                availability: [
+                  { platform: "naver", pricing: "paid" } as unknown as Title["availability"][number],
+                  {
+                    platformId: "naver-webtoon",
+                    pricing: "wait-free",
+                    isOriginal: true,
+                    url: "https://comic.naver.com/webtoon/list?titleId=999",
+                  },
+                  {
+                    platformId: "ridi",
+                    pricing: "free",
+                    url: "http://insecure.example.com/bad",
+                  },
+                ],
+              }),
+            ],
+            topRated: [],
+            waitFree: [],
+            newest: [],
+            todayDay: "토",
+            todayReleases: [],
+            genres: ["판타지"],
+            stats: { titles: 1, platforms: 2, genres: 1 },
+            generatedAt: snapshotGeneratedAt,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (url.includes("/data/catalog/00.json") || url.includes("/data/tags.json")) {
+        return new Response(JSON.stringify(url.includes("tags") ? { tags: [] } : []), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response("Not Found", { status: 404 });
+    });
+
+    try {
+      const exploreRes = await resolveFromLocalStaticCatalog<{
+        generatedAt: string;
+        source: string;
+        catalog: { loadedAt: string | null; platformCoverage: { id: PlatformId; count: number }[] };
+      }>("/api/explore");
+      expect(exploreRes?.generatedAt).toBe(snapshotGeneratedAt);
+      expect(exploreRes?.source).toBe("local-static-fallback");
+      expect(exploreRes?.catalog.loadedAt).toBe(snapshotGeneratedAt);
+      expect(exploreRes?.catalog.platformCoverage).toEqual([
+        { id: "naver-webtoon", count: 1 },
+        { id: "ridi", count: 1 },
+      ]);
+
+      const searchRes = await resolveFromLocalStaticCatalog<{
+        total: number;
+        generatedAt: string;
+        catalog: { loadedAt: string | null; platformCoverage: { id: PlatformId; count: number }[] };
+      }>("/api/search?q=달ㅂ&platforms=naver,undefined,,invalid-plat");
+      expect(searchRes?.total).toBe(1);
+      expect(searchRes?.generatedAt).toBe(snapshotGeneratedAt);
+      expect(searchRes?.catalog.loadedAt).toBe(snapshotGeneratedAt);
+
+      const authorRes = await resolveFromLocalStaticCatalog<{
+        author: string;
+        works: Title[];
+        platforms: PlatformId[];
+        generatedAt: string;
+      }>("/api/authors/%EC%B1%84%EC%9D%80");
+      expect(authorRes?.author).toBe("채은");
+      expect(authorRes?.works).toHaveLength(1);
+      expect(authorRes?.platforms).toEqual(["naver-webtoon", "ridi"]);
+      expect(authorRes?.generatedAt).toBe(snapshotGeneratedAt);
+
+      const unknownAuthorRes = await resolveFromLocalStaticCatalog("/api/authors/%EC%9E%91%EA%B0%80%20%EB%AF%B8%EC%83%81");
+      expect(unknownAuthorRes).toBeNull();
+
+      const titleDetailRes = await resolveFromLocalStaticCatalog<{
+        title: Title;
+        generatedAt: string;
+        source: string;
+      }>("/api/titles/moonlight-knight");
+      expect(titleDetailRes?.generatedAt).toBe(snapshotGeneratedAt);
+      expect(titleDetailRes?.source).toBe("local-static-fallback");
+      expect(titleDetailRes?.title.availability).toEqual([
+        {
+          platformId: "naver-webtoon",
+          pricing: "wait-free",
+          isOriginal: true,
+          url: "https://comic.naver.com/webtoon/list?titleId=999",
+        },
+        {
+          platformId: "ridi",
+          pricing: "free",
+        },
+      ]);
+    } finally {
+      globalThis.fetch = originalFetch;
+      resetLocalCatalogFallbackCache();
+    }
+  });
+
+  it("Round 4: 빈 작가·미상 필터링, 깨진 플랫폼 커버리지 방어, 1000작품 표본 UI 필터·렌더링 응답성 및 한글 IME를 검증한다", () => {
+    expect(isPlaceholderAuthorName("")).toBe(true);
+    expect(isPlaceholderAuthorName("작가 미상")).toBe(true);
+    expect(isPlaceholderAuthorName("미상")).toBe(true);
+    expect(isPlaceholderAuthorName("익명")).toBe(true);
+    expect(isPlaceholderAuthorName("채은")).toBe(false);
+
+    const sanitizedAuthors = sanitizeCatalogApiData("/api/authors", {
+      total: 4,
+      authors: [
+        { name: "" },
+        { name: "작가 미상" },
+        { name: "미상" },
+        { name: "초장문작가_" + "가".repeat(90), workCount: 4, totalViews: 1200, avgRating: 4.9 },
+      ],
+    });
+    expect(sanitizedAuthors?.authors).toHaveLength(1);
+    expect(sanitizedAuthors?.total).toBe(1);
+
+    // 1000작품 합성 표본 생성(사용자 원본 불변) 및 정제·플랫폼 집계·한글 IME 검색 응답성 측정
+    const rawThousand = Array.from({ length: 1000 }, (_, i) => ({
+      id: `synth-${i}`,
+      slug: `synth-${i}`,
+      type: i % 3 === 0 ? "webnovel" : "webtoon",
+      title:
+        i === 0
+          ? "초장문타이틀_" + "나".repeat(120)
+          : i % 25 === 0
+            ? `달빛 판타지 연대기 ${i}`
+            : `합성 테스트 작품 ${i}`,
+      author: i % 10 === 0 ? "작가 미상" : `작가_${i % 80}`,
+      genres: i % 2 === 0 ? ["판타지", "액션"] : ["로맨스"],
+      tags: ["회귀", `태그${i % 15}`],
+      coverImage: i % 5 === 0 ? "https://broken.invalid/404.webp" : undefined,
+      availability: [
+        { platform: "naver", pricing: "paid" },
+        {
+          platformId: i % 2 === 0 ? "naver-webtoon" : "kakao-page",
+          pricing: "wait-free",
+          url: "https://comic.naver.com/webtoon/list?titleId=100",
+        },
+        { platformId: undefined, pricing: "free" },
+      ],
+    }));
+
+    const startPerf = performance.now();
+    const titles1000 = sanitizeTitleArray(rawThousand);
+    const coverage = computeLocalPlatformCoverage(titles1000);
+    const imeFiltered = filterTitlesByLocalQuery(titles1000, "달ㅂ ㅍㅌ");
+    const elapsedMs = performance.now() - startPerf;
+
+    expect(titles1000).toHaveLength(1000);
+    expect(titles1000[0]?.availability).toHaveLength(1);
+    expect(coverage.map((c) => c.id)).toEqual(["naver-webtoon", "kakao-page"]);
+    expect(imeFiltered.length).toBeGreaterThan(0);
+    expect(elapsedMs).toBeLessThan(350);
+
+    resource.read.mockReturnValue({
+      data: {
+        filters: { sort: "popular" },
+        current: {},
+        results: titles1000,
+        shown: titles1000.slice(0, 40),
+        hasMore: true,
+        showCount: 40,
+        pageSize: 40,
+        tags: [{ tag: "회귀", count: 1000 }],
+        genres: ["판타지", "로맨스", "액션"],
+        catalog: {
+          platformCoverage: [
+            { id: undefined as unknown as PlatformId, label: "", color: "", count: 10, share: 0.1 },
+            { id: "naver" as unknown as PlatformId, label: "네이버", color: "#00d564", count: 1000, share: 1 },
+            { id: "naver-webtoon", label: "네이버웹툰", color: "#00d564", count: 1000, share: 1 },
+          ],
+        },
+        generatedAt: "2026-11-07T05:12:01.730Z",
+        source: "local-static-fallback",
+      },
+      loading: false,
+      error: null,
+      reload: resource.reload,
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/explore?platforms=naver-webtoon"]}>
+        <ExplorePage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("catalog-provenance-meta").textContent).toContain("2026-11-07");
+    expect(screen.getAllByTestId("title-card")).toHaveLength(40);
   });
 });
