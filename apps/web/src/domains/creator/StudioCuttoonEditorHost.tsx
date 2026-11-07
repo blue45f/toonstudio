@@ -25587,9 +25587,7 @@ function clearSelectionForEdit() {
           toggleLeftPanel: () => setLeftPanelOpenWithOverride((current) => !current),
           toggleRightPanel: () => setRightPanelOpenWithOverride((current) => !current),
           openShortcuts: () => setShortcutsOpen(true),
-          selectDrawMode: (mode) => {
-            studioMainMenuActions.activatePrimaryCanvasTool("draw", mode);
-          },
+          selectDrawMode: (mode) => studioMainMenuActions.activatePrimaryCanvasTool("draw", mode),
           correctCurrentStroke: studioMainMenuActions.openSmartShapeEditor,
           enableSmartShape: () => {
             studioMainMenuActions.activatePrimaryCanvasTool("draw", "pen");
