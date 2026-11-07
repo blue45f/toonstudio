@@ -54,16 +54,60 @@ export function FortuneShareModal({
       ? `${window.location.origin}/fortune`
       : "https://www.toonstudio.cloud/fortune";
 
-  // Esc로 닫기 + 진입 시 포커스
+  // Esc로 닫기 + 진입 시 초기 포커스 + Tab/Shift+Tab 순환 트랩 + 닫기 후 트리거 포커스 복귀
   const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
+    triggerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    (closeButtonRef.current ?? dialogRef.current)?.focus();
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusables = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])",
+        ),
+      );
+      if (focusables.length === 0) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey) {
+        if (!active || active === first || !dialog.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (!active || active === last || !dialog.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     window.addEventListener("keydown", onKey);
-    dialogRef.current?.focus();
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      const target = triggerRef.current;
+      if (target && document.contains(target)) {
+        target.focus();
+      }
+    };
+  }, []);
 
   async function renderPng(): Promise<string | null> {
     if (!cardRef.current) return null;
@@ -156,10 +200,11 @@ export function FortuneShareModal({
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-fg">운세 결과 공유</h3>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="rounded-lg border border-line p-1.5 text-fg-2 transition-colors hover:bg-card"
+            className="inline-flex h-11 w-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-line p-1.5 text-fg-2 transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <X className="h-4 w-4" />
           </button>
