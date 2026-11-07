@@ -109,9 +109,10 @@ function TemplatePreview({
           onClick={onToggleFavorite}
           aria-pressed={favorite}
           aria-label={bt("즐겨찾기 전환", "Toggle favorite")}
+          style={{ minHeight: "44px", minWidth: "44px" }}
           className={cn(
-            "grid size-11 place-items-center rounded-xl border transition-colors",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+            "grid size-11 min-h-11 min-w-11 place-items-center rounded-xl border transition-colors",
+            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70",
             favorite
               ? "border-accent/40 bg-accent-soft text-accent"
               : "border-line bg-panel text-fg-3 hover:text-fg",
@@ -377,16 +378,21 @@ export function StudioTemplatesPage() {
               className="min-h-12 w-full rounded-xl border border-line bg-panel pl-10 pr-4 text-sm text-fg outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </label>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div
+            role="group"
+            aria-label={bt("템플릿 카테고리 필터", "Template category filter")}
+            className="mt-3 flex flex-wrap items-center gap-2"
+          >
             {STUDIO_TEMPLATE_CATEGORIES.map((candidate) => (
               <button
                 key={candidate}
                 type="button"
                 onClick={() => setCategory(candidate)}
                 aria-pressed={candidate === category}
+                style={{ minHeight: "44px" }}
                 className={cn(
-                  "min-h-10 rounded-full border px-3 text-xs font-bold transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+                  "min-h-11 rounded-full border px-3.5 py-2 text-xs font-bold transition-colors",
+                  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70",
                   candidate === category
                     ? "border-accent bg-accent text-on-accent"
                     : "border-line bg-panel text-fg-2 hover:border-accent/40 hover:text-fg",
@@ -399,8 +405,10 @@ export function StudioTemplatesPage() {
               type="button"
               onClick={() => setFavoritesOnly((current) => !current)}
               aria-pressed={favoritesOnly}
+              style={{ minHeight: "44px" }}
               className={cn(
-                "ml-auto inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors",
+                "ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-bold transition-colors",
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70",
                 favoritesOnly
                   ? "border-accent bg-accent-soft text-accent"
                   : "border-line bg-panel text-fg-2 hover:text-fg",
@@ -427,8 +435,10 @@ export function StudioTemplatesPage() {
                   onClick={() => setSpecPreset(preset.id)}
                   aria-pressed={active}
                   data-template-spec-preset={preset.id}
+                  style={{ minHeight: "44px" }}
                   className={cn(
-                    "min-h-8 rounded-full border px-2.5 text-xs font-semibold transition-colors",
+                    "min-h-11 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors",
+                    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70",
                     active
                       ? "border-accent bg-accent-soft text-accent"
                       : "border-line bg-panel text-fg-2 hover:border-accent/40 hover:text-fg",
@@ -461,6 +471,7 @@ export function StudioTemplatesPage() {
                     </p>
                     <Link
                       href="/studio/new"
+                      style={{ minHeight: "44px" }}
                       className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 text-xs font-black text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                     >
                       {bt("빈 캔버스로 시작", "Start blank")}
@@ -485,7 +496,8 @@ export function StudioTemplatesPage() {
                         onClick={() => setSelectedId(template.id)}
                         aria-label={`${templateTitle(template, bt)} ${bt("시각 미리보기", "visual preview")}`}
                         aria-pressed={active}
-                        className="block w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                        style={{ minHeight: "44px" }}
+                        className="block min-h-11 w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                       >
                         <StudioTemplateVisualPreview
                           template={template}
@@ -497,7 +509,8 @@ export function StudioTemplatesPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedId(template.id)}
-                          className="min-w-0 flex-1 text-left focus-visible:outline-none"
+                          style={{ minHeight: "44px" }}
+                          className="min-h-11 min-w-0 flex-1 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="inline-flex rounded-full bg-accent-soft px-2 py-1 text-[0.6rem] font-black text-accent">
@@ -518,7 +531,8 @@ export function StudioTemplatesPage() {
                           onClick={() => toggleFavorite(template.id)}
                           aria-pressed={favorite}
                           aria-label={bt("즐겨찾기 전환", "Toggle favorite")}
-                          className="grid size-9 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-panel hover:text-accent max-sm:size-11 pointer-coarse:size-11"
+                          style={{ minHeight: "44px", minWidth: "44px" }}
+                          className="grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-panel hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
                         >
                           <Heart size={15} fill={favorite ? "currentColor" : "none"} aria-hidden="true" />
                         </button>
@@ -555,6 +569,7 @@ export function StudioTemplatesPage() {
                         <Link
                           href={studioTemplateStartHref(template.id)}
                           onClick={() => prepareTemplateHandoff(template.id)}
+                          style={{ minHeight: "44px" }}
                           className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 text-xs font-black text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2"
                         >
                           {bt("이 템플릿으로 시작", "Start with this template")}
@@ -563,7 +578,8 @@ export function StudioTemplatesPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedId(template.id)}
-                          className="min-h-10 w-full rounded-xl border border-line bg-panel px-3 text-xs font-bold text-fg-2 transition-colors hover:border-accent/40 hover:text-fg"
+                          style={{ minHeight: "44px" }}
+                          className="min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-xs font-bold text-fg-2 transition-colors hover:border-accent/40 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
                         >
                           {bt("구성 보기", "View structure")}
                         </button>
@@ -586,7 +602,8 @@ export function StudioTemplatesPage() {
                     setSpecPreset("all");
                     setFavoritesOnly(false);
                   }}
-                  className="mt-4 min-h-11 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent"
+                  style={{ minHeight: "44px" }}
+                  className="mt-4 min-h-11 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   {bt("전체 템플릿 보기", "Show all templates")}
                 </button>

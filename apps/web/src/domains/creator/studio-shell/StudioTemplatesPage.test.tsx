@@ -87,4 +87,47 @@ describe("StudioTemplatesPage", () => {
     expect(shortformBtn.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getAllByText(/4컷·컷툰|Four-panel comic/u).length).toBeGreaterThan(0);
   });
+
+  it("exposes role=group with aria-label, 44px touch targets (min-h-11), and focus-visible rings on template category filters and spec presets (GAP-R6-03)", () => {
+    render(
+      <MemoryRouter>
+        <StudioTemplatesPage />
+      </MemoryRouter>,
+    );
+
+    const categoryGroup = screen.getByRole("group", {
+      name: /템플릿 카테고리 필터|Template category filter/u,
+    });
+    expect(categoryGroup).toBeTruthy();
+
+    const categoryButtons = Array.from(categoryGroup.querySelectorAll("button"));
+    expect(categoryButtons.length).toBeGreaterThanOrEqual(7);
+    for (const btn of categoryButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.style.minHeight).toBe("44px");
+      expect(btn.className).toContain("focus-visible:outline");
+      expect(["true", "false"]).toContain(btn.getAttribute("aria-pressed"));
+    }
+
+    const webtoonCatBtn = screen.getByRole("button", { name: /^웹툰$|^Webtoon$/u });
+    fireEvent.click(webtoonCatBtn);
+    expect(webtoonCatBtn.getAttribute("aria-pressed")).toBe("true");
+
+    const specGroup = screen.getByRole("group", {
+      name: /규격·목적별 빠른 필터|Quick filters by spec and purpose/u,
+    });
+    expect(specGroup).toBeTruthy();
+
+    const specButtons = Array.from(
+      specGroup.querySelectorAll<HTMLButtonElement>("button[data-template-spec-preset]"),
+    );
+    expect(specButtons.length).toBe(5);
+    for (const btn of specButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.style.minHeight).toBe("44px");
+      expect(btn.className).toContain("focus-visible:outline");
+      expect(["true", "false"]).toContain(btn.getAttribute("aria-pressed"));
+    }
+  });
 });
+

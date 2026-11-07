@@ -130,4 +130,68 @@ describe("TasteOnboardingPage", () => {
     // 실패를 빈 목록으로 위장하지 않고, 작품 선택 자리에도 실패를 알린다
     expect(screen.getByText(/작품 목록을 불러오지 못해 건너뜁니다/)).toBeTruthy();
   });
+
+  it("Step 2 감상 강도와 Step 3 회피 태그 토글 그룹이 role=group·aria-label·aria-pressed·44px 터치 타깃·키보드 포커스 클래스를 제공한다 (GAP-R6-03)", async () => {
+    const { useEngagement } = await import("./engagement-store");
+    useEngagement.setState({ tastePreferences: null });
+    renderPage();
+
+    const genreGroup = screen.getByRole("group", { name: "선호 장르" });
+    expect(genreGroup).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "판타지" }));
+    fireEvent.click(screen.getByRole("button", { name: "로맨스" }));
+
+    const nextBtn = screen.getByRole("button", { name: /다음/ });
+    expect(nextBtn.className).toContain("min-h-11");
+    expect(nextBtn.className).toContain("focus-visible:outline");
+    fireEvent.click(nextBtn);
+
+    // Step 2: 감상 강도 그룹 및 aria-pressed 검증
+    const intensityGroup = await screen.findByRole("group", { name: "감상 강도" });
+    expect(intensityGroup).toBeTruthy();
+    const balancedBtn = screen.getByRole("button", { name: /균형 있게/ });
+    const gentleBtn = screen.getByRole("button", { name: /편안하게/ });
+    expect(balancedBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(gentleBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(gentleBtn.className).toContain("focus-visible:outline");
+
+    fireEvent.click(gentleBtn);
+    expect(gentleBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(balancedBtn.getAttribute("aria-pressed")).toBe("false");
+
+    // Step 3: 회피 태그 그룹, 44px(min-h-11) 터치 타깃, 키보드 포커스 클래스 검증
+    fireEvent.click(screen.getByRole("button", { name: /다음/ }));
+    const avoidGroup = await screen.findByRole("group", { name: "회피 태그" });
+    expect(avoidGroup).toBeTruthy();
+
+    const avoidButtons = Array.from(avoidGroup.querySelectorAll("button"));
+    expect(avoidButtons.length).toBe(8);
+    for (const btn of avoidButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.style.minHeight).toBe("44px");
+      expect(btn.className).toContain("focus-visible:outline");
+      expect(btn.getAttribute("aria-pressed")).toBe("false");
+    }
+
+    const horrorBtn = screen.getByRole("button", { name: "공포" });
+    fireEvent.click(horrorBtn);
+    expect(horrorBtn.getAttribute("aria-pressed")).toBe("true");
+
+    // Step 4: 선호 포맷·선호 상태 그룹 및 44px(min-h-11) 검증
+    fireEvent.click(screen.getByRole("button", { name: /다음/ }));
+    const formatGroup = await screen.findByRole("group", { name: "선호 포맷" });
+    const statusGroup = screen.getByRole("group", { name: "선호 상태" });
+    expect(formatGroup).toBeTruthy();
+    expect(statusGroup).toBeTruthy();
+    for (const btn of [
+      ...Array.from(formatGroup.querySelectorAll("button")),
+      ...Array.from(statusGroup.querySelectorAll("button")),
+    ]) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.style.minHeight).toBe("44px");
+      expect(btn.className).toContain("focus-visible:outline");
+    }
+  });
 });
+
