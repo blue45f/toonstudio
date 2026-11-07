@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { translateCurrentStaticSourceText, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import {
@@ -56,11 +57,33 @@ export function IrPitchPage() {
   const [presenting, setPresenting] = useState(false);
   const [scene, setScene] = useState(0);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const presentTriggerRef = useRef<HTMLElement | null>(null);
   const filmRef = useRef<HTMLVideoElement>(null);
 
   const SCENE_COUNT = 10;
   const FILM_SCENE = 1;
   const goTo = (next: number) => setScene(Math.min(SCENE_COUNT - 1, Math.max(0, next)));
+
+  const openPresentation = (trigger?: HTMLElement | null) => {
+    presentTriggerRef.current =
+      trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setScene(0);
+    setPresenting(true);
+  };
+
+  const closePresentation = () => {
+    setPresenting(false);
+    const trigger = presentTriggerRef.current;
+    if (trigger && document.contains(trigger)) {
+      trigger.focus();
+    }
+    requestAnimationFrame(() => {
+      if (trigger && document.contains(trigger)) {
+        trigger.focus();
+      }
+    });
+  };
 
   const toggleFullscreen = () => {
     try {
@@ -79,8 +102,41 @@ export function IrPitchPage() {
     if (!presenting) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    if (!presentTriggerRef.current && document.activeElement instanceof HTMLElement) {
+      presentTriggerRef.current = document.activeElement;
+    }
+    if (!overlayRef.current?.contains(document.activeElement)) {
+      (closeButtonRef.current ?? overlayRef.current)?.focus();
+    }
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPresenting(false);
+      if (event.key === "Tab") {
+        const dialog = overlayRef.current;
+        if (!dialog) return;
+        const focusables = Array.from(
+          dialog.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), video[controls], [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((el) => !el.hasAttribute("disabled") && el.getClientRects().length > 0);
+        if (focusables.length === 0) {
+          event.preventDefault();
+          dialog.focus();
+          return;
+        }
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        if (event.shiftKey) {
+          if (!active || !dialog.contains(active) || active === first) {
+            event.preventDefault();
+            last.focus();
+          }
+        } else if (!active || !dialog.contains(active) || active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+        return;
+      }
+      if (event.key === "Escape") { event.preventDefault(); closePresentation(); }
       else if (event.key === "ArrowRight" || event.key === "PageDown") { event.preventDefault(); goTo(scene + 1); }
       else if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); goTo(scene - 1); }
       else if (event.key === "Home") { event.preventDefault(); goTo(0); }
@@ -297,7 +353,7 @@ export function IrPitchPage() {
             />
             <button
               type="button"
-              onClick={() => { setScene(0); setPresenting(true); }}
+              onClick={(event) => openPresentation(event.currentTarget)}
               className="inline-flex min-h-11 w-fit items-center gap-2 rounded-xl border border-accent/50 bg-accent-soft/30 px-4 py-2.5 text-sm font-bold text-accent transition-colors hover:bg-accent-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               <Presentation size={16} aria-hidden="true" />
@@ -640,38 +696,41 @@ export function IrPitchPage() {
         </div>
       </section>
 
-      {presenting ? (
-        <div ref={overlayRef} className="fixed inset-0 z-[100] flex flex-col bg-canvas" role="dialog" aria-modal="true" aria-label={bi("IR 발표 모드", "IR presentation mode")}>
-          <div className="flex items-center justify-between gap-3 px-5 py-3 sm:px-8">
-            <p className="text-sm font-bold text-fg-2">
-              {sceneTitle(scene)} <span className="text-fg-3">· {scene + 1} / {SCENE_COUNT}</span>
-            </p>
-            <div className="flex items-center gap-1.5">
-              <button type="button" onClick={toggleFullscreen} aria-label={bi("전체화면 전환", "Toggle full screen")} className="grid size-10 place-items-center rounded-xl border border-line/70 text-fg-2 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                <Maximize size={17} aria-hidden="true" />
-              </button>
-              <button type="button" onClick={() => setPresenting(false)} aria-label={bi("발표 모드 종료", "Exit presentation mode")} className="grid size-10 place-items-center rounded-xl border border-line/70 text-fg-2 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                <X size={17} aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-          <div className="h-1 shrink-0 bg-line/50" aria-hidden="true">
-            <div className="h-full bg-accent transition-all duration-300" style={{ width: `${((scene + 1) / SCENE_COUNT) * 100}%` }} />
-          </div>
-          <div className="relative flex-1 overflow-y-auto">
-            {scenes[scene]}
-            <button type="button" onClick={() => goTo(scene - 1)} disabled={scene === 0} aria-label={bi("이전 씬", "Previous scene")} className="absolute left-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-line/70 bg-card/70 text-fg-2 transition-opacity hover:text-fg disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-              <ChevronLeft size={20} aria-hidden="true" />
-            </button>
-            <button type="button" onClick={() => goTo(scene + 1)} disabled={scene === SCENE_COUNT - 1} aria-label={bi("다음 씬", "Next scene")} className="absolute right-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-line/70 bg-card/70 text-fg-2 transition-opacity hover:text-fg disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-              <ChevronRight size={20} aria-hidden="true" />
-            </button>
-          </div>
-          <p className="shrink-0 px-5 py-3 text-center text-xs text-fg-3 sm:px-8">
-            {bi("←/→ 씬 이동 · Space 재생·정지/다음 · F 전체화면 · Esc 종료", "←/→ scenes · Space play-pause/next · F full screen · Esc exit")}
-          </p>
-        </div>
-      ) : null}
+      {presenting
+        ? createPortal(
+            <div ref={overlayRef} tabIndex={-1} style={{ zIndex: 1000 }} className="fixed inset-0 z-50 flex flex-col bg-canvas" role="dialog" aria-modal="true" aria-label={bi("IR 발표 모드", "IR presentation mode")}>
+              <div className="flex items-center justify-between gap-3 px-5 py-3 sm:px-8">
+                <p className="text-sm font-bold text-fg-2">
+                  {sceneTitle(scene)} <span className="text-fg-3">· {scene + 1} / {SCENE_COUNT}</span>
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <button type="button" onClick={toggleFullscreen} aria-label={bi("전체화면 전환", "Toggle full screen")} className="grid size-11 min-h-11 min-w-11 place-items-center rounded-xl border border-line/70 text-fg-2 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <Maximize size={17} aria-hidden="true" />
+                  </button>
+                  <button ref={closeButtonRef} type="button" onClick={closePresentation} aria-label={bi("발표 모드 종료", "Exit presentation mode")} className="grid size-11 min-h-11 min-w-11 place-items-center rounded-xl border border-line/70 text-fg-2 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <X size={17} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              <div className="h-1 shrink-0 bg-line/50" aria-hidden="true">
+                <div className="h-full bg-accent transition-all duration-300 motion-reduce:transition-none" style={{ width: `${((scene + 1) / SCENE_COUNT) * 100}%` }} />
+              </div>
+              <div className="relative flex-1 overflow-y-auto">
+                {scenes[scene]}
+                <button type="button" onClick={() => goTo(scene - 1)} disabled={scene === 0} aria-label={bi("이전 씬", "Previous scene")} className="absolute left-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-line/70 bg-card/70 text-fg-2 transition-opacity hover:text-fg disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                  <ChevronLeft size={20} aria-hidden="true" />
+                </button>
+                <button type="button" onClick={() => goTo(scene + 1)} disabled={scene === SCENE_COUNT - 1} aria-label={bi("다음 씬", "Next scene")} className="absolute right-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-line/70 bg-card/70 text-fg-2 transition-opacity hover:text-fg disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                  <ChevronRight size={20} aria-hidden="true" />
+                </button>
+              </div>
+              <p className="shrink-0 px-5 py-3 text-center text-xs text-fg-3 sm:px-8">
+                {bi("←/→ 씬 이동 · Space 재생·정지/다음 · F 전체화면 · Esc 종료", "←/→ scenes · Space play-pause/next · F full screen · Esc exit")}
+              </p>
+            </div>,
+            document.body,
+          )
+        : null}
     </Container>
   );
 }

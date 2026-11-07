@@ -243,6 +243,14 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
       if (event.defaultPrevented || event.repeat || event.isComposing) return;
       if (event.metaKey) return;
       const target = event.target instanceof HTMLElement ? event.target : null;
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      if (
+        target?.closest('[role="dialog"], [aria-modal="true"], dialog') ||
+        active?.closest('[role="dialog"], [aria-modal="true"], dialog') ||
+        document.querySelector('[role="dialog"], [aria-modal="true"], dialog[open]')
+      ) {
+        return;
+      }
       const tag = target?.tagName ?? "";
       if (target?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (event.altKey && !event.ctrlKey) {
@@ -725,9 +733,22 @@ export function LearnPage() {
 
   return (
     <div className="learn-page" lang="ko">
-      <a className="learn-skip-link" href="#learn-main">본문으로 건너뛰기</a>
+      <a
+        className="learn-skip-link"
+        href="#learn-main"
+        onClick={(event) => {
+          const mainEl = document.getElementById("learn-main");
+          if (mainEl) {
+            event.preventDefault();
+            mainEl.focus();
+            mainEl.scrollIntoView({ block: "start" });
+          }
+        }}
+      >
+        본문으로 건너뛰기
+      </a>
       {store.warning && <p className="learn-caution" role="status">{store.warning}</p>}
-      <div id="learn-main">
+      <div id="learn-main" tabIndex={-1}>
         <Routes>
           <Route index element={<Curriculum store={store} />} />
           <Route path="lessons/:lessonId" element={<LessonDetail store={store} />} />

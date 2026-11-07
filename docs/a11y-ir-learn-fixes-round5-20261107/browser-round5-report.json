@@ -1,0 +1,220 @@
+{
+  "executedAt": "2026-11-07",
+  "baseUrl": "http://127.0.0.1:4181",
+  "verifiedDefects": {
+    "GAP-R4-01": {
+      "route": "/ir",
+      "activeInsideDialogOnOpen": true,
+      "activeAriaLabelOnOpen": "발표 모드 종료",
+      "fullscreenButtonSize": {
+        "width": 44,
+        "height": 44
+      },
+      "closeButtonSize": {
+        "width": 44,
+        "height": 44
+      },
+      "progressHasMotionReduceClass": true,
+      "progressTransitionDuration": "1e-05s",
+      "allTabStepsInsideDialog": true,
+      "tabCycleHistory": [
+        {
+          "key": "Tab",
+          "insideDialog": true,
+          "label": "다음 씬"
+        },
+        {
+          "key": "Tab",
+          "insideDialog": true,
+          "label": "전체화면 전환"
+        },
+        {
+          "key": "Tab",
+          "insideDialog": true,
+          "label": "발표 모드 종료"
+        },
+        {
+          "key": "Tab",
+          "insideDialog": true,
+          "label": "다음 씬"
+        },
+        {
+          "key": "Tab",
+          "insideDialog": true,
+          "label": "전체화면 전환"
+        },
+        {
+          "key": "Shift+Tab",
+          "insideDialog": true,
+          "label": "다음 씬"
+        },
+        {
+          "key": "Shift+Tab",
+          "insideDialog": true,
+          "label": "발표 모드 종료"
+        }
+      ],
+      "dialogClosedAfterEscape": true,
+      "restoredToTriggerAfterEscape": true,
+      "activeTextAfterEscape": "발표 모드로 열기 (풀스크린 · ←/→ · Space)",
+      "restoredToTriggerAfterCloseButton": true,
+      "verifiedFixed": true
+    },
+    "GAP-R4-04": {
+      "route": "/learn/lessons/studio-first-page",
+      "learnMainTabIndexAttr": "-1",
+      "activeElementIdAfterSkipEnter": "learn-main",
+      "beforeShortcutState": {
+        "pathname": "/learn/lessons/studio-first-page",
+        "checkedCount": 0
+      },
+      "duringDialogState": {
+        "pathnameWhileDialogOpen": "/learn/lessons/studio-first-page",
+        "checkedCountWhileDialogOpen": 0
+      },
+      "afterDialogClosedState": {
+        "checkedCountAfterDialogClosedAndKey1": 1
+      },
+      "shortcutsBlockedWhileDialogOpen": true,
+      "shortcutWorksWhenNoDialogOpen": true,
+      "verifiedFixed": true
+    }
+  },
+  "viewportMatrixCount": 12,
+  "viewportMatrix": [
+    {
+      "targetId": "GAP-R4-01-IR",
+      "route": "/ir",
+      "viewportId": "mobile-320",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "본문으로 건너뛰기",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-04-LEARN",
+      "route": "/learn/lessons/studio-first-page",
+      "viewportId": "mobile-320",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "01학습 화면과 작업 화면 분리",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-01-IR",
+      "route": "/ir",
+      "viewportId": "mobile-390",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "본문으로 건너뛰기",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-04-LEARN",
+      "route": "/learn/lessons/studio-first-page",
+      "viewportId": "mobile-390",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "01학습 화면과 작업 화면 분리",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-01-IR",
+      "route": "/ir",
+      "viewportId": "tablet-768",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "본문으로 건너뛰기",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-04-LEARN",
+      "route": "/learn/lessons/studio-first-page",
+      "viewportId": "tablet-768",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "01학습 화면과 작업 화면 분리",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-01-IR",
+      "route": "/ir",
+      "viewportId": "pc-1440",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "본문으로 건너뛰기",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-04-LEARN",
+      "route": "/learn/lessons/studio-first-page",
+      "viewportId": "pc-1440",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "01학습 화면과 작업 화면 분리",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 1,
+      "axeViolationIds": [
+        "label-content-name-mismatch"
+      ]
+    },
+    {
+      "targetId": "GAP-R4-01-IR",
+      "route": "/ir",
+      "viewportId": "pc-1440-zoom-200",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "본문으로 건너뛰기",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-04-LEARN",
+      "route": "/learn/lessons/studio-first-page",
+      "viewportId": "pc-1440-zoom-200",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "01학습 화면과 작업 화면 분리",
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-01-IR",
+      "route": "/ir",
+      "viewportId": "pc-1440-reduced-motion",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "본문으로 건너뛰기",
+      "transitionDurationMs": 0.01,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "targetId": "GAP-R4-04-LEARN",
+      "route": "/learn/lessons/studio-first-page",
+      "viewportId": "pc-1440-reduced-motion",
+      "horizontalOverflowPx": 0,
+      "firstTabTag": "a",
+      "firstTabText": "01학습 화면과 작업 화면 분리",
+      "transitionDurationMs": 0.01,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    }
+  ]
+}
