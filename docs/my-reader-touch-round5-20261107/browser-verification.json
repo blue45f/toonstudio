@@ -1,0 +1,724 @@
+{
+  "verifiedAt": "2026-11-07T14:26:22.800Z",
+  "round": "my-reader-touch-round5-20261107",
+  "gapId": "GAP-R4-05 (MySpaceHubPage.tsx & StudioSpatialReaderPage.tsx)",
+  "pageErrors": [],
+  "mySpaceViewportMatrix": [
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 844,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 4,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "my-space-role-filter-all",
+          "label": "전체 보기",
+          "ariaPressed": "true",
+          "widthPx": 70,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-reader",
+          "label": "독자·감상",
+          "ariaPressed": "false",
+          "widthPx": 72,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-creator",
+          "label": "창작·스튜디오",
+          "ariaPressed": "false",
+          "widthPx": 92,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-account",
+          "label": "계정·AI 설정",
+          "ariaPressed": "false",
+          "widthPx": 85,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 4,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "my-space-role-filter-all",
+          "label": "전체 보기",
+          "ariaPressed": "true",
+          "widthPx": 70,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-reader",
+          "label": "독자·감상",
+          "ariaPressed": "false",
+          "widthPx": 72,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-creator",
+          "label": "창작·스튜디오",
+          "ariaPressed": "false",
+          "widthPx": 92,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-account",
+          "label": "계정·AI 설정",
+          "ariaPressed": "false",
+          "widthPx": 85,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 4,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "my-space-role-filter-all",
+          "label": "전체 보기",
+          "ariaPressed": "true",
+          "widthPx": 70,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-reader",
+          "label": "독자·감상",
+          "ariaPressed": "false",
+          "widthPx": 72,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-creator",
+          "label": "창작·스튜디오",
+          "ariaPressed": "false",
+          "widthPx": 92,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-account",
+          "label": "계정·AI 설정",
+          "ariaPressed": "false",
+          "widthPx": 85,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "pc-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 4,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "my-space-role-filter-all",
+          "label": "전체 보기",
+          "ariaPressed": "true",
+          "widthPx": 70,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-reader",
+          "label": "독자·감상",
+          "ariaPressed": "false",
+          "widthPx": 72,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-creator",
+          "label": "창작·스튜디오",
+          "ariaPressed": "false",
+          "widthPx": 92,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-account",
+          "label": "계정·AI 설정",
+          "ariaPressed": "false",
+          "widthPx": 85,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "pc-1440-zoom-200",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "horizontalOverflowPx": 0,
+      "chipCount": 4,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "my-space-role-filter-all",
+          "label": "전체 보기",
+          "ariaPressed": "true",
+          "widthPx": 144,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-reader",
+          "label": "독자·감상",
+          "ariaPressed": "false",
+          "widthPx": 149,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-creator",
+          "label": "창작·스튜디오",
+          "ariaPressed": "false",
+          "widthPx": 190,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-account",
+          "label": "계정·AI 설정",
+          "ariaPressed": "false",
+          "widthPx": 176,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "reflow-720-equiv200",
+      "width": 720,
+      "height": 450,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 4,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "my-space-role-filter-all",
+          "label": "전체 보기",
+          "ariaPressed": "true",
+          "widthPx": 70,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-reader",
+          "label": "독자·감상",
+          "ariaPressed": "false",
+          "widthPx": 72,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-creator",
+          "label": "창작·스튜디오",
+          "ariaPressed": "false",
+          "widthPx": 92,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "my-space-role-filter-account",
+          "label": "계정·AI 설정",
+          "ariaPressed": "false",
+          "widthPx": 85,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    }
+  ],
+  "mySpaceKeyboardAndFilterCheck": {
+    "initialCountAll": 14,
+    "accountPressed": "true",
+    "allPressedAfterAccount": "false",
+    "countAccount": 4,
+    "creatorPressed": "true",
+    "countCreator": 6,
+    "countRestoredAll": 14,
+    "preservedAndRestored": true
+  },
+  "spatialReaderViewportMatrix": [
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 844,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 6,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "spatial-rea-curve-cylinder-90deg-canopy",
+          "label": "90° 원통형 캐노피 곡률",
+          "ariaPressed": "true",
+          "widthPx": 133,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-dome-120deg-cinema",
+          "label": "120° 돔 시네마 몰입",
+          "ariaPressed": "false",
+          "widthPx": 119,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-floating-panel-stack",
+          "label": "부유 다층 컷 스택",
+          "ariaPressed": "false",
+          "widthPx": 103,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-foveated-depth-dof",
+          "label": "시선 중심 심도(DoF) 포커스",
+          "ariaPressed": "true",
+          "widthPx": 153,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-spatial-binaural-pan",
+          "label": "바이노럴 공간 음향 패닝",
+          "ariaPressed": "false",
+          "widthPx": 132,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-comfort-vignette-lock",
+          "label": "멀미 방지 비네팅 잠금",
+          "ariaPressed": "false",
+          "widthPx": 122,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 6,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "spatial-rea-curve-cylinder-90deg-canopy",
+          "label": "90° 원통형 캐노피 곡률",
+          "ariaPressed": "true",
+          "widthPx": 133,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-dome-120deg-cinema",
+          "label": "120° 돔 시네마 몰입",
+          "ariaPressed": "false",
+          "widthPx": 119,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-floating-panel-stack",
+          "label": "부유 다층 컷 스택",
+          "ariaPressed": "false",
+          "widthPx": 103,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-foveated-depth-dof",
+          "label": "시선 중심 심도(DoF) 포커스",
+          "ariaPressed": "true",
+          "widthPx": 153,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-spatial-binaural-pan",
+          "label": "바이노럴 공간 음향 패닝",
+          "ariaPressed": "false",
+          "widthPx": 132,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-comfort-vignette-lock",
+          "label": "멀미 방지 비네팅 잠금",
+          "ariaPressed": "false",
+          "widthPx": 122,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 6,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "spatial-rea-curve-cylinder-90deg-canopy",
+          "label": "90° 원통형 캐노피 곡률",
+          "ariaPressed": "true",
+          "widthPx": 133,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-dome-120deg-cinema",
+          "label": "120° 돔 시네마 몰입",
+          "ariaPressed": "false",
+          "widthPx": 119,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-floating-panel-stack",
+          "label": "부유 다층 컷 스택",
+          "ariaPressed": "false",
+          "widthPx": 103,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-foveated-depth-dof",
+          "label": "시선 중심 심도(DoF) 포커스",
+          "ariaPressed": "true",
+          "widthPx": 153,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-spatial-binaural-pan",
+          "label": "바이노럴 공간 음향 패닝",
+          "ariaPressed": "false",
+          "widthPx": 132,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-comfort-vignette-lock",
+          "label": "멀미 방지 비네팅 잠금",
+          "ariaPressed": "false",
+          "widthPx": 122,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "pc-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 6,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "spatial-rea-curve-cylinder-90deg-canopy",
+          "label": "90° 원통형 캐노피 곡률",
+          "ariaPressed": "true",
+          "widthPx": 133,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-dome-120deg-cinema",
+          "label": "120° 돔 시네마 몰입",
+          "ariaPressed": "false",
+          "widthPx": 119,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-floating-panel-stack",
+          "label": "부유 다층 컷 스택",
+          "ariaPressed": "false",
+          "widthPx": 103,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-foveated-depth-dof",
+          "label": "시선 중심 심도(DoF) 포커스",
+          "ariaPressed": "true",
+          "widthPx": 153,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-spatial-binaural-pan",
+          "label": "바이노럴 공간 음향 패닝",
+          "ariaPressed": "false",
+          "widthPx": 132,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-comfort-vignette-lock",
+          "label": "멀미 방지 비네팅 잠금",
+          "ariaPressed": "false",
+          "widthPx": 122,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "pc-1440-zoom-200",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "horizontalOverflowPx": 0,
+      "chipCount": 6,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "spatial-rea-curve-cylinder-90deg-canopy",
+          "label": "90° 원통형 캐노피 곡률",
+          "ariaPressed": "true",
+          "widthPx": 271,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-dome-120deg-cinema",
+          "label": "120° 돔 시네마 몰입",
+          "ariaPressed": "false",
+          "widthPx": 241,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-floating-panel-stack",
+          "label": "부유 다층 컷 스택",
+          "ariaPressed": "false",
+          "widthPx": 213,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-foveated-depth-dof",
+          "label": "시선 중심 심도(DoF) 포커스",
+          "ariaPressed": "true",
+          "widthPx": 315,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-spatial-binaural-pan",
+          "label": "바이노럴 공간 음향 패닝",
+          "ariaPressed": "false",
+          "widthPx": 275,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-comfort-vignette-lock",
+          "label": "멀미 방지 비네팅 잠금",
+          "ariaPressed": "false",
+          "widthPx": 254,
+          "heightPx": 88,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    },
+    {
+      "viewport": "reflow-720-equiv200",
+      "width": 720,
+      "height": 450,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "chipCount": 6,
+      "allMeet44x44": true,
+      "anyTextTruncated": false,
+      "hasOverlap": false,
+      "chips": [
+        {
+          "testId": "spatial-rea-curve-cylinder-90deg-canopy",
+          "label": "90° 원통형 캐노피 곡률",
+          "ariaPressed": "true",
+          "widthPx": 133,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-dome-120deg-cinema",
+          "label": "120° 돔 시네마 몰입",
+          "ariaPressed": "false",
+          "widthPx": 119,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-curve-floating-panel-stack",
+          "label": "부유 다층 컷 스택",
+          "ariaPressed": "false",
+          "widthPx": 103,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-foveated-depth-dof",
+          "label": "시선 중심 심도(DoF) 포커스",
+          "ariaPressed": "true",
+          "widthPx": 153,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-spatial-binaural-pan",
+          "label": "바이노럴 공간 음향 패닝",
+          "ariaPressed": "false",
+          "widthPx": 132,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        },
+        {
+          "testId": "spatial-rea-gaze-comfort-vignette-lock",
+          "label": "멀미 방지 비네팅 잠금",
+          "ariaPressed": "false",
+          "widthPx": 122,
+          "heightPx": 44,
+          "meets44x44": true,
+          "textTruncated": false
+        }
+      ]
+    }
+  ],
+  "spatialReaderKeyboardAndFilterCheck": {
+    "domePressed": "true",
+    "binauralPressed": "true",
+    "statusTextAfterKeyboard": "곡률: 120° 돔 시네마 몰입 (dome-120deg-cinema) · 포커스: 바이노럴 공간 음향 패닝 (spatial-binaural-pan)",
+    "domePressedAfterSampleLoad": "true",
+    "binauralPressedAfterSampleLoad": "true",
+    "preservedAcrossSampleLoad": true
+  }
+}

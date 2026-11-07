@@ -112,6 +112,17 @@ describe("StudioSpatialReaderPage", () => {
     renderPage();
     const bar = screen.getByTestId("spatial-reader-rea-webxr-fov-bar");
     expect(bar.textContent).toContain("Apple Vision Pro visionOS · Meta Quest WebXR · Spline Spatial");
+    const curveGroup = within(bar).getByRole("group", { name: "곡률 모드" });
+    const gazeGroup = within(bar).getByRole("group", { name: "시선 포커스" });
+    const allChips = [...within(curveGroup).getAllByRole("button"), ...within(gazeGroup).getAllByRole("button")];
+    expect(allChips).toHaveLength(6);
+    for (const chip of allChips) {
+      expect(chip.className).toContain("min-h-11");
+      expect(chip.className).toContain("min-w-11");
+      expect(chip.className).toContain("focus-visible:outline-2");
+      expect(chip.className).not.toContain("py-1.5");
+    }
+
     expect(screen.getByTestId("spatial-rea-curve-cylinder-90deg-canopy").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("spatial-rea-gaze-foveated-depth-dof").getAttribute("aria-pressed")).toBe("true");
 
@@ -137,5 +148,7 @@ describe("StudioSpatialReaderPage", () => {
       useI18n.setState({ lang: "en" });
     });
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("spatial-rea-curve-floating-panel-stack").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("spatial-rea-gaze-comfort-vignette-lock").getAttribute("aria-pressed")).toBe("true");
   });
 });

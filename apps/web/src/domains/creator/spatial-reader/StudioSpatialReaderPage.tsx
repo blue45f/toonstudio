@@ -398,7 +398,11 @@ export function StudioSpatialReaderPage() {
             Apple Vision Pro visionOS · Meta Quest WebXR · Spline Spatial
           </span>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label={pickLang("곡률 모드", "Curvature Mode")}
+          className="mt-3 flex flex-wrap items-center gap-2"
+        >
           <span className="text-xs font-semibold text-fg-2">
             {pickLang("곡률 모드:", "Curvature Mode:")}
           </span>
@@ -411,15 +415,19 @@ export function StudioSpatialReaderPage() {
               onClick={() => setCurvatureMode(item.id)}
               className={
                 curvatureMode === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-accent bg-accent-soft px-3 py-2 text-left text-xs font-semibold leading-snug text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
+                  : "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-line bg-panel px-3 py-2 text-left text-xs font-semibold leading-snug text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
               }
             >
               {pickLang(item.ko, item.en)}
             </button>
           ))}
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label={pickLang("시선 포커스", "Gaze Focus")}
+          className="mt-2 flex flex-wrap items-center gap-2"
+        >
           <span className="text-xs font-semibold text-fg-2">
             {pickLang("시선 포커스:", "Gaze Focus:")}
           </span>
@@ -432,8 +440,8 @@ export function StudioSpatialReaderPage() {
               onClick={() => setGazeFocus(item.id)}
               className={
                 gazeFocus === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-accent bg-accent-soft px-3 py-2 text-left text-xs font-semibold leading-snug text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
+                  : "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-line bg-panel px-3 py-2 text-left text-xs font-semibold leading-snug text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
               }
             >
               {pickLang(item.ko, item.en)}

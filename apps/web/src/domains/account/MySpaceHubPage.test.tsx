@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -121,10 +121,40 @@ describe("MySpaceHubPage next-action center", () => {
     expect(screen.getByRole("link", { name: /이어서 보기/ }).getAttribute("href")).toBe("/ranking");
   });
 
-  it("exposes role-based filter buttons and direct links to AI settings and asset points", () => {
+  it("exposes role-based filter buttons with 44px touch target classes, preserves selection state, and links to AI settings and asset points", () => {
     renderPage();
-    expect(screen.getByRole("group", { name: "내 공간 역할별 보기" })).toBeTruthy();
+    const filterGroup = screen.getByRole("group", { name: "내 공간 역할별 보기" });
+    const filterButtons = within(filterGroup).getAllByRole("button");
+    expect(filterButtons).toHaveLength(4);
+    for (const button of filterButtons) {
+      expect(button.className).toContain("min-h-11");
+      expect(button.className).toContain("min-w-11");
+      expect(button.className).toContain("h-auto");
+      expect(button.className).toContain("focus-visible:ring-2");
+      expect(button.className).not.toContain("min-h-9");
+      expect(button.className).not.toContain("h-8");
+    }
+
+    expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("link", { name: /AI 연결 설정/ }).getAttribute("href")).toBe("/settings/ai");
     expect(screen.getByRole("link", { name: /에셋 포인트·정산/ }).getAttribute("href")).toBe("/asset-points");
+
+    // 역할 필터 선택 시 aria-pressed와 표시 카드가 일관되게 보존된다
+    fireEvent.click(screen.getByTestId("my-space-role-filter-account"));
+    expect(screen.getByTestId("my-space-role-filter-account").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("link", { name: /AI 연결 설정/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /에셋 포인트·정산/ })).toBeNull();
+
+    fireEvent.click(screen.getByTestId("my-space-role-filter-creator"));
+    expect(screen.getByTestId("my-space-role-filter-creator").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("my-space-role-filter-account").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("link", { name: /에셋 포인트·정산/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /AI 연결 설정/ })).toBeNull();
+
+    fireEvent.click(screen.getByTestId("my-space-role-filter-all"));
+    expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("link", { name: /AI 연결 설정/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /에셋 포인트·정산/ })).toBeTruthy();
   });
 });
