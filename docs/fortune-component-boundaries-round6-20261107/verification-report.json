@@ -1,0 +1,355 @@
+{
+  "generatedAt": "2026-11-07T15:04:18.043Z",
+  "baseUrl": "http://127.0.0.1:4185",
+  "componentLineCounts": {
+    "apps/web/src/domains/fortune/FortunePage.tsx": 709,
+    "apps/web/src/domains/fortune/FortuneCharacterPickerSection.tsx": 155,
+    "apps/web/src/domains/fortune/FortuneCharacterSidebar.tsx": 110,
+    "apps/web/src/domains/fortune/FortuneResultPanel.tsx": 569,
+    "apps/web/src/domains/fortune/FortuneToolInputForms.tsx": 406,
+    "apps/web/src/domains/fortune/FortuneShareModal.tsx": 267,
+    "apps/web/src/domains/fortune/FortunePage.period.test.tsx": 555
+  },
+  "viewports": {
+    "320": {
+      "viewport": {
+        "width": 320,
+        "height": 640,
+        "label": "Mobile 320px"
+      },
+      "pickerHeadingVisible": true,
+      "tabA11y": {
+        "hasTablist": true,
+        "tabCount": 8,
+        "selectedTabs": [
+          "fortune-tab-today"
+        ],
+        "tabpanelCount": 1,
+        "tabpanel": {
+          "id": "fortune-tabpanel-today",
+          "ariaLabelledby": "fortune-tab-today"
+        },
+        "sidebarHeading": "사서 아라",
+        "sidebarVoice": false,
+        "horizontalOverflowPx": 0
+      },
+      "sajuProbe": {
+        "genderGroupPresent": true,
+        "genderButtons": [
+          {
+            "text": "선택 안 함",
+            "ariaPressed": "true"
+          },
+          {
+            "text": "남성",
+            "ariaPressed": "false"
+          },
+          {
+            "text": "여성",
+            "ariaPressed": "false"
+          }
+        ],
+        "genderHasAriaPressed": true,
+        "horizontalOverflowPx": 0
+      },
+      "resultProbe": {
+        "hasShareBtn": true,
+        "hasRetryBtn": true,
+        "horizontalOverflowPx": 0
+      },
+      "modalProbe": {
+        "dialogOpen": true,
+        "initialFocusAriaLabel": "닫기",
+        "initialFocusTag": "BUTTON",
+        "horizontalOverflowPx": 0
+      },
+      "afterEscapeFocusRestoredToShareTrigger": true,
+      "gapR402Probe": {
+        "hasTablist": true,
+        "tabpanelCount": 1,
+        "genderGroupPresent": true,
+        "genderHasAriaPressed": true,
+        "modalInitialFocusOnClose": true,
+        "modalEscapeRestoresTrigger": true,
+        "reproduced": false
+      }
+    },
+    "390": {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "label": "Mobile 390px"
+      },
+      "pickerHeadingVisible": true,
+      "tabA11y": {
+        "hasTablist": true,
+        "tabCount": 8,
+        "selectedTabs": [
+          "fortune-tab-today"
+        ],
+        "tabpanelCount": 1,
+        "tabpanel": {
+          "id": "fortune-tabpanel-today",
+          "ariaLabelledby": "fortune-tab-today"
+        },
+        "sidebarHeading": "사서 아라",
+        "sidebarVoice": false,
+        "horizontalOverflowPx": 0
+      },
+      "sajuProbe": {
+        "genderGroupPresent": true,
+        "genderButtons": [
+          {
+            "text": "선택 안 함",
+            "ariaPressed": "true"
+          },
+          {
+            "text": "남성",
+            "ariaPressed": "false"
+          },
+          {
+            "text": "여성",
+            "ariaPressed": "false"
+          }
+        ],
+        "genderHasAriaPressed": true,
+        "horizontalOverflowPx": 0
+      },
+      "resultProbe": {
+        "hasShareBtn": true,
+        "hasRetryBtn": true,
+        "horizontalOverflowPx": 0
+      },
+      "modalProbe": {
+        "dialogOpen": true,
+        "initialFocusAriaLabel": "닫기",
+        "initialFocusTag": "BUTTON",
+        "horizontalOverflowPx": 0
+      },
+      "afterEscapeFocusRestoredToShareTrigger": true,
+      "gapR402Probe": {
+        "hasTablist": true,
+        "tabpanelCount": 1,
+        "genderGroupPresent": true,
+        "genderHasAriaPressed": true,
+        "modalInitialFocusOnClose": true,
+        "modalEscapeRestoresTrigger": true,
+        "reproduced": false
+      }
+    },
+    "768": {
+      "viewport": {
+        "width": 768,
+        "height": 1024,
+        "label": "Tablet 768px"
+      },
+      "pickerHeadingVisible": true,
+      "tabA11y": {
+        "hasTablist": true,
+        "tabCount": 8,
+        "selectedTabs": [
+          "fortune-tab-today"
+        ],
+        "tabpanelCount": 1,
+        "tabpanel": {
+          "id": "fortune-tabpanel-today",
+          "ariaLabelledby": "fortune-tab-today"
+        },
+        "sidebarHeading": "사서 아라",
+        "sidebarVoice": false,
+        "horizontalOverflowPx": 0
+      },
+      "sajuProbe": {
+        "genderGroupPresent": true,
+        "genderButtons": [
+          {
+            "text": "선택 안 함",
+            "ariaPressed": "true"
+          },
+          {
+            "text": "남성",
+            "ariaPressed": "false"
+          },
+          {
+            "text": "여성",
+            "ariaPressed": "false"
+          }
+        ],
+        "genderHasAriaPressed": true,
+        "horizontalOverflowPx": 0
+      },
+      "resultProbe": {
+        "hasShareBtn": true,
+        "hasRetryBtn": true,
+        "horizontalOverflowPx": 0
+      },
+      "modalProbe": {
+        "dialogOpen": true,
+        "initialFocusAriaLabel": "닫기",
+        "initialFocusTag": "BUTTON",
+        "horizontalOverflowPx": 0
+      },
+      "afterEscapeFocusRestoredToShareTrigger": true,
+      "gapR402Probe": {
+        "hasTablist": true,
+        "tabpanelCount": 1,
+        "genderGroupPresent": true,
+        "genderHasAriaPressed": true,
+        "modalInitialFocusOnClose": true,
+        "modalEscapeRestoresTrigger": true,
+        "reproduced": false
+      }
+    },
+    "1440": {
+      "viewport": {
+        "width": 1440,
+        "height": 900,
+        "label": "Desktop 1440px"
+      },
+      "pickerHeadingVisible": true,
+      "tabA11y": {
+        "hasTablist": true,
+        "tabCount": 8,
+        "selectedTabs": [
+          "fortune-tab-today"
+        ],
+        "tabpanelCount": 1,
+        "tabpanel": {
+          "id": "fortune-tabpanel-today",
+          "ariaLabelledby": "fortune-tab-today"
+        },
+        "sidebarHeading": "사서 아라",
+        "sidebarVoice": false,
+        "horizontalOverflowPx": 0
+      },
+      "sajuProbe": {
+        "genderGroupPresent": true,
+        "genderButtons": [
+          {
+            "text": "선택 안 함",
+            "ariaPressed": "true"
+          },
+          {
+            "text": "남성",
+            "ariaPressed": "false"
+          },
+          {
+            "text": "여성",
+            "ariaPressed": "false"
+          }
+        ],
+        "genderHasAriaPressed": true,
+        "horizontalOverflowPx": 0
+      },
+      "resultProbe": {
+        "hasShareBtn": true,
+        "hasRetryBtn": true,
+        "horizontalOverflowPx": 0
+      },
+      "modalProbe": {
+        "dialogOpen": true,
+        "initialFocusAriaLabel": "닫기",
+        "initialFocusTag": "BUTTON",
+        "horizontalOverflowPx": 0
+      },
+      "afterEscapeFocusRestoredToShareTrigger": true,
+      "gapR402Probe": {
+        "hasTablist": true,
+        "tabpanelCount": 1,
+        "genderGroupPresent": true,
+        "genderHasAriaPressed": true,
+        "modalInitialFocusOnClose": true,
+        "modalEscapeRestoresTrigger": true,
+        "reproduced": false
+      }
+    },
+    "200pct": {
+      "viewport": {
+        "width": 720,
+        "height": 450,
+        "label": "200% Zoom (720x450 CSS px)"
+      },
+      "pickerHeadingVisible": true,
+      "tabA11y": {
+        "hasTablist": true,
+        "tabCount": 8,
+        "selectedTabs": [
+          "fortune-tab-today"
+        ],
+        "tabpanelCount": 1,
+        "tabpanel": {
+          "id": "fortune-tabpanel-today",
+          "ariaLabelledby": "fortune-tab-today"
+        },
+        "sidebarHeading": "사서 아라",
+        "sidebarVoice": false,
+        "horizontalOverflowPx": 0
+      },
+      "sajuProbe": {
+        "genderGroupPresent": true,
+        "genderButtons": [
+          {
+            "text": "선택 안 함",
+            "ariaPressed": "true"
+          },
+          {
+            "text": "남성",
+            "ariaPressed": "false"
+          },
+          {
+            "text": "여성",
+            "ariaPressed": "false"
+          }
+        ],
+        "genderHasAriaPressed": true,
+        "horizontalOverflowPx": 0
+      },
+      "resultProbe": {
+        "hasShareBtn": true,
+        "hasRetryBtn": true,
+        "horizontalOverflowPx": 0
+      },
+      "modalProbe": {
+        "dialogOpen": true,
+        "initialFocusAriaLabel": "닫기",
+        "initialFocusTag": "BUTTON",
+        "horizontalOverflowPx": 0
+      },
+      "afterEscapeFocusRestoredToShareTrigger": true,
+      "gapR402Probe": {
+        "hasTablist": true,
+        "tabpanelCount": 1,
+        "genderGroupPresent": true,
+        "genderHasAriaPressed": true,
+        "modalInitialFocusOnClose": true,
+        "modalEscapeRestoresTrigger": true,
+        "reproduced": false
+      }
+    }
+  },
+  "keyboardJourneys": {
+    "tablistRoving": {
+      "afterArrowRight": {
+        "activeId": "fortune-tab-monthly",
+        "ariaSelected": "true",
+        "tabpanelId": "fortune-tabpanel-monthly"
+      },
+      "afterEnd": {
+        "activeId": "fortune-tab-tarot",
+        "ariaSelected": "true",
+        "tabpanelId": "fortune-tabpanel-tarot"
+      },
+      "afterHome": {
+        "activeId": "fortune-tab-today",
+        "ariaSelected": "true",
+        "tabpanelId": "fortune-tabpanel-today"
+      }
+    },
+    "shareModalTrapAndRestore": {
+      "initialFocus": "닫기",
+      "afterShiftTab": "링크 복사",
+      "afterTabWrap": "닫기",
+      "afterEscape": "공유·저장"
+    }
+  }
+}
