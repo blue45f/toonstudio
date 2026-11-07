@@ -1,5 +1,5 @@
 import { catalogStatusText } from "./catalog-status-i18n";
-import { matchesHangulAwareQuery, useLocalCatalogFallback } from "./local-catalog-fallback";
+import { isPlaceholderAuthorName, matchesHangulAwareQuery, useLocalCatalogFallback } from "./local-catalog-fallback";
 import { PenLine, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -67,7 +67,9 @@ export function AuthorsPage() {
     );
   };
 
-  const authors = Array.isArray(data?.authors) ? data.authors : [];
+  const authors = Array.isArray(data?.authors)
+    ? data.authors.filter((a) => Boolean(a) && !isPlaceholderAuthorName(a.name))
+    : [];
   const query = q.trim().normalize("NFC").toLowerCase();
   const filtered = query
     ? authors.filter((a) => {
@@ -207,7 +209,7 @@ export function AuthorsPage() {
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {visible.map((a, idx) => {
-              const safeName = typeof a?.name === "string" && a.name.trim() ? a.name : fallbackName;
+              const safeName = typeof a?.name === "string" && a.name.trim() ? a.name.trim() : fallbackName;
               const initial = safeName.replace(/[^가-힣A-Za-z0-9]/g, "").charAt(0) || "?";
               const safeCover =
                 Array.isArray(a?.cover) && typeof a.cover[0] === "string" && typeof a.cover[1] === "string"
@@ -241,7 +243,7 @@ export function AuthorsPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h2 className="truncate font-semibold text-fg group-hover:text-accent">{safeName}</h2>
+                    <h2 className="truncate font-semibold text-fg group-hover:text-accent" title={safeName}>{safeName}</h2>
                     <p className="mt-0.5 truncate text-xs text-fg-3">
                       {formatNumber(safeWorkCount)}
                       {t("authors.works")}
