@@ -304,20 +304,24 @@ export function StudioPromoPage() {
     patch({ panels });
   };
   return (
-    <div className="promo-studio" aria-labelledby="promo-title">
+    <div
+      className="promo-studio [&_button]:min-h-11 [&_button]:min-w-11 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-accent [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-2 [&_a]:focus-visible:outline-accent [&_.promo-button-row_button]:!basis-auto"
+      data-own-control-size=""
+      aria-labelledby="promo-title"
+    >
       <SiteContextualSubNav pathnameOverride="/showcase/promo" />
       <header className="promo-header">
-        <div>
-          <Link href={SHOWCASE_HOME_PATH} className="promo-back">← {bt("창작 갤러리", "Creator gallery")}</Link>
+        <div className="min-w-0">
+          <Link href={SHOWCASE_HOME_PATH} className="promo-back min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">← {bt("창작 갤러리", "Creator gallery")}</Link>
           <p className="promo-eyebrow">TOONSTUDIO · MOTION COMIC</p>
-          <h1 id="promo-title">{bt("당신의 웹툰을, 움직이는 예고편으로.", "Turn your webtoon into a moving trailer.")}</h1>
+          <h1 id="promo-title" className="[overflow-wrap:anywhere] break-words">{bt("당신의 웹툰을, 움직이는 예고편으로.", "Turn your webtoon into a moving trailer.")}</h1>
           <p>{bt("컷을 올리고 분위기를 고르면 예고편·쇼츠·모션툰을 이 브라우저에서 바로 만들어 저장합니다.", "Add panels, pick a mood, and make trailers, shorts or motion comics right in this browser.")}</p>
           <nav className="promo-button-row" aria-label={bt("영상 홍보 관련 경로", "Video promotion pathways")}>
-            <Link href="/community/promote" className="promo-back">{bt("신작·작가 홍보 게시판", "Creator promotion board")} →</Link>
-            <Link href="/promo-library" className="promo-back">{bt("홍보 영상 자료실 (204편)", "Promo video library (204 clips)")} →</Link>
-            <Link href="/cuts/studio" className="promo-back">{bt("숏폼 컷츠 만들기", "Create a Cuts clip")} →</Link>
-            <Link href="/studio/motion-webtoon" className="promo-back">{bt("모션 웹툰 스튜디오", "Motion webtoon studio")} →</Link>
-            <Link href="/studio" className="promo-back">{bt("ArtCraft v0.41.0 AI 영상·스플랫·스위트", "ArtCraft v0.41.0 AI Video & Splat Suite")} →</Link>
+            <Link href="/community/promote" className="promo-back min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{bt("신작·작가 홍보 게시판", "Creator promotion board")} →</Link>
+            <Link href="/promo-library" className="promo-back min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{bt("홍보 영상 자료실 (204편)", "Promo video library (204 clips)")} →</Link>
+            <Link href="/cuts/studio" className="promo-back min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{bt("숏폼 컷츠 만들기", "Create a Cuts clip")} →</Link>
+            <Link href="/studio/motion-webtoon" className="promo-back min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{bt("모션 웹툰 스튜디오", "Motion webtoon studio")} →</Link>
+            <Link href="/studio" className="promo-back min-h-11 min-w-11 rounded-lg px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{bt("ArtCraft v0.41.0 AI 영상·스플랫·스위트", "ArtCraft v0.41.0 AI Video & Splat Suite")} →</Link>
           </nav>
         </div>
         <span className="promo-badge">{bt("10 / 15 / 30 / 60초", "10 / 15 / 30 / 60 s")}</span>
@@ -339,7 +343,7 @@ export function StudioPromoPage() {
             )}
           </span>
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={bt("예고편 첫 3초 훅 아키타입", "Trailer first 3-second hook archetype")}>
+        <div className="mt-2.5 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap" role="group" aria-label={bt("예고편 첫 3초 훅 아키타입", "Trailer first 3-second hook archetype")}>
           {([
             { id: "cliffhanger-0to3s", ko: "① 클리프행어 결말 선공개 훅 (0~3초 반전)", en: "1. Cliffhanger Cold-Open Hook (0–3s)" },
             { id: "worldview-lore-reveal", ko: "② 세계관·로어 시네마틱 타이틀 훅", en: "2. Worldbuilding Cinematic Title Hook" },
@@ -352,7 +356,7 @@ export function StudioPromoPage() {
               aria-pressed={hookArchetype === hook.id}
               data-testid={`studio-promo-rea-hook-${hook.id}`}
               onClick={() => setHookArchetype(hook.id)}
-              className={hookArchetype === hook.id ? "rounded-lg border border-accent bg-accent/15 px-2.5 py-1 font-bold text-accent" : "rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2"}
+              className={`inline-flex min-h-11 min-w-11 items-center justify-start rounded-xl border px-3.5 py-2 text-left text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:justify-center sm:text-center ${hookArchetype === hook.id ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
             >
               {bt(hook.ko, hook.en)}
             </button>
@@ -393,11 +397,11 @@ export function StudioPromoPage() {
             <input id="promo-panels" type="file" accept="image/png,image/jpeg,image/webp" multiple disabled={busy} onChange={(event) => { void uploadPanels(event.target.files); event.target.value = ""; }} />
             <p className="promo-muted">자동 감지는 가로로 이어진 흰색·투명 여백을 기준으로 분할합니다. 경계가 불확실하면 원고를 한 컷으로 유지합니다. 균등 분할도 선택할 수 있으며 말풍선 경계는 직접 확인하세요. 원본 파일은 수정하지 않습니다.</p>
             <PromoDocumentCuts project={project} disabled={busy} onApply={(panels, summary) => { apply({ ...project, panels }); setError(""); setMessage(summary); }} />
-            <div className="promo-button-row">
-              <button type="button" className="promo-primary" disabled={busy || !project.panels.length} onClick={() => void generate()}>자동 무료 AI로 홍보 콘티 구성</button>
-              <button type="button" disabled={busy || !project.panels.length} onClick={() => { patch({ panels: localPromoPlan(project) }); setMessage("로컬 연출 템플릿을 적용했어요. AI 생성 결과가 아니며 네트워크 요청 없이 동작해요."); }}>로컬 연출 템플릿</button>
-              <button type="button" disabled={busy || !undo.length} onClick={() => stepHistory("undo")}>실행 취소</button>
-              <button type="button" disabled={busy || !redo.length} onClick={() => stepHistory("redo")}>다시 실행</button>
+            <div className="promo-button-row" role="group" aria-label={bt("콘티 편집 및 실행 취소 동작", "Storyboard editing and history actions")}>
+              <button type="button" className="promo-primary min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.panels.length} onClick={() => void generate()}>자동 무료 AI로 홍보 콘티 구성</button>
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.panels.length} onClick={() => { patch({ panels: localPromoPlan(project) }); setMessage("로컬 연출 템플릿을 적용했어요. AI 생성 결과가 아니며 네트워크 요청 없이 동작해요."); }}>로컬 연출 템플릿</button>
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !undo.length} onClick={() => stepHistory("undo")}>실행 취소</button>
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !redo.length} onClick={() => stepHistory("redo")}>다시 실행</button>
             </div>
             <p className="promo-muted">{aiStatus}. 무료 전용 AI 연결에는 제목·줄거리·컷 설명·자막만 전송합니다. 운영측 유료 AI로 자동 전환하지 않습니다.</p>
             {!project.panels.length ? (
@@ -415,9 +419,9 @@ export function StudioPromoPage() {
           <fieldset className="promo-card" id={PROMO_STEP_ANCHOR.sound} disabled={busy}>
             <legend>03 · 배경음악과 내레이션</legend>
             <p className="promo-muted">외부 음원 없이 만드는 로컬 합성 BGM · 기존 BGM을 교체하며 실행 취소할 수 있어요.</p>
-            <div className="promo-button-row"><button type="button" onClick={() => addSoundtrack("ambient")}>앰비언트 생성</button><button type="button" onClick={() => addSoundtrack("pulse")}>펄스 생성</button><button type="button" onClick={() => addSoundtrack("suspense")}>서스펜스 생성</button></div>
+            <div className="promo-button-row" role="group" aria-label={bt("로컬 합성 BGM 생성", "Generate local synth BGM")}><button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => addSoundtrack("ambient")}>앰비언트 생성</button><button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => addSoundtrack("pulse")}>펄스 생성</button><button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => addSoundtrack("suspense")}>서스펜스 생성</button></div>
             <label htmlFor="promo-audio">BGM 파일 · 20MB / 3분 이하 · 사용 권한을 확보한 음원</label><input id="promo-audio" type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/ogg,audio/mp4,audio/webm" onChange={(event) => { void uploadAudio(event.target.files?.[0]); event.target.value = ""; }} />
-            {project.audio ? <div className="promo-button-row"><label htmlFor="promo-volume">BGM 음량 {Math.round(project.audio.volume * 100)}%<input id="promo-volume" type="range" min={0} max={1} step={0.05} value={project.audio.volume} onChange={(event) => { if (project.audio) patch({ audio: { ...project.audio, volume: Number(event.target.value) } }, "audio:volume"); }} /></label><button type="button" onClick={() => patch({ audio: null })}>BGM 제거</button></div> : <p className="promo-muted">무음 저장도 가능합니다. 위의 합성 BGM은 브라우저에서 생성하며, 사람 목소리를 합성하거나 복제하지 않습니다.</p>}
+            {project.audio ? <div className="promo-button-row" role="group" aria-label={bt("BGM 음량 및 제거", "BGM volume and removal")}><label htmlFor="promo-volume">BGM 음량 {Math.round(project.audio.volume * 100)}%<input id="promo-volume" type="range" min={0} max={1} step={0.05} value={project.audio.volume} onChange={(event) => { if (project.audio) patch({ audio: { ...project.audio, volume: Number(event.target.value) } }, "audio:volume"); }} /></label><button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => patch({ audio: null })}>BGM 제거</button></div> : <p className="promo-muted">무음 저장도 가능합니다. 위의 합성 BGM은 브라우저에서 생성하며, 사람 목소리를 합성하거나 복제하지 않습니다.</p>}
             <PromoAudioMixer
               project={project}
               disabled={busy}
@@ -440,7 +444,7 @@ export function StudioPromoPage() {
               <label htmlFor="promo-voice-start">내레이션 시작 {project.voiceover.startSec.toFixed(1)}초<input id="promo-voice-start" type="range" min={0} max={project.seconds - 1} step={0.1} value={Math.min(project.seconds - 1, project.voiceover.startSec)} onChange={(event) => { if (project.voiceover) patch({ voiceover: { ...project.voiceover, startSec: Number(event.target.value) } }, "voice:start"); }} /></label>
               <label htmlFor="promo-voice-volume">음성 음량 {Math.round(project.voiceover.volume * 100)}%<input id="promo-voice-volume" type="range" min={0} max={1} step={0.05} value={project.voiceover.volume} onChange={(event) => { if (project.voiceover) patch({ voiceover: { ...project.voiceover, volume: Number(event.target.value) } }, "voice:volume"); }} /></label>
               {project.voiceover.startSec >= project.seconds ? <p className="promo-error">음성 시작점이 영상 밖에 있어요. 시작 시간을 줄여 주세요.</p> : null}
-              <button type="button" onClick={() => patch({ voiceover: null })}>내레이션 제거</button>
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => patch({ voiceover: null })}>내레이션 제거</button>
             </> : null}
           </fieldset>
         </div>
@@ -450,24 +454,24 @@ export function StudioPromoPage() {
           <section className="promo-card" id={PROMO_STEP_ANCHOR.export} aria-labelledby="promo-export-title">
             <h2 id="promo-export-title">04 · 내보내기</h2>
             <label htmlFor="promo-quality">브라우저 영상 해상도<select id="promo-quality" value={quality} disabled={busy} onChange={(event) => setQuality(Number(event.target.value) as 720 | 1080)}><option value={720}>720p · 빠른 저장</option><option value={1080}>1080p · 높은 해상도</option></select></label>
-            <button type="button" className="promo-primary promo-full" disabled={busy || !project.panels.length || !mime} onClick={() => void exportVideo()}>영상 저장 · {mime?.includes("mp4") ? "MP4" : "WebM"}</button>
+            <button type="button" className="promo-primary promo-full min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.panels.length || !mime} onClick={() => void exportVideo()}>영상 저장 · {mime?.includes("mp4") ? "MP4" : "WebM"}</button>
             <p className="promo-muted">{mime ? "실시간 녹화 중 이 탭을 유지해 주세요. 다른 탭으로 이동하면 취소합니다. 정확한 프레임 렌더링·H.264 MP4는 Remotion을 사용하세요." : subStatusText("studio.subStatus.promoPage.recordingUnsupported", "이 브라우저는 영상 녹화를 지원하지 않아요. Remotion 프로젝트로 내보낼 수 있어요.")}</p>
-            <button type="button" className="promo-full" disabled={busy || !project.panels.length} onClick={exportRemotion}>Remotion 프로젝트 ZIP</button>
+            <button type="button" className="promo-full min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.panels.length} onClick={exportRemotion}>Remotion 프로젝트 ZIP</button>
             <p className="promo-muted">원본 컷·BGM·자막·렌더 코드가 포함됩니다. 별도 Node.js 환경에서 MP4로 렌더링하며, 클라우드 서버나 유료 라이선스 구매는 자동 실행하지 않습니다.</p>
-            <div className="promo-button-row">
-              <button type="button" disabled={busy || !project.panels.length} onClick={() => downloadPromoBlob(new Blob([promoSrt(project)], { type: "text/plain;charset=utf-8" }), "toonstudio-captions.srt")}>자막 SRT</button>
-              <button type="button" disabled={busy || !project.panels.length} onClick={() => downloadPromoBlob(new Blob([promoVtt(project)], { type: "text/vtt;charset=utf-8" }), "toonstudio-captions.vtt")}>자막 VTT</button>
-              {project.voiceStudio?.captionMode === "karaoke" ? <button type="button" disabled={busy || !project.voiceStudio.clips.length} onClick={() => downloadPromoBlob(new Blob([promoKaraokeVtt(project)], { type: "text/vtt;charset=utf-8" }), "toonstudio-karaoke-captions.vtt")}>단어별 VTT</button> : null}
-              <button type="button" disabled={busy || !project.panels.length} onClick={() => downloadPromoBlob(new Blob([promoShotList(project)], { type: "application/json" }), "toonstudio-shot-list.json")}>장면·음성 타임코드 JSON</button>
-              <button type="button" disabled={busy || !project.panels.length} onClick={() => void exportPoster(false)}>홍보 썸네일 PNG</button>
-              <button type="button" disabled={busy || !project.panels.length} onClick={() => void exportPoster(true)}>콘티 시트 PNG</button>
-              <button type="button" disabled={busy} onClick={() => downloadPromoBlob(new Blob([JSON.stringify(project)], { type: "application/json" }), "toonstudio-promo.json")}>프로젝트 JSON 저장</button>
+            <div className="promo-button-row" role="group" aria-label={bt("자막·타임코드·프로젝트 파일 저장", "Export captions, timecodes, and project files")}>
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.panels.length} onClick={() => downloadPromoBlob(new Blob([promoSrt(project)], { type: "text/plain;charset=utf-8" }), "toonstudio-captions.srt")}>자막 SRT</button>
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.panels.length} onClick={() => downloadPromoBlob(new Blob([promoVtt(project)], { type: "text/vtt;charset=utf-8" }), "toonstudio-captions.vtt")}>자막 VTT</button>
+              {project.voiceStudio?.captionMode === "karaoke" ? <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.voiceStudio.clips.length} onClick={() => downloadPromoBlob(new Blob([promoKaraokeVtt(project)], { type: "text/vtt;charset=utf-8" }), "toonstudio-karaoke-captions.vtt")}>단어별 VTT</button> : null}
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.panels.length} onClick={() => downloadPromoBlob(new Blob([promoShotList(project)], { type: "application/json" }), "toonstudio-shot-list.json")}>장면·음성 타임코드 JSON</button>
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.panels.length} onClick={() => void exportPoster(false)}>홍보 썸네일 PNG</button>
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy || !project.panels.length} onClick={() => void exportPoster(true)}>콘티 시트 PNG</button>
+              <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={busy} onClick={() => downloadPromoBlob(new Blob([JSON.stringify(project)], { type: "application/json" }), "toonstudio-promo.json")}>프로젝트 JSON 저장</button>
             </div>
             <label htmlFor="promo-import">프로젝트 JSON 불러오기 (현재 구성 교체)</label><input id="promo-import" type="file" accept="application/json,.json" disabled={busy} onChange={(event) => { void importProject(event.target.files?.[0]); event.target.value = ""; }} />
             <p className="promo-muted">초안은 이 브라우저에 자동 저장합니다. 브라우저 데이터 삭제·저장 공간 부족에 대비해 프로젝트 JSON도 백업하세요. 미디어가 포함되므로 공유 대상을 확인하세요.</p>
-            <div className="promo-button-row" aria-label={bt("완성 영상 배포 동선", "Next steps after exporting")}>
-              <Link href="/community/promote/new">{bt("완성한 트레일러 홍보 글 올리기", "Post your finished trailer")}</Link>
-              <Link href="/cuts">{bt("숏폼 컷츠 피드 둘러보기", "Browse the Cuts feed")}</Link>
+            <div className="promo-button-row" role="group" aria-label={bt("완성 영상 배포 동선", "Next steps after exporting")}>
+              <Link href="/community/promote/new" className="promo-link-button min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{bt("완성한 트레일러 홍보 글 올리기", "Post your finished trailer")}</Link>
+              <Link href="/cuts" className="promo-link-button min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{bt("숏폼 컷츠 피드 둘러보기", "Browse the Cuts feed")}</Link>
             </div>
           </section>
           <details className="promo-card promo-locale-details" onToggle={(event) => setLocaleOpen(event.currentTarget.open)}>
@@ -488,7 +492,7 @@ export function StudioPromoPage() {
                 ? <><p>{subStatusText("studio.subStatus.promoPage.phaseVoiceProgress", { percent: Math.round(progress * 100) }, "클라우드 AI 음성을 자막 타임라인에 맞춰 만드는 중 · {percent}%")}</p><progress value={progress} max={1} aria-label="AI 음성 생성 진행률" /></>
                 : <p>{subStatusText("studio.subStatus.promoPage.phaseVoiceLocal", "무료 시스템 음성을 로컬 오디오 파일로 만들고 있어요. 공유창에서는 현재 탭과 탭 오디오를 선택해 주세요.")}</p>
             ) : null}
-            {!busy ? <p>{message}</p> : phase !== "idle" ? <button type="button" onClick={() => operation.current?.abort()}>작업 취소</button> : <p role="status">{subStatusText("studio.subStatus.promoPage.draftLoading", "초안을 불러오는 중이에요…")}</p>}
+            {!busy ? <p>{message}</p> : phase !== "idle" ? <button type="button" className="min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => operation.current?.abort()}>작업 취소</button> : <p role="status">{subStatusText("studio.subStatus.promoPage.draftLoading", "초안을 불러오는 중이에요…")}</p>}
           </div>
           {error ? <p className="promo-error" role="alert">{error}</p> : null}
         </aside>

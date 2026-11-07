@@ -145,4 +145,36 @@ describe("public hiring search recovery and request identity", () => {
     expect(screen.getByTestId("hiring-rea-rate-escrow-status").textContent).toContain("85컷 총액");
     await screen.findByRole("heading", { name: "공개 공고" });
   });
+
+  it("enforces >=44px touch targets, named control groups, focus-visible rings, and long title wrapping (GAP-R6-04)", async () => {
+    const longTitle =
+      "장편 판타지 액션 웹툰 [심연의 궤적: CHRONICLES OF THE ABYSSAL HORIZON — EPISODE 01–120] 선화·3D 배경 어시스턴트 모집";
+    get.mockResolvedValue(page(longTitle));
+    render(<MemoryRouter><HiringPositionsPage /></MemoryRouter>);
+    const heading = await screen.findByRole("heading", { name: longTitle });
+    expect(heading.className).toContain("[overflow-wrap:anywhere]");
+
+    const roleGroup = screen.getByRole("group", { name: /직무 단가 프리셋/u });
+    const cutGroup = screen.getByRole("group", { name: /회차 기준 컷수/u });
+    const filterGroup = screen.getByRole("group", { name: /조건 필터 동작/u });
+    expect(roleGroup).toBeTruthy();
+    expect(cutGroup).toBeTruthy();
+    expect(filterGroup).toBeTruthy();
+
+    const roleButtons = roleGroup.querySelectorAll("button[data-testid^='hiring-rea-role-']");
+    const cutButtons = cutGroup.querySelectorAll("button[data-testid^='hiring-rea-cuts-']");
+    expect(roleButtons.length).toBe(4);
+    expect(cutButtons.length).toBe(3);
+
+    for (const btn of [...Array.from(roleButtons), ...Array.from(cutButtons)]) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("min-w-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+    }
+
+    const escrowSection = screen.getByTestId("hiring-rea-rate-escrow-bar");
+    expect(escrowSection.hasAttribute("data-own-control-size")).toBe(true);
+    const openPositionsSection = screen.getByRole("region", { name: /공개 모집 조건/u });
+    expect(openPositionsSection.hasAttribute("data-own-control-size")).toBe(true);
+  });
 });

@@ -144,3 +144,41 @@ describe("로케일별 자막 일괄 출력", () => {
     await waitFor(() => expect(screen.queryByLabelText("번역 초안 JSON")).toBeNull());
   });
 });
+
+describe("GAP-R6-04 예고편 훅 프리셋 및 버튼 그룹 접근성", () => {
+  it("44px 이상 터치 타깃, aria-pressed 선택 상태, focus-visible 외곽선 및 그룹 이름을 제공한다", () => {
+    renderPage();
+    const hookBar = screen.getByTestId("studio-promo-rea-hook-director-bar");
+    const promoStudioRoot = hookBar.closest(".promo-studio");
+    expect(promoStudioRoot?.hasAttribute("data-own-control-size")).toBe(true);
+
+    const hookGroup = screen.getByRole("group", { name: /예고편 첫 3초 훅 아키타입/u });
+    const hookButtons = within(hookGroup).getAllByRole("button");
+    expect(hookButtons).toHaveLength(4);
+    for (const btn of hookButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("min-w-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+    }
+
+    const cliffhangerBtn = screen.getByTestId("studio-promo-rea-hook-cliffhanger-0to3s");
+    const beatDropBtn = screen.getByTestId("studio-promo-rea-hook-action-beat-drop");
+    expect(cliffhangerBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(beatDropBtn.getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(beatDropBtn);
+    expect(cliffhangerBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(beatDropBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("studio-promo-rea-retention-badge").textContent).toContain("86.1%");
+
+    expect(screen.getByRole("group", { name: /콘티 편집 및 실행 취소 동작/u })).toBeTruthy();
+    expect(screen.getByRole("group", { name: /로컬 합성 BGM 생성/u })).toBeTruthy();
+    expect(screen.getByRole("group", { name: /자막·타임코드·프로젝트 파일 저장/u })).toBeTruthy();
+    const postExportGroup = screen.getByRole("group", { name: /완성 영상 배포 동선/u });
+    for (const link of within(postExportGroup).getAllByRole("link")) {
+      expect(link.className).toContain("promo-link-button");
+      expect(link.className).toContain("min-h-11");
+      expect(link.className).toContain("min-w-11");
+    }
+  });
+});
