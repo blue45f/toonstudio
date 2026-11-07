@@ -98,7 +98,7 @@ function RecentProjectThumb({ project }: { readonly project: StudioProjectLibrar
 }
 
 const CHOICE_CARD_CLASS =
-  "fx-lift group flex h-full flex-col rounded-2xl border border-line bg-panel/40 p-5 transition-colors hover:border-accent/50 sm:p-6";
+  "fx-lift group flex h-full scroll-my-24 flex-col rounded-2xl border border-line bg-panel/40 p-5 transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:p-6";
 const CHOICE_ICON_CLASS =
   "flex size-11 items-center justify-center rounded-xl bg-accent/15 text-accent";
 
@@ -109,16 +109,45 @@ export function CreateStartPage() {
   const language = useI18n((state) => state.lang);
   const locale = studioProjectLibraryLocale(language);
   const recentProjects = useRecentStudioProjects(locale);
-  const activeSection = searchParams.get("section") ?? "all";
+  const urlSection = searchParams.get("section") ?? "all";
+  const [selectedSection, setSelectedSection] = useState<string>(urlSection);
+  const activeSection = selectedSection !== urlSection && searchParams.get("section") !== null
+    ? urlSection
+    : selectedSection;
   const showLanes = activeSection === "all" || activeSection === "lanes";
   const showPipeline = activeSection === "all" || activeSection === "pipeline";
   const showContinue = activeSection === "all" || activeSection === "continue";
 
   const selectSection = (section: "all" | "lanes" | "pipeline" | "continue") => {
+    setSelectedSection(section);
     const next = new URLSearchParams(searchParams);
     if (section === "all") next.delete("section");
     else next.set("section", section);
     setSearchParams(next, { replace: true });
+  };
+
+  const handleSectionToggleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    const group = event.currentTarget.parentElement;
+    if (!group) return;
+    const buttons = Array.from(group.querySelectorAll<HTMLButtonElement>("button:not([disabled])"));
+    if (buttons.length === 0) return;
+    const currentIndex = buttons.indexOf(event.currentTarget);
+    if (currentIndex === -1) return;
+    event.preventDefault();
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (currentIndex + 1) % buttons.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = buttons.length - 1;
+    }
+    buttons[nextIndex]?.focus();
   };
 
   // 갤러리 보기 조건을 단 옛 /create 공유 주소는 같은 조건의 /showcase로 넘긴다.
@@ -133,7 +162,8 @@ export function CreateStartPage() {
       <Container size="wide" className="py-6 sm:py-10">
         <Link
           href="/create"
-          className="mb-5 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent"
+          style={{ minHeight: "44px" }}
+          className="mb-5 inline-flex min-h-11 scroll-my-24 items-center gap-1.5 text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <ArrowLeft size={15} aria-hidden />
           {bt("다른 시작 방법 보기", "See other ways to start")}
@@ -162,7 +192,13 @@ export function CreateStartPage() {
             )}
           </p>
         </div>
-        <div role="group" aria-label={bt("시작 화면 구역 보기 전환", "Switch start screen view")} className="flex flex-wrap gap-1.5">
+        <div
+          role="group"
+          aria-label={bt("시작 화면 구역 보기 전환", "Switch start screen view")}
+          data-testid="create-start-section-group"
+          style={{ gap: "8px" }}
+          className="flex flex-wrap items-center gap-2"
+        >
           {([
             ["all", "추천 시작", "Recommended"],
             ["lanes", "다른 시작 방법", "More ways to start"],
@@ -174,15 +210,19 @@ export function CreateStartPage() {
               <button
                 key={id}
                 type="button"
+                data-testid={`create-start-section-${id}`}
+                data-state={active ? "active" : "inactive"}
                 aria-pressed={active}
                 onClick={() => selectSection(id)}
-                className={`min-h-9 rounded-full border px-3.5 text-xs font-bold transition-colors ${
+                onKeyDown={handleSectionToggleKeyDown}
+                style={{ minHeight: "44px", minWidth: "44px" }}
+                className={`inline-flex min-h-11 min-w-11 max-w-full scroll-my-24 items-center justify-center rounded-full border px-3.5 py-2 text-xs font-bold leading-snug break-words [overflow-wrap:anywhere] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   active
                     ? "border-accent bg-accent text-on-accent"
                     : "border-line bg-panel/70 text-fg-2 hover:border-accent/50 hover:text-fg"
                 }`}
               >
-                {bt(ko, en)}
+                <span className="break-words [overflow-wrap:anywhere]">{bt(ko, en)}</span>
               </button>
             );
           })}
@@ -205,9 +245,10 @@ export function CreateStartPage() {
         <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           <Link
             href={`/create?intent=${MY_STORY_INTENT}`}
-            className="flex flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50"
+            style={{ minHeight: "44px" }}
+            className="flex min-h-11 scroll-my-24 flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            <span className="text-xs font-bold text-fg">
+            <span className="text-xs font-bold text-fg break-words [overflow-wrap:anywhere]">
               {bt("그림·스토리 모두 처음이에요", "New to both drawing & story")}
             </span>
             <span className="mt-1.5 text-[11px] font-semibold text-accent">
@@ -217,9 +258,10 @@ export function CreateStartPage() {
           <StudioQuickStart locale={locale} presentation="drawing-card" />
           <Link
             href="/studio/templates"
-            className="flex flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50"
+            style={{ minHeight: "44px" }}
+            className="flex min-h-11 scroll-my-24 flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            <span className="text-xs font-bold text-fg">
+            <span className="text-xs font-bold text-fg break-words [overflow-wrap:anywhere]">
               {bt("웹툰·인스타툰 규격이 헷갈려요", "Unsure about canvas specs")}
             </span>
             <span className="mt-1.5 text-[11px] font-semibold text-accent">
@@ -228,9 +270,10 @@ export function CreateStartPage() {
           </Link>
           <Link
             href="/studio/import"
-            className="flex flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50"
+            style={{ minHeight: "44px" }}
+            className="flex min-h-11 scroll-my-24 flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            <span className="text-xs font-bold text-fg">
+            <span className="text-xs font-bold text-fg break-words [overflow-wrap:anywhere]">
               {bt("클튜·포토샵 작업 파일이 있어요", "Have Clip Studio / PSD files")}
             </span>
             <span className="mt-1.5 text-[11px] font-semibold text-accent">
@@ -242,7 +285,10 @@ export function CreateStartPage() {
 
       {showPipeline ? (
       <details open={activeSection === "pipeline"} className="mt-6 rounded-2xl border border-line bg-panel/40 p-4 sm:p-5">
-        <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-fg">
+        <summary
+          style={{ minHeight: "44px" }}
+          className="min-h-11 scroll-my-24 cursor-pointer py-2 text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
           {bt("주제별 질문과 제작 도구 더 보기", "More story topics and creation tools")}
         </summary>
         <SiteContextualSubNav pathnameOverride="/create" className="mt-4" />
@@ -262,7 +308,8 @@ export function CreateStartPage() {
           </div>
           <Link
             href="/studio/ai-lab"
-            className="rounded-full border border-accent/40 bg-accent-soft px-3 py-1 text-[11px] font-bold text-accent hover:border-accent"
+            style={{ minHeight: "44px" }}
+            className="inline-flex min-h-11 scroll-my-24 items-center rounded-full border border-accent/40 bg-accent-soft px-3.5 py-2 text-[11px] font-bold text-accent hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {bt("✦ 스마트 AI 창작 보조 허브 열기 →", "✦ Open Smart AI Assist Hub →")}
           </Link>
@@ -315,7 +362,8 @@ export function CreateStartPage() {
           </div>
           <Link
             href={`/create?intent=${MY_STORY_INTENT}`}
-            className={buttonClass({ variant: "solid", size: "lg", className: "min-h-11 shrink-0 gap-2" })}
+            style={{ minHeight: "44px" }}
+            className={buttonClass({ variant: "solid", size: "lg", className: "min-h-11 scroll-my-24 shrink-0 gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" })}
           >
             {bt("내 이야기 풀어내기", "Tell my story")}
             <ArrowRight size={16} aria-hidden />
@@ -326,7 +374,8 @@ export function CreateStartPage() {
             <li key={topicId}>
               <Link
                 href={`/create?intent=${MY_STORY_INTENT}&topic=${topicId}`}
-                className="fx-press inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 text-sm font-semibold text-fg transition-colors hover:border-accent/60"
+                style={{ minHeight: "44px" }}
+                className="fx-press inline-flex min-h-11 scroll-my-24 items-center rounded-full border border-line bg-panel px-3.5 py-2 text-sm font-semibold text-fg break-words [overflow-wrap:anywhere] transition-colors hover:border-accent/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 {bt(MY_STORY_TOPIC_TITLES[topicId].ko, MY_STORY_TOPIC_TITLES[topicId].en)}
               </Link>
@@ -339,7 +388,10 @@ export function CreateStartPage() {
 
       {showLanes ? (
       <details open={activeSection === "lanes"} className="mt-4 rounded-2xl border border-line bg-panel/40 p-4 sm:p-5">
-        <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-fg">
+        <summary
+          style={{ minHeight: "44px" }}
+          className="min-h-11 scroll-my-24 cursor-pointer py-2 text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
           {bt("다른 시작 방법 · 기획, 콘티, 템플릿, 파일", "More ways to start: plans, boards, templates and files")}
         </summary>
       <StaggerReveal className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
@@ -489,7 +541,8 @@ export function CreateStartPage() {
                   <li key={project.id}>
                     <Link
                       href={resume.href}
-                      className="fx-press flex items-center gap-3 rounded-xl border border-line/70 bg-card/60 px-3 py-2.5 transition-colors hover:border-accent/50"
+                      style={{ minHeight: "44px" }}
+                      className="fx-press flex min-h-11 scroll-my-24 items-center gap-3 rounded-xl border border-line/70 bg-card/60 px-3 py-2.5 transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                       aria-label={bt(`${project.title} 이어서 작업`, `Continue ${project.title}`)}
                     >
                       <RecentProjectThumb project={project} />
@@ -504,7 +557,11 @@ export function CreateStartPage() {
                 );
               })}
             </ul>
-            <Link href="/studio" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+            <Link
+              href="/studio"
+              style={{ minHeight: "44px" }}
+              className="mt-4 inline-flex min-h-11 scroll-my-24 items-center gap-1.5 text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
               {bt("모든 작품 보기", "See all works")}
               <ArrowRight size={15} aria-hidden />
             </Link>
@@ -520,11 +577,19 @@ export function CreateStartPage() {
             {/* 빈 상태의 다음 행동은 이 화면의 본래 목적인 "첫 작품 만들기"여야 한다.
                 둘러보기는 보조로 내린다 — 시작하러 온 사람을 구경으로 보내지 않는다. */}
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-              <Link href="/studio/new?lane=blank" className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+              <Link
+                href="/studio/new?lane=blank"
+                style={{ minHeight: "44px" }}
+                className="inline-flex min-h-11 scroll-my-24 items-center gap-1.5 text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
                 {bt("새 작품 만들기", "Create a new work")}
                 <ArrowRight size={15} aria-hidden />
               </Link>
-              <Link href="/studio" className="inline-flex items-center gap-1.5 text-sm font-semibold text-fg-2">
+              <Link
+                href="/studio"
+                style={{ minHeight: "44px" }}
+                className="inline-flex min-h-11 scroll-my-24 items-center gap-1.5 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
                 {bt("작업실 둘러보기", "Look around the studio")}
               </Link>
             </div>
@@ -562,14 +627,16 @@ export function CreateStartPage() {
         <div className="flex flex-wrap gap-2">
           <Link
             href="/showcase"
-            className="fx-press inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line px-3.5 text-sm font-semibold text-fg transition-colors hover:border-accent/50"
+            style={{ minHeight: "44px" }}
+            className="fx-press inline-flex min-h-11 scroll-my-24 items-center gap-1.5 rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-fg transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <Images size={15} aria-hidden />
             {bt("창작 갤러리", "Creator gallery")}
           </Link>
           <Link
             href="/collaborate/gallery"
-            className="fx-press inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line px-3.5 text-sm font-semibold text-fg transition-colors hover:border-accent/50"
+            style={{ minHeight: "44px" }}
+            className="fx-press inline-flex min-h-11 scroll-my-24 items-center gap-1.5 rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-fg transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <Users size={15} aria-hidden />
             {bt("창작자 커리어 갤러리", "Creator career gallery")}

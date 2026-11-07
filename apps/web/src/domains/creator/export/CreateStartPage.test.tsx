@@ -166,6 +166,53 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(within(guide).getByRole("link", { name: /그림·스토리 모두 처음이에요/ }).getAttribute("href")).toBe("/create?intent=my-story");
     expect(within(guide).getByRole("button", { name: /일단 펜으로 바로 그리고 싶어요/ }).textContent).toContain("새 캔버스 바로 열기");
   });
+
+  it("GAP-R6-04: 시작 화면 구역 전환 토글이 44px 최소 타깃·명시적 포커스 링·선택 상태·방향키 이동 계약을 충족한다", () => {
+    renderStartSheet("/create");
+    const group = screen.getByRole("group", { name: "시작 화면 구역 보기 전환" });
+    expect(group.getAttribute("data-testid")).toBe("create-start-section-group");
+    expect(group.style.gap).toBe("8px");
+
+    const buttons = within(group).getAllByRole("button");
+    expect(buttons.length).toBe(4);
+    for (const button of buttons) {
+      expect(button.className).toContain("min-h-11");
+      expect(button.className).toContain("min-w-11");
+      expect(button.className).toContain("focus-visible:outline");
+      expect(button.className).toContain("scroll-my-24");
+      expect(button.className).toContain("break-words");
+      expect(button.className).toContain("[overflow-wrap:anywhere]");
+      expect(button.style.minHeight).toBe("44px");
+      expect(button.style.minWidth).toBe("44px");
+    }
+
+    const allBtn = screen.getByTestId("create-start-section-all");
+    const lanesBtn = screen.getByTestId("create-start-section-lanes");
+    const pipelineBtn = screen.getByTestId("create-start-section-pipeline");
+    const continueBtn = screen.getByTestId("create-start-section-continue");
+
+    expect(allBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(allBtn.getAttribute("data-state")).toBe("active");
+    expect(lanesBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(lanesBtn.getAttribute("data-state")).toBe("inactive");
+
+    allBtn.focus();
+    fireEvent.keyDown(allBtn, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(lanesBtn);
+    fireEvent.keyDown(lanesBtn, { key: "End" });
+    expect(document.activeElement).toBe(continueBtn);
+    fireEvent.keyDown(continueBtn, { key: "Home" });
+    expect(document.activeElement).toBe(allBtn);
+    fireEvent.keyDown(allBtn, { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(continueBtn);
+
+    fireEvent.click(pipelineBtn);
+    expect(pipelineBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(pipelineBtn.getAttribute("data-state")).toBe("active");
+    expect(allBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(allBtn.getAttribute("data-state")).toBe("inactive");
+    expect(screen.getByTestId("location").textContent).toBe("/create?section=pipeline");
+  });
 });
 
 /** 지연 로딩된 질문형 인터뷰를 기다리는 시간 — 부하가 큰 CI에서 첫 로딩이 기본 1초를 넘길 수 있다. */
