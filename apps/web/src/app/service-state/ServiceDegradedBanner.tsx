@@ -141,7 +141,7 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
           ? "border-good/35 bg-good/10 text-good"
           : "border-warn/40 bg-warn/10 text-fg",
         immersive
-          && "pointer-events-none fixed left-1/2 bottom-[calc(max(5.5rem,var(--immersive-dock-clearance,0px))+env(safe-area-inset-bottom))] z-[90] w-[min(46rem,calc(100vw-1rem))] -translate-x-1/2 rounded-2xl border max-sm:bg-panel",
+          && "pointer-events-none fixed left-1/2 bottom-[calc(max(5.5rem,var(--immersive-dock-clearance,0px),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))+env(safe-area-inset-bottom))] z-[90] w-[min(46rem,calc(100vw-1rem))] -translate-x-1/2 rounded-2xl border max-sm:bg-panel",
       )}
     >
       <div className={cn("mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-3 gap-y-2",

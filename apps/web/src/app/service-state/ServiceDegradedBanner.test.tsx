@@ -102,7 +102,7 @@ it("몰입 화면의 상단 도구를 덮지 않고 장애 상세를 펼치거�
   render(<MemoryRouter><ServiceDegradedBanner immersive /></MemoryRouter>);
   const status = screen.getByRole("status");
   // 가상 스튜디오 도크가 게시하는 여백 변수보다 위에 뜨고, 변수가 없으면 기존 5.5rem을 유지한다.
-  expect(status.className).toContain("bottom-[calc(max(5.5rem,var(--immersive-dock-clearance,0px))+env(safe-area-inset-bottom))]");
+  expect(status.className).toContain("bottom-[calc(max(5.5rem,var(--immersive-dock-clearance,0px),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))+env(safe-area-inset-bottom))]");
   expect(status.className).not.toContain("top-");
   expect(status.className).toContain("max-sm:bg-panel");
   expect(status.querySelector("div")?.className).toContain("max-sm:grid-cols-[auto_minmax(0,1fr)]");
@@ -388,4 +388,10 @@ describe("모달이 내준 상태 자리(B-05)", () => {
       slot.remove();
     }
   });
+});
+
+it("몰입 알림의 조작부를 펼친 모바일 작업 메뉴의 실측 높이 위에 둔다", () => {
+  render(<MemoryRouter><ServiceDegradedBanner immersive /></MemoryRouter>);
+  expect(screen.getByRole("status").className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem)");
+  expect(screen.getByRole("button", { name: "서비스 상태 알림 펼치기" })).toBeTruthy();
 });
