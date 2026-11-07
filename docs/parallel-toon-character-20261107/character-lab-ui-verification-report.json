@@ -1,0 +1,143 @@
+{
+  "schema": "character-lab-ui-local-verification/v1",
+  "generatedAt": "2026-11-07T05:47:36.657Z",
+  "provenance": {
+    "commitSha": "e48cdc2563227ba5dd10bd491b54977ce92b4afa",
+    "shortCommit": "e48cdc2",
+    "branch": "feat/character-lab-ui-20261107",
+    "ancestorCommits": [
+      {
+        "commit": "f8a04aee",
+        "present": true,
+        "isAncestor": true,
+        "subject": "test(character-lab): 포즈 FK·체인 역산·FACS·커스터마이즈 수치 안정성 회귀 하네스 및 경계 결함 수정"
+      },
+      {
+        "commit": "06d95bc8",
+        "present": true,
+        "isAncestor": true,
+        "subject": "test(character-lab): 호출 경계에서 skeleton-fk·back-solve·customize-plan 통합 계약 테스트 추가"
+      },
+      {
+        "commit": "39976d11",
+        "present": true,
+        "isAncestor": true,
+        "subject": "fix(character-lab): 손상 스켈레톤·비유한 입력에 대한 기즈모·제어점·포인터 안전 경계 구현"
+      },
+      {
+        "commit": "eac1fb45",
+        "present": true,
+        "isAncestor": true,
+        "subject": "test(character-lab): 손상 스켈레톤·복구 실브라우저 회귀 프로브 및 진단 경계 보강"
+      },
+      {
+        "commit": "698dffc4",
+        "present": true,
+        "isAncestor": true,
+        "subject": "fix(character-lab): 손상 스켈레톤에 대한 ViewportPane·PosePanel 안전 경계 연결 및 엄격 프로브 검증"
+      }
+    ],
+    "allRequiredAncestorsPresent": true,
+    "dirtyFiles": [
+      "M apps/character-lab/src/app/shell/panels/PackagePanel.test.tsx",
+      "M apps/character-lab/src/app/shell/panels/PackagePanel.tsx",
+      "M apps/character-lab/src/app/shell/panels/PosePanel.test.tsx",
+      "M apps/character-lab/src/app/shell/panels/PosePanel.tsx",
+      "M apps/character-lab/src/app/styles/character-lab.css",
+      "?? docs/parallel-toon-character-20261107/"
+    ]
+  },
+  "poseSummaryState": {
+    "summaryPresent": true,
+    "rigSource": "활성 리그: 절차적 휴머노이드",
+    "selSummary": "선택 상태: 기본 자세(Rest · 프리셋: A 포즈)",
+    "restNoticePresent": true,
+    "restNotice": "현재 기본 자세(Rest · 회전된 본 0개)입니다. 빠른 스탠스·프리셋 카드를 선택하거나 뷰포트 관절 핸들·IK 목표를 조작해 포즈를 만드세요.",
+    "switchBtnPresent": true
+  },
+  "switchedBackToPackage": true,
+  "packageDiagnostics": {
+    "detailsPresent": true,
+    "defaultOpen": false,
+    "summary": "고급 리그·슬롯 지원 요약 (15/15개 활성)",
+    "body": "활성 슬롯 15개 · 부분 제한 0개 · 비활성 0개 · 포즈 리그(available) · 손 리그(available)",
+    "openedAfterClick": true,
+    "closedAfterSecondClick": true
+  },
+  "packageViewports": {
+    "320px": {
+      "clientWidth": 320,
+      "scrollWidth": 320,
+      "horizontalOverflowPx": 0,
+      "panelClientWidth": 296,
+      "panelScrollWidth": 296,
+      "panelOverflowPx": 0,
+      "totalInteractiveChecked": 10,
+      "under44Count": 0,
+      "sampleUnder44": []
+    },
+    "390px": {
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "horizontalOverflowPx": 0,
+      "panelClientWidth": 366,
+      "panelScrollWidth": 366,
+      "panelOverflowPx": 0,
+      "totalInteractiveChecked": 10,
+      "under44Count": 0,
+      "sampleUnder44": []
+    },
+    "768px": {
+      "clientWidth": 768,
+      "scrollWidth": 768,
+      "horizontalOverflowPx": 0,
+      "panelClientWidth": 744,
+      "panelScrollWidth": 744,
+      "panelOverflowPx": 0,
+      "totalInteractiveChecked": 10,
+      "under44Count": 0,
+      "sampleUnder44": []
+    },
+    "1440px": {
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "horizontalOverflowPx": 0,
+      "panelClientWidth": 355,
+      "panelScrollWidth": 355,
+      "panelOverflowPx": 0,
+      "totalInteractiveChecked": 10,
+      "under44Count": 0,
+      "sampleUnder44": []
+    },
+    "200pct-zoom": {
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "horizontalOverflowPx": 0,
+      "panelClientWidth": 355,
+      "panelScrollWidth": 355,
+      "panelOverflowPx": 0,
+      "totalInteractiveChecked": 10,
+      "under44Count": 0,
+      "sampleUnder44": []
+    }
+  },
+  "allPackageViewportsPass": true,
+  "poseUndoRedoFlow": {
+    "afterPoseApply": {
+      "restNoticePresent": false,
+      "selSummary": "선택 상태: 서기 (편집된 본 8개)"
+    },
+    "afterUndo": {
+      "restNoticePresent": true,
+      "selSummary": "선택 상태: 기본 자세(Rest · 프리셋: A 포즈)"
+    },
+    "afterRedo": {
+      "restNoticePresent": false,
+      "selSummary": "선택 상태: 서기 (편집된 본 8개)"
+    },
+    "passed": true
+  },
+  "pageErrors": [],
+  "consoleErrors": [],
+  "ok": true
+}

@@ -854,12 +854,14 @@ code,
 
 .lab-draw-color-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: end;
 }
 
 .lab-draw-hex {
-  flex: 1;
+  flex: 1 1 120px;
+  min-width: 0;
 }
 
 .lab-draw-swatch {
@@ -889,14 +891,15 @@ code,
 .lab-draw-recent {
   display: grid;
   gap: 6px;
-  grid-template-columns: repeat(4, 44px);
+  grid-template-columns: repeat(4, minmax(36px, 44px));
   justify-content: start;
+  max-width: 100%;
 }
 
-@media (min-width: 420px) {
-  .lab-draw-recent {
-    grid-template-columns: repeat(8, 44px);
-  }
+.lab-draw-recent .lab-draw-swatch {
+  width: 100%;
+  max-width: 44px;
+  height: 40px;
 }
 
 /* 색 슬라이더 트랙 위에 그라데이션을 깐다(엄지는 브라우저 기본). */
@@ -905,17 +908,178 @@ code,
   min-height: 44px;
 }
 
-.lab-draw-details {
+.lab-draw-details,
+.lab-banner-details {
   padding: 8px 10px;
   border: 1px solid var(--lab-line);
   border-radius: 10px;
+  background: rgba(11, 15, 26, 0.45);
 }
 
-.lab-draw-details summary {
-  min-height: 44px;
+.lab-draw-details summary,
+.lab-banner-details summary {
+  min-height: 40px;
   display: flex;
   align-items: center;
+  gap: 6px;
   cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--lab-accent-text);
+}
+
+.lab-draw-details[open] > summary,
+.lab-banner-details[open] > summary {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--lab-line);
+}
+
+.lab-draw-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+
+.lab-draw-filter-count {
+  font-size: 0.82rem;
+}
+
+.lab-draw-current-brush {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid var(--lab-accent);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(81, 56, 212, 0.2), rgba(26, 37, 64, 0.92));
+}
+
+.lab-draw-current-thumb {
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--lab-line);
+}
+
+.lab-draw-current-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lab-draw-current-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.lab-draw-current-desc,
+.lab-draw-current-defaults {
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.lab-draw-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.lab-draw-search-row input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.lab-draw-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px dashed var(--lab-accent);
+  border-radius: 8px;
+  background: var(--lab-raised);
+  font-size: 0.82rem;
+}
+
+.lab-draw-param-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--lab-line);
+  border-radius: 10px;
+  background: var(--lab-raised);
+}
+
+.lab-draw-param-summary-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.lab-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lab-chip {
+  min-height: 40px;
+  min-width: 44px;
+  padding: 6px 14px;
+  border: 1px solid var(--lab-line);
+  border-radius: 999px;
+  background: var(--lab-raised);
+  color: var(--lab-fg);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.lab-chip[aria-pressed="true"] {
+  border-color: var(--lab-accent);
+  background: var(--lab-accent-fill);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.lab-input {
+  min-height: 44px;
+  min-width: min(100%, 240px);
+  flex: 1 1 220px;
+  padding: 8px 12px;
+  color: var(--lab-fg);
+  background: var(--lab-canvas);
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.lab-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lab-card-actions .lab-button {
+  flex: 1 1 120px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
+.lab-card-details summary {
+  min-height: 34px;
+  font-size: 0.8rem;
 }
 
 @media (forced-colors: active) {

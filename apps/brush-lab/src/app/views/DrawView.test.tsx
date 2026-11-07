@@ -1039,4 +1039,43 @@ describe("DrawView", { timeout: 30_000 }, () => {
       cornerGate: true,
     });
   });
+
+  it("현재 선택 브러시 요약·미리보기 카드, 탐색 필터 일괄 초기화, 설정 상태 배지 및 고급 진단 기본 접기가 동작한다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    renderDraw(h, { autoProbe: false });
+    await ready(h);
+
+    // 1. 고급 진단 블록 3종이 기본 접힘(open 속성 없음) 상태인지 확인
+    expect(screen.getByTestId("lab-draw-param-diagnostics").hasAttribute("open")).toBe(false);
+    expect(screen.getByTestId("lab-draw-lane-diagnostics").hasAttribute("open")).toBe(false);
+    expect(screen.getByTestId("lab-draw-hud-details").hasAttribute("open")).toBe(false);
+
+    // 2. 현재 브러시 요약 카드가 기본 브러시(연필 HB) 정보를 표시하고, 다른 가족으로 필터링해도 상단에 유지되는지 확인
+    const currentCard = screen.getByTestId("lab-draw-current-brush");
+    expect(currentCard.textContent).toContain("현재 브러시");
+    expect(currentCard.textContent).toContain("연필 HB");
+    expect(screen.getByTestId("lab-draw-filter-summary").textContent).toContain(`표시 ${PRESET_CATALOG.length}/${PRESET_CATALOG.length}종`);
+
+    fireEvent.click(screen.getByTestId("lab-draw-chip-watercolor"));
+    fireEvent.change(screen.getByLabelText("브러시 검색"), { target: { value: "번짐" } });
+    expect(screen.getByTestId("lab-draw-current-brush").textContent).toContain("연필 HB");
+    expect(screen.getByTestId("lab-draw-filter-bar").textContent).toContain("현재 선택 브러시가 필터 밖에 있습니다");
+
+    // 검색 지우기 및 탐색 필터 초기화 동선 확인
+    fireEvent.click(screen.getByTestId("lab-draw-search-clear"));
+    expect((screen.getByLabelText("브러시 검색") as HTMLInputElement).value).toBe("");
+    fireEvent.click(screen.getByTestId("lab-draw-filter-reset"));
+    expect(h.drawStore.get().familyFilter).toBe("all");
+    expect(screen.queryByTestId("lab-draw-filter-bar")).toBeNull();
+
+    // 3. 현재 브러시 설정 상태 배지('프리셋 기본값' -> '사용자 조정 N개')와 상단 초기화 버튼 동선 확인
+    expect(screen.getByTestId("lab-draw-param-status").textContent).toBe("프리셋 기본값");
+    fireEvent.change(screen.getByLabelText(/크기\(px\)/u), { target: { value: "24" } });
+    fireEvent.change(screen.getByLabelText(/불투명도/u), { target: { value: "0.75" } });
+    expect(screen.getByTestId("lab-draw-param-status").textContent).toBe("사용자 조정 2개");
+    expect(screen.getByTestId("lab-draw-param-summary").textContent).toContain("크기 24px");
+
+    fireEvent.click(screen.getByTestId("lab-draw-reset-params"));
+    expect(screen.getByTestId("lab-draw-param-status").textContent).toBe("프리셋 기본값");
+  });
 });
