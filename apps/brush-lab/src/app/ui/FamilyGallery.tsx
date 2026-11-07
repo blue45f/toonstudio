@@ -5,6 +5,12 @@ import { useLab, useLabSelector } from "../shell/lab-context";
 import { messageOf } from "../state/run-compare";
 
 import { PresetCard } from "./PresetCard";
+import {
+  computePresetParameterDiff,
+  setComparePresetB,
+  swapComparePresets,
+  useCompareUiState,
+} from "./PresetComparisonBar";
 
 import type { BrushFamily } from "../../engine/presets/program-schema";
 import type { GalleryRenderer } from "../../platform/worker-client";
@@ -89,6 +95,8 @@ export async function renderGallery(
 export function FamilyGallery() {
   const { gallery, galleryError, store, actions, drawActions } = useLab();
   const state = useLabSelector((s) => s.gallery);
+  const presetAId = useLabSelector((s) => s.presetId);
+  const { comparePresetBId } = useCompareUiState(store);
   const [groupFilter, setGroupFilter] = useState<GalleryGroupFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   useEffect(() => {
@@ -115,6 +123,12 @@ export function FamilyGallery() {
     });
   }, [activeGroup, searchQuery]);
 
+  const presetA = useMemo(() => PRESET_CATALOG.find((p) => p.id === presetAId) ?? null, [presetAId]);
+  const presetB = useMemo(() => PRESET_CATALOG.find((p) => p.id === comparePresetBId) ?? null, [comparePresetBId]);
+  const abDiffs = useMemo(() => computePresetParameterDiff(presetA, presetB), [presetA, presetB]);
+  const entryA = state.entries[presetAId];
+  const entryB = state.entries[comparePresetBId];
+
   const entries = Object.values(state.entries);
   const done = entries.filter((e) => e.status === "done").length;
   const failed = entries.filter((e) => e.status === "error").length;
@@ -133,8 +147,67 @@ export function FamilyGallery() {
     drawActions.setPanelOpen(true);
     actions.setTab("draw");
   };
+  const roleOf = (id: string): "A" | "B" | "both" | null => {
+    const isA = id === presetAId;
+    const isB = id === comparePresetBId;
+    if (isA && isB) return "both";
+    if (isA) return "A";
+    if (isB) return "B";
+    return null;
+  };
   return (
     <div className="lab-tabpanel">
+      <div className="lab-compare-summary-card" data-testid="lab-gallery-ab-compare">
+        <div className="lab-compare-summary-header">
+          <span className="lab-badge lab-badge--pass">
+            동일 샘플 획 비교 ({state.fixtureId} {state.size}²)
+          </span>
+          <span className="lab-badge" data-testid="lab-gallery-ab-order">
+            기준 A: {presetA?.name ?? presetAId} ({presetAId}
+            {entryA?.status === "done" && entryA.result ? ` · 해시 ${entryA.result.pixelHash}` : ""}) → 비교 B:{" "}
+            {presetB?.name ?? comparePresetBId} ({comparePresetBId}
+            {entryB?.status === "done" && entryB.result ? ` · 해시 ${entryB.result.pixelHash}` : ""})
+          </span>
+          <span
+            className={abDiffs.length > 0 ? "lab-badge lab-badge--warn" : "lab-badge lab-badge--pass"}
+            data-testid="lab-gallery-ab-diff-count"
+          >
+            파라미터 차이 {abDiffs.length}개
+          </span>
+        </div>
+        {abDiffs.length > 0 ? (
+          <p className="lab-muted lab-mono" data-testid="lab-gallery-ab-diff-list">
+            {abDiffs
+              .slice(0, 6)
+              .map((d) => `${d.label}: A ${d.valueA} → B ${d.valueB}`)
+              .join(" · ")}
+            {abDiffs.length > 6 ? ` 외 ${abDiffs.length - 6}개` : ""}
+          </p>
+        ) : null}
+        <div className="lab-button-row">
+          <button
+            type="button"
+            className="lab-button lab-button--compact"
+            data-testid="lab-gallery-swap-ab"
+            onClick={() => swapComparePresets(store, (id) => actions.setPreset(id))}
+          >
+            프리셋 A ↔ B 순서 바꾸기
+          </button>
+          <button
+            type="button"
+            className="lab-button lab-button--compact lab-button--primary"
+            data-testid="lab-gallery-go-compare"
+            onClick={() => actions.setTab("compare")}
+          >
+            A/B 비교 탭으로 이동
+          </button>
+          {isFiltered ? (
+            <span className="lab-muted" data-testid="lab-gallery-filter-preserved-note">
+              필터 변경 중에도 선택된 기준 A·비교 B 및 렌더 결과({done}건)는 보존됩니다.
+            </span>
+          ) : null}
+        </div>
+      </div>
       <div className="lab-button-row">
         <span aria-live="polite">
           {gallery
@@ -215,7 +288,14 @@ export function FamilyGallery() {
         <div className="lab-gallery" role="list" aria-label="브러시 가족 갤러리">
           {filteredPresets.map((preset) => (
             <div role="listitem" key={preset.id}>
-              <PresetCard preset={preset} entry={state.entries[preset.id]} onOpen={open} onTryInDraw={tryInDraw} />
+              <PresetCard
+                preset={preset}
+                entry={state.entries[preset.id]}
+                onOpen={open}
+                onTryInDraw={tryInDraw}
+                selectedRole={roleOf(preset.id)}
+                onSelectCompareB={(id) => setComparePresetB(store, id)}
+              />
             </div>
           ))}
         </div>

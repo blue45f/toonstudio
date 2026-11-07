@@ -11,23 +11,53 @@ export interface PresetCardProps {
   entry: GalleryEntry | undefined;
   onOpen: (presetId: string) => void;
   onTryInDraw?: (presetId: string) => void;
+  selectedRole?: "A" | "B" | "both" | null;
+  onSelectCompareB?: (presetId: string) => void;
 }
 
 /** 프리셋 썸네일 카드: 결정성 해시·렌더 시간·dab 수·가족 지표 판정. Worker 실패는 오류 카드. */
-export function PresetCard({ preset, entry, onOpen, onTryInDraw }: PresetCardProps) {
+export function PresetCard({
+  preset,
+  entry,
+  onOpen,
+  onTryInDraw,
+  selectedRole = null,
+  onSelectCompareB,
+}: PresetCardProps) {
   const result = entry?.status === "done" ? entry.result : null;
   const headingId = `lab-card-${preset.id}`;
+  const isSelected = selectedRole !== null;
+  const isCompareB = selectedRole === "B" || selectedRole === "both";
+  const roleLabel =
+    selectedRole === "both"
+      ? "선택됨 · 기준 A & 비교 B"
+      : selectedRole === "A"
+        ? "선택됨 · 기준 A"
+        : selectedRole === "B"
+          ? "비교 대상 B"
+          : null;
   return (
     <article
-      className={`lab-card${entry?.status === "error" ? " lab-card--error" : ""}`}
+      className={`lab-card${entry?.status === "error" ? " lab-card--error" : ""}${isSelected ? " lab-card--selected" : ""}`}
       aria-labelledby={headingId}
       data-testid={`lab-preset-card-${preset.id}`}
       data-status={entry?.status ?? "idle"}
+      data-selected-role={selectedRole ?? undefined}
     >
       <div className="lab-canvas-stage lab-card-stage">
         <ImageCanvas image={result?.image ?? null} size={GALLERY_THUMBNAIL_SIZE} label={`${preset.name} 썸네일`} />
       </div>
-      <h3 id={headingId}>{preset.name}</h3>
+      <div className="lab-card-header-row">
+        <h3 id={headingId}>{preset.name}</h3>
+        {roleLabel ? (
+          <span
+            className={selectedRole === "B" ? "lab-badge lab-badge--warn" : "lab-badge lab-badge--pass"}
+            data-testid={`lab-preset-selected-badge-${preset.id}`}
+          >
+            {roleLabel}
+          </span>
+        ) : null}
+      </div>
       <p className="lab-muted">
         <span className="lab-badge">{preset.family}</span> <span className="lab-mono">{preset.id}</span>
       </p>
@@ -60,6 +90,17 @@ export function PresetCard({ preset, entry, onOpen, onTryInDraw }: PresetCardPro
         <button type="button" className="lab-button" onClick={() => onOpen(preset.id)}>
           A/B 비교에서 열기
         </button>
+        {onSelectCompareB ? (
+          <button
+            type="button"
+            className="lab-button lab-button--compact"
+            aria-pressed={isCompareB}
+            data-testid={`lab-preset-pin-b-${preset.id}`}
+            onClick={() => onSelectCompareB(preset.id)}
+          >
+            {isCompareB ? "비교 B 선택됨" : "비교 B로 지정"}
+          </button>
+        ) : null}
         {onTryInDraw ? (
           <button
             type="button"

@@ -153,8 +153,28 @@ describe("GalleryView", { timeout: 30_000 }, () => {
     expect(searchInput.value).toBe("");
     expect(within(list).getAllByRole("listitem")).toHaveLength(PRESET_CATALOG.length);
 
-    // 추천 조합 테이블이 가로 스크롤 래퍼(lab-recommended-table-wrap) 안에 감싸져 있는지 확인
+    // 추천 조합 테이블이 가로 스크롤 래퍼(lab-recommended-table-wrap) 안에 감싸져 있고 출처 안내가 기본 접힘(open === false)인지 확인
     expect(screen.getByTestId("lab-recommended-table-wrap")).toBeTruthy();
+    expect((screen.getByTestId("lab-recommended-provenance") as HTMLDetailsElement).open).toBe(false);
+
+    // 갤러리 동일 샘플 획 프리셋 A/B 비교 바 및 카드 선택 배지·순서 교체 확인
+    expect(screen.getByTestId("lab-gallery-ab-compare")).toBeTruthy();
+    expect(screen.getByTestId("lab-preset-selected-badge-pencil-hb").textContent).toContain("기준 A");
+    expect(screen.getByTestId("lab-preset-selected-badge-ink-g-pen").textContent).toContain("비교 대상 B");
+
+    fireEvent.click(screen.getByTestId("lab-preset-pin-b-watercolor-wet"));
+    expect(screen.getByTestId("lab-preset-selected-badge-watercolor-wet").textContent).toContain("비교 대상 B");
+    expect(screen.getByTestId("lab-gallery-ab-diff-count").textContent).toMatch(/파라미터 차이 \d+개/u);
+
+    // 필터 변경 후에도 선택된 A/B 프리셋 비교 상태가 보존된다
+    fireEvent.click(within(filterGroup).getByRole("button", { name: "연필·목탄·건식" }));
+    expect(screen.getByTestId("lab-gallery-filter-preserved-note").textContent).toContain("필터 변경 중에도 선택된 기준 A·비교 B");
+    fireEvent.click(within(filterGroup).getByRole("button", { name: `전체 (${PRESET_CATALOG.length})` }));
+
+    fireEvent.click(screen.getByTestId("lab-gallery-swap-ab"));
+    expect(store.get().presetId).toBe("watercolor-wet");
+    expect(screen.getByTestId("lab-preset-selected-badge-watercolor-wet").textContent).toContain("기준 A");
+    expect(screen.getByTestId("lab-preset-selected-badge-pencil-hb").textContent).toContain("비교 대상 B");
 
     // 카드에서 '그리기에서 시험'을 누르면 그리기 탭으로 바로 전환되고 compare 프리셋도 함께 동기화된다
     fireEvent.click(screen.getByTestId("lab-preset-draw-pencil-6b"));

@@ -87,6 +87,9 @@ export function LaneCanvas({
     <figure className="lab-canvas-frame">
       <figcaption>
         <strong>{slot}</strong> · {laneLabel}{" "}
+        <span className={`lab-badge ${pixelHash ? "lab-badge--ok" : "lab-badge--neutral"}`}>
+          {pixelHash ? "완료" : "결과 없음"}
+        </span>{" "}
         {live ? <span className="lab-badge lab-badge--warn">실시간 입력</span> : null}
       </figcaption>
       <div
@@ -110,8 +113,11 @@ export function LaneCanvas({
           data-testid={`lab-preview-${slot}`}
         />
       </div>
-      <p className="lab-muted lab-mono">{hashText}</p>
-      {children}
+      <details className="lab-draw-details lab-canvas-details" data-testid={`lab-stage-diag-${slot}`}>
+        <summary>고급 진단 · 픽셀 해시·영수증 ({pixelHash ? "완료" : "대기"})</summary>
+        <p className="lab-muted lab-mono">{hashText}</p>
+        {children}
+      </details>
     </figure>
   );
 }

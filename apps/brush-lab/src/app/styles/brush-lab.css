@@ -281,11 +281,16 @@ code,
   cursor: not-allowed;
 }
 
-.lab-button--primary {
+.lab-button--primary,
+.lab-button[aria-pressed="true"] {
   background: var(--lab-accent-fill);
   border-color: var(--lab-accent);
   color: #ffffff;
   font-weight: 600;
+}
+
+.lab-button[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.35);
 }
 
 .lab-button-row {
@@ -304,6 +309,13 @@ code,
 .lab-canvas-frame {
   display: grid;
   gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 10px;
+  background: var(--lab-raised);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .lab-canvas-stage {
@@ -1301,6 +1313,147 @@ dd {
     content: var(--label-7) ": ";
     font-weight: 600;
     color: var(--lab-muted);
+  }
+}
+
+/* Round 4: 프리셋 A/B 비교 가독성 · 선택 표시 · 빈 비교 상태 · 작은 화면 카드 간격 */
+.lab-card--selected {
+  border-color: var(--lab-accent);
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.28);
+}
+
+.lab-card-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lab-compare-summary-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 10px;
+  background: var(--lab-raised);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lab-compare-summary-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lab-compare-order-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.lab-compare-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.lab-compare-controls-row .lab-field {
+  flex: 1 1 200px;
+}
+
+.lab-compare-diff-box {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  background: var(--lab-panel);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lab-compare-diff-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lab-compare-diff-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  background: var(--lab-raised);
+  font-size: 0.82rem;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.lab-compare-preserved-note {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--lab-ok);
+  border-radius: 8px;
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--lab-fg);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.lab-compare-empty-state {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px dashed var(--lab-accent);
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.08);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lab-compare-empty-title {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.lab-compare-empty-state .lab-button {
+  justify-self: start;
+}
+
+.lab-canvas-details {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .lab-panel {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .lab-grid-2,
+  .lab-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .lab-canvas-frame,
+  .lab-compare-summary-card,
+  .lab-compare-empty-state {
+    padding: 10px;
+    gap: 8px;
   }
 }
 
