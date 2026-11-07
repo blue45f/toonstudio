@@ -1,0 +1,105 @@
+{
+  "verifiedAt": "2026-11-07T07:10:20.190Z",
+  "allPassed": true,
+  "viewports": [
+    {
+      "viewport": "mobile-320",
+      "dimensions": "320x568",
+      "zoomPercent": 100,
+      "mode": "handheld-dock",
+      "passed": true,
+      "metrics": {
+        "docOverflowX": 0,
+        "canvasWidth": 305,
+        "canvasHeight": 568,
+        "dockHeight": 57,
+        "primarySlotCount": 6,
+        "canvasWorkspaceUnoccluded": true,
+        "sheetOpened": true,
+        "sheetEscapeClosedAndFocused": true,
+        "colorOpened": true,
+        "colorEscapeClosedAndFocused": true,
+        "workOpened": true,
+        "workOutsidePointerClosed": true
+      }
+    },
+    {
+      "viewport": "mobile-390",
+      "dimensions": "390x844",
+      "zoomPercent": 100,
+      "mode": "handheld-dock",
+      "passed": true,
+      "metrics": {
+        "docOverflowX": 0,
+        "canvasWidth": 375,
+        "canvasHeight": 844,
+        "dockHeight": 57,
+        "primarySlotCount": 6,
+        "canvasWorkspaceUnoccluded": true,
+        "sheetOpened": true,
+        "sheetEscapeClosedAndFocused": true,
+        "colorOpened": true,
+        "colorEscapeClosedAndFocused": true,
+        "workOpened": true,
+        "workOutsidePointerClosed": true
+      }
+    },
+    {
+      "viewport": "tablet-768",
+      "dimensions": "768x1024",
+      "zoomPercent": 100,
+      "mode": "handheld-dock",
+      "passed": true,
+      "metrics": {
+        "docOverflowX": 0,
+        "canvasWidth": 753,
+        "canvasHeight": 1024,
+        "dockHeight": 55,
+        "primarySlotCount": 6,
+        "canvasWorkspaceUnoccluded": true,
+        "sheetOpened": true,
+        "sheetEscapeClosedAndFocused": true,
+        "colorOpened": true,
+        "colorEscapeClosedAndFocused": true,
+        "workOpened": true,
+        "workOutsidePointerClosed": true
+      }
+    },
+    {
+      "viewport": "pc-1440",
+      "dimensions": "1440x900",
+      "zoomPercent": 100,
+      "mode": "desktop-appbar",
+      "passed": true,
+      "metrics": {
+        "docOverflowX": 0,
+        "canvasWidth": 743,
+        "canvasHeight": 590,
+        "canvasCenterUnoccluded": true,
+        "defaultCollapsed": true,
+        "panelOpen": true,
+        "zeroLayoutShiftOnOpen": true,
+        "escapeClosedAndFocused": true,
+        "outsidePointerClosed": true
+      }
+    },
+    {
+      "viewport": "pc-1440-zoom-200",
+      "dimensions": "1440x900",
+      "zoomPercent": 200,
+      "mode": "desktop-appbar",
+      "passed": true,
+      "metrics": {
+        "docOverflowX": 0,
+        "canvasWidth": 512,
+        "canvasHeight": 1069,
+        "canvasCenterUnoccluded": true,
+        "defaultCollapsed": true,
+        "panelOpen": true,
+        "zeroLayoutShiftOnOpen": true,
+        "escapeClosedAndFocused": true,
+        "outsidePointerClosed": true
+      }
+    }
+  ]
+}

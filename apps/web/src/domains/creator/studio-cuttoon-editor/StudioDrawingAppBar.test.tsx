@@ -155,6 +155,7 @@ describe("StudioDrawingAppBar", () => {
     fireEvent.click(screen.getByRole("button", { name: "불투명도 높이기" }));
     expect(session.setBrushOpacity).toHaveBeenCalledWith(0.9);
 
+    fireEvent.click(screen.getByTestId("drawing-appbar-advanced-toggle"));
     expect(screen.getByTestId("studio-appbar-stabilizer").textContent).toBe("Stabilizer 20");
     fireEvent.click(screen.getByRole("button", { name: "손떨림 보정 높이기" }));
     expect(session.setStabilizer).toHaveBeenCalledWith(25);
@@ -170,6 +171,7 @@ describe("StudioDrawingAppBar", () => {
     fireEvent.click(screen.getByTestId("drawing-appbar-opacity-cycle"));
     expect(session.setBrushOpacity).toHaveBeenCalledWith(0.75);
 
+    fireEvent.click(screen.getByTestId("drawing-appbar-advanced-toggle"));
     fireEvent.click(screen.getByTestId("drawing-appbar-stabilizer-cycle"));
     expect(session.setStabilizer).toHaveBeenCalledWith(7);
   });
@@ -206,6 +208,7 @@ describe("StudioDrawingAppBar", () => {
     const session = makeSession({ shortcutsOpen: false });
     renderAppBar(session);
 
+    fireEvent.click(screen.getByTestId("drawing-appbar-advanced-toggle"));
     fireEvent.click(screen.getByTestId("drawing-appbar-help-button"));
     expect(session.setShortcutsOpen).toHaveBeenCalledTimes(1);
   });
@@ -213,6 +216,8 @@ describe("StudioDrawingAppBar", () => {
   it("대칭 그리기 모드 순환·캔버스 좌우 반전·브러시 랩 열기·빠른 도형 보정·배율 100% 초기화가 정상 동작한다", () => {
     const session = createMockSession({ symmetryType: "off", zoom: 1.5, quickShapeActive: false });
     renderAppBar(session);
+
+    fireEvent.click(screen.getByTestId("drawing-appbar-advanced-toggle"));
 
     fireEvent.click(screen.getByRole("button", { name: "대칭 그리기 모드 전환" }));
     expect(session.changeStudioSymmetryType).toHaveBeenCalledWith("vertical");
@@ -260,6 +265,7 @@ describe("StudioDrawingAppBar", () => {
     fireEvent.keyDown(screen.getByTestId("drawing-appbar-opacity-cycle"), { key: "ArrowDown" });
     expect(session.setBrushOpacity).toHaveBeenCalledWith(0.75);
 
+    fireEvent.click(screen.getByTestId("drawing-appbar-advanced-toggle"));
     const stabilizerGroup = container.querySelector('[data-studio-quick-stabilizer-control="true"]');
     if (stabilizerGroup) {
       fireEvent.wheel(stabilizerGroup, { deltaY: -100 });
@@ -268,5 +274,66 @@ describe("StudioDrawingAppBar", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "대칭 그리기 모드 전환" }));
     expect(session.changeStudioSymmetryType).toHaveBeenCalledWith("mandala");
+  });
+
+  it("기본 도구를 우선 노출하고 고급 옵션은 기본 접힘 상태로 시작하며 Escape·외부 탭으로 닫고 포커스를 복원한다", () => {
+    const session = createMockSession({
+      stabilizer: 20,
+      symmetryType: "vertical",
+      zoom: 1,
+    });
+    const { container } = renderAppBar(session);
+
+    const toggle = screen.getByTestId("drawing-appbar-advanced-toggle");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByTestId("drawing-appbar-advanced-active-count").textContent).toBe("2");
+    expect(container.querySelector('[data-studio-appbar-advanced-panel="true"]')).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(container.querySelector('[data-studio-appbar-advanced-panel="true"]')).not.toBeNull();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(toggle);
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.pointerDown(document.body);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("모바일 빠른 스트립은 닫기 버튼·Escape로 접혀 포커스를 복원하고 모바일 시트가 열리면 캔버스 가림 방지를 위해 자동 숨긴다", () => {
+    const session = createMockSession({ isMobile: true });
+    const { container, rerender } = render(
+      <MemoryRouter>
+        <StudioDrawingAppBar session={session} />
+      </MemoryRouter>,
+    );
+
+    const strip = container.querySelector('[data-studio-mobile-quick-strip="true"]') as HTMLElement;
+    const stripToggle = screen.getByTestId("drawing-appbar-mobile-strip-toggle");
+    expect(strip.hidden).toBe(false);
+    expect(stripToggle.getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.keyDown(strip, { key: "Escape" });
+    expect(strip.hidden).toBe(true);
+    expect(stripToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(stripToggle);
+
+    fireEvent.click(stripToggle);
+    expect(strip.hidden).toBe(false);
+    fireEvent.click(screen.getByTestId("drawing-appbar-mobile-strip-dismiss"));
+    expect(strip.hidden).toBe(true);
+    expect(document.activeElement).toBe(stripToggle);
+
+    fireEvent.click(stripToggle);
+    expect(strip.hidden).toBe(false);
+    rerender(
+      <MemoryRouter>
+        <StudioDrawingAppBar session={createMockSession({ isMobile: true, mobileSheet: "draw" })} />
+      </MemoryRouter>,
+    );
+    expect(strip.hidden).toBe(true);
   });
 });
