@@ -242,10 +242,13 @@ export function PosePanel() {
   const handCapability = capabilities["hand-pose"];
   const poseDisabled = poseCapability.status === "unavailable";
   const handDisabled = handCapability.status === "unavailable";
-  const poseBlocked = poseDisabled || rigCorrupted || hasEmptyEngineSkeleton;
-  const handBlocked = handDisabled || rigCorrupted || hasEmptyEngineSkeleton;
-  const hasEmptySkeleton = hasEmptyEngineSkeleton && !rigCorrupted;
-  const isRigUnloaded = poseDisabled && !hasEmptyEngineSkeleton && !rigCorrupted;
+  const isStaticMeshReason = poseDisabled && /스켈레톤 없음|정적 메시/u.test(poseCapability.reasonKo ?? "");
+  const hasEmptySkeleton = (hasEmptyEngineSkeleton || isStaticMeshReason) && !rigCorrupted;
+  const isRigUnloaded = poseDisabled && !hasEmptySkeleton && !rigCorrupted;
+  const poseBlocked = poseDisabled || rigCorrupted || hasEmptySkeleton;
+  const handBlocked = handDisabled || rigCorrupted || hasEmptySkeleton;
+  const sharedUnavailableReason =
+    poseDisabled && handDisabled && Boolean(poseCapability.reasonKo) && poseCapability.reasonKo === handCapability.reasonKo;
   const unsupportedPose = plan?.unsupported.find((item) => item.slot === "pose");
   const unsupportedHand = plan?.unsupported.find((item) => item.slot === "hand-pose");
   const violations = useMemo(() => poseLimitViolations(recipe.pose, safeSkeleton), [recipe.pose, safeSkeleton]);
@@ -437,9 +440,7 @@ export function PosePanel() {
     .filter((item): item is string => item !== null)
     .join(" ");
 
-  const effectiveIkStatus: IkStatusLine | null = skeletonFailure
-    ? { text: `${skeletonFailure.reasonKo} [${skeletonFailure.code}]`, status: "unreachable" }
-    : ikStatus;
+  const effectiveIkStatus: IkStatusLine | null = ikStatus;
 
   return (
     <section className="cl-pose-panel" aria-label="포즈">
@@ -463,41 +464,82 @@ export function PosePanel() {
           >
             리그·패키지 선택
           </button>
-          <button
-            type="button"
-            className="cl-button cl-pose-rig-switch"
-            data-testid="pose-switch-to-export-tab"
-            onClick={() => switchInspectorTabWithFocus("export")}
-          >
-            내보내기·보존
-          </button>
+          {!poseBlocked ? (
+            <button
+              type="button"
+              className="cl-button cl-pose-rig-switch"
+              data-testid="pose-switch-to-export-tab"
+              onClick={() => switchInspectorTabWithFocus("export")}
+            >
+              내보내기·보존
+            </button>
+          ) : null}
         </div>
       </div>
       {skeletonFailure ? (
         <p id={`${ids}-skeleton-failure`} className="cl-pose-reason" role="status" data-testid="pose-skeleton-failure">
-          {`${skeletonFailure.reasonKo} [${skeletonFailure.code}]`}
+          {`손상된 스켈레톤 데이터([${skeletonFailure.code}])가 감지되어 포즈 조작이 차단되었으니 리그·패키지 선택 탭에서 정상 소스로 교체하세요.`}
         </p>
-      ) : null}
-      {poseCapability.status !== "available" ? (
-        <p id={`${ids}-pose-reason`} className="cl-pose-reason" role="note" data-testid="pose-capability-reason">
-          포즈 슬롯 {poseCapability.status === "partial" ? "부분 지원" : "미지원"}: {poseCapability.reasonKo ?? "사유 없음"}
-        </p>
-      ) : null}
-      {hasEmptySkeleton ? (
+      ) : hasEmptySkeleton ? (
         <p id={`${ids}-empty-skeleton-notice`} className="cl-pose-empty-state" role="note" data-testid="pose-empty-skeleton-notice">
-          스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없습니다. 제작 패키지 탭에서 리깅된 캐릭터나 모듈식 키트를 선택하세요.
+          스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없으니 리그·패키지 선택 탭에서 리깅된 소스를 선택하세요.
         </p>
-      ) : null}
-      {isRigUnloaded ? (
+      ) : isRigUnloaded ? (
         <p id={`${ids}-unloaded-rig-notice`} className="cl-pose-empty-state" role="note" data-testid="pose-unloaded-rig-notice">
-          현재 캐릭터 소스가 아직 로드되지 않았거나 휴머노이드 포즈 리그가 준비되지 않아 관절·IK 조작이 비활성화되어 있습니다. 상단에서 엔진을 시작하거나 제작 패키지 탭에서 소스를 확인하세요.
+          현재 캐릭터 소스가 아직 로드되지 않았거나 휴머노이드 포즈 리그가 준비되지 않아 관절·IK 조작이 비활성화되어 있으니 리그·패키지 선택 탭에서 소스를 확인하세요.
         </p>
       ) : null}
-      {unsupportedPose ? (
-        <p className="cl-pose-reason" role="status">
-          현재 포즈가 적용되지 않았습니다: {unsupportedPose.reasonKo}
-        </p>
-      ) : null}
+      {poseBlocked ? (
+        <details className="cl-pose-advanced-diagnostics" data-testid="pose-disabled-reason-details">
+          <summary className="cl-pose-diagnostics-summary" data-testid="pose-disabled-reason-summary">
+            비활성 상세 사유 보기
+          </summary>
+          <div className="cl-pose-diagnostics-body">
+            {skeletonFailure ? (
+              <p className="cl-pose-reason" data-testid="pose-skeleton-failure-detail">
+                상세 진단: {skeletonFailure.reasonKo}
+              </p>
+            ) : null}
+            {poseCapability.status !== "available" ? (
+              <p id={`${ids}-pose-reason`} className="cl-pose-reason" role="note" data-testid="pose-capability-reason">
+                {sharedUnavailableReason ? "포즈·손 포즈 슬롯 미지원" : `포즈 슬롯 ${poseCapability.status === "partial" ? "부분 지원" : "미지원"}`}: {poseCapability.reasonKo ?? "사유 없음"}
+              </p>
+            ) : hasEmptySkeleton ? (
+              <p id={`${ids}-pose-reason`} className="cl-pose-reason" role="note" data-testid="pose-capability-reason">
+                포즈·손 포즈 슬롯 미지원: 엔진이 보고한 포즈 가능 본이 0개(정적 메시)입니다.
+              </p>
+            ) : null}
+            {handDisabled && !sharedUnavailableReason ? (
+              <p className="cl-pose-reason" role="note" data-testid="pose-hand-capability-reason">
+                손 포즈 슬롯 미지원: {handCapability.reasonKo ?? "사유 없음"}
+              </p>
+            ) : null}
+            {unsupportedPose && unsupportedPose.reasonKo !== poseCapability.reasonKo ? (
+              <p className="cl-pose-reason" role="status">
+                현재 포즈가 적용되지 않았습니다: {unsupportedPose.reasonKo}
+              </p>
+            ) : null}
+            {unsupportedHand && unsupportedHand.reasonKo !== handCapability.reasonKo && unsupportedHand.reasonKo !== poseCapability.reasonKo ? (
+              <p className="cl-pose-reason" role="status">
+                현재 손 포즈가 적용되지 않았습니다: {unsupportedHand.reasonKo}
+              </p>
+            ) : null}
+          </div>
+        </details>
+      ) : (
+        <>
+          {poseCapability.status !== "available" ? (
+            <p id={`${ids}-pose-reason`} className="cl-pose-reason" role="note" data-testid="pose-capability-reason">
+              포즈 슬롯 부분 지원: {poseCapability.reasonKo ?? "사유 없음"}
+            </p>
+          ) : null}
+          {unsupportedPose ? (
+            <p className="cl-pose-reason" role="status">
+              현재 포즈가 적용되지 않았습니다: {unsupportedPose.reasonKo}
+            </p>
+          ) : null}
+        </>
+      )}
 
       <div className="cl-pose-primary-group" role="region" aria-label="주요 포즈 조작" data-testid="pose-primary-controls">
         <fieldset className="cl-pose-scope">
@@ -602,7 +644,7 @@ export function PosePanel() {
             {(groundedHeight.groundDeltaY * 100).toFixed(1)} cm
           </p>
           <p className="cl-pose-hint" data-testid="pose-skeleton-diagnostics">
-            {hasEmptyEngineSkeleton
+            {hasEmptySkeleton
               ? "스켈레톤 본 0개 · 정적 메시(스켈레톤 없음)"
               : `스켈레톤 본 ${activeSkeleton.bones.length}개 · ${skeletonFailure ? `${skeletonFailure.reasonKo} [${skeletonFailure.code}]` : "정상"}`}
           </p>
@@ -620,12 +662,12 @@ export function PosePanel() {
 
       <fieldset className="cl-pose-hand">
         <legend>손 포즈</legend>
-        {handCapability.status !== "available" ? (
+        {handCapability.status !== "available" && (!poseBlocked || handCapability.status === "partial") ? (
           <p className="cl-pose-reason" role="note">
             손 포즈 슬롯 {handCapability.status === "partial" ? "부분 지원" : "미지원"}: {handCapability.reasonKo ?? "사유 없음"}
           </p>
         ) : null}
-        {unsupportedHand ? (
+        {!poseBlocked && unsupportedHand ? (
           <p className="cl-pose-reason" role="status">
             현재 손 포즈가 적용되지 않았습니다: {unsupportedHand.reasonKo}
           </p>

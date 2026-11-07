@@ -518,8 +518,71 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     const list = screen.getByTestId("pose-violation-list");
     expect(list.textContent).toMatch(/head · 스윙/u);
   });
+
+  it("리그 없음·손상·정적 메시 3가지 차단 상태를 구별하고 1문장+1개 다음 행동만 우선 노출하며 중복 비활성 사유는 접힘 상세에 보존한다", () => {
+    const unloadedReason = "캐릭터 소스가 아직 로드되지 않았습니다.";
+    const view = render(
+      <MockLabProvider
+        initialState={{
+          capabilities: {
+            ...ALL_AVAILABLE_CAPABILITIES,
+            pose: { status: "unavailable", reasonKo: unloadedReason },
+            "hand-pose": { status: "unavailable", reasonKo: unloadedReason },
+          },
+        }}
+      >
+        <PosePanel />
+      </MockLabProvider>,
+    );
+
+    // 1. 리그 없음(미로드): 1문장 + 1개 다음 행동(리그·패키지 선택)만 우선 노출, 상세 사유는 접힘에 통합 보존
+    expect(screen.getByTestId("pose-active-selection-summary").textContent).toBe("선택 상태: 리그 미로드 · 포즈 비활성");
+    expect(screen.getByTestId("pose-unloaded-rig-notice").textContent).toMatch(/리그·패키지 선택 탭에서 소스를 확인하세요\.$/u);
+    expect(screen.queryByTestId("pose-empty-skeleton-notice")).toBeNull();
+    expect(screen.queryByTestId("pose-skeleton-failure")).toBeNull();
+    expect(screen.getByTestId("pose-switch-to-package-tab")).toBeTruthy();
+    expect(screen.queryByTestId("pose-switch-to-export-tab")).toBeNull();
+    const details = screen.getByTestId("pose-disabled-reason-details") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(screen.getByTestId("pose-capability-reason").textContent).toBe(`포즈·손 포즈 슬롯 미지원: ${unloadedReason}`);
+    expect(screen.queryByTestId("pose-hand-capability-reason")).toBeNull();
+    expect(screen.getAllByText(new RegExp(unloadedReason, "u"))).toHaveLength(1);
+
+    // 2. 정적 메시(스켈레톤 없음 능력 사유): 정적 메시 1문장 + 1개 다음 행동 노출, 상세 사유는 접힘에 보존
+    const staticMeshReason = "패키지에 휴머노이드 본이 없습니다(스켈레톤 없음).";
+    view.rerender(
+      <MockLabProvider
+        initialState={{
+          capabilities: {
+            ...ALL_AVAILABLE_CAPABILITIES,
+            pose: { status: "unavailable", reasonKo: staticMeshReason },
+            "hand-pose": { status: "unavailable", reasonKo: staticMeshReason },
+          },
+        }}
+      >
+        <PosePanel />
+      </MockLabProvider>,
+    );
+    expect(screen.getByTestId("pose-active-selection-summary").textContent).toBe("선택 상태: 스켈레톤 없음(정적 메시)");
+    expect(screen.getByTestId("pose-empty-skeleton-notice").textContent).toMatch(/스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어/u);
+    expect(screen.queryByTestId("pose-unloaded-rig-notice")).toBeNull();
+    expect(screen.queryByTestId("pose-switch-to-export-tab")).toBeNull();
+    expect((screen.getByTestId("pose-disabled-reason-details") as HTMLDetailsElement).open).toBe(false);
+    expect(screen.getByTestId("pose-capability-reason").textContent).toContain(staticMeshReason);
+
+    // 3. 손상 스켈레톤: 손상 1문장 + 1개 다음 행동 노출, 상세 진단은 접힘에 보존
+    const session = createMockEngineSession({ phase: "ready", backend: "webgpu", diagnostics: mockDiagnostics("webgpu") });
+    session.setEngine(Object.assign(createMockEngine({ backend: "webgpu" }), { poseSkeleton: () => cycleSkeleton }));
+    view.rerender(
+      <MockLabProvider initialState={{ capabilities: ALL_AVAILABLE_CAPABILITIES }} engineSession={session}>
+        <PosePanel />
+      </MockLabProvider>,
+    );
+    expect(screen.getByTestId("pose-active-selection-summary").textContent).toBe("선택 상태: 손상된 스켈레톤 차단됨");
+    expect(screen.getByTestId("pose-skeleton-failure").textContent).toMatch(/손상된 스켈레톤 데이터\(\[skeleton-cycle\]\)가 감지되어/u);
+    expect(screen.queryByTestId("pose-switch-to-export-tab")).toBeNull();
+    expect((screen.getByTestId("pose-disabled-reason-details") as HTMLDetailsElement).open).toBe(false);
+    expect(screen.getByTestId("pose-skeleton-failure-detail").textContent).toMatch(/상세 진단:/u);
+  });
 });
-
-
-
 
