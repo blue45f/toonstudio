@@ -1,4 +1,5 @@
 import { ChevronDown, Compass, Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import "./search-page-layout.css";
@@ -16,6 +17,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { catalogDiscoveryHref, parseCatalogDiscoveryState } from "@/shared/lib/catalog-discovery-state";
 import { useT } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
 const SEARCH_MODES = [
@@ -35,6 +37,7 @@ export function SearchPage() {
   const t = useT();
   const bt = useBilingual("SearchPage");
   const art = sitePageHeaderArtFor("/search");
+  const [artFailed, setArtFailed] = useState(false);
 
   return (
     <PageEntrance variant="pop">
@@ -98,16 +101,37 @@ export function SearchPage() {
           <div className="space-y-5 border-t border-line p-4 sm:p-5">
             <div className="flex items-start gap-4">
               {art ? (
-                <img
-                  src={sitePageHeaderArtSource(art)}
-                  alt=""
-                  aria-hidden="true"
-                  loading="lazy"
-                  decoding="async"
-                  width={96}
-                  height={72}
-                  className="hidden h-18 w-24 shrink-0 rounded-xl object-cover sm:block"
-                />
+                <>
+                  <img
+                    ref={(node) => {
+                      if (node && node.complete && node.naturalWidth === 0 && !artFailed) {
+                        setArtFailed(true);
+                      }
+                    }}
+                    src={sitePageHeaderArtSource(art)}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    decoding="async"
+                    width={96}
+                    height={72}
+                    data-fallback-active={artFailed ? "true" : "false"}
+                    onError={() => setArtFailed(true)}
+                    className={cn(
+                      "hidden h-18 w-24 shrink-0 rounded-xl object-cover",
+                      artFailed ? "sm:hidden" : "sm:block",
+                    )}
+                  />
+                  {artFailed ? (
+                    <span
+                      aria-hidden="true"
+                      data-testid="search-tools-art-fallback"
+                      className="hidden h-18 w-24 shrink-0 place-items-center rounded-xl border border-line bg-panel px-2 text-center text-[10px] font-bold text-fg-3 sm:grid"
+                    >
+                      SEARCH
+                    </span>
+                  ) : null}
+                </>
               ) : null}
               <div className="min-w-0">
                 <p className="text-sm leading-relaxed text-fg-2">{t("search.subtitle")}</p>

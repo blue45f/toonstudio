@@ -1,4 +1,5 @@
 import { catalogStatusText } from "./catalog-status-i18n";
+import { useLocalCatalogFallback } from "./local-catalog-fallback";
 import { Hash, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -26,10 +27,11 @@ const INITIAL_VISIBLE = 120;
 const VISIBLE_STEP = 120;
 
 export function TagsPage() {
-  const { data, loading, error, reload } = useApiResource<TagsResponse>(
+  const apiState = useApiResource<TagsResponse>(
     "/api/tags",
     catalogStatusText("catalog.status.tags.loadFailed", "태그를 불러오지 못했습니다."),
   );
+  const { data, loading, error, reload } = useLocalCatalogFallback("/api/tags", apiState);
   const [params, setParams] = useSearchParams();
   const query = (params.get("q") ?? "").slice(0, 80);
   const sort = tagDirectorySort(params.get("sort"));

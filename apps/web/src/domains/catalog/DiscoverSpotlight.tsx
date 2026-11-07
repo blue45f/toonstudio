@@ -115,6 +115,7 @@ export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps)
             srcSet={coverStandardSrcSet(lead.coverImage)}
             sizes="100vw"
             className="size-full scale-110 object-cover blur-2xl"
+            fallback={<span aria-hidden="true" className="block size-full bg-panel" />}
           />
         </span>
       ) : null}
@@ -123,11 +124,11 @@ export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps)
         className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(115deg,color-mix(in_oklch,var(--color-canvas)_94%,transparent)_20%,color-mix(in_oklch,var(--color-canvas)_72%,transparent)_65%,color-mix(in_oklch,var(--color-accent)_18%,transparent))]"
       />
 
-      <div className="group relative flex gap-4 p-4 sm:gap-5 sm:p-5">
+      <div className="group relative flex gap-3.5 p-3.5 min-[360px]:gap-4 min-[360px]:p-4 sm:gap-5 sm:p-5">
         <Poster
           title={lead}
           priority
-          className="aspect-[3/4] w-28 shrink-0 rounded-xl shadow-lg transition-transform duration-200 motion-safe:group-hover:-translate-y-0.5 sm:w-36"
+          className="aspect-[3/4] w-24 min-[360px]:w-28 shrink-0 rounded-xl shadow-lg transition-transform duration-200 motion-safe:group-hover:-translate-y-0.5 sm:w-36"
           glyphClassName="text-5xl"
         />
         <div className="flex min-w-0 flex-1 flex-col">
