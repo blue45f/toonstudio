@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isHumanoidBoneName } from "../../../contracts";
+import { isHumanoidBoneName, isLabFailure } from "../../../contracts";
 import { resolveProportions } from "../../../domains/humanoid/proportions";
 import { buildHumanoidSkeleton } from "../../../domains/humanoid/skeleton/skeleton-builder";
 import { qFromAxisAngle } from "../../../shared/math";
@@ -15,9 +15,9 @@ import {
   resolveDragPivotWithMode,
   resolveMirrorHumanoidBone,
 } from "./shaper-bone-gizmo";
-import { visibleHandles } from "./viewport-interactions";
+import { pushShaperHistoryEntry, stepShaperHistoryCursor, visibleHandles } from "./viewport-interactions";
 
-import type { JointDragHandle } from "../../../contracts";
+import type { JointDragHandle, LabFailure, Pose, Quat, SkeletonData } from "../../../contracts";
 
 describe("shaper-bone-gizmo — 대칭 조작·피벗 모드·골격 연결선·네이티브 프리셋", () => {
   const skeleton = buildHumanoidSkeleton(resolveProportions({}));
@@ -123,3 +123,186 @@ describe("shaper-bone-gizmo — 대칭 조작·피벗 모드·골격 연결선·
     expect(Object.keys(SHAPER_BUILTIN_FACE_PRESETS)).toHaveLength(6);
   });
 });
+
+describe("shaper-bone-gizmo — 손상 스켈레톤·비유한 좌표·순환 참조 안전 경계 회귀 검증", () => {
+  const validSkeleton = buildHumanoidSkeleton(resolveProportions({}));
+
+  it("resolveDragPivotWithMode: NaN/Infinity restTranslation 및 부모 순환(hips<->spine, a->b->a, aux1<->aux2) 시 예외 없이 null과 LabFailure를 보고한다", () => {
+    const nanSkeleton: SkeletonData = Object.freeze({
+      bones: Object.freeze(
+        validSkeleton.bones.map((bone) =>
+          bone.name === "leftUpperArm"
+            ? Object.freeze({ ...bone, restTranslation: Object.freeze([Number.NaN, 0.2, 0] as const) })
+            : Object.freeze({ ...bone }),
+        ),
+      ),
+    });
+    const infSkeleton: SkeletonData = Object.freeze({
+      bones: Object.freeze(
+        validSkeleton.bones.map((bone) =>
+          bone.name === "hips"
+            ? Object.freeze({ ...bone, restTranslation: Object.freeze([0, Number.POSITIVE_INFINITY, 0] as const) })
+            : Object.freeze({ ...bone }),
+        ),
+      ),
+    });
+    const cycleHipsSpine: SkeletonData = Object.freeze({
+      bones: Object.freeze([
+        Object.freeze({ name: "hips", parent: "spine", restTranslation: [0, 1, 0] as const, restRotation: [0, 0, 0, 1] as const }),
+        Object.freeze({ name: "spine", parent: "hips", restTranslation: [0, 0.2, 0] as const, restRotation: [0, 0, 0, 1] as const }),
+      ]),
+    });
+    const cycleAux: SkeletonData = Object.freeze({
+      bones: Object.freeze([
+        Object.freeze({ name: "hips", parent: null, restTranslation: [0, 1, 0] as const, restRotation: [0, 0, 0, 1] as const }),
+        Object.freeze({ name: "aux1", parent: "aux2", restTranslation: [0, 0.1, 0] as const, restRotation: [0, 0, 0, 1] as const }),
+        Object.freeze({ name: "aux2", parent: "aux1", restTranslation: [0, 0.1, 0] as const, restRotation: [0, 0, 0, 1] as const }),
+        Object.freeze({ name: "spine", parent: "aux1", restTranslation: [0, 0.2, 0] as const, restRotation: [0, 0, 0, 1] as const }),
+      ]),
+    });
+
+    const frozenPose: Pose = Object.freeze({
+      leftUpperArm: Object.freeze(qFromAxisAngle([0, 0, 1], 0.25)),
+    });
+
+    for (const mode of ["parent", "direct"] as const) {
+      const nanFailures: LabFailure[] = [];
+      expect(
+        resolveDragPivotWithMode(nanSkeleton, frozenPose, "leftLowerArm", mode, {
+          now: 1700000001000,
+          onFailure: (f) => nanFailures.push(f),
+        }),
+      ).toBeNull();
+      expect(nanFailures).toHaveLength(1);
+      expect(isLabFailure(nanFailures[0])).toBe(true);
+      expect(nanFailures[0]?.code).toBe("skeleton-non-finite-rest");
+
+      const infFailures: LabFailure[] = [];
+      expect(
+        resolveDragPivotWithMode(infSkeleton, frozenPose, "hips", mode, {
+          now: 1700000001001,
+          onFailure: (f) => infFailures.push(f),
+        }),
+      ).toBeNull();
+      expect(infFailures).toHaveLength(1);
+      expect(infFailures[0]?.code).toBe("skeleton-non-finite-rest");
+
+      const cycleFailures: LabFailure[] = [];
+      expect(
+        resolveDragPivotWithMode(cycleHipsSpine, frozenPose, "spine", mode, {
+          now: 1700000001002,
+          onFailure: (f) => cycleFailures.push(f),
+        }),
+      ).toBeNull();
+      expect(cycleFailures).toHaveLength(1);
+      expect(cycleFailures[0]?.code).toBe("skeleton-cycle");
+
+      const auxFailures: LabFailure[] = [];
+      expect(
+        resolveDragPivotWithMode(cycleAux, frozenPose, "spine", mode, {
+          now: 1700000001003,
+          onFailure: (f) => auxFailures.push(f),
+        }),
+      ).toBeNull();
+      expect(auxFailures).toHaveLength(1);
+      expect(auxFailures[0]?.code).toBe("skeleton-cycle");
+    }
+
+    // 정상 빈 결과(스켈레톤은 유효하나 조회한 본이 존재하지 않는 경우)에서는 onFailure가 호출되지 않는다
+    const emptyValidSkeleton: SkeletonData = Object.freeze({ bones: Object.freeze([]) });
+    const normalEmptyFailures: LabFailure[] = [];
+    expect(
+      resolveDragPivotWithMode(emptyValidSkeleton, frozenPose, "leftLowerArm", "direct", {
+        onFailure: (f) => normalEmptyFailures.push(f),
+      }),
+    ).toBeNull();
+    expect(
+      resolveDragPivotWithMode(emptyValidSkeleton, frozenPose, "leftLowerArm", "parent", {
+        onFailure: (f) => normalEmptyFailures.push(f),
+      }),
+    ).toBeNull();
+    expect(normalEmptyFailures).toHaveLength(0);
+
+    // 실패 직후 정상 스켈레톤으로 재호출 시 즉시 정상 피벗을 반환하고 원본 불변을 보장한다
+    const recoveredDirect = resolveDragPivotWithMode(validSkeleton, frozenPose, "leftLowerArm", "direct");
+    expect(recoveredDirect?.pivotBone).toBe("leftLowerArm");
+    expect(Number.isFinite(recoveredDirect?.pivotWorld[0])).toBe(true);
+  });
+
+  it("computeVisibleBoneLinks: 부모 순환(a->b->a)·비유한 restTranslation·비유한 화면 픽셀([NaN, 300], [Infinity, -Infinity])에도 무한 루프나 NaN 선분 없이 안전 폴백한다", () => {
+    const handles: readonly JointDragHandle[] = Object.freeze([
+      Object.freeze({ bone: "hips", world: [0, 1, 0] as const, screen: [400, 500] as const }),
+      Object.freeze({ bone: "spine", world: [0, 1.1, 0] as const, screen: [400, 450] as const }),
+      Object.freeze({ bone: "chest", world: [0, 1.25, 0] as const, screen: [Number.NaN, 300] as const }),
+      Object.freeze({ bone: "head", world: [0, 1.5, 0] as const, screen: [400, 320] as const }),
+      Object.freeze({ bone: "leftHand", world: [0.4, 1.0, 0] as const, screen: [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY] as const }),
+    ]);
+
+    const cyclicSkeleton: SkeletonData = Object.freeze({
+      bones: Object.freeze([
+        Object.freeze({ name: "hips", parent: "spine", restTranslation: [0, 1, 0] as const, restRotation: [0, 0, 0, 1] as const }),
+        Object.freeze({ name: "spine", parent: "hips", restTranslation: [0, 0.1, 0] as const, restRotation: [0, 0, 0, 1] as const }),
+        Object.freeze({ name: "head", parent: "spine", restTranslation: [0, 0.4, 0] as const, restRotation: [0, 0, 0, 1] as const }),
+      ]),
+    });
+
+    const cycleFailures: LabFailure[] = [];
+    const segments = computeVisibleBoneLinks(handles, cyclicSkeleton, {
+      now: 1700000002000,
+      onFailure: (f) => cycleFailures.push(f),
+    });
+    expect(cycleFailures).toHaveLength(1);
+    expect(cycleFailures[0]?.code).toBe("skeleton-cycle");
+    // chest([NaN, 300])와 leftHand([Infinity, -Infinity])는 건너뛰고, head는 유효한 조상 spine과 연결된다
+    expect(segments.length).toBeGreaterThanOrEqual(2);
+    for (const seg of segments) {
+      expect(Number.isFinite(seg.x1)).toBe(true);
+      expect(Number.isFinite(seg.y1)).toBe(true);
+      expect(Number.isFinite(seg.x2)).toBe(true);
+      expect(Number.isFinite(seg.y2)).toBe(true);
+    }
+    expect(segments.find((s) => s.toBone === "head")?.fromBone).toBe("spine");
+
+    // 정상 스켈레톤 전달 시 onFailure는 호출되지 않는다
+    const okFailures: LabFailure[] = [];
+    const okSegments = computeVisibleBoneLinks(handles, validSkeleton, {
+      onFailure: (f) => okFailures.push(f),
+    });
+    expect(okFailures).toHaveLength(0);
+    expect(okSegments.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("applySymmetryToPose: 비유한 사원수·영벡터 입력 시 원본 포즈/선택/Undo 스택을 보존하고 직후 정상 조작·프리셋을 즉시 회복한다", () => {
+    const initialRot = Object.freeze(qFromAxisAngle([0, 0, 1], 0.2));
+    const basePose: Pose = Object.freeze({
+      hips: Object.freeze([0, 0, 0, 1] as const),
+      leftUpperArm: initialRot,
+    });
+    const selectedBone = "leftUpperArm" as const;
+    let history = pushShaperHistoryEntry({ entries: [], curPos: -1 }, { type: "selectPoseControlPoints", payload: basePose });
+
+    const nanQuat: Quat = [Number.NaN, 0, 0, 1];
+    const infQuat: Quat = [0, Number.POSITIVE_INFINITY, 0, 1];
+    const zeroQuat: Quat = [0, 0, 0, 0];
+
+    const afterNan = applySymmetryToPose(basePose, selectedBone, nanQuat, true);
+    const afterInf = applySymmetryToPose(basePose, selectedBone, infQuat, false);
+    const afterZero = applySymmetryToPose(basePose, selectedBone, zeroQuat, true);
+
+    expect(afterNan).toEqual(basePose);
+    expect(afterNan.rightUpperArm).toBeUndefined();
+    expect(afterInf).toEqual(basePose);
+    expect(afterZero).toEqual(basePose);
+
+    // 실패 직후 정상 사원수 및 네이티브 프리셋 적용이 즉시 동작하며 Undo/Redo 스택이 그대로 유지된다
+    const validRot = qFromAxisAngle([0, 0, 1], 0.45);
+    const recoveredPose = applySymmetryToPose(basePose, selectedBone, validRot, true);
+    expect(recoveredPose.leftUpperArm).toEqual(validRot);
+    expect(recoveredPose.rightUpperArm).toEqual(mirrorHumanoidBoneRotation(validRot));
+
+    history = pushShaperHistoryEntry(history, { type: "selectPoseControlPoints", payload: recoveredPose });
+    const undoStep = stepShaperHistoryCursor(history, -1);
+    expect(undoStep.appliedEntry?.payload).toEqual(basePose);
+  });
+});
+

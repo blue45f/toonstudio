@@ -6,7 +6,7 @@
  * 부모가 스켈레톤에 없으면 루트로 취급한다.
  */
 import { IDENTITY_QUAT } from "../contracts/pose";
-import { qConjugate, qMultiply, qNormalize, qRotateVec3, v3Add, v3Normalize, VEC3_Y } from "../shared/math";
+import { qConjugate, qMultiply, qNormalize, qRotateVec3, v3Add, v3IsFinite, v3Normalize, VEC3_Y } from "../shared/math";
 
 import type { HumanoidBoneName } from "../contracts/bones";
 import type { BoneData, SkeletonData } from "../contracts/mesh-data";
@@ -28,18 +28,20 @@ export function indexBones(skeleton: SkeletonData): ReadonlyMap<string, BoneData
 
 /** 본의 로컬 회전(rest ∘ pose) */
 export function composeLocalRotation(restRotation: Quat, poseRotation: Quat | undefined): Quat {
-  if (!poseRotation) return qNormalize(restRotation);
-  return qNormalize(qMultiply(restRotation, poseRotation));
+  const r = qNormalize(restRotation);
+  if (!poseRotation) return r;
+  const p = qNormalize(poseRotation);
+  return qNormalize(qMultiply(r, p));
 }
 
 /** 원하는 월드 회전을 rest 기준 포즈 회전으로 환산한다: pose = rest⁻¹ ∘ parentWorld⁻¹ ∘ world */
 export function poseRotationFromWorld(parentWorldRotation: Quat, restRotation: Quat, worldRotation: Quat): Quat {
-  const local = qMultiply(qConjugate(qNormalize(parentWorldRotation)), worldRotation);
+  const local = qMultiply(qConjugate(qNormalize(parentWorldRotation)), qNormalize(worldRotation));
   return qNormalize(qMultiply(qConjugate(qNormalize(restRotation)), local));
 }
 
 /**
- * 모든 본의 월드 변환을 계산한다. 순환 참조는 throw(계약 위반).
+ * 모든 본의 월드 변환을 계산한다. 순환 참조·비유한 restTranslation은 throw(계약 위반).
  */
 export function computeWorldTransforms(skeleton: SkeletonData, pose: Pose): WorldTransformMap {
   const byName = indexBones(skeleton);
@@ -50,6 +52,9 @@ export function computeWorldTransforms(skeleton: SkeletonData, pose: Pose): Worl
     const cached = result.get(bone.name);
     if (cached) return cached;
     if (visiting.has(bone.name)) throw new Error(`스켈레톤에 순환 부모 관계가 있습니다: ${bone.name}`);
+    if (!v3IsFinite(bone.restTranslation)) {
+      throw new Error(`스켈레톤 본 ${bone.name}의 restTranslation이 유한하지 않습니다.`);
+    }
     visiting.add(bone.name);
     const parent = bone.parent === null ? undefined : byName.get(bone.parent);
     const parentTransform: BoneWorldTransform = parent ? resolve(parent) : { position: [0, 0, 0], rotation: IDENTITY_QUAT };

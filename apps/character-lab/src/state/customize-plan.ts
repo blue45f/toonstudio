@@ -55,7 +55,9 @@ export function addNeutralFacs(expression: ExpressionWeights, neutral: Expressio
   const relaxedNeutral = relaxAntagonists(neutral, expression);
   const result: ExpressionWeights = {};
   for (const unit of FACS_UNITS) {
-    const value = (expression[unit] ?? 0) + (relaxedNeutral[unit] ?? 0);
+    const rawExp = expression[unit] ?? 0;
+    const expVal = Number.isFinite(rawExp) && rawExp > 0 ? Math.min(1, rawExp) : 0;
+    const value = expVal + (relaxedNeutral[unit] ?? 0);
     if (value > 0) result[unit] = Math.min(1, value);
   }
   return result;
@@ -158,7 +160,9 @@ export function planCustomization(input: CustomizePlanInput): CustomizePlanField
       // 소품 인스턴스(acc-<n>)는 프리셋마다 형태 키가 달라 소스가 인스턴스 범위로 따로 보고한다.
       const declared = new Set(custom.shapes[scope] ?? []);
       const filtered: Record<string, number> = {};
-      for (const [name, value] of Object.entries(values)) {
+      for (const name of Object.keys(values).sort()) {
+        const value = values[name];
+        if (value === undefined || !Number.isFinite(value) || value === 0) continue;
         if (declared.has(name)) filtered[name] = value;
         else push({ kind: "shape", key: `${scope}/${name}`, reasonKo: reasonOf(custom, customReasonKey("shape", scope), `이 파츠(${scope})에는 형태 키 ${name}이(가) 없습니다.`) });
       }
@@ -184,6 +188,12 @@ export function planCustomization(input: CustomizePlanInput): CustomizePlanField
     }
   }
 
+  const surfaces: Partial<Record<ChannelKey, Surface>> = {};
+  for (const channel of CHANNEL_KEYS) {
+    const surface = recipe.surfaces[channel];
+    if (surface !== undefined) surfaces[channel] = surface;
+  }
+
   // 비례: 키트만 플랜으로 근사한다(절차 소스는 지오메트리 재생성으로 반영, 제작 패키지는 미지원)
   const target = recipe.style.proportion;
   let proportion: Proportion | null = null;
@@ -200,7 +210,7 @@ export function planCustomization(input: CustomizePlanInput): CustomizePlanField
     partMorphWeights,
     proportion,
     channels,
-    surfaces: recipe.surfaces,
+    surfaces,
     hairColor: recipe.hairColor,
     accessories,
     unsupportedCustom,

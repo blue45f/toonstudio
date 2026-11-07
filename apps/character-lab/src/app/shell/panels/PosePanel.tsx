@@ -10,7 +10,7 @@
  * - 뷰포트의 관절 핸들 드래그는 render ViewportPane이 animation/joint-drag.ts로 같은 `pose/set`을 보낸다.
  * - 스타일 접두 `cl-pose-`(core의 character-lab.css가 정의).
  */
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { SPINE_IK_CHAIN, solveChainIk } from "../../../animation/fabrik";
 import { solveIkGoal } from "../../../animation/ik-apply";
@@ -21,9 +21,17 @@ import { computeWorldTransforms } from "../../../animation/skeleton-fk";
 import { computeGroundedBodyHeight } from "../../../animation/two-bone-ik";
 import { IK_CHAINS, POSE_SCOPE_LABELS_KO } from "../../../contracts";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
-import { useApplyPlan, useDispatch, useEngineSession, useLabState } from "../lab-store-context";
+import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore } from "../lab-store-context";
 
-import type { HandPosePreset, HumanoidBoneName, IkChainId, Pose, PosePreset, PoseScope, Quat, SkeletonData, Vec3 } from "../../../contracts";
+import {
+  classifySkeletonBoundaryError,
+  diagnoseSkeletonData,
+  postSkeletonFailureOnce,
+  safeComputeWorldTransforms,
+  type SkeletonBoundaryOptions,
+} from "./skeleton-boundary-guard";
+
+import type { HandPosePreset, HumanoidBoneName, IkChainId, LabFailure, Pose, PosePreset, PoseScope, Quat, SkeletonData, Vec3 } from "../../../contracts";
 
 /** 패널에서 고를 수 있는 적용 범위(손 전용 스코프는 손 포즈 섹션이 맡는다) */
 export const POSE_PANEL_SCOPES: readonly PoseScope[] = ["full", "upper", "arms-hands", "lower"];
@@ -91,12 +99,26 @@ function midBoneOf(target: IkTargetId): HumanoidBoneName {
 }
 
 /** 스켈레톤(기본: 참조 스켈레톤) 기준 현재 포즈의 말단(손·발·머리) 월드 위치 */
-export function ikEndPosition(pose: Pose, target: IkTargetId, skeleton: SkeletonData = REFERENCE_SKELETON): Vec3 {
-  return computeWorldTransforms(skeleton, pose).get(endBoneOf(target))?.position ?? [0, 0, 0];
+export function ikEndPosition(
+  pose: Pose,
+  target: IkTargetId,
+  skeleton: SkeletonData = REFERENCE_SKELETON,
+  options?: SkeletonBoundaryOptions,
+): Vec3 {
+  const fk = safeComputeWorldTransforms(skeleton, pose, options);
+  if (!fk.ok) return REST_WORLD_TRANSFORMS.get(endBoneOf(target))?.position ?? [0, 0, 0];
+  return fk.transforms.get(endBoneOf(target))?.position ?? [0, 0, 0];
 }
 
-function midPosition(pose: Pose, target: IkTargetId, skeleton: SkeletonData = REFERENCE_SKELETON): Vec3 {
-  return computeWorldTransforms(skeleton, pose).get(midBoneOf(target))?.position ?? [0, 0, 0];
+function midPosition(
+  pose: Pose,
+  target: IkTargetId,
+  skeleton: SkeletonData = REFERENCE_SKELETON,
+  options?: SkeletonBoundaryOptions,
+): Vec3 {
+  const fk = safeComputeWorldTransforms(skeleton, pose, options);
+  if (!fk.ok) return REST_WORLD_TRANSFORMS.get(midBoneOf(target))?.position ?? [0, 0, 0];
+  return fk.transforms.get(midBoneOf(target))?.position ?? [0, 0, 0];
 }
 
 function toCoords(v: Vec3): Coords {
@@ -144,10 +166,11 @@ interface CoordInputsProps {
   readonly idPrefix: string;
   readonly labelPrefix: string;
   readonly value: Coords;
+  readonly disabled?: boolean;
   readonly onChange: (next: Coords) => void;
 }
 
-function CoordInputs({ idPrefix, labelPrefix, value, onChange }: CoordInputsProps) {
+function CoordInputs({ idPrefix, labelPrefix, value, disabled, onChange }: CoordInputsProps) {
   const axes: ReadonlyArray<readonly [keyof Coords, string]> = [
     ["x", "X"],
     ["y", "Y"],
@@ -158,7 +181,14 @@ function CoordInputs({ idPrefix, labelPrefix, value, onChange }: CoordInputsProp
       {axes.map(([key, axis]) => (
         <span key={key} className="cl-pose-coord">
           <label htmlFor={`${idPrefix}-${key}`}>{`${labelPrefix} ${axis}`}</label>
-          <input id={`${idPrefix}-${key}`} type="number" step={0.01} value={value[key]} onChange={(event) => onChange({ ...value, [key]: event.target.value })} />
+          <input
+            id={`${idPrefix}-${key}`}
+            type="number"
+            step={0.01}
+            disabled={disabled}
+            value={value[key]}
+            onChange={(event) => onChange({ ...value, [key]: event.target.value })}
+          />
         </span>
       ))}
     </div>
@@ -167,32 +197,49 @@ function CoordInputs({ idPrefix, labelPrefix, value, onChange }: CoordInputsProp
 
 export function PosePanel() {
   const { recipe, capabilities } = useLabState();
+  const store = useLabStore();
   const dispatch = useDispatch();
   const plan = useApplyPlan();
   const engineSession = useEngineSession();
   const engine = engineSession.engine();
   const activeSkeleton = (engine ? readPoseSkeleton(engine) : null) ?? REFERENCE_SKELETON;
   const ids = useId();
+  const renderFailureRef = useRef<LabFailure | null>(null);
+  renderFailureRef.current = null;
+  const skeletonFailure = useMemo(() => diagnoseSkeletonData(activeSkeleton), [activeSkeleton]);
+  if (skeletonFailure) renderFailureRef.current = skeletonFailure;
+  const safeSkeleton = skeletonFailure ? REFERENCE_SKELETON : activeSkeleton;
+  const rigCorrupted = skeletonFailure !== null;
 
   const [scope, setScope] = useState<PoseScope>("full");
   const [handSide, setHandSide] = useState<HandSide>("both");
   const [ikTarget, setIkTarget] = useState<IkTargetId>("leftArm");
-  const [coords, setCoords] = useState<Coords>(() => toCoords(ikEndPosition(recipe.pose, "leftArm", activeSkeleton)));
+  const [coords, setCoords] = useState<Coords>(() => toCoords(ikEndPosition(recipe.pose, "leftArm", safeSkeleton)));
   const [usePole, setUsePole] = useState(false);
-  const [pole, setPole] = useState<Coords>(() => toCoords(midPosition(recipe.pose, "leftArm", activeSkeleton)));
+  const [pole, setPole] = useState<Coords>(() => toCoords(midPosition(recipe.pose, "leftArm", safeSkeleton)));
   const [ikStatus, setIkStatus] = useState<IkStatusLine | null>(null);
 
   const poseCapability = capabilities.pose;
   const handCapability = capabilities["hand-pose"];
   const poseDisabled = poseCapability.status === "unavailable";
   const handDisabled = handCapability.status === "unavailable";
+  const poseBlocked = poseDisabled || rigCorrupted;
+  const handBlocked = handDisabled || rigCorrupted;
   const unsupportedPose = plan?.unsupported.find((item) => item.slot === "pose");
   const unsupportedHand = plan?.unsupported.find((item) => item.slot === "hand-pose");
-  const violations = useMemo(() => poseLimitViolations(recipe.pose, activeSkeleton), [recipe.pose, activeSkeleton]);
+  const violations = useMemo(() => poseLimitViolations(recipe.pose, safeSkeleton), [recipe.pose, safeSkeleton]);
   const boneCount = Object.keys(recipe.pose).length;
   const groundedHeight = useMemo(() => {
-    const restWorld = activeSkeleton === REFERENCE_SKELETON ? REST_WORLD_TRANSFORMS : computeWorldTransforms(activeSkeleton, {});
-    const world = computeWorldTransforms(activeSkeleton, recipe.pose);
+    const onFailure = (failure: LabFailure): void => {
+      renderFailureRef.current = failure;
+    };
+    const restFk =
+      activeSkeleton === REFERENCE_SKELETON
+        ? { ok: true as const, transforms: REST_WORLD_TRANSFORMS }
+        : safeComputeWorldTransforms(activeSkeleton, {}, { onFailure });
+    const restWorld = restFk.ok ? restFk.transforms : REST_WORLD_TRANSFORMS;
+    const worldFk = safeComputeWorldTransforms(activeSkeleton, recipe.pose, { onFailure });
+    const world = worldFk.ok ? worldFk.transforms : REST_WORLD_TRANSFORMS;
     const defaultAnkleY = restWorld.get("leftFoot")?.position[1] ?? 0.08;
     const ankleLeftY = world.get("leftFoot")?.position[1] ?? defaultAnkleY;
     const ankleRightY = world.get("rightFoot")?.position[1] ?? defaultAnkleY;
@@ -209,7 +256,37 @@ export function PosePanel() {
     });
   }, [activeSkeleton, recipe.pose]);
 
+  useEffect(() => {
+    if (renderFailureRef.current) postSkeletonFailureOnce(store, renderFailureRef.current);
+  });
+
+  const skeletonSig = skeletonFailure
+    ? `err:${skeletonFailure.code}`
+    : `ok:${activeSkeleton.bones.length}:${activeSkeleton.bones[0]?.name ?? ""}:${activeSkeleton.bones[0]?.restTranslation.join(",") ?? ""}`;
+  const prevSkeletonSigRef = useRef(skeletonSig);
+  useEffect(() => {
+    if (prevSkeletonSigRef.current === skeletonSig) return;
+    prevSkeletonSigRef.current = skeletonSig;
+    if (skeletonFailure) return;
+    const nextCoords = toCoords(ikEndPosition(recipe.pose, ikTarget, activeSkeleton));
+    const nextPole = toCoords(midPosition(recipe.pose, ikTarget, activeSkeleton));
+    setCoords((prev) => (prev.x === nextCoords.x && prev.y === nextCoords.y && prev.z === nextCoords.z ? prev : nextCoords));
+    setPole((prev) => (prev.x === nextPole.x && prev.y === nextPole.y && prev.z === nextPole.z ? prev : nextPole));
+  }, [skeletonSig, skeletonFailure, activeSkeleton, recipe.pose, ikTarget]);
+
+  const boundaryOptions: SkeletonBoundaryOptions = {
+    onFailure: (failure) => postSkeletonFailureOnce(store, failure),
+  };
+
+  const guardCorruptedRig = (): boolean => {
+    const failure = skeletonFailure ?? diagnoseSkeletonData(activeSkeleton);
+    if (!failure) return false;
+    postSkeletonFailureOnce(store, failure);
+    return true;
+  };
+
   const applyPosePreset = (preset: PosePreset, altMirror = false): void => {
+    if (guardCorruptedRig()) return;
     if (altMirror) {
       dispatch({
         type: "pose/set",
@@ -227,6 +304,7 @@ export function PosePanel() {
   };
 
   const applyHandPreset = (preset: HandPosePreset): void => {
+    if (guardCorruptedRig()) return;
     if (handSide === "both") {
       dispatch({ type: "slot/apply", slot: "hand-pose", presetId: preset.id });
       return;
@@ -236,18 +314,26 @@ export function PosePanel() {
 
   const selectIkTarget = (next: IkTargetId): void => {
     setIkTarget(next);
-    setCoords(toCoords(ikEndPosition(recipe.pose, next, activeSkeleton)));
-    setPole(toCoords(midPosition(recipe.pose, next, activeSkeleton)));
+    if (guardCorruptedRig()) return;
+    setCoords(toCoords(ikEndPosition(recipe.pose, next, activeSkeleton, boundaryOptions)));
+    setPole(toCoords(midPosition(recipe.pose, next, activeSkeleton, boundaryOptions)));
     setIkStatus(null);
   };
 
   const readCurrent = (): void => {
-    setCoords(toCoords(ikEndPosition(recipe.pose, ikTarget, activeSkeleton)));
-    setPole(toCoords(midPosition(recipe.pose, ikTarget, activeSkeleton)));
+    if (guardCorruptedRig()) return;
+    setCoords(toCoords(ikEndPosition(recipe.pose, ikTarget, activeSkeleton, boundaryOptions)));
+    setPole(toCoords(midPosition(recipe.pose, ikTarget, activeSkeleton, boundaryOptions)));
     setIkStatus(null);
   };
 
   const applyIk = (): void => {
+    const failure = skeletonFailure ?? diagnoseSkeletonData(activeSkeleton);
+    if (failure) {
+      postSkeletonFailureOnce(store, failure);
+      setIkStatus({ text: `${failure.reasonKo} [${failure.code}]`, status: "unreachable" });
+      return;
+    }
     const target = parseCoords(coords);
     if (!target) {
       setIkStatus({ text: "목표 좌표가 숫자가 아닙니다." });
@@ -255,44 +341,66 @@ export function PosePanel() {
     }
     const label = IK_TARGET_LABELS_KO[ikTarget];
     const where = `(${target.map((v) => v.toFixed(2)).join(", ")})`;
-    if (ikTarget === "head") {
-      const boneNames = new Set(activeSkeleton.bones.map((bone) => bone.name));
-      const activeSpineChain = SPINE_IK_CHAIN.filter((bone) => boneNames.has(bone));
-      const spineChain = activeSpineChain.length >= 2 ? activeSpineChain : SPINE_IK_CHAIN;
-      const result = solveChainIk(recipe.pose, activeSkeleton, spineChain, target);
-      dispatch({ type: "pose/set", pose: result.pose, scope: "full", labelKo: `IK ${label} → ${where}` });
-      setIkStatus({ text: describeIkOutcome(label, result), status: ikStatusTone(result) });
-      return;
-    }
-    let poleVec: Vec3 | undefined;
-    if (usePole) {
-      const parsed = parseCoords(pole);
-      if (!parsed) {
-        setIkStatus({ text: "폴 벡터 좌표가 숫자가 아닙니다." });
+    try {
+      if (ikTarget === "head") {
+        const boneNames = new Set(activeSkeleton.bones.map((bone) => bone.name));
+        const activeSpineChain = SPINE_IK_CHAIN.filter((bone) => boneNames.has(bone));
+        const spineChain = activeSpineChain.length >= 2 ? activeSpineChain : SPINE_IK_CHAIN;
+        const result = solveChainIk(recipe.pose, activeSkeleton, spineChain, target);
+        dispatch({ type: "pose/set", pose: result.pose, scope: "full", labelKo: `IK ${label} → ${where}` });
+        setIkStatus({ text: describeIkOutcome(label, result), status: ikStatusTone(result) });
         return;
       }
-      poleVec = parsed;
+      let poleVec: Vec3 | undefined;
+      if (usePole) {
+        const parsed = parseCoords(pole);
+        if (!parsed) {
+          setIkStatus({ text: "폴 벡터 좌표가 숫자가 아닙니다." });
+          return;
+        }
+        poleVec = parsed;
+      }
+      const result = solveIkGoal(recipe.pose, activeSkeleton, { chain: ikTarget, target, ...(poleVec ? { pole: poleVec } : {}) });
+      dispatch({ type: "pose/set", pose: result.pose, scope: "full", labelKo: `IK ${label} → ${where}` });
+      setIkStatus({ text: describeIkOutcome(label, result), status: ikStatusTone(result) });
+    } catch (error) {
+      const classified = classifySkeletonBoundaryError(error);
+      if (classified) {
+        postSkeletonFailureOnce(store, classified);
+        setIkStatus({ text: `${classified.reasonKo} [${classified.code}]`, status: "unreachable" });
+        return;
+      }
+      throw error;
     }
-    const result = solveIkGoal(recipe.pose, activeSkeleton, { chain: ikTarget, target, ...(poleVec ? { pole: poleVec } : {}) });
-    dispatch({ type: "pose/set", pose: result.pose, scope: "full", labelKo: `IK ${label} → ${where}` });
-    setIkStatus({ text: describeIkOutcome(label, result), status: ikStatusTone(result) });
   };
 
   const resetPose = (): void => {
+    if (guardCorruptedRig()) return;
     dispatch({ type: "pose/set", pose: {}, scope: "full", labelKo: "포즈 초기화(rest)" });
   };
 
   const clampPose = (): void => {
+    if (guardCorruptedRig()) return;
     dispatch({ type: "pose/set", pose: clampPoseToLimits(recipe.pose, activeSkeleton), scope: "full", labelKo: "관절 제한으로 클램프" });
   };
 
   const mirrorCurrentPose = (): void => {
+    if (guardCorruptedRig()) return;
     dispatch({ type: "pose/set", pose: mirrorHumanoidPoseLeftRight(recipe.pose), scope: "full", labelKo: "포즈 좌우 반전" });
   };
+
+  const effectiveIkStatus: IkStatusLine | null = skeletonFailure
+    ? { text: `${skeletonFailure.reasonKo} [${skeletonFailure.code}]`, status: "unreachable" }
+    : ikStatus;
 
   return (
     <section className="cl-pose-panel" aria-label="포즈">
       <h2 className="cl-pose-title">포즈</h2>
+      {skeletonFailure ? (
+        <p className="cl-pose-reason" role="status" data-testid="pose-skeleton-failure">
+          {`${skeletonFailure.reasonKo} [${skeletonFailure.code}]`}
+        </p>
+      ) : null}
       {poseCapability.status !== "available" ? (
         <p className="cl-pose-reason" role="note">
           포즈 슬롯 {poseCapability.status === "partial" ? "부분 지원" : "미지원"}: {poseCapability.reasonKo ?? "사유 없음"}
@@ -304,83 +412,107 @@ export function PosePanel() {
         </p>
       ) : null}
 
-      <fieldset className="cl-pose-scope">
-        <legend>적용 범위</legend>
-        {POSE_PANEL_SCOPES.map((item) => (
-          <label key={item} className="cl-pose-radio" htmlFor={`${ids}-scope-${item}`}>
-            <input id={`${ids}-scope-${item}`} type="radio" name={`${ids}-scope`} value={item} checked={scope === item} onChange={() => setScope(item)} />
-            {POSE_SCOPE_LABELS_KO[item]}
-          </label>
-        ))}
-        <p className="cl-pose-hint">전신은 슬롯 프리셋으로 기록하고, 다른 범위는 범위 안 본만 바꿉니다(밖은 보존).</p>
-      </fieldset>
+      <div className="cl-pose-primary-group" role="region" aria-label="주요 포즈 조작" data-testid="pose-primary-controls">
+        <fieldset className="cl-pose-scope">
+          <legend>적용 범위</legend>
+          {POSE_PANEL_SCOPES.map((item) => (
+            <label key={item} className="cl-pose-radio" htmlFor={`${ids}-scope-${item}`}>
+              <input
+                id={`${ids}-scope-${item}`}
+                type="radio"
+                name={`${ids}-scope`}
+                value={item}
+                checked={scope === item}
+                disabled={poseBlocked}
+                onChange={() => setScope(item)}
+              />
+              {POSE_SCOPE_LABELS_KO[item]}
+            </label>
+          ))}
+          <p className="cl-pose-hint">전신은 슬롯 프리셋으로 기록하고, 다른 범위는 범위 안 본만 바꿉니다(밖은 보존).</p>
+        </fieldset>
 
-      <div className="cl-pose-grid" role="group" aria-label="포즈 프리셋">
-        {POSE_PRESETS.map((preset) => {
-          const selected = scope === "full" && recipe.slots.pose === preset.id;
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              className={`cl-pose-card${selected ? " cl-pose-card--selected" : ""}`}
-              aria-pressed={selected}
-              disabled={poseDisabled}
-              title={poseCapability.reasonKo}
-              data-preset-id={preset.id}
-              onClick={(event) => applyPosePreset(preset, event.altKey)}
-            >
-              <span className="cl-pose-card-label">{preset.labelKo}</span>
-              <span className="cl-pose-card-meta">
-                {POSE_SCOPE_LABELS_KO[preset.scope]} · 본 {Object.keys(preset.pose).length}개
-              </span>
-            </button>
-          );
-        })}
+        <div className="cl-pose-row" role="group" aria-label="Tripo Text-to-Motion 및 VRM 캘리브레이션 빠른 스탠스" data-testid="pose-tripo-quick-chips">
+          {(
+            [
+              { id: "pose/a-pose", label: "A-Pose 리깅 기준" },
+              { id: "pose/t-pose", label: "T-Pose VRM 기준" },
+              { id: "pose/hands-on-hips", label: "액션 전투 스탠스" },
+              { id: "pose/run", label: "Text-to-Motion 워킹" },
+            ] as const
+          ).map((quick) => {
+            const matched = POSE_PRESETS.find((item) => item.id === quick.id);
+            if (!matched) return null;
+            return (
+              <button
+                key={quick.id}
+                type="button"
+                className="cl-preset-chip"
+                aria-pressed={scope === "full" && recipe.slots.pose === quick.id}
+                disabled={poseBlocked}
+                data-testid={`pose-quick-chip-${quick.id.replace("pose/", "")}`}
+                onClick={() => applyPosePreset(matched, false)}
+              >
+                {quick.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="cl-pose-grid" role="group" aria-label="포즈 프리셋">
+          {POSE_PRESETS.map((preset) => {
+            const selected = scope === "full" && recipe.slots.pose === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                className={`cl-pose-card${selected ? " cl-pose-card--selected" : ""}`}
+                aria-pressed={selected}
+                disabled={poseBlocked}
+                title={poseCapability.reasonKo}
+                data-preset-id={preset.id}
+                onClick={(event) => applyPosePreset(preset, event.altKey)}
+              >
+                <span className="cl-pose-card-label">{preset.labelKo}</span>
+                <span className="cl-pose-card-meta">
+                  {POSE_SCOPE_LABELS_KO[preset.scope]} · 본 {Object.keys(preset.pose).length}개
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="cl-pose-actions" role="group" aria-label="주요 포즈 편집 도구">
+          <button type="button" onClick={resetPose} disabled={rigCorrupted}>
+            포즈 초기화
+          </button>
+          <button type="button" onClick={mirrorCurrentPose} disabled={poseBlocked || boneCount === 0}>
+            포즈 좌우 반전
+          </button>
+          <button type="button" onClick={clampPose} disabled={rigCorrupted || violations.length === 0}>
+            관절 제한으로 클램프
+          </button>
+        </div>
       </div>
-      <div className="cl-pose-actions">
-        <button type="button" onClick={resetPose}>
-          포즈 초기화
-        </button>
-        <button type="button" onClick={mirrorCurrentPose} disabled={poseDisabled || boneCount === 0}>
-          포즈 좌우 반전
-        </button>
-        <button type="button" onClick={clampPose} disabled={violations.length === 0}>
-          관절 제한으로 클램프
-        </button>
-      </div>
-      <div className="cl-pose-row" role="group" aria-label="Tripo Text-to-Motion 및 VRM 캘리브레이션 빠른 스탠스" data-testid="pose-tripo-quick-chips">
-        {(
-          [
-            { id: "pose/a-pose", label: "A-Pose 리깅 기준" },
-            { id: "pose/t-pose", label: "T-Pose VRM 기준" },
-            { id: "pose/hands-on-hips", label: "액션 전투 스탠스" },
-            { id: "pose/run", label: "Text-to-Motion 워킹" },
-          ] as const
-        ).map((quick) => {
-          const matched = POSE_PRESETS.find((item) => item.id === quick.id);
-          if (!matched) return null;
-          return (
-            <button
-              key={quick.id}
-              type="button"
-              className="cl-preset-chip"
-              aria-pressed={scope === "full" && recipe.slots.pose === quick.id}
-              disabled={poseDisabled}
-              data-testid={`pose-quick-chip-${quick.id.replace("pose/", "")}`}
-              onClick={() => applyPosePreset(matched, false)}
-            >
-              {quick.label}
-            </button>
-          );
-        })}
-      </div>
+
       <p className="cl-pose-status">
         포즈 본 {boneCount}개 · 관절 제한 위반 {violations.length}건{violations.length > 0 ? `: ${violations.map((v) => v.bone).join(", ")}` : ""}
       </p>
-      <p className="cl-pose-grounded" data-testid="pose-grounded-height">
-        {groundedHeight.labelKo} · 최저 발목 접지 보정 {groundedHeight.groundDeltaY >= 0 ? "+" : ""}
-        {(groundedHeight.groundDeltaY * 100).toFixed(1)} cm
-      </p>
+
+      <details className="cl-pose-advanced-diagnostics" data-testid="pose-advanced-diagnostics">
+        <summary className="cl-pose-diagnostics-summary" data-testid="pose-diagnostics-summary">
+          고급 진단 및 접지·관절 상세 ({violations.length > 0 ? `위반 ${violations.length}건` : "정상"})
+        </summary>
+        <div className="cl-pose-diagnostics-body">
+          <p className="cl-pose-grounded" data-testid="pose-grounded-height">
+            {groundedHeight.labelKo} · 최저 발목 접지 보정 {groundedHeight.groundDeltaY >= 0 ? "+" : ""}
+            {(groundedHeight.groundDeltaY * 100).toFixed(1)} cm
+          </p>
+          <p className="cl-pose-hint" data-testid="pose-skeleton-diagnostics">
+            스켈레톤 본 {activeSkeleton.bones.length}개 · {skeletonFailure ? `${skeletonFailure.reasonKo} [${skeletonFailure.code}]` : "정상"}
+          </p>
+        </div>
+      </details>
 
       <fieldset className="cl-pose-hand">
         <legend>손 포즈</legend>
@@ -403,6 +535,7 @@ export function PosePanel() {
                 name={`${ids}-hand`}
                 value={side}
                 checked={handSide === side}
+                disabled={handBlocked}
                 onChange={(event) => {
                   if (isHandSide(event.target.value)) setHandSide(event.target.value);
                 }}
@@ -420,7 +553,7 @@ export function PosePanel() {
                 type="button"
                 className={`cl-pose-card${selected ? " cl-pose-card--selected" : ""}`}
                 aria-pressed={selected}
-                disabled={handDisabled}
+                disabled={handBlocked}
                 title={handCapability.reasonKo}
                 data-preset-id={preset.id}
                 onClick={() => applyHandPreset(preset)}
@@ -439,6 +572,7 @@ export function PosePanel() {
           <select
             id={`${ids}-ik-target`}
             value={ikTarget}
+            disabled={poseBlocked}
             onChange={(event) => {
               if (isIkTargetId(event.target.value)) selectIkTarget(event.target.value);
             }}
@@ -450,7 +584,7 @@ export function PosePanel() {
             ))}
           </select>
         </div>
-        <CoordInputs idPrefix={`${ids}-target`} labelPrefix="목표" value={coords} onChange={setCoords} />
+        <CoordInputs idPrefix={`${ids}-target`} labelPrefix="목표" value={coords} disabled={poseBlocked} onChange={setCoords} />
         <div className="cl-pose-row" role="group" aria-label="IK 빠른 위치 이동" data-testid="pose-ik-quick-nudge">
           {(
             [
@@ -463,8 +597,10 @@ export function PosePanel() {
               key={item.id}
               type="button"
               className="cl-preset-chip"
+              disabled={poseBlocked}
               onClick={() => {
-                const base = parseCoords(coords) ?? ikEndPosition(recipe.pose, ikTarget, activeSkeleton);
+                if (guardCorruptedRig()) return;
+                const base = parseCoords(coords) ?? ikEndPosition(recipe.pose, ikTarget, activeSkeleton, boundaryOptions);
                 setCoords(toCoords([base[0] + item.delta[0], base[1] + item.delta[1], base[2] + item.delta[2]]));
               }}
             >
@@ -475,22 +611,28 @@ export function PosePanel() {
         {ikTarget !== "head" ? (
           <div className="cl-pose-row">
             <label className="cl-pose-radio" htmlFor={`${ids}-pole`}>
-              <input id={`${ids}-pole`} type="checkbox" checked={usePole} onChange={(event) => setUsePole(event.target.checked)} />
+              <input
+                id={`${ids}-pole`}
+                type="checkbox"
+                checked={usePole}
+                disabled={poseBlocked}
+                onChange={(event) => setUsePole(event.target.checked)}
+              />
               폴 벡터 지정(팔꿈치·무릎이 향할 위치)
             </label>
           </div>
         ) : null}
-        {ikTarget !== "head" && usePole ? <CoordInputs idPrefix={`${ids}-pole`} labelPrefix="폴" value={pole} onChange={setPole} /> : null}
+        {ikTarget !== "head" && usePole ? <CoordInputs idPrefix={`${ids}-pole`} labelPrefix="폴" value={pole} disabled={poseBlocked} onChange={setPole} /> : null}
         <div className="cl-pose-actions">
-          <button type="button" onClick={readCurrent}>
+          <button type="button" onClick={readCurrent} disabled={poseBlocked}>
             현재 위치 읽기
           </button>
-          <button type="button" onClick={applyIk} disabled={poseDisabled}>
+          <button type="button" onClick={applyIk} disabled={poseBlocked}>
             IK 적용
           </button>
         </div>
-        <p className="cl-pose-ik-status" role="status" data-status={ikStatus?.status}>
-          {ikStatus?.text ?? "목표 좌표(미터, 모델 공간: 정면 +Z · 왼쪽 +X · 위 +Y)를 넣고 IK 적용을 누르세요."}
+        <p className="cl-pose-ik-status" role="status" data-status={effectiveIkStatus?.status}>
+          {effectiveIkStatus?.text ?? "목표 좌표(미터, 모델 공간: 정면 +Z · 왼쪽 +X · 위 +Y)를 넣고 IK 적용을 누르세요."}
         </p>
       </fieldset>
       <p className="cl-pose-footer">뷰포트의 관절 핸들 드래그도 같은 포즈 명령으로 기록됩니다(swing-twist 관절 제한).</p>

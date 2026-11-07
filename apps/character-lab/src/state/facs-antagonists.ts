@@ -30,9 +30,12 @@ export function relaxAntagonists(base: ExpressionWeights, active: ExpressionWeig
   const result: ExpressionWeights = {};
   for (const unit of FACS_UNITS) {
     const value = base[unit] ?? 0;
-    if (value <= 0) continue;
+    if (!Number.isFinite(value) || value <= 0) continue;
     const antagonists = FACS_ANTAGONISTS[unit] ?? [];
-    const suppressed = antagonists.some((antagonist) => (activeMap[antagonist] ?? 0) > 0);
+    const suppressed = antagonists.some((antagonist) => {
+      const actVal = activeMap[antagonist] ?? 0;
+      return Number.isFinite(actVal) && actVal > 0;
+    });
     if (!suppressed) {
       result[unit] = Math.min(1, value);
     }

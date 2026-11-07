@@ -10,7 +10,7 @@ import { createPaintSession } from "../../../paint/paint-session";
 import { projectToPixel } from "../../../render/viewport-math";
 import { v3Length, v3Sub } from "../../../shared/math";
 import { createMockEngine, mockDiagnostics } from "../../../testing/mock-engine";
-import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
+import { MockLabProvider, createMockEngineSession, createMockLabStore } from "../../../testing/mock-store";
 import { applyPlanFixture } from "../../../testing/recipe-fixtures";
 import { TopBar } from "../TopBar";
 import { createUiStateStore } from "../ui-state";
@@ -18,7 +18,7 @@ import { createViewportRegistry } from "../viewport-registry";
 
 import { ViewportPane } from "./ViewportPane";
 
-import type { ApplyPlan, EngineBackend, EngineSession, EngineStatus, HudSample, JointDragHandle, LabCommand, PickHit, Pose, Vec3 } from "../../../contracts";
+import type { ApplyPlan, EngineBackend, EngineSession, EngineStatus, HudSample, JointDragHandle, LabCommand, PickHit, Pose, SkeletonData, Vec3 } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 import type { MockEngine } from "../../../testing/mock-engine";
 import type { ApplyLoop } from "../apply-loop";
@@ -508,6 +508,118 @@ describe("관절 드래그 → pose/set", () => {
     expect(view.dispatched).toEqual([]);
   });
 
+  it("FK(2)·IK(1)·체형스케일(3)·형상제어점(CP)·선택(0) 중 pointercancel·lostpointercapture·Escape·blur 중단 시 미커밋 변형과 기즈모 링을 정리하고 이후 정상 드래그가 커밋된다", () => {
+    const engine = createTestEngine();
+    const view = renderPane({ engine, plan: BASE_PLAN });
+    fireEvent.click(screen.getByRole("button", { name: "형상 제어점" }));
+    flushFrames();
+    const gizmoSelect = screen.getByLabelText("기즈모 조작 모드") as HTMLSelectElement;
+    const { start, end } = dragElbow(-45);
+
+    const triggers: ReadonlyArray<(el: Element, pointerId: number) => void> = [
+      (el, pointerId) => fireEvent.pointerCancel(el, { pointerId }),
+      (el, pointerId) => fireEvent.lostPointerCapture(el, { pointerId }),
+      () => fireEvent.keyDown(window, { key: "Escape" }),
+      () => fireEvent.blur(window),
+    ];
+
+    // 1. FK (Mode 2) 4가지 중단 검증
+    let pid = 30;
+    for (const interrupt of triggers) {
+      pid += 1;
+      const el = handle("leftLowerArm");
+      fireEvent.pointerDown(el, { ...toClient(start), pointerId: pid, button: 0 });
+      fireEvent.pointerMove(el, { ...toClient(end), pointerId: pid });
+      expect(el.getAttribute("data-dragging")).toBe("true");
+      expect(document.querySelector('circle[data-gizmo-ring="leftLowerArm"]')).not.toBeNull();
+      expect(engine.appliedPlans.at(-1)).not.toBe(BASE_PLAN);
+      interrupt(el, pid);
+      expect(engine.appliedPlans.at(-1)).toBe(BASE_PLAN);
+      expect(el.getAttribute("data-dragging")).toBeNull();
+      expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+      fireEvent.pointerUp(el, { ...toClient(end), pointerId: pid });
+      expect(view.dispatched).toEqual([]);
+    }
+
+    // 2. IK (Mode 1) 4가지 중단 검증
+    fireEvent.change(gizmoSelect, { target: { value: "1" } });
+    const pivotWorld = worldOf(BASE_PLAN.boneRotations, "leftUpperArm");
+    const handStart = projectToPixel(CAMERA, worldOf(BASE_PLAN.boneRotations, "leftHand"));
+    const handEnd = projectToPixel(CAMERA, [pivotWorld[0] - 0.1, pivotWorld[1] + 0.1, pivotWorld[2]]);
+    if (!handStart || !handEnd) throw new Error("투영 불가");
+    for (const interrupt of triggers) {
+      pid += 1;
+      const el = handle("leftHand");
+      fireEvent.pointerDown(el, { ...toClient(handStart), pointerId: pid, button: 0 });
+      fireEvent.pointerMove(el, { ...toClient(handEnd), pointerId: pid });
+      expect(el.getAttribute("data-dragging")).toBe("true");
+      expect(engine.appliedPlans.at(-1)).not.toBe(BASE_PLAN);
+      interrupt(el, pid);
+      expect(engine.appliedPlans.at(-1)).toBe(BASE_PLAN);
+      expect(el.getAttribute("data-dragging")).toBeNull();
+      expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+      fireEvent.pointerUp(el, { ...toClient(handEnd), pointerId: pid });
+      expect(view.dispatched).toEqual([]);
+    }
+
+    // 3. 체형 스케일 (Mode 3) 4가지 중단 시 pointerMove 중 조기 dispatch 없이 취소되어야 한다
+    fireEvent.change(gizmoSelect, { target: { value: "3" } });
+    const spineStart = projectToPixel(CAMERA, worldOf(BASE_PLAN.boneRotations, "spine"));
+    if (!spineStart) throw new Error("투영 불가");
+    for (const interrupt of triggers) {
+      pid += 1;
+      const el = handle("spine");
+      fireEvent.pointerDown(el, { ...toClient(spineStart), pointerId: pid, button: 0 });
+      fireEvent.pointerMove(el, { clientX: spineStart[0] / 2 + 30, clientY: spineStart[1] / 2 - 20, pointerId: pid });
+      expect(el.getAttribute("data-dragging")).toBe("true");
+      expect(view.dispatched).toEqual([]);
+      interrupt(el, pid);
+      expect(el.getAttribute("data-dragging")).toBeNull();
+      expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+      fireEvent.pointerUp(el, { clientX: spineStart[0] / 2 + 30, clientY: spineStart[1] / 2 - 20, pointerId: pid });
+      expect(view.dispatched).toEqual([]);
+    }
+
+    // 4. 형상 제어점 (ControlPoint) 4가지 중단 시 pointerMove 중 조기 dispatch 없이 취소되어야 한다
+    const jawCp = document.querySelector('circle[data-control-point="cp-face-jaw"]');
+    if (!jawCp) throw new Error("cp-face-jaw 없음");
+    for (const interrupt of triggers) {
+      pid += 1;
+      fireEvent.pointerDown(jawCp, { clientX: 200, clientY: 120, pointerId: pid, button: 0 });
+      fireEvent.pointerMove(jawCp, { clientX: 235, clientY: 95, pointerId: pid });
+      expect(jawCp.getAttribute("data-dragging")).toBe("true");
+      expect(view.dispatched).toEqual([]);
+      interrupt(jawCp, pid);
+      expect(jawCp.getAttribute("data-dragging")).toBeNull();
+      fireEvent.pointerUp(jawCp, { clientX: 235, clientY: 95, pointerId: pid });
+      expect(view.dispatched).toEqual([]);
+    }
+
+    // 5. Mode 0 (Q 선택) 본 선택 후 Escape 및 blur로 선택 해제 확인
+    fireEvent.change(gizmoSelect, { target: { value: "0" } });
+    fireEvent.pointerDown(handle("leftLowerArm"), { ...toClient(start), pointerId: 90, button: 0 });
+    expect(document.querySelector('circle[data-gizmo-ring="leftLowerArm"]')).not.toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+    fireEvent.pointerDown(handle("leftLowerArm"), { ...toClient(start), pointerId: 91, button: 0 });
+    expect(document.querySelector('circle[data-gizmo-ring="leftLowerArm"]')).not.toBeNull();
+    fireEvent.blur(window);
+    expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+
+    // 6. 중단 이후 정상 FK 드래그 커밋 및 pointerUp 직후 lostpointercapture 후속 발생 시 되돌리지 않는지 확인
+    fireEvent.change(gizmoSelect, { target: { value: "2" } });
+    const elbowEl = handle("leftLowerArm");
+    fireEvent.pointerDown(elbowEl, { ...toClient(start), pointerId: 99, button: 0 });
+    fireEvent.pointerMove(elbowEl, { ...toClient(end), pointerId: 99 });
+    const committedPreview = engine.appliedPlans.at(-1);
+    expect(committedPreview).not.toBe(BASE_PLAN);
+    fireEvent.pointerUp(elbowEl, { ...toClient(end), pointerId: 99 });
+    fireEvent.lostPointerCapture(elbowEl, { pointerId: 99 });
+    expect(engine.appliedPlans.at(-1)).toBe(committedPreview);
+    expect(view.dispatched).toHaveLength(1);
+    expect(view.dispatched[0]?.type).toBe("pose/set");
+  });
+
   it("관절 제한을 넘기면 사유를 보이고(요청 각도 표시) 제한된 회전으로 기록한다", () => {
     const view = renderPane({ plan: BASE_PLAN });
     flushFrames();
@@ -841,4 +953,93 @@ describe("접근성", () => {
     expect(store.getState().recipe).toEqual(initialRecipe);
     expect(presetSelect.value).toBe("");
   });
+
+  it("손상된 스켈레톤(부모 순환·NaN restTranslation)은 store.failures에 중복 없이 진단 게시되고 정상 빈 스켈레톤은 실패를 게시하지 않으며 복구 후 드래그가 정상 동작한다", () => {
+    const cycleSkeleton: SkeletonData = {
+      bones: SKELETON.bones.map((b) => {
+        if (b.name === "hips") return { ...b, parent: "spine" };
+        if (b.name === "spine") return { ...b, parent: "hips" };
+        return b;
+      }),
+    };
+    const nanSkeleton: SkeletonData = {
+      bones: SKELETON.bones.map((b) =>
+        b.name === "hips" ? { ...b, restTranslation: [Number.NaN, 1, 0] as const } : b,
+      ),
+    };
+
+    let currentSkeleton: SkeletonData | null = { bones: [] };
+    let currentHandles: readonly JointDragHandle[] = [];
+    const base = createMockEngine({ backend: "webgpu" });
+    const engine: TestEngine = Object.assign(base, {
+      viewportCamera: () => CAMERA,
+      poseSkeleton: () => currentSkeleton,
+      jointHandles: () => currentHandles,
+    });
+    const store = createMockLabStore({ engine: READY });
+    const session = createMockEngineSession(READY);
+    session.setEngine(engine);
+    const plan = applyPlanFixture({ revision: 1 });
+
+    render(
+      <MockLabProvider store={store} engineSession={session} shell={{ viewport: createViewportRegistry(), ui: createUiStateStore(), applyLoop: fakeApplyLoop(plan) }}>
+        <ViewportPane hudIntervalMs={0} initialOverlays={{ handles: true, controlPoints: true }} />
+      </MockLabProvider>,
+    );
+    flushFrames();
+
+    // 1. normal-empty ({ bones: [] })는 failures를 기록하지 않고 안내 문구를 유지한다
+    expect(store.getState().failures).toHaveLength(0);
+    expect(screen.getByText(/이 소스에는 스켈레톤이 없어 표시할 관절 핸들이 없습니다/u)).toBeTruthy();
+
+    // 2. 부모 순환 스켈레톤: 렌더 및 핸들 드래그 시 skeleton-cycle이 중복 없이 1회 기록되고 모든 기즈모 모드에서 dispatch하지 않는다
+    currentSkeleton = cycleSkeleton;
+    currentHandles = handlesFor({});
+    flushFrames();
+    expect(handle("leftLowerArm").getAttribute("aria-disabled")).toBe("true");
+    fireEvent.pointerDown(handle("leftLowerArm"), { clientX: 100, clientY: 100, pointerId: 21, button: 0 });
+    fireEvent.pointerMove(handle("leftLowerArm"), { clientX: 120, clientY: 110, pointerId: 21 });
+    fireEvent.pointerUp(handle("leftLowerArm"), { clientX: 120, clientY: 110, pointerId: 21 });
+    const gizmoSelect = screen.getByLabelText("기즈모 조작 모드") as HTMLSelectElement;
+    fireEvent.change(gizmoSelect, { target: { value: "0" } });
+    fireEvent.pointerDown(handle("leftLowerArm"), { clientX: 100, clientY: 100, pointerId: 25, button: 0 });
+    fireEvent.change(gizmoSelect, { target: { value: "3" } });
+    fireEvent.pointerDown(handle("spine"), { clientX: 100, clientY: 100, pointerId: 26, button: 0 });
+    fireEvent.pointerMove(handle("spine"), { clientX: 130, clientY: 110, pointerId: 26 });
+    fireEvent.pointerUp(handle("spine"), { clientX: 130, clientY: 110, pointerId: 26 });
+    expect(store.getState().failures).toHaveLength(1);
+    expect(store.getState().failures[0]?.code).toBe("skeleton-cycle");
+    expect(screen.getByText(/\[skeleton-cycle\]/u)).toBeTruthy();
+    expect(store.dispatched).toEqual([]);
+
+    // 3. NaN restTranslation 스켈레톤: IK 드래그 중 손상 주입 시에도 skeleton-non-finite-rest가 기록되고 크래시하지 않는다
+    currentSkeleton = SKELETON;
+    flushFrames();
+    fireEvent.change(gizmoSelect, { target: { value: "1" } });
+    const handStart = projectToPixel(CAMERA, worldOf({}, "leftHand"));
+    if (!handStart) throw new Error("투영 불가");
+    fireEvent.pointerDown(handle("leftHand"), { ...toClient(handStart), pointerId: 22, button: 0 });
+    // pointerMove 시점에 세션 스켈레톤이 손상된 경우 시뮬레이션
+    currentSkeleton = nanSkeleton;
+    fireEvent.pointerUp(handle("leftHand"), { ...toClient(handStart), pointerId: 22 });
+    fireEvent.pointerDown(handle("leftHand"), { ...toClient(handStart), pointerId: 23, button: 0 });
+    expect(store.getState().failures.some((f) => f.code === "skeleton-non-finite-rest")).toBe(true);
+    expect(screen.getByText(/\[skeleton-non-finite-rest\]/u)).toBeTruthy();
+    expect(store.dispatched).toEqual([]);
+
+    // 4. 정상 스켈레톤 복구 후 aria-disabled가 해제되고 정상 드래그 커밋 확인
+    currentSkeleton = SKELETON;
+    fireEvent.change(gizmoSelect, { target: { value: "2" } });
+    expect(handle("leftLowerArm").getAttribute("aria-disabled")).toBeNull();
+    const elbowStart = projectToPixel(CAMERA, worldOf({}, "leftLowerArm"));
+    const pivotWorld = worldOf({}, "leftUpperArm");
+    const elbowEnd = projectToPixel(CAMERA, [pivotWorld[0], pivotWorld[1] - 0.25, pivotWorld[2]]);
+    if (!elbowStart || !elbowEnd) throw new Error("투영 불가");
+    fireEvent.pointerDown(handle("leftLowerArm"), { ...toClient(elbowStart), pointerId: 24, button: 0 });
+    fireEvent.pointerMove(handle("leftLowerArm"), { ...toClient(elbowEnd), pointerId: 24 });
+    fireEvent.pointerUp(handle("leftLowerArm"), { ...toClient(elbowEnd), pointerId: 24 });
+    expect(store.dispatched).toHaveLength(1);
+    expect(store.dispatched[0]?.type).toBe("pose/set");
+  });
 });
+

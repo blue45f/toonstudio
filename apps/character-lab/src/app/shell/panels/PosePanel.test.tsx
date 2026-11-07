@@ -9,11 +9,11 @@ import { computeWorldTransforms } from "../../../animation/skeleton-fk";
 import { ALL_AVAILABLE_CAPABILITIES, createDefaultRecipe } from "../../../contracts";
 import { degToRad, qFromAxisAngle, v3Distance } from "../../../shared/math";
 import { createMockEngine, mockDiagnostics } from "../../../testing/mock-engine";
-import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
+import { MockLabProvider, createMockEngineSession, createMockLabStore } from "../../../testing/mock-store";
 
 import { PosePanel, describeIkOutcome, ikEndPosition, ikStatusTone, parseCoords } from "./PosePanel";
 
-import type { CharacterRecipe, EngineSession, LabCommand, SkeletonData, SlotCapabilityMap } from "../../../contracts";
+import type { CharacterRecipe, EngineSession, LabCommand, Pose, SkeletonData, SlotCapabilityMap } from "../../../contracts";
 
 afterEach(cleanup);
 
@@ -294,4 +294,131 @@ describe("PosePanel 헬퍼", () => {
     }
   });
 });
+
+describe("PosePanel 스켈레톤 경계 안전성", () => {
+  const cycleSkeleton: SkeletonData = {
+    bones: skeleton.bones.map((b) => {
+      if (b.name === "hips") return { ...b, parent: "spine" };
+      if (b.name === "spine") return { ...b, parent: "hips" };
+      return b;
+    }),
+  };
+  const nanRestSkeleton: SkeletonData = {
+    bones: skeleton.bones.map((b) =>
+      b.name === "hips" ? { ...b, restTranslation: [Number.NaN, 1, 0] as const } : b,
+    ),
+  };
+
+  it("부모 순환(hips <-> spine) 스켈레톤에서 마운트·IK 적용·현재 위치 읽기·클램프가 크래시나 상태 오염 없이 skeleton-cycle을 보고한다", () => {
+    const recipe = createDefaultRecipe();
+    recipe.pose = { leftUpperArm: qFromAxisAngle([0, 0, 1], degToRad(-170)) };
+    const store = createMockLabStore({ capabilities: ALL_AVAILABLE_CAPABILITIES, recipe });
+    const session = createMockEngineSession({ phase: "ready", backend: "webgpu", diagnostics: mockDiagnostics("webgpu") });
+    session.setEngine(Object.assign(createMockEngine({ backend: "webgpu" }), { poseSkeleton: () => cycleSkeleton }));
+
+    render(
+      <MockLabProvider store={store} engineSession={session}>
+        <PosePanel />
+      </MockLabProvider>,
+    );
+
+    const banner = screen.getByTestId("pose-skeleton-failure");
+    expect(banner.textContent).toContain("[skeleton-cycle]");
+    expect(store.getState().failures).toHaveLength(1);
+    expect(store.getState().failures[0]?.code).toBe("skeleton-cycle");
+
+    fireEvent.click(screen.getByRole("button", { name: "현재 위치 읽기" }));
+    fireEvent.change(screen.getByLabelText("부위"), { target: { value: "head" } });
+    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    expect(screen.getAllByText(/\[skeleton-cycle\]/u).length).toBeGreaterThanOrEqual(2);
+    fireEvent.click(screen.getByRole("button", { name: "관절 제한으로 클램프" }));
+
+    // 동일 실패 중복 게시 없음 & 상태 오염 명령 dispatch 없음
+    expect(store.getState().failures).toHaveLength(1);
+    expect(store.dispatched).toEqual([]);
+  });
+
+  it("NaN restTranslation 스켈레톤에서 마운트 시 skeleton-non-finite-rest를 보고하고, 정상 스켈레톤으로 복구하면 좌표·IK 적용이 정상 동작한다", () => {
+    let currentSkeleton: SkeletonData = nanRestSkeleton;
+    const store = createMockLabStore({ capabilities: ALL_AVAILABLE_CAPABILITIES });
+    const session = createMockEngineSession({ phase: "ready", backend: "webgpu", diagnostics: mockDiagnostics("webgpu") });
+    session.setEngine(Object.assign(createMockEngine({ backend: "webgpu" }), { poseSkeleton: () => currentSkeleton }));
+
+    const view = render(
+      <MockLabProvider store={store} engineSession={session}>
+        <PosePanel />
+      </MockLabProvider>,
+    );
+
+    expect(screen.getByTestId("pose-skeleton-failure").textContent).toContain("[skeleton-non-finite-rest]");
+    expect(store.getState().failures).toHaveLength(1);
+    expect(store.getState().failures[0]?.code).toBe("skeleton-non-finite-rest");
+
+    // 손상 리그에서는 포즈 카드·빠른 스탠스·초기화·손 포즈·IK 입력 및 버튼이 모두 비활성화되어 조작을 차단한다
+    expect(card("포즈 프리셋", "서기").disabled).toBe(true);
+    expect((screen.getByTestId("pose-quick-chip-hands-on-hips") as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "포즈 초기화" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(card("손 포즈 프리셋", "주먹").disabled).toBe(true);
+    expect((screen.getByLabelText("부위") as HTMLSelectElement).disabled).toBe(true);
+    expect((screen.getByLabelText("목표 X") as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "위로 +10cm" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "현재 위치 읽기" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    expect(store.dispatched).toEqual([]);
+
+    // 정상 스켈레톤으로 복구 후 리렌더 시 즉시 조작이 활성화되고 IK 적용이 정상 동작한다
+    currentSkeleton = skeleton;
+    view.rerender(
+      <MockLabProvider store={store} engineSession={session}>
+        <PosePanel />
+      </MockLabProvider>,
+    );
+
+    expect(screen.queryByTestId("pose-skeleton-failure")).toBeNull();
+    expect(card("포즈 프리셋", "서기").disabled).toBe(false);
+    expect((screen.getByTestId("pose-quick-chip-hands-on-hips") as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "포즈 초기화" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(card("손 포즈 프리셋", "주먹").disabled).toBe(false);
+    expect((screen.getByLabelText("부위") as HTMLSelectElement).disabled).toBe(false);
+    expect((screen.getByLabelText("목표 X") as HTMLInputElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(false);
+    setTarget("0.35", "1.1", "0.3");
+    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    expect(store.dispatched).toHaveLength(1);
+    expect(store.dispatched[0]?.type).toBe("pose/set");
+  });
+
+  it("주요 포즈 조작 영역을 그룹화하고 고급 진단은 기본적으로 접혀 있으며 매 호출마다 새 참조를 반환하는 poseSkeleton()에서도 무한 리렌더하지 않는다", () => {
+    const session = createMockEngineSession({ phase: "ready", backend: "webgpu", diagnostics: mockDiagnostics("webgpu") });
+    session.setEngine(
+      Object.assign(createMockEngine({ backend: "webgpu" }), {
+        poseSkeleton: () => ({ bones: [...skeleton.bones] }),
+      }),
+    );
+    setup({ engineSession: session });
+
+    const primaryRegion = screen.getByRole("region", { name: "주요 포즈 조작" });
+    expect(primaryRegion.getAttribute("data-testid")).toBe("pose-primary-controls");
+    expect(within(primaryRegion).getByRole("group", { name: "포즈 프리셋" })).toBeTruthy();
+    expect(within(primaryRegion).getByTestId("pose-tripo-quick-chips")).toBeTruthy();
+    expect(within(primaryRegion).getByRole("group", { name: "주요 포즈 편집 도구" })).toBeTruthy();
+
+    const details = screen.getByTestId("pose-advanced-diagnostics") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(screen.getByTestId("pose-diagnostics-summary").textContent).toContain("고급 진단 및 접지·관절 상세");
+    expect(screen.getByTestId("pose-skeleton-diagnostics").textContent).toContain(`스켈레톤 본 ${skeleton.bones.length}개 · 정상`);
+  });
+
+  it("예기치 않은 프로그래밍 오류(pose getter의 TypeError 등)는 삼키지 않고 그대로 전파한다", () => {
+    const brokenPose = new Proxy({} as Pose, {
+      get(): never {
+        throw new TypeError("unexpected-pose-getter-bug");
+      },
+    });
+    expect(() => ikEndPosition(brokenPose, "leftArm", skeleton)).toThrowError(new TypeError("unexpected-pose-getter-bug"));
+  });
+});
+
 
