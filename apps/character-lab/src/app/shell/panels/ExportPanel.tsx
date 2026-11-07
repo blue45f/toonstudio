@@ -8,7 +8,17 @@
  */
 import { useCallback, useId, useState, useSyncExternalStore } from "react";
 
-import { CAMERA_FRAMING_MODES, DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible } from "../../../contracts";
+import { POSE_PRESETS } from "../../../animation/presets";
+import {
+  ALL_AVAILABLE_CAPABILITIES,
+  ALL_UNAVAILABLE_CAPABILITIES,
+  CAMERA_FRAMING_MODES,
+  DEFAULT_FRAMING,
+  PART_ROLE_LABELS_KO,
+  failVisible,
+  recipeDigest,
+} from "../../../contracts";
+import { deriveKitCapabilities } from "../../../domains/authored/kit-capability";
 import { saveBytes } from "../../../export/download.browser";
 import { MAX_PNG_EXPORT_DIMENSION, MAX_PSD_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportGlb, exportLayeredPsd, exportRecipe, exportShaperStylePreset, exportTransparentPng } from "../../../export/export-session";
 import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
@@ -17,9 +27,9 @@ import { uploadReplacedLayers } from "../../../paint/paint-bridge";
 import { kitPaintWarningsForLayers } from "../../../paint/paint-kit-warning";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { recipeMigrationNoticeKo } from "../../../state/recipe-io";
-import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
+import { useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
 
-import type { CameraFramingMode, EngineStatus, LabFailure } from "../../../contracts";
+import type { CameraFramingMode, CharacterRecipe, EngineStatus, LabFailure, RecipeSource } from "../../../contracts";
 import type { ExportKind, ExportReceipt } from "../../../export/export-session";
 import type { SaveBytesFn } from "../../../export/save-bytes";
 import type { PaintSession } from "../../../paint/paint-session";
@@ -38,6 +48,35 @@ export interface ExportPanelProps {
 }
 
 const FRAMING_LABELS_KO: Record<CameraFramingMode, string> = { "full-body": "전신", bust: "상반신", face: "얼굴", custom: "현재 카메라" };
+
+function describeExportSourceKo(source: RecipeSource, isPackageRegistered: boolean): string {
+  switch (source.kind) {
+    case "kit":
+      return `모듈식 키트 (${source.kitId} · ${source.baseId === "female" ? "여성 베이스" : "남성 베이스"})`;
+    case "package":
+      return `제작 패키지 (${source.characterId} · ${isPackageRegistered ? "등록됨" : "미로드"})`;
+    case "procedural":
+      return "절차적 휴머노이드";
+    default: {
+      const exhaustive: never = source;
+      return String((exhaustive as { kind?: unknown }).kind);
+    }
+  }
+}
+
+function describeExportPoseKo(recipe: CharacterRecipe): string {
+  const boneCount = Object.keys(recipe.pose).length;
+  const preset = POSE_PRESETS.find((item) => item.id === recipe.slots.pose);
+  const handPresetId = recipe.slots["hand-pose"];
+  const handSuffix = handPresetId ? ` · 손 ${handPresetId.replace("hand-pose/", "")}` : "";
+  if (boneCount === 0) {
+    return `기본 자세(Rest · 프리셋: ${preset?.labelKo ?? "없음"}${handSuffix})`;
+  }
+  if (preset) {
+    return `${preset.labelKo} (본 ${boneCount}개${handSuffix})`;
+  }
+  return `사용자 편집 포즈 (본 ${boneCount}개${handSuffix})`;
+}
 
 /** File → 텍스트(Blob.text가 없는 환경은 FileReader) */
 export function readTextFile(file: File): Promise<string> {
@@ -73,6 +112,9 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const ids = useId();
   const labState = useLabState();
   const dispatch = useDispatch();
+  const { setInspectorTab } = useUiActions();
+  const { store, packagePlans } = useLabContext();
+  const kitPlans = useKitPlans();
   const engineSession = useEngineSession();
   const engineStatus = useEngineStatus();
   const [width, setWidth] = useState(1024);
@@ -86,13 +128,14 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const [busy, setBusy] = useState<ExportKind | "import" | null>(null);
   const [receipt, setReceipt] = useState<ExportReceipt | null>(null);
   const [failure, setFailure] = useState<LabFailure | null>(null);
-  /** 레시피 불러오기 직후 안내(변환·키트 페인트 경고). 다음 작업을 시작하면 지운다. */
+  /** 레시피 불러오기 직후 안내(변환·키트 페인트 경고·미로드 패키지 안내). 다음 작업을 시작하면 지운다. */
   const [notices, setNotices] = useState<readonly string[]>([]);
 
   const engineReady = engineStatus.phase === "ready";
   const hairSupport = engineSession.engine()?.psdHairLayers?.();
   const hairSplitReason = hairSupport?.status === "available" ? null : hairSupport?.reasonKo ?? "현재 엔진은 기하학적 헤어 분리를 지원하지 않습니다. 헤어 분리를 끄고 일반 PSD로 저장할 수 있습니다.";
   const framingValue = { ...DEFAULT_FRAMING, mode: framing };
+  const activeDigest8 = recipeDigest(labState.recipe).slice(0, 8);
 
   const finish = useCallback(
     (outcome: { ok: true; bytes: Uint8Array; receipt: ExportReceipt } | { ok: false; failure: LabFailure }): void => {
@@ -206,6 +249,17 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         setFailure(failVisible("recipe-file-read", `${file.name}: 파일을 읽을 수 없습니다.`, error, now()));
         return;
       }
+      if (text.trim().length === 0) {
+        setFailure(
+          failVisible(
+            "recipe-file-empty",
+            `${file.name}: 파일이 비어 있습니다(0 B). 올바른 레시피(.character.json) 또는 프리셋(.preset) 파일을 선택하세요.`,
+            undefined,
+            now(),
+          ),
+        );
+        return;
+      }
       const isShaperPreset = file.name.toLowerCase().endsWith(".preset");
       const parsed = isShaperPreset
         ? parseShaperPresetTextToRecipe(text, labState.recipe, now())
@@ -215,6 +269,11 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         return;
       }
       const paint = await extractPaintLayers(parsed.recipe, now());
+      const firstFailure = paint.failures[0];
+      if (firstFailure) {
+        setFailure(firstFailure);
+        return;
+      }
       const importNotices: string[] = [];
       if (isShaperPreset) {
         importNotices.push("SHAPER 프리셋 파일을 현재 형식(v3)으로 변환해 열었습니다.");
@@ -223,6 +282,36 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
       if (migrationNotice !== null) importNotices.push(migrationNotice);
       // recipe/load는 스토어가 이전 레이어를 가리키는 페인트 undo 이력을 비운다. 엔진 텍스처는 여기서 새 세션과 맞춘다.
       dispatch({ type: "recipe/load", recipe: parsed.recipe });
+      const nextSource = parsed.recipe.source;
+      if (nextSource.kind === "procedural") {
+        if (!engineSession.engine()) {
+          store.applyEvent({ type: "source/capabilities", capabilities: ALL_AVAILABLE_CAPABILITIES });
+        }
+      } else if (nextSource.kind === "package") {
+        const registered = packagePlans.get(nextSource.characterId);
+        if (!registered) {
+          if (!engineSession.engine()) {
+            store.applyEvent({ type: "source/capabilities", capabilities: ALL_UNAVAILABLE_CAPABILITIES });
+          }
+          importNotices.push(
+            `제작 패키지 '${nextSource.characterId}'가 아직 로드되지 않았습니다. 제작 패키지 탭에서 해당 패키지를 불러오면 스켈레톤·슬롯 능력이 활성화됩니다.`,
+          );
+        } else if (registered.glbSha256 !== nextSource.sha256) {
+          if (!engineSession.engine()) {
+            store.applyEvent({ type: "source/capabilities", capabilities: ALL_UNAVAILABLE_CAPABILITIES });
+          }
+          importNotices.push(
+            `제작 패키지 '${nextSource.characterId}'의 GLB SHA-256이 현재 등록된 패키지와 다릅니다. 제작 패키지 탭에서 다시 불러오세요.`,
+          );
+        } else if (!engineSession.engine()) {
+          store.applyEvent({ type: "source/capabilities", capabilities: registered.capabilities });
+        }
+      } else if (nextSource.kind === "kit" && !engineSession.engine()) {
+        const manifest = kitPlans?.peek(nextSource);
+        if (manifest && manifest.bases[nextSource.baseId]) {
+          store.applyEvent({ type: "source/capabilities", capabilities: deriveKitCapabilities(manifest, nextSource.baseId) });
+        }
+      }
       if (!isShaperPreset || paint.layers.length > 0) {
         const previousLayers = session.layersForExport();
         session.replaceLayers(paint.layers);
@@ -234,8 +323,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         importNotices.push(`이미 칠한 ${PART_ROLE_LABELS_KO[warning.part]} 레이어: ${warning.messageKo}`);
       }
       setNotices(importNotices);
-      const firstFailure = paint.failures[0];
-      setFailure(firstFailure ?? null);
+      setFailure(null);
       setReceipt({ kind: "recipe", fileName: file.name, mime: "application/json", bytes: text.length, durationMs: 0 });
     });
   };
@@ -245,9 +333,41 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
   };
 
+  const isPackageRegistered =
+    labState.recipe.source.kind === "package" &&
+    Boolean(packagePlans.get(labState.recipe.source.characterId));
+
   return (
     <section className="cl-export-panel" aria-labelledby={`${ids}-title`}>
       <h2 id={`${ids}-title`}>내보내기</h2>
+      <div className="cl-export-experiment-summary" role="region" aria-label="현재 실험 상태 및 빠른 이동" data-testid="export-experiment-summary">
+        <div className="cl-export-experiment-meta">
+          <span className="cl-export-experiment-source" data-testid="export-active-source">
+            활성 소스: {describeExportSourceKo(labState.recipe.source, isPackageRegistered)}
+          </span>
+          <span className="cl-export-experiment-pose" data-testid="export-active-pose">
+            실험 포즈: {describeExportPoseKo(labState.recipe)} · 레시피 #{activeDigest8}
+          </span>
+        </div>
+        <div className="cl-export-nav-actions" role="group" aria-label="실험 단계 이동">
+          <button
+            type="button"
+            className="cl-button cl-export-nav-btn"
+            data-testid="export-switch-to-package-tab"
+            onClick={() => setInspectorTab("package")}
+          >
+            패키지 선택 탭으로
+          </button>
+          <button
+            type="button"
+            className="cl-button cl-export-nav-btn"
+            data-testid="export-switch-to-pose-tab"
+            onClick={() => setInspectorTab("pose")}
+          >
+            포즈 실험 탭으로
+          </button>
+        </div>
+      </div>
       {!engineReady ? (
         <p className="cl-export-hint" role="status">
           엔진 상태: {engineStatus.phase} — PNG·PSD·GLB는 엔진이 준비된 뒤 사용할 수 있습니다. 레시피 저장/불러오기는 가능합니다.
@@ -335,6 +455,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           레시피 불러오기
           <input
             id={`${ids}-file`}
+            data-testid="export-recipe-file-input"
             type="file"
             accept={`${RECIPE_FILE_SUFFIX},.json,.preset,application/json,text/plain`}
             disabled={busy !== null}
@@ -372,7 +493,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         </p>
       ) : null}
       {receipt ? (
-        <p className="cl-export-receipt" role="status">
+        <p className="cl-export-receipt" role="status" data-testid="export-receipt">
           저장됨: {describeReceipt(receipt)}
         </p>
       ) : null}
@@ -388,7 +509,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         </div>
       ) : null}
       {failure ? (
-        <p className="cl-export-failure" role="alert">
+        <p className="cl-export-failure" role="alert" data-testid="export-failure-alert">
           실패({failure.code}): {failure.reasonKo}
         </p>
       ) : null}

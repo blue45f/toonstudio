@@ -1,0 +1,211 @@
+{
+  "verifiedAt": "2026-11-07T08:10:27.973Z",
+  "baseUrl": "http://127.0.0.1:4183/",
+  "reuseJourney": {
+    "packageSelectedBadge": "현재 선택됨",
+    "poseSummaryBeforeExport": "선택 상태: 손 흔들기 (편집된 본 7개)",
+    "exportSourceBeforeSave": "활성 소스: 제작 패키지 (avatar-orion-authored · 등록됨)",
+    "exportPoseBeforeSave": "실험 포즈: 손 흔들기 (본 7개 · 손 peace) · 레시피 #f185e44b",
+    "savedReceiptText": "저장됨: character-f185e44b-20261107.character.json (7,041 B · 4 ms)",
+    "savedRecipeBytes": 7041,
+    "savedPresetBytes": 261,
+    "exportSourceAfterReset": "활성 소스: 절차적 휴머노이드",
+    "exportPoseAfterReset": "실험 포즈: 기본 자세(Rest · 프리셋: 손 흔들기 · 손 peace) · 레시피 #89e193a2",
+    "edgeCases": {
+      "emptyFileAlert": "실패(recipe-file-empty): empty-0byte.character.json: 파일이 비어 있습니다(0 B). 올바른 레시피(.character.json) 또는 프리셋(.preset) 파일을 선택하세요.",
+      "receiptDuringEmptyError": 0,
+      "corruptJsonAlert": "실패(recipe-json-syntax): 레시피 파일이 올바른 JSON이 아닙니다.",
+      "corruptPaintAlert": "실패(paint-layer-png): 페인트 레이어(skin)의 PNG를 디코드할 수 없습니다.",
+      "receiptDuringCorruptPaint": 0,
+      "poseDuringCorruptPaint": "실험 포즈: 기본 자세(Rest · 프리셋: 손 흔들기 · 손 peace) · 레시피 #89e193a2",
+      "alertCountAfterRetry": 0,
+      "restoredReceiptText": "저장됨: orion_wave_experiment_reuse_round2_long_segment_reuse_round2_long_segment_reuse_round2_long_segment_reuse_round2_long_segment_restored.character.json (7,041 B · 0 ms)",
+      "exportSourceAfterRestore": "활성 소스: 제작 패키지 (avatar-orion-authored · 등록됨)",
+      "exportPoseAfterRestore": "실험 포즈: 손 흔들기 (본 7개 · 손 peace) · 레시피 #f185e44b",
+      "exportSourceAfterCancel": "활성 소스: 제작 패키지 (avatar-orion-authored · 등록됨)",
+      "restoredReceiptAfterCancel": "저장됨: orion_wave_experiment_reuse_round2_long_segment_reuse_round2_long_segment_reuse_round2_long_segment_reuse_round2_long_segment_restored.character.json (7,041 B · 0 ms)"
+    }
+  },
+  "viewports": [
+    {
+      "viewport": {
+        "id": "mobile-320",
+        "label": "모바일 320px",
+        "width": 320,
+        "height": 640,
+        "zoomPercent": 100
+      },
+      "exportPanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 22,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "export-mobile-320.png"
+      },
+      "posePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 45,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "pose-mobile-320.png"
+      },
+      "packagePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 11,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "package-mobile-320.png"
+      }
+    },
+    {
+      "viewport": {
+        "id": "mobile-390",
+        "label": "모바일 390px",
+        "width": 390,
+        "height": 844,
+        "zoomPercent": 100
+      },
+      "exportPanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 22,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "export-mobile-390.png"
+      },
+      "posePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 45,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "pose-mobile-390.png"
+      },
+      "packagePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 11,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "package-mobile-390.png"
+      }
+    },
+    {
+      "viewport": {
+        "id": "tablet-768",
+        "label": "태블릿 768px",
+        "width": 768,
+        "height": 1024,
+        "zoomPercent": 100
+      },
+      "exportPanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 22,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "export-tablet-768.png"
+      },
+      "posePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 45,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "pose-tablet-768.png"
+      },
+      "packagePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 11,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "package-tablet-768.png"
+      }
+    },
+    {
+      "viewport": {
+        "id": "pc-1440",
+        "label": "PC 1440px",
+        "width": 1440,
+        "height": 900,
+        "zoomPercent": 100
+      },
+      "exportPanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 22,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "export-pc-1440.png"
+      },
+      "posePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 45,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "pose-pc-1440.png"
+      },
+      "packagePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 11,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "package-pc-1440.png"
+      }
+    },
+    {
+      "viewport": {
+        "id": "pc-1440-zoom200",
+        "label": "PC 1440px (200% 확대)",
+        "width": 1440,
+        "height": 900,
+        "zoomPercent": 200
+      },
+      "exportPanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 22,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "export-pc-1440-zoom200.png"
+      },
+      "posePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 45,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "pose-pc-1440-zoom200.png"
+      },
+      "packagePanel": {
+        "horizontalOverflowPx": 0,
+        "docOverflowPx": 0,
+        "panelOverflowPx": 0,
+        "checkedInteractiveCount": 11,
+        "under44Count": 0,
+        "under44": [],
+        "screenshot": "package-pc-1440-zoom200.png"
+      }
+    }
+  ]
+}

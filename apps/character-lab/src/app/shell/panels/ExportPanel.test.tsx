@@ -395,5 +395,258 @@ describe("ExportPanel", () => {
     await waitFor(() => expect(calls).toHaveLength(2));
     expect(calls[1]?.fileName).toBe("character-mock-24x24.psd");
   });
+
+  it("R&D 실험 재사용 여정: 패키지 소스+포즈 실험 레시피 저장 후 초기화 상태에서 다시 불러와 소스·포즈·페인트·능력표를 복원하고 탭 전환을 지원한다", async () => {
+    const { ALL_AVAILABLE_CAPABILITIES, ALL_UNAVAILABLE_CAPABILITIES } = await import("../../../contracts");
+    const { createMockLabStore } = await import("../../../testing/mock-store");
+    const { createPackagePlanRegistry } = await import("../package-plan-registry");
+    const { createUiStateStore } = await import("../ui-state");
+
+    const calls: SaveCall[] = [];
+    const packagePlans = createPackagePlanRegistry();
+    const ui = createUiStateStore({ inspectorTab: "export" });
+    const orionCapabilities = {
+      ...ALL_AVAILABLE_CAPABILITIES,
+      body: { status: "unavailable" as const, reasonKo: "제작 패키지는 단일 리그입니다." },
+      pose: { status: "available" as const },
+    };
+    packagePlans.register({
+      manifest: { characterId: "orion" } as never,
+      glbUrl: "/characters/orion/character.glb",
+      glbBytes: 1024,
+      glbSha256: "a".repeat(64),
+      selectedLod: 0,
+      skeletonMap: {} as never,
+      boneTranslationPolicy: {} as never,
+      springBones: [],
+      materialOverrides: [],
+      capabilities: orionCapabilities,
+      warningsKo: [],
+    } as never);
+
+    const baseRecipe = createDefaultRecipe();
+    const experimentRecipe = {
+      ...baseRecipe,
+      source: {
+        kind: "package" as const,
+        characterId: "orion",
+        sha256: "a".repeat(64),
+      },
+      slots: {
+        ...baseRecipe.slots,
+        pose: "pose/wave" as const,
+        "hand-pose": "hand-pose/peace" as const,
+      },
+      pose: {
+        rightUpperArm: [0, 0, 0.4, 0.9165] as const,
+        rightLowerArm: [0, 0, 0.2, 0.9798] as const,
+      },
+    };
+
+    const paintSession = createPaintSession({ layerSize: 8, brush: { radiusPx: 2, hardness: 1, opacity: 1 } });
+    paintSession.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "skin");
+    paintSession.endStroke();
+
+    let savedRecipeJson = "";
+    const store = createMockLabStore(
+      {
+        recipe: experimentRecipe,
+        capabilities: orionCapabilities,
+      },
+      (cmd) => {
+        if (cmd.type === "recipe/load") {
+          store.setState({ recipe: cmd.recipe });
+        }
+      },
+    );
+
+    render(
+      <MockLabProvider store={store} shell={{ ui, packagePlans }}>
+        <ExportPanel
+          session={paintSession}
+          deps={{
+            save: (fileName, bytes, mime) => {
+              if (fileName.endsWith(".character.json")) {
+                savedRecipeJson = new TextDecoder().decode(bytes);
+              }
+              return fakeSave(calls)(fileName, bytes, mime);
+            },
+            now: () => 1700000000000,
+            readFile: async () => savedRecipeJson,
+          }}
+        />
+      </MockLabProvider>,
+    );
+
+    // 1. 실험 요약 카드에 패키지 소스·포즈·손 프리셋·관절 변형 수가 명확히 표시된다
+    expect(screen.getByTestId("export-active-source").textContent).toContain("제작 패키지 (orion · 등록됨)");
+    expect(screen.getByTestId("export-active-pose").textContent).toContain("손 흔들기 (본 2개 · 손 peace)");
+
+    // 2. 레시피 저장 실행(.character.json)
+    fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(savedRecipeJson).toContain('"characterId": "orion"');
+    expect(savedRecipeJson).toContain('"pose": "pose/wave"');
+
+    // 3. 다른 실험 상태로 초기화(절차 소스 기본 레시피 + 빈 페인트 + 비활성 능력표 가정)
+    act(() => {
+      store.dispatch({ type: "recipe/load", recipe: createDefaultRecipe() });
+      store.applyEvent({ type: "source/capabilities", capabilities: ALL_UNAVAILABLE_CAPABILITIES });
+      paintSession.replaceLayers([]);
+    });
+    expect(screen.getByTestId("export-active-source").textContent).toContain("절차적 휴머노이드");
+    expect(paintSession.layersForExport()).toHaveLength(0);
+    expect(store.getState().capabilities.pose.status).toBe("unavailable");
+
+    // 4. 저장해 둔 .character.json 재가져오기 → 패키지 소스·포즈·페인트 레이어·패키지 능력표까지 완전 복원
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("레시피 불러오기"), {
+        target: { files: [new File([savedRecipeJson], "orion-wave.character.json", { type: "application/json" })] },
+      });
+    });
+    await waitFor(() => expect(screen.getByTestId("export-active-source").textContent).toContain("제작 패키지 (orion · 등록됨)"));
+    expect(screen.getByTestId("export-active-pose").textContent).toContain("손 흔들기 (본 2개 · 손 peace)");
+    expect(paintSession.layersForExport()).toHaveLength(1);
+    expect(store.getState().capabilities.pose.status).toBe("available");
+
+    // 5. 탭 전환 버튼(패키지 선택 탭으로 / 포즈 실험 탭으로) 검증
+    fireEvent.click(screen.getByTestId("export-switch-to-package-tab"));
+    expect(ui.getState().inspectorTab).toBe("package");
+    fireEvent.click(screen.getByTestId("export-switch-to-pose-tab"));
+    expect(ui.getState().inspectorTab).toBe("pose");
+  });
+
+  it("빈 파일(0 B)·손상된 내장 페인트 PNG·선택 취소·실패 후 재시도·긴 파일 이름·미등록 패키지 안내에서 데이터 소실과 거짓 성공을 막는다", async () => {
+    const { ALL_UNAVAILABLE_CAPABILITIES } = await import("../../../contracts");
+    const { createMockLabStore } = await import("../../../testing/mock-store");
+    const { createPackagePlanRegistry } = await import("../package-plan-registry");
+
+    const dispatched: LabCommand[] = [];
+    const paintSession = createPaintSession({ layerSize: 8, brush: { radiusPx: 2, hardness: 1, opacity: 1 } });
+    paintSession.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "skin");
+    paintSession.endStroke();
+    expect(paintSession.layersForExport()).toHaveLength(1);
+
+    const store = createMockLabStore(
+      {
+        capabilities: ALL_UNAVAILABLE_CAPABILITIES,
+      },
+      (cmd) => {
+        dispatched.push(cmd);
+        if (cmd.type === "recipe/load") {
+          store.setState({ recipe: cmd.recipe });
+        }
+      },
+    );
+    const packagePlans = createPackagePlanRegistry();
+
+    let fileContentToRead = "";
+    render(
+      <MockLabProvider
+        store={store}
+        shell={{ packagePlans }}
+      >
+        <ExportPanel
+          session={paintSession}
+          deps={{
+            save: fakeSave([]),
+            now: () => 1,
+            readFile: async () => fileContentToRead,
+          }}
+        />
+      </MockLabProvider>,
+    );
+
+    const input = screen.getByLabelText("레시피 불러오기") as HTMLInputElement;
+
+    // 1. 빈 파일(0 B) 불러오기 → 명확한 recipe-file-empty 오류를 표시하고 기존 레시피·페인트를 유지한다
+    fileContentToRead = "   \n  ";
+    await act(async () => {
+      fireEvent.change(input, {
+        target: { files: [new File([""], "empty.character.json", { type: "application/json" })] },
+      });
+    });
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/recipe-file-empty/u));
+    expect(screen.getByRole("alert").textContent).toMatch(/파일이 비어 있습니다/u);
+    expect(dispatched).toHaveLength(0);
+    expect(paintSession.layersForExport()).toHaveLength(1);
+    expect(screen.queryByTestId("export-receipt")).toBeNull();
+
+    // 2. 손상된 내장 페인트 PNG가 포함된 레시피 → recipe/load 디스패치 금지, 기존 페인트 레이어 보존, 거짓 '저장됨:' 영수증 금지
+    const baseRecipe = createDefaultRecipe();
+    const corruptPaintRecipe = {
+      ...baseRecipe,
+      slots: { ...baseRecipe.slots, pose: "pose/run" as const },
+      paint: {
+        layers: [
+          {
+            part: "skin" as const,
+            width: 8,
+            height: 8,
+            pngBase64: "bm90LWEtdmFsaWQtcG5n",
+          },
+        ],
+      },
+    };
+    fileContentToRead = serializeRecipe(corruptPaintRecipe);
+    await act(async () => {
+      fireEvent.change(input, {
+        target: { files: [new File([fileContentToRead], "corrupt-paint.character.json", { type: "application/json" })] },
+      });
+    });
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/paint-layer-png/u));
+    expect(dispatched).toHaveLength(0);
+    expect(store.getState().recipe.slots.pose).toBe("pose/a-pose");
+    expect(paintSession.layersForExport()).toHaveLength(1);
+    expect(screen.queryByTestId("export-receipt")).toBeNull();
+
+    // 3. 실패 후 유효한 긴 이름 레시피로 재시도 → 오류가 걷히고 영수증·능력표가 정상 갱신된다
+    const longFileName = `experiment_${"very_long_segment_".repeat(6)}restore.character.json`;
+    const validProceduralRecipe = {
+      ...baseRecipe,
+      slots: { ...baseRecipe.slots, pose: "pose/cheer" as const },
+    };
+    fileContentToRead = serializeRecipe(validProceduralRecipe);
+    await act(async () => {
+      fireEvent.change(input, {
+        target: { files: [new File([fileContentToRead], longFileName, { type: "application/json" })] },
+      });
+    });
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+    expect(screen.getByTestId("export-receipt").textContent).toContain(longFileName);
+    expect(store.getState().recipe.slots.pose).toBe("pose/cheer");
+    // 절차 소스로 복구되면서 비활성 상태였던 pose 능력표도 available로 동기화된다
+    expect(store.getState().capabilities.pose.status).toBe("available");
+
+    // 4. 파일 선택 창에서 취소(files: []) → 기존 영수증과 레시피 상태를 그대로 보존한다
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [] } });
+    });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByTestId("export-receipt").textContent).toContain(longFileName);
+    expect(store.getState().recipe.slots.pose).toBe("pose/cheer");
+
+    // 5. 아직 PackagePanel에서 불러오지 않은 제작 패키지 레시피를 가져오면 미등록 안내를 띄우고 거짓 준비 상태를 막는다
+    const unloadedPkgRecipe = {
+      ...baseRecipe,
+      source: {
+        kind: "package" as const,
+        characterId: "unloaded_hero_pkg",
+        sha256: "b".repeat(64),
+      },
+    };
+    fileContentToRead = serializeRecipe(unloadedPkgRecipe);
+    await act(async () => {
+      fireEvent.change(input, {
+        target: { files: [new File([fileContentToRead], "unloaded-pkg.character.json", { type: "application/json" })] },
+      });
+    });
+    await waitFor(() => expect(screen.getByTestId("export-active-source").textContent).toContain("제작 패키지 (unloaded_hero_pkg · 미로드)"));
+    expect(store.getState().capabilities.pose.status).toBe("unavailable");
+    expect(screen.getByRole("list", { name: "레시피 불러오기 안내" }).textContent).toContain(
+      "제작 패키지 'unloaded_hero_pkg'가 아직 로드되지 않았습니다.",
+    );
+  });
 });
+
 

@@ -381,6 +381,8 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
   const kitRequested = useRef<string | null>(null);
   const kitFetchSeq = useRef(0);
   const sourceOpSeq = useRef(0);
+  const lastIndexFailureRef = useRef<LabFailure | null>(null);
+  const lastPackageFailuresRef = useRef<Record<string, LabFailure>>({});
 
   useEffect(() => {
     mounted.current = true;
@@ -436,6 +438,30 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
     [store],
   );
 
+  const dismissFailure = useCallback(
+    (failure: LabFailure | null | undefined): void => {
+      if (!failure) return;
+      store.applyEvent({ type: "failure/dismiss", failure });
+    },
+    [store],
+  );
+
+  const clearLoadingPackages = useCallback((excludeId?: string): void => {
+    if (!mounted.current) return;
+    setPackages((previous) => {
+      let changed = false;
+      const next: Record<string, PackageState> = {};
+      for (const [key, val] of Object.entries(previous)) {
+        if (val.phase === "loading" && key !== excludeId) {
+          changed = true;
+          continue;
+        }
+        next[key] = val;
+      }
+      return changed ? next : previous;
+    });
+  }, []);
+
   const loadIndex = useCallback(async (): Promise<void> => {
     setIndex({ phase: "loading" });
     let result: PackageIndexLoadResult;
@@ -445,12 +471,18 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
       result = { ok: false, failure: isLabFailure(error) ? error : failVisible("package-index-fetch-failed", "index.json을 불러오지 못했습니다.", error, now()) };
     }
     if (!mounted.current) return;
-    if (result.ok) setIndex({ phase: "ready", entries: result.entries });
-    else {
+    if (result.ok) {
+      if (lastIndexFailureRef.current) {
+        dismissFailure(lastIndexFailureRef.current);
+        lastIndexFailureRef.current = null;
+      }
+      setIndex({ phase: "ready", entries: result.entries });
+    } else {
+      lastIndexFailureRef.current = result.failure;
       setIndex({ phase: "failed", failure: result.failure });
       reportFailure(result.failure);
     }
-  }, [loader, now, reportFailure]);
+  }, [dismissFailure, loader, now, reportFailure]);
 
   useEffect(() => {
     if (!autoLoadIndex || indexRequested.current) return;
@@ -468,6 +500,7 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
       sourceOpSeq.current += 1;
       const op = sourceOpSeq.current;
       const id = entry.characterId;
+      clearLoadingPackages(id);
       setPackage(id, { phase: "loading", step: "manifest·slot-mapping·GLB 받는 중" });
       let result: AuthoredPackageLoadResult;
       try {
@@ -475,20 +508,18 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
       } catch (error) {
         result = { ok: false, failure: isLabFailure(error) ? error : failVisible("package-load-failed", `제작 패키지 '${id}' 로드에 실패했습니다.`, error, now()) };
       }
+      if (!mounted.current || sourceOpSeq.current !== op) {
+        return;
+      }
       if (!result.ok) {
+        lastPackageFailuresRef.current[id] = result.failure;
         setPackage(id, { phase: "failed", failure: result.failure });
-        if (mounted.current && sourceOpSeq.current === op) reportFailure(result.failure);
+        reportFailure(result.failure);
         return;
       }
       const parsedVrm = parseVrmFromGlb(result.detail.glbBytes);
       const vrm = parsedVrm.ok ? parsedVrm.info : null;
       const vrmNoteKo = parsedVrm.ok ? (parsedVrm.info ? "" : "GLB에 VRM 확장 없음(humanoid·표정 bind는 manifest.json이 담당)") : `GLB JSON 청크를 읽지 못함: ${parsedVrm.reasonKo}`;
-
-      packagePlans.register(result.plan);
-      if (!mounted.current || sourceOpSeq.current !== op) {
-        setPackage(id, { phase: "ready", result, vrm, vrmNoteKo, applied: "registry" });
-        return;
-      }
 
       setPackage(id, { phase: "loading", step: "플랜 등록·엔진 적용" });
       let capabilities = result.plan.capabilities;
@@ -503,27 +534,33 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
         } catch (error) {
           if (!mounted.current || sourceOpSeq.current !== op) return;
           const failure = isLabFailure(error) ? error : failVisible("package-engine-load-failed", `엔진이 제작 패키지 '${id}' GLB를 올리지 못했습니다.`, error, now());
+          lastPackageFailuresRef.current[id] = failure;
           setPackage(id, { phase: "failed", failure });
           reportFailure(failure);
           return;
         }
       }
       if (!mounted.current || sourceOpSeq.current !== op) {
-        setPackage(id, { phase: "ready", result, vrm, vrmNoteKo, applied: "registry" });
         return;
+      }
+      packagePlans.register(result.plan);
+      if (lastPackageFailuresRef.current[id]) {
+        dismissFailure(lastPackageFailuresRef.current[id]);
+        delete lastPackageFailuresRef.current[id];
       }
       dispatch({ type: "source/set", source: { kind: "package", characterId: result.plan.manifest.characterId, sha256: result.plan.glbSha256 }, capabilities });
       setPackage(id, { phase: "ready", result, vrm, vrmNoteKo, applied });
     },
-    [dispatch, engineSession, loader, now, packagePlans, preferredLod, reportFailure, setPackage],
+    [clearLoadingPackages, dismissFailure, dispatch, engineSession, loader, now, packagePlans, preferredLod, reportFailure, setPackage],
   );
 
   const backToProcedural = useCallback((): void => {
     sourceOpSeq.current += 1;
+    clearLoadingPackages();
     setKitNotice(null);
     setKitFailuresHiddenBefore(now());
     dispatch({ type: "source/set", source: { kind: "procedural" }, capabilities: ALL_AVAILABLE_CAPABILITIES });
-  }, [dispatch, now]);
+  }, [clearLoadingPackages, dispatch, now]);
 
   /**
    * 키트 베이스를 고른다. kit.json이 유효하고 그 베이스가 현재 선택(헤어·의상…)을 모두 제공할 때만 `source/set`을 보낸다.
@@ -533,6 +570,7 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
     async (baseId: KitBaseId): Promise<void> => {
       sourceOpSeq.current += 1;
       const op = sourceOpSeq.current;
+      clearLoadingPackages();
       setKitNotice(null);
       const initialRecipe = store.getState().recipe;
       const current = initialRecipe.source;
@@ -574,7 +612,7 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
         capabilities,
       });
     },
-    [catalog, dispatch, fetchKit, kitPlans, now, reportFailure, store],
+    [catalog, clearLoadingPackages, dispatch, fetchKit, kitPlans, now, reportFailure, store],
   );
 
   /**
@@ -592,6 +630,13 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
   }, [applyLoop, fetchKit, kitPlans, now, store]);
 
   const source = state.recipe.source;
+  const registeredPackagePlan = source.kind === "package" ? packagePlans.get(source.characterId) : undefined;
+  const activePackageState = source.kind === "package" ? packages[source.characterId] : undefined;
+  const showUnloadedPackageNotice =
+    source.kind === "package" &&
+    activePackageState?.phase !== "loading" &&
+    activePackageState?.phase !== "ready" &&
+    (!registeredPackagePlan || registeredPackagePlan.glbSha256 !== source.sha256);
   const availableSlotCount = CHARACTER_SLOT_KINDS.filter((slot) => state.capabilities[slot].status === "available").length;
   const partialSlotCount = CHARACTER_SLOT_KINDS.filter((slot) => state.capabilities[slot].status === "partial").length;
   const unavailableSlotCount = CHARACTER_SLOT_KINDS.filter((slot) => state.capabilities[slot].status === "unavailable").length;
@@ -616,6 +661,13 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
           </button>
         ) : null}
       </p>
+      {showUnloadedPackageNotice && source.kind === "package" ? (
+        <p className="cl-package-kit-notice cl-package-reason" role="note" data-testid="package-unloaded-source-notice">
+          {registeredPackagePlan
+            ? `현재 레시피의 제작 패키지 '${source.characterId}' SHA(${shortSha(source.sha256)})가 등록된 패키지(${shortSha(registeredPackagePlan.glbSha256)})와 다릅니다. 아래 목록에서 다시 불러오기를 실행하세요.`
+            : `현재 레시피의 제작 패키지 '${source.characterId}'가 아직 로드되지 않았습니다. 아래 목록에서 불러오기를 눌러 스켈레톤·슬롯 능력을 활성화하거나 절차 소스로 전환하세요.`}
+        </p>
+      ) : null}
       <div className="cl-package-nav-actions" role="group" aria-label="포즈 및 소스 빠른 이동">
         <button
           type="button"
@@ -624,6 +676,14 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
           onClick={() => setInspectorTab("pose")}
         >
           포즈 탭으로 이동
+        </button>
+        <button
+          type="button"
+          className="cl-package-to-export"
+          data-testid="package-switch-to-export-tab"
+          onClick={() => setInspectorTab("export")}
+        >
+          내보내기 탭으로 이동
         </button>
       </div>
       <details className="cl-package-advanced-diagnostics" data-testid="package-advanced-diagnostics">

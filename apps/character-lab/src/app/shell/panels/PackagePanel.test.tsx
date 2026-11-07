@@ -541,11 +541,12 @@ describe("PackagePanel — 모듈식 키트", () => {
     fireEvent.click(screen.getByRole("button", { name: "Avatar Orion · Authored Toon 불러오기" }));
     expect(screen.getByText(/받는 중/u)).toBeTruthy();
 
-    // 로드 중에 사용자가 '절차 소스로 전환'을 클릭
+    // 로드 중에 사용자가 '절차 소스로 전환'을 클릭하면 로딩 표시가 즉시 해제된다
     fireEvent.click(screen.getByRole("button", { name: "절차 소스로 전환" }));
+    expect(screen.queryByText(/받는 중/u)).toBeNull();
     expect(store.dispatched).toEqual([{ type: "source/set", source: { kind: "procedural" }, capabilities: ALL_AVAILABLE_CAPABILITIES }]);
 
-    // 뒤늦게 avatar-orion-authored 패키지 로드가 완료되어도 source/set이 추가로 발생하지 않아야 한다
+    // 뒤늦게 avatar-orion-authored 패키지 로드가 완료되어도 source/set이나 거짓 '플랜을 등록했습니다' 상태가 표시되지 않아야 한다
     const indexRes = await base.loadIndex();
     if (!indexRes.ok) throw new Error("index fixture failed");
     const orionEntry = indexRes.entries.find((e) => e.characterId === "avatar-orion-authored")!;
@@ -556,6 +557,7 @@ describe("PackagePanel — 모듈식 키트", () => {
     });
     expect(store.dispatched).toHaveLength(1);
     expect(store.dispatched[0]?.type === "source/set" && store.dispatched[0].source.kind).toBe("procedural");
+    expect(screen.queryByText(/플랜을 등록했습니다/u)).toBeNull();
   });
 
   it("'포즈 탭으로 이동' 버튼 클릭 시 인스펙터 탭을 pose로 전환한다", () => {
@@ -567,6 +569,8 @@ describe("PackagePanel — 모듈식 키트", () => {
     );
     fireEvent.click(screen.getByTestId("package-switch-to-pose-tab"));
     expect(ui.getState().inspectorTab).toBe("pose");
+    fireEvent.click(screen.getByTestId("package-switch-to-export-tab"));
+    expect(ui.getState().inspectorTab).toBe("export");
   });
 
   it("리그·슬롯 고급 진단 블록이 기본 접힘(open=false) 상태로 렌더링되고 활성 슬롯·포즈/손 리그 상태를 요약한다", () => {
@@ -613,6 +617,78 @@ describe("PackagePanel — 모듈식 키트", () => {
     const item = badge.closest("li");
     expect(item?.getAttribute("data-selected")).toBe("true");
   });
+
+  it("손상 패키지 로드 실패 후 재시도하면 스토어 실패 기록을 해제하고, 미로드 패키지 소스 안내 및 긴 패키지 이름을 명확히 표시한다", async () => {
+    const base = fsLoader();
+    const indexRes = await base.loadIndex();
+    if (!indexRes.ok) throw new Error("index fixture failed");
+    const orionEntry = indexRes.entries.find((e) => e.characterId === "avatar-orion-authored")!;
+    const longId = `avatar-long-${"segment-".repeat(8)}orion`;
+    const longName = `오리온 실험용 초장문 캐릭터 패키지 (${"긴이름_".repeat(8)}테스트)`;
+
+    let shouldFail = true;
+    const retryLoader: PackagePanelLoader = {
+      loadIndex: async () => ({
+        ok: true,
+        indexUrl: "/packages/characters/index.json",
+        entries: [
+          orionEntry,
+          {
+            ...orionEntry,
+            characterId: longId,
+            displayName: longName,
+          },
+        ],
+      }),
+      loadPackage: async (entry, opts) => {
+        if (entry.characterId === "avatar-orion-authored" && shouldFail) {
+          return {
+            ok: false,
+            failure: failVisible(
+              "package-glb-InvalidMagic",
+              "GLB 매직 바이트가 손상되었습니다(0 B 또는 잘못된 헤더).",
+              undefined,
+              200,
+            ),
+          };
+        }
+        return base.loadPackage(orionEntry, opts);
+      },
+    };
+
+    const pkgRecipe = {
+      ...createKitDefaultRecipe(),
+      source: { kind: "package" as const, characterId: "avatar-orion-authored", sha256: ORION_SHA },
+    };
+    const store = createMockLabStore({ recipe: pkgRecipe });
+
+    render(
+      <MockLabProvider store={store} shell={{ kitPlans: fakeKit().registry }}>
+        <PackagePanel loader={retryLoader} autoLoadKit={false} now={() => 200} />
+      </MockLabProvider>,
+    );
+
+    // 1. 레시피 소스가 패키지인데 아직 packagePlans에 등록되지 않았으므로 미로드 안내(package-unloaded-source-notice)가 표시된다
+    const unloadedNotice = await screen.findByTestId("package-unloaded-source-notice");
+    expect(unloadedNotice.textContent).toMatch(/현재 레시피의 제작 패키지 'avatar-orion-authored'가 아직 로드되지 않았습니다/u);
+
+    // 2. 긴 패키지 이름과 긴 ID도 깨짐 없이 목록에 렌더링된다
+    expect(await screen.findByText(longName)).toBeTruthy();
+    expect(screen.getByText(new RegExp(longId, "u"))).toBeTruthy();
+
+    // 3. 첫 시도: 손상된 GLB 실패 → 스토어 failures에 기록되고 경고창이 표시된다
+    fireEvent.click(screen.getByRole("button", { name: "Avatar Orion · Authored Toon 불러오기" }));
+    await waitFor(() => expect(screen.getByText(/package-glb-InvalidMagic/u)).toBeTruthy());
+    expect(store.getState().failures.some((f) => f.code === "package-glb-InvalidMagic")).toBe(true);
+
+    // 4. 실패 후 재시도: 정상 로드 완료 시 이전 스토어 실패가 해제(failure/dismiss)되고 미로드 안내도 사라진다
+    shouldFail = false;
+    fireEvent.click(screen.getByRole("button", { name: "Avatar Orion · Authored Toon 불러오기" }));
+    await waitFor(() => expect(store.getState().failures.some((f) => f.code === "package-glb-InvalidMagic")).toBe(false));
+    expect(screen.queryByText(/package-glb-InvalidMagic/u)).toBeNull();
+    expect(screen.queryByTestId("package-unloaded-source-notice")).toBeNull();
+  });
 });
+
 
 

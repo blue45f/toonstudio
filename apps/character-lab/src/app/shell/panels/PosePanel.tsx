@@ -435,14 +435,24 @@ export function PosePanel() {
             선택 상태: {selectedPoseSummaryKo}
           </span>
         </div>
-        <button
-          type="button"
-          className="cl-button cl-pose-rig-switch"
-          data-testid="pose-switch-to-package-tab"
-          onClick={() => setInspectorTab("package")}
-        >
-          리그·패키지 선택
-        </button>
+        <div className="cl-pose-rig-actions" role="group" aria-label="실험 단계 빠른 이동">
+          <button
+            type="button"
+            className="cl-button cl-pose-rig-switch"
+            data-testid="pose-switch-to-package-tab"
+            onClick={() => setInspectorTab("package")}
+          >
+            리그·패키지 선택
+          </button>
+          <button
+            type="button"
+            className="cl-button cl-pose-rig-switch"
+            data-testid="pose-switch-to-export-tab"
+            onClick={() => setInspectorTab("export")}
+          >
+            내보내기·보존
+          </button>
+        </div>
       </div>
       {skeletonFailure ? (
         <p className="cl-pose-reason" role="status" data-testid="pose-skeleton-failure">

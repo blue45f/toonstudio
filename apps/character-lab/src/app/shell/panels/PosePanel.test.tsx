@@ -433,6 +433,8 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect(within(summary).getByTestId("pose-active-selection-summary").textContent).toMatch(/선택 상태: 기본 자세\(Rest · 프리셋: A 포즈\)/u);
     fireEvent.click(within(summary).getByTestId("pose-switch-to-package-tab"));
     expect(ui.getState().inspectorTab).toBe("package");
+    fireEvent.click(within(summary).getByTestId("pose-switch-to-export-tab"));
+    expect(ui.getState().inspectorTab).toBe("export");
   });
 
   it("엔진 스켈레톤이 null이거나 본이 0개인 정적 메시이면 빈 상태 안내를 표시하고 포즈·손 조작을 비활성화한다", () => {
