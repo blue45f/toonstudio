@@ -3337,6 +3337,8 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
         );
         const operation = verifierBrushOperation(expectedSelection);
         await selectDesktopBrush(page, preset, expectedSelection);
+        // 재등장하는 시작 안내가 빈 화면·실시간·확정 픽셀 기준에 섞이지 않게 한다.
+        await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
         await page.mouse.move(4, 4);
         // Every preset gets the same clean lane. Packing all brushes into the visible 300 px height
         // made a broad preceding stroke cover a thin successor (notably pen → fineliner), so a
@@ -3829,6 +3831,7 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
             : draws.length === 0,
           `${preset.id}: isolated long-stroke Undo did not reach durable history`,
         );
+        await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
         const undone = await captureStableEvidence(page, clip);
         const undoDiff = await compareScreenshotPixels(page, before, undone, 20);
         const undoRestoredPixels = undoDiff.changedPixels <= 3;
@@ -3859,6 +3862,7 @@ async function runLongBrushMatrix(browser: Browser, studioUrl: string): Promise<
             (draws) => draws.length === 0,
             `${preset.id}: long paint+erase cleanup did not reach durable history`,
           );
+          await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
           const fullyCleaned = await captureStableEvidence(page, clip);
           const fullCleanupDiff = await compareScreenshotPixels(
             page,
