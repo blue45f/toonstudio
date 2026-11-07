@@ -31,14 +31,22 @@ import {
   AboutJourneyPager,
   IntroActions,
   IntroSectionHeading,
-  IntroStepStrip,
   ServiceFlowNext,
-  type IntroStep,
 } from "@/domains/marketing/public/intro-primitives";
 import { StudioWindowMock } from "@/domains/marketing/public/intro-studio-window";
 import { INTRO_PAGE, INTRO_SECTION } from "@/domains/marketing/public/intro-tokens";
 
+import "./about-overview.css";
+
 const SCOPE = "domains.legal.AboutPage";
+
+/** 긴 소개에서도 원하는 내용으로 바로 이동할 수 있는 페이지 내 길잡이. */
+const PAGE_JUMPS = [
+  { target: "about-features-title", ko: "핵심 기능", en: "Core features" },
+  { target: "about-how-title", ko: "제작 흐름", en: "Creative workflow" },
+  { target: "about-audience-title", ko: "내 역할로 시작", en: "Start by role" },
+  { target: "about-explore-title", ko: "영상·더 알아보기", en: "Films and resources" },
+] as const;
 
 /** 첫 화면의 한 줄 가치 세 가지(예전 '왜 ToonStudio' 섹션). 자세한 기준은 제품 원칙 페이지가 소유한다. */
 const VALUE_CHIPS = [
@@ -137,13 +145,8 @@ export function AboutPage() {
 
   useDocumentTitle(bi("ToonStudio 서비스 소개 · 웹툰 제작을 잇는 작업실", "About ToonStudio · A connected webtoon production studio"));
 
-  const howSteps: readonly IntroStep[] = HOW_IT_WORKS.map((step) => {
-    const copy = bi(step.ko, step.en);
-    return { id: step.id, href: step.href, icon: step.icon, title: copy.title, detail: copy.output };
-  });
-
   return (
-    <Container size="wide" className={INTRO_PAGE}>
+    <Container size="wide" className={`about-overview ${INTRO_PAGE}`}>
       <HeroBlock
         eyebrow="ABOUT · TOONSTUDIO"
         title={bi("아이디어부터 완성된 웹툰까지, 하나의 작업실에서.", "From the first idea to a finished webtoon, in one studio.")}
@@ -157,12 +160,12 @@ export function AboutPage() {
         media={(
           <div className="grid gap-3">
             <StudioWindowMock caption={false} />
-            <ul className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden" aria-label={bi("ToonStudio의 약속", "What ToonStudio stands for")}>
+            <ul className="about-overview__values" aria-label={bi("ToonStudio의 약속", "What ToonStudio stands for")}>
               {VALUE_CHIPS.map((chip) => {
                 const Icon = chip.icon;
                 return (
-                  <li key={chip.en} className="inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-line/70 bg-card/60 px-3 text-sm font-semibold text-fg-2">
-                    <Icon size={14} className="text-accent" aria-hidden="true" />{bi(chip.ko, chip.en)}
+                  <li key={chip.en} className="flex min-h-10 min-w-0 items-center gap-2 rounded-xl border border-line/70 bg-card/60 px-3 py-2 text-sm font-semibold leading-5 text-fg-2">
+                    <Icon size={16} className="shrink-0 text-accent" aria-hidden="true" /><span>{bi(chip.ko, chip.en)}</span>
                   </li>
                 );
               })}
@@ -172,6 +175,21 @@ export function AboutPage() {
       />
 
       <AboutSectionNav variant="compact" className="mt-4" />
+
+      <nav className="about-overview__jump-nav" aria-label={bi("이 페이지 바로가기", "On this page")}>
+        <p className="text-sm font-bold text-fg">{bi("궁금한 내용부터 살펴보세요", "Explore what matters to you")}</p>
+        <ol className="about-overview__jumps">
+          {PAGE_JUMPS.map((item, index) => (
+            <li key={item.target}>
+              <a href={`#${item.target}`}>
+                <span className="about-overview__number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                <span>{bi(item.ko, item.en)}</span>
+                <ArrowRight size={15} aria-hidden="true" />
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
 
       <section className="pb-8 pt-8 sm:pb-12 sm:pt-12" aria-labelledby="about-features-title">
         <IntroSectionHeading
@@ -195,7 +213,24 @@ export function AboutPage() {
             </Link>
           )}
         />
-        <IntroStepStrip steps={howSteps} label={bi("작품이 지나는 네 단계", "Four stages of a work")} className="mt-5" />
+        <ol className="about-overview__steps mt-5" aria-label={bi("작품이 지나는 네 단계", "Four stages of a work")}>
+          {HOW_IT_WORKS.map((step, index) => {
+            const Icon = step.icon;
+            const copy = bi(step.ko, step.en);
+            return (
+              <li key={step.id}>
+                <Link href={step.href} className="about-overview__step">
+                  <span className="flex items-center justify-between gap-3 text-accent">
+                    <Icon size={21} aria-hidden="true" />
+                    <span className="about-overview__number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                  </span>
+                  <span className="mt-4 flex items-center justify-between gap-2 font-bold text-fg">{copy.title}<ArrowRight size={15} className="shrink-0 text-accent" aria-hidden="true" /></span>
+                  <span className="mt-1 text-sm leading-6 text-fg-2">{copy.output}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
       </section>
 
       <section className={INTRO_SECTION} aria-labelledby="about-audience-title">
@@ -210,7 +245,7 @@ export function AboutPage() {
             const copy = bi(audience.ko, audience.en);
             return (
               <li key={audience.href} className="min-w-0">
-                <Link href={audience.href} className="group flex h-full min-h-16 items-center gap-3 rounded-2xl border border-line/70 bg-card/65 p-3 transition-colors hover:border-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:p-4">
+                <Link href={audience.href} className="about-overview__audience group flex h-full min-h-16 flex-col items-start gap-3 rounded-2xl border border-line/70 bg-card/65 p-3 transition-colors hover:border-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:p-4">
                   <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><Icon size={19} aria-hidden="true" /></span>
                   <span className="min-w-0">
                     <span className="block break-keep text-sm font-bold text-fg sm:text-base">{copy.title}</span>
@@ -229,16 +264,16 @@ export function AboutPage() {
           eyebrow={eyebrow("WATCH FIRST")}
           title={bi("읽기보다 보고 싶다면, 영상으로.", "Prefer watching? Start with a film.")}
         />
-        <ul className="-mx-4 mt-5 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden" aria-label={bi("소개 영상", "Introduction films")}>
+        <ul className="about-overview__films mt-5" aria-label={bi("소개 영상", "Introduction films")}>
           {EXPLORE_FILMS.map((film) => {
             const copy = bi(film.ko, film.en);
             return (
-              <li key={film.href} className="w-[78%] shrink-0 snap-start sm:w-auto">
-                <Link href={film.href} className="group grid overflow-hidden rounded-2xl border border-line/70 bg-card/65 transition-colors hover:border-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
-                  <span className="relative block aspect-video overflow-hidden bg-panel">
+              <li key={film.href} className="min-w-0">
+                <Link href={film.href} className="about-overview__film group grid overflow-hidden rounded-2xl border border-line/70 bg-card/65 transition-colors hover:border-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
+                  <span className="about-overview__poster relative block overflow-hidden bg-panel">
                     <img src={film.poster} alt="" width={1280} height={720} loading="lazy" decoding="async" className="size-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
                     <span className="absolute inset-0 grid place-items-center bg-gradient-to-t from-canvas/60 via-transparent to-transparent">
-                      <span className="grid size-12 place-items-center rounded-full bg-accent text-on-accent shadow-lg"><Play size={20} fill="currentColor" aria-hidden="true" /></span>
+                      <span className="grid size-10 place-items-center rounded-full bg-accent text-on-accent shadow-lg"><Play size={20} fill="currentColor" aria-hidden="true" /></span>
                     </span>
                     <span className="absolute bottom-2 right-2 rounded-md bg-canvas/80 px-1.5 py-0.5 text-xs font-bold tabular-nums text-fg">{film.time}</span>
                   </span>
@@ -254,18 +289,21 @@ export function AboutPage() {
             );
           })}
         </ul>
-        <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1" aria-label={bi("더 알아보기", "Learn more")}>
-          {MORE_LINKS.map((link) => {
-            const Icon = link.icon;
-            return (
-              <li key={link.href}>
-                <Link href={link.href} className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-fg-2 hover:text-fg">
-                  <Icon size={15} className="text-accent" aria-hidden="true" />{bi(link.ko, link.en)}<ArrowRight size={13} aria-hidden="true" />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <details className="about-overview__resources mt-5">
+          <summary>{bi("더 알아보기 · 기능과 기술 자료", "Explore more · features and technical resources")}</summary>
+          <ul className="about-overview__resource-links" aria-label={bi("더 알아보기", "Learn more")}>
+            {MORE_LINKS.map((link) => {
+              const Icon = link.icon;
+              return (
+                <li key={link.href}>
+                  <Link href={link.href} className="flex min-h-12 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold leading-6 text-fg-2 hover:bg-raised hover:text-fg">
+                    <Icon size={15} className="shrink-0 text-accent" aria-hidden="true" /><span>{bi(link.ko, link.en)}</span><ArrowRight size={13} className="ml-auto shrink-0" aria-hidden="true" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
       </section>
 
       <section className={INTRO_SECTION} aria-labelledby="about-start-title">
