@@ -6,7 +6,6 @@ import { RecommendedCombos } from "../ui/RecommendedCombos";
 export function GalleryView() {
   return (
     <div className="lab-tabpanel">
-      <RecommendedCombos combos={RECOMMENDED_COMBOS} />
       <section className="lab-panel">
         <h2>브러시 가족 갤러리</h2>
         <p className="lab-muted">
@@ -15,6 +14,7 @@ export function GalleryView() {
         </p>
         <FamilyGallery />
       </section>
+      <RecommendedCombos combos={RECOMMENDED_COMBOS} />
     </div>
   );
 }

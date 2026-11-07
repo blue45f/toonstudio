@@ -1,0 +1,259 @@
+{
+  "verifiedAt": "2026-11-07T07:23:15.506Z",
+  "matrixResults": [
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 568,
+      "zoom": 1,
+      "reducedMotion": "no-preference",
+      "tabs": {
+        "draw": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "gallery": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "compare": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "report": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        }
+      }
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "reducedMotion": "no-preference",
+      "tabs": {
+        "draw": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "gallery": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "compare": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "report": {
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        }
+      }
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "reducedMotion": "no-preference",
+      "tabs": {
+        "draw": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "gallery": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "compare": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "report": {
+          "clientWidth": 768,
+          "scrollWidth": 768,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        }
+      }
+    },
+    {
+      "viewport": "pc-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "reducedMotion": "no-preference",
+      "tabs": {
+        "draw": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "gallery": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "compare": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "report": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        }
+      }
+    },
+    {
+      "viewport": "pc-1440-zoom200",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "reducedMotion": "no-preference",
+      "tabs": {
+        "draw": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "gallery": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "compare": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "report": {
+          "clientWidth": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        }
+      }
+    },
+    {
+      "viewport": "reflow-720-equiv200",
+      "width": 720,
+      "height": 900,
+      "zoom": 1,
+      "reducedMotion": "no-preference",
+      "tabs": {
+        "draw": {
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "gallery": {
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "compare": {
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "report": {
+          "clientWidth": 720,
+          "scrollWidth": 720,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        }
+      }
+    },
+    {
+      "viewport": "mobile-320-reduced-motion",
+      "width": 320,
+      "height": 568,
+      "zoom": 1,
+      "reducedMotion": "reduce",
+      "tabs": {
+        "draw": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "gallery": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "compare": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        },
+        "report": {
+          "clientWidth": 320,
+          "scrollWidth": 320,
+          "horizontalOverflowPx": 0,
+          "transitionDuration": "0s"
+        }
+      }
+    }
+  ],
+  "journeyReport": {
+    "viewport": "320x720 (reduced-motion: reduce)",
+    "step1FilteredText": "표시 2/31종",
+    "step1ClearedValue": "",
+    "step1PanelClosed": true,
+    "galleryFirstH2": "브러시 가족 갤러리",
+    "emptyVisible": true,
+    "galleryFilterSummary": "표시 1/31종",
+    "step3PanelReopened": true,
+    "step3FilteredBadge": "목록 필터 밖",
+    "step3BadgeGone": true,
+    "step4StatusAfterPaper": "사용자 조정 1개",
+    "step4SummaryAfterPaper": "연필 6B크기 10px · 불투명도 100% · 흐름 85% · 보정 one-euro · 종이 rough브러시 기본값으로",
+    "step4StatusAfterKey": "사용자 조정 2개",
+    "step5BrushPill": "연필 6B · 브러시 12px · 안정화 one-euro · 1획",
+    "compareParamStatus": "프리셋 기본값",
+    "step6BrushPillAfterReturn": "연필 6B · 브러시 12px · 안정화 one-euro · 1획",
+    "step7ToolbarResetVisible": true,
+    "step7ToolbarResetGone": true,
+    "step7BrushPillPreservedStroke": "연필 6B · 브러시 10px · 안정화 one-euro · 1획",
+    "step7FinalParamStatus": "프리셋 기본값",
+    "pageErrors": []
+  }
+}
