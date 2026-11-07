@@ -233,7 +233,12 @@ export function HelpCenterPage() {
             className="min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-3"
           />
         </label>
-        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={bt("자주 찾는 도움말", "Popular help topics")}>
+        <div
+          className="mt-3 flex flex-wrap gap-2"
+          role="group"
+          aria-label={bt("자주 찾는 도움말", "Popular help topics")}
+          data-own-control-size=""
+        >
           {POPULAR_TERMS.map((term) => {
             const label = bt(...term);
             return (
@@ -242,7 +247,7 @@ export function HelpCenterPage() {
                 type="button"
                 onClick={() => setQuery(label)}
                 aria-pressed={query === label}
-                className="min-h-11 rounded-full border border-line bg-card/70 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-card/70 px-3.5 text-xs font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:border-accent/50 hover:text-accent aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 {label}
               </button>
@@ -273,7 +278,7 @@ export function HelpCenterPage() {
             : `${filtered.length} ${bt("개 주제", "topics")}`}
         </p>
         {filtered.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-2 sm:gap-3 lg:grid-cols-4">
             {filtered.map((topic) => (
               <SiteLinkCard
                 key={topic.id}
@@ -291,21 +296,23 @@ export function HelpCenterPage() {
             {bt("주제에서는 찾지 못했어요. 아래 관련 화면·매뉴얼 문서·강좌와 자주 묻는 질문을 확인해 보세요.", "No topic matched. Check the related screens, manual articles, courses and questions below.")}
           </p>
         ) : (
-          <ActionableEmptyState
-            icon={CircleHelp}
-            art="search"
-            title={bt("일치하는 주제를 찾지 못했습니다.", "No matching help topic found.")}
-            description={bt("다른 표현으로 검색하거나 전체 기능 찾기에서 화면을 골라 보세요.", "Try another phrase or pick a screen from the full directory.")}
-            primary={{ href: "/sitemap", label: bt("전체 기능 찾기", "Find every feature") }}
-          >
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              className="min-h-11 rounded-xl border border-line px-4 text-sm font-semibold text-fg-2 hover:border-accent/50 hover:text-accent"
+          <div data-own-control-size="">
+            <ActionableEmptyState
+              icon={CircleHelp}
+              art="search"
+              title={bt("일치하는 주제를 찾지 못했습니다.", "No matching help topic found.")}
+              description={bt("다른 표현으로 검색하거나 전체 기능 찾기에서 화면을 골라 보세요.", "Try another phrase or pick a screen from the full directory.")}
+              primary={{ href: "/sitemap", label: bt("전체 기능 찾기", "Find every feature") }}
             >
-              {bt("검색어 지우기", "Clear search")}
-            </button>
-          </ActionableEmptyState>
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              >
+                {bt("검색어 지우기", "Clear search")}
+              </button>
+            </ActionableEmptyState>
+          </div>
         )}
 
         {related.length > 0 ? (
@@ -388,12 +395,12 @@ export function HelpCenterPage() {
         <div className="divide-y divide-line border-y border-line">
           {questions.map((entry) => (
             <details key={entry.href} open={faqFiltered || undefined} className="group py-5">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 text-sm font-semibold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
                 {bt(...entry.question)}
-                <span aria-hidden="true" className="text-accent transition-transform group-open:rotate-90">›</span>
+                <span aria-hidden="true" className="text-accent transition-transform motion-reduce:transition-none group-open:rotate-90">›</span>
               </summary>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">{bt(...entry.answer)}</p>
-              <Link href={entry.href} className="mt-2 inline-flex min-h-11 items-center gap-2 text-xs font-bold text-accent">
+              <Link href={entry.href} className="mt-2 inline-flex min-h-11 min-w-11 items-center gap-2 rounded-lg px-1 text-xs font-bold text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
                 {bt(...entry.link)}
                 <ArrowRight size={14} aria-hidden="true" />
               </Link>

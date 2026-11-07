@@ -149,5 +149,32 @@ describe("HelpCenterPage", () => {
     const diagnostics = screen.getByTestId("diagnostics");
     expect(faq.compareDocumentPosition(diagnostics) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it("enforces 44px touch targets on help filter chips, 320px single-column topic grid reflow, and FAQ reduced-motion classes (GAP-R4-05)", () => {
+    renderHelp();
+    const filterGroup = screen.getByRole("group", { name: "자주 찾는 도움말" });
+    const chips = filterGroup.querySelectorAll("button");
+    expect(chips.length).toBeGreaterThanOrEqual(4);
+    for (const chip of chips) {
+      expect(chip.className).toContain("min-h-11");
+      expect(chip.className).toContain("min-w-11");
+      expect(chip.className).toContain("motion-reduce:transition-none");
+    }
+
+    const firstTile = document.querySelector('a[data-site-link-card="tile"]');
+    const topicGrid = firstTile?.parentElement;
+    expect(topicGrid?.className).toContain("grid-cols-1");
+    expect(topicGrid?.className).toContain("min-[380px]:grid-cols-2");
+
+    const faqSummary = screen.getByText("웹툰 작업은 어디서 시작하나요?").closest("summary");
+    expect(faqSummary?.className).toContain("min-h-11");
+    const chevron = faqSummary?.querySelector('span[aria-hidden="true"]');
+    expect(chevron?.className).toContain("motion-reduce:transition-none");
+
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "존재하지않는주제" } });
+    const clearButton = screen.getByRole("button", { name: "검색어 지우기" });
+    expect(clearButton.className).toContain("min-h-11");
+    expect(clearButton.className).toContain("min-w-11");
+  });
 });
 
