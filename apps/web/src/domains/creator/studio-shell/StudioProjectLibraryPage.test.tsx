@@ -684,6 +684,3 @@ describe("StudioProjectLibraryPage", () => {
     expect(container.querySelectorAll('[data-studio-project-card="true"]').length).toBe(24);
   });
 });
-
-
-

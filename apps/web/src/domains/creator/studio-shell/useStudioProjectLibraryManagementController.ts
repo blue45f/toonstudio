@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -11,7 +11,7 @@ import { chooseStudioProjectPackageSaveTarget, studioProjectPackageFileName, wri
 import { readStudioSubmissions } from "../save-first/studio-submission-store";
 import { ensureInitialStudioProjectDocument, readStudioProjectDocuments, studioProjectDocumentStorageKey } from "../studio-project-document-store";
 import { removeStudioExactResumeContext } from "../studio-exact-resume-context";
-import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
+import { createStudioProjectLibraryResumeCache } from "./studio-project-library-resume-cache";
 import { activateStudioProjectsBulk, archiveStudioProjectsBulk, permanentlyDeleteStudioProjectsBulk, restoreStudioProjectsBulk, trashStudioProjectsBulk, type StudioProjectBulkMutationResult } from "../studio-project-library-bulk";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
 import { resolveStudioProjectLibraryManagementView, sortStudioProjectLibraryProjects, studioProjectIsTemporaryWork, studioProjectLibraryLocale, studioProjectLibrarySearchText, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
@@ -412,28 +412,19 @@ export function useStudioProjectLibraryManagementController() {
     `/studio/p/${encodeURIComponent(project.id)}/overview`
   );
 
-  const resumeTargetCache = useMemo(() => {
-    void listedProjects;
-    void locale;
-    return new Map<string, ReturnType<typeof resolveStudioProjectResumeTarget>>();
-  }, [listedProjects, locale]);
-
+  const resumeTargetCache = useMemo(() => createStudioProjectLibraryResumeCache({
+    projects: listedProjects,
+    locale: locale === "ko" ? "ko" : "en",
+    readStorage: () => window.localStorage,
+    host: typeof window === "undefined" ? undefined : window,
+  }), [listedProjects, locale]);
+  const resumeRevision = useSyncExternalStore(
+    resumeTargetCache.subscribe, resumeTargetCache.getSnapshot, resumeTargetCache.getServerSnapshot,
+  );
   const projectResumeTarget = useCallback((project: StudioProjectLibraryEntry) => {
-    if (typeof window === "undefined") {
-      return {
-        href: `/studio/p/${encodeURIComponent(project.id)}/overview`,
-        documentId: project.lastOpenedDocumentId,
-        summary: null,
-        exact: false,
-      };
-    }
-    const cacheKey = `${project.id}:${project.lastOpenedDocumentId ?? ""}:${project.updatedAt}:${project.lastOpenedAt}`;
-    const cached = resumeTargetCache.get(cacheKey);
-    if (cached) return cached;
-    const resolved = resolveStudioProjectResumeTarget(window.localStorage, project, locale === "ko" ? "ko" : "en");
-    resumeTargetCache.set(cacheKey, resolved);
-    return resolved;
-  }, [locale, resumeTargetCache]);
+    void resumeRevision;
+    return resumeTargetCache.resolve(project);
+  }, [resumeRevision, resumeTargetCache]);
   const continueProjectHref = useCallback((project: StudioProjectLibraryEntry): string => (
     projectResumeTarget(project).href
   ), [projectResumeTarget]);

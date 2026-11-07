@@ -1,6 +1,6 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { FolderOpen, HardDrive } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -40,6 +40,20 @@ export function StudioProjectLibraryManagementContent({
   const [visibleTemporaryCount, setVisibleTemporaryCount] = useState(INITIAL_SECTION_PROJECT_COUNT);
   const [visibleSavedCount, setVisibleSavedCount] = useState(INITIAL_SECTION_PROJECT_COUNT);
   const [visibleRecoveryCount, setVisibleRecoveryCount] = useState(INITIAL_SECTION_PROJECT_COUNT * 2);
+
+  const temporaryGridRef = useRef<HTMLDivElement>(null);
+  const savedGridRef = useRef<HTMLDivElement>(null);
+  const recoveryListRef = useRef<HTMLElement>(null);
+  const pendingFocus = useRef<{ list: HTMLElement | null; index: number; trigger: HTMLButtonElement } | null>(null);
+
+  useLayoutEffect(() => {
+    const pending = pendingFocus.current;
+    if (!pending) return;
+    pendingFocus.current = null;
+    // 마지막 확장에서 버튼이 제거돼도, 중간 확장에서 새 카드가 앞에 생겨도 읽던 위치를 잃지 않는다.
+    if (pending.trigger.isConnected && document.activeElement !== pending.trigger) return;
+    pending.list?.querySelectorAll<HTMLButtonElement>('[data-studio-selection-checkbox="true"]')[pending.index]?.focus();
+  }, [visibleTemporaryCount, visibleSavedCount, visibleRecoveryCount]);
 
   useEffect(() => {
     setVisibleTemporaryCount(INITIAL_SECTION_PROJECT_COUNT);
@@ -195,7 +209,7 @@ export function StudioProjectLibraryManagementContent({
                   {bi("복구 가능", "Recoverable")}
                 </span>
               </div>
-              <div data-studio-project-grid="temporary" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div ref={temporaryGridRef} data-studio-project-grid="temporary" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {shownTemporaryProjects.map((project) => renderProjectCard(project, true))}
               </div>
               {temporaryProjects.length > shownTemporaryProjects.length ? (
@@ -203,7 +217,10 @@ export function StudioProjectLibraryManagementContent({
                   <button
                     type="button"
                     data-studio-load-more="temporary"
-                    onClick={() => setVisibleTemporaryCount((count) => count + SECTION_PROJECT_STEP)}
+                    onClick={(event) => {
+                      if (event.detail === 0) pendingFocus.current = { list: temporaryGridRef.current, index: shownTemporaryProjects.length, trigger: event.currentTarget };
+                      setVisibleTemporaryCount((count) => count + SECTION_PROJECT_STEP);
+                    }}
                     className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}
                   >
                     {formatI18nTemplate(
@@ -232,7 +249,7 @@ export function StudioProjectLibraryManagementContent({
                   {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
                 </Link>
               </div>
-              <div data-studio-project-grid="saved" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div ref={savedGridRef} data-studio-project-grid="saved" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {shownSavedProjects.map((project) => renderProjectCard(project, false))}
               </div>
               {savedProjects.length > shownSavedProjects.length ? (
@@ -240,7 +257,10 @@ export function StudioProjectLibraryManagementContent({
                   <button
                     type="button"
                     data-studio-load-more="saved"
-                    onClick={() => setVisibleSavedCount((count) => count + SECTION_PROJECT_STEP)}
+                    onClick={(event) => {
+                      if (event.detail === 0) pendingFocus.current = { list: savedGridRef.current, index: shownSavedProjects.length, trigger: event.currentTarget };
+                      setVisibleSavedCount((count) => count + SECTION_PROJECT_STEP);
+                    }}
                     className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}
                   >
                     {formatI18nTemplate(
@@ -254,14 +274,17 @@ export function StudioProjectLibraryManagementContent({
           ) : null}
         </div>
       ) : (
-        <section className="mt-5 space-y-3" data-studio-recovery-list={view}>
+        <section ref={recoveryListRef} className="mt-5 space-y-3" data-studio-recovery-list={view}>
           {shownRecoveryProjects.map(renderRecoveryRow)}
           {visibleProjects.length > shownRecoveryProjects.length ? (
             <div className="mt-4 flex justify-center">
               <button
                 type="button"
                 data-studio-load-more="recovery"
-                onClick={() => setVisibleRecoveryCount((count) => count + SECTION_PROJECT_STEP)}
+                onClick={(event) => {
+                  if (event.detail === 0) pendingFocus.current = { list: recoveryListRef.current, index: shownRecoveryProjects.length, trigger: event.currentTarget };
+                  setVisibleRecoveryCount((count) => count + SECTION_PROJECT_STEP);
+                }}
                 className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}
               >
                 {formatI18nTemplate(
