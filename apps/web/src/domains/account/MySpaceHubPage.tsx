@@ -327,12 +327,14 @@ export function MySpaceHubPage() {
               <button
                 key={id}
                 type="button"
+                data-testid={`my-space-role-filter-${id}`}
                 aria-pressed={roleFilter === id}
                 onClick={() => setRoleFilter(id)}
                 className={buttonClass({
                   variant: roleFilter === id ? undefined : "outline",
                   size: "sm",
-                  className: "min-h-9 rounded-full px-3 text-xs",
+                  className:
+                    "h-auto min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full whitespace-normal rounded-full px-3.5 py-2 text-center text-xs leading-snug",
                 })}
               >
                 {label}
