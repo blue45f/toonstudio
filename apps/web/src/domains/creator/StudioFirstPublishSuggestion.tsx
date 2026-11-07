@@ -14,8 +14,8 @@
  * - 기억은 렌더 전에 읽으므로, 닫은 뒤 새로고침해도 깜빡이며 다시 뜨지 않는다.
  */
 
-import { CheckCircle2, X } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle2, Info, X } from "lucide-react";
+import { useId, useRef, useState, type KeyboardEvent } from "react";
 
 import {
   translateBilingualValueForActiveLocale,
@@ -54,6 +54,9 @@ export function StudioFirstPublishSuggestion({
   onCheckPublishReady,
 }: StudioFirstPublishSuggestionProps) {
   useBilingualI18nRevision();
+  const [expanded, setExpanded] = useState(false);
+  const detailsId = useId();
+  const disclosureRef = useRef<HTMLButtonElement>(null);
   const [dismissed, setDismissed] = useState<boolean>(() =>
     readFirstPublishSuggestionDismissed(browserFirstPublishSuggestionStorage(), scope),
   );
@@ -79,39 +82,64 @@ export function StudioFirstPublishSuggestion({
     onCheckPublishReady();
   };
 
+  const handleEscape = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "Escape" || !expanded) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setExpanded(false);
+    disclosureRef.current?.focus({ preventScroll: true });
+  };
+
   return (
     <section
       data-studio-first-publish-suggestion="true"
+      data-studio-shortcut-boundary="true"
       aria-label={bi("게시 준비 제안", "Publish readiness suggestion")}
-      className="pointer-events-auto w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-accent/35 bg-panel/95 p-3 shadow-xl backdrop-blur-md"
+      className="pointer-events-auto w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-accent/35 bg-panel/95 p-2 shadow-lg backdrop-blur-md"
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-bold tracking-tight text-fg">
-          {bi("첫 작품, 게시 준비를 확인해 볼까요?", "Check if your first piece is ready to publish?")}
-        </p>
+      <div className="flex items-center gap-1">
         <button
           type="button"
+          onKeyDown={handleEscape}
+          onClick={handleCheckPublishReady}
+          className="flex h-11 min-h-11 min-w-0 flex-1 touch-manipulation items-center justify-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft px-2 text-xs font-semibold text-fg transition-colors hover:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+        >
+          <CheckCircle2 size={15} className="shrink-0" aria-hidden />
+          {bi("게시 준비 확인하기", "Check publish readiness")}
+        </button>
+        <button
+          ref={disclosureRef}
+          type="button"
+          onKeyDown={handleEscape}
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          aria-controls={detailsId}
+          aria-label={expanded
+            ? bi("게시 준비 설명 접기", "Hide publish readiness details")
+            : bi("게시 준비 설명 보기", "Show publish readiness details")}
+          className="grid size-11 shrink-0 touch-manipulation place-items-center rounded-lg text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+        >
+          <Info size={16} aria-hidden />
+        </button>
+        <button
+          type="button"
+          onKeyDown={handleEscape}
           onClick={rememberAndHide}
           aria-label={bi("게시 준비 제안 닫기", "Dismiss the publish readiness suggestion")}
-          className="grid size-8 shrink-0 touch-manipulation place-items-center rounded-lg border border-line text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+          className="grid size-11 shrink-0 touch-manipulation place-items-center rounded-lg border border-line text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
         >
           <X size={14} aria-hidden />
         </button>
       </div>
-      <p className="mt-1 text-[0.7rem] leading-snug text-fg-3">
+      <p className="mt-1 px-1 text-xs leading-snug text-fg-2">
+        {bi("게시는 확인 후 따로 진행해요.", "Publishing is a separate step after the check.")}
+      </p>
+      <p id={detailsId} hidden={!expanded} className="mt-2 border-t border-line px-1 pt-2 text-xs leading-relaxed text-fg-2">
         {bi(
           "게시 전에 빠진 게 없는지 미리 확인하면, 다 그린 뒤에 되돌아오는 일을 줄일 수 있어요. 게시는 확인 뒤에 따로 진행돼요.",
           "A quick check now means fewer surprises after you finish drawing. Publishing itself happens separately, after the check.",
         )}
       </p>
-      <button
-        type="button"
-        onClick={handleCheckPublishReady}
-        className="mt-2.5 flex min-h-11 w-full touch-manipulation items-center justify-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft px-3 text-xs font-semibold text-fg transition-colors hover:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
-      >
-        <CheckCircle2 size={15} aria-hidden />
-        {bi("게시 준비 확인하기", "Check publish readiness")}
-      </button>
     </section>
   );
 }

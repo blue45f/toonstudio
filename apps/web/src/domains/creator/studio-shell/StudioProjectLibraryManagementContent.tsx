@@ -84,10 +84,6 @@ export function StudioProjectLibraryManagementContent({
 
   return (
     <>
-      {/* 예제 프로젝트 시딩 + 완주 여정: 활성 목록·검색 없음일 때만 목록 맨 위에 고정한다. */}
-      {view === "active" && !query ? <StudioExampleProjectBanner /> : null}
-      {/* 연습용 샘플 원고(구조 뜯어보기 + 따라 그리기 사본): 같은 조건에서 예제 아래에 고정한다. */}
-      {view === "active" && !query ? <StudioSampleManuscriptCard /> : null}
       {visibleProjects.length === 0 ? (
         view === "active" && !query ? (
           <StudioWorkspaceLibraryEmptyState />
@@ -193,6 +189,10 @@ export function StudioProjectLibraryManagementContent({
           {visibleProjects.map(renderRecoveryRow)}
         </section>
       )}
+
+      {/* 시딩과 마운트 조건은 유지하고, 예제 안내만 실제 작업 목록 뒤에 둔다. */}
+      {view === "active" && !query ? <StudioExampleProjectBanner /> : null}
+      {view === "active" && !query ? <StudioSampleManuscriptCard /> : null}
 
       <footer className="mt-10 border-t border-line pt-5 text-xs leading-5 text-fg-3">
         {bi("임시 자동저장, 정식 저장, 백업, 내보내기와 게시를 분리해 관리합니다. 휴지통의 완전 삭제만 되돌릴 수 없습니다.", "Temporary autosave, explicit save, backup, export and publishing are managed separately. Only permanent deletion from Trash cannot be undone.")}

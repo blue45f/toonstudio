@@ -1,5 +1,5 @@
 import { BookmarkCheck, ChevronDown, Compass, Gauge, NotebookPen } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ChangeEvent, SyntheticEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -167,6 +167,18 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
   const bt = useBilingual("CreatorHubPage");
   const navigate = useNavigate();
   const { hash } = useLocation();
+  const sourceToolsRef = useRef<HTMLDetailsElement>(null);
+  // Router의 pushState는 네이티브 fragment 공개를 수행하지 않으므로 이 안내 안의 앵커만 연다.
+  useEffect(() => {
+    if (!hash) return;
+    let targetId: string;
+    try { targetId = decodeURIComponent(hash.slice(1)); } catch { return; }
+    const target = document.getElementById(targetId);
+    const tools = sourceToolsRef.current;
+    if (!target || !tools?.contains(target)) return;
+    tools.open = true;
+    target.scrollIntoView?.({ block: "start", behavior: "auto" });
+  }, [hash]);
   const {
     workspace,
     update: updateWorkspace,
@@ -198,8 +210,8 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
   const [providerStatusOpen, setProviderStatusOpen] = useState(false);
   // 예전 공유 링크(#research-coverage)는 접힌 "자세히" 안의 근거 공백 지도를 가리키므로 펼친 채로 연다.
   const [checksOpen, setChecksOpen] = useState(() => hash === "#research-coverage");
-  // 첫 방문(아직 아무것도 안 한 상태) 가이드는 펼쳐 둔 채로 시작하고, 사용자가 접으면 그 선택을 존중한다.
-  const [guideOpen, setGuideOpen] = useState(true);
+  // 첫 방문 안내는 작업 탭을 가리지 않도록 접고, 사용자가 펼친 선택은 유지한다.
+  const [guideOpen, setGuideOpen] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string>("planning");
   const activeStageRec =
     STAGE_RESOURCE_RECOMMENDATIONS.find((item) => item.id === selectedStageId) ??
@@ -275,73 +287,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
     heroAside={<div className="hidden lg:block"><ResearchSceneStudy /></div>}
   >
     <MaterialSentencePanel saved={workspace.saved} saveDisabled={!ready || !writable || saving} onToggleSaved={toggleSavedResource} refineSentence={refineMaterialSentence} />
-    <section className="rounded-2xl border border-line bg-panel p-4 sm:p-5" aria-label={bt("리서치 표면 안내", "Which research surface am I on?")}>
-      <p className="text-sm leading-6 text-fg-2 break-keep">
-        <strong className="text-fg">{bt("여기는 리서치 데스크", "This is the Research Desk")}</strong>
-        {bt(" — 장면에 쓸 자료를 출처와 함께 찾고, 저장하고, 판단 노트로 이어 가는 작업공간이에요. 수록 작품의 장르·소재 분포와 비교는 여기가 아니라 작품 리서치 랩에서 봐요.", " — the workspace for finding sources for a scene, saving them with their provenance, and carrying them into your notes. Genre and motif distribution and title comparison live in the Catalog Research Lab, not here.")}
-      </p>
-      <Link to="/research/catalog" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
-        {bt("작품 메타데이터를 비교하려면 작품 리서치 랩으로 →", "Compare title metadata in the Catalog Research Lab →")}
-      </Link>
-    </section>
-    <section
-      data-research-stage-recommender="true"
-      aria-labelledby="research-stage-recommender-heading"
-      className="rounded-2xl border border-accent/30 bg-panel p-4 sm:p-5"
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-accent">STAGE-GUIDED RESOURCES</p>
-          <h2 id="research-stage-recommender-heading" className="mt-0.5 text-base font-bold text-fg sm:text-lg">
-            {bt("지금 어느 작업 단계이신가요? 공정별 맞춤 리소스 추천", "Which stage are you on? Stage-tailored resource recommendations")}
-          </h2>
-        </div>
-        <div
-          role="group"
-          aria-label={bt("작업 공정 선택", "Select production stage")}
-          className="flex flex-wrap gap-1.5"
-        >
-          {STAGE_RESOURCE_RECOMMENDATIONS.map((stage) => {
-            const active = stage.id === activeStageRec.id;
-            return (
-              <button
-                key={stage.id}
-                type="button"
-                aria-pressed={active}
-                data-stage-selector={stage.id}
-                onClick={() => setSelectedStageId(stage.id)}
-                className={`inline-flex min-h-9 items-center rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  active
-                    ? "border-accent bg-accent-soft text-accent"
-                    : "border-line bg-canvas text-fg-2 hover:border-accent/50 hover:text-fg"
-                }`}
-              >
-                {bt(stage.labelKo, stage.labelEn)}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <p className="mt-2.5 text-xs leading-5 text-fg-2">
-        {bt(activeStageRec.summaryKo, activeStageRec.summaryEn)}
-      </p>
-      <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
-        {activeStageRec.links.map((linkItem) => (
-          <Link
-            key={linkItem.href}
-            to={linkItem.href}
-            className="flex items-center justify-between gap-2 rounded-xl border border-line bg-canvas p-3 text-sm font-semibold text-fg transition-colors hover:border-accent/60 hover:text-accent"
-          >
-            <span>{bt(linkItem.titleKo, linkItem.titleEn)}</span>
-            <span className="shrink-0 rounded-full border border-accent/35 bg-accent-soft/20 px-2 py-0.5 text-[11px] font-bold text-accent">
-              {bt(linkItem.badgeKo, linkItem.badgeEn)}
-            </span>
-          </Link>
-        ))}
-      </div>
-    </section>
-    <ResearchCategoryTiles summary={summary} />
-    <ResearchRecipeRail />
+    <LocalSaveNotice error={error} writable={writable} saving={saving} />
 
     <section id="research-workspace" className="scroll-mt-24 space-y-4" aria-labelledby="research-workspace-title">
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -351,6 +297,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
         </div>
         <p className="text-sm text-fg-2">{bt("자동 평점이 아니라 다음 행동을 고르기 위한 사실 요약입니다.", "A factual summary to pick your next step, not an automatic score.")}</p>
       </header>
+      <SiteSectionTabs tabs={deskTabs} value={activeTab} onChange={selectTab} label={bt("리서치 데스크 작업 영역", "Research desk workspace")} idPrefix={TAB_PREFIX} />
       {briefIsEmpty && <details className="group rounded-2xl border border-accent/40 bg-panel" open={guideOpen} onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setGuideOpen(event.currentTarget.open)}>
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
           {bt("장면으로 시작하기 · 처음이면 이 3단계로", "Start from a scene · first time? Follow these 3 steps")}
@@ -376,7 +323,6 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
           </li>
         </ol>
       </details>}
-      <SiteSectionTabs tabs={deskTabs} value={activeTab} onChange={selectTab} label={bt("리서치 데스크 작업 영역", "Research desk workspace")} idPrefix={TAB_PREFIX} />
 
       <SiteTabPanel idPrefix={TAB_PREFIX} id="overview" active={activeTab === "overview"} mounted={isMounted("overview")} className="space-y-4">
         <ResearchNextActionCard action={nextAction} summary={summary} onAnchor={openAnchor} />
@@ -499,6 +445,80 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
       </SiteTabPanel>
     </section>
 
-    <LocalSaveNotice error={error} writable={writable} saving={saving} />
+    <details className="group rounded-2xl border border-line bg-panel" data-research-tools-disclosure="true" ref={sourceToolsRef}>
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+        {bt("자료 도구·공정별 추천 펼치기", "Browse source tools and stage recommendations")}
+        <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent motion-safe:transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="space-y-6 border-t border-line p-4 sm:p-5">
+        <section className="rounded-2xl border border-line bg-panel p-4 sm:p-5" aria-label={bt("리서치 표면 안내", "Which research surface am I on?")}>
+          <p className="text-sm leading-6 text-fg-2 break-keep">
+            <strong className="text-fg">{bt("여기는 리서치 데스크", "This is the Research Desk")}</strong>
+            {bt(" — 장면에 쓸 자료를 출처와 함께 찾고, 저장하고, 판단 노트로 이어 가는 작업공간이에요. 수록 작품의 장르·소재 분포와 비교는 여기가 아니라 작품 리서치 랩에서 봐요.", " — the workspace for finding sources for a scene, saving them with their provenance, and carrying them into your notes. Genre and motif distribution and title comparison live in the Catalog Research Lab, not here.")}
+          </p>
+          <Link to="/research/catalog" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            {bt("작품 메타데이터를 비교하려면 작품 리서치 랩으로 →", "Compare title metadata in the Catalog Research Lab →")}
+          </Link>
+        </section>
+        <section
+          data-research-stage-recommender="true"
+          aria-labelledby="research-stage-recommender-heading"
+          className="rounded-2xl border border-accent/30 bg-panel p-4 sm:p-5"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-accent">STAGE-GUIDED RESOURCES</p>
+              <h2 id="research-stage-recommender-heading" className="mt-0.5 text-base font-bold text-fg sm:text-lg">
+                {bt("지금 어느 작업 단계이신가요? 공정별 맞춤 리소스 추천", "Which stage are you on? Stage-tailored resource recommendations")}
+              </h2>
+            </div>
+            <div
+              role="group"
+              aria-label={bt("작업 공정 선택", "Select production stage")}
+              className="flex flex-wrap gap-1.5"
+            >
+              {STAGE_RESOURCE_RECOMMENDATIONS.map((stage) => {
+                const active = stage.id === activeStageRec.id;
+                return (
+                  <button
+                    key={stage.id}
+                    type="button"
+                    aria-pressed={active}
+                    data-stage-selector={stage.id}
+                    onClick={() => setSelectedStageId(stage.id)}
+                    className={`inline-flex min-h-11 items-center rounded-xl border px-3 py-1.5 text-xs font-semibold motion-safe:transition-colors ${
+                      active
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-canvas text-fg-2 hover:border-accent/50 hover:text-fg"
+                    }`}
+                  >
+                    {bt(stage.labelKo, stage.labelEn)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="mt-2.5 text-xs leading-5 text-fg-2">
+            {bt(activeStageRec.summaryKo, activeStageRec.summaryEn)}
+          </p>
+          <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
+            {activeStageRec.links.map((linkItem) => (
+              <Link
+                key={linkItem.href}
+                to={linkItem.href}
+                className="flex items-center justify-between gap-2 rounded-xl border border-line bg-canvas p-3 text-sm font-semibold text-fg transition-colors hover:border-accent/60 hover:text-accent"
+              >
+                <span>{bt(linkItem.titleKo, linkItem.titleEn)}</span>
+                <span className="shrink-0 rounded-full border border-accent/35 bg-accent-soft/20 px-2 py-0.5 text-[11px] font-bold text-accent">
+                  {bt(linkItem.badgeKo, linkItem.badgeEn)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+        <ResearchCategoryTiles summary={summary} />
+        <ResearchRecipeRail />
+      </div>
+    </details>
   </ResourceLayout>;
 }

@@ -81,6 +81,7 @@ export function createStudioProjectArchiveIntentController(
 
   return {
     handleExportProject: async () => {
+      if (!input.ensureProjectBackupAvailable()) return;
       try {
         await runExclusive(async (isCurrent) => {
           const orchestration = await load();
@@ -97,6 +98,7 @@ export function createStudioProjectArchiveIntentController(
       }
     },
     handleExportProjectArchive: async () => {
+      if (!input.ensureProjectBackupAvailable()) return;
       try {
         await runExclusive(async (isCurrent) => {
           input.setProjectArchiveBusy(true);

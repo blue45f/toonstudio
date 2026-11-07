@@ -713,3 +713,19 @@ describe("buildStudioMainMenuGroups", () => {
     ).toBeLessThan(vi.mocked(ui.collapseSidePanels).mock.invocationCallOrder[0]);
   });
 });
+
+
+describe("복구 정본 확인에 맞춘 사용자 백업 메뉴", () => {
+  it("복구 미결일 때 JSON과 archive를 같은 읽기 쉬운 사유로 비활성화한다", () => {
+    const reason = "저장된 그림을 이어 연 뒤 백업할 수 있어요. 캔버스 위 복구 안내를 확인해 주세요.";
+    const { groups } = buildMenu({ projectBackupUnavailableReason: reason });
+    for (const id of ["export-json", "export-archive"]) {
+      expect(menuItem(groups, "file", id)).toMatchObject({ disabled: true, unavailableReason: reason });
+    }
+  });
+  it("확인 완료한 새 빈 문서나 복구 완료 문서는 백업을 허용한다", () => {
+    const { groups } = buildMenu({ projectBackupUnavailableReason: null });
+    expect(menuItem(groups, "file", "export-json").disabled).toBe(false);
+    expect(menuItem(groups, "file", "export-archive").disabled).toBe(false);
+  });
+});

@@ -1,6 +1,72 @@
-/* Bound the search grid's min-content width rather than clipping reachable controls.
- * This page-only wrapper leaves Studio and other shared grid consumers unchanged.
- */
+/* 검색 전용 배치다. 공유 SearchExplorer의 상태·필터·카드 렌더링은 바꾸지 않는다. */
+.search-page-workspace { min-width: 0; }
+.search-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1rem;
+  margin-bottom: 1rem;
+}
+.search-page-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .375rem;
+  margin-bottom: 1rem;
+}
+.search-page-mode {
+  display: flex;
+  min-width: 0;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .5rem .375rem;
+  border: 1px solid var(--color-line);
+  border-radius: .75rem;
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.search-page-mode[aria-current="page"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+}
+.search-page-mode:hover { border-color: var(--color-accent); }
+.search-page-mode:focus-visible,
+.search-page-tools-summary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.search-page-tools {
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background: var(--color-panel);
+}
+.search-page-tools-summary {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem 1rem;
+  border-radius: 1rem;
+  color: var(--color-fg-2);
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.search-page-tools-summary::-webkit-details-marker { display: none; }
+.search-page-tools-chevron { flex-shrink: 0; }
+.search-page-tools[open] > .search-page-tools-summary .search-page-tools-chevron { transform: rotate(180deg); }
+
+/* min-content 너비를 제한하되 접근 가능한 컨트롤을 잘라내지 않는다. */
 .search-page-results { min-width: 0; }
 .search-page-results > section {
   min-width: 0;
@@ -8,6 +74,11 @@
 }
 .search-page-results > section > [data-search-results] { min-width: 0; }
 .search-page-results > section > [data-search-results] [role="tablist"] { flex-shrink: 0; }
+@media (min-width: 640px) {
+  .search-page-modes { max-width: 40rem; gap: .5rem; }
+  .search-page-mode { font-size: .875rem; }
+}
 @media (min-width: 1024px) {
   .search-page-results > section { grid-template-columns: 16rem minmax(0, 1fr); }
 }
+/* 새 동작 애니메이션은 추가하지 않는다. PageEntrance의 reduced-motion 계약을 유지한다. */

@@ -1,7 +1,9 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
   loadStudioPsdExportModule,
+  loadStudioWillExportModule,
   loadStudioPsdImportModule,
   loadStudioSvgExportModule,
 } from "./studio-document-export-loaders";
@@ -40,4 +42,22 @@ describe("studio document export loaders", () => {
       psdImportResultMessage: expect.any(Function),
     });
   });
+});
+
+
+it("loads WILL preparation only on demand and coalesces concurrent requests", async () => {
+  const first = loadStudioWillExportModule();
+  expect(loadStudioWillExportModule()).toBe(first);
+  await expect(first).resolves.toMatchObject({ exportStudioPageToWillV1: expect.any(Function) });
+});
+
+
+it("keeps WILL host snapshot and export admission ahead of the optional loader", () => {
+  const source = readFileSync("apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx", "utf8");
+  expect(source).not.toContain('import { exportStudioPageToWillV1 }');
+  const handler = source.slice(source.indexOf("  async function exportCurrentPageToWillV1()"),
+    source.indexOf("  async function exportCurrentPageToPsd()"));
+  expect(handler.indexOf("ensureSharedDocumentAvailableForExport")).toBeLessThan(handler.indexOf("await loadStudioWillExportModule()"));
+  expect(handler.indexOf("const snapshot =")).toBeLessThan(handler.indexOf("await loadStudioWillExportModule()"));
+  expect(handler).toContain("return exportStudioPageToWillV1(snapshot)");
 });

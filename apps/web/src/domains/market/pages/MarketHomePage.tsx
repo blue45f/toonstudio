@@ -12,7 +12,7 @@ import {
   Store,
   Upload,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MarketCategoryTiles } from "../components/MarketCategoryTiles";
 import { MarketHomeSearch } from "../components/MarketHomeSearch";
@@ -114,6 +114,15 @@ export function MarketHomePage() {
   const materials3D = latest.items.filter(
     (item) => item.kind === "3d-asset" || item.kind === "3d-preset",
   );
+  const presetShortLabels: Record<MarketEcosystemPresetId, string> = {
+    all: t("전체", "All"),
+    "brush-2d": t("브러시", "Brushes"),
+    "bg-3d": t("3D 배경", "3D scenes"),
+    "char-pose-3d": t("캐릭터·포즈", "Character poses"),
+    "tone-sfx": t("톤·효과", "Tones & effects"),
+    "free-point": t("추천 소재", "Featured"),
+  };
+  const allPresetRef = useRef<HTMLButtonElement>(null);
   const [activePresetId, setActivePresetId] = useState<MarketEcosystemPresetId>("all");
   const [quickPreviewRecord, setQuickPreviewRecord] =
     useState<CreatorMarketplaceResourceRecord | null>(null);
@@ -134,7 +143,7 @@ export function MarketHomePage() {
       }
       return true;
     });
-    return matched.length > 0 ? matched : latest.items;
+    return matched;
   }, [activePresetId, latest.items]);
 
   const recentMore = useMobileShowMore(presetFilteredItems.length, MOBILE_RECENT_LIMIT);
@@ -202,40 +211,34 @@ export function MarketHomePage() {
           data-testid="market-rea-ecosystem-presets"
           className="mb-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
-                ASSET ECOSYSTEM · 2D BRUSH / 3D STAGE / 3D POSE / TONE
-              </span>
-              <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
-                {t("창작 단계별 소재 프리셋 & 스튜디오 1-Click 장착", "Workflow asset presets & 1-click Studio mount")}
-              </h2>
-            </div>
-            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t("에셋 프리셋 선택", "Select asset preset")}>
+          <div className="space-y-3">
+            <h2 className="text-sm font-bold text-fg sm:text-base">
+              {t("소재 유형", "Material types")}
+            </h2>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" role="group" aria-label={t("에셋 프리셋 선택", "Select asset preset")}>
               {MARKET_ECOSYSTEM_PRESETS.map((preset) => {
                 const selected = preset.id === activePresetId;
                 return (
                   <button
                     key={preset.id}
+                    ref={preset.id === "all" ? allPresetRef : undefined}
                     type="button"
-                    role="tab"
-                    aria-selected={selected}
+                    aria-pressed={selected}
+                    title={preset.label}
                     onClick={() => {
                       runSameDocumentViewTransition(() => {
                         setActivePresetId(preset.id);
                       });
                     }}
                     className={cn(
-                      "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors",
+                      "inline-flex min-h-11 [min-block-size:2.75rem]! items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                       selected
                         ? "border-accent bg-accent text-canvas shadow-sm"
                         : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
                     )}
                   >
-                    <span>{preset.label}</span>
-                    <span className="rounded-full bg-canvas/20 px-1.5 py-0.5 text-[10px] font-extrabold">
-                      {preset.badge}
-                    </span>
+                    <span aria-hidden="true">{presetShortLabels[preset.id]}</span>
+                    <span className="sr-only">{preset.label}</span>
                   </button>
                 );
               })}
@@ -243,7 +246,13 @@ export function MarketHomePage() {
           </div>
           {activePreset ? (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
-              <div className="flex items-center gap-3">
+              <details className="w-full">
+                <summary className="flex min-h-11 [min-block-size:2.75rem]! cursor-pointer items-center gap-2 rounded-lg px-2 font-semibold text-fg focus-visible:outline-2 focus-visible:outline-accent">
+                  <HelpCircle size={16} aria-hidden="true" />
+                  {t("선택한 소재 안내", "About this material type")}
+                  <span aria-hidden="true">⌄</span>
+                </summary>
+                <div className="flex items-center gap-3 px-2 pb-3 pt-2">
                 <img
                   src={
                     activePreset.id === "brush-2d"
@@ -260,19 +269,23 @@ export function MarketHomePage() {
                   decoding="async"
                   className="h-12 w-20 shrink-0 rounded-xl border border-line/70 object-cover"
                 />
-                <p className="max-w-2xl">{activePreset.description}</p>
-              </div>
+                <div className="max-w-2xl">
+                  <p className="mb-1 text-[10px] font-bold text-fg-3">{activePreset.badge}</p>
+                  <p>{activePreset.description}</p>
+                </div>
+                </div>
+              </details>
               <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href={activePreset.studioMountRoute}
-                  className={buttonClass({ variant: "solid", size: "sm", className: "min-h-10 gap-1.5 rounded-full px-4 text-xs font-bold" })}
+                  className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 [min-block-size:2.75rem]! gap-1.5 rounded-full px-4 text-xs font-bold" })}
                 >
                   {activePreset.studioMountLabel}
                   <ArrowRight size={13} aria-hidden="true" />
                 </Link>
                 <Link
                   href="/market/browse"
-                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-10 rounded-full px-3.5 text-xs font-semibold" })}
+                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 [min-block-size:2.75rem]! rounded-full px-3.5 text-xs font-semibold" })}
                 >
                   {t("전체 에셋 카탈로그", "Full asset catalog")}
                 </Link>
@@ -352,6 +365,17 @@ export function MarketHomePage() {
               onClick={recentMore.expand}
               label={t(`최근 공유 ${recentMore.remaining}개 더 보기`, `Show ${recentMore.remaining} more`)}
             />
+            {!latest.loading && hasLatestItems && presetFilteredItems.length === 0 ? (
+              <div role="status" className="mt-6 rounded-2xl border border-dashed border-line bg-panel p-6 text-center">
+                <PackageSearch className="mx-auto size-8 text-fg-3" aria-hidden="true" />
+                <h3 className="mt-3 text-base font-bold text-fg">{t("선택한 유형의 최근 소재가 없어요", "No recent materials match this type")}</h3>
+                <p className="mt-2 text-sm text-fg-2">{t("최근 공개된 소재 안에서 찾은 결과입니다. 전체 카탈로그에서 더 찾아보거나 유형을 바꿔 보세요.", "These results cover recently published materials. Browse the full catalog or choose another type.")}</p>
+                <div className="mt-4 flex flex-wrap justify-center gap-3">
+                  <button type="button" onClick={() => { setActivePresetId("all"); allPresetRef.current?.focus({ preventScroll: true }); }} className={buttonClass({ variant: "solid", size: "md", className: "min-h-11" })}>{t("최근 소재 전체 보기", "Show all recent materials")}</button>
+                  <Link href="/market/browse" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>{t("전체 에셋 카탈로그", "Full asset catalog")}</Link>
+                </div>
+              </div>
+            ) : null}
             {!latest.loading && latest.items.length === 0 ? (
               <div className="mt-6 rounded-2xl border border-dashed border-line bg-panel p-8 text-center sm:p-10">
                 <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-raised text-fg-3">

@@ -1,3 +1,5 @@
+import "./discover-hub-layout.css";
+
 import {
   ArrowRight,
   CalendarDays,
@@ -21,10 +23,7 @@ import { useNavigate } from "react-router-dom";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
-import { SitePageHeader } from "@/domains/legal/public/site-page-header";
-import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
-import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
@@ -109,13 +108,8 @@ const DESTINATIONS: readonly DiscoverDestination[] = [
   { href: "/research", icon: Telescope, title: ["참고자료 찾기", "Find references"], body: ["내 장면에 필요한 레퍼런스·3D 재료·폰트", "References, 3D materials and fonts for your scenes"], highlight: true },
 ];
 
-/**
- * 공개 카탈로그 요약 한 줄 — 작품·플랫폼·장르 수와 기준일, 데이터 출처.
- * 대표 작품 카드가 히어로 오른쪽을 차지하므로 수치는 검색 아래 한 줄로 둔다.
- * 스포트라이트가 없을 때 헤더는 배너형이 되므로, 그 경우(`onArt`) 스크림 위
- * 밝은 글자 톤으로 갈아 신는다.
- */
-function CatalogSnapshotLine({ snapshot, loading, onArt }: { readonly snapshot: DiscoverHomeSnapshot | null; readonly loading: boolean; readonly onArt: boolean }) {
+/** 공개 카탈로그 수치와 기준일은 실제 스냅샷만 사용한다. */
+function CatalogSnapshotLine({ snapshot, loading }: { readonly snapshot: DiscoverHomeSnapshot | null; readonly loading: boolean }) {
   const bt = useBilingual("DiscoverHubPage");
   const dateLabel = snapshot ? snapshotDateLabel(snapshot.generatedAt) : null;
   const stats = snapshot
@@ -131,8 +125,8 @@ function CatalogSnapshotLine({ snapshot, loading, onArt }: { readonly snapshot: 
       aria-label={bt("공개 카탈로그 요약", "Public catalog summary")}
       role="group"
       className={cn(
-        "mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t pt-4 text-xs",
-        onArt ? "border-white/25 text-white/70" : "border-line/70 text-fg-3",
+        "discover-hub-snapshot flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs",
+        "border-line/70 text-fg-3",
       )}
     >
       {stats ? (
@@ -140,7 +134,7 @@ function CatalogSnapshotLine({ snapshot, loading, onArt }: { readonly snapshot: 
           {stats.map((stat) => (
             <div key={stat.label} className="flex items-baseline gap-1">
               <dt className="order-2">{stat.label}</dt>
-              <dd className={cn("numeral order-1 text-sm font-bold", onArt ? "text-white" : "text-fg")}>{stat.value}</dd>
+              <dd className={cn("numeral order-1 text-sm font-bold", "text-fg")}>{stat.value}</dd>
             </div>
           ))}
         </dl>
@@ -151,7 +145,7 @@ function CatalogSnapshotLine({ snapshot, loading, onArt }: { readonly snapshot: 
       )}
       <span className="flex flex-wrap items-center gap-x-1.5">
         {dateLabel ? <span>{`${dateLabel} ${bt("기준 공개 카탈로그", "public catalog snapshot")} ·`}</span> : null}
-        <Link href="/about/data" className={cn("inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline sm:min-h-0", onArt ? "text-white" : "text-accent")}>
+        <Link href="/about/data" className={cn("inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline", "text-accent")}>
           {bt("데이터 출처", "Data sources")}
         </Link>
       </span>
@@ -172,7 +166,7 @@ export function DiscoverHubPage() {
     DISCOVER_HOME_SNAPSHOT_URL,
     bt("추천 작품을 불러오지 못했습니다.", "Couldn't load story picks."),
   );
-  // 대표 작품을 못 고르면 히어로 오른쪽 칸을 비운 채로 두지 않는다 — 칸 자체를 빼서 제목 영역이 넓어지게 한다.
+  // 대표 작품이 없는 상태에는 가짜 표지나 빈 카드를 만들지 않는다.
   const showSpotlight = home.loading || (home.data != null && pickDiscoverSpotlight(home.data) != null);
 
   useDocumentTitle(bt("작품 탐색", "Discover"));
@@ -187,29 +181,16 @@ export function DiscoverHubPage() {
 
   return (
     <PageEntrance variant="rise">
-    <Container size="wide" className="py-7 sm:py-10 lg:py-12">
-      <SiteContextualSubNav pathnameOverride="/discover" className="mb-5" />
-      <SitePageHeader
-        size="hero"
-        icon={Compass}
-        eyebrow="DISCOVER"
-        title={bt("다음 컷의 영감은, 새로운 이야기에서.", "Find the story that sparks your next panel.")}
-        description={bt(
-          "작품 찾기를 시작하는 곳입니다. 작품·작가·태그로 검색하거나 장르로 바로 들어가 보세요. 요일 연재와 평점 높은 작품은 아래에서 바로 볼 수 있고, 조건을 좁혀 찾고 싶으면 '조건으로 탐색'으로 이어집니다.",
-          "This is where finding a story starts. Search by title, creator or tag, or jump in by genre. Weekly serials and top-rated stories are right below — and when you want to narrow by conditions, the filter explorer continues from here.",
-        )}
-        aside={showSpotlight ? <DiscoverSpotlight snapshot={home.data} loading={home.loading} /> : undefined}
-        art={sitePageHeaderArtFor("/discover")}
-        artPlacement={sitePageHeaderArtPlacementFor("/discover")}
-        asideSize="wide"
-        actions={
-          <Link href="/research" className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-accent" })}>
-            {bt("내 웹툰을 위한 참고자료 찾기", "Find references for your webtoon")}
-            <ArrowRight size={14} aria-hidden="true" />
-          </Link>
-        }
-      >
-        <form onSubmit={submit} role="search" className="grid max-w-2xl gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+    <Container size="wide" className="min-w-0 py-5 sm:py-6 lg:py-8">
+      <div className="discover-hub-hero" data-has-spotlight={showSpotlight ? "true" : "false"}>
+        <div className="discover-hub-intro">
+      <header className="discover-hub-header" aria-labelledby="discover-title">
+        <p className="text-xs font-bold tracking-wider text-accent">DISCOVER</p>
+        <h1 id="discover-title" className="discover-hub-title font-bold tracking-tight text-fg">
+          {bt("새로운 이야기를 발견하세요", "Discover your next story")}
+        </h1>
+        <div className="mt-4">
+        <form onSubmit={submit} role="search" className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2">
           <label className="flex min-h-12 min-w-0 items-center gap-3 rounded-2xl border border-line-strong bg-card/90 px-4 focus-within:border-accent/55 focus-within:ring-2 focus-within:ring-accent/25">
             <Search size={18} className="shrink-0 text-accent" aria-hidden="true" />
             <span className="sr-only">{searchLabel}</span>
@@ -250,24 +231,28 @@ export function DiscoverHubPage() {
             </li>
           </ul>
         </nav>
-        <nav aria-label={bt("상황별 빠른 탐색", "Quick discovery presets")} className="mt-2.5">
-          <ul className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
-            {QUICK_DISCOVERY_PRESETS.map((preset) => (
-              <li key={preset.href} className="shrink-0">
-                <Link
-                  href={preset.href}
-                  className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line/80 bg-panel/70 px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                >
-                  {bt(...preset.label)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <CatalogSnapshotLine snapshot={home.data} loading={home.loading} onArt={!showSpotlight} />
-      </SitePageHeader>
+        </div>
+      </header>
+        <CatalogSnapshotLine snapshot={home.data} loading={home.loading} />
+        </div>
+        {showSpotlight ? (
+          <div className="discover-hub-spotlight">
+            <DiscoverSpotlight snapshot={home.data} loading={home.loading} />
+          </div>
+        ) : null}
+      </div>
 
-      <SiteArtSurfaceSpotlight cardId="nb-discover-spotlight" compact className="mt-5" />
+      <section aria-labelledby="discover-shelves-title" className="discover-hub-shelves min-w-0">
+        <h2 id="discover-shelves-title" className="sr-only">{bt("작품 둘러보기", "Browse stories")}</h2>
+        <div className="flex min-w-0 flex-col gap-8">
+          <Suspense fallback={<p role="status">{bt("추천 작품을 불러오는 중", "Loading story picks")}</p>}>
+            <LazyDiscoverShelves snapshot={home.data} loading={home.loading} error={home.error} onRetry={home.reload} />
+          </Suspense>
+          <Suspense fallback={null}>
+            <LazyDiscoverRecentShelf />
+          </Suspense>
+        </div>
+      </section>
 
       <section
         aria-label={bt("연재 트랙 스위처", "Serialization track switcher")}
@@ -291,14 +276,31 @@ export function DiscoverHubPage() {
                   key={track.id}
                   type="button"
                   role="tab"
+                  id={`discover-track-${track.id}`}
+                  aria-controls="discover-track-panel"
+                  tabIndex={selected ? 0 : -1}
                   aria-selected={selected}
+                  onKeyDown={(event) => {
+                    const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+                    if (!keys.includes(event.key)) return;
+                    event.preventDefault();
+                    const index = DISCOVER_SERIALIZATION_TRACKS.findIndex((item) => item.id === track.id);
+                    const count = DISCOVER_SERIALIZATION_TRACKS.length;
+                    const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? count - 1
+                      : (index + (event.key === "ArrowRight" ? 1 : -1) + count) % count;
+                    const next = DISCOVER_SERIALIZATION_TRACKS[nextIndex];
+                    if (next) {
+                      setActiveTrackId(next.id);
+                      document.getElementById(`discover-track-${next.id}`)?.focus();
+                    }
+                  }}
                   onClick={() => {
                     runSameDocumentViewTransition(() => {
                       setActiveTrackId(track.id);
                     });
                   }}
                   className={cn(
-                    "inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition-colors",
+                    "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition-colors",
                     selected
                       ? "border-accent bg-accent text-canvas shadow-sm"
                       : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
@@ -314,8 +316,8 @@ export function DiscoverHubPage() {
           </div>
         </div>
         {activeTrack ? (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
-            <div className="flex items-center gap-3">
+          <div id="discover-track-panel" role="tabpanel" aria-labelledby={`discover-track-${activeTrack.id}`} className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
+            <div className="flex min-w-0 items-center gap-3">
               <img
                 src={
                   activeTrack.id === "originals"
@@ -334,19 +336,19 @@ export function DiscoverHubPage() {
                 decoding="async"
                 className="h-12 w-20 shrink-0 rounded-xl border border-line/70 object-cover"
               />
-              <p className="max-w-2xl">{activeTrack.description}</p>
+              <p className="min-w-0 max-w-2xl break-keep [overflow-wrap:anywhere]">{activeTrack.description}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={activeTrack.primaryRoute}
-                className={buttonClass({ size: "sm", className: "min-h-10 gap-1.5 rounded-full px-4 text-xs font-bold" })}
+                className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4 text-xs font-bold" })}
               >
                 {activeTrack.label} {bt("열기", "Open")}
                 <ArrowRight size={13} aria-hidden="true" />
               </Link>
               <Link
                 href={activeTrack.secondaryRoute}
-                className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-10 rounded-full px-3.5 text-xs font-semibold" })}
+                className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 rounded-full px-3.5 text-xs font-semibold" })}
               >
                 {activeTrack.secondaryLabel}
               </Link>
@@ -355,22 +357,8 @@ export function DiscoverHubPage() {
         ) : null}
       </section>
 
-      <section aria-labelledby="discover-shelves-title" className="mt-10 flex flex-col gap-12 sm:mt-12 sm:gap-14">
-        <h2 id="discover-shelves-title" className="sr-only">{bt("작품 둘러보기", "Browse stories")}</h2>
-        <RevealOnScroll>
-          <Suspense fallback={null}>
-            <LazyDiscoverRecentShelf />
-          </Suspense>
-        </RevealOnScroll>
-        <RevealOnScroll>
-          <Suspense fallback={null}>
-            <LazyDiscoverShelves snapshot={home.data} loading={home.loading} error={home.error} onRetry={home.reload} />
-          </Suspense>
-        </RevealOnScroll>
-      </section>
-
       <Section
-        className="mt-14 sm:mt-16"
+        className="mt-8 sm:mt-10"
         eyebrow="DISCOVERY TOOLS"
         title={bt("원하는 방식으로 찾기", "Choose how you want to find it")}
         desc={bt(
@@ -378,19 +366,53 @@ export function DiscoverHubPage() {
           "Go straight to the tool that fits: search, filters, rankings or the release calendar.",
         )}
       >
-        <StaggerReveal className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-5" itemClassName="h-full">
-          {DESTINATIONS.map((destination) => (
-            <SiteLinkCard
-              key={destination.href}
-              layout="tile"
-              href={destination.href}
-              icon={destination.icon}
-              title={bt(...destination.title)}
-              description={bt(...destination.body)}
-              className={cn("h-full", destination.highlight ? "border-accent/45 bg-accent-soft/50" : undefined)}
-            />
+        <StaggerReveal className="grid grid-cols-1 gap-3 sm:grid-cols-3" itemClassName="h-full">
+          {DESTINATIONS.filter((destination) => ["/explore", "/ranking", "/calendar"].includes(destination.href)).map((destination) => (
+            <Link key={destination.href} href={destination.href}
+              className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-card/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
+              <div className="relative aspect-[16/7] overflow-hidden border-b border-line">
+                <img src={destination.href === "/ranking"
+                  ? "/assets/site-experience/site-art-v1/cards/nb-ranking-constellation-640.webp"
+                  : "/assets/site-experience/site-art-v1/cards/nb-discover-spotlight-640.webp"}
+                  alt="" aria-hidden="true" loading="lazy" decoding="async" className="size-full object-cover" />
+                <span className="absolute bottom-2 left-2 rounded-md bg-canvas/90 px-2 py-1 text-[10px] font-semibold text-fg">
+                  {bt("탐색 안내 이미지", "Discovery guide illustration")}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col gap-2 p-4">
+                <span className="flex items-center justify-between gap-2">
+                  <strong className="break-keep text-base text-fg">{bt(...destination.title)}</strong>
+                  <ArrowRight size={16} className="shrink-0 text-accent" aria-hidden="true" />
+                </span>
+                <span className="break-keep text-sm text-fg-2">{bt(...destination.body)}</span>
+              </div>
+            </Link>
           ))}
         </StaggerReveal>
+        <SiteDisclosure className="mt-4" icon={Compass} title={bt("더 많은 탐색 도구", "More discovery tools")}>
+          <SiteContextualSubNav pathnameOverride="/discover" className="mb-4" />
+        <nav aria-label={bt("상황별 빠른 탐색", "Quick discovery presets")} className="mt-2.5">
+          <ul className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
+            {QUICK_DISCOVERY_PRESETS.map((preset) => (
+              <li key={preset.href} className="shrink-0">
+                <Link
+                  href={preset.href}
+                  className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line/80 bg-panel/70 px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                >
+                  {bt(...preset.label)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {DESTINATIONS.filter((destination) => !["/explore", "/ranking", "/calendar"].includes(destination.href)).map((destination) => (
+              <SiteLinkCard key={destination.href} layout="tile" href={destination.href} icon={destination.icon}
+                title={bt(...destination.title)} description={bt(...destination.body)}
+                className={cn("h-full", destination.highlight ? "border-accent/45 bg-accent-soft/50" : undefined)} />
+            ))}
+          </div>
+        </SiteDisclosure>
         <SiteDisclosure
           className="mt-4"
           id="memory-finder"
@@ -416,6 +438,7 @@ export function DiscoverHubPage() {
           title={bt("처음이라면 30초 안내", "New here? A 30-second guide")}
           summary={bt("기능 이름을 외우지 않아도 지금 상황에 맞는 방법만 고르면 돼요.", "Pick the route that matches your situation — no feature names to memorize.")}
         >
+          <SiteArtSurfaceSpotlight cardId="nb-discover-spotlight" compact className="mb-4" />
           <SiteStepList
             steps={[
               bt("찾는 제목이 있으면 위 검색창에 바로 입력합니다.", "If you know the title, type it into the search field above."),

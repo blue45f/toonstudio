@@ -76,7 +76,11 @@ export function BetaOpenEventGate({ pathname }: { pathname: string }) {
 
     const visits = recordEligibleRouteVisit();
     let armed = visits > 1;
-    const interactionOpen = () => document.querySelector('[aria-modal="true"], dialog[open], nav details[open]') !== null;
+    // 상태·동기화 안내와 사용자가 펼친 음악 패널을 홍보보다 먼저 보여 준다.
+    // 안내가 사라져도 자동으로 끼어들지 않고 다음 사용자 조작에서 노출을 재개한다.
+    const interactionOpen = () => document.querySelector(
+      '[aria-modal="true"], dialog[open], nav details[open], [data-service-degraded-banner], .pwa-pulse, [data-site-ost-expanded="true"]',
+    ) !== null;
     const deferForInteraction = () => {
       if (!interactionOpen()) return;
       setVisible(false);
@@ -99,7 +103,7 @@ export function BetaOpenEventGate({ pathname }: { pathname: string }) {
     window.addEventListener("scroll", onIntent, passive);
     // 이미 표시된 안내도 메뉴가 열리면 숨기고, 닫은 뒤 다음 조작에서만 재개한다.
     const observer = new MutationObserver(deferForInteraction);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["open", "aria-modal"] });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["open", "aria-modal", "data-service-degraded-banner", "data-site-ost-expanded"] });
     return () => {
       observer.disconnect();
       window.clearTimeout(armTimer);

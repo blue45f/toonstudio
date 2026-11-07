@@ -1,0 +1,45 @@
+/* CommunityPage 전용 배치. 전역 내비게이션과 FanCafePanel 스타일은 변경하지 않는다. */
+.community-layout-header { display: grid; gap: 1rem; }
+.community-layout-header h1 { margin: .5rem 0; font-size: clamp(1.5rem, 3vw, 2.25rem); line-height: 1.2; font-weight: 800; text-wrap: balance; }
+.community-layout-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.community-layout-disclosure { margin-top: 1rem; border: 1px solid var(--color-line, currentColor); border-radius: 1rem; padding: 0 1rem; }
+.community-layout-disclosure > summary { min-height: 44px; padding: .75rem 0; cursor: pointer; font-weight: 700; }
+.community-layout-disclosure-body { padding-bottom: 1rem; min-width: 0; }
+.community-layout-art { width: 100%; max-height: 22rem; object-fit: cover; border-radius: 1rem; }
+.community-layout > div[role="group"] button,
+.community-layout > div > div[role="group"] button,
+.community-layout-header a,
+.community-layout-disclosure a,
+.community-layout-disclosure button { min-height: 44px; }
+.community-layout-disclosure [data-testid="community-rea-creator-showcase-bar"] a { display: inline-flex; align-items: center; }
+.community-layout :is(a, button, summary):focus-visible { outline: 3px solid var(--color-accent, Highlight); outline-offset: 3px; }
+@media (min-width: 960px) {
+  .community-layout-header { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .community-layout, .community-layout * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* 전역 #main-content의 768px 이상 40px보다 버튼·링크·접기 대상의 44px 계약을 우선한다.
+   입력 요소는 기존 wrapper/label 터치 영역을 유지하며 체크박스 자체를 확대하지 않는다. */
+#main-content .community-layout button,
+#main-content .community-layout summary,
+#main-content .community-layout a[href],
+#main-content .community-layout [role="button"] {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+}
+
+/* 시안의 네 범주 입구를 작은 탐색 레일로 유지해 실제 피드를 첫 화면 가까이에 둔다. */
+.community-layout-directory { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; margin-top: 1rem; }
+.community-layout-directory-link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .375rem; min-width: 0; padding: .75rem .375rem; border: 1px solid var(--color-line); border-radius: 1rem; background: var(--color-card); color: var(--color-fg); font-size: .75rem; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
+.community-layout-directory-link svg { flex-shrink: 0; color: var(--color-accent); }
+.community-layout-directory-link:hover { border-color: var(--color-accent); background: var(--color-raised); }
+@media (min-width: 768px) {
+  .community-layout-directory-link { flex-direction: row; gap: .75rem; padding: .875rem; font-size: .875rem; }
+}
+@media (max-width: 639px) {
+  .community-layout-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .375rem; }
+  .community-layout-actions a { min-width: 0; justify-content: center; padding-inline: .5rem; font-size: .75rem; }
+  .community-layout-header h1 { font-size: 1.5rem; }
+}

@@ -43,6 +43,7 @@ function fakePage() {
     comic: false, notice: false, beta: false, welcome: false, quickstart: false, viewport: true, stage: true,
   };
   const noticeState = { compact: false };
+  const welcomeState = { collapsed: false };
   const calls: Array<{ surface: Surface | "target"; options: { timeout: number } }> = [];
   const close = vi.fn(async (surface: Surface, options: { timeout: number }) => {
     // 강제 클릭/DOM 변경 없이 실제 닫기 컨트롤만 사용해야 이 fake가 상태를 바꾼다.
@@ -52,7 +53,9 @@ function fakePage() {
     if (surface === "notice") noticeState.compact = true;
     else visible[surface] = false;
   });
-  const isVisible = vi.fn(async (surface: Surface) => visible[surface] && (surface !== "notice" || !noticeState.compact));
+  const isVisible = vi.fn(async (surface: Surface, includeCollapsed = false) => visible[surface]
+    && (surface !== "notice" || !noticeState.compact)
+    && (surface !== "welcome" || includeCollapsed || !welcomeState.collapsed));
   const locators = Object.fromEntries(Object.keys(selectors).map((key) => {
     const surface = key as Surface;
     const locator = {
@@ -70,6 +73,10 @@ function fakePage() {
     };
     return [selectors[surface], locator];
   }));
+  locators['[data-studio-cinematic-canvas-welcome]'] = {
+    ...locators[selectors.welcome],
+    isVisible: () => isVisible("welcome", true),
+  };
   const page = {
     locator: (selector: string) => {
       if (!locators[selector]) throw new Error(`허용하지 않은 locator: ${selector}`);
@@ -82,7 +89,7 @@ function fakePage() {
     calls.push({ surface: "target", options });
   });
   const target = { click: targetClick } as unknown as Locator;
-  return { page, visible, noticeState, calls, close, isVisible, target, targetClick };
+  return { page, visible, noticeState, welcomeState, calls, close, isVisible, target, targetClick };
 }
 
 describe("그리기 검증기 UI readiness", () => {
@@ -425,4 +432,16 @@ describe("그리기 검증기 UI readiness", () => {
     await expect(result).rejects.toBe(failure);
     expect(Date.now()).toBe(started);
   });
+});
+
+
+it("일반 조작은 접힌 시작 안내를 유지하고 픽셀 증거 요청만 정상 닫기로 제거한다", async () => {
+  const f = fakePage();
+  f.visible.welcome = true;
+  f.welcomeState.collapsed = true;
+  await expect(waitForStudioDrawingReady(f.page)).resolves.toEqual({ welcomeDismissed: false });
+  expect(f.close).not.toHaveBeenCalled();
+  const pending = waitForStudioDrawingReady(f.page, { dismissCollapsedWelcome: true });
+  await expect(pending).resolves.toEqual({ welcomeDismissed: true });
+  expect(f.calls.map(({ surface }) => surface)).toEqual(["welcome"]);
 });

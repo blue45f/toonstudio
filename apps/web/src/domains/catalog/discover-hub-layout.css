@@ -1,0 +1,35 @@
+/* 탐색 첫 화면만 소유한다. 다른 페이지의 공통 헤더·작품 카드는 변경하지 않는다. */
+.discover-hub-hero {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+  align-items: start;
+}
+.discover-hub-intro,
+.discover-hub-header,
+.discover-hub-spotlight {
+  min-width: 0;
+}
+.discover-hub-header {
+  margin: 0;
+  padding: 0;
+}
+.discover-hub-title {
+  margin: .5rem 0 0;
+  font-size: clamp(1.5rem, 3.2vw, 2.25rem);
+  line-height: 1.2;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.discover-hub-snapshot {
+  margin-top: .75rem;
+}
+.discover-hub-shelves {
+  margin-top: 1.5rem;
+}
+@media (min-width: 1024px) {
+  .discover-hub-hero[data-has-spotlight="true"] {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    gap: 2rem;
+  }
+}

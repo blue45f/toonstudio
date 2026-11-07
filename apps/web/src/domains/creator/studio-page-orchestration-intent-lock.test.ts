@@ -162,3 +162,19 @@ describe("StudioPage intent-loaded operation locks", () => {
     expect(state.current).toEqual({ busy: false, epoch: 2 });
   });
 });
+
+
+describe("프로젝트 백업의 의도 진입점", () => {
+  it.each(["handleExportProject", "handleExportProjectArchive"] as const)("%s는 복구 미결일 때 도구를 불러오기 전에 거부한다", async (action) => {
+    const ensureProjectBackupAvailable = vi.fn(() => false);
+    const loadRuntime = vi.fn();
+    const state = { current: { busy: false, epoch: 0 } };
+    const controller = createStudioProjectArchiveIntentController({
+      ensureProjectBackupAvailable,
+    } as unknown as Parameters<typeof createStudioProjectArchiveIntentController>[0], state, loadRuntime);
+    await controller[action]();
+    expect(ensureProjectBackupAvailable).toHaveBeenCalledOnce();
+    expect(loadRuntime).not.toHaveBeenCalled();
+    expect(state.current).toEqual({ busy: false, epoch: 0 });
+  });
+});

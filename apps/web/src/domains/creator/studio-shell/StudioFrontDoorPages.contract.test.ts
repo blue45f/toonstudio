@@ -24,9 +24,15 @@ describe("Studio front door UX contract", () => {
     // R-3: 개인화 패널은 설정의 "내 직군 · 작업환경" 진입점으로 이관됐고, 라이브러리에는
     // 딥링크를 지키는 요약+이동 링크가 남는다. 패널 조합(역할·시작)은 그대로 유지된다.
     expect(projectHome).toContain('id="role-personalization"');
-    expect(projectHome).toContain(
-      '{controller.view === "active" ? <StudioLibraryPersonalizeDetails /> : null}',
+    // 시작 안내와 개인화는 활성 목록에서만 함께 노출하며, 안내는 기본 접힘을 유지한다.
+    expect(projectHome).toMatch(
+      /\{controller\.view === "active" \? \([\s\S]*?<details[^>]*>[\s\S]*?<StudioCreatorLobby controller=\{controller\} \/>[\s\S]*?<\/details>[\s\S]*?<StudioLibraryPersonalizeDetails \/>[\s\S]*?\) : null\}/,
     );
+    const activeGuideTag = projectHome.match(
+      /\{controller\.view === "active" \? \([\s\S]*?(<details[^>]*>)/,
+    )?.[1];
+    expect(activeGuideTag).toBeDefined();
+    expect(activeGuideTag).not.toMatch(/\sopen(?:[\s=>])/);
     expect(projectHome).toContain('href="/settings/role?tab=workspace"');
     expect(personalizePanels).toContain(
       'import { StudioProjectStartPanel } from "./StudioProjectStartPanel"',

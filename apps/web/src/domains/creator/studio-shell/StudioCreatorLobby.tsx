@@ -279,7 +279,7 @@ function StudioLobbyHero() {
           <Sparkles size={13} aria-hidden="true" />
           TOONSTUDIO CREATOR LOBBY
         </p>
-        <h1 id="studio-lobby-title">{bi("오늘은 어떤 이야기를 만들까요?", "What story will you create today?")}</h1>
+        <h2 id="studio-lobby-title">{bi("오늘은 어떤 이야기를 만들까요?", "What story will you create today?")}</h2>
         <StudioPageIntro motif="pen" className="studio-lobby-hero__intro" />
         <p className="studio-lobby-hero__lead">
           {bi(
@@ -711,7 +711,7 @@ function StudioLobbyWorkflowGuide() {
 }
 
 /**
- * 작품 홈 첫 화면: 무엇을 만들지 → 이어서 할 작업 → 도움 받기 순서로 읽힌다.
+ * 내 작업 아래에서 펼쳐 보는 시작 가이드와 추천 도구.
  * 작품이 있으면 히어로를 줄여(`data-density="compact"`) 최근 프로젝트가 첫 화면 안에 들어오게 한다.
  */
 export function StudioCreatorLobby({

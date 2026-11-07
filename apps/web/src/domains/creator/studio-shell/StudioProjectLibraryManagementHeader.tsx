@@ -6,6 +6,7 @@ import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
+import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 import { STUDIO_LIBRARY_SECTION_ID } from "./studio-creator-lobby-model";
 import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryManagementViewHref, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
@@ -33,42 +34,31 @@ export function StudioProjectLibraryManagementHeader({
       aria-label={bi("프로젝트 라이브러리 도구", "Project library tools")}
       className="scroll-mt-4 focus:outline-none"
     >
-      <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <header className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-accent">{translateCurrentStaticSourceText("domains.creator.studio.shell.StudioProjectLibraryManagementHeader", "en", "TOONSTUDIO")}</p>
-          {view === "active" ? (
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-fg sm:text-4xl">
-              {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
-            </h2>
-          ) : (
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-fg sm:text-4xl">
-              {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
-            </h1>
-          )}
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2 sm:text-base">
+          <p className="hidden text-[0.68rem] font-black uppercase sm:block tracking-[0.18em] text-accent">{translateCurrentStaticSourceText("domains.creator.studio.shell.StudioProjectLibraryManagementHeader", "en", "TOONSTUDIO")}</p>
+          <h1 className="text-2xl font-black tracking-tight text-fg sm:mt-2 sm:text-4xl">
+            {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
+          </h1>
+          <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-fg-2 sm:block sm:text-base">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
           </p>
+          <p className="mt-1 text-xs text-fg-2 sm:hidden">
+            {bi("작업을 이어 하고 저장 상태를 확인하세요.", "Continue your work and check its save status.")}
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/production" className={buttonClass({ variant: "quiet" })}>
-            {bi("제작 관리", "Production management")}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"} className={buttonClass({ className: "min-h-11 min-w-0 gap-2 whitespace-normal px-3" })}>
+            <Plus size={16} aria-hidden="true" />
+            {bi("새 작업", "New work")}
           </Link>
-          {/* 활성 뷰에서는 바로 위 로비가 같은 시작 동선(새 작품·가져오기)을 제공하므로 여기서는 중복 버튼을 두지 않는다. */}
-          {view !== "active" ? (
-            <>
-              <Link href="/studio/import" className={buttonClass({ variant: "outline" })}>
-                {bi("파일 가져오기", "Import files")}
-              </Link>
-              <Link href="/studio/new" className={buttonClass({ className: "gap-2" })}>
-                <Plus size={16} aria-hidden="true" />
-                {bi("새 작업", "New work")}
-              </Link>
-            </>
-          ) : null}
+          <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-11 min-w-0 whitespace-normal px-3" })}>
+            {bi("파일 가져오기", "Import files")}
+          </Link>
         </div>
       </header>
 
-      <div className="mt-7 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mt-3 sm:mt-7">
         <nav className="overflow-x-auto" aria-label={bi("내 작업 보기", "My work views")}>
           <div className="flex min-w-max gap-1 rounded-2xl border border-line bg-card p-1">
             {(["active", "archived", "trash"] as const).map((candidate) => (
@@ -91,20 +81,7 @@ export function StudioProjectLibraryManagementHeader({
             ))}
           </div>
         </nav>
-        <nav className="flex flex-wrap items-center gap-1" aria-label={bi("저장과 배포", "Storage and distribution")}>
-          <Link href="/studio/import" className="inline-flex min-h-10 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
-          </Link>
-          <Link href="/studio?view=storage" className="inline-flex min-h-10 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("저장·백업", "Save & backup")}
-          </Link>
-          <Link href="/studio?view=exports" className="inline-flex min-h-10 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("내보내기", "Export")}
-          </Link>
-          <Link href="/studio?view=publications" className="inline-flex min-h-10 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("게시", "Publishing")}
-          </Link>
-        </nav>
+
       </div>
 
       {notice ? (
@@ -112,16 +89,16 @@ export function StudioProjectLibraryManagementHeader({
           <span>{notice.message}</span>
           <span className="flex items-center gap-3">
             {notice.action ? (
-              <button type="button" onClick={notice.action} className="text-xs font-black text-accent underline underline-offset-4">
+              <button type="button" onClick={notice.action} className="inline-flex min-h-11 items-center text-xs font-black text-accent underline underline-offset-4">
                 {notice.actionLabel}
               </button>
             ) : null}
             {notice.actionHref && notice.actionLabel ? (
-              <Link href={notice.actionHref} className="text-xs font-black text-accent underline underline-offset-4">
+              <Link href={notice.actionHref} className="inline-flex min-h-11 items-center text-xs font-black text-accent underline underline-offset-4">
                 {notice.actionLabel}
               </Link>
             ) : null}
-            <button type="button" onClick={() => setNotice(null)} className="text-xs underline underline-offset-4">
+            <button type="button" onClick={() => setNotice(null)} className="min-h-11 text-xs underline underline-offset-4">
               {bi("닫기", "Dismiss")}
             </button>
           </span>
@@ -159,7 +136,7 @@ export function StudioProjectLibraryManagementHeader({
         </div>
       ) : null}
 
-      <section className="mt-7 rounded-2xl border border-line bg-card p-3 sm:p-4" aria-label={bi("프로젝트 찾기와 선택", "Find and select projects")}>
+      <section className="mt-3 rounded-2xl border border-line bg-card p-3 sm:p-4" aria-label={bi("프로젝트 찾기와 선택", "Find and select projects")}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 flex-1 items-center gap-2 lg:max-w-xl">
             <label className="relative block min-w-0 flex-1">
@@ -209,6 +186,34 @@ export function StudioProjectLibraryManagementHeader({
         </div>
       </section>
 
+      <details className="mt-2 rounded-xl border border-line bg-card">
+        <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-xs font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+          {bi("저장·내보내기·제작 관리", "Save, export and production")}
+        </summary>
+        <div className="px-3 pb-3">
+          <p className="mb-2 text-xs leading-5 text-fg-2 sm:hidden">
+            {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
+          </p>
+        <nav className="flex flex-wrap items-center gap-1" aria-label={bi("저장과 배포", "Storage and distribution")}>
+          <Link href="/studio/import" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+            {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
+          </Link>
+          <Link href="/studio?view=storage" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+            {bi("저장·백업", "Save & backup")}
+          </Link>
+          <Link href="/studio?view=exports" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+            {bi("내보내기", "Export")}
+          </Link>
+          <Link href="/studio?view=publications" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+            {bi("게시", "Publishing")}
+          </Link>
+        </nav>
+          <Link href="/production" className={buttonClass({ variant: "quiet", className: "min-h-11 whitespace-normal" })}>
+            {bi("제작 관리", "Production management")}
+          </Link>
+        </div>
+      </details>
+
       {selectedProjects.length > 0 ? (
         <section className="sticky top-3 z-30 mt-3 rounded-2xl border border-accent/35 bg-card/95 p-3 shadow-lg backdrop-blur" aria-label={bi("선택 작업", "Selection actions")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -223,33 +228,33 @@ export function StudioProjectLibraryManagementHeader({
             <div className="flex flex-wrap gap-2">
               {view === "active" ? (
                 <>
-                  <button type="button" onClick={() => archiveProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}>
+                  <button type="button" onClick={() => archiveProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
                     <Archive size={14} aria-hidden="true" />{bi("선택 보관", "Archive selected")}
                   </button>
-                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "gap-1.5 text-danger" })}>
+                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 삭제", "Trash selected")}
                   </button>
                 </>
               ) : view === "archived" ? (
                 <>
-                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}>
+                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
                     <RotateCcw size={14} aria-hidden="true" />{bi("선택 복원", "Restore selected")}
                   </button>
-                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "gap-1.5 text-danger" })}>
+                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 삭제", "Trash selected")}
                   </button>
                 </>
               ) : (
                 <>
-                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}>
+                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
                     <RotateCcw size={14} aria-hidden="true" />{bi("선택 복원", "Restore selected")}
                   </button>
-                  <button type="button" onClick={() => setDeleteRequest({ ids: selectedProjects.map((project) => project.id), source: "selected" })} className={buttonClass({ variant: "quiet", size: "sm", className: "gap-1.5 text-danger" })}>
+                  <button type="button" onClick={() => setDeleteRequest({ ids: selectedProjects.map((project) => project.id), source: "selected" })} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 완전 삭제", "Delete selected")}
                   </button>
                 </>
               )}
-              <button type="button" onClick={() => setSelectedIds(new Set())} className={buttonClass({ variant: "quiet", size: "sm" })}>
+              <button type="button" onClick={() => setSelectedIds(new Set())} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11" })}>
                 {bi("선택 해제", "Clear")}
               </button>
             </div>
@@ -262,7 +267,7 @@ export function StudioProjectLibraryManagementHeader({
           <button
             type="button"
             onClick={() => restoreProjects(listedProjects.map((project) => project.id))}
-            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
           >
             <RotateCcw size={14} aria-hidden="true" />
             {view === "trash"
@@ -273,7 +278,7 @@ export function StudioProjectLibraryManagementHeader({
             <button
               type="button"
               onClick={() => setDeleteRequest({ ids: listedProjects.map((project) => project.id), source: "all" })}
-              className={buttonClass({ variant: "quiet", size: "sm", className: "gap-1.5 text-danger" })}
+              className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}
             >
               <Trash2 size={14} aria-hidden="true" />
               {bi("휴지통 비우기", "Empty Trash")}

@@ -10,7 +10,7 @@
  * STUDIO_WORK_MODE_META.i18nKey로 이미 고정돼 있어 사전 등록 시 교체하면 된다.
  * 호스트 장착 지점은 HOST_INSERTION_SPEC.md.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import {
   STUDIO_WORK_MODES,
@@ -35,7 +35,9 @@ export function StudioWorkModeBar({
   onDismissSuggestion,
   lang = "ko",
 }: StudioWorkModeBarProps) {
-  const [coachingOpen, setCoachingOpen] = useState(true);
+  // 기본 화면은 캔버스를 먼저 보여 주고, 단계 설명은 사용자가 원할 때 연다.
+  const [coachingOpen, setCoachingOpen] = useState(false);
+  const coachingId = useId();
   const meta = STUDIO_WORK_MODE_META[mode];
   const next = nextStudioWorkMode(mode);
   const showSuggestion = suggestedMode != null && suggestedMode !== mode;
@@ -59,8 +61,8 @@ export function StudioWorkModeBar({
                 onClick={() => onModeChange(candidate)}
                 className={
                   selected
-                    ? "min-h-9 rounded-full bg-accent px-3 text-sm font-bold text-white"
-                    : "min-h-9 rounded-full border border-line bg-panel px-3 text-sm text-fg-2 transition-colors hover:bg-raised"
+                    ? "min-h-11 rounded-full bg-accent px-3 text-sm font-bold text-on-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    : "min-h-11 rounded-full border border-line bg-panel px-3 text-sm text-fg-2 transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 }
               >
                 {candidateMeta.stepBadge ? (
@@ -77,9 +79,10 @@ export function StudioWorkModeBar({
           <button
             type="button"
             aria-expanded={coachingOpen}
+            aria-controls={coachingOpen ? coachingId : undefined}
             data-work-mode-coaching-toggle="true"
             onClick={() => setCoachingOpen((prev) => !prev)}
-            className="min-h-8 rounded-full border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+            className="min-h-11 rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {lang === "ko"
               ? coachingOpen
@@ -93,7 +96,7 @@ export function StudioWorkModeBar({
             <button
               type="button"
               onClick={() => onModeChange(next)}
-              className="min-h-9 rounded-full border border-accent/50 px-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/10"
+              className="min-h-11 rounded-full border border-accent/50 px-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {lang === "ko"
                 ? `다음 단계: ${STUDIO_WORK_MODE_META[next].labelKo}`
@@ -102,14 +105,17 @@ export function StudioWorkModeBar({
           )}
         </div>
       </div>
-      <p className="mt-1.5 text-xs text-fg-3">
-        {lang === "ko" ? meta.descriptionKo : meta.descriptionEn}
-      </p>
       {coachingOpen && (
         <div
+          id={coachingId}
+          role="region"
+          aria-label={lang === "ko" ? "작업 단계 안내" : "Work stage guide"}
           data-work-mode-coaching="true"
           className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line/80 bg-card/80 px-3 py-2 text-xs"
         >
+          <p className="w-full text-sm leading-6 text-fg-2">
+            {lang === "ko" ? meta.descriptionKo : meta.descriptionEn}
+          </p>
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="rounded-md bg-accent/10 px-2 py-0.5 font-bold text-accent">
               {lang === "ko" ? "단계별 핵심 단축키 & 입문자 팁" : "Stage shortcuts & beginner tip"}
@@ -139,7 +145,7 @@ export function StudioWorkModeBar({
           <button
             type="button"
             onClick={() => onModeChange(suggestedMode)}
-            className="min-h-8 rounded-full bg-accent px-3 text-xs font-bold text-white"
+            className="min-h-11 rounded-full bg-accent px-3 text-sm font-bold text-on-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {lang === "ko" ? "바꾸기" : "Switch"}
           </button>
@@ -147,7 +153,7 @@ export function StudioWorkModeBar({
             <button
               type="button"
               onClick={onDismissSuggestion}
-              className="min-h-8 rounded-full px-3 text-xs text-fg-3"
+              className="min-h-11 rounded-full px-3 text-sm text-fg-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {lang === "ko" ? "그대로 두기" : "Keep current"}
             </button>

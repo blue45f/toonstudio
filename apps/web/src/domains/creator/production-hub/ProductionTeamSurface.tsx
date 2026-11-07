@@ -145,7 +145,10 @@ export function ProductionTeamSurface({
         </div>
       </div>
       <ProductionCrewCoverage aggregate={aggregate} />
-      <ProductionIntegrationsPanel aggregate={aggregate} />
+      <ProductionIntegrationsPanel
+        key={`${aggregate.projectId}:${isDemo && aggregate.projectId === "sample-project" ? "sample" : "real"}`}
+        aggregate={aggregate}
+      />
       {isDemo && aggregate.projectId === "sample-project" ? (
         <details className="rounded-2xl border border-line bg-card p-4" onToggle={(event) => {
           const open = event.currentTarget.open;

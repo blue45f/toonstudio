@@ -1,3 +1,4 @@
+import "./catalog-page-controls.css";
 import { CalendarDays, CalendarPlus, ChevronDown, Database, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { motion } from "motion/react";
 import { useId, useState, type KeyboardEvent } from "react";
@@ -126,6 +127,7 @@ export function CalendarPage() {
     "/api/calendar",
     bt("연재 캘린더를 불러오지 못했습니다.", "Couldn't load the release calendar.")
   );
+  const countsReady = !loading && !error && !!data;
   // 공용 작품 필터(찜·장르·플랫폼·가격·이용가·평점·태그). "필터 기억" ON이면 플랫폼 선택도 함께 유지된다.
   const { filters, setFilters, remember, toggleRemember } = useRememberedFilters("calendar");
   // 표시할 플랫폼 선택은 공용 필터(filters.platforms)에 보관 — 별도 상태일 때 재방문 시 유지되지 않던 문제 해소.
@@ -234,13 +236,9 @@ export function CalendarPage() {
   };
 
   return (
-    <Container size="wide" className="py-6 sm:py-10">
+    <Container size="wide" className="calendar-page-layout py-6 sm:py-10">
       <SiteContextualSubNav pathnameOverride="/calendar" className="mb-5" />
       <header className="mb-6 rounded-2xl border border-line bg-panel/45 p-4 surface-hl sm:mb-7 sm:p-6">
-        <SectionArt
-          image="explore"
-          className="mb-5 block h-36 w-full rounded-xl object-cover object-center sm:h-44"
-        />
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
           <div>
             <p className="eyebrow flex items-center gap-1.5 text-accent">
@@ -249,15 +247,15 @@ export function CalendarPage() {
             <h1 className="mt-2 text-[clamp(1.6rem,7vw,1.875rem)] font-bold tracking-tight sm:text-4xl">{bt("연재 캘린더", "Release Calendar")}</h1>
             <p className="lede mt-2 max-w-2xl text-pretty text-sm leading-relaxed text-fg-2">
               {bt("연재요일 정보가 있는 작품을 요일별로 찾아보세요. 오늘은", "Browse stories by their release day. Today is")}{" "}
-              <span className="font-semibold text-accent">{todayLabel}</span>{bt(", 새 회차가 올라오는 작품이", ", with new episodes from")}{" "}
-              <span className="numeral text-fg">{todayCount.toLocaleString(locale)}</span>{bt("편입니다.", " stories.")}
+              <span className="font-semibold text-accent">{todayLabel}</span>{countsReady ? <>{bt(", 새 회차가 올라오는 작품이", ", with new episodes from")}{" "}
+              <span className="numeral text-fg">{todayCount.toLocaleString(locale)}</span>{bt("편입니다.", " stories.")}</> : <span>{loading ? bt(" · 연재 정보를 확인하고 있어요.", " · Checking release information.") : bt(" · 연재 편수를 확인할 수 없습니다.", " · Release counts are unavailable.")}</span>}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line bg-card px-3 text-xs text-fg-2">
+            {countsReady && <span className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3 text-xs text-fg-2">
               <Database size={14} className="text-accent" />
               {bt("전체 연재", "All series")} <span className="numeral text-fg">{totalScheduled.toLocaleString(locale)}</span>{bt("편", "")}
-            </span>
+            </span>}
             <button
               type="button"
               onClick={exportIcs}
@@ -358,7 +356,7 @@ export function CalendarPage() {
 
         {/* 상세 필터 — 네이티브 details 접기 패널(키보드·AT 기본 지원, 활성 개수 배지 유지) */}
         <details className="group mt-4 border-t border-line">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-3 text-sm font-medium text-fg-2 transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 min-h-11 py-3 text-sm font-medium text-fg-2 transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
             <span className="inline-flex items-center gap-1.5">
               <SlidersHorizontal size={14} className={titleFilterActive ? "text-accent" : undefined} aria-hidden="true" />
               {bt("상세 필터", "More filters")}
@@ -383,7 +381,7 @@ export function CalendarPage() {
         </details>
       </header>
 
-      <SiteArtSurfaceSpotlight cardId="nb-ranking-constellation" defaultLensId="workflow" compact className="mb-5" />
+
 
       {/* "오늘 연재" 최상단 하이라이트 밴드 — 스크롤해도 고정(sticky)되어 오늘 분량을 놓치지 않는다 */}
       {!loading && !error && (
@@ -575,6 +573,14 @@ export function CalendarPage() {
           )}
         </div>
       )}
+      <details className="mt-6 rounded-2xl border border-line bg-panel/30 p-4">
+        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">{bt("연재 캘린더 활용 안내", "Release calendar guide")}</summary>
+        <SectionArt
+          image="explore"
+          className="mb-5 block h-36 w-full rounded-xl object-cover object-center sm:h-44"
+        />
+      <SiteArtSurfaceSpotlight cardId="nb-ranking-constellation" defaultLensId="workflow" compact className="mb-5" />
+      </details>
     </Container>
   );
 }

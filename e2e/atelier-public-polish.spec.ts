@@ -46,9 +46,10 @@ test("community section and guide controls remain keyboard-operable with reduced
   const promotion = page.getByRole("heading", { name: "아마추어 작가의 첫 연재, 새로운 웹툰의 첫 독자", exact: true });
   await expect(modes.getByRole("button")).toHaveCount(4);
   await expect(all).toHaveAttribute("aria-pressed", "true");
-  await expect(league).toBeVisible();
+  // 전체 보기에서는 피드를 먼저 보여 주고 보조 구역은 기본 접힘으로 유지한다.
+  await expect(league).toBeHidden();
   await expect(feed).toBeVisible();
-  await expect(promotion).toBeVisible();
+  await expect(promotion).toBeHidden();
 
   for (const [name, key, visible, hidden] of [
     ["승격 리그 · 활동", "Enter", league, [feed, promotion]],
@@ -67,10 +68,26 @@ test("community section and guide controls remain keyboard-operable with reduced
   await all.focus();
   await page.keyboard.press("Space");
   await expect(all).toHaveAttribute("aria-pressed", "true");
-  await expect(league).toBeVisible();
+  // 전체 보기에서는 피드를 먼저 보여 주고 보조 구역은 기본 접힘으로 유지한다.
+  await expect(league).toBeHidden();
   await expect(feed).toBeVisible();
+  await expect(promotion).toBeHidden();
+  for (const name of ["승격 리그 · 활동", "작품 홍보 · 예고편"]) {
+    const disclosure = page.locator("details.community-layout-disclosure").filter({ has: page.locator("summary", { hasText: name }) });
+    await expect(disclosure).toHaveJSProperty("open", false);
+    await disclosure.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(disclosure).toHaveJSProperty("open", true);
+    await expect(disclosure.locator("summary")).toBeFocused();
+  }
+  await expect(league).toBeVisible();
   await expect(promotion).toBeVisible();
   const spotlight = page.locator('[data-smart-ai-spotlight="nb-community-plaza"]');
+  const artGuide = page.locator("details.community-layout-disclosure").filter({ has: spotlight });
+  await expect(artGuide).toHaveJSProperty("open", false);
+  await artGuide.locator("summary").focus();
+  await page.keyboard.press("Space");
+  await expect(artGuide).toHaveJSProperty("open", true);
   await expect(spotlight).toHaveCount(1);
   const lenses = spotlight.getByRole("group", { name: "스포트라이트 초점 렌즈", exact: true });
   await expect(lenses.getByRole("button")).toHaveCount(3);

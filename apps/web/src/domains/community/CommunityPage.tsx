@@ -7,7 +7,10 @@ import {
   Sparkles,
   UsersRound,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+
+import "./community-page-layout.css";
 import { Navigate, useParams } from "react-router-dom";
 
 import { CommunityScopeDirectory } from "./components/community-scope-directory";
@@ -33,7 +36,6 @@ import { Container, Section } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { COMMUNITY_SCOPE_DIRECTORIES } from "@/shared/lib/community-ui";
 import Link from "@/shared/navigation/router-link";
@@ -48,6 +50,12 @@ import { useT } from "@/shared/lib/i18n";
 const SCOPES = ["title", "author", "pencafe"] as const;
 
 const COPY = {
+  sectionView: defineBilingualText("communityPage", "sectionView", "커뮤니티 구역 보기 전환", "Community sections"),
+  allSections: defineBilingualText("communityPage", "allSections", "전체 보기", "All sections"),
+  leagueSection: defineBilingualText("communityPage", "leagueSection", "승격 리그 · 활동", "Promotion league & activity"),
+  feedSection: defineBilingualText("communityPage", "feedSection", "대화방 · 통합 피드", "Conversations & unified feed"),
+  promoteSection: defineBilingualText("communityPage", "promoteSection", "작품 홍보 · 예고편", "Promotion & trailers"),
+  guideSection: defineBilingualText("communityPage", "guideSection", "커뮤니티 빠른 길잡이", "Community quick guide"),
   configurationPreview: defineBilingualText("communityPage", "configurationPreview", "구성 미리보기:", "Configuration preview:"),
   commissionPreview: defineBilingualText("communityPage", "commissionPreview", "Skeb 무수정 리퀘스트 + VGen·크레페 캐릭터 시트 슬롯 예약 구성 예시", "Skeb requests + VGen/Crepe character sheet booking configuration example"),
   tierPreview: defineBilingualText("communityPage", "tierPreview", "텀블벅·와디즈 달성률 게이지 + 팬딩·DLsite·Fantia PSD 티어 배포 구성 예시", "Tumblbug/Wadiz funding progress + Fanding/DLsite/Fantia PSD tier distribution configuration example"),
@@ -199,6 +207,33 @@ const LEAGUE_TIER_IMAGES: Readonly<Record<string, string>> = {
   "creator-101": "/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp",
 };
 
+function CommunityDisclosure({ title, children, initiallyOpen = false }: {
+  title: string;
+  children: ReactNode;
+  initiallyOpen?: boolean;
+}) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const details = detailsRef.current;
+    if (!details) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || !details?.open) return;
+      event.preventDefault();
+      event.stopPropagation();
+      details.open = false;
+      details.querySelector("summary")?.focus();
+    }
+    details.addEventListener("keydown", closeOnEscape);
+    return () => details.removeEventListener("keydown", closeOnEscape);
+  }, []);
+  return (
+    <details className="community-layout-disclosure" ref={detailsRef} open={initiallyOpen}>
+      <summary>{title}</summary>
+      <div className="community-layout-disclosure-body">{children}</div>
+    </details>
+  );
+}
+
 export function CommunityPage() {
   useBilingualI18nRevision();
   const t = useT();
@@ -210,21 +245,15 @@ export function CommunityPage() {
   const showPromote = sectionView === "all" || sectionView === "promote";
 
   return (
-    <Container size="wide" className="py-7 sm:py-10 lg:py-12">
-      <SiteContextualSubNav pathnameOverride="/community" className="mb-5" />
-      <SitePageHeader
-        size="hero"
-        icon={UsersRound}
-        eyebrow={t(COPY.heroEyebrow)}
-        title={t(COPY.heroTitle)}
-        description={t(COPY.heroSummary)}
-        art="community"
-        artSrc={workflowIllustrationSource("community", 960)}
-        artSrcSet={workflowIllustrationSources("community")}
-        artPlacement="banner"
-        artCaption={t(COPY.heroArtCaption)}
-        actions={
-          <>
+    <Container size="wide" className="community-layout py-5 sm:py-7 lg:py-8">
+      <div>
+      <header className="community-layout-header">
+        <div>
+          <p className="text-xs font-bold text-accent">{t(COPY.heroEyebrow)}</p>
+          <h1>{t(COPY.heroTitle)}</h1>
+          <p className="text-sm text-fg-2">{t(COPY.heroSummary)}</p>
+        </div>
+        <div className="community-layout-actions">
             <Link href="/showcase" className={buttonClass({ size: "md", className: "min-h-11" })}>
               {t(COPY.ctaGallery)}
               <ArrowRight size={16} aria-hidden="true" />
@@ -237,20 +266,23 @@ export function CommunityPage() {
               <CalendarDays size={16} aria-hidden="true" />
               {t(COPY.ctaEvents)}
             </Link>
-          </>
-        }
-      />
+            <Link href="/studio/new" className={buttonClass({ variant: "ghost", size: "md", className: "min-h-11" })}>
+              {t(COPY.directoriesCta)}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
+        </div>
+      </header>
+      </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-center text-xs font-black uppercase tracking-[0.28em] text-fg-3 lg:text-left">
+        <p className="sr-only">
           {t(COPY.tagline)}
         </p>
-        <div role="group" aria-label="커뮤니티 구역 보기 전환" className="flex flex-wrap gap-1.5">
+        <div role="group" aria-label={t(COPY.sectionView)} className="flex flex-wrap gap-1.5">
           {([
-            ["all", "전체 보기"],
-            ["league", "승격 리그 · 활동"],
-            ["feed", "대화방 · 통합 피드"],
-            ["promote", "작품 홍보 · 예고편"],
+            ["all", COPY.allSections],
+            ["league", COPY.leagueSection],
+            ["feed", COPY.feedSection],
+            ["promote", COPY.promoteSection],
           ] as const).map(([id, label]) => (
             <button
               key={id}
@@ -263,100 +295,35 @@ export function CommunityPage() {
                   : "border-line bg-panel/70 text-fg-2 hover:border-accent/50 hover:text-fg"
               }`}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
       </div>
 
-      <SiteArtSurfaceSpotlight cardId="nb-community-plaza" compact className="mt-6" />
 
-      {showLeague ? (
-      <>
-      <section
-        aria-label="오픈 연재 승격 리그 및 창작자 성장 트랙"
-        data-testid="community-promotion-league-strip"
-        className="mt-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
-      >
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
-              OPEN SERIALIZATION LEAGUE · CHALLENGE → BEST → ORIGINALS → IP BIZ
-            </span>
-            <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
-              첫 1화 등록부터 정식 요일연재·수익화까지 4단계 성장 리그
-            </h2>
-          </div>
-          <Link
-            href="/community/promote"
-            className={buttonClass({ size: "sm", className: "min-h-9 gap-1.5 rounded-full px-3.5 text-xs font-bold" })}
-          >
-            내 작품 홍보 등록
-            <ArrowRight size={13} aria-hidden="true" />
-          </Link>
-        </div>
-        <ol className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          {COMMUNITY_PROMOTION_LEAGUE_TIERS.map((tier) => (
-            <li
-              key={tier.id}
-              className="flex flex-col justify-between gap-2 rounded-2xl border border-line bg-panel/65 p-3.5 transition-colors hover:border-accent/45"
-            >
-              <div>
-                <span
-                  aria-hidden="true"
-                  className="mb-2.5 block h-20 w-full rounded-xl border border-line/60 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${LEAGUE_TIER_IMAGES[tier.id] ?? "/assets/site-experience/site-art-v1/cards/nb-community-plaza-640.webp"})` }}
-                />
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-extrabold text-accent">{tier.badge}</span>
-                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
-                    STEP {tier.stepNumber}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs font-extrabold text-fg sm:text-sm">{tier.label}</p>
-                <p className="mt-1 text-[11px] leading-snug text-fg-3">{tier.description}</p>
-              </div>
-              <Link
-                href={tier.route}
-                className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
-              >
-                {tier.ctaLabel}
-                <ArrowRight size={12} aria-hidden="true" />
-              </Link>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <CommunityActivityPreview />
-      </>
-      ) : null}
 
       {showFeed ? (
       <>
-      <Section
-        className="mt-10 sm:mt-12"
-        eyebrow={t(COPY.directoriesEyebrow)}
-        title={t(COPY.directoriesTitle)}
-        desc={t(COPY.directoriesDescription)}
-        action={{ label: t(COPY.directoriesCta), href: "/studio/new" }}
-      >
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-          {COMMUNITY_SCOPE_DIRECTORIES.map((entry, index) => (
-            <div key={entry.value} {...introItemProps(index)}>
-              <SiteLinkCard
-                layout="tile"
-                className="h-full"
-                href={entry.href}
-                icon={COMMUNITY_SCOPE_ICONS[entry.value]}
-                title={t(COMMUNITY_SCOPE_DIRECTORY_LABEL_KEYS[entry.value])}
-                description={t(COMMUNITY_SCOPE_DIRECTORY_DESCRIPTION_KEYS[entry.value])}
-              />
-            </div>
-          ))}
-        </div>
-      </Section>
+      <nav className="community-layout-directory" aria-labelledby="community-directory-heading">
+        <h2 id="community-directory-heading" className="sr-only">{t(COPY.directoriesTitle)}</h2>
+        {COMMUNITY_SCOPE_DIRECTORIES.map((entry) => {
+          const Icon = COMMUNITY_SCOPE_ICONS[entry.value];
+          return (
+            <Link key={entry.value} href={entry.href} className="community-layout-directory-link">
+              <Icon size={22} aria-hidden="true" />
+              <span>{t(COMMUNITY_SCOPE_DIRECTORY_LABEL_KEYS[entry.value])}</span>
+              <span className="sr-only">{t(COMMUNITY_SCOPE_DIRECTORY_DESCRIPTION_KEYS[entry.value])}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
+      <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1" aria-label={t(COPY.unifiedFeedRegion)}>
+        <FanCafePanel scope="all" targetLabel={t(COPY.unifiedFeedLabel)} compact hideSpaceGuide />
+      </section>
+      <CommunityDisclosure title={t(COPY.guideSection)}>
+      <SiteContextualSubNav pathnameOverride="/community" className="mt-4" />
       <section
         aria-label="커뮤니티 빠른 길잡이"
         data-testid="community-quick-guide"
@@ -413,13 +380,73 @@ export function CommunityPage() {
         </div>
       </section>
 
-      <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1" aria-label={t(COPY.unifiedFeedRegion)}>
-        <FanCafePanel scope="all" targetLabel={t(COPY.unifiedFeedLabel)} compact hideSpaceGuide />
-      </section>
+      </CommunityDisclosure>
       </>
       ) : null}
 
+      {showLeague ? (
+      <CommunityDisclosure key={`league-${sectionView}`} title={t(COPY.leagueSection)} initiallyOpen={sectionView === "league"}>
+      <section
+        aria-label="오픈 연재 승격 리그 및 창작자 성장 트랙"
+        data-testid="community-promotion-league-strip"
+        className="mt-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
+              OPEN SERIALIZATION LEAGUE · CHALLENGE → BEST → ORIGINALS → IP BIZ
+            </span>
+            <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
+              첫 1화 등록부터 정식 요일연재·수익화까지 4단계 성장 리그
+            </h2>
+          </div>
+          <Link
+            href="/community/promote"
+            className={buttonClass({ size: "sm", className: "min-h-9 gap-1.5 rounded-full px-3.5 text-xs font-bold" })}
+          >
+            내 작품 홍보 등록
+            <ArrowRight size={13} aria-hidden="true" />
+          </Link>
+        </div>
+        <ol className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          {COMMUNITY_PROMOTION_LEAGUE_TIERS.map((tier) => (
+            <li
+              key={tier.id}
+              className="flex flex-col justify-between gap-2 rounded-2xl border border-line bg-panel/65 p-3.5 transition-colors hover:border-accent/45"
+            >
+              <div>
+                <span
+                  aria-hidden="true"
+                  className="mb-2.5 block h-20 w-full rounded-xl border border-line/60 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${LEAGUE_TIER_IMAGES[tier.id] ?? "/assets/site-experience/site-art-v1/cards/nb-community-plaza-640.webp"})` }}
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-extrabold text-accent">{tier.badge}</span>
+                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+                    STEP {tier.stepNumber}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs font-extrabold text-fg sm:text-sm">{tier.label}</p>
+                <p className="mt-1 text-[11px] leading-snug text-fg-3">{tier.description}</p>
+              </div>
+              <Link
+                href={tier.route}
+                className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
+              >
+                {tier.ctaLabel}
+                <ArrowRight size={12} aria-hidden="true" />
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <CommunityActivityPreview />
+      </CommunityDisclosure>
+      ) : null}
+
       {showPromote ? (
+      <CommunityDisclosure key={`promote-${sectionView}`} title={t(COPY.promoteSection)} initiallyOpen={sectionView === "promote"}>
       <Section
         className="mt-12 sm:mt-14"
         eyebrow={t(COPY.promoteEyebrow)}
@@ -520,7 +547,17 @@ export function CommunityPage() {
           </div>
         </div>
       </Section>
+      </CommunityDisclosure>
       ) : null}
+      <CommunityDisclosure title={t(COPY.heroArtCaption)}>
+        <figure>
+          <img src={workflowIllustrationSource("community", 960)}
+            srcSet={workflowIllustrationSources("community")} sizes="(max-width: 640px) 100vw, 960px"
+            alt="" loading="lazy" className="community-layout-art" />
+          <figcaption className="text-xs text-fg-3">{t(COPY.heroArtCaption)}</figcaption>
+        </figure>
+        <SiteArtSurfaceSpotlight cardId="nb-community-plaza" compact className="mt-6" />
+      </CommunityDisclosure>
     </Container>
   );
 }

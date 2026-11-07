@@ -116,6 +116,8 @@ export interface StudioProjectArchiveOrchestrationInput {
   readonly projectDocumentSessionRef:
     MutableRefObject<StudioProjectDocumentSessionProvenance | null>;
   readonly ensureSharedDocumentAvailableForExport: () => boolean;
+  /** 사용자 백업 전용 경계. 복구가 먼저 만드는 현재 문서 checkpoint에는 적용하지 않는다. */
+  readonly ensureProjectBackupAvailable: () => boolean;
   /** Commit accepted deferred ink before reading the generation used by the unchanged JSON cache. */
   readonly prepareDocumentForExport?: () => Promise<unknown>;
   readonly currentStudioProjectSnapshot: () => StudioProjectSnapshot;
@@ -196,6 +198,7 @@ export function createStudioProjectArchiveOrchestration({
   revisionProjectGenerationRef,
   projectDocumentSessionRef,
   ensureSharedDocumentAvailableForExport,
+  ensureProjectBackupAvailable,
   prepareDocumentForExport,
   currentStudioProjectSnapshot,
   filterMaskSurfaceArchiveDependencies,
@@ -211,7 +214,7 @@ export function createStudioProjectArchiveOrchestration({
   setError,
 }: StudioProjectArchiveOrchestrationInput): StudioProjectArchiveOrchestration {
   async function handleExportProject() {
-    if (!ensureSharedDocumentAvailableForExport()) return;
+    if (!ensureSharedDocumentAvailableForExport() || !ensureProjectBackupAvailable()) return;
     try {
       const [
         { createStudioProjectDocumentEnvelope },
@@ -228,6 +231,7 @@ export function createStudioProjectArchiveOrchestration({
         import( "./vrm/studio-vrm-texture-paint-project-library"),
       ]);
       await prepareDocumentForExport?.();
+      if (!ensureProjectBackupAvailable()) return;
       const exportedAt = new Date().toISOString();
       const documentId = workId
         ? `work:${workId}`
@@ -250,6 +254,11 @@ export function createStudioProjectArchiveOrchestration({
       });
       const texturePaintNotice =
         await inspectStudioVrmTexturePaintJsonExport(sessionExport.project);
+      if (!ensureProjectBackupAvailable()) return;
+      if (revisionProjectGenerationRef.current !== exportGeneration) {
+        setError("그림이 바뀌어 이전 내용의 백업을 멈췄어요. 다시 시도해 주세요.");
+        return;
+      }
       const exportEnvelope = sessionExport.directEnvelope
         ?? createStudioProjectDocumentEnvelope(
           sessionExport.project,
@@ -283,7 +292,7 @@ export function createStudioProjectArchiveOrchestration({
   }
 
   async function handleExportProjectArchive() {
-    if (!ensureSharedDocumentAvailableForExport()) return;
+    if (!ensureSharedDocumentAvailableForExport() || !ensureProjectBackupAvailable()) return;
     if (projectArchiveBusy) return;
     const exportMutationTicket = captureStudioMutationTicket();
     if (!canApplyStudioMutation(exportMutationTicket)) return;
@@ -496,6 +505,7 @@ export function createStudioProjectArchiveOrchestration({
       const fileName = `${sanitizeStudioPublishFileStem(title, {
         fallback: "toonstudio-studio-project",
       })}.toonproject.zip`;
+      if (!ensureProjectBackupAvailable()) return;
       downloadBlob(result.blob, fileName);
       setProjectArchiveStatus(
         presentStudioVrmTexturePaintProjectArchiveExport({

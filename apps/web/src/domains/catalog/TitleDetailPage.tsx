@@ -1,6 +1,7 @@
 import { catalogStatusText } from "./catalog-status-i18n";
 import {
   formatI18nTemplate,
+  translateBilingualValueForActiveLocale,
   translateCurrentStaticSourceText,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { SITE_URL } from "@toonstudio/core/business";
@@ -188,7 +189,7 @@ export function TitleDetailPage() {
       <PageEntrance variant="pop">
       <Container size="wide" className="py-10">
         <TitleDetailBreadcrumb />
-        <ErrorState title={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 상세를 불러오지 못했습니다.")} message={error} onRetry={reload} />
+        <ErrorState className="[&>button]:[min-block-size:2.75rem]!" title={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 상세를 불러오지 못했습니다.")} message={error} onRetry={reload} />
       </Container>
       </PageEntrance>
     );
@@ -232,108 +233,10 @@ export function TitleDetailPage() {
         firstEpisodeHref={firstEpisodeHref}
       />
 
-      <nav
-        aria-label={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 상세 섹션 이동 및 크로스 허브 브리지")}
-        data-testid="title-detail-rea-bridge-bar"
-        className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/75 px-4 py-2.5 text-xs"
-      >
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[10px] font-extrabold uppercase tracking-wider text-accent">
-            SERIES HUB · QUICK JUMP
-          </span>
-          <a
-            href="#title-episodes-anchor"
-            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-          >
-            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "회차 목록")}
-          </a>
-          <a
-            href="#title-availability"
-            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-          >
-            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "연재처 · 가격 비교")}
-          </a>
-          <a
-            href="#metrics"
-            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-          >
-            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률 · 정주행 지표")}
-          </a>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Link
-            href="/cuts"
-            className="inline-flex min-h-8 items-center rounded-full border border-accent/35 bg-accent/10 px-3 font-bold text-accent transition-colors hover:bg-accent/20"
-          >
-            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "숏폼 컷츠 보기")}
-          </Link>
-          <Link
-            href="/compare"
-            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-          >
-            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 스펙 비교")}
-          </Link>
-          <Link
-            href="/showcase/promo"
-            className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-          >
-            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "트레일러 제작")}
-          </Link>
-        </div>
-      </nav>
+      <PersonalContentPreferenceNotice title={title} />
+      <TitleEarlyAccessNotice titleId={title.id} />
 
-      <div className="grid gap-8 lg:grid-cols-[19rem_1fr]">
-        <aside className="flex flex-col gap-4 lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)] lg:self-start">
-          {/* 표지 포스터는 히어로 무대의 주인공이라 여기서는 중복해 그리지 않는다 (웨이브 14). */}
-          <ReadStateSelector titleId={title.id} />
-          <CollectionAdd titleId={title.id} />
-          {title.status === "ongoing" && title.updateDays && title.updateDays.length > 0 && (
-            <SubscribeButton titleId={title.id} days={title.updateDays} />
-          )}
-          <NewsletterSubscribeButton authorName={title.author} />
-          <ShareButton
-            title={title.title}
-            slug={title.slug}
-            description={metaDesc ?? undefined}
-            imageUrl={title.coverImage}
-            className="self-start"
-          />
-          {/* 수익화: 서포터 얼리 액세스 안내 (monetization/paywall) */}
-          <TitleEarlyAccessNotice titleId={title.id} />
-          <AvailabilityHistoryPanel title={title} />
-        </aside>
-
-        <div className="flex flex-col gap-6">
-          {title.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {title.tags.map((tag) => (
-                <Link
-                  key={tag}
-                  href={formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "en", "/explore?tags={v0}"), { v0: String(encodeURIComponent(tag)) })}
-                  className="inline-flex items-center rounded-full border border-line bg-raised/50 px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent pointer-coarse:px-3 pointer-coarse:py-1.5"
-                >
-                  #{tag}
-                </Link>
-              ))}
-            </div>
-          )}
-
-          <PersonalContentPreferenceNotice title={title} />
-
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-4">
-            {stats.map((item) => (
-              <div key={item.label} className="flex flex-col gap-1 bg-card p-4">
-                <dt className="flex items-center gap-1.5 text-xs text-fg-3">
-                  <item.icon size={13} /> {item.label}
-                </dt>
-                <dd className="numeral text-xl text-fg">{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </div>
-
-      <div id="title-episodes-anchor" className="mt-10 grid scroll-mt-24 gap-6 sm:mt-14 lg:grid-cols-[1fr_20rem] lg:items-start">
+      <div id="title-episodes-anchor" className="mt-6 grid scroll-mt-24 gap-6 sm:mt-8 lg:grid-cols-[1fr_20rem] lg:items-start">
         <TitleEpisodeSection title={title} episodes={episodes} />
         <div className="flex flex-col gap-4">
           {/* 회차 빈 상태의 "다른 플랫폼 더 보기"가 도착하는 앵커 지점 (D-9) */}
@@ -381,6 +284,111 @@ export function TitleDetailPage() {
           </section>
         </div>
       </div>
+
+      <details data-testid="title-detail-secondary-tools" className="mt-6 rounded-2xl border border-line bg-card p-4">
+        <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          {translateBilingualValueForActiveLocale("TitleDetailPage", "내 기록 · 알림 · 더 보기", "My records, alerts and more")}
+        </summary>
+        <div className="pt-4">
+          <nav
+            aria-label={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 상세 섹션 이동 및 크로스 허브 브리지")}
+            data-testid="title-detail-rea-bridge-bar"
+            className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/75 px-4 py-2.5 text-xs"
+          >
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-[10px] font-extrabold uppercase tracking-wider text-accent">
+                SERIES HUB · QUICK JUMP
+              </span>
+              <a
+                href="#title-episodes-anchor"
+                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+              >
+                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "회차 목록")}
+              </a>
+              <a
+                href="#title-availability"
+                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+              >
+                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "연재처 · 가격 비교")}
+              </a>
+              <a
+                href="#metrics"
+                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+              >
+                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률 · 정주행 지표")}
+              </a>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Link
+                href="/cuts"
+                className="inline-flex min-h-8 items-center rounded-full border border-accent/35 bg-accent/10 px-3 font-bold text-accent transition-colors hover:bg-accent/20"
+              >
+                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "숏폼 컷츠 보기")}
+              </Link>
+              <Link
+                href="/compare"
+                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+              >
+                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 스펙 비교")}
+              </Link>
+              <Link
+                href="/showcase/promo"
+                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+              >
+                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "트레일러 제작")}
+              </Link>
+            </div>
+          </nav>
+
+          <div className="grid gap-8 lg:grid-cols-[19rem_1fr]">
+            <aside className="flex flex-col gap-4 lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)] lg:self-start">
+              {/* 표지 포스터는 히어로 무대의 주인공이라 여기서는 중복해 그리지 않는다 (웨이브 14). */}
+              <ReadStateSelector titleId={title.id} />
+              <CollectionAdd titleId={title.id} />
+              {title.status === "ongoing" && title.updateDays && title.updateDays.length > 0 && (
+                <SubscribeButton titleId={title.id} days={title.updateDays} />
+              )}
+              <NewsletterSubscribeButton authorName={title.author} />
+              <ShareButton
+                title={title.title}
+                slug={title.slug}
+                description={metaDesc ?? undefined}
+                imageUrl={title.coverImage}
+                className="self-start"
+              />
+              <AvailabilityHistoryPanel title={title} />
+            </aside>
+
+            <div className="flex flex-col gap-6">
+              {title.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {title.tags.map((tag) => (
+                    <Link
+                      key={tag}
+                      href={formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "en", "/explore?tags={v0}"), { v0: String(encodeURIComponent(tag)) })}
+                      className="inline-flex items-center rounded-full border border-line bg-raised/50 px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent pointer-coarse:px-3 pointer-coarse:py-1.5"
+                    >
+                      #{tag}
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+
+              <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-4">
+                {stats.map((item) => (
+                  <div key={item.label} className="flex flex-col gap-1 bg-card p-4">
+                    <dt className="flex items-center gap-1.5 text-xs text-fg-3">
+                      <item.icon size={13} /> {item.label}
+                    </dt>
+                    <dd className="numeral text-xl text-fg">{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+      </details>
 
       <AuthorNoticeSection authorName={title.author} workTitle={title.title} className="mt-10 sm:mt-14" />
 

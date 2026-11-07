@@ -61,3 +61,19 @@ export function preloadStudioPsdExportModule(): void {
 export function preloadStudioPsdImportModule(): void {
   void loadStudioPsdImportModule();
 }
+
+
+type StudioWillExportModule = typeof import("./studio-will-v1-export-bridge");
+let willExportModulePromise: Promise<StudioWillExportModule> | null = null;
+
+/** Optional WILL path preparation is loaded only after an explicit export request. */
+export function loadStudioWillExportModule(): Promise<StudioWillExportModule> {
+  willExportModulePromise ??= new Promise<StudioWillExportModule>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("WILL 내보내기 도구 로딩 시간이 초과됐어요. 다시 시도해 주세요.")), 30_000);
+    import("./studio-will-v1-export-bridge").then(resolve, reject).finally(() => clearTimeout(timer));
+  }).catch((error: unknown) => {
+    willExportModulePromise = null;
+    throw error;
+  });
+  return willExportModulePromise;
+}

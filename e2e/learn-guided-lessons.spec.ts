@@ -82,9 +82,17 @@ test("the learning hub resumes a later active lesson before untouched earlier st
   }, { key: GUEST_STORAGE_KEY, lessonId: active.id });
 
   await page.goto("/learn");
-  await expect(page.locator(".learn-dashboard-next").getByRole("link")).toHaveText(`${active.title} →`);
-  await expect(page.locator(".learn-session-list li").first().getByRole("heading", { level: 3 })).toHaveText(active.title);
-  await expect(page.locator(".learn-session-list li").first()).toContainText("학습 중");
+  // 진행 중 수업은 별도 요약/목록 대신 첫 실습 카드에서 바로 이어 간다.
+  const nextPractice = page.locator(".learn-classroom-feature");
+  await expect(nextPractice.getByRole("heading", { level: 2 })).toHaveText(active.title);
+  await expect(nextPractice).toContainText("학습 중");
+  const resume = nextPractice.getByRole("link", { name: "계속하기", exact: true });
+  await expect(resume).toBeVisible();
+  await expect(resume).toHaveAttribute("href", `/learn/lessons/${encodeURIComponent(active.id)}?from=${encodeURIComponent(path.id)}`);
+  await resume.click();
+  await expect(page).toHaveURL(new RegExp(`/learn/lessons/${active.id}\\?from=${path.id}$`, "u"));
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(active.title);
+  await expect(page.getByLabel("나의 실습 메모", { exact: true })).toHaveValue("여기서 멈춘 수업");
 });
 
 test("guided lesson layout keeps its landmarks and document width on a phone viewport", async ({ page }) => {

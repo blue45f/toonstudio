@@ -1,5 +1,5 @@
 import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, Heart, ListOrdered } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Title } from "@/shared/lib/types";
 
@@ -172,6 +172,7 @@ export function TitleEpisodeSection({
   const [order, setOrder] = useState<EpisodeSortOrder>("latest");
   const [viewMode, setViewMode] = useState<EpisodeViewMode>("list");
   const [episodeQuery, setEpisodeQuery] = useState("");
+  const episodeSearchRef = useRef<HTMLInputElement>(null);
   const [progress] = useState(() => getReaderProgress(title.slug));
   const total = resolveTotalEpisodes(title, episodes);
   const sorted = episodes ? sortEpisodes(episodes, order) : undefined;
@@ -221,7 +222,12 @@ export function TitleEpisodeSection({
         action: bi("이어서 읽기", "Continue reading"),
       };
     }
-    if (progress.ratio >= 0.98 && (total == null || progress.episode < total)) {
+    const nextEpisode = episodes?.find((episode) => episode.number === progress.episode + 1);
+    if (
+      progress.ratio >= 0.98 &&
+      (total == null || progress.episode < total) &&
+      nextEpisode?.status !== "scheduled"
+    ) {
       return {
         episode: progress.episode + 1,
         label: formatI18nTemplate(bi("{v0}화를 다 읽었어요", "You finished episode {v0}"), {
@@ -262,12 +268,13 @@ export function TitleEpisodeSection({
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="search"
+              ref={episodeSearchRef}
               value={episodeQuery}
               onChange={(event) => setEpisodeQuery(event.target.value)}
               placeholder={bi("회차 번호·제목 검색", "Filter episode # or title")}
               aria-label={bi("회차 번호 또는 제목 검색", "Search episode number or title")}
               data-testid="episodes-search-input"
-              className="h-9 w-40 rounded-full border border-line bg-card px-3 text-xs text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent sm:w-48"
+              className="h-11 w-40 rounded-full border border-line bg-card px-3 text-xs text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent sm:w-48"
             />
             <div className="flex rounded-full border border-line bg-card p-0.5" role="group" aria-label={bi("회차 정렬", "Episode order")}>
               {(
@@ -282,7 +289,7 @@ export function TitleEpisodeSection({
                   aria-pressed={order === option.value}
                   onClick={() => setOrder(option.value)}
                   className={cn(
-                    "min-h-9 rounded-full px-3.5 text-xs font-semibold transition-colors duration-150",
+                    "min-h-11 [min-block-size:2.75rem]! rounded-full px-3.5 text-xs font-semibold transition-colors duration-150",
                     order === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
                   )}
                 >
@@ -312,7 +319,7 @@ export function TitleEpisodeSection({
                     });
                   }}
                   className={cn(
-                    "min-h-9 rounded-full px-3 text-xs font-semibold transition-colors duration-150",
+                    "min-h-11 [min-block-size:2.75rem]! rounded-full px-3 text-xs font-semibold transition-colors duration-150",
                     viewMode === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
                   )}
                 >
@@ -332,14 +339,33 @@ export function TitleEpisodeSection({
           <p className="min-w-0 flex-1 text-sm font-medium text-fg">{continueTarget.label}</p>
           <Link
             href={`/title/${encodeURIComponent(title.slug)}/read/${continueTarget.episode}`}
-            className="inline-flex min-h-10 items-center rounded-full bg-accent px-4 text-xs font-bold text-on-accent transition-colors hover:bg-accent/90"
+            className="inline-flex min-h-11 [min-block-size:2.75rem]! items-center rounded-full bg-accent px-4 text-xs font-bold text-on-accent transition-colors hover:bg-accent/90"
           >
             {continueTarget.action}
           </Link>
         </div>
       )}
 
-      {hasEpisodes && filteredEpisodes ? (
+      {hasEpisodes && filteredEpisodes?.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-line bg-card/50 p-5 sm:p-6">
+          <p role="status" className="font-semibold text-fg">
+            {bi("검색 결과가 없어요", "No matching episodes")}
+          </p>
+          <p className="mt-1 text-sm text-fg-2">
+            {bi("다른 회차 번호나 제목으로 찾아보세요.", "Try a different episode number or title.")}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setEpisodeQuery("");
+              episodeSearchRef.current?.focus();
+            }}
+            className="mt-3 inline-flex min-h-11 [min-block-size:2.75rem]! items-center rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg transition-colors hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {bi("검색 지우기", "Clear search")}
+          </button>
+        </div>
+      ) : hasEpisodes && filteredEpisodes ? (
         <ol className={cn("grid gap-2.5", viewMode === "compact" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
           {filteredEpisodes.map((episode) => (
             <EpisodeRow
@@ -398,8 +424,8 @@ export function TitleEpisodeSection({
                       )}
                       className={
                         index === 0
-                          ? "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90"
-                          : "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                          ? "inline-flex min-h-11 [min-block-size:2.75rem]! items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90"
+                          : "inline-flex min-h-11 [min-block-size:2.75rem]! items-center gap-1.5 rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
                       }
                     >
                       {formatI18nTemplate(bi("{v0}에서 보기", "View on {v0}"), { v0: platformName })}
@@ -411,7 +437,7 @@ export function TitleEpisodeSection({
                 {hiddenExternalLinkCount > 0 && (
                   <a
                     href="#title-availability"
-                    className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+                    className="inline-flex min-h-11 [min-block-size:2.75rem]! items-center px-2 text-sm font-semibold text-accent transition-colors hover:text-accent-2"
                   >
                     {formatI18nTemplate(
                       bi("다른 플랫폼 {v0}곳 더 보기", "See {v0} more platforms"),

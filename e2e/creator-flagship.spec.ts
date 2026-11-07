@@ -303,16 +303,18 @@ for (const width of [320, 390, 912, 1024, 1280]) {
     const library = page.getByRole("region", { name: "작품 관리", exact: true });
     await expect(library).toBeVisible();
     await expect(library.getByRole("heading", { name: "내 작업", exact: true })).toBeVisible();
-    // 작업 우선 진입의 주 행동은 로비 히어로의 "새 작품 시작"(작품 시작 정문 /create — 시작 입구 단일화)과 "작업 가져오기"(/studio/import)다.
-    // 목록 머리글은 같은 동선을 중복해 두지 않으므로(활성 뷰) 로비의 링크가 유일한 시작점이어야 한다.
-    const startNew = library.getByRole("link", { name: "새 작품 시작", exact: true });
-    const importWork = library.getByRole("link", { name: "작업 가져오기", exact: true });
+    // 목록 첫 화면의 주요 행동을 검사한다. 보조 로비는 안내 안에 접혀 있으므로 정문 링크를 대신하지 않는다.
+    const startNew = library.getByRole("link", { name: "새 작업", exact: true });
+    const importWork = library.getByRole("link", { name: "파일 가져오기", exact: true });
     await expect(startNew).toBeVisible();
     await expect(startNew).toHaveAttribute("href", STUDIO_START_GATEWAY_HREF);
     await expect(importWork).toBeVisible();
     await expect(importWork).toHaveAttribute("href", "/studio/import");
     const views = library.getByRole("navigation", { name: "내 작업 보기", exact: true });
     await expect(views.getByRole("link")).toHaveCount(3);
+    const storageGuide = library.locator("details").filter({ has: page.locator("summary", { hasText: "저장·내보내기·제작 관리" }) });
+    await expect(storageGuide).not.toHaveAttribute("open", "");
+    await storageGuide.locator("summary").click();
     await expect(library.getByRole("navigation", { name: "저장과 배포", exact: true })).toBeVisible();
     await expect(library.getByLabel("프로젝트 검색", { exact: true })).toBeVisible();
     await expect(page.getByText("클라우드와 동기화됨", { exact: true })).toHaveCount(0);
@@ -322,6 +324,12 @@ for (const width of [320, 390, 912, 1024, 1280]) {
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     );
     expect(hasNoHorizontalOverflow).toBe(true);
+
+    // 접힌 보조 안내도 실제 사용자 동작으로 열고 기존의 모든 조작·치수 검사를 그대로 수행한다.
+    const startGuide = library.locator("details").filter({ has: page.locator("summary", { hasText: "시작 가이드와 추천 도구" }) });
+    await expect(startGuide).not.toHaveAttribute("open", "");
+    await startGuide.locator("summary").click();
+    await expect(page.locator('[data-studio-creator-lobby="true"]')).toBeVisible();
 
     // 문서 폭만으로는 overflow 가 숨겨진 조상 안에서 잘린 조작을 놓치므로 로비 경계와 터치 영역을 직접 잰다.
     await expect.poll(async () => (await collectStudioLobbyProblems(page, width)).join("\n"), {

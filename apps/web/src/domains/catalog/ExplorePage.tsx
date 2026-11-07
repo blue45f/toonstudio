@@ -21,9 +21,7 @@ import { AdSlot } from "@/shared/components/ad-slot";
 import { DiscoveryWorkspaceNav } from "@/shared/components/discovery-workspace-nav";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { CountUp } from "@/shared/components/count-up";
-import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { Container } from "@/shared/components/section";
-import { ShimmerTitle } from "@/shared/components/shimmer-title";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { TitleCard } from "@/shared/components/title-card";
@@ -38,6 +36,7 @@ import {
   spectrumGradient,
 } from "@/shared/lib/genre-color";
 import {
+  catalogDiscoveryHref,
   parseCatalogDiscoveryState,
   writeCatalogDiscoveryState,
 } from "@/shared/lib/catalog-discovery-state";
@@ -57,6 +56,8 @@ import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { useApiResource } from "@/platform/use-api-resource";
+
+import "./explore-page-layout.css";
 
 type ExploreParams = Record<string, string | undefined>;
 
@@ -204,7 +205,6 @@ export function ExplorePage() {
     (entry) => entry.id,
   );
   const hasFilter = sortExplicit || activeFilters > 0;
-  const accent = heroGenre ? genreColor(heroGenre, 0.84) : undefined;
 
   // 무한 스크롤 — 하단 센티넬이 보이면 자동으로 다음 페이지 로드(더보기 버튼 누를 필요 없음).
   // useInView는 1회용이라 부적합 → 반복 트리거 IntersectionObserver를 직접 둔다. 버튼은 a11y/수동 폴백으로 유지.
@@ -228,143 +228,31 @@ export function ExplorePage() {
 
   return (
     <PageEntrance variant="pop">
-    <div>
-      <section className="relative overflow-hidden border-b border-line bg-ledger">
-        {/* 상단 장르-스펙트럼 스트립 — 데이터 시그니처(홈과 톤 정합). 좌→우 fill-in. */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 z-10 h-1 overflow-hidden"
-          aria-hidden
-        >
-          <div
-            className="size-full origin-left motion-safe:[animation:spectrum-grow_0.9s_var(--ease-out-expo)_0.1s_both]"
-            style={{ background: spectrumGradient([...GENRES], 90) }}
-          />
+      <Container size="wide" className="explore-page-layout">
+        {/* 전역 Container 직계 header 장식을 피하고 탐색 도구를 첫 화면에 둔다. */}
+        <div className="explore-page-heading-wrap">
+          <header className="explore-page-heading">
+            <p className="explore-page-eyebrow"><Compass size={14} aria-hidden="true" />{bt("GENRE SPECTRUM / 탐색", "GENRE SPECTRUM / EXPLORE")}</p>
+            <h1>{bt("조건으로 작품 찾기", "Find titles by condition")}</h1>
+            <p>{bt("장르·태그·유형으로 좁혀보세요.", "Narrow it down by genre, tag and type.")}</p>
+          </header>
         </div>
-        {/* 상단 액센트 글로(호흡) — 테마 액센트 토큰을 따른다(장르 선택 시 그 색으로 보강). */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-44 opacity-70"
-          style={{
-            background:
-              "linear-gradient(to bottom, color-mix(in oklch, var(--color-accent) 12%, transparent), transparent)",
-          }}
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -right-24 -top-16 size-[30rem] rounded-full opacity-60 blur-3xl motion-safe:[animation:hero-bloom_11s_ease-in-out_infinite]"
-          style={{
-            background: heroGenre
-              ? `radial-gradient(closest-side, ${genreTint(heroGenre, 0.22)}, transparent 70%)`
-              : "radial-gradient(closest-side, color-mix(in oklch, var(--color-accent) 15%, transparent), color-mix(in oklch, var(--color-cool) 5%, transparent) 58%, transparent 72%)",
-          }}
-          aria-hidden
-        />
-        {heroGenre && (
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background: `radial-gradient(120% 90% at 18% -10%, ${genreTint(
-                heroGenre,
-                0.2,
-              )}, transparent 60%)`,
-            }}
-            aria-hidden
-          />
-        )}
-        <Container size="wide" className="relative py-7 sm:py-12 lg:py-16">
-          <p
-            className="eyebrow inline-flex items-center gap-2 text-accent"
-            style={{
-              animation: "fade-up 0.5s var(--ease-out-expo) 0.05s both",
-            }}
-          >
-            {/* 시그니처 스펙트럼 틱 — 살아있는 브랜드 맥동(데이터 맥락, 홈 히어로와 동일 언어). */}
-            <span
-              aria-hidden
-              className="h-2.5 w-9 rounded-full bg-[length:200%_100%] motion-safe:[animation:spectrum-sheen_3.6s_linear_infinite]"
-              style={{ backgroundImage: spectrumGradient([...GENRES], 90) }}
-            />
-            <Compass size={14} strokeWidth={2} />
-            {bt("GENRE SPECTRUM / 탐색", "GENRE SPECTRUM / EXPLORE")}
-          </p>
 
-          <div className="mt-3 max-w-2xl sm:mt-4">
-            <h1
-              className="text-pretty text-[clamp(1.7rem,7vw,2.25rem)] font-bold leading-[1.1] sm:text-4xl"
-              style={{
-                animation: "fade-up 0.6s var(--ease-out-expo) 0.14s both",
-              }}
-            >
-              {bt("색을 따라 떠나는", "Exploring by color:")}{" "}
-              {heroGenre ? (
-                <span
-                  className="relative font-serif font-normal italic"
-                  style={{ color: accent }}
-                >
-                  {heroGenre}
-                  {/* 선택 장르 강조 밑줄 — 그 장르색으로 fill-in. */}
-                  <span
-                    aria-hidden
-                    className="absolute -bottom-0.5 left-0 h-[0.12em] w-full origin-left rounded-full motion-safe:[animation:spectrum-grow_0.6s_var(--ease-out-expo)_0.5s_both]"
-                    style={{
-                      background: `linear-gradient(90deg, ${accent}, transparent)`,
-                    }}
-                  />
-                </span>
-              ) : (
-                <ShimmerTitle
-                  as="span"
-                  className="relative font-serif font-normal italic"
-                  particleCount={22}
-                  particleSpread={1.2}
-                >
-                  {bt("스펙트럼 탐색", "Genre spectrum")}
-                </ShimmerTitle>
-              )}
-            </h1>
-            <p
-              className="lede mt-2.5 text-pretty text-sm leading-relaxed text-fg-2 sm:mt-3.5 sm:text-base"
-              style={{
-                animation: "fade-up 0.6s var(--ease-out-expo) 0.24s both",
-              }}
-            >
-              {bt(
-                "조건으로 좁혀 보는 화면입니다. 장르·태그·유형별로 웹툰과 웹소설을 좁혀봅니다. 작품 카드에는 줄거리와 연재 상태가 함께 표시되어 무슨 작품인지 바로 판단할 수 있습니다. 어디서부터 볼지 모르겠다면",
-                "Narrow things down by condition here. Filter webtoons and web novels by genre, tag, and type. Each card shows the synopsis and release status, so you can tell what a title is at a glance. Not sure where to start? Try",
-              )}{" "}
-              <Link href="/discover" className="font-semibold text-accent hover:underline">{bt("작품 탐색", "Discover titles")}</Link>
-              {bt("에서 추천·랭킹부터 보세요.", " for recommendations and rankings first.")}
-            </p>
-            <Link
-              href={
-                heroGenre
-                  ? `/random?genre=${encodeURIComponent(heroGenre)}`
-                  : "/random"
-              }
-              className="group mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-fg-3 transition-colors hover:text-accent sm:mt-5"
-              style={{
-                animation: "fade-up 0.6s var(--ease-out-expo) 0.32s both",
-              }}
-            >
-              <Shuffle
-                size={13}
-                aria-hidden="true"
-                className="transition-transform duration-300 ease-out-expo group-hover:rotate-180"
-              />
-              {heroGenre
-                ? formatI18nTemplate(bt("{v0}에서 즉흥으로 한 편", "One spontaneous pick from {v0}"), { v0: heroGenre })
-                : bt("조건은 됐고, 그냥 놀래켜줘", "Skip the filters — surprise me")}
+        <nav className="explore-page-modes" aria-label={bt("탐색 방식", "Explore modes")}>
+          {([
+            { mode: "search", label: ["바로 찾기", "Search"] },
+            { mode: "explore", label: ["조건으로 둘러보기", "Explore"] },
+            { mode: "recommend", label: ["취향 추천", "Recommendations"] },
+          ] as const).map(({ mode, label }) => (
+            <Link key={mode} href={catalogDiscoveryHref(mode, searchParams)} aria-current={mode === "explore" ? "page" : undefined}>
+              {bt(label[0], label[1])}
             </Link>
-          </div>
+          ))}
+        </nav>
 
-          <SiteArtSurfaceSpotlight cardId="nb-explore-spectrum" compact className="mt-6" />
-
-          <RevealOnScroll className="mt-8" delayMs={60}>
-            <div
-              className="h-2 w-full rounded-full"
-              style={{ background: spectrumGradient([...GENRES]) }}
-              aria-hidden
-            />
-            <div className="mt-4 flex flex-wrap gap-2">
+        <section aria-label={bt("장르 선택", "Choose genres")}>
+          <div className="explore-page-spectrum" style={{ background: spectrumGradient([...GENRES]) }} aria-hidden="true" />
+            <div className="explore-page-genres">
               {visibleGenres.map((entry) => {
                 const active = filters.genres.includes(entry);
                 return (
@@ -430,22 +318,12 @@ export function ExplorePage() {
                 </button>
               ) : null}
             </div>
-          </RevealOnScroll>
-        </Container>
-      </section>
 
-      <Container size="wide" className="flex flex-col gap-8 py-10">
-        <SiteContextualSubNav pathnameOverride="/explore" />
-        <DiscoveryWorkspaceNav current="explore" />
-        <ExploreReaDirectoryBar
-          filters={filters}
-          sort={sort}
-          onApplyFilters={applyFilters}
-          onChangeSort={changeSort}
-        />
+        </section>
 
-        <RevealOnScroll variant="fade">
-          <p className="eyebrow mb-3 text-fg-2">{bt("BY CODE / 코드로 좁히기", "BY CODE / NARROW DOWN")}</p>
+        <details className="explore-page-disclosure" data-testid="explore-page-tags">
+          <summary>{bt("태그로 좁히기", "Narrow down by tags")}{filters.tags.length > 0 && <span className="explore-page-selection-count">{formatI18nTemplate(bt("{v0}개 선택", "{v0} selected"), { v0: filters.tags.length })}</span>}</summary>
+          <div className="explore-page-disclosure-body">
           <div className="flex flex-wrap gap-2">
             {visibleTags.map(({ tag: entry, count }) => {
               const active = filters.tags.includes(entry);
@@ -507,9 +385,11 @@ export function ExplorePage() {
               </button>
             ) : null}
           </div>
-        </RevealOnScroll>
 
-        <div className="flex flex-col gap-4 border-y border-line py-4 lg:flex-row lg:items-center lg:justify-between">
+          </div>
+        </details>
+
+        <div className="explore-page-toolbar">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
             <div
               className="inline-flex items-center rounded-lg border border-line bg-card p-0.5"
@@ -572,6 +452,7 @@ export function ExplorePage() {
               type="button"
               onClick={() => setPanelOpen((open) => !open)}
               aria-expanded={panelOpen}
+              aria-controls="explore-page-filter-panel"
               className={cn(
                 "inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-150",
                 panelOpen || activeFilters > 0
@@ -590,7 +471,8 @@ export function ExplorePage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <p className="text-sm text-fg-2">
+            <p className="text-sm text-fg-2" role="status" aria-label={bt("탐색 결과 상태", "Explore result status")} aria-live="polite">
+              {loading ? bt("불러오는 중…", "Loading…") : error ? bt("작품 수 확인 불가", "Title count unavailable") : <>
               {bt("작품", "Titles")}{" "}
               <CountUp
                 key={results.length}
@@ -600,6 +482,7 @@ export function ExplorePage() {
                 className="numeral text-base text-fg"
               />
               {bt("편", "")}
+              </>}
             </p>
             <button
               type="button"
@@ -622,6 +505,7 @@ export function ExplorePage() {
         </div>
 
         {panelOpen && (
+          <div id="explore-page-filter-panel">
           <TitleFilterPanel
             value={filters}
             onChange={applyFilters}
@@ -629,6 +513,7 @@ export function ExplorePage() {
             platformOptions={platformOptions}
             savedCount={savedIds.size}
           />
+          </div>
         )}
 
         {/* 수익화 OFF면 렌더되지 않음(기본 invisible). 결과 그리드 위 광고 지면(탐색 전용 슬롯). */}
@@ -640,9 +525,10 @@ export function ExplorePage() {
           ]}
         />
 
-        <section aria-label={bt("탐색 결과", "Explore results")}>
+        <section className="explore-page-results" aria-label={bt("탐색 결과", "Explore results")} aria-busy={loading}>
+        <h2 className="explore-page-results-title">{bt("탐색 결과", "Explore results")}</h2>
         {loading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+          <div aria-label={bt("작품을 불러오는 중", "Loading titles")} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: 10 }).map((_, index) => (
               <div key={index} className="space-y-3">
                 <span className="skeleton block aspect-[3/4] rounded-xl" />
@@ -728,8 +614,43 @@ export function ExplorePage() {
           </div>
         )}
         </section>
+
+        <details className="explore-page-disclosure explore-page-guide" data-testid="explore-page-guide">
+          <summary>{bt("탐색 가이드 · 빠른 조건", "Explore guide · quick presets")}</summary>
+          <div className="explore-page-disclosure-body">
+            <p className="text-sm leading-relaxed text-fg-2">
+              {bt(
+                "조건으로 좁혀 보는 화면입니다. 장르·태그·유형별로 웹툰과 웹소설을 좁혀봅니다. 작품 카드에는 줄거리와 연재 상태가 함께 표시되어 무슨 작품인지 바로 판단할 수 있습니다. 어디서부터 볼지 모르겠다면",
+                "Narrow things down by condition here. Filter webtoons and web novels by genre, tag, and type. Each card shows the synopsis and release status, so you can tell what a title is at a glance. Not sure where to start? Try",
+              )}{" "}
+              <Link href="/discover" className="font-semibold text-accent hover:underline">{bt("작품 탐색", "Discover titles")}</Link>
+              {bt("에서 추천·랭킹부터 보세요.", " for recommendations and rankings first.")}
+
+            </p>
+            <Link
+              href={
+                heroGenre
+                  ? `/random?genre=${encodeURIComponent(heroGenre)}`
+                  : "/random"
+              }
+              className="group mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-fg-3 transition-colors hover:text-accent sm:mt-5"
+            >
+              <Shuffle
+                size={13}
+                aria-hidden="true"
+                className="transition-transform duration-300 ease-out-expo group-hover:rotate-180"
+              />
+              {heroGenre
+                ? formatI18nTemplate(bt("{v0}에서 즉흥으로 한 편", "One spontaneous pick from {v0}"), { v0: heroGenre })
+                : bt("조건은 됐고, 그냥 놀래켜줘", "Skip the filters — surprise me")}
+            </Link>
+            <SiteContextualSubNav pathnameOverride="/explore" />
+            <DiscoveryWorkspaceNav current="explore" />
+            <ExploreReaDirectoryBar filters={filters} sort={sort} onApplyFilters={applyFilters} onChangeSort={changeSort} />
+            <SiteArtSurfaceSpotlight cardId="nb-explore-spectrum" compact />
+          </div>
+        </details>
       </Container>
-    </div>
     </PageEntrance>
   );
 }

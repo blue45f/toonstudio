@@ -3,6 +3,8 @@ import { errors, type Locator, type Page } from "playwright";
 type PrepareStudioDrawingTarget = (timeoutMs: number) => Promise<void>;
 
 interface DrawingReadinessOptions {
+  /** 픽셀 증거에서만 접힌 안내의 그림자도 제외한다. 일반 조작 검증은 안내를 유지한다. */
+  dismissCollapsedWelcome?: boolean;
   /** 빈 문서 진입/초기화에서는 지연 마운트될 안내의 실제 닫기까지 기다린다. */
   requireWelcome?: boolean;
   timeoutMs?: number;
@@ -10,12 +12,14 @@ interface DrawingReadinessOptions {
 
 async function reachDrawingUi(
   page: Page,
-  { requireWelcome = false, timeoutMs = 60_000 }: DrawingReadinessOptions,
+  { requireWelcome = false, timeoutMs = 60_000, dismissCollapsedWelcome = false }: DrawingReadinessOptions,
   target?: Locator,
   prepareTarget?: PrepareStudioDrawingTarget,
 ): Promise<{ welcomeDismissed: boolean }> {
   const deadline = Date.now() + timeoutMs;
-  const welcome = page.locator('[data-studio-cinematic-canvas-welcome="true"]');
+  const welcome = page.locator(dismissCollapsedWelcome
+    ? '[data-studio-cinematic-canvas-welcome]'
+    : '[data-studio-cinematic-canvas-welcome="true"]');
   const beta = page.locator('[data-studio-beta-notice="true"]');
   const comic = page.locator('[data-studio-quick-comic-overlay="true"]');
   const quickstart = page.locator('[data-studio-creative-starter="true"]');

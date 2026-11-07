@@ -62,6 +62,7 @@ import { LearningProcessStudy } from "./LearningProcessStudy";
 import { LEARN_CURRICULUM_ROADMAP_TRACKS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 import "./learning-hub.css";
+import "./learning-home-classroom.css";
 
 const lessonUrl = (id: string) => `/learn/lessons/${encodeURIComponent(id)}`;
 // 경로에서 연 강좌는 ?from=<pathId>를 붙여 강좌 상세에서도 경로 순서를 유지한다.
@@ -324,26 +325,31 @@ export function LearningHome() {
       <a className="learn-skip-link" href={`#${LEARN_TAB_PREFIX}`}>학습 영역으로 건너뛰기</a>
       {store.warning && <p className="learn-caution" role="status">{store.warning}</p>}
 
-      <header className="learn-hub-hero">
-        <div className="learn-hub-hero-copy">
-          <p className="learn-eyebrow">TOONSTUDIO / ARTIST CLASSROOM</p>
-          <h1>상상하던 장면이,<br />내 손끝의 실력으로.</h1>
-          <p className="learn-intro">웹툰 그리기를 단계별 강좌로 배우는 학습 홈입니다. 콘티의 첫 선부터 빛과 색, 원고 마무리까지 — 매 수업마다 작은 결과물을 하나씩 완성합니다.</p>
-          <div className="learn-actions">
-            <Link className="learn-primary" to={lessonUrl(nextLesson.id)}>
-              {recommendedStats.started ? "추천 경로 이어서 학습" : "내 추천 경로 시작"} <span aria-hidden="true">→</span>
-            </Link>
-            <button type="button" className="learn-secondary" onClick={editPlan}>학습 설정 바꾸기</button>
-          </div>
-          <p className="learn-small">로그인 없이 시작 · 강좌 {LESSONS.length}개 · 학습 경로 {LEARNING_PATHS.length}개 · 용어 {TERMS.length}개 · 기록은 이 브라우저에 저장</p>
-        </div>
-        <figure className="learn-hero-art"><WorkflowIllustration kind="learn" priority /><figcaption><span>YOUR NEXT SCENE</span><strong>관찰하고. 익히고. 그려보세요.</strong><span>ToonStudio 콘셉트 아트</span></figcaption></figure>
+      <header className="learn-classroom-heading">
+        <h1>{recommendedPath.title}</h1>
+        <p className="learn-small">로그인 없이 시작 · 기록은 이 브라우저에 저장</p>
       </header>
 
+      <section id={LEARN_TAB_PREFIX} className="learn-hub-tabs" aria-label="학습 영역">
+        <SiteSectionTabs tabs={hubTabs} value={activeTab} onChange={selectTab} label="학습 영역" idPrefix={LEARN_TAB_PREFIX} />
+
+        <SiteTabPanel idPrefix={LEARN_TAB_PREFIX} id="today" active={activeTab === "today"} mounted={isMounted("today")} className="learn-hub-panel">
+          <section className="learn-classroom-session" aria-labelledby="learn-session-title">
+            <article className="learn-classroom-feature">
+              <div className="learn-classroom-feature-copy">
+                <p className="learn-eyebrow">{recommendedPath.title} · {STATUS_LABELS[getLessonState(store.progress, nextLesson.id)]} · 약 {nextLesson.minutes}분</p>
+                <h2 id="learn-session-title">{nextLesson.title}</h2>
+                <p className="learn-card-outcome"><strong>완성할 것</strong><span>{getLessonMeta(nextLesson.id).outcome}</span></p>
+                <Link className="learn-primary" to={lessonUrlInPath(nextLesson.id, recommendedPath.id)}>
+                  {getLessonState(store.progress, nextLesson.id) === "completed" ? "복습하기" : getLessonState(store.progress, nextLesson.id) === "in-progress" ? "계속하기" : "시작하기"} <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+              <figure className="learn-classroom-art"><WorkflowIllustration kind="learn" priority /><figcaption>ToonStudio 콘셉트 아트</figcaption></figure>
+            </article>
       <aside className="learn-dashboard-card learn-dashboard-overview" aria-label="내 학습 현황">
         <div className="learn-dashboard-heading">
-          <div><span className="learn-eyebrow">MY LEARNING</span><h2>{recommendedPath.title}</h2></div>
-          <strong aria-label={`전체 강좌 ${overallPercent}% 완료`}>{overallPercent}%</strong>
+          <span className="learn-eyebrow">MY LEARNING</span>
+          <strong><span className="sr-only">전체 강좌 </span>{overallPercent}%<span className="sr-only"> 완료</span></strong>
         </div>
         <progress value={completedCount} max={Math.max(LESSONS.length, 1)} aria-label="전체 강좌 완료율" />
         <dl className="learn-dashboard-stats">
@@ -351,63 +357,31 @@ export function LearningHome() {
           <div><dt>저장한 용어</dt><dd>{store.progress.bookmarks.length}</dd></div>
           <div><dt>다음 세션</dt><dd>{sessionLessons.reduce((sum, lesson) => sum + lesson.minutes, 0)}분</dd></div>
         </dl>
-        <div className="learn-dashboard-next">
-          <span>다음에 만들 것</span>
-          <strong>{getLessonMeta(nextLesson.id).outcome}</strong>
-          <Link to={lessonUrl(nextLesson.id)}>{nextLesson.title} →</Link>
-        </div>
       </aside>
 
-      <section
-        aria-label="직무·스킬트리별 실전 커리큘럼 로드맵"
-        data-testid="learn-rea-curriculum-roadmap"
-        className="mb-6 rounded-2xl border border-line bg-panel/70 p-4 sm:p-5"
-      >
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
-              COLOSO · MUNPIA ACADEMY · CSP SKILL-TREE
-            </p>
-            <h2 className="text-sm font-bold text-fg">
-              스토리 각색 · 작화 · 3D 연출 · 데뷔 수익화 4대 실전 스킬트리 로드맵
-            </h2>
-          </div>
-          <span className="rounded-full border border-line bg-canvas px-2.5 py-0.5 text-[11px] font-semibold text-fg-3">
-            학습 후 즉시 실습 스튜디오 연동
-          </span>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {LEARN_CURRICULUM_ROADMAP_TRACKS.map((trackItem) => (
-            <div
-              key={trackItem.id}
-              className="flex flex-col justify-between rounded-xl border border-line/80 bg-canvas/85 p-3.5 transition-colors hover:border-accent/50"
-            >
-              <div>
-                <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
-                  {trackItem.badge}
-                </span>
-                <h3 className="mt-2 text-xs font-bold text-fg">{trackItem.label}</h3>
-                <p className="mt-1 text-[11px] leading-relaxed text-fg-2">{trackItem.description}</p>
-              </div>
-              <div className="mt-3 pt-2 border-t border-line/50">
-                <Link
-                  to={trackItem.practiceHref}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
-                >
-                  {trackItem.practiceLabel} →
-                </Link>
-              </div>
+            <div className="learn-session-heading">
+              <h3>{profile.sessionMinutes}분 안에 이어갈 학습</h3>
+              <span>{recommendedStats.completed === recommendedStats.total ? "경로를 완료해 복습 강좌를 제안합니다." : `추천 경로의 남은 시간 약 ${recommendedStats.remainingMinutes}분`}</span>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <SiteArtSurfaceSpotlight cardId="nb-learn-academy" compact className="mt-6" />
-
-      <section id={LEARN_TAB_PREFIX} className="learn-hub-tabs" aria-label="학습 영역">
-        <SiteSectionTabs tabs={hubTabs} value={activeTab} onChange={selectTab} label="학습 영역" idPrefix={LEARN_TAB_PREFIX} />
-
-        <SiteTabPanel idPrefix={LEARN_TAB_PREFIX} id="today" active={activeTab === "today"} mounted={isMounted("today")} className="learn-hub-panel">
+            <ol className="learn-session-list" start={2}>
+              {sessionLessons.slice(1).map((lesson, index) => {
+                const state = getLessonState(store.progress, lesson.id);
+                return (
+                  <li key={lesson.id}>
+                    <span className="learn-session-number">{index + 2}</span>
+                    <div><span>{STATUS_LABELS[state]} · 약 {lesson.minutes}분</span><h3>{lesson.title}</h3><p>{getLessonMeta(lesson.id).outcome}</p></div>
+                    <Link to={lessonUrlInPath(lesson.id, recommendedPath.id)}>{state === "completed" ? "복습" : state === "in-progress" ? "계속" : "시작"} →</Link>
+                  </li>
+                );
+              })}
+            </ol>
+            <button type="button" className="learn-secondary" onClick={editPlan}>학습 설정 바꾸기</button>
+          </section>
+          <details id="learn-plan" className="learn-plan-section learn-plan-disclosure" open={planOpen} onToggle={(event) => setPlanOpen(event.currentTarget.open)}>
+            <summary>
+              <span><span className="learn-eyebrow">PERSONAL LEARNING PLAN</span><strong id="learn-plan-title">학습 목표·시간 설정</strong></span>
+              <span className="learn-plan-summary">{GOAL_OPTIONS.find((option) => option.value === profile.goal)?.label} · {LEVEL_LABELS[profile.level]} · {profile.sessionMinutes}분</span>
+            </summary>
           <div className="learn-quick-goals" role="group" aria-label="빠른 학습 목표 선택">
             <span className="learn-eyebrow">처음 오셨나요? 목표를 고르면 아래 추천 수업이 즉시 바뀝니다</span>
             <div className="learn-card-chips">
@@ -434,32 +408,6 @@ export function LearningHome() {
               })}
             </div>
           </div>
-          <RevealOnScroll>
-          <section className="learn-session-section" aria-labelledby="learn-session-title">
-            <div className="learn-session-heading">
-              <div><p className="learn-eyebrow">YOUR NEXT SESSION · {recommendedPath.title}</p><h2 id="learn-session-title">{profile.sessionMinutes}분 안에 이어갈 학습</h2></div>
-              <span>{recommendedStats.completed === recommendedStats.total ? "경로를 완료해 복습 강좌를 제안합니다." : `추천 경로의 남은 시간 약 ${recommendedStats.remainingMinutes}분`}</span>
-            </div>
-            <ol className="learn-session-list">
-              {sessionLessons.map((lesson, index) => {
-                const state = getLessonState(store.progress, lesson.id);
-                return (
-                  <li key={lesson.id}>
-                    <span className="learn-session-number">{index + 1}</span>
-                    <div><span>{STATUS_LABELS[state]} · 약 {lesson.minutes}분</span><h3>{lesson.title}</h3><p>{getLessonMeta(lesson.id).outcome}</p></div>
-                    <Link to={lessonUrl(lesson.id)}>{state === "completed" ? "복습" : state === "in-progress" ? "계속" : "시작"} →</Link>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-          </RevealOnScroll>
-
-          <details id="learn-plan" className="learn-plan-section learn-plan-disclosure" open={planOpen} onToggle={(event) => setPlanOpen(event.currentTarget.open)}>
-            <summary>
-              <span><span className="learn-eyebrow">PERSONAL LEARNING PLAN</span><strong id="learn-plan-title">학습 목표·시간 설정</strong></span>
-              <span className="learn-plan-summary">{GOAL_OPTIONS.find((option) => option.value === profile.goal)?.label} · {LEVEL_LABELS[profile.level]} · {profile.sessionMinutes}분</span>
-            </summary>
             <div className="learn-plan-layout">
               <div className="learn-plan-controls">
                 <label htmlFor="learn-role">나의 역할
@@ -629,6 +577,56 @@ export function LearningHome() {
           </RevealOnScroll>
         </SiteTabPanel>
       </section>
+
+      <details className="learn-classroom-roadmap">
+        <summary>학습 경로 · 강좌·자료</summary>
+      <section
+        aria-label="직무·스킬트리별 실전 커리큘럼 로드맵"
+        data-testid="learn-rea-curriculum-roadmap"
+        className="mb-6 rounded-2xl border border-line bg-panel/70 p-4 sm:p-5"
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
+              COLOSO · MUNPIA ACADEMY · CSP SKILL-TREE
+            </p>
+            <h2 className="text-sm font-bold text-fg">
+              스토리 각색 · 작화 · 3D 연출 · 데뷔 수익화 4대 실전 스킬트리 로드맵
+            </h2>
+          </div>
+          <span className="rounded-full border border-line bg-canvas px-2.5 py-0.5 text-[11px] font-semibold text-fg-3">
+            학습 후 즉시 실습 스튜디오 연동
+          </span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {LEARN_CURRICULUM_ROADMAP_TRACKS.map((trackItem) => (
+            <div
+              key={trackItem.id}
+              className="flex flex-col justify-between rounded-xl border border-line/80 bg-canvas/85 p-3.5 transition-colors hover:border-accent/50"
+            >
+              <div>
+                <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
+                  {trackItem.badge}
+                </span>
+                <h3 className="mt-2 text-xs font-bold text-fg">{trackItem.label}</h3>
+                <p className="mt-1 text-[11px] leading-relaxed text-fg-2">{trackItem.description}</p>
+              </div>
+              <div className="mt-3 pt-2 border-t border-line/50">
+                <Link
+                  to={trackItem.practiceHref}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
+                >
+                  {trackItem.practiceLabel} →
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <SiteArtSurfaceSpotlight cardId="nb-learn-academy" compact className="mt-6" />
+
+      </details>
 
       <RevealOnScroll variant="fade">
       <section className="learn-next-steps" aria-labelledby="learn-next-steps-title">

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -22,11 +22,13 @@ const DEFAULT_HREFS = [
 ];
 
 function renderHome() {
-  return render(
+  const result = render(
     <MemoryRouter initialEntries={["/studio"]}>
       <StudioProjectLibraryPage />
     </MemoryRouter>,
   );
+  fireEvent.click(screen.getByText(/시작 가이드와 추천 도구|Getting started and recommended tools/u));
+  return result;
 }
 
 function quickStartHrefs(): (string | null)[] {
