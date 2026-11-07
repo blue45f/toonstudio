@@ -106,9 +106,9 @@ export function TracePracticePage() {
               data-testid={`trace-practice-rea-drill-${item.id}`}
               aria-pressed={drillPreset === item.id}
               onClick={() => setDrillPreset(item.id)}
-              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              className={`inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 drillPreset === item.id
-                  ? "border-accent bg-accent text-white"
+                  ? "border-accent bg-accent text-on-accent"
                   : "border-line bg-card text-fg-2 hover:border-accent/50"
               }`}
             >
@@ -135,9 +135,9 @@ export function TracePracticePage() {
               data-testid={`trace-practice-rea-opacity-${item.id}`}
               aria-pressed={guideOpacity === item.id}
               onClick={() => setGuideOpacity(item.id)}
-              className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              className={`inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 guideOpacity === item.id
-                  ? "border-accent bg-accent text-white"
+                  ? "border-accent bg-accent text-on-accent"
                   : "border-line bg-card text-fg-2 hover:border-accent/50"
               }`}
             >

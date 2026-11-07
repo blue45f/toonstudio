@@ -466,9 +466,9 @@ export function CutsStudioPage() {
                 data-testid={`cuts-studio-rea-engine-${item.id}`}
                 aria-pressed={studioEngine === item.id}
                 onClick={() => setStudioEngine(item.id)}
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                className={`inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   studioEngine === item.id
-                    ? "border-accent bg-accent text-white"
+                    ? "border-accent bg-accent text-on-accent"
                     : "border-line bg-panel text-fg-2 hover:border-accent/50"
                 }`}
               >
@@ -495,9 +495,9 @@ export function CutsStudioPage() {
                 data-testid={`cuts-studio-rea-fps-${item.id}`}
                 aria-pressed={targetFps === item.id}
                 onClick={() => setTargetFps(item.id)}
-                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                className={`inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   targetFps === item.id
-                    ? "border-accent bg-accent text-white"
+                    ? "border-accent bg-accent text-on-accent"
                     : "border-line bg-panel text-fg-2 hover:border-accent/50"
                 }`}
               >
@@ -544,7 +544,7 @@ export function CutsStudioPage() {
                 aria-pressed={cameraCurve === curve.id}
                 data-testid={`cuts-studio-rea-curve-${curve.id}`}
                 onClick={() => setCameraCurve(curve.id)}
-                className={cameraCurve === curve.id ? "rounded-lg border border-accent bg-accent/15 px-2.5 py-1 font-bold text-accent" : "rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2"}
+                className={cameraCurve === curve.id ? "inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent/15 px-3 py-1.5 font-bold text-accent transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" : "inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 py-1.5 text-fg-2 transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"}
               >
                 {t(curve.ko, curve.en)}
               </button>
@@ -562,7 +562,7 @@ export function CutsStudioPage() {
                 aria-pressed={duckingProfile === duck.id}
                 data-testid={`cuts-studio-rea-duck-${duck.id}`}
                 onClick={() => setDuckingProfile(duck.id)}
-                className={duckingProfile === duck.id ? "rounded-md border border-accent bg-accent px-2 py-0.5 text-[11px] font-bold text-on-accent" : "rounded-md border border-line bg-panel px-2 py-0.5 text-[11px] text-fg-3"}
+                className={duckingProfile === duck.id ? "inline-flex min-h-11 items-center rounded-md border border-accent bg-accent px-3 py-1.5 text-[11px] font-bold text-on-accent transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" : "inline-flex min-h-11 items-center rounded-md border border-line bg-panel px-3 py-1.5 text-[11px] text-fg-3 transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"}
               >
                 {t(duck.ko, duck.en)}
               </button>
