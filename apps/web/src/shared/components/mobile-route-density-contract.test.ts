@@ -13,7 +13,10 @@ describe("mobile route density contract", () => {
     const cafes = source("../../domains/community/CafesPage.tsx");
 
     expect(ranking).toContain('aria-label="랭킹 산식 축"');
-    expect(ranking).toContain('className="hidden gap-2 sm:grid');
+    // 작은 화면의 축 선택은 이름 붙은 select로 유지하고 전체 설명 카드는 접어서 보존한다.
+    expect(ranking).toMatch(/<select\s+aria-label="랭킹 산식 축"[\s\S]*?<option key=\{entry.key\}/);
+    expect(ranking).toMatch(/<details data-testid="ranking-supporting-details"[^>]*>[\s\S]*?RANK_AXES\.map/);
+    expect(ranking.match(/<details data-testid="ranking-supporting-details"[^>]*>/)?.[0]).not.toMatch(/\sopen(?:[\s=>])/);
     expect(discovery).not.toContain('min-w-[42rem]');
     expect(discovery).toContain('grid grid-cols-3');
     expect(news).toContain("소식 카테고리");
