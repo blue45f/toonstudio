@@ -70,6 +70,30 @@ export function TimelapseGalleryPage() {
     setSearchParams(next, { replace: true });
   }
 
+  function handleChipKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
+    if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    const group = event.currentTarget.parentElement;
+    if (!group) return;
+    const buttons = Array.from(group.querySelectorAll<HTMLButtonElement>("button:not([disabled])"));
+    if (buttons.length === 0) return;
+    const currentIndex = buttons.indexOf(event.currentTarget);
+    if (currentIndex === -1) return;
+    event.preventDefault();
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (currentIndex + 1) % buttons.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = buttons.length - 1;
+    }
+    buttons[nextIndex]?.focus();
+  }
+
   return (
     <Container>
       <SiteContextualSubNav pathnameOverride="/community/timelapse" className="mb-5" />
@@ -84,7 +108,8 @@ export function TimelapseGalleryPage() {
         actions={
           <Link
             href="/studio"
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-accent/60 bg-accent px-3 py-2 text-xs font-semibold text-on-accent transition-colors hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            style={{ minHeight: "44px" }}
+            className="inline-flex min-h-11 scroll-my-24 items-center gap-1.5 rounded-lg border border-accent/60 bg-accent px-3.5 py-2.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <Plus size={14} aria-hidden />
             {b("내 타임랩스 만들기", "Make my timelapse")}
@@ -94,15 +119,22 @@ export function TimelapseGalleryPage() {
         artSrc="/images/hero-studio.webp"
         artPlacement="banner"
       >
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <label className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg-2">
+        <div
+          className="mt-4 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={b("타임랩스 목록 필터 및 검색", "Timelapse list filters and search")}
+          data-testid="timelapse-filter-controls"
+        >
+          <label
+            style={{ minHeight: "44px" }}
+            className="inline-flex min-h-11 scroll-my-24 items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg-2 focus-within:border-accent focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
+          >
             <ArrowLeftRight size={13} aria-hidden />
             <span className="sr-only">{b("정렬", "Sort")}</span>
             <select
               value={sort}
               onChange={(e) => updateParam("sort", e.target.value)}
-              className="bg-transparent text-fg outline-none"
-              aria-label={b("정렬", "Sort")}
+              className="min-h-7 bg-transparent text-fg outline-none"
             >
               {TIMELAPSE_CLIP_SORT_OPTIONS.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -111,23 +143,36 @@ export function TimelapseGalleryPage() {
               ))}
             </select>
           </label>
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-fg-2">
+          <label
+            data-testid="timelapse-filter-mine-chip"
+            data-state={mineOnly ? "active" : "inactive"}
+            style={{ minHeight: "44px" }}
+            className={`inline-flex min-h-11 scroll-my-24 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium leading-snug break-words [overflow-wrap:anywhere] transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent ${
+              mineOnly
+                ? "border-accent bg-accent/15 text-fg"
+                : "border-line bg-card text-fg-2 hover:border-accent/50"
+            }`}
+          >
             <input
               type="checkbox"
               checked={mineOnly}
               onChange={(e) => updateParam("mine", e.target.checked ? "1" : null)}
-              className="size-4 accent-[var(--color-accent)]"
+              className="size-4 shrink-0 accent-[var(--color-accent)] focus-visible:outline-none"
             />
-            {b("내 클립만", "My clips only")}
+            <span className="break-words [overflow-wrap:anywhere]">{b("내 클립만", "My clips only")}</span>
           </label>
-          <label className="inline-flex min-w-0 flex-1 items-center sm:max-w-64">
+          <label
+            style={{ minHeight: "44px" }}
+            className="inline-flex min-h-11 min-w-0 flex-1 items-center sm:max-w-64"
+          >
             <span className="sr-only">{b("클립 검색", "Search clips")}</span>
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={b("제목·설명·작성자로 검색", "Search title, description, author")}
-              className="h-9 w-full rounded-lg border border-line bg-card px-2.5 text-xs text-fg outline-none placeholder:text-fg-3 focus:border-accent/50"
+              style={{ minHeight: "44px" }}
+              className="min-h-11 scroll-my-24 w-full rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg outline-none placeholder:text-fg-3 focus:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </label>
         </div>
@@ -139,10 +184,13 @@ export function TimelapseGalleryPage() {
         className="mt-5 rounded-2xl border border-line bg-card/85 p-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-extrabold text-fg">
+          <span className="min-w-0 text-xs font-extrabold leading-snug text-fg break-words [overflow-wrap:anywhere]">
             {b("Procreate · Clip Studio · ibisPaint X · Cara · C2PA 타임랩스 텔레메트리 & 인간 필치 검증기", "Procreate / Clip Studio / ibisPaint X / Cara / C2PA Timelapse Telemetry & Human-Stroke Verifier")}
           </span>
-          <span data-testid="timelapse-rea-telemetry-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+          <span
+            data-testid="timelapse-rea-telemetry-status"
+            className="min-w-0 rounded-xl bg-accent/15 px-2.5 py-1 font-mono text-[11px] font-bold leading-snug text-accent break-words [overflow-wrap:anywhere]"
+          >
             {telemetryMode === "stroke-heatmap"
               ? b(`필압 4,096단계 · 12,840 스트로크 밀도 히트맵 (${replaySpeed} 리플레이)`, `4,096-level pressure · 12,840-stroke heatmap (${replaySpeed} replay)`)
               : telemetryMode === "layer-chronology"
@@ -150,8 +198,13 @@ export function TimelapseGalleryPage() {
                 : b(`Cara No-AI · C2PA 인간 필치 서명 (AI 생성 개입 0.0% · ${replaySpeed})`, `Cara No-AI · C2PA human stroke proof (0.0% AI · ${replaySpeed})`)}
           </span>
         </div>
-        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={b("타임랩스 분석 모드", "Timelapse inspection mode")}>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
+          <div
+            className="flex flex-wrap items-center gap-2"
+            style={{ gap: "8px" }}
+            role="group"
+            aria-label={b("타임랩스 분석 모드", "Timelapse inspection mode")}
+          >
             {([
               ["stroke-heatmap", b("필압·속도 스트로크 히트맵", "Pressure & Velocity Heatmap")],
               ["layer-chronology", b("5단계 제작 공정 타임라인", "5-Stage Layer Chronology")],
@@ -161,23 +214,42 @@ export function TimelapseGalleryPage() {
                 key={id}
                 type="button"
                 data-testid={`timelapse-rea-mode-${id}`}
+                data-state={telemetryMode === id ? "active" : "inactive"}
                 aria-pressed={telemetryMode === id}
                 onClick={() => setTelemetryMode(id)}
-                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${telemetryMode === id ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
+                onKeyDown={handleChipKeyDown}
+                style={{ minHeight: "44px", minWidth: "44px" }}
+                className={`inline-flex min-h-11 min-w-11 max-w-full scroll-my-24 items-center justify-center rounded-lg border px-3 py-2 text-left text-xs font-bold leading-snug break-words [overflow-wrap:anywhere] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  telemetryMode === id
+                    ? "border-accent bg-accent text-on-accent"
+                    : "border-line bg-panel text-fg-2 hover:border-accent/50"
+                }`}
               >
-                {label}
+                <span className="break-words [overflow-wrap:anywhere]">{label}</span>
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1.5" role="group" aria-label={b("리플레이 배속", "Replay speed")}>
+          <div
+            className="flex flex-wrap items-center gap-2"
+            style={{ gap: "8px" }}
+            role="group"
+            aria-label={b("리플레이 배속", "Replay speed")}
+          >
             {(["1x", "4x", "16x"] as const).map((spd) => (
               <button
                 key={spd}
                 type="button"
                 data-testid={`timelapse-rea-speed-${spd}`}
+                data-state={replaySpeed === spd ? "active" : "inactive"}
                 aria-pressed={replaySpeed === spd}
                 onClick={() => setReplaySpeed(spd)}
-                className={`rounded-lg border px-2 py-1 text-xs font-bold transition-colors ${replaySpeed === spd ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
+                onKeyDown={handleChipKeyDown}
+                style={{ minHeight: "44px", minWidth: "44px" }}
+                className={`inline-flex min-h-11 min-w-11 scroll-my-24 items-center justify-center rounded-lg border px-3 py-2 text-xs font-bold leading-snug transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  replaySpeed === spd
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-line bg-panel text-fg-3 hover:border-accent/50"
+                }`}
               >
                 {spd}
               </button>
