@@ -83,10 +83,16 @@ export function currentKstYear(now: Date = new Date()): number {
  * "최근 공개" 레일에 둘 수 있는 연도인지 — 미래 연도(예: 작가명 `kore2081`에서 잘못 읽은 2081)는
  * 공개된 작품일 수 없으므로 뺀다.
  */
-export function hasPlausibleReleaseYear(title: Pick<Title, "releaseYear">, maxYear: number): boolean {
-  return Number.isInteger(title.releaseYear)
+export function hasPlausibleReleaseYear(title: Pick<Title, "releaseYear"> | null | undefined, maxYear: number): boolean {
+  return title != null
+    && Number.isInteger(title.releaseYear)
     && title.releaseYear >= MIN_PLAUSIBLE_RELEASE_YEAR
     && title.releaseYear <= maxYear;
+}
+
+function validShelfTitles(list: readonly Title[] | undefined | null): readonly Title[] {
+  if (!Array.isArray(list)) return [];
+  return list.filter((item): item is Title => Boolean(item && typeof item.id === "string" && item.id.trim().length > 0));
 }
 
 /**
@@ -95,11 +101,15 @@ export function hasPlausibleReleaseYear(title: Pick<Title, "releaseYear">, maxYe
  */
 export function buildDiscoverShelves(snapshot: DiscoverHomeSnapshot, now: Date = new Date()): DiscoverShelf[] {
   const maxYear = currentKstYear(now);
+  const todayReleases = validShelfTitles(snapshot.todayReleases);
+  const topRated = validShelfTitles(snapshot.topRated);
+  const waitFree = validShelfTitles(snapshot.waitFree);
+  const newest = validShelfTitles(snapshot.newest);
   const shelves: DiscoverShelf[] = [
-    { id: "weekday", titles: snapshot.todayReleases, href: "/calendar" },
-    { id: "top-rated", titles: snapshot.topRated, href: "/ranking?axis=rating" },
-    { id: "free", titles: snapshot.waitFree, href: "/search?pricing=free,wait-free" },
-    { id: "newest", titles: snapshot.newest.filter((title) => hasPlausibleReleaseYear(title, maxYear)), href: "/explore?sort=newest" },
+    { id: "weekday", titles: todayReleases, href: "/calendar" },
+    { id: "top-rated", titles: topRated, href: "/ranking?axis=rating" },
+    { id: "free", titles: waitFree, href: "/search?pricing=free,wait-free" },
+    { id: "newest", titles: newest.filter((title) => hasPlausibleReleaseYear(title, maxYear)), href: "/explore?sort=newest" },
   ];
   return shelves
     .map((shelf) => ({ ...shelf, titles: shelf.titles.slice(0, DISCOVER_SHELF_LIMIT) }))
@@ -119,11 +129,17 @@ export interface DiscoverSpotlightPick {
  * 함께 보여 줄 작품은 편집 추천 → 평점 랭킹 순으로 채우고 대표 작품과 겹치지 않게 한다.
  */
 export function pickDiscoverSpotlight(snapshot: DiscoverHomeSnapshot): DiscoverSpotlightPick | null {
-  const lead = snapshot.spotlight ?? snapshot.featured?.[0] ?? snapshot.topRated[0] ?? null;
+  const featured = validShelfTitles(snapshot.featured);
+  const topRated = validShelfTitles(snapshot.topRated);
+  const spotlightLead =
+    snapshot.spotlight && typeof snapshot.spotlight.id === "string" && snapshot.spotlight.id.trim().length > 0
+      ? snapshot.spotlight
+      : null;
+  const lead = spotlightLead ?? featured[0] ?? topRated[0] ?? null;
   if (!lead) return null;
   const seen = new Set([lead.id]);
   const more: Title[] = [];
-  for (const title of [...(snapshot.featured ?? []), ...snapshot.topRated]) {
+  for (const title of [...featured, ...topRated]) {
     if (more.length >= DISCOVER_SPOTLIGHT_EXTRA_COUNT) break;
     if (seen.has(title.id)) continue;
     seen.add(title.id);

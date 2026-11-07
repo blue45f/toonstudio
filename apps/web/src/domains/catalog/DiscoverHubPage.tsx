@@ -19,8 +19,8 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { Suspense, useMemo, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
@@ -159,12 +159,21 @@ const DESTINATIONS: readonly DiscoverDestination[] = [
 /** 공개 카탈로그 수치와 기준일은 실제 스냅샷만 사용한다. */
 function CatalogSnapshotLine({ snapshot, loading }: { readonly snapshot: DiscoverHomeSnapshot | null; readonly loading: boolean }) {
   const bt = useBilingual("DiscoverHubPage");
-  const dateLabel = snapshot ? snapshotDateLabel(snapshot.generatedAt) : null;
-  const stats = snapshot
+  const dateLabel = snapshot?.generatedAt ? snapshotDateLabel(snapshot.generatedAt) : null;
+  const rawStats = snapshot?.stats;
+  const hasValidStats =
+    rawStats != null &&
+    typeof rawStats.titles === "number" &&
+    Number.isFinite(rawStats.titles) &&
+    typeof rawStats.platforms === "number" &&
+    Number.isFinite(rawStats.platforms) &&
+    typeof rawStats.genres === "number" &&
+    Number.isFinite(rawStats.genres);
+  const stats = hasValidStats
     ? [
-        { label: bt("작품", "stories"), value: COUNT_FORMAT.format(snapshot.stats.titles) },
-        { label: bt("플랫폼", "platforms"), value: COUNT_FORMAT.format(snapshot.stats.platforms) },
-        { label: bt("장르", "genres"), value: COUNT_FORMAT.format(snapshot.stats.genres) },
+        { label: bt("작품", "stories"), value: COUNT_FORMAT.format(rawStats.titles) },
+        { label: bt("플랫폼", "platforms"), value: COUNT_FORMAT.format(rawStats.platforms) },
+        { label: bt("장르", "genres"), value: COUNT_FORMAT.format(rawStats.genres) },
       ]
     : null;
 
@@ -204,9 +213,17 @@ function CatalogSnapshotLine({ snapshot, loading }: { readonly snapshot: Discove
 export function DiscoverHubPage() {
   const bt = useBilingual("DiscoverHubPage");
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  const [query, setQuery] = useState(() => urlQuery);
+  const isComposingRef = useRef(false);
   const [memoryFinderOpened, setMemoryFinderOpened] = useState(false);
   const [activeTrackId, setActiveTrackId] = useState<DiscoverSerializationTrackId>("all");
+
+  useEffect(() => {
+    setQuery(urlQuery);
+  }, [urlQuery]);
+
   const activeTrack =
     DISCOVER_SERIALIZATION_TRACKS.find((track) => track.id === activeTrackId) ??
     DISCOVER_SERIALIZATION_TRACKS[0];
@@ -223,8 +240,22 @@ export function DiscoverHubPage() {
 
   useDocumentTitle(bt("작품 탐색", "Discover"));
 
+  const updateDiscoverQuery = (nextValue: string) => {
+    setQuery(nextValue);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (nextValue.trim()) next.set("q", nextValue);
+        else next.delete("q");
+        return next;
+      },
+      { replace: true, preventScrollReset: true },
+    );
+  };
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isComposingRef.current) return;
     const trimmed = query.trim();
     navigate(trimmed ? `/search?q=${encodeURIComponent(trimmed)}` : "/search");
   };
@@ -249,7 +280,14 @@ export function DiscoverHubPage() {
             <input
               type="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onCompositionStart={() => {
+                isComposingRef.current = true;
+              }}
+              onCompositionEnd={(event) => {
+                isComposingRef.current = false;
+                updateDiscoverQuery(event.currentTarget.value);
+              }}
+              onChange={(event) => updateDiscoverQuery(event.target.value)}
               placeholder={searchLabel}
               enterKeyHint="search"
               autoComplete="off"
@@ -258,7 +296,7 @@ export function DiscoverHubPage() {
             {query ? (
               <button
                 type="button"
-                onClick={() => setQuery("")}
+                onClick={() => updateDiscoverQuery("")}
                 aria-label={bt("검색어 지우기", "Clear search query")}
                 className="grid size-9 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-panel hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
