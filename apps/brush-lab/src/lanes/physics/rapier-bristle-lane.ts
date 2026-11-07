@@ -55,8 +55,13 @@ export class RapierBristleLane extends BristleLaneBase {
       if (error instanceof LaneUnavailableError) throw error;
       throw new LaneUnavailableError("wasm-artifact-missing", `Rapier 물리 모듈을 불러오지 못했다: ${error instanceof Error ? error.message : String(error)}`, { laneId: this.id });
     }
-    this.module = mod;
+    if (!this.isDisposed()) this.module = mod;
     return () => new RapierWorld2D(mod);
+  }
+
+  override dispose(): void {
+    this.module = null;
+    super.dispose();
   }
 
   protected backendId(): string {

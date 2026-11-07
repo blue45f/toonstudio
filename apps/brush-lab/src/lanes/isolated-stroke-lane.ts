@@ -116,6 +116,10 @@ export abstract class IsolatedStrokeLane implements BrushEngineLane {
     this.width = config.width;
     this.height = config.height;
     await this.prepareEngine(env, config);
+    if (this.disposed) {
+      this.releaseEngine();
+      throw new InvalidStateError("init: dispose된 레인이다");
+    }
     this.document = new Float32Array(config.width * config.height * 4);
     this.clock = env.clock;
   }

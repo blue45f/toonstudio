@@ -82,6 +82,7 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
   let runtime: Webgl2InstancedRuntime | null = null;
   let offscreenGl: WebGL2RenderingContext | null = null;
   let pipeline: StrokePipeline | null = null;
+  let pendingAbort: StrokeAbortReceipt | null = null;
   let disposed = false;
   const stats: LaneStats = emptyLaneStats();
 
@@ -128,10 +129,13 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
         clock: e.clock,
         presentToCanvas: Boolean(config.presentCanvas),
       });
+      pipeline = null;
+      pendingAbort = null;
     },
     beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
       const emitterOptions = strokeEmitterOptions(options);
       const rt = requireRuntime();
+      pendingAbort = null;
       rt.beginStroke(program);
       pipeline = new StrokePipeline(program, seed, undefined, program.paper.enabled ? paperFor(program.paper) : null, emitterOptions);
     },
@@ -151,9 +155,32 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
     async endStroke(): Promise<StrokeReceipt> {
       const rt = requireRuntime();
       if (!pipeline) throw new InvalidStateError("beginStroke 전에 endStroke를 호출했다");
-      rt.submitBatch(pipeline.finish());
-      pipeline = null;
-      const r = rt.endStroke();
+      const currentPipeline = pipeline;
+      let enteredRuntimeEnd = false;
+      let r: ReturnType<Webgl2InstancedRuntime["endStroke"]>;
+      try {
+        rt.submitBatch(currentPipeline.finish());
+        pipeline = null;
+        enteredRuntimeEnd = true;
+        r = rt.endStroke();
+      } catch (error) {
+        pipeline = null;
+        try {
+          const aborted = rt.abortStroke();
+          if (enteredRuntimeEnd && aborted.documentPreserved) {
+            pendingAbort = abortReceipt(
+              aborted.discardedDabs,
+              false,
+              "endStroke가 GPU 굽기 도중 실패해 문서 보존을 보장할 수 없다",
+            );
+          } else {
+            pendingAbort = abortReceipt(aborted.discardedDabs, aborted.documentPreserved);
+          }
+        } catch {
+          pendingAbort = abortReceipt(0, false, "endStroke가 GPU 굽기 도중 실패해 문서 보존을 보장할 수 없다");
+        }
+        throw error;
+      }
       const receipt: StrokeReceipt = {
         dabCount: r.dabCount,
         submitCount: r.submitCount,
@@ -175,6 +202,12 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
      */
     abortStroke(): StrokeAbortReceipt {
       if (disposed) throw new InvalidStateError("webgl2-instanced 레인은 dispose됐다");
+      if (pendingAbort) {
+        const r = pendingAbort;
+        pendingAbort = null;
+        pipeline = null;
+        return r;
+      }
       if (!runtime) return noStrokeAbortReceipt();
       const result = runtime.abortStroke();
       pipeline = null;
@@ -193,6 +226,7 @@ export function createWebgl2InstancedLane(): BrushEngineLane {
       if (disposed) return;
       disposed = true;
       pipeline = null;
+      pendingAbort = null;
       runtime?.dispose();
       runtime = null;
       if (offscreenGl) {

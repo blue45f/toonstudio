@@ -56,6 +56,7 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
   let device: GPUDevice | null = null;
   let runtime: SumiInstancedRuntime | null = null;
   let pipeline: StrokePipeline | null = null;
+  let pendingAbort: StrokeAbortReceipt | null = null;
   let disposed = false;
   const stats: LaneStats = emptyLaneStats();
 
@@ -81,6 +82,7 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
     async init(e: LaneEnvironment, config: LaneInit): Promise<void> {
       if (disposed) throw new InvalidStateError("webgpu-instanced 레인은 dispose됐다");
       if (!probeResult || env !== e) await this.probe(e);
+      if (disposed) throw new InvalidStateError("webgpu-instanced 레인은 dispose됐다");
       const result = probeResult;
       if (!result || result.status !== "supported" || !adapter) {
         const code = result?.reasons[0] ?? "adapter-unavailable";
@@ -88,6 +90,10 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
       }
       const requested = await requestSumiDevice(adapter);
       const created = requested.device;
+      if (disposed) {
+        created.destroy();
+        throw new InvalidStateError("webgpu-instanced 레인은 dispose됐다");
+      }
       device = created;
       try {
         runtime = await SumiInstancedRuntime.create(created, {
@@ -99,8 +105,11 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
           presentCanvas: config.presentCanvas,
           presentFormat: config.presentCanvas && e.gpu ? e.gpu.getPreferredCanvasFormat() : undefined,
         });
+        if (disposed) throw new InvalidStateError("webgpu-instanced 레인은 dispose됐다");
+        pendingAbort = null;
       } catch (error) {
         // 장치를 만든 뒤 실패하면 호출자가 dispose하지 않아도 장치가 남지 않게 되돌린다.
+        runtime?.dispose();
         runtime = null;
         created.destroy();
         device = null;
@@ -110,6 +119,7 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
     beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
       const emitterOptions = strokeEmitterOptions(options);
       const rt = requireRuntime();
+      pendingAbort = null;
       rt.beginStroke(program, seed);
       pipeline = new StrokePipeline(program, seed, undefined, program.paper.enabled ? paperFor(program.paper) : null, emitterOptions);
     },
@@ -129,9 +139,32 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
     async endStroke(): Promise<StrokeReceipt> {
       const rt = requireRuntime();
       if (!pipeline) throw new InvalidStateError("beginStroke 전에 endStroke를 호출했다");
-      rt.submitBatch(pipeline.finish());
-      pipeline = null;
-      const r = await rt.endStroke();
+      const currentPipeline = pipeline;
+      let enteredRuntimeEnd = false;
+      let r: Awaited<ReturnType<SumiInstancedRuntime["endStroke"]>>;
+      try {
+        rt.submitBatch(currentPipeline.finish());
+        pipeline = null;
+        enteredRuntimeEnd = true;
+        r = await rt.endStroke();
+      } catch (error) {
+        pipeline = null;
+        try {
+          const aborted = rt.abortStroke();
+          if (enteredRuntimeEnd && aborted.documentPreserved) {
+            pendingAbort = abortReceipt(
+              aborted.discardedDabs,
+              false,
+              "endStroke가 GPU 굽기 도중 실패해 문서 보존을 보장할 수 없다",
+            );
+          } else {
+            pendingAbort = abortReceipt(aborted.discardedDabs, aborted.documentPreserved, aborted.reasonKo);
+          }
+        } catch {
+          pendingAbort = abortReceipt(0, false, "endStroke가 GPU 굽기 도중 실패해 문서 보존을 보장할 수 없다");
+        }
+        throw error;
+      }
       const receipt: StrokeReceipt = {
         dabCount: r.dabCount,
         submitCount: r.submitCount,
@@ -153,6 +186,12 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
      */
     abortStroke(): StrokeAbortReceipt {
       if (disposed) throw new InvalidStateError("webgpu-instanced 레인은 dispose됐다");
+      if (pendingAbort) {
+        const r = pendingAbort;
+        pendingAbort = null;
+        pipeline = null;
+        return r;
+      }
       if (!runtime) return noStrokeAbortReceipt();
       const result = runtime.abortStroke();
       pipeline = null;
@@ -172,6 +211,7 @@ export function createWebgpuInstancedLane(): BrushEngineLane {
       if (disposed) return;
       disposed = true;
       pipeline = null;
+      pendingAbort = null;
       runtime?.dispose();
       runtime = null;
       device?.destroy();

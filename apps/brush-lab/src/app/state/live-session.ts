@@ -107,6 +107,17 @@ export interface LiveSessionOptions {
   onStrokeAbort?: (abort: LiveStrokeAbort) => void;
 }
 
+function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
+  return value !== null && typeof value === "object" && typeof (value as { then?: unknown }).then === "function";
+}
+
+interface CancelSnapshot {
+  source: "pointercancel" | "lostpointercapture";
+  buttons: number;
+  hasFocus: boolean;
+  maxButtons: number;
+}
+
 export class LiveStrokeSession {
   private readonly opts: LiveSessionOptions;
   private readonly scheduler: FrameScheduler;
@@ -118,7 +129,7 @@ export class LiveStrokeSession {
   /** 진행 중인 획의 addSamples 소요(ms). */
   private addSamplesMs: number[] = [];
   private inStroke = false;
-  /** beginStroke·addSamples 실패로 버려진 물리 포인터 제스처인가(다음 down 전까지 잔여 move/up 미리보기 차단). */
+  /** beginStroke·addSamples 실패 또는 clear로 버려진 물리 포인터 제스처인가(다음 down 전까지 잔여 move/up 미리보기 차단). */
   private strokeRejected = false;
   private strokeCount = 0;
   private strokeSeed = 0;
@@ -129,21 +140,35 @@ export class LiveStrokeSession {
   private disposed = false;
   /** 현재 `lane`이 이미 dispose됐는가(clear가 이전 레인을 버린 뒤 새 레인을 대입하기 전). 같은 레인을 두 번 해제하지 않는다. */
   private laneReleased = false;
-  /** beginStroke를 부른 뒤 endStroke에 들어가기 전인가. 이 구간의 오류는 레인이 획 도중 상태로 남았을 수 있다. */
+  /** beginStroke를 부른 뒤 endStroke가 끝나기 전인가. 이 구간의 오류는 레인이 획 도중 상태로 남았을 수 있다. */
   private laneMidStroke = false;
+  /** clear() 호출마다 증가하는 세대 번호. 이전 세대의 지연 완료·거부가 새 레인의 상태를 덮어쓰지 못하게 막는다. */
+  private clearEpoch = 0;
+  /** 현재 체인에서 진행 중인 획이 시작된 clearEpoch. */
+  private strokeEpoch = 0;
+  /** 입력 경로(onSamples)에서 down마다 증가하는 물리 제스처 번호. */
+  private inputGestureId = 0;
+  /** 비동기 체인(processStrokePart)에서 현재 처리 중인 제스처 번호. */
+  private chainGestureId = 0;
+  /** 거부된 물리 제스처 번호(replaceLane이 진행 중인 거부 제스처를 해제하지 않게 보존). */
+  private rejectedGestureId = -1;
+  /** 현재 캡처를 소유한 포인터 ID(비소유 포인터의 pointercancel·lostpointercapture 무시용). */
+  private ownerPointerId: number | null = null;
+  private lastDownPointerId: number | null = null;
+  private readonly sampleEpoch = new WeakMap<RawSample, number>();
+  private readonly sampleGestureId = new WeakMap<RawSample, number>();
   /** 입력 단계(없으면 null). */
   private inputStage: RawStage | null;
   /** 포인터가 눌려 있는가(정본 표본의 down/up으로 추적). 눌린 채 단계를 reset하면 진행 중인 새 획의 상태를 지우므로 막는다. */
   private pointerDown = false;
   /** 이번 획에서 관측한 최대 버튼 비트(취소 전에 뗀 우클릭 병행까지 잡는다). */
   private strokeMaxButtons = 0;
-  /** 포인터 취소로 끝난 up 표본(스케줄러 큐를 지나도 정체성으로 구분한다). 이 표본이 든 획은 합성하지 않고 버린다. */
-  private readonly canceledUps = new WeakSet<RawSample>();
+  /** 포인터 취소로 끝난 up 표본과 취소 단서 스냅샷(스케줄러 큐·동일 프레임 후속 down을 지나도 보존한다). */
+  private readonly canceledUps = new WeakMap<RawSample, CancelSnapshot>();
   /** `pointercancel` 디스패치 중에만 true: 플랫폼 캡처가 만드는 up 표본을 취소로 표시하라는 신호. */
   private cancelNextUp = false;
   /**
-   * 취소 단서(출처·버튼·포커스). `clearMark`가 지우지 않는다: 비동기 abort 경로가 읽기 전에 지워져
-   * 단서가 항상 null이 되는 결함을 막는다. 새 획의 down과 abort 소비처에서 초기화한다.
+   * 현재 진행 중인 제스처의 취소 단서(출처·버튼·포커스). `pointercancel`이 up 표본을 만들 때 `canceledUps`에 스냅샷으로 옮겨진다.
    */
   private pendingCancel: { source: "pointercancel" | "lostpointercapture"; buttons: number; hasFocus: boolean } | null = null;
 
@@ -220,38 +245,104 @@ export class LiveStrokeSession {
   /** 요소에 포인터 캡처를 붙인다. 반환 함수로 뗀다. */
   attach(el: HTMLElement, captureOpts: PointerCaptureOptions = {}): () => void {
     if (this.detach) this.detach();
+    const onPreDown = (ev: PointerEvent): void => {
+      this.lastDownPointerId = ev.pointerId;
+    };
+    const onPreUp = (ev: PointerEvent): void => {
+      if (this.ownerPointerId !== null && ev.pointerId === this.ownerPointerId) {
+        this.ownerPointerId = null;
+      }
+    };
     // 플랫폼 캡처는 pointerup과 pointercancel을 똑같이 `up` 표본으로 바꾼다. 취소는 합성이 아니라 버려야 하므로,
     // 같은 이벤트에서 그 up 표본이 만들어지는 순간을 알 수 있게 캡처 리스너의 앞(표시)과 뒤(해제)에 리스너를 하나씩 건다.
     const markCancel = (ev: Event): void => {
-      this.cancelNextUp = true;
+      const pointerId = "pointerId" in ev && typeof (ev as PointerEvent).pointerId === "number" ? (ev as PointerEvent).pointerId : null;
+      if (this.ownerPointerId !== null) {
+        if (pointerId !== null && pointerId !== this.ownerPointerId) return;
+      } else if (!this.pointerDown) {
+        return;
+      }
       const buttons = "buttons" in ev && typeof (ev as PointerEvent).buttons === "number" ? (ev as PointerEvent).buttons : 0;
+      if (ev.type === "lostpointercapture") {
+        // pointercancel 처리 도중(releasePointerCapture 등)에 동기 발생하는 lostpointercapture는 취소 출처를 덮어쓰지 않는다.
+        if (this.cancelNextUp) return;
+        this.pendingCancel = {
+          source: "lostpointercapture",
+          buttons: (this.pendingCancel?.buttons ?? 0) | buttons,
+          hasFocus: (this.pendingCancel?.hasFocus ?? true) && document.hasFocus(),
+        };
+        return;
+      }
+      this.cancelNextUp = true;
+      const priorLost = this.pendingCancel?.source === "lostpointercapture";
       this.pendingCancel = {
-        source: ev.type === "lostpointercapture" ? "lostpointercapture" : "pointercancel",
-        buttons,
-        hasFocus: document.hasFocus(),
+        source: priorLost ? "lostpointercapture" : "pointercancel",
+        buttons: (this.pendingCancel?.buttons ?? 0) | buttons,
+        hasFocus: (this.pendingCancel?.hasFocus ?? true) && document.hasFocus(),
       };
     };
-    const clearMark = (): void => {
+    const clearMark = (ev: Event): void => {
+      const pointerId = "pointerId" in ev && typeof (ev as PointerEvent).pointerId === "number" ? (ev as PointerEvent).pointerId : null;
+      if (this.ownerPointerId !== null && pointerId !== null && pointerId !== this.ownerPointerId) return;
       this.cancelNextUp = false;
+      this.ownerPointerId = null;
     };
+    el.addEventListener("pointerdown", onPreDown);
+    el.addEventListener("pointerup", onPreUp);
     el.addEventListener("pointercancel", markCancel);
     // lostpointercapture 단독은 플랫폼이 소유자를 유지해 획을 잇는다(표본 없음). 표시만 남기고,
     // 새 획의 down이 오면 지운다. 뒤이어 진짜 pointercancel이 오면 그 표시가 abort로 보낸다.
-    // 정상 pointerup 뒤의 lostpointercapture는 표시만 남고(무시) 다음 down이 지운다.
+    // 정상 pointerup 뒤의 lostpointercapture는 표시만 남지 않도록 무시된다.
     el.addEventListener("lostpointercapture", markCancel);
     const offCapture = attachPointerCapture(el, (raw) => this.onSamples(raw), {
       logicalSize: { width: this.opts.width, height: this.opts.height },
       ...captureOpts,
     });
     el.addEventListener("pointercancel", clearMark);
-    el.addEventListener("lostpointercapture", clearMark);
+    let detached = false;
     const off = (): void => {
+      if (detached) return;
+      detached = true;
+      const wasDown = this.pointerDown;
+      el.removeEventListener("pointerdown", onPreDown);
+      el.removeEventListener("pointerup", onPreUp);
       el.removeEventListener("pointercancel", markCancel);
       el.removeEventListener("lostpointercapture", markCancel);
       offCapture();
       el.removeEventListener("pointercancel", clearMark);
-      el.removeEventListener("lostpointercapture", clearMark);
       this.cancelNextUp = false;
+      this.pendingCancel = null;
+      this.ownerPointerId = null;
+      this.lastDownPointerId = null;
+      if (!this.disposed && wasDown) {
+        this.pointerDown = false;
+        this.strokeRejected = false;
+        this.rejectedGestureId = -1;
+        this.inputStage?.reset();
+        this.opts.onPreviewReset?.();
+        this.opts.onPreview?.([]);
+        const synthUp: RawSample = {
+          x: 0,
+          y: 0,
+          tMs: this.opts.env.clock.now(),
+          pressure: 0,
+          tiltXDeg: 0,
+          tiltYDeg: 0,
+          twistDeg: 0,
+          pointerType: "pen",
+          phase: "up",
+          source: "raw",
+        };
+        this.sampleEpoch.set(synthUp, this.clearEpoch);
+        this.sampleGestureId.set(synthUp, this.inputGestureId);
+        this.canceledUps.set(synthUp, {
+          source: "lostpointercapture",
+          buttons: 0,
+          hasFocus: typeof document !== "undefined" ? document.hasFocus() : true,
+          maxButtons: this.strokeMaxButtons,
+        });
+        this.scheduler.enqueue([synthUp]);
+      }
     };
     this.detach = off;
     return () => {
@@ -266,7 +357,19 @@ export class LiveStrokeSession {
    * (해제된 이전 레인이 아니라) 새 레인이 준비된 뒤 새 레인에 적용된다.
    */
   clear(): Promise<void> {
-    const run = this.chain.then(() => this.replaceLane());
+    this.clearEpoch += 1;
+    const targetEpoch = this.clearEpoch;
+    this.strokeCount = 0;
+    this.cancelNextUp = false;
+    this.pendingCancel = null;
+    if (this.pointerDown) {
+      this.strokeRejected = true;
+      this.rejectedGestureId = this.inputGestureId;
+      this.inputStage?.reset();
+      if (this.opts.onPreviewReset) this.opts.onPreviewReset();
+      if (this.opts.onPreview) this.opts.onPreview([]);
+    }
+    const run = this.chain.then(() => this.replaceLane(targetEpoch));
     // clear가 실패해도(새 레인 init 실패 등) 뒤따르는 배치가 거부된 체인에 막혀 조용히 버려지지 않게 한다.
     // 실패 자체는 `run`을 돌려받는 호출자에게 그대로 전달된다.
     this.chain = run.catch(() => undefined);
@@ -283,14 +386,14 @@ export class LiveStrokeSession {
   }
 
   /** 이전 레인을 해제하고 새 레인을 init한 뒤 세션 상태를 초기화한다. */
-  private async replaceLane(): Promise<void> {
-    if (this.disposed) return;
-    if (!this.pointerDown) this.inputStage?.reset();
+  private async replaceLane(targetEpoch = this.clearEpoch): Promise<void> {
+    if (this.disposed || this.clearEpoch !== targetEpoch) return;
+    if (!this.pointerDown || this.strokeRejected) this.inputStage?.reset();
     this.releaseLane();
     const lane = this.opts.createLane();
     await LiveStrokeSession.initLane(lane, this.opts);
-    if (this.disposed) {
-      // init을 기다리는 사이 dispose()가 불렸다. dispose()는 이미 해제된 이전 레인만 정리했으므로
+    if (this.disposed || this.clearEpoch !== targetEpoch) {
+      // init을 기다리는 사이 dispose() 또는 새 clear()가 불렸다. dispose()는 이미 해제된 이전 레인만 정리했으므로
       // 새로 만든 레인(GPU 버퍼·텍스처 등)은 여기서 해제하지 않으면 아무도 해제하지 않는다.
       lane.dispose();
       return;
@@ -299,11 +402,17 @@ export class LiveStrokeSession {
     this.laneReleased = false;
     this.laneMidStroke = false;
     this.inStroke = false;
-    this.strokeRejected = false;
+    this.strokeCount = 0;
+    if (!(this.pointerDown && this.rejectedGestureId === this.inputGestureId)) {
+      this.strokeRejected = false;
+      this.rejectedGestureId = -1;
+    }
     this.strokeSamples = [];
     this.frames = [];
     this.addSamplesMs = [];
-    if (this.opts.onPreviewReset) this.opts.onPreviewReset();
+    if (this.opts.onPreviewReset && (!this.pointerDown || this.strokeRejected)) {
+      this.opts.onPreviewReset();
+    }
   }
 
   /** 현재 레인을 한 번만 해제한다. */
@@ -315,29 +424,55 @@ export class LiveStrokeSession {
 
   private onSamples(rawInput: RawSample[]): void {
     if (this.disposed) return;
+    rawInput = rawInput.filter((s) => Number.isFinite(s.x) && Number.isFinite(s.y) && Number.isFinite(s.tMs));
+    if (rawInput.length === 0) return;
     const hasDown = rawInput.some((s) => s.phase === "down");
     if (this.strokeRejected && !hasDown) {
       for (const s of rawInput) {
         if (s.phase === "up") {
           this.pointerDown = false;
           this.strokeRejected = false;
+          this.rejectedGestureId = -1;
+          this.ownerPointerId = null;
+          this.inputStage?.reset();
         }
       }
       this.cancelNextUp = false;
+      this.pendingCancel = null;
       return;
+    }
+    if (hasDown) {
+      if (this.strokeRejected) {
+        this.inputStage?.reset();
+      }
+      this.inputGestureId += 1;
+      this.strokeRejected = false;
+      this.rejectedGestureId = -1;
+      if (this.lastDownPointerId !== null) {
+        this.ownerPointerId = this.lastDownPointerId;
+      }
     }
     const transformed = this.opts.transformSamples ? this.opts.transformSamples(rawInput) : rawInput;
     const raw = this.inputStage ? applyStrokeStream(this.inputStage, transformed) : transformed;
     const { canonical, predicted } = splitPredicted(raw);
     for (const s of canonical) {
+      this.sampleEpoch.set(s, this.clearEpoch);
+      this.sampleGestureId.set(s, this.inputGestureId);
       if (s.phase === "down") {
         this.pointerDown = true;
         this.strokeRejected = false;
+        this.rejectedGestureId = -1;
         this.strokeMaxButtons = s.buttons ?? 0;
         // 이전 획의 정상 종료 뒤 따라온 lostpointercapture가 남긴 단서는 새 획과 무관하므로 버린다.
         this.pendingCancel = null;
-      } else if (s.phase === "up") this.pointerDown = false;
-      else if (typeof s.buttons === "number") this.strokeMaxButtons = Math.max(this.strokeMaxButtons, s.buttons);
+      } else if (s.phase === "up") {
+        this.pointerDown = false;
+        this.ownerPointerId = null;
+        if (typeof s.buttons === "number") this.strokeMaxButtons = Math.max(this.strokeMaxButtons, s.buttons);
+        if (!this.cancelNextUp) this.pendingCancel = null;
+      } else if (typeof s.buttons === "number") {
+        this.strokeMaxButtons = Math.max(this.strokeMaxButtons, s.buttons);
+      }
     }
     if (this.opts.onPreview) {
       this.opts.onPreview(predicted.map((p) => ({ x: p.x, y: p.y, pressure: p.pressure })));
@@ -345,8 +480,16 @@ export class LiveStrokeSession {
     if (this.cancelNextUp) {
       const up = canonical.findLast((sample) => sample.phase === "up");
       if (up) {
-        this.canceledUps.add(up);
+        const pending = this.pendingCancel;
+        this.canceledUps.set(up, {
+          source: pending?.source ?? "pointercancel",
+          buttons: pending?.buttons ?? 0,
+          hasFocus: pending?.hasFocus ?? document.hasFocus(),
+          maxButtons: this.strokeMaxButtons,
+        });
         this.cancelNextUp = false;
+        this.pendingCancel = null;
+        this.ownerPointerId = null;
         // 취소된 획은 버려지므로 입력 단계도 그 즉시 초기화한다(비동기 abort 경로를 기다리다 새 획의 상태를 지우지 않게 동기로 처리한다).
         this.inputStage?.reset();
       }
@@ -364,7 +507,7 @@ export class LiveStrokeSession {
   private async processBatch(batch: RawSample[]): Promise<void> {
     if (this.disposed) return;
     let start = 0;
-    while (start < batch.length) {
+    while (start < batch.length && !this.disposed) {
       let end = batch.length;
       for (let i = start; i < batch.length; i += 1) {
         if (batch[i]?.phase === "up") {
@@ -372,12 +515,25 @@ export class LiveStrokeSession {
           break;
         }
       }
-      try {
-        await this.processStrokePart(batch.slice(start, end));
-      } catch (error) {
-        await this.handleFailure(error);
-      }
+      const rawPart = batch.slice(start, end);
       start = end;
+      const currentEpoch = this.clearEpoch;
+      const part = rawPart.filter((s) => (this.sampleEpoch.get(s) ?? currentEpoch) === currentEpoch);
+      if (part.length === 0) continue;
+      const partEpoch = this.sampleEpoch.get(part[0]!) ?? currentEpoch;
+      try {
+        await this.processStrokePart(part, partEpoch);
+      } catch (error) {
+        if (this.disposed || this.clearEpoch !== partEpoch) {
+          this.inStroke = false;
+          this.laneMidStroke = false;
+          this.strokeSamples = [];
+          this.frames = [];
+          this.addSamplesMs = [];
+          return;
+        }
+        await this.handleFailure(error, partEpoch);
+      }
     }
   }
 
@@ -387,19 +543,29 @@ export class LiveStrokeSession {
    * 그렇지 않으면 레인의 다음 beginStroke가 '이전 획이 끝나지 않았다'로 영구히 실패한다.
    * (체인 안이므로 `clear()`가 아니라 `replaceLane`을 직접 부른다. clear는 같은 체인을 기다려 교착한다.)
    */
-  private async handleFailure(error: unknown): Promise<void> {
+  private async handleFailure(error: unknown, strokeEpoch: number): Promise<void> {
+    if (this.disposed || this.clearEpoch !== strokeEpoch) return;
     const strokeKo = this.strokeDetailKo();
-    this.pendingCancel = null;
     this.inStroke = false;
-    if (this.pointerDown) this.strokeRejected = true;
+    const sameActiveGesture = this.pointerDown && this.chainGestureId === this.inputGestureId;
+    if (sameActiveGesture) {
+      this.strokeRejected = true;
+      this.rejectedGestureId = this.chainGestureId;
+      this.inputStage?.reset();
+    } else if (!this.pointerDown) {
+      this.inputStage?.reset();
+    }
     this.strokeSamples = [];
     this.frames = [];
     this.addSamplesMs = [];
-    if (this.opts.onPreviewReset) this.opts.onPreviewReset();
-    if (this.opts.onPreview) this.opts.onPreview([]);
+    if (!this.pointerDown || sameActiveGesture) {
+      if (this.opts.onPreviewReset) this.opts.onPreviewReset();
+      if (this.opts.onPreview) this.opts.onPreview([]);
+    }
     const failures: unknown[] = [error];
     let abort: LiveStrokeAbort | null = null;
-    if (this.laneMidStroke) abort = await this.discardLaneStroke("error", failures, strokeKo, null);
+    if (this.laneMidStroke) abort = await this.discardLaneStroke("error", failures, strokeKo, null, strokeEpoch);
+    if (this.disposed || this.clearEpoch !== strokeEpoch) return;
     const onError = this.opts.onError;
     if (!onError) throw error;
     for (const failure of failures) onError(failure);
@@ -410,33 +576,42 @@ export class LiveStrokeSession {
    * 포인터 취소: 오류가 아니라 사용자의 중단이다. 아직 레인에 들어가지 않은 획(같은 배치 안에서 시작·취소)은 버릴 것이 없다.
    * 레인이 획 도중이면 abortStroke로 버리고, 문서를 보존하지 못하면(레인 교체) 조용히 넘기지 않고 오류로 드러낸다.
    */
-  private async handleCancel(): Promise<void> {
+  private async handleCancel(cancelMeta: CancelSnapshot | null, strokeEpoch: number): Promise<void> {
+    if (this.disposed || this.clearEpoch !== strokeEpoch) return;
     let strokeKo = this.strokeDetailKo();
-    const pending = this.pendingCancel;
-    this.pendingCancel = null;
-    if (strokeKo && pending) {
-      const buttons = pending.buttons | this.strokeMaxButtons;
+    if (strokeKo && cancelMeta) {
+      const buttons = cancelMeta.buttons | cancelMeta.maxButtons;
       if ((buttons & 2) !== 0) strokeKo += "·우클릭 병행";
       else if ((buttons & 4) !== 0) strokeKo += "·가운데클릭 병행";
-      if (!pending.hasFocus) strokeKo += "·창 포커스 이탈";
-      if (pending.source === "lostpointercapture") strokeKo += "·캡처상실";
+      if (!cancelMeta.hasFocus) strokeKo += "·창 포커스 이탈";
+      if (cancelMeta.source === "lostpointercapture") strokeKo += "·캡처상실";
     }
+    const cancelGestureId = this.chainGestureId;
+    const isCurrentGesture = !this.pointerDown || cancelGestureId === this.inputGestureId;
     this.inStroke = false;
-    this.strokeRejected = false;
+    if (isCurrentGesture) {
+      this.strokeRejected = false;
+      this.rejectedGestureId = -1;
+    }
     this.strokeSamples = [];
     this.frames = [];
     this.addSamplesMs = [];
     if (!this.laneMidStroke) {
-      if (this.opts.onPreviewReset) this.opts.onPreviewReset();
-      if (this.opts.onPreview) this.opts.onPreview([]);
+      if (isCurrentGesture) {
+        if (this.opts.onPreviewReset) this.opts.onPreviewReset();
+        if (this.opts.onPreview) this.opts.onPreview([]);
+      }
       return;
     }
     const failures: unknown[] = [];
-    const source = pending?.source ?? "pointercancel";
-    const abort = await this.discardLaneStroke("pointercancel", failures, strokeKo, source);
+    const source = cancelMeta?.source ?? "pointercancel";
+    const abort = await this.discardLaneStroke("pointercancel", failures, strokeKo, source, strokeEpoch);
+    if (this.disposed || this.clearEpoch !== strokeEpoch) return;
     if (!abort.laneReplaced && failures.length === 0) {
-      if (this.opts.onPreviewReset) this.opts.onPreviewReset();
-      if (this.opts.onPreview) this.opts.onPreview([]);
+      if (!this.pointerDown || cancelGestureId === this.inputGestureId) {
+        if (this.opts.onPreviewReset) this.opts.onPreviewReset();
+        if (this.opts.onPreview) this.opts.onPreview([]);
+      }
       if (this.opts.onStrokeAbort) this.opts.onStrokeAbort(abort);
       return;
     }
@@ -445,8 +620,10 @@ export class LiveStrokeSession {
         new SumiError("document-not-preserved", `포인터 취소로 획을 버렸지만 레인이 문서를 보존하지 못해 교체했다: ${abort.receipt?.reasonKo ?? "사유 없음"}`),
       );
     }
-    if (this.opts.onPreviewReset) this.opts.onPreviewReset();
-    if (this.opts.onPreview) this.opts.onPreview([]);
+    if (!this.pointerDown || cancelGestureId === this.inputGestureId) {
+      if (this.opts.onPreviewReset) this.opts.onPreviewReset();
+      if (this.opts.onPreview) this.opts.onPreview([]);
+    }
     const onError = this.opts.onError;
     if (!onError) throw failures[0];
     for (const failure of failures) onError(failure);
@@ -477,32 +654,47 @@ export class LiveStrokeSession {
     failures: unknown[],
     strokeKo: string | null,
     cancelSource: LiveStrokeAbort["cancelSource"],
+    strokeEpoch: number,
   ): Promise<LiveStrokeAbort> {
+    const targetLane = this.lane;
+    if (this.disposed || this.clearEpoch !== strokeEpoch) {
+      return { cause, receipt: null, laneReplaced: false, strokeKo, cancelSource };
+    }
     // 버린 획의 입력 단계 상태(보류한 up·붓/펜 위치)도 버린다. 포인터가 이미 새 획을 시작했으면 그 획의 상태이므로 건드리지 않는다.
-    if (!this.pointerDown) this.inputStage?.reset();
+    if (!this.pointerDown || this.strokeRejected) this.inputStage?.reset();
     let receipt: StrokeAbortReceipt | null = null;
     try {
-      receipt = this.lane.abortStroke();
+      const maybeReceipt = targetLane.abortStroke();
+      receipt = isPromiseLike<StrokeAbortReceipt>(maybeReceipt) ? await maybeReceipt : maybeReceipt;
     } catch (abortError) {
       failures.push(abortError);
+    }
+    if (this.disposed || this.clearEpoch !== strokeEpoch || this.lane !== targetLane) {
+      return { cause, receipt, laneReplaced: false, strokeKo, cancelSource };
     }
     if (receipt?.documentPreserved) {
       this.laneMidStroke = false;
       return { cause, receipt, laneReplaced: false, strokeKo, cancelSource };
     }
     try {
-      await this.replaceLane();
+      await this.replaceLane(strokeEpoch);
     } catch (recoveryError) {
       failures.push(recoveryError);
     }
     return { cause, receipt, laneReplaced: true, strokeKo, cancelSource };
   }
 
-  private async processStrokePart(part: RawSample[]): Promise<void> {
+  private async processStrokePart(part: RawSample[], partEpoch: number): Promise<void> {
+    if (this.disposed || this.clearEpoch !== partEpoch) return;
+    if (part[0]) {
+      const gId = this.sampleGestureId.get(part[0]);
+      if (gId !== undefined && !this.inStroke) this.chainGestureId = gId;
+    }
     const tail = part[part.length - 1];
     if (tail && tail.phase === "up" && this.canceledUps.has(tail)) {
+      const cancelMeta = this.canceledUps.get(tail) ?? null;
       // 취소된 획: 이 부분의 표본은 레인에 넣지 않고 버린다(문서에 합성하지 않는다).
-      await this.handleCancel();
+      await this.handleCancel(cancelMeta, partEpoch);
       return;
     }
     let samples = part;
@@ -511,57 +703,82 @@ export class LiveStrokeSession {
       const downIdx = samples.findIndex((s) => s.phase === "down");
       if (downIdx < 0) return;
       samples = samples.slice(downIdx);
+      const first = samples[0];
+      if (!first) return;
+      this.chainGestureId = this.sampleGestureId.get(first) ?? this.inputGestureId;
+      this.strokeEpoch = partEpoch;
       this.strokeSeed = this.opts.seed + this.strokeCount;
+      const strokeLane = this.lane;
       // beginStroke가 중간에 던져도 레인 상태는 알 수 없으므로 호출 전에 표시한다.
       this.laneMidStroke = true;
-      if (this.color) this.lane.beginStroke(this.program, this.strokeSeed, { color: this.color });
-      else this.lane.beginStroke(this.program, this.strokeSeed);
       this.inStroke = true;
       this.strokeSamples = [];
       this.frames = [];
       this.addSamplesMs = [];
+      const maybeBegin = this.color
+        ? strokeLane.beginStroke(this.program, this.strokeSeed, { color: this.color })
+        : strokeLane.beginStroke(this.program, this.strokeSeed);
+      if (isPromiseLike<void>(maybeBegin)) {
+        await maybeBegin;
+        if (this.disposed || this.clearEpoch !== partEpoch || this.lane !== strokeLane) return;
+      }
     }
     if (samples.length === 0) return;
+    const strokeLane = this.lane;
+    const strokeEpoch = this.strokeEpoch;
+    if (this.disposed || this.clearEpoch !== strokeEpoch) return;
     const clock = this.opts.env.clock;
     const t0 = clock.now();
-    const receipt = this.lane.addSamples(samples);
+    const maybeReceipt = strokeLane.addSamples(samples);
+    const receipt = isPromiseLike<DabBatchReceipt>(maybeReceipt) ? await maybeReceipt : maybeReceipt;
+    if (this.disposed || this.clearEpoch !== strokeEpoch || this.lane !== strokeLane) return;
     this.addSamplesMs.push(clock.now() - t0);
     this.frames.push(receipt);
     for (const s of samples) this.strokeSamples.push(s);
     if (this.opts.onFrame) this.opts.onFrame(receipt);
     const last = samples[samples.length - 1];
-    if (last && last.phase === "up") await this.finishStroke();
+    if (last && last.phase === "up") await this.finishStroke(strokeLane, strokeEpoch);
   }
 
-  private async finishStroke(): Promise<void> {
+  private async finishStroke(strokeLane: BrushEngineLane, strokeEpoch: number): Promise<void> {
     this.inStroke = false;
-    this.strokeCount += 1;
+    const seed = this.strokeSeed;
+    const samples = this.strokeSamples;
+    const frames = this.frames;
+    const addSamplesMs = this.addSamplesMs;
+    const strokeGestureId = this.chainGestureId;
     const clock = this.opts.env.clock;
     const tEnd = clock.now();
     // endStroke가 던지면(예: 꼬리 dab·GPU 예산 초과) 아직 획 도중이므로 handleFailure가 abortStroke/replaceLane으로 정리한다.
-    const receipt = await this.lane.endStroke();
-    this.laneMidStroke = false;
+    const receipt = await strokeLane.endStroke();
+    if (this.lane === strokeLane) this.laneMidStroke = false;
+    if (this.disposed || this.clearEpoch !== strokeEpoch || this.lane !== strokeLane) return;
     const tRead = clock.now();
-    const image = await this.lane.readback();
-    const linear = this.opts.skipLinear ? null : await this.lane.readbackLinear();
+    const image = await strokeLane.readback();
+    if (this.disposed || this.clearEpoch !== strokeEpoch || this.lane !== strokeLane) return;
+    const linear = this.opts.skipLinear ? null : await strokeLane.readbackLinear();
+    if (this.disposed || this.clearEpoch !== strokeEpoch || this.lane !== strokeLane) return;
+    this.strokeCount += 1;
     const timings: LiveStrokeTimings = {
-      addSamplesMs: this.addSamplesMs,
+      addSamplesMs,
       endStrokeMs: tRead - tEnd,
       readbackMs: clock.now() - tRead,
     };
     this.addSamplesMs = [];
-    if (this.opts.onPreview) this.opts.onPreview([]);
+    this.strokeSamples = [];
+    this.frames = [];
+    if (this.opts.onPreview && (!this.pointerDown || strokeGestureId === this.inputGestureId)) {
+      this.opts.onPreview([]);
+    }
     const result: LiveStrokeResult = {
       image,
       linear,
       receipt,
-      frames: this.frames,
-      samples: this.strokeSamples,
-      seed: this.strokeSeed,
+      frames,
+      samples,
+      seed,
       timings,
     };
-    this.strokeSamples = [];
-    this.frames = [];
     if (this.opts.onStrokeEnd) this.opts.onStrokeEnd(result);
   }
 }

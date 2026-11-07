@@ -50,6 +50,30 @@ export const DEFAULT_PALM_CONTACT_WIDTH_PX = 20;
  * 그 전에는 멀티터치 두 번째 손가락으로 보고 무시한다.
  */
 export const STALE_TAKEOVER_MS = 2000;
+/**
+ * 문서 좌표 절대값 안전 상한(px, `MAX_DOCUMENT_SIDE_PX = 2048`의 8배).
+ * `1e20`·`1e308` 같은 극단 유한 좌표가 `StepGenerator`의 dab 수 예산을 넘기거나 `±Infinity`로 번지는 것을 막되,
+ * 캔버스 밖 수천 px 드래그는 그대로 통과시킨다.
+ */
+export const MAX_SAFE_DOCUMENT_COORD_PX = 16384;
+/** `getBoundingClientRect` 변 길이 최소 유효값(px). `1e-300` 같은 비정상 미소값의 배율 폭주를 막는다. */
+export const MIN_VALID_RECT_SIDE_PX = 1e-3;
+
+export type SurfaceRectInvalidReason = "surface-hidden" | "non-finite-rect" | "negative-rect" | "zero-rect";
+
+export interface SurfaceMappingState {
+  readonly valid: boolean;
+  readonly reason: SurfaceRectInvalidReason | null;
+  readonly left: number;
+  readonly top: number;
+  readonly rectWidth: number;
+  readonly rectHeight: number;
+  readonly logicalWidth: number;
+  readonly logicalHeight: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+  toLocal: (clientX: number, clientY: number) => { x: number; y: number } | null;
+}
 
 type Phase = RawSample["phase"];
 type Source = RawSample["source"];
@@ -62,6 +86,119 @@ interface Mapper {
 /** 브라우저(또는 jsdom)가 제공하지 않는 숫자 필드는 기본값으로 메운다. */
 function numberOr(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function clampDocumentCoord(value: number): number {
+  const clamped = Math.max(-MAX_SAFE_DOCUMENT_COORD_PX, Math.min(MAX_SAFE_DOCUMENT_COORD_PX, value));
+  return clamped === 0 ? 0 : clamped;
+}
+
+/**
+ * 요소의 현재 레이아웃 사각형(`getBoundingClientRect`)과 논리 문서 크기(`logicalSize`)로부터
+ * 클라이언트 CSS px → 문서 논리 px 변환 상태를 계산한다.
+ *
+ * - 숨김(`hidden`, `display: none`, `visibility: hidden`), 비유한(`NaN`/`±Infinity`), 음수 크기, `0×0`(또는 `< 1e-3` 미소 크기)
+ *   상태에서는 `valid: false`와 `reason`을 돌려주고 `toLocal`은 `null`을 반환한다.
+ * - `allowUnlaidOutZeroRect === true`일 때만 jsdom 단위 테스트의 미배치 기본 요소(`0,0,0,0`, 자체 `getBoundingClientRect` 미정의)를
+ *   1:1 배율로 허용한다. 한 번이라도 양수 사각형이 관측된 뒤 `0×0`으로 붕괴하면 `zero-rect`로 거부한다.
+ */
+export function resolveSurfaceMapping(
+  el: HTMLElement,
+  logicalSize?: { width: number; height: number },
+  allowUnlaidOutZeroRect = false,
+): SurfaceMappingState {
+  const rect = el.getBoundingClientRect();
+  const rawLeft = rect.left;
+  const rawTop = rect.top;
+  const rawW = rect.width;
+  const rawH = rect.height;
+  const fallbackLogicalW = logicalSize !== undefined ? logicalSize.width : rawW;
+  const fallbackLogicalH = logicalSize !== undefined ? logicalSize.height : rawH;
+
+  const invalid = (reason: SurfaceRectInvalidReason): SurfaceMappingState => ({
+    valid: false,
+    reason,
+    left: rawLeft,
+    top: rawTop,
+    rectWidth: rawW,
+    rectHeight: rawH,
+    logicalWidth: fallbackLogicalW,
+    logicalHeight: fallbackLogicalH,
+    scaleX: 1,
+    scaleY: 1,
+    toLocal: () => null,
+  });
+
+  if (el.hidden === true || el.style?.display === "none" || el.style?.visibility === "hidden") {
+    return invalid("surface-hidden");
+  }
+  if (!Number.isFinite(rawLeft) || !Number.isFinite(rawTop) || !Number.isFinite(rawW) || !Number.isFinite(rawH)) {
+    return invalid("non-finite-rect");
+  }
+  if (rawW < 0 || rawH < 0) {
+    return invalid("negative-rect");
+  }
+  if (rawW < MIN_VALID_RECT_SIDE_PX || rawH < MIN_VALID_RECT_SIDE_PX) {
+    const isJsdomUnlaidOut =
+      allowUnlaidOutZeroRect &&
+      rawW === 0 &&
+      rawH === 0 &&
+      rawLeft === 0 &&
+      rawTop === 0 &&
+      !Object.prototype.hasOwnProperty.call(el, "getBoundingClientRect") &&
+      el.style?.width !== "0px" &&
+      el.style?.height !== "0px" &&
+      typeof navigator !== "undefined" &&
+      navigator.userAgent.includes("jsdom");
+    if (!isJsdomUnlaidOut) {
+      return invalid("zero-rect");
+    }
+  }
+
+  let logicalWidth = rawW;
+  let logicalHeight = rawH;
+  if (logicalSize !== undefined) {
+    if (!Number.isFinite(logicalSize.width) || !Number.isFinite(logicalSize.height)) {
+      return invalid("non-finite-rect");
+    }
+    if (logicalSize.width < 0 || logicalSize.height < 0) {
+      return invalid("negative-rect");
+    }
+    if (logicalSize.width < MIN_VALID_RECT_SIDE_PX || logicalSize.height < MIN_VALID_RECT_SIDE_PX) {
+      return invalid("zero-rect");
+    }
+    logicalWidth = logicalSize.width;
+    logicalHeight = logicalSize.height;
+  }
+
+  const scaleX = rawW >= MIN_VALID_RECT_SIDE_PX ? logicalWidth / rawW : 1;
+  const scaleY = rawH >= MIN_VALID_RECT_SIDE_PX ? logicalHeight / rawH : 1;
+  if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) {
+    return invalid("non-finite-rect");
+  }
+
+  return {
+    valid: true,
+    reason: null,
+    left: rawLeft,
+    top: rawTop,
+    rectWidth: rawW,
+    rectHeight: rawH,
+    logicalWidth,
+    logicalHeight,
+    scaleX,
+    scaleY,
+    toLocal: (clientX: number, clientY: number) => {
+      if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+      const rawX = (clientX - rawLeft) * scaleX;
+      const rawY = (clientY - rawTop) * scaleY;
+      if (Number.isNaN(rawX) || Number.isNaN(rawY)) return null;
+      return {
+        x: clampDocumentCoord(rawX),
+        y: clampDocumentCoord(rawY),
+      };
+    },
+  };
 }
 
 function pointerKindOf(type: string): PointerKind {
@@ -80,7 +217,7 @@ export function sampleFromPointerEvent(
   const sample: RawSample = {
     x: p.x,
     y: p.y,
-    tMs: ev.timeStamp,
+    tMs: numberOr(ev.timeStamp, 0),
     pressure: numberOr(ev.pressure, 0),
     tiltXDeg: numberOr(ev.tiltX, 0),
     tiltYDeg: numberOr(ev.tiltY, 0),
@@ -140,23 +277,29 @@ export function attachPointerCapture(
   let lastY = 0;
   let lastTMs = 0;
   let lastPointerType: PointerKind = "mouse";
+  let detached = false;
+  let hasSeenPositiveRect = false;
 
-  const mapper: Mapper = {
-    toLocal: (clientX, clientY) => {
-      const rect = el.getBoundingClientRect();
-      const w = opts.logicalSize?.width ?? rect.width;
-      const h = opts.logicalSize?.height ?? rect.height;
-      const sx = rect.width > 0 ? w / rect.width : 1;
-      const sy = rect.height > 0 ? h / rect.height : 1;
-      return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
-    },
+  const currentMapping = (): SurfaceMappingState => {
+    const state = resolveSurfaceMapping(el, opts.logicalSize, !hasSeenPositiveRect);
+    if (
+      state.rectWidth >= MIN_VALID_RECT_SIDE_PX &&
+      state.rectHeight >= MIN_VALID_RECT_SIDE_PX &&
+      Number.isFinite(state.rectWidth) &&
+      Number.isFinite(state.rectHeight)
+    ) {
+      hasSeenPositiveRect = true;
+    }
+    return state;
   };
 
   const previousTouchAction = el.style.touchAction;
   el.style.touchAction = "none";
 
   const notePen = (ev: PointerEvent): void => {
-    if (ev.pointerType === "pen") lastPenTMs = ev.timeStamp;
+    if (ev.pointerType === "pen" && Number.isFinite(ev.timeStamp)) {
+      lastPenTMs = Math.max(lastPenTMs, ev.timeStamp);
+    }
   };
 
   const isPalm = (ev: PointerEvent): boolean => {
@@ -166,33 +309,49 @@ export function attachPointerCapture(
     return false;
   };
 
-  const track = (ev: PointerEvent, kind: PointerKind): void => {
-    const p = mapper.toLocal(ev.clientX, ev.clientY);
-    lastX = p.x;
-    lastY = p.y;
-    lastTMs = ev.timeStamp;
+  const track = (ev: PointerEvent, pt: { x: number; y: number }, kind: PointerKind, resetTime = false): void => {
+    lastX = pt.x;
+    lastY = pt.y;
+    if (Number.isFinite(ev.timeStamp)) {
+      lastTMs = resetTime ? ev.timeStamp : Math.max(lastTMs, ev.timeStamp);
+    }
     lastPointerType = kind;
   };
 
-  const onDown = (ev: PointerEvent): void => {
-    notePen(ev);
-    if (ownerId !== null) {
-      // 예전 획이 조용히 끝난 뒤(창 밖 up 분실 등) 한참 뒤의 새 down이면 예전 획을 합성 종료하고 새로 시작한다.
-      // 얼마 안 된 down은 멀티터치 두 번째 손가락으로 보고 무시한다(보조 버튼은 기본 동작만 막는다).
-      if (ev.timeStamp - lastTMs > STALE_TAKEOVER_MS) {
-        ownerId = null;
-        onSamples([{ x: lastX, y: lastY, tMs: ev.timeStamp, pressure: lastPressure, tiltXDeg: 0, tiltYDeg: 0, twistDeg: 0, pointerType: lastPointerType, phase: "up", source: "raw" }]);
-      } else {
-        if (ev.pointerType === "mouse" && ev.button !== 0) ev.preventDefault();
-        return;
+  const releaseCapture = (id: number): void => {
+    try {
+      if (
+        typeof el.hasPointerCapture === "function" &&
+        typeof el.releasePointerCapture === "function" &&
+        el.hasPointerCapture(id)
+      ) {
+        el.releasePointerCapture(id);
       }
+    } catch {
+      // 이미 해제되었거나 비활성 포인터여서 브라우저가 던져도 무시한다.
     }
-    if (!ev.isPrimary) return;
+  };
+
+  const onDown = (ev: PointerEvent): void => {
+    if (detached) return;
+    notePen(ev);
+    if (ownerId !== null && !(ev.timeStamp - lastTMs > STALE_TAKEOVER_MS)) {
+      // 얼마 안 된 down은 멀티터치 두 번째 손가락으로 보고 무시한다(보조 버튼은 기본 동작만 막는다).
+      if (ev.pointerType === "mouse" && ev.button !== 0) ev.preventDefault();
+      return;
+    }
+    if (!ev.isPrimary) {
+      if (ownerId !== null && ev.pointerType === "mouse" && ev.button !== 0) ev.preventDefault();
+      return;
+    }
     if (opts.primaryButtonOnly === true && ev.pointerType === "mouse" && ev.button !== 0) {
       ev.preventDefault();
       return;
     }
     if (isPalm(ev)) return;
+    const mapping = currentMapping();
+    const localPt = mapping.toLocal(ev.clientX, ev.clientY);
+    if (!mapping.valid || localPt === null) return;
     try {
       if (typeof el.setPointerCapture === "function") {
         el.setPointerCapture(ev.pointerId);
@@ -213,63 +372,109 @@ export function attachPointerCapture(
       }
       return;
     }
+    if (ownerId !== null) {
+      // 예전 획이 조용히 끝난 뒤(창 밖 up 분실 등) 한참 뒤의 유효한 새 down이고 캡처도 확보됐으므로
+      // 예전 획을 합성 종료한 뒤 새 획을 시작한다.
+      const prevOwner = ownerId;
+      if (prevOwner !== ev.pointerId) releaseCapture(prevOwner);
+      ownerId = null;
+      const upTMs = Math.max(lastTMs, Number.isFinite(ev.timeStamp) ? ev.timeStamp : lastTMs);
+      onSamples([
+        {
+          x: lastX,
+          y: lastY,
+          tMs: upTMs,
+          pressure: lastPressure,
+          tiltXDeg: 0,
+          tiltYDeg: 0,
+          twistDeg: 0,
+          pointerType: lastPointerType,
+          phase: "up",
+          source: "raw",
+        },
+      ]);
+      if (detached) {
+        releaseCapture(ev.pointerId);
+        return;
+      }
+    }
     ownerId = ev.pointerId;
-    lastPressure = ev.pressure;
-    track(ev, pointerKindOf(ev.pointerType));
+    lastPressure = numberOr(ev.pressure, 0);
+    track(ev, localPt, pointerKindOf(ev.pointerType), true);
     ev.preventDefault();
-    onSamples([sampleFromPointerEvent(ev, "down", "raw", mapper)]);
+    onSamples([sampleFromPointerEvent(ev, "down", "raw", { toLocal: () => localPt })]);
   };
 
   const onMove = (ev: PointerEvent): void => {
+    if (detached) return;
     notePen(ev);
+    const mapping = currentMapping();
     if (ownerId === null) {
-      if (opts.onHover && ev.buttons === 0) {
-        const p = mapper.toLocal(ev.clientX, ev.clientY);
-        opts.onHover(p.x, p.y);
+      if (opts.onHover && ev.buttons === 0 && mapping.valid) {
+        const p = mapping.toLocal(ev.clientX, ev.clientY);
+        if (p !== null) opts.onHover(p.x, p.y);
       }
       return;
     }
-    if (ev.pointerId !== ownerId) return;
-    track(ev, pointerKindOf(ev.pointerType));
+    if (ev.pointerId !== ownerId || !mapping.valid) return;
     const out: RawSample[] = [];
     if (!useRaw) {
+      const kind = pointerKindOf(ev.pointerType);
       const coalesced = coalescedOf(ev);
-      for (let i = 0; i < coalesced.length; i += 1) {
-        const c = coalesced[i];
+      const validCoalesced: { ev: PointerEvent; pt: { x: number; y: number } }[] = [];
+      for (const c of coalesced) {
         if (!c) continue;
-        const source: Source = i === coalesced.length - 1 ? "raw" : "coalesced";
-        out.push(sampleFromPointerEvent(c, "move", source, mapper));
+        const pt = mapping.toLocal(c.clientX, c.clientY);
+        if (pt !== null) validCoalesced.push({ ev: c, pt });
       }
-      lastPressure = ev.pressure;
+      for (let i = 0; i < validCoalesced.length; i += 1) {
+        const item = validCoalesced[i]!;
+        track(item.ev, item.pt, kind);
+        lastPressure = numberOr(item.ev.pressure, 0);
+        const source: Source = i === validCoalesced.length - 1 ? "raw" : "coalesced";
+        out.push(sampleFromPointerEvent(item.ev, "move", source, { toLocal: () => item.pt }));
+      }
+      const parentPt = mapping.toLocal(ev.clientX, ev.clientY);
+      if (parentPt !== null) {
+        track(ev, parentPt, kind);
+        lastPressure = numberOr(ev.pressure, 0);
+      }
     }
     for (const p of predictedOf(ev)) {
-      out.push(sampleFromPointerEvent(p, "move", "predicted", mapper));
+      const pt = mapping.toLocal(p.clientX, p.clientY);
+      if (pt !== null) {
+        out.push(sampleFromPointerEvent(p, "move", "predicted", { toLocal: () => pt }));
+      }
     }
     if (out.length > 0) onSamples(out);
   };
 
   // `pointerrawupdate`는 HTMLElementEventMap에 없으므로 Event → PointerEvent 판별 후 처리한다.
   const onRawUpdate = (ev: Event): void => {
-    if (!isPointerEvent(ev)) return;
+    if (detached || !isPointerEvent(ev)) return;
+    notePen(ev);
     if (ownerId === null || ev.pointerId !== ownerId) return;
-    lastPressure = ev.pressure;
-    track(ev, pointerKindOf(ev.pointerType));
-    onSamples([sampleFromPointerEvent(ev, "move", "raw", mapper)]);
+    const mapping = currentMapping();
+    if (!mapping.valid) return;
+    const localPt = mapping.toLocal(ev.clientX, ev.clientY);
+    if (localPt === null) return;
+    lastPressure = numberOr(ev.pressure, 0);
+    track(ev, localPt, pointerKindOf(ev.pointerType));
+    onSamples([sampleFromPointerEvent(ev, "move", "raw", { toLocal: () => localPt })]);
   };
 
   const finish = (ev: PointerEvent): void => {
+    if (detached) return;
     notePen(ev);
     if (ownerId === null || ev.pointerId !== ownerId) return;
     ownerId = null;
-    if (
-      typeof el.hasPointerCapture === "function" &&
-      typeof el.releasePointerCapture === "function" &&
-      el.hasPointerCapture(ev.pointerId)
-    ) {
-      el.releasePointerCapture(ev.pointerId);
-    }
-    // up 표본은 마지막 접촉 압력을 쓴다(브라우저는 up에서 0을 준다).
-    const sample = sampleFromPointerEvent(ev, "up", "raw", mapper);
+    releaseCapture(ev.pointerId);
+    const mapping = currentMapping();
+    const localPt = mapping.valid ? mapping.toLocal(ev.clientX, ev.clientY) : null;
+    const endPt = localPt ?? { x: lastX, y: lastY };
+    // up 표본은 마지막 접촉 압력을 쓴다(브라우저는 up에서 0을 준다). 표면이 획 도중 0×0·숨김으로 무너졌으면 마지막 유효 좌표로 닫는다.
+    const sample = sampleFromPointerEvent(ev, "up", "raw", { toLocal: () => endPt });
+    if (!Number.isFinite(ev.timeStamp)) sample.tMs = lastTMs;
     sample.pressure = lastPressure;
     onSamples([sample]);
   };
@@ -304,6 +509,12 @@ export function attachPointerCapture(
   if (useRaw) el.addEventListener("pointerrawupdate", onRawUpdate);
 
   return () => {
+    if (detached) return;
+    detached = true;
+    if (ownerId !== null) {
+      releaseCapture(ownerId);
+      ownerId = null;
+    }
     el.removeEventListener("pointerdown", onDown);
     el.removeEventListener("pointermove", onMove);
     el.removeEventListener("pointerup", finish);
@@ -313,7 +524,6 @@ export function attachPointerCapture(
     if (blockMenu) el.removeEventListener("contextmenu", onContextMenu);
     if (useRaw) el.removeEventListener("pointerrawupdate", onRawUpdate);
     el.style.touchAction = previousTouchAction;
-    ownerId = null;
   };
 }
 
