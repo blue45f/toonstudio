@@ -1,0 +1,377 @@
+{
+  "auditId": "main-preservation-round5-20261107",
+  "verifiedAtUtc": "2026-11-07T13:53:10.323Z",
+  "readOnlyMode": true,
+  "mainHead": {
+    "fullSha": "65da4036cec52f1d5b048855a51085c9b7503264",
+    "shortSha": "65da4036",
+    "committedAtUtc": "2026-11-07T13:11:54+00:00",
+    "subject": "Merge branch 'feat/character-keyboard-fixes-round5-20261107': Character Lab Round 5 KBD-01/02/04/05 keyboard & viewport fixes"
+  },
+  "includedCommitCount": 3,
+  "missingCommitCount": 1,
+  "allMatchExpectedAuditFindings": true,
+  "targetCommits": [
+    {
+      "id": "character-keyboard",
+      "label": "Character 키보드 (Round 5 KBD-01/02/04/05 키보드 포커스·뷰포트·미로드 안내)",
+      "shortSha": "65da4036",
+      "fullSha": "65da4036cec52f1d5b048855a51085c9b7503264",
+      "featureParentShortSha": "7b2db38b",
+      "featureParentFullSha": "7b2db38b2d7050b5aebc0d206952662b97e4e7f7",
+      "committedAtUtc": "2026-11-07T13:11:54+00:00",
+      "commitSubject": "Merge branch 'feat/character-keyboard-fixes-round5-20261107': Character Lab Round 5 KBD-01/02/04/05 keyboard & viewport fixes",
+      "sourceBranch": "feat/character-keyboard-fixes-round5-20261107",
+      "objectExistsInGit": true,
+      "inMainAncestry": true,
+      "parentInMainAncestry": true,
+      "expectedInMainAncestry": true,
+      "matchesExpectedDisposition": true,
+      "status": "PRESERVED_IN_ORIGIN_MAIN",
+      "ownerScope": [
+        "apps/character-lab/src/app/shell/",
+        "docs/character-keyboard-fixes-round5-20261107/"
+      ],
+      "requiredFileCount": 26,
+      "presentFileCount": 26,
+      "missingPaths": []
+    },
+    {
+      "id": "home-200-works",
+      "label": "홈 200작품 (Home 200작품 대규모 목록·성능 개선)",
+      "shortSha": "4b1be6d4",
+      "fullSha": null,
+      "featureParentShortSha": null,
+      "featureParentFullSha": null,
+      "committedAtUtc": null,
+      "sourceBranch": "미푸시 로컬 브랜치 (원격 origin/main 및 origin refs 미존재)",
+      "objectExistsInGit": false,
+      "inMainAncestry": false,
+      "parentInMainAncestry": false,
+      "expectedInMainAncestry": false,
+      "matchesExpectedDisposition": true,
+      "status": "MISSING_FROM_ORIGIN_MAIN_AND_REMOTE_REFS",
+      "ownerRole": "홈 200작품 담당 세션 (Home 도메인)",
+      "ownerScope": [
+        "apps/web/src/domains/home/",
+        "scripts/bench-toon-home-200.mjs"
+      ],
+      "requiredFileCount": 0,
+      "presentFileCount": 0,
+      "missingPaths": []
+    },
+    {
+      "id": "brush-comparison",
+      "label": "브러시 (Brush Lab 동일 샘플 획 프리셋 A/B 비교 가독성·결과 보존)",
+      "shortSha": "01d8f995",
+      "fullSha": "01d8f99569ddc3fe0029dba504f37ac487427790",
+      "featureParentShortSha": "69008b4d",
+      "featureParentFullSha": "69008b4dcf1c22cb7880f59c7f469d2c5491982b",
+      "committedAtUtc": "2026-11-07T11:57:43+00:00",
+      "commitSubject": "Merge branch 'feat/brush-comparison-round4-20261107': 브러시랩 동일 샘플 획 프리셋 A/B 비교 가독성 및 실험 결과 보존 로컬 UI 개선 통합",
+      "sourceBranch": "feat/brush-comparison-round4-20261107",
+      "objectExistsInGit": true,
+      "inMainAncestry": true,
+      "parentInMainAncestry": true,
+      "expectedInMainAncestry": true,
+      "matchesExpectedDisposition": true,
+      "status": "PRESERVED_IN_ORIGIN_MAIN",
+      "ownerScope": [
+        "apps/brush-lab/src/app/",
+        "docs/brush-comparison-round4-20261107/"
+      ],
+      "requiredFileCount": 11,
+      "presentFileCount": 11,
+      "missingPaths": []
+    },
+    {
+      "id": "catalog-provenance",
+      "label": "카탈로그 (탐색 크롤링 데이터 출처·수집시점·누락정보 및 작가·플랫폼 복원력)",
+      "shortSha": "75f34f8d",
+      "fullSha": "75f34f8dbf4a454ce0418c88c24700fa2523e3c9",
+      "featureParentShortSha": "0bc10e55",
+      "featureParentFullSha": "0bc10e551e99bd4e11b56ab525fff48cfd7e6161",
+      "committedAtUtc": "2026-11-07T12:25:40+00:00",
+      "commitSubject": "Merge branch 'feat/catalog-provenance-round4-20261107': 탐색 크롤링 데이터 출처·수집시점·누락정보 신뢰성 및 작가·플랫폼 경계 복원력 개선 통합",
+      "sourceBranch": "feat/catalog-provenance-round4-20261107",
+      "objectExistsInGit": true,
+      "inMainAncestry": true,
+      "parentInMainAncestry": true,
+      "expectedInMainAncestry": true,
+      "matchesExpectedDisposition": true,
+      "status": "PRESERVED_IN_ORIGIN_MAIN",
+      "ownerScope": [
+        "apps/web/src/domains/catalog/",
+        "docs/catalog-provenance-round4-20261107/"
+      ],
+      "requiredFileCount": 12,
+      "presentFileCount": 12,
+      "missingPaths": []
+    }
+  ],
+  "pr2740Status": {
+    "prNumber": 2740,
+    "state": "OPEN",
+    "branch": "codex/character-package-panel-modules-20261107",
+    "title": "fix(ci): 패키지 모듈 분리와 피드·태그 회귀 보정",
+    "initialHeadShortSha": "f508de8f",
+    "initialHeadFullSha": "f508de8fd00b9bb6bb40efa85751c90a9dfd62b6",
+    "latestHeadShortSha": "c4fce43c",
+    "latestHeadFullSha": "c4fce43c307fa5f124105e8cfb4719c1b9998d93",
+    "latestCommittedAt": "2026-11-07T21:41:36+09:00",
+    "prUpdatedAtUtc": "2026-11-07T13:07:25Z",
+    "mergeBaseWithMain": "9e85ad9b69fd5d820704fa32f66aa660fd40d0b4",
+    "aheadOfMain": 6,
+    "behindMain": 2,
+    "ciConclusion": "SUCCESS",
+    "ciWorkflows": [
+      {
+        "name": "CI",
+        "runId": 42375379091,
+        "conclusion": "SUCCESS",
+        "completedAtUtc": "2026-11-07T13:36:08Z",
+        "url": "https://github.com/blue45f/toonstudio/actions/runs/42375379091"
+      },
+      {
+        "name": "Architecture boundaries",
+        "runId": 42375379137,
+        "conclusion": "SUCCESS",
+        "completedAtUtc": "2026-11-07T13:15:50Z",
+        "url": "https://github.com/blue45f/toonstudio/actions/runs/42375379137"
+      },
+      {
+        "name": "CodeQL",
+        "runId": 42375379077,
+        "conclusion": "SUCCESS",
+        "completedAtUtc": "2026-11-07T13:32:08Z",
+        "url": "https://github.com/blue45f/toonstudio/actions/runs/42375379077"
+      },
+      {
+        "name": "Lighthouse CI",
+        "runId": 42375379078,
+        "conclusion": "SUCCESS",
+        "completedAtUtc": "2026-11-07T13:16:08Z",
+        "url": "https://github.com/blue45f/toonstudio/actions/runs/42375379078"
+      }
+    ],
+    "commitsSince354af37a": [
+      {
+        "shortSha": "f508de8f",
+        "fullSha": "f508de8fd00b9bb6bb40efa85751c90a9dfd62b6",
+        "committedAt": "2026-11-07T19:47:42+09:00",
+        "subject": "refactor(character-lab): 패키지 상세 표시를 독립 모듈로 분리한다",
+        "targetFiles": [
+          "apps/character-lab/src/app/shell/panels/PackagePanel.tsx",
+          "apps/character-lab/src/app/shell/panels/package-panel/PackageDetail.tsx",
+          "apps/character-lab/src/app/shell/panels/package-panel/PackageDetail.test.tsx"
+        ]
+      },
+      {
+        "shortSha": "45f35ec2",
+        "fullSha": "45f35ec29b790457ec94263c4555a2465d512436",
+        "committedAt": "2026-11-07T21:23:18+09:00",
+        "subject": "test(cuts): 피드 하이드레이션 경계를 결정적으로 검증한다",
+        "targetFiles": [
+          "apps/web/src/domains/cuts/"
+        ]
+      },
+      {
+        "shortSha": "0474e1dc",
+        "fullSha": "0474e1dc5f7e7d271758a9079087c06b3271f981",
+        "committedAt": "2026-11-07T21:24:36+09:00",
+        "subject": "chore(sync): 최신 main 변경을 CI 수정 브랜치에 반영한다",
+        "targetFiles": []
+      },
+      {
+        "shortSha": "abb378f1",
+        "fullSha": "abb378f1dc62ac9aff9f578f08e8e9a6e05f9c98",
+        "committedAt": "2026-11-07T21:29:47+09:00",
+        "subject": "chore(sync): 최신 카탈로그와 접근성 감사 변경을 반영한다",
+        "targetFiles": []
+      },
+      {
+        "shortSha": "5a077ae0",
+        "fullSha": "5a077ae0a3999c12fc313cdb2cfb534c358e41b7",
+        "committedAt": "2026-11-07T21:36:11+09:00",
+        "subject": "fix(catalog): 태그 목록 빈 상태의 한국어와 영어 번역을 등록한다",
+        "targetFiles": [
+          "apps/web/src/domains/catalog/TagsPage.tsx",
+          "apps/web/src/domains/catalog/catalog-status-i18n-r3c08.test.ts",
+          "apps/web/src/domains/catalog/catalog-status-i18n.ts"
+        ]
+      },
+      {
+        "shortSha": "c4fce43c",
+        "fullSha": "c4fce43c307fa5f124105e8cfb4719c1b9998d93",
+        "committedAt": "2026-11-07T21:41:36+09:00",
+        "subject": "docs(character-lab): 키보드 감사 증거 링크를 저장소 상대경로로 수정한다",
+        "targetFiles": [
+          "docs/character-keyboard-round4-20261107/README.md"
+        ]
+      }
+    ],
+    "headCommitVerifiedInGit": true
+  },
+  "latestMainCi": {
+    "mainHeadSha": "65da4036cec52f1d5b048855a51085c9b7503264",
+    "ciRunId": 42375861658,
+    "ciRunUrl": "https://github.com/blue45f/toonstudio/actions/runs/42375861658",
+    "startedAtUtc": "2026-11-07T13:11:57Z",
+    "completedAtUtc": "2026-11-07T13:24:27Z",
+    "conclusion": "failure",
+    "passingWorkflowsOn65da4036": [
+      {
+        "name": "Architecture boundaries",
+        "runId": 42375861677,
+        "conclusion": "success",
+        "completedAtUtc": "2026-11-07T13:19:16Z"
+      },
+      {
+        "name": "Market CC0 delivery",
+        "runId": 42375861657,
+        "conclusion": "success",
+        "completedAtUtc": "2026-11-07T13:18:01Z"
+      },
+      {
+        "name": "Cleanup merged branches and stale Actions runs",
+        "runId": 42375861596,
+        "conclusion": "success",
+        "completedAtUtc": "2026-11-07T13:13:55Z"
+      }
+    ],
+    "failedItemsAndOwnership": [
+      {
+        "id": "ci-fail-1-package-panel-size",
+        "jobId": 128413172981,
+        "jobName": "Core preflight and application typecheck",
+        "stepName": "Source file size ratchet (no build, dependency-free)",
+        "status": "failure (840줄 > 상한 800줄, 초과 +40줄)",
+        "targetFiles": [
+          "apps/character-lab/src/app/shell/panels/PackagePanel.tsx",
+          "apps/character-lab/src/app/shell/panels/package-panel/PackageDetail.tsx"
+        ],
+        "ownerScope": "PR #2740 (codex/character-package-panel-modules-20261107 @ f508de8f..c4fce43c)",
+        "resolutionStatusInOwnerScope": "PR #2740 커밋 f508de8f에서 PackageDetail.tsx(161줄) 분리로 PackagePanel.tsx를 708줄로 축소하여 PR CI(42375379091) 통과 완료 — 중복 수정 금지",
+        "duplicateFixForbidden": true
+      },
+      {
+        "id": "ci-fail-2-doc-links-round4-keyboard",
+        "jobId": 128413173274,
+        "jobName": "Core regression shard / product",
+        "stepName": "Run semantic regression shard (validate:documentation)",
+        "status": "failure (문서 검증 실패: 63건 — file:/// 절대 경로 링크)",
+        "targetFiles": [
+          "docs/character-keyboard-round4-20261107/README.md"
+        ],
+        "ownerScope": "문서 링크 CI 별도 담당 및 PR #2740 커밋 c4fce43c307fa5f124105e8cfb4719c1b9998d93",
+        "resolutionStatusInOwnerScope": "PR #2740 커밋 c4fce43c에서 docs/character-keyboard-round4-20261107/README.md의 링크를 저장소 상대 경로로 수정하여 PR CI(42375379091) 통과 완료 — 중복 보정 금지",
+        "duplicateFixForbidden": true
+      },
+      {
+        "id": "ci-fail-3-catalog-tags-empty-i18n",
+        "jobId": 128413173274,
+        "jobName": "Core regression shard / product",
+        "stepName": "Run semantic regression shard (catalog i18n contract)",
+        "status": "보정 완료 대기 (75f34f8d/0bc10e55 이후 태그 목록 빈 상태 한·영 번역 키 정합)",
+        "targetFiles": [
+          "apps/web/src/domains/catalog/TagsPage.tsx",
+          "apps/web/src/domains/catalog/catalog-status-i18n.ts",
+          "apps/web/src/domains/catalog/catalog-status-i18n-r3c08.test.ts"
+        ],
+        "ownerScope": "카탈로그 i18n 별도 담당 및 PR #2740 커밋 5a077ae0a3999c12fc313cdb2cfb534c358e41b7",
+        "resolutionStatusInOwnerScope": "PR #2740 커밋 5a077ae0에서 태그 목록 빈 상태 한국어·영어 번역을 등록하여 PR CI(42375379091) 통과 완료 — 중복 보정 금지",
+        "duplicateFixForbidden": true
+      }
+    ]
+  },
+  "browserVerification": {
+    "executed": true,
+    "allViewportsPassed": true,
+    "viewports": [
+      {
+        "label": "320px-mobile",
+        "width": 320,
+        "height": 640,
+        "zoomPercent": 100,
+        "clientWidth": 320,
+        "scrollWidth": 320,
+        "horizontalOverflowPx": 0,
+        "renderedCommitCardCount": 4,
+        "interactiveFilterSwitchPassed": true,
+        "consoleErrorCount": 0,
+        "pageErrorCount": 0,
+        "passed": true
+      },
+      {
+        "label": "390px-mobile",
+        "width": 390,
+        "height": 844,
+        "zoomPercent": 100,
+        "clientWidth": 390,
+        "scrollWidth": 390,
+        "horizontalOverflowPx": 0,
+        "renderedCommitCardCount": 4,
+        "interactiveFilterSwitchPassed": true,
+        "consoleErrorCount": 0,
+        "pageErrorCount": 0,
+        "passed": true
+      },
+      {
+        "label": "768px-tablet",
+        "width": 768,
+        "height": 1024,
+        "zoomPercent": 100,
+        "clientWidth": 768,
+        "scrollWidth": 768,
+        "horizontalOverflowPx": 0,
+        "renderedCommitCardCount": 4,
+        "interactiveFilterSwitchPassed": true,
+        "consoleErrorCount": 0,
+        "pageErrorCount": 0,
+        "passed": true
+      },
+      {
+        "label": "1440px-desktop",
+        "width": 1440,
+        "height": 900,
+        "zoomPercent": 100,
+        "clientWidth": 1440,
+        "scrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "renderedCommitCardCount": 4,
+        "interactiveFilterSwitchPassed": true,
+        "consoleErrorCount": 0,
+        "pageErrorCount": 0,
+        "passed": true
+      },
+      {
+        "label": "1440px-zoom-200pct",
+        "width": 1440,
+        "height": 900,
+        "zoomPercent": 200,
+        "clientWidth": 1440,
+        "scrollWidth": 1440,
+        "horizontalOverflowPx": 0,
+        "renderedCommitCardCount": 4,
+        "interactiveFilterSwitchPassed": true,
+        "consoleErrorCount": 0,
+        "pageErrorCount": 0,
+        "passed": true
+      },
+      {
+        "label": "320px-zoom-200pct",
+        "width": 320,
+        "height": 640,
+        "zoomPercent": 200,
+        "clientWidth": 320,
+        "scrollWidth": 320,
+        "horizontalOverflowPx": 0,
+        "renderedCommitCardCount": 4,
+        "interactiveFilterSwitchPassed": true,
+        "consoleErrorCount": 0,
+        "pageErrorCount": 0,
+        "passed": true
+      }
+    ]
+  }
+}
