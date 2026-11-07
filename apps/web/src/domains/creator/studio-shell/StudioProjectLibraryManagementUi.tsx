@@ -176,6 +176,7 @@ export function StudioProjectLibraryCard({
   authUserId,
   checked,
   temporary,
+  isMostRecent = false,
   localFileSaved,
   busy,
   continueHref,
@@ -197,6 +198,7 @@ export function StudioProjectLibraryCard({
   readonly authUserId: string | null;
   readonly checked: boolean;
   readonly temporary: boolean;
+  readonly isMostRecent?: boolean;
   readonly localFileSaved: boolean;
   readonly busy: boolean;
   readonly continueHref: string;
@@ -217,8 +219,9 @@ export function StudioProjectLibraryCard({
     <article
       data-studio-project-card="true"
       data-selected={checked || undefined}
+      data-recent-primary={isMostRecent || undefined}
       className={cn(
-        "overflow-hidden rounded-2xl border bg-card p-4 shadow-sm transition-colors",
+        "min-w-0 overflow-hidden rounded-2xl border bg-card p-3.5 shadow-sm transition-colors sm:p-4",
         checked ? "border-accent ring-2 ring-accent/15" : "border-line",
       )}
     >
@@ -227,20 +230,34 @@ export function StudioProjectLibraryCard({
         locale={locale}
         project={project}
       />
-      <div className="mt-4 flex items-start gap-3">
+      <div className="mt-3.5 flex items-start gap-2.5 sm:mt-4 sm:gap-3">
         <StudioProjectSelectionCheckbox
           checked={checked}
           label={formatI18nTemplate(String(bi("{value0} 선택", "Select {value0}")), { value0: project.title })}
           onChange={onToggle}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {isMostRecent ? (
+              <span
+                data-studio-recent-badge="true"
+                className="inline-flex min-h-7 items-center rounded-full border border-accent/40 bg-accent-soft px-2.5 text-[0.66rem] font-black text-accent"
+              >
+                {bi("최근 작업", "Most recent")}
+              </span>
+            ) : null}
             <span className="rounded-full bg-panel px-2.5 py-1 text-[0.66rem] font-bold text-fg-2">
               {studioProjectLibraryTypeLabel(project)}
             </span>
             <StudioProjectSaveBadge profile={profile} locale={locale} />
           </div>
-          <h3 className="mt-3 truncate text-lg font-black text-fg">{project.title}</h3>
+          <h3
+            title={project.title}
+            data-studio-project-title="true"
+            className="mt-2.5 line-clamp-2 break-words text-base font-black leading-snug text-fg [overflow-wrap:anywhere] sm:mt-3 sm:text-lg"
+          >
+            {project.title}
+          </h3>
           <p className="mt-1 text-xs text-fg-3">
             {bi("마지막 작업", "Last opened")}{" "}
             {studioProjectLibraryDateLabel(project.lastOpenedAt, locale)}
@@ -257,34 +274,34 @@ export function StudioProjectLibraryCard({
                   ? locale === "ko" ? "최근 위치 기억됨" : "Recent position remembered"
                   : locale === "ko" ? "최근 문서로 이동" : "Continue in recent document"}
               </p>
-              <p className="mt-0.5 break-words">{resumeSummary}</p>
+              <p className="mt-0.5 break-words [overflow-wrap:anywhere]">{resumeSummary}</p>
             </div>
           ) : null}
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-panel/60 p-3 text-[0.68rem]">
-        <div>
+      <div className="mt-3.5 grid grid-cols-1 gap-2 rounded-xl bg-panel/60 p-2.5 text-[0.68rem] sm:mt-4 sm:grid-cols-2 sm:p-3">
+        <div className="min-w-0">
           <p className="font-semibold text-fg-3">{bi("작업 상태", "Work status")}</p>
-          <p className="mt-1 font-black text-fg">
+          <p className="mt-0.5 font-black text-fg sm:mt-1">
             {temporary
               ? bi("이 기기 임시본", "Temporary on device")
               : bi("프로젝트", "Project")}
           </p>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="font-semibold text-fg-3">{bi("마지막 정식 저장", "Last explicit save")}</p>
-          <p className="mt-1 font-black text-fg">
+          <p className="mt-0.5 font-black text-fg sm:mt-1">
             {studioProjectLibraryDateLabel(profile.lastManualSaveAt, locale)}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
+      <div className="mt-3.5 flex flex-wrap gap-2 border-t border-line pt-3 sm:mt-4">
         <Link
           href={continueHref}
           onClick={onTouch}
-          className={buttonClass({ size: "sm", className: "min-w-32 flex-1 gap-1.5" })}
+          className={buttonClass({ size: "sm", className: "min-h-11 min-w-28 flex-1 gap-1.5 sm:min-h-9" })}
         >
           <FolderOpen size={15} aria-hidden="true" />
           {bi("이어서 작업", "Continue")}
@@ -293,7 +310,7 @@ export function StudioProjectLibraryCard({
           <button
             type="button"
             onClick={onOpenSave}
-            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
           >
             <Save size={15} aria-hidden="true" />
             {bi("정식 저장", "Save")}
@@ -303,7 +320,7 @@ export function StudioProjectLibraryCard({
             type="button"
             disabled={busy}
             onClick={onSavePackage}
-            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
           >
             <Download size={15} aria-hidden="true" />
             {bi("파일 다시 저장", "Save file again")}
@@ -311,7 +328,7 @@ export function StudioProjectLibraryCard({
         ) : (
           <Link
             href={storageHref}
-            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
           >
             <Cloud size={15} aria-hidden="true" />
             {bi("저장·백업", "Save & backup")}
@@ -321,19 +338,19 @@ export function StudioProjectLibraryCard({
           type="button"
           onClick={onDuplicate}
           aria-label={formatI18nTemplate(String(bi("{value0} 복제", "Duplicate {value0}")), { value0: project.title })}
-          className={buttonClass({ variant: "quiet", size: "icon" })}
+          className={buttonClass({ variant: "quiet", size: "icon", className: "min-h-11 min-w-11 sm:min-h-9 sm:min-w-9" })}
         >
           <Copy size={15} aria-hidden="true" />
         </button>
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-end gap-1.5">
-        <Link href={overviewHref} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-accent hover:bg-accent-soft/30 hover:underline">
+        <Link href={overviewHref} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold text-accent hover:bg-accent-soft/30 hover:underline sm:min-h-8 sm:px-2">
           {bi("프로젝트 관리", "Manage project")}
         </Link>
-        <button type="button" onClick={onArchive} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-fg-3 hover:bg-raised hover:text-fg">
+        <button type="button" onClick={onArchive} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold text-fg-3 hover:bg-raised hover:text-fg sm:min-h-8 sm:px-2">
           {bi("보관", "Archive")}
         </button>
-        <button type="button" onClick={onTrash} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-danger hover:bg-danger-soft/20">
+        <button type="button" onClick={onTrash} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold text-danger hover:bg-danger-soft/20 sm:min-h-8 sm:px-2">
           {bi("휴지통", "Trash")}
         </button>
       </div>
@@ -366,7 +383,7 @@ export function StudioProjectLibraryRecoveryRow({
       data-studio-project-card="true"
       data-selected={checked || undefined}
       className={cn(
-        "flex flex-col gap-3 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between",
+        "flex min-w-0 flex-col gap-3 rounded-2xl border bg-card p-3.5 sm:flex-row sm:items-center sm:justify-between sm:p-4",
         checked ? "border-accent ring-2 ring-accent/15" : "border-line",
       )}
     >
@@ -376,8 +393,14 @@ export function StudioProjectLibraryRecoveryRow({
           label={formatI18nTemplate(String(bi("{value0} 선택", "Select {value0}")), { value0: project.title })}
           onChange={onToggle}
         />
-        <div className="min-w-0">
-          <h2 className="truncate font-black text-fg">{project.title}</h2>
+        <div className="min-w-0 flex-1">
+          <h2
+            title={project.title}
+            data-studio-project-title="true"
+            className="line-clamp-2 break-words font-black leading-snug text-fg [overflow-wrap:anywhere]"
+          >
+            {project.title}
+          </h2>
           <p className="mt-1 text-xs text-fg-3">
             {studioProjectLibraryTypeLabel(project)} · {studioProjectLibraryDateLabel(project.updatedAt, locale)}
           </p>
@@ -387,7 +410,7 @@ export function StudioProjectLibraryRecoveryRow({
         <button
           type="button"
           onClick={onRestore}
-          className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+          className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
         >
           <RotateCcw size={14} aria-hidden="true" />
           {bi("복원", "Restore")}
@@ -396,7 +419,7 @@ export function StudioProjectLibraryRecoveryRow({
           <button
             type="button"
             onClick={onTrash}
-            className={buttonClass({ variant: "quiet", size: "sm", className: "text-danger" })}
+            className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 text-danger sm:min-h-9" })}
           >
             <Trash2 size={14} aria-hidden="true" />
             {bi("휴지통", "Trash")}
@@ -405,7 +428,7 @@ export function StudioProjectLibraryRecoveryRow({
           <button
             type="button"
             onClick={onDelete}
-            className={buttonClass({ variant: "quiet", size: "sm", className: "text-danger" })}
+            className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 text-danger sm:min-h-9" })}
           >
             <Trash2 size={14} aria-hidden="true" />
             {bi("완전 삭제", "Delete")}

@@ -508,18 +508,24 @@ export function StudioSaveFirstProjectLibraryPage({
                 </div>
               </div>
             ) : view === "active" ? (
-              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-5 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {filteredProjects.map((project) => {
                   const profile = profiles.profileFor(project.id);
                   const resumeTarget = resolveStudioProjectResumeTarget(window.localStorage, project, locale);
                   return (
-                    <article key={project.id} className="overflow-hidden rounded-2xl border border-line bg-card p-4 shadow-sm">
+                    <article key={project.id} className="min-w-0 overflow-hidden rounded-2xl border border-line bg-card p-3.5 shadow-sm sm:p-4">
                       <StudioProjectCardThumbnail authUserId={authUserId} locale={legacyLocale} project={project} />
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex min-h-7 items-center gap-1 rounded-full bg-accent-soft px-2.5 text-[0.68rem] font-black text-accent"><ShieldCheck size={13} aria-hidden="true" />{bt("나만 보기", "Owner only")}</span>
                         <SaveBadge profile={profile} locale={locale} />
                       </div>
-                      <h2 className="mt-3 truncate text-lg font-black text-fg">{project.title}</h2>
+                      <h2
+                        title={project.title}
+                        data-studio-project-title="true"
+                        className="mt-3 line-clamp-2 break-words text-base font-black leading-snug text-fg [overflow-wrap:anywhere] sm:text-lg"
+                      >
+                        {project.title}
+                      </h2>
                       <p className="mt-1 text-xs text-fg-3">{locale === "ko" ? "마지막 작업" : "Last opened"} {dateLabel(project.lastOpenedAt, locale, bt)}</p>
                       {resumeTarget.summary ? (
                         <div className={cn("mt-2 rounded-xl border px-3 py-2 text-[0.68rem] leading-5", resumeTarget.exact ? "border-accent/30 bg-accent-soft/20 text-fg-2" : "border-line bg-panel/55 text-fg-3")}>
@@ -527,9 +533,9 @@ export function StudioSaveFirstProjectLibraryPage({
                           <p className="mt-0.5 break-words">{resumeTarget.summary}</p>
                         </div>
                       ) : null}
-                      <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-panel/60 p-3 text-[0.68rem]">
-                        <div><p className="font-semibold text-fg-3">{bt("마지막 저장", "Last save")}</p><p className="mt-1 font-black text-fg">{dateLabel(profile.lastManualSaveAt, locale, bt)}</p></div>
-                        <div><p className="font-semibold text-fg-3">{bt("배포", "Distribution")}</p><p className="mt-1 font-black text-fg">{distributionLabel(profile, bt)}</p></div>
+                      <div className="mt-4 grid grid-cols-1 gap-2 rounded-xl bg-panel/60 p-3 text-[0.68rem] sm:grid-cols-2">
+                        <div className="min-w-0"><p className="font-semibold text-fg-3">{bt("마지막 저장", "Last save")}</p><p className="mt-1 break-words font-black text-fg">{dateLabel(profile.lastManualSaveAt, locale, bt)}</p></div>
+                        <div className="min-w-0"><p className="font-semibold text-fg-3">{bt("배포", "Distribution")}</p><p className="mt-1 break-words font-black text-fg">{distributionLabel(profile, bt)}</p></div>
                       </div>
                       <details className="mt-3 rounded-xl border border-line bg-panel/55">
                         <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-black text-fg [&::-webkit-details-marker]:hidden">{bt("저장 위치 관리", "Manage storage")}</summary>
@@ -559,14 +565,14 @@ export function StudioSaveFirstProjectLibraryPage({
                           <p className="mt-3 text-[0.64rem] leading-4 text-fg-3">{bt("WebDAV·S3 직접 연결은 자격 증명 보관 방식을 선택한 뒤 별도 설정에서 제공합니다. 연결되지 않은 저장소를 백업 완료로 표시하지 않습니다.", "WebDAV and S3 direct connections remain in advanced settings. Unconnected storage is never shown as a completed backup.")}</p>
                         </div>
                       </details>
-                      <div className="mt-4 flex gap-2 border-t border-line pt-3">
-                        <Link href={resumeTarget.href} onClick={() => { library.touch(project.id, resumeTarget.documentId); }} className={buttonClass({ size: "sm", className: "flex-1 gap-1.5" })}><FolderOpen size={15} aria-hidden="true" />{locale === "ko" ? "이어서 작업" : "Continue"}</Link>
-                        <button type="button" onClick={() => { void savePackage(project); }} disabled={busyProjectId === project.id} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}><Download size={15} aria-hidden="true" />{locale === "ko" ? "저장" : "Save"}</button>
-                        <button type="button" onClick={() => duplicateProject(project)} aria-label={locale === "ko" ? "프로젝트 복제" : "Duplicate project"} className={buttonClass({ variant: "quiet", size: "icon" })}><Copy size={15} aria-hidden="true" /></button>
+                      <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
+                        <Link href={resumeTarget.href} onClick={() => { library.touch(project.id, resumeTarget.documentId); }} className={buttonClass({ size: "sm", className: "min-h-11 flex-1 gap-1.5 sm:min-h-9" })}><FolderOpen size={15} aria-hidden="true" />{locale === "ko" ? "이어서 작업" : "Continue"}</Link>
+                        <button type="button" onClick={() => { void savePackage(project); }} disabled={busyProjectId === project.id} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}><Download size={15} aria-hidden="true" />{locale === "ko" ? "저장" : "Save"}</button>
+                        <button type="button" onClick={() => duplicateProject(project)} aria-label={locale === "ko" ? "프로젝트 복제" : "Duplicate project"} className={buttonClass({ variant: "quiet", size: "icon", className: "size-11 sm:size-10" })}><Copy size={15} aria-hidden="true" /></button>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center justify-end gap-1.5">
-                        <button type="button" onClick={() => { library.archive(project.id); }} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-fg-3 hover:bg-raised hover:text-fg">{bt("보관", "Archive")}</button>
-                        <button type="button" onClick={() => { library.trash(project.id); }} className="inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-danger hover:bg-danger-soft/20">{bt("휴지통", "Trash")}</button>
+                        <button type="button" onClick={() => { library.archive(project.id); }} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold text-fg-3 hover:bg-raised hover:text-fg sm:min-h-8 sm:px-2">{bt("보관", "Archive")}</button>
+                        <button type="button" onClick={() => { library.trash(project.id); }} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold text-danger hover:bg-danger-soft/20 sm:min-h-8 sm:px-2">{bt("휴지통", "Trash")}</button>
                       </div>
                     </article>
                   );
@@ -575,10 +581,10 @@ export function StudioSaveFirstProjectLibraryPage({
             ) : (
               <div className="mt-5 space-y-3">
                 {filteredProjects.map((project) => (
-                  <article key={project.id} className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div><h2 className="font-black text-fg">{project.title}</h2><p className="mt-1 text-xs text-fg-3">{dateLabel(project.updatedAt, locale, bt)}</p></div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => { if (view === "archived") library.activate(project.id); else library.restore(project.id); }} className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}><RotateCcw size={14} aria-hidden="true" />{bt("복원", "Restore")}</button>
+                  <article key={project.id} className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0"><h2 title={project.title} className="line-clamp-2 break-words font-black text-fg [overflow-wrap:anywhere]">{project.title}</h2><p className="mt-1 text-xs text-fg-3">{dateLabel(project.updatedAt, locale, bt)}</p></div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => { if (view === "archived") library.activate(project.id); else library.restore(project.id); }} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}><RotateCcw size={14} aria-hidden="true" />{bt("복원", "Restore")}</button>
                       {view === "trash" ? (
                         <button
                           type="button"
