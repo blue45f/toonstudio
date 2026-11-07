@@ -244,4 +244,25 @@ describe("StudioCreatorLobby", () => {
     expect(proBtn.getAttribute("aria-pressed")).toBe("true");
     expect(within(region).getAllByText(/숙련 팁|Pro tip/u).length).toBeGreaterThan(0);
   });
+
+  it("replaces broken lobby decorative art with a clean fallback surface and preserves full long titles on recent cards", () => {
+    const longTitle = "장편 판타지 로맨스 웹툰 — 제1부 달빛 아래의 시계탑과 잃어버린 계절의 기록 1234567890";
+    seedProject("series-long", longTitle, "2026-09-20T00:00:00.000Z");
+
+    renderHome();
+    const region = lobby();
+    const titleEl = region.querySelector('[data-studio-project-title="true"]');
+    expect(titleEl?.textContent).toBe(longTitle);
+    expect(titleEl?.getAttribute("title")).toBe(longTitle);
+
+    const artImages = Array.from(region.querySelectorAll("img"));
+    expect(artImages.length).toBeGreaterThan(0);
+    for (const img of artImages) {
+      fireEvent.error(img);
+    }
+
+    expect(region.querySelectorAll('[data-lobby-art-fallback="true"]').length).toBeGreaterThan(0);
+    expect(within(region).queryByRole("img")).toBeNull();
+  });
 });
+

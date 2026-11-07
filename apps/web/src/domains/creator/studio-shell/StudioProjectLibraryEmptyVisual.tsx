@@ -1,5 +1,6 @@
 import { ArrowRight, FileUp, PlayCircle, Plus, ShieldCheck, Sparkles } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import { useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -48,6 +49,7 @@ export function StudioProjectLibraryEmptyVisual({ locale }: { readonly locale: s
   const bt = useBilingual("StudioProjectLibraryEmptyVisual");
   const copy = translateParallelBilingualCopy(t, "StudioProjectLibraryEmptyVisual", COPY);
   const reducedMotion = useReducedMotion();
+  const [visualFailed, setVisualFailed] = useState(false);
   return (
     <section className="studio-project-empty-visual" aria-labelledby="studio-project-empty-title" lang={locale}>
       <div className="studio-project-empty-visual__copy">
@@ -58,17 +60,33 @@ export function StudioProjectLibraryEmptyVisual({ locale }: { readonly locale: s
           {copy.badges.map((badge) => <span key={badge}><ShieldCheck size={13} aria-hidden="true" />{badge}</span>)}
         </div>
         <div className="studio-project-empty-visual__actions">
-          <Link href="/studio/new" className={buttonClass({ className: "gap-2" })}><Plus size={16} aria-hidden="true" />{copy.primary}</Link>
-          <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "gap-2" })}><FileUp size={16} aria-hidden="true" />{copy.import}</Link>
+          <Link href="/studio/new" className={buttonClass({ className: "min-h-11 gap-2" })}><Plus size={16} aria-hidden="true" />{copy.primary}</Link>
+          <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-11 gap-2" })}><FileUp size={16} aria-hidden="true" />{copy.import}</Link>
         </div>
         <Link href="/production/projects/sample-project/overview" className="studio-project-empty-visual__sample"><PlayCircle size={16} aria-hidden="true" />{copy.sample}<ArrowRight size={14} aria-hidden="true" /></Link>
       </div>
       <motion.figure
+        data-empty-visual-fallback={visualFailed ? "true" : undefined}
         initial={reducedMotion ? false : { opacity: 0, y: 16, rotate: 0.4 }}
         animate={reducedMotion ? undefined : { opacity: 1, y: 0, rotate: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <img src="/brand/theme-scenes/aurora-studio.svg" alt={copy.visualAlt} loading="lazy" decoding="async" />
+        {visualFailed ? (
+          <div role="img" aria-label={copy.visualAlt} className="grid h-full min-h-[280px] place-items-center bg-panel p-6 text-center text-fg-2">
+            <div>
+              <Sparkles size={28} className="mx-auto text-accent" aria-hidden="true" />
+              <p className="mt-2 text-xs font-bold">TOONSTUDIO CREATIVE WORKSPACE</p>
+            </div>
+          </div>
+        ) : (
+          <img
+            src="/brand/theme-scenes/aurora-studio.svg"
+            alt={copy.visualAlt}
+            loading="lazy"
+            decoding="async"
+            onError={() => setVisualFailed(true)}
+          />
+        )}
         <figcaption>TOONSTUDIO · START → CREATE → CONTINUE</figcaption>
       </motion.figure>
       <div className="studio-project-empty-visual__routes">

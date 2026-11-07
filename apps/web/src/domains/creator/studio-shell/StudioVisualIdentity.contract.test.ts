@@ -60,7 +60,8 @@ describe("ToonStudio visual identity contract", () => {
       "apps/web/src/domains/creator/studio-shell/StudioCreatorLobby.tsx",
     );
 
-    expect(page).toContain('controller.view === "active" ? <StudioCreatorLobby');
+    expect(page).toContain('controller.view === "active" ? (');
+    expect(page).toContain("<StudioCreatorLobby controller={controller} />");
     expect(lobby).toContain("controller.projectResumeTarget(project)");
     expect(lobby).toContain("controller.library.touch(project.id, resume.documentId)");
     // AI 디렉터 진입점은 검색 명령 팔레트가 아니라 실제 디렉터 화면(AI 허브 #ai-director)으로 간다.
