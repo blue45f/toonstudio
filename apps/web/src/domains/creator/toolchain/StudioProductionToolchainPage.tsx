@@ -44,8 +44,8 @@ import {
 import { projectIdFromSearch, withProject } from "./toolchain-links";
 import { useStudioToonBridgeConnection, type StudioToonBridgeConnectionState } from "./useStudioToonBridgeConnection";
 
-const PRIMARY_LINK = "inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-const SECONDARY_LINK = "inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-card px-4 text-sm font-bold text-fg-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const PRIMARY_LINK = "inline-flex min-h-11 scroll-my-24 items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-on-accent shadow-sm hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const SECONDARY_LINK = "inline-flex min-h-11 scroll-my-24 items-center gap-2 rounded-xl border border-line-strong bg-card px-4 py-2 text-sm font-bold text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 /** 제작 영역 카드는 처음에 6개(데스크톱 3열 × 2줄)만 보여 준다. */
 const AREA_CARD_INITIAL = 6;
@@ -64,6 +64,30 @@ const FLOW_SCREENSHOTS: readonly {
 ];
 
 type StateFilter = "all" | StudioToolState;
+
+function handleToggleGroupKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
+  if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(event.key)) {
+    return;
+  }
+  const group = event.currentTarget.parentElement;
+  if (!group) return;
+  const buttons = Array.from(group.querySelectorAll<HTMLButtonElement>("button:not([disabled])"));
+  if (buttons.length === 0) return;
+  const currentIndex = buttons.indexOf(event.currentTarget);
+  if (currentIndex === -1) return;
+  event.preventDefault();
+  let nextIndex = currentIndex;
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    nextIndex = (currentIndex + 1) % buttons.length;
+  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+  } else if (event.key === "Home") {
+    nextIndex = 0;
+  } else if (event.key === "End") {
+    nextIndex = buttons.length - 1;
+  }
+  buttons[nextIndex]?.focus();
+}
 
 function useToolStates(profile: StudioToolchainProfileId, connection: StudioToonBridgeConnectionState) {
   return useMemo(() => {
@@ -127,7 +151,11 @@ function ToolchainStartSteps({
             </div>
             <h3 className="mt-3 text-base font-bold text-fg">{step.title}</h3>
             <p className="mt-1 flex-1 text-xs leading-5 text-fg-3">{step.body}</p>
-            <Link href={step.href} className="mt-3 inline-flex min-h-11 items-center gap-1 self-start rounded-lg px-1 text-sm font-bold text-accent hover:underline">
+            <Link
+              href={step.href}
+              style={{ minHeight: "44px" }}
+              className="mt-3 inline-flex min-h-11 scroll-my-24 items-center gap-1 self-start rounded-lg px-1 py-2 text-sm font-bold text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
               {step.action}
               <ArrowRight size={14} aria-hidden="true" />
             </Link>
@@ -166,10 +194,10 @@ function OverviewContent({
         lede={bt("필터·OCR·벡터화·애니메이션·영상·3D·출판·오디오 도구를 원본 앱과 분리된 로컬 실행기로 연결합니다. 외부 도구 결과가 작품 원본이 되지 않으며 결과와 재현 영수증만 프로젝트에 남습니다.", "Filters, OCR, vectorizing, animation, video, 3D, publishing and audio tools connect through a local runner kept apart from the app. External output never replaces your original; only results and reproducible receipts stay with the project.")}
         actions={(
           <>
-            <Link href={withProject("/studio/jobs", projectId)} className={PRIMARY_LINK}>
+            <Link href={withProject("/studio/jobs", projectId)} style={{ minHeight: "44px" }} className={PRIMARY_LINK}>
               <Workflow size={17} aria-hidden="true" /> {bt("제작 작업 시작", "Start a production job")} <ArrowRight size={15} aria-hidden="true" />
             </Link>
-            <Link href={withProject("/studio/engines", projectId)} className={SECONDARY_LINK}>
+            <Link href={withProject("/studio/engines", projectId)} style={{ minHeight: "44px" }} className={SECONDARY_LINK}>
               <ServerCog size={17} aria-hidden="true" /> {bt("설치·라이선스 확인", "Check installs & licenses")}
             </Link>
           </>
@@ -182,10 +210,13 @@ function OverviewContent({
         className="rounded-2xl border border-line bg-card/85 p-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-extrabold text-fg">
+          <span className="min-w-0 text-xs font-extrabold leading-snug text-fg break-words [overflow-wrap:anywhere]">
             {bt("Blender Flamenco · ComfyUI · OpenToonz/Natron · Scribus/Vivliostyle 재현 영수증 인스펙터", "Blender Flamenco / ComfyUI / OpenToonz·Natron / Scribus·Vivliostyle Receipt Inspector")}
           </span>
-          <span data-testid="toolchain-rea-pipeline-receipt-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+          <span
+            data-testid="toolchain-rea-pipeline-receipt-status"
+            className="min-w-0 rounded-xl bg-accent/15 px-2.5 py-1 font-mono text-[11px] font-bold leading-snug text-accent break-words [overflow-wrap:anywhere]"
+          >
             {bridgeTrack === "flamenco-render-queue"
               ? bt("Flamenco·Deadline 분산 3D/6-Pass LT 배치 큐 · 원본 비파괴 격리 보장", "Flamenco/Deadline distributed 3D & 6-Pass LT queue · Non-destructive isolation")
               : bridgeTrack === "comfy-deterministic-seed"
@@ -195,7 +226,13 @@ function OverviewContent({
                   : bt("Scribus·Vivliostyle·Potrace·VTracer PDF/X-4 350DPI CMYK 인쇄 영수증", "Scribus/Vivliostyle/Potrace/VTracer PDF/X-4 350DPI CMYK print receipt")}
           </span>
         </div>
-        <div className="mt-2.5 flex flex-wrap gap-1.5" role="group" aria-label={bt("로컬 실행기 파이프라인 트랙", "Local runner pipeline tracks")}>
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2"
+          style={{ gap: "8px" }}
+          role="group"
+          aria-label={bt("로컬 실행기 파이프라인 트랙", "Local runner pipeline tracks")}
+          data-testid="toolchain-rea-track-group"
+        >
           {([
             ["flamenco-render-queue", bt("Flamenco · Deadline 3D/LT 렌더 큐", "Flamenco · Deadline 3D/LT Queue")],
             ["comfy-deterministic-seed", bt("ComfyUI · InvokeAI 재현 영수증", "ComfyUI · InvokeAI Seed Receipt")],
@@ -206,14 +243,17 @@ function OverviewContent({
               key={id}
               type="button"
               data-testid={`toolchain-rea-track-${id}`}
+              data-state={bridgeTrack === id ? "active" : "inactive"}
               aria-pressed={bridgeTrack === id}
               onClick={() => setBridgeTrack(id)}
+              onKeyDown={handleToggleGroupKeyDown}
+              style={{ minHeight: "44px", minWidth: "44px" }}
               className={cn(
-                "rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors",
-                bridgeTrack === id ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50",
+                "inline-flex min-h-11 min-w-11 max-w-full scroll-my-24 items-center justify-center rounded-lg border px-3.5 py-2 text-left text-xs font-bold leading-snug break-words [overflow-wrap:anywhere] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                bridgeTrack === id ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50 hover:text-fg",
               )}
             >
-              {label}
+              <span className="break-words [overflow-wrap:anywhere]">{label}</span>
             </button>
           ))}
         </div>
@@ -232,7 +272,11 @@ function OverviewContent({
               {bt(`현재 프로필에서 ${admittedCount}개 도구 · ${groups.length}개 영역 · 전체 검토 ${STUDIO_PRODUCTION_TOOLS.length}개`, `${admittedCount} tools in ${groups.length} areas for this profile · ${STUDIO_PRODUCTION_TOOLS.length} reviewed in total`)}
             </p>
           </div>
-          <Link href={withProject("/studio/engines", projectId)} className="inline-flex min-h-11 items-center text-xs font-bold text-accent hover:underline">
+          <Link
+            href={withProject("/studio/engines", projectId)}
+            style={{ minHeight: "44px" }}
+            className="inline-flex min-h-11 scroll-my-24 items-center py-2 text-xs font-bold text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
             {bt("전체 상태 보기", "See every status")}
           </Link>
         </div>
@@ -341,7 +385,8 @@ function ToolCard({ tool, state, reason, version }: { readonly tool: StudioProdu
         href={tool.source}
         target="_blank"
         rel="noreferrer"
-        className="mt-auto inline-flex min-h-11 items-center gap-1 self-start pt-2 text-xs font-bold text-accent hover:underline"
+        style={{ minHeight: "44px" }}
+        className="mt-auto inline-flex min-h-11 scroll-my-24 items-center gap-1 self-start pt-2 text-xs font-bold text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {bt("원본 프로젝트·라이선스 확인", "Upstream project & license")}
         <span className="sr-only">{bt(" (새 탭)", " (new tab)")}</span>
@@ -388,7 +433,7 @@ function EngineCenterContent({
         title={bt("설치·라이선스 상태", "Installs & licenses")}
         lede={bt("실제 실행 파일을 탐지하고, 직접 번들·로컬 프로세스·외부 서비스·비상업 모듈을 구분합니다. 설치 확인만으로 품질 검증이나 완전 지원을 주장하지 않습니다.", "We detect real executables and separate bundled, local-process, external-service and non-commercial modules. An install check alone never claims quality or full support.")}
         actions={(
-          <Link href={withProject("/studio/jobs", projectId)} className={PRIMARY_LINK}>
+          <Link href={withProject("/studio/jobs", projectId)} style={{ minHeight: "44px" }} className={PRIMARY_LINK}>
             {bt("작업 큐 열기", "Open the job queue")} <ArrowRight size={15} aria-hidden="true" />
           </Link>
         )}
@@ -403,7 +448,10 @@ function EngineCenterContent({
             <h2 id="engine-tools-title" className="font-display text-xl font-bold text-fg sm:text-2xl">{bt("제작 도구 상태", "Tool status")}</h2>
             <p className="mt-1 text-xs text-fg-3">{bt(`${visible.length}/${STUDIO_PRODUCTION_TOOLS.length}개 표시`, `Showing ${visible.length} of ${STUDIO_PRODUCTION_TOOLS.length}`)}</p>
           </div>
-          <label className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-line bg-card px-3 focus-within:border-accent sm:w-72">
+          <label
+            style={{ minHeight: "44px" }}
+            className="flex min-h-11 scroll-my-24 w-full items-center gap-2 rounded-xl border border-line bg-card px-3 focus-within:border-accent focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent sm:w-72"
+          >
             <Search size={16} className="shrink-0 text-fg-3" aria-hidden="true" />
             <span className="sr-only">{bt("도구 검색", "Search tools")}</span>
             <input
@@ -411,11 +459,18 @@ function EngineCenterContent({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={bt("도구 이름·라이선스 검색", "Search name or license")}
-              className="min-h-10 w-full min-w-0 bg-transparent text-sm text-fg outline-none placeholder:text-fg-3"
+              style={{ minHeight: "44px" }}
+              className="min-h-11 w-full min-w-0 bg-transparent text-sm text-fg outline-none placeholder:text-fg-3"
             />
           </label>
         </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label={bt("상태로 거르기", "Filter by status")}>
+        <div
+          className="flex flex-wrap items-center gap-2"
+          style={{ gap: "8px" }}
+          role="group"
+          aria-label={bt("상태로 거르기", "Filter by status")}
+          data-testid="toolchain-engine-status-group"
+        >
           <FilterChip active={filter === "all"} onClick={() => setFilter("all")} label={bt("전체", "All")} count={STUDIO_PRODUCTION_TOOLS.length} />
           {TOOL_STATE_ORDER.map((state) => (
             <FilterChip
@@ -431,7 +486,12 @@ function EngineCenterContent({
           <div className="rounded-2xl border border-dashed border-line-strong bg-panel/40 px-5 py-10 text-center">
             <CircleDashed size={22} className="mx-auto text-fg-3" aria-hidden="true" />
             <p className="mt-2 text-sm font-bold text-fg">{bt("조건에 맞는 도구가 없어요.", "No tools match.")}</p>
-            <button type="button" onClick={() => { setFilter("all"); setQuery(""); }} className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-bold text-fg-2 hover:text-fg">
+            <button
+              type="button"
+              onClick={() => { setFilter("all"); setQuery(""); }}
+              style={{ minHeight: "44px" }}
+              className="mt-3 inline-flex min-h-11 scroll-my-24 items-center rounded-xl border border-line px-4 py-2 text-sm font-bold text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
               {bt("필터 초기화", "Reset filters")}
             </button>
           </div>
@@ -464,14 +524,17 @@ function FilterChip({ active, onClick, label, count }: { readonly active: boolea
   return (
     <button
       type="button"
+      data-state={active ? "active" : "inactive"}
       aria-pressed={active}
       onClick={onClick}
+      onKeyDown={handleToggleGroupKeyDown}
+      style={{ minHeight: "44px", minWidth: "44px" }}
       className={cn(
-        "inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+        "inline-flex min-h-11 min-w-11 max-w-full scroll-my-24 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold leading-snug break-words [overflow-wrap:anywhere] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         active ? "border-accent bg-accent-soft text-fg" : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
       )}
     >
-      <span>{label}</span>
+      <span className="break-words [overflow-wrap:anywhere]">{label}</span>
       <span className={cn("rounded-full px-1.5 text-xs tabular-nums", active ? "bg-accent text-on-accent" : "bg-raised text-fg-3")}>{count}</span>
     </button>
   );
