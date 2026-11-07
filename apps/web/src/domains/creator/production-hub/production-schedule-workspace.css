@@ -1,0 +1,75 @@
+/* 프로덕션 일정·용량 작업실 로컬 반응형 및 오버플로 방지 규칙 */
+[data-production-schedule-workspace],
+[data-production-schedule-workspace] *,
+[data-production-schedule-workspace] *::before,
+[data-production-schedule-workspace] *::after {
+  box-sizing: border-box;
+}
+
+[data-production-schedule-workspace] {
+  max-width: 100%;
+  min-width: 0;
+}
+
+[data-production-schedule-workspace] select,
+[data-production-schedule-workspace] input:not([type="checkbox"]):not([type="radio"]) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+[data-production-schedule-workspace] .production-schedule-task-title {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+[data-production-schedule-workspace] .production-schedule-timeline-grid {
+  display: grid;
+  grid-template-columns: minmax(19rem, 1.5fr) repeat(14, minmax(3.25rem, 1fr));
+}
+
+[data-production-schedule-workspace] .production-schedule-sticky-col {
+  position: sticky;
+  left: 0;
+}
+
+@media (max-width: 767px) {
+  [data-production-schedule-workspace] .production-schedule-timeline-grid {
+    grid-template-columns: minmax(13.5rem, 15rem) repeat(14, minmax(2.85rem, 1fr));
+  }
+
+  /* 320px/390px 작은 화면에서 좌측 고정열이 타임라인 전체를 가리지 않도록 일반 열로 전환 */
+  [data-production-schedule-workspace] .production-schedule-sticky-col {
+    position: relative;
+    left: auto;
+  }
+}
+
+/* 하단 보조 스위트(Batch / PMS / Notion) 내부 인라인 고정폭의 작은 화면 넘침 방어 */
+[data-production-schedule-workspace] [data-testid="production-batch-schedule-suite"],
+[data-production-schedule-workspace] [data-testid="production-pms-blueprint-suite"],
+[data-production-schedule-workspace] [data-testid="notion-knowledge-calendar-suite"] {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+@media (max-width: 640px) {
+  [data-production-schedule-workspace] [data-testid="production-batch-schedule-suite"] input[type="text"],
+  [data-production-schedule-workspace] [data-testid="production-batch-schedule-suite"] input[type="search"],
+  [data-production-schedule-workspace] [data-testid="production-batch-schedule-suite"] select,
+  [data-production-schedule-workspace] [data-testid="production-pms-blueprint-suite"] input,
+  [data-production-schedule-workspace] [data-testid="production-pms-blueprint-suite"] select,
+  [data-production-schedule-workspace] [data-testid="notion-knowledge-calendar-suite"] select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  [data-production-schedule-workspace] [data-testid="production-pms-blueprint-suite"] .grid-cols-6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
