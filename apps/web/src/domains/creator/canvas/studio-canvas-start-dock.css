@@ -405,6 +405,13 @@ body:has([data-studio-cinematic-canvas-welcome="true"]) [data-studio-shell-float
     animation: none;
   }
 
+  /* 작업 시트가 전경 입력을 소유하는 동안 시작 안내의 닫기 버튼이 도구를 가로채지 않게 한다.
+     DOM과 접힘 상태는 유지해 시트를 닫으면 원래 시작 경로로 바로 돌아온다. */
+  body:has([data-studio-mobile-sheet]:not([hidden]):not([aria-hidden="true"])) .studio-canvas-start {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   .studio-canvas-start--collapsed {
     right: auto;
   }
