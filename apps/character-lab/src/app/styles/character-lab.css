@@ -655,11 +655,14 @@ dd {
 .cl-physics-row input[type="number"],
 .cl-render-row input[type="number"] {
   width: 5.5em;
+  min-width: 44px;
+  min-height: 44px;
+  box-sizing: border-box;
   border: 1px solid var(--lab-line);
   border-radius: 8px;
   background: var(--lab-panel-2);
   color: var(--lab-fg);
-  padding: 4px 6px;
+  padding: 6px 8px;
   font: inherit;
   font-size: 0.82rem;
 }
@@ -718,6 +721,7 @@ dd {
 .cl-slot-redo,
 .cl-paint-actions button,
 .cl-export-actions button,
+.cl-export-psd button,
 .cl-expression-actions button,
 .cl-pose-actions button,
 .cl-param-actions button,
@@ -746,6 +750,7 @@ dd {
 .cl-slot-redo:hover:not(:disabled),
 .cl-paint-actions button:hover:not(:disabled),
 .cl-export-actions button:hover:not(:disabled),
+.cl-export-psd button:hover:not(:disabled),
 .cl-expression-actions button:hover:not(:disabled),
 .cl-pose-actions button:hover:not(:disabled),
 .cl-param-actions button:hover:not(:disabled),
@@ -774,6 +779,7 @@ dd {
 .cl-slot-redo:disabled,
 .cl-paint-actions button:disabled,
 .cl-export-actions button:disabled,
+.cl-export-psd button:disabled,
 .cl-expression-actions button:disabled,
 .cl-pose-actions button:disabled,
 .cl-param-actions button:disabled,
@@ -802,6 +808,7 @@ dd {
   color: var(--lab-muted);
   font-size: 0.78rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .cl-paint-status,
@@ -821,6 +828,8 @@ dd {
   color: var(--lab-fg);
   font-size: 0.8rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .cl-paint-status[data-tone="busy"],
@@ -858,6 +867,8 @@ dd {
   color: var(--lab-warn);
   font-size: 0.78rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .cl-export-failure {
@@ -866,6 +877,8 @@ dd {
   border-radius: 8px;
   color: var(--lab-error);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .cl-export-receipt,
@@ -879,8 +892,12 @@ dd {
   font-size: 0.74rem;
   line-height: 1.5;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   max-height: 180px;
   overflow: auto;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .cl-export-file,
@@ -892,6 +909,110 @@ dd {
   padding: 8px 10px;
   border: 1px dashed var(--lab-line);
   border-radius: var(--lab-radius);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cl-export-file {
+  min-height: 44px;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cl-export-file input[type="file"] {
+  min-height: 44px;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.cl-export-psd label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cl-export-psd input[type="checkbox"] {
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: var(--lab-accent);
+}
+
+.cl-export-experiment-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--lab-line);
+  border-radius: var(--lab-radius);
+  background: var(--lab-panel-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cl-export-experiment-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 12em;
+}
+
+.cl-export-experiment-source,
+.cl-export-experiment-pose {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--lab-fg);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.cl-export-experiment-pose {
+  color: var(--lab-muted);
+  font-size: 0.75rem;
+}
+
+.cl-export-nav-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.cl-export-nav-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  background: var(--lab-panel);
+  color: var(--lab-fg);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-export-nav-btn:hover:not(:disabled) {
+  border-color: var(--lab-accent);
 }
 
 /* ---------- SlotPanel: 15슬롯 탭 + 카드 그리드 */
@@ -1212,6 +1333,13 @@ dd {
 .cl-pose-rig-pose {
   color: var(--lab-muted);
   font-size: 0.75rem;
+}
+
+.cl-pose-rig-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 
 .cl-pose-rig-switch {
@@ -1750,6 +1878,8 @@ dd {
   font-size: 0.8rem;
   line-height: 1.45;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .cl-vision-coverage,
@@ -1873,6 +2003,10 @@ dd {
   border-radius: 8px;
   background: var(--lab-panel-2);
   font-size: 0.8rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .cl-package-nav-actions {
@@ -1882,7 +2016,8 @@ dd {
   gap: 8px;
 }
 
-.cl-package-panel .cl-package-to-pose {
+.cl-package-panel .cl-package-to-pose,
+.cl-package-panel .cl-package-to-export {
   font-weight: 600;
 }
 
@@ -1954,6 +2089,11 @@ dd {
   border: 1px solid var(--lab-line);
   border-radius: var(--lab-radius);
   background: var(--lab-panel-2);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .cl-package-item--selected,
@@ -1967,12 +2107,18 @@ dd {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 8px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .cl-package-role,
 .cl-package-id {
   color: var(--lab-muted);
   font-size: 0.72rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .cl-package-id {
@@ -1984,6 +2130,8 @@ dd {
   color: var(--lab-muted);
   font-size: 0.76rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .cl-package-detail {
@@ -2520,7 +2668,12 @@ dd {
   .cl-package-panel button,
   .cl-package-diagnostics-summary,
   .cl-package-gaps summary,
-  .cl-package-unmapped summary {
+  .cl-package-unmapped summary,
+  .cl-export-actions button,
+  .cl-export-psd button,
+  .cl-export-psd label,
+  .cl-export-panel select,
+  .cl-export-nav-btn {
     min-width: 44px;
     min-height: 44px;
     display: inline-flex;
@@ -2671,12 +2824,14 @@ dd {
   .cl-expression-card,
   .cl-pose-card,
   .cl-pose-rig-switch,
+  .cl-export-nav-btn,
   .cl-vision-badge,
   .cl-package-badge,
   .cl-package-kit-base,
   .cl-package-kit-reload,
   .cl-package-kit-to-procedural,
   .cl-package-to-pose,
+  .cl-package-to-export,
   .cl-package-item--selected,
   .cl-vision-model,
   .cl-viewport-button {
@@ -2700,6 +2855,7 @@ dd {
   .cl-expression-card,
   .cl-pose-card,
   .cl-pose-rig-switch,
+  .cl-export-nav-btn,
   .cl-engine-badge,
   .cl-slot-badge,
   .cl-slot-cell-badge,
@@ -2709,6 +2865,7 @@ dd {
   .cl-package-kit-reload,
   .cl-package-kit-to-procedural,
   .cl-package-to-pose,
+  .cl-package-to-export,
   .cl-viewport-button {
     forced-color-adjust: none;
     border: 1px solid CanvasText;
