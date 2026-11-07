@@ -508,6 +508,118 @@ describe("관절 드래그 → pose/set", () => {
     expect(view.dispatched).toEqual([]);
   });
 
+  it("FK(2)·IK(1)·체형스케일(3)·형상제어점(CP)·선택(0) 중 pointercancel·lostpointercapture·Escape·blur 중단 시 미커밋 변형과 기즈모 링을 정리하고 이후 정상 드래그가 커밋된다", () => {
+    const engine = createTestEngine();
+    const view = renderPane({ engine, plan: BASE_PLAN });
+    fireEvent.click(screen.getByRole("button", { name: "형상 제어점" }));
+    flushFrames();
+    const gizmoSelect = screen.getByLabelText("기즈모 조작 모드") as HTMLSelectElement;
+    const { start, end } = dragElbow(-45);
+
+    const triggers: ReadonlyArray<(el: Element, pointerId: number) => void> = [
+      (el, pointerId) => fireEvent.pointerCancel(el, { pointerId }),
+      (el, pointerId) => fireEvent.lostPointerCapture(el, { pointerId }),
+      () => fireEvent.keyDown(window, { key: "Escape" }),
+      () => fireEvent.blur(window),
+    ];
+
+    // 1. FK (Mode 2) 4가지 중단 검증
+    let pid = 30;
+    for (const interrupt of triggers) {
+      pid += 1;
+      const el = handle("leftLowerArm");
+      fireEvent.pointerDown(el, { ...toClient(start), pointerId: pid, button: 0 });
+      fireEvent.pointerMove(el, { ...toClient(end), pointerId: pid });
+      expect(el.getAttribute("data-dragging")).toBe("true");
+      expect(document.querySelector('circle[data-gizmo-ring="leftLowerArm"]')).not.toBeNull();
+      expect(engine.appliedPlans.at(-1)).not.toBe(BASE_PLAN);
+      interrupt(el, pid);
+      expect(engine.appliedPlans.at(-1)).toBe(BASE_PLAN);
+      expect(el.getAttribute("data-dragging")).toBeNull();
+      expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+      fireEvent.pointerUp(el, { ...toClient(end), pointerId: pid });
+      expect(view.dispatched).toEqual([]);
+    }
+
+    // 2. IK (Mode 1) 4가지 중단 검증
+    fireEvent.change(gizmoSelect, { target: { value: "1" } });
+    const pivotWorld = worldOf(BASE_PLAN.boneRotations, "leftUpperArm");
+    const handStart = projectToPixel(CAMERA, worldOf(BASE_PLAN.boneRotations, "leftHand"));
+    const handEnd = projectToPixel(CAMERA, [pivotWorld[0] - 0.1, pivotWorld[1] + 0.1, pivotWorld[2]]);
+    if (!handStart || !handEnd) throw new Error("투영 불가");
+    for (const interrupt of triggers) {
+      pid += 1;
+      const el = handle("leftHand");
+      fireEvent.pointerDown(el, { ...toClient(handStart), pointerId: pid, button: 0 });
+      fireEvent.pointerMove(el, { ...toClient(handEnd), pointerId: pid });
+      expect(el.getAttribute("data-dragging")).toBe("true");
+      expect(engine.appliedPlans.at(-1)).not.toBe(BASE_PLAN);
+      interrupt(el, pid);
+      expect(engine.appliedPlans.at(-1)).toBe(BASE_PLAN);
+      expect(el.getAttribute("data-dragging")).toBeNull();
+      expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+      fireEvent.pointerUp(el, { ...toClient(handEnd), pointerId: pid });
+      expect(view.dispatched).toEqual([]);
+    }
+
+    // 3. 체형 스케일 (Mode 3) 4가지 중단 시 pointerMove 중 조기 dispatch 없이 취소되어야 한다
+    fireEvent.change(gizmoSelect, { target: { value: "3" } });
+    const spineStart = projectToPixel(CAMERA, worldOf(BASE_PLAN.boneRotations, "spine"));
+    if (!spineStart) throw new Error("투영 불가");
+    for (const interrupt of triggers) {
+      pid += 1;
+      const el = handle("spine");
+      fireEvent.pointerDown(el, { ...toClient(spineStart), pointerId: pid, button: 0 });
+      fireEvent.pointerMove(el, { clientX: spineStart[0] / 2 + 30, clientY: spineStart[1] / 2 - 20, pointerId: pid });
+      expect(el.getAttribute("data-dragging")).toBe("true");
+      expect(view.dispatched).toEqual([]);
+      interrupt(el, pid);
+      expect(el.getAttribute("data-dragging")).toBeNull();
+      expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+      fireEvent.pointerUp(el, { clientX: spineStart[0] / 2 + 30, clientY: spineStart[1] / 2 - 20, pointerId: pid });
+      expect(view.dispatched).toEqual([]);
+    }
+
+    // 4. 형상 제어점 (ControlPoint) 4가지 중단 시 pointerMove 중 조기 dispatch 없이 취소되어야 한다
+    const jawCp = document.querySelector('circle[data-control-point="cp-face-jaw"]');
+    if (!jawCp) throw new Error("cp-face-jaw 없음");
+    for (const interrupt of triggers) {
+      pid += 1;
+      fireEvent.pointerDown(jawCp, { clientX: 200, clientY: 120, pointerId: pid, button: 0 });
+      fireEvent.pointerMove(jawCp, { clientX: 235, clientY: 95, pointerId: pid });
+      expect(jawCp.getAttribute("data-dragging")).toBe("true");
+      expect(view.dispatched).toEqual([]);
+      interrupt(jawCp, pid);
+      expect(jawCp.getAttribute("data-dragging")).toBeNull();
+      fireEvent.pointerUp(jawCp, { clientX: 235, clientY: 95, pointerId: pid });
+      expect(view.dispatched).toEqual([]);
+    }
+
+    // 5. Mode 0 (Q 선택) 본 선택 후 Escape 및 blur로 선택 해제 확인
+    fireEvent.change(gizmoSelect, { target: { value: "0" } });
+    fireEvent.pointerDown(handle("leftLowerArm"), { ...toClient(start), pointerId: 90, button: 0 });
+    expect(document.querySelector('circle[data-gizmo-ring="leftLowerArm"]')).not.toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+    fireEvent.pointerDown(handle("leftLowerArm"), { ...toClient(start), pointerId: 91, button: 0 });
+    expect(document.querySelector('circle[data-gizmo-ring="leftLowerArm"]')).not.toBeNull();
+    fireEvent.blur(window);
+    expect(document.querySelector("circle[data-gizmo-ring]")).toBeNull();
+
+    // 6. 중단 이후 정상 FK 드래그 커밋 및 pointerUp 직후 lostpointercapture 후속 발생 시 되돌리지 않는지 확인
+    fireEvent.change(gizmoSelect, { target: { value: "2" } });
+    const elbowEl = handle("leftLowerArm");
+    fireEvent.pointerDown(elbowEl, { ...toClient(start), pointerId: 99, button: 0 });
+    fireEvent.pointerMove(elbowEl, { ...toClient(end), pointerId: 99 });
+    const committedPreview = engine.appliedPlans.at(-1);
+    expect(committedPreview).not.toBe(BASE_PLAN);
+    fireEvent.pointerUp(elbowEl, { ...toClient(end), pointerId: 99 });
+    fireEvent.lostPointerCapture(elbowEl, { pointerId: 99 });
+    expect(engine.appliedPlans.at(-1)).toBe(committedPreview);
+    expect(view.dispatched).toHaveLength(1);
+    expect(view.dispatched[0]?.type).toBe("pose/set");
+  });
+
   it("관절 제한을 넘기면 사유를 보이고(요청 각도 표시) 제한된 회전으로 기록한다", () => {
     const view = renderPane({ plan: BASE_PLAN });
     flushFrames();
