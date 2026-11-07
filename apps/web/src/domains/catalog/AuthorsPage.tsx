@@ -1,7 +1,8 @@
 import { catalogStatusText } from "./catalog-status-i18n";
-import { useLocalCatalogFallback } from "./local-catalog-fallback";
+import { matchesHangulAwareQuery, useLocalCatalogFallback } from "./local-catalog-fallback";
 import { PenLine, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { CoverImage } from "@/shared/components/cover-image";
 import { Container } from "@/shared/components/section";
@@ -32,6 +33,7 @@ interface AuthorsResponse {
 
 const INITIAL_AUTHORS_VISIBLE = 120;
 const AUTHORS_VISIBLE_STEP = 120;
+const DEFAULT_AUTHOR_COVER: [string, string] = ["#1f2937", "#111827"];
 
 export function AuthorsPage() {
   const t = useT();
@@ -42,14 +44,38 @@ export function AuthorsPage() {
     t("authors.error"),
   );
   const { data, loading, error, reload } = useLocalCatalogFallback("/api/authors", apiState);
-  const [q, setQ] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  const [q, setQ] = useState(() => urlQuery);
+  const [sectionArtFailed, setSectionArtFailed] = useState(false);
   const [visibleCount, setVisibleCount] = useState(INITIAL_AUTHORS_VISIBLE);
-  const authors = data?.authors ?? [];
+
+  useEffect(() => {
+    setQ(urlQuery);
+  }, [urlQuery]);
+
+  const updateAuthorQuery = (nextValue: string) => {
+    setQ(nextValue);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (nextValue.trim()) next.set("q", nextValue);
+        else next.delete("q");
+        return next;
+      },
+      { replace: true, preventScrollReset: true },
+    );
+  };
+
+  const authors = Array.isArray(data?.authors) ? data.authors : [];
   const query = q.trim().normalize("NFC").toLowerCase();
   const filtered = query
     ? authors.filter((a) => {
-        const nameMatch = (a.name ?? "").normalize("NFC").toLowerCase().includes(query);
-        const genreMatch = (a.topGenres ?? []).some((g) => g.normalize("NFC").toLowerCase().includes(query));
+        if (!a || typeof a !== "object") return false;
+        const rawName = typeof a.name === "string" ? a.name : "";
+        const nameMatch = matchesHangulAwareQuery(rawName, query);
+        const safeGenres = Array.isArray(a.topGenres) ? a.topGenres : [];
+        const genreMatch = safeGenres.some((g) => typeof g === "string" && matchesHangulAwareQuery(g, query));
         return nameMatch || genreMatch;
       })
     : authors;
@@ -59,11 +85,12 @@ export function AuthorsPage() {
     setVisibleCount(INITIAL_AUTHORS_VISIBLE);
   }, [query]);
 
-  const formatNumber = (value: number) => new Intl.NumberFormat(lang).format(value);
+  const formatNumber = (value: number) =>
+    new Intl.NumberFormat(lang).format(typeof value === "number" && Number.isFinite(value) ? value : 0);
   const authorStats =
     data &&
     t("authors.stats")
-      .replace("{total}", formatNumber(data.total))
+      .replace("{total}", formatNumber(typeof data.total === "number" ? data.total : authors.length))
       .replace("{shown}", formatNumber(authors.length));
 
   return (
@@ -85,13 +112,13 @@ export function AuthorsPage() {
           {t("authors.desc")}
           {authorStats ? <span className="text-fg-3">{` · ${authorStats}`}</span> : null}
         </p>
-        {!loading && !error && authors.length > 0 && (
+        {!loading && !error && (authors.length > 0 || q.trim().length > 0) && (
           <div role="search" className="mt-4 flex min-h-11 max-w-sm items-center gap-2 rounded-xl border border-line-strong bg-card px-3.5 transition-colors focus-within:border-accent/60 focus-within:ring-2 focus-within:ring-accent/20">
             <Search size={15} className="shrink-0 text-fg-3" aria-hidden="true" />
             <input
               type="search"
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => updateAuthorQuery(e.target.value)}
               placeholder={t("authors.search")}
               aria-label={t("authors.search")}
               className="min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-3"
@@ -99,7 +126,7 @@ export function AuthorsPage() {
             {q ? (
               <button
                 type="button"
-                onClick={() => setQ("")}
+                onClick={() => updateAuthorQuery("")}
                 aria-label="작가 검색어 지우기"
                 className="grid size-8 shrink-0 place-items-center rounded-md text-fg-3 hover:bg-panel hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
@@ -109,10 +136,31 @@ export function AuthorsPage() {
           </div>
         )}
         </div>
-        <SectionArt
-          image="community"
-          className="hidden aspect-[16/10] w-full rounded-3xl border border-line object-cover lg:block"
-        />
+        {sectionArtFailed ? (
+          <div
+            aria-hidden="true"
+            data-testid="catalog-section-art-fallback"
+            className="hidden aspect-[16/10] w-full place-items-center rounded-3xl border border-line bg-panel/70 px-4 text-center text-xs font-bold tracking-wider text-fg-3 lg:grid"
+          >
+            AUTHOR DIRECTORY
+          </div>
+        ) : (
+          <div
+            ref={(node) => {
+              const img = node?.querySelector("img");
+              if (img && img.complete && img.naturalWidth === 0) {
+                setSectionArtFailed(true);
+              }
+            }}
+            onErrorCapture={() => setSectionArtFailed(true)}
+            className="hidden lg:block"
+          >
+            <SectionArt
+              image="community"
+              className="aspect-[16/10] w-full rounded-3xl border border-line object-cover"
+            />
+          </div>
+        )}
       </header>
 
       <section aria-labelledby="authors-title">
@@ -125,31 +173,63 @@ export function AuthorsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyTeach
-          icon={Search}
-          title={query ? catalogStatusText("catalog.status.authors.searchEmpty", { query: q.trim() }, "“{query}” 작가를 찾지 못했어요") : catalogStatusText("catalog.status.authors.empty", "등록된 작가가 없어요")}
-          desc={
-            query
-              ? "이름 철자를 확인하거나 더 짧은 키워드로 위 검색창에서 다시 찾아보세요."
-              : "카탈로그에 작가 정보가 모이면 여기에 표시됩니다."
-          }
-        />
+        <div className="space-y-3">
+          <EmptyTeach
+            icon={Search}
+            title={query ? catalogStatusText("catalog.status.authors.searchEmpty", { query: q.trim() }, "“{query}” 작가를 찾지 못했어요") : catalogStatusText("catalog.status.authors.empty", "등록된 작가가 없어요")}
+            desc={
+              query
+                ? "이름 철자를 확인하거나 더 짧은 키워드로 위 검색창에서 다시 찾아보세요."
+                : "카탈로그에 작가 정보가 모이면 여기에 표시됩니다."
+            }
+          />
+          <div className="flex justify-center">
+            {query ? (
+              <button
+                type="button"
+                onClick={() => updateAuthorQuery("")}
+                className="min-h-11 rounded-xl border border-line bg-card px-4 text-xs font-bold text-accent hover:border-accent/50"
+              >
+                검색 초기화
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={reload}
+                className="min-h-11 rounded-xl border border-line bg-card px-4 text-xs font-bold text-fg-2 hover:border-accent/50 hover:text-accent"
+              >
+                다시 시도
+              </button>
+            )}
+          </div>
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {visible.map((a) => {
-              const initial = (a.name ?? "").replace(/[^가-힣A-Za-z0-9]/g, "").charAt(0) || "?";
+            {visible.map((a, idx) => {
+              const safeName = typeof a?.name === "string" && a.name.trim() ? a.name : fallbackName;
+              const initial = safeName.replace(/[^가-힣A-Za-z0-9]/g, "").charAt(0) || "?";
+              const safeCover =
+                Array.isArray(a?.cover) && typeof a.cover[0] === "string" && typeof a.cover[1] === "string"
+                  ? a.cover
+                  : DEFAULT_AUTHOR_COVER;
+              const safeWorkCount = typeof a?.workCount === "number" && Number.isFinite(a.workCount) ? a.workCount : 0;
+              const safeTotalViews = typeof a?.totalViews === "number" && Number.isFinite(a.totalViews) ? a.totalViews : 0;
+              const safeAvgRating = typeof a?.avgRating === "number" && Number.isFinite(a.avgRating) ? a.avgRating : 0;
+              const safeTopGenres = Array.isArray(a?.topGenres)
+                ? a.topGenres.filter((g): g is string => typeof g === "string" && g.trim().length > 0)
+                : [];
               return (
                 <Link
-                  key={a.name}
-                  href={`/author/${encodeURIComponent(a.name)}`}
+                  key={`${safeName}-${idx}`}
+                  href={`/author/${encodeURIComponent(safeName)}`}
                   className="group flex items-center gap-3.5 rounded-xl border border-line bg-card/40 p-3 transition-colors hover:border-line-strong hover:bg-raised"
                 >
                   <div
                     className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-lg border border-line/60 font-display text-lg font-bold text-white/90"
-                    style={{ background: `linear-gradient(145deg, ${a.cover[0]}, ${a.cover[1]})` }}
+                    style={{ background: `linear-gradient(145deg, ${safeCover[0]}, ${safeCover[1]})` }}
                   >
-                    {a.coverImage ? (
+                    {a?.coverImage ? (
                       <CoverImage
                         src={a.coverImage}
                         alt=""
@@ -161,18 +241,18 @@ export function AuthorsPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h2 className="truncate font-semibold text-fg group-hover:text-accent">{a.name ?? fallbackName}</h2>
+                    <h2 className="truncate font-semibold text-fg group-hover:text-accent">{safeName}</h2>
                     <p className="mt-0.5 truncate text-xs text-fg-3">
-                      {formatNumber(a.workCount)}
+                      {formatNumber(safeWorkCount)}
                       {t("authors.works")}
                       {" · "}
-                      {formatCount(a.totalViews)}
+                      {formatCount(safeTotalViews)}
                       {" "}
                       {t("authors.views")}
-                      {a.avgRating > 0 && <> · ★{a.avgRating.toFixed(1)}</>}
+                      {safeAvgRating > 0 && <> · ★{safeAvgRating.toFixed(1)}</>}
                     </p>
                     <div className="mt-1.5 flex flex-wrap gap-1">
-                      {a.topGenres.slice(0, 3).map((g) => (
+                      {safeTopGenres.slice(0, 3).map((g) => (
                         <span
                           key={g}
                           className="rounded-full border px-1.5 py-0.5 text-xs font-medium leading-none"

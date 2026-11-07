@@ -128,7 +128,9 @@ export function DrawParamPanel() {
   const paperOn = overrides.grain ?? base?.paper.enabled ?? false;
   const set = (patch: LabOverrides): void => drawActions.setOverride(patch);
 
-  const overrideKeysCount = Object.values(overrides).filter((v) => v !== undefined).length;
+  const overrideKeysCount = Object.entries(overrides).filter(
+    ([k, v]) => v !== undefined && !(k === "grain" && paperKind !== "preset" && v === true),
+  ).length;
   const extraCustomCount =
     (paperKind !== "preset" ? 1 : 0) +
     (mode !== "one-euro" ? 1 : 0) +
@@ -160,6 +162,7 @@ export function DrawParamPanel() {
           <strong>{base ? base.name : presetId}</strong>
           <span className="lab-muted">
             크기 {sizePx}px · 불투명도 {Math.round(opacity * 100)}% · 흐름 {Math.round(flow * 100)}% · 보정 {mode}
+            {paperKind !== "preset" ? ` · 종이 ${paperKind}` : ""}
           </span>
         </div>
         <button

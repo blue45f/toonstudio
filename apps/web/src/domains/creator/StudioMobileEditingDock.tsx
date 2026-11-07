@@ -661,6 +661,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   const dismissDrawSettings = () => {
     suppressBrushHintOnReturnFocusRef.current = true;
     setMobileSheet(null);
+    (mobileBrushDockButtonRef.current ?? measuredDockRef.current?.querySelector<HTMLElement>('[aria-controls="studio-mobile-draw-settings"]'))?.focus({ preventScroll: true });
   };
   const mobileControlSide = workspaceState.mobileControlSide === "left" ? "left" : "right";
   const colorWorkspace = useStudioColorWorkspace();
@@ -720,7 +721,17 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   useEffect(() => {
     if (!isMobile || mobileSheet === null) return;
     setQuickStartOpen(false);
-  }, [isMobile, mobileSheet, setQuickStartOpen]);
+    if (mobileSheet !== "color-vision") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setMobileSheet(null);
+      (measuredDockRef.current?.querySelector<HTMLElement>('[data-studio-color-vision-trigger="true"]') ?? workspaceToggleRef.current)?.focus({ preventScroll: true });
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isMobile, mobileSheet, setMobileSheet, setQuickStartOpen]);
 
   useEffect(() => {
     if (!isMobile) {
@@ -780,23 +791,17 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
             모바일에는 상단 선택 레인(선택 옵션 44px + 선택 명령 51px)이 아예 없다 — 그 95px 은
             전부 그리기 면적으로 돌아갔다. 대신 레인에만 있던 두 명령(잠금 · 대사/글자 편집)을
             이 바가 넘겨받는다. 라벨과 아이콘은 데스크톱 레인과 같은 용어를 쓴다. */}
-        {isMobile && !mobileSheet && !quickActionsOpen && !showMobileHint && (selected || marqueeIds.length > 0) ? (
+        {isMobile && !mobileSheet && !quickActionsOpen && !showMobileHint && !colorToolsOpen && (selected || marqueeIds.length > 0) ? (
           <div
             role="toolbar"
             aria-label="선택 항목 빠른 작업"
             data-studio-mobile-selection-actions="true"
             className="fixed inset-x-2 z-[53] mx-auto flex max-w-[34rem] items-center gap-1 overflow-x-auto rounded-2xl border border-line bg-panel/95 p-1.5 shadow-2xl backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:hidden"
-            style={{
-              bottom: `calc(var(--studio-canvas-bottom-inset, 7rem) + 0.35rem + ${safeMobileKeyboardInset}px)`,
-            }}
+            style={{ bottom: `calc(var(--studio-canvas-bottom-inset, 7rem) + 0.35rem + ${safeMobileKeyboardInset}px)` }}
           >
             <div className="w-[4.75rem] shrink-0 px-2">
               <p className="truncate text-[0.68rem] font-bold text-fg">
-                {marqueeIds.length > 0
-                  ? `${marqueeIds.length}개 선택`
-                  : selected
-                    ? elementLabel(selected)
-                    : "선택"}
+                {marqueeIds.length > 0 ? `${marqueeIds.length}개 선택` : selected ? elementLabel(selected) : "선택"}
               </p>
               <p className="text-[0.58rem] font-medium uppercase tracking-wide text-fg-3">빠른 작업</p>
             </div>
@@ -996,17 +1001,15 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
             data-studio-sheet-id="draw"
             data-studio-mobile-sheet={mobileSheet === "draw" ? "draw" : undefined}
             data-studio-sheet-snap={drawSheetSnap}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && drawSettingsVisible) { event.preventDefault(); event.stopPropagation(); dismissDrawSettings(); }
+            }}
             className={cn(
               "fixed inset-x-0 z-[54] mx-auto max-w-[34rem] flex flex-col overflow-hidden overscroll-contain rounded-2xl border border-line bg-panel/95 p-3 shadow-2xl backdrop-blur transition-[transform,opacity,height,max-height] duration-300 ease-out motion-reduce:transition-none lg:hidden",
-              drawSettingsVisible
-                ? "pointer-events-auto translate-y-0 opacity-100"
-                : "pointer-events-none translate-y-3 opacity-0"
+              drawSettingsVisible ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
             )}
             inert={drawSettingsVisible ? undefined : true}
-            style={studioDrawSheetSizeStyle(
-              drawSheetSnap,
-              safeMobileKeyboardInset,
-            )}
+            style={studioDrawSheetSizeStyle(drawSheetSnap, safeMobileKeyboardInset)}
           >
             <div data-studio-mobile-draw-header="true" className="relative z-10 shrink-0 -mx-3 -mt-3 mb-2 border-b border-line/70 bg-panel/95 px-3 backdrop-blur">
               <StudioMobileSheetHandle
@@ -1497,9 +1500,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
             data-studio-mobile-sheet="true"
             data-studio-shortcut-boundary="true"
             className="fixed inset-x-2 z-[60] mx-auto max-w-[32rem] rounded-2xl border border-line bg-panel/98 p-3 shadow-2xl backdrop-blur lg:hidden"
-            style={{
-              bottom: `calc(var(--studio-canvas-bottom-inset, 7rem) + 0.5rem + ${safeMobileKeyboardInset}px)`,
-            }}
+            style={{ bottom: `calc(var(--studio-canvas-bottom-inset, 7rem) + 0.5rem + ${safeMobileKeyboardInset}px)` }}
           >
             <div className="mb-2 flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -1508,7 +1509,8 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
               </div>
               <button
                 type="button"
-                onClick={() => setMobileSheet(null)}
+                data-autofocus
+                onClick={() => { setMobileSheet(null); (measuredDockRef.current?.querySelector<HTMLElement>('[data-studio-color-vision-trigger="true"]') ?? workspaceToggleRef.current)?.focus({ preventScroll: true }); }}
                 className="grid size-11 shrink-0 place-items-center rounded-xl text-fg-2 hover:bg-raised"
                 aria-label="색각 검수 닫기"
               >
@@ -1516,10 +1518,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
               </button>
             </div>
             <div className="overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <StudioColorBlindPreviewToggle
-                value={colorBlindPreview}
-                onChange={setColorBlindPreview}
-              />
+              <StudioColorBlindPreviewToggle value={colorBlindPreview} onChange={setColorBlindPreview} />
             </div>
           </section>
         ) : null}

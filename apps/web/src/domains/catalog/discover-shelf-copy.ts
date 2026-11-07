@@ -24,8 +24,9 @@ export function discoverShelfCopies(
   bt: BilingualText,
   snapshot: DiscoverHomeSnapshot,
 ): Record<DiscoverShelfId, ShelfCopy> {
-  const day = snapshot.todayDay;
-  const isToday = day === currentKstWeekDay();
+  const kstToday = currentKstWeekDay();
+  const day = typeof snapshot.todayDay === "string" && snapshot.todayDay.trim().length > 0 ? snapshot.todayDay.trim() : kstToday;
+  const isToday = day === kstToday;
   return {
     weekday: {
       eyebrow: isToday ? "TODAY" : "WEEKLY",

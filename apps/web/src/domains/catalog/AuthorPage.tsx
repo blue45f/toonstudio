@@ -62,15 +62,21 @@ export function AuthorPage() {
   const { data, loading, error, notFound, reload } = useLocalCatalogFallback(authorApiPath, apiState);
   const [workQuery, setWorkQuery] = useState("");
 
-  const author = data?.author ?? decodedAuthor;
+  const rawAuthor = data?.author as string | { readonly name?: string } | undefined;
+  const author =
+    typeof rawAuthor === "string" && rawAuthor.trim()
+      ? rawAuthor
+      : typeof rawAuthor === "object" && rawAuthor !== null && typeof rawAuthor.name === "string" && rawAuthor.name.trim()
+        ? rawAuthor.name
+        : decodedAuthor;
   const works = useMemo(() => data?.works ?? [], [data?.works]);
   const filteredWorks = useMemo(
     () => filterTitlesByLocalQuery(works, workQuery),
     [works, workQuery],
   );
-  const totalViews = data?.totalViews ?? 0;
-  const avg = data?.avg ?? 0;
-  const genres = data?.genres ?? [];
+  const totalViews = typeof data?.totalViews === "number" && Number.isFinite(data.totalViews) ? data.totalViews : 0;
+  const avg = typeof data?.avg === "number" && Number.isFinite(data.avg) ? data.avg : 0;
+  const genres = Array.isArray(data?.genres) ? data.genres : [];
 
   const sharePath = authorParam ? `/author/${encodeURIComponent(decodedAuthor)}` : "/authors";
   const shareDescription = compactPublicShareDescription(
@@ -233,6 +239,26 @@ export function AuthorPage() {
               secondary={{ href: "/explore", label: translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "작품 탐색하기") }}
               art="library"
             />
+          ) : filteredWorks.length === 0 ? (
+            <div
+              role="status"
+              data-testid="author-works-search-empty"
+              className="rounded-2xl border border-dashed border-line bg-card/50 p-8 text-center"
+            >
+              <p className="text-sm font-semibold text-fg">
+                “{workQuery.trim()}” 조건에 맞는 참여작이 없습니다.
+              </p>
+              <p className="mt-1 text-xs text-fg-3">
+                다른 키워드로 검색하거나 검색어를 초기화해 전체 참여작을 확인해 보세요.
+              </p>
+              <button
+                type="button"
+                onClick={() => setWorkQuery("")}
+                className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-xs font-bold text-accent hover:border-accent/50"
+              >
+                참여작 검색 초기화
+              </button>
+            </div>
           ) : (
             <div className={AUTHOR_WORKS_GRID}>
               {filteredWorks.map((title) => (

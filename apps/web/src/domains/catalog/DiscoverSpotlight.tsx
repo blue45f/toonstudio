@@ -175,7 +175,7 @@ export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps)
                   <Poster title={title} className="aspect-[3/4] w-8 shrink-0 rounded-md" glyphClassName="text-sm" />
                   <span className="min-w-0">
                     <span className="block truncate text-xs font-semibold text-fg">{title.title}</span>
-                    <span className="block truncate text-xs text-fg-3">{title.genres.slice(0, 2).join("·")}</span>
+                    <span className="block truncate text-xs text-fg-3">{(Array.isArray(title.genres) ? title.genres : []).slice(0, 2).join("·")}</span>
                   </span>
                 </Link>
               </li>

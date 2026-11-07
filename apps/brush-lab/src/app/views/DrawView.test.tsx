@@ -1078,4 +1078,99 @@ describe("DrawView", { timeout: 30_000 }, () => {
     fireEvent.click(screen.getByTestId("lab-draw-reset-params"));
     expect(screen.getByTestId("lab-draw-param-status").textContent).toBe("프리셋 기본값");
   });
+
+  it("연속 작업 흐름 회귀: 프리셋 검색→갤러리 시험→파라미터 조정→그리기→탭전환→복귀→초기화 및 좁은 화면·키보드 조작이 끊김 없이 이어진다", async () => {
+    const h = makeHarness(defaultDescriptors);
+    const { store } = renderDraw(h, { autoProbe: false });
+    const stage = await ready(h);
+
+    // 1. 프리셋 검색 및 키보드 Escape 지우기 + 가족 필터 적용
+    const drawSearch = screen.getByLabelText("브러시 검색") as HTMLInputElement;
+    fireEvent.change(drawSearch, { target: { value: "수채" } });
+    expect(drawSearch.value).toBe("수채");
+    fireEvent.keyDown(drawSearch, { key: "Escape" });
+    expect(drawSearch.value).toBe("");
+    fireEvent.click(screen.getByTestId("lab-draw-chip-watercolor"));
+    expect(h.drawStore.get().familyFilter).toBe("watercolor");
+
+    // 좁은 화면에서 설정 패널을 접은 채 갤러리로 이동하는 상황 재현
+    fireEvent.click(screen.getByTestId("lab-draw-panel-toggle"));
+    expect(h.drawStore.get().panelOpen).toBe(false);
+
+    // 2. 갤러리 탭 전환(키보드 ArrowRight) → 갤러리 프리셋 검색·빈 결과 복구 → '그리기에서 시험'
+    const drawTab = screen.getByRole("tab", { name: "그리기" });
+    fireEvent.keyDown(drawTab, { key: "ArrowRight" });
+    expect(store.get().tab).toBe("gallery");
+
+    // 갤러리 탭 최상단 패널이 '브러시 가족 갤러리'인지 확인
+    const galleryHeadings = screen.getAllByRole("heading", { level: 2 }).map((el) => el.textContent);
+    expect(galleryHeadings[0]).toBe("브러시 가족 갤러리");
+
+    const gallerySearch = screen.getByTestId("lab-gallery-search-input") as HTMLInputElement;
+    fireEvent.change(gallerySearch, { target: { value: "존재하지않는브러시이름" } });
+    expect(screen.getByTestId("lab-gallery-empty").textContent).toContain("조건에 맞는 브러시 프리셋이 없습니다");
+    expect(screen.getByTestId("lab-gallery-filter-summary").textContent).toBe(`표시 0/${PRESET_CATALOG.length}종`);
+    fireEvent.keyDown(gallerySearch, { key: "Escape" });
+    expect(gallerySearch.value).toBe("");
+    expect(screen.getByTestId("lab-gallery-filter-summary").textContent).toBe(
+      `표시 ${PRESET_CATALOG.length}/${PRESET_CATALOG.length}종`,
+    );
+
+    fireEvent.change(gallerySearch, { target: { value: "pencil-6b" } });
+    expect(screen.getByTestId("lab-gallery-filter-summary").textContent).toBe(`표시 1/${PRESET_CATALOG.length}종`);
+    fireEvent.click(screen.getByTestId("lab-preset-draw-pencil-6b"));
+
+    // 3. 그리기 탭 자동 복귀 + 접혔던 설정 패널 자동 펼침 + compare 프리셋 동기화 + 목록 필터 밖 배지 확인
+    expect(store.get().tab).toBe("draw");
+    expect(store.get().presetId).toBe("pencil-6b");
+    expect(h.drawStore.get().presetId).toBe("pencil-6b");
+    expect(h.drawStore.get().panelOpen).toBe(true);
+    expect(screen.getByTestId("lab-draw-current-filtered-badge").textContent).toBe("목록 필터 밖");
+    fireEvent.click(screen.getByTestId("lab-draw-filter-reset"));
+    expect(screen.queryByTestId("lab-draw-current-filtered-badge")).toBeNull();
+
+    // 4. 파라미터 조정: 종이 종류 변경 시 grain 자동 활성화가 중복 집계되지 않는지(사용자 조정 1개) + 단축키 크기 조절
+    fireEvent.change(screen.getByLabelText("종이 종류"), { target: { value: "rough" } });
+    expect(screen.getByTestId("lab-draw-param-status").textContent).toBe("사용자 조정 1개");
+    expect(screen.getByTestId("lab-draw-param-summary").textContent).toContain("종이 rough");
+    fireEvent.keyDown(window, { key: "]" });
+    expect(screen.getByTestId("lab-draw-param-status").textContent).toBe("사용자 조정 2개");
+
+    // 5. 그리기 실행 → 툴바 배지에 획수('1획') 표시 확인
+    await drawStroke(h, stage, 100);
+    expect(h.drawStore.get().strokes).toBe(1);
+    expect(screen.getByTestId("lab-draw-brush-pill").textContent).toContain("1획");
+
+    // 6. 탭 전환(A/B 비교 → 리포트) 후 키보드 Home으로 그리기 복귀 → 캔버스·획수·파라미터 보존 확인
+    fireEvent.click(screen.getByRole("tab", { name: "A/B 비교" }));
+    expect(store.get().tab).toBe("compare");
+    expect(screen.getByTestId("lab-param-status").textContent).toBe("프리셋 기본값");
+
+    const compareTab = screen.getByRole("tab", { name: "A/B 비교" });
+    fireEvent.keyDown(compareTab, { key: "ArrowRight" });
+    expect(store.get().tab).toBe("report");
+    const reportTab = screen.getByRole("tab", { name: "리포트" });
+    fireEvent.keyDown(reportTab, { key: "Home" });
+    expect(store.get().tab).toBe("draw");
+    expect(screen.getByTestId("lab-draw-stage")).toBe(stage);
+    expect(h.drawStore.get().strokes).toBe(1);
+    expect(screen.getByTestId("lab-draw-brush-pill").textContent).toContain("1획");
+
+    // 7. 좁은 화면(설정 패널 접힘)에서도 상단 툴바의 '설정 초기화' 버튼으로 즉시 파라미터 초기화 가능(캔버스 획은 보존)
+    fireEvent.click(screen.getByTestId("lab-draw-panel-toggle"));
+    expect(document.getElementById("lab-draw-side")).toBeNull();
+    const toolbarReset = screen.getByTestId("lab-draw-toolbar-reset");
+    expect(toolbarReset.textContent).toBe("설정 초기화");
+    fireEvent.click(toolbarReset);
+    expect(screen.queryByTestId("lab-draw-toolbar-reset")).toBeNull();
+    expect(h.drawStore.get()).toMatchObject({
+      presetId: "pencil-6b",
+      strokes: 1,
+      overrides: {},
+      paperKind: "preset",
+      stabilizerMode: "one-euro",
+      stabilizerPct: null,
+      cornerGate: true,
+    });
+  });
 });

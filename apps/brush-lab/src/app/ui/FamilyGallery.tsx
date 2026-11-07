@@ -118,12 +118,19 @@ export function FamilyGallery() {
   const entries = Object.values(state.entries);
   const done = entries.filter((e) => e.status === "done").length;
   const failed = entries.filter((e) => e.status === "error").length;
+  const isFiltered = groupFilter !== "all" || searchQuery.trim().length > 0;
+  const resetGalleryFilters = (): void => {
+    setGroupFilter("all");
+    setSearchQuery("");
+  };
   const open = (presetId: string): void => {
     actions.setPreset(presetId);
     actions.setTab("compare");
   };
   const tryInDraw = (presetId: string): void => {
+    actions.setPreset(presetId);
     drawActions.setPreset(presetId);
+    drawActions.setPanelOpen(true);
     actions.setTab("draw");
   };
   return (
@@ -133,6 +140,9 @@ export function FamilyGallery() {
           {gallery
             ? `${state.status === "idle" ? "대기" : state.status === "running" ? "렌더 중" : "완료"} · ${done}/${PRESET_CATALOG.length} 완료${failed > 0 ? ` · 실패 ${failed}` : ""} · fixture ${state.fixtureId} ${state.size}² · cpu-reference 경로(Worker)`
             : "갤러리 Worker를 만들 수 없다."}
+        </span>
+        <span className="lab-badge" data-testid="lab-gallery-filter-summary">
+          표시 {filteredPresets.length}/{PRESET_CATALOG.length}종
         </span>
         <button
           type="button"
@@ -163,6 +173,12 @@ export function FamilyGallery() {
           className="lab-input"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && searchQuery.length > 0) {
+              e.preventDefault();
+              setSearchQuery("");
+            }
+          }}
           placeholder="브러시 이름·ID 검색 (예: G펜, 수채, 6b)"
           aria-label="브러시 이름 또는 ID 검색"
           data-testid="lab-gallery-search-input"
@@ -172,19 +188,38 @@ export function FamilyGallery() {
             검색 지우기
           </button>
         ) : null}
+        {isFiltered ? (
+          <button
+            type="button"
+            className="lab-button lab-button--compact"
+            data-testid="lab-gallery-filter-reset"
+            onClick={resetGalleryFilters}
+          >
+            탐색 필터 초기화
+          </button>
+        ) : null}
       </div>
       {!gallery ? (
         <p className="lab-error-list" role="alert">
           갤러리 렌더러 없음: {galleryError ?? "사유 없음"} (무음 대체 없음 — 메인 스레드로 대체 렌더하지 않는다)
         </p>
       ) : null}
-      <div className="lab-gallery" role="list" aria-label="브러시 가족 갤러리">
-        {filteredPresets.map((preset) => (
-          <div role="listitem" key={preset.id}>
-            <PresetCard preset={preset} entry={state.entries[preset.id]} onOpen={open} onTryInDraw={tryInDraw} />
-          </div>
-        ))}
-      </div>
+      {filteredPresets.length === 0 ? (
+        <div className="lab-draw-filter-bar" role="status" data-testid="lab-gallery-empty">
+          <span className="lab-muted">조건에 맞는 브러시 프리셋이 없습니다. 검색어나 매체군 필터를 초기화해 보세요.</span>
+          <button type="button" className="lab-button lab-button--compact" onClick={resetGalleryFilters}>
+            전체 프리셋 보기
+          </button>
+        </div>
+      ) : (
+        <div className="lab-gallery" role="list" aria-label="브러시 가족 갤러리">
+          {filteredPresets.map((preset) => (
+            <div role="listitem" key={preset.id}>
+              <PresetCard preset={preset} entry={state.entries[preset.id]} onOpen={open} onTryInDraw={tryInDraw} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -36,6 +36,7 @@ export function TagsPage() {
   const query = (params.get("q") ?? "").slice(0, 80);
   const sort = tagDirectorySort(params.get("sort"));
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const [sectionArtFailed, setSectionArtFailed] = useState(false);
   const filtered = useMemo(
     () => filterTagDirectory(data?.tags ?? [], query, sort),
     [data?.tags, query, sort],
@@ -70,10 +71,31 @@ export function TagsPage() {
             태그는 한 번에 120개씩 표시해 모바일에서도 빠르게 탐색할 수 있습니다.
           </p>
         </div>
-        <SectionArt
-          image="explore"
-          className="hidden aspect-[16/10] w-full rounded-3xl border border-line object-cover lg:block"
-        />
+        {sectionArtFailed ? (
+          <div
+            aria-hidden="true"
+            data-testid="catalog-section-art-fallback"
+            className="hidden aspect-[16/10] w-full place-items-center rounded-3xl border border-line bg-panel/70 px-4 text-center text-xs font-bold tracking-wider text-fg-3 lg:grid"
+          >
+            TAG SPECTRUM
+          </div>
+        ) : (
+          <div
+            ref={(node) => {
+              const img = node?.querySelector("img");
+              if (img && img.complete && img.naturalWidth === 0) {
+                setSectionArtFailed(true);
+              }
+            }}
+            onErrorCapture={() => setSectionArtFailed(true)}
+            className="hidden lg:block"
+          >
+            <SectionArt
+              image="explore"
+              className="aspect-[16/10] w-full rounded-3xl border border-line object-cover"
+            />
+          </div>
+        )}
       </header>
 
       <section className="mt-7 rounded-3xl border border-line bg-panel/60 p-4 sm:p-5" aria-labelledby="tag-filter-title">
@@ -171,15 +193,43 @@ export function TagsPage() {
       ) : (
         <div className="mt-5 rounded-2xl border border-dashed border-line-strong bg-panel/50 p-8 text-center">
           <Hash size={28} className="mx-auto text-accent" aria-hidden="true" />
-          <h2 className="mt-3 font-display text-lg font-bold text-fg">{catalogStatusText("catalog.status.tags.searchEmpty", "일치하는 태그가 없습니다.")}</h2>
-          <p className="mt-2 text-sm leading-6 text-fg-3">검색어를 줄이거나 다른 표현으로 찾아보세요.</p>
-          <button
-            type="button"
-            onClick={() => updateParam("q", "", "")}
-            className="mt-3 min-h-11 rounded-xl px-4 text-sm font-bold text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-          >
-            검색 초기화
-          </button>
+          <h2 className="mt-3 font-display text-lg font-bold text-fg">
+            {query
+              ? catalogStatusText("catalog.status.tags.searchEmpty", "일치하는 태그가 없습니다.")
+              : catalogStatusText("catalog.status.tags.empty", "등록된 태그가 없습니다.")}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-fg-3">
+            {query
+              ? "검색어를 줄이거나 다른 표현으로 찾아보세요."
+              : "카탈로그 태그 정보를 다시 불러오거나 조건별 탐색을 이용해 보세요."}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            {query ? (
+              <button
+                type="button"
+                onClick={() => updateParam("q", "", "")}
+                className="min-h-11 rounded-xl px-4 text-sm font-bold text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              >
+                검색 초기화
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={reload}
+                  className="min-h-11 rounded-xl border border-line bg-card px-4 text-sm font-bold text-fg-2 hover:border-accent/40 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                >
+                  다시 시도
+                </button>
+                <Link
+                  href="/explore"
+                  className="inline-flex min-h-11 items-center rounded-xl border border-accent/40 bg-accent-soft/60 px-4 text-sm font-bold text-accent hover:border-accent"
+                >
+                  조건으로 작품 찾기
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       )}
 

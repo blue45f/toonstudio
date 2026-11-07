@@ -2097,4 +2097,59 @@ describe("모바일 브러시 메뉴 재준비 회귀", () => {
       expect(result.finishedAt).toBe(60_000);
     } finally { vi.useRealTimers(); }
   });
+
+  it("색상 도구가 펼쳐지면 선택 빠른 작업바를 숨겨 캔버스 가림을 방지하고 Escape로 시트 닫기 및 포커스를 복원한다", () => {
+    const setMobileSheet = vi.fn();
+    const { container, rerender } = render(
+      <StudioMobileEditingDock
+        {...createProps({
+          isMobile: true,
+          marqueeIds: ["el-1"],
+          mobileSheet: null,
+          setMobileSheet,
+        })}
+      />,
+    );
+
+    expect(container.querySelector('[data-studio-mobile-selection-actions="true"]')).not.toBeNull();
+    const colorToggle = screen.getByRole("button", { name: "브러시 색상" });
+    fireEvent.click(colorToggle);
+    expect(container.querySelector('[data-studio-mobile-selection-actions="true"]')).toBeNull();
+
+    fireEvent.click(colorToggle);
+    expect(container.querySelector('[data-studio-mobile-selection-actions="true"]')).not.toBeNull();
+
+    rerender(
+      <StudioMobileEditingDock
+        {...createProps({
+          isMobile: true,
+          mobileSheet: "draw",
+          setMobileSheet,
+        })}
+      />,
+    );
+    const drawSheet = container.querySelector<HTMLElement>("#studio-mobile-draw-settings")!;
+    const penButton = within(screen.getByRole("toolbar", { name: "드로잉 도구" })).getByRole("button", { name: "펜" });
+    fireEvent.keyDown(drawSheet, { key: "Escape" });
+    expect(setMobileSheet).toHaveBeenCalledWith(null);
+    expect(document.activeElement).toBe(penButton);
+
+    setMobileSheet.mockClear();
+    rerender(
+      <StudioMobileEditingDock
+        {...createProps({
+          isMobile: true,
+          mobileSheet: "color-vision",
+          setMobileSheet,
+        })}
+      />,
+    );
+    const colorVisionSheet = container.querySelector<HTMLElement>('section[aria-label="색각 검수"]')!;
+    const workspaceToggle = container.querySelector<HTMLButtonElement>('[data-studio-mobile-workspace-toggle="true"]')!;
+    fireEvent.keyDown(colorVisionSheet, { key: "Escape" });
+    expect(setMobileSheet).toHaveBeenCalledWith(null);
+    expect(document.activeElement).toBe(workspaceToggle);
+  });
 });
+
+

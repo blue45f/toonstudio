@@ -1,3 +1,5 @@
+import { matchesHangulAwareQuery } from "./local-catalog-fallback";
+
 export interface TagDirectoryEntry {
   readonly tag: string;
   readonly count: number;
@@ -14,12 +16,37 @@ export function filterTagDirectory(
   query: string,
   sort: TagDirectorySort,
 ): TagDirectoryEntry[] {
-  const needle = normalized(query.slice(0, 80));
-  return [...tags]
-    .filter((entry) => !needle || normalized(entry.tag).includes(needle))
-    .sort((a, b) => sort === "popular"
-      ? b.count - a.count || a.tag.localeCompare(b.tag, "ko-KR")
-      : a.tag.localeCompare(b.tag, "ko-KR") || b.count - a.count);
+  const rawNeedle = query.slice(0, 80).replace(/^#/u, "").trim();
+  const needle = normalized(rawNeedle);
+  const safeTags = Array.isArray(tags)
+    ? tags
+        .filter(
+          (entry): entry is TagDirectoryEntry =>
+            Boolean(entry) &&
+            typeof entry === "object" &&
+            typeof entry.tag === "string" &&
+            entry.tag.trim().length > 0,
+        )
+        .map((entry) => ({
+          tag: entry.tag.trim(),
+          count:
+            typeof entry.count === "number" && Number.isFinite(entry.count) && entry.count >= 0
+              ? entry.count
+              : 0,
+        }))
+    : [];
+
+  return safeTags
+    .filter((entry) => {
+      if (!needle) return true;
+      const normTag = normalized(entry.tag);
+      return normTag.includes(needle) || matchesHangulAwareQuery(entry.tag, rawNeedle);
+    })
+    .sort((a, b) =>
+      sort === "popular"
+        ? b.count - a.count || a.tag.localeCompare(b.tag, "ko-KR")
+        : a.tag.localeCompare(b.tag, "ko-KR") || b.count - a.count,
+    );
 }
 
 export function tagDirectorySort(value: string | null): TagDirectorySort {

@@ -625,25 +625,12 @@ export function StudioDrawOptionsBar({
           )}
         >
           {drawMode !== "eraser" ? (
-            <>
-              <StudioDualColorWell
-                primary={color}
-                secondary={secondaryColor}
-                recent={recentSwatches}
-                onPrimaryChange={onColorChange}
-                onSecondaryChange={onSecondaryColorChange}
-                onSwap={onSwapColors}
-                onRequestCanvasEyedropper={onToggleEyedropper
-                  ? () => { if (!eyedropperActive) onToggleEyedropper(); }
-                  : undefined}
-                isTransparent={false}
-                onTransparentToggle={
-                  onSetDrawMode
-                    ? () => onSetDrawMode("eraser")
-                    : undefined
-                }
-              />
-            </>
+            <StudioDualColorWell
+              primary={color} secondary={secondaryColor} recent={recentSwatches}
+              onPrimaryChange={onColorChange} onSecondaryChange={onSecondaryColorChange} onSwap={onSwapColors}
+              onRequestCanvasEyedropper={onToggleEyedropper ? () => { if (!eyedropperActive) onToggleEyedropper(); } : undefined}
+              isTransparent={false} onTransparentToggle={onSetDrawMode ? () => onSetDrawMode("eraser") : undefined}
+            />
           ) : onToggleEraseToIntersection ? (
             <StudioToolHintTarget
               preferredSide="top"
@@ -755,7 +742,16 @@ export function StudioDrawOptionsBar({
       {advancedOpen && advancedAvailable ? (
         <div
           id="studio-draw-advanced"
+          role="toolbar"
+          aria-label="세부 그리기 옵션"
           data-studio-draw-advanced="true"
+          onKeyDown={(event) => {
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            event.stopPropagation();
+            setAdvancedOpen(false);
+            rootRef.current?.querySelector<HTMLButtonElement>('[data-studio-draw-advanced-toggle="true"]')?.focus({ preventScroll: true });
+          }}
           className={cn(
             "pointer-events-auto flex flex-nowrap items-center gap-1.5 overflow-x-auto border-b border-line bg-canvas/95 px-2 py-1.5 [scrollbar-width:thin]",
             docked && "mt-1 rounded-lg border shadow-[0_14px_36px_oklch(0.06_0.01_70/0.52)]"
