@@ -16,6 +16,8 @@ import { TitleDetailHero } from "./TitleDetailHero";
 import { TitleEpisodeSection } from "./TitleEpisodeSection";
 import { TitleNotFound } from "./TitleNotFound";
 import { WorldWikiSection } from "./WorldWikiSection";
+import { snapshotDateLabel } from "./discover-home";
+import { isPlaceholderAuthorName, useLocalCatalogFallback } from "./local-catalog-fallback";
 import { resolveTitleEpisodes } from "./title-episodes";
 import { TitleEarlyAccessNotice } from "@/domains/monetization/public/title-early-access";
 import { AuthorNoticeSection } from "@/domains/author-notices/public/author-notices";
@@ -87,10 +89,12 @@ interface TitleDetailResponse {
 
 export function TitleDetailPage() {
   const { slug } = useParams();
-  const { data, loading, error, notFound, reload } = useApiResource<TitleDetailResponse>(
-    slug ? `/api/titles/${encodeURIComponent(slug)}` : null,
+  const titleApiUrl = slug ? `/api/titles/${encodeURIComponent(slug)}` : null;
+  const rawResource = useApiResource<TitleDetailResponse>(
+    titleApiUrl,
     catalogStatusText("catalog.status.titleDetail.loadFailed", "작품 상세 데이터를 불러오지 못했습니다.")
   );
+  const { data, loading, error, notFound, reload } = useLocalCatalogFallback(titleApiUrl, rawResource);
   useDocumentTitle(data?.title?.title);
   // 시놉시스 원문은 저작권 리스크가 있어 관리자 킬스위치로 끌 수 있다(끄면 문단 자체를 숨김).
   const { showSynopsis } = useAppConfig();
@@ -248,6 +252,13 @@ export function TitleDetailPage() {
             <AvailabilityRouter availability={title.availability} />
             <p className="mt-3 text-xs leading-relaxed text-fg-3">
               {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "플랫폼을 가로질러 가격(무료·기다무·유료)을 비교합니다. 가장 저렴한 진입점을 위로 정렬했어요.")}</p>
+            <p data-testid="catalog-provenance-meta" className="mt-2 text-[11px] leading-relaxed text-fg-3">
+              {snapshotDateLabel(data.generatedAt ?? "")
+                ? `${snapshotDateLabel(data.generatedAt ?? "")} 기준 공개 카탈로그 스냅샷`
+                : "공개 카탈로그 스냅샷 기준"}
+              {estimated ? " · 추정 지표 포함" : ""}
+              {title.availability.some((a) => !a.url) ? " · 일부 원출처 링크 준비 중" : ""}
+            </p>
           </div>
           <PriceCompare availability={title.availability} />
           <section aria-labelledby="title-metrics-summary" className="rounded-2xl border border-line bg-card p-5">
@@ -543,7 +554,7 @@ export function TitleDetailPage() {
       </Section>
       </div>
 
-      {byAuthor.length > 0 && (
+      {byAuthor.length > 0 && !isPlaceholderAuthorName(title.author) && (
         <Section
           className="mt-10 sm:mt-14"
           eyebrow="BY THIS AUTHOR"

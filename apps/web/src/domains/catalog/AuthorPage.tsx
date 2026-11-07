@@ -1,5 +1,6 @@
 import { catalogStatusText } from "./catalog-status-i18n";
-import { filterTitlesByLocalQuery, useLocalCatalogFallback } from "./local-catalog-fallback";
+import { snapshotDateLabel } from "./discover-home";
+import { filterTitlesByLocalQuery, normalizePlatformId, useLocalCatalogFallback } from "./local-catalog-fallback";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { SITE_URL } from "@toonstudio/core/business";
@@ -7,7 +8,7 @@ import { PenLine, Search, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 
-import type { Title } from "@/shared/lib/types";
+import type { PlatformId, Title } from "@/shared/lib/types";
 
 import { FanCafePanel } from "@/domains/community/public/fan-cafe-panel";
 import { NewsletterSubscribeButton } from "@/domains/newsletter/public/newsletter-subscribe-button";
@@ -17,6 +18,7 @@ import { TitleCard } from "@/shared/components/title-card";
 import { GenreChip } from "@/shared/components/ui/chip";
 import { Stars } from "@/shared/components/ui/stars";
 import { compactPublicShareDescription } from "@/shared/lib/public-share-policy";
+import { PLATFORMS } from "@/shared/lib/platforms";
 import { formatCount } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import { ErrorState } from "@/shared/components/feedback/error-state";
@@ -43,6 +45,7 @@ interface AuthorResponse {
   totalViews: number;
   avg: number;
   genres: string[];
+  platforms?: PlatformId[];
   generatedAt: string;
   source: string;
 }
@@ -77,6 +80,17 @@ export function AuthorPage() {
   const totalViews = typeof data?.totalViews === "number" && Number.isFinite(data.totalViews) ? data.totalViews : 0;
   const avg = typeof data?.avg === "number" && Number.isFinite(data.avg) ? data.avg : 0;
   const genres = Array.isArray(data?.genres) ? data.genres : [];
+  const rawPlatformSource = Array.isArray(data?.platforms)
+    ? data.platforms
+    : works.flatMap((w) => (w.availability ?? []).map((a) => a?.platformId));
+  const platforms = [
+    ...new Set(
+      rawPlatformSource
+        .map((item) => normalizePlatformId(item))
+        .filter((id): id is PlatformId => id !== null),
+    ),
+  ];
+  const snapDate = data?.generatedAt ? snapshotDateLabel(data.generatedAt) : null;
 
   const sharePath = authorParam ? `/author/${encodeURIComponent(decodedAuthor)}` : "/authors";
   const shareDescription = compactPublicShareDescription(
@@ -134,7 +148,7 @@ export function AuthorPage() {
   return (
     <Container size="wide" className="py-6 sm:py-8">
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="eyebrow flex items-center gap-1.5 text-accent">
             <PenLine size={13} /> {translateCurrentStaticSourceText("domains.catalog.AuthorPage", "en", "AUTHOR")}<Link
               href="/authors"
@@ -142,12 +156,35 @@ export function AuthorPage() {
             >
               {translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "· 전체 작가 보기")}</Link>
           </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-4xl">{author}</h1>
+          <h1 className="mt-2 break-words text-2xl font-bold tracking-tight [overflow-wrap:anywhere] sm:text-4xl">{author}</h1>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {genres.map((genre) => (
               <GenreChip key={genre} genre={genre} size="sm" />
             ))}
           </div>
+          {platforms.length > 0 && (
+            <div data-testid="author-platform-list" className="mt-2.5 flex flex-wrap items-center gap-1.5">
+              {platforms.map((pid) => {
+                const p = PLATFORMS[pid];
+                if (!p) return null;
+                return (
+                  <Link
+                    key={pid}
+                    href={`/explore?platforms=${encodeURIComponent(pid)}`}
+                    className="inline-flex items-center gap-1 rounded-full border border-line bg-card/60 px-2.5 py-0.5 text-xs text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                  >
+                    <span className="size-1.5 rounded-full" style={{ background: p.color }} aria-hidden="true" />
+                    {p.short}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+          {!loading && !error && data && (
+            <p data-testid="catalog-provenance-meta" className="mt-2 text-xs text-fg-3">
+              {snapDate ? `${snapDate} 기준 공개 카탈로그 스냅샷` : "공개 카탈로그 스냅샷 기준"} · 참여작 집계(추정 지표 포함)
+            </p>
+          )}
           {!loading && !error && data && (
             <Suspense fallback={null}>
               <SharePageButton

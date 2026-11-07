@@ -2,6 +2,7 @@ import { BookOpen, Bookmark, BookmarkCheck, Star } from "lucide-react";
 
 import type { Title } from "@/shared/lib/types";
 
+import { isPlaceholderAuthorName } from "./local-catalog-fallback";
 import { ArtBackdrop } from "@/shared/components/art-backdrop";
 import { TitlePoster } from "@/shared/components/title-poster";
 import { Stars } from "@/shared/components/ui/stars";
@@ -21,16 +22,19 @@ const bi = (ko: string, en: string) =>
   translateBilingualValueForActiveLocale("TitleDetailHero", ko, en);
 
 function AuthorNames({ raw }: { raw: string }) {
-  const names = raw
+  const names = (raw ?? "")
     .split(/[,/]/)
     .map((s) => s.trim())
     .filter(Boolean);
+  if (names.length === 0) {
+    return <span>{bi("작가 미상", "Author unknown")}</span>;
+  }
   return (
     <>
       {names.map((name, index) => (
         <span key={`${name}-${index}`}>
           {index > 0 && ", "}
-          {name === "미상" ? (
+          {isPlaceholderAuthorName(name) ? (
             <span>{name}</span>
           ) : (
             <Link
@@ -140,15 +144,15 @@ export function TitleDetailHero({
         </div>
 
         <div className="col-start-2 min-w-0">
-          <h1 className="max-w-3xl text-pretty text-[clamp(1.5rem,4vw,2.75rem)] font-bold leading-[1.08] tracking-tight text-white [word-break:keep-all]">
+          <h1 className="max-w-3xl text-pretty text-[clamp(1.5rem,4vw,2.75rem)] font-bold leading-[1.08] tracking-tight text-white [overflow-wrap:anywhere] [word-break:keep-all]">
             {title.title}
           </h1>
           {title.altTitles && title.altTitles.length > 0 && (
-            <p className="mt-2 text-sm text-white/60">{title.altTitles.join(" · ")}</p>
+            <p className="mt-2 break-words text-sm text-white/60 [overflow-wrap:anywhere]">{title.altTitles.join(" · ")}</p>
           )}
-          <p className="mt-2.5 text-sm text-white/80">
+          <p className="mt-2.5 break-words text-sm text-white/80 [overflow-wrap:anywhere]">
             {bi("글", "Story")} <AuthorNames raw={title.author} />
-            {title.artist && title.artist !== title.author && (
+            {title.artist && title.artist !== title.author && !isPlaceholderAuthorName(title.artist) && (
               <>
                 {" · "}
                 {bi("그림", "Art")} <AuthorNames raw={title.artist} />
