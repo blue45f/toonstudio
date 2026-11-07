@@ -1,0 +1,465 @@
+{
+  "base": "http://127.0.0.1:4198",
+  "dataMode": "모든 API는 로컬 fixture. 상태 API 성공·실패·복구, 나머지는 503. 실제 전송 없음.",
+  "zoomMethod": "CSS zoom 2; 실제 브라우저 UI 확대는 미검증",
+  "results": [
+    {
+      "id": "mobile-320",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 108.015625,
+        "columns": 1,
+        "incident": "2026. 11. 8. 오전 3:22:04"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": "not-run",
+      "errors": []
+    },
+    {
+      "id": "mobile-390",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 108.015625,
+        "columns": 1,
+        "incident": "2026. 11. 8. 오전 3:22:09"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": {
+        "helpHistory": "passed",
+        "failedRetry": "passed",
+        "recoveryAndFocus": "passed",
+        "feedbackBack": "passed",
+        "errorMetrics": {
+          "documentOverflow": false,
+          "clipped": [],
+          "cards": 11,
+          "actions": [
+            {
+              "text": "지금 다시 확인",
+              "minHeight": "48px",
+              "height": "48px",
+              "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+            },
+            {
+              "text": "문제 제보하기",
+              "minHeight": "48px",
+              "height": "48px",
+              "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+            },
+            {
+              "text": "상태 확인 다시 시도",
+              "minHeight": "48px",
+              "height": "48px",
+              "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas border border-line-strong text-fg hover:border-accent hover:bg-accent-soft/80 hover:text-accent active:text-on-accent active:bg-accent h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+            },
+            {
+              "text": "도움말 보기",
+              "minHeight": "48px",
+              "height": "48px",
+              "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+            }
+          ],
+          "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+          "actionMinHeight": 48,
+          "actionMinWidth": 95.921875,
+          "columns": 1,
+          "incident": "2026. 11. 8. 오전 3:22:09"
+        },
+        "errorAxe": []
+      },
+      "errors": []
+    },
+    {
+      "id": "tablet-768",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 108.015625,
+        "columns": 2,
+        "incident": "2026. 11. 8. 오전 3:22:22"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": "not-run",
+      "errors": []
+    },
+    {
+      "id": "desktop-1440",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 108.015625,
+        "columns": 3,
+        "incident": "2026. 11. 8. 오전 3:22:27"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": {
+        "helpHistory": "passed",
+        "failedRetry": "passed",
+        "recoveryAndFocus": "passed",
+        "feedbackBack": "passed",
+        "errorMetrics": {
+          "documentOverflow": false,
+          "clipped": [],
+          "cards": 11,
+          "actions": [
+            {
+              "text": "지금 다시 확인",
+              "minHeight": "48px",
+              "height": "48px",
+              "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+            },
+            {
+              "text": "문제 제보하기",
+              "minHeight": "48px",
+              "height": "48px",
+              "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+            },
+            {
+              "text": "상태 확인 다시 시도",
+              "minHeight": "48px",
+              "height": "48px",
+              "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas border border-line-strong text-fg hover:border-accent hover:bg-accent-soft/80 hover:text-accent active:text-on-accent active:bg-accent h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+            },
+            {
+              "text": "도움말 보기",
+              "minHeight": "48px",
+              "height": "48px",
+              "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+            }
+          ],
+          "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+          "actionMinHeight": 48,
+          "actionMinWidth": 95.921875,
+          "columns": 3,
+          "incident": "2026. 11. 8. 오전 3:22:27"
+        },
+        "errorAxe": []
+      },
+      "errors": []
+    },
+    {
+      "id": "desktop-zoom200",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 96,
+        "actionMinWidth": 216.03125,
+        "columns": 3,
+        "incident": "2026. 11. 8. 오전 3:22:38"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": "not-run",
+      "errors": []
+    },
+    {
+      "id": "mobile-light",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 108.015625,
+        "columns": 1,
+        "incident": "2026. 11. 8. 오전 3:22:44"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": "not-run",
+      "errors": []
+    },
+    {
+      "id": "mobile-contrast",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 108.015625,
+        "columns": 1,
+        "incident": "2026. 11. 8. 오전 3:22:49"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": "not-run",
+      "errors": []
+    },
+    {
+      "id": "desktop-reduced-motion",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 108.015625,
+        "columns": 3,
+        "incident": "2026. 11. 8. 오전 3:22:54"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": "not-run",
+      "errors": []
+    },
+    {
+      "id": "mobile-forced-colors",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 108.015625,
+        "columns": 1,
+        "incident": "2026. 11. 8. 오전 3:22:57"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": "not-run",
+      "errors": []
+    },
+    {
+      "id": "mobile-english",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "Check again",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "Report a problem",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 134.8125,
+        "columns": 1,
+        "incident": "Nov 8, 2026, 3:23:01 AM"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": "not-run",
+      "errors": []
+    },
+    {
+      "id": "mobile-image-error",
+      "metrics": {
+        "documentOverflow": false,
+        "clipped": [],
+        "cards": 11,
+        "actions": [
+          {
+            "text": "지금 다시 확인",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas bg-accent text-on-accent shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset] before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,oklch(1_0_0/0.2),transparent_62%)] before:opacity-0 before:transition-opacity before:duration-150 hover:before:opacity-100 hover:bg-accent-2 hover:shadow-[0_1px_0_0_oklch(1_0_0/0.12)_inset,0_8px_24px_-8px_oklch(0.72_0.185_42/0.55)] h-10 px-4 text-sm pointer-coarse:h-11 min-h-12 gap-2"
+          },
+          {
+            "text": "문제 제보하기",
+            "minHeight": "48px",
+            "height": "48px",
+            "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[0.7rem] font-medium transition-[background,color,border-color,transform,box-shadow,filter] duration-150 ease-out-expo select-none relative isolate overflow-hidden disabled:opacity-45 disabled:pointer-events-none active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas text-fg hover:bg-raised hover:text-fg h-10 px-4 text-sm pointer-coarse:h-11 min-h-12"
+          }
+        ],
+        "incidentText": "inc_longidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifierlongidentifier",
+        "actionMinHeight": 48,
+        "actionMinWidth": 108.015625,
+        "columns": 1,
+        "incident": "2026. 11. 8. 오전 3:23:06"
+      },
+      "focus": {
+        "visible": true,
+        "outline": "solid"
+      },
+      "axe": [],
+      "flow": "not-run",
+      "errors": []
+    }
+  ]
+}

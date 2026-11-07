@@ -1,0 +1,68 @@
+.service-status-page {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.service-status-page__metadata {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+}
+
+.service-status-page__reference {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 0.875rem;
+}
+
+.service-status-page__reference > div,
+.service-status-page__capabilities > li {
+  min-width: 0;
+}
+
+.service-status-page__capability-heading {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.service-status-page__capability-heading h3 {
+  flex: 1 1 11rem;
+}
+
+.service-status-page__capability-heading > span {
+  flex: 0 1 auto;
+}
+
+/* data-own-control-size와 함께 전역 40px 규칙 대신 모든 기기에서 48px을 유지한다. */
+.service-status-page :is(button[type="button"], a[href]) {
+  min-width: 44px;
+  min-height: 48px;
+  height: auto;
+  white-space: normal;
+  text-align: center;
+}
+
+.service-status-page :is(button, a):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+@media (min-width: 640px) {
+  .service-status-page__reference {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (forced-colors: active) {
+  .service-status-page__capabilities > li,
+  .service-status-page__error {
+    border-color: CanvasText;
+  }
+
+  .service-status-page :is(button, a):focus-visible {
+    outline-color: Highlight;
+  }
+}
