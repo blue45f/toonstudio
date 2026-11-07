@@ -978,4 +978,38 @@ describe("StudioDrawOptionsBar", () => {
     expect(html).toContain('aria-describedby="');
     expect(html).not.toContain('aria-modal="true"');
   });
+
+  it("세부 옵션 행이 열린 상태에서 Escape 키 입력 시 세부 행을 닫고 토글 버튼으로 포커스를 복원한다", () => {
+    const { container } = render(
+      <StudioDrawOptionsBar
+        drawMode="pen"
+        brushId="pen"
+        strokeWidth={6}
+        brushOpacity={1}
+        stabilizer={4}
+        color="#112233"
+        quickShapeActive={false}
+        onSelectBrush={vi.fn()}
+        onStrokeWidthChange={vi.fn()}
+        onOpacityChange={vi.fn()}
+        onStabilizerChange={vi.fn()}
+        onColorChange={vi.fn()}
+        onToggleQuickShape={vi.fn()}
+      />
+    );
+    const toggle = container.querySelector<HTMLButtonElement>('[data-studio-draw-advanced-toggle="true"]');
+    expect(toggle).not.toBeNull();
+    expect(toggle?.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(toggle!);
+    expect(toggle?.getAttribute("aria-expanded")).toBe("true");
+    const advancedRow = container.querySelector<HTMLElement>("#studio-draw-advanced");
+    expect(advancedRow).not.toBeNull();
+
+    fireEvent.keyDown(advancedRow!, { key: "Escape" });
+    expect(toggle?.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector("#studio-draw-advanced")).toBeNull();
+    expect(document.activeElement).toBe(toggle);
+  });
 });
+
