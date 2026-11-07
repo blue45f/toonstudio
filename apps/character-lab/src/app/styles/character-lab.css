@@ -1178,6 +1178,88 @@ dd {
   flex: 1;
 }
 
+.cl-pose-rig-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--lab-line);
+  border-radius: var(--lab-radius);
+  background: var(--lab-panel-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cl-pose-rig-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 12em;
+}
+
+.cl-pose-rig-source,
+.cl-pose-rig-pose {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--lab-fg);
+  overflow-wrap: anywhere;
+}
+
+.cl-pose-rig-pose {
+  color: var(--lab-muted);
+  font-size: 0.75rem;
+}
+
+.cl-pose-rig-switch {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--lab-line);
+  border-radius: 8px;
+  background: var(--lab-panel);
+  color: var(--lab-fg);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-pose-rig-switch:hover:not(:disabled) {
+  border-color: var(--lab-accent);
+}
+
+.cl-pose-empty-state {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--lab-warn);
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: var(--lab-panel-2);
+  color: var(--lab-warn);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.cl-pose-empty-hint {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px dashed var(--lab-line);
+  border-radius: 8px;
+  color: var(--lab-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .cl-pose-primary-group {
   display: flex;
   flex-direction: column;
@@ -1302,6 +1384,15 @@ dd {
   gap: 6px;
   padding: 6px 0 8px;
   border-top: 1px dashed var(--lab-line);
+}
+
+.cl-pose-violation-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--lab-warn);
+  font-size: 0.74rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .cl-pose-grounded {
@@ -1462,11 +1553,16 @@ dd {
 .cl-vision-panel button,
 .cl-package-panel button {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--lab-line);
   border-radius: 8px;
   background: var(--lab-panel-2);
   color: var(--lab-fg);
-  padding: 4px 10px;
+  padding: 6px 12px;
   font: inherit;
   font-size: 0.8rem;
   cursor: pointer;
@@ -1750,6 +1846,10 @@ dd {
 .cl-vision-skipped summary,
 .cl-package-gaps summary,
 .cl-package-unmapped summary {
+  display: flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
   cursor: pointer;
 }
 
@@ -1775,6 +1875,45 @@ dd {
   font-size: 0.8rem;
 }
 
+.cl-package-nav-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cl-package-panel .cl-package-to-pose {
+  font-weight: 600;
+}
+
+.cl-package-advanced-diagnostics {
+  border: 1px solid var(--lab-line);
+  border-radius: var(--lab-radius);
+  background: var(--lab-panel-2);
+  padding: 4px 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cl-package-diagnostics-summary {
+  display: flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--lab-fg);
+}
+
+.cl-package-diagnostics-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0 8px;
+  border-top: 1px dashed var(--lab-line);
+}
+
 .cl-package-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1784,6 +1923,17 @@ dd {
 
 .cl-package-back {
   font-size: 0.74rem;
+}
+
+.cl-package-empty {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--lab-line);
+  border-radius: var(--lab-radius);
+  color: var(--lab-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .cl-package-list {
@@ -1804,6 +1954,12 @@ dd {
   border: 1px solid var(--lab-line);
   border-radius: var(--lab-radius);
   background: var(--lab-panel-2);
+}
+
+.cl-package-item--selected,
+.cl-package-item[data-selected="true"] {
+  border-color: var(--lab-accent);
+  box-shadow: 0 0 0 1px var(--lab-accent) inset;
 }
 
 .cl-package-item-head {
@@ -1865,6 +2021,7 @@ dd {
 
 .cl-package-capabilities {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.74rem;
 }
@@ -1881,6 +2038,7 @@ dd {
   border-bottom: 1px solid var(--lab-line);
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
 .cl-package-capabilities thead th {
@@ -2357,7 +2515,12 @@ dd {
   .cl-pose-actions button,
   .cl-pose-panel select,
   .cl-pose-radio,
-  .cl-pose-diagnostics-summary {
+  .cl-pose-rig-switch,
+  .cl-pose-diagnostics-summary,
+  .cl-package-panel button,
+  .cl-package-diagnostics-summary,
+  .cl-package-gaps summary,
+  .cl-package-unmapped summary {
     min-width: 44px;
     min-height: 44px;
     display: inline-flex;
@@ -2507,11 +2670,14 @@ dd {
   .cl-inspector-tab,
   .cl-expression-card,
   .cl-pose-card,
+  .cl-pose-rig-switch,
   .cl-vision-badge,
   .cl-package-badge,
   .cl-package-kit-base,
   .cl-package-kit-reload,
   .cl-package-kit-to-procedural,
+  .cl-package-to-pose,
+  .cl-package-item--selected,
   .cl-vision-model,
   .cl-viewport-button {
     border-width: 2px;
@@ -2533,6 +2699,7 @@ dd {
   .cl-inspector-tab,
   .cl-expression-card,
   .cl-pose-card,
+  .cl-pose-rig-switch,
   .cl-engine-badge,
   .cl-slot-badge,
   .cl-slot-cell-badge,
@@ -2541,6 +2708,7 @@ dd {
   .cl-package-kit-base,
   .cl-package-kit-reload,
   .cl-package-kit-to-procedural,
+  .cl-package-to-pose,
   .cl-viewport-button {
     forced-color-adjust: none;
     border: 1px solid CanvasText;
@@ -2559,6 +2727,7 @@ dd {
   .cl-expression-card--selected,
   .cl-pose-card--selected,
   .cl-package-kit-base--selected,
+  .cl-package-item--selected,
   .cl-package-badge--primary {
     background: Highlight;
     color: HighlightText;

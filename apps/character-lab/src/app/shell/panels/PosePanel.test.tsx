@@ -10,6 +10,7 @@ import { ALL_AVAILABLE_CAPABILITIES, createDefaultRecipe } from "../../../contra
 import { degToRad, qFromAxisAngle, v3Distance } from "../../../shared/math";
 import { createMockEngine, mockDiagnostics } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession, createMockLabStore } from "../../../testing/mock-store";
+import { createUiStateStore } from "../ui-state";
 
 import { PosePanel, describeIkOutcome, ikEndPosition, ikStatusTone, parseCoords } from "./PosePanel";
 
@@ -419,6 +420,78 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     });
     expect(() => ikEndPosition(brokenPose, "leftArm", skeleton)).toThrowError(new TypeError("unexpected-pose-getter-bug"));
   });
+
+  it("상단 활성 리그·포즈 요약 바를 표시하고 '리그·패키지 선택' 클릭 시 package 탭으로 전환한다", () => {
+    const ui = createUiStateStore({ inspectorTab: "pose" });
+    render(
+      <MockLabProvider shell={{ ui }}>
+        <PosePanel />
+      </MockLabProvider>,
+    );
+    const summary = screen.getByTestId("pose-rig-summary");
+    expect(within(summary).getByTestId("pose-active-rig-source").textContent).toMatch(/절차적 휴머노이드/u);
+    expect(within(summary).getByTestId("pose-active-selection-summary").textContent).toMatch(/선택 상태: 기본 자세\(Rest · 프리셋: A 포즈\)/u);
+    fireEvent.click(within(summary).getByTestId("pose-switch-to-package-tab"));
+    expect(ui.getState().inspectorTab).toBe("package");
+  });
+
+  it("엔진 스켈레톤이 null이거나 본이 0개인 정적 메시이면 빈 상태 안내를 표시하고 포즈·손 조작을 비활성화한다", () => {
+    const session = createMockEngineSession({ phase: "ready", backend: "webgpu", diagnostics: mockDiagnostics("webgpu") });
+    session.setEngine(
+      Object.assign(createMockEngine({ backend: "webgpu" }), {
+        poseSkeleton: (): SkeletonData | null => ({ bones: [] }),
+      }),
+    );
+    setup({ engineSession: session });
+
+    const emptyNotice = screen.getByTestId("pose-empty-skeleton-notice");
+    expect(emptyNotice.textContent).toMatch(/스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어/u);
+    expect((screen.getByTestId("pose-quick-chip-a-pose") as HTMLButtonElement).disabled).toBe(true);
+    expect(card("포즈 프리셋", "서기").disabled).toBe(true);
+    expect(card("손 포즈 프리셋", "주먹").disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "IK 적용" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId("pose-skeleton-diagnostics").textContent).toMatch(/스켈레톤 본 0개 · 정적 메시\(스켈레톤 없음\)/u);
+  });
+
+  it("변형 본이 0개인 기본 휴식 포즈에서는 빈 상태 힌트를 표시하고 포즈 적용 시 숨긴다", () => {
+    const recipe = createDefaultRecipe();
+    const { unmount } = render(
+      <MockLabProvider initialState={{ recipe, capabilities: ALL_AVAILABLE_CAPABILITIES }}>
+        <PosePanel />
+      </MockLabProvider>,
+    );
+    expect(screen.getByTestId("pose-rest-empty-notice").textContent).toMatch(/현재 기본 자세\(Rest · 회전된 본 0개\)입니다/u);
+    unmount();
+
+    const wavePreset = findPosePreset("wave")!;
+    const activeRecipe: CharacterRecipe = {
+      ...recipe,
+      slots: { ...recipe.slots, pose: "pose/wave" },
+      pose: wavePreset.pose,
+    };
+    render(
+      <MockLabProvider initialState={{ recipe: activeRecipe, capabilities: ALL_AVAILABLE_CAPABILITIES }}>
+        <PosePanel />
+      </MockLabProvider>,
+    );
+    expect(screen.queryByTestId("pose-rest-empty-notice")).toBeNull();
+  });
+
+  it("관절 한계 위반이 발생하면 고급 진단 본문에 위반 본 목록(pose-violation-list)을 표시한다", () => {
+    const recipe = createDefaultRecipe();
+    const extremePose: Pose = {
+      head: qFromAxisAngle([1, 0, 0], degToRad(170)),
+    };
+    render(
+      <MockLabProvider initialState={{ recipe: { ...recipe, pose: extremePose }, capabilities: ALL_AVAILABLE_CAPABILITIES }}>
+        <PosePanel />
+      </MockLabProvider>,
+    );
+    const list = screen.getByTestId("pose-violation-list");
+    expect(list.textContent).toMatch(/head · 스윙/u);
+  });
 });
+
+
 
 
