@@ -274,4 +274,44 @@ describe("ToonStudio project package import", () => {
     expect(readStudioProjectLibrary(base).projects).toEqual([]);
     expect(readStudioProjectDocuments(base, "import-rollback-id").documents).toEqual([]);
   });
+
+  it("Blob/File 읽기 도중 AbortSignal이 취소되면 ABORTED/AbortError로 분리하고 기존 프로젝트를 보존한다", async () => {
+    const store = storage();
+    await importStudioProjectPackage(packageFile(), {
+      storage: store,
+      authUserId: "artist-1",
+      createProjectId: () => "existing-project",
+      createDocumentId: () => "existing-doc",
+    });
+    const beforeProjects = readStudioProjectLibrary(store).projects;
+    expect(beforeProjects).toHaveLength(1);
+
+    const controller = new AbortController();
+    const file = packageFile();
+    const originalSlice = file.slice.bind(file);
+    let sliceCalls = 0;
+    Object.defineProperty(file, "slice", {
+      value: (start?: number, end?: number, contentType?: string) => {
+        sliceCalls += 1;
+        if (sliceCalls >= 2) {
+          controller.abort();
+        }
+        return originalSlice(start, end, contentType);
+      },
+    });
+
+    await expect(
+      importStudioProjectPackage(file, {
+        storage: store,
+        authUserId: "artist-1",
+        signal: controller.signal,
+        createProjectId: () => "aborted-project",
+        createDocumentId: () => "aborted-doc",
+      }),
+    ).rejects.toMatchObject({ code: "ABORTED" });
+
+    expect(readStudioProjectLibrary(store).projects).toEqual(beforeProjects);
+    expect(readStudioProjectDocuments(store, "import-aborted-project").documents).toEqual([]);
+  });
 });
+

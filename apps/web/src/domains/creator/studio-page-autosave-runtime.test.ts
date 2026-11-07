@@ -257,5 +257,43 @@ describe("6패스 자동저장 실제 복구 입구", () => {
     expect(r.context.preserveCurrentDocument).toHaveBeenCalledOnce();
     expect(r.context.setPagesHistory).toHaveBeenCalledOnce();
   });
+
+  it("안전 사본 작성이 AbortError로 취소되면 실패 배너를 띄우지 않고 현재 원고·undo/redo·복구 후보를 보존한다", async () => {
+    const fixture = recoveryFixture({ elements: [STROKE] });
+    const activePage: PageState = { id: "active-page", elements: [], bg: "#ffffff", bgGrad: null, canvasH: 1080 };
+    const undoStep: PageState = { id: "active-page", elements: [STROKE], bg: "#ffffff", bgGrad: null, canvasH: 1080 };
+    fixture.context.pagesHistoryRef.current = [[activePage], [undoStep]];
+    fixture.context.pagesHiRef.current = 1;
+    fixture.context.preserveCurrentDocument.mockRejectedValue(
+      new DOMException("사용자 취소", "AbortError"),
+    );
+
+    await restoreStudioAutosaveRecovery(fixture.context);
+
+    expect(fixture.context.setError).toHaveBeenCalledExactlyOnceWith(null);
+    expect(fixture.context.setPagesHistory).not.toHaveBeenCalled();
+    expect(fixture.context.pagesHistoryRef.current).toEqual([[activePage], [undoStep]]);
+    expect(fixture.context.pagesHiRef.current).toBe(1);
+    expect(fixture.context.autosaveRecoveryCandidateRef.current).toBe(fixture.candidate);
+  });
+
+  it("복구 적용 도중 예외가 발생하면 undo/redo 히스토리와 복구 후보를 원래 상태로 보존한다", async () => {
+    const fixture = recoveryFixture({ elements: [STROKE] });
+    const activePage: PageState = { id: "active-page", elements: [], bg: "#ffffff", bgGrad: null, canvasH: 1080 };
+    const undoStep: PageState = { id: "active-page", elements: [STROKE], bg: "#ffffff", bgGrad: null, canvasH: 1080 };
+    fixture.context.pagesHistoryRef.current = [[activePage], [undoStep]];
+    fixture.context.pagesHiRef.current = 1;
+    fixture.context.setMaster.mockImplementation(() => {
+      throw new Error("master apply failed");
+    });
+
+    await restoreStudioAutosaveRecovery(fixture.context);
+
+    expect(fixture.context.setError).toHaveBeenCalledExactlyOnceWith("이전 그림을 열지 못했어요.");
+    expect(fixture.context.pagesHistoryRef.current).toEqual([[activePage], [undoStep]]);
+    expect(fixture.context.pagesHiRef.current).toBe(1);
+    expect(fixture.context.autosaveRecoveryCandidateRef.current).toBe(fixture.candidate);
+  });
 });
+
 

@@ -938,4 +938,58 @@ describe("Studio autosave OPFS authority reconciliation", () => {
     expect(failure).toBeInstanceOf(StudioAutosaveDurabilityError);
     expect(setItem).not.toHaveBeenCalled();
   });
+
+  it("propagates AbortSignal cancellation during OPFS write without falling back to SQLite or reporting degradation", async () => {
+    const key = "autosave-abort-signal";
+    const journal = new FakeAutosaveJournal();
+    const target = session(journal, key);
+    const sqlite = memorySqliteStore();
+    const sqliteWrite = vi.spyOn(sqlite, "write");
+    const degraded = vi.fn();
+    const controller = new AbortController();
+    journal.appendCheckpoint = async () => {
+      controller.abort();
+      throw new DOMException("OPFS write aborted", "AbortError");
+    };
+
+    await expect(
+      persistStudioAutosaveWithOpfsPrimary({
+        session: target,
+        sqlite,
+        storage: memoryStorage(),
+        key,
+        payload: payload("2026-07-30T09:00:00.000Z", "aborted"),
+        signal: controller.signal,
+        onDurableAuthorityDegraded: degraded,
+      }),
+    ).rejects.toMatchObject({ name: "AbortError" });
+
+    expect(sqliteWrite).not.toHaveBeenCalled();
+    expect(sqlite.values.size).toBe(0);
+    expect(degraded).not.toHaveBeenCalled();
+  });
+
+  it("propagates AbortSignal cancellation during reconciliation instead of returning stale SQLite or browser state", async () => {
+    const key = "autosave-reconcile-abort";
+    const journal = new FakeAutosaveJournal();
+    const target = session(journal, key);
+    const sqlite = memorySqliteStore();
+    await sqlite.write(key, payload("2026-07-30T01:00:00.000Z", "stale-sqlite"));
+    const controller = new AbortController();
+    journal.scan = async () => {
+      controller.abort();
+      throw new DOMException("OPFS scan aborted", "AbortError");
+    };
+
+    await expect(
+      reconcileStudioAutosaveWithOpfsPrimary({
+        session: target,
+        sqlite,
+        storage: memoryStorage(),
+        key,
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: "AbortError" });
+  });
 });
+

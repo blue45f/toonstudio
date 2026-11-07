@@ -125,6 +125,23 @@ export interface StudioProjectPackageImportOptions {
   readonly now?: string;
   readonly createProjectId?: () => string;
   readonly createDocumentId?: () => string;
+  readonly signal?: AbortSignal;
+}
+
+function throwIfImportAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  const reason = signal.reason;
+  if (
+    reason
+    && typeof reason === "object"
+    && (
+      ("name" in reason && (reason as { name?: unknown }).name === "AbortError")
+      || ("code" in reason && (reason as { code?: unknown }).code === "ABORTED")
+    )
+  ) {
+    throw reason;
+  }
+  throw new DOMException("ToonStudio 프로젝트 패키지 가져오기가 취소되었습니다.", "AbortError");
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -214,8 +231,13 @@ function importedDocuments(value: unknown): readonly StudioProjectDocumentEntry[
   }));
 }
 
-async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPackage> {
+async function parseStudioProjectPackage(
+  file: File,
+  signal?: AbortSignal,
+): Promise<ParsedProjectPackage> {
+  throwIfImportAborted(signal);
   const archive = await readStudioZipArchive(file, {
+    signal,
     limits: {
       maxArchiveBytes: 520_000_000,
       maxEntries: 2_048,
@@ -229,7 +251,7 @@ async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPacka
     },
   });
   const actualNames = archive.entries.filter((entry) => !entry.directory).map((entry) => entry.path);
-  const manifest = parseManifest(jsonValue(await archive.readEntry("manifest.json"), "manifest.json"));
+  const manifest = parseManifest(jsonValue(await archive.readEntry("manifest.json", { signal }), "manifest.json"));
   if (new Set(actualNames).size !== actualNames.length) {
     throw new Error("ToonStudio 프로젝트 패키지에 중복 파일이 있습니다.");
   }
@@ -249,26 +271,26 @@ async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPacka
   }
 
   const project = importedProject(jsonValue(
-    await archive.readEntry("project/project.json"),
+    await archive.readEntry("project/project.json", { signal }),
     "project/project.json",
   ));
   const documents = importedDocuments(jsonValue(
-    await archive.readEntry("project/documents.json"),
+    await archive.readEntry("project/documents.json", { signal }),
     "project/documents.json",
   ));
   const profile = record(jsonValue(
-    await archive.readEntry("storage/profile.json"),
+    await archive.readEntry("storage/profile.json", { signal }),
     "storage/profile.json",
   ));
   const submissionsRaw = jsonValue(
-    await archive.readEntry("distribution/submissions.json"),
+    await archive.readEntry("distribution/submissions.json", { signal }),
     "distribution/submissions.json",
   );
   if (!Array.isArray(submissionsRaw)) {
     throw new Error("ToonStudio 프로젝트 패키지의 제출 기록이 배열이 아닙니다.");
   }
   const index = parseWorkspaceIndex(jsonValue(
-    await archive.readEntry(`workspace/${STUDIO_PROJECT_WORKSPACE_INDEX_ENTRY}`),
+    await archive.readEntry(`workspace/${STUDIO_PROJECT_WORKSPACE_INDEX_ENTRY}`, { signal }),
     `workspace/${STUDIO_PROJECT_WORKSPACE_INDEX_ENTRY}`,
   ));
   const documentIds = new Set(documents.map((document) => document.id));
@@ -281,12 +303,13 @@ async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPacka
 
   const snapshots = new Map<string, StudioAutosavePayload>();
   for (const item of index.documents) {
+    throwIfImportAborted(signal);
     if (!item.entry) continue;
     const path = `workspace/${item.entry}`;
     if (!manifestNames.has(path) || !archive.getEntry(path)) {
       throw new Error(`ToonStudio 프로젝트 패키지에 원고 스냅샷이 없습니다: ${path}`);
     }
-    const bytes = await archive.readEntry(path);
+    const bytes = await archive.readEntry(path, { signal });
     const snapshot = parseStudioAutosave(decoder.decode(bytes));
     if (!snapshot) throw new Error(`ToonStudio 원고 스냅샷이 손상되었습니다: ${path}`);
     if (hasStudioBg3dSixPassAutosaveMarkers(snapshot)) {
@@ -294,6 +317,7 @@ async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPacka
     }
     snapshots.set(item.documentId, snapshot);
   }
+  throwIfImportAborted(signal);
   return Object.freeze({
     project,
     documents,
@@ -345,10 +369,12 @@ export async function importStudioProjectPackage(
   file: File,
   options: StudioProjectPackageImportOptions,
 ): Promise<StudioProjectPackageImportResult> {
+  throwIfImportAborted(options.signal);
   if (!(file instanceof File) || file.size <= 0 || !file.name.toLowerCase().endsWith(".toonstudio")) {
     throw new Error("유효한 .toonstudio 프로젝트 파일을 선택해 주세요.");
   }
-  const parsed = await parseStudioProjectPackage(file);
+  const parsed = await parseStudioProjectPackage(file, options.signal);
+  throwIfImportAborted(options.signal);
   const now = options.now ?? new Date().toISOString();
   const createProjectId = options.createProjectId
     ?? (() => createSecureRandomUuid("프로젝트 가져오기 ID를 안전하게 만들 수 없습니다."));
@@ -380,6 +406,7 @@ export async function importStudioProjectPackage(
   const submissionsBefore = options.storage.getItem(STUDIO_SUBMISSION_STORAGE_KEY);
   const createdAutosaveKeys: string[] = [];
   try {
+    throwIfImportAborted(options.signal);
     let project = createStudioProject(options.storage, {
       id: projectId,
       title: parsed.project.title,
