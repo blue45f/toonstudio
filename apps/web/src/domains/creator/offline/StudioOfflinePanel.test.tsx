@@ -173,3 +173,12 @@ describe("automatic Studio offline mode", () => {
     expect(screen.queryByText(/오프라인 자동 준비/u)).toBeNull();
   });
 });
+
+it("연결 안내를 모바일 작업 메뉴 실측 높이 위에 두고 복구 조작을 보존한다", async () => {
+  useServerUnavailable();
+  openPanel();
+  await screen.findByText("서버 장애 · 로컬 작업 중");
+  const notice = screen.getByRole("complementary", { name: "스튜디오 연결 및 오프라인 작업 안내" });
+  expect(notice.className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem)");
+  expect(screen.getByRole("button", { name: "지속 저장 요청" })).toBeTruthy();
+});

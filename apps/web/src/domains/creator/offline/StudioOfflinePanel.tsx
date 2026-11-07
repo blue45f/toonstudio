@@ -143,7 +143,7 @@ export function StudioOfflinePanel() {
 
   return (
     <aside
-      className="fixed bottom-[calc(var(--studio-canvas-bottom-inset,7rem)+7.5rem)] right-3 z-40 max-w-[min(25rem,calc(100vw-1.5rem))]"
+      className="fixed bottom-[max(calc(var(--studio-canvas-bottom-inset,7rem)+7.5rem),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))] right-3 z-40 max-w-[min(25rem,calc(100vw-1.5rem))]"
       aria-label="스튜디오 연결 및 오프라인 작업 안내"
       data-studio-shell-floating-target="offline-readiness"
       data-studio-shell-force-visible="true"

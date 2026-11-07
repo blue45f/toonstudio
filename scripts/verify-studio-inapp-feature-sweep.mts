@@ -148,6 +148,8 @@ async function clickInView(locator: Locator, timeout = 15_000): Promise<void> {
 }
 
 async function openDrawSettings(page: Page): Promise<Locator> {
+  // 브러시 설정은 접힌 작업 메뉴 안에 있으므로 사용자와 같은 순서로 펼친다.
+  await expandWorkRow(page);
   const pen = dock(page).locator('button[data-studio-primary-action="draw"]');
   if (await pen.getAttribute("aria-pressed") !== "true") await clickInView(pen);
   const settings = dock(page).getByRole("button", { name: "브러시 설정 (굵기·색·프리셋)", exact: true });
@@ -325,19 +327,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "brush-settings-open",
     label: "브러시 설정 시트",
     run: async (page) => {
-      await clickLocator(
-        page,
-        dock(page).locator('button[data-studio-primary-action="draw"]'),
-        "pen tool",
-      );
-      const opened = await clickLocator(
-        page,
-        dock(page).locator('button[aria-label="브러시 설정 (굵기·색·프리셋)"]'),
-        "brush settings chip",
-      );
-      if (opened !== "ok") return opened;
-      const sheet = page.locator("#studio-mobile-draw-settings");
-      await sheet.waitFor({ state: "visible" });
+      await openDrawSettings(page);
       return "ok";
     },
   },
