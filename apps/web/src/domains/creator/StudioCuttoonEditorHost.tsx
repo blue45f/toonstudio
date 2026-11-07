@@ -23232,7 +23232,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
   // be bound before the stage pointer callbacks are initialized.
   const onStageDown = guardStudioInitialRecoveryPointer(
     () => initialRecoveryAdmission.blocked(autosaveKey),
-    () => setError("저장된 그림을 확인한 뒤 그릴 수 있어요. 복구 안내에서 다시 이어 열거나, 확인에 실패했다면 새로고침해 주세요."),
+    () => setError(t("studio.hostStatus.initialRecoveryPending", "저장된 그림을 확인한 뒤 그릴 수 있어요. 복구 안내에서 다시 이어 열거나, 확인에 실패했다면 새로고침해 주세요.")),
     (event: Parameters<typeof onReadyStageDown>[0]) => onReadyStageDown(event),
   );
   const {

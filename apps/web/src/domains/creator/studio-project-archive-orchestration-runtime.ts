@@ -256,7 +256,7 @@ export function createStudioProjectArchiveOrchestration({
         await inspectStudioVrmTexturePaintJsonExport(sessionExport.project);
       if (!ensureProjectBackupAvailable()) return;
       if (revisionProjectGenerationRef.current !== exportGeneration) {
-        setError("그림이 바뀌어 이전 내용의 백업을 멈췄어요. 다시 시도해 주세요.");
+        setError(frozenStatus6Text("studio.frozenStatus6.archiveOrch.drawingChanged", "그림이 바뀌어 이전 내용의 백업을 멈췄어요. 다시 시도해 주세요."));
         return;
       }
       const exportEnvelope = sessionExport.directEnvelope

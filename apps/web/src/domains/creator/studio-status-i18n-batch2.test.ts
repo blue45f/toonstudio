@@ -111,6 +111,7 @@ const HOST_STATUS_KEYS = [
   "studio.hostStatus.imageAddFailed",
   "studio.hostStatus.imageAddFailedShort",
   "studio.hostStatus.imageCropFailed",
+  "studio.hostStatus.initialRecoveryPending",
   "studio.hostStatus.initialSampleSendFailed",
   "studio.hostStatus.isometricToolLoadFailed",
   "studio.hostStatus.lineArtCommitFailed",

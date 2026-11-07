@@ -10,6 +10,7 @@
 import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
 
 registerI18nLocaleEntries("ko", {
+  "studio.hostStatus.initialRecoveryPending": "저장된 그림을 확인한 뒤 그릴 수 있어요. 복구 안내에서 다시 이어 열거나, 확인에 실패했다면 새로고침해 주세요.",
   "studio.hostStatus.abrImportRedirect": "ABR 브러시 팩은 ‘내 브러시’의 가져오기에서 변환해요.",
   "studio.hostStatus.accountInstallSyncFailed": "계정 라이브러리 설치 확인을 동기화하지 못했습니다.",
   "studio.hostStatus.accountInstallSyncFailedDetail": "{name} · 로컬 설치는 유지됩니다. 계정 설치 확인 실패: {issue}",
@@ -177,6 +178,7 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "studio.hostStatus.initialRecoveryPending": "You can draw after the saved drawing has been checked. Reopen it from the recovery notice, or refresh if verification failed.",
   "studio.hostStatus.abrImportRedirect": "ABR brush packs are converted from the import option in 'My brushes'.",
   "studio.hostStatus.accountInstallSyncFailed": "The account library install confirmation could not be synced.",
   "studio.hostStatus.accountInstallSyncFailedDetail": "{name} · The local install is kept. Account install confirmation failed: {issue}",
