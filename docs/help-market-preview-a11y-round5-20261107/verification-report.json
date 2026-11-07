@@ -1,0 +1,628 @@
+{
+  "verifiedAt": "2026-11-07T14:34:08.016Z",
+  "issueId": "GAP-R4-05",
+  "targets": [
+    "apps/web/src/domains/legal/HelpCenterPage.tsx",
+    "apps/web/src/domains/market/components/MarketQuickPreviewDialog.tsx"
+  ],
+  "summary": {
+    "allViewportsZeroOverflow": true,
+    "allHelpFilterButtonsMeet44px": true,
+    "help320SingleColumnTopicWidth": 273,
+    "allMarketDialogControlsMeet44px": true,
+    "allMarketDialogsAutoFocusCloseButton": true,
+    "allMarketDialogsTrapFocus": true,
+    "allMarketDialogsRestoreFocusOnEscape": true
+  },
+  "helpCenterResults": [
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 568,
+      "zoom": 1,
+      "docOverflowX": 0,
+      "filterButtonCount": 4,
+      "minFilterButtonHeight": 44,
+      "minFilterButtonWidth": 51,
+      "allFilterButtonsMeet44px": true,
+      "allFilterButtonsHaveReducedMotion": true,
+      "topicCardCount": 8,
+      "firstTopicCardWidth": 273,
+      "firstTopicCardHeight": 99,
+      "faqLinkHeight": 44,
+      "faqLinkWidth": 87,
+      "faqChevronHasReducedMotion": true,
+      "emptyClearButtonHeight": 44,
+      "emptyClearButtonWidth": 110
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "docOverflowX": 0,
+      "filterButtonCount": 4,
+      "minFilterButtonHeight": 44,
+      "minFilterButtonWidth": 51,
+      "allFilterButtonsMeet44px": true,
+      "allFilterButtonsHaveReducedMotion": true,
+      "topicCardCount": 8,
+      "firstTopicCardWidth": 167,
+      "firstTopicCardHeight": 99,
+      "faqLinkHeight": 44,
+      "faqLinkWidth": 87,
+      "faqChevronHasReducedMotion": true
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "docOverflowX": 0,
+      "filterButtonCount": 4,
+      "minFilterButtonHeight": 44,
+      "minFilterButtonWidth": 51,
+      "allFilterButtonsMeet44px": true,
+      "allFilterButtonsHaveReducedMotion": true,
+      "topicCardCount": 8,
+      "firstTopicCardWidth": 347,
+      "firstTopicCardHeight": 168,
+      "faqLinkHeight": 44,
+      "faqLinkWidth": 87,
+      "faqChevronHasReducedMotion": true
+    },
+    {
+      "viewport": "desktop-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "docOverflowX": 0,
+      "filterButtonCount": 4,
+      "minFilterButtonHeight": 44,
+      "minFilterButtonWidth": 51,
+      "allFilterButtonsMeet44px": true,
+      "allFilterButtonsHaveReducedMotion": true,
+      "topicCardCount": 8,
+      "firstTopicCardWidth": 305,
+      "firstTopicCardHeight": 192,
+      "faqLinkHeight": 44,
+      "faqLinkWidth": 87,
+      "faqChevronHasReducedMotion": true
+    },
+    {
+      "viewport": "desktop-1440-zoom200",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "docOverflowX": 0,
+      "filterButtonCount": 4,
+      "minFilterButtonHeight": 44,
+      "minFilterButtonWidth": 51,
+      "allFilterButtonsMeet44px": true,
+      "allFilterButtonsHaveReducedMotion": true,
+      "topicCardCount": 8,
+      "firstTopicCardWidth": 153,
+      "firstTopicCardHeight": 262,
+      "faqLinkHeight": 44,
+      "faqLinkWidth": 87,
+      "faqChevronHasReducedMotion": true
+    }
+  ],
+  "marketQuickPreviewResults": [
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 568,
+      "zoom": 1,
+      "docOverflowX": 0,
+      "initialFocusIsCloseButton": true,
+      "initialFocusAriaLabel": "빠른 미리보기 닫기",
+      "closeButtonWidth": 44,
+      "closeButtonHeight": 44,
+      "badgeStripDoesNotOverlapCloseButton": true,
+      "controlCount": 12,
+      "minControlHeight": 44,
+      "minControlWidth": 44,
+      "allControlsMeet44px": true,
+      "controls": [
+        {
+          "tag": "button",
+          "label": "빠른 미리보기 닫기",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "ToonStudio 검수 CC0",
+          "width": 67,
+          "height": 64
+        },
+        {
+          "tag": "button",
+          "label": "찜하기",
+          "width": 84,
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "label": "유럽풍 건물과 도시 광장 · Hansaplatz 비교 목록에 추가",
+          "width": 91,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#CC0",
+          "width": 56,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#Poly Haven",
+          "width": 92,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#QA-20260913",
+          "width": 109,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#2D",
+          "width": 47,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#배경",
+          "width": 52,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "원고 위 시험 (Fit Lab)",
+          "width": 262,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "Studio에서 열기",
+          "width": 136,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "상세 페이지 보기",
+          "width": 135,
+          "height": 44
+        }
+      ],
+      "focusTrapShiftTab": {
+        "insideDialog": true,
+        "text": "상세 페이지 보기"
+      },
+      "focusTrapForwardTab": {
+        "insideDialog": true,
+        "wrappedToCloseButton": true
+      },
+      "escapeDismissAndRestore": {
+        "dialogClosed": true,
+        "focusRestoredToTrigger": true,
+        "restoredAriaLabel": "유럽풍 건물과 도시 광장 · Hansaplatz 빠른 미리보기"
+      }
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "docOverflowX": 0,
+      "initialFocusIsCloseButton": true,
+      "initialFocusAriaLabel": "빠른 미리보기 닫기",
+      "closeButtonWidth": 44,
+      "closeButtonHeight": 44,
+      "badgeStripDoesNotOverlapCloseButton": true,
+      "controlCount": 12,
+      "minControlHeight": 44,
+      "minControlWidth": 44,
+      "allControlsMeet44px": true,
+      "controls": [
+        {
+          "tag": "button",
+          "label": "빠른 미리보기 닫기",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "ToonStudio 검수 CC0",
+          "width": 137,
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "label": "찜하기",
+          "width": 84,
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "label": "유럽풍 건물과 도시 광장 · Hansaplatz 비교 목록에 추가",
+          "width": 91,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#CC0",
+          "width": 56,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#Poly Haven",
+          "width": 92,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#QA-20260913",
+          "width": 109,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#2D",
+          "width": 47,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#배경",
+          "width": 52,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "원고 위 시험 (Fit Lab)",
+          "width": 332,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "Studio에서 열기",
+          "width": 136,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "상세 페이지 보기",
+          "width": 135,
+          "height": 44
+        }
+      ],
+      "focusTrapShiftTab": {
+        "insideDialog": true,
+        "text": "상세 페이지 보기"
+      },
+      "focusTrapForwardTab": {
+        "insideDialog": true,
+        "wrappedToCloseButton": true
+      },
+      "escapeDismissAndRestore": {
+        "dialogClosed": true,
+        "focusRestoredToTrigger": true,
+        "restoredAriaLabel": "유럽풍 건물과 도시 광장 · Hansaplatz 빠른 미리보기"
+      }
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "docOverflowX": 0,
+      "initialFocusIsCloseButton": true,
+      "initialFocusAriaLabel": "빠른 미리보기 닫기",
+      "closeButtonWidth": 44,
+      "closeButtonHeight": 44,
+      "badgeStripDoesNotOverlapCloseButton": true,
+      "controlCount": 12,
+      "minControlHeight": 44,
+      "minControlWidth": 44,
+      "allControlsMeet44px": true,
+      "controls": [
+        {
+          "tag": "button",
+          "label": "빠른 미리보기 닫기",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "ToonStudio 검수 CC0",
+          "width": 145,
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "label": "찜하기",
+          "width": 84,
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "label": "유럽풍 건물과 도시 광장 · Hansaplatz 비교 목록에 추가",
+          "width": 91,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#CC0",
+          "width": 56,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#Poly Haven",
+          "width": 92,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#QA-20260913",
+          "width": 109,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#2D",
+          "width": 47,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#배경",
+          "width": 52,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "원고 위 시험 (Fit Lab)",
+          "width": 165,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "Studio에서 열기",
+          "width": 136,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "상세 페이지 보기",
+          "width": 135,
+          "height": 44
+        }
+      ],
+      "focusTrapShiftTab": {
+        "insideDialog": true,
+        "text": "상세 페이지 보기"
+      },
+      "focusTrapForwardTab": {
+        "insideDialog": true,
+        "wrappedToCloseButton": true
+      },
+      "escapeDismissAndRestore": {
+        "dialogClosed": true,
+        "focusRestoredToTrigger": true,
+        "restoredAriaLabel": "유럽풍 건물과 도시 광장 · Hansaplatz 빠른 미리보기"
+      }
+    },
+    {
+      "viewport": "desktop-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "docOverflowX": 0,
+      "initialFocusIsCloseButton": true,
+      "initialFocusAriaLabel": "빠른 미리보기 닫기",
+      "closeButtonWidth": 44,
+      "closeButtonHeight": 44,
+      "badgeStripDoesNotOverlapCloseButton": true,
+      "controlCount": 12,
+      "minControlHeight": 44,
+      "minControlWidth": 44,
+      "allControlsMeet44px": true,
+      "controls": [
+        {
+          "tag": "button",
+          "label": "빠른 미리보기 닫기",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "ToonStudio 검수 CC0",
+          "width": 145,
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "label": "찜하기",
+          "width": 84,
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "label": "유럽풍 건물과 도시 광장 · Hansaplatz 비교 목록에 추가",
+          "width": 91,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#CC0",
+          "width": 56,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#Poly Haven",
+          "width": 92,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#QA-20260913",
+          "width": 109,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#2D",
+          "width": 47,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#배경",
+          "width": 52,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "원고 위 시험 (Fit Lab)",
+          "width": 165,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "Studio에서 열기",
+          "width": 136,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "상세 페이지 보기",
+          "width": 135,
+          "height": 44
+        }
+      ],
+      "focusTrapShiftTab": {
+        "insideDialog": true,
+        "text": "상세 페이지 보기"
+      },
+      "focusTrapForwardTab": {
+        "insideDialog": true,
+        "wrappedToCloseButton": true
+      },
+      "escapeDismissAndRestore": {
+        "dialogClosed": true,
+        "focusRestoredToTrigger": true,
+        "restoredAriaLabel": "유럽풍 건물과 도시 광장 · Hansaplatz 빠른 미리보기"
+      }
+    },
+    {
+      "viewport": "desktop-1440-zoom200",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "docOverflowX": 0,
+      "initialFocusIsCloseButton": true,
+      "initialFocusAriaLabel": "빠른 미리보기 닫기",
+      "closeButtonWidth": 44,
+      "closeButtonHeight": 44,
+      "badgeStripDoesNotOverlapCloseButton": true,
+      "controlCount": 12,
+      "minControlHeight": 44,
+      "minControlWidth": 44,
+      "allControlsMeet44px": true,
+      "controls": [
+        {
+          "tag": "button",
+          "label": "빠른 미리보기 닫기",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "ToonStudio 검수 CC0",
+          "width": 145,
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "label": "찜하기",
+          "width": 84,
+          "height": 44
+        },
+        {
+          "tag": "button",
+          "label": "유럽풍 건물과 도시 광장 · Hansaplatz 비교 목록에 추가",
+          "width": 91,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#CC0",
+          "width": 56,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#Poly Haven",
+          "width": 92,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#QA-20260913",
+          "width": 109,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#2D",
+          "width": 47,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "#배경",
+          "width": 52,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "원고 위 시험 (Fit Lab)",
+          "width": 165,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "Studio에서 열기",
+          "width": 136,
+          "height": 44
+        },
+        {
+          "tag": "a",
+          "label": "상세 페이지 보기",
+          "width": 135,
+          "height": 44
+        }
+      ],
+      "focusTrapShiftTab": {
+        "insideDialog": true,
+        "text": "상세 페이지 보기"
+      },
+      "focusTrapForwardTab": {
+        "insideDialog": true,
+        "wrappedToCloseButton": true
+      },
+      "escapeDismissAndRestore": {
+        "dialogClosed": true,
+        "focusRestoredToTrigger": true,
+        "restoredAriaLabel": "유럽풍 건물과 도시 광장 · Hansaplatz 빠른 미리보기"
+      }
+    }
+  ]
+}

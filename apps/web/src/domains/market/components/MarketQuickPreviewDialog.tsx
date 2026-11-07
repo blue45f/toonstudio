@@ -46,14 +46,30 @@ export function MarketQuickPreviewDialog({
 }: MarketQuickPreviewDialogProps) {
   const t = useBilingual("MarketQuickPreviewDialog");
   const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const { recordRecentlyViewed } = useMarketRecentlyViewed();
   const { isWishlisted, toggleWishlist } = useMarketWishlist();
+
+  const restoreTriggerFocus = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (trigger && trigger.isConnected) {
+      trigger.focus({ preventScroll: true });
+    }
+    triggerRef.current = null;
+  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
 
     if (record) {
+      if (
+        document.activeElement instanceof HTMLElement &&
+        !dialog.contains(document.activeElement)
+      ) {
+        triggerRef.current = document.activeElement;
+      }
       if (!dialog.open) {
         if (typeof dialog.showModal === "function") {
           dialog.showModal();
@@ -61,14 +77,18 @@ export function MarketQuickPreviewDialog({
           dialog.setAttribute("open", "");
         }
       }
-    } else if (dialog.open) {
-      if (typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog.removeAttribute("open");
+      closeButtonRef.current?.focus({ preventScroll: true });
+    } else {
+      if (dialog.open) {
+        if (typeof dialog.close === "function") {
+          dialog.close();
+        } else {
+          dialog.removeAttribute("open");
+        }
       }
+      restoreTriggerFocus();
     }
-  }, [record]);
+  }, [record, restoreTriggerFocus]);
 
   useEffect(() => {
     if (!record) return;
@@ -77,11 +97,56 @@ export function MarketQuickPreviewDialog({
 
   const closeSafely = useCallback(() => {
     const dialog = dialogRef.current;
-    if (dialog?.open && typeof dialog.close === "function") {
-      dialog.close();
+    if (dialog?.open) {
+      if (typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
+      }
     }
     onClose();
-  }, [onClose]);
+    restoreTriggerFocus();
+  }, [onClose, restoreTriggerFocus]);
+
+  const handleDialogClose = useCallback(() => {
+    onClose();
+    restoreTriggerFocus();
+  }, [onClose, restoreTriggerFocus]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || !record) return undefined;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeSafely();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusables = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      const active = document.activeElement;
+      if (event.shiftKey) {
+        if (active === first || !dialog.contains(active)) {
+          event.preventDefault();
+          last.focus({ preventScroll: true });
+        }
+      } else if (active === last || !dialog.contains(active)) {
+        event.preventDefault();
+        first.focus({ preventScroll: true });
+      }
+    };
+    dialog.addEventListener("keydown", handleKeyDown);
+    return () => {
+      dialog.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeSafely, record]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -121,9 +186,11 @@ export function MarketQuickPreviewDialog({
       ref={dialogRef}
       // HTML Standard light-dismiss attribute (`closedby="any"`) + Safari backdrop coordinate fallback
       {...({ closedby: "any" } as Record<string, string>)}
+      aria-modal={record ? "true" : undefined}
       aria-labelledby={record ? "market-quick-preview-title" : undefined}
-      onClose={onClose}
+      onClose={handleDialogClose}
       data-testid="market-quick-preview-dialog"
+      data-own-control-size=""
       className={cn(
         "m-auto w-[min(44rem,calc(100vw-1.5rem))] max-w-none overflow-hidden rounded-2xl border border-line bg-panel p-0 text-fg shadow-2xl",
         "backdrop:bg-fg/45 backdrop:backdrop-blur-[2px]",
@@ -133,7 +200,7 @@ export function MarketQuickPreviewDialog({
         <div className="max-h-[min(86vh,48rem)] overflow-y-auto">
           <div className="relative aspect-[16/9] w-full overflow-hidden border-b border-line bg-card">
             <MarketResourceCover record={record} />
-            <div className="absolute left-3.5 top-3.5 z-10 flex flex-wrap items-center gap-1.5">
+            <div className="absolute left-3 right-16 top-3 z-10 flex flex-wrap items-center gap-1.5">
               <span className="rounded-md bg-canvas/95 px-2 py-1 font-display text-xs font-bold uppercase tracking-wider text-fg shadow-sm">
                 {kind.english}
               </span>
@@ -154,16 +221,17 @@ export function MarketQuickPreviewDialog({
               </span>
             </div>
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={closeSafely}
               aria-label={t("빠른 미리보기 닫기", "Close quick preview")}
-              className="absolute right-3 top-3 z-10 inline-flex size-10 items-center justify-center rounded-full border border-line bg-canvas/90 text-fg shadow-sm transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              className="absolute right-3 top-3 z-10 inline-flex size-11 min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-canvas/90 text-fg shadow-sm transition-colors motion-reduce:transition-none hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
             >
               <X className="size-4" aria-hidden="true" />
             </button>
           </div>
 
-          <div className="space-y-4 p-5 sm:p-6">
+          <div className="space-y-4 p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-accent">
@@ -180,7 +248,7 @@ export function MarketQuickPreviewDialog({
                   <Link
                     href={`/market/creator/${encodeURIComponent(record.publisher.id)}`}
                     onClick={closeSafely}
-                    className="inline-flex items-center gap-1 font-semibold text-accent hover:underline"
+                    className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg px-1.5 font-semibold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                   >
                     <Store className="size-3.5" aria-hidden="true" />
                     {record.publisher.name}
@@ -195,7 +263,7 @@ export function MarketQuickPreviewDialog({
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2 [&_button]:min-h-11 [&_button]:min-w-11">
                 <button
                   type="button"
                   aria-pressed={wishlisted}
@@ -203,7 +271,7 @@ export function MarketQuickPreviewDialog({
                   className={buttonClass({
                     variant: wishlisted ? "solid" : "outline",
                     size: "sm",
-                    className: "min-h-9 gap-1.5",
+                    className: "min-h-11 min-w-11 gap-1.5 px-3.5",
                   })}
                 >
                   <Heart
@@ -277,13 +345,13 @@ export function MarketQuickPreviewDialog({
             </div>
 
             {record.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {record.tags.map((tag) => (
                   <Link
                     key={tag}
                     href={`/market/browse?tag=${encodeURIComponent(tag)}`}
                     onClick={closeSafely}
-                    className="rounded-lg bg-raised px-2 py-1 text-xs font-medium text-fg-2 transition-colors hover:text-accent"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-raised px-3 py-1.5 text-xs font-medium text-fg-2 transition-colors motion-reduce:transition-none hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                   >
                     #{tag}
                   </Link>
@@ -291,14 +359,14 @@ export function MarketQuickPreviewDialog({
               </div>
             ) : null}
 
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
+            <div className="flex flex-col gap-2.5 border-t border-line pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <Link
                 href={`/market/fit-lab?slug=${encodeURIComponent(fitLabSlug)}`}
                 onClick={closeSafely}
                 className={buttonClass({
                   variant: "outline",
                   size: "sm",
-                  className: "min-h-10 gap-1.5",
+                  className: "min-h-11 min-w-11 gap-1.5 px-3.5",
                 })}
               >
                 <Sparkles className="size-3.5 text-accent" aria-hidden="true" />
@@ -312,7 +380,7 @@ export function MarketQuickPreviewDialog({
                   className={buttonClass({
                     variant: "outline",
                     size: "sm",
-                    className: "min-h-10 gap-1.5",
+                    className: "min-h-11 min-w-11 gap-1.5 px-3.5",
                   })}
                 >
                   {t("Studio에서 열기", "Open in Studio")}
@@ -324,7 +392,7 @@ export function MarketQuickPreviewDialog({
                   className={buttonClass({
                     variant: "solid",
                     size: "sm",
-                    className: "min-h-10 gap-1.5",
+                    className: "min-h-11 min-w-11 gap-1.5 px-3.5",
                   })}
                 >
                   {t("상세 페이지 보기", "View full details")}
