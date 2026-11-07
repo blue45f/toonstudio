@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "validatedSourceCommit": "34c16c7cd6",
+  "baseCommit": "3698e5162d",
+  "harness": {
+    "command": "pnpm harness:verify",
+    "exitCode": 0
+  },
+  "webTypecheck": {
+    "complete": true,
+    "fileCount": 26341,
+    "workers": 16,
+    "diagnostics": [],
+    "typescriptVersion": "6.0.3",
+    "fingerprint": "44c58a8b4e9888bdda3d9c1766a0b023d93cd5e86a0d41b24367be154386f703"
+  },
+  "apiTypechecks": [
+    "tsconfig.json",
+    "tools/tsconfig.work-session-browser.json",
+    "tools/tsconfig.postgres-tools.json"
+  ],
+  "unitTests": {
+    "files": 3,
+    "passed": 11
+  },
+  "browserConditions": {
+    "passed": 11,
+    "axeViolations": 0,
+    "runtimeErrors": 0
+  },
+  "navigationWidths": [
+    390,
+    1440
+  ],
+  "productionBuild": "not-run",
+  "remoteCI": "not-run",
+  "mainIntegration": "not-run",
+  "deployment": "not-run"
+}

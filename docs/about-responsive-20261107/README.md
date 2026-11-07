@@ -30,7 +30,7 @@
 - 키보드 Enter로 섹션 제목 초점 이동, Space로 보조 자료 열기·닫기 반복, ArrowRight로 기능 탭 이동을 확인했다.
 - 390px 터치에서 브랜드 필름 링크를 눌러 이동하고 브라우저 뒤로·앞으로·뒤로 복귀했다. 별도 탐색 검사에서는 390/1440px 모두 브랜드 필름 재생 버튼과 실제 제목, 전체 기능 페이지의 고유 제목이 렌더된 뒤 복귀하는 것까지 확인했다. URL 변화나 이전 화면의 제목을 도착 완료로 취급하지 않는다.
 - 첫 방문 장식 인트로가 끝난 뒤 캡처하도록 readiness 조건을 추가했으며, 모바일·태블릿·PC 실제 픽셀을 재검토했다.
-- `pnpm harness:doctor` 통과. `pnpm harness:verify`의 하네스·lockfile·변경 lint·Secretlint·아키텍처 검증은 통과했고 **최종 전체 타입 검사는 실행 중**이다. 결과를 별도 통합 기록에서 확정해야 한다.
+- `pnpm harness:doctor` 통과. `pnpm harness:verify` 최종 종료 코드 **0**. 하네스·lockfile·변경 lint·Secretlint·아키텍처, 웹 전체 **26,341/26,341 파일·16샤드·진단 0**, API 기본·work-session-browser·postgres-tools 타입 검사까지 통과했다.
 - 최초 공유 node_modules 연결은 worktree 소유권 검사에서 실패했다. 연결을 제거하고 이 checkout에서 `pnpm install --offline --frozen-lockfile`로 격리 설치한 뒤 재검증했다. 원본 checkout 의존성은 수정하지 않았다.
 - 첫 기준점의 기존 MySpace 테스트 타입 오류 4개는 이 페이지와 무관했고, 후속 main `3698e5162d`에 포함된 수정 반영 후 검사를 다시 시작했다.
 
@@ -53,6 +53,7 @@ node docs/about-responsive-20261107/verify-about-navigation.mjs
 
 - `browser-report.json`: 조건별 치수·자동 접근성·키보드·오류 기록.
 - `navigation-report.json`: 모바일·PC의 실제 도착 화면과 돌아오기 검증 결과.
+- `validation-summary.json`: 최종 하네스·타입·단위·브라우저 검증 요약.
 - `screenshots/`: 기존 390px 화면, 개선한 각 조건과 보조 자료 펼침 화면.
 - 200%는 CSS zoom 2 검증이다. OS·브라우저 메뉴의 실제 확대, 실기기 Safari/VoiceOver·TalkBack은 실행하지 않았다.
 - 정적 소개 페이지는 사용자 목록의 빈 상태가 없다. 모든 API 실패와 장식 이미지 실패에서도 핵심 텍스트와 링크가 남는 것을 검사했다.
