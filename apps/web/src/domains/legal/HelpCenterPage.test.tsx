@@ -176,5 +176,41 @@ describe("HelpCenterPage", () => {
     expect(clearButton.className).toContain("min-h-11");
     expect(clearButton.className).toContain("min-w-11");
   });
+
+  it("restores focus to searchbox when clearing 0-result search, provides an inline 44px clear button, and toggles active popular chips off on second tap (Round 6)", () => {
+    renderHelp();
+    const searchbox = screen.getByRole("searchbox") as HTMLInputElement;
+
+    // 1) Active popular chip toggles on and off when tapped twice
+    const brushChip = screen.getByRole("button", { name: "브러시" });
+    expect(brushChip.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(brushChip);
+    expect(brushChip.getAttribute("aria-pressed")).toBe("true");
+    expect(searchbox.value).toBe("브러시");
+    fireEvent.click(brushChip);
+    expect(brushChip.getAttribute("aria-pressed")).toBe("false");
+    expect(searchbox.value).toBe("");
+
+    // 2) Long unbroken 0-result query renders inline 44px clear button and restores focus to searchbox on empty-state clear
+    fireEvent.change(searchbox, {
+      target: {
+        value: "초장문검색어결과없음_LongUnbrokenQueryWithoutMatches_20261107",
+      },
+    });
+    const inlineClear = screen.getByRole("button", { name: "검색어 초기화" });
+    expect(inlineClear.className).toContain("min-h-11");
+    expect(inlineClear.className).toContain("min-w-11");
+
+    const emptyClear = screen.getByRole("button", { name: "검색어 지우기" });
+    fireEvent.click(emptyClear);
+    expect(searchbox.value).toBe("");
+    expect(document.activeElement).toBe(searchbox);
+
+    // 3) Escape key inside searchbox clears query
+    fireEvent.change(searchbox, { target: { value: "말풍선" } });
+    expect(searchbox.value).toBe("말풍선");
+    fireEvent.keyDown(searchbox, { key: "Escape" });
+    expect(searchbox.value).toBe("");
+  });
 });
 

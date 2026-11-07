@@ -15,9 +15,10 @@ import {
   ShieldCheck,
   Store,
   UserRound,
+  X,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { BrowserReadinessDiagnostics } from "./BrowserReadinessDiagnostics";
 import { helpSearchTokens, rankHelpItems, rankRelatedScreens, type HelpSearchFields } from "./help-search";
@@ -184,6 +185,11 @@ const questionFields = (entry: HelpQuestion): HelpSearchFields => ({
 export function HelpCenterPage() {
   const bt = useBilingual("HelpCenterPage");
   const [query, setQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const clearSearch = useCallback(() => {
+    setQuery("");
+    searchInputRef.current?.focus({ preventScroll: true });
+  }, []);
   // 문제형 문장("저장이 안 돼요")도 낱말 단위로 풀어 주제·질문·관련 화면에서 함께 찾는다.
   const tokens = helpSearchTokens(query);
   const searching = tokens.length > 0;
@@ -220,18 +226,38 @@ export function HelpCenterPage() {
         aside={<SitePageArt kind="learn" caption={bt("브랜드 콘셉트 아트 · 실제 편집 화면이 아닙니다", "Brand concept art · not an editor capture")} />}
         asideClassName="hidden lg:block"
       >
-        <label className="flex min-h-12 max-w-2xl items-center gap-3 rounded-2xl border border-line-strong bg-card/90 px-4 focus-within:border-accent/55 focus-within:ring-2 focus-within:ring-accent/25">
+        <label
+          data-own-control-size=""
+          className="flex min-h-12 max-w-2xl items-center gap-2 rounded-2xl border border-line-strong bg-card/90 pl-4 pr-1.5 focus-within:border-accent/55 focus-within:ring-2 focus-within:ring-accent/25"
+        >
           <Search size={18} className="shrink-0 text-accent" aria-hidden="true" />
           <span className="sr-only">{searchLabel}</span>
           <input
+            ref={searchInputRef}
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && query.length > 0) {
+                event.preventDefault();
+                clearSearch();
+              }
+            }}
             placeholder={bt("예: 저장이 안 돼요, 말풍선, 에셋 라이선스", "e.g. save failed, speech balloon, asset license")}
             enterKeyHint="search"
             autoComplete="off"
-            className="min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-3"
+            className="min-w-0 flex-1 bg-transparent py-2 text-sm text-fg outline-none placeholder:text-fg-3"
           />
+          {query.length > 0 ? (
+            <button
+              type="button"
+              onClick={clearSearch}
+              aria-label={bt("검색어 초기화", "Clear search query")}
+              className="inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-fg-2 transition-colors motion-reduce:transition-none hover:bg-raised hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          ) : null}
         </label>
         <div
           className="mt-3 flex flex-wrap gap-2"
@@ -241,12 +267,13 @@ export function HelpCenterPage() {
         >
           {POPULAR_TERMS.map((term) => {
             const label = bt(...term);
+            const active = query === label;
             return (
               <button
                 key={term[0]}
                 type="button"
-                onClick={() => setQuery(label)}
-                aria-pressed={query === label}
+                onClick={() => setQuery((prev) => (prev === label ? "" : label))}
+                aria-pressed={active}
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-card/70 px-3.5 text-xs font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:border-accent/50 hover:text-accent aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 {label}
@@ -257,7 +284,7 @@ export function HelpCenterPage() {
       </SitePageHeader>
 
       <Section
-        className="mt-10 sm:mt-12"
+        className="mt-10 sm:mt-12 [overflow-wrap:anywhere]"
         eyebrow="FIND YOUR ANSWER"
         title={bt("도움말 주제", "Help topics")}
         desc={
@@ -292,9 +319,21 @@ export function HelpCenterPage() {
             ))}
           </div>
         ) : !nothingFound ? (
-          <p className="rounded-2xl border border-dashed border-line bg-panel/40 px-4 py-3 text-xs leading-5 text-fg-2">
-            {bt("주제에서는 찾지 못했어요. 아래 관련 화면·매뉴얼 문서·강좌와 자주 묻는 질문을 확인해 보세요.", "No topic matched. Check the related screens, manual articles, courses and questions below.")}
-          </p>
+          <div
+            data-own-control-size=""
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-line bg-panel/40 px-4 py-3 text-xs leading-5 text-fg-2"
+          >
+            <p>
+              {bt("주제에서는 찾지 못했어요. 아래 관련 화면·매뉴얼 문서·강좌와 자주 묻는 질문을 확인해 보세요.", "No topic matched. Check the related screens, manual articles, courses and questions below.")}
+            </p>
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-card px-3.5 text-xs font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            >
+              {bt("검색어 지우기", "Clear search")}
+            </button>
+          </div>
         ) : (
           <div data-own-control-size="">
             <ActionableEmptyState
@@ -306,7 +345,7 @@ export function HelpCenterPage() {
             >
               <button
                 type="button"
-                onClick={() => setQuery("")}
+                onClick={clearSearch}
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 {bt("검색어 지우기", "Clear search")}
