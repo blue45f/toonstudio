@@ -26,6 +26,42 @@
   overflow: hidden;
 }
 
+[data-production-schedule-workspace] .production-schedule-calendar-day-button {
+  min-width: 44px !important;
+  min-height: 44px !important;
+  min-inline-size: 44px !important;
+  min-block-size: 44px !important;
+}
+
+[data-production-schedule-workspace] .production-schedule-calendar-grid {
+  display: grid;
+  gap: 0.625rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  [data-production-schedule-workspace] .production-schedule-calendar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-production-schedule-workspace] .production-schedule-calendar-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  [data-production-schedule-workspace] .production-schedule-calendar-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+[data-production-schedule-workspace] .production-schedule-timeline-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
 [data-production-schedule-workspace] .production-schedule-timeline-grid {
   display: grid;
   grid-template-columns: minmax(19rem, 1.5fr) repeat(14, minmax(3.25rem, 1fr));

@@ -1,0 +1,49 @@
+{
+  "capturedAt": "2026-11-07T11:42:54.945Z",
+  "workspaceSourceLines": 786,
+  "sourceCeilingLimit": 800,
+  "preFixDrift": [
+    {
+      "inputIso": "2026-09-30T00:00:00+09:00",
+      "expectedKstDate": "2026-09-30",
+      "preFixInUtc": "2026-09-29",
+      "preFixInPst": "2026-09-29",
+      "driftedInUtc": true
+    },
+    {
+      "inputIso": "2026-10-01T00:00:00+09:00",
+      "expectedKstDate": "2026-10-01",
+      "preFixInUtc": "2026-09-30",
+      "preFixInPst": "2026-09-30",
+      "driftedInUtc": true
+    },
+    {
+      "inputIso": "2026-12-31T00:00:00+09:00",
+      "expectedKstDate": "2026-12-31",
+      "preFixInUtc": "2026-12-30",
+      "preFixInPst": "2026-12-30",
+      "driftedInUtc": true
+    },
+    {
+      "inputIso": "2027-01-01T00:00:00+09:00",
+      "expectedKstDate": "2027-01-01",
+      "preFixInUtc": "2026-12-31",
+      "preFixInPst": "2026-12-31",
+      "driftedInUtc": true
+    }
+  ],
+  "beforeMetrics320": {
+    "viewport": {
+      "width": 320,
+      "height": 740
+    },
+    "articlesRenderedInlineInSingleDayCell": 20,
+    "busyCellHeightPx": 4557,
+    "dayHeaderHeightPx": 26,
+    "selectableDateButtonsCount": 0
+  },
+  "focusBeforeFix": {
+    "activeAfterOpen": "12화 콘티와 세로 리듬 상세 편집",
+    "activeAfterCancel": "BODY"
+  }
+}
