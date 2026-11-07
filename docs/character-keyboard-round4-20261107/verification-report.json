@@ -1,0 +1,433 @@
+{
+  "generatedAt": "2026-11-07T11:54:38.181Z",
+  "appUrl": "http://127.0.0.1:4184/",
+  "branch": "docs/character-keyboard-round4-20261107",
+  "mode": "read-only-qa",
+  "keyboardJourney": {
+    "tabArchitectureAudit": {
+      "totalInitialFocusableCount": 205,
+      "tabStopsBeforePoseTab": 68,
+      "slotRailButtonCount": 15,
+      "slotPanelTabCount": 15,
+      "slotPanelUsesRovingTabIndex": false,
+      "inspectorTabCount": 9,
+      "inspectorUsesRovingTabIndex": false,
+      "skipLinkCount": 0
+    },
+    "activeBeforeShortcut3": {
+      "tag": "BUTTON",
+      "text": "WebGPU",
+      "id": null,
+      "inTopBar": true
+    },
+    "activeAfterShortcut3": {
+      "tag": "BUTTON",
+      "text": "WebGPU",
+      "id": null,
+      "inTopBar": true,
+      "inPosePanel": false,
+      "isPoseTab": false
+    },
+    "initialBootPoseAudit": {
+      "activeRigSource": "활성 리그: 모듈식 키트 (toonstudio-kit-v1 · 여성 베이스)",
+      "activeSelectionSummary": "선택 상태: 스켈레톤 없음(정적 메시)",
+      "emptySkeletonNotice": "스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없습니다. 제작 패키지 탭에서 리깅된 캐릭터나 모듈식 키트를 선택하세요.",
+      "reasonNotes": [
+        "포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다.",
+        "손 포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다."
+      ],
+      "focusablesInPanelCount": 3,
+      "focusablesInPanel": [
+        {
+          "tag": "BUTTON",
+          "text": "리그·패키지 선택",
+          "testId": "pose-switch-to-package-tab",
+          "ariaDescribedBy": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "내보내기·보존",
+          "testId": "pose-switch-to-export-tab",
+          "ariaDescribedBy": null
+        },
+        {
+          "tag": "SUMMARY",
+          "text": "고급 진단 및 접지·관절 상세 (정상)",
+          "testId": "pose-diagnostics-summary",
+          "ariaDescribedBy": null
+        }
+      ],
+      "disabledControlsCount": 42
+    },
+    "tabPressesToPoseTab": 68,
+    "afterArrowRightOnInspectorTab": {
+      "activeId": "cl-tab-pose",
+      "selectedTabId": "cl-tab-pose"
+    },
+    "extraTabsFromPoseTabToPanel": 7,
+    "firstFocusedInPosePanel": {
+      "testId": "pose-switch-to-package-tab",
+      "text": "리그·패키지 선택"
+    },
+    "activeAfterCrossTabButton": {
+      "tag": "BODY",
+      "isBody": true,
+      "id": null
+    },
+    "tabsToProceduralSwitchBtn": 7,
+    "rigSourceNow": "활성 리그: 절차적 휴머노이드",
+    "poseSummaryBefore": "선택 상태: 기본 자세(Rest · 프리셋: A 포즈)",
+    "tabsFromPoseTabToWavePreset": 17,
+    "wavePresetFocusCheck": {
+      "presetId": "pose/wave",
+      "text": "손 흔들기상체 · 본 7개",
+      "matchesFocusVisible": true,
+      "outlineStyle": "solid",
+      "outlineWidth": "2px",
+      "outlineColor": "rgb(124, 104, 236)"
+    },
+    "poseSummaryAfterWave": "선택 상태: 손 흔들기 (편집된 본 7개)",
+    "waveAriaPressed": "true",
+    "tabsToIkLimbSelect": 19,
+    "ikLimbBefore": "leftArm",
+    "ikLimbAfterArrowDown": "leftLeg",
+    "targetXBefore": "0.090",
+    "targetXAfterArrowUp": "0.1",
+    "tabsToQuickNudgeUp": 3,
+    "quickStepButtonFocused": {
+      "tag": "BUTTON",
+      "text": "위로 +10cm",
+      "matchesFocusVisible": true
+    },
+    "tabsToApplyIkBtn": 5,
+    "ikStatusText": "왼발 목표 도달 (오차 0.0 mm)",
+    "poseSummaryAfterIk": "선택 상태: 손 흔들기 (편집된 본 9개)",
+    "historyBadgeAfterIk": "깊이 3 · rev 3",
+    "focusedOnNumberInput": {
+      "tag": "INPUT",
+      "type": "number",
+      "id": "_r_q_-target-z"
+    },
+    "ctrlZBlockedOnNumberInput": true,
+    "summaryAfterUndo1": "선택 상태: 손 흔들기 (편집된 본 7개)",
+    "historyAfterUndo1": "깊이 2 · rev 4",
+    "summaryAfterUndo2": "선택 상태: 기본 자세(Rest · 프리셋: A 포즈)",
+    "historyAfterUndo2": "깊이 1 · rev 5",
+    "summaryAfterRedo1": "선택 상태: 손 흔들기 (편집된 본 7개)",
+    "summaryAfterRedo2": "선택 상태: 손 흔들기 (편집된 본 9개)",
+    "historyAfterRedo2": "깊이 3 · rev 7",
+    "activeAfterSwitchToExport": {
+      "id": null,
+      "tag": "BODY",
+      "isBody": true
+    },
+    "exportExperimentSummary": "활성 소스: 절차적 휴머노이드\n실험 포즈: 손 흔들기 (본 9개 · 손 relaxed) · 레시피 #4815c165\n패키지 선택 탭으로\n포즈 실험 탭으로",
+    "tabsToSaveRecipeBtn": 13,
+    "saveRecipeBtnFocusVisible": true,
+    "receiptAfterSave": "저장됨: character-4815c165-20261107.character.json (4,431 B · 4 ms)",
+    "receiptStatusAfterSave": null,
+    "helpPanelOpenAfterEsc": false,
+    "activeAfterHelpEsc": {
+      "tag": "BODY",
+      "isBody": true,
+      "id": null,
+      "testId": null
+    },
+    "fileInputFocusCheck": {
+      "inputFocused": true,
+      "inputMatchesFocusVisible": true,
+      "inputOutlineStyle": "solid",
+      "labelOutlineStyle": "none",
+      "labelHasFocusWithinRule": false
+    },
+    "receiptPreservedAfterCancel": true,
+    "summaryPreservedAfterCancel": true
+  },
+  "viewportRotationAndZoomMatrix": [
+    {
+      "label": "mobile-320x640-portrait",
+      "width": 320,
+      "height": 640,
+      "zoom": 1,
+      "viewportWidth": 320,
+      "viewportHeight": 640,
+      "horizontalOverflowPx": 0,
+      "focusPreservedOnWavePreset": true,
+      "activeMatchesFocusVisible": true,
+      "rigSourceText": "활성 리그: 절차적 휴머노이드",
+      "summaryText": "선택 상태: 손 흔들기 (편집된 본 9개)",
+      "summaryPreservesPoseResult": true,
+      "isStickyMain": true,
+      "stickyMainHeightPx": 288,
+      "mainRectTopPx": -2464,
+      "mainViewportVisibleWhileEditingPose": false,
+      "unobscuredBottomHeightPx": 352,
+      "stickyViewportHeightRatio": 0.45,
+      "obscuredByStickyMainAtNearest": false,
+      "activeRect": {
+        "top": 590,
+        "bottom": 640,
+        "height": 50
+      },
+      "focusPreservedBeforeScroll": true,
+      "obscuredBehindStickyMainWhenScrolledToTop": false,
+      "screenshot": "viewport-mobile-320x640-portrait.png"
+    },
+    {
+      "label": "mobile-640x320-landscape-rotated",
+      "width": 640,
+      "height": 320,
+      "zoom": 1,
+      "viewportWidth": 640,
+      "viewportHeight": 320,
+      "horizontalOverflowPx": 0,
+      "focusPreservedOnWavePreset": true,
+      "activeMatchesFocusVisible": true,
+      "rigSourceText": "활성 리그: 절차적 휴머노이드",
+      "summaryText": "선택 상태: 손 흔들기 (편집된 본 9개)",
+      "summaryPreservesPoseResult": true,
+      "isStickyMain": true,
+      "stickyMainHeightPx": 260,
+      "mainRectTopPx": -2232,
+      "mainViewportVisibleWhileEditingPose": false,
+      "unobscuredBottomHeightPx": 60,
+      "stickyViewportHeightRatio": 0.813,
+      "obscuredByStickyMainAtNearest": false,
+      "activeRect": {
+        "top": 0,
+        "bottom": 50,
+        "height": 50
+      },
+      "focusPreservedBeforeScroll": true,
+      "obscuredBehindStickyMainWhenScrolledToTop": false,
+      "screenshot": "viewport-mobile-640x320-landscape-rotated.png"
+    },
+    {
+      "label": "mobile-390x844-portrait",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "horizontalOverflowPx": 0,
+      "focusPreservedOnWavePreset": true,
+      "activeMatchesFocusVisible": true,
+      "rigSourceText": "활성 리그: 절차적 휴머노이드",
+      "summaryText": "선택 상태: 손 흔들기 (편집된 본 9개)",
+      "summaryPreservesPoseResult": true,
+      "isStickyMain": true,
+      "stickyMainHeightPx": 380,
+      "mainRectTopPx": -1863,
+      "mainViewportVisibleWhileEditingPose": false,
+      "unobscuredBottomHeightPx": 464,
+      "stickyViewportHeightRatio": 0.45,
+      "obscuredByStickyMainAtNearest": false,
+      "activeRect": {
+        "top": 794,
+        "bottom": 844,
+        "height": 50
+      },
+      "focusPreservedBeforeScroll": true,
+      "obscuredBehindStickyMainWhenScrolledToTop": false,
+      "screenshot": "viewport-mobile-390x844-portrait.png"
+    },
+    {
+      "label": "mobile-844x390-landscape-rotated",
+      "width": 844,
+      "height": 390,
+      "zoom": 1,
+      "viewportWidth": 844,
+      "viewportHeight": 390,
+      "horizontalOverflowPx": 0,
+      "focusPreservedOnWavePreset": true,
+      "activeMatchesFocusVisible": true,
+      "rigSourceText": "활성 리그: 절차적 휴머노이드",
+      "summaryText": "선택 상태: 손 흔들기 (편집된 본 9개)",
+      "summaryPreservesPoseResult": true,
+      "isStickyMain": true,
+      "stickyMainHeightPx": 260,
+      "mainRectTopPx": -2011,
+      "mainViewportVisibleWhileEditingPose": false,
+      "unobscuredBottomHeightPx": 130,
+      "stickyViewportHeightRatio": 0.667,
+      "obscuredByStickyMainAtNearest": false,
+      "activeRect": {
+        "top": 0,
+        "bottom": 50,
+        "height": 50
+      },
+      "focusPreservedBeforeScroll": true,
+      "obscuredBehindStickyMainWhenScrolledToTop": false,
+      "screenshot": "viewport-mobile-844x390-landscape-rotated.png"
+    },
+    {
+      "label": "tablet-768x1024-portrait",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "viewportWidth": 768,
+      "viewportHeight": 1024,
+      "horizontalOverflowPx": 0,
+      "focusPreservedOnWavePreset": true,
+      "activeMatchesFocusVisible": true,
+      "rigSourceText": "활성 리그: 절차적 휴머노이드",
+      "summaryText": "선택 상태: 손 흔들기 (편집된 본 9개)",
+      "summaryPreservesPoseResult": true,
+      "isStickyMain": true,
+      "stickyMainHeightPx": 461,
+      "mainRectTopPx": -1736,
+      "mainViewportVisibleWhileEditingPose": false,
+      "unobscuredBottomHeightPx": 563,
+      "stickyViewportHeightRatio": 0.45,
+      "obscuredByStickyMainAtNearest": false,
+      "activeRect": {
+        "top": 507,
+        "bottom": 557,
+        "height": 50
+      },
+      "focusPreservedBeforeScroll": true,
+      "obscuredBehindStickyMainWhenScrolledToTop": false,
+      "screenshot": "viewport-tablet-768x1024-portrait.png"
+    },
+    {
+      "label": "tablet-1024x768-landscape-rotated",
+      "width": 1024,
+      "height": 768,
+      "zoom": 1,
+      "viewportWidth": 1024,
+      "viewportHeight": 768,
+      "horizontalOverflowPx": 0,
+      "focusPreservedOnWavePreset": true,
+      "activeMatchesFocusVisible": true,
+      "rigSourceText": "활성 리그: 절차적 휴머노이드",
+      "summaryText": "선택 상태: 손 흔들기 (편집된 본 9개)",
+      "summaryPreservesPoseResult": true,
+      "isStickyMain": true,
+      "stickyMainHeightPx": 346,
+      "mainRectTopPx": -2090,
+      "mainViewportVisibleWhileEditingPose": false,
+      "unobscuredBottomHeightPx": 422,
+      "stickyViewportHeightRatio": 0.45,
+      "obscuredByStickyMainAtNearest": false,
+      "activeRect": {
+        "top": 0,
+        "bottom": 50,
+        "height": 50
+      },
+      "focusPreservedBeforeScroll": true,
+      "obscuredBehindStickyMainWhenScrolledToTop": false,
+      "screenshot": "viewport-tablet-1024x768-landscape-rotated.png"
+    },
+    {
+      "label": "desktop-1440x900-100pct",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "horizontalOverflowPx": 0,
+      "focusPreservedOnWavePreset": true,
+      "activeMatchesFocusVisible": true,
+      "rigSourceText": "활성 리그: 절차적 휴머노이드",
+      "summaryText": "선택 상태: 손 흔들기 (편집된 본 9개)",
+      "summaryPreservesPoseResult": true,
+      "isStickyMain": false,
+      "stickyMainHeightPx": 718,
+      "mainRectTopPx": 158,
+      "mainViewportVisibleWhileEditingPose": true,
+      "unobscuredBottomHeightPx": 900,
+      "stickyViewportHeightRatio": 0,
+      "obscuredByStickyMainAtNearest": false,
+      "activeRect": {
+        "top": 773,
+        "bottom": 823,
+        "height": 50
+      },
+      "focusPreservedBeforeScroll": true,
+      "obscuredBehindStickyMainWhenScrolledToTop": false,
+      "screenshot": "viewport-desktop-1440x900-100pct.png"
+    },
+    {
+      "label": "desktop-1440x900-200pct-zoom",
+      "width": 720,
+      "height": 450,
+      "zoom": 2,
+      "viewportWidth": 720,
+      "viewportHeight": 450,
+      "horizontalOverflowPx": 0,
+      "focusPreservedOnWavePreset": true,
+      "activeMatchesFocusVisible": true,
+      "rigSourceText": "활성 리그: 절차적 휴머노이드",
+      "summaryText": "선택 상태: 손 흔들기 (편집된 본 9개)",
+      "summaryPreservesPoseResult": true,
+      "isStickyMain": true,
+      "stickyMainHeightPx": 520,
+      "mainRectTopPx": -4788,
+      "mainViewportVisibleWhileEditingPose": false,
+      "unobscuredBottomHeightPx": -70,
+      "stickyViewportHeightRatio": 1.156,
+      "obscuredByStickyMainAtNearest": false,
+      "activeRect": {
+        "top": 351,
+        "bottom": 450,
+        "height": 99
+      },
+      "focusPreservedBeforeScroll": true,
+      "obscuredBehindStickyMainWhenScrolledToTop": false,
+      "screenshot": "viewport-desktop-1440x900-200pct-zoom.png"
+    }
+  ],
+  "rigUnsupportedKeyboardAudit": {
+    "packageUnloadedNotice": "현재 레시피의 제작 패키지 'synthetic-unloaded-rig-qa'가 아직 로드되지 않았습니다. 아래 목록에서 불러오기를 눌러 스켈레톤·슬롯 능력을 활성화하거나 절차 소스로 전환하세요.",
+    "poseKeyboardAudit": {
+      "emptySkeletonNotice": "스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없습니다. 제작 패키지 탭에서 리깅된 캐릭터나 모듈식 키트를 선택하세요.",
+      "reasonNotes": [
+        "포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다.",
+        "손 포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다."
+      ],
+      "focusableInPoseCount": 3,
+      "focusableInPose": [
+        {
+          "tag": "BUTTON",
+          "text": "리그·패키지 선택",
+          "testId": "pose-switch-to-package-tab",
+          "ariaDescribedBy": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "내보내기·보존",
+          "testId": "pose-switch-to-export-tab",
+          "ariaDescribedBy": null
+        },
+        {
+          "tag": "SUMMARY",
+          "text": "고급 진단 및 접지·관절 상세 (정상)",
+          "testId": "pose-diagnostics-summary",
+          "ariaDescribedBy": null
+        }
+      ],
+      "disabledInPoseCount": 42,
+      "anyButtonLinksToNoticeViaAriaDescribedBy": false
+    }
+  },
+  "screenshots": [
+    "keyboard-step0-initial-kit-unloaded-pose-disabled.png",
+    "keyboard-step1-pose-preset-selected.png",
+    "keyboard-step2-joint-ik-applied.png",
+    "keyboard-step3-undo-redo-verified.png",
+    "keyboard-step4-export-and-cancel.png",
+    "viewport-mobile-320x640-portrait.png",
+    "viewport-mobile-640x320-landscape-rotated.png",
+    "viewport-mobile-390x844-portrait.png",
+    "viewport-mobile-844x390-landscape-rotated.png",
+    "viewport-tablet-768x1024-portrait.png",
+    "viewport-tablet-1024x768-landscape-rotated.png",
+    "viewport-desktop-1440x900-100pct.png",
+    "viewport-desktop-1440x900-200pct-zoom.png",
+    "keyboard-step5-unloaded-package-notice.png"
+  ],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0,
+  "consoleErrors": [],
+  "pageErrors": []
+}
