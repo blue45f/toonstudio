@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { BadgeCheck, Check, Minus, Sparkles } from "lucide-react";
+import { BadgeCheck, Check, ChevronDown, Minus, Sparkles } from "lucide-react";
 
 import { MEMBERSHIP_ECONOMY_POLICY, MEMBERSHIP_PLAN_POLICIES } from "../../../../../packages/core/src/membership-wallet";
 
@@ -247,7 +247,7 @@ export function PricingPage() {
                 className={isPro ? PLAN_CARD_PRO : PLAN_CARD_BASE}
               >
                 {isPro ? (
-                  <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-bold text-white">
+                  <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-bold text-on-accent">
                     <BadgeCheck size={13} aria-hidden="true" />{t(COPY.recommended)}
                   </span>
                 ) : null}
@@ -336,8 +336,13 @@ export function PricingPage() {
             { q: COPY.faqPaidQ, a: COPY.faqPaidA },
           ].map((item) => (
             <details key={item.q} className="group rounded-xl border border-line bg-card/40 open:border-line-strong open:bg-card/70">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
-                {t(item.q)}
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
+                <span>{t(item.q)}</span>
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  className="shrink-0 text-fg-3 transition-transform duration-200 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+                />
               </summary>
               <p className="px-4 pb-4 text-sm leading-7 text-fg-2">{t(item.a)}</p>
             </details>
