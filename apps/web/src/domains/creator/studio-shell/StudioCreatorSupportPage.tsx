@@ -33,6 +33,11 @@ export function StudioCreatorSupportPage() {
     } catch { /* optional draft */ }
   }, []);
 
+  const clearSaveStatus = () => {
+    setSaved(false);
+    setSaveFailed(false);
+  };
+
   const saveRequest = () => {
     const payload = { version: 1, category, summary: summary.trim(), contact: contact.trim(), createdAt: new Date().toISOString() };
     let persisted = false;
@@ -81,6 +86,7 @@ export function StudioCreatorSupportPage() {
               <h1 className="mt-3 text-3xl font-black tracking-tight text-fg sm:text-4xl">{bt("창작부터 계약 준비까지 지원 흐름을 한곳에", "Creator support from drafting to deal readiness")}</h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">{bt("기능을 나열하는 도움말이 아니라 지금 하는 작업에 맞는 다음 화면, 환경 진단, 제작 지원, 인력 소싱, 판권 준비로 바로 연결합니다.", "Instead of a feature list, jump from your current task to the right workspace, environment checks, production support, staffing or rights readiness.")}</p>
               <div className="mt-5 flex flex-wrap gap-2">
+                <a href="#support-request" className={buttonClass({ className: "gap-2" })}><Download size={16} aria-hidden="true" /> {bt("지원 브리프 작성", "Create a support brief")}</a>
                 <button type="button" onClick={speakIntro} className={buttonClass({ variant: "outline", className: "gap-2" })}><Volume2 size={16} /> {bt("음성으로 안내 듣기", "Listen to overview")}</button>
                 <a href="#product-tour" className={buttonClass({ variant: "quiet", className: "gap-2" })}><PlayCircle size={16} /> {bt("영상 가이드", "Video guide")}</a>
                 <Link to="/creator-support" className={buttonClass({ variant: "outline", className: "gap-2" })}>{bt("신인·학생 창작자 지원 안내", "New & student creator support")}</Link>
@@ -121,18 +127,25 @@ export function StudioCreatorSupportPage() {
           </video>
         </section>
 
-        <section className="mt-5 rounded-3xl border border-line bg-card p-5 shadow-sm sm:p-6" aria-labelledby="support-request-title">
+        <section id="support-request" className="mt-5 scroll-mt-24 rounded-3xl border border-line bg-card p-5 shadow-sm sm:p-6" aria-labelledby="support-request-title">
           <p className="text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">SUPPORT BRIEF</p>
           <h2 id="support-request-title" className="mt-2 text-xl font-black text-fg">{bt("지원 요청 브리프 만들기", "Create a support request brief")}</h2>
-          <p className="mt-2 text-xs leading-6 text-fg-2">{bt("아직 실제 상담 티켓 발송 백엔드는 연결하지 않았습니다. 대신 요청을 구조화해 저장·내보낼 수 있어 향후 상담/파트너 연동의 동일 데이터 모델로 사용할 수 있습니다.", "A live support-ticket backend is not connected yet. You can still structure, save and export a request using the same data model intended for future support or partner integrations.")}</p>
-          <div className="mt-4 grid gap-3 lg:grid-cols-[14rem_minmax(0,1fr)]">
-            <label className="text-xs font-bold text-fg-2">{bt("지원 유형", "Support type")}<select className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg" value={category} onChange={(event) => setCategory(event.target.value as SupportCategory)}><option value="story">{bt("스토리/시놉시스", "Story / synopsis")}</option><option value="production">{bt("제작 운영", "Production")}</option><option value="staffing">{bt("인력 소싱", "Staffing")}</option><option value="rights">{bt("판권/계약 준비", "Rights / deal prep")}</option><option value="localization">{bt("번역/현지화", "Localization")}</option><option value="environment">{bt("기술/환경", "Technical setup")}</option></select></label>
-            <label className="text-xs font-bold text-fg-2">{bt("연락 방법", "Contact")}<input className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg" value={contact} maxLength={500} onChange={(event) => { setContact(event.target.value); setSaved(false); }} placeholder={bt("업무용 이메일/메신저 등", "Business email or messenger")} /></label>
+          <div id="support-request-privacy" className="mt-4 rounded-2xl border border-line bg-panel p-4 text-sm leading-6 text-fg-2">
+            <p className="font-bold text-fg">{bt("이 브라우저에 저장 · 파일로 내보내기", "Save in this browser · export a file")}</p>
+            <p className="mt-1">{bt("상담 접수나 전송은 되지 않습니다. 작성한 내용과 연락 방법은 저장 버튼을 누르면 이 브라우저와 내보낸 JSON 파일에 보관됩니다. 공용 기기에서는 개인정보를 입력하지 마세요.", "This does not submit or send a support ticket. Saving keeps your brief and contact details in this browser and the exported JSON file. Do not enter personal information on a shared device.")}</p>
           </div>
-          <label className="mt-3 block text-xs font-bold text-fg-2">{bt("도움이 필요한 내용", "What do you need help with?")}<textarea className="mt-1 min-h-28 w-full resize-y rounded-xl border border-line bg-panel px-3 py-2 text-sm leading-6 text-fg" value={summary} maxLength={6000} onChange={(event) => { setSummary(event.target.value); setSaved(false); }} /></label>
+          <div className="mt-4 grid gap-3 lg:grid-cols-[14rem_minmax(0,1fr)]">
+            <label className="text-xs font-bold text-fg-2">{bt("지원 유형", "Support type")}<select className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg" value={category} onChange={(event) => { setCategory(event.target.value as SupportCategory); clearSaveStatus(); }}><option value="story">{bt("스토리/시놉시스", "Story / synopsis")}</option><option value="production">{bt("제작 운영", "Production")}</option><option value="staffing">{bt("인력 소싱", "Staffing")}</option><option value="rights">{bt("판권/계약 준비", "Rights / deal prep")}</option><option value="localization">{bt("번역/현지화", "Localization")}</option><option value="environment">{bt("기술/환경", "Technical setup")}</option></select></label>
+            <label className="text-xs font-bold text-fg-2">{bt("연락 방법 (선택)", "Contact (optional)")}<input className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg" aria-describedby="support-request-privacy" value={contact} maxLength={500} onChange={(event) => { setContact(event.target.value); clearSaveStatus(); }} placeholder={bt("업무용 이메일/메신저 등", "Business email or messenger")} /></label>
+          </div>
+          <label className="mt-3 block text-xs font-bold text-fg-2">{bt("도움이 필요한 내용", "What do you need help with?")}<textarea className="mt-1 min-h-28 w-full resize-y rounded-xl border border-line bg-panel px-3 py-2 text-sm leading-6 text-fg" aria-describedby="support-request-hint support-request-count" value={summary} maxLength={6000} onChange={(event) => { setSummary(event.target.value); clearSaveStatus(); }} /></label>
+          <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs leading-5 text-fg-2">
+            <p id="support-request-hint">{bt("현재 작업, 막힌 부분, 원하는 도움을 적어 주세요.", "Describe your work, what is blocking you and the help you need.")}</p>
+            <p id="support-request-count" className="shrink-0 tabular-nums">{summary.length.toLocaleString()} / 6,000{bt("자", " characters")}</p>
+          </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button type="button" disabled={!summary.trim()} onClick={saveRequest} className={buttonClass({ className: "gap-2" })}><Download size={16} /> {bt("요청 브리프 저장·내보내기", "Save & export request")}</button>
-            {saved ? <span className="text-xs font-bold text-success">{bt("브라우저에 초안을 저장했습니다.", "Draft saved in this browser.")}</span> : null}
+            {saved ? <span role="status" className="text-xs font-bold text-success">{bt("브라우저에 초안을 저장했습니다.", "Draft saved in this browser.")}</span> : null}
             {saveFailed ? <span role="alert" className="text-xs font-bold text-warning">{bt("브라우저에 초안을 저장하지 못했습니다. 내보낸 파일을 보관해 주세요.", "Could not save the browser draft. Keep the exported file.")}</span> : null}
           </div>
         </section>
