@@ -162,6 +162,32 @@ describe("SlotPanel", () => {
     expect(card("계란형").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText("슬롯 15개 · 프리셋 94개")).toBeTruthy();
   });
+
+  it("슬롯 탭 15개에 roving tabIndex와 방향키·Home·End 키보드 이동을 제공한다", () => {
+    render(
+      <MockLabProvider catalog={catalog()} initialState={{ capabilities: capabilities() }}>
+        <SlotPanel />
+      </MockLabProvider>,
+    );
+    const tabs = Array.from(screen.getByRole("tablist", { name: "슬롯" }).querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    expect(tabs).toHaveLength(15);
+    expect(tabs[0]?.getAttribute("tabindex")).toBe("0");
+    expect(tabs.slice(1).every((t) => t.getAttribute("tabindex") === "-1")).toBe(true);
+
+    tabs[0]?.focus();
+    fireEvent.keyDown(tabs[0]!, { key: "ArrowRight" });
+    expect(tabs[1]?.getAttribute("aria-selected")).toBe("true");
+    expect(tabs[1]?.getAttribute("tabindex")).toBe("0");
+    expect(document.activeElement).toBe(tabs[1]);
+
+    fireEvent.keyDown(tabs[1]!, { key: "End" });
+    expect(tabs[14]?.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[14]);
+
+    fireEvent.keyDown(tabs[14]!, { key: "Home" });
+    expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[0]);
+  });
 });
 
 /** 남성 베이스처럼 일부 헤어만 제공하는 부분 지원 슬롯 */

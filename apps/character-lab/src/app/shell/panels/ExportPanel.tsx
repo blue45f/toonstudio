@@ -337,6 +337,12 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     labState.recipe.source.kind === "package" &&
     Boolean(packagePlans.get(labState.recipe.source.characterId));
 
+  const switchInspectorTabWithFocus = (targetTab: "package" | "pose"): void => {
+    setInspectorTab(targetTab);
+    document.getElementById(`cl-tab-${targetTab}`)?.focus();
+    requestAnimationFrame(() => document.getElementById(`cl-tab-${targetTab}`)?.focus());
+  };
+
   return (
     <section className="cl-export-panel" aria-labelledby={`${ids}-title`}>
       <h2 id={`${ids}-title`}>내보내기</h2>
@@ -354,7 +360,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
             type="button"
             className="cl-button cl-export-nav-btn"
             data-testid="export-switch-to-package-tab"
-            onClick={() => setInspectorTab("package")}
+            onClick={() => switchInspectorTabWithFocus("package")}
           >
             패키지 선택 탭으로
           </button>
@@ -362,7 +368,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
             type="button"
             className="cl-button cl-export-nav-btn"
             data-testid="export-switch-to-pose-tab"
-            onClick={() => setInspectorTab("pose")}
+            onClick={() => switchInspectorTabWithFocus("pose")}
           >
             포즈 실험 탭으로
           </button>

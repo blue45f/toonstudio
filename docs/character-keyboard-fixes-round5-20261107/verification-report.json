@@ -1,0 +1,315 @@
+{
+  "round": "character-keyboard-fixes-round5-20261107",
+  "executedAt": "2026-11-07T13:05:18.677Z",
+  "fixesVerified": {
+    "KBD-01": {
+      "status": "FIXED",
+      "inspectorInitialZeroTabCount": 1,
+      "inspectorAfterTwoArrowRights": {
+        "activeId": "cl-tab-pose",
+        "poseTabIndex": "0",
+        "paramTabIndex": "-1",
+        "poseSelected": "true"
+      },
+      "slotAfterArrowRight": {
+        "activeId": "cl-slot-tab-eyes",
+        "activeTabIndex": "0",
+        "faceShapeTabIndex": "-1"
+      },
+      "shortcutKey1FocusedId": "cl-tab-param",
+      "shortcutKey3FocusedId": "cl-tab-pose"
+    },
+    "KBD-05": {
+      "status": "FIXED",
+      "summary": "선택 상태: 리그 미로드 · 포즈 비활성",
+      "misclassifiedAsStaticMesh": false,
+      "unloadedNotice": "현재 캐릭터 소스가 아직 로드되지 않았거나 휴머노이드 포즈 리그가 준비되지 않아 관절·IK 조작이 비활성화되어 있습니다. 상단에서 엔진을 시작하거나 제작 패키지 탭에서 소스를 확인하세요.",
+      "reasonText": "포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다.",
+      "switchBtnDescribedBy": "_r_1i_-pose-reason _r_1i_-unloaded-rig-notice",
+      "describedByResolvesAllIds": true
+    },
+    "KBD-02": {
+      "status": "FIXED",
+      "focusAfterPoseToPackage": {
+        "activeId": "cl-tab-package",
+        "activeTag": "BUTTON"
+      },
+      "focusAfterPoseToExport": {
+        "activeId": "cl-tab-export",
+        "activeTag": "BUTTON"
+      },
+      "focusAfterExportToPose": {
+        "activeId": "cl-tab-pose",
+        "activeTag": "BUTTON"
+      },
+      "helpOpenVisible": true,
+      "focusAfterHelpEscape": {
+        "helpVisible": false,
+        "activeTestId": "topbar-help-toggle"
+      },
+      "fileLabelFocusOutline": "solid"
+    },
+    "KBD-04": {
+      "status": "FIXED",
+      "allViewportsCoexist": true,
+      "testedCount": 8
+    }
+  },
+  "continuousKeyboardJourney": [
+    {
+      "step": "1-pose-preset-select",
+      "action": "Focus pose-quick-chip-hands-on-hips and press Enter",
+      "activeElement": null,
+      "selectionSummary": "선택 상태: 허리에 손 (편집된 본 8개)"
+    },
+    {
+      "step": "2-3-joint-select-and-value-change",
+      "selectedJoint": {
+        "tag": "SELECT",
+        "value": "rightArm"
+      },
+      "selectionSummaryAfterIk": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "ikStatus": "오른손 목표 도달 (오차 0.0 mm)"
+    },
+    {
+      "step": "4-undo-redo",
+      "summaryAfterUndo": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "summaryAfterRedo": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "restoredIdentically": true
+    },
+    {
+      "step": "5-export-and-cancel",
+      "focusAfterPoseToExport": {
+        "activeId": "cl-tab-export",
+        "activeTag": "BUTTON"
+      },
+      "receiptBeforeCancel": "저장됨: character-83e6abeb-20261107.character.json (4,374 B · 5 ms)",
+      "receiptAfterCancel": "저장됨: character-83e6abeb-20261107.character.json (4,374 B · 5 ms)",
+      "exportPoseSummary": "실험 포즈: 허리에 손 (본 8개 · 손 relaxed) · 레시피 #83e6abeb",
+      "exportPoseAfterCancel": "실험 포즈: 허리에 손 (본 8개 · 손 relaxed) · 레시피 #83e6abeb",
+      "preservedOnCancel": true,
+      "focusAfterExportToPose": {
+        "activeId": "cl-tab-pose",
+        "activeTag": "BUTTON"
+      }
+    }
+  ],
+  "viewportsAndRotations": [
+    {
+      "viewport": "320x640",
+      "zoom": 1,
+      "bodyOverflowX": "clip",
+      "horizontalOverflowPx": 0,
+      "scrollY": 3051,
+      "mainPosition": "sticky",
+      "mainRect": {
+        "top": 0,
+        "bottom": 205,
+        "width": 320,
+        "height": 205
+      },
+      "mainHeightRatio": 0.32,
+      "mainViewportVisibleWhileEditingPose": true,
+      "activeElementTestId": "pose-quick-chip-hands-on-hips",
+      "activeRect": {
+        "top": 407,
+        "bottom": 451,
+        "width": 120,
+        "height": 44
+      },
+      "obscuredByStickyMain": false,
+      "focusedControlVisibleAndUnobscured": true,
+      "selectionSummaryText": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "experimentStatePreserved": true
+    },
+    {
+      "viewport": "640x320",
+      "zoom": 1,
+      "bodyOverflowX": "clip",
+      "horizontalOverflowPx": 0,
+      "scrollY": 2263,
+      "mainPosition": "sticky",
+      "mainRect": {
+        "top": 0,
+        "bottom": 96,
+        "width": 640,
+        "height": 96
+      },
+      "mainHeightRatio": 0.3,
+      "mainViewportVisibleWhileEditingPose": true,
+      "activeElementTestId": "pose-quick-chip-hands-on-hips",
+      "activeRect": {
+        "top": 190,
+        "bottom": 234,
+        "width": 120,
+        "height": 44
+      },
+      "obscuredByStickyMain": false,
+      "focusedControlVisibleAndUnobscured": true,
+      "selectionSummaryText": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "experimentStatePreserved": true
+    },
+    {
+      "viewport": "390x844",
+      "zoom": 1,
+      "bodyOverflowX": "clip",
+      "horizontalOverflowPx": 0,
+      "scrollY": 2485,
+      "mainPosition": "sticky",
+      "mainRect": {
+        "top": 0,
+        "bottom": 220,
+        "width": 390,
+        "height": 220
+      },
+      "mainHeightRatio": 0.261,
+      "mainViewportVisibleWhileEditingPose": true,
+      "activeElementTestId": "pose-quick-chip-hands-on-hips",
+      "activeRect": {
+        "top": 516,
+        "bottom": 560,
+        "width": 120,
+        "height": 44
+      },
+      "obscuredByStickyMain": false,
+      "focusedControlVisibleAndUnobscured": true,
+      "selectionSummaryText": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "experimentStatePreserved": true
+    },
+    {
+      "viewport": "844x390",
+      "zoom": 1,
+      "bodyOverflowX": "clip",
+      "horizontalOverflowPx": 0,
+      "scrollY": 1941,
+      "mainPosition": "sticky",
+      "mainRect": {
+        "top": 0,
+        "bottom": 109,
+        "width": 844,
+        "height": 109
+      },
+      "mainHeightRatio": 0.28,
+      "mainViewportVisibleWhileEditingPose": true,
+      "activeElementTestId": "pose-quick-chip-hands-on-hips",
+      "activeRect": {
+        "top": 232,
+        "bottom": 276,
+        "width": 120,
+        "height": 44
+      },
+      "obscuredByStickyMain": false,
+      "focusedControlVisibleAndUnobscured": true,
+      "selectionSummaryText": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "experimentStatePreserved": true
+    },
+    {
+      "viewport": "768x1024",
+      "zoom": 1,
+      "bodyOverflowX": "clip",
+      "horizontalOverflowPx": 0,
+      "scrollY": 1765,
+      "mainPosition": "sticky",
+      "mainRect": {
+        "top": 0,
+        "bottom": 220,
+        "width": 768,
+        "height": 220
+      },
+      "mainHeightRatio": 0.215,
+      "mainViewportVisibleWhileEditingPose": true,
+      "activeElementTestId": "pose-quick-chip-hands-on-hips",
+      "activeRect": {
+        "top": 606,
+        "bottom": 650,
+        "width": 120,
+        "height": 44
+      },
+      "obscuredByStickyMain": false,
+      "focusedControlVisibleAndUnobscured": true,
+      "selectionSummaryText": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "experimentStatePreserved": true
+    },
+    {
+      "viewport": "1024x768",
+      "zoom": 1,
+      "bodyOverflowX": "clip",
+      "horizontalOverflowPx": 0,
+      "scrollY": 1693,
+      "mainPosition": "sticky",
+      "mainRect": {
+        "top": 0,
+        "bottom": 220,
+        "width": 1024,
+        "height": 220
+      },
+      "mainHeightRatio": 0.286,
+      "mainViewportVisibleWhileEditingPose": true,
+      "activeElementTestId": "pose-quick-chip-hands-on-hips",
+      "activeRect": {
+        "top": 478,
+        "bottom": 522,
+        "width": 120,
+        "height": 44
+      },
+      "obscuredByStickyMain": false,
+      "focusedControlVisibleAndUnobscured": true,
+      "selectionSummaryText": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "experimentStatePreserved": true
+    },
+    {
+      "viewport": "1440x900",
+      "zoom": 1,
+      "bodyOverflowX": "clip",
+      "horizontalOverflowPx": 0,
+      "scrollY": 0,
+      "mainPosition": "relative",
+      "mainRect": {
+        "top": 189,
+        "bottom": 876,
+        "width": 780,
+        "height": 687
+      },
+      "mainHeightRatio": 0.763,
+      "mainViewportVisibleWhileEditingPose": true,
+      "activeElementTestId": "pose-quick-chip-hands-on-hips",
+      "activeRect": {
+        "top": 510,
+        "bottom": 554,
+        "width": 120,
+        "height": 44
+      },
+      "obscuredByStickyMain": false,
+      "focusedControlVisibleAndUnobscured": true,
+      "selectionSummaryText": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "experimentStatePreserved": true
+    },
+    {
+      "viewport": "720x450",
+      "zoom": 2,
+      "bodyOverflowX": "clip",
+      "horizontalOverflowPx": 0,
+      "scrollY": 1998,
+      "mainPosition": "sticky",
+      "mainRect": {
+        "top": 0,
+        "bottom": 126,
+        "width": 720,
+        "height": 126
+      },
+      "mainHeightRatio": 0.28,
+      "mainViewportVisibleWhileEditingPose": true,
+      "activeElementTestId": "pose-quick-chip-hands-on-hips",
+      "activeRect": {
+        "top": 271,
+        "bottom": 315,
+        "width": 120,
+        "height": 44
+      },
+      "obscuredByStickyMain": false,
+      "focusedControlVisibleAndUnobscured": true,
+      "selectionSummaryText": "선택 상태: 허리에 손 (편집된 본 8개)",
+      "experimentStatePreserved": true
+    }
+  ]
+}

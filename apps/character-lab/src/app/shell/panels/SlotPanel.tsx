@@ -24,12 +24,13 @@ import { SlotCustomizeSections } from "./slot-customize-sections";
 import { resolveShaperPresetClickModifiers } from "./viewport-interactions";
 
 import type { CapturedRaster, LabStore, PresetEntry, PresetId, RecipeColorKey, SlotCapability, SlotGroup, SlotKind, ThumbnailEntry, UnsupportedSlot } from "../../../contracts";
-import type { MouseEvent as ReactMouseEvent } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from "react";
 
 /** 비울 수 있는 슬롯("없음" 카드 표시) */
 export const NULLABLE_SLOTS: readonly SlotKind[] = ["accessory"];
 
 const GROUP_ORDER: readonly SlotGroup[] = ["identity", "figure", "performance"];
+const ORDERED_SLOTS: readonly SlotKind[] = GROUP_ORDER.flatMap((group) => SLOT_GROUPS[group]);
 
 function capabilityBadge(capability: SlotCapability): { readonly label: string; readonly className: string } | null {
   if (capability.status === "unavailable") return { label: "미지원", className: "cl-slot-badge cl-slot-badge--unavailable" };
@@ -191,6 +192,28 @@ export function SlotPanel() {
     [catalog, dispatch, recipe.colors, slot, store],
   );
 
+  const onSlotTabKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, currentKind: SlotKind): void => {
+    const index = ORDERED_SLOTS.indexOf(currentKind);
+    if (index < 0) return;
+    let nextIndex: number;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % ORDERED_SLOTS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + ORDERED_SLOTS.length) % ORDERED_SLOTS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = ORDERED_SLOTS.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    const nextSlot = ORDERED_SLOTS[nextIndex];
+    if (!nextSlot) return;
+    setActiveSlot(nextSlot);
+    document.getElementById(`cl-slot-tab-${nextSlot}`)?.focus();
+  };
+
   return (
     <section className="cl-slot-panel" aria-label="슬롯 프리셋">
       <header className="cl-slot-toolbar">
@@ -222,10 +245,12 @@ export function SlotPanel() {
                   role="tab"
                   id={`cl-slot-tab-${kind}`}
                   aria-selected={kind === slot}
+                  tabIndex={kind === slot ? 0 : -1}
                   aria-controls={`cl-slot-grid-${kind}`}
                   className={`cl-slot-tab${kind === slot ? " cl-slot-tab--active" : ""}`}
                   title={kindCapability.reasonKo}
                   onClick={() => setActiveSlot(kind)}
+                  onKeyDown={(event) => onSlotTabKeyDown(event, kind)}
                 >
                   {SLOT_LABELS_KO[kind]}
                   {kindBadge ? <span className={kindBadge.className}>{kindBadge.label}</span> : null}

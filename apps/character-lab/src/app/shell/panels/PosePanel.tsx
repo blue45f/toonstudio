@@ -244,7 +244,8 @@ export function PosePanel() {
   const handDisabled = handCapability.status === "unavailable";
   const poseBlocked = poseDisabled || rigCorrupted || hasEmptyEngineSkeleton;
   const handBlocked = handDisabled || rigCorrupted || hasEmptyEngineSkeleton;
-  const hasEmptySkeleton = (poseDisabled || hasEmptyEngineSkeleton) && !rigCorrupted;
+  const hasEmptySkeleton = hasEmptyEngineSkeleton && !rigCorrupted;
+  const isRigUnloaded = poseDisabled && !hasEmptyEngineSkeleton && !rigCorrupted;
   const unsupportedPose = plan?.unsupported.find((item) => item.slot === "pose");
   const unsupportedHand = plan?.unsupported.find((item) => item.slot === "hand-pose");
   const violations = useMemo(() => poseLimitViolations(recipe.pose, safeSkeleton), [recipe.pose, safeSkeleton]);
@@ -252,13 +253,15 @@ export function PosePanel() {
   const selectedPreset = POSE_PRESETS.find((item) => item.id === recipe.slots.pose);
   const selectedPoseSummaryKo = hasEmptySkeleton
     ? "스켈레톤 없음(정적 메시)"
-    : rigCorrupted
-      ? "손상된 스켈레톤 차단됨"
-      : boneCount === 0
-        ? `기본 자세(Rest · 프리셋: ${selectedPreset?.labelKo ?? "없음"})`
-        : scope === "full" && selectedPreset
-          ? `${selectedPreset.labelKo} (편집된 본 ${boneCount}개)`
-          : `사용자 편집 포즈 (${POSE_SCOPE_LABELS_KO[scope]} · 본 ${boneCount}개)`;
+    : isRigUnloaded
+      ? "리그 미로드 · 포즈 비활성"
+      : rigCorrupted
+        ? "손상된 스켈레톤 차단됨"
+        : boneCount === 0
+          ? `기본 자세(Rest · 프리셋: ${selectedPreset?.labelKo ?? "없음"})`
+          : scope === "full" && selectedPreset
+            ? `${selectedPreset.labelKo} (편집된 본 ${boneCount}개)`
+            : `사용자 편집 포즈 (${POSE_SCOPE_LABELS_KO[scope]} · 본 ${boneCount}개)`;
   const groundedHeight = useMemo(() => {
     const onFailure = (failure: LabFailure): void => {
       renderFailureRef.current = failure;
@@ -419,6 +422,21 @@ export function PosePanel() {
     dispatch({ type: "pose/set", pose: mirrorHumanoidPoseLeftRight(recipe.pose), scope: "full", labelKo: "포즈 좌우 반전" });
   };
 
+  const switchInspectorTabWithFocus = (targetTab: "package" | "export"): void => {
+    setInspectorTab(targetTab);
+    document.getElementById(`cl-tab-${targetTab}`)?.focus();
+    requestAnimationFrame(() => document.getElementById(`cl-tab-${targetTab}`)?.focus());
+  };
+
+  const poseReasonDescribedBy = [
+    skeletonFailure ? `${ids}-skeleton-failure` : null,
+    poseCapability.status !== "available" ? `${ids}-pose-reason` : null,
+    hasEmptySkeleton ? `${ids}-empty-skeleton-notice` : null,
+    isRigUnloaded ? `${ids}-unloaded-rig-notice` : null,
+  ]
+    .filter((item): item is string => item !== null)
+    .join(" ");
+
   const effectiveIkStatus: IkStatusLine | null = skeletonFailure
     ? { text: `${skeletonFailure.reasonKo} [${skeletonFailure.code}]`, status: "unreachable" }
     : ikStatus;
@@ -440,7 +458,8 @@ export function PosePanel() {
             type="button"
             className="cl-button cl-pose-rig-switch"
             data-testid="pose-switch-to-package-tab"
-            onClick={() => setInspectorTab("package")}
+            aria-describedby={poseReasonDescribedBy || undefined}
+            onClick={() => switchInspectorTabWithFocus("package")}
           >
             리그·패키지 선택
           </button>
@@ -448,25 +467,30 @@ export function PosePanel() {
             type="button"
             className="cl-button cl-pose-rig-switch"
             data-testid="pose-switch-to-export-tab"
-            onClick={() => setInspectorTab("export")}
+            onClick={() => switchInspectorTabWithFocus("export")}
           >
             내보내기·보존
           </button>
         </div>
       </div>
       {skeletonFailure ? (
-        <p className="cl-pose-reason" role="status" data-testid="pose-skeleton-failure">
+        <p id={`${ids}-skeleton-failure`} className="cl-pose-reason" role="status" data-testid="pose-skeleton-failure">
           {`${skeletonFailure.reasonKo} [${skeletonFailure.code}]`}
         </p>
       ) : null}
       {poseCapability.status !== "available" ? (
-        <p className="cl-pose-reason" role="note">
+        <p id={`${ids}-pose-reason`} className="cl-pose-reason" role="note" data-testid="pose-capability-reason">
           포즈 슬롯 {poseCapability.status === "partial" ? "부분 지원" : "미지원"}: {poseCapability.reasonKo ?? "사유 없음"}
         </p>
       ) : null}
       {hasEmptySkeleton ? (
-        <p className="cl-pose-empty-state" role="note" data-testid="pose-empty-skeleton-notice">
+        <p id={`${ids}-empty-skeleton-notice`} className="cl-pose-empty-state" role="note" data-testid="pose-empty-skeleton-notice">
           스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없습니다. 제작 패키지 탭에서 리깅된 캐릭터나 모듈식 키트를 선택하세요.
+        </p>
+      ) : null}
+      {isRigUnloaded ? (
+        <p id={`${ids}-unloaded-rig-notice`} className="cl-pose-empty-state" role="note" data-testid="pose-unloaded-rig-notice">
+          현재 캐릭터 소스가 아직 로드되지 않았거나 휴머노이드 포즈 리그가 준비되지 않아 관절·IK 조작이 비활성화되어 있습니다. 상단에서 엔진을 시작하거나 제작 패키지 탭에서 소스를 확인하세요.
         </p>
       ) : null}
       {unsupportedPose ? (
