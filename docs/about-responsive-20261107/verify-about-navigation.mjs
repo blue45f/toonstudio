@@ -39,8 +39,9 @@ try {
     await page.keyboard.press('Enter');
     await page.locator('.about-overview__resources a[href="/features"]').click();
     await page.waitForURL('**/features');
-    await page.locator('main h1').waitFor();
-    const resourceHeading = await page.locator('main h1').innerText();
+    const featureHeading = page.getByRole('heading', { level: 1, name: '툰스튜디오의 모든 기능을 한눈에.' });
+    await featureHeading.waitFor();
+    const resourceHeading = await featureHeading.innerText();
     await page.goBack();
     await page.locator('#about-features-title').waitFor();
     results.push({ width, result: 'passed', keyboardContinuesIntoSelectedSection: true, filmDestinationRendered: destinationHeading, resourceDestinationRendered: resourceHeading, browserBackForward: true, mediaPlayback: 'not-run', studioSavePublish: 'not-run' });

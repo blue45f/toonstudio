@@ -9,6 +9,7 @@ const base = process.env.ABOUT_QA_BASE || 'http://127.0.0.1:4197';
 assert(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
 const output = path.resolve('docs/about-responsive-20261107');
 fs.mkdirSync(path.join(output, 'screenshots'), { recursive: true });
+const captureScreenshots = process.env.ABOUT_QA_SCREENSHOTS !== '0';
 const browser = await chromium.launch({ headless: true });
 const conditions = [
   { id: 'mobile-320', width: 320, height: 844 },
@@ -76,9 +77,9 @@ try {
     assert.equal(await page.getByRole('tab', { name: '3D', exact: true }).getAttribute('aria-selected'), 'true');
     await drawing.click();
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.screenshot({ path: path.join(output, 'screenshots', `${condition.id}.png`), fullPage: true });
+    if (captureScreenshots) await page.screenshot({ path: path.join(output, 'screenshots', `${condition.id}.png`), fullPage: true });
     await summary.click();
-    if (condition.id === 'mobile-390') await page.locator('.about-overview__resources').screenshot({ path: path.join(output, 'screenshots', 'mobile-390-resources-open.png') });
+    if (captureScreenshots && condition.id === 'mobile-390') await page.locator('.about-overview__resources').screenshot({ path: path.join(output, 'screenshots', 'mobile-390-resources-open.png') });
     const axe = await new AxeBuilder({ page }).include('.about-overview').withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
     await summary.click();
     const violations = axe.violations.map(({ id, impact, nodes }) => ({ id, impact, targets: nodes.map(({ target }) => target) }));
@@ -97,6 +98,8 @@ try {
     results.push({ id: condition.id, theme: await page.locator('html').getAttribute('data-design-theme'), metrics, keyboard: 'passed', history: condition.id === 'mobile-390' ? 'passed' : 'not-run', axe: violations, errors });
     fs.writeFileSync(path.join(output, 'browser-report.json'), JSON.stringify({ base, results, zoomMethod: 'CSS zoom 2; OS browser zoom not tested', dataMode: 'API 503 fixture; guest page only' }, null, 2) + '\n');
     console.log(condition.id, JSON.stringify({ violations, errors, metrics }));
+    assert.equal(violations.length, 0, `${condition.id}: accessibility violation`);
+    assert.equal(errors.length, 0, `${condition.id}: runtime error`);
     await context.close();
   }
 } finally { await browser.close(); }
