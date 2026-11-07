@@ -20,8 +20,8 @@ import { createReferenceSkeleton } from "../../../animation/reference-skeleton";
 import { computeWorldTransforms } from "../../../animation/skeleton-fk";
 import { computeGroundedBodyHeight } from "../../../animation/two-bone-ik";
 import { IK_CHAINS, POSE_SCOPE_LABELS_KO } from "../../../contracts";
-import { readPoseSkeleton } from "../../../render/pose-skeleton";
-import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore } from "../lab-store-context";
+import { hasPoseSkeleton, readPoseSkeleton } from "../../../render/pose-skeleton";
+import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions } from "../lab-store-context";
 
 import {
   classifySkeletonBoundaryError,
@@ -31,7 +31,7 @@ import {
   type SkeletonBoundaryOptions,
 } from "./skeleton-boundary-guard";
 
-import type { HandPosePreset, HumanoidBoneName, IkChainId, LabFailure, Pose, PosePreset, PoseScope, Quat, SkeletonData, Vec3 } from "../../../contracts";
+import type { HandPosePreset, HumanoidBoneName, IkChainId, LabFailure, Pose, PosePreset, PoseScope, Quat, RecipeSource, SkeletonData, Vec3 } from "../../../contracts";
 
 /** 패널에서 고를 수 있는 적용 범위(손 전용 스코프는 손 포즈 섹션이 맡는다) */
 export const POSE_PANEL_SCOPES: readonly PoseScope[] = ["full", "upper", "arms-hands", "lower"];
@@ -195,14 +195,33 @@ function CoordInputs({ idPrefix, labelPrefix, value, disabled, onChange }: Coord
   );
 }
 
+function describeActiveRigSourceKo(source: RecipeSource): string {
+  switch (source.kind) {
+    case "kit":
+      return `모듈식 키트 (${source.kitId} · ${source.baseId === "female" ? "여성 베이스" : "남성 베이스"})`;
+    case "package":
+      return `제작 패키지 (${source.characterId})`;
+    case "procedural":
+      return "절차적 휴머노이드";
+    default: {
+      const exhaustive: never = source;
+      return String((exhaustive as { kind?: unknown }).kind);
+    }
+  }
+}
+
 export function PosePanel() {
   const { recipe, capabilities } = useLabState();
   const store = useLabStore();
   const dispatch = useDispatch();
+  const { setInspectorTab } = useUiActions();
   const plan = useApplyPlan();
   const engineSession = useEngineSession();
   const engine = engineSession.engine();
-  const activeSkeleton = (engine ? readPoseSkeleton(engine) : null) ?? REFERENCE_SKELETON;
+  const engineHasPosePort = hasPoseSkeleton(engine);
+  const engineSkeleton = engineHasPosePort ? readPoseSkeleton(engine) : null;
+  const hasEmptyEngineSkeleton = engineHasPosePort && (engineSkeleton === null || engineSkeleton.bones.length === 0);
+  const activeSkeleton = engineSkeleton && engineSkeleton.bones.length > 0 ? engineSkeleton : REFERENCE_SKELETON;
   const ids = useId();
   const renderFailureRef = useRef<LabFailure | null>(null);
   renderFailureRef.current = null;
@@ -223,12 +242,23 @@ export function PosePanel() {
   const handCapability = capabilities["hand-pose"];
   const poseDisabled = poseCapability.status === "unavailable";
   const handDisabled = handCapability.status === "unavailable";
-  const poseBlocked = poseDisabled || rigCorrupted;
-  const handBlocked = handDisabled || rigCorrupted;
+  const poseBlocked = poseDisabled || rigCorrupted || hasEmptyEngineSkeleton;
+  const handBlocked = handDisabled || rigCorrupted || hasEmptyEngineSkeleton;
+  const hasEmptySkeleton = (poseDisabled || hasEmptyEngineSkeleton) && !rigCorrupted;
   const unsupportedPose = plan?.unsupported.find((item) => item.slot === "pose");
   const unsupportedHand = plan?.unsupported.find((item) => item.slot === "hand-pose");
   const violations = useMemo(() => poseLimitViolations(recipe.pose, safeSkeleton), [recipe.pose, safeSkeleton]);
   const boneCount = Object.keys(recipe.pose).length;
+  const selectedPreset = POSE_PRESETS.find((item) => item.id === recipe.slots.pose);
+  const selectedPoseSummaryKo = hasEmptySkeleton
+    ? "스켈레톤 없음(정적 메시)"
+    : rigCorrupted
+      ? "손상된 스켈레톤 차단됨"
+      : boneCount === 0
+        ? `기본 자세(Rest · 프리셋: ${selectedPreset?.labelKo ?? "없음"})`
+        : scope === "full" && selectedPreset
+          ? `${selectedPreset.labelKo} (편집된 본 ${boneCount}개)`
+          : `사용자 편집 포즈 (${POSE_SCOPE_LABELS_KO[scope]} · 본 ${boneCount}개)`;
   const groundedHeight = useMemo(() => {
     const onFailure = (failure: LabFailure): void => {
       renderFailureRef.current = failure;
@@ -396,6 +426,24 @@ export function PosePanel() {
   return (
     <section className="cl-pose-panel" aria-label="포즈">
       <h2 className="cl-pose-title">포즈</h2>
+      <div className="cl-pose-rig-summary" role="region" aria-label="활성 리그 및 포즈 선택 상태" data-testid="pose-rig-summary">
+        <div className="cl-pose-rig-meta">
+          <span className="cl-pose-rig-source" data-testid="pose-active-rig-source">
+            활성 리그: {describeActiveRigSourceKo(recipe.source)}
+          </span>
+          <span className="cl-pose-rig-pose" data-testid="pose-active-selection-summary">
+            선택 상태: {selectedPoseSummaryKo}
+          </span>
+        </div>
+        <button
+          type="button"
+          className="cl-button cl-pose-rig-switch"
+          data-testid="pose-switch-to-package-tab"
+          onClick={() => setInspectorTab("package")}
+        >
+          리그·패키지 선택
+        </button>
+      </div>
       {skeletonFailure ? (
         <p className="cl-pose-reason" role="status" data-testid="pose-skeleton-failure">
           {`${skeletonFailure.reasonKo} [${skeletonFailure.code}]`}
@@ -404,6 +452,11 @@ export function PosePanel() {
       {poseCapability.status !== "available" ? (
         <p className="cl-pose-reason" role="note">
           포즈 슬롯 {poseCapability.status === "partial" ? "부분 지원" : "미지원"}: {poseCapability.reasonKo ?? "사유 없음"}
+        </p>
+      ) : null}
+      {hasEmptySkeleton ? (
+        <p className="cl-pose-empty-state" role="note" data-testid="pose-empty-skeleton-notice">
+          스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없습니다. 제작 패키지 탭에서 리깅된 캐릭터나 모듈식 키트를 선택하세요.
         </p>
       ) : null}
       {unsupportedPose ? (
@@ -483,17 +536,23 @@ export function PosePanel() {
         </div>
 
         <div className="cl-pose-actions" role="group" aria-label="주요 포즈 편집 도구">
-          <button type="button" onClick={resetPose} disabled={rigCorrupted}>
+          <button type="button" onClick={resetPose} disabled={poseBlocked}>
             포즈 초기화
           </button>
           <button type="button" onClick={mirrorCurrentPose} disabled={poseBlocked || boneCount === 0}>
             포즈 좌우 반전
           </button>
-          <button type="button" onClick={clampPose} disabled={rigCorrupted || violations.length === 0}>
+          <button type="button" onClick={clampPose} disabled={poseBlocked || violations.length === 0}>
             관절 제한으로 클램프
           </button>
         </div>
       </div>
+
+      {!poseBlocked && boneCount === 0 ? (
+        <p className="cl-pose-empty-hint" data-testid="pose-rest-empty-notice">
+          현재 기본 자세(Rest · 회전된 본 0개)입니다. 빠른 스탠스·프리셋 카드를 선택하거나 뷰포트 관절 핸들·IK 목표를 조작해 포즈를 만드세요.
+        </p>
+      ) : null}
 
       <p className="cl-pose-status">
         포즈 본 {boneCount}개 · 관절 제한 위반 {violations.length}건{violations.length > 0 ? `: ${violations.map((v) => v.bone).join(", ")}` : ""}
@@ -509,8 +568,19 @@ export function PosePanel() {
             {(groundedHeight.groundDeltaY * 100).toFixed(1)} cm
           </p>
           <p className="cl-pose-hint" data-testid="pose-skeleton-diagnostics">
-            스켈레톤 본 {activeSkeleton.bones.length}개 · {skeletonFailure ? `${skeletonFailure.reasonKo} [${skeletonFailure.code}]` : "정상"}
+            {hasEmptyEngineSkeleton
+              ? "스켈레톤 본 0개 · 정적 메시(스켈레톤 없음)"
+              : `스켈레톤 본 ${activeSkeleton.bones.length}개 · ${skeletonFailure ? `${skeletonFailure.reasonKo} [${skeletonFailure.code}]` : "정상"}`}
           </p>
+          {violations.length > 0 ? (
+            <ul className="cl-pose-violation-list" data-testid="pose-violation-list" aria-label="관절 제한 위반 상세">
+              {violations.map((v) => (
+                <li key={v.bone}>
+                  {`${v.bone} · 스윙 ${v.swingDeg.toFixed(1)}°/${v.limit.swing}° · 트위스트 ${Math.abs(v.twistDeg).toFixed(1)}°/${v.limit.twist}°`}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </details>
 

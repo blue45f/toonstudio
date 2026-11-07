@@ -18,6 +18,7 @@ import { createMockEngine } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession, createMockLabStore } from "../../../testing/mock-store";
 import { createKitPlanRegistry } from "../kit-plan-registry";
 import { createPackagePlanRegistry } from "../package-plan-registry";
+import { createUiStateStore } from "../ui-state";
 
 import { PackagePanel } from "./PackagePanel";
 
@@ -556,4 +557,62 @@ describe("PackagePanel — 모듈식 키트", () => {
     expect(store.dispatched).toHaveLength(1);
     expect(store.dispatched[0]?.type === "source/set" && store.dispatched[0].source.kind).toBe("procedural");
   });
+
+  it("'포즈 탭으로 이동' 버튼 클릭 시 인스펙터 탭을 pose로 전환한다", () => {
+    const ui = createUiStateStore({ inspectorTab: "package" });
+    render(
+      <MockLabProvider shell={{ ui, kitPlans: fakeKit().registry }}>
+        <PackagePanel loader={fsLoader()} autoLoadIndex={false} autoLoadKit={false} />
+      </MockLabProvider>,
+    );
+    fireEvent.click(screen.getByTestId("package-switch-to-pose-tab"));
+    expect(ui.getState().inspectorTab).toBe("pose");
+  });
+
+  it("리그·슬롯 고급 진단 블록이 기본 접힘(open=false) 상태로 렌더링되고 활성 슬롯·포즈/손 리그 상태를 요약한다", () => {
+    const store = createMockLabStore({ recipe: kitRecipe() });
+    render(
+      <MockLabProvider store={store} shell={{ kitPlans: fakeKit().registry }}>
+        <PackagePanel loader={fsLoader()} autoLoadIndex={false} autoLoadKit={false} />
+      </MockLabProvider>,
+    );
+    const details = screen.getByTestId("package-advanced-diagnostics") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(screen.getByTestId("package-diagnostics-summary").textContent).toMatch(/고급 리그·슬롯 지원 요약 \(15\/15개 활성\)/u);
+    expect(screen.getByTestId("package-diagnostics-body").textContent).toMatch(/포즈 리그\(available\) · 손 리그\(available\)/u);
+  });
+
+  it("패키지 색인이 비어 있으면 빈 상태 안내(package-list-empty)를 표시한다", async () => {
+    const emptyLoader: PackagePanelLoader = {
+      loadIndex: async () => ({ ok: true, entries: [], indexUrl: "/packages/characters/index.json" }),
+      loadPackage: fsLoader().loadPackage,
+    };
+    render(
+      <MockLabProvider store={createMockLabStore()} shell={{ kitPlans: fakeKit().registry }}>
+        <PackagePanel loader={emptyLoader} autoLoadKit={false} />
+      </MockLabProvider>,
+    );
+    const emptyNotice = await screen.findByTestId("package-list-empty");
+    expect(emptyNotice.textContent).toMatch(/등록된 제작 패키지가 없습니다/u);
+  });
+
+  it("현재 활성 소스가 패키지이면 목록에서 해당 패키지에 '현재 선택됨' 배지와 data-selected='true'를 표시한다", async () => {
+    const base = createKitDefaultRecipe();
+    const pkgRecipe = {
+      ...base,
+      source: { kind: "package" as const, characterId: "avatar-orion-authored", sha256: ORION_SHA },
+    };
+    const store = createMockLabStore({ recipe: pkgRecipe });
+    render(
+      <MockLabProvider store={store} shell={{ kitPlans: fakeKit().registry }}>
+        <PackagePanel loader={fsLoader()} autoLoadKit={false} />
+      </MockLabProvider>,
+    );
+    const badge = await screen.findByTestId("package-selected-badge-avatar-orion-authored");
+    expect(badge.textContent).toBe("현재 선택됨");
+    const item = badge.closest("li");
+    expect(item?.getAttribute("data-selected")).toBe("true");
+  });
 });
+
+

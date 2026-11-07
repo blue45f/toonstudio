@@ -39,7 +39,7 @@ import { deriveKitCapabilities } from "../../../domains/authored/kit-capability"
 import { compareCapabilities } from "../../../domains/authored/package-capability";
 import { parseVrmFromGlb } from "../../../domains/authored/vrm-extension-parser";
 import { presetUnavailableReasonKo } from "../../../state/apply-plan";
-import { useApplyLoop, useApplyPlan, useCatalog, useDispatch, useKitPlans, useLabContext, useLabState } from "../lab-store-context";
+import { useApplyLoop, useApplyPlan, useCatalog, useDispatch, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
 
 import type { KitBaseId, KitManifest, LabFailure, RecipeSource, SlotCapabilityStatus, SlotKind } from "../../../contracts";
 import type { AuthoredIndexEntry } from "../../../domains/authored/package-index";
@@ -362,6 +362,7 @@ function KitPartsTable({ manifest }: KitPartsTableProps) {
 export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = true, autoLoadKit = true, preferredLod = 0, now = () => Date.now() }: PackagePanelProps) {
   const state = useLabState();
   const dispatch = useDispatch();
+  const { setInspectorTab } = useUiActions();
   const { store, packagePlans, engineSession } = useLabContext();
   const kitPlans = useKitPlans();
   const applyLoop = useApplyLoop();
@@ -591,6 +592,9 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
   }, [applyLoop, fetchKit, kitPlans, now, store]);
 
   const source = state.recipe.source;
+  const availableSlotCount = CHARACTER_SLOT_KINDS.filter((slot) => state.capabilities[slot].status === "available").length;
+  const partialSlotCount = CHARACTER_SLOT_KINDS.filter((slot) => state.capabilities[slot].status === "partial").length;
+  const unavailableSlotCount = CHARACTER_SLOT_KINDS.filter((slot) => state.capabilities[slot].status === "unavailable").length;
   const kitFailures = kitSource === null ? [] : state.failures.filter((failure) => isKitFailure(failure) && failure.at > kitFailuresHiddenBefore);
   const latestKitFailure = kitFailures.length > 0 ? kitFailures[kitFailures.length - 1] : undefined;
   const engineReady = state.engine.phase === "ready";
@@ -612,6 +616,26 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
           </button>
         ) : null}
       </p>
+      <div className="cl-package-nav-actions" role="group" aria-label="포즈 및 소스 빠른 이동">
+        <button
+          type="button"
+          className="cl-package-to-pose"
+          data-testid="package-switch-to-pose-tab"
+          onClick={() => setInspectorTab("pose")}
+        >
+          포즈 탭으로 이동
+        </button>
+      </div>
+      <details className="cl-package-advanced-diagnostics" data-testid="package-advanced-diagnostics">
+        <summary className="cl-package-diagnostics-summary" data-testid="package-diagnostics-summary">
+          고급 리그·슬롯 지원 요약 ({availableSlotCount}/{CHARACTER_SLOT_KINDS.length}개 활성)
+        </summary>
+        <div className="cl-package-diagnostics-body" data-testid="package-diagnostics-body">
+          <p className="cl-package-hint">
+            활성 슬롯 {availableSlotCount}개 · 부분 제한 {partialSlotCount}개 · 비활성 {unavailableSlotCount}개 · 포즈 리그({state.capabilities.pose.status}) · 손 리그({state.capabilities["hand-pose"].status})
+          </p>
+        </div>
+      </details>
       <section className="cl-package-kit" aria-labelledby={`${ids}-kit-title`}>
         <h3 id={`${ids}-kit-title`}>모듈식 키트(기본 소스)</h3>
         <div className="cl-package-kit-bases" role="group" aria-label="키트 베이스">
@@ -706,14 +730,30 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
         </p>
       ) : null}
       {index.phase === "idle" ? <p className="cl-package-hint">목록을 아직 불러오지 않았습니다.</p> : null}
-      {index.phase === "ready" ? (
+      {index.phase === "ready" && index.entries.length === 0 ? (
+        <p className="cl-package-empty" role="note" data-testid="package-list-empty">
+          등록된 제작 패키지가 없습니다. 목록 새로고침을 누르거나 모듈식 키트·절차 소스를 선택하세요.
+        </p>
+      ) : null}
+      {index.phase === "ready" && index.entries.length > 0 ? (
         <ul className="cl-package-list" aria-label="제작 패키지 목록">
           {index.entries.map((entry) => {
             const packageState = packages[entry.characterId];
+            const isSelectedPackage = source.kind === "package" && source.characterId === entry.characterId;
             return (
-              <li key={entry.characterId} className="cl-package-item" data-character-id={entry.characterId}>
+              <li
+                key={entry.characterId}
+                className={`cl-package-item${isSelectedPackage ? " cl-package-item--selected" : ""}`}
+                data-character-id={entry.characterId}
+                data-selected={isSelectedPackage ? "true" : "false"}
+              >
                 <div className="cl-package-item-head">
                   <strong>{entry.displayName}</strong>
+                  {isSelectedPackage ? (
+                    <span className="cl-package-badge cl-package-badge--available" data-testid={`package-selected-badge-${entry.characterId}`}>
+                      현재 선택됨
+                    </span>
+                  ) : null}
                   {entry.primary ? <span className="cl-package-badge cl-package-badge--primary">주 캐릭터</span> : null}
                   {entry.role ? <span className="cl-package-role">{entry.role}</span> : null}
                   <span className="cl-package-id">{entry.characterId}</span>
