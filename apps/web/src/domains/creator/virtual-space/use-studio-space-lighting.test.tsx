@@ -9,6 +9,7 @@ import {
   STUDIO_SPACE_LIGHTING_STORAGE_KEY,
   readStudioSpaceLightingPreference,
   useStudioSpaceLighting,
+  writeStudioSpaceLightingPreference,
 } from "./use-studio-space-lighting";
 
 function createMockBridge(): StudioVirtualSpaceEngineBridge {
@@ -67,6 +68,15 @@ describe("useStudioSpaceLighting", () => {
       cycleMs: 3_600_000,
     }));
     restored.unmount();
+  });
+
+  it("표시 설정 네 필드만 저장하고 문서 payload나 저장 권한 오류를 전달하지 않는다", () => {
+    const preference = { ...DEFAULT_STUDIO_SPACE_LIGHTING_PREFERENCE, projectDocument: { pages: [] } };
+    expect(writeStudioSpaceLightingPreference(preference)).toBe(true);
+    expect(JSON.parse(localStorage.getItem(STUDIO_SPACE_LIGHTING_STORAGE_KEY)!)).toEqual(DEFAULT_STUDIO_SPACE_LIGHTING_PREFERENCE);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("storage denied"); });
+    expect(writeStudioSpaceLightingPreference(preference)).toBe(false);
+    expect(readStudioSpaceLightingPreference()).toEqual(DEFAULT_STUDIO_SPACE_LIGHTING_PREFERENCE);
   });
 
   it("깨진 JSON이나 범위 밖 값은 안전한 기본값으로 복원한다", () => {

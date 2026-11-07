@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   STUDIO_VIRTUAL_STAGE_STORAGE_KEY,
@@ -14,7 +14,21 @@ beforeEach(() => {
   localStorage.clear();
 });
 
+afterEach(() => vi.restoreAllMocks());
+
 describe("studio-virtual-space-stage-mode", () => {
+  it("표시 enum 밖의 쓰기와 저장소 거부가 문서 상태를 만들지 않는다", () => {
+    const write = vi.spyOn(Storage.prototype, "setItem");
+    // @ts-expect-error 런타임 경계는 타입이 없는 호출자도 검증한다.
+    expect(writeStudioVirtualPreferredEngineMode("project-document")).toBe(false);
+    expect(write).not.toHaveBeenCalled();
+    localStorage.setItem(STUDIO_VIRTUAL_STAGE_STORAGE_KEY, "unknown");
+    expect(readStudioVirtualPreferredEngineMode()).toBe("2d");
+    write.mockImplementation(() => { throw new Error("storage denied"); });
+    expect(writeStudioVirtualPreferredEngineMode("3d")).toBe(false);
+    expect(readStudioVirtualPreferredEngineMode()).toBe("2d");
+  });
+
   it("URL 쿼리에 명시 지정이 없을 때 선호 엔진 모드를 저장·복원한다", () => {
     expect(readStudioVirtualPreferredEngineMode()).toBe("2d");
     expect(readStudioVirtualStageMode("")).toBe("2d");

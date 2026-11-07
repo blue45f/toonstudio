@@ -263,6 +263,17 @@ describe("studio-virtual-space-three-motion", () => {
     ).toBeCloseTo(0.145);
   });
 
+  it("조명 저장 포트는 닫힌 enum만 받고 실패하면 표시 기본값을 유지한다", () => {
+    const storage = { getItem: vi.fn(() => "project-document"), setItem: vi.fn() };
+    expect(readStoredStudioThreeLightingPreset("day", storage)).toBe("day");
+    // @ts-expect-error 런타임 쓰기 경계에 잘못된 값을 주입한다.
+    writeStoredStudioThreeLightingPreset("project-document", storage);
+    expect(storage.setItem).not.toHaveBeenCalled();
+    storage.setItem.mockImplementation(() => { throw new Error("storage denied"); });
+    expect(() => writeStoredStudioThreeLightingPreset("night", storage)).not.toThrow();
+    expect(readStoredStudioThreeLightingPreset("studio", storage)).toBe("studio");
+  });
+
   it("조명 프리셋별 fillLight 강도를 갱신하고 sessionStorage에 보존·복원한다", () => {
     expect(studioThreeFillLightIntensity("day")).toBe(0.35);
     expect(studioThreeFillLightIntensity("studio")).toBe(0.6);
