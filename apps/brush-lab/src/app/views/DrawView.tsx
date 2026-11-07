@@ -85,6 +85,7 @@ export function DrawView() {
   const cornerGate = useDrawSelector((s) => s.cornerGate);
   const mouseSim = useDrawSelector((s) => s.mousePressureSim);
   const color = useDrawSelector((s) => s.color);
+  const strokes = useDrawSelector((s) => s.strokes);
   const notices = useDrawSelector((s) => s.notices);
   const lastImage = useDrawSelector((s) => s.lastImage);
   const capability = useLabSelector((s) => s.capability);
@@ -385,6 +386,12 @@ export function DrawView() {
   };
 
   const currentSizePx = overrides.sizePx ?? resolved.program?.tip.sizePx ?? 8;
+  const hasCustomParams =
+    Object.values(overrides).some((v) => v !== undefined) ||
+    paperKind !== "preset" ||
+    stabilizerMode !== "one-euro" ||
+    stabilizerPct !== null ||
+    !cornerGate;
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent): void => {
@@ -459,8 +466,19 @@ export function DrawView() {
           >
             {panelOpen ? "설정 패널 접기" : "설정 패널 펴기"}
           </button>
+          {hasCustomParams ? (
+            <button
+              type="button"
+              className="lab-button lab-button--compact"
+              data-testid="lab-draw-toolbar-reset"
+              onClick={() => drawActions.resetOverrides()}
+            >
+              설정 초기화
+            </button>
+          ) : null}
           <span className="lab-badge lab-draw-status-pill" data-testid="lab-draw-brush-pill">
             {resolved.program ? `${resolved.program.name} · ` : ""}브러시 {currentSizePx}px · 안정화 {stabilizerMode}
+            {strokes > 0 ? ` · ${strokes}획` : ""}
           </span>
           <span className="lab-muted lab-draw-shortcut-hint" data-testid="lab-draw-shortcut-hint">
             단축키: [ / ] 크기 조절

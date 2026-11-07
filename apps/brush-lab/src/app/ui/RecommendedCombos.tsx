@@ -17,30 +17,32 @@ export function RecommendedCombos({ combos }: { combos: readonly FamilyRecommend
       {combos.length === 0 ? (
         <p className="lab-muted">측정된 추천 조합이 없다. 조합 실험 러너를 실행해 표를 갱신한다.</p>
       ) : (
-        <table className="lab-table">
-          <thead>
-            <tr>
-              <th scope="col">프리셋</th>
-              <th scope="col">추천 레인</th>
-              <th scope="col">이유</th>
-              <th scope="col" title="빠른 왕복 코너 스트로크 시나리오 총 소요 시간(ms, 낮을수록 빠름)">지그재그(ms)</th>
-              <th scope="col" title="30초 연속 나선 스트로크 시나리오 총 소요 시간(ms, 지구력·누적 지연 지표)">나선 30초(ms)</th>
-              <th scope="col">주의</th>
-            </tr>
-          </thead>
-          <tbody>
-            {combos.map((c) => (
-              <tr key={`${c.presetId}/${c.laneId}`}>
-                <td>{c.presetId}</td>
-                <td>{c.laneId}</td>
-                <td>{c.reasonKo}</td>
-                <td>{c.zigzagMs}</td>
-                <td>{c.spiralMs}</td>
-                <td>{c.noteKo ?? "—"}</td>
+        <div className="lab-table-wrap" data-testid="lab-recommended-table-wrap">
+          <table className="lab-table">
+            <thead>
+              <tr>
+                <th scope="col">프리셋</th>
+                <th scope="col">추천 레인</th>
+                <th scope="col">이유</th>
+                <th scope="col" title="빠른 왕복 코너 스트로크 시나리오 총 소요 시간(ms, 낮을수록 빠름)">지그재그(ms)</th>
+                <th scope="col" title="30초 연속 나선 스트로크 시나리오 총 소요 시간(ms, 지구력·누적 지연 지표)">나선 30초(ms)</th>
+                <th scope="col">주의</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {combos.map((c) => (
+                <tr key={`${c.presetId}/${c.laneId}`}>
+                  <td>{c.presetId}</td>
+                  <td>{c.laneId}</td>
+                  <td>{c.reasonKo}</td>
+                  <td>{c.zigzagMs}</td>
+                  <td>{c.spiralMs}</td>
+                  <td>{c.noteKo ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

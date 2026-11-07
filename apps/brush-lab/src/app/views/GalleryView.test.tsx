@@ -138,14 +138,27 @@ describe("GalleryView", { timeout: 30_000 }, () => {
     fireEvent.click(within(filterGroup).getByRole("button", { name: `전체 (${PRESET_CATALOG.length})` }));
     expect(within(list).getAllByRole("listitem")).toHaveLength(PRESET_CATALOG.length);
 
-    const searchInput = screen.getByTestId("lab-gallery-search-input");
+    const searchInput = screen.getByTestId("lab-gallery-search-input") as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: "pencil-hb" } });
     expect(within(list).getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByTestId("lab-gallery-filter-summary").textContent).toBe(`표시 1/${PRESET_CATALOG.length}종`);
     fireEvent.click(screen.getByRole("button", { name: "검색 지우기" }));
     expect(within(list).getAllByRole("listitem")).toHaveLength(PRESET_CATALOG.length);
 
-    // 카드에서 '그리기에서 시험'을 누르면 그리기 탭으로 바로 전환된다
+    // 빈 검색 결과 안내 및 '탐색 필터 초기화' 복구 확인
+    fireEvent.click(within(filterGroup).getByRole("button", { name: "수채·수묵·유화" }));
+    fireEvent.change(searchInput, { target: { value: "없는브러시" } });
+    expect(screen.getByTestId("lab-gallery-empty")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("lab-gallery-filter-reset"));
+    expect(searchInput.value).toBe("");
+    expect(within(list).getAllByRole("listitem")).toHaveLength(PRESET_CATALOG.length);
+
+    // 추천 조합 테이블이 가로 스크롤 래퍼(lab-recommended-table-wrap) 안에 감싸져 있는지 확인
+    expect(screen.getByTestId("lab-recommended-table-wrap")).toBeTruthy();
+
+    // 카드에서 '그리기에서 시험'을 누르면 그리기 탭으로 바로 전환되고 compare 프리셋도 함께 동기화된다
     fireEvent.click(screen.getByTestId("lab-preset-draw-pencil-6b"));
     expect(store.get().tab).toBe("draw");
+    expect(store.get().presetId).toBe("pencil-6b");
   });
 });

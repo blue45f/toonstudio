@@ -138,6 +138,11 @@ export function DrawBrushPicker() {
               <strong>{currentPreset.name}</strong>
               <span className="lab-badge">{FAMILY_LABELS[currentPreset.family]}</span>
               <span className="lab-mono lab-muted">{currentPreset.id}</span>
+              {!currentVisibleInList ? (
+                <span className="lab-badge lab-badge--warn" data-testid="lab-draw-current-filtered-badge">
+                  목록 필터 밖
+                </span>
+              ) : null}
             </div>
             <p className="lab-muted lab-draw-current-desc">{currentPreset.description}</p>
             <p className="lab-muted lab-draw-current-defaults">
@@ -159,6 +164,12 @@ export function DrawBrushPicker() {
             placeholder="이름·가족·설명(예: 수채, 연필)"
             value={search}
             onChange={(e) => drawActions.setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && search.length > 0) {
+                e.preventDefault();
+                drawActions.setSearch("");
+              }
+            }}
           />
           {search.length > 0 ? (
             <button

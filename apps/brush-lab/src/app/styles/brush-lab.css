@@ -42,11 +42,13 @@ code,
 .lab-shell {
   min-height: 100vh;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 16px;
   padding: 20px clamp(12px, 3vw, 32px);
   max-width: 1440px;
   margin: 0 auto;
+  min-width: 0;
 }
 
 .lab-brand {
@@ -109,7 +111,13 @@ code,
 
 .lab-tabpanel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+  min-width: 0;
+}
+
+[role="tabpanel"] {
+  min-width: 0;
 }
 
 /* 패널·카드 */
@@ -119,6 +127,7 @@ code,
   border-radius: 12px;
   background: var(--lab-panel);
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .lab-panel h2,
@@ -130,24 +139,27 @@ code,
 .lab-grid-2 {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
 }
 
 .lab-grid-3 {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
 }
 
 /* 배너 */
 .lab-banner {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 12px 16px;
   border: 1px solid var(--lab-line);
   border-left: 4px solid var(--lab-warn);
   border-radius: 10px;
   background: var(--lab-panel);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .lab-banner--ok {
@@ -233,12 +245,16 @@ code,
   align-items: center;
   gap: 8px;
   min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 
 .lab-check input {
   width: 22px;
   height: 22px;
+  flex-shrink: 0;
   accent-color: var(--lab-accent);
 }
 
@@ -519,6 +535,7 @@ code,
   * {
     transition: none !important;
     animation: none !important;
+    scroll-behavior: auto !important;
   }
 }
 

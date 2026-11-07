@@ -102,6 +102,7 @@ export function BrushParamFields({
   );
   const set = (patch: LabOverrides): void => binding.setOverride(patch);
   const stabilizer = overrides.stabilizer;
+  const overrideCount = Object.values(overrides).filter((v) => v !== undefined).length;
   return (
     <div className="lab-form-grid" data-testid={`${idPrefix}-param-panel`}>
       {setPreset ? (
@@ -219,6 +220,12 @@ export function BrushParamFields({
           <button type="button" className="lab-button" disabled={running} onClick={() => binding.resetOverrides()}>
             오버라이드 초기화
           </button>
+          <span
+            className={overrideCount > 0 ? "lab-badge lab-badge--warn" : "lab-badge lab-badge--pass"}
+            data-testid={`${idPrefix}-param-status`}
+          >
+            {overrideCount > 0 ? `사용자 조정 ${overrideCount}개` : "프리셋 기본값"}
+          </span>
           <span className="lab-muted" data-testid={`${idPrefix}-config-hash`}>
             configHash(fnv1a64):{" "}
             {resolved.hash ? <span className="lab-mono">{resolved.hash}</span> : <span role="alert">{resolved.error}</span>}
