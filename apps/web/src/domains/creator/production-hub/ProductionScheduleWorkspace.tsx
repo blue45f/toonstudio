@@ -11,17 +11,14 @@ import {
   Plus,
   Users,
 } from "lucide-react";
-import { type FormEvent, useMemo, useState } from "react";
-
+import { type FormEvent, useCallback, useMemo, useRef, useState } from "react";
 import {
   forecastProductionSchedule,
   type ProductionProjectAggregate,
   type ProductionTask,
   type ProductionTaskStatus,
 } from "@toonstudio/core/production";
-
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
-
 import type { ProductionClientCommand } from "./production-api";
 import {
   PRODUCTION_PROCESS_LABELS,
@@ -33,13 +30,17 @@ import {
 } from "./production-labels";
 import { deriveProductionOperationsOverview } from "./production-episode-operations";
 import { deriveAssignmentWorkload } from "./production-management-overview";
-import {
-  deriveProductionRiskIntelligence,
-  type ProductionRiskSignal,
-} from "./production-risk-intelligence";
+import { deriveProductionRiskIntelligence, type ProductionRiskSignal } from "./production-risk-intelligence";
 import { ProductionBatchScheduleSuite } from "./ProductionBatchScheduleSuite";
 import { ProductionNotionKnowledgeCalendarSuite } from "./ProductionNotionKnowledgeCalendarSuite";
 import { ProductionPmsBlueprintSuite } from "./ProductionPmsBlueprintSuite";
+import {
+  ScheduleCalendarView,
+  ScheduleInlineTaskEditor,
+  ScheduleListView,
+  type ScheduleViewSharedProps,
+  type TaskInlineDraft,
+} from "./ProductionScheduleViews";
 import "./production-schedule-workspace.css";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -52,15 +53,6 @@ export type ScheduleSortKey = "due-asc" | "risk-desc" | "hours-desc" | "title-as
 type ExecuteCommand = (command: ProductionClientCommand, message: string) => Promise<void>;
 type RiskLevel = ScheduleRiskLevel;
 
-interface TaskInlineDraft {
-  readonly taskId: string;
-  readonly title: string;
-  readonly processKey: string;
-  readonly assignmentId: string;
-  readonly likelyHours: string;
-  readonly dueDate: string;
-}
-
 export interface ProductionScheduleWorkspaceProps {
   readonly aggregate: ProductionProjectAggregate;
   readonly execute: ExecuteCommand;
@@ -68,7 +60,8 @@ export interface ProductionScheduleWorkspaceProps {
 }
 
 const DAY_MS = 86_400_000;
-const DATE_LABEL = new Intl.DateTimeFormat("ko-KR", { month: "numeric", day: "numeric", weekday: "short" });
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const DATE_LABEL = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", weekday: "short" });
 const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const STATUS_OPTIONS: readonly ProductionTaskStatus[] = [
   "draft",
@@ -95,10 +88,12 @@ const RISK_PRIORITY: Readonly<Record<RiskLevel, number>> = {
   normal: 1,
 };
 
+/** KST(Asia/Seoul, UTC+9) 기준 YYYY-MM-DD 날짜 문자열을 반환해 자정·월말·연말 경계 드리프트를 방지한다. */
 function dateOnly(value: Date): string {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
+  const kst = new Date(value.getTime() + KST_OFFSET_MS);
+  const year = kst.getUTCFullYear();
+  const month = String(kst.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(kst.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -110,8 +105,10 @@ function parseDate(value: string | null): Date | null {
     const year = Number(match[1]);
     const month = Number(match[2]);
     const day = Number(match[3]);
-    const localDate = new Date(year, month - 1, day, 9, 0, 0, 0);
-    if (Number.isFinite(localDate.getTime()) && localDate.getFullYear() === year && localDate.getMonth() === month - 1 && localDate.getDate() === day) return localDate;
+    const utcCheck = new Date(Date.UTC(year, month - 1, day));
+    if (Number.isFinite(utcCheck.getTime()) && utcCheck.getUTCFullYear() === year && utcCheck.getUTCMonth() === month - 1 && utcCheck.getUTCDate() === day) {
+      return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    }
     return null;
   }
   const date = new Date(trimmed);
@@ -123,19 +120,19 @@ function dueIsoFromDateInput(value: string): string | null {
   if (!trimmed) return null;
   const parsed = parseDate(trimmed);
   if (!parsed) return null;
-  const year = parsed.getFullYear();
+  const key = dateOnly(parsed);
+  const year = Number(key.slice(0, 4));
   if (year < 1970 || year > 2100) return null;
-  return new Date(`${dateOnly(parsed)}T09:00:00`).toISOString();
+  return new Date(`${key}T09:00:00+09:00`).toISOString();
 }
 
 function addDays(value: Date, amount: number): Date {
-  const next = new Date(value);
-  next.setDate(next.getDate() + amount);
-  return next;
+  return new Date(value.getTime() + amount * DAY_MS);
 }
 
 function startOfDay(value: Date): Date {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  const kst = new Date(value.getTime() + KST_OFFSET_MS);
+  return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - KST_OFFSET_MS);
 }
 
 function formatDueRelativeBadge(task: ProductionTask, now: Date): string {
@@ -157,9 +154,7 @@ function taskRisk(
   if (["done", "approved", "cancelled", "out-of-scope"].includes(task.status)) return "normal";
   const due = parseDate(task.dueAt);
   if (due && due.getTime() < now.getTime()) return "overdue";
-  if (signals.some((signal) =>
-    signal.source === "derived"
-    && (signal.severity === "critical" || signal.severity === "high"))) return "predicted";
+  if (signals.some((signal) => signal.source === "derived" && (signal.severity === "critical" || signal.severity === "high"))) return "predicted";
   if (typeof slackHours === "number" && slackHours < 0) return "forecast";
   if (task.status === "blocked" || task.status === "changes-requested") return "attention";
   if (due && startOfDay(due).getTime() - startOfDay(now).getTime() <= DAY_MS * 2) return "attention";
@@ -221,7 +216,11 @@ export function ProductionScheduleWorkspace({
   const [riskFilter, setRiskFilter] = useState<"all" | RiskLevel>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | ProductionTaskStatus>("all");
   const [sortBy, setSortBy] = useState<ScheduleSortKey>("due-asc");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState<TaskInlineDraft | null>(null);
+  const lastEditTriggerTaskIdRef = useRef<string | null>(null);
+  const shouldAutoFocusEditorRef = useRef(false);
+
   const activeAssignments = useMemo(
     () => aggregate.assignments.filter((entry) => entry.status === "active"),
     [aggregate.assignments],
@@ -256,18 +255,21 @@ export function ProductionScheduleWorkspace({
     [windowStart],
   );
 
-  const hasActiveFilters = query.trim().length > 0 || assignmentFilter !== "all" || riskFilter !== "all" || statusFilter !== "all";
-
-  const resetFilters = () => { setQuery(""); setAssignmentFilter("all"); setRiskFilter("all"); setStatusFilter("all"); };
+  const hasActiveFilters = query.trim().length > 0 || assignmentFilter !== "all" || riskFilter !== "all" || statusFilter !== "all" || selectedDate !== null;
+  const resetFilters = () => {
+    setQuery("");
+    setAssignmentFilter("all");
+    setRiskFilter("all");
+    setStatusFilter("all");
+    setSelectedDate(null);
+  };
 
   const tasks = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("ko-KR");
     const filtered = aggregate.tasks.filter((task) => {
       const localizedProcess = processLabel(task.processKey, bt).toLocaleLowerCase("ko-KR");
       const localizedScope = scopeLabel(task, bt).toLocaleLowerCase("ko-KR");
-      const assigneeNames = task.assignmentIds
-        .map((id) => assignmentLabel(aggregate, id).toLocaleLowerCase("ko-KR"))
-        .join(" ");
+      const assigneeNames = task.assignmentIds.map((id) => assignmentLabel(aggregate, id).toLocaleLowerCase("ko-KR")).join(" ");
       const matchesQuery = !normalized || [task.title, task.processKey, localizedProcess, task.scope.id, localizedScope, assigneeNames].some((field) => field.toLocaleLowerCase("ko-KR").includes(normalized));
       const matchesAssignment = assignmentFilter === "all" ? true : assignmentFilter === "unassigned" ? task.assignmentIds.length === 0 : task.assignmentIds.includes(assignmentFilter);
       const matchesStatus = statusFilter === "all" || task.status === statusFilter;
@@ -298,42 +300,87 @@ export function ProductionScheduleWorkspace({
     return [...filtered].sort((left, right) => left.title.localeCompare(right.title, "ko"));
   }, [aggregate, assignmentFilter, bt, now, query, riskFilter, riskSignalsByTask, schedule.byTaskId, sortBy, statusFilter]);
 
-  const saveTask = (task: ProductionTask, patch: Partial<ProductionTask>, message: string) => {
+  const saveTask = useCallback((task: ProductionTask, patch: Partial<ProductionTask>, message: string) => {
     if (!canEdit) return;
     void execute({ type: "upsert-task", task: { ...task, ...patch } }, message);
-  };
+  }, [canEdit, execute]);
 
-  const shiftTaskDueByDays = (task: ProductionTask, deltaDays: number) => {
+  const shiftTaskDueByDays = useCallback((task: ProductionTask, deltaDays: number) => {
     if (!canEdit) return;
     const base = parseDate(task.dueAt) ?? startOfDay(now);
     const nextDate = addDays(startOfDay(base), deltaDays);
-    const nextIso = new Date(`${dateOnly(nextDate)}T09:00:00`).toISOString();
+    const nextIso = new Date(`${dateOnly(nextDate)}T09:00:00+09:00`).toISOString();
     const label = deltaDays > 0 ? `+${deltaDays}일` : `${deltaDays}일`;
     saveTask(task, { dueAt: nextIso }, `${task.title} 마감일을 ${label} 조정했습니다.`);
-  };
+  }, [canEdit, now, saveTask]);
 
-  const jumpToTaskWindow = (task: ProductionTask) => {
+  const jumpToTaskWindow = useCallback((task: ProductionTask) => {
     const due = parseDate(task.dueAt);
     if (!due) return;
     setWindowStart(startOfDay(addDays(due, -3)));
-  };
+  }, []);
 
-  const openInlineEditor = (task: ProductionTask) => { const due = parseDate(task.dueAt); setEditingDraft({ taskId: task.id, title: task.title, processKey: canonicalProductionProcessKey(task.processKey), assignmentId: task.assignmentIds[0] ?? "", likelyHours: String(taskHours(task)), dueDate: due ? dateOnly(due) : "" }); };
+  const openInlineEditor = useCallback((task: ProductionTask) => {
+    const due = parseDate(task.dueAt);
+    lastEditTriggerTaskIdRef.current = task.id;
+    shouldAutoFocusEditorRef.current = true;
+    setEditingDraft({
+      taskId: task.id,
+      title: task.title,
+      processKey: canonicalProductionProcessKey(task.processKey),
+      assignmentId: task.assignmentIds[0] ?? "",
+      likelyHours: String(taskHours(task)),
+      dueDate: due ? dateOnly(due) : "",
+    });
+  }, []);
 
-  const submitInlineEditor = (event: FormEvent<HTMLFormElement>, task: ProductionTask) => {
+  const closeInlineEditor = useCallback((taskId?: string) => {
+    const targetId = taskId ?? editingDraft?.taskId ?? lastEditTriggerTaskIdRef.current;
+    shouldAutoFocusEditorRef.current = false;
+    setEditingDraft(null);
+    const restore = () => {
+      if (!targetId || typeof document === "undefined") return;
+      const buttons = document.querySelectorAll<HTMLButtonElement>("button[data-schedule-edit-trigger]");
+      for (const button of buttons) {
+        if (button.getAttribute("data-schedule-edit-trigger") === targetId) {
+          button.focus();
+          break;
+        }
+      }
+    };
+    restore();
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(restore);
+    }
+  }, [editingDraft?.taskId]);
+
+  const handleTitleInputMount = useCallback((node: HTMLInputElement | null) => {
+    if (node && shouldAutoFocusEditorRef.current) {
+      shouldAutoFocusEditorRef.current = false;
+      node.focus();
+    }
+  }, []);
+
+  const submitInlineEditor = useCallback((event: FormEvent<HTMLFormElement>, task: ProductionTask) => {
     event.preventDefault();
     if (!canEdit || !editingDraft || editingDraft.taskId !== task.id) return;
     const nextTitle = editingDraft.title.trim() || task.title;
     const parsedLikely = Number(editingDraft.likelyHours);
-    const likely = Number.isFinite(parsedLikely) && parsedLikely >= 0
-      ? Math.min(999, Math.round(parsedLikely))
-      : taskHours(task);
-    const nextDueAt = editingDraft.dueDate.trim() === ""
-      ? null
-      : (dueIsoFromDateInput(editingDraft.dueDate) ?? task.dueAt);
-    saveTask(task, { title: nextTitle, processKey: editingDraft.processKey, assignmentIds: editingDraft.assignmentId ? [editingDraft.assignmentId] : [], estimateHours: { optimistic: Math.max(1, Math.floor(likely * 0.6)), likely, pessimistic: Math.max(likely + 2, Math.ceil(likely * 1.5)) }, dueAt: nextDueAt }, `${nextTitle} 세부 일정을 저장했습니다.`);
-    setEditingDraft(null);
-  };
+    const likely = Number.isFinite(parsedLikely) && parsedLikely >= 0 ? Math.min(999, Math.round(parsedLikely)) : taskHours(task);
+    const nextDueAt = editingDraft.dueDate.trim() === "" ? null : (dueIsoFromDateInput(editingDraft.dueDate) ?? task.dueAt);
+    saveTask(
+      task,
+      {
+        title: nextTitle,
+        processKey: editingDraft.processKey,
+        assignmentIds: editingDraft.assignmentId ? [editingDraft.assignmentId] : [],
+        estimateHours: { optimistic: Math.max(1, Math.floor(likely * 0.6)), likely, pessimistic: Math.max(likely + 2, Math.ceil(likely * 1.5)) },
+        dueAt: nextDueAt,
+      },
+      `${nextTitle} 세부 일정을 저장했습니다.`,
+    );
+    closeInlineEditor(task.id);
+  }, [canEdit, closeInlineEditor, editingDraft, saveTask]);
 
   const createTask = async () => {
     if (!canEdit) return;
@@ -366,12 +413,7 @@ export function ProductionScheduleWorkspace({
         name: assignmentLabel(aggregate, assignment.id),
         tasks: assignedTasks,
         hours: assignedTasks.reduce((sum, task) => sum + taskHours(task), 0),
-        attention: assignedTasks.filter((task) => taskRisk(
-          task,
-          now,
-          riskSignalsByTask.get(task.id),
-          schedule.byTaskId[task.id]?.slackHours,
-        ) !== "normal").length,
+        attention: assignedTasks.filter((task) => taskRisk(task, now, riskSignalsByTask.get(task.id), schedule.byTaskId[task.id]?.slackHours) !== "normal").length,
       };
     })
     .filter((entry) => entry.tasks.length > 0)
@@ -379,9 +421,7 @@ export function ProductionScheduleWorkspace({
 
   const calendarTasksByDateKey = useMemo(() => {
     const map = new Map<string, ProductionTask[]>();
-    for (const day of days) {
-      map.set(dateOnly(day), []);
-    }
+    for (const day of days) map.set(dateOnly(day), []);
     for (const task of tasks) {
       const due = parseDate(task.dueAt);
       if (!due) continue;
@@ -409,29 +449,40 @@ export function ProductionScheduleWorkspace({
   const forecastCount = tasks.filter((task) => riskForTask(task) === "forecast").length;
   const attentionCount = tasks.filter((task) => riskForTask(task) === "attention").length;
   const scheduledHours = tasks.reduce((sum, task) => sum + taskHours(task), 0);
+  const formatDateLabel = useCallback((value: Date) => DATE_LABEL.format(value), []);
 
-  const renderInlineEditor = (task: ProductionTask) => {
-    if (!editingDraft || editingDraft.taskId !== task.id) return null;
-    return (
-      <form aria-label={`${task.title} 상세 편집 폼`} onSubmit={(event) => submitInlineEditor(event, task)} className="mt-2.5 grid gap-2 rounded-xl border border-line bg-panel p-2.5 text-xs">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="grid min-w-0 gap-1"><span className="text-[0.6875rem] font-semibold text-fg-2">작업 제목</span><input type="text" aria-label={`${task.title} 제목 편집`} value={editingDraft.title} disabled={!canEdit} onChange={(event) => setEditingDraft((current) => current ? { ...current, title: event.target.value } : current)} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg outline-none" /></label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="grid min-w-0 gap-1"><span className="text-[0.6875rem] font-semibold text-fg-2">공정</span><select aria-label={`${task.title} 공정 편집`} value={editingDraft.processKey} disabled={!canEdit} onChange={(event) => setEditingDraft((current) => current ? { ...current, processKey: event.target.value } : current)} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg outline-none">{PROCESS_OPTIONS.map((processKey) => <option key={processKey} value={processKey}>{processLabel(processKey, bt)}</option>)}</select></label>
-            <label className="grid min-w-0 gap-1"><span className="text-[0.6875rem] font-semibold text-fg-2">담당자</span><select aria-label={`${task.title} 담당자 편집`} value={editingDraft.assignmentId} disabled={!canEdit} onChange={(event) => setEditingDraft((current) => current ? { ...current, assignmentId: event.target.value } : current)} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg outline-none"><option value="">담당 미지정</option>{activeAssignments.map((assignment) => <option key={assignment.id} value={assignment.id}>{assignmentLabel(aggregate, assignment.id)}</option>)}</select></label>
-          </div>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <label className="grid min-w-0 gap-1"><span className="text-[0.6875rem] font-semibold text-fg-2">예상 공수(h)</span><input type="number" min={0} max={999} aria-label={`${task.title} 예상 공수 편집`} value={editingDraft.likelyHours} disabled={!canEdit} onChange={(event) => setEditingDraft((current) => current ? { ...current, likelyHours: event.target.value } : current)} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg outline-none" /></label>
-          <label className="grid min-w-0 gap-1"><span className="text-[0.6875rem] font-semibold text-fg-2">마감일</span><input type="date" aria-label={`${task.title} 상세 마감일 편집`} value={editingDraft.dueDate} disabled={!canEdit} onChange={(event) => setEditingDraft((current) => current ? { ...current, dueDate: event.target.value } : current)} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg outline-none" /></label>
-          <div className="flex flex-wrap items-end justify-end gap-1.5">
-            <button type="button" onClick={() => setEditingDraft(null)} className="min-h-8 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised">취소</button>
-            <button type="submit" disabled={!canEdit} className="min-h-8 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent disabled:opacity-50">저장</button>
-          </div>
-        </div>
-      </form>
-    );
-  };
+  const sharedViewProps = useMemo<ScheduleViewSharedProps>(() => ({
+    aggregate,
+    canEdit,
+    now,
+    bt,
+    statusOptions: STATUS_OPTIONS,
+    processOptions: PROCESS_OPTIONS,
+    activeAssignments,
+    riskSignalsByTask,
+    forecastByTaskId: schedule.byTaskId,
+    editingDraft,
+    onChangeDraft: setEditingDraft,
+    onOpenEditor: openInlineEditor,
+    onCloseEditor: closeInlineEditor,
+    onSubmitEditor: submitInlineEditor,
+    onTitleInputMount: handleTitleInputMount,
+    onSaveTask: saveTask,
+    onShiftTaskDueByDays: shiftTaskDueByDays,
+    onJumpToTaskWindow: jumpToTaskWindow,
+    parseDate,
+    dateOnly,
+    dueIsoFromDateInput,
+    formatDateLabel,
+    formatDueRelativeBadge,
+    taskRisk,
+    assignmentLabel,
+    processLabel,
+    scopeLabel,
+    taskHours,
+    riskClass,
+    statusClass,
+  }), [activeAssignments, aggregate, bt, canEdit, closeInlineEditor, editingDraft, formatDateLabel, handleTitleInputMount, jumpToTaskWindow, now, openInlineEditor, riskSignalsByTask, saveTask, schedule.byTaskId, shiftTaskDueByDays, submitInlineEditor]);
 
   const renderEmptyFilteredTasks = () => (
     <div className="flex flex-col items-center justify-center gap-3 p-10 text-center">
@@ -483,6 +534,7 @@ export function ProductionScheduleWorkspace({
           <label className="flex min-h-10 max-w-full items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2"><Filter className="size-4 shrink-0 text-fg-3" aria-hidden="true" /><span className="sr-only">위험 필터</span><select aria-label="위험 필터" value={riskFilter} onChange={(event) => setRiskFilter(event.target.value as typeof riskFilter)} className="min-w-0 bg-transparent font-semibold text-fg outline-none"><option value="all">모든 위험</option><option value="overdue">{t("productionHub.status.scheduleOverdue", "기한 초과")}</option><option value="predicted">예측 위험</option><option value="forecast">{t("productionHub.status.scheduleForecastOverrun", "예상 초과")}</option><option value="attention">주의 필요</option><option value="normal">정상</option></select></label>
           <label className="flex min-h-10 max-w-full items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2"><span className="sr-only">상태 필터</span><select aria-label="상태 필터" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className="min-w-0 bg-transparent font-semibold text-fg outline-none"><option value="all">모든 상태</option>{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{taskStatusLabel(status, bt)}</option>)}</select></label>
           <label className="flex min-h-10 max-w-full items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2"><span className="sr-only">작업 정렬</span><select aria-label="작업 정렬" value={sortBy} onChange={(event) => setSortBy(event.target.value as ScheduleSortKey)} className="min-w-0 bg-transparent font-semibold text-fg outline-none"><option value="due-asc">마감 빠른순</option><option value="risk-desc">위험 높은순</option><option value="hours-desc">공수 큰순</option><option value="title-asc">제목 가나다순</option></select></label>
+          {selectedDate ? <span data-selected-date-badge={selectedDate} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft px-3 text-xs font-bold text-accent">선택 날짜: {selectedDate}</span> : null}
           {hasActiveFilters ? <button type="button" onClick={resetFilters} className="min-h-10 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg hover:bg-raised">필터 초기화</button> : null}
         </div>
 
@@ -556,10 +608,10 @@ export function ProductionScheduleWorkspace({
                         <button type="button" disabled={!canEdit} aria-label={`${task.title} 마감 1주 늦추기`} onClick={() => shiftTaskDueByDays(task, 7)} className="rounded-md border border-line bg-panel px-2 py-0.5 text-[0.6875rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">+1주</button>
                         {isOutOfWindow ? <button type="button" onClick={() => jumpToTaskWindow(task)} className="rounded-md border border-warn/40 bg-warn/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-warn hover:bg-warn/20">마감 구간으로 이동</button> : null}
                       </div>
-                      <button type="button" aria-expanded={isEditing} aria-label={`${task.title} 상세 편집`} onClick={() => (isEditing ? setEditingDraft(null) : openInlineEditor(task))} className="rounded-md border border-line bg-card px-2 py-0.5 text-[0.6875rem] font-semibold text-fg hover:bg-raised">{isEditing ? "편집 닫기" : "상세 편집"}</button>
+                      <button type="button" data-schedule-edit-trigger={task.id} aria-expanded={isEditing} aria-label={`${task.title} 상세 편집`} onClick={() => (isEditing ? closeInlineEditor(task.id) : openInlineEditor(task))} className="rounded-md border border-line bg-card px-2 py-0.5 text-[0.6875rem] font-semibold text-fg hover:bg-raised">{isEditing ? "편집 닫기" : "상세 편집"}</button>
                     </div>
                     {taskSignals[0] ? <p className="mt-2 line-clamp-2 text-[0.6875rem] leading-4 text-warn">{taskSignals[0].summary}</p> : null}
-                    {renderInlineEditor(task)}
+                    <ScheduleInlineTaskEditor task={task} shared={sharedViewProps} />
                   </div>
                   {days.map((day, index) => {
                     const withinBar = dueIndex >= 0 && dueIndex < 14 && index >= startIndex && index <= dueIndex;
@@ -581,149 +633,27 @@ export function ProductionScheduleWorkspace({
       ) : null}
 
       {view === "calendar" ? (
-        <div className="space-y-4 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-black text-fg">2주 마감 캘린더</h3>
-              <p className="text-xs text-fg-3">일자별 마감 작업을 확인하고 카드에서 상태·마감일·세부 정보를 바로 편집합니다.</p>
-            </div>
-            <span className="rounded-full border border-line bg-panel px-2.5 py-1 text-xs font-bold text-fg-2">구간 내 마감 {tasks.length - calendarOutsideOrUndatedTasks.length}건</span>
-          </div>
-          {tasks.length === 0 ? renderEmptyFilteredTasks() : (
-            <>
-              <div className="production-schedule-calendar-scroll">
-                <div className="production-schedule-calendar-grid">
-                  {days.map((day) => {
-                    const dayKey = dateOnly(day);
-                    const dayTasks = calendarTasksByDateKey.get(dayKey) ?? [];
-                    const today = dayKey === dateOnly(now);
-                    return (
-                      <div key={dayKey} className={cn("flex min-h-40 min-w-0 flex-col rounded-2xl border border-line p-2.5", today ? "bg-accent-soft/20" : "bg-panel/60")}>
-                        <div className="flex items-center justify-between gap-1 border-b border-line/70 pb-1.5 text-xs">
-                          <span className={cn("font-bold", today ? "text-accent" : "text-fg")}>{DATE_LABEL.format(day)}</span>
-                          <span className="rounded-full bg-card px-2 py-0.5 text-[0.6875rem] font-bold text-fg-3">{dayTasks.length}건</span>
-                        </div>
-                        <div className="mt-2 flex flex-1 flex-col gap-2">
-                          {dayTasks.length === 0 ? <p className="my-auto text-center text-[0.6875rem] text-fg-3">마감 없음</p> : dayTasks.map((task) => {
-                            const due = parseDate(task.dueAt);
-                            const taskSignals = riskSignalsByTask.get(task.id) ?? [];
-                            const taskForecast = schedule.byTaskId[task.id];
-                            const risk = taskRisk(task, now, taskSignals, taskForecast?.slackHours);
-                            const assignees = task.assignmentIds.map((id) => assignmentLabel(aggregate, id));
-                            const isEditing = editingDraft?.taskId === task.id;
-                            return (
-                              <article key={task.id} className="min-w-0 rounded-xl border border-line bg-card p-2.5 text-xs">
-                                <div className="flex flex-wrap items-center gap-1">
-                                  <span className={cn("rounded-full border px-1.5 py-0.5 text-[0.625rem] font-bold", riskClass(risk))}>{scheduleRiskLabel(risk, bt)}</span>
-                                  <span className="text-[0.625rem] font-semibold text-fg-3">{processLabel(task.processKey, bt)} · {taskHours(task)}h</span>
-                                </div>
-                                <h4 title={task.title} className="production-schedule-task-title mt-1 text-xs font-bold text-fg">{task.title}</h4>
-                                <p className="mt-0.5 truncate text-[0.6875rem] text-fg-3">{assignees.length > 0 ? assignees.join(", ") : "담당 미지정"}</p>
-                                {taskSignals[0] ? <p className="mt-1 line-clamp-2 text-[0.6875rem] leading-4 text-warn">{taskSignals[0].summary}</p> : null}
-                                <div className="mt-2 grid gap-1.5">
-                                  <select aria-label={`${task.title} 상태`} value={task.status} disabled={!canEdit} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-panel px-2 text-[0.6875rem] font-semibold text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { status: event.target.value as ProductionTaskStatus }, `${task.title} 상태를 변경했습니다.`)}>{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{taskStatusLabel(status, bt)}</option>)}</select>
-                                  <input type="date" aria-label={`${task.title} 마감일`} value={due ? dateOnly(due) : ""} disabled={!canEdit} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-panel px-2 text-[0.6875rem] text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { dueAt: dueIsoFromDateInput(event.target.value) }, `${task.title} 마감일을 변경했습니다.`)} />
-                                </div>
-                                <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1">
-                                  <div className="flex items-center gap-1">
-                                    <button type="button" disabled={!canEdit} onClick={() => shiftTaskDueByDays(task, -1)} className="rounded border border-line bg-panel px-1.5 py-0.5 text-[0.625rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">-1일</button>
-                                    <button type="button" disabled={!canEdit} onClick={() => shiftTaskDueByDays(task, 1)} className="rounded border border-line bg-panel px-1.5 py-0.5 text-[0.625rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">+1일</button>
-                                  </div>
-                                  <button type="button" aria-expanded={isEditing} aria-label={`${task.title} 상세 편집`} onClick={() => (isEditing ? setEditingDraft(null) : openInlineEditor(task))} className="rounded border border-line bg-panel px-1.5 py-0.5 text-[0.625rem] font-semibold text-fg hover:bg-raised">{isEditing ? "닫기" : "상세 편집"}</button>
-                                </div>
-                                {renderInlineEditor(task)}
-                              </article>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              {calendarOutsideOrUndatedTasks.length > 0 ? (
-                <div className="rounded-2xl border border-line bg-panel p-3.5">
-                  <h4 className="text-xs font-bold text-fg">현재 2주 구간 외 또는 마감 미정 작업 ({calendarOutsideOrUndatedTasks.length}건)</h4>
-                  <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                    {calendarOutsideOrUndatedTasks.map((task) => {
-                      const due = parseDate(task.dueAt);
-                      const taskSignals = riskSignalsByTask.get(task.id) ?? [];
-                      const taskForecast = schedule.byTaskId[task.id];
-                      const risk = taskRisk(task, now, taskSignals, taskForecast?.slackHours);
-                      return (
-                        <article key={task.id} className="min-w-0 rounded-xl border border-line bg-card p-3 text-xs">
-                          <div className="flex flex-wrap items-center justify-between gap-1">
-                            <span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", riskClass(risk))}>{scheduleRiskLabel(risk, bt)}</span>
-                            <span className="text-[0.6875rem] text-fg-3">{due ? dateOnly(due) : "마감 미정"}</span>
-                          </div>
-                          <h5 title={task.title} className="production-schedule-task-title mt-1.5 text-xs font-bold text-fg">{task.title}</h5>
-                          <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
-                            <select aria-label={`${task.title} 상태`} value={task.status} disabled={!canEdit} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-panel px-2 text-[0.6875rem] font-semibold text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { status: event.target.value as ProductionTaskStatus }, `${task.title} 상태를 변경했습니다.`)}>{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{taskStatusLabel(status, bt)}</option>)}</select>
-                            <input type="date" aria-label={`${task.title} 마감일`} value={due ? dateOnly(due) : ""} disabled={!canEdit} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-panel px-2 text-[0.6875rem] text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { dueAt: dueIsoFromDateInput(event.target.value) }, `${task.title} 마감일을 변경했습니다.`)} />
-                          </div>
-                          {due ? <button type="button" onClick={() => jumpToTaskWindow(task)} className="mt-2 rounded-md border border-warn/40 bg-warn/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-warn hover:bg-warn/20">마감 구간으로 이동</button> : null}
-                        </article>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
+        <ScheduleCalendarView
+          days={days}
+          tasks={tasks}
+          calendarTasksByDateKey={calendarTasksByDateKey}
+          calendarOutsideOrUndatedTasks={calendarOutsideOrUndatedTasks}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          onOpenListViewForSelectedDate={() => setView("list")}
+          renderEmptyFilteredTasks={renderEmptyFilteredTasks}
+          shared={sharedViewProps}
+        />
       ) : null}
 
       {view === "list" ? (
-        <div className="space-y-3 p-4">
-          <div>
-            <h3 className="text-sm font-black text-fg">일정 상세 목록 ({tasks.length})</h3>
-            <p className="text-xs text-fg-3">긴 작업 제목, 선행 의존, 예측 위험 사유를 한눈에 읽고 상태와 마감일을 바로 편집합니다.</p>
-          </div>
-          {tasks.length === 0 ? renderEmptyFilteredTasks() : (
-            <div className="grid gap-3">
-              {tasks.map((task) => {
-                const due = parseDate(task.dueAt);
-                const taskSignals = riskSignalsByTask.get(task.id) ?? [];
-                const taskForecast = schedule.byTaskId[task.id];
-                const risk = taskRisk(task, now, taskSignals, taskForecast?.slackHours);
-                const assignees = task.assignmentIds.map((id) => assignmentLabel(aggregate, id));
-                const isEditing = editingDraft?.taskId === task.id;
-                return (
-                  <article key={task.id} className="min-w-0 rounded-2xl border border-line bg-panel p-4">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", statusClass(task.status))}>{taskStatusLabel(task.status, bt)}</span>
-                          <span className={cn("rounded-full border px-2 py-0.5 text-[0.625rem] font-bold", riskClass(risk))}>{scheduleRiskLabel(risk, bt)}</span>
-                          <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[0.625rem] font-semibold text-fg-2">{formatDueRelativeBadge(task, now)}</span>
-                          <span className="text-xs font-black text-fg">{taskHours(task)}h</span>
-                        </div>
-                        <h4 title={task.title} className="production-schedule-task-title mt-2 text-sm font-bold text-fg">{task.title}</h4>
-                        <p className="mt-1 text-xs text-fg-3">{processLabel(task.processKey, bt)} · {scopeLabel(task, bt)} · 담당: {assignees.length > 0 ? assignees.join(", ") : "담당 미지정"}{task.dependencyTaskIds.length > 0 ? ` · 선행 ${task.dependencyTaskIds.length}개` : " · 선행 없음"}</p>
-                        {taskSignals[0] ? <p className="mt-2 text-xs leading-5 text-warn">{taskSignals[0].summary}</p> : null}
-                      </div>
-                      <div className="flex w-full shrink-0 flex-col gap-2 lg:w-80">
-                        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                          <select aria-label={`${task.title} 상태`} value={task.status} disabled={!canEdit} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-xs font-semibold text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { status: event.target.value as ProductionTaskStatus }, `${task.title} 상태를 변경했습니다.`)}>{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{taskStatusLabel(status, bt)}</option>)}</select>
-                          <input type="date" aria-label={`${task.title} 마감일`} value={due ? dateOnly(due) : ""} disabled={!canEdit} className="min-h-8 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg outline-none disabled:opacity-60" onChange={(event) => saveTask(task, { dueAt: dueIsoFromDateInput(event.target.value) }, `${task.title} 마감일을 변경했습니다.`)} />
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-1.5">
-                          <div className="flex flex-wrap items-center gap-1">
-                            <button type="button" disabled={!canEdit} onClick={() => shiftTaskDueByDays(task, -1)} className="rounded-md border border-line bg-card px-2 py-0.5 text-[0.6875rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">-1일</button>
-                            <button type="button" disabled={!canEdit} onClick={() => shiftTaskDueByDays(task, 1)} className="rounded-md border border-line bg-card px-2 py-0.5 text-[0.6875rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">+1일</button>
-                            <button type="button" disabled={!canEdit} onClick={() => shiftTaskDueByDays(task, 7)} className="rounded-md border border-line bg-card px-2 py-0.5 text-[0.6875rem] font-semibold text-fg-2 hover:bg-raised disabled:opacity-50">+1주</button>
-                          </div>
-                          <button type="button" aria-expanded={isEditing} aria-label={`${task.title} 상세 편집`} onClick={() => (isEditing ? setEditingDraft(null) : openInlineEditor(task))} className="rounded-md border border-line bg-card px-2.5 py-0.5 text-[0.6875rem] font-semibold text-fg hover:bg-raised">{isEditing ? "편집 닫기" : "상세 편집"}</button>
-                        </div>
-                      </div>
-                    </div>
-                    {renderInlineEditor(task)}
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <ScheduleListView
+          tasks={tasks}
+          selectedDate={selectedDate}
+          onClearSelectedDate={() => setSelectedDate(null)}
+          renderEmptyFilteredTasks={renderEmptyFilteredTasks}
+          shared={sharedViewProps}
+        />
       ) : null}
 
       {view === "workload" ? (
