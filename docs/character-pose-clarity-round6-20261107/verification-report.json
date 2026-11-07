@@ -1,0 +1,689 @@
+{
+  "round": "character-pose-clarity-round6-20261107",
+  "executedAt": "2026-11-07T16:45:32.103Z",
+  "distinctionBetweenActualAndSynthetic": {
+    "actualAppStateDescription": "실제 상태(actual-unloaded): 브라우저 초기 진입 시 GPU 엔진 미선택·외부 GLB 미로드 상태이므로 capabilities.pose가 unavailable('캐릭터 소스가 아직 로드되지 않았습니다.')이며, 포즈/IK/손 포즈 조작은 정당하게 비활성(disabled=true)이다. 허위 포즈 실행 성공을 주장하지 않고 미로드 1문장 안내 + 1개 다음 행동(리그·패키지 선택) + 접힘 상세 사유 + 키보드 탭/초점 계약만 검증한다.",
+    "syntheticFixtureDescription": "합성 fixture(synthetic-fixture): composeCharacterLab + createMockEngineFactory를 통해 (1) 정적 메시(스켈레톤 없음), (2) 손상 스켈레톤(skeleton-cycle), (3) 활성 절차적 휴머노이드 리그(55본)를 각각 주입하여 3종 차단 메시지 구별과 실제 포즈 프리셋→관절 IK→Undo/Redo→내보내기→취소 키보드 여정을 검증한다."
+  },
+  "actualAppUnloadedVerification": {
+    "keyboardContract": {
+      "poseControlsLegitimatelyDisabledInUnloadedState": true,
+      "inspectorRovingTabIndex": {
+        "activeId": "cl-tab-pose",
+        "tabIndex": "0",
+        "zeroTabCount": 1
+      },
+      "nextActionEnterRestoresPackageTabFocus": {
+        "activeId": "cl-tab-package",
+        "packagePanelVisible": true
+      },
+      "detailsToggleByKeyboardEnter": true
+    },
+    "viewports": [
+      {
+        "viewport": "320x640-mobile",
+        "mode": "actual-unloaded",
+        "activeRig": "활성 리그: 모듈식 키트 (toonstudio-kit-v1 · 여성 베이스)",
+        "selectionSummary": "선택 상태: 리그 미로드 · 포즈 비활성",
+        "upfrontNotices": {
+          "unloadedNotice": "현재 캐릭터 소스가 아직 로드되지 않았거나 휴머노이드 포즈 리그가 준비되지 않아 관절·IK 조작이 비활성화되어 있으니 리그·패키지 선택 탭에서 소스를 확인하세요.",
+          "emptyMeshNotice": null,
+          "corruptedNotice": null,
+          "visibleCount": 1
+        },
+        "upfrontNextActions": [
+          {
+            "testId": "pose-switch-to-package-tab",
+            "text": "리그·패키지 선택"
+          }
+        ],
+        "upfrontNextActionCount": 1,
+        "detailsDisclosure": {
+          "present": true,
+          "openByDefault": false,
+          "summaryText": "비활성 상세 사유 보기",
+          "capabilityReason": "포즈·손 포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다.",
+          "corruptedDetail": null
+        },
+        "handSectionDuplicateUnavailableReasons": [],
+        "poseQuickChipDisabled": true,
+        "ikApplyDisabled": true,
+        "layout": {
+          "viewportRect": {
+            "width": 320,
+            "height": 205
+          },
+          "inspectorRect": {
+            "width": 320,
+            "height": 2059
+          },
+          "bothVisible": true
+        },
+        "detailsOpenAfterKeyboardEnter": true,
+        "screenshotCollapsed": "actual-unloaded-320x640-mobile.png",
+        "screenshotExpanded": "actual-unloaded-expanded-320x640-mobile.png"
+      },
+      {
+        "viewport": "390x844-mobile",
+        "mode": "actual-unloaded",
+        "activeRig": "활성 리그: 모듈식 키트 (toonstudio-kit-v1 · 여성 베이스)",
+        "selectionSummary": "선택 상태: 리그 미로드 · 포즈 비활성",
+        "upfrontNotices": {
+          "unloadedNotice": "현재 캐릭터 소스가 아직 로드되지 않았거나 휴머노이드 포즈 리그가 준비되지 않아 관절·IK 조작이 비활성화되어 있으니 리그·패키지 선택 탭에서 소스를 확인하세요.",
+          "emptyMeshNotice": null,
+          "corruptedNotice": null,
+          "visibleCount": 1
+        },
+        "upfrontNextActions": [
+          {
+            "testId": "pose-switch-to-package-tab",
+            "text": "리그·패키지 선택"
+          }
+        ],
+        "upfrontNextActionCount": 1,
+        "detailsDisclosure": {
+          "present": true,
+          "openByDefault": false,
+          "summaryText": "비활성 상세 사유 보기",
+          "capabilityReason": "포즈·손 포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다.",
+          "corruptedDetail": null
+        },
+        "handSectionDuplicateUnavailableReasons": [],
+        "poseQuickChipDisabled": true,
+        "ikApplyDisabled": true,
+        "layout": {
+          "viewportRect": {
+            "width": 390,
+            "height": 220
+          },
+          "inspectorRect": {
+            "width": 390,
+            "height": 1733
+          },
+          "bothVisible": true
+        },
+        "detailsOpenAfterKeyboardEnter": true,
+        "screenshotCollapsed": "actual-unloaded-390x844-mobile.png"
+      },
+      {
+        "viewport": "768x1024-tablet",
+        "mode": "actual-unloaded",
+        "activeRig": "활성 리그: 모듈식 키트 (toonstudio-kit-v1 · 여성 베이스)",
+        "selectionSummary": "선택 상태: 리그 미로드 · 포즈 비활성",
+        "upfrontNotices": {
+          "unloadedNotice": "현재 캐릭터 소스가 아직 로드되지 않았거나 휴머노이드 포즈 리그가 준비되지 않아 관절·IK 조작이 비활성화되어 있으니 리그·패키지 선택 탭에서 소스를 확인하세요.",
+          "emptyMeshNotice": null,
+          "corruptedNotice": null,
+          "visibleCount": 1
+        },
+        "upfrontNextActions": [
+          {
+            "testId": "pose-switch-to-package-tab",
+            "text": "리그·패키지 선택"
+          }
+        ],
+        "upfrontNextActionCount": 1,
+        "detailsDisclosure": {
+          "present": true,
+          "openByDefault": false,
+          "summaryText": "비활성 상세 사유 보기",
+          "capabilityReason": "포즈·손 포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다.",
+          "corruptedDetail": null
+        },
+        "handSectionDuplicateUnavailableReasons": [],
+        "poseQuickChipDisabled": true,
+        "ikApplyDisabled": true,
+        "layout": {
+          "viewportRect": {
+            "width": 768,
+            "height": 220
+          },
+          "inspectorRect": {
+            "width": 768,
+            "height": 1340
+          },
+          "bothVisible": true
+        },
+        "detailsOpenAfterKeyboardEnter": true,
+        "screenshotCollapsed": "actual-unloaded-768x1024-tablet.png"
+      },
+      {
+        "viewport": "1440x900-desktop",
+        "mode": "actual-unloaded",
+        "activeRig": "활성 리그: 모듈식 키트 (toonstudio-kit-v1 · 여성 베이스)",
+        "selectionSummary": "선택 상태: 리그 미로드 · 포즈 비활성",
+        "upfrontNotices": {
+          "unloadedNotice": "현재 캐릭터 소스가 아직 로드되지 않았거나 휴머노이드 포즈 리그가 준비되지 않아 관절·IK 조작이 비활성화되어 있으니 리그·패키지 선택 탭에서 소스를 확인하세요.",
+          "emptyMeshNotice": null,
+          "corruptedNotice": null,
+          "visibleCount": 1
+        },
+        "upfrontNextActions": [
+          {
+            "testId": "pose-switch-to-package-tab",
+            "text": "리그·패키지 선택"
+          }
+        ],
+        "upfrontNextActionCount": 1,
+        "detailsDisclosure": {
+          "present": true,
+          "openByDefault": false,
+          "summaryText": "비활성 상세 사유 보기",
+          "capabilityReason": "포즈·손 포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다.",
+          "corruptedDetail": null
+        },
+        "handSectionDuplicateUnavailableReasons": [],
+        "poseQuickChipDisabled": true,
+        "ikApplyDisabled": true,
+        "layout": {
+          "viewportRect": {
+            "width": 780,
+            "height": 692
+          },
+          "inspectorRect": {
+            "width": 380,
+            "height": 692
+          },
+          "bothVisible": true
+        },
+        "detailsOpenAfterKeyboardEnter": true,
+        "screenshotCollapsed": "actual-unloaded-1440x900-desktop.png",
+        "screenshotExpanded": "actual-unloaded-expanded-1440x900-desktop.png"
+      },
+      {
+        "viewport": "1440x900-zoom200",
+        "mode": "actual-unloaded",
+        "activeRig": "활성 리그: 모듈식 키트 (toonstudio-kit-v1 · 여성 베이스)",
+        "selectionSummary": "선택 상태: 리그 미로드 · 포즈 비활성",
+        "upfrontNotices": {
+          "unloadedNotice": "현재 캐릭터 소스가 아직 로드되지 않았거나 휴머노이드 포즈 리그가 준비되지 않아 관절·IK 조작이 비활성화되어 있으니 리그·패키지 선택 탭에서 소스를 확인하세요.",
+          "emptyMeshNotice": null,
+          "corruptedNotice": null,
+          "visibleCount": 1
+        },
+        "upfrontNextActions": [
+          {
+            "testId": "pose-switch-to-package-tab",
+            "text": "리그·패키지 선택"
+          }
+        ],
+        "upfrontNextActionCount": 1,
+        "detailsDisclosure": {
+          "present": true,
+          "openByDefault": false,
+          "summaryText": "비활성 상세 사유 보기",
+          "capabilityReason": "포즈·손 포즈 슬롯 미지원: 캐릭터 소스가 아직 로드되지 않았습니다.",
+          "corruptedDetail": null
+        },
+        "handSectionDuplicateUnavailableReasons": [],
+        "poseQuickChipDisabled": true,
+        "ikApplyDisabled": true,
+        "layout": {
+          "viewportRect": {
+            "width": 640,
+            "height": 897
+          },
+          "inspectorRect": {
+            "width": 760,
+            "height": 897
+          },
+          "bothVisible": true
+        },
+        "detailsOpenAfterKeyboardEnter": true,
+        "screenshotCollapsed": "actual-unloaded-1440x900-zoom200.png"
+      }
+    ]
+  },
+  "syntheticFixtureVerification": {
+    "blockedStateMatrixByViewport": [
+      {
+        "viewport": "320x640-mobile",
+        "staticMesh": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 스켈레톤 없음(정적 메시)",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": "스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없으니 리그·패키지 선택 탭에서 리깅된 소스를 선택하세요.",
+            "corruptedNotice": null,
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": "포즈·손 포즈 슬롯 미지원: 패키지에 휴머노이드 본이 없습니다(스켈레톤 없음).",
+            "corruptedDetail": null
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 320,
+              "height": 205
+            },
+            "inspectorRect": {
+              "width": 320,
+              "height": 2024
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-static-mesh-320x640-mobile.png"
+        },
+        "corruptedSkeleton": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 손상된 스켈레톤 차단됨",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": null,
+            "corruptedNotice": "손상된 스켈레톤 데이터([skeleton-cycle])가 감지되어 포즈 조작이 차단되었으니 리그·패키지 선택 탭에서 정상 소스로 교체하세요.",
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": null,
+            "corruptedDetail": "상세 진단: 스켈레톤 본 \"hips\"의 부모 관계에 순환이 있습니다."
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 320,
+              "height": 205
+            },
+            "inspectorRect": {
+              "width": 320,
+              "height": 2006
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-corrupted-320x640-mobile.png"
+        }
+      },
+      {
+        "viewport": "390x844-mobile",
+        "staticMesh": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 스켈레톤 없음(정적 메시)",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": "스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없으니 리그·패키지 선택 탭에서 리깅된 소스를 선택하세요.",
+            "corruptedNotice": null,
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": "포즈·손 포즈 슬롯 미지원: 패키지에 휴머노이드 본이 없습니다(스켈레톤 없음).",
+            "corruptedDetail": null
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 390,
+              "height": 220
+            },
+            "inspectorRect": {
+              "width": 390,
+              "height": 1723
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-static-mesh-390x844-mobile.png"
+        },
+        "corruptedSkeleton": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 손상된 스켈레톤 차단됨",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": null,
+            "corruptedNotice": "손상된 스켈레톤 데이터([skeleton-cycle])가 감지되어 포즈 조작이 차단되었으니 리그·패키지 선택 탭에서 정상 소스로 교체하세요.",
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": null,
+            "corruptedDetail": "상세 진단: 스켈레톤 본 \"hips\"의 부모 관계에 순환이 있습니다."
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 390,
+              "height": 220
+            },
+            "inspectorRect": {
+              "width": 390,
+              "height": 1687
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-corrupted-390x844-mobile.png"
+        }
+      },
+      {
+        "viewport": "768x1024-tablet",
+        "staticMesh": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 스켈레톤 없음(정적 메시)",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": "스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없으니 리그·패키지 선택 탭에서 리깅된 소스를 선택하세요.",
+            "corruptedNotice": null,
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": "포즈·손 포즈 슬롯 미지원: 패키지에 휴머노이드 본이 없습니다(스켈레톤 없음).",
+            "corruptedDetail": null
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 768,
+              "height": 220
+            },
+            "inspectorRect": {
+              "width": 768,
+              "height": 1340
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-static-mesh-768x1024-tablet.png"
+        },
+        "corruptedSkeleton": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 손상된 스켈레톤 차단됨",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": null,
+            "corruptedNotice": "손상된 스켈레톤 데이터([skeleton-cycle])가 감지되어 포즈 조작이 차단되었으니 리그·패키지 선택 탭에서 정상 소스로 교체하세요.",
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": null,
+            "corruptedDetail": "상세 진단: 스켈레톤 본 \"hips\"의 부모 관계에 순환이 있습니다."
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 768,
+              "height": 220
+            },
+            "inspectorRect": {
+              "width": 768,
+              "height": 1304
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-corrupted-768x1024-tablet.png"
+        }
+      },
+      {
+        "viewport": "1440x900-desktop",
+        "staticMesh": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 스켈레톤 없음(정적 메시)",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": "스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없으니 리그·패키지 선택 탭에서 리깅된 소스를 선택하세요.",
+            "corruptedNotice": null,
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": "포즈·손 포즈 슬롯 미지원: 패키지에 휴머노이드 본이 없습니다(스켈레톤 없음).",
+            "corruptedDetail": null
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 780,
+              "height": 638
+            },
+            "inspectorRect": {
+              "width": 380,
+              "height": 638
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-static-mesh-1440x900-desktop.png"
+        },
+        "corruptedSkeleton": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 손상된 스켈레톤 차단됨",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": null,
+            "corruptedNotice": "손상된 스켈레톤 데이터([skeleton-cycle])가 감지되어 포즈 조작이 차단되었으니 리그·패키지 선택 탭에서 정상 소스로 교체하세요.",
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": null,
+            "corruptedDetail": "상세 진단: 스켈레톤 본 \"hips\"의 부모 관계에 순환이 있습니다."
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 780,
+              "height": 664
+            },
+            "inspectorRect": {
+              "width": 380,
+              "height": 664
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-corrupted-1440x900-desktop.png"
+        }
+      },
+      {
+        "viewport": "1440x900-zoom200",
+        "staticMesh": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 스켈레톤 없음(정적 메시)",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": "스켈레톤이 없는 정적 메시이거나 포즈 본이 비어 있어 관절 회전·IK를 조작할 수 없으니 리그·패키지 선택 탭에서 리깅된 소스를 선택하세요.",
+            "corruptedNotice": null,
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": "포즈·손 포즈 슬롯 미지원: 패키지에 휴머노이드 본이 없습니다(스켈레톤 없음).",
+            "corruptedDetail": null
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 640,
+              "height": 789
+            },
+            "inspectorRect": {
+              "width": 760,
+              "height": 789
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-static-mesh-1440x900-zoom200.png"
+        },
+        "corruptedSkeleton": {
+          "activeRig": "활성 리그: 절차적 휴머노이드",
+          "selectionSummary": "선택 상태: 손상된 스켈레톤 차단됨",
+          "upfrontNotices": {
+            "unloadedNotice": null,
+            "emptyMeshNotice": null,
+            "corruptedNotice": "손상된 스켈레톤 데이터([skeleton-cycle])가 감지되어 포즈 조작이 차단되었으니 리그·패키지 선택 탭에서 정상 소스로 교체하세요.",
+            "visibleCount": 1
+          },
+          "upfrontNextActions": [
+            {
+              "testId": "pose-switch-to-package-tab",
+              "text": "리그·패키지 선택"
+            }
+          ],
+          "upfrontNextActionCount": 1,
+          "detailsDisclosure": {
+            "present": true,
+            "openByDefault": false,
+            "summaryText": "비활성 상세 사유 보기",
+            "capabilityReason": null,
+            "corruptedDetail": "상세 진단: 스켈레톤 본 \"hips\"의 부모 관계에 순환이 있습니다."
+          },
+          "handSectionDuplicateUnavailableReasons": [],
+          "poseQuickChipDisabled": true,
+          "ikApplyDisabled": true,
+          "layout": {
+            "viewportRect": {
+              "width": 640,
+              "height": 841
+            },
+            "inspectorRect": {
+              "width": 760,
+              "height": 841
+            },
+            "bothVisible": true
+          },
+          "screenshot": "synthetic-corrupted-1440x900-zoom200.png"
+        }
+      }
+    ],
+    "activeRigKeyboardJourney": [
+      {
+        "step": "1-pose-preset-select",
+        "mode": "synthetic-active-rig",
+        "upfrontActionButtonsWhenActive": [
+          {
+            "testId": "pose-switch-to-package-tab",
+            "text": "리그·패키지 선택"
+          },
+          {
+            "testId": "pose-switch-to-export-tab",
+            "text": "내보내기·보존"
+          }
+        ],
+        "selectionSummaryBefore": "선택 상태: 기본 자세(Rest · 프리셋: A 포즈)",
+        "selectionSummaryAfter": "선택 상태: 허리에 손 (편집된 본 8개)"
+      },
+      {
+        "step": "2-joint-select-and-ik-apply",
+        "mode": "synthetic-active-rig",
+        "joint": "leftLeg",
+        "nudgeAction": "위로 +10cm",
+        "selectionSummaryAfter": "선택 상태: 허리에 손 (편집된 본 10개)",
+        "ikStatus": "왼발 목표 도달 (오차 0.0 mm)"
+      },
+      {
+        "step": "3-keyboard-undo-redo",
+        "mode": "synthetic-active-rig",
+        "summaryAfterUndo": "선택 상태: 허리에 손 (편집된 본 8개)",
+        "summaryAfterRedo": "선택 상태: 허리에 손 (편집된 본 10개)",
+        "undoRestoredPresetCount": true,
+        "redoRestoredIkCount": true
+      },
+      {
+        "step": "4-export-and-cancel-preservation",
+        "mode": "synthetic-active-rig",
+        "focusRestoredToExportTabId": "cl-tab-export",
+        "exportActivePoseBeforeCancel": "실험 포즈: 허리에 손 (본 10개 · 손 relaxed) · 레시피 #6f3f68fc",
+        "exportActivePoseAfterCancel": "실험 포즈: 허리에 손 (본 10개 · 손 relaxed) · 레시피 #6f3f68fc",
+        "exportReceipt": "저장됨: character-6f3f68fc-20261107.character.json (4,550 B · 4 ms)",
+        "preservedOnCancel": true
+      }
+    ]
+  }
+}
