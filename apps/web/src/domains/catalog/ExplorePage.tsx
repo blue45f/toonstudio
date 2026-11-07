@@ -1,25 +1,10 @@
 import { useFx } from "@toonstudio/core/fx";
-import {
-  Compass,
-  LayoutGrid,
-  RefreshCw,
-  RotateCcw,
-  Rows3,
-  Search,
-  Shuffle,
-  SlidersHorizontal,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { Compass, LayoutGrid, RefreshCw, RotateCcw, Rows3, Search, Shuffle, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import type { SortKey } from "@/shared/lib/search";
-import type {
-  PlatformId,
-  Title,
-  WorkType,
-} from "@/shared/lib/types";
+import type { PlatformId, Title, WorkType } from "@/shared/lib/types";
 
 import { AdSlot } from "@/shared/components/ad-slot";
 import { DiscoveryWorkspaceNav } from "@/shared/components/discovery-workspace-nav";
@@ -32,34 +17,13 @@ import { TitleCard } from "@/shared/components/title-card";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 
 import { ExploreReaDirectoryBar } from "./ExploreReaDirectoryBar";
-import {
-  filterTitlesByLocalQuery,
-  useLocalCatalogFallback,
-} from "./local-catalog-fallback";
-import {
-  genreBorder,
-  genreColor,
-  genreTextColor,
-  genreTint,
-  spectrumGradient,
-} from "@/shared/lib/genre-color";
-import {
-  catalogDiscoveryHref,
-  parseCatalogDiscoveryState,
-  writeCatalogDiscoveryState,
-} from "@/shared/lib/catalog-discovery-state";
-import {
-  formatI18nTemplate,
-  useBilingual,
-  useBilingualI18nRevision,
-} from "@/shared/lib/i18n-bilingual-copy";
+import { filterTitlesByLocalQuery, useLocalCatalogFallback } from "./local-catalog-fallback";
+import { genreBorder, genreColor, genreTextColor, genreTint, spectrumGradient } from "@/shared/lib/genre-color";
+import { catalogDiscoveryHref, parseCatalogDiscoveryState, writeCatalogDiscoveryState } from "@/shared/lib/catalog-discovery-state";
+import { formatI18nTemplate, useBilingual, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { useSavedTitleIds } from "@/shared/lib/store";
 import { GENRES, TYPE_LABEL } from "@/shared/lib/taxonomy";
-import {
-  applyClientOnlyFilters,
-  countActiveTitleFilters,
-  type TitleFilterState,
-} from "@/shared/lib/title-filters";
+import { applyClientOnlyFilters, countActiveTitleFilters, type TitleFilterState } from "@/shared/lib/title-filters";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import { ErrorState } from "@/shared/components/feedback/error-state";
@@ -83,19 +47,7 @@ const TYPES: { value: WorkType | "all"; label: readonly [string, string] }[] = [
   { value: "webnovel", label: [TYPE_LABEL.webnovel, "Web novels"] },
 ];
 
-const FACETS = [
-  "saved",
-  "type",
-  "genre",
-  "status",
-  "platform",
-  "age",
-  "pricing",
-  "minRating",
-  "year",
-  "tag",
-  "adapted",
-] as const;
+const FACETS = ["saved", "type", "genre", "status", "platform", "age", "pricing", "minRating", "year", "tag", "adapted"] as const;
 
 interface PlatformCoverage {
   id: PlatformId;
@@ -106,12 +58,7 @@ interface PlatformCoverage {
 }
 
 interface ExploreResponse {
-  filters: {
-    genre?: string;
-    tag?: string;
-    type?: WorkType;
-    sort: SortKey;
-  };
+  filters: { genre?: string; tag?: string; type?: WorkType; sort: SortKey };
   current: ExploreParams;
   results: Title[];
   shown: Title[];
@@ -120,10 +67,7 @@ interface ExploreResponse {
   pageSize: number;
   tags: { tag: string; count: number }[];
   genres: string[];
-  catalog?: {
-    platformCoverage?: PlatformCoverage[];
-    filteredPlatformCoverage?: PlatformCoverage[];
-  };
+  catalog?: { platformCoverage?: PlatformCoverage[]; filteredPlatformCoverage?: PlatformCoverage[] };
   generatedAt: string;
   source: string;
 }
@@ -136,10 +80,28 @@ export function ExplorePage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
-  const [localQuery, setLocalQuery] = useState(() => searchParams.get("q") ?? "");
+  const urlLocalQuery = searchParams.get("q") ?? "";
+  const [localQuery, setLocalQuery] = useState(() => urlLocalQuery);
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [emptyArtFailed, setEmptyArtFailed] = useState(false);
   const fx = useFx();
+
+  useEffect(() => {
+    setLocalQuery(urlLocalQuery);
+  }, [urlLocalQuery]);
+
+  const updateLocalQuery = (nextValue: string) => {
+    setLocalQuery(nextValue);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (nextValue.trim()) next.set("q", nextValue);
+        else next.delete("q");
+        return next;
+      },
+      { replace: true, preventScrollReset: true },
+    );
+  };
 
   const discoveryState = useMemo(
     () => parseCatalogDiscoveryState(searchParams, { defaultSort: "popular" }),
@@ -171,6 +133,8 @@ export function ExplorePage() {
       includeView: false,
       includeRecommendation: false,
     });
+    if (localQuery.trim()) nextParams.set("q", localQuery);
+    else nextParams.delete("q");
     const nextShow = override && "show" in override ? override.show : null;
     if (nextShow) nextParams.set("show", nextShow);
     else nextParams.delete("show");
@@ -186,8 +150,10 @@ export function ExplorePage() {
       show: String(showCount + pageSize),
     });
 
-  // 빌드된 서버 쿼리(현재 URL 그대로 사용). useApiResource가 키스트로크당 네트워크를 보장.
-  const query = searchParams.toString();
+  // 빌드된 서버 쿼리(로컬 결과 내 필터 q는 제외하여 키스트로크당 불필요한 API 재호출 방지).
+  const serverSearchParams = new URLSearchParams(searchParams);
+  serverSearchParams.delete("q");
+  const query = serverSearchParams.toString();
   const apiUrl = query ? `/api/explore?${query}` : "/api/explore";
   const rawResource = useApiResource<ExploreResponse>(
     apiUrl,
@@ -428,7 +394,7 @@ export function ExplorePage() {
               <input
                 type="search"
                 value={localQuery}
-                onChange={(event) => setLocalQuery(event.target.value)}
+                onChange={(event) => updateLocalQuery(event.target.value)}
                 placeholder={bt("결과 내 제목·작가·태그 필터…", "Filter by title, author, tag…")}
                 aria-label={bt("결과 내 제목·작가·태그 필터", "Filter by title, author, tag")}
                 className="min-h-11 w-full rounded-lg border border-line bg-card pl-9 pr-9 text-sm text-fg placeholder:text-fg-3 focus:border-accent focus:outline-none"
@@ -436,7 +402,7 @@ export function ExplorePage() {
               {trimmedLocalQuery.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setLocalQuery("")}
+                  onClick={() => updateLocalQuery("")}
                   aria-label={bt("검색어 지우기", "Clear search query")}
                   className="absolute right-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-fg-3 transition-colors hover:text-fg"
                 >
@@ -718,7 +684,7 @@ export function ExplorePage() {
                 ? bt("필터를 조금 넓히거나 초기화해 보세요.", "Try widening or resetting the filters.")
                 : bt("다른 장르나 태그로 탐색해 보세요.", "Try exploring other genres or tags.")}
             </p>
-            {hasFilter && (
+            {hasFilter ? (
               <Link
                 href="/explore"
                 onClick={() => setLocalQuery("")}
@@ -727,6 +693,23 @@ export function ExplorePage() {
                 <RotateCcw size={14} />
                 {bt("필터 초기화", "Reset filters")}
               </Link>
+            ) : (
+              <div className="relative mt-4 flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={reload}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-4 py-2 text-sm font-medium text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                >
+                  <RefreshCw size={14} />
+                  {bt("다시 시도", "Try again")}
+                </button>
+                <Link
+                  href="/discover"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft/60 px-4 py-2 text-sm font-medium text-accent transition-colors hover:border-accent"
+                >
+                  {bt("작품 탐색 허브로 이동", "Go to Discover hub")}
+                </Link>
+              </div>
             )}
           </div>
         )}

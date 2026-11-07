@@ -2,6 +2,7 @@ import { ChevronDown, Compass, Search, SlidersHorizontal, Sparkles } from "lucid
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { useInstallLocalSearchBridge } from "./local-catalog-fallback";
 import "./search-page-layout.css";
 
 import { sitePageHeaderArtFor, sitePageHeaderArtSource } from "@/domains/legal/public/site-page-header-art";
@@ -27,6 +28,7 @@ const SEARCH_MODES = [
 ] as const;
 
 export function SearchPage() {
+  useInstallLocalSearchBridge();
   const [searchParams] = useSearchParams();
   const state = parseCatalogDiscoveryState(searchParams);
   const freeOnly =

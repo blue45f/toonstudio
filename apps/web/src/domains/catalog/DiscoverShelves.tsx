@@ -2,6 +2,7 @@ import { ErrorState } from "@/shared/components/feedback/error-state";
 import { Rail, Section } from "@/shared/components/section";
 import { TitleCard } from "@/shared/components/title-card";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import Link from "@/shared/navigation/router-link";
 
 import { buildDiscoverShelves, type DiscoverHomeSnapshot } from "./discover-home";
 import { discoverShelfCopies } from "./discover-shelf-copy";
@@ -64,11 +65,47 @@ export function DiscoverShelves({ snapshot, loading, error, onRetry }: DiscoverS
     );
   }
 
+  const shelves = buildDiscoverShelves(snapshot);
+  if (shelves.length === 0) {
+    return (
+      <div
+        role="status"
+        data-testid="discover-shelves-empty"
+        className="rounded-2xl border border-dashed border-line bg-card/60 p-8 text-center"
+      >
+        <p className="text-sm font-semibold text-fg">
+          {bt("현재 표시할 추천 작품이 없어요.", "No story picks are available right now.")}
+        </p>
+        <p className="mt-1 text-xs text-fg-3">
+          {bt(
+            "카탈로그를 다시 불러오거나 조건별 탐색에서 전체 작품을 둘러보세요.",
+            "Reload the catalog or browse all stories in Explore.",
+          )}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-4 text-xs font-bold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+          >
+            {bt("다시 시도", "Try again")}
+          </button>
+          <Link
+            href="/explore"
+            className="inline-flex min-h-11 items-center rounded-xl border border-accent/40 bg-accent-soft/60 px-4 text-xs font-bold text-accent transition-colors hover:border-accent"
+          >
+            {bt("조건으로 작품 찾기", "Explore by filters")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const copies = discoverShelfCopies(bt, snapshot);
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10" data-discover-shelves="">
-      {buildDiscoverShelves(snapshot).map((shelf) => {
+      {shelves.map((shelf) => {
         const copy = copies[shelf.id];
         return (
           <Section
