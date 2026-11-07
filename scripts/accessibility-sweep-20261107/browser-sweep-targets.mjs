@@ -1,0 +1,68 @@
+/** 브라우저 감사의 뷰포트·대표 경로 정본. 실행·저장·브라우저 부작용은 없다. */
+export const SWEEP_VIEWPORTS = [
+  {
+    id: "mobile-320",
+    label: "모바일 320×844",
+    width: 320,
+    height: 844,
+    isMobile: true,
+    zoom: 1,
+    reducedMotion: "no-preference",
+  },
+  {
+    id: "mobile-390",
+    label: "모바일 390×844",
+    width: 390,
+    height: 844,
+    isMobile: true,
+    zoom: 1,
+    reducedMotion: "no-preference",
+  },
+  {
+    id: "tablet-768",
+    label: "태블릿 768×1024",
+    width: 768,
+    height: 1024,
+    isMobile: false,
+    zoom: 1,
+    reducedMotion: "no-preference",
+  },
+  {
+    id: "pc-1440",
+    label: "PC 1440×900",
+    width: 1440,
+    height: 900,
+    isMobile: false,
+    zoom: 1,
+    reducedMotion: "no-preference",
+  },
+  {
+    id: "pc-1440-zoom-200",
+    label: "PC 1440×900 (200% 확대)",
+    width: 1440,
+    height: 900,
+    isMobile: false,
+    zoom: 2,
+    reducedMotion: "no-preference",
+  },
+  {
+    id: "pc-1440-reduced-motion",
+    label: "PC 1440×900 (reduced-motion: reduce)",
+    width: 1440,
+    height: 900,
+    isMobile: false,
+    zoom: 1,
+    reducedMotion: "reduce",
+  },
+];
+
+export const REPRESENTATIVE_ROUTES = [
+  { path: "/", domain: "home", label: "홈 대시보드" },
+  { path: "/discover", domain: "discover", label: "작품 탐색" },
+  { path: "/community", domain: "community", label: "커뮤니티 광장" },
+  { path: "/learn", domain: "learn", label: "배우기 허브" },
+  { path: "/accessibility", domain: "legal", label: "접근성 안내 및 조율실" },
+  { path: "/settings", domain: "account", label: "계정 및 화면 설정" },
+  { path: "/studio", domain: "studio-hub", label: "스튜디오 워크스페이스" },
+  { path: "/admin/overview", domain: "admin", label: "관리자 개요(게스트 가드)" },
+];

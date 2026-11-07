@@ -10,6 +10,10 @@ import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { chromium } from "playwright";
 
+import { REPRESENTATIVE_ROUTES, SWEEP_VIEWPORTS } from "./browser-sweep-targets.mjs";
+
+export { REPRESENTATIVE_ROUTES, SWEEP_VIEWPORTS };
+
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../..");
@@ -25,74 +29,6 @@ const REPORT_PATH = path.join(
 const DEFAULT_PORT = Number(process.env.A11Y_SWEEP_PORT || 5288);
 const BASE_URL =
   process.env.A11Y_SWEEP_BASE_URL || `http://127.0.0.1:${DEFAULT_PORT}`;
-
-export const SWEEP_VIEWPORTS = [
-  {
-    id: "mobile-320",
-    label: "모바일 320×844",
-    width: 320,
-    height: 844,
-    isMobile: true,
-    zoom: 1,
-    reducedMotion: "no-preference",
-  },
-  {
-    id: "mobile-390",
-    label: "모바일 390×844",
-    width: 390,
-    height: 844,
-    isMobile: true,
-    zoom: 1,
-    reducedMotion: "no-preference",
-  },
-  {
-    id: "tablet-768",
-    label: "태블릿 768×1024",
-    width: 768,
-    height: 1024,
-    isMobile: false,
-    zoom: 1,
-    reducedMotion: "no-preference",
-  },
-  {
-    id: "pc-1440",
-    label: "PC 1440×900",
-    width: 1440,
-    height: 900,
-    isMobile: false,
-    zoom: 1,
-    reducedMotion: "no-preference",
-  },
-  {
-    id: "pc-1440-zoom-200",
-    label: "PC 1440×900 (200% 확대)",
-    width: 1440,
-    height: 900,
-    isMobile: false,
-    zoom: 2,
-    reducedMotion: "no-preference",
-  },
-  {
-    id: "pc-1440-reduced-motion",
-    label: "PC 1440×900 (reduced-motion: reduce)",
-    width: 1440,
-    height: 900,
-    isMobile: false,
-    zoom: 1,
-    reducedMotion: "reduce",
-  },
-];
-
-export const REPRESENTATIVE_ROUTES = [
-  { path: "/", domain: "home", label: "홈 대시보드" },
-  { path: "/discover", domain: "discover", label: "작품 탐색" },
-  { path: "/community", domain: "community", label: "커뮤니티 광장" },
-  { path: "/learn", domain: "learn", label: "배우기 허브" },
-  { path: "/accessibility", domain: "legal", label: "접근성 안내 및 조율실" },
-  { path: "/settings", domain: "account", label: "계정 및 화면 설정" },
-  { path: "/studio", domain: "studio-hub", label: "스튜디오 워크스페이스" },
-  { path: "/admin/overview", domain: "admin", label: "관리자 개요(게스트 가드)" },
-];
 
 function resolveChromiumExecutable() {
   const candidates = [

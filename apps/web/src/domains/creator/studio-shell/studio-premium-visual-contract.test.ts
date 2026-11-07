@@ -8,6 +8,10 @@ const canvasWelcome = readFileSync(
   new URL("../canvas/StudioCinematicCanvasWelcome.tsx", import.meta.url),
   "utf8",
 );
+const canvasMethods = readFileSync(
+  new URL("../canvas/StudioCanvasStartMethods.tsx", import.meta.url),
+  "utf8",
+);
 const canvasCss = readFileSync(
   new URL("../studio-cuttoon-editor/studio-cinematic-canvas-v4.css", import.meta.url),
   "utf8",
@@ -85,8 +89,11 @@ describe("ToonStudio premium visual flow contract", () => {
   });
 
   it("turns the blank canvas into a mode and scene-led webtoon start flow", () => {
-    expect(canvasWelcome.match(/data-canvas-start-mode/gu)).toHaveLength(1);
-    expect(canvasWelcome.match(/id: "(romance|sf|action|fantasy|daily|horror)"/gu)).toHaveLength(6);
+    // 접힌 입구에서 지연 로딩한 선택지에도 모든 모드·장면이 보존되어야 한다.
+    expect(canvasWelcome).toContain('import("./StudioCanvasStartMethods")');
+    expect(canvasWelcome).toContain("<StartMethodsBoundary");
+    expect(canvasMethods.match(/data-canvas-start-mode/gu)).toHaveLength(1);
+    expect(canvasMethods.match(/id: "(romance|sf|action|fantasy|daily|horror)"/gu)).toHaveLength(6);
     expect(canvasStartDockCss).toContain(".studio-cinematic-canvas-welcome__scene-strip");
     expect(canvasStartDockCss).toContain("body:has([data-studio-cinematic-canvas-welcome");
   });

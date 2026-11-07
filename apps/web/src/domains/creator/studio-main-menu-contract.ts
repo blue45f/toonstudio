@@ -186,16 +186,12 @@ export interface StudioMainMenuUiActions extends StudioMainMenuSurfaceActions {
   /** §15.3 Brush ▸ Natural Media — the hokusai natural-media engines section. */
   openNaturalMediaBrushes: () => unknown;
 }
-/** What every per-group item module receives. Read-only projection of the host. */
-export interface StudioMainMenuItemContext {
-  readonly state: StudioMainMenuBuilderState;
-  readonly editor: StudioMainMenuEditorActions;
-  readonly ui: StudioMainMenuUiActions;
-}
-
 export interface BuildStudioMainMenuGroupsInput {
   state: StudioMainMenuBuilderState;
   editor: StudioMainMenuEditorActions;
   ui: StudioMainMenuUiActions;
   t: (key: string, fallbackText?: string) => string;
 }
+
+/** 개별 메뉴는 호스트 입력에서 번역 함수를 뺀 읽기 전용 projection만 받는다. */
+export type StudioMainMenuItemContext = Readonly<Pick<BuildStudioMainMenuGroupsInput, "state" | "editor" | "ui">>;

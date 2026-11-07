@@ -98,11 +98,13 @@ registerI18nLocaleEntries("en", {
 // ── studio-project-archive-orchestration-runtime.ts
 registerI18nLocaleEntries("ko", {
   "studio.frozenStatus6.archiveOrch.jsonExportFailed": "프로젝트 JSON을 만들지 못했습니다. 대용량 원본 자산은 무결성 archive를 이용해 주세요.",
+  "studio.frozenStatus6.archiveOrch.drawingChanged": "그림이 바뀌어 이전 내용의 백업을 멈췄어요. 다시 시도해 주세요.",
   "studio.frozenStatus6.archiveOrch.createFailed": "프로젝트 archive를 만들지 못했어요.",
   "studio.frozenStatus6.archiveOrch.readFailed": "프로젝트 archive를 읽지 못했어요.",
 });
 registerI18nLocaleEntries("en", {
   "studio.frozenStatus6.archiveOrch.jsonExportFailed": "Could not create the project JSON. For large original assets, use an integrity archive.",
+  "studio.frozenStatus6.archiveOrch.drawingChanged": "The drawing changed, so the backup of its previous content was stopped. Please try again.",
   "studio.frozenStatus6.archiveOrch.createFailed": "Could not create the project archive.",
   "studio.frozenStatus6.archiveOrch.readFailed": "Could not read the project archive.",
 });

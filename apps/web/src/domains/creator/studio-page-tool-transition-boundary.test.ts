@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import { readStudioCanvasViewportStack } from "./canvas/read-studio-canvas-viewport-stack";
@@ -32,6 +33,61 @@ const companionToolExecutorSource = readFileSync(
   new URL("./studio-companion-tool-command-executor.ts", import.meta.url),
   "utf8",
 );
+
+/** 메뉴 콜백의 문법이 아니라 실행문·순서·인자를 고정한다. 주석 속 호출은 인정하지 않는다. */
+function assertTopMenuDrawingTransitions(source: string): void {
+  const start = source.indexOf("const studioMainMenuGroups = useMemo(");
+  const end = source.indexOf("const quickActionsDisabledActions = useMemo(", start);
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(end).toBeGreaterThan(start);
+  const syntax = ts.createSourceFile("menu.tsx", source.slice(start, end), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const builders: ts.CallExpression[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "buildStudioMainMenuGroups") {
+      builders.push(node);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(syntax);
+  expect(builders).toHaveLength(1);
+  const input = builders[0]?.arguments[0];
+  if (!input || !ts.isObjectLiteralExpression(input)) throw new Error("메뉴 빌더 입력 객체가 없습니다.");
+  const propertyValue = (object: ts.ObjectLiteralExpression, key: string): ts.Expression => {
+    const properties = object.properties.filter((property) =>
+      ts.isPropertyAssignment(property) && property.name.getText(syntax) === key,
+    );
+    expect(properties, key).toHaveLength(1);
+    const property = properties[0];
+    if (!property || !ts.isPropertyAssignment(property)) throw new Error(`메뉴 속성 ${key}가 없습니다.`);
+    return property.initializer;
+  };
+  const ui = propertyValue(input, "ui");
+  if (!ts.isObjectLiteralExpression(ui)) throw new Error("메뉴 UI 입력 객체가 없습니다.");
+  for (const [key, parameters, expectedCalls] of [
+    ["selectDrawMode", ["mode"], [["studioMainMenuActions.activatePrimaryCanvasTool", '"draw"', "mode"]]],
+    ["enableSmartShape", [], [
+      ["studioMainMenuActions.activatePrimaryCanvasTool", '"draw"', '"pen"'],
+      ["setQuickShapeActive", "true"],
+    ]],
+  ] as const) {
+    const callback = propertyValue(ui, key);
+    if (!ts.isArrowFunction(callback)) throw new Error(`메뉴 콜백 ${key}가 없습니다.`);
+    expect(callback.parameters.map((parameter) => parameter.getText(syntax)), key).toEqual(parameters);
+    const expressions = ts.isBlock(callback.body)
+      ? callback.body.statements.map((statement) => {
+        if (!ts.isExpressionStatement(statement)) throw new Error(`${key}에 예상하지 않은 제어문이 있습니다.`);
+        return statement.expression;
+      })
+      : [callback.body];
+    const calls = expressions.map((expression) => {
+      if (!ts.isCallExpression(expression)) throw new Error(`${key}에 예상하지 않은 실행문이 있습니다.`);
+      return [expression.expression.getText(syntax).replace(/\s/gu, ""), ...expression.arguments.map((argument) =>
+        ts.isStringLiteral(argument) ? JSON.stringify(argument.text) : argument.getText(syntax),
+      )];
+    });
+    expect(calls, key).toEqual(expectedCalls);
+  }
+}
 
 describe("StudioPage tool transition boundary", () => {
   it("clears every transient Inspector pointer owner through one central disarm", () => {
@@ -191,26 +247,47 @@ describe("StudioPage tool transition boundary", () => {
   });
 
   it("routes top-menu drawing modes through the stroke-safe primary transition", () => {
-    const start = studioPageSource.indexOf("selectDrawMode: (mode) => {");
-    // 의도된 변경(2026-08, B-04): 예전 끝 마커("},\n        },")는 실제로는 뒤따르던
-    // executePublishPackageExport 의 validation-report JSON 리터럴에 걸려 있었고, 그 코드가
-    // export/studio-publish-package-export.ts 로 추출되며 사라졌다. 그리기 메뉴 구간의 실제
-    // 다음 항목(activateTransformTool)으로 끝을 고정한다 — 검증 대상 전이 두 건은 동일하다.
-    const end = studioPageSource.indexOf("activateTransformTool:", start);
-    const drawingMenu = studioPageSource.slice(start, end);
+    assertTopMenuDrawingTransitions(studioPageSource);
+  });
 
-    expect(start).toBeGreaterThanOrEqual(0);
-    expect(end).toBeGreaterThan(start);
-    expect(drawingMenu).toContain(
-      'studioMainMenuActions.activatePrimaryCanvasTool("draw", mode);',
+  it.each([
+    '(mode) => studioMainMenuActions.activatePrimaryCanvasTool("draw", mode)',
+    '(mode) => { studioMainMenuActions.activatePrimaryCanvasTool("draw", mode); }',
+  ])("같은 안전 전환을 expression/block 콜백 문법과 무관하게 검증한다: %s", (selectDrawMode) => {
+    assertTopMenuDrawingTransitions(`
+      const studioMainMenuGroups = useMemo(() => buildStudioMainMenuGroups({ ui: {
+        selectDrawMode: ${selectDrawMode},
+        enableSmartShape: () => {
+          studioMainMenuActions.activatePrimaryCanvasTool("draw", "pen");
+          setQuickShapeActive(true);
+        },
+      } }));
+      const quickActionsDisabledActions = useMemo(() => new Set());
+    `);
+  });
+
+  it.each([
+    ["직접 도구 상태 쓰기", '(mode) => { setTool("draw"); setDrawMode(mode); }'],
+    ["잘못된 도구 인자", '(mode) => studioMainMenuActions.activatePrimaryCanvasTool("select", mode)'],
+    ["잘못된 그리기 모드", '(mode) => studioMainMenuActions.activatePrimaryCanvasTool("draw", "pen")'],
+    ["중복 안전 전환", '(mode) => { studioMainMenuActions.activatePrimaryCanvasTool("draw", mode); studioMainMenuActions.activatePrimaryCanvasTool("draw", mode); }'],
+    ["주석에만 있는 안전 전환", '(mode) => { /* studioMainMenuActions.activatePrimaryCanvasTool("draw", mode); */ setTool("draw"); }'],
+  ])("메뉴 전환 계약이 %s 변이를 거부한다", (_label, callback) => {
+    const source = studioPageSource.replace(
+      'selectDrawMode: (mode) => studioMainMenuActions.activatePrimaryCanvasTool("draw", mode),',
+      `selectDrawMode: ${callback},`,
     );
-    expect(drawingMenu).toContain("setQuickShapeActive(true);");
-    expect(
-      drawingMenu.match(
-        /studioMainMenuActions\.activatePrimaryCanvasTool\("draw", (?:mode|"pen")\);/gu,
-      ),
-    )
-      .toHaveLength(2);
+    expect(source).not.toBe(studioPageSource);
+    expect(() => assertTopMenuDrawingTransitions(source)).toThrow();
+  });
+
+  it("Smart Shape의 안전 전환보다 먼저 활성화하는 변이를 거부한다", () => {
+    const source = studioPageSource.replace(
+      'studioMainMenuActions.activatePrimaryCanvasTool("draw", "pen");\n            setQuickShapeActive(true);',
+      'setQuickShapeActive(true);\n            studioMainMenuActions.activatePrimaryCanvasTool("draw", "pen");',
+    );
+    expect(source).not.toBe(studioPageSource);
+    expect(() => assertTopMenuDrawingTransitions(source)).toThrow();
   });
 
   it("routes tutorial drawing actions through the stroke-safe primary transition", () => {

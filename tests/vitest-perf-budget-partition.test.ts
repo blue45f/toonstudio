@@ -79,6 +79,17 @@ describe("execution-time budget partition", () => {
     expect(measuresExecutionTime("expect(geometry.length).toBe(42);")).toBe(false);
   });
 
+  it("포인터 리플레이 예산만 필수 직렬 레인에 두고 결정적 포인터 계약은 루트에 유지한다", () => {
+    const budgetFile = "apps/brush-lab/src/platform/pointer-replay-budget.test.ts";
+    const contractFile = "apps/brush-lab/src/platform/pointer-capture.test.ts";
+    expect(PERF_BUDGET_TEST_FILES).toContain(budgetFile);
+    expect(serialConfig.test?.include).toContain(budgetFile);
+    expect(rootConfig.test?.exclude).toContain(budgetFile);
+    expect(SERIAL_TEST_FILES).not.toContain(contractFile);
+    expect(rootConfig.test?.exclude).not.toContain(contractFile);
+    expect(serialConfig.test?.include).not.toContain(contractFile);
+  });
+
   it("keeps the list sorted so additions diff cleanly", () => {
     expect([...PERF_BUDGET_TEST_FILES]).toEqual([...PERF_BUDGET_TEST_FILES].sort());
   });

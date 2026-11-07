@@ -382,6 +382,12 @@ const REVIEW_TOOL_LOCAL_STATE =
   "Device-local working state of a review or QC tool (compare session, compare comments, playlist verdicts, vote sessions, an unsent external-review draft, or a per-episode QC summary); losing it cannot alter the canvas document, the manuscript pin document, or server approval records.";
 
 const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
+  // 2026-11-07: 문서 권위가 아닌 정리와 표시 설정을 실제 저장 payload·복원 테스트로 검토했다.
+  allow("apps/web/src/domains/creator/studio-shell/StudioSaveFirstProjectLibraryPage.tsx", "local-storage-cleanup", "studioProjectDocumentStorageKey(project.id)", 1, CLEANUP_ONLY, "프로젝트 제거 성공 뒤 해당 project.id의 메타데이터 키만 removeItem 한다. 아래 변이 검증은 같은 소유자의 setItem·다른 키·추가 호출을 거부한다."),
+  allow("apps/web/src/domains/creator/virtual-space/office2d/studio-virtual-space-stage-mode.ts", "local-storage-write", '"toonstudio:virtual-space-stage-mode:v1"', 1, UI_ONLY, "studio-virtual-space-stage-mode.test.ts가 2d/3d enum만 저장하고 잘못된 값과 저장 실패를 거부하며 URL 우선권과 기본값 복원을 검증한다."),
+  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-entry-preference.ts", "local-storage-write", '"toonspectrum:virtual-space-nickname:v1"', 1, UI_ONLY, "studio-virtual-space-entry-preference.test.ts가 기존 v2 입장 프로필과 같은 정규화 닉네임만 호환 키에 저장하고 이메일·예약 신원을 거부함을 검증한다."),
+  allow("apps/web/src/domains/creator/virtual-space/three/studio-virtual-space-three-motion.ts", "durable-storage-write", '"toonstudio:three-lighting-preset:v1"', 1, UI_ONLY, "studio-virtual-space-three-motion.test.ts가 day/studio/night 표시 프리셋만 sessionStorage 포트에 저장하고 잘못된 값·저장 거부 시 기존 상태를 보존함을 검증한다."),
+  allow("apps/web/src/domains/creator/virtual-space/use-studio-space-lighting.ts", "local-storage-write", '"toonstudio:virtual-space-lighting:v1"', 1, UI_ONLY, "use-studio-space-lighting.test.tsx가 주야 표시 boolean·주기·시간 네 필드만 저장하고 손상된 값은 기본값으로 복원하며 문서·월드 payload가 저장되지 않음을 검증한다."),
   // Deletion-only cleanup of browser compatibility remnants.
   // Intentional change (2026-09, 984251d8c): the key expression moved into
   // useStudioDocumentAccessRuntime as `const autosaveKey = studioAutosaveKey({ userId:
@@ -892,6 +898,34 @@ describe("Studio browser-KV authority boundary", () => {
     expect(() => exact(`${source}\nlocalStorage.setItem("studio-project", payload);`)).toThrow();
     const otherOwner = analyzeBrowserKvSource("apps/web/src/domains/creator/other-owner.tsx", source);
     expect(unauthorizedFindings(otherOwner, ALLOWANCES.filter((allowance) => allowance.file === file))).not.toEqual([]);
+  });
+
+  it("새 표시 설정과 정리 허용은 정확한 소유자·키·호출 수에만 적용한다", () => {
+    const reviewedFiles = [
+      "studio-shell/StudioSaveFirstProjectLibraryPage.tsx",
+      "virtual-space/office2d/studio-virtual-space-stage-mode.ts",
+      "virtual-space/studio-virtual-space-entry-preference.ts",
+      "virtual-space/three/studio-virtual-space-three-motion.ts",
+      "virtual-space/use-studio-space-lighting.ts",
+    ];
+    for (const relativePath of reviewedFiles) {
+      const file = `apps/web/src/domains/creator/${relativePath}`;
+      const source = readFileSync(resolve(WORKSPACE_ROOT, file), "utf8");
+      const allowances = ALLOWANCES.filter((allowance) => allowance.file === file);
+      const findings = analyzeBrowserKvSource(file, source);
+      expect(unauthorizedFindings(findings, allowances), file).toEqual([]);
+      expect(unauthorizedFindings(findings.map((item) => ({ ...item, key: "other-key" })), allowances), file).not.toEqual([]);
+      expect(unauthorizedFindings([...findings, ...findings], allowances), file).not.toEqual([]);
+      expect(unauthorizedFindings(analyzeBrowserKvSource(`${file}.other.ts`, source), allowances), file).not.toEqual([]);
+      const newAuthority = analyzeBrowserKvSource(file, `${source}\nlocalStorage.setItem("studio-project-document", payload);`);
+      expect(unauthorizedFindings(newAuthority, allowances), file).not.toEqual([]);
+      if (relativePath.startsWith("studio-shell/")) {
+        expect(unauthorizedFindings(analyzeBrowserKvSource(file, source.replace(
+          "window.localStorage.removeItem(studioProjectDocumentStorageKey(project.id))",
+          "window.localStorage.setItem(studioProjectDocumentStorageKey(project.id), payload)",
+        )), allowances)).not.toEqual([]);
+      }
+    }
   });
 
   it("keeps every allowance narrow, justified, and reviewable", () => {

@@ -42,6 +42,7 @@ export function writeStoredStudioThreeLightingPreset(
   preset: StudioThreeLightingPreset,
   storage: Pick<Storage, "setItem"> | null | undefined = typeof globalThis !== "undefined" ? globalThis.sessionStorage : null,
 ): void {
+  if (!isStudioThreeLightingPreset(preset)) return;
   try {
     storage?.setItem(STUDIO_THREE_LIGHTING_PRESET_STORAGE_KEY, preset);
   } catch {
