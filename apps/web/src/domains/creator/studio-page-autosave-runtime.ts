@@ -313,13 +313,15 @@ export async function restoreStudioAutosaveRecovery(
           setError("그림이 바뀌어 이어 열기를 멈췄어요. 다시 확인해 주세요.");
           return;
         }
-        if (parsed.pagesList.length > 0) {
-          const restoredPages = parsed.pagesList.map((page) => ({
-            ...page,
-            ...((page as Record<string, unknown>)?.review !== undefined
-              ? { review: normalizePageReviewState((page as Record<string, unknown>).review) }
-              : {}),
-          })) as PageState[];
+        const restoredPages = parsed.pagesList.length > 0
+          ? (parsed.pagesList.map((page) => ({
+              ...page,
+              ...((page as Record<string, unknown>)?.review !== undefined
+                ? { review: normalizePageReviewState((page as Record<string, unknown>).review) }
+                : {}),
+            })) as PageState[])
+          : null;
+        if (restoredPages) {
           const currentHistory = pagesHistoryRef.current;
           const currentHistoryIndex = Math.max(
             0,
@@ -334,62 +336,91 @@ export async function restoreStudioAutosaveRecovery(
             setError(workAssetReason);
             return;
           }
-          resetAdvancedFillForDocumentReplacement();
-          pagesHistoryCommandJournalRef.current?.rebase({
-            pages: restoredPages,
-            historyIndex: 0,
-          });
-          pagesHistoryRef.current = [restoredPages];
-          pagesHiRef.current = 0;
-          // 히스토리를 통째로 갈아치웠으니 통합 저널도 처음부터 — 남은 항목은 사라진 스냅샷을 가리킨다.
-          resetStudioHistoryRetention();
-          resetStudioHistoryJournal();
-          setPagesHistory([restoredPages]);
-          setPagesHi(0);
-          const restoredCurrentId = restoredPages.some((page) => page.id === parsed.currentPageId)
-            ? parsed.currentPageId!
-            : restoredPages[0].id;
-          setCurrentPageId(restoredCurrentId);
-        }
-        if (typeof parsed.title === "string") setTitle(parsed.title);
-        if (typeof parsed.description === "string") setDescription(parsed.description);
-        if (typeof parsed.tagsText === "string") setTagsText(parsed.tagsText);
-        if (parsed.webtoonTheme === "classic" || parsed.webtoonTheme === "soft" || parsed.webtoonTheme === "vivid") {
-          setWebtoonTheme(parsed.webtoonTheme);
-        }
-        if (typeof parsed.panelGutter === "number" && Number.isFinite(parsed.panelGutter)) {
-          setPanelGutter(parsed.panelGutter);
         }
         const publishPack = normalizeStudioPublishPackSettings(parsed.publishPack);
-        setPublishProfile(publishPack.profile);
-        setPublishAiUsage(publishPack.aiUsage);
-        setPublishAiDisclosure(publishPack.disclosure);
-        setPublishCompliance(publishPack.compliance);
-        setPublishPackageSettings(publishPackageSettingsFromPack(parsed.publishPack));
-        setPublishPackageCredits(publishPackageCreditsFromPack(parsed.publishPack));
-        hydrateStudioSidecarDocuments({
-          characterBible: normalizeStudioCharacterBible(parsed.characterBible),
-          writerRoom: normalizeStudioWriterRoomDocument(parsed.writerRoom),
-        });
-        setAiProvenance(
-          recoverInterruptedStudioAiOperations(
-            normalizeStudioAiProvenanceDocument(parsed.aiProvenance)
-          )
+        const publishPackageSettings = publishPackageSettingsFromPack(parsed.publishPack);
+        const publishPackageCredits = publishPackageCreditsFromPack(parsed.publishPack);
+        const characterBible = normalizeStudioCharacterBible(parsed.characterBible);
+        const writerRoom = normalizeStudioWriterRoomDocument(parsed.writerRoom);
+        const aiProvenance = recoverInterruptedStudioAiOperations(
+          normalizeStudioAiProvenanceDocument(parsed.aiProvenance)
         );
-        setStudioComments(normalizeStudioCommentsDocument(parsed.comments));
-        setReleaseSchedule(normalizeStudioReleaseSchedule(parsed.releaseSchedule));
-        setPublicationAnalytics(normalizedPublicationAnalytics);
-        setReferenceBoard(normalizeStudioReferenceBoardDocument(parsed.referenceBoard));
-        setScenarioImageReferenceDocumentState(
-          hydrateStudioAiImageReferenceDocument(parsed.aiImageReferences),
-        );
-        // 문서 마스터 복구 — 백업에 없으면 빈 마스터(하위호환).
-        setMaster(normalizeDocumentMaster(parsed.master) as DocumentMaster<El>);
-        autosaveRecoveryCandidateRef.current = null;
-        setAutosaveRestoreBlockedReason(null);
-        setHasAutosave(false);
+        const comments = normalizeStudioCommentsDocument(parsed.comments);
+        const releaseSchedule = normalizeStudioReleaseSchedule(parsed.releaseSchedule);
+        const referenceBoard = normalizeStudioReferenceBoardDocument(parsed.referenceBoard);
+        const aiImageReferences = hydrateStudioAiImageReferenceDocument(parsed.aiImageReferences);
+        const master = normalizeDocumentMaster(parsed.master) as DocumentMaster<El>;
+
+        const previousHistory = pagesHistoryRef.current;
+        const previousHi = pagesHistoryRef.current.length > 0 ? pagesHiRef.current : 0;
+        try {
+          if (restoredPages) {
+            resetAdvancedFillForDocumentReplacement();
+            pagesHistoryCommandJournalRef.current?.rebase({
+              pages: restoredPages,
+              historyIndex: 0,
+            });
+            pagesHistoryRef.current = [restoredPages];
+            pagesHiRef.current = 0;
+            // 히스토리를 통째로 갈아치웠으니 통합 저널도 처음부터 — 남은 항목은 사라진 스냅샷을 가리킨다.
+            resetStudioHistoryRetention();
+            resetStudioHistoryJournal();
+            setPagesHistory([restoredPages]);
+            setPagesHi(0);
+            const restoredCurrentId = restoredPages.some((page) => page.id === parsed.currentPageId)
+              ? parsed.currentPageId!
+              : restoredPages[0].id;
+            setCurrentPageId(restoredCurrentId);
+          }
+          if (typeof parsed.title === "string") setTitle(parsed.title);
+          if (typeof parsed.description === "string") setDescription(parsed.description);
+          if (typeof parsed.tagsText === "string") setTagsText(parsed.tagsText);
+          if (parsed.webtoonTheme === "classic" || parsed.webtoonTheme === "soft" || parsed.webtoonTheme === "vivid") {
+            setWebtoonTheme(parsed.webtoonTheme);
+          }
+          if (typeof parsed.panelGutter === "number" && Number.isFinite(parsed.panelGutter)) {
+            setPanelGutter(parsed.panelGutter);
+          }
+          setPublishProfile(publishPack.profile);
+          setPublishAiUsage(publishPack.aiUsage);
+          setPublishAiDisclosure(publishPack.disclosure);
+          setPublishCompliance(publishPack.compliance);
+          setPublishPackageSettings(publishPackageSettings);
+          setPublishPackageCredits(publishPackageCredits);
+          hydrateStudioSidecarDocuments({
+            characterBible,
+            writerRoom,
+          });
+          setAiProvenance(aiProvenance);
+          setStudioComments(comments);
+          setReleaseSchedule(releaseSchedule);
+          setPublicationAnalytics(normalizedPublicationAnalytics);
+          setReferenceBoard(referenceBoard);
+          setScenarioImageReferenceDocumentState(aiImageReferences);
+          // 문서 마스터 복구 — 백업에 없으면 빈 마스터(하위호환).
+          setMaster(master);
+          autosaveRecoveryCandidateRef.current = null;
+          setAutosaveRestoreBlockedReason(null);
+          setHasAutosave(false);
+        } catch (commitError: unknown) {
+          pagesHistoryRef.current = previousHistory;
+          pagesHiRef.current = previousHi;
+          throw commitError;
+        }
       }
-    } catch {
+    } catch (cause: unknown) {
+      const isAbort = Boolean(
+        cause
+        && typeof cause === "object"
+        && (
+          ("name" in cause && (cause as { name?: unknown }).name === "AbortError")
+          || ("code" in cause && (cause as { code?: unknown }).code === "ABORTED")
+        ),
+      );
+      if (isAbort) {
+        setError(null);
+        return;
+      }
       setError("이전 그림을 열지 못했어요.");
     } finally {
       restoreInFlightCandidateRefs.delete(autosaveRecoveryCandidateRef);
