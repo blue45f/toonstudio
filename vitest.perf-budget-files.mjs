@@ -31,6 +31,7 @@
 // CPU-time ratios also need an uninstrumented run: V8 coverage changes the hot-loop
 // instruction cost even when scheduler contention is removed by threadCpuUsage().
 export const PERF_BUDGET_TEST_FILES = Object.freeze([
+  "apps/brush-lab/src/platform/pointer-replay-budget.test.ts",
   "apps/web/src/domains/creator/brush/studio-brush-stamp-engine.test.ts",
   "apps/web/src/domains/creator/brush/studio-croquis-capsule-pen-v1.test.ts",
   "apps/web/src/domains/creator/brush/studio-dry-media-long-stroke-regression.test.ts",
