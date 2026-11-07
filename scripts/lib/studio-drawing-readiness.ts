@@ -5,6 +5,8 @@ type PrepareStudioDrawingTarget = (timeoutMs: number) => Promise<void>;
 interface DrawingReadinessOptions {
   /** 픽셀 증거에서만 접힌 안내의 그림자도 제외한다. 일반 조작 검증은 안내를 유지한다. */
   dismissCollapsedWelcome?: boolean;
+  /** 픽셀 캡처에서는 포커스 복귀로 열린 도구 설명을 정상 Escape로 닫는다. */
+  dismissToolHints?: boolean;
   /** 빈 문서 진입/초기화에서는 지연 마운트될 안내의 실제 닫기까지 기다린다. */
   requireWelcome?: boolean;
   timeoutMs?: number;
@@ -12,7 +14,7 @@ interface DrawingReadinessOptions {
 
 async function reachDrawingUi(
   page: Page,
-  { requireWelcome = false, timeoutMs = 60_000, dismissCollapsedWelcome = false }: DrawingReadinessOptions,
+  { requireWelcome = false, timeoutMs = 60_000, dismissCollapsedWelcome = false, dismissToolHints = false }: DrawingReadinessOptions,
   target?: Locator,
   prepareTarget?: PrepareStudioDrawingTarget,
 ): Promise<{ welcomeDismissed: boolean }> {
@@ -55,6 +57,10 @@ async function reachDrawingUi(
         if (surface === welcome) welcomeCloseAttempted = true;
         await close.click({ timeout: Math.min(1_000, remaining) });
         break;
+      }
+      if (!overlayVisible && dismissToolHints && await page.getByRole("tooltip").first().isVisible()) {
+        await page.keyboard.press("Escape");
+        continue;
       }
       if (
         !overlayVisible && (!requireWelcome || welcomeDismissed)

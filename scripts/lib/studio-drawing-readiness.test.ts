@@ -44,6 +44,8 @@ function fakePage() {
   };
   const noticeState = { compact: false };
   const welcomeState = { collapsed: false };
+  const hintState = { visible: false };
+  const press = vi.fn(async (key: string) => { expect(key).toBe("Escape"); hintState.visible = false; });
   const calls: Array<{ surface: Surface | "target"; options: { timeout: number } }> = [];
   const close = vi.fn(async (surface: Surface, options: { timeout: number }) => {
     // 강제 클릭/DOM 변경 없이 실제 닫기 컨트롤만 사용해야 이 fake가 상태를 바꾼다.
@@ -78,6 +80,8 @@ function fakePage() {
     isVisible: () => isVisible("welcome", true),
   };
   const page = {
+    keyboard: { press },
+    getByRole: (role: string) => { expect(role).toBe("tooltip"); return { first: () => ({ isVisible: async () => hintState.visible }) }; },
     locator: (selector: string) => {
       if (!locators[selector]) throw new Error(`허용하지 않은 locator: ${selector}`);
       return locators[selector];
@@ -89,12 +93,23 @@ function fakePage() {
     calls.push({ surface: "target", options });
   });
   const target = { click: targetClick } as unknown as Locator;
-  return { page, visible, noticeState, welcomeState, calls, close, isVisible, target, targetClick };
+  return { page, visible, noticeState, welcomeState, hintState, press, calls, close, isVisible, target, targetClick };
 }
 
 describe("그리기 검증기 UI readiness", () => {
   beforeEach(() => { vi.useFakeTimers(); });
   afterEach(() => { vi.useRealTimers(); });
+
+  it("일반 readiness는 도구 설명을 보존하고 픽셀 전용 옵션만 Escape로 닫는다", async () => {
+    const f = fakePage();
+    f.hintState.visible = true;
+    await waitForStudioDrawingReady(f.page);
+    expect(f.press).not.toHaveBeenCalled();
+    expect(f.hintState.visible).toBe(true);
+    await waitForStudioDrawingReady(f.page, { dismissToolHints: true });
+    expect(f.press).toHaveBeenCalledExactlyOnceWith("Escape");
+    expect(f.hintState.visible).toBe(false);
+  });
 
   it("캔버스가 먼저 보여도 늦게 나타난 안내를 실제로 닫은 뒤 quickstart를 닫는다", async () => {
     const f = fakePage();
