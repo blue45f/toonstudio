@@ -128,6 +128,14 @@ export function DrawParamPanel() {
   const paperOn = overrides.grain ?? base?.paper.enabled ?? false;
   const set = (patch: LabOverrides): void => drawActions.setOverride(patch);
 
+  const overrideKeysCount = Object.values(overrides).filter((v) => v !== undefined).length;
+  const extraCustomCount =
+    (paperKind !== "preset" ? 1 : 0) +
+    (mode !== "one-euro" ? 1 : 0) +
+    (pct !== null ? 1 : 0) +
+    (!cornerGate ? 1 : 0);
+  const customCount = overrideKeysCount + extraCustomCount;
+
   const binding: BrushParamBinding = {
     presetId,
     overrides,
@@ -138,7 +146,31 @@ export function DrawParamPanel() {
 
   return (
     <section className="lab-draw-section" aria-label="브러시 파라미터" data-testid="lab-draw-params">
-      <h3>파라미터</h3>
+      <div className="lab-draw-section-head">
+        <h3>현재 브러시 설정</h3>
+        <span
+          className={customCount > 0 ? "lab-badge lab-badge--warn" : "lab-badge lab-badge--pass"}
+          data-testid="lab-draw-param-status"
+        >
+          {customCount > 0 ? `사용자 조정 ${customCount}개` : "프리셋 기본값"}
+        </span>
+      </div>
+      <div className="lab-draw-param-summary" data-testid="lab-draw-param-summary">
+        <div className="lab-draw-param-summary-text">
+          <strong>{base ? base.name : presetId}</strong>
+          <span className="lab-muted">
+            크기 {sizePx}px · 불투명도 {Math.round(opacity * 100)}% · 흐름 {Math.round(flow * 100)}% · 보정 {mode}
+          </span>
+        </div>
+        <button
+          type="button"
+          className="lab-button lab-button--compact"
+          data-testid="lab-draw-reset-params"
+          onClick={() => drawActions.resetOverrides()}
+        >
+          브러시 기본값으로
+        </button>
+      </div>
       <Slider
         id="lab-draw-size"
         label="크기(px)"
@@ -232,10 +264,6 @@ export function DrawParamPanel() {
         <p className="lab-muted" data-testid="lab-draw-stab-help">
           {stabilizerHelp(mode, pct, cornerGate)}
         </p>
-        <p className="lab-muted">
-          서비스 <code>applyStabilizer</code>는 경계 규칙(<code>@toonstudio/*</code>는 기준선 레인 파일에서만 import)상 이 화면에서 쓰지
-          않는다.
-        </p>
       </fieldset>
       <fieldset className="lab-draw-fieldset">
         <legend>종이</legend>
@@ -278,11 +306,7 @@ export function DrawParamPanel() {
         <p className="lab-draw-error" role="alert" data-testid="lab-draw-program-error">
           {resolved.error}
         </p>
-      ) : (
-        <p className="lab-muted" data-testid="lab-draw-config-hash">
-          configHash(fnv1a64): <span className="lab-mono">{resolved.hash}</span>
-        </p>
-      )}
+      ) : null}
       <details className="lab-draw-details">
         <summary>고급 파라미터(경도·간격·산포·팁·필터·베타)</summary>
         <BrushParamFields
@@ -293,16 +317,18 @@ export function DrawParamPanel() {
           showFooter={false}
         />
       </details>
-      <div className="lab-button-row">
-        <button
-          type="button"
-          className="lab-button"
-          data-testid="lab-draw-reset-params"
-          onClick={() => drawActions.resetOverrides()}
-        >
-          브러시 기본값으로
-        </button>
-      </div>
+      <details className="lab-draw-details" data-testid="lab-draw-param-diagnostics">
+        <summary>고급 진단 · 설정 해시(configHash) 및 경계 규칙</summary>
+        {!resolved.error ? (
+          <p className="lab-muted" data-testid="lab-draw-config-hash">
+            configHash(fnv1a64): <span className="lab-mono">{resolved.hash}</span>
+          </p>
+        ) : null}
+        <p className="lab-muted">
+          서비스 <code>applyStabilizer</code>는 경계 규칙(<code>@toonstudio/*</code>는 기준선 레인 파일에서만 import)상 이 화면에서 쓰지
+          않는다.
+        </p>
+      </details>
     </section>
   );
 }

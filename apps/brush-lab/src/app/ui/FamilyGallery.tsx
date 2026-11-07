@@ -87,7 +87,7 @@ export async function renderGallery(
 }
 
 export function FamilyGallery() {
-  const { gallery, galleryError, store, actions } = useLab();
+  const { gallery, galleryError, store, actions, drawActions } = useLab();
   const state = useLabSelector((s) => s.gallery);
   const [groupFilter, setGroupFilter] = useState<GalleryGroupFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -121,6 +121,10 @@ export function FamilyGallery() {
   const open = (presetId: string): void => {
     actions.setPreset(presetId);
     actions.setTab("compare");
+  };
+  const tryInDraw = (presetId: string): void => {
+    drawActions.setPreset(presetId);
+    actions.setTab("draw");
   };
   return (
     <div className="lab-tabpanel">
@@ -177,7 +181,7 @@ export function FamilyGallery() {
       <div className="lab-gallery" role="list" aria-label="브러시 가족 갤러리">
         {filteredPresets.map((preset) => (
           <div role="listitem" key={preset.id}>
-            <PresetCard preset={preset} entry={state.entries[preset.id]} onOpen={open} />
+            <PresetCard preset={preset} entry={state.entries[preset.id]} onOpen={open} onTryInDraw={tryInDraw} />
           </div>
         ))}
       </div>

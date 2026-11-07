@@ -126,6 +126,7 @@ describe("BrushLabApp", { timeout: 30_000 }, () => {
       ["wasm-cpu", true],
     ]);
     expect(screen.getByTestId("lab-lane-badge-b").textContent).toContain("unavailable (webgpu-api-unavailable)");
+    expect(screen.getByTestId("lab-capability-details").hasAttribute("open")).toBe(false);
   });
 
   it("갤러리 Worker를 만들 수 없으면 갤러리 탭에 사유를 드러낸다", () => {
