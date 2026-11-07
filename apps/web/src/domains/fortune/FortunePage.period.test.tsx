@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { MemoryRouter } from "react-router-dom";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FortunePage } from "./FortunePage";
@@ -66,7 +66,15 @@ vi.mock("./fortune-fx", () => ({
   CountUp: ({ value }: { value: number }) => <span>{value}</span>,
   ConfettiBurst: () => null,
 }));
-vi.mock("./FortuneShareModal", () => ({ FortuneShareModal: () => null }));
+vi.mock("html-to-image", () => ({ toPng: vi.fn().mockResolvedValue("data:image/png;base64,AAA") }));
+vi.mock("./FortuneShareCard", async () => {
+  const React = await import("react");
+  return {
+    FortuneShareCard: React.forwardRef<HTMLDivElement>(function MockShareCard(_props, ref) {
+      return <div ref={ref} data-testid="fortune-share-card" />;
+    }),
+  };
+});
 vi.mock("./WebtoonStrip", () => ({ WebtoonStrip: () => null }));
 vi.mock("./TarotCardFace", () => ({ TarotCardFace: () => null }));
 vi.mock("./FortuneGlobalHoroscope", () => ({ FortuneGlobalHoroscope: () => null }));
@@ -99,7 +107,7 @@ vi.mock("./FortuneVoiceNarration", () => ({
   FortuneVoiceNarration: () => null,
 }));
 
-function renderFortuneTool(tool: "monthly" | "yearly") {
+function renderFortuneTool(tool: "today" | "monthly" | "yearly" | "saju") {
   return render(
     <MemoryRouter initialEntries={[`/fortune/${tool}`]}>
       <FortunePage tool={tool} />
@@ -192,5 +200,113 @@ describe("FortunePage 월간/연간 기간 패널 (F-B10-2)", () => {
     selectFirstCharacter();
     expect(screen.queryByText("이번 달의 흐름을 읽어드릴게요")).toBeNull();
     expect(screen.getByTestId("fortune-reveal").getAttribute("aria-label")).toContain("이달의 운세 지수");
+  });
+});
+
+describe("FortunePage / FortuneShareModal 접근성 회귀 (GAP-R4-02)", () => {
+  it("운세 tablist는 화살표 키·Home·End 이동과 role=tabpanel 연결 및 선택 상태를 유지한다", () => {
+    renderFortuneTool("today");
+    selectFirstCharacter();
+
+    const tablist = screen.getByRole("tablist", { name: "운세 종류" });
+    expect(tablist).toBeTruthy();
+
+    const todayTab = screen.getByRole("tab", { name: "오늘의 운세" });
+    const monthlyTab = screen.getByRole("tab", { name: "월간 운세" });
+    const tarotTab = screen.getByRole("tab", { name: "타로 리딩" });
+
+    expect(todayTab.getAttribute("aria-selected")).toBe("true");
+    expect(todayTab.getAttribute("tabindex")).toBe("0");
+    expect(todayTab.getAttribute("aria-controls")).toBe("fortune-tabpanel-today");
+    expect(monthlyTab.getAttribute("aria-selected")).toBe("false");
+    expect(monthlyTab.getAttribute("tabindex")).toBe("-1");
+
+    const tabpanel = screen.getByRole("tabpanel");
+    expect(tabpanel.getAttribute("id")).toBe("fortune-tabpanel-today");
+    expect(tabpanel.getAttribute("aria-labelledby")).toBe("fortune-tab-today");
+
+    todayTab.focus();
+    fireEvent.keyDown(todayTab, { key: "ArrowRight" });
+    expect(monthlyTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(monthlyTab);
+    expect(screen.getByRole("tabpanel").getAttribute("id")).toBe("fortune-tabpanel-monthly");
+    expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe("fortune-tab-monthly");
+
+    fireEvent.keyDown(monthlyTab, { key: "End" });
+    expect(tarotTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tarotTab);
+    expect(screen.getByRole("tabpanel").getAttribute("id")).toBe("fortune-tabpanel-tarot");
+
+    fireEvent.keyDown(tarotTab, { key: "ArrowRight" });
+    expect(todayTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(todayTab);
+
+    fireEvent.keyDown(todayTab, { key: "ArrowLeft" });
+    expect(tarotTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tarotTab);
+
+    fireEvent.keyDown(tarotTab, { key: "Home" });
+    expect(todayTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(todayTab);
+  });
+
+  it("사주 성별 토글은 role=group과 aria-pressed 상태를 제공한다", () => {
+    renderFortuneTool("saju");
+    selectFirstCharacter();
+
+    const group = screen.getByRole("group", { name: /성별/ });
+    expect(group).toBeTruthy();
+
+    const noneBtn = screen.getByRole("button", { name: "선택 안 함" });
+    const maleBtn = screen.getByRole("button", { name: "남성" });
+    const femaleBtn = screen.getByRole("button", { name: "여성" });
+
+    expect(noneBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(maleBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(femaleBtn.getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(femaleBtn);
+    expect(noneBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(maleBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(femaleBtn.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(maleBtn);
+    expect(noneBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(maleBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(femaleBtn.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("공유 모달은 열릴 때 초기 초점을 이동하고 Tab/Shift+Tab 순환과 Escape 닫기 후 트리거 복귀를 수행한다", async () => {
+    renderFortuneTool("today");
+    selectFirstCharacter();
+
+    const drawBtn = screen.getByRole("button", { name: /오늘의 운세 확인하기/ });
+    fireEvent.click(drawBtn);
+
+    const shareTrigger = await waitFor(() => screen.getByRole("button", { name: /공유·저장/ }));
+    shareTrigger.focus();
+    expect(document.activeElement).toBe(shareTrigger);
+
+    fireEvent.click(shareTrigger);
+
+    const dialog = screen.getByRole("dialog", { name: "운세 결과 공유" });
+    expect(dialog).toBeTruthy();
+
+    const closeBtn = screen.getByRole("button", { name: "닫기" });
+    const copyLinkBtn = screen.getByRole("button", { name: /링크 복사/ });
+    expect(document.activeElement).toBe(closeBtn);
+
+    // 첫 요소에서 Shift+Tab 시 마지막 포커스 가능 요소로 순환
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(copyLinkBtn);
+
+    // 마지막 요소에서 Tab 시 첫 포커스 가능 요소로 순환
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: false });
+    expect(document.activeElement).toBe(closeBtn);
+
+    // Escape 입력 시 모달이 닫히고 트리거 버튼으로 포커스 복귀
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "운세 결과 공유" })).toBeNull();
+    expect(document.activeElement).toBe(shareTrigger);
   });
 });

@@ -106,11 +106,11 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
   // 도구 하위 라우트(/fortune/<tool>)로 열리면 활성 도구가 URL을 따르고 전환도 URL 이동이 된다.
   // 라우트 없이(관측소 ?content=character) 열리면 기존처럼 내부 상태로 전환한다.
   const navigate = useNavigate();
-  const [localTab, setLocalTab] = useState<FortuneTab>("today");
-  const activeTab = routeTab ?? localTab;
+  const [activeTab, setLocalTab] = useState<FortuneTab>(routeTab ?? "today");
+  useEffect(() => { if (routeTab) setLocalTab(routeTab); }, [routeTab]);
   const setActiveTab = (tab: FortuneTab) => {
-    if (routeTab !== undefined) navigate(`/fortune/${tab}`);
-    else setLocalTab(tab);
+    setLocalTab(tab);
+    if (routeTab !== undefined && typeof window !== "undefined") window.history.replaceState(window.history.state, "", `/fortune/${tab}`);
   };
   // 브라우저 탭 제목은 하드코딩된 document.title 대신 공용 SEO 훅으로 관리한다.
   // 활성 도구(탭 또는 하위 라우트) 라벨을 제목에 반영한다.
@@ -179,6 +179,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
 
   // 결과 공유/저장 모달
   const [shareOpen, setShareOpen] = useState(false);
+  const shareTriggerRef = useRef<HTMLButtonElement>(null);
 
   // 에러·재시도 (운세 호출 실패 시)
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -714,7 +715,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                   {playback.status === "playing" && (
                     <p className="flex items-center justify-center gap-1.5 text-center text-xs text-accent">
                       <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                        <span className="absolute inline-flex h-full w-full animate-ping motion-reduce:animate-none rounded-full bg-accent opacity-75" />
                         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
                       </span>
                       {playback.activeStep + 1} / {playback.steps.length} 컷 상영 중…
@@ -729,24 +730,28 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
           <div className="lg:col-span-8 flex flex-col gap-6">
 
             {/* 탭 네비게이션 — 항상 노출(결과를 보면서도 전환, 탭별 결과 유지) · 모바일 가로 스크롤 + ARIA */}
-            <div
-              role="tablist"
-              aria-label={tx("운세 종류")}
-              className="rail flex gap-1 overflow-x-auto rounded-xl border border-line bg-panel/30 p-1"
-            >
-              {FORTUNE_TAB_ORDER.map((key) => (
+            <div role="tablist" aria-label={tx("운세 종류")} className="rail flex gap-1 overflow-x-auto rounded-xl border border-line bg-panel/30 p-1">
+              {FORTUNE_TAB_ORDER.map((key, idx) => (
                 <button
                   key={key}
+                  id={`fortune-tab-${key}`}
+                  type="button"
                   role="tab"
                   aria-selected={activeTab === key}
-                  onClick={() => {
+                  aria-controls={`fortune-tabpanel-${key}`}
+                  tabIndex={activeTab === key ? 0 : -1}
+                  onClick={() => { playback.stop(); setActiveTab(key); }}
+                  onKeyDown={(e) => {
+                    const len = FORTUNE_TAB_ORDER.length;
+                    const nextIdx = e.key === "ArrowRight" ? (idx + 1) % len : e.key === "ArrowLeft" ? (idx - 1 + len) % len : e.key === "Home" ? 0 : e.key === "End" ? len - 1 : -1;
+                    if (nextIdx < 0) return;
+                    e.preventDefault();
+                    const nextKey = FORTUNE_TAB_ORDER[nextIdx];
                     playback.stop();
-                    setActiveTab(key);
+                    setActiveTab(nextKey);
+                    document.getElementById(`fortune-tab-${nextKey}`)?.focus();
                   }}
-                  className={cn(
-                    "min-h-11 min-w-fit shrink-0 whitespace-nowrap rounded-lg px-3.5 text-xs font-semibold transition-all",
-                    activeTab === key ? "bg-accent text-on-accent shadow" : "text-fg-3 hover:text-fg"
-                  )}
+                  className={cn("min-h-11 min-w-fit shrink-0 whitespace-nowrap rounded-lg px-3.5 text-xs font-semibold transition-all", activeTab === key ? "bg-accent text-on-accent shadow" : "text-fg-3 hover:text-fg")}
                 >
                   {FORTUNE_TAB_META[key].labelKo}
                 </button>
@@ -754,11 +759,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
             </div>
 
             {/* 컨텐츠 카드 영역 */}
-            <div
-              className="rounded-2xl border border-line bg-panel/20 p-6 min-h-[400px] flex flex-col justify-center"
-              aria-live="polite"
-              aria-busy={isLoading}
-            >
+            <div id={`fortune-tabpanel-${activeTab}`} role="tabpanel" aria-labelledby={`fortune-tab-${activeTab}`} tabIndex={0} className="rounded-2xl border border-line bg-panel/20 p-6 min-h-[400px] flex flex-col justify-center" aria-live="polite" aria-busy={isLoading}>
 
               {/* 에러 + 재시도 */}
               {!isLoading && errorMsg && (
@@ -800,10 +801,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setShareOpen(true)}
-                        className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-on-accent"
-                      >
+                      <button ref={shareTriggerRef} type="button" onClick={() => setShareOpen(true)} className="flex items-center gap-1 rounded-full border border-accent/30 bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-on-accent">
                         <Share2 className="h-3 w-3" /> {tx("공유·저장")}
                       </button>
                       <button
@@ -1546,20 +1544,19 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="text-xs font-semibold text-fg-2 flex items-center gap-1">
+                    <div id="fortune-saju-gender-label" className="text-xs font-semibold text-fg-2 flex items-center gap-1">
                       <User className="h-3.5 w-3.5 text-fg-3" /> 성별 (선택사항)
                     </div>
-                    <div className="flex gap-2">
+                    <div role="group" aria-labelledby="fortune-saju-gender-label" aria-label={tx("성별 선택")} className="flex gap-2">
                       {["none", "male", "female"].map((g) => (
                         <button
                           key={g}
                           type="button"
+                          aria-pressed={gender === g}
                           onClick={() => setGender(g)}
                           className={cn(
-                            "flex-1 rounded-lg border py-2 text-xs font-semibold transition-all",
-                            gender === g
-                              ? "border-accent bg-accent-soft text-accent"
-                              : "border-line bg-card text-fg-3 hover:text-fg"
+                            "min-h-11 flex-1 rounded-lg border py-2 text-xs font-semibold transition-all",
+                            gender === g ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-3 hover:text-fg"
                           )}
                         >
                           {g === "none" ? "선택 안 함" : g === "male" ? "남성" : "여성"}
@@ -1658,12 +1655,7 @@ function CharacterFortunePage({ routeTab }: { routeTab?: FortuneTab }) {
 
       {/* 결과 {tx("공유·저장")} 모달 */}
       {shareOpen && fortuneResult && selectedChar && (
-        <FortuneShareModal
-          result={fortuneResult}
-          character={selectedChar}
-          tab={activeTab}
-          onClose={() => setShareOpen(false)}
-        />
+        <FortuneShareModal result={fortuneResult} character={selectedChar} tab={activeTab} onClose={() => { setShareOpen(false); shareTriggerRef.current?.focus(); }} />
       )}
 
       {/* 법적 면책 조항 및 자체 캐릭터 안내문 (Disclaimer) */}

@@ -1,0 +1,212 @@
+{
+  "verifiedAt": "2026-11-07T14:31:07.653Z",
+  "defectId": "GAP-R4-02",
+  "targetFiles": [
+    "apps/web/src/domains/fortune/FortunePage.tsx",
+    "apps/web/src/domains/fortune/FortuneShareModal.tsx",
+    "apps/web/src/domains/fortune/FortunePage.period.test.tsx"
+  ],
+  "beforeFixSummary": {
+    "route": "/fortune",
+    "hasTablist": true,
+    "tabpanelCount": 0,
+    "genderButtonCount": 3,
+    "genderHasAriaPressed": false,
+    "shareModalFocusTrap": false,
+    "shareModalTriggerRestore": false,
+    "reproduced": true
+  },
+  "afterFixProbe": {
+    "route": "/fortune/saju",
+    "hasTablist": true,
+    "tabpanelCount": 1,
+    "genderGroupPresent": true,
+    "genderButtonCount": 3,
+    "genderHasAriaPressed": true,
+    "reproduced": false
+  },
+  "keyboardJourneys": {
+    "genderToggle": {
+      "initial": {
+        "none": "true",
+        "male": "false",
+        "female": "false"
+      },
+      "afterClickFemale": {
+        "none": "false",
+        "male": "false",
+        "female": "true"
+      },
+      "afterClickMale": {
+        "none": "false",
+        "male": "true",
+        "female": "false"
+      }
+    },
+    "tablistNavigation": {
+      "beforeArrow": {
+        "activeId": "fortune-tab-saju",
+        "ariaSelected": "true",
+        "tabIndex": "0",
+        "panelId": "fortune-tabpanel-saju",
+        "panelLabelledBy": "fortune-tab-saju"
+      },
+      "afterArrowRight": {
+        "activeId": "fortune-tab-compatibility",
+        "ariaSelected": "true",
+        "tabIndex": "0",
+        "panelId": "fortune-tabpanel-compatibility",
+        "panelLabelledBy": "fortune-tab-compatibility"
+      },
+      "afterEnd": {
+        "activeId": "fortune-tab-tarot",
+        "ariaSelected": "true",
+        "panelId": "fortune-tabpanel-tarot"
+      },
+      "afterWrapRight": {
+        "activeId": "fortune-tab-today",
+        "ariaSelected": "true",
+        "panelId": "fortune-tabpanel-today"
+      },
+      "afterWrapLeft": {
+        "activeId": "fortune-tab-tarot",
+        "ariaSelected": "true"
+      },
+      "afterHome": {
+        "activeId": "fortune-tab-today",
+        "ariaSelected": "true",
+        "panelId": "fortune-tabpanel-today",
+        "panelLabelledBy": "fortune-tab-today"
+      }
+    },
+    "shareModalFocusLifecycle": {
+      "modalInitial": {
+        "activeInsideDialog": true,
+        "activeAriaLabel": "닫기",
+        "closeButtonSize": {
+          "width": 44,
+          "height": 44
+        }
+      },
+      "tabOrderLog": [
+        {
+          "insideDialog": true,
+          "label": "이미지 저장"
+        },
+        {
+          "insideDialog": true,
+          "label": "공유하기"
+        },
+        {
+          "insideDialog": true,
+          "label": "링크 복사"
+        },
+        {
+          "insideDialog": true,
+          "label": "닫기"
+        }
+      ],
+      "afterShiftTab": {
+        "insideDialog": true,
+        "label": "링크 복사"
+      },
+      "afterEscape": {
+        "dialogClosed": true,
+        "activeTag": "button",
+        "activeText": "공유·저장"
+      }
+    }
+  },
+  "viewportMatrix": [
+    {
+      "id": "mobile-320",
+      "label": "모바일 320px",
+      "width": 320,
+      "height": 640,
+      "zoomNote": "100% (320×640)",
+      "horizontalOverflowPx": 0,
+      "hasTablist": true,
+      "hasTabpanel": true,
+      "hasGenderGroup": true,
+      "minGenderBtnHeight": 56,
+      "minTabHeight": 44,
+      "modalHorizontalOverflowPx": 0,
+      "activeInsideDialog": true,
+      "closeBtnWidth": 44,
+      "closeBtnHeight": 44,
+      "restoredToTriggerAfterEscape": true
+    },
+    {
+      "id": "mobile-390",
+      "label": "모바일 390px",
+      "width": 390,
+      "height": 844,
+      "zoomNote": "100% (390×844)",
+      "horizontalOverflowPx": 0,
+      "hasTablist": true,
+      "hasTabpanel": true,
+      "hasGenderGroup": true,
+      "minGenderBtnHeight": 44,
+      "minTabHeight": 44,
+      "modalHorizontalOverflowPx": 0,
+      "activeInsideDialog": true,
+      "closeBtnWidth": 44,
+      "closeBtnHeight": 44,
+      "restoredToTriggerAfterEscape": true
+    },
+    {
+      "id": "tablet-768",
+      "label": "태블릿 768px",
+      "width": 768,
+      "height": 1024,
+      "zoomNote": "100% (768×1024)",
+      "horizontalOverflowPx": 0,
+      "hasTablist": true,
+      "hasTabpanel": true,
+      "hasGenderGroup": true,
+      "minGenderBtnHeight": 40,
+      "minTabHeight": 40,
+      "modalHorizontalOverflowPx": 0,
+      "activeInsideDialog": true,
+      "closeBtnWidth": 44,
+      "closeBtnHeight": 44,
+      "restoredToTriggerAfterEscape": true
+    },
+    {
+      "id": "pc-1440",
+      "label": "PC 1440px",
+      "width": 1440,
+      "height": 900,
+      "zoomNote": "100% (1440×900)",
+      "horizontalOverflowPx": 0,
+      "hasTablist": true,
+      "hasTabpanel": true,
+      "hasGenderGroup": true,
+      "minGenderBtnHeight": 40,
+      "minTabHeight": 40,
+      "modalHorizontalOverflowPx": 0,
+      "activeInsideDialog": true,
+      "closeBtnWidth": 44,
+      "closeBtnHeight": 44,
+      "restoredToTriggerAfterEscape": true
+    },
+    {
+      "id": "pc-1440-zoom-200",
+      "label": "PC 1440px 200% 확대 (720×450 CSS px)",
+      "width": 720,
+      "height": 450,
+      "zoomNote": "200% zoom equivalent (720×450 CSS px)",
+      "horizontalOverflowPx": 0,
+      "hasTablist": true,
+      "hasTabpanel": true,
+      "hasGenderGroup": true,
+      "minGenderBtnHeight": 44,
+      "minTabHeight": 44,
+      "modalHorizontalOverflowPx": 0,
+      "activeInsideDialog": true,
+      "closeBtnWidth": 44,
+      "closeBtnHeight": 44,
+      "restoredToTriggerAfterEscape": true
+    }
+  ]
+}
