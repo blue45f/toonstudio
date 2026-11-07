@@ -1,0 +1,128 @@
+{
+  "verifiedAt": "2026-11-07T11:56:16.008Z",
+  "round": "brush-comparison-round4-20261107",
+  "syntheticFixtureUsed": "zigzag (256x256, seed 42)",
+  "pageErrors": [],
+  "journeyChecks": {
+    "initialEmptyStateVisible": true,
+    "initialEmptyStateContainsZigzag": true,
+    "diagAOpenInitial": false,
+    "diagBOpenInitial": false,
+    "initialPresetOrder": "프리셋 순서: 기준 A [연필 HB (pencil-hb)] → 비교 B [G펜 (ink-g-pen)]",
+    "initialLaneOrder": "레인 순서: A [CPU 참조(Sumi StrokePipeline + Surface)] → B [WebGPU compute (Sumi 타일 파이프라인)]",
+    "initialDiffCount": "차이 7개 항목",
+    "emptyStateAfterRun": false,
+    "preservedBannerInitial": "실험 결과 보존 중 — 실행 프리셋: 연필 HB (pencil-hb) · 샘플 획: zigzag · 누적 세션 리포트 1건",
+    "orderAfterSelectLong": "프리셋 순서: 기준 A [연필 HB (pencil-hb)] → 비교 B [캔버스 직조 스탬프 (texture-canvas-stamp)]",
+    "orderAfterSwapPresets": "프리셋 순서: 기준 A [캔버스 직조 스탬프 (texture-canvas-stamp)] → 비교 B [연필 HB (pencil-hb)]",
+    "laneOrderAfterSwap": "레인 순서: A [WebGPU compute (Sumi 타일 파이프라인)] → B [CPU 참조(Sumi StrokePipeline + Surface)]",
+    "laneOrderAfterUndo1": "레인 순서: A [CPU 참조(Sumi StrokePipeline + Surface)] → B [WebGPU compute (Sumi 타일 파이프라인)]",
+    "presetOrderAfterUndo2": "프리셋 순서: 기준 A [연필 HB (pencil-hb)] → 비교 B [캔버스 직조 스탬프 (texture-canvas-stamp)]",
+    "preservedBannerAfterUndo": "실험 결과 보존 중 — 실행 프리셋: 연필 HB (pencil-hb) · 샘플 획: zigzag · 누적 세션 리포트 1건",
+    "provenanceOpenDefault": false,
+    "badgePencilHb": "선택됨 · 기준 A",
+    "badgeWatercolor": "비교 대상 B",
+    "galleryDiffCount": "파라미터 차이 9개",
+    "filterPreservedNote": "필터 변경 중에도 선택된 기준 A·비교 B 및 렌더 결과(0건)는 보존됩니다.",
+    "badgeWatercolorAfterSwap": "선택됨 · 기준 A",
+    "preservedAfterGalleryRoundtrip": true
+  },
+  "viewportMetrics": [
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 568,
+      "zoom": 1,
+      "compareLayout": {
+        "horizontalOverflowPx": 0,
+        "canvasFrameMarginInline": "0px / 0px",
+        "canvasFramePadding": "10px",
+        "summaryCardWidth": 270
+      },
+      "galleryLayout": {
+        "horizontalOverflowPx": 0,
+        "selectedCardBorderColor": "rgb(143, 126, 255)"
+      }
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "compareLayout": {
+        "horizontalOverflowPx": 0,
+        "canvasFrameMarginInline": "0px / 0px",
+        "canvasFramePadding": "10px",
+        "summaryCardWidth": 340
+      },
+      "galleryLayout": {
+        "horizontalOverflowPx": 0,
+        "selectedCardBorderColor": "rgb(143, 126, 255)"
+      }
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "compareLayout": {
+        "horizontalOverflowPx": 0,
+        "canvasFrameMarginInline": "0px / 0px",
+        "canvasFramePadding": "12px",
+        "summaryCardWidth": 688
+      },
+      "galleryLayout": {
+        "horizontalOverflowPx": 0,
+        "selectedCardBorderColor": "rgb(143, 126, 255)"
+      }
+    },
+    {
+      "viewport": "pc-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "compareLayout": {
+        "horizontalOverflowPx": 0,
+        "canvasFrameMarginInline": "0px / 0px",
+        "canvasFramePadding": "12px",
+        "summaryCardWidth": 1342
+      },
+      "galleryLayout": {
+        "horizontalOverflowPx": 0,
+        "selectedCardBorderColor": "rgb(143, 126, 255)"
+      }
+    },
+    {
+      "viewport": "pc-1440-zoom200",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "compareLayout": {
+        "horizontalOverflowPx": 0,
+        "canvasFrameMarginInline": "0px / 0px",
+        "canvasFramePadding": "12px",
+        "summaryCardWidth": 1244
+      },
+      "galleryLayout": {
+        "horizontalOverflowPx": 0,
+        "selectedCardBorderColor": "rgb(143, 126, 255)"
+      }
+    },
+    {
+      "viewport": "reflow-720-equiv200",
+      "width": 720,
+      "height": 450,
+      "zoom": 1,
+      "compareLayout": {
+        "horizontalOverflowPx": 0,
+        "canvasFrameMarginInline": "0px / 0px",
+        "canvasFramePadding": "12px",
+        "summaryCardWidth": 643
+      },
+      "galleryLayout": {
+        "horizontalOverflowPx": 0,
+        "selectedCardBorderColor": "rgb(143, 126, 255)"
+      }
+    }
+  ]
+}

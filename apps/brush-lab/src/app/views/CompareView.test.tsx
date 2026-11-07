@@ -323,5 +323,80 @@ describe("CompareView", { timeout: 30_000 }, () => {
     const rowsAfter = within(reportTable()).getAllByRole("row");
     expect(rowsAfter[1]?.getAttribute("aria-selected")).toBe("true");
   });
+
+  it("동일 샘플 획 프리셋 A/B 비교 순서·파라미터 차이·빈 비교 상태·고급 진단 접기가 동작하고 되돌리기·설정 변경에도 실험 결과가 보존된다", async () => {
+    const store = createLabStore({ tab: "compare", laneA: "cpu-reference", laneB: "canvas2d", canvasSize: 256 });
+    renderCompare(store);
+    await screen.findByText(/probe 4\/4/u);
+
+    // 1. 실행 전 빈 비교 상태 배너와 고급 진단 접기 기본 상태(open === false) 확인
+    const emptyState = screen.getByTestId("lab-compare-empty-state");
+    expect(emptyState.textContent).toContain("비교 실행 전 (빈 비교 상태)");
+    expect(emptyState.textContent).toContain("합성 fixture: zigzag");
+    expect((screen.getByTestId("lab-stage-diag-A") as HTMLDetailsElement).open).toBe(false);
+    expect((screen.getByTestId("lab-stage-diag-B") as HTMLDetailsElement).open).toBe(false);
+
+    // 2. 프리셋 A/B 비교 순서 및 실제 스키마 파라미터 차이 표시 확인
+    expect(screen.getByTestId("lab-compare-preset-order").textContent).toContain("pencil-hb");
+    expect(screen.getByTestId("lab-compare-preset-order").textContent).toContain("ink-g-pen");
+    expect(screen.getByTestId("lab-compare-lane-order").textContent).toContain("A [CPU 참조] → B [Canvas2D]");
+    expect(screen.getByTestId("lab-preset-diff-count").textContent).toMatch(/차이 \d+개 항목/u);
+    expect(screen.getByTestId("lab-preset-diff-sizePx")).toBeTruthy();
+
+    // 3. 빈 비교 상태의 실행 버튼으로 A/B 실행 → 빈 상태 배너가 사라지고 결과가 기록됨
+    fireEvent.click(screen.getByTestId("lab-compare-empty-run-btn"));
+    await waitFor(() => expect(store.get().running).toBe(false), { timeout: 10_000 });
+    expect(screen.queryByTestId("lab-compare-empty-state")).toBeNull();
+    const initialHashA = store.get().results.reportA?.pixelHash;
+    const initialHashB = store.get().results.reportB?.pixelHash;
+    expect(initialHashA).toBeTruthy();
+    expect(initialHashB).toBeTruthy();
+    expect(store.get().reports).toHaveLength(2);
+    expect(screen.getByTestId("lab-compare-result-preserved").textContent).toContain("실험 결과 보존 중");
+    expect(screen.getByTestId("lab-compare-result-preserved").textContent).toContain("누적 세션 리포트 2건");
+
+    // 4. 비교 프리셋 B 변경(긴 영문 ID screentone-halftone), 파라미터 오버라이드, 프리셋 A↔B 및 레인 A↔B 순서 교체 후에도 실험 결과 보존
+    fireEvent.change(screen.getByTestId("lab-compare-preset-b-select"), {
+      target: { value: "screentone-halftone" },
+    });
+    expect(screen.getByTestId("lab-compare-preset-order").textContent).toContain("screentone-halftone");
+
+    act(() => {
+      store.set({ overrides: { sizePx: 28 } });
+    });
+    expect(screen.getByTestId("lab-override-diff-summary").textContent).toContain("→28");
+
+    fireEvent.click(screen.getByTestId("lab-preset-swap-ab"));
+    expect(store.get().presetId).toBe("screentone-halftone");
+    expect(screen.getByTestId("lab-compare-preset-order").textContent).toMatch(
+      /기준 A \[.*\(screentone-halftone\)\] → 비교 B \[.*\(pencil-hb\)\]/u,
+    );
+
+    fireEvent.click(screen.getByTestId("lab-lane-swap-ab"));
+    expect(store.get().laneA).toBe("canvas2d");
+    expect(store.get().laneB).toBe("cpu-reference");
+
+    // 설정·순서 변경 후에도 기존 실행 결과와 세션 리포트는 소실되지 않는다
+    expect(store.get().results.reportA?.pixelHash).toBe(initialHashA);
+    expect(store.get().results.reportB?.pixelHash).toBe(initialHashB);
+    expect(store.get().reports).toHaveLength(2);
+
+    // 5. '이전 설정으로 되돌리기' 클릭 시 레인·프리셋·오버라이드 순서가 단계별로 복원되며 실험 결과는 그대로 유지된다
+    const undoBtn = screen.getByTestId("lab-compare-undo-config") as HTMLButtonElement;
+    expect(undoBtn.disabled).toBe(false);
+    fireEvent.click(undoBtn);
+    expect(store.get().laneA).toBe("cpu-reference");
+    expect(store.get().laneB).toBe("canvas2d");
+    fireEvent.click(undoBtn);
+    expect(store.get().presetId).toBe("pencil-hb");
+    expect(store.get().results.reportA?.pixelHash).toBe(initialHashA);
+    expect(store.get().reports).toHaveLength(2);
+
+    // 6. '결과 지우기' 클릭 시에만 캔버스 결과가 비워지고 빈 비교 상태 안내가 다시 나타난다(세션 리포트 누적은 유지)
+    fireEvent.click(screen.getByRole("button", { name: "결과 지우기" }));
+    expect(screen.getByTestId("lab-compare-empty-state")).toBeTruthy();
+    expect(store.get().reports).toHaveLength(2);
+  });
 });
+
 

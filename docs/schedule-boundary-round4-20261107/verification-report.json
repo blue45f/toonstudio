@@ -1,0 +1,306 @@
+{
+  "verifiedAt": "2026-11-07T12:07:09.869Z",
+  "sourceFileCeiling": {
+    "limit": 800,
+    "before": {
+      "ProductionScheduleWorkspace.tsx": 786
+    },
+    "after": {
+      "ProductionScheduleWorkspace.tsx": 716,
+      "ProductionScheduleViews.tsx": 496
+    },
+    "allUnder800Lines": true
+  },
+  "kstBoundaryVerification": {
+    "preFixDriftInUtc": [
+      {
+        "inputIso": "2026-09-30T00:00:00+09:00",
+        "expectedKstDate": "2026-09-30",
+        "preFixInUtc": "2026-09-29",
+        "preFixInPst": "2026-09-29",
+        "driftedInUtc": true
+      },
+      {
+        "inputIso": "2026-10-01T00:00:00+09:00",
+        "expectedKstDate": "2026-10-01",
+        "preFixInUtc": "2026-09-30",
+        "preFixInPst": "2026-09-30",
+        "driftedInUtc": true
+      },
+      {
+        "inputIso": "2026-12-31T00:00:00+09:00",
+        "expectedKstDate": "2026-12-31",
+        "preFixInUtc": "2026-12-30",
+        "preFixInPst": "2026-12-30",
+        "driftedInUtc": true
+      },
+      {
+        "inputIso": "2027-01-01T00:00:00+09:00",
+        "expectedKstDate": "2027-01-01",
+        "preFixInUtc": "2026-12-31",
+        "preFixInPst": "2026-12-31",
+        "driftedInUtc": true
+      }
+    ],
+    "afterFixAllExactInUtc": true
+  },
+  "sameDay20TasksMobile320Comparison": {
+    "before": {
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "articlesRenderedInlineInSingleDayCell": 20,
+      "busyCellHeightPx": 4557,
+      "dayHeaderHeightPx": 26,
+      "selectableDateButtonsCount": 0
+    },
+    "after": {
+      "viewport": {
+        "width": 320,
+        "height": 740
+      },
+      "busyDateKey": "2026-11-14",
+      "articlesRenderedInlineInSingleDayCell": 2,
+      "busyCellHeightPx": 585,
+      "selectableDateButtonsCount": 14,
+      "minDateButtonWidthPx": 193,
+      "minDateButtonHeightPx": 44,
+      "allDateButtonsMeet44px": true,
+      "pageScrollWidth": 305,
+      "hasHorizontalOverflow": false
+    },
+    "cellHeightReductionPx": 3972
+  },
+  "focusAndTransitionVerification": {
+    "beforeFocus": {
+      "activeAfterOpen": "12화 콘티와 세로 리듬 상세 편집",
+      "activeAfterCancel": "BODY"
+    },
+    "afterFocus": {
+      "activeAfterOpen": "연말특집_20화_초장문_클라이맥스_전투씬_콘티_선화_배경_식자_통합_검수_새 제작 작업_SUPER_LONG_UNBROKEN_TOKEN_20261231 제목 편집",
+      "activeAfterCancel": "연말특집_20화_초장문_클라이맥스_전투씬_콘티_선화_배경_식자_통합_검수_새 제작 작업_SUPER_LONG_UNBROKEN_TOKEN_20261231 상세 편집",
+      "activeAfterEscape": "연말특집_20화_초장문_클라이맥스_전투씬_콘티_선화_배경_식자_통합_검수_새 제작 작업_SUPER_LONG_UNBROKEN_TOKEN_20261231 상세 편집",
+      "activeAfterSave": "연말특집_20화_초장문_클라이맥스_전투씬_콘티_선화_배경_식자_통합_검수_새 제작 작업_SUPER_LONG_UNBROKEN_TOKEN_20261231 상세 편집",
+      "focusMovedToTitleInputOnOpen": true,
+      "focusRestoredOnCancel": true,
+      "focusRestoredOnEscape": true,
+      "focusRestoredOnSave": true
+    },
+    "transitionPreservation": {
+      "listSelectedBadgeVisible": true,
+      "selectedDateStillInListAfterSave": true,
+      "calendarStateAfterRoundTrip": {
+        "dateButtonAriaPressed": "true",
+        "selectedDatePanelPresent": true,
+        "selectedDatePanelArticles": 20,
+        "preservedSearchQuery": "제작 작업",
+        "preservedSortBy": "hours-desc"
+      }
+    }
+  },
+  "viewportMatrix": [
+    {
+      "viewport": "mobile-320",
+      "view": "timeline",
+      "innerWidth": 320,
+      "scrollWidth": 305,
+      "workspaceWidth": 249,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "mobile-320",
+      "view": "calendar",
+      "innerWidth": 320,
+      "scrollWidth": 305,
+      "workspaceWidth": 249,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": 193,
+      "minCalendarDateButtonHeightPx": 44
+    },
+    {
+      "viewport": "mobile-320",
+      "view": "list",
+      "innerWidth": 320,
+      "scrollWidth": 305,
+      "workspaceWidth": 249,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "mobile-320",
+      "view": "workload",
+      "innerWidth": 320,
+      "scrollWidth": 305,
+      "workspaceWidth": 249,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "mobile-390",
+      "view": "timeline",
+      "innerWidth": 390,
+      "scrollWidth": 375,
+      "workspaceWidth": 319,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "mobile-390",
+      "view": "calendar",
+      "innerWidth": 390,
+      "scrollWidth": 375,
+      "workspaceWidth": 319,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": 263,
+      "minCalendarDateButtonHeightPx": 44
+    },
+    {
+      "viewport": "mobile-390",
+      "view": "list",
+      "innerWidth": 390,
+      "scrollWidth": 375,
+      "workspaceWidth": 319,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "mobile-390",
+      "view": "workload",
+      "innerWidth": 390,
+      "scrollWidth": 375,
+      "workspaceWidth": 319,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "tablet-768",
+      "view": "timeline",
+      "innerWidth": 768,
+      "scrollWidth": 753,
+      "workspaceWidth": 546,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "tablet-768",
+      "view": "calendar",
+      "innerWidth": 768,
+      "scrollWidth": 753,
+      "workspaceWidth": 546,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": 229,
+      "minCalendarDateButtonHeightPx": 44
+    },
+    {
+      "viewport": "tablet-768",
+      "view": "list",
+      "innerWidth": 768,
+      "scrollWidth": 753,
+      "workspaceWidth": 546,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "tablet-768",
+      "view": "workload",
+      "innerWidth": 768,
+      "scrollWidth": 753,
+      "workspaceWidth": 546,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "pc-1440",
+      "view": "timeline",
+      "innerWidth": 1440,
+      "scrollWidth": 1425,
+      "workspaceWidth": 882,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "pc-1440",
+      "view": "calendar",
+      "innerWidth": 1440,
+      "scrollWidth": 1425,
+      "workspaceWidth": 882,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": 91,
+      "minCalendarDateButtonHeightPx": 52
+    },
+    {
+      "viewport": "pc-1440",
+      "view": "list",
+      "innerWidth": 1440,
+      "scrollWidth": 1425,
+      "workspaceWidth": 882,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "pc-1440",
+      "view": "workload",
+      "innerWidth": 1440,
+      "scrollWidth": 1425,
+      "workspaceWidth": 882,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "pc-1440-zoom200",
+      "view": "timeline",
+      "innerWidth": 720,
+      "scrollWidth": 705,
+      "workspaceWidth": 633,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "pc-1440-zoom200",
+      "view": "calendar",
+      "innerWidth": 720,
+      "scrollWidth": 705,
+      "workspaceWidth": 633,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": 273,
+      "minCalendarDateButtonHeightPx": 44
+    },
+    {
+      "viewport": "pc-1440-zoom200",
+      "view": "list",
+      "innerWidth": 720,
+      "scrollWidth": 705,
+      "workspaceWidth": 633,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    },
+    {
+      "viewport": "pc-1440-zoom200",
+      "view": "workload",
+      "innerWidth": 720,
+      "scrollWidth": 705,
+      "workspaceWidth": 633,
+      "hasHorizontalOverflow": false,
+      "minCalendarDateButtonWidthPx": null,
+      "minCalendarDateButtonHeightPx": null
+    }
+  ],
+  "allMatrixCellsZeroOverflow": true,
+  "allCalendarViewportsMeet44px": true
+}
