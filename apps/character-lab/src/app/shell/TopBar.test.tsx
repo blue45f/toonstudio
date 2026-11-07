@@ -112,12 +112,24 @@ describe("app/shell/TopBar", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByTestId("topbar-help-panel")).toBeNull();
+    expect(document.activeElement).toBe(helpBtn);
 
     fireEvent.keyDown(window, { key: "?" });
     expect(screen.getByTestId("topbar-help-panel")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+    expect(screen.queryByTestId("topbar-help-panel")).toBeNull();
+    expect(document.activeElement).toBe(helpBtn);
 
-    fireEvent.keyDown(window, { key: "3" });
-    expect(ui.getState().inspectorTab).toBe("pose");
+    const poseTabStub = document.createElement("button");
+    poseTabStub.id = "cl-tab-pose";
+    document.body.appendChild(poseTabStub);
+    try {
+      fireEvent.keyDown(window, { key: "3" });
+      expect(ui.getState().inspectorTab).toBe("pose");
+      expect(document.activeElement).toBe(poseTabStub);
+    } finally {
+      poseTabStub.remove();
+    }
     fireEvent.keyDown(window, { key: "4" });
     expect(ui.getState().inspectorTab).toBe("physics");
     fireEvent.keyDown(window, { key: "9" });

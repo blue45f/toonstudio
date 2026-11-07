@@ -421,20 +421,46 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect(() => ikEndPosition(brokenPose, "leftArm", skeleton)).toThrowError(new TypeError("unexpected-pose-getter-bug"));
   });
 
-  it("상단 활성 리그·포즈 요약 바를 표시하고 '리그·패키지 선택' 클릭 시 package 탭으로 전환한다", () => {
+  it("상단 활성 리그·포즈 요약 바를 표시하고 탭 전환 시 대상 인스펙터 탭으로 초점을 복원한다", () => {
     const ui = createUiStateStore({ inspectorTab: "pose" });
-    render(
-      <MockLabProvider shell={{ ui }}>
-        <PosePanel />
-      </MockLabProvider>,
-    );
-    const summary = screen.getByTestId("pose-rig-summary");
-    expect(within(summary).getByTestId("pose-active-rig-source").textContent).toMatch(/절차적 휴머노이드/u);
-    expect(within(summary).getByTestId("pose-active-selection-summary").textContent).toMatch(/선택 상태: 기본 자세\(Rest · 프리셋: A 포즈\)/u);
-    fireEvent.click(within(summary).getByTestId("pose-switch-to-package-tab"));
-    expect(ui.getState().inspectorTab).toBe("package");
-    fireEvent.click(within(summary).getByTestId("pose-switch-to-export-tab"));
-    expect(ui.getState().inspectorTab).toBe("export");
+    const packageTab = document.createElement("button");
+    packageTab.id = "cl-tab-package";
+    const exportTab = document.createElement("button");
+    exportTab.id = "cl-tab-export";
+    document.body.append(packageTab, exportTab);
+    try {
+      render(
+        <MockLabProvider shell={{ ui }}>
+          <PosePanel />
+        </MockLabProvider>,
+      );
+      const summary = screen.getByTestId("pose-rig-summary");
+      expect(within(summary).getByTestId("pose-active-rig-source").textContent).toMatch(/절차적 휴머노이드/u);
+      expect(within(summary).getByTestId("pose-active-selection-summary").textContent).toMatch(/선택 상태: 기본 자세\(Rest · 프리셋: A 포즈\)/u);
+      fireEvent.click(within(summary).getByTestId("pose-switch-to-package-tab"));
+      expect(ui.getState().inspectorTab).toBe("package");
+      expect(document.activeElement).toBe(packageTab);
+      fireEvent.click(within(summary).getByTestId("pose-switch-to-export-tab"));
+      expect(ui.getState().inspectorTab).toBe("export");
+      expect(document.activeElement).toBe(exportTab);
+    } finally {
+      packageTab.remove();
+      exportTab.remove();
+    }
+  });
+
+  it("미로드 리그 상태에서는 정적 메시로 오분류하지 않고 미로드 안내와 aria-describedby 연결을 제공한다", () => {
+    const reason = "캐릭터 소스가 아직 로드되지 않았습니다.";
+    setup({ capabilities: { ...ALL_AVAILABLE_CAPABILITIES, pose: { status: "unavailable", reasonKo: reason } } });
+
+    expect(screen.getByTestId("pose-active-selection-summary").textContent).toBe("선택 상태: 리그 미로드 · 포즈 비활성");
+    expect(screen.queryByTestId("pose-empty-skeleton-notice")).toBeNull();
+    const unloadedNotice = screen.getByTestId("pose-unloaded-rig-notice");
+    expect(unloadedNotice.textContent).toMatch(/현재 캐릭터 소스가 아직 로드되지 않았거나/u);
+    const switchBtn = screen.getByTestId("pose-switch-to-package-tab");
+    const describedBy = switchBtn.getAttribute("aria-describedby") ?? "";
+    expect(describedBy).toContain(unloadedNotice.id);
+    expect(describedBy).toContain(screen.getByTestId("pose-capability-reason").id);
   });
 
   it("엔진 스켈레톤이 null이거나 본이 0개인 정적 메시이면 빈 상태 안내를 표시하고 포즈·손 조작을 비활성화한다", () => {

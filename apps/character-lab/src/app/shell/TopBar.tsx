@@ -3,7 +3,7 @@
  * Undo/Redo(Ctrl/Cmd+Z, Shift로 Redo), PBR↔툰 스위치, 품질 프리셋.
  * 엔진 생성에 쓸 캔버스는 viewport-registry에서 `claim()`으로 꺼낸다(백엔드를 바꿔 다시 고르면 새 캔버스, 없으면 fail-visible 실패 이벤트).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ENGINE_BACKENDS, ENGINE_BACKEND_LABELS_KO, QUALITY_PRESETS, QUALITY_PRESET_LABELS_KO, applyQualityPreset, failVisible } from "../../contracts";
 import { stableStringify } from "../../shared/stable-json";
@@ -54,6 +54,7 @@ export function TopBar() {
   const { setActiveSlot, setDrawingMode, setInspectorTab } = useUiActions();
   const activeStageId = resolveActiveWorkflowStageId(ui);
   const [helpOpen, setHelpOpen] = useState(false);
+  const helpToggleRef = useRef<HTMLButtonElement | null>(null);
   const [studioTheme, setStudioTheme] = useState<"nebula" | "shaper">(() =>
     typeof document !== "undefined" && document.documentElement.dataset.studioTheme === "shaper" ? "shaper" : "nebula",
   );
@@ -97,7 +98,13 @@ export function TopBar() {
         return;
       }
       if (event.key === "Escape") {
-        setHelpOpen(false);
+        setHelpOpen((prev) => {
+          if (prev) {
+            helpToggleRef.current?.focus();
+            requestAnimationFrame(() => helpToggleRef.current?.focus());
+          }
+          return false;
+        });
         return;
       }
       if (event.key >= "1" && event.key <= "9") {
@@ -105,6 +112,7 @@ export function TopBar() {
         if (tab) {
           event.preventDefault();
           setInspectorTab(tab);
+          document.getElementById(`cl-tab-${tab}`)?.focus();
         }
       }
     };
@@ -244,6 +252,7 @@ export function TopBar() {
           {studioTheme === "shaper" ? "SHAPER 다크 테마" : "네뷸라 기본 테마"}
         </button>
         <button
+          ref={helpToggleRef}
           type="button"
           className="cl-button cl-button-small"
           data-testid="topbar-help-toggle"
@@ -264,7 +273,15 @@ export function TopBar() {
         >
           <div className="cl-help-panel-header">
             <strong>단축키 &amp; 워크플로 안내</strong>
-            <button type="button" className="cl-button cl-button-small" onClick={() => setHelpOpen(false)}>
+            <button
+              type="button"
+              className="cl-button cl-button-small"
+              onClick={() => {
+                setHelpOpen(false);
+                helpToggleRef.current?.focus();
+                requestAnimationFrame(() => helpToggleRef.current?.focus());
+              }}
+            >
               닫기
             </button>
           </div>

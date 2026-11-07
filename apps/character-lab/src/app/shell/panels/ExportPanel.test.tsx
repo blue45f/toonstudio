@@ -509,11 +509,23 @@ describe("ExportPanel", () => {
     expect(paintSession.layersForExport()).toHaveLength(1);
     expect(store.getState().capabilities.pose.status).toBe("available");
 
-    // 5. 탭 전환 버튼(패키지 선택 탭으로 / 포즈 실험 탭으로) 검증
-    fireEvent.click(screen.getByTestId("export-switch-to-package-tab"));
-    expect(ui.getState().inspectorTab).toBe("package");
-    fireEvent.click(screen.getByTestId("export-switch-to-pose-tab"));
-    expect(ui.getState().inspectorTab).toBe("pose");
+    // 5. 탭 전환 버튼(패키지 선택 탭으로 / 포즈 실험 탭으로) 및 초점 복원 검증
+    const packageTab = document.createElement("button");
+    packageTab.id = "cl-tab-package";
+    const poseTab = document.createElement("button");
+    poseTab.id = "cl-tab-pose";
+    document.body.append(packageTab, poseTab);
+    try {
+      fireEvent.click(screen.getByTestId("export-switch-to-package-tab"));
+      expect(ui.getState().inspectorTab).toBe("package");
+      expect(document.activeElement).toBe(packageTab);
+      fireEvent.click(screen.getByTestId("export-switch-to-pose-tab"));
+      expect(ui.getState().inspectorTab).toBe("pose");
+      expect(document.activeElement).toBe(poseTab);
+    } finally {
+      packageTab.remove();
+      poseTab.remove();
+    }
   });
 
   it("빈 파일(0 B)·손상된 내장 페인트 PNG·선택 취소·실패 후 재시도·긴 파일 이름·미등록 패키지 안내에서 데이터 소실과 거짓 성공을 막는다", async () => {

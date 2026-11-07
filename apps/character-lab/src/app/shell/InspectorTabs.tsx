@@ -7,7 +7,7 @@ import { INSPECTOR_TAB_IDS, INSPECTOR_TAB_LABELS_KO } from "./ui-state";
 
 import type { LabPanels } from "./lab-runtime";
 import type { InspectorTabId } from "./ui-state";
-import type { ComponentType } from "react";
+import type { ComponentType, KeyboardEvent as ReactKeyboardEvent } from "react";
 
 const TAB_PANEL_KEYS: Readonly<Record<InspectorTabId, keyof LabPanels>> = {
   param: "ParamPanel",
@@ -33,10 +33,31 @@ export function InspectorTabs({ panels }: InspectorTabsProps) {
   const ui = useUiState();
   const { setInspectorTab } = useUiActions();
   const Panel = panelForTab(panels, ui.inspectorTab);
+
+  const onTabKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number): void => {
+    let nextIndex: number;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % INSPECTOR_TAB_IDS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + INSPECTOR_TAB_IDS.length) % INSPECTOR_TAB_IDS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = INSPECTOR_TAB_IDS.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    const nextTab = INSPECTOR_TAB_IDS[nextIndex];
+    if (!nextTab) return;
+    setInspectorTab(nextTab);
+    document.getElementById(`cl-tab-${nextTab}`)?.focus();
+  };
+
   return (
     <div className="cl-inspector">
       <div className="cl-inspector-tabs" role="tablist" aria-label="인스펙터">
-        {INSPECTOR_TAB_IDS.map((tab) => (
+        {INSPECTOR_TAB_IDS.map((tab, index) => (
           <button
             key={tab}
             type="button"
@@ -44,9 +65,11 @@ export function InspectorTabs({ panels }: InspectorTabsProps) {
             id={`cl-tab-${tab}`}
             className="cl-inspector-tab"
             aria-selected={ui.inspectorTab === tab}
+            tabIndex={ui.inspectorTab === tab ? 0 : -1}
             aria-controls={`cl-tabpanel-${tab}`}
             data-missing={panelForTab(panels, tab) ? undefined : "true"}
             onClick={() => setInspectorTab(tab)}
+            onKeyDown={(event) => onTabKeyDown(event, index)}
           >
             {INSPECTOR_TAB_LABELS_KO[tab]}
           </button>

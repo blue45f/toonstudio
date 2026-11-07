@@ -36,4 +36,39 @@ describe("app/shell/InspectorTabs", () => {
     expect(panelForTab({ ExportPanel: PosePanelStub }, "export")).toBe(PosePanelStub);
     expect(panelForTab({}, "vision")).toBeUndefined();
   });
+
+  it("roving tabIndex(선택 탭만 0, 나머지 -1)와 방향키·Home·End 키보드 이동을 지원한다", () => {
+    const ui = createUiStateStore();
+    render(
+      <MockLabProvider shell={{ ui }}>
+        <InspectorTabs panels={{ PosePanel: PosePanelStub }} />
+      </MockLabProvider>,
+    );
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs[0]?.getAttribute("tabindex")).toBe("0");
+    expect(tabs.slice(1).every((t) => t.getAttribute("tabindex") === "-1")).toBe(true);
+
+    tabs[0]?.focus();
+    fireEvent.keyDown(tabs[0]!, { key: "ArrowRight" });
+    expect(ui.getState().inspectorTab).toBe("expression");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "표정" }));
+    expect(screen.getByRole("tab", { name: "표정" }).getAttribute("tabindex")).toBe("0");
+    expect(tabs[0]?.getAttribute("tabindex")).toBe("-1");
+
+    fireEvent.keyDown(document.activeElement!, { key: "End" });
+    expect(ui.getState().inspectorTab).toBe("export");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "내보내기" }));
+
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowRight" });
+    expect(ui.getState().inspectorTab).toBe("param");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "파라미터" }));
+
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowLeft" });
+    expect(ui.getState().inspectorTab).toBe("export");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "내보내기" }));
+
+    fireEvent.keyDown(document.activeElement!, { key: "Home" });
+    expect(ui.getState().inspectorTab).toBe("param");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "파라미터" }));
+  });
 });
