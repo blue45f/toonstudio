@@ -4,7 +4,10 @@ import { FolderOpen, HardDrive } from "lucide-react";
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
+import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
+import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
+import { studioLobbyRecentProjects } from "./studio-creator-lobby-model";
 import {
   StudioProjectLibraryCard,
   StudioProjectLibraryRecoveryRow,
@@ -30,6 +33,13 @@ export function StudioProjectLibraryManagementContent({
     trashProjects, restoreProjects, duplicateProject, savePackage,
     projectOverviewHref, projectResumeTarget, continueProjectHref,
   } = controller;
+  const userVisibleProjects = visibleProjects.filter(
+    (project) => project.id !== EXAMPLE_PROJECT_ID && project.id !== SAMPLE_PROJECT_ID,
+  );
+  const recentCandidates = userVisibleProjects.length > 0 ? userVisibleProjects : visibleProjects;
+  const mostRecentProjectId = view === "active"
+    ? studioLobbyRecentProjects(recentCandidates, 1)[0]?.id ?? null
+    : null;
 
   const renderProjectCard = (project: StudioProjectLibraryEntry, temporary: boolean) => {
     const profile = profiles.profileFor(project.id);
@@ -47,6 +57,7 @@ export function StudioProjectLibraryManagementContent({
         authUserId={authUserId}
         checked={checked}
         temporary={temporary}
+        isMostRecent={mostRecentProjectId === project.id}
         localFileSaved={localFileSaved}
         busy={busyProjectId !== null}
         continueHref={continueProjectHref(project)}
@@ -88,7 +99,10 @@ export function StudioProjectLibraryManagementContent({
         view === "active" && !query ? (
           <StudioWorkspaceLibraryEmptyState />
         ) : (
-          <section className="mt-5 rounded-3xl border border-dashed border-line bg-card/60 px-5 py-14 text-center">
+          <section
+            data-studio-empty-state={query ? "search" : view}
+            className="mt-5 rounded-3xl border border-dashed border-line bg-card/60 px-5 py-12 text-center sm:py-14"
+          >
             <FolderOpen size={24} className="mx-auto text-fg-3" aria-hidden="true" />
             <h2 className="mt-3 text-xl font-black text-fg">
               {query
@@ -105,31 +119,31 @@ export function StudioProjectLibraryManagementContent({
             <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
               {query ? (
                 <>
-                  <button type="button" onClick={() => setQuery("")} className={buttonClass({ size: "sm" })}>
+                  <button type="button" onClick={() => setQuery("")} className={buttonClass({ size: "sm", className: "min-h-11 sm:min-h-9" })}>
                     {bi("검색어 지우기", "Clear search")}
                   </button>
-                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm" })}>
+                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}>
                     {bi("새 작업 시작", "Start new work")}
                   </Link>
-                  <Link href="/studio/import" className={buttonClass({ variant: "quiet", size: "sm" })}>
+                  <Link href="/studio/import" className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 sm:min-h-9" })}>
                     {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
                   </Link>
                 </>
               ) : view === "archived" ? (
                 <>
-                  <Link href="/studio" className={buttonClass({ size: "sm" })}>
+                  <Link href="/studio" className={buttonClass({ size: "sm", className: "min-h-11 sm:min-h-9" })}>
                     {bi("내 작업으로 돌아가기", "Back to My work")}
                   </Link>
-                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm" })}>
+                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}>
                     {bi("새 작업 시작", "Start new work")}
                   </Link>
                 </>
               ) : (
                 <>
-                  <Link href="/studio" className={buttonClass({ size: "sm" })}>
+                  <Link href="/studio" className={buttonClass({ size: "sm", className: "min-h-11 sm:min-h-9" })}>
                     {bi("내 작업으로 돌아가기", "Back to My work")}
                   </Link>
-                  <Link href="/studio/import" className={buttonClass({ variant: "outline", size: "sm" })}>
+                  <Link href="/studio/import" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}>
                     {bi("백업 파일 열기", "Open backup file")}
                   </Link>
                 </>
@@ -138,11 +152,11 @@ export function StudioProjectLibraryManagementContent({
           </section>
         )
       ) : view === "active" ? (
-        <div className="mt-6 space-y-8">
+        <div className="mt-6 space-y-8" data-studio-project-sections="true">
           {temporaryProjects.length > 0 ? (
             <section aria-labelledby="temporary-work-title">
               <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <h2 id="temporary-work-title" className="text-xl font-black text-fg">
                     {bi("임시 작업", "Temporary work")}
                     <span className="ml-2 text-sm font-bold text-fg-3">{temporaryProjects.length}</span>
@@ -156,7 +170,7 @@ export function StudioProjectLibraryManagementContent({
                   {bi("복구 가능", "Recoverable")}
                 </span>
               </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div data-studio-project-grid="temporary" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {temporaryProjects.map((project) => renderProjectCard(project, true))}
               </div>
             </section>
@@ -165,7 +179,7 @@ export function StudioProjectLibraryManagementContent({
           {savedProjects.length > 0 ? (
             <section aria-labelledby="saved-projects-title">
               <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <h2 id="saved-projects-title" className="text-xl font-black text-fg">
                     {bi("프로젝트", "Projects")}
                     <span className="ml-2 text-sm font-bold text-fg-3">{savedProjects.length}</span>
@@ -174,18 +188,18 @@ export function StudioProjectLibraryManagementContent({
                     {bi("파일 또는 개인 저장소와 연결한 정식 프로젝트입니다. 저장한 .toonstudio 파일은 파일 가져오기에서 언제든 다시 열 수 있습니다.", "Formally saved projects connected to a file or personal storage. Saved .toonstudio files can be reopened anytime from Open .toonstudio file.")}
                   </p>
                 </div>
-                <Link href="/studio/import" className="text-xs font-bold text-accent underline underline-offset-4">
+                <Link href="/studio/import" className="inline-flex min-h-11 items-center text-xs font-bold text-accent underline underline-offset-4 sm:min-h-9">
                   {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
                 </Link>
               </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div data-studio-project-grid="saved" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {savedProjects.map((project) => renderProjectCard(project, false))}
               </div>
             </section>
           ) : null}
         </div>
       ) : (
-        <section className="mt-5 space-y-3">
+        <section className="mt-5 space-y-3" data-studio-recovery-list={view}>
           {visibleProjects.map(renderRecoveryRow)}
         </section>
       )}

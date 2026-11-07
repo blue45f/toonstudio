@@ -1,14 +1,16 @@
 import { translateCurrentStaticSourceText, formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { Archive, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
+import { Archive, Clock3, FolderOpen, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import type { ChangeEvent } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
+import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
+import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
 import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
-import { STUDIO_LIBRARY_SECTION_ID } from "./studio-creator-lobby-model";
-import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryManagementViewHref, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
+import { STUDIO_LIBRARY_SECTION_ID, studioLobbyRecentProjects } from "./studio-creator-lobby-model";
+import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryDateLabel, studioProjectLibraryManagementViewHref, studioProjectLibraryTypeLabel, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
@@ -25,7 +27,14 @@ export function StudioProjectLibraryManagementHeader({
     setSelectedIds, notice, setNotice, setDeleteRequest, listedProjects,
     viewCounts, visibleProjects, selectedProjects, allVisibleSelected,
     toggleVisibleSelection, archiveProjects, trashProjects, restoreProjects,
+    continueProjectHref, projectResumeTarget,
   } = controller;
+  const userProjects = listedProjects.filter(
+    (project) => project.id !== EXAMPLE_PROJECT_ID && project.id !== SAMPLE_PROJECT_ID,
+  );
+  const recentCandidates = userProjects.length > 0 ? userProjects : listedProjects;
+  const recentProject = view === "active" ? studioLobbyRecentProjects(recentCandidates, 1)[0] ?? null : null;
+  const recentResumeTarget = recentProject ? projectResumeTarget(recentProject) : null;
   return (
     <section
       id={STUDIO_LIBRARY_SECTION_ID}
@@ -35,7 +44,7 @@ export function StudioProjectLibraryManagementHeader({
       className="scroll-mt-4 focus:outline-none"
     >
       <header className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="hidden text-[0.68rem] font-black uppercase sm:block tracking-[0.18em] text-accent">{translateCurrentStaticSourceText("domains.creator.studio.shell.StudioProjectLibraryManagementHeader", "en", "TOONSTUDIO")}</p>
           <h1 className="text-2xl font-black tracking-tight text-fg sm:mt-2 sm:text-4xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
@@ -47,7 +56,7 @@ export function StudioProjectLibraryManagementHeader({
             {bi("작업을 이어 하고 저장 상태를 확인하세요.", "Continue your work and check its save status.")}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" data-studio-primary-entry-actions="true">
           <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"} className={buttonClass({ className: "min-h-11 min-w-0 gap-2 whitespace-normal px-3" })}>
             <Plus size={16} aria-hidden="true" />
             {bi("새 작업", "New work")}
@@ -58,7 +67,55 @@ export function StudioProjectLibraryManagementHeader({
         </div>
       </header>
 
-      <div className="mt-3 sm:mt-7">
+      {recentProject && recentResumeTarget ? (
+        <div
+          role="region"
+          aria-label={bi("최근 작업 빠른 이어하기", "Quick resume recent work")}
+          data-studio-recent-work-bar="true"
+          className="mt-3 flex flex-col gap-2.5 rounded-2xl border border-accent/30 bg-card/90 p-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-[0.68rem] font-black text-accent">
+              <Clock3 size={12} aria-hidden="true" />
+              {bi("최근 작업", "Recent work")}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p
+                title={recentProject.title}
+                data-studio-recent-work-title="true"
+                className="truncate text-xs font-black text-fg sm:text-sm"
+              >
+                {recentProject.title}
+              </p>
+              <p className="mt-0.5 truncate text-[0.68rem] text-fg-3">
+                {`${studioProjectLibraryTypeLabel(recentProject)} · ${studioProjectLibraryDateLabel(recentProject.lastOpenedAt, _locale)}`}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={continueProjectHref(recentProject)}
+              onClick={() => {
+                library.touch(recentProject.id, recentResumeTarget.documentId);
+              }}
+              data-studio-recent-work-open="true"
+              className={buttonClass({ size: "sm", className: "min-h-11 flex-1 gap-1.5 sm:min-h-9 sm:flex-initial" })}
+            >
+              <FolderOpen size={14} aria-hidden="true" />
+              {bi("최근 작업 열기", "Open recent work")}
+            </Link>
+            <Link
+              href="/studio/import"
+              data-studio-open-package-shortcut="true"
+              className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 shrink-0 text-xs font-bold text-accent sm:min-h-9" })}
+            >
+              {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-3 sm:mt-5">
         <nav className="overflow-x-auto" aria-label={bi("내 작업 보기", "My work views")}>
           <div className="flex min-w-max gap-1 rounded-2xl border border-line bg-card p-1">
             {(["active", "archived", "trash"] as const).map((candidate) => (

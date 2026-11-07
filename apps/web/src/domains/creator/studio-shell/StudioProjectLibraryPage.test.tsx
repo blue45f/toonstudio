@@ -19,6 +19,7 @@ import {
   markStudioProjectOpened,
   readStudioProjectLibrary,
   trashStudioProject,
+  updateStudioProjectThumbnailUrl,
 } from "../studio-project-library-store";
 import {
   ensureStudioSaveProfile,
@@ -486,5 +487,63 @@ describe("StudioProjectLibraryPage", () => {
       unmount();
     }
   });
+
+  it("exposes a top-level recent work quick-resume bar, highlights the newest card, clamps long titles, and falls back when cover image fails", async () => {
+    const longTitle =
+      "아주 긴 웹툰 연재 프로젝트 제목 — 시즌 1 제12화 비 오는 날의 네온사인 골목길과 끝없는 이야기 테스트 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    createStudioProject(window.localStorage, {
+      id: "series-older",
+      title: "이전 작업 작품",
+      kind: "illustration",
+      createdAt: "2026-09-10T00:00:00.000Z",
+    });
+    createStudioProject(window.localStorage, {
+      id: "series-recent",
+      title: longTitle,
+      kind: "webtoon",
+      createdAt: "2026-09-15T00:00:00.000Z",
+    });
+    updateStudioProjectThumbnailUrl(
+      window.localStorage,
+      "series-recent",
+      "data:image/png;base64,broken-thumbnail-payload",
+    );
+
+    render(
+      <MemoryRouter initialEntries={["/studio"]}>
+        <StudioProjectLibraryPage />
+      </MemoryRouter>,
+    );
+
+    const recentBar = await screen.findByRole("region", { name: /최근 작업 빠른 이어하기|Quick resume recent work/u });
+    expect(recentBar.getAttribute("data-studio-recent-work-bar")).toBe("true");
+    expect(within(recentBar).getByText(longTitle).getAttribute("title")).toBe(longTitle);
+    const openRecentLink = within(recentBar).getByRole("link", { name: /^최근 작업 열기$|^Open recent work$/u });
+    expect(openRecentLink.getAttribute("href")).toContain("/studio/p/series-recent/");
+    const openPackageLink = within(recentBar).getByRole("link", { name: /\.toonstudio 파일 열기|Open \.toonstudio file/u });
+    expect(openPackageLink.getAttribute("href")).toBe("/studio/import");
+
+    const recentHeading = await screen.findByRole("heading", { name: longTitle });
+    expect(recentHeading.getAttribute("data-studio-project-title")).toBe("true");
+    expect(recentHeading.getAttribute("title")).toBe(longTitle);
+    expect(recentHeading.className).toContain("line-clamp-2");
+    expect(recentHeading.className).toContain("break-words");
+
+    const recentCard = recentHeading.closest("article") as HTMLElement | null;
+    expect(recentCard).not.toBeNull();
+    expect(recentCard?.getAttribute("data-recent-primary")).toBe("true");
+    expect(recentCard?.querySelector('[data-studio-recent-badge="true"]')).not.toBeNull();
+
+    const coverImg = recentCard?.querySelector('img[src^="data:image/png"]') as HTMLImageElement | null;
+    expect(coverImg).not.toBeNull();
+    fireEvent.error(coverImg!);
+
+    await waitFor(() => {
+      const fallback = recentCard?.querySelector('[data-thumbnail-fallback="true"]');
+      expect(fallback).not.toBeNull();
+      expect(fallback?.getAttribute("data-project-preview-state")).toBe("fallback");
+    });
+  });
 });
+
 

@@ -1,0 +1,114 @@
+{
+  "schema": "character-lab-pose-usability-probe/v1",
+  "mode": "negative-control",
+  "generatedAt": "2026-11-07T05:41:18.920Z",
+  "provenance": {
+    "commitSha": "e48cdc2563227ba5dd10bd491b54977ce92b4afa",
+    "shortCommit": "e48cdc2",
+    "branch": "feat/character-lab-ui-20261107",
+    "ancestorCommits": [
+      {
+        "commit": "f8a04aee",
+        "present": true,
+        "isAncestor": true,
+        "subject": "test(character-lab): 포즈 FK·체인 역산·FACS·커스터마이즈 수치 안정성 회귀 하네스 및 경계 결함 수정"
+      },
+      {
+        "commit": "06d95bc8",
+        "present": true,
+        "isAncestor": true,
+        "subject": "test(character-lab): 호출 경계에서 skeleton-fk·back-solve·customize-plan 통합 계약 테스트 추가"
+      },
+      {
+        "commit": "39976d11",
+        "present": true,
+        "isAncestor": true,
+        "subject": "fix(character-lab): 손상 스켈레톤·비유한 입력에 대한 기즈모·제어점·포인터 안전 경계 구현"
+      },
+      {
+        "commit": "eac1fb45",
+        "present": true,
+        "isAncestor": true,
+        "subject": "test(character-lab): 손상 스켈레톤·복구 실브라우저 회귀 프로브 및 진단 경계 보강"
+      },
+      {
+        "commit": "698dffc4",
+        "present": true,
+        "isAncestor": true,
+        "subject": "fix(character-lab): 손상 스켈레톤에 대한 ViewportPane·PosePanel 안전 경계 연결 및 엄격 프로브 검증"
+      }
+    ],
+    "allRequiredAncestorsPresent": true,
+    "dirtyFiles": [
+      "M apps/character-lab/src/app/shell/panels/PackagePanel.test.tsx",
+      "M apps/character-lab/src/app/shell/panels/PackagePanel.tsx",
+      "M apps/character-lab/src/app/shell/panels/PosePanel.test.tsx",
+      "M apps/character-lab/src/app/shell/panels/PosePanel.tsx",
+      "M apps/character-lab/src/app/styles/character-lab.css",
+      "?? docs/parallel-toon-character-20261107/"
+    ]
+  },
+  "negativeControl": {
+    "ok": true,
+    "allRejected": true,
+    "baselinePassed": true,
+    "exitCode": 1,
+    "cases": [
+      {
+        "id": "mutate-320px-horizontal-overflow",
+        "descriptionKo": "320px 뷰포트에서 PosePanel 가로 오버플로(53px) 발생 시 거부",
+        "rejected": true,
+        "observedOk": false,
+        "failures": [
+          "뷰포트 320px: PosePanel 가로 오버플로 발생 (posePanelOverflowPx=53)"
+        ]
+      },
+      {
+        "id": "mutate-touch-target-under-44px",
+        "descriptionKo": "390px 뷰포트에서 44x44px 미만 터치 타겟(3개) 존재 시 거부",
+        "rejected": true,
+        "observedOk": false,
+        "failures": [
+          "뷰포트 390px: 44x44 CSS px 미만 인터랙티브 요소 존재 (under44Count=3)"
+        ]
+      },
+      {
+        "id": "mutate-diagnostics-not-collapsible",
+        "descriptionKo": "고급 진단 컨테이너가 기본 접힘 상태가 아닐 때(defaultOpen=true) 거부",
+        "rejected": true,
+        "observedOk": false,
+        "failures": [
+          "고급 진단 컨테이너가 기본 접힘(defaultOpen === false) 상태가 아닙니다 (defaultOpen=true)."
+        ]
+      },
+      {
+        "id": "mutate-corrupt-rig-controls-not-disabled",
+        "descriptionKo": "손상 순환 리그(corrupt-cycle-rig)에서 조작 버튼이 비활성화되지 않았을 때 거부",
+        "rejected": true,
+        "observedOk": false,
+        "failures": [
+          "rigTransitions.corruptCycleRig 검증 실패 ([skeleton-cycle] 진단 표시·조작 버튼 비활성화·히스토리 깊이 불변·pageErrorCount=0 필요)."
+        ]
+      },
+      {
+        "id": "mutate-recovery-rig-still-blocked",
+        "descriptionKo": "정상 리그(valid-humanoid-rig) 복구 직후에도 조작 버튼이 잠겨 있을 때 거부",
+        "rejected": true,
+        "observedOk": false,
+        "failures": [
+          "rigTransitions.immediateRecoveryToValidRig 검증 실패 (정상 리그 전환 직후 조작 버튼 활성화·포즈 적용 및 히스토리 깊이 +1·pageErrorCount=0 필요)."
+        ]
+      },
+      {
+        "id": "mutate-undo-redo-broken",
+        "descriptionKo": "키보드 Ctrl+Z 실행 취소가 동작하지 않을 때 거부",
+        "rejected": true,
+        "observedOk": false,
+        "failures": [
+          "interactions.undoRedo 검증 실패 (undoRestoredDepth, redoReappliedDepth, keyboardCtrlZWorked, keyboardCtrlYWorked, pageErrorCount=0 필요)."
+        ]
+      }
+    ]
+  },
+  "exitCode": 1
+}

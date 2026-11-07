@@ -260,9 +260,13 @@ function PreviewLoading({ locale: _locale }: { readonly locale: string }) {
 function PreviewEmpty({
   locale,
   project,
+  coverFailed = false,
+  variant = "card",
 }: {
   readonly locale: string;
   readonly project: StudioProjectLibraryEntry;
+  readonly coverFailed?: boolean;
+  readonly variant?: StudioProjectCardThumbnailVariant;
 }) {
   const bt = useBilingual("StudioProjectCardThumbnail.empty");
   const formatProfile = project.definition
@@ -270,23 +274,38 @@ function PreviewEmpty({
     : null;
   if (formatProfile) {
     return (
-      <div className="relative h-full bg-panel/70 p-3 text-center text-fg-3">
+      <div
+        data-thumbnail-empty="true"
+        data-thumbnail-fallback={coverFailed ? "true" : undefined}
+        className="relative h-full bg-panel/70 p-3 text-center text-fg-3"
+      >
         <StudioProjectFormatVisual
           profile={formatProfile}
           className="mx-auto h-full max-w-sm bg-card/70"
         />
-        <span className="absolute inset-x-3 bottom-3 rounded-lg bg-card/90 px-2 py-1.5 text-[0.68rem] font-bold text-fg-2 shadow-sm">
+        <span className="absolute inset-x-3 bottom-3 truncate rounded-lg bg-card/90 px-2 py-1.5 text-[0.68rem] font-bold text-fg-2 shadow-sm">
           {locale.startsWith("ko") ? formatProfile.titleKo : formatProfile.titleEn}
         </span>
       </div>
     );
   }
   return (
-    <div className="grid h-full place-items-center bg-panel/70 px-5 text-center text-fg-3">
-      <div>
-        <ImageIcon size={22} className="mx-auto" aria-hidden="true" />
-        <p className="mt-2 text-xs font-semibold">
-          {bt("작업을 시작하면 미리보기가 표시됩니다.", "A preview appears after you start working.")}
+    <div
+      data-thumbnail-empty="true"
+      data-thumbnail-fallback={coverFailed ? "true" : undefined}
+      className="grid h-full place-items-center bg-panel/70 px-3 text-center text-fg-3 sm:px-5"
+    >
+      <div className="min-w-0 max-w-full">
+        <ImageIcon size={variant === "cover" ? 18 : 22} className="mx-auto text-accent/80" aria-hidden="true" />
+        {variant === "card" ? (
+          <p className="mt-1.5 truncate text-[0.7rem] font-bold text-fg-2" title={project.title}>
+            {project.title}
+          </p>
+        ) : null}
+        <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-fg-3 sm:text-xs">
+          {coverFailed
+            ? bt("표지 이미지를 불러오지 못해 기본 커버로 표시합니다.", "Cover image unavailable; showing default cover.")
+            : bt("작업을 시작하면 미리보기가 표시됩니다.", "A preview appears after you start working.")}
         </p>
       </div>
     </div>
@@ -296,7 +315,7 @@ function PreviewEmpty({
 export type StudioProjectCardThumbnailVariant = "card" | "cover";
 
 const VARIANT_FRAME_CLASS: Readonly<Record<StudioProjectCardThumbnailVariant, string>> = {
-  card: "relative -mx-4 -mt-4 mb-4 aspect-[16/10] overflow-hidden border-b border-line bg-panel/70",
+  card: "relative -mx-3.5 -mt-3.5 mb-3.5 aspect-[16/10] overflow-hidden border-b border-line bg-panel/70 sm:-mx-4 sm:-mt-4 sm:mb-4",
   cover: "relative h-full w-full overflow-hidden bg-panel/70",
 };
 
@@ -363,9 +382,10 @@ export function StudioProjectCardThumbnail({
     <div
       ref={rootRef}
       data-studio-project-thumbnail={variant}
+      data-thumbnail-fallback={storedThumbnailFailed ? "true" : undefined}
       aria-hidden={decorative || undefined}
       className={VARIANT_FRAME_CLASS[variant]}
-      data-project-preview-state={preview ? "autosave" : storedThumbnail ? "stored" : phase}
+      data-project-preview-state={preview ? "autosave" : storedThumbnail ? "stored" : storedThumbnailFailed ? "fallback" : phase}
     >
       {preview ? (
         <div
@@ -389,10 +409,15 @@ export function StudioProjectCardThumbnail({
           decoding="async"
           onError={() => setStoredThumbnailFailed(true)}
         />
-      ) : phase === "idle" || phase === "loading" ? (
+      ) : (phase === "idle" || phase === "loading") && !storedThumbnailFailed ? (
         <PreviewLoading locale={locale} />
       ) : (
-        <PreviewEmpty locale={locale} project={project} />
+        <PreviewEmpty
+          locale={locale}
+          project={project}
+          coverFailed={storedThumbnailFailed}
+          variant={variant}
+        />
       )}
       {!decorative && (preview || storedThumbnail) ? (
         <span className="pointer-events-none absolute bottom-2 left-2 rounded-full border border-white/20 bg-black/65 px-2 py-1 text-[0.62rem] font-black text-white shadow-sm backdrop-blur-sm">

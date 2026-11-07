@@ -217,6 +217,38 @@ function StudioLobbyIdeaForm() {
   );
 }
 
+function LobbyArtImage({
+  art,
+  sizes,
+  className,
+  loading,
+  fetchPriority,
+}: {
+  readonly art: ReturnType<typeof studioLobbyArtSource>;
+  readonly sizes: string;
+  readonly className?: string;
+  readonly loading?: "lazy" | "eager";
+  readonly fetchPriority?: "high" | "low" | "auto";
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <span className={className} data-lobby-art-fallback="true" aria-hidden="true" />;
+  }
+  return (
+    <img
+      className={className}
+      src={art.src}
+      srcSet={art.srcSet}
+      sizes={sizes}
+      alt=""
+      loading={loading}
+      decoding="async"
+      fetchPriority={fetchPriority}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function StudioLobbyQuickStart() {
   // 직군 프리셋(R-1): 전역 워크스페이스 문서의 활성 직군으로 순서·강조만 바꾼다.
   // 문서가 없거나 불러오지 못하면 activeRole이 없어 현행 순서 그대로 폴백한다.
@@ -242,13 +274,10 @@ function StudioLobbyQuickStart() {
                 data-role-featured={featured || undefined}
               >
                 <span className="studio-lobby-quick__artwrap">
-                  <img
+                  <LobbyArtImage
                     className="studio-lobby-quick__art"
-                    src={art.src}
-                    srcSet={art.srcSet}
+                    art={art}
                     sizes="(min-width: 1024px) 18vw, (min-width: 601px) 34vw, 47vw"
-                    alt=""
-                    decoding="async"
                   />
                 </span>
                 <span className="studio-lobby-quick__copy">
@@ -304,7 +333,7 @@ function StudioLobbyHero() {
         </div>
       </div>
       <figure className="studio-lobby-hero__art" aria-hidden="true">
-        <img src={heroArt.src} srcSet={heroArt.srcSet} sizes="(min-width: 900px) 48vw, 100vw" alt="" decoding="async" fetchPriority="high" />
+        <LobbyArtImage art={heroArt} sizes="(min-width: 900px) 48vw, 100vw" fetchPriority="high" />
       </figure>
       <StudioLobbyQuickStart />
     </section>
@@ -344,6 +373,7 @@ function StudioLobbyProjectCard({
       href={resume.href}
       onClick={() => controller.library.touch(project.id, resume.documentId)}
       className="studio-lobby-project"
+      title={project.title}
       aria-label={formatI18nTemplate(String(bi("{value0} 이어서 작업", "Continue {value0}")), { value0: project.title })}
     >
       <span className="studio-lobby-project__art">
@@ -356,7 +386,7 @@ function StudioLobbyProjectCard({
         {temporary ? <span className="studio-lobby-project__badge">{bi("임시", "Temporary")}</span> : null}
       </span>
       <span className="studio-lobby-project__copy">
-        <strong>{project.title}</strong>
+        <strong title={project.title} data-studio-project-title="true">{project.title}</strong>
         <small>
           <Clock3 size={12} aria-hidden="true" />
           {`${studioProjectLibraryTypeLabel(project)} · ${studioProjectLibraryDateLabel(project.lastOpenedAt, controller.locale)}`}
@@ -371,7 +401,7 @@ function StudioLobbyStarterCard({ starter }: { readonly starter: StarterCard }) 
   return (
     <Link href={starter.href} className="studio-lobby-project" data-starter="true">
       <span className="studio-lobby-project__art">
-        <img src={art.src} srcSet={art.srcSet} sizes="(min-width: 1024px) 20vw, 47vw" alt="" loading="lazy" decoding="async" />
+        <LobbyArtImage art={art} sizes="(min-width: 1024px) 20vw, 47vw" loading="lazy" />
         <span className="studio-lobby-project__badge">{bi("예시", "Example")}</span>
       </span>
       <span className="studio-lobby-project__copy">
@@ -455,7 +485,7 @@ function StudioLobbyAiDirector() {
   return (
     <aside className="studio-lobby-panel studio-lobby-director" aria-labelledby="studio-ai-director-title">
       <div className="studio-lobby-director__head">
-        <img className="studio-lobby-director__avatar" src={avatar.src} srcSet={avatar.srcSet} sizes="4rem" alt="" loading="lazy" decoding="async" />
+        <LobbyArtImage className="studio-lobby-director__avatar" art={avatar} sizes="4rem" loading="lazy" />
         <div>
           <p className="studio-lobby-eyebrow">
             <Sparkles size={12} aria-hidden="true" /> AI CREATIVE DIRECTOR
