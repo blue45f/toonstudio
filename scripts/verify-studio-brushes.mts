@@ -1950,6 +1950,8 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       const lowDensityEraser = operation === "erase"
         && isStudioBrushEraserAliasId(expectedSelection.runtimeBrushId);
       await selectDesktopBrush(page, preset, expectedSelection);
+      // 빈 문서로 되돌아오면 접힌 시작 안내도 다시 나타난다. 그림자는 잉크 기준이 아니다.
+      await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
       await page.mouse.move(4, 4);
       // 도구 전환·진단 복구 뒤에는 안내 배너와 작업 영역의 현재 좌표로 다시 측정한다.
       const stageBox = await stage.boundingBox();
@@ -2518,6 +2520,7 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       // the evidence region anchored to the same local canvas coordinates rather than reusing the
       // old absolute page coordinates, otherwise UI chrome movement is counted as residual ink.
       const undoClip = await reanchorEvidenceClip(page.locator(".konvajs-content").first(), stageBox, usedClip, viewport);
+      await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
       let undone = await page.screenshot({ animations: "disabled", clip: undoClip });
       for (let settleAttempt = 0; settleAttempt < 12; settleAttempt += 1) {
         await page.waitForTimeout(60);
@@ -2591,6 +2594,7 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       await page.keyboard.press("Meta+z");
       await page.waitForTimeout(40);
       const cleanupClip = await reanchorEvidenceClip(page.locator(".konvajs-content").first(), stageBox, usedClip, viewport);
+      await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
       const cleaned = await page.screenshot({ animations: "disabled", clip: cleanupClip });
       const cleanupDiff = await compareScreenshotPixelsWithinReferenceDelta(page, before, cleaned, after, 20);
       const cleanupCrossSurfaceAntialiasOnly = operation === "erase"
@@ -2618,6 +2622,7 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
         await page.keyboard.press("Meta+z");
         await page.waitForTimeout(80);
         const fullyCleanedClip = await reanchorEvidenceClip(page.locator(".konvajs-content").first(), stageBox, usedClip, viewport);
+        await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
         const fullyCleaned = await page.screenshot({ animations: "disabled", clip: fullyCleanedClip });
         const fullCleanupDiff = await compareScreenshotPixels(
           page,
