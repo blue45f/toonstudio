@@ -42,9 +42,14 @@ const MAX_TOTAL_IMAGE_CHARS = 64_000_000;
 const DEFAULT_PANEL_SECONDS = 6;
 const MS_PER_SECOND = 1000;
 const DEFAULT_AR_SCALE = 0.65;
-/** 깨진 컷/표지 이미지가 감지되었을 때 브라우저 깨진 아이콘 대신 표시하는 유효한 1×1 PNG. */
-const FALLBACK_PANEL_IMAGE =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+/** 깨진 컷 이미지 감지 시 정상 작품으로 오해하지 않도록 '이미지 로드 실패 대체 표시' 문구를 명시한 SVG 데이터 URI. */
+function fallbackPanelImage(isKo: boolean): string {
+  const label = isKo
+    ? "이미지 로드 실패 · 원본 작품이 아닌 대체 표시"
+    : "Image load failed · Fallback placeholder (not original artwork)";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><rect width="640" height="360" rx="16" fill="#18181b"/><rect x="16" y="16" width="608" height="328" rx="12" fill="none" stroke="#71717a" stroke-width="2" stroke-dasharray="8 6"/><text x="320" y="184" text-anchor="middle" fill="#e4e4e7" font-family="sans-serif" font-size="16" font-weight="600">${label}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 
 function savedIndex(book: SpatialBook): number {
   try {
@@ -121,6 +126,7 @@ export function StudioSpatialReaderPage() {
   const [captionUrl, setCaptionUrl] = useState("");
   const [brokenPanelIds, setBrokenPanelIds] = useState<string[]>([]);
   const [panelFilter, setPanelFilter] = useState("");
+  const [panelFilterOpen, setPanelFilterOpen] = useState(false);
   const host = useRef<HTMLDivElement>(null);
   const runtime = useRef<SpatialReaderRuntime | null>(null);
   const audio = useRef<HTMLAudioElement>(null);
@@ -150,6 +156,7 @@ export function StudioSpatialReaderPage() {
   useEffect(() => {
     setBrokenPanelIds([]);
     setPanelFilter("");
+    setPanelFilterOpen(false);
     const heading = viewerHeading.current;
     if (!openedBookId || !heading) return;
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -248,9 +255,11 @@ export function StudioSpatialReaderPage() {
         dismissError();
         return;
       }
-      if (panelFilter) {
+      if (panelFilter || panelFilterOpen) {
         event.preventDefault();
         setPanelFilter("");
+        setPanelFilterOpen(false);
+        viewerHeading.current?.focus({ preventScroll: true });
         return;
       }
     }
@@ -263,6 +272,13 @@ export function StudioSpatialReaderPage() {
       || target instanceof HTMLAudioElement
       || (target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('[data-testid="spatial-reader-rea-webxr-fov-bar"]'))))
     ) {
+      return;
+    }
+    if (event.key === "/") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setPanelFilterOpen(true);
+      queueMicrotask(() => panelFilterInputRef.current?.focus());
       return;
     }
     if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
@@ -285,10 +301,10 @@ export function StudioSpatialReaderPage() {
         audio.current?.pause();
       }
     };
-    window.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
@@ -317,6 +333,7 @@ export function StudioSpatialReaderPage() {
     const version = ++loadGeneration.current;
     setBusy(true);
     setError("");
+    setStatus("");
     setAuto(false);
     try {
       const result = await load();
@@ -356,7 +373,7 @@ export function StudioSpatialReaderPage() {
       return {
         book: next,
         index: 0,
-        message: bt("파일 이름 순서로 컷을 열었어요. 내보내기를 하면 이미지·자막·깊이 레이어를 함께 보관합니다.", "Opened panels in file-name order. Export keeps images, captions and depth layers together."),
+        message: "",
       };
     }, bt("이미지를 열지 못했어요.", "Couldn't open the images."));
   }
@@ -375,7 +392,7 @@ export function StudioSpatialReaderPage() {
         throw new Error(bt("손상된 JSON 파일이에요. 1~32컷의 공간 웹툰 파일을 사용해 주세요.", "The JSON file is corrupted. Please use a 1–32 panel spatial webtoon file."));
       }
       const next = parseSpatialBook(parsedJson);
-      return { book: next, index: savedIndex(next), message: bt("저장한 공간 웹툰과 감상 위치를 불러왔어요.", "Loaded the saved spatial webtoon and your reading position.") };
+      return { book: next, index: savedIndex(next), message: "" };
     }, bt("공간 웹툰을 열지 못했어요.", "Couldn't open the spatial webtoon."));
   }
 
@@ -393,7 +410,7 @@ export function StudioSpatialReaderPage() {
       return {
         book: next,
         index: 0,
-        message: bt("샘플 작품을 열었어요. ‘공간 보기’를 누르면 컷이 3D 공간에 놓입니다.", "Opened the sample. Press ‘Spatial view’ to place the panels in 3D."),
+        message: "",
       };
     }, bt("샘플 작품을 만들지 못했어요.", "Couldn't build the sample work."));
   }
@@ -473,17 +490,22 @@ export function StudioSpatialReaderPage() {
         title: book.title.trim() || bt("제목 없는 공간 웹툰", "Untitled spatial webtoon"),
         panels: book.panels.map((item, i) => {
           const fallbackTitle = item.title.trim() || (isKo ? `${i + 1}번째 컷` : `Panel ${i + 1}`);
+          const baseAlt = item.alt.trim() || fallbackTitle;
+          const isBroken = brokenPanelIds.includes(item.id);
           return {
             ...item,
             title: fallbackTitle,
-            alt: item.alt.trim() || fallbackTitle,
-            src: brokenPanelIds.includes(item.id) ? FALLBACK_PANEL_IMAGE : item.src,
+            alt: isBroken
+              ? `${bt("[이미지 로드 실패 대체 표시] ", "[Broken image fallback] ")}${baseAlt}`
+              : baseAlt,
+            src: isBroken ? fallbackPanelImage(isKo) : item.src,
           };
         }),
       }
     : null;
   const viewerPanel = viewerBook?.panels[index];
   const normalizedPanelFilter = panelFilter.trim().toLowerCase();
+  const showPanelFilter = Boolean(viewerBook && (viewerBook.panels.length > 6 || panelFilterOpen || normalizedPanelFilter.length > 0));
   const matchingPanels = viewerBook
     ? viewerBook.panels
         .map((item, panelIndex) => ({ item, panelIndex }))
@@ -503,7 +525,7 @@ export function StudioSpatialReaderPage() {
       <section
         data-testid="spatial-reader-rea-webxr-fov-bar"
         aria-label={pickLang("공간 리더 WebXR 시야각 곡률 및 시선 포커스 워크벤치", "Spatial Reader WebXR Curvature & Gaze Focus Workbench")}
-        className="mb-5 rounded-2xl border border-line bg-card p-4"
+        className="rounded-2xl border border-line bg-card p-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -597,9 +619,11 @@ export function StudioSpatialReaderPage() {
         </div>
       ) : null}
 
-      <p role="status" className="text-sm text-fg-2">
-        {busy ? bt("작품을 읽는 중…", "Reading the work…") : status}
-      </p>
+      {busy || status ? (
+        <p role="status" className="text-sm text-fg-2">
+          {busy ? bt("작품을 읽는 중…", "Reading the work…") : status}
+        </p>
+      ) : null}
 
       {busy && !book ? (
         <div aria-hidden className="grid gap-3">
@@ -610,22 +634,11 @@ export function StudioSpatialReaderPage() {
 
       {book && panel && viewerBook && viewerPanel ? (
         <>
-          <div
-            data-testid="spatial-reader-panel-filter-bar"
-            className="flex flex-col gap-3 rounded-2xl border border-line bg-card/70 p-4"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="min-w-0 flex-1" data-testid="spatial-reader-work-summary">
-                <p className="break-words [overflow-wrap:anywhere] text-xs font-semibold text-fg">
-                  {viewerBook.title} · {viewerPanel.title}
-                </p>
-                <p className="mt-0.5 text-xs text-fg-2">
-                  {pickLang(
-                    `전체 ${viewerBook.panels.length}컷 중 ${index + 1}번째 컷 감상 중`,
-                    `Viewing panel ${index + 1} of ${viewerBook.panels.length}`,
-                  )}
-                </p>
-              </div>
+          {showPanelFilter ? (
+            <div
+              data-testid="spatial-reader-panel-filter-bar"
+              className="flex flex-col gap-3 rounded-2xl border border-line bg-card/70 p-4"
+            >
               <input
                 ref={panelFilterInputRef}
                 type="search"
@@ -634,55 +647,56 @@ export function StudioSpatialReaderPage() {
                 aria-label={bt("컷 제목·대사 필터", "Filter panels by title or dialogue")}
                 placeholder={bt("컷 번호·제목·대사로 찾기", "Filter by panel number, title, or dialogue")}
                 data-testid="spatial-reader-panel-filter-input"
-                className="min-h-11 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg placeholder:text-fg-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-64"
+                className="min-h-11 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg placeholder:text-fg-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               />
-            </div>
 
-            {normalizedPanelFilter ? (
-              matchingPanels.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-2" role="group" aria-label={bt("필터된 컷 바로가기", "Filtered panels")}>
-                  {matchingPanels.map(({ item, panelIndex }) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      data-testid={`spatial-reader-filtered-panel-${panelIndex + 1}`}
-                      aria-pressed={panelIndex === index}
-                      onClick={() => focus(panelIndex)}
-                      className="inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! items-center gap-1.5 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                    >
-                      <span className="numeral text-accent">#{panelIndex + 1}</span>
-                      <span className="break-words [overflow-wrap:anywhere]">{item.title}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  role="status"
-                  aria-live="polite"
-                  data-testid="spatial-reader-filter-empty"
-                  className="flex flex-col items-start justify-between gap-2 rounded-xl border border-dashed border-line bg-panel/60 p-3 sm:flex-row sm:items-center"
-                >
-                  <p className="text-xs text-fg-2">
-                    {bt(
-                      "조건에 맞는 컷이 없습니다 (0건). 현재 감상 중인 컷 위치는 그대로 유지됩니다.",
-                      "No panels match the filter (0 results). Your current panel position is preserved.",
-                    )}
-                  </p>
-                  <button
-                    type="button"
-                    data-testid="spatial-reader-filter-reset"
-                    onClick={() => {
-                      setPanelFilter("");
-                      panelFilterInputRef.current?.focus();
-                    }}
-                    className="inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! shrink-0 items-center justify-center rounded-xl border border-line bg-card px-3 py-2 text-xs font-semibold text-fg hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              {normalizedPanelFilter ? (
+                matchingPanels.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-2" role="group" aria-label={bt("필터된 컷 바로가기", "Filtered panels")}>
+                    {matchingPanels.map(({ item, panelIndex }) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        data-testid={`spatial-reader-filtered-panel-${panelIndex + 1}`}
+                        aria-pressed={panelIndex === index}
+                        onClick={() => focus(panelIndex)}
+                        className="inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! items-center gap-1.5 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      >
+                        <span className="numeral text-accent">#{panelIndex + 1}</span>
+                        <span className="break-words [overflow-wrap:anywhere]">{item.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    data-testid="spatial-reader-filter-empty"
+                    className="flex flex-col items-start justify-between gap-2 rounded-xl border border-dashed border-line bg-panel/60 p-3 sm:flex-row sm:items-center"
                   >
-                    {bt("필터 초기화", "Reset filter")}
-                  </button>
-                </div>
-              )
-            ) : null}
-          </div>
+                    <p className="text-xs text-fg-2">
+                      {bt(
+                        "조건에 맞는 컷이 없습니다 (0건). 현재 감상 중인 컷 위치는 그대로 유지됩니다.",
+                        "No panels match the filter (0 results). Your current panel position is preserved.",
+                      )}
+                    </p>
+                    <button
+                      type="button"
+                      data-testid="spatial-reader-filter-reset"
+                      onClick={() => {
+                        setPanelFilter("");
+                        setPanelFilterOpen(false);
+                        viewerHeading.current?.focus({ preventScroll: true });
+                      }}
+                      className="inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! shrink-0 items-center justify-center rounded-xl border border-line bg-card px-3 py-2 text-xs font-semibold text-fg hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      {bt("필터 초기화", "Reset filter")}
+                    </button>
+                  </div>
+                )
+              ) : null}
+            </div>
+          ) : null}
 
           {brokenPanelIds.length > 0 ? (
             <div
@@ -693,23 +707,24 @@ export function StudioSpatialReaderPage() {
             >
               <p className="text-xs leading-relaxed text-fg-2">
                 {bt(
-                  "일부 컷 이미지를 불러오지 못해 기본 대체 표지로 표시하고 있어요. 다른 파일을 열거나 샘플 작품으로 다시 시작할 수 있습니다.",
-                  "Some panel images could not be loaded and were replaced with a fallback cover. You can open another file or restart with the sample work.",
+                  "일부 컷 이미지를 불러오지 못해 원본 작품이 아닌 ‘이미지 로드 실패 대체 표시’로 보여 주고 있어요. 원본 작품 데이터는 변경되지 않았습니다.",
+                  "Some panel images failed to load and are shown with an explicit fallback placeholder instead of the original artwork. Your original work data is unchanged.",
                 )}
               </p>
               <button
                 type="button"
                 data-testid="spatial-reader-broken-image-recover"
-                onClick={openSample}
+                onClick={() => setBrokenPanelIds([])}
                 className="inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! shrink-0 items-center justify-center rounded-xl border border-line bg-card px-3.5 py-2 text-xs font-semibold text-fg hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
-                {bt("샘플 작품으로 다시 열기", "Reopen sample work")}
+                {bt("원본 이미지 다시 불러오기", "Retry original image")}
               </button>
             </div>
           ) : null}
 
           <div
             data-testid="spatial-reader-viewer-stage"
+            className="[&_#spatial-reader-book-title]:whitespace-normal [&_#spatial-reader-book-title]:break-words [&_#spatial-reader-book-title]:[overflow-wrap:anywhere] [&_#spatial-reader-book-title]:text-clip"
             onErrorCapture={(event) => {
               const target = event.target;
               if (!(target instanceof HTMLImageElement)) return;

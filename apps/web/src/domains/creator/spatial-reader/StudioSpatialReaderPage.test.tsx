@@ -152,8 +152,13 @@ describe("StudioSpatialReaderPage", () => {
     expect(screen.getByTestId("spatial-rea-gaze-comfort-vignette-lock").getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("빈 파일·손상된 JSON 및 빈 제목·빈 대사·빈 대체 텍스트 데이터에서도 기본 제목과 접근성 이름을 복원한다", async () => {
+  it("빈 파일·손상된 JSON 및 빈 제목·빈 대사·빈 대체 텍스트 데이터에서도 기본 제목과 접근성 이름을 복원하고 정상 상태에서 불필요한 상시 UI를 노출하지 않는다", async () => {
     renderPage();
+    // 초기 정상 상태에서는 빈 status 문구나 상시 필터 바·오류 배너가 노출되지 않는다
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByTestId("spatial-reader-panel-filter-bar")).toBeNull();
+    expect(screen.queryByTestId("spatial-reader-broken-image-notice")).toBeNull();
+
     const input = screen.getByLabelText(/공간 웹툰 파일\(JSON\)/u);
 
     // 1) 0바이트 빈 파일 업로드 시 한국어 안내
@@ -166,7 +171,7 @@ describe("StudioSpatialReaderPage", () => {
     fireEvent.change(input, { target: { files: [corruptedFile] } });
     expect((await screen.findByRole("alert")).textContent).toContain("손상된 JSON 파일이에요.");
 
-    // 3) 제목·컷 제목·대체 텍스트가 모두 빈 문자열인 작품 열기 시 기본값 복원
+    // 3) 제목·컷 제목·대체 텍스트가 모두 빈 문자열인 작품 열기 시 기본값 복원 (원본 편집 입력값은 빈 문자열 그대로 유지)
     sample.create.mockResolvedValueOnce(
       parseSpatialBook({
         format: "toonstudio-spatial-book",
@@ -189,10 +194,12 @@ describe("StudioSpatialReaderPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "샘플 작품으로 체험하기" }));
     expect(await screen.findByRole("heading", { level: 2, name: "제목 없는 공간 웹툰" })).toBeTruthy();
     expect(screen.getByRole("img", { name: "1번째 컷" })).toBeTruthy();
-    expect(screen.getByTestId("spatial-reader-work-summary").textContent).toContain("제목 없는 공간 웹툰 · 1번째 컷");
+    // 정상 감상 상태(1컷)에서는 상시 검색 바나 중복 작품 요약 카드를 렌더링하지 않는다
+    expect(screen.queryByTestId("spatial-reader-panel-filter-bar")).toBeNull();
+    expect(screen.queryByTestId("spatial-reader-work-summary")).toBeNull();
   });
 
-  it("깨진 표지·컷 이미지 오류 시 대체 이미지와 복구 안내를 표시하고 긴 한영 제목을 잘림 없이 노출한다", async () => {
+  it("깨진 표지·컷 이미지 오류 시 정상 작품으로 오해하지 않도록 대체 표시를 명시하고 원본 작품 데이터를 보존한다", async () => {
     const longKoEnBookTitle =
       "초장편 공간 웹툰 테스트 작품 제목 · UltraLongSpatialWebtoonSeriesWithImmersiveCanopyAndDepthLayers_2026_Edition";
     const longKoEnPanelTitle =
@@ -222,20 +229,34 @@ describe("StudioSpatialReaderPage", () => {
     renderPage();
     fireEvent.click(screen.getByRole("button", { name: "샘플 작품으로 체험하기" }));
 
-    const summary = await screen.findByTestId("spatial-reader-work-summary");
-    expect(summary.textContent).toContain(longKoEnBookTitle);
-    expect(summary.textContent).toContain(longKoEnPanelTitle);
+    const bookHeading = await screen.findByRole("heading", { level: 2, name: longKoEnBookTitle });
+    expect(bookHeading.textContent).toBe(longKoEnBookTitle);
+    const viewerStage = screen.getByTestId("spatial-reader-viewer-stage");
+    expect(viewerStage.className).toContain("[&_#spatial-reader-book-title]:whitespace-normal");
+    expect(viewerStage.textContent).toContain(longKoEnPanelTitle);
+    expect(screen.queryByTestId("spatial-reader-broken-image-notice")).toBeNull();
 
     const stageImg = screen.getByRole("img", { name: "깨진 첫 번째 컷 장면" });
     fireEvent.error(stageImg);
 
     const notice = await screen.findByTestId("spatial-reader-broken-image-notice");
-    expect(notice.textContent).toContain("일부 컷 이미지를 불러오지 못해 기본 대체 표지로 표시하고 있어요.");
-    expect(screen.getByRole("img", { name: "깨진 첫 번째 컷 장면" }).getAttribute("src")).toBe(PIXEL);
-    expect(screen.getByTestId("spatial-reader-broken-image-recover").className).toContain("min-h-11");
+    expect(notice.textContent).toContain("원본 작품이 아닌 ‘이미지 로드 실패 대체 표시’로 보여 주고 있어요.");
+    expect(notice.textContent).toContain("원본 작품 데이터는 변경되지 않았습니다.");
+
+    const fallbackImg = screen.getByRole("img", { name: "[이미지 로드 실패 대체 표시] 깨진 첫 번째 컷 장면" });
+    expect(fallbackImg.getAttribute("src")).toContain("data:image/svg+xml;charset=utf-8,");
+    expect(decodeURIComponent(fallbackImg.getAttribute("src") ?? "")).toContain("이미지 로드 실패 · 원본 작품이 아닌 대체 표시");
+
+    const recoverBtn = screen.getByTestId("spatial-reader-broken-image-recover");
+    expect(recoverBtn.className).toContain("min-h-11");
+    fireEvent.click(recoverBtn);
+    // 복구(재시도) 버튼 클릭 시 샘플 작품으로 덮어쓰지 않고 원본 작품 제목과 원본 이미지 src를 그대로 보존한다
+    expect(screen.queryByTestId("spatial-reader-broken-image-notice")).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: longKoEnBookTitle })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "깨진 첫 번째 컷 장면" }).getAttribute("src")).toBe(brokenDataUri);
   });
 
-  it("컷 필터 결과 0건일 때 현재 감상 위치를 유지하며 초기화 복구 동작을 제공하고 키보드 탐색·오류 닫기 초점을 복원한다", async () => {
+  it("필요할 때('/') 컷 필터를 열어 0건 복구 및 현재 감상 위치를 유지하고 키보드 탐색·오류 닫기 초점을 복원한다", async () => {
     renderPage();
 
     // REA 칩 버튼 내 화살표·Home·End 키보드 탐색
@@ -246,9 +267,10 @@ describe("StudioSpatialReaderPage", () => {
     fireEvent.keyDown(screen.getByTestId("spatial-rea-curve-dome-120deg-cinema"), { key: "Home" });
     expect(screen.getByTestId("spatial-rea-curve-cylinder-90deg-canopy").getAttribute("aria-pressed")).toBe("true");
 
-    // 샘플 작품을 열고 2번째 컷으로 이동
+    // 샘플 작품을 열고 2번째 컷으로 이동 (기본 3컷 작품에서는 상시 필터 바가 숨겨져 있다)
     fireEvent.click(screen.getByRole("button", { name: "샘플 작품으로 체험하기" }));
-    await screen.findByRole("heading", { level: 2, name: "샘플 공간 웹툰 · 예시" });
+    const heading = await screen.findByRole("heading", { level: 2, name: "샘플 공간 웹툰 · 예시" });
+    expect(screen.queryByTestId("spatial-reader-panel-filter-bar")).toBeNull();
     fireEvent.keyDown(window, { key: "ArrowRight" });
     expect(await screen.findByRole("img", { name: "위기 장면" })).toBeTruthy();
 
@@ -256,8 +278,10 @@ describe("StudioSpatialReaderPage", () => {
     fireEvent.keyDown(window, { key: "ArrowLeft", altKey: true });
     expect(screen.getByRole("img", { name: "위기 장면" })).toBeTruthy();
 
-    // 컷 필터에 일치하지 않는 검색어 입력 -> 0건 안내 노출 및 현재 2번째 컷 유지
-    const filterInput = screen.getByTestId("spatial-reader-panel-filter-input");
+    // '/' 단축키로 필요할 때만 컷 필터 바를 열고 0건 안내 노출 및 현재 2번째 컷 유지
+    fireEvent.keyDown(window, { key: "/" });
+    const filterInput = await screen.findByTestId("spatial-reader-panel-filter-input");
+    await waitFor(() => expect(document.activeElement).toBe(filterInput));
     fireEvent.change(filterInput, { target: { value: "존재하지않는컷999" } });
     expect(screen.getByTestId("spatial-reader-filter-empty").textContent).toContain("조건에 맞는 컷이 없습니다 (0건)");
     expect(screen.getByRole("img", { name: "위기 장면" })).toBeTruthy();
@@ -266,7 +290,8 @@ describe("StudioSpatialReaderPage", () => {
     expect(resetBtn.className).toContain("min-h-11");
     fireEvent.click(resetBtn);
     expect(screen.queryByTestId("spatial-reader-filter-empty")).toBeNull();
-    expect(document.activeElement).toBe(filterInput);
+    expect(screen.queryByTestId("spatial-reader-panel-filter-bar")).toBeNull();
+    expect(document.activeElement).toBe(heading);
 
     // 오류 알림 발생 후 Escape로 닫으면 작품 제목 헤딩으로 초점이 복원된다
     fireEvent.click(screen.getByRole("button", { name: "공간 보기" }));

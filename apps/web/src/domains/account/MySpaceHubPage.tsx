@@ -73,7 +73,7 @@ const COPY = {
     filterEmptyTitle: "선택한 조건에 맞는 바로가기가 없습니다 (0건)",
     filterEmptyBody: "검색어나 역할 필터를 초기화하면 전체 바로가기 14개를 다시 볼 수 있습니다.",
     filterResetAction: "전체 보기로 돌아가기",
-    coverFallbackNotice: "표지 미리보기를 불러오지 못해 기본 안내 카드로 표시합니다.",
+    coverFallbackNotice: "일부 표지 이미지를 불러오지 못해 원본 표지 대신 텍스트 안내 카드로 대체 표시합니다.",
     recentFallbackTitle: "최근 작업 공간",
     recentFallbackBody: "이전에 열었던 화면으로 바로 이어서 이동합니다.",
     justNow: "방금 전",
@@ -140,7 +140,7 @@ const COPY = {
     filterEmptyTitle: "No destinations match the selected filter (0 results)",
     filterEmptyBody: "Reset the search or role filter to view all 14 destinations again.",
     filterResetAction: "Show all destinations",
-    coverFallbackNotice: "Cover preview could not be loaded; showing the default summary card.",
+    coverFallbackNotice: "Some cover images failed to load; showing a text fallback card instead of the original cover.",
     recentFallbackTitle: "Recent workspace",
     recentFallbackBody: "Return directly to the screen you opened earlier.",
     justNow: "Just now",
@@ -233,7 +233,9 @@ export function MySpaceHubPage() {
   const initialQueryParam = searchParams.get("q")?.trim() ?? "";
   const [roleFilter, setRoleFilter] = useState<string>(() => initialRoleParam || "all");
   const [filterQuery, setFilterQuery] = useState<string>(initialQueryParam);
+  const [searchOpen, setSearchOpen] = useState<boolean>(() => Boolean(initialQueryParam));
   const [brokenCoverRecovered, setBrokenCoverRecovered] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const chipRefs = useRef<Record<MySpaceCategory, HTMLButtonElement | null>>({
     all: null,
     reader: null,
@@ -289,6 +291,8 @@ export function MySpaceHubPage() {
     });
 
   const activeFilterLabel = copy.filters.find(([id]) => id === roleFilter)?.[1] ?? copy.filters[0][1];
+  const isFilterActive = roleFilter !== "all" || normalizedQuery.length > 0;
+  const showDestinationSearch = searchOpen || normalizedQuery.length > 0 || visibleDestinations.length === 0;
 
   function selectRoleFilter(nextRole: MySpaceCategory, focusChip = false) {
     setRoleFilter(nextRole);
@@ -305,6 +309,7 @@ export function MySpaceHubPage() {
   function resetAllFilters() {
     setRoleFilter("all");
     setFilterQuery("");
+    setSearchOpen(false);
     if (searchParams.has("role") || searchParams.has("q")) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete("role");
@@ -318,6 +323,13 @@ export function MySpaceHubPage() {
     if (event.key === "Escape") {
       event.preventDefault();
       resetAllFilters();
+      return;
+    }
+    if (event.key === "/") {
+      event.preventDefault();
+      event.stopPropagation();
+      setSearchOpen(true);
+      queueMicrotask(() => searchInputRef.current?.focus());
       return;
     }
     const order = copy.filters.map(([id]) => id);
@@ -350,6 +362,7 @@ export function MySpaceHubPage() {
           const target = event.target;
           if (target instanceof HTMLImageElement) {
             target.setAttribute("data-broken-image", "true");
+            target.setAttribute("alt", copy.coverFallbackNotice);
             target.style.opacity = "0";
             setBrokenCoverRecovered(true);
           }
@@ -475,32 +488,37 @@ export function MySpaceHubPage() {
 
         <section className="mt-10" aria-labelledby="my-space-destinations">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
+            <div className="flex min-w-0 flex-wrap items-baseline gap-2">
               <h2 id="my-space-destinations" className="text-xl font-bold tracking-tight text-fg sm:text-2xl">{copy.section}</h2>
-              <p
-                data-testid="my-space-filter-status"
-                aria-live="polite"
-                className="mt-1 text-xs text-fg-2"
-              >
-                {`${activeFilterLabel} · ${visibleDestinations.length} / ${copy.destinations.length}`}
-              </p>
+              {isFilterActive ? (
+                <p
+                  data-testid="my-space-filter-status"
+                  aria-live="polite"
+                  className="text-xs text-fg-2"
+                >
+                  {`${activeFilterLabel} · ${visibleDestinations.length} / ${copy.destinations.length}`}
+                </p>
+              ) : null}
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-              <input
-                type="search"
-                value={filterQuery}
-                onChange={(event) => setFilterQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    event.preventDefault();
-                    resetAllFilters();
-                  }
-                }}
-                aria-label={copy.searchLabel}
-                placeholder={copy.searchPlaceholder}
-                data-testid="my-space-destination-search"
-                className="min-h-11 min-w-0 flex-1 rounded-full border border-line bg-card px-3.5 py-2 text-xs text-fg placeholder:text-fg-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-52 sm:flex-none"
-              />
+            <div className="flex flex-wrap items-center gap-2">
+              {showDestinationSearch ? (
+                <input
+                  ref={searchInputRef}
+                  type="search"
+                  value={filterQuery}
+                  onChange={(event) => setFilterQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      resetAllFilters();
+                    }
+                  }}
+                  aria-label={copy.searchLabel}
+                  placeholder={copy.searchPlaceholder}
+                  data-testid="my-space-destination-search"
+                  className="min-h-11 min-w-0 flex-1 rounded-full border border-line bg-card px-3.5 py-2 text-xs text-fg placeholder:text-fg-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-52 sm:flex-none"
+                />
+              ) : null}
               <div
                 role="group"
                 aria-label={copy.filterLabel}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -32,8 +32,8 @@ vi.mock("@/shared/lib/i18n", () => ({
 }));
 
 const continuityMocks = vi.hoisted(() => ({
-  label: () => "창작 스튜디오",
-  description: () => "마지막 문서와 작업 위치로 돌아가기",
+  label: (): string => "창작 스튜디오",
+  description: (): string => "마지막 문서와 작업 위치로 돌아가기",
 }));
 
 vi.mock("@/shared/lib/creator-continuity", () => ({
@@ -143,24 +143,33 @@ describe("MySpaceHubPage next-action center", () => {
     }
 
     expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("true");
+    // 정상 기본 상태에서는 상시 검색창·보조 건수 문구·오류 배너를 노출하지 않는다
+    expect(screen.queryByTestId("my-space-destination-search")).toBeNull();
+    expect(screen.queryByTestId("my-space-filter-status")).toBeNull();
+    expect(screen.queryByTestId("my-space-cover-fallback")).toBeNull();
+    expect(screen.queryByTestId("my-space-filter-empty")).toBeNull();
     expect(screen.getByRole("link", { name: /AI 연결 설정/ }).getAttribute("href")).toBe("/settings/ai");
     expect(screen.getByRole("link", { name: /에셋 포인트·정산/ }).getAttribute("href")).toBe("/asset-points");
 
-    // 역할 필터 선택 시 aria-pressed와 표시 카드가 일관되게 보존된다
+    // 역할 필터 선택 시에만 현재 필터 건수가 나타나고 aria-pressed와 표시 카드가 보존된다
     fireEvent.click(screen.getByTestId("my-space-role-filter-account"));
     expect(screen.getByTestId("my-space-role-filter-account").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("my-space-filter-status").textContent).toContain("4 / 14");
+    expect(screen.queryByTestId("my-space-destination-search")).toBeNull();
     expect(screen.getByRole("link", { name: /AI 연결 설정/ })).toBeTruthy();
     expect(screen.queryByRole("link", { name: /에셋 포인트·정산/ })).toBeNull();
 
     fireEvent.click(screen.getByTestId("my-space-role-filter-creator"));
     expect(screen.getByTestId("my-space-role-filter-creator").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("my-space-role-filter-account").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("my-space-filter-status").textContent).toContain("6 / 14");
     expect(screen.getByRole("link", { name: /에셋 포인트·정산/ })).toBeTruthy();
     expect(screen.queryByRole("link", { name: /AI 연결 설정/ })).toBeNull();
 
     fireEvent.click(screen.getByTestId("my-space-role-filter-all"));
     expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByTestId("my-space-filter-status")).toBeNull();
     expect(screen.getByRole("link", { name: /AI 연결 설정/ })).toBeTruthy();
     expect(screen.getByRole("link", { name: /에셋 포인트·정산/ })).toBeTruthy();
   });
@@ -201,6 +210,7 @@ describe("MySpaceHubPage next-action center", () => {
     expect(titleEl.className).not.toContain("truncate");
     expect(descEl.textContent).toBe(longBilingualDescription);
     expect(descEl.className).toContain("break-words");
+    expect(screen.queryByTestId("my-space-cover-fallback")).toBeNull();
 
     const root = screen.getByTestId("my-space-hub-root");
     const firstImg = root.querySelector("img");
@@ -209,15 +219,16 @@ describe("MySpaceHubPage next-action center", () => {
       fireEvent.error(firstImg);
     }
     expect(screen.getByTestId("my-space-cover-fallback").textContent).toContain(
-      "표지 미리보기를 불러오지 못해 기본 안내 카드로 표시합니다.",
+      "일부 표지 이미지를 불러오지 못해 원본 표지 대신 텍스트 안내 카드로 대체 표시합니다.",
     );
+    expect(firstImg?.getAttribute("alt")).toContain("원본 표지 대신 텍스트 안내 카드로 대체 표시");
     expect(root.getAttribute("data-broken-image-recovered")).toBe("true");
   });
 
-  it("shows a 0-result filter state with a 44px reset button and supports keyboard roving navigation + Escape recovery", () => {
+  it("shows a 0-result filter state with a 44px reset button and reveals search only on demand ('/' or URL query) with Escape recovery", async () => {
     renderPage("/my?role=unknown-category");
 
-    // 잘못된 URL role 파라미터로 0건이 되었을 때 빈 상태와 복원 버튼을 표시한다
+    // 잘못된 URL role 파라미터로 0건이 되었을 때만 빈 상태와 검색/복원 버튼을 표시한다
     const emptyState = screen.getByTestId("my-space-filter-empty");
     expect(emptyState.textContent).toContain("선택한 조건에 맞는 바로가기가 없습니다 (0건)");
     const resetButton = screen.getByTestId("my-space-filter-reset");
@@ -226,18 +237,23 @@ describe("MySpaceHubPage next-action center", () => {
 
     fireEvent.click(resetButton);
     expect(screen.queryByTestId("my-space-filter-empty")).toBeNull();
+    expect(screen.queryByTestId("my-space-destination-search")).toBeNull();
+    expect(screen.queryByTestId("my-space-filter-status")).toBeNull();
     expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("true");
     expect(document.activeElement).toBe(screen.getByTestId("my-space-role-filter-all"));
 
-    // 검색어로 0건이 되었을 때와 Escape 복원 검증
-    const searchInput = screen.getByTestId("my-space-destination-search");
+    // 필요할 때('/') 검색 입력을 드러내고 0건 안내 및 Escape 복원 검증
+    fireEvent.keyDown(screen.getByTestId("my-space-role-filter-all"), { key: "/" });
+    const searchInput = await screen.findByTestId("my-space-destination-search");
+    await waitFor(() => expect(document.activeElement).toBe(searchInput));
     fireEvent.change(searchInput, { target: { value: "존재하지않는바로가기키워드999" } });
     expect(screen.getByTestId("my-space-filter-empty")).toBeTruthy();
     expect(screen.getByTestId("my-space-filter-status").textContent).toContain("0 / 14");
 
     fireEvent.keyDown(searchInput, { key: "Escape" });
     expect(screen.queryByTestId("my-space-filter-empty")).toBeNull();
-    expect(screen.getByTestId("my-space-filter-status").textContent).toContain("14 / 14");
+    expect(screen.queryByTestId("my-space-destination-search")).toBeNull();
+    expect(screen.queryByTestId("my-space-filter-status")).toBeNull();
 
     // 역할 필터 버튼 내 키보드 화살표·Home·End·Escape 탐색 복원성 검증
     fireEvent.keyDown(screen.getByTestId("my-space-role-filter-all"), { key: "ArrowRight" });
@@ -254,6 +270,7 @@ describe("MySpaceHubPage next-action center", () => {
 
     fireEvent.keyDown(screen.getByTestId("my-space-role-filter-creator"), { key: "Escape" });
     expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByTestId("my-space-filter-status")).toBeNull();
     expect(document.activeElement).toBe(screen.getByTestId("my-space-role-filter-all"));
   });
 });
