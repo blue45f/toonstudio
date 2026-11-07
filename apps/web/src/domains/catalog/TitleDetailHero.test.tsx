@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -90,6 +90,25 @@ describe("TitleDetailHero", () => {
     expect(readLink.getAttribute("href")).toBe("/title/fog-signal/read/1");
   });
 
+  it("긴 공백 없는 메타데이터를 생략하지 않고 좁은 화면에서 줄바꿈하도록 한다", () => {
+    const title = makeTitle({
+      title: "아주긴공백없는작품제목".repeat(12),
+      author: "VeryLongAuthorName".repeat(12),
+      altTitles: ["UnbrokenAlternativeTitle".repeat(12)],
+      synopsis: "LongSynopsis".repeat(40),
+    });
+    renderHero(title);
+    const heading = screen.getByRole("heading", { level: 1, name: title.title });
+    expect(heading.closest("[class*='overflow-wrap:anywhere']")).not.toBeNull();
+    const author = screen.getByRole("link", { name: title.author });
+    expect(author.getAttribute("href")).toBe(`/author/${encodeURIComponent(title.author)}`);
+    expect(author.classList.contains("focus-visible:outline-white")).toBe(true);
+    author.focus();
+    expect(document.activeElement).toBe(author);
+    expect(screen.getByText(title.altTitles?.[0] ?? "")).toBeTruthy();
+    expect(screen.getByText(title.synopsis)).toBeTruthy();
+  });
+
   it("서재에 담기는 읽기 상태를 토글하고 눌림 상태를 알린다", () => {
     renderHero(makeTitle());
     const saveButton = screen.getByRole("button", { name: /서재에 담기/ });
@@ -138,6 +157,14 @@ describe("TitleDetailHero", () => {
     expect(nav.querySelector('a[href="#title-episodes-anchor"]')?.textContent).toBe("회차 목록");
     expect(nav.querySelector('a[href="#title-availability"]')?.textContent).toBe("감상 플랫폼·가격");
     expect(nav.querySelector('a[href="#title-reviews"]')?.textContent).toBe("독자 리뷰");
+    const links = within(nav).getAllByRole("link");
+    expect(links).toHaveLength(5);
+    for (const link of links) {
+      expect(link.classList.contains("min-h-11")).toBe(true);
+      expect(link.classList.contains("focus-visible:outline-white")).toBe(true);
+      link.focus();
+      expect(document.activeElement).toBe(link);
+    }
   });
 });
 
