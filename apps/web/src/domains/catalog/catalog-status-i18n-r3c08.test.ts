@@ -106,9 +106,9 @@ function placeholders(value: string): string[] {
 }
 
 describe("c08 status 사전 (등록 모듈 4종)", () => {
-  it("ko/en 키가 패리티를 이루고 94키이며 en에 한글이 없다", () => {
+  it("ko/en 키가 패리티를 이루고 95키이며 en에 한글이 없다", () => {
     expect(Object.keys(DICTS.en).sort()).toEqual(ALL_KEYS);
-    expect(ALL_KEYS).toHaveLength(94);
+    expect(ALL_KEYS).toHaveLength(95);
     for (const mod of MODULES) {
       const parsed = parseRegisterModule(readSource(mod.file));
       expect(Object.keys(parsed.en).sort(), mod.file).toEqual(Object.keys(parsed.ko).sort());
@@ -120,6 +120,35 @@ describe("c08 status 사전 (등록 모듈 4종)", () => {
       expect(DICTS.ko[key], `ko missing ${key}`).toBeTruthy();
       expect(DICTS.en[key], `en missing ${key}`).toBeTruthy();
       expect(HANGUL.test(DICTS.en[key] ?? ""), `en value has Hangul: ${key}`).toBe(false);
+    }
+  });
+
+  it("태그 목록 자체가 빈 상태와 검색 결과가 빈 상태를 ko/en으로 구별한다", () => {
+    expect(DICTS.ko["catalog.status.tags.empty"]).toBe("등록된 태그가 없습니다.");
+    expect(DICTS.en["catalog.status.tags.empty"]).toBe("No tags have been registered.");
+    expect(DICTS.ko["catalog.status.tags.searchEmpty"]).toBe("일치하는 태그가 없습니다.");
+    expect(DICTS.en["catalog.status.tags.searchEmpty"]).toBe("No matching tags.");
+    expect(collectCalls().filter((call) => call.key === "catalog.status.tags.empty")).toEqual([
+      { key: "catalog.status.tags.empty", fallback: "등록된 태그가 없습니다.", file: "TagsPage.tsx" },
+    ]);
+  });
+
+  it("실제 등록 사전이 현재 언어의 태그 빈 상태 문구를 반환한다", async () => {
+    const { useI18n } = await import("@/shared/lib/i18n");
+    const { catalogStatusText } = await import("./catalog-status-i18n");
+    const previousLang = useI18n.getState().lang;
+    try {
+      for (const lang of ["ko", "en"] as const) {
+        useI18n.setState({ lang });
+        expect(catalogStatusText("catalog.status.tags.empty", "등록된 태그가 없습니다.")).toBe(
+          DICTS[lang]["catalog.status.tags.empty"],
+        );
+        expect(catalogStatusText("catalog.status.tags.searchEmpty", "일치하는 태그가 없습니다.")).toBe(
+          DICTS[lang]["catalog.status.tags.searchEmpty"],
+        );
+      }
+    } finally {
+      useI18n.setState({ lang: previousLang });
     }
   });
 
