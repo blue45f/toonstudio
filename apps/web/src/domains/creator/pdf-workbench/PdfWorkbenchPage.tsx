@@ -302,6 +302,7 @@ export function PdfWorkbenchPage() {
 
       <section
         data-testid="pdf-workbench-rea-cmyk-bleed-bar"
+        data-own-control-size=""
         aria-label={pickLang("PDF 워크벤치 인쇄 도련 및 CMYK 프로파일 점검", "PDF Workbench Print Bleed & CMYK Profile Preflight")}
         className="mb-5 rounded-2xl border border-line bg-card p-4"
       >
@@ -321,7 +322,11 @@ export function PdfWorkbenchPage() {
             Clip Studio EX Multi-Page · Affinity Publisher · Adobe InDesign Print Preflight
           </span>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label={pickLang("재단 및 도련 규격 프리셋", "Trim & Bleed Spec Presets")}
+          className="mt-3 flex flex-wrap items-center gap-2"
+        >
           <span className="text-xs font-semibold text-fg-2">
             {pickLang("재단·도련 규격:", "Trim & Bleed Spec:")}
           </span>
@@ -334,15 +339,19 @@ export function PdfWorkbenchPage() {
               onClick={() => setTrimSpec(item.id)}
               className={
                 trimSpec === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "min-h-11 min-w-11 rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  : "min-h-11 min-w-11 rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-accent-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               }
             >
               {pickLang(item.ko, item.en)}
             </button>
           ))}
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label={pickLang("잉크 프로파일 프리셋", "Ink Profile Presets")}
+          className="mt-2 flex flex-wrap items-center gap-2"
+        >
           <span className="text-xs font-semibold text-fg-2">
             {pickLang("잉크 프로파일:", "Ink Profile:")}
           </span>
@@ -355,8 +364,8 @@ export function PdfWorkbenchPage() {
               onClick={() => setInkProfile(item.id)}
               className={
                 inkProfile === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "min-h-11 min-w-11 rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  : "min-h-11 min-w-11 rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-accent-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               }
             >
               {pickLang(item.ko, item.en)}
@@ -387,6 +396,7 @@ export function PdfWorkbenchPage() {
       ) : null}
 
       <section
+        data-own-control-size=""
         aria-label={bt("PDF 추가", "Add PDFs")}
         onDragOver={(event) => event.preventDefault()}
         onDrop={onDropFiles}
@@ -406,7 +416,7 @@ export function PdfWorkbenchPage() {
             type="button"
             disabled={adding}
             onClick={() => fileInputRef.current?.click()}
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition-colors disabled:opacity-50"
+            className="min-h-11 min-w-11 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
           >
             {bt("PDF 고르기", "Choose PDFs")}
           </button>
@@ -421,11 +431,11 @@ export function PdfWorkbenchPage() {
           />
         </div>
         {wb.sources.length > 0 ? (
-          <ul className="mt-4 flex flex-wrap gap-2" aria-label={bt("추가된 파일", "Added files")}>
+          <ul className="mt-4 flex flex-wrap items-center gap-2" aria-label={bt("추가된 파일", "Added files")}>
             {wb.sources.map((source) => (
               <li
                 key={source.id}
-                className="inline-flex items-center gap-2 rounded-full border border-line bg-panel py-1.5 pl-3 pr-1.5 text-sm"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-panel py-1 pl-3.5 pr-1 text-sm"
               >
                 <FileText size={14} aria-hidden="true" className="shrink-0" />
                 <span className="max-w-56 truncate">{source.name}</span>
@@ -437,9 +447,9 @@ export function PdfWorkbenchPage() {
                   type="button"
                   onClick={() => removeSource(source.id, source.name)}
                   aria-label={bt(`${source.name} 빼기`, `Remove ${source.name}`)}
-                  className="grid size-7 place-items-center rounded-full transition-colors hover:bg-accent-soft"
+                  className="grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
-                  <X size={14} aria-hidden="true" />
+                  <X size={15} aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -447,7 +457,7 @@ export function PdfWorkbenchPage() {
               <button
                 type="button"
                 onClick={clearAll}
-                className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm transition-colors hover:bg-accent-soft"
+                className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-full border border-line px-3.5 py-2 text-sm transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <Trash2 size={14} aria-hidden="true" />
                 {bt("전부 비우기", "Clear all")}
@@ -459,7 +469,7 @@ export function PdfWorkbenchPage() {
 
       {hasPages ? (
         <>
-          <section aria-label={bt("페이지 목록", "Pages")}>
+          <section data-own-control-size="" aria-label={bt("페이지 목록", "Pages")}>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">
                 {bt(`페이지 ${wb.pages.length}장`, `${wb.pages.length} pages`)}
@@ -468,7 +478,7 @@ export function PdfWorkbenchPage() {
                 {bt("카드를 드래그하거나 화살표 버튼으로 순서를 바꿔요.", "Drag cards or use the arrow buttons to reorder.")}
               </p>
             </div>
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {wb.pages.map((entry, index) => {
                 const source = wb.sources.find((candidate) => candidate.id === entry.sourceId);
                 const thumb = thumbs.get(thumbnailKey(entry));
@@ -511,43 +521,47 @@ export function PdfWorkbenchPage() {
                       )}
                       {entry.rotationDelta !== 0 ? ` · ${entry.rotationDelta}°` : ""}
                     </p>
-                    <div className="mt-1 flex items-center justify-between px-0.5 pb-0.5">
-                      <span className="flex gap-0.5">
+                    <div
+                      role="group"
+                      aria-label={bt(`${index + 1}번째 페이지 조작`, `Page ${index + 1} actions`)}
+                      className="mt-1.5 flex flex-wrap items-center justify-between gap-1 px-0.5 pb-0.5"
+                    >
+                      <span className="flex items-center gap-1">
                         <button
                           type="button"
                           disabled={index === 0}
                           onClick={() => setWb((current) => movePdfPage(current, entry.id, -1))}
                           aria-label={bt(`${index + 1}번째 페이지를 앞으로`, `Move page ${index + 1} earlier`)}
-                          className="grid size-8 place-items-center rounded-lg transition-colors hover:bg-accent-soft disabled:opacity-30"
+                          className="grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-lg transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-30"
                         >
-                          <ArrowLeft size={15} aria-hidden="true" />
+                          <ArrowLeft size={16} aria-hidden="true" />
                         </button>
                         <button
                           type="button"
                           disabled={index === wb.pages.length - 1}
                           onClick={() => setWb((current) => movePdfPage(current, entry.id, 1))}
                           aria-label={bt(`${index + 1}번째 페이지를 뒤로`, `Move page ${index + 1} later`)}
-                          className="grid size-8 place-items-center rounded-lg transition-colors hover:bg-accent-soft disabled:opacity-30"
+                          className="grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-lg transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-30"
                         >
-                          <ArrowRight size={15} aria-hidden="true" />
+                          <ArrowRight size={16} aria-hidden="true" />
                         </button>
                       </span>
-                      <span className="flex gap-0.5">
+                      <span className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => setWb((current) => rotatePdfPage(current, entry.id, 1))}
                           aria-label={bt(`${index + 1}번째 페이지를 시계 방향으로 회전`, `Rotate page ${index + 1} clockwise`)}
-                          className="grid size-8 place-items-center rounded-lg transition-colors hover:bg-accent-soft"
+                          className="grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-lg transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
-                          <RotateCw size={15} aria-hidden="true" />
+                          <RotateCw size={16} aria-hidden="true" />
                         </button>
                         <button
                           type="button"
                           onClick={() => setWb((current) => removePdfPage(current, entry.id))}
                           aria-label={bt(`${index + 1}번째 페이지를 목록에서 제거`, `Remove page ${index + 1} from the list`)}
-                          className="grid size-8 place-items-center rounded-lg transition-colors hover:bg-accent-soft"
+                          className="grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-lg transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
-                          <X size={15} aria-hidden="true" />
+                          <X size={16} aria-hidden="true" />
                         </button>
                       </span>
                     </div>
@@ -558,8 +572,9 @@ export function PdfWorkbenchPage() {
           </section>
 
           <section
+            data-own-control-size=""
             aria-label={bt("문서 속성", "Document properties")}
-            className="rounded-3xl border border-line bg-card p-5 sm:p-6"
+            className="rounded-3xl border border-line bg-card p-5 sm:p-6 [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11"
           >
             <PdfWorkbenchMetadataPanel
               value={metadataForm}
@@ -570,6 +585,7 @@ export function PdfWorkbenchPage() {
           </section>
 
           <section
+            data-own-control-size=""
             aria-label={bt("내려받기", "Download")}
             className="grid gap-4 rounded-3xl border border-line bg-card p-5 sm:grid-cols-2 sm:p-6"
           >
@@ -582,7 +598,7 @@ export function PdfWorkbenchPage() {
                 type="button"
                 disabled={building}
                 onClick={() => void downloadMerged()}
-                className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition-colors disabled:opacity-50"
+                className="inline-flex min-h-11 min-w-11 items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-on-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
               >
                 {building ? <LoaderCircle className="animate-spin" size={16} aria-hidden="true" /> : <Download size={16} aria-hidden="true" />}
                 {bt("합친 PDF 내려받기", "Download merged PDF")}
@@ -603,13 +619,13 @@ export function PdfWorkbenchPage() {
                   placeholder="1-3, 5"
                   aria-invalid={splitError ? true : undefined}
                   aria-describedby={splitError ? "pdf-workbench-split-error" : undefined}
-                  className="min-w-0 flex-1 rounded-xl border border-line bg-panel px-3 py-2.5 text-sm"
+                  className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-panel px-3 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 />
                 <button
                   type="button"
                   disabled={building}
                   onClick={() => void downloadSplit()}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-accent-soft disabled:opacity-50"
+                  className="inline-flex min-h-11 min-w-11 shrink-0 items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
                 >
                   <Scissors size={16} aria-hidden="true" />
                   {bt("나눠 받기", "Split")}
