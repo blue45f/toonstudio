@@ -103,20 +103,20 @@ function PublicPositionsContent({ postId }: { postId?: string }) {
   }}><option value="">{bt("전체", "All")}</option>{Object.entries(options).map(([value, name]) => <option key={value} value={value}>{optionLabel(String(name))}</option>)}</select></CollabField>;
   const next = page?.next;
   const hasNext = Boolean(next && !cursors.includes(next));
-  return <section className="space-y-5" aria-label={bt("공개 모집 조건", "Open positions")} aria-busy={loading}>
+  return <section data-own-control-size="" className="space-y-5" aria-label={bt("공개 모집 조건", "Open positions")} aria-busy={loading}>
     {!postId && <div className="rounded-2xl border border-line bg-panel/70 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-sm font-bold text-fg"><SlidersHorizontal size={16} className="text-accent" aria-hidden="true" />{bt("조건 고르기", "Choose conditions")}</h2>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className={collabButton} aria-expanded={showExtraFilters} onClick={() => setMoreFiltersOpen((open) => !open)}>{showExtraFilters ? bt("조건 접기", "Fewer conditions") : bt("조건 더 고르기", "More conditions")}</button>
-          <button type="button" className={collabButton} disabled={!hasFilters} onClick={resetFilters}>{bt("검색 조건 초기화", "Reset filters")}</button>
+        <div className="flex flex-wrap gap-2" role="group" aria-label={bt("조건 필터 동작", "Filter actions")}>
+          <button type="button" className={`${collabButton} min-w-11`} aria-expanded={showExtraFilters} onClick={() => setMoreFiltersOpen((open) => !open)}>{showExtraFilters ? bt("조건 접기", "Fewer conditions") : bt("조건 더 고르기", "More conditions")}</button>
+          <button type="button" className={`${collabButton} min-w-11`} disabled={!hasFilters} onClick={resetFilters}>{bt("검색 조건 초기화", "Reset filters")}</button>
         </div>
       </div>
       <div className="mt-1 grid gap-3 sm:grid-cols-2">{choices.slice(0, 2).map(renderChoice)}</div>
       {showExtraFilters && <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{choices.slice(2).map(renderChoice)}</div>}
     </div>}
     {error && (postId || page
-      ? <CollabNotice error>{error}<button type="button" className={`${collabButton} ml-3`} onClick={() => setRetry((value) => value + 1)}>{bt("다시 불러오기", "Reload")}</button></CollabNotice>
+      ? <CollabNotice error>{error}<button type="button" className={`${collabButton} ml-3 min-w-11`} onClick={() => setRetry((value) => value + 1)}>{bt("다시 불러오기", "Reload")}</button></CollabNotice>
       : <PositionsUnavailable message={error} onRetry={() => setRetry((value) => value + 1)} />)}
     {loading && <div role="status" aria-label={bt("모집 조건을 불러오는 중", "Loading positions")} className="grid gap-4 md:grid-cols-2" aria-hidden="true"><div className="skeleton h-44 rounded-xl" /><div className="skeleton h-44 rounded-xl" /></div>}
     {page && <p role="status" className="text-sm text-fg-3">{bt(`${cursors.length}페이지 · 이 페이지 ${page.items.length}개 · 한 번에 최대 30개`, `Page ${cursors.length} · ${page.items.length} items on this page · up to 30 per page`)}</p>}
@@ -132,19 +132,19 @@ function PublicPositionsContent({ postId }: { postId?: string }) {
         secondary={{ href: "/collaborate", label: bt("게시판 전체 공고 보기", "Browse all posts") }}
       >
         {/* 필터는 화면 상태라 같은 주소 링크로는 풀리지 않는다. 실제로 조건을 푸는 버튼을 둔다. */}
-        {hasFilters ? <button type="button" className={collabButton} onClick={resetFilters}>{bt("조건 모두 풀고 다시 보기", "Clear all conditions")}</button> : null}
+        {hasFilters ? <button type="button" className={`${collabButton} min-w-11`} onClick={resetFilters}>{bt("조건 모두 풀고 다시 보기", "Clear all conditions")}</button> : null}
       </ActionableEmptyState>
     )}
-    {page && page.items.length > 0 && <div className="grid gap-4 lg:grid-cols-2">{page.items.map((position) => <article key={position.id} className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-5 transition-colors hover:border-accent/45">
+    {page && page.items.length > 0 && <div className="grid gap-4 lg:grid-cols-2">{page.items.map((position) => <article key={position.id} className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-panel p-5 transition-colors hover:border-accent/45">
       <p className="text-xs font-semibold text-accent">{bt(`1명 모집 · 조건 버전 ${position.revision}`, `Hiring 1 · terms v${position.revision}`)}</p>
-      <h2 className="text-lg font-bold leading-snug text-fg">{position.postTitle}</h2>
+      <h2 className="text-lg font-bold leading-snug text-fg [overflow-wrap:anywhere] break-words">{position.postTitle}</h2>
       <HiringTermsView terms={position.terms} />
-      <Link className={`${collabButton} mt-auto self-start`} href={`/collaborate/${position.postId}`}>{bt("원래 공고에서 확인·지원", "View & apply on the original post")}</Link>
+      <Link className={`${collabButton} mt-auto min-w-11 self-start`} href={`/collaborate/${position.postId}`}>{bt("원래 공고에서 확인·지원", "View & apply on the original post")}</Link>
     </article>)}</div>}
     {(cursors.length > 1 || hasNext) && <nav className="flex flex-wrap gap-3" aria-label={bt("모집 조건 페이지 이동", "Position pages")}>
-      <button type="button" className={collabButton} disabled={loading || cursors.length === 1} onClick={() => setCursors((values) => values.slice(0, -1))}>{bt("이전 페이지", "Previous")}</button>
-      {cursors.length > 1 && <button type="button" className={collabButton} disabled={loading} onClick={() => setCursors([null])}>{bt("처음으로", "First")}</button>}
-      <button type="button" className={collabButton} disabled={loading || !hasNext} onClick={() => { if (next && hasNext) setCursors((values) => [...values, next]); }}>{bt("다음 페이지", "Next")}</button>
+      <button type="button" className={`${collabButton} min-w-11`} disabled={loading || cursors.length === 1} onClick={() => setCursors((values) => values.slice(0, -1))}>{bt("이전 페이지", "Previous")}</button>
+      {cursors.length > 1 && <button type="button" className={`${collabButton} min-w-11`} disabled={loading} onClick={() => setCursors([null])}>{bt("처음으로", "First")}</button>}
+      <button type="button" className={`${collabButton} min-w-11`} disabled={loading || !hasNext} onClick={() => { if (next && hasNext) setCursors((values) => [...values, next]); }}>{bt("다음 페이지", "Next")}</button>
     </nav>}
   </section>;
 }
@@ -157,9 +157,9 @@ function PositionsUnavailable({ message, onRetry }: { message: string; onRetry: 
     <h2 id="positions-unavailable-title" className="mt-3 text-lg font-bold text-fg">{bt("모집 자리를 지금 불러올 수 없어요", "Can't load open seats right now")}</h2>
     <p className="mt-2 max-w-2xl text-sm leading-7 text-fg-2">{message}</p>
     <p className="mt-1 max-w-2xl text-sm leading-7 text-fg-3">{bt("고른 조건은 그대로 두었어요. 연결되면 같은 조건으로 다시 찾을 수 있어요.", "Your conditions are kept. Retry with the same conditions once connected.")}</p>
-    <div className="mt-5 flex flex-wrap gap-3">
-      <button type="button" onClick={onRetry} className={collabPrimary}><RefreshCw size={16} aria-hidden="true" />{bt("다시 불러오기", "Reload")}</button>
-      <Link href="/collaborate" className={collabButton}>{bt("게시판으로 돌아가기", "Back to the board")}</Link>
+    <div className="mt-5 flex flex-wrap gap-3" role="group" aria-label={bt("복구 및 이동 동작", "Recovery and navigation actions")}>
+      <button type="button" onClick={onRetry} className={`${collabPrimary} min-w-11`}><RefreshCw size={16} aria-hidden="true" />{bt("다시 불러오기", "Reload")}</button>
+      <Link href="/collaborate" className={`${collabButton} min-w-11`}>{bt("게시판으로 돌아가기", "Back to the board")}</Link>
     </div>
   </section>;
 }
@@ -177,17 +177,18 @@ export function HiringPositionsPage() {
   } as const;
   const activeRate = roleRates[rolePreset];
   const episodeTotalKrw = activeRate.unitKrw * cutCountBudget;
-  return <Container className="space-y-6 py-8 sm:py-12">
-    <header className="rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel to-canvas p-6 sm:p-8">
-      <Link href="/collaborate" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent underline-offset-4 hover:underline"><ArrowLeft size={16} aria-hidden="true" />{bt("구인·의뢰 게시판", "Gigs board")}</Link>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight text-fg sm:text-4xl">{bt("모집 조건으로 찾기", "Find by hiring terms")}</h1>
+  return <Container className="space-y-6 py-8 sm:py-12 [&_button]:min-h-11 [&_button]:min-w-11 [&_input:not([type=checkbox]):not([type=radio]):not([type=range])]:min-h-11 [&_select]:min-h-11">
+    <header data-own-control-size="" className="rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel to-canvas p-6 sm:p-8">
+      <Link href="/collaborate" className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"><ArrowLeft size={16} aria-hidden="true" />{bt("구인·의뢰 게시판", "Gigs board")}</Link>
+      <h1 className="mt-2 text-3xl font-bold tracking-tight text-fg sm:text-4xl [overflow-wrap:anywhere]">{bt("모집 조건으로 찾기", "Find by hiring terms")}</h1>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-fg-2 sm:text-base">{bt("공고의 각 모집 자리를 역할·도구·보수로 찾아보세요. 공개 중인 자리만 표시하며 기존 공고에서 지원합니다.", "Search open seats by role, tools, and compensation. Only public seats are shown; apply from the original post.")}</p>
-      <div className="mt-5 flex flex-wrap gap-3"><Link href="/collaborate/new" className={collabPrimary}><Plus size={17} aria-hidden="true" />{bt("모집 글 올리기", "Post a gig")}</Link></div>
+      <div className="mt-5 flex flex-wrap gap-3"><Link href="/collaborate/new" className={`${collabPrimary} min-w-11`}><Plus size={17} aria-hidden="true" />{bt("모집 글 올리기", "Post a gig")}</Link></div>
     </header>
     <section
+      data-own-control-size=""
       aria-label={bt("REA 직무별 표준 단가 및 3단계 에스크로 시뮬레이터", "REA Role Rate & 3-Stage Escrow Simulator")}
       data-testid="hiring-rea-rate-escrow-bar"
-      className="rounded-2xl border border-line bg-card/85 p-4"
+      className="rounded-2xl border border-line bg-card/85 p-3.5 sm:p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-extrabold text-fg">
@@ -197,8 +198,8 @@ export function HiringPositionsPage() {
           {bt(`${cutCountBudget}컷 총액 ${episodeTotalKrw.toLocaleString("ko-KR")}원 · 착수30%(${(episodeTotalKrw * 0.3).toLocaleString("ko-KR")}원)/검수30%/납품40%`, `${cutCountBudget} cuts total ${episodeTotalKrw.toLocaleString("en-US")} KRW · 30%/30%/40% Escrow`)}
         </span>
       </div>
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("직무 단가 프리셋", "Role rate presets")}>
+      <div className="mt-2.5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap" role="group" aria-label={bt("직무 단가 프리셋", "Role rate presets")}>
           {(Object.keys(roleRates) as (keyof typeof roleRates)[]).map((key) => (
             <button
               key={key}
@@ -206,13 +207,13 @@ export function HiringPositionsPage() {
               data-testid={`hiring-rea-role-${key}`}
               aria-pressed={rolePreset === key}
               onClick={() => setRolePreset(key)}
-              className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${rolePreset === key ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
+              className={`inline-flex min-h-11 min-w-11 items-center justify-start rounded-xl border px-3.5 py-2 text-left text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:justify-center sm:text-center ${rolePreset === key ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
             >
               {bt(roleRates[key].ko, roleRates[key].en)}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1.5" role="group" aria-label={bt("회차 기준 컷수", "Episode cut count")}>
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center" role="group" aria-label={bt("회차 기준 컷수", "Episode cut count")}>
           {([60, 70, 85] as const).map((cnt) => (
             <button
               key={cnt}
@@ -220,7 +221,7 @@ export function HiringPositionsPage() {
               data-testid={`hiring-rea-cuts-${cnt}`}
               aria-pressed={cutCountBudget === cnt}
               onClick={() => setCutCountBudget(cnt)}
-              className={`rounded-lg border px-2 py-1 text-xs font-bold transition-colors ${cutCountBudget === cnt ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
+              className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border px-3.5 py-2 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${cutCountBudget === cnt ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3 hover:border-accent/50"}`}
             >
               {bt(`${cnt}컷`, `${cnt} cuts`)}
             </button>

@@ -1,0 +1,2967 @@
+{
+  "round": "Round 8 (GAP-R6-04)",
+  "mode": "after",
+  "generatedAt": "2026-11-07",
+  "ownedRoutes": [
+    "/collaborate/positions",
+    "/showcase/promo"
+  ],
+  "summary": {
+    "totalHiringUndersizedTargetsAcrossViewports": 0,
+    "totalPromoUndersizedTargetsAcrossViewports": 0,
+    "totalPromoProhibitedAriaAcrossViewports": 0,
+    "maxHorizontalOverflowPx": 0,
+    "allViewportsPass44x44": true,
+    "allProhibitedAriaResolved": true,
+    "allGroupsNamed": true
+  },
+  "viewportResults": [
+    {
+      "viewportId": "mobile-320",
+      "width": 320,
+      "height": 844,
+      "zoom": 1,
+      "hiring": {
+        "route": "/collaborate/positions",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "groups": {
+          "rolePresetGroupLabel": "직무 단가 프리셋",
+          "cutCountGroupLabel": "회차 기준 컷수",
+          "filterActionsGroupLabel": "조건 필터 동작"
+        },
+        "roleButtonsCount": 4,
+        "cutButtonsCount": 3,
+        "filterButtonsCount": 2,
+        "filterSelectsCount": 2,
+        "cardApplyLinksCount": 2,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allRoleButtonsMeet44": true,
+        "allCutButtonsMeet44": true,
+        "allFilterButtonsMeet44": true,
+        "allFilterSelectsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "text": "장편 판타지 액션 웹툰 [심연의 궤적: CHRONICLES OF THE ABYSSAL HORIZON — EPISODE 01–120 GLOBAL ",
+          "width": 246,
+          "height": 173,
+          "clippedHorizontally": false
+        },
+        "sampleTargets": {
+          "roleButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-lineart-assist",
+              "text": "선화·펜터치 어시 (평균 12,000원/컷)",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 258,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-flat-colorist",
+              "text": "밑색·채색 어시 (평균 9,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 258,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-bg3d-lt-artist",
+              "text": "3D 배경·6-Pass LT 배치 (평균 11,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 258,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-jp-en-typesetter",
+              "text": "한·일·영 다국어 식자·리드로잉 (평균 6,500원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 258,
+              "height": 50,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "cutButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-60",
+              "text": "60컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 80.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-70",
+              "text": "70컷",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 80.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-85",
+              "text": "85컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 80.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "filterButtons": [
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "조건 더 고르기",
+              "ariaPressed": null,
+              "ariaExpanded": "false",
+              "width": 113.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "검색 조건 초기화",
+              "ariaPressed": null,
+              "ariaExpanded": null,
+              "width": 125.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeRolePressed": "true",
+          "prevRolePressed": "false",
+          "activeCutsPressed": "true",
+          "escrowStatusText": "85컷 총액 935,000원 · 착수30%(280,500원)/검수30%/납품40%"
+        },
+        "screenshot": "screenshots/after-hiring-mobile-320.png"
+      },
+      "promo": {
+        "route": "/showcase/promo",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "prohibitedAriaDivCount": 0,
+        "prohibitedAriaDivs": [],
+        "namedGroupsCount": 8,
+        "namedGroups": [
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 · 홍보 · 컷츠 허브"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 홍보 관련 경로"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "예고편 첫 3초 훅 아키타입"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "홍보영상 제작 단계"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "콘티 편집 및 실행 취소 동작"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "로컬 합성 BGM 생성"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "자막·타임코드·프로젝트 파일 저장"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "완성 영상 배포 동선"
+          }
+        ],
+        "hookButtonsCount": 4,
+        "buttonRowControlsCount": 31,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allHookButtonsMeet44": true,
+        "allButtonRowControlsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "inputValueLength": 80,
+          "headingClippedHorizontally": false
+        },
+        "sampleTargets": {
+          "hookButtons": [
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-cliffhanger-0to3s",
+              "text": "① 클리프행어 결말 선공개 훅 (0~3초 반전)",
+              "ariaPressed": "true",
+              "width": 264,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-worldview-lore-reveal",
+              "text": "② 세계관·로어 시네마틱 타이틀 훅",
+              "ariaPressed": "false",
+              "width": 264,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-character-voice-tease",
+              "text": "③ 주인공 결정적 대사·AI 성우 독백 훅",
+              "ariaPressed": "false",
+              "width": 264,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-action-beat-drop",
+              "text": "④ BGM 비트 드롭 & 0.6초 고속 컷 전환",
+              "ariaPressed": "false",
+              "width": 264,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ],
+          "buttonRowControls": [
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "신작·작가 홍보 게시판 →",
+              "ariaPressed": null,
+              "width": 151.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "홍보 영상 자료실 (204편) →",
+              "ariaPressed": null,
+              "width": 174.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 만들기 →",
+              "ariaPressed": null,
+              "width": 124,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "모션 웹툰 스튜디오 →",
+              "ariaPressed": null,
+              "width": 136.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "ArtCraft v0.41.0 AI 영상·스플랫·스위트 →",
+              "ariaPressed": null,
+              "width": 254.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자동 무료 AI로 홍보 콘티 구성",
+              "ariaPressed": null,
+              "width": 260,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "로컬 연출 템플릿",
+              "ariaPressed": null,
+              "width": 144.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "실행 취소",
+              "ariaPressed": null,
+              "width": 107.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다시 실행",
+              "ariaPressed": null,
+              "width": 260,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "앰비언트 생성",
+              "ariaPressed": null,
+              "width": 137.2,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "펄스 생성",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "서스펜스 생성",
+              "ariaPressed": null,
+              "width": 260,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면에서 대사 다시 만들기",
+              "ariaPressed": null,
+              "width": 226,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면 타이밍 맞춤",
+              "ariaPressed": null,
+              "width": 226,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이 대사 미리듣기",
+              "ariaPressed": null,
+              "width": 196,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 제거",
+              "ariaPressed": null,
+              "width": 196,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "전체 타임라인 미리듣기",
+              "ariaPressed": null,
+              "width": 226,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "무료 전체 음성 파일 만들기",
+              "ariaPressed": null,
+              "width": 226,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 TXT",
+              "ariaPressed": null,
+              "width": 226,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마이크 녹음 시작",
+              "ariaPressed": null,
+              "width": 230,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이전 프레임",
+              "ariaPressed": null,
+              "width": 124,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다음 프레임",
+              "ariaPressed": null,
+              "width": 124,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마지막 카드 확인",
+              "ariaPressed": null,
+              "width": 256,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 SRT",
+              "ariaPressed": null,
+              "width": 125.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 VTT",
+              "ariaPressed": null,
+              "width": 126.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면·음성 타임코드 JSON",
+              "ariaPressed": null,
+              "width": 260,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "홍보 썸네일 PNG",
+              "ariaPressed": null,
+              "width": 131.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "콘티 시트 PNG",
+              "ariaPressed": null,
+              "width": 120.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "프로젝트 JSON 저장",
+              "ariaPressed": null,
+              "width": 260,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "완성한 트레일러 홍보 글 올리기",
+              "ariaPressed": null,
+              "width": 188.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 피드 둘러보기",
+              "ariaPressed": null,
+              "width": 151.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeHookPressed": "true",
+          "prevHookPressed": "false",
+          "retentionBadgeText": "비율 9:16 · 15초 · 0/12컷 · 예상 3초 유지율 86.1%"
+        },
+        "screenshot": "screenshots/after-promo-mobile-320.png"
+      }
+    },
+    {
+      "viewportId": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "hiring": {
+        "route": "/collaborate/positions",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "groups": {
+          "rolePresetGroupLabel": "직무 단가 프리셋",
+          "cutCountGroupLabel": "회차 기준 컷수",
+          "filterActionsGroupLabel": "조건 필터 동작"
+        },
+        "roleButtonsCount": 4,
+        "cutButtonsCount": 3,
+        "filterButtonsCount": 2,
+        "filterSelectsCount": 2,
+        "cardApplyLinksCount": 2,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allRoleButtonsMeet44": true,
+        "allCutButtonsMeet44": true,
+        "allFilterButtonsMeet44": true,
+        "allFilterSelectsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "text": "장편 판타지 액션 웹툰 [심연의 궤적: CHRONICLES OF THE ABYSSAL HORIZON — EPISODE 01–120 GLOBAL ",
+          "width": 316,
+          "height": 149,
+          "clippedHorizontally": false
+        },
+        "sampleTargets": {
+          "roleButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-lineart-assist",
+              "text": "선화·펜터치 어시 (평균 12,000원/컷)",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 328,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-flat-colorist",
+              "text": "밑색·채색 어시 (평균 9,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 328,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-bg3d-lt-artist",
+              "text": "3D 배경·6-Pass LT 배치 (평균 11,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 328,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-jp-en-typesetter",
+              "text": "한·일·영 다국어 식자·리드로잉 (평균 6,500원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 328,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "cutButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-60",
+              "text": "60컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 104,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-70",
+              "text": "70컷",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 104,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-85",
+              "text": "85컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 104,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "filterButtons": [
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "조건 더 고르기",
+              "ariaPressed": null,
+              "ariaExpanded": "false",
+              "width": 113.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "검색 조건 초기화",
+              "ariaPressed": null,
+              "ariaExpanded": null,
+              "width": 125.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeRolePressed": "true",
+          "prevRolePressed": "false",
+          "activeCutsPressed": "true",
+          "escrowStatusText": "85컷 총액 935,000원 · 착수30%(280,500원)/검수30%/납품40%"
+        },
+        "screenshot": "screenshots/after-hiring-mobile-390.png"
+      },
+      "promo": {
+        "route": "/showcase/promo",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "prohibitedAriaDivCount": 0,
+        "prohibitedAriaDivs": [],
+        "namedGroupsCount": 8,
+        "namedGroups": [
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 · 홍보 · 컷츠 허브"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 홍보 관련 경로"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "예고편 첫 3초 훅 아키타입"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "홍보영상 제작 단계"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "콘티 편집 및 실행 취소 동작"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "로컬 합성 BGM 생성"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "자막·타임코드·프로젝트 파일 저장"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "완성 영상 배포 동선"
+          }
+        ],
+        "hookButtonsCount": 4,
+        "buttonRowControlsCount": 31,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allHookButtonsMeet44": true,
+        "allButtonRowControlsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "inputValueLength": 80,
+          "headingClippedHorizontally": false
+        },
+        "sampleTargets": {
+          "hookButtons": [
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-cliffhanger-0to3s",
+              "text": "① 클리프행어 결말 선공개 훅 (0~3초 반전)",
+              "ariaPressed": "true",
+              "width": 334,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-worldview-lore-reveal",
+              "text": "② 세계관·로어 시네마틱 타이틀 훅",
+              "ariaPressed": "false",
+              "width": 334,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-character-voice-tease",
+              "text": "③ 주인공 결정적 대사·AI 성우 독백 훅",
+              "ariaPressed": "false",
+              "width": 334,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-action-beat-drop",
+              "text": "④ BGM 비트 드롭 & 0.6초 고속 컷 전환",
+              "ariaPressed": "false",
+              "width": 334,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ],
+          "buttonRowControls": [
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "신작·작가 홍보 게시판 →",
+              "ariaPressed": null,
+              "width": 151.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "홍보 영상 자료실 (204편) →",
+              "ariaPressed": null,
+              "width": 174.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 만들기 →",
+              "ariaPressed": null,
+              "width": 124,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "모션 웹툰 스튜디오 →",
+              "ariaPressed": null,
+              "width": 136.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "ArtCraft v0.41.0 AI 영상·스플랫·스위트 →",
+              "ariaPressed": null,
+              "width": 254.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자동 무료 AI로 홍보 콘티 구성",
+              "ariaPressed": null,
+              "width": 194.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "로컬 연출 템플릿",
+              "ariaPressed": null,
+              "width": 127.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "실행 취소",
+              "ariaPressed": null,
+              "width": 161,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다시 실행",
+              "ariaPressed": null,
+              "width": 161,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "앰비언트 생성",
+              "ariaPressed": null,
+              "width": 112.2,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "펄스 생성",
+              "ariaPressed": null,
+              "width": 89.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "서스펜스 생성",
+              "ariaPressed": null,
+              "width": 112.2,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면에서 대사 다시 만들기",
+              "ariaPressed": null,
+              "width": 168,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면 타이밍 맞춤",
+              "ariaPressed": null,
+              "width": 120,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이 대사 미리듣기",
+              "ariaPressed": null,
+              "width": 147.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 제거",
+              "ariaPressed": null,
+              "width": 110.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "전체 타임라인 미리듣기",
+              "ariaPressed": null,
+              "width": 296,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "무료 전체 음성 파일 만들기",
+              "ariaPressed": null,
+              "width": 186.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 TXT",
+              "ariaPressed": null,
+              "width": 101.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마이크 녹음 시작",
+              "ariaPressed": null,
+              "width": 300,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이전 프레임",
+              "ariaPressed": null,
+              "width": 94.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다음 프레임",
+              "ariaPressed": null,
+              "width": 94.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마지막 카드 확인",
+              "ariaPressed": null,
+              "width": 120.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 SRT",
+              "ariaPressed": null,
+              "width": 160.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 VTT",
+              "ariaPressed": null,
+              "width": 161.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면·음성 타임코드 JSON",
+              "ariaPressed": null,
+              "width": 183.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "홍보 썸네일 PNG",
+              "ariaPressed": null,
+              "width": 138.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "콘티 시트 PNG",
+              "ariaPressed": null,
+              "width": 146.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "프로젝트 JSON 저장",
+              "ariaPressed": null,
+              "width": 175.9,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "완성한 트레일러 홍보 글 올리기",
+              "ariaPressed": null,
+              "width": 188.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 피드 둘러보기",
+              "ariaPressed": null,
+              "width": 151.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeHookPressed": "true",
+          "prevHookPressed": "false",
+          "retentionBadgeText": "비율 9:16 · 15초 · 0/12컷 · 예상 3초 유지율 86.1%"
+        },
+        "screenshot": "screenshots/after-promo-mobile-390.png"
+      }
+    },
+    {
+      "viewportId": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "hiring": {
+        "route": "/collaborate/positions",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "groups": {
+          "rolePresetGroupLabel": "직무 단가 프리셋",
+          "cutCountGroupLabel": "회차 기준 컷수",
+          "filterActionsGroupLabel": "조건 필터 동작"
+        },
+        "roleButtonsCount": 4,
+        "cutButtonsCount": 3,
+        "filterButtonsCount": 2,
+        "filterSelectsCount": 2,
+        "cardApplyLinksCount": 2,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allRoleButtonsMeet44": true,
+        "allCutButtonsMeet44": true,
+        "allFilterButtonsMeet44": true,
+        "allFilterSelectsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "text": "장편 판타지 액션 웹툰 [심연의 궤적: CHRONICLES OF THE ABYSSAL HORIZON — EPISODE 01–120 GLOBAL ",
+          "width": 663,
+          "height": 74,
+          "clippedHorizontally": false
+        },
+        "sampleTargets": {
+          "roleButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-lineart-assist",
+              "text": "선화·펜터치 어시 (평균 12,000원/컷)",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 209.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-flat-colorist",
+              "text": "밑색·채색 어시 (평균 9,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 192.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-bg3d-lt-artist",
+              "text": "3D 배경·6-Pass LT 배치 (평균 11,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 250.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-jp-en-typesetter",
+              "text": "한·일·영 다국어 식자·리드로잉 (평균 6,500원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 265.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "cutButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-60",
+              "text": "60컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 55.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-70",
+              "text": "70컷",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 55,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-85",
+              "text": "85컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 55.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "filterButtons": [
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "조건 더 고르기",
+              "ariaPressed": null,
+              "ariaExpanded": "false",
+              "width": 113.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "검색 조건 초기화",
+              "ariaPressed": null,
+              "ariaExpanded": null,
+              "width": 125.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeRolePressed": "true",
+          "prevRolePressed": "false",
+          "activeCutsPressed": "true",
+          "escrowStatusText": "85컷 총액 935,000원 · 착수30%(280,500원)/검수30%/납품40%"
+        },
+        "screenshot": "screenshots/after-hiring-tablet-768.png"
+      },
+      "promo": {
+        "route": "/showcase/promo",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "prohibitedAriaDivCount": 0,
+        "prohibitedAriaDivs": [],
+        "namedGroupsCount": 8,
+        "namedGroups": [
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 · 홍보 · 컷츠 허브"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 홍보 관련 경로"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "예고편 첫 3초 훅 아키타입"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "홍보영상 제작 단계"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "콘티 편집 및 실행 취소 동작"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "로컬 합성 BGM 생성"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "자막·타임코드·프로젝트 파일 저장"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "완성 영상 배포 동선"
+          }
+        ],
+        "hookButtonsCount": 4,
+        "buttonRowControlsCount": 31,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allHookButtonsMeet44": true,
+        "allButtonRowControlsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "inputValueLength": 80,
+          "headingClippedHorizontally": false
+        },
+        "sampleTargets": {
+          "hookButtons": [
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-cliffhanger-0to3s",
+              "text": "① 클리프행어 결말 선공개 훅 (0~3초 반전)",
+              "ariaPressed": "true",
+              "width": 252.2,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-worldview-lore-reveal",
+              "text": "② 세계관·로어 시네마틱 타이틀 훅",
+              "ariaPressed": "false",
+              "width": 203.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-character-voice-tease",
+              "text": "③ 주인공 결정적 대사·AI 성우 독백 훅",
+              "ariaPressed": "false",
+              "width": 221.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-action-beat-drop",
+              "text": "④ BGM 비트 드롭 & 0.6초 고속 컷 전환",
+              "ariaPressed": "false",
+              "width": 235.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ],
+          "buttonRowControls": [
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "신작·작가 홍보 게시판 →",
+              "ariaPressed": null,
+              "width": 151.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "홍보 영상 자료실 (204편) →",
+              "ariaPressed": null,
+              "width": 174.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 만들기 →",
+              "ariaPressed": null,
+              "width": 124,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "모션 웹툰 스튜디오 →",
+              "ariaPressed": null,
+              "width": 136.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "ArtCraft v0.41.0 AI 영상·스플랫·스위트 →",
+              "ariaPressed": null,
+              "width": 254.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자동 무료 AI로 홍보 콘티 구성",
+              "ariaPressed": null,
+              "width": 181.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "로컬 연출 템플릿",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "실행 취소",
+              "ariaPressed": null,
+              "width": 78,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다시 실행",
+              "ariaPressed": null,
+              "width": 78,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "앰비언트 생성",
+              "ariaPressed": null,
+              "width": 100.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "펄스 생성",
+              "ariaPressed": null,
+              "width": 78,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "서스펜스 생성",
+              "ariaPressed": null,
+              "width": 100.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면에서 대사 다시 만들기",
+              "ariaPressed": null,
+              "width": 162.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면 타이밍 맞춤",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이 대사 미리듣기",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 제거",
+              "ariaPressed": null,
+              "width": 78,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "전체 타임라인 미리듣기",
+              "ariaPressed": null,
+              "width": 148.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "무료 전체 음성 파일 만들기",
+              "ariaPressed": null,
+              "width": 165.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 TXT",
+              "ariaPressed": null,
+              "width": 80.9,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마이크 녹음 시작",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이전 프레임",
+              "ariaPressed": null,
+              "width": 89.2,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다음 프레임",
+              "ariaPressed": null,
+              "width": 89.2,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마지막 카드 확인",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 SRT",
+              "ariaPressed": null,
+              "width": 80.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 VTT",
+              "ariaPressed": null,
+              "width": 81.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면·음성 타임코드 JSON",
+              "ariaPressed": null,
+              "width": 163.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "홍보 썸네일 PNG",
+              "ariaPressed": null,
+              "width": 119.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "콘티 시트 PNG",
+              "ariaPressed": null,
+              "width": 107.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "프로젝트 JSON 저장",
+              "ariaPressed": null,
+              "width": 137.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "완성한 트레일러 홍보 글 올리기",
+              "ariaPressed": null,
+              "width": 188.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 피드 둘러보기",
+              "ariaPressed": null,
+              "width": 151.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeHookPressed": "true",
+          "prevHookPressed": "false",
+          "retentionBadgeText": "비율 9:16 · 15초 · 0/12컷 · 예상 3초 유지율 86.1%"
+        },
+        "screenshot": "screenshots/after-promo-tablet-768.png"
+      }
+    },
+    {
+      "viewportId": "pc-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "hiring": {
+        "route": "/collaborate/positions",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "groups": {
+          "rolePresetGroupLabel": "직무 단가 프리셋",
+          "cutCountGroupLabel": "회차 기준 컷수",
+          "filterActionsGroupLabel": "조건 필터 동작"
+        },
+        "roleButtonsCount": 4,
+        "cutButtonsCount": 3,
+        "filterButtonsCount": 2,
+        "filterSelectsCount": 2,
+        "cardApplyLinksCount": 2,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allRoleButtonsMeet44": true,
+        "allCutButtonsMeet44": true,
+        "allFilterButtonsMeet44": true,
+        "allFilterSelectsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "text": "장편 판타지 액션 웹툰 [심연의 궤적: CHRONICLES OF THE ABYSSAL HORIZON — EPISODE 01–120 GLOBAL ",
+          "width": 578,
+          "height": 74,
+          "clippedHorizontally": false
+        },
+        "sampleTargets": {
+          "roleButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-lineart-assist",
+              "text": "선화·펜터치 어시 (평균 12,000원/컷)",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 209.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-flat-colorist",
+              "text": "밑색·채색 어시 (평균 9,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 192.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-bg3d-lt-artist",
+              "text": "3D 배경·6-Pass LT 배치 (평균 11,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 250.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-jp-en-typesetter",
+              "text": "한·일·영 다국어 식자·리드로잉 (평균 6,500원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 265.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "cutButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-60",
+              "text": "60컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 55.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-70",
+              "text": "70컷",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 55,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-85",
+              "text": "85컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 55.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "filterButtons": [
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "조건 더 고르기",
+              "ariaPressed": null,
+              "ariaExpanded": "false",
+              "width": 113.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "검색 조건 초기화",
+              "ariaPressed": null,
+              "ariaExpanded": null,
+              "width": 125.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeRolePressed": "true",
+          "prevRolePressed": "false",
+          "activeCutsPressed": "true",
+          "escrowStatusText": "85컷 총액 935,000원 · 착수30%(280,500원)/검수30%/납품40%"
+        },
+        "screenshot": "screenshots/after-hiring-pc-1440.png"
+      },
+      "promo": {
+        "route": "/showcase/promo",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "prohibitedAriaDivCount": 0,
+        "prohibitedAriaDivs": [],
+        "namedGroupsCount": 8,
+        "namedGroups": [
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 · 홍보 · 컷츠 허브"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 홍보 관련 경로"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "예고편 첫 3초 훅 아키타입"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "홍보영상 제작 단계"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "콘티 편집 및 실행 취소 동작"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "로컬 합성 BGM 생성"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "자막·타임코드·프로젝트 파일 저장"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "완성 영상 배포 동선"
+          }
+        ],
+        "hookButtonsCount": 4,
+        "buttonRowControlsCount": 31,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allHookButtonsMeet44": true,
+        "allButtonRowControlsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "inputValueLength": 80,
+          "headingClippedHorizontally": false
+        },
+        "sampleTargets": {
+          "hookButtons": [
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-cliffhanger-0to3s",
+              "text": "① 클리프행어 결말 선공개 훅 (0~3초 반전)",
+              "ariaPressed": "true",
+              "width": 252.2,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-worldview-lore-reveal",
+              "text": "② 세계관·로어 시네마틱 타이틀 훅",
+              "ariaPressed": "false",
+              "width": 203.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-character-voice-tease",
+              "text": "③ 주인공 결정적 대사·AI 성우 독백 훅",
+              "ariaPressed": "false",
+              "width": 221.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-action-beat-drop",
+              "text": "④ BGM 비트 드롭 & 0.6초 고속 컷 전환",
+              "ariaPressed": "false",
+              "width": 235.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ],
+          "buttonRowControls": [
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "신작·작가 홍보 게시판 →",
+              "ariaPressed": null,
+              "width": 151.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "홍보 영상 자료실 (204편) →",
+              "ariaPressed": null,
+              "width": 174.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 만들기 →",
+              "ariaPressed": null,
+              "width": 124,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "모션 웹툰 스튜디오 →",
+              "ariaPressed": null,
+              "width": 136.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "ArtCraft v0.41.0 AI 영상·스플랫·스위트 →",
+              "ariaPressed": null,
+              "width": 254.6,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자동 무료 AI로 홍보 콘티 구성",
+              "ariaPressed": null,
+              "width": 181.4,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "로컬 연출 템플릿",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "실행 취소",
+              "ariaPressed": null,
+              "width": 78,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다시 실행",
+              "ariaPressed": null,
+              "width": 78,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "앰비언트 생성",
+              "ariaPressed": null,
+              "width": 100.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "펄스 생성",
+              "ariaPressed": null,
+              "width": 78,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "서스펜스 생성",
+              "ariaPressed": null,
+              "width": 100.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면에서 대사 다시 만들기",
+              "ariaPressed": null,
+              "width": 162.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면 타이밍 맞춤",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이 대사 미리듣기",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 제거",
+              "ariaPressed": null,
+              "width": 78,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "전체 타임라인 미리듣기",
+              "ariaPressed": null,
+              "width": 148.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "무료 전체 음성 파일 만들기",
+              "ariaPressed": null,
+              "width": 165.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 TXT",
+              "ariaPressed": null,
+              "width": 80.9,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마이크 녹음 시작",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이전 프레임",
+              "ariaPressed": null,
+              "width": 89.2,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다음 프레임",
+              "ariaPressed": null,
+              "width": 89.2,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마지막 카드 확인",
+              "ariaPressed": null,
+              "width": 114.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 SRT",
+              "ariaPressed": null,
+              "width": 80.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 VTT",
+              "ariaPressed": null,
+              "width": 81.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면·음성 타임코드 JSON",
+              "ariaPressed": null,
+              "width": 163.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "홍보 썸네일 PNG",
+              "ariaPressed": null,
+              "width": 119.1,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "콘티 시트 PNG",
+              "ariaPressed": null,
+              "width": 107.8,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "프로젝트 JSON 저장",
+              "ariaPressed": null,
+              "width": 137.7,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "완성한 트레일러 홍보 글 올리기",
+              "ariaPressed": null,
+              "width": 188.3,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 피드 둘러보기",
+              "ariaPressed": null,
+              "width": 151.5,
+              "height": 44,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeHookPressed": "true",
+          "prevHookPressed": "false",
+          "retentionBadgeText": "비율 9:16 · 15초 · 0/12컷 · 예상 3초 유지율 86.1%"
+        },
+        "screenshot": "screenshots/after-promo-pc-1440.png"
+      }
+    },
+    {
+      "viewportId": "pc-1440-zoom-200",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "hiring": {
+        "route": "/collaborate/positions",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "groups": {
+          "rolePresetGroupLabel": "직무 단가 프리셋",
+          "cutCountGroupLabel": "회차 기준 컷수",
+          "filterActionsGroupLabel": "조건 필터 동작"
+        },
+        "roleButtonsCount": 4,
+        "cutButtonsCount": 3,
+        "filterButtonsCount": 2,
+        "filterSelectsCount": 2,
+        "cardApplyLinksCount": 2,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allRoleButtonsMeet44": true,
+        "allCutButtonsMeet44": true,
+        "allFilterButtonsMeet44": true,
+        "allFilterSelectsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "text": "장편 판타지 액션 웹툰 [심연의 궤적: CHRONICLES OF THE ABYSSAL HORIZON — EPISODE 01–120 GLOBAL ",
+          "width": 549,
+          "height": 297,
+          "clippedHorizontally": false
+        },
+        "sampleTargets": {
+          "roleButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-lineart-assist",
+              "text": "선화·펜터치 어시 (평균 12,000원/컷)",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 418.9,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-flat-colorist",
+              "text": "밑색·채색 어시 (평균 9,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 384.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-bg3d-lt-artist",
+              "text": "3D 배경·6-Pass LT 배치 (평균 11,000원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 501.3,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-role-jp-en-typesetter",
+              "text": "한·일·영 다국어 식자·리드로잉 (평균 6,500원/컷)",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 530.1,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "cutButtons": [
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-60",
+              "text": "60컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 111.2,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-70",
+              "text": "70컷",
+              "ariaPressed": "true",
+              "ariaExpanded": null,
+              "width": 110,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": "hiring-rea-cuts-85",
+              "text": "85컷",
+              "ariaPressed": "false",
+              "ariaExpanded": null,
+              "width": 111.2,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ],
+          "filterButtons": [
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "조건 더 고르기",
+              "ariaPressed": null,
+              "ariaExpanded": "false",
+              "width": 226.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "검색 조건 초기화",
+              "ariaPressed": null,
+              "ariaExpanded": null,
+              "width": 250.7,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisibleClass": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeRolePressed": "true",
+          "prevRolePressed": "false",
+          "activeCutsPressed": "true",
+          "escrowStatusText": "85컷 총액 935,000원 · 착수30%(280,500원)/검수30%/납품40%"
+        },
+        "screenshot": "screenshots/after-hiring-pc-1440-zoom-200.png"
+      },
+      "promo": {
+        "route": "/showcase/promo",
+        "theme": "dark",
+        "horizontalOverflowPx": 0,
+        "hasOwnControlSize": true,
+        "prohibitedAriaDivCount": 0,
+        "prohibitedAriaDivs": [],
+        "namedGroupsCount": 8,
+        "namedGroups": [
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 · 홍보 · 컷츠 허브"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "영상 홍보 관련 경로"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "예고편 첫 3초 훅 아키타입"
+          },
+          {
+            "tag": "nav",
+            "role": null,
+            "ariaLabel": "홍보영상 제작 단계"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "콘티 편집 및 실행 취소 동작"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "로컬 합성 BGM 생성"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "자막·타임코드·프로젝트 파일 저장"
+          },
+          {
+            "tag": "div",
+            "role": "group",
+            "ariaLabel": "완성 영상 배포 동선"
+          }
+        ],
+        "hookButtonsCount": 4,
+        "buttonRowControlsCount": 31,
+        "undersizedTargetCount": 0,
+        "undersizedTargets": [],
+        "allHookButtonsMeet44": true,
+        "allButtonRowControlsMeet44": true,
+        "allFocusVisibleReady": true,
+        "longTitle": {
+          "inputValueLength": 80,
+          "headingClippedHorizontally": false
+        },
+        "sampleTargets": {
+          "hookButtons": [
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-cliffhanger-0to3s",
+              "text": "① 클리프행어 결말 선공개 훅 (0~3초 반전)",
+              "ariaPressed": "true",
+              "width": 504.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-worldview-lore-reveal",
+              "text": "② 세계관·로어 시네마틱 타이틀 훅",
+              "ariaPressed": "false",
+              "width": 406.9,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-character-voice-tease",
+              "text": "③ 주인공 결정적 대사·AI 성우 독백 훅",
+              "ariaPressed": "false",
+              "width": 443.4,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": "studio-promo-rea-hook-action-beat-drop",
+              "text": "④ BGM 비트 드롭 & 0.6초 고속 컷 전환",
+              "ariaPressed": "false",
+              "width": 470.6,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ],
+          "buttonRowControls": [
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "신작·작가 홍보 게시판 →",
+              "ariaPressed": null,
+              "width": 303.6,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "홍보 영상 자료실 (204편) →",
+              "ariaPressed": null,
+              "width": 349,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 만들기 →",
+              "ariaPressed": null,
+              "width": 248,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "모션 웹툰 스튜디오 →",
+              "ariaPressed": null,
+              "width": 272.3,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "ArtCraft v0.41.0 AI 영상·스플랫·스위트 →",
+              "ariaPressed": null,
+              "width": 509.1,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자동 무료 AI로 홍보 콘티 구성",
+              "ariaPressed": null,
+              "width": 362.8,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "로컬 연출 템플릿",
+              "ariaPressed": null,
+              "width": 229.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "실행 취소",
+              "ariaPressed": null,
+              "width": 156,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다시 실행",
+              "ariaPressed": null,
+              "width": 156,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "앰비언트 생성",
+              "ariaPressed": null,
+              "width": 200.9,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "펄스 생성",
+              "ariaPressed": null,
+              "width": 156,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "서스펜스 생성",
+              "ariaPressed": null,
+              "width": 200.9,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면에서 대사 다시 만들기",
+              "ariaPressed": null,
+              "width": 325.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면 타이밍 맞춤",
+              "ariaPressed": null,
+              "width": 229.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이 대사 미리듣기",
+              "ariaPressed": null,
+              "width": 229.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 제거",
+              "ariaPressed": null,
+              "width": 156,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "전체 타임라인 미리듣기",
+              "ariaPressed": null,
+              "width": 296.9,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "무료 전체 음성 파일 만들기",
+              "ariaPressed": null,
+              "width": 331.6,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "대사 TXT",
+              "ariaPressed": null,
+              "width": 161.7,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마이크 녹음 시작",
+              "ariaPressed": null,
+              "width": 229.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "이전 프레임",
+              "ariaPressed": null,
+              "width": 178.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "다음 프레임",
+              "ariaPressed": null,
+              "width": 178.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "마지막 카드 확인",
+              "ariaPressed": null,
+              "width": 229.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 SRT",
+              "ariaPressed": null,
+              "width": 160.2,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "자막 VTT",
+              "ariaPressed": null,
+              "width": 162.6,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "장면·음성 타임코드 JSON",
+              "ariaPressed": null,
+              "width": 327.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "홍보 썸네일 PNG",
+              "ariaPressed": null,
+              "width": 238.1,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "콘티 시트 PNG",
+              "ariaPressed": null,
+              "width": 215.6,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "button",
+              "testId": null,
+              "text": "프로젝트 JSON 저장",
+              "ariaPressed": null,
+              "width": 275.4,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "완성한 트레일러 홍보 글 올리기",
+              "ariaPressed": null,
+              "width": 376.5,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            },
+            {
+              "tag": "a",
+              "testId": null,
+              "text": "숏폼 컷츠 피드 둘러보기",
+              "ariaPressed": null,
+              "width": 303,
+              "height": 88,
+              "meets44x44": true,
+              "hasFocusVisible": true
+            }
+          ]
+        },
+        "toggleState": {
+          "activeHookPressed": "true",
+          "prevHookPressed": "false",
+          "retentionBadgeText": "비율 9:16 · 15초 · 0/12컷 · 예상 3초 유지율 86.1%"
+        },
+        "screenshot": "screenshots/after-promo-pc-1440-zoom-200.png"
+      }
+    }
+  ],
+  "visualModeResults": [
+    {
+      "modeId": "light",
+      "theme": "light",
+      "reducedMotion": "no-preference",
+      "hiring": {
+        "undersizedTargetCount": 0,
+        "horizontalOverflowPx": 0,
+        "allRoleButtonsMeet44": true,
+        "allCutButtonsMeet44": true,
+        "screenshot": "screenshots/after-hiring-mode-light.png"
+      },
+      "promo": {
+        "undersizedTargetCount": 0,
+        "prohibitedAriaDivCount": 0,
+        "horizontalOverflowPx": 0,
+        "allHookButtonsMeet44": true,
+        "allButtonRowControlsMeet44": true,
+        "screenshot": "screenshots/after-promo-mode-light.png"
+      }
+    },
+    {
+      "modeId": "dark",
+      "theme": "dark",
+      "reducedMotion": "no-preference",
+      "hiring": {
+        "undersizedTargetCount": 0,
+        "horizontalOverflowPx": 0,
+        "allRoleButtonsMeet44": true,
+        "allCutButtonsMeet44": true,
+        "screenshot": "screenshots/after-hiring-mode-dark.png"
+      },
+      "promo": {
+        "undersizedTargetCount": 0,
+        "prohibitedAriaDivCount": 0,
+        "horizontalOverflowPx": 0,
+        "allHookButtonsMeet44": true,
+        "allButtonRowControlsMeet44": true,
+        "screenshot": "screenshots/after-promo-mode-dark.png"
+      }
+    },
+    {
+      "modeId": "contrast",
+      "theme": "contrast",
+      "reducedMotion": "no-preference",
+      "hiring": {
+        "undersizedTargetCount": 0,
+        "horizontalOverflowPx": 0,
+        "allRoleButtonsMeet44": true,
+        "allCutButtonsMeet44": true,
+        "screenshot": "screenshots/after-hiring-mode-contrast.png"
+      },
+      "promo": {
+        "undersizedTargetCount": 0,
+        "prohibitedAriaDivCount": 0,
+        "horizontalOverflowPx": 0,
+        "allHookButtonsMeet44": true,
+        "allButtonRowControlsMeet44": true,
+        "screenshot": "screenshots/after-promo-mode-contrast.png"
+      }
+    },
+    {
+      "modeId": "reduced-motion",
+      "theme": "light",
+      "reducedMotion": "reduce",
+      "hiring": {
+        "undersizedTargetCount": 0,
+        "horizontalOverflowPx": 0,
+        "allRoleButtonsMeet44": true,
+        "allCutButtonsMeet44": true,
+        "screenshot": "screenshots/after-hiring-mode-reduced-motion.png"
+      },
+      "promo": {
+        "undersizedTargetCount": 0,
+        "prohibitedAriaDivCount": 0,
+        "horizontalOverflowPx": 0,
+        "allHookButtonsMeet44": true,
+        "allButtonRowControlsMeet44": true,
+        "screenshot": "screenshots/after-promo-mode-reduced-motion.png"
+      }
+    }
+  ]
+}
