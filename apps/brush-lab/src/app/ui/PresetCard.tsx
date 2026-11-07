@@ -10,10 +10,11 @@ export interface PresetCardProps {
   preset: BrushProgram;
   entry: GalleryEntry | undefined;
   onOpen: (presetId: string) => void;
+  onTryInDraw?: (presetId: string) => void;
 }
 
 /** 프리셋 썸네일 카드: 결정성 해시·렌더 시간·dab 수·가족 지표 판정. Worker 실패는 오류 카드. */
-export function PresetCard({ preset, entry, onOpen }: PresetCardProps) {
+export function PresetCard({ preset, entry, onOpen, onTryInDraw }: PresetCardProps) {
   const result = entry?.status === "done" ? entry.result : null;
   const headingId = `lab-card-${preset.id}`;
   return (
@@ -39,7 +40,8 @@ export function PresetCard({ preset, entry, onOpen }: PresetCardProps) {
         </p>
       ) : null}
       {result ? (
-        <>
+        <details className="lab-draw-details lab-card-details" data-testid={`lab-preset-diag-${preset.id}`}>
+          <summary>고급 진단 · 해시·지표 ({result.renderMs.toFixed(1)} ms)</summary>
           <p className="lab-card-hash">
             해시 <span className="lab-mono">{result.pixelHash}</span> · {result.renderMs.toFixed(1)} ms · dab{" "}
             {result.dabCount}
@@ -52,11 +54,23 @@ export function PresetCard({ preset, entry, onOpen }: PresetCardProps) {
               </li>
             ))}
           </ul>
-        </>
+        </details>
       ) : null}
-      <button type="button" className="lab-button" onClick={() => onOpen(preset.id)}>
-        A/B 비교에서 열기
-      </button>
+      <div className="lab-card-actions">
+        <button type="button" className="lab-button" onClick={() => onOpen(preset.id)}>
+          A/B 비교에서 열기
+        </button>
+        {onTryInDraw ? (
+          <button
+            type="button"
+            className="lab-button lab-button--primary"
+            data-testid={`lab-preset-draw-${preset.id}`}
+            onClick={() => onTryInDraw(preset.id)}
+          >
+            그리기에서 시험
+          </button>
+        ) : null}
+      </div>
     </article>
   );
 }
