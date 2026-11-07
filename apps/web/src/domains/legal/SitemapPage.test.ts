@@ -285,4 +285,21 @@ describe("site directory experience contracts", () => {
     expect(sitemapSource).toContain("Directory at a glance");
     expect(SITEMAP_DIRECTORY_ENTRIES.length).toBeGreaterThan(0);
   });
+
+  it("enforces >=44px touch targets (min-h-11) and collapsible hub/pipeline groups without undersized min-h-7/min-h-9 links (GAP-R6-05)", () => {
+    expect(sitemapSource).not.toMatch(/\bmin-h-7\b/u);
+    expect(sitemapSource).not.toMatch(/\bmin-h-9\b/u);
+    expect(sitemapSource).toContain('data-testid="sitemap-promo-hub-cta"');
+    expect(sitemapSource).toContain('data-testid={`sitemap-hub-group-${hub.id}`}');
+    expect(sitemapSource).toContain('data-testid={`sitemap-hub-chip-${hub.id}-${item.id}`}');
+    expect(sitemapSource).toContain('data-testid="sitemap-pipeline-group"');
+    expect(sitemapSource).toContain('data-testid={`sitemap-pipeline-step-${step.stepNumber}`}');
+    expect(sitemapSource).toContain("open={hubIndex === 0}");
+    expect(sitemapSource).toContain("{hub.items.length}");
+    expect(sitemapSource).toContain("{CREATOR_STUDIO_PIPELINE_STEPS.length}");
+    expect(sitemapSource).toContain("focus-visible:outline-2");
+    expect(sitemapSource).toContain("motion-reduce:transition-none");
+    expect(sitemapSource).toContain("break-words");
+    expect(sitemapSource.split("\n").length).toBeLessThanOrEqual(800);
+  });
 });
