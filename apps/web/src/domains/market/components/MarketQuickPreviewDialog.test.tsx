@@ -150,5 +150,70 @@ describe("MarketQuickPreviewDialog", () => {
       expect(cta.className).toContain("min-h-11");
       expect(cta.className).toContain("min-w-11");
     }
+
+    const footerClose = screen.getByTestId("market-quick-preview-footer-close");
+    expect(footerClose.className).toContain("min-h-11");
+    expect(footerClose.className).toContain("min-w-11");
+  });
+
+  it("이전 트리거가 DOM에서 제거됐을 때 안전한 본문 대체 요소로 초점을 복원하고, 배경 스크롤 잠금·복원 및 깨진 썸네일 폴백을 처리한다 (Round 6)", () => {
+    const onClose = vi.fn();
+    const scrollToSpy = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    Object.defineProperty(window, "scrollY", { value: 240, configurable: true, writable: true });
+    const sample = CREATOR_MARKETPLACE_STARTER_RECORDS[0]!;
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <main id="main-content">
+          <button type="button" data-testid="ephemeral-trigger">
+            임시 미리보기 열기
+          </button>
+          <button type="button" data-testid="fallback-main-control">
+            마켓 필터 초기화
+          </button>
+          <MarketQuickPreviewDialog record={null} onClose={onClose} />
+        </main>
+      </MemoryRouter>,
+    );
+
+    const trigger = screen.getByTestId("ephemeral-trigger");
+    const fallbackControl = screen.getByTestId("fallback-main-control");
+    trigger.focus();
+
+    rerender(
+      <MemoryRouter>
+        <main id="main-content">
+          <button type="button" data-testid="ephemeral-trigger">
+            임시 미리보기 열기
+          </button>
+          <button type="button" data-testid="fallback-main-control">
+            마켓 필터 초기화
+          </button>
+          <MarketQuickPreviewDialog record={sample} onClose={onClose} />
+        </main>
+      </MemoryRouter>,
+    );
+
+    // 1) 모달 오픈 시 배경 스크롤 잠금 확인
+    expect(document.body.style.overflow).toBe("hidden");
+
+    // 2) 커버 내 이미지 로드 실패 시 폴백 배지 표시 확인
+    const coverBox = screen.getByTestId("market-quick-preview-cover");
+    const brokenImg = document.createElement("img");
+    coverBox.appendChild(brokenImg);
+    fireEvent.error(brokenImg);
+    expect(brokenImg.style.display).toBe("none");
+    expect(screen.getByTestId("market-cover-fallback")).toBeTruthy();
+
+    // 3) 모달이 열린 상태에서 이전 트리거가 DOM에서 제거된 경우
+    trigger.remove();
+    expect(trigger.isConnected).toBe(false);
+
+    // 4) 하단 닫기 버튼 클릭 시 배경 스크롤 복원 및 본문 내 안전한 대체 컨트롤로 초점 복원
+    fireEvent.click(screen.getByTestId("market-quick-preview-footer-close"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(document.body.style.overflow).toBe("");
+    expect(scrollToSpy).toHaveBeenCalledWith(0, 240);
+    expect(document.activeElement).toBe(fallbackControl);
   });
 });
