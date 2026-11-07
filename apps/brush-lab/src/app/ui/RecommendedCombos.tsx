@@ -10,10 +10,13 @@ export function RecommendedCombos({ combos }: { combos: readonly FamilyRecommend
   return (
     <section className="lab-panel" aria-label="추천 조합">
       <h2>추천 조합</h2>
-      <p className="lab-muted">
-        가족별 프리셋에 가장 잘 맞는 레인을 Node 실측(결정성 2회 확인)으로 골랐다. 수치는 같은 머신 단일 측정이라 성능 증거가
-        아니며, 브라우저 실측 전까지 승격 근거로 쓰지 않는다. 출처: {COMBO_PROVENANCE}
-      </p>
+      <details className="lab-draw-details" data-testid="lab-recommended-provenance">
+        <summary>측정 기준 및 출처 안내 접기/펼치기</summary>
+        <p className="lab-muted">
+          가족별 프리셋에 가장 잘 맞는 레인을 Node 실측(결정성 2회 확인)으로 골랐다. 수치는 같은 머신 단일 측정이라 성능 증거가
+          아니며, 브라우저 실측 전까지 승격 근거로 쓰지 않는다. 출처: {COMBO_PROVENANCE}
+        </p>
+      </details>
       {combos.length === 0 ? (
         <p className="lab-muted">측정된 추천 조합이 없다. 조합 실험 러너를 실행해 표를 갱신한다.</p>
       ) : (

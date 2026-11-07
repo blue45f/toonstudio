@@ -14,6 +14,7 @@ import { FixturePicker } from "../ui/FixturePicker";
 import { LaneCanvas } from "../ui/LaneCanvas";
 import { LaneSelector } from "../ui/LaneSelector";
 import { MetricsTable } from "../ui/MetricsTable";
+import { PresetComparisonBar } from "../ui/PresetComparisonBar";
 import { ReceiptMapping } from "../ui/ReceiptMapping";
 import { ReportPanel } from "../ui/ReportPanel";
 
@@ -281,11 +282,13 @@ export function CompareView() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [running, registry, env, ctx.runner, store, actions]);
 
+  const fixtureId = useLabSelector((s) => s.fixtureId);
   const hashA = results.reportA?.pixelHash ?? (results.a ? pixelHashOf(results.a.image) : null);
   const hashB = results.reportB?.pixelHash ?? (results.b ? pixelHashOf(results.b.image) : null);
   const labelA = descA ? descA.label : laneA;
   const labelB = descB ? descB.label : laneB;
   const displaySize = results.a?.image.width ?? (fixtureSource === "captured" && captured ? captured.width : canvasSize);
+  const hasAnyResult = results.a !== null || results.b !== null;
 
   const benchmarkScenarios = [
     { id: "ink-g-pen", label: "클립스튜디오 G펜 기준선" },
@@ -321,6 +324,7 @@ export function CompareView() {
             );
           })}
         </div>
+        <PresetComparisonBar />
         <div className="lab-form-grid">
           <LaneSelector slot="a" />
           <LaneSelector slot="b" />
@@ -357,6 +361,33 @@ export function CompareView() {
             단축키: R 재실행
           </span>
         </div>
+        {!hasAnyResult && !running ? (
+          <div className="lab-compare-empty-state" role="status" data-testid="lab-compare-empty-state">
+            <p className="lab-compare-empty-title">
+              <strong>비교 실행 전 (빈 비교 상태)</strong> · 동일 샘플 획(
+              {fixtureSource === "captured" && captured
+                ? `캡처 획 (${captured.samples.length} 표본, ${captured.width}×${captured.height})`
+                : `합성 fixture: ${fixtureId}`}
+              )을{" "}
+              <span className="lab-mono">
+                기준 A({laneA}) → 비교 B({laneB})
+              </span>{" "}
+              순서로 실행할 준비가 됐다.
+            </p>
+            <p className="lab-muted">
+              프리셋·파라미터·순서를 바꾸거나 이전 설정으로 되돌려도 이미 생성된 실험 리포트는 소실되지 않으며, 아래 버튼을 누르면
+              현재 설정으로 새 A/B 비교를 기록한다.
+            </p>
+            <button
+              type="button"
+              className="lab-button lab-button--primary"
+              onClick={onRun}
+              data-testid="lab-compare-empty-run-btn"
+            >
+              지금 A/B 실행 (단축키 R)
+            </button>
+          </div>
+        ) : null}
         <div className="lab-grid-3">
           <LaneCanvas
             slot="A"
