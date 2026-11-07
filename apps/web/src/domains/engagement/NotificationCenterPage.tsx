@@ -1,3 +1,4 @@
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { engagementStatusText } from "./engagement-status-i18n";
 import { r45EngagementStatusText } from "./r45-cat1-status-i18n";
 import {
@@ -11,7 +12,7 @@ import {
   Settings2,
   TriangleAlert,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { EngagementNotification, EngagementNotificationCategory } from "./engagement-model";
 import {
@@ -77,88 +78,50 @@ function CardOverflowMenu({
   readonly onArchive: () => void;
   readonly t: (ko: string, en: string) => string;
 }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open ]);
-
   const menuItemClass = cn(
-    "flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 text-left text-sm font-semibold text-fg",
-    "transition-colors hover:bg-raised",
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+    "flex min-h-11 w-full cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 text-left text-sm font-semibold text-fg",
+    "outline-none transition-colors data-[highlighted]:bg-raised motion-reduce:transition-none",
   );
 
   return (
-    <div ref={rootRef} className="relative shrink-0">
-      <button
-        type="button"
-        ref={triggerRef}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={t("알림 옵션", "Notification options")}
-        onClick={() => setOpen((value) => !value)}
-        className={buttonClass({ variant: "ghost", size: "sm", className: "px-2.5" })}
-      >
-        <Ellipsis size={17} aria-hidden="true" />
-      </button>
-      {open ? (
-        <div
-          role="menu"
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger asChild>
+        <button
+          type="button"
           aria-label={t("알림 옵션", "Notification options")}
-          className="absolute right-0 z-30 mt-1.5 w-48 rounded-xl border border-line bg-card p-1 shadow-xl"
+          className={buttonClass({ variant: "ghost", size: "icon", className: "size-11 shrink-0" })}
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => { setOpen(false); onToggleRead(); }}
-            className={menuItemClass}
-          >
+          <Ellipsis size={17} aria-hidden="true" />
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={6}
+          collisionPadding={12}
+          loop
+          aria-label={t("알림 옵션", "Notification options")}
+          className="z-[90] w-48 max-w-[calc(100vw-1.5rem)] rounded-xl border border-line-strong bg-card p-1 shadow-xl"
+        >
+          <DropdownMenu.Item onSelect={onToggleRead} className={menuItemClass}>
             <CheckCheck size={15} className="shrink-0 text-fg-3" aria-hidden="true" />
             {read ? t("안 읽음으로", "Mark as unread") : t("읽음으로", "Mark as read")}
-          </button>
+          </DropdownMenu.Item>
           {!archived ? (
             <>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => { setOpen(false); onSnooze(); }}
-                className={menuItemClass}
-              >
+              <DropdownMenu.Item onSelect={onSnooze} className={menuItemClass}>
                 <Clock3 size={15} className="shrink-0 text-fg-3" aria-hidden="true" />
                 {t("하루 뒤", "Remind me tomorrow")}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => { setOpen(false); onArchive(); }}
-                className={menuItemClass}
-              >
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onSelect={onArchive} className={menuItemClass}>
                 <Archive size={15} className="shrink-0 text-fg-3" aria-hidden="true" />
                 {t("보관", "Archive")}
-              </button>
+              </DropdownMenu.Item>
             </>
           ) : null}
-        </div>
-      ) : null}
-    </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 
@@ -184,7 +147,7 @@ function NotificationCard({
     <article
       aria-label={display.title}
       className={cn(
-        "rounded-2xl border bg-card p-4 transition-colors sm:p-5",
+        "min-w-0 rounded-2xl border bg-card p-4 transition-colors sm:p-5",
         read ? "border-line" : "border-accent/35 ring-1 ring-accent/10",
       )}
     >
@@ -202,11 +165,11 @@ function NotificationCard({
             {isNew ? (
               <span className="rounded-full bg-accent px-2 py-0.5 text-[0.65rem] font-black text-on-accent">새 알림</span>
             ) : null}
-            {!read && !isNew ? <span className="size-2 rounded-full bg-accent" aria-label="읽지 않음" /> : null}
+            {!read && !isNew ? <span role="img" className="size-2 rounded-full bg-accent" aria-label="읽지 않음" /> : null}
           </div>
-          <h3 className="mt-2 text-base font-black text-fg">{display.title}</h3>
-          <p className="mt-1 text-sm leading-6 text-fg-2">{display.body}</p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <h3 className="mt-2 text-base font-black text-fg [overflow-wrap:anywhere]">{display.title}</h3>
+          <p className="mt-1 text-sm leading-6 text-fg-2 [overflow-wrap:anywhere]">{display.body}</p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
             <Link
               href={notification.href}
               onClick={() => {
@@ -363,17 +326,17 @@ export function NotificationCenterPage() {
       <div
         role="group"
         aria-label="알림 필터"
-        className="mt-7 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mt-7 flex flex-wrap gap-2"
       >
         {filters.map((item) => (
           <button
             key={item.value}
             type="button"
             aria-pressed={filter === item.value}
+            style={{ minBlockSize: "var(--site-control-size, 2.75rem)" }}
             onClick={() => selectFilter(item.value)}
             className={cn(
-              "min-h-10 shrink-0 rounded-full border px-4 text-xs font-bold transition-colors",
-              "pointer-coarse:min-h-11",
+              "min-h-11 max-w-full rounded-full border px-4 py-2 text-sm font-bold transition-colors motion-reduce:transition-none",
               "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
               filter === item.value
                 ? "border-accent bg-accent text-on-accent"
