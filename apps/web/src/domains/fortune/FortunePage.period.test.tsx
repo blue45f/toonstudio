@@ -1,10 +1,16 @@
 // @vitest-environment jsdom
 
+import { createRef } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { getCharacters } from "@toonstudio/core/fortune";
+import { FortuneCharacterPickerSection } from "./FortuneCharacterPickerSection";
+import { FortuneCharacterSidebar } from "./FortuneCharacterSidebar";
 import { FortunePage } from "./FortunePage";
+import { FortuneResultPanel } from "./FortuneResultPanel";
+import { FortuneToolInputForms } from "./FortuneToolInputForms";
 import { useFortuneStore } from "./fortune-store";
 
 // 운세 도구 라우트(/fortune/monthly·/fortune/yearly) 전체 흐름 회귀 테스트 (F-B10-2).
@@ -310,3 +316,240 @@ describe("FortunePage / FortuneShareModal 접근성 회귀 (GAP-R4-02)", () => {
     expect(document.activeElement).toBe(shareTrigger);
   });
 });
+
+describe("FortunePage 화면별 표현 컴포넌트 분리 경계 (Round 6)", () => {
+  const identityTx = (s: string) => s;
+  const sampleChar = getCharacters()[0];
+
+  it("FortuneCharacterPickerSection: 캐릭터 그리드·히스토리·에러 배너를 독립 렌더링하고 선택/삭제 콜백을 전달한다", () => {
+    const onSelect = vi.fn();
+    const onRemoveFromHistory = vi.fn();
+    const onRetryLoad = vi.fn();
+    const { rerender } = render(
+      <FortuneCharacterPickerSection
+        characters={[sampleChar]}
+        charLoadFailed={false}
+        history={[
+          {
+            id: "hist-1",
+            tab: "today",
+            characterId: sampleChar.id,
+            characterName: sampleChar.name,
+            characterAvatar: sampleChar.avatarUrl,
+            dateLabel: "11월 7일",
+            summary: "행운 가득한 하루",
+            result: {
+              interpretation: "해석 본문",
+              recommendations: [],
+            },
+          },
+        ]}
+        onContinueQuickToday={() => undefined}
+        onRestoreFortune={() => undefined}
+        onClearHistory={() => undefined}
+        onRemoveFromHistory={onRemoveFromHistory}
+        onRetryLoadCharacters={onRetryLoad}
+        onSelectCharacter={onSelect}
+        tx={identityTx}
+      />
+    );
+
+    expect(document.getElementById("fortune-character-picker")?.textContent).toContain(
+      "당신의 운세를 해석해줄 캐릭터 에이전트를 고르세요"
+    );
+    expect(screen.getByText("행운 가득한 하루")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "이 운세 기록 삭제" }));
+    expect(onRemoveFromHistory).toHaveBeenCalledWith("hist-1");
+
+    const charButtons = screen.getAllByRole("button");
+    const selectCharBtn = charButtons.find((btn) => btn.textContent?.includes("선택하기"));
+    if (!selectCharBtn) throw new Error("캐릭터 카드 버튼을 찾지 못했어요");
+    fireEvent.click(selectCharBtn);
+    expect(onSelect).toHaveBeenCalledWith(sampleChar);
+
+    rerender(
+      <FortuneCharacterPickerSection
+        characters={[]}
+        charLoadFailed={true}
+        history={[]}
+        onContinueQuickToday={() => undefined}
+        onRestoreFortune={() => undefined}
+        onClearHistory={() => undefined}
+        onRemoveFromHistory={onRemoveFromHistory}
+        onRetryLoadCharacters={onRetryLoad}
+        onSelectCharacter={onSelect}
+        tx={identityTx}
+      />
+    );
+    expect(screen.getByRole("alert").textContent).toContain("캐릭터를 불러오지 못했어요");
+  });
+
+  it("FortuneCharacterSidebar: 선택된 캐릭터 프로필·연속 출석 배지·음성 상태·캐릭터 변경 액션을 독립 렌더링한다", () => {
+    const onReset = vi.fn();
+    const onTogglePlay = vi.fn();
+    render(
+      <FortuneCharacterSidebar
+        selectedChar={sampleChar}
+        streak={3}
+        hasPanels={true}
+        playback={{
+          supported: true,
+          status: "playing",
+          activeStep: 1,
+          steps: [
+            { panel: 0, line: 0, text: "1컷", characterId: null },
+            { panel: 1, line: 0, text: "2컷", characterId: null },
+          ],
+        }}
+        onTogglePlay={onTogglePlay}
+        onResetCharacter={onReset}
+        tx={identityTx}
+      />
+    );
+
+    expect(screen.getByText(sampleChar.name)).toBeTruthy();
+    expect(screen.getByText(/3일 연속 출석/)).toBeTruthy();
+    expect(screen.getByText(/2 \/ 2 컷 상영 중/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /다른 캐릭터 선택/ }));
+    expect(onReset).toHaveBeenCalledTimes(1);
+  });
+
+  it("FortuneToolInputForms: 사주 성별 토글 그룹과 처방전 사연 입력 폼을 독립 렌더링한다", () => {
+    const onGenderChange = vi.fn();
+    const onPrescriptionQueryChange = vi.fn();
+    const noop = () => undefined;
+
+    const { rerender } = render(
+      <FortuneToolInputForms
+        activeTab="saju"
+        selectedChar={sampleChar}
+        birthDate="1995-03-21"
+        birthTime="09:30"
+        gender="female"
+        onBirthDateChange={noop}
+        onBirthTimeChange={noop}
+        onGenderChange={onGenderChange}
+        hasSavedBirthProfile={true}
+        onClearBirthProfile={noop}
+        partnerBirthDate=""
+        partnerBirthTime=""
+        onPartnerBirthDateChange={noop}
+        onPartnerBirthTimeChange={noop}
+        prescriptionQuery=""
+        onPrescriptionQueryChange={onPrescriptionQueryChange}
+        tarotStep="idle"
+        tarotSpread="one"
+        onTarotSpreadChange={noop}
+        onStartTarotShuffle={noop}
+        onSelectTarotCard={noop}
+        onAnalyzeToday={noop}
+        onAnalyzeZodiac={noop}
+        onAnalyzePrescription={noop}
+        onAnalyzeCompatibility={noop}
+        onAnalyzeSaju={noop}
+        onNavigateObservatorySaju={noop}
+        tx={identityTx}
+      />
+    );
+
+    const group = screen.getByRole("group", { name: /성별/ });
+    expect(group).toBeTruthy();
+    expect(screen.getByRole("button", { name: "여성" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "남성" }));
+    expect(onGenderChange).toHaveBeenCalledWith("male");
+
+    rerender(
+      <FortuneToolInputForms
+        activeTab="prescription"
+        selectedChar={sampleChar}
+        birthDate=""
+        birthTime=""
+        gender="none"
+        onBirthDateChange={noop}
+        onBirthTimeChange={noop}
+        onGenderChange={onGenderChange}
+        hasSavedBirthProfile={false}
+        onClearBirthProfile={noop}
+        partnerBirthDate=""
+        partnerBirthTime=""
+        onPartnerBirthDateChange={noop}
+        onPartnerBirthTimeChange={noop}
+        prescriptionQuery=""
+        onPrescriptionQueryChange={onPrescriptionQueryChange}
+        tarotStep="idle"
+        tarotSpread="one"
+        onTarotSpreadChange={noop}
+        onStartTarotShuffle={noop}
+        onSelectTarotCard={noop}
+        onAnalyzeToday={noop}
+        onAnalyzeZodiac={noop}
+        onAnalyzePrescription={noop}
+        onAnalyzeCompatibility={noop}
+        onAnalyzeSaju={noop}
+        onNavigateObservatorySaju={noop}
+        tx={identityTx}
+      />
+    );
+
+    const textarea = document.getElementById("prescription-query");
+    if (!textarea) throw new Error("처방전 입력란을 찾지 못했어요");
+    fireEvent.change(textarea, { target: { value: "퇴근 후 위로가 필요해요" } });
+    expect(onPrescriptionQueryChange).toHaveBeenCalledWith("퇴근 후 위로가 필요해요");
+  });
+
+  it("FortuneResultPanel: 결과 헤더 ref·공유/다시뽑기 액션 및 처방전 결과를 독립 렌더링한다", () => {
+    const headingRef = createRef<HTMLHeadingElement>();
+    const shareRef = createRef<HTMLButtonElement>();
+    const onOpenShare = vi.fn();
+    const onReset = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <FortuneResultPanel
+          activeTab="prescription"
+          selectedChar={sampleChar}
+          characters={[sampleChar]}
+          fortuneResult={{
+            interpretation: "마음을 다독이는 메인 처방",
+            query: "불안과 조급함",
+            recommendations: [],
+          }}
+          playback={{
+            status: "idle",
+            supported: false,
+            steps: [],
+            activeStep: 0,
+            activePanel: 0,
+            typed: 0,
+            speed: 1,
+            setSpeed: () => undefined,
+            play: () => undefined,
+            pause: () => undefined,
+            resume: () => undefined,
+            stop: () => undefined,
+            next: () => undefined,
+            prev: () => undefined,
+          }}
+          onTogglePlay={() => undefined}
+          onOpenShare={onOpenShare}
+          onReset={onReset}
+          resultHeadingRef={headingRef}
+          shareTriggerRef={shareRef}
+          tx={identityTx}
+        />
+      </MemoryRouter>
+    );
+
+    expect(headingRef.current?.textContent).toContain("READING PRESCRIPTION");
+    expect(screen.getByText(/불안과 조급함/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /공유·저장/ }));
+    expect(onOpenShare).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /다시 보기/ }));
+    expect(onReset).toHaveBeenCalledTimes(1);
+  });
+});
+
