@@ -60,4 +60,24 @@ describe("trace practice", () => {
     // 섹션 내비(공용 SectionNav)는 목적지를 드롭다운 없이 펼쳐 보이고 현재 위치를 링크에 표시한다.
     expect((await screen.findByRole("link", { name: "따라 그리기" })).getAttribute("aria-current")).toBe("page");
   });
+
+  it("applies text-on-accent contrast token, 44px(min-h-11) touch target, focus ring, and reduced-motion classes to REA drill and opacity chips (GAP-R6-01)", () => {
+    render(<MemoryRouter><TracePracticePage /></MemoryRouter>);
+
+    const activeDrill = screen.getByTestId("trace-practice-rea-drill-posemaniacs-30s-gesture");
+    const inactiveDrill = screen.getByTestId("trace-practice-rea-drill-lineofaction-2m-anatomy");
+    const activeOpacity = screen.getByTestId("trace-practice-rea-opacity-50pct-onion");
+    const inactiveOpacity = screen.getByTestId("trace-practice-rea-opacity-25pct-ghost");
+
+    for (const btn of [activeDrill, activeOpacity]) {
+      expect(btn.className).toContain("text-on-accent");
+      expect(btn.className).not.toContain("text-white");
+    }
+
+    for (const btn of [activeDrill, inactiveDrill, activeOpacity, inactiveOpacity]) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("motion-reduce:transition-none");
+      expect(btn.className).toContain("focus-visible:outline-2");
+    }
+  });
 });

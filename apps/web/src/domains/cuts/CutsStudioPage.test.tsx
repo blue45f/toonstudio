@@ -74,4 +74,29 @@ describe("CutsStudioPage REA 렌더 엔진 및 프레임레이트 컨트롤러",
     const controller = screen.getByTestId("cuts-studio-rea-engine-controller");
     expect(controller.textContent).not.toMatch(/[가-힣]/);
   });
+
+  it("활성·비활성 REA 토글 칩에 text-on-accent 대비 토큰, 44px(min-h-11) 타깃, 키보드 포커스 링, 모션 감쇠를 적용한다 (GAP-R6-01)", () => {
+    render(
+      <MemoryRouter initialEntries={["/cuts/studio"]}>
+        <CutsStudioPage />
+      </MemoryRouter>,
+    );
+
+    const activeEngineBtn = screen.getByTestId("cuts-studio-rea-engine-gsap-parallax-25d");
+    const inactiveEngineBtn = screen.getByTestId("cuts-studio-rea-engine-rive-spine-state-rig");
+    const activeFpsBtn = screen.getByTestId("cuts-studio-rea-fps-60fps-webgpu");
+    const activeCurveBtn = screen.getByTestId("cuts-studio-rea-curve-spring-impact");
+    const activeDuckBtn = screen.getByTestId("cuts-studio-rea-duck-dialogue-minus12db");
+
+    for (const btn of [activeEngineBtn, activeFpsBtn, activeDuckBtn]) {
+      expect(btn.className).toContain("text-on-accent");
+      expect(btn.className).not.toContain("text-white");
+    }
+
+    for (const btn of [activeEngineBtn, inactiveEngineBtn, activeFpsBtn, activeCurveBtn, activeDuckBtn]) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("motion-reduce:transition-none");
+      expect(btn.className).toContain("focus-visible:outline-2");
+    }
+  });
 });
