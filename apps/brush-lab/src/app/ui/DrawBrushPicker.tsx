@@ -63,26 +63,13 @@ export function DrawBrushPicker() {
   const presetRef = useRef(presetId);
   presetRef.current = presetId;
 
-  const currentPreset = useMemo(
-    () => PRESET_CATALOG.find((p) => p.id === presetId) ?? PRESET_CATALOG[0],
-    [presetId],
-  );
-  const currentEntry = currentPreset ? previews[currentPreset.id] : undefined;
-  const currentImage = currentEntry?.status === "done" ? (currentEntry.result?.image ?? null) : null;
-  const isFiltered = filter !== "all" || search.trim().length > 0;
-  const currentVisibleInList = visible.some((p) => p.id === presetId);
-
-  // 보이는 항목과 현재 선택된 브러시의 미리보기를 지연 요청한다(선택된 브러시를 맨 앞으로).
+  // 보이는 항목의 미리보기를 지연 요청한다(선택된 브러시를 맨 앞으로).
   useEffect(() => {
     if (!gallery) return undefined;
     let cancelled = false;
     const ids = visibleKey.split(",").filter((id) => id.length > 0);
     const first = presetRef.current;
-    if (first && !ids.includes(first)) {
-      ids.unshift(first);
-    } else {
-      ids.sort((a, b) => (a === first ? -1 : b === first ? 1 : 0));
-    }
+    ids.sort((a, b) => (a === first ? -1 : b === first ? 1 : 0));
     const timer = setTimeout(() => {
       void renderPreviews(gallery, drawStore, drawActions, ids, () => cancelled);
     }, PREVIEW_START_DELAY_MS);
@@ -90,7 +77,7 @@ export function DrawBrushPicker() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [gallery, visibleKey, presetId, drawStore, drawActions]);
+  }, [gallery, visibleKey, drawStore, drawActions]);
 
   const chip = (id: string, label: string, active: boolean, onClick: () => void) => (
     <button
@@ -105,95 +92,27 @@ export function DrawBrushPicker() {
     </button>
   );
 
-  const resetExplorationFilters = (): void => {
-    drawActions.setFamilyFilter("all");
-    drawActions.setSearch("");
-  };
-
   return (
     <section className="lab-draw-section" aria-label="브러시 선택" data-testid="lab-draw-brushes">
-      <div className="lab-draw-section-head">
-        <h3>브러시 탐색 ({PRESET_CATALOG.length}종)</h3>
-        <span className="lab-muted lab-draw-filter-count" data-testid="lab-draw-filter-summary">
-          표시 {visible.length}/{PRESET_CATALOG.length}종
-        </span>
-      </div>
-      {currentPreset ? (
-        <div className="lab-draw-current-brush" data-testid="lab-draw-current-brush" aria-label="현재 선택 브러시 요약">
-          <span className="lab-draw-thumb lab-draw-current-thumb" data-status={currentEntry?.status ?? "idle"}>
-            <ImageCanvas
-              image={currentImage}
-              size={DRAW_PREVIEW_SIZE}
-              label={`현재 선택 브러시 ${currentPreset.name} 미리보기`}
-            />
-            {currentEntry?.status === "error" ? (
-              <span className="lab-draw-thumb-note" role="img" aria-label={`현재 브러시 미리보기 실패: ${currentEntry.error ?? ""}`}>
-                !
-              </span>
-            ) : null}
-          </span>
-          <div className="lab-draw-current-meta">
-            <div className="lab-draw-current-title">
-              <span className="lab-badge lab-badge--pass">현재 브러시</span>
-              <strong>{currentPreset.name}</strong>
-              <span className="lab-badge">{FAMILY_LABELS[currentPreset.family]}</span>
-              <span className="lab-mono lab-muted">{currentPreset.id}</span>
-            </div>
-            <p className="lab-muted lab-draw-current-desc">{currentPreset.description}</p>
-            <p className="lab-muted lab-draw-current-defaults">
-              기본 크기 {currentPreset.tip.sizePx}px · 불투명도 {Math.round(currentPreset.deposition.opacity * 100)}% · 흐름{" "}
-              {Math.round(currentPreset.deposition.flow * 100)}%
-            </p>
-          </div>
-        </div>
-      ) : null}
+      <h3>브러시 ({PRESET_CATALOG.length}종)</h3>
       <div className="lab-field">
         <label htmlFor="lab-draw-search">
           <span>브러시 검색</span>
         </label>
-        <div className="lab-draw-search-row">
-          <input
-            id="lab-draw-search"
-            type="search"
-            autoComplete="off"
-            placeholder="이름·가족·설명(예: 수채, 연필)"
-            value={search}
-            onChange={(e) => drawActions.setSearch(e.target.value)}
-          />
-          {search.length > 0 ? (
-            <button
-              type="button"
-              className="lab-button lab-button--compact"
-              data-testid="lab-draw-search-clear"
-              onClick={() => drawActions.setSearch("")}
-            >
-              검색 지우기
-            </button>
-          ) : null}
-        </div>
+        <input
+          id="lab-draw-search"
+          type="search"
+          autoComplete="off"
+          placeholder="이름·가족·설명(예: 수채, 연필)"
+          value={search}
+          onChange={(e) => drawActions.setSearch(e.target.value)}
+        />
       </div>
       <div className="lab-draw-chips" role="group" aria-label="브러시 가족">
         {chip("all", "전체", filter === "all", () => drawActions.setFamilyFilter("all"))}
         {chip("recent", `최근 사용 (${recentIds.length})`, filter === "recent", () => drawActions.setFamilyFilter("recent"))}
         {families.map((f) => chip(f, FAMILY_LABELS[f], filter === f, () => drawActions.setFamilyFilter(f)))}
       </div>
-      {isFiltered ? (
-        <div className="lab-draw-filter-bar" data-testid="lab-draw-filter-bar">
-          <span className="lab-muted">
-            {currentVisibleInList
-              ? `필터 적용됨 (${visible.length}종 일치)`
-              : "현재 선택 브러시가 필터 밖에 있습니다(상단 카드에서 확인 가능)"}
-          </span>
-          <button
-            type="button"
-            className="lab-button lab-button--compact"
-            data-testid="lab-draw-filter-reset"
-            onClick={resetExplorationFilters}
-          >
-            탐색 필터 초기화
-          </button>
-        </div>
-      ) : null}
       {!gallery ? (
         <p className="lab-draw-note" role="status">
           미리보기 Worker를 만들 수 없어 이름만 보여 준다: {galleryError ?? "사유 없음"} (메인 스레드로 대체 렌더하지 않는다)

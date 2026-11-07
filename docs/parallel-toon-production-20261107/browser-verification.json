@@ -1,0 +1,234 @@
+{
+  "verifiedAt": "2026-11-07T05:50:59.011Z",
+  "route": "/production/projects/sample-project/schedule",
+  "browser": "Playwright Chromium (/usr/bin/chromium)",
+  "allOverflowChecksPassed": true,
+  "matrix": [
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 800,
+      "zoom": 1,
+      "view": "timeline",
+      "innerWidth": 320,
+      "docScrollWidth": 305,
+      "workspaceWidth": 249,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 800,
+      "zoom": 1,
+      "view": "calendar",
+      "innerWidth": 320,
+      "docScrollWidth": 305,
+      "workspaceWidth": 249,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 800,
+      "zoom": 1,
+      "view": "list",
+      "innerWidth": 320,
+      "docScrollWidth": 305,
+      "workspaceWidth": 249,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "mobile-320",
+      "width": 320,
+      "height": 800,
+      "zoom": 1,
+      "view": "workload",
+      "innerWidth": 320,
+      "docScrollWidth": 305,
+      "workspaceWidth": 249,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "view": "timeline",
+      "innerWidth": 390,
+      "docScrollWidth": 375,
+      "workspaceWidth": 319,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "view": "calendar",
+      "innerWidth": 390,
+      "docScrollWidth": 375,
+      "workspaceWidth": 319,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "view": "list",
+      "innerWidth": 390,
+      "docScrollWidth": 375,
+      "workspaceWidth": 319,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "view": "workload",
+      "innerWidth": 390,
+      "docScrollWidth": 375,
+      "workspaceWidth": 319,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "view": "timeline",
+      "innerWidth": 768,
+      "docScrollWidth": 753,
+      "workspaceWidth": 546,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "view": "calendar",
+      "innerWidth": 768,
+      "docScrollWidth": 753,
+      "workspaceWidth": 546,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "view": "list",
+      "innerWidth": 768,
+      "docScrollWidth": 753,
+      "workspaceWidth": 546,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "view": "workload",
+      "innerWidth": 768,
+      "docScrollWidth": 753,
+      "workspaceWidth": 546,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "desktop-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "view": "timeline",
+      "innerWidth": 1440,
+      "docScrollWidth": 1425,
+      "workspaceWidth": 882,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "desktop-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "view": "calendar",
+      "innerWidth": 1440,
+      "docScrollWidth": 1425,
+      "workspaceWidth": 882,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "desktop-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "view": "list",
+      "innerWidth": 1440,
+      "docScrollWidth": 1425,
+      "workspaceWidth": 882,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "desktop-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "view": "workload",
+      "innerWidth": 1440,
+      "docScrollWidth": 1425,
+      "workspaceWidth": 882,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "zoom-200pct",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "view": "timeline",
+      "innerWidth": 1440,
+      "docScrollWidth": 1425,
+      "workspaceWidth": 354,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "zoom-200pct",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "view": "calendar",
+      "innerWidth": 1440,
+      "docScrollWidth": 1425,
+      "workspaceWidth": 354,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "zoom-200pct",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "view": "list",
+      "innerWidth": 1440,
+      "docScrollWidth": 1425,
+      "workspaceWidth": 354,
+      "pageOverflow": false
+    },
+    {
+      "viewport": "zoom-200pct",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "view": "workload",
+      "innerWidth": 1440,
+      "docScrollWidth": 1425,
+      "workspaceWidth": 354,
+      "pageOverflow": false
+    }
+  ],
+  "interactiveFlowsVerified": [
+    "date-window-navigation-and-jump-to-due-window",
+    "search-by-korean-process-label-and-empty-state-reset",
+    "inline-task-detail-editing-and-long-title-wrapping",
+    "timeline-calendar-list-workload-view-switching"
+  ]
+}

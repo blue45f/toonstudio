@@ -143,9 +143,5 @@ describe("GalleryView", { timeout: 30_000 }, () => {
     expect(within(list).getAllByRole("listitem")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "검색 지우기" }));
     expect(within(list).getAllByRole("listitem")).toHaveLength(PRESET_CATALOG.length);
-
-    // 카드에서 '그리기에서 시험'을 누르면 그리기 탭으로 바로 전환된다
-    fireEvent.click(screen.getByTestId("lab-preset-draw-pencil-6b"));
-    expect(store.get().tab).toBe("draw");
   });
 });

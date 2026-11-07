@@ -460,7 +460,7 @@ export function DrawView() {
             {panelOpen ? "설정 패널 접기" : "설정 패널 펴기"}
           </button>
           <span className="lab-badge lab-draw-status-pill" data-testid="lab-draw-brush-pill">
-            {resolved.program ? `${resolved.program.name} · ` : ""}브러시 {currentSizePx}px · 안정화 {stabilizerMode}
+            브러시 {currentSizePx}px · 안정화 {stabilizerMode}
           </span>
           <span className="lab-muted lab-draw-shortcut-hint" data-testid="lab-draw-shortcut-hint">
             단축키: [ / ] 크기 조절
@@ -501,9 +501,9 @@ export function DrawView() {
       </div>
       {panelOpen ? (
         <aside id="lab-draw-side" className="lab-draw-side" aria-label="그리기 설정">
+          <DrawLaneSelect />
           <DrawBrushPicker />
           <DrawParamPanel />
-          <DrawLaneSelect />
         </aside>
       ) : null}
     </div>

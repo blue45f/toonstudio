@@ -79,24 +79,21 @@ export function DrawLaneSelect() {
           {sessionError}
         </p>
       ) : null}
-      <details className="lab-draw-details" data-testid="lab-draw-lane-diagnostics">
-        <summary>고급 진단 · 레인 선택 원칙 및 문서 수명주기{strokes > 0 ? ` (현재 ${strokes}획)` : ""}</summary>
-        <p className="lab-muted" data-testid="lab-draw-lane-origin">
-          {laneId === null
-            ? "능력 탐지 결과로 시작 레인을 정한다(WebGPU compute → wasm CPU → CPU 참조 순)."
-            : chosenByUser
-              ? "직접 고른 레인이다. 어떤 이유로도 다른 레인으로 자동 전환하지 않는다."
-              : "시작 시 능력 탐지로 정한 레인이다. 한 번 정한 뒤에는 자동으로 바꾸지 않는다."}
-        </p>
-        {laneId && lanePresentsLive(laneId) ? (
-          <p className="lab-muted">이 레인은 GPU로 획 도중 결과를 직접 표시한다.</p>
-        ) : laneId ? (
-          <p className="lab-muted">이 레인은 획이 끝나야 실제 결과를 표시한다(획 도중에는 입력 궤적 미리보기).</p>
-        ) : null}
-        <p className="lab-draw-note" role="note">
-          문서는 레인 안에 있다. 레인(또는 캔버스 크기)을 바꾸면 캔버스가 비워진다{strokes > 0 ? ` (지금 ${strokes}획이 사라진다)` : ""}.
-        </p>
-      </details>
+      <p className="lab-muted" data-testid="lab-draw-lane-origin">
+        {laneId === null
+          ? "능력 탐지 결과로 시작 레인을 정한다(WebGPU compute → wasm CPU → CPU 참조 순)."
+          : chosenByUser
+            ? "직접 고른 레인이다. 어떤 이유로도 다른 레인으로 자동 전환하지 않는다."
+            : "시작 시 능력 탐지로 정한 레인이다. 한 번 정한 뒤에는 자동으로 바꾸지 않는다."}
+      </p>
+      {laneId && lanePresentsLive(laneId) ? (
+        <p className="lab-muted">이 레인은 GPU로 획 도중 결과를 직접 표시한다.</p>
+      ) : laneId ? (
+        <p className="lab-muted">이 레인은 획이 끝나야 실제 결과를 표시한다(획 도중에는 입력 궤적 미리보기).</p>
+      ) : null}
+      <p className="lab-draw-note" role="note">
+        문서는 레인 안에 있다. 레인(또는 캔버스 크기)을 바꾸면 캔버스가 비워진다{strokes > 0 ? ` (지금 ${strokes}획이 사라진다)` : ""}.
+      </p>
     </section>
   );
 }
