@@ -125,10 +125,27 @@
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
 }
+.explore-page-results[data-density="compact"] > div.grid {
+  gap: 0.625rem;
+}
+.explore-page-results[data-density="compact"] .explore-card-compact article > div + div > p {
+  display: none;
+}
+@media (min-width: 640px) {
+  .explore-page-results[data-density="compact"] > div.grid {
+    gap: 0.75rem;
+  }
+}
+@media (min-width: 1280px) {
+  .explore-page-results[data-density="compact"] > div.grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
 @media (max-width: 639px) {
   .explore-page-layout { gap: 0.75rem; padding-block: 1rem 2rem; }
   .explore-page-modes a { font-size: 0.75rem; }
   .explore-page-genres button { padding-inline: 0.65rem; font-size: 0.8125rem; }
+  .explore-page-local-search { min-width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .explore-page-layout *,

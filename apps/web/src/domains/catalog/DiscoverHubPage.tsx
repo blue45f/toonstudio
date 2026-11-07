@@ -16,9 +16,10 @@ import {
   Swords,
   Telescope,
   TrendingUp,
+  X,
   type LucideIcon,
 } from "lucide-react";
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
@@ -29,6 +30,7 @@ import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/Sit
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { Container, Section } from "@/shared/components/section";
+import { TitleCard } from "@/shared/components/title-card";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
@@ -50,6 +52,52 @@ import {
   snapshotDateLabel,
   type DiscoverHomeSnapshot,
 } from "./discover-home";
+import { collectDiscoverLocalMatches } from "./local-catalog-fallback";
+
+/** 카드·트랙 안내 일러스트가 깨지거나 오프라인일 때 빈 영역 대신 토큰 배지를 표시한다. */
+function DiscoverCardArt({
+  src,
+  className,
+  fallbackLabel,
+}: {
+  readonly src: string;
+  readonly className?: string;
+  readonly fallbackLabel: string;
+}) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === src;
+  return (
+    <>
+      <img
+        ref={(node) => {
+          if (node && node.complete && node.naturalWidth === 0 && failedSrc !== src) {
+            setFailedSrc(src);
+          }
+        }}
+        src={src}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        decoding="async"
+        data-fallback-active={failed ? "true" : "false"}
+        onError={() => setFailedSrc(src)}
+        className={cn(className, failed && "hidden")}
+      />
+      {failed ? (
+        <span
+          aria-hidden="true"
+          data-testid="discover-art-fallback"
+          className={cn(
+            "grid place-items-center bg-[linear-gradient(145deg,color-mix(in_oklch,var(--color-accent)_26%,var(--color-panel)),color-mix(in_oklch,var(--color-cool)_20%,var(--color-canvas)))] px-2 text-center text-[11px] font-bold text-fg-2",
+            className,
+          )}
+        >
+          {fallbackLabel}
+        </span>
+      ) : null}
+    </>
+  );
+}
 
 /** 헤더에서 바로 누를 수 있는 장르 수 — 나머지는 "전체 장르"(탐색)로 이어진다. */
 const QUICK_GENRE_COUNT = 8;
@@ -168,6 +216,10 @@ export function DiscoverHubPage() {
   );
   // 대표 작품이 없는 상태에는 가짜 표지나 빈 카드를 만들지 않는다.
   const showSpotlight = home.loading || (home.data != null && pickDiscoverSpotlight(home.data) != null);
+  const localMatches = useMemo(
+    () => (query.trim().length > 0 ? collectDiscoverLocalMatches(home.data, query, 6) : null),
+    [home.data, query],
+  );
 
   useDocumentTitle(bt("작품 탐색", "Discover"));
 
@@ -190,8 +242,8 @@ export function DiscoverHubPage() {
           {bt("새로운 이야기를 발견하세요", "Discover your next story")}
         </h1>
         <div className="mt-4">
-        <form onSubmit={submit} role="search" className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2">
-          <label className="flex min-h-12 min-w-0 items-center gap-3 rounded-2xl border border-line-strong bg-card/90 px-4 focus-within:border-accent/55 focus-within:ring-2 focus-within:ring-accent/25">
+        <form onSubmit={submit} role="search" className="discover-hub-search-form grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2">
+          <label className="flex min-h-12 min-w-0 items-center gap-2.5 rounded-2xl border border-line-strong bg-card/90 px-3.5 focus-within:border-accent/55 focus-within:ring-2 focus-within:ring-accent/25">
             <Search size={18} className="shrink-0 text-accent" aria-hidden="true" />
             <span className="sr-only">{searchLabel}</span>
             <input
@@ -203,8 +255,18 @@ export function DiscoverHubPage() {
               autoComplete="off"
               className="min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-3"
             />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label={bt("검색어 지우기", "Clear search query")}
+                className="grid size-9 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-panel hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              >
+                <X size={15} aria-hidden="true" />
+              </button>
+            ) : null}
           </label>
-          <button type="submit" className={buttonClass({ size: "lg", className: "min-h-12 rounded-2xl px-6 text-sm font-bold" })}>
+          <button type="submit" className={buttonClass({ size: "lg", className: "min-h-12 rounded-2xl px-5 sm:px-6 text-sm font-bold" })}>
             {bt("검색", "Search")}
           </button>
         </form>
@@ -244,6 +306,32 @@ export function DiscoverHubPage() {
 
       <section aria-labelledby="discover-shelves-title" className="discover-hub-shelves min-w-0">
         <h2 id="discover-shelves-title" className="sr-only">{bt("작품 둘러보기", "Browse stories")}</h2>
+        {localMatches && (localMatches.titles.length > 0 || localMatches.genres.length > 0 || localMatches.tags.length > 0) ? (
+          <div
+            data-testid="discover-local-matches"
+            className="mb-6 rounded-2xl border border-accent/35 bg-card/90 p-4 shadow-sm"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-bold text-accent">
+                {bt(`로컬 카탈로그 즉시 일치 (${localMatches.titles.length}편)`, `Instant local catalog matches (${localMatches.titles.length})`)}
+              </p>
+              <Link
+                href={`/search?q=${encodeURIComponent(query.trim())}`}
+                className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-fg-2 hover:text-accent"
+              >
+                {bt("전체 검색 결과 보기", "See all search results")}
+                <ArrowRight size={13} aria-hidden="true" />
+              </Link>
+            </div>
+            {localMatches.titles.length > 0 ? (
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {localMatches.titles.map((item) => (
+                  <TitleCard key={item.id} title={item} />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex min-w-0 flex-col gap-8">
           <Suspense fallback={<p role="status">{bt("추천 작품을 불러오는 중", "Loading story picks")}</p>}>
             <LazyDiscoverShelves snapshot={home.data} loading={home.loading} error={home.error} onRetry={home.reload} />
@@ -318,7 +406,7 @@ export function DiscoverHubPage() {
         {activeTrack ? (
           <div id="discover-track-panel" role="tabpanel" aria-labelledby={`discover-track-${activeTrack.id}`} className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
             <div className="flex min-w-0 items-center gap-3">
-              <img
+              <DiscoverCardArt
                 src={
                   activeTrack.id === "originals"
                     ? "/assets/site-experience/site-art-v1/cards/nb-ranking-constellation-640.webp"
@@ -330,10 +418,7 @@ export function DiscoverHubPage() {
                           ? "/assets/site-experience/site-art-v1/cards/nb-showcase-premiere-640.webp"
                           : "/assets/site-experience/site-art-v1/cards/nb-discover-spotlight-640.webp"
                 }
-                alt=""
-                aria-hidden="true"
-                loading="lazy"
-                decoding="async"
+                fallbackLabel={activeTrack.badge}
                 className="h-12 w-20 shrink-0 rounded-xl border border-line/70 object-cover"
               />
               <p className="min-w-0 max-w-2xl break-keep [overflow-wrap:anywhere]">{activeTrack.description}</p>
@@ -371,10 +456,17 @@ export function DiscoverHubPage() {
             <Link key={destination.href} href={destination.href}
               className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-card/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
               <div className="relative aspect-[16/7] overflow-hidden border-b border-line">
-                <img src={destination.href === "/ranking"
-                  ? "/assets/site-experience/site-art-v1/cards/nb-ranking-constellation-640.webp"
-                  : "/assets/site-experience/site-art-v1/cards/nb-discover-spotlight-640.webp"}
-                  alt="" aria-hidden="true" loading="lazy" decoding="async" className="size-full object-cover" />
+                <DiscoverCardArt
+                  src={
+                    destination.href === "/ranking"
+                      ? "/assets/site-experience/site-art-v1/cards/nb-ranking-constellation-640.webp"
+                      : destination.href === "/calendar"
+                        ? "/assets/site-experience/site-art-v1/cards/nb-library-archive-640.webp"
+                        : "/assets/site-experience/site-art-v1/cards/nb-discover-spotlight-640.webp"
+                  }
+                  fallbackLabel={bt(...destination.title)}
+                  className="size-full object-cover"
+                />
                 <span className="absolute bottom-2 left-2 rounded-md bg-canvas/90 px-2 py-1 text-[10px] font-semibold text-fg">
                   {bt("탐색 안내 이미지", "Discovery guide illustration")}
                 </span>

@@ -21,7 +21,7 @@ import { TitleCard } from "@/shared/components/title-card";
  */
 
 const GRID_CLASS =
-  "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
+  "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5";
 
 function columnCount(): number {
   if (typeof window === "undefined") return 2;
@@ -85,8 +85,8 @@ export function ExploreVirtualGrid({ titles }: { titles: Title[] }) {
     count: rowCount,
     estimateSize: () => {
       const cardWidth = Math.min(window.innerWidth, 1536) / cols;
-      // 포스터 3:4 + 제목·메타 블록 + 행 하단 간격(pb-8) 추정치. 실측으로 보정된다.
-      return Math.round((cardWidth * 4) / 3 + 132);
+      // 포스터 3:4 + 제목·메타 블록 + 행 하단 간격(pb-4) 추정치. 실측으로 보정된다.
+      return Math.round((cardWidth * 4) / 3 + 116);
     },
     overscan: 3,
     scrollMargin,
@@ -94,7 +94,7 @@ export function ExploreVirtualGrid({ titles }: { titles: Title[] }) {
 
   if (isUnmeasurableEnv()) {
     return (
-      <div className={`${GRID_CLASS} gap-y-8`}>
+      <div className={GRID_CLASS}>
         {titles.map((title) => (
           <TitleCard key={title.id} title={title} />
         ))}
@@ -118,8 +118,8 @@ export function ExploreVirtualGrid({ titles }: { titles: Title[] }) {
             className="absolute left-0 top-0 w-full"
             style={{ transform: `translateY(${vrow.start - scrollMargin}px)` }}
           >
-            {/* pb-8 = 기존 그리드의 gap-y-8(행 간격)을 행 내부에서 흡수 */}
-            <div className={`${GRID_CLASS} pb-8`}>
+            {/* pb-4 = 표준 그리드 행 간격(gap-3 sm:gap-4)을 행 내부에서 흡수 */}
+            <div className={`${GRID_CLASS} pb-4`}>
               {rowTitles.map((title) => (
                 <TitleCard key={title.id} title={title} />
               ))}

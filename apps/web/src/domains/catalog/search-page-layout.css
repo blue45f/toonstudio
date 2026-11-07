@@ -50,10 +50,12 @@
 }
 .search-page-tools-summary {
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
   min-height: 2.75rem;
   align-items: center;
   justify-content: space-between;
-  gap: .75rem;
+  gap: .5rem .75rem;
   padding: .75rem 1rem;
   border-radius: 1rem;
   color: var(--color-fg-2);
