@@ -1,5 +1,6 @@
-import { formatI18nTemplate, translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { FolderOpen, HardDrive } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -20,6 +21,9 @@ import type { StudioProjectLibraryManagementController } from "./useStudioProjec
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioProjectLibraryManagementContent", ko, en);
 
+const INITIAL_SECTION_PROJECT_COUNT = 12;
+const SECTION_PROJECT_STEP = 24;
+
 export function StudioProjectLibraryManagementContent({
   controller,
 }: {
@@ -31,8 +35,18 @@ export function StudioProjectLibraryManagementContent({
     busyProjectId, setSaveTarget, setDeleteRequest,
     visibleProjects, temporaryProjects, savedProjects, archiveProjects,
     trashProjects, restoreProjects, duplicateProject, savePackage,
-    projectOverviewHref, projectResumeTarget, continueProjectHref,
+    projectOverviewHref, projectResumeTarget,
   } = controller;
+  const [visibleTemporaryCount, setVisibleTemporaryCount] = useState(INITIAL_SECTION_PROJECT_COUNT);
+  const [visibleSavedCount, setVisibleSavedCount] = useState(INITIAL_SECTION_PROJECT_COUNT);
+  const [visibleRecoveryCount, setVisibleRecoveryCount] = useState(INITIAL_SECTION_PROJECT_COUNT * 2);
+
+  useEffect(() => {
+    setVisibleTemporaryCount(INITIAL_SECTION_PROJECT_COUNT);
+    setVisibleSavedCount(INITIAL_SECTION_PROJECT_COUNT);
+    setVisibleRecoveryCount(INITIAL_SECTION_PROJECT_COUNT * 2);
+  }, [view, query]);
+
   const userVisibleProjects = visibleProjects.filter(
     (project) => project.id !== EXAMPLE_PROJECT_ID && project.id !== SAMPLE_PROJECT_ID,
   );
@@ -40,6 +54,10 @@ export function StudioProjectLibraryManagementContent({
   const mostRecentProjectId = view === "active"
     ? studioLobbyRecentProjects(recentCandidates, 1)[0]?.id ?? null
     : null;
+
+  const shownTemporaryProjects = temporaryProjects.slice(0, visibleTemporaryCount);
+  const shownSavedProjects = savedProjects.slice(0, visibleSavedCount);
+  const shownRecoveryProjects = visibleProjects.slice(0, visibleRecoveryCount);
 
   const renderProjectCard = (project: StudioProjectLibraryEntry, temporary: boolean) => {
     const profile = profiles.profileFor(project.id);
@@ -60,11 +78,11 @@ export function StudioProjectLibraryManagementContent({
         isMostRecent={mostRecentProjectId === project.id}
         localFileSaved={localFileSaved}
         busy={busyProjectId !== null}
-        continueHref={continueProjectHref(project)}
+        continueHref={resumeTarget.href}
         resumeSummary={resumeTarget.summary}
         resumeExact={resumeTarget.exact}
         overviewHref={projectOverviewHref(project)}
-        storageHref={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.studio.shell.StudioProjectLibraryManagementContent", "en", "/studio?view=storage&project={v0}"), { v0: String(encodeURIComponent(project.id)) })}
+        storageHref={`/studio?view=storage&project=${encodeURIComponent(project.id)}`}
         onToggle={() => setSelection(project.id, !checked)}
         onTouch={() => { library.touch(project.id, resumeTarget.documentId); }}
         onOpenSave={() => setSaveTarget(project)}
@@ -119,7 +137,14 @@ export function StudioProjectLibraryManagementContent({
             <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
               {query ? (
                 <>
-                  <button type="button" onClick={() => setQuery("")} className={buttonClass({ size: "sm", className: "min-h-11 sm:min-h-9" })}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery("");
+                      document.querySelector<HTMLInputElement>('[data-studio-library-search-input="true"]')?.focus();
+                    }}
+                    className={buttonClass({ size: "sm", className: "min-h-11 sm:min-h-9" })}
+                  >
                     {bi("검색어 지우기", "Clear search")}
                   </button>
                   <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}>
@@ -171,8 +196,23 @@ export function StudioProjectLibraryManagementContent({
                 </span>
               </div>
               <div data-studio-project-grid="temporary" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {temporaryProjects.map((project) => renderProjectCard(project, true))}
+                {shownTemporaryProjects.map((project) => renderProjectCard(project, true))}
               </div>
+              {temporaryProjects.length > shownTemporaryProjects.length ? (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    type="button"
+                    data-studio-load-more="temporary"
+                    onClick={() => setVisibleTemporaryCount((count) => count + SECTION_PROJECT_STEP)}
+                    className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}
+                  >
+                    {formatI18nTemplate(
+                      String(bi("임시 작업 더 보기 ({value0}개 남음)", "Show more temporary work ({value0} left)")),
+                      { value0: temporaryProjects.length - shownTemporaryProjects.length },
+                    )}
+                  </button>
+                </div>
+              ) : null}
             </section>
           ) : null}
 
@@ -193,14 +233,44 @@ export function StudioProjectLibraryManagementContent({
                 </Link>
               </div>
               <div data-studio-project-grid="saved" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {savedProjects.map((project) => renderProjectCard(project, false))}
+                {shownSavedProjects.map((project) => renderProjectCard(project, false))}
               </div>
+              {savedProjects.length > shownSavedProjects.length ? (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    type="button"
+                    data-studio-load-more="saved"
+                    onClick={() => setVisibleSavedCount((count) => count + SECTION_PROJECT_STEP)}
+                    className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}
+                  >
+                    {formatI18nTemplate(
+                      String(bi("프로젝트 더 보기 ({value0}개 남음)", "Show more projects ({value0} left)")),
+                      { value0: savedProjects.length - shownSavedProjects.length },
+                    )}
+                  </button>
+                </div>
+              ) : null}
             </section>
           ) : null}
         </div>
       ) : (
         <section className="mt-5 space-y-3" data-studio-recovery-list={view}>
-          {visibleProjects.map(renderRecoveryRow)}
+          {shownRecoveryProjects.map(renderRecoveryRow)}
+          {visibleProjects.length > shownRecoveryProjects.length ? (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                data-studio-load-more="recovery"
+                onClick={() => setVisibleRecoveryCount((count) => count + SECTION_PROJECT_STEP)}
+                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}
+              >
+                {formatI18nTemplate(
+                  String(bi("목록 더 보기 ({value0}개 남음)", "Show more items ({value0} left)")),
+                  { value0: visibleProjects.length - shownRecoveryProjects.length },
+                )}
+              </button>
+            </div>
+          ) : null}
         </section>
       )}
 

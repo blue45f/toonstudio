@@ -1,4 +1,4 @@
-import { translateCurrentStaticSourceText, formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import {
   Check,
   CheckCircle2,
@@ -13,7 +13,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useId, useRef, type ReactNode } from "react";
+import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -78,15 +78,38 @@ export function StudioProjectSelectionCheckbox({
   readonly onChange: () => void;
 }) {
   useBilingualI18nRevision();
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const isNext = event.key === "ArrowDown" || event.key === "ArrowRight";
+    const isPrev = event.key === "ArrowUp" || event.key === "ArrowLeft";
+    const isHome = event.key === "Home";
+    const isEnd = event.key === "End";
+    if (!isNext && !isPrev && !isHome && !isEnd) return;
+    const checkboxes = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[data-studio-selection-checkbox="true"]'),
+    );
+    const currentIndex = checkboxes.indexOf(event.currentTarget);
+    if (currentIndex === -1 || checkboxes.length <= 1) return;
+    event.preventDefault();
+    const targetIndex = isHome
+      ? 0
+      : isEnd
+        ? checkboxes.length - 1
+        : isNext
+          ? (currentIndex + 1) % checkboxes.length
+          : (currentIndex - 1 + checkboxes.length) % checkboxes.length;
+    checkboxes[targetIndex]?.focus();
+  };
   return (
     <button
       type="button"
       role="checkbox"
       aria-checked={checked}
       aria-label={label}
+      data-studio-selection-checkbox="true"
       onClick={onChange}
+      onKeyDown={handleKeyDown}
       className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+        "grid size-11 shrink-0 place-items-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:size-9",
         checked
           ? "border-accent bg-accent text-on-accent"
           : "border-line bg-panel text-transparent hover:border-accent/55",
@@ -141,7 +164,7 @@ export function StudioProjectLibraryModal({
       />
       <section
         ref={dialogRef}
-        role={danger ? translateCurrentStaticSourceText("domains.creator.studio.shell.StudioProjectLibraryManagementUi", "en", "alertdialog") : translateCurrentStaticSourceText("domains.creator.studio.shell.StudioProjectLibraryManagementUi", "en", "dialog")}
+        role={danger ? "alertdialog" : "dialog"}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
@@ -256,7 +279,14 @@ export function StudioProjectLibraryCard({
             data-studio-project-title="true"
             className="mt-2.5 line-clamp-2 break-words text-base font-black leading-snug text-fg [overflow-wrap:anywhere] sm:mt-3 sm:text-lg"
           >
-            {project.title}
+            <Link
+              href={continueHref}
+              onClick={onTouch}
+              data-studio-card-title-link="true"
+              className="rounded-sm transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {project.title}
+            </Link>
           </h3>
           <p className="mt-1 text-xs text-fg-3">
             {bi("마지막 작업", "Last opened")}{" "}
@@ -301,6 +331,7 @@ export function StudioProjectLibraryCard({
         <Link
           href={continueHref}
           onClick={onTouch}
+          data-studio-card-continue="true"
           className={buttonClass({ size: "sm", className: "min-h-11 min-w-28 flex-1 gap-1.5 sm:min-h-9" })}
         >
           <FolderOpen size={15} aria-hidden="true" />

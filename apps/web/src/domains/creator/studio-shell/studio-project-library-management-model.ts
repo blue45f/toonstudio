@@ -80,19 +80,34 @@ export function studioProjectLibraryManagementViewHref(
   return view === "active" ? "/studio" : `/studio?view=${view}`;
 }
 
+const dateTimeFormatterByLocale = new Map<string, Intl.DateTimeFormat>();
+
+function getDateTimeFormatter(locale: string): Intl.DateTimeFormat {
+  let formatter = dateTimeFormatterByLocale.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    dateTimeFormatterByLocale.set(locale, formatter);
+  }
+  return formatter;
+}
+
 export function studioProjectLibraryDateLabel(
   value: string | null,
   _locale: string,
 ): string {
-  if (!value || !Number.isFinite(Date.parse(value))) {
+  if (!value) {
     return bi("아직 없음", "Not yet");
   }
-  return new Intl.DateTimeFormat(getActiveI18nLocale(), {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) {
+    return bi("아직 없음", "Not yet");
+  }
+  return getDateTimeFormatter(getActiveI18nLocale()).format(new Date(timestamp));
 }
 
 export function studioProjectIsTemporaryWork(profile: StudioSaveProfile): boolean {
@@ -107,17 +122,37 @@ export function studioProjectLibrarySearchText(
     project.title,
     project.description,
     studioProjectLibraryTypeLabel(project),
-  ].join(" ").toLocaleLowerCase();
+  ]
+    .join(" ")
+    .normalize("NFC")
+    .toLocaleLowerCase();
 }
 
 export function sortStudioProjectLibraryProjects(
   projects: readonly StudioProjectLibraryEntry[],
   sort: StudioProjectLibrarySortMode,
 ): readonly StudioProjectLibraryEntry[] {
-  return [...projects].sort((left, right) => {
-    if (sort === "name") return left.title.localeCompare(right.title);
-    if (sort === "created") return Date.parse(right.createdAt) - Date.parse(left.createdAt);
-    return Date.parse(right.lastOpenedAt) - Date.parse(left.lastOpenedAt)
-      || Date.parse(right.updatedAt) - Date.parse(left.updatedAt);
-  });
+  if (projects.length <= 1) return projects;
+  if (sort === "name") {
+    return [...projects].sort((left, right) => left.title.localeCompare(right.title));
+  }
+  if (sort === "created") {
+    return projects
+      .map((project) => ({ project, createdMs: Date.parse(project.createdAt) || 0 }))
+      .sort((left, right) => right.createdMs - left.createdMs || left.project.title.localeCompare(right.project.title))
+      .map((entry) => entry.project);
+  }
+  return projects
+    .map((project) => ({
+      project,
+      lastOpenedMs: Date.parse(project.lastOpenedAt) || 0,
+      updatedMs: Date.parse(project.updatedAt) || 0,
+    }))
+    .sort(
+      (left, right) =>
+        right.lastOpenedMs - left.lastOpenedMs
+        || right.updatedMs - left.updatedMs
+        || left.project.title.localeCompare(right.project.title),
+    )
+    .map((entry) => entry.project);
 }

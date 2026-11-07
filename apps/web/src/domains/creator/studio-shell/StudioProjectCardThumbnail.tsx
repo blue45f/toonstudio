@@ -1,7 +1,7 @@
 import { Image as ImageIcon, LoaderCircle } from "lucide-react";
 import { Suspense, useEffect, useRef, useState, type ReactElement, type RefObject } from "react";
 
-import { useBilingual, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { formatI18nTemplate, useBilingual, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 import type { StudioAutosavePayload, studioAutosaveKey } from "../studio-autosave";
@@ -376,7 +376,10 @@ export function StudioProjectCardThumbnail({
   const storedThumbnail = resolvedThumbnailUrl && !storedThumbnailFailed
     ? resolvedThumbnailUrl
     : null;
-  const previewLabel = bt(`${project.title} 최근 작업 미리보기`, `Recent work preview for ${project.title}`);
+  const previewLabel = formatI18nTemplate(
+    bt("{value0} 최근 작업 미리보기", "Recent work preview for {value0}"),
+    { value0: project.title },
+  );
 
   return (
     <div
