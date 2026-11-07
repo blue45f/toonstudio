@@ -7,6 +7,7 @@ import { useApp, useHydrated } from "@/shared/lib/store";
 import { useApiResource } from "@/platform/use-api-resource";
 
 import { orderTitlesByIds } from "./discover-home";
+import { useLocalCatalogFallback } from "./local-catalog-fallback";
 
 /** "최근 본 작품" 레일에 보여 줄 최대 수. */
 export const DISCOVER_RECENT_LIMIT = 10;
@@ -21,10 +22,12 @@ export function DiscoverRecentShelf() {
   const recentlyViewed = useApp((state) => state.recentlyViewed);
   const ids = hydrated ? recentlyViewed.slice(0, DISCOVER_RECENT_LIMIT) : [];
   const key = ids.join(",");
-  const { data } = useApiResource<{ readonly items?: readonly Title[] }>(
-    key ? `/api/titles?ids=${encodeURIComponent(key)}` : null,
+  const recentPath = key ? `/api/titles?ids=${encodeURIComponent(key)}` : null;
+  const apiState = useApiResource<{ readonly items?: readonly Title[] }>(
+    recentPath,
     bt("최근 본 작품을 불러오지 못했습니다.", "Couldn't load recently viewed stories."),
   );
+  const { data } = useLocalCatalogFallback(recentPath, apiState);
   const titles = orderTitlesByIds(ids, data?.items ?? []);
   if (titles.length === 0) return null;
 
@@ -38,7 +41,7 @@ export function DiscoverRecentShelf() {
     >
       <Rail ariaLabel={title}>
         {titles.map((item) => (
-          <TitleCard key={item.id} title={item} />
+          <TitleCard key={item.id} title={item} size="sm" className="w-[150px] shrink-0 sm:w-[172px]" />
         ))}
       </Rail>
     </Section>

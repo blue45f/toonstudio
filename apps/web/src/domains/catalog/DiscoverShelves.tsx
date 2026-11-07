@@ -58,7 +58,7 @@ export function DiscoverShelves({ snapshot, loading, error, onRetry }: DiscoverS
     if (!loading) return null;
     const label = bt("추천 작품을 불러오는 중", "Loading story picks");
     return (
-      <div className="flex flex-col gap-12">
+      <div className="flex flex-col gap-8 sm:gap-10">
         {Array.from({ length: SKELETON_SHELF_COUNT }, (_, index) => <DiscoverShelfSkeleton key={index} label={label} />)}
       </div>
     );
@@ -67,7 +67,7 @@ export function DiscoverShelves({ snapshot, loading, error, onRetry }: DiscoverS
   const copies = discoverShelfCopies(bt, snapshot);
 
   return (
-    <div className="flex flex-col gap-12 sm:gap-14" data-discover-shelves="">
+    <div className="flex flex-col gap-8 sm:gap-10" data-discover-shelves="">
       {buildDiscoverShelves(snapshot).map((shelf) => {
         const copy = copies[shelf.id];
         return (
@@ -80,7 +80,7 @@ export function DiscoverShelves({ snapshot, loading, error, onRetry }: DiscoverS
           >
             <Rail ariaLabel={copy.title}>
               {shelf.titles.map((item) => (
-                <TitleCard key={item.id} title={item} />
+                <TitleCard key={item.id} title={item} size="sm" className="w-[150px] shrink-0 sm:w-[172px]" />
               ))}
             </Rail>
           </Section>

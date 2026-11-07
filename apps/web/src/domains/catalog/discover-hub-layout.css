@@ -25,11 +25,16 @@
   margin-top: .75rem;
 }
 .discover-hub-shelves {
-  margin-top: 1.5rem;
+  margin-top: 1.125rem;
+}
+@media (max-width: 359px) {
+  .discover-hub-search-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 @media (min-width: 1024px) {
   .discover-hub-hero[data-has-spotlight="true"] {
     grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
-    gap: 2rem;
+    gap: 1.5rem;
   }
 }

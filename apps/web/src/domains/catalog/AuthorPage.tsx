@@ -1,8 +1,9 @@
 import { catalogStatusText } from "./catalog-status-i18n";
+import { filterTitlesByLocalQuery, useLocalCatalogFallback } from "./local-catalog-fallback";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { SITE_URL } from "@toonstudio/core/business";
-import { PenLine } from "lucide-react";
+import { PenLine, Search, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 
@@ -46,18 +47,27 @@ interface AuthorResponse {
   source: string;
 }
 
+const AUTHOR_WORKS_GRID = "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5";
+
 export function AuthorPage() {
   const { name } = useParams();
   const authorParam = name ?? "";
   // useParams already decodes the segment; decoding again corrupts literal % names.
   const decodedAuthor = authorParam;
-  const { data, loading, error, notFound, reload } = useApiResource<AuthorResponse>(
-    authorParam ? `/api/authors/${encodeURIComponent(decodedAuthor)}` : null,
-    catalogStatusText("catalog.status.author.loadFailed", "작가 데이터를 불러오지 못했습니다.")
+  const authorApiPath = authorParam ? `/api/authors/${encodeURIComponent(decodedAuthor)}` : null;
+  const apiState = useApiResource<AuthorResponse>(
+    authorApiPath,
+    catalogStatusText("catalog.status.author.loadFailed", "작가 데이터를 불러오지 못했습니다."),
   );
+  const { data, loading, error, notFound, reload } = useLocalCatalogFallback(authorApiPath, apiState);
+  const [workQuery, setWorkQuery] = useState("");
 
   const author = data?.author ?? decodedAuthor;
-  const works = data?.works ?? [];
+  const works = useMemo(() => data?.works ?? [], [data?.works]);
+  const filteredWorks = useMemo(
+    () => filterTitlesByLocalQuery(works, workQuery),
+    [works, workQuery],
+  );
   const totalViews = data?.totalViews ?? 0;
   const avg = data?.avg ?? 0;
   const genres = data?.genres ?? [];
@@ -116,8 +126,8 @@ export function AuthorPage() {
   if (missingAuthor) return <NotFoundPage />;
 
   return (
-    <Container size="wide" className="py-10">
-      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <Container size="wide" className="py-6 sm:py-8">
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow flex items-center gap-1.5 text-accent">
             <PenLine size={13} /> {translateCurrentStaticSourceText("domains.catalog.AuthorPage", "en", "AUTHOR")}<Link
@@ -126,7 +136,7 @@ export function AuthorPage() {
             >
               {translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "· 전체 작가 보기")}</Link>
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{author}</h1>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-4xl">{author}</h1>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {genres.map((genre) => (
               <GenreChip key={genre} genre={genre} size="sm" />
@@ -169,18 +179,43 @@ export function AuthorPage() {
         </dl>
       </header>
 
-      <AuthorNoticeSection authorName={author} className="mb-10" />
+      <AuthorNoticeSection authorName={author} className="mb-8" />
 
       <section aria-labelledby="author-works-title">
-        <h2 id="author-works-title" className="text-xl font-bold tracking-tight text-fg">
-          {translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "작품 목록")}
-          {!loading && !error && works.length > 0 ? <span className="numeral ml-2 text-base font-semibold text-fg-3">{works.length}</span> : null}
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="author-works-title" className="text-xl font-bold tracking-tight text-fg">
+            {translateCurrentStaticSourceText("domains.catalog.AuthorPage", "ko", "작품 목록")}
+            {!loading && !error && works.length > 0 ? <span className="numeral ml-2 text-base font-semibold text-fg-3">{filteredWorks.length}</span> : null}
+          </h2>
+          {!loading && !error && works.length > 4 ? (
+            <label className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2 focus-within:border-accent/55">
+              <Search size={14} className="shrink-0 text-fg-3" aria-hidden="true" />
+              <span className="sr-only">작가 작품 내 검색</span>
+              <input
+                type="search"
+                value={workQuery}
+                onChange={(event) => setWorkQuery(event.target.value)}
+                placeholder="참여작 제목·장르·태그 검색"
+                className="min-w-0 flex-1 bg-transparent text-xs text-fg outline-none placeholder:text-fg-3"
+              />
+              {workQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setWorkQuery("")}
+                  aria-label="참여작 검색 지우기"
+                  className="grid size-7 shrink-0 place-items-center rounded-md text-fg-3 hover:bg-panel hover:text-fg"
+                >
+                  <X size={13} aria-hidden="true" />
+                </button>
+              ) : null}
+            </label>
+          ) : null}
+        </div>
         <div className="mt-4">
           {loading ? (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+            <div className={AUTHOR_WORKS_GRID}>
               {Array.from({ length: 10 }).map((_, index) => (
-                <div key={index} className="space-y-3">
+                <div key={index} className="space-y-2.5">
                   <span className="skeleton block aspect-[3/4] rounded-xl" />
                   <span className="skeleton block h-4 w-3/4" />
                   <span className="skeleton block h-3 w-1/2" />
@@ -199,8 +234,8 @@ export function AuthorPage() {
               art="library"
             />
           ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
-              {works.map((title) => (
+            <div className={AUTHOR_WORKS_GRID}>
+              {filteredWorks.map((title) => (
                 <TitleCard key={title.id} title={title} />
               ))}
             </div>
@@ -209,7 +244,7 @@ export function AuthorPage() {
       </section>
 
       {!loading && !error && works.length > 0 && (
-        <div className="mt-12">
+        <div className="mt-10">
           <FanCafePanel scope="author" targetId={author} targetLabel={author} compact />
         </div>
       )}

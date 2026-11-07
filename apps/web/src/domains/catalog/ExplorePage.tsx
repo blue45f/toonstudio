@@ -1,11 +1,15 @@
 import { useFx } from "@toonstudio/core/fx";
 import {
   Compass,
+  LayoutGrid,
   RefreshCw,
   RotateCcw,
+  Rows3,
+  Search,
   Shuffle,
   SlidersHorizontal,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -28,6 +32,10 @@ import { TitleCard } from "@/shared/components/title-card";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 
 import { ExploreReaDirectoryBar } from "./ExploreReaDirectoryBar";
+import {
+  filterTitlesByLocalQuery,
+  useLocalCatalogFallback,
+} from "./local-catalog-fallback";
 import {
   genreBorder,
   genreColor,
@@ -128,6 +136,9 @@ export function ExplorePage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [showAllGenres, setShowAllGenres] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
+  const [localQuery, setLocalQuery] = useState(() => searchParams.get("q") ?? "");
+  const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
+  const [emptyArtFailed, setEmptyArtFailed] = useState(false);
   const fx = useFx();
 
   const discoveryState = useMemo(
@@ -177,13 +188,26 @@ export function ExplorePage() {
 
   // 빌드된 서버 쿼리(현재 URL 그대로 사용). useApiResource가 키스트로크당 네트워크를 보장.
   const query = searchParams.toString();
-  const { data, loading, error, reload } = useApiResource<ExploreResponse>(
-    query ? `/api/explore?${query}` : "/api/explore",
+  const apiUrl = query ? `/api/explore?${query}` : "/api/explore";
+  const rawResource = useApiResource<ExploreResponse>(
+    apiUrl,
     bt("탐색 데이터를 불러오지 못했습니다.", "Couldn't load the explore data."),
   );
+  const { data, loading, error, reload } = useLocalCatalogFallback(
+    apiUrl,
+    rawResource,
+  );
   const rawResults = data?.results ?? [];
-  // 서버가 적용하지 못한 클라 전용 facet(가격 정밀·내 찜만)을 결과에 추가 적용.
-  const results = applyClientOnlyFilters(rawResults, filters, savedIds);
+  // 서버가 적용하지 못한 클라 전용 facet(가격 정밀·내 찜만) 및 로컬 키워드 필터를 결과에 추가 적용.
+  const clientFilteredResults = applyClientOnlyFilters(rawResults, filters, savedIds);
+  const trimmedLocalQuery = localQuery.trim();
+  const results = useMemo(
+    () =>
+      trimmedLocalQuery
+        ? filterTitlesByLocalQuery(clientFilteredResults, trimmedLocalQuery)
+        : clientFilteredResults,
+    [clientFilteredResults, trimmedLocalQuery],
+  );
   const showCount = data?.showCount ?? 40;
   const pageSize = data?.pageSize ?? 40;
   const shown = results.slice(0, showCount);
@@ -204,7 +228,7 @@ export function ExplorePage() {
   const platformOptions = data?.catalog?.platformCoverage?.map(
     (entry) => entry.id,
   );
-  const hasFilter = sortExplicit || activeFilters > 0;
+  const hasFilter = sortExplicit || activeFilters > 0 || trimmedLocalQuery.length > 0;
 
   // 무한 스크롤 — 하단 센티넬이 보이면 자동으로 다음 페이지 로드(더보기 버튼 누를 필요 없음).
   // useInView는 1회용이라 부적합 → 반복 트리거 IntersectionObserver를 직접 둔다. 버튼은 a11y/수동 폴백으로 유지.
@@ -390,7 +414,37 @@ export function ExplorePage() {
         </details>
 
         <div className="explore-page-toolbar">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+            <div
+              role="search"
+              aria-label={bt("결과 내 작품·작가·태그 검색", "Filter results by title, author, or tag")}
+              className="explore-page-local-search relative flex min-w-[13.5rem] flex-1 items-center sm:max-w-xs"
+            >
+              <Search
+                size={15}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 text-fg-3"
+              />
+              <input
+                type="search"
+                value={localQuery}
+                onChange={(event) => setLocalQuery(event.target.value)}
+                placeholder={bt("결과 내 제목·작가·태그 필터…", "Filter by title, author, tag…")}
+                aria-label={bt("결과 내 제목·작가·태그 필터", "Filter by title, author, tag")}
+                className="min-h-11 w-full rounded-lg border border-line bg-card pl-9 pr-9 text-sm text-fg placeholder:text-fg-3 focus:border-accent focus:outline-none"
+              />
+              {trimmedLocalQuery.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setLocalQuery("")}
+                  aria-label={bt("검색어 지우기", "Clear search query")}
+                  className="absolute right-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-fg-3 transition-colors hover:text-fg"
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+
             <div
               className="inline-flex items-center rounded-lg border border-line bg-card p-0.5"
               role="group"
@@ -448,6 +502,38 @@ export function ExplorePage() {
               })}
             </div>
 
+            <div
+              className="inline-flex items-center rounded-lg border border-line bg-card p-0.5"
+              role="group"
+              aria-label={bt("카드 밀도", "Card density")}
+            >
+              {(
+                [
+                  { key: "comfortable", label: ["표준", "Standard"], Icon: LayoutGrid },
+                  { key: "compact", label: ["조밀", "Compact"], Icon: Rows3 },
+                ] as const
+              ).map(({ key, label, Icon }) => {
+                const active = density === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setDensity(key)}
+                    aria-pressed={active}
+                    className={cn(
+                      "inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-150",
+                      active
+                        ? "bg-accent text-on-accent"
+                        : "text-fg-2 hover:text-fg",
+                    )}
+                  >
+                    <Icon size={13} aria-hidden="true" />
+                    {bt(label[0], label[1])}
+                  </button>
+                );
+              })}
+            </div>
+
             <button
               type="button"
               onClick={() => setPanelOpen((open) => !open)}
@@ -470,7 +556,7 @@ export function ExplorePage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <p className="text-sm text-fg-2" role="status" aria-label={bt("탐색 결과 상태", "Explore result status")} aria-live="polite">
               {loading ? bt("불러오는 중…", "Loading…") : error ? bt("작품 수 확인 불가", "Title count unavailable") : <>
               {bt("작품", "Titles")}{" "}
@@ -495,6 +581,7 @@ export function ExplorePage() {
             {hasFilter && (
               <Link
                 href="/explore"
+                onClick={() => setLocalQuery("")}
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-fg-3 transition-colors duration-150 hover:text-accent"
               >
                 <RotateCcw size={13} />
@@ -525,7 +612,12 @@ export function ExplorePage() {
           ]}
         />
 
-        <section className="explore-page-results" aria-label={bt("탐색 결과", "Explore results")} aria-busy={loading}>
+        <section
+          className="explore-page-results"
+          data-density={density}
+          aria-label={bt("탐색 결과", "Explore results")}
+          aria-busy={loading}
+        >
         <h2 className="explore-page-results-title">{bt("탐색 결과", "Explore results")}</h2>
         {loading ? (
           <div aria-label={bt("작품을 불러오는 중", "Loading titles")} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
@@ -547,7 +639,12 @@ export function ExplorePage() {
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
               {shown.map((title) => (
-                <TitleCard key={title.id} title={title} />
+                <TitleCard
+                  key={title.id}
+                  title={title}
+                  size={density === "compact" ? "sm" : "md"}
+                  className={density === "compact" ? "explore-card-compact" : undefined}
+                />
               ))}
             </div>
             {hasMore && (
@@ -566,7 +663,7 @@ export function ExplorePage() {
             )}
           </>
         ) : (
-          <div className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-dashed border-line bg-gradient-to-b from-card/55 to-panel/30 p-12 text-center">
+          <div className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-dashed border-line bg-gradient-to-b from-card/55 to-panel/30 p-8 text-center sm:p-12">
             {/* 은은한 액센트 글로우 — 배경에만 깔려 가독성 영향 없음(창작 게시판 빈-상태와 톤 정합). */}
             <div
               aria-hidden
@@ -577,13 +674,32 @@ export function ExplorePage() {
               }}
             />
             <img
+              ref={(node) => {
+                if (node && node.complete && node.naturalWidth === 0) {
+                  setEmptyArtFailed(true);
+                }
+              }}
               src="/images/empty-generic.webp"
               alt=""
               aria-hidden="true"
               loading="lazy"
               decoding="async"
-              className="relative mb-2 h-36 w-full max-w-sm rounded-2xl border border-line/60 object-cover"
+              onError={() => setEmptyArtFailed(true)}
+              data-fallback-active={emptyArtFailed ? "true" : undefined}
+              className={cn(
+                "relative mb-2 h-36 w-full max-w-sm rounded-2xl border border-line/60 object-cover",
+                emptyArtFailed && "hidden",
+              )}
             />
+            {emptyArtFailed && (
+              <div
+                aria-hidden="true"
+                data-testid="explore-empty-art-fallback"
+                className="relative mb-2 flex h-24 w-full max-w-sm items-center justify-center rounded-2xl border border-line/60 bg-panel/70 px-4 text-xs font-semibold tracking-wider text-fg-3"
+              >
+                GENRE SPECTRUM · EMPTY RESULT
+              </div>
+            )}
             <span
               aria-hidden
               className="pf-glow relative mb-4 grid size-14 place-items-center rounded-2xl border border-accent/30 bg-accent-soft/60 text-accent"
@@ -605,6 +721,7 @@ export function ExplorePage() {
             {hasFilter && (
               <Link
                 href="/explore"
+                onClick={() => setLocalQuery("")}
                 className="relative mt-4 inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-4 py-2 text-sm font-medium text-fg-2 transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
               >
                 <RotateCcw size={14} />
