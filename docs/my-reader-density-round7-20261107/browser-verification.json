@@ -1,0 +1,580 @@
+{
+  "verifiedAt": "2026-11-07T15:57:31.085Z",
+  "round": "my-reader-density-round7-20261107",
+  "pageErrors": [],
+  "mySpace": {
+    "normalDensityComparison": {
+      "mobile-320": {
+        "primaryActionTopPx": 2132,
+        "firstFilterChipTopPx": 2987,
+        "firstDestinationCardTopPx": 3101,
+        "round6FirstFilterChipTopPx": 3015,
+        "round6FirstDestinationCardTopPx": 3173,
+        "savedVerticalDistanceToDestinationsPx": 72,
+        "permanentSearchVisible": false,
+        "permanentFilterStatusVisible": false,
+        "permanentCoverFallbackVisible": false,
+        "destinationSectionInteractiveCount": 18,
+        "round6DestinationSectionInteractiveCount": 19
+      },
+      "mobile-390": {
+        "primaryActionTopPx": 1851,
+        "firstFilterChipTopPx": 2546,
+        "firstDestinationCardTopPx": 2660,
+        "round6FirstFilterChipTopPx": 2574,
+        "round6FirstDestinationCardTopPx": 2732,
+        "savedVerticalDistanceToDestinationsPx": 72,
+        "permanentSearchVisible": false,
+        "permanentFilterStatusVisible": false,
+        "permanentCoverFallbackVisible": false,
+        "destinationSectionInteractiveCount": 18,
+        "round6DestinationSectionInteractiveCount": 19
+      }
+    },
+    "zeroFilterFromUrlVisible": true,
+    "afterResetSearchHidden": true,
+    "afterResetStatusHidden": true,
+    "searchOpenedOnDemand": true,
+    "searchZeroVisible": true,
+    "searchCollapsedAfterEscape": true,
+    "brokenCoverNoticeText": "일부 표지 이미지를 불러오지 못해 원본 표지 대신 텍스트 안내 카드로 대체 표시합니다.",
+    "viewportMatrix": [
+      {
+        "viewport": "mobile-320",
+        "width": 320,
+        "height": 844,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 70,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-reader']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-creator']",
+            "found": true,
+            "widthPx": 92,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-account']",
+            "found": true,
+            "widthPx": 85,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "mobile-390",
+        "width": 390,
+        "height": 844,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 70,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-reader']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-creator']",
+            "found": true,
+            "widthPx": 92,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-account']",
+            "found": true,
+            "widthPx": 85,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "tablet-768",
+        "width": 768,
+        "height": 1024,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 70,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-reader']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-creator']",
+            "found": true,
+            "widthPx": 92,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-account']",
+            "found": true,
+            "widthPx": 85,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "pc-1440",
+        "width": 1440,
+        "height": 900,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 70,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-reader']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-creator']",
+            "found": true,
+            "widthPx": 92,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-account']",
+            "found": true,
+            "widthPx": 85,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "pc-1440-zoom-200",
+        "width": 1440,
+        "height": 900,
+        "zoom": 2,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 144,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-reader']",
+            "found": true,
+            "widthPx": 149,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-creator']",
+            "found": true,
+            "widthPx": 190,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-account']",
+            "found": true,
+            "widthPx": 176,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "reflow-720-equiv200",
+        "width": 720,
+        "height": 450,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 70,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-reader']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-creator']",
+            "found": true,
+            "widthPx": 92,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-account']",
+            "found": true,
+            "widthPx": 85,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      }
+    ]
+  },
+  "spatialReader": {
+    "normalDensityComparison": {
+      "mobile-320": {
+        "initialEmptyStatusCountBeforeOpen": 0,
+        "viewerHeadingTopPx": 1221,
+        "firstViewerActionTopPx": 1266,
+        "round6ViewerHeadingTopPx": 1455,
+        "round6FirstViewerActionTopPx": 1500,
+        "savedVerticalDistanceToViewerPx": 234,
+        "permanentFilterBarVisible": false,
+        "duplicateSummaryVisible": false,
+        "redundantSuccessStatusVisible": false,
+        "brokenNoticeVisibleInNormal": false
+      },
+      "mobile-390": {
+        "initialEmptyStatusCountBeforeOpen": 0,
+        "viewerHeadingTopPx": 1007,
+        "firstViewerActionTopPx": 1052,
+        "round6ViewerHeadingTopPx": 1241,
+        "round6FirstViewerActionTopPx": 1286,
+        "savedVerticalDistanceToViewerPx": 234,
+        "permanentFilterBarVisible": false,
+        "duplicateSummaryVisible": false,
+        "redundantSuccessStatusVisible": false,
+        "brokenNoticeVisibleInNormal": false
+      }
+    },
+    "spatialFilterOpenedOnDemand": true,
+    "spatialZeroFilterVisible": true,
+    "spatialFilterClosedAfterReset": true,
+    "brokenPanelCheck": {
+      "noticeText": "일부 컷 이미지를 불러오지 못해 원본 작품이 아닌 ‘이미지 로드 실패 대체 표시’로 보여 주고 있어요. 원본 작품 데이터는 변경되지 않았습니다.원본 이미지 다시 불러오기",
+      "imgAlt": "[이미지 로드 실패 대체 표시] 밤거리의 속도선 사이로 달리는 인물 실루엣",
+      "isExplicitSvgFallback": true
+    },
+    "viewportMatrix": [
+      {
+        "viewport": "mobile-320",
+        "width": 320,
+        "height": 844,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 146,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "mobile-390",
+        "width": 390,
+        "height": 844,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 146,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "tablet-768",
+        "width": 768,
+        "height": 1024,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 146,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "pc-1440",
+        "width": 1440,
+        "height": 900,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 146,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "pc-1440-zoom-200",
+        "width": 1440,
+        "height": 900,
+        "zoom": 2,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 303,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 271,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 315,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "reflow-720-equiv200",
+        "width": 720,
+        "height": 450,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 146,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      }
+    ]
+  }
+}
