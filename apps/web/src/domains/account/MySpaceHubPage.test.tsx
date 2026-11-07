@@ -273,4 +273,45 @@ describe("MySpaceHubPage next-action center", () => {
     expect(screen.queryByTestId("my-space-filter-status")).toBeNull();
     expect(document.activeElement).toBe(screen.getByTestId("my-space-role-filter-all"));
   });
+
+  it("provides a 44px touch-discoverable search toggle and places primary action and destinations ahead of progressive disclosure guides", async () => {
+    fixtures.continuity.recent = [
+      { id: "studio", href: "/studio/p/project-1/d/document-1?resume=latest", visitedAt: Date.parse("2026-10-01T12:00:00.000Z") },
+    ];
+    renderPage("/my");
+
+    const root = screen.getByTestId("my-space-hub-root");
+    const nextAction = root.querySelector("[data-my-space-next-action='true']");
+    const destinations = root.querySelector("#my-space-destinations")?.closest("section");
+    const moreDetails = screen.getByTestId("my-space-more-details");
+    expect(nextAction).toBeTruthy();
+    expect(destinations).toBeTruthy();
+    expect(moreDetails.hasAttribute("open")).toBe(false);
+    if (nextAction && destinations) {
+      expect(Boolean(nextAction.compareDocumentPosition(destinations) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+      expect(Boolean(destinations.compareDocumentPosition(moreDetails) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    }
+
+    const searchToggle = screen.getByTestId("my-space-search-toggle");
+    expect(searchToggle.className).toContain("min-h-11");
+    expect(searchToggle.className).toContain("min-w-11");
+    expect(searchToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByTestId("my-space-destination-search")).toBeNull();
+
+    // 터치/클릭 1회로 검색 입력이 열리고 포커스가 이동한다
+    fireEvent.click(searchToggle);
+    expect(searchToggle.getAttribute("aria-expanded")).toBe("true");
+    const searchInput = await screen.findByTestId("my-space-destination-search");
+    await waitFor(() => expect(document.activeElement).toBe(searchInput));
+
+    fireEvent.change(searchInput, { target: { value: "서재" } });
+    expect(screen.getByTestId("my-space-filter-status").textContent).toContain("1 / 14");
+
+    // 다시 터치 토글을 누르면 검색어가 초기화되고 입력창이 닫힌다
+    fireEvent.click(searchToggle);
+    expect(searchToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByTestId("my-space-destination-search")).toBeNull();
+    expect(screen.queryByTestId("my-space-filter-status")).toBeNull();
+  });
 });
+

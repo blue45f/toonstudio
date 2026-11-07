@@ -17,6 +17,7 @@ import {
   Library,
   Mail,
   PlayCircle,
+  Search,
   Settings,
   Store,
   UserRound,
@@ -70,6 +71,10 @@ const COPY = {
     filterLabel: "내 공간 역할별 보기",
     searchLabel: "내 공간 바로가기 필터",
     searchPlaceholder: "바로가기 이름·설명 찾기",
+    searchToggleShort: "검색",
+    searchToggleOpen: "바로가기 검색 열기",
+    searchToggleClose: "바로가기 검색 닫기",
+    moreGuideSummary: "내 공간 안내·동기화 상태·세부 탐색 더보기",
     filterEmptyTitle: "선택한 조건에 맞는 바로가기가 없습니다 (0건)",
     filterEmptyBody: "검색어나 역할 필터를 초기화하면 전체 바로가기 14개를 다시 볼 수 있습니다.",
     filterResetAction: "전체 보기로 돌아가기",
@@ -137,6 +142,10 @@ const COPY = {
     filterLabel: "Filter My Space by role",
     searchLabel: "Filter My Space destinations",
     searchPlaceholder: "Find by destination name or description",
+    searchToggleShort: "Search",
+    searchToggleOpen: "Open destination search",
+    searchToggleClose: "Close destination search",
+    moreGuideSummary: "More My Space guide, sync status & sub-navigation",
     filterEmptyTitle: "No destinations match the selected filter (0 results)",
     filterEmptyBody: "Reset the search or role filter to view all 14 destinations again.",
     filterResetAction: "Show all destinations",
@@ -353,7 +362,7 @@ export function MySpaceHubPage() {
   }
 
   return (
-    <Container size="wide" className="py-7 sm:py-10 lg:py-12">
+    <Container size="wide" className="py-2 sm:py-6 lg:py-8">
       <div
         data-testid="my-space-hub-root"
         data-broken-image-recovered={brokenCoverRecovered ? "true" : undefined}
@@ -368,13 +377,13 @@ export function MySpaceHubPage() {
           }
         }}
       >
-        <SiteContextualSubNav pathnameOverride="/my" className="mb-5" />
         <SitePageHeader
-          size="hero"
+          size="default"
+          surface="plain"
           icon={UserRound}
           eyebrow={copy.eyebrow}
           title={copy.title}
-          description={copy.body}
+          className="pb-2 sm:pb-4 [&_h1]:mt-0.5 [&_h1]:text-base sm:[&_h1]:text-2xl [&>div]:gap-2 [&>div>div>div]:mt-2"
           aside={
             <div className="relative overflow-hidden rounded-2xl border border-line bg-panel/60">
               <SectionArt
@@ -385,111 +394,92 @@ export function MySpaceHubPage() {
           }
           asideClassName="hidden lg:block"
         >
-          <p className="max-w-2xl rounded-xl border border-line bg-card/60 px-4 py-3 text-xs leading-5 text-fg-2" aria-live="polite">
-            {syncCopy}
-          </p>
           {brokenCoverRecovered ? (
             <p
               role="status"
               data-testid="my-space-cover-fallback"
-              className="mt-2 max-w-2xl rounded-xl border border-line bg-panel/70 px-3 py-2 text-xs text-fg-2"
+              className="max-w-2xl rounded-xl border border-line bg-panel/70 px-3 py-2 text-xs text-fg-2"
             >
               {copy.coverFallbackNotice}
             </p>
           ) : null}
-          {!hydrated ? (
-            <LoadingState variant="skeleton" label={copy.statsLoading} className="mt-4 max-w-2xl" />
-          ) : hasActivity ? (
-            <dl className="mt-4 grid max-w-2xl grid-cols-3 gap-2" data-my-space-activity-summary="true">
-              {copy.stats.map((label, index) => (
-                <div key={label} className="flex min-w-0 flex-col rounded-xl border border-line bg-card/70 p-3">
-                  <dt className="order-2 mt-1 text-[0.68rem] text-fg-2 sm:text-xs">{label}</dt>
-                  <dd className="numeral order-1 text-xl font-bold text-fg sm:text-2xl">{stats[index]}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
         </SitePageHeader>
 
-        <SiteArtSurfaceSpotlight cardId="nb-manage-vault" compact className="mt-5" />
-
-        <section className="mt-5" aria-label={recent ? (studioRecent ? copy.continueTitle : copy.revisitTitle) : copy.emptyTitle} data-my-space-next-action="true">
+        <section
+          className="mt-2.5"
+          aria-label={recent ? (studioRecent ? copy.continueTitle : copy.revisitTitle) : copy.emptyTitle}
+          data-my-space-next-action="true"
+        >
           {recent ? (
-            <div className="relative overflow-hidden rounded-3xl border border-accent/30 bg-gradient-to-br from-accent-soft/65 via-card to-panel p-5 shadow-lg sm:p-6">
-              <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <div className="relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent-soft/65 via-card to-panel p-3 shadow-sm sm:p-5">
+              <div className="relative grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                 <div className="min-w-0">
-                  <p className="eyebrow text-accent">{copy.continueEyebrow}</p>
-                  <h2 className="mt-2 break-keep text-xl font-bold tracking-tight text-fg sm:text-2xl">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="eyebrow text-accent">{copy.continueEyebrow}</p>
+                    <span className="inline-flex items-center gap-1 text-[0.68rem] font-bold text-fg-2">
+                      <Clock3 size={12} aria-hidden="true" />
+                      {visitTimeLabel(recent.visitedAt, locale)}
+                    </span>
+                  </div>
+                  <h2 className="mt-0.5 break-keep text-sm font-bold tracking-tight text-fg sm:text-xl">
                     {studioRecent ? copy.continueTitle : copy.revisitTitle}
                   </h2>
-                  <div className="mt-4 flex items-start gap-3 rounded-2xl border border-line bg-card/70 p-4">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-accent/25 bg-accent-soft text-accent">
-                      <PlayCircle size={20} aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
-                      <strong
-                        data-testid="my-space-recent-title"
-                        className="block break-words [overflow-wrap:anywhere] text-sm leading-snug text-fg"
-                      >
-                        {recentTitle}
-                      </strong>
-                      <p
-                        data-testid="my-space-recent-description"
-                        className="mt-1 break-words [overflow-wrap:anywhere] text-xs leading-5 text-fg-2"
-                      >
-                        {recentDescription}
-                      </p>
-                      <span className="mt-2 inline-flex items-center gap-1.5 text-[0.68rem] font-bold text-fg-2">
-                        <Clock3 size={13} aria-hidden="true" />
-                        {visitTimeLabel(recent.visitedAt, locale)}
-                      </span>
-                    </div>
-                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2 lg:max-w-56 lg:flex-col">
-                  <Link href={recent.href} className={buttonClass({ size: "md", className: "min-h-11 flex-1 lg:w-full" })}>
+                <div className="flex flex-wrap gap-1.5 lg:row-span-2 lg:max-w-56 lg:flex-col">
+                  <Link
+                    href={recent.href}
+                    data-testid="my-space-primary-action"
+                    className={buttonClass({ size: "sm", className: "min-h-11 flex-1 px-3 text-xs lg:w-full" })}
+                  >
                     {studioRecent ? copy.continueAction : copy.revisitAction}
-                    <ArrowRight size={15} aria-hidden="true" />
+                    <ArrowRight size={14} aria-hidden="true" />
                   </Link>
-                  <Link href="/studio" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11 flex-1 lg:w-full" })}>
+                  <Link
+                    href="/studio"
+                    className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 flex-1 px-3 text-xs lg:w-full" })}
+                  >
                     {copy.allProjects}
                   </Link>
+                </div>
+                <div className="flex min-w-0 items-start gap-2 rounded-xl border border-line bg-card/70 p-2.5">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-xl border border-accent/25 bg-accent-soft text-accent">
+                    <PlayCircle size={16} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                    <strong
+                      data-testid="my-space-recent-title"
+                      className="block break-words [overflow-wrap:anywhere] text-xs leading-snug text-fg sm:text-sm"
+                    >
+                      {recentTitle}
+                    </strong>
+                    <p
+                      data-testid="my-space-recent-description"
+                      className="mt-0.5 break-words [overflow-wrap:anywhere] text-[11px] leading-4 text-fg-2 sm:text-xs"
+                    >
+                      {recentDescription}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
             <ActionableEmptyState
-              art="library"
+              art="none"
               icon={Layers}
               title={copy.emptyTitle}
               description={copy.emptyBody}
               primary={{ href: "/studio/new", label: copy.createAction }}
               secondary={{ href: "/studio/import", label: copy.importAction }}
               sample={{ href: "/production/projects/sample-project/overview", label: copy.sampleAction }}
+              className="p-3 sm:p-5 [&_h2]:text-sm sm:[&_h2]:text-lg [&_p]:mt-1 [&_p]:text-xs [&_p]:leading-4 [&>div]:gap-2 [&>div>span]:hidden sm:[&>div>span]:grid [&>div>div>div]:mt-2"
             />
           )}
-
-          <div className="mt-3 rounded-2xl border border-line bg-panel/45 p-4">
-            <h2 className="text-sm font-bold text-fg">{copy.quickTitle}</h2>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              {copy.quickActions.map(([title, body, href], index) => (
-                <SiteLinkCard key={href} layout="compact" href={href} icon={QUICK_ICONS[index]} title={title} description={body} />
-              ))}
-            </div>
-          </div>
         </section>
 
-        <FriendlyQuickGuide
-          className="mt-5"
-          title={copy.guideTitle}
-          description={copy.guideBody}
-          steps={copy.guideSteps}
-        />
-
-        <section className="mt-10" aria-labelledby="my-space-destinations">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <section className="mt-3.5" aria-labelledby="my-space-destinations">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-baseline gap-2">
-              <h2 id="my-space-destinations" className="text-xl font-bold tracking-tight text-fg sm:text-2xl">{copy.section}</h2>
+              <h2 id="my-space-destinations" className="text-base font-bold tracking-tight text-fg sm:text-xl">{copy.section}</h2>
               {isFilterActive ? (
                 <p
                   data-testid="my-space-filter-status"
@@ -500,9 +490,10 @@ export function MySpaceHubPage() {
                 </p>
               ) : null}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               {showDestinationSearch ? (
                 <input
+                  id="my-space-destination-search"
                   ref={searchInputRef}
                   type="search"
                   value={filterQuery}
@@ -539,17 +530,47 @@ export function MySpaceHubPage() {
                       variant: roleFilter === id ? undefined : "outline",
                       size: "sm",
                       className:
-                        "h-auto min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full whitespace-normal rounded-full px-3.5 py-2 text-center text-xs leading-snug",
+                        "h-auto min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full whitespace-normal rounded-full px-3 py-1.5 text-center text-xs leading-snug",
                     })}
                   >
                     {label}
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                data-testid="my-space-search-toggle"
+                aria-expanded={showDestinationSearch}
+                aria-controls="my-space-destination-search"
+                aria-label={showDestinationSearch ? copy.searchToggleClose : copy.searchToggleOpen}
+                onClick={() => {
+                  if (showDestinationSearch) {
+                    setFilterQuery("");
+                    setSearchOpen(false);
+                    if (searchParams.has("q")) {
+                      const nextParams = new URLSearchParams(searchParams);
+                      nextParams.delete("q");
+                      setSearchParams(nextParams, { replace: true });
+                    }
+                  } else {
+                    setSearchOpen(true);
+                    queueMicrotask(() => searchInputRef.current?.focus());
+                  }
+                }}
+                className={buttonClass({
+                  variant: showDestinationSearch ? undefined : "outline",
+                  size: "sm",
+                  className:
+                    "h-auto min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs leading-snug",
+                })}
+              >
+                <Search size={13} aria-hidden="true" />
+                <span>{copy.searchToggleShort}</span>
+              </button>
             </div>
           </div>
           {visibleDestinations.length > 0 ? (
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
               {visibleDestinations.map(({ entry: [title, body, href], icon }) => (
                 <SiteLinkCard key={href} href={href} icon={icon} title={title} description={body} cta={copy.open} />
               ))}
@@ -559,7 +580,7 @@ export function MySpaceHubPage() {
               role="status"
               aria-live="polite"
               data-testid="my-space-filter-empty"
-              className="mt-5 flex flex-col items-start justify-between gap-3 rounded-2xl border border-dashed border-line bg-panel/45 p-5 sm:flex-row sm:items-center"
+              className="mt-3 flex flex-col items-start justify-between gap-3 rounded-2xl border border-dashed border-line bg-panel/45 p-4 sm:flex-row sm:items-center"
             >
               <div className="min-w-0">
                 <p className="text-sm font-bold text-fg">{copy.filterEmptyTitle}</p>
@@ -581,6 +602,59 @@ export function MySpaceHubPage() {
             </div>
           )}
         </section>
+
+        {!hydrated ? (
+          <LoadingState variant="skeleton" label={copy.statsLoading} className="mt-4 max-w-2xl" />
+        ) : hasActivity ? (
+          <dl className="mt-4 grid max-w-2xl grid-cols-3 gap-2" data-my-space-activity-summary="true">
+            {copy.stats.map((label, index) => (
+              <div key={label} className="flex min-w-0 flex-col rounded-xl border border-line bg-card/70 p-2.5">
+                <dt className="order-2 mt-0.5 text-[0.68rem] text-fg-2 sm:text-xs">{label}</dt>
+                <dd className="numeral order-1 text-lg font-bold text-fg sm:text-xl">{stats[index]}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+
+        <div className="mt-4 rounded-2xl border border-line bg-panel/45 p-3.5 sm:p-4">
+          <h2 className="text-sm font-bold text-fg">{copy.quickTitle}</h2>
+          <div className="mt-2.5 grid gap-2 sm:grid-cols-3">
+            {copy.quickActions.map(([title, body, href], index) => (
+              <SiteLinkCard key={href} layout="compact" href={href} icon={QUICK_ICONS[index]} title={title} description={body} />
+            ))}
+          </div>
+        </div>
+
+        <FriendlyQuickGuide
+          className="mt-4"
+          title={copy.guideTitle}
+          description={copy.guideBody}
+          steps={copy.guideSteps}
+        />
+
+        <details
+          data-testid="my-space-more-details"
+          className="group mt-4 overflow-hidden rounded-2xl border border-line/75 bg-panel/45"
+        >
+          <summary
+            data-testid="my-space-more-summary"
+            className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2.5 text-xs font-semibold text-fg-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <span>{copy.moreGuideSummary}</span>
+            <span aria-hidden="true" className="text-accent transition-transform group-open:rotate-90">›</span>
+          </summary>
+          <div className="border-t border-line/70 px-4 py-3.5">
+            <p className="max-w-2xl text-xs leading-5 text-fg-2">{copy.body}</p>
+            <p
+              className="mt-2 max-w-2xl rounded-xl border border-line bg-card/60 px-3 py-2 text-xs leading-5 text-fg-2"
+              aria-live="polite"
+            >
+              {syncCopy}
+            </p>
+            <SiteContextualSubNav pathnameOverride="/my" className="mt-3" />
+            <SiteArtSurfaceSpotlight cardId="nb-manage-vault" compact className="mt-3" />
+          </div>
+        </details>
       </div>
     </Container>
   );

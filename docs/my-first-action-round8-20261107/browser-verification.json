@@ -1,0 +1,1477 @@
+{
+  "verifiedAt": "2026-11-07T16:56:31.898Z",
+  "round": "my-first-action-round8-20261107",
+  "previousCommitInOriginMain": {
+    "commit": "ecc103605d80ad00dd8bb294b911e781450c4386",
+    "mergeCommit": "3698e5162db8d20afefe15c15994dd9e2d7fa777",
+    "isAncestorOfOriginMain": true
+  },
+  "pageErrors": [],
+  "touchSearchFlow": {
+    "tappedToggleOpenedInput": true,
+    "searchFocusedOnTouch": true,
+    "filteredStatusText": "창작·스튜디오 · 1 / 14",
+    "searchClosedOnSecondTap": true
+  },
+  "progressiveDisclosureFlow": {
+    "defaultOpen": false,
+    "openedOnSummaryTap": true
+  },
+  "scenarios": {
+    "empty-ko": {
+      "label": "빈 데이터 (신규 사용자 · KO)",
+      "viewports": {
+        "mobile-320": {
+          "viewport": "mobile-320",
+          "width": 320,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/new",
+          "primaryActionText": "새 작품 만들기",
+          "primaryActionTopPx": 461,
+          "primaryActionBottomPx": 505,
+          "beforePrimaryActionTopPx": 2132,
+          "savedPrimaryActionY": 1671,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 672,
+          "beforeFirstFilterChipTopPx": 2987,
+          "firstDestinationCardTopPx": 828,
+          "beforeFirstDestinationCardTopPx": 3101,
+          "savedDestinationCardY": 2273,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 66,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "mobile-390": {
+          "viewport": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/new",
+          "primaryActionText": "새 작품 만들기",
+          "primaryActionTopPx": 425,
+          "primaryActionBottomPx": 469,
+          "beforePrimaryActionTopPx": 1851,
+          "savedPrimaryActionY": 1426,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 584,
+          "beforeFirstFilterChipTopPx": 2546,
+          "firstDestinationCardTopPx": 740,
+          "beforeFirstDestinationCardTopPx": 2660,
+          "savedDestinationCardY": 1920,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 66,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "pc-1440-zoom-200": {
+          "viewport": "pc-1440-zoom-200",
+          "width": 1440,
+          "height": 900,
+          "zoom": 2,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/new",
+          "primaryActionText": "새 작품 만들기",
+          "primaryActionTopPx": 1926,
+          "primaryActionBottomPx": 2014,
+          "beforePrimaryActionTopPx": 9917,
+          "savedPrimaryActionY": 7991,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 2284,
+          "beforeFirstFilterChipTopPx": 11547,
+          "firstDestinationCardTopPx": 2496,
+          "beforeFirstDestinationCardTopPx": 11675,
+          "savedDestinationCardY": 9179,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 136,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 141,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 182,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 168,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 127,
+              "heightPx": 88,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "reflow-720-equiv200": {
+          "viewport": "reflow-720-equiv200",
+          "width": 720,
+          "height": 450,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/new",
+          "primaryActionText": "새 작품 만들기",
+          "primaryActionTopPx": 432,
+          "primaryActionBottomPx": 476,
+          "beforePrimaryActionTopPx": 1498,
+          "savedPrimaryActionY": 1066,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 513,
+          "beforeFirstFilterChipTopPx": 1903,
+          "firstDestinationCardTopPx": 569,
+          "beforeFirstDestinationCardTopPx": 1967,
+          "savedDestinationCardY": 1398,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 66,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        }
+      }
+    },
+    "creator-recent-ko": {
+      "label": "창작 역할 · 최근 Studio 작업 (KO)",
+      "viewports": {
+        "mobile-320": {
+          "viewport": "mobile-320",
+          "width": 320,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-1/d/document-1?resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 452,
+          "primaryActionBottomPx": 496,
+          "beforePrimaryActionTopPx": 2004,
+          "savedPrimaryActionY": 1552,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 637,
+          "beforeFirstFilterChipTopPx": 2759,
+          "firstDestinationCardTopPx": 793,
+          "beforeFirstDestinationCardTopPx": 2873,
+          "savedDestinationCardY": 2080,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 86,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "mobile-390": {
+          "viewport": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-1/d/document-1?resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 407,
+          "primaryActionBottomPx": 451,
+          "beforePrimaryActionTopPx": 1727,
+          "savedPrimaryActionY": 1320,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 593,
+          "beforeFirstFilterChipTopPx": 2374,
+          "firstDestinationCardTopPx": 749,
+          "beforeFirstDestinationCardTopPx": 2488,
+          "savedDestinationCardY": 1739,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 86,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "tablet-768": {
+          "viewport": "tablet-768",
+          "width": 768,
+          "height": 1024,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-1/d/document-1?resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 450,
+          "primaryActionBottomPx": 494,
+          "beforePrimaryActionTopPx": 1508,
+          "savedPrimaryActionY": 1058,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 634,
+          "beforeFirstFilterChipTopPx": 2007,
+          "firstDestinationCardTopPx": 690,
+          "beforeFirstDestinationCardTopPx": 2071,
+          "savedDestinationCardY": 1381,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 86,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "pc-1440": {
+          "viewport": "pc-1440",
+          "width": 1440,
+          "height": 900,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-1/d/document-1?resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 592,
+          "primaryActionBottomPx": 636,
+          "beforePrimaryActionTopPx": 1168,
+          "savedPrimaryActionY": 576,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 733,
+          "beforeFirstFilterChipTopPx": 1621,
+          "firstDestinationCardTopPx": 789,
+          "beforeFirstDestinationCardTopPx": 1685,
+          "savedDestinationCardY": 896,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 86,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "pc-1440-zoom-200": {
+          "viewport": "pc-1440-zoom-200",
+          "width": 1440,
+          "height": 900,
+          "zoom": 2,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-1/d/document-1?resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 1818,
+          "primaryActionBottomPx": 1906,
+          "beforePrimaryActionTopPx": 9397,
+          "savedPrimaryActionY": 7579,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 2239,
+          "beforeFirstFilterChipTopPx": 11179,
+          "firstDestinationCardTopPx": 2451,
+          "beforeFirstDestinationCardTopPx": 11307,
+          "savedDestinationCardY": 8856,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 140,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 141,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 178,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 168,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 127,
+              "heightPx": 88,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "reflow-720-equiv200": {
+          "viewport": "reflow-720-equiv200",
+          "width": 720,
+          "height": 450,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-1/d/document-1?resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 417,
+          "primaryActionBottomPx": 461,
+          "beforePrimaryActionTopPx": 1417,
+          "savedPrimaryActionY": 1000,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 565,
+          "beforeFirstFilterChipTopPx": 1824,
+          "firstDestinationCardTopPx": 621,
+          "beforeFirstDestinationCardTopPx": 1888,
+          "savedDestinationCardY": 1267,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 86,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        }
+      }
+    },
+    "reader-recent-ko": {
+      "label": "읽기 역할 · 최근 감상/탐색 (KO)",
+      "viewports": {
+        "mobile-320": {
+          "viewport": "mobile-320",
+          "width": 320,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/ranking",
+          "primaryActionText": "이어서 보기",
+          "primaryActionTopPx": 452,
+          "primaryActionBottomPx": 496,
+          "beforePrimaryActionTopPx": 1984,
+          "savedPrimaryActionY": 1532,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 621,
+          "beforeFirstFilterChipTopPx": 2739,
+          "firstDestinationCardTopPx": 777,
+          "beforeFirstDestinationCardTopPx": 2853,
+          "savedDestinationCardY": 2076,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 66,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "mobile-390": {
+          "viewport": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/ranking",
+          "primaryActionText": "이어서 보기",
+          "primaryActionTopPx": 407,
+          "primaryActionBottomPx": 451,
+          "beforePrimaryActionTopPx": 1707,
+          "savedPrimaryActionY": 1300,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 577,
+          "beforeFirstFilterChipTopPx": 2354,
+          "firstDestinationCardTopPx": 733,
+          "beforeFirstDestinationCardTopPx": 2468,
+          "savedDestinationCardY": 1735,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 66,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "pc-1440-zoom-200": {
+          "viewport": "pc-1440-zoom-200",
+          "width": 1440,
+          "height": 900,
+          "zoom": 2,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/ranking",
+          "primaryActionText": "이어서 보기",
+          "primaryActionTopPx": 1774,
+          "primaryActionBottomPx": 1862,
+          "beforePrimaryActionTopPx": 9377,
+          "savedPrimaryActionY": 7603,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 2151,
+          "beforeFirstFilterChipTopPx": 11139,
+          "firstDestinationCardTopPx": 2363,
+          "beforeFirstDestinationCardTopPx": 11267,
+          "savedDestinationCardY": 8904,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 140,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 137,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 182,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 168,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 127,
+              "heightPx": 88,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "reflow-720-equiv200": {
+          "viewport": "reflow-720-equiv200",
+          "width": 720,
+          "height": 450,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/ranking",
+          "primaryActionText": "이어서 보기",
+          "primaryActionTopPx": 417,
+          "primaryActionBottomPx": 461,
+          "beforePrimaryActionTopPx": 1417,
+          "savedPrimaryActionY": 1000,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 565,
+          "beforeFirstFilterChipTopPx": 1824,
+          "firstDestinationCardTopPx": 621,
+          "beforeFirstDestinationCardTopPx": 1888,
+          "savedDestinationCardY": 1267,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 66,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        }
+      }
+    },
+    "long-title-ko": {
+      "label": "긴 한·영 제목 및 작업 경로 (KO)",
+      "viewports": {
+        "mobile-320": {
+          "viewport": "mobile-320",
+          "width": 320,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/ultra-long-bilingual-project-2026-ep99/d/director-cut-storyboard-final-revision?focus=%EC%B4%88%EC%9E%A5%ED%8E%B8_%ED%8C%90%ED%83%80%EC%A7%80_UltraLongWebtoonEpisodeProductionWorkflow2026&resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 452,
+          "primaryActionBottomPx": 496,
+          "beforePrimaryActionTopPx": 2004,
+          "savedPrimaryActionY": 1552,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 637,
+          "beforeFirstFilterChipTopPx": 2759,
+          "firstDestinationCardTopPx": 793,
+          "beforeFirstDestinationCardTopPx": 2873,
+          "savedDestinationCardY": 2080,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 66,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "mobile-390": {
+          "viewport": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/ultra-long-bilingual-project-2026-ep99/d/director-cut-storyboard-final-revision?focus=%EC%B4%88%EC%9E%A5%ED%8E%B8_%ED%8C%90%ED%83%80%EC%A7%80_UltraLongWebtoonEpisodeProductionWorkflow2026&resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 407,
+          "primaryActionBottomPx": 451,
+          "beforePrimaryActionTopPx": 1727,
+          "savedPrimaryActionY": 1320,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 593,
+          "beforeFirstFilterChipTopPx": 2374,
+          "firstDestinationCardTopPx": 749,
+          "beforeFirstDestinationCardTopPx": 2488,
+          "savedDestinationCardY": 1739,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 66,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "pc-1440-zoom-200": {
+          "viewport": "pc-1440-zoom-200",
+          "width": 1440,
+          "height": 900,
+          "zoom": 2,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/ultra-long-bilingual-project-2026-ep99/d/director-cut-storyboard-final-revision?focus=%EC%B4%88%EC%9E%A5%ED%8E%B8_%ED%8C%90%ED%83%80%EC%A7%80_UltraLongWebtoonEpisodeProductionWorkflow2026&resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 1818,
+          "primaryActionBottomPx": 1906,
+          "beforePrimaryActionTopPx": 9397,
+          "savedPrimaryActionY": 7579,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 2239,
+          "beforeFirstFilterChipTopPx": 11179,
+          "firstDestinationCardTopPx": 2451,
+          "beforeFirstDestinationCardTopPx": 11307,
+          "savedDestinationCardY": 8856,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 136,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 141,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 182,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 168,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 127,
+              "heightPx": 88,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "reflow-720-equiv200": {
+          "viewport": "reflow-720-equiv200",
+          "width": 720,
+          "height": 450,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/ultra-long-bilingual-project-2026-ep99/d/director-cut-storyboard-final-revision?focus=%EC%B4%88%EC%9E%A5%ED%8E%B8_%ED%8C%90%ED%83%80%EC%A7%80_UltraLongWebtoonEpisodeProductionWorkflow2026&resume=latest&workspace=comic",
+          "primaryActionText": "이어서 작업",
+          "primaryActionTopPx": 417,
+          "primaryActionBottomPx": 461,
+          "beforePrimaryActionTopPx": 1417,
+          "savedPrimaryActionY": 1000,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 565,
+          "beforeFirstFilterChipTopPx": 1824,
+          "firstDestinationCardTopPx": 621,
+          "beforeFirstDestinationCardTopPx": 1888,
+          "savedDestinationCardY": 1267,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 66,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 68,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 81,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 63,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        }
+      }
+    },
+    "en-locale": {
+      "label": "영문 로케일 (EN · Recent Studio)",
+      "viewports": {
+        "mobile-320": {
+          "viewport": "mobile-320",
+          "width": 320,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-en/d/doc-1?resume=latest&workspace=comic",
+          "primaryActionText": "Continue working",
+          "primaryActionTopPx": 510,
+          "primaryActionBottomPx": 554,
+          "beforePrimaryActionTopPx": 2233,
+          "savedPrimaryActionY": 1723,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 712,
+          "beforeFirstFilterChipTopPx": 3224,
+          "firstDestinationCardTopPx": 868,
+          "beforeFirstDestinationCardTopPx": 3338,
+          "savedDestinationCardY": 2470,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 44,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 73,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 117,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 95,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 82,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "mobile-390": {
+          "viewport": "mobile-390",
+          "width": 390,
+          "height": 844,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-en/d/doc-1?resume=latest&workspace=comic",
+          "primaryActionText": "Continue working",
+          "primaryActionTopPx": 427,
+          "primaryActionBottomPx": 471,
+          "beforePrimaryActionTopPx": 2015,
+          "savedPrimaryActionY": 1588,
+          "primaryVisibleInFirstScreen": true,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 613,
+          "beforeFirstFilterChipTopPx": 2798,
+          "firstDestinationCardTopPx": 769,
+          "beforeFirstDestinationCardTopPx": 2912,
+          "savedDestinationCardY": 2143,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 44,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 73,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 117,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 95,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 82,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "pc-1440-zoom-200": {
+          "viewport": "pc-1440-zoom-200",
+          "width": 1440,
+          "height": 900,
+          "zoom": 2,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-en/d/doc-1?resume=latest&workspace=comic",
+          "primaryActionText": "Continue working",
+          "primaryActionTopPx": 3049,
+          "primaryActionBottomPx": 3137,
+          "beforePrimaryActionTopPx": 18305,
+          "savedPrimaryActionY": 15256,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 3502,
+          "beforeFirstFilterChipTopPx": 22186,
+          "firstDestinationCardTopPx": 3714,
+          "beforeFirstDestinationCardTopPx": 22314,
+          "savedDestinationCardY": 18600,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 88,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 137,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 229,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 191,
+              "heightPx": 88,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 162,
+              "heightPx": 88,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        },
+        "reflow-720-equiv200": {
+          "viewport": "reflow-720-equiv200",
+          "width": 720,
+          "height": 450,
+          "zoom": 1,
+          "horizontalOverflowPx": 0,
+          "primaryActionHref": "/studio/p/project-en/d/doc-1?resume=latest&workspace=comic",
+          "primaryActionText": "Continue working",
+          "primaryActionTopPx": 437,
+          "primaryActionBottomPx": 481,
+          "beforePrimaryActionTopPx": 1631,
+          "savedPrimaryActionY": 1194,
+          "primaryVisibleInFirstScreen": false,
+          "beforePrimaryVisibleInFirstScreen": false,
+          "firstFilterChipTopPx": 621,
+          "beforeFirstFilterChipTopPx": 2110,
+          "firstDestinationCardTopPx": 677,
+          "beforeFirstDestinationCardTopPx": 2174,
+          "savedDestinationCardY": 1497,
+          "searchTogglePresent": true,
+          "moreDetailsCollapsedByDefault": true,
+          "clicksToPrimaryAction": 1,
+          "clicksToRoleFilteredDestination": 2,
+          "clicksToTouchSearch": 1,
+          "beforeClicksToTouchSearch": null,
+          "allTargetsMeet44": true,
+          "targets": [
+            {
+              "selector": "[data-testid='my-space-role-filter-all']",
+              "found": true,
+              "widthPx": 44,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-reader']",
+              "found": true,
+              "widthPx": 73,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-creator']",
+              "found": true,
+              "widthPx": 117,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-role-filter-account']",
+              "found": true,
+              "widthPx": 95,
+              "heightPx": 44,
+              "meets44x44": true
+            },
+            {
+              "selector": "[data-testid='my-space-search-toggle']",
+              "found": true,
+              "widthPx": 82,
+              "heightPx": 44,
+              "meets44x44": true
+            }
+          ],
+          "rootFound": true
+        }
+      }
+    }
+  }
+}
