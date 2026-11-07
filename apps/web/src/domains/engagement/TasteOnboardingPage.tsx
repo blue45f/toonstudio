@@ -203,7 +203,7 @@ export function TasteOnboardingPage() {
           <div className="mt-6">
             <h2 className="font-black text-fg">좋아하는 장르를 2개 이상 골라 주세요</h2>
             <p className="mt-1 text-xs leading-5 text-fg-3">고르는 대로 위 스펙트럼 바가 장르 색으로 채워집니다.</p>
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div role="group" aria-label="선호 장르" className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {ONBOARDING_GENRES.map((genre) => {
                 const selected = selectedGenres.includes(genre);
                 const color = genreColor(genre);
@@ -219,11 +219,12 @@ export function TasteOnboardingPage() {
                       );
                     }}
                     style={{
+                      minHeight: "44px",
                       borderColor: selected ? color : undefined,
                       backgroundColor: selected ? `${color}18` : undefined,
                     }}
                     className={cn(
-                      "flex h-12 items-center justify-center rounded-xl border text-sm transition-colors",
+                      "flex h-12 min-h-11 items-center justify-center rounded-xl border text-sm transition-colors",
                       "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                       selected
                         ? "border-line bg-panel font-bold text-fg"
@@ -302,13 +303,14 @@ export function TasteOnboardingPage() {
                 <p className="mt-1 text-xs leading-5 text-fg-3">언제든 다시 바꿀 수 있으며, 선택 내용은 현재 브라우저의 추천 화면에 사용됩니다.</p>
               </div>
             </div>
-            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+            <div role="group" aria-label="감상 강도" className="mt-5 grid gap-2 sm:grid-cols-3">
               {INTENSITY.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   aria-pressed={contentIntensity === option.value}
                   onClick={() => { touch(); setContentIntensity(option.value); }}
+                  style={{ minHeight: "80px" }}
                   className={cn(
                     "min-h-20 rounded-2xl border p-3 text-left transition-colors",
                     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
@@ -336,7 +338,7 @@ export function TasteOnboardingPage() {
                 <p className="mt-1 text-xs leading-5 text-fg-3">고른 태그가 명시된 작품은 추천에서 제외합니다. 공식 콘텐츠 경고를 대신하지 않습니다.</p>
               </div>
             </div>
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div role="group" aria-label="회피 태그" className="mt-5 flex flex-wrap gap-2">
               {AVOID_TAGS.map((tag) => {
                 const selected = avoidTags.includes(tag);
                 return (
@@ -347,9 +349,9 @@ export function TasteOnboardingPage() {
                     onClick={() => { touch(); setAvoidTags((current) => selected
                       ? current.filter((value) => value !== tag)
                       : [...current, tag]); }}
+                    style={{ minHeight: "44px" }}
                     className={cn(
-                      "min-h-9 rounded-full border px-3 text-xs font-bold transition-colors",
-                      "pointer-coarse:min-h-11",
+                      "min-h-11 rounded-full border px-3.5 py-2 text-xs font-bold transition-colors",
                       "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                       selected
                         ? "border-warn/45 bg-warn/10 text-warn"
@@ -385,15 +387,16 @@ export function TasteOnboardingPage() {
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div>
                 <span className="block text-xs font-semibold text-fg-3">선호 포맷</span>
-                <div className="mt-2 flex gap-2">
+                <div role="group" aria-label="선호 포맷" className="mt-2 flex gap-2">
                   {FORMAT_OPTIONS.map((option) => (
                     <button
                       key={option.value}
                       type="button"
                       aria-pressed={selectedFormat === option.value}
                       onClick={() => { touch(); setSelectedFormat(option.value); }}
+                      style={{ minHeight: "44px" }}
                       className={cn(
-                        "flex-1 rounded-xl border p-2.5 text-xs font-semibold transition-colors",
+                        "min-h-11 flex-1 rounded-xl border p-2.5 text-xs font-semibold transition-colors",
                         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                         selectedFormat === option.value
                           ? "border-accent bg-accent-soft/30 text-accent"
@@ -407,15 +410,16 @@ export function TasteOnboardingPage() {
               </div>
               <div>
                 <span className="block text-xs font-semibold text-fg-3">선호 상태</span>
-                <div className="mt-2 flex gap-2">
+                <div role="group" aria-label="선호 상태" className="mt-2 flex gap-2">
                   {STATUS_OPTIONS.map((option) => (
                     <button
                       key={option.value}
                       type="button"
                       aria-pressed={selectedStatus === option.value}
                       onClick={() => { touch(); setSelectedStatus(option.value); }}
+                      style={{ minHeight: "44px" }}
                       className={cn(
-                        "flex-1 rounded-xl border p-2.5 text-xs font-semibold transition-colors",
+                        "min-h-11 flex-1 rounded-xl border p-2.5 text-xs font-semibold transition-colors",
                         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                         selectedStatus === option.value
                           ? "border-accent bg-accent-soft/30 text-accent"
@@ -463,7 +467,8 @@ export function TasteOnboardingPage() {
             <button
               type="button"
               onClick={() => setStep((current) => Math.max(1, current - 1))}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-panel px-4 text-sm font-bold text-fg-2 transition-colors hover:border-line-strong"
+              style={{ minHeight: "44px" }}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-panel px-4 text-sm font-bold text-fg-2 transition-colors hover:border-line-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <ArrowLeft size={14} aria-hidden="true" />
               이전
@@ -472,7 +477,8 @@ export function TasteOnboardingPage() {
             <button
               type="button"
               onClick={() => navigate("/recommend")}
-              className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-4 text-sm font-bold text-fg-2 transition-colors hover:border-line-strong"
+              style={{ minHeight: "44px" }}
+              className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-4 text-sm font-bold text-fg-2 transition-colors hover:border-line-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               닫기
             </button>
@@ -482,7 +488,8 @@ export function TasteOnboardingPage() {
               type="button"
               disabled={step === 1 && selectedGenres.length < 2}
               onClick={() => setStep((current) => Math.min(4, current + 1))}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{ minHeight: "44px" }}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
             >
               {step === 1 && selectedGenres.length < 2 ? "장르를 2개 이상 골라 주세요" : "다음"}
               <ArrowRight size={14} aria-hidden="true" />
@@ -491,7 +498,8 @@ export function TasteOnboardingPage() {
             <button
               type="button"
               onClick={complete}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2"
+              style={{ minHeight: "44px" }}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <Wand2 size={14} aria-hidden="true" />
               추천 화면으로 이동

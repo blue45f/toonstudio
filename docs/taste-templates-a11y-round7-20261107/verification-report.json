@@ -1,0 +1,305 @@
+{
+  "round": "Round 7 — GAP-R6-03 TasteOnboardingPage & StudioTemplatesPage A11y Verification",
+  "generatedAt": "2026-11-07T16:34:41.399Z",
+  "gapId": "GAP-R6-03",
+  "gapR603Before": {
+    "commit": "0dbc7502",
+    "sourceReport": "docs/a11y-uncovered-round6-20261107/browser-round6-report.json",
+    "reproduced": true,
+    "step2GroupRole": null,
+    "step2GroupAriaLabel": "맞춤 추천 화면 안내",
+    "step3GroupRole": null,
+    "step3GroupAriaLabel": "맞춤 추천 화면 안내",
+    "avoidTagButtonHeight": 40,
+    "categoryContainerRole": null,
+    "categoryContainerAriaLabel": null,
+    "categoryButtonHeight": 40,
+    "specPresetButtonHeight": 40
+  },
+  "gapR603After": {
+    "reproduced": false,
+    "step2GroupRole": "group",
+    "step2GroupAriaLabel": "감상 강도",
+    "step3GroupRole": "group",
+    "step3GroupAriaLabel": "회피 태그",
+    "avoidTagButtonHeight": 44,
+    "categoryContainerRole": "group",
+    "categoryContainerAriaLabel": "템플릿 카테고리 필터",
+    "categoryButtonHeight": 44,
+    "specGroupRole": "group",
+    "specGroupAriaLabel": "규격·목적별 빠른 필터",
+    "specPresetButtonHeight": 44
+  },
+  "summary": {
+    "allViewportsGapResolved": true,
+    "zeroHorizontalOverflowAcrossAllViewports": true,
+    "allKeyboardJourneysPassed": true
+  },
+  "viewports": [
+    {
+      "viewport": "320",
+      "dimensions": "320x640",
+      "note": null,
+      "horizontalOverflowPx": 0,
+      "keyboardJourneys": {
+        "tasteStep2EnterToggle": true,
+        "tasteStep3EnterToggle": true,
+        "templatesCategoryEnterToggle": true,
+        "templatesSpecPresetEnterToggle": true
+      },
+      "gapR603Probe": {
+        "reproduced": false,
+        "step1GenreGroup": {
+          "role": "group",
+          "ariaLabel": "선호 장르",
+          "count": 12,
+          "minHeight": 48
+        },
+        "step2GroupRole": "group",
+        "step2GroupAriaLabel": "감상 강도",
+        "step2MinHeight": 80,
+        "step2OverflowPx": 0,
+        "step2FocusOutlineStyle": "solid",
+        "step2FocusOutlineWidth": "2px",
+        "step3GroupRole": "group",
+        "step3GroupAriaLabel": "회피 태그",
+        "avoidTagButtonHeight": 44,
+        "allAvoidTagsAtLeast44Px": true,
+        "avoidTagMinHeight": 44,
+        "step3OverflowPx": 0,
+        "step3FocusOutlineStyle": "solid",
+        "step3FocusOutlineWidth": "2px",
+        "categoryContainerRole": "group",
+        "categoryContainerAriaLabel": "템플릿 카테고리 필터",
+        "categoryButtonHeight": 44,
+        "allCategoryButtonsAtLeast44Px": true,
+        "categoryMinHeight": 44,
+        "specGroupRole": "group",
+        "specGroupAriaLabel": "규격·목적별 빠른 필터",
+        "specPresetButtonHeight": 44,
+        "allSpecPresetButtonsAtLeast44Px": true,
+        "specPresetMinHeight": 44,
+        "templatesOverflowPx": 0,
+        "templatesFocusOutlineStyle": "solid",
+        "templatesFocusOutlineWidth": "2px"
+      },
+      "screenshots": {
+        "tasteStep2": "./taste-step2-320.png",
+        "tasteStep3": "./taste-step3-320.png",
+        "studioTemplates": "./studio-templates-320.png"
+      }
+    },
+    {
+      "viewport": "390",
+      "dimensions": "390x844",
+      "note": null,
+      "horizontalOverflowPx": 0,
+      "keyboardJourneys": {
+        "tasteStep2EnterToggle": true,
+        "tasteStep3EnterToggle": true,
+        "templatesCategoryEnterToggle": true,
+        "templatesSpecPresetEnterToggle": true
+      },
+      "gapR603Probe": {
+        "reproduced": false,
+        "step1GenreGroup": {
+          "role": "group",
+          "ariaLabel": "선호 장르",
+          "count": 12,
+          "minHeight": 48
+        },
+        "step2GroupRole": "group",
+        "step2GroupAriaLabel": "감상 강도",
+        "step2MinHeight": 80,
+        "step2OverflowPx": 0,
+        "step2FocusOutlineStyle": "solid",
+        "step2FocusOutlineWidth": "2px",
+        "step3GroupRole": "group",
+        "step3GroupAriaLabel": "회피 태그",
+        "avoidTagButtonHeight": 44,
+        "allAvoidTagsAtLeast44Px": true,
+        "avoidTagMinHeight": 44,
+        "step3OverflowPx": 0,
+        "step3FocusOutlineStyle": "solid",
+        "step3FocusOutlineWidth": "2px",
+        "categoryContainerRole": "group",
+        "categoryContainerAriaLabel": "템플릿 카테고리 필터",
+        "categoryButtonHeight": 44,
+        "allCategoryButtonsAtLeast44Px": true,
+        "categoryMinHeight": 44,
+        "specGroupRole": "group",
+        "specGroupAriaLabel": "규격·목적별 빠른 필터",
+        "specPresetButtonHeight": 44,
+        "allSpecPresetButtonsAtLeast44Px": true,
+        "specPresetMinHeight": 44,
+        "templatesOverflowPx": 0,
+        "templatesFocusOutlineStyle": "solid",
+        "templatesFocusOutlineWidth": "2px"
+      },
+      "screenshots": {
+        "tasteStep2": "./taste-step2-390.png",
+        "tasteStep3": "./taste-step3-390.png",
+        "studioTemplates": "./studio-templates-390.png"
+      }
+    },
+    {
+      "viewport": "768",
+      "dimensions": "768x1024",
+      "note": null,
+      "horizontalOverflowPx": 0,
+      "keyboardJourneys": {
+        "tasteStep2EnterToggle": true,
+        "tasteStep3EnterToggle": true,
+        "templatesCategoryEnterToggle": true,
+        "templatesSpecPresetEnterToggle": true
+      },
+      "gapR603Probe": {
+        "reproduced": false,
+        "step1GenreGroup": {
+          "role": "group",
+          "ariaLabel": "선호 장르",
+          "count": 12,
+          "minHeight": 48
+        },
+        "step2GroupRole": "group",
+        "step2GroupAriaLabel": "감상 강도",
+        "step2MinHeight": 80,
+        "step2OverflowPx": 0,
+        "step2FocusOutlineStyle": "solid",
+        "step2FocusOutlineWidth": "2px",
+        "step3GroupRole": "group",
+        "step3GroupAriaLabel": "회피 태그",
+        "avoidTagButtonHeight": 44,
+        "allAvoidTagsAtLeast44Px": true,
+        "avoidTagMinHeight": 44,
+        "step3OverflowPx": 0,
+        "step3FocusOutlineStyle": "solid",
+        "step3FocusOutlineWidth": "2px",
+        "categoryContainerRole": "group",
+        "categoryContainerAriaLabel": "템플릿 카테고리 필터",
+        "categoryButtonHeight": 44,
+        "allCategoryButtonsAtLeast44Px": true,
+        "categoryMinHeight": 44,
+        "specGroupRole": "group",
+        "specGroupAriaLabel": "규격·목적별 빠른 필터",
+        "specPresetButtonHeight": 44,
+        "allSpecPresetButtonsAtLeast44Px": true,
+        "specPresetMinHeight": 44,
+        "templatesOverflowPx": 0,
+        "templatesFocusOutlineStyle": "solid",
+        "templatesFocusOutlineWidth": "2px"
+      },
+      "screenshots": {
+        "tasteStep2": "./taste-step2-768.png",
+        "tasteStep3": "./taste-step3-768.png",
+        "studioTemplates": "./studio-templates-768.png"
+      }
+    },
+    {
+      "viewport": "1440",
+      "dimensions": "1440x900",
+      "note": null,
+      "horizontalOverflowPx": 0,
+      "keyboardJourneys": {
+        "tasteStep2EnterToggle": true,
+        "tasteStep3EnterToggle": true,
+        "templatesCategoryEnterToggle": true,
+        "templatesSpecPresetEnterToggle": true
+      },
+      "gapR603Probe": {
+        "reproduced": false,
+        "step1GenreGroup": {
+          "role": "group",
+          "ariaLabel": "선호 장르",
+          "count": 12,
+          "minHeight": 47
+        },
+        "step2GroupRole": "group",
+        "step2GroupAriaLabel": "감상 강도",
+        "step2MinHeight": 80,
+        "step2OverflowPx": 0,
+        "step2FocusOutlineStyle": "solid",
+        "step2FocusOutlineWidth": "2px",
+        "step3GroupRole": "group",
+        "step3GroupAriaLabel": "회피 태그",
+        "avoidTagButtonHeight": 44,
+        "allAvoidTagsAtLeast44Px": true,
+        "avoidTagMinHeight": 44,
+        "step3OverflowPx": 0,
+        "step3FocusOutlineStyle": "solid",
+        "step3FocusOutlineWidth": "2px",
+        "categoryContainerRole": "group",
+        "categoryContainerAriaLabel": "템플릿 카테고리 필터",
+        "categoryButtonHeight": 44,
+        "allCategoryButtonsAtLeast44Px": true,
+        "categoryMinHeight": 44,
+        "specGroupRole": "group",
+        "specGroupAriaLabel": "규격·목적별 빠른 필터",
+        "specPresetButtonHeight": 44,
+        "allSpecPresetButtonsAtLeast44Px": true,
+        "specPresetMinHeight": 44,
+        "templatesOverflowPx": 0,
+        "templatesFocusOutlineStyle": "solid",
+        "templatesFocusOutlineWidth": "2px"
+      },
+      "screenshots": {
+        "tasteStep2": "./taste-step2-1440.png",
+        "tasteStep3": "./taste-step3-1440.png",
+        "studioTemplates": "./studio-templates-1440.png"
+      }
+    },
+    {
+      "viewport": "200pct",
+      "dimensions": "720x450",
+      "note": "1440x900 @ 200% browser zoom (720x450 CSS px)",
+      "horizontalOverflowPx": 0,
+      "keyboardJourneys": {
+        "tasteStep2EnterToggle": true,
+        "tasteStep3EnterToggle": true,
+        "templatesCategoryEnterToggle": true,
+        "templatesSpecPresetEnterToggle": true
+      },
+      "gapR603Probe": {
+        "reproduced": false,
+        "step1GenreGroup": {
+          "role": "group",
+          "ariaLabel": "선호 장르",
+          "count": 12,
+          "minHeight": 48
+        },
+        "step2GroupRole": "group",
+        "step2GroupAriaLabel": "감상 강도",
+        "step2MinHeight": 92,
+        "step2OverflowPx": 0,
+        "step2FocusOutlineStyle": "solid",
+        "step2FocusOutlineWidth": "2px",
+        "step3GroupRole": "group",
+        "step3GroupAriaLabel": "회피 태그",
+        "avoidTagButtonHeight": 44,
+        "allAvoidTagsAtLeast44Px": true,
+        "avoidTagMinHeight": 44,
+        "step3OverflowPx": 0,
+        "step3FocusOutlineStyle": "solid",
+        "step3FocusOutlineWidth": "2px",
+        "categoryContainerRole": "group",
+        "categoryContainerAriaLabel": "템플릿 카테고리 필터",
+        "categoryButtonHeight": 44,
+        "allCategoryButtonsAtLeast44Px": true,
+        "categoryMinHeight": 44,
+        "specGroupRole": "group",
+        "specGroupAriaLabel": "규격·목적별 빠른 필터",
+        "specPresetButtonHeight": 44,
+        "allSpecPresetButtonsAtLeast44Px": true,
+        "specPresetMinHeight": 44,
+        "templatesOverflowPx": 0,
+        "templatesFocusOutlineStyle": "solid",
+        "templatesFocusOutlineWidth": "2px"
+      },
+      "screenshots": {
+        "tasteStep2": "./taste-step2-200pct.png",
+        "tasteStep3": "./taste-step3-200pct.png",
+        "studioTemplates": "./studio-templates-200pct.png"
+      }
+    }
+  ]
+}
