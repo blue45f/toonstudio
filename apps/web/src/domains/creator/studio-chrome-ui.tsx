@@ -294,11 +294,7 @@ export function StudioFloatingToolPopover({
  * horizontal scroll row (CSS: overflow-x:auto forces y clipping of absolute menus).
  */
 export function StudioAppMenubar({
-  children,
-  subRow,
-  className,
-  id = "studio-menubar",
-  "aria-label": ariaLabel = "문서 메뉴",
+  children, subRow, className, id = "studio-menubar", "aria-label": ariaLabel = "문서 메뉴",
 }: {
   children: ReactNode;
   /**
@@ -306,19 +302,10 @@ export function StudioAppMenubar({
    * 같은 테두리·배경 단위 안에 붙인다. 스크롤 행 밖에 렌더하므로 메뉴 드롭다운의
    * overflow 계약(위 주석)은 그대로 유지된다.
    */
-  subRow?: ReactNode;
-  className?: string;
-  id?: string;
-  "aria-label"?: string;
+  subRow?: ReactNode; className?: string; id?: string; "aria-label"?: string;
 }): ReactElement {
   return (
-    <div
-      id={id}
-      role="banner"
-      tabIndex={-1}
-      aria-label={ariaLabel}
-      data-testid="studio-menubar"
-      data-studio-app-menubar="true"
+    <div id={id} role="region" tabIndex={-1} aria-label={ariaLabel} data-testid="studio-menubar" data-studio-app-menubar="true"
       className={cn(
         // Sumo-class top bar — denser commercial app chrome, still canvas-max height.
         // Height grows with content (CSP 명령 바 second row) instead of a hard 44px:
@@ -326,13 +313,14 @@ export function StudioAppMenubar({
         // the same auto/min-height shape in globals.css.
         "relative z-[50] min-h-11 shrink-0 border-b border-line",
         // Critical: do NOT put overflow-x-auto here — it clips File/Edit dropdowns.
-        "overflow-visible",
-        className
+        "overflow-visible", className
       )}
     >
-      <div
-        data-testid="studio-menubar-scroll"
-        data-studio-app-menubar-scroll="true"
+      <a href="#studio-canvas-workspace" data-studio-skip-link="true" onClick={(event) => {
+        const target = document.getElementById("studio-canvas-workspace") ?? document.getElementById("studio-workspace") ?? document.getElementById("main-content");
+        if (target instanceof HTMLElement) { event.preventDefault(); target.focus({ preventScroll: true }); target.scrollIntoView?.({ block: "nearest", inline: "nearest" }); }
+      }} className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[300] focus:flex focus:min-h-11 focus:items-center focus:rounded-xl focus:border focus:border-line-strong focus:bg-fg focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-canvas focus:shadow-2xl focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent">캔버스로 이동</a>
+      <div data-testid="studio-menubar-scroll" data-studio-app-menubar-scroll="true"
         className={cn(
           "flex min-h-11 w-full flex-nowrap items-center gap-2 px-2.5 sm:gap-2.5 sm:px-3",
           // Mobile actions are a bounded 44px icon cluster and all overlays use portals. Keeping
@@ -341,9 +329,7 @@ export function StudioAppMenubar({
           // two-row application menu.
           "max-md:overflow-visible md:overflow-hidden"
         )}
-      >
-        {children}
-      </div>
+      >{children}</div>
       {subRow ?? null}
     </div>
   );

@@ -59,6 +59,7 @@ export function LanguagePicker({
   const searchRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
   const listId = useId();
+  const dialogId = useId();
   const label = ariaLabel ?? (korean ? "언어 선택" : "Choose language");
 
   const visibleOptions = useMemo(() => {
@@ -79,7 +80,10 @@ export function LanguagePicker({
   const close = useCallback((restoreFocus = true) => {
     setOpen(false);
     setQuery("");
-    if (restoreFocus) window.setTimeout(() => triggerRef.current?.focus(), 0);
+    if (restoreFocus) {
+      triggerRef.current?.focus();
+      window.setTimeout(() => triggerRef.current?.focus(), 0);
+    }
   }, []);
 
   useEffect(() => {
@@ -88,8 +92,18 @@ export function LanguagePicker({
     const onPointerDown = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) close(false);
     };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.isComposing || event.defaultPrevented) return;
+      event.preventDefault();
+      event.stopPropagation();
+      close(true);
+    };
     document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
   }, [close, open]);
 
   const focusRelativeOption = (
@@ -120,7 +134,8 @@ export function LanguagePicker({
       nodes?.item(Math.max(0, nodes.length - 1)).focus();
     } else if (event.key === "Escape") {
       event.preventDefault();
-      close();
+      event.stopPropagation();
+      close(true);
     }
   };
 
@@ -133,6 +148,7 @@ export function LanguagePicker({
         aria-label={label}
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls={open ? dialogId : undefined}
         onClick={() => setOpen((currentOpen) => !currentOpen)}
         className={cx(
           "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-panel px-3 text-xs font-semibold text-fg outline-none transition-colors hover:border-line-strong focus-visible:ring-2 focus-visible:ring-accent/35 disabled:cursor-not-allowed disabled:opacity-55",
@@ -156,6 +172,7 @@ export function LanguagePicker({
 
       {open ? (
         <section
+          id={dialogId}
           role="dialog"
           aria-labelledby={titleId}
           className={cx(
@@ -177,6 +194,13 @@ export function LanguagePicker({
             <button
               type="button"
               onClick={() => close()}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  close(true);
+                }
+              }}
               aria-label={korean ? "언어 선택 닫기" : "Close language picker"}
               className="grid size-9 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
             >
@@ -213,7 +237,15 @@ export function LanguagePicker({
           <div
             id={listId}
             role="listbox"
+            tabIndex={visibleOptions.options.length === 0 ? 0 : -1}
             aria-label={korean ? "언어 검색 결과" : "Language search results"}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                close(true);
+              }
+            }}
             className="mt-2 max-h-72 space-y-1 overflow-y-auto overscroll-contain rounded-xl border border-line bg-canvas/50 p-1"
           >
             {visibleOptions.options.length > 0 ? visibleOptions.options.map((option) => (

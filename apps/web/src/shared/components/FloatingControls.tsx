@@ -1,6 +1,6 @@
 import { useFx } from "@toonstudio/core/fx";
 import { Moon, Music2, Settings2, Sun, Volume2, VolumeX, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { AppearanceTrigger } from "./appearance/AppearanceTrigger";
 import { LanguagePicker } from "./LanguagePicker";
@@ -98,6 +98,7 @@ export function FloatingControls({
   const rootRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mobilePanelId = useId();
   const collapsible = COLLAPSIBLE[placement];
 
   const clearHideTimer = useCallback(() => {
@@ -169,7 +170,12 @@ export function FloatingControls({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.isComposing || event.defaultPrevented) return;
       // 언어 검색 같은 내부 대화상자가 Esc를 먼저 처리하면 그대로 둔다.
-      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      if (
+        document.querySelector('[role="dialog"][aria-modal="true"]') ||
+        rootRef.current?.querySelector('[role="dialog"]')
+      ) {
+        return;
+      }
       closeMobilePanel(true);
     };
     document.addEventListener("pointerdown", onPointerDown);
@@ -264,11 +270,30 @@ export function FloatingControls({
         {renderControls(false)}
       </div>
 
-      {/* 모바일(접힘형만): 단일 토글 — 콘텐츠를 가리지 않게 면적 최소화. 탭하면 위로 펼침. */}
+      {/* 모바일(접힘형만): 단일 토글 — 콘텐츠를 가리지 않게 면적 최소화. 탭하면 위로 펼침.
+          DOM 순서는 토글 -> 펼침 패널로 두어 정방향 Tab이 열린 패널 안으로 진입하게 하고,
+          flex-col-reverse로 시각적 배치(패널이 토글 위)를 그대로 유지한다. */}
       {collapsible && (
-        <div className="flex flex-col items-end gap-2 md:hidden">
+        <div className="flex flex-col-reverse items-end gap-2 md:hidden">
+          <button
+            ref={toggleRef}
+            type="button"
+            data-floating-controls-toggle
+            onClick={() => setOpen((value) => !value)}
+            aria-expanded={open}
+            aria-controls={open ? mobilePanelId : undefined}
+            aria-label={open ? t("control.settings.close") : bt("화면·언어·OST 설정", "Display, language and OST settings")}
+            title={open ? t("control.settings.close") : t("control.cluster.open")}
+            className={cx(
+              PILL,
+              "size-12",
+              open ? "ts-float-active" : "text-fg-2 hover:text-fg"
+            )}
+          >
+            {open ? <X size={18} aria-hidden="true" /> : <Settings2 size={18} aria-hidden="true" />}
+          </button>
           {open && (
-            <div className="flex flex-col items-center gap-2 motion-safe:animate-fade-up">
+            <div id={mobilePanelId} className="flex flex-col items-center gap-2 motion-safe:animate-fade-up">
               {renderControls(true)}
               {/* OST 플레이어가 마운트된 화면에서만 보인다(floating-menu.css). */}
               <button
@@ -286,22 +311,6 @@ export function FloatingControls({
               </button>
             </div>
           )}
-          <button
-            ref={toggleRef}
-            type="button"
-            data-floating-controls-toggle
-            onClick={() => setOpen((value) => !value)}
-            aria-expanded={open}
-            aria-label={open ? t("control.settings.close") : bt("화면·언어·OST 설정", "Display, language and OST settings")}
-            title={open ? t("control.settings.close") : t("control.cluster.open")}
-            className={cx(
-              PILL,
-              "size-12",
-              open ? "ts-float-active" : "text-fg-2 hover:text-fg"
-            )}
-          >
-            {open ? <X size={18} aria-hidden="true" /> : <Settings2 size={18} aria-hidden="true" />}
-          </button>
         </div>
       )}
     </div>

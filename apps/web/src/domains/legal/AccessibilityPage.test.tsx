@@ -25,25 +25,26 @@ describe("accessibility page", () => {
       .toBe("/learn/accessibility");
   });
 
-  it("changes only the preview and can reset every preference", () => {
+  it("changes only the preview, supports 200% text scaling, exposes role=switch semantics, and can reset every preference", () => {
     render(<MemoryRouter><AccessibilityPage /></MemoryRouter>);
     const slider = screen.getByRole("slider");
-    const contrast = screen.getByRole("button", { name: /강한 대비|Stronger contrast/u });
-    const motion = screen.getByRole("button", { name: /모션 감소|Reduce motion/u });
+    const contrast = screen.getByRole("switch", { name: /강한 대비|Stronger contrast/u });
+    const motion = screen.getByRole("switch", { name: /모션 감소|Reduce motion/u });
     const preview = document.querySelector<HTMLElement>("[data-accessibility-preview]");
+    expect(slider.getAttribute("max")).toBe("200");
     expect(preview?.style.fontSize).toBe("100%");
-    fireEvent.change(slider, { target: { value: "140" } });
+    fireEvent.change(slider, { target: { value: "200" } });
     fireEvent.click(contrast);
     fireEvent.click(motion);
-    expect(preview?.style.fontSize).toBe("140%");
-    expect(contrast.getAttribute("aria-pressed")).toBe("true");
-    expect(motion.getAttribute("aria-pressed")).toBe("true");
+    expect(preview?.style.fontSize).toBe("200%");
+    expect(contrast.getAttribute("aria-checked")).toBe("true");
+    expect(motion.getAttribute("aria-checked")).toBe("true");
     expect(preview?.hasAttribute("data-strong-contrast")).toBe(true);
     expect(preview?.hasAttribute("data-reduced-motion")).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: /체험 초기화|Reset preview/u }));
     expect(preview?.style.fontSize).toBe("100%");
-    expect(contrast.getAttribute("aria-pressed")).toBe("false");
-    expect(motion.getAttribute("aria-pressed")).toBe("false");
+    expect(contrast.getAttribute("aria-checked")).toBe("false");
+    expect(motion.getAttribute("aria-checked")).toBe("false");
   });
 });

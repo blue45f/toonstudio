@@ -79,4 +79,30 @@ describe("appearance controls", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
+
+  it("links aria-controls to appearance-settings-dialog and marks only the clicked trigger as aria-expanded=true", async () => {
+    render(
+      <>
+        <AppearanceTrigger scope="site" className="header-trigger" />
+        <AppearanceTrigger scope="site" className="floating-trigger" />
+        <AppearanceDialogHost />
+      </>,
+    );
+    const triggers = screen.getAllByRole("button", { name: "디자인 테마" });
+    expect(triggers).toHaveLength(2);
+    const [headerTrigger, floatingTrigger] = triggers;
+
+    expect(headerTrigger?.getAttribute("aria-controls")).toBe("appearance-settings-dialog");
+    expect(floatingTrigger?.getAttribute("aria-controls")).toBe("appearance-settings-dialog");
+    expect(headerTrigger?.getAttribute("aria-expanded")).toBe("false");
+    expect(floatingTrigger?.getAttribute("aria-expanded")).toBe("false");
+
+    floatingTrigger?.focus();
+    fireEvent.click(floatingTrigger!);
+
+    const dialog = await screen.findByRole("dialog", { name: "디자인 테마" });
+    expect(dialog.id).toBe("appearance-settings-dialog");
+    expect(floatingTrigger?.getAttribute("aria-expanded")).toBe("true");
+    expect(headerTrigger?.getAttribute("aria-expanded")).toBe("false");
+  });
 });

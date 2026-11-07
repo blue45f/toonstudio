@@ -130,10 +130,31 @@ describe("studio chrome UI", () => {
     expect(html).toContain('data-testid="studio-menubar"');
     expect(html).toContain('data-testid="studio-menubar-scroll"');
     expect(html).toContain('data-studio-app-menubar="true"');
+    expect(html).toContain('role="region"');
+    expect(html).not.toContain('role="banner"');
+    expect(html).toContain('data-studio-skip-link="true"');
     expect(html).toContain("max-md:overflow-visible");
     expect(html).toContain("md:overflow-hidden");
     expect(html).toContain("h-11");
     expect(html).toContain("스튜디오");
+  });
+
+  it("moves keyboard focus to the studio canvas workspace when the menubar skip link is activated", () => {
+    render(
+      <main id="main-content" tabIndex={-1}>
+        <StudioAppMenubar>
+          <button type="button">파일</button>
+        </StudioAppMenubar>
+        <div id="studio-canvas-workspace" tabIndex={-1}>
+          캔버스 본문
+        </div>
+      </main>
+    );
+    expect(document.querySelectorAll('main [role="banner"]')).toHaveLength(0);
+    const skipLink = screen.getByRole("link", { name: "캔버스로 이동" });
+    expect(skipLink.getAttribute("href")).toBe("#studio-canvas-workspace");
+    fireEvent.click(skipLink);
+    expect(document.activeElement?.id).toBe("studio-canvas-workspace");
   });
 
   it("renders the subRow inside the menubar shell below the scroll row", () => {

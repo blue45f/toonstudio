@@ -1,0 +1,210 @@
+{
+  "executedAt": "2026-11-07",
+  "auditBaselineCommit": "5eb3810b90837e5e02baddf4b0880acdad1d76e8",
+  "gapVerifications": {
+    "GAP-A11Y-03": {
+      "beforeInAudit5eb3810": {
+        "sliderMax": "160",
+        "switchRoleCountInLab": 0,
+        "toggleButtonCountUsingAriaPressed": 2,
+        "auditReproductionStatus": "감사재현PASS (결함 존재 확인)"
+      },
+      "afterFix": {
+        "sliderMin": "100",
+        "sliderMax": "200",
+        "switchRoleCountInLab": 2,
+        "legacyAriaPressedCount": 0,
+        "previewFontSize": "200%",
+        "firstSwitchAriaChecked": "true",
+        "actualFixStatus": "실제수정PASS"
+      }
+    },
+    "GAP-A11Y-01": {
+      "beforeInAudit5eb3810": {
+        "closedFromCloseBtn": false,
+        "closedFromEmptyListbox": false,
+        "auditReproductionStatus": "감사재현PASS (결함 존재 확인)"
+      },
+      "afterFix": {
+        "closedFromCloseBtn": true,
+        "focusReturnedFromCloseBtn": true,
+        "closedFromEmptyListbox": true,
+        "focusReturnedFromEmptyListbox": true,
+        "actualFixStatus": "실제수정PASS"
+      }
+    },
+    "GAP-A11Y-02": {
+      "beforeInAudit5eb3810": {
+        "floatingForwardTabStayedInside": false,
+        "auditReproductionStatus": "감사재현PASS (결함 존재 확인)"
+      },
+      "afterFix": {
+        "mobile320": {
+          "insideFloatingControls": true,
+          "isToggleItself": false,
+          "tag": "button",
+          "ariaLabel": "주간 모드 전환",
+          "expandedAfterEscape": "false",
+          "focusReturnedToToggle": true
+        },
+        "mobile390": {
+          "insideFloatingControls": true,
+          "isToggleItself": false,
+          "tag": "button",
+          "ariaLabel": "주간 모드 전환",
+          "expandedAfterEscape": "false",
+          "focusReturnedToToggle": true
+        },
+        "actualFixStatus": "실제수정PASS"
+      }
+    },
+    "GAP-A11Y-05": {
+      "beforeInAudit5eb3810": {
+        "menubarRole": "banner",
+        "nestedBannerInMainCount": 1,
+        "skipLinkCount": 0,
+        "auditReproductionStatus": "감사재현PASS (결함 존재 확인)"
+      },
+      "afterFix": {
+        "pc1440": {
+          "menubarRole": "region",
+          "nestedBannerInMainCount": 0,
+          "skipLinkCount": 7,
+          "focusedIdAfterSkip": "studio-canvas-workspace"
+        },
+        "mobile390": {
+          "menubarRole": "region",
+          "nestedBannerInMainCount": 0,
+          "skipLinkCount": 7,
+          "focusedIdAfterSkip": "studio-canvas-workspace"
+        },
+        "actualFixStatus": "실제수정PASS"
+      }
+    },
+    "GAP-A11Y-04": {
+      "beforeInAudit5eb3810": {
+        "expandedTriggerCount": 3,
+        "allHaveAriaControls": false,
+        "auditReproductionStatus": "감사재현PASS (결함 존재 확인)"
+      },
+      "afterFix": {
+        "totalTriggerCount": 2,
+        "expandedTriggerCount": 1,
+        "allHaveAriaControls": true,
+        "dialogIdMatchesAriaControls": true,
+        "appearanceFocusReturned": true,
+        "actualFixStatus": "실제수정PASS"
+      }
+    }
+  },
+  "viewportMatrix": [
+    {
+      "viewportId": "mobile-320",
+      "route": "/accessibility",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "mobile-320",
+      "route": "/studio/canvas",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "mobile-390",
+      "route": "/accessibility",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "mobile-390",
+      "route": "/studio/canvas",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "tablet-768",
+      "route": "/accessibility",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "tablet-768",
+      "route": "/studio/canvas",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "pc-1440",
+      "route": "/accessibility",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "pc-1440-zoom-200",
+      "route": "/accessibility",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "pc-1440-reduced-motion",
+      "route": "/accessibility",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 0.01,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "pc-1440",
+      "route": "/studio/canvas",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "pc-1440-zoom-200",
+      "route": "/studio/canvas",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 250,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "pc-1440-reduced-motion",
+      "route": "/studio/canvas",
+      "horizontalOverflowPx": 0,
+      "nestedBannerInMainCount": 0,
+      "transitionDurationMs": 0.01,
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    }
+  ]
+}

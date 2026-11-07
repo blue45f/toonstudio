@@ -91,7 +91,7 @@ export function AccessibilityLab() {
               id="accessibility-text-scale"
               type="range"
               min="100"
-              max="160"
+              max="200"
               step="10"
               value={textScale}
               onChange={(event) => setTextScale(Number(event.target.value))}
@@ -173,7 +173,8 @@ function PreferenceToggle({
   return (
     <button
       type="button"
-      aria-pressed={pressed}
+      role="switch"
+      aria-checked={pressed}
       onClick={onToggle}
       className="flex min-h-11 w-full items-center justify-between rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
     >

@@ -121,4 +121,40 @@ describe("FloatingControls 휴대폰 설정 묶음", () => {
 
     expect(screen.getByRole("button", { name: "Display, language and OST settings" })).toBeTruthy();
   });
+
+  it("모바일 펼침 시 토글 버튼 뒤에 패널 DOM이 배치되어 정방향 Tab이 패널로 진입하고 내부 언어 선택 Esc는 부모 패널을 닫지 않는다", () => {
+    const { root, toggle } = renderCluster();
+    fireEvent.click(toggle);
+
+    const panelId = toggle.getAttribute("aria-controls");
+    expect(panelId).toBeTruthy();
+    const mobilePanel = panelId ? document.getElementById(panelId) : null;
+    expect(mobilePanel).toBeTruthy();
+
+    // toggle precedes mobilePanel in DOM order (DOCUMENT_POSITION_FOLLOWING = 4)
+    expect(
+      Boolean(toggle.compareDocumentPosition(mobilePanel!) & Node.DOCUMENT_POSITION_FOLLOWING),
+    ).toBe(true);
+    expect(toggle.parentElement?.className).toContain("flex-col-reverse");
+
+    // Open mobile LanguagePicker and press Escape on its close button: only LanguagePicker closes
+    const langTriggers = [
+      ...(root?.querySelectorAll<HTMLButtonElement>('[data-language-picker="true"] > button') ?? []),
+    ];
+    const mobileLangTrigger = langTriggers[1];
+    expect(mobileLangTrigger).toBeTruthy();
+    fireEvent.click(mobileLangTrigger!);
+    const closeLangBtn = screen.getByRole("button", { name: "언어 선택 닫기" });
+    closeLangBtn.focus();
+    fireEvent.keyDown(closeLangBtn, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog", { name: "언어 선택" })).toBeNull();
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(document.activeElement).toBe(mobileLangTrigger);
+
+    // Pressing Escape again closes the mobile FloatingControls panel and returns focus to toggle
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(toggle);
+  });
 });

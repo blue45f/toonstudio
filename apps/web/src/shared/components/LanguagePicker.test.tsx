@@ -88,5 +88,43 @@ describe("LanguagePicker", () => {
     expect(screen.getAllByRole("option").length).toBeLessThanOrEqual(60);
     fireEvent.keyDown(screen.getByRole("searchbox", { name: "언어 검색" }), { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "언어 선택" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("closes on Escape from the close button or empty search results and restores focus to trigger without bubbling to parent panels", () => {
+    const onParentKeyDown = vi.fn();
+    document.addEventListener("keydown", onParentKeyDown);
+    try {
+      render(<LanguagePicker value="ko" onChange={() => undefined} />);
+
+      const trigger = screen.getByRole("button", { name: "언어 선택" });
+      fireEvent.click(trigger);
+
+      const dialog = screen.getByRole("dialog", { name: "언어 선택" });
+      expect(trigger.getAttribute("aria-controls")).toBe(dialog.id);
+
+      const closeButton = screen.getByRole("button", { name: "언어 선택 닫기" });
+      closeButton.focus();
+      fireEvent.keyDown(closeButton, { key: "Escape" });
+
+      expect(screen.queryByRole("dialog", { name: "언어 선택" })).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+      expect(onParentKeyDown).not.toHaveBeenCalled();
+
+      fireEvent.click(trigger);
+      const searchbox = screen.getByRole("searchbox", { name: "언어 검색" });
+      fireEvent.change(searchbox, { target: { value: "zzzz-no-match-999" } });
+      expect(screen.queryAllByRole("option")).toHaveLength(0);
+
+      const emptyListbox = screen.getByRole("listbox", { name: "언어 검색 결과" });
+      emptyListbox.focus();
+      fireEvent.keyDown(emptyListbox, { key: "Escape" });
+
+      expect(screen.queryByRole("dialog", { name: "언어 선택" })).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+      expect(onParentKeyDown).not.toHaveBeenCalled();
+    } finally {
+      document.removeEventListener("keydown", onParentKeyDown);
+    }
   });
 });
