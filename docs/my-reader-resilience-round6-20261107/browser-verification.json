@@ -1,0 +1,537 @@
+{
+  "verifiedAt": "2026-11-07T15:17:32.467Z",
+  "round": "my-reader-resilience-round6-20261107",
+  "pageErrors": [],
+  "mySpace": {
+    "emptyDataVisible": true,
+    "zeroFilterFromUrlVisible": true,
+    "restoredCountText": "전체 보기 · 14 / 14",
+    "searchZeroVisible": true,
+    "searchClearedAfterEscape": true,
+    "keyboardRoving": {
+      "readerPressedAfterRight": "true",
+      "accountPressedAfterEnd": "true",
+      "allPressedAfterEscape": "true"
+    },
+    "brokenCoverNoticeVisible": true,
+    "longTitleCheck": {
+      "horizontalOverflowPx": 0,
+      "titleOverflowWrap": "break-word",
+      "titleTextOverflow": "clip",
+      "descriptionPresent": true
+    },
+    "viewportMatrix": [
+      {
+        "viewport": "mobile-320",
+        "width": 320,
+        "height": 844,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-filter-reset']",
+            "found": true,
+            "widthPx": 128,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "normal",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-destination-search']",
+            "found": true,
+            "widthPx": 249,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "mobile-390",
+        "width": 390,
+        "height": 844,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-filter-reset']",
+            "found": true,
+            "widthPx": 128,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "normal",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-destination-search']",
+            "found": true,
+            "widthPx": 319,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "tablet-768",
+        "width": 768,
+        "height": 1024,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-filter-reset']",
+            "found": true,
+            "widthPx": 128,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "normal",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-destination-search']",
+            "found": true,
+            "widthPx": 208,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "pc-1440",
+        "width": 1440,
+        "height": 900,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-filter-reset']",
+            "found": true,
+            "widthPx": 128,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "normal",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-destination-search']",
+            "found": true,
+            "widthPx": 208,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "pc-1440-zoom-200",
+        "width": 1440,
+        "height": 900,
+        "zoom": 2,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-filter-reset']",
+            "found": true,
+            "widthPx": 264,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "normal",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 148,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-destination-search']",
+            "found": true,
+            "widthPx": 416,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "reflow-720-equiv200",
+        "width": 720,
+        "height": 450,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='my-space-filter-reset']",
+            "found": true,
+            "widthPx": 128,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "normal",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-role-filter-all']",
+            "found": true,
+            "widthPx": 72,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='my-space-destination-search']",
+            "found": true,
+            "widthPx": 208,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      }
+    ]
+  },
+  "spatialReader": {
+    "emptyJsonAlertText": "문제가 생겼어요비어 있는 파일이에요. 1~32컷의 공간 웹툰 파일을 사용해 주세요.",
+    "alertDismissedByEscape": true,
+    "blankBookFallbackSummary": "제목 없는 공간 웹툰 · 1번째 컷전체 1컷 중 1번째 컷 감상 중",
+    "spatialFilterEmptyAfterReset": 0,
+    "keyboardNavigation": {
+      "domePressedAfterArrow": "true",
+      "summaryStillPanel1": true,
+      "summaryNowPanel2": true
+    },
+    "viewportMatrix": [
+      {
+        "viewport": "mobile-320",
+        "width": 320,
+        "height": 844,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-filter-reset']",
+            "found": true,
+            "widthPx": 78,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 136,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "mobile-390",
+        "width": 390,
+        "height": 844,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-filter-reset']",
+            "found": true,
+            "widthPx": 78,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 136,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "tablet-768",
+        "width": 768,
+        "height": 1024,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-filter-reset']",
+            "found": true,
+            "widthPx": 78,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 136,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "pc-1440",
+        "width": 1440,
+        "height": 900,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-filter-reset']",
+            "found": true,
+            "widthPx": 78,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 136,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "pc-1440-zoom-200",
+        "width": 1440,
+        "height": 900,
+        "zoom": 2,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-filter-reset']",
+            "found": true,
+            "widthPx": 160,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 283,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 271,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 315,
+            "heightPx": 88,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      },
+      {
+        "viewport": "reflow-720-equiv200",
+        "width": 720,
+        "height": 450,
+        "zoom": 1,
+        "horizontalOverflowPx": 0,
+        "targets": [
+          {
+            "selector": "[data-testid='spatial-reader-filter-reset']",
+            "found": true,
+            "widthPx": 78,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-reader-broken-image-recover']",
+            "found": true,
+            "widthPx": 136,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-curve-cylinder-90deg-canopy']",
+            "found": true,
+            "widthPx": 133,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          },
+          {
+            "selector": "[data-testid='spatial-rea-gaze-foveated-depth-dof']",
+            "found": true,
+            "widthPx": 153,
+            "heightPx": 44,
+            "meets44x44": true,
+            "overflowWrap": "anywhere",
+            "textOverflow": "clip"
+          }
+        ],
+        "allTargetsMeet44": true
+      }
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 import { BookOpen, TriangleAlert, X } from "lucide-react";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
 import {
   localSpatialImage,
@@ -33,6 +33,8 @@ const GAZE_FOCUSES = [
   { id: "comfort-vignette-lock", ko: "멀미 방지 비네팅 잠금", en: "Comfort Vignette Lock" },
 ] as const;
 
+type CurvatureModeId = (typeof CURVATURE_MODES)[number]["id"];
+type GazeFocusId = (typeof GAZE_FOCUSES)[number]["id"];
 type SpatialReaderFactory = typeof import("./spatial-reader-runtime")["createSpatialReader"];
 
 /** 여러 장을 한 번에 열 때 이미지 데이터 총량 상한(작품 파일 상한보다 여유를 둔다). */
@@ -40,6 +42,9 @@ const MAX_TOTAL_IMAGE_CHARS = 64_000_000;
 const DEFAULT_PANEL_SECONDS = 6;
 const MS_PER_SECOND = 1000;
 const DEFAULT_AR_SCALE = 0.65;
+/** 깨진 컷/표지 이미지가 감지되었을 때 브라우저 깨진 아이콘 대신 표시하는 유효한 1×1 PNG. */
+const FALLBACK_PANEL_IMAGE =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
 function savedIndex(book: SpatialBook): number {
   try {
@@ -62,13 +67,45 @@ function errorText(cause: unknown, fallback: string): string {
   return cause instanceof Error && cause.message ? cause.message : fallback;
 }
 
+function reaChipClass(active: boolean): string {
+  return active
+    ? "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-accent bg-accent-soft px-3 py-2 text-left text-xs font-semibold leading-snug text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
+    : "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-line bg-panel px-3 py-2 text-left text-xs font-semibold leading-snug text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center";
+}
+
+function stepRovingChip<T extends string>(
+  event: ReactKeyboardEvent<HTMLButtonElement>,
+  order: readonly T[],
+  current: T,
+  onSelect: (next: T) => void,
+  refs: Record<T, HTMLButtonElement | null>,
+): void {
+  const currentIndex = order.indexOf(current);
+  let nextId: T | null = null;
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    nextId = order[(currentIndex + 1) % order.length] ?? order[0];
+  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    nextId = order[(currentIndex - 1 + order.length) % order.length] ?? order[0];
+  } else if (event.key === "Home") {
+    nextId = order[0];
+  } else if (event.key === "End") {
+    nextId = order[order.length - 1] ?? order[0];
+  }
+  if (nextId) {
+    event.preventDefault();
+    event.stopPropagation();
+    onSelect(nextId);
+    refs[nextId]?.focus();
+  }
+}
+
 export function StudioSpatialReaderPage() {
   const bt = useBilingual("StudioSpatialReader");
   const lang = useI18n((state) => state.lang);
   const isKo = lang.startsWith("ko");
   const pickLang = (ko: string, en: string) => (isKo ? ko : en);
-  const [curvatureMode, setCurvatureMode] = useState<(typeof CURVATURE_MODES)[number]["id"]>("cylinder-90deg-canopy");
-  const [gazeFocus, setGazeFocus] = useState<(typeof GAZE_FOCUSES)[number]["id"]>("foveated-depth-dof");
+  const [curvatureMode, setCurvatureMode] = useState<CurvatureModeId>("cylinder-90deg-canopy");
+  const [gazeFocus, setGazeFocus] = useState<GazeFocusId>("foveated-depth-dof");
   const activeCurvature = CURVATURE_MODES.find((item) => item.id === curvatureMode) ?? CURVATURE_MODES[0];
   const activeGaze = GAZE_FOCUSES.find((item) => item.id === gazeFocus) ?? GAZE_FOCUSES[0];
   const [book, setBook] = useState<SpatialBook | null>(null);
@@ -82,10 +119,23 @@ export function StudioSpatialReaderPage() {
   const [runtimeReady, setRuntimeReady] = useState(false);
   const [xr, setXr] = useState<XrSupport>({ vr: null, ar: null });
   const [captionUrl, setCaptionUrl] = useState("");
+  const [brokenPanelIds, setBrokenPanelIds] = useState<string[]>([]);
+  const [panelFilter, setPanelFilter] = useState("");
   const host = useRef<HTMLDivElement>(null);
   const runtime = useRef<SpatialReaderRuntime | null>(null);
   const audio = useRef<HTMLAudioElement>(null);
   const viewerHeading = useRef<HTMLHeadingElement>(null);
+  const panelFilterInputRef = useRef<HTMLInputElement>(null);
+  const curveChipRefs = useRef<Record<CurvatureModeId, HTMLButtonElement | null>>({
+    "cylinder-90deg-canopy": null,
+    "dome-120deg-cinema": null,
+    "floating-panel-stack": null,
+  });
+  const gazeChipRefs = useRef<Record<GazeFocusId, HTMLButtonElement | null>>({
+    "foveated-depth-dof": null,
+    "spatial-binaural-pan": null,
+    "comfort-vignette-lock": null,
+  });
   const loadGeneration = useRef(0);
   // 비동기 파일 읽기가 끝난 시점의 최신 작품(편집 중 다른 작품으로 바뀌었는지 확인용).
   const bookRef = useRef<SpatialBook | null>(book);
@@ -96,8 +146,10 @@ export function StudioSpatialReaderPage() {
     bookRef.current = book;
   }, [book]);
 
-  // 새 작품을 열면 감상 영역으로 이동하고 제목에 초점을 둔다(모바일에서 긴 안내 아래로 직접 스크롤하지 않게).
+  // 새 작품을 열면 이전 깨진 이미지/컷 필터 상태를 초기화하고 감상 영역 제목에 초점을 둔다.
   useEffect(() => {
+    setBrokenPanelIds([]);
+    setPanelFilter("");
     const heading = viewerHeading.current;
     if (!openedBookId || !heading) return;
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -177,10 +229,42 @@ export function StudioSpatialReaderPage() {
     return () => clearTimeout(timer);
   }, [auto, book, index]);
 
+  function dismissError() {
+    setError("");
+    queueMicrotask(() => {
+      if (bookRef.current && viewerHeading.current) {
+        viewerHeading.current.focus({ preventScroll: true });
+        return;
+      }
+      curveChipRefs.current[curvatureMode]?.focus();
+    });
+  }
+
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
-    if (!book || event.isComposing) return;
+    if (event.isComposing || event.defaultPrevented || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.key === "Escape") {
+      if (error) {
+        event.preventDefault();
+        dismissError();
+        return;
+      }
+      if (panelFilter) {
+        event.preventDefault();
+        setPanelFilter("");
+        return;
+      }
+    }
+    if (!book) return;
     const target = event.target;
-    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
+    if (
+      target instanceof HTMLInputElement
+      || target instanceof HTMLTextAreaElement
+      || target instanceof HTMLSelectElement
+      || target instanceof HTMLAudioElement
+      || (target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('[data-testid="spatial-reader-rea-webxr-fov-bar"]'))))
+    ) {
+      return;
+    }
     if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
     const next = event.key === "Home"
@@ -280,7 +364,17 @@ export function StudioSpatialReaderPage() {
   function openBook(file: File) {
     void openWith(async () => {
       if (file.size > SPATIAL_MAX_BOOK_BYTES) throw new Error(bt("공간 웹툰 파일은 80MB 이하여야 해요.", "Spatial webtoon files must be 80MB or smaller."));
-      const next = parseSpatialBook(JSON.parse(await file.text()));
+      const rawText = (await file.text()).trim();
+      if (!rawText) {
+        throw new Error(bt("비어 있는 파일이에요. 1~32컷의 공간 웹툰 파일을 사용해 주세요.", "The file is empty. Please use a 1–32 panel spatial webtoon file."));
+      }
+      let parsedJson: unknown;
+      try {
+        parsedJson = JSON.parse(rawText);
+      } catch {
+        throw new Error(bt("손상된 JSON 파일이에요. 1~32컷의 공간 웹툰 파일을 사용해 주세요.", "The JSON file is corrupted. Please use a 1–32 panel spatial webtoon file."));
+      }
+      const next = parseSpatialBook(parsedJson);
       return { book: next, index: savedIndex(next), message: bt("저장한 공간 웹툰과 감상 위치를 불러왔어요.", "Loaded the saved spatial webtoon and your reading position.") };
     }, bt("공간 웹툰을 열지 못했어요.", "Couldn't open the spatial webtoon."));
   }
@@ -373,8 +467,37 @@ export function StudioSpatialReaderPage() {
     reader.readAsDataURL(file);
   }
 
+  const viewerBook: SpatialBook | null = book
+    ? {
+        ...book,
+        title: book.title.trim() || bt("제목 없는 공간 웹툰", "Untitled spatial webtoon"),
+        panels: book.panels.map((item, i) => {
+          const fallbackTitle = item.title.trim() || (isKo ? `${i + 1}번째 컷` : `Panel ${i + 1}`);
+          return {
+            ...item,
+            title: fallbackTitle,
+            alt: item.alt.trim() || fallbackTitle,
+            src: brokenPanelIds.includes(item.id) ? FALLBACK_PANEL_IMAGE : item.src,
+          };
+        }),
+      }
+    : null;
+  const viewerPanel = viewerBook?.panels[index];
+  const normalizedPanelFilter = panelFilter.trim().toLowerCase();
+  const matchingPanels = viewerBook
+    ? viewerBook.panels
+        .map((item, panelIndex) => ({ item, panelIndex }))
+        .filter(({ item, panelIndex }) => (
+          !normalizedPanelFilter
+          || String(panelIndex + 1) === normalizedPanelFilter
+          || item.title.toLowerCase().includes(normalizedPanelFilter)
+          || item.caption.toLowerCase().includes(normalizedPanelFilter)
+          || item.alt.toLowerCase().includes(normalizedPanelFilter)
+        ))
+    : [];
+
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1400px] min-w-0 flex-col gap-6 px-4 py-8 [overflow-wrap:anywhere] sm:px-6">
       <SpatialReaderIntro busy={busy} onOpenImages={openImages} onOpenBook={openBook} onOpenSample={openSample} />
 
       <section
@@ -403,21 +526,19 @@ export function StudioSpatialReaderPage() {
           aria-label={pickLang("곡률 모드", "Curvature Mode")}
           className="mt-3 flex flex-wrap items-center gap-2"
         >
-          <span className="text-xs font-semibold text-fg-2">
-            {pickLang("곡률 모드:", "Curvature Mode:")}
-          </span>
+          <span className="text-xs font-semibold text-fg-2">{pickLang("곡률 모드:", "Curvature Mode:")}</span>
           {CURVATURE_MODES.map((item) => (
             <button
               key={item.id}
+              ref={(node) => {
+                curveChipRefs.current[item.id] = node;
+              }}
               type="button"
               data-testid={`spatial-rea-curve-${item.id}`}
               aria-pressed={curvatureMode === item.id}
               onClick={() => setCurvatureMode(item.id)}
-              className={
-                curvatureMode === item.id
-                  ? "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-accent bg-accent-soft px-3 py-2 text-left text-xs font-semibold leading-snug text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
-                  : "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-line bg-panel px-3 py-2 text-left text-xs font-semibold leading-snug text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
-              }
+              onKeyDown={(event) => stepRovingChip(event, CURVATURE_MODES.map((m) => m.id), curvatureMode, setCurvatureMode, curveChipRefs.current)}
+              className={reaChipClass(curvatureMode === item.id)}
             >
               {pickLang(item.ko, item.en)}
             </button>
@@ -428,21 +549,19 @@ export function StudioSpatialReaderPage() {
           aria-label={pickLang("시선 포커스", "Gaze Focus")}
           className="mt-2 flex flex-wrap items-center gap-2"
         >
-          <span className="text-xs font-semibold text-fg-2">
-            {pickLang("시선 포커스:", "Gaze Focus:")}
-          </span>
+          <span className="text-xs font-semibold text-fg-2">{pickLang("시선 포커스:", "Gaze Focus:")}</span>
           {GAZE_FOCUSES.map((item) => (
             <button
               key={item.id}
+              ref={(node) => {
+                gazeChipRefs.current[item.id] = node;
+              }}
               type="button"
               data-testid={`spatial-rea-gaze-${item.id}`}
               aria-pressed={gazeFocus === item.id}
               onClick={() => setGazeFocus(item.id)}
-              className={
-                gazeFocus === item.id
-                  ? "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-accent bg-accent-soft px-3 py-2 text-left text-xs font-semibold leading-snug text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
-                  : "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-line bg-panel px-3 py-2 text-left text-xs font-semibold leading-snug text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
-              }
+              onKeyDown={(event) => stepRovingChip(event, GAZE_FOCUSES.map((m) => m.id), gazeFocus, setGazeFocus, gazeChipRefs.current)}
+              className={reaChipClass(gazeFocus === item.id)}
             >
               {pickLang(item.ko, item.en)}
             </button>
@@ -465,11 +584,11 @@ export function StudioSpatialReaderPage() {
           <TriangleAlert size={18} aria-hidden className="mt-0.5 shrink-0 text-bad" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-fg">{bt("문제가 생겼어요", "Something went wrong")}</p>
-            <p className="mt-1 text-sm leading-relaxed text-fg-2">{error}</p>
+            <p className="mt-1 break-words [overflow-wrap:anywhere] text-sm leading-relaxed text-fg-2">{error}</p>
           </div>
           <button
             type="button"
-            onClick={() => setError("")}
+            onClick={dismissError}
             aria-label={bt("안내 닫기", "Dismiss")}
             className="grid size-11 shrink-0 place-items-center rounded-xl text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
@@ -489,35 +608,145 @@ export function StudioSpatialReaderPage() {
         </div>
       ) : null}
 
-      {book && panel ? (
+      {book && panel && viewerBook && viewerPanel ? (
         <>
-          <SpatialReaderViewer
-            book={book}
-            index={index}
-            view={view}
-            auto={auto}
-            runtimeReady={runtimeReady}
-            xr={xr}
-            hostRef={host}
-            audioRef={audio}
-            headingRef={viewerHeading}
-            captionUrl={captionUrl}
-            onView={(next) => {
-              setView(next);
-              if (next === "2d") setAuto(false);
+          <div
+            data-testid="spatial-reader-panel-filter-bar"
+            className="flex flex-col gap-3 rounded-2xl border border-line bg-card/70 p-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0 flex-1" data-testid="spatial-reader-work-summary">
+                <p className="break-words [overflow-wrap:anywhere] text-xs font-semibold text-fg">
+                  {viewerBook.title} · {viewerPanel.title}
+                </p>
+                <p className="mt-0.5 text-xs text-fg-2">
+                  {pickLang(
+                    `전체 ${viewerBook.panels.length}컷 중 ${index + 1}번째 컷 감상 중`,
+                    `Viewing panel ${index + 1} of ${viewerBook.panels.length}`,
+                  )}
+                </p>
+              </div>
+              <input
+                ref={panelFilterInputRef}
+                type="search"
+                value={panelFilter}
+                onChange={(event) => setPanelFilter(event.target.value)}
+                aria-label={bt("컷 제목·대사 필터", "Filter panels by title or dialogue")}
+                placeholder={bt("컷 번호·제목·대사로 찾기", "Filter by panel number, title, or dialogue")}
+                data-testid="spatial-reader-panel-filter-input"
+                className="min-h-11 w-full rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg placeholder:text-fg-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-64"
+              />
+            </div>
+
+            {normalizedPanelFilter ? (
+              matchingPanels.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-2" role="group" aria-label={bt("필터된 컷 바로가기", "Filtered panels")}>
+                  {matchingPanels.map(({ item, panelIndex }) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      data-testid={`spatial-reader-filtered-panel-${panelIndex + 1}`}
+                      aria-pressed={panelIndex === index}
+                      onClick={() => focus(panelIndex)}
+                      className="inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! items-center gap-1.5 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      <span className="numeral text-accent">#{panelIndex + 1}</span>
+                      <span className="break-words [overflow-wrap:anywhere]">{item.title}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  data-testid="spatial-reader-filter-empty"
+                  className="flex flex-col items-start justify-between gap-2 rounded-xl border border-dashed border-line bg-panel/60 p-3 sm:flex-row sm:items-center"
+                >
+                  <p className="text-xs text-fg-2">
+                    {bt(
+                      "조건에 맞는 컷이 없습니다 (0건). 현재 감상 중인 컷 위치는 그대로 유지됩니다.",
+                      "No panels match the filter (0 results). Your current panel position is preserved.",
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="spatial-reader-filter-reset"
+                    onClick={() => {
+                      setPanelFilter("");
+                      panelFilterInputRef.current?.focus();
+                    }}
+                    className="inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! shrink-0 items-center justify-center rounded-xl border border-line bg-card px-3 py-2 text-xs font-semibold text-fg hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    {bt("필터 초기화", "Reset filter")}
+                  </button>
+                </div>
+              )
+            ) : null}
+          </div>
+
+          {brokenPanelIds.length > 0 ? (
+            <div
+              role="status"
+              aria-live="polite"
+              data-testid="spatial-reader-broken-image-notice"
+              className="flex flex-col items-start justify-between gap-2 rounded-2xl border border-line bg-panel/70 p-4 sm:flex-row sm:items-center"
+            >
+              <p className="text-xs leading-relaxed text-fg-2">
+                {bt(
+                  "일부 컷 이미지를 불러오지 못해 기본 대체 표지로 표시하고 있어요. 다른 파일을 열거나 샘플 작품으로 다시 시작할 수 있습니다.",
+                  "Some panel images could not be loaded and were replaced with a fallback cover. You can open another file or restart with the sample work.",
+                )}
+              </p>
+              <button
+                type="button"
+                data-testid="spatial-reader-broken-image-recover"
+                onClick={openSample}
+                className="inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! shrink-0 items-center justify-center rounded-xl border border-line bg-card px-3.5 py-2 text-xs font-semibold text-fg hover:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                {bt("샘플 작품으로 다시 열기", "Reopen sample work")}
+              </button>
+            </div>
+          ) : null}
+
+          <div
+            data-testid="spatial-reader-viewer-stage"
+            onErrorCapture={(event) => {
+              const target = event.target;
+              if (!(target instanceof HTMLImageElement)) return;
+              const failedSrc = target.getAttribute("src") ?? "";
+              const matched = book.panels.find((item) => item.src === failedSrc) ?? panel;
+              if (!matched) return;
+              setBrokenPanelIds((prev) => (prev.includes(matched.id) ? prev : [...prev, matched.id]));
             }}
-            onFocus={focus}
-            onToggleAuto={toggleAuto}
-            onEnter={(mode) => void enter(mode)}
-            onExit={() => void runtime.current?.exit().catch((cause: unknown) => setError(errorText(cause, bt("AR/VR을 종료하지 못했어요.", "Couldn't exit AR/VR."))))}
-            onExport={() => {
-              try {
-                downloadBook(book);
-              } catch (cause) {
-                setError(errorText(cause, bt("작품 파일을 만들지 못했어요.", "Couldn't create the work file.")));
-              }
-            }}
-          />
+          >
+            <SpatialReaderViewer
+              book={viewerBook}
+              index={index}
+              view={view}
+              auto={auto}
+              runtimeReady={runtimeReady}
+              xr={xr}
+              hostRef={host}
+              audioRef={audio}
+              headingRef={viewerHeading}
+              captionUrl={captionUrl}
+              onView={(next) => {
+                setView(next);
+                if (next === "2d") setAuto(false);
+              }}
+              onFocus={focus}
+              onToggleAuto={toggleAuto}
+              onEnter={(mode) => void enter(mode)}
+              onExit={() => void runtime.current?.exit().catch((cause: unknown) => setError(errorText(cause, bt("AR/VR을 종료하지 못했어요.", "Couldn't exit AR/VR."))))}
+              onExport={() => {
+                try {
+                  downloadBook(book);
+                } catch (cause) {
+                  setError(errorText(cause, bt("작품 파일을 만들지 못했어요.", "Couldn't create the work file.")));
+                }
+              }}
+            />
+          </div>
           <SpatialReaderEditPanel
             book={book}
             panel={panel}
