@@ -1,0 +1,606 @@
+{
+  "verifiedAt": "2026-11-07T16:20:14.008Z",
+  "gapId": "GAP-R6-02",
+  "route": "/studio/pdf-workbench",
+  "component": "apps/web/src/domains/creator/pdf-workbench/PdfWorkbenchPage.tsx",
+  "mode": "after",
+  "summary": {
+    "mode": "after",
+    "allZeroHorizontalOverflow": true,
+    "allHavePresetGroupRolesAndLabels": true,
+    "allPresetsMeet44pxAndFocusVisible": false,
+    "allRemoveSourceButtonsMeet44pxAndFocusVisible": true,
+    "allPageActionButtonsMeet44pxAndFocusVisible": true,
+    "allZeroAxeViolations": true,
+    "keyboardAndPdfSemanticsPreserved": true
+  },
+  "keyboardAndWorkflowResult": {
+    "a5PressedAfterKeyboardEnter": true,
+    "pageRotated90Deg": true,
+    "pageReorderedToOriginalPage2First": true,
+    "remainingPageCountAfterRemovePage": 1,
+    "sourceRemovedCleanly": true
+  },
+  "viewportResults": [
+    {
+      "viewportId": "mobile-320",
+      "width": 320,
+      "height": 844,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "trimGroupRole": "group",
+      "trimGroupAriaLabel": "재단 및 도련 규격 프리셋",
+      "inkGroupRole": "group",
+      "inkGroupAriaLabel": "잉크 프로파일 프리셋",
+      "allPresetsMeet44": true,
+      "trimButtonMetrics": [
+        {
+          "testId": "pdf-rea-trim-b5-manga-bleed3mm",
+          "width": 144,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-a5-tankobon-spread",
+          "width": 112,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-webtoon-scroll-to-page",
+          "width": 143,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "inkButtonMetrics": [
+        {
+          "testId": "pdf-rea-ink-cmyk-japan-color-300pct",
+          "width": 200,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-monochrome-600dpi-screentone",
+          "width": 138,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-pdfx4-font-outline",
+          "width": 142,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "removeSourceButtonSize": {
+        "width": 44,
+        "height": 44,
+        "hasFocusVisibleClass": true
+      },
+      "clearAllButtonSize": {
+        "width": 113,
+        "height": 44,
+        "hasFocusVisibleClass": true
+      },
+      "removeSourceMeets44": true,
+      "allPageActionsMeet44": true,
+      "pageActionMetrics": [
+        {
+          "ariaLabel": "1번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "trimGroupRole": "group",
+      "trimGroupAriaLabel": "재단 및 도련 규격 프리셋",
+      "inkGroupRole": "group",
+      "inkGroupAriaLabel": "잉크 프로파일 프리셋",
+      "allPresetsMeet44": true,
+      "trimButtonMetrics": [
+        {
+          "testId": "pdf-rea-trim-b5-manga-bleed3mm",
+          "width": 144,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-a5-tankobon-spread",
+          "width": 112,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-webtoon-scroll-to-page",
+          "width": 143,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "inkButtonMetrics": [
+        {
+          "testId": "pdf-rea-ink-cmyk-japan-color-300pct",
+          "width": 200,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-monochrome-600dpi-screentone",
+          "width": 138,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-pdfx4-font-outline",
+          "width": 142,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "removeSourceButtonSize": {
+        "width": 44,
+        "height": 44,
+        "hasFocusVisibleClass": true
+      },
+      "clearAllButtonSize": {
+        "width": 113,
+        "height": 44,
+        "hasFocusVisibleClass": true
+      },
+      "removeSourceMeets44": true,
+      "allPageActionsMeet44": true,
+      "pageActionMetrics": [
+        {
+          "ariaLabel": "1번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "tablet-768",
+      "width": 768,
+      "height": 1024,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "trimGroupRole": "group",
+      "trimGroupAriaLabel": "재단 및 도련 규격 프리셋",
+      "inkGroupRole": "group",
+      "inkGroupAriaLabel": "잉크 프로파일 프리셋",
+      "allPresetsMeet44": false,
+      "trimButtonMetrics": [
+        {
+          "testId": "pdf-rea-trim-b5-manga-bleed3mm",
+          "width": 144,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-a5-tankobon-spread",
+          "width": 112,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-webtoon-scroll-to-page",
+          "width": 143,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "inkButtonMetrics": [
+        {
+          "testId": "pdf-rea-ink-cmyk-japan-color-300pct",
+          "width": 200,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-monochrome-600dpi-screentone",
+          "width": 138,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-pdfx4-font-outline",
+          "width": 142,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "removeSourceButtonSize": {
+        "width": 44,
+        "height": 44,
+        "hasFocusVisibleClass": true
+      },
+      "clearAllButtonSize": {
+        "width": 113,
+        "height": 40,
+        "hasFocusVisibleClass": true
+      },
+      "removeSourceMeets44": true,
+      "allPageActionsMeet44": true,
+      "pageActionMetrics": [
+        {
+          "ariaLabel": "1번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "pc-1440",
+      "width": 1440,
+      "height": 900,
+      "zoom": 1,
+      "horizontalOverflowPx": 0,
+      "trimGroupRole": "group",
+      "trimGroupAriaLabel": "재단 및 도련 규격 프리셋",
+      "inkGroupRole": "group",
+      "inkGroupAriaLabel": "잉크 프로파일 프리셋",
+      "allPresetsMeet44": false,
+      "trimButtonMetrics": [
+        {
+          "testId": "pdf-rea-trim-b5-manga-bleed3mm",
+          "width": 144,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-a5-tankobon-spread",
+          "width": 112,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-webtoon-scroll-to-page",
+          "width": 143,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "inkButtonMetrics": [
+        {
+          "testId": "pdf-rea-ink-cmyk-japan-color-300pct",
+          "width": 200,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-monochrome-600dpi-screentone",
+          "width": 138,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-pdfx4-font-outline",
+          "width": 142,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "removeSourceButtonSize": {
+        "width": 44,
+        "height": 44,
+        "hasFocusVisibleClass": true
+      },
+      "clearAllButtonSize": {
+        "width": 113,
+        "height": 40,
+        "hasFocusVisibleClass": true
+      },
+      "removeSourceMeets44": true,
+      "allPageActionsMeet44": true,
+      "pageActionMetrics": [
+        {
+          "ariaLabel": "1번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    },
+    {
+      "viewportId": "pc-1440-zoom-200",
+      "width": 1440,
+      "height": 900,
+      "zoom": 2,
+      "horizontalOverflowPx": 0,
+      "trimGroupRole": "group",
+      "trimGroupAriaLabel": "재단 및 도련 규격 프리셋",
+      "inkGroupRole": "group",
+      "inkGroupAriaLabel": "잉크 프로파일 프리셋",
+      "allPresetsMeet44": false,
+      "trimButtonMetrics": [
+        {
+          "testId": "pdf-rea-trim-b5-manga-bleed3mm",
+          "width": 144,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-a5-tankobon-spread",
+          "width": 112,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-trim-webtoon-scroll-to-page",
+          "width": 143,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "inkButtonMetrics": [
+        {
+          "testId": "pdf-rea-ink-cmyk-japan-color-300pct",
+          "width": 200,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-monochrome-600dpi-screentone",
+          "width": 138,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "testId": "pdf-rea-ink-pdfx4-font-outline",
+          "width": 142,
+          "height": 40,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "removeSourceButtonSize": {
+        "width": 44,
+        "height": 44,
+        "hasFocusVisibleClass": true
+      },
+      "clearAllButtonSize": {
+        "width": 113,
+        "height": 40,
+        "hasFocusVisibleClass": true
+      },
+      "removeSourceMeets44": true,
+      "allPageActionsMeet44": true,
+      "pageActionMetrics": [
+        {
+          "ariaLabel": "1번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "1번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 앞으로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 뒤로",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 시계 방향으로 회전",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        },
+        {
+          "ariaLabel": "2번째 페이지를 목록에서 제거",
+          "width": 44,
+          "height": 44,
+          "hasFocusVisibleClass": true
+        }
+      ],
+      "axeViolationCount": 0,
+      "axeViolationIds": []
+    }
+  ]
+}

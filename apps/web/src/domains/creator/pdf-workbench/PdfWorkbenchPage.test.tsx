@@ -60,4 +60,73 @@ describe("PdfWorkbenchPage — REA 단행본 인쇄 도련 & CMYK 프리플라�
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByTestId("pdf-workbench-rea-status").textContent).toContain("Trim:");
   });
+
+  it("GAP-R6-02: 재단·잉크 프리셋 그룹 시맨틱(role=group, aria-label), 44px(min-h-11/size-11) 타깃 및 포커스 가시성을 보장한다", async () => {
+    const { PDFDocument } = await import("pdf-lib");
+    const doc = await PDFDocument.create();
+    doc.addPage([420, 595]);
+    doc.addPage([420, 595]);
+    const rawBytes = await doc.save();
+    const pdfBytes = new Uint8Array(rawBytes.length);
+    pdfBytes.set(rawBytes);
+    const file = new File([pdfBytes], "sample-gap-r6-02.pdf", { type: "application/pdf" });
+    Object.defineProperty(file, "arrayBuffer", {
+      value: async () => pdfBytes.buffer.slice(0),
+    });
+
+    render(<PdfWorkbenchPage />);
+
+    const trimGroup = screen.getByRole("group", { name: "재단 및 도련 규격 프리셋" });
+    const inkGroup = screen.getByRole("group", { name: "잉크 프로파일 프리셋" });
+    expect(trimGroup).toBeTruthy();
+    expect(inkGroup).toBeTruthy();
+
+    const trimBtn = screen.getByTestId("pdf-rea-trim-b5-manga-bleed3mm");
+    const inkBtn = screen.getByTestId("pdf-rea-ink-cmyk-japan-color-300pct");
+    expect(trimBtn.className).toContain("min-h-11");
+    expect(trimBtn.className).toContain("focus-visible:outline-2");
+    expect(inkBtn.className).toContain("min-h-11");
+    expect(inkBtn.className).toContain("focus-visible:outline-2");
+
+    const fileInput = screen.getByLabelText("PDF 파일 선택");
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    const removeSourceBtn = await screen.findByRole("button", {
+      name: "sample-gap-r6-02.pdf 빼기",
+    });
+    expect(removeSourceBtn.className).toContain("size-11");
+    expect(removeSourceBtn.className).toContain("min-h-11");
+    expect(removeSourceBtn.className).toContain("min-w-11");
+    expect(removeSourceBtn.className).toContain("focus-visible:outline-2");
+
+    const page1ActionsGroup = screen.getByRole("group", { name: "1번째 페이지 조작" });
+    expect(page1ActionsGroup).toBeTruthy();
+
+    const moveEarlierBtn = screen.getByRole("button", { name: "2번째 페이지를 앞으로" });
+    const rotateBtn = screen.getByRole("button", { name: "1번째 페이지를 시계 방향으로 회전" });
+    const removePageBtn = screen.getByRole("button", { name: "1번째 페이지를 목록에서 제거" });
+
+    for (const btn of [moveEarlierBtn, rotateBtn, removePageBtn]) {
+      expect(btn.className).toContain("size-11");
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("min-w-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+    }
+
+    // 페이지 회전·순서 이동·제거 및 파일 빼기 의미가 그대로 유지되는지 검증
+    fireEvent.click(rotateBtn);
+    expect(screen.getByText(/원본 1페이지 · 90°/u)).toBeTruthy();
+
+    fireEvent.click(moveEarlierBtn);
+    const pageItems = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes("원본"));
+    expect(pageItems[0]?.textContent).toContain("1. sample-gap-r6-02.pdf · 원본 2페이지");
+
+    fireEvent.click(screen.getByRole("button", { name: "1번째 페이지를 목록에서 제거" }));
+    expect(screen.getByText("페이지 1장")).toBeTruthy();
+
+    fireEvent.click(removeSourceBtn);
+    expect(screen.getByRole("status").textContent).toContain(
+      "sample-gap-r6-02.pdf을(를) 워크벤치에서 뺐어요.",
+    );
+  });
 });
