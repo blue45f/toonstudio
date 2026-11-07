@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-11-07T16:20:14.008Z",
+  "verifiedAt": "2026-11-07T16:22:54.308Z",
   "gapId": "GAP-R6-02",
   "route": "/studio/pdf-workbench",
   "component": "apps/web/src/domains/creator/pdf-workbench/PdfWorkbenchPage.tsx",
@@ -8,7 +8,7 @@
     "mode": "after",
     "allZeroHorizontalOverflow": true,
     "allHavePresetGroupRolesAndLabels": true,
-    "allPresetsMeet44pxAndFocusVisible": false,
+    "allPresetsMeet44pxAndFocusVisible": true,
     "allRemoveSourceButtonsMeet44pxAndFocusVisible": true,
     "allPageActionButtonsMeet44pxAndFocusVisible": true,
     "allZeroAxeViolations": true,
@@ -264,24 +264,24 @@
       "trimGroupAriaLabel": "재단 및 도련 규격 프리셋",
       "inkGroupRole": "group",
       "inkGroupAriaLabel": "잉크 프로파일 프리셋",
-      "allPresetsMeet44": false,
+      "allPresetsMeet44": true,
       "trimButtonMetrics": [
         {
           "testId": "pdf-rea-trim-b5-manga-bleed3mm",
           "width": 144,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-trim-a5-tankobon-spread",
           "width": 112,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-trim-webtoon-scroll-to-page",
           "width": 143,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         }
       ],
@@ -289,19 +289,19 @@
         {
           "testId": "pdf-rea-ink-cmyk-japan-color-300pct",
           "width": 200,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-ink-monochrome-600dpi-screentone",
           "width": 138,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-ink-pdfx4-font-outline",
           "width": 142,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         }
       ],
@@ -312,7 +312,7 @@
       },
       "clearAllButtonSize": {
         "width": 113,
-        "height": 40,
+        "height": 44,
         "hasFocusVisibleClass": true
       },
       "removeSourceMeets44": true,
@@ -380,24 +380,24 @@
       "trimGroupAriaLabel": "재단 및 도련 규격 프리셋",
       "inkGroupRole": "group",
       "inkGroupAriaLabel": "잉크 프로파일 프리셋",
-      "allPresetsMeet44": false,
+      "allPresetsMeet44": true,
       "trimButtonMetrics": [
         {
           "testId": "pdf-rea-trim-b5-manga-bleed3mm",
           "width": 144,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-trim-a5-tankobon-spread",
           "width": 112,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-trim-webtoon-scroll-to-page",
           "width": 143,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         }
       ],
@@ -405,19 +405,19 @@
         {
           "testId": "pdf-rea-ink-cmyk-japan-color-300pct",
           "width": 200,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-ink-monochrome-600dpi-screentone",
           "width": 138,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-ink-pdfx4-font-outline",
           "width": 142,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         }
       ],
@@ -428,7 +428,7 @@
       },
       "clearAllButtonSize": {
         "width": 113,
-        "height": 40,
+        "height": 44,
         "hasFocusVisibleClass": true
       },
       "removeSourceMeets44": true,
@@ -496,24 +496,24 @@
       "trimGroupAriaLabel": "재단 및 도련 규격 프리셋",
       "inkGroupRole": "group",
       "inkGroupAriaLabel": "잉크 프로파일 프리셋",
-      "allPresetsMeet44": false,
+      "allPresetsMeet44": true,
       "trimButtonMetrics": [
         {
           "testId": "pdf-rea-trim-b5-manga-bleed3mm",
           "width": 144,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-trim-a5-tankobon-spread",
           "width": 112,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-trim-webtoon-scroll-to-page",
           "width": 143,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         }
       ],
@@ -521,19 +521,19 @@
         {
           "testId": "pdf-rea-ink-cmyk-japan-color-300pct",
           "width": 200,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-ink-monochrome-600dpi-screentone",
           "width": 138,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         },
         {
           "testId": "pdf-rea-ink-pdfx4-font-outline",
           "width": 142,
-          "height": 40,
+          "height": 44,
           "hasFocusVisibleClass": true
         }
       ],
@@ -544,7 +544,7 @@
       },
       "clearAllButtonSize": {
         "width": 113,
-        "height": 40,
+        "height": 44,
         "hasFocusVisibleClass": true
       },
       "removeSourceMeets44": true,
