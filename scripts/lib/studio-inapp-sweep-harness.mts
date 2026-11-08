@@ -333,6 +333,7 @@ export async function selectStudioInAppInactiveBrush(
   interaction: {
     click: (locator: Locator) => Promise<void>;
     settle: () => Promise<void>;
+    prepareVerification?: () => Promise<void>;
   },
 ): Promise<void> {
   const candidates = library.locator('button[data-studio-brush-select]:not([aria-pressed="true"])');
@@ -349,6 +350,7 @@ export async function selectStudioInAppInactiveBrush(
     }
     await interaction.click(selected);
     await interaction.settle();
+    await interaction.prepareVerification?.();
     if (await selected.getAttribute("aria-pressed") !== "true") {
       throw new Error("selected brush did not become active");
     }

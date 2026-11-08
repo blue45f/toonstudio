@@ -135,6 +135,8 @@ async function clickInView(locator: Locator, timeout = 15_000): Promise<void> {
         tag: node.tagName,
         id: node.id,
         aria: node.getAttribute("aria-label"),
+        testId: node.getAttribute("data-testid"),
+        disabled: node instanceof HTMLButtonElement ? node.disabled : null,
         className: typeof node.className === "string" ? node.className.slice(0, 160) : "",
         pointerEvents: getComputedStyle(node).pointerEvents,
       }));
@@ -148,10 +150,10 @@ async function clickInView(locator: Locator, timeout = 15_000): Promise<void> {
 }
 
 async function openDrawSettings(page: Page): Promise<Locator> {
-  // 브러시 설정은 접힌 작업 메뉴 안에 있으므로 사용자와 같은 순서로 펼친다.
-  await expandWorkRow(page);
+  // 펜 선택은 작업 메뉴를 닫으므로 도구를 먼저 고른 뒤 설정 메뉴를 펼친다.
   const pen = dock(page).locator('button[data-studio-primary-action="draw"]');
   if (await pen.getAttribute("aria-pressed") !== "true") await clickInView(pen);
+  await expandWorkRow(page);
   const settings = dock(page).getByRole("button", { name: "브러시 설정 (굵기·색·프리셋)", exact: true });
   if (await settings.getAttribute("aria-expanded") !== "true") await clickInView(settings);
   const sheet = page.locator("#studio-mobile-draw-settings");
@@ -193,35 +195,24 @@ async function clickLocator(
   for (let index = 0; index < Math.min(count, 6); index += 1) {
     const candidate = locator.nth(index);
     if (!(await candidate.isVisible().catch(() => false))) continue;
-    await candidate.evaluate((element) => {
-      element.scrollIntoView({ block: "center", inline: "center" });
-    });
     try {
-      await candidate.click({ timeout: 5_000 });
+      await clickInView(candidate, 5_000);
     } catch (error) {
-      const blocker = await candidate.evaluate((element) => {
-        const rect = element.getBoundingClientRect();
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
-        return document.elementsFromPoint(x, y).slice(0, 6).map((node) => ({
-          tag: node.tagName,
-          id: node.id,
-          aria: node.getAttribute("aria-label"),
-          testId: node.getAttribute("data-testid"),
-          className: typeof node.className === "string" ? node.className.slice(0, 160) : "",
-          pointerEvents: getComputedStyle(node).pointerEvents,
-        }));
-      }).catch(() => []);
-      const detail = error instanceof Error ? error.message.split("\n")[0] : String(error);
-      throw new Error(
-        what + ": click failed (" + detail + "); hit-test=" + JSON.stringify(blocker),
-        { cause: error },
-      );
+      throw new Error(what + ": " + (error instanceof Error ? error.message : String(error)), { cause: error });
     }
     await settle(page);
     return "ok";
   }
   throw new Error(`${what}: required action is present but not visible on this profile`);
+}
+
+/** 작업 메뉴가 닫혀 있어도 먼저 열고, 클릭한 도구의 선택 상태까지 확인한다. */
+async function selectWorkspaceTool(page: Page, name: string): Promise<"ok"> {
+  await expandWorkRow(page);
+  const tool = dock(page).getByRole("button", { name, exact: true, includeHidden: true });
+  await clickLocator(page, tool, name);
+  if (await tool.getAttribute("aria-pressed") !== "true") throw new Error(name + ": tool did not activate");
+  return "ok";
 }
 
 const STEPS: readonly StudioInAppStep[] = Object.freeze([
@@ -239,11 +230,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
   {
     id: "tool-select",
     label: "선택 도구",
-    run: (page) => clickLocator(
-      page,
-      dock(page).getByRole("button", { name: "선택", exact: true }),
-      "select tool",
-    ),
+    run: (page) => selectWorkspaceTool(page, "선택"),
   },
   {
     id: "tool-pen",
@@ -262,11 +249,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
   {
     id: "tool-pixel",
     label: "픽셀 펜",
-    run: (page) => clickLocator(
-      page,
-      dock(page).getByRole("button", { name: "픽셀", exact: true }),
-      "pixel tool",
-    ),
+    run: (page) => selectWorkspaceTool(page, "픽셀"),
   },
   {
     id: "draw-stroke-pixel",
@@ -290,20 +273,12 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
   {
     id: "tool-fill",
     label: "채우기 도구",
-    run: (page) => clickLocator(
-      page,
-      dock(page).getByRole("button", { name: "채우기", exact: true }),
-      "fill tool",
-    ),
+    run: (page) => selectWorkspaceTool(page, "채우기"),
   },
   {
     id: "tool-shape",
     label: "도형 도구",
-    run: (page) => clickLocator(
-      page,
-      dock(page).getByRole("button", { name: "도형", exact: true }),
-      "shape tool",
-    ),
+    run: (page) => selectWorkspaceTool(page, "도형"),
   },
   {
     id: "draw-shape",
@@ -360,14 +335,20 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "brush-colour-swatch",
     label: "색상 선택",
     run: async (page) => {
-      const sheet = await openDrawSettings(page);
-      const swatches = sheet.getByRole("button", { name: /^색상 #/u });
-      if (await swatches.count() === 0) throw new Error("brush colour swatches are missing");
-      for (const swatch of await swatches.all()) {
-        await clickInView(swatch);
-        if (await swatch.getAttribute("aria-pressed") !== "true") throw new Error("selected colour was not applied");
+      await clickInView(dock(page).getByRole("button", { name: "브러시 색상", exact: true }));
+      const controls = dock(page).locator('[data-studio-mobile-color-controls="true"]');
+      await controls.waitFor({ state: "visible" });
+      const well = controls.locator('[data-studio-dual-color-well="true"]');
+      const original = await well.getAttribute("data-studio-primary-color");
+      if (!original) throw new Error("current brush colour is missing");
+      for (const color of [original === "#2468ac" ? "#ac6824" : "#2468ac", original]) {
+        await clickInView(well.getByRole("button", { name: "주 색", exact: true }));
+        const popover = page.getByRole("dialog", { name: "주 색 선택", exact: true });
+        await popover.getByRole("textbox", { name: "헥스 색상 코드", exact: true }).fill(color);
+        await clickInView(popover.getByRole("button", { name: "색상 적용", exact: true }));
+        await popover.waitFor({ state: "detached" });
+        if (await well.getAttribute("data-studio-primary-color") !== color) throw new Error("selected colour was not applied");
       }
-      await clickInView(swatches.first());
       return "ok";
     },
   },
@@ -418,6 +399,12 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       await selectStudioInAppInactiveBrush(library, {
         click: (locator) => clickInView(locator, 5_000),
         settle: () => settle(page),
+        prepareVerification: async () => {
+          // 모바일은 선택 직후 목록을 닫는다. 다시 열어 동일 ID의 실제 활성 상태를 확인한다.
+          if (!await library.isVisible()) await openBrushLibrary(page);
+          await search.fill("펜");
+          await settle(page);
+        },
       });
       return "ok";
     },
@@ -436,7 +423,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       await expandWorkRow(page);
       const opened = await clickLocator(
         page,
-        page.locator('button[data-studio-primary-action="pages"]'),
+        dock(page).locator('button[aria-controls="studio-mobile-pages-sheet"]'),
         "pages trigger",
       );
       if (opened !== "ok") return opened;
@@ -594,7 +581,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       }
       // Earlier steps deliberately leave eraser commands on their page. A fresh page gives
       // this filter case its own supported raster target through the same UI a user follows.
-      await dock(page).locator('button[data-studio-primary-action="pages"]').click();
+      await dock(page).locator('button[aria-controls="studio-mobile-pages-sheet"]').click();
       const pages = page.locator("#studio-mobile-pages-sheet");
       await pages.locator('[data-testid="studio-add-page"]').click();
       const newPage = pages.getByRole("button", { name: /^\d+페이지 선택$/u }).last();
@@ -794,7 +781,10 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
           waitUntil: "domcontentloaded",
           timeout: 25_000,
         });
-        await dock(page).waitFor({ state: "visible", timeout: 25_000 });
+        const ready = path === "/studio/poser"
+          ? page.locator('[data-testid="studio-poser-varco3d-workbench-toggle"]')
+          : dock(page);
+        await ready.waitFor({ state: "visible", timeout: 25_000 });
         if (new URL(page.url()).pathname !== path) throw new Error(`editor route ${path} navigated to ${page.url()}`);
         await settle(page);
         await settle(page);

@@ -65,6 +65,8 @@ import {
   type StudioNativeRasterScenarioId,
 } from "./studio-native-raster-tools-policy";
 
+import type { StudioRailToolId } from "../apps/web/src/domains/creator/studio-app-settings";
+
 type Point = { x: number; y: number };
 type Tier = "quick" | "deep";
 type RetouchScenarioId = "smudge" | "wet-mix" | "dodge-burn" | "liquify";
@@ -90,12 +92,12 @@ const OPTIONAL_STATIC_PREVIEW_API_PATHS = [
   "/api/analytics/traffic/",
 ] as const;
 
-const RETOUCH_TOOL_LABELS: Record<RetouchScenarioId, RegExp> = {
-  smudge: /^색 밀어 섞기 · 스머지/u,
-  "wet-mix": /^물감 섞어 칠하기 · 혼색/u,
-  "dodge-burn": /^밝기·채도 붓 · 닷지·번/u,
-  liquify: /^형태 밀어 변형 · 리퀴파이/u,
-};
+const RETOUCH_TOOL_IDS = {
+  smudge: "blend",
+  "wet-mix": "wet-mix",
+  "dodge-burn": "dodge-burn",
+  liquify: "liquify",
+} as const satisfies Record<RetouchScenarioId, StudioRailToolId>;
 
 const RETOUCH_ACTIVE_PANEL_LABELS: Record<RetouchScenarioId, RegExp> = {
   smudge: /^색 밀어 섞기 끄기$/u,
@@ -494,8 +496,9 @@ async function setCanvasHeightThroughShippedUi(page: Page, height: number): Prom
   // (studio-main-menu-presentation.ts). 항목 id·라벨은 그대로라 아래 menuitem 선택은 유지된다.
   const canvasTrigger = mainMenu.locator('[data-studio-main-menu-trigger="view"]');
   await canvasTrigger.waitFor({ state: "visible", timeout: 16_000 });
-  await canvasTrigger.click();
-  const menu = page.locator('[role="menu"][data-studio-main-menu-panel="true"]');
+  await canvasTrigger.focus();
+  await canvasTrigger.press("ArrowDown");
+  const menu = page.locator('[data-studio-main-menu-panel="true"] [role="menu"]');
   await menu.waitFor({ state: "visible", timeout: 8_000 });
   await menu.getByRole("menuitem", {
     name: "캔버스 크기 · 문서 설정…",
@@ -565,18 +568,25 @@ async function visibleLocator(locator: Locator): Promise<Locator> {
   throw new Error("no visible locator candidate");
 }
 
-async function toolButton(page: Page, name: string | RegExp): Promise<Locator> {
-  return visibleLocator(
-    page.locator('[data-studio-tool-rail="true"]').getByRole("button", { name }),
-  );
-}
-
-async function waitForToolButton(page: Page, name: string | RegExp): Promise<Locator> {
-  const locator = page
-    .locator('[data-studio-tool-rail="true"]')
-    .getByRole("button", { name });
+// 번역·간소 도구막대에 의존하지 않고 출시된 전체 도구 카탈로그에서 필요한 도구만 고정한다.
+async function toolButton(page: Page, id: StudioRailToolId): Promise<Locator> {
+  const rail = page.locator('[data-studio-tool-rail="true"]');
+  const locator = rail.locator(`button[data-studio-rail-tool-id="${id}"]`);
+  if (await locator.first().isVisible()) return visibleLocator(locator);
+  await rail.getByRole("button", { name: "전체 도구", exact: true }).click();
+  const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
+  await catalog.waitFor({ state: "visible", timeout: 16_000 });
+  const entry = catalog.locator(`button[data-studio-catalog-tool-id="${id}"]`);
+  await entry.waitFor({ state: "visible", timeout: 16_000 });
+  const pin = entry.locator("..").locator("button[aria-pressed]");
+  if (await pin.getAttribute("aria-pressed") !== "true") await pin.click();
+  await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
   await locator.first().waitFor({ state: "visible", timeout: 16_000 });
   return visibleLocator(locator);
+}
+
+async function waitForToolButton(page: Page, id: StudioRailToolId): Promise<Locator> {
+  return toolButton(page, id);
 }
 
 async function waitForPressed(button: Locator, expected = true, timeoutMs = 16_000): Promise<void> {
@@ -1646,7 +1656,7 @@ async function capturePreparedRasterOnlyControl(
     await prepareStudio(page, studioUrl, configuredCanvasHeight);
     const fixture = await drawNativeFixture(page, null);
     if (id === "wet-mix") await setPrimaryColor(page, "#e11d48");
-    const button = await toolButton(page, RETOUCH_TOOL_LABELS[id]);
+    const button = await toolButton(page, RETOUCH_TOOL_IDS[id]);
     await armRasterImagePresentationProbe(page);
     await button.click();
     const presentation = await waitForExactRasterImagePresentation(
@@ -2107,11 +2117,14 @@ async function openFilterDialog(
   // Escape is also Studio's intentional pixel-selection clear shortcut. Only use it when a
   // previously opened application menu actually needs dismissal; sending it unconditionally here
   // would erase the selection whose inside/outside filter contract this scenario is proving.
-  if (await page.locator('[role="menu"][data-studio-main-menu-panel="true"]:visible').count() > 0) {
+  if (await page.locator('[data-studio-main-menu-panel="true"]:visible [role="menu"]').count() > 0) {
     await page.keyboard.press("Escape");
   }
-  await nav.locator('[data-studio-main-menu-trigger="filter"]').click();
-  const menu = page.locator('[role="menu"][data-studio-main-menu-panel="true"]');
+  // 동일 포인터 이동으로 hover-open된 메뉴를 두 번째 클릭으로 닫지 않도록 정식 키보드 경로를 쓴다.
+  const filterTrigger = nav.locator('[data-studio-main-menu-trigger="filter"]');
+  await filterTrigger.focus();
+  await filterTrigger.press("ArrowDown");
+  const menu = page.locator('[data-studio-main-menu-panel="true"] [role="menu"]');
   await menu.waitFor({ state: "visible" });
   await onMenuOpened?.();
   await menu.getByRole("menuitem", {
@@ -2171,7 +2184,7 @@ async function exposePixelSelectionUi(page: Page): Promise<PixelSelectionUiState
 
   const retouchTab = page
     .locator('[role="tab"]:visible')
-    .filter({ hasText: /^선택·리터치$/u });
+    .filter({ hasText: /^선택·보정$/u });
   await retouchTab.first().waitFor({ state: "visible", timeout: 10_000 });
   if (await retouchTab.first().getAttribute("aria-selected") !== "true") {
     await retouchTab.first().click();
@@ -2206,7 +2219,7 @@ async function performRectLikeSelection(
 ): Promise<{ inactiveBefore: boolean; activeAfter: boolean; snapshot: DocumentSnapshot }> {
   const button = await toolButton(
     page,
-    kind === "rect" ? "사각 선택 (M)" : "원형 선택",
+    kind === "rect" ? "marquee-rect" : "marquee-circle",
   );
   const inactiveBefore = await button.getAttribute("aria-pressed") !== "true";
   const documentRoute = kind === "rect"
@@ -2240,7 +2253,7 @@ async function performLassoSelection(
   // The rail's lasso is arm-anytime for existing rasters. On a vector-only page, the rectangle
   // entry owns the explicit editable-copy preparation seam; prepare through that shipped UI first,
   // then exercise the lasso itself with a real freehand pointer path.
-  const rectButton = await toolButton(page, "사각 선택 (M)");
+  const rectButton = await toolButton(page, "marquee-rect");
   await rectButton.click();
   const snapshot = await waitForDocumentSnapshot(
     page,
@@ -2248,7 +2261,7 @@ async function performLassoSelection(
     "lasso precondition did not create an editable raster copy",
   );
   await waitForPressed(rectButton, true);
-  const lasso = await toolButton(page, /^(?:올가미 선택|자유 올가미)/u);
+  const lasso = await toolButton(page, "lasso");
   const inactiveBefore = await lasso.getAttribute("aria-pressed") !== "true";
   await lasso.click();
   const path = await documentPointsToScreen(page, [
@@ -2281,7 +2294,7 @@ async function performRetouchGesture(
   performance: StudioNativeRasterPerformanceEvidence;
 }> {
   if (id === "wet-mix") await setPrimaryColor(page, "#e11d48");
-  const button = await toolButton(page, RETOUCH_TOOL_LABELS[id]);
+  const button = await toolButton(page, RETOUCH_TOOL_IDS[id]);
   const inactiveBefore = await button.getAttribute("aria-pressed") !== "true";
   const documentPath = id === "liquify"
     ? [
@@ -2297,11 +2310,9 @@ async function performRetouchGesture(
         { x: 455, y: 493 },
         { x: 510, y: 500 },
       ];
-  const path = await documentPointsToScreen(page, documentPath);
   // Keep the warm stroke inside the first stroke's brush footprint while avoiding an identical
   // saturated pass. This makes cold-vs-warm pixel evidence deterministic for every retouch mode.
   const warmDocumentPath = documentPath.map(({ x, y }) => ({ x, y: y + 18 }));
-  const warmPath = await documentPointsToScreen(page, warmDocumentPath);
   const baselineSnapshot = await readDocumentSnapshot(page);
   const baselineImageSignature = imageSignature(baselineSnapshot);
   const moveStepsPerSegment = tier === "deep" ? 9 : 6;
@@ -2309,6 +2320,8 @@ async function performRetouchGesture(
   await armRasterPerformanceProbe(page);
   await markRasterPerformanceActivation(page);
   await button.click();
+  // 도구 활성화가 캔버스 배치를 바꾼 뒤에도 첫 입력은 같은 문서 위치를 가리켜야 한다.
+  const path = await documentPointsToScreen(page, documentPath);
   // This drag starts while createEditableRasterCopyForInspector is still decoding the vector page.
   // A small explicit delay makes the rAF sample window observable without turning timing into a
   // pass/fail gate or changing the number of trusted pointermove samples.
@@ -2331,6 +2344,8 @@ async function performRetouchGesture(
   const coldSnapshot = coldSettle.snapshot;
 
   const warmBaselineImageSignature = imageSignature(coldSnapshot);
+  // cold 도구 준비가 inspector를 열어 캔버스 배치를 바꿀 수 있으므로 실제 현재 좌표를 쓴다.
+  const warmPath = await documentPointsToScreen(page, warmDocumentPath);
   await armRasterPerformanceProbe(page);
   await drawMeasuredPointerPath(
     page,
@@ -2393,7 +2408,7 @@ async function performHealGesture(
 }> {
   // Heal/clone has no rail shortcut that owns raster preparation. Exercise the shipped rectangle
   // selection entry first; it creates and selects the editable raster and opens the retouch panel.
-  const rectangle = await toolButton(page, "사각 선택 (M)");
+  const rectangle = await toolButton(page, "marquee-rect");
   await rectangle.click();
   const preparedSnapshot = await waitForDocumentSnapshot(
     page,
@@ -2403,7 +2418,7 @@ async function performHealGesture(
   );
   await waitForPressed(rectangle, true);
 
-  const retouchTab = page.getByRole("tab", { name: "선택·리터치", exact: true });
+  const retouchTab = page.getByRole("tab", { name: "선택·보정", exact: true });
   await retouchTab.waitFor({ state: "visible", timeout: 10_000 });
   await retouchTab.click();
   const healCandidates = page.getByRole("button", {
@@ -2519,7 +2534,7 @@ async function performHealGesture(
 async function performPaintBucket(
   page: Page,
 ): Promise<{ inactiveBefore: boolean; activeAfter: boolean; snapshot: DocumentSnapshot }> {
-  const button = await toolButton(page, "채우기 (G)");
+  const button = await toolButton(page, "fill");
   const inactiveBefore = await button.getAttribute("aria-pressed") !== "true";
   await button.click();
   await waitForPressed(button, true);
@@ -2532,7 +2547,8 @@ async function performPaintBucket(
   });
   await activeFillToggle.waitFor({ state: "visible", timeout: 16_000 });
   const activeAfter = await button.getAttribute("aria-pressed") === "true";
-  const [fillPoint] = await documentPointsToScreen(page, [{ x: 355, y: 390 }]);
+  // 같은 닫힌 영역에서 자동 선택된 내부 선의 회전·크기 핸들을 피해 채운다.
+  const [fillPoint] = await documentPointsToScreen(page, [{ x: 250, y: 380 }]);
   invariant(fillPoint, "paint-bucket point is unavailable");
   await assertCanvasPoints(page, [fillPoint], "paint-bucket first tap");
   await page.mouse.click(fillPoint.x, fillPoint.y);
@@ -2557,7 +2573,7 @@ async function performCrop(
   preparedSnapshot: DocumentSnapshot;
   preparedBaselineScreenshot: Buffer;
 }> {
-  const button = await toolButton(page, "자르기 (C)");
+  const button = await toolButton(page, "crop");
   const inactiveBefore = await button.getAttribute("aria-pressed") !== "true";
   await armRasterImagePresentationProbe(page);
   await button.click();
@@ -2729,11 +2745,11 @@ async function performPixelTransform(
 }> {
   const recovery = await toolButton(
     page,
-    /^(?:변형 \(⇧T\)|선택 시작하기|선택 후 변형)$/u,
+    "transform",
   );
   const inactiveBefore = await recovery.getAttribute("aria-pressed") !== "true";
   const selection = await performRectLikeSelection(page, "rect");
-  const transform = await waitForToolButton(page, "변형 (⇧T)");
+  const transform = await waitForToolButton(page, "transform");
   await waitForEnabled(transform);
   await transform.click();
   const flip = page.getByRole("button", { name: "픽셀 내용 좌우 반전", exact: true });
@@ -2928,7 +2944,7 @@ async function runRasterPreparationCancellationScenario(
       await route.continue().catch(() => undefined);
     });
 
-    const smudge = await toolButton(page, RETOUCH_TOOL_LABELS.smudge);
+    const smudge = await toolButton(page, RETOUCH_TOOL_IDS.smudge);
     await smudge.click();
     await page.waitForFunction(() =>
       document.querySelector<HTMLButtonElement>('[data-studio-rail-tool-id="blend"]')?.disabled

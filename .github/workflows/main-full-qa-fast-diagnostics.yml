@@ -166,7 +166,18 @@ jobs:
         if: ${{ matrix.production_bundle }}
         run: pnpm run build:bundle
       - name: Run one engine option gate
+        env:
+          TOONSPECTRUM_BRUSH_MEDIA_VERIFY_DIR: ${{ github.workspace }}/artifacts/engine-core/${{ matrix.gate }}
+          TOONSPECTRUM_NATIVE_RASTER_VERIFY_DIR: ${{ github.workspace }}/artifacts/engine-core/${{ matrix.gate }}
         run: ${{ matrix.command }}
+      - name: Preserve engine gate evidence
+        if: ${{ always() && (matrix.gate == 'brush-media' || matrix.gate == 'native-raster') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-full-qa-isolated-engine-${{ matrix.gate }}-${{ github.sha }}
+          path: artifacts/engine-core/${{ matrix.gate }}/
+          if-no-files-found: warn
+          retention-days: 7
 
   engine-extended:
     name: Engine extended contracts
@@ -190,6 +201,10 @@ jobs:
       - name: Build exact production Studio bundle for extended browser probes
         run: pnpm run build:bundle
       - name: Hokusai, living ink and hybrid DCC
+        env:
+          TOONSPECTRUM_LIVING_INK_VERIFY_DIR: ${{ github.workspace }}/artifacts/engine-extended/living-ink-execution
+          TOONSPECTRUM_LIVING_INK_PROBE_RESULTS_PATH: ${{ github.workspace }}/artifacts/engine-extended/living-ink-probes.json
+          TOONSPECTRUM_LIVING_INK_INTEGRATION_DIR: ${{ github.workspace }}/artifacts/engine-extended/living-ink-integration
         run: |
           pnpm run verify:studio-hokusai-wasm
           pnpm run verify:studio-hokusai-natural-media-quality
@@ -208,6 +223,14 @@ jobs:
           pnpm run verify:studio-vello-candidate
           pnpm run verify:studio-canvaskit-quality-worker
           pnpm run studio:toolchain:check
+      - name: Preserve extended engine evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-full-qa-isolated-engine-extended-${{ github.sha }}
+          path: artifacts/engine-extended/
+          if-no-files-found: warn
+          retention-days: 7
 
   studio-browser-core:
     runs-on: ubuntu-24.04-arm
@@ -227,8 +250,12 @@ jobs:
       - name: Build exact production Studio bundle
         run: pnpm run build:bundle
       - name: In-app route matrix
+        env:
+          TOONSPECTRUM_INAPP_VERIFY_DIR: ${{ github.workspace }}/artifacts/studio-inapp-route-matrix
         run: pnpm run verify:studio-inapp-browser
       - name: In-app feature sweep
+        env:
+          TOONSPECTRUM_SWEEP_VERIFY_DIR: ${{ github.workspace }}/artifacts/studio-inapp-feature-sweep
         run: pnpm run verify:studio-inapp-feature-sweep
       - name: Studio launch and lifecycle
         run: pnpm run verify:studio-launch && pnpm run verify:studio-lifecycle
