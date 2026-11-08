@@ -194,11 +194,10 @@ function isOpenRouterFreeModel(model: string): boolean {
   return normalized === "openrouter/free" || normalized.endsWith(":free");
 }
 
+const DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL = "@cf/google/gemma-4-26b-a4b-it";
 const CLOUDFLARE_WORKERS_AI_FREE_MODELS = new Set([
-  "@cf/qwen/qwen3-30b-a3b-fp8",
+  DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL,
   "@cf/zai-org/glm-4.7-flash",
-  "@cf/google/gemma-4-26b-a4b-it",
-  "@cf/nvidia/nemotron-3-120b-a12b",
 ]);
 
 export function isCloudflareWorkersAiFreeModel(model: string): boolean {
@@ -348,7 +347,7 @@ function freeProviderConfig(
     const apiKey = env.STUDIO_AI_FREE_CLOUDFLARE_API_TOKEN?.trim() ?? "";
     const model = boundedText(
       env.STUDIO_AI_FREE_CLOUDFLARE_MODEL,
-      "@cf/qwen/qwen3-30b-a3b-fp8",
+      DEFAULT_CLOUDFLARE_WORKERS_AI_MODEL,
       200,
     );
     return {
