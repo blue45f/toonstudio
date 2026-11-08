@@ -151,33 +151,33 @@ export function RoleWorkspaceSettingsPage() {
             </button>
           ))}
         </div>
-
-        {tab === "profile" ? (
-          <div
-            id="role-settings-panel-profile"
-            role="tabpanel"
-            aria-labelledby="role-settings-tab-profile"
-          >
-            <RoleProfileSettingsSection />
-          </div>
-        ) : (
-          <div
-            id="role-settings-panel-workspace"
-            role="tabpanel"
-            aria-labelledby="role-settings-tab-workspace"
-          >
-            <Suspense
-              fallback={
-                <div role="status" className="rounded-2xl border border-line bg-panel/40 p-5 text-sm text-fg-2">
-                  {bi("작업환경 설정을 불러오는 중…", "Loading workspace settings…")}
-                </div>
-              }
-            >
-              <StudioLibraryPersonalizePanels locale={lang} />
-            </Suspense>
-          </div>
-        )}
       </div>
+
+      {tab === "profile" ? (
+        <div
+          id="role-settings-panel-profile"
+          role="tabpanel"
+          aria-labelledby="role-settings-tab-profile"
+        >
+          <RoleProfileSettingsSection />
+        </div>
+      ) : (
+        <div
+          id="role-settings-panel-workspace"
+          role="tabpanel"
+          aria-labelledby="role-settings-tab-workspace"
+        >
+          <Suspense
+            fallback={
+              <div role="status" className="rounded-2xl border border-line bg-panel/40 p-5 text-sm text-fg-2">
+                {bi("작업환경 설정을 불러오는 중…", "Loading workspace settings…")}
+              </div>
+            }
+          >
+            <StudioLibraryPersonalizePanels locale={lang} />
+          </Suspense>
+        </div>
+      )}
     </Container>
   );
 }

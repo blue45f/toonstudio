@@ -2295,3 +2295,9 @@
   margin-top: 10px;
   opacity: 0.75;
 }
+
+/* 전역 크기 보정에서 제외한 컨트롤은 비계층 기존 CSS보다 우선하는 44px 바닥을 직접 둔다.
+   Tailwind utilities 계층의 min-h-11만으로는 위 min-height 선언을 덮을 수 없다. */
+.storyworld-shell :is(button, select).min-h-11 {
+  min-height: 2.75rem;
+}

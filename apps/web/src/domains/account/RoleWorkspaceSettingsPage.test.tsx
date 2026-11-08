@@ -77,7 +77,7 @@ describe("내 직군 · 작업환경 설정 (R-3)", () => {
     } as never);
 
     renderPage();
-    expect(await screen.findByTestId("role-editor")).toBeTruthy();
+    expect((await screen.findByTestId("role-editor")).closest("[data-own-control-size]")).toBeNull();
     expect(screen.getByText("story")).toBeTruthy();
 
     const saveButton = screen.getByRole("button", { name: /직군 프로필 저장/u });
@@ -106,7 +106,7 @@ describe("내 직군 · 작업환경 설정 (R-3)", () => {
   it("작업환경 탭(?tab=workspace)에서는 개인화 패널을 불러온다", async () => {
     useApp.setState({ userId: "user-1" });
     renderPage("/settings/role?tab=workspace");
-    expect(await screen.findByTestId("personalize-panels")).toBeTruthy();
+    expect((await screen.findByTestId("personalize-panels")).closest("[data-own-control-size]")).toBeNull();
     expect(screen.queryByTestId("role-editor")).toBeNull();
   });
 

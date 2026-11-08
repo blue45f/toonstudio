@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -223,3 +226,60 @@ test.describe("mobile shell accessibility", () => {
     });
   }
 });
+
+const storyworldCss = readFileSync(resolve("apps/web/src/domains/creator/storyworld/studio-storyworld-lab.css"), "utf8");
+const sitewideCss = readFileSync(resolve("apps/web/src/app/styles/sitewide-visual-ux.css"), "utf8");
+
+// 실제 비계층 CSS와 Tailwind의 계층 순서를 함께 적용한다. 클래스 유무만으로는 크기를 보증할 수 없다.
+const utilities = `
+  @layer utilities {
+    .min-h-11 { min-height: 2.75rem; }
+    .min-h-8 { min-height: 2rem; }
+  }
+  :root { font-size: 16px; --site-control-size: 44px; }
+`;
+
+for (const mode of ["desktop", "touch", "contrast"] as const) {
+  test.describe(`컨트롤 크기 CSS 우선순위: ${mode}`, () => {
+    test.use({ viewport: { width: 1280, height: 900 }, hasTouch: mode === "touch" });
+
+    test("스토리월드의 자체 크기 컨트롤은 기존 비계층 CSS 아래에서도 44px를 유지한다", async ({ page }) => {
+      await page.setContent(`
+        <style>${utilities}${sitewideCss}${storyworldCss}</style>
+        <main id="main-content"><div class="storyworld-shell">
+          <header data-own-control-size><button class="storyworld-button min-h-11">설정 불러오기</button></header>
+          <aside class="storyworld-sidebar" data-own-control-size>
+            <nav><button class="min-h-11">설정 파일</button></nav>
+          </aside>
+          <section data-own-control-size>
+            <button class="storyworld-text-button min-h-11">편집 닫기</button>
+            <div class="storyworld-branch-controls"><label>장면<select class="min-h-11"><option>장면 1</option></select></label></div>
+            <div class="storyworld-segmented"><button class="min-h-11">전체</button></div>
+          </section>
+        </div></main>
+      `);
+      if (mode === "contrast") await page.locator("html").evaluate((element) => { element.dataset.designTheme = "contrast"; });
+
+      for (const control of await page.locator("button, select").all()) {
+        const size = await control.boundingBox();
+        expect(size).not.toBeNull();
+        expect(size?.height).toBeGreaterThanOrEqual(44);
+      }
+    });
+
+    test("크기 면제 밖의 직군 편집기는 전역 최소 높이를 유지한다", async ({ page }) => {
+      // 페이지의 실제 면제 경계는 RoleWorkspaceSettingsPage.test.tsx에서 렌더 결과로 확인한다.
+      await page.setContent(`
+        <style>${utilities}${sitewideCss}</style>
+        <main id="main-content">
+          <div data-own-control-size><button class="min-h-11">내 직군</button></div>
+          <div role="tabpanel"><button class="min-h-8">직군 분류</button></div>
+        </main>
+      `);
+      if (mode === "contrast") await page.locator("html").evaluate((element) => { element.dataset.designTheme = "contrast"; });
+      const size = await page.getByRole("button", { name: "직군 분류" }).boundingBox();
+      expect(size).not.toBeNull();
+      expect(size?.height).toBeGreaterThanOrEqual(mode === "desktop" ? 40 : 44);
+    });
+  });
+}
