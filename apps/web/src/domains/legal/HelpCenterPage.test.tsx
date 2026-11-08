@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HelpCenterPage } from "./HelpCenterPage";
+
+import { useI18n } from "@/shared/lib/i18n-core";
 
 vi.mock("./BrowserReadinessDiagnostics", () => ({ BrowserReadinessDiagnostics: () => <div data-testid="diagnostics" /> }));
 vi.mock("@/shared/seo/use-document-title", () => ({ useDocumentTitle: vi.fn() }));
@@ -19,7 +21,10 @@ function renderHelp() {
   );
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  useI18n.getState().setLang("ko");
+});
 
 function topicLinks() {
   return screen.getAllByRole("link", { name: /관련 화면 열기/ });
@@ -212,5 +217,69 @@ describe("HelpCenterPage", () => {
     fireEvent.keyDown(searchbox, { key: "Escape" });
     expect(searchbox.value).toBe("");
   });
+
+  it("검색 결과가 있는 분류만 개수와 함께 보여 주고 초기화하면 빠른 이동을 숨긴다", () => {
+    renderHelp();
+    expect(screen.queryByRole("navigation", { name: "검색 결과 바로가기" })).toBeNull();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "소실점" } });
+    expect(screen.getByRole("searchbox", { name: "도움말 검색" })).toBeTruthy();
+    const navigation = screen.getByRole("navigation", { name: "검색 결과 바로가기" });
+    const buttons = within(navigation).getAllByRole("button");
+    expect(within(navigation).getByRole("button", { name: /강좌 \d+/ })).toBeTruthy();
+    expect(within(navigation).queryByRole("button", { name: /도움말 주제/ })).toBeNull();
+    expect(within(navigation).queryByRole("button", { name: /자주 묻는 질문/ })).toBeNull();
+    for (const button of buttons) {
+      const target = document.getElementById(button.getAttribute("aria-controls") ?? "");
+      expect(target).toBeTruthy();
+      expect(target?.getAttribute("tabindex")).toBe("-1");
+      expect(button.className).toContain("min-h-11");
+      expect(button.className).toContain("motion-reduce:transition-none");
+    }
+    fireEvent.click(screen.getByRole("button", { name: "검색어 초기화" }));
+    expect(screen.queryByRole("navigation", { name: "검색 결과 바로가기" })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("searchbox"));
+  });
+
+  it("결과 분류로 반복 이동해도 검색어를 유지하고 대상 제목으로 포커스를 옮긴다", () => {
+    const scrollIntoView = vi.fn();
+    const originalScroll = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    try {
+      renderHelp();
+      fireEvent.change(screen.getByRole("searchbox"), { target: { value: "저장이 안 돼요" } });
+      const navigation = screen.getByRole("navigation", { name: "검색 결과 바로가기" });
+      const buttons = within(navigation).getAllByRole("button");
+      expect(within(navigation).getByRole("button", { name: /자주 묻는 질문/ })).toBeTruthy();
+      for (const button of [...buttons, ...buttons]) {
+        fireEvent.click(button);
+        expect(document.activeElement?.id).toBe(button.getAttribute("aria-controls"));
+        expect(scrollIntoView).toHaveBeenLastCalledWith({ block: "start", behavior: "instant" });
+        expect(screen.getByRole("searchbox").getAttribute("value")).toBe("저장이 안 돼요");
+      }
+      expect(scrollIntoView).toHaveBeenCalledTimes(buttons.length * 2);
+    } finally {
+      HTMLElement.prototype.scrollIntoView = originalScroll;
+    }
+  });
+
+  it("결과가 없는 검색과 공백 검색에서는 존재하지 않는 빠른 이동을 노출하지 않는다", () => {
+    renderHelp();
+    for (const query of ["없는결과_20261108", "   ", ""]) {
+      fireEvent.change(screen.getByRole("searchbox"), { target: { value: query } });
+      expect(screen.queryByRole("navigation", { name: "검색 결과 바로가기" })).toBeNull();
+    }
+  });
+
+
+  it("영어에서도 결과 분류와 이동 버튼의 접근 가능한 이름을 제공한다", () => {
+    useI18n.getState().setLang("en");
+    renderHelp();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search help" }), { target: { value: "save" } });
+    const navigation = screen.getByRole("navigation", { name: "Jump to search results" });
+    expect(within(navigation).getByRole("button", { name: /Manual articles \d+/ })).toBeTruthy();
+    expect(within(navigation).getByRole("button", { name: /Help topics \d+/ })).toBeTruthy();
+    expect(navigation.textContent).not.toContain("legacyUi.");
+  });
+
 });
 
