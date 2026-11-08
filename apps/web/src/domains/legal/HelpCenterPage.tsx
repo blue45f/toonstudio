@@ -18,7 +18,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 
 import { BrowserReadinessDiagnostics } from "./BrowserReadinessDiagnostics";
 import { helpSearchTokens, rankHelpItems, rankRelatedScreens, type HelpSearchFields } from "./help-search";
@@ -186,6 +186,7 @@ export function HelpCenterPage() {
   const bt = useBilingual("HelpCenterPage");
   const [query, setQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const resultId = useId();
   const clearSearch = useCallback(() => {
     setQuery("");
     searchInputRef.current?.focus({ preventScroll: true });
@@ -209,6 +210,20 @@ export function HelpCenterPage() {
   const questions = faqFiltered ? matchedQuestions : QUESTIONS;
   const nothingFound = searching && filtered.length === 0 && related.length === 0 && matchedQuestions.length === 0 && manualResults.length === 0 && courseResults.length === 0;
   const searchLabel = bt("도움말 검색", "Search help");
+  const resultGroups = [
+    { id: "topics", label: bt("도움말 주제", "Help topics"), count: filtered.length },
+    { id: "screens", label: bt("관련 화면", "Related screens"), count: related.length },
+    { id: "manual", label: bt("매뉴얼 문서", "Manual articles"), count: manualResults.length },
+    { id: "courses", label: bt("강좌", "Courses"), count: courseResults.length },
+    { id: "questions", label: bt("자주 묻는 질문", "Frequently asked questions"), count: matchedQuestions.length },
+  ].filter((group) => group.count > 0);
+  const resultTargetClass = "scroll-mt-24 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70";
+  const focusResults = (id: string) => {
+    const target = document.getElementById(`${resultId}-${id}`);
+    target?.focus({ preventScroll: true });
+    // 검색 상태와 뒤로 가기 기록을 유지하고, 모션 설정에 관계없이 즉시 이동한다.
+    target?.scrollIntoView({ block: "start", behavior: "instant" });
+  };
 
   useDocumentTitle(bt("도움말", "Help Center"));
 
@@ -235,6 +250,7 @@ export function HelpCenterPage() {
           <input
             ref={searchInputRef}
             type="search"
+            aria-label={searchLabel}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -281,12 +297,38 @@ export function HelpCenterPage() {
             );
           })}
         </div>
+        {searching && !nothingFound ? (
+          <nav
+            aria-label={bt("검색 결과 바로가기", "Jump to search results")}
+            className="mt-5 max-w-2xl border-t border-line pt-4"
+            data-own-control-size=""
+          >
+            <p className="mb-2 text-xs font-semibold text-fg-2">
+              {bt("찾은 결과로 바로 이동", "Jump to matching results")}
+            </p>
+            <ul className="flex flex-wrap gap-2">
+              {resultGroups.map((group) => (
+                <li key={group.id} className="min-w-0 max-w-full">
+                  <button
+                    type="button"
+                    aria-controls={`${resultId}-${group.id}`}
+                    onClick={() => focusResults(group.id)}
+                    className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl border border-line bg-card/70 px-3 py-2 text-left text-xs font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                  >
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{group.label}</span>{" "}
+                    <span className="rounded-md bg-accent-soft px-1.5 py-0.5 tabular-nums text-accent">{group.count}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ) : null}
       </SitePageHeader>
 
       <Section
         className="mt-10 sm:mt-12 [overflow-wrap:anywhere]"
         eyebrow="FIND YOUR ANSWER"
-        title={bt("도움말 주제", "Help topics")}
+        title={<span id={`${resultId}-topics`} tabIndex={-1} className={resultTargetClass}>{bt("도움말 주제", "Help topics")}</span>}
         desc={
           searching
             ? formatI18nTemplate(bt("‘{v0}’와 관련된 주제·화면·질문·매뉴얼 문서·강좌예요.", "Topics, screens, questions, manual articles and courses related to ‘{v0}’."), { v0: query.trim() })
@@ -356,7 +398,7 @@ export function HelpCenterPage() {
 
         {related.length > 0 ? (
           <div className="mt-8">
-            <h3 className="flex items-center gap-2 text-sm font-bold text-fg">
+            <h3 id={`${resultId}-screens`} tabIndex={-1} className={`flex items-center gap-2 text-sm font-bold text-fg ${resultTargetClass}`}>
               <Compass size={16} className="text-accent" aria-hidden="true" />
               {bt("관련 화면", "Related screens")}
             </h3>
@@ -378,7 +420,7 @@ export function HelpCenterPage() {
 
         {manualResults.length > 0 ? (
           <div className="mt-8">
-            <h3 className="flex items-center gap-2 text-sm font-bold text-fg">
+            <h3 id={`${resultId}-manual`} tabIndex={-1} className={`flex items-center gap-2 text-sm font-bold text-fg ${resultTargetClass}`}>
               <BookOpen size={16} className="text-accent" aria-hidden="true" />
               {bt("매뉴얼 문서", "Manual articles")}
             </h3>
@@ -400,7 +442,7 @@ export function HelpCenterPage() {
 
         {courseResults.length > 0 ? (
           <div className="mt-8">
-            <h3 className="flex items-center gap-2 text-sm font-bold text-fg">
+            <h3 id={`${resultId}-courses`} tabIndex={-1} className={`flex items-center gap-2 text-sm font-bold text-fg ${resultTargetClass}`}>
               <GraduationCap size={16} className="text-accent" aria-hidden="true" />
               {bt("강좌", "Courses")}
             </h3>
@@ -424,7 +466,7 @@ export function HelpCenterPage() {
       <Section
         className="mt-12 sm:mt-14"
         eyebrow="FAQ"
-        title={bt("작업을 시작하기 전에", "Before you start drawing")}
+        title={<span id={`${resultId}-questions`} tabIndex={-1} className={resultTargetClass}>{bt("작업을 시작하기 전에", "Before you start drawing")}</span>}
         desc={
           faqFiltered
             ? bt("검색어와 관련된 질문을 펼쳐 두었어요.", "Questions related to your search are expanded.")
