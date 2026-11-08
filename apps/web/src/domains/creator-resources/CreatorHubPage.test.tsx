@@ -342,5 +342,43 @@ describe("research command center", () => {
     expect(within(recommender).getByRole("link", { name: /상업 이용 가능 폰트·레터링/u }).getAttribute("href"))
       .toBe("/research/fonts");
   });
+
+  it("GAP-R6-05: 아코디언 화살표 모션 감쇠, 320px 권리·최근 저장 카드 반응형 열 분할, 공정 토글 44px 타깃을 보장한다", async () => {
+    localStorage.setItem(GUEST_WORKSPACE_KEY, JSON.stringify(workspace({
+      saved: [
+        resource({ id: "met:costume", provider: "met", title: "Costume reference" }),
+      ],
+    })));
+    const { container } = renderPage("/research#research-coverage");
+
+    const workspaceRoot = container.querySelector("#research-workspace")!;
+    const chevrons = Array.from(workspaceRoot.querySelectorAll("summary svg.transition-transform"));
+    expect(chevrons.length).toBeGreaterThanOrEqual(1);
+    for (const chevron of chevrons) {
+      expect(chevron.getAttribute("class") ?? "").toContain("motion-reduce:transition-none");
+    }
+
+    const rightsDl = container.querySelector("section[aria-labelledby='research-rights-title'] dl")!;
+    expect(rightsDl).toBeTruthy();
+    expect(rightsDl.className).toContain("grid-cols-1");
+    expect(rightsDl.className).toContain("sm:grid-cols-3");
+
+    await waitFor(() => expect(screen.getByRole("heading", { name: "다시 볼 자료" })).toBeTruthy());
+    const recentGrid = container.querySelector("section[aria-labelledby='recent-research-title'] > div.grid")!;
+    expect(recentGrid.className).toContain("grid-cols-1");
+    expect(recentGrid.className).toContain("sm:grid-cols-3");
+
+    openSourceTools();
+    const stageGroup = screen.getByRole("group", { name: "작업 공정 선택" });
+    expect(stageGroup.hasAttribute("data-own-control-size")).toBe(true);
+    const stageButtons = within(stageGroup).getAllByRole("button");
+    expect(stageButtons.length).toBeGreaterThanOrEqual(6);
+    for (const btn of stageButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+      expect(btn.className).toContain("focus-visible:outline-offset-2");
+      expect(btn.className).toContain("focus-visible:outline-accent");
+    }
+  });
 });
 

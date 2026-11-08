@@ -301,9 +301,9 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
       {briefIsEmpty && <details className="group rounded-2xl border border-accent/40 bg-panel" open={guideOpen} onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setGuideOpen(event.currentTarget.open)}>
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
           {bt("장면으로 시작하기 · 처음이면 이 3단계로", "Start from a scene · first time? Follow these 3 steps")}
-          <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent transition-transform group-open:rotate-180" />
+          <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent transition-transform motion-reduce:transition-none group-open:rotate-180" />
         </summary>
-        <ol className="grid gap-3 border-t border-line p-4 sm:grid-cols-3 sm:p-5">
+        <ol data-own-control-size="" className="grid gap-3 border-t border-line p-4 sm:grid-cols-3 sm:p-5">
           <li className="rounded-xl bg-canvas p-4">
             <p className="text-xs font-bold text-accent">01</p>
             <p className="mt-1 font-bold">{bt("장면 고르기", "Pick a scene")}</p>
@@ -339,8 +339,8 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
             </dl>
           </section>
           {recentItems.length ? <section className="space-y-3 rounded-2xl border border-line bg-panel p-4 sm:p-5" aria-labelledby="recent-research-title">
-            <header className="flex items-end justify-between gap-4"><div><p className="text-sm font-semibold text-accent">{tx("최근 저장")}</p><h3 id="recent-research-title" className="mt-1 text-lg font-bold">{tx("다시 볼 자료")}</h3></div><button type="button" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("board")}>{tx("전체 보드 점검")} →</button></header>
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">{recentItems.map((item) => {
+            <header data-own-control-size="" className="flex items-end justify-between gap-4"><div><p className="text-sm font-semibold text-accent">{tx("최근 저장")}</p><h3 id="recent-research-title" className="mt-1 text-lg font-bold">{tx("다시 볼 자료")}</h3></div><button type="button" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => selectTab("board")}>{tx("전체 보드 점검")} →</button></header>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">{recentItems.map((item) => {
               const freshness = sourceFreshness(item);
               return <article key={item.id} className="min-w-0 overflow-hidden rounded-xl border border-line bg-canvas">
                 {item.imageUrl && <div className="aspect-[4/3] overflow-hidden border-b border-line bg-card"><img src={item.imageUrl} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" className="h-full w-full object-cover" /></div>}
@@ -352,7 +352,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
         <details className="group rounded-2xl border border-line bg-panel" open={checksOpen} onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setChecksOpen(event.currentTarget.open)}>
           <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
             {bt("리서치 흐름·근거 공백·출처 점검 자세히", "Flow, evidence gaps and source checks")}
-            <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent transition-transform group-open:rotate-180" />
+            <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent transition-transform motion-reduce:transition-none group-open:rotate-180" />
           </summary>
           <div className="space-y-6 border-t border-line p-4 sm:p-5">
             <SiteRail label={tx("리서치 권장 흐름")} columns="sm:grid-cols-2 xl:grid-cols-4">
@@ -366,7 +366,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
             <div id="research-coverage" className="scroll-mt-24"><ResearchCoverageMap summary={summary} onAnchor={openAnchor} /></div>
             <section className="space-y-3" aria-labelledby="research-rights-title">
               <header><p className="text-sm font-semibold text-accent">{tx("출처·이용조건")}</p><h3 id="research-rights-title" className="mt-1 text-lg font-bold">{tx("보드 점검")}</h3></header>
-              <dl className="grid grid-cols-3 gap-2 text-center">
+              <dl className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
                 <div className="rounded-xl bg-canvas p-3"><dt className="text-xs text-fg-2">{tx("CC0로 확인된 자료")}</dt><dd className="mt-1 font-bold">{formatI18nTemplate(tx("{v0}개"), { v0: summary.publicDomainCount })}</dd></div>
                 <div className="rounded-xl bg-canvas p-3"><dt className="text-xs text-fg-2">{tx("원문 이용조건 확인 필요")}</dt><dd className="mt-1 font-bold">{formatI18nTemplate(tx("{v0}개"), { v0: summary.rightsReviewCount })}</dd></div>
                 <div className="rounded-xl bg-canvas p-3"><dt className="text-xs text-fg-2">{tx("조회일 재확인 권장")}</dt><dd className="mt-1 font-bold">{formatI18nTemplate(tx("{v0}개"), { v0: summary.staleCount })}</dd></div>
@@ -417,7 +417,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
         <SavedBoard items={workspace.saved} disabled={!ready || !writable || saving} onRemove={(id) => {
           void updateWorkspace((value) => ({ ...value, saved: value.saved.filter((item) => item.id !== id) }));
         }} />
-        <section id="research-export" className="scroll-mt-24 space-y-4 rounded-2xl border border-line bg-panel p-5 sm:p-6" aria-labelledby="research-export-title">
+        <section id="research-export" data-own-control-size="" className="scroll-mt-24 space-y-4 rounded-2xl border border-line bg-panel p-5 sm:p-6" aria-labelledby="research-export-title">
           <header><p className="text-sm font-semibold text-accent">{tx("휴대·복구 가능한 기록")}</p><h3 id="research-export-title" className="mt-1 text-xl font-bold">{tx("내보내기와 백업")}</h3><p className="mt-2 text-sm leading-7 text-fg-2">{tx("리서치 초점·검색 기록·판단 노트·기획·출처를 읽기 쉬운 문서로 내보내거나, 자료·기획서 작업공간을 JSON으로 백업하세요.")}</p></header>
           <div className="flex flex-wrap gap-3">
             <button type="button" className={RESOURCE_BUTTON} disabled={briefIsEmpty} onClick={exportResearchBrief}>{tx("리서치 브리프 내보내기")}</button>
@@ -448,7 +448,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
     <details className="group rounded-2xl border border-line bg-panel" data-research-tools-disclosure="true" ref={sourceToolsRef}>
       <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
         {bt("자료 도구·공정별 추천 펼치기", "Browse source tools and stage recommendations")}
-        <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent motion-safe:transition-transform group-open:rotate-180" />
+        <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-accent transition-transform motion-reduce:transition-none motion-safe:transition-transform group-open:rotate-180" />
       </summary>
       <div className="space-y-6 border-t border-line p-4 sm:p-5">
         <section className="rounded-2xl border border-line bg-panel p-4 sm:p-5" aria-label={bt("리서치 표면 안내", "Which research surface am I on?")}>
@@ -462,6 +462,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
         </section>
         <section
           data-research-stage-recommender="true"
+          data-own-control-size=""
           aria-labelledby="research-stage-recommender-heading"
           className="rounded-2xl border border-accent/30 bg-panel p-4 sm:p-5"
         >
@@ -474,6 +475,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
             </div>
             <div
               role="group"
+              data-own-control-size=""
               aria-label={bt("작업 공정 선택", "Select production stage")}
               className="flex flex-wrap gap-1.5"
             >
@@ -486,7 +488,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
                     aria-pressed={active}
                     data-stage-selector={stage.id}
                     onClick={() => setSelectedStageId(stage.id)}
-                    className={`inline-flex min-h-11 items-center rounded-xl border px-3 py-1.5 text-xs font-semibold motion-safe:transition-colors ${
+                    className={`inline-flex min-h-11 items-center rounded-xl border px-3 py-1.5 text-xs font-semibold motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                       active
                         ? "border-accent bg-accent-soft text-accent"
                         : "border-line bg-canvas text-fg-2 hover:border-accent/50 hover:text-fg"
@@ -506,7 +508,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
               <Link
                 key={linkItem.href}
                 to={linkItem.href}
-                className="flex items-center justify-between gap-2 rounded-xl border border-line bg-canvas p-3 text-sm font-semibold text-fg transition-colors hover:border-accent/60 hover:text-accent"
+                className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-line bg-canvas p-3 text-sm font-semibold text-fg transition-colors hover:border-accent/60 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <span>{bt(linkItem.titleKo, linkItem.titleEn)}</span>
                 <span className="shrink-0 rounded-full border border-accent/35 bg-accent-soft/20 px-2 py-0.5 text-[11px] font-bold text-accent">

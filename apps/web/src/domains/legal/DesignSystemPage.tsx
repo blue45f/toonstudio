@@ -119,9 +119,9 @@ export function DesignSystemPage() {
   }, []);
 
   return (
-    <Container size="wide" className="py-10 sm:py-14">
+    <Container size="wide" className="py-10 sm:py-14 [&_button]:min-h-11 [&_button]:min-w-11">
       {/* ── 헤더 ── */}
-      <header className="flex flex-col gap-5 border-b border-line pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <header data-own-control-size="" className="flex flex-col gap-5 border-b border-line pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-[60ch]">
           <p className="eyebrow text-accent">툰스튜디오 · DESIGN SYSTEM</p>
           <h1 className="mt-2 text-balance font-display text-4xl font-bold tracking-[-0.04em] text-fg sm:text-5xl">
@@ -136,9 +136,9 @@ export function DesignSystemPage() {
         <button
           type="button"
           onClick={toggle}
-          aria-label={isDark ? "주간 모드로 전환" : "야간 모드로 전환"}
+          aria-label={isDark ? "야간 모드 (주간 모드로 전환)" : "주간 모드 (야간 모드로 전환)"}
           className={cn(
-            "inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-panel px-3.5 py-2 text-sm font-medium text-fg-2 transition-colors hover:text-fg",
+            "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-line bg-panel px-3.5 py-2 text-sm font-medium text-fg-2 transition-colors hover:text-fg",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
           )}
         >
@@ -149,6 +149,7 @@ export function DesignSystemPage() {
 
       {/* ── 인-페이지 스티키 내비 ── */}
       <nav
+        data-own-control-size=""
         aria-label="디자인 시스템 섹션"
         className="sticky top-2 z-30 mt-6 flex gap-1 overflow-x-auto rounded-full border border-line bg-panel/85 p-1 backdrop-blur rail"
       >
@@ -156,7 +157,7 @@ export function DesignSystemPage() {
           <a
             key={n.id}
             href={`#${n.id}`}
-            className="shrink-0 rounded-full px-3.5 py-3 text-sm font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 py-2.5 text-sm font-medium text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             {n.label}
           </a>
@@ -341,7 +342,7 @@ export function DesignSystemPage() {
           <div className="flex flex-col gap-3 rounded-2xl border border-line bg-card/40 p-5">
             <p className="eyebrow text-fg-3">pulse-soft · 라이브</p>
             <div className="flex items-center gap-2 text-sm text-fg">
-              <span className="size-2.5 animate-pulse-soft rounded-full bg-accent" aria-hidden />
+              <span className="size-2.5 animate-pulse-soft motion-reduce:animate-none rounded-full bg-accent" aria-hidden />
               연재중 · LIVE
             </div>
             <p className="mt-auto eyebrow text-fg-3">count-up · 수치</p>
@@ -359,7 +360,7 @@ export function DesignSystemPage() {
       </section>
 
       {/* ── 컴포넌트 갤러리 ── */}
-      <section id="components" className="scroll-mt-20 pt-16">
+      <section id="components" data-own-control-size="" className="scroll-mt-20 pt-16 [&_button]:min-h-11 [&_button]:min-w-11">
         <h2 className="text-2xl font-bold tracking-tight text-fg">컴포넌트</h2>
         <p className="mt-1.5 max-w-[65ch] text-sm leading-relaxed text-fg-2">
           <code className="font-display text-fg">components/ui/*</code>의 실제 프리미티브입니다. 상태 캡션을
@@ -368,20 +369,20 @@ export function DesignSystemPage() {
 
         <div className="mt-6 grid gap-3 md:grid-cols-2">
           <StateRow caption="Button · variants">
-            <Button variant="solid">Solid</Button>
-            <Button variant="outline">Outline</Button>
-            <Button variant="ghost">Ghost</Button>
-            <Button variant="quiet">Quiet</Button>
-            <Button variant="solid" disabled>
+            <Button variant="solid" className="min-h-11">Solid</Button>
+            <Button variant="outline" className="min-h-11">Outline</Button>
+            <Button variant="ghost" className="min-h-11">Ghost</Button>
+            <Button variant="quiet" className="min-h-11">Quiet</Button>
+            <Button variant="solid" className="min-h-11" disabled>
               Disabled
             </Button>
           </StateRow>
 
           <StateRow caption="Button · sizes">
-            <Button size="sm">Small</Button>
-            <Button size="md">Medium</Button>
+            <Button size="sm" className="min-h-11">Small</Button>
+            <Button size="md" className="min-h-11">Medium</Button>
             <Button size="lg">Large</Button>
-            <button type="button" className={buttonClass({ variant: "solid", className: "gap-1.5" })}>
+            <button type="button" className={buttonClass({ variant: "solid", className: "min-h-11 gap-1.5" })}>
               <Sparkles size={15} />
               아이콘
             </button>
@@ -415,7 +416,7 @@ export function DesignSystemPage() {
               value={platform}
               onValueChange={setPlatform}
               ariaLabel="플랫폼"
-              triggerClassName="h-9 rounded-lg border border-line bg-card px-3 text-sm text-fg"
+              triggerClassName="h-11 min-h-11 sm:min-h-11 rounded-lg border border-line bg-card px-3 text-sm text-fg"
               options={[
                 { value: "all", label: "전체 플랫폼" },
                 { value: "naver", label: "네이버 웹툰" },
@@ -429,6 +430,7 @@ export function DesignSystemPage() {
             <Segmented
               value={seg}
               onChange={setSeg}
+              className="[&_button]:min-h-11 [&_button]:sm:min-h-11"
               items={[
                 { value: "rank", label: "랭킹" },
                 { value: "new", label: "신작" },
@@ -441,6 +443,7 @@ export function DesignSystemPage() {
             <UnderlineTabs
               value={tab}
               onChange={setTab}
+              className="[&_button]:min-h-11 [&_button]:sm:min-h-11"
               items={[
                 { value: "all", label: "전체" },
                 { value: "toon", label: "웹툰" },
@@ -474,7 +477,7 @@ export function DesignSystemPage() {
             <button
               type="button"
               onClick={() => window.dispatchEvent(new Event("toonspectrum:search"))}
-              className="mt-4 flex w-full items-center gap-2.5 rounded-xl border border-line bg-panel px-3.5 py-2.5 text-left text-sm text-fg-3 transition-colors hover:border-line-strong hover:text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              className="mt-4 flex min-h-11 w-full items-center gap-2.5 rounded-xl border border-line bg-panel px-3.5 py-2.5 text-left text-sm text-fg-3 transition-colors hover:border-line-strong hover:text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
             >
               <Search size={15} className="shrink-0" />
               <span className="flex-1">작품·작가·태그 검색…</span>
