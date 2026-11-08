@@ -2,6 +2,7 @@ import {
   Archive,
   BookOpen,
   CalendarCheck,
+  Clock3,
   GraduationCap,
   LayoutGrid,
   Library,
@@ -14,6 +15,8 @@ import {
 import { PageIntro } from "@/shared/components/page-intro";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { useEffect, useState } from "react";
+import { defineBilingualText, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { useT } from "@/shared/lib/i18n";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
@@ -63,6 +66,8 @@ import { LEARN_CURRICULUM_ROADMAP_TRACKS } from "@/shared/navigation/webtoon-pla
 
 import "./learning-hub.css";
 import "./learning-home-classroom.css";
+
+const SINGLE_LESSON_NOTE = defineBilingualText("learnHome", "singleLesson", "오늘은 이 강좌 하나에 집중해 보세요.", "Focus on this one lesson today.");
 
 const lessonUrl = (id: string) => `/learn/lessons/${encodeURIComponent(id)}`;
 // 경로에서 연 강좌는 ?from=<pathId>를 붙여 강좌 상세에서도 경로 순서를 유지한다.
@@ -216,6 +221,8 @@ const LEARN_NEXT_STEPS: readonly { href: string; icon: LucideIcon; title: string
 ];
 
 export function LearningHome() {
+  useBilingualI18nRevision();
+  const t = useT();
   const store = useLearningProgress();
   const [params, setParams] = useSearchParams();
   const { hash } = useLocation();
@@ -237,6 +244,7 @@ export function LearningHome() {
   const recommendedStats = getPathStats(recommendedPath, store.progress);
   const sessionLessons = buildSessionPlan(recommendedPath, store.progress, profile.sessionMinutes);
   const nextLesson = sessionLessons[0] ?? LESSONS[0];
+  const nextLessonState = getLessonState(store.progress, nextLesson.id);
   const completedCount = LESSONS.filter((lesson) => getLessonState(store.progress, lesson.id) === "completed").length;
   const overallPercent = Math.round((completedCount / Math.max(LESSONS.length, 1)) * 100);
   const skillProgress = getSkillProgress(store.progress);
@@ -337,12 +345,19 @@ export function LearningHome() {
           <section className="learn-classroom-session" aria-labelledby="learn-session-title">
             <article className="learn-classroom-feature">
               <div className="learn-classroom-feature-copy">
-                <p className="learn-eyebrow">{recommendedPath.title} · {STATUS_LABELS[getLessonState(store.progress, nextLesson.id)]} · 약 {nextLesson.minutes}분</p>
+                <p className="learn-eyebrow">{recommendedPath.title}</p>
+                <div className="learn-classroom-meta">
+                  <span className={`learn-status learn-status-${nextLessonState}`}>{STATUS_LABELS[nextLessonState]}</span>
+                  <span><Clock3 size={14} aria-hidden="true" />약 {nextLesson.minutes}분</span>
+                </div>
                 <h2 id="learn-session-title">{nextLesson.title}</h2>
                 <p className="learn-card-outcome"><strong>완성할 것</strong><span>{getLessonMeta(nextLesson.id).outcome}</span></p>
-                <Link className="learn-primary" to={lessonUrlInPath(nextLesson.id, recommendedPath.id)}>
-                  {getLessonState(store.progress, nextLesson.id) === "completed" ? "복습하기" : getLessonState(store.progress, nextLesson.id) === "in-progress" ? "계속하기" : "시작하기"} <span aria-hidden="true">→</span>
-                </Link>
+                <div className="learn-classroom-actions">
+                  <Link className="learn-primary" to={lessonUrlInPath(nextLesson.id, recommendedPath.id)}>
+                    {nextLessonState === "completed" ? "복습하기" : nextLessonState === "in-progress" ? "계속하기" : "시작하기"} <span aria-hidden="true">→</span>
+                  </Link>
+                  <Link className="learn-classroom-path-link" to={pathUrl(recommendedPath.id)}>경로 보기 <span aria-hidden="true">→</span></Link>
+                </div>
               </div>
               <figure className="learn-classroom-art"><WorkflowIllustration kind="learn" priority /><figcaption>ToonStudio 콘셉트 아트</figcaption></figure>
             </article>
@@ -360,10 +375,13 @@ export function LearningHome() {
       </aside>
 
             <div className="learn-session-heading">
-              <h3>{profile.sessionMinutes}분 안에 이어갈 학습</h3>
-              <span>{recommendedStats.completed === recommendedStats.total ? "경로를 완료해 복습 강좌를 제안합니다." : `추천 경로의 남은 시간 약 ${recommendedStats.remainingMinutes}분`}</span>
+              <div>
+                <h3>{profile.sessionMinutes}분 안에 이어갈 학습</h3>
+                <p className="learn-small">{recommendedStats.completed === recommendedStats.total ? "경로를 완료해 복습 강좌를 제안합니다." : `추천 경로의 남은 시간 약 ${recommendedStats.remainingMinutes}분`}</p>
+              </div>
+              <button type="button" className="learn-secondary" aria-expanded={planOpen} aria-controls="learn-plan" onClick={editPlan}>학습 설정 바꾸기</button>
             </div>
-            <ol className="learn-session-list" start={2}>
+            {sessionLessons.length > 1 ? <ol className="learn-session-list" start={2}>
               {sessionLessons.slice(1).map((lesson, index) => {
                 const state = getLessonState(store.progress, lesson.id);
                 return (
@@ -374,8 +392,7 @@ export function LearningHome() {
                   </li>
                 );
               })}
-            </ol>
-            <button type="button" className="learn-secondary" onClick={editPlan}>학습 설정 바꾸기</button>
+            </ol> : <p className="learn-session-focus-note">{t(SINGLE_LESSON_NOTE)}</p>}
           </section>
           <details id="learn-plan" className="learn-plan-section learn-plan-disclosure" open={planOpen} onToggle={(event) => setPlanOpen(event.currentTarget.open)}>
             <summary>

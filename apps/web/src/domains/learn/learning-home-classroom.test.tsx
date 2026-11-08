@@ -54,6 +54,30 @@ describe("다음 실습 우선 학습 홈",()=>{
     fireEvent.change(screen.getByLabelText("한 번에 집중할 시간"),{target:{value:"15"}});
     expect(screen.getByText("15분 안에 이어갈 학습")).toBeTruthy();
   });
+  it("수업 상태·시간과 경로 이동을 분리하고 설정 열림 상태를 전달한다",()=>{
+    mount();
+    const feature = document.querySelector(".learn-classroom-feature");
+    expect(feature).toBeTruthy();
+    const settings = screen.getByRole("button", { name: "학습 설정 바꾸기" });
+    expect(settings.getAttribute("aria-expanded")).toBe("false");
+    expect(settings.getAttribute("aria-controls")).toBe("learn-plan");
+    expect(screen.getByRole("link", { name: "경로 보기" }).getAttribute("href")).toMatch(/^\/learn\/paths\//);
+    expect(document.querySelector(".learn-classroom-meta")?.textContent).toBe("시작 전약 12분");
+    fireEvent.click(settings);
+    expect(settings.getAttribute("aria-expanded")).toBe("true");
+  });
+  it("한 강좌 세션은 빈 순서 목록 대신 집중 안내를 보여 주고 시간을 늘리면 목록을 복원한다",()=>{
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "학습 설정 바꾸기" }));
+    const duration = screen.getByLabelText("한 번에 집중할 시간");
+    fireEvent.change(duration, { target: { value: "15" } });
+    expect(screen.getByText("오늘은 이 강좌 하나에 집중해 보세요.")).toBeTruthy();
+    expect(document.querySelector(".learn-session-list")).toBeNull();
+    expect(screen.getByRole("link", { name: "시작하기" })).toBeTruthy();
+    fireEvent.change(duration, { target: { value: "30" } });
+    expect(screen.queryByText("오늘은 이 강좌 하나에 집중해 보세요.")).toBeNull();
+    expect(document.querySelectorAll(".learn-session-list li")).toHaveLength(1);
+  });
   it("필터 공유 주소·빈 결과·초기화에서 전체 강좌 탭을 유지한다",()=>{
     mount("/learn?view=library&q=zzzzzz"); expect(screen.getByRole("tab",{name:/전체 강좌/}).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByText("조건에 맞는 강좌가 없습니다.")).toBeTruthy(); fireEvent.click(screen.getByRole("button",{name:"필터 초기화"}));

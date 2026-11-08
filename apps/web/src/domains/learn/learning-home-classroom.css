@@ -1,27 +1,37 @@
 /* 학습 홈 전용: 다음 실습을 먼저 보여 주고 실제 기기 진도를 보조한다. */
 .learn-home-page .learn-classroom-heading { margin: 0 0 20px; }
-.learn-home-page .learn-classroom-heading h1 { margin: 0 0 8px; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.3; }
+.learn-home-page .learn-classroom-heading h1 { margin: 0 0 8px; font-size: 2rem; line-height: 1.3; }
 .learn-home-page .learn-classroom-heading p { margin: 0; }
 .learn-home-page .learn-hub-tabs { margin-top: 0; }
 .learn-home-page .learn-classroom-session { display: grid; gap: 16px; }
 .learn-home-page .learn-classroom-feature { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding: 24px; border: 1px solid var(--learn-line); border-radius: 18px; background: var(--color-panel); }
 .learn-home-page .learn-classroom-feature-copy { min-width: 0; align-self: center; }
-.learn-home-page .learn-classroom-feature h2 { margin: 12px 0; font-size: clamp(1.3rem, 2.6vw, 2rem); line-height: 1.4; }
-.learn-home-page .learn-classroom-feature .learn-primary { margin-top: 20px; }
+.learn-home-page .learn-classroom-feature h2 { margin: 12px 0; font-size: 2rem; line-height: 1.4; }
+.learn-home-page .learn-classroom-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; font-size: 13px; color: var(--learn-muted); }
+.learn-home-page .learn-classroom-meta > span { display: inline-flex; align-items: center; gap: 6px; }
+.learn-home-page .learn-classroom-feature .learn-card-outcome { border-radius: 0; border-left: 2px solid var(--learn-accent); padding: 4px 0 4px 12px; background: transparent; }
+.learn-home-page .learn-classroom-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-top: 20px; }
+.learn-home-page .learn-classroom-actions .learn-primary { margin: 0; }
+.learn-home-page .learn-classroom-path-link { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; gap: 8px; font-size: 14px; font-weight: 700; }
+.learn-home-page .learn-classroom-path-link:hover { text-decoration: underline; text-underline-offset: 4px; }
 .learn-home-page .learn-classroom-art { min-width: 0; margin: 0; align-self: center; }
 .learn-home-page .learn-classroom-art img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 12px; }
 .learn-home-page .learn-classroom-art figcaption { margin-top: 6px; font-size: 12px; color: var(--learn-muted); }
-.learn-home-page .learn-dashboard-overview { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; max-width: none; margin: 0; padding: 12px 16px; border-radius: 12px; }
+.learn-home-page .learn-dashboard-overview { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; max-width: none; margin: 0; padding: 16px; border-radius: 12px; border-color: var(--learn-line); background: var(--color-panel); box-shadow: none; }
 .learn-home-page .learn-dashboard-heading { align-items: center; gap: 12px; }
 .learn-home-page .learn-dashboard-heading > strong { font-size: 18px; }
 .learn-home-page .learn-dashboard-overview > progress { flex: 1 1 60px; max-width: 100px; height: 6px; margin: 0; }
 .learn-home-page .learn-dashboard-stats { display: flex; flex-wrap: wrap; flex: 1; gap: 8px 18px; margin: 0; }
-.learn-home-page .learn-dashboard-stats > div { display: flex; align-items: baseline; gap: 6px; padding: 0; }
+.learn-home-page .learn-dashboard-stats > div { display: flex; align-items: baseline; gap: 6px; padding: 0; border: 0; background: transparent; }
 .learn-home-page .learn-dashboard-stats dd { margin: 0; font-size: 15px; }
-.learn-home-page .learn-session-heading { margin: 0; }
+.learn-home-page .learn-session-heading { margin: 8px 0 0; align-items: center; gap: 12px; }
 .learn-home-page .learn-session-heading h3 { margin: 0; font-size: 15px; }
-.learn-home-page .learn-session-heading > span { font-size: 12px; }
-.learn-home-page .learn-classroom-session > .learn-secondary { justify-self: end; }
+.learn-home-page .learn-session-heading .learn-small { margin: 6px 0 0; font-size: 13px; }
+.learn-home-page .learn-session-heading .learn-secondary { flex-shrink: 0; }
+.learn-home-page .learn-session-focus-note { margin: 0; padding: 16px 0; border-top: 1px solid var(--learn-line); color: var(--learn-muted); font-size: 14px; }
+.learn-home-page .learn-session-list li { padding-block: 16px; }
+.learn-home-page .learn-session-list li > a { padding-inline: 12px; border: 1px solid var(--learn-line); border-radius: 10px; }
+.learn-home-page .learn-session-list li > a:hover { border-color: var(--learn-accent); background: var(--color-raised); }
 .learn-home-page .learn-classroom-roadmap { margin: 24px 0; border: 1px solid var(--learn-line); border-radius: 12px; padding: 0 16px; }
 .learn-home-page .learn-classroom-roadmap > summary { padding: 12px 0; cursor: pointer; }
 .learn-home-page :is(h1, h2, h3, p, span, strong, a, summary, label) { overflow-wrap: anywhere; word-break: keep-all; }
@@ -31,38 +41,43 @@
 @media (max-width: 1023px) {
   .learn-home-page .learn-classroom-feature { gap: 18px; padding: 20px; }
 }
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .learn-home-page .learn-classroom-heading { margin-bottom: 16px; }
+  .learn-home-page .learn-classroom-heading h1 { font-size: 1.5rem; }
   .learn-home-page .learn-classroom-feature { grid-template-columns: minmax(0, 1fr); padding: 16px; gap: 12px; }
   .learn-home-page .learn-classroom-feature-copy { display: contents; }
   .learn-home-page .learn-classroom-feature .learn-eyebrow { order: 0; margin: 0; }
   /* 핵심 행동은 아트보다 먼저, 아트 래퍼의 기본 8:5 높이도 함께 줄인다. */
   .learn-home-page .learn-classroom-art { order: 5; }
+  .learn-home-page .learn-classroom-meta { order: 1; margin: 0; }
   .learn-home-page .learn-classroom-art .workflow-illustration { height: 96px; min-height: 0; aspect-ratio: auto; }
   .learn-home-page .learn-classroom-art img { height: 96px; aspect-ratio: auto; object-fit: contain; }
-  .learn-home-page .learn-classroom-feature h2 { order: 2; margin: 0; }
+  .learn-home-page .learn-classroom-feature h2 { order: 2; margin: 0; font-size: 1.5rem; }
   .learn-home-page .learn-classroom-feature .learn-card-outcome { order: 3; margin: 0; }
-  .learn-home-page .learn-classroom-feature .learn-primary { order: 4; margin: 0; justify-content: center; }
+  .learn-home-page .learn-classroom-actions { order: 4; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; margin: 0; }
+  .learn-home-page .learn-classroom-feature .learn-primary { min-width: 0; justify-content: center; }
   .learn-home-page .learn-dashboard-overview { gap: 8px; padding: 12px; }
   .learn-home-page .learn-dashboard-stats { flex-basis: 100%; }
-  .learn-home-page .learn-session-heading { display: block; }
+  .learn-home-page .learn-session-heading { flex-direction: column; align-items: stretch; }
+  .learn-home-page .learn-session-heading .learn-secondary { align-self: flex-start; }
   .learn-home-page .learn-session-list li { grid-template-columns: minmax(0, 1fr) auto; }
+  .learn-home-page .learn-session-list li > a { grid-column: 2; grid-row: 1; align-self: center; white-space: nowrap; }
   .learn-home-page .learn-session-number { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .learn-home-page .learn-classroom-feature, .learn-home-page .learn-classroom-art { animation: none; transition: none; }
 }
 
-/* Keep the four learning destinations legible rather than stacking words in narrow columns. */
+/* 네 학습 목적지는 좁은 열에서 낱말이 쌓이지 않도록 분할한다. */
 .learn-home-page .learn-hub-tabs > [role="tablist"] { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 #main-content .learn-home-page .learn-hub-tabs > [role="tablist"] > [role="tab"] { flex-direction: row; min-height: 44px; min-block-size: 44px; gap: 6px; padding: 8px; border-radius: 10px; }
 .learn-home-page .learn-hub-tabs > [role="tablist"] > [role="tab"] > span { flex-wrap: nowrap; }
-@media (min-width: 641px) and (max-width: 1023px) {
+@media (min-width: 640px) and (max-width: 1023px) {
   .learn-home-page .learn-classroom-feature { grid-template-columns: minmax(0, 1fr); }
   .learn-home-page .learn-classroom-art .workflow-illustration,
   .learn-home-page .learn-classroom-art img { height: 160px; min-height: 0; aspect-ratio: auto; object-fit: contain; }
-  .learn-home-page .learn-classroom-feature .learn-primary { width: 100%; justify-content: center; }
+  .learn-home-page .learn-classroom-actions .learn-primary { flex: 1; justify-content: center; }
 }
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .learn-home-page .learn-hub-tabs > [role="tablist"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
