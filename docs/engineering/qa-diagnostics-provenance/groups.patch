@@ -1,0 +1,29 @@
+--- scripts/verify-studio-groups.mts
++++ scripts/verify-studio-groups-investigate.mts
+@@ -1993,6 +1993,15 @@
+     deviceScaleFactor: 2,
+     locale: STUDIO_UI_LOCALE,
+   });
++  await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
++  await context.addInitScript(() => {
++    const events: unknown[] = [];
++    Object.assign(window, { __qaInputEvents: events });
++    document.addEventListener("change", (event) => {
++      const target = event.target as HTMLInputElement;
++      if (target.type === "file") events.push({ kind: "change", accept: target.accept, files: [...(target.files ?? [])].map(file => ({ name: file.name, type: file.type, size: file.size })) });
++    }, true);
++  });
+   const page = await context.newPage();
+   const errors = collectBrowserErrors(page, "desktop-groups", studioUrl);
+   const screenshots: string[] = [];
+@@ -2857,6 +2866,10 @@
+       durableAutosaveModuleUrl,
+     };
+   } finally {
++    await page.screenshot({ path: join(SCRATCH, "diagnostic-final.png"), fullPage: true }).catch(() => undefined);
++    writeFileSync(join(SCRATCH, "diagnostic-page.txt"), await page.locator("body").innerText().catch(() => ""));
++    writeFileSync(join(SCRATCH, "diagnostic-events.json"), JSON.stringify({ errors, inputs: await page.evaluate(() => (window as unknown as { __qaInputEvents: unknown }).__qaInputEvents) }, null, 2));
++    await context.tracing.stop({ path: join(SCRATCH, "diagnostic-trace.zip") });
+     await context.close();
+   }
+ }

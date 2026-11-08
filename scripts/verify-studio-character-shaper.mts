@@ -17,6 +17,7 @@ import { initializeCanvas, readPsd, type Layer } from "ag-psd";
 import { chromium, type Browser, type Download, type Page } from "playwright";
 
 import { compositeCharacterPsdLayers } from "./lib/character-psd-reference-compositor.mjs";
+import { collectStudioQaDiagnostics, installStudioQaDiagnostics } from "./lib/studio-qa-diagnostics.mjs";
 import {
   findFreePort,
   spawnVitePreview,
@@ -416,6 +417,7 @@ async function main(): Promise<void> {
   try {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: "ko-KR", acceptDownloads: true });
     await ctx.addInitScript({ content: "globalThis.__name ??= (value) => value;" });
+    await installStudioQaDiagnostics(ctx, "layout");
     await ctx.addInitScript(([q, m]) => {
       try { localStorage.setItem(q, "1"); localStorage.setItem(m, "1"); } catch { /* ignore */ }
     }, [QUICKSTART_KEY, MOBILE_HINT_KEY]);
@@ -741,6 +743,8 @@ async function main(): Promise<void> {
     console.log(`character shaper evidence → ${RESULT_PATH}`);
   } finally {
     if (evidence.status !== "passed") evidence.status = "failed";
+    const diagnostics = await Promise.all(browser.contexts().map(collectStudioQaDiagnostics));
+    if (diagnostics.some((entry) => entry !== undefined)) evidence.layoutDiagnostics = diagnostics;
     writeFileSync(RESULT_PATH, JSON.stringify(evidence, null, 2));
     for (const context of browser.contexts()) {
       await context.pages()[0]?.screenshot({ path: join(OUT_DIR, `character-final-${context.pages()[0]?.viewportSize()?.width}.png`) }).catch(() => undefined);

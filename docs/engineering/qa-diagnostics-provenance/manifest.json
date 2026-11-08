@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "files": [
+    {
+      "canonical": "scripts/verify-studio-character-shaper.mts",
+      "original": "scripts/verify-studio-character-shaper-investigate.mts",
+      "baseSha": "d823079b2f3d9daa0fc5c241e09d64f533ee8ea0",
+      "baseSha256": "194f70bc4b9ac90a842c693f9155e36384b5aa80828daa6fcc538336834faecd",
+      "originalBytes": 44758,
+      "originalSha256": "53f3e2079471643391d5a2a86a1f702cea671588b9cdbf5b8c951f866d242c9f",
+      "patch": "character-shaper.patch",
+      "patchSha256": "83271ac9e8b6d488f4ec070ecee64faf4c09337efde1ae4991011749e38e08cc",
+      "preservedLocalName": "scripts/verify-studio-character-shaper-investigate.mts.original"
+    },
+    {
+      "canonical": "scripts/verify-studio-groups.mts",
+      "original": "scripts/verify-studio-groups-investigate.mts",
+      "baseSha": "d823079b2f3d9daa0fc5c241e09d64f533ee8ea0",
+      "baseSha256": "d3aa1a626a244330683573b17eb6527ac7b212e9ad56f8e13d398c7c9a511107",
+      "originalBytes": 119785,
+      "originalSha256": "f3160ffb7f6006184259b6487f6e9e4132425fb62a33878b64cf838e832c873d",
+      "patch": "groups.patch",
+      "patchSha256": "a0f466409269b35ff4657a4bc4943f8a55989e623d7064d6a945f33f34b3b032",
+      "preservedLocalName": "scripts/verify-studio-groups-investigate.mts.original"
+    }
+  ]
+}

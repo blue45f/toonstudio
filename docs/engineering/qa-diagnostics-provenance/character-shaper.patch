@@ -1,0 +1,38 @@
+--- scripts/verify-studio-character-shaper.mts
++++ scripts/verify-studio-character-shaper-investigate.mts
+@@ -416,6 +416,24 @@
+   try {
+     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: "ko-KR", acceptDownloads: true });
+     await ctx.addInitScript({ content: "globalThis.__name ??= (value) => value;" });
++    await ctx.addInitScript(() => {
++      const samples: unknown[] = [];
++      Object.assign(window, { __qaCharacterLayoutSamples: samples });
++      let previous = "";
++      const record = () => {
++        const canvas = document.querySelector<HTMLCanvasElement>('[data-character-shaper-viewport] canvas');
++        if (!canvas || samples.length > 200) return;
++        const rect = canvas.getBoundingClientRect();
++        const dock = document.querySelector<HTMLElement>('[data-character-shaper-dock]');
++        const status = [...document.querySelectorAll('[data-character-shaper] [role=status]')].map(element => element.textContent).join(" | ");
++        const sample = { width: canvas.width, height: canvas.height, cssWidth: rect.width, cssHeight: rect.height, top: rect.top, dockHeight: dock?.getBoundingClientRect().height, status };
++        const key = JSON.stringify(sample);
++        if (key !== previous) { previous = key; samples.push({ at: performance.now(), ...sample }); }
++      };
++      const observer = new MutationObserver(record);
++      observer.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
++      setInterval(record, 100);
++    });
+     await ctx.addInitScript(([q, m]) => {
+       try { localStorage.setItem(q, "1"); localStorage.setItem(m, "1"); } catch { /* ignore */ }
+     }, [QUICKSTART_KEY, MOBILE_HINT_KEY]);
+@@ -741,6 +759,10 @@
+     console.log(`character shaper evidence → ${RESULT_PATH}`);
+   } finally {
+     if (evidence.status !== "passed") evidence.status = "failed";
++    evidence.layoutDiagnostics = await Promise.all(browser.contexts().map(async (context) => {
++      const page = context.pages()[0];
++      return page ? { width: page.viewportSize()?.width, samples: await page.evaluate(() => (window as unknown as { __qaCharacterLayoutSamples: unknown }).__qaCharacterLayoutSamples).catch(() => null) } : null;
++    }));
+     writeFileSync(RESULT_PATH, JSON.stringify(evidence, null, 2));
+     for (const context of browser.contexts()) {
+       await context.pages()[0]?.screenshot({ path: join(OUT_DIR, `character-final-${context.pages()[0]?.viewportSize()?.width}.png`) }).catch(() => undefined);

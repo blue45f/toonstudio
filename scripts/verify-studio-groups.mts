@@ -33,6 +33,7 @@ import { STUDIO_DRAFT_CANVAS_PATHNAME } from "../apps/web/src/domains/creator/st
 
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { setStudioPrimaryColorThroughUi } from "./lib/studio-primary-color-interactions";
+import { closeStudioGroupQaContext, createStudioGroupQaContext } from "./lib/studio-qa-diagnostics.mjs";
 import {
   readDurableStudioAutosaveDocument,
   readDurableStudioAutosaveError,
@@ -1988,11 +1989,7 @@ async function runDesktopGroupAudit(
   browser: Browser,
   studioUrl: string,
 ): Promise<DesktopAuditResult> {
-  const context = await browser.newContext({
-    viewport: { width: 1440, height: 1100 },
-    deviceScaleFactor: 2,
-    locale: STUDIO_UI_LOCALE,
-  });
+  const context = await createStudioGroupQaContext(browser, STUDIO_UI_LOCALE);
   const page = await context.newPage();
   const errors = collectBrowserErrors(page, "desktop-groups", studioUrl);
   const screenshots: string[] = [];
@@ -2857,7 +2854,7 @@ async function runDesktopGroupAudit(
       durableAutosaveModuleUrl,
     };
   } finally {
-    await context.close();
+    await closeStudioGroupQaContext(context, join(SCRATCH, "diagnostic-events.json"));
   }
 }
 
