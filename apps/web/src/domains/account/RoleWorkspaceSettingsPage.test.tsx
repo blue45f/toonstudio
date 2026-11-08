@@ -110,12 +110,29 @@ describe("내 직군 · 작업환경 설정 (R-3)", () => {
     expect(screen.queryByTestId("role-editor")).toBeNull();
   });
 
-  it("탭을 누르면 주소에 남는다", async () => {
+  it("탭을 누르면 주소에 남고 활성 탭 대비·44px 타깃·포커스 표시 계약을 유지한다", async () => {
     useApp.setState({ userId: "user-1" });
     vi.mocked(getMyProfile).mockResolvedValue(profile as never);
     renderPage();
-    fireEvent.click(screen.getByRole("tab", { name: "작업환경" }));
+
+    const tablist = screen.getByRole("tablist", { name: "직군·작업환경 설정" });
+    expect(tablist.hasAttribute("data-own-control-size")).toBe(true);
+
+    const profileTab = screen.getByRole("tab", { name: "내 직군" });
+    const workspaceTab = screen.getByRole("tab", { name: "작업환경" });
+    expect(profileTab.className).toContain("text-on-accent");
+    expect(profileTab.className).not.toContain("text-white");
+    expect(profileTab.className).toContain("min-h-11");
+    expect(profileTab.className).toContain("focus-visible:outline-2");
+
+    const canvasLink = screen.getByRole("link", { name: /스튜디오 캔버스에서 바로 열기/ });
+    expect(canvasLink.className).toContain("min-h-11");
+    expect(canvasLink.className).toContain("focus-visible:outline-2");
+
+    fireEvent.click(workspaceTab);
     expect(await screen.findByTestId("personalize-panels")).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "작업환경" }).getAttribute("aria-selected")).toBe("true");
+    expect(workspaceTab.getAttribute("aria-selected")).toBe("true");
+    expect(workspaceTab.className).toContain("text-on-accent");
+    expect(workspaceTab.className).not.toContain("text-white");
   });
 });

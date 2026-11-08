@@ -61,99 +61,123 @@ export function RoleWorkspaceSettingsPage() {
 
   return (
     <Container className="py-10">
-      <PageIntro variant="restrained">
-        {bi("직군과 작업환경", "Role and workspace")}
-      </PageIntro>
-      <SitePageHeader
-        surface="plain"
-        className="mb-6"
-        icon={Briefcase}
-        eyebrow={bi("설정", "Settings")}
-        title={bi("내 직군 · 작업환경", "My role · workspace")}
-        description={bi(
-          "직군은 기능 접근을 막는 권한이 아니라, 자주 쓰는 화면·기본 선택·알림 수준을 내 일에 맞게 바꿔 주는 프리셋입니다. 직군을 바꿔도 모든 기능을 그대로 쓸 수 있습니다.",
-          "Your role is not a permission gate — it is a preset that tunes default views, shortcuts and notification levels to your work. Every feature stays available either way.",
-        )}
-        aside={
-          <Link to="/settings" className={buttonClass({ variant: "outline" })}>
-            {bi("설정으로 돌아가기", "Back to settings")}
-          </Link>
-        }
-      />
+      <div data-own-control-size="">
+        <PageIntro variant="restrained">
+          {bi("직군과 작업환경", "Role and workspace")}
+        </PageIntro>
+        <SitePageHeader
+          surface="plain"
+          className="mb-6"
+          icon={Briefcase}
+          eyebrow={bi("설정", "Settings")}
+          title={bi("내 직군 · 작업환경", "My role · workspace")}
+          description={bi(
+            "직군은 기능 접근을 막는 권한이 아니라, 자주 쓰는 화면·기본 선택·알림 수준을 내 일에 맞게 바꿔 주는 프리셋입니다. 직군을 바꿔도 모든 기능을 그대로 쓸 수 있습니다.",
+            "Your role is not a permission gate — it is a preset that tunes default views, shortcuts and notification levels to your work. Every feature stays available either way.",
+          )}
+          aside={
+            <Link
+              to="/settings"
+              className={buttonClass({
+                variant: "outline",
+                className: "min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+              })}
+            >
+              {bi("설정으로 돌아가기", "Back to settings")}
+            </Link>
+          }
+        />
 
-      <div
-        data-testid="role-workspace-rea-ergonomics-bar"
-        className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-accent/25 bg-accent/5 px-4 py-2.5 text-xs text-fg-2"
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <img
-            src="/assets/site-experience/site-art-v1/motion-previews/atelier-pipeline-motion-640.webp"
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
-            width={56}
-            height={32}
-            className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
-          />
-          <span className="rounded-md bg-accent/15 px-2 py-0.5 font-bold text-accent">
-            {bi("15개 세부직무 인지부하 47~58% 절감", "15 Sub-Role Cognitive Load -47~58%")}
-          </span>
-          <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-medium text-fg">
-            {bi("Affinity 페르소나 (캔버스 76%)", "Affinity Persona (76% Canvas)")}
-          </span>
-          <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-medium text-fg">
-            {bi("Procreate Zen 몰입 (캔버스 86%)", "Procreate Zen Focus (86% Canvas)")}
-          </span>
-          <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-medium text-fg">
-            {bi("CSP·Krita 풀 도크 (캔버스 68%)", "CSP/Krita Full Dock (68% Canvas)")}
-          </span>
-        </div>
-        <Link
-          to="/studio/canvas"
-          className="font-semibold text-accent underline underline-offset-4 hover:text-fg"
+        <div
+          data-own-control-size=""
+          data-testid="role-workspace-rea-ergonomics-bar"
+          className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-accent/25 bg-accent/5 px-4 py-2.5 text-xs text-fg-2"
         >
-          {bi("스튜디오 캔버스에서 바로 열기 →", "Open in Studio Canvas →")}
-        </Link>
-      </div>
-
-      <div role="tablist" aria-label={bi("직군·작업환경 설정", "Role and workspace settings")} className="mb-6 flex flex-wrap gap-2">
-        {ROLE_SETTINGS_TABS.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            role="tab"
-            aria-selected={tab === item.key}
-            onClick={() => selectTab(item.key)}
-            className={cn(
-              "inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold transition-colors",
-              tab === item.key
-                ? "border-accent bg-accent text-white"
-                : "border-line bg-raised text-fg-2 hover:border-accent/50 hover:text-fg",
-            )}
+          <div className="flex flex-wrap items-center gap-2">
+            <img
+              src="/assets/site-experience/site-art-v1/motion-previews/atelier-pipeline-motion-640.webp"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              decoding="async"
+              width={56}
+              height={32}
+              className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
+            />
+            <span className="rounded-md bg-accent/15 px-2 py-0.5 font-bold text-accent">
+              {bi("15개 세부직무 인지부하 47~58% 절감", "15 Sub-Role Cognitive Load -47~58%")}
+            </span>
+            <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-medium text-fg">
+              {bi("Affinity 페르소나 (캔버스 76%)", "Affinity Persona (76% Canvas)")}
+            </span>
+            <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-medium text-fg">
+              {bi("Procreate Zen 몰입 (캔버스 86%)", "Procreate Zen Focus (86% Canvas)")}
+            </span>
+            <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-medium text-fg">
+              {bi("CSP·Krita 풀 도크 (캔버스 68%)", "CSP/Krita Full Dock (68% Canvas)")}
+            </span>
+          </div>
+          <Link
+            to="/studio/canvas"
+            className="inline-flex min-h-11 items-center rounded-lg px-2 font-semibold text-accent underline underline-offset-4 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            {bi(item.label[0], item.label[1])}
-          </button>
-        ))}
-      </div>
+            {bi("스튜디오 캔버스에서 바로 열기 →", "Open in Studio Canvas →")}
+          </Link>
+        </div>
 
-      {tab === "profile" ? (
-        <div role="tabpanel">
-          <RoleProfileSettingsSection />
+        <div
+          role="tablist"
+          aria-label={bi("직군·작업환경 설정", "Role and workspace settings")}
+          data-own-control-size=""
+          className="mb-6 flex flex-wrap gap-2"
+        >
+          {ROLE_SETTINGS_TABS.map((item) => (
+            <button
+              key={item.key}
+              id={`role-settings-tab-${item.key}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === item.key}
+              aria-controls={`role-settings-panel-${item.key}`}
+              onClick={() => selectTab(item.key)}
+              className={cn(
+                "inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                tab === item.key
+                  ? "border-accent bg-accent text-on-accent"
+                  : "border-line bg-raised text-fg-2 hover:border-accent/50 hover:text-fg",
+              )}
+            >
+              {bi(item.label[0], item.label[1])}
+            </button>
+          ))}
         </div>
-      ) : (
-        <div role="tabpanel">
-          <Suspense
-            fallback={
-              <div role="status" className="rounded-2xl border border-line bg-panel/40 p-5 text-sm text-fg-2">
-                {bi("작업환경 설정을 불러오는 중…", "Loading workspace settings…")}
-              </div>
-            }
+
+        {tab === "profile" ? (
+          <div
+            id="role-settings-panel-profile"
+            role="tabpanel"
+            aria-labelledby="role-settings-tab-profile"
           >
-            <StudioLibraryPersonalizePanels locale={lang} />
-          </Suspense>
-        </div>
-      )}
+            <RoleProfileSettingsSection />
+          </div>
+        ) : (
+          <div
+            id="role-settings-panel-workspace"
+            role="tabpanel"
+            aria-labelledby="role-settings-tab-workspace"
+          >
+            <Suspense
+              fallback={
+                <div role="status" className="rounded-2xl border border-line bg-panel/40 p-5 text-sm text-fg-2">
+                  {bi("작업환경 설정을 불러오는 중…", "Loading workspace settings…")}
+                </div>
+              }
+            >
+              <StudioLibraryPersonalizePanels locale={lang} />
+            </Suspense>
+          </div>
+        )}
+      </div>
     </Container>
   );
 }
@@ -212,7 +236,13 @@ function RoleProfileSettingsSection() {
             "Your role is saved on your account profile. Sign in to set your role and working style.",
           )}
         </p>
-        <Link to="/auth/login" className={buttonClass({ variant: "solid", className: "mt-4" })}>
+        <Link
+          to="/auth/login"
+          className={buttonClass({
+            variant: "solid",
+            className: "mt-4 min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          })}
+        >
           {bi("로그인하기", "Sign in")}
         </Link>
       </section>
@@ -239,7 +269,10 @@ function RoleProfileSettingsSection() {
         <button
           type="button"
           onClick={() => setReloadKey((key) => key + 1)}
-          className={buttonClass({ variant: "outline", className: "mt-4" })}
+          className={buttonClass({
+            variant: "outline",
+            className: "mt-4 min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          })}
         >
           {bi("다시 시도", "Retry")}
         </button>
@@ -288,7 +321,10 @@ function RoleProfileSettingsSection() {
           type="button"
           onClick={onSave}
           disabled={saving || !dirty}
-          className={buttonClass({ variant: "solid", className: "gap-1.5" })}
+          className={buttonClass({
+            variant: "solid",
+            className: "min-h-11 gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          })}
         >
           {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : null}
           {saving

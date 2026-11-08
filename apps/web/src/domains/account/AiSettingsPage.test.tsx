@@ -62,15 +62,28 @@ it("switches BYOK routing policy and failover probe mode interactively", () => {
     </MemoryRouter>,
   );
 
-  expect(screen.getByTestId("ai-settings-rea-byok-failover-bar")).toBeTruthy();
+  const bar = screen.getByTestId("ai-settings-rea-byok-failover-bar");
+  expect(bar).toBeTruthy();
+  expect(bar.hasAttribute("data-own-control-size")).toBe(true);
+  expect(screen.getByRole("group", { name: "라우팅 정책 선택" })).toBeTruthy();
+  expect(screen.getByRole("group", { name: "페일오버 프로브 모드" })).toBeTruthy();
+
   const defaultPolicyBtn = screen.getByTestId("ai-settings-rea-policy-byok-12key-auto-rotate");
   const localBridgeBtn = screen.getByTestId("ai-settings-rea-policy-comfy-invoke-local-bridge");
   const defaultProbeBtn = screen.getByTestId("ai-settings-rea-probe-realtime-verify");
   const failoverProbeBtn = screen.getByTestId("ai-settings-rea-probe-429-auto-failover");
 
   expect(defaultPolicyBtn.getAttribute("aria-pressed")).toBe("true");
+  expect(defaultPolicyBtn.className).toContain("text-on-accent");
+  expect(defaultPolicyBtn.className).not.toContain("text-white");
+  expect(defaultPolicyBtn.className).toContain("min-h-11");
+  expect(defaultPolicyBtn.className).toContain("focus-visible:outline-2");
   expect(localBridgeBtn.getAttribute("aria-pressed")).toBe("false");
   expect(defaultProbeBtn.getAttribute("aria-pressed")).toBe("true");
+  expect(defaultProbeBtn.className).toContain("text-on-accent");
+  expect(defaultProbeBtn.className).not.toContain("text-white");
+  expect(defaultProbeBtn.className).toContain("min-h-11");
+  expect(defaultProbeBtn.className).toContain("focus-visible:outline-2");
   expect(failoverProbeBtn.getAttribute("aria-pressed")).toBe("false");
 
   const status = screen.getByTestId("ai-settings-rea-byok-status");
@@ -84,8 +97,12 @@ it("switches BYOK routing policy and failover probe mode interactively", () => {
 
   expect(defaultPolicyBtn.getAttribute("aria-pressed")).toBe("false");
   expect(localBridgeBtn.getAttribute("aria-pressed")).toBe("true");
+  expect(localBridgeBtn.className).toContain("text-on-accent");
+  expect(localBridgeBtn.className).not.toContain("text-white");
   expect(defaultProbeBtn.getAttribute("aria-pressed")).toBe("false");
   expect(failoverProbeBtn.getAttribute("aria-pressed")).toBe("true");
+  expect(failoverProbeBtn.className).toContain("text-on-accent");
+  expect(failoverProbeBtn.className).not.toContain("text-white");
   expect(status.textContent).toContain("comfy-invoke-local-bridge");
   expect(status.textContent).toContain("429-auto-failover");
 });

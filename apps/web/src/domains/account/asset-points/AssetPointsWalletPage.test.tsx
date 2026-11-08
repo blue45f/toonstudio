@@ -113,16 +113,33 @@ describe("로그인 사용자", () => {
     authState.userId = "user-1";
     renderPage();
 
-    expect(screen.getByTestId("wallet-rea-fifo-exchange-bar")).toBeTruthy();
+    const bar = screen.getByTestId("wallet-rea-fifo-exchange-bar");
+    expect(bar).toBeTruthy();
+    expect(bar.hasAttribute("data-own-control-size")).toBe(true);
+    expect(screen.getByRole("group", { name: "에셋 교환 티어 시뮬레이션" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "선입선출(FIFO) 차감 구간" })).toBeTruthy();
+
     const defaultTierBtn = screen.getByTestId("wallet-rea-tier-clippy-brush-pack-150p");
     const aconTierBtn = screen.getByTestId("wallet-rea-tier-acon-3d-prop-300p");
     const defaultWindowBtn = screen.getByTestId("wallet-rea-window-30d-urgent-first");
     const quarterlyWindowBtn = screen.getByTestId("wallet-rea-window-90d-quarterly");
 
     expect(defaultTierBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(defaultTierBtn.className).toContain("text-on-accent");
+    expect(defaultTierBtn.className).not.toContain("text-white");
+    expect(defaultTierBtn.className).toContain("min-h-11");
+    expect(defaultTierBtn.className).toContain("focus-visible:outline-2");
     expect(aconTierBtn.getAttribute("aria-pressed")).toBe("false");
     expect(defaultWindowBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(defaultWindowBtn.className).toContain("text-on-accent");
+    expect(defaultWindowBtn.className).not.toContain("text-white");
+    expect(defaultWindowBtn.className).toContain("min-h-11");
+    expect(defaultWindowBtn.className).toContain("focus-visible:outline-2");
     expect(quarterlyWindowBtn.getAttribute("aria-pressed")).toBe("false");
+
+    const membershipLink = screen.getByRole("link", { name: "멤버십 이용 내역에서 보기" });
+    expect(membershipLink.className).toContain("min-h-11");
+    expect(membershipLink.className).toContain("focus-visible:outline-2");
 
     const status = screen.getByTestId("wallet-rea-fifo-status");
     expect(status.textContent).toContain("clippy-brush-pack-150p");
@@ -135,8 +152,12 @@ describe("로그인 사용자", () => {
 
     expect(defaultTierBtn.getAttribute("aria-pressed")).toBe("false");
     expect(aconTierBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(aconTierBtn.className).toContain("text-on-accent");
+    expect(aconTierBtn.className).not.toContain("text-white");
     expect(defaultWindowBtn.getAttribute("aria-pressed")).toBe("false");
     expect(quarterlyWindowBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(quarterlyWindowBtn.className).toContain("text-on-accent");
+    expect(quarterlyWindowBtn.className).not.toContain("text-white");
     expect(status.textContent).toContain("acon-3d-prop-300p");
     expect(status.textContent).toContain("90d-quarterly");
   });
