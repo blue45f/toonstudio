@@ -127,7 +127,7 @@ export function PromotionBoardPage() {
     hookWindowOptions.find((item) => item.id === hookWindow) ?? hookWindowOptions[0]!;
 
   return (
-    <div className="pc-shell">
+    <div className="pc-shell" data-own-control-size="">
       <CampusObjectSource objects={publicPosts.map((post) => ({
         id: post.id,
         title: post.title,
@@ -160,16 +160,16 @@ export function PromotionBoardPage() {
           <h1>{bt("아직 발견하지 못한,", "Stories you haven't found yet,")}<br /><em>{bt("당신의 다음 웹툰.", "your next webtoon.")}</em></h1>
           <p className="pc-lead">{bt("첫 연재의 설렘부터 한 편의 트레일러까지.", "From the thrill of a first serialization to a full trailer.")}<br />{bt("새로운 작가를 만나고, 만드는 과정을 응원해 주세요.", "Meet new creators and cheer on their process.")}</p>
           <div className="pc-actions">
-            <Link className="pc-button pc-primary" to="/community/promote/new"><PenLine size={17} aria-hidden="true" />{bt("내 작품 소개하기", "Introduce my work")}</Link>
-            <Link className="pc-button" to="/showcase/promo"><Clapperboard size={16} aria-hidden="true" />{bt("홍보 영상·트레일러 만들기", "Create a promo trailer")} <ArrowRight size={16} aria-hidden="true" /></Link>
-            <Link className="pc-button" to="/collaborate">{bt("용역·어시·팀원 찾기", "Find gigs · assistants · teammates")} <ArrowRight size={16} aria-hidden="true" /></Link>
-            <Link className="pc-button" to="/showcase">{bt("창작 갤러리", "Creator gallery")} <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link className="pc-button pc-primary min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/community/promote/new"><PenLine size={17} aria-hidden="true" />{bt("내 작품 소개하기", "Introduce my work")}</Link>
+            <Link className="pc-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/showcase/promo"><Clapperboard size={16} aria-hidden="true" />{bt("홍보 영상·트레일러 만들기", "Create a promo trailer")} <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link className="pc-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/collaborate">{bt("용역·어시·팀원 찾기", "Find gigs · assistants · teammates")} <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link className="pc-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/showcase">{bt("창작 갤러리", "Creator gallery")} <ArrowRight size={16} aria-hidden="true" /></Link>
           </div>
         </div>
         {featuredPost ? (
           <aside className="pc-hero-feature">
             <Link
-              className="pc-hero-feature-cover"
+              className="pc-hero-feature-cover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               to={`/community/promote/${encodeURIComponent(featuredPost.id)}`}
               aria-label={bt(`${featuredPost.seriesTitle} 소개 보기`, `View the introduction of ${featuredPost.seriesTitle}`)}
             >
@@ -193,12 +193,13 @@ export function PromotionBoardPage() {
         )}
       </header>
       <nav className="pc-quick" aria-label={bt("추천 탐색", "Suggested browsing")}>
-        <button type="button" onClick={() => { setParams((previous) => { const next = new URLSearchParams(previous); next.set("stage", "amateur"); next.delete("q"); return next; }); setSearch(""); }}>01 <strong>{bt("아마추어 작가 발견", "Discover amateur creators")}</strong><ArrowRight size={16} aria-hidden="true" /></button>
-        <button type="button" onClick={() => { setParams((previous) => { const next = new URLSearchParams(previous); next.set("stage", "debut"); next.delete("q"); return next; }); setSearch(""); }}>02 <strong>{bt("첫 작품·신작 모아보기", "First & new works")}</strong><ArrowRight size={16} aria-hidden="true" /></button>
-        <button type="button" onClick={() => { setParams((previous) => { const next = new URLSearchParams(previous); next.set("kind", "trailer"); next.delete("q"); return next; }); setSearch(""); }}>03 <strong>{bt("트레일러 상영관", "Trailer theater")}</strong><ArrowRight size={16} aria-hidden="true" /></button>
+        <button type="button" className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => { setParams((previous) => { const next = new URLSearchParams(previous); next.set("stage", "amateur"); next.delete("q"); return next; }); setSearch(""); }}>01 <strong>{bt("아마추어 작가 발견", "Discover amateur creators")}</strong><ArrowRight size={16} aria-hidden="true" /></button>
+        <button type="button" className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => { setParams((previous) => { const next = new URLSearchParams(previous); next.set("stage", "debut"); next.delete("q"); return next; }); setSearch(""); }}>02 <strong>{bt("첫 작품·신작 모아보기", "First & new works")}</strong><ArrowRight size={16} aria-hidden="true" /></button>
+        <button type="button" className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" onClick={() => { setParams((previous) => { const next = new URLSearchParams(previous); next.set("kind", "trailer"); next.delete("q"); return next; }); setSearch(""); }}>03 <strong>{bt("트레일러 상영관", "Trailer theater")}</strong><ArrowRight size={16} aria-hidden="true" /></button>
       </nav>
       <section
         data-testid="promotion-rea-launch-funnel-bar"
+        data-own-control-size=""
         aria-label={bt(
           "신작 런칭 트레일러 및 독자 전환 퍼널 시뮬레이터",
           "New Series Launch Trailer & Reader Conversion Funnel Simulator",
@@ -239,9 +240,9 @@ export function PromotionBoardPage() {
                   aria-pressed={promoChannel === item.id}
                   onClick={() => setPromoChannel(item.id)}
                   className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                     promoChannel === item.id
-                      ? "border-accent bg-accent/15 text-accent"
+                      ? "border-accent bg-accent text-on-accent"
                       : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
                   )}
                 >
@@ -264,9 +265,9 @@ export function PromotionBoardPage() {
                   aria-pressed={hookWindow === item.id}
                   onClick={() => setHookWindow(item.id)}
                   className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                     hookWindow === item.id
-                      ? "border-accent bg-accent/15 text-accent"
+                      ? "border-accent bg-accent text-on-accent"
                       : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
                   )}
                 >
@@ -304,42 +305,42 @@ export function PromotionBoardPage() {
             <p className="pc-eyebrow">DISCOVER THE NEXT STORY</p>
             <h2 id="pc-discover-title">{bt("창작자의 이야기를 만나보세요", "Meet the creators' stories")}</h2>
           </div>
-          <button className="pc-button" type="button" disabled={feed.loading} onClick={feed.refresh}><RefreshCw size={16} aria-hidden="true" />{bt("새로고침", "Refresh")}</button>
+          <button className="pc-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" type="button" disabled={feed.loading} onClick={feed.refresh}><RefreshCw size={16} aria-hidden="true" />{bt("새로고침", "Refresh")}</button>
         </div>
         <form className="pc-search" role="search" onSubmit={(event) => { event.preventDefault(); setFilter("q", search.trim()); }}>
           <Search size={19} aria-hidden="true" />
           <label className="sr-only" htmlFor="pc-search">{bt("작품명·제목·태그 검색", "Search by work, title, or tags")}</label>
-          <input id="pc-search" type="search" maxLength={100} value={search} onChange={(event) => setSearch(event.target.value)} placeholder={bt("작품명, 제목, 태그로 검색", "Search by work, title, or tags")} />
-          <button className="pc-button" type="submit">{bt("검색", "Search")}</button>
+          <input id="pc-search" className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" type="search" maxLength={100} value={search} onChange={(event) => setSearch(event.target.value)} placeholder={bt("작품명, 제목, 태그로 검색", "Search by work, title, or tags")} />
+          <button className="pc-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" type="submit">{bt("검색", "Search")}</button>
         </form>
         <div className="pc-tabs" role="group" aria-label={bt("게시물 유형", "Post type")}>
           {Object.entries({ all: bt("전체", "All"), ...Object.fromEntries(Object.entries(PROMOTION_KINDS).map(([value, label]) => [value, bt(label, KIND_EN[value as keyof typeof PROMOTION_KINDS] ?? label)])) }).map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={(params.get("kind") ?? "all") === value} onClick={() => setFilter("kind", value)}>{label}</button>
+            <button key={value} type="button" className={cn("min-h-11 min-w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent", (params.get("kind") ?? "all") === value && "bg-accent text-on-accent")} aria-pressed={(params.get("kind") ?? "all") === value} onClick={() => setFilter("kind", value)}>{label}</button>
           ))}
         </div>
-        <div className="pc-filters">
+        <div className="pc-filters" role="group" aria-label={bt("탐색 상세 필터", "Discovery detail filters")}>
           <label>{bt("활동 단계", "Creator stage")}
-            <select value={params.get("stage") ?? "all"} onChange={(event) => setFilter("stage", event.target.value)}>
+            <select className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" value={params.get("stage") ?? "all"} onChange={(event) => setFilter("stage", event.target.value)}>
               <option value="all">{bt("모든 작가", "All creators")}</option>
               {Object.entries(PROMOTION_STAGES).map(([value, label]) => <option key={value} value={value}>{bt(label, STAGE_EN[value as keyof typeof PROMOTION_STAGES] ?? label)}</option>)}
             </select>
           </label>
           <label>{bt("장르", "Genre")}
-            <select value={params.get("genre") ?? "all"} onChange={(event) => setFilter("genre", event.target.value)}>
+            <select className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" value={params.get("genre") ?? "all"} onChange={(event) => setFilter("genre", event.target.value)}>
               <option value="all">{bt("모든 장르", "All genres")}</option>
               {PROMOTION_GENRES.map((genre) => <option key={genre}>{bt(genre, GENRE_EN[genre] ?? genre)}</option>)}
             </select>
           </label>
-          <button className="pc-button" disabled={!userId} type="button" aria-pressed={params.get("mine") === "true"} onClick={() => setFilter("mine", params.get("mine") === "true" ? "" : "true")}>{bt("내 게시물", "My posts")}</button>
-          <button className="pc-button" disabled={!userId} type="button" aria-pressed={params.get("saved") === "true"} onClick={() => setFilter("saved", params.get("saved") === "true" ? "" : "true")}><Bookmark size={15} aria-hidden="true" />{bt("저장한 작품", "Saved works")}</button>
-          {filters.size > 0 && <button className="pc-text-button" type="button" onClick={() => { setParams({}); setSearch(""); }}>{bt("필터 초기화", "Clear filters")}</button>}
+          <button className="pc-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={!userId} type="button" aria-pressed={params.get("mine") === "true"} onClick={() => setFilter("mine", params.get("mine") === "true" ? "" : "true")}>{bt("내 게시물", "My posts")}</button>
+          <button className="pc-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" disabled={!userId} type="button" aria-pressed={params.get("saved") === "true"} onClick={() => setFilter("saved", params.get("saved") === "true" ? "" : "true")}><Bookmark size={15} aria-hidden="true" />{bt("저장한 작품", "Saved works")}</button>
+          {filters.size > 0 && <button className="pc-text-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" type="button" onClick={() => { setParams({}); setSearch(""); }}>{bt("필터 초기화", "Clear filters")}</button>}
         </div>
       </section>
       <section aria-label={bt("홍보 게시물 목록", "Promotion posts")}>
         {feed.error && (
           <div className="pc-error" role="alert">
             {feed.error}
-            <button className="pc-button" type="button" onClick={feed.refresh}>{bt("다시 시도", "Retry")}</button>
+            <button className="pc-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" type="button" onClick={feed.refresh}>{bt("다시 시도", "Retry")}</button>
           </div>
         )}
         {feed.loading && !feed.page && (
@@ -353,7 +354,7 @@ export function PromotionBoardPage() {
             <PenLine size={38} aria-hidden="true" />
             <h3>{bt("첫 이야기를 기다리고 있어요", "Waiting for the first story")}</h3>
             <p>{bt("조건에 맞는 공개 게시물이 아직 없어요.", "No public posts match these filters yet.")}<br />{bt("직접 만든 작품과 작업 과정을 소개해 주세요.", "Introduce your own work and process.")}</p>
-            <Link className="pc-button pc-primary" to="/community/promote/new">{bt("첫 소개 작성하기", "Write your first introduction")}</Link>
+            <Link className="pc-button pc-primary min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/community/promote/new">{bt("첫 소개 작성하기", "Write your first introduction")}</Link>
           </div>
         )}
         <div className="pc-grid">
@@ -363,7 +364,7 @@ export function PromotionBoardPage() {
         </div>
         {feed.page?.hasMore && (
           <div className="pc-load-more">
-            <button className="pc-button" type="button" disabled={feed.moreLoading || feed.loading} onClick={() => void feed.loadMore()}>
+            <button className="pc-button min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" type="button" disabled={feed.moreLoading || feed.loading} onClick={() => void feed.loadMore()}>
               {feed.moreLoading ? bt("불러오는 중…", "Loading…") : bt("더 많은 작품 보기", "Show more works")}
             </button>
           </div>
@@ -371,11 +372,11 @@ export function PromotionBoardPage() {
       </section>
       <footer className="pc-bottom">
         <p>{bt("읽기는 누구나, 등록·댓글·저장은 로그인 후 이용할 수 있어요. 도용·스팸·괴롭힘은 신고해 주세요.", "Anyone can read; posting, commenting, and saving need sign-in. Report plagiarism, spam, or harassment.")}</p>
-        <Link to="/community">{bt("전체 커뮤니티", "All communities")}</Link>
-        <Link to="/showcase/promo">{bt("홍보 영상 스튜디오", "Promo video studio")}</Link>
-        <Link to="/promo-library">{bt("홍보 영상 자료실", "Promo video library")}</Link>
-        <Link to="/cuts">{bt("숏폼 컷츠 피드", "Cuts feed")}</Link>
-        {feed.page?.canModerate && <Link to="/community/promote/moderation">{bt("홍보 신고 관리", "Promotion report moderation")}</Link>}
+        <Link className="inline-flex min-h-11 items-center px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/community">{bt("전체 커뮤니티", "All communities")}</Link>
+        <Link className="inline-flex min-h-11 items-center px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/showcase/promo">{bt("홍보 영상 스튜디오", "Promo video studio")}</Link>
+        <Link className="inline-flex min-h-11 items-center px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/promo-library">{bt("홍보 영상 자료실", "Promo video library")}</Link>
+        <Link className="inline-flex min-h-11 items-center px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/cuts">{bt("숏폼 컷츠 피드", "Cuts feed")}</Link>
+        {feed.page?.canModerate && <Link className="inline-flex min-h-11 items-center px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to="/community/promote/moderation">{bt("홍보 신고 관리", "Promotion report moderation")}</Link>}
       </footer>
     </div>
   );

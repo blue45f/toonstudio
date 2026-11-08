@@ -182,7 +182,7 @@ export function ProductionFocusedAiWorkflow({
       setNotice(t("productionHub.status.aiAssistHandoffFailed", "AI 보조 요청을 안전하게 전달하지 못했어요. 편집기에서 AI 메뉴를 눌러 직접 시작해 주세요."));
     }
   };
-  return <section className="rounded-3xl border border-accent/30 bg-card p-4 sm:p-6" aria-labelledby="focused-ai-title" data-production-focused-ai="">
+  return <section data-own-control-size="" className="rounded-3xl border border-accent/30 bg-card p-4 sm:p-6" aria-labelledby="focused-ai-title" data-production-focused-ai="">
     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
       <div>
         <p className="flex items-center gap-2 text-[0.6875rem] font-black uppercase tracking-[0.14em] text-accent">
@@ -196,29 +196,29 @@ export function ProductionFocusedAiWorkflow({
       </span>
     </div>
 
-    <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <div role="group" aria-label="AI 보조 계획 조건" className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       <label className="text-xs font-bold text-fg-2">처리 범위
-        <select value={plan.scope} onChange={(event) => setPlan({ ...plan, scope: event.target.value as ProductionAiAssistPlan["scope"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg">
+        <select value={plan.scope} onChange={(event) => setPlan({ ...plan, scope: event.target.value as ProductionAiAssistPlan["scope"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           <option value="selection">선택 영역</option><option value="active-panel">현재 컷</option><option value="active-page">현재 페이지</option>
         </select>
       </label>
       <label className="text-xs font-bold text-fg-2">조명
-        <select value={plan.lighting} onChange={(event) => setPlan({ ...plan, lighting: event.target.value as ProductionAiAssistPlan["lighting"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg">
+        <select value={plan.lighting} onChange={(event) => setPlan({ ...plan, lighting: event.target.value as ProductionAiAssistPlan["lighting"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           <option value="soft">부드러운 확산광</option><option value="dramatic">극적 대비</option><option value="backlight">역광</option><option value="night">야간</option>
         </select>
       </label>
       <label className="text-xs font-bold text-fg-2">색상
-        <select value={plan.color} onChange={(event) => setPlan({ ...plan, color: event.target.value as ProductionAiAssistPlan["color"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg">
+        <select value={plan.color} onChange={(event) => setPlan({ ...plan, color: event.target.value as ProductionAiAssistPlan["color"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           <option value="preserve">기존 색 유지</option><option value="warm">따뜻하게</option><option value="cool">차갑게</option><option value="monochrome">단색 명암</option>
         </select>
       </label>
       <label className="text-xs font-bold text-fg-2">처리 방식
-        <select value={plan.provider} onChange={(event) => setPlan({ ...plan, provider: event.target.value as ProductionAiAssistPlan["provider"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg">
+        <select value={plan.provider} onChange={(event) => setPlan({ ...plan, provider: event.target.value as ProductionAiAssistPlan["provider"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           <option value="project-default">프로젝트 기본</option><option value="local">로컬 우선</option><option value="external">외부 공급자</option>
         </select>
       </label>
       <label className="text-xs font-bold text-fg-2">적용 결과
-        <select value={plan.output} onChange={(event) => setPlan({ ...plan, output: event.target.value as ProductionAiAssistPlan["output"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg">
+        <select value={plan.output} onChange={(event) => setPlan({ ...plan, output: event.target.value as ProductionAiAssistPlan["output"] })} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           <option value="new-layer">새 레이어</option><option value="new-revision">새 revision 후보</option>
         </select>
       </label>
@@ -251,7 +251,7 @@ export function ProductionFocusedAiWorkflow({
       {/* 11종 광원 위치 선택기 */}
       <div className="mt-3">
         <p className="text-xs font-bold text-fg-2">광원 방향 (8방위 + 정면 / 역광 / 최적 자동)</p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
+        <div role="group" aria-label="광원 방향" className="mt-1.5 flex flex-wrap gap-1.5">
           {SHADING_LIGHT_DIRECTIONS.map((dir) => (
             <button
               key={dir.id}
@@ -259,10 +259,10 @@ export function ProductionFocusedAiWorkflow({
               data-testid={`shading-light-dir-${dir.id}`}
               aria-pressed={lightDirection === dir.id}
               onClick={() => setLightDirection(dir.id)}
-              className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${
+              className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 lightDirection === dir.id
-                  ? "border-accent bg-accent text-white"
-                  : "border-line bg-card text-fg-2"
+                  ? "border-accent bg-accent text-on-accent"
+                  : "border-line bg-card text-fg-2 hover:bg-raised"
               }`}
             >
               {dir.badge} {dir.labelKo}
@@ -271,7 +271,7 @@ export function ProductionFocusedAiWorkflow({
         </div>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div role="group" aria-label="음영 세부 파라미터" className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="text-xs font-bold text-fg-2">
           음영 엣지 스타일
           <select
@@ -279,7 +279,7 @@ export function ProductionFocusedAiWorkflow({
             data-testid="shading-edge-style-select"
             value={edgeStyle}
             onChange={(e) => setEdgeStyle(e.target.value as ShadingEdgeStyle)}
-            className="mt-1 min-h-9 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+            className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="hard">하드 엣지 (셀 채색 스타일)</option>
             <option value="soft">소프트 엣지 (브러시 채색 스타일)</option>
@@ -293,7 +293,7 @@ export function ProductionFocusedAiWorkflow({
             data-testid="shading-amount-select"
             value={shadowAmount}
             onChange={(e) => setShadowAmount(e.target.value as ShadingAmount)}
-            className="mt-1 min-h-9 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+            className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="backlight">역광 (넓고 깊은 음영)</option>
             <option value="normal">보통 (표준 인물·배경 음영)</option>
@@ -311,7 +311,7 @@ export function ProductionFocusedAiWorkflow({
             max={4096}
             value={cropWidthPx}
             onChange={(e) => setCropWidthPx(Number(e.target.value) || 1024)}
-            className="mt-1 min-h-9 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+            className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           />
         </label>
 
@@ -325,7 +325,7 @@ export function ProductionFocusedAiWorkflow({
             max={4096}
             value={cropHeightPx}
             onChange={(e) => setCropHeightPx(Number(e.target.value) || 1024)}
-            className="mt-1 min-h-9 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+            className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           />
         </label>
       </div>
@@ -333,7 +333,7 @@ export function ProductionFocusedAiWorkflow({
       {/* 실시간 RGB/Hex 곱하기(Multiply) 블렌딩 미리보기 & 투명 PNG 다운로드 패키징 */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-card p-3 text-xs">
         <div className="flex flex-wrap items-center gap-3">
-          <label className="inline-flex items-center gap-1.5 font-bold text-fg-2">
+          <label className="inline-flex min-h-11 items-center gap-1.5 font-bold text-fg-2">
             음영 색상(Hex):
             <input
               type="text"
@@ -341,10 +341,10 @@ export function ProductionFocusedAiWorkflow({
               data-testid="shading-hex-input"
               value={shadowHex}
               onChange={(e) => setShadowHex(e.target.value)}
-              className="w-24 rounded border border-line bg-panel px-2 py-1 text-xs text-fg"
+              className="min-h-11 w-24 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </label>
-          <label className="inline-flex items-center gap-1.5 font-bold text-fg-2">
+          <label className="inline-flex min-h-11 items-center gap-1.5 font-bold text-fg-2">
             불투명도({opacityPercent}%):
             <input
               type="range"
@@ -353,6 +353,7 @@ export function ProductionFocusedAiWorkflow({
               max={100}
               value={opacityPercent}
               onChange={(e) => setOpacityPercent(Number(e.target.value))}
+              className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </label>
           <span data-testid="shading-multiply-preview-readout" className="font-bold text-fg">
@@ -360,13 +361,13 @@ export function ProductionFocusedAiWorkflow({
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div role="group" aria-label="음영 다운로드 옵션" className="flex flex-wrap items-center gap-2">
           <select
             aria-label="음영 다운로드 범위"
             data-testid="shading-download-scope-select"
             value={downloadScope}
             onChange={(e) => setDownloadScope(e.target.value as ShadingDownloadScope)}
-            className="rounded border border-line bg-panel px-2 py-1 text-xs"
+            className="min-h-11 rounded-lg border border-line bg-panel px-3 py-1.5 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="all">전체 다운로드</option>
             <option value="page">페이지별 다운로드</option>
@@ -378,7 +379,7 @@ export function ProductionFocusedAiWorkflow({
             data-testid="shading-download-packaging-select"
             value={downloadPackaging}
             onChange={(e) => setDownloadPackaging(e.target.value as ShadingDownloadPackaging)}
-            className="rounded border border-line bg-panel px-2 py-1 text-xs"
+            className="min-h-11 rounded-lg border border-line bg-panel px-3 py-1.5 text-xs text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="merged">합쳐진 결과물 (페이지당 1장 병합 PNG)</option>
             <option value="separated">분리된 결과물 (영역별 개별 투명 PNG)</option>
@@ -390,12 +391,12 @@ export function ProductionFocusedAiWorkflow({
         </div>
       </div>
 
-      <div className="mt-2.5 flex flex-wrap gap-2">
+      <div role="group" aria-label="음영 적용 영역 선택" className="mt-2.5 flex flex-wrap gap-2">
         {regions.map((region) => (
           <label
             key={region.id}
             data-testid={`shading-region-item-${region.id}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1 text-xs text-fg-2"
+            className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-line bg-card px-3 py-1.5 text-xs text-fg-2"
           >
             <input
               type="checkbox"
@@ -405,6 +406,7 @@ export function ProductionFocusedAiWorkflow({
                   prev.map((item) => (item.id === region.id ? { ...item, visible: e.target.checked } : item)),
                 )
               }
+              className="size-4 accent-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
             <span>
               {region.pageNumber}P · {region.label} ({region.resolution})
@@ -416,7 +418,7 @@ export function ProductionFocusedAiWorkflow({
 
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
       <p className="text-xs text-fg-3">{t("productionHub.status.aiWorkflowFailurePolicyNote", "실패·취소·재시도와 중복 청구 방지는 실제 편집기 실행 경계에서 확인해요.")}</p>
-      <button type="button" disabled={!process || !editorHref} onClick={launch} className={buttonClass({ className: "min-h-11 gap-2" })}>
+      <button type="button" disabled={!process || !editorHref} onClick={launch} className={buttonClass({ className: "min-h-11 gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" })}>
         <WandSparkles className="size-4" aria-hidden="true" /> 편집기에서 미리보기·비용 확인 <ArrowRight className="size-4" aria-hidden="true" />
       </button>
     </div>

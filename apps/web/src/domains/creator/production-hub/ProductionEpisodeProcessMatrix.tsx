@@ -215,15 +215,15 @@ export function ProductionEpisodeProcessMatrix({
 
   if (!cells.length) return null;
 
-  return <section className="min-w-0 max-w-full overflow-hidden rounded-3xl border border-line bg-card p-4 sm:p-6" aria-labelledby="production-matrix-title" data-production-process-matrix="">
+  return <section data-own-control-size="" className="min-w-0 max-w-full overflow-hidden rounded-3xl border border-line bg-card p-4 sm:p-6" aria-labelledby="production-matrix-title" data-production-process-matrix="">
     <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
       <div><p className="text-[0.6875rem] font-black uppercase tracking-[0.14em] text-accent">EPISODE × PROCESS MATRIX</p><h2 id="production-matrix-title" className="mt-2 text-xl font-black text-fg">회차와 공정을 한 표에서 운영합니다</h2><p className="mt-1 max-w-3xl text-sm leading-6 text-fg-2">각 셀에서 담당자·기한·HEAD·FINAL·필수 수정을 확인하고, 여러 셀을 선택해 실제 Production 업무를 일괄 갱신합니다.</p></div>
       <div className="flex flex-wrap items-center gap-2">
         <div role="group" aria-label="매트릭스 보기 방식" className="flex overflow-hidden rounded-xl border border-line">
-          <button type="button" aria-pressed={!compareMode} onClick={() => setCompareMode(false)} className={cn("min-h-11 px-4 text-xs font-black", !compareMode ? "bg-accent text-white" : "bg-card text-fg-2 hover:bg-raised")}>매트릭스</button>
-          <button type="button" aria-pressed={compareMode} onClick={() => setCompareMode(true)} className={cn("min-h-11 px-4 text-xs font-black", compareMode ? "bg-accent text-white" : "bg-card text-fg-2 hover:bg-raised")}>차수 비교</button>
+          <button type="button" aria-pressed={!compareMode} onClick={() => setCompareMode(false)} className={cn("min-h-11 min-w-11 px-4 text-xs font-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent", !compareMode ? "bg-accent text-on-accent" : "bg-card text-fg-2 hover:bg-raised")}>매트릭스</button>
+          <button type="button" aria-pressed={compareMode} onClick={() => setCompareMode(true)} className={cn("min-h-11 min-w-11 px-4 text-xs font-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent", compareMode ? "bg-accent text-on-accent" : "bg-card text-fg-2 hover:bg-raised")}>차수 비교</button>
         </div>
-        {!compareMode ? <button type="button" onClick={selectAll} className={buttonClass({ variant: "outline", size: "sm" })}>{selected.size === cells.length ? <CheckSquare2 className="size-4" aria-hidden="true" /> : <Square className="size-4" aria-hidden="true" />} {selected.size === cells.length ? "전체 해제" : "전체 선택"}</button> : null}
+        {!compareMode ? <button type="button" onClick={selectAll} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" })}>{selected.size === cells.length ? <CheckSquare2 className="size-4" aria-hidden="true" /> : <Square className="size-4" aria-hidden="true" />} {selected.size === cells.length ? "전체 해제" : "전체 선택"}</button> : null}
       </div>
     </div>
 
@@ -232,7 +232,7 @@ export function ProductionEpisodeProcessMatrix({
     {compareMode ? <div className="mt-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-3xl text-xs leading-5 text-fg-2">검수 제출 기준으로 나눈 차수(1차·2차·수정본)를 공정별로 나란히 비교합니다. 요약과 상세를 함께 스크롤할 수 있습니다.</p>
-        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold text-fg-2"><input type="checkbox" checked={compareScrollLinked} onChange={(event) => setCompareScrollLinked(event.target.checked)} className="size-5 accent-accent" /> 스크롤 동기화</label>
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold text-fg-2"><input type="checkbox" checked={compareScrollLinked} onChange={(event) => setCompareScrollLinked(event.target.checked)} className="size-5 accent-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" /> 스크롤 동기화</label>
       </div>
       {compareColumns.length === 0 ? <p className="mt-3 rounded-2xl border border-line bg-panel p-4 text-xs text-fg-2" role="status">{t("productionHub.status.noCompareRounds", "비교할 차수 기록이 없어요. 리비전이 쌓이면 1차·2차·수정본으로 나뉘어 표시돼요.")}</p> : <>
         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Wide comparison strip needs keyboard scrolling. */}
@@ -273,7 +273,7 @@ export function ProductionEpisodeProcessMatrix({
                 if (!cell || !round) return <td key={`${column.processKey}:${column.roundLabel}`} className="border-t border-line bg-panel/20 p-3 text-fg-3">—</td>;
                 const attention = productionManuscriptAttention(cell.process);
                 return <td key={`${column.processKey}:${column.roundLabel}`} className="border-t border-line p-2">
-                  <button type="button" onClick={() => onOpenProcess(cell.process, attention.recommendedView)} className="block w-full rounded-xl border border-line bg-card p-3 text-left hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+                  <button type="button" onClick={() => onOpenProcess(cell.process, attention.recommendedView)} className="block min-h-11 w-full rounded-xl border border-line bg-card p-3 text-left hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                     <p className="truncate text-[0.6875rem] font-black text-fg">{cell.process.artifact.title}</p>
                     <p className="mt-1 text-[0.625rem] text-fg-3">{round.kind === "submitted" && round.submittedAt ? `제출 ${new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(new Date(round.submittedAt))}` : "작업 중"} · 리비전 {round.revisionCount}개</p>
                     {round.approved ? <p className="mt-1 inline-block rounded-full bg-good/15 px-2 py-0.5 text-[0.625rem] font-black text-good">승인됨</p> : null}
@@ -285,7 +285,7 @@ export function ProductionEpisodeProcessMatrix({
         </div>
       </>}
     </div> : <>
-    <div className="mt-5 space-y-3 sm:hidden" aria-label="회차별 공정 운영 카드">
+    <div role="group" className="mt-5 space-y-3 sm:hidden" aria-label="회차별 공정 운영 카드">
       {rows.map((episodeId) => <section key={episodeId ?? "project"} className="rounded-2xl border border-line bg-panel p-3">
         <div className="flex items-center justify-between gap-3">
           <h3 className="font-black text-fg">{episodeLabel(aggregate, episodeId)}</h3>
@@ -296,7 +296,7 @@ export function ProductionEpisodeProcessMatrix({
             const attention = productionManuscriptAttention(cell.process);
             return <article key={cell.key} className={cn("rounded-xl border p-3", cellTone(cell))}>
               <div className="flex items-start gap-2">
-                <button type="button" aria-pressed={selected.has(cell.key)} onClick={() => toggle(cell.key)} className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+                <button type="button" aria-pressed={selected.has(cell.key)} onClick={() => toggle(cell.key)} className="grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                   {selected.has(cell.key) ? <CheckSquare2 className="size-5 text-accent" aria-hidden="true" /> : <Square className="size-5" aria-hidden="true" />}
                   <span className="sr-only">{cell.process.artifact.title} 선택</span>
                 </button>
@@ -306,7 +306,7 @@ export function ProductionEpisodeProcessMatrix({
                   <p className="mt-2 text-xs text-fg-2">담당 {cell.assigneeNames.join(", ") || "미배정"} · 검수 {cell.process.openReviewCount}건 · 필수 {cell.process.openRequiredFeedbackCount}</p>
                 </div>
               </div>
-              <button type="button" onClick={() => onOpenProcess(cell.process, attention.recommendedView)} className="mt-3 flex min-h-11 w-full items-center justify-between rounded-lg border border-line bg-card px-3 text-xs font-bold text-fg-2 hover:bg-raised">
+              <button type="button" onClick={() => onOpenProcess(cell.process, attention.recommendedView)} className="mt-3 flex min-h-11 w-full items-center justify-between rounded-lg border border-line bg-card px-3 text-xs font-bold text-fg-2 hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                 <span>{attention.actionLabel}</span><ChevronRight className="size-4" aria-hidden="true" />
               </button>
             </article>;
@@ -326,28 +326,28 @@ export function ProductionEpisodeProcessMatrix({
           if (!cell) return <td key={column.key} className="border-t border-line bg-panel/20 p-3 text-fg-3">—</td>;
           const attention = productionManuscriptAttention(cell.process);
           return <td key={column.key} className="border-t border-line p-2"><article className={cn("rounded-xl border p-3", cellTone(cell))}>
-            <div className="flex items-start gap-2"><button type="button" aria-pressed={selected.has(cell.key)} onClick={() => toggle(cell.key)} className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{selected.has(cell.key) ? <CheckSquare2 className="size-5 text-accent" aria-hidden="true" /> : <Square className="size-5" aria-hidden="true" />}<span className="sr-only">{cell.process.artifact.title} 선택</span></button><div className="min-w-0 flex-1"><p className="truncate font-black text-fg">{cell.process.artifact.title}</p><p className="mt-1 text-[0.625rem] text-fg-3">HEAD {cell.process.headRevision?.id.slice(0, 10) ?? "없음"} · FINAL {cell.process.approvedRevision?.id.slice(0, 10) ?? "미지정"}</p></div></div>
+            <div className="flex items-start gap-2"><button type="button" aria-pressed={selected.has(cell.key)} onClick={() => toggle(cell.key)} className="grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{selected.has(cell.key) ? <CheckSquare2 className="size-5 text-accent" aria-hidden="true" /> : <Square className="size-5" aria-hidden="true" />}<span className="sr-only">{cell.process.artifact.title} 선택</span></button><div className="min-w-0 flex-1"><p className="truncate font-black text-fg">{cell.process.artifact.title}</p><p className="mt-1 text-[0.625rem] text-fg-3">HEAD {cell.process.headRevision?.id.slice(0, 10) ?? "없음"} · FINAL {cell.process.approvedRevision?.id.slice(0, 10) ?? "미지정"}</p></div></div>
             <dl className="mt-3 grid gap-1.5"><div className="flex justify-between gap-2"><dt className="text-fg-3">담당</dt><dd className="truncate font-bold text-fg-2">{cell.assigneeNames.join(", ") || "미배정"}</dd></div><div className="flex justify-between gap-2"><dt className="text-fg-3">기한</dt><dd className="font-bold text-fg-2">{cell.task?.dueAt ? new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(new Date(cell.task.dueAt)) : "미정"}</dd></div><div className="flex justify-between gap-2"><dt className="text-fg-3">검수</dt><dd className="font-bold text-fg-2">{cell.process.openReviewCount}건 · 필수 {cell.process.openRequiredFeedbackCount}</dd></div></dl>
-            <button type="button" onClick={() => onOpenProcess(cell.process, attention.recommendedView)} className="mt-3 flex min-h-11 w-full items-center justify-between rounded-lg border border-line bg-card px-3 text-xs font-bold text-fg-2 hover:bg-raised"><span>{attention.actionLabel}</span><ChevronRight className="size-4" aria-hidden="true" /></button>
+            <button type="button" onClick={() => onOpenProcess(cell.process, attention.recommendedView)} className="mt-3 flex min-h-11 w-full items-center justify-between rounded-lg border border-line bg-card px-3 text-xs font-bold text-fg-2 hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"><span>{attention.actionLabel}</span><ChevronRight className="size-4" aria-hidden="true" /></button>
             {matching.length > 1 ? <p className="mt-2 text-[0.625rem] text-fg-3">같은 공정 원고 {matching.length - 1}개 추가</p> : null}
           </article></td>;
         })}</tr>)}</tbody>
       </table>
     </div>
 
-    <div className="mt-4 rounded-2xl border border-line bg-panel p-4" aria-label="선택 공정 일괄 변경">
+    <div role="group" className="mt-4 rounded-2xl border border-line bg-panel p-4" aria-label="선택 공정 일괄 변경">
       <div className="flex flex-wrap items-center gap-2"><Workflow className="size-4 text-accent" aria-hidden="true" /><h3 className="text-sm font-black text-fg">선택 {selected.size}개 일괄 변경</h3>{!editable ? <span className="rounded-full border border-line bg-card px-2 py-1 text-[0.625rem] font-bold text-fg-3">{isDemo ? "데모에서는 읽기 전용" : "편집 권한 필요"}</span> : null}</div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(12rem,1fr)_12rem_12rem_auto] xl:items-end">
         <label className="text-xs font-bold text-fg-2"><UserRound className="mr-1 inline size-4" aria-hidden="true" /> 담당자
-          <select value={assignmentId} onChange={(event) => setAssignmentId(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"><option value="">변경하지 않음</option>{aggregate.assignments.filter((assignment) => assignment.status === "active" || assignment.status === "onboarding").map((assignment) => <option key={assignment.id} value={assignment.id}>{assignmentLabel(aggregate, assignment.id)} · {assignment.roleType}</option>)}</select>
+          <select value={assignmentId} onChange={(event) => setAssignmentId(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"><option value="">변경하지 않음</option>{aggregate.assignments.filter((assignment) => assignment.status === "active" || assignment.status === "onboarding").map((assignment) => <option key={assignment.id} value={assignment.id}>{assignmentLabel(aggregate, assignment.id)} · {assignment.roleType}</option>)}</select>
         </label>
         <label className="text-xs font-bold text-fg-2"><CalendarClock className="mr-1 inline size-4" aria-hidden="true" /> 기한
-          <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg" />
+          <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" />
         </label>
         <label className="text-xs font-bold text-fg-2">상태
-          <select value={status} onChange={(event) => setStatus(event.target.value as BulkStatus)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg">{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+          <select value={status} onChange={(event) => setStatus(event.target.value as BulkStatus)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
         </label>
-        <button type="button" disabled={!editable || selected.size === 0 || busy} onClick={() => void apply()} className={buttonClass({ size: "sm", className: "min-h-11" })}>{busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />} 일괄 저장</button>
+        <button type="button" disabled={!editable || selected.size === 0 || busy} onClick={() => void apply()} className={buttonClass({ size: "sm", className: "min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" })}>{busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />} 일괄 저장</button>
       </div>
       {notice ? <p className="mt-3 text-xs text-fg-2" role="status">{notice}</p> : null}
     </div>

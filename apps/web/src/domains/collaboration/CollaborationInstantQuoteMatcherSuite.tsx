@@ -113,6 +113,7 @@ export function CollaborationInstantQuoteMatcherSuite({
   return (
     <section
       data-testid="collaboration-instant-quote-matcher-suite"
+      data-own-control-size=""
       aria-label={bt(
         "숨고·위시켓·크몽 역공학 웹툰 공정별 즉시 견적 및 표준계약 매칭기",
         "Instant Webtoon Stage Quote & Standard Contract Matcher"
@@ -167,7 +168,11 @@ export function CollaborationInstantQuoteMatcherSuite({
       </div>
 
       {/* 입력 폼 그리드 */}
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div
+        role="group"
+        aria-label={bt("즉시 견적 산출 조건", "Instant quote estimation parameters")}
+        className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+      >
         <label className="block text-xs font-semibold text-fg-2">
           {bt("1. 의뢰 공정 분야", "1. Process Stage")}
           <select
@@ -178,7 +183,7 @@ export function CollaborationInstantQuoteMatcherSuite({
               setProcessRole(nextRole);
               onApplyRoleFilter?.(nextRole);
             }}
-            className="mt-1.5 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg"
+            className="mt-1.5 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {ROLE_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
@@ -198,7 +203,7 @@ export function CollaborationInstantQuoteMatcherSuite({
             data-testid="quote-cut-count-input"
             value={episodeCutCount}
             onChange={(event) => setEpisodeCutCount(Number(event.target.value))}
-            className="mt-1.5 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg"
+            className="mt-1.5 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           />
         </label>
 
@@ -208,7 +213,7 @@ export function CollaborationInstantQuoteMatcherSuite({
             data-testid="quote-urgency-select"
             value={turnaroundUrgency}
             onChange={(event) => setTurnaroundUrgency(event.target.value as TurnaroundUrgencyTier)}
-            className="mt-1.5 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg"
+            className="mt-1.5 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {URGENCY_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
@@ -224,7 +229,7 @@ export function CollaborationInstantQuoteMatcherSuite({
             data-testid="quote-rights-select"
             value={ipRightsScope}
             onChange={(event) => setIpRightsScope(event.target.value as IpRightsScopeTier)}
-            className="mt-1.5 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg"
+            className="mt-1.5 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {RIGHTS_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
@@ -242,7 +247,7 @@ export function CollaborationInstantQuoteMatcherSuite({
             onChange={(event) =>
               setSourceFileDelivery(event.target.value as SourceFileDeliveryTier)
             }
-            className="mt-1.5 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg"
+            className="mt-1.5 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-xs font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {DELIVERY_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
@@ -322,7 +327,11 @@ export function CollaborationInstantQuoteMatcherSuite({
               : null}
           </div>
         </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div
+          role="group"
+          aria-label={bt("추천 웹툰 전문 파트너 목록", "Recommended webtoon specialists")}
+          className="mt-3 grid gap-3 md:grid-cols-3"
+        >
           {evaluation.matchedSpecialists.slice(0, 3).map((pro) => {
             const isSent = dispatchedProId === pro.id;
             return (
@@ -365,11 +374,12 @@ export function CollaborationInstantQuoteMatcherSuite({
                   <button
                     type="button"
                     data-testid={`dispatch-quote-btn-${pro.id}`}
+                    aria-pressed={isSent}
                     onClick={() => setDispatchedProId(pro.id)}
-                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
+                    className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl px-3.5 py-2 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                       isSent
                         ? "bg-good/20 text-good"
-                        : "bg-accent text-white hover:bg-accent/90"
+                        : "bg-accent text-on-accent hover:bg-accent/90"
                     }`}
                   >
                     {isSent

@@ -501,4 +501,41 @@ describe("ProductionEpisodeProcessMatrix (C-4 차수 비교 모드)", () => {
     fireEvent.click(first);
     expect(onOpenProcess).toHaveBeenCalledTimes(1);
   });
+
+  it("접근성: 루트 data-own-control-size, 활성 토글 text-on-accent, 그룹 시맨틱 및 44px(min-h-11) 계약을 유지한다", () => {
+    const demo = createProductionDemoProject();
+    const episodeId = demo.episodePlans[0]?.episodeId ?? "episode-12";
+    const aggregate = { ...demo, tasks: [] } satisfies ProductionProjectAggregate;
+    const { container } = render(
+      <ProductionEpisodeProcessMatrix
+        aggregate={aggregate}
+        processes={[fakeProcess("art-a", "canvas-2d", episodeId, "선화")]}
+        canEdit
+        isDemo={false}
+        execute={vi.fn().mockResolvedValue(undefined)}
+        onOpenProcess={vi.fn()}
+      />,
+    );
+
+    const root = container.querySelector("[data-production-process-matrix]");
+    expect(root?.hasAttribute("data-own-control-size")).toBe(true);
+
+    expect(screen.getByRole("group", { name: "매트릭스 보기 방식" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "회차별 공정 운영 카드" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "선택 공정 일괄 변경" })).toBeTruthy();
+
+    const matrixBtn = screen.getByRole("button", { name: "매트릭스" });
+    const compareBtn = screen.getByRole("button", { name: "차수 비교" });
+    expect(matrixBtn.className).toContain("text-on-accent");
+    expect(matrixBtn.className).not.toContain("text-white");
+    expect(matrixBtn.className).toContain("min-h-11");
+    expect(compareBtn.className).toContain("min-h-11");
+
+    const selectAllBtn = screen.getByRole("button", { name: "전체 선택" });
+    expect(selectAllBtn.className).toContain("min-h-11");
+
+    fireEvent.click(compareBtn);
+    expect(compareBtn.className).toContain("text-on-accent");
+    expect(compareBtn.className).not.toContain("text-white");
+  });
 });

@@ -66,4 +66,33 @@ describe("PromotionBoardPage REA launch trailer & conversion funnel simulator", 
     expect(status.textContent).toContain("15-Sec Cliffhanger Hook");
     expect(bar.textContent).not.toMatch(/[\uAC00-\uD7A3]/u);
   });
+
+  it("maintains contrast (text-on-accent), group semantics (role=group), and 44px target (min-h-11 / data-own-control-size)", () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={["/community/promote"]}>
+        <PromotionBoardPage />
+      </MemoryRouter>,
+    );
+
+    const shell = container.querySelector(".pc-shell");
+    expect(shell?.hasAttribute("data-own-control-size")).toBe(true);
+
+    const bar = screen.getByTestId("promotion-rea-launch-funnel-bar");
+    expect(bar.hasAttribute("data-own-control-size")).toBe(true);
+
+    expect(screen.getByRole("group", { name: "런칭 홍보 채널" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "트레일러 훅 윈도우" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "게시물 유형" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "탐색 상세 필터" })).toBeTruthy();
+
+    const activeChannelBtn = screen.getByTestId("promotion-rea-channel-canvas-first-ep-hook");
+    expect(activeChannelBtn.className).toContain("text-on-accent");
+    expect(activeChannelBtn.className).not.toContain("text-white");
+    expect(activeChannelBtn.className).toContain("min-h-11");
+
+    const activeHookBtn = screen.getByTestId("promotion-rea-hook-3sec-thumb-stop");
+    expect(activeHookBtn.className).toContain("text-on-accent");
+    expect(activeHookBtn.className).not.toContain("text-white");
+    expect(activeHookBtn.className).toContain("min-h-11");
+  });
 });
