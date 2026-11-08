@@ -22,7 +22,7 @@ import {
   type StudioBrushCatalogItem,
 } from "../apps/web/src/domains/creator/brush/studio-brush-catalog";
 
-import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import { prepareStudioBrushDrawingUi } from "./lib/studio-brush-drawing-ui";
 import {
   isStaticPreviewReadinessResponse,
   isStaticPreviewReadinessUnavailable,
@@ -206,19 +206,7 @@ async function prepareStudioPage(page: Page, studioUrl: string): Promise<void> {
   // serializes the evaluator body without that module-scoped helper, so provide the standard
   // identity implementation inside this isolated QA page before pixel-analysis evaluators run.
   await page.evaluate("globalThis.__name ??= (target) => target");
-  const stage = page.locator(".konvajs-content").first();
-  await stage.waitFor({ state: "visible", timeout: 15_000 });
-  await waitForStudioDrawingReady(page, { requireWelcome: true });
-  await page.keyboard.press("b");
-  const toolbar = page.getByRole("toolbar", { name: /그리기 옵션/u });
-  await toolbar.waitFor({ state: "visible", timeout: 10_000 });
-  await page.waitForFunction(() =>
-    document.querySelector('[data-studio-draw-options="true"]')
-      ?.getAttribute("data-studio-active-draw-mode") === "pen"
-  );
-  await toolbar.getByRole("button", { name: /브러시 선택 열기$/u }).waitFor({
-    state: "visible",
-  });
+  await prepareStudioBrushDrawingUi(page);
 
   const shell = await page.evaluate(() => ({
     hasErrorOverlay: Boolean(
@@ -245,7 +233,7 @@ async function selectBrush(
   await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
   const catalog = page.getByRole("dialog", { name: "브러시 전체 라이브러리" });
   await catalog.waitFor({ state: "visible" });
-  await catalog.getByRole("searchbox", { name: "전체 브러시 검색" }).fill(brush.id);
+  await catalog.getByRole("searchbox", { name: "전체 브러시 검색" }).fill(brush.name);
   const option = catalog.getByRole("button", {
     name: `${brush.name} 선택`,
     exact: true,

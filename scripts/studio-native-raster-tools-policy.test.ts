@@ -598,12 +598,36 @@ describe("Studio native-raster browser gate policy", () => {
     expect(durableAutosaveSource).toContain("studio-autosave-opfs-session\\.ts");
     expect(durableAutosaveSource).toContain('url.includes("/@vite/client")');
     expect(durableAutosaveSource).toContain("readDurableStudioAutosaveError");
-    expect(source).toContain("선택 후 변형");
+    expect(source).toContain('button[data-studio-rail-tool-id="${id}"]');
+    expect(source).toContain('button[data-studio-catalog-tool-id="${id}"]');
+    expect(source).toContain('name: "전체 도구 닫기"');
+    expect(source).toContain('await pin.click()');
+    expect(source).toContain('kind === "rect" ? "marquee-rect" : "marquee-circle"');
+    expect(source).toContain('toolButton(page, "fill")');
+    const fillGesture = source.slice(source.indexOf("async function performPaintBucket("),
+      source.indexOf("async function performCrop("));
+    expect(fillGesture).toContain("documentPointsToScreen(page, [{ x: 250, y: 380 }])");
+    expect(fillGesture).not.toContain("{ x: 355, y: 390 }");
+    expect(fillGesture).toContain('await assertCanvasPoints(page, [fillPoint], "paint-bucket first tap")');
+    expect(source).toContain('waitForToolButton(page, "transform")');
+    expect(source).toContain('smudge: "blend"');
+    expect(source).not.toContain('toolButton(page, "채우기 (G)")');
     expect(source).toContain("markRasterOperationSettled");
     expect(source).toContain("waitForClearedPixelSelectionUiState");
     expect(source).toContain("exposePixelSelectionUi");
     expect(source).toContain('[data-studio-inspector-primary-tab="properties"]:visible');
-    expect(source).toContain("/^선택·리터치$/u");
+    expect(source).toContain("/^선택·보정$/u");
+    expect(source).toContain('await canvasTrigger.press("ArrowDown")');
+    expect(source).toContain('await filterTrigger.press("ArrowDown")');
+    expect(source.indexOf("const warmPath = await documentPointsToScreen(page, warmDocumentPath)"))
+      .toBeGreaterThan(source.indexOf("const coldSnapshot = coldSettle.snapshot"));
+    const retouchGesture = source.slice(source.indexOf("async function performRetouchGesture("),
+      source.indexOf("async function performHealGesture("));
+    expect(retouchGesture.indexOf("const path = await documentPointsToScreen(page, documentPath)"))
+      .toBeGreaterThan(retouchGesture.indexOf("await button.click()"));
+    expect(source).toContain('[data-studio-main-menu-panel="true"] [role="menu"]');
+    expect(source).not.toContain('[role="menu"][data-studio-main-menu-panel="true"]');
+    expect(source).not.toContain(`await nav.locator('[data-studio-main-menu-trigger="filter"]').click()`);
     expect(source).toContain("durableDocumentFingerprint");
     expect(source).toContain("selectionUndoDurableSnapshotRetained");
     expect(source).not.toContain("selectionUndoVisualDiff");
