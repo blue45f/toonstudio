@@ -21,6 +21,7 @@ import {
   type PolicySlug,
 } from "./policy-content";
 import { DocumentReadingProgress, LegalRelatedDocs } from "./LegalDocTools";
+import { PrivacyPolicyLayout } from "./PrivacyPolicyLayout";
 import "./policy-page.css";
 
 import { SectionArt } from "@/shared/components/section-art";
@@ -105,7 +106,7 @@ function PolicyBlockView({ block }: { block: PolicyBlock }) {
 
 
 /** First-party policy body and its reviewed release identity. */
-export function PolicyArticle({ doc }: { doc: PolicyDocument }) {
+export function PolicyArticle({ doc, focusableSections = false }: { doc: PolicyDocument; focusableSections?: boolean }) {
   useBilingualI18nRevision();
   const sections = groupPolicySections(parsePolicyBlocks(doc.body));
   const effective = formatPolicyDate(doc.effectiveAt);
@@ -115,7 +116,7 @@ export function PolicyArticle({ doc }: { doc: PolicyDocument }) {
         {sections.map((section, index) => {
           const id = section.heading ? policySectionId(index) : undefined;
           return (
-            <section key={`${section.heading ?? "intro"}-${index}`} id={id} className="scroll-mt-28">
+            <section key={`${section.heading ?? "intro"}-${index}`} id={id} tabIndex={focusableSections && section.heading ? -1 : undefined} className="scroll-mt-28">
               {section.heading ? (
                 <div className="group mb-3 flex items-start gap-2">
                   <h2 className="min-w-0 text-base font-bold leading-7 text-fg sm:text-lg">{section.heading}</h2>
@@ -243,5 +244,12 @@ export function TermsPage() {
 }
 
 export function PrivacyPage() {
-  return <PolicyPageShell slug="privacy-policy" eyebrow="PRIVACY" fallbackName="개인정보처리방침" />;
+  const doc = getStaticPolicyDocument("privacy-policy");
+  const sections = groupPolicySections(parsePolicyBlocks(doc.body));
+  const outline = sections.flatMap((section, index) => section.heading ? [{ id: policySectionId(index), label: section.heading }] : []);
+  return (
+    <PrivacyPolicyLayout doc={doc} outline={outline} summaries={POLICY_SUMMARIES["privacy-policy"]}>
+      <PolicyArticle doc={doc} focusableSections />
+    </PrivacyPolicyLayout>
+  );
 }

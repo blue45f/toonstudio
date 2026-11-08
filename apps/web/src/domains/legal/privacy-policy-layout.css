@@ -1,0 +1,84 @@
+/* 개인정보 안내 전용: DocsShell의 목차·본문·도구 구조이며 다른 정책에는 적용하지 않는다. */
+.privacy-policy { color: var(--color-fg); }
+.privacy-policy__header { max-width: 54rem; }
+.privacy-policy__header h1 { margin-block: 0.75rem 1.25rem; font-family: var(--font-display); font-size: 2rem; font-weight: 700; line-height: 1.25; letter-spacing: 0; overflow-wrap: anywhere; }
+.privacy-policy__metadata { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: 0; font-size: 0.8125rem; color: var(--color-fg-2); }
+.privacy-policy__metadata > div { display: flex; flex-wrap: wrap; gap: 0.375rem; min-width: 0; }
+.privacy-policy__metadata dt { color: var(--color-fg-3); }
+.privacy-policy__metadata dd { margin: 0; overflow-wrap: anywhere; }
+.privacy-policy__metadata code { font-size: 0.75rem; }
+
+.privacy-policy__summary { margin-block: 1.75rem 2rem; padding: 1.25rem 0 1.25rem 1rem; border-block: 1px solid var(--color-line); border-inline-start: 3px solid var(--color-accent); max-width: 64rem; }
+.privacy-policy__summary h2 { font-size: 1rem; font-weight: 700; }
+.privacy-policy__summary ul { display: grid; gap: 0.625rem; margin-block: 0.875rem; padding-inline-start: 1.125rem; list-style: disc; font-size: 0.9375rem; line-height: 1.75; color: var(--color-fg-2); }
+.privacy-policy__summary li::marker { color: var(--color-accent); }
+.privacy-policy__summary p { color: var(--color-fg-3); font-size: 0.8125rem; line-height: 1.75; max-width: 75ch; }
+.privacy-policy__body-link { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; margin-block-start: 0.5rem; font-size: 0.875rem; font-weight: 700; color: var(--color-accent); }
+
+.privacy-policy__layout { display: grid; gap: 1.25rem; align-items: start; }
+.privacy-policy__navigation { min-width: 0; }
+.privacy-policy__desktop-contents { display: none; }
+.privacy-policy__mobile-contents { border: 1px solid var(--color-line-strong); border-radius: 0.5rem; background: var(--color-panel); }
+.privacy-policy__mobile-contents > summary { display: flex; align-items: center; gap: 0.625rem; min-height: 3rem; padding: 0.75rem; cursor: pointer; font-size: 0.875rem; font-weight: 700; list-style: none; }
+.privacy-policy__mobile-contents > summary::-webkit-details-marker { display: none; }
+.privacy-policy__mobile-contents > summary > svg { flex-shrink: 0; }
+.privacy-policy__mobile-contents > summary > svg:last-child { margin-inline-start: auto; }
+.privacy-policy__mobile-contents[open] > summary > svg:last-child { transform: rotate(180deg); }
+.privacy-policy__mobile-contents[open] > summary { border-block-end: 1px solid var(--color-line); }
+.privacy-policy__clause-count { font-weight: 400; font-size: 0.75rem; color: var(--color-fg-3); }
+.privacy-policy__contents-list { margin: 0; padding: 0.5rem; list-style: none; }
+.privacy-policy__contents-list a { display: flex; align-items: center; min-height: 2.75rem; padding: 0.625rem 0.5rem; border-radius: 0.25rem; font-size: 0.875rem; line-height: 1.5; color: var(--color-fg-2); overflow-wrap: anywhere; }
+.privacy-policy__contents-list a:hover { background: var(--color-card); color: var(--color-accent); }
+.privacy-policy__document { min-width: 0; scroll-margin-block-start: 7rem; }
+.privacy-policy .policy-page__article { font-size: 1rem; line-height: 1.9; }
+.privacy-policy .policy-page__article h2 { line-height: 1.6; }
+.privacy-policy .policy-page__article section { scroll-margin-block-start: 7rem; }
+.privacy-policy__document > footer { border-radius: 0.5rem; }
+.privacy-policy__tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; padding-block-start: 1rem; border-block-start: 1px solid var(--color-line); }
+.privacy-policy__tools h2 { width: 100%; font-size: 0.875rem; font-weight: 700; }
+.privacy-policy__tools :is(button, a) { display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0.625rem 0.75rem; border: 1px solid var(--color-line-strong); border-radius: 0.5rem; font-size: 0.8125rem; line-height: 1.5; color: var(--color-fg); }
+.privacy-policy__tools button { background: var(--color-card); cursor: pointer; }
+.privacy-policy__tools :is(button, a):hover { border-color: var(--color-accent); color: var(--color-accent); }
+.privacy-policy__tools p { width: 100%; font-size: 0.75rem; line-height: 1.75; color: var(--color-fg-3); }
+.privacy-policy :is(a, button, summary, section, article):focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+
+@media (min-width: 640px) {
+  .privacy-policy__header h1 { font-size: 2.75rem; }
+  .privacy-policy__summary { padding-inline-start: 1.25rem; }
+}
+@media (min-width: 1024px) {
+  .privacy-policy__layout { grid-template-columns: 12rem minmax(0, 1fr); gap: 2.5rem; }
+  .privacy-policy__navigation { position: sticky; top: 6rem; grid-row: span 2; }
+  .privacy-policy__mobile-contents { display: none; }
+  .privacy-policy__desktop-contents { display: block; max-height: calc(100dvh - 8rem); overflow-y: auto; padding: 0.25rem; }
+  .privacy-policy__desktop-contents h2 { margin-block-end: 0.75rem; padding-inline: 0.5rem; font-size: 0.875rem; font-weight: 700; }
+  .privacy-policy__contents-list { padding: 0; }
+  .privacy-policy__tools { grid-column: 2; }
+}
+@media (min-width: 1280px) {
+  .privacy-policy__layout { grid-template-columns: 12rem minmax(0, 1fr) 11rem; gap: 2rem; }
+  .privacy-policy__navigation { grid-row: auto; }
+  .privacy-policy__tools { grid-column: 3; display: grid; position: sticky; top: 6rem; padding-block-start: 0; border: 0; }
+  .privacy-policy__tools :is(button, a) { justify-content: flex-start; }
+}
+@media (forced-colors: active) {
+  .privacy-policy__summary { border-inline-start-color: Highlight; }
+  .privacy-policy :is(a, button, summary, section, article):focus-visible { outline-color: Highlight; }
+}
+@media print {
+  .privacy-policy__layout { display: block; }
+  .privacy-policy__navigation, .privacy-policy__tools, .privacy-policy__body-link { display: none; }
+  .privacy-policy__summary { margin-block: 1rem; }
+  .privacy-policy__document { max-width: none; }
+  .privacy-policy .policy-page__article { font-size: 11pt; }
+}
+
+.privacy-policy__quick-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.5rem; margin-block-start: 0.75rem; }
+.privacy-policy__quick-actions .privacy-policy__body-link { margin: 0; }
+.privacy-policy__quick-actions button { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0.5rem 0.75rem; border: 1px solid var(--color-line-strong); border-radius: 0.5rem; background: var(--color-card); color: var(--color-fg-2); font-size: 0.8125rem; cursor: pointer; }
+.privacy-policy__quick-actions button:hover { border-color: var(--color-accent); color: var(--color-accent); }
+@media print { .privacy-policy__quick-actions { display: none; } }
+
+/* 공용 데스크톱 버튼의 40px 바닥보다 문서 조작의 48px 목표를 우선한다. */
+.privacy-policy__quick-actions :is(a, button),
+.privacy-policy__tools a { min-block-size: 3rem !important; }
