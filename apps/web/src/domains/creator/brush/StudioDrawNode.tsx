@@ -155,7 +155,7 @@ import {
   releaseStudioOilRibbonDraftPlanners,
   studioOilRibbonProgramsForBrush,
 } from "./studio-oil-ribbon-carrier";
-import { paintStudioOilRibbonCarrierIncremental } from "./studio-oil-ribbon-incremental-paint";
+import { paintStudioOilRibbonCarrierIncremental } from "./studio-oil-live-paint";
 import {
   STUDIO_PENCIL_DEFAULT_ALIAS_PASS,
   STUDIO_PENCIL_RIBBON_ALPHA_BUCKET_COUNT,
