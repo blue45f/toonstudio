@@ -430,7 +430,7 @@ export function TitleEpisodeSection({
                       }
                     >
                       {formatI18nTemplate(bi("{v0}에서 보기", "View on {v0}"), { v0: platformName })}
-                      <span className="text-xs font-medium opacity-80">{PRICING_FULL[link.pricing]}</span>
+                      <span className="text-xs font-medium">{PRICING_FULL[link.pricing]}</span>
                       <ArrowUpRight size={15} aria-hidden />
                     </a>
                   );

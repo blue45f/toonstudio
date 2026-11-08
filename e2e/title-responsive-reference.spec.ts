@@ -75,7 +75,15 @@ for (const width of [390, 834, 1440]) {
     await expect(related).not.toHaveAttribute("open");
 
     for (const theme of ["dark", "light", "contrast"]) {
-      await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+      // 실제 저장된 설정을 다시 읽게 해 색상·디자인 프리셋·고대비 계약을 함께 적용한다.
+      await page.evaluate((value) => {
+        localStorage.setItem("toonstudio-theme", JSON.stringify({ state: { preference: value, studioPreference: "inherit" }, version: 0 }));
+      }, theme);
+      await page.goto(path);
+      await expect(page.locator("html")).toHaveAttribute("data-design-theme", theme);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme === "light" ? "light" : "dark");
+      await expect(page.locator("html")).toHaveAttribute("data-contrast", theme === "contrast" ? "more" : "standard");
+      await expect(hero.getByRole("heading", { level: 1, name: title.title })).toBeVisible();
       await hero.scrollIntoViewIfNeeded();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
       expect(overflow).toBeLessThanOrEqual(1);
