@@ -76,14 +76,14 @@ export function OverviewTab({ project, result, onOpenIssues, onOpenData, onEditE
               <strong>{result.overallScore}</strong>
               <span>통합 건전성</span>
             </div>
-            <div className="storyworld-score-copy">
+            <div className="storyworld-score-copy" data-own-control-size="">
               <span className="storyworld-eyebrow">세계관 점검 결과</span>
               <h2>원고를 읽는 대신, 원고가 성립하는지 실행했습니다.</h2>
               <p>
                 {result.orderedSceneIds.length}개 장면과 {result.receipt.factCount}개 사실을 순서대로 적용해
                 {" "}{result.issues.length}개 확인할 점과 {result.repairProposals.length}개 고치기 제안을 만들었습니다.
               </p>
-              <button className="storyworld-button storyworld-button--primary" onClick={onOpenIssues} type="button">
+              <button className="storyworld-button storyworld-button--primary min-h-11" onClick={onOpenIssues} type="button">
                 {blockingIssues > 0 ? `${blockingIssues}개 꼭 고칠 문제 보기` : "전체 확인할 점 보기"}
                 <ChevronRight aria-hidden size={16} />
               </button>
@@ -122,7 +122,7 @@ export function OverviewTab({ project, result, onOpenIssues, onOpenData, onEditE
           <Panel
             title="먼저 확인할 점"
             description="원고를 함부로 고치지 않고, 중요한 것부터 순서대로 보여줍니다."
-            action={<button className="storyworld-text-button" onClick={onOpenIssues} type="button">모두 보기 <ChevronRight aria-hidden size={14} /></button>}
+            action={<button className="storyworld-text-button min-h-11 px-2" onClick={onOpenIssues} type="button">모두 보기 <ChevronRight aria-hidden size={14} /></button>}
           >
             <IssueList issues={result.issues} limit={5} />
           </Panel>
@@ -167,14 +167,14 @@ export function MultiverseTab({ project, result }: {
   return (
     <div className="storyworld-tab-stack">
       <Panel title="장면 빼고 미리 보기" description="지금 설정을 바꾸지 않고 ‘이 장면이 없었다면’ 어떻게 되는지 미리 계산합니다.">
-        <div className="storyworld-branch-controls">
+        <div className="storyworld-branch-controls" data-own-control-size="" role="group" aria-label="가상 전개 시뮬레이션 제어">
           <label>
             가상으로 제외할 장면
-            <select onChange={(event) => setSceneId(event.target.value)} value={sceneId}>
+            <select className="min-h-11" onChange={(event) => setSceneId(event.target.value)} value={sceneId}>
               {activeScenes.map((scene) => <option key={scene.id} value={scene.id}>{scene.order}. {scene.title}</option>)}
             </select>
           </label>
-          <button className="storyworld-button storyworld-button--primary" disabled={!sceneId} onClick={run} type="button">
+          <button className="storyworld-button storyworld-button--primary min-h-11" disabled={!sceneId} onClick={run} type="button">
             <FlaskConical aria-hidden size={17} />
             미리 보기 실행
           </button>
@@ -347,9 +347,9 @@ export function CapabilitiesTab() {
           <div><dt>시험 중</dt><dd>{counts.experimental}</dd></div>
         </dl>
       </div>
-      <div className="storyworld-segmented" role="group" aria-label="기능 성숙도 필터">
+      <div className="storyworld-segmented" data-own-control-size="" role="group" aria-label="기능 성숙도 필터">
         {(["all", "engine", "adapter", "experimental"] as const).map((value) => (
-          <button aria-pressed={maturity === value} key={value} onClick={() => setMaturity(value)} type="button">
+          <button aria-pressed={maturity === value} className="min-h-11 px-3" key={value} onClick={() => setMaturity(value)} type="button">
             {value === "all" ? "전체" : MATURITY_LABELS[value]}
           </button>
         ))}
@@ -414,9 +414,11 @@ export function JsonTab({ project, onApply }: {
           <li>직접 편집을 열면 인물·사실·장면을 적어 둔 글이 그대로 보입니다.</li>
           <li>다 고치면 '적용하고 다시 점검하기'를 누르세요. 형식이 어긋나면 적용되지 않고, 무엇이 문제인지와 다음에 할 일을 알려 드립니다.</li>
         </ol>
-        <button className="storyworld-button storyworld-button--primary" onClick={() => setEditorOpen(true)} type="button">
-          직접 편집 열기
-        </button>
+        <div data-own-control-size="">
+          <button className="storyworld-button storyworld-button--primary min-h-11" onClick={() => setEditorOpen(true)} type="button">
+            직접 편집 열기
+          </button>
+        </div>
       </Panel>
     );
   }
@@ -424,14 +426,16 @@ export function JsonTab({ project, onApply }: {
     <Panel
       title="설정 직접 편집"
       description="인물·사실·공개 범위·인물이 아는 것을 글자 그대로 적어 고칩니다."
-      action={<button className="storyworld-button storyworld-button--primary" onClick={apply} type="button"><Save aria-hidden size={16} /> 적용하고 다시 점검하기</button>}
+      action={<button className="storyworld-button storyworld-button--primary min-h-11" onClick={apply} type="button"><Save aria-hidden size={16} /> 적용하고 다시 점검하기</button>}
     >
       <label className="storyworld-json-editor">
         <span className="sr-only">세계관 설정 직접 편집</span>
         <textarea onChange={(event) => setText(event.target.value)} spellCheck={false} value={text} />
       </label>
       {error ? <p className="storyworld-inline-error" role="alert"><XCircle aria-hidden size={16} />{error}</p> : null}
-      <button className="storyworld-text-button" onClick={() => setEditorOpen(false)} type="button">편집 닫기</button>
+      <div data-own-control-size="">
+        <button className="storyworld-text-button min-h-11 px-2" onClick={() => setEditorOpen(false)} type="button">편집 닫기</button>
+      </div>
     </Panel>
   );
 }

@@ -172,6 +172,7 @@ export function MotionWebtoonPage(): JSX.Element {
       )}
       <section
         data-testid="motion-webtoon-rea-parallax-bar"
+        data-own-control-size=""
         aria-label={pickLang("모션 웹툰 패럴랙스 및 스크롤 리그 워크벤치", "Motion Webtoon Parallax & Scroll Rig Workbench")}
         className="mb-5 rounded-2xl border border-line bg-card p-4"
       >
@@ -191,7 +192,11 @@ export function MotionWebtoonPage(): JSX.Element {
             Rive · Spine 2D · Live2D Cubism · Naver Smartoon/Effectoon
           </span>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label={pickLang("스크롤 리그 프리셋", "Scroll Rig Presets")}
+          className="mt-3 flex flex-wrap items-center gap-2"
+        >
           <span className="text-xs font-semibold text-fg-2">
             {pickLang("스크롤 리그:", "Scroll Rig:")}
           </span>
@@ -204,15 +209,19 @@ export function MotionWebtoonPage(): JSX.Element {
               onClick={() => setScrollRig(item.id)}
               className={
                 scrollRig === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "min-h-11 min-w-11 rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  : "min-h-11 min-w-11 rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-accent-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               }
             >
               {pickLang(item.ko, item.en)}
             </button>
           ))}
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label={pickLang("동기화 페이싱 프리셋", "Sync Pacing Presets")}
+          className="mt-2 flex flex-wrap items-center gap-2"
+        >
           <span className="text-xs font-semibold text-fg-2">
             {pickLang("동기화 페이싱:", "Sync Pacing:")}
           </span>
@@ -225,8 +234,8 @@ export function MotionWebtoonPage(): JSX.Element {
               onClick={() => setSyncPacing(item.id)}
               className={
                 syncPacing === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "min-h-11 min-w-11 rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  : "min-h-11 min-w-11 rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-accent-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               }
             >
               {pickLang(item.ko, item.en)}

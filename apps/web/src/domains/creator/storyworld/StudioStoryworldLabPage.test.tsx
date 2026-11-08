@@ -407,11 +407,23 @@ describe("Storyworld world board layer", () => {
     expect(view.container.querySelector(".storyworld-board-note")).toBeNull();
   });
 
-  it("REA 연속성 워크벤치에서 점검 렌즈·정사 범위를 전환하고 en 로케일에서 한글을 포함하지 않는다", async () => {
+  it("REA 연속성 워크벤치에서 점검 렌즈·정사 범위를 전환하고 그룹 시맨틱·44px 터치 타깃·en 로케일 순수성을 유지한다", async () => {
     useI18n.setState({ lang: "ko" });
     await open("work-rea-continuity");
     const bar = screen.getByTestId("storyworld-rea-continuity-bar");
+    expect(bar.hasAttribute("data-own-control-size")).toBe(true);
     expect(bar.textContent).toContain("World Anvil · Campfire · Plottr · Scrivener");
+
+    expect(within(bar).getByRole("group", { name: "점검 렌즈 프리셋" })).toBeTruthy();
+    expect(within(bar).getByRole("group", { name: "정사 범위 프리셋" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "세계관 설정 파일 작업" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Studio 편집기로 돌아가기" }).className).toContain("min-h-11");
+
+    for (const button of Array.from(bar.querySelectorAll("button"))) {
+      expect(button.className).toContain("min-h-11");
+      expect(button.className).toContain("focus-visible:outline-2");
+    }
+
     expect(screen.getByTestId("storyworld-rea-lens-timeline-paradox-guard").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("storyworld-rea-scope-season1-main-arc").getAttribute("aria-pressed")).toBe("true");
 
@@ -436,6 +448,8 @@ describe("Storyworld world board layer", () => {
     act(() => {
       useI18n.setState({ lang: "en" });
     });
+    expect(within(bar).getByRole("group", { name: "Checker Lens Presets" })).toBeTruthy();
+    expect(within(bar).getByRole("group", { name: "Canon Scope Presets" })).toBeTruthy();
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
     act(() => {
       useI18n.setState({ lang: "ko" });

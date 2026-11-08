@@ -155,7 +155,7 @@ export function StudioPinnedReviewShowcasePage() {
   return (
     <PageEntrance variant="rise">
     <Container size="wide" className="py-8 sm:py-12">
-    <header className="overflow-hidden rounded-3xl border border-line bg-card p-6 sm:p-9">
+    <header data-own-control-size="" className="overflow-hidden rounded-3xl border border-line bg-card p-6 sm:p-9">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="max-w-3xl">
           <span className="inline-flex items-center gap-2 rounded-full border border-accent/35 bg-accent-soft px-3 py-1 text-xs font-black text-accent"><ShieldCheck className="size-4" aria-hidden="true" />{bt("승인본 공개 전시", "Approved review showcase")}</span>
@@ -168,6 +168,7 @@ export function StudioPinnedReviewShowcasePage() {
 
     <section
       data-testid="pinned-review-rea-ab-diff-bar"
+      data-own-control-size=""
       aria-label={pickLang("고정 리비전 A/B 어니언 스킨 및 승인 감사 바", "Pinned Revision A/B Onion-Skin & Approval Audit Bar")}
       className="mt-4 rounded-2xl border border-line bg-card p-4"
     >
@@ -180,7 +181,11 @@ export function StudioPinnedReviewShowcasePage() {
             {pickLang("고정 리비전 A/B 시각 비교 및 워터마크 감사", "Pinned Revision A/B Visual Diff & Watermark Audit")}
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          role="group"
+          aria-label={pickLang("시각 비교 모드", "Visual Diff Mode")}
+          className="flex flex-wrap items-center justify-between gap-2"
+        >
           {DIFF_MODE_OPTIONS.map((opt) => (
             <button
               key={opt.id}
@@ -188,7 +193,7 @@ export function StudioPinnedReviewShowcasePage() {
               data-testid={`pinned-review-rea-diff-${opt.id}`}
               aria-pressed={diffMode === opt.id}
               onClick={() => setDiffMode(opt.id)}
-              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+              className={`min-h-11 min-w-11 rounded-lg border px-3.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 diffMode === opt.id
                   ? "border-accent bg-accent/10 text-accent"
                   : "border-line bg-panel text-fg-2"
@@ -203,7 +208,11 @@ export function StudioPinnedReviewShowcasePage() {
         <span className="text-xs font-semibold text-fg-2">
           {pickLang("워터마크·무결성 정책", "Watermark & Provenance Policy")}
         </span>
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          role="group"
+          aria-label={pickLang("워터마크 및 무결성 정책", "Watermark & Provenance Policy")}
+          className="flex flex-wrap items-center justify-between gap-2"
+        >
           {WATERMARK_POLICY_OPTIONS.map((opt) => (
             <button
               key={opt.id}
@@ -211,7 +220,7 @@ export function StudioPinnedReviewShowcasePage() {
               data-testid={`pinned-review-rea-watermark-${opt.id}`}
               aria-pressed={watermarkPolicy === opt.id}
               onClick={() => setWatermarkPolicy(opt.id)}
-              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+              className={`min-h-11 min-w-11 rounded-lg border px-3.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 watermarkPolicy === opt.id
                   ? "border-accent bg-accent/10 text-accent"
                   : "border-line bg-panel text-fg-2"
@@ -235,17 +244,17 @@ export function StudioPinnedReviewShowcasePage() {
     </section>
 
     {loading ? <p className="mt-8 flex items-center justify-center gap-2 rounded-2xl border border-line bg-card p-8 text-sm" role="status"><LoaderCircle className="size-5 animate-spin text-accent motion-reduce:animate-none" aria-hidden="true" />{bt("공개 승인본을 확인하는 중…", "Checking approved snapshots…")}</p> : null}
-    {error ? <section className="mt-8 rounded-3xl border border-warn/35 bg-gradient-to-br from-warn/10 via-card to-card p-6 sm:p-8" role="alert" aria-labelledby="showcase-reviews-unavailable">
+    {error ? <section data-own-control-size="" className="mt-8 rounded-3xl border border-warn/35 bg-gradient-to-br from-warn/10 via-card to-card p-6 sm:p-8" role="alert" aria-labelledby="showcase-reviews-unavailable">
       <CloudOff className="size-7 text-warn" aria-hidden="true" />
       <h2 id="showcase-reviews-unavailable" className="mt-3 text-balance break-keep text-lg font-black">{bt("공개 승인본 목록을 불러오지 못했습니다.", "Couldn't load approved snapshots.")}</h2>
       <p className="mt-2 max-w-2xl break-keep text-sm leading-7 text-fg-2">{bt("연결이 잠시 불안정할 수 있어요. 잠시 뒤 다시 확인하거나, 그동안 일반 작품 전시와 샘플 검수 흐름을 둘러보세요.", "The connection may be unstable. Try again shortly, or browse the main showcase and the sample review flow meanwhile.")}</p>
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div role="group" aria-label={bt("승인본 목록 복구 동작", "Snapshot recovery actions")} className="mt-5 flex flex-wrap gap-3">
         <button type="button" className={buttonClass({ size: "md", className: "min-h-11 gap-1.5" })} onClick={() => { void load(); }}><RefreshCw className="size-4" aria-hidden="true" />{bt("다시 확인", "Try again")}</button>
         <Link href={SAMPLE_REVIEW_ROOM} className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>{bt("샘플 검수 흐름 보기", "See the sample review flow")}</Link>
       </div>
     </section> : null}
 
-    {!loading && !error ? <section className="mt-8" aria-label={bt("공개 승인본 목록", "Approved snapshots")}>
+    {!loading && !error ? <section data-own-control-size="" className="mt-8" aria-label={bt("공개 승인본 목록", "Approved snapshots")}>
       {items.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => <article key={item.id} className="rounded-3xl border border-line bg-card p-5">
           <ShowcaseCover entry={item} />

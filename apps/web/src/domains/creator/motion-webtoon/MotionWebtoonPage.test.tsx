@@ -112,10 +112,22 @@ describe("MotionWebtoonPage", () => {
     expect(document.title).toContain("모션 웹툰");
   });
 
-  it("REA 패럴랙스 워크벤치에서 스크롤 리그·동기화 페이싱을 전환하고 en 로케일에서 한글을 포함하지 않는다", () => {
+  it("REA 패럴랙스 워크벤치에서 스크롤 리그·동기화 페이싱을 전환하고 그룹 시맨틱·44px 터치 타깃·en 로케일 순수성을 유지한다", () => {
     render(<MotionWebtoonPage />);
     const bar = screen.getByTestId("motion-webtoon-rea-parallax-bar");
+    expect(bar.hasAttribute("data-own-control-size")).toBe(true);
     expect(bar.textContent).toContain("Rive · Spine 2D · Live2D Cubism · Naver Smartoon/Effectoon");
+
+    const rigGroup = screen.getByRole("group", { name: "스크롤 리그 프리셋" });
+    const pacingGroup = screen.getByRole("group", { name: "동기화 페이싱 프리셋" });
+    expect(rigGroup).toBeTruthy();
+    expect(pacingGroup).toBeTruthy();
+
+    for (const button of Array.from(bar.querySelectorAll("button"))) {
+      expect(button.className).toContain("min-h-11");
+      expect(button.className).toContain("focus-visible:outline-2");
+    }
+
     expect(screen.getByTestId("motion-rea-rig-zdepth-5layer-parallax").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("motion-rea-pacing-scroll-velocity-1to1").getAttribute("aria-pressed")).toBe("true");
 
@@ -140,6 +152,8 @@ describe("MotionWebtoonPage", () => {
     act(() => {
       useI18n.setState({ lang: "en" });
     });
+    expect(screen.getByRole("group", { name: "Scroll Rig Presets" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Sync Pacing Presets" })).toBeTruthy();
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
   });
 });

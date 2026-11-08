@@ -79,13 +79,21 @@ describe("approved immutable review showcase", () => {
     expect(screen.getByRole("link", { name: "일반 작품 전시로 돌아가기" }).getAttribute("href")).toBe("/showcase");
   });
 
-  it("toggles diffMode and watermarkPolicy in pinned-review-rea-ab-diff-bar with aria-pressed", async () => {
+  it("toggles diffMode and watermarkPolicy in pinned-review-rea-ab-diff-bar with aria-pressed, group semantics, and 44px touch targets", async () => {
     mocks.list.mockResolvedValue({ items: [first], nextCursor: null });
     render(<MemoryRouter><StudioPinnedReviewShowcasePage /></MemoryRouter>);
     await screen.findByRole("heading", { name: first.title });
 
     const bar = screen.getByTestId("pinned-review-rea-ab-diff-bar");
+    expect(bar.hasAttribute("data-own-control-size")).toBe(true);
     expect(bar.textContent).toContain("Frame.io · Ziflow · PageProof · Chromatic Visual Diff");
+    expect(within(bar).getByRole("group", { name: "시각 비교 모드" })).toBeTruthy();
+    expect(within(bar).getByRole("group", { name: "워터마크 및 무결성 정책" })).toBeTruthy();
+
+    for (const button of Array.from(bar.querySelectorAll("button"))) {
+      expect(button.className).toContain("min-h-11");
+      expect(button.className).toContain("focus-visible:outline-2");
+    }
 
     const syncBtn = screen.getByTestId("pinned-review-rea-diff-side-by-side-sync");
     const onionBtn = screen.getByTestId("pinned-review-rea-diff-onion-skin-50pct");
@@ -139,6 +147,8 @@ describe("approved immutable review showcase", () => {
     expect(bar.textContent ?? "").not.toMatch(/[가-힣]/u);
 
     const withinBar = within(bar);
+    expect(withinBar.getByRole("group", { name: "Visual Diff Mode" })).toBeTruthy();
+    expect(withinBar.getByRole("group", { name: "Watermark & Provenance Policy" })).toBeTruthy();
     fireEvent.click(withinBar.getByTestId("pinned-review-rea-diff-pixel-delta-heatmap"));
     fireEvent.click(withinBar.getByTestId("pinned-review-rea-watermark-clean-press-kit"));
 

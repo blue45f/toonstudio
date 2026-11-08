@@ -23,7 +23,7 @@ export function Panel({ title, description, children, action }: {
           <h2>{title}</h2>
           {description ? <p>{description}</p> : null}
         </div>
-        {action ? <div className="storyworld-panel__action">{action}</div> : null}
+        {action ? <div className="storyworld-panel__action" data-own-control-size="">{action}</div> : null}
       </div>
       {children}
     </section>

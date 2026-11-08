@@ -191,6 +191,7 @@ function StoryworldReaContinuityBar({
   return (
     <section
       data-testid="storyworld-rea-continuity-bar"
+      data-own-control-size=""
       aria-label={pickLang("스토리월드 연속성 및 정사 범위 워크벤치", "Storyworld Continuity & Canon Scope Workbench")}
       className="mb-5 rounded-2xl border border-line bg-card p-4"
     >
@@ -210,7 +211,11 @@ function StoryworldReaContinuityBar({
           World Anvil · Campfire · Plottr · Scrivener
         </span>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div
+        role="group"
+        aria-label={pickLang("점검 렌즈 프리셋", "Checker Lens Presets")}
+        className="mt-3 flex flex-wrap items-center gap-2"
+      >
         <span className="text-xs font-semibold text-fg-2">
           {pickLang("점검 렌즈:", "Checker Lens:")}
         </span>
@@ -223,15 +228,19 @@ function StoryworldReaContinuityBar({
             onClick={() => setCheckerLens(item.id)}
             className={
               checkerLens === item.id
-                ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                ? "min-h-11 min-w-11 rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                : "min-h-11 min-w-11 rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-accent-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             }
           >
             {pickLang(item.ko, item.en)}
           </button>
         ))}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div
+        role="group"
+        aria-label={pickLang("정사 범위 프리셋", "Canon Scope Presets")}
+        className="mt-2 flex flex-wrap items-center gap-2"
+      >
         <span className="text-xs font-semibold text-fg-2">
           {pickLang("정사 범위:", "Canon Scope:")}
         </span>
@@ -244,8 +253,8 @@ function StoryworldReaContinuityBar({
             onClick={() => setCanonScope(item.id)}
             className={
               canonScope === item.id
-                ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                ? "min-h-11 min-w-11 rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                : "min-h-11 min-w-11 rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:bg-accent-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             }
           >
             {pickLang(item.ko, item.en)}
@@ -295,14 +304,14 @@ export function StudioStoryworldLabPage(props: StudioStoryworldLabPageProps) {
   );
   if (loaded === null || loaded.key !== key) {
     return (
-      <div className="storyworld-main storyworld-recovery" aria-busy={error === null}>
+      <div className="storyworld-main storyworld-recovery" data-own-control-size="" aria-busy={error === null}>
         <h1>스토리월드 인과관계 랩</h1>
         {reaBar}
         <p role={error === null ? "status" : "alert"}>
           {error === null ? frozenStatus2Text("studio.frozenStatus2.world.loadingSettings", "저장된 세계관 설정을 불러오는 중입니다.") : frozenStatus2Text("studio.frozenStatus2.world.loadSettingsFailed", "저장된 설정을 불러오지 못했습니다. 저장된 내용은 그대로 두었습니다. 아래 ‘다시 불러오기’를 눌러 주세요. 계속 실패하면 편집기로 돌아가 다시 시작할 수 있습니다.")}
         </p>
-        {error !== null ? <button className="storyworld-button" type="button" onClick={() => setAttempt((value) => value + 1)}>다시 불러오기</button> : null}
-        <Link className="storyworld-button" href={editorHref(props.workId, props.remixSourceWorkId)}>Studio 편집기로 돌아가기</Link>
+        {error !== null ? <button className="storyworld-button min-h-11 min-w-11" type="button" onClick={() => setAttempt((value) => value + 1)}>다시 불러오기</button> : null}
+        <Link className="storyworld-button min-h-11 min-w-11" href={editorHref(props.workId, props.remixSourceWorkId)}>Studio 편집기로 돌아가기</Link>
       </div>
     );
   }
@@ -432,9 +441,9 @@ function StudioStoryworldLabEditor({
 
   return (
     <div className="storyworld-shell" data-creator-workflow="storyworld">
-      <header className="storyworld-topbar">
+      <header className="storyworld-topbar" data-own-control-size="">
         <div className="storyworld-topbar__brand">
-          <Link aria-label="Studio 편집기로 돌아가기" className="storyworld-icon-button" href={backHref}>
+          <Link aria-label="Studio 편집기로 돌아가기" className="storyworld-icon-button min-h-11 min-w-11" href={backHref}>
             <ArrowLeft aria-hidden size={19} />
           </Link>
           <div className="storyworld-brand-mark" aria-hidden><Network size={20} /></div>
@@ -443,20 +452,20 @@ function StudioStoryworldLabEditor({
             <strong>스토리월드 인과관계 랩</strong>
           </div>
         </div>
-        <div className="storyworld-topbar__actions">
+        <div className="storyworld-topbar__actions" role="group" aria-label="세계관 설정 파일 작업">
           <span className={`storyworld-save-state storyworld-save-state--${saveState}`}>
             {saveState === "error" ? <AlertTriangle aria-hidden size={14} /> : <ShieldCheck aria-hidden size={14} />}
             {saveState === "error" ? frozenStatus2Text("studio.frozenStatus2.world.saveFailedBadge", "저장 실패") : saveState === "saved" ? frozenStatus2Text("studio.frozenStatus2.world.savedBadge", "로컬 저장됨") : frozenStatus2Text("studio.frozenStatus2.world.analyzingBadge", "분석 중")}
           </span>
-          <button className="storyworld-button" onClick={() => setImportWizardOpen(true)} type="button"><Import aria-hidden size={16} /> 설정 불러오기</button>
-          <button className="storyworld-button" onClick={exportProject} type="button"><Download aria-hidden size={16} /> 설정 파일로 저장</button>
-          <button className="storyworld-button" onClick={exportReceipt} type="button"><BadgeCheck aria-hidden size={16} /> 점검 기록 저장</button>
+          <button className="storyworld-button min-h-11" onClick={() => setImportWizardOpen(true)} type="button"><Import aria-hidden size={16} /> 설정 불러오기</button>
+          <button className="storyworld-button min-h-11" onClick={exportProject} type="button"><Download aria-hidden size={16} /> 설정 파일로 저장</button>
+          <button className="storyworld-button min-h-11" onClick={exportReceipt} type="button"><BadgeCheck aria-hidden size={16} /> 점검 기록 저장</button>
           <input aria-label="세계관 설정 파일 고르기" accept="application/json,.json" className="sr-only" onChange={importProject} ref={importRef} type="file" />
         </div>
       </header>
 
       <div className="storyworld-body">
-        <aside className="storyworld-sidebar">
+        <aside className="storyworld-sidebar" data-own-control-size="">
           <div className="storyworld-project-card">
             <span>{documentScope}</span>
             <strong>{project.title}</strong>
@@ -466,7 +475,7 @@ function StudioStoryworldLabEditor({
             {TAB_ITEMS.map((tab) => {
               const Icon = tab.icon;
               return (
-                <button aria-current={activeTab === tab.id ? "page" : undefined} key={tab.id} onClick={() => setActiveTab(tab.id)} type="button">
+                <button aria-current={activeTab === tab.id ? "page" : undefined} className="min-h-11" key={tab.id} onClick={() => setActiveTab(tab.id)} type="button">
                   <Icon aria-hidden size={17} />
                   <span>{tab.label}</span>
                   {tab.id === "issues" && result.issues.length > 0 ? <em>{result.issues.length}</em> : null}
@@ -475,14 +484,14 @@ function StudioStoryworldLabEditor({
             })}
           </nav>
           <div className="storyworld-sidebar__footer">
-            <button onClick={reset} type="button"><RefreshCcw aria-hidden size={15} /> 데모 초기화</button>
+            <button className="min-h-11" onClick={reset} type="button"><RefreshCcw aria-hidden size={15} /> 데모 초기화</button>
             <p><TimerReset aria-hidden size={14} /> 분석은 네트워크 없이 이 탭에서 실행됩니다.</p>
           </div>
         </aside>
 
         <div className="storyworld-main">
           {importWizardOpen ? (
-            <section aria-labelledby="storyworld-import-wizard-title" className="storyworld-checkup">
+            <section aria-labelledby="storyworld-import-wizard-title" className="storyworld-checkup" data-own-control-size="">
               <div className="storyworld-checkup__heading">
                 <h2 id="storyworld-import-wizard-title">설정 불러오기</h2>
                 <p>이전에 이 화면에서 저장한 설정 파일을 불러오면 지금 세계관 설정이 그 내용으로 바뀝니다. 순서대로 따라 하세요.</p>
@@ -492,14 +501,14 @@ function StudioStoryworldLabEditor({
                 <li>불러올 설정 파일을 고르세요.</li>
                 <li>불러온 뒤 대시보드에서 점검 결과를 확인하세요.</li>
               </ol>
-              <div className="storyworld-branch-controls">
-                <button className="storyworld-button storyworld-button--primary" onClick={() => { setImportWizardOpen(false); importRef.current?.click(); }} type="button">
+              <div className="storyworld-branch-controls" role="group" aria-label="설정 불러오기 작업">
+                <button className="storyworld-button storyworld-button--primary min-h-11" onClick={() => { setImportWizardOpen(false); importRef.current?.click(); }} type="button">
                   <Import aria-hidden size={16} /> 파일 고르기
                 </button>
-                <button className="storyworld-button" onClick={exportProject} type="button">
+                <button className="storyworld-button min-h-11" onClick={exportProject} type="button">
                   <Download aria-hidden size={16} /> 지금 설정 파일로 저장
                 </button>
-                <button className="storyworld-button" onClick={() => setImportWizardOpen(false)} type="button">취소</button>
+                <button className="storyworld-button min-h-11" onClick={() => setImportWizardOpen(false)} type="button">취소</button>
               </div>
             </section>
           ) : null}
