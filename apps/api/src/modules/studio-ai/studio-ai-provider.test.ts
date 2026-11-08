@@ -66,10 +66,17 @@ describe("Studio AI provider resolution", () => {
     expect(JSON.stringify(status)).not.toContain("test-key");
   });
 
+  const cloudflareFreeEnv = {
+    STUDIO_AI_FREE_POOL_ENABLED: "true",
+    STUDIO_AI_FREE_CLOUDFLARE_ACCOUNT_ID: "00000000000000000000000000000000",
+    STUDIO_AI_FREE_CLOUDFLARE_API_TOKEN: "cloudflare-free-token",
+    STUDIO_AI_FREE_CLOUDFLARE_CONFIRMED: "true",
+  };
+
   it("무료 풀은 확인된 외부 실시간 제공자만 품질 순서대로 노출한다", () => {
     const freeEnv = {
       NODE_ENV: "production",
-      STUDIO_AI_FREE_POOL_ENABLED: "true",
+      ...cloudflareFreeEnv,
       STUDIO_AI_FREE_PROVIDER_ORDER: "gemini,qwen,groq,sambanova,zai,mistral,cloudflare,openrouter,siliconflow",
       STUDIO_AI_FREE_GEMINI_API_KEY: "gemini-free-key",
       STUDIO_AI_FREE_GEMINI_CONFIRMED: "true",
@@ -84,9 +91,6 @@ describe("Studio AI provider resolution", () => {
       STUDIO_AI_FREE_ZAI_CONFIRMED: "true",
       STUDIO_AI_FREE_MISTRAL_API_KEY: "mistral-free-key",
       STUDIO_AI_FREE_MISTRAL_CONFIRMED: "true",
-      STUDIO_AI_FREE_CLOUDFLARE_ACCOUNT_ID: "00000000000000000000000000000000",
-      STUDIO_AI_FREE_CLOUDFLARE_API_TOKEN: "cloudflare-free-token",
-      STUDIO_AI_FREE_CLOUDFLARE_CONFIRMED: "true",
       STUDIO_AI_FREE_OPENROUTER_API_KEY: "openrouter-free-key",
       STUDIO_AI_FREE_OPENROUTER_CONFIRMED: "true",
       STUDIO_AI_FREE_OPENROUTER_MODEL: "openrouter/free",
@@ -102,7 +106,7 @@ describe("Studio AI provider resolution", () => {
         { id: "sambanova", model: "DeepSeek-V3.1" },
         { id: "zai", model: "glm-4.7-flash" },
         { id: "mistral", model: "mistral-small-latest" },
-        { id: "cloudflare", model: "@cf/qwen/qwen3-30b-a3b-fp8" },
+        { id: "cloudflare", model: "@cf/google/gemma-4-26b-a4b-it" },
         { id: "openrouter", model: "openrouter/free" },
         { id: "siliconflow", model: "THUDM/GLM-Z1-9B-0414" },
       ]);
@@ -152,6 +156,37 @@ describe("Studio AI provider resolution", () => {
       kind: STUDIO_AI_BILLING_FAILOVER_REASON,
       failoverReason: STUDIO_AI_BILLING_FAILOVER_REASON,
     });
+  });
+
+  it("명시한 Cloudflare 무료 모델을 보존한다", () => {
+    const model = "@cf/zai-org/glm-4.7-flash";
+    expect(resolveStudioAiProviders("cloudflare", {
+      ...cloudflareFreeEnv,
+      STUDIO_AI_FREE_CLOUDFLARE_MODEL: model,
+    })).toMatchObject([{ id: "cloudflare", model }]);
+  });
+
+  it.each([
+    "@cf/qwen/qwen3-30b-a3b-fp8",
+    "@cf/nvidia/nemotron-3-120b-a12b",
+    "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+    "@cf/zai-org/glm-5.3",
+  ])("폐기·유료 모델 %s를 지정하면 Cloudflare를 무료 후보에서 제외한다", (model) => {
+    const freeEnv = {
+      ...cloudflareFreeEnv,
+      STUDIO_AI_FREE_CLOUDFLARE_MODEL: model,
+      STUDIO_AI_FREE_MISTRAL_API_KEY: "mistral-free-key",
+      STUDIO_AI_FREE_MISTRAL_CONFIRMED: "true",
+    };
+    expect(resolveStudioAiProviderCandidates("cloudflare", freeEnv)).toEqual([]);
+    expect(resolveStudioAiProviderCandidates("auto", freeEnv, ["cloudflare", "mistral"])
+      .map(({ id }) => id)).toEqual(["mistral"]);
+  });
+
+  it("Cloudflare 모델 폐기 오류에서 다른 공급자로 재전송하지 않는다", () => {
+    expect(classifyStudioAiProviderFailure("cloudflare", 410, {
+      errors: [{ code: 5028 }],
+    })).toMatchObject({ kind: "request_rejected", billingFailoverEligible: false });
   });
 
   it("사용자가 지정한 무료 공급자 순서를 운영 기본값보다 우선한다", () => {
