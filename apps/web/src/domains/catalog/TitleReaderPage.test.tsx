@@ -456,7 +456,7 @@ describe("리더 시안의 공식 감상 동선", () => {
     expect(links[1].getAttribute("href")).toBe("/title/fog-signal");
     expect(content.textContent).not.toContain("연결되면");
     expect(content.textContent).toContain("읽기 진도를 기록하지 않아요");
-    expect(screen.getAllByRole("link", { name: "다음 화", exact: true })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: /^다음 화$/ })).toHaveLength(1);
   });
 
   it("공식 URL이 없으면 링크를 지어내지 않고 작품 상세로 안내한다", () => {
