@@ -272,6 +272,7 @@ describe("CreatorDirectoryPage", () => {
     render(view());
     await waitFor(() => expect(searchCreatorDirectory).toHaveBeenCalledTimes(1));
 
+    fireEvent.click(screen.getByRole("button", { name: "상세 조건" }));
     const storyChip = screen.getByRole("button", { name: "글작가" });
     fireEvent.click(storyChip);
     expect(storyChip.getAttribute("aria-pressed")).toBe("true");
@@ -284,7 +285,8 @@ describe("CreatorDirectoryPage", () => {
       ),
     );
 
-    // 이미 선택된 칩을 다시 누르면 전체 직무로 해제된다.
+    // 적용 후 접힌 상세 조건을 다시 열어 선택을 해제한다.
+    fireEvent.click(screen.getByRole("button", { name: /상세 조건/ }));
     fireEvent.click(storyChip);
     expect(storyChip.getAttribute("aria-pressed")).toBe("false");
     fireEvent.click(screen.getByRole("button", { name: "검색" }));
@@ -294,5 +296,49 @@ describe("CreatorDirectoryPage", () => {
         expect.any(AbortSignal),
       ),
     );
+  });
+});
+
+
+describe("창작자 검색 조건의 단계적 표시", () => {
+  it("검색은 항상 노출하고 상세 조건의 연결과 상태를 제공한다", async () => {
+    searchCreatorDirectory.mockResolvedValue(result([entry("a", "창작자A")]));
+    render(view());
+    await screen.findByText("창작자A");
+    const toggle = screen.getByRole("button", { name: "상세 조건" });
+    expect(toggle.getAttribute("aria-controls")).toBe("creator-directory-advanced");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByPlaceholderText("이름 또는 소개 검색").closest("[hidden]")).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "전문 분야" })).toBeNull();
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("combobox", { name: "전문 분야" })).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(screen.queryByRole("combobox", { name: "전문 분야" })).toBeNull();
+  });
+
+  it("적용 전 수정 안내와 실제 적용한 조건을 구분하고 초기화한다", async () => {
+    searchCreatorDirectory.mockResolvedValue(result([entry("a", "창작자A")]));
+    render(view());
+    await screen.findByText("창작자A");
+    fireEvent.change(screen.getByPlaceholderText("이름 또는 소개 검색"), { target: { value: "세계관" } });
+    expect(screen.getByRole("status").textContent).toContain("검색을 눌러");
+    expect(screen.queryByLabelText("적용한 조건")).toBeNull();
+    expect(searchCreatorDirectory).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+    await waitFor(() => expect(searchCreatorDirectory).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText("적용한 조건").textContent).toContain("세계관");
+    expect(screen.queryByRole("status")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "검색 조건 초기화" }));
+    await waitFor(() => expect(searchCreatorDirectory).toHaveBeenCalledTimes(3));
+    expect(screen.queryByLabelText("적용한 조건")).toBeNull();
+    expect(screen.getByPlaceholderText("이름 또는 소개 검색").getAttribute("value")).toBe("");
+  });
+
+  it("프로필 링크마다 대상 창작자를 명시한다", async () => {
+    searchCreatorDirectory.mockResolvedValue(result([entry("a", "창작자A"), entry("b", "창작자B")]));
+    render(view());
+    expect((await screen.findByRole("link", { name: "창작자A · 프로필과 포트폴리오 보기" })).getAttribute("href")).toBe("/u/a");
+    expect(screen.getByRole("link", { name: "창작자B · 프로필과 포트폴리오 보기" }).getAttribute("href")).toBe("/u/b");
   });
 });
