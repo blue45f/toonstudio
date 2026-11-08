@@ -1,0 +1,21 @@
+{
+  "base": "http://127.0.0.1:4198",
+  "results": [
+    {
+      "width": 390,
+      "loading": "passed",
+      "noReportError": "passed",
+      "reducedMotion": "passed",
+      "axeViolations": 0,
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "loading": "passed",
+      "noReportError": "passed",
+      "reducedMotion": "passed",
+      "axeViolations": 0,
+      "errors": []
+    }
+  ]
+}

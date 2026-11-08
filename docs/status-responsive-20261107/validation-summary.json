@@ -1,0 +1,61 @@
+{
+  "status": "로컬 검증 완료, 통합 대기",
+  "completedAt": "2026-11-07T18:35:45.878Z",
+  "base": "d823079b2f",
+  "branch": "codex/toon-status-responsive-20261107",
+  "unitTests": {
+    "files": 2,
+    "passed": 11
+  },
+  "browser": {
+    "conditions": 11,
+    "axeViolations": 0,
+    "pageErrors": 0,
+    "horizontalOverflow": 0,
+    "clippedText": 0,
+    "initialStateWidths": [
+      390,
+      1440
+    ],
+    "navigationAndRecoveryWidths": [
+      390,
+      1440
+    ]
+  },
+  "harness": {
+    "command": "pnpm harness:verify",
+    "exitCode": 0,
+    "webFilesChecked": 26348,
+    "webTotalFiles": 26348,
+    "diagnostics": 0,
+    "typescriptVersion": "6.0.3",
+    "fingerprint": "c9681854198e13aa90a632bc38ed8ad3e9eb2337b3ece7e675f31c0b7e0d771a",
+    "apiChecks": [
+      "tsc -p tsconfig.json --noEmit",
+      "tsc -p tools/tsconfig.work-session-browser.json --noEmit",
+      "tsc -p tools/tsconfig.postgres-tools.json --noEmit"
+    ]
+  },
+  "sha256": {
+    "apps/web/src/domains/legal/ServiceStatusPage.tsx": "8450b4f2719830e8276656c41c07ac75ec90e8839078e896e3cbb8fce6792ace",
+    "apps/web/src/domains/legal/ServiceStatusPage.test.tsx": "93a3419dc02573d90c9bee6a52585f80ddbb77be16763d95fdf0881f90120dbe",
+    "apps/web/src/domains/legal/service-status-page.css": "171411515774002848f771511bd8aef4009a599ba71fada9483142ac931d2d0f"
+  },
+  "cleanup": {
+    "testBrowsers": "종료 확인",
+    "vitePort": 4198,
+    "vitePid": 99783,
+    "vite": "종료 및 리스너 없음 확인"
+  },
+  "notRun": [
+    "실기기 Safari",
+    "실제 스크린리더",
+    "실제 브라우저 메뉴 확대",
+    "실제 운영 API 장애·복구",
+    "제보 제출",
+    "production build",
+    "원격 CI",
+    "main 통합",
+    "배포"
+  ]
+}
