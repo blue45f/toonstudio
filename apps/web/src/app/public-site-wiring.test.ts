@@ -111,3 +111,11 @@ describe("public shell integration", () => {
     expect(shell).toMatch(/<ErrorBoundary resetKey=\{pathname\}>\s*<Suspense fallback=\{<Suspense fallback=\{null\}><PublicSiteWayfinder \/><\/Suspense>\}>\s*<PublicSiteNextSteps pathname=\{pathname\}\s*\/>/u);
   });
 });
+
+
+it("웹툰 리더는 자체 메뉴를 유지하고 캠퍼스 작업 내비를 중복하지 않는다", () => {
+  expect(shell).toContain("immersiveReader ? null : campus");
+  expect(shell).toContain("immersiveReader ? null : taskRoute");
+  expect(shell).toContain("immersiveVirtualHome || immersiveReader || taskRoute !== null");
+  expect(shell).toContain("resolveShellChrome({");
+});

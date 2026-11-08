@@ -50,3 +50,9 @@ describe("studio-first destination ownership", () => {
     expect(supportsRoutePurposeScene("/studio/p/work/space")).toBe(false);
   });
 });
+
+
+it.each(["/title/example/read/1", "/title/example/read/128/"])("리더 %s에 전역 안내를 끼워 넣지 않는다", (pathname) => {
+  expect(supportsSiteExperience(pathname)).toBe(false);
+  expect(supportsRoutePurposeScene(pathname)).toBe(false);
+});

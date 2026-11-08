@@ -13,7 +13,7 @@ describe("public floating controls startup boundary", () => {
   });
 
   it("loads only in public chrome with a local suspense boundary", () => {
-    expect(source).toContain("const isolatedChrome = studioImmersive || adminChrome;");
+    expect(source).toContain("const isolatedChrome = studioImmersive || adminChrome || READER_PATTERN.test(pathname);");
     expect(source).toContain("floatingControls={isolatedChrome ? null : <WebFloatingControls />}");
     const controls = source.split("function WebFloatingControls()")[1]?.split("/**")[0];
     expect(controls).toMatch(/<Suspense fallback=\{null\}>\s*<FloatingControls/u);

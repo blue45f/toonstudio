@@ -89,10 +89,10 @@ afterEach(() => {
 });
 
 describe("TitleReaderPage — 뷰어 셸", () => {
-  it("시작 카드·컷 빈 상태·상하단 회차 동선을 그린다", () => {
+  it("공식 감상 안내·간결한 회차 정보·상하단 회차 동선을 그린다", () => {
     renderReader("/title/fog-signal/read/2");
-    expect(screen.getByRole("heading", { level: 1, name: "2화" })).toBeTruthy();
-    expect(screen.getByText("이 회차의 컷은 아직 준비되지 않았어요")).toBeTruthy();
+    expect(within(screen.getByRole("region", { name: "회차 정보" })).getByText("2화")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "이 회차는 외부 플랫폼에서 읽어요" })).toBeTruthy();
     // 플랫폼 딥링크가 1차 동선이다
     const platform = screen.getByRole("link", { name: /에서 읽기/ });
     expect(platform.getAttribute("href")).toBe("https://comic.naver.com/example");
@@ -417,7 +417,7 @@ describe("TitleReaderPage — 숨긴 메뉴와 Escape 초점", () => {
     renderReader("/title/fog-signal/read/2");
     const toggle = screen.getByRole("button", { name: "보기 설정" });
     toggle.focus();
-    fireEvent.pointerDown(screen.getByRole("heading", { name: "이 회차의 컷은 아직 준비되지 않았어요" }));
+    fireEvent.pointerDown(screen.getByRole("heading", { name: "이 회차는 외부 플랫폼에서 읽어요" }));
     expect(document.activeElement).not.toBe(toggle);
     fireEvent.keyDown(document.activeElement ?? window, { key: "m" });
     expect(document.activeElement).toBe(toggle);
@@ -441,4 +441,38 @@ it("모바일 footer와 본문 여백은 기존 셸의 하단 안전 기준선�
   expect(footer.classList.contains("bottom-0")).toBe(true);
   expect(footer.classList.contains("z-40")).toBe(true);
   expect(container.querySelector('[class*="max-md:pb-[calc(9rem+var(--site-float-base))]"]')).not.toBeNull();
+});
+
+
+describe("리더 시안의 공식 감상 동선", () => {
+  it("공식 감상 링크와 상세 링크를 중심에 모으고 원고 제공을 예고하지 않는다", () => {
+    renderReader("/title/fog-signal/read/2");
+    const content = screen.getByRole("region", { name: "회차 내용" });
+    const links = within(content).getAllByRole("link");
+    expect(links).toHaveLength(2);
+    expect(links[0].getAttribute("href")).toBe("https://comic.naver.com/example");
+    expect(links[0].getAttribute("target")).toBe("_blank");
+    expect(links[0].getAttribute("rel")).toBe("noopener noreferrer");
+    expect(links[1].getAttribute("href")).toBe("/title/fog-signal");
+    expect(content.textContent).not.toContain("연결되면");
+    expect(content.textContent).toContain("읽기 진도를 기록하지 않아요");
+    expect(screen.getAllByRole("link", { name: /^다음 화$/ })).toHaveLength(1);
+  });
+
+  it("공식 URL이 없으면 링크를 지어내지 않고 작품 상세로 안내한다", () => {
+    resource.data = { title: makeTitle({ availability: [{ platformId: "naver-webtoon", pricing: "free" }] }) };
+    renderReader("/title/fog-signal/read/2");
+    const content = screen.getByRole("region", { name: "회차 내용" });
+    expect(within(content).getByRole("heading", { name: "공식 감상 경로를 확인해 주세요" })).toBeTruthy();
+    expect(within(content).getAllByRole("link")).toHaveLength(1);
+    expect(within(content).getByRole("link").getAttribute("href")).toBe("/title/fog-signal");
+  });
+
+  it("영문에서도 같은 공식 감상 경로와 진도 미기록 안내를 보존한다", () => {
+    useI18n.setState({ lang: "en" });
+    renderReader("/title/fog-signal/read/2");
+    expect(screen.getByRole("heading", { name: "Read this episode on its official platform" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Read on/ }).getAttribute("href")).toBe("https://comic.naver.com/example");
+    expect(screen.getByText("Reading progress is not recorded because panels are not provided.")).toBeTruthy();
+  });
 });
