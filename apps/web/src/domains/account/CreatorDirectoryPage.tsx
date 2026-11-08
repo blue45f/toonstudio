@@ -209,6 +209,7 @@ function CreatorCard({ creator, locale }: { readonly creator: CreatorDirectoryEn
       ) : null}
       <Link
         href={`/u/${encodeURIComponent(creator.id)}`}
+        aria-label={`${creator.name} · ${t("프로필과 포트폴리오 보기", "View profile and portfolio")}`}
         className={buttonClass({ variant: "quiet", size: "sm", className: "mt-auto w-full pt-4" })}
       >
         {t("프로필과 포트폴리오 보기", "View profile and portfolio")}
@@ -232,7 +233,7 @@ export function CreatorDirectoryPage() {
   const lang = useI18n((state) => state.lang);
   const [draft, setDraft] = useState<DirectoryFilters>(EMPTY_FILTERS);
   const [filters, setFilters] = useState<DirectoryFilters>(EMPTY_FILTERS);
-  // 모바일에서는 필터 폼을 접어 두고 토글로 펼친다. 데스크톱에서는 항상 펼쳐진다.
+  // 검색어는 항상 보이고 상세 조건은 필요한 때 펼친다.
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [result, setResult] = useState<DirectoryQueryState>({ status: "loading" });
   const [loadingMore, setLoadingMore] = useState(false);
@@ -301,8 +302,20 @@ export function CreatorDirectoryPage() {
     setFilters(EMPTY_FILTERS);
   };
 
-  const activeDraftCount = [draft.q?.trim(), draft.role, draft.specialty, draft.collaborationStatus]
-    .filter(Boolean).length;
+  const activeDraftCount = [draft.role, draft.specialty, draft.collaborationStatus].filter(Boolean).length;
+  const hasPendingFilters = ["q", "role", "specialty", "collaborationStatus"].some(
+    (key) => (draft[key as keyof DirectoryFilters] ?? "") !== (filters[key as keyof DirectoryFilters] ?? ""),
+  );
+  const appliedLabels = [
+    filters.q?.trim(),
+    filters.role ? creatorRoleDefinition(filters.role) : null,
+    filters.specialty ? creatorSpecialtyDefinition(filters.specialty) : null,
+    filters.collaborationStatus ? CREATOR_COLLABORATION_LABELS[filters.collaborationStatus] : null,
+  ].flatMap((value) => {
+    if (!value) return [];
+    if (typeof value === "string") return [value];
+    return [creatorText("label" in value ? value.label : value, lang)];
+  });
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-bg">
@@ -323,35 +336,16 @@ export function CreatorDirectoryPage() {
           asideClassName="hidden md:block"
         />
 
-        <section aria-label={t("창작자 찾기 조건", "Creator search filters")} className="sticky top-16 z-20 bg-bg pt-7">
-        <form
-          className="rounded-2xl border border-line bg-card p-4 shadow-sm"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setFilters(draft);
-          }}
-        >
-          <button
-            type="button"
-            className="flex min-h-11 w-full items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:hidden"
-            aria-expanded={filtersOpen}
-            onClick={() => setFiltersOpen((open) => !open)}
+        <section aria-label={t("창작자 찾기 조건", "Creator search filters")} className="mt-6">
+          <form
+            className="rounded-2xl border border-line bg-card p-4 sm:p-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setFilters(draft);
+              setFiltersOpen(false);
+            }}
           >
-            <SlidersHorizontal size={15} className="shrink-0 text-accent" aria-hidden="true" />
-            <span className="flex-1 text-sm font-black text-fg">{t("검색 조건", "Search filters")}</span>
-            {activeDraftCount > 0 ? (
-              <span className="inline-flex min-h-6 items-center rounded-full bg-accent px-2 text-[0.68rem] font-black text-on-accent">
-                {activeDraftCount}
-              </span>
-            ) : null}
-            <ChevronDown
-              size={16}
-              aria-hidden="true"
-              className={cn("shrink-0 text-fg-3 transition-transform", filtersOpen && "rotate-180")}
-            />
-          </button>
-          <div className={cn(!filtersOpen && "hidden", "sm:block")}>
-          <div className="mt-3 grid gap-3 sm:mt-0 lg:grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,1fr))_auto]">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
             <label className="text-xs font-bold text-fg">
               {t("이름·소개", "Name / bio")}
               <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-line bg-panel px-3 focus-within:border-accent">
@@ -368,6 +362,30 @@ export function CreatorDirectoryPage() {
                 />
               </span>
             </label>
+              <button type="submit" className={buttonClass({ className: "min-h-11 gap-2" })}>
+                <Search size={15} aria-hidden="true" />
+                {t("검색", "Search")}
+              </button>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                aria-expanded={filtersOpen}
+                aria-controls="creator-directory-advanced"
+                onClick={() => setFiltersOpen((open) => !open)}
+              >
+                <SlidersHorizontal size={16} className="text-accent" aria-hidden="true" />
+                {t("상세 조건", "More filters")}
+                {activeDraftCount > 0 ? <span className="rounded-full bg-accent px-2 py-0.5 text-xs text-on-accent">{activeDraftCount}</span> : null}
+                <ChevronDown size={16} aria-hidden="true" className={cn("transition-transform motion-reduce:transition-none", filtersOpen && "rotate-180")} />
+              </button>
+              <button type="button" className={buttonClass({ variant: "quiet", className: "min-h-11" })} onClick={resetFilters}>
+                {t("검색 조건 초기화", "Clear filters")}
+              </button>
+            </div>
+            <div id="creator-directory-advanced" hidden={!filtersOpen} className="mt-3 border-t border-line pt-4">
+              <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs font-bold text-fg">
               {t("전문 분야", "Specialty")}
               <select
@@ -402,14 +420,7 @@ export function CreatorDirectoryPage() {
                 ))}
               </select>
             </label>
-            <button
-              type="submit"
-              className={buttonClass({ className: "self-end gap-2" })}
-            >
-              <Search size={15} aria-hidden="true" />
-              {t("검색", "Search")}
-            </button>
-          </div>
+              </div>
           <div className="mt-3 border-t border-line pt-3">
             <span className="text-xs font-bold text-fg">{t("직무", "Role")}</span>
             <div role="group" aria-label={t("직무", "Role")} className="mt-1.5 flex flex-wrap gap-1.5">
@@ -437,21 +448,23 @@ export function CreatorDirectoryPage() {
               })}
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-            <p className="flex items-center gap-1.5 text-[0.68rem] leading-5 text-fg-3">
-              <Sparkles size={13} aria-hidden="true" />
-              {t("공개 동의한 정보만 검색 결과와 프로필에 표시됩니다.", "Only information creators consented to make public is shown in results and profiles.")}
-            </p>
-            <button
-              type="button"
-              className="min-h-11 rounded-lg px-3 text-xs font-bold text-fg-2 hover:bg-raised hover:text-fg"
-              onClick={resetFilters}
-            >
-              {t("검색 조건 초기화", "Clear filters")}
-            </button>
-          </div>
-          </div>
-        </form>
+            </div>
+            {hasPendingFilters ? (
+              <p role="status" className="mt-3 border-t border-line pt-3 text-sm leading-6 text-fg-2">
+                {t("조건을 수정했습니다. 검색을 눌러 결과에 적용하세요.", "Filters changed. Select Search to update the results.")}
+              </p>
+            ) : null}
+          </form>
+          {appliedLabels.length > 0 ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-fg-2" aria-label={t("적용한 조건", "Applied filters")}>
+              <span className="font-bold">{t("적용한 조건", "Applied filters")}</span>
+              {appliedLabels.map((label, index) => <span key={`${index}:${label}`} className="max-w-full break-words rounded-full border border-line bg-panel px-3 py-1.5">{label}</span>)}
+            </div>
+          ) : null}
+          <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-fg-2">
+            <Sparkles size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
+            {t("공개 동의한 정보만 검색 결과와 프로필에 표시됩니다.", "Only information creators consented to make public is shown in results and profiles.")}
+          </p>
         </section>
 
         {result.status === "loading" ? (

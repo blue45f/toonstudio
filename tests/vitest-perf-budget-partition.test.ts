@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import brushLabConfig, { BRUSH_LAB_SERIAL_TEST_FILES } from "../apps/brush-lab/vitest.config";
+import brushLabSerialConfig from "../apps/brush-lab/vitest.perf.config";
 import rootConfig from "../vitest.config";
 import { PERF_BUDGET_TEST_FILES } from "../vitest.perf-budget-files.mjs";
 import serialConfig from "../vitest.perf.config";
@@ -88,6 +90,27 @@ describe("execution-time budget partition", () => {
     expect(SERIAL_TEST_FILES).not.toContain(contractFile);
     expect(rootConfig.test?.exclude).not.toContain(contractFile);
     expect(serialConfig.test?.include).not.toContain(contractFile);
+  });
+
+  it("Architecture의 앱 로컬 명령도 동일한 직렬 파일을 병렬 검사 후 정확히 한 번 실행한다", () => {
+    const packageJson = JSON.parse(readFileSync(path.join(root, "apps/brush-lab/package.json"), "utf8"));
+    expect(packageJson.scripts.test).toBe("vitest run src && vitest run --config vitest.perf.config.ts");
+    const prefix = "apps/brush-lab/";
+    expect(BRUSH_LAB_SERIAL_TEST_FILES).toEqual(
+      SERIAL_TEST_FILES.filter((file) => file.startsWith(prefix)).map((file) => file.slice(prefix.length)),
+    );
+    expect(brushLabSerialConfig.test?.include).toEqual(BRUSH_LAB_SERIAL_TEST_FILES);
+    expect(brushLabSerialConfig.test?.fileParallelism).toBe(false);
+    expect(brushLabSerialConfig.test?.maxWorkers).toBe(1);
+    expect(brushLabConfig.test?.setupFiles).toBeUndefined();
+    expect(brushLabSerialConfig.test?.setupFiles).toBeUndefined();
+    for (const file of BRUSH_LAB_SERIAL_TEST_FILES) {
+      expect(brushLabConfig.test?.exclude, file).toContain(file);
+      expect(brushLabSerialConfig.test?.exclude, file).not.toContain(file);
+    }
+    expect(brushLabConfig.test?.exclude).not.toContain("src/platform/pointer-capture.test.ts");
+    const workflow = readFileSync(path.join(root, ".github/workflows/architecture-boundaries.yml"), "utf8");
+    expect(workflow).toContain("pnpm --filter @toonstudio/brush-lab test");
   });
 
   it("keeps the list sorted so additions diff cleanly", () => {

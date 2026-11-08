@@ -8,7 +8,7 @@
     "build": "vite build --config vite.config.ts",
     "preview": "vite preview --config vite.config.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run src"
+    "test": "vitest run src && vitest run --config vitest.perf.config.ts"
   },
   "dependencies": {
     "@dimforge/rapier2d-compat": "0.21.0",
