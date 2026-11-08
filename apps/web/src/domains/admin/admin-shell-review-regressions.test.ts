@@ -66,6 +66,15 @@ describe("admin shell review regressions", () => {
     );
   });
 
+  it("관리자 셸 내부 공지가 #main-content에 게이트 여백과 배경을 입히지 않는다", () => {
+    expect(shellCssSource).toContain(
+      '#main-content:has([data-admin-notice="true"]):not(:has([data-admin-shell="true"]))',
+    );
+    expect(shellCssSource).not.toMatch(
+      /#main-content:has\(\[data-admin-notice="true"\]\)\s*\{/,
+    );
+  });
+
   it("관리자 상태 색이 팔레트 클래스 대신 의미 토큰을 쓴다", () => {
     // 상태(정상·경고·위험·정보)는 good/warn/bad/cool 토큰으로만 표현한다.
     const componentFiles = [
@@ -75,13 +84,14 @@ describe("admin shell review regressions", () => {
       "AdminToast.tsx",
       "AdminReports.tsx",
       "AdminBusinessVerifications.tsx",
+      "../traffic/WebVitalsDashboardPage.tsx",
     ];
     for (const file of componentFiles) {
       const source = readFileSync(
         join(process.cwd(), "apps/web/src/domains/admin/components", file),
         "utf8",
       );
-      expect(source, file).not.toMatch(/(?:rose|emerald|amber|cyan)-\d{3}/);
+      expect(source, file).not.toMatch(/(?:rose|emerald|amber|cyan|red|slate)-\d{3}/);
     }
   });
 

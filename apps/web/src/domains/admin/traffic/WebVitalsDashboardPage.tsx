@@ -19,10 +19,10 @@ import {
 const RANGE_OPTIONS = [7, 30, 90] as const;
 
 const TONE_CLASS: Record<"good" | "warn" | "bad" | "muted", string> = {
-  good: "bg-emerald-100 text-emerald-800",
-  warn: "bg-amber-100 text-amber-800",
-  bad: "bg-red-100 text-red-800",
-  muted: "bg-slate-100 text-slate-500",
+  good: "border border-good/30 bg-good/15 text-good",
+  warn: "border border-warn/30 bg-warn/15 text-warn",
+  bad: "border border-bad/30 bg-bad/15 text-bad",
+  muted: "border border-line bg-raised text-fg-2",
 };
 
 function AlertList({ alerts }: { alerts: WebVitalsAlert[] }) {
@@ -60,10 +60,10 @@ function PathCard({ summary }: { summary: WebVitalsPathSummary }) {
       aria-label={`${summary.path} 성능 실측`}
       className="rounded-2xl border border-line bg-card p-5"
     >
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-semibold">{summary.path}</h3>
         <span
-          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${TONE_CLASS[
+          className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${TONE_CLASS[
             summary.status === "pass"
               ? "good"
               : summary.status === "fail"
@@ -78,7 +78,7 @@ function PathCard({ summary }: { summary: WebVitalsPathSummary }) {
               : "표본 부족"}
         </span>
       </header>
-      <dl className="mt-4 grid grid-cols-3 gap-3">
+      <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {summary.metrics.map((metric) => (
           <div key={metric.metric} className="rounded-xl bg-panel px-3 py-3">
             <dt className="text-xs font-medium text-fg-3">
@@ -87,13 +87,13 @@ function PathCard({ summary }: { summary: WebVitalsPathSummary }) {
             <dd className="mt-1 text-lg font-bold">
               {formatWebVitalValue(metric.metric, metric.p75)}
             </dd>
-            <dd className="mt-1">
+            <dd className="mt-2 flex flex-wrap items-center gap-1.5">
               <span
-                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${TONE_CLASS[webVitalRatingTone(metric.rating)]}`}
+                className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${TONE_CLASS[webVitalRatingTone(metric.rating)]}`}
               >
                 {webVitalRatingLabel(metric.rating)}
               </span>
-              <span className="ml-2 text-xs text-fg-3">
+              <span className="whitespace-nowrap text-xs text-fg-3">
                 표본 {metric.samples}건
               </span>
             </dd>
@@ -122,12 +122,12 @@ export function WebVitalsDashboardPage() {
   );
 
   return (
-    <Container>
+    <Container className="max-w-none px-0 sm:px-0 lg:px-0">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-xl font-bold">
+        <h2 className="flex items-center gap-2 text-xl font-bold">
           <Gauge className="h-6 w-6" aria-hidden />
           {t("adminWebVitals.title", "성능 실측 (Core Web Vitals)")}
-        </h1>
+        </h2>
         <div className="flex items-center gap-2">
           {RANGE_OPTIONS.map((option) => (
             <button

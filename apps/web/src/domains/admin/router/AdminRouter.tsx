@@ -230,11 +230,24 @@ function AdminAuthorizedRouter({ routeId }: { routeId: AdminRouteId }) {
 
   if (gate.kind !== "admin" || !uid) {
     return (
-      <div data-admin-access-state={gate.kind} className="min-h-[100dvh] bg-canvas px-4 py-20 text-fg">
-        <div className="mx-auto max-w-xl rounded-2xl border border-line bg-card p-6">
+      <div
+        data-admin-access-state={gate.kind}
+        className={
+          gate.kind === "loading"
+            ? "min-h-[100dvh] bg-canvas px-4 py-20 text-fg"
+            : "mx-auto w-full max-w-[560px] text-fg min-[901px]:max-w-[820px]"
+        }
+      >
+        <div
+          className={
+            gate.kind === "loading"
+              ? "mx-auto max-w-xl rounded-2xl border border-line bg-card p-6"
+              : "space-y-4"
+          }
+        >
           <AdminGateFallback gate={gate} />
           {gate.kind !== "loading" ? (
-            <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card/90 px-5 py-4 backdrop-blur-md">
               <AuthMenuShell />
               <Link
                 href="/"

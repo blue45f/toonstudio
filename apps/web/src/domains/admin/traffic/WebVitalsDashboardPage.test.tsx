@@ -88,7 +88,15 @@ describe("WebVitalsDashboardPage (G6)", () => {
     api.state.data = REGRESSED_REPORT;
     render(<WebVitalsDashboardPage />);
 
-    expect(screen.getByText("표본 부족")).toBeTruthy();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "성능 실측 (Core Web Vitals)",
+      }),
+    ).toBeTruthy();
+    const insufficientBadge = screen.getByText("표본 부족");
+    expect(insufficientBadge.className).toContain("bg-raised");
+    expect(insufficientBadge.className).toContain("text-fg-2");
     expect(screen.getByText("표본 4건")).toBeTruthy();
   });
 
