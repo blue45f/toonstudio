@@ -1,3 +1,4 @@
+import { PAGE_NOTE_MAX } from "./page/studio-page-constants";
 import { StudioLiveAdjustmentMetadataSchema } from "./contracts/studio-live-adjustment-contract";
 /**
  * Studio Page Meta & Element Clipboard — 페이지 메타(이름·콘티 메모)와
@@ -34,8 +35,7 @@ import type { LayerGroup } from "./studio-layers";
 
 /** 페이지 이름 최대 길이(스트립 UI·직렬화 비대 방지). */
 export const PAGE_NAME_MAX = 40;
-/** 콘티 메모 최대 길이. */
-export const PAGE_NOTE_MAX = 500;
+export { PAGE_NOTE_MAX };
 
 /** 페이지에 실리는 메타 — 둘 다 옵셔널이라 과거 문서와 JSON 형태 호환. */
 export interface PageMeta {

@@ -24,6 +24,7 @@ import {
   remapStudioShared3dStageCollectionElementIds,
   studioShared3dStageLinkedCharacterElementIds,
 } from "./studio-shared-3d-stage-collection";
+import { DEFAULT_BG } from "./page/studio-page-constants";
 import { copyStudioSmartShapeSnapshot } from "./studio-smart-shape-copy";
 
 export interface PageElementLike {
@@ -57,7 +58,7 @@ export interface PageLike {
 }
 
 export const DEFAULT_CANVAS_H = 1080;
-export const DEFAULT_BG = "#ffffff";
+export { DEFAULT_BG };
 
 /** 새 빈 페이지 생성. makeId로 호출자가 UUID 등을 제공(테스트 시 결정적 id 가능). */
 export function createBlankPage(makeId: () => string, canvasH: number = DEFAULT_CANVAS_H): PageLike {

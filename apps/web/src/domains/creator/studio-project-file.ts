@@ -1,3 +1,4 @@
+import { STUDIO_PROJECT_MAX_PAGES } from "./page/studio-page-constants";
 import { assertStudioLegacyPigmentArchiveElement } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 import { hasStudioBg3dSixPassImageMarker } from "./studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-persistence-markers";
 import { parseStudioPsdSource } from "./export/studio-psd-source";
@@ -44,8 +45,7 @@ import {
 
 const STUDIO_PROJECT_MAX_ELEMENTS_PER_PAGE_OR_MASTER = 10_000;
 
-/** Canonical limits shared by Studio mutation paths and the persisted project schema. */
-export const STUDIO_PROJECT_MAX_PAGES = 200;
+export { STUDIO_PROJECT_MAX_PAGES };
 export const STUDIO_PROJECT_MAX_CANVAS_HEIGHT = 100_000;
 
 const OptionalAiProvenanceSchema = z

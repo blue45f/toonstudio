@@ -8,7 +8,7 @@ import { useStudioPageManagement } from "./studio-page-management-controller";
 
 import type { PageState } from "../studio-page-state";
 
-function createHarness() {
+function createHarness(pendingStrokeCommitsRef: { current: unknown } = { current: null }, flush = () => true) {
   const initialPage: PageState = {
     id: "page-1",
     elements: [],
@@ -37,14 +37,34 @@ function createHarness() {
     activePage: initialPage,
     currentPageId: initialPage.id,
     setCurrentPageId,
-    pendingStrokeCommitsRef: { current: null },
-    flushPendingStrokeCommitsRef: { current: () => true },
+    pendingStrokeCommitsRef,
+    flushPendingStrokeCommitsRef: { current: flush },
     commitPages,
   }));
   return { ...hook, pages, pagesHistoryRef, pagesHiRef, setCurrentPageId, commitPages };
 }
 
 describe("페이지 추가 명령의 최신 히스토리 사용", () => {
+  it("빈 원고 초기화는 최신 페이지를 한 번에 커밋하고 재클릭은 기존 이력을 유지한다", () => {
+    const harness = createHarness();
+    const initialize = (pages: PageState[]) =>
+      pages.length === 1 ? [...pages, { ...pages[0], id: "second" }] : null;
+    const apply = harness.result.current.commitInitializedPages;
+    expect(apply(initialize)).toBe(true);
+    expect(apply(initialize)).toBe(false);
+    expect(harness.pagesHistoryRef.current.map(pages => pages.length)).toEqual([1, 2]);
+    expect(harness.commitPages).toHaveBeenCalledOnce();
+    expect(harness.setCurrentPageId).not.toHaveBeenCalled();
+  });
+
+  it("미확정 획을 확정할 수 없으면 초기화와 히스토리 기록을 중단한다", () => {
+    const harness = createHarness({ current: {} }, () => false);
+    const initialize = vi.fn(() => harness.pages);
+    expect(harness.result.current.commitInitializedPages(initialize)).toBe(false);
+    expect(initialize).not.toHaveBeenCalled();
+    expect(harness.commitPages).not.toHaveBeenCalled();
+  });
+
   it("렌더 갱신 전 연속 추가해도 앞서 추가한 페이지와 두 히스토리 단계를 보존한다", () => {
     const harness = createHarness();
     const addPage = harness.result.current.addPage;
