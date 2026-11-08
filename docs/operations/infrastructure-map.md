@@ -1,7 +1,7 @@
 # ToonStudio 인프라 지도
 
 - 문서 상태: **current** — 2026-10-23 컷오버를 마쳤다(Core API·DB가 onpod 서울에서 운영 트래픽을 받는다). 행마다 `current`(지금 동작·검증), `migration`(진행 중), `target`(승인 대기), `legacy exception`(퇴역 예정), `retired`(삭제됨)를 따로 적는다.
-- 최종 갱신: 2026-10-29 (운영 상태·DB 원장·Cloudflare CLI 인증 재확인)
+- 운영 상태·DB 원장·Cloudflare CLI 인증 확인일: 2026-10-29. TLS 문서 갱신일: 2026-11-08 (7.2절, 첨부 인증서 오프라인 대조).
 - 목적: 에이전트와 사람이 "무엇이 어디서 어떤 비용으로 도는지, 비밀값은 어디에 있는지, 어떻게 다시 만드는지"를 한 곳에서 본다. 이 문서는 정책을 바꾸지 않는다. 정책 정본은 루트 `AGENTS.md` 8·9절, 배포 절차는 `DEPLOY.md`다.
 - 갱신 의무: 공급자·자원·도메인·비밀 저장 위치·연결 경로를 바꾸는 변경은 **같은 변경에서 이 문서를 고친다**. 날짜와 증거 표기를 함께 바꾼다.
 - 증거 표기: **[직접]** 이 Mac에서 조회하거나 실행해 확인. 별도 날짜가 없는 기존 기록은 2026-10-22 기준이며, 이후 조회는 항목에 날짜를 적는다 · **[벤더]** 벤더 매뉴얼의 서술(저장소가 검증하지 않음) · **[저장소]** 저장소 파일 · **미확인**.
@@ -137,7 +137,7 @@ psql "$(grep -E '^ONPOD_DATABASE_URL_PUBLIC=' "$ENVF" | cut -d= -f2-)" -c 'selec
 onpod db allowlist toonstudio-db --rm "$MYIP"
 ```
 
-- TLS는 1.3이지만 인증서가 자체 서명이고 CN이 호스트와 다르다. `verify-full`은 불가능하다. libpq는 `sslmode=require`, Node `pg`는 `sslmode=no-verify`를 쓴다.
+- 당시 접속 기록은 TLS 1.3, 공개 libpq `sslmode=require`, 내부 Node `pg` `sslmode=no-verify`다. 첨부 지문은 7.2절의 오프라인 명령으로 확인한다. 이 목적으로 공개 접근을 열 필요는 없다.
 - 허용목록은 평상시 **비어 있어야 정상**이다. 앱은 내부 호스트(`*.db.onpod.local`)로 붙으므로 허용목록이 필요 없다.
 
 ### 6.3 Core API 배포 (무료 티어, 서울)
@@ -251,7 +251,23 @@ curl -sS -H @"$HF" "$A/api/health/capabilities"; rm -f "$HF"
 
 ### 7.2 onpod DB `toonstudio-db`의 제약
 
-- **TLS**: 자체 서명 인증서라 `verify-full`이 불가능하다. 공식 마이그레이션 검증기 `scripts/validate-production-database-url.mjs`는 `verify-full`+`channel_binding=require`를 강제하므로 **공식 러너를 그대로 쓸 수 없다**. 앱 런타임은 `sslmode=no-verify`를 받는다(`pg-connection.ts`가 `require`·`prefer`·`verify-ca`를 `verify-full`로 올리므로 `no-verify`여야 한다).
+#### TLS 검증 범위 (2026-11-08)
+
+AI3가 2026-11-06 재전송한 `onpod-managed-postgres-server-cert.pem`(1,241바이트)을 오프라인에서 대조했다. 2026-11-05 회신 PDF 3쪽, 2026-11-06 회신 PDF 1쪽, 첨부에서 계산한 X.509 DER SHA-256 지문이 모두 일치했다. 첨부를 받은 디렉터리에서 다음 명령으로 재현할 수 있다.
+
+```sh
+openssl x509 -in onpod-managed-postgres-server-cert.pem -noout -fingerprint -sha256
+```
+
+기대값은 `FF:F3:88:40:18:F2:BC:4F:14:0B:13:85:E0:95:6B:7C:D7:AD:0C:20:D1:A6:A2:20:EB:08:96:43:24:FD:8D:BD`다. 이 대조의 범위는 첨부 파일까지다. 운영 서버가 제시하는 인증서, 인증 협상과 DB 원장 상태는 이 점검에서 확인하지 않았다.
+
+- **호스트 검증**. 첨부는 자체 서명 서버 인증서(`CA:FALSE`)다. CN과 유일한 DNS SAN은 `ip-172-31-42-0.ap-northeast-2.compute.internal`이며, 사설·공개 DB 주소 어느 쪽과도 일치하지 않는다. 따라서 이 인증서를 신뢰해도 두 주소에서 `verify-full`의 이름 검사를 통과할 수 없다.
+- **공급자의 비공식 예시**. 기존 Node `no-verify`는 TLS 상대 인증을 끈다. 공급자 예시는 첨부를 `ca`로 지정하고 `rejectUnauthorized: true`를 유지하면서 호스트 이름 비교를 생략한다. 같은 인증서를 여러 DB가 공유하므로 개별 DB를 식별하지 못하며, 접속 상대의 DER 지문을 직접 비교하는 코드도 없다. 공급자는 사전 통지 없이 인증서를 교체할 수 있다고 설명했다.
+- **채널 바인딩**. libpq의 `channel_binding=require`는 TLS에서 SCRAM-PLUS를 강제한다. 공급자가 시험한 순수 JS `pg@8.23.0`과 저장소의 `pg@8.23.1`은 예시의 `channelBinding: "require"`를 읽지 않는다. `enableChannelBinding: true`도 서버가 PLUS를 제시하지 않으면 일반 SCRAM을 허용한다. 공급자 자체 DB에서 확인한 로그인 오류(`28P01`)로는 강제를 입증할 수 없다. [libpq 연결 옵션](https://www.postgresql.org/docs/17/libpq-connect.html#LIBPQ-CONNECT-CHANNEL-BINDING) · [pg 옵션 처리](https://github.com/brianc/node-postgres/blob/pg@8.23.0/packages/pg/lib/client.js#L85-L89) · [SCRAM 선택](https://github.com/brianc/node-postgres/blob/pg@8.23.1/packages/pg/lib/crypto/sasl.js#L35-L45)
+- **기존 DB 마이그레이션**. [0121 보존 경로](bg3d-preserving-acl-migration.md)는 신뢰 가능한 CA·호스트 이름 일치·필수 채널 바인딩을 요구한다. 첨부는 CA 입력에서 거절된다. 별도 핀 정책을 검토한다면 독립된 공급자 채널에서 기대 지문을 확인하고, 실제 인증에 쓰는 연결마다 서버 인증서 지문 불일치 또는 필수 채널 바인딩 실패 시 중단되는지 격리 환경에서 검증해야 한다. 기존 외부 허용 목록과 비밀번호를 유지한다.
+
+#### 역할·스키마 적용 기록
+
 - **단일 소유자 역할**: 접속 역할은 슈퍼유저가 아니고 `CREATEROLE`·`CREATEDB`가 없다. 별도 런타임 역할을 만들 수 없다. 이 때문에 공식 부트스트랩의 롤 생성·롤 ACL·롤 분리 점검 30문을 건너뛰었다(아래).
 - **비밀번호**: 서버는 평문을 저장하지 않는다. `onpod db url`은 `{password}` 자리표시자만 보여 주고, 새 값은 `--rotate`·`rotate-password`·`--attach-db`로만 만들어지며 붙어 있는 앱의 기존 연결을 끊는다. 주입된 값은 읽을 때 가려진다. 로컬 파일이 유일한 사본이다(5절).
 - **dev 티어**: 계정당 1개, 10 GB, 30일 유휴 시 자동 휴면. 백업·7일 PITR은 [벤더] 서술이며 복구 연습은 하지 않았다.

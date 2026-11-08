@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { afterEach, expect, test } from "vitest";
 
 import { createMigrationPsqlEnvironment, createProductionMigrationConnection, isDisposableMigrationConnection, validatePublicCaFile } from "./production-database-connection.mjs";
+import { createStudioReviewQaCertificates } from "./studio-review-local-storage-runtime.mjs";
 
 const fixtures = [];
 const production = "postgresql://fixture:fixture@db.example.com:5432/fixture?sslmode=verify-full&channel_binding=require";
@@ -36,6 +37,15 @@ test("새 explicit CA context는 disposable loopback에서도 실제 verify-full
   expect(result).toMatchObject({ PGSSLMODE: "verify-full", PGCHANNELBINDING: "require", PGSSLROOTCERT: file, PGHOST: "127.0.0.1" });
   expect(() => createProductionMigrationConnection(loopback, { publicCaFile: file })).toThrow(/loopback/u);
   expect(isDisposableMigrationConnection(createProductionMigrationConnection(loopback, { allowLoopback: true, publicCaFile: file }))).toBe(true);
+});
+
+test("유효한 CA는 허용하고 그 CA가 발급한 CA:FALSE 서버 인증서는 공개 CA로 거절한다", async () => {
+  const directory = await createStudioReviewQaCertificates();
+  fixtures.push(directory);
+  const ca = join(directory, "ca.crt");
+  const leaf = join(directory, "public.crt");
+  expect(() => createProductionMigrationConnection(production, { publicCaFile: ca })).not.toThrow();
+  expect(() => createProductionMigrationConnection(production, { publicCaFile: leaf })).toThrow(/CA 제약/u);
 });
 
 test("CA 없는 기존 loopback 테스트 예외와 production query allowlist는 그대로다", () => {
