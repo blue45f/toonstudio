@@ -303,3 +303,21 @@ describe("site directory experience contracts", () => {
     expect(sitemapSource.split("\n").length).toBeLessThanOrEqual(800);
   });
 });
+
+// 원본 와이어프레임 §1의 제목 → 검색 순서를 보존한다.
+describe("사이트맵 검색 우선 정보 위계", () => {
+  const source = readFileSync(SITEMAP_SOURCE, "utf8");
+  it("검색과 개인화를 통계 및 보조 허브 앞에 둔다", () => {
+    const search = source.indexOf('<div id="sitemap-directory"');
+    const personal = source.indexOf("<SiteDirectoryPersonalized");
+    expect(search).toBeGreaterThan(source.indexOf("<SitePageHeader"));
+    expect(personal).toBeGreaterThan(search);
+    expect(personal).toBeLessThan(source.indexOf("aria-label={copy.statsLabel}"));
+    expect(personal).toBeLessThan(source.indexOf('data-testid="sitemap-rea-hub-architecture"'));
+  });
+  it("검색을 밀어내는 큰 장식 대신 작업형 헤더를 쓴다", () => {
+    expect(source).toContain('surface="plain"');
+    expect(source).not.toContain('size="hero"');
+    expect(source).not.toContain('art={sitePageHeaderArtFor');
+  });
+});
