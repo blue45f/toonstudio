@@ -256,6 +256,20 @@ describe("in-app brush selection transition", () => {
     expect(state.clicked).toEqual(["next-pen"]);
   });
 
+  it.each([true, false])("닫힌 목록을 다시 연 뒤에도 같은 브러시의 실제 선택 상태를 검증한다: %s", async (selected) => {
+    let restore: BrushState[] = [];
+    const state = brushLibrary((clicked, brushes) => {
+      for (const brush of brushes) brush.active = selected && brush === clicked;
+      restore = brushes.splice(0);
+    });
+    const prepareVerification = vi.fn(async () => { state.brushes.push(...restore); });
+    const result = selectStudioInAppInactiveBrush(state.library, { ...state.interaction, prepareVerification });
+    if (selected) await result;
+    else await expect(result).rejects.toThrow("selected brush did not become active");
+    expect(prepareVerification).toHaveBeenCalledOnce();
+    expect(state.clicked).toEqual(["next-pen"]);
+  });
+
   it.each(["unchanged", "wrong-brush"])("fails when a click leaves selection %s", async (result) => {
     const state = brushLibrary((_selected, brushes) => {
       if (result === "wrong-brush") for (const brush of brushes) brush.active = brush.id === "other-pen";
