@@ -101,12 +101,12 @@ export function TitleDetailHero({
   };
 
   return (
-    <section aria-label={bi("작품 소개", "About this title")} className="relative isolate mb-8 lg:mb-10">
+    <section aria-label={bi("작품 소개", "About this title")} className="relative isolate mb-4 lg:mb-6">
       {/* 무대 배경 — ArtBackdrop: 사전 계산 틴트 위에 같은 표지를 흐리게 겹쳐
           무대감만 만들고, 주인공은 아래의 선명한 포스터다. */}
       <ArtBackdrop title={title} />
 
-      <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-4 pb-6 pt-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-x-6 sm:pt-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-x-8 lg:pb-8">
+      <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-x-4 gap-y-3 pb-3 pt-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-x-6 sm:pt-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-x-8 lg:pb-4">
         {/* 표지 무대의 주인공 — 원본 비율 그대로 크게 세운 포스터.
             표지 없음·로드 실패·킬스위치에서는 타이포그래픽 포스터가 같은 자리를 차지한다. */}
         <div className="row-span-2 w-full motion-safe:animate-fade-up lg:row-span-6">
@@ -144,7 +144,7 @@ export function TitleDetailHero({
         </div>
 
         <div className="col-start-2 min-w-0">
-          <h1 className="max-w-3xl text-pretty text-[clamp(1.5rem,4vw,2.75rem)] font-bold leading-[1.08] tracking-tight text-white [overflow-wrap:anywhere] [word-break:keep-all]">
+          <h1 className="max-w-3xl text-pretty text-[clamp(1.375rem,3.2vw,2.5rem)] font-bold leading-[1.08] tracking-tight text-white [overflow-wrap:anywhere] [word-break:keep-all]">
             {title.title}
           </h1>
           {title.altTitles && title.altTitles.length > 0 && (
@@ -162,9 +162,9 @@ export function TitleDetailHero({
           </p>
         </div>
 
-        <div className="col-span-2 flex flex-wrap items-center gap-x-5 gap-y-2 lg:col-span-1 lg:col-start-2">
+        <div className="col-span-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm lg:col-span-1 lg:col-start-2">
           <span className="flex items-center gap-2">
-            <span className="numeral text-3xl font-bold text-white">{reviewAvg.toFixed(1)}</span>
+            <span className="numeral text-xl font-bold text-white">{reviewAvg.toFixed(1)}</span>
             <span className="flex flex-col gap-0.5">
               <Stars value={reviewAvg} size="sm" />
               <span className="text-[0.7rem] text-white/65">
@@ -193,9 +193,10 @@ export function TitleDetailHero({
         </div>
 
         {showSynopsis && title.synopsis && (
-          <details className="col-span-2 min-w-0 rounded-xl border border-white/15 bg-white/5 px-3 lg:col-span-1 lg:col-start-2">
-            <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-white/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
-              {bi("작품 소개", "About this story")}
+          <details className="group/synopsis col-span-2 min-w-0 lg:col-span-1 lg:col-start-2">
+            <summary className="min-h-11 cursor-pointer list-none text-sm text-white/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white [&::-webkit-details-marker]:hidden">
+              <span aria-hidden="true" className="mb-1 line-clamp-2 leading-relaxed group-open/synopsis:hidden">{title.synopsis}</span>
+              <span className="inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline">{bi("소개 더 보기", "Read the synopsis")}</span>
             </summary>
             <p className="max-w-2xl pb-3 text-pretty text-[0.95rem] leading-relaxed text-white/85">
               {title.synopsis}
@@ -203,12 +204,12 @@ export function TitleDetailHero({
           </details>
         )}
 
-        <div className="col-span-2 mt-1 flex flex-wrap items-center gap-2.5 lg:col-span-1 lg:col-start-2">
+        <div className="col-span-2 mt-1 grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-2.5 lg:col-span-1 lg:col-start-2 lg:flex lg:flex-wrap">
           {firstEpisodeHref && (
             <Link
               href={firstEpisodeHref}
               viewTransition={labSettings.viewTransitions}
-              className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[linear-gradient(100deg,var(--color-accent),var(--color-accent-2))] px-6 text-sm font-bold text-on-accent shadow-[0_10px_28px_-10px_oklch(0.4_0.15_295/0.7)] transition-transform duration-150 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(100deg,var(--color-accent),var(--color-accent-2))] px-6 text-sm font-bold text-on-accent shadow-[0_10px_28px_-10px_oklch(0.4_0.15_295/0.7)] transition-transform duration-150 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100"
             >
               <BookOpen size={17} aria-hidden />
               {bi("첫 화부터 읽기", "Start from episode 1")}
@@ -219,7 +220,7 @@ export function TitleDetailHero({
             onClick={handleSaveToggle}
             aria-pressed={saved}
             className={cn(
-              "inline-flex min-h-12 [min-block-size:3rem]! items-center gap-2 rounded-full border px-5 text-sm font-semibold backdrop-blur-sm transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+              "inline-flex min-h-12 [min-block-size:3rem]! items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold backdrop-blur-sm transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
               saved
                 ? "border-white/50 bg-white/20 text-white"
                 : "border-white/30 bg-white/10 text-white hover:bg-white/20",
@@ -233,21 +234,21 @@ export function TitleDetailHero({
         <nav
           data-testid="title-detail-section-nav"
           aria-label={bi("작품 상세 섹션 바로가기", "Jump to title section")}
-          className="col-span-2 flex flex-wrap items-center gap-1.5 pt-2 lg:col-span-1 lg:col-start-2"
+          className="col-span-2 -mb-3 flex items-center gap-1 overflow-x-auto border-b border-white/25 pt-2 [scrollbar-width:thin] lg:-mb-4"
         >
           {(
             [
               { href: "#title-episodes-anchor", ko: "회차 목록", en: "Episodes" },
+              { href: "#title-reviews", ko: "독자 리뷰", en: "Reviews" },
               { href: "#title-availability", ko: "감상 플랫폼·가격", en: "Where to read" },
               { href: "#metrics", ko: "완독률·지표", en: "Metrics" },
               { href: "#title-character-talk", ko: "캐릭터 대화", en: "Character talk" },
-              { href: "#title-reviews", ko: "독자 리뷰", en: "Reviews" },
             ] as const
           ).map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="inline-flex min-h-11 items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm transition-colors hover:border-white/45 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              className="inline-flex min-h-11 shrink-0 items-center border-b-2 border-transparent px-3 py-2 text-xs font-semibold text-white/90 transition-colors hover:border-white/65 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white sm:px-4 sm:text-sm"
             >
               {bi(item.ko, item.en)}
             </a>

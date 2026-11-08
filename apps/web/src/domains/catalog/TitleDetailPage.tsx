@@ -165,6 +165,22 @@ export function TitleDetailPage() {
     if (viewedId) addRecentlyViewed(viewedId);
   }, [viewedId, addRecentlyViewed]);
 
+  // 접힌 보조 콘텐츠도 직접 링크·뒤로/앞으로 이동에서 실제 내용을 열어 준다.
+  useEffect(() => {
+    const revealSection = () => {
+      const id = window.location.hash.slice(1);
+      if (!["metrics", "title-character-talk"].includes(id)) return;
+      const details = document.getElementById("title-detail-related-tools");
+      if (details instanceof HTMLDetailsElement) {
+        details.open = true;
+        document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "instant" });
+      }
+    };
+    revealSection();
+    window.addEventListener("hashchange", revealSection);
+    return () => window.removeEventListener("hashchange", revealSection);
+  }, [viewedId]);
+
   if (loading) {
     return (
       <PageEntrance variant="pop">
@@ -226,7 +242,6 @@ export function TitleDetailPage() {
   return (
     <PageEntrance variant="pop">
     <Container size="wide" className="relative py-8 lg:py-10">
-      <SiteContextualSubNav pathnameOverride="/discover" className="mb-4" />
       <TitleDetailBreadcrumb title={title.title} />
       <TitleDetailHero
         title={title}
@@ -240,7 +255,7 @@ export function TitleDetailPage() {
       <PersonalContentPreferenceNotice title={title} />
       <TitleEarlyAccessNotice titleId={title.id} />
 
-      <div id="title-episodes-anchor" className="mt-6 grid scroll-mt-24 gap-6 sm:mt-8 lg:grid-cols-[1fr_20rem] lg:items-start">
+      <div id="title-episodes-anchor" className="mt-4 grid scroll-mt-24 gap-4 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <TitleEpisodeSection title={title} episodes={episodes} />
         <div className="flex flex-col gap-4">
           {/* 회차 빈 상태의 "다른 플랫폼 더 보기"가 도착하는 앵커 지점 (D-9) */}
@@ -260,6 +275,10 @@ export function TitleDetailPage() {
               {title.availability.some((a) => !a.url) ? " · 일부 원출처 링크 준비 중" : ""}
             </p>
           </div>
+          <details className="rounded-2xl border border-line bg-card p-4">
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+              {translateBilingualValueForActiveLocale("TitleDetailPage", "가격 · 지표 요약", "Pricing and metrics")}
+            </summary>
           <PriceCompare availability={title.availability} />
           <section aria-labelledby="title-metrics-summary" className="rounded-2xl border border-line bg-card p-5">
             <h3 id="title-metrics-summary" className="text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "지표 요약")}</h3>
@@ -293,6 +312,7 @@ export function TitleDetailPage() {
               {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "지표 자세히 보기")}
             </a>
           </section>
+          </details>
         </div>
       </div>
 
@@ -301,6 +321,7 @@ export function TitleDetailPage() {
           {translateBilingualValueForActiveLocale("TitleDetailPage", "내 기록 · 알림 · 더 보기", "My records, alerts and more")}
         </summary>
         <div className="pt-4">
+          <SiteContextualSubNav pathnameOverride="/discover" className="mb-4" />
           <nav
             aria-label={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 상세 섹션 이동 및 크로스 허브 브리지")}
             data-testid="title-detail-rea-bridge-bar"
@@ -409,6 +430,10 @@ export function TitleDetailPage() {
         </div>
       ) : null}
 
+      <details id="title-detail-related-tools" data-testid="title-detail-related-tools" className="mt-4 rounded-2xl border border-line bg-card p-4">
+        <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          {translateBilingualValueForActiveLocale("TitleDetailPage", "작품 지표 · 관련 콘텐츠", "Title metrics and related content")}
+        </summary>
       <section id="metrics" className="mt-10 scroll-mt-24 sm:mt-14">
         <h2 className="eyebrow mb-1 text-accent">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "METRICS · 지표")}</h2>
         <p className="mb-4 text-xs text-fg-2">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률·몰입·분포는 수집값과 추정값을 함께 사용합니다.")}</p>
@@ -492,6 +517,8 @@ export function TitleDetailPage() {
         </div>
       </Section>
       </div>
+
+      </details>
 
       <div id="title-reviews" className="scroll-mt-24">
       <Section

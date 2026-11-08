@@ -13,6 +13,8 @@ const calendarSource = readFileSync(
   join(HERE, "../../../domains/catalog/CalendarPage.tsx"),
   "utf-8",
 );
+const calendarFilters = readFileSync(join(HERE, "../../../domains/catalog/CalendarFilters.tsx"), "utf-8");
+const calendarLayout = readFileSync(join(HERE, "../../../domains/catalog/calendar-page-layout.css"), "utf-8");
 const panelSource = readFileSync(join(HERE, "../title-filter-panel.tsx"), "utf-8");
 const exploreSource = readFileSync(
   join(HERE, "../../../domains/catalog/ExplorePage.tsx"),
@@ -35,9 +37,10 @@ describe("칩 터치 타겟 44px 계약", () => {
   });
 
   it("CalendarPage 플랫폼 칩은 44px 이고 coarse 우회(36px)로 되돌아가지 않는다", () => {
-    expect(calendarSource).toContain(
-      '"inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors"',
-    );
+    expect(calendarFilters).toContain('className="calendar-platform-option"');
+    expect(calendarLayout).toContain(".calendar-controls :is(button, select) { min-height: 44px; }");
+    expect(calendarFilters).not.toContain("pointer-coarse:h-9");
+    expect(calendarLayout).not.toContain("min-height: 36px");
     expect(calendarSource).not.toContain("pointer-coarse:h-9");
     expect(calendarSource).not.toContain("inline-flex h-7 items-center");
   });
@@ -58,8 +61,7 @@ describe("칩 터치 타겟 44px 계약", () => {
     expect(calendarSource).toContain(
       "inline-flex min-h-11 shrink-0 items-center rounded-full border border-accent/40",
     );
-    expect(calendarSource).toContain(
-      'className="inline-flex min-h-11 items-center px-1 text-xs text-accent hover:underline"',
-    );
+    expect(calendarFilters).toContain('bt("전체 보기", "Show all")');
+    expect(calendarLayout).toContain(".calendar-controls :is(button, select) { min-height: 44px; }");
   });
 });

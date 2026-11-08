@@ -85,7 +85,7 @@ describe("TitleDetailHero", () => {
     );
     expect(screen.getByText("9.8")).toBeTruthy();
     expect(screen.getByText("미스터리")).toBeTruthy();
-    expect(screen.getByText(/안개 낀 항구 도시에서/)).toBeTruthy();
+    expect(screen.getAllByText(/안개 낀 항구 도시에서/)).toHaveLength(2);
     const readLink = screen.getByRole("link", { name: /첫 화부터 읽기/ });
     expect(readLink.getAttribute("href")).toBe("/title/fog-signal/read/1");
   });
@@ -106,7 +106,7 @@ describe("TitleDetailHero", () => {
     author.focus();
     expect(document.activeElement).toBe(author);
     expect(screen.getByText(title.altTitles?.[0] ?? "")).toBeTruthy();
-    expect(screen.getByText(title.synopsis)).toBeTruthy();
+    expect(screen.getAllByText(title.synopsis)).toHaveLength(2);
   });
 
   it("서재에 담기는 읽기 상태를 토글하고 눌림 상태를 알린다", () => {
@@ -171,7 +171,8 @@ describe("TitleDetailHero", () => {
 describe("TitleDetailHero — 접힌 소개와 핵심 동선", () => {
   it("줄거리만 접고 제목·읽기·저장·섹션 동선은 밖에 유지한다", () => {
     renderHero(makeTitle());
-    const synopsis = screen.getByText(/안개 낀 항구 도시에서/);
+    const synopsis = screen.getAllByText(/안개 낀 항구 도시에서/).find((element) => element.tagName === "P");
+    if (!synopsis) throw new Error("줄거리 본문 누락");
     const details = synopsis.closest("details");
     expect(details?.open).toBe(false);
     expect(screen.getByRole("heading", { level: 1 }).closest("details")).toBeNull();
@@ -218,4 +219,16 @@ describe("TitleDetailHero — 빈 작가·미상·다중 작가·초장문 이�
     );
     expect(screen.queryByRole("link", { name: "미상" })).toBeNull();
   });
+});
+
+
+it("시안처럼 핵심 버튼은 모바일 동일 너비, 섹션 링크는 별도 가로 탐색줄에 둔다", () => {
+  renderHero(makeTitle());
+  const nav = screen.getByTestId("title-detail-section-nav");
+  expect(nav.className).toContain("col-span-2");
+  expect(nav.className).toContain("overflow-x-auto");
+  expect(nav.className).not.toContain("lg:col-start-2");
+  const actions = screen.getByRole("link", { name: /첫 화부터 읽기/ }).parentElement;
+  expect(actions?.className).toContain("grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))]");
+  expect(screen.getByText(makeTitle().synopsis, { selector: "span" }).getAttribute("aria-hidden")).toBe("true");
 });

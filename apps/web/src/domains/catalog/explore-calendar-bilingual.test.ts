@@ -201,3 +201,13 @@ describe("/explore · /calendar 이중언어 편입", () => {
     }
   });
 });
+
+
+it("분리한 캘린더 조건줄도 한글·영문 쌍을 등록한다", () => {
+  const source = readFileSync(path.join(HERE, "CalendarFilters.tsx"), "utf8");
+  expect(uncoveredHangul(source)).toEqual([]);
+  expect(source).toContain("useBilingual(");
+  const arities = btCallArities(source);
+  expect(arities.length).toBeGreaterThanOrEqual(10);
+  expect(arities.every((arity) => arity === 2 || arity === ".spread")).toBe(true);
+});
