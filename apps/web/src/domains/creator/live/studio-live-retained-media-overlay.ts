@@ -1,3 +1,4 @@
+import { StudioLiveOilUnderlayPainter } from "./studio-live-oil-underlay-paint";
 import { StudioMaterialBrushPlanner, renderStudioMaterialBrushMarks } from "../brush/studio-material-brush-runtime";
 /**
  * Append-only live canvas for oil and pencil.
@@ -211,63 +212,13 @@ function flatFinitePoints(element: DrawEl): number[] {
   return points;
 }
 
-/**
- * Extends the running dab-radius mean to cover `dabs` and returns it. Addition stays strictly
- * left-to-right across frames, so the value is bit-identical to reducing the whole array every
- * call while costing O(new dabs) instead of O(all dabs) per pointer frame.
- */
-function extendOilRadiusMean(
-  active: ActiveRetainedStroke,
-  dabs: readonly { radiusY: number }[],
-): number {
-  if (
-    active.oilRadiusSum === undefined
-    || active.oilRadiusSumDabCount === undefined
-    || active.oilRadiusSumDabCount > dabs.length
-  ) {
-    // Clamped to what `dabs` actually holds. The seed covers the prefix already painted, but a
-    // bed can SHRINK — an authoritative draft that retracts a predicted suffix replans to fewer
-    // dabs — and seeding from the previous, longer count then reads past the end of the new array
-    // and throws. Clamping seeds the whole short array instead, which is the same strictly
-    // left-to-right sum a full reduce would produce.
-    const seeded = Math.min(active.paintedDabs, dabs.length);
-    let sum = 0;
-    for (let index = 0; index < seeded; index += 1) {
-      sum += dabs[index]!.radiusY;
-    }
-    active.oilRadiusSum = sum;
-    active.oilRadiusSumDabCount = seeded;
-  }
-  for (
-    let index = active.oilRadiusSumDabCount;
-    index < dabs.length;
-    index += 1
-  ) {
-    active.oilRadiusSum += dabs[index]!.radiusY;
-  }
-  active.oilRadiusSumDabCount = dabs.length;
-  return Math.max(1, active.oilRadiusSum / Math.max(1, dabs.length));
+/** 플래너가 접두를 바꿀 수도 있으므로 실제 대브의 좌표·반경으로 혼색한다. */
+function oilRadiusMean(dabs: readonly { radiusY: number }[]): number {
+  return Math.max(1, dabs.reduce((sum, dab) => sum + dab.radiusY, 0) / Math.max(1, dabs.length));
 }
 
-/** Reuses the per-frame dab point objects across carrier paints instead of re-mapping. */
-function oilDabPoints(
-  active: ActiveRetainedStroke,
-  dabs: readonly { x: number; y: number }[],
-): readonly { x: number; y: number }[] {
-  const cached = active.oilDabPoints;
-  if (
-    cached
-    && cached.length === dabs.length
-    && active.oilDabPointsElementPointsLength === active.element.points.length
-    && active.oilDabPointsPressuresLength === (active.element.pressures?.length ?? -1)
-  ) {
-    return cached;
-  }
-  const mapped = dabs.map((dab) => ({ x: dab.x, y: dab.y }));
-  active.oilDabPoints = mapped;
-  active.oilDabPointsElementPointsLength = active.element.points.length;
-  active.oilDabPointsPressuresLength = active.element.pressures?.length ?? -1;
-  return mapped;
+function oilDabPoints( dabs: readonly { x: number; y: number }[]): readonly { x: number; y: number }[] {
+  return dabs.map(({ x, y }) => ({ x, y }));
 }
 
 /**
@@ -347,18 +298,6 @@ interface ActiveRetainedStroke {
   fxPressurePathBuilder?: StudioIncrementalFxPressurePathBuilder;
   highlighterWashBuilder?: StudioIncrementalHighlighterWashRibbonBuilder;
   /**
-   * Running left-to-right `radiusY` sum over the accepted dab prefix plus the dab count it was
-   * accumulated for. Rebuilding the mean from the whole dab array every pointer frame made oil
-   * live cost O(N²) over one drag; extending the running sum keeps the float addition order —
-   * and therefore the produced `radiusPx` — bit-identical to the full reduce it replaces.
-   */
-  oilRadiusSum?: number;
-  oilRadiusSumDabCount?: number;
-  /** Cached carrier input points plus the element lengths they were mapped from. */
-  oilDabPoints?: readonly { x: number; y: number }[];
-  oilDabPointsElementPointsLength?: number;
-  oilDabPointsPressuresLength?: number;
-  /**
    * Per-stroke incremental calligraphy segment state. Created lazily on the first multi-point
    * paint; settled replays build a throwaway `ActiveRetainedStroke`, so each replay starts its
    * own builder and pays one full O(n) build instead of per-move ones.
@@ -382,6 +321,7 @@ type StudioRetainedRedoPixelSnapshot = {
 };
 
 export class StudioLiveRetainedMediaOverlayRenderer {
+  readonly oilUnderlay = new StudioLiveOilUnderlayPainter();
   private activeCanvas: HTMLCanvasElement | null = null;
   private settledCanvas: HTMLCanvasElement | null = null;
   private activeContext: CanvasRenderingContext2D | null = null;
@@ -433,6 +373,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
     readonly activeCanvas: HTMLCanvasElement;
     readonly settledCanvas: HTMLCanvasElement;
   } | null): void {
+    this.oilUnderlay.reset();
     this.invalidateRetainedRedoPixelSnapshot();
     this.activeCanvas = canvases?.activeCanvas ?? null;
     this.settledCanvas = canvases?.settledCanvas ?? null;
@@ -799,9 +740,12 @@ export class StudioLiveRetainedMediaOverlayRenderer {
         element.brushEnginePrograms,
       );
       const planInput = {
-        points: flatPoints,
+        points: resolveStudioFreehandRenderPath(flatPoints, {
+          sampleSpacing: element.sampleSpacing,
+          legacyMinDistance: strokeRenderDistance(element.sampleSpacing), legacyTension: 0,
+        }).points,
         pressures: element.pressures,
-        baseWidth: Math.max(1, element.strokeWidth),
+        baseWidth: studioBrushAliasEffectiveDiameter(brush, Math.max(1, element.strokeWidth)),
         seed: fxBrushSeedFromKey(element.id),
         maxDabs: FX_OIL_DAB_CAP,
         ...studioOilFamilyPlanFields(brush),
@@ -822,11 +766,9 @@ export class StudioLiveRetainedMediaOverlayRenderer {
       // pixels stayed on the canvas. The exact input comparison above already answers the
       // question, before the plan rather than after it, so anything that reaches this line has
       // inputs the canvas has not been painted from and is repainted.
-      const radiusPx = extendOilRadiusMean(active, dabs);
+      const radiusPx = oilRadiusMean(dabs);
       if (target === this.activeContext) {
-        // The wet-mix readback that used to run here sampled and rewrote active-canvas pixels
-        // immediately before this clear discarded them — pure per-frame getImageData stall with
-        // zero surviving pixels. Wet-into-wet feel stays owned by the committed renderer.
+        // 활성 픽셀을 다시 샘플링하지 않는다. 고정한 바닥에서 혼색을 재생한다.
         this.clearCanvas(this.activeContext, this.activeCanvas);
       }
       const programs = studioOilRibbonProgramsForBrush(
@@ -841,17 +783,18 @@ export class StudioLiveRetainedMediaOverlayRenderer {
       const carrier = active.oilCarrierPlanner
         ? active.oilCarrierPlanner.plan(dabs, programs)
         : planStudioOilRibbonCarrier(dabs, programs);
-      paintStudioOilRibbonCarrier(
-        context as unknown as StudioOilRibbonPaintContext,
-        {
-          carrier,
-          stroke: element.stroke,
-          opacity: element.opacity ?? 1,
-          points: oilDabPoints(active, dabs),
-          radiusPx,
-          skipDestinationReadback: true,
-        },
-      );
+      const paintInput = {
+        carrier, stroke: element.stroke, opacity: element.opacity ?? 1,
+        points: oilDabPoints(dabs), radiusPx,
+        paddingRadiusPx: dabs.reduce((max, dab) => Math.max(max, dab.radiusX, dab.radiusY), radiusPx),
+      };
+      try {
+        if (!this.surface || !this.oilUnderlay.paint(context, paintInput, element.id,
+          this.surface, this.settledCanvas, target === this.activeContext)) {
+          paintStudioOilRibbonCarrier(context as unknown as StudioOilRibbonPaintContext,
+            { ...paintInput, skipDestinationReadback: true });
+        }
+      } catch { return false; }
       active.paintedDabs = dabs.length;
       if (target === this.activeContext) {
         active.paintedOilPasses += 1;
@@ -1408,6 +1351,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
   }
 
   private replay(): void {
+    this.oilUnderlay.reset();
     this.clearActiveRect();
     this.replaySettledOnly();
     if (!this.isNativeSurfaceReady) return;
@@ -1521,6 +1465,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
   }
 
   private resetActiveState(): void {
+    this.oilUnderlay.reset();
     this.clearCapRepaintWake();
     this.active = null;
     this.activePaintedOntoSettled = false;

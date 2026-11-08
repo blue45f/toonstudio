@@ -1,4 +1,4 @@
-import { parseStudioGpuColor } from "../render/studio-webgpu-color";
+import { studioOilMapPoint, studioOilReadbackPlan, studioOilWetSettings } from "./studio-oil-readback-plan";
 
 import { STUDIO_OIL_IMPASTO_RELIEF_HIGHLIGHT_COLOR } from "./studio-oil-ribbon-impasto-relief";
 import { applyStudioOilWetIntoWetStroke } from "./studio-oil-wet-into-wet";
@@ -27,33 +27,6 @@ export type {
 
 function clampUnit(value: number): number {
   return Math.min(1, Math.max(0, value));
-}
-
-function strokePaintColor(stroke: string): { r: number; g: number; b: number } {
-  const parsed = parseStudioGpuColor(stroke);
-  if (!parsed) return { r: 0, g: 0, b: 0 };
-  return {
-    r: Math.round(parsed[0] * 255),
-    g: Math.round(parsed[1] * 255),
-    b: Math.round(parsed[2] * 255),
-  };
-}
-
-function oilWetIntoWetSettings(
-  radiusPx: number,
-  paintColor: { r: number; g: number; b: number },
-  mixModel?: "spectral-wgm" | "ryb"
-) {
-  return {
-    radiusPx: Number.isFinite(radiusPx) && radiusPx > 0 ? radiusPx : 8,
-    hardness: 0.55,
-    strength: 0.88,
-    wetness: 0.65,
-    pickup: 0.55,
-    paintColor,
-    loadDepletion: 0,
-    mixModel: mixModel ?? "spectral-wgm",
-  };
 }
 
 export function traceStudioOilRibbonPath(
@@ -96,12 +69,7 @@ export function paintStudioOilRibbonCarrier(
   context: StudioOilRibbonPaintContext,
   input: StudioOilRibbonPaintInput
 ): StudioOilRibbonPaintReceipt {
-  const paintColor = strokePaintColor(input.stroke);
-  const radiusPx =
-    Number.isFinite(input.radiusPx) && input.radiusPx > 0
-      ? input.radiusPx
-      : 8;
-  const settings = oilWetIntoWetSettings(radiusPx, paintColor, input.mixModel);
+  const settings = studioOilWetSettings(input);
   const hitPass = studioOilRibbonPaintIsHitPass(context, input.hitPass === true);
   let usedLiveDestination = false;
 
@@ -138,61 +106,16 @@ export function paintStudioOilRibbonCarrier(
       canvas.height > 0
     ) {
       try {
-        const pad = Math.ceil(radiusPx + 2);
-        let minX = input.points[0]!.x;
-        let minY = input.points[0]!.y;
-        let maxX = minX;
-        let maxY = minY;
-        for (const point of input.points) {
-          minX = Math.min(minX, point.x);
-          minY = Math.min(minY, point.y);
-          maxX = Math.max(maxX, point.x);
-          maxY = Math.max(maxY, point.y);
-        }
-        const transform = native.getTransform?.() ?? {
-          a: 1,
-          b: 0,
-          c: 0,
-          d: 1,
-          e: 0,
-          f: 0,
-        };
-        const map = (x: number, y: number) => ({
-          x: transform.a * x + transform.c * y + transform.e,
-          y: transform.b * x + transform.d * y + transform.f,
-        });
-        const corners = [
-          map(minX - pad, minY - pad),
-          map(maxX + pad, minY - pad),
-          map(minX - pad, maxY + pad),
-          map(maxX + pad, maxY + pad),
-        ];
-        const devMinX = Math.max(
-          0,
-          Math.floor(Math.min(...corners.map((c) => c.x)))
-        );
-        const devMinY = Math.max(
-          0,
-          Math.floor(Math.min(...corners.map((c) => c.y)))
-        );
-        const devMaxX = Math.min(
-          canvas.width,
-          Math.ceil(Math.max(...corners.map((c) => c.x)))
-        );
-        const devMaxY = Math.min(
-          canvas.height,
-          Math.ceil(Math.max(...corners.map((c) => c.y)))
-        );
-        const width = devMaxX - devMinX;
-        const height = devMaxY - devMinY;
-        if (width > 0 && height > 0) {
+        const plan = studioOilReadbackPlan(native, input);
+        if (plan) {
+          const { transform, rect: { x: devMinX, y: devMinY, width, height } } = plan;
           const image = native.getImageData(devMinX, devMinY, width, height);
           applyStudioOilWetIntoWetStroke(
             image.data,
             width,
             height,
             input.points.map((point) => {
-              const mapped = map(point.x, point.y);
+              const mapped = studioOilMapPoint(transform, point.x, point.y);
               return { x: mapped.x - devMinX, y: mapped.y - devMinY };
             }),
             settings

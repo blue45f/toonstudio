@@ -1,3 +1,4 @@
+import { useStudioLiveOilUnderlay } from "./use-studio-live-oil-underlay";
 import { createStudioSkiaCameraSource } from "../render/studio-skia-camera-source";
 import { waitForStudioSkiaPresentationFence } from "../render/studio-skia-presentation-fence";
 import {
@@ -214,30 +215,14 @@ export function StudioCanvasViewportStageHost({
   const frameGraphOwnsDocumentPixels =
     settledFrameGraphOwnsDocumentPixels || liveTransformHandoffOwnsGpu;
 
-  // Pointer-up retains the exact terminal draft until this authoritative render is committed.
-  // useLayoutEffect releases the hidden source before paint, preventing both source flash and a
-  // duplicate preview frame while React hands renderer authority back to the document Layer.
-  useLayoutEffect(() => {
-    const snapshot = liveTransformDraftStore.getSnapshot();
-    // A GPU-owned handoff keeps the exact draft visible until the replacement document revision
-    // has produced a visible Skia receipt. Compatibility rendering remains synchronous and can
-    // acknowledge from this layout phase as before.
-    if (
-      live.velloDocumentSurfaceEnabled
-      && snapshot?.scope === liveTransformDraftScope
-      && snapshot.phase === "handoff"
-    ) return;
-    liveTransformDraftStore.acknowledgeAuthoritative(
-      liveTransformDraftScope,
-      elements,
-    );
-  }, [
-    elements,
-    live.velloDocumentSurfaceEnabled,
-    liveTransformDraftScope,
-    liveTransformDraftStore,
-    liveTransformHandoffRevision,
-  ]);
+  useStudioLiveOilUnderlay({
+    renderer: viewport.liveRetainedMediaOverlayRenderer, layerRef: mainLayerRef,
+    ownsDocument: frameGraphOwnsDocumentPixels,
+    left: stageViewLayout.clip?.left ?? 0, top: stageViewLayout.clip?.top ?? 0,
+    transformStore: liveTransformDraftStore, transformScope: liveTransformDraftScope,
+    transformRevision: liveTransformHandoffRevision,
+    gpuEnabled: live.velloDocumentSurfaceEnabled, elements,
+  });
 
   // A terminal draft belongs to exactly one page/master surface. The draft node also filters by
   // scope during render, while this layout cleanup restores the old hidden source before paint.

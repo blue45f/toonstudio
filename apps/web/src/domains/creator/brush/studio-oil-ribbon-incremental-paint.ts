@@ -7,7 +7,8 @@
  * algorithm as remixing the whole stroke from paper each frame.
  */
 
-import { parseStudioGpuColor } from "../render/studio-webgpu-color";
+import { studioOilMapPoint as mapPoint, studioOilReadbackPlan } from "./studio-oil-readback-plan";
+import type { StudioOilAffineTransform as AffineTransform, StudioOilDeviceRect as DeviceRect } from "./studio-oil-readback-plan";
 
 import {
   paintStudioOilRibbonCarrier,
@@ -24,22 +25,6 @@ const POINT_EPSILON = 1e-4;
 
 export interface StudioOilRibbonIncrementalPaintInput extends StudioOilRibbonPaintInput {
   readonly incrementalKey: string;
-}
-
-interface AffineTransform {
-  readonly a: number;
-  readonly b: number;
-  readonly c: number;
-  readonly d: number;
-  readonly e: number;
-  readonly f: number;
-}
-
-interface DeviceRect {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
 }
 
 interface OilIncrementalCache {
@@ -60,24 +45,6 @@ export function studioOilRibbonIncrementalCacheSizeForTests(): number {
   return caches.size;
 }
 
-function identityTransform(): AffineTransform {
-  return { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
-}
-
-function readTransform(
-  native: NonNullable<StudioOilRibbonPaintContext["_context"]>,
-): AffineTransform {
-  const transform = native.getTransform?.() ?? identityTransform();
-  return {
-    a: transform.a,
-    b: transform.b,
-    c: transform.c,
-    d: transform.d,
-    e: transform.e,
-    f: transform.f,
-  };
-}
-
 function sameTransform(left: AffineTransform, right: AffineTransform): boolean {
   return left.a === right.a
     && left.b === right.b
@@ -85,58 +52,6 @@ function sameTransform(left: AffineTransform, right: AffineTransform): boolean {
     && left.d === right.d
     && left.e === right.e
     && left.f === right.f;
-}
-
-function mapPoint(
-  transform: AffineTransform,
-  x: number,
-  y: number,
-): { x: number; y: number } {
-  return {
-    x: transform.a * x + transform.c * y + transform.e,
-    y: transform.b * x + transform.d * y + transform.f,
-  };
-}
-
-function deviceRectForPoints(
-  points: readonly { readonly x: number; readonly y: number }[],
-  radiusPx: number,
-  transform: AffineTransform,
-  canvasWidth: number,
-  canvasHeight: number,
-): DeviceRect | null {
-  if (points.length === 0) return null;
-  const pad = Math.ceil(radiusPx + 2);
-  let minX = points[0]!.x;
-  let minY = points[0]!.y;
-  let maxX = minX;
-  let maxY = minY;
-  for (const point of points) {
-    minX = Math.min(minX, point.x);
-    minY = Math.min(minY, point.y);
-    maxX = Math.max(maxX, point.x);
-    maxY = Math.max(maxY, point.y);
-  }
-  const corners = [
-    mapPoint(transform, minX - pad, minY - pad),
-    mapPoint(transform, maxX + pad, minY - pad),
-    mapPoint(transform, minX - pad, maxY + pad),
-    mapPoint(transform, maxX + pad, maxY + pad),
-  ];
-  const x = Math.max(0, Math.floor(Math.min(...corners.map((corner) => corner.x))));
-  const y = Math.max(0, Math.floor(Math.min(...corners.map((corner) => corner.y))));
-  const maxDeviceX = Math.min(
-    canvasWidth,
-    Math.ceil(Math.max(...corners.map((corner) => corner.x))),
-  );
-  const maxDeviceY = Math.min(
-    canvasHeight,
-    Math.ceil(Math.max(...corners.map((corner) => corner.y))),
-  );
-  const width = maxDeviceX - x;
-  const height = maxDeviceY - y;
-  if (width <= 0 || height <= 0) return null;
-  return { x, y, width, height };
 }
 
 function isPointPrefix(
@@ -223,29 +138,6 @@ function remember(cache: OilIncrementalCache): void {
   }
 }
 
-function wetSettings(
-  radiusPx: number,
-  stroke: string,
-  mixModel?: "spectral-wgm" | "ryb",
-): Parameters<typeof applyStudioOilWetIntoWetStroke>[4] {
-  const parsed = parseStudioGpuColor(stroke);
-  return {
-    radiusPx: Number.isFinite(radiusPx) && radiusPx > 0 ? radiusPx : 8,
-    hardness: 0.55,
-    strength: 0.88,
-    wetness: 0.65,
-    pickup: 0.55,
-    paintColor: parsed
-      ? {
-          r: Math.round(parsed[0] * 255),
-          g: Math.round(parsed[1] * 255),
-          b: Math.round(parsed[2] * 255),
-        }
-      : { r: 0, g: 0, b: 0 },
-    mixModel: mixModel ?? "spectral-wgm",
-  };
-}
-
 /**
  * Live Konva oil: mix only the unseen suffix against a retained paper snapshot, then paint the
  * same bristle overlay the one-shot path uses.
@@ -271,20 +163,9 @@ export function paintStudioOilRibbonCarrierIncremental(
     return paintStudioOilRibbonCarrier(context, input);
   }
 
-  const transform = readTransform(native);
-  const radiusPx = Number.isFinite(input.radiusPx) && input.radiusPx > 0
-    ? input.radiusPx
-    : 8;
-  const rect = deviceRectForPoints(
-    input.points,
-    radiusPx,
-    transform,
-    canvas.width,
-    canvas.height,
-  );
-  if (!rect) return paintStudioOilRibbonCarrier(context, input);
-
-  const settings = wetSettings(radiusPx, input.stroke, input.mixModel);
+  const plan = studioOilReadbackPlan(native, input);
+  if (!plan) return paintStudioOilRibbonCarrier(context, input);
+  const { transform, rect, settings } = plan;
   const previous = caches.get(input.incrementalKey);
 
   try {
