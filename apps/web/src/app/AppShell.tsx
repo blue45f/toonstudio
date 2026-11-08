@@ -199,7 +199,7 @@ export function AppShell({
   // PWA 설치 안내는 발표·영상 화면에서만 제외한다(호스트 자체 게이트와 이중 구조).
   const pwaInstallPromptAllowed = supportsPwaInstallPrompts(pathname);
   // 몰입 예외(전역 크롬 제거) 판정은 shell-chrome-policy의 명시 목록이 단일 기준이다.
-  const { immersiveVirtualHome, immersiveVirtualProject, immersiveVirtualExperience } =
+  const { immersiveVirtualHome, immersiveVirtualProject, immersiveReader, immersiveVirtualExperience } =
     resolveShellChrome({
       pathname,
       normalizedPath,
@@ -212,7 +212,7 @@ export function AppShell({
     && !immersiveVirtualExperience;
   // 날씨·계절 배경: 몰입형 작업 화면과 작업 집중 경로(편집기·3D·제작 보드·발표·영상·관리자)에서는 끈다.
   const ambientBackdrop = !immersiveVirtualExperience && isAmbientRouteAllowed(pathname);
-  const resolvedMainClassName = immersiveVirtualHome || taskRoute !== null
+  const resolvedMainClassName = immersiveVirtualHome || immersiveReader || taskRoute !== null
     ? "min-h-[100dvh] bg-canvas outline-none"
     : immersiveVirtualProject
       ? "min-h-[100dvh] bg-canvas outline-none"
@@ -273,7 +273,7 @@ export function AppShell({
             <Suspense fallback={null}><ActiveProjectContextBridge /></Suspense>
           ) : null}
           <WorkspaceAccountContext.Provider value={<AuthMenuShell />}>
-            <SpatialCampusFrame binding={campus} route={taskRoute}>
+            <SpatialCampusFrame binding={immersiveReader ? null : campus} route={immersiveReader ? null : taskRoute}>
               <AppRouter />
             </SpatialCampusFrame>
           </WorkspaceAccountContext.Provider>

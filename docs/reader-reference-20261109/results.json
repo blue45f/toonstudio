@@ -1,0 +1,78 @@
+[
+  {
+    "width": 320,
+    "geom": {
+      "overflow": 0,
+      "buttons": [
+        {
+          "text": "네이버 웹툰에서 읽기",
+          "width": 288,
+          "height": 48
+        },
+        {
+          "text": "작품 상세로",
+          "width": 288,
+          "height": 48
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 390,
+    "geom": {
+      "overflow": 0,
+      "buttons": [
+        {
+          "text": "네이버 웹툰에서 읽기",
+          "width": 358,
+          "height": 48
+        },
+        {
+          "text": "작품 상세로",
+          "width": 358,
+          "height": 48
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 834,
+    "geom": {
+      "overflow": 0,
+      "buttons": [
+        {
+          "text": "네이버 웹툰에서 읽기",
+          "width": 384,
+          "height": 48
+        },
+        {
+          "text": "작품 상세로",
+          "width": 384,
+          "height": 48
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "geom": {
+      "overflow": 0,
+      "buttons": [
+        {
+          "text": "네이버 웹툰에서 읽기",
+          "width": 384,
+          "height": 48
+        },
+        {
+          "text": "작품 상세로",
+          "width": 384,
+          "height": 48
+        }
+      ]
+    },
+    "errors": []
+  }
+]

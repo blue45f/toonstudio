@@ -78,11 +78,11 @@ export function TitleReaderReaBridgeCard({
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-white/60">
             FINISH READING BRIDGE · PIXIV / CUTS / RIDI / TAPAS
           </span>
-          <h3 className="mt-0.5 text-sm font-bold text-white">
+          <h2 className="mt-0.5 text-sm font-bold text-white">
             {formatI18nTemplate(bi("{v0}화 감상 후 이어가기", "After Episode {v0}"), {
               v0: String(episode),
             })}
-          </h3>
+          </h2>
         </div>
         <Link
           href={`${detailPath}#title-reviews`}

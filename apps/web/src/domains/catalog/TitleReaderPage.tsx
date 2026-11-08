@@ -1,9 +1,7 @@
 import { catalogStatusText } from "./catalog-status-i18n";
 import {
-  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
-  ImageOff,
   ListOrdered,
   SlidersHorizontal,
   X,
@@ -16,9 +14,8 @@ import type { Title } from "@/shared/lib/types";
 import { resolveTitleEpisodes, resolveTotalEpisodes } from "./title-episodes";
 import { TitleNotFound } from "./TitleNotFound";
 import { TitleReaderReaBridgeCard } from "./TitleReaderReaBridgeCard";
+import { ReaderPlatformNotice } from "./ReaderPlatformNotice";
 
-import { CoverImage } from "@/shared/components/cover-image";
-import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
 import { useNextgenLabSettings } from "@/shared/hooks/use-nextgen-lab-settings";
 import { useScreenWakeLock } from "@/shared/hooks/use-screen-wake-lock";
 import { ErrorState } from "@/shared/components/feedback/error-state";
@@ -203,7 +200,6 @@ function ReaderShell({
     "transition-opacity duration-300 motion-reduce:transition-none",
     chromeVisible ? "opacity-100" : "pointer-events-none opacity-0",
   );
-  const [coverFrom, coverTo] = title.cover;
   const episodeTotalForDrawer = Math.min(total ?? Math.max(episode + 3, 6), 24);
   const quickEpisodes = Array.from({ length: episodeTotalForDrawer }, (_, i) => i + 1);
   const chipClass = (active: boolean) =>
@@ -299,115 +295,24 @@ function ReaderShell({
         )}
       </header>
 
-      <div onPointerDown={handleContentPointerDown} className={cn("mx-auto w-full px-4 pb-36 pt-[4.5rem] max-md:pb-[calc(9rem+var(--site-float-base))]", WIDTH_CLASSES[comfort.width])}>
-        {/* 회차 시작 카드 — 회차 제목·날짜는 계약에 없어 작품 실데이터만 표기한다 */}
-        <section aria-label={bi("회차 정보", "Episode info")} className="flex gap-4 rounded-2xl border border-white/10 bg-reader-panel p-4 sm:p-5">
-          <span className="relative block aspect-[3/4] w-16 shrink-0 overflow-hidden rounded-lg sm:w-[4.5rem]">
-            {title.coverImage ? (
-              <CoverImage
-                src={title.coverImage}
-                alt=""
-                srcSet={coverStandardSrcSet(title.coverImage)}
-                sizes="(max-width: 639px) 4rem, 4.5rem"
-                className="absolute inset-0 size-full object-cover"
-              />
-            ) : (
-              <span
-                aria-hidden
-                className="absolute inset-0"
-                style={{
-                  background: `linear-gradient(150deg, color-mix(in oklch, ${coverFrom} 85%, oklch(0.24 0.012 66)), color-mix(in oklch, ${coverTo} 80%, oklch(0.15 0.008 70)))`,
-                }}
-              />
-            )}
-          </span>
-          <div className="flex min-w-0 flex-col justify-center gap-1">
-            <h1 className="text-xl font-bold leading-tight sm:text-2xl">
-              {formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode) })}
-            </h1>
-            <p className="truncate text-sm text-white/75">{title.title}</p>
-            <p className="text-xs text-white/55">
-              {title.author}
-              {" · "}
-              {STATUS_LABEL[title.status]}
-              {title.updateDays && title.updateDays.length > 0 &&
-                ` · ${title.updateDays.join("·")} ${bi("연재", "serial")}`}
-            </p>
-          </div>
+      <div onPointerDown={handleContentPointerDown} className={cn("reader-reference-body mx-auto w-full px-4 pb-36 max-md:pb-[calc(9rem+var(--site-float-base))]", WIDTH_CLASSES[comfort.width])}>
+        {/* 회차 제목·날짜는 계약에 없어 작품 실데이터만 간결하게 표시한다. */}
+        <section aria-label={bi("회차 정보", "Episode info")} className="reader-episode-context">
+          <p className="reader-episode-context-title">
+            <strong>{formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode) })}</strong>{" · "}{title.title}
+          </p>
+          <p className="reader-episode-context-meta">{title.author}{" · "}{STATUS_LABEL[title.status]}
+            {title.updateDays && title.updateDays.length > 0 && ` · ${title.updateDays.join("·")} ${bi("연재", "serial")}`}
+          </p>
         </section>
 
-        {/* 컷 컬럼 — 컷 데이터 계약이 없어 정직한 빈 상태로 둔다. 가짜 컷을 그리지 않는다. */}
-        <section
-          aria-label={bi("회차 내용", "Episode content")}
-          className="mt-4 rounded-2xl border border-dashed border-white/15 bg-reader-panel/50 px-6 py-14 text-center"
-        >
-          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-white/8 text-white/60">
-            <ImageOff size={22} aria-hidden />
-          </span>
-          <h2 className="mt-4 font-semibold text-white">
-            {bi("이 회차의 컷은 아직 준비되지 않았어요", "Panels for this episode aren't ready yet")}
-          </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-white/65">
-            {bi(
-              "이 작품은 외부 플랫폼에서 연재되어 회차 컷이 이 사이트로 제공되지 않아요. 컷 데이터가 연결되면 이 자리에 세로 스크롤로 표시됩니다.",
-              "This title is serialized on an external platform, so its panels aren't delivered to this site. Once panel data is connected, episodes will appear here as a vertical scroll.",
-            )}
-          </p>
-          <p className="mt-3 text-xs leading-relaxed text-white/65">
-            {bi("컷이 제공되지 않아 읽기 진도를 기록하지 않아요.", "Reading progress is not recorded because panels are not provided.")}
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
-            {platformLink && (
-              <a
-                href={platformLink.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[linear-gradient(100deg,var(--color-accent),var(--color-accent-2))] px-5 text-sm font-bold text-on-accent transition-transform duration-150 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100"
-              >
-                {formatI18nTemplate(bi("{v0}에서 읽기", "Read on {v0}"), { v0: platformLink.name })}
-                <ArrowUpRight size={15} aria-hidden />
-              </a>
-            )}
-            <Link
-              href={detailPath}
-              className="inline-flex min-h-11 items-center rounded-full border border-white/25 bg-white/5 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
-              {bi("작품 상세로", "Title details")}
-            </Link>
-          </div>
-        </section>
+        <ReaderPlatformNotice platformLink={platformLink} detailPath={detailPath} />
 
-        {/* 끝 카드 — 다음 화 동선 */}
-        {hasNext ? (
-          <Link
-            href={`/title/${encodeURIComponent(title.slug)}/read/${episode + 1}`}
-            className="group mt-4 flex items-center justify-between gap-4 rounded-2xl border border-white/12 bg-reader-panel p-5 transition-colors hover:border-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            <span>
-              <span className="block text-xs font-medium text-white/55">{bi("다음 화", "Next episode")}</span>
-              <span className="mt-1 block text-lg font-bold">
-                {formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode + 1) })}
-              </span>
-            </span>
-            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10 text-white transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none">
-              <ChevronRight size={19} aria-hidden />
-            </span>
-          </Link>
-        ) : (
-          <div className="mt-4 rounded-2xl border border-white/12 bg-reader-panel p-5 text-center">
-            <p className="font-semibold text-white">{bi("지금까지 공개된 마지막 회차예요", "This is the latest available episode")}</p>
-            <Link
-              href={detailPath}
-              className="mt-3 inline-flex min-h-11 items-center rounded-full border border-white/25 bg-white/5 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            >
-              {bi("작품 상세로 돌아가기", "Back to title details")}
-            </Link>
-          </div>
-        )}
+        {!hasNext && <p className="mb-4 text-center text-sm text-white/75">{bi("지금까지 공개된 마지막 회차예요", "This is the latest available episode")}</p>}
 
         <TitleReaderReaBridgeCard title={title} episode={episode} />
 
-        <p className="mt-6 text-center text-xs text-white/45">
+        <p className="mt-6 text-center text-xs text-white/65">
           {bi(
             "화면을 탭하면 메뉴가 사라져요 — Esc로 나가기 · [ / ] 이전·다음 화 · M 메뉴 토글",
             "Tap the screen to hide menus — Esc to exit · [ / ] prev/next ep · M toggle menu",
@@ -485,7 +390,7 @@ function ReaderShell({
               className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
             >
               <ChevronLeft size={17} aria-hidden />
-              <span className="hidden min-[420px]:inline">{bi("이전 화", "Prev")}</span>
+              <span className="sr-only min-[420px]:not-sr-only">{bi("이전 화", "Prev")}</span>
             </Link>
           ) : (
             <span
@@ -493,7 +398,7 @@ function ReaderShell({
               className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
             >
               <ChevronLeft size={17} aria-hidden />
-              <span className="hidden min-[420px]:inline">{bi("이전 화", "Prev")}</span>
+              <span className="sr-only min-[420px]:not-sr-only">{bi("이전 화", "Prev")}</span>
             </span>
           )}
           <span aria-hidden className="min-w-0 flex-1" />
@@ -502,7 +407,7 @@ function ReaderShell({
               href={`/title/${encodeURIComponent(title.slug)}/read/${episode + 1}`}
               className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
             >
-              <span className="hidden min-[420px]:inline">{bi("다음 화", "Next")}</span>
+              <span className="sr-only min-[420px]:not-sr-only">{bi("다음 화", "Next")}</span>
               <ChevronRight size={17} aria-hidden />
             </Link>
           ) : (
@@ -510,7 +415,7 @@ function ReaderShell({
               aria-disabled="true"
               className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
             >
-              <span className="hidden min-[420px]:inline">{bi("다음 화", "Next")}</span>
+              <span className="sr-only min-[420px]:not-sr-only">{bi("다음 화", "Next")}</span>
               <ChevronRight size={17} aria-hidden />
             </span>
           )}

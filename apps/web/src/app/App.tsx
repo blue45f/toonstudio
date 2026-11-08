@@ -1,3 +1,4 @@
+import { READER_PATTERN } from "./shell-chrome-policy";
 import { apiFetch } from "@/platform/api";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, useLocation } from "react-router-dom";
@@ -252,7 +253,7 @@ function AppRuntime() {
   // Route truth is available during the first render; the Zustand bridge runs later in an effect.
   const studioImmersive = isImmersiveMobileRoute(pathname);
   const adminChrome = isAdminPath(pathname);
-  const isolatedChrome = studioImmersive || adminChrome;
+  const isolatedChrome = studioImmersive || adminChrome || READER_PATTERN.test(pathname);
   const publicExperience = isPublicCreativeRoute(pathname);
 
   // Catalog refresh is unrelated to manuscript creation, review or local recovery.

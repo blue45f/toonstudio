@@ -16,7 +16,7 @@ function normalizedExperiencePath(pathname: string): string {
 /** Editors and administrative tools never inherit promotional chrome or effects. */
 export function supportsSiteExperience(pathname: string): boolean {
   const path = normalizedExperiencePath(pathname);
-  return !/^\/(?:studio|shaper|brush-lab|music|production|admin)(?:\/|$)/u.test(path);
+  return !/^\/title\/[^/]+\/read\/\d+$/u.test(path) && !/^\/(?:studio|shaper|brush-lab|music|production|admin)(?:\/|$)/u.test(path);
 }
 
 const STUDIO_ROUTE_GUIDE_PATHS = new Set([
