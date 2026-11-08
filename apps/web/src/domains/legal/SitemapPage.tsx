@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 
 import { SitePageHeader } from "./public/site-page-header";
-import { sitePageHeaderArtFor } from "./public/site-page-header-art";
 import { SiteDirectoryPersonalized } from "./SiteDirectoryPersonalized";
 import { SiteDirectorySearch } from "./SiteDirectorySearch";
 import {
@@ -122,13 +121,12 @@ export function SitemapPage() {
     <Container size="wide" className="py-7 sm:py-10 lg:py-12">
       <SiteContextualSubNav pathnameOverride="/sitemap" className="mb-5" />
       <SitePageHeader
-        size="hero"
+        surface="plain"
         icon={MapIcon}
         eyebrow={copy.eyebrow}
         titleId="sitemap-title"
         title={copy.title}
         description={copy.description}
-        art={sitePageHeaderArtFor("/sitemap")}
         actions={
           <>
             <Link href="/studio/new" className={buttonClass({ size: "md", className: "min-h-11" })}>
@@ -150,6 +148,11 @@ export function SitemapPage() {
           </>
         }
       />
+
+      <div id="sitemap-directory" className="scroll-mt-24">
+        <SiteDirectorySearch entries={SITEMAP_DIRECTORY_ENTRIES} locale={locale} />
+      </div>
+      <SiteDirectoryPersonalized entries={SITEMAP_DIRECTORY_ENTRIES} locale={locale} />
 
       {/* 첫 화면에서 디렉터리의 실제 규모가 읽히게 — 수치는 아래 목록과 같은 데이터 원본에서 센다. */}
       <section aria-label={copy.statsLabel} className="mt-8 rounded-2xl border border-line/80 bg-panel/45 p-4 sm:p-5">
@@ -302,10 +305,6 @@ export function SitemapPage() {
         </details>
       </section>
 
-      <div id="sitemap-directory" className="scroll-mt-24">
-        <SiteDirectorySearch entries={SITEMAP_DIRECTORY_ENTRIES} locale={locale} />
-      </div>
-      <SiteDirectoryPersonalized entries={SITEMAP_DIRECTORY_ENTRIES} locale={locale} />
 
       <section className="mt-10 sm:mt-14" aria-labelledby="sitemap-levels-title">
         <div className="max-w-3xl">
