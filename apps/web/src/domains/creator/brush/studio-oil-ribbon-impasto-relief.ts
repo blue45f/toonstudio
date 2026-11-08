@@ -1,3 +1,4 @@
+import { stampStudioImpastoRidgeSegment } from "./studio-oil-impasto-ridge-segment";
 import { computeStudioImpastoReliefShading } from "../studio-impasto-relief-shading-v1";
 
 import type { FxOilBristle } from "../studio-fx-brush";
@@ -352,10 +353,6 @@ function stampImpastoRidge(
 ): void {
   const {
     cell,
-    originX,
-    originY,
-    gridWidth,
-    gridHeight,
     bristleCount,
     hairStride,
     hairOffset,
@@ -391,51 +388,8 @@ function stampImpastoRidge(
       const toY = hairY[slot + 1]!;
       const fromLoad = hairLoad[slot]!;
       const toLoad = hairLoad[slot + 1]!;
-      const segmentX = toX - fromX;
-      const segmentY = toY - fromY;
-      const ridgeReach = Math.max(hairReach[slot]!, hairReach[slot + 1]!);
-      const ridgeReachSquared = ridgeReach * ridgeReach;
-      const lengthSquared = segmentX * segmentX + segmentY * segmentY;
-      const inverseLengthSquared =
-        lengthSquared > POINT_EPSILON ? 1 / lengthSquared : 0;
-      const loadSpan = toLoad - fromLoad;
-      const minCellX = Math.max(
-        0,
-        Math.floor((Math.min(fromX, toX) - ridgeReach - originX) / cell)
-      );
-      const maxCellX = Math.min(
-        gridWidth - 1,
-        Math.ceil((Math.max(fromX, toX) + ridgeReach - originX) / cell)
-      );
-      const minCellY = Math.max(
-        0,
-        Math.floor((Math.min(fromY, toY) - ridgeReach - originY) / cell)
-      );
-      const maxCellY = Math.min(
-        gridHeight - 1,
-        Math.ceil((Math.max(fromY, toY) + ridgeReach - originY) / cell)
-      );
-      for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
-        const pointY = originY + (cellY + 0.5) * cell - fromY;
-        for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
-          const pointX = originX + (cellX + 0.5) * cell - fromX;
-          const t = clamp(
-            (pointX * segmentX + pointY * segmentY) * inverseLengthSquared,
-            0,
-            1
-          );
-          const deltaX = pointX - segmentX * t;
-          const deltaY = pointY - segmentY * t;
-          const distanceSquared = deltaX * deltaX + deltaY * deltaY;
-          if (distanceSquared >= ridgeReachSquared) continue;
-          const level =
-            IMPASTO_RELIEF_RIDGE_HEIGHT *
-            (0.25 + 0.75 * (fromLoad + loadSpan * t));
-          const value = level * (1 - Math.sqrt(distanceSquared) / ridgeReach);
-          const at = cellY * gridWidth + cellX;
-          if (value > ridge[at]!) ridge[at] = value;
-        }
-      }
+      stampStudioImpastoRidgeSegment(ridge, grid, fromX, fromY, toX, toY,
+        fromLoad, toLoad, Math.max(hairReach[slot]!, hairReach[slot + 1]!), IMPASTO_RELIEF_RIDGE_HEIGHT);
     }
   }
 }
