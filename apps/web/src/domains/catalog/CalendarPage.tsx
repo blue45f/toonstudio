@@ -1,8 +1,7 @@
 import "./catalog-page-controls.css";
-import { CalendarDays, CalendarPlus, ChevronDown, Database, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { CalendarDays, CalendarPlus, RotateCcw } from "lucide-react";
 import { motion } from "motion/react";
 import { useId, useState, type KeyboardEvent } from "react";
-
 
 import type { PlatformId, Title, TitleCard } from "@/shared/lib/types";
 
@@ -12,7 +11,6 @@ import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
-import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { RatingInline } from "@/shared/components/ui/stars";
 import { statsAreEstimated } from "@/shared/lib/estimate";
@@ -34,14 +32,13 @@ import {
 import { cn, kstTodayIdx } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import {
-  CALENDAR_BM_FILTERS,
   runSameDocumentViewTransition,
   type CalendarBmFilterId,
 } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { useApiResource } from "@/platform/use-api-resource";
 
-
+import { CalendarFilters } from "./CalendarFilters";
 
 interface CalendarResponse {
   // todayIdx/todayDay 는 응답 생성 시점의 서버(KST) 기준 참고값이다. 화면의 "오늘" 표시는
@@ -132,23 +129,13 @@ export function CalendarPage() {
   const { filters, setFilters, remember, toggleRemember } = useRememberedFilters("calendar");
   // 표시할 플랫폼 선택은 공용 필터(filters.platforms)에 보관 — 별도 상태일 때 재방문 시 유지되지 않던 문제 해소.
   // 캘린더 전용 칩 UI로 토글하며, 패널 facet에서는 'platform'을 제외해 중복 노출을 막는다.
-  const selectedPlatforms = new Set(filters.platforms);
   const platformFilterActive = filters.platforms.length > 0;
-  const togglePlatform = (id: PlatformId) =>
-    setFilters({
-      ...filters,
-      platforms: filters.platforms.includes(id)
-        ? filters.platforms.filter((p) => p !== id)
-        : [...filters.platforms, id],
-    });
 
   const dayTabsId = useId();
   // 모바일: 요일 탭으로 하루씩 본다(null = 오늘). 데스크톱(xl)은 7열 그리드 유지.
   const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(null);
-  const [bmFilterId, setBmFilterId] = useState<CalendarBmFilterId>("all");
   const applyBmPreset = (nextBmId: CalendarBmFilterId) => {
     runSameDocumentViewTransition(() => {
-      setBmFilterId(nextBmId);
       if (nextBmId === "all") {
         setFilters({ ...filters, pricing: [], status: [], yearRange: null });
       } else if (nextBmId === "wait-free") {
@@ -163,7 +150,7 @@ export function CalendarPage() {
     });
   };
   const savedIds = useSavedTitleIds();
-  // '상세 필터' 배지는 패널에 보이는 facet만 센다(플랫폼은 전용 칩으로 분리 노출).
+  // 플랫폼 조건과 다른 조건 중 하나라도 활성화되면 현재 보드를 필터링한다.
   const titleFilterCount = countActiveTitleFilters(filters) - filters.platforms.length;
   const titleFilterActive = titleFilterCount > 0;
   const anyFilterActive = platformFilterActive || titleFilterActive;
@@ -202,7 +189,8 @@ export function CalendarPage() {
     if (next === null) return;
     event.preventDefault();
     setSelectedDayIdx(next);
-    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]').item(next).focus({ preventScroll: true });
+    // 좁은 화면의 가로 요일 목록에서도 키보드로 선택한 탭이 화면 안에 들어오게 한다.
+    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]').item(next).focus();
   };
 
   // ICS 내보내기 대상: 현재 필터가 적용된 보드의 고유 작품. 같은 작품이 여러 요일에 보이면
@@ -236,26 +224,29 @@ export function CalendarPage() {
   };
 
   return (
-    <Container size="wide" className="calendar-page-layout py-6 sm:py-10">
+    <Container size="wide" className="calendar-page-layout py-6">
       <SiteContextualSubNav pathnameOverride="/calendar" className="mb-5" />
-      <header className="mb-6 rounded-2xl border border-line bg-panel/45 p-4 surface-hl sm:mb-7 sm:p-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
-          <div>
-            <p className="eyebrow flex items-center gap-1.5 text-accent">
-              <CalendarDays size={14} /> RELEASE CALENDAR
-            </p>
-            <h1 className="mt-2 text-[clamp(1.6rem,7vw,1.875rem)] font-bold tracking-tight sm:text-4xl">{bt("연재 캘린더", "Release Calendar")}</h1>
+      <div className="mb-4 min-w-0">
+        <header>
+          <p className="eyebrow flex items-center gap-1.5 text-accent"><CalendarDays size={14} aria-hidden="true" /> RELEASE CALENDAR</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{bt("연재 캘린더", "Release Calendar")}</h1>
             <p className="lede mt-2 max-w-2xl text-pretty text-sm leading-relaxed text-fg-2">
               {bt("연재요일 정보가 있는 작품을 요일별로 찾아보세요. 오늘은", "Browse stories by their release day. Today is")}{" "}
               <span className="font-semibold text-accent">{todayLabel}</span>{countsReady ? <>{bt(", 새 회차가 올라오는 작품이", ", with new episodes from")}{" "}
               <span className="numeral text-fg">{todayCount.toLocaleString(locale)}</span>{bt("편입니다.", " stories.")}</> : <span>{loading ? bt(" · 연재 정보를 확인하고 있어요.", " · Checking release information.") : bt(" · 연재 편수를 확인할 수 없습니다.", " · Release counts are unavailable.")}</span>}
             </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {countsReady && <span className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3 text-xs text-fg-2">
-              <Database size={14} className="text-accent" />
-              {bt("전체 연재", "All series")} <span className="numeral text-fg">{totalScheduled.toLocaleString(locale)}</span>{bt("편", "")}
-            </span>}
+          {countsReady && <p className="mt-1 text-xs text-fg-3"><span>{bt("전체 연재", "All series")}</span>{" "}{totalScheduled.toLocaleString(locale)}{bt("편", " stories")}</p>}
+        </header>
+      </div>
+      <CalendarFilters
+        filters={filters}
+        onChange={setFilters}
+        onPreset={applyBmPreset}
+        platforms={data?.platformCoverage ?? []}
+        savedCount={savedIds.size}
+        remember={remember}
+        onToggleRemember={toggleRemember}
+        actions={
             <button
               type="button"
               onClick={exportIcs}
@@ -263,7 +254,7 @@ export function CalendarPage() {
               title={bt("현재 필터 기준 연재 일정을 캘린더 앱용 .ics 파일로 저장 (주간 반복 일정)", "Save the release schedule for the current filters as an .ics file for calendar apps (weekly repeating schedule)")}
               className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1.5" })}
             >
-              <CalendarPlus size={14} />
+              <CalendarPlus size={14} aria-hidden="true" />
               {bt("내보내기 (.ics)", "Export (.ics)")}
               {exportable.size > 0 && (
                 <span className="numeral text-xs text-fg-3">
@@ -271,117 +262,8 @@ export function CalendarPage() {
                 </span>
               )}
             </button>
-            {/* 연재 캘린더는 커밋된 카탈로그 스냅샷(정적 calendar.json)에서 파생된다 — 런타임 재수집이
-                없어 수동 "갱신"은 동일 데이터를 다시 읽을 뿐이라 오해를 줘 제거했다. 로드 실패 시
-                재시도는 아래 ErrorState 의 onRetry(reload) 로 제공한다. */}
-          </div>
-        </div>
-
-        <div
-          role="group"
-          aria-label={bt("이용권·연재 방식 빠른 필터", "Business model & release filter")}
-          data-testid="calendar-bm-filter-bar"
-          className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line pt-4"
-        >
-          <span className="mr-1 text-xs font-bold text-fg-3">
-            {bt("BM·연재 필터:", "BM Filter:")}
-          </span>
-          {CALENDAR_BM_FILTERS.map((bm) => {
-            const active = bmFilterId === bm.id;
-            return (
-              <button
-                key={bm.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => applyBmPreset(bm.id)}
-                className={cn(
-                  "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors",
-                  active
-                    ? "border-accent bg-accent text-canvas shadow-sm"
-                    : "border-line bg-card text-fg-2 hover:border-accent/45 hover:text-fg",
-                )}
-              >
-                <span>{bm.label}</span>
-                <span className="rounded-full bg-canvas/20 px-1.5 py-0.5 text-[10px] font-extrabold">
-                  {bm.badge}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {data?.platformCoverage.length ? (
-          <div className="mt-5 border-t border-line pt-4">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-fg-3">
-                {bt("표시할 플랫폼", "Platforms to show")}{platformFilterActive ? formatI18nTemplate(bt(" · {v0}개 선택", " · {v0} selected"), { v0: selectedPlatforms.size }) : bt(" · 전체", " · All")}
-              </span>
-              {platformFilterActive && (
-                <button
-                  type="button"
-                  onClick={() => setFilters({ ...filters, platforms: [] })}
-                  className="inline-flex min-h-11 items-center px-1 text-xs text-accent hover:underline"
-                >
-                  {bt("전체 보기", "Show all")}
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {data.platformCoverage.map((platform) => {
-                const on = selectedPlatforms.has(platform.id);
-                return (
-                  <button
-                    key={platform.id}
-                    type="button"
-                    onClick={() => togglePlatform(platform.id)}
-                    aria-pressed={on}
-                    className={cn(
-                      "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors",
-                      on
-                        ? "border-accent/60 bg-accent-soft/50 text-fg"
-                        : "border-line bg-card text-fg-2 hover:bg-raised",
-                      platformFilterActive && !on && "opacity-45"
-                    )}
-                    title={formatI18nTemplate(bt("{v0} {v1}편", "{v0} · {v1} stories"), { v0: platform.label, v1: platform.count.toLocaleString(locale) })}
-                  >
-                    <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: platform.color }} />
-                    {platform.label}
-                    <span className="numeral text-fg-3">{platform.count.toLocaleString(locale)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
-
-        {/* 상세 필터 — 네이티브 details 접기 패널(키보드·AT 기본 지원, 활성 개수 배지 유지) */}
-        <details className="group mt-4 border-t border-line">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 min-h-11 py-3 text-sm font-medium text-fg-2 transition-colors hover:text-fg [&::-webkit-details-marker]:hidden">
-            <span className="inline-flex items-center gap-1.5">
-              <SlidersHorizontal size={14} className={titleFilterActive ? "text-accent" : undefined} aria-hidden="true" />
-              {bt("상세 필터", "More filters")}
-              {titleFilterActive && (
-                <span className="rounded-full bg-accent/15 px-1.5 text-xs text-accent">
-                  {titleFilterCount}
-                </span>
-              )}
-            </span>
-            <ChevronDown size={16} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-200 group-open:rotate-180" />
-          </summary>
-          <div className="pb-4">
-            <TitleFilterPanel
-              value={filters}
-              onChange={setFilters}
-              facets={["saved", "genre", "pricing", "age", "minRating", "tag"]}
-              savedCount={savedIds.size}
-              remember={remember}
-              onToggleRemember={toggleRemember}
-            />
-          </div>
-        </details>
-      </header>
-
-
+        }
+      />
 
       {/* "오늘 연재" 최상단 하이라이트 밴드 — 스크롤해도 고정(sticky)되어 오늘 분량을 놓치지 않는다 */}
       {!loading && !error && (
@@ -448,7 +330,7 @@ export function CalendarPage() {
             <div
               role="tablist"
               aria-label={bt("요일 선택", "Choose a day")}
-              className="rail -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-7 sm:overflow-visible sm:px-0"
+              className="calendar-day-tabs"
             >
               {days.map(({ day, items }, index) => {
                 const on = index === selDay;
@@ -488,6 +370,7 @@ export function CalendarPage() {
               })}
             </div>
             <div className="mt-3 scroll-mt-[calc(var(--site-header-sticky-offset,5rem)+5rem)]" id={`${dayTabsId}-panel`} role="tabpanel" aria-labelledby={`${dayTabsId}-tab-${selDay}`} tabIndex={0}>
+              <h2 className="mb-3 text-base font-semibold text-fg">{formatI18nTemplate(bt("{v0} 연재 ({v1}편)", "{v0} releases ({v1} stories)"), { v0: selDayLabel, v1: selItems.length.toLocaleString(locale) })}</h2>
               {selItems.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-line bg-card/40 px-4 py-10 text-center text-xs text-fg-3">
                   {formatI18nTemplate(bt("{v0} 연재 없음", "No releases on {v0}"), { v0: selDayLabel })}
