@@ -91,17 +91,14 @@ export function StudioEditorRoute({ resolution }: {
     return <Navigate replace state={location.state} to={`${source.redirectHref}${location.hash}`} />;
   }
 
+  const { projectId, documentId } = route;
+  const episodeId = new URLSearchParams(location.search).get("episode");
   return (
     <StudioDocumentRuntimeBoundary documentKey={editorKey}>
       <StudioDocumentLayout
         draftSessionEpoch={draftScope.epoch}
         studioRoute={route}
       >
-        {route.workId === null && route.projectId && route.documentId && new URLSearchParams(location.search).has("episode") ? (
-          <Suspense fallback={null}>
-            <StudioEpisodeDocumentHandoff projectId={route.projectId} documentId={route.documentId} search={location.search} />
-          </Suspense>
-        ) : null}
         {route.surface === "poser" ? (
           <Suspense fallback={null}>
             <StudioWorkspaceContextCoach surface={route.surface} />
@@ -131,6 +128,13 @@ export function StudioEditorRoute({ resolution }: {
           <LegacyStudioEditorAdapter
             remixId={route.remixSourceWorkId}
             studioRoute={route}
+            renderEpisodeHandoff={route.workId === null && projectId && documentId && episodeId !== null
+              ? (editor) => (
+                <Suspense fallback={null}>
+                  <StudioEpisodeDocumentHandoff key={episodeId} projectId={projectId} documentId={documentId}
+                    search={location.search} editor={editor} />
+                </Suspense>
+              ) : undefined}
           />
         </Suspense>
       </StudioDocumentLayout>

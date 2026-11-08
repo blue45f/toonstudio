@@ -18,14 +18,14 @@ import { resolveStudioRoute } from "../studio-route-manifest";
 
 import { StudioEditorRoute } from "./StudioEditorRoute";
 
-import type { StudioWorkspaceRoute } from "../../studio-workspace-route";
+import type { LegacyStudioEditorAdapterProps } from "../../studio-legacy-editor-adapter";
 
 const observed = vi.hoisted(() => ({ sources: [] as (string | null)[] }));
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({
   useSession: () => ({ data: { user: { id: "owner" } }, ready: true }),
 }));
 vi.mock("../../studio-legacy-editor-adapter", () => ({
-  LegacyStudioEditorAdapter: ({ studioRoute }: { studioRoute: StudioWorkspaceRoute }) => {
+  LegacyStudioEditorAdapter: ({ studioRoute, renderEpisodeHandoff }: LegacyStudioEditorAdapterProps) => {
     const layout = useStudioDocumentLayout();
     const [ink, setInk] = useState(0);
     observed.sources.push(studioRoute.workId);
@@ -42,6 +42,7 @@ vi.mock("../../studio-legacy-editor-adapter", () => ({
         data-recovery-key={key}
         data-pending={String(isStudioSourceHydrationPending(studioRoute.workId, studioRoute.remixSourceWorkId, false))}
       >
+        {renderEpisodeHandoff?.({ pages: [], writable: false, apply: () => false })}
         <button type="button" onClick={() => setInk((value) => value + 1)}>draw</button>
         <output aria-label="ink">{ink}</output>
         <output aria-label="recovery">{localStorage.getItem(key)}</output>
@@ -102,7 +103,7 @@ describe("StudioEditorRoute local-source integration", () => {
     fireEvent.click(summary);
     expect(await screen.findByText("작화 샷 계획 — 저장된 회차 기준")).toBeTruthy();
     expect(screen.getByText(/페이지를 자동 생성하거나 교체하지 않습니다/u)).toBeTruthy();
-    expect(screen.getByText(/샷 6개/u)).toBeTruthy();
+    expect(screen.getByText(/샷 6개 · 예상 캔버스 높이/u)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "draw" }));
     fireEvent.click(screen.getByRole("link", { name: "이 회차 작화 시작하기" }));
     await waitFor(() => expect(screen.getByLabelText("location").textContent).toContain("workspace=draw"));
@@ -120,7 +121,7 @@ describe("StudioEditorRoute local-source integration", () => {
     await screen.findByTestId("editor");
     fireEvent.click(await screen.findByText(`1화 컷 계획 · ${document.title}`));
     expect(await screen.findByRole("link", { name: "이 회차 작화 시작하기" })).toBeTruthy();
-    expect(screen.getByText(/샷 6개/u)).toBeTruthy();
+    expect(screen.getByText(/샷 6개 · 예상 캔버스 높이/u)).toBeTruthy();
     expect(screen.getByLabelText("recovery").textContent).toBe("기존 여섯 페이지");
   });
 

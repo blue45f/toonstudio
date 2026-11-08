@@ -1320,7 +1320,6 @@ import { resolveStudioWorkspacePanelLayoutVisibility } from "./studio-workspace-
 import {
   studio2dSurfaceNavigationHref,
   type Studio2dWorkspaceSurface,
-  type StudioWorkspaceRoute,
 } from "./studio-workspace-route";
 import { resolveStudioWorkspaceWidePanelToggle } from "./studio-workspace-wide-mode";
 import {
@@ -1509,15 +1508,11 @@ import {
   rememberedOperationForDrawMode,
 } from "./studio-cuttoon-editor-host-helpers";
 
+import type { LegacyStudioEditorAdapterProps } from "./studio-legacy-editor-adapter";
+
 const bi = <T,>(ko: T, en: T): T => translateBilingualValueForActiveLocale("StudioCuttoonEditorHost", ko, en);
 const StudioAiSuperSuiteModal = lazyRetry(studioAiSuperSuiteModalLoader.load, "StudioAiSuperSuiteModal");
-export function StudioCuttoonEditor({
-  remixId,
-  studioRoute,
-}: {
-  readonly remixId: string | null;
-  readonly studioRoute: StudioWorkspaceRoute;
-}) {
+export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff }: LegacyStudioEditorAdapterProps) {
   useBilingualI18nRevision();
   const navigate = useNavigate();
   const location = useLocation();
@@ -17219,6 +17214,7 @@ const puppetWarpArmed =
     movePageToBottom,
     reorderPage,
     pageDnd,
+    commitInitializedPages,
   } = useStudioPageManagement({
     pages,
     pagesHistoryRef,
@@ -29402,6 +29398,11 @@ function clearSelectionForEdit() {
         onFlushWorkspacePersistence={flushHybridDccWorkspacePersistence}
       >
         {editorSurface}
+        {renderEpisodeHandoff?.({
+          pages, writable: !activePageMutationLocked && !masterEditMode && master.elements.length === 0
+            && !initialRecoveryBlocked && projectBackupUnavailableReason === null,
+          apply: commitInitializedPages,
+        })}
         {smartShapeDialog}
         {reviewCapture.dialog}
         <StudioFormalSaveDialog

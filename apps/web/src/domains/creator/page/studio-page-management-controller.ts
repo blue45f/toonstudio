@@ -56,6 +56,12 @@ export function useStudioPageManagement({
     return history[index] ?? pages;
   }
 
+  function commitInitializedPages(build: (current: PageState[]) => PageState[] | null): boolean {
+    if (pendingStrokeCommitsRef.current && !flushPendingStrokeCommitsRef.current()) return false;
+    const next = build(latestStudioPagesSnapshot());
+    return next !== null && commitPages(next);
+  }
+
   function addPage() {
     const baseH = activePage.canvasH || 1080;
     // 렌더 갱신 전 다시 실행돼도 앞서 커밋한 페이지를 덮어쓰지 않는다.
@@ -210,6 +216,7 @@ export function useStudioPageManagement({
 
   return {
     latestStudioPagesSnapshot,
+    commitInitializedPages,
     addPage,
     findPageIndexInPages,
     insertPageBefore,
