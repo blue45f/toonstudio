@@ -272,7 +272,7 @@ function ChecklistSection() {
   };
 
   return (
-    <section id="guide-checklist" aria-labelledby="guide-checklist-title" className={SECTION}>
+    <section id="guide-checklist" aria-labelledby="guide-checklist-title" className={SECTION} data-own-control-size="">
       <h2 id="guide-checklist-title" className="text-2xl font-bold">
         {t("게시 전 점검표", "Pre-publish checklist")}
       </h2>
@@ -292,7 +292,7 @@ function ChecklistSection() {
                   type="checkbox"
                   checked={checked.has(item.id)}
                   onChange={() => toggle(item.id)}
-                  className="mt-1 size-5 shrink-0 accent-[var(--color-accent)]"
+                  className={cn("mt-1 size-5 shrink-0 rounded accent-[var(--color-accent)]", FOCUS_RING)}
                 />
                 <span>{t(item.label.ko, item.label.en)}</span>
               </label>
@@ -314,7 +314,7 @@ function ChecklistSection() {
           type="button"
           onClick={() => setChecked(new Set())}
           disabled={checked.size === 0}
-          className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
+          className={buttonClass({ variant: "outline", size: "sm", className: cn("min-h-11 h-auto py-2 gap-1.5", FOCUS_RING) })}
         >
           <RotateCcw size={14} aria-hidden />
           {t("점검표 처음으로", "Clear the checklist")}
@@ -443,7 +443,11 @@ export function AccessibleWebtoonGuidePage() {
   ];
 
   return (
-    <article aria-labelledby={titleId} className="mx-auto max-w-5xl space-y-8 px-4 py-8 text-fg sm:px-6 sm:py-12">
+    <article
+      aria-labelledby={titleId}
+      className="mx-auto max-w-5xl space-y-8 px-4 py-8 text-fg sm:px-6 sm:py-12"
+      data-own-control-size=""
+    >
       <header className="rounded-3xl border border-line bg-panel p-6 sm:p-10">
         <p className="text-xs font-bold tracking-[.16em] text-accent">ACCESSIBLE WEBTOON</p>
         <h1 id={titleId} className="mt-4 max-w-3xl text-3xl font-bold leading-tight sm:text-5xl">
@@ -491,6 +495,7 @@ export function AccessibleWebtoonGuidePage() {
       </header>
 
       <section
+        data-own-control-size=""
         data-testid="accessible-guide-rea-wcag-bar"
         aria-label={pickLang("배리어프리 웹툰 WCAG 벤치마크 워크벤치", "Barrier-free webtoon WCAG benchmark workbench")}
         className="mb-5 rounded-2xl border border-line bg-card p-4"
@@ -520,11 +525,13 @@ export function AccessibleWebtoonGuidePage() {
                 data-testid={`a11y-guide-rea-vision-${item.id}`}
                 aria-pressed={active}
                 onClick={() => setVisionSim(item.id)}
-                className={
+                className={cn(
+                  "inline-flex min-h-11 items-center rounded-lg border px-3.5 py-2 text-xs font-semibold transition-colors",
+                  FOCUS_RING,
                   active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
-                }
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line bg-panel text-fg-2 hover:border-accent/50",
+                )}
               >
                 {pickLang(item.ko, item.en)}
               </button>
@@ -548,11 +555,13 @@ export function AccessibleWebtoonGuidePage() {
                 data-testid={`a11y-guide-rea-aid-${item.id}`}
                 aria-pressed={active}
                 onClick={() => setReadingAid(item.id)}
-                className={
+                className={cn(
+                  "inline-flex min-h-11 items-center rounded-lg border px-3.5 py-2 text-xs font-semibold transition-colors",
+                  FOCUS_RING,
                   active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
-                }
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line bg-panel text-fg-2 hover:border-accent/50",
+                )}
               >
                 {pickLang(item.ko, item.en)}
               </button>
@@ -578,7 +587,10 @@ export function AccessibleWebtoonGuidePage() {
       <ChecklistSection />
       <ReferencesSection />
 
-      <footer className="grid gap-5 rounded-3xl border border-line bg-panel p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <footer
+        data-own-control-size=""
+        className="grid gap-5 rounded-3xl border border-line bg-panel p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+      >
         <div>
           <p className="text-xs font-bold tracking-[.14em] text-accent">LEARN → MAKE</p>
           <h2 className="mt-2 text-2xl font-bold">{t("직접 해 보세요", "Try it yourself")}</h2>
@@ -590,13 +602,13 @@ export function AccessibleWebtoonGuidePage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 lg:justify-end">
-          <Link to="/studio/new" className={buttonClass({ size: "md", className: "min-h-11" })}>
+          <Link to="/studio/new" className={buttonClass({ size: "md", className: cn("min-h-11 h-auto py-2.5", FOCUS_RING) })}>
             {t("새 작업 시작", "Start a project")}
           </Link>
-          <Link to="/accessibility" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>
+          <Link to="/accessibility" className={buttonClass({ variant: "outline", size: "md", className: cn("min-h-11 h-auto py-2.5", FOCUS_RING) })}>
             {t("접근성 안내", "Accessibility statement")}
           </Link>
-          <Link to="/learn" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>
+          <Link to="/learn" className={buttonClass({ variant: "outline", size: "md", className: cn("min-h-11 h-auto py-2.5", FOCUS_RING) })}>
             {t("학습 홈으로", "Back to Learn")}
           </Link>
         </div>

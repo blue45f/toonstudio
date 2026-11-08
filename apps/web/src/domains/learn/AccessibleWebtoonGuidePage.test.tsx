@@ -273,4 +273,32 @@ describe("REA 배리어프리 WCAG 워크벤치", () => {
     expect(status.textContent).toContain("스크린리더 상황해설 대본");
     expect(status.textContent).toContain("난독증 친화 행간·자간");
   });
+
+  it("토글 그룹 시맨틱, 44px 타깃(min-h-11/data-own-control-size), 포커스 링 및 시맨틱 대비 클래스를 갖춘다", () => {
+    const { container } = renderGuide();
+    const article = container.querySelector("article");
+    expect(article?.hasAttribute("data-own-control-size")).toBe(true);
+
+    const bar = screen.getByTestId("accessible-guide-rea-wcag-bar");
+    expect(bar.hasAttribute("data-own-control-size")).toBe(true);
+
+    const visionGroup = within(bar).getByRole("group", { name: "시각 접근성 시뮬레이션" });
+    const aidGroup = within(bar).getByRole("group", { name: "읽기 보조 규칙" });
+    const toggleButtons = [
+      ...within(visionGroup).getAllByRole("button"),
+      ...within(aidGroup).getAllByRole("button"),
+    ];
+    expect(toggleButtons).toHaveLength(6);
+    for (const btn of toggleButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+      expect(btn.className).not.toContain("text-white");
+    }
+
+    const checklistSection = screen.getByRole("region", { name: "게시 전 점검표" });
+    expect(checklistSection.hasAttribute("data-own-control-size")).toBe(true);
+    const resetBtn = within(checklistSection).getByRole("button", { name: "점검표 처음으로" });
+    expect(resetBtn.className).toContain("min-h-11");
+    expect(resetBtn.className).toContain("focus-visible:outline-2");
+  });
 });

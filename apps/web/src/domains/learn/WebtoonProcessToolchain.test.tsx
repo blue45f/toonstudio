@@ -152,4 +152,51 @@ describe("공정별 도구 섹션 렌더", () => {
     expect(screen.getAllByText("CRECO").length).toBeGreaterThan(0);
     expect(screen.getAllByText("세계관 랩").length).toBeGreaterThan(0);
   });
+
+  it("토글 그룹 시맨틱, aria-pressed, 44px 타깃(min-h-11/data-own-control-size), 포커스 링, 시맨틱 대비를 충족한다", () => {
+    renderToolchain();
+    const section = screen.getByRole("region", { name: "공정별로 쓰이는 도구들" });
+    expect(section.hasAttribute("data-own-control-size")).toBe(true);
+    expect(screen.getByTestId("learn-rea-toolchain-coverage-bar").hasAttribute("data-own-control-size")).toBe(true);
+    expect(screen.getByTestId("learn-rea-interactive-practice-bar").hasAttribute("data-own-control-size")).toBe(true);
+
+    const kindGroup = screen.getByRole("group", { name: "도구 종류 필터" });
+    const kindButtons = within(kindGroup).getAllByRole("button");
+    expect(kindButtons).toHaveLength(3);
+    for (const btn of kindButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+      expect(btn.className).not.toContain("text-white");
+    }
+    expect(kindButtons[0]?.getAttribute("aria-pressed")).toBe("true");
+    expect(kindButtons[0]?.className).toContain("text-on-accent");
+
+    const labGroup = screen.getByRole("group", { name: "아카데미 실습 랩 모드" });
+    const labButtons = within(labGroup).getAllByRole("button");
+    expect(labButtons).toHaveLength(4);
+    for (const btn of labButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+      expect(btn.className).not.toContain("text-white");
+    }
+    expect(labButtons[0]?.getAttribute("aria-pressed")).toBe("true");
+    expect(labButtons[0]?.className).toContain("text-on-accent");
+
+    const intervalGroup = screen.getByRole("group", { name: "크로키 주기 미리보기" });
+    const intervalButtons = within(intervalGroup).getAllByRole("button");
+    expect(intervalButtons).toHaveLength(3);
+    for (const btn of intervalButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("min-w-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+      expect(btn.className).not.toContain("text-white");
+    }
+
+    const canvasCta = screen.getByRole("link", { name: /스튜디오 실습 캔버스 열기/u });
+    const roleCta = screen.getByRole("link", { name: /15개 세부직무 맞춤 배치 설정/u });
+    expect(canvasCta.className).toContain("min-h-11");
+    expect(canvasCta.className).toContain("focus-visible:outline-2");
+    expect(roleCta.className).toContain("min-h-11");
+    expect(roleCta.className).toContain("focus-visible:outline-2");
+  });
 });

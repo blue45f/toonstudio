@@ -45,10 +45,12 @@ function oneOf<T extends string>(value: string | null, values: readonly T[]): va
 
 function ResourceAction({ resource }: { readonly resource: LearningResource }) {
   const label = resource.external ? "원문 보기 ↗" : "강좌 열기 →";
+  const actionClass =
+    "academy-resource-primary inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
   if (resource.external) {
-    return <a className="academy-resource-primary" href={resource.url} target="_blank" rel="noopener noreferrer">{label}</a>;
+    return <a className={actionClass} href={resource.url} target="_blank" rel="noopener noreferrer">{label}</a>;
   }
-  return <Link className="academy-resource-primary" to={resource.url}>{label}</Link>;
+  return <Link className={actionClass} to={resource.url}>{label}</Link>;
 }
 
 function ResourceCard({ resource }: { readonly resource: LearningResource }) {
@@ -69,15 +71,31 @@ function ResourceCard({ resource }: { readonly resource: LearningResource }) {
       </div>
       <h2>{resource.title}</h2>
       <p>{resource.summary}</p>
-      <div className="academy-resource-tags" aria-label="관련 제작 단계">
+      <div className="academy-resource-tags" role="group" aria-label="관련 제작 단계">
         {resource.steps.map((step) => <span key={step}>{PRODUCTION_STEP_LABELS[step]}</span>)}
       </div>
       <p className="academy-resource-provider">{resource.provider} · {resource.rights === "internal" ? "자체 콘텐츠" : "외부 사이트 링크"}</p>
       {resource.note && <p className="academy-resource-note">{resource.note}</p>}
       <div className="academy-resource-actions">
         <ResourceAction resource={resource} />
-        {resource.practicePath && <a href={resource.practicePath} target="_blank" rel="noopener noreferrer">바로 실습 ↗</a>}
-        {resource.lessonId && resource.external && <Link to={`/learn/lessons/${encodeURIComponent(resource.lessonId)}`}>관련 자체 강좌 →</Link>}
+        {resource.practicePath && (
+          <a
+            className="inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            href={resource.practicePath}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            바로 실습 ↗
+          </a>
+        )}
+        {resource.lessonId && resource.external && (
+          <Link
+            className="inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            to={`/learn/lessons/${encodeURIComponent(resource.lessonId)}`}
+          >
+            관련 자체 강좌 →
+          </Link>
+        )}
       </div>
     </article>
   );
@@ -127,7 +145,7 @@ export function LearningResourcesPage() {
   }
 
   return (
-    <div className="learn-page academy-resources-page" lang="ko">
+    <div className="learn-page academy-resources-page" data-own-control-size="" lang="ko">
       <header className="academy-page-hero">
         <div>
           <p className="learn-eyebrow">ACADEMY RESOURCE HUB</p>
@@ -147,7 +165,9 @@ export function LearningResourcesPage() {
           <p className="learn-small">스토리 → 콘티 → 작화 → 채색 → 배경 → 게시까지 제작 단계로 좁혀보세요.</p>
         </div>
         <div
+          data-own-control-size=""
           data-testid="learn-resources-rea-skilltree-bar"
+          role="group"
           aria-label="REA 직무별 스킬트리 및 실습 키트 매처"
           className="mb-4 rounded-2xl border border-line bg-card/90 p-3.5 text-xs"
         >
@@ -178,7 +198,11 @@ export function LearningResourcesPage() {
                   next.set("step", track.stepValue);
                   setParams(next);
                 }}
-                className={skillTrack === track.id ? "rounded-lg border border-accent bg-accent/15 px-2.5 py-1 font-bold text-accent" : "rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2"}
+                className={
+                  skillTrack === track.id
+                    ? "inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent px-3.5 py-2 font-bold text-on-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    : "inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3.5 py-2 text-fg-2 transition-colors hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                }
               >
                 {track.label}
               </button>
@@ -194,7 +218,7 @@ export function LearningResourcesPage() {
                   : "Marco Bucci·ShotDeck·Schoolism 기준: 평면 밑색 분리 → 색온도 대비(한색 그림자·난색 조명) → 대기원근 후보정으로 이어집니다."}
           </p>
         </div>
-        <div className="academy-resource-filters">
+        <div className="academy-resource-filters" role="group" aria-label="자료 검색 및 필터">
           <label className="academy-wide-filter" htmlFor="academy-resource-search">자료 검색
             <input id="academy-resource-search" type="search" maxLength={200} value={query} placeholder="예: 액션 콘티, 투시, 채색, 포트폴리오" onChange={(event) => setFilter("q", event.currentTarget.value, true)} />
           </label>
@@ -231,11 +255,31 @@ export function LearningResourcesPage() {
         </div>
         <div className="academy-resource-result-row">
           <p role="status">검색 결과 <strong>{visibleResources.length}</strong>개</p>
-          {params.size > 0 && <button type="button" onClick={() => setParams({})}>필터 초기화</button>}
+          {params.size > 0 && (
+            <button
+              type="button"
+              className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              onClick={() => setParams({})}
+            >
+              필터 초기화
+            </button>
+          )}
         </div>
         {visibleResources.length > 0
           ? <div className="academy-resource-grid">{visibleResources.map((resource) => <ResourceCard key={resource.id} resource={resource} />)}</div>
-          : <div className="learn-empty"><h2>{learnStatusText("learn.status.resources.empty", "조건에 맞는 자료가 없습니다.")}</h2><p>직군이나 제작 단계 필터를 넓혀 보세요.</p><button type="button" onClick={() => setParams({})}>전체 자료 보기</button></div>}
+          : (
+            <div className="learn-empty">
+              <h2>{learnStatusText("learn.status.resources.empty", "조건에 맞는 자료가 없습니다.")}</h2>
+              <p>직군이나 제작 단계 필터를 넓혀 보세요.</p>
+              <button
+                type="button"
+                className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                onClick={() => setParams({})}
+              >
+                전체 자료 보기
+              </button>
+            </div>
+          )}
       </section>
 
       <section className="academy-youtube-search" aria-labelledby="academy-youtube-title">
@@ -247,7 +291,13 @@ export function LearningResourcesPage() {
             <label htmlFor="academy-youtube-query">찾고 싶은 기술
               <input id="academy-youtube-query" value={youtubeQuery} maxLength={120} placeholder="예: 손 그리기, 액션 연출, 배경 투시" onChange={(event) => setYoutubeQuery(event.currentTarget.value)} />
             </label>
-            <button type="submit" disabled={youtubeQuery.trim().length < 2 || youtubeState === "loading"}>{youtubeState === "loading" ? learnStatusText("learn.status.resources.searching", "검색 중…") : "YouTube에서 찾기"}</button>
+            <button
+              type="submit"
+              className="min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              disabled={youtubeQuery.trim().length < 2 || youtubeState === "loading"}
+            >
+              {youtubeState === "loading" ? learnStatusText("learn.status.resources.searching", "검색 중…") : "YouTube에서 찾기"}
+            </button>
           </form>
         </div>
 
@@ -255,7 +305,18 @@ export function LearningResourcesPage() {
           {youtubeState === "idle" && <p>검색어를 입력하면 YouTube의 공개 영상 메타데이터를 별도 영역에서 확인할 수 있습니다.</p>}
           {youtubeState === "error" && <p>{learnStatusText("learn.status.resources.apiUnavailable", "현재 API 검색을 사용할 수 없습니다. 잠시 후 다시 시도하거나 YouTube 검색으로 이동하세요.")}</p>}
           {youtubeResult && !youtubeResult.configured && (
-            <div className="academy-youtube-fallback"><strong>YouTube API가 아직 연결되지 않았습니다.</strong><p>서비스 동작은 유지됩니다. API 키를 설정하기 전에는 외부 검색 페이지로 안전하게 연결합니다.</p><a href={youtubeResult.fallbackUrl} target="_blank" rel="noopener noreferrer">YouTube 검색 열기 ↗</a></div>
+            <div className="academy-youtube-fallback">
+              <strong>YouTube API가 아직 연결되지 않았습니다.</strong>
+              <p>서비스 동작은 유지됩니다. API 키를 설정하기 전에는 외부 검색 페이지로 안전하게 연결합니다.</p>
+              <a
+                className="inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                href={youtubeResult.fallbackUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                YouTube 검색 열기 ↗
+              </a>
+            </div>
           )}
           {youtubeResult?.configured && youtubeResult.items.length === 0 && <p>{learnStatusText("learn.status.resources.youtubeLoadFailed", "검색 결과를 가져오지 못했습니다. 검색어를 바꾸거나 직접 YouTube 검색을 열어보세요.")}</p>}
           {youtubeResult?.configured && youtubeResult.items.length > 0 && (
@@ -263,12 +324,33 @@ export function LearningResourcesPage() {
               {youtubeResult.items.map((video) => (
                 <article key={video.id}>
                   {video.thumbnailUrl && <img src={video.thumbnailUrl} alt="" width={320} height={180} loading="lazy" referrerPolicy="no-referrer" />}
-                  <div><span>검수 전 외부 영상 · {video.channelTitle}</span><h3>{video.title}</h3><p>{video.description}</p><a href={video.url} target="_blank" rel="noopener noreferrer">YouTube에서 보기 ↗</a></div>
+                  <div>
+                    <span>검수 전 외부 영상 · {video.channelTitle}</span>
+                    <h3>{video.title}</h3>
+                    <p>{video.description}</p>
+                    <a
+                      className="inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      href={video.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      YouTube에서 보기 ↗
+                    </a>
+                  </div>
                 </article>
               ))}
             </div>
           )}
-          {youtubeResult && <a className="academy-youtube-direct" href={youtubeResult.fallbackUrl} target="_blank" rel="noopener noreferrer">YouTube 전체 검색 결과 ↗</a>}
+          {youtubeResult && (
+            <a
+              className="academy-youtube-direct inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              href={youtubeResult.fallbackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              YouTube 전체 검색 결과 ↗
+            </a>
+          )}
         </div>
       </section>
 
@@ -278,7 +360,12 @@ export function LearningResourcesPage() {
           <h2>좋은 자료를 수업 흐름으로 묶으세요.</h2>
           <p>교육기관용 Classroom에서 주차별 자체 강좌와 외부 자료, 과제를 하나의 커리큘럼으로 구성할 수 있습니다.</p>
         </div>
-        <Link className="learn-secondary" to="/learn/classroom">Classroom 열기 →</Link>
+        <Link
+          className="learn-secondary inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          to="/learn/classroom"
+        >
+          Classroom 열기 →
+        </Link>
       </section>
     </div>
   );

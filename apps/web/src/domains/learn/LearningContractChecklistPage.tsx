@@ -16,7 +16,11 @@ export function LearningContractChecklistPage() {
   const [clauseFocus, setClauseFocus] = useState<"mg-recoup-net" | "secondary-ip-split" | "hiatus-welfare">("mg-recoup-net");
   const [rsSplitRatio, setRsSplitRatio] = useState<"70-30" | "60-40" | "50-50">("70-30");
   return (
-    <section className="mx-auto max-w-4xl space-y-6 px-4 py-8 text-fg sm:px-6 sm:py-10" aria-labelledby="learn-contract-checklist-title">
+    <section
+      className="mx-auto max-w-4xl space-y-6 px-4 py-8 text-fg sm:px-6 sm:py-10"
+      aria-labelledby="learn-contract-checklist-title"
+      data-own-control-size=""
+    >
       <header>
         <p className="text-xs font-bold tracking-[.16em] text-accent">{bt("계약서 읽기", "READING CONTRACTS")}</p>
         <h1 id="learn-contract-checklist-title" className="mt-3 text-3xl font-bold leading-tight sm:text-4xl">
@@ -30,13 +34,17 @@ export function LearningContractChecklistPage() {
         </p>
         <p className="mt-3 text-sm leading-relaxed text-fg-3">
           {bt("제작 프로젝트의 ‘계약·정산’ 화면에서도 같은 체크리스트를 쓸 수 있고, 답은 두 화면이 함께 써요. ", "The same checklist is available in a production project's “Rights & pay” screen, and both screens share your answers. ")}
-          <Link className="text-accent underline underline-offset-2 hover:text-accent-2" to="/production/projects">
+          <Link
+            className="inline-flex min-h-11 items-center rounded text-accent underline underline-offset-2 hover:text-accent-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            to="/production/projects"
+          >
             {bt("제작 프로젝트 보기", "Open production projects")}
           </Link>
         </p>
       </header>
       <section
         aria-label={bt("REA 표준계약서 MG·RS 손익분기 및 2차 저작물 권리 시뮬레이터", "REA Standard Contract MG/RS Break-Even & Secondary IP Simulator")}
+        data-own-control-size=""
         data-testid="contract-rea-mg-rs-simulator"
         className="rounded-2xl border border-line bg-card/85 p-4"
       >
@@ -65,7 +73,7 @@ export function LearningContractChecklistPage() {
                 data-testid={`contract-rea-clause-${id}`}
                 aria-pressed={clauseFocus === id}
                 onClick={() => setClauseFocus(id)}
-                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${clauseFocus === id ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
+                className={`inline-flex min-h-11 items-center rounded-lg border px-3.5 py-2 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${clauseFocus === id ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
               >
                 {label}
               </button>
@@ -79,7 +87,7 @@ export function LearningContractChecklistPage() {
                 data-testid={`contract-rea-rs-${ratio}`}
                 aria-pressed={rsSplitRatio === ratio}
                 onClick={() => setRsSplitRatio(ratio)}
-                className={`rounded-lg border px-2 py-1 text-xs font-bold transition-colors ${rsSplitRatio === ratio ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
+                className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${rsSplitRatio === ratio ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
               >
                 {bt(`RS ${ratio.replace("-", ":")}`, `RS ${ratio.replace("-", ":")}`)}
               </button>

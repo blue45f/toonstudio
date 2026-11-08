@@ -37,7 +37,35 @@ describe("웹툰 계약서 검토 체크리스트 학습 화면", () => {
     const navigation = screen.getByRole("navigation", { name: "배우기 영역" });
     fireEvent.click(within(navigation).getByRole("link", { name: /계약서 검토/u }));
     expect(screen.getByRole("heading", { level: 1, name: "웹툰 계약서 검토 체크리스트" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "제작 프로젝트 보기" }).getAttribute("href")).toBe("/production/projects");
+    const projectsLink = screen.getByRole("link", { name: "제작 프로젝트 보기" });
+    expect(projectsLink.getAttribute("href")).toBe("/production/projects");
+    expect(projectsLink.className).toContain("min-h-11");
+    expect(projectsLink.className).toContain("focus-visible:outline-2");
+
+    const simulator = screen.getByTestId("contract-rea-mg-rs-simulator");
+    expect(simulator.hasAttribute("data-own-control-size")).toBe(true);
+
+    const clauseGroup = within(simulator).getByRole("group", { name: "핵심 계약 조항 시뮬레이션" });
+    const clauseButtons = within(clauseGroup).getAllByRole("button");
+    expect(clauseButtons).toHaveLength(3);
+    for (const btn of clauseButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+      expect(btn.className).not.toContain("text-white");
+    }
+    expect(clauseButtons[0]?.getAttribute("aria-pressed")).toBe("true");
+    expect(clauseButtons[0]?.className).toContain("text-on-accent");
+
+    const rsGroup = within(simulator).getByRole("group", { name: "RS 배분 비율" });
+    const rsButtons = within(rsGroup).getAllByRole("button");
+    expect(rsButtons).toHaveLength(3);
+    for (const btn of rsButtons) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("min-w-11");
+      expect(btn.className).toContain("focus-visible:outline-2");
+      expect(btn.className).not.toContain("text-white");
+    }
+
     expect(await screen.findByRole("radiogroup", { name: /수익 배분/u }, { timeout: 15_000 })).toBeTruthy();
   });
 });

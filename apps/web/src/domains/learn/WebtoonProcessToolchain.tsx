@@ -58,7 +58,7 @@ export function WebtoonProcessToolchain() {
   })).filter((stage) => stage.tools.length > 0);
 
   return (
-    <section aria-labelledby="process-toolchain-title" className="scroll-mt-28 space-y-4" id="process-toolchain">
+    <section aria-labelledby="process-toolchain-title" className="scroll-mt-28 space-y-4" data-own-control-size="" id="process-toolchain">
       <div>
         <p className="text-[11px] font-black uppercase tracking-[0.18em] text-accent">Process toolchain</p>
         <h2 className="mt-2 text-2xl font-black leading-tight text-ink md:text-3xl" id="process-toolchain-title">
@@ -72,14 +72,14 @@ export function WebtoonProcessToolchain() {
         </p>
       </div>
 
-      <div aria-label={bt("도구 종류 필터", "Tool kind filter")} className="flex flex-wrap gap-2" role="group">
+      <div aria-label={bt("도구 종류 필터", "Tool kind filter")} className="flex flex-wrap gap-2" data-own-control-size="" role="group">
         {filterOptions.map((option) => (
           <button
             aria-pressed={filter === option.value}
             className={
               filter === option.value
-                ? "min-h-10 rounded-full bg-accent px-4 py-2 text-sm font-bold text-on-accent"
-                : "min-h-10 rounded-full border border-line px-4 py-2 text-sm font-bold text-fg hover:bg-raised"
+                ? "min-h-11 rounded-full bg-accent px-4 py-2 text-sm font-bold text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                : "min-h-11 rounded-full border border-line px-4 py-2 text-sm font-bold text-fg hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             }
             key={option.value}
             onClick={() => setFilter(option.value)}
@@ -105,7 +105,7 @@ export function WebtoonProcessToolchain() {
                 <li className="rounded-xl bg-accent-soft px-3 py-2" key={tool.name}>
                   <span className="flex flex-wrap items-center gap-1.5">
                     {tool.href ? (
-                      <Link className="inline-flex items-center gap-1 text-sm font-bold text-accent hover:underline" to={tool.href}>
+                      <Link className="inline-flex min-h-11 items-center gap-1 rounded text-sm font-bold text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" to={tool.href}>
                         {tool.name}
                         <ArrowUpRight aria-hidden="true" size={14} />
                       </Link>
@@ -142,6 +142,7 @@ export function WebtoonProcessToolchain() {
           )}
         </p>
         <div
+          data-own-control-size=""
           data-testid="learn-rea-toolchain-coverage-bar"
           className="mt-4 space-y-2.5 rounded-xl border border-line bg-card/85 px-3.5 py-2.5 text-xs"
         >
@@ -155,20 +156,21 @@ export function WebtoonProcessToolchain() {
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 to="/studio/canvas"
-                className="inline-flex min-h-8 items-center gap-1 rounded-full bg-accent/15 px-3 py-1 font-bold text-accent hover:bg-accent hover:text-on-accent"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full bg-accent/15 px-3.5 py-2 font-bold text-accent hover:bg-accent hover:text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 {bt("스튜디오 실습 캔버스 열기", "Open Studio Practice Canvas")}
                 <ArrowUpRight aria-hidden="true" size={13} />
               </Link>
               <Link
                 to="/settings/role?tab=workspace"
-                className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 font-semibold text-fg-2 hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel px-3.5 py-2 font-semibold text-fg-2 hover:border-accent/45 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 {bt("15개 세부직무 맞춤 배치 설정", "15-Sub-Role Workspace Setup")}
               </Link>
             </div>
           </div>
           <div
+            data-own-control-size=""
             data-testid="learn-rea-interactive-practice-bar"
             className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/25 bg-accent/5 px-3 py-2"
           >
@@ -186,7 +188,7 @@ export function WebtoonProcessToolchain() {
                   data-testid={`learn-rea-lab-${lab.id}`}
                   aria-pressed={practiceLabMode === lab.id}
                   onClick={() => setPracticeLabMode(lab.id)}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                  className={`inline-flex min-h-11 items-center rounded-full px-3.5 py-2 text-[11px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                     practiceLabMode === lab.id
                       ? "bg-accent text-on-accent"
                       : "border border-line bg-panel text-fg-2 hover:border-accent/45"
@@ -205,8 +207,8 @@ export function WebtoonProcessToolchain() {
                   data-testid={`learn-rea-croquis-interval-${sec}`}
                   aria-pressed={croquisIntervalSec === sec}
                   onClick={() => setCroquisIntervalSec(sec)}
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                    croquisIntervalSec === sec ? "bg-accent text-on-accent" : "border border-line bg-panel text-fg-2"
+                  className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                    croquisIntervalSec === sec ? "bg-accent text-on-accent" : "border border-line bg-panel text-fg-2 hover:border-accent/45"
                   }`}
                 >
                   {bt(`${sec}초`, `${sec}s`)}
