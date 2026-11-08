@@ -12,7 +12,7 @@ const SIZE = {
   sm: { pad: "p-2.5", title: "text-sm leading-[1.15]", type: "text-[0.58rem]", wm: "text-[3.8rem]" },
   md: { pad: "p-3", title: "text-base leading-[1.12]", type: "text-[0.62rem]", wm: "text-[5.3rem]" },
   lg: { pad: "p-4", title: "text-xl leading-[1.1]", type: "text-xs", wm: "text-[7.4rem]" },
-  hero: { pad: "p-5", title: "text-3xl leading-[1.05]", type: "text-sm", wm: "text-[10.5rem]" },
+  hero: { pad: "p-2 sm:p-3 lg:p-5", title: "text-sm leading-[1.1] sm:text-xl lg:text-3xl", type: "text-[0.58rem] sm:text-xs lg:text-sm", wm: "text-[3.8rem] sm:text-[7.4rem] lg:text-[10.5rem]" },
 } as const;
 
 // 타이포그래픽 커버 — 실제 이미지 대신 장르 그라디언트 + 활자 포스터.
@@ -107,14 +107,14 @@ export function TitlePoster({
       <div className={cx("absolute left-0 top-0 flex items-center gap-1.5", s.pad)}>
         <span
           className={cx(
-            "rounded-md border border-[oklch(0.95_0.01_85/0.28)] bg-[oklch(0.16_0.01_70/0.56)] px-1.5 py-0.5 font-display font-semibold uppercase text-[oklch(0.95_0.01_85/0.9)] backdrop-blur-sm",
+            "shrink-0 whitespace-nowrap rounded-md border border-[oklch(0.95_0.01_85/0.28)] bg-[oklch(0.16_0.01_70/0.56)] px-1.5 py-0.5 font-display font-semibold uppercase text-[oklch(0.95_0.01_85/0.9)] backdrop-blur-sm",
             s.type
           )}
         >
           {isNovel ? "NOVEL" : "TOON"}
         </span>
         {size !== "sm" && (
-          <span className={cx("font-display font-semibold text-[oklch(0.95_0.01_85/0.62)]", s.type)}>
+          <span className={cx("font-display font-semibold text-[oklch(0.95_0.01_85/0.62)]", s.type, size === "hero" && "hidden sm:inline")}>
             IDX {issue}
           </span>
         )}

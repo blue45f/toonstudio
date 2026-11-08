@@ -42,3 +42,15 @@ describe("작품 상세 콘텐츠 우선 JSX 계약 (화면 렌더 검증 아님
     }
   });
 });
+
+
+it("시안의 보조 지표·관련 콘텐츠는 접되 리뷰와 오류는 접기 밖에 유지한다", () => {
+  const related = byAttribute("data-testid", "title-detail-related-tools");
+  expect(related.openingElement.tagName.getText(source)).toBe("details");
+  expect(related.openingElement.attributes.properties.some((attr) => ts.isJsxAttribute(attr) && attr.name.getText(source) === "open")).toBe(false);
+  expect(related.getText(source)).toContain('id="metrics"');
+  expect(related.getText(source)).toContain('id="title-character-talk"');
+  expect(related.getText(source)).not.toContain('id="title-reviews"');
+  expect(related.getText(source)).not.toContain("reviewsUnavailableTitle");
+  expect(related.pos).toBeLessThan(byAttribute("id", "title-reviews").pos);
+});

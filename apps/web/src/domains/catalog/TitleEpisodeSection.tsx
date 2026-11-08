@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, Heart, ListOrdered } from "lucide-react";
+import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, Heart } from "lucide-react";
 import { useRef, useState } from "react";
 
 import type { Title } from "@/shared/lib/types";
@@ -382,17 +382,17 @@ export function TitleEpisodeSection({
       ) : (
         <div
           data-testid="title-episodes-empty"
-          className="rounded-2xl border border-dashed border-line bg-card/50 p-6 sm:p-7"
+          className="rounded-2xl border border-line bg-card/50 p-5 text-center sm:p-7"
         >
-          <span className="grid size-11 place-items-center rounded-2xl bg-raised text-fg-3">
-            <ListOrdered size={20} aria-hidden />
+          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent-soft text-accent">
+            <BookOpen size={30} aria-hidden />
           </span>
           <p className="mt-3.5 font-semibold text-fg">{bi("회차별 목록은 아직 제공되지 않아요", "Episode lists aren't available yet")}</p>
-          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-fg-2">
+          <p className="mx-auto mt-1.5 max-w-xl text-sm leading-relaxed text-fg-2">
             {externalGuide.state === "ready"
               ? bi(
-                  "이 작품의 회차 제목·공개일은 연재 플랫폼에서만 공개되고 있어요. 회차별 정보가 연결되면 이 자리에 최신 회차부터 표시됩니다. 그때까지는 아래 연재 플랫폼에서 바로 읽을 수 있어요.",
-                  "Episode titles and dates for this title are only published on its serial platforms. Once episode data is connected, it will appear here starting with the latest episode — until then, you can read it right away on a serial platform below.",
+                  "작품은 아래 공식 연재 플랫폼에서 감상할 수 있어요. 회차별 제목과 공개일이 연결되면 이곳에 표시됩니다.",
+                  "Read this title on an official platform below. Episode titles and dates will appear here once they are connected.",
                 )
               : externalGuide.state === "no-url"
                 ? bi(
@@ -410,7 +410,7 @@ export function TitleEpisodeSection({
               {bi("외부 플랫폼에서 보기", "View on an external platform")}
             </p>
             {externalGuide.state === "ready" ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2.5">
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2.5">
                 {visibleExternalLinks.map((link, index) => {
                   const platformName = PLATFORMS[link.platformId]?.name ?? link.platformId;
                   return (
@@ -448,7 +448,7 @@ export function TitleEpisodeSection({
                 )}
               </div>
             ) : externalGuide.state === "no-url" ? (
-              <ul className="mt-3 flex flex-wrap gap-2" aria-label={bi("연재 플랫폼", "Serial platforms")}>
+              <ul className="mt-3 flex flex-wrap justify-center gap-2" aria-label={bi("연재 플랫폼", "Serial platforms")}>
                 {externalGuide.knownPlatformIds.map((platformId) => (
                   <li
                     key={platformId}
@@ -470,7 +470,7 @@ export function TitleEpisodeSection({
 
             {/* 외부로 나가지 않아도 흐름이 끊기지 않게 하는 내부 후속 동선.
                 외부 링크 유무와 무관하게 항상 제공한다. */}
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+            <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2">
               {(() => {
                 const leadAuthor = primaryAuthorName(title.author);
                 return leadAuthor ? (
@@ -491,7 +491,7 @@ export function TitleEpisodeSection({
             </div>
           </div>
 
-          <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <dl className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
             <div className="flex items-center gap-2">
               <dt className="text-fg-3">{bi("연재 상태", "Status")}</dt>
               <dd className="font-medium text-fg">{STATUS_LABEL[title.status]}</dd>
