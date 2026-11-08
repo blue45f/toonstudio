@@ -1,5 +1,5 @@
 import { useFx } from "@toonstudio/core/fx";
-import { Compass, LayoutGrid, RefreshCw, RotateCcw, Rows3, Search, Shuffle, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { Compass, RefreshCw, RotateCcw, Shuffle, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -17,6 +17,7 @@ import { TitleCard } from "@/shared/components/title-card";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 
 import { ExploreReaDirectoryBar } from "./ExploreReaDirectoryBar";
+import { ExploreResultsControls } from "./ExploreResultsControls";
 import { snapshotDateLabel } from "./discover-home";
 import { filterTitlesByLocalQuery, normalizePlatformId, useLocalCatalogFallback } from "./local-catalog-fallback";
 import { genreBorder, genreColor, genreTextColor, genreTint, spectrumGradient } from "@/shared/lib/genre-color";
@@ -394,36 +395,6 @@ export function ExplorePage() {
         <div className="explore-page-toolbar">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
             <div
-              role="search"
-              aria-label={bt("결과 내 작품·작가·태그 검색", "Filter results by title, author, or tag")}
-              className="explore-page-local-search relative flex min-w-[13.5rem] flex-1 items-center sm:max-w-xs"
-            >
-              <Search
-                size={15}
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3 text-fg-3"
-              />
-              <input
-                type="search"
-                value={localQuery}
-                onChange={(event) => updateLocalQuery(event.target.value)}
-                placeholder={bt("결과 내 제목·작가·태그 필터…", "Filter by title, author, tag…")}
-                aria-label={bt("결과 내 제목·작가·태그 필터", "Filter by title, author, tag")}
-                className="min-h-11 w-full rounded-lg border border-line bg-card pl-9 pr-9 text-sm text-fg placeholder:text-fg-3 focus:border-accent focus:outline-none"
-              />
-              {trimmedLocalQuery.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => updateLocalQuery("")}
-                  aria-label={bt("검색어 지우기", "Clear search query")}
-                  className="absolute right-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-fg-3 transition-colors hover:text-fg"
-                >
-                  <X size={14} aria-hidden="true" />
-                </button>
-              )}
-            </div>
-
-            <div
               className="inline-flex items-center rounded-lg border border-line bg-card p-0.5"
               role="group"
               aria-label={bt("작품 유형", "Work type")}
@@ -475,38 +446,6 @@ export function ExplorePage() {
                     )}
                   >
                     {bt(...entry.label)}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div
-              className="inline-flex items-center rounded-lg border border-line bg-card p-0.5"
-              role="group"
-              aria-label={bt("카드 밀도", "Card density")}
-            >
-              {(
-                [
-                  { key: "comfortable", label: ["표준", "Standard"], Icon: LayoutGrid },
-                  { key: "compact", label: ["조밀", "Compact"], Icon: Rows3 },
-                ] as const
-              ).map(({ key, label, Icon }) => {
-                const active = density === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setDensity(key)}
-                    aria-pressed={active}
-                    className={cn(
-                      "inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-150",
-                      active
-                        ? "bg-accent text-on-accent"
-                        : "text-fg-2 hover:text-fg",
-                    )}
-                  >
-                    <Icon size={13} aria-hidden="true" />
-                    {bt(label[0], label[1])}
                   </button>
                 );
               })}
@@ -601,7 +540,15 @@ export function ExplorePage() {
           aria-label={bt("탐색 결과", "Explore results")}
           aria-busy={loading}
         >
-        <h2 className="explore-page-results-title">{bt("탐색 결과", "Explore results")}</h2>
+        <div className="explore-page-results-heading">
+          <h2 className="explore-page-results-title">{bt("탐색 결과", "Explore results")}</h2>
+          <ExploreResultsControls
+            query={localQuery}
+            onQueryChange={updateLocalQuery}
+            density={density}
+            onDensityChange={setDensity}
+          />
+        </div>
         {loading ? (
           <div aria-label={bt("작품을 불러오는 중", "Loading titles")} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: 10 }).map((_, index) => (

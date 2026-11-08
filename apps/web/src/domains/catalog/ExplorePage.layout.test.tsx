@@ -121,6 +121,40 @@ describe("/explore 결과 우선 레이아웃", () => {
     expect(screen.getAllByTestId("title-card")).toHaveLength(2);
   });
 
+  it("보조 검색·밀도는 1차 조건줄이 아닌 결과의 접힌 도구 안에 둔다", () => {
+    page();
+    const results = screen.getByRole("region", { name: "탐색 결과" });
+    const controls = results.querySelector("details.explore-results-controls");
+    expect(controls).toBeInstanceOf(HTMLDetailsElement);
+    expect(controls?.hasAttribute("open")).toBe(false);
+    expect(results.querySelector('input[type="search"]')).not.toBeNull();
+    expect(document.querySelector('.explore-page-toolbar input[type="search"]')).toBeNull();
+    expect(screen.getByRole("button", { name: "평점순" }).closest("details")).toBeNull();
+  });
+
+  it("검색 URL은 도구를 열고 로컬 결과만 거르며 지워도 기존 조건을 보존한다", () => {
+    page("/explore?q=one&genres=판타지&sort=rating&show=80&utm_source=reference");
+    const input = screen.getByRole("searchbox", { name: "결과 내 제목·작가·태그 필터" });
+    expect(input.closest("details")?.open).toBe(true);
+    expect(screen.getAllByTestId("title-card")).toHaveLength(1);
+    const request = boundary.urls.mock.lastCall?.[0];
+    expect(request).not.toContain("q=");
+    fireEvent.change(input, { target: { value: "two" } });
+    expect(params().get("q")).toBe("two");
+    expect(screen.getAllByTestId("title-card")[0]?.textContent).toBe("테스트 two");
+    expect(boundary.urls.mock.lastCall?.[0]).toBe(request);
+    fireEvent.click(screen.getByRole("button", { name: "검색어 지우기" }));
+    expect(params().has("q")).toBe(false);
+    expect(params().get("genres")).toBe("판타지");
+    expect(params().get("sort")).toBe("rating");
+    expect(params().get("show")).toBe("80");
+    expect(params().get("utm_source")).toBe("reference");
+    expect(document.activeElement).toBe(input);
+    expect(screen.getAllByTestId("title-card")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "조밀" }));
+    expect(document.querySelector('[data-density="compact"]')).not.toBeNull();
+  });
+
   it("모드 링크가 공유 URL 변환과 선택 상태를 유지한다", () => {
     page("/explore?genres=판타지&status=completed&pricing=free&sort=rating&savedOnly=true&view=list");
     const nav = screen.getByRole("navigation", { name: "탐색 방식" });
