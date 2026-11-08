@@ -13,8 +13,9 @@ describe('ranking board content-first source contract',()=>{
   expect(source.slice(detail,source.indexOf('<summary',detail))).not.toMatch(/\bopen\b/);
  });
  it('keeps primary axes and period inputs before results and advanced conditions reachable',()=>{
-  expect(source.indexOf('aria-label="랭킹 산식 축"')).toBeLessThan(source.indexOf('<RankingSkeleton'));
-  expect(source.indexOf('value={period}')).toBeLessThan(source.indexOf('<RankingSkeleton'));
+  expect(source.indexOf('<RankingPrimaryControls')).toBeGreaterThan(0);
+  expect(source.indexOf('<RankingPrimaryControls')).toBeLessThan(source.indexOf('<RankingSkeleton'));
+  expect(source.indexOf('period={period}')).toBeLessThan(source.indexOf('<RankingSkeleton'));
   for(const handler of ['setStatus','setPricing','setMinRating','setRisingOnly','setGenre','setPlatform','setView','setShowFilters','setWindowLimit'])expect(source).toContain(handler);
   expect(source).toContain('상태·가격·평점·상승 조건');
   expect(source).toContain('데이터 출처·갱신 정보');

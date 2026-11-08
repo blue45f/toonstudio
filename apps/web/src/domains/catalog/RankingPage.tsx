@@ -1,13 +1,12 @@
 import "./catalog-page-controls.css";
-import { Calculator, ChevronRight, Compass, GitCompare, ListFilter, Trophy, type LucideIcon } from "lucide-react";
-import { useState, type MouseEvent } from "react";
+import { Calculator, Compass, GitCompare, Trophy, type LucideIcon } from "lucide-react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import type { PlatformId } from "@/shared/lib/types";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
-import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { RankingBoard } from "@/shared/components/ranking-board";
 import { RankingMethod } from "@/shared/components/ranking-method";
@@ -15,7 +14,6 @@ import { Container } from "@/shared/components/section";
 import { SharePageButton } from "@/shared/components/share-page-button";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
-import { buttonClass } from "@/shared/components/ui/button-utils";
 import { PLATFORM_LIST } from "@/shared/lib/platforms";
 import { RANK_AXES, type RankAxis } from "@/shared/lib/ranking";
 import {
@@ -26,7 +24,6 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 import { RANKING_STREAM_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
-import { MotionIllustration } from "@/shared/motion-assets";
 
 const SCOPE = "domains.catalog.RankingPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
@@ -65,70 +62,29 @@ export function RankingPage() {
   } as const;
   const axis: RankAxis =
     RANK_AXES.find((entry) => entry.key === searchParams.get("axis"))?.key ?? "popular";
-  // 축 key("popular")를 그대로 노출하지 않고 사람이 읽는 한글 라벨("실시간 인기")로 표시.
-  const axisLabel = RANK_AXES.find((entry) => entry.key === axis)?.label ?? axis;
   const platformParam = searchParams.get("platform");
   const platformIds = new Set(PLATFORM_LIST.map((platform) => platform.id));
   const platform: PlatformId | "all" = platformIds.has(platformParam as PlatformId)
     ? (platformParam as PlatformId)
     : "all";
 
-  const jumpToBoard = (event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    document.getElementById("ranking-board")?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <PageEntrance variant="slide">
-    <Container size="wide" className="ranking-page-layout py-6 sm:py-10">
+    <Container size="wide" className="ranking-page-layout py-6">
       <SiteContextualSubNav pathnameOverride="/ranking" className="mb-5" />
-      <SitePageHeader
-        className="mb-6 sm:mb-8"
-        icon={Trophy}
-        eyebrow={txEn("UNIFIED RANKING")}
-        title={tx("통합 랭킹")}
-        description={tx("무엇을 볼지 고민될 때 가장 확실한 출발점. 인기·급상승·평점까지, 여덟 가지 관점으로 지금의 흐름을 바로 확인해 보세요.")}
-        aside={
-          <MotionIllustration
-            name="trophy"
-            size="xl"
-            className="mx-auto text-accent"
-            title={tx("통합 랭킹 트로피 일러스트")}
-          />
-        }
-        asideClassName="hidden lg:flex lg:justify-end"
-        actions={
-          <>
-            <a
-              href="#ranking-board"
-              onClick={jumpToBoard}
-              className={buttonClass({ size: "sm", className: "hidden min-h-11 gap-1.5 sm:inline-flex" })}
-            >
-              <ChevronRight size={14} aria-hidden="true" />
-              {tx("랭킹 시작점으로 이동")}
-            </a>
-            <span className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3 text-xs text-fg-2">
-              <ListFilter size={14} className="text-fg-3" aria-hidden="true" />
-              {tx("현재 축:")} <span className="font-medium text-fg">{axisLabel}</span>
-            </span>
-            {/* 랭킹 공유 — OS 공유 시트 → 클립보드 폴백 */}
-            <SharePageButton path="/ranking" text={tx("툰스튜디오 통합 랭킹")} label={tx("랭킹 공유")} />
-          </>
-        }
-      />
+      <div className="mb-4 flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <header className="min-w-0">
+          <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-accent"><Trophy size={15} aria-hidden="true" />{txEn("UNIFIED RANKING")}</p>
+          <h1 className="text-2xl font-bold text-fg sm:text-3xl">{tx("통합 랭킹")}</h1>
+          <p className="mt-2 text-sm text-fg-2">{bt("여덟 가지 관점으로 작품을 찾아보세요.", "Find stories from eight perspectives.")}</p>
+        </header>
+        <SharePageButton path="/ranking" text={tx("툰스튜디오 통합 랭킹")} label={tx("랭킹 공유")} />
+      </div>
 
       <section id="ranking-board" aria-labelledby="ranking-board-title">
         <h2 id="ranking-board-title" className="sr-only">{tx("랭킹 보드")}</h2>
         <RankingBoard initialAxis={axis} initialPlatform={platform} />
       </section>
-
-
-
-      <nav className="mt-10 grid grid-cols-1 gap-2.5 sm:mt-12 md:grid-cols-3" aria-label={bt("랭킹 다음 행동", "After the ranking")}>
-        {NEXT_STEPS.map((step) => (
-          <SiteLinkCard key={step.href} layout="compact" href={step.href} icon={step.icon} title={bt(...step.title)} description={bt(...step.body)} />
-        ))}
-      </nav>
 
       <SiteDisclosure
         className="mt-6"
@@ -259,6 +215,12 @@ export function RankingPage() {
       </section>
 
       </SiteDisclosure>
+      <nav className="mt-10 grid grid-cols-1 gap-2.5 sm:mt-12 md:grid-cols-3" aria-label={bt("랭킹 다음 행동", "After the ranking")}>
+        {NEXT_STEPS.map((step) => (
+          <SiteLinkCard key={step.href} layout="compact" href={step.href} icon={step.icon} title={bt(...step.title)} description={bt(...step.body)} />
+        ))}
+      </nav>
+
     </Container>
     </PageEntrance>
   );

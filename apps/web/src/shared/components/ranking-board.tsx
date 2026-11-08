@@ -1,3 +1,4 @@
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { restStatusText } from "../rest-status-i18n";
 import { apiFetch } from "@/platform/api";
 import {
@@ -14,7 +15,6 @@ import {
   LayoutList,
   RefreshCw,
   Rows3,
-  SlidersHorizontal,
   Sprout,
   Star,
   TrendingUp,
@@ -30,6 +30,7 @@ import {
   RANK_ENTRY_STAGGER_STEP_MS,
 } from "./rank-row";
 import { SignalWorkbench } from "./ranking-board-signal";
+import { RankingPrimaryControls } from "./ranking-primary-controls";
 import { RankingSkeleton } from "./ranking-board-skeleton";
 import { ErrorState } from "./feedback/error-state";
 import { metricFor, formatUpdatedAt } from "./ranking-board-utils";
@@ -47,7 +48,6 @@ import { statsAreEstimated } from "@/shared/lib/estimate";
 import { PLATFORM_LIST } from "@/shared/lib/platforms";
 import {
   RANK_AXES,
-  PERIODS,
   axisMeta,
   rankingItemListJsonLd,
   type RankedTitle,
@@ -114,11 +114,15 @@ export function RankingBoard({
   initialAxis?: RankAxis;
   initialPlatform?: PlatformId | "all";
 }) {
+  const bt = useBilingual("RankingBoard");
   const [axis, setAxis] = useState<RankAxis>(initialAxis);
   const [period, setPeriod] = useState<RankPeriod>("weekly");
   const [type, setType] = useState<WorkType | "all">("all");
   const [genre, setGenre] = useState<string>("all");
   const [platform, setPlatform] = useState<PlatformId | "all">(initialPlatform);
+  // 주소 이동·뒤로 가기로 바뀐 진입 조건을 보드 선택에도 반영한다.
+  useEffect(() => setAxis(initialAxis), [initialAxis]);
+  useEffect(() => setPlatform(initialPlatform), [initialPlatform]);
   const [status, setStatus] = useState<SerialStatus | "all">("all");
   const [pricing, setPricing] = useState<Pricing | "all">("all");
   const [minRating, setMinRating] = useState(0);
@@ -248,42 +252,35 @@ export function RankingBoard({
     [visibleRanked, windowLimit]
   );
 
+  // 수신한 플랫폼 범위 밖의 현재 선택도 남겨 조건이 조용히 바뀌지 않게 한다.
+  const presentPlatforms = rankingMeta?.availablePlatforms;
+  const platformItems = presentPlatforms?.length
+    ? PLATFORM_FILTER_ITEMS.filter((item) => item.value === "all" || item.value === platform || presentPlatforms.includes(item.value))
+    : PLATFORM_FILTER_ITEMS;
+  const advancedFilterCount = clientFilterCount
+    + Number(type !== "all") + Number(genre !== "all") + Number(status !== "all")
+    + Number(pricing !== "all") + Number(minRating > 0) + Number(risingOnly)
+    + Number(platform !== "all");
+
   return (
     <div className="ranking-board-content-first flex flex-col gap-3">
-      {/* 축 선택 */}
-      <section className="rounded-2xl border border-line bg-panel/60 p-4 surface-hl sm:p-5">
-        <div className="mb-3 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="eyebrow mb-1.5 text-accent">랭킹 축</p>
-            <h2 className="text-lg font-semibold text-fg">랭킹 산식 축</h2>
-            <p className="text-sm text-fg-3">축 하나가 바뀌면 전체 정렬 기준이 즉시 교체됩니다.</p>
-          </div>
-          <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-xs text-fg-2">
-            <span className="size-1.5 rounded-full bg-accent" />
-            현재 {axisDetail.label}
-          </span>
-        </div>
+      <RankingPrimaryControls
+        axis={axis}
+        onAxisChange={setAxis}
+        period={period}
+        onPeriodChange={setPeriod}
+        platform={platform}
+        onPlatformChange={setPlatform}
+        platforms={platformItems}
+        filtersOpen={showFilters}
+        filterCount={advancedFilterCount}
+        onToggleFilters={() => setShowFilters((current) => !current)}
+      />
 
-        <label className="grid gap-1.5">
-          <span className="text-[0.68rem] font-bold text-fg-3">랭킹 기준 선택</span>
-          <select
-            aria-label="랭킹 산식 축"
-            value={axis}
-            onChange={(event) => setAxis(event.target.value as RankAxis)}
-            className="min-h-12 w-full rounded-2xl border border-accent/40 bg-card px-4 text-sm font-bold text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
-          >
-            {RANK_AXES.map((entry) => (
-              <option key={entry.key} value={entry.key}>{entry.label} · {entry.desc}</option>
-            ))}
-          </select>
-        </label>
-
-      </section>
-
-
-
-      {/* 산식 + 기간/유형 */}
-      <section className="grid gap-3 rounded-2xl border border-line bg-panel/40 p-4 surface-hl sm:p-5">
+      {showFilters && (
+      <section id="ranking-client-filters" aria-label={bt("추가 랭킹 조건과 보기", "Additional ranking filters and display")} className="grid gap-3 rounded-2xl border border-line bg-panel/40 p-4 sm:p-5">
+      {/* 보조 유형·조건·보기 설정은 요청할 때만 펼친다. */}
+      <div>
         <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
           <Segmented
             size="sm"
@@ -295,17 +292,12 @@ export function RankingBoard({
               { value: "webnovel", label: "웹소설" },
             ]}
           />
-          <Segmented
-            size="sm"
-            value={period}
-            onChange={setPeriod}
-            items={PERIODS.map((p) => ({ value: p.key, label: p.label }))}
-          />
+
         </div>
-      </section>
+      </div>
 
       {/* 필터(장르·플랫폼) + 보기 방식 */}
-      <section className="grid gap-3 rounded-2xl border border-line bg-panel/40 p-4 surface-hl lg:grid-cols-[1fr_auto] lg:items-start xl:p-5">
+      <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
         <div className="grid min-w-0 gap-2 sm:flex sm:flex-wrap">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex h-8 items-center rounded-full border border-accent/35 bg-accent-soft px-3 text-[0.7rem] font-semibold text-accent">
@@ -323,30 +315,17 @@ export function RankingBoard({
               ...GENRES.map((g) => ({ value: g, label: g })),
             ]}
           />
-          <div className="inline-flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-lg border border-line bg-card px-3 text-xs text-fg-2 transition-colors focus-within:border-accent/50 sm:justify-start">
-            <span className="whitespace-nowrap text-fg-3">플랫폼</span>
-            {(() => {
-              // 카탈로그에 실존하는 플랫폼만 노출(빈 플랫폼 옵션 방지). 커버리지 미수신 시 전체 노출.
-              const present = rankingMeta?.availablePlatforms;
-              const items =
-                present && present.length
-                  ? PLATFORM_FILTER_ITEMS.filter(
-                      (item) =>
-                        item.value === "all" ||
-                        item.value === platform ||
-                        present.includes(item.value as PlatformId)
-                    )
-                  : PLATFORM_FILTER_ITEMS;
-              return (
-                <Select
-                  value={platform}
-                  onValueChange={(value) => setPlatform(value as PlatformId | "all")}
-                  ariaLabel="플랫폼 필터"
-                  triggerClassName="h-auto min-w-28 px-0 text-sm font-medium text-fg"
-                  options={items.map((item) => ({ value: item.value, label: item.label }))}
-                />
-              );
-            })()}
+          <div className="ranking-advanced-platform">
+            <Select
+              value={platform}
+              onValueChange={(value) => {
+                const selected = platformItems.find((item) => item.value === value);
+                if (selected) setPlatform(selected.value);
+              }}
+              ariaLabel="플랫폼 필터"
+              triggerClassName="min-h-11 rounded-lg border border-line bg-card px-2.5 text-sm text-fg-2"
+              options={platformItems}
+            />
           </div>
           <details className="min-w-0 rounded-xl border border-line bg-card px-3">
             <summary className="flex min-h-11 cursor-pointer items-center text-xs font-medium">상태·가격·평점·상승 조건</summary>
@@ -414,26 +393,6 @@ export function RankingBoard({
           >
             <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} />
           </button>
-          <button
-            type="button"
-            onClick={() => setShowFilters((current) => !current)}
-            aria-expanded={showFilters}
-            aria-controls="ranking-client-filters"
-            className={cn(
-              "inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors",
-              showFilters || clientFilterCount > 0
-                ? "border-accent/45 bg-accent-soft text-accent"
-                : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg"
-            )}
-          >
-            <SlidersHorizontal size={14} />
-            필터
-            {clientFilterCount > 0 && (
-              <span className="rounded-full bg-accent/20 px-1.5 text-[0.68rem] text-accent">
-                {clientFilterCount}
-              </span>
-            )}
-          </button>
           <Segmented
             size="sm"
             value={view}
@@ -445,11 +404,10 @@ export function RankingBoard({
             ]}
           />
         </div>
-      </section>
+      </div>
 
       {/* 보조 클라이언트 필터(내 찜·장르·이용가) — 서버 순위는 유지하고 비매칭 행만 숨김 */}
-      {showFilters && (
-        <div id="ranking-client-filters">
+        <div>
           <TitleFilterPanel
             value={clientFilters}
             onChange={setClientFilters}
@@ -459,6 +417,7 @@ export function RankingBoard({
             onToggleRemember={toggleRememberFilters}
           />
         </div>
+      </section>
       )}
 
       {/* 랭킹 — 3가지 표시 방식 */}

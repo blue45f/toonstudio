@@ -7,7 +7,7 @@ import { RANK_AXES } from "@/shared/lib/ranking";
 
 import { RankingPage } from "./RankingPage";
 
-vi.mock("@/shared/components/ranking-board", () => ({ RankingBoard: () => <div data-testid="ranking-board" /> }));
+vi.mock("@/shared/components/ranking-board", () => ({ RankingBoard: ({ initialAxis, initialPlatform }: { initialAxis: string; initialPlatform: string }) => <div data-testid="ranking-board" data-axis={initialAxis} data-platform={initialPlatform} /> }));
 vi.mock("@/shared/components/ranking-method", () => ({ RankingMethod: () => <p>산식 본문</p> }));
 vi.mock("@/shared/components/share-page-button", () => ({ SharePageButton: () => <button type="button">랭킹 공유</button> }));
 
@@ -40,13 +40,16 @@ describe("통합 랭킹 페이지", () => {
     expect(within(details as HTMLElement).getByText("산식 본문")).toBeTruthy();
   });
 
-  it("현재 축을 주소에서 읽어 머리말에 사람이 읽는 이름으로 표시한다", () => {
+  it("주소의 기준을 보드에 전달하고 짧은 제목과 설명을 목록 앞에 둔다", () => {
     renderPage("/ranking?axis=rating");
     const label = RANK_AXES.find((axis) => axis.key === "rating")?.label ?? "";
     expect(label).not.toBe("");
-    const current = screen.getByText(/현재 축:/u);
-    expect(current.textContent).toContain(label);
-    expect(current.textContent).not.toContain("rating");
+    const board = screen.getByTestId("ranking-board");
+    expect(board.getAttribute("data-axis")).toBe("rating");
+    const heading = screen.getByRole("heading", { level: 1, name: "통합 랭킹" });
+    expect(heading.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("여덟 가지 관점으로 작품을 찾아보세요.")).toBeTruthy();
+    expect(screen.queryByText("현재 축:")).toBeNull();
     expect(screen.getByTestId("ranking-quick-axes")).toBeTruthy();
     expect(screen.getByTestId("ranking-rea-formula-simulator-bar")).toBeTruthy();
     expect(screen.getByTestId("ranking-rea-formula-status").textContent).toContain("Score = 0.55×ΔViews");

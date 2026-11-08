@@ -1,0 +1,52 @@
+/* 랭킹의 첫 조건줄만 소유한다. 캘린더와 공용 선택기 밀도는 바꾸지 않는다. */
+.ranking-primary-controls {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-block: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+}
+.ranking-primary-controls :is(button, select) {
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--color-line);
+  border-radius: 0.55rem;
+  background: var(--color-card);
+  padding-inline: 0.7rem;
+  color: var(--color-fg-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.ranking-primary-controls select { max-width: 100%; }
+.ranking-primary-controls option { background: var(--color-card); color: var(--color-fg); }
+.ranking-primary-controls :is(button, select):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.ranking-primary-controls :is(button[aria-pressed="true"], select[data-active="true"]) {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.ranking-primary-axes { display: flex; min-width: 0; flex-wrap: wrap; gap: 0.25rem; margin-inline-end: auto; }
+.ranking-primary-controls .ranking-primary-axis-mobile { display: none; }
+.ranking-primary-filter { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
+.ranking-primary-filter[aria-expanded="true"] { border-color: var(--color-accent); color: var(--color-accent); }
+.ranking-primary-filter-count { font-variant-numeric: tabular-nums; }
+.ranking-advanced-platform { display: none; }
+@media (min-width: 640px) and (max-width: 1023px) {
+  .ranking-primary-axes { flex-basis: 100%; }
+}
+@media (max-width: 639px) {
+  .ranking-primary-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(4.75rem, auto) auto; }
+  .ranking-primary-controls .ranking-primary-axes,
+  .ranking-primary-controls .ranking-primary-platform { display: none; }
+  .ranking-primary-controls .ranking-primary-axis-mobile { display: block; width: 100%; }
+  .ranking-primary-controls :is(button, select) { padding-inline: 0.5rem; font-size: 0.75rem; }
+  .ranking-advanced-platform { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ranking-primary-controls :is(button, select) { transition: none; }
+}
