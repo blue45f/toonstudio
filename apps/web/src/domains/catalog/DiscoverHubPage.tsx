@@ -100,7 +100,7 @@ function DiscoverCardArt({
 }
 
 /** 헤더에서 바로 누를 수 있는 장르 수 — 나머지는 "전체 장르"(탐색)로 이어진다. */
-const QUICK_GENRE_COUNT = 8;
+const QUICK_GENRE_COUNT = 7;
 /** 스냅샷 수치는 정확한 값이라 약식(6만) 대신 천 단위 구분으로 보여 준다. */
 const COUNT_FORMAT = new Intl.NumberFormat("en-US");
 
@@ -298,7 +298,7 @@ export function DiscoverHubPage() {
                 type="button"
                 onClick={() => updateDiscoverQuery("")}
                 aria-label={bt("검색어 지우기", "Clear search query")}
-                className="grid size-9 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-panel hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                className="grid size-11 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-panel hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 <X size={15} aria-hidden="true" />
               </button>
@@ -309,9 +309,9 @@ export function DiscoverHubPage() {
           </button>
         </form>
         <nav aria-label={bt("장르로 바로 찾기", "Jump in by genre")} className="mt-4">
-          <ul className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
+          <ul className="discover-hub-quick-genres">
             {GENRES.slice(0, QUICK_GENRE_COUNT).map((genre) => (
-              <li key={genre} className="shrink-0">
+              <li key={genre} className="discover-hub-quick-genre">
                 <Link
                   href={`/explore?genre=${encodeURIComponent(genre)}`}
                   className="inline-flex min-h-11 items-center rounded-full border border-line bg-card/70 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"

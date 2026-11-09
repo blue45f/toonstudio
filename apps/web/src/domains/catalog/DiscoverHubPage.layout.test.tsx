@@ -103,6 +103,20 @@ describe("탐색 허브 작품 우선 배치", () => {
     expect(screen.getByRole("link", { name: /조건으로 탐색/ }).closest("details")).toBeNull();
     expect(screen.getByTestId("guide-art").closest("details")?.open).toBe(false);
   });
+  it("장르 바로가기와 전체 장르 출구를 같은 목록에서 보존한다", () => {
+    page();
+    const genres = screen.getByRole("navigation", { name: "장르로 바로 찾기" });
+    expect(genres.querySelector("ul")?.className).toBe("discover-hub-quick-genres");
+    expect(genres.querySelectorAll(".discover-hub-quick-genre")).toHaveLength(7);
+    const allGenres = within(genres).getByRole("link", { name: "전체 장르" });
+    expect(allGenres.getAttribute("href")).toBe("/explore");
+    expect(allGenres.closest("li")?.classList.contains("discover-hub-quick-genre")).toBe(false);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "달" } });
+    const clear = screen.getByRole("button", { name: "검색어 지우기" });
+    expect(clear.className).toContain("size-11");
+    fireEvent.click(clear);
+    expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("");
+  });
   it("연재 트랙 키보드와 원본 목적지를 유지한다", () => {
     page();
     const tabs = screen.getAllByRole("tab");
