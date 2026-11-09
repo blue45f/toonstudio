@@ -119,6 +119,7 @@ describe("검색 페이지 결과 우선 배치", () => {
   it("query·무료 조건·플랫폼 전달과 통합검색 query를 바꾸지 않는다", () => {
     page("/search?q=첫째&pricing=free,wait-free&platforms=naver-webtoon,kakao-page");
     expect(child.props).toHaveBeenLastCalledWith({
+      fullWidthQuery: true,
       initialQuery: "첫째",
       initialFree: true,
       initialPlatforms: ["naver-webtoon", "kakao-page"],

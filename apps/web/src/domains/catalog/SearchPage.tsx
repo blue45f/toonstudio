@@ -87,6 +87,7 @@ export function SearchPage() {
           className="search-page-results [scroll-margin-top:var(--site-header-sticky-offset)] outline-none"
         >
           <SearchExplorer
+            fullWidthQuery
             initialQuery={state.query}
             initialFree={freeOnly}
             initialPlatforms={state.filters.platforms}

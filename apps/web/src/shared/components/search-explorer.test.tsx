@@ -47,6 +47,24 @@ afterEach(() => {
 });
 
 describe("SearchExplorer", () => {
+  it("검색 전용 배치에서 입력을 필터 앞에 두고 접힌 조건 값을 보존한다", async () => {
+    const { container, unmount } = render(<MemoryRouter initialEntries={["/search?platforms=naver-webtoon&q=판타지"]}><SearchExplorer fullWidthQuery /><LocationProbe /></MemoryRouter>);
+    const section = container.querySelector("section");
+    const field = container.querySelector("[data-search-query-field]");
+    expect(section?.firstElementChild).toBe(field);
+    expect(screen.getAllByRole("searchbox")).toHaveLength(1);
+    const groups = container.querySelectorAll<HTMLDetailsElement>("details.search-facet-group");
+    expect(groups).toHaveLength(9);
+    expect([...groups].map((group) => group.open)).toEqual([true, true, false, false, false, false, false, false, false]);
+    groups[5].open = true;
+    fireEvent(groups[5], new Event("toggle"));
+    groups[5].open = false;
+    fireEvent(groups[5], new Event("toggle"));
+    expect(screen.getByLabelText("location").textContent).toContain("platforms=naver-webtoon");
+    expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("판타지");
+    unmount();
+  });
+
   it("uses a focus-contained mobile filter sheet and writes filters to the URL", async () => {
     const { container, unmount } = render(
       <MemoryRouter initialEntries={["/search?genres=%ED%8C%90%ED%83%80%EC%A7%80"]}>
