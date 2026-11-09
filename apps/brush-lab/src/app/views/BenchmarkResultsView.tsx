@@ -253,6 +253,9 @@ export function BenchmarkResultsView() {
             {brushVerifyAiReport.summaryBadgeKo}
           </strong>
         </div>
+        <p className="lab-mono" data-testid="lab-brush-remix-header">
+          {brushVerifyAiReport.remixHeaderKo}
+        </p>
         <div className="lab-button-row" role="group" aria-label="웹툰 장르별 최적 브러시 추천">
           {WEBTOON_BRUSH_GENRE_RECOMMENDATIONS.map((rec) => (
             <button
@@ -288,7 +291,16 @@ export function BenchmarkResultsView() {
           <p>
             <strong>{activeBrushLens.badgeKo}: {activeBrushLens.titleKo}</strong>
           </p>
-          <p className="lab-muted">→ {activeBrushLens.angleKo}</p>
+          <p className="lab-muted">
+            → <strong>Angle:</strong> {activeBrushLens.angleKo}
+          </p>
+          {activeBrushLens.actionableStepsKo ? (
+            <ol className="lab-muted" data-testid="lab-brush-fresh-lens-steps">
+              {activeBrushLens.actionableStepsKo.map((step, idx) => (
+                <li key={idx}>{step}</li>
+              ))}
+            </ol>
+          ) : null}
         </div>
       </div>
 

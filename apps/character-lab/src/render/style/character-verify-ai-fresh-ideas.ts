@@ -3,7 +3,7 @@
  *
  * `render/style/**` 순수 CPU 모듈 규칙(규칙 3-a)을 준수하여 `@babylonjs/` 의존 없이
  * 4방향 턴어라운드(0°/35°/90°/180°) 정합성(C_ID), 얼굴 SDF 그림자 클린도(F_SDF),
- * 비등방 외곽선 가독성 및 5대 크리에이티브 연출 렌즈를 산출한다.
+ * 비등방 외곽선 가독성 및 5대 크리에이티브 연출 렌즈(Mode A 요약 + Mode B 확장 초안)를 산출한다.
  */
 import type { ShadingProfile } from "../../contracts";
 import type { LabShaperGen3dLookId } from "../shaper-gen3d-bridge";
@@ -21,6 +21,16 @@ export interface CharacterLabFreshLensRemix {
   readonly titleKo: string;
   readonly pitchKo: string;
   readonly angleKo: string;
+  readonly actionableStepsKo?: readonly string[];
+}
+
+export interface CharacterLabFreshLensDraft {
+  readonly id: CharacterLabFreshLensId;
+  readonly badgeKo: string;
+  readonly channelFormatKo: string;
+  readonly headlineKo: string;
+  readonly bodyParagraphsKo: readonly string[];
+  readonly keyTakeawayKo: string;
 }
 
 export interface CharacterTurnaroundAngleMetric {
@@ -31,6 +41,7 @@ export interface CharacterTurnaroundAngleMetric {
 }
 
 export interface CharacterLabVerifyAiReport {
+  readonly remixHeaderKo: string;
   readonly overallScore100: number;
   readonly passed: boolean;
   readonly turnaroundConsistencyScore100: number;
@@ -138,6 +149,7 @@ export function evaluateCharacterLabVerifyAiGate(
   );
 
   const passed = overallScore100 >= 85;
+  const remixHeaderKo = `💡 Remix: Character Labs (${lookId} · ${headUnits.toFixed(1)}등신) × Verify AI · Sources used: SHAPER REA & Tripo V3 Pipeline`;
 
   const remixes: readonly CharacterLabFreshLensRemix[] = Object.freeze([
     {
@@ -152,7 +164,7 @@ export function evaluateCharacterLabVerifyAiGate(
       badgeKo: "2. 💡 PERSONAL STORY",
       titleKo: "매 화 70컷에서 주인공 얼굴 각도가 무너지던 작화 병목을 35° 반측면 SDF 기준점으로 해결한 기록",
       pitchKo: "연재 마감 직전 주인공 얼굴 인상이 컷마다 달라지던 문제를 잡은 턴어라운드 워크플로",
-      angleKo: `정면(0°)·반측면(35°)·측면(90°) 턴어라운드 일관성 점수 ${turnaroundConsistencyScore100}점을 유지하여 어시스턴트 협업 시에도 동일한 이목구비 비율을 보장합니다.`,
+      angleKo: `(1) Setup: 주간 70컷 연재 중 어시스턴트마다 주인공 35° 반측면 턱선과 코 그림자를 다르게 그려 데스크 리테이크가 폭증 → (2) Friction: 일반 3D 램버트 조명은 뺨에 다각형 계단 암부를 만들어 2D 수정 시간이 더 소요됨 → (3) Lesson: 정면(0°)·반측면(35°)·측면(90°) 턴어라운드 일관성 점수 ${turnaroundConsistencyScore100}점과 얼굴 SDF(${facialSdfCleanScore100}점)를 고정해 전 컷에서 동일한 이목구비 인상을 확보했습니다.`,
     },
     {
       id: "data-evidence-hook",
@@ -165,8 +177,14 @@ export function evaluateCharacterLabVerifyAiGate(
       id: "practical-playbook",
       badgeKo: "4. ✅ PRACTICAL PLAYBOOK",
       titleKo: "웹툰 주인공 3D 시트 3분 확정 플레이북",
-      pitchKo: `선택된 룩(${lookId})을 원고 컷에 바로 투입하는 3단계 체크리스트`,
+      pitchKo: `선택된 룩(${lookId})을 원고 컷에 바로 투입하는 4단계 체크리스트`,
       angleKo: "1) 툰 모드 + 3단 셀 음영 및 림라이트 활성화 → 2) 외곽 셸(hull) + 비등방 필압 외곽선 체크 → 3) Verify AI 캐릭터 툰 최적 보정 원클릭 확정",
+      actionableStepsKo: Object.freeze([
+        `비주얼 룩 고정: [${lookId}] 프리셋 및 ${headUnits.toFixed(1)}등신 T-Pose 비율 선택`,
+        `알베도·헤어 정리: Tripo v3.5 Delight(${delight ? "ON" : "OFF"}) 및 SHAPER hID*1 헤어 내선 억제(${disableHairInline ? "ON" : "OFF"}) 활성화`,
+        `외곽선 필압 동기화: hull 외곽선 + 1.5×0.3 비등방 필압 토글(${outlineAnisotropyScore100}점) 적용`,
+        `Verify AI 게이트 확정: 종합 ${overallScore100}점(${passed ? "PASS" : "HOLD"}) 확인 후 4방향 턴어라운드 시트 반출`,
+      ]),
     },
     {
       id: "what-they-missed",
@@ -177,12 +195,17 @@ export function evaluateCharacterLabVerifyAiGate(
     },
   ]);
 
+  const recommendedIblIntensity =
+    typeof shading.ibl.intensity === "number" && Number.isFinite(shading.ibl.intensity)
+      ? Math.min(4, Math.max(1.15, shading.ibl.intensity))
+      : 1.15;
+
   const recommendedShadingPatch: Partial<ShadingProfile> = {
     mode: "toon",
     ibl: {
       ...shading.ibl,
       enabled: true,
-      intensity: Math.max(1.15, shading.ibl.intensity),
+      intensity: recommendedIblIntensity,
     },
     toon: {
       ...shading.toon,
@@ -195,6 +218,7 @@ export function evaluateCharacterLabVerifyAiGate(
   };
 
   return Object.freeze({
+    remixHeaderKo,
     overallScore100,
     passed,
     turnaroundConsistencyScore100,
@@ -210,5 +234,37 @@ export function evaluateCharacterLabVerifyAiGate(
       hasAnisotropicPressure && shading.toon.faceSdfShadow && isToon
         ? "툰 셀 음영·얼굴 SDF·비등방 필압 외곽선이 모두 최적 상태입니다."
         : "원클릭 최적 보정으로 툰 3단 음영·얼굴 SDF·림라이트·비등방 필압 외곽선을 즉시 활성화할 수 있습니다.",
+  });
+}
+
+/**
+ * `@generate-fresh-ideas` Mode B: 선택된 캐릭터 랩 렌즈(1~5)를 즉시 배포·공유 가능한 완성형 초안으로 확장한다.
+ */
+export function expandCharacterLabFreshLensDraft(
+  report: CharacterLabVerifyAiReport,
+  lensId: CharacterLabFreshLensId,
+): CharacterLabFreshLensDraft {
+  const remix = report.remixes.find((r) => r.id === lensId) ?? report.remixes[0]!;
+  const channelMap: Readonly<Record<CharacterLabFreshLensId, string>> = {
+    "contrarian-take": "기술 아키텍처 칼럼 / 테크 블로그",
+    "personal-story-angle": "웹툰 창작자 커뮤니티 / 제작기",
+    "data-evidence-hook": "엔지니어링 QA 리포트 / 릴리스 노트",
+    "practical-playbook": "스튜디오 캐릭터 작화 SOP 매뉴얼",
+    "what-they-missed": "3D×2D 하이브리드 파이프라인 설계 메모",
+  };
+
+  return Object.freeze({
+    id: remix.id,
+    badgeKo: remix.badgeKo,
+    channelFormatKo: channelMap[remix.id],
+    headlineKo: remix.titleKo,
+    bodyParagraphsKo: Object.freeze([
+      remix.pitchKo,
+      remix.angleKo,
+      ...(remix.actionableStepsKo ?? [
+        `4방향 턴어라운드 정합성(C_ID ${report.turnaroundConsistencyScore100}점)과 얼굴 SDF 클린도(${report.facialSdfCleanScore100}점), 비등방 외곽선(${report.outlineAnisotropyScore100}점)을 결합해 Verify AI 종합 ${report.overallScore100}점(${report.passed ? "PASS" : "HOLD"})을 기록했습니다.`,
+      ]),
+    ]),
+    keyTakeawayKo: `${report.summaryBadgeKo} — ${report.remediationKo}`,
   });
 }

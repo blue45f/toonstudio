@@ -518,6 +518,9 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         <p className="cl-render-status" data-testid="character-lab-verify-ai-badge">
           {verifyAiReport.summaryBadgeKo}
         </p>
+        <p className="cl-render-hint" data-testid="character-lab-remix-header">
+          {verifyAiReport.remixHeaderKo}
+        </p>
         <div className="cl-render-row" role="group" aria-label="캐릭터 5-Lens 크리에이티브 리믹스">
           {verifyAiReport.remixes.map((remix) => (
             <button
@@ -537,8 +540,15 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
             <strong>{activeLensRemix.badgeKo}: {activeLensRemix.titleKo}</strong>
           </p>
           <p className="cl-render-hint">
-            → {activeLensRemix.angleKo}
+            → <strong>Angle:</strong> {activeLensRemix.angleKo}
           </p>
+          {activeLensRemix.actionableStepsKo ? (
+            <ol className="cl-render-hint" data-testid="character-lab-fresh-lens-steps">
+              {activeLensRemix.actionableStepsKo.map((step, idx) => (
+                <li key={idx}>{step}</li>
+              ))}
+            </ol>
+          ) : null}
         </div>
         <div className="cl-render-row">
           <span className="cl-render-hint" data-testid="character-lab-remediation-readout">

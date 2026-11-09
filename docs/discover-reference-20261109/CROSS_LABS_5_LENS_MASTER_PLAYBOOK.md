@@ -68,3 +68,13 @@ ToonStudio는 이를 해결하기 위해 **7-Target Dynamic Deployment Matrix**�
 - **단일 VM & 로컬 풀스택 (`local-docker-compose`):** Docker Compose 파일 하나로 웹·캐릭터·브러시·API를 통합 구동합니다.
 - **엣지 & 컨테이너 클라우드 (`cloudflare-edge-static`, `onpod-container-cloud`):** `deployment-preflight.mjs`의 SHA 고정·시크릿 격리 계약을 통과한 정적 번들과 컨테이너를 무중단 배포합니다.
 - **하이퍼스케일러 & K8s 포터블 확장 (`aws-ecs-cloudfront`, `gcp-cloud-run`, `self-hosted-k8s`):** 표준 Kubernetes 매니페스트와 클라우드별 배포 번들을 GitHub Actions가 매 커밋 자동 아티팩트로 생성해 어떤 인프라로도 즉시 이식할 수 있습니다.
+
+## 6. 🛡️ FAIL-VISIBLE HARD GATE & Mode B 초안 확장 (Character × Brush Labs 회귀 검증)
+
+- **Character Labs (`character-verify-ai-fresh-ideas.ts` & `character-verify-ai-regression.test.ts`):**
+  - `remixHeaderKo`, 3-Beat 스토리(`Setup → Friction → Lesson`), 4단계 실행 체크리스트(`actionableStepsKo`), 채널별 초안 확장기(`expandCharacterLabFreshLensDraft`)를 제공합니다.
+  - PBR·무외곽선·SDF 비활성·Delight OFF 조합에서 종합 `84.13점(< 85)`으로 `HOLD` 판정을 내리며, `headUnits`(`5.0~8.5`)·`ibl.intensity`(`1.15~4.0`)·`computeShaperSelectionOutlineEffect` 비유한(`NaN`) 방어와 Radiance HDR RLE 디코더 5대 오류 경로를 검증합니다.
+- **Brush Labs (`webtoon-brush-verify-ai-remix.ts` & `webtoon-brush-verify-ai-regression.test.ts`):**
+  - `remixHeaderKo`, 3-Beat 스토리, 4단계 실행 체크리스트, 채널별 초안 확장기(`expandWebtoonBrushFreshLensDraft`)를 제공합니다.
+  - `pressureVelocityLinearity100`·`marathonSoakStability100`·`wetPigmentChromaRetention100`의 하한을 `0`부터 개방하여 저품질 벤치마크·드리프트 과다·`NaN` 입력 시 즉시 `HOLD`(`passed: false`)로 전환하고, `resolveStrokeColor`의 `InvalidStateError` 입력 경계와 LazyBrush 데드존(`distance - radius <= 0.04`) 불변성을 보장합니다.
+

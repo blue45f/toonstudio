@@ -28,9 +28,9 @@ export function fnv1a32Hex(input: string): string {
   return fnv1a32(input).toString(16).padStart(8, "0");
 }
 
-const FNV64_OFFSET = 0xcbf29ce484222325n;
-const FNV64_PRIME = 0x100000001b3n;
-const MASK64 = 0xffffffffffffffffn;
+const FNV64_OFFSET = BigInt("0xcbf29ce484222325");
+const FNV64_PRIME = BigInt("0x100000001b3");
+const MASK64 = BigInt("0xffffffffffffffff");
 
 /** 바이트 열의 FNV-1a 64bit → 16자리 소문자 hex */
 export function fnv1a64HexBytes(bytes: Uint8Array): string {

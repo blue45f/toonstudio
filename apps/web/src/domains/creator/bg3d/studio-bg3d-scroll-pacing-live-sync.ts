@@ -69,7 +69,7 @@ export function evaluateVerticalScrollCutPacing(
   };
 
   const lensHeightBonus =
-    lensId === "contrarian-take" || lensId === "data-evidence-hook" ? 80 : 0;
+    lensId === "contrarian-take" || lensId === "data-evidence-angle" ? 80 : 0;
   const recommendedCutHeightPx =
     baseHeightByArchetype[archetypeId] + lensHeightBonus;
   const { top: topGutterPx, bottom: bottomGutterPx } =

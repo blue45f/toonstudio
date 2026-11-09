@@ -31,7 +31,7 @@ export function isPreviewFileRole(role: string): role is `preview:${string}` {
 }
 
 /** Blender 메시 규약: TS_AuthoredHair_<style>_LOD<n>, <mesh>_Outline */
-export const AUTHORED_HAIR_MESH_PATTERN = /^TS_AuthoredHair_(?<style>[a-z0-9-]+)_LOD(?<lod>\d+)$/u;
+export const AUTHORED_HAIR_MESH_PATTERN = /^TS_AuthoredHair_([a-z0-9-]+)_LOD(\d+)$/u;
 export const OUTLINE_MESH_SUFFIX = "_Outline";
 
 export const slotCapabilitySchema = z

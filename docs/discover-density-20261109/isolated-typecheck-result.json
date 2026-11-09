@@ -1,0 +1,159 @@
+{
+  "baseCommit": "d856e71ee2724a81d6820589b3ba54b086ab09a9",
+  "complete": true,
+  "checkedFiles": 26529,
+  "expectedFiles": 26529,
+  "inputStable": true,
+  "diagnostics": [
+    {
+      "code": 1503,
+      "category": 1,
+      "message": "Named capturing groups are only available when targeting 'ES2018' or later.",
+      "file": "apps/character-lab/src/contracts/package-manifest.ts",
+      "start": 1500,
+      "line": 34,
+      "column": 63,
+      "length": 7
+    },
+    {
+      "code": 1503,
+      "category": 1,
+      "message": "Named capturing groups are only available when targeting 'ES2018' or later.",
+      "file": "apps/character-lab/src/contracts/package-manifest.ts",
+      "start": 1524,
+      "line": 34,
+      "column": 87,
+      "length": 5
+    },
+    {
+      "code": 2322,
+      "category": 1,
+      "message": "Type 'readonly ({ id: \"contrarian-take\"; badgeKo: string; channelFormatKo: string; headlineKo: string; bodyParagraphsKo: string[]; keyTakeawayKo: string; } | { id: \"personal-story-angle\"; badgeKo: string; channelFormatKo: string; headlineKo: string; bodyParagraphsKo: string[]; keyTakeawayKo: string; } | { ...; } | { ...; ...' is not assignable to type 'readonly ExpandedCrossLabsLensDraft[]'.\n  Type '{ id: \"contrarian-take\"; badgeKo: string; channelFormatKo: string; headlineKo: string; bodyParagraphsKo: string[]; keyTakeawayKo: string; } | { id: \"personal-story-angle\"; badgeKo: string; channelFormatKo: string; headlineKo: string; bodyParagraphsKo: string[]; keyTakeawayKo: string; } | { ...; } | { ...; } | { ...; }' is not assignable to type 'ExpandedCrossLabsLensDraft'.\n    Type '{ id: \"personal-story-angle\"; badgeKo: string; channelFormatKo: string; headlineKo: string; bodyParagraphsKo: string[]; keyTakeawayKo: string; }' is not assignable to type 'ExpandedCrossLabsLensDraft'.\n      Types of property 'id' are incompatible.\n        Type '\"personal-story-angle\"' is not assignable to type 'FreshIdeaLensId'.",
+      "file": "apps/web/src/domains/creator/bg3d/studio-cross-labs-5-lens-drafts.ts",
+      "start": 975,
+      "line": 27,
+      "column": 3,
+      "length": 6
+    },
+    {
+      "code": 2339,
+      "category": 1,
+      "message": "Property 'recommendedCameraTiltDeg' does not exist on type 'CutArchetypePresetRecommendation'.",
+      "file": "scripts/verify-blender-fresh-ideas-ai-gate.mts",
+      "start": 4128,
+      "line": 114,
+      "column": 52,
+      "length": 24
+    },
+    {
+      "code": 2339,
+      "category": 1,
+      "message": "Property 'recommendedCameraTiltDeg' does not exist on type 'CutArchetypePresetRecommendation'.",
+      "file": "scripts/verify-blender-fresh-ideas-ai-gate.mts",
+      "start": 4671,
+      "line": 126,
+      "column": 52,
+      "length": 24
+    },
+    {
+      "code": 2339,
+      "category": 1,
+      "message": "Property 'silhouetteSeparationRatio' does not exist on type 'CutArchetypePresetRecommendation'.",
+      "file": "scripts/verify-blender-fresh-ideas-ai-gate.mts",
+      "start": 4221,
+      "line": 116,
+      "column": 39,
+      "length": 25
+    },
+    {
+      "code": 2367,
+      "category": 1,
+      "message": "This comparison appears to be unintentional because the types '\"personal-story-hook\" | \"data-evidence-angle\" | \"practical-playbook\" | \"what-they-missed\"' and '\"data-evidence-hook\"' have no overlap.",
+      "file": "apps/web/src/domains/creator/bg3d/studio-bg3d-scroll-pacing-live-sync.ts",
+      "start": 2211,
+      "line": 72,
+      "column": 37,
+      "length": 31
+    },
+    {
+      "code": 2737,
+      "category": 1,
+      "message": "BigInt literals are not available when targeting lower than ES2020.",
+      "file": "apps/brush-lab/src/engine/core/hash.ts",
+      "start": 127,
+      "line": 6,
+      "column": 20,
+      "length": 19
+    },
+    {
+      "code": 2737,
+      "category": 1,
+      "message": "BigInt literals are not available when targeting lower than ES2020.",
+      "file": "apps/brush-lab/src/engine/core/hash.ts",
+      "start": 166,
+      "line": 7,
+      "column": 19,
+      "length": 14
+    },
+    {
+      "code": 2737,
+      "category": 1,
+      "message": "BigInt literals are not available when targeting lower than ES2020.",
+      "file": "apps/brush-lab/src/engine/core/hash.ts",
+      "start": 197,
+      "line": 8,
+      "column": 16,
+      "length": 19
+    },
+    {
+      "code": 2737,
+      "category": 1,
+      "message": "BigInt literals are not available when targeting lower than ES2020.",
+      "file": "apps/brush-lab/src/engine/gpu/testing/mock-gpu-device.ts",
+      "start": 26604,
+      "line": 647,
+      "column": 45,
+      "length": 2
+    },
+    {
+      "code": 2737,
+      "category": 1,
+      "message": "BigInt literals are not available when targeting lower than ES2020.",
+      "file": "apps/brush-lab/src/engine/gpu/testing/mock-gpu-device.ts",
+      "start": 26608,
+      "line": 647,
+      "column": 49,
+      "length": 2
+    },
+    {
+      "code": 2737,
+      "category": 1,
+      "message": "BigInt literals are not available when targeting lower than ES2020.",
+      "file": "apps/character-lab/src/shared/hash.ts",
+      "start": 789,
+      "line": 31,
+      "column": 22,
+      "length": 19
+    },
+    {
+      "code": 2737,
+      "category": 1,
+      "message": "BigInt literals are not available when targeting lower than ES2020.",
+      "file": "apps/character-lab/src/shared/hash.ts",
+      "start": 830,
+      "line": 32,
+      "column": 21,
+      "length": 14
+    },
+    {
+      "code": 2737,
+      "category": 1,
+      "message": "BigInt literals are not available when targeting lower than ES2020.",
+      "file": "apps/character-lab/src/shared/hash.ts",
+      "start": 861,
+      "line": 33,
+      "column": 16,
+      "length": 19
+    }
+  ]
+}

@@ -644,7 +644,7 @@ export function createMockGpu(options: MockGpuOptions = {}): MockGpu {
         }
         if ((d.usage & USAGE_QUERY_RESOLVE) === 0) throw new MockValidationError(`resolveQuerySet destination ${d.label} lacks QUERY_RESOLVE usage`);
         const view = new DataView(d.data);
-        const ts = options.timestampsNs ?? [0n, 0n];
+        const ts = options.timestampsNs ?? [BigInt(0), BigInt(0)];
         for (let i = 0; i < count; i += 1) {
           view.setBigUint64(dstOffset + i * 8, i % 2 === 0 ? ts[0] : ts[1], true);
         }

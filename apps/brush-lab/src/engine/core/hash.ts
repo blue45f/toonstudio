@@ -3,9 +3,9 @@
  * (`globalThis.crypto.subtle`, `TextEncoder`).
  */
 
-const FNV_OFFSET = 0xcbf29ce484222325n;
-const FNV_PRIME = 0x100000001b3n;
-const MASK64 = 0xffffffffffffffffn;
+const FNV_OFFSET = BigInt("0xcbf29ce484222325");
+const FNV_PRIME = BigInt("0x100000001b3");
+const MASK64 = BigInt("0xffffffffffffffff");
 
 /** FNV-1a 64비트. 16자리 소문자 hex. */
 export function fnv1a64(bytes: Uint8Array): string {

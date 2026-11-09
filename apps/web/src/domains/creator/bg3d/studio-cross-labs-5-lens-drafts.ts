@@ -38,7 +38,7 @@ export function buildAllFiveCrossLabsFullDrafts(
       keyTakeawayKo: `개별 랩스의 고립된 스펙보다 3대 랩스 교차 정합성(X_LABS ${coherence.crossLabsCoherenceIndex100}점)이 실전 웹툰 원고의 완성도를 결정합니다.`,
     },
     {
-      id: "personal-story-angle",
+      id: "personal-story-hook",
       badgeKo: "2. 📖 PERSONAL STORY HOOK",
       channelFormatKo: "창작자 커뮤니티 / 제작기 에세이",
       headlineKo:
@@ -52,7 +52,7 @@ export function buildAllFiveCrossLabsFullDrafts(
         "분업화된 스튜디오의 가장 큰 손실인 '레이어 합치기 재작업'을 1클릭 광원·선폭·원근 동기화로 제거했습니다.",
     },
     {
-      id: "data-evidence-hook",
+      id: "data-evidence-angle",
       badgeKo: "3. 📊 DATA / EVIDENCE ANGLE",
       channelFormatKo: "엔지니어링 벤치마크 리포트 / 릴리스 노트",
       headlineKo: `전사 통합 Verify AI ${coherence.unifiedVerifyAiReleaseScore100}점 · Cross-Labs X_LABS ${coherence.crossLabsCoherenceIndex100}점 · Blender 5.2 라이브 오브젝트 ${sceneObjectsSynced}종 정량 검증`,

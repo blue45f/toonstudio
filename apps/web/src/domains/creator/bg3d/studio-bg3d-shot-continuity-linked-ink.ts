@@ -72,6 +72,8 @@ export interface CutArchetypePresetRecommendation {
   readonly archetypeId: WebtoonCutArchetypeId;
   readonly labelKo: string;
   readonly recommendedFocalLengthMm: number;
+  readonly recommendedCameraTiltDeg: number;
+  readonly silhouetteSeparationRatio: number;
   readonly cameraAngleKo: string;
   readonly recommendedLightingRigId: string;
   readonly recommendedNprShaderId: string;
@@ -271,7 +273,7 @@ const ARCHETYPE_SPECS: Readonly<
     WebtoonCutArchetypeId,
     Omit<
       CutArchetypePresetRecommendation,
-      "presetRecommendationScore" | "rationaleKo"
+      "presetRecommendationScore" | "rationaleKo" | "silhouetteSeparationRatio"
     >
   >
 > = Object.freeze({
@@ -279,6 +281,7 @@ const ARCHETYPE_SPECS: Readonly<
     archetypeId: "dialogue-medium",
     labelKo: "일상 대화 · 미디엄 샷",
     recommendedFocalLengthMm: 55,
+    recommendedCameraTiltDeg: 0,
     cameraAngleKo: "아이레벨 (±5°), 2점 투시 보정",
     recommendedLightingRigId: "holy-sword-awakening-halo",
     recommendedNprShaderId: "cel-anime-hero-skin-silk",
@@ -288,6 +291,7 @@ const ARCHETYPE_SPECS: Readonly<
     archetypeId: "emotion-closeup",
     labelKo: "감정 클로즈업 · 회상",
     recommendedFocalLengthMm: 95,
+    recommendedCameraTiltDeg: 10,
     cameraAngleKo: "소프트 하이앵글 (+10°, DoF f/2.0)",
     recommendedLightingRigId: "magic-circle-arcane-upglow",
     recommendedNprShaderId: "arcane-mana-crystal-gem",
@@ -297,6 +301,7 @@ const ARCHETYPE_SPECS: Readonly<
     archetypeId: "action-impact",
     labelKo: "액션 타격 · 클라이맥스 전투",
     recommendedFocalLengthMm: 22,
+    recommendedCameraTiltDeg: 18,
     cameraAngleKo: "로우앵글 더치 틸트 (18°), 광각 박력",
     recommendedLightingRigId: "dungeon-boss-abyss-backlight",
     recommendedNprShaderId: "paladin-gilded-plate-toon",
@@ -306,6 +311,7 @@ const ARCHETYPE_SPECS: Readonly<
     archetypeId: "horror-pressure",
     labelKo: "호러 · 마계 심리적 압박",
     recommendedFocalLengthMm: 24,
+    recommendedCameraTiltDeg: -35,
     cameraAngleKo: "근접 언더라이트 (-35°) · 고대비 암부",
     recommendedLightingRigId: "crimson-bloodmoon-eclipse",
     recommendedNprShaderId: "cursed-dark-blade-aura",
@@ -330,6 +336,7 @@ export function recommendBlenderCutArchetypePreset(
 
   return {
     ...spec,
+    silhouetteSeparationRatio: round2(silhouetteQuality),
     presetRecommendationScore: prs,
     rationaleKo: `[${spec.labelKo}] 권장 초점거리 ${spec.recommendedFocalLengthMm}mm (${spec.cameraAngleKo}) · 실루엣 분리도 ${(silhouetteQuality * 100).toFixed(0)}% · 얼굴 섀도우 클린율 ${((1 - facialShadowDirtyRatio) * 100).toFixed(1)}% (PRS ${prs}점)`,
   };

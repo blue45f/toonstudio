@@ -137,15 +137,22 @@ export const SHAPER_SELECTION_OUTLINE_COLORS: Readonly<Record<ShaperSelectionOut
  * 선택된 파츠/헤어/장신구 메시의 포스트프로세싱 선택 실루엣 두께(해상도 비례 보정), 내부 채움 강도(`fillAmount`),
  * 코너 샘플 배수(`cornerOutlines`), 3-슬롯 색상 팔레트를 계산한다.
  */
+function finiteOrDefault(value: number | undefined, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
 export function computeShaperSelectionOutlineEffect(
   input: ShaperSelectionOutlineEffectInput = {},
 ): ShaperSelectionOutlineEffectConfig {
-  const baseThickness = Math.min(6, Math.max(0, input.lineThickness ?? 1.25));
-  const lineIntensity = Math.min(2, Math.max(0, input.lineIntensity ?? 0.5));
-  const fillAmount = Math.min(1, Math.max(0, input.fillAmount ?? 0.2));
-  const colorIndex: ShaperSelectionOutlineColorSlot = input.colorIndex ?? 0;
+  const baseThickness = Math.min(6, Math.max(0, finiteOrDefault(input.lineThickness, 1.25)));
+  const lineIntensity = Math.min(2, Math.max(0, finiteOrDefault(input.lineIntensity, 0.5)));
+  const fillAmount = Math.min(1, Math.max(0, finiteOrDefault(input.fillAmount, 0.2)));
+  const colorIndex: ShaperSelectionOutlineColorSlot =
+    input.colorIndex === 0 || input.colorIndex === 1 || input.colorIndex === 2
+      ? input.colorIndex
+      : 0;
   const scaleWithScreenSize = input.scaleWithScreenSize ?? true;
-  const viewportHeightPx = Math.max(1, input.viewportHeightPx ?? 1080);
+  const viewportHeightPx = Math.max(1, finiteOrDefault(input.viewportHeightPx, 1080));
   const cornerOutlines = input.cornerOutlines ?? false;
 
   const screenScale = scaleWithScreenSize
