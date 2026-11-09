@@ -160,8 +160,8 @@ export function parseCharacterPackageManifest(json: unknown, now?: number): Pars
 /** 메시 이름이 제작 헤어 규약이면 style·lod를 돌려준다. */
 export function parseAuthoredHairMeshName(name: string): { style: string; lod: number } | null {
   const match = AUTHORED_HAIR_MESH_PATTERN.exec(name);
-  const style = match?.groups?.style;
-  const lod = match?.groups?.lod;
+  const style = match?.[1];
+  const lod = match?.[2];
   if (!match || style === undefined || lod === undefined) return null;
   return { style, lod: Number.parseInt(lod, 10) };
 }
