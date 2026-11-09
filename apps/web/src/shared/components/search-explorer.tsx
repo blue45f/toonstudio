@@ -20,7 +20,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
-
 import {
   SORTS,
   WORK_TYPE_LABEL_KEY,
@@ -29,7 +28,6 @@ import {
 } from "./search-explorer-constants";
 import { SearchFacetPanel } from "./search-explorer-facets";
 import { SearchResultSummary } from "./search-result-summary";
-
 // search.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
 import "./search-i18n";
 import { ErrorState } from "./feedback/error-state";
@@ -46,7 +44,6 @@ import { TitleCard, TitleRow } from "./title-card";
 import { buttonClass } from "./ui/button-utils";
 import { Segmented } from "./ui/segmented";
 import { Select } from "./ui/select";
-
 import type { SortKey } from "@/shared/lib/search";
 import type {
   WorkType,
@@ -54,7 +51,6 @@ import type {
   AgeRating,
   PlatformId,
 } from "@/shared/lib/types";
-
 import {
   hasCatalogDiscoveryFilters,
   parseCatalogDiscoveryState,
@@ -75,22 +71,21 @@ import { useSearchQueryDraft } from "./use-search-query-draft";
 import { usePaginatedSearch } from "@/platform/use-paginated-search";
 
 type FilterToken = { key: string; label: string; category: string };
-
 type FilterSetter<K extends keyof TitleFilterState> = Dispatch<
   SetStateAction<TitleFilterState[K]>
 >;
-
 function resolveAction<T>(action: SetStateAction<T>, current: T): T {
   return typeof action === "function"
     ? (action as (value: T) => T)(current)
     : action;
 }
-
 export function SearchExplorer({
+  fullWidthQuery = false,
   initialQuery = "",
   initialFree = false,
   initialPlatforms = [],
 }: {
+  fullWidthQuery?: boolean;
   initialQuery?: string;
   initialFree?: boolean;
   initialPlatforms?: PlatformId[];
@@ -123,7 +118,6 @@ export function SearchExplorer({
   const filterSheetRef = useRef<HTMLElement>(null);
   const [retryKey, setRetryKey] = useState(0);
   const t = useT();
-
   const updateState = useCallback(
     (update: (current: CatalogDiscoveryState) => CatalogDiscoveryState) => {
       const next = update(parsed);
@@ -134,7 +128,6 @@ export function SearchExplorer({
     },
     [parsed, searchParams, setSearchParams],
   );
-
   const updateFilters = useCallback(
     (action: SetStateAction<TitleFilterState>) => {
       updateState((current) => ({
@@ -144,7 +137,6 @@ export function SearchExplorer({
     },
     [updateState],
   );
-
   const filterSetter = useCallback(
     <K extends keyof TitleFilterState>(key: K): FilterSetter<K> =>
       (action) => {
@@ -155,7 +147,6 @@ export function SearchExplorer({
       },
     [updateFilters],
   );
-
   const { filters, sort, view } = parsed;
   const {
     types,
@@ -200,14 +191,13 @@ export function SearchExplorer({
     updateState((current) => ({ ...current, sort: next }));
   const setView = (next: "grid" | "list") =>
     updateState((current) => ({ ...current, view: next }));
-
   useEffect(() => {
     if (!showFilters) return undefined;
     const previousOverflow = document.body.style.overflow;
     const sheet = filterSheetRef.current;
     const focusReturnTarget = filterButtonRef.current;
     const focusableSelector = [
-      "button:not([disabled])",
+      "summary", "button:not([disabled])",
       "a[href]",
       "input:not([disabled])",
       "select:not([disabled])",
@@ -223,7 +213,7 @@ export function SearchExplorer({
       if (event.key !== "Tab" || !sheet) return;
       const focusable = [
         ...sheet.querySelectorAll<HTMLElement>(focusableSelector),
-      ];
+      ].filter((element) => element.tagName === "SUMMARY" || !element.closest("details:not([open])"));
       if (focusable.length === 0) {
         event.preventDefault();
         sheet.focus();
@@ -259,14 +249,12 @@ export function SearchExplorer({
           : current.sort,
     }));
   }, [canCommitQuery, debouncedQ, parsed.query, updateState]);
-
   const recentSearches = useApp((s) => s.recentSearches);
   const recordRecentSearch = useApp((s) => s.addRecentSearch);
   const removeRecentSearch = useApp((s) => s.removeRecentSearch);
   const clearRecentSearches = useApp((s) => s.clearRecentSearches);
   const textSettling = q.trim() !== debouncedQ.trim();
   const savedIds = useSavedTitleIds();
-
   const query = useMemo(() => {
     const params = new URLSearchParams(titleFiltersToParams(filters, { sort }));
     if (debouncedQ) params.set("q", debouncedQ);
@@ -504,7 +492,7 @@ export function SearchExplorer({
 
   const facets = (
     <SearchFacetPanel
-      t={t}
+      t={t} collapsible={fullWidthQuery}
       types={types}
       setTypes={setTypes}
       genres={genres}
@@ -530,36 +518,7 @@ export function SearchExplorer({
     />
   );
 
-  return (
-    <section className="grid gap-6 lg:grid-cols-[16rem_1fr]">
-      <aside className="hidden lg:block">
-        <div className="sticky top-[var(--site-header-sticky-offset,5rem)] rounded-2xl border border-line bg-panel/40 p-4">
-          <div className="mb-3 flex items-center justify-between gap-2 border-b border-line pb-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold">
-              <SlidersHorizontal size={15} />
-              {t("search.explorer.filter")}
-              {activeCount > 0 && (
-                <span className="numeral rounded-full bg-accent px-1.5 text-[0.7rem] text-on-accent">
-                  {activeCount}
-                </span>
-              )}
-            </h2>
-            {activeCount > 0 && (
-              <button
-                type="button"
-                onClick={reset}
-                className="text-xs text-fg-3 hover:text-accent"
-              >
-                {t("search.explorer.filterReset")}
-              </button>
-            )}
-          </div>
-          {facets}
-        </div>
-      </aside>
-
-      <div data-search-results="">
-        <div className="rounded-2xl border border-line bg-card p-3 sm:p-4">
+  const queryField = <div data-search-query-field="">
           <label htmlFor="search-explorer-query" className="sr-only">
             {t("search.explorer.search.label")}
           </label>
@@ -597,6 +556,39 @@ export function SearchExplorer({
               <Search size={14} />
             </button>
           </div>
+  </div>;
+  return (
+    <section className="grid gap-6 lg:grid-cols-[16rem_1fr]">
+      {fullWidthQuery && queryField}
+      <aside className="hidden lg:block">
+        <div className="sticky top-[var(--site-header-sticky-offset,5rem)] rounded-2xl border border-line bg-panel/40 p-4">
+          <div className="mb-3 flex items-center justify-between gap-2 border-b border-line pb-3">
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <SlidersHorizontal size={15} />
+              {t("search.explorer.filter")}
+              {activeCount > 0 && (
+                <span className="numeral rounded-full bg-accent px-1.5 text-[0.7rem] text-on-accent">
+                  {activeCount}
+                </span>
+              )}
+            </h2>
+            {activeCount > 0 && (
+              <button
+                type="button"
+                onClick={reset}
+                className="text-xs text-fg-3 hover:text-accent"
+              >
+                {t("search.explorer.filterReset")}
+              </button>
+            )}
+          </div>
+          {facets}
+        </div>
+      </aside>
+
+      <div data-search-results="">
+        <div className="rounded-2xl border border-line bg-card p-3 sm:p-4">
+          {!fullWidthQuery && queryField}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button

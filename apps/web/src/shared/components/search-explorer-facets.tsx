@@ -1,4 +1,4 @@
-import { Link2, Gift } from "lucide-react";
+import { ChevronDown, Link2, Gift } from "lucide-react";
 import React from "react";
 
 import {
@@ -19,7 +19,15 @@ import { GENRES } from "@/shared/lib/taxonomy";
 import { cn } from "@/shared/lib/utils";
 
 
-export function FacetGroup({ title, children }: { title: string; children: React.ReactNode }) {
+export function FacetGroup({ title, children, collapsible = false, expanded = false }: { title: string; children: React.ReactNode; collapsible?: boolean; expanded?: boolean }) {
+  if (collapsible) return (
+    <details className="search-facet-group border-b border-line last:border-0" open={expanded}>
+      <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-md text-sm font-semibold text-fg-2 focus-visible:outline-2 focus-visible:outline-accent">
+        {title}<ChevronDown size={16} aria-hidden="true" />
+      </summary>
+      <div className="pb-3.5">{children}</div>
+    </details>
+  );
   return (
     <section className="border-b border-line py-3.5 last:border-0">
       <p className="eyebrow mb-2.5 text-fg-3">{title}</p>
@@ -29,6 +37,7 @@ export function FacetGroup({ title, children }: { title: string; children: React
 }
 
 export interface SearchFacetPanelProps {
+  collapsible?: boolean;
   t: (key: string) => string;
   types: WorkType[];
   setTypes: React.Dispatch<React.SetStateAction<WorkType[]>>;
@@ -55,6 +64,7 @@ export interface SearchFacetPanelProps {
 }
 
 export function SearchFacetPanel({
+  collapsible = false,
   t,
   types,
   setTypes,
@@ -81,7 +91,7 @@ export function SearchFacetPanel({
 }: SearchFacetPanelProps) {
   return (
     <div className="flex flex-col">
-      <FacetGroup title={t("search.explorer.facet.type")}>
+      <FacetGroup collapsible={collapsible} title={t("search.explorer.facet.type")} expanded>
         <div className="grid grid-cols-2 gap-1.5">
           {WORK_TYPES.map((entry) => (
             <button
@@ -97,7 +107,7 @@ export function SearchFacetPanel({
         </div>
       </FacetGroup>
 
-      <FacetGroup title={t("search.explorer.facet.genre")}>
+      <FacetGroup collapsible={collapsible} title={t("search.explorer.facet.genre")} expanded>
         <div className="flex flex-wrap gap-1.5">
           {GENRES.map((genre) => (
             <button
@@ -113,7 +123,7 @@ export function SearchFacetPanel({
         </div>
       </FacetGroup>
 
-      <FacetGroup title={t("search.explorer.facet.tag")}>
+      <FacetGroup collapsible={collapsible} title={t("search.explorer.facet.tag")}>
         <div className="flex flex-wrap gap-1.5">
           {topTags.map((tag) => (
             <TagChip
@@ -127,7 +137,7 @@ export function SearchFacetPanel({
         </div>
       </FacetGroup>
 
-      <FacetGroup title={t("search.explorer.facet.year")}>
+      <FacetGroup collapsible={collapsible} title={t("search.explorer.facet.year")}>
         <div className="grid grid-cols-3 gap-1.5">
           {YEAR_RANGES.map((entry) => {
             const active =
@@ -149,7 +159,7 @@ export function SearchFacetPanel({
         </div>
       </FacetGroup>
 
-      <FacetGroup title={t("search.explorer.facet.status")}>
+      <FacetGroup collapsible={collapsible} title={t("search.explorer.facet.status")}>
         <div className="grid grid-cols-3 gap-1.5">
           {STATUS_OPTIONS.map((entry) => (
             <button
@@ -165,7 +175,7 @@ export function SearchFacetPanel({
         </div>
       </FacetGroup>
 
-      <FacetGroup title={t("search.explorer.facet.platform")}>
+      <FacetGroup collapsible={collapsible} title={t("search.explorer.facet.platform")}>
         <div className="grid gap-1.5 sm:grid-cols-2">
           {platformOptions.map((entry) => (
             <button
@@ -187,7 +197,7 @@ export function SearchFacetPanel({
         </div>
       </FacetGroup>
 
-      <FacetGroup title={t("search.explorer.facet.minRating")}>
+      <FacetGroup collapsible={collapsible} title={t("search.explorer.facet.minRating")}>
         <div className="grid grid-cols-4 gap-1.5">
           {RATING_OPTIONS.map((rating) => (
             <button
@@ -203,7 +213,7 @@ export function SearchFacetPanel({
         </div>
       </FacetGroup>
 
-      <FacetGroup title={t("search.explorer.facet.age")}>
+      <FacetGroup collapsible={collapsible} title={t("search.explorer.facet.age")}>
         <div className="grid grid-cols-4 gap-1.5">
           {AGE_OPTIONS.map((entry) => (
             <button
@@ -219,7 +229,7 @@ export function SearchFacetPanel({
         </div>
       </FacetGroup>
 
-      <FacetGroup title={t("search.explorer.facet.option")}>
+      <FacetGroup collapsible={collapsible} title={t("search.explorer.facet.option")}>
         <div className="flex flex-col gap-1.5">
           <button
             type="button"
