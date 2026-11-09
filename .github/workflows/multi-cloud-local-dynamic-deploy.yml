@@ -97,7 +97,7 @@ jobs:
             scripts/multi-env-dynamic-deploy.test.mjs
 
       - name: Upload Dynamic Deploy Plan & Verify AI Reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: multi-env-deploy-plan-and-verify-ai
           path: |
@@ -170,7 +170,7 @@ jobs:
           echo "- Command: \`${TARGET_CMD}\`" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Portable Environment Bundle (${{ matrix.target.id }})
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: deploy-bundle-${{ matrix.target.id }}
           path: /tmp/deploy-bundle-${{ matrix.target.id }}
