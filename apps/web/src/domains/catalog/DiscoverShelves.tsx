@@ -52,7 +52,7 @@ export function DiscoverShelves({ snapshot, loading, error, onRetry }: DiscoverS
             "Search and the discovery tools below still work. Please try again in a moment.",
           )}
           onRetry={onRetry}
-          className="p-8"
+          className="discover-hub-error"
         />
       );
     }

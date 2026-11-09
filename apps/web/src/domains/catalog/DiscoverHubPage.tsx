@@ -383,10 +383,10 @@ export function DiscoverHubPage() {
       <section
         aria-label={bt("연재 트랙 스위처", "Serialization track switcher")}
         data-testid="discover-serialization-track-switcher"
-        className="mt-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
+        className="discover-hub-tracks mt-6 rounded-2xl border border-line bg-card/85 p-2 shadow-sm"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
+        <div>
+          <div className="sr-only">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
               SERIALIZATION TRACKS · ORIGINALS / CANVAS / WUF / CUTS
             </span>
@@ -394,7 +394,7 @@ export function DiscoverHubPage() {
               {bt("연재 트랙별 바로가기", "Browse by serialization track")}
             </h2>
           </div>
-          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={bt("연재 트랙 선택", "Select serialization track")}>
+          <div className="discover-hub-track-tabs" data-own-control-size="true" role="tablist" aria-label={bt("연재 트랙 선택", "Select serialization track")}>
             {DISCOVER_SERIALIZATION_TRACKS.map((track) => {
               const selected = track.id === activeTrackId;
               return (
@@ -404,6 +404,7 @@ export function DiscoverHubPage() {
                   role="tab"
                   id={`discover-track-${track.id}`}
                   aria-controls="discover-track-panel"
+                  aria-label={track.label}
                   tabIndex={selected ? 0 : -1}
                   aria-selected={selected}
                   onKeyDown={(event) => {
@@ -426,16 +427,13 @@ export function DiscoverHubPage() {
                     });
                   }}
                   className={cn(
-                    "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition-colors",
+                    "inline-flex min-h-11 min-w-0 items-center justify-center rounded-lg border px-1 text-[10px] font-bold transition-colors sm:text-xs",
                     selected
                       ? "border-accent bg-accent text-canvas shadow-sm"
                       : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
                   )}
                 >
-                  <span>{track.label}</span>
-                  <span className="rounded-full bg-canvas/20 px-1.5 py-0.5 text-[10px] font-extrabold">
-                    {track.badge}
-                  </span>
+                  <span aria-hidden="true">{track.id === "all" ? bt("전체", "All") : track.id === "wait-free" ? "WUF" : track.id === "cuts-short" ? "CUTS" : track.badge}</span>
                 </button>
               );
             })}

@@ -55,3 +55,43 @@
     display: list-item;
   }
 }
+
+/* 시안의 다섯 트랙을 한 줄로 유지하되 44px 터치 영역과 상세 목적지는 보존한다. */
+.discover-hub-track-tabs {
+  display: grid;
+  grid-template-columns: minmax(44px, 1fr) minmax(68px, 1.4fr) minmax(48px, 1.2fr) minmax(44px, 1fr) minmax(44px, 1fr);
+  gap: .25rem;
+  min-width: 0;
+}
+/* 공통 오류 화면을 바꾸지 않고 탐색 오류만 작은 가로 안내로 표시한다. */
+.discover-hub-error {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: .75rem;
+  padding: 1rem;
+  text-align: start;
+}
+.discover-hub-error > svg {
+  grid-column: 1;
+  grid-row: 1 / 4;
+  margin: 0;
+}
+.discover-hub-error > p,
+.discover-hub-error > button {
+  grid-column: 2;
+}
+.discover-hub-error > button {
+  justify-self: start;
+  margin-top: .75rem;
+}
+.discover-hub-track-tabs > button {
+  padding-inline: .125rem;
+  font-size: .625rem;
+  white-space: nowrap;
+}
+@media (min-width: 640px) {
+  .discover-hub-track-tabs > button {
+    font-size: .75rem;
+  }
+}

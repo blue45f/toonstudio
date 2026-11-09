@@ -121,6 +121,9 @@ describe("탐색 허브 작품 우선 배치", () => {
     page();
     const tabs = screen.getAllByRole("tab");
     expect(tabs[0].tabIndex).toBe(0);
+    expect(screen.getByRole("tablist").className).toBe("discover-hub-track-tabs");
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["전체", "ORIGINALS", "CANVAS", "WUF", "CUTS"]);
+    expect(tabs.map((tab) => tab.getAttribute("aria-label"))).toEqual(DISCOVER_SERIALIZATION_TRACKS.map((track) => track.label));
     fireEvent.keyDown(tabs[0], { key: "End" });
     expect(tabs[tabs.length - 1].getAttribute("aria-selected")).toBe("true");
     expect(document.activeElement).toBe(tabs[tabs.length - 1]);
