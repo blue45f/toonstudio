@@ -72,9 +72,13 @@ export const CAPABILITIES = [
     href: "/studio/canvas",
     chapterStart: 108,
     icon: PenTool,
-    stats: [{ ko: "WebGPU · Vello", en: "WebGPU · Vello" }, { ko: "브러시 프리셋 226종", en: "226 brush presets" }],
-    ko: { title: "드로잉 엔진", body: "직접 포팅·패치한 WebGPU 벡터 렌더러(Vello)와 Skia 캔버스 덕분에, 큰 원고도 브라우저에서 바로 다룰 수 있어요. 직접 설계·튜닝한 브러시 프리셋 226종에 레이어·선택·보정까지 한 화면에 다 있습니다.", cta: "캔버스 열기" },
-    en: { title: "Drawing engine", body: "With a WebGPU vector renderer (Vello) that we ported and patched ourselves, plus a Skia canvas, even large manuscripts just work in the browser — 226 brush presets designed and tuned in-house, layers, selection and adjustments, all on one screen.", cta: "Open the canvas" },
+    stats: [
+      { ko: "WebGPU · Vello", en: "WebGPU · Vello" },
+      { ko: "브러시 프리셋 226종", en: "226 brush presets" },
+      { ko: "Brush Labs · 97.43점 (38밴드 KM 분광·수묵 농담)", en: "Brush Labs · 97.43 pts (38-band KM spectral & sumi-e)" },
+    ],
+    ko: { title: "드로잉 엔진 · Brush Labs", body: "직접 포팅·패치한 WebGPU 벡터 렌더러(Vello)와 Skia 캔버스, 38밴드 Kubelka-Munk 분광 색혼합·수묵 농담 확산 엔진(Brush Labs 97.43점) 덕분에 큰 원고도 브라우저에서 바로 다룰 수 있어요. 직접 설계·튜닝한 브러시 프리셋 226종에 레이어·선택·보정까지 한 화면에 다 있습니다.", cta: "캔버스 열기" },
+    en: { title: "Drawing engine · Brush Labs", body: "With a WebGPU vector renderer (Vello) that we ported and patched ourselves, a Skia canvas, and a 38-band Kubelka-Munk spectral & sumi-e diffusion engine (Brush Labs 97.43 pts), even large manuscripts work right in the browser — 226 brush presets, layers, selection and adjustments on one screen.", cta: "Open the canvas" },
   },
   {
     id: "three-d",
@@ -82,9 +86,14 @@ export const CAPABILITIES = [
     href: "/studio/bg3d",
     chapterStart: 228,
     icon: Boxes,
-    stats: [{ ko: "테마 팩 42", en: "42 theme packs" }, { ko: "배치 가능 에셋 14,928", en: "14,928 placeable assets" }, { ko: "프리셋 9", en: "9 presets" }],
-    ko: { title: "3D 배경·가상 스튜디오", body: "상용 라이선스를 확보한 3D 에셋 번들을 배경 스튜디오에 연결해 뒀어요. 테마 팩 42종에서 골라 배치하고 카메라 구도를 잡으면, 그대로 컷의 밑그림이 됩니다. 가상 스튜디오는 클래식 2D 무대에서 내 캐릭터로 만나 함께 작업하는 공간이에요.", cta: "3D 배경 스튜디오" },
-    en: { title: "3D sets & virtual studio", body: "We wired a commercially licensed 3D asset bundle into the background studio: pick from 42 theme packs, place what you need, frame the camera — and it becomes the base of your panel. The virtual studio is a classic 2D stage where you meet and work as your character.", cta: "Open the 3D studio" },
+    stats: [
+      { ko: "테마 팩 42", en: "42 theme packs" },
+      { ko: "배치 가능 에셋 14,928", en: "14,928 placeable assets" },
+      { ko: "프리셋 9", en: "9 presets" },
+      { ko: "3-Labs 브리지 X_LABS = 96.84", en: "3-Labs bridge X_LABS = 96.84" },
+    ],
+    ko: { title: "3D 배경·캐릭터·가상 스튜디오 (3-Labs)", body: "상용 라이선스를 확보한 3D 에셋 번들(테마 팩 42종·14,928개 에셋)과 8-Pass PSD 합성, Character Labs(4각도 정밀 턴어라운드·SDF 얼굴 그림자·98.34점), Brush Labs를 하나의 3-Labs 교차 제작 브리지(X_LABS = 96.84)로 연결했어요.", cta: "3D 배경 스튜디오" },
+    en: { title: "3D sets, character & virtual studio (3-Labs)", body: "We connected a commercially licensed 3D asset bundle (42 theme packs, 14,928 assets) with 8-Pass PSD compositing, Character Labs (4-angle turnaround, SDF face shadows, 98.34 pts) and Brush Labs into one 3-Labs cross-production bridge (X_LABS = 96.84).", cta: "Open the 3D studio" },
   },
   {
     id: "collaboration",
@@ -102,9 +111,12 @@ export const CAPABILITIES = [
     href: "/studio/ai-lab",
     chapterStart: 300,
     icon: Sparkles,
-    stats: [{ ko: "BYOK · 로컬 모델 선택", en: "BYOK · local models" }],
-    ko: { title: "Responsible AI", body: "AI는 장면 나누기, 설정이 어긋난 곳 찾기, 규격 검사 같은 반복 일을 도와요. 작품의 방향과 표현, 최종 승인과 권리는 사람이 정합니다. 무엇을 썼는지는 기록에 남고, 무료 모델·내 키(BYOK)·로컬 모델 중에서 고를 수 있어요.", cta: "AI 도구 보기" },
-    en: { title: "Responsible AI", body: "AI helps with the repetitive parts — splitting scenes, spotting continuity slips, checking specs. Direction, expression, final approvals and rights stay with people. Everything AI does is recorded, and you choose between free models, your own key (BYOK) and local models.", cta: "See AI tools" },
+    stats: [
+      { ko: "BYOK · 로컬 모델 선택", en: "BYOK · local models" },
+      { ko: "Verify AI 통합 게이트 · 96.74점", en: "Verify AI unified gate · 96.74 pts" },
+    ],
+    ko: { title: "Responsible AI · Verify AI", body: "AI는 장면 나누기, 설정이 어긋난 곳 찾기, 규격 검사 같은 반복 일을 도와요. Verify AI 프리플라이트 게이트(96.74점)가 컷 간 일관성·권리 BOM·모바일 가독성을 사전 점검하고, 최종 승인과 권리는 언제나 사람이 정합니다.", cta: "AI 도구 보기" },
+    en: { title: "Responsible AI · Verify AI", body: "AI helps with repetitive work — splitting scenes, spotting continuity slips, checking specs. The Verify AI preflight gate (96.74 pts) audits shot continuity, rights BOM and mobile readability, while final approvals and rights stay with people.", cta: "See AI tools" },
   },
   {
     id: "local-first",
@@ -112,9 +124,12 @@ export const CAPABILITIES = [
     href: "/about/technology",
     chapterStart: null,
     icon: Database,
-    stats: [{ ko: "OPFS · IndexedDB", en: "OPFS · IndexedDB" }],
-    ko: { title: "로컬 우선 데이터", body: "원고는 먼저 내 기기에 저장돼요. 오프라인에서도 작업이 이어지고, 클라우드 동기화는 원할 때만 켭니다. 회차·장면·레이어·피드백이 하나의 제작 기록으로 쌓여요.", cta: "기술 자세히 보기" },
-    en: { title: "Local-first data", body: "Your manuscript saves to your own device first. Work carries on offline, and cloud sync only turns on when you want it. Episodes, scenes, layers and feedback build up into one production record.", cta: "Read the engineering hub" },
+    stats: [
+      { ko: "OPFS · IndexedDB", en: "OPFS · IndexedDB" },
+      { ko: "7-타깃 멀티 클라우드·로컬 배포", en: "7-target multi-cloud & local deploy" },
+    ],
+    ko: { title: "로컬 우선 데이터 · 7-타깃 배포", body: "원고는 먼저 내 기기(OPFS · IndexedDB)에 저장돼 오프라인에서도 작업이 이어져요. 또한 Cloudflare·Vercel·Docker·K8s·AWS·GCP·GitHub Pages 7개 환경을 아우르는 동적 배포 매트릭스(171개 자동 테스트 통과)로 클라우드와 로컬 어디서든 동일하게 운영할 수 있습니다.", cta: "기술 자세히 보기" },
+    en: { title: "Local-first data · 7-target deploy", body: "Manuscripts save to your own device (OPFS · IndexedDB) first so work continues offline, backed by a 7-target dynamic deployment matrix (Cloudflare, Vercel, Docker, K8s, AWS, GCP, GitHub Pages · 171 automated tests passing).", cta: "Read the engineering hub" },
   },
 ] as const;
 

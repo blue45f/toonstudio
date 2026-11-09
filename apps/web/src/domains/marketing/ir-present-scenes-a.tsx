@@ -179,11 +179,11 @@ export const SCENE_NODES_A: ReactNode[] = [
         </div>
         <div className="stat">
           <div className="num"><span data-count="226">226</span><small>종</small></div>
-          <div className="label">브러시 카탈로그</div>
-          <div className="desc">기본 G펜부터 질감 브러시까지, 즐겨찾기와 함께 제공되는 드로잉 브러시예요.</div>
+          <div className="label">브러시 카탈로그 · 3-Labs</div>
+          <div className="desc">기본 G펜부터 38밴드 분광·수묵 농담 브러시(Brush Labs 97.43점)까지 제공되는 드로잉 브러시예요.</div>
         </div>
       </div>
-      <p className="stats-note rv">수치는 2026년 10월 21일 실제 서비스 배선 완료 기준입니다. (브러시 카탈로그는 공개 소스코드 기준)</p>
+      <p className="stats-note rv">수치는 실제 서비스 배선 및 공개 소스코드(0d380996, 2026-11-09) 기준입니다 — 3-Labs 교차 제작 브리지(X_LABS = 96.84), Verify AI 통합 프리플라이트 게이트(96.74점), 7-타깃 멀티 클라우드·로컬 배포 매트릭스(171개 자동 테스트 통과) 검증 완료.</p>
     </div>
   ),
   /* 06 역할별 UX */

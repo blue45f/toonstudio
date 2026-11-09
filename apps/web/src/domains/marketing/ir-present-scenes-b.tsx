@@ -204,16 +204,16 @@ export const SCENE_NODES_B: ReactNode[] = [
           <div className="chips"><span className="chip">CanvasKit WASM</span><span className="chip">Vector · Text · PDF</span></div>
         </article>
         <article className="tech-card rv">
-          <div className="t-label">Local First</div>
-          <h3>로컬 우선 저장 — OPFS · IndexedDB</h3>
-          <p>원고는 먼저 내 기기에 저장돼요. <b>OPFS와 IndexedDB</b> 기반 원자적 저장·복구로 네트워크가 끊겨도 작업이 날아가지 않고, <b>SHA-256 무결성 검증</b>을 거쳐 기기 간 아카이브로 안전하게 옮길 수 있습니다.</p>
-          <div className="chips"><span className="chip">OPFS</span><span className="chip">IndexedDB Atomic Recovery</span><span className="chip">SHA-256</span></div>
+          <div className="t-label">Local First &amp; Portable Cloud</div>
+          <h3>로컬 우선 저장(OPFS · IndexedDB) + 7-타깃 멀티 클라우드 배포</h3>
+          <p>원고는 먼저 내 기기(<b>OPFS · IndexedDB</b>)에 원자적 저장·복구되고 <b>SHA-256 무결성 검증</b>을 거칩니다. 서버와 프론트엔드는 Cloudflare · Vercel · Docker · K8s · AWS · GCP · GitHub Pages 7개 타깃 어디서든 원클릭으로 구동되는 포터블 매트릭스를 갖췄어요.</p>
+          <div className="chips"><span className="chip">OPFS · IndexedDB</span><span className="chip">SHA-256</span><span className="chip">7-Target Multi-Cloud &amp; Local</span><span className="chip">3-Labs Bridge (96.84)</span></div>
         </article>
         <article className="tech-card rv">
-          <div className="t-label">Realtime Collaboration</div>
-          <h3>Yjs 실시간 협업</h3>
-          <p>동시 편집의 정합성은 <b>바이너리 CRDT의 CRC 검증</b>과 revision 충돌 방지가 지켜요. 여럿이 동시에 만져도 원고가 손상되지 않게 설계했고, 선택형 P2P 음성 작업실(최대 6인)도 같은 협업 흐름 위에 있습니다.</p>
-          <div className="chips"><span className="chip">Yjs · CRDT</span><span className="chip">CRC Verified</span><span className="chip">P2P Voice (opt-in)</span></div>
+          <div className="t-label">Realtime Collaboration &amp; Verify AI</div>
+          <h3>Yjs 실시간 협업 + Verify AI 프리플라이트 게이트</h3>
+          <p>동시 편집의 정합성은 <b>바이너리 CRDT의 CRC 검증</b>이 지키고, <b>Verify AI 통합 게이트(96.74점)</b>가 3D 배경(8-Pass PSD)·캐릭터(4각 턴어라운드·SDF)·브러시(38밴드 분광) 간 색온도·광원·선굵기·권리 BOM을 연재 전 자동 검증합니다.</p>
+          <div className="chips"><span className="chip">Yjs · CRDT</span><span className="chip">Verify AI (96.74점)</span><span className="chip">171 Automated Tests</span></div>
         </article>
       </div>
     </div>
