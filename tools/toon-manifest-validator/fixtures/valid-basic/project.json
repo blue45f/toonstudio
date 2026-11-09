@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "1.0.0",
+  "project": {
+    "id": "proj-toon-001",
+    "title": "달빛 스튜디오 시즌1",
+    "author": "ToonStudio Team",
+    "createdAt": "2026-11-10T00:00:00.000Z"
+  },
+  "episodes": [
+    {
+      "id": "ep-01",
+      "projectId": "proj-toon-001",
+      "title": "제1화 시작의 문",
+      "order": 1
+    },
+    {
+      "id": "ep-02",
+      "projectId": "proj-toon-001",
+      "title": "제2화 그림자 숲",
+      "order": 2
+    }
+  ],
+  "scenes": [
+    {
+      "id": "sc-01",
+      "episodeId": "ep-01",
+      "title": "오프닝 거리",
+      "order": 1
+    },
+    {
+      "id": "sc-02",
+      "episodeId": "ep-01",
+      "title": "옥상 조우",
+      "order": 2
+    },
+    {
+      "id": "sc-03",
+      "episodeId": "ep-02",
+      "title": "숲 입구",
+      "order": 1
+    }
+  ],
+  "panels": [
+    {
+      "id": "pn-01",
+      "sceneId": "sc-01",
+      "title": "첫 번째 컷",
+      "order": 1,
+      "assetIds": [
+        "as-img-1",
+        "as-font-1"
+      ],
+      "dialogue": "드디어 도착했어."
+    },
+    {
+      "id": "pn-02",
+      "sceneId": "sc-01",
+      "title": "두 번째 컷",
+      "order": 2,
+      "assetIds": [
+        "as-img-2",
+        "as-aud-1"
+      ]
+    },
+    {
+      "id": "pn-03",
+      "sceneId": "sc-02",
+      "title": "옥상 야경 컷",
+      "order": 1,
+      "assetIds": [
+        "as-img-kr",
+        "as-sub-1"
+      ]
+    },
+    {
+      "id": "pn-04",
+      "sceneId": "sc-03",
+      "title": "숲 속 대사 컷",
+      "order": 1,
+      "assetIds": [
+        "as-scr-1"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "as-img-1",
+      "type": "image",
+      "title": "1화 1컷 이미지",
+      "relativePath": "assets/images/ep1_p1.png"
+    },
+    {
+      "id": "as-img-2",
+      "type": "image",
+      "title": "1화 2컷 이미지",
+      "relativePath": "assets/images/ep1_p2.webp"
+    },
+    {
+      "id": "as-img-kr",
+      "type": "image",
+      "title": "한글 배경 이미지",
+      "relativePath": "assets/images/한글배경.jpg"
+    },
+    {
+      "id": "as-aud-1",
+      "type": "audio",
+      "title": "배경음악 01",
+      "relativePath": "assets/audio/bgm_01.mp3"
+    },
+    {
+      "id": "as-font-1",
+      "type": "font",
+      "title": "기본 웹툰 폰트",
+      "relativePath": "assets/fonts/toon_sans.woff2"
+    },
+    {
+      "id": "as-scr-1",
+      "type": "script",
+      "title": "1화 대본 데이터",
+      "relativePath": "assets/scripts/dialogue_ep1.json"
+    },
+    {
+      "id": "as-sub-1",
+      "type": "subtitle",
+      "title": "1화 한국어 자막",
+      "relativePath": "assets/subtitles/ep1_ko.vtt"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+================================================================
+ ToonStudio Project Validator & Safe Export Manifest Report
+================================================================
+Status       : FAIL (INVALID)
+Project File : ./fixtures/invalid-sample/project-invalid.json
+Fixture Root : ./fixtures/valid-basic
+Project ID   : proj-toon-001
+Project Title: (empty)
+----------------------------------------------------------------
+Counts       : Episodes=2, Scenes=3, Panels=4, Assets=8
+Diagnostics  : Errors=6, Warnings=0
+----------------------------------------------------------------
+Validation Errors:
+  [1] [EMPTY_PROJECT_TITLE] (project.title) Project title must be a non-empty string.
+  [2] [REF_EPISODE_PROJECT_MISMATCH] (episodes[0].projectId) Episode "ep-01" references projectId "wrong-proj", expected "proj-toon-001".
+  [3] [PATH_TRAVERSAL_DETECTED] (assets[7].relativePath) Path traversal sequence ("..") detected in "../../outside-fixture/unallowed.dat".
+  [4] [UNSUPPORTED_EXTENSION] (assets[7].relativePath) Extension ".dat" in "../../outside-fixture/unallowed.dat" is not supported.
+  [5] [REF_PANEL_ASSET_MISSING] (panels[0].assetIds[2]) Panel "pn-01" references non-existent assetId "asset-missing-999".
+  [6] [UNREFERENCED_ASSET] (assets(asset-traversal)) Asset "asset-traversal" ("../../outside-fixture/unallowed.dat") is not referenced by any panel.
+================================================================
