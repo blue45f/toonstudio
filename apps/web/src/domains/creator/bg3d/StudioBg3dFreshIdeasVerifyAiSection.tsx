@@ -1,10 +1,24 @@
-import { CheckCircle2, Layers, Link2, Sparkles, Wand2 } from "lucide-react";
+import {
+  CheckCircle2,
+  FileCheck2,
+  Layers,
+  Link2,
+  Sparkles,
+  Wand2,
+  Wrench,
+} from "lucide-react";
 
 import type {
   BlenderSceneVerifyAiReport,
   FreshIdeaLensId,
   FreshIdeaLensRemix,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
+import type {
+  MultiPassToonPsdExportPlan,
+  RightsBomCommercialAuditResult,
+  ToonRenderQualityTier,
+  VerifyAiAutoRemediationPlan,
+} from "./studio-bg3d-multipass-rights-remediation";
 import type {
   VerifyAiPreflightGateReport,
   WebtoonCutArchetypeId,
@@ -20,6 +34,15 @@ const CUT_ARCHETYPE_OPTIONS: readonly {
   { id: "horror-pressure", labelKo: "호러·심리적 압박" },
 ]);
 
+const QUALITY_TIER_OPTIONS: readonly {
+  readonly id: ToonRenderQualityTier;
+  readonly labelKo: string;
+}[] = Object.freeze([
+  { id: "draft", labelKo: "Draft (콘티용)" },
+  { id: "interactive", labelKo: "Interactive (편집용)" },
+  { id: "final", labelKo: "Final (출판 원고용)" },
+]);
+
 export interface StudioBg3dFreshIdeasVerifyAiSectionProps {
   readonly disabled?: boolean;
   readonly verifyAiReport: BlenderSceneVerifyAiReport;
@@ -27,9 +50,16 @@ export interface StudioBg3dFreshIdeasVerifyAiSectionProps {
   readonly preflightReport: VerifyAiPreflightGateReport;
   readonly selectedArchetypeId: WebtoonCutArchetypeId;
   readonly artisticOverride: boolean;
+  readonly renderQualityTier: ToonRenderQualityTier;
+  readonly multiPassPlan: MultiPassToonPsdExportPlan;
+  readonly rightsBomAudit: RightsBomCommercialAuditResult;
+  readonly autoRemediationPlan: VerifyAiAutoRemediationPlan;
+  readonly remediationAppliedCount: number;
   readonly onSelectLensId: (lensId: FreshIdeaLensId) => void;
   readonly onSelectArchetypeId: (archetypeId: WebtoonCutArchetypeId) => void;
   readonly onToggleArtisticOverride: (enabled: boolean) => void;
+  readonly onSelectRenderQualityTier: (tier: ToonRenderQualityTier) => void;
+  readonly onApplyAutoRemediation: () => void;
   readonly onApplyArchetypePreset?: (archetypeId: WebtoonCutArchetypeId) => void;
   readonly onSelectFreshIdeaLens?: (lensId: FreshIdeaLensId, pitchKo: string) => void;
   readonly onVerifyAiGate?: (overallScore: number, passed: boolean) => void;
@@ -43,9 +73,16 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
   preflightReport,
   selectedArchetypeId,
   artisticOverride,
+  renderQualityTier,
+  multiPassPlan,
+  rightsBomAudit,
+  autoRemediationPlan,
+  remediationAppliedCount,
   onSelectLensId,
   onSelectArchetypeId,
   onToggleArtisticOverride,
+  onSelectRenderQualityTier,
+  onApplyAutoRemediation,
   onApplyArchetypePreset,
   onSelectFreshIdeaLens,
   onVerifyAiGate,
@@ -223,6 +260,88 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
         </div>
       </div>
 
+      {/* Phase 3: 8-Pass Toon PSD 플래너 · Rights BOM 상용 출판 감사 · 원클릭 Auto-Remediation */}
+      <div
+        data-testid="bg3d-blender-phase3-multipass-rights-panel"
+        className="flex flex-col gap-2 rounded border border-line bg-card p-2.5 text-[0.63rem]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="flex items-center gap-1 font-semibold text-fg">
+            <FileCheck2 className="size-3.5 text-accent" aria-hidden />
+            Phase 3: 8-Pass Toon PSD 패키징 · Rights BOM 상용 감사 · 원클릭 자동 보정
+          </span>
+          <span
+            data-testid="bg3d-blender-rights-bom-badge"
+            className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[0.6rem] font-semibold text-accent"
+          >
+            {rightsBomAudit.summaryKo}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-semibold text-fg-2">PSD 렌더 품질:</span>
+            {QUALITY_TIER_OPTIONS.map((tier) => (
+              <button
+                key={tier.id}
+                type="button"
+                disabled={disabled}
+                data-testid={`bg3d-blender-psd-tier-${tier.id}`}
+                onClick={() => {
+                  onSelectRenderQualityTier(tier.id);
+                  onStatusChange?.(`PSD 렌더 품질 전환: ${tier.labelKo}`);
+                }}
+                className={`min-h-11 rounded border px-2.5 py-1 text-[0.61rem] ${
+                  renderQualityTier === tier.id
+                    ? "border-accent bg-accent/20 font-bold text-accent"
+                    : "border-line bg-panel text-fg-2 hover:bg-raised"
+                }`}
+              >
+                {tier.labelKo}
+              </button>
+            ))}
+          </div>
+
+          <span
+            data-testid="bg3d-blender-multipass-readout"
+            className="font-mono text-[0.6rem] text-fg-2"
+          >
+            {multiPassPlan.summaryKo}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-line bg-panel/60 px-2.5 py-1.5">
+          <div className="flex flex-col gap-0.5">
+            <span
+              data-testid="bg3d-blender-remediation-readout"
+              className="font-semibold text-fg"
+            >
+              {autoRemediationPlan.summaryKo}
+              {remediationAppliedCount > 0
+                ? ` · 보정 적용 ${remediationAppliedCount}회 완료`
+                : ""}
+            </span>
+            <span className="text-[0.58rem] text-fg-3">
+              자동 크레딧: {rightsBomAudit.autoAttributionCreditsKo.join(" · ")}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            disabled={disabled}
+            data-testid="bg3d-blender-auto-remediation-btn"
+            onClick={() => {
+              onApplyAutoRemediation();
+              onStatusChange?.(autoRemediationPlan.summaryKo);
+            }}
+            className="inline-flex min-h-11 items-center gap-1 rounded border border-accent bg-accent/15 px-2.5 py-1 text-[0.62rem] font-bold text-accent hover:bg-accent/25"
+          >
+            <Wrench className="size-3" aria-hidden />
+            <span>원클릭 자동 보정(Auto-Remediation) 적용</span>
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-2 rounded bg-card px-2.5 py-1.5 text-[0.62rem]">
         <span data-testid="bg3d-blender-verify-ai-dimensions" className="font-mono text-fg-2">
           캐릭터 정합성 {verifyAiReport.evaluation.dimensionScores.characterIdentity} · 스타일 일관성{" "}
@@ -238,7 +357,9 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
           onClick={() => {
             onVerifyAiGate?.(
               verifyAiReport.evaluation.overallScore,
-              verifyAiReport.evaluation.passed && preflightReport.hardGatePassed,
+              verifyAiReport.evaluation.passed &&
+                preflightReport.hardGatePassed &&
+                rightsBomAudit.commercialPublishAllowed,
             );
             onStatusChange?.(
               `${verifyAiReport.summaryBadgeKo} · ${preflightReport.summaryBadgeKo}`,

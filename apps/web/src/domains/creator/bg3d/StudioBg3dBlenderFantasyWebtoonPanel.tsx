@@ -37,6 +37,12 @@ import {
   type FreshIdeaLensId,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
 import { StudioBg3dFreshIdeasVerifyAiSection } from "./StudioBg3dFreshIdeasVerifyAiSection";
+import {
+  buildVerifyAiAutoRemediationPlan,
+  evaluateMultiPassToonPsdExportPlan,
+  evaluateRightsBomCommercialReadiness,
+  type ToonRenderQualityTier,
+} from "./studio-bg3d-multipass-rights-remediation";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 import {
   evaluateVerifyAiPreflightGates,
@@ -103,6 +109,10 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   const [selectedArchetypeId, setSelectedArchetypeId] =
     useState<WebtoonCutArchetypeId>("action-impact");
   const [artisticOverride, setArtisticOverride] = useState<boolean>(false);
+  const [renderQualityTier, setRenderQualityTier] =
+    useState<ToonRenderQualityTier>("final");
+  const [remediationAppliedCount, setRemediationAppliedCount] =
+    useState<number>(0);
   const [selectedLightingId, setSelectedLightingId] = useState<string>(
     BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!.id,
   );
@@ -270,6 +280,25 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         contrastRatio: lightingEvaluation.contrastRatio,
       }),
     [selectedArchetypeId, artisticOverride, lightingEvaluation.contrastRatio],
+  );
+
+  const multiPassPlan = useMemo(
+    () =>
+      evaluateMultiPassToonPsdExportPlan({
+        qualityTier: renderQualityTier,
+        webgpuComputeAvailable: true,
+      }),
+    [renderQualityTier],
+  );
+
+  const rightsBomAudit = useMemo(
+    () => evaluateRightsBomCommercialReadiness(),
+    [],
+  );
+
+  const autoRemediationPlan = useMemo(
+    () => buildVerifyAiAutoRemediationPlan(preflightReport, customKelvin),
+    [preflightReport, customKelvin],
   );
 
   const activeLensRemix = useMemo(
@@ -712,9 +741,18 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         preflightReport={preflightReport}
         selectedArchetypeId={selectedArchetypeId}
         artisticOverride={artisticOverride}
+        renderQualityTier={renderQualityTier}
+        multiPassPlan={multiPassPlan}
+        rightsBomAudit={rightsBomAudit}
+        autoRemediationPlan={autoRemediationPlan}
+        remediationAppliedCount={remediationAppliedCount}
         onSelectLensId={setSelectedLensId}
         onSelectArchetypeId={setSelectedArchetypeId}
         onToggleArtisticOverride={setArtisticOverride}
+        onSelectRenderQualityTier={setRenderQualityTier}
+        onApplyAutoRemediation={() =>
+          setRemediationAppliedCount((prev) => prev + 1)
+        }
         onApplyArchetypePreset={(archetypeId) => {
           const rec = recommendBlenderCutArchetypePreset(
             archetypeId,

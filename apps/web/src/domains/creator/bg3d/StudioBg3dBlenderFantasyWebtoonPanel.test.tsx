@@ -21,7 +21,7 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(fireEvent.click(link)).toBe(false);
   });
 
-  it("renders all 5 Blender 5.2 fantasy webtoon sections, 5-Lens Fresh Ideas Remix, Phase 2 S_CD/BRI/PRS preflight, and Verify AI gate", () => {
+  it("renders all 5 Blender 5.2 sections, 5-Lens Fresh Ideas Remix, Phase 2 S_CD/BRI/PRS, Phase 3 8-Pass PSD/Rights BOM/Auto-Remediation, and Verify AI gate", () => {
     const onApplyLightingRig = vi.fn();
     const onApplyNprShader = vi.fn();
     const onApplyFreestyleInk = vi.fn();
@@ -113,7 +113,7 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-crowd-readout").textContent,
     ).toContain("240기");
 
-    // 5B. 5-Lens Creative Remix & Phase 2 S_CD/BRI/PRS & Verify AI Gate
+    // 5B. 5-Lens Creative Remix & Phase 2 S_CD/BRI/PRS & Phase 3 Multi-Pass/Rights BOM/Auto-Remediation & Verify AI Gate
     expect(
       screen.getByTestId("bg3d-blender-fresh-ideas-verify-ai-section"),
     ).toBeTruthy();
@@ -137,6 +137,20 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(
       screen.getByTestId("bg3d-blender-scd-readout").textContent,
     ).toContain("예술적 허용");
+
+    // Phase 3 interactions
+    expect(
+      screen.getByTestId("bg3d-blender-rights-bom-badge").textContent,
+    ).toContain("Rights BOM 상용 출판 가능");
+    fireEvent.click(screen.getByTestId("bg3d-blender-psd-tier-draft"));
+    expect(
+      screen.getByTestId("bg3d-blender-multipass-readout").textContent,
+    ).toContain("DRAFT 960×1350");
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-auto-remediation-btn"));
+    expect(
+      screen.getByTestId("bg3d-blender-remediation-readout").textContent,
+    ).toContain("보정 적용 1회 완료");
 
     fireEvent.click(
       screen.getByTestId("bg3d-blender-fresh-lens-practical-playbook"),

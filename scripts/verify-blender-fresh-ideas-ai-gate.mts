@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Blender 5.2 × Generate Fresh Ideas (5-Lens Remix) × Verify AI Quality Gate (Phase 1 + Phase 2 V01~V10) 통합 검증 CLI.
+ * Blender 5.2 × Generate Fresh Ideas (5-Lens Remix) × Verify AI Quality Gate (Phase 1 + Phase 2 V01~V10 + Phase 3 Multi-Pass PSD/Rights BOM/Auto-Remediation) 통합 검증 CLI.
  *
  * Usage:
  *   pnpm exec tsx scripts/verify-blender-fresh-ideas-ai-gate.mts [--report /tmp/blender-verify-ai-report.md] [--json /tmp/blender-verify-ai-run.json]
@@ -15,6 +15,11 @@ import {
   evaluateBlenderSceneWithVerifyAi,
   type BlenderSceneVerifyAiSynthesisInput,
 } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-fresh-ideas-verify-ai";
+import {
+  buildVerifyAiAutoRemediationPlan,
+  evaluateMultiPassToonPsdExportPlan,
+  evaluateRightsBomCommercialReadiness,
+} from "../apps/web/src/domains/creator/bg3d/studio-bg3d-multipass-rights-remediation";
 import { evaluateVerifyAiPreflightGates } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink";
 import {
   BLENDER_FANTASY_LIGHTING_RIG_PRESETS,
@@ -93,6 +98,12 @@ const preflight = evaluateVerifyAiPreflightGates({
   artisticOverride: false,
   contrastRatio: lightingEval.contrastRatio,
 });
+const multiPassPlan = evaluateMultiPassToonPsdExportPlan({
+  qualityTier: "final",
+  webgpuComputeAvailable: true,
+});
+const rightsBomAudit = evaluateRightsBomCommercialReadiness();
+const autoRemediation = buildVerifyAiAutoRemediationPlan(preflight, 5600);
 
 const qualityMarkdown = formatStudioAiQualityEvaluationMarkdown(
   result.qualityRun,
@@ -118,6 +129,12 @@ const fullMarkdown = [
   "| ID | 지표 | Hard Gate | 점수 | 측정값 | 판정 |",
   "|---|---|:---:|---:|---|:---:|",
   preflightRows,
+  "",
+  `## Phase 3 Multi-Pass PSD · Rights BOM · Auto-Remediation`,
+  "",
+  `- **Multi-Pass PSD:** ${multiPassPlan.summaryKo}`,
+  `- **Rights BOM:** ${rightsBomAudit.summaryKo} (${rightsBomAudit.autoAttributionCreditsKo.join(", ")})`,
+  `- **Auto-Remediation:** ${autoRemediation.summaryKo}`,
   "",
   `## ${result.remixHeaderKo}`,
   "",
@@ -150,4 +167,8 @@ if (reportPath) {
 
 process.stdout.write(fullMarkdown);
 process.exitCode =
-  result.evaluation.passed && preflight.hardGatePassed ? 0 : 1;
+  result.evaluation.passed &&
+  preflight.hardGatePassed &&
+  rightsBomAudit.commercialPublishAllowed
+    ? 0
+    : 1;
