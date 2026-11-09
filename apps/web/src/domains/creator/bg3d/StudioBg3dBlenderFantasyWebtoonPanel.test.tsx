@@ -21,13 +21,15 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(fireEvent.click(link)).toBe(false);
   });
 
-  it("renders all 5 Blender 5.2 fantasy webtoon sections and invokes callbacks on interaction", () => {
+  it("renders all 5 Blender 5.2 fantasy webtoon sections, 5-Lens Fresh Ideas Remix, and Verify AI gate", () => {
     const onApplyLightingRig = vi.fn();
     const onApplyNprShader = vi.fn();
     const onApplyFreestyleInk = vi.fn();
     const onApplyWeaponRig = vi.fn();
     const onApplyMonsterIk = vi.fn();
     const onSimulateCrowd = vi.fn();
+    const onSelectFreshIdeaLens = vi.fn();
+    const onVerifyAiGate = vi.fn();
 
     render(
       <StudioBg3dBlenderFantasyWebtoonPanel
@@ -37,6 +39,8 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
         onApplyWeaponRig={onApplyWeaponRig}
         onApplyMonsterIk={onApplyMonsterIk}
         onSimulateCrowd={onSimulateCrowd}
+        onSelectFreshIdeaLens={onSelectFreshIdeaLens}
+        onVerifyAiGate={onVerifyAiGate}
       />,
     );
 
@@ -108,5 +112,27 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(
       screen.getByTestId("bg3d-blender-crowd-readout").textContent,
     ).toContain("240기");
+
+    // 5B. 5-Lens Creative Remix & Verify AI Gate
+    expect(
+      screen.getByTestId("bg3d-blender-fresh-ideas-verify-ai-section"),
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("bg3d-blender-verify-ai-badge").textContent,
+    ).toContain("Verify AI PASS");
+
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-fresh-lens-practical-playbook"),
+    );
+    expect(onSelectFreshIdeaLens).toHaveBeenCalledWith(
+      "practical-playbook",
+      expect.stringContaining("체크리스트"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-fresh-lens-detail").textContent,
+    ).toContain("4. ✅ PRACTICAL PLAYBOOK");
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-verify-ai-run-btn"));
+    expect(onVerifyAiGate).toHaveBeenCalledWith(expect.any(Number), true);
   });
 });
