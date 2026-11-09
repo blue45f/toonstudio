@@ -26,6 +26,7 @@ on:
       - "apps/character-lab/src/**"
       - "apps/brush-lab/src/**"
       - "scripts/multi-env-dynamic-deploy.mjs"
+      - "scripts/verify-all-labs-production-release.mts"
       - "deploy/multi-env/**"
       - ".github/workflows/multi-cloud-local-dynamic-deploy.yml"
 
@@ -79,15 +80,18 @@ jobs:
           echo "target=$TARGET_LIST" >> "$GITHUB_OUTPUT"
           cat /tmp/multi-env-deploy-plan.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run Architecture & 3-Labs Verify AI Preflight Gates in Parallel
+      - name: Run Architecture & All-Labs Verify AI Preflight Gates in Parallel
         run: |
           pnpm run validate:architecture
           pnpm exec tsx scripts/verify-blender-fresh-ideas-ai-gate.mts --report /tmp/blender-verify-ai-report.md
+          pnpm exec tsx scripts/verify-all-labs-production-release.mts --report /tmp/all-labs-production-release.md
+          cat /tmp/all-labs-production-release.md >> "$GITHUB_STEP_SUMMARY"
           ./node_modules/.bin/vitest run \
             apps/web/src/domains/creator/bg3d/studio-bg3d-fresh-ideas-verify-ai.test.ts \
             apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink.test.ts \
             apps/web/src/domains/creator/bg3d/studio-bg3d-multipass-rights-remediation.test.ts \
             apps/web/src/domains/creator/bg3d/studio-bg3d-scroll-pacing-live-sync.test.ts \
+            apps/web/src/domains/creator/bg3d/studio-cross-labs-production-bridge.test.ts \
             apps/character-lab/src/render/style/character-verify-ai-fresh-ideas.test.ts \
             apps/brush-lab/src/bench/metrics/webtoon-brush-verify-ai-remix.test.ts \
             scripts/multi-env-dynamic-deploy.test.mjs
@@ -100,6 +104,7 @@ jobs:
             /tmp/multi-env-deploy-plan.md
             /tmp/multi-env-deploy-plan.json
             /tmp/blender-verify-ai-report.md
+            /tmp/all-labs-production-release.md
           retention-days: 14
 
   verify-and-package-workspaces:

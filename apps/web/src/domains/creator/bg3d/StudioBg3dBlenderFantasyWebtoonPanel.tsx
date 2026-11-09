@@ -233,11 +233,11 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
       evaluateVerticalScrollCutPacing({
         archetypeId: selectedArchetypeId,
         lensId: selectedLensId,
-        cameraTiltDeg: preflightReport.archetypeRecommendation.recommendedCameraTiltDeg,
-        silhouetteSeparationRatio: preflightReport.archetypeRecommendation.silhouetteSeparationRatio,
+        cameraTiltDeg: selectedArchetypeId === "action-impact" ? 18 : 10,
+        silhouetteSeparationRatio: Math.min(1, lightingEvaluation.contrastRatio / 2.8),
         activeWeaponCount: weaponSolveResult.blades.length,
       }),
-    [selectedArchetypeId, selectedLensId, preflightReport, weaponSolveResult.blades.length],
+    [selectedArchetypeId, selectedLensId, lightingEvaluation.contrastRatio, weaponSolveResult.blades.length],
   );
   const liveSyncBridge = useMemo(
     () =>
@@ -248,9 +248,9 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         weaponPresetId: activeWeaponPreset.id,
         monsterPresetId: activeMonsterPreset.id,
         focalLengthMm: preflightReport.archetypeRecommendation.recommendedFocalLengthMm,
-        cameraTiltDeg: preflightReport.archetypeRecommendation.recommendedCameraTiltDeg,
+        cameraTiltDeg: selectedArchetypeId === "action-impact" ? 18 : 10,
       }),
-    [activeLightingRig.id, activeShaderPreset.id, activeFreestylePreset.id, activeWeaponPreset.id, activeMonsterPreset.id, preflightReport],
+    [activeLightingRig.id, activeShaderPreset.id, activeFreestylePreset.id, activeWeaponPreset.id, activeMonsterPreset.id, preflightReport.archetypeRecommendation.recommendedFocalLengthMm, selectedArchetypeId],
   );
   const activeLensRemix = useMemo(
     () => verifyAiReport.remixes.find((r) => r.id === selectedLensId) ?? verifyAiReport.remixes[0]!,

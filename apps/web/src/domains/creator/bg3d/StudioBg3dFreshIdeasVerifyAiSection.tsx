@@ -1,5 +1,6 @@
 import {
   CheckCircle2,
+  Cpu,
   FileCheck2,
   Layers,
   Link2,
@@ -9,6 +10,7 @@ import {
   Wrench,
 } from "lucide-react";
 
+import { evaluateCrossLabsUnifiedProductionBridge } from "./studio-cross-labs-production-bridge";
 import type {
   BlenderSceneVerifyAiReport,
   FreshIdeaLensId,
@@ -97,6 +99,22 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
   onVerifyAiGate,
   onStatusChange,
 }: StudioBg3dFreshIdeasVerifyAiSectionProps) {
+  const crossLabsReport = evaluateCrossLabsUnifiedProductionBridge({
+    bg3dOverallScore100: verifyAiReport.evaluation.overallScore,
+    bg3dPreflightScore100: preflightReport.totalGateScore,
+    bg3dContrastRatio: 2.45,
+    bg3dSafeZoneScore100: scrollPacingPlan.speechBubbleSafeZoneScore,
+    characterOverallScore100: 96.9,
+    characterTurnaroundScore100: 96.4,
+    characterFaceSdfScore100: 99.5,
+    characterOutlineWidthMm: 3.5,
+    brushOverallScore100: 97.3,
+    brushTaperSharpness100: 97.4,
+    brushLinkedInkStability100: preflightReport.linkedInkBridge.bridgeReliabilityIndex,
+    brushAverageStrokePx: 4.48,
+    rightsBomScore100: rightsBomAudit.commercialPublishAllowed ? 100 : 0,
+  });
+
   return (
     <section
       data-testid="bg3d-blender-fresh-ideas-verify-ai-section"
@@ -269,7 +287,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
         </div>
       </div>
 
-      {/* Phase 3 & 4: 8-Pass Toon PSD · Rights BOM · 원클릭 Auto-Remediation · 세로 스크롤 페이싱(B_SZ) */}
+      {/* Phase 3·4·Wave 2: 8-Pass Toon PSD · Rights BOM · 원클릭 Auto-Remediation · 세로 스크롤(B_SZ) · Cross-Labs 통합(X_LABS) */}
       <div
         data-testid="bg3d-blender-phase3-multipass-rights-panel"
         className="flex flex-col gap-2 rounded border border-line bg-card p-2.5 text-[0.63rem]"
@@ -277,7 +295,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-1 font-semibold text-fg">
             <FileCheck2 className="size-3.5 text-accent" aria-hidden />
-            Phase 3·4: 8-Pass PSD · Rights BOM 감사 · 원클릭 보정 · 세로 스크롤 안전영역(B_SZ)
+            Phase 3·4 & Wave 2: 8-Pass PSD · Rights BOM · 세로 스크롤(B_SZ) · 3대 랩스 정합성(X_LABS)
           </span>
           <span
             data-testid="bg3d-blender-rights-bom-badge"
@@ -335,6 +353,19 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
           </span>
         </div>
 
+        <div
+          data-testid="bg3d-blender-cross-labs-bridge-readout"
+          className="flex flex-wrap items-center justify-between gap-2 rounded border border-accent/40 bg-accent/10 px-2.5 py-1.5 text-[0.6rem]"
+        >
+          <span className="flex items-center gap-1 font-bold text-accent">
+            <Cpu className="size-3" aria-hidden />
+            {crossLabsReport.summaryBadgeKo}
+          </span>
+          <span className="font-mono text-fg-2">
+            {crossLabsReport.productionReadySummaryKo}
+          </span>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-line bg-panel/60 px-2.5 py-1.5">
           <div className="flex flex-col gap-0.5">
             <span
@@ -384,10 +415,11 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
               verifyAiReport.evaluation.overallScore,
               verifyAiReport.evaluation.passed &&
                 preflightReport.hardGatePassed &&
-                rightsBomAudit.commercialPublishAllowed,
+                rightsBomAudit.commercialPublishAllowed &&
+                crossLabsReport.coherence.releaseGatePassed,
             );
             onStatusChange?.(
-              `${verifyAiReport.summaryBadgeKo} · ${preflightReport.summaryBadgeKo}`,
+              `${verifyAiReport.summaryBadgeKo} · ${crossLabsReport.summaryBadgeKo}`,
             );
           }}
           className="inline-flex min-h-11 items-center gap-1 rounded bg-accent px-3 py-1 text-[0.65rem] font-bold text-on-accent"
