@@ -60,6 +60,13 @@ describe("벤치마크의 로컬 이차 안료 모델과 JSON v2", () => {
     expect(store.get().presetId).toBe("watercolor-wet");
     expect(drawStore.get().presetId).toBe("watercolor-wet");
     expect(store.get().overrides.kmBeta).toBe(true);
+
+    // Brush Verify AI & 5-Lens Remix & Genre Preset assertions
+    expect(screen.getByTestId("lab-brush-verify-ai-badge").textContent).toContain("Brush Verify AI PASS");
+    fireEvent.click(screen.getByTestId("lab-genre-preset-noir-heavy-halftone"));
+    expect(store.get().presetId).toBe("charcoal-grain");
+    fireEvent.click(screen.getByTestId("lab-brush-fresh-lens-what-they-missed"));
+    expect(screen.getByTestId("lab-brush-fresh-lens-detail").textContent).toContain("5. 🎯 WHAT THEY MISSED");
   });
 
   it("다운로드 버튼은 v2 파일명·모델 키·비승격 분류와 기존 혼색 지표를 내보낸다", () => {

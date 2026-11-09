@@ -3,6 +3,7 @@ import {
   FileCheck2,
   Layers,
   Link2,
+  MessageSquare,
   Sparkles,
   Wand2,
   Wrench,
@@ -19,6 +20,10 @@ import type {
   ToonRenderQualityTier,
   VerifyAiAutoRemediationPlan,
 } from "./studio-bg3d-multipass-rights-remediation";
+import type {
+  BlenderLiveSceneSyncBridge,
+  VerticalScrollCutPacingPlan,
+} from "./studio-bg3d-scroll-pacing-live-sync";
 import type {
   VerifyAiPreflightGateReport,
   WebtoonCutArchetypeId,
@@ -55,6 +60,8 @@ export interface StudioBg3dFreshIdeasVerifyAiSectionProps {
   readonly rightsBomAudit: RightsBomCommercialAuditResult;
   readonly autoRemediationPlan: VerifyAiAutoRemediationPlan;
   readonly remediationAppliedCount: number;
+  readonly scrollPacingPlan: VerticalScrollCutPacingPlan;
+  readonly liveSyncBridge: BlenderLiveSceneSyncBridge;
   readonly onSelectLensId: (lensId: FreshIdeaLensId) => void;
   readonly onSelectArchetypeId: (archetypeId: WebtoonCutArchetypeId) => void;
   readonly onToggleArtisticOverride: (enabled: boolean) => void;
@@ -78,6 +85,8 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
   rightsBomAudit,
   autoRemediationPlan,
   remediationAppliedCount,
+  scrollPacingPlan,
+  liveSyncBridge,
   onSelectLensId,
   onSelectArchetypeId,
   onToggleArtisticOverride,
@@ -159,7 +168,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
         )}
       </div>
 
-      {/* Phase 2: 3D Shot 연속성(S_CD) · Live 2D↔3D Linked Ink(BRI) · 컷 아키타입 추천(PRS) · V01~V10 하드 게이트 */}
+      {/* Phase 2: 3D Shot 연속성(S_CD) · Live 2D↔3D Linked Ink(BRI) · 컷 아키타입 추천(PRS) */}
       <div
         data-testid="bg3d-blender-phase2-preflight-panel"
         className="flex flex-col gap-2 rounded border border-line bg-card p-2.5 text-[0.63rem]"
@@ -260,7 +269,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
         </div>
       </div>
 
-      {/* Phase 3: 8-Pass Toon PSD 플래너 · Rights BOM 상용 출판 감사 · 원클릭 Auto-Remediation */}
+      {/* Phase 3 & 4: 8-Pass Toon PSD · Rights BOM · 원클릭 Auto-Remediation · 세로 스크롤 페이싱(B_SZ) */}
       <div
         data-testid="bg3d-blender-phase3-multipass-rights-panel"
         className="flex flex-col gap-2 rounded border border-line bg-card p-2.5 text-[0.63rem]"
@@ -268,7 +277,7 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-1 font-semibold text-fg">
             <FileCheck2 className="size-3.5 text-accent" aria-hidden />
-            Phase 3: 8-Pass Toon PSD 패키징 · Rights BOM 상용 감사 · 원클릭 자동 보정
+            Phase 3·4: 8-Pass PSD · Rights BOM 감사 · 원클릭 보정 · 세로 스크롤 안전영역(B_SZ)
           </span>
           <span
             data-testid="bg3d-blender-rights-bom-badge"
@@ -307,6 +316,22 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
             className="font-mono text-[0.6rem] text-fg-2"
           >
             {multiPassPlan.summaryKo}
+          </span>
+        </div>
+
+        <div
+          data-testid="bg3d-blender-phase4-scroll-pacing-readout"
+          className="flex flex-wrap items-center justify-between gap-2 rounded border border-line bg-panel/50 px-2.5 py-1.5 text-[0.6rem]"
+        >
+          <span className="flex items-center gap-1 font-semibold text-fg">
+            <MessageSquare className="size-3 text-accent" aria-hidden />
+            {scrollPacingPlan.summaryKo}
+          </span>
+          <span
+            data-testid="bg3d-blender-live-sync-readout"
+            className="font-mono text-fg-2"
+          >
+            {liveSyncBridge.summaryKo}
           </span>
         </div>
 

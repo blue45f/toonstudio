@@ -1,0 +1,53 @@
+# ToonStudio 로컬 & 단일 클라우드 VM 통합 실행용 Docker Compose 스택
+# 실행 방법:
+#   docker compose -f deploy/multi-env/docker-compose.local.yml up --build -d
+
+name: toonstudio-multi-env
+
+services:
+  toonstudio-web:
+    image: node:24-alpine
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+    command: >
+      sh -c "corepack enable && pnpm --filter @toonstudio/web preview --host 0.0.0.0 --port 4173"
+    ports:
+      - "4173:4173"
+    environment:
+      - NODE_ENV=production
+
+  character-lab:
+    image: node:24-alpine
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+    command: >
+      sh -c "corepack enable && pnpm --filter @toonstudio/character-lab preview --host 0.0.0.0 --port 4174"
+    ports:
+      - "4174:4174"
+    environment:
+      - NODE_ENV=production
+
+  brush-lab:
+    image: node:24-alpine
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+    command: >
+      sh -c "corepack enable && pnpm --filter @toonstudio/brush-lab preview --host 0.0.0.0 --port 4175"
+    ports:
+      - "4175:4175"
+    environment:
+      - NODE_ENV=production
+
+  toonstudio-api:
+    build:
+      context: ../../
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped

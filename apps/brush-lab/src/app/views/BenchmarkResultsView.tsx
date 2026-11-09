@@ -8,6 +8,12 @@ import {
   selectOptimalServiceBrushConfiguration,
 } from "../../bench/metrics/competitor-quality-bench";
 import {
+  WEBTOON_BRUSH_GENRE_RECOMMENDATIONS,
+  evaluateWebtoonBrushVerifyAiGate,
+  type BrushLabFreshLensId,
+  type WebtoonBrushGenreId,
+} from "../../bench/metrics/webtoon-brush-verify-ai-remix";
+import {
   QUADRATIC_PIGMENT_MODEL,
   evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
   evaluateQuadraticPigmentMix,
@@ -28,6 +34,8 @@ export function BenchmarkResultsView() {
   const [promotedOnly, setPromotedOnly] = useState<boolean>(false);
   const [appliedBanner, setAppliedBanner] = useState<string | null>(null);
   const [pigmentMixRatio01, setPigmentMixRatio01] = useState<number>(0.5);
+  const [selectedGenreId, setSelectedGenreId] = useState<WebtoonBrushGenreId>("action-gpen-slash");
+  const [selectedLensId, setSelectedLensId] = useState<BrushLabFreshLensId>("contrarian-take");
 
   const summaryReport = useMemo(() => runBrushLabCompetitorQualityBenchmark(seed), [seed]);
   const engineMatrix = useMemo(() => runMultiEngineBrushMatrixBenchmark(seed), [seed]);
@@ -73,6 +81,31 @@ export function BenchmarkResultsView() {
     [pigmentMixRatio01, seed],
   );
 
+  const brushVerifyAiReport = useMemo(
+    () =>
+      evaluateWebtoonBrushVerifyAiGate({
+        genreId: selectedGenreId,
+        compositeBenchScore100: optimalProfile.verifiedCompositeScore100,
+        chromaPreservationGain01: summaryReport.spectral38ChromaPreservationGain01,
+        mudEliminationGain01: summaryReport.ghostWashMudEliminationGain01,
+        eightHourFrameDriftPct: optimalProfile.verified8hFrameDriftPct,
+      }),
+    [
+      selectedGenreId,
+      optimalProfile.verifiedCompositeScore100,
+      summaryReport.spectral38ChromaPreservationGain01,
+      summaryReport.ghostWashMudEliminationGain01,
+      optimalProfile.verified8hFrameDriftPct,
+    ],
+  );
+
+  const activeBrushLens = useMemo(
+    () =>
+      brushVerifyAiReport.remixes.find((r) => r.id === selectedLensId) ??
+      brushVerifyAiReport.remixes[0]!,
+    [brushVerifyAiReport.remixes, selectedLensId],
+  );
+
   const visibleEngines = promotedOnly
     ? engineMatrix.filter((row) => row.promotedToService)
     : engineMatrix;
@@ -110,6 +143,27 @@ export function BenchmarkResultsView() {
     drawActions.setOverride(optimalOverrides);
     setAppliedBanner(
       `실서비스 최적 프로파일(${optimalProfile.profileId} · 종합 ${optimalProfile.verifiedCompositeScore100}점)을 브러시 랩 샌드박스 및 A/B 비교 설정에 적용했습니다.`,
+    );
+  };
+
+  const handleApplyGenreRecommendation = (genreId: WebtoonBrushGenreId): void => {
+    setSelectedGenreId(genreId);
+    const rec =
+      WEBTOON_BRUSH_GENRE_RECOMMENDATIONS.find((g) => g.genreId === genreId) ??
+      WEBTOON_BRUSH_GENRE_RECOMMENDATIONS[0]!;
+    const overrides = {
+      grain: rec.enableGrain,
+      paperRoughness: rec.recommendedPaperTooth01,
+      wetBeta: rec.enableWetBeta,
+      kmBeta: rec.enableKmBeta,
+      filter: "anisotropic" as const,
+    };
+    actions.setPreset(rec.targetPresetId);
+    actions.setOverride(overrides);
+    drawActions.setPreset(rec.targetPresetId);
+    drawActions.setOverride(overrides);
+    setAppliedBanner(
+      `웹툰 장르 프리셋 [${rec.labelKo}] (${rec.targetPresetId} · 종이 거칠기 ${rec.recommendedPaperTooth01})을 드로잉·비교 샌드박스에 적용했습니다.`,
     );
   };
 
@@ -191,6 +245,51 @@ export function BenchmarkResultsView() {
             {appliedBanner}
           </p>
         ) : null}
+      </div>
+
+      <div className="lab-banner" data-testid="lab-webtoon-verify-ai-remix-panel">
+        <div className="lab-button-row">
+          <strong data-testid="lab-brush-verify-ai-badge">
+            {brushVerifyAiReport.summaryBadgeKo}
+          </strong>
+        </div>
+        <div className="lab-button-row" role="group" aria-label="웹툰 장르별 최적 브러시 추천">
+          {WEBTOON_BRUSH_GENRE_RECOMMENDATIONS.map((rec) => (
+            <button
+              key={rec.genreId}
+              type="button"
+              className="lab-button"
+              data-testid={`lab-genre-preset-${rec.genreId}`}
+              aria-pressed={selectedGenreId === rec.genreId}
+              onClick={() => handleApplyGenreRecommendation(rec.genreId)}
+            >
+              {rec.labelKo}
+            </button>
+          ))}
+        </div>
+        <p className="lab-muted" data-testid="lab-brush-genre-rationale">
+          {brushVerifyAiReport.genreRecommendation.rationaleKo}
+        </p>
+        <div className="lab-button-row" role="group" aria-label="브러시 5-Lens 크리에이티브 리믹스">
+          {brushVerifyAiReport.remixes.map((remix) => (
+            <button
+              key={remix.id}
+              type="button"
+              className="lab-button"
+              data-testid={`lab-brush-fresh-lens-${remix.id}`}
+              aria-pressed={selectedLensId === remix.id}
+              onClick={() => setSelectedLensId(remix.id)}
+            >
+              {remix.badgeKo}
+            </button>
+          ))}
+        </div>
+        <div data-testid="lab-brush-fresh-lens-detail">
+          <p>
+            <strong>{activeBrushLens.badgeKo}: {activeBrushLens.titleKo}</strong>
+          </p>
+          <p className="lab-muted">→ {activeBrushLens.angleKo}</p>
+        </div>
       </div>
 
       <dl className="lab-stats" data-testid="lab-benchmark-kpi-strip">

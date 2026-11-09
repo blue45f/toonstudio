@@ -538,6 +538,14 @@ describe("베타 기능 토글", () => {
       patch: { line: { widthMm: 5.5 } },
       coalesceKey: "look:line.widthMm",
     });
+
+    expect(getByTestId("character-lab-verify-ai-panel")).toBeTruthy();
+    expect(getByTestId("character-lab-verify-ai-badge").textContent).toContain("Character Verify AI PASS");
+    fireEvent.click(getByTestId("character-lab-fresh-lens-practical-playbook"));
+    expect(getByTestId("character-lab-fresh-lens-detail").textContent).toContain("4. ✅ PRACTICAL PLAYBOOK");
+    fireEvent.click(getByTestId("character-lab-apply-verify-ai-patch-btn"));
+    expect(lastProfile(dispatched).toon?.outlinePressure).toBe(true);
   });
 });
+
 

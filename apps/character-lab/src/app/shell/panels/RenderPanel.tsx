@@ -1,25 +1,15 @@
 /**
  * RenderPanel: 셰이딩 모드(PBR/툰)·품질 프리셋·톤맵·그림자(캐스케이드·PCF·접촉 경화)·후처리(FXAA·블룸·샤프닝·TAA/SSAO 베타)·IBL 세기·
  * 툰 옵션을 `shading/set`으로 바꾸고, 엔진이 보고하는 기능 가용성(CSM·SSS·IBL·TAA·SSAO·GPU 타이머·텍스처 모드)과 HUD 수치를 표로 보인다.
- *
- * - 컨트롤은 레시피의 `shading` 프로파일을 그대로 편집한다(엔진이 없어도 저장되고, 준비되면 적용 루프가 반영한다).
- * - 슬라이더(IBL 세기)는 드래그 중에는 로컬 값만 바꾸고 포인터·키보드를 놓을 때 한 번만 dispatch한다(history 1단계).
- * - 엔진이 켜지 못한 기능은 '사용 불가 + 사유'로 표에 남는다. 패널은 대체 기능을 켜거나 설정을 바꾸지 않는다(무음 축소 금지).
- * - 키트 소스에서는 엔진이 얼굴 SDF 그림자를 쓰지 않는다(키트 UV에 SDF 전제가 없음, KT-04). 체크박스는 레시피 값을 그대로 편집하게 두고
- *   "적용되지 않음" 사유를 같은 줄 아래 보인다(값은 레시피에 남아 절차 소스로 돌아가면 다시 쓰인다). 키트의 툰 기본값(음영 2단계·림 끔)은 레시피에 들어 있어
- *   컨트롤이 레시피 값을 그대로 보인다.
- * - TAA·SSAO는 베타 라벨을 붙인다. 이 컨테이너에는 GPU가 없어 실제 렌더 품질은 브라우저 미검증이다.
- * - 베타 기능 4종(NodeMaterial 툰·IBL 그림자·OpenPBR·투영 페인트)은 엔진 세션 상태라 레시피·히스토리에 저장하지 않고 엔진 포트
- *   (`betaFeatures()`·`setBetaFeature()`)로 켜고 끈다. 기본은 꺼짐이고 엔진이 능력을 확인해 지원하지 않으면 체크박스가 비활성이며 한글 사유를 보인다
- *   (다른 경로로 자동 대체하지 않는다). 확장 능력(체형 관절 오프셋·GLB morph sparse)은 별도 표에 보인다. 키보드: 체크박스는 Tab·Space로 조작한다.
  */
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { QUALITY_PRESET_LABELS_KO, TONE_MAPPINGS, applyQualityPreset } from "../../../contracts";
 import { BETA_FEATURE_HINTS_KO, BETA_FEATURE_IDS, EXTENDED_FEATURE_LABELS_KO, RIG_CAPABILITY_IDS, hasBetaFeatures, readBetaFeatures, readExtendedFeatures } from "../../../render/beta-features";
 import { resolveOutlinePressureAspect } from "../../../render/outline-policy";
 import { SCENE_FEATURE_IDS, SCENE_FEATURE_LABELS_KO, SCENE_FEATURE_STATUS_LABELS_KO, readSceneFeatures } from "../../../render/scene-features";
 import { applyLabShaperGen3dLookToShading, buildLabShaperGen3dPipelineSpec, LAB_SHAPER_GEN3D_LOOK_PRESETS, type LabShaperGen3dLookId } from "../../../render/shaper-gen3d-bridge";
+import { evaluateCharacterLabVerifyAiGate, type CharacterLabFreshLensId } from "../../../render/style/character-verify-ai-fresh-ideas";
 import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
@@ -90,14 +80,32 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
     };
   }, []);
 
-  // IBL 세기 슬라이더: 드래그 중 로컬 값, 놓을 때 dispatch
   const [iblDraft, setIblDraft] = useState(shading.ibl.intensity);
   const [tripoLookId, setTripoLookId] = useState<LabShaperGen3dLookId>("shaper-cel");
   const [tripoDelight, setTripoDelight] = useState(true);
   const [disableHairInline, setDisableHairInline] = useState(true);
+  const [selectedLensId, setSelectedLensId] = useState<CharacterLabFreshLensId>("contrarian-take");
   useEffect(() => {
     setIblDraft(shading.ibl.intensity);
   }, [shading.ibl.intensity]);
+
+  const verifyAiReport = useMemo(
+    () =>
+      evaluateCharacterLabVerifyAiGate({
+        shading,
+        lookId: tripoLookId,
+        delight: tripoDelight,
+        disableHairInline,
+      }),
+    [shading, tripoLookId, tripoDelight, disableHairInline],
+  );
+
+  const activeLensRemix = useMemo(
+    () =>
+      verifyAiReport.remixes.find((r) => r.id === selectedLensId) ??
+      verifyAiReport.remixes[0]!,
+    [verifyAiReport.remixes, selectedLensId],
+  );
 
   const poll = useCallback((): void => {
     if (!engine) {
@@ -141,7 +149,6 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
     return () => window.clearInterval(timer);
   }, [poll, pollIntervalMs]);
 
-  // 셰이딩이 바뀌면 적용 루프가 엔진에 반영한 뒤 보고가 달라지므로 다음 틱에 다시 읽는다.
   useEffect(() => {
     const timer = window.setTimeout(poll, 0);
     return () => window.clearTimeout(timer);
@@ -506,6 +513,47 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         })()}
       </fieldset>
 
+      <fieldset className="cl-render-group" data-testid="character-lab-verify-ai-panel">
+        <legend>Character Labs × 5-Lens 연출 리믹스 & Verify AI 턴어라운드 품질 게이트</legend>
+        <p className="cl-render-status" data-testid="character-lab-verify-ai-badge">
+          {verifyAiReport.summaryBadgeKo}
+        </p>
+        <div className="cl-render-row" role="group" aria-label="캐릭터 5-Lens 크리에이티브 리믹스">
+          {verifyAiReport.remixes.map((remix) => (
+            <button
+              key={remix.id}
+              type="button"
+              className="cl-preset-chip"
+              data-testid={`character-lab-fresh-lens-${remix.id}`}
+              aria-pressed={remix.id === activeLensRemix.id}
+              onClick={() => setSelectedLensId(remix.id)}
+            >
+              {remix.badgeKo}
+            </button>
+          ))}
+        </div>
+        <div data-testid="character-lab-fresh-lens-detail">
+          <p className="cl-render-hint">
+            <strong>{activeLensRemix.badgeKo}: {activeLensRemix.titleKo}</strong>
+          </p>
+          <p className="cl-render-hint">
+            → {activeLensRemix.angleKo}
+          </p>
+        </div>
+        <div className="cl-render-row">
+          <span className="cl-render-hint" data-testid="character-lab-remediation-readout">
+            {verifyAiReport.remediationKo}
+          </span>
+          <button
+            type="button"
+            data-testid="character-lab-apply-verify-ai-patch-btn"
+            onClick={() => set(verifyAiReport.recommendedShadingPatch)}
+          >
+            Verify AI 캐릭터 툰 최적 보정 적용
+          </button>
+        </div>
+      </fieldset>
+
       <fieldset className="cl-render-group" data-group="beta">
         <legend>
           베타 기능<span className="cl-render-beta"> (베타)</span>
@@ -534,7 +582,6 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
                   aria-describedby={`${ids}-beta-${id}-hint ${ids}-beta-${id}-state`}
                   aria-busy={pending ? "true" : undefined}
                   onChange={(event) => {
-                    // 비활성 컨트롤은 브라우저가 이벤트를 만들지 않지만, 합성 이벤트(보조 기술·테스트)로도 지원하지 않는 기능을 켜지 않는다.
                     if (entry === null || unsupported || pending) return;
                     void toggleBeta(id, event.target.checked);
                   }}

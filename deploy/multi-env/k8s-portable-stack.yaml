@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toonstudio-unified-suite
+  labels:
+    app: toonstudio-unified-suite
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: toonstudio-unified-suite
+  template:
+    metadata:
+      labels:
+        app: toonstudio-unified-suite
+    spec:
+      containers:
+        - name: toonstudio-api
+          image: ghcr.io/blue45f/toonstudio-api:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: toonstudio-unified-service
+spec:
+  type: ClusterIP
+  selector:
+    app: toonstudio-unified-suite
+  ports:
+    - name: http-api
+      port: 3000
+      targetPort: 3000

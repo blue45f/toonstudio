@@ -1,0 +1,172 @@
+name: Multi-Cloud & Local Dynamic Matrix Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      workspaces:
+        description: "쉼표로 구분된 빌드·검증 대상 (예: web,character-lab,brush-lab,api)"
+        required: false
+        default: "web,character-lab,brush-lab,api"
+        type: string
+      targets:
+        description: "쉼표로 구분된 배포 타겟 환경 (local-pnpm-preview,local-docker-compose,cloudflare-edge-static,onpod-container-cloud,aws-ecs-cloudfront,gcp-cloud-run,self-hosted-k8s)"
+        required: false
+        default: "local-docker-compose,cloudflare-edge-static,onpod-container-cloud,aws-ecs-cloudfront,gcp-cloud-run,self-hosted-k8s"
+        type: string
+      execute_live_deploy:
+        description: "드라이런/번들 아티팩트 생성 후 실제 클라우드 원격 배포 실행 여부"
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/web/src/domains/creator/bg3d/**"
+      - "apps/character-lab/src/**"
+      - "apps/brush-lab/src/**"
+      - "scripts/multi-env-dynamic-deploy.mjs"
+      - "deploy/multi-env/**"
+      - ".github/workflows/multi-cloud-local-dynamic-deploy.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: multi-cloud-local-dynamic-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan-and-verify-matrix:
+    name: "Stage 1 · Dynamic Matrix & Verify AI Gate"
+    runs-on: ubuntu-latest
+    outputs:
+      workspace_matrix: ${{ steps.matrix.outputs.workspace }}
+      target_matrix: ${{ steps.matrix.outputs.target }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Compute Dynamic Workspace & Multi-Cloud Matrix
+        id: matrix
+        env:
+          INPUT_WORKSPACES: ${{ inputs.workspaces || 'web,character-lab,brush-lab,api' }}
+          INPUT_TARGETS: ${{ inputs.targets || 'local-docker-compose,cloudflare-edge-static,onpod-container-cloud,aws-ecs-cloudfront,gcp-cloud-run,self-hosted-k8s' }}
+        run: |
+          MATRIX_JSON=$(node scripts/multi-env-dynamic-deploy.mjs \
+            --workspace "$INPUT_WORKSPACES" \
+            --target "$INPUT_TARGETS" \
+            --sha "${GITHUB_SHA}" \
+            --report /tmp/multi-env-deploy-plan.md \
+            --json /tmp/multi-env-deploy-plan.json \
+            --github-matrix)
+          WORKSPACE_LIST=$(node -e 'const m = JSON.parse(process.argv[1]); process.stdout.write(JSON.stringify(m.workspace));' "$MATRIX_JSON")
+          TARGET_LIST=$(node -e 'const m = JSON.parse(process.argv[1]); process.stdout.write(JSON.stringify(m.target));' "$MATRIX_JSON")
+          echo "workspace=$WORKSPACE_LIST" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET_LIST" >> "$GITHUB_OUTPUT"
+          cat /tmp/multi-env-deploy-plan.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run Architecture & 3-Labs Verify AI Preflight Gates in Parallel
+        run: |
+          pnpm run validate:architecture
+          pnpm exec tsx scripts/verify-blender-fresh-ideas-ai-gate.mts --report /tmp/blender-verify-ai-report.md
+          ./node_modules/.bin/vitest run \
+            apps/web/src/domains/creator/bg3d/studio-bg3d-fresh-ideas-verify-ai.test.ts \
+            apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink.test.ts \
+            apps/web/src/domains/creator/bg3d/studio-bg3d-multipass-rights-remediation.test.ts \
+            apps/web/src/domains/creator/bg3d/studio-bg3d-scroll-pacing-live-sync.test.ts \
+            apps/character-lab/src/render/style/character-verify-ai-fresh-ideas.test.ts \
+            apps/brush-lab/src/bench/metrics/webtoon-brush-verify-ai-remix.test.ts \
+            scripts/multi-env-dynamic-deploy.test.mjs
+
+      - name: Upload Dynamic Deploy Plan & Verify AI Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-env-deploy-plan-and-verify-ai
+          path: |
+            /tmp/multi-env-deploy-plan.md
+            /tmp/multi-env-deploy-plan.json
+            /tmp/blender-verify-ai-report.md
+          retention-days: 14
+
+  verify-and-package-workspaces:
+    name: "Stage 2 · Parallel Workspace Verify (${{ matrix.workspace.id }})"
+    needs: plan-and-verify-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace: ${{ fromJson(needs.plan-and-verify-matrix.outputs.workspace_matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Execute Workspace Verify AI Gate (${{ matrix.workspace.id }})
+        run: ${{ matrix.workspace.verifyCommand }}
+
+  emit-multi-cloud-bundles:
+    name: "Stage 3 · Target Bundle (${{ matrix.target.id }})"
+    needs:
+      - plan-and-verify-matrix
+      - verify-and-package-workspaces
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan-and-verify-matrix.outputs.target_matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate Target Environment Deployment Bundle (${{ matrix.target.id }})
+        env:
+          TARGET_ID: ${{ matrix.target.id }}
+          TARGET_CATEGORY: ${{ matrix.target.category }}
+          TARGET_CMD: ${{ matrix.target.commandPreview }}
+        run: |
+          mkdir -p /tmp/deploy-bundle-${TARGET_ID}
+          cp deploy/multi-env/docker-compose.local.yml /tmp/deploy-bundle-${TARGET_ID}/
+          cp deploy/multi-env/k8s-portable-stack.yaml /tmp/deploy-bundle-${TARGET_ID}/
+          cat <<EOF > /tmp/deploy-bundle-${TARGET_ID}/deploy-receipt.json
+          {
+            "targetId": "${TARGET_ID}",
+            "category": "${TARGET_CATEGORY}",
+            "commitSha": "${GITHUB_SHA}",
+            "commandPreview": "${TARGET_CMD}",
+            "ready": true
+          }
+          EOF
+          echo "### Target \`${TARGET_ID}\` (${TARGET_CATEGORY})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Command: \`${TARGET_CMD}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Portable Environment Bundle (${{ matrix.target.id }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-bundle-${{ matrix.target.id }}
+          path: /tmp/deploy-bundle-${{ matrix.target.id }}
+          retention-days: 14

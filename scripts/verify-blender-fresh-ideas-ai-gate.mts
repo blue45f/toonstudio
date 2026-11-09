@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Blender 5.2 × Generate Fresh Ideas (5-Lens Remix) × Verify AI Quality Gate (Phase 1 + Phase 2 V01~V10 + Phase 3 Multi-Pass PSD/Rights BOM/Auto-Remediation) 통합 검증 CLI.
+ * Blender 5.2 × Generate Fresh Ideas (5-Lens Remix) × Verify AI Quality Gate (Phase 1 ~ Phase 4) 통합 검증 CLI.
  *
  * Usage:
  *   pnpm exec tsx scripts/verify-blender-fresh-ideas-ai-gate.mts [--report /tmp/blender-verify-ai-report.md] [--json /tmp/blender-verify-ai-run.json]
@@ -20,6 +20,10 @@ import {
   evaluateMultiPassToonPsdExportPlan,
   evaluateRightsBomCommercialReadiness,
 } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-multipass-rights-remediation";
+import {
+  buildBlenderLiveSceneSyncBridge,
+  evaluateVerticalScrollCutPacing,
+} from "../apps/web/src/domains/creator/bg3d/studio-bg3d-scroll-pacing-live-sync";
 import { evaluateVerifyAiPreflightGates } from "../apps/web/src/domains/creator/bg3d/studio-bg3d-shot-continuity-linked-ink";
 import {
   BLENDER_FANTASY_LIGHTING_RIG_PRESETS,
@@ -104,6 +108,23 @@ const multiPassPlan = evaluateMultiPassToonPsdExportPlan({
 });
 const rightsBomAudit = evaluateRightsBomCommercialReadiness();
 const autoRemediation = buildVerifyAiAutoRemediationPlan(preflight, 5600);
+const scrollPacing = evaluateVerticalScrollCutPacing({
+  archetypeId: "action-impact",
+  lensId: "contrarian-take",
+  cameraTiltDeg: preflight.archetypeRecommendation.recommendedCameraTiltDeg,
+  silhouetteSeparationRatio:
+    preflight.archetypeRecommendation.silhouetteSeparationRatio,
+  activeWeaponCount: input.weaponEval.blades.length,
+});
+const liveSyncBridge = buildBlenderLiveSceneSyncBridge({
+  lightingPresetId: lightingPreset.id,
+  shaderPresetId: shaderPreset.id,
+  inkPresetId: freestylePreset.id,
+  weaponPresetId: weaponPreset.id,
+  monsterPresetId: monsterPreset.id,
+  focalLengthMm: preflight.archetypeRecommendation.recommendedFocalLengthMm,
+  cameraTiltDeg: preflight.archetypeRecommendation.recommendedCameraTiltDeg,
+});
 
 const qualityMarkdown = formatStudioAiQualityEvaluationMarkdown(
   result.qualityRun,
@@ -135,6 +156,12 @@ const fullMarkdown = [
   `- **Multi-Pass PSD:** ${multiPassPlan.summaryKo}`,
   `- **Rights BOM:** ${rightsBomAudit.summaryKo} (${rightsBomAudit.autoAttributionCreditsKo.join(", ")})`,
   `- **Auto-Remediation:** ${autoRemediation.summaryKo}`,
+  "",
+  `## Phase 4 Vertical Scroll Pacing (B_SZ) · Live Blender 5.2 Scene Sync`,
+  "",
+  `- **Scroll Pacing & Safe Zone:** ${scrollPacing.summaryKo}`,
+  `- **Live Blender 5.2 Sync:** ${liveSyncBridge.summaryKo}`,
+  `- **Viewport Snapshot:** ${liveSyncBridge.viewportSnapshotFile}`,
   "",
   `## ${result.remixHeaderKo}`,
   "",
@@ -169,6 +196,7 @@ process.stdout.write(fullMarkdown);
 process.exitCode =
   result.evaluation.passed &&
   preflight.hardGatePassed &&
-  rightsBomAudit.commercialPublishAllowed
+  rightsBomAudit.commercialPublishAllowed &&
+  liveSyncBridge.liveSyncReady
     ? 0
     : 1;
