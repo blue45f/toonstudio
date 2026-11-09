@@ -1,4 +1,5 @@
 import "./catalog-page-controls.css";
+import "./ranking-page-density.css";
 import { Calculator, Compass, GitCompare, Trophy, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -6,7 +7,6 @@ import { useSearchParams } from "react-router-dom";
 import type { PlatformId } from "@/shared/lib/types";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
-import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { RankingBoard } from "@/shared/components/ranking-board";
 import { RankingMethod } from "@/shared/components/ranking-method";
@@ -87,7 +87,7 @@ export function RankingPage() {
       </section>
 
       <SiteDisclosure
-        className="mt-6"
+        className="ranking-page-support"
         icon={Calculator}
         title={bt("순위는 어떻게 계산하나요?", "How is the ranking calculated?")}
         summary={formatI18nTemplate(bt("{v0}가지 관점의 산식과 데이터 한계를 확인하세요.", "See the formulas behind the {v0} views and the data limits."), { v0: RANK_AXES.length })}
@@ -96,7 +96,7 @@ export function RankingPage() {
         <RankingMethod />
       </SiteDisclosure>
       <SiteDisclosure
-        className="mt-6"
+        className="ranking-page-support"
         icon={Calculator}
         title={bt("랭킹 스트림 · 산식 시뮬레이터", "Ranking streams and formula simulator")}
         summary={bt("빠른 관점 전환과 산식 설명을 펼쳐보세요.", "Expand quick views and formula explanations.")}
@@ -215,9 +215,13 @@ export function RankingPage() {
       </section>
 
       </SiteDisclosure>
-      <nav className="mt-10 grid grid-cols-1 gap-2.5 sm:mt-12 md:grid-cols-3" aria-label={bt("랭킹 다음 행동", "After the ranking")}>
+      <nav className="ranking-page-next-actions" aria-label={bt("랭킹 다음 행동", "After the ranking")}>
         {NEXT_STEPS.map((step) => (
-          <SiteLinkCard key={step.href} layout="compact" href={step.href} icon={step.icon} title={bt(...step.title)} description={bt(...step.body)} />
+          <Link key={step.href} href={step.href} className="ranking-page-next-link">
+            <step.icon size={16} aria-hidden="true" />
+            <span>{bt(...step.title)}</span>
+            <span className="sr-only">{bt(...step.body)}</span>
+          </Link>
         ))}
       </nav>
 

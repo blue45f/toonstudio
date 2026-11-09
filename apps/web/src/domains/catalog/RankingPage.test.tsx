@@ -68,3 +68,17 @@ it("보드 뒤에 스트림과 산식 도구를 접어 두고 기존 도구를 �
   expect(tools.querySelectorAll('[data-testid^="ranking-rea-window-"]')).toHaveLength(3);
   expect(screen.getByTestId("ranking-rea-stream-modes").querySelectorAll("a")).toHaveLength(4);
 });
+
+it("다음 행동은 카드 대신 간결한 링크로 제공하고 상세 설명을 접근성 이름에 보존한다", () => {
+  renderPage();
+  const next = screen.getByRole("navigation", { name: /랭킹 다음 행동/u });
+  expect(next.classList.contains("ranking-page-next-actions")).toBe(true);
+  expect(next.querySelector("[data-site-link-card]")).toBeNull();
+  const links = within(next).getAllByRole("link");
+  expect(links).toHaveLength(3);
+  for (const link of links) {
+    expect(link.classList.contains("ranking-page-next-link")).toBe(true);
+    expect(link.querySelector(".sr-only")?.textContent).toBeTruthy();
+  }
+  expect(within(next).getByRole("link", { name: /조건으로 탐색.*장르·태그·상태/u })).toBeTruthy();
+});
