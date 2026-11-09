@@ -38,6 +38,11 @@ import {
 } from "./studio-bg3d-fresh-ideas-verify-ai";
 import { StudioBg3dFreshIdeasVerifyAiSection } from "./StudioBg3dFreshIdeasVerifyAiSection";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
+import {
+  evaluateVerifyAiPreflightGates,
+  recommendBlenderCutArchetypePreset,
+  type WebtoonCutArchetypeId,
+} from "./studio-bg3d-shot-continuity-linked-ink";
 
 export interface StudioBg3dBlenderFantasyWebtoonPanelProps {
   readonly disabled?: boolean;
@@ -77,12 +82,6 @@ const WEAPON_SOCKET_OPTIONS: readonly {
 
 /**
  * Blender 5.2 REA 역공학 기반 판타지 웹툰 특화 스튜디오 패널.
- * - EEVEE 광원·IES 배광·흑체 색온도·볼륨 라이트 프로브
- * - NPR ShaderNodeTree (`ShaderToRGB` + `ValToRGB` + `BsdfToon`) & `Freestyle`/`LineArt`
- * - 화려한 판타지 무기 (`ChildOf` / `FollowPath` / `TrackTo` / `ActionConstraint`)
- * - 몬스터 다관절 `iTaSC` 야코비안 IK & 폴벡터 리깅
- * - `GeometryNodes` (`InstanceReference`) & `BoidBrain` 대규모 군중/군단 시뮬레이션
- * - `generate-fresh-ideas` 5-Lens 연출 아이디어 리믹스 & `Verify AI` 10축 품질 게이트
  */
 export function StudioBg3dBlenderFantasyWebtoonPanel({
   disabled = false,
@@ -101,6 +100,9 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
 }: StudioBg3dBlenderFantasyWebtoonPanelProps) {
   const [selectedLensId, setSelectedLensId] =
     useState<FreshIdeaLensId>("contrarian-take");
+  const [selectedArchetypeId, setSelectedArchetypeId] =
+    useState<WebtoonCutArchetypeId>("action-impact");
+  const [artisticOverride, setArtisticOverride] = useState<boolean>(false);
   const [selectedLightingId, setSelectedLightingId] = useState<string>(
     BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!.id,
   );
@@ -258,6 +260,16 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
       activeCrowdPreset,
       crowdResult,
     ],
+  );
+
+  const preflightReport = useMemo(
+    () =>
+      evaluateVerifyAiPreflightGates({
+        archetypeId: selectedArchetypeId,
+        artisticOverride,
+        contrastRatio: lightingEvaluation.contrastRatio,
+      }),
+    [selectedArchetypeId, artisticOverride, lightingEvaluation.contrastRatio],
   );
 
   const activeLensRemix = useMemo(
@@ -697,7 +709,22 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         disabled={disabled}
         verifyAiReport={verifyAiReport}
         activeLensRemix={activeLensRemix}
+        preflightReport={preflightReport}
+        selectedArchetypeId={selectedArchetypeId}
+        artisticOverride={artisticOverride}
         onSelectLensId={setSelectedLensId}
+        onSelectArchetypeId={setSelectedArchetypeId}
+        onToggleArtisticOverride={setArtisticOverride}
+        onApplyArchetypePreset={(archetypeId) => {
+          const rec = recommendBlenderCutArchetypePreset(
+            archetypeId,
+            lightingEvaluation.contrastRatio,
+          );
+          setSelectedLightingId(rec.recommendedLightingRigId);
+          setSelectedShaderId(rec.recommendedNprShaderId);
+          setSelectedFreestyleId(rec.recommendedFreestyleInkId);
+          onStatusChange?.(rec.rationaleKo);
+        }}
         onSelectFreshIdeaLens={onSelectFreshIdeaLens}
         onVerifyAiGate={onVerifyAiGate}
         onStatusChange={onStatusChange}

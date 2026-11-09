@@ -21,7 +21,7 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(fireEvent.click(link)).toBe(false);
   });
 
-  it("renders all 5 Blender 5.2 fantasy webtoon sections, 5-Lens Fresh Ideas Remix, and Verify AI gate", () => {
+  it("renders all 5 Blender 5.2 fantasy webtoon sections, 5-Lens Fresh Ideas Remix, Phase 2 S_CD/BRI/PRS preflight, and Verify AI gate", () => {
     const onApplyLightingRig = vi.fn();
     const onApplyNprShader = vi.fn();
     const onApplyFreestyleInk = vi.fn();
@@ -113,13 +113,30 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-crowd-readout").textContent,
     ).toContain("240기");
 
-    // 5B. 5-Lens Creative Remix & Verify AI Gate
+    // 5B. 5-Lens Creative Remix & Phase 2 S_CD/BRI/PRS & Verify AI Gate
     expect(
       screen.getByTestId("bg3d-blender-fresh-ideas-verify-ai-section"),
     ).toBeTruthy();
     expect(
       screen.getByTestId("bg3d-blender-verify-ai-badge").textContent,
     ).toContain("Verify AI PASS");
+    expect(
+      screen.getByTestId("bg3d-blender-preflight-summary-badge").textContent,
+    ).toContain("Preflight Hard Gate PASS");
+
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-prs-readout").textContent,
+    ).toContain("95mm");
+
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-artistic-override-checkbox"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-scd-readout").textContent,
+    ).toContain("예술적 허용");
 
     fireEvent.click(
       screen.getByTestId("bg3d-blender-fresh-lens-practical-playbook"),
