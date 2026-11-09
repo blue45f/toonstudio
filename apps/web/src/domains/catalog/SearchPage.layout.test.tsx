@@ -81,6 +81,41 @@ describe("검색 페이지 결과 우선 배치", () => {
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
   });
 
+  it("네 가지 전용 검색 링크에 지원되는 검색어 계약을 적용한다", () => {
+    page("/search?q=%20%ED%8C%90%ED%83%80%EC%A7%80%20%26%20%EB%8B%AC%20");
+    const nav = screen.getByRole("navigation", { name: "유형별 검색 바로가기" });
+    const urls = within(nav).getAllByRole("link").map((link) => new URL(link.getAttribute("href") ?? "", "https://example.test"));
+    expect(urls.map((url) => url.pathname)).toEqual(["/learn", "/help", "/sitemap", "/market/browse"]);
+    expect(urls[0].searchParams.get("q")).toBe("판타지 & 달");
+    expect(urls[1].search).toBe("");
+    expect(urls[2].searchParams.get("menu")).toBe("판타지 & 달");
+    expect(urls[3].searchParams.get("q")).toBe("판타지 & 달");
+  });
+
+  it("세부 통합 결과를 접어도 작품 입력 초안과 기존 결과를 보존한다", () => {
+    page();
+    const details = screen.getByTestId("search-other-types-details") as HTMLDetailsElement;
+    const field = screen.getByRole("searchbox") as HTMLInputElement;
+    const summary = details.querySelector("summary") as HTMLElement;
+    expect(details.open).toBe(false);
+    expect(screen.getByTestId("unified-search").closest("details")).toBe(details);
+    fireEvent.change(field, { target: { value: "작성 중인 검색" } });
+    for (let index = 0; index < 3; index += 1) {
+      fireEvent.click(summary);
+      expect(details.open).toBe(true);
+      fireEvent.click(summary);
+      expect(details.open).toBe(false);
+    }
+    expect(field.value).toBe("작성 중인 검색");
+    expect(child.mounts).toHaveBeenCalledTimes(1);
+  });
+
+  it("빈 검색어에서도 네 가지 목적지를 제공하고 빈 결과 접기는 만들지 않는다", () => {
+    page("/search");
+    expect(within(screen.getByRole("navigation", { name: "유형별 검색 바로가기" })).getAllByRole("link")).toHaveLength(4);
+    expect(screen.queryByTestId("search-other-types-details")).toBeNull();
+  });
+
   it("query·무료 조건·플랫폼 전달과 통합검색 query를 바꾸지 않는다", () => {
     page("/search?q=첫째&pricing=free,wait-free&platforms=naver-webtoon,kakao-page");
     expect(child.props).toHaveBeenLastCalledWith({

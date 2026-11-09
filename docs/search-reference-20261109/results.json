@@ -1,0 +1,362 @@
+[
+  {
+    "width": 320,
+    "theme": "starlight",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 320,
+    "theme": "contrast",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 140,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 390,
+    "theme": "starlight",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 390,
+    "theme": "contrast",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 83.5,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 834,
+    "theme": "starlight",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 834,
+    "theme": "light",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 834,
+    "theme": "contrast",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 190.5,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "theme": "starlight",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "theme": "light",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "theme": "contrast",
+    "geometry": {
+      "overflow": 0,
+      "links": [
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/learn?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/help"
+        },
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/sitemap?menu=%ED%8C%90%ED%83%80%EC%A7%80"
+        },
+        {
+          "height": 44,
+          "width": 308,
+          "href": "/market/browse?q=%ED%8C%90%ED%83%80%EC%A7%80"
+        }
+      ]
+    },
+    "errors": []
+  }
+]

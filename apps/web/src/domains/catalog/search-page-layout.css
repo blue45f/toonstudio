@@ -84,3 +84,32 @@
   .search-page-results > section { grid-template-columns: 16rem minmax(0, 1fr); }
 }
 /* 새 동작 애니메이션은 추가하지 않는다. PageEntrance의 reduced-motion 계약을 유지한다. */
+
+/* 시안의 네 가지 유형 이동을 세부 검색 목록과 분리한다. */
+.search-other-types { min-width: 0; margin-top: 1.5rem; border-top: 1px solid var(--color-line); padding-top: 1rem; }
+.search-other-types-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .75rem; }
+.search-other-types-link { display: flex; min-width: 0; min-height: 2.75rem; align-items: center; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--color-line); border-radius: .75rem; background: var(--color-card); color: var(--color-fg); font-size: .8125rem; font-weight: 600; }
+.search-other-types-link svg { flex-shrink: 0; color: var(--color-accent); }
+.search-other-types-link svg:last-child { margin-left: auto; }
+.search-other-types-link:hover { border-color: var(--color-accent); }
+.search-other-types-link:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.search-other-types-details { margin-top: .75rem; }
+.search-other-types-results { min-width: 0; padding: 0 1rem 1rem; }
+.search-other-types-results > section { margin-top: 0; padding-top: 1rem; }
+@media (min-width: 640px) {
+  .search-other-types-links { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  /* 긴 플랫폼 목록이 작품 결과 아래 이동까지 밀어내지 않도록 필터 안에서 스크롤한다. */
+  .search-page-results > section > aside > div {
+    max-height: calc(100dvh - var(--site-header-sticky-offset, 5rem) - 2rem);
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+}
+@media (min-width: 380px) and (max-width: 639px) {
+  .search-other-types-links { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .search-other-types-link { justify-content: center; gap: .25rem; padding-inline: .375rem; font-size: .75rem; }
+  .search-other-types-link svg { width: 1rem; height: 1rem; }
+  .search-other-types-link svg:last-child { display: none; }
+}

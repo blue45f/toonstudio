@@ -2,6 +2,7 @@ import { ChevronDown, Compass, Search, SlidersHorizontal, Sparkles } from "lucid
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { SearchOtherTypes } from "./SearchOtherTypes";
 import { useInstallLocalSearchBridge } from "./local-catalog-fallback";
 import "./search-page-layout.css";
 
@@ -10,7 +11,6 @@ import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 // search.* 사전은 셸 번들에서 분리돼 이 모듈 평가 시점에 동기 등록된다.
 import "@/shared/components/search-i18n";
 import { SearchExplorer } from "@/shared/components/search-explorer";
-import { UnifiedSearchSections } from "@/shared/components/unified-search-sections";
 import { DiscoveryWorkspaceNav } from "@/shared/components/discovery-workspace-nav";
 import { Container } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
@@ -93,7 +93,7 @@ export function SearchPage() {
           />
         </div>
 
-        <UnifiedSearchSections query={state.query} />
+        <SearchOtherTypes query={state.query} />
 
         <details className="search-page-tools mt-6" data-testid="search-page-tools">
           <summary className="search-page-tools-summary">
