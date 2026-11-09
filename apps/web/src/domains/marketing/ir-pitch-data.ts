@@ -169,3 +169,37 @@ export const FOUNDER_CAREER = [
   { ko: "카카오 — 다음 메일 프론트엔드를 만들었어요.", en: "Kakao — built the Daum Mail front-end." },
   { ko: "엔씨소프트 — 모바일 퍼블리싱 플랫폼을 다뤘어요.", en: "NCSOFT — worked on the mobile publishing platform." },
 ] as const;
+
+/** 투자자 미팅 핵심 Q&A 요약 — 실제 코드 검증 사실(3-Labs · Verify AI · 7-타깃 배포)과 고객 검증 목표를 구분해 답한다. */
+export const INVESTOR_QA_ITEMS = [
+  {
+    ko: {
+      question: "클립스튜디오가 표준인데 왜 ToonStudio를 함께 쓰나요?",
+      answer: "클립스튜디오를 당장 버리게 하는 대체재가 아니라, 기존 원고(PSD)를 그대로 불러와 핀 검수·승인 기록·3D 배경/캐릭터 턴어라운드 일관성을 잇는 공존형 제작 OS로 진입합니다.",
+    },
+    en: {
+      question: "Clip Studio is the standard — why adopt ToonStudio alongside it?",
+      answer: "Rather than forcing creators to drop Clip Studio on day one, ToonStudio imports existing PSD manuscripts and adds pin review, approval logs, and 3D set/character turnaround consistency in one browser flow.",
+    },
+  },
+  {
+    ko: {
+      question: "3-Labs(3D · 캐릭터 · 브러시) 간 작화 이질감은 어떻게 해결했나요?",
+      answer: "3-Labs 교차 제작 브리지(X_LABS = 96.84)가 배경 색온도·캐릭터 SDF 그림자·브러시 선굵기 편차를 맞추고, Verify AI 게이트(96.74점)가 권리 BOM과 가독성을 사전 점검합니다.",
+    },
+    en: {
+      question: "How do you prevent visual mismatch across 3D, Character, and Brush Labs?",
+      answer: "The 3-Labs Cross-Production Bridge (X_LABS = 96.84) aligns color temperature, SDF shadows, and stroke width variance, while the Verify AI gate (96.74 pts) audits rights BOM and readability.",
+    },
+  },
+  {
+    ko: {
+      question: "스튜디오 보안과 인프라 비용(적자 위험)은 어떻게 관리하나요?",
+      answer: "원고는 내 기기(OPFS · IndexedDB)에 먼저 저장되고 Docker·K8s 포함 7-타깃 배포(171개 자동 테스트 통과)로 온프레미스도 지원합니다. AI는 크레딧 상한·BYOK·로컬 모델로 원가를 통제합니다.",
+    },
+    en: {
+      question: "How do you handle studio security and infrastructure/AI cost risk?",
+      answer: "Manuscripts save locally first (OPFS · IndexedDB) with 7-target deployment (including Docker/K8s air-gapped local stacks, 171 automated tests passing), while AI costs are bounded via credit caps, BYOK, and local models.",
+    },
+  },
+] as const;

@@ -27,6 +27,7 @@ import {
   FLOW_STEPS,
   FOUNDER_CAREER,
   GTM_STEPS,
+  INVESTOR_QA_ITEMS,
   IR_DECK_PDF,
   IR_DECK_PPTX,
   IR_FILM_POSTER,
@@ -694,6 +695,17 @@ export function IrPitchPage() {
             </p>
           </a>
         </div>
+        <ul className="mt-4 grid gap-3 md:grid-cols-3" aria-label={bi("투자자 미팅 핵심 Q&A", "Investor meeting key Q&A")}>
+          {INVESTOR_QA_ITEMS.map((qa) => {
+            const copy = bi(qa.ko, qa.en);
+            return (
+              <li key={qa.en.question} className="rounded-2xl border border-line/70 bg-card/65 p-4">
+                <h3 className="break-keep font-display text-sm font-black text-fg">{copy.question}</h3>
+                <p className="mt-1.5 break-keep text-xs leading-5 text-fg-2">{copy.answer}</p>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       {presenting
