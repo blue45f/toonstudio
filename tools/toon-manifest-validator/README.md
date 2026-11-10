@@ -18,7 +18,7 @@
    - **OS 커널과 일치하는 홉 단위(hop-by-hop) 심볼릭 링크 경계 검증**: 절대/상대 심볼릭 링크 타깃 문자열의 `.`·`..`를 사전 문자열 정규화(`path.resolve`)로 접지 않고 세그먼트 단위로 실제 디렉터리/심볼릭 링크 여부를 `lstatSync`+`readlinkSync`로 확인하여 `${root}/escape-dir/../same.png`(중간 탈출 링크 경유) 및 `${root}/missing/../same.png`(미존재 중간 경로) 오류를 원천 차단
    - **3단계 배리어(파일 읽기 0회 보장 계약)**: `validateProject`·`generateExportManifest`·`verifyExportManifest` 모두 ① 전체 에셋의 정적 경로 검증 및 고정점 유니코드 대소문자 폴딩(`foldPathCase`: `ß`/`ẞ`/`SS`, `ᾼ`/`ᾳ` 등 멱등 일치) 충돌 검사 → ② 전체 에셋의 `fixtureDir` 경계·심볼릭 링크 `lstatSync` 검증이 **전 항목 무오류로 완료된 이후에만** ③ 물리 파일 내용(`fs.readFileSync`)을 읽어 SHA-256을 계산함(동일 경로 2개 입력 시 첫 번째 파일도 읽지 않음)
    - **결정성 및 타임스탬프 호환 계약**:
-     - `createdAt` 생략(`undefined`/`null`) 시 고정 기본값 `'2026-11-10T00:00:00.000Z'`을 사용하고, 값이 주어질 때는 반드시 명시적 타임존(`Z` 또는 `±HH:MM`)을 포함한 유효한 ISO-8601 문자열만 허용함. 타임존이 없는 문자열(예: `'2026-11-10T09:00:00'`)은 실행 환경의 `TZ`(`UTC` 대 `Asia/Seoul`)에 따라 해시가 달라지는 비결정성을 유발하므로 `INVALID_PROJECT_TIMESTAMP`로 명시 거절함
+     - `createdAt` 생략(`undefined`/`null`) 시 고정 기본값 `'2026-11-10T00:00:00.000Z'`을 사용하고, 값이 주어질 때는 반드시 명시적 타임존(`Z` 또는 `±HH:MM`)을 포함한 유효한 ISO-8601 선행 그레고리력(proleptic Gregorian, `0000`~`9999`년 윤년·월별 일수 순수 산술 검증, `Date.UTC` 1900년 보정 및 `Date.parse` 자동 롤오버 미사용) 문자열만 허용함. 타임존이 없는 문자열이나 무효 달력 날짜(`0099-02-29`, `0100-02-29`, `1900-02-29`, `04-31` 등)는 `INVALID_PROJECT_TIMESTAMP`로 명시 거절함
      - 로케일 무관 유니코드 코드포인트 정렬(`compareStringsCodePoint`), `StudioProjectGraphV1` `assetUsages` 결정론적 정렬, 텍스트 NFC 정준화 적용
 5. **`apps/web/src/domains/creator/studio-export-preflight.ts` (`STUDIO_EXPORT_TARGET_PROFILES`)**
    - 타깃별 허용 포맷 매핑
@@ -26,8 +26,8 @@
 ## 2. 실행 명령 (`tools/toon-manifest-validator`)
 
 ```bash
-# 1. 기존 45개 + 경로 안전성·호환성·결정성 집중 회귀 19개 (총 64개) 자동 테스트 실행
-/opt/homebrew/bin/node --test test/validator.test.mjs test/path-safety-determinism.test.mjs
+# 1. 기존 64개(45 + 19) + 날짜·윤년·오프셋·TZ 독립성 전용 6개 (총 70개) 자동 테스트 실행
+/opt/homebrew/bin/node --test test/validator.test.mjs test/path-safety-determinism.test.mjs test/project-normalizer-dates.test.mjs
 
 # 2. 관계형 프로젝트 JSON 검증 및 Export Manifest 생성 (Exit Code: 0)
 /opt/homebrew/bin/node ./bin/toon-validator.mjs \

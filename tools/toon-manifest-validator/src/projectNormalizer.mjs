@@ -70,13 +70,36 @@ function compareCodePoints(a, b) {
 const STRICT_ISO_WITH_TZ_RE =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-](\d{2}):(\d{2}))$/i;
 
-function daysInUtcMonth(year, month) {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+function isProlepticGregorianLeapYear(year) {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+function daysInProlepticGregorianMonth(year, month) {
+  switch (month) {
+    case 1:
+    case 3:
+    case 5:
+    case 7:
+    case 8:
+    case 10:
+    case 12:
+      return 31;
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+      return 30;
+    case 2:
+      return isProlepticGregorianLeapYear(year) ? 29 : 28;
+    default:
+      return 0;
+  }
 }
 
 /**
- * Parses an explicit-timezone ISO-8601 timestamp into canonical UTC ISO-8601 (`YYYY-MM-DDTHH:mm:ss.sssZ`).
- * Rejects timezone-less strings (e.g., "2026-11-10T09:00:00") so host `TZ` can never alter manifest hashes.
+ * 명시적 타임존이 있는 ISO-8601 타임스탬프를 UTC 표준 형식(`YYYY-MM-DDTHH:mm:ss.sssZ`)으로 변환한다.
+ * 선행 그레고리력의 산술 규칙으로 `0000`~`9999`년을 검증하며, `Date.UTC(0..99)`의 1900년 보정과
+ * `Date.parse`의 날짜 자동 넘김을 사용하지 않는다. 타임존 없는 입력은 거절하여 실행 환경의 `TZ`에 따른 해시 변화를 막는다.
  */
 export function parseDeterministicCreatedAt(rawCreatedAt) {
   if (rawCreatedAt === undefined || rawCreatedAt === null) {
@@ -96,7 +119,11 @@ export function parseDeterministicCreatedAt(rawCreatedAt) {
   const hour = Number.parseInt(match[4], 10);
   const minute = Number.parseInt(match[5], 10);
   const second = Number.parseInt(match[6], 10);
+  const fraction = match[7] ?? '';
+  const millisecond =
+    fraction.length === 0 ? 0 : Number.parseInt(fraction.padEnd(3, '0').slice(0, 3), 10);
   const tzToken = match[8];
+  const isUtcZ = tzToken.toUpperCase() === 'Z';
   const offHour = match[9] !== undefined ? Number.parseInt(match[9], 10) : 0;
   const offMinute = match[10] !== undefined ? Number.parseInt(match[10], 10) : 0;
 
@@ -104,20 +131,37 @@ export function parseDeterministicCreatedAt(rawCreatedAt) {
     month < 1 ||
     month > 12 ||
     day < 1 ||
-    day > daysInUtcMonth(year, month) ||
+    day > daysInProlepticGregorianMonth(year, month) ||
     hour > 23 ||
     minute > 59 ||
     second > 59 ||
-    (tzToken.toUpperCase() !== 'Z' && (offHour > 23 || offMinute > 59))
+    (!isUtcZ && (offHour > 23 || offMinute > 59))
   ) {
     return { valid: false, canonicalIso: null };
   }
 
-  const parsedMs = Date.parse(trimmed);
-  if (!Number.isFinite(parsedMs)) {
+  const wallUtc = new Date(0);
+  wallUtc.setUTCFullYear(year, month - 1, day);
+  wallUtc.setUTCHours(hour, minute, second, millisecond);
+  if (
+    wallUtc.getUTCFullYear() !== year ||
+    wallUtc.getUTCMonth() !== month - 1 ||
+    wallUtc.getUTCDate() !== day ||
+    wallUtc.getUTCHours() !== hour ||
+    wallUtc.getUTCMinutes() !== minute ||
+    wallUtc.getUTCSeconds() !== second ||
+    wallUtc.getUTCMilliseconds() !== millisecond
+  ) {
     return { valid: false, canonicalIso: null };
   }
-  return { valid: true, canonicalIso: new Date(parsedMs).toISOString() };
+
+  const offsetSign = tzToken.startsWith('-') ? -1 : 1;
+  const offsetMinutes = isUtcZ ? 0 : offsetSign * (offHour * 60 + offMinute);
+  const utcEpochMs = wallUtc.getTime() - offsetMinutes * 60_000;
+  if (!Number.isFinite(utcEpochMs)) {
+    return { valid: false, canonicalIso: null };
+  }
+  return { valid: true, canonicalIso: new Date(utcEpochMs).toISOString() };
 }
 
 /**
