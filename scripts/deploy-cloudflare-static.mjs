@@ -11,12 +11,14 @@ const ENVIRONMENT_CONTRACT_PATH = "config/deployment/environment-contract.json";
 const mode = process.argv.includes("--production") ? "production" : "dry-run";
 const skipBuild = process.argv.includes("--skip-build");
 const skipR2Sync = process.argv.includes("--skip-r2-sync");
+const useStandingProfile = process.argv.includes("--standing-profile");
 const coreOriginArg = process.argv
   .find((argument) => argument.startsWith("--core-origin="))
   ?.slice("--core-origin=".length);
 const profileArg = process.argv
   .find((argument) => argument.startsWith("--profile="))
-  ?.slice("--profile=".length);
+  ?.slice("--profile=".length)
+  ?? (useStandingProfile ? "onpod-current" : undefined);
 const approval = process.env.TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL;
 
 const OPTIONAL_SINGLE_ORIGINS = [
