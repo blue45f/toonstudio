@@ -678,12 +678,12 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
                 {collaborationDocumentLocked
                   ? collaborationLockMessage()
                   : sharedDocumentNotice ??
-                    `서버 revision ${sharedDocument?.revision ?? "—"} 기준으로 안전하게 저장합니다.`}
+                    `서버 버전 #${sharedDocument?.revision ?? "—"} 기준으로 안전하게 저장합니다.`}
               </span>
             </span>
             {sharedDocument ? (
               <span className="shrink-0 rounded-full border border-line bg-card px-2 py-1 text-[0.6875rem] font-semibold tabular-nums text-fg-2">
-                r{sharedDocument.revision}
+                #{sharedDocument.revision}
               </span>
             ) : workHydrated ? (
               <button

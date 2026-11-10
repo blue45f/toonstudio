@@ -1,15 +1,5 @@
 /**
- * StudioSaveStatusBar — 에디터 상단(문서 제목 옆) 상시 저장 상태 표시 (초안)
- *
- * 배경 (벤치마크 신규 P0, 2026-10-13):
- * - Canva의 "All changes saved"처럼 저장 상태는 상시 보여야 표준이다.
- * - 레포에는 이미 완성된 `StudioSaveSyncStatusCenter`(필 + 상세 다이얼로그)와
- *   순수 로직 `resolveSaveSyncStatus`가 있으나, 둘 다 실제 화면 어디에도
- *   렌더링되지 않는다(테스트만 import). 이 컴포넌트는 그 로직을 재사용해
- *   "메뉴바에 항상 보이는 한 줄"을 맡고, 상세는 기존 센터가 맡는다.
- *
- * 배치: 에디터 메뉴바의 문서 제목 오른쪽. `StudioChromePortal`로
- * `#studio-document-chrome-slot`에 넣는 것을 권장한다 (연결 지점은 AUDIT.md).
+ * StudioSaveStatusBar — 에디터 상단(문서 제목 옆) 상시 저장 상태 표시
  *
  * 상태 문구 규칙:
  * - 실제 receipt는 OPFS/SQLite의 기기 저장만 확인한다. 온라인 여부로 서버 저장을 약속하지 않는다.
@@ -17,12 +7,6 @@
  * - 오프라인은 실패와 구분하고, 아직 저장 중이거나 receipt가 없으면 완료라고 말하지 않는다.
  * - 실패(localDurable=false)는 문구 + 다시 시도 버튼으로 행동까지 제시한다.
  * - 상태는 아이콘 모양 + 문구로 전달한다. 색만으로 구분하지 않는다.
- *
- * 장애·오프라인 복구 UX (누락 신규 G2, 2026-10-14):
- * - 연결 모듈(studio-connectivity)의 4모드를 studio-save-recovery-ux 모델로
- *   합쳐, 서버 장애(server-unavailable)·재확인 중(reconnecting)도 한 줄에
- *   드러낸다. 연결 문제가 있으면 "연결 다시 확인" 버튼으로 즉시 재검사
- *   동선을 열고, 연결 상실·복구 전이도 라이브 영역이 알린다.
  *
  * 접근성:
  * - 시각적 표시는 aria-hidden으로 두고, 별도 role="status" 라이브 영역이
@@ -50,8 +34,6 @@ import { resolveSavedRecency } from "./studio-save-recency";
 import type { StudioConnectivitySnapshot } from "./offline/studio-connectivity";
 import type { StudioSaveSyncStatus } from "./studio-operation-recovery-coordinator";
 
-// 이 앱의 확립된 이중언어 패턴(NotFoundPage·RouteFallback과 동일):
-// 컴포넌트 이름으로 네임스페이스를 두고 한·영 문구를 나란히 적는다.
 const bi = (ko: string, en: string): string =>
   translateBilingualValueForActiveLocale("StudioSaveStatusBar", ko, en);
 
@@ -82,6 +64,12 @@ export interface StudioSaveStatusBarProps {
   readonly connectivity?: StudioConnectivitySnapshot | null;
   /** 연결 문제 시 즉시 재검사를 실행하는 콜백. 없으면 재확인 버튼을 숨긴다. */
   readonly onRecheckConnection?: () => void;
+  /**
+   * 바로 옆에 `StudioSaveSyncStatusCenter` 알약 버튼이 함께 마운트된 경우,
+   * 동일한 "이 기기에 저장됨" 문구가 나란히 중복 노출되지 않도록 시각 텍스트만 접고
+   * 스크린리더 라이브 알림·읽기 전용 경고·인라인 복구 버튼은 그대로 유지한다.
+   */
+  readonly companionCenterMounted?: boolean;
 }
 
 /** Render the always-visible one-line save state for the editor menubar. */
@@ -91,6 +79,7 @@ export function StudioSaveStatusBar({
   readOnlyTab = false,
   connectivity = null,
   onRecheckConnection,
+  companionCenterMounted = false,
 }: StudioSaveStatusBarProps) {
   useBilingualI18nRevision();
   const view = resolveSaveRecoveryView(status, connectivity, { readOnlyTab });
@@ -101,10 +90,6 @@ export function StudioSaveStatusBar({
     initialSaveRecoveryAnnouncementState(state),
   );
 
-  // 전이만 알린다: saving→saved (완료), *→failed (위험), 연결 상실·복구.
-  // 복구는 다단계 전이(오프라인→재확인→동기화 중→저장됨) 전체를 기억하는
-  // 상태 기계로 판정한다 — 마지막 한 쌍만 보면 "복구 확인"이 "일반 저장
-  // 완료"로 뭉개진다 (studio-save-recovery-ux의 C6 상태 기계).
   useEffect(() => {
     const advanced = advanceSaveRecoveryAnnouncement(announcementState.current, state);
     announcementState.current = advanced.state;
@@ -193,12 +178,16 @@ export function StudioSaveStatusBar({
         ? "text-warning"
         : "text-fg-2";
 
+  const showVisualText = !companionCenterMounted || state === "readonly";
+
   return (
     <div className="flex items-center gap-2" data-studio-save-status-bar data-save-state={state}>
-      <span className={`flex min-h-8 items-center gap-1.5 text-[0.75rem] font-medium tabular-nums ${tone}`} aria-hidden="true">
-        <Icon className={`size-3.5 ${state === "saving" || state === "reconnecting" ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden="true" />
-        <span>{label}</span>
-      </span>
+      {showVisualText ? (
+        <span className={`flex min-h-8 items-center gap-1.5 text-[0.75rem] font-medium tabular-nums ${tone}`} aria-hidden="true">
+          <Icon className={`size-3.5 ${state === "saving" || state === "reconnecting" ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden="true" />
+          <span>{label}</span>
+        </span>
+      ) : null}
       {state === "failed" && onRetrySave ? (
         <button
           type="button"

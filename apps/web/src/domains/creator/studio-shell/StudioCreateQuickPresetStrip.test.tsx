@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { CreateStartPage } from "../CreateStartPage";
+import { readStudioProjectDocuments } from "../studio-project-document-reader";
 import { readStudioProjectLibrary } from "../studio-project-library-store";
 import {
   clearStudioAssistantSessionState,
@@ -40,8 +41,8 @@ afterEach(() => {
 });
 
 describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이터 · 단축키 가이드 · 출고 복원 흐름", () => {
-  it("시작 화면(/create)에 4가지 비주얼 장르 스타터 카드를 렌더링하고 로케일·프리셋 쿼리를 일관되게 연결한다", () => {
-    const { unmount } = render(
+  it("시작 화면(/create)에 4가지 비주얼 장르 스타터 카드를 렌더링하고 올바른 생성 주소·로케일로 연결한다", () => {
+    const { rerender } = render(
       <MemoryRouter initialEntries={["/create"]}>
         <CreateStartPage />
       </MemoryRouter>,
@@ -63,40 +64,57 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(screen.getByTestId("genre-starter-mystery").getAttribute("href")).toContain(
       "format=page-comic",
     );
-    unmount();
 
     useI18n.setState({ lang: "en" });
-    render(
+    rerender(
       <MemoryRouter initialEntries={["/create"]}>
         <CreateStartPage />
       </MemoryRouter>,
     );
     expect(screen.getByTestId("genre-starter-romance").getAttribute("href")).toContain(
-      encodeURIComponent("First Encounter Ep.1").replace(/%20/gu, "+"),
+      "First+Encounter+Ep.1",
     );
   });
 
-  it("장르 스타터 링크로 /studio/new에 진입하면 해당 프리셋이 선택되고, 수동 변경 시 선택 표시가 해제된다", () => {
+  it("장르 스타터 링크로 /studio/new에 진입하면 프리셋 동기화·수동 변경 해제·원클릭 시작이 모두 동작한다", async () => {
     const romanceSpec = STUDIO_GUIDED_GENRE_STARTERS[0]!;
-    const entryHref = buildGuidedGenreStarterHref(romanceSpec, "ko");
-
+    const romanceHref = buildGuidedGenreStarterHref(romanceSpec, "ko");
     const { container } = render(
-      <MemoryRouter initialEntries={[entryHref]}>
+      <MemoryRouter initialEntries={[romanceHref]}>
         <StudioProjectCreatePage />
+        <LocationProbe />
       </MemoryRouter>,
     );
 
-    expect(container.querySelector("[data-studio-imported-idea]")).toBeNull();
-    const romancePresetBtn = screen.getByTestId("studio-quick-preset-romance-scroll");
-    expect(romancePresetBtn.getAttribute("aria-pressed")).toBe("true");
+    const romancePreset = screen.getByTestId("studio-quick-preset-romance-scroll");
+    expect(romancePreset.getAttribute("aria-pressed")).toBe("true");
+    // 프리셋 샘플 가제는 '가져온 아이디어' 배너로 오표시되지 않는다.
+    expect(container.querySelector('[data-studio-imported-idea="true"]')).toBeNull();
 
     const titleInput = screen.getByRole("textbox", {
       name: /프로젝트 이름|Project name/u,
     }) as HTMLInputElement;
     expect(titleInput.value).toBe("설레는 첫 만남 1화");
 
+    // 제목을 직접 수정하면 프리셋 선택 표시가 해제되고, 다시 프리셋을 고르면 복원된다.
     fireEvent.change(titleInput, { target: { value: "직접 수정한 제목" } });
-    expect(romancePresetBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(romancePreset.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(romancePreset);
+    expect(romancePreset.getAttribute("aria-pressed")).toBe("true");
+
+    // 스크롤 없이 상단 프리셋 바에서 바로 프로젝트를 시작할 수 있다.
+    fireEvent.click(screen.getByTestId("studio-quick-preset-start-now"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("location").textContent).toContain("/story");
+    });
+
+    const created = readStudioProjectLibrary(window.localStorage).projects[0];
+    expect(created?.title).toBe("설레는 첫 만남 1화");
+    expect(created?.templateId).toBe("webtoon-canvas");
+    const createdDoc = readStudioProjectDocuments(window.localStorage, created!.id).documents[0];
+    expect(createdDoc?.width).toBe(800);
+    expect(createdDoc?.height).toBe(8000);
   });
 
   it("프로젝트 생성 화면(/studio/new)에서 모바일 안전영역 시뮬레이터와 1초 프리셋을 함께 검증한다", async () => {
@@ -117,11 +135,12 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     fireEvent.click(dailyPreset);
 
     expect(dailyPreset.getAttribute("aria-pressed")).toBe("true");
-    expect(simulator.getAttribute("data-preview-mode")).toBe("card-news");
-    expect(simulator.textContent).toContain("SNS 카드 4장 구성");
     expect(
       container.querySelector('[data-studio-create-format="cuttoon"]')?.getAttribute("aria-pressed"),
     ).toBe("true");
+    expect(simulator.getAttribute("data-preview-mode")).toBe("card-news");
+    expect(simulator.textContent).toContain("SNS 카드 4장 구성");
+    expect(simulator.textContent).toContain("4장 세트");
 
     const titleInput = screen.getByRole("textbox", {
       name: /프로젝트 이름|Project name/u,
@@ -143,7 +162,7 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(created?.templateId).toBe("cuttoon-square-4");
   });
 
-  it("안전영역 순수 계산기가 세로 스크롤·카드뉴스·페이지·가로형과 비정상 수치를 안전하게 판정한다", () => {
+  it("안전영역 순수 계산기가 세로 웹툰·SNS 카드·페이지 만화·가로 와이드·비정상 수치를 정확히 판정한다", () => {
     const narrow = analyzeMobileSafeZone(540, 1280, "balanced");
     expect(narrow.previewMode).toBe("vertical-scroll");
     expect(narrow.readabilityTone).toBe("warning");
@@ -163,8 +182,9 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(pageComic.previewMode).toBe("page-spread");
     expect(pageComic.phoneScreensPerPage).toBe(8);
 
-    const landscape = analyzeMobileSafeZone(1920, 1080, "balanced");
+    const landscape = analyzeMobileSafeZone(1920, 1080, "balanced", "motion-toon", 1);
     expect(landscape.previewMode).toBe("landscape");
+    expect(landscape.readabilityTone).toBe("optimal");
     expect(landscape.aspectRatioLabel).toBe("16:9");
 
     const malformed = analyzeMobileSafeZone(Number.NaN, Number.POSITIVE_INFINITY, "balanced");
@@ -172,12 +192,16 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(malformed.aspectRatioLabel).toBe("5:8");
   });
 
-  it("초보자 10초 단축키 가이드 바에서 기능 찾기 열기를 누르면 커맨드 팔레트 이벤트를 발행한다", () => {
+  it("초보자 10초 단축키·제스처 바에서 터치 제스처 전환과 기능 찾기 열기가 모두 동작한다", () => {
     const listener = vi.fn();
     window.addEventListener("toonspectrum:command-palette:open", listener);
 
     render(<StudioBeginnerQuickTipsBar />);
     expect(screen.getByTestId("studio-beginner-quick-tips")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("quick-tips-mode-touch"));
+    expect(screen.getByText("두 손가락 탭")).toBeTruthy();
+    expect(screen.getByText("색상 스포이드")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /기능 찾기 열기|Open feature finder/u }));
     expect(listener).toHaveBeenCalledTimes(1);
@@ -209,7 +233,7 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(widthInput.value).toBe(initialWidth);
   });
 
-  it("AI 보조 세션 저장소가 프로젝트별 초안을 복원하고 변조된 페이로드는 안전하게 거부한다", () => {
+  it("AI 보조 세션 저장소가 프로젝트별 초안·구버전 호환을 복원하고 손상된 mode/result 및 빈 초안은 안전하게 정리한다", () => {
     writeStudioAssistantSessionState(
       "proj-alpha",
       {
@@ -224,6 +248,20 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(restored?.openAiMode).toBe("dialogue-polish");
     expect(restored?.prompt).toBe("비 오는 날 우산을 건네는 첫 대사");
 
+    // 공백만 있는 빈 초안 기록 시 불필요한 세션 키를 남기지 않고 제거한다.
+    writeStudioAssistantSessionState(
+      "proj-alpha",
+      {
+        openAiMode: "dialogue-polish",
+        prompt: "   ",
+        lastResult: null,
+      },
+      window.sessionStorage,
+    );
+    expect(readStudioAssistantSessionState("proj-alpha", window.sessionStorage)).toBeNull();
+    expect(window.sessionStorage.getItem("toonstudio:assistant-draft:v1:proj-alpha")).toBeNull();
+
+    // 손상된 mode 거부
     window.sessionStorage.setItem(
       "toonstudio:assistant-draft:v1:proj-corrupt-mode",
       JSON.stringify({
@@ -236,12 +274,19 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
       readStudioAssistantSessionState("proj-corrupt-mode", window.sessionStorage),
     ).toBeNull();
 
+    // 손상된 lastResult(필수 필드·data 배열 누락)는 null로 정화하고 정상 prompt는 보존한다.
     window.sessionStorage.setItem(
       "toonstudio:assistant-draft:v1:proj-corrupt-result",
       JSON.stringify({
         openAiMode: "idea-remix",
         prompt: "정상 프롬프트",
-        lastResult: { provider: "openai", model: "gpt-4o-mini", result: { mode: "idea-remix" } },
+        lastResult: {
+          provider: "openai",
+          model: "gpt-4o-mini",
+          privacy: { storeData: false, piiRedactedCount: 0 },
+          quota: { remainingDaily: 50, dailyLimit: 60 },
+          result: { mode: "idea-remix", data: { summary: "요약만 있고 angles 배열 누락" } },
+        },
       }),
     );
     const sanitized = readStudioAssistantSessionState(
@@ -251,7 +296,19 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(sanitized?.prompt).toBe("정상 프롬프트");
     expect(sanitized?.lastResult).toBeNull();
 
-    clearStudioAssistantSessionState("proj-alpha", window.sessionStorage);
-    expect(readStudioAssistantSessionState("proj-alpha", window.sessionStorage)).toBeNull();
+    // 구버전 inputText/mode 키 호환 복원
+    window.sessionStorage.setItem(
+      "toonstudio:assistant-draft:v1:proj-legacy",
+      JSON.stringify({
+        mode: "script-to-cuts",
+        inputText: "구버전 세션 초안",
+      }),
+    );
+    const legacy = readStudioAssistantSessionState("proj-legacy", window.sessionStorage);
+    expect(legacy?.openAiMode).toBe("script-to-cuts");
+    expect(legacy?.prompt).toBe("구버전 세션 초안");
+
+    clearStudioAssistantSessionState("proj-legacy", window.sessionStorage);
+    expect(readStudioAssistantSessionState("proj-legacy", window.sessionStorage)).toBeNull();
   });
 });

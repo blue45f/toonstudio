@@ -274,7 +274,7 @@ export function StudioPublicationControls({
             disabled={disabled}
             icon={<Clock3 size={16} />}
             title="저장 즉시 공개"
-            description="사전검사를 통과한 현재 revision을 바로 독자에게 공개합니다."
+            description="사전검사를 통과한 현재 버전을 바로 독자에게 공개합니다."
             onClick={() => setMode("immediate")}
           />
           <ChoiceCard

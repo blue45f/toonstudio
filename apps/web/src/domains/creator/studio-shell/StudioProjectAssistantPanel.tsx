@@ -74,7 +74,7 @@ function editorHref(projectId: string, tool: StudioAiAssistToolId): string {
   return `/studio/work/${encodeURIComponent(projectId)}/${surface}`;
 }
 
-function readLocalProjectMeta(projectId: string): {
+function readLocalProjectContext(projectId: string): {
   readonly title?: string;
   readonly targetPlatform: StudioOpenAiTargetPlatform;
 } {
@@ -87,11 +87,15 @@ function readLocalProjectMeta(projectId: string): {
     );
     const format = match?.definition?.format;
     const targetPlatform: StudioOpenAiTargetPlatform =
-      format === "vertical-webtoon" || format === "cuttoon" || format === "page-comic"
-        ? format
-        : match?.kind && match.kind !== "webtoon"
-          ? "general"
-          : "vertical-webtoon";
+      format === "cuttoon"
+        ? "cuttoon"
+        : format === "page-comic"
+          ? "page-comic"
+          : format === "motion-toon" ||
+              format === "illustration" ||
+              (match?.kind && match.kind !== "webtoon")
+            ? "general"
+            : "vertical-webtoon";
     return {
       title: match?.title?.trim() || undefined,
       targetPlatform,
@@ -102,8 +106,8 @@ function readLocalProjectMeta(projectId: string): {
 }
 
 /**
- * 프로젝트별 key 경계를 강제해 프로젝트 전환 시 이전 작품의 초안·결과가
- * 새 작품의 sessionStorage를 덮어쓰지 않도록 격리한다.
+ * 프로젝트 단계 안에서 바로 쓸 수 있는 AI 창작 도우미.
+ * 프로젝트별 key 경계로 세션 복원 상태를 격리하고, 진행 중인 요청은 언제든 취소할 수 있다.
  */
 export function StudioProjectAssistantPanel(props: StudioProjectAssistantPanelProps) {
   return <StudioProjectAssistantPanelBody key={props.projectId} {...props} />;
@@ -121,6 +125,12 @@ function StudioProjectAssistantPanelBody({
   const normalizedLocale = locale.toLowerCase().startsWith("ko") ? "ko" : "en";
   const suite = useStudioProjectFeatureSuite(projectId, normalizedLocale);
   const suggestions = useMemo(() => STUDIO_ASSISTANT_SUGGESTIONS[section], [section]);
+  const inFlightAbortRef = useRef<AbortController | null>(null);
+
+  const defaultMode = suggestions[0]?.openAiMode ?? defaultOpenAiModeForSection(section);
+  const defaultPrompt = suggestions[0]
+    ? l(suggestions[0].prompt.ko, suggestions[0].prompt.en)
+    : "";
 
   const initialRestored = useMemo(
     () => readStudioAssistantSessionState(projectId),
@@ -131,22 +141,18 @@ function StudioProjectAssistantPanelBody({
     suggestions[0]?.tool ?? "composition",
   );
   const [openAiMode, setOpenAiMode] = useState<StudioOpenAiAssistMode>(
-    () =>
-      initialRestored?.openAiMode ??
-      suggestions[0]?.openAiMode ??
-      defaultOpenAiModeForSection(section),
+    () => initialRestored?.openAiMode ?? defaultMode,
   );
-  const [prompt, setPrompt] = useState<string>(() =>
-    initialRestored?.prompt ??
-    (suggestions[0] ? l(suggestions[0].prompt.ko, suggestions[0].prompt.en) : ""),
+  const [prompt, setPrompt] = useState<string>(
+    () => initialRestored?.prompt ?? defaultPrompt,
   );
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusInfo, setStatusInfo] = useState<StudioOpenAiAssistStatus | null>(null);
   const [runningOpenAi, setRunningOpenAi] = useState(false);
   const [openAiResult, setOpenAiResult] = useState<StudioOpenAiAssistSuccess | null>(
     () => initialRestored?.lastResult ?? null,
   );
-  const openAiRequestAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -156,18 +162,17 @@ function StudioProjectAssistantPanelBody({
     }).then((next) => {
       if (!controller.signal.aborted) setStatusInfo(next);
     });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+    };
   }, [fetchImpl]);
 
   useEffect(() => {
     return () => {
-      openAiRequestAbortRef.current?.abort();
-      openAiRequestAbortRef.current = null;
+      inFlightAbortRef.current?.abort();
+      inFlightAbortRef.current = null;
     };
   }, []);
-
-  const defaultMode = suggestions[0]?.openAiMode ?? defaultOpenAiModeForSection(section);
-  const defaultPrompt = suggestions[0] ? l(suggestions[0].prompt.ko, suggestions[0].prompt.en) : "";
 
   useEffect(() => {
     if (
@@ -184,28 +189,39 @@ function StudioProjectAssistantPanelBody({
     });
   }, [projectId, prompt, openAiMode, openAiResult, defaultPrompt, defaultMode]);
 
-  const cancelRunningOpenAi = () => {
-    openAiRequestAbortRef.current?.abort();
-    openAiRequestAbortRef.current = null;
-    setRunningOpenAi(false);
-  };
-
   const chooseSuggestion = (suggestion: AssistantSuggestionSpec) => {
     setSelectedTool(suggestion.tool);
     setOpenAiMode(suggestion.openAiMode);
     setPrompt(l(suggestion.prompt.ko, suggestion.prompt.en));
     setError(null);
+    setStatusMessage(null);
   };
 
   const resetDraft = () => {
-    cancelRunningOpenAi();
+    inFlightAbortRef.current?.abort();
+    inFlightAbortRef.current = null;
+    setRunningOpenAi(false);
     clearStudioAssistantSessionState(projectId);
     const first = suggestions[0];
     setSelectedTool(first?.tool ?? "composition");
-    setOpenAiMode(first?.openAiMode ?? defaultOpenAiModeForSection(section));
-    setPrompt(first ? l(first.prompt.ko, first.prompt.en) : "");
+    setOpenAiMode(defaultMode);
+    setPrompt(defaultPrompt);
     setOpenAiResult(null);
     setError(null);
+    setStatusMessage(null);
+  };
+
+  const cancelOpenAiRequest = () => {
+    inFlightAbortRef.current?.abort();
+    inFlightAbortRef.current = null;
+    setRunningOpenAi(false);
+    setError(null);
+    setStatusMessage(
+      bt(
+        "초안 생성 요청을 취소했어요. 입력한 내용은 그대로 남아 있습니다.",
+        "Canceled drafting. Your input text is preserved.",
+      ),
+    );
   };
 
   const launch = () => {
@@ -249,27 +265,28 @@ function StudioProjectAssistantPanelBody({
       );
       return;
     }
-    openAiRequestAbortRef.current?.abort();
+    inFlightAbortRef.current?.abort();
     const controller = new AbortController();
-    openAiRequestAbortRef.current = controller;
+    inFlightAbortRef.current = controller;
     setRunningOpenAi(true);
     setError(null);
+    setStatusMessage(null);
 
-    const projectMeta = readLocalProjectMeta(projectId);
+    const localProject = readLocalProjectContext(projectId);
     const response = await runStudioOpenAiCreativeAssist(
       {
         mode: openAiMode,
         inputText: trimmed,
-        projectTitle: projectMeta.title,
-        targetPlatform: projectMeta.targetPlatform,
+        projectTitle: localProject.title,
+        targetPlatform: localProject.targetPlatform,
       },
       { fetchImpl, signal: controller.signal },
     );
 
-    if (openAiRequestAbortRef.current !== controller || controller.signal.aborted) {
+    if (inFlightAbortRef.current !== controller || controller.signal.aborted) {
       return;
     }
-    openAiRequestAbortRef.current = null;
+    inFlightAbortRef.current = null;
     setRunningOpenAi(false);
     if (!response.ok) {
       if (response.code !== "CLIENT_ABORTED") {
@@ -369,6 +386,7 @@ function StudioProjectAssistantPanelBody({
               onClick={() => {
                 setOpenAiMode(modeItem.id);
                 setError(null);
+                setStatusMessage(null);
               }}
               className={cn(
                 "min-h-10 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
@@ -427,7 +445,7 @@ function StudioProjectAssistantPanelBody({
         <button
           type="button"
           onClick={resetDraft}
-          className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-bold text-fg-3 transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+          className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs font-bold text-fg-3 transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
         >
           <RotateCcw size={12} aria-hidden="true" />
           {bt("기본 예시로 초기화", "Reset prompt")}
@@ -439,6 +457,7 @@ function StudioProjectAssistantPanelBody({
         onChange={(event) => {
           setPrompt(event.target.value);
           setError(null);
+          setStatusMessage(null);
         }}
         rows={3}
         maxLength={6_000}
@@ -453,12 +472,17 @@ function StudioProjectAssistantPanelBody({
           {error}
         </p>
       ) : null}
+      {statusMessage ? (
+        <p role="status" className="mt-2 text-xs font-semibold text-fg-2">
+          {statusMessage}
+        </p>
+      ) : null}
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs leading-5 text-fg-3">
           {bt(
-            "키·결제 정보는 서버 로컬 환경변수에서만 읽으며, 주요 연락처·이메일은 전송 전 자동 마스킹되고 일일 한도 내에서만 실행됩니다.",
-            "Keys stay in server-only env vars, common PII is masked before sending, store:false is enforced, and daily server caps apply.",
+            "키·결제 정보는 서버 로컬 환경변수에서만 읽으며, 이메일·연락처는 전송 전 자동 마스킹되고 유료 자동 충전은 하지 않습니다.",
+            "Keys stay in server-only env vars, PII is masked before sending, store:false is enforced, and no auto-billing occurs.",
           )}
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -473,7 +497,7 @@ function StudioProjectAssistantPanelBody({
             })}
           >
             {runningOpenAi ? (
-              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+              <Loader2 size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
             ) : (
               <Sparkles size={16} aria-hidden="true" />
             )}
@@ -484,8 +508,8 @@ function StudioProjectAssistantPanelBody({
           {runningOpenAi ? (
             <button
               type="button"
+              onClick={cancelOpenAiRequest}
               data-testid="openai-assist-cancel-btn"
-              onClick={cancelRunningOpenAi}
               className={buttonClass({
                 variant: "outline",
                 className: "min-h-11 gap-1.5",

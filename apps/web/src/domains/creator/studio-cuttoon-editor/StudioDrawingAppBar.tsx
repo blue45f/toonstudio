@@ -6,6 +6,7 @@ import {
   ChevronUp,
   CloudUpload,
   Command,
+  Download,
   FlipHorizontal2,
   HelpCircle,
   Layers3,
@@ -33,6 +34,8 @@ import {
   evaluateStudioCspBenchmarkScorecard,
   resolveStudioDeviceFormFactor,
 } from "../drawing/studio-csp-benchmark-scorecard";
+import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
+import { StudioEditorReturnButton } from "../StudioEditorReturnButton";
 
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
@@ -101,7 +104,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [mobileStripCollapsed, setMobileStripCollapsed] = useState(false);
 
-  const brushName = s.activeCatalogBrush?.name ?? s.brush ?? "Brush";
+  const brushName = s.activeCatalogBrush?.name ?? s.brush ?? "브러시";
   const strokeWidth = clamp(Math.round(Number(s.strokeWidth) || 8), 1, 200);
   const currentWidth = Math.round(Number(s.strokeWidth) || 0);
   const opacityRatio = clamp(
@@ -129,6 +132,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
   const mobileStripSuppressed = Boolean(s.canvasOnlyMode || s.mobileSheet);
   const mobileStripVisible = !mobileStripSuppressed && !mobileStripCollapsed;
 
+  const hasServerWork = Boolean(s.workId || s.loadedWork?.id || s.sharedDocument?.workId);
   const isSyncBusy = Boolean(s.saving || s.collaborationOperationSyncPending);
   const hasSyncError = Boolean(s.serverRevisionError);
   const isOfflineProtected = Boolean(s.offlineSceneNotice);
@@ -138,8 +142,12 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
     : isOfflineProtected
       ? tx("오프라인 보호 중")
       : isSyncBusy
-        ? tx("실시간 저장 중…")
-        : tx("실시간 동기화됨");
+        ? hasServerWork
+          ? tx("실시간 저장 중…")
+          : tx("이 기기에 저장 중…")
+        : hasServerWork
+          ? tx("실시간 동기화됨")
+          : tx("이 기기에 자동 저장됨");
 
   const cspScorecard = useMemo(
     () =>
@@ -234,22 +242,25 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
       className="@container relative z-30 flex flex-col border-b border-line bg-panel/95 shadow-sm backdrop-blur-xl"
     >
       <div className="flex min-h-12 shrink-0 items-center gap-1.5 px-2 sm:gap-2 sm:px-3">
-        <div className="flex min-w-0 items-center gap-2 pr-1">
-          <ToonStudioMark className="size-8 shrink-0 rounded-xl shadow-sm" />
+        <div className="flex min-w-0 items-center gap-1.5 pr-1">
+          <StudioEditorReturnButton
+            variant="immersive"
+            onReturn={returnFromStudioEditorInBrowser}
+          />
+          <ToonStudioMark className="hidden size-8 shrink-0 rounded-xl shadow-sm sm:block" />
           <div className="hidden min-w-0 sm:block">
             <div className="flex items-center gap-1.5">
               <strong className="block truncate text-xs font-black tracking-[-0.02em] text-fg">
-                <ToonStudioWordmark /> Draw
+                <ToonStudioWordmark /> {tx("드로잉")}
               </strong>
               <span
                 data-studio-appbar-csp-badge="true"
-                className="hidden rounded-full border border-good/35 bg-good/10 px-1.5 py-0.5 text-[0.58rem] font-extrabold tracking-tight text-good xl:inline-flex"
-                title={tx("클립스튜디오(CSP) 대비 종합 성능·품질·기능 우위 배율")}
+                className="sr-only"
               >
                 CSP {cspScorecard.compositeRatio}×
               </span>
             </div>
-            <span className="block max-w-40 truncate text-[0.65rem] text-fg-3">{typeof s.name === "string" && s.name ? s.name : "Untitled"}</span>
+            <span className="block max-w-40 truncate text-[0.65rem] text-fg-3">{typeof s.name === "string" && s.name ? s.name : tx("제목 없는 원고")}</span>
           </div>
         </div>
 
@@ -412,8 +423,8 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             type="button"
             data-testid="drawing-appbar-sync-status"
             aria-live="polite"
-            aria-label={s.scopedSavePendingConfirmation ? tx("저장 상태 확인") : `${tx("원고 동기화 상태")}: ${syncLabel}`}
-            title={s.scopedSavePendingConfirmation ? tx("기존 요청의 저장 상태 확인") : tx("클릭하여 즉시 원고 저장·서버 동기화 플러시")}
+            aria-label={s.scopedSavePendingConfirmation ? tx("저장 상태 확인") : `${hasServerWork ? tx("원고 동기화 상태") : tx("원고 저장 상태")}: ${syncLabel}`}
+            title={s.scopedSavePendingConfirmation ? tx("기존 요청의 저장 상태 확인") : tx("클릭하여 즉시 원고 저장 플러시")}
             onClick={() => s.requestSaveFlush?.()}
             className={cn(
               "inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[0.65rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
@@ -441,6 +452,18 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           <button type="button" className={cn(buttonClass({ variant: s.visibleRightPanelOpen ? "solid" : "quiet", size: "icon" }), "hidden lg:inline-flex")} aria-pressed={Boolean(s.visibleRightPanelOpen)} aria-label={tx("레이어·속성 패널")} title={tx("레이어·속성 패널")} onClick={() => s.setRightPanelOpenWithOverride?.(!s.visibleRightPanelOpen)}>
             <Layers3 size={17} aria-hidden="true" />
           </button>
+          <button
+            type="button"
+            data-testid="drawing-appbar-export-toggle"
+            className={buttonClass({ variant: s.exportMenuOpen ? "solid" : "outline", size: "sm", className: "min-h-11 gap-1 px-2.5 text-xs font-bold" })}
+            aria-pressed={Boolean(s.exportMenuOpen)}
+            aria-label={tx("저장·내보내기 메뉴 열기")}
+            title={tx("저장·내보내기 메뉴 열기")}
+            onClick={() => s.setExportMenuOpen?.((value: boolean) => !value)}
+          >
+            <Download size={15} aria-hidden="true" />
+            <span className="hidden sm:inline">{tx("내보내기")}</span>
+          </button>
           <button type="button" className={buttonClass({ variant: s.canvasOnlyMode ? "solid" : "quiet", size: "icon" })} aria-pressed={Boolean(s.canvasOnlyMode)} aria-label={tx("캔버스만 보기")} title={`${tx("캔버스만 보기")} · ${tx("4손가락 탭")}`} onClick={() => s.setCanvasOnlyMode?.((value: boolean) => !value)}>
             <Maximize2 size={17} aria-hidden="true" />
           </button>
@@ -454,7 +477,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
 
       {advancedOpen && !s.canvasOnlyMode ? (
         <div id="studio-drawing-appbar-advanced-panel" role="region" aria-label={tx("고급 드로잉 옵션")} data-studio-appbar-advanced-panel="true" className="absolute inset-x-0 top-full z-40 flex flex-wrap items-center gap-1.5 border-b border-line bg-panel/98 px-2.5 py-1.5 shadow-lg backdrop-blur-xl sm:px-3">
-          {/* 손떨림 보정(Stabilizer) 빠른 스텝 컨트롤 */}
+          {/* 손떨림 보정 빠른 스텝 컨트롤 */}
           <div
             data-studio-quick-stabilizer-control="true"
             className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-[0.68rem] font-semibold tabular-nums text-fg-2"
@@ -478,7 +501,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
               type="button"
               data-testid="drawing-appbar-stabilizer-cycle"
               className="px-1 text-center transition-colors hover:text-fg"
-              aria-label={`${tx("손떨림 보정 강도 빠른 전환, 현재")} Stabilizer ${stabilizer}`}
+              aria-label={`${tx("손떨림 보정 강도 빠른 전환, 현재")} ${tx("손떨림 보정")} ${stabilizer}`}
               title={tx("클릭하여 손떨림 보정 단계(0·3·7·12·15) 빠른 전환 · 휠/상하키 미세 조절")}
               onClick={() => s.setStabilizer?.(nextInCycle(QUICK_STABILIZER_LEVELS, stabilizer))}
               onKeyDown={(event) => {
@@ -491,7 +514,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
                 }
               }}
             >
-              <span data-testid="studio-appbar-stabilizer">Stabilizer {stabilizer}</span>
+              <span data-testid="studio-appbar-stabilizer">{`${tx("손떨림 보정")} ${stabilizer}`}</span>
             </button>
             <button
               type="button"
@@ -542,7 +565,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             <span>{canvasFlipH ? tx("반전 켜짐") : tx("좌우 반전")}</span>
           </button>
 
-          {/* 브러시 랩(Brush Studio V6) 빠른 열기 */}
+          {/* 브러시 랩 빠른 열기 */}
           <button
             type="button"
             data-studio-open-brush-lab="true"
@@ -561,7 +584,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             <span>{tx("브러시 랩")}</span>
           </button>
 
-          {/* 빠른 도형 보정(QuickShape) 토글 */}
+          {/* 빠른 도형 보정 토글 */}
           <button
             type="button"
             data-studio-quick-shape-toggle="true"
@@ -609,7 +632,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
         </div>
       ) : null}
 
-      {/* 컴팩트/태블릿 다기종 1-탭 빠른 드로잉 스트립 */}
+      {/* 컴팩트/태블릿 다기종 44px 터치 타깃 빠른 드로잉 스트립 */}
       <div
         id="studio-drawing-mobile-quick-strip"
         role="toolbar"
@@ -624,14 +647,14 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           }
         }}
         className={cn(
-          "items-center justify-between gap-1 border-t border-line/60 px-2 py-1 md:hidden",
+          "items-center justify-between gap-1.5 border-t border-line/60 px-2 py-1.5 md:hidden",
           mobileStripVisible ? "flex flex-wrap" : "hidden",
         )}
         aria-label={tx("모바일 빠른 드로잉 스트립")}
       >
         <button
           type="button"
-          className="inline-flex min-h-8 min-w-0 items-center gap-1 rounded-full border border-line bg-card px-2 py-1 text-[0.65rem] font-semibold text-fg-2"
+          className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg-2"
           aria-label={tx("모바일 브러시 시트 열기")}
           onClick={(event) => {
             if (s.isMobile) {
@@ -641,38 +664,38 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             s.studioBrushCatalogHandlers?.toggle?.("desktop-dock", event.currentTarget);
           }}
         >
-          <Brush size={12} aria-hidden="true" />
-          <span className="max-w-20 truncate">{brushName}</span>
+          <Brush size={14} aria-hidden="true" />
+          <span className="max-w-24 truncate">{brushName}</span>
         </button>
 
-        <div className="inline-flex items-center gap-1 text-[0.65rem] font-semibold tabular-nums text-fg-2">
+        <div className="inline-flex items-center gap-1 text-xs font-semibold tabular-nums text-fg-2">
           <button
             type="button"
-            className="inline-flex size-7 items-center justify-center rounded-full border border-line bg-card"
+            className="inline-flex size-11 items-center justify-center rounded-full border border-line bg-card"
             aria-label={tx("모바일 브러시 크기 줄이기")}
             onClick={() => stepStrokeWidth(-2)}
           >
-            <Minus size={11} aria-hidden="true" />
+            <Minus size={14} aria-hidden="true" />
           </button>
-          <span className="min-w-9 text-center">{strokeWidth}px</span>
+          <span className="min-w-10 text-center">{strokeWidth}px</span>
           <button
             type="button"
-            className="inline-flex size-7 items-center justify-center rounded-full border border-line bg-card"
+            className="inline-flex size-11 items-center justify-center rounded-full border border-line bg-card"
             aria-label={tx("모바일 브러시 크기 키우기")}
             onClick={() => stepStrokeWidth(2)}
           >
-            <Plus size={11} aria-hidden="true" />
+            <Plus size={14} aria-hidden="true" />
           </button>
         </div>
 
         <div className="inline-flex items-center gap-1">
           <button
             type="button"
-            className="inline-flex min-h-7 items-center gap-1 rounded-full border border-line bg-card px-2 py-0.5 text-[0.62rem] font-semibold text-fg-2"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg-2"
             aria-label={tx("모바일 대칭 전환")}
             onClick={handleCycleSymmetry}
           >
-            <Sparkles size={11} aria-hidden="true" />
+            <Sparkles size={13} aria-hidden="true" />
             <span>{resolveSymmetryShortLabel(symmetryType)}</span>
           </button>
           <button
@@ -681,9 +704,9 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             aria-label={tx("모바일 빠른 스트립 닫기")}
             title={tx("모바일 빠른 스트립을 접어 캔버스 작업영역을 넓힙니다")}
             onClick={collapseMobileStripAndRestoreFocus}
-            className="inline-flex size-7 items-center justify-center rounded-full border border-line bg-card text-fg-3 hover:bg-raised hover:text-fg"
+            className="inline-flex size-11 items-center justify-center rounded-full border border-line bg-card text-fg-3 hover:bg-raised hover:text-fg"
           >
-            <X size={12} aria-hidden="true" />
+            <X size={14} aria-hidden="true" />
           </button>
         </div>
       </div>

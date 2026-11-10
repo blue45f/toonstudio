@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { consumeStudioAiProjectHandoff } from "../ai/studio-ai-project-handoff";
+import { createStudioProjectDefinition } from "../studio-project-definition";
+import { createStudioProject } from "../studio-project-library-store";
 import {
   readStudioAssistantSessionState,
   writeStudioAssistantSessionState,
@@ -73,16 +75,38 @@ describe("StudioProjectAssistantPanel", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.change(screen.getByLabelText(/요청 내용/u), { target: { value: " " } });
+    fireEvent.change(screen.getByLabelText("요청 내용"), { target: { value: " " } });
     fireEvent.click(screen.getByRole("button", { name: /편집기에서 검토/u }));
 
     expect(screen.getByRole("alert").textContent).toContain("요청할 내용을 입력");
     expect(screen.getByLabelText("location").textContent).toContain(
       "/studio/p/project-12/production",
     );
+    expect(window.sessionStorage.length).toBe(0);
     expect(
       consumeStudioAiProjectHandoff(window.sessionStorage, "project-12"),
     ).toBeNull();
+  });
+
+  it("작성하던 초안을 비우면 불필요한 세션 기록도 함께 정리한다", () => {
+    const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error("offline"));
+    render(
+      <MemoryRouter initialEntries={["/studio/p/project-12/story"]}>
+        <StudioProjectAssistantPanel
+          projectId="project-12"
+          section="story"
+          locale="ko"
+          fetchImpl={fetchMock}
+        />
+      </MemoryRouter>,
+    );
+
+    const textarea = screen.getByLabelText("요청 내용");
+    fireEvent.change(textarea, { target: { value: "임시로 적어 둔 대사 초안" } });
+    expect(window.sessionStorage.length).toBe(1);
+
+    fireEvent.change(textarea, { target: { value: "   " } });
+    expect(window.sessionStorage.length).toBe(0);
   });
 
   it("프로젝트 전환(projectId 변경) 시 이전 작품 초안이 대상 작품의 세션 저장소를 덮어쓰지 않는다", () => {
@@ -108,7 +132,7 @@ describe("StudioProjectAssistantPanel", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.change(screen.getByLabelText(/요청 내용/u), {
+    fireEvent.change(screen.getByLabelText("요청 내용"), {
       target: { value: "작품 A 전용 대사 초안" },
     });
     expect(
@@ -126,7 +150,7 @@ describe("StudioProjectAssistantPanel", () => {
       </MemoryRouter>,
     );
 
-    expect((screen.getByLabelText(/요청 내용/u) as HTMLTextAreaElement).value).toBe(
+    expect((screen.getByLabelText("요청 내용") as HTMLTextAreaElement).value).toBe(
       "작품 B 고유 세계관 초안",
     );
     expect(
@@ -135,63 +159,6 @@ describe("StudioProjectAssistantPanel", () => {
     expect(
       readStudioAssistantSessionState("project-a", window.sessionStorage)?.prompt,
     ).toBe("작품 A 전용 대사 초안");
-  });
-
-  it("진행 중인 OpenAI 보조 요청을 취소 버튼으로 즉시 중단할 수 있다", async () => {
-    let capturedRunSignal: AbortSignal | null | undefined;
-    const fetchMock = vi.fn<typeof fetch>().mockImplementation((input, init) => {
-      const url = typeof input === "string" ? input : input.toString();
-      if (url.endsWith("/status")) {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              configured: true,
-              provider: "openai",
-              model: "gpt-4o-mini",
-              keyLocation: "server-env-only",
-              storeData: false,
-              piiMasking: true,
-              autoBillingDisabled: true,
-              modes: [],
-              limits: { burstPerMinute: 5, hourlyRequests: 20, dailyRequests: 60, maxInputChars: 6000 },
-              setupNoticeKo: "연결됨",
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
-        );
-      }
-      capturedRunSignal = init?.signal;
-      return new Promise<Response>((_resolve, reject) => {
-        init?.signal?.addEventListener("abort", () => {
-          reject(new DOMException("Aborted", "AbortError"));
-        });
-      });
-    });
-
-    render(
-      <MemoryRouter initialEntries={["/studio/p/project-12/story"]}>
-        <StudioProjectAssistantPanel
-          projectId="project-12"
-          section="story"
-          locale="ko"
-          fetchImpl={fetchMock}
-        />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId("openai-assist-status-badge").textContent).toContain(
-        "OpenAI 연결됨",
-      );
-    });
-
-    fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
-    const cancelBtn = await screen.findByTestId("openai-assist-cancel-btn");
-    fireEvent.click(cancelBtn);
-
-    expect(capturedRunSignal?.aborted).toBe(true);
-    expect(screen.queryByTestId("openai-assist-cancel-btn")).toBeNull();
-    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("서버에 OPENAI_API_KEY가 없을 때 솔직하게 안내하고 다른 작업은 막지 않는다", async () => {
@@ -236,6 +203,21 @@ describe("StudioProjectAssistantPanel", () => {
   });
 
   it("서버 OpenAI 보조 결과를 사본으로 추가하고 새 응답을 다시 받으면 추가 버튼을 재활성화한다", async () => {
+    createStudioProject(window.localStorage, {
+      id: "project-12",
+      title: "네 컷 일상기",
+      kind: "webtoon",
+      definition: createStudioProjectDefinition({
+        format: "cuttoon",
+        purpose: "serial",
+        startPoint: "storyboard",
+        collaboration: "solo",
+        primaryWorkspace: "webtoon",
+        enabledWorkspaces: ["webtoon"],
+        deliveryProfileIds: ["social-card-sequence"],
+      }),
+    });
+
     const makeCutResponse = (goal: string) =>
       new Response(
         JSON.stringify({
@@ -318,6 +300,10 @@ describe("StudioProjectAssistantPanel", () => {
     await waitFor(() => {
       expect(screen.getByTestId("openai-assist-result-card")).toBeTruthy();
     });
+
+    const postInit = fetchMock.mock.calls[1]?.[1];
+    expect(String(postInit?.body ?? "")).toContain('"targetPlatform":"cuttoon"');
+
     expect(screen.getByText(/비 오는 날 정류장의 긴장감 형성/u)).toBeTruthy();
     expect(screen.getByText(/개인정보·민감 문자열 1건 자동 마스킹/u)).toBeTruthy();
 
@@ -333,5 +319,60 @@ describe("StudioProjectAssistantPanel", () => {
       name: "기획 컷 목록에 사본으로 추가",
     }) as HTMLButtonElement;
     expect(reEnabledAppendBtn.disabled).toBe(false);
+  });
+
+  it("진행 중인 OpenAI 초안 요청을 사용자가 즉시 취소할 수 있고 입력한 문장은 그대로 보존된다", async () => {
+    let capturedSignal: AbortSignal | undefined;
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            configured: true,
+            provider: "openai",
+            model: "gpt-4o-mini",
+            keyLocation: "server-env-only",
+            storeData: false,
+            piiMasking: true,
+            autoBillingDisabled: true,
+            modes: [],
+            limits: { burstPerMinute: 5, hourlyRequests: 20, dailyRequests: 60, maxInputChars: 6000 },
+            setupNoticeKo: "연결됨",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      .mockImplementationOnce((_url, init) => {
+        capturedSignal = init?.signal ?? undefined;
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      });
+
+    render(
+      <MemoryRouter initialEntries={["/studio/p/project-12/story"]}>
+        <StudioProjectAssistantPanel
+          projectId="project-12"
+          section="story"
+          locale="ko"
+          fetchImpl={fetchMock}
+        />
+      </MemoryRouter>,
+    );
+
+    const textarea = screen.getByLabelText("요청 내용") as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: "취소 후에도 남을 소중한 대사 초안" } });
+
+    fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
+    const cancelBtn = await screen.findByTestId("openai-assist-cancel-btn");
+    fireEvent.click(cancelBtn);
+
+    expect(capturedSignal?.aborted).toBe(true);
+    expect(screen.queryByTestId("openai-assist-cancel-btn")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(textarea.value).toBe("취소 후에도 남을 소중한 대사 초안");
+    expect(screen.getByRole("status").textContent).toContain("요청을 취소했어요");
   });
 });

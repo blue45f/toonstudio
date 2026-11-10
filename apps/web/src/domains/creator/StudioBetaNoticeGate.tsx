@@ -35,7 +35,7 @@ const BETA_NOTICE_ENTRY_PATHNAMES: ReadonlySet<string> = new Set([
 
 const COPY = {
   ko: {
-    badge: "BETA TEST",
+    badge: "베타 안내",
     title: "툰스튜디오는 현재 베타 테스트 중입니다",
     intro:
       "저장 정책과 기능이 바뀔 수 있습니다. 캔버스 작업은 계속할 수 있으며, 중요한 결과물은 별도로 백업해 주세요.",
@@ -140,7 +140,7 @@ export function StudioBetaNoticeGate({ pathname }: StudioBetaNoticeGateProps) {
   return (
     <div
       data-studio-beta-notice-host="true"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[90] flex justify-end px-3 sm:bottom-4 sm:px-4"
+      className="pointer-events-none fixed inset-x-0 bottom-[max(calc(5.75rem+env(safe-area-inset-bottom)),var(--service-status-overlay-clearance,0px))] z-[90] flex justify-end px-3 sm:px-4 md:bottom-[max(1rem,var(--service-status-overlay-clearance,0px))]"
     >
       <aside
         ref={noticeRef}
@@ -158,7 +158,7 @@ export function StudioBetaNoticeGate({ pathname }: StudioBetaNoticeGateProps) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-warning/40 bg-warning-soft px-2 py-0.5 text-[0.62rem] font-black tracking-[0.14em] text-warning">
+              <span className="rounded-full border border-warning/40 bg-warning-soft px-2 py-0.5 text-[0.62rem] font-black tracking-[0.08em] text-warning">
                 {copy.badge}
               </span>
               <h2 id={titleId} className="sr-only">{copy.title}</h2>

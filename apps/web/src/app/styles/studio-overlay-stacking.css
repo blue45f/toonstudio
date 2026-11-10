@@ -63,11 +63,11 @@ html:has([data-studio-mobile-sheet]:not([hidden]):not([aria-hidden="true"])) [da
  * 하단 탭이 있는 휴대폰 폭(~767px)은 탭 위 기준선(5.75rem)에, 넓은 화면은 화면 아래 1rem에 둔다.
  * 가로 위치는 sitewide-visual-ux.css 의 '떠 있는 요소 배치 계약'(알림 열)이 정한다. */
 [data-studio-beta-notice-host="true"] {
-  bottom: max(calc(5.75rem + env(safe-area-inset-bottom)), var(--service-status-overlay-clearance, 0px));
+  bottom: max(calc(5.75rem + env(safe-area-inset-bottom)), var(--service-status-overlay-clearance, 0px)) !important;
 }
 @media (min-width: 768px) {
   [data-studio-beta-notice-host="true"] {
-    bottom: max(1rem, var(--service-status-overlay-clearance, 0px));
+    bottom: max(1rem, var(--service-status-overlay-clearance, 0px)) !important;
   }
 }
 

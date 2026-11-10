@@ -96,11 +96,18 @@ describe("StudioDocumentWindowHub", () => {
     expect(bar?.className).toContain("z-[60]");
   });
 
-  it("offers a one-click way back to the studio lobby", () => {
+  it("offers one-click links back to My work, project stages, and mobile-labeled export", () => {
     renderHub();
 
     const back = screen.getByRole("link", { name: "내 작업으로 돌아가기" });
     expect(back.getAttribute("href")).toBe("/studio");
+
+    const projectStages = screen.getByRole("link", { name: "프로젝트 단계로 돌아가기" });
+    expect(projectStages.getAttribute("href")).toBe("/studio/p/project-1/overview");
+
+    const exportLink = screen.getByRole("link", { name: "저장 및 내보내기 화면 열기" });
+    expect(exportLink.getAttribute("href")).toBe("/studio/p/project-1/export");
+    expect(exportLink.textContent).toContain("내보내기");
   });
 
   it("keeps the grouped workspace switcher and direct tab/window actions", () => {

@@ -22,6 +22,68 @@ export type AssistantSuggestionSpec = Readonly<{
   prompt: BilingualText;
 }>;
 
+const VALID_OPENAI_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
+  "idea-remix",
+  "script-to-cuts",
+  "dialogue-polish",
+  "export-preflight-coach",
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isValidOpenAiMode(value: unknown): value is StudioOpenAiAssistMode {
+  return (
+    typeof value === "string" &&
+    VALID_OPENAI_MODES.has(value as StudioOpenAiAssistMode)
+  );
+}
+
+function isValidStoredSuccess(value: unknown): value is StudioOpenAiAssistSuccess {
+  if (!isRecord(value) || value.provider !== "openai" || typeof value.model !== "string") {
+    return false;
+  }
+  const privacy = value.privacy;
+  const quota = value.quota;
+  const result = value.result;
+  if (
+    !isRecord(privacy) ||
+    privacy.storeData !== false ||
+    typeof privacy.piiRedactedCount !== "number" ||
+    !isRecord(quota) ||
+    typeof quota.remainingDaily !== "number" ||
+    typeof quota.dailyLimit !== "number" ||
+    !isRecord(result) ||
+    !isValidOpenAiMode(result.mode) ||
+    !isRecord(result.data)
+  ) {
+    return false;
+  }
+
+  if (result.mode === "idea-remix") {
+    return typeof result.data.summary === "string" && Array.isArray(result.data.angles);
+  }
+  if (result.mode === "script-to-cuts") {
+    return (
+      typeof result.data.episodeGoal === "string" &&
+      typeof result.data.pacingTip === "string" &&
+      Array.isArray(result.data.cuts)
+    );
+  }
+  if (result.mode === "dialogue-polish") {
+    return (
+      typeof result.data.readabilityNote === "string" &&
+      Array.isArray(result.data.balloons)
+    );
+  }
+  return (
+    typeof result.data.readinessSummary === "string" &&
+    typeof result.data.episodeBlurbSuggestion === "string" &&
+    Array.isArray(result.data.checks)
+  );
+}
+
 export const STUDIO_ASSISTANT_SUGGESTIONS: Readonly<
   Record<StudioProjectAssistantSectionId, readonly AssistantSuggestionSpec[]>
 > = Object.freeze({
@@ -196,63 +258,6 @@ export function defaultOpenAiModeForSection(
 
 const SESSION_KEY_PREFIX = "toonstudio:assistant-draft:v1:";
 
-const VALID_OPENAI_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
-  "idea-remix",
-  "script-to-cuts",
-  "dialogue-polish",
-  "export-preflight-coach",
-]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function isValidOpenAiMode(value: unknown): value is StudioOpenAiAssistMode {
-  return typeof value === "string" && VALID_OPENAI_MODES.has(value as StudioOpenAiAssistMode);
-}
-
-function isValidStoredSuccess(value: unknown): value is StudioOpenAiAssistSuccess {
-  if (!isRecord(value) || value.provider !== "openai" || typeof value.model !== "string") {
-    return false;
-  }
-  const privacy = value.privacy;
-  const quota = value.quota;
-  const result = value.result;
-  if (
-    !isRecord(privacy) ||
-    typeof privacy.piiRedactedCount !== "number" ||
-    !isRecord(quota) ||
-    typeof quota.remainingDaily !== "number" ||
-    typeof quota.dailyLimit !== "number" ||
-    !isRecord(result) ||
-    !isValidOpenAiMode(result.mode) ||
-    !isRecord(result.data)
-  ) {
-    return false;
-  }
-
-  if (result.mode === "idea-remix") {
-    return typeof result.data.summary === "string" && Array.isArray(result.data.angles);
-  }
-  if (result.mode === "script-to-cuts") {
-    return (
-      typeof result.data.episodeGoal === "string" &&
-      typeof result.data.pacingTip === "string" &&
-      Array.isArray(result.data.cuts)
-    );
-  }
-  if (result.mode === "dialogue-polish") {
-    return (
-      typeof result.data.readabilityNote === "string" && Array.isArray(result.data.balloons)
-    );
-  }
-  return (
-    typeof result.data.readinessSummary === "string" &&
-    typeof result.data.episodeBlurbSuggestion === "string" &&
-    Array.isArray(result.data.checks)
-  );
-}
-
 export interface StudioAssistantSessionSnapshot {
   readonly prompt: string;
   readonly openAiMode: StudioOpenAiAssistMode;
@@ -268,13 +273,26 @@ export function readStudioAssistantSessionState(
     const raw = storage.getItem(`${SESSION_KEY_PREFIX}${projectId}`);
     if (!raw || raw.length > 64_000) return null;
     const parsed = JSON.parse(raw) as unknown;
-    if (!isRecord(parsed) || typeof parsed.prompt !== "string" || !isValidOpenAiMode(parsed.openAiMode)) {
+    if (!isRecord(parsed)) return null;
+    const prompt =
+      typeof parsed.prompt === "string"
+        ? parsed.prompt
+        : typeof parsed.inputText === "string"
+          ? parsed.inputText
+          : null;
+    const rawMode = parsed.openAiMode ?? parsed.mode;
+    if (prompt === null || !isValidOpenAiMode(rawMode)) {
       return null;
     }
-    const lastResult = isValidStoredSuccess(parsed.lastResult) ? parsed.lastResult : null;
+    const lastResult = isValidStoredSuccess(parsed.lastResult)
+      ? parsed.lastResult
+      : null;
+    if (!prompt.trim() && lastResult === null) {
+      return null;
+    }
     return {
-      prompt: parsed.prompt.slice(0, 6_000),
-      openAiMode: parsed.openAiMode,
+      prompt: prompt.slice(0, 6_000),
+      openAiMode: rawMode,
       lastResult,
     };
   } catch {
@@ -287,9 +305,23 @@ export function writeStudioAssistantSessionState(
   snapshot: StudioAssistantSessionSnapshot,
   storage: Storage | null = typeof window !== "undefined" ? window.sessionStorage : null,
 ): void {
-  if (!storage || !projectId) return;
+  if (!storage || !projectId || !isValidOpenAiMode(snapshot.openAiMode)) return;
+  const sanitizedResult = isValidStoredSuccess(snapshot.lastResult)
+    ? snapshot.lastResult
+    : null;
+  if (!snapshot.prompt.trim() && sanitizedResult === null) {
+    clearStudioAssistantSessionState(projectId, storage);
+    return;
+  }
   try {
-    storage.setItem(`${SESSION_KEY_PREFIX}${projectId}`, JSON.stringify(snapshot));
+    storage.setItem(
+      `${SESSION_KEY_PREFIX}${projectId}`,
+      JSON.stringify({
+        prompt: snapshot.prompt.slice(0, 6_000),
+        openAiMode: snapshot.openAiMode,
+        lastResult: sanitizedResult,
+      }),
+    );
   } catch {
     // sessionStorage 할당량 초과나 사생활 보호 모드에서는 조용히 건너뛴다.
   }

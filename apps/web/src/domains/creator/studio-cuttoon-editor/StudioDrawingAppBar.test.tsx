@@ -54,6 +54,8 @@ function createMockSession(
     setLeftPanelOpenWithOverride: vi.fn(),
     visibleRightPanelOpen: true,
     setRightPanelOpenWithOverride: vi.fn(),
+    exportMenuOpen: false,
+    setExportMenuOpen: vi.fn(),
     canvasOnlyMode: false,
     setCanvasOnlyMode: vi.fn(),
     undo: vi.fn(),
@@ -124,7 +126,8 @@ describe("StudioDrawingAppBar", () => {
       f.expire(); view.rerender(ui()); expect(screen.getByRole("button", { name: "실행 취소" }).matches(":disabled")).toBe(true);
     } finally { unbind(); document.destroy(); }
   });
-  it("클립스튜디오(CSP) 2× 우위 검증 메타데이터, 컨테이너 쿼리(inline-size), 다기종 폼팩터 속성을 노출한다", () => {
+
+  it("클립스튜디오(CSP) 2× 우위 검증 메타데이터, 이전 복귀 버튼, 내보내기 메뉴 버튼을 노출한다", () => {
     const session = createMockSession({ isMobile: false });
     const { container } = renderAppBar(session);
 
@@ -133,7 +136,13 @@ describe("StudioDrawingAppBar", () => {
     expect(header?.getAttribute("data-studio-form-factor")).toBe("desktop");
     expect(header?.getAttribute("data-studio-csp-two-x-verified")).toBe("true");
     expect(header?.style.containerType).toBe("inline-size");
-    expect(container.querySelector('[data-studio-appbar-csp-badge="true"]')?.textContent).toContain("CSP");
+    const cspBadge = container.querySelector('[data-studio-appbar-csp-badge="true"]');
+    expect(cspBadge?.textContent).toContain("CSP");
+    expect(cspBadge?.className).toContain("sr-only");
+
+    expect(screen.getByRole("button", { name: "이전 화면으로 돌아가기" })).toBeTruthy();
+    fireEvent.click(screen.getByTestId("drawing-appbar-export-toggle"));
+    expect(session.setExportMenuOpen).toHaveBeenCalledTimes(1);
   });
 
   it("브러시 크기·불투명도·손떨림 보정 빠른 스텝 버튼이 세션 핸들러를 즉시 호출한다", () => {
@@ -156,7 +165,7 @@ describe("StudioDrawingAppBar", () => {
     expect(session.setBrushOpacity).toHaveBeenCalledWith(0.9);
 
     fireEvent.click(screen.getByTestId("drawing-appbar-advanced-toggle"));
-    expect(screen.getByTestId("studio-appbar-stabilizer").textContent).toBe("Stabilizer 20");
+    expect(screen.getByTestId("studio-appbar-stabilizer").textContent).toBe("손떨림 보정 20");
     fireEvent.click(screen.getByRole("button", { name: "손떨림 보정 높이기" }));
     expect(session.setStabilizer).toHaveBeenCalledWith(25);
   });
@@ -176,22 +185,30 @@ describe("StudioDrawingAppBar", () => {
     expect(session.setStabilizer).toHaveBeenCalledWith(7);
   });
 
-  it("실시간 서버 동기화·저장 중·오프라인 보호 상태를 표시하고 클릭 시 즉시 저장 플러시를 호출한다", () => {
-    const syncedSession = makeSession();
+  it("로컬 전용 원고와 서버 연동 작품을 정직하게 구분해 표시하고 클릭 시 즉시 저장 플러시를 호출한다", () => {
+    const localSession = makeSession({ workId: null });
     const { rerender } = render(
       <MemoryRouter>
-        <StudioDrawingAppBar session={syncedSession} />
+        <StudioDrawingAppBar session={localSession} />
       </MemoryRouter>,
     );
 
     const syncButton = screen.getByTestId("drawing-appbar-sync-status");
-    expect(syncButton.textContent).toContain("실시간 동기화됨");
+    expect(syncButton.textContent).toContain("이 기기에 자동 저장됨");
+    expect(syncButton.textContent).not.toContain("실시간 동기화됨");
     fireEvent.click(syncButton);
-    expect(syncedSession.requestSaveFlush).toHaveBeenCalledTimes(1);
+    expect(localSession.requestSaveFlush).toHaveBeenCalledTimes(1);
 
     rerender(
       <MemoryRouter>
-        <StudioDrawingAppBar session={makeSession({ saving: true })} />
+        <StudioDrawingAppBar session={makeSession({ workId: "work-1" })} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("drawing-appbar-sync-status").textContent).toContain("실시간 동기화됨");
+
+    rerender(
+      <MemoryRouter>
+        <StudioDrawingAppBar session={makeSession({ workId: "work-1", saving: true })} />
       </MemoryRouter>,
     );
     expect(screen.getByTestId("drawing-appbar-sync-status").textContent).toContain("실시간 저장 중…");
@@ -236,17 +253,21 @@ describe("StudioDrawingAppBar", () => {
     expect(session.setZoom).toHaveBeenCalledWith(1);
   });
 
-  it("모바일 세션에서 컴팩트 폼팩터로 판정하고 모바일 브러시 시트를 연다", () => {
+  it("모바일 세션에서 컴팩트 폼팩터로 판정하고 44px 터치 타깃 브러시 시트·크기 컨트롤을 제공한다", () => {
     const session = createMockSession({ isMobile: true, strokeWidth: 12 });
     const { container } = renderAppBar(session);
 
     const header = container.querySelector('[data-studio-drawing-app-bar="true"]');
     expect(header?.getAttribute("data-studio-form-factor")).toBe("compact");
 
-    fireEvent.click(screen.getByRole("button", { name: "모바일 브러시 시트 열기" }));
+    const brushBtn = screen.getByRole("button", { name: "모바일 브러시 시트 열기" });
+    expect(brushBtn.className).toContain("min-h-11");
+    fireEvent.click(brushBtn);
     expect(session.setMobileSheet).toHaveBeenCalledWith("draw");
 
-    fireEvent.click(screen.getByRole("button", { name: "모바일 브러시 크기 키우기" }));
+    const plusBtn = screen.getByRole("button", { name: "모바일 브러시 크기 키우기" });
+    expect(plusBtn.className).toContain("size-11");
+    fireEvent.click(plusBtn);
     expect(session.setStrokeWidth).toHaveBeenCalledWith(14);
   });
 

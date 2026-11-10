@@ -384,7 +384,7 @@ export function StudioDraftSaveCenter({
     const cleared = outboxWorkId === null
       || clearStudioDraftSaveOutbox({ storage: readOutboxStorage(), workId: outboxWorkId });
     if (!cleared && surfaceFailure) {
-      setOutboxWarning(frozenStatus4Text("studio.frozenStatus4.draft.outboxClearFailed", "서버 저장 예약을 정리하지 못했습니다. 중복 저장은 revision 검증으로 차단되지만 새로고침 전에 상태를 다시 확인해 주세요."));
+      setOutboxWarning(frozenStatus4Text("studio.frozenStatus4.draft.outboxClearFailed", "서버 저장 예약을 정리하지 못했습니다. 중복 저장은 버전 검증으로 차단되지만 새로고침 전에 상태를 다시 확인해 주세요."));
       return false;
     }
     setDeferredSave(false);
@@ -690,7 +690,7 @@ export function StudioDraftSaveCenter({
           <div className="mt-3 rounded-xl border border-line bg-card/70 px-3 py-2.5 text-xs text-fg-2">
             <p className="font-bold text-fg">2단계 자동 보호</p>
             <p className="mt-1 leading-relaxed">
-              기기 복구 체크포인트와 서버 revision은 별개입니다. 편집이 멈춘 뒤 약 {formatStudioDraftSaveInterval(STUDIO_SERVER_AUTOSAVE_IDLE_MS)}가 지나면 서버 자동 저장도 시도합니다.
+              기기 복구 체크포인트와 서버 저장 번호는 별개입니다. 편집이 멈춘 뒤 약 {formatStudioDraftSaveInterval(STUDIO_SERVER_AUTOSAVE_IDLE_MS)}가 지나면 서버 자동 저장도 시도합니다.
             </p>
           </div>
 
@@ -707,7 +707,7 @@ export function StudioDraftSaveCenter({
               icon={saving
                 ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
                 : <Cloud className="h-4 w-4" />}
-              footer={serverRevision === null ? "revision 없음" : `현재 revision #${serverRevision}`}
+              footer={serverRevision === null ? "서버 기록 없음" : `현재 저장 번호 #${serverRevision}`}
             />
           </div>
 
@@ -717,7 +717,7 @@ export function StudioDraftSaveCenter({
               <dd className="mt-1 text-sm font-black">{checkpointCount}개</dd>
             </div>
             <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">서버 revision</dt>
+              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">서버 저장 번호</dt>
               <dd className="mt-1 text-sm font-black">{serverRevision ?? "—"}</dd>
             </div>
             <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">

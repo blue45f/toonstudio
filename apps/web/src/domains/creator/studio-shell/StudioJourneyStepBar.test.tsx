@@ -44,6 +44,23 @@ describe("StudioJourneyStepBar", () => {
     expect(currentItem?.textContent).toContain("현재 단계");
   });
 
+  it("allowCurrentStepLink가 켜진 생성 하위 화면에서는 현재 단계도 상위 시작 화면 복귀 링크로 작동한다", () => {
+    render(
+      <MemoryRouter>
+        <StudioJourneyStepBar
+          currentStep="start"
+          startHref="/create"
+          allowCurrentStepLink
+        />
+      </MemoryRouter>,
+    );
+
+    const nav = screen.getByRole("navigation", { name: "창작 3단계 진행 흐름" });
+    const startLink = within(nav).getByRole("link", { name: /1\. 시작·기획/u });
+    expect(startLink.getAttribute("href")).toBe("/create");
+    expect(startLink.getAttribute("aria-current")).toBe("step");
+  });
+
   it("영어 로케일에서도 3단계 안내 문구를 자연스럽게 표시한다", () => {
     useI18n.setState({ lang: "en" });
     render(

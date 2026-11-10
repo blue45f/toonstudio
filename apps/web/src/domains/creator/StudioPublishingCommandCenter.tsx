@@ -1312,7 +1312,7 @@ export function StudioPublishingCommandCenter({
           return;
         }
         const revision = saved.revision ?? sharedMetaSnapshot.revision;
-        setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.pub.draftSaved", { revision }, "초안을 revision {revision}로 안전하게 저장했습니다."));
+        setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.pub.draftSaved", { revision }, "초안을 버전 #{revision}로 안전하게 저장했습니다."));
       } else {
         navigate(resultHref, { replace: true });
       }
@@ -1696,7 +1696,7 @@ export function StudioPublishingCommandCenter({
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 text-good">
-              <Check size={13} /> 현재 revision까지 저장됨
+              <Check size={13} /> 현재 버전까지 저장됨
             </span>
           )}
         </span>
@@ -2036,7 +2036,7 @@ export function StudioPublishingCommandCenter({
 
       <div className={cn("mt-5", STUDIO_UPLOAD_ACTION_DOCK_CLASS)}>
         <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-fg-3">
-          {dirty ? <span className="inline-flex items-center gap-1.5 text-warn"><span className="size-2 rounded-full bg-warn" /> 저장 또는 게시하면 현재 변경이 새 revision에 함께 반영됩니다.</span> : <span className="inline-flex items-center gap-1.5 text-good"><Check size={13} /> 현재 revision 저장됨</span>}
+          {dirty ? <span className="inline-flex items-center gap-1.5 text-warn"><span className="size-2 rounded-full bg-warn" /> 저장 또는 게시하면 현재 변경이 새 저장 버전에 함께 반영됩니다.</span> : <span className="inline-flex items-center gap-1.5 text-good"><Check size={13} /> 현재 버전 저장됨</span>}
           {sharedMeta && <span className="hidden sm:inline">· 역할 {sharedMeta.role}</span>}
         </div>
         <button

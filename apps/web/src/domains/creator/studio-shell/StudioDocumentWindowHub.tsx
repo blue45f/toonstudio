@@ -10,6 +10,7 @@ import {
   AppWindow,
   ArrowLeft,
   ArrowUpRight,
+  BookOpen,
   Copy,
   Download,
   ExternalLink,
@@ -280,11 +281,26 @@ export function StudioDocumentWindowHub({
             href="/studio"
             aria-label={bi("내 작업으로 돌아가기", "Back to My work")}
             title={bi("내 작업으로 돌아가기", "Back to My work")}
-            className="grid size-8 shrink-0 place-items-center rounded-xl text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="grid size-9 shrink-0 place-items-center rounded-xl text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:size-11"
           >
             <ArrowLeft size={16} aria-hidden="true" />
           </Link>
-          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+          {resolution.projectId ? (
+            <Link
+              href={`/studio/p/${encodeURIComponent(resolution.projectId)}/overview`}
+              aria-label={bi("프로젝트 단계로 돌아가기", "Back to project stages")}
+              title={bi("프로젝트 단계로 돌아가기", "Back to project stages")}
+              className={buttonClass({
+                variant: "quiet",
+                size: "sm",
+                className: "shrink-0 gap-1 rounded-xl px-2 text-xs text-fg-2 pointer-coarse:min-h-11",
+              })}
+            >
+              <BookOpen size={14} aria-hidden="true" />
+              <span className="hidden md:inline">{bi("프로젝트", "Project")}</span>
+            </Link>
+          ) : null}
+          <span className="hidden size-8 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent sm:grid">
             <PanelsTopLeft size={16} aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
@@ -351,10 +367,11 @@ export function StudioDocumentWindowHub({
             className={buttonClass({
               variant: "outline",
               size: "sm",
-              className: "shrink-0 gap-1 rounded-xl px-2.5",
+              className: "shrink-0 gap-1 rounded-xl px-2.5 pointer-coarse:min-h-11",
             })}
           >
             <Download size={14} aria-hidden="true" />
+            <span className="text-xs font-bold sm:hidden">{bi("내보내기", "Export")}</span>
             <span className="hidden sm:inline">{bi("저장·내보내기", "Export")}</span>
           </Link>
           <button
@@ -384,7 +401,7 @@ export function StudioDocumentWindowHub({
             className={buttonClass({
               variant: open ? "solid" : "outline",
               size: "sm",
-              className: "shrink-0 gap-1.5 rounded-xl px-2.5",
+              className: "shrink-0 gap-1.5 rounded-xl px-2.5 pointer-coarse:min-h-11",
             })}
             title={bi("여러 창 작업공간 · ⌘/Ctrl+Shift+M", "Multi-window workspace · ⌘/Ctrl+Shift+M")}
             onClick={() => setOpen((value) => !value)}
