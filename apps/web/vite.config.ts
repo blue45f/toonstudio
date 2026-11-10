@@ -1,4 +1,5 @@
 import { collectStudioOfflineDrawingUrls } from "./src/app/service-worker/studio-service-worker-drawing-plan";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -558,6 +559,26 @@ function studioServiceWorkerPlugin(): Plugin {
           },
         },
       });
+
+      const gitHeadResult = spawnSync("git", ["rev-parse", "HEAD"], {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+      });
+      const rawGitSha =
+        gitHeadResult.status === 0 ? gitHeadResult.stdout.trim() : "";
+      const buildGitSha = /^[0-9a-f]{40}$/u.test(rawGitSha) ? rawGitSha : null;
+      writeFileSync(
+        path.join(outDir, ".vite", "build-meta.json"),
+        `${JSON.stringify(
+          {
+            gitSha: buildGitSha,
+            buildId: swManifest.buildId,
+          },
+          null,
+          2,
+        )}\n`,
+        "utf8",
+      );
 
       this.warn(
         `service worker ${swManifest.buildId}: `

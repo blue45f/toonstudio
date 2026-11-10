@@ -2,6 +2,7 @@ import {
   ArrowRight,
   CheckCircle2,
   FileCheck2,
+  Globe2,
   RotateCcw,
   ShieldAlert,
   SlidersHorizontal,
@@ -17,11 +18,14 @@ import {
   type StudioExportPreflightResult,
   type StudioExportTargetId,
 } from "../studio-export-preflight";
+import { readStudioProjectDocuments } from "../studio-project-document-reader";
 import {
   createStudioProjectExportSnapshot,
   recommendedStudioExportDraft,
   type StudioExportDraftInput,
 } from "../studio-project-export-snapshot";
+import { readStudioProjectLibrary } from "../studio-project-library-store";
+import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
@@ -37,6 +41,57 @@ const EXPORT_TARGET_VISUALS: Readonly<Record<StudioExportTargetId, string>> = {
   video: "/brand/theme-scenes/starlight-studio.svg",
   archive: "/brand/theme-scenes/midnight-studio.svg",
 };
+
+interface LocalProjectExportContext {
+  readonly documentId: string;
+  readonly width: number;
+  readonly height: number;
+  readonly localEditorHref: string;
+}
+
+function readLocalProjectExportContext(
+  projectId: string,
+  locale: "ko" | "en",
+): LocalProjectExportContext | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const storage = window.localStorage;
+    const project = readStudioProjectLibrary(storage).projects.find(
+      (item) => item.id === projectId,
+    );
+    const docs = readStudioProjectDocuments(storage, projectId).documents.filter(
+      (doc) => doc.status !== "trashed",
+    );
+    const activeDoc = docs.find((doc) => doc.status === "active") ?? docs[0] ?? null;
+    if (!activeDoc) return null;
+    const resumeHref = project
+      ? resolveStudioProjectResumeTarget(storage, project, locale).href
+      : `/studio/p/${encodeURIComponent(projectId)}/d/${encodeURIComponent(activeDoc.id)}`;
+    return {
+      documentId: activeDoc.id,
+      width: activeDoc.width,
+      height: activeDoc.height,
+      localEditorHref: resumeHref,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function buildInitialDraft(
+  projectId: string,
+  target: StudioExportTargetId,
+  localContext: LocalProjectExportContext | null,
+): StudioExportDraftInput {
+  const recommended = recommendedStudioExportDraft(projectId, target);
+  if (!localContext) return recommended;
+  return {
+    ...recommended,
+    documentId: localContext.documentId,
+    width: localContext.width,
+    height: localContext.height,
+  };
+}
 
 function numberValue(value: string, fallback: number): number {
   const parsed = Number(value);
@@ -67,8 +122,8 @@ function resultTone(result: StudioExportPreflightResult | null): string {
 }
 
 /**
- * 초보자도 올릴 곳과 파일 형식만 고르면 바로 규격 점검과 내보내기를 마칠 수 있도록
- * 필수 선택을 앞에 두고 세부 수치(해상도·DPI·색 공간 등)는 필요할 때 펼쳐 보게 구성한 내보내기 패널.
+ * 초보자도 올릴 곳과 파일 형식만 고르면 실제 원고 해상도와 플랫폼 권장 규격을 대조 점검하고,
+ * 비로그인 로컬 편집기 파일 저장과 로그인 후 커뮤니티 공개 게시를 헷갈리지 않고 선택할 수 있는 출고 패널.
  */
 export function StudioExportPanel({
   projectId,
@@ -79,9 +134,13 @@ export function StudioExportPanel({
 }) {
   const bt = useBilingual("StudioExportPanel");
   const workspace = useStudioProjectWorkspace(projectId, locale);
+  const localContext = useMemo(
+    () => readLocalProjectExportContext(projectId, locale),
+    [projectId, locale],
+  );
   const [target, setTarget] = useState<StudioExportTargetId>("webtoon-platform");
   const [draft, setDraft] = useState<StudioExportDraftInput>(() =>
-    recommendedStudioExportDraft(projectId, "webtoon-platform"),
+    buildInitialDraft(projectId, "webtoon-platform", localContext),
   );
   const [result, setResult] = useState<StudioExportPreflightResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -118,14 +177,17 @@ export function StudioExportPanel({
 
   const selectTarget = (nextTarget: StudioExportTargetId) => {
     setTarget(nextTarget);
-    setDraft(recommendedStudioExportDraft(projectId, nextTarget));
+    setDraft(buildInitialDraft(projectId, nextTarget, localContext));
     setResult(null);
     setMessage(null);
     setError(null);
   };
 
   const resetToRecommendedSpec = () => {
-    setDraft(recommendedStudioExportDraft(projectId, target));
+    const next = recommendedStudioExportDraft(projectId, target);
+    setDraft(
+      localContext ? { ...next, documentId: localContext.documentId } : next,
+    );
     setResult(null);
     setMessage(
       bt(
@@ -185,7 +247,12 @@ export function StudioExportPanel({
     }
   };
 
-  const editorHref = `/studio/work/${encodeURIComponent(projectId)}/publish`;
+  const editorHref = localContext
+    ? localContext.localEditorHref
+    : `/studio/work/${encodeURIComponent(projectId)}/publish`;
+  const communityPublishHref = localContext
+    ? "/studio/publish"
+    : `/studio/work/${encodeURIComponent(projectId)}/publish`;
   const estimatedMb = Math.round((draft.estimatedFileSizeBytes / 1024 / 1024) * 10) / 10;
 
   return (
@@ -211,8 +278,8 @@ export function StudioExportPanel({
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
             {bt(
-              "연재 플랫폼이나 SNS·인쇄 용도를 선택하면 권장 크기와 형식이 채워집니다. 사용 권리와 미해결 메모를 먼저 확인한 뒤 편집기에서 최종 파일을 내려받으세요.",
-              "Select a webtoon platform, social feed, or print target to prefill recommended dimensions and format. Check rights and open notes here, then export the final file in the editor.",
+              "연재 플랫폼이나 SNS·인쇄 용도를 선택하면 현재 원고 크기와 권장 규격을 비교해 드립니다. 내 기기에 이미지·PDF로 저장하거나 커뮤니티 공개 게시로 이어 가세요.",
+              "Select a webtoon platform, social feed, or print target to compare your manuscript dimensions with recommended specs, then export locally or publish to the community.",
             )}
           </p>
           <ol
@@ -325,11 +392,18 @@ export function StudioExportPanel({
             <strong className="font-bold text-fg">
               {bt(profile.labelKo, profile.labelEn)}{` `}
               {hasCustomSpec
-                ? bt("직접 조정한 규격", "custom spec")
+                ? localContext &&
+                  draft.width === localContext.width &&
+                  draft.height === localContext.height
+                  ? bt("현재 원고 크기 기준", "current manuscript size")
+                  : bt("직접 조정한 규격", "custom spec")
                 : bt("권장 규격", "recommended spec")}
             </strong>
             <p className="mt-0.5 text-fg-3">
               {`${draft.width} × ${draft.height} px · ${draft.colorSpace.toUpperCase()}${draft.dpi ? ` · ${draft.dpi} DPI` : ""} · ${bt(`예상 ${estimatedMb} MB`, `Est. ${estimatedMb} MB`)}`}
+              {hasCustomSpec
+                ? ` (${bt(`권장 ${recommendedDraft.width} × ${recommendedDraft.height}px`, `Recommended ${recommendedDraft.width} × ${recommendedDraft.height}px`)})`
+                : ""}
             </p>
           </div>
           {hasCustomSpec ? (
@@ -596,21 +670,42 @@ export function StudioExportPanel({
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs leading-5 text-fg-3">
-          {bt(
-            "컷 자동 분할과 최종 이미지·PDF 파일 저장은 편집기 출고 화면에서 바로 마무리할 수 있어요.",
-            "The editor rechecks exact segmentation, layers and file size immediately before rendering.",
-          )}
+          {localContext
+            ? bt(
+                "편집기 내보내기에서는 로그인 없이 내 기기에 PNG·PDF·분할 이미지를 저장할 수 있고, 게시판 공개는 로그인 후 진행됩니다.",
+                "Export PNG, PDF, or sliced images locally in the editor without signing in, or publish publicly to the community.",
+              )
+            : bt(
+                "컷 자동 분할과 최종 이미지·PDF 파일 저장은 편집기 출고 화면에서 바로 마무리할 수 있어요.",
+                "The editor rechecks exact segmentation, layers and file size immediately before rendering.",
+              )}
         </p>
-        <Link
-          href={editorHref}
-          className={buttonClass({
-            variant: displayedResult?.status === "blocked" ? "outline" : "solid",
-            className: "min-h-11 gap-2",
-          })}
-        >
-          {bt("편집기에서 최종 출력", "Finalize in editor")}
-          <ArrowRight size={15} aria-hidden="true" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {localContext ? (
+            <Link
+              href={communityPublishHref}
+              data-testid="studio-export-community-publish"
+              className={buttonClass({
+                variant: "outline",
+                className: "min-h-11 gap-1.5",
+              })}
+            >
+              <Globe2 size={15} aria-hidden="true" />
+              {bt("커뮤니티 공개 게시 (로그인)", "Publish to community")}
+            </Link>
+          ) : null}
+          <Link
+            href={editorHref}
+            data-testid="studio-export-finalize-link"
+            className={buttonClass({
+              variant: displayedResult?.status === "blocked" ? "outline" : "solid",
+              className: "min-h-11 gap-2",
+            })}
+          >
+            {bt("편집기에서 최종 출력", "Finalize in editor")}
+            <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
       </div>
     </section>
   );

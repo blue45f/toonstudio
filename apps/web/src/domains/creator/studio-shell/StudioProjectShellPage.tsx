@@ -6,7 +6,6 @@ import {
   ChevronDown,
   MoreHorizontal,
   Users,
-  WandSparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useParams } from "react-router-dom";
@@ -54,7 +53,9 @@ import {
   SECTION_DEFINITIONS,
   localeFromLanguage,
   projectStatusChipClasses,
-  projectViewHref, workHref,
+  projectViewHref,
+  workHref,
+  type ProjectAction,
 } from "./studio-project-shell-definitions";
 import "./studio-illustrated-project-surfaces.css";
 
@@ -114,6 +115,23 @@ function journeyStepFromSection(section: StudioProjectSection): StudioJourneySte
   if (section === "overview" || section === "story") return "start";
   if (section === "review" || section === "export") return "export";
   return "edit";
+}
+
+function resolveProjectActionHref(
+  section: StudioProjectSection,
+  actionItem: ProjectAction,
+  projectId: string,
+  headerFacts: ProjectHeaderFacts | null,
+): string {
+  const defaultHref = actionItem.href(projectId);
+  if (
+    section === "export" &&
+    headerFacts?.hasResumeDocument &&
+    defaultHref === workHref(projectId, "publish")
+  ) {
+    return headerFacts.resumeHref;
+  }
+  return defaultHref;
 }
 
 function InvalidProject() {
@@ -639,7 +657,9 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
             </div>
           </div>
           <Link
-            href={launchHref(primaryAction.href(displayProjectId))}
+            href={launchHref(
+              resolveProjectActionHref(section, primaryAction, displayProjectId, headerFacts),
+            )}
             data-studio-project-primary-action="true"
             className="group mt-3 flex min-h-28 items-center gap-4 rounded-2xl border border-accent/35 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent hover:bg-raised hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:p-5"
           >
@@ -680,7 +700,9 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
                   return (
                     <Link
                       key={item.title.ko}
-                      href={launchHref(item.href(displayProjectId))}
+                      href={launchHref(
+                        resolveProjectActionHref(section, item, displayProjectId, headerFacts),
+                      )}
                       className="group flex min-h-16 items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                     >
                       <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-line bg-panel text-fg-3 group-hover:text-accent">
@@ -734,25 +756,6 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
       </details>
 
       <StudioBeginnerQuickTipsBar />
-
-      <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <strong className="text-sm text-fg">
-            {bt("원하는 작업이 보이지 않나요?", "Cannot find the task you need?")}
-          </strong>
-          <p className="mt-0.5 text-xs leading-5 text-fg-3">
-            {bt("하려는 일을 입력하면 현재 프로젝트에 맞는 기능을 찾습니다.", "Describe the task to find the right feature for this project.")}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => globalThis.dispatchEvent(new CustomEvent("toonspectrum:command-palette:open"))}
-          className={buttonClass({ variant: "outline", className: "shrink-0 gap-2" })}
-        >
-          <WandSparkles size={16} aria-hidden="true" />
-          {bt("기능 찾기", "Find a feature")}
-        </button>
-      </div>
     </Container>
   );
 }

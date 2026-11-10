@@ -57,6 +57,7 @@ export interface StudioJourneyStepBarProps {
   readonly startHref?: string;
   readonly editHref?: string;
   readonly exportHref?: string;
+  readonly allowCurrentStepLink?: boolean;
   readonly className?: string;
 }
 
@@ -69,6 +70,7 @@ export function StudioJourneyStepBar({
   startHref,
   editHref,
   exportHref,
+  allowCurrentStepLink = false,
   className,
 }: StudioJourneyStepBarProps) {
   const bt = useBilingual("StudioJourneyStepBar");
@@ -115,7 +117,7 @@ export function StudioJourneyStepBar({
           const isCurrent = step.id === currentStep;
           const isCompleted = step.index < activeOrder;
           const href = hrefByStep[step.id];
-          const isLinked = Boolean(href && !isCurrent);
+          const isLinked = Boolean(href && (!isCurrent || allowCurrentStepLink));
           const Icon = step.icon;
           const stepTitle = `${step.index}. ${bt(step.labelKo, step.labelEn)}`;
           const stepHint = bt(step.hintKo, step.hintEn);
@@ -177,9 +179,10 @@ export function StudioJourneyStepBar({
 
           return (
             <li key={step.id} className="min-w-0">
-              {href && !isCurrent ? (
+              {href && isLinked ? (
                 <Link
                   href={href}
+                  aria-current={isCurrent ? "step" : undefined}
                   data-journey-step={step.id}
                   className={itemClassName}
                 >
