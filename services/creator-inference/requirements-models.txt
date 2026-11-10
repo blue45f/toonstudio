@@ -19,7 +19,7 @@ huggingface-hub>=2.4.0,<3
 # Wan I2V 의 프롬프트 정리(diffusers pipeline_wan_i2v.basic_clean)가 ftfy.fix_text 를 직접 부른다. diffusers 는
 # ftfy 를 test·dev extra 로만 두므로 빠지면 첫 Wan 작업이 NameError: name 'ftfy' is not defined 로 실패한다.
 ftfy>=6.3.1,<7
-sentencepiece>=0.2.2,<1
+sentencepiece>=0.2.3,<1
 numpy>=1.26,<3
 imageio[ffmpeg]>=2.34,<3
 opencv-python-headless>=4.10,<5
