@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
+import type { PersonalCloudConnectionStatus } from "../save-first/personal-cloud-client";
 import { serializeStudioAutosave, studioAutosaveKey } from "../studio-autosave";
 import { EXAMPLE_PROJECT_ID, EXAMPLE_PROJECT_TITLE } from "../studio-example-project-content";
 import {
@@ -28,17 +29,39 @@ import {
 import { SAMPLE_PROJECT_ID, SAMPLE_PROJECT_TITLE } from "../studio-sample-manuscript-content";
 import { StudioProjectLibraryPage } from "./StudioProjectLibraryPage";
 
+const personalCloudClientMocks = vi.hoisted(() => ({
+  listPersonalCloudConnections: vi.fn(),
+  startPersonalCloudConnection: vi.fn(),
+  getPersonalCloudAccessToken: vi.fn(),
+  disconnectPersonalCloud: vi.fn(),
+}));
+
+vi.mock("../save-first/personal-cloud-client", () => ({
+  PERSONAL_CLOUD_PROVIDER_IDS: ["google-drive", "dropbox", "onedrive"] as const,
+  listPersonalCloudConnections: personalCloudClientMocks.listPersonalCloudConnections,
+  startPersonalCloudConnection: personalCloudClientMocks.startPersonalCloudConnection,
+  getPersonalCloudAccessToken: personalCloudClientMocks.getPersonalCloudAccessToken,
+  disconnectPersonalCloud: personalCloudClientMocks.disconnectPersonalCloud,
+}));
+
 function temporaryWorkRegion(): HTMLElement {
   return screen.getByRole("region", { name: /^임시 작업|^Temporary work/u });
 }
 
 beforeEach(() => {
   window.localStorage.clear();
+  personalCloudClientMocks.listPersonalCloudConnections.mockReset();
+  personalCloudClientMocks.listPersonalCloudConnections.mockResolvedValue([]);
+  personalCloudClientMocks.startPersonalCloudConnection.mockReset();
+  personalCloudClientMocks.getPersonalCloudAccessToken.mockReset();
+  personalCloudClientMocks.disconnectPersonalCloud.mockReset();
+  personalCloudClientMocks.disconnectPersonalCloud.mockResolvedValue(true);
 });
 
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  vi.restoreAllMocks();
 });
 
 describe("StudioProjectLibraryPage", () => {
@@ -474,6 +497,7 @@ describe("StudioProjectLibraryPage", () => {
   });
 
   it("shows empty-state guidance and next actions across storage, exports, and publications views", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
     for (const view of ["storage", "exports", "publications"] as const) {
       const { unmount } = render(
         <MemoryRouter initialEntries={[`/studio?view=${view}`]}>
@@ -485,6 +509,66 @@ describe("StudioProjectLibraryPage", () => {
       expect(screen.getAllByRole("link", { name: /파일 가져오기|\.toonstudio 파일 열기|Import files|Open \.toonstudio file/u }).length).toBeGreaterThan(0);
       expect(screen.getAllByRole("link", { name: /내 작업으로 이동|Go to My work/u }).length).toBeGreaterThan(0);
       unmount();
+    }
+    expect(personalCloudClientMocks.listPersonalCloudConnections).toHaveBeenCalledTimes(3);
+    const leakedPersonalCloudFetch = fetchSpy.mock.calls.some(([input]) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+      return url.includes("/personal-cloud");
+    });
+    expect(leakedPersonalCloudFetch).toBe(false);
+  });
+
+  it("ignores delayed personal cloud status settlement after storage view unmounts and window tears down", async () => {
+    const scheduleMacrotask = globalThis.setTimeout;
+    for (const outcome of ["resolve", "reject"] as const) {
+      let resolveConnections!: (value: readonly PersonalCloudConnectionStatus[]) => void;
+      let rejectConnections!: (reason?: unknown) => void;
+      const delayed = new Promise<readonly PersonalCloudConnectionStatus[]>((resolve, reject) => {
+        resolveConnections = resolve;
+        rejectConnections = reject;
+      });
+      personalCloudClientMocks.listPersonalCloudConnections.mockReturnValueOnce(delayed);
+
+      const { unmount } = render(
+        <MemoryRouter initialEntries={["/studio?view=storage"]}>
+          <StudioProjectLibraryPage />
+        </MemoryRouter>,
+      );
+
+      expect(await screen.findByRole("heading", { level: 1, name: /저장·백업|Save and backup/u })).toBeTruthy();
+      unmount();
+
+      const unhandledRejections: unknown[] = [];
+      const onUnhandledRejection = (reason: unknown) => {
+        unhandledRejections.push(reason);
+      };
+      const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
+      process.on("unhandledRejection", onUnhandledRejection);
+      try {
+        Reflect.deleteProperty(globalThis, "window");
+        if (outcome === "resolve") {
+          resolveConnections([]);
+        } else {
+          rejectConnections(new Error("late storage status failure"));
+        }
+        await delayed.catch(() => undefined);
+        for (let turn = 0; turn < 3; turn += 1) {
+          await Promise.resolve();
+          await new Promise<void>((resolve) => {
+            scheduleMacrotask(resolve, 0);
+          });
+        }
+      } finally {
+        if (windowDescriptor) {
+          Object.defineProperty(globalThis, "window", windowDescriptor);
+        }
+        process.off("unhandledRejection", onUnhandledRejection);
+      }
+      expect(unhandledRejections).toEqual([]);
     }
   });
 
