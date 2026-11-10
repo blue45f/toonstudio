@@ -31,7 +31,6 @@ import {
   type StudioProjectSection,
 } from "./StudioProjectShellPage";
 
-
 const StudioCreatorIntelligencePanel = lazy(async () => {
   const module = await import("../creator-intelligence/StudioCreatorIntelligencePanel");
   return { default: module.StudioCreatorIntelligencePanel };
@@ -128,19 +127,78 @@ function SectionWorkflow({
   readonly locale: "ko" | "en";
   readonly focusedStory?: boolean;
 }) {
+  const bt = useBilingual("StudioProjectIntegratedPage.workflow");
   useBilingualI18nRevision();
   const location = useLocation();
-  const pinnedSubject = useMemo(() => studioVirtualSpaceReviewSubjectFromLocation(projectId, location.search), [projectId, location.search]);
-  const resolutionRequest = useMemo(() => studioReviewResolutionRequestFromLocation(projectId, location.search), [projectId, location.search]);
+  const pinnedSubject = useMemo(
+    () => studioVirtualSpaceReviewSubjectFromLocation(projectId, location.search),
+    [projectId, location.search],
+  );
+  const resolutionRequest = useMemo(
+    () => studioReviewResolutionRequestFromLocation(projectId, location.search),
+    [projectId, location.search],
+  );
   const hasReviewPin = new URLSearchParams(location.search).has("sharedReview");
   const showDelivery = section === "export" || (section === "settings" && view === "archive");
 
-  if (section === "review" && hasReviewPin) return <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
-    <StudioPinnedReviewPanel subject={pinnedSubject} resolutionRequest={resolutionRequest} />
-  </Suspense>;
+  if (section === "review" && hasReviewPin) {
+    return (
+      <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+        <StudioPinnedReviewPanel
+          subject={pinnedSubject}
+          resolutionRequest={resolutionRequest}
+        />
+      </Suspense>
+    );
+  }
+
+  const hasExportSecondaryChecks =
+    section === "export" &&
+    (view === "preflight" || view === "targets" || view === "packages");
 
   return (
     <>
+      {section === "export" ? (
+        <StudioExportPanel projectId={projectId} locale={locale} />
+      ) : null}
+      {section === "export" && view === "packages" ? (
+        <Suspense fallback={<SubmissionPackageFallback />}>
+          {/* 프로젝트가 바뀌면 다시 만든다 — 작품 소개·회차 칸·고른 이미지가 다른 프로젝트로 섞이면 안 된다. */}
+          <StudioSubmissionPackagePanel key={projectId} projectId={projectId} locale={locale} />
+        </Suspense>
+      ) : null}
+      {showDelivery ? (
+        <StudioProjectDeliveryPanel
+          projectId={projectId}
+          section={section}
+          view={view}
+          locale={locale}
+        />
+      ) : null}
+      {hasExportSecondaryChecks ? (
+        <details className="rounded-2xl border border-line bg-card/85">
+          <summary className="min-h-12 cursor-pointer px-4 py-3 text-sm font-bold text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            {bt(
+              "연령 등급 · 2차 저작물 · 호환성 상세 점검 펼쳐 보기 (선택)",
+              "Show audience rating, IP opportunities & compatibility checks (optional)",
+            )}
+          </summary>
+          <div className="space-y-4 border-t border-line p-3 sm:p-4">
+            {view === "preflight" ? (
+              <>
+                <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+                  <StudioCompatibilityReportsPanel projectId={projectId} locale={locale} />
+                </Suspense>
+                <StudioAudiencePolicyPanel projectId={projectId} />
+              </>
+            ) : null}
+            {view === "targets" || view === "packages" ? (
+              <StudioIpOpportunityPanel projectId={projectId} />
+            ) : null}
+          </div>
+        </details>
+      ) : null}
+
       <StudioProjectFeatureSuitePanel
         projectId={projectId}
         section={section}
@@ -163,21 +221,26 @@ function SectionWorkflow({
         <StudioProjectDocumentsPanel projectId={projectId} locale={locale} />
       ) : null}
       {section === "production" && (view === "pipeline" || view === "renders") ? (
-        <>
-          <StudioProductionToolchainPanel
-            projectId={projectId}
-            view={view}
-          />
-          <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
-            <StudioKaistoryProductionWorkbench projectId={projectId} />
-          </Suspense>
-          <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
-            <StudioDesignPlatformWorkbench projectId={projectId} />
-          </Suspense>
-          <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
-            <StudioArtCraftSuiteWorkbench projectId={projectId} />
-          </Suspense>
-        </>
+        <details className="rounded-2xl border border-line bg-card/85">
+          <summary className="min-h-12 cursor-pointer px-4 py-3 text-sm font-bold text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            {bt(
+              "전문 제작 파이프라인 · 멀티 툴체인 확장 도구 열기",
+              "Open specialist pipeline & multi-toolchain workbenches",
+            )}
+          </summary>
+          <div className="space-y-4 border-t border-line p-3 sm:p-4">
+            <StudioProductionToolchainPanel projectId={projectId} view={view} />
+            <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+              <StudioKaistoryProductionWorkbench projectId={projectId} />
+            </Suspense>
+            <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+              <StudioDesignPlatformWorkbench projectId={projectId} />
+            </Suspense>
+            <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+              <StudioArtCraftSuiteWorkbench projectId={projectId} />
+            </Suspense>
+          </div>
+        </details>
       ) : null}
       {section === "story" && view === "localization" ? (
         <StudioLocalizationPanel projectId={projectId} locale={locale} />
@@ -186,37 +249,20 @@ function SectionWorkflow({
         <StudioSeriesKitPanel projectId={projectId} locale={locale} />
       ) : null}
       {section === "review" && view === "versions" ? (
-        <StudioProjectVersionStackPanel projectId={projectId} locale={locale} />
+        <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+          <StudioProjectVersionStackPanel projectId={projectId} locale={locale} />
+        </Suspense>
       ) : null}
       {section === "review" ? (
         <StudioReviewPanel projectId={projectId} locale={locale} />
       ) : null}
-      {(section === "assets" && (view === "missing" || view === "rights"))
-        || (section === "export" && view === "preflight") ? (
+      {section === "assets" && (view === "missing" || view === "rights") ? (
+        <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
           <StudioCompatibilityReportsPanel projectId={projectId} locale={locale} />
-        ) : null}
-      {(section === "settings" && view === "general") || (section === "export" && view === "preflight") ? (
-        <StudioAudiencePolicyPanel projectId={projectId} />
-      ) : null}
-      {section === "export" && (view === "targets" || view === "packages") ? (
-        <StudioIpOpportunityPanel projectId={projectId} />
-      ) : null}
-      {section === "export" && view === "packages" ? (
-        <Suspense fallback={<SubmissionPackageFallback />}>
-          {/* 프로젝트가 바뀌면 다시 만든다 — 작품 소개·회차 칸·고른 이미지가 다른 프로젝트로 섞이면 안 된다. */}
-          <StudioSubmissionPackagePanel key={projectId} projectId={projectId} locale={locale} />
         </Suspense>
       ) : null}
-      {section === "export" ? (
-        <StudioExportPanel projectId={projectId} locale={locale} />
-      ) : null}
-      {showDelivery ? (
-        <StudioProjectDeliveryPanel
-          projectId={projectId}
-          section={section}
-          view={view}
-          locale={locale}
-        />
+      {section === "settings" && view === "general" ? (
+        <StudioAudiencePolicyPanel projectId={projectId} />
       ) : null}
     </>
   );
@@ -224,8 +270,8 @@ function SectionWorkflow({
 
 /**
  * Compose the canonical project shell with every project-owned production capability.
- * Heavy editors remain optional destinations, while planning, checks and persisted project
- * workflows stay inside the selected project view instead of opening another product shell.
+ * Frequent stage tools and the AI assistant stay upfront, while reference guides and
+ * secondary diagnostics fold cleanly so beginners aren't overwhelmed by stacked panels.
  */
 export function StudioProjectIntegratedPage({
   section,
@@ -246,26 +292,65 @@ export function StudioProjectIntegratedPage({
     }
   })();
 
-  const focusedStory = section === "story" && view === "script"
-    && readStudioLaunchDensity(location.search) === "focus";
-  const workflow = <SectionWorkflow projectId={decodedProjectId} section={section} view={view} locale={locale} focusedStory={focusedStory} />;
-  const guidance = <>
-    <StudioProjectGraphContextBar projectId={decodedProjectId} locale={locale} />
-    <StudioProjectMediaGuide section={section} />
-  </>;
-  const assistant = <StudioProjectAssistantPanel projectId={decodedProjectId} section={section} locale={locale} />;
+  const focusedStory =
+    section === "story" &&
+    view === "script" &&
+    readStudioLaunchDensity(location.search) === "focus";
+  const workflow = (
+    <SectionWorkflow
+      projectId={decodedProjectId}
+      section={section}
+      view={view}
+      locale={locale}
+      focusedStory={focusedStory}
+    />
+  );
+  const guidance = (
+    <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
+      <StudioProjectGraphContextBar projectId={decodedProjectId} locale={locale} />
+      <StudioProjectMediaGuide section={section} />
+    </Suspense>
+  );
+  const assistant = (
+    <StudioProjectAssistantPanel
+      projectId={decodedProjectId}
+      section={section}
+      locale={locale}
+    />
+  );
   return (
     <>
       <StudioProjectShellPage section={section} />
       {decodedProjectId ? (
         <Container size="wide" className="-mt-3 space-y-5 pb-10 sm:-mt-5 sm:pb-14">
-          {focusedStory ? <>
-            {workflow}
-            <details className="rounded-2xl border border-line bg-card">
-              <summary className="min-h-12 cursor-pointer px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("작품 정보·제작 도움말", "Project details and production help")}</summary>
-              <div className="space-y-4 border-t border-line p-3">{guidance}{assistant}</div>
-            </details>
-          </> : <>{guidance}{workflow}{assistant}</>}
+          {focusedStory ? (
+            <>
+              {workflow}
+              <details className="rounded-2xl border border-line bg-card">
+                <summary className="min-h-12 cursor-pointer px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+                  {bt("작품 정보·제작 도움말", "Project details and production help")}
+                </summary>
+                <div className="space-y-4 border-t border-line p-3">
+                  {assistant}
+                  {guidance}
+                </div>
+              </details>
+            </>
+          ) : (
+            <>
+              {workflow}
+              {assistant}
+              <details className="rounded-2xl border border-line bg-card/85">
+                <summary className="min-h-12 cursor-pointer px-4 py-3 text-sm font-semibold text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+                  {bt(
+                    "작품 연결 구조 · 단계별 도움말 펼쳐 보기",
+                    "Show project graph & step-by-step guide",
+                  )}
+                </summary>
+                <div className="space-y-4 border-t border-line p-3 sm:p-4">{guidance}</div>
+              </details>
+            </>
+          )}
         </Container>
       ) : null}
     </>

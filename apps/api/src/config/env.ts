@@ -396,6 +396,13 @@ const envSchema = z.object({
   ADMIN_EMAILS: z.string().optional(),
   // 창작 스튜디오 LLM 키(선택 — 미설정 시 해당 기능만 비활성).
   OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_MODEL: z.enum(["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4o"]).optional(),
+  OPENAI_ORG_ID: z.string().regex(/^org-[A-Za-z0-9_-]{4,80}$/u, "OPENAI_ORG_ID must match org-*").optional(),
+  OPENAI_PROJECT_ID: z.string().regex(/^proj_[A-Za-z0-9_-]{4,80}$/u, "OPENAI_PROJECT_ID must match proj_*").optional(),
+  STUDIO_OPENAI_TIMEOUT_MS: boundedPositiveInteger("STUDIO_OPENAI_TIMEOUT_MS", 5_000, 60_000).optional(),
+  STUDIO_OPENAI_HOURLY_REQUEST_LIMIT: boundedPositiveInteger("STUDIO_OPENAI_HOURLY_REQUEST_LIMIT", 1, 500).optional(),
+  STUDIO_OPENAI_DAILY_REQUEST_LIMIT: boundedPositiveInteger("STUDIO_OPENAI_DAILY_REQUEST_LIMIT", 1, 2_000).optional(),
+  STUDIO_OPENAI_GLOBAL_DAILY_REQUEST_LIMIT: boundedPositiveInteger("STUDIO_OPENAI_GLOBAL_DAILY_REQUEST_LIMIT", 1, 20_000).optional(),
   GEMINI_API_KEY: z.string().min(1).optional(),
   CREATOR_INTELLIGENCE_VOICE_ENABLED: z.enum(["true", "false"]).optional(),
   GEMINI_TTS_API_KEY: z.string().min(1).optional(),

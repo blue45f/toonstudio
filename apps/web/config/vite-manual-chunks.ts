@@ -290,6 +290,7 @@ export function createStudioManualChunks(predicates: {
       return "StudioColorVisionHintPreview";
     }
     if (
+      id.includes("vite/preload-helper") ||
       id.includes("/node_modules/react/") ||
       id.includes("/node_modules/react-dom/") ||
       id.includes("/node_modules/scheduler/") ||

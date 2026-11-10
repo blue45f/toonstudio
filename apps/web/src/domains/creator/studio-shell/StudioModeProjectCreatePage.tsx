@@ -90,7 +90,9 @@ import {
 } from "./studio-mode-project-create-helpers";
 import { StudioCreateKeyboardForm } from "./StudioCreateKeyboardForm";
 import { StudioCreateLaunchSummary, StudioCreateReturnToStart } from "./StudioCreateLaunchSummary";
+import { StudioCreateQuickPresetStrip, type StudioCreateQuickPreset } from "./StudioCreateQuickPresetStrip";
 import { StudioCreateReviewDetails } from "./StudioCreateReviewDetails";
+import { StudioJourneyStepBar } from "./StudioJourneyStepBar";
 import { StudioProjectFormatVisual } from "./StudioProjectFormatPreview";
 import { STUDIO_PROJECT_TITLE_MAX_LENGTH, normalizeStudioProjectTitleDraft } from "./studio-project-title";
 import "./studio-illustrated-project-surfaces.css";
@@ -147,6 +149,7 @@ export function StudioModeProjectCreatePage() {
   );
   // 템플릿이 정한 초기 크기를 숫자로 덮어쓴 값. null이면 템플릿 크기를 그대로 쓴다.
   const [sizeOverride, setSizeOverride] = useState<{ width: string; height: string } | null>(null);
+  const [activeQuickPresetId, setActiveQuickPresetId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const advancedSettingsRef = useRef<HTMLDetailsElement>(null);
@@ -196,12 +199,27 @@ export function StudioModeProjectCreatePage() {
   }
 
   function chooseFormat(profile: StudioProjectFormatProfile) {
+    setActiveQuickPresetId(null);
     setAuxiliaryKind(null);
     setFormatId(profile.id);
     setTemplateId(profile.templates[0]!.id);
     setSizeOverride(null);
     if (!titleEdited) setTitle(bt(profile.defaultTitleKo, profile.defaultTitleEn));
     if (profile.projectKind !== "webtoon") setOnboardingEnabled(false);
+    setError(null);
+  }
+
+  function applyQuickPreset(preset: StudioCreateQuickPreset) {
+    const nextProfile = studioProjectFormatProfile(preset.formatId);
+    setActiveQuickPresetId(preset.id);
+    setAuxiliaryKind(null);
+    setFormatId(nextProfile.id);
+    setTemplateId(preset.templateId ?? nextProfile.templates[0]!.id);
+    setSizeOverride(null);
+    setTitle(bt(preset.sampleTitleKo, preset.sampleTitleEn));
+    setTitleEdited(true);
+    chooseStartPoint(preset.startPoint);
+    if (nextProfile.projectKind !== "webtoon") setOnboardingEnabled(false);
     setError(null);
   }
 
@@ -322,6 +340,7 @@ export function StudioModeProjectCreatePage() {
           titleReady={titleReady} sizeReady={sizeReady} creating={creating}
           onCreate={create} onFixName={focusProjectTitle} onFixSize={focusCanvasSize}>
           {(onInputKeyDown) => <>
+          <StudioJourneyStepBar currentStep="start" startHref="/create" className="mb-4" />
           {/* 기본 선택 뒤에 주 행동 하나를 두고 추가 설정·미리보기는 뒤로 분리한다. */}
           <PurposeHeader
             eyebrow={(
@@ -330,15 +349,15 @@ export function StudioModeProjectCreatePage() {
                 {bt("새 프로젝트", "New project")}
               </>
             )}
-            title={bt("어떤 결과물을 완성하려고 하나요?", "What do you want to finish?")}
+            title={bt("어떤 작품을 만들까요?", "What would you like to create?")}
             description={bt(
-              "형식과 시작 재료를 고르면 바로 시작할 수 있어요. 자세한 설정은 필요한 경우에만 펼쳐 보세요.",
-              "Choose a format and starting material, then begin. Open the extra settings only when needed.",
+              "만들 형식과 시작 단계만 고르면 바로 작업실이 열려요. 해상도나 협업 설정은 필요할 때만 아래에서 펼쳐 보세요.",
+              "Pick a format and starting step to open your workspace right away. Extra settings stay folded until you need them.",
             )}
             secondaryActions={(
               <Link href="/studio/import" className={buttonClass({ variant: "outline" })}>
                 <Upload size={16} aria-hidden="true" />
-                {bt("기존 파일 바로 가져오기", "Import an existing file")}
+                {bt("가진 파일 불러오기", "Import an existing file")}
               </Link>
             )}
           />
@@ -361,11 +380,16 @@ export function StudioModeProjectCreatePage() {
             </p>
           ) : null}
 
+          <StudioCreateQuickPresetStrip
+            activePresetId={activeQuickPresetId}
+            onSelectPreset={applyQuickPreset}
+          />
+
           <FormStepSection
             step={1}
             titleId="studio-format-title"
-            title={bt("완성할 콘텐츠를 선택하세요", "Choose the final outcome")}
-            description={bt("도구가 아니라 독자와 시청자가 보게 될 형태를 기준으로 선택합니다.", "Choose by what readers or viewers will receive, not by a tool.")}
+            title={bt("만들 작품 형식을 골라 주세요", "Choose the format to create")}
+            description={bt("독자가 보게 될 화면 형태를 고르면 알맞은 캔버스 크기를 자동으로 맞춰 드려요.", "Choose how readers will view your work and we will set the right canvas size.")}
           >
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5" data-studio-format-count={STUDIO_PROJECT_FORMAT_PROFILES.length}>
               {STUDIO_PROJECT_FORMAT_PROFILES.map((profile) => {
@@ -439,8 +463,8 @@ export function StudioModeProjectCreatePage() {
           <FormStepSection
             step={2}
             titleId="studio-start-point-title"
-            title={bt("지금 어떤 재료를 가지고 있나요?", "What do you have right now?")}
-            description={bt("선택한 위치에서 가장 짧은 제작 경로로 시작합니다.", "Start from the shortest production path for your current material.")}
+            title={bt("지금 어디서부터 시작할까요?", "Where would you like to start?")}
+            description={bt("고른 단계에 맞춰 가장 먼저 필요한 작업 화면으로 바로 안내해 드려요.", "Jump straight to the first workspace that matches what you have ready.")}
           >
             <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
               {STUDIO_PROJECT_START_POINT_OPTIONS.map((option) => {
@@ -482,23 +506,48 @@ export function StudioModeProjectCreatePage() {
             description={bt("별도 규격이 없다면 미리 채워진 값으로 시작하세요.", "Use the prefilled values unless your project needs a different specification.")}
           >
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="block text-xs font-bold text-fg-2" htmlFor={PROJECT_TITLE_INPUT_ID}>
-                {bt("프로젝트 이름", "Project name")}
-                <input
-                  id={PROJECT_TITLE_INPUT_ID}
-                  onKeyDown={onInputKeyDown}
-                  enterKeyHint="go"
-                  aria-invalid={!titleReady || undefined}
-                  aria-describedby={!titleReady ? CREATE_DISABLED_REASON_ID : undefined}
-                  value={title}
-                  maxLength={STUDIO_PROJECT_TITLE_MAX_LENGTH}
-                  onChange={(event) => {
-                    setTitle(event.target.value);
-                    setTitleEdited(true);
-                  }}
-                  className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg outline-none focus:border-accent"
-                />
-              </label>
+              <div>
+                <label className="block text-xs font-bold text-fg-2" htmlFor={PROJECT_TITLE_INPUT_ID}>
+                  {bt("프로젝트 이름", "Project name")}
+                  <input
+                    id={PROJECT_TITLE_INPUT_ID}
+                    onKeyDown={onInputKeyDown}
+                    enterKeyHint="go"
+                    aria-invalid={!titleReady || undefined}
+                    aria-describedby={!titleReady ? CREATE_DISABLED_REASON_ID : undefined}
+                    value={title}
+                    maxLength={STUDIO_PROJECT_TITLE_MAX_LENGTH}
+                    onChange={(event) => {
+                      setTitle(event.target.value);
+                      setTitleEdited(true);
+                    }}
+                    className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg outline-none focus:border-accent"
+                  />
+                </label>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5" aria-label={bt("임시 제목 예시", "Working title examples")}>
+                  <span className="text-[0.68rem] text-fg-3">{bt("임시 제목:", "Quick title:")}</span>
+                  {([
+                    ["1화 초안", "Episode 1 Draft"],
+                    ["비 오는 날의 만남", "Rainy Day Encounter"],
+                    ["일상 4컷 기록", "4-Panel Daily Note"],
+                  ] as const).map(([koTitle, enTitle]) => {
+                    const sample = bt(koTitle, enTitle);
+                    return (
+                      <button
+                        key={koTitle}
+                        type="button"
+                        onClick={() => {
+                          setTitle(sample);
+                          setTitleEdited(true);
+                        }}
+                        className="min-h-8 rounded-full border border-line bg-panel/70 px-2.5 py-1 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                      >
+                        {sample}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <label className="block text-xs font-bold text-fg-2" htmlFor="studio-mode-template">
                 {bt("형식·초기 크기", "Format and initial size")}
                 <select

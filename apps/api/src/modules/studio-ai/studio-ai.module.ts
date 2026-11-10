@@ -25,6 +25,8 @@ import { STUDIO_3D_CREDIT_WALLET } from "./studio-3d-credit-charge";
 import { STUDIO_AI_CREDIT_WALLET } from "./studio-ai-credit-charge";
 import { StudioAiController } from "./studio-ai.controller";
 import { StudioAiService } from "./studio-ai.service";
+import { StudioOpenAiCreativeAssistController } from "./studio-openai-creative-assist.controller";
+import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assist.service";
 
 @Module({
   imports: [MembershipWalletModule],
@@ -34,6 +36,7 @@ import { StudioAiService } from "./studio-ai.service";
     StudioAiComicDirectorController,
     Studio3dGenerationController,
     StudioMediaInferenceController,
+    StudioOpenAiCreativeAssistController,
   ],
   providers: [
     CreatorInferenceGateway,
@@ -53,6 +56,7 @@ import { StudioAiService } from "./studio-ai.service";
     StudioAiComicDirectorService,
     Studio3dGenerationService,
     StudioMediaInferenceService,
+    StudioOpenAiCreativeAssistService,
     {
       provide: STUDIO_AI_COMIC_DIRECTOR_REPOSITORY,
       useFactory: () => new PostgresStudioAiComicDirectorRepository(),

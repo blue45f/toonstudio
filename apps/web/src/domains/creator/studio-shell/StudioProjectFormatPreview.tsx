@@ -1,4 +1,4 @@
-import { CheckCircle2, PackageCheck } from "lucide-react";
+import { CheckCircle2, PackageCheck, Smartphone } from "lucide-react";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -7,10 +7,17 @@ import type { StudioProjectFormatProfile, StudioProjectFormatVisual } from "../s
 function VisualFrame({ visual }: { readonly visual: StudioProjectFormatVisual }) {
   if (visual === "vertical-scroll") {
     return (
-      <div className="mx-auto flex h-36 w-20 flex-col gap-1.5 rounded-[1.1rem] border-2 border-line-strong bg-card p-2 shadow-sm" aria-hidden="true">
+      <div
+        className="mx-auto flex h-36 w-20 flex-col gap-1.5 rounded-[1.1rem] border-2 border-accent/40 bg-gradient-to-br from-accent-soft to-panel p-2 shadow-sm"
+        aria-hidden="true"
+      >
         <span className="mx-auto h-1 w-6 rounded-full bg-line-strong" />
-        <span className="h-8 rounded-md border border-line bg-raised" />
-        <span className="h-12 rounded-md border border-line bg-panel" />
+        <span className="relative h-8 overflow-hidden rounded-md border border-line bg-card">
+          <i className="absolute right-1.5 top-1 h-2 w-6 rounded-full bg-accent-soft" />
+        </span>
+        <span className="relative h-12 overflow-hidden rounded-md border border-line bg-panel">
+          <i className="absolute bottom-1.5 left-1.5 h-2 w-8 rounded-full bg-accent-soft" />
+        </span>
         <span className="h-6 rounded-md border border-line bg-raised" />
       </div>
     );
@@ -19,9 +26,14 @@ function VisualFrame({ visual }: { readonly visual: StudioProjectFormatVisual })
     return (
       <div className="grid h-36 grid-cols-2 gap-2 p-2" aria-hidden="true">
         {[1, 2, 3, 4].map((number) => (
-          <span key={number} className="relative rounded-lg border border-line-strong bg-card shadow-sm">
-            <span className="absolute left-1.5 top-1.5 grid size-4 place-items-center rounded-full bg-accent-soft text-[0.5rem] font-black text-accent">{number}</span>
-            <span className="absolute inset-x-2 bottom-2 h-2 rounded bg-raised" />
+          <span
+            key={number}
+            className="relative overflow-hidden rounded-lg border border-line-strong bg-gradient-to-br from-accent-soft to-panel shadow-sm"
+          >
+            <span className="absolute left-1.5 top-1.5 grid size-4 place-items-center rounded-full bg-accent text-[0.5rem] font-black text-on-accent">
+              {number}
+            </span>
+            <span className="absolute inset-x-2 bottom-2 h-2 rounded bg-card" />
           </span>
         ))}
       </div>
@@ -31,8 +43,11 @@ function VisualFrame({ visual }: { readonly visual: StudioProjectFormatVisual })
     return (
       <div className="flex h-36 items-center justify-center gap-1.5 p-2" aria-hidden="true">
         {["left", "right"].map((side) => (
-          <span key={side} className="relative h-28 w-20 rounded-md border border-line-strong bg-card p-2 shadow-sm">
-            <span className="block h-10 rounded border border-line bg-raised" />
+          <span
+            key={side}
+            className="relative h-28 w-20 rounded-md border border-line-strong bg-card p-2 shadow-sm"
+          >
+            <span className="block h-10 rounded border border-line bg-accent-soft/45" />
             <span className="mt-2 block h-4 rounded border border-line bg-panel" />
             <span className="mt-2 block h-8 rounded border border-line bg-raised" />
             <span className={cn("absolute inset-y-1 w-px bg-line", side === "left" ? "right-1" : "left-1")} />
@@ -45,7 +60,9 @@ function VisualFrame({ visual }: { readonly visual: StudioProjectFormatVisual })
     return (
       <div className="flex h-36 flex-col gap-2 p-2" aria-hidden="true">
         <span className="grid flex-1 place-items-center rounded-lg border border-line-strong bg-canvas">
-          <span className="grid size-10 place-items-center rounded-full border border-line bg-card text-xs font-black text-accent">▶</span>
+          <span className="grid size-10 place-items-center rounded-full border border-line bg-card text-xs font-black text-accent">
+            ▶
+          </span>
         </span>
         <span className="space-y-1 rounded-md border border-line bg-card p-1.5">
           <span className="flex gap-1"><i className="h-2 w-8 rounded bg-accent-soft" /><i className="h-2 flex-1 rounded bg-raised" /></span>
@@ -58,10 +75,10 @@ function VisualFrame({ visual }: { readonly visual: StudioProjectFormatVisual })
   return (
     <div className="grid h-36 grid-cols-[1fr_3.5rem] gap-2 p-2" aria-hidden="true">
       <span className="relative rounded-lg border border-line-strong bg-canvas shadow-inner">
-        <span className="absolute inset-[16%] rounded-full border-2 border-accent/40 bg-accent-soft/30" />
+        <span className="absolute inset-[16%] rounded-full border-2 border-accent/40 bg-accent-soft/35" />
       </span>
       <span className="space-y-2 rounded-lg border border-line bg-card p-2">
-        <i className="block h-5 rounded bg-raised" />
+        <i className="block h-5 rounded bg-accent-soft" />
         <i className="block h-5 rounded bg-panel" />
         <i className="block h-5 rounded bg-raised" />
         <i className="block h-5 rounded bg-panel" />
@@ -82,7 +99,7 @@ export function StudioProjectFormatVisual({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border bg-panel/55",
+        "overflow-hidden rounded-xl border bg-panel/55 transition-colors",
         active ? "border-accent/60 bg-accent-soft/25" : "border-line",
         className,
       )}
@@ -106,12 +123,16 @@ export function StudioProjectFormatPreview({
   const outputs = locale === "ko" ? profile.outputsKo : profile.outputsEn;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-line bg-panel/45" data-studio-format-preview={profile.id}>
+    <section
+      className="overflow-hidden rounded-2xl border border-line bg-panel/45"
+      data-studio-format-preview={profile.id}
+    >
       <div className="grid gap-4 p-4 sm:grid-cols-[11rem_minmax(0,1fr)] sm:p-5">
         <StudioProjectFormatVisual profile={profile} active className="min-h-40" />
         <div className="min-w-0">
-          <p className="text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
-            {locale === "ko" ? "선택한 결과물" : "Selected outcome"}
+          <p className="inline-flex items-center gap-1.5 text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
+            <Smartphone size={13} aria-hidden="true" />
+            {locale === "ko" ? "독자 화면 미리보기 · 선택한 결과물" : "Reader screen preview · Selected outcome"}
           </p>
           <h3 className="mt-1 text-lg font-black text-fg">
             {locale === "ko" ? profile.titleKo : profile.titleEn}
@@ -128,7 +149,7 @@ export function StudioProjectFormatPreview({
               {hierarchy.map((item, index) => (
                 <span key={item} className="contents">
                   <span className="rounded-full border border-line bg-card px-2 py-1 text-[0.68rem] font-bold text-fg-2">{item}</span>
-                  {index < hierarchy.length - 1 ? <span className="text-xs text-fg-2">›</span> : null}
+                  {index < hierarchy.length - 1 ? <span className="text-xs text-accent">›</span> : null}
                 </span>
               ))}
             </div>

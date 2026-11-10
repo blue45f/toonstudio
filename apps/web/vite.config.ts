@@ -336,6 +336,28 @@ function isStudioCoreIconModule(id: string) {
  * Resolve the sibling implementation when one exists so the studio bundle never binds
  * runtime exports (e.g. STUDIO_RASTER_CRDT_VERSION) from a test module.
  */
+/**
+ * three r187 renamed `transformedNormalView` -> `normalView` in `three/tsl` while
+ * `@pixiv/three-vrm@3.5.5` MToon nodes still import `transformedNormalView`.
+ * Rewriting in-place avoids emitting a virtual wrapper chunk that would split
+ * `studio-bg3d-three-webgpu-entry`'s single-owner closure in `check-studio-bundle`.
+ */
+function threeTslVrmCompatPlugin(): Plugin {
+  return {
+    name: "toonstudio-three-tsl-vrm-compat",
+    enforce: "pre",
+    transform(code, id) {
+      if (!id.includes("three-vrm") || !code.includes("transformedNormalView")) {
+        return null;
+      }
+      return {
+        code: code.replaceAll(/\btransformedNormalView\b/g, "normalView"),
+        map: null,
+      };
+    },
+  };
+}
+
 function preferImplementationOverTestModulePlugin(): Plugin {
   return {
     name: "toonstudio-prefer-implementation-over-test-module",
@@ -608,6 +630,7 @@ export default defineConfig(({ command, mode }) => ({
   ...viteServeCacheConfig(command),
   plugins: [
     pigmentLicenseBoundaryPlugin(),
+    threeTslVrmCompatPlugin(),
     preferImplementationOverTestModulePlugin(),
     studioCrossOriginIsolationPlugin(),
     studioServiceWorkerPlugin(),
@@ -659,7 +682,7 @@ export default defineConfig(({ command, mode }) => ({
   // remains valid instead of failing the production build with INVALID_OPTION.
   worker: {
     format: "es",
-    plugins: () => [pigmentLicenseBoundaryPlugin("worker")],
+    plugins: () => [pigmentLicenseBoundaryPlugin("worker"), threeTslVrmCompatPlugin()],
   },
   optimizeDeps: {
     // Browser acceptance needs only the exercised route graph. Disabling discovery there avoids

@@ -41,6 +41,7 @@ import {
 import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
 import { preserveStudioLaunchDensity, readStudioLaunchDensity } from "../studio-launch-mode";
 import { readStudioReviewHistory } from "../studio-review-history-store";
+import { StudioJourneyStepBar, type StudioJourneyStepId } from "./StudioJourneyStepBar";
 import { StudioProjectCardThumbnail } from "./StudioProjectCardThumbnail";
 import { StudioProjectDiagnosticsBridge } from "./StudioProjectDiagnosticsBridge";
 import { StudioProjectStoryPlanning } from "../planning/StudioProjectStoryPlanning";
@@ -106,6 +107,12 @@ function readProjectHeaderFacts(
 
 function projectSectionHref(projectId: string, section: StudioProjectSection): string {
   return `/studio/p/${encodeURIComponent(projectId)}/${section}`;
+}
+
+function journeyStepFromSection(section: StudioProjectSection): StudioJourneyStepId {
+  if (section === "overview" || section === "story") return "start";
+  if (section === "review" || section === "export") return "export";
+  return "edit";
 }
 
 function InvalidProject() {
@@ -460,7 +467,15 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
         </div>
       </header>
 
-      <div className="mt-4 grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto]">
+      <StudioJourneyStepBar
+        currentStep={journeyStepFromSection(section)}
+        startHref={launchHref(projectSectionHref(displayProjectId, "story"))}
+        editHref={launchHref(headerFacts?.hasResumeDocument ? headerFacts.resumeHref : workHref(displayProjectId))}
+        exportHref={launchHref(projectSectionHref(displayProjectId, "export"))}
+        className="mt-4"
+      />
+
+      <div className="mt-3 grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto]">
         <nav
           aria-label={bt("프로젝트 주요 단계", "Main project stages")}
           className="overflow-x-auto rounded-2xl border border-line bg-card p-1.5"

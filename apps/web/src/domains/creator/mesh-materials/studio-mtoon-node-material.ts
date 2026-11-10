@@ -2,7 +2,7 @@
 import { MToonLightingModel, MToonNodeMaterial, type MToonNodeMaterialParameters } from "@pixiv/three-vrm/nodes";
 import { Texture, WebGLCoordinateSystem, WebGPUCoordinateSystem } from "three";
 import { Fn, cameraProjectionMatrix, diffuseColor, float, length, matcapUV, materialReference, mix, modelNormalMatrix, modelViewMatrix,
-  materialNormal, modelViewPosition, nodeObject, normalLocal, normalMap, positionLocal, step, transformedNormalView, vec3, vec4 } from "three/tsl";
+  materialNormal, modelViewPosition, nodeObject, normalLocal, normalMap, normalView, positionLocal, step, vec3, vec4 } from "three/tsl";
 import { ConvertNode, NodeMaterial, type Node, type NodeBuilder } from "three/webgpu";
 
 import { hasStudioMToonRuntimeFactors } from "./studio-mtoon-runtime-factors";
@@ -55,7 +55,7 @@ function directNodes(material: MToonNodeMaterial) {
   const rimMultiply = material.rimMultiplyTexture ? sample("rimMultiplyTexture").rgb : vec3(1);
   const matcap = material.matcapTexture
     ? vector4Node(materialReference("matcapTexture", "texture")).context({ getUV: () => vector2Node(matcapUV).mul(1, -1).add(0, 1) }).rgb.mul(color("matcapFactor")) : vec3(0);
-  const dotNV = transformedNormalView.dot(modelViewPosition.normalize().negate());
+  const dotNV = normalView.dot(modelViewPosition.normalize().negate());
   const rim = float(1).sub(dotNV).add(scalar("parametricRimLiftFactor")).clamp().pow(scalar("parametricRimFresnelPowerFactor"))
     .mul(color("parametricRimColorFactor"));
   return { shade, shift, toony: scalar("shadingToonyFactor"), rimMultiply, matcap, rim, rimLightingMix: scalar("rimLightingMixFactor") };
@@ -65,7 +65,7 @@ class StudioMToonLightingModel extends MToonLightingModel {
   constructor(private readonly material: MToonNodeMaterial) { super(); }
   override direct(input: DirectInput): void {
     const values = directNodes(this.material), lightColor = vector3Node(input.lightColor);
-    const dotNL = transformedNormalView.dot(vector3Node(input.lightDirection)).clamp(-1, 1);
+    const dotNL = normalView.dot(vector3Node(input.lightDirection)).clamp(-1, 1);
     const shading = studioMToonNodeShading(dotNL, float(values.shift), float(values.toony));
     // SDK와 같은 Lambert 계수이며 나머지 간접광·emissive·rim 처리는 SDK를 유지한다.
     const directDiffuse = input.reflectedLight.directDiffuse, directSpecular = input.reflectedLight.directSpecular;

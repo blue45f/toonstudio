@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   FileCheck2,
   ShieldAlert,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -25,7 +26,6 @@ import { cn } from "@/shared/lib/utils";
 
 import { useStudioProjectWorkspace } from "./useStudioProjectWorkspace";
 
-
 const EXPORT_TARGET_VISUALS: Readonly<Record<StudioExportTargetId, string>> = {
   "webtoon-platform": "/brand/theme-scenes/ink-studio.svg",
   social: "/brand/theme-scenes/blossom-studio.svg",
@@ -46,10 +46,16 @@ function updatePreflight(
   results: readonly StudioExportPreflightResult[],
   next: StudioExportPreflightResult,
 ): readonly StudioExportPreflightResult[] {
-  return Object.freeze([
-    ...results.filter((item) => item.target !== next.target || item.policyVersion !== next.policyVersion),
-    next,
-  ].sort((a, b) => `${a.target}:${a.policyVersion}`.localeCompare(`${b.target}:${b.policyVersion}`)));
+  return Object.freeze(
+    [
+      ...results.filter(
+        (item) => item.target !== next.target || item.policyVersion !== next.policyVersion,
+      ),
+      next,
+    ].sort((a, b) =>
+      `${a.target}:${a.policyVersion}`.localeCompare(`${b.target}:${b.policyVersion}`),
+    ),
+  );
 }
 
 function resultTone(result: StudioExportPreflightResult | null): string {
@@ -60,8 +66,8 @@ function resultTone(result: StudioExportPreflightResult | null): string {
 }
 
 /**
- * Project-level export planner. It combines user-visible destination settings with canonical
- * rights, localization and review state, then hands exact rasterization to the existing editor.
+ * 초보자도 올릴 곳과 파일 형식만 고르면 바로 규격 점검과 내보내기를 마칠 수 있도록
+ * 필수 선택을 앞에 두고 세부 수치(해상도·DPI·색 공간 등)는 필요할 때 펼쳐 보게 구성한 내보내기 패널.
  */
 export function StudioExportPanel({
   projectId,
@@ -73,15 +79,18 @@ export function StudioExportPanel({
   const bt = useBilingual("StudioExportPanel");
   const workspace = useStudioProjectWorkspace(projectId, locale);
   const [target, setTarget] = useState<StudioExportTargetId>("webtoon-platform");
-  const [draft, setDraft] = useState<StudioExportDraftInput>(() => recommendedStudioExportDraft(projectId, "webtoon-platform"));
+  const [draft, setDraft] = useState<StudioExportDraftInput>(() =>
+    recommendedStudioExportDraft(projectId, "webtoon-platform"),
+  );
   const [result, setResult] = useState<StudioExportPreflightResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const profile = STUDIO_EXPORT_TARGET_PROFILES[target];
-  const savedResult = workspace.state?.exportPreflights.find(
-    (item) => item.target === target && item.policyVersion === profile.policyVersion,
-  ) ?? null;
+  const savedResult =
+    workspace.state?.exportPreflights.find(
+      (item) => item.target === target && item.policyVersion === profile.policyVersion,
+    ) ?? null;
   const displayedResult = result ?? savedResult;
 
   const projectFacts = useMemo(() => {
@@ -89,8 +98,10 @@ export function StudioExportPanel({
     return {
       blockedAssets: state?.assets.filter((asset) => asset.status === "blocked").length ?? 0,
       warningAssets: state?.assets.filter((asset) => asset.status === "warning").length ?? 0,
-      localization: state?.localization.reduce((sum, item) => sum + item.blockingIssueCount, 0) ?? 0,
-      comments: state?.reviewSession.threads.filter((thread) => thread.status === "open").length ?? 0,
+      localization:
+        state?.localization.reduce((sum, item) => sum + item.blockingIssueCount, 0) ?? 0,
+      comments:
+        state?.reviewSession.threads.filter((thread) => thread.status === "open").length ?? 0,
     };
   }, [workspace.state]);
 
@@ -102,7 +113,10 @@ export function StudioExportPanel({
     setError(null);
   };
 
-  const patch = <K extends keyof StudioExportDraftInput>(key: K, value: StudioExportDraftInput[K]) => {
+  const patch = <K extends keyof StudioExportDraftInput>(
+    key: K,
+    value: StudioExportDraftInput[K],
+  ) => {
     setDraft((current) => ({ ...current, [key]: value }));
     setResult(null);
     setMessage(null);
@@ -110,7 +124,12 @@ export function StudioExportPanel({
 
   const runPreflight = () => {
     if (!workspace.state) {
-      setError(bt("프로젝트 상태를 불러온 뒤 다시 검사해 주세요.", "Reload project state before running preflight."));
+      setError(
+        bt(
+          "작품 정보를 아직 불러오지 못했어요. 페이지를 새로고침한 뒤 다시 검사해 주세요.",
+          "Reload project state before running preflight.",
+        ),
+      );
       return;
     }
     try {
@@ -122,50 +141,98 @@ export function StudioExportPanel({
         ...current,
         exportPreflights: updatePreflight(current.exportPreflights, next),
       }));
-      if (!updated) throw new Error("Project preflight could not be stored.");
+      if (!updated) throw new Error("검사 결과를 기기에 저장하지 못했어요.");
       setResult(next);
-      setMessage(bt("현재 프로젝트 상태로 사전검사를 저장했습니다.", "Saved preflight from the current project state."));
+      setMessage(
+        bt(
+          "지금 설정으로 출고 전 점검을 마치고 결과를 저장했어요.",
+          "Saved preflight from the current project state.",
+        ),
+      );
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error
-        ? cause.message
-        : (bt("사전검사를 실행하지 못했습니다.", "Preflight could not be completed.")));
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : bt(
+              "출고 전 점검을 실행하지 못했어요. 잠시 후 다시 눌러 주세요.",
+              "Preflight could not be completed.",
+            ),
+      );
     }
   };
 
   const editorHref = `/studio/work/${encodeURIComponent(projectId)}/publish`;
+  const estimatedMb = Math.round((draft.estimatedFileSizeBytes / 1024 / 1024) * 10) / 10;
 
   return (
-    <section className="rounded-3xl border border-line bg-card p-4 shadow-sm sm:p-6" aria-labelledby="project-export-title">
+    <section
+      className="rounded-3xl border border-line bg-card p-4 shadow-sm sm:p-6"
+      aria-labelledby="project-export-title"
+      data-testid="studio-export-panel"
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
-            <FileCheck2 size={14} aria-hidden="true" /> EXPORT PREFLIGHT
+            <FileCheck2 size={14} aria-hidden="true" />{" "}
+            {bt("3단계 · 저장·내보내기 점검", "STEP 3 · EXPORT CHECK")}
           </p>
-          <h2 id="project-export-title" className="mt-2 text-2xl font-black tracking-tight text-fg">
-            {bt("사용할 곳을 고르면 필요한 검사를 자동으로", "Choose a destination and check everything required")}
+          <h2
+            id="project-export-title"
+            className="mt-2 text-2xl font-black tracking-tight text-fg"
+          >
+            {bt(
+              "올릴 곳을 고르면 알맞은 규격을 자동으로 맞춰 드려요",
+              "Pick where to publish and get matching specs automatically",
+            )}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
-            {bt("권리·현지화·미해결 검토와 대상 규격을 함께 확인합니다. 여기서는 프로젝트 수준을 검사하고, 실제 파일 생성 직전 편집기에서 캔버스 수치를 다시 확인합니다.", "Check rights, localization, unresolved review items and destination rules together. This is the project-level check; the editor verifies exact canvas data before rendering.")}
+            {bt(
+              "연재 플랫폼이나 SNS·인쇄 용도를 선택하면 권장 크기와 형식이 채워집니다. 사용 권리와 미해결 메모를 먼저 확인한 뒤 편집기에서 최종 파일을 내려받으세요.",
+              "Select a webtoon platform, social feed, or print target to prefill recommended dimensions and format. Check rights and open notes here, then export the final file in the editor.",
+            )}
           </p>
+          <ol
+            aria-label={bt("내보내기 3단계 요약", "3-step export summary")}
+            className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-fg-2"
+          >
+            <li className="rounded-full border border-accent/35 bg-accent-soft/35 px-2.5 py-1 text-accent">
+              {bt("① 올릴 곳 선택", "1. Pick destination")}
+            </li>
+            <li className="rounded-full border border-line bg-panel px-2.5 py-1">
+              {bt("② 현재 상태 검사", "2. Check status")}
+            </li>
+            <li className="rounded-full border border-line bg-panel px-2.5 py-1">
+              {bt("③ 편집기에서 파일 저장", "3. Export file")}
+            </li>
+          </ol>
         </div>
         <span className="inline-flex min-h-9 items-center rounded-full border border-line bg-panel px-3 text-xs font-bold text-fg-2">
-          {bt(`정책 ${profile.policyVersion}`, `Policy ${profile.policyVersion}`)}
+          {bt(`규격 기준 ${profile.policyVersion}`, `Policy ${profile.policyVersion}`)}
         </span>
       </div>
 
       {workspace.error || error ? (
-        <p role="alert" className="mt-4 rounded-xl border border-danger/35 bg-danger-soft/20 px-3 py-2 text-xs font-semibold text-danger">
+        <p
+          role="alert"
+          className="mt-4 rounded-xl border border-danger/35 bg-danger-soft/20 px-3 py-2 text-xs font-semibold text-danger"
+        >
           {error ?? workspace.error}
         </p>
       ) : null}
       {message ? (
-        <p role="status" className="mt-4 rounded-xl border border-success/30 bg-success-soft/20 px-3 py-2 text-xs font-semibold text-success">
+        <p
+          role="status"
+          className="mt-4 rounded-xl border border-success/30 bg-success-soft/20 px-3 py-2 text-xs font-semibold text-success"
+        >
           {message}
         </p>
       ) : null}
 
-      <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4" aria-label={bt("내보내기 목적", "Export destinations")}>
+      <div
+        className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
+        aria-label={bt("내보내기 목적", "Export destinations")}
+      >
         {STUDIO_EXPORT_TARGETS.map((candidate) => {
           const candidateProfile = STUDIO_EXPORT_TARGET_PROFILES[candidate];
           const active = candidate === target;
@@ -183,7 +250,7 @@ export function StudioExportPanel({
                   : "border-line bg-panel text-fg-2 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-raised hover:text-fg",
               )}
             >
-              <span className="relative block h-20 overflow-hidden bg-canvas">
+              <span className="relative block h-16 overflow-hidden bg-canvas sm:h-20">
                 <img
                   src={EXPORT_TARGET_VISUALS[candidate]}
                   alt=""
@@ -192,9 +259,17 @@ export function StudioExportPanel({
                   decoding="async"
                   className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.035] motion-reduce:transform-none"
                 />
-                <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-white/[0.04]" aria-hidden="true" />
+                <span
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-white/[0.04]"
+                  aria-hidden="true"
+                />
               </span>
-              <span className={cn("flex min-h-11 items-center px-3", active ? "text-accent" : "text-fg-2")}>
+              <span
+                className={cn(
+                  "flex min-h-11 items-center px-3 break-words",
+                  active ? "text-accent" : "text-fg-2",
+                )}
+              >
                 {bt(candidateProfile.labelKo, candidateProfile.labelEn)}
               </span>
             </button>
@@ -202,83 +277,227 @@ export function StudioExportPanel({
         })}
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {/* 자주 쓰는 파일 형식 선택과 자동 맞춰진 규격 요약을 한눈에 배치 */}
+      <div className="mt-5 grid gap-3 rounded-2xl border border-line bg-panel/45 p-4 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] md:items-end">
         <label className="text-xs font-bold text-fg-2">
-          {bt("형식", "Format")}
-          <select value={draft.format} onChange={(event) => patch("format", event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg">
-            {profile.allowedFormats.map((format) => <option key={format} value={format}>{format.toUpperCase()}</option>)}
+          {bt("파일 형식", "File format")}
+          <select
+            aria-label={bt("형식", "Format")}
+            value={draft.format}
+            onChange={(event) => patch("format", event.target.value)}
+            className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm font-bold text-fg"
+          >
+            {profile.allowedFormats.map((format) => (
+              <option key={format} value={format}>
+                {format.toUpperCase()}
+              </option>
+            ))}
           </select>
         </label>
-        <label className="text-xs font-bold text-fg-2">
-          {bt("가로 폭", "Width")}
-          <input type="number" min={1} value={draft.width} onChange={(event) => patch("width", numberValue(event.target.value, draft.width))} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg" />
-        </label>
-        <label className="text-xs font-bold text-fg-2">
-          {bt("전체 높이", "Height")}
-          <input type="number" min={1} value={draft.height} onChange={(event) => patch("height", numberValue(event.target.value, draft.height))} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg" />
-        </label>
-        <label className="text-xs font-bold text-fg-2">
-          {bt("예상 용량 (MB)", "Estimated size (MB)")}
-          <input type="number" min={0.1} step={0.1} value={Math.round(draft.estimatedFileSizeBytes / 1024 / 1024 * 10) / 10} onChange={(event) => patch("estimatedFileSizeBytes", numberValue(event.target.value, 1) * 1024 * 1024)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg" />
-        </label>
-        <label className="text-xs font-bold text-fg-2">
-          DPI
-          <input type="number" min={1} value={draft.dpi ?? ""} onChange={(event) => patch("dpi", event.target.value ? numberValue(event.target.value, 72) : null)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg" placeholder={bt("웹은 자동", "Automatic for web")} />
-        </label>
-        <label className="text-xs font-bold text-fg-2">
-          {bt("색 공간", "Color space")}
-          <select value={draft.colorSpace} onChange={(event) => patch("colorSpace", event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg">
-            {(profile.allowedColorSpaces ?? ["srgb"]).map((space) => <option key={space} value={space}>{space.toUpperCase()}</option>)}
-          </select>
-        </label>
-        <label className="text-xs font-bold text-fg-2">
-          {bt("가장 작은 글자", "Smallest text")}
-          <input type="number" min={1} value={draft.minimumTextPx ?? ""} onChange={(event) => patch("minimumTextPx", event.target.value ? numberValue(event.target.value, 12) : null)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg" />
-        </label>
-        <label className="text-xs font-bold text-fg-2">
-          {bt("대체 텍스트 범위", "Alt text coverage")}
-          <select value={String(draft.altTextCoverage)} onChange={(event) => patch("altTextCoverage", Number(event.target.value))} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg">
-            <option value="0">0%</option><option value="0.5">50%</option><option value="1">100%</option>
-          </select>
-        </label>
+        <div
+          data-testid="studio-export-preset-summary"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line/80 bg-card px-3.5 py-2.5 text-xs text-fg-2"
+        >
+          <div>
+            <strong className="font-bold text-fg">
+              {bt(profile.labelKo, profile.labelEn)} {bt("권장 규격", "recommended spec")}
+            </strong>
+            <p className="mt-0.5 text-fg-3">
+              {`${draft.width} × ${draft.height} px · ${draft.colorSpace.toUpperCase()}${draft.dpi ? ` · ${draft.dpi} DPI` : ""} · ${bt(`예상 ${estimatedMb} MB`, `Est. ${estimatedMb} MB`)}`}
+            </p>
+          </div>
+          <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[0.68rem] font-bold text-accent">
+            {bt("자동 맞춤 적용됨", "Auto-matched")}
+          </span>
+        </div>
       </div>
 
-      <details className="mt-5 rounded-2xl border border-line bg-panel/45 p-4">
-        <summary className="min-h-11 cursor-pointer text-sm font-black text-fg">{bt("전문 확인 항목", "Advanced checks")}</summary>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {([
-            ["readingOrderComplete", bt("읽기 순서 완료", "Reading order complete")],
-            ["aiDisclosurePrepared", bt("AI 사용 표시 준비", "AI disclosure prepared")],
-            ["captionsComplete", bt("자막 완료", "Captions complete")],
-            ["editableStructurePreserved", bt("편집 구조 유지", "Editable structure preserved")],
-          ] as const).map(([key, label]) => (
-            <label key={key} className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2">
-              <input type="checkbox" checked={draft[key]} onChange={(event) => patch(key, event.target.checked)} />
+      {/* 초보자에게 부담스러운 7가지 세부 수치·체크박스는 접힘 영역으로 분리 */}
+      <details
+        data-testid="studio-export-advanced-settings"
+        className="mt-4 rounded-2xl border border-line bg-panel/35 p-4"
+      >
+        <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          <SlidersHorizontal size={15} className="text-accent" aria-hidden="true" />
+          <span>
+            {bt(
+              "해상도·DPI·색 공간·접근성 세부 설정 (필요할 때만 변경)",
+              "Detailed resolution, DPI, color space & accessibility (optional)",
+            )}
+          </span>
+        </summary>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <label className="text-xs font-bold text-fg-2">
+            {bt("가로 폭", "Width")}
+            <input
+              type="number"
+              min={1}
+              value={draft.width}
+              onChange={(event) => patch("width", numberValue(event.target.value, draft.width))}
+              className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"
+            />
+          </label>
+          <label className="text-xs font-bold text-fg-2">
+            {bt("전체 높이", "Height")}
+            <input
+              type="number"
+              min={1}
+              value={draft.height}
+              onChange={(event) => patch("height", numberValue(event.target.value, draft.height))}
+              className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"
+            />
+          </label>
+          <label className="text-xs font-bold text-fg-2">
+            {bt("예상 용량 (MB)", "Estimated size (MB)")}
+            <input
+              type="number"
+              min={0.1}
+              step={0.1}
+              value={estimatedMb}
+              onChange={(event) =>
+                patch("estimatedFileSizeBytes", numberValue(event.target.value, 1) * 1024 * 1024)
+              }
+              className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"
+            />
+          </label>
+          <label className="text-xs font-bold text-fg-2">
+            DPI
+            <input
+              type="number"
+              min={1}
+              value={draft.dpi ?? ""}
+              onChange={(event) =>
+                patch("dpi", event.target.value ? numberValue(event.target.value, 72) : null)
+              }
+              className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"
+              placeholder={bt("웹 연재는 자동", "Automatic for web")}
+            />
+          </label>
+          <label className="text-xs font-bold text-fg-2">
+            {bt("색 공간", "Color space")}
+            <select
+              value={draft.colorSpace}
+              onChange={(event) => patch("colorSpace", event.target.value)}
+              className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"
+            >
+              {(profile.allowedColorSpaces ?? ["srgb"]).map((space) => (
+                <option key={space} value={space}>
+                  {space.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-bold text-fg-2">
+            {bt("가장 작은 글자 (px)", "Smallest text (px)")}
+            <input
+              type="number"
+              min={1}
+              value={draft.minimumTextPx ?? ""}
+              onChange={(event) =>
+                patch(
+                  "minimumTextPx",
+                  event.target.value ? numberValue(event.target.value, 12) : null,
+                )
+              }
+              className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"
+            />
+          </label>
+          <label className="text-xs font-bold text-fg-2">
+            {bt("대체 텍스트 범위", "Alt text coverage")}
+            <select
+              value={String(draft.altTextCoverage)}
+              onChange={(event) => patch("altTextCoverage", Number(event.target.value))}
+              className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"
+            >
+              <option value="0">0%</option>
+              <option value="0.5">50%</option>
+              <option value="1">100%</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2 xl:grid-cols-4">
+          {(
+            [
+              ["readingOrderComplete", bt("읽기 순서 확인 완료", "Reading order complete")],
+              ["aiDisclosurePrepared", bt("AI 보조 사용 표기 준비", "AI disclosure prepared")],
+              ["captionsComplete", bt("자막·대본 준비 완료", "Captions complete")],
+              ["editableStructurePreserved", bt("레이어 편집 구조 유지", "Editable structure preserved")],
+            ] as const
+          ).map(([key, label]) => (
+            <label
+              key={key}
+              className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2"
+            >
+              <input
+                type="checkbox"
+                checked={draft[key]}
+                onChange={(event) => patch(key, event.target.checked)}
+              />
               {label}
             </label>
           ))}
         </div>
       </details>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-line bg-panel p-3"><p className="text-[0.65rem] text-fg-3">{bt("사용 불가 에셋", "Blocked assets")}</p><b className="mt-1 block text-lg text-fg">{projectFacts.blockedAssets}</b></div>
-        <div className="rounded-xl border border-line bg-panel p-3"><p className="text-[0.65rem] text-fg-3">{bt("조건 확인 에셋", "Asset warnings")}</p><b className="mt-1 block text-lg text-fg">{projectFacts.warningAssets}</b></div>
-        <div className="rounded-xl border border-line bg-panel p-3"><p className="text-[0.65rem] text-fg-3">{bt("현지화 오류", "Localization blocks")}</p><b className="mt-1 block text-lg text-fg">{projectFacts.localization}</b></div>
-        <div className="rounded-xl border border-line bg-panel p-3"><p className="text-[0.65rem] text-fg-3">{bt("열린 검토", "Open review")}</p><b className="mt-1 block text-lg text-fg">{projectFacts.comments}</b></div>
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-line bg-panel p-3">
+          <p className="text-[0.68rem] text-fg-3">
+            {bt("권리 확인 필요 소재", "Blocked assets")}
+          </p>
+          <b className="mt-1 block text-lg text-fg">{projectFacts.blockedAssets}</b>
+        </div>
+        <div className="rounded-xl border border-line bg-panel p-3">
+          <p className="text-[0.68rem] text-fg-3">
+            {bt("사용 조건 주의 소재", "Asset warnings")}
+          </p>
+          <b className="mt-1 block text-lg text-fg">{projectFacts.warningAssets}</b>
+        </div>
+        <div className="rounded-xl border border-line bg-panel p-3">
+          <p className="text-[0.68rem] text-fg-3">
+            {bt("다국어 대사 넘침", "Localization blocks")}
+          </p>
+          <b className="mt-1 block text-lg text-fg">{projectFacts.localization}</b>
+        </div>
+        <div className="rounded-xl border border-line bg-panel p-3">
+          <p className="text-[0.68rem] text-fg-3">
+            {bt("남은 피드백 메모", "Open review")}
+          </p>
+          <b className="mt-1 block text-lg text-fg">{projectFacts.comments}</b>
+        </div>
       </div>
 
       <div className={cn("mt-5 rounded-2xl border p-4", resultTone(displayedResult))}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h3 className="flex items-center gap-2 text-sm font-black text-fg">
-              {displayedResult?.status === "pass" ? <CheckCircle2 size={17} className="text-success" aria-hidden="true" /> : <ShieldAlert size={17} className={displayedResult?.status === "blocked" ? "text-danger" : "text-warning"} aria-hidden="true" />}
+              {displayedResult?.status === "pass" ? (
+                <CheckCircle2 size={17} className="text-success" aria-hidden="true" />
+              ) : (
+                <ShieldAlert
+                  size={17}
+                  className={displayedResult?.status === "blocked" ? "text-danger" : "text-warning"}
+                  aria-hidden="true"
+                />
+              )}
               {displayedResult
                 ? bt(displayedResult.summaryKo, displayedResult.summaryEn)
-                : (bt("현재 설정으로 검사해 보세요", "Run preflight for these settings"))}
+                : bt("내보내기 전에 한 번 점검해 보세요", "Run preflight for these settings")}
             </h3>
-            {displayedResult ? <p className="mt-1 text-xs text-fg-3">{bt(`차단 ${displayedResult.blockingCount} · 확인 ${displayedResult.warningCount}`, `${displayedResult.blockingCount} blocking · ${displayedResult.warningCount} warnings`)}</p> : null}
+            {displayedResult ? (
+              <p className="mt-1 text-xs text-fg-3">
+                {bt(
+                  `꼭 고칠 항목 ${displayedResult.blockingCount}건 · 참고 항목 ${displayedResult.warningCount}건`,
+                  `${displayedResult.blockingCount} blocking · ${displayedResult.warningCount} warnings`,
+                )}
+              </p>
+            ) : null}
           </div>
-          <button type="button" onClick={runPreflight} className={buttonClass({ className: "gap-2" })}>
+          <button
+            type="button"
+            onClick={runPreflight}
+            className={buttonClass({ className: "min-h-11 gap-2" })}
+          >
             <FileCheck2 size={16} aria-hidden="true" />
             {bt("현재 상태 검사", "Run preflight")}
           </button>
@@ -287,9 +506,24 @@ export function StudioExportPanel({
         {displayedResult?.findings.length ? (
           <ul className="mt-4 space-y-2">
             {displayedResult.findings.map((finding) => (
-              <li key={finding.code} className="rounded-xl border border-line bg-card/70 p-3 text-xs leading-5 text-fg-2">
-                <b className={finding.severity === "error" ? "text-danger" : finding.severity === "warning" ? "text-warning" : "text-fg"}>{bt(finding.messageKo, finding.messageEn)}</b>
-                <span className="mt-1 block text-fg-3">{bt(finding.suggestedActionKo, finding.suggestedActionEn)}</span>
+              <li
+                key={finding.code}
+                className="rounded-xl border border-line bg-card/70 p-3 text-xs leading-5 text-fg-2"
+              >
+                <b
+                  className={
+                    finding.severity === "error"
+                      ? "text-danger"
+                      : finding.severity === "warning"
+                        ? "text-warning"
+                        : "text-fg"
+                  }
+                >
+                  {bt(finding.messageKo, finding.messageEn)}
+                </b>
+                <span className="mt-1 block text-fg-3">
+                  {bt(finding.suggestedActionKo, finding.suggestedActionEn)}
+                </span>
               </li>
             ))}
           </ul>
@@ -297,8 +531,19 @@ export function StudioExportPanel({
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs leading-5 text-fg-3">{bt("실제 분할·레이어·파일 용량은 편집기에서 최종 렌더 직전에 다시 확인합니다.", "The editor rechecks exact segmentation, layers and file size immediately before rendering.")}</p>
-        <Link href={editorHref} className={buttonClass({ variant: displayedResult?.status === "blocked" ? "outline" : "solid", className: "gap-2" })}>
+        <p className="text-xs leading-5 text-fg-3">
+          {bt(
+            "컷 자동 분할과 최종 이미지·PDF 파일 저장은 편집기 출고 화면에서 바로 마무리할 수 있어요.",
+            "The editor rechecks exact segmentation, layers and file size immediately before rendering.",
+          )}
+        </p>
+        <Link
+          href={editorHref}
+          className={buttonClass({
+            variant: displayedResult?.status === "blocked" ? "outline" : "solid",
+            className: "min-h-11 gap-2",
+          })}
+        >
           {bt("편집기에서 최종 출력", "Finalize in editor")}
           <ArrowRight size={15} aria-hidden="true" />
         </Link>

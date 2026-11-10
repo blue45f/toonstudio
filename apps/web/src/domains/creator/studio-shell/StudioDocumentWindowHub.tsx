@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Copy,
+  Download,
   ExternalLink,
   Grid2X2,
   Link2,
@@ -339,6 +340,23 @@ export function StudioDocumentWindowHub({
               </span>
             </button>
           ) : null}
+          <Link
+            href={
+              resolution.projectId
+                ? `/studio/p/${encodeURIComponent(resolution.projectId)}/export`
+                : "/studio/publish"
+            }
+            aria-label={bi("저장 및 내보내기 화면 열기", "Open save and export screen")}
+            title={bi("저장·내보내기", "Save & Export")}
+            className={buttonClass({
+              variant: "outline",
+              size: "sm",
+              className: "shrink-0 gap-1 rounded-xl px-2.5",
+            })}
+          >
+            <Download size={14} aria-hidden="true" />
+            <span className="hidden sm:inline">{bi("저장·내보내기", "Export")}</span>
+          </Link>
           <button
             type="button"
             className={iconButtonClass}

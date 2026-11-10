@@ -59,7 +59,7 @@ const VELLO_ARTIFACT_POLICIES = Object.freeze([
     requiredPackages: Object.freeze([
       "vello_cpu@0.3.0",
       "vello_common@0.3.0",
-      "parley@0.11.0",
+      "parley@0.12.0",
       "harfrust@0.10.0",
       "harfrust@0.12.0",
       "skrifa@0.43.2",
@@ -78,7 +78,7 @@ const VELLO_ARTIFACT_POLICIES = Object.freeze([
       "vello_svg@0.11.0",
       "usvg@0.48.1",
       "wgpu@30.0.1",
-      "parley@0.11.0",
+      "parley@0.12.0",
       "harfrust@0.10.0",
       "harfrust@0.12.0",
       "skrifa@0.43.2",
@@ -246,7 +246,7 @@ const OCCT_NPM_INTEGRITY =
 const OCCT_WASM_SHA256 =
   "6cc2f3fa1611d32ad7563f7092aa1bf58741124302630cef7d21561ecd7b7284";
 
-const REMOTION_PACKAGE_VERSION = "4.0.536";
+const REVIEWED_REMOTION_PACKAGE_VERSIONS = Object.freeze(["4.0.536", "4.0.541"]);
 const REMOTION_LICENSE_EXPRESSION = "Remotion License";
 const REMOTION_LICENSE_SHA256 =
   "9830440ed5c55fbbbc0afcf58f292dc1c1522e9e691264a78733f1e11b2841b9";
@@ -284,7 +284,7 @@ const REVIEWED_LICENSE_EXPRESSIONS = new Set([
 
 const REVIEWED_RESTRICTED_PRODUCTION_DEPENDENCIES = Object.freeze({
   "@remotion/player": Object.freeze({
-    version: REMOTION_PACKAGE_VERSION,
+    allowedVersions: REVIEWED_REMOTION_PACKAGE_VERSIONS,
     license: REMOTION_LICENSE_EXPRESSION,
     detectedLicenses: Object.freeze([
       "SEE LICENSE IN LICENSE.md",
@@ -292,7 +292,7 @@ const REVIEWED_RESTRICTED_PRODUCTION_DEPENDENCIES = Object.freeze({
     ]),
   }),
   remotion: Object.freeze({
-    version: REMOTION_PACKAGE_VERSION,
+    allowedVersions: REVIEWED_REMOTION_PACKAGE_VERSIONS,
     license: REMOTION_LICENSE_EXPRESSION,
     detectedLicenses: Object.freeze([
       "SEE LICENSE IN LICENSE.md",
@@ -318,8 +318,8 @@ function validateReviewedRestrictedProductionDependency(
   if (
     !policy
     || policy.license !== license
-    || versions.length !== 1
-    || versions[0] !== policy.version
+    || versions.length === 0
+    || versions.some((version) => !policy.allowedVersions.includes(version))
   ) {
     throw new Error(
       `Unreviewed restricted production license package: ${name}@${versions.join(",") || "(missing)"} — ${license || "(missing)"}`,
@@ -331,8 +331,8 @@ function resolveReviewedLicenseExpression(name, versions, detectedLicense) {
   const policy = REVIEWED_RESTRICTED_PRODUCTION_DEPENDENCIES[name];
   if (!policy?.detectedLicenses) return detectedLicense;
   if (
-    versions.length !== 1
-    || versions[0] !== policy.version
+    versions.length === 0
+    || versions.some((version) => !policy.allowedVersions.includes(version))
     || !policy.detectedLicenses.includes(detectedLicense)
   ) {
     throw new Error(
@@ -356,16 +356,16 @@ const HYBRID_PROVIDER_DEPENDENCIES = Object.freeze({
   "@gltf-transform/functions": "4.4.2",
   "@resvg/resvg-wasm": "2.6.2",
   "@techstark/opencv-js": "5.0.0-release.1",
-  harfbuzzjs: "1.6.3",
+  harfbuzzjs: "1.6.4",
   "manifold-3d": "3.5.1",
-  "onnxruntime-web": "1.30.0",
+  "onnxruntime-web": "1.31.1",
   "opencascade.js": "1.1.1",
   "p5.brush": "2.2.1",
-  paper: "0.12.18",
+  paper: "0.17.0",
   "perfect-freehand": "1.2.3",
   rbush: "4.0.1",
   rhino3dm: "8.35.0",
-  "three-mesh-bvh": "0.9.16",
+  "three-mesh-bvh": "0.9.18",
   "web-ifc": "0.0.78",
   xatlasjs: "0.2.0",
 });
@@ -1735,11 +1735,12 @@ function validateRemotionReleaseBoundary(inventory) {
   const expectedPackages = ["@remotion/player", "remotion"];
   for (const name of expectedPackages) {
     const entry = inventory.find((candidate) => candidate.name === name);
+    const policy = REVIEWED_RESTRICTED_PRODUCTION_DEPENDENCIES[name];
     if (
       !entry
       || entry.license !== REMOTION_LICENSE_EXPRESSION
-      || entry.versions.length !== 1
-      || entry.versions[0] !== REMOTION_PACKAGE_VERSION
+      || entry.versions.length === 0
+      || entry.versions.some((version) => !policy.allowedVersions.includes(version))
     ) {
       throw new Error(
         `Remotion release boundary changed: ${name}@${entry?.versions.join(",") || "(missing)"} — ${entry?.license || "(missing)"}`,
@@ -1750,10 +1751,9 @@ function validateRemotionReleaseBoundary(inventory) {
       const detectedLicense = normalizeLicenseExpression(
         metadata.license ?? metadata.licenses,
       );
-      const policy = REVIEWED_RESTRICTED_PRODUCTION_DEPENDENCIES[name];
       if (
         metadata.name !== name
-        || metadata.version !== REMOTION_PACKAGE_VERSION
+        || !policy.allowedVersions.includes(metadata.version)
         || !policy.detectedLicenses.includes(detectedLicense)
       ) {
         throw new Error(`Installed Remotion metadata changed: ${name}`);
