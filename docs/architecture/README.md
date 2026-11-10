@@ -12,6 +12,7 @@
 | [`frontend-layered-architecture.md`](frontend-layered-architecture.md) | Web/Admin의 `app/domains/platform/shared` 규칙 |
 | [`modular-monorepo-target.md`](modular-monorepo-target.md) | 모듈형 모노레포 목표와 마이그레이션 순서 |
 | [`studio-current-boundaries.md`](studio-current-boundaries.md) | Studio의 현재 권위·저장·렌더링·협업 경계 |
+| [`studio-guided-flow-and-ai-assist.md`](studio-guided-flow-and-ai-assist.md) | 초보자·숙련자 통합 3단계 창작 흐름(`guided-flow/`)과 서버 전용 OpenAI 창작 보조 경계 |
 | [`studio-3d-asset-governance-v1.md`](studio-3d-asset-governance-v1.md) | 3D 에셋 품질·권리·공개 게이트 |
 | [`studio-3d-web-authoring-v3-2026-09-24.md`](studio-3d-web-authoring-v3-2026-09-24.md) | 브라우저 우선 3D 저작 경계 |
 | [`studio-live-canvas-gesture.md`](studio-live-canvas-gesture.md) | 라이브 캔버스 제스처 수명주기 |

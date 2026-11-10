@@ -3,83 +3,12 @@ import { Sparkles } from "lucide-react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
-import type { StudioProjectFormat, StudioProjectStartPoint } from "../studio-project-definition";
+import {
+  STUDIO_GUIDED_GENRE_STARTERS,
+  type GuidedGenreStarterSpec,
+} from "./guided-flow/studio-guided-flow-catalog";
 
-export interface StudioCreateQuickPreset {
-  readonly id: string;
-  readonly formatId: StudioProjectFormat;
-  readonly startPoint: StudioProjectStartPoint;
-  readonly templateId?: string;
-  readonly imageUrl: string;
-  readonly badgeKo: string;
-  readonly badgeEn: string;
-  readonly titleKo: string;
-  readonly titleEn: string;
-  readonly sampleTitleKo: string;
-  readonly sampleTitleEn: string;
-  readonly subtitleKo: string;
-  readonly subtitleEn: string;
-}
-
-const STUDIO_CREATE_QUICK_PRESETS: readonly StudioCreateQuickPreset[] = [
-  {
-    id: "romance-scroll",
-    formatId: "vertical-webtoon",
-    startPoint: "idea",
-    imageUrl: "/brand/studio-canvas-previews/romance.webp",
-    badgeKo: "세로 웹툰 · 줄거리부터",
-    badgeEn: "Vertical · Story first",
-    titleKo: "감성 로맨스·드라마",
-    titleEn: "Romance & Drama",
-    sampleTitleKo: "비 오는 정류장의 첫 만남",
-    sampleTitleEn: "Rainy Bus Stop Encounter",
-    subtitleKo: "모바일 스크롤 호흡과 대사 연출에 맞춘 표준 세로 원고",
-    subtitleEn: "Standard vertical scroll layout tuned for emotional dialogue",
-  },
-  {
-    id: "action-fantasy",
-    formatId: "vertical-webtoon",
-    startPoint: "storyboard",
-    imageUrl: "/brand/studio-canvas-previews/action.webp",
-    badgeKo: "세로 웹툰 · 콘티부터",
-    badgeEn: "Vertical · Boards first",
-    titleKo: "판타지·액션 연재",
-    titleEn: "Action & Fantasy",
-    sampleTitleKo: "각성의 순간 1화",
-    sampleTitleEn: "Awakening Episode 1",
-    subtitleKo: "박진감 있는 긴 컷과 연출 흐름을 바로 잡는 콘티 중심 시작",
-    subtitleEn: "Dynamic tall panels starting directly from storyboard beats",
-  },
-  {
-    id: "daily-cuttoon",
-    formatId: "cuttoon",
-    startPoint: "storyboard",
-    templateId: "cuttoon-square-4",
-    imageUrl: "/brand/studio-canvas-previews/daily.webp",
-    badgeKo: "인스타 4컷 · 카드형",
-    badgeEn: "4-Panel · Social cards",
-    titleKo: "일상·공감 4컷툰",
-    titleEn: "4-Panel Daily Toon",
-    sampleTitleKo: "오늘 하루 네 컷 일기",
-    sampleTitleEn: "Today in Four Panels",
-    subtitleKo: "SNS에서 넘겨 보기 편한 4장 카드 구성으로 가볍게 시작",
-    subtitleEn: "Swipe-friendly 4-card square preset for social feeds",
-  },
-  {
-    id: "world-comic",
-    formatId: "page-comic",
-    startPoint: "idea",
-    imageUrl: "/brand/studio-canvas-previews/fantasy.webp",
-    badgeKo: "단행본·페이지 만화",
-    badgeEn: "Page Comic · Spread",
-    titleKo: "미스터리·단편 만화",
-    titleEn: "Mystery & Short Comic",
-    sampleTitleKo: "자정의 도서관 제1장",
-    sampleTitleEn: "Midnight Library Ch.1",
-    subtitleKo: "출판·단편 공모전 규격의 페이지 단위 컷 분할 시작",
-    subtitleEn: "Print-ready page layout for short stories and contests",
-  },
-] as const;
+export type StudioCreateQuickPreset = GuidedGenreStarterSpec;
 
 export function StudioCreateQuickPresetStrip({
   activePresetId,
@@ -115,14 +44,14 @@ export function StudioCreateQuickPresetStrip({
       </div>
 
       <div className="mt-3.5 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-        {STUDIO_CREATE_QUICK_PRESETS.map((preset) => {
-          const active = activePresetId === preset.id;
+        {STUDIO_GUIDED_GENRE_STARTERS.map((preset) => {
+          const active = activePresetId === preset.quickPresetId;
           return (
             <button
-              key={preset.id}
+              key={preset.quickPresetId}
               type="button"
               aria-pressed={active}
-              data-testid={`studio-quick-preset-${preset.id}`}
+              data-testid={`studio-quick-preset-${preset.quickPresetId}`}
               onClick={() => onSelectPreset(preset)}
               className={cn(
                 "group flex min-h-11 flex-col overflow-hidden rounded-2xl border text-left transition-all motion-reduce:transform-none",
@@ -155,7 +84,7 @@ export function StudioCreateQuickPresetStrip({
                     {bt(preset.titleKo, preset.titleEn)}
                   </strong>
                   <span className="mt-1 block text-xs leading-5 text-fg-2">
-                    {bt(preset.subtitleKo, preset.subtitleEn)}
+                    {bt(preset.descKo, preset.descEn)}
                   </span>
                 </span>
                 <span className="mt-2.5 inline-flex items-center justify-between text-[0.68rem] font-extrabold text-accent">

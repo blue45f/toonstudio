@@ -41,6 +41,7 @@ import {
 import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
 import { preserveStudioLaunchDensity, readStudioLaunchDensity } from "../studio-launch-mode";
 import { readStudioReviewHistory } from "../studio-review-history-store";
+import { StudioBeginnerQuickTipsBar } from "./guided-flow/StudioBeginnerQuickTipsBar";
 import { StudioJourneyStepBar, type StudioJourneyStepId } from "./StudioJourneyStepBar";
 import { StudioProjectCardThumbnail } from "./StudioProjectCardThumbnail";
 import { StudioProjectDiagnosticsBridge } from "./StudioProjectDiagnosticsBridge";
@@ -731,6 +732,8 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
           />
         </div>
       </details>
+
+      <StudioBeginnerQuickTipsBar />
 
       <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

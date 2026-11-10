@@ -2,7 +2,7 @@ import {
   Lightbulb,
   Sparkles, Upload,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -15,20 +15,11 @@ import { useI18n } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 import {
   DEFAULT_WEBTOON_ONBOARDING_SELECTION,
-  WEBTOON_CADENCES,
-  WEBTOON_ONBOARDING_GOALS,
-  WEBTOON_STARTING_POINTS,
-  WEBTOON_TEAM_MODELS,
-  buildWebtoonOnboardingPlan,
   createStudioWebtoonOnboardingProfile,
   webtoonOnboardingProjectHref,
   webtoonOnboardingSelectionFromSearchParams,
   writeStudioWebtoonOnboardingProfile,
-  type WebtoonCadenceId,
-  type WebtoonOnboardingGoalId,
   type WebtoonOnboardingSelection,
-  type WebtoonStartingPointId,
-  type WebtoonTeamModelId,
 } from "@/shared/lib/webtoon-production-onboarding";
 
 import {
@@ -71,7 +62,6 @@ import {
   COLLABORATION_ICONS,
   CREATE_DISABLED_REASON_ID,
   CREATE_SIZE_REASON_ID,
-  OnboardingSelect,
   PROJECT_TITLE_INPUT_ID,
   START_POINT_ICONS,
   focusProjectTitle,
@@ -88,6 +78,8 @@ import {
   standaloneDocumentTitle,
   type AuxiliaryKind,
 } from "./studio-mode-project-create-helpers";
+import { StudioCanvasSafeZoneSimulator } from "./guided-flow/StudioCanvasSafeZoneSimulator";
+import { StudioCreateProductionPlanSection } from "./guided-flow/StudioCreateProductionPlanSection";
 import { StudioCreateKeyboardForm } from "./StudioCreateKeyboardForm";
 import { StudioCreateLaunchSummary, StudioCreateReturnToStart } from "./StudioCreateLaunchSummary";
 import { StudioCreateQuickPresetStrip, type StudioCreateQuickPreset } from "./StudioCreateQuickPresetStrip";
@@ -171,7 +163,6 @@ export function StudioModeProjectCreatePage() {
   const sizeReady = !sizeOverride || (customWidth !== null && customHeight !== null);
   const documentWidth = customWidth ?? modePlan.document.width;
   const documentHeight = customHeight ?? modePlan.document.height;
-  const onboardingPlan = useMemo(() => buildWebtoonOnboardingPlan(selection), [selection]);
   const supportsProductionPlan = !auxiliary && format.projectKind === "webtoon";
   const structuredWebtoon = supportsProductionPlan && onboardingEnabled;
   const effectiveStartPoint = structuredWebtoon
@@ -211,7 +202,7 @@ export function StudioModeProjectCreatePage() {
 
   function applyQuickPreset(preset: StudioCreateQuickPreset) {
     const nextProfile = studioProjectFormatProfile(preset.formatId);
-    setActiveQuickPresetId(preset.id);
+    setActiveQuickPresetId(preset.quickPresetId);
     setAuxiliaryKind(null);
     setFormatId(nextProfile.id);
     setTemplateId(preset.templateId ?? nextProfile.templates[0]!.id);
@@ -573,7 +564,7 @@ export function StudioModeProjectCreatePage() {
                 ) : null}
               </label>
             </div>
-
+            <StudioCanvasSafeZoneSimulator width={documentWidth} height={documentHeight} />
           </FormStepSection>
 
           <StudioCreateLaunchSummary
@@ -728,82 +719,15 @@ export function StudioModeProjectCreatePage() {
 
           {/* 명시적인 제작 계획 선택은 기존 토글·온보딩 상태를 유지한다. */}
           {supportsProductionPlan ? (
-            <section className="mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5" data-studio-create-optional-settings="true">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-black text-accent">
-                    {bt("회차 제작 계획까지 함께 준비", "Prepare the episode production plan")}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-fg-2">
-                    {bt(
-                      "대본·콘티·제작 인원과 주기를 정하고, 처음 할 일을 준비합니다.",
-                      "Set your script, storyboard, team and schedule to prepare the first tasks.",
-                    )}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  aria-pressed={onboardingEnabled}
-                  onClick={() => setOnboardingEnabled((value) => !value)}
-                  className={buttonClass({ variant: onboardingEnabled ? "solid" : "outline", size: "sm" })}
-                >
-                  {onboardingEnabled
-                    ? bt("제작 계획 사용 중", "Production plan on")
-                    : bt("제작 계획 추가", "Add production plan")}
-                </button>
-              </div>
-
-              {onboardingEnabled ? (
-                <div className="mt-4 rounded-2xl border border-line bg-panel/35 p-4">
-                  <h3 className="text-base font-black text-fg">
-                    {bt(onboardingPlan.titleKo, onboardingPlan.titleEn)}
-                  </h3>
-                  <p className="mt-1 text-xs leading-5 text-fg-2">
-                    {bt(onboardingPlan.summaryKo, onboardingPlan.summaryEn)}
-                  </p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <OnboardingSelect<WebtoonStartingPointId>
-                      id="studio-webtoon-starting-point"
-                      label={bt("현재 가지고 있는 자료", "What you already have")}
-                      value={selection.startingPoint}
-                      choices={WEBTOON_STARTING_POINTS}
-                      onChange={(startingPoint) => {
-                        setSelection((current) => ({ ...current, startingPoint }));
-                        setStartPoint(projectStartPointFromOnboarding(startingPoint));
-                      }}
-                    />
-                    <OnboardingSelect<WebtoonOnboardingGoalId>
-                      id="studio-webtoon-goal"
-                      label={bt("이번 프로젝트 목표", "Project goal")}
-                      value={selection.goal}
-                      choices={WEBTOON_ONBOARDING_GOALS}
-                      onChange={(goal) => {
-                        setSelection((current) => ({ ...current, goal }));
-                        setPurpose(projectPurposeFromOnboarding(goal));
-                      }}
-                    />
-                    <OnboardingSelect<WebtoonTeamModelId>
-                      id="studio-webtoon-team"
-                      label={bt("제작 인원", "Team model")}
-                      value={selection.teamModel}
-                      choices={WEBTOON_TEAM_MODELS}
-                      onChange={(teamModel) => {
-                        setSelection((current) => ({ ...current, teamModel }));
-                        setCollaboration(projectCollaborationFromOnboarding(teamModel));
-                      }}
-                    />
-                    <OnboardingSelect<WebtoonCadenceId>
-                      id="studio-webtoon-cadence"
-                      label={bt("제작 주기", "Cadence")}
-                      value={selection.cadence}
-                      choices={WEBTOON_CADENCES}
-                      onChange={(cadence) => setSelection((current) => ({ ...current, cadence }))}
-                    />
-                  </div>
-                </div>
-              ) : null}
-              {onboardingEnabled ? <StudioCreateReturnToStart /> : null}
-            </section>
+            <StudioCreateProductionPlanSection
+              onboardingEnabled={onboardingEnabled}
+              selection={selection}
+              onToggleOnboarding={() => setOnboardingEnabled((value) => !value)}
+              onChangeSelection={setSelection}
+              onSyncStartPoint={setStartPoint}
+              onSyncPurpose={setPurpose}
+              onSyncCollaboration={setCollaboration}
+            />
           ) : null}
           </>}
         </StudioCreateKeyboardForm>

@@ -1,6 +1,7 @@
 import { HttpException } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 
+import { StudioOpenAiRateLimiter } from "./openai-assist/studio-openai-guardrails";
 import { StudioOpenAiCreativeAssistRequestSchema } from "./studio-openai-creative-assist.dto";
 import {
   redactCreatorSensitiveText,
@@ -258,5 +259,19 @@ describe("StudioOpenAiCreativeAssistService", () => {
       inputText: " ",
     });
     expect(emptyCheck.success).toBe(false);
+  });
+
+  it("bounds rate-limiter memory with LRU eviction and sweeps expired UTC day buckets", () => {
+    const limiter = new StudioOpenAiRateLimiter(4);
+    const dayOne = Date.parse("2026-11-10T10:00:00.000Z");
+
+    for (let i = 0; i < 6; i += 1) {
+      limiter.checkAndRecord(`user:actor-${i}`, { dailyLimit: 5, burstPerMinute: 5 }, dayOne);
+    }
+    expect(limiter.trackedActorCount()).toBe(4);
+
+    const dayTwo = Date.parse("2026-11-11T00:05:00.000Z");
+    limiter.checkAndRecord("user:fresh-day", { dailyLimit: 5, burstPerMinute: 5 }, dayTwo);
+    expect(limiter.trackedActorCount()).toBe(1);
   });
 });

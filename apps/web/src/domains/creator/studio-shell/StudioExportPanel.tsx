@@ -2,6 +2,7 @@ import {
   ArrowRight,
   CheckCircle2,
   FileCheck2,
+  RotateCcw,
   ShieldAlert,
   SlidersHorizontal,
 } from "lucide-react";
@@ -87,6 +88,16 @@ export function StudioExportPanel({
   const [error, setError] = useState<string | null>(null);
 
   const profile = STUDIO_EXPORT_TARGET_PROFILES[target];
+  const recommendedDraft = useMemo(
+    () => recommendedStudioExportDraft(projectId, target),
+    [projectId, target],
+  );
+  const hasCustomSpec =
+    draft.width !== recommendedDraft.width ||
+    draft.height !== recommendedDraft.height ||
+    draft.format !== recommendedDraft.format ||
+    draft.dpi !== recommendedDraft.dpi ||
+    draft.colorSpace !== recommendedDraft.colorSpace;
   const savedResult =
     workspace.state?.exportPreflights.find(
       (item) => item.target === target && item.policyVersion === profile.policyVersion,
@@ -110,6 +121,18 @@ export function StudioExportPanel({
     setDraft(recommendedStudioExportDraft(projectId, nextTarget));
     setResult(null);
     setMessage(null);
+    setError(null);
+  };
+
+  const resetToRecommendedSpec = () => {
+    setDraft(recommendedStudioExportDraft(projectId, target));
+    setResult(null);
+    setMessage(
+      bt(
+        "선택한 올릴 곳의 권장 해상도·형식으로 되돌렸어요.",
+        "Restored the recommended resolution and format for this destination.",
+      ),
+    );
     setError(null);
   };
 
@@ -300,15 +323,30 @@ export function StudioExportPanel({
         >
           <div>
             <strong className="font-bold text-fg">
-              {bt(profile.labelKo, profile.labelEn)} {bt("권장 규격", "recommended spec")}
+              {bt(profile.labelKo, profile.labelEn)}{` `}
+              {hasCustomSpec
+                ? bt("직접 조정한 규격", "custom spec")
+                : bt("권장 규격", "recommended spec")}
             </strong>
             <p className="mt-0.5 text-fg-3">
               {`${draft.width} × ${draft.height} px · ${draft.colorSpace.toUpperCase()}${draft.dpi ? ` · ${draft.dpi} DPI` : ""} · ${bt(`예상 ${estimatedMb} MB`, `Est. ${estimatedMb} MB`)}`}
             </p>
           </div>
-          <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[0.68rem] font-bold text-accent">
-            {bt("자동 맞춤 적용됨", "Auto-matched")}
-          </span>
+          {hasCustomSpec ? (
+            <button
+              type="button"
+              data-testid="studio-export-reset-recommended"
+              onClick={resetToRecommendedSpec}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent/45 bg-accent-soft/45 px-3 py-1 text-[0.68rem] font-bold text-accent transition-colors hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            >
+              <RotateCcw size={12} aria-hidden="true" />
+              {bt("권장값으로 복원", "Restore recommended")}
+            </button>
+          ) : (
+            <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[0.68rem] font-bold text-accent">
+              {bt("자동 맞춤 적용됨", "Auto-matched")}
+            </span>
+          )}
         </div>
       </div>
 
@@ -441,30 +479,56 @@ export function StudioExportPanel({
       </details>
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-line bg-panel p-3">
-          <p className="text-[0.68rem] text-fg-3">
-            {bt("권리 확인 필요 소재", "Blocked assets")}
-          </p>
-          <b className="mt-1 block text-lg text-fg">{projectFacts.blockedAssets}</b>
-        </div>
-        <div className="rounded-xl border border-line bg-panel p-3">
-          <p className="text-[0.68rem] text-fg-3">
-            {bt("사용 조건 주의 소재", "Asset warnings")}
-          </p>
-          <b className="mt-1 block text-lg text-fg">{projectFacts.warningAssets}</b>
-        </div>
-        <div className="rounded-xl border border-line bg-panel p-3">
-          <p className="text-[0.68rem] text-fg-3">
-            {bt("다국어 대사 넘침", "Localization blocks")}
-          </p>
-          <b className="mt-1 block text-lg text-fg">{projectFacts.localization}</b>
-        </div>
-        <div className="rounded-xl border border-line bg-panel p-3">
-          <p className="text-[0.68rem] text-fg-3">
-            {bt("남은 피드백 메모", "Open review")}
-          </p>
-          <b className="mt-1 block text-lg text-fg">{projectFacts.comments}</b>
-        </div>
+        {(
+          [
+            {
+              id: "rights",
+              label: bt("권리 확인 필요 소재", "Blocked assets"),
+              count: projectFacts.blockedAssets,
+              href: `/studio/p/${encodeURIComponent(projectId)}/assets?view=rights`,
+              cta: bt("권리 확인하기", "Check rights"),
+            },
+            {
+              id: "missing",
+              label: bt("사용 조건 주의 소재", "Asset warnings"),
+              count: projectFacts.warningAssets,
+              href: `/studio/p/${encodeURIComponent(projectId)}/assets?view=missing`,
+              cta: bt("소재 점검하기", "Inspect assets"),
+            },
+            {
+              id: "localization",
+              label: bt("다국어 대사 넘침", "Localization blocks"),
+              count: projectFacts.localization,
+              href: `/studio/p/${encodeURIComponent(projectId)}/story?view=localization`,
+              cta: bt("대사 길이 보기", "Check dialogue"),
+            },
+            {
+              id: "review",
+              label: bt("남은 피드백 메모", "Open review"),
+              count: projectFacts.comments,
+              href: `/studio/p/${encodeURIComponent(projectId)}/review`,
+              cta: bt("피드백 열기", "Open review"),
+            },
+          ] as const
+        ).map((item) => (
+          <Link
+            key={item.id}
+            href={item.href}
+            data-testid={`studio-export-jump-${item.id}`}
+            className="group flex min-h-20 flex-col justify-between rounded-xl border border-line bg-panel p-3 transition-colors hover:border-accent/50 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+          >
+            <div>
+              <p className="text-[0.68rem] text-fg-3">{item.label}</p>
+              <b className={cn("mt-1 block text-lg", item.count > 0 ? "text-warning" : "text-fg")}>
+                {item.count}
+              </b>
+            </div>
+            <span className="mt-2 inline-flex items-center gap-1 text-[0.68rem] font-bold text-accent">
+              <span>{item.cta}</span>
+              <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            </span>
+          </Link>
+        ))}
       </div>
 
       <div className={cn("mt-5 rounded-2xl border p-4", resultTone(displayedResult))}>
