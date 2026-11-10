@@ -319,12 +319,19 @@ describe("Cloudflare production release gates (all child process calls mocked)",
     expect(commands).toEqual([]);
   });
 
-  it("supports --skip-build, --skip-r2-sync, and --core-origin while keeping CSP, SW, and R2 dry-run gates", () => {
+  it("supports --skip-build, --skip-r2-sync, and --profile while keeping CSP, SW, and R2 dry-run gates", () => {
     const { result, commands } = runDeploy(
       { CLOUDFLARE_API_TOKEN: "", CLOUDFLARE_CORE_API_ORIGIN: "" },
-      ["--production", "--skip-build", "--skip-r2-sync", "--core-origin=https://cli-core.example.test"],
+      ["--production", "--skip-build", "--skip-r2-sync", "--profile=onpod-current"],
       {
         ...standingApprovalFile,
+        "config/deployment/environment-contract.json": JSON.stringify({
+          profiles: {
+            "onpod-current": {
+              settings: { CORE_API_ORIGIN: "https://profile-core.example.test" },
+            },
+          },
+        }),
         "dist/index.html": "<!doctype html><title>ok</title>",
         "dist/.assetsignore": "*.br\n",
       },
@@ -344,7 +351,7 @@ describe("Cloudflare production release gates (all child process calls mocked)",
         "--config",
         "deploy/cloudflare-static/wrangler.jsonc",
         "--var",
-        "CORE_API_ORIGIN:https://cli-core.example.test",
+        "CORE_API_ORIGIN:https://profile-core.example.test",
       ],
     ]);
   });

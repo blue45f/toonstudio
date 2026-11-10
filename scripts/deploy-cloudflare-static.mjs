@@ -6,6 +6,7 @@ import { userInfo } from "node:os";
 import { delimiter, dirname, resolve } from "node:path";
 
 const STANDING_APPROVAL_PATH = "deploy/cloudflare-static/STANDING_APPROVAL.json";
+const ENVIRONMENT_CONTRACT_PATH = "config/deployment/environment-contract.json";
 
 const mode = process.argv.includes("--production") ? "production" : "dry-run";
 const skipBuild = process.argv.includes("--skip-build");
@@ -13,10 +14,10 @@ const skipR2Sync = process.argv.includes("--skip-r2-sync");
 const coreOriginArg = process.argv
   .find((argument) => argument.startsWith("--core-origin="))
   ?.slice("--core-origin=".length);
+const profileArg = process.argv
+  .find((argument) => argument.startsWith("--profile="))
+  ?.slice("--profile=".length);
 const approval = process.env.TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL;
-const rawOrigin = coreOriginArg
-  ?? process.env.CLOUDFLARE_CORE_API_ORIGIN
-  ?? (mode === "dry-run" ? "https://core.invalid" : "");
 
 const OPTIONAL_SINGLE_ORIGINS = [
   ["CLOUDFLARE_SOCIAL_API_ORIGIN", "SOCIAL_API_ORIGIN"],
@@ -31,6 +32,30 @@ function fail(message) {
   console.error(message);
   process.exit(1);
 }
+
+function readProfileCoreOrigin(profileName) {
+  if (!profileName) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(resolve(process.cwd(), ENVIRONMENT_CONTRACT_PATH), "utf8"));
+  } catch {
+    fail(`Failed to read ${ENVIRONMENT_CONTRACT_PATH} for --profile=${profileName}`);
+  }
+  const profile = parsed?.profiles?.[profileName];
+  if (!profile) {
+    fail(`Unknown deployment profile: ${profileName}`);
+  }
+  const origin = profile?.settings?.CORE_API_ORIGIN;
+  if (typeof origin !== "string" || origin.trim() === "") {
+    fail(`Deployment profile ${profileName} does not define CORE_API_ORIGIN`);
+  }
+  return origin.trim();
+}
+
+const rawOrigin = coreOriginArg
+  ?? readProfileCoreOrigin(profileArg)
+  ?? process.env.CLOUDFLARE_CORE_API_ORIGIN
+  ?? (mode === "dry-run" ? "https://core.invalid" : "");
 
 function parseOrigin(raw, environmentName) {
   let origin;
