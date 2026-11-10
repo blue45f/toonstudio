@@ -47,7 +47,8 @@ jobs:
           pnpm --filter @webtoon-nest/api build
 
   production-inspect:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # 삭제된 퇴역 Neon(ep-jolly-smoke-...) 전용 조회 잡. 2026-10-23 서울 onpod 컷오버 이후 자동 실행하지 않는다.
+    if: false
     needs: verify
     environment: production-database
     runs-on: ubuntu-24.04

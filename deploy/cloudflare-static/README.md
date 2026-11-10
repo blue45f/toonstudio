@@ -147,6 +147,8 @@ production 모드(`scripts/deploy-cloudflare-static.mjs --production`)는 빌드
 - `TOONSPECTRUM_APPROVED_MAIN_SHA`: 사용자가 승인한 `main` 커밋의 소문자 40자리 16진수 SHA. `HEAD`에서 자동으로 채우지 않고 승인된 값을 그대로 입력한다.
 - 현재 브랜치가 `main`이고 `git status --porcelain`이 비어 있다.
 - `git rev-parse HEAD`가 `TOONSPECTRUM_APPROVED_MAIN_SHA`와 같다.
+- `--skip-build` 사용 시 `dist/.vite/build-meta.json`의 `gitSha`가 현재 `HEAD`와 일치한다.
+- 로컬 배포 원장(`.git/toonstudio-deploy-ledger/cloudflare-static/<sha>.json`)에 동일 SHA 배포 기록이 없으며, 배포 시 Worker 변수 `RELEASE_SHA`에 현재 40자리 SHA를 기록한다.
 
 `dry-run`은 이 승인 조건을 요구하지 않는다.
 

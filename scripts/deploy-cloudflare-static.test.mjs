@@ -52,8 +52,8 @@ require("node:module").syncBuiltinESMExports();
   return { directory, preload, commandLog };
 }
 
-function runDeploy(environment = {}, args = [], files = {}) {
-  const fake = createFakeProcesses();
+function runDeploy(environment = {}, args = [], files = {}, customDirectory = null) {
+  const fake = customDirectory ?? createFakeProcesses();
   for (const [relativePath, content] of Object.entries(files)) {
     const target = join(fake.directory, relativePath);
     mkdirSync(dirname(target), { recursive: true });
@@ -78,7 +78,12 @@ function runDeploy(environment = {}, args = [], files = {}) {
       .filter(Boolean)
       .map((line) => JSON.parse(line))
     : [];
-  return { result, allCommands, commands: allCommands.filter((command) => command.executable === "pnpm") };
+  return {
+    result,
+    allCommands,
+    commands: allCommands.filter((command) => command.executable === "pnpm"),
+    directory: fake.directory,
+  };
 }
 
 function runProduction(environment = {}) {
@@ -248,7 +253,17 @@ describe("Cloudflare production release gates (all child process calls mocked)",
       ["run", "prepare:cloudflare-static-assets"],
       ["exec", "node", "scripts/verify-static-service-worker.mjs"],
       ["run", "sync:cloudflare-r2-assets"],
-      ["exec", "wrangler", "deploy", "--config", "deploy/cloudflare-static/wrangler.jsonc", "--var", "CORE_API_ORIGIN:https://core.example.test"],
+      [
+        "exec",
+        "wrangler",
+        "deploy",
+        "--config",
+        "deploy/cloudflare-static/wrangler.jsonc",
+        "--var",
+        "CORE_API_ORIGIN:https://core.example.test",
+        "--var",
+        `RELEASE_SHA:${approvedSha}`,
+      ],
     ]);
   });
 
@@ -319,7 +334,31 @@ describe("Cloudflare production release gates (all child process calls mocked)",
     expect(commands).toEqual([]);
   });
 
-  it("supports --skip-build, --skip-r2-sync, and --profile while keeping CSP, SW, and R2 dry-run gates", () => {
+  it.each([
+    ["missing build-meta.json", {}, "proving the prebuilt dist SHA"],
+    ["invalid build-meta.json", { "dist/.vite/build-meta.json": "{broken" }, "not valid JSON"],
+    [
+      "stale dist gitSha",
+      { "dist/.vite/build-meta.json": JSON.stringify({ gitSha: "1".repeat(40), buildId: "stale01234567" }) },
+      `to equal HEAD ${approvedSha}`,
+    ],
+  ])("rejects production --skip-build on %s before invoking pnpm", (_label, extraFiles, expectedError) => {
+    const { result, commands } = runDeploy(
+      {},
+      ["--production", "--skip-build"],
+      {
+        ...standingApprovalFile,
+        "dist/index.html": "<!doctype html><title>ok</title>",
+        "dist/.assetsignore": "*.br\n",
+        ...extraFiles,
+      },
+    );
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(expectedError);
+    expect(commands).toEqual([]);
+  });
+
+  it("supports --skip-build, --skip-r2-sync, and --profile when dist/.vite/build-meta.json matches HEAD", () => {
     const { result, commands } = runDeploy(
       { CLOUDFLARE_API_TOKEN: "", CLOUDFLARE_CORE_API_ORIGIN: "" },
       ["--production", "--skip-build", "--skip-r2-sync", "--profile=onpod-current"],
@@ -334,6 +373,7 @@ describe("Cloudflare production release gates (all child process calls mocked)",
         }),
         "dist/index.html": "<!doctype html><title>ok</title>",
         "dist/.assetsignore": "*.br\n",
+        "dist/.vite/build-meta.json": JSON.stringify({ gitSha: approvedSha, buildId: "0123456789ab" }),
       },
     );
     expect(result.status).toBe(0);
@@ -352,7 +392,44 @@ describe("Cloudflare production release gates (all child process calls mocked)",
         "deploy/cloudflare-static/wrangler.jsonc",
         "--var",
         "CORE_API_ORIGIN:https://profile-core.example.test",
+        "--var",
+        `RELEASE_SHA:${approvedSha}`,
       ],
     ]);
+  });
+
+  it("records completed production deploy in .git ledger and blocks duplicate deploy of the same SHA", () => {
+    const fake = createFakeProcesses();
+    mkdirSync(join(fake.directory, ".git"), { recursive: true });
+    const first = runDeploy(
+      {
+        TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL: "cloudflare-static-production",
+        TOONSPECTRUM_APPROVED_MAIN_SHA: approvedSha,
+      },
+      ["--production"],
+      {},
+      fake,
+    );
+    expect(first.result.status).toBe(0);
+    const ledgerFile = join(
+      fake.directory,
+      ".git/toonstudio-deploy-ledger/cloudflare-static",
+      `${approvedSha}.json`,
+    );
+    expect(existsSync(ledgerFile)).toBe(true);
+
+    writeFileSync(fake.commandLog, "");
+    const duplicate = runDeploy(
+      {
+        TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL: "cloudflare-static-production",
+        TOONSPECTRUM_APPROVED_MAIN_SHA: approvedSha,
+      },
+      ["--production"],
+      {},
+      fake,
+    );
+    expect(duplicate.result.status).toBe(1);
+    expect(duplicate.result.stderr).toContain("duplicate production deploy blocked");
+    expect(duplicate.commands).toEqual([]);
   });
 });

@@ -113,10 +113,26 @@ function renderRequest(name, args) {
       .test(arg.replace(/\$\{\{[^}]*\}\}/gu, "workflow-expression")));
 }
 
+function onpodMutation(args) {
+  const [group, subcommand] = commandPositionals(args, ["--output", "-o", "--profile"]);
+  if (group === "exec") return true;
+  if (group === "app") {
+    return ["deploy", "update", "rollback", "rm", "delete", "env", "scale", "restart"].includes(subcommand);
+  }
+  if (group === "static") {
+    return ["deploy", "rm", "delete"].includes(subcommand);
+  }
+  if (group === "db") {
+    return ["create", "rm", "delete", "restore", "rotate-password", "allowlist", "extensions"].includes(subcommand)
+      || (subcommand === "url" && args.includes("--rotate"));
+  }
+  return false;
+}
+
 function providerCommand(words) {
   const [executable, ...args] = words;
   const name = basename(executable ?? "").replace(/@[^@/]+$/u, "");
-  if (["wrangler", "vercel", "vc", "render"].includes(name)
+  if (["wrangler", "vercel", "vc", "render", "onpod"].includes(name)
     && (args.includes("--help") || args.includes("-h"))) return null;
   if (name === "wrangler") {
     const positionals = commandPositionals(args, ["--config", "-c", "--cwd", "--env", "-e"]);
@@ -138,10 +154,23 @@ function providerCommand(words) {
     if ((["deploy", "trigger"].includes(command) || command === "deploys" && subcommand === "create")
       && !dryRun(args)) return "Render";
   }
+  if (name === "onpod" && onpodMutation(args) && !dryRun(args)) {
+    return "Onpod";
+  }
   const script = ["node", "nodejs", "tsx"].includes(name)
     ? args.find((arg) => /\.(?:mjs|mts)$/u.test(arg)) : executable;
-  if (["deploy-cloudflare-static.mjs", "sync-cloudflare-r2-assets.mts"].includes(basename(script ?? ""))
-    && args.includes("--production")) return "Cloudflare";
+  if (
+    [
+      "deploy-cloudflare-static.mjs",
+      "deploy-cloudflare-analytics.mjs",
+      "plan-creator-bundle-deploy.mjs",
+      "sync-cloudflare-r2-assets.mts",
+    ].includes(basename(script ?? ""))
+    && args.includes("--production")
+  ) return "Cloudflare";
+  if (basename(script ?? "") === "provision-cloudflare-free-data-plane.mjs" && args.includes("--apply")) {
+    return "Cloudflare";
+  }
   if (renderRequest(name, args)) return "Render";
   return null;
 }

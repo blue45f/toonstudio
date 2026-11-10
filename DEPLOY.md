@@ -1,5 +1,6 @@
 # ToonStudio 배포 가이드
 
+> **AI·운영자 빠른 진입 정본:** 검증·빌드·배포·상태 확인·롤백의 표준 `deploy:*` 명령과 성공 판정·금지 사항 요약은 [AI·운영자 정본 배포 안내](docs/operations/ai-deployment-quickstart.md)를 먼저 확인합니다.
 > 로컬·클라우드 설정 계약과 읽기 전용 preflight: [배포 환경 계약](docs/operations/deployment-environment-contract.md). 현재 onpod와 generic-separated 예제는 서로 다른 프로필이다.
 > **2026-09-15 사용자 정책:** 자동 빌드·배포 금지. PR 병합은 배포 승인이 아닙니다.
 > 승인한 main SHA의 변경 배포 단위만 각 단위의 승인 범위에 따라 수동 반영합니다.
@@ -91,6 +92,8 @@ pnpm run cloudflare:static:deploy
 - 현재 브랜치가 `main`입니다.
 - 작업 트리가 깨끗합니다(`git status --porcelain`이 비어 있음).
 - `git rev-parse HEAD`가 `TOONSPECTRUM_APPROVED_MAIN_SHA`와 같습니다.
+- `--skip-build`로 사전 빌드 산출물을 재사용할 때는 `dist/.vite/build-meta.json`의 `gitSha`가 현재 `HEAD`와 정확히 일치해야 합니다(구버전 `dist/` 배포 차단).
+- 로컬 배포 원장(`.git/toonstudio-deploy-ledger/cloudflare-static/<sha>.json`)에 동일 SHA 완료 기록이 없어야 하며, 배포 시 Worker 변수 `RELEASE_SHA`에 승인된 40자리 SHA를 함께 바인딩합니다.
 
 ### 상시 승인 모드 (2026-10-13 저장소 소유자 결정)
 

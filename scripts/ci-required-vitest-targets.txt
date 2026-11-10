@@ -851,8 +851,10 @@ scripts/creator-bundle-serving-parity.test.mjs
 scripts/creator-career-confirmation-database-contract.test.mjs
 scripts/creator-hiring-automation-database-contract.test.mjs
 scripts/customer-support-database-contract.test.mjs
+scripts/deploy-canonical-guide.test.mjs
 scripts/deploy-cloudflare-analytics.test.mjs
 scripts/deploy-cloudflare-static.test.mjs
+scripts/deploy-docs-contract.test.mjs
 scripts/deploy-standing-approval.test.mjs
 scripts/free-database-federation.test.mjs
 scripts/free-infrastructure-policy.test.mjs
@@ -874,6 +876,7 @@ scripts/lib/studio-memory-growth-policy.test.mjs
 scripts/lib/studio-p2p-failure-diagnostics.test.ts
 scripts/lib/studio-smart-shape-visible-grid.test.ts
 scripts/lib/studio-verify-shape-readiness.test.tsx
+scripts/multi-env-dynamic-deploy.test.mjs
 scripts/pigment-dependency-install-policy.test.mjs
 scripts/plan-creator-bundle-deploy-cli.test.mjs
 scripts/plan-creator-bundle-deploy.test.mjs

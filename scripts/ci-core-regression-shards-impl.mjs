@@ -87,7 +87,10 @@ export function shardForTarget(target) {
     || target.startsWith("apps/web/src/domains/creator/production-hub/")
     || target === "packages/contracts/src/production-workflow.test.ts"
     || target.startsWith("deploy/cloudflare-analytics/")
+    || target === "scripts/deploy-canonical-guide.test.mjs"
     || target === "scripts/deploy-cloudflare-analytics.test.mjs"
+    || target === "scripts/deploy-docs-contract.test.mjs"
+    || target === "scripts/multi-env-dynamic-deploy.test.mjs"
     || target === "scripts/free-database-federation.test.mjs"
     || target === "scripts/prepare-managed-database-bootstrap.test.mjs"
     || target === "scripts/provision-cloudflare-free-data-plane.test.mjs"

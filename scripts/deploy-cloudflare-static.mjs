@@ -5,8 +5,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { userInfo } from "node:os";
 import { delimiter, dirname, resolve } from "node:path";
 
+import {
+  assertNoDuplicateDeploy,
+  recordCompletedDeploy,
+  resolveLocalDeployLedgerPath,
+} from "./lib/local-deploy-ledger.mjs";
+
 const STANDING_APPROVAL_PATH = "deploy/cloudflare-static/STANDING_APPROVAL.json";
 const ENVIRONMENT_CONTRACT_PATH = "config/deployment/environment-contract.json";
+const BUILD_META_PATH = "dist/.vite/build-meta.json";
 
 const mode = process.argv.includes("--production") ? "production" : "dry-run";
 const skipBuild = process.argv.includes("--skip-build");
@@ -132,6 +139,10 @@ function readStandingApproval() {
   return parsed;
 }
 
+let productionHead = null;
+let productionApprovalMode = null;
+let productionLedgerPath = null;
+
 if (mode === "production") {
   // 상시 승인 모드(2026-10-13 저장소 소유자 결정): 명시적 승인 env가 없으면
   // 저장소에 기록된 상시 승인 파일을 대신 인정하고 HEAD를 승인 SHA로 간주한다.
@@ -159,11 +170,29 @@ if (mode === "production") {
   const status = execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim();
   if (status !== "") fail("production deploy requires a clean worktree");
   const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  if (!/^[0-9a-f]{40}$/u.test(head)) {
+    fail("production deploy requires HEAD to resolve to a lowercase 40-hex SHA");
+  }
   if (approvedSha) {
     if (head !== approvedSha) fail("production deploy requires HEAD to equal TOONSPECTRUM_APPROVED_MAIN_SHA");
+    productionApprovalMode = "manual";
   } else {
     console.log(`standing deploy approval (${standing.grantedAt ?? "undated"}) applies — deploying HEAD ${head} without per-release approval`);
+    productionApprovalMode = "standing";
   }
+  productionHead = head;
+  productionLedgerPath = resolveLocalDeployLedgerPath({
+    cwd: process.cwd(),
+    env: process.env,
+    unit: "cloudflare-static",
+    sha: head,
+  });
+  try {
+    assertNoDuplicateDeploy(productionLedgerPath, "cloudflare-static", head);
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
+  routeVariables.push("--var", `RELEASE_SHA:${head}`);
 }
 
 const staticCatalogSource = process.env.VITE_CATALOG_SOURCE?.trim() || "static";
@@ -171,14 +200,30 @@ if (staticCatalogSource !== "static" && staticCatalogSource !== "api") {
   fail("VITE_CATALOG_SOURCE must be static or api");
 }
 
-if (
-  skipBuild
-  && (
+if (skipBuild) {
+  if (
     !existsSync(resolve(process.cwd(), "dist/index.html"))
     || !existsSync(resolve(process.cwd(), "dist/.assetsignore"))
-  )
-) {
-  fail("--skip-build requires prebuilt dist/index.html and dist/.assetsignore");
+  ) {
+    fail("--skip-build requires prebuilt dist/index.html and dist/.assetsignore");
+  }
+  if (mode === "production") {
+    const buildMetaPath = resolve(process.cwd(), BUILD_META_PATH);
+    if (!existsSync(buildMetaPath)) {
+      fail(`--skip-build in production requires ${BUILD_META_PATH} proving the prebuilt dist SHA`);
+    }
+    let buildMeta;
+    try {
+      buildMeta = JSON.parse(readFileSync(buildMetaPath, "utf8"));
+    } catch {
+      fail(`${BUILD_META_PATH} is not valid JSON; rebuild dist before production deploy`);
+    }
+    if (buildMeta?.gitSha !== productionHead) {
+      fail(
+        `--skip-build requires ${BUILD_META_PATH} gitSha (${String(buildMeta?.gitSha ?? "missing")}) to equal HEAD ${productionHead}`,
+      );
+    }
+  }
 }
 
 const childHome = process.env.HOME?.includes("/.gemini/")
@@ -262,4 +307,13 @@ for (const command of pipelineCommands) {
     env: command.environment ?? baseChildEnvironment,
   });
   if (result.status !== 0) process.exit(result.status ?? 1);
+}
+
+if (mode === "production" && productionHead) {
+  recordCompletedDeploy(productionLedgerPath, {
+    unit: "cloudflare-static",
+    sha: productionHead,
+    approvalMode: productionApprovalMode,
+    coreOrigin,
+  });
 }

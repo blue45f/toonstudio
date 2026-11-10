@@ -6,6 +6,12 @@ import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import {
+  assertNoDuplicateDeploy,
+  recordCompletedDeploy,
+  resolveLocalDeployLedgerPath,
+} from "./lib/local-deploy-ledger.mjs";
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u;
 
@@ -53,6 +59,18 @@ export function analyticsDeploymentSecrets(environment) {
 
 export function deployAnalyticsWorker(config, environment, production, runner = spawnSync) {
   const secrets = production ? analyticsDeploymentSecrets(environment) : undefined;
+  const releaseSha = production ? config?.vars?.RELEASE_SHA : null;
+  const shouldUseRepoGitLedger = runner === spawnSync || Boolean(environment.TOONSPECTRUM_DEPLOY_LEDGER_DIR?.trim());
+  const ledgerPath = production && releaseSha && shouldUseRepoGitLedger
+    ? resolveLocalDeployLedgerPath({
+        cwd: ROOT,
+        env: environment,
+        unit: "cloudflare-analytics",
+        sha: releaseSha,
+      })
+    : null;
+  assertNoDuplicateDeploy(ledgerPath, "cloudflare-analytics", releaseSha);
+
   const directory = mkdtempSync(resolve(tmpdir(), "toonstudio-analytics-deploy-"));
   try {
     const path = resolve(directory, "wrangler.json");
@@ -69,6 +87,13 @@ export function deployAnalyticsWorker(config, environment, production, runner = 
     delete childEnvironment.ANALYTICS_RPC_TOKEN;
     const result = runner("pnpm", args, { cwd: ROOT, stdio: "inherit", env: childEnvironment });
     if (result.status !== 0) throw new Error("분석 Worker 빌드/배포 실패. 자동 재시도하지 않았습니다.");
+    if (ledgerPath && releaseSha) {
+      recordCompletedDeploy(ledgerPath, {
+        unit: "cloudflare-analytics",
+        sha: releaseSha,
+        approvalMode: "manual",
+      });
+    }
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

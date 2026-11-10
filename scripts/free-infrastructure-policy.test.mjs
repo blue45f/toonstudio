@@ -236,6 +236,15 @@ describe("CI production publisher policy", () => {
     ["Render", "curl --json '{}' https://api.render.com/v1/services/srv-fixture/deploys"],
     ["Render", "wget --post-data='{}' https://api.render.com/v1/services/srv-fixture/deploys"],
     ["Render", "render deploys create srv-fixture --confirm"],
+    ["Cloudflare", "node ./scripts/deploy-cloudflare-analytics.mjs --production"],
+    ["Cloudflare", "node ./scripts/plan-creator-bundle-deploy.mjs --production"],
+    ["Cloudflare", "node ./scripts/provision-cloudflare-free-data-plane.mjs --apply"],
+    ["Onpod", "onpod app deploy --name toonstudio-api --image ghcr.io/blue45f/toonspectrum-core-api:fixture"],
+    ["Onpod", "onpod app update toonstudio-api --image ghcr.io/blue45f/toonspectrum-core-api:fixture"],
+    ["Onpod", "onpod app rollback toonstudio-api"],
+    ["Onpod", "onpod app env set toonstudio-api KEY=value"],
+    ["Onpod", "onpod db rotate-password toonstudio-db"],
+    ["Onpod", "onpod exec toonstudio-api -- sh -c 'id'"],
   ];
 
   for (const [label, trigger] of [
@@ -262,6 +271,10 @@ describe("CI production publisher policy", () => {
     "vercel build --prod", "vercel inspect https://fixture.vercel.app",
     "vercel --scope fixture build --prod", "vercel inspect deploy",
     "render deploys logs srv-fixture",
+    "onpod whoami",
+    "onpod app ls",
+    "onpod db ls",
+    "node scripts/deploy-cloudflare-analytics.mjs --dry-run",
     "curl -H 'X-Audit: POST RENDER_DEPLOY_HOOK' https://api.render.com/v1/services/srv-fixture/deploys",
     "render deploys list srv-fixture", "curl -I https://core.example.test/api/health/live",
     "curl https://api.render.com/v1/services/srv-fixture/deploys",

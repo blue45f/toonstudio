@@ -42,6 +42,45 @@ jobs:
           test "$(git rev-parse FETCH_HEAD)" = "$RELEASE_SHA"
           test -z "$(git status --porcelain)"
 
+      - name: Require green core and verify checks on release SHA
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          response="$(curl --fail-with-body --silent --show-error --retry 3 \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100")"
+          for gate in core verify; do
+            conclusion="$(jq -r --arg gate "$gate" '
+              [ .check_runs[]
+                | select(.name == $gate and .app.slug == "github-actions" and .status == "completed")
+              ] | sort_by(.id) | last | .conclusion // "missing"
+            ' <<< "$response")"
+            if [[ "$conclusion" != "success" ]]; then
+              echo "::error::Required check '$gate' is not green on $RELEASE_SHA (conclusion=$conclusion)."
+              exit 1
+            fi
+          done
+
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refuse duplicate immutable image release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker buildx imagetools inspect "${IMAGE_NAME}:${RELEASE_SHA}" >/dev/null 2>&1; then
+            echo "::error::Immutable image ${IMAGE_NAME}:${RELEASE_SHA} already exists on GHCR; duplicate release is forbidden."
+            exit 1
+          fi
+
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -83,13 +122,6 @@ jobs:
           printf '%s\n' "$RELEASE_SHA" > .release/image/RELEASE_SHA
           test -s .release/image/apps/api/dist/apps/api/src/main.js
 
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build and publish immutable API image
         id: image
         uses: docker/build-push-action@v7
@@ -115,6 +147,7 @@ jobs:
             echo "sha=$RELEASE_SHA"
             echo "image=${IMAGE_NAME}:${RELEASE_SHA}"
             echo "digest=${{ steps.image.outputs.digest }}"
+            echo "production_deployed=false"
           } | tee artifacts/api-container-release/image.txt
 
       - name: Verify anonymous image pull metadata

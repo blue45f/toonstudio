@@ -1,6 +1,7 @@
 # 배포 단위 안내
 
-- 상태: **current** — 저장소 탐색 안내(2026-11-04).
+- 상태: **current** — 저장소 탐색 안내(2026-11-08).
+- 빠른 진입 명령(검증·빌드·배포·상태 확인·롤백)과 금지 사항은 [AI·운영자 정본 배포 안내](../docs/operations/ai-deployment-quickstart.md)를 먼저 본다.
 - 운영 자원과 마지막 공급자 조회 기록은 [인프라 지도](../docs/operations/infrastructure-map.md)가 정본이다. 아래 상태는 그 기록과 저장소 설정을 구분하며 이번 세션의 실시간 공급자 조회를 뜻하지 않는다.
 - 승인 범위는 루트 `AGENTS.md`, `DEPLOY.md`, `STANDING_APPROVAL.json`을 따른다. 이 인덱스는 승인 범위를 바꾸지 않는다.
 

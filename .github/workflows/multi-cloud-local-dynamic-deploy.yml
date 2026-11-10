@@ -1,4 +1,4 @@
-name: Multi-Cloud & Local Dynamic Matrix Deploy
+name: Multi-Cloud & Local Dynamic Matrix Plan (Offline Preview)
 
 on:
   workflow_dispatch:
@@ -9,15 +9,10 @@ on:
         default: "web,character-lab,brush-lab,api"
         type: string
       targets:
-        description: "쉼표로 구분된 배포 타겟 환경 (local-pnpm-preview,local-docker-compose,cloudflare-edge-static,onpod-container-cloud,aws-ecs-cloudfront,gcp-cloud-run,self-hosted-k8s)"
+        description: "쉼표로 구분된 배포 계획 프리뷰 타겟 환경 (실제 원격 배포는 수행하지 않음)"
         required: false
         default: "local-docker-compose,cloudflare-edge-static,onpod-container-cloud,aws-ecs-cloudfront,gcp-cloud-run,self-hosted-k8s"
         type: string
-      execute_live_deploy:
-        description: "드라이런/번들 아티팩트 생성 후 실제 클라우드 원격 배포 실행 여부"
-        required: false
-        default: false
-        type: boolean
   push:
     branches:
       - main
@@ -32,7 +27,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: multi-cloud-local-dynamic-deploy-${{ github.ref }}
@@ -135,7 +129,7 @@ jobs:
         run: ${{ matrix.workspace.verifyCommand }}
 
   emit-multi-cloud-bundles:
-    name: "Stage 3 · Target Bundle (${{ matrix.target.id }})"
+    name: "Stage 3 · Offline Plan Bundle (${{ matrix.target.id }})"
     needs:
       - plan-and-verify-matrix
       - verify-and-package-workspaces
@@ -148,7 +142,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Generate Target Environment Deployment Bundle (${{ matrix.target.id }})
+      - name: Generate Offline Deployment Plan Preview Bundle (${{ matrix.target.id }})
         env:
           TARGET_ID: ${{ matrix.target.id }}
           TARGET_CATEGORY: ${{ matrix.target.category }}
@@ -157,21 +151,23 @@ jobs:
           mkdir -p /tmp/deploy-bundle-${TARGET_ID}
           cp deploy/multi-env/docker-compose.local.yml /tmp/deploy-bundle-${TARGET_ID}/
           cp deploy/multi-env/k8s-portable-stack.yaml /tmp/deploy-bundle-${TARGET_ID}/
-          cat <<EOF > /tmp/deploy-bundle-${TARGET_ID}/deploy-receipt.json
+          cat <<EOF > /tmp/deploy-bundle-${TARGET_ID}/deploy-plan-preview.json
           {
             "targetId": "${TARGET_ID}",
             "category": "${TARGET_CATEGORY}",
             "commitSha": "${GITHUB_SHA}",
             "commandPreview": "${TARGET_CMD}",
-            "ready": true
+            "status": "offline-plan-only",
+            "deployed": false,
+            "deploymentAuthorized": false
           }
           EOF
-          echo "### Target \`${TARGET_ID}\` (${TARGET_CATEGORY})" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Command: \`${TARGET_CMD}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Target \`${TARGET_ID}\` (${TARGET_CATEGORY}) — Offline Plan Preview Only (Not Deployed)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Command preview: \`${TARGET_CMD}\`" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload Portable Environment Bundle (${{ matrix.target.id }})
+      - name: Upload Portable Environment Plan Bundle (${{ matrix.target.id }})
         uses: actions/upload-artifact@v7
         with:
-          name: deploy-bundle-${{ matrix.target.id }}
+          name: deploy-plan-bundle-${{ matrix.target.id }}
           path: /tmp/deploy-bundle-${{ matrix.target.id }}
           retention-days: 14

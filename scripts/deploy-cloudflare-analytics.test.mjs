@@ -1,5 +1,6 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { analyticsDeploymentConfig, analyticsDeploymentSecrets, deployAnalyticsWorker } from "./deploy-cloudflare-analytics.mjs";
 
@@ -75,6 +76,29 @@ describe("분석 Worker 수동 배포 경계", () => {
     else expect(() => deployAnalyticsWorker(config, env, true, runner)).toThrow("자동 재시도하지 않았습니다");
     expect(runner).toHaveBeenCalledTimes(1);
     expect(existsSync(directory)).toBe(false);
+  });
+  it("동일 SHA 운영 배포가 이미 기록돼 있으면 외부 명령 실행 전에 차단한다", () => {
+    const ledgerRoot = mkdtempSync(join(tmpdir(), "toonstudio-analytics-ledger-"));
+    try {
+      const token = "local-analytics-deployment-test-value";
+      const env = {
+        ...environment,
+        TRAFFIC_ANALYTICS_D1_RPC_TOKEN: token,
+        TOONSPECTRUM_DEPLOY_LEDGER_DIR: ledgerRoot,
+      };
+      const config = analyticsDeploymentConfig(env, true, git);
+      const runner = vi.fn(() => ({ status: 0 }));
+      deployAnalyticsWorker(config, env, true, runner);
+      expect(runner).toHaveBeenCalledTimes(1);
+
+      const secondRunner = vi.fn(() => ({ status: 0 }));
+      expect(() => deployAnalyticsWorker(config, env, true, secondRunner)).toThrow(
+        "duplicate production deploy blocked",
+      );
+      expect(secondRunner).not.toHaveBeenCalled();
+    } finally {
+      rmSync(ledgerRoot, { recursive: true, force: true });
+    }
   });
   it("dry-run은 환경에 비밀이 있어도 secrets 파일을 만들지 않는다", () => {
     const runner = vi.fn((_command, args) => {

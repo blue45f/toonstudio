@@ -1,16 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * ToonStudio 다이나믹 멀티 클라우드 & 로컬 통합 배포 오케스트레이터 (Multi-Cloud & Local Dynamic Deploy Planner)
+ * ToonStudio 다이나믹 멀티 클라우드 & 로컬 통합 배포 계획 생성기 (Offline Plan Preview Only)
  *
- * 지원 배포 타겟 환경 (7종):
- * - local-pnpm-preview: Docker 없이 로컬 머신에서 Web / Character Lab / Brush Lab / API 즉시 기동
- * - local-docker-compose: 로컬 및 단일 VM용 Docker Compose 풀스택(Web + Character Lab + Brush Lab + API + Postgres)
- * - cloudflare-edge-static: Cloudflare Workers 정적 에셋 + R2 번들 배포 (deployment-preflight 연동)
- * - onpod-container-cloud: GHCR 컨테이너 이미지 빌드 및 Onpod 클라우드 런타임 배포
- * - aws-ecs-cloudfront: AWS S3 + CloudFront 정적 호스팅 및 ECS Fargate API 배포 매니페스트
- * - gcp-cloud-run: Google Cloud Run 무서버 컨테이너 + Cloud CDN 배포 매니페스트
- * - self-hosted-k8s: 표준 Kubernetes Deployment/Service/Ingress 매니페스트 (자체 클라우드/온프레미스 호환)
+ * 이 스크립트는 실제 원격 클라우드 배포를 실행하지 않으며(`deployed: false`, `deploymentAuthorized: false`),
+ * 워크스페이스 검증 매트릭스와 환경별 참조 명령 프리뷰만 생성한다.
+ * 실제 운영 배포 권위는 Cloudflare(`toonspectrum-web`)와 서울 onpod(`toonstudio-api`·`toonstudio-db`)뿐이며
+ * `DEPLOY.md`와 `docs/operations/infrastructure-map.md`의 승인·SHA 절차를 따른다.
  */
 
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -40,7 +36,7 @@ export const SUPPORTED_DEPLOY_TARGETS = Object.freeze([
   {
     id: "cloudflare-edge-static",
     category: "cloud-edge",
-    labelKo: "Cloudflare Workers 정적 에셋 + R2 글로벌 엣지",
+    labelKo: "Cloudflare Workers 정적 에셋 + R2 글로벌 엣지 (운영 권위)",
     requiresApprovalSha: true,
     supportsOffline: false,
     estimatedBootSec: 35,
@@ -49,7 +45,7 @@ export const SUPPORTED_DEPLOY_TARGETS = Object.freeze([
   {
     id: "onpod-container-cloud",
     category: "cloud-container",
-    labelKo: "Onpod 컨테이너 클라우드 (`toonstudio-api` / `toonstudio-db`)",
+    labelKo: "Onpod 컨테이너 클라우드 (`toonstudio-api` / `toonstudio-db`, 별도 승인 필수)",
     requiresApprovalSha: true,
     supportsOffline: false,
     estimatedBootSec: 45,
@@ -59,8 +55,8 @@ export const SUPPORTED_DEPLOY_TARGETS = Object.freeze([
   {
     id: "aws-ecs-cloudfront",
     category: "cloud-hyperscaler",
-    labelKo: "AWS ECS Fargate + S3 / CloudFront 하이브리드 배포",
-    requiresApprovalSha: false,
+    labelKo: "AWS ECS Fargate + S3 / CloudFront 하이브리드 이식성 참조 (미운영·별도 승인 대상)",
+    requiresApprovalSha: true,
     supportsOffline: false,
     estimatedBootSec: 60,
     commandPreview:
@@ -69,8 +65,8 @@ export const SUPPORTED_DEPLOY_TARGETS = Object.freeze([
   {
     id: "gcp-cloud-run",
     category: "cloud-hyperscaler",
-    labelKo: "Google Cloud Run 컨테이너 + Cloud Storage CDN 배포",
-    requiresApprovalSha: false,
+    labelKo: "Google Cloud Run 컨테이너 + Cloud Storage CDN 이식성 참조 (미운영·별도 승인 대상)",
+    requiresApprovalSha: true,
     supportsOffline: false,
     estimatedBootSec: 50,
     commandPreview:
@@ -79,11 +75,11 @@ export const SUPPORTED_DEPLOY_TARGETS = Object.freeze([
   {
     id: "self-hosted-k8s",
     category: "cloud-portable",
-    labelKo: "표준 Kubernetes (K8s / Helm / K3s) 멀티 클라우드 호환 배포",
-    requiresApprovalSha: false,
+    labelKo: "표준 Kubernetes (K8s / Helm / K3s) 멀티 클라우드 호환 참조 매니페스트",
+    requiresApprovalSha: true,
     supportsOffline: true,
     estimatedBootSec: 30,
-    commandPreview: "kubectl apply -f deploy/multi-env/k8s-portable-stack.yaml",
+    commandPreview: "kubectl apply -f deploy/multi-env/k8s-portable-stack.yaml --dry-run=client",
   },
 ]);
 
@@ -167,6 +163,9 @@ export function buildDynamicDeployMatrix(options = {}) {
     schemaVersion: 1,
     commitSha,
     generatedAt: options.generatedAt ?? "2026-11-09T00:00:00.000Z",
+    executionStatus: "offline-plan-only",
+    deployed: false,
+    deploymentAuthorized: false,
     parallelStrategy: {
       failFast: false,
       maxParallelWorkspaces: workspaces.length,
@@ -191,7 +190,7 @@ export function buildDynamicDeployMatrix(options = {}) {
         commandPreview: t.commandPreview,
       })),
     },
-    summaryKo: `병렬 워크스페이스 ${workspaces.length}종(${workspaces.map((w) => w.id).join(", ")}) × 배포 환경 ${targets.length}종(${targets.map((t) => t.id).join(", ")}) 다이나믹 매트릭스 준비 완료`,
+    summaryKo: `병렬 워크스페이스 ${workspaces.length}종(${workspaces.map((w) => w.id).join(", ")}) × 배포 환경 ${targets.length}종(${targets.map((t) => t.id).join(", ")}) 오프라인 계획 프리뷰 준비 완료 (실제 배포 아님)`,
   });
 }
 
@@ -211,9 +210,10 @@ export function formatDynamicDeployPlanMarkdown(plan) {
     .join("\n");
 
   return [
-    "# ToonStudio 다이나믹 멀티 클라우드 & 로컬 병렬 배포 플랜",
+    "# ToonStudio 다이나믹 멀티 클라우드 & 로컬 병렬 배포 플랜 (오프라인 프리뷰)",
     "",
     `- **요약:** ${plan.summaryKo}`,
+    `- **실행 상태:** \`${plan.executionStatus}\` (\`deployed: false\`, \`deploymentAuthorized: false\` — 운영 반영 증거가 아님)`,
     `- **기준 커밋:** \`${plan.commitSha}\``,
     "",
     "## 1. 병렬 빌드·Verify AI 검증 워크스페이스 매트릭스",
