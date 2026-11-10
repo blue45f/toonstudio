@@ -9,6 +9,7 @@ export {
 } from './schema.mjs';
 
 export {
+  foldPathCase,
   inspectAndNormalizeAssetPath,
   resolveSafeFixtureFilePath,
 } from './pathSafety.mjs';
@@ -18,6 +19,7 @@ export {
   computeStringSha256,
   formatStudioChecksum,
   parseExpectedSha256,
+  parseDeterministicCreatedAt,
   normalizeProjectCollections,
   validateProject,
 } from './validator.mjs';

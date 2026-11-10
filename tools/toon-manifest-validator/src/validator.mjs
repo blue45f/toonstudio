@@ -3,6 +3,7 @@ import {
   ERROR_CODES,
 } from './schema.mjs';
 import {
+  foldPathCase,
   inspectAndNormalizeAssetPath,
   resolveSafeFixtureFilePath,
 } from './pathSafety.mjs';
@@ -11,6 +12,7 @@ import {
   computeStringSha256,
   formatStudioChecksum,
   parseExpectedSha256,
+  parseDeterministicCreatedAt,
   isNonEmptyString,
   validateId,
   normalizeProjectCollections,
@@ -21,6 +23,7 @@ export {
   computeStringSha256,
   formatStudioChecksum,
   parseExpectedSha256,
+  parseDeterministicCreatedAt,
   normalizeProjectCollections,
 };
 
@@ -59,9 +62,10 @@ export function validateProject(rawInput, options = {}) {
     });
   }
 
-  // 2. Project metadata check
+  // 2. Project metadata & deterministic timestamp check
   const project = data.project;
   let projectId = null;
+  let normalizedCreatedAt = '2026-11-10T00:00:00.000Z';
   if (!project || typeof project !== 'object' || Array.isArray(project)) {
     errors.push({
       code: ERROR_CODES.MISSING_PROJECT_META,
@@ -82,6 +86,18 @@ export function validateProject(rawInput, options = {}) {
         path: 'project.title',
         message: 'Project title must be a non-empty string.',
       });
+    }
+    const createdAtCheck = parseDeterministicCreatedAt(project.createdAt);
+    if (!createdAtCheck.valid) {
+      errors.push({
+        code: ERROR_CODES.INVALID_PROJECT_TIMESTAMP,
+        entityType: 'project',
+        entityId: project.id ?? null,
+        path: 'project.createdAt',
+        message: `Project createdAt "${project.createdAt}" must be an ISO-8601 timestamp with an explicit timezone (e.g., "Z" or "+09:00").`,
+      });
+    } else {
+      normalizedCreatedAt = createdAtCheck.canonicalIso;
     }
   }
 
@@ -319,13 +335,18 @@ export function validateProject(rawInput, options = {}) {
     }
   }
 
-  // 6. Validate Assets & Normalization Collisions
+  // 6. Validate Assets via 3-Stage Barrier (Guarantees 0 file reads until ALL static path,
+  //    normalization-collision, and symlink-containment checks complete across ALL assets)
   const assetById = new Map();
   const canonicalPathOwners = new Map(); // canonicalKey -> { assetId, rawPath, normalizedPath, idx }
   const normalizedAssetRecords = new Map(); // assetId -> normalized record
+  const stagedAssets = [];
+  let hasStaticPathOrCollisionError = false;
 
+  // Stage 6A: Pure in-memory static metadata, digest syntax, path safety & cross-asset collision pass
   assets.forEach((asset, idx) => {
     if (!asset || typeof asset !== 'object') {
+      hasStaticPathOrCollisionError = true;
       errors.push({
         code: ERROR_CODES.INVALID_COLLECTION_TYPE,
         entityType: 'asset',
@@ -378,24 +399,27 @@ export function validateProject(rawInput, options = {}) {
 
     const rawAssetPath = asset.relativePath ?? asset.path ?? asset.displayPath;
     const pathInspection = inspectAndNormalizeAssetPath(rawAssetPath, asset.type);
-    for (const issue of pathInspection.issues) {
-      errors.push({
-        code: issue.code,
-        entityType: 'asset',
-        entityId: asset.id ?? `(index:${idx})`,
-        path: `assets[${idx}].relativePath`,
-        message: issue.message,
-      });
+    if (!pathInspection.valid) {
+      hasStaticPathOrCollisionError = true;
+      for (const issue of pathInspection.issues) {
+        errors.push({
+          code: issue.code,
+          entityType: 'asset',
+          entityId: asset.id ?? `(index:${idx})`,
+          path: `assets[${idx}].relativePath`,
+          message: issue.message,
+        });
+      }
     }
 
     if (pathInspection.canonicalKey) {
       if (canonicalPathOwners.has(pathInspection.canonicalKey)) {
+        hasStaticPathOrCollisionError = true;
         const prev = canonicalPathOwners.get(pathInspection.canonicalKey);
         let collisionCode = ERROR_CODES.NORMALIZATION_COLLISION_PATH;
         if (
-          prev.rawPath.normalize('NFC') !== rawAssetPath.normalize('NFC') &&
-          prev.rawPath.normalize('NFC').toLowerCase() ===
-            rawAssetPath.normalize('NFC').toLowerCase()
+          prev.normalizedPath !== pathInspection.normalizedPath &&
+          foldPathCase(prev.normalizedPath) === foldPathCase(pathInspection.normalizedPath)
         ) {
           collisionCode = ERROR_CODES.NORMALIZATION_COLLISION_CASE;
         } else if (
@@ -422,53 +446,80 @@ export function validateProject(rawInput, options = {}) {
       }
     }
 
-    // Verify physical file inside fixtureDir if requested and path passed static safety checks
-    let fileVerification = null;
-    if (verifyFiles && fixtureDir && pathInspection.valid) {
-      const resolved = resolveSafeFixtureFilePath(fixtureDir, pathInspection.normalizedPath);
+    stagedAssets.push({
+      asset,
+      idx,
+      validId,
+      assetTitle,
+      rawAssetPath,
+      parsedExpectedSha256,
+      pathInspection,
+      resolvedFile: null,
+      fileVerification: null,
+    });
+  });
+
+  // Stage 6B: Filesystem containment & lstat/readlink verification (still 0 file reads)
+  let hasContainmentError = false;
+  if (verifyFiles && fixtureDir && !hasStaticPathOrCollisionError) {
+    for (const item of stagedAssets) {
+      const resolved = resolveSafeFixtureFilePath(fixtureDir, item.pathInspection.normalizedPath);
       if (!resolved.safe) {
+        hasContainmentError = true;
         errors.push({
           code: resolved.code,
           entityType: 'asset',
-          entityId: asset.id ?? `(index:${idx})`,
-          path: `assets[${idx}].relativePath`,
+          entityId: item.asset.id ?? `(index:${item.idx})`,
+          path: `assets[${item.idx}].relativePath`,
           message: resolved.message,
         });
       } else {
-        const actualSha256 = computeFileSha256(resolved.resolvedPath);
-        if (parsedExpectedSha256 !== null && parsedExpectedSha256 !== actualSha256.toLowerCase()) {
-          errors.push({
-            code: ERROR_CODES.ASSET_SHA256_MISMATCH,
-            entityType: 'asset',
-            entityId: asset.id ?? `(index:${idx})`,
-            path: `assets[${idx}].expectedSha256`,
-            message: `SHA-256 mismatch for asset "${asset.id}" ("${pathInspection.normalizedPath}"): expected ${parsedExpectedSha256}, got ${actualSha256}.`,
-          });
-        }
-        fileVerification = {
-          sizeBytes: resolved.sizeBytes,
-          sha256: actualSha256,
-        };
+        item.resolvedFile = resolved;
       }
     }
+  }
 
-    if (validId) {
-      const finalSha256 = fileVerification?.sha256 ?? parsedExpectedSha256 ?? null;
-      normalizedAssetRecords.set(asset.id, {
-        id: asset.id,
-        type: asset.type,
-        title: typeof assetTitle === 'string' ? assetTitle.trim() : '',
-        originalPath: rawAssetPath,
-        normalizedPath: pathInspection.normalizedPath,
-        canonicalKey: pathInspection.canonicalKey,
-        extension: pathInspection.extension,
-        sizeBytes: fileVerification?.sizeBytes ?? null,
+  // Stage 6C: Physical file reading & SHA-256 hashing ONLY when ALL path, collision & containment checks passed
+  if (verifyFiles && fixtureDir && !hasStaticPathOrCollisionError && !hasContainmentError) {
+    for (const item of stagedAssets) {
+      const actualSha256 = computeFileSha256(item.resolvedFile.resolvedPath);
+      if (
+        item.parsedExpectedSha256 !== null &&
+        item.parsedExpectedSha256 !== actualSha256.toLowerCase()
+      ) {
+        errors.push({
+          code: ERROR_CODES.ASSET_SHA256_MISMATCH,
+          entityType: 'asset',
+          entityId: item.asset.id ?? `(index:${item.idx})`,
+          path: `assets[${item.idx}].expectedSha256`,
+          message: `SHA-256 mismatch for asset "${item.asset.id}" ("${item.pathInspection.normalizedPath}"): expected ${item.parsedExpectedSha256}, got ${actualSha256}.`,
+        });
+      }
+      item.fileVerification = {
+        sizeBytes: item.resolvedFile.sizeBytes,
+        sha256: actualSha256,
+      };
+    }
+  }
+
+  for (const item of stagedAssets) {
+    if (item.validId && !normalizedAssetRecords.has(item.asset.id)) {
+      const finalSha256 = item.fileVerification?.sha256 ?? item.parsedExpectedSha256 ?? null;
+      normalizedAssetRecords.set(item.asset.id, {
+        id: item.asset.id,
+        type: item.asset.type,
+        title: typeof item.assetTitle === 'string' ? item.assetTitle.trim().normalize('NFC') : '',
+        originalPath: item.rawAssetPath,
+        normalizedPath: item.pathInspection.normalizedPath,
+        canonicalKey: item.pathInspection.canonicalKey,
+        extension: item.pathInspection.extension,
+        sizeBytes: item.fileVerification?.sizeBytes ?? null,
         sha256: finalSha256,
         checksum: finalSha256 ? formatStudioChecksum(finalSha256) : null,
         referencedByPanels: [],
       });
     }
-  });
+  }
 
   // 7. Validate Panels
   const panelById = new Map();
@@ -640,9 +691,10 @@ export function validateProject(rawInput, options = {}) {
       project: project
         ? {
             id: project.id,
-            title: typeof project.title === 'string' ? project.title.trim() : '',
-            author: typeof project.author === 'string' ? project.author.trim() : null,
-            createdAt: typeof project.createdAt === 'string' ? project.createdAt : '2026-11-10T00:00:00.000Z',
+            title: typeof project.title === 'string' ? project.title.trim().normalize('NFC') : '',
+            author:
+              typeof project.author === 'string' ? project.author.trim().normalize('NFC') : null,
+            createdAt: normalizedCreatedAt,
           }
         : null,
       episodes,

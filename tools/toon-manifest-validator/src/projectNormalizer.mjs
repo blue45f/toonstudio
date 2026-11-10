@@ -49,6 +49,77 @@ export function validateId(id, entityType, index, errors) {
   return true;
 }
 
+function compareCodePoints(a, b) {
+  const sa = String(a ?? '');
+  const sb = String(b ?? '');
+  if (sa === sb) return 0;
+  const iterA = sa[Symbol.iterator]();
+  const iterB = sb[Symbol.iterator]();
+  while (true) {
+    const nextA = iterA.next();
+    const nextB = iterB.next();
+    if (nextA.done && nextB.done) return 0;
+    if (nextA.done) return -1;
+    if (nextB.done) return 1;
+    const cpA = nextA.value.codePointAt(0);
+    const cpB = nextB.value.codePointAt(0);
+    if (cpA !== cpB) return cpA < cpB ? -1 : 1;
+  }
+}
+
+const STRICT_ISO_WITH_TZ_RE =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-](\d{2}):(\d{2}))$/i;
+
+function daysInUtcMonth(year, month) {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/**
+ * Parses an explicit-timezone ISO-8601 timestamp into canonical UTC ISO-8601 (`YYYY-MM-DDTHH:mm:ss.sssZ`).
+ * Rejects timezone-less strings (e.g., "2026-11-10T09:00:00") so host `TZ` can never alter manifest hashes.
+ */
+export function parseDeterministicCreatedAt(rawCreatedAt) {
+  if (rawCreatedAt === undefined || rawCreatedAt === null) {
+    return { valid: true, canonicalIso: '2026-11-10T00:00:00.000Z' };
+  }
+  if (typeof rawCreatedAt !== 'string') {
+    return { valid: false, canonicalIso: null };
+  }
+  const trimmed = rawCreatedAt.trim();
+  const match = STRICT_ISO_WITH_TZ_RE.exec(trimmed);
+  if (!match) {
+    return { valid: false, canonicalIso: null };
+  }
+  const year = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  const day = Number.parseInt(match[3], 10);
+  const hour = Number.parseInt(match[4], 10);
+  const minute = Number.parseInt(match[5], 10);
+  const second = Number.parseInt(match[6], 10);
+  const tzToken = match[8];
+  const offHour = match[9] !== undefined ? Number.parseInt(match[9], 10) : 0;
+  const offMinute = match[10] !== undefined ? Number.parseInt(match[10], 10) : 0;
+
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > daysInUtcMonth(year, month) ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59 ||
+    (tzToken.toUpperCase() !== 'Z' && (offHour > 23 || offMinute > 59))
+  ) {
+    return { valid: false, canonicalIso: null };
+  }
+
+  const parsedMs = Date.parse(trimmed);
+  if (!Number.isFinite(parsedMs)) {
+    return { valid: false, canonicalIso: null };
+  }
+  return { valid: true, canonicalIso: new Date(parsedMs).toISOString() };
+}
+
 /**
  * Supports three ToonStudio project JSON representations and normalizes them into
  * a unified relational representation `{ schemaVersion, project, episodes, scenes, panels, assets, graphIntegrityIssues }`:
@@ -83,7 +154,7 @@ export function normalizeProjectCollections(raw) {
     const episodes = [];
     const scenes = [];
     const panels = [];
-    const panelAssetIdsMap = new Map(); // panelId -> assetIds[]
+    const panelAssetUsagesMap = new Map(); // panelId -> { assetId, usageId }[]
 
     if (Array.isArray(raw.assetUsages)) {
       for (const usage of raw.assetUsages) {
@@ -100,12 +171,28 @@ export function normalizeProjectCollections(raw) {
         }
         const targetPanelId = scope?.panelId ?? usage.panelId;
         if (targetPanelId && usage.assetId) {
-          if (!panelAssetIdsMap.has(targetPanelId)) {
-            panelAssetIdsMap.set(targetPanelId, []);
+          if (!panelAssetUsagesMap.has(targetPanelId)) {
+            panelAssetUsagesMap.set(targetPanelId, []);
           }
-          panelAssetIdsMap.get(targetPanelId).push(usage.assetId);
+          panelAssetUsagesMap.get(targetPanelId).push({
+            assetId: usage.assetId,
+            usageId: usage.id ?? '',
+          });
         }
       }
+    }
+
+    const panelAssetIdsMap = new Map();
+    for (const [panelId, usageList] of panelAssetUsagesMap.entries()) {
+      const sortedUsages = [...usageList].sort(
+        (u, v) =>
+          compareCodePoints(u.assetId, v.assetId) ||
+          compareCodePoints(u.usageId, v.usageId)
+      );
+      panelAssetIdsMap.set(
+        panelId,
+        sortedUsages.map((u) => u.assetId)
+      );
     }
 
     raw.nodes.forEach((node, idx) => {
@@ -125,7 +212,9 @@ export function normalizeProjectCollections(raw) {
 
       if (scope && typeof scope === 'object') {
         if (
-          (scope.sequenceId !== undefined || scope.sceneId !== undefined || scope.panelId !== undefined) &&
+          (scope.sequenceId !== undefined ||
+            scope.sceneId !== undefined ||
+            scope.panelId !== undefined) &&
           scope.episodeId === undefined
         ) {
           graphIntegrityIssues.push({
@@ -229,7 +318,12 @@ export function normalizeProjectCollections(raw) {
     project:
       raw.project ??
       (raw.projectId !== undefined
-        ? { id: raw.projectId, title: raw.title, author: raw.author }
+        ? {
+            id: raw.projectId,
+            title: raw.title,
+            author: raw.author,
+            createdAt: raw.createdAt,
+          }
         : raw.project),
     episodes: rawEpisodes ? episodes : raw.episodes,
     scenes: hasExplicitScenes ? raw.scenes : scenes,
@@ -238,8 +332,3 @@ export function normalizeProjectCollections(raw) {
     graphIntegrityIssues,
   };
 }
-
-/**
- * Validates a ToonStudio project object and (when fixtureDir is provided) verifies
- * all referenced asset files inside fixtureDir.
- */

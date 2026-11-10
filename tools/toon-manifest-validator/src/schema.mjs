@@ -51,7 +51,7 @@ export const ALL_ALLOWED_EXTENSIONS = Object.freeze(
 );
 
 export const SENSITIVE_PATH_PATTERNS = Object.freeze([
-  /(^|\/)\.env(\..+)?$/i,
+  /(^|\/)\.env(\.[^/]*)?(\/|$)/i,
   /(^|\/)\.git(\/|$)/i,
   /(^|\/)\.ssh(\/|$)/i,
   /(^|\/)\.toonstudio-secrets(\/|$)/i,
@@ -73,6 +73,7 @@ export const ERROR_CODES = Object.freeze({
   INVALID_ROOT_OBJECT: 'INVALID_ROOT_OBJECT',
   UNSUPPORTED_SCHEMA_VERSION: 'UNSUPPORTED_SCHEMA_VERSION',
   MISSING_PROJECT_META: 'MISSING_PROJECT_META',
+  INVALID_PROJECT_TIMESTAMP: 'INVALID_PROJECT_TIMESTAMP',
   INVALID_ID_FORMAT: 'INVALID_ID_FORMAT',
   INVALID_COLLECTION_TYPE: 'INVALID_COLLECTION_TYPE',
 

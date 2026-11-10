@@ -6,26 +6,44 @@ import {
   parseExpectedSha256,
   validateProject,
 } from './validator.mjs';
-import { resolveSafeFixtureFilePath } from './pathSafety.mjs';
+import {
+  inspectAndNormalizeAssetPath,
+  resolveSafeFixtureFilePath,
+} from './pathSafety.mjs';
 
 /**
- * Deterministic lexicographical string comparison (code point order, locale-independent).
+ * Deterministic lexicographical string comparison in true Unicode code point order
+ * (locale-independent across all operating systems and JS runtimes).
  */
 export function compareStringsCodePoint(a, b) {
   const sa = String(a ?? '');
   const sb = String(b ?? '');
-  if (sa < sb) return -1;
-  if (sa > sb) return 1;
-  return 0;
+  if (sa === sb) return 0;
+  const iterA = sa[Symbol.iterator]();
+  const iterB = sb[Symbol.iterator]();
+  while (true) {
+    const nextA = iterA.next();
+    const nextB = iterB.next();
+    if (nextA.done && nextB.done) return 0;
+    if (nextA.done) return -1;
+    if (nextB.done) return 1;
+    const cpA = nextA.value.codePointAt(0);
+    const cpB = nextB.value.codePointAt(0);
+    if (cpA !== cpB) return cpA < cpB ? -1 : 1;
+  }
 }
 
 /**
  * Deterministic canonical JSON serializer: recursively sorts all object keys
- * in code point order so identical logical structures always produce the exact same bytes.
+ * in Unicode code point order and normalizes `-0` / `toJSON` values so identical
+ * logical structures always produce the exact same bytes.
  */
 export function canonicalizeValue(value) {
   if (value === null || typeof value !== 'object') {
-    return value;
+    return Object.is(value, -0) ? 0 : value;
+  }
+  if (typeof value.toJSON === 'function') {
+    return canonicalizeValue(value.toJSON());
   }
   if (Array.isArray(value)) {
     return value.map(canonicalizeValue);
@@ -100,8 +118,8 @@ export function generateExportManifest(rawProject, options = {}) {
               id: pn.id,
               order: pn.order,
               sceneId: sc.id,
-              title: pn.title.trim(),
-              dialogue: typeof pn.dialogue === 'string' ? pn.dialogue : '',
+              title: pn.title.trim().normalize('NFC'),
+              dialogue: typeof pn.dialogue === 'string' ? pn.dialogue.normalize('NFC') : '',
               assetIds: [...pn.assetIds],
               assets: orderedAssetRefs,
             };
@@ -111,7 +129,7 @@ export function generateExportManifest(rawProject, options = {}) {
           id: sc.id,
           order: sc.order,
           episodeId: ep.id,
-          title: sc.title.trim(),
+          title: sc.title.trim().normalize('NFC'),
           panelCount: scPanels.length,
           panels: scPanels,
         };
@@ -121,7 +139,7 @@ export function generateExportManifest(rawProject, options = {}) {
       id: ep.id,
       order: ep.order,
       projectId: ep.projectId,
-      title: ep.title.trim(),
+      title: ep.title.trim().normalize('NFC'),
       sceneCount: epScenes.length,
       scenes: epScenes,
     };
@@ -215,7 +233,8 @@ export function generateExportManifest(rawProject, options = {}) {
 
 /**
  * Verifies an existing Export Manifest against the physical files in `fixtureDir`
- * and checks internal cryptographic hash consistency.
+ * via a 3-stage barrier: ALL static path, canonical ordering, normalization collision,
+ * and symlink containment checks complete across ALL manifest entries BEFORE any file is read.
  */
 export function verifyExportManifest(manifest, fixtureDir) {
   const errors = [];
@@ -228,43 +247,132 @@ export function verifyExportManifest(manifest, fixtureDir) {
     return { verified: false, errors };
   }
 
-  // 1. Verify each asset on disk in fixtureDir
-  for (const asset of manifest.assets) {
-    const resolved = resolveSafeFixtureFilePath(fixtureDir, asset.normalizedPath);
-    if (!resolved.safe) {
+  const seenCanonicalKeys = new Map();
+  const stagedEntries = [];
+  let hasStaticOrCollisionError = false;
+
+  // Stage 1: Canonical sort order check
+  for (let i = 1; i < manifest.assets.length; i++) {
+    const prev = manifest.assets[i - 1];
+    const curr = manifest.assets[i];
+    const cmpPath = compareStringsCodePoint(prev?.normalizedPath, curr?.normalizedPath);
+    const cmpOrder = cmpPath !== 0 ? cmpPath : compareStringsCodePoint(prev?.id, curr?.id);
+    if (cmpOrder > 0) {
+      hasStaticOrCollisionError = true;
       errors.push({
-        code: resolved.code,
-        entityId: asset.id,
-        path: asset.normalizedPath,
-        message: resolved.message,
+        code: ERROR_CODES.ARCHIVE_MANIFEST_INVALID,
+        path: `assets[${i}]`,
+        message: `Manifest assets are not in deterministic canonical order at "${curr?.normalizedPath}".`,
+      });
+      break;
+    }
+  }
+
+  // Stage 2: Pure in-memory static path & cross-entry collision check across ALL entries
+  for (let i = 0; i < manifest.assets.length; i++) {
+    const asset = manifest.assets[i];
+    if (!asset || typeof asset !== 'object') {
+      hasStaticOrCollisionError = true;
+      errors.push({
+        code: ERROR_CODES.INVALID_COLLECTION_TYPE,
+        path: `assets[${i}]`,
+        message: 'Manifest asset entry must be an object.',
       });
       continue;
     }
 
-    if (asset.sizeBytes !== null && resolved.sizeBytes !== asset.sizeBytes) {
-      errors.push({
-        code: ERROR_CODES.MANIFEST_ASSET_SIZE_MISMATCH,
-        entityId: asset.id,
-        path: asset.normalizedPath,
-        message: `Size mismatch for "${asset.normalizedPath}": manifest expected ${asset.sizeBytes} bytes, found ${resolved.sizeBytes} bytes.`,
-      });
+    const inspection = inspectAndNormalizeAssetPath(asset.normalizedPath, asset.type);
+    if (!inspection.valid) {
+      hasStaticOrCollisionError = true;
+      for (const issue of inspection.issues) {
+        errors.push({
+          code: issue.code,
+          entityId: asset.id ?? null,
+          path: asset.normalizedPath ?? `assets[${i}].normalizedPath`,
+          message: issue.message,
+        });
+      }
+      continue;
     }
 
-    const actualSha256 = computeFileSha256(resolved.resolvedPath);
-    const expectedHex = parseExpectedSha256(asset.sha256 ?? asset.checksum);
-    if (expectedHex !== actualSha256) {
+    if (asset.normalizedPath !== inspection.normalizedPath) {
+      hasStaticOrCollisionError = true;
       errors.push({
-        code: ERROR_CODES.MANIFEST_ASSET_TAMPERED,
-        entityId: asset.id,
+        code: ERROR_CODES.INVALID_RELATIVE_PATH,
+        entityId: asset.id ?? null,
         path: asset.normalizedPath,
-        message: `SHA-256 mismatch for "${asset.normalizedPath}": manifest expected ${expectedHex}, actual is ${actualSha256}.`,
+        message: `Manifest normalizedPath "${asset.normalizedPath}" is not in canonical NFC relative form ("${inspection.normalizedPath}").`,
       });
+      continue;
+    }
+
+    if (seenCanonicalKeys.has(inspection.canonicalKey)) {
+      hasStaticOrCollisionError = true;
+      const prevAssetId = seenCanonicalKeys.get(inspection.canonicalKey);
+      errors.push({
+        code: ERROR_CODES.NORMALIZATION_COLLISION_PATH,
+        entityId: asset.id ?? null,
+        path: asset.normalizedPath,
+        message: `Manifest path "${asset.normalizedPath}" collides after normalization with "${prevAssetId}".`,
+      });
+      continue;
+    }
+    seenCanonicalKeys.set(inspection.canonicalKey, asset.id ?? `(index:${i})`);
+    stagedEntries.push({ asset, inspection, resolved: null });
+  }
+
+  // Stage 3: Containment & lstat/readlink verification across ALL entries (still 0 file reads)
+  let hasContainmentError = false;
+  if (!hasStaticOrCollisionError) {
+    for (const entry of stagedEntries) {
+      const resolved = resolveSafeFixtureFilePath(fixtureDir, entry.inspection.normalizedPath);
+      if (!resolved.safe) {
+        hasContainmentError = true;
+        errors.push({
+          code: resolved.code,
+          entityId: entry.asset.id,
+          path: entry.asset.normalizedPath,
+          message: resolved.message,
+        });
+        continue;
+      }
+      entry.resolved = resolved;
+
+      if (entry.asset.sizeBytes !== null && resolved.sizeBytes !== entry.asset.sizeBytes) {
+        errors.push({
+          code: ERROR_CODES.MANIFEST_ASSET_SIZE_MISMATCH,
+          entityId: entry.asset.id,
+          path: entry.asset.normalizedPath,
+          message: `Size mismatch for "${entry.asset.normalizedPath}": manifest expected ${entry.asset.sizeBytes} bytes, found ${resolved.sizeBytes} bytes.`,
+        });
+      }
     }
   }
 
-  // 2. Verify assetTreeHash and manifestContentHash
-  const assetTreeLines = manifest.assets
-    .map((a) => `${a.normalizedPath}:${a.sizeBytes ?? 0}:${a.sha256 ?? ''}`)
+  // Stage 4: Physical file reading & SHA-256 verification ONLY after all static, collision & containment checks pass
+  if (!hasStaticOrCollisionError && !hasContainmentError) {
+    for (const entry of stagedEntries) {
+      const actualSha256 = computeFileSha256(entry.resolved.resolvedPath);
+      const expectedHex = parseExpectedSha256(entry.asset.sha256 ?? entry.asset.checksum);
+      if (expectedHex !== actualSha256) {
+        errors.push({
+          code: ERROR_CODES.MANIFEST_ASSET_TAMPERED,
+          entityId: entry.asset.id,
+          path: entry.asset.normalizedPath,
+          message: `SHA-256 mismatch for "${entry.asset.normalizedPath}": manifest expected ${expectedHex}, actual is ${actualSha256}.`,
+        });
+      }
+    }
+  }
+
+  // Stage 5: Verify assetTreeHash and manifestContentHash
+  const sortedForHash = [...manifest.assets].sort((a, b) => {
+    const cmpPath = compareStringsCodePoint(a?.normalizedPath, b?.normalizedPath);
+    if (cmpPath !== 0) return cmpPath;
+    return compareStringsCodePoint(a?.id, b?.id);
+  });
+  const assetTreeLines = sortedForHash
+    .map((a) => `${a?.normalizedPath ?? ''}:${a?.sizeBytes ?? 0}:${a?.sha256 ?? ''}`)
     .join('\n');
   const expectedAssetTreeHash = computeStringSha256(assetTreeLines);
 
