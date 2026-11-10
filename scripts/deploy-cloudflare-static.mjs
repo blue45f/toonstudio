@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
-import { spawnSync } from "node:child_process";
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { userInfo } from "node:os";
 import { resolve } from "node:path";
 
 const STANDING_APPROVAL_PATH = "deploy/cloudflare-static/STANDING_APPROVAL.json";
 
 const mode = process.argv.includes("--production") ? "production" : "dry-run";
+const skipBuild = process.argv.includes("--skip-build");
+const skipR2Sync = process.argv.includes("--skip-r2-sync");
 const approval = process.env.TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL;
 const rawOrigin = process.env.CLOUDFLARE_CORE_API_ORIGIN
   ?? (mode === "dry-run" ? "https://core.invalid" : "");
@@ -138,23 +140,51 @@ if (staticCatalogSource !== "static" && staticCatalogSource !== "api") {
   fail("VITE_CATALOG_SOURCE must be static or api");
 }
 
-for (const command of [
+if (
+  skipBuild
+  && (
+    !existsSync(resolve(process.cwd(), "dist/index.html"))
+    || !existsSync(resolve(process.cwd(), "dist/.assetsignore"))
+  )
+) {
+  fail("--skip-build requires prebuilt dist/index.html and dist/.assetsignore");
+}
+
+const childHome = process.env.HOME?.includes("/.gemini/")
+  ? userInfo().homedir
+  : process.env.HOME;
+const baseChildEnvironment = {
+  ...process.env,
+  ...(childHome ? { HOME: childHome } : {}),
+};
+const useWranglerOAuthIsolation = skipR2Sync && !process.env.CLOUDFLARE_API_TOKEN?.trim();
+
+const pipelineCommands = [
   {
     executable: "pnpm",
     args: ["run", "generate:cloudflare-static-rules", "--", "--check"],
   },
-  {
-    executable: "pnpm",
-    args: ["run", "build"],
-    environment: {
-      ...process.env,
-      VITE_CATALOG_SOURCE: staticCatalogSource,
-    },
-  },
-  {
-    executable: "pnpm",
-    args: ["run", "prepare:cloudflare-static-assets"],
-  },
+  ...(skipBuild
+    ? [
+        {
+          executable: "pnpm",
+          args: ["exec", "node", "scripts/verify-static-csp.mjs", "dist/index.html"],
+        },
+      ]
+    : [
+        {
+          executable: "pnpm",
+          args: ["run", "build"],
+          environment: {
+            ...baseChildEnvironment,
+            VITE_CATALOG_SOURCE: staticCatalogSource,
+          },
+        },
+        {
+          executable: "pnpm",
+          args: ["run", "prepare:cloudflare-static-assets"],
+        },
+      ]),
   {
     // sw.js가 빠진 dist는 /sw.js를 SPA HTML로 응답해 PWA 업데이트 안내를 멈추게 한다.
     executable: "pnpm",
@@ -164,7 +194,7 @@ for (const command of [
     executable: "pnpm",
     args: [
       "run",
-      mode === "production"
+      mode === "production" && !skipR2Sync
         ? "sync:cloudflare-r2-assets"
         : "sync:cloudflare-r2-assets:dry-run",
     ],
@@ -176,15 +206,21 @@ for (const command of [
       "wrangler",
       "deploy",
       ...(mode === "dry-run" ? ["--dry-run"] : []),
+      ...(useWranglerOAuthIsolation ? ["--env-file", "/dev/null"] : []),
       "--config",
       "deploy/cloudflare-static/wrangler.jsonc",
       ...routeVariables,
     ],
+    environment: useWranglerOAuthIsolation
+      ? { ...baseChildEnvironment, WRANGLER_WRITE_LOGS: "false" }
+      : baseChildEnvironment,
   },
-]) {
+];
+
+for (const command of pipelineCommands) {
   const result = spawnSync(command.executable, command.args, {
     stdio: "inherit",
-    env: command.environment ?? process.env,
+    env: command.environment ?? baseChildEnvironment,
   });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
