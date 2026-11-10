@@ -24,11 +24,14 @@ const ORG_ID_PATTERN = /^org-[A-Za-z0-9_-]{4,80}$/u;
 const PROJECT_ID_PATTERN = /^proj_[A-Za-z0-9_-]{4,80}$/u;
 
 // 모듈 로드 시 1회 컴파일해 요청당 정규식 재생성 비용을 없앤다.
-const SECRET_KEY_PATTERN = /\b(?:sk-[A-Za-z0-9_-]{16,}|Bearer\s+[A-Za-z0-9._-]{20,})\b/gu;
-const RESIDENT_ID_PATTERN = /\b\d{6}-?[1-4]\d{6}\b/gu;
-const CARD_NUMBER_PATTERN = /\b(?:\d{4}[-\s]){3}\d{4}\b/gu;
+const SECRET_KEY_PATTERN =
+  /\b(?:sk-[A-Za-z0-9_-]{16,}|Bearer\s+[A-Za-z0-9._-]{20,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{30,}|xox[baprs]-[A-Za-z0-9-]{16,})\b/gu;
+const RESIDENT_ID_PATTERN = /\b\d{6}-?[1-8]\d{6}\b/gu;
+const CARD_NUMBER_PATTERN =
+  /\b(?:\d{4}[-\s]?){3}\d{4}\b|\b\d{4}[-\s]?\d{6}[-\s]?\d{5}\b/gu;
 const EMAIL_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu;
-const PHONE_PATTERN = /\b01[016789][-\s.]?\d{3,4}[-\s.]?\d{4}\b/gu;
+const PHONE_PATTERN =
+  /(?:(?<!\w)\+82[-\s.]?0?1[016789]|\b(?:01[016789]|02|0[3-6][1-5]|070))[-\s.]?\d{3,4}[-\s.]?\d{4}\b/gu;
 
 export interface StudioOpenAiCreativeConfig {
   readonly configured: boolean;
@@ -78,7 +81,12 @@ export function resolveStudioOpenAiCreativeConfig(
     projectId: PROJECT_ID_PATTERN.test(rawProject) ? rawProject : null,
     timeoutMs: parsePositiveLimit(env.STUDIO_OPENAI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS, 5_000, 60_000),
     limits: {
-      burstPerMinute: DEFAULT_BURST_LIMIT_PER_MINUTE,
+      burstPerMinute: parsePositiveLimit(
+        env.STUDIO_OPENAI_BURST_LIMIT_PER_MINUTE,
+        DEFAULT_BURST_LIMIT_PER_MINUTE,
+        1,
+        60,
+      ),
       hourlyRequests: parsePositiveLimit(
         env.STUDIO_OPENAI_HOURLY_REQUEST_LIMIT,
         DEFAULT_HOURLY_REQUEST_LIMIT,
@@ -107,8 +115,8 @@ export interface RedactedCreatorText {
 }
 
 /**
- * 외부 AI 전송 전 원고·메모에 섞여 들어간 개인정보(이메일, 전화번호, 주민등록번호, 카드번호)와
- * 실수로 붙여 넣은 API 키 문자열을 마스킹한다.
+ * 외부 AI 전송 전 원고·메모에 섞여 들어간 개인정보(이메일, 전화번호, 주민·외국인등록번호, 카드번호)와
+ * 실수로 붙여 넣은 API 키·토큰 문자열을 마스킹한다.
  */
 export function redactCreatorSensitiveText(raw: string): RedactedCreatorText {
   let redactedCount = 0;
@@ -145,9 +153,24 @@ interface ActorWindowState {
   dayCount: number;
 }
 
+export interface RateLimitReservation {
+  readonly remainingDaily: number;
+  readonly release: () => void;
+}
+
+function removeSingleTimestamp(list: number[], target: number): void {
+  const index = list.lastIndexOf(target);
+  if (index >= 0) {
+    list.splice(index, 1);
+  }
+}
+
 /**
  * 메모리 상한(MAX_TRACKED_ACTOR_BUCKETS)과 날짜 전환 시 만료 버킷 자동 정리를 보장하는
  * 서버 전용 슬라이딩 윈도우 호출 제한기.
+ *
+ * 일시적 네트워크 오류·타임아웃·클라이언트 취소·업스트림 5xx/스키마 불일치 시에는
+ * `release()`로 예약 슬롯을 되돌려 재시도 한도가 부당하게 소진되지 않게 한다.
  */
 export class StudioOpenAiRateLimiter {
   private readonly actorWindows = new Map<string, ActorWindowState>();
@@ -173,7 +196,7 @@ export class StudioOpenAiRateLimiter {
     actorIdentifier: string,
     limits: StudioOpenAiCreativeConfig["limits"],
     nowMs = Date.now(),
-  ): { readonly remainingDaily: number } {
+  ): RateLimitReservation {
     const utcDay = new Date(nowMs).toISOString().slice(0, 10);
     if (this.globalUtcDay !== utcDay) {
       this.globalUtcDay = utcDay;
@@ -249,8 +272,22 @@ export class StudioOpenAiRateLimiter {
     }
 
     this.globalDayCount += 1;
+    let released = false;
+
     return {
       remainingDaily: Math.max(0, limits.dailyRequests - existing.dayCount),
+      release: () => {
+        if (released) return;
+        released = true;
+        removeSingleTimestamp(existing.minuteTimestamps, nowMs);
+        removeSingleTimestamp(existing.hourTimestamps, nowMs);
+        if (existing.utcDay === utcDay && existing.dayCount > 0) {
+          existing.dayCount -= 1;
+        }
+        if (this.globalUtcDay === utcDay && this.globalDayCount > 0) {
+          this.globalDayCount -= 1;
+        }
+      },
     };
   }
 }

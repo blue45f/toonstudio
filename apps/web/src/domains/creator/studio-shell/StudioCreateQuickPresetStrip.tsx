@@ -1,5 +1,6 @@
-import { Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 
+import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
@@ -13,11 +14,20 @@ export type StudioCreateQuickPreset = GuidedGenreStarterSpec;
 export function StudioCreateQuickPresetStrip({
   activePresetId,
   onSelectPreset,
+  onQuickStart,
+  quickStartSummary,
+  creating = false,
 }: {
   readonly activePresetId: string | null;
   readonly onSelectPreset: (preset: StudioCreateQuickPreset) => void;
+  readonly onQuickStart?: () => void;
+  readonly quickStartSummary?: string;
+  readonly creating?: boolean;
 }) {
   const bt = useBilingual("StudioCreateQuickPresetStrip");
+  const activePreset = STUDIO_GUIDED_GENRE_STARTERS.find(
+    (item) => item.quickPresetId === activePresetId,
+  ) ?? null;
 
   return (
     <section
@@ -72,7 +82,7 @@ export function StudioCreateQuickPresetStrip({
                 />
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent"
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-canvas/85 via-transparent to-transparent"
                 />
                 <span className="absolute bottom-2 left-2.5 rounded-full border border-line bg-card px-2.5 py-0.5 text-[10px] font-bold text-fg">
                   {bt(preset.badgeKo, preset.badgeEn)}
@@ -99,6 +109,35 @@ export function StudioCreateQuickPresetStrip({
           );
         })}
       </div>
+
+      {activePreset && onQuickStart ? (
+        <div
+          data-testid="studio-quick-preset-launch-bar"
+          className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/35 bg-card/90 px-4 py-3"
+        >
+          <div className="min-w-0">
+            <strong className="block text-xs font-black text-fg sm:text-sm">
+              {bt(
+                `${activePreset.titleKo} 구성이 준비됐어요`,
+                `${activePreset.titleEn} preset is ready`,
+              )}
+            </strong>
+            {quickStartSummary ? (
+              <span className="mt-0.5 block text-xs text-fg-2">{quickStartSummary}</span>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            disabled={creating}
+            data-testid="studio-quick-preset-start-now"
+            onClick={onQuickStart}
+            className={buttonClass({ className: "min-h-11 shrink-0 gap-2" })}
+          >
+            {bt("이 프리셋으로 바로 시작", "Start right away with preset")}
+            <ArrowRight size={15} aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

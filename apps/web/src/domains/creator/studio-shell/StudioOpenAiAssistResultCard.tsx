@@ -1,5 +1,5 @@
 import { Check, Copy, ListPlus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -44,13 +44,30 @@ export function StudioOpenAiAssistResultCard({
 }) {
   const bt = useBilingual("StudioOpenAiAssistResultCard");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [appended, setAppended] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [appendedResponse, setAppendedResponse] =
+    useState<StudioOpenAiAssistSuccess | null>(null);
+  const appended = appendedResponse === response;
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== null) {
+        clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleCopy = async (key: string, value: string) => {
     const ok = await copyPlainText(value);
     if (ok) {
       setCopiedKey(key);
-      setTimeout(() => setCopiedKey((prev) => (prev === key ? null : prev)), 2_000);
+      if (copyTimerRef.current !== null) {
+        clearTimeout(copyTimerRef.current);
+      }
+      copyTimerRef.current = setTimeout(() => {
+        copyTimerRef.current = null;
+        setCopiedKey((prev) => (prev === key ? null : prev));
+      }, 2_000);
     }
   };
 
@@ -177,7 +194,7 @@ export function StudioOpenAiAssistResultCard({
                 disabled={appended}
                 onClick={() => {
                   onAppendStoryBeats(cutsToStoryBeats(result.data.cuts));
-                  setAppended(true);
+                  setAppendedResponse(response);
                 }}
                 className={buttonClass({
                   variant: appended ? "outline" : "solid",

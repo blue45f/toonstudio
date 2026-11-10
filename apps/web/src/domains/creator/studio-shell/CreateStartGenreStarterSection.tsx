@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 
+import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
@@ -10,6 +11,8 @@ import {
 
 export function CreateStartGenreStarterSection() {
   const bt = useBilingual("CreateStartGenreStarterSection");
+  const lang = useI18n((state) => state.lang);
+  const locale = lang.toLowerCase().startsWith("ko") ? "ko" : "en";
 
   return (
     <section
@@ -38,7 +41,7 @@ export function CreateStartGenreStarterSection() {
         {STUDIO_GUIDED_GENRE_STARTERS.map((starter) => (
           <Link
             key={starter.id}
-            href={buildGuidedGenreStarterHref(starter)}
+            href={buildGuidedGenreStarterHref(starter, locale)}
             data-testid={`genre-starter-${starter.id}`}
             style={{ minHeight: "44px" }}
             className="group flex min-h-11 scroll-my-24 flex-col overflow-hidden rounded-2xl border border-line bg-panel/45 transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:bg-raised hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none"
@@ -54,7 +57,7 @@ export function CreateStartGenreStarterSection() {
               />
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent"
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-canvas/85 via-transparent to-transparent"
               />
               <span className="absolute bottom-2.5 left-3 rounded-full border border-line bg-card px-2.5 py-0.5 text-[10px] font-bold text-fg">
                 {bt(starter.badgeKo, starter.badgeEn)}

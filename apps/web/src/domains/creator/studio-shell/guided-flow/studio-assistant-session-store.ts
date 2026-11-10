@@ -196,6 +196,63 @@ export function defaultOpenAiModeForSection(
 
 const SESSION_KEY_PREFIX = "toonstudio:assistant-draft:v1:";
 
+const VALID_OPENAI_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
+  "idea-remix",
+  "script-to-cuts",
+  "dialogue-polish",
+  "export-preflight-coach",
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isValidOpenAiMode(value: unknown): value is StudioOpenAiAssistMode {
+  return typeof value === "string" && VALID_OPENAI_MODES.has(value as StudioOpenAiAssistMode);
+}
+
+function isValidStoredSuccess(value: unknown): value is StudioOpenAiAssistSuccess {
+  if (!isRecord(value) || value.provider !== "openai" || typeof value.model !== "string") {
+    return false;
+  }
+  const privacy = value.privacy;
+  const quota = value.quota;
+  const result = value.result;
+  if (
+    !isRecord(privacy) ||
+    typeof privacy.piiRedactedCount !== "number" ||
+    !isRecord(quota) ||
+    typeof quota.remainingDaily !== "number" ||
+    typeof quota.dailyLimit !== "number" ||
+    !isRecord(result) ||
+    !isValidOpenAiMode(result.mode) ||
+    !isRecord(result.data)
+  ) {
+    return false;
+  }
+
+  if (result.mode === "idea-remix") {
+    return typeof result.data.summary === "string" && Array.isArray(result.data.angles);
+  }
+  if (result.mode === "script-to-cuts") {
+    return (
+      typeof result.data.episodeGoal === "string" &&
+      typeof result.data.pacingTip === "string" &&
+      Array.isArray(result.data.cuts)
+    );
+  }
+  if (result.mode === "dialogue-polish") {
+    return (
+      typeof result.data.readabilityNote === "string" && Array.isArray(result.data.balloons)
+    );
+  }
+  return (
+    typeof result.data.readinessSummary === "string" &&
+    typeof result.data.episodeBlurbSuggestion === "string" &&
+    Array.isArray(result.data.checks)
+  );
+}
+
 export interface StudioAssistantSessionSnapshot {
   readonly prompt: string;
   readonly openAiMode: StudioOpenAiAssistMode;
@@ -210,14 +267,15 @@ export function readStudioAssistantSessionState(
   try {
     const raw = storage.getItem(`${SESSION_KEY_PREFIX}${projectId}`);
     if (!raw || raw.length > 64_000) return null;
-    const parsed = JSON.parse(raw) as Partial<StudioAssistantSessionSnapshot>;
-    if (typeof parsed.prompt !== "string" || typeof parsed.openAiMode !== "string") {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!isRecord(parsed) || typeof parsed.prompt !== "string" || !isValidOpenAiMode(parsed.openAiMode)) {
       return null;
     }
+    const lastResult = isValidStoredSuccess(parsed.lastResult) ? parsed.lastResult : null;
     return {
       prompt: parsed.prompt.slice(0, 6_000),
-      openAiMode: parsed.openAiMode as StudioOpenAiAssistMode,
-      lastResult: parsed.lastResult ?? null,
+      openAiMode: parsed.openAiMode,
+      lastResult,
     };
   } catch {
     return null;

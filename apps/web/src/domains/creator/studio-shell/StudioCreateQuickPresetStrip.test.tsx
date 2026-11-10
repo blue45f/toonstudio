@@ -14,7 +14,11 @@ import {
   writeStudioAssistantSessionState,
 } from "./guided-flow/studio-assistant-session-store";
 import { StudioBeginnerQuickTipsBar } from "./guided-flow/StudioBeginnerQuickTipsBar";
-import { analyzeMobileSafeZone } from "./guided-flow/studio-guided-flow-catalog";
+import {
+  analyzeMobileSafeZone,
+  buildGuidedGenreStarterHref,
+  STUDIO_GUIDED_GENRE_STARTERS,
+} from "./guided-flow/studio-guided-flow-catalog";
 import { StudioExportPanel } from "./StudioExportPanel";
 import { StudioNewIntegratedPage as StudioProjectCreatePage } from "./StudioProjectCreatePage";
 
@@ -36,8 +40,8 @@ afterEach(() => {
 });
 
 describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이터 · 단축키 가이드 · 출고 복원 흐름", () => {
-  it("시작 화면(/create)에 4가지 비주얼 장르 스타터 카드를 렌더링하고 올바른 생성 주소로 연결한다", () => {
-    render(
+  it("시작 화면(/create)에 4가지 비주얼 장르 스타터 카드를 렌더링하고 로케일·프리셋 쿼리를 일관되게 연결한다", () => {
+    const { unmount } = render(
       <MemoryRouter initialEntries={["/create"]}>
         <CreateStartPage />
       </MemoryRouter>,
@@ -46,9 +50,10 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     const section = screen.getByTestId("create-start-genre-starters");
     expect(section).toBeTruthy();
 
-    expect(screen.getByTestId("genre-starter-romance").getAttribute("href")).toContain(
-      "format=vertical-webtoon",
-    );
+    const romanceHref = screen.getByTestId("genre-starter-romance").getAttribute("href") ?? "";
+    expect(romanceHref).toContain("preset=romance-scroll");
+    expect(romanceHref).toContain("format=vertical-webtoon");
+    expect(romanceHref).toContain("template=webtoon-canvas");
     expect(screen.getByTestId("genre-starter-action").getAttribute("href")).toContain(
       "lane=storyboard",
     );
@@ -58,6 +63,40 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(screen.getByTestId("genre-starter-mystery").getAttribute("href")).toContain(
       "format=page-comic",
     );
+    unmount();
+
+    useI18n.setState({ lang: "en" });
+    render(
+      <MemoryRouter initialEntries={["/create"]}>
+        <CreateStartPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("genre-starter-romance").getAttribute("href")).toContain(
+      encodeURIComponent("First Encounter Ep.1").replace(/%20/gu, "+"),
+    );
+  });
+
+  it("장르 스타터 링크로 /studio/new에 진입하면 해당 프리셋이 선택되고, 수동 변경 시 선택 표시가 해제된다", () => {
+    const romanceSpec = STUDIO_GUIDED_GENRE_STARTERS[0]!;
+    const entryHref = buildGuidedGenreStarterHref(romanceSpec, "ko");
+
+    const { container } = render(
+      <MemoryRouter initialEntries={[entryHref]}>
+        <StudioProjectCreatePage />
+      </MemoryRouter>,
+    );
+
+    expect(container.querySelector("[data-studio-imported-idea]")).toBeNull();
+    const romancePresetBtn = screen.getByTestId("studio-quick-preset-romance-scroll");
+    expect(romancePresetBtn.getAttribute("aria-pressed")).toBe("true");
+
+    const titleInput = screen.getByRole("textbox", {
+      name: /프로젝트 이름|Project name/u,
+    }) as HTMLInputElement;
+    expect(titleInput.value).toBe("설레는 첫 만남 1화");
+
+    fireEvent.change(titleInput, { target: { value: "직접 수정한 제목" } });
+    expect(romancePresetBtn.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("프로젝트 생성 화면(/studio/new)에서 모바일 안전영역 시뮬레이터와 1초 프리셋을 함께 검증한다", async () => {
@@ -69,6 +108,7 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     );
 
     const simulator = screen.getByTestId("studio-canvas-safe-zone-simulator");
+    expect(simulator.getAttribute("data-preview-mode")).toBe("vertical-scroll");
     expect(simulator.textContent).toContain("2컷 호흡");
     fireEvent.click(screen.getByTestId("safe-zone-rhythm-snappy"));
     expect(simulator.textContent).toContain("3컷 호흡");
@@ -77,6 +117,8 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     fireEvent.click(dailyPreset);
 
     expect(dailyPreset.getAttribute("aria-pressed")).toBe("true");
+    expect(simulator.getAttribute("data-preview-mode")).toBe("card-news");
+    expect(simulator.textContent).toContain("SNS 카드 4장 구성");
     expect(
       container.querySelector('[data-studio-create-format="cuttoon"]')?.getAttribute("aria-pressed"),
     ).toBe("true");
@@ -101,8 +143,9 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(created?.templateId).toBe("cuttoon-square-4");
   });
 
-  it("모바일 안전영역 순수 계산기가 저해상도 폭 경고와 적정 세로 스크롤 분량을 정확히 판정한다", () => {
+  it("안전영역 순수 계산기가 세로 스크롤·카드뉴스·페이지·가로형과 비정상 수치를 안전하게 판정한다", () => {
     const narrow = analyzeMobileSafeZone(540, 1280, "balanced");
+    expect(narrow.previewMode).toBe("vertical-scroll");
     expect(narrow.readabilityTone).toBe("warning");
     expect(narrow.cutsPerScreen).toBe(2);
 
@@ -110,6 +153,23 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(standard.readabilityTone).toBe("optimal");
     expect(standard.phoneScreensPerPage).toBe(2);
     expect(standard.cutsPerScreen).toBe(1);
+
+    const cuttoon = analyzeMobileSafeZone(1080, 1080, "balanced", "cuttoon", 4);
+    expect(cuttoon.previewMode).toBe("card-news");
+    expect(cuttoon.phoneScreensPerPage).toBe(4);
+    expect(cuttoon.readabilityTone).toBe("optimal");
+
+    const pageComic = analyzeMobileSafeZone(1600, 2400, "balanced", "page-comic", 8);
+    expect(pageComic.previewMode).toBe("page-spread");
+    expect(pageComic.phoneScreensPerPage).toBe(8);
+
+    const landscape = analyzeMobileSafeZone(1920, 1080, "balanced");
+    expect(landscape.previewMode).toBe("landscape");
+    expect(landscape.aspectRatioLabel).toBe("16:9");
+
+    const malformed = analyzeMobileSafeZone(Number.NaN, Number.POSITIVE_INFINITY, "balanced");
+    expect(malformed.previewMode).toBe("vertical-scroll");
+    expect(malformed.aspectRatioLabel).toBe("5:8");
   });
 
   it("초보자 10초 단축키 가이드 바에서 기능 찾기 열기를 누르면 커맨드 팔레트 이벤트를 발행한다", () => {
@@ -149,20 +209,47 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(widthInput.value).toBe(initialWidth);
   });
 
-  it("AI 보조 세션 저장소가 프로젝트별 초안을 복원하고 초기화 시 깨끗이 비운다", () => {
+  it("AI 보조 세션 저장소가 프로젝트별 초안을 복원하고 변조된 페이로드는 안전하게 거부한다", () => {
     writeStudioAssistantSessionState(
       "proj-alpha",
       {
-        mode: "dialogue-polish",
-        inputText: "비 오는 날 우산을 건네는 첫 대사",
+        openAiMode: "dialogue-polish",
+        prompt: "비 오는 날 우산을 건네는 첫 대사",
         lastResult: null,
       },
       window.sessionStorage,
     );
 
     const restored = readStudioAssistantSessionState("proj-alpha", window.sessionStorage);
-    expect(restored?.mode).toBe("dialogue-polish");
-    expect(restored?.inputText).toBe("비 오는 날 우산을 건네는 첫 대사");
+    expect(restored?.openAiMode).toBe("dialogue-polish");
+    expect(restored?.prompt).toBe("비 오는 날 우산을 건네는 첫 대사");
+
+    window.sessionStorage.setItem(
+      "toonstudio:assistant-draft:v1:proj-corrupt-mode",
+      JSON.stringify({
+        openAiMode: "invalid-mode",
+        prompt: "손상된 모드",
+        lastResult: null,
+      }),
+    );
+    expect(
+      readStudioAssistantSessionState("proj-corrupt-mode", window.sessionStorage),
+    ).toBeNull();
+
+    window.sessionStorage.setItem(
+      "toonstudio:assistant-draft:v1:proj-corrupt-result",
+      JSON.stringify({
+        openAiMode: "idea-remix",
+        prompt: "정상 프롬프트",
+        lastResult: { provider: "openai", model: "gpt-4o-mini", result: { mode: "idea-remix" } },
+      }),
+    );
+    const sanitized = readStudioAssistantSessionState(
+      "proj-corrupt-result",
+      window.sessionStorage,
+    );
+    expect(sanitized?.prompt).toBe("정상 프롬프트");
+    expect(sanitized?.lastResult).toBeNull();
 
     clearStudioAssistantSessionState("proj-alpha", window.sessionStorage);
     expect(readStudioAssistantSessionState("proj-alpha", window.sessionStorage)).toBeNull();

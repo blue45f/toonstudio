@@ -6,8 +6,9 @@ import {
   ShieldCheck,
   Sparkles,
   WandSparkles,
+  X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -30,6 +31,7 @@ import {
   type StudioOpenAiAssistMode,
   type StudioOpenAiAssistStatus,
   type StudioOpenAiAssistSuccess,
+  type StudioOpenAiTargetPlatform,
 } from "../ai/studio-openai-creative-assist-client";
 import { readStudioProjectLibrary } from "../studio-project-library-store";
 import type { StudioStoryBeat } from "../studio-storyboard-planner";
@@ -48,6 +50,13 @@ import { useStudioProjectFeatureSuite } from "./useStudioProjectFeatureSuite";
 
 export type StudioProjectAssistantSection = StudioProjectAssistantSectionId;
 
+interface StudioProjectAssistantPanelProps {
+  readonly projectId: string;
+  readonly section: StudioProjectAssistantSection;
+  readonly locale?: string;
+  readonly fetchImpl?: typeof fetch;
+}
+
 function assistantSource(
   section: StudioProjectAssistantSection,
 ): StudioAiProjectHandoff["source"] {
@@ -65,33 +74,47 @@ function editorHref(projectId: string, tool: StudioAiAssistToolId): string {
   return `/studio/work/${encodeURIComponent(projectId)}/${surface}`;
 }
 
-function readLocalProjectTitle(projectId: string): string | undefined {
-  if (typeof window === "undefined") return undefined;
+function readLocalProjectMeta(projectId: string): {
+  readonly title?: string;
+  readonly targetPlatform: StudioOpenAiTargetPlatform;
+} {
+  if (typeof window === "undefined") {
+    return { targetPlatform: "vertical-webtoon" };
+  }
   try {
     const match = readStudioProjectLibrary(window.localStorage).projects.find(
       (item) => item.id === projectId,
     );
-    return match?.title?.trim() || undefined;
+    const format = match?.definition?.format;
+    const targetPlatform: StudioOpenAiTargetPlatform =
+      format === "vertical-webtoon" || format === "cuttoon" || format === "page-comic"
+        ? format
+        : match?.kind && match.kind !== "webtoon"
+          ? "general"
+          : "vertical-webtoon";
+    return {
+      title: match?.title?.trim() || undefined,
+      targetPlatform,
+    };
   } catch {
-    return undefined;
+    return { targetPlatform: "vertical-webtoon" };
   }
 }
 
 /**
- * 프로젝트 단계 안에서 바로 쓸 수 있는 AI 창작 도우미.
- * 탭 전환 시에도 세션 초안·마지막 제안 결과를 자동 복원해 작업 흐름이 끊기지 않는다.
+ * 프로젝트별 key 경계를 강제해 프로젝트 전환 시 이전 작품의 초안·결과가
+ * 새 작품의 sessionStorage를 덮어쓰지 않도록 격리한다.
  */
-export function StudioProjectAssistantPanel({
+export function StudioProjectAssistantPanel(props: StudioProjectAssistantPanelProps) {
+  return <StudioProjectAssistantPanelBody key={props.projectId} {...props} />;
+}
+
+function StudioProjectAssistantPanelBody({
   projectId,
   section,
   locale = "ko",
   fetchImpl,
-}: {
-  readonly projectId: string;
-  readonly section: StudioProjectAssistantSection;
-  readonly locale?: string;
-  readonly fetchImpl?: typeof fetch;
-}) {
+}: StudioProjectAssistantPanelProps) {
   const bt = useBilingual("StudioProjectAssistantPanel");
   const l = useBilingualLocalizer("studioProjectAssistant");
   const navigate = useNavigate();
@@ -123,6 +146,7 @@ export function StudioProjectAssistantPanel({
   const [openAiResult, setOpenAiResult] = useState<StudioOpenAiAssistSuccess | null>(
     () => initialRestored?.lastResult ?? null,
   );
+  const openAiRequestAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -136,12 +160,35 @@ export function StudioProjectAssistantPanel({
   }, [fetchImpl]);
 
   useEffect(() => {
+    return () => {
+      openAiRequestAbortRef.current?.abort();
+      openAiRequestAbortRef.current = null;
+    };
+  }, []);
+
+  const defaultMode = suggestions[0]?.openAiMode ?? defaultOpenAiModeForSection(section);
+  const defaultPrompt = suggestions[0] ? l(suggestions[0].prompt.ko, suggestions[0].prompt.en) : "";
+
+  useEffect(() => {
+    if (
+      !prompt.trim() ||
+      (openAiResult === null && prompt === defaultPrompt && openAiMode === defaultMode)
+    ) {
+      clearStudioAssistantSessionState(projectId);
+      return;
+    }
     writeStudioAssistantSessionState(projectId, {
       prompt,
       openAiMode,
       lastResult: openAiResult,
     });
-  }, [projectId, prompt, openAiMode, openAiResult]);
+  }, [projectId, prompt, openAiMode, openAiResult, defaultPrompt, defaultMode]);
+
+  const cancelRunningOpenAi = () => {
+    openAiRequestAbortRef.current?.abort();
+    openAiRequestAbortRef.current = null;
+    setRunningOpenAi(false);
+  };
 
   const chooseSuggestion = (suggestion: AssistantSuggestionSpec) => {
     setSelectedTool(suggestion.tool);
@@ -151,6 +198,7 @@ export function StudioProjectAssistantPanel({
   };
 
   const resetDraft = () => {
+    cancelRunningOpenAi();
     clearStudioAssistantSessionState(projectId);
     const first = suggestions[0];
     setSelectedTool(first?.tool ?? "composition");
@@ -201,20 +249,32 @@ export function StudioProjectAssistantPanel({
       );
       return;
     }
+    openAiRequestAbortRef.current?.abort();
+    const controller = new AbortController();
+    openAiRequestAbortRef.current = controller;
     setRunningOpenAi(true);
     setError(null);
+
+    const projectMeta = readLocalProjectMeta(projectId);
     const response = await runStudioOpenAiCreativeAssist(
       {
         mode: openAiMode,
         inputText: trimmed,
-        projectTitle: readLocalProjectTitle(projectId),
-        targetPlatform: "vertical-webtoon",
+        projectTitle: projectMeta.title,
+        targetPlatform: projectMeta.targetPlatform,
       },
-      { fetchImpl },
+      { fetchImpl, signal: controller.signal },
     );
+
+    if (openAiRequestAbortRef.current !== controller || controller.signal.aborted) {
+      return;
+    }
+    openAiRequestAbortRef.current = null;
     setRunningOpenAi(false);
     if (!response.ok) {
-      setError(response.message);
+      if (response.code !== "CLIENT_ABORTED") {
+        setError(response.message);
+      }
       return;
     }
     setOpenAiResult(response.data);
@@ -352,13 +412,18 @@ export function StudioProjectAssistantPanel({
         })}
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2">
-        <label
-          className="text-xs font-bold text-fg-2"
-          htmlFor="project-assistant-prompt"
-        >
-          {bt("요청 내용 (탭을 옮겨도 현재 세션에 유지됨)", "Request (kept across tabs in this session)")}
-        </label>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label
+            className="text-xs font-bold text-fg-2"
+            htmlFor="project-assistant-prompt"
+          >
+            {bt("요청 내용", "Request")}
+          </label>
+          <span className="text-[0.68rem] text-fg-3">
+            {bt("탭을 옮겨도 작성 중인 초안이 유지됩니다", "Draft kept across tabs")}
+          </span>
+        </div>
         <button
           type="button"
           onClick={resetDraft}
@@ -392,8 +457,8 @@ export function StudioProjectAssistantPanel({
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs leading-5 text-fg-3">
           {bt(
-            "키·결제 정보는 서버 로컬 환경변수에서만 읽으며, 이메일·연락처는 전송 전 자동 마스킹되고 유료 자동 충전은 하지 않습니다.",
-            "Keys stay in server-only env vars, PII is masked before sending, store:false is enforced, and no auto-billing occurs.",
+            "키·결제 정보는 서버 로컬 환경변수에서만 읽으며, 주요 연락처·이메일은 전송 전 자동 마스킹되고 일일 한도 내에서만 실행됩니다.",
+            "Keys stay in server-only env vars, common PII is masked before sending, store:false is enforced, and daily server caps apply.",
           )}
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -416,6 +481,20 @@ export function StudioProjectAssistantPanel({
               ? bt("초안 만드는 중…", "Drafting…")
               : bt("OpenAI로 초안 받기", "Draft with OpenAI")}
           </button>
+          {runningOpenAi ? (
+            <button
+              type="button"
+              data-testid="openai-assist-cancel-btn"
+              onClick={cancelRunningOpenAi}
+              className={buttonClass({
+                variant: "outline",
+                className: "min-h-11 gap-1.5",
+              })}
+            >
+              <X size={15} aria-hidden="true" />
+              {bt("요청 취소", "Cancel")}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={launch}

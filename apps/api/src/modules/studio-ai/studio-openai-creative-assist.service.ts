@@ -34,6 +34,7 @@ export {
   redactCreatorSensitiveText,
   resolveStudioOpenAiCreativeConfig,
   StudioOpenAiRateLimiter,
+  type RateLimitReservation,
   type RedactedCreatorText,
   type StudioOpenAiCreativeConfig,
 } from "./openai-assist/studio-openai-guardrails";
@@ -64,7 +65,7 @@ export class StudioOpenAiCreativeAssistService {
         maxInputChars: 6_000,
       },
       setupNoticeKo: config.configured
-        ? "서버 로컬 환경변수(OPENAI_API_KEY)가 연결되어 있습니다. 원고는 OpenAI 학습·보관 로그에 남기지 않도록(store: false) 요청합니다."
+        ? "서버 로컬 환경변수(OPENAI_API_KEY)가 연결되어 있습니다. 원고는 OpenAI 보관 로그에 남기지 않도록(store: false) 요청합니다."
         : "현재 서버 로컬 환경변수에 OPENAI_API_KEY가 설정되어 있지 않습니다. 서버의 .env.local에 OPENAI_API_KEY를 설정하면 바로 사용할 수 있으며, 설정 전에도 기획·편집·내보내기 기능은 모두 그대로 작동합니다.",
     };
   }
@@ -85,6 +86,13 @@ export class StudioOpenAiCreativeAssistService {
         message:
           "서버에 OpenAI API 키(OPENAI_API_KEY)가 아직 설정되지 않았어요. 서버 측 .env.local에 키를 추가한 뒤 다시 실행해 주세요.",
       });
+    }
+
+    if (options.signal?.aborted) {
+      throw new HttpException(
+        { code: "CLIENT_ABORTED", message: "요청이 취소되었어요." },
+        499,
+      );
     }
 
     const quota = this.rateLimiter.consume(actorIdentifier, config.limits);
@@ -156,6 +164,7 @@ export class StudioOpenAiCreativeAssistService {
         signal: controller.signal,
       });
     } catch {
+      quota.release();
       clearTimeout(timer);
       options.signal?.removeEventListener("abort", onClientAbort);
       if (timedOut) {
@@ -180,6 +189,9 @@ export class StudioOpenAiCreativeAssistService {
     }
 
     if (!response.ok) {
+      if (response.status >= 500 || response.status === 401 || response.status === 403) {
+        quota.release();
+      }
       const errorCode = await this.readSafeOpenAiErrorCode(response);
       throw this.mapUpstreamHttpError(response.status, errorCode);
     }
@@ -188,6 +200,7 @@ export class StudioOpenAiCreativeAssistService {
     try {
       payload = (await response.json()) as Record<string, unknown>;
     } catch {
+      quota.release();
       throw new BadGatewayException({
         code: "OPENAI_INVALID_JSON",
         message: "OpenAI 응답 형식을 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
@@ -215,13 +228,21 @@ export class StudioOpenAiCreativeAssistService {
 
     const rawContent = firstChoice.message?.content;
     if (typeof rawContent !== "string" || !rawContent.trim()) {
+      quota.release();
       throw new BadGatewayException({
         code: "OPENAI_EMPTY_RESPONSE",
         message: "OpenAI에서 빈 답변이 돌아왔어요. 잠시 후 다시 시도해 주세요.",
       });
     }
 
-    const structured = this.parseModeOutput(input.mode, rawContent);
+    let structured: OpenAiAssistStructuredResult;
+    try {
+      structured = this.parseModeOutput(input.mode, rawContent);
+    } catch (error) {
+      quota.release();
+      throw error;
+    }
+
     const usageRecord =
       payload.usage && typeof payload.usage === "object"
         ? (payload.usage as Record<string, unknown>)

@@ -79,6 +79,7 @@ import {
   type AuxiliaryKind,
 } from "./studio-mode-project-create-helpers";
 import { StudioCanvasSafeZoneSimulator } from "./guided-flow/StudioCanvasSafeZoneSimulator";
+import { findGuidedGenreStarter } from "./guided-flow/studio-guided-flow-catalog";
 import { StudioCreateProductionPlanSection } from "./guided-flow/StudioCreateProductionPlanSection";
 import { StudioCreateKeyboardForm } from "./StudioCreateKeyboardForm";
 import { StudioCreateLaunchSummary, StudioCreateReturnToStart } from "./StudioCreateLaunchSummary";
@@ -95,7 +96,8 @@ export function StudioModeProjectCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const locale = useI18n((state) => state.lang) === "ko" ? "ko" : "en";
-  const requestedTemplateId = searchParams.get("template");
+  const initialPreset = findGuidedGenreStarter(searchParams.get("preset"));
+  const requestedTemplateId = searchParams.get("template") ?? initialPreset?.templateId ?? null;
   const requestedSelection = webtoonOnboardingSelectionFromSearchParams(searchParams);
   const initialFormatId = requestedFormat(searchParams.get("format"), searchParams.get("kind"), requestedTemplateId);
   const initialFormat = studioProjectFormatProfile(initialFormatId);
@@ -116,8 +118,8 @@ export function StudioModeProjectCreatePage() {
   const entryLane = resolveStudioCreateLane(searchParams);
   const explicitEntryLane = studioCreateExplicitLane(searchParams);
   const [lane, setLane] = useState<StudioCreateLane | null>(entryLane);
-  // 작품 홈에서 가져온 한 줄 아이디어. 제목 초안으로 쓰였다는 사실을 화면 위쪽에서 바로 보여 준다.
-  const importedIdea = requestedStart === "idea" ? requestedTitle : null;
+  // 작품 홈에서 직접 적어 온 한 줄 아이디어만 표시하고, 장르 프리셋의 샘플 가제는 제외한다.
+  const importedIdea = !initialPreset && requestedStart === "idea" ? requestedTitle : null;
   const [startPoint, setStartPoint] = useState<StudioProjectStartPoint>(
     requestedStart
       ?? (entryLane ? studioCreateLaneSpec(entryLane).startPoint : null)
@@ -141,7 +143,9 @@ export function StudioModeProjectCreatePage() {
   );
   // 템플릿이 정한 초기 크기를 숫자로 덮어쓴 값. null이면 템플릿 크기를 그대로 쓴다.
   const [sizeOverride, setSizeOverride] = useState<{ width: string; height: string } | null>(null);
-  const [activeQuickPresetId, setActiveQuickPresetId] = useState<string | null>(null);
+  const [activeQuickPresetId, setActiveQuickPresetId] = useState<string | null>(
+    () => initialPreset?.quickPresetId ?? null,
+  );
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const advancedSettingsRef = useRef<HTMLDetailsElement>(null);
@@ -189,6 +193,20 @@ export function StudioModeProjectCreatePage() {
     document.getElementById(customWidth === null ? CANVAS_WIDTH_INPUT_ID : CANVAS_HEIGHT_INPUT_ID)?.focus();
   }
 
+  function syncStartPointSelection(next: StudioProjectStartPoint, supportsPlan = supportsProductionPlan) {
+    setStartPoint(next);
+    // 재료를 직접 바꾸면 첫 단계가 바뀐 것이므로 레인(과 그 착지)도 따라간다.
+    // files는 가져오기 착지가 따로 있어 레인을 유지한다.
+    const nextLane = studioCreateLaneForStartPoint(next);
+    if (nextLane !== null) setLane(nextLane);
+    if (supportsPlan) {
+      setSelection((current) => ({
+        ...current,
+        startingPoint: onboardingStartPointFromProject(next),
+      }));
+    }
+  }
+
   function chooseFormat(profile: StudioProjectFormatProfile) {
     setActiveQuickPresetId(null);
     setAuxiliaryKind(null);
@@ -209,12 +227,13 @@ export function StudioModeProjectCreatePage() {
     setSizeOverride(null);
     setTitle(bt(preset.sampleTitleKo, preset.sampleTitleEn));
     setTitleEdited(true);
-    chooseStartPoint(preset.startPoint);
+    syncStartPointSelection(preset.startPoint, nextProfile.projectKind === "webtoon");
     if (nextProfile.projectKind !== "webtoon") setOnboardingEnabled(false);
     setError(null);
   }
 
   function chooseAuxiliary(option: StudioAuxiliaryWorkspaceOption) {
+    setActiveQuickPresetId(null);
     setAuxiliaryKind(option.id);
     setTemplateId(option.templateId);
     setSizeOverride(null);
@@ -224,17 +243,8 @@ export function StudioModeProjectCreatePage() {
   }
 
   function chooseStartPoint(next: StudioProjectStartPoint) {
-    setStartPoint(next);
-    // 재료를 직접 바꾸면 첫 단계가 바뀐 것이므로 레인(과 그 착지)도 따라간다.
-    // files는 가져오기 착지가 따로 있어 레인을 유지한다.
-    const nextLane = studioCreateLaneForStartPoint(next);
-    if (nextLane !== null) setLane(nextLane);
-    if (supportsProductionPlan) {
-      setSelection((current) => ({
-        ...current,
-        startingPoint: onboardingStartPointFromProject(next),
-      }));
-    }
+    setActiveQuickPresetId(null);
+    syncStartPointSelection(next);
   }
 
   function create(): boolean {
@@ -331,7 +341,7 @@ export function StudioModeProjectCreatePage() {
           titleReady={titleReady} sizeReady={sizeReady} creating={creating}
           onCreate={create} onFixName={focusProjectTitle} onFixSize={focusCanvasSize}>
           {(onInputKeyDown) => <>
-          <StudioJourneyStepBar currentStep="start" startHref="/create" className="mb-4" />
+          <StudioJourneyStepBar currentStep="start" startHref="/create" allowCurrentStepLink className="mb-4" />
           {/* 기본 선택 뒤에 주 행동 하나를 두고 추가 설정·미리보기는 뒤로 분리한다. */}
           <PurposeHeader
             eyebrow={(
@@ -374,6 +384,9 @@ export function StudioModeProjectCreatePage() {
           <StudioCreateQuickPresetStrip
             activePresetId={activeQuickPresetId}
             onSelectPreset={applyQuickPreset}
+            onQuickStart={titleReady && sizeReady ? () => { create(); } : undefined}
+            quickStartSummary={`${title.trim() || targetTitle} · ${documentWidth} × ${documentHeight}px · ${nextStepLabel}`}
+            creating={creating}
           />
 
           <FormStepSection
@@ -509,6 +522,7 @@ export function StudioModeProjectCreatePage() {
                     value={title}
                     maxLength={STUDIO_PROJECT_TITLE_MAX_LENGTH}
                     onChange={(event) => {
+                      setActiveQuickPresetId(null);
                       setTitle(event.target.value);
                       setTitleEdited(true);
                     }}
@@ -528,6 +542,7 @@ export function StudioModeProjectCreatePage() {
                         key={koTitle}
                         type="button"
                         onClick={() => {
+                          setActiveQuickPresetId(null);
                           setTitle(sample);
                           setTitleEdited(true);
                         }}
@@ -546,6 +561,7 @@ export function StudioModeProjectCreatePage() {
                   aria-label={bt("시작 템플릿", "Starting template")}
                   value={selectedTemplateId}
                   onChange={(event) => {
+                    setActiveQuickPresetId(null);
                     setTemplateId(event.target.value);
                     setSizeOverride(null);
                   }}
@@ -564,7 +580,12 @@ export function StudioModeProjectCreatePage() {
                 ) : null}
               </label>
             </div>
-            <StudioCanvasSafeZoneSimulator width={documentWidth} height={documentHeight} />
+            <StudioCanvasSafeZoneSimulator
+              width={documentWidth}
+              height={documentHeight}
+              formatId={auxiliary ? undefined : format.id}
+              pageCount={selectedPageCount}
+            />
           </FormStepSection>
 
           <StudioCreateLaunchSummary
@@ -597,10 +618,13 @@ export function StudioModeProjectCreatePage() {
                     value={sizeOverride?.width ?? String(modePlan.document.width)}
                     aria-invalid={sizeOverride !== null && customWidth === null ? true : undefined}
                     aria-describedby={sizeOverride !== null && customWidth === null ? CREATE_SIZE_REASON_ID : undefined}
-                    onChange={(event) => setSizeOverride({
-                      width: event.target.value,
-                      height: sizeOverride?.height ?? String(modePlan.document.height),
-                    })}
+                    onChange={(event) => {
+                      setActiveQuickPresetId(null);
+                      setSizeOverride({
+                        width: event.target.value,
+                        height: sizeOverride?.height ?? String(modePlan.document.height),
+                      });
+                    }}
                     className="mt-2 min-h-11 w-36 rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg outline-none focus:border-accent"
                   />
                 </label>
@@ -618,10 +642,13 @@ export function StudioModeProjectCreatePage() {
                     value={sizeOverride?.height ?? String(modePlan.document.height)}
                     aria-invalid={sizeOverride !== null && customHeight === null ? true : undefined}
                     aria-describedby={sizeOverride !== null && customHeight === null ? CREATE_SIZE_REASON_ID : undefined}
-                    onChange={(event) => setSizeOverride({
-                      width: sizeOverride?.width ?? String(modePlan.document.width),
-                      height: event.target.value,
-                    })}
+                    onChange={(event) => {
+                      setActiveQuickPresetId(null);
+                      setSizeOverride({
+                        width: sizeOverride?.width ?? String(modePlan.document.width),
+                        height: event.target.value,
+                      });
+                    }}
                     className="mt-2 min-h-11 w-36 rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg outline-none focus:border-accent"
                   />
                 </label>
@@ -724,7 +751,7 @@ export function StudioModeProjectCreatePage() {
               selection={selection}
               onToggleOnboarding={() => setOnboardingEnabled((value) => !value)}
               onChangeSelection={setSelection}
-              onSyncStartPoint={setStartPoint}
+              onSyncStartPoint={chooseStartPoint}
               onSyncPurpose={setPurpose}
               onSyncCollaboration={setCollaboration}
             />

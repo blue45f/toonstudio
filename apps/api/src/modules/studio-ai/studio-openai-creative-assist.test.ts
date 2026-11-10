@@ -1,7 +1,10 @@
-import { HttpException } from "@nestjs/common";
+import { EventEmitter } from "node:events";
+
+import { HttpException, UnauthorizedException } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 
 import { StudioOpenAiRateLimiter } from "./openai-assist/studio-openai-guardrails";
+import { StudioOpenAiCreativeAssistController } from "./studio-openai-creative-assist.controller";
 import { StudioOpenAiCreativeAssistRequestSchema } from "./studio-openai-creative-assist.dto";
 import {
   redactCreatorSensitiveText,
@@ -9,7 +12,39 @@ import {
   StudioOpenAiCreativeAssistService,
 } from "./studio-openai-creative-assist.service";
 
-describe("StudioOpenAiCreativeAssistService", () => {
+import type { StudioOpenAiCreativeAssistDto } from "./studio-openai-creative-assist.dto";
+import type { Request, Response } from "express";
+
+function createRequestResponseHarness(headers: Record<string, string> = {}) {
+  const request = new EventEmitter() as EventEmitter & {
+    aborted: boolean;
+    destroyed: boolean;
+    headers: Record<string, string>;
+    socket: { remoteAddress: string };
+    header: (name: string) => string | undefined;
+  };
+  request.aborted = false;
+  request.destroyed = false;
+  request.headers = Object.fromEntries(
+    Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]),
+  );
+  request.socket = { remoteAddress: "203.0.113.10" };
+  request.header = (name: string) => request.headers[name.toLowerCase()];
+
+  const response = new EventEmitter() as EventEmitter & {
+    writableEnded: boolean;
+  };
+  response.writableEnded = false;
+
+  return {
+    request: request as unknown as Request,
+    response: response as unknown as Response,
+    requestEmitter: request,
+    responseEmitter: response,
+  };
+}
+
+describe("StudioOpenAiCreativeAssistService & Controller", () => {
   it("reports unconfigured status safely without leaking keys when OPENAI_API_KEY is absent", () => {
     const service = new StudioOpenAiCreativeAssistService();
     const status = service.status({});
@@ -54,18 +89,31 @@ describe("StudioOpenAiCreativeAssistService", () => {
     expect(config.model).toBe("gpt-4o-mini");
   });
 
-  it("masks personal data (email, phone, RRN, accidental secret token) before upstream send", () => {
+  it("masks personal data (email, phone, +82 phone, foreign RRN, unspaced card, tokens) before upstream send", () => {
     const fakeSecret = ["sk", "live", "1234567890abcdefghij"].join("-");
-    const sample = `작가 연락처 010-1234-5678, 메일 creator@example.com, 주민번호 990101-1234567, 토큰 ${fakeSecret}`;
+    const fakeGhToken = ["ghp", "1234567890abcdefghijklmnop"].join("_");
+    const sample = [
+      "연락처 010-1234-5678",
+      "국제 +82-10-9876-5432",
+      "메일 creator@example.com",
+      "외국인번호 010203-5123456",
+      "카드 1234567812345678",
+      `토큰 ${fakeSecret}`,
+      `깃허브 ${fakeGhToken}`,
+    ].join(", ");
     const result = redactCreatorSensitiveText(sample);
 
-    expect(result.redactedCount).toBe(4);
+    expect(result.redactedCount).toBe(7);
     expect(result.sanitizedText).not.toContain("010-1234-5678");
+    expect(result.sanitizedText).not.toContain("9876-5432");
     expect(result.sanitizedText).not.toContain("creator@example.com");
-    expect(result.sanitizedText).not.toContain("990101-1234567");
+    expect(result.sanitizedText).not.toContain("010203-5123456");
+    expect(result.sanitizedText).not.toContain("1234567812345678");
     expect(result.sanitizedText).not.toContain(fakeSecret);
+    expect(result.sanitizedText).not.toContain(fakeGhToken);
     expect(result.sanitizedText).toContain("[연락처 비공개]");
     expect(result.sanitizedText).toContain("[이메일 비공개]");
+    expect(result.sanitizedText).toContain("[카드번호 비공개]");
   });
 
   it("returns 503 with clear Korean guidance when OPENAI_API_KEY is missing", async () => {
@@ -166,7 +214,7 @@ describe("StudioOpenAiCreativeAssistService", () => {
     }
   });
 
-  it("distinguishes OpenAI quota exhaustion without auto-charging and enforces burst rate limits", async () => {
+  it("distinguishes OpenAI quota exhaustion without auto-charging and enforces daily caps", async () => {
     const service = new StudioOpenAiCreativeAssistService();
     const quotaFetch = vi.fn(async () =>
       new Response(
@@ -191,7 +239,6 @@ describe("StudioOpenAiCreativeAssistService", () => {
       expect(JSON.stringify(httpError.getResponse())).toContain("유료 충전을 진행하지 않았습니다");
     }
 
-    // 한도 1회 설정 시 두 번째 요청은 외부 호출 전에 차단됨
     let upstreamCalls = 0;
     const okFetch = vi.fn(async () => {
       upstreamCalls += 1;
@@ -253,6 +300,57 @@ describe("StudioOpenAiCreativeAssistService", () => {
     expect(upstreamCalls).toBe(1);
   });
 
+  it("releases rate-limiter slot when request is aborted or fails with transient error so retries succeed", async () => {
+    const service = new StudioOpenAiCreativeAssistService();
+    const env = {
+      OPENAI_API_KEY: "placeholder-key",
+      STUDIO_OPENAI_DAILY_REQUEST_LIMIT: "1",
+    };
+
+    const failingFetch = vi.fn(async () => {
+      throw new Error("socket hang up");
+    }) as unknown as typeof fetch;
+
+    await expect(
+      service.assist(
+        "user:retry-safe",
+        { mode: "export-preflight-coach", inputText: "1화 마감 점검 문구 테스트" },
+        { env, fetchImpl: failingFetch },
+      ),
+    ).rejects.toMatchObject({ status: 502 });
+
+    const successFetch = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              finish_reason: "stop",
+              message: {
+                content: JSON.stringify({
+                  readinessSummary: "출고 준비가 안정적입니다.",
+                  episodeBlurbSuggestion: "빗속 정류장, 노란 우산 하나가 바꾼 첫 만남.",
+                  checks: [
+                    { category: "말풍선 밀도", severity: "pass", detail: "두 줄 이내로 안정적입니다." },
+                    { category: "도입 훅", severity: "tip", detail: "첫 컷 여백을 조금 넓혀 보세요." },
+                  ],
+                }),
+              },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    ) as unknown as typeof fetch;
+
+    const retried = await service.assist(
+      "user:retry-safe",
+      { mode: "export-preflight-coach", inputText: "1화 마감 점검 문구 테스트" },
+      { env, fetchImpl: successFetch },
+    );
+    expect(retried.result.mode).toBe("export-preflight-coach");
+    expect(retried.quota.remainingDaily).toBe(0);
+  });
+
   it("validates DTO input bounds with concrete Korean messages", () => {
     const emptyCheck = StudioOpenAiCreativeAssistRequestSchema.safeParse({
       mode: "idea-remix",
@@ -263,15 +361,61 @@ describe("StudioOpenAiCreativeAssistService", () => {
 
   it("bounds rate-limiter memory with LRU eviction and sweeps expired UTC day buckets", () => {
     const limiter = new StudioOpenAiRateLimiter(4);
+    const limits = {
+      burstPerMinute: 5,
+      hourlyRequests: 20,
+      dailyRequests: 5,
+      globalDailyRequests: 100,
+    };
     const dayOne = Date.parse("2026-11-10T10:00:00.000Z");
 
     for (let i = 0; i < 6; i += 1) {
-      limiter.checkAndRecord(`user:actor-${i}`, { dailyLimit: 5, burstPerMinute: 5 }, dayOne);
+      limiter.consume(`user:actor-${i}`, limits, dayOne);
     }
-    expect(limiter.trackedActorCount()).toBe(4);
+    expect(limiter.trackedActorCount).toBe(4);
 
     const dayTwo = Date.parse("2026-11-11T00:05:00.000Z");
-    limiter.checkAndRecord("user:fresh-day", { dailyLimit: 5, burstPerMinute: 5 }, dayTwo);
-    expect(limiter.trackedActorCount()).toBe(1);
+    limiter.consume("user:fresh-day", limits, dayTwo);
+    expect(limiter.trackedActorCount).toBe(1);
+  });
+
+  it("requires authenticated user in controller and propagates client disconnect abort", async () => {
+    const assistSpy = vi.fn(
+      async (_actor: string, _body: StudioOpenAiCreativeAssistDto, opts?: { signal?: AbortSignal }) => {
+        return { abortedOnStart: Boolean(opts?.signal?.aborted) };
+      },
+    );
+    const mockService = {
+      status: vi.fn(() => ({ configured: false })),
+      assist: assistSpy,
+    } as unknown as StudioOpenAiCreativeAssistService;
+
+    const controller = new StudioOpenAiCreativeAssistController(mockService);
+    const spoofedHarness = createRequestResponseHarness({
+      "x-toonstudio-client-ip": "198.51.100.99",
+    });
+    const body: StudioOpenAiCreativeAssistDto = {
+      mode: "idea-remix",
+      inputText: "지하철 미스터리 웹툰 소재",
+    };
+
+    await expect(
+      controller.assist(undefined, body, spoofedHarness.request, spoofedHarness.response),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(assistSpy).not.toHaveBeenCalled();
+
+    const abortedHarness = createRequestResponseHarness();
+    abortedHarness.requestEmitter.aborted = true;
+    const result = await controller.assist(
+      "creator-77",
+      body,
+      abortedHarness.request,
+      abortedHarness.response,
+    );
+    expect(assistSpy).toHaveBeenCalledTimes(1);
+    expect(assistSpy.mock.calls[0]?.[0]).toBe("user:creator-77");
+    expect(result).toEqual({ abortedOnStart: true });
+    expect(abortedHarness.requestEmitter.listenerCount("aborted")).toBe(0);
+    expect(abortedHarness.responseEmitter.listenerCount("close")).toBe(0);
   });
 });

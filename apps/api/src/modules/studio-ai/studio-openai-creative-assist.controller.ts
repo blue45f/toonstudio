@@ -10,6 +10,7 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
 } from "@nestjs/common";
 
 import { StudioOpenAiCreativeAssistDto } from "./studio-openai-creative-assist.dto";
@@ -17,13 +18,24 @@ import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assi
 
 import type { Request, Response } from "express";
 
-function resolveActorKey(userId: string | undefined, request: Request): string {
-  if (userId && userId.trim().length > 0) {
-    return `user:${userId.trim()}`;
+function loginRequired(): UnauthorizedException {
+  return new UnauthorizedException({
+    code: "OPENAI_ASSIST_LOGIN_REQUIRED",
+    message:
+      "OpenAI 창작 도우미를 사용하려면 먼저 로그인해 주세요. 로그인하지 않아도 기획·원고 편집·내보내기는 그대로 사용할 수 있어요.",
+    settingsHref: "/settings/ai",
+  });
+}
+
+export function resolveOpenAiAssistActorKey(
+  userId: string | undefined,
+  _request?: Request,
+): string {
+  const normalizedUser = userId?.trim();
+  if (!normalizedUser) {
+    throw loginRequired();
   }
-  const edgeClientIp = request.header("x-toonstudio-client-ip")?.trim();
-  if (edgeClientIp) return `ip:${edgeClientIp}`;
-  return `ip:${request.ip || "local-anonymous"}`;
+  return `user:${normalizedUser}`;
 }
 
 async function withRequestAbort<T>(
@@ -72,7 +84,7 @@ export class StudioOpenAiCreativeAssistController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const actor = resolveActorKey(userId, request);
+    const actor = resolveOpenAiAssistActorKey(userId, request);
     return withRequestAbort(request, response, (signal) =>
       this.assistService.assist(actor, body, { signal }),
     );
