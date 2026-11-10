@@ -1,0 +1,27 @@
+================================================================
+ ToonStudio Project Validator & Safe Export Manifest Report
+================================================================
+Status       : PASS (VALID)
+Project File : ./fixtures/valid-basic/project.json
+Fixture Root : ./fixtures/valid-basic
+Project ID   : proj-toon-001
+Project Title: 달빛 스튜디오 시즌1
+----------------------------------------------------------------
+Counts       : Episodes=2, Scenes=3, Panels=4, Assets=7
+Diagnostics  : Errors=0, Warnings=0
+----------------------------------------------------------------
+Export Manifest Integrity:
+  Algorithm           : SHA-256
+  Total Asset Bytes   : 223
+  Asset Tree SHA-256  : 1cbd3e2862ecc2862c763b061f0e5348c13613e8508c9bbb6c6bab792ebe2a83
+  Manifest SHA-256    : 36cde0dd567064043f32d57834726a7cd08f8fbd3aaf6d2000320f2fe2502652
+  Studio Checksum     : sha256:36cde0dd567064043f32d57834726a7cd08f8fbd3aaf6d2000320f2fe2502652
+  Ordered Assets      :
+    - [as-aud-1] assets/audio/bgm_01.mp3 (26B, sha256:0b5370bcae3bc9ac...)
+    - [as-font-1] assets/fonts/toon_sans.woff2 (24B, sha256:5655a05ad5080f17...)
+    - [as-img-1] assets/images/ep1_p1.png (33B, sha256:4ffd8bb30991e3a6...)
+    - [as-img-2] assets/images/ep1_p2.webp (27B, sha256:d19e5f43c22d2c44...)
+    - [as-img-kr] assets/images/한글배경.jpg (34B, sha256:69383d2ed2ca90b7...)
+    - [as-scr-1] assets/scripts/dialogue_ep1.json (31B, sha256:debe6eee3d5b659e...)
+    - [as-sub-1] assets/subtitles/ep1_ko.vtt (48B, sha256:a6437ba9e4912feb...)
+================================================================

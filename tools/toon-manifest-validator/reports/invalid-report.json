@@ -1,0 +1,57 @@
+{
+  "errorCount": 6,
+  "errors": [
+    {
+      "code": "EMPTY_PROJECT_TITLE",
+      "entityId": "proj-toon-001",
+      "entityType": "project",
+      "message": "Project title must be a non-empty string.",
+      "path": "project.title"
+    },
+    {
+      "code": "REF_EPISODE_PROJECT_MISMATCH",
+      "entityId": "ep-01",
+      "entityType": "episode",
+      "message": "Episode \"ep-01\" references projectId \"wrong-proj\", expected \"proj-toon-001\".",
+      "path": "episodes[0].projectId"
+    },
+    {
+      "code": "PATH_TRAVERSAL_DETECTED",
+      "entityId": "asset-traversal",
+      "entityType": "asset",
+      "message": "Path traversal sequence (\"..\") detected in \"../../outside-fixture/unallowed.dat\".",
+      "path": "assets[7].relativePath"
+    },
+    {
+      "code": "UNSUPPORTED_EXTENSION",
+      "entityId": "asset-traversal",
+      "entityType": "asset",
+      "message": "Extension \".dat\" in \"../../outside-fixture/unallowed.dat\" is not supported.",
+      "path": "assets[7].relativePath"
+    },
+    {
+      "code": "REF_PANEL_ASSET_MISSING",
+      "entityId": "pn-01",
+      "entityType": "panel",
+      "message": "Panel \"pn-01\" references non-existent assetId \"asset-missing-999\".",
+      "path": "panels[0].assetIds[2]"
+    },
+    {
+      "code": "UNREFERENCED_ASSET",
+      "entityId": "asset-traversal",
+      "entityType": "asset",
+      "message": "Asset \"asset-traversal\" (\"../../outside-fixture/unallowed.dat\") is not referenced by any panel.",
+      "path": "assets(asset-traversal)"
+    }
+  ],
+  "exitCode": 1,
+  "input": {
+    "fixtureDir": "./fixtures/valid-basic",
+    "projectPath": "./fixtures/invalid-sample/project-invalid.json"
+  },
+  "manifest": null,
+  "reportVersion": "1.0.0",
+  "status": "invalid",
+  "warningCount": 0,
+  "warnings": []
+}

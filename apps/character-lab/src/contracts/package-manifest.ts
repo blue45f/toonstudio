@@ -30,8 +30,16 @@ export function isPreviewFileRole(role: string): role is `preview:${string}` {
   return role.startsWith("preview:");
 }
 
-/** Blender 메시 규약: TS_AuthoredHair_<style>_LOD<n>, <mesh>_Outline */
-export const AUTHORED_HAIR_MESH_PATTERN = /^TS_AuthoredHair_([a-z0-9-]+)_LOD(\d+)$/u;
+/**
+ * Blender 메시 규약: TS_AuthoredHair_<style>_LOD<n>, <mesh>_Outline.
+ * 루트 tsconfig(target ES2017, noEmit)가 scripts/verify-all-labs-production-release.mts 경유로 이 계약을 검사할 때
+ * 정규식 리터럴의 ES2018 명명 캡처 구문 오류(TS1503)가 나지 않도록 RegExp 생성자로 선언한다(ES2017 런타임 지원이 아님 —
+ * 실제 실행은 앱 target ES2022/esnext, 지원 브라우저 Chrome 113+, Node >=24.16의 ES2018+ 정규식 엔진을 전제).
+ */
+export const AUTHORED_HAIR_MESH_PATTERN: RegExp = new RegExp(
+  "^TS_AuthoredHair_(?<style>[a-z0-9-]+)_LOD(?<lod>\\d+)$",
+  "u",
+);
 export const OUTLINE_MESH_SUFFIX = "_Outline";
 
 export const slotCapabilitySchema = z
@@ -160,8 +168,10 @@ export function parseCharacterPackageManifest(json: unknown, now?: number): Pars
 /** 메시 이름이 제작 헤어 규약이면 style·lod를 돌려준다. */
 export function parseAuthoredHairMeshName(name: string): { style: string; lod: number } | null {
   const match = AUTHORED_HAIR_MESH_PATTERN.exec(name);
-  const style = match?.[1];
-  const lod = match?.[2];
-  if (!match || style === undefined || lod === undefined) return null;
-  return { style, lod: Number.parseInt(lod, 10) };
+  const style = match?.groups?.style ?? match?.[1];
+  const lodText = match?.groups?.lod ?? match?.[2];
+  if (!match || style === undefined || lodText === undefined) return null;
+  const lod = Number.parseInt(lodText, 10);
+  if (!Number.isSafeInteger(lod)) return null;
+  return { style, lod };
 }

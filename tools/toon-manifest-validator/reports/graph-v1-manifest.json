@@ -1,0 +1,95 @@
+{
+  "assets": [
+    {
+      "checksum": "sha256:4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03",
+      "extension": ".png",
+      "id": "as:img:1",
+      "normalizedPath": "assets/images/ep1_p1.png",
+      "originalPath": "assets/images/ep1_p1.png",
+      "referencedByPanels": [
+        "pn:01"
+      ],
+      "sha256": "4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03",
+      "sizeBytes": 33,
+      "title": "그래프 패널 이미지",
+      "type": "image"
+    }
+  ],
+  "episodes": [
+    {
+      "id": "ep:01",
+      "order": 1,
+      "projectId": "proj:toon:graph-01",
+      "sceneCount": 1,
+      "scenes": [
+        {
+          "episodeId": "ep:01",
+          "id": "sc:01",
+          "order": 1,
+          "panelCount": 1,
+          "panels": [
+            {
+              "assetIds": [
+                "as:img:1"
+              ],
+              "assets": [
+                {
+                  "assetId": "as:img:1",
+                  "checksum": "sha256:4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03",
+                  "normalizedPath": "assets/images/ep1_p1.png",
+                  "sha256": "4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03"
+                }
+              ],
+              "dialogue": "",
+              "id": "pn:01",
+              "order": 1,
+              "sceneId": "sc:01",
+              "title": "패널 1"
+            }
+          ],
+          "title": "장면 1"
+        }
+      ],
+      "title": "제1화 그래프 오프닝"
+    }
+  ],
+  "integrity": {
+    "algorithm": "SHA-256",
+    "assetTreeHash": "0ebdbcd657ec0b0e6288d842a128232c4b24a2a3bb7f040a7ceff5f53d308b22",
+    "checksum": "sha256:6d77d437bb207456bb97c21ee7ea16ff8d62700acda4f4f91007347210b02a6a",
+    "manifestContentHash": "6d77d437bb207456bb97c21ee7ea16ff8d62700acda4f4f91007347210b02a6a"
+  },
+  "manifestVersion": "1.0.0",
+  "project": {
+    "author": null,
+    "id": "proj:toon:graph-01",
+    "title": "달빛 스튜디오 그래프 v1"
+  },
+  "schemaVersion": 1,
+  "studioArchiveManifest": {
+    "applicationVersion": "1.0.0",
+    "createdAt": "2026-11-10T00:00:00.000Z",
+    "dependencies": [],
+    "files": [
+      {
+        "checksum": "sha256:4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03",
+        "kind": "asset",
+        "path": "assets/images/ep1_p1.png",
+        "required": true,
+        "sizeBytes": 33
+      }
+    ],
+    "projectId": "proj:toon:graph-01",
+    "rootDocumentPaths": [
+      "assets/images/ep1_p1.png"
+    ],
+    "schemaVersion": 1
+  },
+  "summary": {
+    "assetCount": 1,
+    "episodeCount": 1,
+    "panelCount": 1,
+    "sceneCount": 1,
+    "totalBytes": 33
+  }
+}
