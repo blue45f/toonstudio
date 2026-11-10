@@ -6,7 +6,7 @@
   "dependencies": {
     "embla-carousel-react": "^8.6.0",
     "korean-lunar-calendar": "0.4.0",
-    "lunar-typescript": "1.8.6"
+    "lunar-typescript": "1.8.7"
   },
   "main": "./src/index.ts",
   "module": "./src/index.ts",
