@@ -2862,11 +2862,6 @@ packages:
   '@nodable/entities@3.1.0':
     resolution: {integrity: sha512-LsS/DjHr+uDM647Gru/cA8+J3a3HfhttwCKLyuoyN7yXTFCxKBtSgMQBvrW9yNPa2/zDRUNuGPaH5QUFoa4arQ==}
 
-  '@nuxt/opencollective@0.4.1':
-    resolution: {integrity: sha512-GXD3wy50qYbxCJ652bDrDzgMr3NFEkIS374+IgFQKkCvk9yiYcLvX2XDYr7UyQxf4wK0e+yqDYRubZ0DtOxnmQ==}
-    engines: {node: ^14.18.0 || >=16.10.0, npm: '>=5.10.0'}
-    hasBin: true
-
   '@odiff/darwin-arm64@4.5.0':
     resolution: {integrity: sha512-fztpr/73BNwJqua2xSjGaxkZr9xMVDqYFIKFnZS/MAW1MzHg6lN9r0kno2aY9FSIbCyE6c6/0MqbHs/+AkDhXw==}
     cpu: [arm64]
@@ -11151,10 +11146,6 @@ snapshots:
   '@nodable/entities@3.0.0': {}
 
   '@nodable/entities@3.1.0': {}
-
-  '@nuxt/opencollective@0.4.1':
-    dependencies:
-      consola: 3.4.2
 
   '@odiff/darwin-arm64@4.5.0':
     optional: true
