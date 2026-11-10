@@ -3,15 +3,19 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { userInfo } from "node:os";
-import { resolve } from "node:path";
+import { delimiter, dirname, resolve } from "node:path";
 
 const STANDING_APPROVAL_PATH = "deploy/cloudflare-static/STANDING_APPROVAL.json";
 
 const mode = process.argv.includes("--production") ? "production" : "dry-run";
 const skipBuild = process.argv.includes("--skip-build");
 const skipR2Sync = process.argv.includes("--skip-r2-sync");
+const coreOriginArg = process.argv
+  .find((argument) => argument.startsWith("--core-origin="))
+  ?.slice("--core-origin=".length);
 const approval = process.env.TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL;
-const rawOrigin = process.env.CLOUDFLARE_CORE_API_ORIGIN
+const rawOrigin = coreOriginArg
+  ?? process.env.CLOUDFLARE_CORE_API_ORIGIN
   ?? (mode === "dry-run" ? "https://core.invalid" : "");
 
 const OPTIONAL_SINGLE_ORIGINS = [
@@ -153,8 +157,16 @@ if (
 const childHome = process.env.HOME?.includes("/.gemini/")
   ? userInfo().homedir
   : process.env.HOME;
+const nodeBinDirectory = dirname(process.execPath);
+const existingPathEntries = (process.env.PATH ?? "").split(delimiter).filter(Boolean);
+const normalizedPathEntries = [
+  nodeBinDirectory,
+  "/opt/homebrew/bin",
+  ...existingPathEntries,
+].filter((entry, index, list) => list.indexOf(entry) === index);
 const baseChildEnvironment = {
   ...process.env,
+  PATH: normalizedPathEntries.join(delimiter),
   ...(childHome ? { HOME: childHome } : {}),
 };
 const useWranglerOAuthIsolation = skipR2Sync && !process.env.CLOUDFLARE_API_TOKEN?.trim();
