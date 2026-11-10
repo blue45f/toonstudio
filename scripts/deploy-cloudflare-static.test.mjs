@@ -252,7 +252,8 @@ describe("Cloudflare production release gates (all child process calls mocked)",
     ]);
   });
 
-  it.each([1, 2, 3, 4, 5, 6])("stops after failing build/publication stage %i", (stage) => {    const { result, commands } = runProduction({ FAKE_FAIL_CALL: String(stage) });
+  it.each([1, 2, 3, 4, 5, 6])("stops after failing build/publication stage %i", (stage) => {
+    const { result, commands } = runProduction({ FAKE_FAIL_CALL: String(stage) });
     expect(result.status).toBe(17);
     expect(commands).toHaveLength(stage);
   });
@@ -309,5 +310,49 @@ describe("Cloudflare production release gates (all child process calls mocked)",
     expect(result.status).toBe(0);
     expect(allCommands).toEqual(commands);
     expect(commands[5].args).toContain("--dry-run");
+  });
+
+  it("rejects --skip-build when prebuilt dist artifacts are missing", () => {
+    const { result, commands } = runDeploy({}, ["--production", "--skip-build"], standingApprovalFile);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("--skip-build requires prebuilt dist/index.html and dist/.assetsignore");
+    expect(commands).toEqual([]);
+  });
+
+  it("supports --skip-build, --skip-r2-sync, and --profile while keeping CSP, SW, and R2 dry-run gates", () => {
+    const { result, commands } = runDeploy(
+      { CLOUDFLARE_API_TOKEN: "", CLOUDFLARE_CORE_API_ORIGIN: "" },
+      ["--production", "--skip-build", "--skip-r2-sync", "--profile=onpod-current"],
+      {
+        ...standingApprovalFile,
+        "config/deployment/environment-contract.json": JSON.stringify({
+          profiles: {
+            "onpod-current": {
+              settings: { CORE_API_ORIGIN: "https://profile-core.example.test" },
+            },
+          },
+        }),
+        "dist/index.html": "<!doctype html><title>ok</title>",
+        "dist/.assetsignore": "*.br\n",
+      },
+    );
+    expect(result.status).toBe(0);
+    expect(commands.map((command) => command.args)).toEqual([
+      ["run", "generate:cloudflare-static-rules", "--", "--check"],
+      ["exec", "node", "scripts/verify-static-csp.mjs", "dist/index.html"],
+      ["exec", "node", "scripts/verify-static-service-worker.mjs"],
+      ["run", "sync:cloudflare-r2-assets:dry-run"],
+      [
+        "exec",
+        "wrangler",
+        "deploy",
+        "--env-file",
+        "/dev/null",
+        "--config",
+        "deploy/cloudflare-static/wrangler.jsonc",
+        "--var",
+        "CORE_API_ORIGIN:https://profile-core.example.test",
+      ],
+    ]);
   });
 });

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "meta": {
+    "description": "Pilates-flow (src/design-system/tokens.ts) & ToonStudio (studio-webtoon-design-tokens.ts) Verified Shared Design System Tokens",
+    "version": "1.1.0",
+    "verifiedFromLocalCode": true,
+    "wcagTarget": "WCAG 2.2 AA/AAA (Normal text >= 4.5:1, UI components >= 3.0:1, Touch target >= 44px)"
+  },
+  "pilatesFlowTokens": {
+    "surface": {
+      "--pf-color-bg-canvas": { "$value": "#F7F5EF", "responsiveStudioOverride": "#F5F7F7", "labelKo": "캔버스 배경 (Warm Ivory)" },
+      "--pf-color-bg-surface": { "$value": "#FFFEF9", "responsiveStudioOverride": "#FFFFFF", "labelKo": "기본 표면 (Atelier Paper)" },
+      "--pf-color-bg-surface-subtle": { "$value": "#F3F5EE", "responsiveStudioOverride": "#EEF2F2", "labelKo": "보조 표면 (Subtle Linen)" },
+      "--pf-color-bg-surface-muted": { "$value": "#E4EADF", "responsiveStudioOverride": "#E5F2EF", "labelKo": "세이지 강조 표면 (Soft Sage)" },
+      "--pf-color-block-surface": { "$value": "#F6F7F2", "labelKo": "시퀀스 블록 표면" }
+    },
+    "text": {
+      "--pf-color-text-primary": { "$value": "#1E3129", "responsiveStudioOverride": "#182C30", "contrast": "12.6:1 (AAA)" },
+      "--pf-color-text-secondary": { "$value": "#3D4F45", "responsiveStudioOverride": "#3C5156", "contrast": "8.1:1 (AAA)" },
+      "--pf-color-text-muted": { "$value": "#526358", "responsiveStudioOverride": "#526267", "contrast": "5.9:1 (AA)" }
+    },
+    "actionAndStatus": {
+      "--pf-color-action-primary": { "$value": "#173D34", "responsiveStudioOverride": "#17675C", "contrast": "11.4:1 (AAA)" },
+      "--pf-color-focus-ring": { "$value": "#B16F48", "outline": "3px solid", "outlineOffset": "3px", "contrast": "3.8:1 (AA)" },
+      "--pf-color-border-default": { "$value": "#D5DDD0", "responsiveStudioOverride": "#D6E0E0" },
+      "--pf-color-status-success-text": { "$value": "#254B29", "contrast": "8.8:1 (AAA)" },
+      "--pf-color-status-warning-text": { "$value": "#6B4010", "contrast": "7.9:1 (AAA)" },
+      "--pf-color-status-danger-text": { "$value": "#8A341E", "contrast": "7.1:1 (AAA)" },
+      "--pf-color-ai-draft-bg": { "$value": "#EEF2EA", "contrast": "9.4:1 (AAA)" },
+      "--pf-color-ai-memo-bg": { "$value": "#F4F1E3", "contrast": "8.5:1 (AAA)" }
+    },
+    "typography": {
+      "--pf-text-display": { "size": "clamp(1.75rem, 2.8vw, 2.4rem)", "lineHeight": "1.3" },
+      "--pf-text-xl": { "size": "1.375rem (22px)", "lineHeight": "1.45" },
+      "--pf-text-lg": { "size": "1.1875rem (19px)", "lineHeight": "1.45" },
+      "--pf-text-base": { "size": "1rem (16px)", "lineHeight": "1.65", "note": "모바일 iOS 자동 확대 방지 기준" },
+      "--pf-text-sm": { "size": "0.8125rem (13px)", "lineHeight": "1.8" },
+      "--pf-text-xs": { "size": "0.75rem (12px)", "lineHeight": "1.45" },
+      "--pf-text-2xs": { "size": "0.6875rem (11px)", "lineHeight": "1.45" }
+    },
+    "spacingAndTouch": {
+      "--pf-space-1": "4px",
+      "--pf-space-2": "8px",
+      "--pf-space-3": "12px",
+      "--pf-space-4": "16px",
+      "--pf-space-5": "20px",
+      "--pf-space-6": "24px",
+      "--pf-space-8": "32px",
+      "--pf-touch-min": "44px",
+      "bottomNavMinHeight": "48px"
+    }
+  },
+  "toonStudioWebtoonTokens": {
+    "version": 1,
+    "maxSerializedBytes": 2097152,
+    "modeAxes": {
+      "theme": ["present", "night", "memory", "dream"],
+      "language": ["ko", "ja", "en"],
+      "platform": ["mobile", "print", "preview"]
+    },
+    "defaults": {
+      "typography": {
+        "fontFamily": "Pretendard, sans-serif",
+        "fontSizePx": 16,
+        "lineHeight": 1.4,
+        "fontWeight": 400,
+        "letterSpacingPx": 0,
+        "color": "#111111"
+      },
+      "spacing": {
+        "panelGutterPx": 20,
+        "contentMarginPx": 24,
+        "safeAreaTopPx": 0,
+        "safeAreaRightPx": 0,
+        "safeAreaBottomPx": 0,
+        "safeAreaLeftPx": 0
+      },
+      "stroke": {
+        "color": "#111111",
+        "widthPx": 2,
+        "opacity": 1,
+        "lineCap": "round",
+        "lineJoin": "round"
+      },
+      "bubble": {
+        "fill": "#ffffff",
+        "textColor": "#111111",
+        "borderColor": "#111111",
+        "borderWidthPx": 2,
+        "paddingXPx": 18,
+        "paddingYPx": 14,
+        "tailLengthPx": 24,
+        "tailWidthPx": 16,
+        "cornerRadiusPx": 22,
+        "fontFamily": "Pretendard, sans-serif",
+        "fontSizePx": 18,
+        "lineHeight": 1.4
+      },
+      "output": {
+        "format": "webp",
+        "quality": 0.92,
+        "maxWidthPx": 800,
+        "sliceHeightPx": 4000,
+        "pixelRatio": 1,
+        "colorSpace": "srgb",
+        "backgroundColor": "#ffffff",
+        "compression": "balanced"
+      }
+    }
+  }
+}

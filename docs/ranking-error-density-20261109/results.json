@@ -1,0 +1,398 @@
+[
+  {
+    "width": 320,
+    "theme": "starlight",
+    "geometry": {
+      "overflow": 0,
+      "height": 92,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 154,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "geometry": {
+      "overflow": 0,
+      "height": 92,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 154,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 320,
+    "theme": "contrast",
+    "geometry": {
+      "overflow": 0,
+      "height": 92,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 154,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 390,
+    "theme": "starlight",
+    "geometry": {
+      "overflow": 0,
+      "height": 44,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 134,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "geometry": {
+      "overflow": 0,
+      "height": 44,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 134,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 390,
+    "theme": "contrast",
+    "geometry": {
+      "overflow": 0,
+      "height": 44,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 134,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 834,
+    "theme": "starlight",
+    "geometry": {
+      "overflow": 0,
+      "height": 44,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 78,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 834,
+    "theme": "light",
+    "geometry": {
+      "overflow": 0,
+      "height": 44,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 78,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 834,
+    "theme": "contrast",
+    "geometry": {
+      "overflow": 0,
+      "height": 44,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 78,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 1440,
+    "theme": "starlight",
+    "geometry": {
+      "overflow": 0,
+      "height": 44,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 78,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 1440,
+    "theme": "light",
+    "geometry": {
+      "overflow": 0,
+      "height": 44,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 78,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  },
+  {
+    "width": 1440,
+    "theme": "contrast",
+    "geometry": {
+      "overflow": 0,
+      "height": 44,
+      "links": [
+        {
+          "height": 44,
+          "width": 101.078125,
+          "text": "조건으로 탐색장르·태그·상태로 후보를 좁혀요",
+          "href": "/explore"
+        },
+        {
+          "height": 44,
+          "width": 93.09375,
+          "text": "두 작품 비교고민되는 두 작품의 지표를 나란히",
+          "href": "/compare"
+        },
+        {
+          "height": 44,
+          "width": 126.8125,
+          "text": "작품 이야기 나누기순위 속 작품의 감상을 나눠요",
+          "href": "/community"
+        }
+      ]
+    },
+    "alert": {
+      "height": 78,
+      "button": 44,
+      "text": "랭킹을 불러오지 못했습니다.연결 상태를 확인한 뒤 다시 시도해 주세요.재시도"
+    }
+  }
+]

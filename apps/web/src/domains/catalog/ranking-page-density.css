@@ -42,3 +42,40 @@
 }
 /* 밝은 테마에서도 보드의 기존 접기 제목이 배경색과 구분되도록 한다. */
 .ranking-page-layout #ranking-board summary { color: var(--color-fg); }
+/* 연결 오류도 시안처럼 간결하게 표시하되 안내 문구와 재시도 영역을 보존한다. */
+.ranking-page-layout #ranking-board [data-slot="error-state"] {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 0.25rem 0.75rem;
+  padding: 1rem;
+  text-align: left;
+}
+.ranking-page-layout #ranking-board [data-slot="error-state"] > svg {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  margin: 0;
+}
+.ranking-page-layout #ranking-board [data-slot="error-state"] > p {
+  grid-column: 2;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.ranking-page-layout #ranking-board [data-slot="error-state"] > button {
+  grid-column: 2;
+  justify-self: start;
+  min-width: 44px;
+  min-height: 44px;
+  margin-top: 0.5rem;
+}
+@media (min-width: 640px) {
+  .ranking-page-layout #ranking-board [data-slot="error-state"] {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+  }
+  .ranking-page-layout #ranking-board [data-slot="error-state"] > button {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-self: center;
+    margin-top: 0;
+  }
+}

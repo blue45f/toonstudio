@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "projectId": "proj:toon:graph-01",
+  "title": "달빛 스튜디오 그래프 v1",
+  "createdAt": "2026-11-10T00:00:00.000Z",
+  "updatedAt": "2026-11-10T00:00:00.000Z",
+  "nodes": [
+    {
+      "version": 1,
+      "id": "ep:01",
+      "kind": "episode",
+      "parentId": null,
+      "scope": {
+        "version": 1,
+        "projectId": "proj:toon:graph-01",
+        "episodeId": "ep:01"
+      },
+      "label": "제1화 그래프 오프닝",
+      "order": 1
+    },
+    {
+      "version": 1,
+      "id": "sc:01",
+      "kind": "scene",
+      "parentId": "ep:01",
+      "scope": {
+        "version": 1,
+        "projectId": "proj:toon:graph-01",
+        "episodeId": "ep:01",
+        "sceneId": "sc:01"
+      },
+      "label": "장면 1",
+      "order": 1
+    },
+    {
+      "version": 1,
+      "id": "pn:01",
+      "kind": "panel",
+      "parentId": "sc:01",
+      "scope": {
+        "version": 1,
+        "projectId": "proj:toon:graph-01",
+        "episodeId": "ep:01",
+        "sceneId": "sc:01",
+        "panelId": "pn:01"
+      },
+      "label": "패널 1",
+      "order": 1
+    }
+  ],
+  "assetUsages": [
+    {
+      "version": 1,
+      "id": "usage:01",
+      "assetId": "as:img:1",
+      "assetRevisionId": "rev:01",
+      "licenseGrantId": "lic:01",
+      "scope": {
+        "version": 1,
+        "projectId": "proj:toon:graph-01",
+        "episodeId": "ep:01",
+        "sceneId": "sc:01",
+        "panelId": "pn:01"
+      },
+      "insertedAt": "2026-11-10T00:00:00.000Z"
+    }
+  ],
+  "assets": [
+    {
+      "id": "as:img:1",
+      "type": "image",
+      "label": "그래프 패널 이미지",
+      "displayPath": "assets/images/ep1_p1.png"
+    }
+  ]
+}

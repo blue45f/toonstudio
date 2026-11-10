@@ -1,0 +1,323 @@
+{
+  "assets": [
+    {
+      "checksum": "sha256:0b5370bcae3bc9ac4f7763c136204c6489609b4ea49b93d05878f004cfd4621b",
+      "extension": ".mp3",
+      "id": "as-aud-1",
+      "normalizedPath": "assets/audio/bgm_01.mp3",
+      "originalPath": "assets/audio/bgm_01.mp3",
+      "referencedByPanels": [
+        "pn-02"
+      ],
+      "sha256": "0b5370bcae3bc9ac4f7763c136204c6489609b4ea49b93d05878f004cfd4621b",
+      "sizeBytes": 26,
+      "title": "배경음악 01",
+      "type": "audio"
+    },
+    {
+      "checksum": "sha256:5655a05ad5080f17f7ac08608d763ad996d93169ddb61a307fd7005ab4bc12de",
+      "extension": ".woff2",
+      "id": "as-font-1",
+      "normalizedPath": "assets/fonts/toon_sans.woff2",
+      "originalPath": "assets/fonts/toon_sans.woff2",
+      "referencedByPanels": [
+        "pn-01"
+      ],
+      "sha256": "5655a05ad5080f17f7ac08608d763ad996d93169ddb61a307fd7005ab4bc12de",
+      "sizeBytes": 24,
+      "title": "기본 웹툰 폰트",
+      "type": "font"
+    },
+    {
+      "checksum": "sha256:4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03",
+      "extension": ".png",
+      "id": "as-img-1",
+      "normalizedPath": "assets/images/ep1_p1.png",
+      "originalPath": "assets/images/ep1_p1.png",
+      "referencedByPanels": [
+        "pn-01"
+      ],
+      "sha256": "4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03",
+      "sizeBytes": 33,
+      "title": "1화 1컷 이미지",
+      "type": "image"
+    },
+    {
+      "checksum": "sha256:d19e5f43c22d2c44a332ac5089ed04a7054519831a79421603f5092ab0f16c60",
+      "extension": ".webp",
+      "id": "as-img-2",
+      "normalizedPath": "assets/images/ep1_p2.webp",
+      "originalPath": "assets/images/ep1_p2.webp",
+      "referencedByPanels": [
+        "pn-02"
+      ],
+      "sha256": "d19e5f43c22d2c44a332ac5089ed04a7054519831a79421603f5092ab0f16c60",
+      "sizeBytes": 27,
+      "title": "1화 2컷 이미지",
+      "type": "image"
+    },
+    {
+      "checksum": "sha256:69383d2ed2ca90b7df803bdc9900e5b1851adcd7cb4a6e53601153ed1e815600",
+      "extension": ".jpg",
+      "id": "as-img-kr",
+      "normalizedPath": "assets/images/한글배경.jpg",
+      "originalPath": "assets/images/한글배경.jpg",
+      "referencedByPanels": [
+        "pn-03"
+      ],
+      "sha256": "69383d2ed2ca90b7df803bdc9900e5b1851adcd7cb4a6e53601153ed1e815600",
+      "sizeBytes": 34,
+      "title": "한글 배경 이미지",
+      "type": "image"
+    },
+    {
+      "checksum": "sha256:debe6eee3d5b659ee51f99247658dca606878618d220f079d3dc06bb7336ba8f",
+      "extension": ".json",
+      "id": "as-scr-1",
+      "normalizedPath": "assets/scripts/dialogue_ep1.json",
+      "originalPath": "assets/scripts/dialogue_ep1.json",
+      "referencedByPanels": [
+        "pn-04"
+      ],
+      "sha256": "debe6eee3d5b659ee51f99247658dca606878618d220f079d3dc06bb7336ba8f",
+      "sizeBytes": 31,
+      "title": "1화 대본 데이터",
+      "type": "script"
+    },
+    {
+      "checksum": "sha256:a6437ba9e4912feb3a00aee0bffd05348e69ace59f1d20c1a2a160f08fa85883",
+      "extension": ".vtt",
+      "id": "as-sub-1",
+      "normalizedPath": "assets/subtitles/ep1_ko.vtt",
+      "originalPath": "assets/subtitles/ep1_ko.vtt",
+      "referencedByPanels": [
+        "pn-03"
+      ],
+      "sha256": "a6437ba9e4912feb3a00aee0bffd05348e69ace59f1d20c1a2a160f08fa85883",
+      "sizeBytes": 48,
+      "title": "1화 한국어 자막",
+      "type": "subtitle"
+    }
+  ],
+  "episodes": [
+    {
+      "id": "ep-01",
+      "order": 1,
+      "projectId": "proj-toon-001",
+      "sceneCount": 2,
+      "scenes": [
+        {
+          "episodeId": "ep-01",
+          "id": "sc-01",
+          "order": 1,
+          "panelCount": 2,
+          "panels": [
+            {
+              "assetIds": [
+                "as-img-1",
+                "as-font-1"
+              ],
+              "assets": [
+                {
+                  "assetId": "as-img-1",
+                  "checksum": "sha256:4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03",
+                  "normalizedPath": "assets/images/ep1_p1.png",
+                  "sha256": "4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03"
+                },
+                {
+                  "assetId": "as-font-1",
+                  "checksum": "sha256:5655a05ad5080f17f7ac08608d763ad996d93169ddb61a307fd7005ab4bc12de",
+                  "normalizedPath": "assets/fonts/toon_sans.woff2",
+                  "sha256": "5655a05ad5080f17f7ac08608d763ad996d93169ddb61a307fd7005ab4bc12de"
+                }
+              ],
+              "dialogue": "드디어 도착했어.",
+              "id": "pn-01",
+              "order": 1,
+              "sceneId": "sc-01",
+              "title": "첫 번째 컷"
+            },
+            {
+              "assetIds": [
+                "as-img-2",
+                "as-aud-1"
+              ],
+              "assets": [
+                {
+                  "assetId": "as-img-2",
+                  "checksum": "sha256:d19e5f43c22d2c44a332ac5089ed04a7054519831a79421603f5092ab0f16c60",
+                  "normalizedPath": "assets/images/ep1_p2.webp",
+                  "sha256": "d19e5f43c22d2c44a332ac5089ed04a7054519831a79421603f5092ab0f16c60"
+                },
+                {
+                  "assetId": "as-aud-1",
+                  "checksum": "sha256:0b5370bcae3bc9ac4f7763c136204c6489609b4ea49b93d05878f004cfd4621b",
+                  "normalizedPath": "assets/audio/bgm_01.mp3",
+                  "sha256": "0b5370bcae3bc9ac4f7763c136204c6489609b4ea49b93d05878f004cfd4621b"
+                }
+              ],
+              "dialogue": "",
+              "id": "pn-02",
+              "order": 2,
+              "sceneId": "sc-01",
+              "title": "두 번째 컷"
+            }
+          ],
+          "title": "오프닝 거리"
+        },
+        {
+          "episodeId": "ep-01",
+          "id": "sc-02",
+          "order": 2,
+          "panelCount": 1,
+          "panels": [
+            {
+              "assetIds": [
+                "as-img-kr",
+                "as-sub-1"
+              ],
+              "assets": [
+                {
+                  "assetId": "as-img-kr",
+                  "checksum": "sha256:69383d2ed2ca90b7df803bdc9900e5b1851adcd7cb4a6e53601153ed1e815600",
+                  "normalizedPath": "assets/images/한글배경.jpg",
+                  "sha256": "69383d2ed2ca90b7df803bdc9900e5b1851adcd7cb4a6e53601153ed1e815600"
+                },
+                {
+                  "assetId": "as-sub-1",
+                  "checksum": "sha256:a6437ba9e4912feb3a00aee0bffd05348e69ace59f1d20c1a2a160f08fa85883",
+                  "normalizedPath": "assets/subtitles/ep1_ko.vtt",
+                  "sha256": "a6437ba9e4912feb3a00aee0bffd05348e69ace59f1d20c1a2a160f08fa85883"
+                }
+              ],
+              "dialogue": "",
+              "id": "pn-03",
+              "order": 1,
+              "sceneId": "sc-02",
+              "title": "옥상 야경 컷"
+            }
+          ],
+          "title": "옥상 조우"
+        }
+      ],
+      "title": "제1화 시작의 문"
+    },
+    {
+      "id": "ep-02",
+      "order": 2,
+      "projectId": "proj-toon-001",
+      "sceneCount": 1,
+      "scenes": [
+        {
+          "episodeId": "ep-02",
+          "id": "sc-03",
+          "order": 1,
+          "panelCount": 1,
+          "panels": [
+            {
+              "assetIds": [
+                "as-scr-1"
+              ],
+              "assets": [
+                {
+                  "assetId": "as-scr-1",
+                  "checksum": "sha256:debe6eee3d5b659ee51f99247658dca606878618d220f079d3dc06bb7336ba8f",
+                  "normalizedPath": "assets/scripts/dialogue_ep1.json",
+                  "sha256": "debe6eee3d5b659ee51f99247658dca606878618d220f079d3dc06bb7336ba8f"
+                }
+              ],
+              "dialogue": "",
+              "id": "pn-04",
+              "order": 1,
+              "sceneId": "sc-03",
+              "title": "숲 속 대사 컷"
+            }
+          ],
+          "title": "숲 입구"
+        }
+      ],
+      "title": "제2화 그림자 숲"
+    }
+  ],
+  "integrity": {
+    "algorithm": "SHA-256",
+    "assetTreeHash": "1cbd3e2862ecc2862c763b061f0e5348c13613e8508c9bbb6c6bab792ebe2a83",
+    "checksum": "sha256:36cde0dd567064043f32d57834726a7cd08f8fbd3aaf6d2000320f2fe2502652",
+    "manifestContentHash": "36cde0dd567064043f32d57834726a7cd08f8fbd3aaf6d2000320f2fe2502652"
+  },
+  "manifestVersion": "1.0.0",
+  "project": {
+    "author": "ToonStudio Team",
+    "id": "proj-toon-001",
+    "title": "달빛 스튜디오 시즌1"
+  },
+  "schemaVersion": "1.0.0",
+  "studioArchiveManifest": {
+    "applicationVersion": "1.0.0",
+    "createdAt": "2026-11-10T00:00:00.000Z",
+    "dependencies": [],
+    "files": [
+      {
+        "checksum": "sha256:0b5370bcae3bc9ac4f7763c136204c6489609b4ea49b93d05878f004cfd4621b",
+        "kind": "asset",
+        "path": "assets/audio/bgm_01.mp3",
+        "required": true,
+        "sizeBytes": 26
+      },
+      {
+        "checksum": "sha256:5655a05ad5080f17f7ac08608d763ad996d93169ddb61a307fd7005ab4bc12de",
+        "kind": "asset",
+        "path": "assets/fonts/toon_sans.woff2",
+        "required": true,
+        "sizeBytes": 24
+      },
+      {
+        "checksum": "sha256:4ffd8bb30991e3a6f28d1d03f1aedcd02ccf8e0cc16bb9e969e7bc2bda1ddf03",
+        "kind": "asset",
+        "path": "assets/images/ep1_p1.png",
+        "required": true,
+        "sizeBytes": 33
+      },
+      {
+        "checksum": "sha256:d19e5f43c22d2c44a332ac5089ed04a7054519831a79421603f5092ab0f16c60",
+        "kind": "asset",
+        "path": "assets/images/ep1_p2.webp",
+        "required": true,
+        "sizeBytes": 27
+      },
+      {
+        "checksum": "sha256:69383d2ed2ca90b7df803bdc9900e5b1851adcd7cb4a6e53601153ed1e815600",
+        "kind": "asset",
+        "path": "assets/images/한글배경.jpg",
+        "required": true,
+        "sizeBytes": 34
+      },
+      {
+        "checksum": "sha256:debe6eee3d5b659ee51f99247658dca606878618d220f079d3dc06bb7336ba8f",
+        "kind": "asset",
+        "path": "assets/scripts/dialogue_ep1.json",
+        "required": true,
+        "sizeBytes": 31
+      },
+      {
+        "checksum": "sha256:a6437ba9e4912feb3a00aee0bffd05348e69ace59f1d20c1a2a160f08fa85883",
+        "kind": "asset",
+        "path": "assets/subtitles/ep1_ko.vtt",
+        "required": true,
+        "sizeBytes": 48
+      }
+    ],
+    "projectId": "proj-toon-001",
+    "rootDocumentPaths": [
+      "assets/audio/bgm_01.mp3"
+    ],
+    "schemaVersion": 1
+  },
+  "summary": {
+    "assetCount": 7,
+    "episodeCount": 2,
+    "panelCount": 4,
+    "sceneCount": 3,
+    "totalBytes": 223
+  }
+}
