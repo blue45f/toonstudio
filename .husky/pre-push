@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # core.hooksPath 는 husky 가 생성하는 .husky/_ 가 아니라 이 디렉터리(.husky)를 가리킨다.
-# Tier 2 (Changed-Scope Push Gate): 아키텍처·UI/UX v2 계약, 타입체크, 변경 파일 린트·시크릿,
-# 변경 모듈 대응 단위 테스트(Vitest / node:test)까지 60초 이내에 검증한다.
+# Tier 2 (Changed-Scope Push Gate): 아키텍처·UI/UX v2.2 계약, 타입체크, 변경 파일 린트·시크릿을
+# 병렬 실행하고 경량 변경 단위 테스트를 이어 실행해 20초 이내에 검증한다.
 set -e
 
 if ! command -v pnpm >/dev/null 2>&1; then
@@ -36,12 +36,31 @@ node scripts/verify-pnpm-lockfile.mjs
 BASE="${PRE_PUSH_BASE:-origin/main}"
 git rev-parse --verify --quiet "$BASE" >/dev/null || BASE=""
 
-pnpm run validate:architecture
-NODE_OPTIONS='--max-old-space-size=16384' pnpm run typecheck
+# 읽기 전용 정적 검증(아키텍처·타입체크·변경 린트·시크릿)을 병렬 실행해 푸시 지연을 줄인다.
+pnpm run validate:architecture &
+PID_ARCH=$!
+
+NODE_OPTIONS='--max-old-space-size=16384' pnpm run typecheck &
+PID_TSC=$!
 
 if [ -n "$BASE" ]; then
-  node scripts/lint-changed.mjs "--base=$BASE"
-  node scripts/secretlint-files.mjs "--base=$BASE"
+  node scripts/lint-changed.mjs "--base=$BASE" &
+  PID_LINT=$!
+  node scripts/secretlint-files.mjs "--base=$BASE" &
+  PID_SECRET=$!
+else
+  node scripts/lint-changed.mjs &
+  PID_LINT=$!
+  pnpm run quality:secrets &
+  PID_SECRET=$!
+fi
+
+wait "$PID_ARCH"
+wait "$PID_TSC"
+wait "$PID_LINT"
+wait "$PID_SECRET"
+
+if [ -n "$BASE" ]; then
   node scripts/run-changed-unit-tests.mjs "--base=$BASE"
   if git diff --name-only "$BASE...HEAD" -- package.json pnpm-lock.yaml packages/studio-hokusai-wasm \
     | grep -q .; then
@@ -49,7 +68,5 @@ if [ -n "$BASE" ]; then
     pnpm run audit:licenses
   fi
 else
-  node scripts/lint-changed.mjs
-  pnpm run quality:secrets
   node scripts/run-changed-unit-tests.mjs
 fi
