@@ -81,6 +81,12 @@ export function SerialCenterOverview({
     () => projects.reduce((sum, project) => sum + project.readyBufferCount, 0),
     [projects],
   );
+  const createProjectAction = <Link
+    href="/production/projects"
+    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent"
+  >
+    <PackageOpen size={15} aria-hidden /> {ko ? "제작 프로젝트 만들러 가기" : "Go to create a production project"}
+  </Link>;
 
   return (
     <section className={selectionMode ? "py-3" : "rounded-3xl border border-line bg-card p-5 sm:p-6"} aria-label={ko ? "내 작품 연재 현황" : "My works' serialization status"}>
@@ -140,18 +146,14 @@ export function SerialCenterOverview({
           </button>
         </div>
       ) : projects.length === 0 ? (
-        <div className="mt-5 flex flex-col items-start gap-3 rounded-2xl bg-panel/60 p-5">
+        <div className={`flex flex-col items-start gap-3 rounded-2xl bg-panel/60 ${selectionMode ? "mt-3 p-4" : "mt-5 p-5"}`}>
+          {selectionMode ? createProjectAction : null}
           <p className="text-sm leading-6 text-fg-2">
             {ko
               ? "아직 제작 프로젝트가 없어요. 제작 관리에서 프로젝트를 만든 뒤 여기서 선택하세요. 브라우저에 보관한 원고와 제작 프로젝트는 별도로 관리됩니다."
               : "No production projects yet. Create one in Production, then choose it here. Browser-saved manuscripts and production projects are managed separately."}
           </p>
-          <Link
-            href="/production/projects"
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent"
-          >
-            <PackageOpen size={15} aria-hidden /> {ko ? "제작 프로젝트 만들러 가기" : "Go to create a production project"}
-          </Link>
+          {!selectionMode ? createProjectAction : null}
         </div>
       ) : (
         <ul className="mt-5 grid gap-3 sm:grid-cols-2">

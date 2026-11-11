@@ -20,9 +20,10 @@ export function WorkspaceBrand({
   const destination = href.split(/[?#]/u)[0] === "/studio"
     ? (korean ? "내 프로젝트" : "My projects")
     : (korean ? "홈" : "home");
-  return <Link href={href} className="workspace-brand" aria-label={`ToonStudio${compact ? "" : " STORY COMES TO LIFE"} ${destination}`}>
+  return <Link href={href} className="workspace-brand">
     <ToonStudioMark className="workspace-brand-mark" />
     <strong><ToonStudioWordmark />{compact ? null : <small>STORY COMES TO LIFE</small>}</strong>
+    <span className="sr-only">{destination}</span>
   </Link>;
 }
 

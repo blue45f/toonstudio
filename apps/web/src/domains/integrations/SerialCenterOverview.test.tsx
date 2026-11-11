@@ -68,6 +68,7 @@ describe("SerialCenterOverview", () => {
     renderOverview();
     expect(screen.getByText(/로그인하면 내 작품의 다음 발행 예정/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "로그인하기" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "제작 프로젝트 만들러 가기" })).toBeNull();
     expect(screen.getByRole("link", { name: "연재 캘린더" }).getAttribute("href")).toBe("/calendar");
     expect(api.listProductionProjects).not.toHaveBeenCalled();
   });
@@ -123,9 +124,26 @@ describe("SerialCenterOverview", () => {
     renderOverview();
 
     expect(await screen.findByText(/아직 제작 프로젝트가 없어요/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /제작 프로젝트 만들러 가기/ }).getAttribute("href")).toBe("/production/projects");
+    const create = screen.getByRole("link", { name: /제작 프로젝트 만들러 가기/ });
+    expect(create.getAttribute("href")).toBe("/production/projects");
+    expect(screen.getByText(/아직 제작 프로젝트가 없어요/).compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText(/브라우저에 보관한 원고와 제작 프로젝트는 별도로 관리됩니다/)).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("작품 선택의 빈 상태는 긴 설명보다 실제 생성 행동을 먼저 한 번만 제공한다", async () => {
+    useApp.setState({ userId: "user-1", sessionToken: "token" });
+    api.listProductionProjects.mockResolvedValue({ projects: [] });
+    const onSelectProject = vi.fn();
+    render(<MemoryRouter><SerialCenterOverview ko selectionMode onSelectProject={onSelectProject} /></MemoryRouter>);
+    const create = await screen.findByRole("link", { name: "제작 프로젝트 만들러 가기" });
+    const explanation = screen.getByText(/아직 제작 프로젝트가 없어요/);
+    expect(create.getAttribute("href")).toBe("/production/projects");
+    expect(screen.getAllByRole("link", { name: "제작 프로젝트 만들러 가기" })).toHaveLength(1);
+    expect(create.compareDocumentPosition(explanation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(explanation.textContent).toContain("브라우저에 보관한 원고와 제작 프로젝트는 별도로 관리됩니다");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(onSelectProject).not.toHaveBeenCalled();
   });
 
   it("불러오기 실패는 오류 상태로 구분하고 다시 시도가 재호출한다", async () => {

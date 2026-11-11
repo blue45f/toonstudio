@@ -93,8 +93,8 @@ describe("홍보 영상 찾기·복귀와 필터 경계", () => {
     const section = container.querySelector("#promo-category-shorts");
     if (!section) throw new Error("쇼츠 목록 누락");
     expect(form.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "영상 분류" })).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "화면 비율 필터" })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "영상 분류" }).getAttribute("data-select-native")).toBe("true");
+    expect(screen.getByRole("combobox", { name: "화면 비율 필터" }).getAttribute("data-select-native")).toBe("true");
     expect(screen.getByText("생성형 AI 개념 영상입니다. 실제 제품 화면과 다를 수 있어요.")).toBeTruthy();
     const first = container.querySelector('[data-promo-video]');
     const title = first?.querySelector("h3");

@@ -353,7 +353,7 @@ export function PromoVideoLibraryPage() {
             </label>
             <label className="promo-library__select">
               <span className="sr-only">{copy.categoryFilterLabel}</span>
-              <select aria-label={copy.categoryFilterLabel} value={filter.categoryFilter} onChange={(event) => {
+              <select data-select-native="true" aria-label={copy.categoryFilterLabel} value={filter.categoryFilter} onChange={(event) => {
                 const categoryFilter = PROMO_VIDEO_CATEGORIES.find((category) => category.id === event.currentTarget.value)?.id ?? "all";
                 patchFilter({ categoryFilter });
               }}>
@@ -363,7 +363,7 @@ export function PromoVideoLibraryPage() {
             </label>
             <label className="promo-library__select">
               <span className="sr-only">{copy.aspectFilterLabel}</span>
-              <select aria-label={copy.aspectFilterLabel} value={filter.aspectFilter} onChange={(event) => {
+              <select data-select-native="true" aria-label={copy.aspectFilterLabel} value={filter.aspectFilter} onChange={(event) => {
                 const aspect = aspectOptions.find((option) => option.id === event.currentTarget.value)?.id;
                 if (aspect) updateAspectFilter(aspect);
               }}>{aspectOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select>

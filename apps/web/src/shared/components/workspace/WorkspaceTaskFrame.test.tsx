@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceTaskFrame } from "./WorkspaceTaskFrame";
+import { WorkspaceBrand } from "./WorkspaceChrome";
 import { workspaceTaskRoute } from "./workspace-task-route";
 import { useI18n } from "@/shared/lib/i18n";
 
@@ -11,15 +12,38 @@ vi.mock("@/shared/components/open-search-button", () => ({ OpenSearchButton: ({ 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ useSession: () => ({ data: null, ready: true }) }));
 beforeEach(() => useI18n.getState().setLang("ko"));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+// 실제 CSS의 줄바꿈이 없는 jsdom에서는 공백만 정규화하고 이름의 전체 문자·순서·목적은 같게 검증한다.
 describe("common task frame", () => {
+  it.each([
+    ["ko", false, "/home", "홈"],
+    ["en", false, "/home", "home"],
+    ["ko", false, "/studio?project=kept#work", "내 프로젝트"],
+    ["en", false, "/studio?project=kept#work", "My projects"],
+    ["ko", true, "/home", "홈"],
+    ["en", true, "/home", "home"],
+    ["ko", true, "/studio", "내 프로젝트"],
+    ["en", true, "/studio", "My projects"],
+  ] as const)("%s compact=%s 브랜드가 %s의 전체 표시와 목적을 native 이름으로 읽는다", (locale, compact, href, destination) => {
+    useI18n.getState().setLang(locale);
+    render(<MemoryRouter><WorkspaceBrand href={href} compact={compact} /></MemoryRouter>);
+    const caption = `ToonStudio${compact ? "" : " STORY COMES TO LIFE"} ${destination}`;
+    const brand = screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === caption.replace(/\s/gu, "") });
+    expect(brand.hasAttribute("aria-label")).toBe(false);
+    expect(brand.hasAttribute("aria-labelledby")).toBe(false);
+    expect(brand.getAttribute("href")).toBe(href);
+    expect(brand.textContent?.replace(/\s/gu, "")).toBe(caption.replace(/\s/gu, ""));
+    expect(brand.querySelector("small")?.textContent ?? null).toBe(compact ? null : "STORY COMES TO LIFE");
+    expect(within(brand).getByText(destination).className).toContain("sr-only");
+  });
+
   it.each([
     ["ko", "작품·도구·메뉴 검색", "홈"],
     ["en", "Search works, tools, menus", "home"],
   ])("%s에서도 보이는 브랜드·검색·단축키를 음성 이름에 담는다", (locale, caption, destination) => {
     useI18n.getState().setLang(locale);
     render(<MemoryRouter initialEntries={["/studio/assets"]}><WorkspaceTaskFrame route={workspaceTaskRoute("/studio/assets")}><input aria-label="kept draft" /></WorkspaceTaskFrame></MemoryRouter>);
-    const brand = screen.getByRole("link", { name: `ToonStudio STORY COMES TO LIFE ${destination}` });
-    expect(brand.getAttribute("aria-label")).toContain("ToonStudio STORY COMES TO LIFE");
+    const brand = screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === `ToonStudioSTORYCOMESTOLIFE${destination.replace(/\s/gu, "")}` });
+    expect(brand.hasAttribute("aria-label")).toBe(false);
     expect(brand.textContent).toContain("STORY COMES TO LIFE");
     const search = screen.getByRole("button", { name: `${caption} ⌘ K` });
     expect(search.getAttribute("aria-label")).toContain(within(search).getByText(caption).textContent);
@@ -38,7 +62,7 @@ describe("common task frame", () => {
     expect(mount).toHaveBeenCalledTimes(1);
     expect(result.container.querySelector('[data-workspace-surface="focused"]')).toBeTruthy();
     expect(result.container.querySelector(".workspace-focused-topbar")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "ToonStudio 내 프로젝트" }).getAttribute("href")).toBe("/studio");
+    expect(screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === "ToonStudio내프로젝트" }).getAttribute("href")).toBe("/studio");
     const focusedContent = result.container.querySelector(".workspace-focused-main");
     expect(focusedContent?.getAttribute("tabindex")).toBe("0");
     expect(focusedContent?.getAttribute("aria-label")).toBe("작업 내용");
@@ -59,7 +83,7 @@ describe("common task frame", () => {
     );
 
     expect(result.container.querySelector('[data-workspace-surface="task"]')).toBeTruthy();
-    expect(screen.getByRole("link", { name: "ToonStudio STORY COMES TO LIFE 홈" }).getAttribute("href")).toMatch(/^\/home(?:\?|$)/u);
+    expect(screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === "ToonStudioSTORYCOMESTOLIFE홈" }).getAttribute("href")).toMatch(/^\/home(?:\?|$)/u);
     expect(screen.getAllByRole("navigation", { name: "주 메뉴" })).toHaveLength(1);
   });
 });

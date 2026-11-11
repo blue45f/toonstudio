@@ -114,7 +114,7 @@
 }
 
 .promo-library__select { min-width: 0; }
-.promo-library__select select { width: 100%; min-width: 0; min-height: 46px; padding: 8px 10px; border: 1px solid var(--mk-line); border-radius: 11px; background: var(--mk-card); color: var(--mk-fg); font: inherit; font-size: 13px; }
+.promo-library__select select { width: 100%; min-width: 0; min-height: 46px; padding: 8px 10px; border: 1px solid var(--mk-line); border-radius: 11px; background: var(--mk-card); color: var(--mk-fg); font: inherit; font-size: 13px; appearance: auto; }
 .promo-library__controls-secondary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
 .promo-library__results-count { margin: 0 auto 0 0; color: var(--mk-fg-2); font-size: 12px; }
 .promo-library__guidance > summary, .promo-library__view-options > summary { display: flex; align-items: center; min-height: 44px; font-size: 13px; color: var(--mk-fg-2); cursor: pointer; }
@@ -125,6 +125,20 @@
 .promo-library__view-options .promo-library__filter-btn { min-width: 44px; justify-content: center; border-radius: 10px; padding: 8px; }
 .promo-library__nav-chip[aria-disabled="true"] { color: var(--mk-fg-3); }
 .promo-library__related summary:focus-visible, .promo-library__guidance > summary:focus-visible, .promo-library__view-options > summary:focus-visible, .promo-library__select select:focus-visible { outline: 2px solid var(--mk-accent); outline-offset: 3px; }
+
+:is(.promo-library__related, .promo-library__guidance, .promo-library__view-options, .promo-library__rea-benchmark) > summary { gap: 8px; }
+:is(.promo-library__related, .promo-library__guidance, .promo-library__view-options, .promo-library__rea-benchmark) > summary::after {
+  content: "";
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  flex-shrink: 0;
+  transform: rotate(45deg);
+}
+:is(.promo-library__related, .promo-library__guidance, .promo-library__view-options, .promo-library__rea-benchmark)[open] > summary::after { transform: rotate(225deg); }
 
 .promo-library__search-box:focus-within {
   outline: 2px solid var(--mk-accent);
