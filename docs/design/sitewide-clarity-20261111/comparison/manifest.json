@@ -37,7 +37,8 @@
     "routeInventoryCount": 441,
     "routeMeaning": "합성 동적 경로·별칭 포함 주소 분류 원장.441개 독립 시안/실사용 성공 수 아님.",
     "densityLibraryPage": "https://chatgpt.com/space/page_1e4bdd165d908191b152ae11b81a568c",
-    "densityLibraryUpload": "root가 기존6PNG 업로드 완료로 전달. 이 작업은 새 업로드하지 않음."
+    "densityLibraryUpload": "root가 기존6PNG 업로드 완료로 전달. 이 작업은 새 업로드하지 않음.",
+    "latestLibraryPage": "https://chatgpt.com/space/page_6f98e6e9522081918d42d55476507ed2"
   },
   "families": [
     {
@@ -1126,6 +1127,174 @@
       "width": 390,
       "height": 844,
       "delivery": "4911 actual 선별 원본; comparison/assets에만 복사"
+    },
+    "latest-story-comparison-390": {
+      "key": "latest-story-comparison-390",
+      "file": "assets/latest-story-d400de4bdf3e-390.png",
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/story-after-fidelity/phase7-actual-attempt1/story-proposal-versus-phase7-actual-390.png",
+      "kind": "정적 제안과 명시 로컬 production 실제 화면을 나란히 둔 비교판 PNG. 단일 제품 viewport PNG가 아님.",
+      "width": 980,
+      "height": 1178,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 145701,
+      "sha256": "71ccd39974e71fc2e4f57be9b934599cf45515e62a45198aef465684c78c7e97",
+      "build": {
+        "gitSha": "d400de4bdf3efea5ef6650d18136e10c37371a68",
+        "buildId": "b5c24948e4d0"
+      },
+      "state": "같은 390×844 / 1440×1000에서 제목 「별빛 아래의 약속」·주인공 「사라진 별자리를 찾는 수습 기록관」 두 필드만 UI로 작성한 미저장 guest 초안. 인트로 자연 종료 후 촬영.",
+      "sourcePixelsPolicy": "기존 비교판 PNG를 바이트 그대로 복사. 재렌더·resize·crop·새 시안 생성 없음.",
+      "delivery": "이 comparison/assets에 단일 복사; 원본 QA 파일 보존"
+    },
+    "latest-story-comparison-1440": {
+      "key": "latest-story-comparison-1440",
+      "file": "assets/latest-story-d400de4bdf3e-1440.png",
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/story-after-fidelity/phase7-actual-attempt1/story-proposal-versus-phase7-actual-1440.png",
+      "kind": "정적 제안과 명시 로컬 production 실제 화면을 나란히 둔 비교판 PNG. 단일 제품 viewport PNG가 아님.",
+      "width": 2952,
+      "height": 1180,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bytes": 310128,
+      "sha256": "269a494c2687aabf845c83312d5c332b00ab6455aff99af1224b82a6afdc5feb",
+      "build": {
+        "gitSha": "d400de4bdf3efea5ef6650d18136e10c37371a68",
+        "buildId": "b5c24948e4d0"
+      },
+      "state": "같은 390×844 / 1440×1000에서 제목 「별빛 아래의 약속」·주인공 「사라진 별자리를 찾는 수습 기록관」 두 필드만 UI로 작성한 미저장 guest 초안. 인트로 자연 종료 후 촬영.",
+      "sourcePixelsPolicy": "기존 비교판 PNG를 바이트 그대로 복사. 재렌더·resize·crop·새 시안 생성 없음.",
+      "delivery": "이 comparison/assets에 단일 복사; 원본 QA 파일 보존"
+    },
+    "latest-showcase-comparison-390": {
+      "key": "latest-showcase-comparison-390",
+      "file": "assets/latest-showcase-d400de4bdf3e-390.png",
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/compare-proposal-actual-390.png",
+      "kind": "정적 제안과 명시 로컬 production 실제 화면을 나란히 둔 비교판 PNG. 단일 제품 viewport PNG가 아님.",
+      "width": 828,
+      "height": 930,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 355669,
+      "sha256": "e7057ab665fa6de23c01d5dbd1f7cf20f52669ac7ae131636c405ffc8eed0905",
+      "build": {
+        "gitSha": "d400de4bdf3efea5ef6650d18136e10c37371a68",
+        "buildId": "b5c24948e4d0"
+      },
+      "state": "같은 390×844 / 1440×1000의 populated 비교. 기존 로컬 브랜드 아트를 표지로 쓴 가상4작품 예시이며 실제 사용자 작품이 아니다. 4911 before용 가상6작품 상태와도 구분.",
+      "sourcePixelsPolicy": "기존 비교판 PNG를 바이트 그대로 복사. 재렌더·resize·crop·새 시안 생성 없음.",
+      "delivery": "이 comparison/assets에 단일 복사; 원본 QA 파일 보존"
+    },
+    "latest-showcase-comparison-1440": {
+      "key": "latest-showcase-comparison-1440",
+      "file": "assets/latest-showcase-d400de4bdf3e-1440.png",
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/compare-proposal-actual-1440.png",
+      "kind": "정적 제안과 명시 로컬 production 실제 화면을 나란히 둔 비교판 PNG. 단일 제품 viewport PNG가 아님.",
+      "width": 2928,
+      "height": 1086,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bytes": 1044908,
+      "sha256": "64fa8ed7bf1d2a5168f497350f6e20d5057259009a86ea102f560dcf480c284e",
+      "build": {
+        "gitSha": "d400de4bdf3efea5ef6650d18136e10c37371a68",
+        "buildId": "b5c24948e4d0"
+      },
+      "state": "같은 390×844 / 1440×1000의 populated 비교. 기존 로컬 브랜드 아트를 표지로 쓴 가상4작품 예시이며 실제 사용자 작품이 아니다. 4911 before용 가상6작품 상태와도 구분.",
+      "sourcePixelsPolicy": "기존 비교판 PNG를 바이트 그대로 복사. 재렌더·resize·crop·새 시안 생성 없음.",
+      "delivery": "이 comparison/assets에 단일 복사; 원본 QA 파일 보존"
+    },
+    "latest-publish-comparison-390": {
+      "key": "latest-publish-comparison-390",
+      "file": "assets/latest-publish-107c11ff4351-390.png",
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/wave4-purpose-review/phase8-107c11ff-publish-final-v1/phase8-proposal-vs-actual-publish-390x844.png",
+      "kind": "정적 제안과 명시 로컬 production 실제 화면을 나란히 둔 비교판 PNG. 단일 제품 viewport PNG가 아님.",
+      "width": 828,
+      "height": 1040,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 245437,
+      "sha256": "f480e7c92d4f3aca51cb92c2e8e7f2cd924c17eef4d3a3e631333462bc5930fd",
+      "build": {
+        "gitSha": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d",
+        "buildId": "399bf5bf0013"
+      },
+      "state": "같은 390×844 / 1440×1000에서 제목 「별빛 아래의 약속」·대표 주소 https://example.invalid/my-story·등록 채널1개 선택. 입력 단계의 내부 scroll0/h1 위치를 맞춤.",
+      "sourcePixelsPolicy": "기존 비교판 PNG를 바이트 그대로 복사. 재렌더·resize·crop·새 시안 생성 없음.",
+      "delivery": "이 comparison/assets에 단일 복사; 원본 QA 파일 보존"
+    },
+    "latest-publish-comparison-1440": {
+      "key": "latest-publish-comparison-1440",
+      "file": "assets/latest-publish-107c11ff4351-1440.png",
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/wave4-purpose-review/phase8-107c11ff-publish-final-v1/phase8-proposal-vs-actual-publish-1440x1000.png",
+      "kind": "정적 제안과 명시 로컬 production 실제 화면을 나란히 둔 비교판 PNG. 단일 제품 viewport PNG가 아님.",
+      "width": 2928,
+      "height": 1240,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bytes": 492856,
+      "sha256": "5268de6cf1f28012557d9354606b340408709ce541a1ae13fa7aef6999d93aca",
+      "build": {
+        "gitSha": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d",
+        "buildId": "399bf5bf0013"
+      },
+      "state": "같은 390×844 / 1440×1000에서 제목 「별빛 아래의 약속」·대표 주소 https://example.invalid/my-story·등록 채널1개 선택. 입력 단계의 내부 scroll0/h1 위치를 맞춤.",
+      "sourcePixelsPolicy": "기존 비교판 PNG를 바이트 그대로 복사. 재렌더·resize·crop·새 시안 생성 없음.",
+      "delivery": "이 comparison/assets에 단일 복사; 원본 QA 파일 보존"
+    },
+    "latest-promo-comparison-390": {
+      "key": "latest-promo-comparison-390",
+      "file": "assets/latest-promo-107c11ff4351-390.png",
+      "sourcePath": "/workspace/toonstudio/.qa/promo-landing-density/phase8-built-arrows-attempt2/proposal-versus-actual-390.png",
+      "kind": "정적 제안과 명시 로컬 production 실제 화면을 나란히 둔 비교판 PNG. 단일 제품 viewport PNG가 아님.",
+      "width": 852,
+      "height": 1024,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bytes": 342653,
+      "sha256": "7e2934014461bced585a5ba2525694d5d47a4674752bef7404d520e3eecdc3f6",
+      "build": {
+        "gitSha": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d",
+        "buildId": "399bf5bf0013"
+      },
+      "state": "같은 390×844 / 1440×1000의 실제 기본 목록. 정본204편·쇼츠49편 레지스트리/첫 포스터를 사용하며 가짜 영상·작품을 추가하지 않음.",
+      "sourcePixelsPolicy": "기존 비교판 PNG를 바이트 그대로 복사. 재렌더·resize·crop·새 시안 생성 없음.",
+      "delivery": "이 comparison/assets에 단일 복사; 원본 QA 파일 보존"
+    },
+    "latest-promo-comparison-1440": {
+      "key": "latest-promo-comparison-1440",
+      "file": "assets/latest-promo-107c11ff4351-1440.png",
+      "sourcePath": "/workspace/toonstudio/.qa/promo-landing-density/phase8-built-arrows-attempt2/proposal-versus-actual-1440.png",
+      "kind": "정적 제안과 명시 로컬 production 실제 화면을 나란히 둔 비교판 PNG. 단일 제품 viewport PNG가 아님.",
+      "width": 2952,
+      "height": 1180,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bytes": 1004835,
+      "sha256": "dc2d27bc938aca59a8f9d5108259cd1f2991144332819e679aa82b7e50d1baac",
+      "build": {
+        "gitSha": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d",
+        "buildId": "399bf5bf0013"
+      },
+      "state": "같은 390×844 / 1440×1000의 실제 기본 목록. 정본204편·쇼츠49편 레지스트리/첫 포스터를 사용하며 가짜 영상·작품을 추가하지 않음.",
+      "sourcePixelsPolicy": "기존 비교판 PNG를 바이트 그대로 복사. 재렌더·resize·crop·새 시안 생성 없음.",
+      "delivery": "이 comparison/assets에 단일 복사; 원본 QA 파일 보존"
     }
   },
   "globalDecisions": {
@@ -1137,7 +1306,7 @@
   },
   "gaps": [
     "18계열 원장에8개 상세 시나리오(7계열)를 연결했다. 나머지 계열의 개별 시안·actual은 이 패키지에 없으며 완료로 판정하지 않는다.",
-    "Story·Showcase actual은4911의 신규 단계·밀도 후속 적용 전 baseline이다. Publish 대응 actual 및 최신3단계 실제 검증은 아직 없다.",
+    "기존3열의 Story·Showcase actual은4911의 후속 적용 전 baseline으로 보존한다. 최신 Story/Showcase d400 및 Publish/Promo107 비교8PNG·조건·한계는 상단 별도 섹션에 연결하며 버전을 합치지 않는다.",
     "원본1440×860 복합보드와390/320 actual은 상태·비율이 달라 픽셀 충실도 동등 비교가 아니다.",
     "사용자 지정 Gemini 원본 출처와 독립 Gemini 생성로그 확인 여부를 구분한다. 원본 SVG 직접 표시·대조 HTML 검증 결과는 별도 기록한다.",
     "자동 접근성·정적 계약·주소 수를 초보자 성공·전 페이지 완료·운영 배포 완료로 합산하지 않는다."
@@ -1167,7 +1336,19 @@
     "privateLibraryFileIdsIncluded": false,
     "workspaceAccountIdsIncluded": false,
     "linkRule": "클론 내 상대 경로 사용. sourcePath는 로컬 실행 재현 참고이며 클릭 링크가 아니다.",
-    "densityDependency": "density-proposals는 root 소유 변경이다. 이 작업 시작 시 followups git ls-files에는 미포함이므로 최종 반영에 함께 포함되어야 한다."
+    "densityDependency": "density-proposals는 root 소유 변경이다. 이 작업 시작 시 followups git ls-files에는 미포함이므로 최종 반영에 함께 포함되어야 한다.",
+    "latestComparisonPngCopied": 8,
+    "latestCopiedFiles": [
+      "assets/latest-story-d400de4bdf3e-390.png",
+      "assets/latest-story-d400de4bdf3e-1440.png",
+      "assets/latest-showcase-d400de4bdf3e-390.png",
+      "assets/latest-showcase-d400de4bdf3e-1440.png",
+      "assets/latest-publish-107c11ff4351-390.png",
+      "assets/latest-publish-107c11ff4351-1440.png",
+      "assets/latest-promo-107c11ff4351-390.png",
+      "assets/latest-promo-107c11ff4351-1440.png"
+    ],
+    "preservedHistoricalAssets": 29
   },
   "viewerValidation": {
     "status": "지정 정적 뷰어 검증8/8통과",
@@ -1195,5 +1376,123 @@
     "initialTimeout": "초기5초 이미지 대기는 닫힌 details의lazy PNG까지 포함한 선택자였다. 초기 results/캡처를보존하고표시중이미지로교정했다. 제품실패나시안완료로덮지않음.",
     "qaEvidenceLocalOnly": "/workspace/toonstudio-ux-followups/.qa/gemini-codex-implementation-comparison/delivery-check-after-selector-correction/results.json",
     "scope": "정적 비교 뷰어·SVG 표시만. 최신 Story/Showcase/Publish단계·제품동선·운영배포 검증 아님."
+  },
+  "latestComparisons": {
+    "state": "current-versioned-local-evidence",
+    "updatedAt": "2026-11-11T22:15:45.514709+00:00",
+    "cost": "0 — 기존8PNG 바이트 복사와 HTML/JSON 정적 파싱·해시 확인만. 브라우저·외부 실행·새 시안·제품/빌드/원격 변경 없음.",
+    "scope": "4개 지정 화면의 버전별 최신 비교8PNG. 전체18계열/441주소 완료·후속커밋 반영·운영 배포 보증이 아니다.",
+    "libraryPage": "https://chatgpt.com/space/page_6f98e6e9522081918d42d55476507ed2",
+    "libraryMeaning": "root가 이미 공유한16이미지 LibraryPage의 참고 링크. 이 작업에서 업로드/수정하지 않음.",
+    "imageMeaning": "왼쪽 정적 제안/오른쪽 명시 버전 실제 화면을 결합한 기존 비교판. 동작 검증·원본 SVG 생성 도구 확인과 구분.",
+    "items": [
+      {
+        "id": "story",
+        "title": "스토리 연구실 · 목적별 기획 입력",
+        "route": "/story-lab",
+        "build": {
+          "gitSha": "d400de4bdf3efea5ef6650d18136e10c37371a68",
+          "buildId": "b5c24948e4d0"
+        },
+        "state": "같은 390×844 / 1440×1000에서 제목 「별빛 아래의 약속」·주인공 「사라진 별자리를 찾는 수습 기록관」 두 필드만 UI로 작성한 미저장 guest 초안. 인트로 자연 종료 후 촬영.",
+        "fixture": "새 guest 저장소. GET session/config만 로컬 fixture, 나머지 GET503·비GET501·외부/WS 차단. 실제 계정·원고·서버 ACK가 아니다.",
+        "differences": "공통 ResourceLayout/전역 메뉴와 실제 미저장 상태 유지. 단일 열 조작은 첫 입력 보호를 위해 시안의 고정 footer 대신 단계 끝 문서 흐름, 1024px 이상은 두 열·sticky 유지.",
+        "verified": "해당 d400 잔여9/9: 모바일 첫 제목 클릭·Tab 초점/12.375px 헤더 여유, Save/Next 44px 이상·재발견, 390px 기기 초안→저장→재로드 smoke. 이전6d의19성공·hash/저장 실패 복구는 재실행과 구분해 재사용.",
+        "limits": "전 페이지 완료·운영 배포·계정 동기화·실기기 IME/성능 검증 아님. 비교용 scrollTop0 이미지와 실제 Tab 입력 접근을 구분. 새 WCAG 전체 검사를 반복하지 않았다.",
+        "assetIds": [
+          "latest-story-comparison-390",
+          "latest-story-comparison-1440"
+        ],
+        "evidence": {
+          "sourcePath": "/workspace/toonstudio-ux-followups/.qa/story-after-fidelity/phase7-actual-attempt1/manual-visual-review.json",
+          "sha256": "1fa7e43d8029bad7a7d2adbf7ce9d509df7f2bcfd1a726c834637ba246c3c853"
+        }
+      },
+      {
+        "id": "showcase",
+        "title": "쇼케이스 · 작품 찾기와 읽기",
+        "route": "/showcase",
+        "build": {
+          "gitSha": "d400de4bdf3efea5ef6650d18136e10c37371a68",
+          "buildId": "b5c24948e4d0"
+        },
+        "state": "같은 390×844 / 1440×1000의 populated 비교. 기존 로컬 브랜드 아트를 표지로 쓴 가상4작품 예시이며 실제 사용자 작품이 아니다. 4911 before용 가상6작품 상태와도 구분.",
+        "fixture": "명시 guest·works/빈 series/challenges GET fixture. 비GET501·외부 차단. 제목·작가 찾기는 현재 반환된 배열 안에서만 수행하며 전체 서비스 검색이 아니다.",
+        "differences": "PC 공통1320 컨테이너·실제4탭/기존 조건·3:4 표지 비율 유지. 모바일 메뉴는 단일 DOM 접기, 추천 정보는 보조 행동으로 유지. 시안의 미구현 필터를 추가하지 않음.",
+        "verified": "d400 지정9/9:390/320 native Tab 초점·복귀 anchor·합성 IME/URL, 세 폭 새 렌더/이름 검사. 추가 기록에서 담당자가390/1440의 시안·actual 및 before·after4쌍을 직접 시각 검토했고390px reduced-motion도 별도로 확인했다.",
+        "limits": "원본 results.json의 fidelityReview pending은 그대로 보존하고, 별도 phase7-review-summary의 시각검토 완료 범위와 구분한다. 상세503 fixture이므로 실제 회차 읽기 성공·공개 작품·전체 검색·실기기/OS IME·전 페이지/운영 검증이 아니다.",
+        "assetIds": [
+          "latest-showcase-comparison-390",
+          "latest-showcase-comparison-1440"
+        ],
+        "evidence": {
+          "sourcePath": "/workspace/toonstudio-ux-followups/.qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/results.json",
+          "sha256": "074dd9994dc95e1ee96c3bf291e4eee2a865c867a736a3cfdd5fe3835e18a3b7"
+        },
+        "reviewEvidence": {
+          "file": "evidence/showcase-d400-review-summary.json",
+          "sourcePath": "/workspace/toonstudio-ux-followups/.qa/showcase-density-review/phase7-review-summary.json",
+          "sha256": "abe5283955a80767745cebedcdf640b10c3ffee809a1f19239e9738d98010626",
+          "scope": "담당자의390/1440시안·actual및4911before·after4쌍view_image직접검토+390motion별도확인.원본results.pending은변경하지않음."
+        }
+      },
+      {
+        "id": "publish",
+        "title": "게시 준비 · 입력·채널·검토",
+        "route": "/publish",
+        "build": {
+          "gitSha": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d",
+          "buildId": "399bf5bf0013"
+        },
+        "state": "같은 390×844 / 1440×1000에서 제목 「별빛 아래의 약속」·대표 주소 https://example.invalid/my-story·등록 채널1개 선택. 입력 단계의 내부 scroll0/h1 위치를 맞춤.",
+        "fixture": "가상 로컬 계정·제작 프로젝트·등록 채널 fixture. 비GET 전부 차단, 외부 게시/주문/결제/새 JSON·피드 요청 없음. 실제 원고·서버 권한 아님.",
+        "differences": "3단계·현재 선택·입력/요약·보조 접기와 JSON 준비의 의미를 유지. 시안 자리표시 대신 실제 채널명·공통 상단/공간·업무/side-bottom 내비를 사용해390 첫 화면 정보량은 다름.",
+        "verified": "107 최종 잔여4/4와 desktop full Axe 위반0. contrast/계정 이름 incomplete는 수동 항목 유지. 비교판의 원본 두 viewport 픽셀 변경 없음 기록.",
+        "limits": "4911 단일 페이지 실제 before PNG 없음. JSON 패키지 준비를 실제 게시 완료로 표현하지 않음. API fixture·native click trial 범위를 운영 게시/권한/전 페이지 성공으로 확대하지 않음.",
+        "assetIds": [
+          "latest-publish-comparison-390",
+          "latest-publish-comparison-1440"
+        ],
+        "evidence": {
+          "sourcePath": "/workspace/toonstudio-ux-followups/.qa/wave4-purpose-review/phase8-107c11ff-publish-final-v1/manual-final-review.json",
+          "sha256": "a1c0e8bb798dba1c7c3b1e506d24ea3c550aa989b258121c406e7fad1933ea95"
+        }
+      },
+      {
+        "id": "promo",
+        "title": "홍보 영상 · 검색과 첫 재생",
+        "route": "/promo-library",
+        "build": {
+          "gitSha": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d",
+          "buildId": "399bf5bf0013"
+        },
+        "state": "같은 390×844 / 1440×1000의 실제 기본 목록. 정본204편·쇼츠49편 레지스트리/첫 포스터를 사용하며 가짜 영상·작품을 추가하지 않음.",
+        "fixture": "로컬 guest GET session fixture·다른 GET503/비GET403 차단. 로컬 origin만 허용. 이번 비교는 영상 재생 없이 src0·MP4 요청0으로 수행.",
+        "differences": "검색 우선·카드 제목/첫 포스터·PC4열/모바일1열·보라 재생 유지. 실제 공통 셸·건수·이름 있는 안내를 사용하며 시안 표시 띠/새 duration 배지를 제품에 복사하지 않음.",
+        "verified": "107 잔여3/3:390/1440/320 native select 화살표·첫 화면 핵심 행동44px/중심 hit·가로 넘침0. attempt1 준비 실패는 보존했고 attempt2만 exit0. 이전 필터/Back/재생·다운로드·Axe는 재사용.",
+        "limits": "모바일503 연결 칩이 영상 하단/설명 일부와 겹칠 수 있으나 첫 Play hit는 통과. 이번 영상 재생·전체 모션·실기기 Android/Safari·운영 배포 검증 아님.",
+        "assetIds": [
+          "latest-promo-comparison-390",
+          "latest-promo-comparison-1440"
+        ],
+        "evidence": {
+          "sourcePath": "/workspace/toonstudio/.qa/promo-landing-density/phase8-built-arrows-attempt2/manual-handoff.json",
+          "sha256": "0b71d54665661995cec18e24732cb077b8d74cea79793547f90e74c2ac85ce0a"
+        }
+      }
+    ]
+  },
+  "latestGalleryValidation": {
+    "state": "정적 파싱·파일/해시 확인; 새 뷰어 브라우저 검증 미실행",
+    "checkedAt": "2026-11-11T22:15:45.514709+00:00",
+    "scope": "이번 최신 섹션만. 기존 viewerValidation8/8은 추가 전 뷰어의 역사 결과다.",
+    "productBrowserRun": false,
+    "newViewerBrowserRun": false,
+    "sourceAssetsPreserved": true,
+    "familiesUnchanged": 18,
+    "baselineScenariosUnchanged": 8,
+    "historicalAssetsUnchanged": 29,
+    "historicalLocalPngUnchanged": 14,
+    "newCopiedComparisons": 8
   }
 }
