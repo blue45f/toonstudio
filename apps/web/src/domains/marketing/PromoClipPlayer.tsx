@@ -3,6 +3,8 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+import { promoClipPlaybackSource } from "./promo-clip-playback";
+
 import "./promo-clip-player.css";
 
 interface PromoClipPlayerProps {
@@ -23,6 +25,7 @@ export function PromoClipPlayer(props: PromoClipPlayerProps) {
 }
 
 function PromoClipPlayback({ src, title, width, height, poster }: PromoClipPlayerProps) {
+  const playbackSrc = promoClipPlaybackSource(src);
   const bt = useBilingual("PromoClipPlayer");
   const statusId = useId();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -99,7 +102,7 @@ function PromoClipPlayback({ src, title, width, height, poster }: PromoClipPlaye
     setLoadingCycle((cycle) => cycle + 1);
     setDelayed(false);
     // 소스 연결과 play를 같은 사용자 이벤트 안에서 실행해 모바일 재생 권한을 유지한다.
-    video.src = src;
+    video.src = playbackSrc;
     video.load();
     video.focus({ preventScroll: true });
     try {
@@ -129,7 +132,7 @@ function PromoClipPlayback({ src, title, width, height, poster }: PromoClipPlaye
         : phase === "loading" ? bt("영상을 불러오는 중이에요", "Loading the video") : "";
 
   return (
-    <div ref={rootRef} className="promo-clip-player" data-promo-clip-state={phase} data-promo-clip-orientation={width < height ? "portrait" : "landscape"}>
+    <div ref={rootRef} className="promo-clip-player" data-promo-clip-state={phase} data-original-src={src} data-variant={playbackSrc === src ? "original" : "compatible"} data-promo-clip-orientation={width < height ? "portrait" : "landscape"}>
       <video
         ref={videoRef}
         controls

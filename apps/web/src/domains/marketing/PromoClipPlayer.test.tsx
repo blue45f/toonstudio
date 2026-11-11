@@ -7,6 +7,7 @@ import { useI18n } from "@/shared/lib/i18n";
 import { PromoClipPlayer } from "./PromoClipPlayer";
 
 const FIRST = "/brand/promo-shorts/shorts-1-drawing-autocolor.mp4";
+const FIRST_PLAYBACK = "/brand/promo-shorts/compat/shorts-1-drawing-autocolor.mp4";
 const SECOND = "/brand/promo-shorts/shorts-3-serial-deadline.mp4";
 const clip = { src: FIRST, title: "그리고, 색까지", width: 768, height: 1344 };
 let paused: WeakMap<HTMLMediaElement, boolean>;
@@ -60,7 +61,7 @@ describe("PromoClipPlayer", () => {
     let gestureActive = false;
     vi.mocked(HTMLMediaElement.prototype.play).mockImplementation(function (this: HTMLMediaElement) {
       expect(gestureActive).toBe(true);
-      expect(this.getAttribute("src")).toBe(FIRST);
+      expect(this.getAttribute("src")).toBe(FIRST_PLAYBACK);
       paused.set(this, false);
       return Promise.resolve();
     });
@@ -69,6 +70,8 @@ describe("PromoClipPlayer", () => {
     fireEvent.click(screen.getByRole("button", { name: "그리고, 색까지 · 재생" }));
     gestureActive = false;
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    expect(container.firstElementChild?.getAttribute("data-original-src")).toBe(FIRST);
+    expect(container.firstElementChild?.getAttribute("data-variant")).toBe("compatible");
     expect(document.activeElement).toBe(player(container));
     expect(container.firstElementChild?.getAttribute("data-promo-clip-state")).toBe("loading");
   });
@@ -88,10 +91,11 @@ describe("PromoClipPlayer", () => {
     const { container } = render(<><PromoClipPlayer {...clip} /><PromoClipPlayer {...clip} src={SECOND} title="마감 관리" /></>);
     const videos = container.querySelectorAll("video");
     fireEvent.click(screen.getByRole("button", { name: "그리고, 색까지 · 재생" }));
-    expect(videos[0]?.getAttribute("src")).toBe(FIRST);
+    expect(videos[0]?.getAttribute("src")).toBe(FIRST_PLAYBACK);
     fireEvent.click(screen.getByRole("button", { name: "마감 관리 · 재생" }));
     expect(videos[0]?.hasAttribute("src")).toBe(false);
     expect(videos[1]?.getAttribute("src")).toBe(SECOND);
+    expect(videos[1]?.parentElement?.getAttribute("data-variant")).toBe("original");
     expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
     expect(container.querySelectorAll("video[src]")).toHaveLength(1);
     expect(container.querySelectorAll("video")).toHaveLength(2);
@@ -115,7 +119,7 @@ describe("PromoClipPlayer", () => {
     expect(original.getAttribute("target")).toBe("_blank");
     expect(original.getAttribute("rel")).toContain("noopener");
     fireEvent.click(retry);
-    expect(video.getAttribute("src")).toBe(FIRST);
+    expect(video.getAttribute("src")).toBe(FIRST_PLAYBACK);
     expect(screen.queryByRole("alert")).toBeNull();
     expect(document.activeElement).toBe(video);
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
