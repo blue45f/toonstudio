@@ -9,7 +9,7 @@ import { DiscoverFacetTabStrip } from "./DiscoverFacetTabStrip";
 afterEach(cleanup);
 
 describe("DiscoverFacetTabStrip", () => {
-  it("renders spectrum facet links and a direct creation bridge with 44px touch targets", () => {
+  it("renders the 18-genre spectrum ribbon, facet links, and a direct creation bridge with 44px touch targets", () => {
     render(
       <MemoryRouter initialEntries={["/discover"]}>
         <DiscoverFacetTabStrip />
@@ -18,6 +18,7 @@ describe("DiscoverFacetTabStrip", () => {
 
     const nav = screen.getByRole("navigation", { name: /스펙트럼 빠른 이동|Spectrum quick facets/u });
     expect(nav.getAttribute("data-testid")).toBe("discover-facet-tab-strip");
+    expect(nav.querySelector('[data-discover-spectrum-ribbon="true"]')).toBeTruthy();
 
     const homeLink = within(nav).getByRole("link", { name: /탐색 홈|Discover Home/u });
     expect(homeLink.getAttribute("aria-current")).toBe("page");

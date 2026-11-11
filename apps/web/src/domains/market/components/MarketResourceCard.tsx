@@ -131,7 +131,7 @@ export function MarketResourceCard({
           />
         ) : null}
 
-        <span className="numeral tnum absolute right-3.5 top-3 z-[2] inline-flex min-h-6 items-center gap-1 rounded-md bg-canvas px-1.5 text-xs font-semibold text-fg shadow-sm">
+        <span className="numeral tnum absolute right-3.5 top-3 z-[2] inline-flex items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold text-fg shadow-sm">
           <Layers className="h-3 w-3" aria-hidden="true" />
           {record.entries.length}개
         </span>
@@ -170,7 +170,7 @@ export function MarketResourceCard({
         <div className="flex items-center justify-between gap-2 text-xs text-fg-2">
           <Link
             href={`/market/creator/${encodeURIComponent(record.publisher.id)}`}
-            className="inline-flex min-w-0 items-center gap-1 truncate font-medium text-fg-2 transition-colors hover:text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="inline-flex min-h-11 min-w-0 items-center gap-1 truncate font-medium text-fg-2 transition-colors hover:text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             <Store className="size-3 shrink-0 text-fg-3" aria-hidden="true" />
             <span className="truncate">{record.publisher.name}</span>
@@ -185,7 +185,7 @@ export function MarketResourceCard({
           {record.rightsConfirmed ? (
             <span
               data-market-rights-bom="true"
-              className="inline-flex min-h-6 items-center gap-1 rounded-md border border-good/35 bg-good/10 px-2 py-0.5 text-[0.68rem] font-semibold text-good"
+              className="inline-flex items-center gap-1 rounded-md border border-good/35 bg-good/10 px-2 py-0.5 text-[0.68rem] font-semibold text-good"
             >
               <ShieldCheck className="size-3" aria-hidden="true" />
               Rights BOM 자동 보존
@@ -194,7 +194,7 @@ export function MarketResourceCard({
           {!record.containsAi ? (
             <span
               data-market-no-ai-disclosed="true"
-              className="inline-flex min-h-6 items-center gap-1 rounded-md border border-good/30 bg-good/10 px-2 py-0.5 text-[0.68rem] font-semibold text-good"
+              className="inline-flex items-center gap-1 rounded-md border border-good/30 bg-good/10 px-2 py-0.5 text-[0.68rem] font-semibold text-good"
             >
               <ShieldCheck className="size-3" aria-hidden="true" />
               AI 미포함 공개
@@ -203,7 +203,7 @@ export function MarketResourceCard({
           {record.compatibility.engines.length > 0 ? (
             <span
               data-market-studio-ready="true"
-              className="inline-flex min-h-6 items-center gap-1 rounded-md border border-accent/30 bg-accent-soft px-2 py-0.5 text-[0.68rem] font-semibold text-accent"
+              className="inline-flex items-center gap-1 rounded-md border border-accent/30 bg-accent-soft px-2 py-0.5 text-[0.68rem] font-semibold text-accent"
             >
               Studio 즉시 호환
             </span>
@@ -217,7 +217,7 @@ export function MarketResourceCard({
         ) : null}
 
         <div className="mt-auto flex items-center gap-1.5 pt-1.5 text-xs text-fg-2">
-          <span className="inline-flex min-h-6 items-center rounded bg-accent px-2 font-semibold text-on-accent">
+          <span className="inline-flex items-center rounded bg-accent px-2 py-0.5 font-semibold text-on-accent">
             {kind.label}
           </span>
           <span className="truncate" title={license.summary}>

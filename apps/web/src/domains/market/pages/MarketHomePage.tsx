@@ -57,19 +57,19 @@ import {
   usePageSocialMeta,
 } from "@/shared/seo/use-document-title";
 
-/** 휴대폰에서 "최근 공유"를 처음 보여 주는 개수(2열 3줄) — 나머지는 "더 보기"로 펼친다. */
 const MOBILE_RECENT_LIMIT = 6;
-/** 인기 키워드 칩의 최대 수. */
 const POPULAR_TAG_LIMIT = 8;
 
-/**
- * 마켓 홈 밴드 구성 (8구역 펼침 해소):
- * ① buy — 히어로·카테고리·최근 공유. 첫 화면은 구매 동선만 보인다.
- * ② explore — 스토어 내비·패밀리 탐색·컬렉션·3D 추천·인기 키워드(전부 구매 탐색).
- * ③ sell — 판매자 밴드. 구매 흐름을 끊지 않게 탐색 뒤로 분리하고 CTA도 보조(outline)로 강등.
- * ④ guide — 처음 안내·다음 작업·사용권 안내(접힌 안내가 있는 하단 묶음).
- * 판매자 기능은 지우지 않고 층위만 분리한다 — 딥링크(/market/publish 등)는 그대로 동작한다.
- */
+const PRESET_EN_COPY: Readonly<Record<MarketEcosystemPresetId, { readonly label: string; readonly description: string; readonly studioMountLabel: string }>> = {
+  all: { label: "All Creator Materials", description: "Browse every production category from 2D brushes and screentones to 3D stages and character poses.", studioMountLabel: "Open Studio Asset Library" },
+  "brush-2d": { label: "2D Pens, Brushes & Line Art", description: "Mount ink pens, watercolor nibs, and effect brushes straight into the Studio Brush Engine.", studioMountLabel: "Mount in Brush Manager" },
+  "bg-3d": { label: "3D Webtoon Stages & Rooms", description: "Stage interior, city, and fantasy 3D environments with camera angles and lighting for your panels.", studioMountLabel: "Open in 3D Scene Lab" },
+  "char-pose-3d": { label: "3D Characters, Dolls & Poses", description: "Lock tricky high-angle and low-angle anatomy or hand poses in the 3D Character Lab.", studioMountLabel: "Open in 3D Character Lab" },
+  "tone-sfx": { label: "Screentones, Balloons & SFX", description: "Equip print-and-scroll screentones, dialogue balloons, and sound-effect lettering packs.", studioMountLabel: "Mount in Comic Studio" },
+  "free-point": { label: "Curated Time-Saving Picks", description: "Verified time-saving assets most downloaded by webtoon creators this week.", studioMountLabel: "View My Purchased Assets" },
+};
+
+/** 마켓 홈 4밴드 구성: ① buy · ② explore · ③ sell · ④ guide */
 export function MarketHomePage() {
   const t = useBilingual("MarketHomePage");
   const marketHomeDescription = t(
@@ -80,8 +80,6 @@ export function MarketHomePage() {
   const { isPaidMode } = useCommerceConfig();
   const hasLatestItems = latest.items.length > 0;
   const hasFatalLatestError = Boolean(latest.error) && !hasLatestItems;
-  // 같은 서버 장애는 전역 웜업 칩·저하 배너가 이미 알리고 있다. 그 구간에는 섹션의 큰 경고
-  // 패널을 중복으로 띄우지 않고, 복구가 확인되면 섹션도 자동으로 다시 불러온다.
   const capability = useServiceCapabilityState();
   const coveredByGlobalNotice = capability.status === "degraded" || capability.warmingUp === true;
   const recoveredAt = capability.recoveredAt;
@@ -132,7 +130,7 @@ export function MarketHomePage() {
 
   const presetFilteredItems = useMemo(() => {
     if (activePresetId === "all") return latest.items;
-    const matched = latest.items.filter((item) => {
+    return latest.items.filter((item) => {
       if (activePresetId === "brush-2d") return item.kind === "brush";
       if (activePresetId === "bg-3d") return item.kind === "3d-asset";
       if (activePresetId === "char-pose-3d") {
@@ -143,7 +141,6 @@ export function MarketHomePage() {
       }
       return true;
     });
-    return matched;
   }, [activePresetId, latest.items]);
 
   const recentMore = useMobileShowMore(presetFilteredItems.length, MOBILE_RECENT_LIMIT);
@@ -194,7 +191,7 @@ export function MarketHomePage() {
                   <Store className="h-4 w-4" aria-hidden="true" />
                   {t("소재 찾기", "Find materials")}
                 </Link>
-                <span className="inline-flex min-h-8 items-center rounded-full border border-good/30 bg-good/10 px-3 text-xs font-semibold text-good">
+                <span className="inline-flex items-center rounded-full border border-good/30 bg-good/10 px-3 py-1.5 text-xs font-semibold text-good">
                   {isPaidMode ? t("현재 유료 운영 모드", "Currently in paid operation mode") : t("현재 무료 운영 모드", "Currently in free operation mode")}
                 </span>
               </>
@@ -224,7 +221,7 @@ export function MarketHomePage() {
                     ref={preset.id === "all" ? allPresetRef : undefined}
                     type="button"
                     aria-pressed={selected}
-                    title={preset.label}
+                    title={t(preset.label, PRESET_EN_COPY[preset.id].label)}
                     onClick={() => {
                       runSameDocumentViewTransition(() => {
                         setActivePresetId(preset.id);
@@ -238,7 +235,7 @@ export function MarketHomePage() {
                     )}
                   >
                     <span aria-hidden="true">{presetShortLabels[preset.id]}</span>
-                    <span className="sr-only">{preset.label}</span>
+                    <span className="sr-only">{t(preset.label, PRESET_EN_COPY[preset.id].label)}</span>
                   </button>
                 );
               })}
@@ -271,7 +268,7 @@ export function MarketHomePage() {
                 />
                 <div className="max-w-2xl">
                   <p className="mb-1 text-[10px] font-bold text-fg-3">{activePreset.badge}</p>
-                  <p>{activePreset.description}</p>
+                  <p>{t(activePreset.description, PRESET_EN_COPY[activePreset.id].description)}</p>
                 </div>
                 </div>
               </details>
@@ -280,7 +277,7 @@ export function MarketHomePage() {
                   href={activePreset.studioMountRoute}
                   className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 [min-block-size:2.75rem]! gap-1.5 rounded-full px-4 text-xs font-bold" })}
                 >
-                  {activePreset.studioMountLabel}
+                  {t(activePreset.studioMountLabel, PRESET_EN_COPY[activePreset.id].studioMountLabel)}
                   <ArrowRight size={13} aria-hidden="true" />
                 </Link>
                 <Link
@@ -431,7 +428,7 @@ export function MarketHomePage() {
             </div>
             <Link
               href="/market/fit-lab"
-              className="inline-flex min-h-9 items-center gap-1 rounded-xl border border-accent/40 bg-accent-soft/20 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent-soft/35"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft/20 px-3.5 py-2 text-xs font-bold text-accent hover:bg-accent-soft/35"
             >
               {t("원고 위 시험 (Fit Lab) 바로가기", "Open Fit Lab")}
               <ArrowRight size={13} aria-hidden="true" />
@@ -488,7 +485,7 @@ export function MarketHomePage() {
                 </div>
                 <Link
                   href={item.href}
-                  className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+                  className="mt-2 inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-accent hover:underline"
                 >
                   {t(`${item.stageKo} 소재 보기`, `Browse ${item.stageEn}`)}
                   <ArrowRight size={12} aria-hidden="true" />
@@ -591,7 +588,7 @@ export function MarketHomePage() {
             </div>
             <Link
               href="/market/browse?containsAi=false&commercial=true"
-              className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-accent hover:underline"
+              className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-accent hover:underline"
             >
               {t("No-AI 상업 허용 전체 보기", "Browse all No-AI commercial")}
               <ArrowRight size={13} aria-hidden="true" />
@@ -664,7 +661,7 @@ export function MarketHomePage() {
                   <Link
                     key={pub.id}
                     href={`/market/creator/${encodeURIComponent(pub.id)}`}
-                    className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:border-accent/50 hover:text-accent"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg transition-colors hover:border-accent/50 hover:text-accent"
                   >
                     <Store className="size-3.5 text-accent" aria-hidden="true" />
                     <span>{pub.name}</span>

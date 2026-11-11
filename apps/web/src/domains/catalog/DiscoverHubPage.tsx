@@ -116,6 +116,36 @@ const QUICK_DISCOVERY_PRESETS: readonly {
   { href: "/character-chat", label: ["AI 캐릭터 토크", "Character Talk"] },
 ];
 
+const SERIALIZATION_TRACK_EN: Readonly<
+  Record<DiscoverSerializationTrackId, { readonly label: string; readonly description: string; readonly secondaryLabel: string }>
+> = {
+  all: {
+    label: "All Unified Tracks",
+    description: "Browse weekly originals, open Canvas leagues, Wait-Until-Free hits, and short-form Cuts in one place.",
+    secondaryLabel: "Live Rankings",
+  },
+  originals: {
+    label: "Weekly Originals",
+    description: "Explore official Monday-to-Sunday serialized series and weekly spotlight hits.",
+    secondaryLabel: "Originals Chart",
+  },
+  canvas: {
+    label: "Open Canvas League",
+    description: "Discover indie series published freely by creators and promoted through reader momentum.",
+    secondaryLabel: "Start Canvas Series",
+  },
+  "wait-free": {
+    label: "Wait-Until-Free (WUF)",
+    description: "Catch major serialized hits that unlock free episodes on a timer plus full-free binge titles.",
+    secondaryLabel: "Browse WUF Titles",
+  },
+  "cuts-short": {
+    label: "Short-form Cuts & Trailers",
+    description: "Find your next favorite story in under a minute with vertical Cuts and motion trailers.",
+    secondaryLabel: "Open Cuts Feed",
+  },
+};
+
 // 아래 작품 레일은 라우트 본문과 분리해 첫 화면의 동기 모듈 그래프를 줄인다.
 const LazyDiscoverRecentShelf = lazyRetry(
   () => import("./DiscoverRecentShelf").then((module) => ({ default: module.DiscoverRecentShelf })),
@@ -357,7 +387,7 @@ export function DiscoverHubPage() {
               </p>
               <Link
                 href={`/search?q=${encodeURIComponent(query.trim())}`}
-                className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-fg-2 hover:text-accent"
+                className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-fg-2 hover:text-accent"
               >
                 {bt("전체 검색 결과 보기", "See all search results")}
                 <ArrowRight size={13} aria-hidden="true" />
@@ -406,7 +436,7 @@ export function DiscoverHubPage() {
                   role="tab"
                   id={`discover-track-${track.id}`}
                   aria-controls="discover-track-panel"
-                  aria-label={track.label}
+                  aria-label={bt(track.label, SERIALIZATION_TRACK_EN[track.id].label)}
                   tabIndex={selected ? 0 : -1}
                   aria-selected={selected}
                   onKeyDown={(event) => {
@@ -459,21 +489,21 @@ export function DiscoverHubPage() {
                 fallbackLabel={activeTrack.badge}
                 className="h-12 w-20 shrink-0 rounded-xl border border-line/70 object-cover"
               />
-              <p className="min-w-0 max-w-2xl break-keep [overflow-wrap:anywhere]">{activeTrack.description}</p>
+              <p className="min-w-0 max-w-2xl break-keep [overflow-wrap:anywhere]">{bt(activeTrack.description, SERIALIZATION_TRACK_EN[activeTrack.id].description)}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={activeTrack.primaryRoute}
                 className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4 text-xs font-bold" })}
               >
-                {activeTrack.label} {bt("열기", "Open")}
+                {bt(activeTrack.label, SERIALIZATION_TRACK_EN[activeTrack.id].label)} {bt("열기", "Open")}
                 <ArrowRight size={13} aria-hidden="true" />
               </Link>
               <Link
                 href={activeTrack.secondaryRoute}
                 className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 rounded-full px-3.5 text-xs font-semibold" })}
               >
-                {activeTrack.secondaryLabel}
+                {bt(activeTrack.secondaryLabel, SERIALIZATION_TRACK_EN[activeTrack.id].secondaryLabel)}
               </Link>
             </div>
           </div>

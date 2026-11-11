@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { Archive, BookOpen, Clock3, FolderOpen, Plus, RotateCcw, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { Archive, BookOpen, Clock3, FolderOpen, Plus, RotateCcw, Search, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -16,6 +16,14 @@ import type { StudioProjectLibraryManagementController } from "./useStudioProjec
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioProjectLibraryManagementHeader", ko, en);
+
+const BENTO_STAGE_STEPS = [
+  { ko: "콘티", en: "Board" },
+  { ko: "3D", en: "3D" },
+  { ko: "작화", en: "Ink" },
+  { ko: "식자", en: "Type" },
+  { ko: "출고", en: "Ship" },
+] as const;
 
 export function StudioProjectLibraryManagementHeader({
   controller,
@@ -52,7 +60,9 @@ export function StudioProjectLibraryManagementHeader({
     >
       <header className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <p className="hidden text-[0.68rem] font-black uppercase sm:block tracking-[0.18em] text-accent">TOONSTUDIO</p>
+          <p className="hidden font-display text-[0.68rem] font-black uppercase tracking-[0.18em] text-accent sm:block">
+            TOONSTUDIO · STARLIGHT ATELIER
+          </p>
           <h1 className="text-2xl font-black tracking-tight text-fg sm:mt-2 sm:text-4xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
           </h1>
@@ -64,84 +74,138 @@ export function StudioProjectLibraryManagementHeader({
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" data-studio-primary-entry-actions="true">
-          <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"} className={buttonClass({ className: "min-h-11 min-w-0 gap-2 whitespace-normal px-3" })}>
+          <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"} className={buttonClass({ className: "min-h-11 min-w-0 gap-2 whitespace-normal px-3.5" })}>
             <Plus size={16} aria-hidden="true" />
             {bi("새 작업", "New work")}
           </Link>
-          <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-11 min-w-0 whitespace-normal px-3" })}>
+          <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-11 min-w-0 whitespace-normal px-3.5" })}>
             {bi("파일 가져오기", "Import files")}
           </Link>
         </div>
       </header>
 
-      {recentProject && recentResumeTarget ? (
+      {view === "active" && !hasSearchQuery ? (
         <div
-          role="region"
-          aria-label={bi("최근 작업 빠른 이어하기", "Quick resume recent work")}
-          data-studio-recent-work-bar="true"
-          className="mt-3 flex flex-col gap-2.5 rounded-2xl border border-accent/30 bg-card/90 p-3 sm:flex-row sm:items-center sm:justify-between"
+          data-studio-atelier-bento="true"
+          className="mt-4 grid gap-3.5 lg:grid-cols-12"
         >
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-[0.68rem] font-black text-accent">
-              <Clock3 size={12} aria-hidden="true" />
-              {bi("최근 작업", "Recent work")}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-center gap-2">
-                <p
-                  title={recentProject.title}
-                  data-studio-recent-work-title="true"
-                  className="truncate text-xs font-black text-fg sm:text-sm"
+          {recentProject && recentResumeTarget ? (
+            <div
+              role="region"
+              aria-label={bi("최근 작업 빠른 이어하기", "Quick resume recent work")}
+              data-studio-recent-work-bar="true"
+              className="flex flex-col justify-between gap-4 rounded-2xl border border-accent/35 bg-gradient-to-br from-accent-soft/55 via-card to-panel p-4 shadow-sm lg:col-span-5"
+            >
+              <div className="space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wider text-on-accent">
+                    <Clock3 size={12} aria-hidden="true" />
+                    {bi("최근 작업 이어하기", "Resume Latest")}
+                  </span>
+                  <span
+                    data-studio-recent-save-badge="true"
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[0.65rem] font-bold",
+                      recentIsTemporary
+                        ? "bg-panel text-fg-2"
+                        : "bg-good/15 text-good",
+                    )}
+                  >
+                    <ShieldCheck size={12} aria-hidden="true" />
+                    {recentIsTemporary
+                      ? bi("오프라인 자동저장됨", "Offline autosaved")
+                      : bi("정식 저장 연결됨", "Formal save linked")}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <p
+                    title={recentProject.title}
+                    data-studio-recent-work-title="true"
+                    className="truncate text-base font-black tracking-tight text-fg sm:text-lg"
+                  >
+                    {recentProject.title}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-fg-2">
+                    {`${studioProjectLibraryTypeLabel(recentProject)} · ${studioProjectLibraryDateLabel(recentProject.lastOpenedAt, _locale)}`}
+                  </p>
+                </div>
+                <ol
+                  aria-label={bi("5단계 제작 공정 흐름", "5-stage production flow")}
+                  className="grid grid-cols-5 gap-1 pt-1"
                 >
-                  {recentProject.title}
-                </p>
-                <span
-                  data-studio-recent-save-badge="true"
-                  className={cn(
-                    "hidden shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[0.62rem] font-bold sm:inline-flex",
-                    recentIsTemporary
-                      ? "border-line bg-panel text-fg-2"
-                      : "border-good/30 bg-good/10 text-good",
-                  )}
-                >
-                  <ShieldCheck size={11} aria-hidden="true" />
-                  {recentIsTemporary
-                    ? bi("오프라인 자동저장됨", "Offline autosaved")
-                    : bi("정식 저장 연결됨", "Formal save linked")}
-                </span>
+                  {BENTO_STAGE_STEPS.map((step, idx) => (
+                    <li
+                      key={step.en}
+                      className={cn(
+                        "rounded-lg px-1.5 py-1 text-center text-[0.62rem] font-bold",
+                        idx <= 2 ? "bg-accent/20 text-accent" : "bg-panel/80 text-fg-3",
+                      )}
+                    >
+                      {bi(step.ko, step.en)}
+                    </li>
+                  ))}
+                </ol>
               </div>
-              <p className="mt-0.5 truncate text-[0.68rem] text-fg-3">
-                {`${studioProjectLibraryTypeLabel(recentProject)} · ${studioProjectLibraryDateLabel(recentProject.lastOpenedAt, _locale)}`}
-              </p>
+              <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
+                <Link
+                  href={recentResumeTarget.href}
+                  onClick={() => {
+                    library.touch(recentProject.id, recentResumeTarget.documentId);
+                  }}
+                  data-studio-recent-work-open="true"
+                  className={buttonClass({ size: "sm", className: "min-h-11 flex-1 gap-1.5 px-3.5 text-xs font-black" })}
+                >
+                  <FolderOpen size={14} aria-hidden="true" />
+                  {bi("최근 작업 열기", "Open recent work")}
+                </Link>
+                <Link
+                  href={projectOverviewHref(recentProject)}
+                  data-studio-recent-work-overview="true"
+                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 px-3 text-xs font-bold" })}
+                >
+                  <BookOpen size={14} aria-hidden="true" />
+                  {bi("작품 단계", "Project stages")}
+                </Link>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={projectOverviewHref(recentProject)}
-              data-studio-recent-work-overview="true"
-              className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
-            >
-              <BookOpen size={14} aria-hidden="true" />
-              {bi("작품 단계", "Project stages")}
-            </Link>
-            <Link
-              href={recentResumeTarget.href}
-              onClick={() => {
-                library.touch(recentProject.id, recentResumeTarget.documentId);
-              }}
-              data-studio-recent-work-open="true"
-              className={buttonClass({ size: "sm", className: "min-h-11 flex-1 gap-1.5 sm:min-h-9 sm:flex-initial" })}
-            >
-              <FolderOpen size={14} aria-hidden="true" />
-              {bi("최근 작업 열기", "Open recent work")}
-            </Link>
+          ) : (
+            <div className="flex flex-col justify-between gap-4 rounded-2xl border border-accent/30 bg-gradient-to-br from-accent-soft/45 via-card to-panel p-4 shadow-sm lg:col-span-5">
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 text-[0.65rem] font-black text-accent">
+                  <Sparkles size={12} aria-hidden="true" />
+                  {bi("1초 첫 캔버스", "1-Second First Canvas")}
+                </span>
+                <p className="text-base font-black text-fg sm:text-lg">
+                  {bi("오른쪽 규격 카드를 고르면 원고 캔버스가 즉시 열립니다", "Pick a format card on the right to open your canvas in 1 second")}
+                </p>
+                <p className="text-xs leading-5 text-fg-2">
+                  {bi("로그인 전에도 이 기기 원고 금고(OPFS·SQLite)에 안전하게 자동 저장됩니다.", "Autosaved safely to your local manuscript vault even before signing in.")}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
+                <Link
+                  href="/studio/new?kind=webtoon&template=webtoon-vertical"
+                  className={buttonClass({ size: "sm", className: "min-h-11 flex-1 gap-1.5 text-xs font-black" })}
+                >
+                  <Plus size={14} aria-hidden="true" />
+                  {bi("새 세로 웹툰 열기", "New vertical webtoon")}
+                </Link>
+                <Link
+                  href="/studio/recovery"
+                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 text-xs font-bold" })}
+                >
+                  {bi("복구 금고", "Recovery vault")}
+                </Link>
+              </div>
+            </div>
+          )}
+          <div className="lg:col-span-7">
+            <StudioProjectLibraryFastStartStrip className="h-full" />
           </div>
         </div>
       ) : null}
 
-      {view === "active" && !hasSearchQuery ? <StudioProjectLibraryFastStartStrip /> : null}
-
-      <div className="mt-3 sm:mt-5">
+      <div className="mt-4 sm:mt-5">
         <nav className="overflow-x-auto" aria-label={bi("내 작업 보기", "My work views")}>
           <div className="flex min-w-max gap-1 rounded-2xl border border-line bg-card p-1">
             {(["active", "archived", "trash"] as const).map((candidate) => (

@@ -133,8 +133,9 @@ function transportLabel(
 const iconButtonClass = buttonClass({
   variant: "quiet",
   size: "icon",
-  className: "shrink-0 rounded-xl",
+  className: "min-h-11 min-w-11 shrink-0 rounded-xl",
 });
+
 export function StudioDocumentWindowHub({
   locale,
   resolution,
@@ -269,153 +270,167 @@ export function StudioDocumentWindowHub({
     activeWorkspaceCounts.set(peer.workspace, (activeWorkspaceCounts.get(peer.workspace) ?? 0) + 1);
   }
 
+  // DESIGN.md §1.1 & §5.2 (시안 B): 데스크톱에서는 단일 44px 상단바 중앙에 5단계 공정 스위처를 인라인 도킹해
+  // 이중 막대가 원고 시야를 가리지 않도록 하고, 좁은 화면(<1280px)에서만 가로 스냅 줄로 자연스럽게 개행한다.
   const workspaceBar = (
       <div
         ref={barRef}
         data-studio-shell-authored-layout={chromeTarget ? "true" : undefined}
         data-studio-document-chrome-docked={chromeTarget ? "true" : undefined}
         data-studio-document-window-hub-bar="true"
-        className={chromeTarget ? "studio-document-chrome-bar" : "pointer-events-none fixed left-1/2 top-[3.25rem] z-[60] w-[min(94vw,42rem)] -translate-x-1/2 print:hidden"}
+        className={chromeTarget ? "studio-document-chrome-bar" : "pointer-events-none fixed left-1/2 top-[3.25rem] z-[60] w-[min(96vw,72rem)] -translate-x-1/2 print:hidden"}
       >
-        <div className="pointer-events-auto flex min-h-11 items-center gap-1 rounded-2xl border border-line bg-card/95 p-1.5 shadow-lg backdrop-blur-xl">
-          <Link
-            href="/studio"
-            aria-label={bi("내 작업으로 돌아가기", "Back to My work")}
-            title={bi("내 작업으로 돌아가기", "Back to My work")}
-            className="grid size-9 shrink-0 place-items-center rounded-xl text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:size-11"
-          >
-            <ArrowLeft size={16} aria-hidden="true" />
-          </Link>
-          {resolution.projectId ? (
+        <div className="pointer-events-auto flex min-h-11 flex-wrap items-center gap-1 rounded-2xl border border-line bg-card/95 px-1.5 py-1 shadow-lg backdrop-blur-xl xl:flex-nowrap">
+          <div className="order-1 flex min-w-0 flex-1 items-center gap-1 xl:flex-initial">
             <Link
-              href={`/studio/p/${encodeURIComponent(resolution.projectId)}/overview`}
-              aria-label={bi("프로젝트 단계로 돌아가기", "Back to project stages")}
-              title={bi("프로젝트 단계로 돌아가기", "Back to project stages")}
-              className={buttonClass({
-                variant: "quiet",
-                size: "sm",
-                className: "shrink-0 gap-1 rounded-xl px-2 text-xs text-fg-2 pointer-coarse:min-h-11",
-              })}
+              href="/studio"
+              aria-label={bi("내 작업으로 돌아가기", "Back to My work")}
+              title={bi("내 작업으로 돌아가기", "Back to My work")}
+              className="grid size-11 shrink-0 place-items-center rounded-xl text-fg-3 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
             >
-              <BookOpen size={14} aria-hidden="true" />
-              <span className="hidden md:inline">{bi("프로젝트", "Project")}</span>
+              <ArrowLeft size={16} aria-hidden="true" />
             </Link>
-          ) : null}
-          <span className="hidden size-8 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent sm:grid">
-            <PanelsTopLeft size={16} aria-hidden="true" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <label htmlFor="studio-document-workspace" className="sr-only">
-              {bi("문서 작업공간", "Document workspace")}
-            </label>
-            <select
-              id="studio-document-workspace"
-              aria-label={bi("문서 작업공간", "Document workspace")}
-              className="min-h-8 w-full cursor-pointer rounded-xl border-0 bg-transparent px-2 text-sm font-black text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-              value={resolution.workspace}
-              title={bi(currentWorkspace.descriptionKo, currentWorkspace.descriptionEn)}
-              onChange={(event) => onChangeWorkspace(event.target.value as StudioDocumentWorkspaceId)}
-            >
-              {WORKSPACE_FAMILIES.map((family) => (
-                <optgroup key={family.id} label={bi(family.ko, family.en)}>
-                  {STUDIO_DOCUMENT_WORKSPACES
-                    .filter((workspace) => workspace.family === family.id)
-                    .map((workspace) => (
-                      <option key={workspace.id} value={workspace.id}>
-                        {bi(workspace.labelKo, workspace.labelEn)}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-            </select>
-            <p className="hidden truncate px-2 text-[0.62rem] font-medium text-fg-3 sm:block">
-              {bi(currentWorkspace.descriptionKo, currentWorkspace.descriptionEn)}
-            </p>
+            {resolution.projectId ? (
+              <Link
+                href={`/studio/p/${encodeURIComponent(resolution.projectId)}/overview`}
+                aria-label={bi("프로젝트 단계로 돌아가기", "Back to project stages")}
+                title={bi("프로젝트 단계로 돌아가기", "Back to project stages")}
+                className={buttonClass({
+                  variant: "quiet",
+                  size: "sm",
+                  className: "min-h-11 shrink-0 gap-1 rounded-xl px-2 text-xs text-fg-2",
+                })}
+              >
+                <BookOpen size={14} aria-hidden="true" />
+                <span className="hidden md:inline">{bi("프로젝트", "Project")}</span>
+              </Link>
+            ) : null}
+            <span className="hidden size-8 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent sm:grid">
+              <PanelsTopLeft size={15} aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1 xl:w-44 xl:flex-none">
+              <label htmlFor="studio-document-workspace" className="sr-only">
+                {bi("문서 작업공간", "Document workspace")}
+              </label>
+              <select
+                id="studio-document-workspace"
+                aria-label={bi("문서 작업공간", "Document workspace")}
+                className="min-h-11 w-full cursor-pointer rounded-xl border-0 bg-transparent px-2 text-xs font-black text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:text-sm"
+                value={resolution.workspace}
+                title={bi(currentWorkspace.descriptionKo, currentWorkspace.descriptionEn)}
+                onChange={(event) => onChangeWorkspace(event.target.value as StudioDocumentWorkspaceId)}
+              >
+                {WORKSPACE_FAMILIES.map((family) => (
+                  <optgroup key={family.id} label={bi(family.ko, family.en)}>
+                    {STUDIO_DOCUMENT_WORKSPACES
+                      .filter((workspace) => workspace.family === family.id)
+                      .map((workspace) => (
+                        <option key={workspace.id} value={workspace.id}>
+                          {bi(workspace.labelKo, workspace.labelEn)}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
           </div>
-          <div id="studio-mode-chrome-slot" className="shrink-0 empty:hidden" />
-          <div id="studio-episode-stage-chrome-slot" className="shrink-0 empty:hidden" />
-          {resolution.workspace === "draw" ? (
-            <button
-              type="button"
-              aria-pressed={quickMode}
-              aria-label={quickMode
-                ? bi("일반 모드", "Full mode")
-                : bi("퀵모드", "Quick mode")}
-              title={bi("그림은 유지하고 패널 배치와 기본 도구만 바꿉니다.", "Keep the artwork and change only panel layout and the primary tool.")}
-              className={buttonClass({
-                variant: quickMode ? "solid" : "quiet",
-                size: "sm",
-                className: "shrink-0 gap-1 rounded-xl px-2",
-              })}
-              onClick={onToggleQuickMode}
+
+          <StudioDocumentStagePillBar
+            workspace={resolution.workspace}
+            onSelectWorkspace={onChangeWorkspace}
+            className="order-3 w-full border-t border-line/50 pt-1 xl:order-2 xl:mx-auto xl:w-auto xl:border-t-0 xl:pt-0"
+          />
+
+          <div className="order-2 ml-auto flex shrink-0 items-center gap-1 xl:order-3 xl:ml-0">
+            <div id="studio-mode-chrome-slot" className="shrink-0 empty:hidden" />
+            <div id="studio-episode-stage-chrome-slot" className="shrink-0 empty:hidden" />
+            <span
+              data-studio-autosave-dot="true"
+              title={bi("로컬 원고 금고 실시간 보호 중", "Protected by local manuscript vault")}
+              className="hidden items-center gap-1.5 rounded-full bg-good/12 px-2.5 py-1 text-[0.65rem] font-bold text-good 2xl:inline-flex"
             >
-              <Zap size={15} aria-hidden="true" />
-              <span className="hidden sm:inline">
-                {quickMode
+              <span className="size-1.5 rounded-full bg-good" aria-hidden="true" />
+              {bi("안전 저장", "Saved")}
+            </span>
+            {resolution.workspace === "draw" ? (
+              <button
+                type="button"
+                aria-pressed={quickMode}
+                aria-label={quickMode
                   ? bi("일반 모드", "Full mode")
                   : bi("퀵모드", "Quick mode")}
-              </span>
+                title={bi("그림은 유지하고 패널 배치와 기본 도구만 바꿉니다.", "Keep the artwork and change only panel layout and the primary tool.")}
+                className={buttonClass({
+                  variant: quickMode ? "solid" : "quiet",
+                  size: "sm",
+                  className: "min-h-11 shrink-0 gap-1 rounded-xl px-2",
+                })}
+                onClick={onToggleQuickMode}
+              >
+                <Zap size={15} aria-hidden="true" />
+                <span className="hidden sm:inline">
+                  {quickMode
+                    ? bi("일반 모드", "Full mode")
+                    : bi("퀵모드", "Quick mode")}
+                </span>
+              </button>
+            ) : null}
+            <Link
+              href={
+                resolution.projectId
+                  ? `/studio/p/${encodeURIComponent(resolution.projectId)}/export`
+                  : "/studio/publish"
+              }
+              aria-label={bi("저장 및 내보내기 화면 열기", "Open save and export screen")}
+              title={bi("저장·내보내기", "Save & Export")}
+              className={buttonClass({
+                variant: "solid",
+                size: "sm",
+                className: "min-h-11 shrink-0 gap-1 rounded-xl px-3",
+              })}
+            >
+              <Download size={14} aria-hidden="true" />
+              <span className="text-xs font-bold sm:hidden">{bi("내보내기", "Export")}</span>
+              <span className="hidden sm:inline">{bi("저장·내보내기", "Export")}</span>
+            </Link>
+            <button
+              type="button"
+              className={iconButtonClass}
+              aria-label={bi("현재 작업공간을 새 탭으로 열기", "Open current workspace in a new tab")}
+              title={bi("새 탭", "New tab")}
+              onClick={() => openWorkspace(resolution.workspace, "tab")}
+            >
+              <ExternalLink size={16} aria-hidden="true" />
             </button>
-          ) : null}
-          <Link
-            href={
-              resolution.projectId
-                ? `/studio/p/${encodeURIComponent(resolution.projectId)}/export`
-                : "/studio/publish"
-            }
-            aria-label={bi("저장 및 내보내기 화면 열기", "Open save and export screen")}
-            title={bi("저장·내보내기", "Save & Export")}
-            className={buttonClass({
-              variant: "outline",
-              size: "sm",
-              className: "shrink-0 gap-1 rounded-xl px-2.5 pointer-coarse:min-h-11",
-            })}
-          >
-            <Download size={14} aria-hidden="true" />
-            <span className="text-xs font-bold sm:hidden">{bi("내보내기", "Export")}</span>
-            <span className="hidden sm:inline">{bi("저장·내보내기", "Export")}</span>
-          </Link>
-          <button
-            type="button"
-            className={iconButtonClass}
-            aria-label={bi("현재 작업공간을 새 탭으로 열기", "Open current workspace in a new tab")}
-            title={bi("새 탭", "New tab")}
-            onClick={() => openWorkspace(resolution.workspace, "tab")}
-          >
-            <ExternalLink size={16} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className={iconButtonClass}
-            aria-label={bi("현재 작업공간을 독립 창으로 열기", "Open current workspace in a separate window")}
-            title={bi("독립 창", "Separate window")}
-            onClick={() => openWorkspace(resolution.workspace, "window")}
-          >
-            <AppWindow size={16} aria-hidden="true" />
-          </button>
-          <button
-            ref={triggerRef}
-            type="button"
-            aria-controls={panelId}
-            aria-expanded={open}
-            aria-haspopup="dialog"
-            className={buttonClass({
-              variant: open ? "solid" : "outline",
-              size: "sm",
-              className: "shrink-0 gap-1.5 rounded-xl px-2.5 pointer-coarse:min-h-11",
-            })}
-            title={bi("여러 창 작업공간 · ⌘/Ctrl+Shift+M", "Multi-window workspace · ⌘/Ctrl+Shift+M")}
-            onClick={() => setOpen((value) => !value)}
-          >
-            <MonitorUp size={16} aria-hidden="true" />
-            <span className="tabular-nums">{openCount}</span>
-            <span className="hidden md:inline">{bi("창", "views")}</span>
-          </button>
+            <button
+              type="button"
+              className={iconButtonClass}
+              aria-label={bi("현재 작업공간을 독립 창으로 열기", "Open current workspace in a separate window")}
+              title={bi("독립 창", "Separate window")}
+              onClick={() => openWorkspace(resolution.workspace, "window")}
+            >
+              <AppWindow size={16} aria-hidden="true" />
+            </button>
+            <button
+              ref={triggerRef}
+              type="button"
+              aria-controls={panelId}
+              aria-expanded={open}
+              aria-haspopup="dialog"
+              className={buttonClass({
+                variant: open ? "solid" : "outline",
+                size: "sm",
+                className: "min-h-11 shrink-0 gap-1.5 rounded-xl px-2.5",
+              })}
+              title={bi("여러 창 작업공간 · ⌘/Ctrl+Shift+M", "Multi-window workspace · ⌘/Ctrl+Shift+M")}
+              onClick={() => setOpen((value) => !value)}
+            >
+              <MonitorUp size={16} aria-hidden="true" />
+              <span className="tabular-nums">{openCount}</span>
+              <span className="hidden md:inline">{bi("창", "views")}</span>
+            </button>
+          </div>
         </div>
-        <StudioDocumentStagePillBar
-          workspace={resolution.workspace}
-          onSelectWorkspace={onChangeWorkspace}
-        />
       </div>
   );
 
@@ -448,14 +463,14 @@ export function StudioDocumentWindowHub({
                 {bi("같은 문서를 역할별 탭과 창으로 나눕니다. 문서 저장·실시간 협업 권위는 기존 편집기 한곳을 그대로 사용합니다.", "Split one document into role-specific tabs and windows while preserving the editor's existing save and collaboration authority.")}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-[0.65rem] font-bold text-fg-3">
-                <span className="inline-flex items-center gap-1 rounded-full border border-line bg-card px-2 py-1">
+                <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-1">
                   <Radio size={11} aria-hidden="true" />
                   {transportLabel(snapshot.transport, locale)}
                 </span>
-                <span className="rounded-full border border-line bg-card px-2 py-1 tabular-nums">
+                <span className="rounded-full bg-card px-2 py-1 tabular-nums">
                   {formatI18nTemplate(String(bi("{value0}개 열림", "{value0} open")), { value0: openCount })}
                 </span>
-                <kbd className="rounded border border-line bg-card px-1.5 py-0.5 font-mono">⌘/Ctrl ⇧ M</kbd>
+                <kbd className="rounded bg-card px-1.5 py-0.5 font-mono">⌘/Ctrl ⇧ M</kbd>
               </div>
             </div>
             <button
@@ -498,7 +513,7 @@ export function StudioDocumentWindowHub({
                 </div>
                 <button
                   type="button"
-                  className={buttonClass({ variant: "outline", size: "sm" })}
+                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
                   onClick={() => void copyCurrentLink()}
                 >
                   <Copy size={14} aria-hidden="true" />
@@ -512,7 +527,7 @@ export function StudioDocumentWindowHub({
                     <div key={workspace} className="flex min-w-0 items-center gap-1 rounded-2xl border border-line bg-panel/60 p-1.5">
                       <button
                         type="button"
-                        className="min-h-10 min-w-0 flex-1 rounded-xl px-3 text-left hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                        className="min-h-11 min-w-0 flex-1 rounded-xl px-3 text-left hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                         onClick={() => openWorkspace(workspace, "tab")}
                       >
                         <span className="block truncate text-xs font-black text-fg">
@@ -590,7 +605,7 @@ export function StudioDocumentWindowHub({
                       className={buttonClass({
                         variant: "outline",
                         size: "sm",
-                        className: "mt-2 w-full",
+                        className: "mt-2 min-h-11 w-full",
                       })}
                       onClick={() => focusPeer(peer)}
                     >
@@ -633,7 +648,7 @@ export function StudioDocumentWindowHub({
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        className={buttonClass({ variant: "outline", size: "sm" })}
+                        className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
                         onClick={() => openPreset(preset.workspaces, "tab")}
                       >
                         <ExternalLink size={14} aria-hidden="true" />
@@ -641,7 +656,7 @@ export function StudioDocumentWindowHub({
                       </button>
                       <button
                         type="button"
-                        className={buttonClass({ variant: "outline", size: "sm" })}
+                        className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
                         onClick={() => openPreset(preset.workspaces, "window")}
                       >
                         <Grid2X2 size={14} aria-hidden="true" />
@@ -687,7 +702,7 @@ export function StudioDocumentWindowHub({
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-1 min-h-10 text-[0.65rem] leading-relaxed text-fg-3">
+                      <p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">
                         {bi(workspace.descriptionKo, workspace.descriptionEn)}
                       </p>
                       <div className="mt-auto flex items-center gap-1 pt-3">
@@ -697,7 +712,7 @@ export function StudioDocumentWindowHub({
                             className={buttonClass({
                               variant: "outline",
                               size: "sm",
-                              className: "min-w-0 flex-1 px-2",
+                              className: "min-h-11 min-w-0 flex-1 px-2",
                             })}
                             onClick={() => focusPeer(openPeer)}
                           >
@@ -713,7 +728,7 @@ export function StudioDocumentWindowHub({
                             className={buttonClass({
                               variant: current ? "quiet" : "outline",
                               size: "sm",
-                              className: "min-w-0 flex-1 px-2",
+                              className: "min-h-11 min-w-0 flex-1 px-2",
                             })}
                             onClick={() => {
                               onChangeWorkspace(workspace.id);

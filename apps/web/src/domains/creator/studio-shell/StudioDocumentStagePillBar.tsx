@@ -54,9 +54,11 @@ export function resolveCanonicalStageForWorkspace(
 export function StudioDocumentStagePillBar({
   workspace,
   onSelectWorkspace,
+  className,
 }: {
   readonly workspace: StudioDocumentWorkspaceId;
   readonly onSelectWorkspace: (workspace: StudioDocumentWorkspaceId) => void;
+  readonly className?: string;
 }) {
   useBilingualI18nRevision();
   const activeStage = resolveCanonicalStageForWorkspace(workspace);
@@ -65,9 +67,9 @@ export function StudioDocumentStagePillBar({
     <nav
       aria-label={bi("5단계 제작 공정 전환", "5-stage production pipeline switcher")}
       data-studio-stage-pill-bar="true"
-      className="pointer-events-auto mt-1 flex items-center justify-center"
+      className={cn("pointer-events-auto flex items-center justify-center", className)}
     >
-      <div className="flex max-w-full snap-x snap-mandatory items-center gap-1 overflow-x-auto rounded-2xl border border-line bg-panel/95 p-1 shadow-sm backdrop-blur-md [scrollbar-width:none]">
+      <div className="flex max-w-full snap-x snap-mandatory items-center gap-1 overflow-x-auto rounded-xl bg-panel/90 p-0.5 [scrollbar-width:none]">
         {STAGE_PILLS.map((stage) => {
           const active = stage.id === activeStage;
           return (
@@ -78,9 +80,9 @@ export function StudioDocumentStagePillBar({
               data-studio-stage-pill={stage.id}
               onClick={() => onSelectWorkspace(stage.workspace)}
               className={cn(
-                "inline-flex min-h-9 shrink-0 snap-start items-center rounded-xl px-2.5 text-[0.68rem] font-black transition-colors max-sm:min-h-11 pointer-coarse:min-h-11",
+                "inline-flex min-h-11 shrink-0 snap-start items-center rounded-lg px-2.5 text-[0.7rem] font-black transition-colors",
                 active
-                  ? "bg-accent text-on-accent"
+                  ? "bg-accent text-on-accent shadow-sm"
                   : "text-fg-2 hover:bg-raised hover:text-fg",
               )}
             >

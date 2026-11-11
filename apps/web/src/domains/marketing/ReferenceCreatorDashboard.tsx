@@ -20,20 +20,15 @@ import "./reference-creator-dashboard.css";
 /**
  * 공개 홈(/)은 BLUEPRINT §3.3의 4밴드로 조립한다(data-home-band):
  * ① 히어로(포스터 + 통합 입력이 1차 행동, 우측 패널에 Luna 창작 안내)
- * ② 이어하기 — 로그인하면 지금 할 일 카드(HomeNowCard, 읽는 동안·실패하면 개인
- *    스트립으로 폴백), 게스트에게는 1초 포맷·스펙트럼 런치패드와 예시 작품 선반이 이어진다.
- * ③ 작품 발견 미리보기(스포트라이트 1장 + 요일 레일 1줄)까지만 얹는다 —
- *    레일 전체와 검색은 /discover·/search가 소유한다.
- * ④ 더 알아보기 — 시작 카드·핵심 작업실·편집기 미리보기·챕터 링크는 접힌
- *    밴드(details.rd-more) 아래로 내려 첫 화면을 얇게 유지한다.
- * 로그인해도 홈의 골격은 그대로이고 개인 동선은 ② 밴드로만 얹는다.
+ * ② 이어하기 — 로그인하면 지금 할 일 카드(HomeNowCard), 아래에 시안 A·E 정본
+ *    아틀리에 2×2/4열 시각 Bento 런치패드 + 예시 작품 선반이 이어진다.
+ * ③ 작품 발견 미리보기(스포트라이트 1장 + 요일 레일 1줄).
+ * ④ 더 알아보기 — 시작 카드·핵심 작업실·편집기 미리보기·챕터 링크.
  */
 export function ReferenceCreatorDashboard() {
   const bi = useBilingualLocalizer("domains.marketing.ReferenceCreatorDashboard");
   const navigate = useNavigate();
   const [idea, setIdea] = useState("");
-  // 만들기는 입력한 아이디어를 이어받는 질문 흐름으로, 작품 찾기는 카탈로그 검색으로 보낸다.
-  // 입력한 문장은 모드를 오가도 유지한다.
   const [inputMode, setInputMode] = useState<"create" | "search">("create");
   const searching = inputMode === "search";
   const submitInput = (event: FormEvent) => {
@@ -47,7 +42,6 @@ export function ReferenceCreatorDashboard() {
   };
   return <div className="reference-dashboard" data-reference-dashboard="true">
     <div data-home-band="hero">
-      {/* 히어로는 SpectacleHero 부품이 소유한다 (S3-15). rd-* 클래스는 표면 마감이 이긴다. */}
       <SpectacleHero
         className="rd-poster"
         artClassName="rd-poster-art"
@@ -97,58 +91,70 @@ export function ReferenceCreatorDashboard() {
       <nav
         data-testid="home-v2-spectrum-launchpad"
         aria-label={bi("1초 창작 포맷 및 스펙트럼 탐색 바로가기", "1-second studio launch and Spectrum hub shortcuts")}
-        className="mx-auto mb-5 flex w-full max-w-[1180px] flex-col gap-3 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
+        className="rd-v2-bento"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-wide text-accent">
+        <div className="rd-v2-spectrum-ribbon" aria-hidden="true" />
+        <div className="rd-v2-bento-head">
+          <span className="rd-v2-eyebrow">
             <Sparkles size={14} aria-hidden="true" />
-            {bi("UI/UX v2 · 1초 포맷 시작 & 스펙트럼 슈퍼 허브", "UI/UX v2 · 1-Second Launch & Spectrum Super Hub")}
+            <span>{bi("STARLIGHT ATELIER · 1초 포맷 & 스펙트럼 허브", "STARLIGHT ATELIER · 1S LAUNCH & SPECTRUM HUB")}</span>
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-success-soft/25 px-2.5 py-1 text-[11px] font-semibold text-success">
+          <span className="rd-v2-trust-pill">
             <ShieldCheck size={13} aria-hidden="true" />
-            {bi("가입 없이 오프라인 자동저장 · Rights BOM 출처 보존", "No sign-up offline autosave · Rights BOM preserved")}
+            <span>{bi("오프라인 원고 금고 · Rights BOM 자동 보존", "Offline Manuscript Vault · Rights BOM Preserved")}</span>
           </span>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
-            href="/studio/new?lane=blank"
-            className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-accent/45 bg-accent-soft/75 px-3.5 py-2.5 text-xs font-bold text-accent transition-colors hover:border-accent"
-          >
-            <span className="inline-flex items-center gap-2">
-              <PencilLine size={15} aria-hidden="true" />
-              {bi("세로 웹툰 1초 캔버스", "1s Vertical Webtoon Canvas")}
-            </span>
-            <ArrowRight size={14} aria-hidden="true" />
+        <div className="rd-v2-bento-grid">
+          <Link href="/studio/new?lane=blank" className="rd-v2-card rd-v2-card--primary min-h-11">
+            <div className="rd-v2-card-top">
+              <span className="rd-v2-index" aria-hidden="true">01</span>
+              <span className="rd-v2-spec">800×∞ · 5-STAGE</span>
+              <span className="rd-v2-glyph rd-v2-glyph--scroll" aria-hidden="true"><i /><i /><i /></span>
+            </div>
+            <div className="rd-v2-card-body">
+              <strong><PencilLine size={15} aria-hidden="true" />{bi("세로 웹툰 1초 캔버스", "1s Vertical Webtoon Canvas")}</strong>
+              <small>{bi("콘티·3D·작화·식자·출고 단일 44px 작업대 즉시 오픈", "Instant 44px single-bar 5-stage webtoon workspace")}</small>
+            </div>
+            <span className="rd-v2-cta">{bi("바로 그리기", "Open Canvas")}<ArrowRight size={14} aria-hidden="true" /></span>
           </Link>
-          <Link
-            href="/studio/bg3d"
-            className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3.5 py-2.5 text-xs font-bold text-fg transition-colors hover:border-accent/55 hover:text-accent"
-          >
-            <span className="inline-flex items-center gap-2">
-              <Boxes size={15} aria-hidden="true" />
-              {bi("3D 세트 · 캐릭터 셰이퍼", "3D Set & Character Shaper")}
-            </span>
-            <ArrowRight size={14} aria-hidden="true" />
+
+          <Link href="/studio/bg3d" className="rd-v2-card min-h-11">
+            <div className="rd-v2-card-top">
+              <span className="rd-v2-index" aria-hidden="true">02</span>
+              <span className="rd-v2-spec">WEBGPU · LIVE INK</span>
+              <span className="rd-v2-glyph rd-v2-glyph--cube" aria-hidden="true"><i /><i /></span>
+            </div>
+            <div className="rd-v2-card-body">
+              <strong><Boxes size={15} aria-hidden="true" />{bi("3D 세트 · 캐릭터 셰이퍼", "3D Set & Character Shaper")}</strong>
+              <small>{bi("공간 배치·관절 포즈 후 실시간 2D 펜선 즉시 추출", "Stage 3D rooms & poses with live 2D line extraction")}</small>
+            </div>
+            <span className="rd-v2-cta">{bi("3D 스튜디오 열기", "Open 3D Studio")}<ArrowRight size={14} aria-hidden="true" /></span>
           </Link>
-          <Link
-            href="/discover"
-            className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3.5 py-2.5 text-xs font-bold text-fg transition-colors hover:border-accent/55 hover:text-accent"
-          >
-            <span className="inline-flex items-center gap-2">
-              <Compass size={15} aria-hidden="true" />
-              {bi("스펙트럼 작품 탐색 허브", "Spectrum Story Hub")}
-            </span>
-            <ArrowRight size={14} aria-hidden="true" />
+
+          <Link href="/discover" className="rd-v2-card min-h-11">
+            <div className="rd-v2-card-top">
+              <span className="rd-v2-index" aria-hidden="true">03</span>
+              <span className="rd-v2-spec">18 GENRES · WUF</span>
+              <span className="rd-v2-glyph rd-v2-glyph--bars" aria-hidden="true"><i /><i /><i /><i /></span>
+            </div>
+            <div className="rd-v2-card-body">
+              <strong><Compass size={15} aria-hidden="true" />{bi("스펙트럼 작품 탐색 허브", "Spectrum Story Hub")}</strong>
+              <small>{bi("18종 장르 스펙트럼·통합 랭킹·어디서 봐 가격 비교", "18-genre spectrum, unified rankings & platform router")}</small>
+            </div>
+            <span className="rd-v2-cta">{bi("스펙트럼 탐색", "Explore Hub")}<ArrowRight size={14} aria-hidden="true" /></span>
           </Link>
-          <Link
-            href="/read/spatial"
-            className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3.5 py-2.5 text-xs font-bold text-fg transition-colors hover:border-accent/55 hover:text-accent"
-          >
-            <span className="inline-flex items-center gap-2">
-              <Glasses size={15} aria-hidden="true" />
-              {bi("2.5D 공간 리더 체험", "Try 2.5D Spatial Reader")}
-            </span>
-            <ArrowRight size={14} aria-hidden="true" />
+
+          <Link href="/read/spatial" className="rd-v2-card min-h-11">
+            <div className="rd-v2-card-top">
+              <span className="rd-v2-index" aria-hidden="true">04</span>
+              <span className="rd-v2-spec">WEBXR · 90°/120°</span>
+              <span className="rd-v2-glyph rd-v2-glyph--dome" aria-hidden="true"><i /><i /></span>
+            </div>
+            <div className="rd-v2-card-body">
+              <strong><Glasses size={15} aria-hidden="true" />{bi("2.5D 공간 리더 체험", "Try 2.5D Spatial Reader")}</strong>
+              <small>{bi("원통형·돔 캐노피 곡률과 깊이 레이어 몰입 감상", "Curved canopy & multi-depth spatial webtoon viewer")}</small>
+            </div>
+            <span className="rd-v2-cta">{bi("공간 뷰어 체험", "Launch Spatial")}<ArrowRight size={14} aria-hidden="true" /></span>
           </Link>
         </div>
       </nav>
