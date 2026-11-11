@@ -251,7 +251,7 @@ function PreviewLoading({ locale: _locale }: { readonly locale: string }) {
     <div className="grid h-full place-items-center bg-panel/70 text-fg-3">
       <div className="flex items-center gap-2 text-xs font-semibold">
         <LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-        {bt("최근 작업 불러오는 중", "Loading recent work")}
+        {bt("미리보기 불러오는 중", "Loading preview")}
       </div>
     </div>
   );

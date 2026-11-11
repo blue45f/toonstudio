@@ -1,116 +1,259 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
+import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
 import { ActiveProjectContextBridge } from "./ActiveProjectContextBridge";
 
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
 import type { PropsWithChildren } from "react";
 
-const fixtures = vi.hoisted(() => ({
-  projects: [] as StudioProjectLibraryEntry[],
-}));
+const CONTEXT_KEY = "toonstudio:active-project-context:v1";
+const fixtures = vi.hoisted(() => ({ projects: [] as StudioProjectLibraryEntry[], lang: "ko" }));
 
 vi.mock("@/shared/lib/i18n", () => ({
-  useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: "ko" }),
+  useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: fixtures.lang }),
 }));
-
 vi.mock("@/shared/navigation/router-link", () => ({
-  default: ({ children, href, ...props }: PropsWithChildren<{ href: string }>) => (
-    <a href={href} {...props}>{children}</a>
-  ),
+  default: ({ children, href, ...props }: PropsWithChildren<{ href: string }>) => <a href={href} {...props}>{children}</a>,
 }));
-
 vi.mock("./useStudioProjectLibrary", () => ({
-  useStudioProjectLibrary: () => ({
-    projects: fixtures.projects,
-    state: null,
-    error: null,
-    reload: vi.fn(),
-    rename: vi.fn(),
-    duplicate: vi.fn(),
-    archive: vi.fn(),
-    activate: vi.fn(),
-    trash: vi.fn(),
-    restore: vi.fn(),
-    removePermanently: vi.fn(),
-    touch: vi.fn(),
-  }),
+  useStudioProjectLibrary: () => ({ projects: fixtures.projects, state: null, error: null, reload: vi.fn() }),
 }));
 
 function project(id: string, title: string, lastOpenedAt: string): StudioProjectLibraryEntry {
   return {
-    id,
-    title,
-    kind: "webtoon",
-    status: "active",
-    statusBeforeTrash: null,
-    templateId: null,
-    description: "",
-    primaryLocale: "ko-KR",
-    createdAt: "2026-09-20T00:00:00.000Z",
-    updatedAt: lastOpenedAt,
-    lastOpenedAt,
-    lastOpenedDocumentId: null,
-    thumbnailUrl: null,
-    definition: null,
+    id, title, kind: "webtoon", status: "active", statusBeforeTrash: null,
+    templateId: null, description: "", primaryLocale: "ko-KR",
+    createdAt: "2026-09-20T00:00:00.000Z", updatedAt: lastOpenedAt, lastOpenedAt,
+    lastOpenedDocumentId: null, thumbnailUrl: null, definition: null,
   };
 }
 
+function ContextHarness() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  return <main id="main-content" tabIndex={-1}>
+    <output data-testid="route">{`${location.pathname}${location.search}`}</output>
+    <button onClick={() => navigate("/research?project=project-a")}>다른 자료로</button>
+    <button onClick={() => navigate("/learn/another?project=project-a")}>같은 학습 영역</button>
+    <button onClick={() => navigate("/market?project=project-a")}>마켓으로</button>
+    <button onClick={() => navigate("/learn?project=project-b")}>다른 작품 학습</button>
+    <button onClick={() => navigate(-1)}>뒤로</button>
+    <input aria-label="페이지의 다른 입력" />
+    <ActiveProjectContextBridge />
+    <h1>페이지 본문</h1>
+  </main>;
+}
+function show(route = "/market") {
+  return render(<MemoryRouter initialEntries={[route]}><ContextHarness /></MemoryRouter>);
+}
+function disclosure() {
+  const node = document.querySelector("[data-active-project-context] details");
+  if (!(node instanceof HTMLDetailsElement)) throw new Error("현재 작품 접기 누락");
+  return node;
+}
+function summary() {
+  const node = disclosure().querySelector("summary");
+  if (!(node instanceof HTMLElement)) throw new Error("현재 작품 메뉴 열기 누락");
+  return node;
+}
+function openMenu() {
+  if (!disclosure().open) fireEvent.click(summary());
+  expect(disclosure().open).toBe(true);
+}
+function selectedTitle() {
+  return document.querySelector("[data-active-project-title]");
+}
+
 beforeEach(() => {
-  window.sessionStorage.clear();
+  window.sessionStorage.clear(); fixtures.lang = "ko";
   fixtures.projects = [
     project("project-a", "최근 작품", "2026-09-26T02:00:00.000Z"),
     project("project-b", "두 번째 작품", "2026-09-25T02:00:00.000Z"),
   ];
 });
+afterEach(() => { cleanup(); window.sessionStorage.clear(); });
 
-afterEach(() => {
-  cleanup();
-  window.sessionStorage.clear();
-});
-
-describe("ActiveProjectContextBridge", () => {
-  it("lets the user switch the active work and rewrites every contextual action", () => {
-    render(
-      <MemoryRouter initialEntries={["/market"]}>
-        <ActiveProjectContextBridge />
-      </MemoryRouter>,
-    );
-
-    const selector = screen.getByRole("combobox", { name: "현재 작품 선택" }) as HTMLSelectElement;
-    expect(selector.value).toBe("project-a");
-    expect(screen.getByRole("link", { name: /이 작품에 소재 추가/ }).getAttribute("href")).toBe(
-      "/studio/assets?project=project-a&view=market",
-    );
-
-    fireEvent.change(selector, { target: { value: "project-b" } });
-
-    expect(selector.value).toBe("project-b");
-    expect(window.sessionStorage.getItem("toonstudio:active-project-context:v1")).toBe("project-b");
-    expect(screen.getByRole("link", { name: /이 작품에 소재 추가/ }).getAttribute("href")).toBe(
-      "/studio/assets?project=project-b&view=market",
-    );
-    expect(screen.getByRole("link", { name: /프로젝트/ }).getAttribute("href")).toBe(
-      "/studio/p/project-b/overview",
-    );
+describe("현재 작품 메뉴의 정보 밀도와 선택", () => {
+  it("작품명은 기본 노출하고 부가 행동은 이름 있는 같은 메뉴에서 연다", () => {
+    show();
+    expect(disclosure().open).toBe(false);
+    expect(selectedTitle()?.textContent).toBe("최근 작품");
+    expect(summary().textContent).toContain("더 보기");
+    const menu = document.getElementById(summary().getAttribute("aria-controls") ?? "");
+    expect(menu?.getAttribute("aria-label")).toBe("현재 작품 메뉴");
+    openMenu();
+    for (const control of [
+      screen.getByRole("combobox", { name: "작품 바꾸기" }),
+      screen.getByRole("link", { name: "프로젝트" }),
+      screen.getByRole("link", { name: /이 작품에 소재 추가/u }),
+      screen.getByRole("button", { name: "이 작품 안내 숨기기" }),
+    ]) expect(control.closest("[role='region']")).toBe(menu);
+    expect(document.querySelector("[data-active-project-context]")?.textContent).not.toMatch(/CURRENT WORK|문맥 연결됨|저장됨/u);
   });
 
-  it("keeps a single active work compact without rendering a redundant selector", () => {
+  it("작품을 바꾸면 기존 session 문맥과 모든 실제 목적지가 함께 바뀐다", () => {
+    show(); openMenu();
+    const selector = screen.getByRole("combobox", { name: "작품 바꾸기" });
+    if (!(selector instanceof HTMLSelectElement)) throw new Error("작품 선택기 누락");
+    expect(selector.value).toBe("project-a");
+    fireEvent.change(selector, { target: { value: "project-b" } });
+    expect(selector.value).toBe("project-b");
+    expect(disclosure().open).toBe(true);
+    expect(selectedTitle()?.textContent).toBe("두 번째 작품");
+    expect(window.sessionStorage.getItem(CONTEXT_KEY)).toBe("project-b");
+    expect(screen.getByRole("link", { name: /이 작품에 소재 추가/u }).getAttribute("href")).toBe("/studio/assets?project=project-b&view=market");
+    expect(screen.getByRole("link", { name: "프로젝트" }).getAttribute("href")).toBe("/studio/p/project-b/overview");
+  });
+
+  it("한 작품이면 중복 선택기를 만들지 않고 기존 리서치 목적지를 제공한다", () => {
     fixtures.projects = [project("project-a", "한 작품", "2026-09-26T02:00:00.000Z")];
-
-    render(
-      <MemoryRouter initialEntries={["/research"]}>
-        <ActiveProjectContextBridge />
-      </MemoryRouter>,
-    );
-
+    show("/research"); openMenu();
     expect(screen.queryByRole("combobox")).toBeNull();
-    expect(screen.getByText("한 작품")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /이 작품의 리서치로 저장/ }).getAttribute("href")).toBe(
-      "/research?project=project-a",
-    );
+    expect(selectedTitle()?.textContent).toBe("한 작품");
+    expect(screen.getByRole("link", { name: /이 작품의 리서치로 저장/u }).getAttribute("href")).toBe("/research?project=project-a");
+  });
+
+  it.each([[EXAMPLE_PROJECT_ID, "예제"], [SAMPLE_PROJECT_ID, "샘플"]])("고정 예제 ID %s만 %s로 표시한다", (id, label) => {
+    fixtures.projects = [project(id, "선택한 연습 원고", "2026-09-26T02:00:00.000Z")];
+    show("/learn");
+    expect(document.querySelector("[data-active-project-sample]")?.textContent).toBe(label);
+  });
+
+  it("이름에 샘플이 들어가는 개인 작품을 예제로 분류하지 않는다", () => {
+    fixtures.projects = [project("my-own-work", "샘플이라는 이름의 나의 작품", "2026-09-26T02:00:00.000Z")];
+    show("/learn");
+    expect(selectedTitle()?.textContent).toBe("샘플이라는 이름의 나의 작품");
+    expect(document.querySelector("[data-active-project-sample]")).toBeNull();
+  });
+
+  it("긴 제목은 전체 이름과 선택 항목을 유지한다", () => {
+    const title = "아주 긴 현재 작품 제목과 한글·English ".repeat(5).slice(0, 120);
+    fixtures.projects = [project("long-work", title, "2026-09-26T03:00:00.000Z"), ...fixtures.projects];
+    show();
+    expect(selectedTitle()?.textContent).toBe(title);
+    expect(selectedTitle()?.getAttribute("title")).toBe(title);
+    openMenu();
+    expect(screen.getByRole("option", { name: title }).getAttribute("value")).toBe("long-work");
+  });
+
+  it("사용할 작품이 없으면 허위 선택이나 새 행동 없이 본문을 유지한다", () => {
+    fixtures.projects = [];
+    window.sessionStorage.setItem(CONTEXT_KEY, "missing-work");
+    show("/learn?project=missing-work");
+    expect(document.querySelector("[data-active-project-context]")).toBeNull();
+    expect(window.sessionStorage.getItem(CONTEXT_KEY)).toBe("missing-work");
+    expect(screen.getByRole("heading", { name: "페이지 본문" })).toBeTruthy();
+  });
+
+  it("지원하지 않는 영역에서는 안내를 노출하지 않는다", () => {
+    show("/account");
+    expect(document.querySelector("[data-active-project-context]")).toBeNull();
+  });
+
+  it("영문에서도 선택명과 결과 중심 메뉴를 제공한다", () => {
+    fixtures.lang = "en";
+    show("/learn"); openMenu();
+    expect(screen.getByRole("combobox", { name: "Change work" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Practice in this work/u }).getAttribute("href")).toBe("/learn?project=project-a");
+    expect(screen.getByRole("button", { name: "Hide work notice" })).toBeTruthy();
+  });
+});
+
+describe("작품 메뉴의 키보드와 숨김", () => {
+  it("내부 Escape는 접고 summary로 초점을 돌리며 선택을 지우지 않는다", () => {
+    show("/learn"); openMenu();
+    const selector = screen.getByRole("combobox", { name: "작품 바꾸기" });
+    fireEvent.change(selector, { target: { value: "project-b" } }); selector.focus();
+    fireEvent.keyDown(selector, { key: "Escape" });
+    expect(disclosure().open).toBe(false);
+    expect(document.activeElement).toBe(summary());
+    expect(window.sessionStorage.getItem(CONTEXT_KEY)).toBe("project-b");
+    expect(selectedTitle()?.textContent).toBe("두 번째 작품");
+  });
+
+  it("다른 입력의 Escape와 조합 중 Escape를 가로채지 않는다", () => {
+    show(); openMenu();
+    const outside = screen.getByRole("textbox", { name: "페이지의 다른 입력" }); outside.focus();
+    fireEvent.keyDown(outside, { key: "Escape" });
+    expect(disclosure().open).toBe(true); expect(document.activeElement).toBe(outside);
+    const selector = screen.getByRole("combobox", { name: "작품 바꾸기" }); selector.focus();
+    fireEvent.keyDown(selector, { key: "Escape", isComposing: true });
+    expect(disclosure().open).toBe(true); expect(document.activeElement).toBe(selector);
+  });
+
+  it("내부에 초점이 있는 채 native 접기가 닫혀도 숨은 조작에 초점을 남기지 않는다", () => {
+    show(); openMenu();
+    screen.getByRole("link", { name: "프로젝트" }).focus();
+    const details = disclosure(); details.open = false;
+    fireEvent(details, new Event("toggle"));
+    expect(document.activeElement).toBe(summary());
+  });
+
+  it("native 접힘 알림이 페이지의 다른 입력 초점을 옮기지 않는다", () => {
+    show(); openMenu();
+    const outside = screen.getByRole("textbox", { name: "페이지의 다른 입력" }); outside.focus();
+    const details = disclosure(); details.open = false;
+    fireEvent(details, new Event("toggle"));
+    expect(document.activeElement).toBe(outside);
+  });
+
+  it("안내 숨김은 작품 선택을 유지하고 현재 본문에 키보드 문맥을 넘긴다", () => {
+    show("/learn"); openMenu();
+    const close = screen.getByRole("button", { name: "이 작품 안내 숨기기" }); close.focus(); fireEvent.click(close);
+    expect(document.querySelector("[data-active-project-context]")).toBeNull();
+    expect(window.sessionStorage.getItem(CONTEXT_KEY)).toBe("project-a");
+    expect(window.sessionStorage.getItem("toonstudio:active-project-bridge:dismissed:learn:project-a")).toBe("1");
+    expect(document.activeElement).toBe(document.getElementById("main-content"));
+  });
+
+  it("안내를 코드로 숨길 때 이미 다른 입력에 있는 초점은 유지한다", () => {
+    show(); openMenu();
+    const outside = screen.getByRole("textbox", { name: "페이지의 다른 입력" }); outside.focus();
+    fireEvent.click(screen.getByRole("button", { name: "이 작품 안내 숨기기" }));
+    expect(document.activeElement).toBe(outside);
+  });
+});
+
+describe("기존 선택 우선순위와 영역별 복귀", () => {
+  it("URL 명시 작품이 session보다 먼저이며 알 수 없는 URL은 session으로 복귀한다", () => {
+    window.sessionStorage.setItem(CONTEXT_KEY, "project-b");
+    const view = show("/learn?project=project-a");
+    expect(selectedTitle()?.textContent).toBe("최근 작품");
+    view.unmount(); window.sessionStorage.setItem(CONTEXT_KEY, "project-b");
+    show("/learn?project=unknown");
+    expect(selectedTitle()?.textContent).toBe("두 번째 작품");
+  });
+
+  it("route 안의 수동 선택은 URL보다 우선하고 다른 영역 왕복 뒤에도 유지된다", async () => {
+    show("/learn?project=project-a"); openMenu();
+    fireEvent.change(screen.getByRole("combobox", { name: "작품 바꾸기" }), { target: { value: "project-b" } });
+    expect(selectedTitle()?.textContent).toBe("두 번째 작품");
+    fireEvent.click(screen.getByRole("button", { name: "다른 자료로" }));
+    await waitFor(() => expect(selectedTitle()?.textContent).toBe("최근 작품"));
+    expect(disclosure().open).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "뒤로" }));
+    await waitFor(() => expect(selectedTitle()?.textContent).toBe("두 번째 작품"));
+    expect(screen.getByTestId("route").textContent).toBe("/learn?project=project-a");
+    expect(window.sessionStorage.getItem(CONTEXT_KEY)).toBe("project-b");
+    openMenu(); expect(screen.getByRole("link", { name: /이 작품에서 실습/u }).getAttribute("href")).toBe("/learn?project=project-b");
+  });
+
+  it("같은 영역과 작품의 숨김을 유지하고 다른 영역·작품에는 전파하지 않는다", async () => {
+    show("/learn?project=project-a"); openMenu();
+    fireEvent.click(screen.getByRole("button", { name: "이 작품 안내 숨기기" }));
+    fireEvent.click(screen.getByRole("button", { name: "같은 학습 영역" }));
+    expect(document.querySelector("[data-active-project-context]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "마켓으로" }));
+    await waitFor(() => expect(selectedTitle()?.textContent).toBe("최근 작품"));
+    fireEvent.click(screen.getByRole("button", { name: "뒤로" }));
+    await waitFor(() => expect(document.querySelector("[data-active-project-context]")).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "다른 작품 학습" }));
+    await waitFor(() => expect(selectedTitle()?.textContent).toBe("두 번째 작품"));
+    expect(window.sessionStorage.getItem("toonstudio:active-project-bridge:dismissed:learn:project-b")).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
-import { ArrowRight, FolderOpen, Link2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, ChevronDown, FolderOpen, X } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -11,6 +11,8 @@ import {
   supportsActiveProjectBridge,
   writeActiveProjectContext,
 } from "./active-project-context";
+import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
+import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
 import { useStudioProjectLibrary } from "./useStudioProjectLibrary";
 
 const DISMISS_KEY_PREFIX = "toonstudio:active-project-bridge:dismissed:";
@@ -26,6 +28,11 @@ export function ActiveProjectContextBridge() {
   const locale = korean ? "ko" : "en";
   const library = useStudioProjectLibrary(locale, "active");
   const [dismissed, setDismissed] = useState(false);
+  const asideRef = useRef<HTMLElement>(null);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const summaryRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
   const routeKey = `${pathname}${search}`;
   const [manualSelection, setManualSelection] = useState<{ routeKey: string; projectId: string } | null>(null);
   const manualProjectId = manualSelection?.routeKey === routeKey ? manualSelection.projectId : null;
@@ -62,6 +69,20 @@ export function ActiveProjectContextBridge() {
     }
   }, [pathname, selectedProject]);
 
+  useEffect(() => {
+    const details = detailsRef.current;
+    if (!details) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.isComposing || event.defaultPrevented || !details.open) return;
+      details.open = false;
+      summaryRef.current?.focus();
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    details.addEventListener("keydown", onKeyDown);
+    return () => details.removeEventListener("keydown", onKeyDown);
+  }, [dismissed, routeKey, selectedProject?.id]);
+
   if (!supportsActiveProjectBridge(pathname) || !selectedProject || dismissed) return null;
 
   const contextual = contextualProjectHref(pathname, selectedProject.id);
@@ -74,6 +95,9 @@ export function ActiveProjectContextBridge() {
         // Dismiss in memory when storage is unavailable.
       }
     }
+    if (asideRef.current?.contains(document.activeElement)) {
+      document.getElementById("main-content")?.focus({ preventScroll: true });
+    }
     setDismissed(true);
   };
   const selectProject = (projectId: string) => {
@@ -84,72 +108,87 @@ export function ActiveProjectContextBridge() {
     }
   };
 
+  const sampleKind = selectedProject.id === EXAMPLE_PROJECT_ID
+    ? "example"
+    : selectedProject.id === SAMPLE_PROJECT_ID ? "sample" : null;
+
   return (
     <aside
+      ref={asideRef}
       data-active-project-context="true"
       aria-label={korean ? "현재 작품 연결" : "Current work connection"}
-      className="relative z-30 mx-auto mt-3 flex w-[min(100%-1.5rem,88rem)] flex-col gap-3 overflow-hidden rounded-2xl border border-accent/30 bg-panel/95 px-4 py-3 text-fg shadow-lg backdrop-blur-xl sm:flex-row sm:items-center sm:px-5"
+      className="relative z-30 mx-auto mt-3 w-[min(100%-1.5rem,88rem)] overflow-hidden rounded-2xl border border-accent/30 bg-panel/95 text-fg shadow-lg backdrop-blur-xl"
     >
-      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-accent via-accent-2 to-good" />
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-accent/25 bg-accent-soft text-accent">
-        <Link2 size={18} aria-hidden="true" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[0.68rem] font-black uppercase tracking-[0.15em] text-accent">
-          CURRENT WORK
-        </p>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-          {projectOptions.length > 1 ? (
-            <label className="min-w-0 flex-1 sm:max-w-sm">
-              <span className="sr-only">{korean ? "현재 작품 선택" : "Choose current work"}</span>
-              <select
-                data-active-project-selector="true"
-                value={selectedProject.id}
-                onChange={(event) => selectProject(event.target.value)}
-                className="min-h-10 w-full min-w-0 rounded-xl border border-line bg-card px-3 text-sm font-black text-fg outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                {projectOptions.map((project) => (
-                  <option key={project.id} value={project.id}>{project.title}</option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <strong className="truncate text-sm font-black text-fg">{selectedProject.title}</strong>
-          )}
-          <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[0.68rem] font-bold text-fg-2">
-            {korean ? "작품 문맥 연결됨" : "Work context connected"}
+      <details
+        key={routeKey}
+        ref={detailsRef}
+        className="group"
+        onToggle={(event) => {
+          if (event.currentTarget !== detailsRef.current || event.currentTarget.open) return;
+          if (menuRef.current?.contains(document.activeElement)) summaryRef.current?.focus();
+        }}
+      >
+        <summary
+          ref={summaryRef}
+          aria-controls={menuId}
+          className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent sm:px-4 [&::-webkit-details-marker]:hidden"
+        >
+          <span className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-3.5">
+            <span className="flex shrink-0 items-center gap-1.5 text-[0.6875rem] leading-[18px] text-fg-2">
+              {korean ? "현재 작품" : "Current work"}
+              {sampleKind && (
+                <span data-active-project-sample={sampleKind} className="rounded-md border border-accent/35 bg-accent-soft px-1.5 text-[0.625rem] font-bold text-accent">
+                  {sampleKind === "example" ? korean ? "예제" : "Example" : korean ? "샘플" : "Sample"}
+                </span>
+              )}
+            </span>
+            <strong title={selectedProject.title} data-active-project-title="true" className="block min-w-0 truncate text-sm font-black leading-[22px]">
+              {selectedProject.title}
+            </strong>
           </span>
+          <span className="flex min-h-11 shrink-0 items-center justify-center gap-2 text-xs font-bold text-accent">
+            <span className="group-open:hidden">{korean ? "더 보기" : "More"}</span>
+            <span className="hidden group-open:inline">{korean ? "접기" : "Collapse"}</span>
+            <ChevronDown size={14} aria-hidden="true" className="transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+          </span>
+        </summary>
+        <div ref={menuRef} id={menuId} role="region" aria-label={korean ? "현재 작품 메뉴" : "Current work menu"} className="grid gap-3.5 border-t border-line p-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:gap-4 sm:p-4">
+          <div className="min-w-0">
+            {projectOptions.length > 1 ? (
+              <label className="block min-w-0 text-xs font-bold sm:max-w-lg">
+                {korean ? "작품 바꾸기" : "Change work"}
+                <select
+                  data-active-project-selector="true"
+                  value={selectedProject.id}
+                  onChange={(event) => selectProject(event.target.value)}
+                  className="mt-1.5 min-h-11 w-full min-w-0 rounded-xl border border-line bg-card px-3 text-sm font-black text-fg outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/40"
+                >
+                  {projectOptions.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
+                </select>
+              </label>
+            ) : (
+              <p className="break-words text-sm font-bold [overflow-wrap:anywhere]">{selectedProject.title}</p>
+            )}
+            <p className="mt-2 text-xs leading-5 text-fg-2">
+              {korean ? "실습과 자료 찾기를 선택한 작품으로 이어가세요." : "Continue practice and finding resources for the selected work."}
+            </p>
+          </div>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+            <Link href={projectHref} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2 transition hover:border-line-strong hover:text-fg motion-reduce:transition-none">
+              <FolderOpen size={15} aria-hidden="true" />
+              {korean ? "프로젝트" : "Project"}
+            </Link>
+            <Link href={contextual.href} className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-black text-on-accent shadow-sm transition hover:bg-accent-2 motion-reduce:transition-none">
+              {korean ? contextual.labelKo : contextual.labelEn}
+              <ArrowRight size={15} aria-hidden="true" className="shrink-0" />
+            </Link>
+            <button type="button" onClick={close} className="col-span-2 inline-flex min-h-11 items-center justify-self-start gap-1.5 rounded-xl px-2 text-xs font-semibold text-fg-3 transition hover:bg-raised hover:text-fg motion-reduce:transition-none">
+              <X size={15} aria-hidden="true" />
+              {korean ? "이 작품 안내 숨기기" : "Hide work notice"}
+            </button>
+          </div>
         </div>
-        <p className="mt-1 text-xs leading-5 text-fg-2">
-          {korean
-            ? "이 화면에서 고른 자료와 다음 행동을 현재 작품으로 이어갈 수 있습니다."
-            : "Selections and next actions on this page can continue into the current work."}
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2 sm:justify-end">
-        <Link
-          href={projectHref}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2 transition hover:border-line-strong hover:text-fg"
-        >
-          <FolderOpen size={15} aria-hidden="true" />
-          {korean ? "프로젝트" : "Project"}
-        </Link>
-        <Link
-          href={contextual.href}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-black text-on-accent shadow-sm transition hover:bg-accent-2"
-        >
-          {korean ? contextual.labelKo : contextual.labelEn}
-          <ArrowRight size={15} aria-hidden="true" />
-        </Link>
-        <button
-          type="button"
-          onClick={close}
-          aria-label={korean ? "현재 작품 연결 숨기기" : "Hide current work connection"}
-          className="grid size-11 place-items-center rounded-xl text-fg-3 transition hover:bg-raised hover:text-fg"
-        >
-          <X size={17} aria-hidden="true" />
-        </button>
-      </div>
+      </details>
     </aside>
   );
 }
