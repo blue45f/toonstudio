@@ -151,6 +151,13 @@
 html {
   scrollbar-gutter: stable;
 }
+/* 고정 헤더가 있는 공개 화면에서도 Tab·이전 단계로 돌아온 초점이 헤더 뒤에 숨지 않는다. */
+html:has(.site-header) {
+  scroll-padding-block-start: var(--site-header-height, 60px);
+}
+html:has(.site-header) #main-content :where(a[href], button, input, textarea, select, summary, [tabindex]) {
+  scroll-margin-block-start: 0.75rem;
+}
 
 :is(#root, #main-content, .route-stage) {
   inline-size: 100%;

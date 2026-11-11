@@ -256,7 +256,7 @@ export function GalleryToolbar({ view, onPatch, compactFilters = false }: {
       <GalleryTabs value={tab} compact={compactFilters} onChange={(next) => onPatch({ tab: next === "works" ? null : next })} />
       {compactFilters && filterControls ? (
         <details className="group/gallery-filters w-14 shrink-0 rounded-xl border border-line bg-canvas/50 px-1 open:order-2 open:w-full sm:w-auto sm:px-3" aria-label={bt("작품 조건 더 보기", "More work filters")}>
-          <summary aria-label={bt("작품 조건 더 보기", "More work filters")} className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-0.5 rounded-lg text-xs font-semibold text-fg-2 outline-none focus-visible:ring-2 focus-visible:ring-accent sm:gap-2 sm:text-sm [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-0.5 rounded-lg text-xs font-semibold text-fg-2 outline-none focus-visible:ring-2 focus-visible:ring-accent sm:gap-2 sm:text-sm [&::-webkit-details-marker]:hidden">
             <span className="flex flex-col items-center leading-4 sm:flex-row sm:gap-1"><span><span className="sm:hidden">{bt("조건", "Filter")}</span><span className="hidden sm:inline">{bt("조건 더 보기", "More filters")} ·</span></span><span>{bt(currentSort?.ko ?? "최신", currentSort?.en ?? "Latest")}</span></span>
             <ChevronDown size={12} aria-hidden className="shrink-0 transition-transform group-open/gallery-filters:rotate-180 motion-reduce:transition-none" />
           </summary>

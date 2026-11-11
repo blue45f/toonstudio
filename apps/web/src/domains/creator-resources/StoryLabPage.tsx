@@ -332,7 +332,8 @@ export function StoryLabPage() {
       </section>
       </details>
     </div>
-    <div data-story-worksheet-actions="true" className="sticky bottom-[var(--site-float-base,1rem)] z-10 grid grid-cols-3 gap-2 rounded-xl border border-line bg-panel p-2 shadow-lg sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:p-3">
+    {/* 단일 열에서는 첫 입력을 가리지 않도록 단계 끝에 두고, 두 열부터 하단 고정을 유지한다. */}
+    <div data-story-worksheet-actions="true" className="static bottom-[var(--site-float-base,1rem)] z-10 grid grid-cols-3 gap-2 rounded-xl border border-line bg-panel p-2 shadow-lg sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:p-3 lg:sticky">
       <p className="mr-auto hidden text-sm text-fg-2 sm:block">{`${stepIndex + 1} / ${STORY_STEPS.length} · ${bt("모든 항목은 위 단계에서 다시 열 수 있어요", "Revisit any field from the steps above")}`}</p>
       <button type="button" className={cn(RESOURCE_BUTTON, "min-w-0 px-1 text-xs sm:px-3 sm:text-sm")} disabled={stepIndex === 0} onClick={() => openStep(stepIndex - 1)}>{bt("이전 단계", "Previous")}</button>
       <button type="submit" form="story-worksheet" className={cn(RESOURCE_BUTTON, "min-w-0 px-1 text-xs sm:px-3 sm:text-sm")} disabled={!ready || !draftReady || !writable || saving || !dirty || conflicts.length > 0 || corruptDraft}>{saving ? bt("저장 중…", "Saving…") : bt("기획서 저장", "Save story plan")}</button>

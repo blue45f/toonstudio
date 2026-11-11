@@ -61,6 +61,7 @@ export function WorkCard({ work, showAuthor = true }: { work: WorkSummary; showA
   return (
     <Link
       href={creatorWorkHref(work.id)}
+      data-route-return-focus={`work:${work.id}`}
       className="sheen-sweep group flex flex-col overflow-hidden rounded-2xl border border-line bg-panel/30 transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg hover:shadow-black/25 active:scale-[0.98]"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-raised/40">

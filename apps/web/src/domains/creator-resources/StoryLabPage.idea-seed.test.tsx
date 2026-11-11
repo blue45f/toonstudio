@@ -137,7 +137,7 @@ describe("스토리 연구실 홈 아이디어 시딩", () => {
 });
 
 describe("목적별 기획 입력", () => {
-  it("단계 탐색은 입력 앞에, 외부 저장 버튼은 같은 워크시트 폼에 연결한다", () => {
+  it("단계 끝 조작은 단일 열에서 입력을 가리지 않고 저장 버튼은 같은 워크시트 폼에 연결한다", () => {
     render(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
     const form = screen.getByRole("form", { name: "기획 워크시트" });
     const steps = screen.getByRole("navigation", { name: "기획 입력 단계" });
@@ -149,6 +149,16 @@ describe("목적별 기획 입력", () => {
     expect(save.form).toBe(form);
     expect(save.type).toBe("submit");
     expect(form.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const actions = save.closest("[data-story-worksheet-actions]");
+    const preview = screen.getByText("입력 내용 미리보기", { selector: "summary" }).closest("details");
+    if (!(actions instanceof HTMLElement) || !preview) throw new Error("단계 끝 조작 또는 미리보기 누락");
+    expect(actions.classList.contains("static")).toBe(true);
+    expect(actions.classList.contains("sticky")).toBe(false);
+    expect(actions.classList.contains("lg:sticky")).toBe(true);
+    expect(preview.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(save.closest("details")).toBeNull();
+    expect(within(actions).getByRole("button", { name: "이전 단계" })).toBeTruthy();
+    expect(within(actions).getByRole("button", { name: "다음: 갈등 정리" })).toBeTruthy();
   });
 
   it("8개 입력을 보존하고 세 묶음 중 현재 목적만 보여 준다", () => {

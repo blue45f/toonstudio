@@ -107,6 +107,10 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     renderPage("/publish"); await screen.findByText("외부 웹툰 플랫폼");
     expect(stepButton(1).getAttribute("aria-current")).toBe("step");
     expect(screen.queryByRole("textbox")).toBeNull();
+    const create = await screen.findByRole("link", { name: "제작 프로젝트 만들러 가기" });
+    expect(create.getAttribute("href")).toBe("/production/projects");
+    expect(document.querySelector("[data-publish-preparation-actions]")).toBeNull();
+    expect(screen.queryByRole("button", { name: "정보와 채널 확인" })).toBeNull();
     fireEvent.click(stepButton(2));
     fireEvent.change(screen.getByLabelText("제목"), { target: { value: "직접 입력" } });
     fireEvent.change(screen.getByLabelText("작품 대표 주소"), { target: { value: "https://example.com/works/one" } });
@@ -125,6 +129,31 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(stepButton(1));
     expect(screen.getByRole("link", { name: "로그인하기" })).toBeTruthy();
+    expect(document.querySelector("[data-publish-preparation-actions]")).toBeNull();
+  });
+
+  it("작품 확인 중·실패에는 선택과 재시도를 열어 두고 확인 뒤에만 이어가기 바를 표시한다", async () => {
+    let failVerification: (reason: Error) => void = () => { throw new Error("프로젝트 확인 미시작"); };
+    mocks.getProject.mockReturnValueOnce(new Promise<ReturnType<typeof projectRecord>>((_resolve, reject) => { failVerification = reject; }));
+    renderPage("/publish?projectId=project-1&step=project");
+    await screen.findByText("선택한 제작 프로젝트를 확인하고 있어요.");
+    expect(document.querySelector("[data-publish-preparation-actions]")).toBeNull();
+    expect(document.querySelector<HTMLDetailsElement>("#publish-project-selection")?.open).toBe(true);
+    await act(async () => failVerification(new Error("503")));
+    const retry = await screen.findByRole("button", { name: "프로젝트 다시 확인" });
+    expect((retry as HTMLButtonElement).disabled).toBe(false);
+    expect(document.querySelector("[data-publish-preparation-actions]")).toBeNull();
+    expect(screen.getByRole("link", { name: "제작 프로젝트 목록으로" }).getAttribute("href")).toBe("/production/projects");
+    fireEvent.click(retry);
+    await screen.findByRole("link", { name: "선택한 프로젝트로 돌아가기" });
+    const next = screen.getByRole<HTMLButtonElement>("button", { name: "정보와 채널 확인" });
+    expect(next.disabled).toBe(false);
+    expect(document.querySelector("[data-publish-preparation-actions]")?.classList.contains("sticky")).toBe(true);
+    fireEvent.click(next);
+    await screen.findByRole("heading", { name: "정보와 채널 확인" });
+    expect(document.querySelector("[data-publish-preparation-actions]")?.classList.contains("sticky")).toBe(true);
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(false);
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
   });
 
   it("실제 목록에서 고른 프로젝트를 확인하고 그 프로젝트로 정확히 돌아간다", async () => {
@@ -168,6 +197,7 @@ describe("PublishCenterPage 게시 준비 계약", () => {
   it("채널 확인이 성공해도 원고 검증·게시 완료로 표시하지 않고 JSON을 내려받는다", async () => {
     renderPage(); await prepareInputs(); fireEvent.click(prepareButton());
     await preparedFiles();
+    expect(document.querySelector("[data-publish-preparation-actions]")?.classList.contains("sticky")).toBe(true);
     expect(screen.getByText("게시 정보 파일이 준비됐어요. 외부 게시와 예약은 아직 실행되지 않았습니다.")).toBeTruthy();
     expect(screen.queryByText("규격 검사를 통과했습니다.")).toBeNull();
     expect(screen.queryByText("바로 실행")).toBeNull();
