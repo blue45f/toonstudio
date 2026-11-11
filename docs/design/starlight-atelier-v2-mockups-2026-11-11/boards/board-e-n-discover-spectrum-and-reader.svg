@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 860" width="1440" height="860" role="img" aria-label="시안 E 및 시안 N — 스펙트럼 탐색 허브, 어디서 봐 플랫폼 라우터, 2.5D 공간 리더">
+  <defs>
+    <linearGradient id="spectrum8" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fb7185"/>
+      <stop offset="20%" stop-color="#f59e0b"/>
+      <stop offset="40%" stop-color="#34d399"/>
+      <stop offset="60%" stop-color="#38bdf8"/>
+      <stop offset="80%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <linearGradient id="stageBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b38"/>
+      <stop offset="100%" stop-color="#141629"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1440" height="860" fill="#0d0e1a"/>
+
+  <!-- TOP LEFT: DISCOVER SPECTRUM HUB (/discover) -->
+  <text x="36" y="36" fill="#fb7185" font-family="monospace" font-size="12" font-weight="800">시안 E · 스펙트럼 탐색 슈퍼 허브(/discover · /explore · /calendar)</text>
+  <rect x="36" y="50" width="668" height="370" rx="24" fill="url(#stageBg)" stroke="#3b3670" stroke-width="1.5"/>
+  <rect x="36" y="50" width="668" height="4" fill="url(#spectrum8)"/>
+  <text x="64" y="88" fill="#fda4af" font-family="monospace" font-size="11" font-weight="800">DISCOVER SPECTRUM · GENRE RIBBON &amp; 44PX FACETS</text>
+  <text x="64" y="122" fill="#ffffff" font-family="system-ui,sans-serif" font-size="24" font-weight="900">취향의 스펙트럼으로 웹툰을 발견하세요</text>
+
+  <!-- Facet Tab Strip -->
+  <g transform="translate(64,144)">
+    <rect x="0" y="0" width="96" height="40" rx="20" fill="#7c5cff"/>
+    <text x="48" y="25" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">추천 허브</text>
+    <rect x="106" y="0" width="96" height="40" rx="20" fill="#1b1f38" stroke="#39406b"/>
+    <text x="154" y="25" text-anchor="middle" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="12" font-weight="700">전체 탐색</text>
+    <rect x="212" y="0" width="96" height="40" rx="20" fill="#1b1f38" stroke="#39406b"/>
+    <text x="260" y="25" text-anchor="middle" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="12" font-weight="700">실시간 랭킹</text>
+    <rect x="318" y="0" width="104" height="40" rx="20" fill="#1b1f38" stroke="#39406b"/>
+    <text x="370" y="25" text-anchor="middle" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="12" font-weight="700">연재 캘린더</text>
+    <rect x="432" y="0" width="180" height="40" rx="20" fill="#26214d" stroke="#7c5cff"/>
+    <text x="522" y="25" text-anchor="middle" fill="#c4b5fd" font-family="system-ui,sans-serif" font-size="12" font-weight="800">+ 이 감성으로 3컷 창작</text>
+  </g>
+
+  <!-- Release Calendar Today Highlight Strip -->
+  <rect x="64" y="204" width="612" height="192" rx="18" fill="#16192f" stroke="#323861"/>
+  <text x="86" y="234" fill="#7dd3fc" font-family="monospace" font-size="11" font-weight="800">STARLIGHT SCHEDULE · RELEASE CALENDAR (오늘 열 스펙트럼 강조)</text>
+  <g transform="translate(86,250)">
+    <rect x="0" y="0" width="76" height="124" rx="12" fill="#1d213d" stroke="#323861"/>
+    <text x="38" y="26" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="12" font-weight="700">월</text>
+    <rect x="84" y="0" width="76" height="124" rx="12" fill="#1d213d" stroke="#323861"/>
+    <text x="122" y="26" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="12" font-weight="700">화</text>
+    <rect x="168" y="0" width="96" height="124" rx="12" fill="#26214d" stroke="#7c5cff" stroke-width="1.5"/>
+    <rect x="168" y="0" width="96" height="3" fill="url(#spectrum8)"/>
+    <text x="216" y="26" text-anchor="middle" fill="#c4b5fd" font-family="system-ui,sans-serif" font-size="12" font-weight="800">수 · 오늘</text>
+    <text x="216" y="64" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="11" font-weight="700">신작 42편</text>
+    <rect x="272" y="0" width="76" height="124" rx="12" fill="#1d213d" stroke="#323861"/>
+    <text x="310" y="26" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="12" font-weight="700">목</text>
+    <rect x="356" y="0" width="76" height="124" rx="12" fill="#1d213d" stroke="#323861"/>
+    <text x="394" y="26" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="12" font-weight="700">금</text>
+    <rect x="440" y="0" width="128" height="124" rx="12" fill="#1d213d" stroke="#323861"/>
+    <text x="504" y="26" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="12" font-weight="700">주말 · 완결 정주행</text>
+  </g>
+
+  <!-- TOP RIGHT: TITLE DETAIL WHERE TO READ ROUTER + CREATION BRIDGE (/title/:slug) -->
+  <text x="736" y="36" fill="#a78bfa" font-family="monospace" font-size="12" font-weight="800">시안 E · 작품 상세(/title/:slug) WHERE TO READ 라우터 &amp; 창작 직행 브리지</text>
+  <rect x="736" y="50" width="668" height="370" rx="24" fill="url(#stageBg)" stroke="#484288" stroke-width="1.5"/>
+  <rect x="736" y="50" width="668" height="4" fill="url(#spectrum8)"/>
+  <text x="764" y="88" fill="#c4b5fd" font-family="monospace" font-size="11" font-weight="800">WHERE TO READ · OFFICIAL PLATFORM ROUTER</text>
+  <text x="764" y="120" fill="#ffffff" font-family="system-ui,sans-serif" font-size="22" font-weight="900">어디서 볼 수 있나요? (공식 연재처 가격·기다무 비교)</text>
+
+  <rect x="764" y="140" width="612" height="62" rx="16" fill="#1b1f38" stroke="#3b426e"/>
+  <text x="788" y="176" fill="#34d399" font-family="system-ui,sans-serif" font-size="14" font-weight="800">● 네이버 시리즈 / 웹툰</text>
+  <text x="980" y="176" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="12">기다리면 무료 · 최신 84화</text>
+  <rect x="1220" y="150" width="138" height="42" rx="21" fill="#7c5cff"/>
+  <text x="1289" y="176" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">공식 감상 ↗</text>
+
+  <rect x="764" y="212" width="612" height="62" rx="16" fill="#1b1f38" stroke="#3b426e"/>
+  <text x="788" y="248" fill="#fbbf24" font-family="system-ui,sans-serif" font-size="14" font-weight="800">● 카카오페이지</text>
+  <text x="980" y="248" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="12">3시간마다 무료 · 외전 포함</text>
+  <rect x="1220" y="222" width="138" height="42" rx="21" fill="#252a4a" stroke="#4d568c"/>
+  <text x="1289" y="248" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12" font-weight="700">공식 감상 ↗</text>
+
+  <!-- TitleDetailCreationBridgeCard -->
+  <rect x="764" y="292" width="612" height="104" rx="18" fill="#201d42" stroke="#7c5cff"/>
+  <rect x="764" y="292" width="612" height="3" fill="url(#spectrum8)"/>
+  <text x="788" y="322" fill="#c4b5fd" font-family="monospace" font-size="10" font-weight="800">SPECTRUM TO STUDIO · IMMERSIVE BRIDGE</text>
+  <text x="788" y="346" fill="#ffffff" font-family="system-ui,sans-serif" font-size="14" font-weight="800">이 작품의 호흡에서 영감을 얻었나요? 바로 3컷 연출이나 공간 뷰어로 이어가세요.</text>
+  <rect x="788" y="358" width="176" height="28" rx="14" fill="#7c5cff"/>
+  <text x="876" y="376" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="11" font-weight="800">이 연출로 3컷 시작</text>
+  <rect x="974" y="358" width="152" height="28" rx="14" fill="#18203b" stroke="#4d568c"/>
+  <text x="1050" y="376" text-anchor="middle" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="11" font-weight="700">2.5D 공간 리더</text>
+  <rect x="1136" y="358" width="152" height="28" rx="14" fill="#18203b" stroke="#4d568c"/>
+  <text x="1212" y="376" text-anchor="middle" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="11" font-weight="700">캐릭터와 대화하기</text>
+
+  <!-- BOTTOM: BOARD N & E — SPATIAL READER (/read/spatial) + CUTS FEED (/cuts) -->
+  <text x="36" y="456" fill="#38bdf8" font-family="monospace" font-size="12" font-weight="800">시안 N · E — WebXR 2.5D 공간 리더(/read/spatial) 곡률·시선 심도 워크벤치 &amp; 컷츠(/cuts) 무빙툰 피드</text>
+  <rect x="36" y="470" width="1368" height="356" rx="24" fill="#13162a" stroke="#31375f" stroke-width="1.5"/>
+  <rect x="36" y="470" width="1368" height="3" fill="url(#spectrum8)"/>
+
+  <!-- Spatial Reader Left -->
+  <rect x="64" y="498" width="820" height="302" rx="18" fill="#191d36" stroke="#454c7c"/>
+  <text x="88" y="530" fill="#7dd3fc" font-family="monospace" font-size="11" font-weight="800">SPATIAL READER · WEBXR FOV CURVATURE &amp; GAZE DOF</text>
+  <g transform="translate(88,548)">
+    <rect x="0" y="0" width="190" height="40" rx="20" fill="#26214d" stroke="#7c5cff"/>
+    <text x="95" y="25" text-anchor="middle" fill="#c4b5fd" font-family="system-ui,sans-serif" font-size="11" font-weight="800">90° 원통형 캐노피 곡률</text>
+    <rect x="200" y="0" width="170" height="40" rx="20" fill="#14182e" stroke="#39406b"/>
+    <text x="285" y="25" text-anchor="middle" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="11" font-weight="600">120° 돔 시네마 몰입</text>
+    <rect x="380" y="0" width="170" height="40" rx="20" fill="#14182e" stroke="#39406b"/>
+    <text x="465" y="25" text-anchor="middle" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="11" font-weight="600">부유 다층 컷 스택</text>
+  </g>
+  <rect x="88" y="608" width="772" height="168" rx="14" fill="#0d1020" stroke="#2c355c"/>
+  <text x="474" y="688" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="15" font-weight="800">Apple Vision Pro · Meta Quest WebXR 2.5D 패럴랙스 컷 스테이지</text>
+  <text x="474" y="716" text-anchor="middle" fill="#8f97c0" font-family="system-ui,sans-serif" font-size="12">시선 중심 심도(DoF) · 바이노럴 공간 음향 · 하단 44px 몰입 창작 전환 바</text>
+
+  <!-- Cuts Feed & Studio Token Unification Right -->
+  <rect x="908" y="498" width="468" height="302" rx="18" fill="#191d36" stroke="#454c7c"/>
+  <text x="932" y="530" fill="#fda4af" font-family="monospace" font-size="11" font-weight="800">CUTS 9:16 FEED &amp; STARLIGHT STUDIO (/cuts · /cuts/studio)</text>
+  <rect x="932" y="548" width="144" height="228" rx="16" fill="#090a12" stroke="#7c5cff"/>
+  <text x="1004" y="652" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">9:16 컷츠</text>
+  <text x="1004" y="674" text-anchor="middle" fill="#a78bfa" font-family="system-ui,sans-serif" font-size="10">Rive 60fps</text>
+  <rect x="1096" y="548" width="256" height="228" rx="16" fill="#14172b" stroke="#343b66"/>
+  <text x="1116" y="580" fill="#f5f6ff" font-family="system-ui,sans-serif" font-size="13" font-weight="800">Starlight 의미 토큰 통합</text>
+  <text x="1116" y="608" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">• 구형 흰색(#fff) 박스 전면 제거</text>
+  <text x="1116" y="632" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">• var(--color-card / panel) 일치</text>
+  <text x="1116" y="656" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">• Rask 130개국어 더빙 프리뷰 바</text>
+  <text x="1116" y="680" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">• 리워드 펀드 정산 테이블 다크화</text>
+  <rect x="1116" y="714" width="216" height="40" rx="20" fill="#7c5cff"/>
+  <text x="1224" y="739" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">+ 클립 만들기 (44px)</text>
+</svg>

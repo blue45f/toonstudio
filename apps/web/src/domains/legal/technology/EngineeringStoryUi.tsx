@@ -80,7 +80,7 @@ export function EngineeringStatusBadge({
   return (
     <span
       className={cx(
-        "inline-flex min-h-7 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 font-display text-[0.66rem] font-bold",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 font-display text-[0.66rem] font-bold",
         STATUS_STYLES[status],
         className,
       )}
@@ -129,8 +129,9 @@ export function EngineeringTechNav({ className }: { readonly className?: string 
   return (
     <nav
       aria-label={bi("기술 문서 메뉴", "Engineering documents")}
-      className={cx("rounded-3xl border border-line/70 bg-panel/70 shadow-sm backdrop-blur-xl", className)}
+      className={cx("relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-r from-accent/8 via-panel/85 to-card/90 shadow-sm backdrop-blur-xl", className)}
     >
+      <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
       <div ref={scrollerRef} className="flex snap-x gap-1 overflow-x-auto overscroll-x-contain p-2 [scrollbar-width:thin]">
         {ENGINEERING_PAGE_GROUPS.map((group, groupIndex) => {
           const pages = ENGINEERING_PAGES.filter((page) => page.group === group.id);
@@ -230,8 +231,9 @@ function EngineeringAtlasSideToc({ currentId }: { readonly currentId: Engineerin
     <>
       <details
         data-testid="engineering-atlas-mobile-toc"
-        className="group mt-3 rounded-2xl border border-line/70 bg-panel/60 xl:hidden"
+        className="group relative mt-3 overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/8 via-panel/85 to-card xl:hidden"
       >
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-2 text-xs font-bold text-fg [&::-webkit-details-marker]:hidden">
           <span className="truncate">
             {bi("기술 아틀라스 12종 목차", "12-Part Engineering Atlas")}
@@ -250,9 +252,12 @@ function EngineeringAtlasSideToc({ currentId }: { readonly currentId: Engineerin
       <aside
         data-testid="engineering-atlas-sticky-toc"
         aria-label={bi("기술 아틀라스 12종 목차", "12-Part Engineering Atlas index")}
-        className="hidden xl:sticky xl:top-24 xl:block xl:self-start xl:rounded-2xl xl:border xl:border-line/70 xl:bg-panel/60 xl:p-3"
+        className="hidden xl:sticky xl:top-24 xl:block xl:self-start xl:overflow-hidden xl:rounded-2xl xl:border xl:border-accent/25 xl:bg-gradient-to-b xl:from-accent/8 xl:via-panel/85 xl:to-card/90 xl:shadow-xs"
       >
-        <AtlasTocGroups currentId={currentId} />
+        <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
+        <div className="p-3">
+          <AtlasTocGroups currentId={currentId} />
+        </div>
       </aside>
     </>
   );

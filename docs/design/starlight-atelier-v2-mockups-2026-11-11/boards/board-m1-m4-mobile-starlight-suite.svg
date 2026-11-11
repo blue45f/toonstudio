@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 860" width="1440" height="860" role="img" aria-label="모바일 시안 M1 ~ M4 — 모바일 하단 글래스 독, 한손 Thumb-Arc 에디터, 스펙트럼 라우터, 오프라인 무스피너 스켈레톤">
+  <defs>
+    <linearGradient id="mAurora" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#fb7185"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1440" height="860" fill="#0b0c16"/>
+  <text x="44" y="44" fill="#c4b5fd" font-family="monospace" font-size="14" font-weight="800">모바일 시안 M1 ~ M4 (&lt;768px) — Starlight Atelier 모바일 전용 4대 시안 보드 (WCAG 2.5.8 44px~48px 터치 불변식)</text>
+
+  <!-- PHONE M1 -->
+  <g transform="translate(44,72)">
+    <rect x="0" y="0" width="318" height="740" rx="38" fill="#14172b" stroke="#3c4370" stroke-width="2"/>
+    <rect x="0" y="0" width="318" height="3" fill="url(#mAurora)"/>
+    <text x="24" y="38" fill="#a78bfa" font-family="monospace" font-size="11" font-weight="800">모바일 시안 M1 · 로비 &amp; 무스피너 셸</text>
+    <rect x="20" y="56" width="278" height="92" rx="18" fill="#1d203b" stroke="#4c448f"/>
+    <text x="36" y="84" fill="#6ee7b7" font-family="monospace" font-size="10" font-weight="800">● OPFS 오프라인 안전 보호</text>
+    <text x="36" y="110" fill="#ffffff" font-family="system-ui,sans-serif" font-size="15" font-weight="800">심야의 별빛 공방 12화</text>
+    <text x="36" y="132" fill="#c4b5fd" font-family="system-ui,sans-serif" font-size="11" font-weight="700">터치해 이어 그리기 (48px) →</text>
+
+    <!-- 2x2 Format Bento -->
+    <rect x="20" y="164" width="133" height="88" rx="16" fill="#1b1f38" stroke="#373e68"/>
+    <text x="86" y="204" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">세로 웹툰</text>
+    <text x="86" y="226" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="10">800px 표준</text>
+    <rect x="165" y="164" width="133" height="88" rx="16" fill="#1b1f38" stroke="#373e68"/>
+    <text x="231" y="204" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">인스타 4컷</text>
+    <text x="231" y="226" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="10">1080×1350</text>
+
+    <!-- Native Shell Silhouette Skeleton (No Spinner!) -->
+    <rect x="20" y="272" width="278" height="364" rx="18" fill="#101324" stroke="#2d3459"/>
+    <text x="36" y="302" fill="#7dd3fc" font-family="monospace" font-size="10" font-weight="800">apps/mobile/shell · NO SPINNER</text>
+    <rect x="36" y="320" width="180" height="16" rx="8" fill="#232848"/>
+    <rect x="36" y="348" width="246" height="110" rx="14" fill="#1c213d"/>
+    <rect x="36" y="472" width="246" height="72" rx="14" fill="#1c213d"/>
+    <rect x="36" y="566" width="246" height="48" rx="24" fill="#7c5cff"/>
+    <text x="159" y="595" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">오프라인 원고 열기 (48px)</text>
+
+    <!-- Bottom 5-Tab Frosted Glass Dock -->
+    <rect x="12" y="660" width="294" height="64" rx="22" fill="#191d36" stroke="#484288"/>
+    <rect x="12" y="660" width="294" height="2" fill="url(#mAurora)"/>
+    <text x="44" y="698" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="10" font-weight="700">홈</text>
+    <text x="102" y="698" text-anchor="middle" fill="#c4b5fd" font-family="system-ui,sans-serif" font-size="10" font-weight="800">● 스튜디오</text>
+    <text x="162" y="698" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="10" font-weight="700">탐색</text>
+    <text x="218" y="698" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="10" font-weight="700">커뮤니티</text>
+    <text x="274" y="698" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="10" font-weight="700">전체</text>
+  </g>
+
+  <!-- PHONE M2 -->
+  <g transform="translate(384,72)">
+    <rect x="0" y="0" width="318" height="740" rx="38" fill="#14172b" stroke="#3c4370" stroke-width="2"/>
+    <rect x="0" y="0" width="318" height="3" fill="url(#mAurora)"/>
+    <text x="24" y="38" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="800">모바일 시안 M2 · 한손 Thumb-Arc 독</text>
+
+    <!-- Snap Stage Pill Bar -->
+    <rect x="16" y="54" width="286" height="44" rx="22" fill="#1b1f38" stroke="#3d4573"/>
+    <text x="54" y="81" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">콘티</text>
+    <text x="108" y="81" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">3D</text>
+    <rect x="136" y="60" width="76" height="32" rx="16" fill="#7c5cff"/>
+    <text x="174" y="81" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="11" font-weight="800">작화</text>
+    <text x="242" y="81" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">식자</text>
+    <text x="284" y="81" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">출고</text>
+
+    <!-- Canvas Area -->
+    <rect x="20" y="112" width="278" height="408" rx="18" fill="#f8fafc"/>
+    <rect x="38" y="132" width="242" height="176" fill="#e2e8f0" stroke="#0f172a" stroke-width="2"/>
+    <rect x="38" y="322" width="242" height="176" fill="#ede9fe" stroke="#0f172a" stroke-width="2"/>
+    <text x="159" y="414" text-anchor="middle" fill="#312e81" font-family="system-ui,sans-serif" font-size="12" font-weight="800">왼손/오른손 엄지 반경 최적화</text>
+
+    <!-- Compact Brush / 3D Peek Sheet -->
+    <rect x="16" y="534" width="286" height="112" rx="20" fill="#1b1f38" stroke="#484288"/>
+    <text x="34" y="562" fill="#c4b5fd" font-family="monospace" font-size="10" font-weight="800">PEEK SNAP SHEET (112px · 왼/오른손 전환)</text>
+    <text x="34" y="592" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12" font-weight="700">G펜 필압 14px  ────────●────</text>
+    <text x="34" y="622" fill="#6ee7b7" font-family="system-ui,sans-serif" font-size="11" font-weight="700">✓ 손떨림 보정 12 · Rights BOM 활성</text>
+
+    <!-- 6-Slot Thumb-Arc Dock -->
+    <rect x="12" y="660" width="294" height="64" rx="24" fill="#191d36" stroke="#7c5cff"/>
+    <text x="159" y="697" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="11" font-weight="800">[펜]  [지우개]  [색상]  [↶]  [↷]  [메뉴]</text>
+  </g>
+
+  <!-- PHONE M3 -->
+  <g transform="translate(724,72)">
+    <rect x="0" y="0" width="318" height="740" rx="38" fill="#14172b" stroke="#3c4370" stroke-width="2"/>
+    <rect x="0" y="0" width="318" height="3" fill="url(#mAurora)"/>
+    <text x="24" y="38" fill="#fb7185" font-family="monospace" font-size="11" font-weight="800">모바일 시안 M3 · 스펙트럼 &amp; 공간 리더</text>
+
+    <rect x="20" y="56" width="278" height="156" rx="18" fill="#1d1a36" stroke="#484288"/>
+    <rect x="20" y="56" width="278" height="3" fill="url(#mAurora)"/>
+    <text x="36" y="86" fill="#fda4af" font-family="monospace" font-size="10" font-weight="800">WHERE TO READ · 1-COLUMN STACK</text>
+    <rect x="36" y="102" width="246" height="44" rx="22" fill="#7c5cff"/>
+    <text x="159" y="129" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">네이버 시리즈 무료 감상 ↗</text>
+    <rect x="36" y="154" width="246" height="44" rx="22" fill="#23284a" stroke="#4b5387"/>
+    <text x="159" y="181" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12" font-weight="700">이 연출로 3컷 시작 (44px)</text>
+
+    <!-- Immersive Reader Tone + Spatial Creation Bar -->
+    <rect x="20" y="228" width="278" height="492" rx="20" fill="#090a12" stroke="#2f355c"/>
+    <text x="38" y="260" fill="#a5accf" font-family="monospace" font-size="10" font-weight="700">IMMERSIVE READER · OLED / PAPER / SEPIA</text>
+    <rect x="38" y="278" width="242" height="276" rx="12" fill="#14172b"/>
+    <text x="159" y="418" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="13" font-weight="800">세로 스크롤 몰입 감상 뷰어</text>
+
+    <!-- TitleReaderImmersiveCreationBar -->
+    <rect x="32" y="572" width="254" height="132" rx="18" fill="#191d36" stroke="#4c448f"/>
+    <rect x="32" y="572" width="254" height="2" fill="url(#mAurora)"/>
+    <rect x="46" y="588" width="226" height="44" rx="22" fill="#7c5cff"/>
+    <text x="159" y="615" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="11" font-weight="800">이 감성으로 3컷 창작 (44px)</text>
+    <rect x="46" y="642" width="226" height="44" rx="22" fill="#23284a" stroke="#4d568c"/>
+    <text x="159" y="669" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="11" font-weight="700">2.5D 공간 리더 체험</text>
+  </g>
+
+  <!-- PHONE M4 -->
+  <g transform="translate(1064,72)">
+    <rect x="0" y="0" width="318" height="740" rx="38" fill="#14172b" stroke="#3c4370" stroke-width="2"/>
+    <rect x="0" y="0" width="318" height="3" fill="url(#mAurora)"/>
+    <text x="24" y="38" fill="#34d399" font-family="monospace" font-size="11" font-weight="800">모바일 시안 M4 · 마켓·볼트·아틀라스</text>
+
+    <!-- Market Fit Lab Card -->
+    <rect x="20" y="56" width="278" height="168" rx="18" fill="#1b1f38" stroke="#3d4573"/>
+    <text x="36" y="84" fill="#6ee7b7" font-family="system-ui,sans-serif" font-size="11" font-weight="800">✓ Rights BOM 자동 보존</text>
+    <text x="36" y="112" fill="#ffffff" font-family="system-ui,sans-serif" font-size="14" font-weight="800">로판 마차·정원 브러시 팩</text>
+    <rect x="36" y="162" width="246" height="44" rx="22" fill="#7c5cff"/>
+    <text x="159" y="189" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">원고 위 시험 (Fit Lab · 44px)</text>
+
+    <!-- Collapsible Engineering Atlas Mobile TOC -->
+    <rect x="20" y="240" width="278" height="122" rx="18" fill="#1b1f38" stroke="#3d4573"/>
+    <text x="36" y="270" fill="#7dd3fc" font-family="monospace" font-size="10" font-weight="800">ENGINEERING ATLAS MOBILE TOC</text>
+    <rect x="36" y="288" width="246" height="52" rx="14" fill="#13162a" stroke="#39406b"/>
+    <text x="52" y="319" fill="#f5f6ff" font-family="system-ui,sans-serif" font-size="12" font-weight="700">기술 아틀라스 12종 목차 펼치기 ▾</text>
+
+    <!-- My Space Vault + Desktop Sync Conflict Card -->
+    <rect x="20" y="378" width="278" height="342" rx="18" fill="#1b1f38" stroke="#484288"/>
+    <rect x="20" y="378" width="278" height="3" fill="#34d399"/>
+    <text x="36" y="410" fill="#c4b5fd" font-family="monospace" font-size="10" font-weight="800">MY SPACE VAULT &amp; SYNC CONSOLE</text>
+    <rect x="36" y="430" width="246" height="48" rx="24" fill="#7c5cff"/>
+    <text x="159" y="459" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">통합 API 키 볼트 (44px+)</text>
+    <rect x="36" y="490" width="246" height="48" rx="24" fill="#23284a" stroke="#4b5387"/>
+    <text x="159" y="519" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12" font-weight="700">원고 복구 금고 (/studio/recovery)</text>
+    <rect x="36" y="550" width="246" height="48" rx="24" fill="#23284a" stroke="#4b5387"/>
+    <text x="159" y="579" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12" font-weight="700">Edge Gate 모바일 운영 드로어</text>
+    <text x="36" y="638" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">• desktop-sync 1열 충돌 해결 콘솔</text>
+    <text x="36" y="664" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11">• forced-colors &amp; reduced-motion 대응</text>
+  </g>
+</svg>

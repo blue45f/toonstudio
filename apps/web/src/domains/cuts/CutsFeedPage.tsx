@@ -465,8 +465,9 @@ export function CutsFeedPage() {
         <section
           data-testid="cuts-rea-interactive-motion-dub-bar"
           aria-label={t("무빙툰 모션·더빙·립싱크 구성 미리보기", "Moving-Toon Motion, Dubbing & Lip-Sync Configuration Preview")}
-          className="mt-2 rounded-2xl border border-white/15 bg-black/55 px-3.5 py-2.5 text-xs text-white/90 backdrop-blur-sm"
+          className="relative mt-2 overflow-hidden rounded-2xl border border-white/20 bg-black/65 px-4 py-3 text-xs text-white/90 shadow-sm backdrop-blur-md"
         >
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("모션 엔진 선택", "Motion Engine Selection")}>
               <span className="shrink-0 whitespace-nowrap rounded-md bg-white/10 px-2 py-0.5 font-extrabold text-warn">{t("모션 엔진:", "Motion Engine:")}</span>

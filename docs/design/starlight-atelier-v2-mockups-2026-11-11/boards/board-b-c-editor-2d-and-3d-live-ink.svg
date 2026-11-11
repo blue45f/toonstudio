@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 860" width="1440" height="860" role="img" aria-label="시안 B·C·D·O — 단일 44px 바 2D 에디터, 3D Live Ink 에셋 선반, 출고 프리플라이트">
+  <defs>
+    <linearGradient id="aurora2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+    <linearGradient id="bakeCta" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c5cff"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1440" height="860" fill="#0c0d18"/>
+
+  <!-- TOP: 2D EDITOR SINGLE 44PX STAGE PILL BAR (68rem unclipped + autosave dot) -->
+  <text x="36" y="34" fill="#a78bfa" font-family="monospace" font-size="12" font-weight="800">시안 B · D — 2D 웹툰 에디터 단일 44px 5공정 스냅 바 (클리핑 해제 68rem + 실시간 OPFS 자동저장 배지 + Rights BOM 프리플라이트)</text>
+  <rect x="36" y="48" width="1368" height="364" rx="22" fill="#131526" stroke="#31365c" stroke-width="1.5"/>
+  <rect x="36" y="48" width="1368" height="3" fill="url(#aurora2)"/>
+
+  <!-- 44px Chrome Bar -->
+  <rect x="36" y="51" width="1368" height="52" fill="#181b31"/>
+  <line x1="36" y1="103" x2="1404" y2="103" stroke="#2d3257"/>
+  <text x="60" y="82" fill="#f5f6ff" font-family="system-ui,sans-serif" font-size="13" font-weight="800">← 심야의 별빛 공방 · 12화 원고</text>
+  <rect x="272" y="63" width="144" height="28" rx="14" fill="#13382d" stroke="#34d399"/>
+  <text x="344" y="81" text-anchor="middle" fill="#6ee7b7" font-family="system-ui,sans-serif" font-size="11" font-weight="700">● OPFS 자동저장됨</text>
+
+  <!-- 5-Stage Snap Pill Switcher -->
+  <rect x="444" y="59" width="560" height="36" rx="18" fill="#111324" stroke="#373d69"/>
+  <text x="498" y="81" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11" font-weight="700">1. 콘티</text>
+  <text x="598" y="81" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11" font-weight="700">2. 3D·배경</text>
+  <rect x="654" y="63" width="118" height="28" rx="14" fill="#7c5cff"/>
+  <text x="713" y="81" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="11" font-weight="800">3. 작화·채색</text>
+  <text x="822" y="81" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11" font-weight="700">4. 식자</text>
+  <text x="928" y="81" text-anchor="middle" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="11" font-weight="700">5. 검수·출고</text>
+
+  <rect x="1028" y="59" width="176" height="36" rx="18" fill="#222645" stroke="#474f82"/>
+  <text x="1116" y="81" text-anchor="middle" fill="#d8def8" font-family="system-ui,sans-serif" font-size="11" font-weight="700">고급 도구 펼치기</text>
+  <rect x="1218" y="59" width="162" height="36" rx="18" fill="url(#bakeCta)"/>
+  <text x="1299" y="81" text-anchor="middle" fill="#0b0d18" font-family="system-ui,sans-serif" font-size="11" font-weight="800">출고 · 프리플라이트</text>
+
+  <!-- Left Tool Rail + Center Manuscript Canvas + Right Export Preflight Summary -->
+  <rect x="54" y="118" width="56" height="276" rx="16" fill="#1a1e36" stroke="#31375e"/>
+  <circle cx="82" cy="150" r="16" fill="#7c5cff"/>
+  <circle cx="82" cy="194" r="16" fill="#252a4a"/>
+  <circle cx="82" cy="238" r="16" fill="#252a4a"/>
+  <circle cx="82" cy="282" r="16" fill="#252a4a"/>
+  <circle cx="82" cy="326" r="16" fill="#252a4a"/>
+
+  <!-- Webtoon Vertical Manuscript Viewport -->
+  <rect x="128" y="118" width="856" height="276" rx="16" fill="#0f1120" stroke="#282d4f"/>
+  <rect x="396" y="130" width="320" height="252" rx="8" fill="#f8fafc"/>
+  <rect x="412" y="144" width="288" height="98" rx="4" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+  <text x="556" y="198" text-anchor="middle" fill="#334155" font-family="system-ui,sans-serif" font-size="12" font-weight="700">컷 01 · 800px 웹툰 안전선 가이드</text>
+  <rect x="412" y="254" width="288" height="114" rx="4" fill="#ede9fe" stroke="#1e293b" stroke-width="2"/>
+  <ellipse cx="484" cy="292" rx="54" ry="22" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+  <text x="484" y="296" text-anchor="middle" fill="#0f172a" font-family="system-ui,sans-serif" font-size="10" font-weight="700">"오늘 밤, 공방의 별이 열린다."</text>
+
+  <!-- Right Panel: StudioExportOutputSummary (시안 D) -->
+  <rect x="1002" y="118" width="384" height="276" rx="18" fill="#191d36" stroke="#484288"/>
+  <rect x="1002" y="118" width="384" height="3" fill="url(#aurora2)"/>
+  <text x="1024" y="150" fill="#f5f6ff" font-family="system-ui,sans-serif" font-size="14" font-weight="800">출력 요약 · PREFLIGHT &amp; BOM</text>
+  <rect x="1256" y="133" width="110" height="22" rx="11" fill="#13382d" stroke="#34d399"/>
+  <text x="1311" y="148" text-anchor="middle" fill="#6ee7b7" font-family="monospace" font-size="9" font-weight="800">RIGHTS BOM OK</text>
+  <text x="1024" y="186" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="12">출력 이미지: PNG · 800 × 12,800 px</text>
+  <text x="1024" y="214" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="12">배경 투명도: 원고 배경 보존</text>
+  <text x="1024" y="242" fill="#9ea6cc" font-family="system-ui,sans-serif" font-size="12">비가시 워터마크: 창작자 서명 활성</text>
+  <line x1="1024" y1="262" x2="1364" y2="262" stroke="#2f355c"/>
+  <text x="1024" y="290" fill="#6ee7b7" font-family="system-ui,sans-serif" font-size="12" font-weight="700">✓ 웹툰 규격 적합 · Rights BOM 출처 자동 점검</text>
+  <rect x="1024" y="322" width="210" height="44" rx="22" fill="#26214d" stroke="#7c5cff"/>
+  <text x="1129" y="349" text-anchor="middle" fill="#c4b5fd" font-family="system-ui,sans-serif" font-size="12" font-weight="800">서명·보호 모양 다듬기 (44px)</text>
+
+  <!-- BOTTOM: BOARD C & O — 3D LIVE INK STAGE BAR + OPEN ASSET SHELF + 6-MODE DCC -->
+  <text x="36" y="446" fill="#38bdf8" font-family="monospace" font-size="12" font-weight="800">시안 C · O — 3D 배경 Live Ink 스테이지 바(/studio/bg3d) + 기본 오픈 에셋 선반 + 6대 하이브리드 DCC 모드</text>
+  <rect x="36" y="460" width="1368" height="368" rx="22" fill="#131526" stroke="#31365c" stroke-width="1.5"/>
+  <rect x="36" y="460" width="1368" height="3" fill="url(#aurora2)"/>
+
+  <!-- 3D Live Ink Stage Header -->
+  <rect x="36" y="463" width="1368" height="54" fill="#181c34"/>
+  <rect x="58" y="476" width="128" height="28" rx="14" fill="#19344f" stroke="#38bdf8"/>
+  <text x="122" y="494" text-anchor="middle" fill="#7dd3fc" font-family="monospace" font-size="11" font-weight="800">3D · LIVE INK</text>
+  <text x="202" y="495" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="13" font-weight="700">카메라 화각 35mm · 은선(Lineart) + 툰 음영 실시간 패스</text>
+  <rect x="1164" y="468" width="218" height="44" rx="22" fill="url(#bakeCta)"/>
+  <text x="1273" y="495" text-anchor="middle" fill="#0b0d18" font-family="system-ui,sans-serif" font-size="12" font-weight="900">원고 컷에 바로 굽기 →</text>
+
+  <!-- 3D Viewport + Open Bottom Asset Shelf -->
+  <rect x="56" y="530" width="1328" height="146" rx="16" fill="#0f1324" stroke="#2c3559"/>
+  <line x1="56" y1="636" x2="1384" y2="636" stroke="#233056" stroke-dasharray="6 6"/>
+  <polygon points="480,648 610,552 790,552 920,648" fill="#1a2442" stroke="#38bdf8" stroke-width="1.5"/>
+  <rect x="628" y="566" width="144" height="70" fill="#131b33" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="700" y="606" text-anchor="middle" fill="#cbd5e1" font-family="monospace" font-size="11">3D PERSPECTIVE + LINE EXTRACT</text>
+
+  <!-- Open Asset Shelf (assetShelfOpen = true by default) -->
+  <rect x="56" y="688" width="1328" height="124" rx="18" fill="#191d36" stroke="#454c7c"/>
+  <text x="80" y="716" fill="#c4b5fd" font-family="monospace" font-size="11" font-weight="800">STUDIO BG3D ASSET SHELF (기본 펼침) · 6-MODE HYBRID DCC BAR</text>
+  <g transform="translate(80,730)">
+    <rect x="0" y="0" width="160" height="66" rx="14" fill="#23284a" stroke="#7c5cff"/>
+    <text x="80" y="28" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="12" font-weight="800">공간 프리셋</text>
+    <text x="80" y="48" text-anchor="middle" fill="#a5accf" font-family="system-ui,sans-serif" font-size="10">교실·옥상·법정·황궁</text>
+
+    <rect x="174" y="0" width="160" height="66" rx="14" fill="#1e223f" stroke="#373e68"/>
+    <text x="254" y="28" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12" font-weight="700">가구 · 소품</text>
+    <text x="254" y="48" text-anchor="middle" fill="#939bc2" font-family="system-ui,sans-serif" font-size="10">스냅 배치 · 문 열림</text>
+
+    <rect x="348" y="0" width="160" height="66" rx="14" fill="#1e223f" stroke="#373e68"/>
+    <text x="428" y="28" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12" font-weight="700">캐릭터 · 포즈</text>
+    <text x="428" y="48" text-anchor="middle" fill="#939bc2" font-family="system-ui,sans-serif" font-size="10">VRM · 마네킹 데생</text>
+
+    <rect x="522" y="0" width="160" height="66" rx="14" fill="#1e223f" stroke="#373e68"/>
+    <text x="602" y="28" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="12" font-weight="700">조명 · 은선</text>
+    <text x="602" y="48" text-anchor="middle" fill="#939bc2" font-family="system-ui,sans-serif" font-size="10">석양·역광·외곽선 두께</text>
+
+    <rect x="706" y="0" width="578" height="66" rx="14" fill="#14182e" stroke="#38bdf8"/>
+    <text x="728" y="26" fill="#7dd3fc" font-family="monospace" font-size="10" font-weight="800">HYBRID DCC 6 MODES (시안 O)</text>
+    <text x="728" y="49" fill="#e2e8f0" font-family="monospace" font-size="11" font-weight="700">[Build]  [Model]  [Sculpt]  [Material]  [CAD]  [Shot Multi-Pass]</text>
+  </g>
+</svg>

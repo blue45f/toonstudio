@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * UI/UX v2 전수 시안(데스크톱 시안 A~P · 모바일 시안 M1~M4) 및 Starlight Atelier 디자인 시스템 계약 자동 검증 게이트 (v2.5).
+ * UI/UX v2 전수 시안(데스크톱 시안 A~P · 모바일 시안 M1~M4) 및 Starlight Atelier 디자인 시스템 계약 자동 검증 게이트 (v2.6).
  *
  * 브라우저를 기동하지 않고 <100ms 내에 아래 불변식을 검증한다:
- * 1. 정본 문서(PRODUCT.md, DESIGN.md, UI/UX v2 Blueprint, Quality Gates Policy) 존재 및 시안 A~P / 모바일 M1~M4 기록 동기화
+ * 1. 정본 문서(PRODUCT.md, DESIGN.md, UI/UX v2 Blueprint, Quality Gates Policy) 및 프로젝트 내 Starlight Atelier 시안 패키지(docs/design/starlight-atelier-v2-mockups-2026-11-11/*) 존재·동기화
  * 2. 독립 셸(apps/mobile/shell, apps/admin-web, apps/desktop-sync, apps/brush-lab, apps/character-lab)의 스피너 금지(DESIGN.md §4), OKLCH 의미 토큰(§2), 44px 터치 타깃(WCAG 2.5.8) 준수
  * 3. 게스트 3초 비차단 세션(INITIAL_SESSION_READY_DEADLINE_MS <= 3500) 회귀 방지(UX_FLOW_BACKLOG P1)
- * 4. 36대 핵심 화면군·루트 정문·아틀리에 벤토·단일 44px 에디터 바·3D Live Ink 스테이지/쉘프·스펙트럼 리본·어디서 봐 라우터 데이터 앵커 무결성 + 정본 경로(레거시 별칭 금지) + 44px 미만 Tailwind 높이(min-h-6..10) 금지
+ * 4. 39대 핵심 화면군·루트 정문·아틀리에 벤토·단일 44px 에디터 바·3D Live Ink 스테이지/쉘프·스펙트럼 리본·어디서 봐 라우터·컷츠 의미 토큰 데이터 앵커 무결성 + 정본 경로(레거시 별칭 금지) + 44px 미만 Tailwind 높이(min-h-6..10) 금지
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -31,8 +31,16 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     for (const doc of [
       "docs/architecture/ui-ux-v2-overhaul-blueprint-2026-11-11.md",
       "docs/operations/quality-gates-policy.md",
+      "docs/design/starlight-atelier-v2-mockups-2026-11-11/README.md",
+      "docs/design/starlight-atelier-v2-mockups-2026-11-11/starlight-atelier-design-tokens.json",
+      "docs/design/starlight-atelier-v2-mockups-2026-11-11/starlight-atelier-interactive-gallery.html",
+      "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-a-b-home-and-studio-lobby.svg",
+      "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-b-c-editor-2d-and-3d-live-ink.svg",
+      "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-e-n-discover-spectrum-and-reader.svg",
+      "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-g-h-i-k-p-ecosystem-hubs.svg",
+      "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-m1-m4-mobile-starlight-suite.svg",
     ]) {
-      if (!exists(doc)) issues.push(`필수 정본 문서 누락: ${doc}`);
+      if (!exists(doc)) issues.push(`필수 정본 문서·디자인 시안 패키지 누락: ${doc}`);
     }
   }
 
@@ -107,6 +115,9 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     "apps/web/src/domains/creator/spatial-reader/StudioSpatialReaderPage.tsx",
     "apps/web/src/domains/creator/CreateStartPage.tsx",
     "apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx",
+    "apps/web/src/domains/admin/shell/AdminShell.tsx",
+    "apps/web/src/domains/legal/technology/EngineeringStoryUi.tsx",
+    "apps/web/src/shared/components/site-header-mobile-nav.tsx",
   ];
 
   for (const rel of v2ComponentFilesForInlineAudit) {
@@ -124,7 +135,13 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     return { ok: issues.length === 0, issues };
   }
 
-  // 2) 독립 서브앱 셸(admin-web, desktop-sync, brush-lab, character-lab): OKLCH 토큰 및 >= 44px 터치 타깃
+  // 2) 독립 서브앱 셸(admin-web, desktop-sync, brush-lab, character-lab) 및 cuts.css 의미 토큰 검사
+  if (exists("apps/web/src/domains/cuts/cuts.css")) {
+    const cutsCss = read("apps/web/src/domains/cuts/cuts.css");
+    if (/#17171c|#fafafb/iu.test(cutsCss)) {
+      issues.push("apps/web/src/domains/cuts/cuts.css: 구형 라이트모드 전용 하드코딩 색상(#17171c/#fafafb) 잔존 — Starlight 의미 토큰을 사용하세요");
+    }
+  }
   if (exists("apps/admin-web/src/app/styles/admin.css")) {
     const adminCss = read("apps/admin-web/src/app/styles/admin.css");
     if (!adminCss.includes("oklch(")) {
@@ -170,7 +187,7 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     }
   }
 
-  // 4) 핵심 화면군 UI/UX v2.5 Starlight Atelier 시각·동선 앵커 연결 무결성
+  // 4) 핵심 화면군 UI/UX v2.6 Starlight Atelier 시각·동선 앵커 연결 무결성
   const requiredSurfaceAnchors = [
     ["apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx", "home-v2-spectrum-launchpad"],
     ["apps/web/src/domains/marketing/reference-creator-dashboard.css", "rd-v2-spectrum-ribbon"],
@@ -220,9 +237,9 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = evaluateUiUxV2Contracts();
   if (!result.ok) {
-    console.error(`UI/UX v2.5 계약 게이트 실패 (${result.issues.length}건):`);
+    console.error(`UI/UX v2.6 계약 게이트 실패 (${result.issues.length}건):`);
     for (const issue of result.issues) console.error(` - ${issue}`);
     process.exit(1);
   }
-  console.log("UI/UX v2.5 계약 게이트 통과: 데스크톱 시안 A~P · 모바일 M1~M4 · Starlight Atelier 벤토/단일바/스펙트럼/라우터 · 36대 허브 44px 불변식 정상");
+  console.log("UI/UX v2.6 계약 게이트 통과: 디자인 시안 패키지 · 데스크톱 시안 A~P · 모바일 M1~M4 · Starlight Atelier 39대 허브 44px 불변식 정상");
 }

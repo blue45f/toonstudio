@@ -1,6 +1,7 @@
 # ToonStudio 전수 UI/UX 고도화 시안 및 통합 개편 설계서 (v2 Blueprint)
 
 - 문서 상태: **current + migration** (기준일: `2026-11-11` — **데스크톱 16대 전수 화면군 `시안 A ~ 시안 P` + 모바일 전수 화면군 `모바일 시안 M1 ~ M4` 100% 코드·단위 테스트·자동 품질 게이트 반영 완료**, 기존 북마크·외부 공유 URL 호환을 위한 레거시 별칭 경로는 `legacy exception`으로 100% 무손실 보존)
+- 시각 시안 아틀라스 및 아트보드 번들: [Starlight Atelier v2.6 디자인 시안 패키지](../design/starlight-atelier-v2-mockups-2026-11-11/README.md) · [인터랙티브 HTML 시안 갤러리](../design/starlight-atelier-v2-mockups-2026-11-11/starlight-atelier-interactive-gallery.html) · [정밀 토큰 원장](../design/starlight-atelier-v2-mockups-2026-11-11/starlight-atelier-design-tokens.json)
 - 상위 정본: 제품 범위와 원칙은 [PRODUCT.md](../../PRODUCT.md), 시각·토큰·레이아웃 계약은 [DESIGN.md](../../DESIGN.md), 아키텍처 경계는 [ARCHITECTURE.md](../../ARCHITECTURE.md), 품질 게이트 정책은 [quality-gates-policy.md](../operations/quality-gates-policy.md)를 따른다.
 
 ## 1. 개편 배경 및 모노레포 전수 감사 요약

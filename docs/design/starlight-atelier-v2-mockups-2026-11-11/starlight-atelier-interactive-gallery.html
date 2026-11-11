@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ToonStudio Starlight Atelier v2.6 — 전수 디자인 시안 아틀라스 (시안 A~P · 모바일 M1~M4)</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --canvas: oklch(0.145 0.024 268);
+      --ledger: oklch(0.168 0.026 268);
+      --panel: oklch(0.192 0.028 268);
+      --card: oklch(0.218 0.030 268);
+      --raised: oklch(0.252 0.032 268);
+      --fg: oklch(0.962 0.008 265);
+      --fg-2: oklch(0.795 0.016 266);
+      --fg-3: oklch(0.635 0.020 266);
+      --line: oklch(0.305 0.028 268);
+      --line-strong: oklch(0.395 0.036 268);
+      --accent: oklch(0.685 0.195 278);
+      --accent-soft: oklch(0.265 0.065 278);
+      --cool: oklch(0.745 0.145 215);
+      --accent-2: oklch(0.715 0.175 350);
+      --good: oklch(0.745 0.165 156);
+      --warn: oklch(0.805 0.155 82);
+      --aurora: linear-gradient(90deg, var(--accent), var(--cool), var(--accent-2));
+      --cta: linear-gradient(135deg, var(--accent), var(--cool));
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 18% 8%, color-mix(in oklch, var(--accent) 20%, transparent), transparent 46%),
+        radial-gradient(circle at 84% 14%, color-mix(in oklch, var(--cool) 16%, transparent), transparent 42%),
+        var(--canvas);
+      color: var(--fg);
+      line-height: 1.6;
+    }
+    .aurora-bar { height: 3px; width: 100%; background: var(--aurora); }
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: color-mix(in oklch, var(--panel) 88%, transparent);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+    .top-header__inner {
+      max-width: 1360px;
+      margin: 0 auto;
+      min-height: 60px;
+      padding: 0 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 16px; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 10px;
+      background: var(--cta);
+      display: grid; place-items: center; color: #090b14; font-weight: 900;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 999px;
+      border: 1px solid color-mix(in oklch, var(--accent) 45%, transparent);
+      background: var(--accent-soft);
+      color: var(--fg);
+      font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+    }
+    .badge--good {
+      border-color: color-mix(in oklch, var(--good) 45%, transparent);
+      background: color-mix(in oklch, var(--good) 14%, transparent);
+      color: var(--good);
+    }
+    .container { max-width: 1360px; margin: 0 auto; padding: 32px 24px 80px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      border: 1px solid color-mix(in oklch, var(--accent) 35%, var(--line));
+      background: linear-gradient(145deg, color-mix(in oklch, var(--accent) 14%, var(--panel)), var(--card));
+      padding: 32px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+    }
+    .hero::before {
+      content: "";
+      position: absolute; inset: 0 0 auto 0; height: 3px;
+      background: var(--aurora);
+    }
+    h1 { margin: 12px 0 10px; font-size: clamp(26px, 3.4vw, 40px); line-height: 1.18; letter-spacing: -0.02em; }
+    .lede { margin: 0; max-width: 820px; color: var(--fg-2); font-size: 15px; }
+    .filter-bar {
+      margin-top: 24px;
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .pill-btn {
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      background: var(--card);
+      color: var(--fg-2);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    .pill-btn:hover { border-color: var(--accent); color: var(--fg); }
+    .pill-btn[aria-pressed="true"] {
+      border-color: transparent;
+      background: var(--cta);
+      color: #090b14;
+    }
+    .section-title {
+      margin: 40px 0 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      font-size: 20px; font-weight: 900;
+    }
+    .artboard-grid { display: grid; gap: 28px; }
+    .artboard-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    }
+    .artboard-card::before {
+      content: "";
+      position: absolute; inset: 0 0 auto 0; height: 3px;
+      background: var(--aurora);
+    }
+    .artboard-meta {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .artboard-meta h2 { margin: 4px 0 0; font-size: 18px; font-weight: 800; }
+    .artboard-meta p { margin: 4px 0 0; font-size: 13px; color: var(--fg-2); }
+    .artboard-frame { padding: 16px; background: #090a13; }
+    .artboard-frame img {
+      display: block; width: 100%; height: auto;
+      border-radius: 16px; border: 1px solid var(--line);
+    }
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .spec-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: linear-gradient(155deg, color-mix(in oklch, var(--accent) 8%, var(--panel)), var(--card));
+      padding: 20px;
+    }
+    .spec-card::before {
+      content: "";
+      position: absolute; inset: 0 0 auto 0; height: 2px;
+      background: var(--aurora);
+    }
+    .spec-card h3 { margin: 8px 0 6px; font-size: 15px; font-weight: 800; }
+    .spec-card p { margin: 0 0 10px; font-size: 12.5px; color: var(--fg-2); }
+    .route-code {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--canvas);
+      border: 1px solid var(--line);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      color: var(--cool);
+      margin: 2px 4px 2px 0;
+    }
+    .swatch-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    .swatch {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      padding: 12px;
+    }
+    .swatch-chip { height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); margin-bottom: 8px; }
+    .swatch strong { display: block; font-size: 12px; }
+    .swatch code { font-size: 10.5px; color: var(--fg-3); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <header class="top-header">
+    <div class="aurora-bar" aria-hidden="true"></div>
+    <div class="top-header__inner">
+      <div class="brand">
+        <span class="brand-mark">T</span>
+        <span>ToonStudio · Starlight Atelier Design Atlas</span>
+        <span class="badge">v2.6 CANONICAL</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="badge badge--good">데스크톱 시안 A~P (16종) + 모바일 M1~M4 (4종) = 100% 코드 동기화</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <span class="badge">STARLIGHT ATELIER OVERHAUL · 20 BOARDS</span>
+      <h1>툰스튜디오 전수 디자인 시안 아틀라스</h1>
+      <p class="lede">
+        모노레포 7개 애플리케이션과 웹 24개 라우트 그룹(376개 경로) 전체를 포괄하는 정본 시각 시안 패키지입니다.
+        상단 2px 오로라 스펙트럼 헤어라인, OKLCH 딥 인디고 글래스 표면, 단일 44px 에디터 공정 바, 3D Live Ink 에셋 선반,
+        5열 공정 칸반, 플랫폼 가격 라우터, 모바일 한손 Thumb-Arc 독이 실제 프로덕션 컴포넌트와 1:1로 연결됩니다.
+      </p>
+      <div class="filter-bar" role="group" aria-label="시안 보기 필터">
+        <button type="button" class="pill-btn" data-filter="all" aria-pressed="true">전체 보기 (아트보드 + 20대 시안 명세)</button>
+        <button type="button" class="pill-btn" data-filter="artboards" aria-pressed="false">고해상도 아트보드 (5종)</button>
+        <button type="button" class="pill-btn" data-filter="desktop" aria-pressed="false">데스크톱 시안 A ~ P (16종)</button>
+        <button type="button" class="pill-btn" data-filter="mobile" aria-pressed="false">모바일 시안 M1 ~ M4 (4종)</button>
+        <button type="button" class="pill-btn" data-filter="tokens" aria-pressed="false">OKLCH 토큰 팔레트</button>
+      </div>
+    </section>
+
+    <section data-section="tokens">
+      <div class="section-title">
+        <span>1. Starlight Atelier OKLCH 의미 색상 &amp; 스펙트럼 토큰</span>
+        <span class="badge">unified-theme-contract.css 정본</span>
+      </div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="swatch-chip" style="background:var(--canvas)"></div><strong>--color-canvas</strong><code>oklch(0.145 0.024 268)</code></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--panel)"></div><strong>--color-panel</strong><code>oklch(0.192 0.028 268)</code></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--card)"></div><strong>--color-card</strong><code>oklch(0.218 0.030 268)</code></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--accent)"></div><strong>--color-accent</strong><code>oklch(0.685 0.195 278)</code></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--cool)"></div><strong>--color-cool</strong><code>oklch(0.745 0.145 215)</code></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--accent-2)"></div><strong>--color-accent-2</strong><code>oklch(0.715 0.175 350)</code></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--good)"></div><strong>--color-good</strong><code>oklch(0.745 0.165 156)</code></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--aurora)"></div><strong>--spectacle-gradient</strong><code>Violet → Cyan → Rose</code></div>
+      </div>
+    </section>
+
+    <section data-section="artboards">
+      <div class="section-title">
+        <span>2. 핵심 화면군 고해상도 벡터 아트보드 (SVG 1440×860)</span>
+        <span class="badge badge--good">실제 구현 레이아웃 1:1 대응</span>
+      </div>
+      <div class="artboard-grid">
+        <article class="artboard-card">
+          <div class="artboard-meta">
+            <div>
+              <span class="badge">BOARD 01 · 시안 A · B · F</span>
+              <h2>통합 홈 프로스티드 커맨드 히어로 · 스튜디오 3열 아틀리에 벤토 · 5열 공정 칸반</h2>
+              <p>대응 경로: <code>/</code>, <code>/create</code>, <code>/studio</code>, <code>/studio/p/:projectId/*</code>, <code>/production/projects/:projectId/*</code></p>
+            </div>
+          </div>
+          <div class="artboard-frame">
+            <img src="./boards/board-a-b-home-and-studio-lobby.svg" alt="시안 A·B·F 홈 히어로 및 스튜디오 로비 아트보드" />
+          </div>
+        </article>
+
+        <article class="artboard-card">
+          <div class="artboard-meta">
+            <div>
+              <span class="badge">BOARD 02 · 시안 B · C · D · O</span>
+              <h2>2D 웹툰 에디터 단일 44px 5공정 스냅 바 · Rights BOM 프리플라이트 · 3D Live Ink 에셋 선반</h2>
+              <p>대응 경로: <code>/studio/p/:id/d/:docId</code>, <code>/studio/bg3d</code>, <code>/studio/3d/dcc/*</code>, <code>/studio/export</code></p>
+            </div>
+          </div>
+          <div class="artboard-frame">
+            <img src="./boards/board-b-c-editor-2d-and-3d-live-ink.svg" alt="시안 B·C·D·O 2D 에디터 및 3D Live Ink 아트보드" />
+          </div>
+        </article>
+
+        <article class="artboard-card">
+          <div class="artboard-meta">
+            <div>
+              <span class="badge">BOARD 03 · 시안 E · N</span>
+              <h2>스펙트럼 탐색 허브 · 작품 상세 WHERE TO READ 라우터 · 2.5D 공간 리더 · 컷츠 무빙툰</h2>
+              <p>대응 경로: <code>/discover</code>, <code>/explore</code>, <code>/calendar</code>, <code>/title/:slug</code>, <code>/read/spatial</code>, <code>/cuts</code></p>
+            </div>
+          </div>
+          <div class="artboard-frame">
+            <img src="./boards/board-e-n-discover-spectrum-and-reader.svg" alt="시안 E·N 탐색 스펙트럼 및 공간 리더 아트보드" />
+          </div>
+        </article>
+
+        <article class="artboard-card">
+          <div class="artboard-meta">
+            <div>
+              <span class="badge">BOARD 04 · 시안 G · H · I · J · K · L · M · P</span>
+              <h2>마켓 Fit Lab · 28개 고증 핀보드 · 소셜 살롱 · 보조 스위트 · 내 공간 볼트 · Edge Gate Admin · 기술 아틀라스</h2>
+              <p>대응 경로: <code>/market</code>, <code>/research/open-data</code>, <code>/showcase</code>, <code>/pencafe/:name</code>, <code>/my</code>, <code>/admin</code>, <code>/about/technology/*</code></p>
+            </div>
+          </div>
+          <div class="artboard-frame">
+            <img src="./boards/board-g-h-i-k-p-ecosystem-hubs.svg" alt="시안 G~P 생태계 허브 아트보드" />
+          </div>
+        </article>
+
+        <article class="artboard-card">
+          <div class="artboard-meta">
+            <div>
+              <span class="badge">BOARD 05 · 모바일 시안 M1 ~ M4 (&lt;768px)</span>
+              <h2>모바일 하단 글래스 독 · 한손 6슬롯 Thumb-Arc 에디터 · 1열 라우터 · 무스피너 스켈레톤 네이티브 셸</h2>
+              <p>대응 경로: 전 모바일 웹 뷰포트 및 <code>apps/mobile/shell/{index,offline}.html</code></p>
+            </div>
+          </div>
+          <div class="artboard-frame">
+            <img src="./boards/board-m1-m4-mobile-starlight-suite.svg" alt="모바일 시안 M1~M4 아트보드" />
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section data-section="desktop">
+      <div class="section-title">
+        <span>3. 데스크톱 16대 전수 시안 명세 (시안 A ~ 시안 P)</span>
+        <span class="badge">16 / 16 구현 완료</span>
+      </div>
+      <div class="matrix-grid">
+        <div class="spec-card"><span class="badge">시안 A</span><h3>통합 홈 &amp; 1초 시작 시트</h3><p>다크 프로스티드 글래스 커맨드 바, 첫 화면 4열 Bento 런치패드, 132px 포스터 예시 선반, 상황별 44px 시작 가이드</p><span class="route-code">/</span><span class="route-code">/create</span></div>
+        <div class="spec-card"><span class="badge">시안 B</span><h3>스튜디오 3열 로비 &amp; 단일 44px 에디터 바</h3><p>오프라인 안전 배지, 상단 상태 스펙트럼 프로젝트 카드, 68rem 무클리핑 5단계 공정 스냅 바</p><span class="route-code">/studio</span><span class="route-code">/studio/p/:id/d/:docId</span></div>
+        <div class="spec-card"><span class="badge">시안 C</span><h3>3D Live Ink 스테이지 &amp; 에셋 선반</h3><p>진입 즉시 열리는 4탭 3D 에셋 선반과 44px <code>원고 컷에 바로 굽기</code> 직행 스테이지 헤더</p><span class="route-code">/studio/bg3d</span><span class="route-code">apps/character-lab</span></div>
+        <div class="spec-card"><span class="badge">시안 D</span><h3>출고 프리플라이트 &amp; Rights BOM 원장</h3><p>웹툰 슬라이스 적합성 판정, 비가시 워터마크 서명 상태, Rights BOM 자동 점검 요약 카드</p><span class="route-code">/studio/export</span><span class="route-code">/studio/publish</span></div>
+        <div class="spec-card"><span class="badge">시안 E</span><h3>스펙트럼 탐색 · 작품 라우터 · 캘린더 · 컷츠</h3><p>8장르 스펙트럼 리본, 공식 연재처 가격·기다무 비교 라우터, 오늘 연재 열 강조, Starlight 컷츠 스튜디오</p><span class="route-code">/discover</span><span class="route-code">/title/:slug</span><span class="route-code">/calendar</span><span class="route-code">/cuts</span></div>
+        <div class="spec-card"><span class="badge">시안 F</span><h3>5열 공정 칸반 &amp; 8단계 에피소드 DAG</h3><p>STAGE 01~05 스펙트럼 액센트 칸반 카드와 ShotGrid/Kitsu 방식 15직무 부하 밸런서</p><span class="route-code">/studio/p/:id/*</span><span class="route-code">/production/projects/:id/*</span></div>
+        <div class="spec-card"><span class="badge">시안 G</span><h3>소재 마켓 Fit Lab &amp; 애널리틱스</h3><p>인라인 Rights BOM 보존 배지, 44px 원고 위 시험(Fit Lab) 캡슐 CTA, 애널리틱스 글래스 컨트롤 독</p><span class="route-code">/market</span><span class="route-code">/creator/analytics</span></div>
+        <div class="spec-card"><span class="badge">시안 H</span><h3>28개 공공 고증 핀보드 &amp; 실습형 배우기</h3><p>창작 목적별 6종 캡슐 필터, CC0 상업 직투입 vs 참고 아카이브 분리, 글래스 강의실</p><span class="route-code">/research/open-data</span><span class="route-code">/learn</span></div>
+        <div class="spec-card"><span class="badge">시안 I</span><h3>창작 소셜 살롱 4탭 · 팬카페 · 캐릭터 토크</h3><p>갤러리·팬카페·타임랩스·팀구인 4탭 캡슐 허브, 워치파티 시뮬레이터, 공식 캐릭터 토크</p><span class="route-code">/showcase</span><span class="route-code">/pencafe/:name</span><span class="route-code">/character-chat</span></div>
+        <div class="spec-card"><span class="badge">시안 J</span><h3>전문 크리에이터 보조 도구 스위트</h3><p>브러시 스튜디오 V6, 장면 BGM, 모션 웹툰, Luna AI, PDF 워크벤치 캡슐 독</p><span class="route-code">/studio/assets</span><span class="route-code">apps/brush-lab</span></div>
+        <div class="spec-card"><span class="badge">시안 K</span><h3>내 공간 AES-GCM 볼트 &amp; 쉬어가기</h3><p>브라우저 격리 API 키 볼트, 오프라인 원고 복구 금고, 창작 운세·놀이터·영감 2열 벤토</p><span class="route-code">/my</span><span class="route-code">/settings/api-keys</span><span class="route-code">/studio/recovery</span></div>
+        <div class="spec-card"><span class="badge">시안 L</span><h3>Edge Gate 운영자 콘솔 &amp; admin-web</h3><p>16개 운영 경로 44px 도메인 아코디언, 상단 오로라 헤더, Edge Gate 보호 배지</p><span class="route-code">/admin/*</span><span class="route-code">apps/admin-web</span></div>
+        <div class="spec-card"><span class="badge">시안 M</span><h3>3초 비차단 세션 &amp; 404 검색 복구 허브</h3><p>백엔드 콜드스타트 시 3.0초 내 로컬·게스트 화면 즉시 진입 및 작품·기능 복구 안내</p><span class="route-code">/auth/:action</span><span class="route-code">NotFoundPage</span></div>
+        <div class="spec-card"><span class="badge">시안 N</span><h3>몰입형 세로 리더 &amp; WebXR 2.5D 공간 리더</h3><p>OLED/종이/세피아 뷰어, 하단 공간 창작 전환 바, 90°/120° 캐노피 곡률 &amp; 시선 심도 워크벤치</p><span class="route-code">/title/:slug/read/:ep</span><span class="route-code">/read/spatial</span></div>
+        <div class="spec-card"><span class="badge">시안 O</span><h3>6대 하이브리드 DCC &amp; 데스크톱 동기화 콘솔</h3><p>Build·Model·Sculpt·Material·CAD·Shot 6모드 바 및 44px OKLCH 충돌 해결 콘솔</p><span class="route-code">/studio/3d/dcc/*</span><span class="route-code">apps/desktop-sync</span></div>
+        <div class="spec-card"><span class="badge">시안 P</span><h3>12종 기술 아틀라스 &amp; 발행·신뢰 센터</h3><p>좌측 xl:sticky 12종 목차, 모바일 접이식 목차 드로어, 스튜디오 출고·신뢰 교차 브리지</p><span class="route-code">/about/technology/*</span><span class="route-code">/publish</span></div>
+      </div>
+    </section>
+
+    <section data-section="mobile">
+      <div class="section-title">
+        <span>4. 모바일 4대 전수 시안 명세 (모바일 시안 M1 ~ M4, &lt;768px)</span>
+        <span class="badge badge--good">4 / 4 구현 완료</span>
+      </div>
+      <div class="matrix-grid">
+        <div class="spec-card"><span class="badge">모바일 시안 M1</span><h3>하단 글래스 독 · 2×2 포맷 Bento · 무스피너 셸</h3><p>상단 오로라 헤어라인이 적용된 하단 4~5탭 안전영역 독과 회전 스피너 없는 실루엣 스켈레톤 네이티브 셸</p><span class="route-code">site-header-mobile-nav.tsx</span><span class="route-code">apps/mobile/shell</span></div>
+        <div class="spec-card"><span class="badge">모바일 시안 M2</span><h3>한손 6슬롯 Thumb-Arc 에디터 &amp; 3D 스냅 시트</h3><p>펜·지우개·색상·실행취소·다시실행·메뉴 6슬롯 엄지 독, 왼손/오른손 전환, 112px 3D 피크 바텀시트</p><span class="route-code">StudioMobileEditingDock.tsx</span></div>
+        <div class="spec-card"><span class="badge">모바일 시안 M3</span><h3>모바일 스펙트럼 패싯 &amp; 1열 가격 라우터</h3><p>가로 스냅 패싯 탭, 모바일 1열 연재처 비교 카드, 안전 영역 위 몰입형 세로/공간 리더 전환 바</p><span class="route-code">DiscoverFacetTabStrip.tsx</span><span class="route-code">TitleReaderImmersiveCreationBar.tsx</span></div>
+        <div class="spec-card"><span class="badge">모바일 시안 M4</span><h3>모바일 Fit Lab · 오픈데이터 · 볼트 · 아틀라스 목차</h3><p>44px Fit Lab 버튼, 목적별 오픈데이터 칩, 1열 보안 볼트 카드, 접이식 12종 기술 아틀라스 목차</p><span class="route-code">MarketResourceCard.tsx</span><span class="route-code">EngineeringStoryUi.tsx</span></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const buttons = document.querySelectorAll("[data-filter]");
+    const sections = {
+      tokens: document.querySelector('[data-section="tokens"]'),
+      artboards: document.querySelector('[data-section="artboards"]'),
+      desktop: document.querySelector('[data-section="desktop"]'),
+      mobile: document.querySelector('[data-section="mobile"]'),
+    };
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const mode = button.getAttribute("data-filter");
+        for (const candidate of buttons) {
+          candidate.setAttribute("aria-pressed", candidate === button ? "true" : "false");
+        }
+        for (const [key, element] of Object.entries(sections)) {
+          if (!element) continue;
+          element.hidden = mode !== "all" && mode !== key;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

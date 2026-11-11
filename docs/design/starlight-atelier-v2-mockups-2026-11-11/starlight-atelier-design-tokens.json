@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "ToonStudio Starlight Atelier Design System v2.6",
+  "updatedAt": "2026-11-11",
+  "defaultTheme": "starlight",
+  "supportedThemes": ["starlight", "light", "dark", "paper", "sepia", "oled", "contrast"],
+  "colorSpace": "oklch",
+  "semanticPalette": {
+    "canvas": "oklch(0.145 0.024 268)",
+    "ledger": "oklch(0.168 0.026 268)",
+    "panel": "oklch(0.192 0.028 268)",
+    "card": "oklch(0.218 0.030 268)",
+    "raised": "oklch(0.252 0.032 268)",
+    "fg": "oklch(0.962 0.008 265)",
+    "fg-2": "oklch(0.795 0.016 266)",
+    "fg-3": "oklch(0.635 0.020 266)",
+    "line": "oklch(0.305 0.028 268)",
+    "line-strong": "oklch(0.395 0.036 268)",
+    "accent": "oklch(0.685 0.195 278)",
+    "accent-soft": "oklch(0.265 0.065 278)",
+    "accent-2": "oklch(0.715 0.175 350)",
+    "cool": "oklch(0.745 0.145 215)",
+    "good": "oklch(0.745 0.165 156)",
+    "warn": "oklch(0.805 0.155 82)",
+    "bad": "oklch(0.665 0.195 25)"
+  },
+  "spectacleContractTokens": {
+    "authorityFile": "apps/web/src/app/styles/unified-theme-contract.css",
+    "lockedTokenCount": 13,
+    "tokens": [
+      "--spectacle-gradient",
+      "--spectacle-glow",
+      "--spectacle-border",
+      "--spectacle-aurora",
+      "--spectacle-halo",
+      "--spectacle-spotlight",
+      "--spectacle-shimmer",
+      "--domain-tint",
+      "--surface-glass",
+      "--elevation-1",
+      "--elevation-2",
+      "--art-scrim",
+      "--art-on"
+    ]
+  },
+  "interactionInvariants": {
+    "minTouchTargetPx": 44,
+    "mobileNativePrimaryTargetPx": 48,
+    "tailwindMinHeightClass": "min-h-11",
+    "forbiddenTailwindSub44Classes": ["min-h-6", "min-h-7", "min-h-8", "min-h-9", "min-h-10"],
+    "guestSessionNonBlockingDeadlineMs": 3000,
+    "loadingPattern": "silhouette-skeleton-only-no-spinner",
+    "headerPrimaryNavCount": 5,
+    "headerHeightPx": 60,
+    "editorTopBarHeightPx": 44,
+    "mobileEditorThumbDockSlots": 6
+  },
+  "boards": {
+    "desktop": [
+      { "id": "A", "title": "통합 크리에이터 홈 & 1초 시작 허브", "routes": ["/", "/home", "/create", "/studio/new", "/studio/templates", "/studio/import"] },
+      { "id": "B", "title": "스튜디오 3열 아틀리에 로비 & 단일 44px 바 2D 에디터", "routes": ["/studio", "/studio/p/:projectId/d/:docId", "/studio/draft/:draftId", "/studio/canvas"] },
+      { "id": "C", "title": "통합 3D 세트 · Live Ink 스테이지 & 6모드 에셋 선반", "routes": ["/studio/bg3d", "/studio/poser", "/studio/lift3d", "apps/character-lab"] },
+      { "id": "D", "title": "원스톱 출고 프리플라이트 & Rights BOM 원장 요약", "routes": ["/studio/export", "/studio/publish", "/studio/p/:id/export", "/studio/review"] },
+      { "id": "E", "title": "공개 탐색(Spectrum) 슈퍼 허브 · 작품 라우터 · 캘린더 · 컷츠", "routes": ["/discover", "/explore", "/ranking", "/calendar", "/title/:slug", "/cuts"] },
+      { "id": "F", "title": "프로젝트 워크스페이스 5열 공정 칸반 & 8단계 에피소드 DAG", "routes": ["/studio/p/:projectId/*", "/production", "/production/projects/:projectId/*"] },
+      { "id": "G", "title": "소재 마켓(인라인 Fit Lab & Rights BOM) · 크리에이터 애널리틱스", "routes": ["/market", "/market/:slug", "/creator/analytics", "/creator/revenue"] },
+      { "id": "H", "title": "28개 공공·박물관 고증 핀보드 & 실습형 배우기", "routes": ["/research", "/research/open-data", "/references", "/learn", "/help"] },
+      { "id": "I", "title": "창작 소셜 살롱 4탭 · 팬카페 워치파티 · 세계관 캐릭터 토크", "routes": ["/showcase", "/community", "/pencafe/:name", "/collaborate", "/character-chat"] },
+      { "id": "J", "title": "전문 크리에이터 보조 도구 스위트 (브러시 V6 · 오디오 · 모션 · AI)", "routes": ["/studio/assets", "/studio/assets/brushes/new", "/music", "/motion-webtoon", "/studio/ai-lab"] },
+      { "id": "K", "title": "통합 내 공간 · AES-GCM 키 볼트 · 원고 복구 금고 · 쉬어가기", "routes": ["/my", "/settings/api-keys", "/studio/recovery", "/sitemap", "/fortune", "/play", "/now"] },
+      { "id": "L", "title": "운영자 Edge Gate Admin 콘솔 & 독립 admin-web", "routes": ["/admin/*", "apps/admin-web", "/studio/space", "/status"] },
+      { "id": "M", "title": "3초 비차단 게스트 세션 · 복구 허브 · 404 안내", "routes": ["/auth/:action", "/onboarding/*", "/studio/trash", "*"] },
+      { "id": "N", "title": "몰입형 세로 웹툰 리더 & WebXR 2.5D 공간 리더", "routes": ["/title/:slug/read/:episode", "/read/spatial", "/product-tour"] },
+      { "id": "O", "title": "3D 하이브리드 DCC 6대 전문 모드 & 데스크톱 동기화 충돌 콘솔", "routes": ["/studio/3d/dcc/*", "/studio/storyworld", "apps/desktop-sync"] },
+      { "id": "P", "title": "12종 엔지니어링 기술 아틀라스 · 발행 센터 · 신뢰 허브", "routes": ["/about/technology/*", "/publish", "/creator-support", "/accessibility"] }
+    ],
+    "mobile": [
+      { "id": "M1", "title": "모바일 하단 글래스 독 · 2×2 포맷 Bento · 무스피너 스켈레톤 네이티브 셸", "viewport": "<768px" },
+      { "id": "M2", "title": "모바일 한손 6슬롯 Thumb-Arc 에디터 · 3D 스냅 시트 · 모바일 프리플라이트", "viewport": "<768px" },
+      { "id": "M3", "title": "모바일 스펙트럼 패싯 탐색 · 1열 어디서 봐 라우터 · 몰입형 리더 바", "viewport": "<768px" },
+      { "id": "M4", "title": "모바일 Fit Lab 마켓 · 오픈데이터 칩 · 내 공간 볼트 · 아틀라스 접이식 목차", "viewport": "<768px" }
+    ]
+  }
+}

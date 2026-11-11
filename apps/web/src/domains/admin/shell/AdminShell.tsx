@@ -96,7 +96,7 @@ function AdminNavigation({
                   aria-expanded={expanded}
                   aria-controls={listId}
                   onClick={() => toggleGroup(group.id)}
-                  className="flex min-h-8 w-full items-center justify-between rounded-lg px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-fg-3 transition-colors hover:bg-raised/60 hover:text-fg"
+                  className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-fg-3 transition-colors hover:bg-raised/60 hover:text-fg"
                 >
                   <span>{copy.groups[group.id]}</span>
                   <ChevronDown
@@ -121,9 +121,9 @@ function AdminNavigation({
                     onClick={onNavigate}
                     data-admin-route-entry={route.id}
                     className={cn(
-                      "group flex min-h-10 items-center gap-3 rounded-xl border px-3 text-sm font-medium transition-colors",
+                      "group flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm font-medium transition-colors",
                       active
-                        ? "border-accent/30 bg-accent/10 text-accent"
+                        ? "border-accent/35 bg-accent-soft text-accent shadow-2xs"
                         : "border-transparent text-fg-2 hover:border-line hover:bg-raised/60 hover:text-fg",
                       collapsed && "justify-center px-0",
                     )}
@@ -235,7 +235,7 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
           <button
             type="button"
             onClick={toggleCollapsed}
-            className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-medium text-fg-3 transition-colors hover:bg-raised hover:text-fg"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-xs font-medium text-fg-3 transition-colors hover:bg-raised hover:text-fg"
             aria-label={
               collapsed ? copy.expandSidebar : copy.collapseSidebar
             }
@@ -310,7 +310,8 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
       </Dialog.Portal>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-40 flex min-h-16 items-center justify-between gap-3 border-b border-line bg-panel/95 px-4 backdrop-blur-lg sm:px-6">
+        <header className="relative sticky top-0 z-40 flex min-h-16 items-center justify-between gap-3 border-b border-accent/20 bg-panel/92 px-4 backdrop-blur-xl sm:px-6">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
           <div className="flex min-w-0 items-center gap-3">
             <Dialog.Trigger asChild>
             <button
@@ -355,7 +356,7 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
             <Link
               href="/"
               aria-label={copy.openPublicSite}
-              className="inline-flex size-10 items-center justify-center gap-1.5 rounded-xl border border-line bg-card text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg md:w-auto md:px-3"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-line-strong/75 bg-card/90 px-2.5 text-xs font-medium text-fg-2 transition-colors hover:border-accent/55 hover:text-fg md:w-auto md:px-3.5"
               title={copy.openPublicSite}
             >
               <span className="hidden md:inline">{copy.publicSite}</span>

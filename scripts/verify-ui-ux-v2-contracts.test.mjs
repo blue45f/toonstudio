@@ -7,7 +7,7 @@ import { describe, it } from "node:test";
 import { evaluateUiUxV2Contracts } from "./verify-ui-ux-v2-contracts.mjs";
 
 describe("verify-ui-ux-v2-contracts", () => {
-  it("실제 저장소가 데스크톱(시안 A~P)·모바일(시안 M1~M4)·Starlight Atelier·무스피너·36대 허브 정본 경로·44px 계약을 통과한다", () => {
+  it("실제 저장소가 디자인 시안 패키지·데스크톱(시안 A~P)·모바일(시안 M1~M4)·Starlight Atelier·무스피너·39대 허브 정본 경로·44px 계약을 통과한다", () => {
     const result = evaluateUiUxV2Contracts();
     assert.equal(result.ok, true, `위반 발견:\n${result.issues.join("\n")}`);
   });

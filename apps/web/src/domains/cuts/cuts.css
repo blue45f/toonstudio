@@ -1,6 +1,6 @@
 /**
- * 컷츠 스타일 — 세로형 피드(스크롤 스냅), 9:16 플레이어, 스튜디오.
- * 비디오 피드 특성상 다크 베이스로 고정한다.
+ * 컷츠 스타일 — 세로형 피드(스크롤 스냅), 9:16 플레이어, Starlight Atelier 스튜디오·리워드 통합.
+ * 비디오 피드는 몰입형 다크 스테이지로 유지하고, 스튜디오·리워드는 의미 토큰(var(--color-*))을 따른다.
  */
 
 .cuts-feed {
@@ -8,7 +8,7 @@
   overflow-y: auto;
   scroll-snap-type: y mandatory;
   overscroll-behavior-y: contain;
-  background: #0b0b10;
+  background: var(--color-canvas);
   color: #f5f5f7;
   scrollbar-width: none;
 }
@@ -36,7 +36,7 @@
   justify-content: space-between;
   gap: 0.5rem 0.75rem;
   padding: 0.65rem 1rem;
-  background: linear-gradient(to bottom, rgba(11, 11, 16, 0.84), rgba(11, 11, 16, 0));
+  background: linear-gradient(to bottom, color-mix(in oklch, var(--color-canvas) 88%, transparent), transparent);
   pointer-events: none;
 }
 .cuts-feed__header > * {
@@ -60,35 +60,39 @@
   flex-shrink: 0;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.5rem 0.85rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(6px);
-  color: #fcd34d;
+  border: 1px solid color-mix(in oklch, var(--color-line-strong) 75%, transparent);
+  background: color-mix(in oklch, var(--color-panel) 78%, transparent);
+  backdrop-filter: blur(10px);
+  color: var(--color-warn);
   font-weight: 700;
   font-size: 0.82rem;
   white-space: nowrap;
   text-decoration: none;
 }
 .cuts-feed__rewards:hover {
-  background: rgba(255, 255, 255, 0.24);
+  border-color: var(--color-accent);
+  background: color-mix(in oklch, var(--color-raised) 85%, transparent);
 }
 .cuts-feed__make {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.5rem 0.9rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
   border-radius: 999px;
-  background: #e11d48;
-  color: #fff;
-  font-weight: 700;
+  background: var(--spectacle-gradient);
+  color: var(--color-on-accent);
+  font-weight: 800;
   font-size: 0.85rem;
   white-space: nowrap;
   text-decoration: none;
 }
 .cuts-feed__make:hover {
-  background: #be123c;
+  filter: brightness(1.07);
 }
 @media (max-width: 639px) {
   .cuts-feed__header {
@@ -96,7 +100,7 @@
   }
   .cuts-feed__rewards,
   .cuts-feed__make {
-    padding: 0.42rem 0.72rem;
+    padding: 0.42rem 0.78rem;
     font-size: 0.76rem;
   }
 }
@@ -107,8 +111,9 @@
   aspect-ratio: 9 / 16;
   max-width: 96vw;
   border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 28%, var(--color-line));
   overflow: hidden;
-  background: #000;
+  background: #05060b;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
 }
 
@@ -138,8 +143,8 @@
   margin: 0;
   padding: 0.7rem 1rem;
   border-radius: 0.9rem;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
+  background: rgba(8, 10, 18, 0.65);
+  backdrop-filter: blur(8px);
   font-size: 1.02rem;
   font-weight: 600;
   line-height: 1.5;
@@ -151,12 +156,12 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 3px;
   background: rgba(255, 255, 255, 0.18);
 }
 .cuts-player__progress-bar {
   height: 100%;
-  background: #f43f5e;
+  background: var(--spectacle-gradient);
   transition: width 0.2s linear;
 }
 
@@ -164,11 +169,11 @@
   position: absolute;
   top: 0.9rem;
   right: 0.9rem;
-  width: 2.6rem;
-  height: 2.6rem;
-  border: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(8, 10, 18, 0.6);
   color: #fff;
   display: inline-flex;
   align-items: center;
@@ -176,11 +181,10 @@
   cursor: pointer;
 }
 .cuts-player__mute:hover {
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(8, 10, 18, 0.8);
 }
 
-/* 피드 아이템 오버레이 — 작품 정보 + 액션 레일.
-   데스크톱에서도 플레이어 컬럼(9:16) 폭에 맞춰 가운데로 모은다. */
+/* 피드 아이템 오버레이 — 작품 정보 + 액션 레일. */
 .cuts-item__overlay {
   position: absolute;
   top: 0;
@@ -265,7 +269,7 @@
   background: rgba(255, 255, 255, 0.22);
 }
 .cuts-action--liked .cuts-action__icon {
-  background: rgba(244, 63, 94, 0.85);
+  background: var(--color-accent);
 }
 .cuts-action__notice {
   align-self: center;
@@ -284,12 +288,12 @@
   padding: 2rem;
 }
 
-/* 스튜디오 */
+/* 컷츠 스튜디오 — Starlight Atelier 의미 토큰 일원화 */
 .cuts-studio {
   max-width: 72rem;
   margin: 0 auto;
   padding: 2rem 1.25rem 4rem;
-  color: #17171c;
+  color: var(--color-fg);
 }
 .cuts-studio__steps {
   display: flex;
@@ -300,20 +304,23 @@
 }
 .cuts-studio__step {
   flex: 1;
-  padding: 0.8rem 1rem;
-  border-radius: 0.9rem;
-  background: #f4f4f6;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
   font-weight: 700;
   font-size: 0.9rem;
-  color: #6b6b76;
+  color: var(--color-fg-2);
 }
 .cuts-studio__step--current {
-  background: #17171c;
-  color: #fff;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 .cuts-studio__step--done {
-  background: #e8f5e9;
-  color: #1b5e20;
+  border-color: color-mix(in oklch, var(--color-good) 45%, var(--color-line));
+  background: color-mix(in oklch, var(--color-good) 14%, var(--color-panel));
+  color: var(--color-good);
 }
 
 .cuts-episode-list {
@@ -326,34 +333,38 @@
   display: flex;
   gap: 1rem;
   text-align: start;
-  border: 2px solid #e8e8ec;
-  border-radius: 1rem;
-  background: #fff;
+  border: 1.5px solid var(--color-line);
+  border-radius: 1.15rem;
+  background: var(--color-card);
+  color: var(--color-fg);
   padding: 1rem;
   cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 .cuts-episode-card:hover {
-  border-color: #c9c9d4;
+  border-color: color-mix(in oklch, var(--color-accent) 55%, var(--color-line));
+  transform: translateY(-2px);
 }
 .cuts-episode-card--selected {
-  border-color: #f43f5e;
-  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-accent) 22%, transparent);
 }
 .cuts-episode-card img {
   width: 4.5rem;
   height: 8rem;
   object-fit: cover;
-  border-radius: 0.6rem;
+  border-radius: 0.65rem;
   flex: none;
 }
 .cuts-episode-card h3 {
   margin: 0 0 0.3rem;
   font-size: 1rem;
+  color: var(--color-fg);
 }
 .cuts-episode-card p {
   margin: 0.2rem 0;
   font-size: 0.85rem;
-  color: #55555f;
+  color: var(--color-fg-2);
 }
 
 .cuts-studio__preview {
@@ -388,10 +399,11 @@
   display: flex;
   gap: 0.9rem;
   align-items: center;
-  border: 1px solid #e8e8ec;
-  border-radius: 0.9rem;
-  padding: 0.7rem 0.9rem;
-  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  padding: 0.75rem 0.95rem;
+  background: var(--color-card);
+  color: var(--color-fg);
 }
 .cuts-shot-list img {
   width: 3rem;
@@ -402,7 +414,7 @@
 }
 .cuts-shot-list__meta {
   font-size: 0.82rem;
-  color: #55555f;
+  color: var(--color-fg-2);
 }
 
 .cuts-studio__actions {
@@ -412,49 +424,57 @@
   flex-wrap: wrap;
 }
 .cuts-button {
-  border: none;
+  min-height: 2.75rem;
+  border: 1px solid transparent;
   border-radius: 999px;
-  padding: 0.8rem 1.6rem;
-  font-size: 0.95rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
 }
 .cuts-button--primary {
-  background: #e11d48;
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 .cuts-button--primary:hover {
-  background: #be123c;
+  filter: brightness(1.08);
 }
 .cuts-button--primary:disabled {
-  background: #c9c9d4;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 .cuts-button--ghost {
-  background: #f4f4f6;
-  color: #17171c;
+  border-color: var(--color-line-strong);
+  background: var(--color-card);
+  color: var(--color-fg);
 }
 .cuts-button--ghost:hover {
-  background: #e8e8ec;
+  border-color: var(--color-accent);
+  background: var(--color-raised);
 }
 
 .cuts-studio__notice {
   margin-top: 1.25rem;
   padding: 1rem 1.25rem;
-  border-radius: 0.9rem;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
+  border-radius: 1rem;
+  background: color-mix(in oklch, var(--color-warn) 14%, var(--color-panel));
+  border: 1px solid color-mix(in oklch, var(--color-warn) 42%, var(--color-line));
+  color: var(--color-fg);
   font-size: 0.9rem;
 }
 
 .cuts-ssml {
   margin-top: 1.5rem;
-  border: 1px solid #e8e8ec;
-  border-radius: 0.9rem;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
   padding: 1rem 1.25rem;
-  background: #fafafb;
+  background: var(--color-panel);
+  color: var(--color-fg);
 }
 .cuts-ssml summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
   cursor: pointer;
   font-weight: 700;
 }
@@ -464,9 +484,10 @@
   font-size: 0.78rem;
   max-height: 12rem;
   overflow: auto;
+  color: var(--color-fg-2);
 }
 
-/* 팬 리믹스 원작 배지 — 피드(어두운 배경)와 스튜디오(밝은 배경) 공용 */
+/* 팬 리믹스 원작 배지 */
 .cuts-remix-badge {
   display: inline-flex;
   align-items: center;
@@ -475,9 +496,9 @@
   margin: 0.4rem 0 0;
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
-  border: 1px solid rgba(244, 63, 94, 0.55);
-  background: rgba(0, 0, 0, 0.45);
-  color: #ffe4e6;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 55%, transparent);
+  background: rgba(8, 10, 18, 0.58);
+  color: #f5f6ff;
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.4;
@@ -491,37 +512,37 @@
   color: #fff;
 }
 .cuts-studio .cuts-remix-badge {
-  background: #fff1f2;
-  border-color: #fda4af;
-  color: #9f1239;
+  background: var(--color-accent-soft);
+  border-color: color-mix(in oklch, var(--color-accent) 45%, var(--color-line));
+  color: var(--color-accent);
 }
 .cuts-studio .cuts-remix-badge__link:hover {
-  color: #881337;
+  color: var(--color-fg);
 }
 
 .cuts-item__remix-link {
-  color: #fda4af;
+  color: var(--color-accent-2);
   font-weight: 700;
   text-decoration: none;
-  border-bottom: 1px solid rgba(253, 164, 175, 0.5);
+  border-bottom: 1px solid color-mix(in oklch, var(--color-accent-2) 55%, transparent);
 }
 .cuts-item__remix-link:hover {
-  border-bottom-color: #fda4af;
+  border-bottom-color: var(--color-accent-2);
 }
 
-/* 리워드 펀드 대상 표기 — 누르면 정산 대시보드(/cuts/rewards)로 이어진다 */
+/* 리워드 펀드 대상 표기 */
 .cuts-item__fund {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  color: #fcd34d;
+  color: var(--color-warn);
   font-size: 0.78rem;
   font-weight: 700;
   text-decoration: none;
-  border-bottom: 1px solid rgba(252, 211, 77, 0.45);
+  border-bottom: 1px solid color-mix(in oklch, var(--color-warn) 45%, transparent);
 }
 .cuts-item__fund:hover {
-  border-bottom-color: #fcd34d;
+  border-bottom-color: var(--color-warn);
 }
 
 /* 작품별 팬 리믹스 필터 배너 */
@@ -543,32 +564,36 @@
   margin: 0;
   padding: 0.45rem 0.9rem;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(6px);
+  background: rgba(8, 10, 18, 0.68);
+  backdrop-filter: blur(8px);
   font-size: 0.85rem;
   font-weight: 700;
 }
 .cuts-feed__filter-clear {
-  padding: 0.45rem 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.45rem 1rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
   color: #fff;
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
 }
 .cuts-feed__filter-clear:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.26);
 }
 
 /* 작가 설정 — 리믹스 허용 스위치 */
 .cuts-remix-settings {
   margin: 1.5rem 0;
-  border: 1px solid #e8e8ec;
-  border-radius: 1rem;
-  padding: 1rem 1.25rem;
-  background: #fafafb;
+  border: 1px solid var(--color-line);
+  border-radius: 1.15rem;
+  padding: 1.1rem 1.25rem;
+  background: var(--color-panel);
+  color: var(--color-fg);
 }
 .cuts-remix-settings h2 {
   margin: 0 0 0.25rem;
@@ -577,15 +602,15 @@
 .cuts-remix-settings > p {
   margin: 0 0 0.75rem;
   font-size: 0.85rem;
-  color: #55555f;
+  color: var(--color-fg-2);
 }
 .cuts-remix-settings__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.6rem 0;
-  border-top: 1px solid #ececf0;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--color-line);
 }
 .cuts-remix-settings__row:first-of-type {
   border-top: none;
@@ -598,18 +623,18 @@
   display: block;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #6b6b76;
+  color: var(--color-fg-3);
 }
 .cuts-switch {
   position: relative;
   flex: none;
-  width: 3rem;
-  height: 1.7rem;
-  border: none;
+  width: 3.1rem;
+  height: 1.85rem;
+  border: 1px solid var(--color-line-strong);
   border-radius: 999px;
-  background: #c9c9d4;
+  background: var(--color-raised);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 .cuts-switch::after {
   content: "";
@@ -623,10 +648,11 @@
   transition: transform 0.15s ease;
 }
 .cuts-switch[aria-checked="true"] {
-  background: #f43f5e;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
 }
 .cuts-switch[aria-checked="true"]::after {
-  transform: translateX(1.3rem);
+  transform: translateX(1.25rem);
 }
 .cuts-switch:focus-visible,
 .cuts-action:focus-visible,
@@ -635,7 +661,7 @@
 .cuts-item__fund:focus-visible,
 .cuts-feed__rewards:focus-visible,
 .cuts-feed__make:focus-visible {
-  outline: 2px solid #f43f5e;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -643,26 +669,25 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  color: #e11d48;
+  color: var(--color-accent);
   font-weight: 700;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cuts-action__icon {
-    transition: none;
-  }
+  .cuts-action__icon,
+  .cuts-episode-card,
   .cuts-switch,
   .cuts-switch::after {
     transition: none;
   }
 }
 
-/* 리워드 펀드 정산 대시보드 — 스튜디오와 같은 밝은 베이스 */
+/* 리워드 펀드 정산 대시보드 — Starlight 의미 토큰 통합 */
 .cuts-rewards {
   max-width: 72rem;
   margin: 0 auto;
   padding: 2rem 1.25rem 4rem;
-  color: #17171c;
+  color: var(--color-fg);
 }
 .cuts-rewards h1 {
   display: flex;
@@ -675,7 +700,7 @@
 }
 .cuts-rewards__intro {
   max-width: 44rem;
-  color: #55555f;
+  color: var(--color-fg-2);
   line-height: 1.6;
 }
 .cuts-rewards__guest {
@@ -690,7 +715,7 @@
 }
 .cuts-rewards__loading {
   margin-top: 2rem;
-  color: #55555f;
+  color: var(--color-fg-2);
 }
 .cuts-rewards__controls {
   display: flex;
@@ -704,20 +729,21 @@
   gap: 0.35rem;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #55555f;
+  color: var(--color-fg-2);
 }
 .cuts-rewards__controls select {
-  padding: 0.6rem 0.8rem;
-  border: 1px solid #d8d8e0;
-  border-radius: 0.7rem;
-  background: #fff;
-  color: #17171c;
-  font-size: 0.95rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 0.92rem;
   font-weight: 600;
 }
 .cuts-rewards__controls select:focus-visible,
 .cuts-rewards__history-row:focus-visible {
-  outline: 2px solid #f43f5e;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 .cuts-rewards__summary {
@@ -727,26 +753,28 @@
   margin-top: 1.25rem;
 }
 .cuts-rewards__card {
-  border: 1px solid #e8e8ec;
-  border-radius: 1rem;
-  background: #fafafb;
-  padding: 1.1rem 1.25rem;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 22%, var(--color-line));
+  border-radius: 1.15rem;
+  background: linear-gradient(155deg, color-mix(in oklch, var(--color-accent) 9%, var(--color-panel)), var(--color-card));
+  padding: 1.15rem 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
 .cuts-rewards__card span {
   font-size: 0.85rem;
-  color: #6b6b76;
+  color: var(--color-fg-2);
 }
 .cuts-rewards__card strong {
   font-size: 1.6rem;
   letter-spacing: -0.01em;
+  color: var(--color-fg);
 }
 .cuts-rewards__table-wrap {
   overflow-x: auto;
-  border: 1px solid #e8e8ec;
-  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+  border-radius: 1.15rem;
+  background: var(--color-card);
 }
 .cuts-rewards__table {
   width: 100%;
@@ -758,13 +786,13 @@
 .cuts-rewards__table td {
   padding: 0.75rem 1rem;
   text-align: start;
-  border-top: 1px solid #ececf0;
+  border-top: 1px solid var(--color-line);
 }
 .cuts-rewards__table thead th {
   border-top: none;
-  background: #fafafb;
+  background: var(--color-panel);
   font-size: 0.82rem;
-  color: #55555f;
+  color: var(--color-fg-2);
 }
 .cuts-rewards__table td:last-child,
 .cuts-rewards__table th:last-child {
@@ -781,31 +809,32 @@
 }
 .cuts-rewards__history-row {
   width: 100%;
+  min-height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
   padding: 0.9rem 1.1rem;
-  border: 1px solid #e8e8ec;
-  border-radius: 0.9rem;
-  background: #fff;
-  color: #17171c;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background: var(--color-card);
+  color: var(--color-fg);
   font-size: 0.92rem;
   cursor: pointer;
   text-align: start;
 }
 .cuts-rewards__history-row:hover {
-  border-color: #c9c9d4;
+  border-color: color-mix(in oklch, var(--color-accent) 55%, var(--color-line));
 }
 .cuts-rewards__history-row--current {
-  border-color: #f43f5e;
-  background: #fff7f8;
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 .cuts-rewards__footnote {
   margin-top: 2.5rem;
   font-size: 0.82rem;
-  color: #6b6b76;
+  color: var(--color-fg-3);
   line-height: 1.6;
   max-width: 44rem;
 }

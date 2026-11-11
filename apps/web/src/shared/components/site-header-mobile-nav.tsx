@@ -426,8 +426,9 @@ export function MobileHeaderNavigation({
         <nav
           aria-label={t("nav.quickAccess")}
           data-site-product={navigationContext}
-          className="fixed inset-x-0 bottom-0 z-50 border-t border-line/80 bg-panel/92 shadow-[0_-12px_35px_-28px_var(--color-fg)] backdrop-blur-2xl md:hidden"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-accent/25 bg-panel/94 shadow-[0_-12px_35px_-28px_var(--color-fg)] backdrop-blur-2xl md:hidden"
         >
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
           <div
             className={cx(
               "mx-auto grid max-w-md pb-[env(safe-area-inset-bottom)]",
