@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "state": "target",
+  "dateKst": "2026-11-12",
+  "kind": "구현 전에 공유한 정적 HTML 목업 PNG",
+  "sharedBeforeImplementation": true,
+  "sharedPage": "https://chatgpt.com/space/page_1ceae82a16a081919d1aca249661d4e7",
+  "captures": [
+    {
+      "file": "proposal-promo-landing-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 130676,
+      "sha256": "854abe1e64993b3568d3cdf41ff43eb8577ab3bccf643f751d6909d1585b2c5e",
+      "kind": "static-proposal-not-implemented-ui"
+    },
+    {
+      "file": "proposal-promo-landing-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 422726,
+      "sha256": "e4a64e0260daea608b844fb555fe5b91c51fc2b23cbef18baa209c0eb30d5917",
+      "kind": "static-proposal-not-implemented-ui"
+    }
+  ],
+  "referenceSourceSnapshot": "6d597b8571cc444ee66635563958ad3e41170f06",
+  "sourceReuse": [
+    {
+      "path": "docs/design/sitewide-clarity-20261111/density-proposals/index.html",
+      "sha256": "c914b6329fffd358958b5b0d8ff019f54f5aad61a6de1757834646ad7f8851a9"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/PromoVideoLibraryPage.tsx",
+      "sha256": "25544b33d5eb6c1d16d08a1cc4192e2e8dfe5d4d320af744249b77b1168d6d4a"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/promo-video-library.css",
+      "sha256": "41d1be65ae85f1bd3294545f5e68ea90398f843939d80926f22cfad1ad8546b9"
+    }
+  ],
+  "content": {
+    "registryTotal": 204,
+    "shorts": 49,
+    "exampleCards": 4,
+    "examplePosters": "기존 원본에서 파생된 로컬 포스터",
+    "newPaidGeneration": false
+  },
+  "layout": {
+    "primaryOrder": [
+      "목적 제목·개념영상 고지",
+      "검색·분류·비율",
+      "영상 제목·선택 재생·원본 내려받기"
+    ],
+    "secondary": [
+      "활용 안내",
+      "보기 방식",
+      "내 작품 홍보·제작 도구",
+      "기존 제작·탐색 참고 자료"
+    ],
+    "previewFit": "object-fit:contain; 원본 구도·비율 유지",
+    "previewHeight": {
+      "390": 260,
+      "1440": 320
+    }
+  },
+  "limits": [
+    "정적 예시이며 실제 필터·재생·다운로드 실행 캡처가 아니다.",
+    "실제 제품은 기존 공통 헤더·기본 너비를 유지하고 시안 안내 띠를 표시하지 않는다.",
+    "재생 모듈과 원본 204편·쇼츠 49편·실패 안내·재시도·원본 다운로드를 보존해야 한다.",
+    "Android/Safari 실기기·운영 배포·비용/권한 확인을 뜻하지 않는다."
+  ]
+}
