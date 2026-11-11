@@ -35,6 +35,7 @@ export function buildStudioThreeWorldArchitecture(scene: THREE.Scene, manifest: 
     } };
   }
   const palette = studioThreeSurfaceRecipe(theme, manifest.rooms[0]?.id);
+  const hqFallbackRoomId = manifest.rooms.find((room) => room.id.startsWith("hq-"))?.id;
   const owned: THREE.Object3D[] = [];
   const murals: StudioThreeMural[] = [];
   const add = (node: THREE.Object3D) => { owned.push(node); scene.add(node); };
@@ -71,7 +72,7 @@ export function buildStudioThreeWorldArchitecture(scene: THREE.Scene, manifest: 
     if (wall.width <= 0 || wall.height <= 0 || (wall.width > 30 && wall.height > 30)) continue;
     const geometry = new THREE.BoxGeometry(wall.width * STUDIO_THREE_SCALE, 1.65, wall.height * STUDIO_THREE_SCALE);
     const room = manifest.rooms.find((candidate) => wall.x + wall.width / 2 >= candidate.x && wall.x + wall.width / 2 <= candidate.x + candidate.width && wall.y + wall.height / 2 >= candidate.y && wall.y + wall.height / 2 <= candidate.y + candidate.height);
-    const wallPalette = studioThreeSurfaceRecipe(theme, room?.id);
+    const wallPalette = studioThreeSurfaceRecipe(theme, room?.id ?? hqFallbackRoomId);
     const finish = theme.kind === "asset-recipe" ? theme.surfacePBR.wall : null;
     const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: wallPalette.wallTints[room ? studioThreeRoomTone(room) : "marble"], roughness: finish?.roughness ?? 0.85, metalness: finish?.metalness ?? 0, transparent: theme.kind === "preserved-baseline", opacity: theme.kind === "preserved-baseline" ? 0.9 : 1 }));
     mesh.name = "manifest-wall";

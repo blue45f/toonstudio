@@ -1,271 +1,264 @@
 // @vitest-environment jsdom
-
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter, useNavigate } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PublishCenterPage } from "./PublishCenterPage";
+import type { PublishPackageRequest } from "./integration-platform-types";
+
+import { useApp } from "@/shared/lib/store";
 
 const mocks = vi.hoisted(() => ({
-  lang: "ko",
-  catalog: vi.fn(),
-  buildPublishPackage: vi.fn(),
-  buildFeedPreview: vi.fn(),
+  lang: "ko", catalog: vi.fn(), buildPublishPackage: vi.fn(), buildFeedPreview: vi.fn(),
+  getProject: vi.fn(), listProjects: vi.fn(), downloadJson: vi.fn(), downloadText: vi.fn(),
 }));
-
-vi.mock("./integration-platform-client", () => ({
-  integrationPlatformClient: mocks,
-}));
-
+vi.mock("./integration-platform-client", () => ({ integrationPlatformClient: mocks }));
+vi.mock("./integration-platform-storage", () => ({ downloadIntegrationJson: mocks.downloadJson, downloadIntegrationText: mocks.downloadText }));
+vi.mock("@/domains/creator/public/production-projects", () => ({ getProductionProject: mocks.getProject, listProductionProjects: mocks.listProjects }));
 vi.mock("@/shared/lib/i18n", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  // 상태 문구 사전 모듈이 import 시점에 등록 함수를, 렌더 중에는 번역 해석 함수를 쓴다 — 번역기만 바꾸고 나머지는 실제 모듈을 쓴다.
   useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: mocks.lang }),
-  // 공용 LoadingState가 useT를 쓴다 — 라벨을 명시 전달하므로 키 반환 스텁으로 충분하다.
   useT: () => (key: string) => key,
 }));
 
 const catalogFixture = {
-  generatedAt: "2026-10-02T00:00:00.000Z",
-  categories: ["publishing"],
+  generatedAt: "2026-10-02T00:00:00.000Z", categories: ["publishing"],
   providers: [
-    {
-      id: "external-webtoon-platforms",
-      name: "외부 웹툰 플랫폼",
-      category: "publishing",
-      summary: "승인 API가 없는 플랫폼용 규격 검사와 업로드 패키지를 준비합니다.",
-      capabilities: ["규격 검사"],
-      connectionMode: "manual-upload",
-      activation: "none",
-      configured: true,
-      executable: false,
-      status: "manual",
-      statusReason: "공급자 승인 API가 없어 직접 업로드용 패키지로 종료합니다.",
-    },
-    {
-      id: "rss-json-feed",
-      name: "RSS · JSON Feed",
-      category: "publishing",
-      summary: "내 도메인에서 바로 구독할 수 있는 공개 피드를 생성합니다.",
-      capabilities: ["RSS 2.0"],
-      connectionMode: "public-feed",
-      activation: "none",
-      configured: true,
-      executable: true,
-      status: "ready",
-      statusReason: "외부 계정 없이 바로 생성할 수 있습니다.",
-    },
+    { id: "external-webtoon-platforms", name: "외부 웹툰 플랫폼", category: "publishing", summary: "외부 플랫폼 수동 전달 정보", capabilities: ["publish.manual"], connectionMode: "manual", activation: "none", configured: true, executable: false, status: "manual", statusReason: "플랫폼에서 업로드 결과를 확인하세요." },
+    { id: "rss-json-feed", name: "RSS · JSON Feed", category: "publishing", summary: "피드 파일 미리보기", capabilities: ["feed.generate"], connectionMode: "public-feed", activation: "none", configured: true, executable: true, status: "ready", statusReason: "피드 파일을 준비할 수 있습니다." },
   ],
 };
-
 const packageFixture = {
-  schema: "toonstudio.publish-package/v1",
-  createdAt: "2026-10-02T10:00:00.000Z",
-  projectId: "demo-project",
-  title: "별빛 항해자",
-  description: "",
-  canonicalUrl: "https://example.com/showcase",
+  schema: "toonstudio.publish-package/1", createdAt: "2026-10-02T10:00:00.000Z", projectId: "project-1",
+  title: "별빛 항해자", description: "", canonicalUrl: "https://example.com/works/one", scheduledAt: null,
   channels: [
-    {
-      id: "external-webtoon-platforms",
-      name: "외부 웹툰 플랫폼",
-      valid: true,
-      executable: false,
-      mode: "manual-upload",
-      status: "manual",
-      reason: "규격 검사를 통과했습니다. 플랫폼 업로드 화면에서 패키지 ZIP을 직접 올려 주세요.",
-    },
-    {
-      id: "rss-json-feed",
-      name: "RSS · JSON Feed",
-      valid: true,
-      executable: true,
-      mode: "public-feed",
-      status: "ready",
-      reason: "피드 파일을 바로 배포할 수 있습니다.",
-    },
+    { id: "external-webtoon-platforms", name: "외부 웹툰 플랫폼", valid: true, executable: false, mode: "manual-handoff", status: "manual", reason: "플랫폼에서 업로드 결과를 확인하세요." },
+    { id: "rss-json-feed", name: "RSS · JSON Feed", valid: true, executable: true, mode: "provider-api", status: "ready", reason: "피드 파일을 준비할 수 있습니다." },
   ],
-  tags: [],
-  packageDigest: "9f2c1ab47de3058192aa",
-  ready: true,
-  directlyExecutable: false,
-  notices: ["수동 업로드 채널은 플랫폼 화면에서 최종 확인을 마쳐야 발행이 끝납니다."],
+  tags: [], packageDigest: "9f2c1ab47de3058192aa", ready: true, directlyExecutable: false,
+  notices: ["Manual channels require a human confirmation receipt after upload."],
 };
+const projectSummary = {
+  projectId: "project-1", workId: "work-1", title: "별빛 항해자", coverImageUrl: null,
+  collaborationModel: "solo", revision: 1, updatedAt: "2026-10-02T00:00:00.000Z",
+  access: { view: true, comment: true, edit: true, manage: true, owner: true, role: "owner" },
+  healthScore: 80, activeEpisodeCount: 1, readyBufferCount: 0, criticalRiskCount: 0, overdueTaskCount: 0,
+  blockedTaskCount: 0, unassignedTaskCount: 0, reviewTaskCount: 0, nextReleaseAt: null,
+  forecastFinishAt: null, scheduleConfidencePercent: null,
+};
+const projectRecord = (projectId: string) => ({ aggregate: { projectId, title: projectId === "project-2" ? "다음 작품" : "별빛 항해자", episodes: [], episodePlans: [] } });
 
-function renderPage(initialPath = "/publish") {
-  return render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <PublishCenterPage />
-    </MemoryRouter>,
-  );
+function NavigateProject() {
+  const navigate = useNavigate();
+  return <button type="button" onClick={() => navigate("/publish?projectId=project-2")}>다른 작품 주소로 이동</button>;
 }
+function renderPage(initialPath = "/publish?projectId=project-1", navigation = false) {
+  return render(<MemoryRouter initialEntries={[initialPath]}><PublishCenterPage />{navigation ? <NavigateProject /> : null}</MemoryRouter>);
+}
+async function prepareInputs() {
+  await screen.findByRole("link", { name: "선택한 프로젝트로 돌아가기" });
+  fireEvent.change(screen.getByLabelText("제목"), { target: { value: "별빛 항해자" } });
+  fireEvent.change(screen.getByLabelText("작품 대표 주소"), { target: { value: "https://example.com/works/one" } });
+}
+const prepareButton = () => screen.getByRole("button", { name: "게시 정보 JSON 준비" });
 
-describe("PublishCenterPage", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mocks.lang = "ko";
-    mocks.catalog.mockResolvedValue(catalogFixture);
-    mocks.buildPublishPackage.mockResolvedValue(packageFixture);
-    mocks.buildFeedPreview.mockResolvedValue({
-      rss: "<rss/>",
-      jsonFeed: {},
-      activityPub: [],
-      digest: "77aa10bc",
-    });
-  });
+beforeEach(() => {
+  vi.clearAllMocks(); mocks.lang = "ko";
+  useApp.setState({ userId: "user-1" });
+  mocks.catalog.mockResolvedValue(catalogFixture);
+  mocks.getProject.mockImplementation(async (projectId: string) => projectRecord(projectId));
+  mocks.listProjects.mockResolvedValue({ projects: [] });
+  mocks.buildPublishPackage.mockImplementation(async (request: PublishPackageRequest) => ({ ...packageFixture, projectId: request.projectId, title: request.title, description: request.description, canonicalUrl: request.canonicalUrl, scheduledAt: request.scheduledAt ?? null, tags: request.tags }));
+  mocks.buildFeedPreview.mockResolvedValue({ rss: "<rss/>", jsonFeed: {}, activityPub: [], digest: "77aa10bc" });
+});
+afterEach(() => { cleanup(); useApp.setState({ userId: null }); vi.unstubAllGlobals(); });
 
-  it("플랫폼 카드에 상태 배지와 수동 업로드 정직 표기가 렌더링된다", async () => {
+describe("PublishCenterPage 게시 준비 계약", () => {
+  it("카드 상태와 기본 채널 선택을 유지한다", async () => {
     const { container } = renderPage();
     await screen.findByText("외부 웹툰 플랫폼");
     expect(screen.getByText("수동 완주 가능")).toBeTruthy();
     expect(screen.getByText("직접 업로드용 패키지로 준비돼요")).toBeTruthy();
     expect(screen.getByText("사용 가능")).toBeTruthy();
-    // 기본 선택 채널 2개가 체크된 상태로 시작한다 (기존 기본값 계약).
-    const webtoon = container.querySelector<HTMLInputElement>("#publish-channel-external-webtoon-platforms");
-    const feed = container.querySelector<HTMLInputElement>("#publish-channel-rss-json-feed");
-    expect(webtoon?.checked).toBe(true);
-    expect(feed?.checked).toBe(true);
+    expect(container.querySelector<HTMLInputElement>("#publish-channel-external-webtoon-platforms")?.checked).toBe(true);
+    expect(container.querySelector<HTMLInputElement>("#publish-channel-rss-json-feed")?.checked).toBe(true);
   });
 
-  it("제목이 비어 있으면 만들 수 없고, 입력하면 작품 히어로와 버튼이 함께 바뀐다", async () => {
-    renderPage();
-    await screen.findByText("외부 웹툰 플랫폼");
-    const buildButton = screen.getByRole("button", { name: /패키지 만들기/ });
-    expect((buildButton as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("제목만 채우면 만들 수 있어요.")).toBeTruthy();
+  it("직접 진입에서는 가짜 프로젝트와 갤러리 주소를 만들지 않고 선택을 요구한다", async () => {
+    renderPage("/publish"); await screen.findByText("외부 웹툰 플랫폼");
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "직접 입력" } });
+    fireEvent.change(screen.getByLabelText("작품 대표 주소"), { target: { value: "https://example.com/works/one" } });
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(prepareButton());
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
+    expect(mocks.getProject).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "제작 프로젝트 목록으로" }).getAttribute("href")).toBe("/production/projects");
+    expect(document.querySelector("#publish-project-selection")?.hasAttribute("open")).toBe(true);
+    expect(document.body.textContent).not.toContain("demo-project");
+  });
 
-    const titleInput = screen.getByLabelText("제목");
-    fireEvent.change(titleInput, { target: { value: "별빛 항해자" } });
+  it("로그인 전에는 URL의 프로젝트를 확인하거나 패키지 실행하지 않는다", async () => {
+    useApp.setState({ userId: null }); renderPage(); await screen.findByText("외부 웹툰 플랫폼");
+    expect(mocks.getProject).not.toHaveBeenCalled();
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("link", { name: "로그인하기" })).toBeTruthy();
+  });
+
+  it("실제 목록에서 고른 프로젝트를 확인하고 그 프로젝트로 정확히 돌아간다", async () => {
+    mocks.listProjects.mockResolvedValue({ projects: [projectSummary] }); renderPage("/publish");
+    fireEvent.click(await screen.findByRole("button", { name: /이 작품으로 게시 준비/u }));
+    const back = await screen.findByRole("link", { name: "선택한 프로젝트로 돌아가기" });
+    expect(back.getAttribute("href")).toBe("/production/projects/project-1/overview");
+    expect(mocks.getProject).toHaveBeenCalledWith("project-1");
+    expect(document.querySelector("#publish-project-selection")?.hasAttribute("open")).toBe(false);
+    expect((screen.getByLabelText("작품 대표 주소") as HTMLInputElement).value).toBe("");
+  });
+
+  it("제목·실제 대표 주소·채널이 갖춰져야 준비할 수 있다", async () => {
+    const { container } = renderPage(); await screen.findByRole("link", { name: "선택한 프로젝트로 돌아가기" });
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    await prepareInputs(); expect((prepareButton() as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "" } });
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "별빛 항해자" } });
     expect(screen.getByRole("heading", { name: "별빛 항해자" })).toBeTruthy();
-    expect((buildButton as HTMLButtonElement).disabled).toBe(false);
+    for (const input of container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')) fireEvent.click(input);
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("채널을 모두 해제하면 다시 만들 수 없게 된다", async () => {
-    const { container } = renderPage();
-    await screen.findByText("외부 웹툰 플랫폼");
-    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "별빛 항해자" } });
-    const buildButton = screen.getByRole("button", { name: /패키지 만들기/ });
-    expect((buildButton as HTMLButtonElement).disabled).toBe(false);
+  it("희망 시각·태그·설명은 실제 요청에 기록되며 컷 분할·시간대 설정은 전송되지 않는다", async () => {
+    renderPage("/publish?projectId=project-real&title=전달한제목"); await prepareInputs();
+    fireEvent.change(screen.getByLabelText("게시 희망 시각 · 계획 기록"), { target: { value: "2026-12-01T23:00" } });
+    fireEvent.change(screen.getByLabelText("태그(쉼표 구분)"), { target: { value: "웹툰, 모험" } });
+    fireEvent.change(screen.getByLabelText("설명"), { target: { value: "게시 안내" } });
+    fireEvent.click(prepareButton());
+    await waitFor(() => expect(mocks.buildPublishPackage).toHaveBeenCalledTimes(1));
+    expect(mocks.buildPublishPackage).toHaveBeenCalledWith({
+      projectId: "project-real", title: "별빛 항해자", description: "게시 안내", canonicalUrl: "https://example.com/works/one",
+      scheduledAt: new Date("2026-12-01T23:00").toISOString(), channels: ["external-webtoon-platforms", "rss-json-feed"], tags: ["웹툰", "모험"],
+    });
+    expect(screen.queryByTestId("publish-center-rea-multispec-bar")).toBeNull();
+  });
 
-    for (const id of ["external-webtoon-platforms", "rss-json-feed"]) {
-      const checkbox = container.querySelector<HTMLInputElement>(`#publish-channel-${id}`);
-      expect(checkbox).not.toBeNull();
-      fireEvent.click(checkbox as HTMLInputElement);
+  it("채널 확인이 성공해도 원고 검증·게시 완료로 표시하지 않고 JSON을 내려받는다", async () => {
+    renderPage(); await prepareInputs(); fireEvent.click(prepareButton());
+    await screen.findByText("게시 정보 JSON 준비됨");
+    expect(screen.getByText("게시 정보 파일이 준비됐어요. 외부 게시와 예약은 아직 실행되지 않았습니다.")).toBeTruthy();
+    expect(screen.queryByText("규격 검사를 통과했습니다.")).toBeNull();
+    expect(screen.queryByText("바로 실행")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "게시 정보 JSON 다운로드" }));
+    expect(mocks.downloadJson).toHaveBeenCalledWith("publish-project-1.json", expect.objectContaining({ schema: "toonstudio.publish-package/1", ready: true, directlyExecutable: false, projectId: "project-1" }));
+    expect(mocks.buildFeedPreview).not.toHaveBeenCalled();
+  });
+
+  it("유효하지 않은 채널 결과는 준비 성공으로 포장하지 않는다", async () => {
+    mocks.buildPublishPackage.mockResolvedValue({ ...packageFixture, ready: false, channels: [{ id: "unknown", valid: false, executable: false, mode: "unsupported", reason: "등록되지 않은 채널" }] });
+    renderPage(); await prepareInputs(); fireEvent.click(prepareButton());
+    await screen.findByText("채널 정보 확인 필요");
+    expect(screen.queryByText("게시 정보 JSON 준비됨")).toBeNull();
+    expect(screen.getByText("채널 정보를 확인하세요. 게시가 실행되지 않았습니다.")).toBeTruthy();
+  });
+
+  it("실패해도 입력을 유지하고 같은 내용으로 재시도한다", async () => {
+    mocks.buildPublishPackage.mockRejectedValueOnce(new Error("offline"));
+    renderPage(); await prepareInputs();
+    fireEvent.change(screen.getByLabelText("설명"), { target: { value: "유지할 설명" } });
+    fireEvent.click(prepareButton()); await screen.findByRole("alert");
+    expect((screen.getByLabelText("설명") as HTMLTextAreaElement).value).toBe("유지할 설명");
+    fireEvent.click(prepareButton()); await screen.findByText("게시 정보 JSON 준비됨");
+    expect(mocks.buildPublishPackage).toHaveBeenCalledTimes(2);
+    expect(mocks.buildPublishPackage.mock.calls[0]?.[0]).toEqual(mocks.buildPublishPackage.mock.calls[1]?.[0]);
+  });
+
+  it("입력을 바꾸면 이전 준비 결과를 현재 입력의 성공처럼 표시하지 않는다", async () => {
+    renderPage(); await prepareInputs(); fireEvent.click(prepareButton()); await screen.findByText("게시 정보 JSON 준비됨");
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "바꾼 제목" } });
+    expect(screen.queryByText("게시 정보 JSON 준비됨")).toBeNull();
+    expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
+  });
+
+  it("프로젝트 확인 실패는 입력을 보존하고 재확인 후 준비할 수 있다", async () => {
+    mocks.getProject.mockRejectedValueOnce(new Error("503")); renderPage();
+    await screen.findByRole("button", { name: "프로젝트 다시 확인" });
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "유지할 제목" } });
+    fireEvent.change(screen.getByLabelText("작품 대표 주소"), { target: { value: "https://example.com/works/one" } });
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "프로젝트 다시 확인" }));
+    await waitFor(() => expect((prepareButton() as HTMLButtonElement).disabled).toBe(false));
+    expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("유지할 제목");
+  });
+
+  it("프로젝트 응답이 다른 작품이면 준비를 허용하지 않는다", async () => {
+    mocks.getProject.mockResolvedValue(projectRecord("project-other")); renderPage();
+    await screen.findByRole("button", { name: "프로젝트 다시 확인" });
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
+  });
+
+  it("준비 중에는 중복 실행·입력·프로젝트 변경을 막고 새 주소의 결과와 섞지 않는다", async () => {
+    let finish: (value: typeof packageFixture) => void = () => { throw new Error("준비 요청이 시작되지 않음"); };
+    mocks.buildPublishPackage.mockReturnValue(new Promise<typeof packageFixture>((resolve) => { finish = resolve; }));
+    mocks.listProjects.mockResolvedValue({ projects: [projectSummary] }); renderPage(undefined, true); await prepareInputs();
+    fireEvent.click(prepareButton());
+    expect((screen.getByRole("button", { name: "준비 중" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByLabelText("제목") as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: /이 작품으로 게시 준비/u }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "다른 작품 주소로 이동" }));
+    await screen.findByRole("heading", { name: "다음 작품" });
+    await act(async () => finish(packageFixture));
+    expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
+    expect(screen.getByRole("link", { name: "선택한 프로젝트로 돌아가기" }).getAttribute("href")).toBe("/production/projects/project-2/overview");
+  });
+
+  it.each(["준비 중", "준비 완료"])("계정을 바꾸면 이전 계정의 %s 결과와 입력을 새 계정에 섞지 않는다", async (phase) => {
+    let finish: (value: typeof packageFixture) => void = () => { throw new Error("준비 요청이 시작되지 않음"); };
+    if (phase === "준비 중") {
+      mocks.buildPublishPackage.mockReturnValueOnce(new Promise<typeof packageFixture>((resolve) => { finish = resolve; }));
     }
-    expect((buildButton as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText(/채널 한 곳만 채우면 만들 수 있어요/)).toBeTruthy();
+    renderPage(); await prepareInputs();
+    fireEvent.change(screen.getByLabelText("설명"), { target: { value: "이전 계정의 설명" } });
+    fireEvent.click(prepareButton());
+    if (phase === "준비 완료") await screen.findByText("게시 정보 JSON 준비됨");
+    else await screen.findByRole("button", { name: "준비 중" });
+    mocks.getProject.mockRejectedValue(new Error("forbidden"));
+    act(() => useApp.setState({ userId: "user-2" }));
+    await screen.findByRole("button", { name: "프로젝트 다시 확인" });
+    if (phase === "준비 중") await act(async () => finish(packageFixture));
+    expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("");
+    expect((screen.getByLabelText("작품 대표 주소") as HTMLInputElement).value).toBe("");
+    expect((screen.getByLabelText("설명") as HTMLTextAreaElement).value).toBe("");
+    expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("패키지를 만들면 채널별 검사 사유와 안내가 체크리스트로 보인다", async () => {
-    renderPage();
-    await screen.findByText("외부 웹툰 플랫폼");
-    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "별빛 항해자" } });
-    fireEvent.click(screen.getByRole("button", { name: /패키지 만들기/ }));
-
-    await waitFor(() => {
-      expect(mocks.buildPublishPackage).toHaveBeenCalledTimes(1);
-    });
-    const request = mocks.buildPublishPackage.mock.calls[0]?.[0] as { channels: string[] };
-    expect(request.channels).toEqual(["external-webtoon-platforms", "rss-json-feed"]);
-    await screen.findByText("규격 검사를 통과했습니다. 플랫폼 업로드 화면에서 패키지 ZIP을 직접 올려 주세요.");
-    expect(screen.getByText("수동 업로드 채널은 플랫폼 화면에서 최종 확인을 마쳐야 발행이 끝납니다.")).toBeTruthy();
-    expect(screen.getByText("패키지 준비 완료")).toBeTruthy();
+  it("피드는 계획 날짜를 담은 미리보기 파일이며 게시 요청을 보내지 않는다", async () => {
+    renderPage(); await prepareInputs();
+    fireEvent.change(screen.getByLabelText("게시 희망 시각 · 계획 기록"), { target: { value: "2026-12-01T23:00" } });
+    fireEvent.click(screen.getByRole("button", { name: "피드 파일 미리보기" }));
+    await waitFor(() => expect(mocks.buildFeedPreview).toHaveBeenCalledTimes(1));
+    expect(mocks.buildFeedPreview.mock.calls[0]?.[0].items[0].datePublished).toBe(new Date("2026-12-01T23:00").toISOString());
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole("button", { name: "RSS" }));
+    expect(mocks.downloadText).toHaveBeenCalledWith("feed.xml", "<rss/>", "application/rss+xml;charset=utf-8");
   });
 
-  it("?projectId=·?title= 쿼리로 들어오면 작품이 미리 채워지고 그 프로젝트로 패키지를 만든다", async () => {
-    renderPage("/publish?projectId=project-hdtxl4&title=%EB%B3%84%EB%B9%9B%20%ED%95%AD%ED%95%B4%EC%9E%90");
-    await screen.findByText("외부 웹툰 플랫폼");
-    // 내부 식별자는 입력欄으로 노출하지 않는다 — 선택한 작품은 제목으로만 확인한다.
-    expect(screen.queryByLabelText("프로젝트 ID")).toBeNull();
-    expect(screen.getByText(/선택한 작품 · 별빛 항해자/)).toBeTruthy();
-    expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("별빛 항해자");
-    const buildButton = screen.getByRole("button", { name: /패키지 만들기/ });
-    expect((buildButton as HTMLButtonElement).disabled).toBe(false);
-
-    fireEvent.click(buildButton);
-    await waitFor(() => {
-      expect(mocks.buildPublishPackage).toHaveBeenCalledTimes(1);
-    });
-    const request = mocks.buildPublishPackage.mock.calls[0]?.[0] as { projectId: string };
-    expect(request.projectId).toBe("project-hdtxl4");
+  it("390px 조건에서 주 행동을 하나로 유지하고 보조 안내는 접힌 채 실제 목적지를 보존한다", async () => {
+    vi.stubGlobal("innerWidth", 390); renderPage(); await prepareInputs();
+    expect(screen.getAllByRole("button", { name: "게시 정보 JSON 준비" })).toHaveLength(1);
+    expect(prepareButton().classList.contains("w-full")).toBe(true);
+    const guide = screen.getByRole("group", { name: "원고 출력·게시 계획 안내" });
+    expect((guide as HTMLDetailsElement).open).toBe(false);
+    expect(within(guide).getByTestId("publish-surface-cross-bridge").querySelector('a[href="/studio/publish"]')).toBeTruthy();
+    expect(guide.textContent).not.toContain("RIGHTS BOM READY");
+    expect(guide.textContent).not.toContain("스마트 컷분할");
   });
 
-  it("REA 멀티플랫폼 컷 분할·발행 창구 워크벤치를 렌더링하고 양방향 상태를 전환한다", async () => {
-    renderPage();
-    await screen.findByText("외부 웹툰 플랫폼");
-
-    const bar = screen.getByTestId("publish-center-rea-multispec-bar");
-    expect(bar.textContent).toContain("Naver Webtoon(690px) · Kakao Webtoon(720px) · WEBTOON Global(800px) · Piccoma");
-
-    const sliceNaver = screen.getByTestId("publish-rea-slice-naver-690px-smart");
-    const sliceKakao = screen.getByTestId("publish-rea-slice-kakao-720px-alive");
-    const sliceGlobal = screen.getByTestId("publish-rea-slice-global-800px-2mb");
-
-    expect(sliceNaver.getAttribute("aria-pressed")).toBe("true");
-    expect(sliceKakao.getAttribute("aria-pressed")).toBe("false");
-    expect(sliceGlobal.getAttribute("aria-pressed")).toBe("false");
-
-    const winKst = screen.getByTestId("publish-rea-window-kst-2300-prime");
-    const winGlobal = screen.getByTestId("publish-rea-window-global-6tz-simulcast");
-    const winEmbargo = screen.getByTestId("publish-rea-window-embargo-preview-holdback");
-
-    expect(winKst.getAttribute("aria-pressed")).toBe("true");
-    expect(winGlobal.getAttribute("aria-pressed")).toBe("false");
-    expect(winEmbargo.getAttribute("aria-pressed")).toBe("false");
-
-    const status = screen.getByTestId("publish-center-rea-status");
-    expect(status.getAttribute("aria-live")).toBe("polite");
-    expect(status.textContent).toContain("네이버 690px 스마트 컷분할");
-    expect(status.textContent).toContain("KST 23:00 프라임 예약");
-
-    fireEvent.click(sliceKakao);
-    expect(sliceKakao.getAttribute("aria-pressed")).toBe("true");
-    expect(sliceNaver.getAttribute("aria-pressed")).toBe("false");
-    expect(status.textContent).toContain("카카오 720px 얼라이브 규격");
-
-    fireEvent.click(winGlobal);
-    expect(winGlobal.getAttribute("aria-pressed")).toBe("true");
-    expect(winKst.getAttribute("aria-pressed")).toBe("false");
-    expect(status.textContent).toContain("글로벌 6개 시간대 동시 연재");
-
-    fireEvent.click(sliceGlobal);
-    fireEvent.click(winEmbargo);
-    expect(sliceGlobal.getAttribute("aria-pressed")).toBe("true");
-    expect(winEmbargo.getAttribute("aria-pressed")).toBe("true");
-    expect(status.textContent).toContain("글로벌 800px · 2MB 슬라이스");
-    expect(status.textContent).toContain("유료 미리보기 엠바고 홀드백");
-  });
-
-  it("영어 로케일(en)에서 REA 워크벤치에 한글이 섞이지 않는다", async () => {
-    mocks.lang = "en";
-    renderPage();
-    await screen.findByText("외부 웹툰 플랫폼");
-
-    const bar = screen.getByTestId("publish-center-rea-multispec-bar");
-    expect(bar.textContent).not.toMatch(/[가-힣]/u);
-
-    fireEvent.click(screen.getByTestId("publish-rea-slice-global-800px-2mb"));
-    fireEvent.click(screen.getByTestId("publish-rea-window-embargo-preview-holdback"));
-    expect(bar.textContent).not.toMatch(/[가-힣]/u);
-    expect(screen.getByTestId("publish-center-rea-status").textContent).toContain("Global 800px 2MB Slice");
-    expect(screen.getByTestId("publish-center-rea-status").textContent).toContain("Preview Embargo Holdback");
-  });
-
-  it("시안 P 스튜디오 원고 출고·기술 아틀라스·신뢰 허브 교차 브리지를 한·영 무혼용으로 렌더링한다", async () => {
-    const { unmount } = renderPage();
-    await screen.findByText("외부 웹툰 플랫폼");
-
-    const koBridge = screen.getByTestId("publish-surface-cross-bridge");
-    expect(koBridge.querySelector('a[href="/studio/publish"]')).not.toBeNull();
-    expect(koBridge.querySelector('a[href="/about/technology/architecture"]')).not.toBeNull();
-    expect(koBridge.querySelector('a[href="/creator-support"]')).not.toBeNull();
-    expect(koBridge.querySelector('a[href="/accessibility"]')).not.toBeNull();
-
-    unmount();
-    mocks.lang = "en";
-    renderPage();
-    await screen.findByText("외부 웹툰 플랫폼");
-    const enBridge = screen.getByTestId("publish-surface-cross-bridge");
-    expect(enBridge.textContent).not.toMatch(/[가-힣]/u);
+  it("영어 안내와 기존 Studio·기술·신뢰 목적지를 유지한다", async () => {
+    mocks.lang = "en"; renderPage(); await screen.findByText("외부 웹툰 플랫폼");
+    const guide = screen.getByRole("group", { name: "Manuscript export and publication planning guide" });
+    expect(screen.getByRole("button", { name: "Prepare publication JSON" })).toBeTruthy();
+    const bridge = within(guide).getByTestId("publish-surface-cross-bridge");
+    expect(bridge.textContent).not.toMatch(/[가-힣]/u);
+    for (const href of ["/studio/publish", "/about/technology/architecture", "/creator-support", "/accessibility"]) expect(bridge.querySelector(`a[href="${href}"]`)).toBeTruthy();
   });
 });

@@ -1,6 +1,6 @@
 # 기존 시안과 현재 구현·검증 대조표 — 2026-11-11
 
-상태: **migration** — **1~5절은 `53f184ad…` 기준 읽기 전용 대조 원장을 역사 기록으로 보존**한다. 그 안의 “현재”, 행 번호, “남은 작업”은 당시 판정이며, 이후 수정 여부는 **6~10절의 Phase2 현재 상태**를 우선 확인한다. 구현·모델·목표와 소스 브라우저 검증·최종 빌드·운영 배포를 구분한다.
+상태: **migration** — **1~5절은 `53f184ad…`, 6~10절은 Phase2 기준의 역사 기록으로 보존**한다. 그 안의 “현재”, 행 번호, “남은 작업”은 당시 판정이다. **11~13절에 고정된 Phase3 실행 증거와 Phase4 잔여 범위**를 추가한다. 구현·모델·목표와 브라우저 검증·최종 빌드·원격 반영·운영 배포를 구분한다.
 
 당시 상태 표기: **current** — 현재 소스와 보유 검증 증거를 읽기 전용으로 대조한 기록이다. 후속 수정·실제 사용자 여정·운영 배포를 완료했다는 문서가 아니다. 각 행의 남은 작업은 **target**이다.
 
@@ -154,3 +154,62 @@
 5. 정본 배포 정책에 따른 원격 main·필수 CI·정적 웹 preflight·인증·승인 SHA·롤백 기록·배포 ID와 사후 스모크. G의 기존 운영 게이트웨이 302만으로 이번 프런트엔드가 배포됐다고 주장하지 않는다.
 
 이 문서 갱신은 제품 소스·라우트·데이터 계약·시안 원본을 바꾸지 않는다. 최종 빌드·readiness·운영 배포의 결과는 확인된 뒤 별도 릴리스 증거로 추가한다.
+
+## 11. Phase3 고정 번들의 실제 원고·오프라인·출력 — 역사적 실행 증거
+
+대상은 `9d641f1c067905ec6921bcb97474ef3ed2026103`, `buildId=086eb4202efb`의 로컬 프로덕션 번들이다. `2026-11-12 02:00:22~02:01:15 KST`(`2026-11-11 17:00:22~17:01:15 UTC`)에 `http://127.0.0.1:5276`에서 실행했다. 해시가 있는 앱 자산을 사용하고 `/@vite/client`는 없었다. 원본 증거는 `.qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/{summary,evidence}.json`이다. **운영 배포나 Phase4 변경 검증이 아니다.**
+
+| 실제 동선·상태 | 확인 결과 | 한계·후속 |
+| --- | --- | --- |
+| 기존 원고→오프라인 편집→재연결→같은 원고 재접속 | **4/4**, `pageErrors=[]`. UI로 만든 기존 `project-yv58so / ep01-1te2igr`을 재사용했다. 오프라인 journal 바이트와 text CAS 해시·정확한 work/session 범위를 읽었고, 오프라인 중에는 canonical에 새 문구가 없음을 구분했다. 재연결 뒤 같은 페이지와 원래 원소 ID를 보존한 실제 레이어 **8개**가 재접속 화면에 나타났다. | 실제 게스트·백엔드 부재·성공 API fixture 및 정본 데이터 주입 없음. 영수증은 **`canonical-local`**, `serverSequence=null`이다. 서버 ACK·클라우드 동기화·백업 성공으로 표시하지 않는다. 최초 부분 projection을 곧바로 손실로 판정했던 이전 시도는 별도 보존했고, 최종 실행은 준비 기한 안의 전체 ID 복원을 확인했다. |
+| 현재 페이지 PNG 내보내기 | 실제 다운로드 **720×5333px / 340,021bytes**. SHA-256 `bf95c728a9f243eb25b1f0baf4ec93d47e85fa3a0b998fd1ab68dfd6a5d3401b`. 실제 저장 시각은 `2026-11-11T17:00:40.363Z`다. | PNG 내보내기는 외부 게시·연재 예약·클라우드 저장이 아니다. ZIP·다른 포맷·전체 페이지 출력을 이 결과에 포함하지 않는다. |
+| 1440/390/320px 재접속 화면·화면 맞춤 | 실제 화면 3장, 가로 넘침 0. 390/320px 화면 맞춤 버튼 높이 44px, 캔버스 viewport 시작은 각각 y206/y254였다. [실제 화면 모음](./review-renders/README.md)의 `after-phase3-*`를 참조한다. | 이 layout 측정은 해당 버튼·viewport의 증거이며 모든 조작부의 터치·가림·초보자 성공을 보증하지 않는다. 기존 QA 텍스트·이미지 겹침과 연결 재확인 안내를 지우거나 합성하지 않았다. |
+
+같은 소스에서 뒤이어 확인한 실패도 유지한다. Phase3 성공을 아래 문제의 해결 증거로 확대하지 않는다.
+
+| 별도 실제 실행 | 확인된 문제 | Phase4 상태 — 다음 번들 재검증 필요 |
+| --- | --- | --- |
+| 드로잉·협업 disclosure, `2026-11-12 02:10 KST` 시작 | 선행 11개 검사 후 **320px native tap 실패**. `함께 작업` summary를 브러시 HUD slider가 가렸다. 390px 탭과 320px Enter/Space/Escape 통과는 보존한다. 원본: `.qa/clarity-20261111/production-interactions/ui-browser-2026-11-11T17-10-07-951Z/results.json`. | HUD의 실제 canvas scrollport 밖 anchor·협업 UI 분류 수정이 followups 소스에 있다. **실제 새 번들 통과 대기**다. 다음 검증은 도구 찾기→실제 획→Undo/Redo→저장→같은 문서 재열기를 먼저 실행한다. |
+| 소재 상세 적용 footer, `2026-11-12 01:49 KST` 시작 | 390/320px의 적용·스크롤·권리 helper **8개 검사 통과** 뒤 **1440px 실패**. 버튼 하단 y972.75가 외부 clip 하단 y840 밖이었고 center hit가 실패했다. 원본: followups `.qa/resource-detail-footer/production/results.json`. 오래된 restored chunk 요청 오류도 해당 원본에 별도 남아 있다. | desktop detail aside의 잘못된 scroll owner를 제거하는 CSS 수정이 followups 소스에 있다. **1440px 실제 재검증 대기**다. 권리 확인을 자동 체크하거나 문서를 변경하지 않은 검사 조건을 유지한다. |
+
+## 12. 모노레포의 앱·패키지·콘텐츠와 18계열 연결 — 소스 조사 범위
+
+이 절은 `9d641f1c…`와 followups의 AI/Admin 구현을 대조한 담당자의 `.qa/clarity-20261111/admin-account-package-surface-map.{md,json}`을 원장에 연결한 **source-inspection** 기록이다. 441개는 Web의 정적 주소 원장이고, `/admin` 22개도 Web manifest의 16업무와 별칭에서 왔다. 독립 `admin-web` source 행과 query/hash 행은 각각 0개다. 주소 441개·계열 18개·앱 7개·패키지 디렉터리 13개를 독립 화면 수나 사용자 업무 성공 수로 더하지 않는다.
+
+| 앱·진입점 | 실제 사용자/운영 기능·계열 연결 | 아직 별도인 검증 |
+| --- | --- | --- |
+| `web` — `apps/web/src/app/App.tsx` | 기존 18계열과 441주소 원장. query/hash·동적 문서·권한·데이터 소유자 조건을 추가 축으로 관리한다. | 각 상태의 실제 업무 완주와 최종 번들 전수 관측. 일반 페이지 준비가 문서 편집 성공을 뜻하지 않는다. |
+| `admin-web` — `apps/admin-web/src/app/bootstrap/main.tsx` | 실제 마운트는 운영 정책·라이선스 capability 1개다. 별도 manifest의 16업무는 미이전이며 Web의 `admin`과 중복 구현 수로 세지 않는다. | 운영자·거부·만료·장애, 정책 read/preview/apply/audit와 Web 복귀를 분리한다. |
+| `api` — `apps/api/src/modules/operation-policy/operation-policy.controller.ts` 등 | 사용자 페이지가 아닌 인증·정본 저장·제작·검색·거래·운영 정책 authority다. `admin/settings/create/pipeline/discover/reader/market` 행과 연결한다. | 프런트 메뉴 노출이나 배지를 서버 인가·실제 변경 성공으로 대체하지 않는다. |
+| `mobile` — `apps/mobile/capacitor.config.ts` | 승인된 Web origin의 native wrapper와 launch/offline shell. `system/compatibility` 연결이다. | Web의 320/390px 관측은 iOS/Android 설치·권한·네이티브 오프라인 실행 증거가 아니다. |
+| `desktop-sync` — `apps/desktop-sync/src/cli.ts`, `conflict-server.ts` | 폴더 동기화 CLI와 loopback 충돌 해결 HTML. `personal/settings/system/compatibility`에 연결되는 별도 surface다. | 실제 동기화·충돌 해결·재진입과 브라우저 보안 조건은 별도다. |
+| `brush-lab` — `apps/brush-lab/src/app/bootstrap/main.tsx` | 독립 브러시 테스트 벤치. `create/resources`의 입력·PNG snapshot을 실험한다. | 제품 원고·서버 저장이 없는 실험 결과를 Studio 저장·복원 완주로 합산하지 않는다. |
+| `character-lab` — `apps/character-lab/src/app/bootstrap/main.tsx` | 캐릭터 composition·엔진/패널 셸. `create/resources`와 연결한다. | 구조·NullEngine 테스트와 실제 GPU·모델·출력 브라우저 실행을 구분한다. |
+
+패키지는 **JS workspace 12개 + Rust/WASM `studio-hokusai-wasm` 1디렉터리**다. 아래는 기존 소비자·역할 연결이며 13개의 새 메뉴나 페이지를 만들 근거가 아니다.
+
+| 패키지 역할·실제 소비자 예 | 연결 계열·콘텐츠 | 검증 경계 |
+| --- | --- | --- |
+| `contracts` — admin HTTP/정책 DTO, Web/API schema | `admin/settings/create/pipeline/market` | actor·권한·revision·실패·감사와 실제 자산 출처. DTO 존재는 조작 성공이 아니다. |
+| `core` — `shared/catalog/catalog-static-engine.ts` | `discover/reader/research/community/market/pipeline` | 생성 공개 카탈로그·공식 URL과 개인/거래 데이터 조건을 분리한다. |
+| `play-core` — RPS·룰렛 등 게임 소비자 | `experience` | 게임별 시작·결과·다시하기·키보드 실행이 필요하다. `/play` 한 번의 준비로 대체하지 않는다. |
+| `product-tour-film` — `ProductTourRemotionComposition.tsx` | `marketing` | 소개 영상 청크와 실제 재생·시킹·음성·BGM·자막·실패 복구를 분리한다. |
+| `studio-project-model`, `studio-command-registry` — project graph, editor command client | `create/pipeline/system/personal` | 같은 문서 ID·원고·자산·journal/복구와 실제 명령 receipt·Undo/Redo. 서재 기록 백업과 구분한다. |
+| `studio-brush-platform`, `studio-engine-registry` — vector ops·brush와 renderer provider 계획 | `create/resources` | 실제 입력·획·준비/미지원·fallback을 확인한다. capability 선언은 가동 결과가 아니다. |
+| `studio-engine-skia`, `studio-engine-vello`, `studio-engine-thorvg` — document surface·vello hub·SVG preview의 실제 loader | `create/resources/pipeline` | 실제 선택된 renderer·GPU/CPU·글꼴·context loss·SVG/Lottie 제한·미리보기/삽입·원본/출력 일치를 따로 확인한다. |
+| `studio-format-gateway` — compatibility report schema의 Web/API 소비 | `resources/create/pipeline` | export된 모든 형식을 UI 지원 완료로 세지 않는다. 실제 받는 파일·부분 지원·거절·손실 보고·원본 보존이 필요하다. |
+| `studio-hokusai-wasm` — natural-media worker loader | `create/resources` | Rust/WASM 자연매체 입력·worker 실패·fallback·저장/출력. 일반 TS workspace 수와 구분한다. |
+
+콘텐츠 소유권도 같은 원장에 연결한다. 공개 카탈로그는 공식 감상 안내와 실제 회차 콘텐츠를, 내장 래스터는 미리보기와 명시적 적용·Undo·재열기를, 운영 정책 근거는 read-only 조회와 preview/apply를 각각 분리한다. `library-backup.ts`의 별점·읽기·리뷰·컬렉션 복원을 Studio 원고·소재 복구로 표시하지 않는다.
+
+추가 판정 축은 `계열 → 앱/base → route+query/hash → capability → actor/권한 → 데이터 소유자 → 진입/행동/복귀 → 준비/빈 상태/실패/거부/만료 → 구현 증거 → 실행 증거 → 빌드/배포 증거`다. 기존 18계열을 보완하며 새 전수 성공 수를 생산하지 않는다.
+
+## 13. 기록 시점의 통합·배포 상태와 다음 판정
+
+`2026-11-12 02:57 KST`(`2026-11-11 17:57 UTC`) 기록 시점에 마지막 확인한 원격 `origin/main`은 `933caa71cf57f79d783a7703ccfc60bb93a98e00`이고, 로컬 UX 체크포인트는 `9d641f1c067905ec6921bcb97474ef3ed2026103`이다. Phase4 구현은 `codex/sitewide-ux-final-followups-20261111` 작업본에 미커밋 상태다. 이 문서의 추가 화면은 그 변경을 포함하지 않는다.
+
+- **코드·로컬 번들:** Phase3 고정 번들의 원고/오프라인/PNG 결과는 11절의 제한 안에서 확인했다. 이후 변경의 최종 타입 검사·통합 빌드·드로잉·소재·운영 흐름 검증은 별도다.
+- **원격 반영:** 이 UX 브랜치의 push·PR·원격 main 반영은 이 기록 시점에 미실시다. 원격이 더 진행됐는지는 실제 통합 직전에 다시 확인한다.
+- **운영 배포·운영 검증:** 미실시다. 원격 실행 환경의 기존 Cloudflare 인증 연결 부족은 배포 차단 단계다. 기존 운영 API live/ready 200이나 공식 게이트웨이 관측을 이번 프런트엔드 배포 증거로 사용하지 않는다.
+
+드로잉·모바일 핵심 동선과 확인된 가림/clip 수정의 실제 재검증을 먼저 마친 뒤, 변경된 화면군과 필수 회귀·최종 빌드·현재 main 조율을 판정한다. 배포 전에는 기존 배포 커밋/진행 상태와 중복 원장을 확인한다. 이후 결과는 [검증·배포 인계](./validation-and-release.md)의 실제 증거로 갱신하며, 비용·권한·비밀 제한 때문에 실행하지 않은 단계는 미실시로 남긴다.

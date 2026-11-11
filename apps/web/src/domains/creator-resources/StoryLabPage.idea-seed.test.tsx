@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -29,6 +29,41 @@ afterEach(() => {
 });
 
 describe("스토리 연구실 홈 아이디어 시딩", () => {
+  it("기획 작성과 저장을 먼저 제공하고 관련 제작 도구는 기본 접힘으로 둔다", () => {
+    render(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
+    const worksheet = screen.getByRole("form", { name: "기획 워크시트" });
+    const save = screen.getByRole("button", { name: "기획서 저장" });
+    const summary = screen.getByText("다음 작업·제작 도구", { selector: "summary" });
+    const details = summary.closest("details");
+    expect(worksheet.closest("details")).toBeNull();
+    expect(save.closest("details")).toBeNull();
+    expect(details?.open).toBe(false);
+    expect(worksheet.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole("navigation", { name: "스토리 연구실 화면 보기 모드 전환" })).toBeNull();
+  });
+
+  it("보조 메뉴를 열면 실제 도착 화면 이름과 기존 목적지를 유지한다", () => {
+    render(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
+    const summary = screen.getByText("다음 작업·제작 도구", { selector: "summary" });
+    const details = summary.closest("details");
+    if (!details) throw new Error("제작 도구 disclosure 누락");
+    fireEvent.click(summary);
+    expect(details.open).toBe(true);
+    for (const [name, href] of [
+      ["기획 워크시트 열기", "/story-lab"],
+      ["새 작업 설정 열기", "/studio/new"],
+      ["웹툰 편집기 열기", "/studio/comic"],
+      ["게시 준비 열기", "/studio/publish"],
+    ] as const) {
+      const link = screen.getByRole("link", { name: new RegExp(name, "u") });
+      expect(link.getAttribute("href")).toBe(href);
+      expect(link.closest("details")).toBe(details);
+    }
+    expect(screen.queryByRole("link", { name: /신작 대본 생성/u })).toBeNull();
+    fireEvent.click(summary);
+    expect(details.open).toBe(false);
+  });
+
   it("?idea= 문장을 빈 가제에 채우고 임시 초안으로 보관한다", () => {
     window.sessionStorage.clear();
     render(<MemoryRouter initialEntries={["/story-lab?idea=비 오는 날의 첫사랑"]}><StoryLabPage /></MemoryRouter>);
