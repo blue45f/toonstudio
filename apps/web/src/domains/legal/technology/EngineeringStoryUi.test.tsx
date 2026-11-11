@@ -60,7 +60,7 @@ describe("EngineeringPageIntro 안내 줄", () => {
   });
 });
 
-describe("EngineeringPageFrame 이어보기", () => {
+describe("EngineeringPageFrame 이어보기 및 시안 P 좌측 고정·모바일 아틀라스 목차", () => {
   it.each(ENGINEERING_PAGES.map((page) => page.id))("%s 의 이전·다음 글은 레지스트리 순서와 같고 기술 허브 카드는 처음과 끝에만 온다", (pageId) => {
     const index = ENGINEERING_PAGES.findIndex((page) => page.id === pageId);
     const previous = ENGINEERING_PAGES[index - 1];
@@ -81,9 +81,15 @@ describe("EngineeringPageFrame 이어보기", () => {
     const hubCards = links.filter((link) => link.getAttribute("href") === "/about/technology");
     expect(hubCards).toHaveLength(previous && next ? 0 : 1);
     for (const hub of hubCards) expect(hub.textContent).toContain("읽는 길 한눈에 보기");
-    // 단계 번호가 있는 글은 "이전 글" 과 이름 사이에 번호가 끼므로 둘을 따로 확인한다.
     if (previous) for (const text of ["이전 글", previous.label.ko]) expect(links[0]?.textContent, text).toContain(text);
     if (next) for (const text of ["다음 글", next.label.ko]) expect(links[1]?.textContent, text).toContain(text);
+
+    // 시안 P 좌측 고정 목차 및 모바일 접이식 목차가 12종 전체 문서를 노출하고 현재 문서를 표시한다.
+    const stickyToc = screen.getByTestId("engineering-atlas-sticky-toc");
+    expect(within(stickyToc).getAllByRole("link")).toHaveLength(ENGINEERING_PAGES.length);
+    const activeLink = stickyToc.querySelector('[aria-current="page"]');
+    expect(activeLink?.getAttribute("href")).toBe(ENGINEERING_PAGES[index]?.href);
+    expect(screen.getByTestId("engineering-atlas-mobile-toc").hasAttribute("open")).toBe(false);
   });
 
   it("읽기 순서는 큰 그림 두 해설로 시작해 라이선스로 끝난다", () => {

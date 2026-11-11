@@ -12,6 +12,7 @@ import { useParams } from "react-router-dom";
 import type { StudioPublicWiki } from "@/domains/creator/public/world-wiki";
 
 import { TitleDetailBreadcrumb } from "./TitleDetailBreadcrumb";
+import { TitleDetailCreationBridgeCard } from "./TitleDetailCreationBridgeCard";
 import { TitleDetailHero } from "./TitleDetailHero";
 import { TitleEpisodeSection } from "./TitleEpisodeSection";
 import { TitleNotFound } from "./TitleNotFound";
@@ -315,6 +316,8 @@ export function TitleDetailPage() {
           </details>
         </div>
       </div>
+
+      <TitleDetailCreationBridgeCard slug={title.slug} titleName={title.title} />
 
       <details data-testid="title-detail-secondary-tools" className="mt-6 rounded-2xl border border-line bg-card p-4">
         <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">

@@ -20,11 +20,11 @@ export function ShowcaseSocialHubBar() {
       data-testid="showcase-social-hub-bar"
       className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/80 p-1.5"
     >
-      <ul className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none]">
+      <ul className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto snap-x [scrollbar-width:none]">
         {SOCIAL_TABS.map((tab) => {
           const Icon = tab.icon;
           return (
-            <li key={tab.id} className="shrink-0">
+            <li key={tab.id} className="shrink-0 snap-start">
               <Link
                 href={tab.href}
                 aria-current={tab.current ? "page" : undefined}

@@ -27,7 +27,7 @@ interface MarketResourceCardProps {
 }
 
 /**
- * 마켓 리소스 카드: 커버 아트·가격·라이선스·No-AI 공개·용량·사전점검 배지와 함께
+ * 마켓 리소스 카드: 커버 아트·가격·라이선스·Rights BOM·No-AI 공개·용량·사전점검 배지와 함께
  * 배급자 스토어 링크, 빠른 미리보기, 후보 비교(MarketCompareToggle), 원고 위 시험(Fit Lab)으로 바로 연결한다.
  */
 export function MarketResourceCard({
@@ -182,6 +182,15 @@ export function MarketResourceCard({
 
         <div className="flex flex-wrap items-center gap-1.5">
           <MarketProductionFitBadge record={record} showCounts />
+          {record.rightsConfirmed ? (
+            <span
+              data-market-rights-bom="true"
+              className="inline-flex min-h-6 items-center gap-1 rounded-md border border-good/35 bg-good/10 px-2 py-0.5 text-[0.68rem] font-semibold text-good"
+            >
+              <ShieldCheck className="size-3" aria-hidden="true" />
+              Rights BOM 자동 보존
+            </span>
+          ) : null}
           {!record.containsAi ? (
             <span
               data-market-no-ai-disclosed="true"
@@ -194,7 +203,7 @@ export function MarketResourceCard({
           {record.compatibility.engines.length > 0 ? (
             <span
               data-market-studio-ready="true"
-              className="inline-flex min-h-6 items-center rounded-md border border-accent/30 bg-accent-soft px-2 py-0.5 text-[0.68rem] font-semibold text-accent"
+              className="inline-flex min-h-6 items-center gap-1 rounded-md border border-accent/30 bg-accent-soft px-2 py-0.5 text-[0.68rem] font-semibold text-accent"
             >
               Studio 즉시 호환
             </span>
@@ -234,7 +243,7 @@ export function MarketResourceCard({
               <button
                 type="button"
                 onClick={() => onQuickPreview(record)}
-                className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-line bg-card px-2 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 <Eye className="size-3" aria-hidden="true" />
                 미리보기
@@ -242,7 +251,7 @@ export function MarketResourceCard({
             ) : null}
             <Link
               href={`/market/fit-lab?slug=${encodeURIComponent(resourceSlug)}`}
-              className="inline-flex min-h-8 items-center rounded-lg border border-line bg-panel px-2.5 py-1 text-xs font-semibold text-accent transition-colors hover:border-accent/50 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:border-accent/50 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
             >
               원고 위 시험 (Fit Lab)
             </Link>

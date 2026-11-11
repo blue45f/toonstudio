@@ -9,7 +9,7 @@ import { GalleryToolbar } from "./publishing/GalleryControls";
 import { GalleryTabPanel } from "./publishing/GalleryTabPanels";
 import { parseGalleryView, patchSearchParams } from "./publishing/gallery-query";
 import { ShowcaseSpotlight } from "./publishing/ShowcaseSpotlight";
-import { ShowcaseSocialHubBar } from "./ShowcaseSocialHubBar";
+import { ShowcaseSocialHubBar } from "./publishing/ShowcaseSocialHubBar";
 
 import { Container } from "@/shared/components/section";
 import { CreativeJourneyLinks } from "@/shared/components/public-creative";

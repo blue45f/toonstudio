@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { evaluateUiUxV2Contracts } from "./verify-ui-ux-v2-contracts.mjs";
+
 const ROOT = process.cwd();
 const resolve = (relativePath) => path.join(ROOT, relativePath);
 const exists = (relativePath) => fs.existsSync(resolve(relativePath));
@@ -62,6 +64,8 @@ requirePaths(
     "scripts/source-file-size-baseline.json",
     "scripts/check-studio-eager-graph.mjs",
     "scripts/studio-eager-graph-baseline.json",
+    "scripts/verify-ui-ux-v2-contracts.mjs",
+    "scripts/run-changed-unit-tests.mjs",
     "docs/engineering/code-structure-and-bundle-patterns.md",
     "deploy/cloudflare-static/wrangler.jsonc",
     "docs/FREE_INFRASTRUCTURE.md",
@@ -408,6 +412,11 @@ if (!exists(apiPackagePath)) {
   const apiPackage = JSON.parse(read(apiPackagePath));
   if (!apiPackage.name) issues.push('apps/api has no "name"');
   if (!apiPackage.scripts?.build) issues.push('apps/api has no "build" script');
+}
+
+const uiUxResult = evaluateUiUxV2Contracts(ROOT);
+if (!uiUxResult.ok) {
+  for (const issue of uiUxResult.issues) issues.push(`ui-ux-v2 contract: ${issue}`);
 }
 
 if (issues.length > 0) {

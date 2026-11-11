@@ -294,6 +294,7 @@ function verify(options) {
   const classification = classifyChangedFiles(files);
   if (classification.needsArchitecture) run("pnpm", ["run", "validate:architecture"]);
   if (classification.needsTypecheck) run("pnpm", ["run", "typecheck"]);
+  if (classification.source) run(process.execPath, ["scripts/run-changed-unit-tests.mjs", sourceArgument]);
 
   if (options.full) {
     if (classification.source) run("pnpm", ["run", "test:root"]);

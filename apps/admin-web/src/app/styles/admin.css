@@ -1,13 +1,14 @@
 :root {
   color-scheme: dark;
-  --admin-canvas: #070b17;
-  --admin-panel: #0d1425;
-  --admin-raised: #141e34;
-  --admin-fg: #f3f5ff;
-  --admin-muted: #bbc7df;
-  --admin-line: #344461;
-  --admin-focus: #76e4ff;
-  --admin-accent: #7c68ec;
+  --admin-canvas: oklch(0.145 0.014 265);
+  --admin-panel: oklch(0.185 0.016 265);
+  --admin-raised: oklch(0.23 0.018 265);
+  --admin-fg: oklch(0.96 0.008 265);
+  --admin-muted: oklch(0.78 0.018 265);
+  --admin-line: oklch(0.34 0.025 265);
+  --admin-focus: oklch(0.82 0.13 212);
+  --admin-accent: oklch(0.68 0.16 285);
+  --admin-good: oklch(0.80 0.15 155);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--admin-fg);
   background: var(--admin-canvas);
@@ -41,7 +42,7 @@ body {
   border: 1px solid var(--admin-line);
   border-radius: 20px;
   background: var(--admin-panel);
-  box-shadow: 0 24px 80px rgb(0 0 0 / 28%);
+  box-shadow: 0 24px 80px oklch(0 0 0 / 0.28);
 }
 
 .admin-card h1 {
@@ -78,7 +79,7 @@ body {
 .mode-options, .policy-status { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
 .mode-options label, .policy-checks label { flex-direction: row; align-items: center; gap: 10px; }
 .policy-status, .policy-card { padding: 24px; border: 1px solid var(--admin-line); border-radius: 16px; background: var(--admin-panel); margin: 20px 0; }
-.policy-alert { border-left: 4px solid #ffc874; background: #302719; padding: 16px; line-height: 1.7; }
+.policy-alert { border-left: 4px solid oklch(0.82 0.15 80); background: oklch(0.26 0.04 80); padding: 16px; line-height: 1.7; }
 .policy-impact { margin-top: 20px; border-top: 1px solid var(--admin-line); padding-top: 18px; }
 .policy-digest { overflow-wrap: anywhere; }
 .operation-policy details { border-bottom: 1px solid var(--admin-line); padding: 16px 0; }
@@ -87,27 +88,28 @@ body {
 @media (max-width: 600px) { .admin-shell { padding: 16px; } .policy-card { padding: 16px; } }
 
 /* 독립 관리자 앱도 같은 브랜드 표면을 쓰되 업무·권한 경계는 보존한다. */
-.admin-shell { background: radial-gradient(ellipse at 80% 0, #29214c55, transparent 44rem), var(--admin-canvas); }
+.admin-shell { background: radial-gradient(ellipse at 80% 0, oklch(0.32 0.08 285 / 0.34), transparent 44rem), var(--admin-canvas); }
 .admin-brand { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; width: min(1080px, 100%); min-width: 0; padding-bottom: 18px; border-bottom: 1px solid var(--admin-line); }
 .admin-brand > a { display: inline-flex; align-items: center; min-height: 44px; color: var(--admin-fg); font-size: 28px; font-weight: 850; letter-spacing: -.04em; text-decoration: none; }
-.admin-brand > a > span { color: #a697ff; }
+.admin-brand > a > span { color: oklch(0.76 0.14 285); }
 .admin-brand__label { color: var(--admin-muted); font-size: 12px; padding: 7px 12px; border: 1px solid var(--admin-line); border-radius: 8px; }
+.admin-brand__security { color: var(--admin-good); background: oklch(0.80 0.15 155 / 0.12); border: 1px solid oklch(0.80 0.15 155 / 0.35); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
 .admin-brand a:focus-visible { outline: 3px solid var(--admin-focus); outline-offset: 4px; }
-.policy-card, .policy-status, .admin-card { box-shadow: inset 0 1px #ffffff08, 0 14px 40px #00000020; }
+.policy-card, .policy-status, .admin-card { box-shadow: inset 0 1px oklch(1 0 0 / 0.04), 0 14px 40px oklch(0 0 0 / 0.2); }
 .operation-policy h1, .operation-policy h2, .operation-policy h3 { text-wrap: balance; }
 .operation-policy p, .operation-policy li { text-wrap: pretty; }
 .operation-policy h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); letter-spacing: -.03em; }
 .operation-policy h2 { padding-bottom: 12px; border-bottom: 1px solid var(--admin-line); }
 .operation-policy fieldset { background: var(--admin-canvas); }
-.operation-policy button:not(:disabled):hover { border-color: var(--admin-focus); background: #202943; }
+.operation-policy button:not(:disabled):hover { border-color: var(--admin-focus); background: var(--admin-raised); }
 .operation-policy :is(input, select, textarea):focus-visible { border-color: var(--admin-focus); }
 .operation-policy summary { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.policy-onboarding-guide { margin-top: 14px; padding: 12px 16px; border: 1px solid var(--admin-line); border-radius: 12px; background: rgba(20, 30, 52, 0.65); }
+.policy-onboarding-guide { margin-top: 14px; padding: 12px 16px; border: 1px solid var(--admin-line); border-radius: 12px; background: oklch(0.22 0.018 265 / 0.65); }
 .policy-onboarding-guide__body ol { margin: 8px 0 0; padding-left: 20px; }
 .policy-status__badge { padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--admin-line); background: var(--admin-raised); }
-.policy-status__badge[data-dirty="true"] { border-color: #ffc874; color: #ffe2b0; background: #302719; }
-.policy-btn--subtle, .policy-chip-btn { min-height: 36px !important; padding: 6px 12px !important; font-size: 0.875rem !important; border-color: var(--admin-line) !important; background: var(--admin-canvas) !important; }
-.policy- stepper { margin: 16px 0; }
+.policy-status__badge[data-dirty="true"] { border-color: oklch(0.82 0.15 80); color: oklch(0.92 0.08 80); background: oklch(0.28 0.05 80); }
+.policy-btn--subtle, .policy-chip-btn { min-height: 44px !important; padding: 8px 14px !important; font-size: 0.875rem !important; border-color: var(--admin-line) !important; background: var(--admin-canvas) !important; }
+.policy-stepper { margin: 16px 0; }
 .policy-stepper__list { list-style: none; padding: 0; margin: 16px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .policy-stepper__item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--admin-line); background: var(--admin-panel); margin: 0 !important; }
 .policy-stepper__item[data-state="ready"] { border-color: var(--admin-accent); }
@@ -116,23 +118,22 @@ body {
 .policy-stepper__item small { color: var(--admin-muted); font-size: 0.8rem; }
 .policy-comparison-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .policy-comparison-chip { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--admin-line); background: var(--admin-canvas); font-size: 0.9rem; }
-.policy-comparison-chip[data-active="true"] { border-color: var(--admin-focus); background: rgba(124, 104, 236, 0.12); }
+.policy-comparison-chip[data-active="true"] { border-color: var(--admin-focus); background: oklch(0.68 0.16 285 / 0.14); }
 .policy-review-pill { padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; border: 1px solid var(--admin-line); }
-.policy-review-pill[data-state="approved"] { border-color: #4ade80; color: #bbf7d0; background: rgba(22, 101, 52, 0.35); }
-.policy-review-pill[data-state="blocked"] { border-color: #f87171; color: #fecaca; background: rgba(127, 29, 29, 0.35); }
+.policy-review-pill[data-state="approved"] { border-color: var(--admin-good); color: oklch(0.92 0.08 155); background: oklch(0.32 0.08 155 / 0.35); }
+.policy-review-pill[data-state="blocked"] { border-color: oklch(0.72 0.17 22); color: oklch(0.92 0.07 22); background: oklch(0.30 0.09 22 / 0.35); }
 .policy-reason-templates { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
 .policy-reason-templates__label { font-size: 0.85rem; color: var(--admin-muted); }
 .policy-action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 8px; }
 .policy-shortcut-hint { font-size: 0.85rem; color: var(--admin-muted); }
 .operation-policy kbd { padding: 2px 6px; border-radius: 4px; border: 1px solid var(--admin-line); background: var(--admin-raised); font-size: 0.8em; }
 @media (prefers-contrast: more) {
-  :root { --admin-line: #99aac9; --admin-muted: #e0e7f6; }
+  :root { --admin-line: oklch(0.72 0.04 265); --admin-muted: oklch(0.92 0.02 265); }
   .admin-shell { background: var(--admin-canvas); }
 }
 @media (forced-colors: active) {
   .admin-shell, .admin-card, .policy-card, .policy-status, .policy-alert, .policy-stepper__item, .policy-comparison-chip { color: CanvasText; background: Canvas; border-color: CanvasText; box-shadow: none; }
-  .admin-brand, .admin-brand__label, .operation-policy fieldset, .operation-policy h2, .policy-review-pill, .policy-status__badge { border-color: CanvasText; }
+  .admin-brand, .admin-brand__label, .admin-brand__security, .operation-policy fieldset, .operation-policy h2, .policy-review-pill, .policy-status__badge { border-color: CanvasText; }
   .admin-brand > a, .admin-brand > a > span { color: LinkText; }
   .admin-brand a:focus-visible, .operation-policy :focus-visible { outline-color: Highlight; }
 }
-

@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
+  ChevronDown,
   CircleDashed,
   CircleDot,
   Clock3,
@@ -176,6 +177,87 @@ export function EngineeringTechNav({ className }: { readonly className?: string 
   );
 }
 
+/* ── 좌측 고정 아틀라스 목차(시안 P) & 모바일 접이식 목차(모바일 시안 M4) ── */
+
+function AtlasTocGroups({ currentId }: { readonly currentId: EngineeringPageId }) {
+  return (
+    <div className="space-y-3">
+      {ENGINEERING_PAGE_GROUPS.map((group) => {
+        const pages = ENGINEERING_PAGES.filter((page) => page.group === group.id);
+        return (
+          <div key={group.id}>
+            <p className="px-2 font-display text-[0.65rem] font-black uppercase tracking-[0.12em] text-fg-3">
+              {bi(group.label.ko, group.label.en)}
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {pages.map((page) => {
+                const active = page.id === currentId;
+                const Icon = page.icon;
+                return (
+                  <li key={page.id}>
+                    <Link
+                      href={page.href}
+                      aria-current={active ? "page" : undefined}
+                      className={cx(
+                        "flex min-h-11 items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                        active
+                          ? "bg-accent-soft text-accent"
+                          : "text-fg-2 hover:bg-raised hover:text-fg",
+                      )}
+                    >
+                      {"step" in page ? (
+                        <StepMark step={page.step} active={active} />
+                      ) : (
+                        <Icon size={14} aria-hidden="true" className={active ? "text-accent" : "text-fg-3"} />
+                      )}
+                      <span className="truncate">{bi(page.label.ko, page.label.en)}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EngineeringAtlasSideToc({ currentId }: { readonly currentId: EngineeringPageId }) {
+  useBilingualI18nRevision();
+  const current = findEngineeringPage(currentId);
+  return (
+    <>
+      <details
+        data-testid="engineering-atlas-mobile-toc"
+        className="group mt-3 rounded-2xl border border-line/70 bg-panel/60 xl:hidden"
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-2 text-xs font-bold text-fg [&::-webkit-details-marker]:hidden">
+          <span className="truncate">
+            {bi("기술 아틀라스 12종 목차", "12-Part Engineering Atlas")}
+            {current ? ` · ${bi(current.label.ko, current.label.en)}` : ""}
+          </span>
+          <ChevronDown size={15} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform group-open:rotate-180" />
+        </summary>
+        <nav
+          aria-label={bi("모바일 기술 아틀라스 목차", "Mobile engineering atlas index")}
+          className="border-t border-line/60 p-2.5"
+        >
+          <AtlasTocGroups currentId={currentId} />
+        </nav>
+      </details>
+
+      <aside
+        data-testid="engineering-atlas-sticky-toc"
+        aria-label={bi("기술 아틀라스 12종 목차", "12-Part Engineering Atlas index")}
+        className="hidden xl:sticky xl:top-24 xl:block xl:self-start xl:rounded-2xl xl:border xl:border-line/70 xl:bg-panel/60 xl:p-3"
+      >
+        <AtlasTocGroups currentId={currentId} />
+      </aside>
+    </>
+  );
+}
+
 /* ── 페이지 머리말 ─────────────────────────────────────────── */
 
 function PageMeta({ page }: { readonly page: EngineeringPageEntry }) {
@@ -256,7 +338,7 @@ function EngineeringPageHeroArt({ page }: { readonly page: EngineeringPageEntry 
   const korean = getActiveI18nLocale().startsWith("ko");
   const fallback = stage === "fallback";
   return (
-    <figure className="relative m-0 overflow-hidden rounded-[2rem] border border-line/70 bg-[#0b1427] shadow-sm">
+    <figure className="relative m-0 overflow-hidden rounded-[2rem] border border-line/70 bg-panel shadow-sm">
       <img
         src={fallback ? `/brand/illustrated-20260928/${copy.fallback}-640.webp` : workflowIllustrationSource(page.art)}
         srcSet={fallback ? undefined : workflowIllustrationSources(page.art)}
@@ -269,7 +351,7 @@ function EngineeringPageHeroArt({ page }: { readonly page: EngineeringPageEntry 
         decoding="async"
         onError={() => setStage(fallback ? "gone" : "fallback")}
       />
-      <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
+      <figcaption className="absolute bottom-3 left-3 rounded-full bg-canvas/75 px-2.5 py-1 text-[0.65rem] font-semibold text-fg backdrop-blur-sm">
         {bi("브랜드 콘셉트 아트 · 실제 화면이 아닙니다", "Brand concept art · not an actual screen")}
       </figcaption>
     </figure>
@@ -406,7 +488,7 @@ function HubCard({ alignEnd = false }: { readonly alignEnd?: boolean }) {
 
 /* ── 공통 페이지 틀 ────────────────────────────────────────── */
 
-/** 기술 하위 페이지 공통 틀: 소개 메뉴(간결형) → 기술 메뉴 → 본문 → 이어보기. */
+/** 기술 하위 페이지 공통 틀: 소개 메뉴(간결형) → 기술 메뉴 → 좌측 고정 목차(시안 P) + 본문 → 이어보기. */
 export function EngineeringPageFrame({
   pageId,
   children,
@@ -422,8 +504,13 @@ export function EngineeringPageFrame({
     <Container size="wide" className={cx("py-6 sm:py-8 lg:py-10", className)}>
       <AboutSectionNav variant="compact" />
       <EngineeringTechNav className="mt-2" />
-      {children}
-      {pager ? <EngineeringPathPager current={pageId} /> : null}
+      <div className="xl:mt-4 xl:grid xl:grid-cols-[14.5rem_minmax(0,1fr)] xl:items-start xl:gap-8">
+        <EngineeringAtlasSideToc currentId={pageId} />
+        <div className="min-w-0">
+          {children}
+          {pager ? <EngineeringPathPager current={pageId} /> : null}
+        </div>
+      </div>
     </Container>
   );
 }
