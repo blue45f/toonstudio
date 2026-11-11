@@ -21,6 +21,8 @@ vi.mock("@/platform/use-api-resource", () => ({
 vi.mock("@/domains/auth/public/session/auth-session-state", () => ({
   getAuthUserId: () => null,
 }));
+const appConfig = vi.hoisted(() => ({ showAvailability: true }));
+vi.mock("@/platform/environment/use-app-config", () => ({ useAppConfig: () => appConfig }));
 vi.mock("@/shared/components/cover-image", () => ({
   CoverImage: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
 }));
@@ -75,11 +77,12 @@ function renderReader(path: string) {
 beforeEach(() => {
   useI18n.setState({ lang: "ko" });
   window.localStorage.clear();
+  appConfig.showAvailability = true;
   Object.assign(resource, {
     loading: false,
     error: null,
     notFound: false,
-    data: { title: makeTitle() },
+    data: { title: makeTitle(), episodes: [{ number: 1 }, { number: 2 }, { number: 3 }] },
   });
 });
 
@@ -92,10 +95,10 @@ describe("TitleReaderPage — 뷰어 셸", () => {
   it("공식 감상 안내·간결한 회차 정보·상하단 회차 동선을 그린다", () => {
     renderReader("/title/fog-signal/read/2");
     expect(within(screen.getByRole("region", { name: "회차 정보" })).getByText("2화")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1, name: "이 회차는 외부 플랫폼에서 읽어요" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "공식 플랫폼에서 작품을 감상하세요" })).toBeTruthy();
     // 플랫폼 딥링크가 1차 동선이다
     const platform = screen.getByRole("link", { name: /에서 읽기/ });
-    expect(platform.getAttribute("href")).toBe("https://comic.naver.com/example");
+    expect(platform.getAttribute("href")).toBe("/api/go/naver-webtoon?to=https%3A%2F%2Fcomic.naver.com%2Fexample");
     // 상단 닫기 → 작품 상세, 하단 목록 → 상세의 회차 앵커
     expect(screen.getByRole("link", { name: "작품 상세로 나가기" }).getAttribute("href")).toBe(
       "/title/fog-signal",
@@ -172,6 +175,56 @@ describe("TitleReaderPage — 뷰어 셸", () => {
 });
 
 describe("TitleReaderPage — 상태 구분", () => {
+  it.each([undefined, 120])("총 회차=%s만으로 회차·다음 화·빠른 이동을 만들지 않는다", (totalEpisodes) => {
+    resource.data = { title: makeTitle({ totalEpisodes }) };
+    renderReader("/title/fog-signal/read/2");
+    expect(screen.getByRole("link", { name: /에서 읽기.*새 탭/u }).getAttribute("href")).toBe("/api/go/naver-webtoon?to=https%3A%2F%2Fcomic.naver.com%2Fexample");
+    expect(screen.queryByRole("button", { name: "회차 빠른 이동" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "이전 화" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "다음 화" })).toBeNull();
+    expect(screen.queryByText(/마지막 회차예요/u)).toBeNull();
+    fireEvent.keyDown(window, { key: "]" });
+    expect(within(screen.getByRole("region", { name: "회차 정보" })).getByText("공식 감상 안내")).toBeTruthy();
+  });
+
+  it("공개가 확인된 번호만 이동하며 예약 회차와 비어 있는 번호를 건너뛴다", () => {
+    resource.data = { title: makeTitle(), episodes: [{ number: 1 }, { number: 4 }, { number: 6, status: "scheduled" }, { number: 8 }] };
+    renderReader("/title/fog-signal/read/4");
+    expect(screen.getByRole("link", { name: "이전 화" }).getAttribute("href")).toBe("/title/fog-signal/read/1");
+    expect(screen.getByRole("link", { name: "다음 화" }).getAttribute("href")).toBe("/title/fog-signal/read/8");
+    fireEvent.click(screen.getByRole("button", { name: "회차 빠른 이동" }));
+    const drawer = screen.getByRole("region", { name: "회차 빠른 이동 목록" });
+    expect(within(drawer).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/title/fog-signal#episodes", "/title/fog-signal/read/1", "/title/fog-signal/read/4", "/title/fog-signal/read/8",
+    ]);
+  });
+
+  it("미확인 안내 주소를 열고 나가도 수동으로 남긴 읽기 기록을 바꾸지 않는다", () => {
+    const key = "toonstudio.reader-progress.v1.guest";
+    const original = JSON.stringify({ "fog-signal": { episode: 7, ratio: 1, updatedAt: Date.now() } });
+    window.localStorage.setItem(key, original);
+    resource.data = { title: makeTitle() };
+    const view = renderReader("/title/fog-signal/read/2");
+    expect(within(screen.getByRole("region", { name: "회차 정보" })).getByText("공식 감상 안내")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "다음 화" })).toBeNull();
+    fireEvent.scroll(window);
+    fireEvent.keyDown(window, { key: "Escape" });
+    view.unmount();
+    expect(window.localStorage.getItem(key)).toBe(original);
+  });
+
+  it("플랫폼 노출 킬스위치와 URL 검증을 직접 방문한 안내에도 적용한다", () => {
+    appConfig.showAvailability = false;
+    renderReader("/title/fog-signal/read/2");
+    expect(screen.queryByRole("link", { name: /에서 읽기/u })).toBeNull();
+    expect(screen.getByRole("link", { name: "작품 상세로" }).getAttribute("href")).toBe("/title/fog-signal");
+    cleanup();
+    appConfig.showAvailability = true;
+    resource.data = { title: makeTitle({ availability: [{ platformId: "naver-webtoon", pricing: "free", url: "javascript:alert(1)" }] }) };
+    renderReader("/title/fog-signal/read/2");
+    expect(screen.queryByRole("link", { name: /에서 읽기/u })).toBeNull();
+  });
+
   it("로딩 중에는 리더 캔버스 위에 스켈레톤을 보여준다", () => {
     Object.assign(resource, { loading: true, data: null });
     renderReader("/title/fog-signal/read/1");
@@ -223,6 +276,7 @@ describe("TitleReaderPage — 상태 구분", () => {
     });
     renderReader("/title/fog-signal/read/5");
     expect(screen.getByRole("heading", { name: "5화는 아직 공개 전이에요" })).toBeTruthy();
+    expect(screen.queryByText(/이 주소에서 바로 읽을 수/u)).toBeNull();
   });
 });
 
@@ -417,7 +471,7 @@ describe("TitleReaderPage — 숨긴 메뉴와 Escape 초점", () => {
     renderReader("/title/fog-signal/read/2");
     const toggle = screen.getByRole("button", { name: "보기 설정" });
     toggle.focus();
-    fireEvent.pointerDown(screen.getByRole("heading", { name: "이 회차는 외부 플랫폼에서 읽어요" }));
+    fireEvent.pointerDown(screen.getByRole("heading", { name: "공식 플랫폼에서 작품을 감상하세요" }));
     expect(document.activeElement).not.toBe(toggle);
     fireEvent.keyDown(document.activeElement ?? window, { key: "m" });
     expect(document.activeElement).toBe(toggle);
@@ -450,7 +504,7 @@ describe("리더 시안의 공식 감상 동선", () => {
     const content = screen.getByRole("region", { name: "회차 내용" });
     const links = within(content).getAllByRole("link");
     expect(links).toHaveLength(2);
-    expect(links[0].getAttribute("href")).toBe("https://comic.naver.com/example");
+    expect(links[0].getAttribute("href")).toBe("/api/go/naver-webtoon?to=https%3A%2F%2Fcomic.naver.com%2Fexample");
     expect(links[0].getAttribute("target")).toBe("_blank");
     expect(links[0].getAttribute("rel")).toBe("noopener noreferrer");
     expect(links[1].getAttribute("href")).toBe("/title/fog-signal");
@@ -471,8 +525,8 @@ describe("리더 시안의 공식 감상 동선", () => {
   it("영문에서도 같은 공식 감상 경로와 진도 미기록 안내를 보존한다", () => {
     useI18n.setState({ lang: "en" });
     renderReader("/title/fog-signal/read/2");
-    expect(screen.getByRole("heading", { name: "Read this episode on its official platform" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Read on/ }).getAttribute("href")).toBe("https://comic.naver.com/example");
+    expect(screen.getByRole("heading", { name: "Read this title on its official platform" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Read on/ }).getAttribute("href")).toBe("/api/go/naver-webtoon?to=https%3A%2F%2Fcomic.naver.com%2Fexample");
     expect(screen.getByText("Reading progress is not recorded because panels are not provided.")).toBeTruthy();
   });
 

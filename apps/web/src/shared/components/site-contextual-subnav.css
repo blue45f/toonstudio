@@ -36,7 +36,7 @@
   gap: 6px;
   min-height: var(--site-control-size, 44px);
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: var(--site-control-radius);
   color: var(--color-fg-2);
   font-size: 0.8125rem;
   font-weight: 600;

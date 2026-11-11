@@ -55,6 +55,7 @@ describe("작품 상세에서 목록 복귀", () => {
     const navigation = screen.getByRole("navigation", { name: "작품 탐색 경로" });
     expect(within(navigation).getByRole("link", { name: "작품 목록" }).getAttribute("href")).toBe("/explore");
     expect(navigation.querySelector('[aria-current="page"]')?.textContent).toBe("작품 상세");
+    if (loading) expect(screen.getByRole("status", { name: "작품 정보를 불러오는 중" })).toBeTruthy();
   });
 });
 

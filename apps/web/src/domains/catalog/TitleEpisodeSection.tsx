@@ -212,7 +212,9 @@ export function TitleEpisodeSection({
   };
 
   const continueTarget = (() => {
-    if (!progress) return null;
+    if (!progress || !episodes) return null;
+    const currentEpisode = episodes.find((episode) => episode.number === progress.episode);
+    if (!currentEpisode || currentEpisode.status === "scheduled") return null;
     if (isResumable(progress)) {
       return {
         episode: progress.episode,
@@ -227,7 +229,7 @@ export function TitleEpisodeSection({
     if (
       progress.ratio >= 0.98 &&
       (total == null || progress.episode < total) &&
-      nextEpisode?.status !== "scheduled"
+      nextEpisode != null && nextEpisode.status !== "scheduled"
     ) {
       return {
         episode: progress.episode + 1,

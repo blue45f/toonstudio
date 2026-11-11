@@ -19,37 +19,12 @@ interface StagePillDefinition {
 }
 
 const STAGE_PILLS: readonly StagePillDefinition[] = [
-  { id: "storyboard", workspace: "storyboard", labelKo: "1. 콘티", labelEn: "1. Storyboard" },
-  { id: "3d", workspace: "3d", labelKo: "2. 3D·배경", labelEn: "2. 3D Stage" },
-  { id: "draw", workspace: "draw", labelKo: "3. 작화·채색", labelEn: "3. Draw & Ink" },
-  { id: "comic", workspace: "comic", labelKo: "4. 식자", labelEn: "4. Lettering" },
-  { id: "review", workspace: "review", labelKo: "5. 검수·출고", labelEn: "5. Review & Ship" },
+  { id: "storyboard", workspace: "storyboard", labelKo: "콘티", labelEn: "Storyboard" },
+  { id: "3d", workspace: "3d", labelKo: "3D 배경", labelEn: "3D scene" },
+  { id: "draw", workspace: "draw", labelKo: "그리기·채색", labelEn: "Draw & color" },
+  { id: "comic", workspace: "comic", labelKo: "웹툰 편집", labelEn: "Edit webtoon" },
+  { id: "review", workspace: "review", labelKo: "검토·내보내기", labelEn: "Review & export" },
 ] as const;
-
-function resolveCanonicalStageForWorkspace(
-  workspace: StudioDocumentWorkspaceId,
-): StudioCanonicalStageId {
-  switch (workspace) {
-    case "storyboard":
-    case "whiteboard":
-      return "storyboard";
-    case "3d":
-      return "3d";
-    case "draw":
-    case "image":
-      return "draw";
-    case "comic":
-    case "localization":
-    case "audio":
-    case "animation":
-    case "motion":
-      return "comic";
-    case "review":
-    case "design":
-    case "slides":
-      return "review";
-  }
-}
 
 export function StudioDocumentStagePillBar({
   workspace,
@@ -61,17 +36,17 @@ export function StudioDocumentStagePillBar({
   readonly className?: string;
 }) {
   useBilingualI18nRevision();
-  const activeStage = resolveCanonicalStageForWorkspace(workspace);
 
   return (
     <nav
-      aria-label={bi("5단계 제작 공정 전환", "5-stage production pipeline switcher")}
+      aria-label={bi("작업공간 바로가기", "Workspace shortcuts")}
       data-studio-stage-pill-bar="true"
-      className={cn("pointer-events-auto flex items-center justify-center", className)}
+      className={cn("pointer-events-auto flex items-center", className)}
     >
-      <div className="flex max-w-full snap-x snap-mandatory items-center gap-1 overflow-x-auto rounded-full border border-accent/30 bg-panel/95 p-0.5 shadow-sm [scrollbar-width:none]">
+      <div className="flex max-w-full flex-wrap items-center gap-1">
         {STAGE_PILLS.map((stage) => {
-          const active = stage.id === activeStage;
+          // 작업공간은 문서 종류다. 이를 실제 회차 공정이나 진행 상태로 추정하지 않는다.
+          const active = stage.workspace === workspace;
           return (
             <button
               key={stage.id}

@@ -38,4 +38,11 @@ describe("buttonClass touch targets", () => {
     expect(composed).toContain("gap-1.5");
     expect(composed.split(/\s+/u)).toContain("border-line-strong");
   });
+
+  it.each(["solid", "outline", "ghost", "quiet"] as const)("%s의 색과 동작은 선택한 테마·모션 설정을 따른다", (variant) => {
+    const classes = buttonClass({ variant });
+    expect(classes).not.toMatch(/oklch\(|rgb\(|#[\da-f]{3,8}\b/iu);
+    expect(classes).toContain("motion-reduce:transition-none");
+    expect(classes).not.toMatch(/(?:^|\s)active:scale-/u);
+  });
 });

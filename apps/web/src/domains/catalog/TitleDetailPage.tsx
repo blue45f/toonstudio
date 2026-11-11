@@ -103,7 +103,7 @@ export function TitleDetailPage() {
   const { data, loading, error, notFound, reload } = useLocalCatalogFallback(titleApiUrl, rawResource);
   useDocumentTitle(data?.title?.title);
   // 시놉시스 원문은 저작권 리스크가 있어 관리자 킬스위치로 끌 수 있다(끄면 문단 자체를 숨김).
-  const { showSynopsis } = useAppConfig();
+  const { showSynopsis, showAvailability } = useAppConfig();
 
   const t = data?.title;
   const metaDesc = t
@@ -193,7 +193,7 @@ export function TitleDetailPage() {
       <Container size="wide" className="relative py-8 lg:py-10">
         <TitleDetailBreadcrumb />
         {/* 로딩 골격도 무대 구도(포스터 + 카피 열)를 따라 첫 화면이 흔들리지 않게 한다. */}
-        <div className="flex flex-col gap-7 lg:flex-row lg:gap-10">
+        <div role="status" aria-label={bi("작품 정보를 불러오는 중", "Loading title details")} aria-busy="true" className="flex flex-col gap-7 lg:flex-row lg:gap-10">
           <div className="skeleton aspect-[3/4] w-40 shrink-0 rounded-2xl sm:w-52 lg:w-72" />
           <div className="flex-1 space-y-5">
             <div className="skeleton h-8 w-40" />
@@ -238,12 +238,12 @@ export function TitleDetailPage() {
     { icon: Bookmark, label: "관심", value: fmtStat(title.stats.bookmarks) },
     { icon: Star, label: "평가", value: fmtStat(reviewCount) },
   ];
-  // 회차는 API 상세 응답 루트의 episodes 로 온다(스냅샷 수집 작품만). 없으면 undefined → 빈 상태.
+  // 확인된 공개 회차만 내부 안내로 연결하며, 회차가 없는 카탈로그에 1화를 만들지 않는다.
   const episodes = resolveTitleEpisodes(data);
-  const firstEpisodeHref =
-    !episodes && title.totalEpisodes === 0
-      ? null
-      : `/title/${encodeURIComponent(title.slug)}/read/1`;
+  const firstPublishedEpisode = episodes?.find((episode) => episode.status !== "scheduled");
+  const firstEpisodeHref = firstPublishedEpisode
+    ? `/title/${encodeURIComponent(title.slug)}/read/${firstPublishedEpisode.number}`
+    : null;
 
   return (
     <PageEntrance variant="pop">
@@ -255,6 +255,7 @@ export function TitleDetailPage() {
         reviewCount={reviewCount}
         estimated={estimated}
         showSynopsis={showSynopsis}
+        showAvailability={showAvailability}
         firstEpisodeHref={firstEpisodeHref}
       />
 

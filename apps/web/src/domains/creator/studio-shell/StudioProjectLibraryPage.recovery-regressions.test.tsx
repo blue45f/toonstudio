@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { ensureStudioSaveProfile } from "../save-first/studio-save-profile";
-import { studioExactResumeStorageKey, writeStudioExactResumeContext } from "../studio-exact-resume-context";
+import { readStudioExactResumeContext, studioExactResumeStorageKey, writeStudioExactResumeContext } from "../studio-exact-resume-context";
 import { ensureInitialStudioProjectDocument, setStudioProjectDocumentWorkspace, studioProjectDocumentStorageKey, trashStudioProjectDocument } from "../studio-project-document-store";
 import { archiveStudioProject, createStudioProject, markStudioProjectOpened, readStudioProjectLibrary, trashStudioProject } from "../studio-project-library-store";
 import { StudioProjectLibraryPage } from "./StudioProjectLibraryPage";
@@ -47,7 +47,7 @@ describe("회수한 홈 후보의 이어하기 캐시", () => {
       writeStudioExactResumeContext(window.localStorage, { projectId: project.id, documentId: document.id, workspace: "comic", pageId: "page-9", focus: "cut:9", zoom: 1.5, updatedAt: DATE }, window);
     });
     await waitFor(() => expect(link.getAttribute("href")).toContain("focus=cut%3A9"));
-    expect(card().getByText("page-9 · 확대 150%")).toBeTruthy();
+    expect(card().getByText("최근 페이지 · 확대 150%")).toBeTruthy();
     expect(readStudioProjectLibrary(window.localStorage)).toEqual(before);
   });
 
@@ -63,13 +63,14 @@ describe("회수한 홈 후보의 이어하기 캐시", () => {
 
   it.each(["exact", "documents", "clear"] as const)("다른 탭의 %s 저장소 변경도 다시 렌더링한다", async (kind) => {
     const { project, document } = seedResume();
-    writeStudioExactResumeContext(window.localStorage, { projectId: project.id, documentId: document.id, workspace: "comic", pageId: "page-old", updatedAt: DATE });
+    writeStudioExactResumeContext(window.localStorage, { projectId: project.id, documentId: document.id, workspace: "comic", pageId: "page-old", zoom: 1.25, updatedAt: DATE });
     showLibrary();
-    expect(card().getByText(/page-old/u)).toBeTruthy();
+    expect(card().getByText("최근 페이지 · 확대 125%")).toBeTruthy();
+    expect(readStudioExactResumeContext(window.localStorage, project.id, document.id)?.pageId).toBe("page-old");
     await act(async () => {
       let key: string | null = null;
       if (kind === "exact") {
-        writeStudioExactResumeContext(window.localStorage, { projectId: project.id, documentId: document.id, workspace: "comic", pageId: "page-new", updatedAt: DATE });
+        writeStudioExactResumeContext(window.localStorage, { projectId: project.id, documentId: document.id, workspace: "comic", pageId: "page-new", zoom: 1.5, updatedAt: DATE });
         key = studioExactResumeStorageKey(project.id, document.id);
       } else if (kind === "documents") {
         trashStudioProjectDocument(window.localStorage, project.id, document.id);
@@ -79,9 +80,13 @@ describe("회수한 홈 후보의 이어하기 캐시", () => {
       }
       window.dispatchEvent(new StorageEvent("storage", { key, storageArea: window.localStorage }));
     });
-    await waitFor(() => expect(card().queryByText(/page-old/u)).toBeNull());
-    if (kind === "exact") expect(card().getByText(/page-new/u)).toBeTruthy();
+    await waitFor(() => expect(card().queryByText("최근 페이지 · 확대 125%")).toBeNull());
+    if (kind === "exact") {
+      expect(card().getByText("최근 페이지 · 확대 150%")).toBeTruthy();
+      expect(readStudioExactResumeContext(window.localStorage, project.id, document.id)).toMatchObject({ pageId: "page-new", zoom: 1.5 });
+    }
     if (kind === "documents") expect(card().getByRole("link", { name: "이어서 작업" }).getAttribute("href")).toBe(`/studio/p/${project.id}/overview`);
+    if (kind === "clear") expect(readStudioExactResumeContext(window.localStorage, project.id, document.id)).toBeNull();
   });
 });
 

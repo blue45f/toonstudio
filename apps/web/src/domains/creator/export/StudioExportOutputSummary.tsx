@@ -1,4 +1,3 @@
-import { ShieldCheck } from "lucide-react";
 import type { Ref } from "react";
 
 import { translateBilingualValueForActiveLocale } from "@/shared/lib/i18n-bilingual-copy";
@@ -36,10 +35,10 @@ export function StudioExportOutputSummary({
       : appearance.signature === "invalid" ? exportMenuText("signatureInvalid")
         : appearance.signature === "invisible" ? exportMenuText("signatureInvisible")
         : exportMenuText("signatureOn");
-  const needsWebtoonSlice = width > 1_600 || height > 20_000;
-  const preflightLabel = needsWebtoonSlice
-    ? bi("고해상도 원본 · 연재처 투고 시 자동 슬라이스 권장", "High-res master · auto-slice advised for platform upload")
-    : bi("웹툰 규격 적합 · Rights BOM 출처 자동 점검", "Webtoon spec ready · Rights BOM auto-checked");
+  const largeImage = width > 1_600 || height > 20_000;
+  const sizeGuidance = largeImage
+    ? bi("큰 이미지예요. 제출처의 가로·세로 제한을 확인하세요.", "Large image. Check the destination's width and height limits.")
+    : bi("선택한 이미지 크기입니다.", "The image uses the selected dimensions.");
 
   return (
     <section
@@ -55,10 +54,6 @@ export function StudioExportOutputSummary({
         <h3 id={`${summaryId}-title`} className="text-xs font-extrabold text-fg">
           {exportMenuText("outputSummary")}
         </h3>
-        <span className="inline-flex items-center gap-1 rounded-full border border-good/35 bg-good/10 px-2 py-0.5 font-display text-[10px] font-bold tracking-wider text-good">
-          <ShieldCheck size={11} aria-hidden="true" />
-          <span>PREFLIGHT · BOM</span>
-        </span>
       </div>
       <dl id={`${summaryId}-values`} aria-live="polite" aria-atomic="true" className="mt-2.5 grid min-w-0 gap-2 text-xs text-fg-2">
         <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1">
@@ -71,9 +66,9 @@ export function StudioExportOutputSummary({
         <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1">
           <dt>{exportMenuText("outputSignature")}</dt><dd className="m-0 min-w-0 break-words text-fg">{signature}</dd>
         </div>
-        <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1 border-t border-line/65 pt-2" data-studio-export-preflight="true">
-          <dt>{bi("출고 프리플라이트", "Export preflight")}</dt>
-          <dd className={`m-0 min-w-0 break-words font-semibold ${needsWebtoonSlice ? "text-fg-2" : "text-good"}`}>{preflightLabel}</dd>
+        <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1 border-t border-line/65 pt-2" data-studio-export-size-guidance="true">
+          <dt>{bi("이미지 크기 안내", "Image size guidance")}</dt>
+          <dd className="m-0 min-w-0 break-words text-fg-2">{sizeGuidance}</dd>
         </div>
       </dl>
       {appearance.background === "unsupported" && transparent ? (

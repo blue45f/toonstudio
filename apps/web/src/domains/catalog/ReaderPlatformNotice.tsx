@@ -10,7 +10,7 @@ export function ReaderPlatformNotice({
   platformLink,
   detailPath,
 }: {
-  readonly platformLink: { name: string; url: string } | null;
+  readonly platformLink: { name: string; href: string } | null;
   readonly detailPath: string;
 }) {
   const bt = useBilingual("TitleReaderPage");
@@ -21,15 +21,16 @@ export function ReaderPlatformNotice({
         <BookOpen className="reader-platform-book" strokeWidth={1.4} />
       </div>
       <h1>{platformLink
-        ? bt("이 회차는 외부 플랫폼에서 읽어요", "Read this episode on its official platform")
+        ? bt("공식 플랫폼에서 작품을 감상하세요", "Read this title on its official platform")
         : bt("공식 감상 경로를 확인해 주세요", "Find the official reading link")}</h1>
       <p className="reader-platform-description">{bt("이 사이트에는 회차 컷이 제공되지 않아요.", "Episode panels are not provided on this site.")}<br />
         {platformLink
-          ? bt("공식 플랫폼에서 감상해 주세요.", "Continue reading on the official platform.")
+          ? bt("공식 플랫폼을 새 탭으로 열어 감상해 주세요.", "Open the official platform in a new tab to continue reading.")
           : bt("작품 상세에서 공식 감상 경로를 확인해 주세요.", "Check the title details for its official reading links.")}
       </p>
       <div className="reader-platform-actions">
-        {platformLink && <a className="reader-platform-primary" href={platformLink.url} target="_blank" rel="noopener noreferrer">
+        {platformLink && <a className="reader-platform-primary" href={platformLink.href} target="_blank" rel="noopener noreferrer"
+          aria-label={formatI18nTemplate(bt("{v0}에서 읽기 (새 탭)", "Read on {v0} (new tab)"), { v0: platformLink.name })}>
           {formatI18nTemplate(bt("{v0}에서 읽기", "Read on {v0}"), { v0: platformLink.name })}
           <ArrowUpRight size={18} aria-hidden="true" />
         </a>}

@@ -87,7 +87,7 @@ for (const width of [390, 834, 1440]) {
       await hero.scrollIntoViewIfNeeded();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
       expect(overflow).toBeLessThanOrEqual(1);
-      for (const action of [hero.getByRole("link", { name: "첫 화부터 읽기", exact: true }), save]) {
+      for (const action of [hero.getByRole("link", { name: /네이버 웹툰에서 보기.*새 탭/u }), save]) {
         expect((await action.boundingBox())?.height).toBeGreaterThanOrEqual(44);
       }
       const audit = await new AxeBuilder({ page }).include('[aria-label="작품 소개"]').include("#title-episodes-anchor")
@@ -106,7 +106,7 @@ test("320px 긴 제목·표지 없음·외부 링크 없음에서도 동선을 �
   await page.goto(path);
   const hero = page.getByRole("region", { name: "작품 소개", exact: true });
   await expect(hero.getByRole("heading", { level: 1, name: longTitle })).toBeVisible();
-  await expect(hero.getByRole("link", { name: "첫 화부터 읽기", exact: true })).toHaveCount(0);
+  await expect(hero.getByRole("link", { name: "회차 안내 보기", exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   await expect(page.getByRole("link", { name: "비슷한 작품 탐색하기", exact: true })).toBeVisible();
 });

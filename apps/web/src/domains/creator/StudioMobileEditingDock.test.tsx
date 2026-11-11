@@ -55,13 +55,9 @@ interface MockDockButtonProps {
   readonly title?: string;
 }
 
-const mobileInspectorPreload = vi.hoisted(() => ({
-  drawingSurface: vi.fn(),
-}));
-
-vi.mock("./studio-inspector-aside-loader", () => ({
-  preloadStudioInspectorDrawingSurface: mobileInspectorPreload.drawingSurface,
-}));
+const mobileInspectorPreload = vi.hoisted(() => ({ drawingSurface: vi.fn(), assets: vi.fn() }));
+vi.mock("./studio-inspector-aside-loader", () => ({ preloadStudioInspectorDrawingSurface: mobileInspectorPreload.drawingSurface }));
+vi.mock("./studio-tool-belt-lazy-ui", () => ({ preloadStudioAssetToolPopoverBody: mobileInspectorPreload.assets }));
 
 vi.mock("./studio-chrome-ui", () => ({
   StudioContextActionButton: ({ label, disabled, onClick, title }: MockDockButtonProps) => (
@@ -577,24 +573,26 @@ describe("StudioMobileEditingDock", () => {
   });
 
   it("keeps drawing, color, history and the work menu reachable without horizontal scrolling", () => {
-    render(<StudioMobileEditingDock {...createProps({ isMobile: true })} />);
+    const props = createProps({ isMobile: true });
+    render(<StudioMobileEditingDock {...props} />);
     const row = screen.getByRole("toolbar", { name: "드로잉 도구" });
     expect(within(row).getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual([
       "펜", "지우개", "브러시 색상", "실행취소", "다시실행", "작업 메뉴",
     ]);
     expect(row.className).toContain("grid-cols-6");
     expect(row.closest('[data-studio-mobile-dock-scroll]')).toBeNull();
-    expect(screen.queryByRole("button", { name: "도형" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "주 색" })).toBeNull();
+    for (const name of ["도형", "주 색"]) expect(screen.queryByRole("button", { name })).toBeNull();
 
     fireEvent.click(within(row).getByRole("button", { name: "작업 메뉴" }));
     const tools = screen.getByRole("toolbar", { name: "작업 메뉴 · 드로잉 도구" });
-    for (const name of ["선택", "픽셀", "채우기", "도형", "브러시 설정 (굵기·색·프리셋)", "레이어 열기", "전체 도구 열기"]) {
-      expect(within(tools).getByRole("button", { name })).toBeTruthy();
-    }
+    for (const name of ["선택", "픽셀", "채우기", "도형", "브러시 설정 (굵기·색·프리셋)", "레이어 열기", "소재 찾기", "전체 도구 열기"]) expect(within(tools).getByRole("button", { name })).toBeTruthy();
     expect(tools.className).toContain("grid-cols-4");
-    expect(within(row).getByRole("button", { name: "실행취소" })).toBeTruthy();
-    expect(within(row).getByRole("button", { name: "다시실행" })).toBeTruthy();
+    for (const name of ["실행취소", "다시실행"]) expect(within(row).getByRole("button", { name })).toBeTruthy();
+    fireEvent.click(within(tools).getByRole("button", { name: "소재 찾기" }));
+    expect(props.setMenu).toHaveBeenCalledWith("asset");
+    expect(props.setMobileSheet).toHaveBeenCalledWith(null);
+    expect(mobileInspectorPreload.assets).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("region", { name: "작업 메뉴" })).toBeNull();
   });
 
   it("returns keyboard focus and dismisses expanded controls without hiding essential tools", () => {
@@ -1976,7 +1974,7 @@ describe("StudioMobileEditingDock", () => {
     expect(within(toolbar).getByRole("button", { name: "Redo" })).toBeTruthy();
     fireEvent.click(within(toolbar).getByRole("button", { name: "Tools" }));
     const tools = screen.getByRole("toolbar", { name: "Tools · Drawing tools" });
-    for (const name of ["Select", "Pixel", "Fill", "Shape", "Brush settings (size, color, presets)"]) {
+    for (const name of ["Select", "Pixel", "Fill", "Shape", "Brush settings (size, color, presets)", "Find assets"]) {
       expect(within(tools).getByRole("button", { name })).toBeTruthy();
     }
 

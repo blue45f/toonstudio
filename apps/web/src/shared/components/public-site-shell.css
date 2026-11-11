@@ -155,7 +155,7 @@
 .site-menu-group[open] > .site-menu-group__summary > svg { transform: rotate(180deg); }
 .site-menu-group > ul { padding: 4px 12px 12px; }
 /* 단일 지도에서 현재 여정 구간만 강조한다. 지도 자체는 모든 화면에서 같다. */
-.site-menu-group[data-current-journey="true"] { border-radius: 10px; background: var(--color-accent-soft); }
+.site-menu-group[data-current-journey="true"] { border-radius: var(--site-control-radius); background: var(--color-accent-soft); }
 .site-menu-group__current { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; color: var(--color-on-accent); background: var(--color-accent); font-size: 0.625rem; font-weight: 700; letter-spacing: 0.04em; vertical-align: 2px; }
 
 .public-footer-invitation {
@@ -165,9 +165,10 @@
   --color-fg-2: oklch(0.8 0.012 78);
   --color-line: oklch(0.305 0.012 64);
   --color-line-strong: oklch(0.42 0.013 64);
-  --color-accent: oklch(0.72 0.185 42);
-  --color-accent-2: oklch(0.66 0.2 38);
-  --color-on-accent: oklch(0.2 0.02 60);
+  /* 아트 표면의 중립색과 별개로 행동색은 사용자가 선택한 문서 테마를 따른다. */
+  --color-accent: var(--unified-accent);
+  --color-accent-2: var(--unified-accent-2);
+  --color-on-accent: var(--unified-on-accent);
   position: relative;
   isolation: isolate;
   display: grid;

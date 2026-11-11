@@ -311,6 +311,7 @@ export function DiscoverHubPage() {
             <span className="sr-only">{searchLabel}</span>
             <input
               type="search"
+              aria-label={searchLabel}
               value={query}
               onCompositionStart={() => {
                 isComposingRef.current = true;

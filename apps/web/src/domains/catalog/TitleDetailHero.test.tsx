@@ -50,7 +50,7 @@ function makeTitle(overrides: Partial<Title> = {}): Title {
   };
 }
 
-function renderHero(title: Title, firstEpisodeHref: string | null = "/title/fog-signal/read/1") {
+function renderHero(title: Title, firstEpisodeHref: string | null = "/title/fog-signal/read/1", showAvailability = true) {
   return render(
     <MemoryRouter>
       <TitleDetailHero
@@ -59,6 +59,7 @@ function renderHero(title: Title, firstEpisodeHref: string | null = "/title/fog-
         reviewCount={4210}
         estimated={false}
         showSynopsis
+        showAvailability={showAvailability}
         firstEpisodeHref={firstEpisodeHref}
       />
     </MemoryRouter>,
@@ -76,6 +77,40 @@ afterEach(() => {
 });
 
 describe("TitleDetailHero", () => {
+  it.each([
+    ["ko", "네이버 웹툰에서 보기 (새 탭)"],
+    ["en", "Read on 네이버 웹툰 (new tab)"],
+  ])("%s: 회차 목록이 없으면 검증된 공식 감상 게이트웨이를 새 탭으로 연결한다", (language, label) => {
+    useI18n.setState({ lang: language });
+    renderHero(makeTitle({ availability: [
+      { platformId: "ridi", pricing: "paid", url: "https://ridibooks.com/books/1" },
+      { platformId: "naver-webtoon", pricing: "free", url: "https://comic.naver.com/webtoon/list?titleId=1" },
+    ] }), null);
+    const official = screen.getByRole("link", { name: label });
+    expect(official.getAttribute("href")).toBe("/api/go/naver-webtoon?to=https%3A%2F%2Fcomic.naver.com%2Fwebtoon%2Flist%3FtitleId%3D1");
+    expect(official.getAttribute("target")).toBe("_blank");
+    expect(official.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(official.closest("details")).toBeNull();
+    expect(screen.queryByRole("link", { name: /회차 안내 보기|View episode guide/u })).toBeNull();
+  });
+
+  it("없는 URL·안전하지 않은 URL을 공식 감상 링크로 만들지 않는다", () => {
+    renderHero(makeTitle({ availability: [
+      { platformId: "naver-webtoon", pricing: "free" },
+      { platformId: "ridi", pricing: "paid", url: "http://ridibooks.com/books/1" },
+    ] }), null);
+    expect(screen.queryByTestId("title-official-read-link")).toBeNull();
+    expect(screen.getByText(/공식 감상 링크가 아직 연결되지 않았어요/u)).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "회차 안내 보기" })).toBeNull();
+  });
+
+  it("플랫폼 노출을 끄면 공식 링크를 숨기되 확인된 내부 회차 안내는 유지한다", () => {
+    renderHero(makeTitle({ availability: [{ platformId: "naver-webtoon", pricing: "free", url: "https://comic.naver.com/webtoon/list?titleId=1" }] }), "/title/fog-signal/read/4", false);
+    expect(screen.queryByTestId("title-official-read-link")).toBeNull();
+    expect(screen.getByRole("link", { name: "회차 안내 보기" }).getAttribute("href")).toBe("/title/fog-signal/read/4");
+    expect(screen.queryByText(/공식 감상 링크/u)).toBeNull();
+  });
+
   it("제목·작가·평점·장르·줄거리와 주 행동을 보여준다", () => {
     renderHero(makeTitle());
     expect(screen.getByRole("heading", { level: 1, name: "안개 속의 신호" })).toBeTruthy();
@@ -86,7 +121,7 @@ describe("TitleDetailHero", () => {
     expect(screen.getByText("9.8")).toBeTruthy();
     expect(screen.getByText("미스터리")).toBeTruthy();
     expect(screen.getAllByText(/안개 낀 항구 도시에서/)).toHaveLength(2);
-    const readLink = screen.getByRole("link", { name: /첫 화부터 읽기/ });
+    const readLink = screen.getByRole("link", { name: /회차 안내 보기/ });
     expect(readLink.getAttribute("href")).toBe("/title/fog-signal/read/1");
   });
 
@@ -132,7 +167,7 @@ describe("TitleDetailHero", () => {
 
   it("회차가 없다고 확정된 작품에서는 읽기 행동을 숨긴다", () => {
     renderHero(makeTitle(), null);
-    expect(screen.queryByRole("link", { name: /첫 화부터 읽기/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /회차 안내 보기/ })).toBeNull();
   });
 
   it("킬스위치가 꺼지면 줄거리를 그리지 않는다", () => {
@@ -176,7 +211,7 @@ describe("TitleDetailHero — 접힌 소개와 핵심 동선", () => {
     const details = synopsis.closest("details");
     expect(details?.open).toBe(false);
     expect(screen.getByRole("heading", { level: 1 }).closest("details")).toBeNull();
-    expect(screen.getByRole("link", { name: /첫 화부터 읽기/ }).closest("details")).toBeNull();
+    expect(screen.getByRole("link", { name: /회차 안내 보기/ }).closest("details")).toBeNull();
     expect(screen.getByRole("button", { name: /서재에 담기/ }).closest("details")).toBeNull();
     expect(screen.getByTestId("title-detail-section-nav").closest("details")).toBeNull();
     if (!details) throw new Error("줄거리 disclosure 누락");
@@ -228,7 +263,7 @@ it("시안처럼 핵심 버튼은 모바일 동일 너비, 섹션 링크는 별�
   expect(nav.className).toContain("col-span-2");
   expect(nav.className).toContain("overflow-x-auto");
   expect(nav.className).not.toContain("lg:col-start-2");
-  const actions = screen.getByRole("link", { name: /첫 화부터 읽기/ }).parentElement;
+  const actions = screen.getByRole("link", { name: /회차 안내 보기/ }).parentElement;
   expect(actions?.className).toContain("grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))]");
   expect(screen.getByText(makeTitle().synopsis, { selector: "span" }).getAttribute("aria-hidden")).toBe("true");
 });

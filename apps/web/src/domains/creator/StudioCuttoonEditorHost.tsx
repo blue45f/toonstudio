@@ -1,4 +1,5 @@
 import { enterStudioSelectionTransform } from "./studio-transform-entry";
+import { preloadStudioAssetToolPopoverBody } from "./studio-tool-belt-lazy-ui";
 import "./studio-host-status-i18n";
 import { hostErrorText } from "./status-i18n/studio-host-reason-i18n";
 import { resolveStudioShortcutAnnouncement } from "./status-i18n/studio-producer-error-i18n-shortcut";
@@ -969,7 +970,7 @@ import {
   useStudioUiBooleanPreferenceHydration,
   useStudioWorkspacePanelOpenOverrides,
 } from "./studio-page-workspace-persistence";
-import { studioExactResumeRequested, studioExactResumeSourceReady } from "./studio-exact-resume-context";
+import { studioExactResumeRequested, studioExactResumeSourceReady, studioExactResumeSummary } from "./studio-exact-resume-context";
 import { useStudioExactResumeContext } from "./useStudioExactResumeContext";
 import {
   DEFAULT_STUDIO_PAPER_SURFACE,
@@ -7278,7 +7279,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setDrawMode,
     onRestored: (context) => {
       setStatusNotice(
-        `최근 작업 위치를 복원했어요. ${context.pageId ?? "최근 페이지"} · 확대 ${Math.round(context.zoom * 100)}%`
+        `최근 작업 위치를 복원했어요. ${studioExactResumeSummary(context, studioSaveLocale.startsWith("ko") ? "ko" : "en", pages.find((page) => page.id === context.pageId)?.name)}`
       );
     },
   });
@@ -14503,10 +14504,10 @@ const puppetWarpArmed =
       && autosaveChecked
       && !hasAutosave
       && !quickStartDismissed
+      && elements.length === 0
       && (quickStartYielded
         || (uiDensityMode !== "focus"
-          && !menu
-          && elements.length === 0)))
+          && !menu)))
   );
 
   // 삭제된 요소의 노드 참조가 nodeRefs에 남지 않도록 정리(누수 방지).
@@ -17503,7 +17504,7 @@ const puppetWarpArmed =
     !mobileHintDismissed &&
     workHydrated &&
     !showQuickStart &&
-    !hasAutosave &&
+    !hasAutosave && elements.length === 0 &&
     drawingShortcutNotice === null;
   function openQuickStartMenu(nextMenu: Extract<StudioMenu, "template" | "char" | "bubble">) {
     setTool("select");
@@ -25543,10 +25544,7 @@ function clearSelectionForEdit() {
             setAppSettingsOpen(true);
           },
           openStudioMenu: setMenu,
-          openAssetMenu: () => {
-            preloadStudioAssetMenuPanel();
-            setMenu("template");
-          },
+          openAssetMenu: () => { preloadStudioAssetToolPopoverBody(); setMenu("asset"); },
           createAdjustmentLayer: studioMainMenuActions.createAdjustmentLayer,
           requestImageInsert: () => editMenuImageInputRef.current?.click(),
           openMannequinPoser: () => setMannequinPoserOpen(true),

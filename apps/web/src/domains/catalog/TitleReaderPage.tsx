@@ -16,6 +16,8 @@ import { TitleNotFound } from "./TitleNotFound";
 import { TitleReaderImmersiveCreationBar } from "./TitleReaderImmersiveCreationBar";
 import { TitleReaderReaBridgeCard } from "./TitleReaderReaBridgeCard";
 import { ReaderPlatformNotice } from "./ReaderPlatformNotice";
+import { resolveExternalPlatformGuide } from "./title-episode-empty-guide";
+import { useLocalCatalogFallback } from "./local-catalog-fallback";
 
 import { useNextgenLabSettings } from "@/shared/hooks/use-nextgen-lab-settings";
 import { useScreenWakeLock } from "@/shared/hooks/use-screen-wake-lock";
@@ -31,6 +33,7 @@ import { cn } from "@/shared/lib/utils";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import Link from "@/shared/navigation/router-link";
 import { useApiResource } from "@/platform/use-api-resource";
+import { useAppConfig } from "@/platform/environment/use-app-config";
 
 const bi = (ko: string, en: string) =>
   translateBilingualValueForActiveLocale("TitleReaderPage", ko, en);
@@ -82,11 +85,13 @@ function ReaderShell({
   episode,
   total,
   platformLink,
+  publishedEpisodes,
 }: {
   title: Title;
   episode: number;
   total: number | undefined;
-  platformLink: { name: string; url: string } | null;
+  platformLink: { name: string; href: string } | null;
+  publishedEpisodes: readonly number[];
 }) {
   useBilingualI18nRevision();
   const navigate = useNavigate();
@@ -106,8 +111,11 @@ function ReaderShell({
   const [episodeDrawerOpen, setEpisodeDrawerOpen] = useState(false);
 
   const detailPath = `/title/${encodeURIComponent(title.slug)}`;
-  const hasPrev = episode > 1;
-  const hasNext = total == null || episode < total;
+  const previousEpisode = publishedEpisodes.filter((number) => number < episode).at(-1);
+  const nextEpisode = publishedEpisodes.find((number) => number > episode);
+  const hasPrev = previousEpisode != null;
+  const hasNext = nextEpisode != null;
+  const currentEpisodeConfirmed = publishedEpisodes.includes(episode);
 
   const updateComfort = useCallback((patch: Partial<ReaderComfortPrefs>) => {
     setComfort((prev) => {
@@ -165,16 +173,16 @@ function ReaderShell({
         navigate(detailPath);
         return;
       }
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("input,textarea,select,[contenteditable='true']")) return;
+      const target = event.target;
+      if (target instanceof Element && target.closest("input,textarea,select,[contenteditable='true']")) return;
       if (event.key === "[" && hasPrev) {
         event.preventDefault();
-        navigate(`/title/${encodeURIComponent(title.slug)}/read/${episode - 1}`);
+        navigate(`/title/${encodeURIComponent(title.slug)}/read/${previousEpisode}`);
         return;
       }
       if (event.key === "]" && hasNext) {
         event.preventDefault();
-        navigate(`/title/${encodeURIComponent(title.slug)}/read/${episode + 1}`);
+        navigate(`/title/${encodeURIComponent(title.slug)}/read/${nextEpisode}`);
         return;
       }
       if (event.key === "m" || event.key === "M") {
@@ -186,11 +194,11 @@ function ReaderShell({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [navigate, detailPath, pokeChrome, toggleChrome, settingsOpen, episodeDrawerOpen, hasPrev, hasNext, title.slug, episode]);
+  }, [navigate, detailPath, pokeChrome, toggleChrome, settingsOpen, episodeDrawerOpen, hasPrev, hasNext, title.slug, previousEpisode, nextEpisode]);
 
   const handleContentPointerDown = (event: React.PointerEvent) => {
-    const target = event.target as HTMLElement;
-    if (target.closest("a,button,summary,input,select,textarea,[role='button']")) {
+    const target = event.target;
+    if (target instanceof Element && target.closest("a,button,summary,input,select,textarea,[role='button']")) {
       pokeChrome();
       return;
     }
@@ -201,8 +209,8 @@ function ReaderShell({
     "transition-opacity duration-300 motion-reduce:transition-none",
     chromeVisible ? "opacity-100" : "pointer-events-none opacity-0",
   );
-  const episodeTotalForDrawer = Math.min(total ?? Math.max(episode + 3, 6), 24);
-  const quickEpisodes = Array.from({ length: episodeTotalForDrawer }, (_, i) => i + 1);
+  const episodeWindowStart = Math.max(0, publishedEpisodes.indexOf(episode) - 12);
+  const quickEpisodes = publishedEpisodes.slice(episodeWindowStart, episodeWindowStart + 24);
   const chipClass = (active: boolean) =>
     cn(
       "min-h-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! rounded-full border px-2.5 font-semibold transition-colors",
@@ -238,8 +246,10 @@ function ReaderShell({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold leading-tight">{title.title}</p>
             <p className="truncate text-xs leading-tight text-white/60">
-              {formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode) })}
-              {total != null &&
+              {currentEpisodeConfirmed
+                ? formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode) })
+                : bi("공식 감상 안내", "Official reading guide")}
+              {currentEpisodeConfirmed && total != null &&
                 formatI18nTemplate(bi(" · 총 {v0}화", " · of {v0}"), { v0: String(total) })}
             </p>
           </div>
@@ -300,7 +310,9 @@ function ReaderShell({
         {/* 회차 제목·날짜는 계약에 없어 작품 실데이터만 간결하게 표시한다. */}
         <section aria-label={bi("회차 정보", "Episode info")} className="reader-episode-context">
           <p className="reader-episode-context-title">
-            <strong>{formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode) })}</strong>{" · "}{title.title}
+            <strong>{currentEpisodeConfirmed
+              ? formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode) })
+              : bi("공식 감상 안내", "Official reading guide")}</strong>{" · "}{title.title}
           </p>
           <p className="reader-episode-context-meta">{title.author}{" · "}{STATUS_LABEL[title.status]}
             {title.updateDays && title.updateDays.length > 0 && ` · ${title.updateDays.join("·")} ${bi("연재", "serial")}`}
@@ -309,15 +321,15 @@ function ReaderShell({
 
         <ReaderPlatformNotice platformLink={platformLink} detailPath={detailPath} />
 
-        {!hasNext && <p className="mb-4 text-center text-sm text-white/75">{bi("지금까지 공개된 마지막 회차예요", "This is the latest available episode")}</p>}
+        {publishedEpisodes.includes(episode) && !hasNext && <p className="mb-4 text-center text-sm text-white/75">{bi("확인된 공개 회차 중 마지막 회차예요", "This is the latest confirmed published episode")}</p>}
 
         <TitleReaderReaBridgeCard title={title} episode={episode} />
         <TitleReaderImmersiveCreationBar />
 
         <p className="mt-6 text-center text-xs text-white/65">
           {bi(
-            "화면을 탭하면 메뉴가 사라져요 — Esc로 나가기 · [ / ] 이전·다음 화 · M 메뉴 토글",
-            "Tap the screen to hide menus — Esc to exit · [ / ] prev/next ep · M toggle menu",
+            "화면을 탭하면 메뉴가 사라져요 — Esc로 나가기 · M 메뉴 토글",
+            "Tap the screen to hide menus — Esc to exit · M toggle menu",
           )}
         </p>
       </div>
@@ -373,7 +385,7 @@ function ReaderShell({
           >
             <ListOrdered size={19} aria-hidden />
           </Link>
-          <button
+          {quickEpisodes.length > 0 && <button
             ref={episodeToggleRef}
             type="button"
             onClick={() => { setEpisodeDrawerOpen((prev) => !prev); setSettingsOpen(false); pokeChrome(); }}
@@ -385,16 +397,16 @@ function ReaderShell({
             )}
           >
             {bi("회차 선택", "Episodes")}
-          </button>
+          </button>}
           {hasPrev ? (
             <Link
-              href={`/title/${encodeURIComponent(title.slug)}/read/${episode - 1}`}
+              href={`/title/${encodeURIComponent(title.slug)}/read/${previousEpisode}`}
               className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
             >
               <ChevronLeft size={17} aria-hidden />
               <span className="sr-only min-[420px]:not-sr-only">{bi("이전 화", "Prev")}</span>
             </Link>
-          ) : (
+          ) : quickEpisodes.length > 0 ? (
             <span
               aria-disabled="true"
               className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
@@ -402,17 +414,17 @@ function ReaderShell({
               <ChevronLeft size={17} aria-hidden />
               <span className="sr-only min-[420px]:not-sr-only">{bi("이전 화", "Prev")}</span>
             </span>
-          )}
+          ) : null}
           <span aria-hidden className="min-w-0 flex-1" />
           {hasNext ? (
             <Link
-              href={`/title/${encodeURIComponent(title.slug)}/read/${episode + 1}`}
+              href={`/title/${encodeURIComponent(title.slug)}/read/${nextEpisode}`}
               className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
             >
               <span className="sr-only min-[420px]:not-sr-only">{bi("다음 화", "Next")}</span>
               <ChevronRight size={17} aria-hidden />
             </Link>
-          ) : (
+          ) : quickEpisodes.length > 0 ? (
             <span
               aria-disabled="true"
               className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
@@ -420,7 +432,7 @@ function ReaderShell({
               <span className="sr-only min-[420px]:not-sr-only">{bi("다음 화", "Next")}</span>
               <ChevronRight size={17} aria-hidden />
             </span>
-          )}
+          ) : null}
         </div>
       </footer>
     </div>
@@ -462,18 +474,23 @@ function ReaderMessageShell({
  */
 export function TitleReaderPage() {
   useBilingualI18nRevision();
+  const { showAvailability } = useAppConfig();
   const { slug, episode: episodeParam } = useParams();
-  const { data, loading, error, notFound, reload } = useApiResource<ReaderTitleResponse>(
-    slug ? `/api/titles/${encodeURIComponent(slug)}` : null,
+  const titleApiUrl = slug ? `/api/titles/${encodeURIComponent(slug)}` : null;
+  const resource = useApiResource<ReaderTitleResponse>(
+    titleApiUrl,
     catalogStatusText("catalog.status.titleReader.loadFailed", "작품 정보를 불러오지 못했습니다."),
   );
+  const { data, loading, error, notFound, reload } = useLocalCatalogFallback(titleApiUrl, resource);
   const title = data?.title;
   const episodeNumber =
     episodeParam != null && /^\d+$/u.test(episodeParam) ? Number(episodeParam) : Number.NaN;
   const episodeValid = Number.isInteger(episodeNumber) && episodeNumber >= 1;
+  const episodes = resolveTitleEpisodes(data);
+  const currentEpisode = episodes?.find((item) => item.number === episodeNumber);
   useDocumentTitle(
     title && episodeValid
-      ? `${title.title} ${episodeNumber}화`
+      ? currentEpisode ? `${title.title} ${episodeNumber}화` : `${title.title} · ${bi("공식 감상 안내", "Official reading guide")}`
       : title?.title,
   );
 
@@ -506,9 +523,9 @@ export function TitleReaderPage() {
   }
 
   const detailPath = `/title/${encodeURIComponent(title.slug)}`;
-  const episodes = resolveTitleEpisodes(data);
+  const publishedEpisodes = [...new Set((episodes ?? []).filter((episode) => episode.status !== "scheduled").map((episode) => episode.number))];
+  const latestPublishedEpisode = publishedEpisodes.at(-1);
   const total = resolveTotalEpisodes(title, episodes);
-  const currentEpisode = episodes?.find((item) => item.number === episodeNumber);
 
   if (!episodeValid || (total != null && episodeNumber > total)) {
     return (
@@ -517,7 +534,7 @@ export function TitleReaderPage() {
         <p className="mt-2 text-sm leading-relaxed text-white/70">
           {total != null
             ? formatI18nTemplate(
-                bi("이 작품은 총 {v0}화까지 공개되어 있어요.", "This title has {v0} episodes available."),
+                bi("이 작품의 회차 정보는 {v0}화까지 연결돼 있어요.", "Episode information is connected up to episode {v0}."),
                 { v0: String(total) },
               )
             : bi(
@@ -525,13 +542,13 @@ export function TitleReaderPage() {
                 "That episode number isn't valid. Please come back through the title page.",
               )}
         </p>
-        {total != null && (
+        {latestPublishedEpisode != null && (
           <Link
-            href={`/title/${encodeURIComponent(title.slug)}/read/${total}`}
+            href={`/title/${encodeURIComponent(title.slug)}/read/${latestPublishedEpisode}`}
             className="mt-5 inline-flex min-h-11 items-center rounded-full bg-white px-5 text-sm font-bold text-[oklch(0.16_0.02_265)] transition-colors hover:bg-white/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             {formatI18nTemplate(bi("마지막 화({v0}화)로", "Go to the latest (ep. {v0})"), {
-              v0: String(total),
+              v0: String(latestPublishedEpisode),
             })}
           </Link>
         )}
@@ -549,8 +566,8 @@ export function TitleReaderPage() {
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-white/70">
           {bi(
-            "공개 예정인 회차예요. 공개되면 이 주소에서 바로 읽을 수 있어요.",
-            "This episode is scheduled. It will be readable at this address once it's out.",
+            "공개 예정인 회차예요. 공개 여부와 감상 경로는 공식 플랫폼에서 확인해 주세요.",
+            "This episode is scheduled. Check its release and reading options on the official platform.",
           )}
         </p>
       </ReaderMessageShell>
@@ -558,10 +575,8 @@ export function TitleReaderPage() {
   }
 
   const platformLink = (() => {
-    for (const item of title.availability) {
-      if (item.url) return { name: PLATFORMS[item.platformId].name, url: item.url };
-    }
-    return null;
+    const primary = resolveExternalPlatformGuide(title.availability, { availabilityVisible: showAvailability }).primary;
+    return primary ? { name: PLATFORMS[primary.platformId]?.name ?? primary.platformId, href: primary.href } : null;
   })();
 
   return (
@@ -571,6 +586,7 @@ export function TitleReaderPage() {
       episode={episodeNumber}
       total={total}
       platformLink={platformLink}
+      publishedEpisodes={publishedEpisodes}
     />
   );
 }

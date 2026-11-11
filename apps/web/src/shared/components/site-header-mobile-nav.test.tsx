@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { createRef } from "react";
-import { MemoryRouter } from "react-router-dom";
+import { createRef, useCallback, useRef, useState } from "react";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MobileHeaderNavigation } from "./site-header-mobile-nav";
@@ -28,7 +28,76 @@ function menu(menuOpen = true, closeMenu = vi.fn(), pathname = "/market") {
   </MemoryRouter>;
 }
 
+function StatefulMenuOwner() {
+  const [open, setOpen] = useState(true);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const closeMenu = useCallback(() => setOpen(false), []);
+  return <>
+    <output data-testid="menu-route">{location.pathname}{location.search}</output>
+    <MobileHeaderNavigation
+      menuOpen={open}
+      menuId="stateful-site-menu"
+      panelRef={panelRef}
+      closeMenu={closeMenu}
+      isActive={(href) => href === location.pathname}
+      isPurposeActive={() => false}
+    />
+  </>;
+}
+
+function renderStatefulMenu() {
+  return render(<MemoryRouter initialEntries={["/community"]}><StatefulMenuOwner /></MemoryRouter>);
+}
+
+function rankingMenuLink() {
+  const dialog = screen.getByRole("dialog");
+  const link = dialog.querySelector<HTMLAnchorElement>('a[href="/ranking"]');
+  if (!link) throw new Error("전체 메뉴의 랭킹 링크가 없습니다.");
+  const group = link.closest("details");
+  if (group) group.open = true;
+  return link;
+}
+
 describe("모바일 전체 메뉴", () => {
+  it("실제 메뉴를 닫아도 RouterLink 이동을 먼저 처리하고 본문을 유지한다", async () => {
+    renderStatefulMenu();
+    const link = rankingMenuLink();
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    fireEvent(link, click);
+    await waitFor(() => expect(screen.getByTestId("menu-route").textContent).toBe("/ranking"));
+    expect(click.defaultPrevented).toBe(true);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("링크의 이동 취소 가드가 실행되면 메뉴와 현재 경로를 유지한다", () => {
+    renderStatefulMenu();
+    const link = rankingMenuLink();
+    const guard = vi.fn((event: Event) => {
+      expect(link.isConnected).toBe(true);
+      event.preventDefault();
+    });
+    link.addEventListener("click", guard);
+    fireEvent.click(link);
+    expect(guard).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("menu-route").textContent).toBe("/community");
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it.each([
+    { ctrlKey: true }, { metaKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 },
+  ])("수정키·보조 클릭 %j는 현재 메뉴를 닫거나 경로를 바꾸지 않는다", (modifier) => {
+    renderStatefulMenu();
+    const link = rankingMenuLink();
+    // RouterLink 뒤에서 jsdom의 네이티브 탐색만 막아 수정키 처리를 방해하지 않는다.
+    const preventNativeNavigation = (event: Event) => event.preventDefault();
+    document.addEventListener("click", preventNativeNavigation);
+    try { fireEvent.click(link, modifier); }
+    finally { document.removeEventListener("click", preventNativeNavigation); }
+    expect(screen.getByTestId("menu-route").textContent).toBe("/community");
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
   it("현재 여정만 펼쳐 기본 노출을 줄이고 다른 여정은 직접 펼칠 수 있다", () => {
     render(menu());
     const dialog = screen.getByRole("dialog");

@@ -146,6 +146,16 @@ describe("DiscoverHubPage", () => {
     expect(await screen.findByRole("heading", { name: `${otherDay}요일 연재 인기작` })).toBeTruthy();
   });
 
+  it("검색어 지우기 버튼이 생겨도 입력의 접근성 이름을 유지한다", () => {
+    mockResource({ data: snapshot(currentKstWeekDay()) });
+    renderPage();
+    const field = screen.getByRole("searchbox", { name: "작품명·작가·태그 검색" });
+    fireEvent.change(field, { target: { value: "화산귀환" } });
+    expect(screen.getByRole("searchbox", { name: "작품명·작가·태그 검색" })).toBe(field);
+    fireEvent.click(screen.getByRole("button", { name: "검색어 지우기" }));
+    expect(screen.getByRole("searchbox", { name: "작품명·작가·태그 검색" })).toBe(field);
+  });
+
   it("keeps search usable while picks load and sends the query to the search page", async () => {
     mockResource({ loading: true });
     renderPage();

@@ -46,6 +46,7 @@ import {
 import { StudioDualColorWell } from "./StudioDualColorWell";
 import { useStudioColorWorkspace } from "./color/StudioColorWorkspaceContext";
 import { requestStudioAllTools } from "./studio-toolbar-channel";
+import { preloadStudioAssetToolPopoverBody } from "./studio-tool-belt-lazy-ui";
 import { studioTouchGestureHint } from "./studio-cuttoon-editor/studio-touch-gesture-policy";
 import type { StudioAppSettings } from "./studio-app-settings";
 import { STUDIO_DRAW_SHAPE_PICKER_KINDS } from "./brush/studio-draw-hud";
@@ -129,6 +130,7 @@ import type { StudioProDrawPrefs } from "./studio-pro-draw-prefs";
 import type { StudioWorkspaceState } from "./studio-workspaces";
 
 import { useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 const ZOOM_MIN = 0.2;
@@ -595,11 +597,8 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   const measuredDockRef = useRef<HTMLElement>(null);
   useStudioMobileDockMetrics(isMobile, measuredDockRef, drawSheetRef);
   const t = useT();
-  const localizedWorkspaceToggle = localizeStudioText(
-    t,
-    "작업 메뉴",
-    "studio.mobileDock.workspaceToggle",
-  );
+  const bt = useBilingual("studio.mobileDock");
+  const localizedWorkspaceToggle = localizeStudioText(t, "작업 메뉴", "studio.mobileDock.workspaceToggle");
   // 도크 라벨은 로케일 팩 키를 우선하고, 팩이 아직 안 붙었거나 키가 없으면 저작 한국어로 되돌아온다.
   // 기존 키가 정확히 같은 의미면 새 키를 만들지 않고 재사용한다(75개 팩 전부에 이미 번역이 있다).
   const label = {
@@ -1797,12 +1796,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                   // bubble into StudioToolHint and cover the touch canvas with a rich coach.
                   event.stopPropagation();
                 }}
-                onClick={() => {
-                  setWorkspaceDockExpanded(false);
-                  void loadStudioBrushStudio();
-                  setMenu(null);
-                  setMobileSheet((s) => (s === "draw" ? null : "draw"));
-                }}
+                onClick={() => { setWorkspaceDockExpanded(false); void loadStudioBrushStudio(); setMenu(null); setMobileSheet((s) => (s === "draw" ? null : "draw")); }}
                 swatch={(
                   <span
                     aria-hidden
@@ -1813,6 +1807,8 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
               />
                 <StudioDockNavButton icon={Layers} label="레이어" aria-label="레이어 열기"
                   onClick={() => { setWorkspaceDockExpanded(false); setMenu(null); openInspectorRoute({ primary: "layers" }, "props"); }} />
+                <StudioDockNavButton icon={Search} label={bt("소재 찾기", "Find assets")} aria-haspopup="dialog"
+                  onClick={() => { setWorkspaceDockExpanded(false); setMobileSheet(null); preloadStudioAssetToolPopoverBody(); setMenu("asset"); }} />
                 <StudioDockNavButton icon={Grid3X3} label="전체 도구" aria-label="전체 도구 열기"
                   onClick={(event) => { setWorkspaceDockExpanded(false); setMobileSheet(null); setMenu(null); requestStudioAllTools(workspaceToggleRef.current ?? event.currentTarget); }} />
               </div>

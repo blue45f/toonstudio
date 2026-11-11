@@ -41,7 +41,7 @@ describe("작업 홈의 첫 행동과 상태 안내", () => {
     expect(container.textContent).not.toMatch(/OPFS|SQLite|1초|오른쪽 규격/u);
   });
 
-  it.each([false, true])("저장 위치 지정 여부(%s)를 저장 성공이나 제작 진척으로 오인시키지 않는다", (configured) => {
+  it.each([false, true])("저장 프로필 유무(%s)로 저장 완료 배지를 만들지 않는다", (configured) => {
     const project = createStudioProject(window.localStorage, {
       id: "clarity-recent",
       title: "이어서 작업할 작품",
@@ -54,8 +54,8 @@ describe("작업 홈의 첫 행동과 상태 안내", () => {
     showHeader();
     const recent = screen.getByRole("region", { name: "최근 작업 빠른 이어하기" });
     const badge = recent.querySelector('[data-studio-recent-save-badge="true"]');
-    expect(badge?.textContent).toBe(configured ? "저장 위치 지정됨" : "임시 작업");
-    expect(recent.textContent).not.toMatch(/자동저장됨|정식 저장 연결됨/u);
+    expect(badge).toBeNull();
+    expect(recent.textContent).not.toMatch(/자동저장됨|정식 저장 연결됨|저장 위치 지정됨/u);
     expect(within(recent).queryByRole("list", { name: "5단계 제작 공정 흐름" })).toBeNull();
     expect(within(recent).getByRole("link", { name: "최근 작업 열기" }).getAttribute("href")).toContain(`/studio/p/${project.id}/`);
     expect(within(recent).getByRole("link", { name: "작품 단계" }).getAttribute("href")).toBe(`/studio/p/${project.id}/overview`);

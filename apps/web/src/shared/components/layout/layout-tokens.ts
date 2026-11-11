@@ -51,6 +51,7 @@ export const LAYOUT_DIMENSIONS = {
   workspaceMainPaddingBlockEnd: "40px",
   homeSectionGap: "44px",
   homeBandGap: "36px",
+  controlRadius: "0.625rem",
 } as const;
 
 /**
@@ -120,6 +121,7 @@ export const LAYOUT_TYPE_SCALE = {
   display: {
     heading: { base: "2rem", sm: "2.25rem", lg: "3.75rem" },
     sectionTitle: { base: "1.5rem", sm: "1.875rem", lg: "2.25rem" },
+    taskHeading: "clamp(1.5rem, 4vw, 2rem)",
   },
   editorial: {
     heading: "clamp(2.25rem, 3.4vw, 3.375rem)",

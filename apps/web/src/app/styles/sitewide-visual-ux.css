@@ -35,11 +35,13 @@
   --layout-workspace-main-padding-block-end: 40px;
   --layout-home-section-gap: 44px;
   --layout-home-band-gap: 36px;
+  --layout-control-radius: 0.625rem;
   --site-content-max: var(--layout-content-app);
   --site-page-gutter: var(--layout-gutter);
   --site-section-space: clamp(2.25rem, 6vw, 5rem);
   --site-card-gap: clamp(0.75rem, 1.4vw, 1.25rem);
   --site-control-size: 44px;
+  --site-control-radius: var(--layout-control-radius);
   --site-focus-ring-width: 2px;
 }
 

@@ -2,6 +2,7 @@
 
 - 문서 상태: **current** (최종 개편 기준일: `2026-11-11`)
 - 권위 범위: ToonStudio 전역 공개 페이지, 탐색(Spectrum), 스튜디오 에디터(2D·3D), 프로젝트·프로덕션 허브, 마켓, 커뮤니티, 모바일 셸 및 운영자 콘솔(`Admin`)의 **단일 시각·인터랙션·레이아웃 정본**이다. 전수 화면별 상세 개편 명세는 [UI/UX v2 전수 개편 설계서](./docs/architecture/ui-ux-v2-overhaul-blueprint-2026-11-11.md), 제품 경계는 [PRODUCT.md](./PRODUCT.md)를 따른다.
+- 규격과 실제 완료 증거는 구분한다. 화면군별 구현·목표·잔여는 [현행 대조표](./docs/design/sitewide-clarity-20261111/verification-matrix.md), 실제 검증·원격 반영·배포 상태는 [검증 및 반영 기록](./docs/design/sitewide-clarity-20261111/validation-and-release.md)을 따른다. 원본 시안의 완료 문구나 정적 경로 수만으로 사용성·배포 완료를 판정하지 않는다.
 
 시그니처 디자인 언어: **이야기가 살아나는 창작자의 아틀리에(The Living Webtoon Atelier)**. 짙은 남색 스타라이트 표면과 청록·보라 행동 신호, 섬세한 1px 경계선, 원고 아트워크가 주인공이 되는 절제된 크롬을 공유한다. 전역 헤더·푸터·사이드 레일·모바일 독·에디터 패널은 모두 하나의 일관된 제품 규격으로 동작한다.
 
@@ -68,6 +69,7 @@
 **고정 디스플레이 스케일 계약 (`LAYOUT_TYPE_SCALE`)**:
 - 페이지·히어로 제목(`--site-heading-size`): 기본 `2rem` → `≥640px 2.25rem` → `≥1024px 3.75rem`
 - 섹션 제목(`--site-section-title-size`): 기본 `1.5rem` → `≥640px 1.875rem` → `≥1024px 2.25rem`
+- 작업형 공통 제목(`LAYOUT_TYPE_SCALE.display.taskHeading` / `--site-task-heading-size`): `clamp(1.5rem, 4vw, 2rem)`. `SitePageHeader` 기본 크기에 적용하고, 소개용 `hero`와 읽기·편집기의 문서 제목은 각 역할의 규격을 유지한다. 테마 변경이 크기나 배치를 바꾸지 않는다.
 - 본문 가독 폭은 `65–75ch`(`--site-reading-max: 48rem`)를 유지하며, 테마 전환이 글자 크기를 바꾸지 않는다(`typography-display-scale.contract.test.ts`).
 
 ## 4. 표면 깊이 · 시그니처 자산 · 컴포넌트 규격
@@ -87,7 +89,7 @@
 
 ### 필수 컴포넌트 및 상태 계약 (`기본 / 호버 / 포커스 / 활성 / 비활성+사유 / 스켈레톤 로딩 / 오류`)
 
-- **버튼**: `solid`(주 행동, 한 영역당 1개 원칙) / `outline`(`ghost`, 보조 행동) / `quiet`(아이콘·텍스트 도구). 기본 반경 `0.625rem`, 포커스 링은 `2px accent` 오프셋. 비활성(`disabled`) 항목은 특히 에디터 메뉴·3D 패널에서 **왜 비활성인지 한 줄 사유(`unavailableReason`)**를 툴팁·보조 문구로 함께 제공한다.
+- **버튼**: `solid`(현재 상태의 주 행동) / `outline`(`ghost`, 보조 행동) / `quiet`(아이콘·텍스트 도구). 작업이 있으면 이어하기, 없으면 새 작업을 우선한다. 공통 반경은 `--layout-control-radius`의 `0.625rem`을 `--site-control-radius`로 참조하고, 포커스 링은 `2px accent` 오프셋이다. 색·호버는 의미 토큰을 사용하며 테마와 무관한 색상 글로우를 넣지 않는다. 축소 모션 설정에서는 버튼 이동·크기 애니메이션을 끈다. 비활성(`disabled`) 항목은 특히 에디터 메뉴·3D 패널에서 **왜 비활성인지 한 줄 사유(`unavailableReason`)**를 툴팁·보조 문구로 함께 제공한다.
 - **스위치/토글 단일 기하 규칙**: 독립 토글은 반드시 `@/shared/components/ui/switch`의 `Switch`(`role="switch"` + `aria-checked`), 행 내부 이진 표시는 `SwitchIndicator`를 재사용하며 개별 화면에서 임의 thumb/track을 다시 그리지 않는다. 기준 규격은 `44×24px` 트랙, `20px` thumb, 명시적 `left/top 2px` 기준점, ON 이동 `20px`, 독립 클릭 영역 최소 `44×44px`이다.
 - **로딩과 빈 상태 (스피너 금지)**: 회전 스피너 대신 실제 콘텐츠 골격과 동일한 **스켈레톤(`RouteSilhouetteSkeleton`, `LoadingState`)**만 사용한다. 빈 상태(Empty State)는 단순 "데이터 없음"이 아니라 **다음 첫 행동 버튼(예: `새 웹툰 시작`, `내 파일 불러오기`)을 가르치는 런처**로 설계한다.
 - **통합 커맨드 팔레트 (`⌘K` / 에디터 `F1`)**: 작품·작가·소재·페이지 이동은 `⌘K`, 에디터 내부의 모든 숨겨진 고급 명령·브러시·필터·단축키·타 프로그램 용어 매핑(클립스튜디오·포토샵·스케치업 용어 검색)은 `F1` 명령 검색으로 언제든 1초 만에 호출된다.

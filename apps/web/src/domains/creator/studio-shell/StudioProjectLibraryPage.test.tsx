@@ -300,7 +300,7 @@ describe("StudioProjectLibraryPage", () => {
     );
 
     expect(await screen.findByText("최근 위치 기억됨")).toBeTruthy();
-    expect(screen.getByText("page-8 · 확대 140% · 선택 1개")).toBeTruthy();
+    expect(screen.getByText("최근 페이지 · 확대 140% · 선택 1개")).toBeTruthy();
     // 시딩된 예제·샘플 카드에도 "이어서 작업" 링크가 있으므로 이 작품의 카드 안에서 확인한다.
     const card = screen.getByRole("heading", { name: "이어보기 작품" }).closest("article");
     expect(card).not.toBeNull();

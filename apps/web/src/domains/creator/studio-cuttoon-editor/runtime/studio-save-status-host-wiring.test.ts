@@ -62,7 +62,7 @@ describe("studio save-status + first-screen host wiring", () => {
   it("view feeds the first-publish suggestion through the chrome mount (A5 후속 호스트 마운트)", () => {
     const view = read(VIEW);
     // 콜백을 넘기지 않으면 제안이 무표시로 설계돼 있어, 마운트만으로는 동선이 살지 않는다.
-    expect(view).toContain("publishSuggestion={{");
+    expect(view).toContain('publishSuggestion={s.workMode === "finish" ? {');
     // 1회성 scope는 문서 단위(오토세이브 문서 키)여야 한다.
     expect(view).toContain("scope: s.saveIntentScope?.documentKey");
     // 이미 게시된 문서는 제안 대상이 아니다.

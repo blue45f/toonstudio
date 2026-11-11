@@ -39,14 +39,14 @@ export function StudioWorkModeBar({
   const [coachingOpen, setCoachingOpen] = useState(false);
   const coachingId = useId();
   const meta = STUDIO_WORK_MODE_META[mode];
-  const next = nextStudioWorkMode(mode);
+  const next = mode === "all" ? null : nextStudioWorkMode(mode);
   const showSuggestion = suggestedMode != null && suggestedMode !== mode;
   const suggestionMeta = showSuggestion ? STUDIO_WORK_MODE_META[suggestedMode] : null;
 
   return (
     <div className="border-b border-line bg-panel/60 px-3 py-2" data-work-mode-bar={mode}>
       <div className="flex flex-wrap items-center gap-2">
-        <div role="tablist" aria-label={lang === "ko" ? "작업 모드" : "Work mode"} className="flex flex-wrap gap-1">
+        <div role="tablist" aria-label={lang === "ko" ? "도구 모드" : "Tool mode"} className="flex flex-wrap gap-1">
           {STUDIO_WORK_MODES.map((candidate) => {
             const candidateMeta = STUDIO_WORK_MODE_META[candidate];
             const selected = candidate === mode;

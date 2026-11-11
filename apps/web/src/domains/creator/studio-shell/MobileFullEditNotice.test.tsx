@@ -16,10 +16,11 @@ vi.mock("@/shared/lib/i18n-bilingual-copy", () => ({
 let narrowViewport = true;
 let touchTabletViewport = false;
 
-function notice(surface = "canvas") {
+function notice(surface = "canvas", startCollapsed = false) {
   const plan = resolveStudioMobileTouchPlan(surface);
   return (
     <MobileFullEditNotice
+      startCollapsed={startCollapsed}
       surfaceId={`studio-editor-${surface}`}
       surfaceLabel={plan.label}
       mobileCapabilities={plan.canDo}
@@ -49,6 +50,22 @@ afterEach(() => {
 });
 
 describe("모바일 편집 안내의 펼치기와 복귀", () => {
+  it("캔버스의 작은 기기 안내도 제한을 다시 열 수 있고 확인 기록을 미리 만들지 않는다", () => {
+    render(notice("canvas", true));
+    const toggle = screen.getByRole("button", { name: "기기 안내" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("heading", { name: "지금 할 수 있어요" })).toBeNull();
+    expect(window.sessionStorage.getItem(mobileFullEditNoticeStorageKey("studio-editor-canvas"))).toBeNull();
+    fireEvent.click(toggle);
+    expect(screen.getByRole("heading", { name: "이 기기에서는 안 돼요" })).toBeTruthy();
+    for (const item of resolveStudioMobileTouchPlan("canvas").cannotDo) expect(screen.getByText(item.ko)).toBeTruthy();
+    const close = screen.getByRole("button", { name: "안내 접고 계속하기" });
+    close.focus();
+    fireEvent.click(close);
+    expect(document.activeElement).toBe(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  });
+
   it("첫 진입에는 정본 제한을 짧게 알리고 상세 목록을 접으며 작업 포커스를 가져가지 않는다", () => {
     render(<button type="button">그리기</button>);
     const drawingTool = screen.getByRole("button", { name: "그리기" });

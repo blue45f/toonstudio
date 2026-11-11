@@ -1,14 +1,12 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { FolderOpen, HardDrive } from "lucide-react";
+import { FolderOpen } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
-import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
-import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
-import { studioLobbyRecentProjects } from "./studio-creator-lobby-model";
+import { studioLibraryRecentWork } from "./studio-library-recent-work";
 import {
   StudioProjectLibraryCard,
   StudioProjectLibraryRecoveryRow,
@@ -61,12 +59,8 @@ export function StudioProjectLibraryManagementContent({
     setVisibleRecoveryCount(INITIAL_SECTION_PROJECT_COUNT * 2);
   }, [view, query]);
 
-  const userVisibleProjects = visibleProjects.filter(
-    (project) => project.id !== EXAMPLE_PROJECT_ID && project.id !== SAMPLE_PROJECT_ID,
-  );
-  const recentCandidates = userVisibleProjects.length > 0 ? userVisibleProjects : visibleProjects;
   const mostRecentProjectId = view === "active"
-    ? studioLobbyRecentProjects(recentCandidates, 1)[0]?.id ?? null
+    ? studioLibraryRecentWork(visibleProjects, projectResumeTarget)[0]?.id ?? null
     : null;
 
   const shownTemporaryProjects = temporaryProjects.slice(0, visibleTemporaryCount);
@@ -201,13 +195,9 @@ export function StudioProjectLibraryManagementContent({
                     <span className="ml-2 text-sm font-bold text-fg-3">{temporaryProjects.length}</span>
                   </h2>
                   <p className="mt-1 text-xs leading-5 text-fg-3">
-                    {bi("이 기기에 자동저장된 작업입니다. 정식 저장을 누르면 그때 저장 위치를 선택합니다.", "Autosaved on this device. Choose a destination only when you explicitly save.")}
+                    {bi("저장 위치를 아직 지정하지 않은 작업입니다. 원고를 열어 실제 저장 상태를 확인하세요.", "These projects have no chosen save destination. Open a manuscript to check its current save status.")}
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft/20 px-3 py-1.5 text-[0.68rem] font-bold text-warning">
-                  <HardDrive size={13} aria-hidden="true" />
-                  {bi("복구 가능", "Recoverable")}
-                </span>
               </div>
               <div ref={temporaryGridRef} data-studio-project-grid="temporary" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {shownTemporaryProjects.map((project) => renderProjectCard(project, true))}
@@ -242,7 +232,7 @@ export function StudioProjectLibraryManagementContent({
                     <span className="ml-2 text-sm font-bold text-fg-3">{savedProjects.length}</span>
                   </h2>
                   <p className="mt-1 text-xs leading-5 text-fg-3">
-                    {bi("파일 또는 개인 저장소와 연결한 정식 프로젝트입니다. 저장한 .toonstudio 파일은 파일 가져오기에서 언제든 다시 열 수 있습니다.", "Formally saved projects connected to a file or personal storage. Saved .toonstudio files can be reopened anytime from Open .toonstudio file.")}
+                    {bi("저장 설정이 있는 프로젝트입니다. 실제 저장 위치와 완료 시각은 원고에서 확인하세요.", "These projects have save settings. Check the manuscript for the actual destination and completed save time.")}
                   </p>
                 </div>
                 <Link href="/studio/import" className="inline-flex min-h-11 items-center text-xs font-bold text-accent underline underline-offset-4">

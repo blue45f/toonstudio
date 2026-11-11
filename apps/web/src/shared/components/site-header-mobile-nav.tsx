@@ -4,6 +4,7 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 import { ArrowRight, ChevronDown, FolderOpen, LayoutGrid, Palette, X } from "lucide-react";
 import { useEffect, useRef, type RefObject } from "react";
+import { useLocation } from "react-router-dom";
 
 import {
   SITE_UTILITY_NAVIGATION,
@@ -17,7 +18,6 @@ import {
 import { ToonStudioMark } from "./toonstudio-mark";
 import { ToonStudioWordmark } from "./toonstudio-brand";
 
-import { usePathname } from "@/shared/navigation/navigation";
 import Link from "@/shared/navigation/router-link";
 import { cx } from "@/shared/lib/cx";
 import { useI18n, useT } from "@/shared/lib/i18n";
@@ -119,7 +119,8 @@ export function MobileHeaderNavigation({
   isMobileViewport = true,
 }: MobileHeaderNavigationProps) {
   useBilingualI18nRevision();
-  const pathname = usePathname();
+  const { pathname, key: locationKey } = useLocation();
+  const previousLocationKey = useRef(locationKey);
   const language = useI18n((state) => state.lang);
   const locale = siteNavigationLocale(language);
   const t = useT();
@@ -150,6 +151,14 @@ export function MobileHeaderNavigation({
           "영감을 찾고, 그리고, 함께 나누는 작업실",
           "Discover inspiration, draw and share your work"
         );
+
+  useEffect(() => {
+    const committed = previousLocationKey.current !== locationKey;
+    previousLocationKey.current = locationKey;
+    // RouterLink와 이동 취소 가드가 먼저 처리되도록, 실제 이동이 반영된 뒤에만 닫는다.
+    // 동일 경로 이동도 새 key를 만들지만, 취소·수정키·새 탭은 현재 메뉴를 유지한다.
+    if (committed && menuOpen) closeMenu();
+  }, [locationKey, menuOpen, closeMenu]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -239,14 +248,6 @@ export function MobileHeaderNavigation({
             aria-label={t("nav.allMenu")}
             tabIndex={-1}
             data-site-product={navigationContext}
-            onClickCapture={(event) => {
-              if (
-                !event.defaultPrevented &&
-                (event.target as HTMLElement | null)?.closest("a[href]")
-              ) {
-                closeMenu();
-              }
-            }}
             className="absolute inset-x-0 top-0 z-[110] max-h-[100dvh] overflow-y-auto overscroll-contain border-b border-line-strong bg-canvas/95 shadow-2xl backdrop-blur-2xl motion-safe:animate-fade-up"
           >
             <div className="sticky top-0 z-10 border-b border-line/60 bg-canvas/92 backdrop-blur-2xl">

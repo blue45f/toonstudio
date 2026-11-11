@@ -184,7 +184,7 @@ test("Local My work resumes the exact document context and keeps it after return
   await expect(projectCard).toHaveCount(1);
   await expect(projectCard).toBeVisible();
   await expect(projectCard.getByText("최근 위치 기억됨", { exact: true })).toBeVisible();
-  await expect(projectCard.getByText("page-2 · 확대 160% · 선택 1개", { exact: true })).toBeVisible();
+  await expect(projectCard.getByText("최근 페이지 · 확대 160% · 선택 1개", { exact: true })).toBeVisible();
 
   const continueLink = projectCard.getByRole("link", { name: "이어서 작업", exact: true });
   await expect(continueLink).toHaveAttribute(
@@ -207,7 +207,7 @@ test("Local My work resumes the exact document context and keeps it after return
     }
     return page.evaluate(() => (window as Window & { __studioExactResumeEvents?: unknown[] }).__studioExactResumeEvents?.length ?? 0);
   }).toBeGreaterThan(0);
-  await expect(page.getByText(/최근 작업 위치를 복원했어요\. page-2 · 확대 160%/u)).toBeVisible();
+  await expect(page.getByText(/최근 작업 위치를 복원했어요\. 최근 페이지 · 확대 160%/u)).toBeVisible();
   await expect.poll(async () => page.evaluate(() => (
     (window as Window & { __studioExactResumeEvents?: Array<{ pageId?: string; zoom?: number; selectedElementIds?: string[] }> })
       .__studioExactResumeEvents?.at(-1) ?? null
@@ -232,7 +232,7 @@ test("Local My work resumes the exact document context and keeps it after return
   await page.goto("/studio", { waitUntil: "domcontentloaded" });
   await expect(projectCard).toHaveCount(1);
   await expect(projectCard.getByText("최근 위치 기억됨", { exact: true })).toBeVisible();
-  await expect(projectCard.getByText(/page-2 · 확대 160%/u)).toBeVisible();
+  await expect(projectCard.getByText(/최근 페이지 · 확대 160%/u)).toBeVisible();
   await capturePageEvidence(page, testInfo, "studio-exact-resume-library-mobile");
   expect(pageErrors).toEqual([]);
 });

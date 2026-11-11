@@ -252,6 +252,26 @@ describe("TitleEpisodeSection — 회차 데이터가 있을 때", () => {
 
 
 describe("회차 이어보기 공개 상태", () => {
+  it.each([0.5, 1])("기존 진도 %s가 있어도 미확인 회차를 이어보기로 만들지 않는다", (ratio) => {
+    window.localStorage.setItem(
+      "toonstudio.reader-progress.v1.guest",
+      JSON.stringify({ "fog-signal": { episode: 2, ratio, updatedAt: Date.now() } }),
+    );
+    renderSection(makeTitle({ totalEpisodes: 100 }));
+    expect(screen.queryByRole("link", { name: "이어서 읽기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "다음 화 보기" })).toBeNull();
+    expect(screen.getAllByRole("link").some((link) => link.getAttribute("href")?.includes("/read/"))).toBe(false);
+  });
+
+  it("부분 회차 목록의 빈 번호를 다음 화로 만들지 않는다", () => {
+    window.localStorage.setItem(
+      "toonstudio.reader-progress.v1.guest",
+      JSON.stringify({ "fog-signal": { episode: 2, ratio: 1, updatedAt: Date.now() } }),
+    );
+    renderSection(makeTitle({ totalEpisodes: 100 }), [{ number: 2 }, { number: 4 }]);
+    expect(screen.queryByRole("link", { name: "다음 화 보기" })).toBeNull();
+  });
+
   it("다 읽은 회차 다음이 공개 예정이면 다음 화 버튼을 만들지 않는다", () => {
     window.localStorage.setItem(
       "toonstudio.reader-progress.v1.guest",

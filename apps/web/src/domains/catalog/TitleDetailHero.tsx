@@ -1,8 +1,9 @@
-import { BookOpen, Bookmark, BookmarkCheck, Star } from "lucide-react";
+import { ArrowUpRight, BookOpen, Bookmark, BookmarkCheck, Star } from "lucide-react";
 
 import type { Title } from "@/shared/lib/types";
 
 import { isPlaceholderAuthorName } from "./local-catalog-fallback";
+import { resolveExternalPlatformGuide } from "./title-episode-empty-guide";
 import { ArtBackdrop } from "@/shared/components/art-backdrop";
 import { TitlePoster } from "@/shared/components/title-poster";
 import { Stars } from "@/shared/components/ui/stars";
@@ -12,6 +13,7 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { useNextgenLabSettings } from "@/shared/hooks/use-nextgen-lab-settings";
+import { PLATFORMS } from "@/shared/lib/platforms";
 import { useApp, useHydrated } from "@/shared/lib/store";
 import { AGE_LABEL, STATUS_LABEL, TYPE_LABEL } from "@/shared/lib/taxonomy";
 import { toast } from "@/shared/lib/toast-store";
@@ -56,7 +58,7 @@ function AuthorNames({ raw }: { raw: string }) {
  * 제작 개요 무대(ProductionOverviewCoverStage) 문법의 이식: 첫 화면의 주인공은
  * 표지 그 자체다. 표지 포스터를 왼쪽에 원본 비율(3:4) 그대로 크게 세우고,
  * 같은 표지를 흐릿하게 깐 배경이 무대감만 만든다. 배지·대형 제목·작가·평점·
- * 장르·줄거리와 주 행동 2개(첫 화부터 읽기·서재에 담기)는 무대 오른쪽에 정합한다.
+ * 장르·줄거리와 주 행동(공식 감상·서재에 담기)은 무대 오른쪽에 정합한다.
  * 표지가 없는 작품은 TitlePoster의 타이포그래픽 포스터가 같은 자리·같은 크기를
  * 차지해 구도가 무너지지 않는다 — 없는 표지를 이미지로 위장하지 않는다.
  * 배경 무대는 ArtBackdrop(S3-17)이 책임진다: 메타데이터에 사전 계산된 표지
@@ -70,6 +72,7 @@ export function TitleDetailHero({
   reviewCount,
   estimated,
   showSynopsis,
+  showAvailability = true,
   firstEpisodeHref,
 }: {
   title: Title;
@@ -77,7 +80,8 @@ export function TitleDetailHero({
   reviewCount: number;
   estimated: boolean;
   showSynopsis: boolean;
-  /** 회차가 없다고 확정된 작품이면 null — 읽기 행동을 숨긴다. */
+  showAvailability?: boolean;
+  /** 확인된 공개 회차의 내부 안내 경로. 회차가 확인되지 않으면 null이다. */
   firstEpisodeHref: string | null;
 }) {
   useBilingualI18nRevision();
@@ -87,6 +91,9 @@ export function TitleDetailHero({
   const current = useApp((s) => s.reads[title.id]);
   const setRead = useApp((s) => s.setRead);
   const saved = hydrated && current != null && current !== "dropped";
+  const externalGuide = resolveExternalPlatformGuide(title.availability, { availabilityVisible: showAvailability });
+  const official = externalGuide.primary;
+  const officialPlatformName = official ? PLATFORMS[official.platformId]?.name ?? official.platformId : null;
 
   const handleSaveToggle = () => {
     if (current === "want") {
@@ -205,14 +212,31 @@ export function TitleDetailHero({
         )}
 
         <div className="col-span-2 mt-1 grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-2.5 lg:col-span-1 lg:col-start-2 lg:flex lg:flex-wrap">
+          {official && (
+            <a
+              data-testid="title-official-read-link"
+              href={official.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={formatI18nTemplate(bi("{v0}에서 보기 (새 탭)", "Read on {v0} (new tab)"), { v0: officialPlatformName ?? "" })}
+              className="inline-flex min-h-12 [min-block-size:3rem]! items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              <BookOpen size={17} aria-hidden="true" />
+              {formatI18nTemplate(bi("{v0}에서 보기", "Read on {v0}"), { v0: officialPlatformName ?? "" })}
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </a>
+          )}
           {firstEpisodeHref && (
             <Link
               href={firstEpisodeHref}
               viewTransition={labSettings.viewTransitions}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(100deg,var(--color-accent),var(--color-accent-2))] px-6 text-sm font-bold text-on-accent shadow-[0_10px_28px_-10px_oklch(0.4_0.15_295/0.7)] transition-transform duration-150 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100"
+              className={cn(
+                "inline-flex min-h-12 [min-block-size:3rem]! items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+                official ? "border border-white/30 bg-white/10 text-white hover:bg-white/20" : "bg-accent text-on-accent hover:bg-accent-2",
+              )}
             >
               <BookOpen size={17} aria-hidden />
-              {bi("첫 화부터 읽기", "Start from episode 1")}
+              {bi("회차 안내 보기", "View episode guide")}
             </Link>
           )}
           <button
@@ -230,6 +254,14 @@ export function TitleDetailHero({
             {saved ? bi("서재에 담김", "In your library") : bi("서재에 담기", "Save to library")}
           </button>
         </div>
+
+        {showAvailability && (
+          <p className="col-span-2 text-xs leading-relaxed text-white/75 lg:col-span-1 lg:col-start-2">
+            {official
+              ? bi("회차 감상은 공식 플랫폼에서 제공돼요. 새 탭으로 열립니다.", "Episodes are available on the official platform. Opens in a new tab.")
+              : bi("공식 감상 링크가 아직 연결되지 않았어요. 아래 감상 플랫폼 안내를 확인해 주세요.", "An official reading link is not connected yet. Check the platform information below.")}
+          </p>
+        )}
 
         <nav
           data-testid="title-detail-section-nav"

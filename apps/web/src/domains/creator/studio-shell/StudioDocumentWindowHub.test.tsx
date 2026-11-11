@@ -150,7 +150,7 @@ describe("StudioDocumentWindowHub", () => {
 
   it("opens production presets as positioned companion windows", () => {
     renderHub();
-    fireEvent.click(screen.getByRole("button", { name: "1창" }));
+    fireEvent.click(screen.getByRole("button", { name: "작업공간·창 메뉴, 1개 창" }));
     const preset = screen.getByRole("heading", { name: "원고 제작" }).closest("article");
     if (!preset) throw new Error("preset article missing");
 
@@ -167,6 +167,18 @@ describe("StudioDocumentWindowHub", () => {
     ]);
   });
 
+  it("키보드로 작업공간 메뉴에 진입하고 Escape로 원래 메뉴 버튼에 복귀한다", async () => {
+    renderHub();
+    const trigger = screen.getByRole("button", { name: "작업공간·창 메뉴, 1개 창" });
+    trigger.focus();
+    fireEvent.keyDown(window, { key: "m", ctrlKey: true, shiftKey: true });
+    const currentWorkspace = screen.getByRole("button", { name: "그리기·채색" });
+    await waitFor(() => expect(document.activeElement).toBe(currentWorkspace));
+    fireEvent.keyDown(currentWorkspace, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("discovers a peer and requests focus without exposing its internal id", () => {
     runtime.snapshot.peers = [{
       instanceId: "studio-window-review-5678",
@@ -178,7 +190,7 @@ describe("StudioDocumentWindowHub", () => {
     }];
     renderHub();
 
-    fireEvent.click(screen.getByRole("button", { name: "2창" }));
+    fireEvent.click(screen.getByRole("button", { name: "작업공간·창 메뉴, 2개 창" }));
     fireEvent.click(screen.getByRole("button", { name: "이 탭으로 전환" }));
     expect(runtime.focus).toHaveBeenCalledWith("studio-window-review-5678");
     expect(screen.getByRole("dialog").textContent).not.toContain(
@@ -193,22 +205,29 @@ describe("StudioDocumentWindowHub", () => {
     fireEvent.click(screen.getByRole("button", {
       name: "현재 작업공간을 독립 창으로 열기",
     }));
-    fireEvent.click(screen.getByRole("button", { name: "1창" }));
+    fireEvent.click(screen.getByRole("button", { name: "작업공간·창 메뉴, 1개 창" }));
 
     expect(screen.getByRole("status").textContent).toContain(
       "브라우저가 새 창을 차단했습니다",
     );
   });
 
-  it("exposes the 5-stage canonical production pill bar for one-click stage switching", () => {
+  it("기본 도구 줄은 현재 작업공간을 유지하고 다른 작업공간은 메뉴에서 선택한다", () => {
     const { onChangeWorkspace } = renderHub();
-
-    const stageNav = screen.getByRole("navigation", { name: "5단계 제작 공정 전환" });
+    expect(screen.queryByRole("navigation", { name: "작업공간 바로가기" })).toBeNull();
+    expect(document.querySelector('[data-studio-autosave-dot="true"]')).toBeNull();
+    const trigger = screen.getByRole("button", { name: "작업공간·창 메뉴, 1개 창" });
+    fireEvent.click(trigger);
+    const stageNav = screen.getByRole("navigation", { name: "작업공간 바로가기" });
     expect(stageNav.getAttribute("data-studio-stage-pill-bar")).toBe("true");
-    expect(within(stageNav).getByRole("button", { name: "3. 작화·채색" }).getAttribute("aria-pressed")).toBe("true");
-    expect(within(stageNav).getByRole("button", { name: "1. 콘티" }).getAttribute("aria-pressed")).toBe("false");
+    expect(within(stageNav).getByRole("button", { name: "그리기·채색" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(stageNav).getByRole("button", { name: "콘티" }).getAttribute("aria-pressed")).toBe("false");
+    expect(stageNav.textContent).not.toMatch(/\d\.|식자|공정/u);
 
-    fireEvent.click(within(stageNav).getByRole("button", { name: "4. 식자" }));
+    fireEvent.click(within(stageNav).getByRole("button", { name: "웹툰 편집" }));
     expect(onChangeWorkspace).toHaveBeenCalledWith("comic");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    expect((screen.getByRole("combobox", { name: "문서 작업공간" }) as HTMLSelectElement).value).toBe("draw");
   });
 });

@@ -21,6 +21,8 @@ export const MOBILE_FULL_EDIT_NOTICE_QUERY = STUDIO_TOUCH_NARROW_QUERY;
 export const MOBILE_TOUCH_TABLET_NOTICE_QUERY = STUDIO_TOUCH_TABLET_QUERY;
 
 export interface MobileFullEditNoticeProps {
+  /** 캔버스는 작업을 먼저 보여 주고, 사용자가 기기 안내를 선택하면 제한을 펼친다. */
+  readonly startCollapsed?: boolean;
   /** 표면별 닫힘 기억 키. 예: "studio-editor-canvas". */
   readonly surfaceId: string;
   /** 안내 제목에 들어가는 표면 이름. 예: { ko: "캔버스 편집기", en: "Canvas editor" }. */
@@ -64,6 +66,7 @@ export function MobileFullEditNotice(props: MobileFullEditNoticeProps) {
 }
 
 function MobileFullEditNoticeContent({
+  startCollapsed = false,
   surfaceId,
   surfaceLabel,
   mobileCapabilities,
@@ -76,7 +79,7 @@ function MobileFullEditNoticeContent({
   const toggleRef = useRef<HTMLButtonElement>(null);
   const detailsId = useId();
   const limitations = mobileLimitations ?? [];
-  const compact = dismissed && !expanded;
+  const compact = (startCollapsed || dismissed) && !expanded;
   // 정본 계획의 제한을 그대로 요약에 써서, 펼치기 전에도 현재 도구의 경계를 알린다.
   const firstLimitation = limitations[0];
   const reservedBottom = "max(var(--studio-canvas-bottom-inset, 4.75rem), var(--studio-mobile-dock-measured-height, 0px), env(safe-area-inset-bottom))";

@@ -81,7 +81,7 @@ const ASIDE_COLUMNS = {
 } as const;
 
 const TITLE_SIZE = {
-  default: "text-[clamp(1.5rem,4vw,2rem)] leading-[1.2] tracking-[-0.025em]",
+  default: "text-[length:var(--site-task-heading-size)] leading-[1.2] tracking-[-0.025em]",
   hero: "text-[clamp(2rem,6vw,3.25rem)] leading-[1.1] tracking-[-0.045em]",
 } as const;
 
