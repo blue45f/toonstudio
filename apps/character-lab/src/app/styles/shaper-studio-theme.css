@@ -2,25 +2,25 @@
  * SHAPER Studio UI/UX 디자인 시스템 & 모던 웹 가이드라인(browser-ui-theming, slider, color, premium-ui-design) 스타일시트.
  *
  * REA 역공학 근거 (Assembly-CSharp.dll):
- * - UIImageView::SetImage (0x060002eb): 캔버스/썸네일 배경 #121212 (0.07, 0.07, 0.07, 1.0)
- * - UIImageView::ShowEditButtons (0x060002e8): 호버 스크림 rgba(18, 18, 18, 0.5)
- * - UIManager::Awake (0x06000327): defaultColorBlock #333333 (0.2, 0.2, 0.2), toggleColorBlock #FFFF00 (스튜디오 옐로 하이라이트)
- * - UILayerToggleHelper::Start (0x0600030d): 비활성 레이어 #666666 (0.4, 0.4, 0.4)
- * - UIButtonHelper::.ctor (0x060002c1): 활성 아이콘 #FAFAFA (0.98), 비활성 #737373 (0.45)
- * - UITextKeycap::SetKeyCap (0x06000384) & UIManager::AlignUI (0x06000317): 하단 24px 컨텍스트 단축키 상태바 및 키캡 배지 (#B0B0B0)
+ * - UIImageView::SetImage (0x060002eb): 캔버스/썸네일 배경 OKLCH 다크 뉴트럴 (0.18 0 0)
+ * - UIImageView::ShowEditButtons (0x060002e8): 호버 스크림 반투명 다크 오버레이
+ * - UIManager::Awake (0x06000327): defaultColorBlock (0.32 0 0), toggleColorBlock 스튜디오 옐로 하이라이트
+ * - UILayerToggleHelper::Start (0x0600030d): 비활성 레이어 (0.48 0 0)
+ * - UIButtonHelper::.ctor (0x060002c1): 활성 아이콘 (0.985 0 0), 비활성 (0.55 0 0)
+ * - UITextKeycap::SetKeyCap (0x06000384) & UIManager::AlignUI (0x06000317): 하단 24px 컨텍스트 단축키 상태바 및 키캡 배지
  */
 
 :root {
-  --shaper-canvas: #121212;
-  --shaper-panel: #1a1c22;
-  --shaper-panel-2: #262932;
-  --shaper-surface-elevated: #333333;
-  --shaper-fg: #fafafa;
-  --shaper-muted: #b0b0b0;
-  --shaper-disabled: #737373;
-  --shaper-line: #3d4250;
-  --shaper-highlight: #f5d90a;
-  --shaper-scrim: rgba(18, 18, 18, 0.5);
+  --shaper-canvas: oklch(0.18 0 0);
+  --shaper-panel: oklch(0.22 0.012 264);
+  --shaper-panel-2: oklch(0.28 0.016 264);
+  --shaper-surface-elevated: oklch(0.32 0 0);
+  --shaper-fg: oklch(0.985 0 0);
+  --shaper-muted: oklch(0.76 0 0);
+  --shaper-disabled: oklch(0.55 0 0);
+  --shaper-line: oklch(0.38 0.022 264);
+  --shaper-highlight: oklch(0.88 0.18 98);
+  --shaper-scrim: color-mix(in oklab, oklch(0.18 0 0) 50%, transparent);
   --studio-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -32,14 +32,14 @@
   --lab-fg: var(--shaper-fg);
   --lab-muted: var(--shaper-muted);
   --lab-line: var(--shaper-line);
-  --lab-accent: #eab308;
+  --lab-accent: oklch(0.79 0.17 86);
 }
 
 :root[data-studio-theme="shaper"] .cl-button--primary,
 :root[data-studio-theme="shaper"] .cl-button[aria-pressed="true"] {
   background: color-mix(in oklab, var(--shaper-highlight) 85%, black);
   border-color: var(--shaper-highlight);
-  color: #121212;
+  color: oklch(0.18 0 0);
   font-weight: 600;
 }
 
@@ -205,7 +205,7 @@ input:not(input[type="range"]):user-valid {
   border-radius: 3px;
   border: 1px solid color-mix(in oklab, var(--lab-line) 75%, white 18%);
   background: color-mix(in oklab, var(--lab-panel-2) 88%, white 8%);
-  color: #b0b0b0;
+  color: var(--shaper-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.68rem;
   font-weight: 600;

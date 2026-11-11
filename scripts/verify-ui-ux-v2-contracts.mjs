@@ -4,7 +4,7 @@
  *
  * 브라우저를 기동하지 않고 <100ms 내에 아래 불변식을 검증한다:
  * 1. 정본 문서(PRODUCT.md, DESIGN.md, UI/UX v2 Blueprint, Quality Gates Policy) 존재 및 시안 A~P / 모바일 M1~M4 기록 동기화
- * 2. 독립 셸(apps/mobile/shell, apps/admin-web, apps/desktop-sync)의 스피너 금지(DESIGN.md §4), OKLCH 의미 토큰(§2), 44px 터치 타깃(WCAG 2.5.8) 준수
+ * 2. 독립 셸(apps/mobile/shell, apps/admin-web, apps/desktop-sync, apps/brush-lab, apps/character-lab)의 스피너 금지(DESIGN.md §4), OKLCH 의미 토큰(§2), 44px 터치 타깃(WCAG 2.5.8) 준수
  * 3. 게스트 3초 비차단 세션(INITIAL_SESSION_READY_DEADLINE_MS <= 3500) 회귀 방지(UX_FLOW_BACKLOG P1)
  * 4. 16대 핵심 화면군 UI/UX v2 컴포넌트 및 데이터 앵커 연결 무결성
  */
@@ -70,7 +70,7 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     return { ok: issues.length === 0, issues };
   }
 
-  // 2) 독립 Admin 셸 & Desktop Sync 충돌 콘솔: OKLCH 토큰 및 >= 44px(2.75rem) 터치 타깃
+  // 2) 독립 서브앱 셸(admin-web, desktop-sync, brush-lab, character-lab): OKLCH 토큰 및 >= 44px 터치 타깃
   if (exists("apps/admin-web/src/app/styles/admin.css")) {
     const adminCss = read("apps/admin-web/src/app/styles/admin.css");
     if (!adminCss.includes("oklch(")) {
@@ -84,6 +84,21 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     const conflictServer = read("apps/desktop-sync/src/conflict-server.ts");
     if (!conflictServer.includes("oklch(") || !conflictServer.includes("min-height:2.75rem")) {
       issues.push("apps/desktop-sync/src/conflict-server.ts: OKLCH 토큰 또는 2.75rem(44px) 터치 타깃 누락");
+    }
+  }
+  if (exists("apps/brush-lab/src/app/styles/brush-lab.css")) {
+    const brushLabCss = read("apps/brush-lab/src/app/styles/brush-lab.css");
+    if (!brushLabCss.includes("oklch(")) {
+      issues.push("apps/brush-lab/src/app/styles/brush-lab.css: Starlight OKLCH 토큰 누락");
+    }
+    if (/min-height:\s*(?:34|36|40)px/u.test(brushLabCss)) {
+      issues.push("apps/brush-lab/src/app/styles/brush-lab.css: 44px 미만(34/36/40px) 인터랙티브 컨트롤 잔존");
+    }
+  }
+  if (exists("apps/character-lab/src/app/styles/character-lab.css")) {
+    const characterLabCss = read("apps/character-lab/src/app/styles/character-lab.css");
+    if (!characterLabCss.includes("oklch(")) {
+      issues.push("apps/character-lab/src/app/styles/character-lab.css: Starlight OKLCH 토큰 누락");
     }
   }
 
@@ -109,7 +124,7 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     ["apps/web/src/domains/creator/export/StudioExportOutputSummary.tsx", "Rights BOM"],
     ["apps/web/src/domains/catalog/DiscoverFacetTabStrip.tsx", "discover-facet-tab-strip"],
     ["apps/web/src/domains/catalog/TitleDetailCreationBridgeCard.tsx", "title-detail-creation-bridge"],
-    ["apps/web/src/domains/creator/studio-shell/StudioProjectTeamKanbanBridge.tsx", "studio-project-team-kanban-bridge"],
+    ["apps/web/src/domains/creator/studio-shell/StudioProjectTeamKanbanBridge.tsx", "studio-kanban-stage-card"],
     ["apps/web/src/domains/market/components/MarketResourceCard.tsx", "data-market-rights-bom"],
     ["apps/web/src/domains/creator-resources/OpenDataPurposeFilterBar.tsx", "open-data-purpose-filter-bar"],
     ["apps/web/src/domains/creator/publishing/ShowcaseSocialHubBar.tsx", "showcase-social-hub-bar"],
@@ -140,5 +155,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     for (const issue of result.issues) console.error(` - ${issue}`);
     process.exit(1);
   }
-  console.log("UI/UX v2 계약 게이트 통과: 데스크톱 시안 A~P · 모바일 시안 M1~M4 · OKLCH · 무스피너 · 44px 불변식 정상");
+  console.log("UI/UX v2 계약 게이트 통과: 데스크톱 시안 A~P · 모바일 시안 M1~M4 · 7대 서브앱 OKLCH · 무스피너 · 44px 불변식 정상");
 }

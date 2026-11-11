@@ -1,20 +1,20 @@
-/* ToonStudio Brush Lab 전역 스타일. 토큰은 admin.css 관례(--*-canvas/panel/fg/muted/line/accent/focus)를 따른다. */
+/* ToonStudio Brush Lab 전역 스타일. DESIGN.md §2 Starlight OKLCH 의미 토큰 및 WCAG 2.5.8 44px 터치 타깃 계약을 따른다. */
 :root {
   color-scheme: dark;
-  --lab-canvas: #0b0f1a;
-  --lab-panel: #121a2b;
-  --lab-raised: #1a2540;
-  --lab-fg: #f3f5ff;
-  --lab-muted: #c8d3ea;
-  --lab-line: #5f759e;
-  --lab-accent: #8f7eff;
-  --lab-accent-fill: #5138d4;
-  --lab-accent-text: #b4a8ff;
-  --lab-focus: #76e4ff;
-  --lab-pass: #5be398;
-  --lab-fail: #ff8a8a;
-  --lab-warn: #ffd678;
-  --lab-paper: #ffffff;
+  --lab-canvas: oklch(0.13 0.024 265);
+  --lab-panel: oklch(0.17 0.026 265);
+  --lab-raised: oklch(0.22 0.032 265);
+  --lab-fg: oklch(0.96 0.012 275);
+  --lab-muted: oklch(0.84 0.024 268);
+  --lab-line: oklch(0.54 0.048 264);
+  --lab-accent: oklch(0.68 0.17 284);
+  --lab-accent-fill: oklch(0.46 0.21 282);
+  --lab-accent-text: oklch(0.79 0.12 284);
+  --lab-focus: oklch(0.84 0.13 215);
+  --lab-pass: oklch(0.80 0.15 156);
+  --lab-fail: oklch(0.74 0.16 20);
+  --lab-warn: oklch(0.86 0.13 84);
+  --lab-paper: oklch(1 0 0);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--lab-fg);
   background: var(--lab-canvas);
@@ -285,12 +285,12 @@ code,
 .lab-button[aria-pressed="true"] {
   background: var(--lab-accent-fill);
   border-color: var(--lab-accent);
-  color: #ffffff;
+  color: oklch(1 0 0);
   font-weight: 600;
 }
 
 .lab-button[aria-pressed="true"] {
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.35);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--lab-focus) 38%, transparent);
 }
 
 .lab-button-row {
@@ -355,8 +355,8 @@ code,
   place-items: center;
   padding: 12px;
   text-align: center;
-  color: #4a1d1d;
-  background: #ffd9d9;
+  color: oklch(0.28 0.09 20);
+  background: oklch(0.91 0.05 20);
 }
 
 /* 표 */
@@ -485,19 +485,19 @@ code,
 
 @media (prefers-contrast: more) {
   :root {
-    --lab-canvas: #050811;
-    --lab-panel: #0b1020;
-    --lab-raised: #141e38;
-    --lab-fg: #ffffff;
-    --lab-muted: #eef3ff;
-    --lab-line: #b8c8e8;
-    --lab-accent: #b4a8ff;
-    --lab-accent-fill: #3f27b8;
-    --lab-accent-text: #d6ceff;
-    --lab-focus: #9ef0ff;
-    --lab-pass: #74f2ab;
-    --lab-fail: #ff9e9e;
-    --lab-warn: #ffe08a;
+    --lab-canvas: oklch(0.09 0.018 265);
+    --lab-panel: oklch(0.14 0.022 265);
+    --lab-raised: oklch(0.20 0.030 265);
+    --lab-fg: oklch(1 0 0);
+    --lab-muted: oklch(0.95 0.015 270);
+    --lab-line: oklch(0.82 0.042 264);
+    --lab-accent: oklch(0.79 0.13 284);
+    --lab-accent-fill: oklch(0.40 0.21 282);
+    --lab-accent-text: oklch(0.88 0.09 284);
+    --lab-focus: oklch(0.91 0.11 215);
+    --lab-pass: oklch(0.87 0.15 156);
+    --lab-fail: oklch(0.80 0.15 20);
+    --lab-warn: oklch(0.90 0.13 84);
   }
 
   .lab-tab[aria-selected="true"],
@@ -620,7 +620,6 @@ code,
 
 .lab-draw-side {
   display: grid;
-  /* 긴 사유 문구(오류 URL 등)가 암묵 열을 넓혀 패널 밖으로 밀어내지 않게 열 폭을 패널에 고정한다 */
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   min-width: 0;
@@ -803,7 +802,7 @@ code,
 .lab-draw-chip[aria-pressed="true"] {
   border-color: var(--lab-accent);
   background: var(--lab-accent-fill);
-  color: #ffffff;
+  color: oklch(1 0 0);
   font-weight: 600;
 }
 
@@ -837,7 +836,7 @@ code,
 
 .lab-draw-brush[aria-pressed="true"] {
   border-color: var(--lab-focus);
-  background: #223156;
+  background: color-mix(in oklab, var(--lab-raised) 78%, var(--lab-accent));
   box-shadow: inset 0 0 0 2px var(--lab-focus);
 }
 
@@ -867,7 +866,7 @@ code,
   inset: 0;
   display: grid;
   place-items: center;
-  color: #7a1c1c;
+  color: oklch(0.35 0.12 20);
   font-weight: 700;
 }
 
@@ -920,7 +919,7 @@ code,
 .lab-draw-recent {
   display: grid;
   gap: 6px;
-  grid-template-columns: repeat(4, minmax(36px, 44px));
+  grid-template-columns: repeat(4, minmax(44px, 44px));
   justify-content: start;
   max-width: 100%;
 }
@@ -928,7 +927,7 @@ code,
 .lab-draw-recent .lab-draw-swatch {
   width: 100%;
   max-width: 44px;
-  height: 40px;
+  height: 44px;
 }
 
 /* 색 슬라이더 트랙 위에 그라데이션을 깐다(엄지는 브라우저 기본). */
@@ -942,12 +941,12 @@ code,
   padding: 8px 10px;
   border: 1px solid var(--lab-line);
   border-radius: 10px;
-  background: rgba(11, 15, 26, 0.45);
+  background: color-mix(in oklab, var(--lab-canvas) 65%, transparent);
 }
 
 .lab-draw-details summary,
 .lab-banner-details summary {
-  min-height: 40px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -984,7 +983,11 @@ code,
   padding: 10px;
   border: 1px solid var(--lab-accent);
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(81, 56, 212, 0.2), rgba(26, 37, 64, 0.92));
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--lab-accent-fill) 24%, transparent),
+    color-mix(in oklab, var(--lab-raised) 92%, transparent)
+  );
 }
 
 .lab-draw-current-thumb {
@@ -1063,7 +1066,7 @@ code,
 }
 
 .lab-chip {
-  min-height: 40px;
+  min-height: 44px;
   min-width: 44px;
   padding: 6px 14px;
   border: 1px solid var(--lab-line);
@@ -1078,7 +1081,7 @@ code,
 .lab-chip[aria-pressed="true"] {
   border-color: var(--lab-accent);
   background: var(--lab-accent-fill);
-  color: #ffffff;
+  color: oklch(1 0 0);
   font-weight: 600;
 }
 
@@ -1107,7 +1110,10 @@ code,
 }
 
 .lab-card-details summary {
-  min-height: 34px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
   font-size: 0.8rem;
 }
 
@@ -1155,8 +1161,11 @@ dd {
 }
 
 .lab-workflow-step {
-  min-height: 36px;
-  padding: 6px 12px;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
   border: 1px solid var(--lab-line);
   border-radius: 999px;
   background: var(--lab-raised);
@@ -1168,7 +1177,7 @@ dd {
 
 .lab-workflow-step--active {
   border-color: var(--lab-accent);
-  background: rgba(124, 104, 236, 0.22);
+  background: color-mix(in oklab, var(--lab-accent) 24%, transparent);
   color: var(--lab-fg);
   font-weight: 600;
 }
@@ -1316,10 +1325,10 @@ dd {
   }
 }
 
-/* Round 4: 프리셋 A/B 비교 가독성 · 선택 표시 · 빈 비교 상태 · 작은 화면 카드 간격 */
+/* 프리셋 A/B 비교 가독성 · 선택 표시 · 빈 비교 상태 · 작은 화면 카드 간격 */
 .lab-card--selected {
   border-color: var(--lab-accent);
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.28);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--lab-focus) 30%, transparent);
 }
 
 .lab-card-header-row {
@@ -1405,9 +1414,9 @@ dd {
 .lab-compare-preserved-note {
   margin: 0;
   padding: 8px 10px;
-  border: 1px solid var(--lab-ok);
+  border: 1px solid var(--lab-pass);
   border-radius: 8px;
-  background: rgba(52, 211, 153, 0.1);
+  background: color-mix(in oklab, var(--lab-pass) 12%, transparent);
   color: var(--lab-fg);
   font-size: 0.85rem;
   overflow-wrap: anywhere;
@@ -1419,7 +1428,7 @@ dd {
   padding: 12px 14px;
   border: 1px dashed var(--lab-accent);
   border-radius: 10px;
-  background: rgba(59, 130, 246, 0.08);
+  background: color-mix(in oklab, var(--lab-accent) 10%, transparent);
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -1456,5 +1465,3 @@ dd {
     gap: 8px;
   }
 }
-
-
