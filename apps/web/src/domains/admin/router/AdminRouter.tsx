@@ -116,23 +116,9 @@ const AdminCampaigns = lazyRetry(
     })),
   "AdminCampaignsV2",
 );
-const AdminOperatingMode = lazyRetry(
-  () => import("../components/AdminOperatingMode").then((module) => ({ default: module.AdminOperatingMode })),
-  "AdminOperatingModeV1",
-);
-const AdminOps = lazyRetry(
-  () =>
-    import("../components/AdminOps").then((module) => ({
-      default: module.AdminOps,
-    })),
-  "AdminOpsV2",
-);
-const AdminIntegrations = lazyRetry(
-  () =>
-    import("../components/AdminIntegrations").then((module) => ({
-      default: module.AdminIntegrations,
-    })),
-  "AdminIntegrationsV1",
+const AdminOperationsWorkspace = lazyRetry(
+  () => import("../components/AdminOperatingMode").then((module) => ({ default: module.AdminOperationsWorkspace })),
+  "AdminOperationsWorkspaceV1",
 );
 const AdminMembersPage = lazyRetry(
   () =>
@@ -213,7 +199,7 @@ function AdminRouteSurface({
     case "announcements":
       return <AdminAnnouncements userId={uid} />;
     case "ops":
-      return <div className="space-y-6"><AdminOperatingMode uid={uid} /><AdminOps uid={uid} /><AdminIntegrations /></div>;
+      return <AdminOperationsWorkspace key={uid} uid={uid} />;
     case "security":
       return <AdminSecurity userId={uid} />;
     case "audit":

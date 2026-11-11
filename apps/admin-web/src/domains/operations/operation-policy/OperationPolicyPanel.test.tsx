@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { initialOperationPolicy, resolveOperationPolicy } from "@toonstudio/contracts/operation-policy";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AdminApiError } from "../../../platform/http/admin-api";
+
 import { OperationPolicyPanel } from "./OperationPolicyPanel";
 
 const mocks = vi.hoisted(()=>({load:vi.fn(),preview:vi.fn(),apply:vi.fn()}));
@@ -55,6 +57,23 @@ describe('operating-mode administrator UI',()=>{
     render(<OperationPolicyPanel/>);
     await screen.findByText('관리자만 접근할 수 있습니다.');
     expect(screen.queryByRole('radio',{name:'유료 운영'})).toBeNull();
+  });
+  it('clears privileged controls when authorization expires during preview',async()=>{
+    mocks.preview.mockRejectedValueOnce(new AdminApiError(403,'관리자 권한을 다시 확인해 주세요.'));
+    render(<OperationPolicyPanel/>);await screen.findByText('현재: 무료 운영');
+    fireEvent.click(screen.getByRole('button',{name:'변경 영향 미리보기'}));
+    await screen.findByText('관리자 권한을 다시 확인해 주세요.');
+    expect(screen.queryByRole('radio')).toBeNull();
+    expect(screen.getByRole('button',{name:'로그인·권한 다시 확인'})).toBeTruthy();
+    expect(mocks.apply).not.toHaveBeenCalled();
+  });
+  it('labels a server read failure as connection recovery rather than authorization',async()=>{
+    mocks.load.mockRejectedValueOnce(new AdminApiError(503,'일시적으로 연결할 수 없습니다.'));
+    render(<OperationPolicyPanel/>);
+    await screen.findByText('일시적으로 연결할 수 없습니다.');
+    fireEvent.click(screen.getByRole('button',{name:'연결 확인 후 다시 읽기'}));
+    await screen.findByText('현재: 무료 운영');
+    expect(mocks.load).toHaveBeenCalledTimes(2);
   });
   it('tracks draft modifications, allows one-click reset, and supports quick reason templates & fingerprint autofill',async()=>{
     mocks.load.mockResolvedValue({

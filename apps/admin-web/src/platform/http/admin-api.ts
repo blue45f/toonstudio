@@ -45,7 +45,7 @@ export async function requestAdminJson<T>(path: string, options: AdminRequestOpt
       && typeof payload.message === "string"
       ? payload.message
       : "설정을 처리하지 못했습니다. 관리자 로그인과 연결을 확인해주세요.";
-    throw new Error(message);
+    throw new AdminApiError(response.status, message);
   }
   return payload as T;
 }

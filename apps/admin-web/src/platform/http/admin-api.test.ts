@@ -70,6 +70,6 @@ describe("admin-api platform transport", () => {
 
     await expect(
       requestAdminJson("/api/admin/paid", { body: { enabled: false } }),
-    ).rejects.toThrow("권한이 없습니다.");
+    ).rejects.toMatchObject({ name: "AdminApiError", status: 403, message: "권한이 없습니다." });
   });
 });
