@@ -380,6 +380,62 @@ describe("StudioUnifiedAssetWorkspace", () => {
     expect(await screen.findByText(/권리와 출처 확인이 필요한 에셋/)).toBeTruthy();
   });
 
+  it("상세 하단의 권리 확인은 본문으로 이동하고 동의 전 적용을 허용하지 않는다", async () => {
+    const onUseItem = vi.fn().mockResolvedValue(true);
+    render(
+      <StudioUnifiedAssetWorkspace
+        items={items}
+        legacyContent={null}
+        onUseItem={onUseItem}
+        onOpenAi={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "출처 확인 배경 상세 미리보기" }));
+
+    const actions = screen.getByRole("group", { name: "선택한 소재 적용" });
+    const apply = within(actions).getByRole("button", { name: "배경 삽입" });
+    expect(within(actions).getAllByRole("button", { name: "배경 삽입" })).toHaveLength(1);
+    const acknowledgement = screen.getByRole("checkbox");
+    const rightsLabel = acknowledgement.parentElement;
+    if (!rightsLabel) throw new Error("권리 확인 본문이 없습니다");
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(rightsLabel, "scrollIntoView", { value: scrollIntoView });
+
+    fireEvent.click(within(actions).getByRole("button", { name: "권리·출처 확인" }));
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+    expect(document.activeElement).toBe(acknowledgement);
+    expect((acknowledgement as HTMLInputElement).checked).toBe(false);
+    expect((apply as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(apply);
+    expect(onUseItem).not.toHaveBeenCalled();
+
+    fireEvent.click(acknowledgement);
+    expect(within(actions).queryByRole("button", { name: "권리·출처 확인" })).toBeNull();
+    expect((apply as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(apply);
+    await waitFor(() => expect(onUseItem).toHaveBeenCalledWith(items[5], "auto"));
+  });
+
+  it("상세 하단 적용도 검토 잠금 상태에서는 실행되지 않는다", () => {
+    const onUseItem = vi.fn();
+    render(
+      <StudioUnifiedAssetWorkspace
+        items={items}
+        legacyContent={null}
+        onUseItem={onUseItem}
+        onOpenAi={vi.fn()}
+        reviewLocked
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "비 오는 밤 학교 상세 미리보기" }));
+    const actions = screen.getByRole("group", { name: "선택한 소재 적용" });
+    const apply = within(actions).getByRole("button", { name: "배경 삽입" });
+    expect((apply as HTMLButtonElement).disabled).toBe(true);
+    expect(within(actions).getByText("검토 잠금을 해제한 뒤 추가할 수 있습니다.")).toBeTruthy();
+    fireEvent.click(apply);
+    expect(onUseItem).not.toHaveBeenCalled();
+  });
+
   it("keeps placement choices in the selected asset detail instead of before results", async () => {
     const onUseItem = vi.fn().mockResolvedValue(true);
     const { container } = render(
@@ -584,6 +640,11 @@ describe("StudioUnifiedAssetWorkspace", () => {
 
     view.rerender(tree("mobile"));
     expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(true);
+    const footer = screen.getByRole("group", { name: "선택한 소재 적용" });
+    const pendingApply = within(footer).getByRole("button", { name: "처리 중…" });
+    expect((pendingApply as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(pendingApply);
+    expect(onUseItem).toHaveBeenCalledOnce();
     const apply = screen.getByRole("button", { name: "출처 확인 배경 배경 삽입" });
     expect((apply as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(apply);

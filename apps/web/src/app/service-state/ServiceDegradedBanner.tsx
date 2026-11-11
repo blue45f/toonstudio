@@ -201,8 +201,8 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
  */
 const WARMUP_CHIP_CLASS = cn(
   "pointer-events-none fixed left-4 z-[90] flex w-max items-center gap-2.5 border border-line bg-panel/95 text-sm text-fg-2 shadow-lg backdrop-blur-md",
-  "bottom-[calc(max(1rem,var(--immersive-dock-clearance,0px))+env(safe-area-inset-bottom))] max-w-[min(24rem,calc(100vw-2rem))] rounded-2xl px-4 py-2",
-  "max-md:bottom-[max(var(--site-float-base),calc(var(--immersive-dock-clearance,0px)+env(safe-area-inset-bottom)))] max-md:left-3 max-md:max-w-[calc(100vw-0.75rem-max(0.75rem,var(--site-float-column)))] max-md:rounded-[1.25rem] max-md:px-3",
+  "bottom-[calc(max(1rem,var(--immersive-dock-clearance,0px),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))+env(safe-area-inset-bottom))] max-w-[min(24rem,calc(100vw-2rem))] rounded-2xl px-4 py-2",
+  "max-md:bottom-[max(var(--site-float-base),calc(var(--immersive-dock-clearance,0px)+env(safe-area-inset-bottom)),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem+env(safe-area-inset-bottom)))] max-md:left-3 max-md:max-w-[calc(100vw-0.75rem-max(0.75rem,var(--site-float-column)))] max-md:rounded-[1.25rem] max-md:px-3",
 );
 
 /**

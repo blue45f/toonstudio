@@ -454,7 +454,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
           bubbleShapeHandles={bubbleShapeHandles}
           canvasFlipH={canvasFlipH}
           canvasRotation={canvasRotation}
-          canvasH={canvasH}
+          canvasH={canvasH} canvasStartGuideReady={s.canvasStartGuideReady}
           canvasOnlyMode={canvasOnlyMode}
           canvasInteractionBlocked={canvasInteractionBlocked && !s.scopedCanvasDrawingAvailable}
           canvasScrollViewport={scrollPos}

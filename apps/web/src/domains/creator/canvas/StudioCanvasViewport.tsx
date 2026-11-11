@@ -81,6 +81,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
     brushOpacity,
     canvasFlipH,
     canvasOnlyMode,
+    canvasStartGuideReady,
     canvasRotation,
     closeViewToolWithFocus,
     collaborationDocumentUnavailable,
@@ -374,6 +375,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
           fitCanvasToViewport,
           fitCanvasToWidth,
           followingStudioSessionId,
+          mobileImmersive: mobileImmersive && !canvasOnlyMode,
           navigate,
           pages,
           remixId,
@@ -407,6 +409,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
           initiallyCollapsed={!studioUiDensityAllows(uiDensityMode, "workflow-guide")}
           onOpenTutorial={() => openFeatureTutorial(null)}
           visible={shouldShowStudioCinematicCanvasWelcome({
+            canvasStartGuideReady,
             elementCount: elements.length,
             sourceHydrationPending,
             workHydrationFailed,

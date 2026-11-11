@@ -1,20 +1,22 @@
 export interface StudioCinematicCanvasWelcomeVisibilityInput {
   readonly elementCount: number;
+  readonly canvasStartGuideReady: boolean;
   readonly sourceHydrationPending: boolean;
   readonly workHydrationFailed: boolean;
   readonly collaborationDocumentUnavailable: boolean;
   readonly joinedStudioLiveJam: boolean;
 }
 
-/** A joined collaborator must see the shared document surface, never the local empty-page launcher. */
+/** 로컬 정본 확인 전과 공동 작업 중에는 임시 빈 페이지를 새 그림으로 안내하지 않는다. */
 export function shouldShowStudioCinematicCanvasWelcome({
   elementCount,
+  canvasStartGuideReady,
   sourceHydrationPending,
   workHydrationFailed,
   collaborationDocumentUnavailable,
   joinedStudioLiveJam,
 }: StudioCinematicCanvasWelcomeVisibilityInput): boolean {
-  return elementCount === 0
+  return canvasStartGuideReady && elementCount === 0
     && !sourceHydrationPending
     && !workHydrationFailed
     && !collaborationDocumentUnavailable

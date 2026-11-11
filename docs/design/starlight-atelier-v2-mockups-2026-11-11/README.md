@@ -48,10 +48,10 @@
 | 참고 시각 자료 (**reference**) | 기존 5개 SVG 묶음·20개 시안 이름·토큰·HTML 갤러리를 보존한다. | 이 문서의 원본 링크와 이미지 |
 | 목표 화면 구성 (**target**) | 화면 계열별 배치와 기능 방향을 제안한다. | 보드별 구성과 [명료성 개선 계열 계약](../sitewide-clarity-20261111/index.html#contracts) |
 | 실제 반영 (**current / migration**) | 실제 소스·마운트·콜백 연결로 확인한 범위를 구분한다. | [구현·검증 대조표](../sitewide-clarity-20261111/verification-matrix.md) |
-| 미적용·미검증 | 샘플·순수 모델·표시용 링크와 실행 기능을 구분하고 남은 항목을 기록한다. | 대조표의 남은 차이와 [현재 검증 범위](../sitewide-clarity-20261111/validation-and-release.md#현재-확인-범위) |
+| 미적용·미검증 | 샘플·순수 모델·표시용 링크와 실행 기능을 구분하고 남은 항목을 기록한다. | 대조표의 남은 차이와 [검증 단계와 조건](../sitewide-clarity-20261111/validation-and-release.md) |
 | 실제 화면·릴리스 | 실행 환경·테마·뷰포트·인증·데이터 조건과 통과/실패를 함께 기록한다. | [검증·배포 기록](../sitewide-clarity-20261111/validation-and-release.md)와 실제 실행 캡처 |
 
-현재 작업공간에는 개발 서버의 [모바일 메뉴 캡처](../../../.qa/clarity-20261111/mobile-navigation-confirmed/starlight-mobile-menu-collapsed.png), [모바일 서재 캡처](../../../.qa/clarity-20261111/mobile-navigation-confirmed/starlight-mobile-library-default.png), [데스크톱 리더 캡처](../../../.qa/clarity-20261111/reader-native-confirmed/starlight-desktop-reader.png), [모바일 리더 캡처](../../../.qa/clarity-20261111/reader-native-confirmed/starlight-mobile-reader.png)가 있다. 이 `.qa/` 자료는 로컬 검증 산출물이며 저장소에 커밋되는 보드 이미지와 다르다. 게스트/API fixture 관측의 조건·실패·한계는 검증·배포 기록을 함께 읽는다. 보드를 시각적으로 읽은 검토와 앱을 실행해 캡처한 검증도 별개로 기록한다.
+저장소에 포함한 실제 구현 캡처와 전후 비교는 [실행 화면 모음](../sitewide-clarity-20261111/review-renders/README.md)에서 확인한다. `.qa/`의 원본 실행 로그와 추가 캡처는 로컬 검증 산출물이므로 다른 작업공간에서도 열리는 링크로 가정하지 않는다. 게스트/API fixture 관측의 조건·실패·한계는 검증·배포 기록을 함께 읽는다. 보드를 시각적으로 읽은 검토와 앱을 실행해 캡처한 검증도 별개로 기록한다.
 
 ## 4. 기존 상태 선언의 이력
 
