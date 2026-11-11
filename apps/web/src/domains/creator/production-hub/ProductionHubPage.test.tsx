@@ -65,6 +65,11 @@ describe("webtoon production collaboration UI", () => {
     expect(screen.getByRole("heading", { name: "마감 임박 회차" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "내 할 일" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "최근 피드백" })).toBeTruthy();
+    const planningGuide = screen.getByRole("group", { name: "제작 계획·검수 안내" });
+    expect((planningGuide as HTMLDetailsElement).open).toBe(false);
+    expect(screen.getByRole("heading", { name: "내 할 일" }).compareDocumentPosition(planningGuide)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(document.querySelector('[data-testid="production-rea-dag-workload-bar"]')).toBeNull();
     // 막힌 질문이 있으면 "지금 할 일"이 그 회차 룸으로 곧장 안내한다.
     expect(screen.getByText("막힌 질문에 먼저 답해 주세요")).toBeTruthy();
     expect(screen.getByRole("link", { name: /회차 룸에서 답하기/u }).getAttribute("href"))

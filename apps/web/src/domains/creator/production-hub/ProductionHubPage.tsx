@@ -1,12 +1,13 @@
 import "../studio-shell/creator-workflow-surfaces.css";
-import { ArrowRight, Layers, RefreshCw } from "lucide-react";
-import { Suspense, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { Suspense } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 import { ProductionProjectHeader } from "./ProductionProjectHeader";
 import { ProductionProjectNav } from "./ProductionProjectNav";
+import { ProductionPlanningGuide } from "./ProductionPlanningGuide";
 import { ProductionSampleJourneyGuide } from "./ProductionSampleJourneyGuide";
 import { ProductionSessionStatus } from "./ProductionSessionStatus";
 import { ProductionSurfaceHeader } from "./ProductionSurfaceHeader";
@@ -110,8 +111,6 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
   const { ready: authReady } = useSession();
   const project = useProductionProjectSession(projectId, actorId, productionDemoAdapter, { authReady });
   const [roleLens, setRoleLens] = usePreferredRoleLens("producer");
-  const [criticalPathMode, setCriticalPathMode] = useState<"deadline-bottleneck" | "assistant-load-balance" | "portal-simulpub-gate">("deadline-bottleneck");
-  const [episodeCadence, setEpisodeCadence] = useState<"weekly-70cuts" | "biweekly-100cuts" | "daily-strip-25cuts">("weekly-70cuts");
   const bt = useBilingual("ProductionProjectPage");
 
   if (!projectId) return <Navigate to="/production" replace />;
@@ -127,7 +126,6 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
   }
 
   const aggregate = project.aggregate;
-  const encodedProjectId = encodeURIComponent(aggregate.projectId);
   return (
     <div data-creator-workflow="production-project" data-route-ready="production-project" className="min-h-dvh bg-canvas text-fg">
       <ProductionProjectHeader aggregate={aggregate} access={project.access} roleLens={roleLens} onRoleLensChange={setRoleLens} saveState={project.saveState} isDemo={project.isDemo} />
@@ -147,89 +145,6 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
           ) : null}
           {project.isDemo ? <ProductionSampleJourneyGuide location={surface} /> : null}
           <ProductionSurfaceHeader aggregate={aggregate} surface={surface} />
-          <section
-            data-testid="production-rea-dag-workload-bar"
-            aria-label={bt("REA 스튜디오 에피소드 DAG 크리티컬 패스 및 15직무 부하 밸런서", "REA studio episode DAG critical-path & 15-role workload balancer")}
-            className="relative mb-4 overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-4 text-xs shadow-sm"
-          >
-            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <strong className="font-display tracking-wide font-extrabold text-accent">
-                {bt("SHOTGRID · FTRACK · KITSU · LINEAR · AYON 8단계 에피소드 DAG & 15직무 부하 밸런서", "SHOTGRID · FTRACK · KITSU · LINEAR · AYON 8-Stage Episode DAG & 15-Role Workload Balancer")}
-              </strong>
-              <div className="flex flex-wrap items-center gap-2">
-                <span data-testid="production-rea-cadence-badge" className="rounded-full border border-accent/35 bg-accent-soft px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
-                  {episodeCadence === "weekly-70cuts"
-                    ? bt(`주간 70컷 마감 · 현재 렌즈 ${roleLens}`, `Weekly 70 Cuts · Lens: ${roleLens}`)
-                    : episodeCadence === "biweekly-100cuts"
-                      ? bt(`격주 100컷 고밀도 · 현재 렌즈 ${roleLens}`, `Biweekly 100 Cuts · Lens: ${roleLens}`)
-                      : bt(`일일 인스타/숏스트립 25컷 · 현재 렌즈 ${roleLens}`, `Daily 25 Cuts · Lens: ${roleLens}`)}
-                </span>
-                <Link
-                  to={`/studio/p/${encodedProjectId}/overview`}
-                  data-testid="production-studio-workspace-link"
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/45 bg-accent px-3.5 text-xs font-bold text-on-accent shadow-xs transition-colors hover:bg-accent/90"
-                >
-                  <Layers size={13} aria-hidden="true" />
-                  {bt("Studio 작업실 열기", "Open Studio Workspace")}
-                  <ArrowRight size={12} aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("DAG 관제 모드", "DAG control mode")}>
-                {([
-                  { id: "deadline-bottleneck", ko: "① 크리티컬 패스 마감 병목 탐지", en: "1. Critical-Path Bottleneck" },
-                  { id: "assistant-load-balance", ko: "② 15개 세부직무 어시 부하 분산", en: "2. 15-Role Assistant Load Balance" },
-                  { id: "portal-simulpub-gate", ko: "③ 98대 글로벌 포털 동시연재 게이트", en: "3. 98-Portal Simulpub Gate" },
-                ] as const).map((mode) => (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    aria-pressed={criticalPathMode === mode.id}
-                    data-testid={`production-rea-dag-${mode.id}`}
-                    onClick={() => setCriticalPathMode(mode.id)}
-                    className={
-                      criticalPathMode === mode.id
-                        ? "inline-flex min-h-11 items-center rounded-full border border-accent bg-accent-soft px-3.5 font-bold text-accent shadow-2xs"
-                        : "inline-flex min-h-11 items-center rounded-full border border-line-strong/70 bg-card/85 px-3.5 text-fg-2 hover:border-accent/45 hover:text-fg"
-                    }
-                  >
-                    {bt(mode.ko, mode.en)}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("연재 주기 기준", "Serialization cadence")}>
-                {([
-                  { id: "weekly-70cuts", ko: "주간 70컷", en: "Weekly 70c" },
-                  { id: "biweekly-100cuts", ko: "격주 100컷", en: "Biweekly 100c" },
-                  { id: "daily-strip-25cuts", ko: "일일 25컷", en: "Daily 25c" },
-                ] as const).map((cad) => (
-                  <button
-                    key={cad.id}
-                    type="button"
-                    aria-pressed={episodeCadence === cad.id}
-                    data-testid={`production-rea-cadence-${cad.id}`}
-                    onClick={() => setEpisodeCadence(cad.id)}
-                    className={
-                      episodeCadence === cad.id
-                        ? "inline-flex min-h-11 items-center rounded-full border border-accent bg-accent px-3.5 text-[11px] font-bold text-on-accent shadow-2xs"
-                        : "inline-flex min-h-11 items-center rounded-full border border-line-strong/70 bg-card/85 px-3.5 text-[11px] text-fg-2 hover:border-accent/45 hover:text-fg"
-                    }
-                  >
-                    {bt(cad.ko, cad.en)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <p data-testid="production-rea-dag-status" className="mt-3 rounded-xl border border-line/65 bg-card/85 px-3.5 py-2.5 text-[11px] leading-relaxed text-fg-2">
-              {criticalPathMode === "deadline-bottleneck"
-                ? bt("Kitsu·ShotGrid DAG 분석: [3D 배경 은선 추출 → 메인 선화 인계] 구간의 대기 시간(Slack)이 +4.5시간으로 가장 짧아 우선 검수 슬롯으로 지정되었습니다.", "Kitsu/ShotGrid DAG analysis: [3D BG LT → Lead Line Handoff] has the tightest slack (+4.5h) and is prioritized for review.")
-                : criticalPathMode === "assistant-load-balance"
-                  ? bt("15개 세부직무 중 밑색(Flat)·명암(Shade) 어시스턴트 가동률을 78% 이하로 균등 배분하여 마감 전야 과부하를 방지합니다.", "Balances Flat Color and Shading assistant utilization below 78% across 15 sub-roles to prevent crunch.")
-                  : bt("네이버·카카오·픽코마·WEBTOON Global·Manga UP! 75개 언어 식자 레이어와 무음 영역 규격을 납품 12시간 전 자동 검증합니다.", "Auto-verifies 75-locale lettering layers and portal slice specs 12h before simulpub delivery.")}
-            </p>
-          </section>
           <Suspense fallback={<ProductionProjectLoading />}>
           <SurfaceContent
             surface={surface}
@@ -245,6 +160,7 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
             viewerUserId={actorId}
           />
           </Suspense>
+          <ProductionPlanningGuide projectId={aggregate.projectId} />
         </div>
       </div>
     </div>

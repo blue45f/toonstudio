@@ -23,6 +23,21 @@ const BASELINE: StudioThreeSurfaceRecipe = {
   floors: { marble: floor("marble", 0xe9e2d2, 0xcabfa8), wood: floor("planks", 0xd9b98f, 0xb28c5c), oak: floor("planks", 0xb9906a, 0x8f6c48), cafe: floor("planks", 0xa5714a, 0x7d5233), carpet: floor("carpet", 0x8d7f92, 0x6f6178), stone: floor("stone", 0xb9b2a4, 0x948c7c), stage: floor("planks", 0x3a3e63, 0x2b2e4a), mosaic: floor("checker", 0xe6ddca, 0x9a8f78), sand: floor("sand", 0xe6cf9e, 0xcbb27e), lavender: floor("carpet", 0xa493c4, 0x8474ab), grass: floor("lawn", 0x8fc97a, 0x6cab52) },
 };
 
+/** HQ의 기존 WebGL 표면만 구분한다. UI 토큰·2D 저장값·원본 모델 재질은 읽지 않는다. */
+const HQ_SURFACE_PALETTE = Object.freeze({
+  warmStone: 0xd8cbb2, stoneJoint: 0xb38b63, navy: 0x4d5d82, navyStitch: 0x48587c,
+  purple: 0x7858ee, teal: 0x4b9895, warmWall: 0xcabfa8,
+});
+const HQ_SURFACE: StudioThreeSurfaceRecipe = {
+  ...BASELINE,
+  decorAccent: HQ_SURFACE_PALETTE.purple,
+  wallTints: { ...BASELINE.wallTints, marble: HQ_SURFACE_PALETTE.warmWall, stone: HQ_SURFACE_PALETTE.teal },
+  floors: { ...BASELINE.floors,
+    stone: floor("stone", HQ_SURFACE_PALETTE.warmStone, HQ_SURFACE_PALETTE.stoneJoint),
+    carpet: floor("carpet", HQ_SURFACE_PALETTE.navy, HQ_SURFACE_PALETTE.navyStitch),
+  },
+};
+
 interface PreservedOfficeSurface {
   readonly floor: number;
   readonly wall: number;
@@ -52,6 +67,7 @@ const color = (value: `#${string}`) => Number.parseInt(value.slice(1), 16);
 
 export function studioThreeSurfaceRecipe(theme: VirtualThreeTheme, roomId?: string): StudioThreeSurfaceRecipe {
   if (theme.kind === "preserved-baseline") {
+    if (roomId?.startsWith("hq-")) return HQ_SURFACE;
     const office = studioThreePreservedOfficeSurface(roomId);
     return office ? { decorAccent: office.accent, foliage: office.foliage,
       wallTints: toneMap((_tone, index) => office.wall + index * 0x010101),

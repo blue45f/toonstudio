@@ -20,27 +20,27 @@ export function PublishSurfaceGuide({ surface }: { surface: PublishSurfaceId }) 
       <Info size={15} className="shrink-0 text-accent" aria-hidden="true" />
       <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
         {isStudio
-          ? bt("정본 · 회차 게시", "Canonical · Episode publishing")
-          : bt("연재 운영", "Serialization operations")}
+          ? bt("회차 게시", "Episode publishing")
+          : bt("게시 정보 준비", "Publishing information")}
       </span>
       <p className="min-w-0 flex-1 leading-relaxed">
         {isStudio
           ? bt(
-              "회차 게시는 여기가 정본입니다. 작품 한 편의 검수·내보내기·게시를 끝내는 화면입니다.",
-              "This is the canonical place to publish an episode — review, export and publish one work here.",
+              "선택한 회차를 검토하고 게시 설정을 확인합니다. 실제 게시·예약 결과는 이 화면에서 확인하세요.",
+              "Review the selected episode and its publishing settings. Check the actual publication or schedule result here.",
             )
           : bt(
-              "여기는 작품 단위 연재 운영 뷰입니다. 여러 작품의 연재 현황과 외부 채널 배포 패키지를 준비하는 화면입니다.",
-              "This is the per-work serialization operations view — check serialization across works and prepare external channel packages here.",
+              "선택한 작품의 게시 정보 파일(JSON)과 피드 미리보기를 준비합니다. 외부 게시나 예약은 실행하지 않습니다.",
+              "Prepare a publication information JSON file and feed preview for the selected work. This does not publish externally or execute a schedule.",
             )}
       </p>
       <Link
         href={counterpartHref}
-        className="inline-flex shrink-0 items-center gap-1 font-semibold text-accent hover:underline"
+        className="inline-flex min-h-11 shrink-0 items-center gap-1 font-semibold text-accent hover:underline"
       >
         {isStudio
-          ? bt("연재 운영은 연재 센터에서", "For serialization operations, open the Serialization center")
-          : bt("회차 게시는 정본인 게시 명령 센터에서", "To publish an episode, use the canonical Publish command center")}
+          ? bt("게시 정보·피드 준비 열기", "Prepare publication information and feeds")
+          : bt("회차 게시 설정 열기", "Open episode publishing settings")}
         <ArrowRight size={14} aria-hidden="true" />
       </Link>
     </div>

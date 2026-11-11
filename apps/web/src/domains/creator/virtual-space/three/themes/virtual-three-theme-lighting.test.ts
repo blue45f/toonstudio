@@ -75,7 +75,7 @@ describe("독립 3D 테마의 실제 Three 광원 adapter", () => {
     for (const theme of VIRTUAL_THREE_THEMES) {
       if (theme.kind !== "asset-recipe") continue;
       const { lights } = rig();
-      applyVirtualThreeThemeLighting(theme, dimensions, lights);
+      applyVirtualThreeThemeLighting(theme, dimensions, lights, 0.35);
       expect(lights.key.intensity).toBeCloseTo(theme.lighting.key.illuminanceLux / 500 * 1.42);
       expect(lights.ambient.intensity).toBeCloseTo(theme.lighting.ambientIlluminanceLux / 120 * 1.04);
       expect(lights.fill.intensity).toBeCloseTo(theme.lighting.fill.illuminanceLux / 200 * 0.6);
@@ -106,6 +106,14 @@ describe("독립 3D 테마의 실제 Three 광원 adapter", () => {
     expect(lights.key.castShadow).toBe(true);
     expect(lights.fill.intensity).toBe(0);
     expect(lights.fill.castShadow).toBe(false);
+  });
+
+  it("Canvas가 명시한 baseline preset의 fill을 유지하고 recipe의 광량으로 덮지 않는다", () => {
+    const { lights } = rig();
+    applyVirtualThreeThemeLighting(DEFAULT_VIRTUAL_THREE_THEME, dimensions, lights, 0.35);
+    expect(lights.fill.intensity).toBe(0.35);
+    applyVirtualThreeThemeLighting(DEFAULT_VIRTUAL_THREE_THEME, dimensions, lights, 0.22);
+    expect(lights.fill.intensity).toBe(0.22);
   });
 
   it("0 광량과 수직 key도 지원하며 광원이나 target을 생성·연결·해제하지 않는다", () => {

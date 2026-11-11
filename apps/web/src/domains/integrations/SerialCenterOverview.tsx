@@ -24,9 +24,11 @@ import { integrationsStatusText } from "./integrations-status-i18n";
 export function SerialCenterOverview({
   ko,
   onSelectProject,
+  selectionDisabled = false,
 }: Readonly<{
   ko: boolean;
   onSelectProject: (project: ProductionProjectSummary) => void;
+  selectionDisabled?: boolean;
 }>) {
   const userId = useApp((state) => state.userId);
   const [projects, setProjects] = useState<readonly ProductionProjectSummary[]>([]);
@@ -139,20 +141,20 @@ export function SerialCenterOverview({
         <div className="mt-5 flex flex-col items-start gap-3 rounded-2xl bg-panel/60 p-5">
           <p className="text-sm leading-6 text-fg-2">
             {ko
-              ? "아직 제작 중인 작품이 없어요. 첫 작품을 시작하면 연재 현황이 여기에 모입니다."
-              : "No works in production yet. Start your first work and its serialization status will gather here."}
+              ? "아직 제작 프로젝트가 없어요. 제작 관리에서 프로젝트를 만든 뒤 여기서 선택하세요. 브라우저에 보관한 원고와 제작 프로젝트는 별도로 관리됩니다."
+              : "No production projects yet. Create one in Production, then choose it here. Browser-saved manuscripts and production projects are managed separately."}
           </p>
           <Link
-            href="/create"
+            href="/production/projects"
             className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent"
           >
-            <PackageOpen size={15} aria-hidden /> {ko ? "작품 시작하기" : "Start a work"}
+            <PackageOpen size={15} aria-hidden /> {ko ? "제작 프로젝트 만들러 가기" : "Go to create a production project"}
           </Link>
         </div>
       ) : (
         <ul className="mt-5 grid gap-3 sm:grid-cols-2">
           {sorted.map((project) => (
-            <SerialProjectCard key={project.projectId} project={project} ko={ko} onSelectProject={onSelectProject} />
+            <SerialProjectCard key={project.projectId} project={project} ko={ko} onSelectProject={onSelectProject} selectionDisabled={selectionDisabled} />
           ))}
         </ul>
       )}
@@ -174,10 +176,12 @@ function SerialProjectCard({
   project,
   ko,
   onSelectProject,
+  selectionDisabled,
 }: Readonly<{
   project: ProductionProjectSummary;
   ko: boolean;
   onSelectProject: (project: ProductionProjectSummary) => void;
+  selectionDisabled: boolean;
 }>) {
   const nextReleaseLabel = project.nextReleaseAt
     ? new Date(project.nextReleaseAt).toLocaleString(ko ? "ko-KR" : "en-US", { dateStyle: "medium", timeStyle: "short" })
@@ -228,8 +232,9 @@ function SerialProjectCard({
       <div className="mt-4 flex flex-wrap gap-2 pt-1">
         <button
           type="button"
+          disabled={selectionDisabled}
           onClick={() => onSelectProject(project)}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-accent px-3 text-sm font-bold text-on-accent"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-sm font-bold text-on-accent disabled:opacity-50"
         >
           {ko ? "이 작품으로 게시 준비" : "Prepare release"} <ArrowRight size={14} aria-hidden />
         </button>

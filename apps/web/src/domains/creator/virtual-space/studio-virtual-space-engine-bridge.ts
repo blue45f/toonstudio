@@ -260,6 +260,8 @@ export class StudioVirtualSpaceEngineBridge {
   requestPose(request: StudioSpacePoseRequest): void {
     if (request === "rest" || request === "stand") this.pendingPoseRequest = request;
   }
+  /** 이미 서 있어 자세 전이가 없어도 명시 요청 의도는 읽을 수 있다. 소비는 updatePoseState만 한다. */
+  getPendingPoseRequest(): StudioSpacePoseRequest | null { return this.pendingPoseRequest; }
   getPose(): StudioSpacePose {
     return this.pose;
   }

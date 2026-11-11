@@ -216,7 +216,7 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     ["apps/web/src/domains/catalog/TitleReaderImmersiveCreationBar.tsx", "reader-spatial-creation-bar"],
     ["apps/web/src/domains/integrations/PublishSurfaceCrossBridge.tsx", "publish-surface-cross-bridge"],
     ["apps/web/src/domains/legal/technology/EngineeringStoryUi.tsx", "engineering-atlas-sticky-toc"],
-    ["apps/web/src/domains/creator/production-hub/ProductionHubPage.tsx", "production-studio-workspace-link"],
+    ["apps/web/src/domains/creator/production-hub/ProductionPlanningGuide.tsx", "production-studio-workspace-link"],
     ["apps/web/src/domains/creator/analytics/CreatorAnalyticsPage.tsx", "creator-analytics-publish-bridge"],
     ["apps/web/src/domains/catalog/RankingPage.tsx", "ranking-create-bridge"],
     ["apps/web/src/domains/character-chat/CharacterChatPage.tsx", "character-chat-shaper-bridge"],

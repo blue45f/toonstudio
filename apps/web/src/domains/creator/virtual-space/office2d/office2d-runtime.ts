@@ -42,6 +42,7 @@ import { OFFICE2D_CATEGORY, Office2dPhysicsWorld } from "./office2d-physics";
 import type { Office2dCanvas2D } from "./office2d-procedural-art";
 import { Office2dRenderer, type Office2dPropVisual, type Office2dRendererHost } from "./office2d-renderer";
 import { office2dSceneFor, type Office2dScene, type Office2dSeatVisual } from "./office2d-scene";
+import { Office2dSelfPose } from "./office2d-self-pose";
 import { studioUserStatusLabel } from "./office2d-status";
 import { Office2dTeleportVeil } from "./office2d-teleport-veil";
 import { office2dAccentFor, office2dCharacterForAvatar, office2dCharacterForNpc, office2dHashIndex, type Office2dCharacterKey } from "./office2d-sprite-catalog";
@@ -102,6 +103,7 @@ export class Office2dRuntime {
   private readonly zoneTracker: StudioZoneChangeTracker;
   private readonly stuck = new StudioStuckDetector();
   private readonly self: Office2dActor;
+  private readonly selfPose = new Office2dSelfPose();
   private readonly peers = new Map<string, Office2dActor>();
   private readonly npcs: { readonly state: Office2dNpcState; readonly actor: Office2dActor }[] = [];
   private readonly coworkers: Office2dCoworkerCrowd;
@@ -339,6 +341,8 @@ export class Office2dRuntime {
     this.physics.teleport(SELF_BODY, free.x, free.y);
     this.self.x = free.x;
     this.self.y = free.y;
+    this.selfPose.reset();
+    this.options.bridge.updatePoseState({ position: free, moving: true, seatAnchors: [], openArea: true, now: this.now() });
     this.path = [];
     this.destination = null;
     this.pending = null;
@@ -350,7 +354,7 @@ export class Office2dRuntime {
 
   private showEmote(actor: Office2dActor, kind: string, nowMs: number): void {
     if (!applyOffice2dActorEmote(actor, kind, nowMs)) return;
-    this.particles.emitComboBurst("emote", actor.x, actor.y, 0.85);
+    if (!this.options.getReducedMotion()) this.particles.emitComboBurst("emote", actor.x, actor.y, 0.85);
   }
 
   /** 한 프레임 진행(초 단위 경과). */
@@ -553,6 +557,7 @@ export class Office2dRuntime {
 
   private updateSeats(nowMs: number): void {
     const seated = this.options.getSeatedActors();
+    const request = this.options.bridge.getPendingPoseRequest();
     const pose = this.options.bridge.updatePoseState({
       position: this.self,
       moving: this.self.moving,
@@ -567,14 +572,12 @@ export class Office2dRuntime {
       if (actor.seat) peerSeatIds.add(actor.seat.id);
     }
     const leased = seated.find((actor) => actor.id === this.options.selfIdentity);
-    const seatPoint = leased?.anchorPoint ?? (pose.pose === "sit" ? pose.anchor?.point : undefined);
-    let selfSeat = seatPoint && !this.self.moving ? this.seatFor(seatPoint, 18) : null;
-    if (!selfSeat && !this.self.moving && this.path.length === 0) {
-      const candidate = this.seatFor(this.self, 18);
-      if (candidate && !peerSeatIds.has(candidate.id)) selfSeat = candidate;
-    }
+    const selfSeat = this.selfPose.resolveSeat({ request, pose, moving: this.self.moving, hasPath: this.path.length > 0,
+      point: this.self, leasedPoint: leased?.anchorPoint, occupiedSeatIds: peerSeatIds,
+      findSeat: (point, distance) => this.seatFor(point, distance) });
     const prevSeatId = this.self.seat?.id ?? null;
     this.self.seat = selfSeat;
+    this.self.pose = selfSeat ? "sit" : pose.pose;
     if (selfSeat) this.self.facing = selfSeat.facing;
     if (prevSeatId !== (selfSeat?.id ?? null)) {
       this.self.previousSeated = selfSeat !== null;
@@ -681,7 +684,7 @@ export class Office2dRuntime {
     if (this.stuck.sample({ time: nowMs, directional, point: this.self })) callbacks.onStuckChange?.(this.stuck.value);
 
     const point = { x: Math.round(this.self.x), y: Math.round(this.self.y) };
-    const pose = this.self.seat ? "sit" : bridge.getPose();
+    const pose = this.self.pose;
     const key = `${point.x}:${point.y}:${this.self.facing}:${this.self.moving}:${pose}`;
     if (key !== this.lastLocalKey && nowMs - this.lastLocalStateAt >= LOCAL_STATE_INTERVAL_MS) {
       this.lastLocalKey = key;

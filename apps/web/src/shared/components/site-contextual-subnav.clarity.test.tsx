@@ -45,4 +45,17 @@ describe("맥락 메뉴의 기본 정보량과 현재 위치", () => {
     expect(current).toHaveLength(1);
     expect(current[0]?.getAttribute("href")).toBe(href);
   });
+
+  it.each([
+    ["/publish", "게시 정보 준비", "/publish"],
+    ["/studio/publish", "회차 게시", "/studio/publish"],
+  ])("%s의 게시 목적과 현재 위치를 다른 화면과 구분한다", (url, label, href) => {
+    const { container } = render(
+      <MemoryRouter initialEntries={[url]}><SiteContextualSubNav /></MemoryRouter>,
+    );
+    const current = container.querySelectorAll('[aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(href);
+    expect(current[0]?.getAttribute("href")).toBe(href);
+  });
 });
