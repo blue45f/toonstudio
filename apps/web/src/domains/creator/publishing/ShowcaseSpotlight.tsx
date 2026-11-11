@@ -34,7 +34,6 @@ export function ShowcaseHeader() {
       description={bt("공개 작품과 작가를 둘러보고, 관심 있는 작품을 열어보세요.", "Explore public works and creators, then open something you love.")}
       surface="plain"
       className="mb-5"
-      actions={<Link href="/studio/publish" className={buttonClass({ variant: "outline", className: "min-h-11" })}>{bt("내 작품 공개하기", "Publish your work")}</Link>}
     />
   );
 }
@@ -85,11 +84,11 @@ function closeInfoOnEscape(event: KeyboardEvent<HTMLElement>) {
 function SpotlightInformation({ work }: { readonly work: WorkSummary }) {
   const bt = useBilingual("ShowcaseSpotlight");
   return (
-      <details className="group/spotlight-info relative" onBlur={(event) => { if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false; }} aria-label={bt("추천 작품 정보", "Spotlight work information")}>
+      <details className="group/spotlight-info" onBlur={(event) => { if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false; }} aria-label={bt("추천 작품 정보", "Spotlight work information")}>
         <summary onKeyDown={closeInfoOnEscape} className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-1 rounded-xl border border-line bg-panel px-2 text-xs font-semibold text-fg-2 outline-none hover:text-accent focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
           {bt("작품 정보", "Work info")}<ChevronDown size={14} aria-hidden className="shrink-0 transition-transform group-open/spotlight-info:rotate-180 motion-reduce:transition-none" />
         </summary>
-        <div className="absolute right-0 top-full z-10 mt-2 max-h-[min(24rem,60dvh)] w-64 max-w-[calc(100vw-2rem)] space-y-2 overflow-y-auto rounded-xl border border-line bg-panel p-3 text-sm text-fg-2 shadow-xl">
+        <div className="absolute left-3 right-3 top-full z-10 mt-2 max-h-[min(24rem,60dvh)] space-y-2 overflow-y-auto rounded-xl border border-line bg-panel p-3 text-sm text-fg-2 shadow-xl">
           <p>{bt("공개 작품의 좋아요순 목록에서 표지가 있는 작품을 우선 소개합니다.", "From public works ordered by likes, a work with a cover is featured first.")}</p>
           {work.seriesTitle ? <p>{work.seriesTitle}{work.episodeNo != null ? " · " + formatI18nTemplate(bt("{no}화", "Episode {no}"), { no: work.episodeNo }) : ""}</p> : null}
           {work.author.id ? <Link href={creatorProfileHref(work.author.id)} onKeyDown={closeInfoOnEscape} className={TEXT_LINK}>{work.author.name} · {bt("작가 프로필", "Creator profile")}</Link> : <p>{work.author.name}</p>}
@@ -107,24 +106,23 @@ function SpotlightInformation({ work }: { readonly work: WorkSummary }) {
 function SpotlightWork({ work }: { readonly work: WorkSummary }) {
   const bt = useBilingual("ShowcaseSpotlight");
   return (
-    <article className={CARD_CLASS} data-showcase-spotlight-state="ready">
-      <div className="flex items-center gap-3 sm:gap-5">
-        <Link href={creatorWorkHref(work.id)} aria-label={formatI18nTemplate(bt("‘{title}’ 작품 보러 가기", "View the work ‘{title}’"), { title: work.title })} className={COVER_CLASS + " focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"}>
+    <article className={"relative " + CARD_CLASS} data-showcase-spotlight-state="ready">
+      <div className="grid grid-cols-[4.625rem_minmax(0,1fr)] items-center gap-x-3 sm:grid-cols-[7.625rem_minmax(0,1fr)] sm:gap-x-5">
+        <Link href={creatorWorkHref(work.id)} aria-label={formatI18nTemplate(bt("‘{title}’ 작품 보러 가기", "View the work ‘{title}’"), { title: work.title })} className={COVER_CLASS + " min-[375px]:row-span-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"}>
           {work.cover.trim() ? <CoverImage src={work.cover} alt={work.title} priority className="size-full object-cover" fallback={<CoverTitleTile work={work} />} /> : <CoverTitleTile work={work} />}
         </Link>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-accent">{bt("주목할 작품", "Spotlight work")}</p>
           <h2 className="mt-0.5 line-clamp-2 break-keep text-base font-bold leading-snug text-fg sm:text-xl">{work.title}</h2>
           {work.description.trim() ? <p className="mt-1 line-clamp-2 break-keep text-xs leading-5 text-fg-2 sm:text-sm">{work.description}</p> : null}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Link href={creatorWorkHref(work.id)} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
-              {bt("작품 자세히 보기", "View work details")}<ArrowRight size={15} aria-hidden />
-            </Link>
-            <SpotlightInformation work={work} />
-          </div>
+        </div>
+        <div className="col-span-2 mt-2 flex flex-wrap items-center gap-2 min-[375px]:col-span-1">
+          <Link href={creatorWorkHref(work.id)} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1 px-2.5 text-xs" })}>
+            {bt("작품 자세히 보기", "View work details")}<ArrowRight size={15} aria-hidden />
+          </Link>
+          <SpotlightInformation work={work} />
         </div>
       </div>
-
     </article>
   );
 }

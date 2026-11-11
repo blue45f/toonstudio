@@ -3,6 +3,7 @@
 // (GalleryToolbar·GalleryTabPanel)를 그대로 재사용한다. 보기 조건은 주소 검색 문자열이 단일 출처라
 // 새로고침·공유 링크·스포트라이트의 태그 링크에서도 같은 화면이 열린다.
 import { ChevronDown, Send } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { GalleryToolbar } from "./publishing/GalleryControls";
@@ -14,6 +15,7 @@ import { ShowcaseSocialHubBar } from "./publishing/ShowcaseSocialHubBar";
 import { Container } from "@/shared/components/section";
 import { CreativeJourneyLinks } from "@/shared/components/public-creative";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
@@ -26,8 +28,50 @@ const SHOWCASE_TRACK_IMAGES: Readonly<Record<string, string>> = {
   "contest-pitch": "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp",
 };
 
+/** 입력 중인 초안은 네이티브 입력에 두고, 제출한 검색 조건만 주소와 동기화한다. */
+function ShowcaseSearchForm({ searchText, searchable, onFind }: {
+  readonly searchText: string;
+  readonly searchable: boolean;
+  readonly onFind: (value: string | null) => void;
+}) {
+  const bt = useBilingual("ShowcasePage");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const composingRef = useRef(false);
+  const submittedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (submittedRef.current === searchText) {
+      submittedRef.current = null;
+      return;
+    }
+    submittedRef.current = null;
+    if (inputRef.current) inputRef.current.value = searchText;
+  }, [searchText]);
+
+  return (
+    <form role="search" aria-label={bt("불러온 작품에서 찾기", "Find in loaded works")} className="mb-3" onSubmit={(event) => {
+      event.preventDefault();
+      if (!searchable || composingRef.current) return;
+      const value = new FormData(event.currentTarget).get("q");
+      const next = typeof value === "string" ? value.trim().slice(0, 200) : "";
+      if (inputRef.current) inputRef.current.value = next;
+      submittedRef.current = next;
+      onFind(next || null);
+    }}>
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <input ref={inputRef} type="search" name="q" maxLength={200} defaultValue={searchText} disabled={!searchable} onCompositionStart={() => { composingRef.current = true; }} onCompositionEnd={() => { composingRef.current = false; }} onKeyDown={(event) => {
+          if (event.key === "Enter" && (composingRef.current || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)) event.preventDefault();
+        }} aria-label={bt("불러온 작품에서 제목·작가 찾기", "Find a title or creator in loaded works")} aria-describedby="showcase-search-scope" placeholder={bt("불러온 작품에서 제목·작가 찾기", "Find a title or creator in loaded works")} className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-panel px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60" />
+        <button type="submit" disabled={!searchable} className={buttonClass({ variant: "solid", className: "min-h-11 shrink-0 whitespace-nowrap" })}>{bt("찾기", "Find")}</button>
+        {searchText && searchable ? <button type="button" onClick={() => onFind(null)} className={buttonClass({ variant: "ghost", className: "min-h-11 shrink-0 whitespace-nowrap" })}>{bt("검색 지우기", "Clear search")}</button> : null}
+      </div>
+      <p id="showcase-search-scope" className="mt-1 text-xs leading-5 text-fg-2">{searchable ? bt("불러온 목록의 제목·작가만 찾습니다.", "Search titles and creators in the loaded list only.") : bt("이 보기에서는 제목·작가 찾기를 제공하지 않습니다. 검색어는 전체 작품·북마크로 돌아오면 유지됩니다.", "Title and creator search is unavailable in this view. Your term remains when you return to All works or Bookmarks.")}</p>
+    </form>
+  );
+}
+
 export function ShowcasePage() {
   const bt = useBilingual("ShowcasePage");
+  const isDesktop = useMediaQuery("(min-width: 640px)");
   const [searchParams, setSearchParams] = useSearchParams();
   const view = parseGalleryView(searchParams);
   const searchText = (searchParams.get("q") ?? "").trim().slice(0, 200);
@@ -42,23 +86,18 @@ export function ShowcasePage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
-      <SiteContextualSubNav pathnameOverride="/showcase" className="mb-4" />
+      <details open={isDesktop} className="group/showcase-navigation mb-4 rounded-xl border border-line bg-panel sm:rounded-none sm:border-0 sm:bg-transparent" aria-label={bt("탐색·커뮤니티 메뉴", "Explore and community menu")}>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-3 text-xs font-semibold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent sm:hidden [&::-webkit-details-marker]:hidden">
+          <span>{bt("탐색·커뮤니티 메뉴", "Explore and community menu")}</span>
+          <span className="ml-auto rounded-md bg-accent-soft px-2 py-1 text-accent">{bt("창작 갤러리", "Creator gallery")}</span>
+          <ChevronDown className="size-4 shrink-0 transition-transform group-open/showcase-navigation:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+        </summary>
+        <SiteContextualSubNav pathnameOverride="/showcase" />
+      </details>
       <ShowcaseHeader />
 
       <section aria-labelledby="showcase-browse-title" className="mt-5">
-        <form role="search" aria-label={bt("불러온 작품에서 찾기", "Find in loaded works")} className="mb-4" onSubmit={(event) => {
-          event.preventDefault();
-          if (!searchable) return;
-          const value = new FormData(event.currentTarget).get("q");
-          patchView({ q: typeof value === "string" ? value.trim().slice(0, 200) || null : null });
-        }}>
-          <div className="flex min-w-0 items-center gap-2">
-            <input type="search" name="q" maxLength={200} value={(searchParams.get("q") ?? "").slice(0, 200)} onChange={(event) => patchView({ q: event.target.value || null })} disabled={!searchable} aria-label={bt("불러온 작품에서 제목·작가 찾기", "Find a title or creator in loaded works")} aria-describedby="showcase-search-scope" placeholder={bt("불러온 작품에서 제목·작가 찾기", "Find a title or creator in loaded works")} className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-panel px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60" />
-            <button type="submit" disabled={!searchable} className={buttonClass({ variant: "solid", className: "min-h-11 shrink-0 whitespace-nowrap" })}>{bt("찾기", "Find")}</button>
-            {searchText && searchable ? <button type="button" onClick={() => patchView({ q: null })} className={buttonClass({ variant: "ghost", className: "min-h-11 shrink-0 whitespace-nowrap" })}>{bt("검색 지우기", "Clear search")}</button> : null}
-          </div>
-          <p id="showcase-search-scope" className="mt-2 text-xs leading-5 text-fg-2">{searchable ? bt("현재 목록에 불러온 작품의 제목·작가에서 찾습니다. 전체 서비스 검색은 아닙니다.", "Search titles and creators in this loaded list. This is not a service-wide search.") : bt("이 보기에서는 제목·작가 찾기를 제공하지 않습니다. 검색어는 전체 작품·북마크로 돌아오면 유지됩니다.", "Title and creator search is unavailable in this view. Your term remains when you return to All works or Bookmarks.")}</p>
-        </form>
+        <ShowcaseSearchForm searchText={searchText} searchable={searchable} onFind={(q) => patchView({ q })} />
         <GalleryToolbar view={view} onPatch={patchView} compactFilters />
         {view.tab === "works" && !searchText ? <ShowcaseSpotlight /> : null}
         <div className="mb-3">

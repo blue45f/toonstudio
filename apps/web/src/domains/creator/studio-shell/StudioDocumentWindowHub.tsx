@@ -420,7 +420,7 @@ export function StudioDocumentWindowHub({
                 className: "min-h-11 shrink-0 gap-1.5 rounded-xl px-2.5",
               })}
               title={bi("여러 창 작업공간 · ⌘/Ctrl+Shift+M", "Multi-window workspace · ⌘/Ctrl+Shift+M")}
-              aria-label={bi(`작업공간·창 메뉴, ${openCount}개 창`, `Workspaces and windows, ${openCount} views`)}
+              aria-label={`${openCount} ${bi("창", "views")} · ${bi("작업공간·창 메뉴", "Workspaces and windows")}`}
               onClick={() => setOpen((value) => !value)}
             >
               <MonitorUp size={16} aria-hidden="true" />

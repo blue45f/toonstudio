@@ -89,6 +89,20 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     expect(container.querySelector<HTMLInputElement>("#publish-channel-rss-json-feed")?.checked).toBe(true);
   });
 
+  it("부모 라벨에 이름 속성을 두지 않아도 checkbox 이름과 라벨 클릭을 유지한다", async () => {
+    const { container } = renderPage(); await prepareInputs();
+    const checkbox = screen.getByRole<HTMLInputElement>("checkbox", { name: "외부 웹툰 플랫폼" });
+    const label = container.querySelector<HTMLLabelElement>('label[for="publish-channel-external-webtoon-platforms"]');
+    if (!label) throw new Error("채널 선택 라벨이 필요합니다.");
+    expect(label.getAttribute("aria-label")).toBeNull();
+    expect(checkbox.checked).toBe(true);
+    fireEvent.click(label); expect(checkbox.checked).toBe(false);
+    expect(screen.getByRole("checkbox", { name: "외부 웹툰 플랫폼" })).toBe(checkbox);
+    fireEvent.click(label); expect(checkbox.checked).toBe(true);
+    expect((screen.getByRole("checkbox", { name: "RSS · JSON Feed" }) as HTMLInputElement).checked).toBe(true);
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
+  });
+
   it("직접 진입에서는 가짜 프로젝트와 갤러리 주소를 만들지 않고 선택을 요구한다", async () => {
     renderPage("/publish"); await screen.findByText("외부 웹툰 플랫폼");
     expect(stepButton(1).getAttribute("aria-current")).toBe("step");

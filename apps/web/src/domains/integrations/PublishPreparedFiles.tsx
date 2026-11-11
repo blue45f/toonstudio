@@ -51,4 +51,3 @@ export function PublishPreparedFiles({ ko, result, feedResult }: {
     </section> : null}
   </div>;
 }
-

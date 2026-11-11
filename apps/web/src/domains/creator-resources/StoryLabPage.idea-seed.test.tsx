@@ -35,6 +35,12 @@ const workspaceMock = vi.hoisted(() => {
     error: null, ready: true, saving: false, writable: true, ownerKey: "guest",
   };
 });
+const viewportMock = vi.hoisted(() => ({ desktop: false }));
+
+vi.mock("@/shared/hooks/use-media-query", async (original) => ({
+  ...await original<typeof import("@/shared/hooks/use-media-query")>(),
+  useMediaQuery: () => viewportMock.desktop,
+}));
 
 vi.mock("./workspace", () => ({
   downloadText: vi.fn(),
@@ -42,11 +48,12 @@ vi.mock("./workspace", () => ({
 }));
 
 beforeEach(() => {
+  viewportMock.desktop = false;
   nativeNavigationType("navigate");
   useI18n.setState({ lang: "ko" });
   workspaceMock.workspace.story = {};
   workspaceMock.saveStory.mockReset().mockResolvedValue(true);
-  workspaceMock.writable = true; workspaceMock.saving = false; workspaceMock.ownerKey = "guest";
+  workspaceMock.writable = true; workspaceMock.saving = false; workspaceMock.ready = true; workspaceMock.ownerKey = "guest";
 });
 
 afterEach(() => {
@@ -301,9 +308,28 @@ describe("기획의 native Back 복귀 초점", () => {
     } finally { restored.remove(); }
   });
 
-  it("유효한 hash 목적지의 복귀는 공통 탐색 소유자에게 맡긴다", async () => {
+  it("native Back의 현재 입력 hash는 저장 보드를 읽은 뒤 해당 입력으로 돌아간다", async () => {
     nativeNavigationType("back_forward");
-    render(<MemoryRouter initialEntries={["/story-lab?story-step=character#story-title"]}><StoryLabPage /></MemoryRouter>);
+    workspaceMock.ready = false;
+    const { rerender } = render(<MemoryRouter initialEntries={["/story-lab?story-step=conflict#story-world"]}><StoryLabPage /></MemoryRouter>);
+    await showNativePage(false);
+    expect(document.activeElement).toBe(document.body);
+    workspaceMock.ready = true;
+    rerender(<MemoryRouter initialEntries={["/story-lab?story-step=conflict#story-world"]}><StoryLabPage /></MemoryRouter>);
+    await waitFor(() => expect(document.activeElement?.id).toBe("story-world"));
+    expect(workspaceMock.saveStory).not.toHaveBeenCalled();
+  });
+
+  it.each(["story-world", "story-related-tools"])("숨긴 입력 또는 별도 영역 hash #%s는 공통 탐색 소유자에게 맡긴다", async (hash) => {
+    nativeNavigationType("back_forward");
+    render(<MemoryRouter initialEntries={[`/story-lab?story-step=character#${hash}`]}><StoryLabPage /></MemoryRouter>);
+    await showNativePage(false);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it.each(["navigate", "reload"] as const)("일반 %s의 유효한 입력 hash에도 자동 초점을 더하지 않는다", async (type) => {
+    nativeNavigationType(type);
+    render(<MemoryRouter initialEntries={["/story-lab?story-step=conflict#story-world"]}><StoryLabPage /></MemoryRouter>);
     await showNativePage(false);
     expect(document.activeElement).toBe(document.body);
   });
@@ -321,5 +347,67 @@ describe("기획의 native Back 복귀 초점", () => {
     expect(document.activeElement).toBe(world);
     expect(world.closest("fieldset")?.hidden).toBe(false);
     expect(workspaceMock.saveStory).not.toHaveBeenCalled();
+  });
+});
+
+describe("다른 제작 도구의 반응형 접기", () => {
+  it("모바일에서는 같은 메뉴 DOM과 목적지를 접고 Escape 뒤 summary로 복귀한다", async () => {
+    const { container } = render(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
+    const summary = screen.getByText("다른 제작 도구로 이동", { selector: "summary" });
+    const details = summary.closest("details");
+    if (!details) throw new Error("제작 도구 접기 누락");
+    const nav = details.querySelector("nav[data-contextual-subnav]");
+    const before = Array.from(nav?.querySelectorAll("a") ?? [], link => [link.getAttribute("href"), link.getAttribute("aria-current")]);
+    expect(details.open).toBe(false);
+    await act(async () => { fireEvent.click(summary); await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect(details.open).toBe(true);
+    expect(container.querySelectorAll("nav[data-contextual-subnav]")).toHaveLength(1);
+    expect(Array.from(nav?.querySelectorAll("a") ?? [], link => [link.getAttribute("href"), link.getAttribute("aria-current")])).toEqual(before);
+    const link = nav?.querySelector("a");
+    if (!link) throw new Error("도구 링크 누락");
+    link.focus(); fireEvent.keyDown(link, { key: "Escape" });
+    expect(details.open).toBe(false);
+    expect(document.activeElement).toBe(summary);
+  });
+
+  it("더 보기에서 Escape는 먼저 내부 메뉴만 닫고 이후 바깥 접기를 닫는다", async () => {
+    render(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
+    const summary = screen.getByText("다른 제작 도구로 이동", { selector: "summary" });
+    const details = summary.closest("details");
+    if (!details) throw new Error("제작 도구 접기 누락");
+    await act(async () => { fireEvent.click(summary); await new Promise(resolve => setTimeout(resolve, 0)); });
+    const more = details.querySelector<HTMLDetailsElement>("details.site-contextual-subnav__more");
+    const moreSummary = more?.querySelector("summary");
+    const link = more?.querySelector("a");
+    if (!more || !moreSummary || !link) throw new Error("더 보기 누락");
+    await act(async () => { fireEvent.click(moreSummary); await new Promise(resolve => setTimeout(resolve, 0)); });
+    link.focus(); fireEvent.keyDown(link, { key: "Escape" });
+    expect(more.open).toBe(false); expect(details.open).toBe(true); expect(document.activeElement).toBe(moreSummary);
+    fireEvent.keyDown(moreSummary, { key: "Escape" });
+    expect(details.open).toBe(false); expect(document.activeElement).toBe(summary);
+  });
+
+  it.each([false, true])("PC 메뉴의 초점은 폭 전환·브라우저 blur(%s) 뒤에도 보이는 영역으로 이동한다", (browserBlur) => {
+    viewportMock.desktop = true;
+    const { rerender } = render(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
+    const summary = screen.getByText("다른 제작 도구로 이동", { selector: "summary" });
+    const details = summary.closest("details"), body = document.getElementById("story-related-tools"), link = body?.querySelector("a");
+    if (!details || !body || !link) throw new Error("반응형 도구 영역 누락");
+    expect(details.open).toBe(true); link.focus();
+    if (browserBlur) link.blur();
+    viewportMock.desktop = false; rerender(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
+    expect(details.open).toBe(false); expect(document.activeElement).toBe(summary);
+    viewportMock.desktop = true; rerender(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
+    expect(details.open).toBe(true); expect(document.activeElement).toBe(body);
+  });
+
+  it("폭 전환이 도구 밖의 실제 입력 초점을 가로채지 않는다", () => {
+    viewportMock.desktop = true;
+    const { rerender } = render(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
+    const title = document.querySelector<HTMLTextAreaElement>("#story-title");
+    if (!title) throw new Error("가제 입력 누락");
+    title.focus(); viewportMock.desktop = false;
+    rerender(<MemoryRouter initialEntries={["/story-lab"]}><StoryLabPage /></MemoryRouter>);
+    expect(document.activeElement).toBe(title);
   });
 });

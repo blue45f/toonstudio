@@ -86,6 +86,10 @@ export function StoryLabPage() {
   const [draftError, setDraftError] = useState("");
   const [inputError, setInputError] = useState<{ readonly field: StoryField; readonly message: string } | null>(null);
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [pipelineExpanded, setPipelineExpanded] = useState(false);
+  const pipelineSummary = useRef<HTMLElement | null>(null);
+  const pipelineBody = useRef<HTMLDivElement | null>(null);
+  const pipelineOwnedFocus = useRef(false);
   const desktopPreview = useMediaQuery("(min-width: 1024px)");
   const pendingFocus = useRef<string | null>(null);
   const handlingInvalid = useRef(false);
@@ -107,17 +111,45 @@ export function StoryLabPage() {
     if (!pendingFocus.current) return;
     focusStoryElement(pendingFocus.current); pendingFocus.current = null;
   }, [stepIndex, previewExpanded, desktopPreview]);
+  useLayoutEffect(() => {
+    const focused = document.activeElement;
+    const lostFocus = focused === document.body || focused?.id === "main-content";
+    if (!desktopPreview && !pipelineExpanded && ((focused && pipelineBody.current?.contains(focused)) || (pipelineOwnedFocus.current && lostFocus))) { pipelineSummary.current?.focus(); pipelineOwnedFocus.current = false; }
+    else if (desktopPreview && focused === pipelineSummary.current) pipelineBody.current?.focus();
+  }, [desktopPreview, pipelineExpanded]);
+  useEffect(() => {
+    if (desktopPreview || !pipelineExpanded) return;
+    const details = pipelineBody.current?.closest("details");
+    if (!details) return;
+    const closeTools = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing || !(event.target instanceof Node) || !details.contains(event.target)) return;
+      event.preventDefault(); event.stopPropagation();
+      const nested = event.target instanceof Element ? event.target.closest("details[open]") : null;
+      if (nested instanceof HTMLDetailsElement && nested !== details) { nested.open = false; nested.querySelector("summary")?.focus(); return; }
+      details.open = false; setPipelineExpanded(false); pipelineSummary.current?.focus(); pipelineOwnedFocus.current = false;
+    };
+    document.addEventListener("keydown", closeTools);
+    return () => document.removeEventListener("keydown", closeTools);
+  }, [desktopPreview, pipelineExpanded]);
   // Studio 경계의 문서 이동은 유지하고 native Back에서만 현재 입력 묶음의 키보드 문맥을 되돌린다.
   useEffect(() => {
     if (nativeReturnPending.current === null) nativeReturnPending.current = isNativeStoryHistoryReturn();
     let frame = 0;
     const restoreStepContext = () => {
-      if (!nativeReturnPending.current || !draftReady) return;
+      if (!nativeReturnPending.current || !draftReady || !ready) return;
       nativeReturnPending.current = false;
       const anchorId = location.hash.length > 1 ? safeDecodeRouteText(location.hash.slice(1)) : "";
-      if (pendingFocus.current || handlingInvalid.current || (anchorId && document.getElementById(anchorId))) return;
+      if (pendingFocus.current || handlingInvalid.current) return;
       const focused = document.activeElement;
       if (focused && focused !== document.body && focused.id !== "main-content") return;
+      const anchor = anchorId ? document.getElementById(anchorId) : null;
+      if (anchor) {
+        // 처음 hash를 복원하는 소유자는 유지하고 native Back의 유효한 현재 입력만 읽기 완료 뒤 보완한다.
+        if (!(anchor instanceof HTMLTextAreaElement) || anchor.form?.id !== "story-worksheet" || anchor.matches(":disabled") || anchor.closest("[hidden]")) return;
+        const style = window.getComputedStyle(anchor);
+        if (style.display === "none" || style.visibility === "hidden") return;
+        focusStoryElement(anchor.id); return;
+      }
       const step = STORY_STEPS[stepIndex];
       if (step) focusStoryElement(`story-step-heading-${step.id}`);
     };
@@ -131,9 +163,9 @@ export function StoryLabPage() {
       scheduleRestore();
     };
     window.addEventListener("pageshow", onPageShow);
-    if (nativeReturnPending.current && draftReady) scheduleRestore();
+    if (nativeReturnPending.current && draftReady && ready) scheduleRestore();
     return () => { cancelAnimationFrame(frame); window.removeEventListener("pageshow", onPageShow); };
-  }, [draftReady, stepIndex, location.hash]);
+  }, [draftReady, ready, stepIndex, location.hash]);
   const seedAttempted = useRef(false);
   useEffect(() => {
     active.current = true;
@@ -221,7 +253,19 @@ export function StoryLabPage() {
     pendingFocus.current = "story-preview-title"; setPreviewExpanded(true);
   };
   return <ResourceLayout compact title={tx("스토리 연구실")} intro={tx("인물, 욕망, 장애물과 선택을 차근차근 정리하세요. 외부 AI 호출 없이 직접 작성하는 기획 워크시트입니다.")}>
-    <SiteContextualSubNav pathnameOverride="/story-lab" className="mb-5" />
+    <details open={desktopPreview || pipelineExpanded} className="rounded-xl border border-line bg-panel px-3 lg:border-0 lg:bg-transparent lg:px-0" onToggle={(event) => {
+      if (event.target !== event.currentTarget || desktopPreview) return;
+      setPipelineExpanded(event.currentTarget.open);
+      const focused = document.activeElement;
+      if (!event.currentTarget.open && ((focused && pipelineBody.current?.contains(focused)) || (pipelineOwnedFocus.current && (focused === document.body || focused?.id === "main-content")))) { pipelineSummary.current?.focus(); pipelineOwnedFocus.current = false; }
+    }}>
+      <summary ref={pipelineSummary} className="flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-2 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent lg:hidden">
+        {bt("다른 제작 도구로 이동", "Other creation tools")}<span className="text-xs font-normal text-fg-2">{bt("원고 편집·게시 등", "Editing, publishing and more")}</span>
+      </summary>
+      <div ref={pipelineBody} id="story-related-tools" role="region" aria-label={bt("다른 제작 도구", "Other creation tools")} tabIndex={-1} onFocusCapture={() => { pipelineOwnedFocus.current = true; }} onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) pipelineOwnedFocus.current = false; }} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+        <SiteContextualSubNav pathnameOverride="/story-lab" />
+      </div>
+    </details>
     <nav aria-label={bt("기획 입력 단계", "Story planning steps")} className="grid grid-cols-3 gap-2">
       {STORY_STEPS.map((step, index) => <button key={step.id} type="button" aria-current={stepIndex === index ? "step" : undefined} aria-controls={`story-step-${step.id}`} onClick={() => openStep(index)} className={cn(RESOURCE_BUTTON, "min-w-0 flex-col px-1 text-xs motion-reduce:transition-none sm:px-2 sm:text-sm", stepIndex === index ? "border-accent bg-accent-soft text-accent" : "bg-canvas text-fg-2")}>
         <span>{`${index + 1}. ${bt(...step.label)}`}</span><span className="mt-1 text-[0.6875rem] font-normal text-fg-2">{bt(...step.hint)}</span>

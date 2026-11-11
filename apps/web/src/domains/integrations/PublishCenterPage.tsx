@@ -264,7 +264,7 @@ function ChannelCard({ provider, selected, ko, onToggle, disabled }: {
   readonly onToggle: () => void; readonly disabled: boolean;
 }) {
   const inputId = `publish-channel-${provider.id}`;
-  return <label htmlFor={inputId} aria-label={provider.name} className={`flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border bg-canvas p-3 ${selected ? "border-accent/60" : "border-line"}`}>
+  return <label htmlFor={inputId} className={`flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border bg-canvas p-3 ${selected ? "border-accent/60" : "border-line"}`}>
     <input id={inputId} type="checkbox" aria-label={provider.name} checked={selected} disabled={disabled} onChange={onToggle} className="mt-1 size-5 shrink-0 [accent-color:var(--color-accent)]" />
     <span className="min-w-0 text-sm"><strong className="font-semibold text-fg">{provider.name}</strong><span className="mt-1 block text-xs leading-5 text-fg-2">{provider.status === "manual" ? (ko ? "직접 업로드용 패키지로 준비돼요" : "Prepared as a manual-upload package") : provider.summary}</span><span className="mt-1 block text-xs text-fg-2">{INTEGRATION_PROVIDER_STATUS_LABELS[provider.status]} · {ko ? "채널 정보만 포함 · 직접 게시 아님" : "Channel information only · not a publication"}</span></span>
   </label>;

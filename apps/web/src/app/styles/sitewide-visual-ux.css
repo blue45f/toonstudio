@@ -123,6 +123,21 @@
 :root:has([data-site-ost-expanded="true"]) [data-beta-open-prompt="engaged"] {
   visibility: hidden;
 }
+/* 입력 단계의 주 행동은 알림·음악·설정의 실제 점유 영역을 피한다.
+ * 휴대폰의 오른쪽 조작 열은 그대로 두고 버튼에 쓸 폭을 별도로 확보한다. */
+:is([data-story-worksheet-actions="true"], [data-publish-preparation-actions="true"]) {
+  bottom: max(var(--site-float-base, 1rem), var(--floating-stack-clearance, 0px), 4.5rem);
+}
+@media (max-width: 767px) {
+  :is([data-story-worksheet-actions="true"], [data-publish-preparation-actions="true"]) {
+    padding-inline-end: max(0.5rem, var(--site-float-column, 0px));
+  }
+}
+@media (min-width: 768px) {
+  html:has([data-back-to-top="true"][aria-hidden="false"]) :is([data-story-worksheet-actions="true"], [data-publish-preparation-actions="true"]) {
+    padding-inline-end: 4.75rem;
+  }
+}
 /* 연결 칩이 나타나거나 사라질 때 그 위에 쌓인 요소가 튀지 않고 부드럽게 오르내린다. */
 :is([data-site-ost="mounted"], [data-beta-open-prompt="engaged"], [data-studio-beta-notice-host="true"]) {
   transition: bottom 180ms ease;

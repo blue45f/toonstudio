@@ -48,7 +48,7 @@ function GalleryTabs({ value, onChange, compact = false }: { value: ShowcaseGall
   };
 
   return (
-    <div role="tablist" aria-label={bt("작품 보기", "Browse works")} className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-canvas/50 p-1 sm:inline-flex">
+    <div role="tablist" aria-label={bt("작품 보기", "Browse works")} className={cn("grid grid-cols-4 rounded-2xl border border-line bg-canvas/50 sm:inline-flex", compact ? "min-w-0 flex-1 gap-0 p-0.5 sm:flex-none sm:gap-1 sm:p-1" : "gap-1 p-1")}>
       {GALLERY_TABS.map((option, index) => {
         const active = option.value === value;
         const Icon = option.icon;
@@ -63,18 +63,19 @@ function GalleryTabs({ value, onChange, compact = false }: { value: ShowcaseGall
             role="tab"
             aria-selected={active}
             aria-controls={TABPANEL_ID}
+            aria-label={bt(option.ko, option.en)}
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => moveFocus(event, index)}
             className={cn(
               // 모바일은 4칸 균등(아이콘 위·라벨 아래), sm 이상은 한 줄 알약 탭.
-              compact ? "inline-flex min-h-11 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 text-xs font-semibold transition-colors duration-150 sm:px-3.5 sm:text-sm" : "inline-flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap rounded-xl px-1 text-sm font-semibold transition-colors duration-150 sm:min-h-11 sm:flex-row sm:gap-1.5 sm:px-3.5 sm:font-medium",
+              compact ? "inline-flex min-h-11 min-w-11 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-1 text-xs font-semibold transition-colors duration-150 sm:px-3.5 sm:text-sm" : "inline-flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap rounded-xl px-1 text-sm font-semibold transition-colors duration-150 sm:min-h-11 sm:flex-row sm:gap-1.5 sm:px-3.5 sm:font-medium",
               CHIP_FOCUS,
               active ? "bg-accent text-on-accent shadow-md shadow-accent/25" : "text-fg-2 hover:bg-raised hover:text-fg",
             )}
           >
             <Icon size={15} aria-hidden className={compact ? "hidden sm:block" : undefined} />
-            {bt(option.ko, option.en)}
+            {compact && option.value === "works" ? <><span className="sm:hidden">{bt("전체", "All")}</span><span className="hidden sm:inline">{bt(option.ko, option.en)}</span></> : bt(option.ko, option.en)}
           </button>
         );
       })}
@@ -251,24 +252,26 @@ export function GalleryToolbar({ view, onPatch, compactFilters = false }: {
       ) : null;
 
   return (
-    <div className={cn(compactFilters ? "mb-5" : "mb-6", "space-y-3 rounded-2xl border border-line bg-panel p-3 sm:p-4")}>
+    <div className={cn("rounded-2xl border border-line bg-panel", compactFilters ? "mb-4 flex flex-wrap items-start gap-2 p-2 sm:p-3" : "mb-6 space-y-3 p-3 sm:p-4")}>
       <GalleryTabs value={tab} compact={compactFilters} onChange={(next) => onPatch({ tab: next === "works" ? null : next })} />
       {compactFilters && filterControls ? (
-        <details className="group/gallery-filters rounded-xl border border-line bg-canvas/50 px-3" aria-label={bt("작품 조건 더 보기", "More work filters")}>
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg text-sm font-semibold text-fg-2 outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
-            <span>{bt("조건 더 보기", "More filters")} · {bt(currentSort?.ko ?? "최신", currentSort?.en ?? "Latest")}</span>
-            <ChevronDown size={15} aria-hidden className="shrink-0 transition-transform group-open/gallery-filters:rotate-180 motion-reduce:transition-none" />
+        <details className="group/gallery-filters w-14 shrink-0 rounded-xl border border-line bg-canvas/50 px-1 open:order-2 open:w-full sm:w-auto sm:px-3" aria-label={bt("작품 조건 더 보기", "More work filters")}>
+          <summary aria-label={bt("작품 조건 더 보기", "More work filters")} className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-0.5 rounded-lg text-xs font-semibold text-fg-2 outline-none focus-visible:ring-2 focus-visible:ring-accent sm:gap-2 sm:text-sm [&::-webkit-details-marker]:hidden">
+            <span className="flex flex-col items-center leading-4 sm:flex-row sm:gap-1"><span><span className="sm:hidden">{bt("조건", "Filter")}</span><span className="hidden sm:inline">{bt("조건 더 보기", "More filters")} ·</span></span><span>{bt(currentSort?.ko ?? "최신", currentSort?.en ?? "Latest")}</span></span>
+            <ChevronDown size={12} aria-hidden className="shrink-0 transition-transform group-open/gallery-filters:rotate-180 motion-reduce:transition-none" />
           </summary>
           <div className="border-t border-line py-3">{filterControls}</div>
         </details>
       ) : filterControls}
-      {showWorkFilters ? (
+      {showWorkFilters && hasActiveFilters(query) ? (
+        <div className={compactFilters ? "order-3 w-full" : undefined}>
         <ActiveFilters
           query={query}
           bt={bt}
           onClear={(key) => onPatch({ [key]: null })}
           onClearAll={() => onPatch({ tag: null, content: null, provenance: null, portfolio: null })}
         />
+        </div>
       ) : null}
     </div>
   );

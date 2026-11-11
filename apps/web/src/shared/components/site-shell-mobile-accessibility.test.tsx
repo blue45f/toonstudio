@@ -155,7 +155,7 @@ describe("mobile site shell accessibility", () => {
 
     render(<FloatingControls placement="static" showTheme={false} />);
 
-    const language = screen.getByRole("button", { name: "언어 선택" });
+    const language = screen.getByRole("button", { name: "한국어 / Korean · 언어 선택" });
     expect(useI18n.getState().lang).toBe("ko");
     expect(language.textContent).toContain("한국어");
     expect(screen.queryByRole("listbox", { name: "언어 검색 결과" })).toBeNull();
@@ -165,7 +165,7 @@ describe("mobile site shell accessibility", () => {
     useI18n.getState().setLang("ko");
     render(<FloatingControls placement="static" showTheme={false} />);
 
-    const trigger = screen.getByRole("button", { name: "언어 선택" });
+    const trigger = screen.getByRole("button", { name: "한국어 / Korean · 언어 선택" });
     expect(screen.queryAllByRole("option")).toHaveLength(0);
     fireEvent.click(trigger);
 

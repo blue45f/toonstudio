@@ -1621,7 +1621,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                   setColorToolsOpen(false);
                   undo();
                 }}
-                aria-label={label.undoAria}
+                aria-label={label.undo === label.undoAria ? label.undo : `${label.undo} · ${label.undoAria}`}
               />
               <StudioDockButton
                 icon={Redo2}
@@ -1636,7 +1636,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                   setColorToolsOpen(false);
                   redo();
                 }}
-                aria-label={label.redoAria}
+                aria-label={label.redo === label.redoAria ? label.redo : `${label.redo} · ${label.redoAria}`}
               />
               <button
                 type="button" ref={workspaceToggleRef}

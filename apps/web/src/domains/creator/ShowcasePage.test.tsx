@@ -59,7 +59,7 @@ function renderShowcase(initialEntry = "/showcase") {
 function RouteProbe() {
   const location = useLocation();
   const navigate = useNavigate();
-  return <><output data-testid="showcase-route">{location.pathname + location.search}</output><button onClick={() => navigate("/elsewhere")} type="button">테스트 다른 화면</button><button onClick={() => navigate(-1)} type="button">테스트 뒤로</button></>;
+  return <><output data-testid="showcase-route">{location.pathname + location.search}</output><button onClick={() => navigate("/elsewhere")} type="button">테스트 다른 화면</button><button onClick={() => navigate("/showcase?q=%EB%B9%9B%EB%82%98&sort=likes")} type="button">테스트 외부 검색 주소</button><button onClick={() => navigate(-1)} type="button">테스트 뒤로</button></>;
 }
 
 beforeEach(() => {
@@ -75,6 +75,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
   useApp.setState({ userId: null });
 });
 
@@ -95,6 +96,23 @@ describe("pickSpotlightWork", () => {
 });
 
 describe("ShowcasePage", () => {
+  it("모바일 메뉴는 현재 위치를 알리는 단일 접힘이며 공개 행동은 참여 안내에서 한 번 제공한다", () => {
+    const { container } = renderShowcase();
+    const menu = screen.getByRole("group", { name: "탐색·커뮤니티 메뉴" });
+    expect((menu as HTMLDetailsElement).open).toBe(false);
+    expect(within(menu).getByText("창작 갤러리", { selector: "span" })).toBeTruthy();
+    expect(container.querySelectorAll("[data-contextual-subnav]")).toHaveLength(1);
+    expect(menu.querySelector('[aria-current="page"]')?.textContent).toBe("창작 갤러리");
+    expect(container.querySelectorAll('a[href="/studio/publish"]')).toHaveLength(1);
+  });
+
+  it("데스크톱에서는 같은 메뉴 DOM이 처음부터 열려 있다", () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const { container } = renderShowcase();
+    expect((screen.getByRole("group", { name: "탐색·커뮤니티 메뉴" }) as HTMLDetailsElement).open).toBe(true);
+    expect(container.querySelectorAll("[data-contextual-subnav]")).toHaveLength(1);
+  });
+
   it("머리말은 작품 탐색을 먼저 안내하고 창작 바로가기는 접힌 참여 영역에서 찾는다", () => {
     renderShowcase();
     expect(screen.getByRole("heading", { level: 1, name: "마음에 드는 작품을 찾아보세요" })).toBeTruthy();
@@ -148,6 +166,8 @@ describe("ShowcasePage", () => {
     const input = screen.getByRole("searchbox", { name: "불러온 작품에서 제목·작가 찾기" });
     input.focus();
     fireEvent.change(input, { target: { value: "ＣＡＦＥ" } });
+    // 모바일 실제 실패 회귀: 라우터 반영을 기다리지 않고 같은 동작에서 즉시 제출한다.
+    fireEvent.submit(screen.getByRole("search", { name: "불러온 작품에서 찾기" }));
     expect(await screen.findByText("불러온 3개 중 1개")).toBeTruthy();
     expect(document.activeElement).toBe(input);
     const results = within(screen.getByRole("tabpanel"));
@@ -155,10 +175,48 @@ describe("ShowcasePage", () => {
     expect(results.queryByText("달의 호수")).toBeNull();
     const requests = creatorClient.listWorks.mock.calls.length;
     fireEvent.change(input, { target: { value: "홍길동" } });
+    fireEvent.submit(screen.getByRole("search", { name: "불러온 작품에서 찾기" }));
     await waitFor(() => expect(results.getAllByRole("link").some(link => link.getAttribute("href") === "/showcase/work/moon")).toBe(true));
     expect(results.queryByText("Cafe Tomorrow")).toBeNull();
     expect(creatorClient.listWorks.mock.calls.length).toBe(requests);
     expect(creatorClient.listWorks.mock.calls.every(([params]) => !("q" in params))).toBe(true);
+  });
+
+  it("한글 조합을 확정하는 Enter는 제출하지 않고 조합 완료 후 입력을 찾는다", async () => {
+    renderShowcase();
+    await screen.findByText("작품 2개");
+    const input = screen.getByRole("searchbox") as HTMLInputElement;
+    const form = screen.getByRole("search", { name: "불러온 작품에서 찾기" });
+    input.focus();
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: "ㅂ" } });
+    expect(fireEvent.keyDown(input, { key: "Enter", isComposing: true, keyCode: 229 })).toBe(false);
+    fireEvent.submit(form);
+    expect(screen.getByTestId("showcase-route").textContent).toBe("/showcase");
+    expect(input.value).toBe("ㅂ");
+    fireEvent.compositionEnd(input, { data: "빛나" });
+    fireEvent.change(input, { target: { value: "빛나" } });
+    fireEvent.submit(form);
+    expect(await screen.findByText("불러온 2개 중 2개")).toBeTruthy();
+    expect(input.value).toBe("빛나");
+    expect(document.activeElement).toBe(input);
+  });
+
+  it("입력 초안은 주소를 매번 바꾸지 않고 외부 주소·뒤로 가기·지우기에 동기화된다", async () => {
+    renderShowcase("/showcase?q=%ED%91%9C%EC%A7%80");
+    await screen.findByText("불러온 2개 중 1개");
+    const input = screen.getByRole("searchbox") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "아직 제출하지 않은 초안" } });
+    expect(screen.getByTestId("showcase-route").textContent).toBe("/showcase?q=%ED%91%9C%EC%A7%80");
+    fireEvent.click(screen.getByRole("button", { name: "테스트 외부 검색 주소" }));
+    expect(await screen.findByText("불러온 2개 중 2개")).toBeTruthy();
+    expect(input.value).toBe("빛나");
+    fireEvent.click(screen.getByRole("button", { name: "테스트 뒤로" }));
+    expect(await screen.findByText("불러온 2개 중 1개")).toBeTruthy();
+    expect(input.value).toBe("표지");
+    fireEvent.click(screen.getByRole("button", { name: "검색 지우기" }));
+    expect(await screen.findByText("작품 2개")).toBeTruthy();
+    expect(input.value).toBe("");
   });
 
   it("처음 표시하는 12개 밖의 일치 작품도 찾고 전체 건수와 구분한다", async () => {
