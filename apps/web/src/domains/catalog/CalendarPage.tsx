@@ -226,16 +226,17 @@ export function CalendarPage() {
   return (
     <Container size="wide" className="calendar-page-layout py-6">
       <SiteContextualSubNav pathnameOverride="/calendar" className="mb-5" />
-      <div className="mb-4 min-w-0">
-        <header>
-          <p className="eyebrow flex items-center gap-1.5 text-accent"><CalendarDays size={14} aria-hidden="true" /> RELEASE CALENDAR</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{bt("연재 캘린더", "Release Calendar")}</h1>
-            <p className="lede mt-2 max-w-2xl text-pretty text-sm leading-relaxed text-fg-2">
-              {bt("연재요일 정보가 있는 작품을 요일별로 찾아보세요. 오늘은", "Browse stories by their release day. Today is")}{" "}
-              <span className="font-semibold text-accent">{todayLabel}</span>{countsReady ? <>{bt(", 새 회차가 올라오는 작품이", ", with new episodes from")}{" "}
-              <span className="numeral text-fg">{todayCount.toLocaleString(locale)}</span>{bt("편입니다.", " stories.")}</> : <span>{loading ? bt(" · 연재 정보를 확인하고 있어요.", " · Checking release information.") : bt(" · 연재 편수를 확인할 수 없습니다.", " · Release counts are unavailable.")}</span>}
-            </p>
-          {countsReady && <p className="mt-1 text-xs text-fg-3"><span>{bt("전체 연재", "All series")}</span>{" "}{totalScheduled.toLocaleString(locale)}{bt("편", " stories")}</p>}
+      <div className="mb-5 min-w-0">
+        <header className="relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-6">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
+          <p className="eyebrow inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-accent"><CalendarDays size={14} aria-hidden="true" /> STARLIGHT SCHEDULE · RELEASE CALENDAR</p>
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">{bt("연재 캘린더", "Release Calendar")}</h1>
+          <p className="lede mt-2 max-w-2xl text-pretty text-sm leading-relaxed text-fg-2">
+            {bt("연재요일 정보가 있는 작품을 요일별로 찾아보세요. 오늘은", "Browse stories by their release day. Today is")}{" "}
+            <span className="font-semibold text-accent">{todayLabel}</span>{countsReady ? <>{bt(", 새 회차가 올라오는 작품이", ", with new episodes from")}{" "}
+            <span className="numeral font-bold text-fg">{todayCount.toLocaleString(locale)}</span>{bt("편입니다.", " stories.")}</> : <span>{loading ? bt(" · 연재 정보를 확인하고 있어요.", " · Checking release information.") : bt(" · 연재 편수를 확인할 수 없습니다.", " · Release counts are unavailable.")}</span>}
+          </p>
+          {countsReady && <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-line-strong/70 bg-card/85 px-3 py-1 text-xs font-medium text-fg-2"><span>{bt("전체 연재", "All series")}</span>{" "}<strong className="numeral text-fg">{totalScheduled.toLocaleString(locale)}</strong>{bt("편", " stories")}</p>}
         </header>
       </div>
       <CalendarFilters
@@ -390,10 +391,11 @@ export function CalendarPage() {
                   key={day}
                   id={isToday ? "calendar-today-col" : undefined}
                   className={cn(
-                    "flex scroll-mt-[calc(var(--site-header-sticky-offset,5rem)+5rem)] flex-col rounded-2xl border",
-                    isToday ? "border-accent/50 bg-accent-soft/40" : "border-line bg-panel/30"
+                    "relative flex scroll-mt-[calc(var(--site-header-sticky-offset,5rem)+5rem)] flex-col overflow-hidden rounded-2xl border",
+                    isToday ? "border-accent/55 bg-gradient-to-b from-accent-soft/45 via-panel/55 to-card/75 shadow-sm" : "border-line bg-panel/35"
                   )}
                 >
+                  {isToday ? <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" /> : null}
                   <header
                     className={cn(
                       "flex items-center justify-between rounded-t-2xl border-b px-3.5 py-2.5",

@@ -21,9 +21,10 @@ export function ShowcaseSocialHubBar() {
     <nav
       aria-label={bt("창작 소셜 4탭 허브", "Creator social 4-tab hub")}
       data-testid="showcase-social-hub-bar"
-      className="mb-5 overflow-hidden rounded-2xl border border-line-strong/75 bg-[linear-gradient(155deg,color-mix(in_oklch,var(--color-accent)_9%,var(--color-panel)),var(--color-card))] shadow-sm"
+      className="relative mb-5 overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card shadow-sm"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/65 px-3.5 py-2">
+      <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/65 px-4 py-2.5">
         <span className="inline-flex items-center gap-1.5 font-display text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
           <Sparkles size={13} aria-hidden="true" />
           <span>{bt("CREATOR SOCIAL SALON · 갤러리 · 타임랩스 · 협업", "CREATOR SOCIAL SALON · GALLERY · TIMELAPSE · TEAM")}</span>
@@ -32,8 +33,8 @@ export function ShowcaseSocialHubBar() {
           {bt("완성 아트워크 감상부터 분업 스튜디오 매칭까지 한 화면에서 전환", "Switch from finished artwork to studio team matching in one click")}
         </span>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2">
-        <ul className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto snap-x [scrollbar-width:none]">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5">
+        <ul className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto snap-x [scrollbar-width:none]">
           {SOCIAL_TABS.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -42,10 +43,10 @@ export function ShowcaseSocialHubBar() {
                   href={tab.href}
                   aria-current={tab.current ? "page" : undefined}
                   className={cn(
-                    "inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-bold transition-colors",
+                    "inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold transition-colors",
                     tab.current
                       ? "bg-accent text-on-accent shadow-xs"
-                      : "text-fg-2 hover:bg-panel hover:text-fg",
+                      : "border border-line/70 bg-card/75 text-fg-2 hover:border-accent/45 hover:bg-panel hover:text-fg",
                   )}
                 >
                   <Icon size={14} aria-hidden="true" />
@@ -57,7 +58,7 @@ export function ShowcaseSocialHubBar() {
         </ul>
         <Link
           href="/character-chat"
-          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-accent/45 bg-accent-soft px-3.5 text-xs font-bold text-accent transition-colors hover:border-accent hover:bg-accent hover:text-on-accent"
+          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-accent/45 bg-accent-soft px-4 text-xs font-bold text-accent transition-colors hover:border-accent hover:bg-accent hover:text-on-accent"
         >
           <MessageCircle size={14} aria-hidden="true" />
           {bt("세계관 캐릭터 토크", "Canon Character Talk")}

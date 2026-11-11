@@ -77,8 +77,9 @@ export function OpenDataPurposeFilterBar({
     <section
       aria-label={bi("창작 목적별 제공처 필터", "Archive provider filter by creative purpose")}
       data-testid="open-data-purpose-filter-bar"
-      className="overflow-hidden rounded-2xl border border-line-strong/75 bg-[linear-gradient(155deg,color-mix(in_oklch,var(--color-accent)_8%,var(--color-panel)),var(--color-card))] shadow-sm"
+      className="relative overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card shadow-sm"
     >
+      <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/65 px-4 py-2.5">
         <span className="inline-flex items-center gap-1.5 font-display text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
           <Database size={13} aria-hidden="true" />
@@ -103,14 +104,14 @@ export function OpenDataPurposeFilterBar({
               type="button"
               aria-pressed={purpose === item.id}
               onClick={() => onSelectPurpose(item.id)}
-              className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent"
+              className="inline-flex min-h-11 items-center rounded-full border border-line-strong/70 bg-card/90 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent aria-pressed:shadow-xs"
             >
               {bi(item.label, item.enLabel)}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line bg-card px-3 focus-within:border-accent/60 lg:w-64">
+          <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-line-strong/75 bg-card/95 px-3.5 focus-within:border-accent/65 lg:w-64">
             <Search size={15} className="shrink-0 text-fg-3" aria-hidden="true" />
             <span className="sr-only">{bi("제공처·고증 키워드 필터", "Filter archives and research keywords")}</span>
             <input
@@ -125,7 +126,7 @@ export function OpenDataPurposeFilterBar({
                 type="button"
                 aria-label={bi("필터 검색어 지우기", "Clear filter query")}
                 onClick={() => onChangeQuery("")}
-                className="grid size-11 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg"
+                className="grid size-11 shrink-0 place-items-center rounded-full text-fg-3 hover:bg-raised hover:text-fg"
               >
                 <X size={14} aria-hidden="true" />
               </button>
@@ -135,7 +136,7 @@ export function OpenDataPurposeFilterBar({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex min-h-11 shrink-0 items-center rounded-xl border border-line bg-card px-3 text-xs font-bold text-accent hover:border-accent/60"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-accent/40 bg-accent-soft px-3.5 text-xs font-bold text-accent hover:border-accent"
             >
               {bi(`필터 초기화 (${matchCount}/${totalCount})`, `Reset (${matchCount}/${totalCount})`)}
             </button>

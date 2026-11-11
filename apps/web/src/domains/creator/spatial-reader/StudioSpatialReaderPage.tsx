@@ -75,8 +75,8 @@ function errorText(cause: unknown, fallback: string): string {
 
 function reaChipClass(active: boolean): string {
   return active
-    ? "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-accent bg-accent-soft px-3 py-2 text-left text-xs font-semibold leading-snug text-accent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
-    : "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-xl border border-line bg-panel px-3 py-2 text-left text-xs font-semibold leading-snug text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center";
+    ? "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-full border border-accent bg-accent-soft px-3.5 py-2 text-left text-xs font-bold leading-snug text-accent shadow-2xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center"
+    : "inline-flex min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full items-center justify-center rounded-full border border-line-strong/70 bg-card/85 px-3.5 py-2 text-left text-xs font-semibold leading-snug text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-center";
 }
 
 function stepRovingChip<T extends string>(
@@ -526,11 +526,12 @@ export function StudioSpatialReaderPage() {
       <section
         data-testid="spatial-reader-rea-webxr-fov-bar"
         aria-label={pickLang("공간 리더 WebXR 시야각 곡률 및 시선 포커스 워크벤치", "Spatial Reader WebXR Curvature & Gaze Focus Workbench")}
-        className="rounded-2xl border border-line bg-card p-4"
+        className="relative overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-4 shadow-sm sm:p-5"
       >
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="font-mono text-xs font-semibold text-accent">
+            <p className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
               {pickLang("공간 리더 · WebXR 시야각 곡률 & 시선 심도", "SPATIAL READER · WEBXR FOV CURVATURE & GAZE DOF")}
             </p>
             <p className="mt-2 text-xs font-semibold text-fg">
@@ -541,18 +542,18 @@ export function StudioSpatialReaderPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2" data-testid="spatial-reader-studio-bridge">
-            <span className="rounded-lg bg-panel/80 px-3 py-1.5 font-mono text-xs text-fg-2">
+            <span className="rounded-full border border-line/70 bg-card/85 px-3 py-1 font-mono text-xs text-fg-2">
               Apple Vision Pro visionOS · Meta Quest WebXR · Spline Spatial
             </span>
             <Link
               href="/studio"
-              className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 items-center rounded-full border border-line-strong/75 bg-card/90 px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {pickLang("스튜디오 복귀", "Back to Studio")}
             </Link>
             <Link
               href="/studio/export"
-              className="inline-flex min-h-11 items-center rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-xs font-semibold text-accent transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 items-center rounded-full border border-accent/45 bg-accent px-3.5 py-2 text-xs font-bold text-on-accent shadow-2xs transition-colors hover:bg-accent/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {pickLang("출고 규격 점검", "Export Check")}
             </Link>
@@ -561,7 +562,7 @@ export function StudioSpatialReaderPage() {
         <div
           role="group"
           aria-label={pickLang("곡률 모드", "Curvature Mode")}
-          className="mt-3 flex flex-wrap items-center gap-2"
+          className="mt-3.5 flex flex-wrap items-center gap-2"
         >
           <span className="text-xs font-semibold text-fg-2">{pickLang("곡률 모드:", "Curvature Mode:")}</span>
           {CURVATURE_MODES.map((item) => (
@@ -607,7 +608,7 @@ export function StudioSpatialReaderPage() {
         <p
           data-testid="spatial-reader-rea-status"
           aria-live="polite"
-          className="mt-3 rounded-xl bg-panel/80 px-3 py-2 font-mono text-xs text-fg-2"
+          className="mt-3 rounded-xl border border-line/65 bg-card/85 px-3.5 py-2 font-mono text-xs text-fg-2"
         >
           {pickLang(
             `곡률: ${activeCurvature.ko} (${curvatureMode}) · 포커스: ${activeGaze.ko} (${gazeFocus})`,

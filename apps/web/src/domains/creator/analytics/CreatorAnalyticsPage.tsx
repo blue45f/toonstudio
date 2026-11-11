@@ -124,7 +124,8 @@ export function CreatorAnalyticsPage() {
 
   return (
     <div className="creator-analytics">
-      <section className="relative overflow-hidden border-b border-line bg-ledger">
+      <section className="relative overflow-hidden border-b border-line bg-gradient-to-br from-accent/10 via-ledger to-panel">
+        <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
         <div
           className="pointer-events-none absolute -top-1/2 right-1/4 h-[44rem] w-[44rem] opacity-30 blur-3xl"
           style={{ background: "radial-gradient(circle, color-mix(in oklch, var(--color-accent) 30%, transparent), transparent 60%)" }}
@@ -134,14 +135,14 @@ export function CreatorAnalyticsPage() {
           <div className="flex gap-6">
             <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <p className="eyebrow text-accent">CREATOR · ANALYTICS</p>
+            <p className="eyebrow inline-flex items-center rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-accent">STARLIGHT INSIGHTS · CREATOR ANALYTICS</p>
             {sample ? (
               <span className="rounded-full border border-accent/50 bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-fg">
                 {bt("예시 데이터로 보는 중", "Viewing sample data")}
               </span>
             ) : null}
           </div>
-          <h1 className="mt-2 text-balance break-keep text-3xl font-bold leading-[1.15] sm:text-4xl lg:text-[2.75rem]">
+          <h1 className="mt-3 text-balance break-keep text-3xl font-extrabold leading-[1.15] sm:text-4xl lg:text-[2.75rem]">
             {t("creatorAnalytics.title", "창작자 애널리틱스")}
           </h1>
           <p className="mt-3 max-w-xl text-pretty break-keep text-base leading-relaxed text-fg-2">
@@ -152,11 +153,11 @@ export function CreatorAnalyticsPage() {
           </p>
             </div>
             <div className="hidden w-60 shrink-0 self-center lg:block xl:w-72" aria-hidden="true">
-              <SectionArt image="explore" className="aspect-[16/10] w-full rounded-2xl border border-line object-cover" />
+              <SectionArt image="explore" className="aspect-[16/10] w-full rounded-2xl border border-accent/25 object-cover shadow-sm" />
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-end gap-x-5 gap-y-3">
+          <div className="mt-6 flex flex-wrap items-end gap-x-5 gap-y-3 rounded-2xl border border-accent/20 bg-panel/80 p-3.5 shadow-xs backdrop-blur-md sm:p-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor={seriesSelectId} className="text-xs font-medium text-fg-2">
                 {t("creatorAnalytics.seriesLabel", "시리즈")}
@@ -166,7 +167,7 @@ export function CreatorAnalyticsPage() {
                 value={selectedSeries}
                 disabled={seriesOptions.length === 0}
                 onChange={(event) => setSeriesId(event.target.value || undefined)}
-                className="min-h-11 min-w-48 rounded-full border border-line bg-card px-4 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
+                className="min-h-11 min-w-48 rounded-full border border-line-strong/75 bg-card px-4 text-sm text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
               >
                 {seriesOptions.length === 0 ? (
                   <option value="">{loading ? bt("시리즈 불러오는 중…", "Loading series…") : bt("선택할 시리즈 없음", "No series")}</option>
@@ -192,21 +193,21 @@ export function CreatorAnalyticsPage() {
             >
               <Link
                 href="/publish"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft px-3.5 text-xs font-bold text-accent transition-colors hover:border-accent"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/45 bg-accent px-3.5 text-xs font-bold text-on-accent shadow-xs transition-colors hover:bg-accent/90"
               >
                 <Send size={14} aria-hidden="true" />
                 {bt("연재·배급 허브", "Publish Hub")}
               </Link>
               <Link
                 href="/studio/export"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong/75 bg-card px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
               >
                 <Download size={14} aria-hidden="true" />
                 {bt("스튜디오 원고 출고", "Studio Export")}
               </Link>
             </nav>
             {range ? (
-              <p className="pb-3 text-xs text-fg-2" aria-live="polite">
+              <p className="pb-2.5 text-xs text-fg-2" aria-live="polite">
                 {formatI18nTemplate(bt("최근 {days}일 · {start} – {end} · {comparison}", "Last {days} days · {start} – {end} · {comparison}"), {
                   days: range.days,
                   start: dateFormat.format(range.start),

@@ -188,6 +188,7 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     ["apps/web/src/domains/catalog/TitleDetailPage.tsx", "data-title-where-to-read-router"],
     ["apps/web/src/domains/catalog/TitleDetailCreationBridgeCard.tsx", "title-detail-creation-bridge"],
     ["apps/web/src/domains/creator/studio-shell/StudioProjectTeamKanbanBridge.tsx", "studio-kanban-stage-card"],
+    ["apps/web/src/domains/creator/studio-shell/StudioProjectTeamKanbanBridge.tsx", "data-kanban-stage-accent"],
     ["apps/web/src/domains/market/components/MarketResourceCard.tsx", "data-market-rights-bom"],
     ["apps/web/src/domains/creator-resources/OpenDataPurposeFilterBar.tsx", "open-data-purpose-filter-bar"],
     ["apps/web/src/domains/creator/publishing/ShowcaseSocialHubBar.tsx", "showcase-social-hub-bar"],

@@ -156,7 +156,8 @@ export function CreateStartPage() {
   return (
     <Container size="wide" className="py-6 sm:py-10">
       {/* 비주얼 아틀리에 히어로 배너 */}
-      <div className="relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent-soft to-panel p-5 shadow-sm sm:p-6">
+      <div className="relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/12 via-panel/90 to-card p-5 shadow-sm sm:p-6">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
         <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -255,8 +256,9 @@ export function CreateStartPage() {
       <section
         data-testid="create-start-persona-guide"
         aria-label={bt("상황별 추천 시작 방법", "Recommended start by situation")}
-        className="mt-6 rounded-2xl border border-line bg-card/70 p-4 sm:p-5"
+        className="relative mt-6 overflow-hidden rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/8 via-panel/85 to-card p-4 shadow-sm sm:p-5"
       >
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-extrabold uppercase tracking-wider text-accent">
             {bt("어떻게 시작하고 싶나요?", "How would you like to start?")}
