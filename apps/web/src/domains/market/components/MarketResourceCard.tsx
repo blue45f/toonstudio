@@ -17,8 +17,15 @@ import { MarketResourceCover } from "./MarketResourceCover";
 
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
+import {
+  translateBilingualValueForActiveLocale,
+  useBilingualI18nRevision,
+} from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
+
+const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
+  translateBilingualValueForActiveLocale("MarketResourceCard", ko, en);
 
 interface MarketResourceCardProps {
   readonly record: CreatorMarketplaceResourceRecord;
@@ -35,6 +42,7 @@ export function MarketResourceCard({
   className,
   onQuickPreview,
 }: MarketResourceCardProps) {
+  useBilingualI18nRevision();
   const kind = marketKindMeta(record.kind);
   const license = marketLicenseMeta(record.license);
   const KindIcon = kind.icon;
@@ -52,9 +60,9 @@ export function MarketResourceCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-xl border border-line bg-card shadow-sm",
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-gradient-to-b from-card to-panel/90 shadow-sm",
         "transition-[border-color,transform,box-shadow] duration-200 ease-out-expo",
-        "hover:-translate-y-1 hover:border-line-strong hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none",
+        "hover:-translate-y-1 hover:border-accent/50 hover:shadow-lg motion-reduce:transform-none motion-reduce:transition-none",
         className,
       )}
     >
@@ -66,10 +74,10 @@ export function MarketResourceCard({
       >
         <Link
           href={`/market/resource/${record.id}`}
-          aria-label={`${record.name} 상세 보기`}
+          aria-label={bi(`${record.name} 상세 보기`, `View ${record.name} details`)}
           className="absolute inset-0 z-[1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70"
         >
-          <span className="sr-only">{record.name} 상세 보기</span>
+          <span className="sr-only">{bi(`${record.name} 상세 보기`, `View ${record.name} details`)}</span>
         </Link>
 
         <MarketResourceCover record={record} />
@@ -78,10 +86,10 @@ export function MarketResourceCard({
           <button
             type="button"
             onClick={() => toggleWishlist(record)}
-            aria-label={wishlisted ? `${record.name} 찜 해제` : `${record.name} 찜하기`}
+            aria-label={wishlisted ? bi(`${record.name} 찜 해제`, `Remove ${record.name} from wishlist`) : bi(`${record.name} 찜하기`, `Save ${record.name}`)}
             aria-pressed={wishlisted}
             className={cn(
-              "flex size-11 items-center justify-center rounded-full bg-card/80 shadow-sm backdrop-blur-sm transition-transform hover:scale-110 motion-reduce:transform-none motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+              "flex size-11 items-center justify-center rounded-full border border-line/60 bg-card/85 shadow-sm backdrop-blur-sm transition-transform hover:scale-110 motion-reduce:transform-none motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
               wishlisted ? "text-warn" : "text-fg-3 hover:text-warn",
             )}
           >
@@ -94,8 +102,8 @@ export function MarketResourceCard({
             <button
               type="button"
               onClick={() => onQuickPreview(record)}
-              aria-label={`${record.name} 빠른 미리보기`}
-              className="flex size-11 items-center justify-center rounded-full bg-card/85 text-fg-2 shadow-sm backdrop-blur-sm transition-colors hover:bg-card hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              aria-label={bi(`${record.name} 빠른 미리보기`, `Quick preview ${record.name}`)}
+              className="flex size-11 items-center justify-center rounded-full border border-line/60 bg-card/85 text-fg-2 shadow-sm backdrop-blur-sm transition-colors hover:bg-card hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
             >
               <Eye className="size-3.5" aria-hidden="true" />
             </button>
@@ -133,7 +141,7 @@ export function MarketResourceCard({
 
         <span className="numeral tnum absolute right-3.5 top-3 z-[2] inline-flex items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold text-fg shadow-sm">
           <Layers className="h-3 w-3" aria-hidden="true" />
-          {record.entries.length}개
+          {bi(`${record.entries.length}개`, `${record.entries.length} items`)}
         </span>
       </div>
 
@@ -141,14 +149,14 @@ export function MarketResourceCard({
         <div className="flex items-start justify-between gap-2">
           <Link
             href={`/market/resource/${record.id}`}
-            className="line-clamp-2 text-pretty text-sm font-semibold leading-snug text-fg transition-colors duration-150 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="line-clamp-2 text-pretty text-sm font-bold leading-snug text-fg transition-colors duration-150 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             {record.name}
           </Link>
           {price.kind === "free" ? (
             <span
               data-market-price="free"
-              className="shrink-0 rounded bg-good/15 px-1.5 py-0.5 text-xs font-bold text-good"
+              className="shrink-0 rounded-full bg-good/15 px-2 py-0.5 text-xs font-bold text-good"
             >
               {price.label}
             </span>
@@ -160,7 +168,7 @@ export function MarketResourceCard({
           ) : (
             <span
               data-market-price="paid-unknown"
-              className="shrink-0 rounded bg-warn/15 px-1.5 py-0.5 text-xs font-bold text-warn"
+              className="shrink-0 rounded-full bg-warn/15 px-2 py-0.5 text-xs font-bold text-warn"
             >
               {price.label}
             </span>
@@ -175,7 +183,7 @@ export function MarketResourceCard({
             <Store className="size-3 shrink-0 text-fg-3" aria-hidden="true" />
             <span className="truncate">{record.publisher.name}</span>
           </Link>
-          <span className="numeral tnum shrink-0 rounded bg-raised px-1.5 py-0.5 text-[11px] font-semibold text-fg-2">
+          <span className="numeral tnum shrink-0 rounded-md bg-raised px-1.5 py-0.5 text-[11px] font-semibold text-fg-2">
             v{record.resourceVersion} · {formatMarketByteSize(record.manifestByteSize)}
           </span>
         </div>
@@ -185,27 +193,27 @@ export function MarketResourceCard({
           {record.rightsConfirmed ? (
             <span
               data-market-rights-bom="true"
-              className="inline-flex items-center gap-1 rounded-md border border-good/35 bg-good/10 px-2 py-0.5 text-[0.68rem] font-semibold text-good"
+              className="inline-flex items-center gap-1 rounded-full border border-good/35 bg-good/10 px-2.5 py-0.5 text-[0.68rem] font-bold text-good"
             >
               <ShieldCheck className="size-3" aria-hidden="true" />
-              Rights BOM 자동 보존
+              {bi("Rights BOM 자동 보존", "Rights BOM auto-preserved")}
             </span>
           ) : null}
           {!record.containsAi ? (
             <span
               data-market-no-ai-disclosed="true"
-              className="inline-flex items-center gap-1 rounded-md border border-good/30 bg-good/10 px-2 py-0.5 text-[0.68rem] font-semibold text-good"
+              className="inline-flex items-center gap-1 rounded-full border border-good/30 bg-good/10 px-2.5 py-0.5 text-[0.68rem] font-bold text-good"
             >
               <ShieldCheck className="size-3" aria-hidden="true" />
-              AI 미포함 공개
+              {bi("AI 미포함 공개", "No-AI disclosed")}
             </span>
           ) : null}
           {record.compatibility.engines.length > 0 ? (
             <span
               data-market-studio-ready="true"
-              className="inline-flex items-center gap-1 rounded-md border border-accent/30 bg-accent-soft px-2 py-0.5 text-[0.68rem] font-semibold text-accent"
+              className="inline-flex items-center gap-1 rounded-full border border-accent/35 bg-accent-soft px-2.5 py-0.5 text-[0.68rem] font-bold text-accent"
             >
-              Studio 즉시 호환
+              {bi("Studio 즉시 호환", "Studio ready")}
             </span>
           ) : null}
         </div>
@@ -217,7 +225,7 @@ export function MarketResourceCard({
         ) : null}
 
         <div className="mt-auto flex items-center gap-1.5 pt-1.5 text-xs text-fg-2">
-          <span className="inline-flex items-center rounded bg-accent px-2 py-0.5 font-semibold text-on-accent">
+          <span className="inline-flex items-center rounded-md bg-accent px-2 py-0.5 font-semibold text-on-accent">
             {kind.label}
           </span>
           <span className="truncate" title={license.summary}>
@@ -229,36 +237,36 @@ export function MarketResourceCard({
         {record.tags.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {record.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="rounded bg-raised px-1.5 py-0.5 text-xs text-fg-2">
+              <span key={tag} className="rounded-full bg-raised px-2 py-0.5 text-xs text-fg-2">
                 #{tag}
               </span>
             ))}
           </div>
         ) : null}
 
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5 border-t border-line/60 pt-2">
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5 border-t border-line/60 pt-2.5">
           <MarketCompareToggle record={record} />
           <div className="flex flex-wrap items-center gap-1.5">
             {onQuickPreview ? (
               <button
                 type="button"
                 onClick={() => onQuickPreview(record)}
-                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 <Eye className="size-3" aria-hidden="true" />
-                미리보기
+                {bi("미리보기", "Preview")}
               </button>
             ) : null}
             <Link
               href={`/market/fit-lab?slug=${encodeURIComponent(resourceSlug)}`}
-              className="inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:border-accent/50 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              className="inline-flex min-h-11 items-center rounded-full border border-accent/45 bg-accent-soft px-3.5 py-1.5 text-xs font-bold text-accent transition-colors hover:border-accent hover:bg-accent hover:text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
             >
-              원고 위 시험 (Fit Lab)
+              {bi("원고 위 시험 (Fit Lab)", "Test on Canvas (Fit Lab)")}
             </Link>
           </div>
         </div>
-        <time dateTime={record.updatedAt} className="text-xs text-fg-2">
-          {formatMarketDate(record.updatedAt)} 업데이트
+        <time dateTime={record.updatedAt} className="text-xs text-fg-3">
+          {bi(`${formatMarketDate(record.updatedAt)} 업데이트`, `Updated ${formatMarketDate(record.updatedAt)}`)}
         </time>
       </div>
     </article>

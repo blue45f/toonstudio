@@ -145,13 +145,14 @@ export function CharacterChatPage() {
 
   return (
     <Container size="wide" className="py-8">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <header className="relative mb-6 flex flex-wrap items-end justify-between gap-4 overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-6">
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2 opacity-90" />
         <div>
-          <p className="eyebrow text-accent">
-            <Sparkles size={13} className="mr-1 inline" aria-hidden />
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-accent/35 bg-accent-soft px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-accent">
+            <Sparkles size={13} aria-hidden />
             {t("파일럿", "Pilot")}
           </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-fg">
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-fg">
             {t("캐릭터 토크", "Character Talk")}
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-fg-2">
@@ -165,14 +166,14 @@ export function CharacterChatPage() {
           <Link
             href="/studio/assets/characters/new"
             data-testid="character-chat-shaper-bridge"
-            className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-3.5" })}
           >
             <Box size={14} aria-hidden />
             {t("3D 캐릭터 셰이퍼 열기", "Open 3D Character Shaper")}
           </Link>
           <Link
             href="/character-chat/manage"
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
+            className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4" })}
           >
             <MessageCircle size={14} aria-hidden />
             {t("작가이신가요? 캐릭터 챗 열기", "Are you an author? Open a character chat")}

@@ -69,7 +69,7 @@ export function StudioDocumentStagePillBar({
       data-studio-stage-pill-bar="true"
       className={cn("pointer-events-auto flex items-center justify-center", className)}
     >
-      <div className="flex max-w-full snap-x snap-mandatory items-center gap-1 overflow-x-auto rounded-xl bg-panel/90 p-0.5 [scrollbar-width:none]">
+      <div className="flex max-w-full snap-x snap-mandatory items-center gap-1 overflow-x-auto rounded-full border border-accent/30 bg-panel/95 p-0.5 shadow-sm [scrollbar-width:none]">
         {STAGE_PILLS.map((stage) => {
           const active = stage.id === activeStage;
           return (
@@ -80,7 +80,7 @@ export function StudioDocumentStagePillBar({
               data-studio-stage-pill={stage.id}
               onClick={() => onSelectWorkspace(stage.workspace)}
               className={cn(
-                "inline-flex min-h-11 shrink-0 snap-start items-center rounded-lg px-2.5 text-[0.7rem] font-black transition-colors",
+                "inline-flex min-h-11 shrink-0 snap-start items-center rounded-full px-3 text-[0.72rem] font-black tracking-tight transition-colors",
                 active
                   ? "bg-accent text-on-accent shadow-sm"
                   : "text-fg-2 hover:bg-raised hover:text-fg",

@@ -58,12 +58,14 @@ export function StudioProjectLibraryManagementHeader({
       aria-label={bi("프로젝트 라이브러리 도구", "Project library tools")}
       className="scroll-mt-4 focus:outline-none"
     >
-      <header className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <header className="relative flex flex-col gap-3 overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:gap-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2 opacity-90" />
         <div className="min-w-0">
-          <p className="hidden font-display text-[0.68rem] font-black uppercase tracking-[0.18em] text-accent sm:block">
+          <p className="hidden w-fit items-center gap-1.5 rounded-full border border-accent/35 bg-accent-soft px-3 py-1 font-display text-[0.66rem] font-black uppercase tracking-[0.16em] text-accent sm:inline-flex">
+            <Sparkles size={12} aria-hidden="true" />
             TOONSTUDIO · STARLIGHT ATELIER
           </p>
-          <h1 className="text-2xl font-black tracking-tight text-fg sm:mt-2 sm:text-4xl">
+          <h1 className="text-2xl font-black tracking-tight text-fg sm:mt-2.5 sm:text-4xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
           </h1>
           <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-fg-2 sm:block sm:text-base">
@@ -74,11 +76,11 @@ export function StudioProjectLibraryManagementHeader({
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" data-studio-primary-entry-actions="true">
-          <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"} className={buttonClass({ className: "min-h-11 min-w-0 gap-2 whitespace-normal px-3.5" })}>
+          <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"} className={buttonClass({ className: "min-h-11 min-w-0 gap-2 whitespace-normal rounded-full px-4" })}>
             <Plus size={16} aria-hidden="true" />
             {bi("새 작업", "New work")}
           </Link>
-          <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-11 min-w-0 whitespace-normal px-3.5" })}>
+          <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-11 min-w-0 whitespace-normal rounded-full px-4" })}>
             {bi("파일 가져오기", "Import files")}
           </Link>
         </div>
