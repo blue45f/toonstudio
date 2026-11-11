@@ -17,6 +17,7 @@ import { applyStudioThreeActorPose, computeStudioThreeCameraOrbitDelta, consumeA
 import { createStylized3DCharacterNode, facingToYawRadians, loadStudioThreeAssets, shortestAngleLerp, STUDIO_THREE_SCALE, threeToWorld, worldToThree, type StudioThreeActorNode } from "./studio-virtual-space-three-scene";
 import { studioThreeRoomSigns } from "./studio-virtual-space-three-world-layout";
 import { StudioThreeWorldNavigation } from "./studio-virtual-space-three-navigation";
+import { bindStudioThreePointerInput } from "./studio-virtual-space-three-pointer-input";
 import { studioThreeThemeLightingPreset } from "./studio-virtual-space-three-surface-art";
 import { StudioThreeProximityPublication, StudioThreeRuntimePublication } from "./studio-virtual-space-three-runtime-policy";
 import type { StudioVirtualSpaceThreeStageProps } from "./studio-virtual-space-three-stage-props";
@@ -194,8 +195,7 @@ export function StudioVirtualSpaceThreeCanvas({
         if (disposed) return;
         const preset = readStoredStudioThreeLightingPreset(studioThreeThemeLightingPreset(committedTheme, manifest));
         syncLighting(preset);
-        applyVirtualThreeThemeLighting(committedTheme, manifest, { ambient: hemiLight, key: dirLight, fill: fillLight });
-        fillLight.intensity = studioThreeFillLightIntensity(preset);
+        applyVirtualThreeThemeLighting(committedTheme, manifest, { ambient: hemiLight, key: dirLight, fill: fillLight }, studioThreeFillLightIntensity(preset));
         setLightingPreset(preset);
       },
       onAssetError: (_url, kind) => {
@@ -297,28 +297,7 @@ export function StudioVirtualSpaceThreeCanvas({
     const pointerNdc = new THREE.Vector2();
     const peerPositionTarget = new THREE.Vector3();
     const cameraPositionTarget = new THREE.Vector3();
-    let pointerDownPos: { x: number; y: number } | null = null;
-    let orbitDragLastX: number | null = null;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (event.button === 2) orbitDragLastX = event.clientX;
-      else if (event.button === 0) pointerDownPos = { x: event.clientX, y: event.clientY };
-    };
-    const handlePointerMove = (event: PointerEvent) => {
-      if (orbitDragLastX !== null) {
-        targetCameraYaw -= (event.clientX - orbitDragLastX) * 0.007;
-        orbitDragLastX = event.clientX;
-      }
-    };
-    const handlePointerUp = (event: PointerEvent) => {
-      if (event.button === 2) {
-        orbitDragLastX = null;
-        return;
-      }
-      if (!pointerDownPos) return;
-      const dist = Math.hypot(event.clientX - pointerDownPos.x, event.clientY - pointerDownPos.y);
-      pointerDownPos = null;
-      if (dist > 8) return;
+    const handleFloorTap = (event: Pick<PointerEvent, "clientX" | "clientY">) => {
       const rect = renderer.domElement.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
       pointerNdc.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
@@ -344,9 +323,9 @@ export function StudioVirtualSpaceThreeCanvas({
       bridge.userZoom.apply(event.deltaY < 0 ? "in" : "out");
     };
 
-    renderer.domElement.addEventListener("pointerdown", handlePointerDown);
-    renderer.domElement.addEventListener("pointermove", handlePointerMove);
-    renderer.domElement.addEventListener("pointerup", handlePointerUp);
+    const pointerInput = bindStudioThreePointerInput(renderer.domElement, {
+      onOrbitDelta: (delta) => { targetCameraYaw += delta; }, onTap: handleFloorTap,
+    });
     renderer.domElement.addEventListener("contextmenu", handleContextMenu);
     renderer.domElement.addEventListener("wheel", handleWheel, { passive: false });
 
@@ -674,9 +653,7 @@ export function StudioVirtualSpaceThreeCanvas({
       window.removeEventListener("blur", clearKeys);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("resize", handleResize);
-      renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
-      renderer.domElement.removeEventListener("pointermove", handlePointerMove);
-      renderer.domElement.removeEventListener("pointerup", handlePointerUp);
+      pointerInput.dispose();
       renderer.domElement.removeEventListener("contextmenu", handleContextMenu);
       renderer.domElement.removeEventListener("wheel", handleWheel);
       bridge.setFocusHandler(null);

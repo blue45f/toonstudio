@@ -78,6 +78,18 @@ function createBaseSnapshot(overrides: Partial<StudioVirtualSpaceSnapshot> = {})
 }
 
 describe("studio-virtual-space-three-motion", () => {
+  it("sessionStorage getter 자체가 거절돼도 표시 기본값과 현재 화면 동작을 유지한다", () => {
+    const previous = Object.getOwnPropertyDescriptor(globalThis, "sessionStorage");
+    Object.defineProperty(globalThis, "sessionStorage", { configurable: true, get() { throw new DOMException("로컬 검증용 저장소 접근 차단", "SecurityError"); } });
+    try {
+      expect(readStoredStudioThreeLightingPreset("studio")).toBe("studio");
+      expect(() => writeStoredStudioThreeLightingPreset("night")).not.toThrow();
+    } finally {
+      if (previous) Object.defineProperty(globalThis, "sessionStorage", previous);
+      else Reflect.deleteProperty(globalThis, "sessionStorage");
+    }
+  });
+
   it("VRM 정규화 본 연결 후 보행·착석·이모트·표정 적용과 만료 원복을 수행한다", () => {
     const node = createStylized3DCharacterNode("self", 0x4f46e5, true);
     const vrmScene = new THREE.Group();

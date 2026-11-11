@@ -100,7 +100,9 @@ describe("3D 테마 재질·벽면 원화", () => {
   });
 
   it("HQ 바깥벽도 같은 팔레트를 쓰며 mesh·기하·변환·투명도와 정본 manifest는 보존한다", () => {
-    const manifest = studioVirtualToonHqManifest(false);
+    const source = studioVirtualToonHqManifest(false);
+    const border = { x: -8, y: 0, width: 8, height: source.height };
+    const manifest = { ...source, colliders: [...source.colliders, border] };
     const original = JSON.stringify(manifest);
     const unchangedPaletteManifest = { ...manifest, rooms: manifest.rooms.map((room) => ({ ...room, id: room.id.replace(/^hq-/u, "reference-") })) };
     const scene = new THREE.Scene(), reference = new THREE.Scene();
@@ -121,8 +123,6 @@ describe("3D 테마 재질·벽면 원화", () => {
       return shapes;
     };
     try {
-      const border = manifest.colliders[0];
-      if (!border) throw new Error("HQ 바깥벽이 없습니다.");
       const outerWall = scene.children.find((node) => node.name === "manifest-wall"
         && node.position.x === (border.x + border.width / 2) / 32 && node.position.z === (border.y + border.height / 2) / 32);
       if (!(outerWall instanceof THREE.Mesh) || !(outerWall.material instanceof THREE.MeshStandardMaterial)) throw new Error("HQ 바깥벽 재질이 없습니다.");

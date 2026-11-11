@@ -17,7 +17,16 @@ const SEAT_FOOT_OFFSET = Object.freeze({ up: 15, down: 19, side: 16 });
 /** 발끝에서 머리 위까지(키 대비 비율): 서기 · 작업 자세 착석 · 옆 착석. */
 const HEAD_RATIO = Object.freeze({ stand: 0.98, sitWork: 0.8, sitSide: 0.84 });
 
-type GeometryActor = Pick<Office2dActor, "x" | "y" | "seat">;
+type GeometryActor = Pick<Office2dActor, "x" | "y" | "seat"> & Partial<Pick<Office2dActor, "pose">>;
+
+/** 전용 눕기 시트가 없어 기존 정지 프레임을 바닥 중심에 가로로 눕히는 표시 폴백이다. */
+export function office2dActorRestTransform(actor: Pick<Office2dActor, "pose" | "moving" | "seat">): {
+  readonly offsetX: number; readonly offsetY: number; readonly tiltRad: number;
+} {
+  return actor.pose === "lie" && !actor.moving && !actor.seat
+    ? { offsetX: -OFFICE2D_ACTOR_HEIGHT * OFFICE2D_FOOT_RATIO / 2, offsetY: -OFFICE2D_ACTOR_HEIGHT / 3, tiltRad: Math.PI / 2 }
+    : { offsetX: 0, offsetY: 0, tiltRad: 0 };
+}
 
 export function office2dActorFoot(actor: GeometryActor): StudioVirtualSpacePoint {
   const seat = actor.seat;
@@ -30,6 +39,7 @@ export function office2dActorFoot(actor: GeometryActor): StudioVirtualSpacePoint
 export function office2dActorHeadY(actor: GeometryActor): number {
   const foot = office2dActorFoot(actor);
   const seat = actor.seat;
+  if (!seat && actor.pose === "lie") return foot.y - OFFICE2D_ACTOR_HEIGHT * (2 / 3) - 6;
   const ratio = !seat ? HEAD_RATIO.stand : seat.facing === "up" || seat.facing === "down" ? HEAD_RATIO.sitWork : HEAD_RATIO.sitSide;
   return foot.y - OFFICE2D_ACTOR_HEIGHT * ratio;
 }
