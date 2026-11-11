@@ -1,57 +1,147 @@
 # 화면 명료성 개선 검증·배포 인계 — 2026-11-11
 
-상태: **migration**. 아래 표는 실행한 검증과 남은 릴리스 조건을 구분한다. 디자인 갤러리,
-정적 경로 조사, 게스트 시각 관측, 실제 로그인 업무, 운영 반영은 서로 다른 증거다.
+상태: **migration**. 프로덕션 빌드 preview에서 지정 동선 성공과 미완료 핵심 UX를 확인했다.
+preview·전수 관측·전체 타입 실행은 강제 종료되어 후속 검증을 기다린다. 후속 수정은 별도
+작업트리에서 진행 중이며, 아래 빌드 결과를 그 수정까지 검증한 결과로 확장하지 않는다.
+1차 전체 하네스, 2차 변경 범위 검증, 개발 서버 동선, 최종 번들 관측과 운영 반영을 각각 구분한다.
 
-## 현재 확인 범위
+## 소스 기준과 현재 실행 단계
 
-| 항목 | 상태 | 근거와 한계 |
+작업 브랜치는 `codex/sitewide-ux-clarity-20261111`이다. 아래 병합은 최신 main을 작업
+브랜치에 반영한 로컬 병합이며, 이 변경을 원격 main에 배포하거나 병합했다는 뜻이 아니다.
+
+| 소스 기준 | 커밋 |
+| --- | --- |
+| 1차 개선 체크포인트 | `9393369b8db21bbcbfad1bf511ce7dc346680924` |
+| 2차 제품 소스·테스트 체크포인트 | `70c577828b35886ec6ae71a1b37949798eab4323` |
+| 반영한 최신 main | `933caa71cf57f79d783a7703ccfc60bb93a98e00` |
+| 병합 후 빌드 기준 HEAD | `e780510fd4928ee244f965f9ff697d71544e6d25` |
+
+`dist/.vite/build-meta.json`에서 위 `gitSha`와 `buildId=35fcb401d50e`를 직접 확인했다.
+
+| 단계 | 현재 상태 | 확인한 범위·남은 조건 |
 | --- | --- | --- |
-| 정적 경로 조사 | 확인 | 정본 AST 수집기에서 주소 441개. 별칭·리다이렉트와 동적 경로의 `visual-audit` 표본을 포함하며 독립 페이지 수가 아니다. [경로 원장](./route-inventory.json) 참조 |
-| 초기 개발 서버 관측 | 중단·진단용 | Vite 초기 모듈 로딩과 동시 HMR 중 주요 경로 15조건, 전수 실행 6조건을 기록한 뒤 중단했다. 준비 시간 초과를 제품의 최종 회귀로 확정하지 않는다. 로컬 `.qa/clarity-20261111/initial-partial-status.json`에 중단 전 수치를 동결했다 |
-| 최종 빌드·전체 주소 시각 관측 | 대기 | 최종 빌드 성공과 산출물 확인 뒤 다시 실행한다. 초기 개발 서버 관측이나 시안 갤러리의 441행 검증으로 대신하지 않는다 |
-| 모바일 메뉴·서재 키보드 | 수정 후 22항목 통과·개발 서버 범위 | 390px·게스트/API fixture·GPU 비활성 조건. 서재 사용법·쿼리 현재 위치, native Enter/Space, 닫힌 링크 제외, Tab 48회·Shift+Tab, 포커스 진입·Escape 복귀·스크롤 잠금·배경 inert·해제·링크 이동과 Back 스크롤·포커스 복원 통과. Vite hot update 0건 |
-| 리더의 부가 도구 접힘 | 1차 소스 12항목 통과 | 1440·390px에서 기본 닫힘·부가 링크의 접근성 트리 제외·Enter로 3개 도구 표시·Space로 닫힘 확인. 당시 공식 플랫폼·다음 회차 링크 보존 확인. 실제 카탈로그 작품 fixture를 사용했으며, 외부 플랫폼의 회차를 읽거나 실제 회차 데이터를 검증한 결과는 아니다. 후속 공식 감상·회차 계약 변경 검증과 구분한다 |
-| 제목 크기 실측 | 1차 소스 6항목 통과 | 1440·390px에서 공통 기본 헤더(`/community/title`) 32·24px, 명시적 마켓 hero 60·32px. 자체 헤더를 쓰는 `/community`는 기존 36·24px이며 공통 기본 헤더의 32px 규칙과 구분한다 |
-| 배포 안내 정리 | 통과 | 기존 문서·정본 진입점 계약 2파일 20테스트, `pnpm harness:check`, 변경 안내 3파일 Secretlint, 해당 diff 공백 검사 통과. 명령·별칭·상시 승인·운영 정책 코드는 변경하지 않았다 |
-| 정적 웹 preflight | 차단 | 올바른 정적 웹 명령은 `blocked`를 반환했다. 작업트리 변경 및 현재 세션의 `CLOUDFLARE_API_TOKEN`·`CLOUDFLARE_ACCOUNT_ID` 부재가 원인이다. 원격 권한 검증·배포 완료를 뜻하지 않는다 |
-| 실제 로그인·GPU 편집·저장·내보내기 | 미실행 | 게스트·API fixture·GPU 비활성 시각 관측으로 보증하지 않는다 |
-| 원격 main 반영·필수 CI | 미확인 | 해당 릴리스 SHA의 `core`·`verify` 성공을 별도로 확인해야 한다 |
-| 운영 배포·배포 후 스모크 | 미실행 | 현 세션의 배포 인증이 없다. Worker 버전·배포 ID·운영 반영을 확인하지 않았다 |
+| 정적 경로 조사 | 확인 | 정본 AST 수집기 주소 441개. 별칭·리다이렉트와 동적 경로의 합성 표본을 포함하며 독립 페이지 수가 아니다. [경로 원장](./route-inventory.json) 참조 |
+| 1차 전체 하네스 | 통과·1차 소스 범위 | 웹 타입 26,649/26,649 진단 0, API 타입 검사, 변경 모듈 Vitest 7파일 109테스트 통과. `.qa/clarity-20261111/harness-verify-final.log` 근거. 전체 테스트 스위트 완주가 아니며 하네스가 제외한 대형 2파일의 원격 샤드 검증은 별도다 |
+| 2차 분야별 검증 | 지정 범위 통과 | 메뉴·Link 2파일 38테스트, 공유 계약 6파일 102테스트, 편집 여정 9파일 100테스트, 모바일 편집·소재 3파일 77테스트, 소재 4파일 45테스트의 개별 로그를 확인했다. 분야별 중복이 있어 합산 총계로 쓰지 않는다. 변경 파일 lint·Secretlint와 구조 검증도 전체 타입·원격 CI와 구분한다 |
+| 2차 전체 타입·통합 하네스 | 중단·후속 검증 대기 | 26,658파일 대상 첫 샤드 완수 전 중단됐다. `phase2-interrupted-typecheck-report.json`은 `workers=[]`, `complete=false`로 전체 타입 통과 근거가 아니다. 1차 결과를 2차·main 병합 후 소스의 전체 통과로 승계하지 않는다. `focused-types-phase2.json`의 77파일·11진단도 테스트 옵션 수정 전 기록이므로 성공 근거에서 제외한다 |
+| 최종 프로덕션 번들 | 통과 | 위 병합 HEAD에서 10분 21초, 종료 코드 0. `dist/index.html`, `dist/sw.js`, 일치하는 build-meta와 제3자 라이선스 고지 생성·CSP 검증을 확인했다. `.qa/clarity-20261111/build-final.log`, `build-final.exit` 근거. 아래 Three/VRM 경고와 해당 런타임 미검증은 별도로 남긴다 |
+| Studio 번들 구조 검사 | 통과·성능 측정 아님 | `check:studio-bundle`: 기준선 27·개선 1·퇴행 0. 기존 정책상 size ratchet은 비활성이며 telemetry 예산 초과 15개가 남아 있다. 크기 예산 전부 충족·실측 성능 개선으로 보고하지 않는다 |
+| 제품 투어 청크 검사 | 통과·구조 범위 | `check:product-tour-remotion-chunks` 통과. 제품 투어의 실제 재생·오디오·자막 게이트를 이 결과로 대신하지 않는다 |
+| 빌드 번들 preview QA | 중단·후속 검증 대기 | 실행 당시 `http://127.0.0.1:5276`의 해시 에셋·`@vite` 미사용을 확인했다. 메뉴 22·카탈로그 23·모바일 소재 6·데스크톱 소재 2항목의 개별 통과 기록은 보존한다. 오프라인 변경의 정본 저장 확인은 실패했고 모바일 원고 가림·복구 전 시작 안내가 남아 있다. 아래 상세 조건과 후속 수정 재검증을 분리한다 |
+| 441개 주소 전수 브라우저 관측 | 중단·후속 검증 대기 | 빌드 번들의 441주소 × 데스크톱·모바일 882조건 실행은 완료되지 않았다. 중간 전달 98/882는 최종 집계가 아니며, 중단 직전 유효한 원본 관측 수는 별도 확인 중이다. 정적 원장·갤러리 441행과 구분하며 정상·접근 제한·장애·기능 저하·미준비 상태를 각각 집계한다 |
+| 최종 소스 원격 push | 대기 | 로컬 체크포인트·main 반영과 원격 push를 구분한다 |
+| 최종 소스 PR·원격 main 병합 | 대기 | 최신 main을 작업 브랜치에 병합한 사실로 대신하지 않는다 |
+| 릴리스 SHA의 원격 `core`·`verify` | 대기 | 해당 40자리 SHA에서 실제 성공을 확인해야 한다. 로컬 하네스·분야별 검증은 대체 증거가 아니다 |
+| 운영 배포·배포 후 스모크 | 미실행 | 배포 인증을 제공받아 운영 배포를 실행한 기록, Worker 버전·배포 ID·배포 원장은 아직 없다 |
 
-초기 관측은 `guest-fixture`, 다른 API의 `503-fixture`, GPU 비활성 조건이다. 닫힌 브라우저가
-SIGTERM 이후 기록한 탐색 실패는 초기 검증 수치에 포함하지 않는다. 향후 전수 관측에서도
-접근 안내·장애·기능 저하·준비 시간 초과와 정상 본문을 분리하여 보고한다.
+2차 분야별 테스트 근거는 로컬 `.qa/clarity-20261111/`의 `menu-back-fix-tests.log`,
+`shared-tokens-phase2.log`, `editor-flow-tests.log`, `editor-mobile-assets-tests.log`,
+`resource-tests.log`다. `architecture-phase2-final.log`는 구조·번들 진입 경계의 지정 범위
+검증이며 최종 프로덕션 번들 검사 결과가 아니다. 1차 하네스·2차 분야별 실행·커밋 훅을
+최종 전체 검증 한 번으로 합쳐 보고하지 않는다.
 
-수정 전 모바일 메뉴의 복원 결함은 `/community`의 `scrollY=220`에서 메뉴를 열어 랭킹으로 이동한 뒤
-브라우저 Back으로 돌아왔을 때 확인했다. 실제 커뮤니티 제목과 `route-state=ready`까지 기다렸으나
-`scrollY=0`, `BODY` 포커스가 남았다. 메뉴를 열 때는 220px 위치가 유지되어, 잠금 자체의 위치
-손실과 구분했다. 로컬 증거는 `.qa/clarity-20261111/mobile-navigation-confirmed/report.json`과
-`starlight-mobile-menu-back-state.png`다. 이 증거는 수정 전 상태로 보존했다.
+### 실행 중단과 후속 작업트리
 
-후속 클릭 계측에서는 capture 단계 뒤 메뉴 링크가 DOM에서 제거되고 bubble 단계의
-`defaultPrevented=false`가 남은 채 실제 문서가 교체됐다. 메뉴의 capture 닫기가 RouterLink의
-이벤트 처리를 앞서는 경로다. `.qa/clarity-20261111/menu-click-diagnostic.json`에 문서 교체와
-이벤트 단계의 관측을 남겼다.
+15:35 UTC에 preview·전수 관측·타입 검사·새 체크아웃 등 실행 중인 작업이 `SIGKILL` 9로
+강제 종료된 것을 확인했다. 관측한 `oom_kill` 값은 0이었고 원인은 확정되지 않았다.
+종료를 제품의 기능 실패나 전체 타입 성공으로 분류하지 않는다. 타입 보고서의 진단 목록이
+비어 있어도 `complete=false`인 실행은 미완료다.
 
-메뉴의 capture 닫기를 제거하고 React Router의 `location.key`가 실제로 바뀐 뒤 닫도록 수정했다.
-동일 경로 이동은 닫히고, 가드 취소·수정키·새 탭은 원래 이벤트 처리를 유지한다. 네비게이션 기억
-범위·저장 정책은 변경하지 않았다. 실제 메뉴를 unmount하는 회귀·이동 취소·수정키와 기존 Link
-계약 2파일 38테스트, 변경 TSX ESLint·Secretlint·공백 검사를 통과했다.
+후속 작업트리 `/workspace/toonstudio-ux-followups`의 체크아웃을 복구하고 offline frozen
+의존성 설치를 마쳤으며 세 소유자가 후속 UX를 수정 중이다. 기존
+`/workspace/toonstudio`의 제품 소스는 변경하지 않았다. 의존성 설치·체크아웃 복구를
+후속 빌드·전체 타입·브라우저 검증·원격 배포 완료로 보고하지 않는다.
 
-수정 후 같은 모바일 22항목이 모두 통과했다. 실제 커뮤니티로 Back 시 `scrollY=220`과 연결된
-버튼 포커스가 복원됐고, 추가 계측에서 bubble 단계의 `defaultPrevented=true`, 연결된 메뉴 링크,
-동일 문서 ID를 확인했다. 두 실행 모두 Vite hot update는 0건이다. 수정 후 증거는
-`.qa/clarity-20261111/dot-review-after/mobile-navigation/report.json`과
-`.qa/clarity-20261111/dot-review-after/menu-click-diagnostic.json`에 있다.
+### 빌드 경고와 남은 런타임 확인
 
-앞선 QA의 잘못된 헤더 선택자와 닫힌 서재 사용법 미활성화는 제품 결함으로 세지 않는다.
-해당 시도는 `.qa/clarity-20261111/automation-corrections.json`에 제외 사유와 함께 보존했다.
-닫힌 native `<details>`의 자식은 레이아웃 좌표가 남을 수 있어 `getClientRects()`만으로 표시를
-판정하지 않았다. 리더의 부가 링크는 브라우저 역할 가시성으로 다시 확인했고 12항목 모두 통과했다.
-1차 개발 서버 표본은 메뉴 22·리더 12·제목 6개, 총 40항목 중 38통과·복원 2실패였다.
-위 메뉴 수정 후 해당 22항목을 다시 검증해 22통과를 확인했다. 이전 리더·제목 수치를 후속 변경의
-최신 검증으로 합산하지 않으며 최종 번들·441개 주소 전수 관측·로그인 업무 검증을 대체하지 않는다.
+성공한 빌드에 `[IMPORT_IS_UNDEFINED]` 경고가 남았다. `@pixiv/three-vrm@3.5.5`의
+`lib/nodes/index.module.js:106`이 참조하는 `THREE_WEBGPU.tslFn`은 사용 중인
+`three@0.186.1/build/three.webgpu.js`에 대응 export가 없어 undefined가 된다는 경고다.
+해당 VRM/WebGPU의 레거시 TSL 호환 경로는 실제 런타임을 아직 확인하지 않았다.
+일반 화면·소프트웨어 ANGLE 2D 편집·GPU 비활성 전수 관측으로 그 경로의 동작을 보증하지 않는다.
+빌드 성공·청크 검사 통과와 이 미검증 상태를 함께 기록한다.
+
+## 빌드 번들 preview의 실제 동선
+
+`production-interactions/summary.json`과 하위 메뉴·카탈로그 보고서, 아래 소재 JSON을 직접 읽었다.
+메뉴·카탈로그 실행은 `gitSha=e780510fd4928ee244f965f9ff697d71544e6d25`,
+`buildId=35fcb401d50e`, 해시 에셋과 `@vite` 미사용을 확인했다. 소재 실행도 같은 HTML의
+SHA-256 `94027a32741fe436d968139dfa57b3762fb603df10d38d51ffbda41d794ee993`를 기록했다.
+이는 로컬 프로덕션 preview이며 원격 운영 배포 기록이 아니다.
+
+| 여정 | 확인한 결과 | 조건·남은 한계 |
+| --- | --- | --- |
+| 메뉴·서재 키보드 동선 | 22/22 통과, hot update 0 | 게스트·선택 API 503 fixture, GPU 비활성. `production-interactions/mobile-navigation/report.json`. 기존 스크립트는 pageerror를 별도로 수집하지 않았으므로 페이지 오류 0을 주장하지 않는다 |
+| 실제 카탈로그·공식 감상 안내 | 23/23 통과. `nw-15640`과 `/api/go` 요청 의도, Back 검색어, 회차 미확인 안내, loading·empty·error·retry, 1440·390·320px 조건을 확인 | `production-interactions/catalog-core-flow/results.json`. 실제 공개 데이터이며 상태별 JSON 지연·빈 응답·503만 명시적으로 주입했다. populated 화면은 pageerror 0을 확인했으나 상태 fixture 화면은 별도 수집하지 않았다. 외부 리다이렉트·회차 콘텐츠·로그인 성공은 이 결과에 포함되지 않는다 |
+| 모바일 소재 미리보기·적용·Undo·재열기 | 6/6 통과, 오류 목록 비어 있음. 같은 원고의 대상 소재 수가 `1→1(Enter)→1(Space)→2(명시적 탭)→1(Undo)→1(reload)`이며 정규화한 페이지 내용도 기준선과 일치 | `dot-review-after/production-resource/results.json`, `consistency.json`. 실제 UI 생성 원고·게스트·정본 OPFS/SQLite 판독, API fixture·원고 주입 없음. 390px 터치, 소프트웨어 ANGLE/SwiftShader, QA에서 service worker 차단. 기존 비이미지 draw 요소도 변경 없이 비교에 포함했다. 모바일 편집·선택기·상세 PNG 3개 확보 |
+| 데스크톱의 같은 원고·미리보기 | 2/2 통과, 기존 대상 소재 1개 유지, 오류 목록 비어 있음 | `dot-review-after/production-resource-desktop/results.json`. 모바일 종료 후 같은 프로필의 별도 실행, 1440px·실제 로컬 백엔드 연결 불가·API fixture 없음. 선택기 PNG는 확보했으나 편집기 PNG는 캡처 시간 초과로 없어 시각 증거 전체 완료로 보고하지 않는다 |
+| 선택 3D 진입 | 불완전 관측 | `production-interactions/summary.json`의 `optional3d`. 소프트웨어 ANGLE/SwiftShader에서 route state ready·pageerror 목록 비어 있음만 확인했고 전문 작업공간·스크린샷은 확보하지 못했다. 기능 통과나 VRM/WebGPU 호환성 증거가 아니다 |
+
+### 실제 미완료 핵심 UX
+
+다음 문제는 위 지정 동선 통과와 별개이며, 후속 소스 수정·새 번들에서 재검증해야 한다.
+
+| 문제 | 실제 관측과 증거 | 완료로 인정하기 위한 조건 |
+| --- | --- | --- |
+| 기존 소재가 있는 원고의 오프라인 텍스트 저장 | `dot-review-after/production-offline-mobile-2026-11-11T15-13-06-610Z/evidence.json`은 `ok=false`, 실패 단계 `offline-edit`다. 원본 텍스트·소재의 기존 저장과 오프라인 실제 텍스트 입력까지 확인했지만, 변경하지 않은 에셋 참조 요소에 대한 거절 안내가 나타나 텍스트 제안 전체가 저장되지 않았다. 같은 문서의 정본 marker를 45초 안에 확인하지 못했다. UI의 “이 기기에 저장됨” 문구를 성공 증거로 사용하지 않는다 | 기존 에셋 참조의 검증·정본 권한을 유지하면서 새 텍스트가 같은 문서의 내구 저장소에 남아야 한다. 원래 텍스트·소재·요소 ID 보존, 오프라인 저장, 재연결 후 보존, reload 후 보존을 실제 UI와 정본 판독으로 다시 확인한다. 현재 실행은 재연결·reload 검증에 도달하지 못했고 클라우드 동기화도 미검증이다 |
+| 모바일 원고가 도구·연결 안내에 가려짐 | 같은 보고서의 390·320px fit 관측과 `editor-before-offline-fit-390.png`, `editor-before-offline-fit-320.png`, `failure-offline-edit.png`. 폭 맞춤은 실제 surface 폭을 사용하지만 원고가 y=0에서 상단 absolute chrome 아래 시작하고, 연결 안내도 캔버스를 가린다. 가로 넘침 0·하단 버튼 44px만으로 원고 가시성을 통과 처리하지 않는다 | 실제 도구·상태 안내가 차지하는 영역을 고려한 원고 가시 영역과 조작 공간을 390·320px에서 확인한다. 저장 문서의 크기·좌표·출력 픽셀은 바꾸지 않고 실제 상·하단 내용 접근과 편집을 재검증한다 |
+| 저장 원고 복구 전 빈 시작 안내 노출 | `production-interactions/coach-fit-source-analysis.json`에서 로컬 autosave 복구 대기와 시작 안내의 표시 조건이 연결되지 않아 빈 bootstrap 시점에 “바로 그리기”가 먼저 노출되는 경로를 확인했다. 해당 버튼이 원치 않는 획을 만든다는 인과는 확인되지 않았다 | 복구 중에는 빈 원고 시작 안내를 확정하지 않고, 복구 후 실제 빈 원고와 저장 원고를 구분해야 한다. 기존 원고 재열기·신규 빈 원고·명시적 도움말을 각각 재검증한다 |
+
+위 분석에 대한 후속 수정은 별도 작업트리에서 진행 중이다. 이 문서의 `e780510fd4…` 빌드·
+소재 성공 결과로 수정 완료를 선언하지 않는다. 전수 관측은 중단됐으며 전 페이지 통과가 아니다.
+
+### 기존 운영 게이트웨이를 통한 공식 공개 회차 접근
+
+`official-reading-observation/results.json`을 직접 읽었다. 임시 Chromium 컨텍스트 한 번에서
+로그인·fixture·사용자 헤더·프록시 없이 기존 운영 `/api/go`의 `302`를 따라 공식 목록
+`200`에 도달했고, 목록에 실제 노출된 “첫 화 보기”를 눌러
+`https://comic.naver.com/webtoon/detail?titleId=15640&no=1&week=finish`의 `200`을 확인했다.
+세 접근 항목은 통과했고 로그인 요구·403·429·captcha는 관측되지 않았다.
+
+공식 viewer의 이미지 8개 중 3개가 로드된 메타데이터와 이전화 버튼 비활성·다음화 버튼 활성
+상태를 확인했다. 이미지·화면 사본은 만들지 않았고 인접 회차는 열지 않았다. 공개 첫 화의
+접근·부분 이미지 로드와 기존 버튼 상태의 증거이며, 회차 전체 로드·인접 회차 이동·플랫폼 전체
+호환성이나 최신 프런트엔드 운영 배포 성공을 뜻하지 않는다.
+
+## 개발 서버 동선과 기존 운영 게이트웨이 증거
+
+아래 JSON을 직접 읽어 상태와 실행 조건을 대조했다. 개발 서버 기록과 기존 운영 게이트웨이의
+일반 GET 관측을 구분하며, 개발 서버에서도 API fixture를 사용한 메뉴·카탈로그와 실제 게스트
+저장소를 사용한 제작·소재 여정을 구분한다.
+
+| 여정 | 확인한 결과 | 조건·보증하지 않는 범위 |
+| --- | --- | --- |
+| 모바일 메뉴·서재 | 수정 후 22/22 통과. 서재 사용법·쿼리 현재 위치, native Enter/Space, 닫힌 링크 제외, Tab 48회·Shift+Tab, 포커스 진입·Escape 복귀, 스크롤 잠금·배경 inert·해제, 링크 이동·Back 복원 | 390px, 게스트·다른 API 503 fixture, GPU 비활성. Vite hot update 0. `dot-review-after/mobile-navigation/report.json` |
+| 실제 카탈로그 탐색·상세·공식 감상 안내 | 최종 게이트웨이 수정 후 23/23 통과. 실제 `nw-15640` 검색·상세, `/api/go` 모델 href, Enter로 열린 게이트웨이 팝업 요청, Back 검색어, 회차를 지어내지 않는 직접 리더 안내, Escape, loading·empty·error·retry, 1440·390·320px 넘침 확인 | 생성된 실제 공개 카탈로그, 게스트·선택 API 503 fixture. 로컬 팝업의 게이트웨이 요청 의도까지 확인했으며 외부 리다이렉트·회차 콘텐츠를 로컬에서 검증한 것은 아니다. `catalog-core-flow/results.json`; 기존 직접 URL 23항목은 `pre-gateway-review-results.json`에 보관 |
+| 빈 작업실·최근 작업 | 빈 상태의 새 작업, 실제 작업이 있을 때 최근 작업 열기, 예제 구분, 다른 시작 방식의 native Enter/Space, 1440·390px 및 Starlight·light·contrast 화면 확인. `ok=true`, 페이지 오류 0 | 실제 게스트·로컬 개발 서버, API fixture·사용자 작업 주입 없음. 주요 행동 44px·가로 넘침 0의 관측이며 전 상태·전 테마 전체 접근성 검사를 뜻하지 않는다. `dot-review-after/creator-library-evidence.json` |
+| 소재 검색·미리보기·원고 적용·재열기 | 10/10 통과. UI로 실제 문서 생성, 빈 검색 복구, Enter/Space 미리보기의 삽입 방지, 결과로 초점 복귀, 화면 전환 시 검색·선택·필터·밀도 보존, 명시적 적용 1개와 reload 후 유지 | 실제 내장 카탈로그·게스트·로컬 원고 저장소, API fixture·문서 상태 주입 없음. 소프트웨어 ANGLE/SwiftShader 사용. 실제 하드웨어 GPU·3D 모델링·서버 저장·배포·출력 파일은 이 결과로 보증하지 않는다. `dot-review-after/resource-core-results.json` |
+| 모바일 소재 진입 | 3/3 통과. 이름 있는 작업 메뉴 진입, 실제 결과 우선 배치, 390→320px 상세·복귀 | 위 여정의 실제 로컬 문서, 터치 모드·실제 게스트, API fixture 없음. 모바일 전체 편집·내보내기 완주와 구분한다. `dot-review-after/resource-mobile-entry-results.json` |
+| 기존 운영 공식 감상 게이트웨이 | 일반 비인증 GET의 상태 `302`, 공개 Location `https://comic.naver.com/webtoon/list?titleId=15640` 확인 | 승인된 `www.toonstudio.cloud`의 기존 `/api/go/naver-webtoon` 관측만 수행. 리다이렉트 추적·추가 인증·사용자 헤더·원점 직접 접근 없음. 최신 프런트 배포·외부 회차 콘텐츠의 증거가 아니다. `production-official-gateway-observation.json` |
+| 로그인·실제 서버 원장·3D·출력 | 별도 미검증 | 게스트 로컬 편집·저장·재열기 성공을 로그인 후 서버 동기화·협업·실제 GPU 3D·검수·내보내기 성공으로 확장하지 않는다 |
+
+위 파일 경로는 모두 로컬 `.qa/clarity-20261111/` 기준이다. JSON 조건과 해당 PNG가 근거이며,
+서로 겹치는 관측을 “전 페이지 통과 수”로 합산하지 않는다. 후속 수정의 번들 preview와 공유할
+스크린샷 패키지는 해당 소스의 산출물로 별도 연결한다.
+
+### 이전 실패와 수정의 추적
+
+초기 Vite 모듈 로딩과 동시 HMR 중 주요 경로 15조건·전수 실행 6조건을 기록한 뒤 중단했다.
+닫힌 브라우저가 SIGTERM 이후 기록한 실패는 제외했고, 중단 전 수치는
+`initial-partial-status.json`에 동결했다. 잘못된 헤더 선택자·닫힌 서재 안내 미활성화·native
+details의 잔여 레이아웃 좌표는 `automation-corrections.json`에 제외 근거를 남겼다.
+
+메뉴의 수정 전 22항목은 Back 스크롤·포커스 2항목이 실패했다. capture 닫기가 링크를 먼저
+제거해 `defaultPrevented=false`인 native 문서 이동을 일으켰다. 수정 전
+`mobile-navigation-confirmed/report.json`, `menu-click-diagnostic.json`은 보존했다.
+닫기를 실제 Router `location.key` 변경 뒤로 옮긴 뒤 같은 22항목이 모두 통과했고,
+Back의 220px 위치·연결된 버튼 포커스·동일 문서 ID·`defaultPrevented=true`를 확인했다.
+수정 후 증거는 `dot-review-after/mobile-navigation/report.json`과
+`dot-review-after/menu-click-diagnostic.json`이다. 저장·스크롤 기억 범위는 바꾸지 않았다.
+
+1차 리더 부가 도구 12항목과 제목 크기 6항목은 당시 소스의 증거다. 당시 리더의 다음 회차
+링크 보존 결과를 후속 공식 감상·회차 계약 변경의 최신 검증으로 사용하지 않는다. 현재 카탈로그
+여정은 위의 게이트웨이 수정 후 보고서를 사용한다.
 
 ## 배포할 때 실행할 명령
 
@@ -65,11 +155,11 @@ pnpm run deploy:web
 현재 세션에서 이 명령을 실행한 것은 아니다. [배포 가이드](../../../DEPLOY.md#2-정적-웹과-core-api-배포)와
 [정본 5단계 안내](../../operations/ai-deployment-quickstart.md)에 따라 다음을 먼저 준비한다.
 
-1. clean `main`의 소문자 40자리 SHA와 배포 시점 `origin/main` 끝이 일치하고, 그 SHA의 `core`·`verify`가 성공해야 한다. 유효한 정적 웹 상시 승인은 매 릴리스 승인 변수를 대체하며 나머지 조건은 유지한다.
-2. `deploy:verify`, 정적 웹 목적 preflight, 빌드·번들 검사와 dry-run을 통과하고, `dist/.vite/build-meta.json`의 `gitSha`가 릴리스 SHA와 같은지 확인한다. preflight 명령은 `pnpm run deploy:preflight --operation static-deploy --unit static-worker`다. pnpm 인자 사이에 별도 `--`를 넣지 않는다.
+1. clean `main`의 소문자 40자리 SHA와 배포 시점 `origin/main` 끝이 일치하고, 그 SHA의 `core`·`verify`가 성공해야 한다. 유효한 정적 웹 상시 승인은 매 릴리스 승인 변수를 대체하며 나머지 조건은 유지한다. 현재 작업 브랜치의 로컬 병합 SHA를 운영 릴리스 완료로 간주하지 않는다.
+2. `deploy:verify`, 정적 웹 목적 preflight, 빌드·번들 검사와 dry-run을 통과하고, `dist/.vite/build-meta.json`의 `gitSha`가 릴리스 SHA와 같은지 확인한다. 정적 웹 preflight는 `pnpm run deploy:preflight --operation static-deploy --unit static-worker`다. pnpm 인자 사이에 별도 `--`를 넣지 않는다. 기존 실행은 변경된 작업트리·세션 인증 부재로 `blocked`였으며, `offline-contract-only`도 원격 권한·배포 완료를 뜻하지 않는다.
 3. 기존 승인된 secret store에서 `CLOUDFLARE_API_TOKEN`과 `CLOUDFLARE_ACCOUNT_ID`만 필요한 배포 세션에 제공한다. 기존 `toonspectrum-web`의 코드·Static Assets 배포와 `toonspectrum-public-assets`의 객체 목록 조회·업로드 권한이 필요하다. 현재 R2 REST 동기화에는 API 토큰이 필요하며 OAuth 로그인만으로 전체 배포 가능성을 주장하지 않는다. 원문 비밀값·로컬 env·Keychain을 복사하거나 요청하지 않는다.
 4. 직전 정상인 컷오버 이후 Worker 버전을 기록하고 `.git/toonstudio-deploy-ledger/cloudflare-static/<sha>.json`의 중복 여부를 확인한다. 같은 SHA를 자동 재배포하지 않는다.
-5. 배포 후 실제 Worker 버전·SHA·배포 원장, 원점 readiness, 에지 출처 인증, 주요 화면·로그인, 제품 투어 실재생과 Studio의 `crossOriginIsolated`를 확인한다. 실패하면 기록한 정상 Worker 버전으로 복구하고 같은 스모크를 반복한다.
+5. 배포 후 실제 Worker 버전·SHA·배포 원장, 원점 readiness, 에지 출처 인증, 주요 화면·로그인, 제품 투어 실재생과 Studio의 `crossOriginIsolated`를 확인한다. 실패하면 기록한 정상 Worker 버전으로 복구하고 같은 스모크를 반복한다. 배포 ID·롤백 대상·실제 스모크 결과를 완료 원장에 추가한다.
 
 이 웹 작업에 onpod 이미지·DB·DNS·기존 runtime secret 변경은 포함하지 않는다. 접근 권한이
-거절된 서비스를 다른 도구로 우회하지 않으며, 인증이 없는 동안 배포·사후 검증은 미실행 상태로 남긴다.
+거절된 서비스를 다른 도구로 우회하지 않으며, 배포·사후 검증을 실행하기 전에는 미실행 상태로 남긴다.
