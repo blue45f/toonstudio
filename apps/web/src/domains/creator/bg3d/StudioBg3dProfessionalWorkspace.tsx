@@ -1,5 +1,13 @@
 import { isValidElement, useEffect, useRef, useState } from "react";
+import { Sparkles } from "lucide-react";
+
 import { useIsMobile } from "@/shared/hooks/use-media-query";
+import {
+  translateBilingualValueForActiveLocale,
+  useBilingualI18nRevision,
+} from "@/shared/lib/i18n-bilingual-copy";
+import Link from "@/shared/navigation/router-link";
+
 import { StudioScene3dBg3dCutPanel } from "../scene3d/StudioScene3dBg3dCutPanel";
 
 import type {
@@ -27,6 +35,9 @@ import {
 } from "./studio-bg3d-professional-workspace-layout";
 import { StudioBg3dAssetShelf } from "./StudioBg3dAssetShelf";
 
+const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
+  translateBilingualValueForActiveLocale("StudioBg3dProfessionalWorkspace", ko, en);
+
 interface StudioBg3dProfessionalWorkspaceProps {
   readonly outliner: ReactNode;
   readonly viewport: ReactNode;
@@ -41,13 +52,16 @@ interface ResizeGesture {
   readonly startWidth: number;
 }
 
-const PRESET_LABELS: Readonly<Record<Exclude<StudioBg3dWorkspacePresetId, "custom">, string>> =
-  Object.freeze({
-    scene: "장면",
-    character: "캐릭터",
-    output: "출력",
-    focus: "집중",
-  });
+const PRESET_ENTRIES: ReadonlyArray<{
+  readonly id: Exclude<StudioBg3dWorkspacePresetId, "custom">;
+  readonly ko: string;
+  readonly en: string;
+}> = [
+  { id: "scene", ko: "장면", en: "Scene" },
+  { id: "character", ko: "캐릭터", en: "Character" },
+  { id: "output", ko: "출력", en: "Output" },
+  { id: "focus", ko: "집중", en: "Focus" },
+];
 
 function browserStorage(): Storage | null {
   if (typeof window === "undefined") return null;
@@ -70,11 +84,12 @@ export function StudioBg3dProfessionalWorkspace({
   inspector,
   scopeKey = null,
 }: StudioBg3dProfessionalWorkspaceProps) {
+  useBilingualI18nRevision();
   const isMobile = useIsMobile();
   const canonicalStorageKey = studioBg3dProfessionalWorkspaceStorageKey(scopeKey);
   const [layout, setLayout] = useState(() =>
     readStudioBg3dProfessionalWorkspaceLayout(browserStorage(), scopeKey));
-  const [assetShelfOpen, setAssetShelfOpen] = useState(false);
+  const [assetShelfOpen, setAssetShelfOpen] = useState(true);
   const hydratedStorageKeyRef = useRef(canonicalStorageKey);
   const resizeGestureRef = useRef<ResizeGesture | null>(null);
 
@@ -173,7 +188,9 @@ export function StudioBg3dProfessionalWorkspace({
   const renderSeparator = (panel: StudioBg3dWorkspacePanel) => {
     const bounds = panelBounds(panel);
     const value = panel === "outliner" ? layout.outlinerWidth : layout.inspectorWidth;
-    const label = panel === "outliner" ? "장면 계층 패널 너비" : "속성 패널 너비";
+    const label = panel === "outliner"
+      ? bi("장면 계층 패널 너비", "Scene hierarchy panel width")
+      : bi("속성 패널 너비", "Inspector panel width");
     const orderVariable = panel === "outliner"
       ? "var(--studio-bg3d-outliner-resizer-order)"
       : "var(--studio-bg3d-inspector-resizer-order)";
@@ -208,60 +225,73 @@ export function StudioBg3dProfessionalWorkspace({
     <div data-bg3d-professional-workspace="true" className="flex min-h-0 min-w-0 flex-1 flex-col">
       {isValidElement<{ h?: unknown }>(viewport) && Boolean(viewport.props.h) && <StudioScene3dBg3dCutPanel host={viewport.props.h} preferredExpanded={!isMobile} />}
       <div
-        className="hidden min-h-10 shrink-0 items-center gap-1.5 border-b border-line bg-panel/90 px-2 xl:flex"
+        data-bg3d-stage-header="true"
+        className="flex min-h-12 shrink-0 flex-wrap items-center gap-1.5 border-b border-line bg-gradient-to-r from-accent/10 via-panel/95 to-panel/95 px-2.5 py-1.5 shadow-sm"
         role="toolbar"
-        aria-label="3D 전문가 작업공간"
+        aria-label={bi("3D 전문가 작업공간", "3D professional workspace")}
       >
-        {(Object.keys(PRESET_LABELS) as Array<Exclude<StudioBg3dWorkspacePresetId, "custom">>).map((preset) => (
+        <span className="mr-1 hidden items-center gap-1.5 rounded-full border border-accent/35 bg-accent-soft px-2.5 py-1 font-display text-[0.65rem] font-extrabold tracking-wider text-accent sm:inline-flex">
+          <Sparkles size={12} aria-hidden="true" />
+          3D · LIVE INK
+        </span>
+        {PRESET_ENTRIES.map((preset) => (
           <button
-            key={preset}
+            key={preset.id}
             type="button"
-            aria-pressed={layout.preset === preset}
-            className="min-h-8 rounded-md border border-line bg-card px-2.5 text-[0.65rem] font-semibold text-fg-2 hover:border-accent/60 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
-            onClick={() => setLayout(applyStudioBg3dWorkspacePreset(preset))}
+            aria-pressed={layout.preset === preset.id}
+            className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-bold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+            onClick={() => setLayout(applyStudioBg3dWorkspacePreset(preset.id))}
           >
-            {PRESET_LABELS[preset]}
+            {bi(preset.ko, preset.en)}
           </button>
         ))}
-        <span className="mx-1 h-5 w-px bg-line" aria-hidden />
+        <span className="mx-0.5 hidden h-5 w-px bg-line xl:inline-block" aria-hidden />
         <button
           type="button"
           aria-pressed={layout.outlinerVisible}
-          className="min-h-8 rounded-md border border-line bg-card px-2.5 text-[0.65rem] font-semibold text-fg-2 hover:border-accent/60 aria-pressed:border-accent aria-pressed:text-accent"
+          className="hidden min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex"
           onClick={() => togglePanel("outliner")}
         >
-          계층
+          {bi("계층", "Hierarchy")}
         </button>
         <button
           type="button"
           aria-pressed={layout.inspectorVisible}
-          className="min-h-8 rounded-md border border-line bg-card px-2.5 text-[0.65rem] font-semibold text-fg-2 hover:border-accent/60 aria-pressed:border-accent aria-pressed:text-accent"
+          className="hidden min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft/50 aria-pressed:text-accent xl:inline-flex"
           onClick={() => togglePanel("inspector")}
         >
-          속성
+          {bi("속성", "Inspector")}
         </button>
         <button
           type="button"
-          className="min-h-8 rounded-md border border-line bg-card px-2.5 text-[0.65rem] font-semibold text-fg-2 hover:border-accent/60 hover:text-accent"
+          className="hidden min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-accent xl:inline-flex"
           onClick={() => setLayout((current) => swapStudioBg3dWorkspaceDockOrder(current))}
         >
-          좌우 바꾸기
+          {bi("좌우 바꾸기", "Swap sides")}
         </button>
         <button
           type="button"
           aria-pressed={assetShelfOpen}
-          className="min-h-8 rounded-md border border-line bg-card px-2.5 text-[0.65rem] font-semibold text-fg-2 hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+          className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-bold text-fg-2 transition-colors hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
           onClick={() => setAssetShelfOpen((current) => !current)}
         >
-          에셋 쉘프
+          {bi("에셋 쉘프", "Asset shelf")}
         </button>
-        <button
-          type="button"
-          className="ml-auto min-h-8 rounded-md border border-line bg-card px-2.5 text-[0.65rem] font-semibold text-fg-2 hover:border-accent/60 hover:text-accent"
-          onClick={() => setLayout(DEFAULT_STUDIO_BG3D_PROFESSIONAL_WORKSPACE_LAYOUT)}
-        >
-          기본 배치
-        </button>
+        <div className="ml-auto flex items-center gap-1.5">
+          <Link
+            href="/studio/new?template=webtoon&from=bg3d-cut"
+            className="hidden min-h-11 items-center rounded-full bg-accent px-3.5 text-xs font-extrabold text-on-accent shadow-sm transition-colors hover:bg-accent-2 md:inline-flex"
+          >
+            {bi("원고 컷에 바로 굽기", "Bake directly into panel")}
+          </Link>
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-accent"
+            onClick={() => setLayout(DEFAULT_STUDIO_BG3D_PROFESSIONAL_WORKSPACE_LAYOUT)}
+          >
+            {bi("기본 배치", "Reset layout")}
+          </button>
+        </div>
       </div>
 
       <div

@@ -1,9 +1,9 @@
 /* Document controls live in the existing command lane, not above drawing controls. */
-[data-studio-document-chrome-slot="true"] { flex: 1 1 0%; min-width: 0; max-width: 40rem; margin-left: auto; }
+[data-studio-document-chrome-slot="true"] { flex: 1 1 0%; min-width: 0; max-width: 68rem; margin-left: auto; }
 [data-studio-document-chrome-slot="true"]:empty { display: none; }
 .studio-document-chrome-bar { width: 100%; min-width: 0; }
 .studio-document-chrome-bar > div { min-height: 44px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
-.studio-document-chrome-bar > div > span,
+.studio-document-chrome-bar > div > span:not([data-studio-autosave-status="true"]),
 .studio-document-chrome-bar > div > div > p { display: none; }
 .studio-document-chrome-bar select { min-height: 44px; font-size: 12px; }
 #studio-mode-chrome-slot > details { position: relative; inset: auto; z-index: auto; max-width: none; }

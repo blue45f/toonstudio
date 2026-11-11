@@ -116,6 +116,10 @@ describe("Studio BG3D professional workspace layout", () => {
     expect(screen.getAllByRole("separator")).toHaveLength(2);
 
     const shelfToggle = screen.getByRole("button", { name: "에셋 쉘프" });
+    expect(shelfToggle.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("studio-bg3d-asset-shelf")).toBeTruthy();
+
+    fireEvent.click(shelfToggle);
     expect(shelfToggle.getAttribute("aria-pressed")).toBe("false");
     expect(screen.queryByTestId("studio-bg3d-asset-shelf")).toBeNull();
 

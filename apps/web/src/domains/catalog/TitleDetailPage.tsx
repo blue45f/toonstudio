@@ -3,6 +3,7 @@ import {
   formatI18nTemplate,
   translateBilingualValueForActiveLocale,
   translateCurrentStaticSourceText,
+  useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { SITE_URL } from "@toonstudio/core/business";
 import { Bookmark, Eye, Heart, Layers, MapPin, MessageSquareText, PenLine, Star } from "lucide-react";
@@ -88,7 +89,11 @@ interface TitleDetailResponse {
   worldWiki?: StudioPublicWiki | null;
 }
 
+const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
+  translateBilingualValueForActiveLocale("TitleDetailPage", ko, en);
+
 export function TitleDetailPage() {
+  useBilingualI18nRevision();
   const { slug } = useParams();
   const titleApiUrl = slug ? `/api/titles/${encodeURIComponent(slug)}` : null;
   const rawResource = useApiResource<TitleDetailResponse>(
@@ -259,58 +264,83 @@ export function TitleDetailPage() {
       <div id="title-episodes-anchor" className="mt-4 grid scroll-mt-24 gap-4 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <TitleEpisodeSection title={title} episodes={episodes} />
         <div className="flex flex-col gap-4">
-          {/* 회차 빈 상태의 "다른 플랫폼 더 보기"가 도착하는 앵커 지점 (D-9) */}
-          <div id="title-availability" className="scroll-mt-24 rounded-2xl border border-line bg-panel/50 p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <MapPin size={15} className="text-accent" />
-              <p className="text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "어디서 볼 수 있나요")}</p>
+          {/* 회차 빈 상태의 "다른 플랫폼 더 보기"가 도착하는 시그니처 Starlight 라우터 카드 (D-9 · 시안 E) */}
+          <div
+            id="title-availability"
+            data-title-where-to-read-router="true"
+            className="relative scroll-mt-24 overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-b from-accent/10 via-panel/85 to-card p-4 shadow-sm"
+          >
+            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0">
+              <GenreSpectrum genres={title.genres} height={3} />
+            </div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 pt-0.5">
+              <div className="flex items-center gap-2">
+                <span className="grid size-7 place-items-center rounded-lg border border-accent/35 bg-accent-soft text-accent">
+                  <MapPin size={14} aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="font-display text-[10px] font-extrabold uppercase tracking-wider text-accent">
+                    WHERE TO READ · ROUTER
+                  </p>
+                  <p className="text-sm font-bold text-fg">
+                    {bi("어디서 볼 수 있나요", "Where to read")}
+                  </p>
+                </div>
+              </div>
+              <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 text-[11px] font-bold text-fg-2">
+                {formatI18nTemplate(String(bi("{v0}개 플랫폼", "{v0} platforms")), { v0: String(title.availability.length) })}
+              </span>
             </div>
             <AvailabilityRouter availability={title.availability} />
             <p className="mt-3 text-xs leading-relaxed text-fg-3">
-              {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "플랫폼을 가로질러 가격(무료·기다무·유료)을 비교합니다. 가장 저렴한 진입점을 위로 정렬했어요.")}</p>
+              {bi(
+                "플랫폼을 가로질러 가격(무료·기다무·유료)을 비교합니다. 가장 저렴한 진입점을 위로 정렬했어요.",
+                "Compares free, wait-until-free, and paid pricing across platforms, ordered from lowest entry cost.",
+              )}
+            </p>
             <p data-testid="catalog-provenance-meta" className="mt-2 text-[11px] leading-relaxed text-fg-3">
               {snapshotDateLabel(data.generatedAt ?? "")
-                ? `${snapshotDateLabel(data.generatedAt ?? "")} 기준 공개 카탈로그 스냅샷`
-                : "공개 카탈로그 스냅샷 기준"}
-              {estimated ? " · 추정 지표 포함" : ""}
-              {title.availability.some((a) => !a.url) ? " · 일부 원출처 링크 준비 중" : ""}
+                ? `${snapshotDateLabel(data.generatedAt ?? "")} ${bi("기준 공개 카탈로그 스냅샷", "public catalog snapshot")}`
+                : bi("공개 카탈로그 스냅샷 기준", "Based on public catalog snapshot")}
+              {estimated ? bi(" · 추정 지표 포함", " · includes estimated metrics") : ""}
+              {title.availability.some((a) => !a.url) ? bi(" · 일부 원출처 링크 준비 중", " · some source links pending") : ""}
             </p>
           </div>
           <details className="rounded-2xl border border-line bg-card p-4">
             <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
-              {translateBilingualValueForActiveLocale("TitleDetailPage", "가격 · 지표 요약", "Pricing and metrics")}
+              {bi("가격 · 지표 요약", "Pricing and metrics")}
             </summary>
           <PriceCompare availability={title.availability} />
           <section aria-labelledby="title-metrics-summary" className="rounded-2xl border border-line bg-card p-5">
-            <h3 id="title-metrics-summary" className="text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "지표 요약")}</h3>
+            <h3 id="title-metrics-summary" className="text-sm font-semibold text-fg">{bi("지표 요약", "Metrics summary")}</h3>
             <dl className="mt-3.5 flex flex-col gap-2.5 text-sm">
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "평점")}</dt>
+                <dt className="text-fg-3">{bi("평점", "Rating")}</dt>
                 <dd className="numeral font-semibold text-fg">
                   {reviewAvg.toFixed(1)}
                   <span className="ml-1.5 text-xs font-normal text-fg-3">
-                    {formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "{v0}개의 평가"), { v0: String(formatCount(reviewCount)) })}
+                    {formatI18nTemplate(String(bi("{v0}개의 평가", "{v0} ratings")), { v0: String(formatCount(reviewCount)) })}
                   </span>
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률")}</dt>
+                <dt className="text-fg-3">{bi("완독률", "Completion rate")}</dt>
                 <dd className="numeral font-semibold text-fg">{Math.round(title.stats.completionRate)}%</dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "몰입 지수")}</dt>
+                <dt className="text-fg-3">{bi("몰입 지수", "Binge index")}</dt>
                 <dd className="numeral font-semibold text-fg">{Math.round(title.stats.bingeIndex)}</dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "관심")}</dt>
+                <dt className="text-fg-3">{bi("관심", "Bookmarks")}</dt>
                 <dd className="numeral font-semibold text-fg">{fmtStat(title.stats.bookmarks)}</dd>
               </div>
             </dl>
             <a
               href="#metrics"
-              className="mt-4 inline-flex min-h-10 items-center text-xs font-semibold text-accent transition-colors hover:text-accent-2"
+              className="mt-4 inline-flex min-h-11 items-center text-xs font-semibold text-accent transition-colors hover:text-accent-2"
             >
-              {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "지표 자세히 보기")}
+              {bi("지표 자세히 보기", "View detailed metrics")}
             </a>
           </section>
           </details>
@@ -321,12 +351,12 @@ export function TitleDetailPage() {
 
       <details data-testid="title-detail-secondary-tools" className="mt-6 rounded-2xl border border-line bg-card p-4">
         <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
-          {translateBilingualValueForActiveLocale("TitleDetailPage", "내 기록 · 알림 · 더 보기", "My records, alerts and more")}
+          {bi("내 기록 · 알림 · 더 보기", "My records, alerts and more")}
         </summary>
         <div className="pt-4">
           <SiteContextualSubNav pathnameOverride="/discover" className="mb-4" />
           <nav
-            aria-label={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 상세 섹션 이동 및 크로스 허브 브리지")}
+            aria-label={bi("작품 상세 섹션 이동 및 크로스 허브 브리지", "Title section jump and cross-hub bridge")}
             data-testid="title-detail-rea-bridge-bar"
             className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/75 px-4 py-2.5 text-xs"
           >
@@ -336,41 +366,41 @@ export function TitleDetailPage() {
               </span>
               <a
                 href="#title-episodes-anchor"
-                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
-                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "회차 목록")}
+                {bi("회차 목록", "Episodes")}
               </a>
               <a
                 href="#title-availability"
-                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
-                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "연재처 · 가격 비교")}
+                {bi("연재처 · 가격 비교", "Platforms & pricing")}
               </a>
               <a
                 href="#metrics"
-                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
-                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률 · 정주행 지표")}
+                {bi("완독률 · 정주행 지표", "Completion & binge metrics")}
               </a>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <Link
                 href="/cuts"
-                className="inline-flex min-h-8 items-center rounded-full border border-accent/35 bg-accent/10 px-3 font-bold text-accent transition-colors hover:bg-accent/20"
+                className="inline-flex min-h-11 items-center rounded-full border border-accent/35 bg-accent/10 px-3.5 font-bold text-accent transition-colors hover:bg-accent/20"
               >
-                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "숏폼 컷츠 보기")}
+                {bi("숏폼 컷츠 보기", "Watch short-form cuts")}
               </Link>
               <Link
                 href="/compare"
-                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
-                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 스펙 비교")}
+                {bi("작품 스펙 비교", "Compare title specs")}
               </Link>
               <Link
                 href="/showcase/promo"
-                className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
-                {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "트레일러 제작")}
+                {bi("트레일러 제작", "Create trailer")}
               </Link>
             </div>
           </nav>

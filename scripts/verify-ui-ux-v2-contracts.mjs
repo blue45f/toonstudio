@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * UI/UX v2 전수 시안(데스크톱 시안 A~P · 모바일 시안 M1~M4) 및 Starlight Atelier 디자인 시스템 계약 자동 검증 게이트 (v2.4).
+ * UI/UX v2 전수 시안(데스크톱 시안 A~P · 모바일 시안 M1~M4) 및 Starlight Atelier 디자인 시스템 계약 자동 검증 게이트 (v2.5).
  *
  * 브라우저를 기동하지 않고 <100ms 내에 아래 불변식을 검증한다:
  * 1. 정본 문서(PRODUCT.md, DESIGN.md, UI/UX v2 Blueprint, Quality Gates Policy) 존재 및 시안 A~P / 모바일 M1~M4 기록 동기화
  * 2. 독립 셸(apps/mobile/shell, apps/admin-web, apps/desktop-sync, apps/brush-lab, apps/character-lab)의 스피너 금지(DESIGN.md §4), OKLCH 의미 토큰(§2), 44px 터치 타깃(WCAG 2.5.8) 준수
  * 3. 게스트 3초 비차단 세션(INITIAL_SESSION_READY_DEADLINE_MS <= 3500) 회귀 방지(UX_FLOW_BACKLOG P1)
- * 4. 32대 핵심 화면군·루트 정문·아틀리에 벤토·단일 44px 에디터 바·3D Live Ink 쉘프·스펙트럼 리본 데이터 앵커 무결성 + 정본 경로(레거시 별칭 금지) + 44px 미만 Tailwind 높이(min-h-6..10) 금지
+ * 4. 36대 핵심 화면군·루트 정문·아틀리에 벤토·단일 44px 에디터 바·3D Live Ink 스테이지/쉘프·스펙트럼 리본·어디서 봐 라우터 데이터 앵커 무결성 + 정본 경로(레거시 별칭 금지) + 44px 미만 Tailwind 높이(min-h-6..10) 금지
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -73,12 +73,16 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
   const v2ComponentFilesForInlineAudit = [
     "apps/web/src/domains/creator/studio-shell/StudioProjectLibraryFastStartStrip.tsx",
     "apps/web/src/domains/creator/studio-shell/StudioProjectLibraryManagementHeader.tsx",
+    "apps/web/src/domains/creator/studio-shell/StudioProjectLibraryManagementUi.tsx",
+    "apps/web/src/domains/creator/studio-shell/StudioProjectLibraryManagementContent.tsx",
     "apps/web/src/domains/creator/studio-shell/StudioDocumentStagePillBar.tsx",
     "apps/web/src/domains/creator/studio-shell/StudioDocumentWindowHub.tsx",
     "apps/web/src/domains/creator/bg3d/StudioBg3dAssetShelf.tsx",
+    "apps/web/src/domains/creator/bg3d/StudioBg3dProfessionalWorkspace.tsx",
     "apps/web/src/domains/creator/export/StudioExportOutputSummary.tsx",
     "apps/web/src/domains/catalog/DiscoverFacetTabStrip.tsx",
     "apps/web/src/domains/catalog/DiscoverHubPage.tsx",
+    "apps/web/src/domains/catalog/TitleDetailPage.tsx",
     "apps/web/src/domains/catalog/TitleDetailCreationBridgeCard.tsx",
     "apps/web/src/domains/creator/studio-shell/StudioProjectTeamKanbanBridge.tsx",
     "apps/web/src/domains/market/components/MarketResourceCard.tsx",
@@ -166,19 +170,22 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     }
   }
 
-  // 4) 핵심 화면군 UI/UX v2.4 Starlight Atelier 시각·동선 앵커 연결 무결성
+  // 4) 핵심 화면군 UI/UX v2.5 Starlight Atelier 시각·동선 앵커 연결 무결성
   const requiredSurfaceAnchors = [
     ["apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx", "home-v2-spectrum-launchpad"],
     ["apps/web/src/domains/marketing/reference-creator-dashboard.css", "rd-v2-spectrum-ribbon"],
     ["apps/web/src/domains/creator/studio-shell/StudioProjectLibraryFastStartStrip.tsx", "studio-fast-start-strip"],
     ["apps/web/src/domains/creator/studio-shell/StudioProjectLibraryManagementHeader.tsx", "data-studio-atelier-bento"],
+    ["apps/web/src/domains/creator/studio-shell/StudioProjectLibraryManagementUi.tsx", "data-studio-card-accent-bar"],
     ["apps/web/src/domains/creator/studio-shell/StudioDocumentStagePillBar.tsx", "data-studio-stage-pill-bar"],
     ["apps/web/src/domains/creator/studio-shell/StudioDocumentWindowHub.tsx", "data-studio-autosave-dot"],
+    ["apps/web/src/domains/creator/bg3d/StudioBg3dProfessionalWorkspace.tsx", "data-bg3d-stage-header"],
     ["apps/web/src/domains/creator/bg3d/StudioBg3dAssetShelf.tsx", "studio-bg3d-dcc-mode-bar"],
     ["apps/web/src/domains/creator/bg3d/StudioBg3dAssetShelf.tsx", "studio-bg3d-bake-to-panel-cta"],
     ["apps/web/src/domains/creator/export/StudioExportOutputSummary.tsx", "Rights BOM"],
     ["apps/web/src/domains/catalog/DiscoverFacetTabStrip.tsx", "discover-facet-tab-strip"],
     ["apps/web/src/domains/catalog/DiscoverFacetTabStrip.tsx", "data-discover-spectrum-ribbon"],
+    ["apps/web/src/domains/catalog/TitleDetailPage.tsx", "data-title-where-to-read-router"],
     ["apps/web/src/domains/catalog/TitleDetailCreationBridgeCard.tsx", "title-detail-creation-bridge"],
     ["apps/web/src/domains/creator/studio-shell/StudioProjectTeamKanbanBridge.tsx", "studio-kanban-stage-card"],
     ["apps/web/src/domains/market/components/MarketResourceCard.tsx", "data-market-rights-bom"],
@@ -212,9 +219,9 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = evaluateUiUxV2Contracts();
   if (!result.ok) {
-    console.error(`UI/UX v2.4 계약 게이트 실패 (${result.issues.length}건):`);
+    console.error(`UI/UX v2.5 계약 게이트 실패 (${result.issues.length}건):`);
     for (const issue of result.issues) console.error(` - ${issue}`);
     process.exit(1);
   }
-  console.log("UI/UX v2.4 계약 게이트 통과: 데스크톱 시안 A~P · 모바일 M1~M4 · Starlight Atelier 벤토/단일바/스펙트럼 · 32대 허브 44px 불변식 정상");
+  console.log("UI/UX v2.5 계약 게이트 통과: 데스크톱 시안 A~P · 모바일 M1~M4 · Starlight Atelier 벤토/단일바/스펙트럼/라우터 · 36대 허브 44px 불변식 정상");
 }

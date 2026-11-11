@@ -1,9 +1,33 @@
 /* 탐색 첫 화면만 소유한다. 다른 페이지의 공통 헤더·작품 카드는 변경하지 않는다. */
 .discover-hub-hero {
+  position: relative;
   display: grid;
   min-width: 0;
-  gap: 1rem;
+  gap: 1.125rem;
   align-items: start;
+  padding: 1.25rem;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 26%, var(--color-line));
+  border-radius: 1.5rem;
+  background: linear-gradient(
+    150deg,
+    color-mix(in oklch, var(--color-accent) 9%, var(--color-panel)),
+    color-mix(in oklch, var(--color-cool, var(--color-accent-2)) 6%, var(--color-card))
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 8%, transparent),
+    var(--unified-shadow-soft);
+}
+:root[data-design-theme="contrast"] .discover-hub-hero {
+  border-color: var(--color-line-strong);
+  background: var(--color-panel);
+  box-shadow: none;
+}
+@media (forced-colors: active) {
+  .discover-hub-hero {
+    border: 2px solid CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
 }
 .discover-hub-intro,
 .discover-hub-header,
@@ -18,6 +42,7 @@
   margin: .5rem 0 0;
   font-size: clamp(1.5rem, 3.2vw, 2.25rem);
   line-height: 1.2;
+  letter-spacing: -0.03em;
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
@@ -25,7 +50,7 @@
   margin-top: .75rem;
 }
 .discover-hub-shelves {
-  margin-top: 1.125rem;
+  margin-top: 1.25rem;
 }
 @media (max-width: 359px) {
   .discover-hub-search-form {
@@ -33,6 +58,9 @@
   }
 }
 @media (min-width: 1024px) {
+  .discover-hub-hero {
+    padding: 1.5rem 1.75rem;
+  }
   .discover-hub-hero[data-has-spotlight="true"] {
     grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
     gap: 1.5rem;

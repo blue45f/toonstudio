@@ -792,13 +792,13 @@ export function SiteHeader({
               type="button"
               onClick={openSearch}
               aria-label={t("nav.searchOpen")}
-              className="site-header__search group flex size-11 shrink-0 items-center justify-center rounded-md border border-line bg-card/80 text-fg-3 outline-none transition-[border-color,background-color,color,box-shadow] duration-150 hover:border-line-strong hover:bg-card hover:text-fg-2 focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:justify-between sm:px-3"
+              className="site-header__search group flex size-11 shrink-0 items-center justify-center rounded-full border border-line bg-card/85 text-fg-3 shadow-sm outline-none transition-[border-color,background-color,color,box-shadow] duration-150 hover:border-accent/45 hover:bg-card hover:text-fg focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:justify-between sm:px-3.5"
             >
               <span className="flex min-w-0 items-center gap-2">
                 <Search size={16} className="shrink-0 transition-colors group-hover:text-accent" />
                 <span className="site-header__search-label truncate text-sm">{t("nav.search")}</span>
               </span>
-              <kbd aria-hidden="true" className="site-header__search-shortcut items-center gap-0.5 rounded border border-line bg-panel px-1 py-0.5 font-display text-[0.62rem] text-fg-3">⌘K</kbd>
+              <kbd aria-hidden="true" className="site-header__search-shortcut items-center gap-0.5 rounded-full border border-line bg-panel px-1.5 py-0.5 font-display text-[0.62rem] text-fg-3">⌘K</kbd>
             </button>
 
             {/* 새 작품은 위치가 아니라 동작이다. 현재 위치 표시는 주 메뉴 한 곳에만 둔다. */}
@@ -806,9 +806,9 @@ export function SiteHeader({
               href={CANONICAL_CREATE_HREF}
               aria-label={siteNavigationText(create.label, locale)}
               title={siteNavigationText(create.description, locale)}
-              className="site-header__create group relative hidden h-11 min-w-11 shrink-0 items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border border-line-strong bg-fg px-3 text-sm font-bold text-canvas [text-wrap:nowrap] [word-break:keep-all] shadow-sm outline-none transition-all duration-200 ease-out-expo hover:-translate-y-0.5 hover:border-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:flex"
+              className="site-header__create group relative hidden h-11 min-w-11 shrink-0 items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full border px-3.5 text-sm font-bold [text-wrap:nowrap] [word-break:keep-all] outline-none transition-all duration-200 ease-out-expo hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:flex"
             >
-              <span aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-on-accent/40 to-transparent" />
+              <span aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-on-accent/45 to-transparent" />
               <Palette size={16} className="shrink-0 transition-transform duration-200 group-hover:-rotate-6 group-hover:scale-110" />
               <span className="hidden min-w-max whitespace-nowrap xl:inline-block">{keepInlineText(siteNavigationText(create.label, locale))}</span>
             </Link>
@@ -828,7 +828,7 @@ export function SiteHeader({
               aria-haspopup="dialog"
               aria-expanded={menuOpen}
               aria-controls={menuId}
-              className="grid size-11 shrink-0 place-items-center rounded-md border border-line bg-card/80 text-fg-2 outline-none transition-[border-color,background-color,color,transform] hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.97] min-[1180px]:hidden"
+              className="grid size-11 shrink-0 place-items-center rounded-full border border-line bg-card/85 text-fg-2 outline-none transition-[border-color,background-color,color,transform] hover:border-accent/45 hover:bg-raised hover:text-fg focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.97] min-[1180px]:hidden"
             >
               {menuOpen ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
             </button>

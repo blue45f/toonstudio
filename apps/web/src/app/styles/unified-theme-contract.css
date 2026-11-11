@@ -313,11 +313,26 @@ h1[data-type-variant="editorial"],
   --route-accent: var(--unified-route-accent);
   --route-accent-soft: var(--unified-route-accent-soft);
   position: relative;
+  isolation: isolate;
   min-width: 0;
   color: var(--color-fg);
   background:
-    radial-gradient(circle at 92% -5%, color-mix(in oklch, var(--route-accent) 7%, transparent), transparent 34rem),
+    radial-gradient(52rem 28rem at 12% -6%, color-mix(in oklch, var(--route-accent) 11%, transparent), transparent 72%),
+    radial-gradient(46rem 26rem at 90% -5%, color-mix(in oklch, var(--color-cool, var(--unified-accent-2)) 9%, transparent), transparent 70%),
     var(--color-canvas);
+}
+:root[data-design-theme="starlight"] .route-stage[data-theme-contract="unified"]:not([data-route-surface-identity="editor"])::before {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: min(38rem, 100%);
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--color-line) 28%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--color-line) 28%, transparent) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse 86% 78% at 50% 0%, black 18%, transparent 78%);
 }
 .route-stage[data-route-purpose="discover"] { --route-accent: var(--color-cool); }
 .route-stage[data-route-purpose="learn"] { --route-accent: var(--color-good); }
@@ -340,7 +355,9 @@ h1[data-type-variant="editorial"],
   article.bg-card,
   aside.bg-card
 ) {
-  box-shadow: var(--unified-shadow-soft);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 7%, transparent),
+    var(--unified-shadow-soft);
 }
 
 .route-stage[data-theme-contract="unified"] :where(a, button, input, select, textarea) {

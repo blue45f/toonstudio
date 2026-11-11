@@ -47,7 +47,7 @@ export function StudioProjectSaveBadge({
   useBilingualI18nRevision();
   if (studioProjectIsTemporaryWork(profile)) {
     return (
-      <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-warning/35 bg-warning-soft/20 px-2.5 text-[0.68rem] font-bold text-warning">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/35 bg-warning-soft/20 px-2.5 py-1 text-[0.68rem] font-bold text-warning">
         <HardDrive size={13} aria-hidden="true" />
         {bi("임시 자동저장", "Temporary autosave")}
       </span>
@@ -57,7 +57,7 @@ export function StudioProjectSaveBadge({
   const Icon = summary.needsBackup ? CloudOff : CheckCircle2;
   return (
     <span className={cn(
-      "inline-flex min-h-7 items-center gap-1.5 rounded-full border px-2.5 text-[0.68rem] font-bold",
+      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold",
       summary.needsBackup
         ? "border-warning/35 bg-warning-soft/20 text-warning"
         : "border-success/35 bg-success-soft/20 text-success",
@@ -109,7 +109,7 @@ export function StudioProjectSelectionCheckbox({
       onClick={onChange}
       onKeyDown={handleKeyDown}
       className={cn(
-        "grid size-11 shrink-0 place-items-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:size-9",
+        "grid size-11 shrink-0 place-items-center rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
         checked
           ? "border-accent bg-accent text-on-accent"
           : "border-line bg-panel text-transparent hover:border-accent/55",
@@ -244,10 +244,22 @@ export function StudioProjectLibraryCard({
       data-selected={checked || undefined}
       data-recent-primary={isMostRecent || undefined}
       className={cn(
-        "min-w-0 overflow-hidden rounded-2xl border bg-card p-3.5 shadow-sm transition-colors sm:p-4",
-        checked ? "border-accent ring-2 ring-accent/15" : "border-line",
+        "group relative min-w-0 overflow-hidden rounded-2xl border bg-gradient-to-b from-card to-panel/90 p-3.5 shadow-sm transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-accent/45 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:transform-none sm:p-4",
+        checked ? "border-accent ring-2 ring-accent/20" : isMostRecent ? "border-accent/40" : "border-line",
       )}
     >
+      <div
+        aria-hidden="true"
+        data-studio-card-accent-bar="true"
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-0.5",
+          isMostRecent
+            ? "bg-gradient-to-r from-accent via-cool to-accent-2"
+            : temporary
+              ? "bg-gradient-to-r from-warning/75 via-warning/35 to-transparent"
+              : "bg-gradient-to-r from-accent/65 via-cool/45 to-transparent",
+        )}
+      />
       <StudioProjectCardThumbnail
         authUserId={authUserId}
         locale={locale}
@@ -264,12 +276,12 @@ export function StudioProjectLibraryCard({
             {isMostRecent ? (
               <span
                 data-studio-recent-badge="true"
-                className="inline-flex min-h-7 items-center rounded-full border border-accent/40 bg-accent-soft px-2.5 text-[0.66rem] font-black text-accent"
+                className="inline-flex items-center rounded-full border border-accent/40 bg-accent-soft px-2.5 py-1 text-[0.66rem] font-black text-accent"
               >
                 {bi("최근 작업", "Most recent")}
               </span>
             ) : null}
-            <span className="rounded-full bg-panel px-2.5 py-1 text-[0.66rem] font-bold text-fg-2">
+            <span className="rounded-full border border-line/80 bg-panel px-2.5 py-1 text-[0.66rem] font-bold text-fg-2">
               {studioProjectLibraryTypeLabel(project)}
             </span>
             <StudioProjectSaveBadge profile={profile} locale={locale} />
@@ -310,7 +322,7 @@ export function StudioProjectLibraryCard({
         </div>
       </div>
 
-      <div className="mt-3.5 grid grid-cols-1 gap-2 rounded-xl bg-panel/60 p-2.5 text-[0.68rem] sm:mt-4 sm:grid-cols-2 sm:p-3">
+      <div className="mt-3.5 grid grid-cols-1 gap-2 rounded-xl border border-line/60 bg-panel/70 p-2.5 text-[0.68rem] sm:mt-4 sm:grid-cols-2 sm:p-3">
         <div className="min-w-0">
           <p className="font-semibold text-fg-3">{bi("작업 상태", "Work status")}</p>
           <p className="mt-0.5 font-black text-fg sm:mt-1">
@@ -332,7 +344,7 @@ export function StudioProjectLibraryCard({
           href={continueHref}
           onClick={onTouch}
           data-studio-card-continue="true"
-          className={buttonClass({ size: "sm", className: "min-h-11 min-w-28 flex-1 gap-1.5 sm:min-h-9" })}
+          className={buttonClass({ size: "sm", className: "min-h-11 min-w-28 flex-1 gap-1.5 rounded-full" })}
         >
           <FolderOpen size={15} aria-hidden="true" />
           {bi("이어서 작업", "Continue")}
@@ -341,7 +353,7 @@ export function StudioProjectLibraryCard({
           <button
             type="button"
             onClick={onOpenSave}
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 rounded-full" })}
           >
             <Save size={15} aria-hidden="true" />
             {bi("정식 저장", "Save")}
@@ -351,7 +363,7 @@ export function StudioProjectLibraryCard({
             type="button"
             disabled={busy}
             onClick={onSavePackage}
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 rounded-full" })}
           >
             <Download size={15} aria-hidden="true" />
             {bi("파일 다시 저장", "Save file again")}
@@ -359,7 +371,7 @@ export function StudioProjectLibraryCard({
         ) : (
           <Link
             href={storageHref}
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 rounded-full" })}
           >
             <Cloud size={15} aria-hidden="true" />
             {bi("저장·백업", "Save & backup")}
@@ -369,19 +381,19 @@ export function StudioProjectLibraryCard({
           type="button"
           onClick={onDuplicate}
           aria-label={formatI18nTemplate(String(bi("{value0} 복제", "Duplicate {value0}")), { value0: project.title })}
-          className={buttonClass({ variant: "quiet", size: "icon", className: "min-h-11 min-w-11 sm:min-h-9 sm:min-w-9" })}
+          className={buttonClass({ variant: "quiet", size: "icon", className: "min-h-11 min-w-11 rounded-full" })}
         >
           <Copy size={15} aria-hidden="true" />
         </button>
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-end gap-1.5">
-        <Link href={overviewHref} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold text-accent hover:bg-accent-soft/30 hover:underline sm:min-h-8 sm:px-2">
+        <Link href={overviewHref} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-xs font-semibold text-accent hover:bg-accent-soft/30 hover:underline">
           {bi("프로젝트 관리", "Manage project")}
         </Link>
-        <button type="button" onClick={onArchive} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold text-fg-3 hover:bg-raised hover:text-fg sm:min-h-8 sm:px-2">
+        <button type="button" onClick={onArchive} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-xs font-semibold text-fg-3 hover:bg-raised hover:text-fg">
           {bi("보관", "Archive")}
         </button>
-        <button type="button" onClick={onTrash} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold text-danger hover:bg-danger-soft/20 sm:min-h-8 sm:px-2">
+        <button type="button" onClick={onTrash} className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-xs font-semibold text-danger hover:bg-danger-soft/20">
           {bi("휴지통", "Trash")}
         </button>
       </div>
@@ -441,7 +453,7 @@ export function StudioProjectLibraryRecoveryRow({
         <button
           type="button"
           onClick={onRestore}
-          className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
+          className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 rounded-full" })}
         >
           <RotateCcw size={14} aria-hidden="true" />
           {bi("복원", "Restore")}
@@ -450,7 +462,7 @@ export function StudioProjectLibraryRecoveryRow({
           <button
             type="button"
             onClick={onTrash}
-            className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 text-danger sm:min-h-9" })}
+            className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 rounded-full text-danger" })}
           >
             <Trash2 size={14} aria-hidden="true" />
             {bi("휴지통", "Trash")}
@@ -459,7 +471,7 @@ export function StudioProjectLibraryRecoveryRow({
           <button
             type="button"
             onClick={onDelete}
-            className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 text-danger sm:min-h-9" })}
+            className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 rounded-full text-danger" })}
           >
             <Trash2 size={14} aria-hidden="true" />
             {bi("완전 삭제", "Delete")}

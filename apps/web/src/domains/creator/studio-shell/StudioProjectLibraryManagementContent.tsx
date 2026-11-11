@@ -157,32 +157,32 @@ export function StudioProjectLibraryManagementContent({
                       setQuery("");
                       document.querySelector<HTMLInputElement>('[data-studio-library-search-input="true"]')?.focus();
                     }}
-                    className={buttonClass({ size: "sm", className: "min-h-11 sm:min-h-9" })}
+                    className={buttonClass({ size: "sm", className: "min-h-11" })}
                   >
                     {bi("검색어 지우기", "Clear search")}
                   </button>
-                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}>
+                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}>
                     {bi("새 작업 시작", "Start new work")}
                   </Link>
-                  <Link href="/studio/import" className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 sm:min-h-9" })}>
+                  <Link href="/studio/import" className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11" })}>
                     {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
                   </Link>
                 </>
               ) : view === "archived" ? (
                 <>
-                  <Link href="/studio" className={buttonClass({ size: "sm", className: "min-h-11 sm:min-h-9" })}>
+                  <Link href="/studio" className={buttonClass({ size: "sm", className: "min-h-11" })}>
                     {bi("내 작업으로 돌아가기", "Back to My work")}
                   </Link>
-                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}>
+                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}>
                     {bi("새 작업 시작", "Start new work")}
                   </Link>
                 </>
               ) : (
                 <>
-                  <Link href="/studio" className={buttonClass({ size: "sm", className: "min-h-11 sm:min-h-9" })}>
+                  <Link href="/studio" className={buttonClass({ size: "sm", className: "min-h-11" })}>
                     {bi("내 작업으로 돌아가기", "Back to My work")}
                   </Link>
-                  <Link href="/studio/import" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}>
+                  <Link href="/studio/import" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}>
                     {bi("백업 파일 열기", "Open backup file")}
                   </Link>
                 </>
@@ -221,7 +221,7 @@ export function StudioProjectLibraryManagementContent({
                       if (event.detail === 0) pendingFocus.current = { list: temporaryGridRef.current, index: shownTemporaryProjects.length, trigger: event.currentTarget };
                       setVisibleTemporaryCount((count) => count + SECTION_PROJECT_STEP);
                     }}
-                    className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}
+                    className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
                   >
                     {formatI18nTemplate(
                       String(bi("임시 작업 더 보기 ({value0}개 남음)", "Show more temporary work ({value0} left)")),
@@ -261,7 +261,7 @@ export function StudioProjectLibraryManagementContent({
                       if (event.detail === 0) pendingFocus.current = { list: savedGridRef.current, index: shownSavedProjects.length, trigger: event.currentTarget };
                       setVisibleSavedCount((count) => count + SECTION_PROJECT_STEP);
                     }}
-                    className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}
+                    className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
                   >
                     {formatI18nTemplate(
                       String(bi("프로젝트 더 보기 ({value0}개 남음)", "Show more projects ({value0} left)")),
