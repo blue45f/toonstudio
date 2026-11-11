@@ -1,6 +1,6 @@
 // 창작 갤러리의 보기 조절 줄 — 보기 탭, 정렬, 작품 유형·제작 방식·포트폴리오 필터, 적용된 필터 칩.
 // 상태는 갖지 않고 주소 조건(GalleryView)과 변경 요청(onPatch)만 주고받는다.
-import { Heart, X } from "lucide-react";
+import { ChevronDown, Heart, X } from "lucide-react";
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 
 import {
@@ -28,7 +28,7 @@ import type { WorkSort } from "@/platform/creator-client";
 const CHIP_FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 /** 보기 탭 — WAI-ARIA 탭 패턴(←/→/Home/End로 이동, 선택된 탭만 Tab 순서에 포함). */
-function GalleryTabs({ value, onChange }: { value: ShowcaseGalleryTab; onChange: (tab: ShowcaseGalleryTab) => void }) {
+function GalleryTabs({ value, onChange, compact = false }: { value: ShowcaseGalleryTab; onChange: (tab: ShowcaseGalleryTab) => void; compact?: boolean }) {
   const bt = useBilingual("CreateGalleryPage");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -68,12 +68,12 @@ function GalleryTabs({ value, onChange }: { value: ShowcaseGalleryTab; onChange:
             onKeyDown={(event) => moveFocus(event, index)}
             className={cn(
               // 모바일은 4칸 균등(아이콘 위·라벨 아래), sm 이상은 한 줄 알약 탭.
-              "inline-flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap rounded-xl px-1 text-sm font-semibold transition-colors duration-150 sm:min-h-11 sm:flex-row sm:gap-1.5 sm:px-3.5 sm:font-medium",
+              compact ? "inline-flex min-h-11 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 text-xs font-semibold transition-colors duration-150 sm:px-3.5 sm:text-sm" : "inline-flex min-h-14 flex-col items-center justify-center gap-0.5 whitespace-nowrap rounded-xl px-1 text-sm font-semibold transition-colors duration-150 sm:min-h-11 sm:flex-row sm:gap-1.5 sm:px-3.5 sm:font-medium",
               CHIP_FOCUS,
               active ? "bg-accent text-on-accent shadow-md shadow-accent/25" : "text-fg-2 hover:bg-raised hover:text-fg",
             )}
           >
-            <Icon size={15} aria-hidden />
+            <Icon size={15} aria-hidden className={compact ? "hidden sm:block" : undefined} />
             {bt(option.ko, option.en)}
           </button>
         );
@@ -199,21 +199,20 @@ function ActiveFilters({ query, bt, onClear, onClearAll }: {
  * 좁은 화면에서는 정렬·필터를 한 줄 가로 레일로 두어 여러 줄로 쌓이지 않게 한다.
  * 팔로잉 탭은 정렬이 없고, 필터는 전체 작품 탭에만 있다(북마크는 내 목록이라 조건을 두지 않는다).
  */
-export function GalleryToolbar({ view, onPatch }: {
+export function GalleryToolbar({ view, onPatch, compactFilters = false }: {
   readonly view: GalleryView;
   /** 주소 조건을 바꾼다. 값이 null이면 그 조건을 지운다. */
   readonly onPatch: (patch: Readonly<Record<string, string | null>>) => void;
+  /** 쇼케이스는 기본 보기부터 고르고, 상세 조건을 이름 있는 보조 영역에서 연다. */
+  readonly compactFilters?: boolean;
 }) {
   const bt = useBilingual("CreateGalleryPage");
   const { tab, query } = view;
   const showSort = tab !== "following";
   const showWorkFilters = tab === "works";
+  const currentSort = SORTS.find(option => option.value === query.sort) ?? SORTS[0];
 
-  return (
-    <div className="mb-6 space-y-3 rounded-2xl border border-line bg-panel p-3 sm:p-4">
-      <GalleryTabs value={tab} onChange={(next) => onPatch({ tab: next === "works" ? null : next })} />
-
-      {showSort || showWorkFilters ? (
+  const filterControls = showSort || showWorkFilters ? (
         <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {showSort ? (
             <SortControl value={query.sort} onChange={(next) => onPatch({ sort: next === "recent" ? null : next })} />
@@ -249,8 +248,20 @@ export function GalleryToolbar({ view, onPatch }: {
             </>
           ) : null}
         </div>
-      ) : null}
+      ) : null;
 
+  return (
+    <div className={cn(compactFilters ? "mb-5" : "mb-6", "space-y-3 rounded-2xl border border-line bg-panel p-3 sm:p-4")}>
+      <GalleryTabs value={tab} compact={compactFilters} onChange={(next) => onPatch({ tab: next === "works" ? null : next })} />
+      {compactFilters && filterControls ? (
+        <details className="group/gallery-filters rounded-xl border border-line bg-canvas/50 px-3" aria-label={bt("작품 조건 더 보기", "More work filters")}>
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg text-sm font-semibold text-fg-2 outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+            <span>{bt("조건 더 보기", "More filters")} · {bt(currentSort?.ko ?? "최신", currentSort?.en ?? "Latest")}</span>
+            <ChevronDown size={15} aria-hidden className="shrink-0 transition-transform group-open/gallery-filters:rotate-180 motion-reduce:transition-none" />
+          </summary>
+          <div className="border-t border-line py-3">{filterControls}</div>
+        </details>
+      ) : filterControls}
       {showWorkFilters ? (
         <ActiveFilters
           query={query}

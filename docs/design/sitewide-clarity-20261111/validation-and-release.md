@@ -1,9 +1,28 @@
 # 화면 명료성 개선 검증·배포 인계 — 2026-11-11
 
-상태: **migration**. 프로덕션 빌드 preview에서 지정 동선 성공과 미완료 핵심 UX를 확인했다.
-preview·전수 관측·전체 타입 실행은 강제 종료되어 후속 검증을 기다린다. 후속 수정은 별도
-작업트리에서 진행 중이며, 아래 빌드 결과를 그 수정까지 검증한 결과로 확장하지 않는다.
-1차 전체 하네스, 2차 변경 범위 검증, 개발 서버 동선, 최종 번들 관측과 운영 반영을 각각 구분한다.
+상태: **migration**. 아래 최신 절은 `4911a5b0…` 고정 번들의 실제 실행 기록이다. 그 뒤의
+`e780510f…` 빌드·실행 중단은 역사 기록이며 최신 preview 상태가 아니다. 신규 밀도·미디어
+후속 소스의 검증은 해당 새 번들에서 다시 수행한다. 로컬 소스·분야별 검증·전체 타입·원격
+CI·main 반영·운영 배포를 각각 구분한다. 이 문서의 고정 관측 이후 릴리스 결과는 PR과 배포
+원장의 정확한 SHA를 기준으로 확인한다.
+
+## 2026-11-12 고정 번들의 후속 검증
+
+검증 기준은 `4911a5b0f3ddf179f0827d6c62ae3a8e51eab401`, `buildId=2931f94c0bb7`이며 로컬 `http://127.0.0.1:5276`의 해시 번들이다. `build-phase4.exit=0`, CSP·라이선스 생성, Studio 구조·제품 투어 청크 검사를 확인했다. 크기 예산의 기존 비차단 관측 15건과 VRM/WebGPU 경고를 실측 성능 통과로 바꾸지 않는다.
+
+| 실행 범위 | 확인한 결과 | 조건·한계 |
+| --- | --- | --- |
+| 그리기→Undo→Redo→기기 보관→동일 문서 재열기 | 20/20, 페이지 오류 0. 같은 획 ID·값, 복구 안내, 320px native 터치·키보드·초점·폰트·도구/저장 캡션, 390px·가로·classic·desktop·canvas-only를 확인 | 실제 게스트·성공 API fixture/문서 주입 없음. ANGLE/SwiftShader·브라우저 마우스의 펜 도구이며 실제 스타일러스·서버 ACK·기기 간 복구·출력 픽셀 검증이 아님. 원본: `production-interactions/ui-drawing-2026-11-11T18-28-12-637Z/results.json` |
+| 소재 권리 확인·적용 footer | 9/9. 390·320px 각각 4개, 1440px 1개 통과. desktop 버튼 하단 y972.75→824, clip 하단 840 안·center hit 정상. 실제 PNG 5장 확인 | 같은 원고 `ep01-193612v`, 체크 자동 승인·문서 주입 없음. 이번 원소 ID·종류·명칭·이미지·출처 요약 보존과 과거 전체 내용 검증을 구분. followups `.qa/resource-detail-footer/production-wave4/{results,review}.json` |
+| 운영·AI·독립 관리자 | 로컬 실제 UI 6동선 그룹·390px 터치/가림 검사, 페이지 오류 0. 정책↔근거·Back·미저장 유지·revision 갱신·actor 전환·401/403·503 재시도·409·독립 preview 403 clear 확인 | 가상 세션/권한/정책 API fixture. 실제 운영 권한·정책 변경·provider 호출 없음. Web preview/apply 403의 기존 폼 유지와 독립 apply 403 브라우저 미검증은 별도. followups `.qa/operator-ui-review/summary-4911.json` |
+| 창작 준비·쇼케이스·커뮤니티·샘플 제작 | 1440·390px 템플릿 검색/복구, 실제 StoryLab 초안 왕복·reload, Showcase 지연·가상 작품·빈 목록·503, 커뮤니티 링크와 샘플 일정 동선을 확인. 선별 PNG 35개 | StoryLab desktop 저장 버튼 40px·일부 Back 초점/스크롤은 잔여로 기록. Showcase 가상 작품은 실제 게시물 아님. 선택자/준비기한/중복 파일명 오류는 원본 보존·성공 집계 제외. BG3D 실제 적용 미검증. followups `.qa/creation-surfaces-review/phase4-before-4911-review-summary.json` |
+| 가상 스튜디오 2D·3D | 자세와 그림 일치, 이동·착석/기립·모션 감소·실패 후 재선택 회복, 테마/조명 저장·재진입·native capture 해제·바닥 이동 확인 | 320 전환칩 잘림, HQ 공간 밀도, SwiftShader의 극저 프레임은 잔여. OS 취소·저장소 예외·recipe fill은 단위 증거. PNG 진단 3건은 성공 판정 제외. followups `.qa/sprite-motion-3d-after-4911/{results.json,README.md}` |
+
+드로잉의 첫 실행은 객체 키 직렬화 순서 때문에 Redo hash 검사가 중단됐다. 읽기 전용 판독에서 ID·모든 필드·배열 값이 같음을 확인한 뒤 객체 키만 정규화해 같은 의미의 검사를 재실행했다. 이전 실패·판독 증거는 보존했다. 위 성공은 서버 저장·운영 배포 성공이 아니다.
+
+공유한 [밀도 제안 6장](./density-proposals/README.md)과 [원본→제안→실제 비교](./comparison/index.html)는 reference·target·버전별 actual을 나눈다. 이후 StoryLab 3묶음, Showcase 목록 우선, Publish 3단계, 바로 그리기·안내 겹침, 공통 44px, 전환칩·홍보 미디어 후속은 새 소스의 렌더·동작·타입·빌드로 재검증해야 한다.
+
+이 시점 원격 main 반영·원격 CI·운영 배포는 미실행이다. 전체 주소 882조건도 최신 성공이 아니며 `e780510f…` 중단 당시 유효한 desktop 112관측(정상 렌더 82·인증 게이트 22·차단 1·미준비 7)을 후속 버전의 완료 수로 합치지 않는다. Cloudflare 인증 연결이 없는 환경에서 API live/ready 응답만으로 최신 프런트 배포를 보고하지 않는다.
 
 ## 소스 기준과 현재 실행 단계
 

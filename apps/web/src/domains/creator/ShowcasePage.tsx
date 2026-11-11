@@ -1,4 +1,4 @@
-// 쇼케이스(/showcase) — 전용 첫 화면(ShowcaseSpotlight) → 전체 작품 갤러리 → 발행 안내.
+// 쇼케이스(/showcase) — 검색·보기 조건 → 짧은 추천 → 전체 작품 → 창작 참여 안내.
 // 만들기 갤러리 본체(CreateGalleryPage)는 건드리지 않고, 갤러리 본문은 공유 컴포넌트
 // (GalleryToolbar·GalleryTabPanel)를 그대로 재사용한다. 보기 조건은 주소 검색 문자열이 단일 출처라
 // 새로고침·공유 링크·스포트라이트의 태그 링크에서도 같은 화면이 열린다.
@@ -8,7 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import { GalleryToolbar } from "./publishing/GalleryControls";
 import { GalleryTabPanel } from "./publishing/GalleryTabPanels";
 import { parseGalleryView, patchSearchParams } from "./publishing/gallery-query";
-import { ShowcaseSpotlight } from "./publishing/ShowcaseSpotlight";
+import { ShowcaseHeader, ShowcaseShortcutLinks, ShowcaseSpotlight } from "./publishing/ShowcaseSpotlight";
 import { ShowcaseSocialHubBar } from "./publishing/ShowcaseSocialHubBar";
 
 import { Container } from "@/shared/components/section";
@@ -30,6 +30,8 @@ export function ShowcasePage() {
   const bt = useBilingual("ShowcasePage");
   const [searchParams, setSearchParams] = useSearchParams();
   const view = parseGalleryView(searchParams);
+  const searchText = (searchParams.get("q") ?? "").trim().slice(0, 200);
+  const searchable = view.tab === "works" || view.tab === "saved";
   const galleryQuery = searchParams.toString();
   const galleryAnchor = `${galleryQuery ? `?${galleryQuery}` : ""}#showcase-browse-title`;
 
@@ -41,23 +43,30 @@ export function ShowcasePage() {
   return (
     <Container size="wide" className="py-6 sm:py-10">
       <SiteContextualSubNav pathnameOverride="/showcase" className="mb-4" />
-      <ShowcaseSpotlight />
+      <ShowcaseHeader />
 
-      <section aria-labelledby="showcase-browse-title" className="mt-8">
-        <div className="mb-4">
-          <p className="eyebrow text-accent">FULL GALLERY</p>
-          <h2 id="showcase-browse-title" className="mt-1 text-xl font-black tracking-tight text-fg sm:text-2xl">
+      <section aria-labelledby="showcase-browse-title" className="mt-5">
+        <form role="search" aria-label={bt("불러온 작품에서 찾기", "Find in loaded works")} className="mb-4" onSubmit={(event) => {
+          event.preventDefault();
+          if (!searchable) return;
+          const value = new FormData(event.currentTarget).get("q");
+          patchView({ q: typeof value === "string" ? value.trim().slice(0, 200) || null : null });
+        }}>
+          <div className="flex min-w-0 items-center gap-2">
+            <input type="search" name="q" maxLength={200} value={(searchParams.get("q") ?? "").slice(0, 200)} onChange={(event) => patchView({ q: event.target.value || null })} disabled={!searchable} aria-label={bt("불러온 작품에서 제목·작가 찾기", "Find a title or creator in loaded works")} aria-describedby="showcase-search-scope" placeholder={bt("불러온 작품에서 제목·작가 찾기", "Find a title or creator in loaded works")} className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-panel px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60" />
+            <button type="submit" disabled={!searchable} className={buttonClass({ variant: "solid", className: "min-h-11 shrink-0 whitespace-nowrap" })}>{bt("찾기", "Find")}</button>
+            {searchText && searchable ? <button type="button" onClick={() => patchView({ q: null })} className={buttonClass({ variant: "ghost", className: "min-h-11 shrink-0 whitespace-nowrap" })}>{bt("검색 지우기", "Clear search")}</button> : null}
+          </div>
+          <p id="showcase-search-scope" className="mt-2 text-xs leading-5 text-fg-2">{searchable ? bt("현재 목록에 불러온 작품의 제목·작가에서 찾습니다. 전체 서비스 검색은 아닙니다.", "Search titles and creators in this loaded list. This is not a service-wide search.") : bt("이 보기에서는 제목·작가 찾기를 제공하지 않습니다. 검색어는 전체 작품·북마크로 돌아오면 유지됩니다.", "Title and creator search is unavailable in this view. Your term remains when you return to All works or Bookmarks.")}</p>
+        </form>
+        <GalleryToolbar view={view} onPatch={patchView} compactFilters />
+        {view.tab === "works" && !searchText ? <ShowcaseSpotlight /> : null}
+        <div className="mb-3">
+          <h2 id="showcase-browse-title" className="text-xl font-bold tracking-tight text-fg sm:text-2xl">
             {bt("전체 작품 둘러보기", "Browse all works")}
           </h2>
-          <p className="mt-1 text-sm leading-6 text-fg-2">
-            {bt(
-              "공개된 모든 창작물을 탭·정렬·태그로 좁혀 볼 수 있어요. 추천 컬렉션은 전체 작품 탭의 맨 위에 모여 있습니다.",
-              "Narrow down every public work by tab, sort, and tag. Curated collections gather at the top of the All works tab.",
-            )}
-          </p>
         </div>
-        <GalleryToolbar view={view} onPatch={patchView} />
-        <GalleryTabPanel view={view} onResetFilters={clearAllFilters} />
+        <GalleryTabPanel view={view} onResetFilters={clearAllFilters} searchText={searchText} onClearSearch={() => patchView({ q: null })} featuredCollapsed />
       </section>
 
       <details className="group/showcase-participation mt-8 rounded-2xl border border-line bg-panel" aria-label={bt("내 작품 소개·협업 참여", "Share your work and collaborate")}>
@@ -66,6 +75,7 @@ export function ShowcasePage() {
           <ChevronDown className="size-4 shrink-0 text-fg-3 transition-transform group-open/showcase-participation:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
         </summary>
         <div className="space-y-6 border-t border-line p-4 sm:p-5">
+          <ShowcaseShortcutLinks />
           <ShowcaseSocialHubBar />
           <section
             aria-label={bt("크리에이터 쇼케이스 · 협업 · 공모 트랙", "Creator showcase, collaboration & contest tracks")}

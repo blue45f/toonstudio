@@ -82,7 +82,7 @@ function MobileFullEditNoticeContent({
   const compact = (startCollapsed || dismissed) && !expanded;
   // 정본 계획의 제한을 그대로 요약에 써서, 펼치기 전에도 현재 도구의 경계를 알린다.
   const firstLimitation = limitations[0];
-  const reservedBottom = "max(var(--studio-canvas-bottom-inset, 4.75rem), var(--studio-mobile-dock-measured-height, 0px), env(safe-area-inset-bottom))";
+  const reservedBottom = "max(var(--studio-canvas-bottom-inset, 4.75rem), var(--studio-mobile-dock-measured-height, 0px), var(--service-status-overlay-clearance, 0px), env(safe-area-inset-bottom))";
 
   const close = () => {
     dismissMobileFullEditNotice(surfaceId);
@@ -110,7 +110,7 @@ function MobileFullEditNoticeContent({
       aria-label={bt("모바일 편집 안내", "Mobile editing notice")}
       className={cn(
         "fixed z-[90] flex flex-col overflow-hidden rounded-2xl border border-line bg-card/95 text-fg shadow-lg backdrop-blur-md",
-        compact ? "right-3 max-w-[calc(100vw-1.5rem)]" : "inset-x-3 mx-auto max-w-lg",
+        compact ? "right-3 max-w-[calc(100vw-1.5rem)] max-[429px]:left-3 max-[429px]:right-auto" : "inset-x-3 mx-auto max-w-lg",
       )}
       style={{
         bottom: `calc(${reservedBottom} + 0.5rem)`,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, useNavigate } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PublishCenterPage } from "./PublishCenterPage";
@@ -50,10 +50,13 @@ const projectRecord = (projectId: string) => ({ aggregate: { projectId, title: p
 
 function NavigateProject() {
   const navigate = useNavigate();
-  return <button type="button" onClick={() => navigate("/publish?projectId=project-2")}>다른 작품 주소로 이동</button>;
+  const location = useLocation();
+  return <><button type="button" onClick={() => navigate("/publish?projectId=project-2")}>다른 작품 주소로 이동</button>
+    <button type="button" onClick={() => navigate(-1)}>브라우저 뒤로</button><button type="button" onClick={() => navigate(1)}>브라우저 앞으로</button>
+    <button type="button" onClick={() => navigate("/elsewhere")}>화면 떠나기</button><output aria-label="현재 게시 준비 주소">{location.pathname}{location.search}</output></>;
 }
 function renderPage(initialPath = "/publish?projectId=project-1", navigation = false) {
-  return render(<MemoryRouter initialEntries={[initialPath]}><PublishCenterPage />{navigation ? <NavigateProject /> : null}</MemoryRouter>);
+  return render(<MemoryRouter initialEntries={[initialPath]}><Routes><Route path="/publish" element={<PublishCenterPage />} /><Route path="/elsewhere" element={<h1>다른 화면</h1>} /></Routes>{navigation ? <NavigateProject /> : null}</MemoryRouter>);
 }
 async function prepareInputs() {
   await screen.findByRole("link", { name: "선택한 프로젝트로 돌아가기" });
@@ -61,6 +64,8 @@ async function prepareInputs() {
   fireEvent.change(screen.getByLabelText("작품 대표 주소"), { target: { value: "https://example.com/works/one" } });
 }
 const prepareButton = () => screen.getByRole("button", { name: "게시 정보 JSON 준비" });
+const stepButton = (number: 1 | 2 | 3) => within(screen.getByRole("navigation", { name: "게시 정보 준비 단계" })).getByRole("button", { name: new RegExp(`^${number}\\.`) });
+const preparedFiles = () => screen.findByRole("heading", { name: "파일 결과를 확인하세요" });
 
 beforeEach(() => {
   vi.clearAllMocks(); mocks.lang = "ko";
@@ -77,15 +82,18 @@ describe("PublishCenterPage 게시 준비 계약", () => {
   it("카드 상태와 기본 채널 선택을 유지한다", async () => {
     const { container } = renderPage();
     await screen.findByText("외부 웹툰 플랫폼");
-    expect(screen.getByText("수동 완주 가능")).toBeTruthy();
+    expect(screen.getByText(/수동 완주 가능 · 채널 정보만 포함/)).toBeTruthy();
     expect(screen.getByText("직접 업로드용 패키지로 준비돼요")).toBeTruthy();
-    expect(screen.getByText("사용 가능")).toBeTruthy();
+    expect(screen.getByText(/사용 가능 · 채널 정보만 포함/)).toBeTruthy();
     expect(container.querySelector<HTMLInputElement>("#publish-channel-external-webtoon-platforms")?.checked).toBe(true);
     expect(container.querySelector<HTMLInputElement>("#publish-channel-rss-json-feed")?.checked).toBe(true);
   });
 
   it("직접 진입에서는 가짜 프로젝트와 갤러리 주소를 만들지 않고 선택을 요구한다", async () => {
     renderPage("/publish"); await screen.findByText("외부 웹툰 플랫폼");
+    expect(stepButton(1).getAttribute("aria-current")).toBe("step");
+    expect(screen.queryByRole("textbox")).toBeNull();
+    fireEvent.click(stepButton(2));
     fireEvent.change(screen.getByLabelText("제목"), { target: { value: "직접 입력" } });
     fireEvent.change(screen.getByLabelText("작품 대표 주소"), { target: { value: "https://example.com/works/one" } });
     expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
@@ -101,6 +109,7 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     useApp.setState({ userId: null }); renderPage(); await screen.findByText("외부 웹툰 플랫폼");
     expect(mocks.getProject).not.toHaveBeenCalled();
     expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(stepButton(1));
     expect(screen.getByRole("link", { name: "로그인하기" })).toBeTruthy();
   });
 
@@ -116,14 +125,16 @@ describe("PublishCenterPage 게시 준비 계약", () => {
 
   it("제목·실제 대표 주소·채널이 갖춰져야 준비할 수 있다", async () => {
     const { container } = renderPage(); await screen.findByRole("link", { name: "선택한 프로젝트로 돌아가기" });
-    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(prepareButton());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("작품 대표 주소")));
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
     await prepareInputs(); expect((prepareButton() as HTMLButtonElement).disabled).toBe(false);
-    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "" } });
-    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "" } }); fireEvent.click(prepareButton());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("제목")));
     fireEvent.change(screen.getByLabelText("제목"), { target: { value: "별빛 항해자" } });
-    expect(screen.getByRole("heading", { name: "별빛 항해자" })).toBeTruthy();
     for (const input of container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')) fireEvent.click(input);
-    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(prepareButton()); await waitFor(() => expect(document.activeElement?.id).toBe("publish-channel-list"));
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
   });
 
   it("희망 시각·태그·설명은 실제 요청에 기록되며 컷 분할·시간대 설정은 전송되지 않는다", async () => {
@@ -142,7 +153,7 @@ describe("PublishCenterPage 게시 준비 계약", () => {
 
   it("채널 확인이 성공해도 원고 검증·게시 완료로 표시하지 않고 JSON을 내려받는다", async () => {
     renderPage(); await prepareInputs(); fireEvent.click(prepareButton());
-    await screen.findByText("게시 정보 JSON 준비됨");
+    await preparedFiles();
     expect(screen.getByText("게시 정보 파일이 준비됐어요. 외부 게시와 예약은 아직 실행되지 않았습니다.")).toBeTruthy();
     expect(screen.queryByText("규격 검사를 통과했습니다.")).toBeNull();
     expect(screen.queryByText("바로 실행")).toBeNull();
@@ -154,7 +165,8 @@ describe("PublishCenterPage 게시 준비 계약", () => {
   it("유효하지 않은 채널 결과는 준비 성공으로 포장하지 않는다", async () => {
     mocks.buildPublishPackage.mockResolvedValue({ ...packageFixture, ready: false, channels: [{ id: "unknown", valid: false, executable: false, mode: "unsupported", reason: "등록되지 않은 채널" }] });
     renderPage(); await prepareInputs(); fireEvent.click(prepareButton());
-    await screen.findByText("채널 정보 확인 필요");
+    await preparedFiles();
+    expect(screen.getByText("채널 정보 확인 필요")).toBeTruthy();
     expect(screen.queryByText("게시 정보 JSON 준비됨")).toBeNull();
     expect(screen.getByText("채널 정보를 확인하세요. 게시가 실행되지 않았습니다.")).toBeTruthy();
   });
@@ -165,13 +177,14 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     fireEvent.change(screen.getByLabelText("설명"), { target: { value: "유지할 설명" } });
     fireEvent.click(prepareButton()); await screen.findByRole("alert");
     expect((screen.getByLabelText("설명") as HTMLTextAreaElement).value).toBe("유지할 설명");
-    fireEvent.click(prepareButton()); await screen.findByText("게시 정보 JSON 준비됨");
+    fireEvent.click(prepareButton()); await preparedFiles();
     expect(mocks.buildPublishPackage).toHaveBeenCalledTimes(2);
     expect(mocks.buildPublishPackage.mock.calls[0]?.[0]).toEqual(mocks.buildPublishPackage.mock.calls[1]?.[0]);
   });
 
   it("입력을 바꾸면 이전 준비 결과를 현재 입력의 성공처럼 표시하지 않는다", async () => {
-    renderPage(); await prepareInputs(); fireEvent.click(prepareButton()); await screen.findByText("게시 정보 JSON 준비됨");
+    renderPage(); await prepareInputs(); fireEvent.click(prepareButton()); await preparedFiles();
+    fireEvent.click(screen.getByRole("button", { name: "입력 내용 수정" }));
     fireEvent.change(screen.getByLabelText("제목"), { target: { value: "바꾼 제목" } });
     expect(screen.queryByText("게시 정보 JSON 준비됨")).toBeNull();
     expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
@@ -202,9 +215,10 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     fireEvent.click(prepareButton());
     expect((screen.getByRole("button", { name: "준비 중" }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByLabelText("제목") as HTMLInputElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: /이 작품으로 게시 준비/u }) as HTMLButtonElement).disabled).toBe(true);
+    expect(document.querySelector<HTMLButtonElement>("#publish-project-choice li button")?.disabled).toBe(true);
+    expect(stepButton(1).getAttribute("disabled")).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "다른 작품 주소로 이동" }));
-    await screen.findByRole("heading", { name: "다음 작품" });
+    await waitFor(() => expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("다음 작품"));
     await act(async () => finish(packageFixture));
     expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
     expect(screen.getByRole("link", { name: "선택한 프로젝트로 돌아가기" }).getAttribute("href")).toBe("/production/projects/project-2/overview");
@@ -218,7 +232,7 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     renderPage(); await prepareInputs();
     fireEvent.change(screen.getByLabelText("설명"), { target: { value: "이전 계정의 설명" } });
     fireEvent.click(prepareButton());
-    if (phase === "준비 완료") await screen.findByText("게시 정보 JSON 준비됨");
+    if (phase === "준비 완료") await preparedFiles();
     else await screen.findByRole("button", { name: "준비 중" });
     mocks.getProject.mockRejectedValue(new Error("forbidden"));
     act(() => useApp.setState({ userId: "user-2" }));
@@ -245,7 +259,9 @@ describe("PublishCenterPage 게시 준비 계약", () => {
   it("390px 조건에서 주 행동을 하나로 유지하고 보조 안내는 접힌 채 실제 목적지를 보존한다", async () => {
     vi.stubGlobal("innerWidth", 390); renderPage(); await prepareInputs();
     expect(screen.getAllByRole("button", { name: "게시 정보 JSON 준비" })).toHaveLength(1);
-    expect(prepareButton().classList.contains("w-full")).toBe(true);
+    expect(document.querySelector("[data-publish-preparation-actions]")?.classList.contains("sticky")).toBe(true);
+    expect(stepButton(3).getAttribute("disabled")).not.toBeNull();
+    expect(screen.queryByRole("heading", { name: "파일 결과를 확인하세요" })).toBeNull();
     const guide = screen.getByRole("group", { name: "원고 출력·게시 계획 안내" });
     expect((guide as HTMLDetailsElement).open).toBe(false);
     expect(within(guide).getByTestId("publish-surface-cross-bridge").querySelector('a[href="/studio/publish"]')).toBeTruthy();
@@ -260,5 +276,112 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     const bridge = within(guide).getByTestId("publish-surface-cross-bridge");
     expect(bridge.textContent).not.toMatch(/[가-힣]/u);
     for (const href of ["/studio/publish", "/about/technology/architecture", "/creator-support", "/accessibility"]) expect(bridge.querySelector(`a[href="${href}"]`)).toBeTruthy();
+  });
+});
+
+
+describe("게시 정보 준비의 단계·복귀 계약", () => {
+  it("준비 전 결과는 비활성화하고 직접 파일 단계 주소도 입력 단계로 복구한다", async () => {
+    renderPage("/publish?projectId=project-1&step=files"); await prepareInputs();
+    expect(stepButton(2).getAttribute("aria-current")).toBe("step");
+    expect((stepButton(3) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("heading", { name: "파일 결과를 확인하세요" })).toBeNull();
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
+  });
+
+  it("선택·입력 단계와 브라우저 Back·Forward에서 입력·채널·초점을 유지한다", async () => {
+    renderPage(undefined, true); await prepareInputs();
+    fireEvent.change(screen.getByLabelText("설명"), { target: { value: "왕복 후 유지할 설명" } });
+    fireEvent.change(screen.getByLabelText("태그(쉼표 구분)"), { target: { value: "유지, 초안" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "RSS · JSON Feed" }));
+    fireEvent.click(stepButton(1)); await screen.findByRole("heading", { name: "어떤 작품의 정보를 준비할까요?" });
+    fireEvent.click(stepButton(2)); await screen.findByRole("heading", { name: "정보와 채널 확인" });
+    fireEvent.click(screen.getByRole("button", { name: "브라우저 뒤로" }));
+    await waitFor(() => expect(stepButton(1).getAttribute("aria-current")).toBe("step"));
+    expect(document.activeElement?.id).toBe("publish-step-heading-project");
+    fireEvent.click(screen.getByRole("button", { name: "브라우저 앞으로" }));
+    await waitFor(() => expect(stepButton(2).getAttribute("aria-current")).toBe("step"));
+    expect(document.activeElement?.id).toBe("publish-step-heading-details");
+    expect((screen.getByLabelText("설명") as HTMLTextAreaElement).value).toBe("왕복 후 유지할 설명");
+    expect((screen.getByLabelText("태그(쉼표 구분)") as HTMLInputElement).value).toBe("유지, 초안");
+    expect((screen.getByRole("checkbox", { name: "RSS · JSON Feed" }) as HTMLInputElement).checked).toBe(false);
+    expect(mocks.getProject).toHaveBeenCalledTimes(1);
+  });
+
+  it("처음 선택한 프로젝트가 주소와 Back 목적지에 남고 입력을 잃지 않는다", async () => {
+    mocks.listProjects.mockResolvedValue({ projects: [projectSummary] }); renderPage("/publish", true);
+    fireEvent.click(await screen.findByRole("button", { name: /이 작품으로 게시 준비/u })); await prepareInputs();
+    expect(screen.getByLabelText("현재 게시 준비 주소").textContent).toBe("/publish?projectId=project-1&step=details");
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "고쳐 적은 제목" } });
+    fireEvent.click(screen.getByRole("button", { name: "브라우저 뒤로" }));
+    await waitFor(() => expect(stepButton(1).getAttribute("aria-current")).toBe("step"));
+    expect(screen.getByLabelText("현재 게시 준비 주소").textContent).toBe("/publish?projectId=project-1&step=project");
+    fireEvent.click(screen.getByRole("button", { name: "정보와 채널 확인" }));
+    await waitFor(() => expect(stepButton(2).getAttribute("aria-current")).toBe("step"));
+    expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("고쳐 적은 제목");
+    expect((screen.getByLabelText("작품 대표 주소") as HTMLInputElement).value).toBe("https://example.com/works/one");
+  });
+
+  it("같은 프로젝트를 다시 선택해도 입력을 초기화하지 않는다", async () => {
+    mocks.listProjects.mockResolvedValue({ projects: [projectSummary] }); renderPage(); await prepareInputs();
+    fireEvent.change(screen.getByLabelText("설명"), { target: { value: "동일 작품의 설명" } });
+    fireEvent.click(stepButton(1));
+    const choices = document.querySelector<HTMLDetailsElement>("#publish-project-selection");
+    if (!choices) throw new Error("프로젝트 선택 영역이 필요합니다.");
+    const summary = choices.querySelector("summary");
+    if (!summary) throw new Error("프로젝트 선택 버튼이 필요합니다.");
+    fireEvent.click(summary);
+    fireEvent.click(await screen.findByRole("button", { name: /이 작품으로 게시 준비/u }));
+    await screen.findByRole("heading", { name: "정보와 채널 확인" });
+    expect((screen.getByLabelText("설명") as HTMLTextAreaElement).value).toBe("동일 작품의 설명");
+    expect((screen.getByLabelText("작품 대표 주소") as HTMLInputElement).value).toBe("https://example.com/works/one");
+  });
+
+  it("결과에서 Back하면 파일을 다시 찾을 수 있고 입력 수정 시 이전 결과를 폐기한다", async () => {
+    renderPage(undefined, true); await prepareInputs(); fireEvent.click(prepareButton()); await preparedFiles();
+    expect(document.activeElement?.id).toBe("publish-step-heading-files");
+    fireEvent.click(screen.getByRole("button", { name: "브라우저 뒤로" }));
+    await waitFor(() => expect(stepButton(2).getAttribute("aria-current")).toBe("step"));
+    expect(screen.getByRole("button", { name: "준비된 파일 다시 보기" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "준비된 파일 다시 보기" })); await preparedFiles();
+    expect(mocks.buildPublishPackage).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "입력 내용 수정" }));
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "수정된 제목" } });
+    expect((stepButton(3) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "준비된 파일 다시 보기" })).toBeNull();
+    expect(screen.queryByText("게시 정보 JSON 준비됨")).toBeNull();
+  });
+
+  it("준비 중 브라우저 Back 뒤 늦은 응답이 사용자의 단계를 바꾸지 않는다", async () => {
+    let finish: (value: typeof packageFixture) => void = () => { throw new Error("준비 미시작"); };
+    mocks.buildPublishPackage.mockReturnValue(new Promise<typeof packageFixture>((resolve) => { finish = resolve; }));
+    renderPage("/publish?projectId=project-1&step=project", true);
+    await screen.findByRole("link", { name: "선택한 프로젝트로 돌아가기" }); fireEvent.click(stepButton(2)); await prepareInputs();
+    fireEvent.click(prepareButton()); await screen.findByRole("button", { name: "준비 중" });
+    fireEvent.click(screen.getByRole("button", { name: "브라우저 뒤로" }));
+    await waitFor(() => expect(stepButton(1).getAttribute("aria-current")).toBe("step"));
+    await act(async () => finish(packageFixture));
+    expect(stepButton(1).getAttribute("aria-current")).toBe("step");
+    expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
+    fireEvent.click(stepButton(3)); await preparedFiles();
+    expect(screen.getByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeTruthy();
+  });
+
+  it("다른 화면으로 떠난 뒤 응답이 도착해도 게시 준비로 돌아오지 않는다", async () => {
+    let finish: (value: typeof packageFixture) => void = () => { throw new Error("준비 미시작"); };
+    mocks.buildPublishPackage.mockReturnValue(new Promise<typeof packageFixture>((resolve) => { finish = resolve; }));
+    renderPage(undefined, true); await prepareInputs(); fireEvent.click(prepareButton());
+    fireEvent.click(screen.getByRole("button", { name: "화면 떠나기" })); await screen.findByRole("heading", { name: "다른 화면" });
+    await act(async () => finish(packageFixture));
+    expect(screen.getByLabelText("현재 게시 준비 주소").textContent).toBe("/elsewhere");
+    expect(screen.queryByRole("navigation", { name: "게시 정보 준비 단계" })).toBeNull();
+  });
+
+  it("잘못된 URL의 검증 실패는 입력 단계와 해당 필드 초점으로 안내한다", async () => {
+    renderPage(); await prepareInputs();
+    fireEvent.change(screen.getByLabelText("작품 대표 주소"), { target: { value: "not a url" } }); fireEvent.click(prepareButton());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("작품 대표 주소")));
+    expect(screen.getByRole("alert").textContent).toContain("입력한 내용은 유지됩니다");
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
   });
 });

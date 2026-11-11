@@ -50,6 +50,19 @@ afterEach(() => {
 });
 
 describe("모바일 편집 안내의 펼치기와 복귀", () => {
+  it("작은 안내를 연결 상태 칩 위 왼쪽에 두고 펼쳐도 같은 하단 예약을 유지한다", () => {
+    render(notice("canvas", true));
+    const guide = screen.getByRole("complementary", { name: "모바일 편집 안내" });
+    expect(guide.style.bottom).toContain("var(--service-status-overlay-clearance, 0px)");
+    expect(guide.style.maxHeight).toContain("var(--service-status-overlay-clearance, 0px)");
+    expect(guide.className).toContain("max-[429px]:left-3");
+    expect(guide.className).toContain("max-[429px]:right-auto");
+    fireEvent.click(screen.getByRole("button", { name: "기기 안내" }));
+    expect(screen.getByRole("heading", { name: "이 기기에서는 안 돼요" })).toBeTruthy();
+    expect(guide.className).toContain("inset-x-3");
+    expect(guide.style.bottom).toContain("var(--service-status-overlay-clearance, 0px)");
+  });
+
   it("캔버스의 작은 기기 안내도 제한을 다시 열 수 있고 확인 기록을 미리 만들지 않는다", () => {
     render(notice("canvas", true));
     const toggle = screen.getByRole("button", { name: "기기 안내" });
