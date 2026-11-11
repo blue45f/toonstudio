@@ -238,9 +238,8 @@ describe("generated third-party notice inventory", () => {
         "velato@0.12.0",
         "vello_svg@0.11.0",
         "usvg@0.48.1",
-        "parley@0.11.0",
-        "harfrust@0.10.0",
-        "skrifa@0.43.2",
+        "parley@0.12.0",
+        "harfrust@0.12.0",
         "skrifa@0.44.0",
       ]),
     );
@@ -557,7 +556,7 @@ describe("generated third-party notice inventory", () => {
       expect(notice).toContain("| `vello` | 0.11.0 | Apache-2.0 OR MIT | pkg-gpu |");
       expect(notice).toContain("| `velato` | 0.12.0 | Apache-2.0 OR MIT | pkg-gpu |");
       expect(notice).toContain("| `vello_svg` | 0.11.0 | Apache-2.0 OR MIT | pkg-gpu |");
-      expect(notice).toContain("| `harfrust` | 0.10.0 | MIT | pkg, pkg-gpu |");
+      expect(notice).toContain("| `harfrust` | 0.12.0 | MIT | pkg, pkg-gpu |");
       expect(notice).toContain("## Locked opaque WASM engine provenance");
       expect(notice).toContain("`google/ink-stroke-modeler`");
       expect(notice).toContain("`abseil-cpp`");

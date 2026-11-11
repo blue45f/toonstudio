@@ -54,7 +54,7 @@ describe("lighthouse CI telemetry contract", () => {
   });
 
   it("installs @lhci/cli as a dev-only dependency and exposes one autorun script", () => {
-    expect(pkg.devDependencies["@lhci/cli"]).toBe("0.15.1");
+    expect(pkg.devDependencies["@lhci/cli"]).toBe("0.16.0");
     expect(pkg.dependencies?.["@lhci/cli"]).toBeUndefined();
     expect(pkg.scripts["lhci:autorun"]).toBe(
       "lhci autorun --config=lighthouserc.json",

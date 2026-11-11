@@ -44,8 +44,8 @@ const EXPORT_TARGET_VISUALS: Readonly<Record<StudioExportTargetId, string>> = {
 
 interface LocalProjectExportContext {
   readonly documentId: string;
-  readonly width: number;
-  readonly height: number;
+  readonly width: number | null;
+  readonly height: number | null;
   readonly localEditorHref: string;
 }
 
@@ -88,8 +88,8 @@ function buildInitialDraft(
   return {
     ...recommended,
     documentId: localContext.documentId,
-    width: localContext.width,
-    height: localContext.height,
+    width: localContext.width ?? recommended.width,
+    height: localContext.height ?? recommended.height,
   };
 }
 
@@ -531,7 +531,7 @@ export function StudioExportPanel({
         <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2 xl:grid-cols-4">
           {(
             [
-              ["readingOrderComplete", bt("읽기 순서 확인 완료", "Reading order complete")],
+              ["readingOrderComplete", bt("읽기 순서 완료", "Reading order complete")],
               ["aiDisclosurePrepared", bt("AI 보조 사용 표기 준비", "AI disclosure prepared")],
               ["captionsComplete", bt("자막·대본 준비 완료", "Captions complete")],
               ["editableStructurePreserved", bt("레이어 편집 구조 유지", "Editable structure preserved")],

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "engine": "studio-engine-vello",
   "target": "wasm32-unknown-unknown",
-  "cargoManifestSha256": "ebb02745876d05d532ae44d46ffd83fb197e5267914778ec825c59feac628604",
-  "cargoLockSha256": "e56edb994827e38bc85db58f2bfafa0c30cbecec1916a1a1d7fc7ae5b0fd0b30",
+  "cargoManifestSha256": "adbdd05961c0913680f82ab79b6a8be44473de541f5f2e143ec51dc69d6dd7f9",
+  "cargoLockSha256": "1bfedd7618a7acc92f7d602a6b06a6831d286dae2ed17fa5a997cec1b126530e",
   "artifacts": [
     {
       "id": "pkg",
@@ -25,23 +25,22 @@
         "flate2@1.1.9",
         "foldhash@0.2.0",
         "font-types@0.12.2",
-        "fontique@0.11.0",
+        "fontique@0.12.0",
         "glifo@0.4.0",
         "guillotiere@0.7.0",
-        "harfrust@0.10.0",
         "harfrust@0.12.0",
         "hashbrown@0.17.1",
-        "icu_collections@2.2.0",
-        "icu_locale@2.2.0",
-        "icu_locale_core@2.2.0",
-        "icu_locale_data@2.2.0",
-        "icu_normalizer@2.2.0",
-        "icu_normalizer_data@2.2.0",
-        "icu_properties@2.2.0",
-        "icu_properties_data@2.2.0",
-        "icu_provider@2.2.0",
-        "icu_segmenter@2.2.0",
-        "icu_segmenter_data@2.2.0",
+        "icu_collections@2.4.0",
+        "icu_locale_core@2.4.0",
+        "icu_locale_fallback@2.4.0",
+        "icu_locale_fallback_data@2.4.0",
+        "icu_normalizer@2.4.0",
+        "icu_normalizer_data@2.4.0",
+        "icu_properties@2.4.0",
+        "icu_properties_data@2.4.0",
+        "icu_provider@2.4.0",
+        "icu_segmenter@2.4.0",
+        "icu_segmenter_data@2.4.0",
         "itoa@1.0.18",
         "kurbo@0.13.1",
         "linebender_resource_handle@0.1.1",
@@ -52,32 +51,33 @@
         "miniz_oxide@0.8.9",
         "num-traits@0.2.19",
         "once_cell@1.21.4",
-        "parlance@0.1.0",
-        "parley@0.11.0",
-        "parley_data@0.11.0",
+        "parlance@0.1.1",
+        "parley@0.12.0",
+        "parley_data@0.12.0",
+        "parley_emoji@0.12.0",
+        "parley_engine@0.12.0",
         "peniko@0.6.1",
         "png@0.18.1",
         "polycool@0.4.0",
         "potential_utf@0.1.5",
         "proc-macro2@1.0.107",
         "quote@1.0.47",
-        "read-fonts@0.40.2",
         "read-fonts@0.41.0",
         "serde@1.0.229",
         "serde_core@1.0.229",
         "serde_derive@1.0.229",
         "serde_json@1.0.154",
         "simd-adler32@0.3.10",
-        "skrifa@0.43.2",
         "skrifa@0.44.0",
-        "smallvec@1.15.2",
+        "smallvec@1.16.5",
         "stable_deref_trait@1.2.1",
         "syn@2.0.119",
         "syn@3.0.3",
         "synstructure@0.13.2",
+        "synstructure@0.14.0",
         "thiserror-impl@2.0.19",
         "thiserror@2.0.19",
-        "tinystr@0.8.3",
+        "tinystr@0.8.5",
         "unicode-ident@1.0.24",
         "utf8_iter@1.0.4",
         "vello_common@0.3.0",
@@ -86,14 +86,14 @@
         "wasm-bindgen-macro@0.2.129",
         "wasm-bindgen-shared@0.2.129",
         "wasm-bindgen@0.2.129",
-        "writeable@0.6.3",
-        "yoke-derive@0.8.2",
-        "yoke@0.8.3",
+        "writeable@0.6.4",
+        "yoke-derive@0.8.4",
+        "yoke@0.8.4",
         "zerofrom-derive@0.1.7",
         "zerofrom@0.1.8",
-        "zerotrie@0.2.4",
-        "zerovec-derive@0.11.3",
-        "zerovec@0.11.6",
+        "zerotrie@0.2.5",
+        "zerovec-derive@0.11.7",
+        "zerovec@0.11.9",
         "zmij@1.0.23"
       ],
       "files": [
@@ -139,27 +139,26 @@
         "foldhash@0.2.0",
         "font-types@0.12.2",
         "fontdb@0.24.0",
-        "fontique@0.11.0",
+        "fontique@0.12.0",
         "futures-core@0.3.33",
         "futures-intrusive@0.5.0",
         "futures-task@0.3.33",
         "futures-util@0.3.33",
         "glifo@0.4.0",
         "guillotiere@0.7.0",
-        "harfrust@0.10.0",
         "harfrust@0.12.0",
         "hashbrown@0.17.1",
-        "icu_collections@2.2.0",
-        "icu_locale@2.2.0",
-        "icu_locale_core@2.2.0",
-        "icu_locale_data@2.2.0",
-        "icu_normalizer@2.2.0",
-        "icu_normalizer_data@2.2.0",
-        "icu_properties@2.2.0",
-        "icu_properties_data@2.2.0",
-        "icu_provider@2.2.0",
-        "icu_segmenter@2.2.0",
-        "icu_segmenter_data@2.2.0",
+        "icu_collections@2.4.0",
+        "icu_locale_core@2.4.0",
+        "icu_locale_fallback@2.4.0",
+        "icu_locale_fallback_data@2.4.0",
+        "icu_normalizer@2.4.0",
+        "icu_normalizer_data@2.4.0",
+        "icu_properties@2.4.0",
+        "icu_properties_data@2.4.0",
+        "icu_provider@2.4.0",
+        "icu_segmenter@2.4.0",
+        "icu_segmenter_data@2.4.0",
         "imagesize@0.15.0",
         "indexmap@2.14.0",
         "itoa@1.0.18",
@@ -178,9 +177,11 @@
         "once_cell@1.21.4",
         "parking_lot@0.12.5",
         "parking_lot_core@0.9.12",
-        "parlance@0.1.0",
-        "parley@0.11.0",
-        "parley_data@0.11.0",
+        "parlance@0.1.1",
+        "parley@0.12.0",
+        "parley_data@0.12.0",
+        "parley_emoji@0.12.0",
+        "parley_engine@0.12.0",
         "peniko@0.6.1",
         "pico-args@0.5.0",
         "pin-project-lite@0.2.17",
@@ -191,9 +192,8 @@
         "profiling@1.0.18",
         "quote@1.0.47",
         "raw-window-handle@0.6.2",
-        "read-fonts@0.40.2",
         "read-fonts@0.41.0",
-        "roxmltree@0.21.1",
+        "roxmltree@0.21.2",
         "rustc-hash@1.1.0",
         "scopeguard@1.2.0",
         "serde@1.0.229",
@@ -204,11 +204,10 @@
         "simd-adler32@0.3.10",
         "simplecss@0.2.2",
         "siphasher@1.0.3",
-        "skrifa@0.43.2",
         "skrifa@0.44.0",
         "slab@0.4.12",
         "slotmap@1.1.1",
-        "smallvec@1.15.2",
+        "smallvec@1.16.5",
         "stable_deref_trait@1.2.1",
         "static_assertions@1.1.0",
         "strict-num@0.1.1",
@@ -217,10 +216,11 @@
         "syn@2.0.119",
         "syn@3.0.3",
         "synstructure@0.13.2",
+        "synstructure@0.14.0",
         "thiserror-impl@2.0.19",
         "thiserror@2.0.19",
         "tiny-skia-path@0.12.0",
-        "tinystr@0.8.3",
+        "tinystr@0.8.5",
         "tinyvec@1.12.0",
         "tinyvec_macros@0.1.1",
         "unicode-bidi@0.3.18",
@@ -247,15 +247,15 @@
         "web-sys@0.3.106",
         "wgpu-types@30.0.1",
         "wgpu@30.0.1",
-        "writeable@0.6.3",
+        "writeable@0.6.4",
         "xmlwriter@0.1.0",
-        "yoke-derive@0.8.2",
-        "yoke@0.8.3",
+        "yoke-derive@0.8.4",
+        "yoke@0.8.4",
         "zerofrom-derive@0.1.7",
         "zerofrom@0.1.8",
-        "zerotrie@0.2.4",
-        "zerovec-derive@0.11.3",
-        "zerovec@0.11.6",
+        "zerotrie@0.2.5",
+        "zerovec-derive@0.11.7",
+        "zerovec@0.11.9",
         "zmij@1.0.23"
       ],
       "files": [
@@ -584,9 +584,9 @@
     },
     {
       "name": "fontique",
-      "version": "0.11.0",
+      "version": "0.12.0",
       "license": "Apache-2.0 OR MIT",
-      "checksum": "1e04c4750a17111ebd77c3e0aea00476ce33f59235bc4d9e7f0aded5033ad3fc",
+      "checksum": "bbf1df16263783918b7da396077521f92b729ef7c429444dfcf03581f1448b77",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/linebender/parley",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -675,18 +675,6 @@
     },
     {
       "name": "harfrust",
-      "version": "0.10.0",
-      "license": "MIT",
-      "checksum": "f0589ddd0d2935dd2845827ac606b4081c266225d613b268ed2910f832889cab",
-      "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "upstream": "https://github.com/harfbuzz/harfrust",
-      "licenseEvidence": "crate-or-vendored-root-files",
-      "licenseDocumentDigests": [
-        "31b628c2f6d73f791cb7773205ea3de4ffb5a0fbd292316e7e8418727ce5d933"
-      ]
-    },
-    {
-      "name": "harfrust",
       "version": "0.12.0",
       "license": "MIT",
       "checksum": "c03d949a14aa089bbb282f7dd76a498a7f684428e4257202efc119ec010376f9",
@@ -712,21 +700,9 @@
     },
     {
       "name": "icu_collections",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "2984d1cd16c883d7935b9e07e44071dca8d917fd52ecc02c04d5fa0b5a3f191c",
-      "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "upstream": "https://github.com/unicode-org/icu4x",
-      "licenseEvidence": "crate-or-vendored-root-files",
-      "licenseDocumentDigests": [
-        "cde87abe221f413fede55ded0f17985f37b8fdc23e5f6cba9a3955437facb3ae"
-      ]
-    },
-    {
-      "name": "icu_locale",
-      "version": "2.2.0",
-      "license": "Unicode-3.0",
-      "checksum": "d5a396343c7208121dc86e35623d3dfe19814a7613cfd14964994cdc9c9a2e26",
+      "checksum": "fe090a42a0d3140fed8c63263ed1fecc02422cb2f4bfe55cd8de2de1b8e105dd",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -736,9 +712,9 @@
     },
     {
       "name": "icu_locale_core",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "92219b62b3e2b4d88ac5119f8904c10f8f61bf7e95b640d25ba3075e6cac2c29",
+      "checksum": "25d29b57c17c6528d0dc4c2141cfa2d08200465acb537a3909c8b9b8a4a984c0",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -747,10 +723,22 @@
       ]
     },
     {
-      "name": "icu_locale_data",
-      "version": "2.2.0",
+      "name": "icu_locale_fallback",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "d5fdcc9ac77c6d74ff5cf6e65ef3181d6af32003b16fce3a77fb451d2f695993",
+      "checksum": "406e9ae5b95d8aa37db6293405931b766a6172d1848daee22d70eb44aa78a43c",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "upstream": "https://github.com/unicode-org/icu4x",
+      "licenseEvidence": "crate-or-vendored-root-files",
+      "licenseDocumentDigests": [
+        "cde87abe221f413fede55ded0f17985f37b8fdc23e5f6cba9a3955437facb3ae"
+      ]
+    },
+    {
+      "name": "icu_locale_fallback_data",
+      "version": "2.4.0",
+      "license": "Unicode-3.0",
+      "checksum": "3632ebbd0c5c3637ba1a40bdf8288f2cb9d2268e73441a69d5fc73d7cfbaa87c",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -760,9 +748,9 @@
     },
     {
       "name": "icu_normalizer",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "c56e5ee99d6e3d33bd91c5d85458b6005a22140021cc324cea84dd0e72cff3b4",
+      "checksum": "404a3b8c486f205c87fe7f23ab6894d84a4ad76d6e4671ae1981ba7def87c599",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -772,9 +760,9 @@
     },
     {
       "name": "icu_normalizer_data",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "da3be0ae77ea334f4da67c12f149704f19f81d1adf7c51cf482943e84a2bad38",
+      "checksum": "20f0088bfb7441f7a37fa0c9e20cb1e9cba1cac6b9ce8cd2a6dc44294f8e8cbc",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -784,9 +772,9 @@
     },
     {
       "name": "icu_properties",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "bee3b67d0ea5c2cca5003417989af8996f8604e34fb9ddf96208a033901e70de",
+      "checksum": "2ea83d991c56158f7cf898bf86436c1dfe7c07ee82fe88951f2695c9f37a379f",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -796,9 +784,9 @@
     },
     {
       "name": "icu_properties_data",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "8e2bbb201e0c04f7b4b3e14382af113e17ba4f63e2c9d2ee626b720cbce54a14",
+      "checksum": "b98f29af82d02b163fe50161388350e743bb3107cc8e8c2f7314cb505faddfcf",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -808,9 +796,9 @@
     },
     {
       "name": "icu_provider",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "139c4cf31c8b5f33d7e199446eff9c1e02decfc2f0eec2c8d71f65befa45b421",
+      "checksum": "413099315636c588ee8f011190b329b971a09a8fae9d157e01dcae8379468514",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -820,9 +808,9 @@
     },
     {
       "name": "icu_segmenter",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "5c0794db0b1a86193ac9c48768d0e6c52c54448e0870ad87907d456ee0dac964",
+      "checksum": "61b195dc605f81aa181bec9b3bd14e26cc71b903e4644f6af578ca9772c7a710",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -832,9 +820,9 @@
     },
     {
       "name": "icu_segmenter_data",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "license": "Unicode-3.0",
-      "checksum": "e4a2c462a4d927d512f5f882a033ddd62f33a05bb9f230d98f736ac3dc85938f",
+      "checksum": "913a7d294ad056474749152107309fdee3ec17d2482d1ab70fdc61a81c64b9a3",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1078,9 +1066,9 @@
     },
     {
       "name": "parlance",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "license": "Apache-2.0 OR MIT",
-      "checksum": "4b6937eda350acc1a5d05872c3cbf99fe78619c269096e2be3d4a350058639d5",
+      "checksum": "73072a9470554c8e794778acece2312661218aaabb635600957d952cf01c716e",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/linebender/parley",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1091,9 +1079,9 @@
     },
     {
       "name": "parley",
-      "version": "0.11.0",
+      "version": "0.12.0",
       "license": "Apache-2.0 OR MIT",
-      "checksum": "e0478b47dd9885a5e0a4f1c0782ffc42bf6ee8c41dea0917d7a9bcee3e6585fc",
+      "checksum": "61bd0c0c1737f0b3d3726dc06b225083af213b61913e4fbae1670613a106c6ce",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/linebender/parley",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1104,15 +1092,40 @@
     },
     {
       "name": "parley_data",
-      "version": "0.11.0",
+      "version": "0.12.0",
       "license": "Apache-2.0 OR MIT",
-      "checksum": "a649e01a1acc917247ee147b56b8a1fa91824acf7117bd003b4204306d601255",
+      "checksum": "c43b63f808f6cc8f4a3b07de0d62a977bddd2e0bb5c232bd9e93ba8ef92e5e4b",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/linebender/parley",
       "licenseEvidence": "crate-or-vendored-root-files",
       "licenseDocumentDigests": [
         "954f335b8baf5e1a5748b3a1bf6eeb2ec0b28ae19813f02063d64be005765a76",
         "ad40d6ebc808a6ce685b305966abb05cd449f4e8ccbbef11e8d8e6a58d5de7bf"
+      ]
+    },
+    {
+      "name": "parley_emoji",
+      "version": "0.12.0",
+      "license": "MIT",
+      "checksum": "9c4482d912d7671a7cd2089794f90ef3bb5f5f8c738230fb0fcd50fa020f0ed3",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "upstream": "https://github.com/linebender/parley",
+      "licenseEvidence": "crate-or-vendored-root-files",
+      "licenseDocumentDigests": [
+        "c1a790180cc8b8a952aa32642514d9d40d2b54cb276f1e8ad7b105b703cb1be7"
+      ]
+    },
+    {
+      "name": "parley_engine",
+      "version": "0.12.0",
+      "license": "Apache-2.0 OR MIT",
+      "checksum": "b74c0d373e462e504ad4436710a39f099e18e848e1ee711f70cd2dcd5a69b290",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "upstream": "https://github.com/linebender/parley",
+      "licenseEvidence": "crate-or-vendored-root-files",
+      "licenseDocumentDigests": [
+        "0637f0b892b3d5f521eedf00e860c49ac6d4787da117e4b99f53b0cc5af25d70",
+        "85ad950cce8752f716dbf49be95b2639172cb49f291336d57f1fdc9989e38179"
       ]
     },
     {
@@ -1246,19 +1259,6 @@
     },
     {
       "name": "read-fonts",
-      "version": "0.40.2",
-      "license": "MIT OR Apache-2.0",
-      "checksum": "487889119a5f19ff7c0a20637196bdc76b9f54ebec17e3588b5d75e4999f8773",
-      "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "upstream": "https://github.com/googlefonts/fontations",
-      "licenseEvidence": "crate-or-vendored-root-files",
-      "licenseDocumentDigests": [
-        "af2a770a058a22db4ef962be857b6ba70358537a932404d1e56a6e6ad7ad39aa",
-        "f03893164caafcc4f7c4767c3c0dd7c0763b84debde761ad80ea8af0e3af5d00"
-      ]
-    },
-    {
-      "name": "read-fonts",
       "version": "0.41.0",
       "license": "MIT OR Apache-2.0",
       "checksum": "046a7d674daf459825b32f5062056d6882db0d2f5a479fbd76ccfc870ac18709",
@@ -1272,9 +1272,9 @@
     },
     {
       "name": "roxmltree",
-      "version": "0.21.1",
+      "version": "0.21.2",
       "license": "MIT OR Apache-2.0",
-      "checksum": "f1964b10c76125c36f8afe190065a4bf9a87bf324842c05701330bba9f1cacbb",
+      "checksum": "9da7f59328b09405b181fee1018925fad50f157afb43c0c0f5c522c256dd5907",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/RazrFalcon/roxmltree",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1413,19 +1413,6 @@
     },
     {
       "name": "skrifa",
-      "version": "0.43.2",
-      "license": "MIT OR Apache-2.0",
-      "checksum": "4cbe997d0f2480442d727488fbe2150779114cbe480ecdbadef58b33e0318ffb",
-      "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "upstream": "https://github.com/googlefonts/fontations",
-      "licenseEvidence": "crate-or-vendored-root-files",
-      "licenseDocumentDigests": [
-        "af2a770a058a22db4ef962be857b6ba70358537a932404d1e56a6e6ad7ad39aa",
-        "f03893164caafcc4f7c4767c3c0dd7c0763b84debde761ad80ea8af0e3af5d00"
-      ]
-    },
-    {
-      "name": "skrifa",
       "version": "0.44.0",
       "license": "MIT OR Apache-2.0",
       "checksum": "819ab7d62b1d3e72d9d9dea5650bac30424f9111364bb94928dbf5ecad1baa68",
@@ -1463,9 +1450,9 @@
     },
     {
       "name": "smallvec",
-      "version": "1.15.2",
+      "version": "1.16.5",
       "license": "MIT OR Apache-2.0",
-      "checksum": "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90",
+      "checksum": "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/servo/rust-smallvec",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1577,6 +1564,18 @@
       ]
     },
     {
+      "name": "synstructure",
+      "version": "0.14.0",
+      "license": "MIT",
+      "checksum": "901704edd0dfe137f1987838ee4f259e4e063c31371bdb423f7ae38ec6f77f02",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "upstream": "https://github.com/mystor/synstructure",
+      "licenseEvidence": "crate-or-vendored-root-files",
+      "licenseDocumentDigests": [
+        "3a036676ec8c0dba1c24b96f83595456280b7a754ddee64585dd8048ed2b087f"
+      ]
+    },
+    {
       "name": "thiserror-impl",
       "version": "2.0.19",
       "license": "MIT OR Apache-2.0",
@@ -1616,9 +1615,9 @@
     },
     {
       "name": "tinystr",
-      "version": "0.8.3",
+      "version": "0.8.5",
       "license": "Unicode-3.0",
-      "checksum": "c8323304221c2a851516f22236c5722a72eaa19749016521d6dff0824447d96d",
+      "checksum": "abc840c238154d58f9e86b2792261edfde565a17696e1cda1a449de27979801a",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1969,9 +1968,9 @@
     },
     {
       "name": "writeable",
-      "version": "0.6.3",
+      "version": "0.6.4",
       "license": "Unicode-3.0",
-      "checksum": "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4",
+      "checksum": "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1993,9 +1992,9 @@
     },
     {
       "name": "yoke-derive",
-      "version": "0.8.2",
+      "version": "0.8.4",
       "license": "Unicode-3.0",
-      "checksum": "de844c262c8848816172cef550288e7dc6c7b7814b4ee56b3e1553f275f1858e",
+      "checksum": "ec8ebde2db3681e8c9980cc27822030e68752690ddfa9473e739aeb4dbde6d71",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -2005,9 +2004,9 @@
     },
     {
       "name": "yoke",
-      "version": "0.8.3",
+      "version": "0.8.4",
       "license": "Unicode-3.0",
-      "checksum": "709fe23a0424b6a435d82152b1bd3fdfb0833487d5fa90d05d42762a9891fef5",
+      "checksum": "417ef3fcf6c300b7dbd25c85531a746931c02ad536f3cf4786ed1e88223340b3",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -2041,9 +2040,9 @@
     },
     {
       "name": "zerotrie",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "license": "Unicode-3.0",
-      "checksum": "0f9152d31db0792fa83f70fb2f83148effb5c1f5b8c7686c3459e361d9bc20bf",
+      "checksum": "4ea269c3bd32f0a32c321907a2ae912ba6f4649bb0fc764a15627e99a7095a3f",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -2053,9 +2052,9 @@
     },
     {
       "name": "zerovec-derive",
-      "version": "0.11.3",
+      "version": "0.11.7",
       "license": "Unicode-3.0",
-      "checksum": "625dc425cab0dca6dc3c3319506e6593dcb08a9f387ea3b284dbd52a92c40555",
+      "checksum": "c3743ddbf47738d929cd1ae2e199d40d0162979dfe31aef8ae646d2bf00bf97a",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -2065,9 +2064,9 @@
     },
     {
       "name": "zerovec",
-      "version": "0.11.6",
+      "version": "0.11.9",
       "license": "Unicode-3.0",
-      "checksum": "90f911cbc359ab6af17377d242225f4d75119aec87ea711a880987b18cd7b239",
+      "checksum": "f58a2799cfe9a1670c7ea8edbd52ef8edb93cb37a7f83bf31ba9e35d9dae6a40",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/unicode-org/icu4x",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -2105,6 +2104,15 @@
       ],
       "packages": [
         "unicode-bidi@0.3.18"
+      ]
+    },
+    {
+      "sha256": "0637f0b892b3d5f521eedf00e860c49ac6d4787da117e4b99f53b0cc5af25d70",
+      "sources": [
+        "https://crates.io/crates/parley_engine/0.12.0/source/LICENSE-MIT"
+      ],
+      "packages": [
+        "parley_engine@0.12.0"
       ]
     },
     {
@@ -2351,11 +2359,9 @@
     {
       "sha256": "31b628c2f6d73f791cb7773205ea3de4ffb5a0fbd292316e7e8418727ce5d933",
       "sources": [
-        "https://crates.io/crates/harfrust/0.10.0/source/LICENSE",
         "https://crates.io/crates/harfrust/0.12.0/source/LICENSE"
       ],
       "packages": [
-        "harfrust@0.10.0",
         "harfrust@0.12.0"
       ]
     },
@@ -2384,10 +2390,12 @@
     {
       "sha256": "3a036676ec8c0dba1c24b96f83595456280b7a754ddee64585dd8048ed2b087f",
       "sources": [
-        "https://crates.io/crates/synstructure/0.13.2/source/LICENSE"
+        "https://crates.io/crates/synstructure/0.13.2/source/LICENSE",
+        "https://crates.io/crates/synstructure/0.14.0/source/LICENSE"
       ],
       "packages": [
-        "synstructure@0.13.2"
+        "synstructure@0.13.2",
+        "synstructure@0.14.0"
       ]
     },
     {
@@ -2626,10 +2634,10 @@
     {
       "sha256": "7f194ae45c2525a57443f7edabd392e8218109ee81a4bce70d385104c87c1a71",
       "sources": [
-        "https://crates.io/crates/smallvec/1.15.2/source/LICENSE-MIT"
+        "https://crates.io/crates/smallvec/1.16.5/source/LICENSE-MIT"
       ],
       "packages": [
-        "smallvec@1.15.2"
+        "smallvec@1.16.5"
       ]
     },
     {
@@ -2679,6 +2687,7 @@
         "https://crates.io/crates/glifo/0.4.0/source/LICENSE-APACHE",
         "https://crates.io/crates/itoa/1.0.18/source/LICENSE-APACHE",
         "https://crates.io/crates/litrs/1.0.0/source/LICENSE-APACHE",
+        "https://crates.io/crates/parley_engine/0.12.0/source/LICENSE-APACHE",
         "https://crates.io/crates/proc-macro2/1.0.107/source/LICENSE-APACHE",
         "https://crates.io/crates/quote/1.0.47/source/LICENSE-APACHE",
         "https://crates.io/crates/serde/1.0.229/source/LICENSE-APACHE",
@@ -2696,6 +2705,7 @@
         "glifo@0.4.0",
         "itoa@1.0.18",
         "litrs@1.0.0",
+        "parley_engine@0.12.0",
         "proc-macro2@1.0.107",
         "quote@1.0.47",
         "serde@1.0.229",
@@ -2735,10 +2745,10 @@
     {
       "sha256": "92f2a160c78f21187374d5c315addf57b70e80b286976b66baa62da60f6ca032",
       "sources": [
-        "https://crates.io/crates/roxmltree/0.21.1/source/LICENSE-MIT"
+        "https://crates.io/crates/roxmltree/0.21.2/source/LICENSE-MIT"
       ],
       "packages": [
-        "roxmltree@0.21.1"
+        "roxmltree@0.21.2"
       ]
     },
     {
@@ -2767,7 +2777,7 @@
         "https://crates.io/crates/equivalent/1.0.2/source/LICENSE-APACHE",
         "https://crates.io/crates/euclid/0.22.14/source/LICENSE-APACHE",
         "https://crates.io/crates/flate2/1.1.9/source/LICENSE-APACHE",
-        "https://crates.io/crates/fontique/0.11.0/source/LICENSE-APACHE",
+        "https://crates.io/crates/fontique/0.12.0/source/LICENSE-APACHE",
         "https://crates.io/crates/hashbrown/0.17.1/source/LICENSE-APACHE",
         "https://crates.io/crates/indexmap/2.14.0/source/LICENSE-APACHE",
         "https://crates.io/crates/js-sys/0.3.106/source/LICENSE-APACHE",
@@ -2777,15 +2787,15 @@
         "https://crates.io/crates/once_cell/1.21.4/source/LICENSE-APACHE",
         "https://crates.io/crates/parking_lot/0.12.5/source/LICENSE-APACHE",
         "https://crates.io/crates/parking_lot_core/0.9.12/source/LICENSE-APACHE",
-        "https://crates.io/crates/parlance/0.1.0/source/LICENSE-APACHE",
-        "https://crates.io/crates/parley/0.11.0/source/LICENSE-APACHE",
-        "https://crates.io/crates/parley_data/0.11.0/source/LICENSE-APACHE",
+        "https://crates.io/crates/parlance/0.1.1/source/LICENSE-APACHE",
+        "https://crates.io/crates/parley/0.12.0/source/LICENSE-APACHE",
+        "https://crates.io/crates/parley_data/0.12.0/source/LICENSE-APACHE",
         "https://crates.io/crates/png/0.18.1/source/LICENSE-APACHE",
-        "https://crates.io/crates/roxmltree/0.21.1/source/LICENSE-APACHE",
+        "https://crates.io/crates/roxmltree/0.21.2/source/LICENSE-APACHE",
         "https://crates.io/crates/rustc-hash/1.1.0/source/LICENSE-APACHE",
         "https://crates.io/crates/scopeguard/1.2.0/source/LICENSE-APACHE",
         "https://crates.io/crates/simplecss/0.2.2/source/LICENSE-APACHE",
-        "https://crates.io/crates/smallvec/1.15.2/source/LICENSE-APACHE",
+        "https://crates.io/crates/smallvec/1.16.5/source/LICENSE-APACHE",
         "https://crates.io/crates/stable_deref_trait/1.2.1/source/LICENSE-APACHE",
         "https://crates.io/crates/svgtypes/0.16.1/source/LICENSE-APACHE",
         "https://crates.io/crates/unicode-bidi/0.3.18/source/LICENSE-APACHE",
@@ -2808,7 +2818,7 @@
         "equivalent@1.0.2",
         "euclid@0.22.14",
         "flate2@1.1.9",
-        "fontique@0.11.0",
+        "fontique@0.12.0",
         "hashbrown@0.17.1",
         "indexmap@2.14.0",
         "js-sys@0.3.106",
@@ -2818,15 +2828,15 @@
         "once_cell@1.21.4",
         "parking_lot@0.12.5",
         "parking_lot_core@0.9.12",
-        "parlance@0.1.0",
-        "parley@0.11.0",
-        "parley_data@0.11.0",
+        "parlance@0.1.1",
+        "parley@0.12.0",
+        "parley_data@0.12.0",
         "png@0.18.1",
-        "roxmltree@0.21.1",
+        "roxmltree@0.21.2",
         "rustc-hash@1.1.0",
         "scopeguard@1.2.0",
         "simplecss@0.2.2",
-        "smallvec@1.15.2",
+        "smallvec@1.16.5",
         "stable_deref_trait@1.2.1",
         "svgtypes@0.16.1",
         "unicode-bidi@0.3.18",
@@ -2896,14 +2906,14 @@
     {
       "sha256": "ad40d6ebc808a6ce685b305966abb05cd449f4e8ccbbef11e8d8e6a58d5de7bf",
       "sources": [
-        "https://crates.io/crates/parlance/0.1.0/source/LICENSE-MIT",
-        "https://crates.io/crates/parley/0.11.0/source/LICENSE-MIT",
-        "https://crates.io/crates/parley_data/0.11.0/source/LICENSE-MIT"
+        "https://crates.io/crates/parlance/0.1.1/source/LICENSE-MIT",
+        "https://crates.io/crates/parley/0.12.0/source/LICENSE-MIT",
+        "https://crates.io/crates/parley_data/0.12.0/source/LICENSE-MIT"
       ],
       "packages": [
-        "parlance@0.1.0",
-        "parley@0.11.0",
-        "parley_data@0.11.0"
+        "parlance@0.1.1",
+        "parley@0.12.0",
+        "parley_data@0.12.0"
       ]
     },
     {
@@ -2919,16 +2929,12 @@
       "sha256": "af2a770a058a22db4ef962be857b6ba70358537a932404d1e56a6e6ad7ad39aa",
       "sources": [
         "https://crates.io/crates/font-types/0.12.2/source/LICENSE-APACHE",
-        "https://crates.io/crates/read-fonts/0.40.2/source/LICENSE-APACHE",
         "https://crates.io/crates/read-fonts/0.41.0/source/LICENSE-APACHE",
-        "https://crates.io/crates/skrifa/0.43.2/source/LICENSE-APACHE",
         "https://crates.io/crates/skrifa/0.44.0/source/LICENSE-APACHE"
       ],
       "packages": [
         "font-types@0.12.2",
-        "read-fonts@0.40.2",
         "read-fonts@0.41.0",
-        "skrifa@0.43.2",
         "skrifa@0.44.0"
       ]
     },
@@ -3025,6 +3031,15 @@
       ]
     },
     {
+      "sha256": "c1a790180cc8b8a952aa32642514d9d40d2b54cb276f1e8ad7b105b703cb1be7",
+      "sources": [
+        "https://crates.io/crates/parley_emoji/0.12.0/source/LICENSE-MIT"
+      ],
+      "packages": [
+        "parley_emoji@0.12.0"
+      ]
+    },
+    {
       "sha256": "c1ecaa7721a2ce5c512d14da71c6526581ca6ff7e3d54aeeb54f874b2db3c5c2",
       "sources": [
         "https://crates.io/crates/simplecss/0.2.2/source/LICENSE-MIT",
@@ -3056,52 +3071,52 @@
     {
       "sha256": "cde87abe221f413fede55ded0f17985f37b8fdc23e5f6cba9a3955437facb3ae",
       "sources": [
-        "https://crates.io/crates/icu_collections/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_locale/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_locale_core/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_locale_data/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_normalizer/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_normalizer_data/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_properties/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_properties_data/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_provider/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_segmenter/2.2.0/source/LICENSE",
-        "https://crates.io/crates/icu_segmenter_data/2.2.0/source/LICENSE",
+        "https://crates.io/crates/icu_collections/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_locale_core/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_locale_fallback/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_locale_fallback_data/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_normalizer/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_normalizer_data/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_properties/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_properties_data/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_provider/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_segmenter/2.4.0/source/LICENSE",
+        "https://crates.io/crates/icu_segmenter_data/2.4.0/source/LICENSE",
         "https://crates.io/crates/litemap/0.8.2/source/LICENSE",
         "https://crates.io/crates/potential_utf/0.1.5/source/LICENSE",
-        "https://crates.io/crates/tinystr/0.8.3/source/LICENSE",
-        "https://crates.io/crates/writeable/0.6.3/source/LICENSE",
-        "https://crates.io/crates/yoke-derive/0.8.2/source/LICENSE",
-        "https://crates.io/crates/yoke/0.8.3/source/LICENSE",
+        "https://crates.io/crates/tinystr/0.8.5/source/LICENSE",
+        "https://crates.io/crates/writeable/0.6.4/source/LICENSE",
+        "https://crates.io/crates/yoke-derive/0.8.4/source/LICENSE",
+        "https://crates.io/crates/yoke/0.8.4/source/LICENSE",
         "https://crates.io/crates/zerofrom-derive/0.1.7/source/LICENSE",
         "https://crates.io/crates/zerofrom/0.1.8/source/LICENSE",
-        "https://crates.io/crates/zerotrie/0.2.4/source/LICENSE",
-        "https://crates.io/crates/zerovec-derive/0.11.3/source/LICENSE",
-        "https://crates.io/crates/zerovec/0.11.6/source/LICENSE"
+        "https://crates.io/crates/zerotrie/0.2.5/source/LICENSE",
+        "https://crates.io/crates/zerovec-derive/0.11.7/source/LICENSE",
+        "https://crates.io/crates/zerovec/0.11.9/source/LICENSE"
       ],
       "packages": [
-        "icu_collections@2.2.0",
-        "icu_locale@2.2.0",
-        "icu_locale_core@2.2.0",
-        "icu_locale_data@2.2.0",
-        "icu_normalizer@2.2.0",
-        "icu_normalizer_data@2.2.0",
-        "icu_properties@2.2.0",
-        "icu_properties_data@2.2.0",
-        "icu_provider@2.2.0",
-        "icu_segmenter@2.2.0",
-        "icu_segmenter_data@2.2.0",
+        "icu_collections@2.4.0",
+        "icu_locale_core@2.4.0",
+        "icu_locale_fallback@2.4.0",
+        "icu_locale_fallback_data@2.4.0",
+        "icu_normalizer@2.4.0",
+        "icu_normalizer_data@2.4.0",
+        "icu_properties@2.4.0",
+        "icu_properties_data@2.4.0",
+        "icu_provider@2.4.0",
+        "icu_segmenter@2.4.0",
+        "icu_segmenter_data@2.4.0",
         "litemap@0.8.2",
         "potential_utf@0.1.5",
-        "tinystr@0.8.3",
-        "writeable@0.6.3",
-        "yoke-derive@0.8.2",
-        "yoke@0.8.3",
+        "tinystr@0.8.5",
+        "writeable@0.6.4",
+        "yoke-derive@0.8.4",
+        "yoke@0.8.4",
         "zerofrom-derive@0.1.7",
         "zerofrom@0.1.8",
-        "zerotrie@0.2.4",
-        "zerovec-derive@0.11.3",
-        "zerovec@0.11.6"
+        "zerotrie@0.2.5",
+        "zerovec-derive@0.11.7",
+        "zerovec@0.11.9"
       ]
     },
     {
@@ -3155,16 +3170,12 @@
       "sha256": "f03893164caafcc4f7c4767c3c0dd7c0763b84debde761ad80ea8af0e3af5d00",
       "sources": [
         "https://crates.io/crates/font-types/0.12.2/source/LICENSE-MIT",
-        "https://crates.io/crates/read-fonts/0.40.2/source/LICENSE-MIT",
         "https://crates.io/crates/read-fonts/0.41.0/source/LICENSE-MIT",
-        "https://crates.io/crates/skrifa/0.43.2/source/LICENSE-MIT",
         "https://crates.io/crates/skrifa/0.44.0/source/LICENSE-MIT"
       ],
       "packages": [
         "font-types@0.12.2",
-        "read-fonts@0.40.2",
         "read-fonts@0.41.0",
-        "skrifa@0.43.2",
         "skrifa@0.44.0"
       ]
     },
@@ -3180,10 +3191,10 @@
     {
       "sha256": "fa9dc7e4b32ac7fcd4c9e40beb739ab2f859a84f6ee657133c74846500cce223",
       "sources": [
-        "https://crates.io/crates/fontique/0.11.0/source/LICENSE-MIT"
+        "https://crates.io/crates/fontique/0.12.0/source/LICENSE-MIT"
       ],
       "packages": [
-        "fontique@0.11.0"
+        "fontique@0.12.0"
       ]
     },
     {

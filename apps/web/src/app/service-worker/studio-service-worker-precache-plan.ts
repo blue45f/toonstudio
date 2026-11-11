@@ -97,7 +97,12 @@ export const STUDIO_PRECACHE_BUDGET: StudioPrecacheBudget = Object.freeze({
   // 브러시·캔버스 사전을 첫 화면 31키와 패널 전용 79키로 분리한 뒤 2,571,361 B(-19,018 B).
   // URL 81개·복구 안내·고정 정적 파일은 유지한다. 회복한 여유를 잠그려고 2,560 → 2,528 KiB로 낮춘다.
   // 실측 여유는 17,311 B. 2.25 MiB까지 낮추면 현재 셸이 212,065 B 초과하므로 추가 셸 최적화가 필요하다.
-  criticalBytes: 2528 * 1024,
+  // 2026-11-11 main dbc5a455의 동일 프로덕션 빌드: 2,599,066 B(CI), 로컬 재빌드 2,599,977 B.
+  // Starlight Atelier 디자인 커밋(공통 SitePageHeader·허브 히어로·표면 깊이 CSS)이
+  // entry CSS closure를 누적시켜 2,528 KiB 예산을 10~11 KiB 초과했다. 디자인 산출물이며
+  // 단일 회귀가 아니므로 이 측정치에 소폭 여유(≈5.1~6 KB)만 두고 예산을 2,528 → 2,544 KiB로
+  // 올린다. MB급 성장의 조용한 허용은 여전히 실패 처리한다.
+  criticalBytes: 2544 * 1024,
   warmBytes: 512 * 1024,
 });
 

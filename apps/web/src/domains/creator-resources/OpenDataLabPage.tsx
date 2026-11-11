@@ -6,12 +6,12 @@ import {
   RESOURCE_SEARCH_CONFIG,
 } from "./resource-search-config";
 import { RESOURCE_BUTTON } from "./navigation";
+import { OpenDataPurposeFilterBar } from "./OpenDataPurposeFilterBar";
 import {
   OPEN_DATA_PURPOSE_FILTERS,
-  OpenDataPurposeFilterBar,
   matchesOpenDataPurpose,
   type OpenDataPurposeId,
-} from "./OpenDataPurposeFilterBar";
+} from "./open-data-purpose-filters";
 import { researchSourceArtSrc, researchSourceIdentity } from "./research-source-identity";
 import { ResourceLayout } from "./ResourceLayout";
 import { ResearchSourceCardCover } from "./ResearchSourceCover";

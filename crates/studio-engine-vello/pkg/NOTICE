@@ -29,23 +29,22 @@ copied into the bundle and hash-locked.
 | flate2@1.1.9 | MIT OR Apache-2.0 | https://github.com/rust-lang/flate2-rs |
 | foldhash@0.2.0 | Zlib | https://github.com/orlp/foldhash |
 | font-types@0.12.2 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
-| fontique@0.11.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
+| fontique@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
 | glifo@0.4.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | guillotiere@0.7.0 | MIT/Apache-2.0 | https://github.com/nical/guillotiere |
-| harfrust@0.10.0 | MIT | https://github.com/harfbuzz/harfrust |
 | harfrust@0.12.0 | MIT | https://github.com/harfbuzz/harfrust |
 | hashbrown@0.17.1 | MIT OR Apache-2.0 | https://github.com/rust-lang/hashbrown |
-| icu_collections@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_locale@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_locale_core@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_locale_data@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_normalizer@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_normalizer_data@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_properties@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_properties_data@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_provider@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_segmenter@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_segmenter_data@2.2.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_collections@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_locale_core@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_locale_fallback@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_locale_fallback_data@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_normalizer@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_normalizer_data@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_properties@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_properties_data@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_provider@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_segmenter@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_segmenter_data@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | itoa@1.0.18 | MIT OR Apache-2.0 | https://github.com/dtolnay/itoa |
 | kurbo@0.13.1 | Apache-2.0 OR MIT | https://github.com/linebender/kurbo |
 | linebender_resource_handle@0.1.1 | Apache-2.0 OR MIT | https://github.com/linebender/raw_resource_handle |
@@ -56,32 +55,33 @@ copied into the bundle and hash-locked.
 | miniz_oxide@0.8.9 | MIT OR Zlib OR Apache-2.0 | https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide |
 | num-traits@0.2.19 | MIT OR Apache-2.0 | https://github.com/rust-num/num-traits |
 | once_cell@1.21.4 | MIT OR Apache-2.0 | https://github.com/matklad/once_cell |
-| parlance@0.1.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
-| parley@0.11.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
-| parley_data@0.11.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
+| parlance@0.1.1 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
+| parley@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
+| parley_data@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
+| parley_emoji@0.12.0 | MIT | https://github.com/linebender/parley |
+| parley_engine@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
 | peniko@0.6.1 | Apache-2.0 OR MIT | https://github.com/linebender/peniko |
 | png@0.18.1 | MIT OR Apache-2.0 | https://github.com/image-rs/image-png |
 | polycool@0.4.0 | MIT OR Apache-2.0 | https://github.com/linebender/kurbo |
 | potential_utf@0.1.5 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | proc-macro2@1.0.107 | MIT OR Apache-2.0 | https://github.com/dtolnay/proc-macro2 |
 | quote@1.0.47 | MIT OR Apache-2.0 | https://github.com/dtolnay/quote |
-| read-fonts@0.40.2 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
 | read-fonts@0.41.0 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
 | serde@1.0.229 | MIT OR Apache-2.0 | https://github.com/serde-rs/serde |
 | serde_core@1.0.229 | MIT OR Apache-2.0 | https://github.com/serde-rs/serde |
 | serde_derive@1.0.229 | MIT OR Apache-2.0 | https://github.com/serde-rs/serde |
 | serde_json@1.0.154 | MIT OR Apache-2.0 | https://github.com/serde-rs/json |
 | simd-adler32@0.3.10 | MIT | https://github.com/mcountryman/simd-adler32 |
-| skrifa@0.43.2 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
 | skrifa@0.44.0 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
-| smallvec@1.15.2 | MIT OR Apache-2.0 | https://github.com/servo/rust-smallvec |
+| smallvec@1.16.5 | MIT OR Apache-2.0 | https://github.com/servo/rust-smallvec |
 | stable_deref_trait@1.2.1 | MIT OR Apache-2.0 | https://github.com/storyyeller/stable_deref_trait |
 | syn@2.0.119 | MIT OR Apache-2.0 | https://github.com/dtolnay/syn |
 | syn@3.0.3 | MIT OR Apache-2.0 | https://github.com/dtolnay/syn |
 | synstructure@0.13.2 | MIT | https://github.com/mystor/synstructure |
+| synstructure@0.14.0 | MIT | https://github.com/mystor/synstructure |
 | thiserror-impl@2.0.19 | MIT OR Apache-2.0 | https://github.com/dtolnay/thiserror |
 | thiserror@2.0.19 | MIT OR Apache-2.0 | https://github.com/dtolnay/thiserror |
-| tinystr@0.8.3 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| tinystr@0.8.5 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | unicode-ident@1.0.24 | (MIT OR Apache-2.0) AND Unicode-3.0 | https://github.com/dtolnay/unicode-ident |
 | utf8_iter@1.0.4 | Apache-2.0 OR MIT | https://github.com/hsivonen/utf8_iter |
 | vello_common@0.3.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
@@ -90,12 +90,12 @@ copied into the bundle and hash-locked.
 | wasm-bindgen-macro@0.2.129 | MIT OR Apache-2.0 | https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/macro |
 | wasm-bindgen-shared@0.2.129 | MIT OR Apache-2.0 | https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/shared |
 | wasm-bindgen@0.2.129 | MIT OR Apache-2.0 | https://github.com/wasm-bindgen/wasm-bindgen |
-| writeable@0.6.3 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| yoke-derive@0.8.2 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| yoke@0.8.3 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| writeable@0.6.4 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| yoke-derive@0.8.4 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| yoke@0.8.4 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | zerofrom-derive@0.1.7 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | zerofrom@0.1.8 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| zerotrie@0.2.4 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| zerovec-derive@0.11.3 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| zerovec@0.11.6 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| zerotrie@0.2.5 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| zerovec-derive@0.11.7 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| zerovec@0.11.9 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | zmij@1.0.23 | MIT | https://github.com/dtolnay/zmij |

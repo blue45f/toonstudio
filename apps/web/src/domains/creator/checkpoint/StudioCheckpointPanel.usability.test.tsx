@@ -238,11 +238,11 @@ describe("StudioCheckpointPanel · 저장 기록 이해 및 안전한 복구 선
   it("변경 검토 중 취소·중복 요청 정리, stale 로컬 편집 차단, 복구 잠금(닫기·탭·Esc)을 그대로 지킨다", async () => {
     let generation = 10;
     const localProject = syntheticProject("편집 중 원고", "수정된 대사");
-    let resolveRestore: ((value: boolean) => void) | null = null;
+    const restoreResolveRef: { current: ((value: boolean) => void) | null } = { current: null };
     const onRestoreServer = vi.fn(
       () =>
         new Promise<boolean>((resolve) => {
-          resolveRestore = resolve;
+          restoreResolveRef.current = resolve;
         }),
     );
 
@@ -336,7 +336,7 @@ describe("StudioCheckpointPanel · 저장 기록 이해 및 안전한 복구 선
 
     // 복원 도중 serverCurrentRevision이 갱신돼도 serverRestoreBusy 동안은 강제 리셋되지 않다가 완료 후 해제된다.
     rerender(<StudioCheckpointPanel {...props} serverCurrentRevision={5} />);
-    resolveRestore?.(true);
+    restoreResolveRef.current?.(true);
     await waitFor(() => {
       expect(screen.queryByText(/복원 적용 중 · 안전을 위해 닫기·탭 이동 잠금/u)).toBeNull();
     });

@@ -36,6 +36,36 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ----- END LICENSE 0331c26405bf44d471436c6b1e5b9a1898faa5fadc0c6471ff216e10814132e0 -----
 
+Packages: parley_engine@0.12.0
+Sources: https://crates.io/crates/parley_engine/0.12.0/source/LICENSE-MIT
+----- BEGIN LICENSE 0637f0b892b3d5f521eedf00e860c49ac6d4787da117e4b99f53b0cc5af25d70 -----
+Copyright 2025 the Parley Authors
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+----- END LICENSE 0637f0b892b3d5f521eedf00e860c49ac6d4787da117e4b99f53b0cc5af25d70 -----
+
 Packages: fearless_simd@0.7.0, kurbo@0.13.1, peniko@0.6.1, polycool@0.4.0
 Sources: https://crates.io/crates/fearless_simd/0.4.1/source/LICENSE-MIT, https://crates.io/crates/fearless_simd/0.7.0/source/LICENSE-MIT, https://crates.io/crates/kurbo/0.13.1/source/LICENSE-MIT, https://crates.io/crates/peniko/0.6.1/source/LICENSE-MIT, https://crates.io/crates/polycool/0.4.0/source/LICENSE-MIT
 ----- BEGIN LICENSE 0e297345cbd90f056157ad7bfc614d4bf5d13ff0d9e978711f261e17c70ff876 -----
@@ -682,8 +712,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE 30fefc3a7d6a0041541858293bcbea2dde4caa4c0a5802f996a7f7e8c0085652 -----
 
-Packages: harfrust@0.10.0, harfrust@0.12.0
-Sources: https://crates.io/crates/harfrust/0.10.0/source/LICENSE, https://crates.io/crates/harfrust/0.12.0/source/LICENSE
+Packages: harfrust@0.12.0
+Sources: https://crates.io/crates/harfrust/0.12.0/source/LICENSE
 ----- BEGIN LICENSE 31b628c2f6d73f791cb7773205ea3de4ffb5a0fbd292316e7e8418727ce5d933 -----
 The MIT License (MIT)
 
@@ -753,8 +783,8 @@ dealings in these Data Files or Software without prior written
 authorization of the copyright holder.
 ----- END LICENSE 361d7912957842f2ce61c774b14afba41ae91df84882982e6f7e749e01c07c91 -----
 
-Packages: synstructure@0.13.2
-Sources: https://crates.io/crates/synstructure/0.13.2/source/LICENSE
+Packages: synstructure@0.13.2, synstructure@0.14.0
+Sources: https://crates.io/crates/synstructure/0.13.2/source/LICENSE, https://crates.io/crates/synstructure/0.14.0/source/LICENSE
 ----- BEGIN LICENSE 3a036676ec8c0dba1c24b96f83595456280b7a754ddee64585dd8048ed2b087f -----
 Copyright 2016 Nika Layzell
 
@@ -1414,8 +1444,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE 7dc2f64024477c92b147ae4a93bbcef90031b33ba0de6a84bd570d59e6c0688b -----
 
-Packages: smallvec@1.15.2
-Sources: https://crates.io/crates/smallvec/1.15.2/source/LICENSE-MIT
+Packages: smallvec@1.16.5
+Sources: https://crates.io/crates/smallvec/1.16.5/source/LICENSE-MIT
 ----- BEGIN LICENSE 7f194ae45c2525a57443f7edabd392e8218109ee81a4bce70d385104c87c1a71 -----
 Copyright (c) 2018 The Servo Project Developers
 
@@ -1504,8 +1534,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE 84e1bbfebd74e4196cfa0ea5cf58e677aa24b47c6661adbb19fb07920d089d1d -----
 
-Packages: glifo@0.4.0, itoa@1.0.18, proc-macro2@1.0.107, quote@1.0.47, serde@1.0.229, serde_core@1.0.229, serde_derive@1.0.229, serde_json@1.0.154, syn@2.0.119, syn@3.0.3, thiserror-impl@2.0.19, thiserror@2.0.19, unicode-ident@1.0.24
-Sources: https://crates.io/crates/glifo/0.4.0/source/LICENSE-APACHE, https://crates.io/crates/itoa/1.0.18/source/LICENSE-APACHE, https://crates.io/crates/litrs/1.0.0/source/LICENSE-APACHE, https://crates.io/crates/proc-macro2/1.0.107/source/LICENSE-APACHE, https://crates.io/crates/quote/1.0.47/source/LICENSE-APACHE, https://crates.io/crates/serde/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_core/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_derive/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_json/1.0.154/source/LICENSE-APACHE, https://crates.io/crates/serde_repr/0.1.21/source/LICENSE-APACHE, https://crates.io/crates/syn/2.0.119/source/LICENSE-APACHE, https://crates.io/crates/syn/3.0.3/source/LICENSE-APACHE, https://crates.io/crates/thiserror-impl/2.0.19/source/LICENSE-APACHE, https://crates.io/crates/thiserror/2.0.19/source/LICENSE-APACHE, https://crates.io/crates/unicode-ident/1.0.24/source/LICENSE-APACHE
+Packages: glifo@0.4.0, itoa@1.0.18, parley_engine@0.12.0, proc-macro2@1.0.107, quote@1.0.47, serde@1.0.229, serde_core@1.0.229, serde_derive@1.0.229, serde_json@1.0.154, syn@2.0.119, syn@3.0.3, thiserror-impl@2.0.19, thiserror@2.0.19, unicode-ident@1.0.24
+Sources: https://crates.io/crates/glifo/0.4.0/source/LICENSE-APACHE, https://crates.io/crates/itoa/1.0.18/source/LICENSE-APACHE, https://crates.io/crates/litrs/1.0.0/source/LICENSE-APACHE, https://crates.io/crates/parley_engine/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/proc-macro2/1.0.107/source/LICENSE-APACHE, https://crates.io/crates/quote/1.0.47/source/LICENSE-APACHE, https://crates.io/crates/serde/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_core/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_derive/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_json/1.0.154/source/LICENSE-APACHE, https://crates.io/crates/serde_repr/0.1.21/source/LICENSE-APACHE, https://crates.io/crates/syn/2.0.119/source/LICENSE-APACHE, https://crates.io/crates/syn/3.0.3/source/LICENSE-APACHE, https://crates.io/crates/thiserror-impl/2.0.19/source/LICENSE-APACHE, https://crates.io/crates/thiserror/2.0.19/source/LICENSE-APACHE, https://crates.io/crates/unicode-ident/1.0.24/source/LICENSE-APACHE
 ----- BEGIN LICENSE 85ad950cce8752f716dbf49be95b2639172cb49f291336d57f1fdc9989e38179 -----
 Apache License
                         Version 2.0, January 2004
@@ -1731,8 +1761,8 @@ Permission is granted to anyone to use this software for any purpose, including 
 3. This notice may not be removed or altered from any source distribution.
 ----- END LICENSE 943f36fd309fb5ea67a82f577433f4ed3bc877e5b00f9b874e2f8b7f72bf0bdc -----
 
-Packages: arrayvec@0.7.8, bitflags@2.13.1, bumpalo@3.20.3, cfg-if@1.0.4, displaydoc@0.2.7, euclid@0.22.14, flate2@1.1.9, fontique@0.11.0, hashbrown@0.17.1, log@0.4.33, num-traits@0.2.19, once_cell@1.21.4, parlance@0.1.0, parley@0.11.0, parley_data@0.11.0, png@0.18.1, smallvec@1.15.2, stable_deref_trait@1.2.1, wasm-bindgen-macro-support@0.2.129, wasm-bindgen-macro@0.2.129, wasm-bindgen-shared@0.2.129, wasm-bindgen@0.2.129
-Sources: https://crates.io/crates/arrayvec/0.7.8/source/LICENSE-APACHE, https://crates.io/crates/base64/0.23.1/source/LICENSE-APACHE, https://crates.io/crates/bitflags/2.13.1/source/LICENSE-APACHE, https://crates.io/crates/bumpalo/3.20.3/source/LICENSE-APACHE, https://crates.io/crates/cfg-if/1.0.4/source/LICENSE-APACHE, https://crates.io/crates/data-url/0.3.2/source/LICENSE-APACHE, https://crates.io/crates/displaydoc/0.2.7/source/LICENSE-APACHE, https://crates.io/crates/equivalent/1.0.2/source/LICENSE-APACHE, https://crates.io/crates/euclid/0.22.14/source/LICENSE-APACHE, https://crates.io/crates/flate2/1.1.9/source/LICENSE-APACHE, https://crates.io/crates/fontique/0.11.0/source/LICENSE-APACHE, https://crates.io/crates/hashbrown/0.17.1/source/LICENSE-APACHE, https://crates.io/crates/indexmap/2.14.0/source/LICENSE-APACHE, https://crates.io/crates/js-sys/0.3.106/source/LICENSE-APACHE, https://crates.io/crates/lock_api/0.4.14/source/LICENSE-APACHE, https://crates.io/crates/log/0.4.33/source/LICENSE-APACHE, https://crates.io/crates/num-traits/0.2.19/source/LICENSE-APACHE, https://crates.io/crates/once_cell/1.21.4/source/LICENSE-APACHE, https://crates.io/crates/parking_lot/0.12.5/source/LICENSE-APACHE, https://crates.io/crates/parking_lot_core/0.9.12/source/LICENSE-APACHE, https://crates.io/crates/parlance/0.1.0/source/LICENSE-APACHE, https://crates.io/crates/parley/0.11.0/source/LICENSE-APACHE, https://crates.io/crates/parley_data/0.11.0/source/LICENSE-APACHE, https://crates.io/crates/png/0.18.1/source/LICENSE-APACHE, https://crates.io/crates/roxmltree/0.21.1/source/LICENSE-APACHE, https://crates.io/crates/rustc-hash/1.1.0/source/LICENSE-APACHE, https://crates.io/crates/scopeguard/1.2.0/source/LICENSE-APACHE, https://crates.io/crates/simplecss/0.2.2/source/LICENSE-APACHE, https://crates.io/crates/smallvec/1.15.2/source/LICENSE-APACHE, https://crates.io/crates/stable_deref_trait/1.2.1/source/LICENSE-APACHE, https://crates.io/crates/svgtypes/0.16.1/source/LICENSE-APACHE, https://crates.io/crates/unicode-bidi/0.3.18/source/LICENSE-APACHE, https://crates.io/crates/unicode-vo/0.1.0/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen-futures/0.4.79/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen-macro-support/0.2.129/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen-macro/0.2.129/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen-shared/0.2.129/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen/0.2.129/source/LICENSE-APACHE, https://crates.io/crates/web-sys/0.3.106/source/LICENSE-APACHE
+Packages: arrayvec@0.7.8, bitflags@2.13.1, bumpalo@3.20.3, cfg-if@1.0.4, displaydoc@0.2.7, euclid@0.22.14, flate2@1.1.9, fontique@0.12.0, hashbrown@0.17.1, log@0.4.33, num-traits@0.2.19, once_cell@1.21.4, parlance@0.1.1, parley@0.12.0, parley_data@0.12.0, png@0.18.1, smallvec@1.16.5, stable_deref_trait@1.2.1, wasm-bindgen-macro-support@0.2.129, wasm-bindgen-macro@0.2.129, wasm-bindgen-shared@0.2.129, wasm-bindgen@0.2.129
+Sources: https://crates.io/crates/arrayvec/0.7.8/source/LICENSE-APACHE, https://crates.io/crates/base64/0.23.1/source/LICENSE-APACHE, https://crates.io/crates/bitflags/2.13.1/source/LICENSE-APACHE, https://crates.io/crates/bumpalo/3.20.3/source/LICENSE-APACHE, https://crates.io/crates/cfg-if/1.0.4/source/LICENSE-APACHE, https://crates.io/crates/data-url/0.3.2/source/LICENSE-APACHE, https://crates.io/crates/displaydoc/0.2.7/source/LICENSE-APACHE, https://crates.io/crates/equivalent/1.0.2/source/LICENSE-APACHE, https://crates.io/crates/euclid/0.22.14/source/LICENSE-APACHE, https://crates.io/crates/flate2/1.1.9/source/LICENSE-APACHE, https://crates.io/crates/fontique/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/hashbrown/0.17.1/source/LICENSE-APACHE, https://crates.io/crates/indexmap/2.14.0/source/LICENSE-APACHE, https://crates.io/crates/js-sys/0.3.106/source/LICENSE-APACHE, https://crates.io/crates/lock_api/0.4.14/source/LICENSE-APACHE, https://crates.io/crates/log/0.4.33/source/LICENSE-APACHE, https://crates.io/crates/num-traits/0.2.19/source/LICENSE-APACHE, https://crates.io/crates/once_cell/1.21.4/source/LICENSE-APACHE, https://crates.io/crates/parking_lot/0.12.5/source/LICENSE-APACHE, https://crates.io/crates/parking_lot_core/0.9.12/source/LICENSE-APACHE, https://crates.io/crates/parlance/0.1.1/source/LICENSE-APACHE, https://crates.io/crates/parley/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/parley_data/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/png/0.18.1/source/LICENSE-APACHE, https://crates.io/crates/roxmltree/0.21.2/source/LICENSE-APACHE, https://crates.io/crates/rustc-hash/1.1.0/source/LICENSE-APACHE, https://crates.io/crates/scopeguard/1.2.0/source/LICENSE-APACHE, https://crates.io/crates/simplecss/0.2.2/source/LICENSE-APACHE, https://crates.io/crates/smallvec/1.16.5/source/LICENSE-APACHE, https://crates.io/crates/stable_deref_trait/1.2.1/source/LICENSE-APACHE, https://crates.io/crates/svgtypes/0.16.1/source/LICENSE-APACHE, https://crates.io/crates/unicode-bidi/0.3.18/source/LICENSE-APACHE, https://crates.io/crates/unicode-vo/0.1.0/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen-futures/0.4.79/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen-macro-support/0.2.129/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen-macro/0.2.129/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen-shared/0.2.129/source/LICENSE-APACHE, https://crates.io/crates/wasm-bindgen/0.2.129/source/LICENSE-APACHE, https://crates.io/crates/web-sys/0.3.106/source/LICENSE-APACHE
 ----- BEGIN LICENSE 954f335b8baf5e1a5748b3a1bf6eeb2ec0b28ae19813f02063d64be005765a76 -----
 Apache License
                         Version 2.0, January 2004
@@ -2009,8 +2039,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ----- END LICENSE ac9859ce4e9a80a4846ee0b453981427f4fc2ba9ac7d0e568de61ab80a53d86d -----
 
-Packages: parlance@0.1.0, parley@0.11.0, parley_data@0.11.0
-Sources: https://crates.io/crates/parlance/0.1.0/source/LICENSE-MIT, https://crates.io/crates/parley/0.11.0/source/LICENSE-MIT, https://crates.io/crates/parley_data/0.11.0/source/LICENSE-MIT
+Packages: parlance@0.1.1, parley@0.12.0, parley_data@0.12.0
+Sources: https://crates.io/crates/parlance/0.1.1/source/LICENSE-MIT, https://crates.io/crates/parley/0.12.0/source/LICENSE-MIT, https://crates.io/crates/parley_data/0.12.0/source/LICENSE-MIT
 ----- BEGIN LICENSE ad40d6ebc808a6ce685b305966abb05cd449f4e8ccbbef11e8d8e6a58d5de7bf -----
 Copyright 2020 the Parley Authors
 
@@ -2069,8 +2099,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE ae9791f02f2bbe0ce17b434753af97be6e5284b6f8e9f22db3c1f0f11b2e015a -----
 
-Packages: font-types@0.12.2, read-fonts@0.40.2, read-fonts@0.41.0, skrifa@0.43.2, skrifa@0.44.0
-Sources: https://crates.io/crates/font-types/0.12.2/source/LICENSE-APACHE, https://crates.io/crates/read-fonts/0.40.2/source/LICENSE-APACHE, https://crates.io/crates/read-fonts/0.41.0/source/LICENSE-APACHE, https://crates.io/crates/skrifa/0.43.2/source/LICENSE-APACHE, https://crates.io/crates/skrifa/0.44.0/source/LICENSE-APACHE
+Packages: font-types@0.12.2, read-fonts@0.41.0, skrifa@0.44.0
+Sources: https://crates.io/crates/font-types/0.12.2/source/LICENSE-APACHE, https://crates.io/crates/read-fonts/0.41.0/source/LICENSE-APACHE, https://crates.io/crates/skrifa/0.44.0/source/LICENSE-APACHE
 ----- BEGIN LICENSE af2a770a058a22db4ef962be857b6ba70358537a932404d1e56a6e6ad7ad39aa -----
 Apache License
 
@@ -2432,8 +2462,40 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE c18ee669bac9b829ddeabe40d603bcf89e22daaf339a44b7a9846079eeea1d93 -----
 
-Packages: icu_collections@2.2.0, icu_locale@2.2.0, icu_locale_core@2.2.0, icu_locale_data@2.2.0, icu_normalizer@2.2.0, icu_normalizer_data@2.2.0, icu_properties@2.2.0, icu_properties_data@2.2.0, icu_provider@2.2.0, icu_segmenter@2.2.0, icu_segmenter_data@2.2.0, litemap@0.8.2, potential_utf@0.1.5, tinystr@0.8.3, writeable@0.6.3, yoke-derive@0.8.2, yoke@0.8.3, zerofrom-derive@0.1.7, zerofrom@0.1.8, zerotrie@0.2.4, zerovec-derive@0.11.3, zerovec@0.11.6
-Sources: https://crates.io/crates/icu_collections/2.2.0/source/LICENSE, https://crates.io/crates/icu_locale/2.2.0/source/LICENSE, https://crates.io/crates/icu_locale_core/2.2.0/source/LICENSE, https://crates.io/crates/icu_locale_data/2.2.0/source/LICENSE, https://crates.io/crates/icu_normalizer/2.2.0/source/LICENSE, https://crates.io/crates/icu_normalizer_data/2.2.0/source/LICENSE, https://crates.io/crates/icu_properties/2.2.0/source/LICENSE, https://crates.io/crates/icu_properties_data/2.2.0/source/LICENSE, https://crates.io/crates/icu_provider/2.2.0/source/LICENSE, https://crates.io/crates/icu_segmenter/2.2.0/source/LICENSE, https://crates.io/crates/icu_segmenter_data/2.2.0/source/LICENSE, https://crates.io/crates/litemap/0.8.2/source/LICENSE, https://crates.io/crates/potential_utf/0.1.5/source/LICENSE, https://crates.io/crates/tinystr/0.8.3/source/LICENSE, https://crates.io/crates/writeable/0.6.3/source/LICENSE, https://crates.io/crates/yoke-derive/0.8.2/source/LICENSE, https://crates.io/crates/yoke/0.8.3/source/LICENSE, https://crates.io/crates/zerofrom-derive/0.1.7/source/LICENSE, https://crates.io/crates/zerofrom/0.1.8/source/LICENSE, https://crates.io/crates/zerotrie/0.2.4/source/LICENSE, https://crates.io/crates/zerovec-derive/0.11.3/source/LICENSE, https://crates.io/crates/zerovec/0.11.6/source/LICENSE
+Packages: parley_emoji@0.12.0
+Sources: https://crates.io/crates/parley_emoji/0.12.0/source/LICENSE-MIT
+----- BEGIN LICENSE c1a790180cc8b8a952aa32642514d9d40d2b54cb276f1e8ad7b105b703cb1be7 -----
+Copyright 2020 the Parley Authors
+Copyright (c) 2026 Christian Hansen <chansen@cpan.org>
+<https://github.com/chansen/c-emoji>
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+----- END LICENSE c1a790180cc8b8a952aa32642514d9d40d2b54cb276f1e8ad7b105b703cb1be7 -----
+
+Packages: icu_collections@2.4.0, icu_locale_core@2.4.0, icu_locale_fallback@2.4.0, icu_locale_fallback_data@2.4.0, icu_normalizer@2.4.0, icu_normalizer_data@2.4.0, icu_properties@2.4.0, icu_properties_data@2.4.0, icu_provider@2.4.0, icu_segmenter@2.4.0, icu_segmenter_data@2.4.0, litemap@0.8.2, potential_utf@0.1.5, tinystr@0.8.5, writeable@0.6.4, yoke-derive@0.8.4, yoke@0.8.4, zerofrom-derive@0.1.7, zerofrom@0.1.8, zerotrie@0.2.5, zerovec-derive@0.11.7, zerovec@0.11.9
+Sources: https://crates.io/crates/icu_collections/2.4.0/source/LICENSE, https://crates.io/crates/icu_locale_core/2.4.0/source/LICENSE, https://crates.io/crates/icu_locale_fallback/2.4.0/source/LICENSE, https://crates.io/crates/icu_locale_fallback_data/2.4.0/source/LICENSE, https://crates.io/crates/icu_normalizer/2.4.0/source/LICENSE, https://crates.io/crates/icu_normalizer_data/2.4.0/source/LICENSE, https://crates.io/crates/icu_properties/2.4.0/source/LICENSE, https://crates.io/crates/icu_properties_data/2.4.0/source/LICENSE, https://crates.io/crates/icu_provider/2.4.0/source/LICENSE, https://crates.io/crates/icu_segmenter/2.4.0/source/LICENSE, https://crates.io/crates/icu_segmenter_data/2.4.0/source/LICENSE, https://crates.io/crates/litemap/0.8.2/source/LICENSE, https://crates.io/crates/potential_utf/0.1.5/source/LICENSE, https://crates.io/crates/tinystr/0.8.5/source/LICENSE, https://crates.io/crates/writeable/0.6.4/source/LICENSE, https://crates.io/crates/yoke-derive/0.8.4/source/LICENSE, https://crates.io/crates/yoke/0.8.4/source/LICENSE, https://crates.io/crates/zerofrom-derive/0.1.7/source/LICENSE, https://crates.io/crates/zerofrom/0.1.8/source/LICENSE, https://crates.io/crates/zerotrie/0.2.5/source/LICENSE, https://crates.io/crates/zerovec-derive/0.11.7/source/LICENSE, https://crates.io/crates/zerovec/0.11.9/source/LICENSE
 ----- BEGIN LICENSE cde87abe221f413fede55ded0f17985f37b8fdc23e5f6cba9a3955437facb3ae -----
 UNICODE LICENSE V3
 
@@ -2516,8 +2578,8 @@ Permission is granted to anyone to use this software for any purpose, including 
 3. This notice may not be removed or altered from any source distribution.
 ----- END LICENSE eac3911cc3d41ffb7de705edeec755d3f83189b61839389cc9079acb54d8c5af -----
 
-Packages: font-types@0.12.2, read-fonts@0.40.2, read-fonts@0.41.0, skrifa@0.43.2, skrifa@0.44.0
-Sources: https://crates.io/crates/font-types/0.12.2/source/LICENSE-MIT, https://crates.io/crates/read-fonts/0.40.2/source/LICENSE-MIT, https://crates.io/crates/read-fonts/0.41.0/source/LICENSE-MIT, https://crates.io/crates/skrifa/0.43.2/source/LICENSE-MIT, https://crates.io/crates/skrifa/0.44.0/source/LICENSE-MIT
+Packages: font-types@0.12.2, read-fonts@0.41.0, skrifa@0.44.0
+Sources: https://crates.io/crates/font-types/0.12.2/source/LICENSE-MIT, https://crates.io/crates/read-fonts/0.41.0/source/LICENSE-MIT, https://crates.io/crates/skrifa/0.44.0/source/LICENSE-MIT
 ----- BEGIN LICENSE f03893164caafcc4f7c4767c3c0dd7c0763b84debde761ad80ea8af0e3af5d00 -----
 Copyright (c) 2019 Fontations Developers
 
@@ -2546,8 +2608,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE f03893164caafcc4f7c4767c3c0dd7c0763b84debde761ad80ea8af0e3af5d00 -----
 
-Packages: fontique@0.11.0
-Sources: https://crates.io/crates/fontique/0.11.0/source/LICENSE-MIT
+Packages: fontique@0.12.0
+Sources: https://crates.io/crates/fontique/0.12.0/source/LICENSE-MIT
 ----- BEGIN LICENSE fa9dc7e4b32ac7fcd4c9e40beb739ab2f859a84f6ee657133c74846500cce223 -----
 Copyright 2024 the Parley Authors
 

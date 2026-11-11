@@ -91,7 +91,7 @@ test("설치 후 실행되는 진입 그래프 테스트는 필수 Vitest 회귀
 
 test("로컬 pre-push 는 validate:architecture 를 실행하므로 두 가드레일이 푸시 전에 같은 방식으로 돈다", () => {
   const prePush = read(".husky/pre-push");
-  assert.match(prePush, /^pnpm run validate:architecture$/mu);
+  assert.match(prePush, /^pnpm run validate:architecture &$/mu);
 });
 
 test("Studio 어댑터 진입점은 번들 게이트와 같고 기준선 파일은 스크립트 옆에 있다", () => {

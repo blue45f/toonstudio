@@ -245,7 +245,7 @@ export function StudioProjectLibraryManagementContent({
                     {bi("파일 또는 개인 저장소와 연결한 정식 프로젝트입니다. 저장한 .toonstudio 파일은 파일 가져오기에서 언제든 다시 열 수 있습니다.", "Formally saved projects connected to a file or personal storage. Saved .toonstudio files can be reopened anytime from Open .toonstudio file.")}
                   </p>
                 </div>
-                <Link href="/studio/import" className="inline-flex min-h-11 items-center text-xs font-bold text-accent underline underline-offset-4 sm:min-h-9">
+                <Link href="/studio/import" className="inline-flex min-h-11 items-center text-xs font-bold text-accent underline underline-offset-4">
                   {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
                 </Link>
               </div>
@@ -285,7 +285,7 @@ export function StudioProjectLibraryManagementContent({
                   if (event.detail === 0) pendingFocus.current = { list: recoveryListRef.current, index: shownRecoveryProjects.length, trigger: event.currentTarget };
                   setVisibleRecoveryCount((count) => count + SECTION_PROJECT_STEP);
                 }}
-                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 sm:min-h-9" })}
+                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
               >
                 {formatI18nTemplate(
                   String(bi("목록 더 보기 ({value0}개 남음)", "Show more items ({value0} left)")),

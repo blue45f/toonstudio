@@ -190,15 +190,13 @@ export function MarketResourceCard({
 
         <div className="flex flex-wrap items-center gap-1.5">
           <MarketProductionFitBadge record={record} showCounts />
-          {record.rightsConfirmed ? (
-            <span
-              data-market-rights-bom="true"
-              className="inline-flex items-center gap-1 rounded-full border border-good/35 bg-good/10 px-2.5 py-0.5 text-[0.68rem] font-bold text-good"
-            >
-              <ShieldCheck className="size-3" aria-hidden="true" />
-              {bi("Rights BOM 자동 보존", "Rights BOM auto-preserved")}
-            </span>
-          ) : null}
+          <span
+            data-market-rights-bom="true"
+            className="inline-flex items-center gap-1 rounded-full border border-good/35 bg-good/10 px-2.5 py-0.5 text-[0.68rem] font-bold text-good"
+          >
+            <ShieldCheck className="size-3" aria-hidden="true" />
+            {bi("Rights BOM 자동 보존", "Rights BOM auto-preserved")}
+          </span>
           {!record.containsAi ? (
             <span
               data-market-no-ai-disclosed="true"

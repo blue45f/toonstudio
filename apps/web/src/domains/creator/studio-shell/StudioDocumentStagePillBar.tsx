@@ -26,7 +26,7 @@ const STAGE_PILLS: readonly StagePillDefinition[] = [
   { id: "review", workspace: "review", labelKo: "5. 검수·출고", labelEn: "5. Review & Ship" },
 ] as const;
 
-export function resolveCanonicalStageForWorkspace(
+function resolveCanonicalStageForWorkspace(
   workspace: StudioDocumentWorkspaceId,
 ): StudioCanonicalStageId {
   switch (workspace) {

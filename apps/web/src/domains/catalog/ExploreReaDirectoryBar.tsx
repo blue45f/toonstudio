@@ -260,7 +260,7 @@ export function ExploreReaDirectoryBar({
                 readerViewMode === rm.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-panel/60 text-fg-2 hover:border-accent/40",
               )}
             >
-              {bt(...rm.label)}
+              {bt(rm.label[0], rm.label[1])}
             </button>
           ))}
         </div>
