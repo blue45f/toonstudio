@@ -25,10 +25,12 @@ export function SerialCenterOverview({
   ko,
   onSelectProject,
   selectionDisabled = false,
+  selectionMode = false,
 }: Readonly<{
   ko: boolean;
   onSelectProject: (project: ProductionProjectSummary) => void;
   selectionDisabled?: boolean;
+  selectionMode?: boolean;
 }>) {
   const userId = useApp((state) => state.userId);
   const [projects, setProjects] = useState<readonly ProductionProjectSummary[]>([]);
@@ -81,17 +83,17 @@ export function SerialCenterOverview({
   );
 
   return (
-    <section className="rounded-3xl border border-line bg-card p-5 sm:p-6" aria-label={ko ? "내 작품 연재 현황" : "My works' serialization status"}>
+    <section className={selectionMode ? "py-3" : "rounded-3xl border border-line bg-card p-5 sm:p-6"} aria-label={ko ? "내 작품 연재 현황" : "My works' serialization status"}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent">
+          {!selectionMode ? <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent">
             {ko ? "연재 현황" : "Serialization status"}
-          </p>
-          <h2 className="mt-1.5 text-xl font-black tracking-tight text-fg">
-            {ko ? "내 작품은 지금 어디까지 왔나" : "Where each of my works stands"}
+          </p> : null}
+          <h2 className={selectionMode ? "text-base font-bold text-fg" : "mt-1.5 text-xl font-black tracking-tight text-fg"}>
+            {selectionMode ? (ko ? "내 제작 프로젝트" : "My production projects") : (ko ? "내 작품은 지금 어디까지 왔나" : "Where each of my works stands")}
           </h2>
         </div>
-        {userId && !loading && !error && projects.length > 0 ? (
+        {userId && !selectionMode && !loading && !error && projects.length > 0 ? (
           <p className="text-sm text-fg-2" role="status">
             {ko
               ? `작품 ${projects.length}개 · 밀린 작업 ${overdueTotal}개 · 바로 올릴 수 있는 회차 ${readyTotal}개`
@@ -154,12 +156,12 @@ export function SerialCenterOverview({
       ) : (
         <ul className="mt-5 grid gap-3 sm:grid-cols-2">
           {sorted.map((project) => (
-            <SerialProjectCard key={project.projectId} project={project} ko={ko} onSelectProject={onSelectProject} selectionDisabled={selectionDisabled} />
+            <SerialProjectCard key={project.projectId} project={project} ko={ko} onSelectProject={onSelectProject} selectionDisabled={selectionDisabled} selectionMode={selectionMode} />
           ))}
         </ul>
       )}
 
-      <p className="mt-5 border-t border-line pt-4 text-xs leading-5 text-fg-3">
+      {!selectionMode ? <p className="mt-5 border-t border-line pt-4 text-xs leading-5 text-fg-3">
         {ko
           ? "이 현황은 내 작품(제작 프로젝트) 기준입니다. 외부 플랫폼 작품은 여기에 없어요 — 독자들이 보는 요일별 연재표는 "
           : "This status covers my works (production projects) only. External platform titles are not listed here — readers see them in the "}
@@ -167,7 +169,7 @@ export function SerialCenterOverview({
           {ko ? "연재 캘린더" : "serialization calendar"}
         </Link>
         {ko ? "에서 확인하세요." : "."}
-      </p>
+      </p> : null}
     </section>
   );
 }
@@ -177,11 +179,13 @@ function SerialProjectCard({
   ko,
   onSelectProject,
   selectionDisabled,
+  selectionMode,
 }: Readonly<{
   project: ProductionProjectSummary;
   ko: boolean;
   onSelectProject: (project: ProductionProjectSummary) => void;
   selectionDisabled: boolean;
+  selectionMode: boolean;
 }>) {
   const nextReleaseLabel = project.nextReleaseAt
     ? new Date(project.nextReleaseAt).toLocaleString(ko ? "ko-KR" : "en-US", { dateStyle: "medium", timeStyle: "short" })
@@ -190,13 +194,13 @@ function SerialProjectCard({
     <li className="flex flex-col rounded-2xl border border-line bg-panel/40 p-4">
       <div className="flex items-start justify-between gap-3">
         <strong className="min-w-0 truncate text-base font-bold text-fg">{project.title}</strong>
-        {project.criticalRiskCount > 0 ? (
+        {!selectionMode && project.criticalRiskCount > 0 ? (
           <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[0.7rem] font-semibold text-danger">
             <TriangleAlert size={11} aria-hidden /> {ko ? `위험 ${project.criticalRiskCount}` : `${project.criticalRiskCount} risk(s)`}
           </span>
         ) : null}
       </div>
-      <dl className="mt-3 space-y-1.5 text-sm">
+      {!selectionMode ? <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex items-center gap-2">
           <dt className="inline-flex shrink-0 items-center gap-1 text-fg-3">
             <Clock3 size={13} aria-hidden /> {ko ? "다음 발행" : "Next release"}
@@ -225,10 +229,10 @@ function SerialProjectCard({
             </dd>
           </div>
         ) : null}
-      </dl>
-      <div className="mt-3">
+      </dl> : null}
+      {!selectionMode ? <div className="mt-3">
         <SummaryBufferShield readyBufferCount={project.readyBufferCount} />
-      </div>
+      </div> : null}
       <div className="mt-4 flex flex-wrap gap-2 pt-1">
         <button
           type="button"
@@ -238,18 +242,18 @@ function SerialProjectCard({
         >
           {ko ? "이 작품으로 게시 준비" : "Prepare release"} <ArrowRight size={14} aria-hidden />
         </button>
-        <Link
+        {!selectionMode ? <Link
           href={`/production/projects/${encodeURIComponent(project.projectId)}/episodes`}
           className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg"
         >
           <Layers size={14} aria-hidden /> {ko ? "회차 관리" : "Manage episodes"}
-        </Link>
-        <Link
+        </Link> : null}
+        {!selectionMode ? <Link
           href={`/production/projects/${encodeURIComponent(project.projectId)}/overview`}
           className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg"
         >
           <CalendarDays size={14} aria-hidden /> {ko ? "제작 현황" : "Production status"}
-        </Link>
+        </Link> : null}
       </div>
     </li>
   );

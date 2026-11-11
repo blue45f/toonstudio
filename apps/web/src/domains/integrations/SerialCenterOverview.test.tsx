@@ -141,4 +141,18 @@ describe("SerialCenterOverview", () => {
     });
     expect(await screen.findByText("별빛 항해자")).toBeTruthy();
   });
+
+  it("작품 선택 모드에서는 운영 수치를 앞세우지 않고 같은 실제 프로젝트를 선택한다", async () => {
+    useApp.setState({ userId: "user-1", sessionToken: "token" });
+    const project = summary({ overdueTaskCount: 3, criticalRiskCount: 1 });
+    api.listProductionProjects.mockResolvedValue({ projects: [project] });
+    const onSelectProject = vi.fn();
+    render(<MemoryRouter><SerialCenterOverview ko selectionMode onSelectProject={onSelectProject} /></MemoryRouter>);
+    expect(await screen.findByRole("heading", { name: "내 제작 프로젝트" })).toBeTruthy();
+    expect(await screen.findByText("별빛 항해자")).toBeTruthy();
+    expect(screen.queryByText("밀린 작업")).toBeNull();
+    expect(screen.queryByRole("link", { name: /회차 관리/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /이 작품으로 게시 준비/ }));
+    expect(onSelectProject).toHaveBeenCalledWith(project);
+  });
 });
