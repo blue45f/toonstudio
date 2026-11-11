@@ -37,6 +37,13 @@ describe("public shell integration", () => {
     );
   });
 
+  it("창작 활용 안내는 현재 페이지의 본문 작업 뒤에서 선택해 연다", () => {
+    expect(shell.match(/<SiteCreationCompass\s*\/>/gu)).toHaveLength(1);
+    expect(shell.indexOf("<AppRouter />")).toBeLessThan(shell.indexOf("<SiteCreationCompass />"));
+    expect(shell.indexOf("<SiteCreationCompass />")).toBeLessThan(shell.indexOf("</main>"));
+    expect(shell).toContain("{enhancedSite ? <SiteConnectionNotice /> : null}");
+  });
+
   it("retains a single lifecycle-preserving owner for history and late fragments", () => {
     expect(shell.match(/<RouteScrollRestoration\s*\/>/gu)).toHaveLength(1);
     expect(shell).not.toContain("<PublicSiteNavigationEffects");

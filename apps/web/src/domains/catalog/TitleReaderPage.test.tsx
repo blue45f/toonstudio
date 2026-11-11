@@ -476,18 +476,37 @@ describe("리더 시안의 공식 감상 동선", () => {
     expect(screen.getByText("Reading progress is not recorded because panels are not provided.")).toBeTruthy();
   });
 
-  it("시안 N 몰입형 2.5D 공간 리더·3컷 창작·제품 투어 브리지 링크를 한·영으로 렌더링한다", () => {
+  it("읽기 동선을 유지하며 부가 활동 3개를 한·영 접이식 메뉴로 제공한다", () => {
     renderReader("/title/fog-signal/read/2");
     const bar = screen.getByTestId("reader-spatial-creation-bar");
-    expect(within(bar).getByRole("link", { name: "2.5D 공간 리더 체험" }).getAttribute("href")).toBe("/read/spatial");
-    expect(within(bar).getByRole("link", { name: "이 감성으로 3컷 창작" }).getAttribute("href")).toBe("/create");
-    expect(within(bar).getByRole("link", { name: "인터랙티브 제품 투어" }).getAttribute("href")).toBe("/product-tour");
+    const summary = within(bar).getByText("창작·뷰어 체험", { selector: "summary" });
+    expect(bar.tagName).toBe("DETAILS");
+    expect(bar.hasAttribute("open")).toBe(false);
+    // jsdom의 가시성 계산 대신 native 접힘 상태와 부가 링크의 소속을 검사한다.
+    expect(within(bar).getAllByRole("link").every((link) => link.closest("details") === bar)).toBe(true);
+    expect(screen.getByRole("link", { name: "다음 화" }).getAttribute("href")).toBe("/title/fog-signal/read/3");
+    expect(screen.getByRole("link", { name: /에서 읽기/ }).closest("details")).toBeNull();
+
+    fireEvent.click(summary);
+    expect(bar.hasAttribute("open")).toBe(true);
+    expect(within(bar).getAllByRole("link")).toHaveLength(3);
+    expect(within(bar).getByRole("link", { name: "공간 뷰어 체험" }).getAttribute("href")).toBe("/read/spatial");
+    expect(within(bar).getByRole("link", { name: "3컷 이야기 만들기" }).getAttribute("href")).toBe("/create");
+    expect(within(bar).getByRole("link", { name: "사용법 둘러보기" }).getAttribute("href")).toBe("/product-tour");
+    expect(within(bar).getAllByRole("link").every((link) => link.className.includes("min-h-11"))).toBe(true);
+
+    fireEvent.click(summary);
+    expect(bar.hasAttribute("open")).toBe(false);
 
     cleanup();
     useI18n.setState({ lang: "en" });
     renderReader("/title/fog-signal/read/2");
     const enBar = screen.getByTestId("reader-spatial-creation-bar");
     expect(enBar.textContent).not.toMatch(/[가-힣]/u);
-    expect(within(enBar).getByRole("link", { name: "Try 2.5D Spatial Reader" }).getAttribute("href")).toBe("/read/spatial");
+    expect(enBar.hasAttribute("open")).toBe(false);
+    fireEvent.click(within(enBar).getByText("Create or try the viewer", { selector: "summary" }));
+    expect(within(enBar).getByRole("link", { name: "Try the spatial viewer" }).getAttribute("href")).toBe("/read/spatial");
+    expect(within(enBar).getByRole("link", { name: "Create a 3-panel story" }).getAttribute("href")).toBe("/create");
+    expect(within(enBar).getByRole("link", { name: "Take a product tour" }).getAttribute("href")).toBe("/product-tour");
   });
 });

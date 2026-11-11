@@ -29,6 +29,20 @@ function menu(menuOpen = true, closeMenu = vi.fn(), pathname = "/market") {
 }
 
 describe("모바일 전체 메뉴", () => {
+  it("현재 여정만 펼쳐 기본 노출을 줄이고 다른 여정은 직접 펼칠 수 있다", () => {
+    render(menu());
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.querySelectorAll("details[open]")).toHaveLength(1);
+    expect(dialog.querySelector("details[open]")?.textContent).toContain("자료·성장");
+    const group = [...dialog.querySelectorAll("details")].find((entry) => entry.textContent?.includes("쉬어가기"));
+    expect(group?.open).toBe(false);
+    const summary = group?.querySelector("summary");
+    expect(summary).not.toBeNull();
+    if (summary) fireEvent.click(summary);
+    expect(group?.open).toBe(true);
+    expect(group?.querySelector('a[href="/play"]')).not.toBeNull();
+  });
+
   it("작품 시작하기와 내 프로젝트를 앞에 두고 전체 기능·계정까지 연결한다", () => {
     render(menu());
     const dialog = screen.getByRole("dialog", { name: "nav.allMenu" });

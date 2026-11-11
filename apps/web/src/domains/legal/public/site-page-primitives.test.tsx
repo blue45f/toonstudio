@@ -39,6 +39,27 @@ describe("public page primitives", () => {
     expect(search.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText("보조 영역").parentElement?.className).toContain("hidden lg:block");
     expect(document.querySelector("[data-site-page-header]")?.getAttribute("data-site-page-header")).toBe("panel");
+    expect(document.querySelector("[data-site-page-header]")?.getAttribute("data-site-page-header-size")).toBe("default");
+  });
+
+  it("기본 작업 헤더는 검색·행동·보조 조작부를 접지 않고 중립 표면으로 표시한다", () => {
+    const { container } = render(
+      <SitePageHeader
+        eyebrow="LIBRARY"
+        title="내 서재"
+        actions={<button type="button">작품 추가</button>}
+        aside={<button type="button">정렬 바꾸기</button>}
+      >
+        <input aria-label="서재 검색" />
+      </SitePageHeader>,
+    );
+    const header = container.querySelector("header");
+    expect(header?.className).toContain("bg-panel/60");
+    expect(header?.className).not.toContain("bg-gradient");
+    expect(header?.querySelector("details")).toBeNull();
+    expect(screen.getByRole("textbox", { name: "서재 검색" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "작품 추가" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "정렬 바꾸기" }).parentElement?.className).not.toContain("hidden");
   });
 
   it("uses a plain divider surface for workspace pages", () => {
@@ -58,6 +79,7 @@ describe("public page primitives", () => {
     expect(art?.alt).toBe("");
     expect(art?.getAttribute("aria-hidden")).toBe("true");
     expect(screen.queryAllByRole("img")).toHaveLength(0);
+    expect(art?.parentElement?.className).toContain("hidden lg:block");
   });
 
   it("prefers an explicit aside over header art", () => {
@@ -80,6 +102,8 @@ describe("public page primitives", () => {
     );
     const header = container.querySelector("[data-site-page-header]");
     expect(header?.getAttribute("data-site-page-header-variant")).toBe("banner");
+    expect(header?.getAttribute("data-site-page-header-size")).toBe("default");
+    expect(header?.lastElementChild?.className).toContain("min-h-0");
     // 아트는 측면 장식이 아니라 헤더 전면을 덮는 배경으로 그려진다.
     const art = container.querySelector<HTMLImageElement>("[data-site-page-header-art]");
     expect(art?.getAttribute("data-site-page-header-art")).toBe("hero");
@@ -89,6 +113,17 @@ describe("public page primitives", () => {
     // 제목·설명은 스크림 위 밝은 글자로 얹힌다.
     expect(screen.getByRole("heading", { level: 1, name: "작품 탐색" }).className).toContain("text-white");
     expect(screen.getByText("배너 위 설명").className).toContain("text-white/80");
+  });
+
+  it("명시적인 hero는 큰 배너와 아트 표현을 유지한다", () => {
+    const { container } = render(
+      <SitePageHeader size="hero" eyebrow="MARKET" title="소재 마켓" art="hero" artPlacement="banner" />,
+    );
+    const header = container.querySelector("header");
+    expect(header?.getAttribute("data-site-page-header-size")).toBe("hero");
+    expect(header?.getAttribute("data-site-page-header-variant")).toBe("banner");
+    expect(header?.lastElementChild?.className).toContain("min-h-72 sm:min-h-80");
+    expect(container.querySelector("[data-site-page-header-art]")).not.toBeNull();
   });
 
   it("uses an external art source for the banner when artSrc is given", () => {

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Boxes, ChevronDown, ChevronRight, Compass, FolderKanban, Glasses, PencilLine, Plus, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Boxes, ChevronDown, ChevronRight, Compass, FolderKanban, Glasses, PencilLine, Plus, Search, Sparkles } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
@@ -19,9 +19,9 @@ import "./reference-creator-dashboard.css";
 
 /**
  * 공개 홈(/)은 BLUEPRINT §3.3의 4밴드로 조립한다(data-home-band):
- * ① 히어로(포스터 + 통합 입력이 1차 행동, 우측 패널에 Luna 창작 안내)
- * ② 이어하기 — 로그인하면 지금 할 일 카드(HomeNowCard), 아래에 시안 A·E 정본
- *    아틀리에 2×2/4열 시각 Bento 런치패드 + 예시 작품 선반이 이어진다.
+ * ① 히어로(통합 입력이 1차 행동, Luna 창작 안내는 요청할 때 펼침)
+ * ② 이어하기 — 지금 할 일 카드(HomeNowCard)와 예시 작품 선반.
+ *    다른 도구·감상 방식은 접이식 메뉴에서 선택한다.
  * ③ 작품 발견 미리보기(스포트라이트 1장 + 요일 레일 1줄).
  * ④ 더 알아보기 — 시작 카드·핵심 작업실·편집기 미리보기·챕터 링크.
  */
@@ -59,7 +59,16 @@ export function ReferenceCreatorDashboard() {
         eyebrow={bi("상상하는 모든 이야기, 여기서 작품이 됩니다.", "Every story you imagine starts here.")}
         title={<>{bi("오늘은 어떤 이야기를", "What story will you")}<br /><em>{bi("만들까요?", "create today?")}</em></>}
         lede={bi("당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.", "Your imagination. Your next extraordinary story.")}
-        aside={<HomeLunaPanel />}
+        aside={
+          <details className="rd-luna-help">
+            <summary className="rd-optional-summary">
+              <Sparkles size={16} aria-hidden="true" />
+              <span>{bi("시작이 막막한가요?", "Need help getting started?")}</span>
+              <ChevronDown size={16} aria-hidden="true" />
+            </summary>
+            <HomeLunaPanel />
+          </details>
+        }
       >
             <form className="rd-idea" onSubmit={submitInput}>
               <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
@@ -88,32 +97,33 @@ export function ReferenceCreatorDashboard() {
     </div>
     <div data-home-band="continue">
       <HomeNowCard />
+      <details className="rd-launchpad-help">
+        <summary className="rd-optional-summary">
+          <span>{bi("다른 시작 방법 보기", "More ways to start")}</span>
+          <ChevronDown size={16} aria-hidden="true" />
+        </summary>
       <nav
         data-testid="home-v2-spectrum-launchpad"
-        aria-label={bi("1초 창작 포맷 및 스펙트럼 탐색 바로가기", "1-second studio launch and Spectrum hub shortcuts")}
+        aria-label={bi("도구와 감상 방식", "Tools and viewing options")}
         className="rd-v2-bento"
       >
         <div className="rd-v2-spectrum-ribbon" aria-hidden="true" />
         <div className="rd-v2-bento-head">
           <span className="rd-v2-eyebrow">
             <Sparkles size={14} aria-hidden="true" />
-            <span>{bi("STARLIGHT ATELIER · 1초 포맷 & 스펙트럼 허브", "STARLIGHT ATELIER · 1S LAUNCH & SPECTRUM HUB")}</span>
-          </span>
-          <span className="rd-v2-trust-pill">
-            <ShieldCheck size={13} aria-hidden="true" />
-            <span>{bi("오프라인 원고 금고 · Rights BOM 자동 보존", "Offline Manuscript Vault · Rights BOM Preserved")}</span>
+            <span>{bi("하고 싶은 작업을 고르세요", "Choose what you would like to do")}</span>
           </span>
         </div>
         <div className="rd-v2-bento-grid">
           <Link href="/studio/new?lane=blank" className="rd-v2-card rd-v2-card--primary min-h-11">
             <div className="rd-v2-card-top">
               <span className="rd-v2-index" aria-hidden="true">01</span>
-              <span className="rd-v2-spec">800×∞ · 5-STAGE</span>
+              <span className="rd-v2-spec">{bi("빈 원고", "Blank canvas")}</span>
               <span className="rd-v2-glyph rd-v2-glyph--scroll" aria-hidden="true"><i /><i /><i /></span>
             </div>
             <div className="rd-v2-card-body">
-              <strong><PencilLine size={15} aria-hidden="true" />{bi("세로 웹툰 1초 캔버스", "1s Vertical Webtoon Canvas")}</strong>
-              <small>{bi("콘티·3D·작화·식자·출고 단일 44px 작업대 즉시 오픈", "Instant 44px single-bar 5-stage webtoon workspace")}</small>
+              <strong><PencilLine size={15} aria-hidden="true" />{bi("바로 그리기", "Start drawing")}</strong>
+              <small>{bi("빈 원고에서 그림과 이야기를 시작해요", "Start your art and story on a blank canvas")}</small>
             </div>
             <span className="rd-v2-cta">{bi("바로 그리기", "Open Canvas")}<ArrowRight size={14} aria-hidden="true" /></span>
           </Link>
@@ -121,12 +131,12 @@ export function ReferenceCreatorDashboard() {
           <Link href="/studio/bg3d" className="rd-v2-card min-h-11">
             <div className="rd-v2-card-top">
               <span className="rd-v2-index" aria-hidden="true">02</span>
-              <span className="rd-v2-spec">WEBGPU · LIVE INK</span>
+              <span className="rd-v2-spec">{bi("배경·포즈", "Scenes and poses")}</span>
               <span className="rd-v2-glyph rd-v2-glyph--cube" aria-hidden="true"><i /><i /></span>
             </div>
             <div className="rd-v2-card-body">
-              <strong><Boxes size={15} aria-hidden="true" />{bi("3D 세트 · 캐릭터 셰이퍼", "3D Set & Character Shaper")}</strong>
-              <small>{bi("공간 배치·관절 포즈 후 실시간 2D 펜선 즉시 추출", "Stage 3D rooms & poses with live 2D line extraction")}</small>
+              <strong><Boxes size={15} aria-hidden="true" />{bi("3D 배경 만들기", "Build a 3D scene")}</strong>
+              <small>{bi("공간과 캐릭터 포즈를 배치해요", "Arrange a scene and pose your characters")}</small>
             </div>
             <span className="rd-v2-cta">{bi("3D 스튜디오 열기", "Open 3D Studio")}<ArrowRight size={14} aria-hidden="true" /></span>
           </Link>
@@ -134,30 +144,31 @@ export function ReferenceCreatorDashboard() {
           <Link href="/discover" className="rd-v2-card min-h-11">
             <div className="rd-v2-card-top">
               <span className="rd-v2-index" aria-hidden="true">03</span>
-              <span className="rd-v2-spec">18 GENRES · WUF</span>
+              <span className="rd-v2-spec">{bi("장르·연재처", "Genres and platforms")}</span>
               <span className="rd-v2-glyph rd-v2-glyph--bars" aria-hidden="true"><i /><i /><i /><i /></span>
             </div>
             <div className="rd-v2-card-body">
-              <strong><Compass size={15} aria-hidden="true" />{bi("스펙트럼 작품 탐색 허브", "Spectrum Story Hub")}</strong>
-              <small>{bi("18종 장르 스펙트럼·통합 랭킹·어디서 봐 가격 비교", "18-genre spectrum, unified rankings & platform router")}</small>
+              <strong><Compass size={15} aria-hidden="true" />{bi("읽을 작품 찾기", "Find a story to read")}</strong>
+              <small>{bi("취향에 맞는 작품과 공식 연재처를 찾아요", "Discover stories and where to read them")}</small>
             </div>
-            <span className="rd-v2-cta">{bi("스펙트럼 탐색", "Explore Hub")}<ArrowRight size={14} aria-hidden="true" /></span>
+            <span className="rd-v2-cta">{bi("작품 둘러보기", "Browse stories")}<ArrowRight size={14} aria-hidden="true" /></span>
           </Link>
 
           <Link href="/read/spatial" className="rd-v2-card min-h-11">
             <div className="rd-v2-card-top">
               <span className="rd-v2-index" aria-hidden="true">04</span>
-              <span className="rd-v2-spec">WEBXR · 90°/120°</span>
+              <span className="rd-v2-spec">{bi("새로운 감상", "A different view")}</span>
               <span className="rd-v2-glyph rd-v2-glyph--dome" aria-hidden="true"><i /><i /></span>
             </div>
             <div className="rd-v2-card-body">
-              <strong><Glasses size={15} aria-hidden="true" />{bi("2.5D 공간 리더 체험", "Try 2.5D Spatial Reader")}</strong>
-              <small>{bi("원통형·돔 캐노피 곡률과 깊이 레이어 몰입 감상", "Curved canopy & multi-depth spatial webtoon viewer")}</small>
+              <strong><Glasses size={15} aria-hidden="true" />{bi("공간 뷰어 체험", "Try the spatial viewer")}</strong>
+              <small>{bi("만화 컷을 입체적인 공간에서 감상해요", "Explore comic panels in a spatial view")}</small>
             </div>
             <span className="rd-v2-cta">{bi("공간 뷰어 체험", "Launch Spatial")}<ArrowRight size={14} aria-hidden="true" /></span>
           </Link>
         </div>
       </nav>
+      </details>
       <RevealOnScroll>
       <section className="rd-examples" aria-labelledby="rd-examples-title">
         <div className="rd-examples-heading"><h2 id="rd-examples-title">{bi("예시 작품", "Example works")}</h2><Link href="/studio"><FolderKanban size={13} aria-hidden="true" />{bi("내 프로젝트", "My projects")}<ChevronRight size={13} aria-hidden="true" /></Link></div>

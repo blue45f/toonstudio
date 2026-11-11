@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { Archive, BookOpen, Clock3, FolderOpen, Plus, RotateCcw, Search, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { Archive, BookOpen, Clock3, FolderOpen, Plus, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -16,14 +16,6 @@ import type { StudioProjectLibraryManagementController } from "./useStudioProjec
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioProjectLibraryManagementHeader", ko, en);
-
-const BENTO_STAGE_STEPS = [
-  { ko: "콘티", en: "Board" },
-  { ko: "3D", en: "3D" },
-  { ko: "작화", en: "Ink" },
-  { ko: "식자", en: "Type" },
-  { ko: "출고", en: "Ship" },
-] as const;
 
 export function StudioProjectLibraryManagementHeader({
   controller,
@@ -106,17 +98,11 @@ export function StudioProjectLibraryManagementHeader({
                   </span>
                   <span
                     data-studio-recent-save-badge="true"
-                    className={cn(
-                      "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[0.65rem] font-bold",
-                      recentIsTemporary
-                        ? "bg-panel text-fg-2"
-                        : "bg-good/15 text-good",
-                    )}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-full bg-panel px-2.5 py-1 text-[0.65rem] font-bold text-fg-2"
                   >
-                    <ShieldCheck size={12} aria-hidden="true" />
                     {recentIsTemporary
-                      ? bi("오프라인 자동저장됨", "Offline autosaved")
-                      : bi("정식 저장 연결됨", "Formal save linked")}
+                      ? bi("임시 작업", "Temporary work")
+                      : bi("저장 위치 지정됨", "Save location configured")}
                   </span>
                 </div>
                 <div className="min-w-0">
@@ -131,22 +117,6 @@ export function StudioProjectLibraryManagementHeader({
                     {`${studioProjectLibraryTypeLabel(recentProject)} · ${studioProjectLibraryDateLabel(recentProject.lastOpenedAt, _locale)}`}
                   </p>
                 </div>
-                <ol
-                  aria-label={bi("5단계 제작 공정 흐름", "5-stage production flow")}
-                  className="grid grid-cols-5 gap-1 pt-1"
-                >
-                  {BENTO_STAGE_STEPS.map((step, idx) => (
-                    <li
-                      key={step.en}
-                      className={cn(
-                        "rounded-lg px-1.5 py-1 text-center text-[0.62rem] font-bold",
-                        idx <= 2 ? "bg-accent/20 text-accent" : "bg-panel/80 text-fg-3",
-                      )}
-                    >
-                      {bi(step.ko, step.en)}
-                    </li>
-                  ))}
-                </ol>
               </div>
               <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
                 <Link
@@ -175,13 +145,13 @@ export function StudioProjectLibraryManagementHeader({
               <div className="space-y-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 text-[0.65rem] font-black text-accent">
                   <Sparkles size={12} aria-hidden="true" />
-                  {bi("1초 첫 캔버스", "1-Second First Canvas")}
+                  {bi("첫 작품 시작", "Start your first work")}
                 </span>
                 <p className="text-base font-black text-fg sm:text-lg">
-                  {bi("오른쪽 규격 카드를 고르면 원고 캔버스가 즉시 열립니다", "Pick a format card on the right to open your canvas in 1 second")}
+                  {bi("만들고 싶은 작업을 선택하세요", "Choose what you want to make")}
                 </p>
                 <p className="text-xs leading-5 text-fg-2">
-                  {bi("로그인 전에도 이 기기 원고 금고(OPFS·SQLite)에 안전하게 자동 저장됩니다.", "Autosaved safely to your local manuscript vault even before signing in.")}
+                  {bi("웹툰·4컷 만화를 시작하거나 작업 중인 파일을 불러올 수 있어요.", "Start a webtoon or comic, or import a file you are working on.")}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
@@ -196,7 +166,7 @@ export function StudioProjectLibraryManagementHeader({
                   href="/studio/recovery"
                   className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 text-xs font-bold" })}
                 >
-                  {bi("복구 금고", "Recovery vault")}
+                  {bi("작업 복구", "Recover work")}
                 </Link>
               </div>
             </div>

@@ -116,6 +116,15 @@ function openMoreBand() {
   }
 }
 
+function openLunaHelp(language: "ko" | "en" = "ko") {
+  const summary = screen.getByText(language === "ko" ? "시작이 막막한가요?" : "Need help getting started?").closest("summary");
+  if (!summary) throw new Error("Luna 안내를 여는 summary가 필요합니다.");
+  const details = summary.closest("details");
+  if (!details) throw new Error("Luna 안내의 접이식 메뉴가 필요합니다.");
+  if (!details.open) fireEvent.click(summary);
+  expect(details.open).toBe(true);
+}
+
 describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
   it("아이디어 입력이 만들기의 시작점이고 검색 팔레트는 상단 크롬의 몫으로 남는다", async () => {
     await dashboard();
@@ -214,6 +223,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
   it("영어 선택 시 모든 홈 동선과 접근성 이름을 영어로 제공한다", async () => {
     await dashboard("en");
     openMoreBand();
+    openLunaHelp("en");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("What story will youcreate today?");
     expect(screen.getByRole("textbox", { name: "Idea input" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Start" })).toBeTruthy();
@@ -228,9 +238,18 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     }
   });
 
-  it("히어로 직하단에 44px 1초 포맷·스펙트럼 런치패드를 노출하고 정본 경로로 연결한다", async () => {
+  it("추가 도구는 기본 접힘이며 펼치면 44px 동선 4개를 정본 경로로 연결한다", async () => {
     await dashboard();
     const launchpad = screen.getByTestId("home-v2-spectrum-launchpad");
+    const details = launchpad.closest("details");
+    expect(details?.open).toBe(false);
+    expect(launchpad.textContent).not.toMatch(/1초|1S|WEBGPU|WEBXR|Rights BOM/u);
+    expect(screen.getByRole("textbox", { name: "아이디어 입력" }).closest("details")).toBeNull();
+    expect(screen.getByRole("region", { name: "예시 작품" }).closest("details")).toBeNull();
+    const summary = screen.getByText("다른 시작 방법 보기").closest("summary");
+    if (!summary) throw new Error("추가 도구를 여는 summary가 필요합니다.");
+    fireEvent.click(summary);
+    expect(details?.open).toBe(true);
     const links = within(launchpad).getAllByRole("link");
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/studio/new?lane=blank",
@@ -241,6 +260,8 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     for (const link of links) {
       expect(link.className).toContain("min-h-11");
     }
+    fireEvent.click(summary);
+    expect(details?.open).toBe(false);
   });
 
   it("예시 컷을 고르면 로컬 미리보기만 바뀌고 편집기로 이동하거나 검색을 실행하지 않는다", async () => {
@@ -303,6 +324,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
 
   it("Luna는 실제 도구로 가는 제안 칩과 직접 물을 수 있는 입력창을 함께 제공한다", async () => {
     await dashboard();
+    openLunaHelp();
     const luna = screen.getByRole("complementary", { name: "Luna 창작 안내" });
     expect(within(luna).getByText("안녕하세요! 어떤 이야기를 함께 만들어 볼까요?")).toBeTruthy();
     expect(within(luna).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(HOME_LUNA_SUGGESTIONS.map((item) => item.href));
@@ -312,6 +334,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
   it("Luna에게 물으면 사용자 AI 전송으로 답하고, 연결이 없으면 키 등록 동선을 안내한다", async () => {
     completeAi.mockResolvedValueOnce(completedText("가제를 정했다면 스토리 연구실에서 인물의 욕망부터 적어 보세요."));
     await dashboard();
+    openLunaHelp();
     const luna = screen.getByRole("complementary", { name: "Luna 창작 안내" });
     fireEvent.change(within(luna).getByRole("textbox", { name: "Luna에게 물어보기" }), { target: { value: "뭐부터 시작해?" } });
     fireEvent.click(within(luna).getByRole("button", { name: "Luna에게 보내기" }));
@@ -349,11 +372,16 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/search");
   });
 
-  it("Luna 패널은 히어로 안에 있고 히어로 입력은 모드 토글을 품은 한 단으로 통합돼 있다", async () => {
+  it("Luna 안내는 요청할 때 펼치고 이야기 입력·시작은 항상 제공한다", async () => {
     await dashboard();
     const hero = document.querySelector(".rd-poster");
     const luna = screen.getByRole("complementary", { name: "Luna 창작 안내" });
     expect(hero?.contains(luna)).toBe(true);
+    const details = luna.closest("details");
+    expect(details?.open).toBe(false);
+    expect(screen.getByRole("textbox", { name: "아이디어 입력" }).closest("details")).toBeNull();
+    openLunaHelp();
+    expect(details?.open).toBe(true);
     // 중간 섹션으로 따로 서 있지 않다.
     expect(document.querySelector(".rd-luna-section")).toBeNull();
     const forms = document.querySelectorAll("form.rd-idea");

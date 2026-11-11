@@ -1,13 +1,13 @@
-# ToonStudio Starlight Atelier 전수 디자인 시안 패키지 (v2.6)
+# ToonStudio Starlight Atelier 디자인 참고 시안 패키지 (v2.6)
 
-- 상태: **현재** (`2026-11-11`, 데스크톱 `시안 A ~ 시안 P` 16종 + 모바일 `모바일 시안 M1 ~ M4` 4종 전수 아트보드·토큰·실제 코드 1:1 동기화 완료)
+- 상태: **reference / target** (`2026-11-11`). 데스크톱 `시안 A ~ 시안 P` 16종과 모바일 `시안 M1 ~ M4` 4종의 참고 아트보드·목표 구성·토큰 매핑을 보존한 패키지다. 실제 구현·미적용·검증·배포 상태는 [구현·검증 대조표](../sitewide-clarity-20261111/verification-matrix.md)와 [검증·배포 기록](../sitewide-clarity-20261111/validation-and-release.md)에서 구분한다.
 - 상위 정본: [PRODUCT.md](../../../PRODUCT.md), [DESIGN.md](../../../DESIGN.md), [UI/UX v2 통합 개편 설계서](../../architecture/ui-ux-v2-overhaul-blueprint-2026-11-11.md), [품질 게이트 정책](../../operations/quality-gates-policy.md)
 
 ## 1. 시안 패키지 구성 파일
 
-이 폴더는 툰스튜디오 모노레포 7개 애플리케이션(`web`, `api`, `admin-web`, `brush-lab`, `character-lab`, `mobile`, `desktop-sync`)과 웹 24개 라우트 그룹 전체의 **Starlight Atelier** 시각 시안을 프로젝트 저장소 안에서 언제든 열람·검증할 수 있도록 정제한 정본 시안 번들입니다.
+이 폴더는 툰스튜디오 모노레포 7개 애플리케이션(`web`, `api`, `admin-web`, `brush-lab`, `character-lab`, `mobile`, `desktop-sync`)과 웹의 여러 경로를 20개 화면 계열로 묶은 **Starlight Atelier** 참고 시안 번들입니다. 보드와 라우트 매핑은 설계 의도를 보여줍니다. 각 실제 페이지의 기능·사용성·접근성·데이터 처리는 별도의 실행 증거로 판정합니다.
 
-| 파일 경로 | 용도 및 내용 |
+| 파일 경로 | 참고 시안·목표 구성의 내용 |
 | :--- | :--- |
 | [starlight-atelier-interactive-gallery.html](./starlight-atelier-interactive-gallery.html) | WebStorm 미리보기나 브라우저에서 바로 열어 전체 20개 시안(`시안 A~P` · `모바일 M1~M4`), OKLCH 스와치, 고해상도 아트보드를 탭별로 필터링해 볼 수 있는 독립 실행형 시안 아틀라스 |
 | [starlight-atelier-design-tokens.json](./starlight-atelier-design-tokens.json) | OKLCH 의미 색상 팔레트, 13개 Spectacle 계약 토큰, `44px`(`min-h-11`) 터치 타깃 불변식, 20대 보드별 정본 라우트 매핑 JSON 원장 |
@@ -39,6 +39,24 @@
 
 ![모바일 시안 M1~M4 아트보드](./boards/board-m1-m4-mobile-starlight-suite.svg)
 
-## 3. 시안-코드 자동 검증 연결
+## 3. 정적 계약 검사와 실제 검증
 
-모든 시안 패키지 파일 존재 여부, OKLCH 토큰 계약, 정본 경로 사용(레거시 리다이렉트 별칭 금지), 전 핵심 화면군 `>=44px`(`min-h-11`) 터치 타깃, 시각 앵커 무결성은 [verify-ui-ux-v2-contracts.mjs](../../../scripts/verify-ui-ux-v2-contracts.mjs)를 통해 커밋·푸시 및 아키텍처 검증 시마다 자동 검사됩니다.
+[verify-ui-ux-v2-contracts.mjs](../../../scripts/verify-ui-ux-v2-contracts.mjs)는 명시한 파일·보드 식별자의 존재, 일부 색상·최소 높이 문자열, 이전 주소와 소스 앵커를 정적으로 검사합니다. SVG의 XML 유효성은 파일 구조 검사입니다. 이러한 검사는 렌더된 컨트롤의 실제 크기, 이동 목적지의 실행, 저장·내보내기, 사용자 여정 완주 또는 시안과 런타임의 기능 일치를 입증하지 않습니다.
+
+| 판정 대상 | 이 패키지의 역할 | 확인할 증거 |
+| --- | --- | --- |
+| 참고 시각 자료 (**reference**) | 기존 5개 SVG 묶음·20개 시안 이름·토큰·HTML 갤러리를 보존한다. | 이 문서의 원본 링크와 이미지 |
+| 목표 화면 구성 (**target**) | 화면 계열별 배치와 기능 방향을 제안한다. | 보드별 구성과 [명료성 개선 계열 계약](../sitewide-clarity-20261111/index.html#contracts) |
+| 실제 반영 (**current / migration**) | 실제 소스·마운트·콜백 연결로 확인한 범위를 구분한다. | [구현·검증 대조표](../sitewide-clarity-20261111/verification-matrix.md) |
+| 미적용·미검증 | 샘플·순수 모델·표시용 링크와 실행 기능을 구분하고 남은 항목을 기록한다. | 대조표의 남은 차이와 [현재 검증 범위](../sitewide-clarity-20261111/validation-and-release.md#현재-확인-범위) |
+| 실제 화면·릴리스 | 실행 환경·테마·뷰포트·인증·데이터 조건과 통과/실패를 함께 기록한다. | [검증·배포 기록](../sitewide-clarity-20261111/validation-and-release.md)와 실제 실행 캡처 |
+
+현재 작업공간에는 개발 서버의 [모바일 메뉴 캡처](../../../.qa/clarity-20261111/mobile-navigation-confirmed/starlight-mobile-menu-collapsed.png), [모바일 서재 캡처](../../../.qa/clarity-20261111/mobile-navigation-confirmed/starlight-mobile-library-default.png), [데스크톱 리더 캡처](../../../.qa/clarity-20261111/reader-native-confirmed/starlight-desktop-reader.png), [모바일 리더 캡처](../../../.qa/clarity-20261111/reader-native-confirmed/starlight-mobile-reader.png)가 있다. 이 `.qa/` 자료는 로컬 검증 산출물이며 저장소에 커밋되는 보드 이미지와 다르다. 게스트/API fixture 관측의 조건·실패·한계는 검증·배포 기록을 함께 읽는다. 보드를 시각적으로 읽은 검토와 앱을 실행해 캡처한 검증도 별개로 기록한다.
+
+## 4. 기존 상태 선언의 이력
+
+2026-11-11의 초기 v2.6 문서는 다음과 같이 상태를 선언했다.
+
+> 데스크톱 시안 A~P 16종 + 모바일 M1~M4 4종 전수 아트보드·토큰·실제 코드 1:1 동기화 완료
+
+이 문구는 당시의 선언 이력으로 보존한다. 파일·마커 계약 검사와 라우트 매핑만으로 모든 화면의 런타임·기능·사용성 일치를 판정할 수 없어, 현재 상태 표시는 위의 **reference / target**, 실제 구현 대조표, 실행 검증·배포 기록으로 나누었다. 원본 SVG와 기존 링크는 유지한다.

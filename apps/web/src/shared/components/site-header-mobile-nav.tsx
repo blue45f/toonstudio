@@ -2,7 +2,7 @@ import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowRight, FolderOpen, LayoutGrid, Palette, X } from "lucide-react";
+import { ArrowRight, ChevronDown, FolderOpen, LayoutGrid, Palette, X } from "lucide-react";
 import { useEffect, useRef, type RefObject } from "react";
 
 import {
@@ -49,6 +49,7 @@ const FOCUSABLE_SELECTOR = [
   "input:not([disabled]):not([type='hidden'])",
   "select:not([disabled])",
   "textarea:not([disabled])",
+  "summary",
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
@@ -63,7 +64,10 @@ function focusableElements(dialog: HTMLElement): HTMLElement[] {
     (element) =>
       element.tabIndex >= 0 &&
       !element.hidden &&
-      !element.closest("[hidden], [inert], [aria-hidden='true']")
+      !element.closest("[hidden], [inert], [aria-hidden='true']") &&
+      ![...dialog.querySelectorAll<HTMLDetailsElement>("details:not([open])")].some(
+        (details) => details.contains(element) && !details.querySelector(":scope > summary")?.contains(element),
+      )
   );
 }
 
@@ -283,23 +287,18 @@ export function MobileHeaderNavigation({
                 </Link>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                {navigationGroups.map((group, groupIndex) => (
-                  <section
+              <div className="grid items-start gap-2">
+                {navigationGroups.map((group) => (
+                  <details
                     key={group.id}
                     aria-labelledby={`${menuId}-${group.id}`}
                     className="site-menu-group"
+                    open={group.id === currentGroupId}
                     data-current-journey={group.id === currentGroupId ? "true" : undefined}
                   >
-                    <div className="mb-3 flex items-start gap-3 px-1 sm:px-2">
-                      <span
-                        aria-hidden="true"
-                        className="font-display text-[0.68rem] font-bold tracking-[0.14em] text-accent"
-                      >
-                        0{groupIndex + 1}
-                      </span>
-                      <div>
-                        <h2
+                    <summary className="site-menu-group__summary">
+                      <span>
+                        <span
                           id={`${menuId}-${group.id}`}
                           className="font-display text-sm font-bold text-fg"
                         >
@@ -309,12 +308,10 @@ export function MobileHeaderNavigation({
                               {bi("현재 여정", "Current journey")}
                             </span>
                           )}
-                        </h2>
-                        <p className="mt-1 text-xs leading-5 text-fg-3">
-                          {siteNavigationText(group.description, locale)}
-                        </p>
-                      </div>
-                    </div>
+                        </span>
+                      </span>
+                      <ChevronDown size={18} aria-hidden="true" />
+                    </summary>
                     <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                       {group.items.filter((item) => !PINNED_MENU_HREFS.has(item.href)).map((item) => {
                         const active = isActive(item.href, item.exact);
@@ -367,7 +364,7 @@ export function MobileHeaderNavigation({
                         );
                       })}
                     </ul>
-                  </section>
+                  </details>
                 ))}
               </div>
 

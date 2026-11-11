@@ -15,7 +15,8 @@ import { cn } from "@/shared/lib/utils";
  * 시작하도록 만든 표현 전용 컴포넌트다. 도메인 사이에서는 `domains/legal/public` 경계로만
  * 가져다 쓰며, 여러 앱 영역이 쓰게 되면 `shared/components/layout`으로 승격할 후보다.
  *
- * - `size="hero"`: 허브(탐색·마켓 홈·학습 홈 등) 첫 화면용 큰 제목.
+ * - 기본 크기: 작업 제목과 조작부를 먼저 보여주는 간결한 헤더.
+ * - `size="hero"`: 소개·마켓 홈 등에서 명시적으로 선택하는 큰 제목과 아트.
  * - `surface="plain"`: 카드 배경 없이 하단 구분선만 두는 작업형 페이지 헤더.
  * - `aside`: lg 이상에서 오른쪽에 두는 보조 요소(모바일에서는 본문 아래로 내려간다).
  * - `art`: aside가 없을 때 그 자리에 두는 장식 아트(일러스트 풀 키). 경로별 배정은
@@ -80,7 +81,7 @@ const ASIDE_COLUMNS = {
 } as const;
 
 const TITLE_SIZE = {
-  default: "text-[clamp(1.75rem,5.4vw,2.5rem)] leading-[1.15] tracking-[-0.03em]",
+  default: "text-[clamp(1.5rem,4vw,2rem)] leading-[1.2] tracking-[-0.025em]",
   hero: "text-[clamp(2rem,6vw,3.25rem)] leading-[1.1] tracking-[-0.045em]",
 } as const;
 
@@ -89,7 +90,7 @@ const TITLE_SIZE = {
  * (alt 빈 문자열·aria-hidden), 초점 위치 50% 30%. 작품이나 실제 화면으로 읽히지 않게
  * 테두리와 패널 톤 안에 가둔다.
  */
-function SitePageHeaderArtwork({ artKey }: { readonly artKey: string }) {
+function SitePageHeaderArtwork({ artKey, compact }: { readonly artKey: string; readonly compact: boolean }) {
   return (
     <img
       data-site-page-header-art={artKey}
@@ -100,7 +101,9 @@ function SitePageHeaderArtwork({ artKey }: { readonly artKey: string }) {
       height={480}
       decoding="async"
       draggable={false}
-      className="h-44 w-full rounded-2xl border border-line object-cover sm:h-52 lg:h-full lg:min-h-60"
+      className={compact
+        ? "h-24 w-36 rounded-lg border border-line object-cover"
+        : "h-44 w-full rounded-2xl border border-line object-cover sm:h-52 lg:h-full lg:min-h-60"}
       style={{ objectPosition: "50% 30%" }}
     />
   );
@@ -144,9 +147,9 @@ function SitePageHeaderBannerArtwork({ artKey, artSrc, artSrcSet }: {
   );
 }
 
-/** 배너 최소 높이 — 본문을 과도하게 밀지 않게 측면 아트 시절의 헤더 높이와 같은 급으로 절제한다. */
+/** 작업형 배너는 내용 높이를 따르고, 명시적인 hero만 큰 아트 높이를 확보한다. */
 const BANNER_MIN_HEIGHT = {
-  default: "min-h-60 sm:min-h-64",
+  default: "min-h-0",
   hero: "min-h-72 sm:min-h-80",
 } as const;
 
@@ -171,7 +174,9 @@ export function SitePageHeader({
   size = "default",
 }: SitePageHeaderProps) {
   const panel = surface === "panel";
-  const asideNode = aside ?? (art ? <SitePageHeaderArtwork artKey={art} /> : null);
+  const compact = size === "default";
+  const decorativeAside = aside == null && art != null;
+  const asideNode = aside ?? (art ? <SitePageHeaderArtwork artKey={art} compact={compact} /> : null);
 
   // 전경(아이브로·제목·설명·자식·행동)은 배너 여부에 따라 글자색만 갈린다.
   // 배너에서는 테마 토큰 대신 아트 표면의 고정 명암(흰 글자·연보라 아이브로)을 쓴다 —
@@ -181,7 +186,7 @@ export function SitePageHeader({
       <p
         className={cn(
           "eyebrow flex items-center gap-1.5",
-          onArt ? "text-[oklch(0.85_0.09_265)]" : "text-accent",
+          onArt ? "text-[oklch(0.85_0.09_265)]" : compact ? "text-fg-2" : "text-accent",
         )}
       >
         {Icon ? <Icon size={14} aria-hidden="true" /> : null}
@@ -190,7 +195,8 @@ export function SitePageHeader({
       <h1
         id={titleId}
         className={cn(
-          "mt-2.5 text-balance break-keep font-bold",
+          "text-balance break-keep font-bold",
+          compact ? "mt-1.5" : "mt-2.5",
           onArt ? "max-w-3xl text-white" : "text-fg",
           TITLE_SIZE[size],
         )}
@@ -200,16 +206,17 @@ export function SitePageHeader({
       {description != null ? (
         <p
           className={cn(
-            "mt-3 max-w-2xl text-balance break-keep text-sm leading-relaxed sm:text-base",
+            "max-w-2xl text-balance break-keep text-sm leading-relaxed sm:text-base",
+            compact ? "mt-2" : "mt-3",
             onArt ? "text-white/80" : "text-fg-2",
           )}
         >
           {description}
         </p>
       ) : null}
-      {children != null ? <div className="mt-5">{children}</div> : null}
+      {children != null ? <div className={compact ? "mt-4" : "mt-5"}>{children}</div> : null}
       {actions != null ? (
-        <div className="mt-5 flex flex-wrap items-center gap-2">{actions}</div>
+        <div className={cn("flex flex-wrap items-center gap-2", compact ? "mt-3" : "mt-5")}>{actions}</div>
       ) : null}
     </>
   );
@@ -221,20 +228,25 @@ export function SitePageHeader({
       <header
         data-site-page-header={surface}
         data-site-page-header-variant="banner"
+        data-site-page-header-size={size}
         className={cn(
-          "relative isolate overflow-hidden rounded-3xl border border-line",
+          "relative isolate overflow-hidden border border-line",
+          compact ? "rounded-xl" : "rounded-3xl",
           className,
         )}
       >
         <SitePageHeaderBannerArtwork artKey={art} artSrc={artSrc} artSrcSet={artSrcSet} />
         {artCaption != null ? (
-          <p className="absolute right-4 top-4 z-10 m-0 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
+          <p className={compact
+            ? "relative z-10 m-0 px-4 pt-3 text-xs text-white/80"
+            : "absolute right-4 top-4 z-10 m-0 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm"}>
             {artCaption}
           </p>
         ) : null}
         <div
           className={cn(
-            "relative flex flex-col justify-end p-5 sm:p-7 lg:p-8",
+            "relative flex flex-col justify-end",
+            compact ? "p-4 sm:p-5" : "p-5 sm:p-7 lg:p-8",
             BANNER_MIN_HEIGHT[size],
           )}
         >
@@ -247,15 +259,18 @@ export function SitePageHeader({
   return (
     <header
       data-site-page-header={surface}
+      data-site-page-header-size={size}
       className={cn(
         "relative isolate",
         panel
-          ? "overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-7 lg:p-8"
-          : "border-b border-line pb-6 sm:pb-8",
+          ? compact
+            ? "rounded-xl border border-line bg-panel/60 p-4 sm:p-5"
+            : "overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-7 lg:p-8"
+          : compact ? "border-b border-line pb-4 sm:pb-5" : "border-b border-line pb-6 sm:pb-8",
         className,
       )}
     >
-      {panel ? (
+      {panel && !compact ? (
         <span
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2 opacity-90"
@@ -263,12 +278,16 @@ export function SitePageHeader({
       ) : null}
       <div
         className={cn(
-          "grid gap-6",
-          asideNode != null && cn(ASIDE_COLUMNS[asideSize], "lg:items-center"),
+          "grid",
+          compact ? "gap-4" : "gap-6",
+          asideNode != null && cn(
+            compact && decorativeAside ? "lg:grid-cols-[minmax(0,1fr)_9rem]" : ASIDE_COLUMNS[asideSize],
+            "lg:items-center",
+          ),
         )}
       >
         <div className="min-w-0">{foreground(false)}</div>
-        {asideNode != null ? <div className={cn("min-w-0", asideClassName)}>{asideNode}</div> : null}
+        {asideNode != null ? <div className={cn("min-w-0", compact && decorativeAside && "hidden lg:block", asideClassName)}>{asideNode}</div> : null}
       </div>
     </header>
   );

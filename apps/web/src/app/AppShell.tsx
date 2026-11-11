@@ -266,9 +266,6 @@ export function AppShell({
             publicCreativeRoute ? "atelier" : publicExperience || undefined
           }
         >
-          {enhancedSite ? (
-            <Suspense fallback={null}><SiteCreationCompass /></Suspense>
-          ) : null}
           {publicCreativeRoute && !/^\/create\/*$/iu.test(pathname) ? (
             <Suspense fallback={null}><ActiveProjectContextBridge /></Suspense>
           ) : null}
@@ -277,6 +274,9 @@ export function AppShell({
               <AppRouter />
             </SpatialCampusFrame>
           </WorkspaceAccountContext.Provider>
+          {enhancedSite ? (
+            <Suspense fallback={null}><SiteCreationCompass /></Suspense>
+          ) : null}
           {publicCreativeRoute && !immersiveVirtualExperience && supportsPublicSiteOnwardJourney(pathname) ? (
             <ErrorBoundary resetKey={pathname}>
               <Suspense fallback={<Suspense fallback={null}><PublicSiteWayfinder /></Suspense>}>

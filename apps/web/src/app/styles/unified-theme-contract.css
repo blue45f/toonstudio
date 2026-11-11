@@ -247,6 +247,12 @@
   text-wrap: balance;
 }
 
+/* 작업형 공통 헤더는 전역 히어로 제목 크기보다 자신의 간결한 크기를 우선한다. */
+[data-site-experience] .route-stage[data-theme-contract="unified"] [data-page-container] > header[data-site-page-header-size="default"] h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: -0.025em;
+}
+
 /* 에디토리얼 변형 (BLUEPRINT §6.2 (5)) — 세리프 이탤릭을 명시적으로 고른 표면만 켠다(opt-in 속성).
    크기는 layout-tokens.ts의 LAYOUT_TYPE_SCALE.editorial.heading과 같고, 페이지 헤더 h1 규칙보다 이긴다. */
 h1[data-type-variant="editorial"],

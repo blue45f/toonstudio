@@ -1,0 +1,48 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { SiteContextualSubNav } from "./site-contextual-subnav";
+
+vi.mock("@/shared/lib/i18n", () => ({
+  useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: "ko" }),
+}));
+
+afterEach(cleanup);
+
+describe("맥락 메뉴의 기본 정보량과 현재 위치", () => {
+  it("현재 메뉴를 기본 네 자리 안에 유지하고 다른 목적지도 펼쳐서 찾을 수 있다", () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={["/recommend"]}><SiteContextualSubNav /></MemoryRouter>,
+    );
+    const nav = screen.getByRole("navigation", { name: "작품 탐색 · 큐레이션" });
+    const primary = nav.querySelector(":scope > ul");
+    expect(primary?.querySelectorAll("a")).toHaveLength(4);
+    expect(primary?.querySelector('[aria-current="page"]')?.getAttribute("href")).toBe("/recommend");
+    expect(nav.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    const disclosure = container.querySelector("details");
+    expect(disclosure?.open).toBe(false);
+    expect(disclosure?.querySelector('a[href="/calendar"]')).not.toBeNull();
+    const summary = disclosure?.querySelector("summary");
+    expect(summary).not.toBeNull();
+    if (summary) fireEvent.click(summary);
+    expect(disclosure?.open).toBe(true);
+    if (summary) fireEvent.click(summary);
+    expect(disclosure?.open).toBe(false);
+  });
+
+  it.each([
+    ["/library", "/library"],
+    ["/library?tab=diary", "/library?tab=diary"],
+    ["/library?tab=rated", "/library?tab=rated"],
+    ["/library?tab=collections", "/library?tab=collections"],
+  ])("%s의 쿼리 탭을 현재 위치 하나로 표시한다", (url, href) => {
+    const { container } = render(
+      <MemoryRouter initialEntries={[url]}><SiteContextualSubNav /></MemoryRouter>,
+    );
+    const current = container.querySelectorAll('[aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]?.getAttribute("href")).toBe(href);
+  });
+});

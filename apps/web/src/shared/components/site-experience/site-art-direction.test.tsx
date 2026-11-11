@@ -79,13 +79,21 @@ describe("artwork study controls", () => {
 });
 
 describe("contextual creation compass", () => {
-  it("starts compact with a real destination and no autoplay media", () => {
+  it("다음 작업 행동을 기본 접힘 안내 안에 둔다", () => {
     const result = render(<MemoryRouter initialEntries={["/learn"]}><SiteCreationCompass /></MemoryRouter>);
-    expect(result.container.querySelector("details")?.hasAttribute("open")).toBe(false);
+    const details = result.container.querySelector("details");
+    expect(details?.hasAttribute("open")).toBe(false);
+    expect(details?.contains(screen.getByRole("link", { name: "캔버스에서 연습하기" }))).toBe(true);
+    const summary = result.container.querySelector("summary");
+    if (!summary) throw new Error("창작 활용 안내를 여는 요약이 없습니다");
+    fireEvent.click(summary);
+    expect(result.container.querySelector("details")?.hasAttribute("open")).toBe(true);
     expect(screen.getByRole("link", { name: "캔버스에서 연습하기" }).getAttribute("href")).toBe("/studio?uiMode=simple");
     expect(result.container.querySelector(".site-creation-compass__image img")?.getAttribute("sizes"))
       .toBe("(max-width: 767px) calc(100vw - 58px), 150px");
     expect(result.container.querySelector("video")).toBeNull();
+    fireEvent.click(summary);
+    expect(details?.hasAttribute("open")).toBe(false);
   });
   it.each(["/create", "/create?intent=my-story", "/CREATE/?intent=my-story"])("작품 시작 입력 %s 위에 다른 작업의 홍보를 표시하지 않는다", (path) => {
     const result = render(<MemoryRouter initialEntries={[path]}><SiteCreationCompass /></MemoryRouter>);

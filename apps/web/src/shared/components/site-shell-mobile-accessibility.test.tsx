@@ -146,7 +146,7 @@ describe("mobile site shell accessibility", () => {
 
     const quickNavigation = container.querySelector<HTMLElement>('nav[aria-label="빠른 이동"]');
     expect(Array.from(quickNavigation?.querySelectorAll("a") ?? []).map((link) => link.getAttribute("href"))).toEqual(["/", "/studio", "/discover", "/community", "/sitemap"]);
-    expect(quickNavigation?.firstElementChild?.className).toContain("grid-cols-5");
+    expect(quickNavigation?.querySelector(":scope > .grid")?.className).toContain("grid-cols-5");
     expect(within(quickNavigation as HTMLElement).getByRole("link", { name: "탐색" }).getAttribute("aria-current")).toBe("page");
   });
 
