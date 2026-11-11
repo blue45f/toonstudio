@@ -187,7 +187,7 @@ export function EngineeringMapSection({
         ) : (
           <ul className="mt-6 grid gap-3" aria-label={text(map.title)} data-map-cards="">
             {rows.map((row) => (
-              <li key={row.id} className="rounded-3xl border border-line/65 bg-card/65 p-4">
+              <li key={row.id} id={`map-${map.id}-${row.id}`} className="scroll-mt-32 rounded-3xl border border-line/65 bg-card/65 p-4">
                 <RowIdentity mapId={map.id} row={row} visibleAtlas={visibleAtlas} />
                 <dl className="mt-3 grid gap-2.5">
                   {map.columns.map((column) => (
