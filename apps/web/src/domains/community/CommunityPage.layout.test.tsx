@@ -93,10 +93,12 @@ describe("CommunityPage 대화 우선 배치", () => {
     fireEvent.click(summary); expect(details.open).toBe(true);
     fireEvent.click(summary); expect(details.open).toBe(false);
   });
-  it("모든 기존 정적 링크와 네 범주 링크를 남긴다", () => {
+  it("모든 보조 이동과 네 범주를 유지하고 리뷰·타임랩스는 등록된 주소로 연결한다", () => {
     const {container} = page();
     const hrefs = new Set(Array.from(container.querySelectorAll("a"), link => link.getAttribute("href")));
-    for (const href of ["/showcase","/collaborate","/community/events","/studio/new","/community/title","/community/author","/community/pencafe","/community/cafes","/community/promote","/community/reviews","/community/timelapse","/community/promote/new","/showcase/promo","/cuts","/newsletter","/community/promote?stage=amateur","/community/promote?kind=trailer","/community?provenance=human-verified","/community?provenance=ai-assisted","/creator/membership","/team/recruiting"]) expect(hrefs.has(href),href).toBe(true);
+    for (const href of ["/showcase","/collaborate","/community/events","/studio/new","/community/title","/community/author","/community/pencafe","/community/cafes","/community/promote","/reviews","/community/timelapses","/community/promote/new","/showcase/promo","/cuts","/newsletter","/community/promote?stage=amateur","/community/promote?kind=trailer","/community?provenance=human-verified","/community?provenance=ai-assisted","/creator/membership","/team/recruiting"]) expect(hrefs.has(href),href).toBe(true);
+    expect(hrefs.has("/community/reviews")).toBe(false);
+    expect(hrefs.has("/community/timelapse")).toBe(false);
   });
   it("홍보 구성 예시의 네 트랙을 모두 선택할 수 있다", () => {
     page();fireEvent.click(screen.getByRole("button",{name:"작품 홍보 · 예고편"}));

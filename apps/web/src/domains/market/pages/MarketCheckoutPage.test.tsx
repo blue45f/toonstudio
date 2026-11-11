@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { Link as RouterLink, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MarketCheckoutPage } from "./MarketCheckoutPage";
@@ -13,6 +13,7 @@ const api = vi.hoisted(() => ({
   confirmPayment: vi.fn(),
   acquire: vi.fn(),
   detail: vi.fn(),
+  reloadDetail: vi.fn(),
   resolveTarget: vi.fn(),
   getResource: vi.fn(),
   getApiErrorMessage: vi.fn(),
@@ -121,9 +122,9 @@ function tossFactory() {
   return { factory, widgets, widgetsFactory };
 }
 
-function view() {
+function view(search = "") {
   return (
-    <MemoryRouter initialEntries={[`/market/checkout/${RESOURCE_ID}`]}>
+    <MemoryRouter initialEntries={[`/market/checkout/${RESOURCE_ID}${search}`]}>
       <Routes>
         <Route path="/market/checkout/:id" element={<MarketCheckoutPage />} />
       </Routes>
@@ -145,7 +146,7 @@ beforeEach(() => {
     ready: true,
     status: "authenticated",
   });
-  api.detail.mockReturnValue({ record: record(), loading: false, notFound: false });
+  api.detail.mockReturnValue({ record: record(), loading: false, notFound: false, error: null, reload: api.reloadDetail });
   api.getQuote.mockResolvedValue(quote());
   api.getApiErrorMessage.mockImplementation(
     async (caught: unknown, fallback: string) =>
@@ -160,6 +161,143 @@ beforeEach(() => {
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
     callback(0);
     return 0;
+  });
+});
+
+describe("MarketCheckoutPage 조회 실패 복구", () => {
+  it("통신 실패와 상품 삭제를 구분하고 받은 견적을 유지한 채 같은 상품을 다시 조회한다", async () => {
+    api.detail.mockReturnValue({ record: null, loading: false, notFound: false, error: "HTTP 503", reload: api.reloadDetail });
+    const { rerender } = render(view());
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("지금은 리소스 정보를 불러올 수 없어요");
+    expect(alert.textContent).not.toContain("링크가 만료");
+    expect(screen.getByRole("link", { name: "리소스 상세로 돌아가기" }).getAttribute("href"))
+      .toBe(`/market/resource/${RESOURCE_ID}`);
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    expect(api.reloadDetail).toHaveBeenCalledTimes(1);
+    expect(api.getQuote).toHaveBeenCalledTimes(1);
+
+    api.detail.mockReturnValue({ record: record(), loading: false, notFound: false, error: null, reload: api.reloadDetail });
+    rerender(view());
+    expect(await screen.findByRole("checkbox")).toBeTruthy();
+    expect(screen.getByText("테스트 브러시")).toBeTruthy();
+    expect(api.createOrder).not.toHaveBeenCalled();
+    expect(api.confirmPayment).not.toHaveBeenCalled();
+    expect(api.acquire).not.toHaveBeenCalled();
+    expect(api.loadToss).not.toHaveBeenCalled();
+  });
+
+  it("상품과 견적이 모두 실패했으면 두 조회를 재시도하되 결제는 시작하지 않는다", async () => {
+    api.detail.mockReturnValue({ record: null, loading: false, notFound: false, error: "오프라인", reload: api.reloadDetail });
+    api.getQuote.mockRejectedValueOnce(new Error("오프라인")).mockResolvedValue(quote());
+    render(view());
+    await screen.findByRole("alert");
+
+    api.detail.mockReturnValue({ record: record(), loading: false, notFound: false, error: null, reload: api.reloadDetail });
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+
+    expect(await screen.findByRole("checkbox")).toBeTruthy();
+    expect(api.reloadDetail).toHaveBeenCalledTimes(1);
+    expect(api.getQuote).toHaveBeenCalledTimes(2);
+    expect(api.createOrder).not.toHaveBeenCalled();
+    expect(api.confirmPayment).not.toHaveBeenCalled();
+    expect(api.acquire).not.toHaveBeenCalled();
+  });
+
+  it("실제 404는 상품 없음과 탐색·위시리스트 복귀로 안내한다", async () => {
+    api.detail.mockReturnValue({ record: null, loading: false, notFound: true, error: null, reload: api.reloadDetail });
+    render(view());
+
+    expect(await screen.findByText("결제할 리소스 정보를 찾을 수 없습니다.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "리소스 다시 찾기" }).getAttribute("href")).toBe("/market/browse");
+    expect(screen.getByRole("link", { name: "위시리스트에서 확인" }).getAttribute("href")).toBe("/market/wishlist");
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(api.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("견적만 실패하면 상품 조회를 반복하지 않고 견적만 다시 불러온다", async () => {
+    api.getQuote.mockRejectedValueOnce(new Error("견적 조회 실패")).mockResolvedValue(quote());
+    render(view());
+    expect((await screen.findByRole("alert")).textContent).toContain("견적 조회 실패");
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+
+    expect(await screen.findByRole("checkbox")).toBeTruthy();
+    expect(api.getQuote).toHaveBeenCalledTimes(2);
+    expect(api.reloadDetail).not.toHaveBeenCalled();
+    expect(api.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("취소된 이전 견적 응답이 현재 견적을 덮어쓰지 않는다", async () => {
+    let resolvePreviousQuote: ((value: ReturnType<typeof quote>) => void) | undefined;
+    const previousQuote = new Promise<ReturnType<typeof quote>>((resolve) => { resolvePreviousQuote = resolve; });
+    api.getQuote.mockReturnValueOnce(previousQuote).mockResolvedValue(quote(9900));
+    const { rerender } = render(view());
+    api.session.mockReturnValue({ data: { user: {} }, ready: true, status: "unauthenticated" });
+    rerender(view());
+    expect(await screen.findByText("₩9,900")).toBeTruthy();
+
+    await act(async () => { resolvePreviousQuote?.(quote(4900)); });
+
+    expect(screen.getByText("₩9,900")).toBeTruthy();
+    expect(screen.queryByText("₩4,900")).toBeNull();
+    expect(api.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("기존 결제 승인 확인 중에는 상품 조회 재시도가 추가 요청을 시작하지 않는다", async () => {
+    api.detail.mockReturnValue({ record: null, loading: false, notFound: false, error: "HTTP 503", reload: api.reloadDetail });
+    api.confirmPayment.mockReturnValue(new Promise(() => undefined));
+    render(view("?payment=success&paymentKey=payment-1&orderId=order-1&amount=4900"));
+    const retry = await screen.findByRole("button", { name: "다시 시도" });
+    expect(retry.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(retry);
+
+    expect(api.confirmPayment).toHaveBeenCalledTimes(1);
+    expect(api.reloadDetail).not.toHaveBeenCalled();
+    expect(api.getQuote).toHaveBeenCalledTimes(1);
+    expect(api.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("상품을 바꾼 뒤 조회에 실패해도 이전 견적·동의·준비 주문을 재사용하지 않는다", async () => {
+    const nextId = "resource-456";
+    let nextResourceAvailable = false;
+    api.detail.mockImplementation((id: string) => ({
+      record: id === RESOURCE_ID ? record() : nextResourceAvailable ? { ...record(), id: nextId, name: "다음 브러시" } : null,
+      loading: false, notFound: false,
+      error: id === nextId && !nextResourceAvailable ? "HTTP 503" : null,
+      reload: api.reloadDetail,
+    }));
+    api.getQuote.mockResolvedValueOnce(quote())
+      .mockRejectedValueOnce(new Error("다음 상품 견적 조회 실패"))
+      .mockResolvedValueOnce(quote(9900, { resourceId: nextId, productName: "다음 브러시" }));
+    api.createOrder.mockResolvedValue(order(4900, "mock"));
+    render(
+      <MemoryRouter initialEntries={[`/market/checkout/${RESOURCE_ID}`]}>
+        <RouterLink to={`/market/checkout/${nextId}`}>다음 상품</RouterLink>
+        <Routes><Route path="/market/checkout/:id" element={<MarketCheckoutPage />} /></Routes>
+      </MemoryRouter>,
+    );
+    await acceptTermsAndPrepare();
+    expect(await screen.findByRole("button", { name: "개발용 모의 결제 승인" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("link", { name: "다음 상품" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("지금은 리소스 정보를 불러올 수 없어요");
+    nextResourceAvailable = true;
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+
+    const checkbox = await screen.findByRole("checkbox");
+    expect(checkbox).toHaveProperty("checked", false);
+    expect(screen.getByText("다음 브러시")).toBeTruthy();
+    expect(screen.getByText("₩9,900")).toBeTruthy();
+    expect(screen.queryByText("₩4,900")).toBeNull();
+    expect(screen.getByRole("button", { name: /결제 준비/ }).hasAttribute("disabled")).toBe(true);
+    expect(screen.queryByRole("button", { name: "개발용 모의 결제 승인" })).toBeNull();
+    expect(api.getQuote.mock.calls.map(([id]) => id)).toEqual([RESOURCE_ID, nextId, nextId]);
+    expect(api.reloadDetail).toHaveBeenCalledTimes(1);
+    expect(api.createOrder).toHaveBeenCalledTimes(1);
+    expect(api.confirmPayment).not.toHaveBeenCalled();
+    expect(api.acquire).not.toHaveBeenCalled();
   });
 });
 

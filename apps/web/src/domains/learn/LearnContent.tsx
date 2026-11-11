@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { LESSONS, READINGS, TERMS } from "./learning-content";
 import {
@@ -8,6 +9,7 @@ import {
   SKILLS,
 } from "./learning-paths";
 import { canComplete, EMPTY_LESSON, matchesSearch, type Lesson } from "./learning-model";
+import { lessonUrlInContext, resolveLessonNavigation } from "./learning-lesson-navigation";
 import {
   buildStudioPracticeUrl,
   getMissionStatus,
@@ -169,6 +171,7 @@ function LessonDetail({ store }: { store: LearningStore }) {
 }
 
 function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore }) {
+  const t = useBilingual("domains.learn.LearnContent");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const id = useId();
@@ -180,9 +183,8 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
   // 이전 완료 값 — false→true 전이일 때만 완료 제목으로 포커스를 옮긴다.
   const prevCompletedRef = useRef(saved.completed);
   const ready = canComplete(lesson, saved);
-  const lessonIndex = LESSONS.indexOf(lesson);
-  const previous = LESSONS[lessonIndex - 1];
-  const next = LESSONS[lessonIndex + 1];
+  const navigation = resolveLessonNavigation(lesson.id, searchParams.get("from"));
+  const { previous, next, previousUrl, nextUrl } = navigation;
   const meta = getLessonMeta(lesson.id);
   const progress = getLessonRequirementProgress(lesson, store.progress);
   const checkedCount = lesson.checks.reduce((count, _, index) => count + (saved.checks.includes(index) ? 1 : 0), 0);
@@ -191,7 +193,11 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
   const skillLabels = meta.skills.map((skillId) => SKILLS.find((skill) => skill.id === skillId)?.label).filter(Boolean);
   const mission = getPracticeMission(lesson.id);
   const missionStatus = mission ? getMissionStatus(mission, practice.progress, store.progress) : null;
-  const nextMission = saved.completed ? suggestNextMission(store.progress, practice.progress, lesson.id) : null;
+  const suggestedMission = saved.completed ? suggestNextMission(store.progress, practice.progress, lesson.id) : null;
+  const nextMission = navigation.path && suggestedMission && !navigation.path.lessonIds.includes(suggestedMission.lessonId)
+    ? navigation.lessons.map((item) => getPracticeMission(item.id)).find((candidate) =>
+      candidate && getMissionStatus(candidate, practice.progress, store.progress) !== "completed") ?? null
+    : suggestedMission;
 
   // 강좌가 바뀌면 제목으로 포커스를 옮겨 이전·다음 강좌 이동을 스크린리더에 알린다.
   useEffect(() => {
@@ -212,12 +218,8 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
   // 입력 필드(메모·검색 등)·선택 요소 안에서는 가로채지 않고, IME 조합 중·
   // 키 반복·브라우저/시스템 조합(Ctrl·Meta, AltGr=Ctrl+Alt)도 건드리지 않는다.
   // 이동 목적지는 화면의 이전·다음 링크와 같은 순서(previous/next)를 쓰고,
-  // 경로 맥락(?from)이 있으면 그대로 이어 붙여 키보드 이동에서도 끊기지 않게 한다.
+  // 검증한 경로 맥락과 링크 목적지를 키보드 이동에서도 그대로 사용한다.
   useEffect(() => {
-    const fromParam = searchParams.get("from");
-    const navLessonUrl = (targetId: string) => (fromParam
-      ? `${lessonUrl(targetId)}?from=${encodeURIComponent(fromParam)}`
-      : lessonUrl(targetId));
     const toggleCheck = (index: number) => {
       const checked = saved.checks.includes(index);
       store.patchLesson(lesson.id, {
@@ -254,25 +256,25 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
       const tag = target?.tagName ?? "";
       if (target?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (event.altKey && !event.ctrlKey) {
-        if (event.key === "ArrowLeft" && previous) {
+        if (event.key === "ArrowLeft" && previousUrl) {
           event.preventDefault();
-          navigate(navLessonUrl(previous.id));
-        } else if (event.key === "ArrowRight" && next) {
+          navigate(previousUrl);
+        } else if (event.key === "ArrowRight" && nextUrl) {
           event.preventDefault();
-          navigate(navLessonUrl(next.id));
+          navigate(nextUrl);
         }
         return;
       }
       if (event.ctrlKey || event.altKey) return;
       if (event.key === "[" || event.key === "{") {
-        if (previous) {
+        if (previousUrl) {
           event.preventDefault();
-          navigate(navLessonUrl(previous.id));
+          navigate(previousUrl);
         }
       } else if (event.key === "]" || event.key === "}") {
-        if (next) {
+        if (nextUrl) {
           event.preventDefault();
-          navigate(navLessonUrl(next.id));
+          navigate(nextUrl);
         }
       } else if (/^[1-9]$/.test(event.key)) {
         const index = Number(event.key) - 1;
@@ -287,14 +289,14 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [checkedCount, lesson.checks.length, lesson.id, navigate, next, previous, ready, saved.checks, saved.completed, searchParams, store]);
+  }, [checkedCount, lesson.checks.length, lesson.id, navigate, nextUrl, previousUrl, ready, saved.checks, saved.completed, store]);
 
   return (
     <>
       <header className="learn-lesson-header learn-guided-lesson-header">
-        <Link className="learn-back" to="/learn#learn-library">← 전체 강좌</Link>
+        <Link className="learn-back" to={navigation.backUrl}>← {navigation.path ? t(`${navigation.path.title} 경로로`, `Back to ${navigation.path.title} path`) : "전체 강좌"}</Link>
         <p className="learn-eyebrow">
-          {lesson.track === "studio" ? "SELF-GUIDED STUDIO PRACTICE" : "WEBTOON FOUNDATIONS"} · LESSON {String(lessonIndex + 1).padStart(2, "0")}
+          {navigation.path ? t(`${navigation.path.title} · ${navigation.index + 1}/${navigation.lessons.length} 수업`, `${navigation.path.title} · Lesson ${navigation.index + 1}/${navigation.lessons.length}`) : `${lesson.track === "studio" ? "SELF-GUIDED STUDIO PRACTICE" : "WEBTOON FOUNDATIONS"} · LESSON ${String(navigation.index + 1).padStart(2, "0")}`}
         </p>
         <h1 ref={headingRef} tabIndex={-1} className="learn-focus-heading">{lesson.title}</h1>
         <p className="learn-intro">{lesson.summary}</p>
@@ -530,7 +532,7 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
                 <p className="learn-eyebrow">NEXT PRACTICE MISSION</p>
                 <h3>다음 실습 미션 · {nextMission.title}</h3>
                 <p>목표 · {nextMission.goal}</p>
-                <Link className="learn-secondary" to={`${lessonUrl(nextMission.lessonId)}#${nextMission.lessonId}-practice`}>
+                <Link className="learn-secondary" to={`${lessonUrlInContext(nextMission.lessonId, navigation.path)}#${nextMission.lessonId}-practice`}>
                   {nextMission.lessonId === lesson.id ? "이 강좌의 실습으로 이동" : "미션 강좌로 이동"} <span aria-hidden="true">→</span>
                 </Link>
               </div>
@@ -538,12 +540,12 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
           </section>
 
           <nav className="learn-prev-next" aria-label="이전·다음 강좌">
-            {previous
-              ? <Link to={lessonUrl(previous.id)} aria-keyshortcuts="[ Alt+ArrowLeft"><span>← 이전 수업</span><strong>{previous.title}</strong></Link>
-              : <Link to="/learn#learning-paths"><span>학습 경로</span><strong>목표별 경로 선택하기</strong></Link>}
-            {next
-              ? <Link to={lessonUrl(next.id)} aria-keyshortcuts="] Alt+ArrowRight"><span>다음 수업 →</span><strong>{next.title}</strong></Link>
-              : <Link to="/learn"><span>커리큘럼</span><strong>전체 강좌 다시 보기 →</strong></Link>}
+            {previous && previousUrl
+              ? <Link to={previousUrl} aria-keyshortcuts="[ Alt+ArrowLeft"><span>← 이전 수업</span><strong>{previous.title}</strong></Link>
+              : <Link to={navigation.path ? navigation.backUrl : "/learn#learning-paths"}><span>학습 경로</span><strong>{navigation.path ? t("선택한 경로 보기", "View selected path") : "목표별 경로 선택하기"}</strong></Link>}
+            {next && nextUrl
+              ? <Link to={nextUrl} aria-keyshortcuts="] Alt+ArrowRight"><span>다음 수업 →</span><strong>{next.title}</strong></Link>
+              : <Link to={navigation.path ? navigation.backUrl : "/learn"}><span>{navigation.path ? t("경로의 마지막 수업", "Last lesson in this path") : "커리큘럼"}</span><strong>{navigation.path ? t("경로 학습 현황 보기 →", "View path progress →") : "전체 강좌 다시 보기 →"}</strong></Link>}
           </nav>
         </div>
 

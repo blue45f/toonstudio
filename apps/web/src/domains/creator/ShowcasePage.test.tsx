@@ -47,9 +47,9 @@ function work(id: string, title: string, cover = ""): WorkSummary {
   };
 }
 
-function renderShowcase() {
+function renderShowcase(initialEntry = "/showcase") {
   return render(
-    <MemoryRouter initialEntries={["/showcase"]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <ShowcasePage />
     </MemoryRouter>,
   );
@@ -120,6 +120,25 @@ describe("ShowcasePage", () => {
     expect(screen.getByRole("heading", { level: 2, name: "전체 작품 둘러보기" })).toBeTruthy();
     expect(screen.getByRole("tablist", { name: "작품 보기" })).toBeTruthy();
     expect(await screen.findByText("작품 2개")).toBeTruthy();
+  });
+
+  it("작품 목록 뒤의 접힌 참여 안내에서 협업·발행과 현재 갤러리로 연결한다", async () => {
+    renderShowcase("/showcase?tag=romance");
+    await screen.findByText("작품 2개");
+    const gallery = screen.getByRole("region", { name: "전체 작품 둘러보기" });
+    const participation = screen.getByRole("group", { name: "내 작품 소개·협업 참여" });
+    expect(participation.tagName).toBe("DETAILS");
+    expect((participation as HTMLDetailsElement).open).toBe(false);
+    expect(gallery.contains(screen.getByRole("tablist", { name: "작품 보기" }))).toBe(true);
+    expect(gallery.compareDocumentPosition(participation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const guide = within(participation);
+    expect(guide.getByRole("navigation", { name: "창작 소셜 4탭 허브" })).toBeTruthy();
+    const galleryLink = guide.getByRole("link", { name: /갤러리 탐색/u });
+    expect(galleryLink.getAttribute("href")).toBe("/showcase?tag=romance#showcase-browse-title");
+    expect(document.getElementById("showcase-browse-title")).toBeTruthy();
+    expect(guide.getByRole("link", { name: /구인·의뢰 매칭/u }).getAttribute("href")).toBe("/collaborate");
+    expect(guide.getByRole("link", { name: /공모·기회 보기/u }).getAttribute("href")).toBe("/opportunities");
+    expect(guide.getByRole("link", { name: "발행하러 가기" }).getAttribute("href")).toBe("/studio/publish");
   });
 
   it("공개 작품이 없으면 주인공을 지어내지 않고 빈 상태를 보여 준다", async () => {

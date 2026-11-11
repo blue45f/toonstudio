@@ -80,11 +80,16 @@ function checkoutHref(resourceId: string): string {
 
 export function MarketCheckoutPage() {
   const { id = "" } = useParams<{ id: string }>();
+  // 상품이 바뀌면 견적·구매 동의·준비 주문의 소유권도 함께 초기화한다.
+  return <MarketCheckoutResourcePage key={id} id={id} />;
+}
+
+function MarketCheckoutResourcePage({ id }: { readonly id: string }) {
   const t = useBilingual("MarketCheckoutPage");
   const location = useLocation();
   const navigate = useNavigate();
   const { data: session, ready, status } = useSession();
-  const { record, loading: resourceLoading, notFound } = useMarketResourceDetail(id);
+  const { record, loading: resourceLoading, notFound, error: resourceError, reload: reloadResource } = useMarketResourceDetail(id);
   const { acquireResource } = useMarketLibrary();
 
   const [quote, setQuote] = useState<MarketplaceCommerceQuote | null>(null);
@@ -113,10 +118,13 @@ export function MarketCheckoutPage() {
     setQuoteLoading(true);
     setError(null);
     void getMarketplaceCommerceQuote(id, controller.signal)
-      .then(setQuote)
+      .then((nextQuote) => {
+        if (!controller.signal.aborted) setQuote(nextQuote);
+      })
       .catch(async (caught) => {
         if (controller.signal.aborted) return;
-        setError(await getApiErrorMessage(caught, t("가격과 결제 정책을 불러오지 못했습니다.", "Could not load the price and payment policy.")));
+        const message = await getApiErrorMessage(caught, t("가격과 결제 정책을 불러오지 못했습니다.", "Could not load the price and payment policy."));
+        if (!controller.signal.aborted) setError(message);
       })
       .finally(() => {
         if (!controller.signal.aborted) setQuoteLoading(false);
@@ -128,6 +136,12 @@ export function MarketCheckoutPage() {
   const reloadQuote = useCallback(() => {
     setQuoteNonce((n) => n + 1);
   }, []);
+
+  const reloadCheckoutInformation = () => {
+    if (working || resourceLoading || quoteLoading) return;
+    reloadResource();
+    if (!quote) reloadQuote();
+  };
 
   const completeAcquisition = useCallback(async () => {
     if (!id) throw new Error(t("리소스 식별자가 없습니다.", "Missing resource identifier."));
@@ -320,7 +334,7 @@ export function MarketCheckoutPage() {
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               {t("결제 정보를 확인하는 중…", "Checking payment information…")}
             </div>
-          ) : notFound || !record ? (
+          ) : notFound ? (
             <div className="py-10 text-center">
               <p className="text-sm text-fg-2">{t("결제할 리소스 정보를 찾을 수 없습니다.", "The resource to pay for could not be found.")}</p>
               <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-fg-3">
@@ -334,6 +348,21 @@ export function MarketCheckoutPage() {
                   {t("위시리스트에서 확인", "Check in wishlist")}
                 </Link>
               </div>
+            </div>
+          ) : resourceError || !record ? (
+            <div role="alert" className="py-10 text-center">
+              <p className="text-sm font-semibold text-fg">{t("지금은 리소스 정보를 불러올 수 없어요", "Resource information is unavailable right now")}</p>
+              <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-fg-3">
+                {t("네트워크 상태를 확인한 뒤 다시 시도해 주세요. 같은 리소스의 결제 정보로 돌아갑니다.", "Check your network connection and try again to return to checkout for this resource.")}
+              </p>
+              <button
+                type="button"
+                disabled={working}
+                onClick={reloadCheckoutInformation}
+                className={buttonClass({ variant: "outline", size: "sm", className: "mt-3 min-h-11 disabled:opacity-40" })}
+              >
+                {t("다시 시도", "Try again")}
+              </button>
             </div>
           ) : !quote ? (
             <div role="alert" className="py-10 text-center">
