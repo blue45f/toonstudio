@@ -1,7 +1,7 @@
 # 아키텍처 문서 지도
 
 - 상태: **현재 문서 색인**
-- 최종 갱신: **2026-11-04**
+- 최종 갱신: **2026-11-11**
 
 ## 현재 권위 문서
 
@@ -11,6 +11,7 @@
 | [`../engineering/feature-extension-guide.md`](../engineering/feature-extension-guide.md) | 기능 추가 시 모듈·상태·권한·자산 수명·검증 경계를 연결하는 실무 진입점 |
 | [`frontend-layered-architecture.md`](frontend-layered-architecture.md) | Web/Admin의 `app/domains/platform/shared` 규칙 |
 | [`modular-monorepo-target.md`](modular-monorepo-target.md) | 모듈형 모노레포 목표와 마이그레이션 순서 |
+| [`ui-ux-v2-overhaul-blueprint-2026-11-11.md`](ui-ux-v2-overhaul-blueprint-2026-11-11.md) | 전수 화면군(12대 시안) UI/UX 단순화·메뉴·동선 목표 설계 및 단계별 전환 계획 |
 | [`studio-current-boundaries.md`](studio-current-boundaries.md) | Studio의 현재 권위·저장·렌더링·협업 경계 |
 | [`studio-guided-flow-and-ai-assist.md`](studio-guided-flow-and-ai-assist.md) | 초보자·숙련자 통합 3단계 창작 흐름(`guided-flow/`)과 서버 전용 OpenAI 창작 보조 경계 |
 | [`studio-3d-asset-governance-v1.md`](studio-3d-asset-governance-v1.md) | 3D 에셋 품질·권리·공개 게이트 |
