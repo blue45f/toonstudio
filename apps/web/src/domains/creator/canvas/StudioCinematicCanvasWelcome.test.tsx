@@ -31,6 +31,20 @@ afterEach(() => {
 });
 
 describe("StudioCinematicCanvasWelcome", () => {
+  it("바로 그리기는 전용 도구 선택 콜백을 한 번 호출하고 전역 설정 열기를 요청하지 않는다", () => {
+    const onDrawNow = vi.fn();
+    const listener = vi.fn();
+    window.addEventListener(STUDIO_CREATION_MODE_EVENT, listener);
+    try {
+      render(<StudioCinematicCanvasWelcome pageKey="draw-without-sheet" visible onDrawNow={onDrawNow} />);
+      const action = screen.getByRole("button", { name: "바로 그리기" });
+      action.focus(); fireEvent.click(action);
+      expect(onDrawNow).toHaveBeenCalledOnce();
+      expect(listener).not.toHaveBeenCalled();
+      expect(screen.queryByRole("region", { name: "빈 캔버스 시작 방법" })).toBeNull();
+    } finally { window.removeEventListener(STUDIO_CREATION_MODE_EVENT, listener); }
+  });
+
   it("keeps the empty-canvas launcher out of a joined live room", () => {
     const base = {
       elementCount: 0,

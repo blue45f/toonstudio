@@ -80,6 +80,8 @@ interface StudioCinematicCanvasWelcomeProps {
   readonly initiallyCollapsed?: boolean;
   /** 핵심 도구를 화면에서 차례로 안내하는 사용법 따라 하기를 연다. */
   readonly onOpenTutorial?: () => void;
+  /** 즉시 작화 CTA는 속성 패널을 열지 않고 기존 도구 전이 포트를 사용한다. */
+  readonly onDrawNow?: () => void;
 }
 
 /**
@@ -91,6 +93,7 @@ export function StudioCinematicCanvasWelcome({
   visible,
   initiallyCollapsed = false,
   onOpenTutorial,
+  onDrawNow,
 }: StudioCinematicCanvasWelcomeProps) {
   const bt = useBilingual("StudioCinematicCanvasWelcome");
   const waysId = useId();
@@ -142,6 +145,12 @@ export function StudioCinematicCanvasWelcome({
     requestStudioCreationMode(mode);
   };
 
+  const drawNow = () => {
+    closeForPage();
+    if (onDrawNow) onDrawNow();
+    else requestStudioCreationMode("draw");
+  };
+
   const openTutorial = () => {
     closeForPage();
     onOpenTutorial?.();
@@ -189,7 +198,7 @@ export function StudioCinematicCanvasWelcome({
       data-studio-mobile-coach="true"
     >
       <div className="studio-canvas-start__quick-actions">
-        <button type="button" className="studio-canvas-start__tutorial" onKeyDown={closeWithEscape} onClick={() => launch("draw")}>
+        <button type="button" className="studio-canvas-start__tutorial" onKeyDown={closeWithEscape} onClick={drawNow}>
           <Brush size={14} aria-hidden="true" />{bt("바로 그리기", "Draw now")}
         </button>
         {onOpenTutorial ? (
