@@ -51,7 +51,8 @@ describe("admin shell review regressions", () => {
 
   it("keeps a public-site exit visible at mobile widths", () => {
     expect(shellSource).toContain("aria-label={copy.openPublicSite}");
-    expect(shellSource).toContain('className="inline-flex size-10');
+    // 모바일에서도 44px 이상 터치 타깃을 유지한다.
+    expect(shellSource).toContain('className="inline-flex min-h-11 min-w-11');
   });
 
   it("provides the completed admin gate to embedded legacy pages", () => {
