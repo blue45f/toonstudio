@@ -4,7 +4,7 @@ import { BETA_OPEN_EVENT } from "./event-catalog";
 import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 /** 창작 입력과 영상 시청을 홍보 카드로 가리지 않는다. */
-const TASK_PAGES = new Set(["/create", "/product-tour", "/brand-film"]);
+const TASK_PAGES = new Set(["/create", "/product-tour", "/brand-film", "/promo-library"]);
 
 /**
  * 레일·그리드·보드가 주인공인 탐색 표면. 큰 카드(30rem, 접이식 혜택 목록 포함)가
