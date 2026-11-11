@@ -488,7 +488,8 @@ export const CONTEXTUAL_SUBNAV_GROUPS: readonly ContextualSubNavGroup[] = Object
       { id: "character-shaper", href: "/studio/assets/characters/new", koLabel: "3D 캐릭터 셰이퍼", enLabel: "3D Character Shaper", badge: "3D·ASSET" },
       { id: "studio-import", href: "/studio/import", koLabel: "원고 변환·검수", enLabel: "Import & Convert" },
       { id: "showcase-promo", href: "/showcase/promo", koLabel: "예고편 스튜디오", enLabel: "Promo Trailer", badge: "SHORT-VOD" },
-      { id: "studio-publish", href: "/studio/publish", koLabel: "연재·유통 배포", enLabel: "Publish" },
+      { id: "studio-publish", href: "/studio/publish", koLabel: "회차 게시", enLabel: "Episode publishing" },
+      { id: "publish-information", href: "/publish", koLabel: "게시 정보 준비", enLabel: "Publishing information", exact: true },
     ],
   },
   {

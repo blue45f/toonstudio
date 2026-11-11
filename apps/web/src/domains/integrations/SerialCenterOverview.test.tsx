@@ -122,8 +122,9 @@ describe("SerialCenterOverview", () => {
     api.listProductionProjects.mockResolvedValue({ projects: [] });
     renderOverview();
 
-    expect(await screen.findByText(/아직 제작 중인 작품이 없어요/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /작품 시작하기/ }).getAttribute("href")).toBe("/create");
+    expect(await screen.findByText(/아직 제작 프로젝트가 없어요/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /제작 프로젝트 만들러 가기/ }).getAttribute("href")).toBe("/production/projects");
+    expect(screen.getByText(/브라우저에 보관한 원고와 제작 프로젝트는 별도로 관리됩니다/)).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
