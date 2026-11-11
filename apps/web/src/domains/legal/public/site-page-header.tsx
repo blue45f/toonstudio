@@ -250,7 +250,7 @@ export function SitePageHeader({
       className={cn(
         "relative isolate",
         panel
-          ? "overflow-hidden rounded-3xl border border-line bg-panel/60 p-5 sm:p-7 lg:p-8"
+          ? "overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-7 lg:p-8"
           : "border-b border-line pb-6 sm:pb-8",
         className,
       )}
@@ -258,7 +258,7 @@ export function SitePageHeader({
       {panel ? (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2 opacity-90"
         />
       ) : null}
       <div

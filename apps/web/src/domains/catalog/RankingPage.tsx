@@ -108,17 +108,18 @@ export function RankingPage() {
     <PageEntrance variant="slide">
     <Container size="wide" className="ranking-page-layout py-6">
       <SiteContextualSubNav pathnameOverride="/ranking" className="mb-5" />
-      <div className="mb-4 flex min-w-0 flex-wrap items-start justify-between gap-3">
+      <div className="relative mb-5 flex min-w-0 flex-wrap items-center justify-between gap-4 overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-6">
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2 opacity-90" />
         <header className="min-w-0">
-          <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-accent"><Trophy size={15} aria-hidden="true" />{txEn("UNIFIED RANKING")}</p>
-          <h1 className="text-2xl font-bold text-fg sm:text-3xl">{tx("통합 랭킹")}</h1>
+          <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-accent/35 bg-accent-soft px-3 py-1 text-xs font-extrabold tracking-wider text-accent"><Trophy size={14} aria-hidden="true" />{txEn("UNIFIED RANKING")}</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">{tx("통합 랭킹")}</h1>
           <p className="mt-2 text-sm text-fg-2">{bt("여덟 가지 관점으로 작품을 찾아보세요.", "Find stories from eight perspectives.")}</p>
         </header>
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/create"
             data-testid="ranking-create-bridge"
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
+            className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4" })}
           >
             <PenLine size={14} aria-hidden="true" />
             {bt("영감으로 작품 시작", "Start a story")}

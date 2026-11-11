@@ -380,11 +380,11 @@ export function MySpaceHubPage() {
       >
         <SitePageHeader
           size="default"
-          surface="plain"
+          surface="panel"
           icon={UserRound}
           eyebrow={copy.eyebrow}
           title={copy.title}
-          className="pb-2 sm:pb-4 [&_h1]:mt-0.5 [&_h1]:text-base sm:[&_h1]:text-2xl [&>div]:gap-2 [&>div>div>div]:mt-2"
+          className="p-4 sm:p-5 lg:p-6 [&_h1]:mt-1 [&_h1]:text-lg sm:[&_h1]:text-2xl [&>div]:gap-4 [&>div>div>div]:mt-2"
           aside={
             <div className="relative overflow-hidden rounded-2xl border border-line bg-panel/60">
               <SectionArt
