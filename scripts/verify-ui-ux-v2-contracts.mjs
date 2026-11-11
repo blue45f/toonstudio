@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * UI/UX v2 전수 시안(데스크톱 시안 A~P · 모바일 시안 M1~M4) 및 디자인 시스템 계약 자동 검증 게이트 (v2.2).
+ * UI/UX v2 전수 시안(데스크톱 시안 A~P · 모바일 시안 M1~M4) 및 디자인 시스템 계약 자동 검증 게이트 (v2.3).
  *
  * 브라우저를 기동하지 않고 <100ms 내에 아래 불변식을 검증한다:
  * 1. 정본 문서(PRODUCT.md, DESIGN.md, UI/UX v2 Blueprint, Quality Gates Policy) 존재 및 시안 A~P / 모바일 M1~M4 기록 동기화
  * 2. 독립 셸(apps/mobile/shell, apps/admin-web, apps/desktop-sync, apps/brush-lab, apps/character-lab)의 스피너 금지(DESIGN.md §4), OKLCH 의미 토큰(§2), 44px 터치 타깃(WCAG 2.5.8) 준수
  * 3. 게스트 3초 비차단 세션(INITIAL_SESSION_READY_DEADLINE_MS <= 3500) 회귀 방지(UX_FLOW_BACKLOG P1)
- * 4. 16대 핵심 화면군 UI/UX v2 컴포넌트 데이터 앵커 무결성 + 정본 경로(레거시 별칭 금지) + 44px 미만 Tailwind 높이(min-h-6..10) 금지
+ * 4. 28대 핵심 화면군·루트 정문·허브·브리지 컴포넌트 데이터 앵커 무결성 + 정본 경로(레거시 별칭 금지) + 44px 미만 Tailwind 높이(min-h-6..10) 금지
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -90,6 +90,15 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     "apps/web/src/domains/creator/production-hub/ProductionHubPage.tsx",
     "apps/web/src/domains/cuts/CutsFeedPage.tsx",
     "apps/web/src/domains/creator/analytics/CreatorAnalyticsPage.tsx",
+    "apps/web/src/domains/catalog/RankingPage.tsx",
+    "apps/web/src/domains/catalog/ExplorePage.tsx",
+    "apps/web/src/domains/catalog/ExploreReaDirectoryBar.tsx",
+    "apps/web/src/domains/catalog/CalendarPage.tsx",
+    "apps/web/src/domains/catalog/CalendarFilters.tsx",
+    "apps/web/src/domains/character-chat/CharacterChatPage.tsx",
+    "apps/web/src/domains/creator/spatial-reader/StudioSpatialReaderPage.tsx",
+    "apps/web/src/domains/creator/CreateStartPage.tsx",
+    "apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx",
   ];
 
   for (const rel of v2ComponentFilesForInlineAudit) {
@@ -153,8 +162,9 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     }
   }
 
-  // 4) 핵심 화면군 UI/UX v2 데이터 앵커 연결 무결성
+  // 4) 핵심 화면군 UI/UX v2.3 데이터 앵커 연결 무결성
   const requiredSurfaceAnchors = [
+    ["apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx", "home-v2-spectrum-launchpad"],
     ["apps/web/src/domains/creator/studio-shell/StudioProjectLibraryFastStartStrip.tsx", "studio-fast-start-strip"],
     ["apps/web/src/domains/creator/studio-shell/StudioDocumentStagePillBar.tsx", "data-studio-stage-pill-bar"],
     ["apps/web/src/domains/creator/bg3d/StudioBg3dAssetShelf.tsx", "studio-bg3d-dcc-mode-bar"],
@@ -173,6 +183,9 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     ["apps/web/src/domains/legal/technology/EngineeringStoryUi.tsx", "engineering-atlas-sticky-toc"],
     ["apps/web/src/domains/creator/production-hub/ProductionHubPage.tsx", "production-studio-workspace-link"],
     ["apps/web/src/domains/creator/analytics/CreatorAnalyticsPage.tsx", "creator-analytics-publish-bridge"],
+    ["apps/web/src/domains/catalog/RankingPage.tsx", "ranking-create-bridge"],
+    ["apps/web/src/domains/character-chat/CharacterChatPage.tsx", "character-chat-shaper-bridge"],
+    ["apps/web/src/domains/creator/spatial-reader/StudioSpatialReaderPage.tsx", "spatial-reader-studio-bridge"],
   ];
   for (const [file, marker] of requiredSurfaceAnchors) {
     if (!exists(file)) {
@@ -190,9 +203,9 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = evaluateUiUxV2Contracts();
   if (!result.ok) {
-    console.error(`UI/UX v2 계약 게이트 실패 (${result.issues.length}건):`);
+    console.error(`UI/UX v2.3 계약 게이트 실패 (${result.issues.length}건):`);
     for (const issue of result.issues) console.error(` - ${issue}`);
     process.exit(1);
   }
-  console.log("UI/UX v2.2 계약 게이트 통과: 데스크톱 시안 A~P · 모바일 M1~M4 · 7대 서브앱 OKLCH · 무스피너 · 정본 경로 · 44px 불변식 정상");
+  console.log("UI/UX v2.3 계약 게이트 통과: 데스크톱 시안 A~P · 모바일 M1~M4 · 7대 서브앱 OKLCH · 무스피너 · 28대 허브 정본 경로 · 44px 불변식 정상");
 }

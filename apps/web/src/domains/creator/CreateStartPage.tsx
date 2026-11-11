@@ -57,6 +57,31 @@ const CHOICE_CARD_CLASS =
 const CHOICE_ICON_CLASS =
   "flex size-11 items-center justify-center rounded-xl bg-accent/15 text-accent";
 
+const PIPELINE_MODE_EN_COPY: Readonly<
+  Record<string, { readonly label: string; readonly description: string; readonly ctaLabel: string }>
+> = {
+  "worldbuilding-synopsis": {
+    label: "Worldbuilding · Logline · Genre Plot",
+    description: "Structure core story beats, character arcs, and synopses for webtoons and novel-comics.",
+    ctaLabel: "Open Plot Board",
+  },
+  "novel-to-script": {
+    label: "Webnovel to Webtoon Script & Beats",
+    description: "Break prose chapters into 60–80 panel scripts, speech balloons, and camera angle cues.",
+    ctaLabel: "Draft New Script",
+  },
+  "storyboard-3d-blocking": {
+    label: "Vertical Storyboard & 3D Blocking",
+    description: "Stage 3D character poses and scene angles per panel to validate scroll pacing and eye flow.",
+    ctaLabel: "Open Storyboard",
+  },
+  "ink-render-publish": {
+    label: "Ink, Color & Simultaneous Cuts Launch",
+    description: "Run final export checks and publish both the episode and a 9:16 promo cut in one flow.",
+    ctaLabel: "Open Publish Center",
+  },
+};
+
 export function CreateStartPage() {
   const bt = useBilingual("CreateStartPage");
   const userId = useApp((state) => state.userId);
@@ -315,24 +340,27 @@ export function CreateStartPage() {
           </Link>
         </div>
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => (
-            <Link
-              key={mode.id}
-              href={mode.targetHref}
-              className="flex flex-col justify-between rounded-xl border border-line/80 bg-canvas/85 p-3.5 text-left transition-colors hover:border-accent/50"
-            >
-              <div>
-                <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
-                  {mode.step}
+          {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => {
+            const enMode = PIPELINE_MODE_EN_COPY[mode.id];
+            return (
+              <Link
+                key={mode.id}
+                href={mode.targetHref}
+                className="flex min-h-11 flex-col justify-between rounded-xl border border-line/80 bg-canvas/85 p-3.5 text-left transition-colors hover:border-accent/50"
+              >
+                <div>
+                  <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
+                    {mode.step}
+                  </span>
+                  <p className="mt-2 text-xs font-bold text-fg">{bt(mode.label, enMode?.label ?? mode.label)}</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-fg-2">{bt(mode.description, enMode?.description ?? mode.description)}</p>
+                </div>
+                <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-accent">
+                  {bt(mode.ctaLabel, enMode?.ctaLabel ?? mode.ctaLabel)} →
                 </span>
-                <p className="mt-2 text-xs font-bold text-fg">{mode.label}</p>
-                <p className="mt-1 text-[11px] leading-relaxed text-fg-2">{mode.description}</p>
-              </div>
-              <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-accent">
-                {mode.ctaLabel} →
-              </span>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </section>
 

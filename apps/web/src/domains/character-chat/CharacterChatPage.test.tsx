@@ -59,6 +59,9 @@ describe("CharacterChatPage", () => {
     expect(screen.getByRole("link", { name: /AI 키 등록하러 가기/ }).getAttribute("href")).toBe(
       "/settings/ai",
     );
+    const shaperBridge = screen.getByTestId("character-chat-shaper-bridge");
+    expect(shaperBridge.getAttribute("href")).toBe("/studio/assets/characters/new");
+    expect(shaperBridge.className).toContain("min-h-11");
     // 첫 캐릭터(레이나)의 인사말이 스레드에 보인다.
     expect(screen.getByText(/내 이름은 레이나/)).toBeTruthy();
     // 입력은 잠겨 있다.
@@ -117,11 +120,12 @@ describe("CharacterChatPage", () => {
     expect(input.value).toBe("오늘 기분은 어때?");
 
     const searchInput = screen.getByRole("searchbox", { name: "대화할 캐릭터 검색" });
+    expect(searchInput.closest("label")?.className).toContain("min-h-11");
     fireEvent.change(searchInput, { target: { value: "하루" } });
     expect(screen.getByRole("button", { name: /하루/ })).toBeTruthy();
   });
 
-  it("REA 로어북 스포일러 펜스·페르소나 톤 워크벤치를 렌더링하고 양방향 상태를 전환한다", () => {
+  it("REA 로어북 스포일러 펜스·페르소나 톤 워크벤치를 44px 규격으로 렌더링하고 양방향 상태를 전환한다", () => {
     renderPage();
 
     const bar = screen.getByTestId("character-chat-rea-lorebook-bar");
@@ -130,6 +134,9 @@ describe("CharacterChatPage", () => {
     const fenceEp10 = screen.getByTestId("char-chat-rea-fence-ep10-canon-lock");
     const fenceS1 = screen.getByTestId("char-chat-rea-fence-season1-finale-sync");
     const fenceAu = screen.getByTestId("char-chat-rea-fence-au-whatif-sandbox");
+    expect(fenceEp10.className).toContain("min-h-11");
+    expect(fenceS1.className).toContain("min-h-11");
+    expect(fenceAu.className).toContain("min-h-11");
 
     expect(fenceEp10.getAttribute("aria-pressed")).toBe("true");
     expect(fenceS1.getAttribute("aria-pressed")).toBe("false");
@@ -138,6 +145,9 @@ describe("CharacterChatPage", () => {
     const toneStrict = screen.getByTestId("char-chat-rea-tone-canon-dialogue-strict");
     const toneAffection = screen.getByTestId("char-chat-rea-tone-affection-stage-reactive");
     const toneTts = screen.getByTestId("char-chat-rea-tone-voice-tts-prosody");
+    expect(toneStrict.className).toContain("min-h-11");
+    expect(toneAffection.className).toContain("min-h-11");
+    expect(toneTts.className).toContain("min-h-11");
 
     expect(toneStrict.getAttribute("aria-pressed")).toBe("true");
     expect(toneAffection.getAttribute("aria-pressed")).toBe("false");
@@ -145,6 +155,7 @@ describe("CharacterChatPage", () => {
 
     const status = screen.getByTestId("character-chat-rea-status");
     expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.className).not.toContain("border-line");
     expect(status.textContent).toContain("10화 정사 스포일러 잠금");
     expect(status.textContent).toContain("원작 대사 말투 고정");
 
@@ -166,12 +177,13 @@ describe("CharacterChatPage", () => {
     expect(status.textContent).toContain("보이스 TTS 감정 운율");
   });
 
-  it("영어 로케일(en)에서 REA 워크벤치에 한글이 섞이지 않는다", () => {
+  it("영어 로케일(en)에서 REA 워크벤치 및 셰이퍼 브리지에 한글이 섞이지 않는다", () => {
     useI18n.setState({ lang: "en" });
     renderPage();
 
     const bar = screen.getByTestId("character-chat-rea-lorebook-bar");
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("character-chat-shaper-bridge").textContent).not.toMatch(/[가-힣]/u);
 
     fireEvent.click(screen.getByTestId("char-chat-rea-fence-au-whatif-sandbox"));
     fireEvent.click(screen.getByTestId("char-chat-rea-tone-voice-tts-prosody"));

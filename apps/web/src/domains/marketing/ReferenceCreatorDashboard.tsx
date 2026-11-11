@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronDown, ChevronRight, FolderKanban, PencilLine, Plus, Search } from "lucide-react";
+import { ArrowRight, Boxes, ChevronDown, ChevronRight, Compass, FolderKanban, Glasses, PencilLine, Plus, Search, ShieldCheck, Sparkles } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
@@ -21,7 +21,7 @@ import "./reference-creator-dashboard.css";
  * 공개 홈(/)은 BLUEPRINT §3.3의 4밴드로 조립한다(data-home-band):
  * ① 히어로(포스터 + 통합 입력이 1차 행동, 우측 패널에 Luna 창작 안내)
  * ② 이어하기 — 로그인하면 지금 할 일 카드(HomeNowCard, 읽는 동안·실패하면 개인
- *    스트립으로 폴백), 게스트에게는 예시 작품 선반이 이 밴드의 주인공이다.
+ *    스트립으로 폴백), 게스트에게는 1초 포맷·스펙트럼 런치패드와 예시 작품 선반이 이어진다.
  * ③ 작품 발견 미리보기(스포트라이트 1장 + 요일 레일 1줄)까지만 얹는다 —
  *    레일 전체와 검색은 /discover·/search가 소유한다.
  * ④ 더 알아보기 — 시작 카드·핵심 작업실·편집기 미리보기·챕터 링크는 접힌
@@ -94,6 +94,64 @@ export function ReferenceCreatorDashboard() {
     </div>
     <div data-home-band="continue">
       <HomeNowCard />
+      <nav
+        data-testid="home-v2-spectrum-launchpad"
+        aria-label={bi("1초 창작 포맷 및 스펙트럼 탐색 바로가기", "1-second studio launch and Spectrum hub shortcuts")}
+        className="mx-auto mb-5 flex w-full max-w-[1180px] flex-col gap-3 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-wide text-accent">
+            <Sparkles size={14} aria-hidden="true" />
+            {bi("UI/UX v2 · 1초 포맷 시작 & 스펙트럼 슈퍼 허브", "UI/UX v2 · 1-Second Launch & Spectrum Super Hub")}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-success-soft/25 px-2.5 py-1 text-[11px] font-semibold text-success">
+            <ShieldCheck size={13} aria-hidden="true" />
+            {bi("가입 없이 오프라인 자동저장 · Rights BOM 출처 보존", "No sign-up offline autosave · Rights BOM preserved")}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Link
+            href="/studio/new?lane=blank"
+            className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-accent/45 bg-accent-soft/75 px-3.5 py-2.5 text-xs font-bold text-accent transition-colors hover:border-accent"
+          >
+            <span className="inline-flex items-center gap-2">
+              <PencilLine size={15} aria-hidden="true" />
+              {bi("세로 웹툰 1초 캔버스", "1s Vertical Webtoon Canvas")}
+            </span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+          <Link
+            href="/studio/bg3d"
+            className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3.5 py-2.5 text-xs font-bold text-fg transition-colors hover:border-accent/55 hover:text-accent"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Boxes size={15} aria-hidden="true" />
+              {bi("3D 세트 · 캐릭터 셰이퍼", "3D Set & Character Shaper")}
+            </span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+          <Link
+            href="/discover"
+            className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3.5 py-2.5 text-xs font-bold text-fg transition-colors hover:border-accent/55 hover:text-accent"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Compass size={15} aria-hidden="true" />
+              {bi("스펙트럼 작품 탐색 허브", "Spectrum Story Hub")}
+            </span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+          <Link
+            href="/read/spatial"
+            className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3.5 py-2.5 text-xs font-bold text-fg transition-colors hover:border-accent/55 hover:text-accent"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Glasses size={15} aria-hidden="true" />
+              {bi("2.5D 공간 리더 체험", "Try 2.5D Spatial Reader")}
+            </span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </div>
+      </nav>
       <RevealOnScroll>
       <section className="rd-examples" aria-labelledby="rd-examples-title">
         <div className="rd-examples-heading"><h2 id="rd-examples-title">{bi("예시 작품", "Example works")}</h2><Link href="/studio"><FolderKanban size={13} aria-hidden="true" />{bi("내 프로젝트", "My projects")}<ChevronRight size={13} aria-hidden="true" /></Link></div>

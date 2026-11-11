@@ -75,7 +75,7 @@ function CalItem({ title, className }: { title: TitleCard; className?: string })
     <Link
       href={`/title/${title.slug}`}
       className={cn(
-        "group flex gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-raised",
+        "group flex min-h-11 gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-raised",
         className
       )}
     >

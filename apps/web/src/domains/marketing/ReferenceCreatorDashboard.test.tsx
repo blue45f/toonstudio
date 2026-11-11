@@ -228,6 +228,21 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     }
   });
 
+  it("히어로 직하단에 44px 1초 포맷·스펙트럼 런치패드를 노출하고 정본 경로로 연결한다", async () => {
+    await dashboard();
+    const launchpad = screen.getByTestId("home-v2-spectrum-launchpad");
+    const links = within(launchpad).getAllByRole("link");
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/studio/new?lane=blank",
+      "/studio/bg3d",
+      "/discover",
+      "/read/spatial",
+    ]);
+    for (const link of links) {
+      expect(link.className).toContain("min-h-11");
+    }
+  });
+
   it("예시 컷을 고르면 로컬 미리보기만 바뀌고 편집기로 이동하거나 검색을 실행하지 않는다", async () => {
     const observedNavigation = await dashboard();
     openMoreBand();

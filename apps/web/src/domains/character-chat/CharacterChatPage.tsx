@@ -8,7 +8,7 @@
  * 볼 수 있다.
  */
 
-import { KeyRound, MessageCircle, Search, Sparkles } from "lucide-react";
+import { Box, KeyRound, MessageCircle, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -161,13 +161,23 @@ export function CharacterChatPage() {
             )}
           </p>
         </div>
-        <Link
-          href="/character-chat/manage"
-          className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
-        >
-          <MessageCircle size={14} aria-hidden />
-          {t("작가이신가요? 캐릭터 챗 열기", "Are you an author? Open a character chat")}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/studio/assets/characters/new"
+            data-testid="character-chat-shaper-bridge"
+            className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5" })}
+          >
+            <Box size={14} aria-hidden />
+            {t("3D 캐릭터 셰이퍼 열기", "Open 3D Character Shaper")}
+          </Link>
+          <Link
+            href="/character-chat/manage"
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
+          >
+            <MessageCircle size={14} aria-hidden />
+            {t("작가이신가요? 캐릭터 챗 열기", "Are you an author? Open a character chat")}
+          </Link>
+        </div>
       </header>
 
       <section
@@ -179,7 +189,7 @@ export function CharacterChatPage() {
           <span className="text-xs font-semibold text-accent">
             {pickLang("REA 로어북 스포일러 펜스 · 페르소나 톤 제어", "REA Lorebook Spoiler Fence & Persona Tone Control")}
           </span>
-          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+          <span className="rounded-lg bg-panel/80 px-3 py-1.5 font-mono text-xs text-fg-3">
             Character.AI · Zeta · Wrtn · SillyTavern Lorebook
           </span>
         </div>
@@ -202,8 +212,8 @@ export function CharacterChatPage() {
                 onClick={() => setSpoilerFence(item.id)}
                 className={
                   active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                    ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors"
+                    : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45"
                 }
               >
                 {pickLang(item.ko, item.en)}
@@ -230,8 +240,8 @@ export function CharacterChatPage() {
                 onClick={() => setPersonaTone(item.id)}
                 className={
                   active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                    ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors"
+                    : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45"
                 }
               >
                 {pickLang(item.ko, item.en)}
@@ -242,7 +252,7 @@ export function CharacterChatPage() {
         <p
           data-testid="character-chat-rea-status"
           aria-live="polite"
-          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+          className="mt-3 rounded-xl bg-panel/80 px-3 py-2 font-mono text-xs text-fg"
         >
           {pickLang(
             `${activeFence.ko} + ${activeTone.ko} · ${activeFence.detailKo} (${activeTone.detailKo})`,
@@ -256,7 +266,7 @@ export function CharacterChatPage() {
           aria-label={t("AI 키 등록 안내", "AI key setup notice")}
           className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-card p-4"
         >
-          <span className="grid size-10 place-items-center rounded-xl bg-accent-soft text-accent">
+          <span className="grid size-11 place-items-center rounded-xl bg-accent-soft text-accent">
             <KeyRound size={18} aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
@@ -302,7 +312,7 @@ export function CharacterChatPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
           <section aria-label={t("대화할 캐릭터", "Characters to chat with")}>
-            <label className="mb-2.5 flex min-h-10 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2 focus-within:border-accent">
+            <label className="mb-2.5 flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2 focus-within:border-accent">
               <Search size={14} className="shrink-0 text-fg-3" aria-hidden />
               <span className="sr-only">{t("대화할 캐릭터 검색", "Search characters")}</span>
               <input
@@ -324,7 +334,7 @@ export function CharacterChatPage() {
                       onClick={() => setSelectedId(profile.id)}
                       aria-pressed={active}
                       className={cn(
-                        "flex w-56 items-center gap-3 rounded-2xl border p-3 text-left lg:w-full",
+                        "flex min-h-11 w-56 items-center gap-3 rounded-2xl border p-3 text-left lg:w-full",
                         active
                           ? "border-accent bg-accent-soft/50"
                           : "border-line bg-card hover:border-accent/40",
@@ -373,17 +383,17 @@ export function CharacterChatPage() {
                 {selectedProfile.workSlug ? (
                   <Link
                     href={`/title/${encodeURIComponent(selectedProfile.workSlug)}`}
-                    className="text-xs font-semibold text-accent hover:text-accent-2"
+                    className="inline-flex min-h-11 items-center px-2 text-xs font-semibold text-accent hover:text-accent-2"
                   >
                     {t("작품 보러 가기", "View work")}
                   </Link>
                 ) : null}
               </div>
-              <details className="border-b border-line bg-card/60 px-4 py-2 text-xs text-fg-2">
-                <summary className="cursor-pointer font-semibold text-fg-2">
+              <details className="border-b border-line bg-card/60 px-4 py-1 text-xs text-fg-2">
+                <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-fg-2">
                   {t("캐릭터 성격·말투·금지 주제 안내 보기", "View character personality, tone & off-limits topics")}
                 </summary>
-                <dl className="mt-2 grid gap-1.5 text-xs sm:grid-cols-3">
+                <dl className="mt-1 mb-2 grid gap-1.5 text-xs sm:grid-cols-3">
                   <div>
                     <dt className="font-bold text-fg">{t("성격", "Personality")}</dt>
                     <dd className="text-fg-2">{selectedProfile.personality}</dd>

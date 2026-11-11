@@ -148,6 +148,12 @@ describe("StudioSpatialReaderPage", () => {
       useI18n.setState({ lang: "en" });
     });
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    const studioBridge = screen.getByTestId("spatial-reader-studio-bridge");
+    const bridgeLinks = within(studioBridge).getAllByRole("link");
+    expect(bridgeLinks.map((link) => link.getAttribute("href"))).toEqual(["/studio", "/studio/export"]);
+    for (const link of bridgeLinks) {
+      expect(link.className).toContain("min-h-11");
+    }
     expect(screen.getByTestId("spatial-rea-curve-floating-panel-stack").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("spatial-rea-gaze-comfort-vignette-lock").getAttribute("aria-pressed")).toBe("true");
   });

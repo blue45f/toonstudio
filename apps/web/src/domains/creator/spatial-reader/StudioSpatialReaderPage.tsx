@@ -20,6 +20,7 @@ import { SpatialReaderViewer, type SpatialView, type XrMode, type XrSupport } fr
 
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import Link from "@/shared/navigation/router-link";
 
 const CURVATURE_MODES = [
   { id: "cylinder-90deg-canopy", ko: "90° 원통형 캐노피 곡률", en: "90-Deg Cylinder Canopy" },
@@ -539,9 +540,23 @@ export function StudioSpatialReaderPage() {
               )}
             </p>
           </div>
-          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2">
-            Apple Vision Pro visionOS · Meta Quest WebXR · Spline Spatial
-          </span>
+          <div className="flex flex-wrap items-center gap-2" data-testid="spatial-reader-studio-bridge">
+            <span className="rounded-lg bg-panel/80 px-3 py-1.5 font-mono text-xs text-fg-2">
+              Apple Vision Pro visionOS · Meta Quest WebXR · Spline Spatial
+            </span>
+            <Link
+              href="/studio"
+              className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {pickLang("스튜디오 복귀", "Back to Studio")}
+            </Link>
+            <Link
+              href="/studio/export"
+              className="inline-flex min-h-11 items-center rounded-xl border border-accent/40 bg-accent-soft px-3 py-2 text-xs font-semibold text-accent transition-colors hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {pickLang("출고 규격 점검", "Export Check")}
+            </Link>
+          </div>
         </div>
         <div
           role="group"
@@ -592,7 +607,7 @@ export function StudioSpatialReaderPage() {
         <p
           data-testid="spatial-reader-rea-status"
           aria-live="polite"
-          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
+          className="mt-3 rounded-xl bg-panel/80 px-3 py-2 font-mono text-xs text-fg-2"
         >
           {pickLang(
             `곡률: ${activeCurvature.ko} (${curvatureMode}) · 포커스: ${activeGaze.ko} (${gazeFocus})`,

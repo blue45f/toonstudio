@@ -167,6 +167,18 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(within(guide).getByRole("button", { name: /일단 펜으로 바로 그리고 싶어요/ }).textContent).toContain("새 캔버스 바로 열기");
   });
 
+  it("영어 로케일(en)에서 4단계 스토리 파이프라인과 상황별 시작 가이드에 한글이 누수되지 않고 44px 높이를 지킨다", () => {
+    useI18n.setState({ lang: "en" });
+    renderStartSheet("/create?section=pipeline");
+    const pipeline = screen.getByTestId("create-rea-story-pipeline");
+    const guide = screen.getByTestId("create-start-persona-guide");
+    expect(pipeline.textContent).not.toMatch(/[가-힣]/u);
+    expect(guide.textContent).not.toMatch(/[가-힣]/u);
+    for (const stepLink of within(pipeline).getAllByRole("link")) {
+      expect(stepLink.className).toContain("min-h-11");
+    }
+  });
+
   it("GAP-R6-04: 시작 화면 구역 전환 토글이 44px 최소 타깃·명시적 포커스 링·선택 상태·방향키 이동 계약을 충족한다", () => {
     renderStartSheet("/create");
     const group = screen.getByRole("group", { name: "시작 화면 구역 보기 전환" });

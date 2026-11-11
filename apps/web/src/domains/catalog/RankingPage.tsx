@@ -1,6 +1,6 @@
 import "./catalog-page-controls.css";
 import "./ranking-page-density.css";
-import { Calculator, Compass, GitCompare, Trophy, type LucideIcon } from "lucide-react";
+import { Calculator, Compass, GitCompare, PenLine, Trophy, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -14,6 +14,7 @@ import { Container } from "@/shared/components/section";
 import { SharePageButton } from "@/shared/components/share-page-button";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
+import { buttonClass } from "@/shared/components/ui/button-utils";
 import { PLATFORM_LIST } from "@/shared/lib/platforms";
 import { RANK_AXES, type RankAxis } from "@/shared/lib/ranking";
 import {
@@ -23,11 +24,46 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
-import { RANKING_STREAM_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
+import {
+  RANKING_STREAM_MODES,
+  type RankingStreamModeId,
+} from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 const SCOPE = "domains.catalog.RankingPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 const txEn = (source: string): string => translateCurrentStaticSourceText(SCOPE, "en", source);
+
+const STREAM_MODE_EN_COPY: Readonly<
+  Record<RankingStreamModeId, { readonly label: string; readonly subtitle: string }>
+> = {
+  hottest: {
+    label: "Hottest Now",
+    subtitle: "Flagship hits leading live views and reader completion rates",
+  },
+  trending: {
+    label: "Trending New",
+    subtitle: "Series surging in bookmarks and trailer engagement right after release",
+  },
+  completed: {
+    label: "Completed Classics",
+    subtitle: "Top-rated finished series verified through the finale for binge reading",
+  },
+  "canvas-rising": {
+    label: "CANVAS Rising",
+    subtitle: "Open-league contenders on track for official serialization promotion",
+  },
+};
+
+const RANK_AXIS_EN_LABEL: Readonly<Record<RankAxis, string>> = {
+  popular: "Popular Now",
+  trending: "Trending",
+  favorites: "Most Saved",
+  rating: "Top Rated",
+  hidden: "Hidden Gems",
+  binge: "Binge Picks",
+  completed: "Completed",
+  rookie: "Rising Rookies",
+};
 
 /** 랭킹을 보고 난 뒤 이어지는 다음 행동 — 막다른 화면이 되지 않게 탐색·비교·커뮤니티로 잇는다. */
 const NEXT_STEPS: readonly { readonly href: string; readonly icon: LucideIcon; readonly title: readonly [string, string]; readonly body: readonly [string, string] }[] = [
@@ -78,7 +114,17 @@ export function RankingPage() {
           <h1 className="text-2xl font-bold text-fg sm:text-3xl">{tx("통합 랭킹")}</h1>
           <p className="mt-2 text-sm text-fg-2">{bt("여덟 가지 관점으로 작품을 찾아보세요.", "Find stories from eight perspectives.")}</p>
         </header>
-        <SharePageButton path="/ranking" text={tx("툰스튜디오 통합 랭킹")} label={tx("랭킹 공유")} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/create"
+            data-testid="ranking-create-bridge"
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
+          >
+            <PenLine size={14} aria-hidden="true" />
+            {bt("영감으로 작품 시작", "Start a story")}
+          </Link>
+          <SharePageButton path="/ranking" text={tx("툰스튜디오 통합 랭킹")} label={tx("랭킹 공유")} />
+        </div>
       </div>
 
       <section id="ranking-board" aria-labelledby="ranking-board-title">
@@ -120,6 +166,7 @@ export function RankingPage() {
                   ? "completed"
                   : "rating";
           const isCurrent = axis === targetAxis;
+          const enStream = STREAM_MODE_EN_COPY[stream.id];
           return (
             <Link
               key={stream.id}
@@ -127,17 +174,17 @@ export function RankingPage() {
               aria-current={isCurrent ? "page" : undefined}
               className={
                 isCurrent
-                  ? "flex flex-col justify-between gap-1.5 rounded-2xl border border-accent bg-accent/12 p-3.5 text-left shadow-sm transition-colors"
-                  : "flex flex-col justify-between gap-1.5 rounded-2xl border border-line bg-card/75 p-3.5 text-left transition-colors hover:border-accent/45 hover:bg-card"
+                  ? "flex min-h-11 flex-col justify-between gap-1.5 rounded-2xl border border-accent bg-accent/12 p-3.5 text-left shadow-sm transition-colors"
+                  : "flex min-h-11 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-card/75 p-3.5 text-left transition-colors hover:border-accent/45 hover:bg-card"
               }
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-extrabold text-fg">{stream.label}</span>
+                <span className="text-xs font-extrabold text-fg">{bt(stream.label, enStream.label)}</span>
                 <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
                   {stream.badge}
                 </span>
               </div>
-              <p className="text-[11px] leading-snug text-fg-3">{stream.subtitle}</p>
+              <p className="text-[11px] leading-snug text-fg-3">{bt(stream.subtitle, enStream.subtitle)}</p>
             </Link>
           );
         })}
@@ -159,11 +206,11 @@ export function RankingPage() {
               aria-current={isCurrent ? "page" : undefined}
               className={
                 isCurrent
-                  ? "inline-flex min-h-8 items-center rounded-full border border-accent bg-accent px-3 py-1 text-xs font-bold text-on-accent"
-                  : "inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                  ? "inline-flex min-h-11 items-center rounded-full border border-accent bg-accent px-3.5 py-1.5 text-xs font-bold text-on-accent"
+                  : "inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               }
             >
-              {entry.label}
+              {bt(entry.label, RANK_AXIS_EN_LABEL[entry.key])}
             </Link>
           );
         })}
@@ -191,7 +238,7 @@ export function RankingPage() {
                 data-testid={`ranking-rea-engine-${key}`}
                 aria-pressed={algorithmEngine === key}
                 onClick={() => setAlgorithmEngine(key)}
-                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${algorithmEngine === key ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
+                className={`inline-flex min-h-11 items-center rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors ${algorithmEngine === key ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
               >
                 {formulaEngines[key].label}
               </button>
@@ -205,7 +252,7 @@ export function RankingPage() {
                 data-testid={`ranking-rea-window-${win}`}
                 aria-pressed={decayWindow === win}
                 onClick={() => setDecayWindow(win)}
-                className={`rounded-lg border px-2 py-1 text-xs font-bold transition-colors ${decayWindow === win ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
+                className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors ${decayWindow === win ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
               >
                 {win}
               </button>

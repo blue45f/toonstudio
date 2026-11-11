@@ -10,6 +10,7 @@ import {
   EXPLORE_PREFERENCE_TAG_COMBOS,
   runSameDocumentViewTransition,
   type ExploreDirectoryMode,
+  type ExploreDirectoryModeId,
 } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 export interface ExploreReaDirectoryBarProps {
@@ -18,6 +19,85 @@ export interface ExploreReaDirectoryBarProps {
   readonly onApplyFilters: (next: TitleFilterState) => void;
   readonly onChangeSort: (nextSort: SortKey) => void;
 }
+
+const DIRECTORY_MODE_LABELS: Readonly<Record<ExploreDirectoryModeId, readonly [string, string]>> = {
+  all: ["전체 디렉터리", "All Directory"],
+  ongoing: ["연재중 (Ongoing)", "Ongoing"],
+  completed: ["완결 (Completed)", "Completed"],
+  hiatus: ["시즌 휴재·재정비", "Season Hiatus"],
+  alpha: ["가나다 · A-Z 순", "A–Z Order"],
+  updated: ["최신 업데이트순", "Recently Updated"],
+};
+
+const COMBO_LABELS: Readonly<
+  Record<string, { readonly label: readonly [string, string]; readonly tag: readonly [string, string] }>
+> = {
+  "regression-fantasy": {
+    label: ["회귀 · 헌터 · 액션판타지", "Regression & Hunter Fantasy"],
+    tag: ["#회귀/각성", "#Regression"],
+  },
+  "contract-rofan": {
+    label: ["계약결혼 · 황궁 로맨스판타지", "Royal Contract RoFan"],
+    tag: ["#계약관계", "#ContractMarriage"],
+  },
+  "cyberpunk-sf": {
+    label: ["사이버펑크 · 디스토피아 SF", "Cyberpunk & Dystopian Sci-Fi"],
+    tag: ["#네오서울", "#Cyberpunk"],
+  },
+  "mystery-thriller": {
+    label: ["두뇌심리전 · 미스터리 스릴러", "Mind-Game Mystery Thriller"],
+    tag: ["#반전서사", "#PlotTwist"],
+  },
+  "slice-of-life-cuts": {
+    label: ["공감 일상 · 숏폼 개그툰", "Slice-of-Life & Short Gag"],
+    tag: ["#가벼운호흡", "#BiteSized"],
+  },
+};
+
+const TEMPO_PRESETS: readonly {
+  readonly id: string;
+  readonly label: readonly [string, string];
+  readonly status: SerialStatus[];
+  readonly sortKey: SortKey;
+}[] = [
+  {
+    id: "naver-weekly-long",
+    label: ["네이버·카카오 주간 정통 (65~80컷)", "Naver/Kakao Weekly (65-80 cuts)"],
+    status: ["ongoing"],
+    sortKey: "popular",
+  },
+  {
+    id: "tapas-bite-sized",
+    label: ["Tapas·WEBTOON·MANGA Plus 글로벌 동시연재 (30~45컷)", "Tapas/WEBTOON/MANGA Plus Simulrelease (30-45 cuts)"],
+    status: ["ongoing"],
+    sortKey: "newest",
+  },
+  {
+    id: "lezhin-binge-complete",
+    label: ["리디·레진·봄툰·피너툰·Manta·Piccoma 완결 정주행 패스", "Ridi/Lezhin/Bomtoon/Peanutoon/Manta/Piccoma Binge Pass"],
+    status: ["completed"],
+    sortKey: "rating",
+  },
+  {
+    id: "munpia-novelpia-watcha",
+    label: ["문피아·조아라·노벨피아·교보eBook·밀리의서재 노벨코믹스 & 왓챠피디아 고별점 픽", "Munpia/Joara/Novelpia/Kyobo/Millie Novel-Comics & Watcha Pedia Top Rated"],
+    status: ["ongoing"],
+    sortKey: "rating",
+  },
+  {
+    id: "bilibili-kuaikan-comicdays",
+    label: ["빌리빌리·콰이칸·동만·토나리노영점프·쿠라게번치·망가도서관Z·포켓코믹스·진강문학성·SFACG 아시아/글로벌 인기작", "Bilibili/Kuaikan/Dongman/Tonari no Young Jump/Kurage Bunch/Manga Library Z/Pocket Comics/JJWXC/SFACG Global Hits"],
+    status: ["ongoing"],
+    sortKey: "popular",
+  },
+];
+
+const READER_VIEW_MODES = [
+  { id: "vertical", label: ["네이버·카카오 세로 스크롤", "Vertical Scroll"] },
+  { id: "koma-swipe", label: ["메챠코믹 코마뷰 (1컷 스와이프)", "Mecha Comic Koma-View"] },
+  { id: "spread-rtl", label: ["점프+·ComicFuz 좌우 양면(RTL)", "Jump+/ComicFuz Spread (RTL)"] },
+  { id: "alt-text-a11y", label: ["Corona EX·Sylph 스크린리더 대사색인", "Corona EX/Sylph Screen-Reader Alt-Text"] },
+] as const;
 
 function mapSortKey(sortValue: ExploreDirectoryMode["sortValue"]): SortKey {
   if (sortValue === "latest") return "newest";
@@ -63,6 +143,7 @@ export function ExploreReaDirectoryBar({
           </span>
           {EXPLORE_DIRECTORY_MODES.map((mode) => {
             const active = isModeActive(mode);
+            const labelPair = DIRECTORY_MODE_LABELS[mode.id];
             return (
               <button
                 key={mode.id}
@@ -78,13 +159,13 @@ export function ExploreReaDirectoryBar({
                   });
                 }}
                 className={cn(
-                  "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors",
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition-colors",
                   active
                     ? "border-accent bg-accent text-canvas shadow-sm"
                     : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
                 )}
               >
-                <span>{mode.label}</span>
+                <span>{bt(...labelPair)}</span>
                 <span className="rounded-full bg-canvas/20 px-1.5 py-0.5 text-[10px] font-extrabold">
                   {mode.badge}
                 </span>
@@ -105,6 +186,7 @@ export function ExploreReaDirectoryBar({
         </span>
         {EXPLORE_PREFERENCE_TAG_COMBOS.map((combo) => {
           const active = filters.genres.length === 1 && filters.genres[0] === combo.genreValue;
+          const comboCopy = COMBO_LABELS[combo.id];
           return (
             <button
               key={combo.id}
@@ -119,14 +201,14 @@ export function ExploreReaDirectoryBar({
                 });
               }}
               className={cn(
-                "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors",
+                "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-xs font-semibold transition-colors",
                 active
                   ? "border-accent/65 bg-accent-soft text-accent"
                   : "border-line bg-panel/60 text-fg-2 hover:border-accent/45 hover:text-fg",
               )}
             >
-              <span>{combo.label}</span>
-              <span className="text-[11px] text-fg-3">{combo.tags[0]}</span>
+              <span>{comboCopy ? bt(...comboCopy.label) : combo.id}</span>
+              <span className="text-[11px] text-fg-3">{comboCopy ? bt(...comboCopy.tag) : ""}</span>
             </button>
           );
         })}
@@ -141,43 +223,7 @@ export function ExploreReaDirectoryBar({
         <span className="mr-1 font-bold text-fg-3">
           {bt("포털 호흡 벤치마크:", "Portal Pacing:")}
         </span>
-        {[
-          {
-            id: "naver-weekly-long",
-            ko: "네이버·카카오 주간 정통 (65~80컷)",
-            en: "Naver/Kakao Weekly (65-80 cuts)",
-            status: ["ongoing"] as SerialStatus[],
-            sortKey: "popular" as SortKey,
-          },
-          {
-            id: "tapas-bite-sized",
-            ko: "Tapas·WEBTOON·MANGA Plus 글로벌 동시연재 (30~45컷)",
-            en: "Tapas/WEBTOON/MANGA Plus Simulrelease (30-45 cuts)",
-            status: ["ongoing"] as SerialStatus[],
-            sortKey: "newest" as SortKey,
-          },
-          {
-            id: "lezhin-binge-complete",
-            ko: "리디·레진·봄툰·피너툰·Manta·Piccoma 완결 정주행 패스",
-            en: "Ridi/Lezhin/Bomtoon/Peanutoon/Manta/Piccoma Binge Pass",
-            status: ["completed"] as SerialStatus[],
-            sortKey: "rating" as SortKey,
-          },
-          {
-            id: "munpia-novelpia-watcha",
-            ko: "문피아·조아라·노벨피아·교보eBook·밀리의서재 노벨코믹스 & 왓챠피디아 고별점 픽",
-            en: "Munpia/Joara/Novelpia/Kyobo/Millie Novel-Comics & Watcha Pedia Top Rated",
-            status: ["ongoing"] as SerialStatus[],
-            sortKey: "rating" as SortKey,
-          },
-          {
-            id: "bilibili-kuaikan-comicdays",
-            ko: "빌리빌리·콰이칸·동만·토나리노영점프·쿠라게번치·망가도서관Z·포켓코믹스·진강문학성·SFACG 아시아/글로벌 인기작",
-            en: "Bilibili/Kuaikan/Dongman/Tonari no Young Jump/Kurage Bunch/Manga Library Z/Pocket Comics/JJWXC/SFACG Global Hits",
-            status: ["ongoing"] as SerialStatus[],
-            sortKey: "popular" as SortKey,
-          },
-        ].map((preset) => (
+        {TEMPO_PRESETS.map((preset) => (
           <button
             key={preset.id}
             type="button"
@@ -188,9 +234,9 @@ export function ExploreReaDirectoryBar({
                 onChangeSort(preset.sortKey);
               });
             }}
-            className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel/60 px-2.5 py-1 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel/60 px-3 py-1.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
           >
-            {bt(preset.ko, preset.en)}
+            {bt(...preset.label)}
           </button>
         ))}
       </div>
@@ -202,12 +248,7 @@ export function ExploreReaDirectoryBar({
       >
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="font-bold text-accent">{bt("리더 뷰포트·접근성 모드:", "Reader & A11y Mode:")}</span>
-          {([
-            { id: "vertical", ko: "네이버·카카오 세로 스크롤", en: "Vertical Scroll" },
-            { id: "koma-swipe", ko: "메챠코믹 코마뷰 (1컷 스와이프)", en: "Mecha Comic Koma-View" },
-            { id: "spread-rtl", ko: "점프+·ComicFuz 좌우 양면(RTL)", en: "Jump+/ComicFuz Spread (RTL)" },
-            { id: "alt-text-a11y", ko: "Corona EX·Sylph 스크린리더 대사색인", en: "Corona EX/Sylph Screen-Reader Alt-Text" },
-          ] as const).map((rm) => (
+          {READER_VIEW_MODES.map((rm) => (
             <button
               key={rm.id}
               type="button"
@@ -215,11 +256,11 @@ export function ExploreReaDirectoryBar({
               data-testid={`explore-reader-mode-${rm.id}`}
               onClick={() => setReaderViewMode(rm.id)}
               className={cn(
-                "rounded-full border px-2.5 py-0.5 font-semibold transition-colors",
+                "inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 font-semibold transition-colors",
                 readerViewMode === rm.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-panel/60 text-fg-2 hover:border-accent/40",
               )}
             >
-              {bt(rm.ko, rm.en)}
+              {bt(...rm.label)}
             </button>
           ))}
         </div>
@@ -228,7 +269,7 @@ export function ExploreReaDirectoryBar({
           aria-pressed={danmakuHeatmapOn}
           data-testid="explore-danmaku-heatmap-toggle"
           onClick={() => setDanmakuHeatmapOn((v) => !v)}
-          className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-mono text-[10px] font-bold text-success hover:border-accent/40"
+          className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3 py-1.5 font-mono text-[10px] font-bold text-success hover:border-accent/40"
         >
           {danmakuHeatmapOn
             ? bt("빌리빌리·콰이칸 컷별 탄막 히트맵 ON · 75개 언어 동시연재", "Bilibili/Kuaikan Danmaku Heatmap ON · 75-Lang Simulpub")

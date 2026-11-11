@@ -582,7 +582,7 @@ export function ExplorePage() {
                 <button
                   type="button"
                   onClick={showMore}
-                  className="inline-flex items-center gap-2 rounded-xl border border-line bg-card px-5 py-2.5 text-sm font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-5 py-2.5 text-sm font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
                 >
                   {loading ? bt("불러오는 중…", "Loading…") : bt("더 보기", "Show more")}
                   <span className="numeral text-fg-3">
@@ -652,7 +652,7 @@ export function ExplorePage() {
               <Link
                 href="/explore"
                 onClick={() => setLocalQuery("")}
-                className="relative mt-4 inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-4 py-2 text-sm font-medium text-fg-2 transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
+                className="relative mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-4 py-2 text-sm font-medium text-fg-2 transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
               >
                 <RotateCcw size={14} />
                 {bt("필터 초기화", "Reset filters")}
@@ -697,7 +697,7 @@ export function ExplorePage() {
                   ? `/random?genre=${encodeURIComponent(heroGenre)}`
                   : "/random"
               }
-              className="group mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-fg-3 transition-colors hover:text-accent sm:mt-5"
+              className="group mt-4 inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-fg-3 transition-colors hover:text-accent sm:mt-5"
             >
               <Shuffle
                 size={13}
