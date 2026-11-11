@@ -1,17 +1,9 @@
 import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 import {
-  AlertTriangle,
-  BookmarkPlus,
-  Cloud,
-  HardDrive,
-  History,
-  RefreshCw,
-  RotateCcw,
-  Trash2,
-  Users,
-  X,
+  AlertTriangle, BookmarkPlus, Cloud, HardDrive, History, Lock,
+  RefreshCw, RotateCcw, ShieldCheck, Trash2, Users, X,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { STUDIO_CHECKPOINT_LIMIT, type StudioCheckpoint } from "./studio-checkpoints";
@@ -22,7 +14,6 @@ import {
 import { StudioRevisionCompareView } from "./StudioRevisionCompareView";
 import { StudioCollabWorkbench } from "./studio-collab/StudioCollabWorkbench";
 import type { CompareVersion } from "./studio-collab/studio-side-by-side-compare";
-
 import type { StudioProjectFile } from "./studio-project-file";
 import type { StudioRevisionChange } from "./studio-revision-diff";
 import type { StudioServerRevisionComparison } from "./studio-server-revision-comparison";
@@ -66,6 +57,35 @@ function checkpointDate(value: string): string {
     : value;
 }
 
+function checkpointSnapshotMeta(checkpoint: StudioCheckpoint): {
+  readonly autoPreRestore: boolean;
+  readonly pageCount: number | null;
+} {
+  const autoPreRestore = /^서버 r\d+ 복원 전(?:\s|$)/u.test(checkpoint.name.trim());
+  const payload = checkpoint.payload;
+  if (!payload || typeof payload !== "object" || !("pagesList" in payload)) {
+    return { autoPreRestore, pageCount: null };
+  }
+  const pages = (payload as { readonly pagesList?: unknown }).pagesList;
+  return { autoPreRestore, pageCount: Array.isArray(pages) ? pages.length : null };
+}
+
+function revisionStepSummary(revision: number, baseRevision: number | undefined): string | null {
+  if (!baseRevision || revision === baseRevision) return null;
+  const diff = baseRevision - revision;
+  return diff > 0 ? `현재 기준 대비 ${diff}단계 이전` : `현재 기준 이후 +${Math.abs(diff)}단계`;
+}
+
+function modeGuideCopy(tab: "local" | "server" | "collab"): string {
+  if (tab === "local") {
+    return "이 기기 저장은 현재 브라우저 전용 스냅샷입니다. ‘이 시점 복원’을 누르면 바로 덮어쓰지 않고 확인 창이 먼저 열립니다(페이지는 ⌘Z 가능 · 제목·마스터 등 문서 정보는 체크포인트 값으로 교체).";
+  }
+  if (tab === "server") {
+    return "계정 기록은 서버 저장마다 자동 누적됩니다. ‘변경 검토’는 현재 원고를 바꾸지 않는 읽기 전용 비교이며, 복원 확정 시 현재 편집본을 이 기기에 자동 백업한 뒤 새 revision으로 기록합니다.";
+  }
+  return "협업 워크벤치는 이 기기 보관본과 서버 버전을 현재 원고 변경 없이 나란히 대조합니다.";
+}
+
 function projectPageLabels(project: StudioProjectFile): Readonly<Record<string, string>> {
   return Object.fromEntries(project.pagesList.map((page, index) => {
     const candidate = "name" in page && typeof page.name === "string" ? page.name.trim() : "";
@@ -87,32 +107,15 @@ function canNavigateStudioRevisionChange(
 }
 
 export function StudioCheckpointPanel({
-  open,
-  onClose,
-  checkpoints,
-  error,
-  onCreate,
-  onRestore,
-  onDelete,
-  serverRevisions = [],
-  serverCurrentRevision,
-  serverLoading = false,
-  serverError = null,
-  onReloadServer,
-  serverWorkId,
-  getCurrentProject,
-  getCurrentProjectGeneration,
-  onRestoreServer,
-  onNavigateServerChange,
+  open, onClose, checkpoints, error, onCreate, onRestore, onDelete,
+  serverRevisions = [], serverCurrentRevision, serverLoading = false, serverError = null,
+  onReloadServer, serverWorkId, getCurrentProject, getCurrentProjectGeneration,
+  onRestoreServer, onNavigateServerChange,
 }: StudioCheckpointPanelProps) {
   const [name, setName] = useState("");
   const serverAvailable = Boolean(
-    onReloadServer &&
-    onRestoreServer &&
-    serverWorkId &&
-    getCurrentProject &&
-    getCurrentProjectGeneration &&
-    serverCurrentRevision
+    onReloadServer && onRestoreServer && serverWorkId &&
+    getCurrentProject && getCurrentProjectGeneration && serverCurrentRevision
   );
   const [activeTab, setActiveTab] = useState<"local" | "server" | "collab">("local");
   const visibleTab = activeTab === "collab" ? "collab" : serverAvailable ? activeTab : "local";
@@ -124,7 +127,6 @@ export function StudioCheckpointPanel({
   const [confirmingServerRestore, setConfirmingServerRestore] = useState(false);
   const [serverRestoreBusy, setServerRestoreBusy] = useState(false);
   const serverRestoreBusyRef = useRef(serverRestoreBusy);
-  serverRestoreBusyRef.current = serverRestoreBusy;
   const [showServerRestoreError, setShowServerRestoreError] = useState(false);
   const comparisonRequestRef = useRef(0);
   const comparisonProjectGenerationRef = useRef<number | null>(null);
@@ -138,17 +140,19 @@ export function StudioCheckpointPanel({
   const tabListId = useId();
   const dialogTitleId = useId();
   const dialogDescriptionId = useId();
+  const checkpointNameInputId = useId();
   const currentComparisonScopeRef = useRef({
-    open,
-    workId: serverWorkId,
-    baseRevision: serverCurrentRevision,
+    open, workId: serverWorkId, baseRevision: serverCurrentRevision,
   });
-  currentComparisonScopeRef.current = {
-    open,
-    workId: serverWorkId,
-    baseRevision: serverCurrentRevision,
-  };
   const interactionLocked = serverRestoreBusy;
+  const localAtCapacity = checkpoints.length >= STUDIO_CHECKPOINT_LIMIT;
+
+  useLayoutEffect(() => {
+    serverRestoreBusyRef.current = serverRestoreBusy;
+    currentComparisonScopeRef.current = {
+      open, workId: serverWorkId, baseRevision: serverCurrentRevision,
+    };
+  }, [open, serverCurrentRevision, serverRestoreBusy, serverWorkId]);
 
   function resetServerComparison() {
     comparisonRequestRef.current += 1;
@@ -181,19 +185,15 @@ export function StudioCheckpointPanel({
       "collab",
     ];
     const refs: Record<"local" | "server" | "collab", React.RefObject<HTMLButtonElement | null>> = {
-      local: localTabRef,
-      server: serverTabRef,
-      collab: collabTabRef,
+      local: localTabRef, server: serverTabRef, collab: collabTabRef,
     };
     const currentIndex = tabs.indexOf(visibleTab);
     let target: "local" | "server" | "collab" | null = null;
     if (event.key === "Home") target = tabs[0] ?? null;
     if (event.key === "End") target = tabs[tabs.length - 1] ?? null;
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      if (currentIndex >= 0) {
-        const step = event.key === "ArrowRight" ? 1 : -1;
-        target = tabs[(currentIndex + step + tabs.length) % tabs.length] ?? null;
-      }
+    if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && currentIndex >= 0) {
+      const step = event.key === "ArrowRight" ? 1 : -1;
+      target = tabs[(currentIndex + step + tabs.length) % tabs.length] ?? null;
     }
     if (!target) return;
     event.preventDefault();
@@ -269,13 +269,13 @@ export function StudioCheckpointPanel({
       const last = focusable[focusable.length - 1];
       if (!dialog.contains(document.activeElement)) {
         event.preventDefault();
-        (event.shiftKey ? last : first).focus();
+        (event.shiftKey ? last : first)?.focus();
       } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
-        last.focus();
+        last?.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
         event.preventDefault();
-        first.focus();
+        first?.focus();
       }
     };
     globalThis.addEventListener("keydown", onKeyDown);
@@ -286,12 +286,8 @@ export function StudioCheckpointPanel({
 
   async function reviewServerRevision(revision: StudioServerRevisionSummary) {
     if (
-      !serverWorkId ||
-      !serverCurrentRevision ||
-      !getCurrentProject ||
-      !getCurrentProjectGeneration ||
-      revision.revision === serverCurrentRevision ||
-      serverRestoreBusy
+      !serverWorkId || !serverCurrentRevision || !getCurrentProject ||
+      !getCurrentProjectGeneration || revision.revision === serverCurrentRevision || serverRestoreBusy
     ) return;
 
     const requestId = comparisonRequestRef.current + 1;
@@ -305,12 +301,9 @@ export function StudioCheckpointPanel({
     const requestScopeIsCurrent = () => {
       const current = currentComparisonScopeRef.current;
       return requestId === comparisonRequestRef.current &&
-        current.open &&
-        current.workId === workId &&
-        current.baseRevision === baseRevision;
+        current.open && current.workId === workId && current.baseRevision === baseRevision;
     };
-    const requestIsCurrent = () =>
-      !controller.signal.aborted && requestScopeIsCurrent();
+    const requestIsCurrent = () => !controller.signal.aborted && requestScopeIsCurrent();
 
     setSelectedServerRevision(revision);
     setServerComparison(null);
@@ -337,8 +330,7 @@ export function StudioCheckpointPanel({
       }
       const comparison = await runStudioRevisionComparison(
         {
-          targetRevision,
-          baseRevision,
+          targetRevision, baseRevision,
           targetSnapshot: targetDetail.snapshot,
           baseSnapshot: baseDetail.snapshot,
           localProject,
@@ -369,14 +361,9 @@ export function StudioCheckpointPanel({
 
   async function confirmServerRevisionRestore() {
     if (
-      !selectedServerRevision ||
-      !serverComparison ||
-      !comparisonProject ||
-      !serverCurrentRevision ||
-      !getCurrentProject ||
-      !getCurrentProjectGeneration ||
-      !onRestoreServer ||
-      serverRestoreBusy
+      !selectedServerRevision || !serverComparison || !comparisonProject ||
+      !serverCurrentRevision || !getCurrentProject || !getCurrentProjectGeneration ||
+      !onRestoreServer || serverRestoreBusy
     ) return;
 
     setShowServerRestoreError(false);
@@ -416,8 +403,6 @@ export function StudioCheckpointPanel({
   );
 
   // 협업 워크벤치 비교 쌍: 서버 revision과 로컬 체크포인트를 버전 카드로 묶는다.
-  // 미리보기 이미지가 없는 버전은 정보 카드로 비교하며, 이미지가 생기면 같은
-  // 슬롯에 그대로 표시된다. (DB·API 추가 없이 패널이 이미 가진 데이터만 사용)
   const collabVersions: readonly CompareVersion[] = [
     ...serverRevisions.map((revision) => ({
       id: `server-r${revision.revision}`,
@@ -457,15 +442,13 @@ export function StudioCheckpointPanel({
           <div className="min-w-0 flex-1">
             <h2 id={dialogTitleId} className="text-base font-bold tracking-tight text-fg">저장 기록</h2>
             <p id={dialogDescriptionId} className="mt-0.5 text-xs leading-relaxed text-fg-3">
-              지금 그림을 남겨 두거나 이전 그림을 다시 열 수 있어요. 이 기기와 계정의 기록을 구분해 보여 드립니다.
+              지금 그림을 남겨 두거나 이전 시점을 안전하게 검토·복원할 수 있어요. 이 기기 보관본과 계정 서버 버전을 구분해 보여 드립니다.
             </p>
           </div>
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={() => {
-              if (!interactionLocked) onClose();
-            }}
+            onClick={() => { if (!interactionLocked) onClose(); }}
             disabled={interactionLocked}
             aria-label="저장 기록 닫기"
             className="grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-3 hover:bg-raised hover:text-fg disabled:cursor-wait disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -474,12 +457,7 @@ export function StudioCheckpointPanel({
           </button>
         </header>
 
-        <div
-          id={tabListId}
-          role="tablist"
-          aria-label="버전 저장 위치"
-          className="grid shrink-0 grid-cols-3 gap-1 border-b border-line bg-card/25 p-2"
-        >
+        <div id={tabListId} role="tablist" aria-label="버전 저장 위치" className="grid shrink-0 grid-cols-3 gap-1 border-b border-line bg-card/25 p-2">
           <button
             ref={localTabRef}
             type="button"
@@ -531,6 +509,39 @@ export function StudioCheckpointPanel({
           </button>
         </div>
 
+        <div data-testid="checkpoint-status-strip" className="shrink-0 border-b border-line bg-card/35 px-4 py-2.5 text-[0.7rem] leading-relaxed">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5 font-semibold text-fg-2">
+              <HardDrive size={12} aria-hidden /> 이 기기 보관 {checkpoints.length}/{STUDIO_CHECKPOINT_LIMIT}개
+            </span>
+            {localAtCapacity ? (
+              <span className="rounded-full border border-warn/35 bg-warn/10 px-2.5 py-0.5 font-semibold text-warn">
+                한도 도달 · 새 저장 시 가장 오래된 기록 자동 정리
+              </span>
+            ) : null}
+            {serverAvailable ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-good/30 bg-good-soft/35 px-2.5 py-0.5 font-semibold text-good">
+                <Cloud size={12} aria-hidden /> 현재 서버 기준 r{serverCurrentRevision}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5 font-semibold text-fg-3">
+                <Cloud size={12} aria-hidden /> 계정 버전 미연결 (로그인·서버 저장 후 사용)
+              </span>
+            )}
+            {interactionLocked ? (
+              <span role="status" className="inline-flex items-center gap-1 rounded-full border border-warn/35 bg-warn/10 px-2.5 py-0.5 font-semibold text-warn">
+                <Lock size={11} aria-hidden /> 복원 적용 중 · 안전을 위해 닫기·탭 이동 잠금
+              </span>
+            ) : null}
+          </div>
+          {!comparisonVisible ? (
+            <p className="mt-1.5 flex items-start gap-1.5 text-fg-3" data-testid="checkpoint-mode-guide">
+              <ShieldCheck size={13} className="mt-0.5 shrink-0 text-accent" aria-hidden />
+              <span>{modeGuideCopy(visibleTab)}</span>
+            </p>
+          ) : null}
+        </div>
+
         {comparisonVisible && selectedServerRevision ? (
           <div
             id={`${tabListId}-server-panel`}
@@ -563,12 +574,7 @@ export function StudioCheckpointPanel({
             />
           </div>
         ) : visibleTab === "collab" ? (
-          <div
-            id={`${tabListId}-collab-panel`}
-            role="tabpanel"
-            aria-label="협업 워크벤치"
-            className="flex min-h-0 flex-1 flex-col"
-          >
+          <div id={`${tabListId}-collab-panel`} role="tabpanel" aria-label="협업 워크벤치" className="flex min-h-0 flex-1 flex-col">
             <StudioCollabWorkbench comparePair={collabPair} availableVersions={collabVersions} />
           </div>
         ) : (
@@ -582,23 +588,27 @@ export function StudioCheckpointPanel({
           className="flex shrink-0 flex-wrap gap-2 border-b border-line bg-card/35 px-4 py-3"
           onSubmit={(event) => {
             event.preventDefault();
+            if (interactionLocked) return;
             const normalized = name.trim() || "이름 없는 저장 기록";
             onCreate(normalized);
             setName("");
           }}
         >
-          <label className="min-w-[12rem] flex-1 text-xs font-semibold text-fg-2">
-            기록 이름 (선택)
+          <div className="min-w-[12rem] flex-1">
+            <label htmlFor={checkpointNameInputId} className="block text-xs font-semibold text-fg-2">기록 이름 (선택)</label>
             <input
+              id={checkpointNameInputId}
               value={name}
+              disabled={interactionLocked}
               onChange={(event) => setName(event.target.value.slice(0, 80))}
               maxLength={80}
               placeholder="예: 1화 대사 수정 전"
               className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent"
             />
-          </label>
+          </div>
           <button
             type="submit"
+            disabled={interactionLocked}
             className="mt-auto inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-45"
           >
             <BookmarkPlus size={14} aria-hidden /> 지금 상태 저장
@@ -606,7 +616,7 @@ export function StudioCheckpointPanel({
         </form> : null}
 
         {visibleError && (
-          <p className="mx-4 mt-3 flex items-start gap-2 rounded-lg border border-bad/30 bg-bad/10 px-3 py-2 text-xs leading-relaxed text-bad">
+          <p role="alert" className="mx-4 mt-3 flex items-start gap-2 rounded-lg border border-bad/30 bg-bad/10 px-3 py-2 text-xs leading-relaxed text-bad">
             <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
             {visibleError}
           </p>
@@ -618,39 +628,52 @@ export function StudioCheckpointPanel({
               <div>
                 <History size={24} className="mx-auto text-fg-3" aria-hidden />
                 <p className="mt-2 text-sm font-semibold text-fg-2">{panelStatusText("studio.panelStatus.checkpoint.localEmpty", "아직 저장한 기록이 없어요")}</p>
-                <p className="mt-1 text-xs text-fg-3">큰 편집이나 AI 적용 전에 하나 만들어 두면 안전합니다.</p>
+                <p className="mt-1 text-xs text-fg-3">큰 편집이나 AI 적용 전에 하나 만들어 두면 확인 창을 거쳐 언제든 되돌릴 수 있어요.</p>
               </div>
             </div>
           ) : (
             <ol className="space-y-2" aria-label="저장된 그림 기록">
-              {checkpoints.map((checkpoint) => (
-                <li
-                  key={checkpoint.id}
-                  className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card/55 px-3 py-2.5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-fg">{checkpoint.name}</p>
-                    <time dateTime={checkpoint.createdAt} className="mt-0.5 block text-[0.68rem] text-fg-3">
-                      {checkpointDate(checkpoint.createdAt)}
-                    </time>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onRestore(checkpoint)}
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-accent/35 bg-accent-soft/25 px-3 text-xs font-semibold text-accent hover:bg-accent-soft/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                  >
-                    <RotateCcw size={12} aria-hidden /> 이 시점 복원
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(checkpoint)}
-                    aria-label={`${checkpoint.name} 저장 기록 삭제`}
-                    className="grid size-11 place-items-center rounded-lg border border-line text-fg-3 hover:border-bad/45 hover:bg-bad/10 hover:text-bad focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bad"
-                  >
-                    <Trash2 size={13} aria-hidden />
-                  </button>
-                </li>
-              ))}
+              {checkpoints.map((checkpoint, index) => {
+                const meta = checkpointSnapshotMeta(checkpoint);
+                return (
+                  <li key={checkpoint.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card/55 px-3 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-fg">
+                        <span className="truncate">{checkpoint.name}</span>
+                        {index === 0 ? <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.62rem] font-semibold text-accent">최신 저장</span> : null}
+                        {meta.autoPreRestore ? <span className="rounded-full bg-good-soft px-2 py-0.5 text-[0.62rem] font-semibold text-good">복원 전 자동 보관</span> : null}
+                        {meta.pageCount !== null ? (
+                          <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[0.62rem] font-medium text-fg-3">
+                            페이지 {meta.pageCount.toLocaleString("ko-KR")}개
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[0.68rem] text-fg-3">
+                        <time dateTime={checkpoint.createdAt}>{checkpointDate(checkpoint.createdAt)}</time>
+                        <span aria-hidden>·</span>
+                        <span>복원 시 확인 창 열림 · 삭제는 영구 제거</span>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={interactionLocked}
+                      onClick={() => onRestore(checkpoint)}
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-accent/35 bg-accent-soft/25 px-3 text-xs font-semibold text-accent hover:bg-accent-soft/45 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      <RotateCcw size={12} aria-hidden /> 이 시점 복원
+                    </button>
+                    <button
+                      type="button"
+                      disabled={interactionLocked}
+                      onClick={() => onDelete(checkpoint)}
+                      aria-label={`${checkpoint.name} 저장 기록 삭제`}
+                      className="grid size-11 place-items-center rounded-lg border border-line text-fg-3 hover:border-bad/45 hover:bg-bad/10 hover:text-bad disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bad"
+                    >
+                      <Trash2 size={13} aria-hidden />
+                    </button>
+                  </li>
+                );
+              })}
             </ol>
           )) : (
             <div>
@@ -664,7 +687,7 @@ export function StudioCheckpointPanel({
                 <button
                   type="button"
                   onClick={onReloadServer}
-                  disabled={serverLoading}
+                  disabled={serverLoading || interactionLocked}
                   className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-panel px-3 text-xs font-semibold text-fg-2 hover:bg-raised disabled:cursor-wait disabled:opacity-55"
                 >
                   <RefreshCw size={13} className={serverLoading ? "animate-spin" : undefined} aria-hidden /> 새로고침
@@ -686,29 +709,30 @@ export function StudioCheckpointPanel({
                 <ol className="space-y-2" aria-label="계정의 저장 기록">
                   {serverRevisions.map((revision) => {
                     const current = revision.revision === serverCurrentRevision;
+                    const stepNote = revisionStepSummary(revision.revision, serverCurrentRevision);
                     return (
-                      <li
-                        key={revision.revision}
-                        className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card/55 px-3 py-2.5"
-                      >
+                      <li key={revision.revision} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card/55 px-3 py-2.5">
                         <div className="min-w-0 flex-1">
                           <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-fg">
                             revision {revision.revision}
                             {current ? <span className="rounded-full bg-good-soft px-2 py-0.5 text-[0.62rem] text-good">현재</span> : null}
+                            {stepNote ? <span className="rounded-full border border-line bg-panel px-2 py-0.5 text-[0.62rem] font-medium text-fg-3">{stepNote}</span> : null}
                             {revision.restoredFromRevision ? (
                               <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.62rem] text-accent">
                                 r{revision.restoredFromRevision}에서 복원
                               </span>
                             ) : null}
                           </p>
-                          <time dateTime={revision.createdAt} className="mt-0.5 block text-[0.68rem] text-fg-3">
-                            {checkpointDate(revision.createdAt)}
-                          </time>
+                          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[0.68rem] text-fg-3">
+                            <time dateTime={revision.createdAt}>{checkpointDate(revision.createdAt)}</time>
+                            <span aria-hidden>·</span>
+                            <span>{current ? "현재 열려 있는 서버 기준" : "읽기 전용 비교 후 복원 결정"}</span>
+                          </p>
                         </div>
                         <button
                           type="button"
                           onClick={() => void reviewServerRevision(revision)}
-                          disabled={current || serverLoading}
+                          disabled={current || serverLoading || interactionLocked}
                           className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-accent/35 bg-accent-soft/25 px-3 text-xs font-semibold text-accent hover:bg-accent-soft/45 disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <History size={12} aria-hidden /> {current ? "현재 버전" : "변경 검토"}
