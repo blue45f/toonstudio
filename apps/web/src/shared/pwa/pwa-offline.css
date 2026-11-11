@@ -227,7 +227,16 @@
 @media (max-width: 560px) {
   .pwa-offline { padding: 24px 12px 56px; }
   .pwa-offline__card { padding: 30px 20px; border-radius: 24px; }
-  .pwa-offline__primary, .pwa-offline__secondary { flex: 1; justify-content: center; }
+  .pwa-offline__actions { width: 100%; flex-direction: column; }
+  .pwa-offline__primary, .pwa-offline__secondary {
+    width: 100%;
+    flex: none;
+    justify-content: center;
+    padding: 12px 16px;
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+  .pwa-offline__actions svg { flex: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

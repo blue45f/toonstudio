@@ -163,9 +163,11 @@ export function RoutePurposeScene({
               <span key={layer.en} className="route-purpose-scene__quick-step">{`${index + 1}. ${layer[copyLocale]}`}</span>
             ))}
           </div>
-          <p className="nb-site-purpose-pill" data-atelier-card={stagePill[0]}>
-            <span>{stagePill[copyLocale === "ko" ? 1 : 2]}</span>
-          </p>
+          {profile.stagePill !== null ? (
+            <p className="nb-site-purpose-pill" data-atelier-card={stagePill[0]}>
+              <span>{profile.stagePill?.[copyLocale] ?? stagePill[copyLocale === "ko" ? 1 : 2]}</span>
+            </p>
+          ) : null}
         </div>
 
         <figure className="route-purpose-scene__visual" aria-hidden="true">

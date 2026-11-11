@@ -56,6 +56,7 @@ export interface SiteRouteVisualProfile {
   readonly imagePosition: string;
   readonly video?: SiteRouteVisualVideo;
   readonly layers: readonly [SiteRouteVisualText, SiteRouteVisualText, SiteRouteVisualText];
+  readonly stagePill?: SiteRouteVisualText | null;
 }
 
 const t = (ko: string, en: string): SiteRouteVisualText => ({ ko, en });
@@ -202,6 +203,17 @@ const PROFILES: Record<SiteRouteVisualKind, SiteRouteVisualProfile> = {
   },
 };
 
+const OFFLINE_PROFILE: SiteRouteVisualProfile = {
+  kind: PROFILES.discover.kind,
+  motion: PROFILES.discover.motion,
+  density: "compact",
+  image: PROFILES.discover.image,
+  imagePosition: PROFILES.discover.imagePosition,
+  eyebrow: t("연결·기기 보관", "CONNECTION & DEVICE STORAGE"),
+  layers: [t("연결 확인", "CHECK CONNECTION"), t("기기 보관", "ON-DEVICE CONTENT"), t("다시 접속", "RECONNECT")],
+  stagePill: null,
+};
+
 const exact = (pathname: string, routes: readonly string[]) => routes.includes(pathname);
 const family = (pathname: string, routes: readonly string[]) => routes.some(
   (route) => pathname === route || pathname.startsWith(`${route}/`),
@@ -252,5 +264,6 @@ export function resolveSiteRouteVisualKind(input: string): SiteRouteVisualKind {
 }
 
 export function resolveSiteRouteVisual(input: string): SiteRouteVisualProfile {
+  if (canonicalSitePath(input) === "/offline") return OFFLINE_PROFILE;
   return PROFILES[resolveSiteRouteVisualKind(input)];
 }

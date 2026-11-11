@@ -92,6 +92,16 @@ const PURPOSE_DEFAULTS: Record<SiteRoutePurpose, Omit<SiteRouteUxContract, "cano
 
 export const SITE_ROUTE_UX_OVERRIDES: readonly SiteRouteUxOverride[] = [
   {
+    matches: exact("/offline"),
+    pagePurpose: text("연결 상태와 기기에 보관된 콘텐츠를 확인합니다.", "Check the connection status and content stored on this device."),
+    primaryAction: text("연결·기기 작업 확인", "Check connection and on-device work"),
+    contextLevel: "global",
+    mobilePolicy: "full",
+    helpPath: "/help",
+    recoveryPolicy: "none",
+    audiences: ["solo-creator", "reader"],
+  },
+  {
     matches: exact("/"),
     pagePurpose: text("기획부터 연재까지 웹툰 제작의 전체 흐름을 이해하고 시작합니다.", "Understand and start the complete webtoon workflow from planning to publishing."),
     primaryAction: text("새 작품 시작", "Start a new work"),
