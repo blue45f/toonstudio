@@ -15,15 +15,24 @@ describe("selectChangedUnitTestTargets", () => {
       fs.writeFileSync(path.join(tmp, "apps/web/src/domains/catalog/Sample.tsx"), "export {};");
       fs.writeFileSync(path.join(tmp, "apps/web/src/domains/catalog/Sample.test.tsx"), "export {};");
       fs.writeFileSync(path.join(tmp, "scripts/verify-ui-ux-v2-contracts.test.mjs"), "export {};");
+      fs.mkdirSync(path.join(tmp, "scripts/__tests__"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmp, "scripts/__tests__/vitest-based-contract.test.mjs"),
+        "import { describe, it } from \"vitest\";\ndescribe(\"x\", () => { it(\"y\", () => {}); });\n",
+      );
 
       const plan = selectChangedUnitTestTargets(
         [
           "apps/web/src/domains/catalog/Sample.tsx",
           "scripts/verify-ui-ux-v2-contracts.test.mjs",
+          "scripts/__tests__/vitest-based-contract.test.mjs",
         ],
         tmp,
       );
-      assert.deepEqual(plan.vitestTargets, ["apps/web/src/domains/catalog/Sample.test.tsx"]);
+      assert.deepEqual(plan.vitestTargets, [
+        "apps/web/src/domains/catalog/Sample.test.tsx",
+        "scripts/__tests__/vitest-based-contract.test.mjs",
+      ]);
       assert.deepEqual(plan.nodeTestTargets, ["scripts/verify-ui-ux-v2-contracts.test.mjs"]);
       assert.equal(plan.truncatedVitestCount, 0);
     } finally {

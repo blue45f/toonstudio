@@ -27,7 +27,12 @@ export function selectChangedUnitTestTargets(changedFiles, root = DEFAULT_ROOT) 
     if (!exists(file)) continue;
 
     if (/^(?:scripts|tools)\/.*\.test\.mjs$/u.test(file)) {
-      nodeTestTargets.add(file);
+      const source = fs.readFileSync(path.join(root, file), "utf8");
+      if (/from\s+["']vitest["']/u.test(source)) {
+        vitestCandidates.add(file);
+      } else {
+        nodeTestTargets.add(file);
+      }
       continue;
     }
 

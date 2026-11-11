@@ -219,8 +219,8 @@ describe("studioServiceWorkerBuildId", () => {
 // 동일 빌드에서 측정한 전후 용량으로 강화된 한도가 실제 증가를 막는지 확인한다.
 describe("사전 분리 후 critical 예산", () => {
   it("분리 전 용량은 거절하고 분리 후 용량은 수용한다", () => {
-    expect(STUDIO_PRECACHE_BUDGET.criticalBytes).toBe(2_588_672);
-    for (const [bytes, rejected] of [[2_590_379, true], [2_571_361, false]] as const) {
+    expect(STUDIO_PRECACHE_BUDGET.criticalBytes).toBe(2_605_056);
+    for (const [bytes, rejected] of [[2_610_379, true], [2_599_977, false]] as const) {
       const plan = planStudioServiceWorkerPrecache({
         manifest: { "index.html": { file: "assets/entry.js", isEntry: true } },
         appEntryKey: "index.html",

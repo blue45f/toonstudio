@@ -25,7 +25,7 @@ const pkg = JSON.parse(readFileSync(path.join(repoRoot, "package.json"), "utf8")
  */
 describe("bundle visualizer contract", () => {
   it("installs rollup-plugin-visualizer as a pinned dev-only dependency", () => {
-    expect(pkg.devDependencies["rollup-plugin-visualizer"]).toBe("7.1.1");
+    expect(pkg.devDependencies["rollup-plugin-visualizer"]).toBe("7.1.2");
     expect(pkg.dependencies?.["rollup-plugin-visualizer"]).toBeUndefined();
   });
 
