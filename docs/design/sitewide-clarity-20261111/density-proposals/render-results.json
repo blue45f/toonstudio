@@ -1,0 +1,107 @@
+{
+  "recordedAt": "2026-11-11T18:18:54.260Z",
+  "kind": "local-static-design-proposal",
+  "productBrowserExecuted": false,
+  "network": "temporary loopback HTTP serves only static mock HTML and3known local brand assets; all other origins blocked",
+  "fileProtocolAttempt": "ERR_BLOCKED_BY_ADMINISTRATOR preserved; no browser policy modified",
+  "browserClosed": true,
+  "staticServerClosed": true,
+  "results": [
+    {
+      "screen": "story",
+      "width": 390,
+      "name": "proposal-story-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "document": {
+        "width": 390,
+        "height": 1007
+      },
+      "imageCount": 5,
+      "loadedImages": 5,
+      "kind": "static-proposal-not-product-runtime"
+    },
+    {
+      "screen": "showcase",
+      "width": 390,
+      "name": "proposal-showcase-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "document": {
+        "width": 390,
+        "height": 1226
+      },
+      "imageCount": 5,
+      "loadedImages": 5,
+      "kind": "static-proposal-not-product-runtime"
+    },
+    {
+      "screen": "publish",
+      "width": 390,
+      "name": "proposal-publish-390.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "document": {
+        "width": 390,
+        "height": 1085
+      },
+      "imageCount": 5,
+      "loadedImages": 5,
+      "kind": "static-proposal-not-product-runtime"
+    },
+    {
+      "screen": "story",
+      "width": 1440,
+      "name": "proposal-story-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "imageCount": 5,
+      "loadedImages": 5,
+      "kind": "static-proposal-not-product-runtime"
+    },
+    {
+      "screen": "showcase",
+      "width": 1440,
+      "name": "proposal-showcase-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "document": {
+        "width": 1440,
+        "height": 1035
+      },
+      "imageCount": 5,
+      "loadedImages": 5,
+      "kind": "static-proposal-not-product-runtime"
+    },
+    {
+      "screen": "publish",
+      "width": 1440,
+      "name": "proposal-publish-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "document": {
+        "width": 1440,
+        "height": 1111
+      },
+      "imageCount": 5,
+      "loadedImages": 5,
+      "kind": "static-proposal-not-product-runtime"
+    }
+  ]
+}
