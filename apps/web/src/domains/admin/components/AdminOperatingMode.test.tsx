@@ -71,8 +71,8 @@ function openWorkspace(path = "/admin/platform/operations") {
   return render(<MemoryRouter initialEntries={[path]}><AdminOperationsWorkspace uid="admin-a" /><LocationHistory /></MemoryRouter>);
 }
 function evidenceFixture(revision = 4) {
-  const savedPolicy = { ...policy(), revision };
-  savedPolicy.draft.releaseReview.evidenceRef = revision === 4 ? "라이선스 검토 문서" : "갱신한 라이선스 근거";
+  const base = policy();
+  const savedPolicy = { ...base, revision, draft: { ...base.draft, releaseReview: { ...base.draft.releaseReview, evidenceRef: revision === 4 ? "라이선스 검토 문서" : "갱신한 라이선스 근거" } } };
   return { policy: savedPolicy, effective: resolveOperationPolicy(savedPolicy, null, new Date()), runtimeFingerprint: null, audit: [{ revision, reason: "승인된 근거 갱신", actorUserId: "admin-a", occurredAt: "2026-11-11T00:00:00Z" }] };
 }
 describe("purpose-based operations and saved evidence", () => {
@@ -127,10 +127,10 @@ describe("purpose-based operations and saved evidence", () => {
     mocks.get.mockResolvedValueOnce(evidenceFixture());
     openWorkspace("/admin/platform/operations?view=evidence");
     expect((await screen.findByText(/조회한 정책 revision/)).textContent).toContain("4");
-    fireEvent.click(screen.getByRole("button", { name: "서비스 상태·설정", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "서비스 상태·설정" }));
     expect(await screen.findByText("실제 상태 업무")).toBeTruthy();
     mocks.get.mockResolvedValueOnce(evidenceFixture(5));
-    fireEvent.click(screen.getByRole("button", { name: "정책 검토 근거", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "정책 검토 근거" }));
     expect(screen.queryByText("라이선스 검토 문서")).toBeNull();
     expect(await screen.findByText("갱신한 라이선스 근거")).toBeTruthy();
     expect(screen.getByText(/조회한 정책 revision/).textContent).toContain("5");
