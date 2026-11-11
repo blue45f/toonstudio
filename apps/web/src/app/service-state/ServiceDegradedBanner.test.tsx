@@ -396,3 +396,13 @@ it("몰입 알림의 조작부를 펼친 모바일 작업 메뉴의 실측 높�
   expect(screen.getByRole("status").className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem)");
   expect(screen.getByRole("button", { name: "서비스 상태 알림 펼치기" })).toBeTruthy();
 });
+
+
+it("연결 준비 안내도 실제 모바일 도크 높이 위에 머문다", () => {
+  mocks.state = { ...mocks.state, report: null, warmingUp: true };
+  render(<ServiceDegradedBanner immersive />);
+  const chip = screen.getByRole("status");
+  expect(chip.getAttribute("data-service-degraded-banner")).toBe("warming");
+  expect(chip.className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem)");
+  expect(chip.className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem+env(safe-area-inset-bottom))");
+});

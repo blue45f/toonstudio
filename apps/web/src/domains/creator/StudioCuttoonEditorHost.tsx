@@ -14500,9 +14500,7 @@ const puppetWarpArmed =
   const showQuickStart = !canvasOnlyMode && !quickComicOpen && (
     quickStartOpen ||
     (uiBooleanPreferencesReady
-      && workHydrated
-      && autosaveChecked
-      && !hasAutosave
+      && projectBackupUnavailableReason === null
       && !quickStartDismissed
       && elements.length === 0
       && (quickStartYielded
@@ -28369,7 +28367,7 @@ function clearSelectionForEdit() {
       cancelStudioPointCommentComposer={cancelStudioPointCommentComposer}
       canvasFlipH={canvasFlipH}
       canvasGuides={canvasGuides}
-      canvasH={canvasH}
+      canvasH={canvasH} canvasStartGuideReady={projectBackupUnavailableReason === null}
       canvasInteractionBlocked={canvasInteractionBlocked}
       canvasOnlyMode={canvasOnlyMode}
       canvasRotation={canvasRotation}

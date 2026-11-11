@@ -34,6 +34,7 @@ describe("StudioCinematicCanvasWelcome", () => {
   it("keeps the empty-canvas launcher out of a joined live room", () => {
     const base = {
       elementCount: 0,
+      canvasStartGuideReady: true,
       sourceHydrationPending: false,
       workHydrationFailed: false,
       collaborationDocumentUnavailable: false,

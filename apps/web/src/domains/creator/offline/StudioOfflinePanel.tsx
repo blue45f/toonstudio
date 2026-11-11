@@ -153,7 +153,7 @@ export function StudioOfflinePanel() {
         data-studio-offline-panel="true"
         data-studio-local-only={connectivity.localOnly ? "true" : "false"}
       >
-        <summary className="min-h-9 cursor-pointer content-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+        <summary className="min-h-11 cursor-pointer content-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
           {summary}
         </summary>
         <div className="mt-2 max-h-[60dvh] space-y-3 overflow-y-auto overscroll-contain leading-relaxed">
