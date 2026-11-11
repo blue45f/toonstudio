@@ -475,4 +475,19 @@ describe("리더 시안의 공식 감상 동선", () => {
     expect(screen.getByRole("link", { name: /Read on/ }).getAttribute("href")).toBe("https://comic.naver.com/example");
     expect(screen.getByText("Reading progress is not recorded because panels are not provided.")).toBeTruthy();
   });
+
+  it("시안 N 몰입형 2.5D 공간 리더·3컷 창작·제품 투어 브리지 링크를 한·영으로 렌더링한다", () => {
+    renderReader("/title/fog-signal/read/2");
+    const bar = screen.getByTestId("reader-spatial-creation-bar");
+    expect(within(bar).getByRole("link", { name: "2.5D 공간 리더 체험" }).getAttribute("href")).toBe("/read/spatial");
+    expect(within(bar).getByRole("link", { name: "이 감성으로 3컷 창작" }).getAttribute("href")).toBe("/create");
+    expect(within(bar).getByRole("link", { name: "인터랙티브 제품 투어" }).getAttribute("href")).toBe("/product-tour");
+
+    cleanup();
+    useI18n.setState({ lang: "en" });
+    renderReader("/title/fog-signal/read/2");
+    const enBar = screen.getByTestId("reader-spatial-creation-bar");
+    expect(enBar.textContent).not.toMatch(/[가-힣]/u);
+    expect(within(enBar).getByRole("link", { name: "Try 2.5D Spatial Reader" }).getAttribute("href")).toBe("/read/spatial");
+  });
 });

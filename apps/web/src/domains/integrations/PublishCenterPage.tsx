@@ -18,6 +18,7 @@ import {
   downloadIntegrationText,
 } from "./integration-platform-storage";
 import type { IntegrationProviderStatus, PublishPackageResponse } from "./integration-platform-types";
+import { PublishSurfaceCrossBridge } from "./PublishSurfaceCrossBridge";
 import { SerialCenterOverview } from "./SerialCenterOverview";
 import { integrationsStatusText } from "./integrations-status-i18n";
 
@@ -336,6 +337,7 @@ export function PublishCenterPage() {
           )}
         </p>
       </section>
+      <PublishSurfaceCrossBridge ko={ko} />
       <div className="mb-6">
         <SerialCenterOverview
           ko={ko}

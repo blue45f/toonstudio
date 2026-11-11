@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { StudioBg3dProfessionalWorkspace } from "./StudioBg3dProfessionalWorkspace";
@@ -122,6 +122,12 @@ describe("Studio BG3D professional workspace layout", () => {
     fireEvent.click(shelfToggle);
     expect(shelfToggle.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("studio-bg3d-asset-shelf")).toBeTruthy();
+
+    const dccBar = screen.getByTestId("studio-bg3d-dcc-mode-bar");
+    expect(within(dccBar).getByRole("link", { name: "스컬프트" }).getAttribute("href"))
+      .toBe("/studio/3d/dcc/sculpt");
+    expect(within(dccBar).getByRole("link", { name: "보조기기 컴패니언" }).getAttribute("href"))
+      .toBe("/studio/companion/canvas");
 
     fireEvent.click(screen.getByRole("button", { name: "캐릭터·포즈" }));
     expect(screen.getByText("기본 체형 더미·포즈 릭")).toBeTruthy();

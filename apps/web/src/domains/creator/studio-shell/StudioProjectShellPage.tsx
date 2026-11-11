@@ -46,6 +46,7 @@ import { StudioProjectCardThumbnail } from "./StudioProjectCardThumbnail";
 import { StudioProjectDiagnosticsBridge } from "./StudioProjectDiagnosticsBridge";
 import { StudioProjectStoryPlanning } from "../planning/StudioProjectStoryPlanning";
 import { StudioProjectReadinessPanel } from "./StudioProjectReadinessPanel";
+import { StudioProjectTeamKanbanBridge } from "./StudioProjectTeamKanbanBridge";
 import {
   PRIMARY_SECTIONS,
   PROJECT_STATUS_LABELS,
@@ -755,6 +756,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
         </div>
       </details>
 
+      <StudioProjectTeamKanbanBridge projectId={displayProjectId} />
       <StudioBeginnerQuickTipsBar />
     </Container>
   );

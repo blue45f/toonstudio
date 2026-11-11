@@ -27,6 +27,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
+import { MySpaceVaultAndRestBar } from "./MySpaceVaultAndRestBar";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { FriendlyQuickGuide } from "@/shared/components/purpose-experience-stage";
@@ -631,6 +632,8 @@ export function MySpaceHubPage() {
           description={copy.guideBody}
           steps={copy.guideSteps}
         />
+
+        <MySpaceVaultAndRestBar />
 
         <details
           data-testid="my-space-more-details"

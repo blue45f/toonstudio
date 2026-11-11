@@ -13,6 +13,7 @@ import type { Title } from "@/shared/lib/types";
 
 import { resolveTitleEpisodes, resolveTotalEpisodes } from "./title-episodes";
 import { TitleNotFound } from "./TitleNotFound";
+import { TitleReaderImmersiveCreationBar } from "./TitleReaderImmersiveCreationBar";
 import { TitleReaderReaBridgeCard } from "./TitleReaderReaBridgeCard";
 import { ReaderPlatformNotice } from "./ReaderPlatformNotice";
 
@@ -311,6 +312,7 @@ function ReaderShell({
         {!hasNext && <p className="mb-4 text-center text-sm text-white/75">{bi("지금까지 공개된 마지막 회차예요", "This is the latest available episode")}</p>}
 
         <TitleReaderReaBridgeCard title={title} episode={episode} />
+        <TitleReaderImmersiveCreationBar />
 
         <p className="mt-6 text-center text-xs text-white/65">
           {bi(

@@ -9,6 +9,7 @@ import { GalleryToolbar } from "./publishing/GalleryControls";
 import { GalleryTabPanel } from "./publishing/GalleryTabPanels";
 import { parseGalleryView, patchSearchParams } from "./publishing/gallery-query";
 import { ShowcaseSpotlight } from "./publishing/ShowcaseSpotlight";
+import { ShowcaseSocialHubBar } from "./ShowcaseSocialHubBar";
 
 import { Container } from "@/shared/components/section";
 import { CreativeJourneyLinks } from "@/shared/components/public-creative";
@@ -37,7 +38,8 @@ export function ShowcasePage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
-      <SiteContextualSubNav pathnameOverride="/showcase" className="mb-5" />
+      <SiteContextualSubNav pathnameOverride="/showcase" className="mb-4" />
+      <ShowcaseSocialHubBar />
       <ShowcaseSpotlight />
       <SiteArtSurfaceSpotlight cardId="nb-showcase-premiere" compact className="mt-6" />
 

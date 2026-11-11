@@ -15,6 +15,7 @@ import { StudioAssetGovernancePanel } from "./StudioAssetGovernancePanel";
 import { StudioAssetVisualIntro } from "./StudioAssetVisualIntro";
 import { StudioAssetsPage } from "./StudioFrontDoorPages";
 import { StudioSeriesKitPanel } from "./StudioSeriesKitPanel";
+import { StudioSpecialistSuiteBar } from "./StudioSpecialistSuiteBar";
 import { ASSET_HUB_VIEWS, resolveStudioAssetHubView, type AssetHubView } from "./studio-asset-hub-view";
 import "./studio-illustrated-project-surfaces.css";
 
@@ -39,7 +40,6 @@ const VIEW_ICONS = {
   safety: ShieldCheck,
   seller: Store,
 } as const;
-
 
 /** Build a canonical link while preserving the optional project context. */
 function assetHubHref(view: AssetHubView, projectId: string | null): string {
@@ -146,6 +146,8 @@ export function StudioAssetHubPage() {
           </div>
         </Container>
       </div>
+
+      <StudioSpecialistSuiteBar projectId={projectId} />
 
       {view === "overview" ? <StudioAssetsPage /> : null}
       {view === "overview" ? <details className="mx-3 mb-6 min-w-0 rounded-2xl border border-line sm:mx-6">

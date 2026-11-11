@@ -250,4 +250,22 @@ describe("PublishCenterPage", () => {
     expect(screen.getByTestId("publish-center-rea-status").textContent).toContain("Global 800px 2MB Slice");
     expect(screen.getByTestId("publish-center-rea-status").textContent).toContain("Preview Embargo Holdback");
   });
+
+  it("시안 P 스튜디오 원고 출고·기술 아틀라스·신뢰 허브 교차 브리지를 한·영 무혼용으로 렌더링한다", async () => {
+    const { unmount } = renderPage();
+    await screen.findByText("외부 웹툰 플랫폼");
+
+    const koBridge = screen.getByTestId("publish-surface-cross-bridge");
+    expect(koBridge.querySelector('a[href="/studio/publish"]')).not.toBeNull();
+    expect(koBridge.querySelector('a[href="/about/technology/architecture"]')).not.toBeNull();
+    expect(koBridge.querySelector('a[href="/creator-support"]')).not.toBeNull();
+    expect(koBridge.querySelector('a[href="/accessibility"]')).not.toBeNull();
+
+    unmount();
+    mocks.lang = "en";
+    renderPage();
+    await screen.findByText("외부 웹툰 플랫폼");
+    const enBridge = screen.getByTestId("publish-surface-cross-bridge");
+    expect(enBridge.textContent).not.toMatch(/[가-힣]/u);
+  });
 });

@@ -17,6 +17,17 @@ const SHELF_CATEGORIES: readonly { readonly id: AssetShelfCategoryId; readonly l
   { id: "lighting", label: "조명·선화" },
 ] as const;
 
+const DCC_MODE_LINKS: readonly { readonly id: string; readonly label: string; readonly href: string }[] = [
+  { id: "build", label: "DCC 빌드", href: "/studio/3d/dcc/build" },
+  { id: "model", label: "모델링", href: "/studio/3d/dcc/model" },
+  { id: "sculpt", label: "스컬프트", href: "/studio/3d/dcc/sculpt" },
+  { id: "material", label: "머티리얼", href: "/studio/3d/dcc/material" },
+  { id: "cad", label: "정밀 CAD", href: "/studio/3d/dcc/cad" },
+  { id: "shot", label: "카메라 샷", href: "/studio/3d/dcc/shot" },
+  { id: "companion", label: "보조기기 컴패니언", href: "/studio/companion/canvas" },
+  { id: "storyworld", label: "세계관·컬러", href: "/studio/storyworld" },
+] as const;
+
 const SHELF_ENTRIES: readonly AssetShelfEntry[] = [
   { id: "room-classroom", category: "rooms", title: "학교 교실·복도 모듈", meta: "2점 투시 · 벽면 자동 숨김", href: "/studio/bg3d?preset=classroom" },
   { id: "room-alley", category: "rooms", title: "야간 골목길·상점가", meta: "빗길 반사 · 간판 레이어", href: "/studio/bg3d?preset=alley" },
@@ -83,6 +94,22 @@ export function StudioBg3dAssetShelf({
           </a>
         ))}
       </div>
+      <nav
+        aria-label="3D 하이브리드 DCC 6대 전문 모드 및 컴패니언"
+        data-testid="studio-bg3d-dcc-mode-bar"
+        className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-line pt-2"
+      >
+        <span className="text-[11px] font-bold text-fg-3">전문 DCC · 보조기기:</span>
+        {DCC_MODE_LINKS.map((mode) => (
+          <a
+            key={mode.id}
+            href={mode.href}
+            className="inline-flex min-h-8 items-center rounded-lg border border-line bg-card px-2.5 text-[11px] font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-accent"
+          >
+            {mode.label}
+          </a>
+        ))}
+      </nav>
     </section>
   );
 }
