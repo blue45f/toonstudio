@@ -199,4 +199,16 @@ describe("StudioDocumentWindowHub", () => {
       "브라우저가 새 창을 차단했습니다",
     );
   });
+
+  it("exposes the 5-stage canonical production pill bar for one-click stage switching", () => {
+    const { onChangeWorkspace } = renderHub();
+
+    const stageNav = screen.getByRole("navigation", { name: "5단계 제작 공정 전환" });
+    expect(stageNav.getAttribute("data-studio-stage-pill-bar")).toBe("true");
+    expect(within(stageNav).getByRole("button", { name: "3. 작화·채색" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(stageNav).getByRole("button", { name: "1. 콘티" }).getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(within(stageNav).getByRole("button", { name: "4. 식자" }));
+    expect(onChangeWorkspace).toHaveBeenCalledWith("comic");
+  });
 });

@@ -1,9 +1,14 @@
 import type { Ref } from "react";
 
+import { translateBilingualValueForActiveLocale } from "@/shared/lib/i18n-bilingual-copy";
+
 import type { WatermarkSettings } from "../studio-watermark";
 import { exportFormatLabel, type ExportFormat } from "./studio-export";
 import { exportMenuText } from "./studio-export-menu-i18n";
 import { studioExportAppearanceSummary } from "./studio-export-summary";
+
+const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
+  translateBilingualValueForActiveLocale("StudioExportOutputSummary", ko, en);
 
 interface StudioExportOutputSummaryProps {
   readonly format: ExportFormat;
@@ -30,6 +35,11 @@ export function StudioExportOutputSummary({
       : appearance.signature === "invalid" ? exportMenuText("signatureInvalid")
         : appearance.signature === "invisible" ? exportMenuText("signatureInvisible")
         : exportMenuText("signatureOn");
+  const needsWebtoonSlice = width > 1_600 || height > 20_000;
+  const preflightLabel = needsWebtoonSlice
+    ? bi("고해상도 원본 · 연재처 투고 시 자동 슬라이스 권장", "High-res master · auto-slice advised for platform upload")
+    : bi("웹툰 규격 적합 · Rights BOM 출처 자동 점검", "Webtoon spec ready · Rights BOM auto-checked");
+
   return (
     <section id={summaryId} ref={summaryRef} tabIndex={-1} data-studio-export-output-summary="true"
       aria-labelledby={`${summaryId}-title`}
@@ -45,6 +55,10 @@ export function StudioExportOutputSummary({
         </div>
         <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1">
           <dt>{exportMenuText("outputSignature")}</dt><dd className="m-0 min-w-0 break-words text-fg">{signature}</dd>
+        </div>
+        <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1" data-studio-export-preflight="true">
+          <dt>{bi("출고 프리플라이트", "Export preflight")}</dt>
+          <dd className={`m-0 min-w-0 break-words font-semibold ${needsWebtoonSlice ? "text-fg-2" : "text-good"}`}>{preflightLabel}</dd>
         </div>
       </dl>
       {appearance.background === "unsupported" && transparent ? (

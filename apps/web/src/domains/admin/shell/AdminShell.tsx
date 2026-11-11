@@ -1,5 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import {
+  ChevronDown,
   ExternalLink,
   Menu,
   PanelLeftClose,
@@ -18,6 +19,7 @@ import {
   ADMIN_ROUTE_BY_ID,
   getAdminShellCopy,
   resolveAdminRoute,
+  type AdminNavigationGroupId,
 } from "../router/admin-route-manifest";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
@@ -48,69 +50,106 @@ function AdminNavigation({
   const lang = useI18n((state) => state.lang);
   const copy = getAdminShellCopy(lang);
   const t = useT();
+  const activeRoute = resolveAdminRoute(pathname);
+  const [foldedGroups, setFoldedGroups] = useState<ReadonlySet<AdminNavigationGroupId>>(
+    () => new Set(),
+  );
+
+  const toggleGroup = (groupId: AdminNavigationGroupId) => {
+    setFoldedGroups((current) => {
+      const next = new Set(current);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  };
 
   return (
     <nav
       aria-label={copy.navigation}
       className="flex-1 overflow-y-auto px-2 py-4"
     >
-      {ADMIN_NAVIGATION_GROUPS.map((group) => (
-        <section
-          key={group.id}
-          className="mb-5"
-          aria-labelledby={`${navigationId}-${group.id}`}
-        >
-          <h2
-            id={`${navigationId}-${group.id}`}
-            className={cn(
-              "mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-fg-3",
-              collapsed && "sr-only",
-            )}
+      {ADMIN_NAVIGATION_GROUPS.map((group) => {
+        const containsActive = activeRoute ? group.routeIds.includes(activeRoute.id) : false;
+        const expanded = collapsed || containsActive || !foldedGroups.has(group.id);
+        const headingId = `${navigationId}-${group.id}`;
+        const listId = `${navigationId}-${group.id}-items`;
+
+        return (
+          <section
+            key={group.id}
+            className="mb-4"
+            aria-labelledby={headingId}
           >
-            {copy.groups[group.id]}
-          </h2>
-          <div className="space-y-1">
-            {group.routeIds.map((routeId) => {
-              const route = ADMIN_ROUTE_BY_ID[routeId];
-              const active = resolveAdminRoute(pathname)?.id === route.id;
-              return (
-                <Link
-                  key={route.id}
-                  href={route.path}
-                  aria-current={active ? "page" : undefined}
-                  aria-label={collapsed ? t(route.labelKey) : undefined}
-                  title={collapsed ? t(route.labelKey) : undefined}
-                  onClick={onNavigate}
-                  data-admin-route-entry={route.id}
-                  className={cn(
-                    "group flex min-h-10 items-center gap-3 rounded-xl border px-3 text-sm font-medium transition-colors",
-                    active
-                      ? "border-accent/30 bg-accent/10 text-accent"
-                      : "border-transparent text-fg-2 hover:border-line hover:bg-raised/60 hover:text-fg",
-                    collapsed && "justify-center px-0",
-                  )}
+            <h2
+              id={headingId}
+              className={cn(
+                "mb-1",
+                collapsed && "sr-only",
+              )}
+            >
+              {collapsed ? (
+                copy.groups[group.id]
+              ) : (
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-controls={listId}
+                  onClick={() => toggleGroup(group.id)}
+                  className="flex min-h-8 w-full items-center justify-between rounded-lg px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-fg-3 transition-colors hover:bg-raised/60 hover:text-fg"
                 >
-                  <span className="admin-nav-visual" aria-hidden="true">
-                    <span className="admin-nav-art" />
-                    <AdminRouteIcon
-                      icon={route.icon}
-                      className={cn(
-                        "relative z-[1] shrink-0",
-                        active
-                          ? "text-fg"
-                          : "text-fg-2 group-hover:text-fg",
-                      )}
-                    />
-                  </span>
-                  <span className={cn("truncate", collapsed && "sr-only")}>
-                    {t(route.labelKey)}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+                  <span>{copy.groups[group.id]}</span>
+                  <ChevronDown
+                    size={13}
+                    aria-hidden="true"
+                    className={cn("transition-transform", !expanded && "-rotate-90")}
+                  />
+                </button>
+              )}
+            </h2>
+            <div id={listId} hidden={!expanded} className="space-y-1">
+              {group.routeIds.map((routeId) => {
+                const route = ADMIN_ROUTE_BY_ID[routeId];
+                const active = activeRoute?.id === route.id;
+                return (
+                  <Link
+                    key={route.id}
+                    href={route.path}
+                    aria-current={active ? "page" : undefined}
+                    aria-label={collapsed ? t(route.labelKey) : undefined}
+                    title={collapsed ? t(route.labelKey) : undefined}
+                    onClick={onNavigate}
+                    data-admin-route-entry={route.id}
+                    className={cn(
+                      "group flex min-h-10 items-center gap-3 rounded-xl border px-3 text-sm font-medium transition-colors",
+                      active
+                        ? "border-accent/30 bg-accent/10 text-accent"
+                        : "border-transparent text-fg-2 hover:border-line hover:bg-raised/60 hover:text-fg",
+                      collapsed && "justify-center px-0",
+                    )}
+                  >
+                    <span className="admin-nav-visual" aria-hidden="true">
+                      <span className="admin-nav-art" />
+                      <AdminRouteIcon
+                        icon={route.icon}
+                        className={cn(
+                          "relative z-[1] shrink-0",
+                          active
+                            ? "text-fg"
+                            : "text-fg-2 group-hover:text-fg",
+                        )}
+                      />
+                    </span>
+                    <span className={cn("truncate", collapsed && "sr-only")}>
+                      {t(route.labelKey)}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
     </nav>
   );
 }
@@ -295,6 +334,13 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            <span
+              data-testid="admin-edge-gate-badge"
+              className="hidden items-center gap-1 rounded-full border border-accent/30 bg-accent-soft px-2.5 py-1 text-[10px] font-bold text-accent sm:inline-flex"
+            >
+              <ShieldCheck size={12} aria-hidden="true" />
+              {lang === "ko" ? "Edge Gate 보호" : "Edge Gate Active"}
+            </span>
             <span
               className={cn(
                 "hidden rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] sm:inline-flex",

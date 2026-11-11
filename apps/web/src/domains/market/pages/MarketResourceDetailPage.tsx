@@ -1,4 +1,4 @@
-import { ArrowLeft, SearchX } from "lucide-react";
+import { ArrowLeft, SearchX, ShieldCheck } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 import { MarketNavHeader } from "../components/MarketNavHeader";
@@ -104,25 +104,40 @@ export function MarketResourceDetailPage() {
             aria-label={t("리소스 빠른 실행 도구", "Resource quick actions")}
             className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel/60 px-4 py-3"
           >
-            <span className="text-xs font-semibold text-fg-2">
-              {t("이 에셋을 내 원고 환경에서 바로 점검하거나 비교해 보세요", "Test or compare this asset directly in your manuscript workflow")}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-fg-2">
+                {t("이 에셋을 내 원고 환경에서 바로 점검하거나 비교해 보세요", "Test or compare this asset directly in your manuscript workflow")}
+              </span>
+              <span
+                data-testid="market-detail-rights-bom-pill"
+                className="inline-flex items-center gap-1 rounded-full border border-good/30 bg-good/10 px-2.5 py-1 text-[11px] font-bold text-good"
+              >
+                <ShieldCheck size={13} aria-hidden="true" />
+                {t("Rights BOM 출처·사용권 자동 보존", "Rights BOM provenance auto-preserved")}
+              </span>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/market/fit-lab?slug=${encodeURIComponent(record.id)}`}
-                className="inline-flex min-h-9 items-center rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent transition-opacity hover:opacity-90"
+                className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent transition-opacity hover:opacity-90"
               >
                 {t("원고 위 시험 (Fit Lab)", "Test in Fit Lab")}
               </Link>
               <Link
+                href="/studio/assets"
+                className="inline-flex min-h-11 items-center rounded-lg border border-accent/40 bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:border-accent"
+              >
+                {t("Studio 에셋 허브 열기", "Open Studio Asset Hub")}
+              </Link>
+              <Link
                 href="/market/compare"
-                className="inline-flex min-h-9 items-center rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:border-accent/50"
+                className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:border-accent/50"
               >
                 {t("비교함 열기", "Open Compare")}
               </Link>
               <Link
                 href={`/market/browse?kind=${encodeURIComponent(record.kind)}`}
-                className="inline-flex min-h-9 items-center rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg"
+                className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg"
               >
                 {t("같은 종류 에셋 더 보기", "More of this kind")}
               </Link>

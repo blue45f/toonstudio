@@ -45,6 +45,7 @@ import { useApiResource } from "@/platform/use-api-resource";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { cn } from "@/shared/lib/utils";
 
+import { DiscoverFacetTabStrip } from "./DiscoverFacetTabStrip";
 import { DiscoverSpotlight } from "./DiscoverSpotlight";
 import {
   DISCOVER_HOME_SNAPSHOT_URL,
@@ -265,6 +266,7 @@ export function DiscoverHubPage() {
   return (
     <PageEntrance variant="rise">
     <Container size="wide" className="min-w-0 py-5 sm:py-6 lg:py-8">
+      <DiscoverFacetTabStrip />
       <div className="discover-hub-hero" data-has-spotlight={showSpotlight ? "true" : "false"}>
         <div className="discover-hub-intro">
       <header className="discover-hub-header" aria-labelledby="discover-title">

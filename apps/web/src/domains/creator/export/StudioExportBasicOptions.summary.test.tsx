@@ -163,4 +163,12 @@ describe("모바일에서도 예측할 수 있는 이미지 다운로드", () =>
     expect(appearance(second.container).open).toBe(true);
     expect(appearance(first.container).open).toBe(false);
   });
+  it("출고 요약에서 웹툰 규격 적합 여부와 Rights BOM 자동 점검 안내를 함께 표시한다", () => {
+    const standard = render(<StudioExportBasicOptions {...props({ canvasWidth: 800, canvasHeight: 1200, exportScale: 2 })} />);
+    expect(summary(standard.container).textContent).toContain("웹툰 규격 적합 · Rights BOM 출처 자동 점검");
+    standard.unmount();
+
+    const oversized = render(<StudioExportBasicOptions {...props({ canvasWidth: 1200, canvasHeight: 9000, exportScale: 3 })} />);
+    expect(summary(oversized.container).textContent).toContain("고해상도 원본 · 연재처 투고 시 자동 슬라이스 권장");
+  });
 });

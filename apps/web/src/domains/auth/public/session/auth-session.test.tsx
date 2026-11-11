@@ -3,7 +3,10 @@
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SessionProvider } from "./auth-session";
+import {
+  INITIAL_SESSION_READY_DEADLINE_MS,
+  SessionProvider,
+} from "./auth-session";
 import { persistSession, useSession } from "./auth-session-store";
 
 const apiRaw = vi.hoisted(() => vi.fn());
@@ -196,6 +199,41 @@ describe("SessionProvider server reconciliation", () => {
     });
 
     expect(apiRaw).toHaveBeenCalledTimes(5);
+    expect(screen.getByText("ready:authenticated:provider-user")).toBeTruthy();
+  });
+
+  it("초기 세션 응답이 지연되더라도 3초 기한 안에 게스트 화면을 먼저 열고 뒤늦은 인증을 반영한다", async () => {
+    vi.useFakeTimers();
+    let resolveSession!: (response: Response) => void;
+    apiRaw.mockImplementation(
+      () => new Promise<Response>((resolve) => {
+        resolveSession = resolve;
+      }),
+    );
+
+    render(
+      <SessionProvider>
+        <SessionProbe />
+      </SessionProvider>,
+    );
+
+    expect(screen.getByText("pending:unauthenticated:none")).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(INITIAL_SESSION_READY_DEADLINE_MS - 1);
+    });
+    expect(screen.getByText("pending:unauthenticated:none")).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(screen.getByText("ready:unauthenticated:none")).toBeTruthy();
+
+    await act(async () => {
+      resolveSession(authenticatedResponse());
+      await Promise.resolve();
+      await Promise.resolve();
+    });
     expect(screen.getByText("ready:authenticated:provider-user")).toBeTruthy();
   });
 });

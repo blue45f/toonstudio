@@ -133,4 +133,23 @@ describe("관리자 모바일 탐색의 키보드와 복구", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(document.body.hasAttribute("data-scroll-locked")).toBe(false);
   });
+
+  it("도메인 그룹 아코디언 접기·펼치기와 Edge Gate 보호 상태 배지를 제공한다", () => {
+    renderShell();
+    expect(screen.getByTestId("admin-edge-gate-badge").textContent).toContain("Edge Gate 보호");
+
+    const groupToggle = screen.getByRole("button", { name: copy.groups.monetization });
+    expect(groupToggle.getAttribute("aria-expanded")).toBe("true");
+    const listId = groupToggle.getAttribute("aria-controls") ?? "";
+    const groupList = document.getElementById(listId);
+    expect(groupList?.hidden).toBe(false);
+
+    fireEvent.click(groupToggle);
+    expect(groupToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(groupList?.hidden).toBe(true);
+
+    fireEvent.click(groupToggle);
+    expect(groupToggle.getAttribute("aria-expanded")).toBe("true");
+    expect(groupList?.hidden).toBe(false);
+  });
 });

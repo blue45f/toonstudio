@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import {
   OPEN_DATA_KEYLESS_PROVIDERS,
@@ -6,6 +6,12 @@ import {
   RESOURCE_SEARCH_CONFIG,
 } from "./resource-search-config";
 import { RESOURCE_BUTTON } from "./navigation";
+import {
+  OPEN_DATA_PURPOSE_FILTERS,
+  OpenDataPurposeFilterBar,
+  matchesOpenDataPurpose,
+  type OpenDataPurposeId,
+} from "./OpenDataPurposeFilterBar";
 import { researchSourceArtSrc, researchSourceIdentity } from "./research-source-identity";
 import { ResourceLayout } from "./ResourceLayout";
 import { ResearchSourceCardCover } from "./ResearchSourceCover";
@@ -39,13 +45,56 @@ const WORKFLOW: Record<typeof OPEN_DATA_PROVIDERS[number], string> = {
   europeana: "유럽 문화유산 횡단 검색",
   dpla: "미국 역사 자료 횡단 검색",
 };
+
+function parsePurposeParam(raw: string | null): OpenDataPurposeId {
+  if (raw && OPEN_DATA_PURPOSE_FILTERS.some((item) => item.id === raw)) {
+    return raw as OpenDataPurposeId;
+  }
+  return "all";
+}
+
 export function OpenDataLabPage() {
   useBilingualI18nRevision();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const purpose = parsePurposeParam(searchParams.get("purpose"));
+  const query = searchParams.get("q") ?? "";
+  const normalizedQuery = query.normalize("NFC").trim().toLocaleLowerCase();
+
+  const updateFilterParams = (nextPurpose: OpenDataPurposeId, nextQuery: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (nextPurpose === "all") next.delete("purpose");
+        else next.set("purpose", nextPurpose);
+        if (nextQuery.trim()) next.set("q", nextQuery);
+        else next.delete("q");
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  const filteredProviders = OPEN_DATA_PROVIDERS.filter((provider) => {
+    const isKeyless = KEYLESS.has(provider);
+    if (!matchesOpenDataPurpose(provider, purpose, isKeyless)) return false;
+    if (!normalizedQuery) return true;
+    const identity = researchSourceIdentity(provider);
+    const haystack = [
+      provider,
+      RESOURCE_LABELS[provider],
+      WORKFLOW[provider],
+      identity.name,
+      identity.tagline,
+      RESOURCE_SEARCH_CONFIG[provider].intro,
+    ]
+      .join(" ")
+      .normalize("NFC")
+      .toLocaleLowerCase();
+    return haystack.includes(normalizedQuery);
+  });
+
   const keylessCount = OPEN_DATA_PROVIDERS.filter((provider) => KEYLESS.has(provider)).length;
   const keyedCount = OPEN_DATA_PROVIDERS.filter((provider) => !KEYLESS.has(provider)).length;
-  // 첫 화면 무대 (디자인 웨이브 14 — 구도 교체): 대표 제공처 NASA의 실물 장면 아트를
-  // 전폭 무대로 세우고, 제목·소개·제공처 통계를 스크림 위 무대 안에 종속 배치한다.
-  // 통계 스트립은 무대와 중복돼 제거했고, 주의 패널·제공처 그리드·하단 동선은 그대로다.
   const heroIdentity = researchSourceIdentity("nasa");
   const heroArt = researchSourceArtSrc(heroIdentity);
   const stats = [
@@ -125,33 +174,55 @@ export function OpenDataLabPage() {
         </div>
       </div>
     </section>
+    <OpenDataPurposeFilterBar
+      purpose={purpose}
+      query={query}
+      matchCount={filteredProviders.length}
+      totalCount={OPEN_DATA_PROVIDERS.length}
+      onSelectPurpose={(nextPurpose) => updateFilterParams(nextPurpose, query)}
+      onChangeQuery={(nextQuery) => updateFilterParams(purpose, nextQuery)}
+      onReset={() => updateFilterParams("all", "")}
+    />
     <section aria-labelledby="open-data-providers-title">
       <h2 id="open-data-providers-title" className="sr-only">{tx("공개 데이터 제공처")}</h2>
-      <StaggerReveal className="grid gap-4 md:grid-cols-2" itemClassName="h-full">
-      {OPEN_DATA_PROVIDERS.map((provider) => {
-        const config = RESOURCE_SEARCH_CONFIG[provider];
-        const keyless = KEYLESS.has(provider);
-        const identity = researchSourceIdentity(provider);
-        return <article key={provider} className={`research-source research-source--${provider} flex h-full flex-col gap-3 rounded-2xl border border-line bg-panel p-5`}>
-          <ResearchSourceCardCover identity={identity} />
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${keyless ? "border-good/30 bg-good/10" : "border-accent/30 bg-accent-soft text-accent"}`}>
-              {keyless ? tx("가입·키 없음") : tx("무료 서버 키 필요")}
-            </span>
-            <span className="text-xs text-fg-2">{tx(WORKFLOW[provider])}</span>
-          </div>
-          <h3 className="text-lg font-bold">{RESOURCE_LABELS[provider]}</h3>
-          <p className="flex items-center gap-2 text-sm font-semibold text-fg-2">
-            <span aria-hidden="true" className="resource-source-dot" />
-            {identity.tagline}
-          </p>
-          <p className="flex-1 text-sm leading-7 text-fg-2">{tx(config.intro)}</p>
-          <Link className={`${RESOURCE_BUTTON} self-start bg-accent-soft`} to={`/research/open-data/${provider}`}>
-            {tx("검색 도구 열기")}
-          </Link>
-        </article>;
-      })}
-      </StaggerReveal>
+      {filteredProviders.length === 0 ? (
+        <div className="rounded-2xl border border-line bg-panel p-6 text-sm text-fg-2">
+          <p className="font-bold text-fg">{tx("조건에 맞는 공개 데이터 제공처가 없습니다.")}</p>
+          <button
+            type="button"
+            onClick={() => updateFilterParams("all", "")}
+            className={`${RESOURCE_BUTTON} mt-3 bg-accent-soft`}
+          >
+            {tx("전체 14개 제공처 다시 보기")}
+          </button>
+        </div>
+      ) : (
+        <StaggerReveal className="grid gap-4 md:grid-cols-2" itemClassName="h-full">
+        {filteredProviders.map((provider) => {
+          const config = RESOURCE_SEARCH_CONFIG[provider];
+          const keyless = KEYLESS.has(provider);
+          const identity = researchSourceIdentity(provider);
+          return <article key={provider} className={`research-source research-source--${provider} flex h-full flex-col gap-3 rounded-2xl border border-line bg-panel p-5`}>
+            <ResearchSourceCardCover identity={identity} />
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${keyless ? "border-good/30 bg-good/10" : "border-accent/30 bg-accent-soft text-accent"}`}>
+                {keyless ? tx("가입·키 없음") : tx("무료 서버 키 필요")}
+              </span>
+              <span className="text-xs text-fg-2">{tx(WORKFLOW[provider])}</span>
+            </div>
+            <h3 className="text-lg font-bold">{RESOURCE_LABELS[provider]}</h3>
+            <p className="flex items-center gap-2 text-sm font-semibold text-fg-2">
+              <span aria-hidden="true" className="resource-source-dot" />
+              {identity.tagline}
+            </p>
+            <p className="flex-1 text-sm leading-7 text-fg-2">{tx(config.intro)}</p>
+            <Link className={`${RESOURCE_BUTTON} self-start bg-accent-soft`} to={`/research/open-data/${provider}`}>
+              {tx("검색 도구 열기")}
+            </Link>
+          </article>;
+        })}
+        </StaggerReveal>
+      )}
     </section>
     <section className="flex flex-wrap gap-3 rounded-2xl border border-line bg-panel p-6">
       <Link className={RESOURCE_BUTTON} to="/research">{tx("전체 저장 보드")}</Link>

@@ -16,6 +16,8 @@ import {
 } from "./auth-session-store";
 
 const SESSION_RETRY_DELAYS_MS = [250, 1_000, 3_000] as const;
+/** 백엔드 콜드스타트·네트워크 행 상태에서도 3초 안에 게스트·로컬 캐시 화면을 먼저 개방한다. */
+export const INITIAL_SESSION_READY_DEADLINE_MS = 3_000;
 
 export function SessionProvider({ children, session = null }: { children: ReactNode; session?: Session }) {
   const [data, setData] = useState<Session>(() => session ?? getAuthSession());
@@ -30,8 +32,24 @@ export function SessionProvider({ children, session = null }: { children: ReactN
     let requestGeneration = 0;
     let retryAttempt = 0;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let startupDeadlineTimer: ReturnType<typeof setTimeout> | undefined =
+      globalThis.setTimeout(() => {
+        startupDeadlineTimer = undefined;
+        if (active) setReady(true);
+      }, INITIAL_SESSION_READY_DEADLINE_MS);
 
     const listener = (next: Session) => setData(next);
+
+    function clearStartupDeadlineTimer() {
+      if (startupDeadlineTimer === undefined) return;
+      globalThis.clearTimeout(startupDeadlineTimer);
+      startupDeadlineTimer = undefined;
+    }
+
+    function markSessionReady() {
+      clearStartupDeadlineTimer();
+      setReady(true);
+    }
 
     function clearRetryTimer() {
       if (retryTimer === undefined) return;
@@ -67,7 +85,7 @@ export function SessionProvider({ children, session = null }: { children: ReactN
         clearRetryTimer();
         // The last verified public profile remains the honest offline authority.
         // Do not flood DevTools with doomed session requests while disconnected.
-        setReady(true);
+        markSessionReady();
         return;
       }
       if (resetRetryBudget) {
@@ -82,18 +100,18 @@ export function SessionProvider({ children, session = null }: { children: ReactN
           if (result.status !== "indeterminate") {
             retryAttempt = 0;
             clearRetryTimer();
-            setReady(true);
+            markSessionReady();
             return;
           }
           // Session transport availability must never block public rendering. Keep the last
           // locally known profile as the honest fallback, expose the application immediately,
           // and continue the bounded verification retries in the background.
-          setReady(true);
+          markSessionReady();
           scheduleRetry(reason);
         },
         () => {
           if (!active || generation !== requestGeneration) return;
-          setReady(true);
+          markSessionReady();
           scheduleRetry(reason);
         },
       );
@@ -116,6 +134,7 @@ export function SessionProvider({ children, session = null }: { children: ReactN
     return () => {
       active = false;
       requestGeneration += 1;
+      clearStartupDeadlineTimer();
       clearRetryTimer();
       listeners.delete(listener);
       unsubscribeSyncRequests();

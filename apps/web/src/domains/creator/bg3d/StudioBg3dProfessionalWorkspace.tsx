@@ -1,4 +1,3 @@
-
 import { isValidElement, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@/shared/hooks/use-media-query";
 import { StudioScene3dBg3dCutPanel } from "../scene3d/StudioScene3dBg3dCutPanel";
@@ -26,8 +25,7 @@ import {
   type StudioBg3dWorkspacePanel,
   type StudioBg3dWorkspacePresetId,
 } from "./studio-bg3d-professional-workspace-layout";
-
-
+import { StudioBg3dAssetShelf } from "./StudioBg3dAssetShelf";
 
 interface StudioBg3dProfessionalWorkspaceProps {
   readonly outliner: ReactNode;
@@ -76,6 +74,7 @@ export function StudioBg3dProfessionalWorkspace({
   const canonicalStorageKey = studioBg3dProfessionalWorkspaceStorageKey(scopeKey);
   const [layout, setLayout] = useState(() =>
     readStudioBg3dProfessionalWorkspaceLayout(browserStorage(), scopeKey));
+  const [assetShelfOpen, setAssetShelfOpen] = useState(false);
   const hydratedStorageKeyRef = useRef(canonicalStorageKey);
   const resizeGestureRef = useRef<ResizeGesture | null>(null);
 
@@ -250,6 +249,14 @@ export function StudioBg3dProfessionalWorkspace({
         </button>
         <button
           type="button"
+          aria-pressed={assetShelfOpen}
+          className="min-h-8 rounded-md border border-line bg-card px-2.5 text-[0.65rem] font-semibold text-fg-2 hover:border-accent/60 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent"
+          onClick={() => setAssetShelfOpen((current) => !current)}
+        >
+          에셋 쉘프
+        </button>
+        <button
+          type="button"
           className="ml-auto min-h-8 rounded-md border border-line bg-card px-2.5 text-[0.65rem] font-semibold text-fg-2 hover:border-accent/60 hover:text-accent"
           onClick={() => setLayout(DEFAULT_STUDIO_BG3D_PROFESSIONAL_WORKSPACE_LAYOUT)}
         >
@@ -285,6 +292,8 @@ export function StudioBg3dProfessionalWorkspace({
           {inspector}
         </div>
       </div>
+
+      {assetShelfOpen ? <StudioBg3dAssetShelf onClose={() => setAssetShelfOpen(false)} /> : null}
     </div>
   );
 }

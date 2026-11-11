@@ -114,5 +114,19 @@ describe("Studio BG3D professional workspace layout", () => {
     expect(screen.queryByRole("separator")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "기본 배치" }));
     expect(screen.getAllByRole("separator")).toHaveLength(2);
+
+    const shelfToggle = screen.getByRole("button", { name: "에셋 쉘프" });
+    expect(shelfToggle.getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByTestId("studio-bg3d-asset-shelf")).toBeNull();
+
+    fireEvent.click(shelfToggle);
+    expect(shelfToggle.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("studio-bg3d-asset-shelf")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "캐릭터·포즈" }));
+    expect(screen.getByText("기본 체형 더미·포즈 릭")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "쉘프 접기" }));
+    expect(screen.queryByTestId("studio-bg3d-asset-shelf")).toBeNull();
   });
 });

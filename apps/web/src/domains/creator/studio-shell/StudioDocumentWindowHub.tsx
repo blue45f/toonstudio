@@ -45,6 +45,7 @@ import {
   STUDIO_DOCUMENT_WINDOW_PRESETS,
   studioRecommendedCompanionWorkspaces,
 } from "./studio-document-window-presets";
+import { StudioDocumentStagePillBar } from "./StudioDocumentStagePillBar";
 
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
@@ -411,6 +412,10 @@ export function StudioDocumentWindowHub({
             <span className="hidden md:inline">{bi("창", "views")}</span>
           </button>
         </div>
+        <StudioDocumentStagePillBar
+          workspace={resolution.workspace}
+          onSelectWorkspace={onChangeWorkspace}
+        />
       </div>
   );
 

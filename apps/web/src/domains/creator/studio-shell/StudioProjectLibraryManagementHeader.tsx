@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { Archive, Clock3, FolderOpen, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
+import { Archive, BookOpen, Clock3, FolderOpen, Plus, RotateCcw, Search, ShieldCheck, Trash2 } from "lucide-react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -9,8 +9,9 @@ import { cn } from "@/shared/lib/utils";
 import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
 import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
 import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
+import { StudioProjectLibraryFastStartStrip } from "./StudioProjectLibraryFastStartStrip";
 import { STUDIO_LIBRARY_SECTION_ID, studioLobbyRecentProjects } from "./studio-creator-lobby-model";
-import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryDateLabel, studioProjectLibraryManagementViewHref, studioProjectLibraryTypeLabel, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
+import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectIsTemporaryWork, studioProjectLibraryDateLabel, studioProjectLibraryManagementViewHref, studioProjectLibraryTypeLabel, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
@@ -27,7 +28,7 @@ export function StudioProjectLibraryManagementHeader({
     setSelectedIds, notice, setNotice, setDeleteRequest, listedProjects,
     viewCounts, visibleProjects, selectedProjects, allVisibleSelected,
     toggleVisibleSelection, archiveProjects, trashProjects, restoreProjects,
-    projectResumeTarget,
+    projectOverviewHref, projectResumeTarget,
   } = controller;
   const hasSearchQuery = query.trim().length > 0;
   const userProjects = listedProjects.filter(
@@ -38,6 +39,9 @@ export function StudioProjectLibraryManagementHeader({
     ? studioLobbyRecentProjects(recentCandidates, 1)[0] ?? null
     : null;
   const recentResumeTarget = recentProject ? projectResumeTarget(recentProject) : null;
+  const recentIsTemporary = recentProject
+    ? studioProjectIsTemporaryWork(profiles.profileFor(recentProject.id))
+    : false;
   return (
     <section
       id={STUDIO_LIBRARY_SECTION_ID}
@@ -83,19 +87,43 @@ export function StudioProjectLibraryManagementHeader({
               {bi("최근 작업", "Recent work")}
             </span>
             <div className="min-w-0 flex-1">
-              <p
-                title={recentProject.title}
-                data-studio-recent-work-title="true"
-                className="truncate text-xs font-black text-fg sm:text-sm"
-              >
-                {recentProject.title}
-              </p>
+              <div className="flex min-w-0 items-center gap-2">
+                <p
+                  title={recentProject.title}
+                  data-studio-recent-work-title="true"
+                  className="truncate text-xs font-black text-fg sm:text-sm"
+                >
+                  {recentProject.title}
+                </p>
+                <span
+                  data-studio-recent-save-badge="true"
+                  className={cn(
+                    "hidden shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[0.62rem] font-bold sm:inline-flex",
+                    recentIsTemporary
+                      ? "border-line bg-panel text-fg-2"
+                      : "border-good/30 bg-good/10 text-good",
+                  )}
+                >
+                  <ShieldCheck size={11} aria-hidden="true" />
+                  {recentIsTemporary
+                    ? bi("오프라인 자동저장됨", "Offline autosaved")
+                    : bi("정식 저장 연결됨", "Formal save linked")}
+                </span>
+              </div>
               <p className="mt-0.5 truncate text-[0.68rem] text-fg-3">
                 {`${studioProjectLibraryTypeLabel(recentProject)} · ${studioProjectLibraryDateLabel(recentProject.lastOpenedAt, _locale)}`}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={projectOverviewHref(recentProject)}
+              data-studio-recent-work-overview="true"
+              className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 sm:min-h-9" })}
+            >
+              <BookOpen size={14} aria-hidden="true" />
+              {bi("작품 단계", "Project stages")}
+            </Link>
             <Link
               href={recentResumeTarget.href}
               onClick={() => {
@@ -110,6 +138,8 @@ export function StudioProjectLibraryManagementHeader({
           </div>
         </div>
       ) : null}
+
+      {view === "active" && !hasSearchQuery ? <StudioProjectLibraryFastStartStrip /> : null}
 
       <div className="mt-3 sm:mt-5">
         <nav className="overflow-x-auto" aria-label={bi("내 작업 보기", "My work views")}>

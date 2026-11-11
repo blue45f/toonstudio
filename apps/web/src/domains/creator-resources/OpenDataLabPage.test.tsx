@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 
-import { render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { OpenDataLabPage } from "./OpenDataLabPage";
 
-function mount() {
+afterEach(cleanup);
+
+function mount(initialEntry = "/research/open-data") {
   return render(
-    <MemoryRouter initialEntries={["/research/open-data"]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <OpenDataLabPage />
     </MemoryRouter>,
   );
@@ -30,13 +32,10 @@ describe("OpenDataLabPage", () => {
   it("gives every provider card its source identity (scope · mark · tagline)", () => {
     const { container } = mount();
     expect(container.querySelectorAll("article.research-source")).toHaveLength(14);
-    // 전용 장면을 가진 소스(ambientCG)는 그 장면을 마크로 쓴다(웨이브 17에 장면으로 전환).
     const ambient = container.querySelector("article.research-source--ambientcg");
     expect(ambient?.querySelector("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/ambientcg.webp");
-    // 브랜드 일러스트가 없는 소스(NASA)는 소스 성격이 읽히는 장면 표지를 쓴다.
     const nasa = container.querySelector("article.research-source--nasa");
     expect(nasa?.querySelector("img")?.getAttribute("src")).toBe("/brand/research-sources-20261008/nasa.webp");
-    // 허브 카드 14곳 전부 실물 아트 표지다 — 타이포 표지는 한 곳도 남지 않는다.
     for (const card of container.querySelectorAll("article.research-source")) {
       expect(card.querySelector("img")).toBeTruthy();
       expect(card.querySelector(".resource-source-cover")).toBeNull();
@@ -49,5 +48,21 @@ describe("OpenDataLabPage", () => {
     mount();
     expect(screen.getByText(/Studio 직접 가져오기는 CC0가 확인된 ambientCG에만 허용/u)).toBeTruthy();
     expect(screen.getByText(/NASA·V&A는 안전한 미리보기를 레퍼런스 전용/u)).toBeTruthy();
+  });
+
+  it("filters providers by creative purpose and keyword with one-click reset", () => {
+    const { container } = mount();
+    fireEvent.click(screen.getByRole("button", { name: "가입·키 없음 즉시" }));
+    expect(container.querySelectorAll("article.research-source")).toHaveLength(8);
+
+    const filterInput = screen.getByRole("searchbox", { name: "제공처·고증 키워드 필터" });
+    fireEvent.change(filterInput, { target: { value: "ambientCG" } });
+    expect(container.querySelectorAll("article.research-source")).toHaveLength(1);
+
+    fireEvent.change(filterInput, { target: { value: "존재하지않는제공처999" } });
+    expect(screen.getByText("조건에 맞는 공개 데이터 제공처가 없습니다.")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "전체 14개 제공처 다시 보기" }));
+    expect(container.querySelectorAll("article.research-source")).toHaveLength(14);
   });
 });
