@@ -153,19 +153,13 @@ export function StudioProjectLibraryManagementHeader({
               </div>
             </div>
           )}
-          {recentProject ? (
-            <details className="group rounded-xl border border-line bg-card" data-studio-other-starts="true">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
-                {bi("다른 작업 시작", "Start something else")}
-                <ChevronDown size={16} aria-hidden="true" className="group-open:rotate-180" />
-              </summary>
-              <StudioProjectLibraryFastStartStrip className="px-3 pb-3" />
-            </details>
-          ) : (
-            <div className="lg:col-span-7">
-              <StudioProjectLibraryFastStartStrip className="h-full" />
-            </div>
-          )}
+          <details className={cn("group self-start rounded-xl border border-line bg-card", !recentProject && "lg:col-span-7")} data-studio-other-starts="true">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+              {bi("다른 작업 시작", "Start something else")}
+              <ChevronDown size={16} aria-hidden="true" className="group-open:rotate-180" />
+            </summary>
+            <StudioProjectLibraryFastStartStrip className="px-3 pb-3" />
+          </details>
         </div>
       ) : null}
 

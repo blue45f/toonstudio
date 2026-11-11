@@ -54,7 +54,11 @@ describe("개인 활동에 따른 작업 홈", () => {
     expect(primary).toHaveLength(1);
     expect(primary[0]?.getAttribute("data-studio-library-primary-action")).toBe("new");
     expect(screen.getByRole("link", { name: "새 작업" }).getAttribute("href")).toBe("/create");
-    expect(screen.getByRole("navigation", { name: "작업 시작 방식" }).closest("details")).toBeNull();
+    const alternatives = screen.getByRole("navigation", { name: "작업 시작 방식" }).closest("details");
+    expect(alternatives?.open).toBe(false);
+    fireEvent.click(screen.getByText("다른 작업 시작", { exact: true }));
+    expect(alternatives?.open).toBe(true);
+    expect(alternatives?.querySelectorAll("a")).toHaveLength(4);
   });
 
   it.each([EXAMPLE_PROJECT_ID, SAMPLE_PROJECT_ID])("실제 편집기 사용 맥락이 있는 %s 원본은 같은 ID로 이어한다", (id) => {
