@@ -40,6 +40,8 @@ import {
   promoVideosByCategory,
   type PromoVideoItem,
 } from "./promo-video-library";
+import { PromoClipPlayer } from "./PromoClipPlayer";
+import { promoClipPoster } from "./promo-clip-posters";
 
 import "./marketing-page.css";
 import "./promo-video-library.css";
@@ -144,15 +146,12 @@ function PromoVideoCard({ item }: { readonly item: PromoVideoItem }) {
         움직이면 어지럽고 데이터도 많이 쓰며, 움직임 최소화를 선호하는
         사용자에게도 안전하지 않다. 재생은 사용자가 직접 누를 때만 일어난다.
       */}
-      <video
-        controls
-        muted
-        playsInline
-        preload="metadata"
+      <PromoClipPlayer
         src={item.src}
+        poster={promoClipPoster(item.src)}
         width={item.width}
         height={item.height}
-        aria-label={itemCopy.title}
+        title={itemCopy.title}
       />
       <div className="promo-library__card-copy">
         <h3>{itemCopy.title}</h3>

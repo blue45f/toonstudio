@@ -14,6 +14,15 @@ afterEach(() => {
 });
 
 describe("PromoVideoLibraryPage — 20종 REA 3-Mode 뷰 스위처·필터·허브 서브탭·6단계 파이프라인", () => {
+  it("204개 원본과 쇼츠 49개를 유지하며 명시적 재생 전에는 미디어를 선로딩하지 않는다", () => {
+    const { container } = render(<MemoryRouter initialEntries={["/promo-library"]}><PromoVideoLibraryPage /></MemoryRouter>);
+    const videos = Array.from(container.querySelectorAll("video"));
+    expect(videos).toHaveLength(204);
+    expect(container.querySelectorAll("#promo-category-shorts [data-promo-video]")).toHaveLength(49);
+    expect(videos.every((video) => video.preload === "none" && !video.hasAttribute("src"))).toBe(true);
+    expect(container.querySelectorAll('a[download][href$=".mp4"]')).toHaveLength(204);
+  });
+
   it("맥락형 서브탭과 3-Mode 뷰 스위처(card, poster, list), 화면 비율 필터, 20종 REA 기준표 및 6단계 창작 동선을 렌더링한다", () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/promo-library"]}>
