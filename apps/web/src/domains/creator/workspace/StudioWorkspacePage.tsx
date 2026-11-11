@@ -174,7 +174,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
         ><Search size={19} aria-hidden="true" /></button>
       </div>
       <div className="workspace-utilities">
-        <OpenSearchButton className="workspace-search-trigger" aria-label={bt("작품·도구·메뉴 검색", "Search works, tools, menus")}>
+        <OpenSearchButton className="workspace-search-trigger" aria-label={`${bt("작품·도구·메뉴 검색", "Search works, tools, menus")} ⌘ K`}>
           <Search size={17} aria-hidden="true" />
           <span>{bt("작품·도구·메뉴 검색", "Search works, tools, menus")}</span>
           <kbd aria-hidden="true">⌘ K</kbd>

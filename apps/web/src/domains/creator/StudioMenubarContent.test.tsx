@@ -995,12 +995,14 @@ describe("StudioMenubarContent", () => {
 
   it("takes slot names, the settings dialog, and its hint from the locale pack", async () => {
     useI18n.setState({ lang: "en" });
-    render(<StudioMenubarContent {...createProps()} />);
-
+    const props = createProps();
+    render(<StudioMenubarContent {...props} />);
     expect(screen.getByRole("group", { name: "Quick command bar" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Undo" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Slot 4: Export options" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "초안 저장" }).textContent).toContain("Save");
+    const draft = screen.getByRole("button", { name: "Save draft" });
+    expect(draft.getAttribute("aria-label")).toContain(within(draft).getByText("Save").textContent);
+    fireEvent.click(draft); expect(props.stableHandlers.handleSave).toHaveBeenCalledWith("draft");
     const settings = screen.getByRole("button", { name: "Command bar settings" });
     fireEvent.click(settings);
     expect(
@@ -1121,8 +1123,6 @@ describe("StudioMenubarContent", () => {
     }
   });
 });
-
-
 describe("PSD original-quality import controls", () => {
   afterEach(cleanup);
   it("keeps cancellation available even if document editing permission changes", () => {

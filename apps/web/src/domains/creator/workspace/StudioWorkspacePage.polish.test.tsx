@@ -27,7 +27,7 @@ vi.mock("@/shared/lib/creator-experience-mode", () => ({
   useCreatorExperienceMode: (selector: (value: typeof state) => unknown) => selector(state),
 }));
 vi.mock("@/shared/components/CreatorExperienceModeSwitch", () => ({ CreatorExperienceModeSwitch: () => null }));
-vi.mock("@/shared/components/open-search-button", () => ({ OpenSearchButton: () => <button type="button">검색</button> }));
+vi.mock("@/shared/components/open-search-button", () => ({ OpenSearchButton: ({ children, ...props }: { children: ReactNode; "aria-label"?: string; className?: string }) => <button type="button" {...props}>{children}</button> }));
 vi.mock("@/shared/components/workspace/WorkspaceContextPanel", () => ({
   WorkspaceContextPanel: ({ open, onClose, children }: { open: boolean; onClose?: () => void; children: ReactNode }) => open ? (
     <aside>
@@ -103,6 +103,13 @@ afterEach(() => {
 });
 
 describe("studio workspace polish wiring", () => {
+  it("홈 검색의 보이는 문구와 단축키를 같은 음성 이름으로 찾는다", () => {
+    render(<App entries={["/home?project=older"]} />);
+    const search = screen.getByRole("button", { name: "작품·도구·메뉴 검색 ⌘ K" });
+    expect(search.textContent).toBe("작품·도구·메뉴 검색⌘ K");
+    expect(search.getAttribute("aria-label")).toContain("⌘ K");
+  });
+
   it("renders the cinematic continue hero as the tour entry point", () => {
     render(<App entries={["/home?project=older"]} />);
     expect(document.querySelector(".workspace-hero-cinematic")).toBeTruthy();

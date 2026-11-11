@@ -1,15 +1,31 @@
 // @vitest-environment jsdom
 import { useEffect, useState } from "react";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceTaskFrame } from "./WorkspaceTaskFrame";
 import { workspaceTaskRoute } from "./workspace-task-route";
+import { useI18n } from "@/shared/lib/i18n";
 
-vi.mock("@/shared/components/open-search-button", () => ({ OpenSearchButton: ({ children }: { children: React.ReactNode }) => <button type="button">{children}</button> }));
+vi.mock("@/shared/components/open-search-button", () => ({ OpenSearchButton: ({ children, ...props }: { children: React.ReactNode; "aria-label"?: string; className?: string }) => <button type="button" {...props}>{children}</button> }));
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ useSession: () => ({ data: null, ready: true }) }));
+beforeEach(() => useI18n.getState().setLang("ko"));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe("common task frame", () => {
+  it.each([
+    ["ko", "작품·도구·메뉴 검색", "홈"],
+    ["en", "Search works, tools, menus", "home"],
+  ])("%s에서도 보이는 브랜드·검색·단축키를 음성 이름에 담는다", (locale, caption, destination) => {
+    useI18n.getState().setLang(locale);
+    render(<MemoryRouter initialEntries={["/studio/assets"]}><WorkspaceTaskFrame route={workspaceTaskRoute("/studio/assets")}><input aria-label="kept draft" /></WorkspaceTaskFrame></MemoryRouter>);
+    const brand = screen.getByRole("link", { name: `ToonStudio STORY COMES TO LIFE ${destination}` });
+    expect(brand.getAttribute("aria-label")).toContain("ToonStudio STORY COMES TO LIFE");
+    expect(brand.textContent).toContain("STORY COMES TO LIFE");
+    const search = screen.getByRole("button", { name: `${caption} ⌘ K` });
+    expect(search.getAttribute("aria-label")).toContain(within(search).getByText(caption).textContent);
+    expect(search.getAttribute("aria-label")).toContain(within(search).getByText("⌘ K").textContent);
+  });
+
   it("does not remount or lose the router child when chrome changes", () => {
     const mount = vi.fn();
     function Document() { const [value, setValue] = useState("draft"); useEffect(() => { mount(); }, []);
@@ -43,7 +59,7 @@ describe("common task frame", () => {
     );
 
     expect(result.container.querySelector('[data-workspace-surface="task"]')).toBeTruthy();
-    expect(screen.getByRole("link", { name: "ToonStudio 홈" }).getAttribute("href")).toMatch(/^\/home(?:\?|$)/u);
+    expect(screen.getByRole("link", { name: "ToonStudio STORY COMES TO LIFE 홈" }).getAttribute("href")).toMatch(/^\/home(?:\?|$)/u);
     expect(screen.getAllByRole("navigation", { name: "주 메뉴" })).toHaveLength(1);
   });
 });
