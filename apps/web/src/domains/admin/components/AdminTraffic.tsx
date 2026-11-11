@@ -133,7 +133,7 @@ export function TrafficTrendChart({
       <div className="mt-4 overflow-x-auto">
         <svg
           viewBox={`-12 -12 ${width + 24} ${height + 24}`}
-          className="h-56 min-w-[620px] w-full"
+          className="h-44 w-full sm:h-56"
           role="img"
           aria-label={`${t("admin.traffic.trend")}: ${formatNum(
             points.reduce((sum, point) => sum + point.pageViews, 0),

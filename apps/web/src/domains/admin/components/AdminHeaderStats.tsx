@@ -75,9 +75,9 @@ export function AdminHeaderStats({ userId }: AdminHeaderStatsProps) {
           <p className="text-[11px] font-medium text-fg-3">
             {t("admin.stats.health")}
           </p>
-          <p className="flex items-center gap-1.5 pt-0.5 text-xs font-bold text-fg">
+          <p className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs font-bold text-fg">
             <span
-              className={`size-2 rounded-full ${
+              className={`size-2 shrink-0 rounded-full ${
                 health.status === "healthy"
                   ? "animate-pulse bg-good"
                   : "bg-bad"
@@ -86,7 +86,7 @@ export function AdminHeaderStats({ userId }: AdminHeaderStatsProps) {
             {health.status === "healthy"
               ? t("admin.stats.healthy")
               : t("admin.stats.degraded")}
-            <span className="font-mono text-[10px] text-fg-3">
+            <span className="whitespace-nowrap font-mono text-[10px] text-fg-3">
               ({health.database.latencyMs}ms)
             </span>
           </p>
