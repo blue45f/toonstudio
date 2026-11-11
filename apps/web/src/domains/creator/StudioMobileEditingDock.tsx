@@ -1600,7 +1600,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
               <button type="button" ref={colorToolsButtonRef}
                 aria-label={label.color} aria-controls={`${scrollDescriptionId}-colors`} aria-expanded={colorToolsOpen}
                 onClick={() => { setWorkspaceDockExpanded(false); setMobileSheet(null); setColorToolsOpen((open) => !open); }}
-                className={cn("flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl text-[0.625rem] font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent", colorToolsOpen ? "bg-accent-soft" : "hover:bg-raised")}
+                className={cn("flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl text-[0.6875rem] font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent", colorToolsOpen ? "bg-accent-soft" : "hover:bg-raised")}
               >
                 <span aria-hidden className="relative h-5 w-7">
                   <span className="absolute bottom-0 right-0 size-4 rounded-md border border-line-strong" style={{ backgroundColor: colorWorkspace?.secondary ?? "#ffffff" }} />
@@ -1645,7 +1645,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 data-studio-mobile-workspace-toggle="true"
                 onFocus={preloadStudioInspectorDrawingSurface} onPointerDown={preloadStudioInspectorDrawingSurface} onPointerEnter={preloadStudioInspectorDrawingSurface}
                 onClick={() => { setColorToolsOpen(false); setMobileSheet(null); setWorkspaceDockExpanded((expanded) => !expanded); }}
-                className={cn("relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl text-[0.625rem] font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent", workspaceDockExpanded ? "bg-accent-soft text-accent" : "hover:bg-raised")}
+                className={cn("relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl text-[0.6875rem] font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent", workspaceDockExpanded ? "bg-accent-soft text-accent" : "hover:bg-raised")}
               >
                 <Grid3X3 size={18} aria-hidden />
                 <span>{workspaceDockExpanded ? label.collapse : label.workspaceToggle}</span>
