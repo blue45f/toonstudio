@@ -293,7 +293,7 @@ describe("게시 정보 준비의 단계·복귀 계약", () => {
     renderPage(undefined, true); await prepareInputs();
     fireEvent.change(screen.getByLabelText("설명"), { target: { value: "왕복 후 유지할 설명" } });
     fireEvent.change(screen.getByLabelText("태그(쉼표 구분)"), { target: { value: "유지, 초안" } });
-    fireEvent.click(screen.getByRole("checkbox", { name: "RSS · JSON Feed", exact: true }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "RSS · JSON Feed" }));
     fireEvent.click(stepButton(1)); await screen.findByRole("heading", { name: "어떤 작품의 정보를 준비할까요?" });
     fireEvent.click(stepButton(2)); await screen.findByRole("heading", { name: "정보와 채널 확인" });
     fireEvent.click(screen.getByRole("button", { name: "브라우저 뒤로" }));
@@ -304,7 +304,7 @@ describe("게시 정보 준비의 단계·복귀 계약", () => {
     expect(document.activeElement?.id).toBe("publish-step-heading-details");
     expect((screen.getByLabelText("설명") as HTMLTextAreaElement).value).toBe("왕복 후 유지할 설명");
     expect((screen.getByLabelText("태그(쉼표 구분)") as HTMLInputElement).value).toBe("유지, 초안");
-    expect((screen.getByRole("checkbox", { name: "RSS · JSON Feed", exact: true }) as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByRole("checkbox", { name: "RSS · JSON Feed" }) as HTMLInputElement).checked).toBe(false);
     expect(mocks.getProject).toHaveBeenCalledTimes(1);
   });
 
@@ -316,7 +316,7 @@ describe("게시 정보 준비의 단계·복귀 계약", () => {
     fireEvent.click(screen.getByRole("button", { name: "브라우저 뒤로" }));
     await waitFor(() => expect(stepButton(1).getAttribute("aria-current")).toBe("step"));
     expect(screen.getByLabelText("현재 게시 준비 주소").textContent).toBe("/publish?projectId=project-1&step=project");
-    fireEvent.click(screen.getByRole("button", { name: "정보와 채널 확인", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "정보와 채널 확인" }));
     await waitFor(() => expect(stepButton(2).getAttribute("aria-current")).toBe("step"));
     expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("고쳐 적은 제목");
     expect((screen.getByLabelText("작품 대표 주소") as HTMLInputElement).value).toBe("https://example.com/works/one");

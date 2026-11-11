@@ -30,11 +30,19 @@ import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-pla
 const SCOPE = "domains.creator.resources.StoryLabPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 
-const STORY_STEPS = [
+interface StoryWorksheetStep {
+  readonly id: "character" | "conflict" | "ending";
+  readonly label: readonly [string, string];
+  readonly hint: readonly [string, string];
+  readonly heading: readonly [string, string];
+  readonly fields: readonly StoryField[];
+}
+
+const STORY_STEPS: readonly StoryWorksheetStep[] = [
   { id: "character", label: ["인물·목표", "Character & goal"], hint: ["가제 · 주인공 · 욕망", "Title · character · desire"], heading: ["누가 무엇을 원하나요?", "Who wants what?"], fields: ["title", "protagonist", "desire"] },
   { id: "conflict", label: ["갈등·세계", "Conflict & world"], hint: ["장애물 · 대가 · 규칙", "Obstacle · stakes · rules"], heading: ["무엇이 선택을 어렵게 하나요?", "What makes the choice difficult?"], fields: ["obstacle", "stakes", "world"] },
   { id: "ending", label: ["전환·결말", "Turn & ending"], hint: ["첫 화 · 변화 · 검토", "First episode · change · review"], heading: ["처음과 끝은 어떻게 달라지나요?", "What changes between the beginning and end?"], fields: ["turn", "ending"] },
-] as const satisfies readonly { readonly id: string; readonly label: readonly [string, string]; readonly hint: readonly [string, string]; readonly heading: readonly [string, string]; readonly fields: readonly StoryField[] }[];
+];
 
 function focusStoryElement(id: string) {
   const element = document.getElementById(id);
