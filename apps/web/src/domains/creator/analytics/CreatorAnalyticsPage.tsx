@@ -1,4 +1,4 @@
-import { BarChart3, LogIn, RefreshCw } from "lucide-react";
+import { BarChart3, Download, LogIn, RefreshCw, Send } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
@@ -6,6 +6,7 @@ import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-co
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import Link from "@/shared/navigation/router-link";
 import { useApiResource } from "@/platform/use-api-resource";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 
@@ -184,6 +185,26 @@ export function CreatorAnalyticsPage() {
               </span>
               <PeriodSelector value={period} onChange={setPeriod} />
             </div>
+            <nav
+              aria-label={bt("발행·출고 워크플로 연결", "Publish and export workflow links")}
+              data-testid="creator-analytics-publish-bridge"
+              className="flex flex-wrap items-center gap-2"
+            >
+              <Link
+                href="/publish"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft px-3.5 text-xs font-bold text-accent transition-colors hover:border-accent"
+              >
+                <Send size={14} aria-hidden="true" />
+                {bt("연재·배급 허브", "Publish Hub")}
+              </Link>
+              <Link
+                href="/studio/export"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+              >
+                <Download size={14} aria-hidden="true" />
+                {bt("스튜디오 원고 출고", "Studio Export")}
+              </Link>
+            </nav>
             {range ? (
               <p className="pb-3 text-xs text-fg-2" aria-live="polite">
                 {formatI18nTemplate(bt("최근 {days}일 · {start} – {end} · {comparison}", "Last {days} days · {start} – {end} · {comparison}"), {

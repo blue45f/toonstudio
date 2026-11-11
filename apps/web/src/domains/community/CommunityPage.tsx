@@ -56,6 +56,124 @@ const COPY = {
   feedSection: defineBilingualText("communityPage", "feedSection", "대화방 · 통합 피드", "Conversations & unified feed"),
   promoteSection: defineBilingualText("communityPage", "promoteSection", "작품 홍보 · 예고편", "Promotion & trailers"),
   guideSection: defineBilingualText("communityPage", "guideSection", "커뮤니티 빠른 길잡이", "Community quick guide"),
+  quickGuideRegion: defineBilingualText("communityPage", "quickGuideRegion", "커뮤니티 빠른 길잡이", "Community quick guide"),
+  quickGuidePrompt: defineBilingualText(
+    "communityPage",
+    "quickGuidePrompt",
+    "처음 방문하셨나요? 관심 있는 활동부터 바로 참여해 보세요",
+    "First time here? Jump right into an activity that interests you",
+  ),
+  quickReviews: defineBilingualText("communityPage", "quickReviews", "작품 리뷰·감상평 보기", "Read work reviews"),
+  quickTimelapse: defineBilingualText("communityPage", "quickTimelapse", "작화 타임랩스 갤러리", "Drawing timelapse gallery"),
+  quickPromoteNew: defineBilingualText("communityPage", "quickPromoteNew", "내 신작 홍보하기", "Promote my new work"),
+  quickPromoVideo: defineBilingualText("communityPage", "quickPromoVideo", "홍보 영상·트레일러 만들기", "Create promo trailer"),
+  quickCuts: defineBilingualText("communityPage", "quickCuts", "숏폼 컷츠 피드", "Short-form Cuts feed"),
+  quickNewsletter: defineBilingualText("communityPage", "quickNewsletter", "뉴스레터 구독·발송", "Newsletter hub"),
+  leagueRegion: defineBilingualText(
+    "communityPage",
+    "leagueRegion",
+    "오픈 연재 승격 리그 및 창작자 성장 트랙",
+    "Open serialization promotion league and creator growth tracks",
+  ),
+  leagueHeading: defineBilingualText(
+    "communityPage",
+    "leagueHeading",
+    "첫 1화 등록부터 정식 요일연재·수익화까지 4단계 성장 리그",
+    "4-stage creator growth league from Episode 1 to weekly Originals and IP monetization",
+  ),
+  leaguePromoteCta: defineBilingualText("communityPage", "leaguePromoteCta", "내 작품 홍보 등록", "Register work promotion"),
+  tierChallengeLabel: defineBilingualText("communityPage", "tierChallengeLabel", "도전만화 · 오픈 캔버스", "Challenge · Open Canvas"),
+  tierChallengeDesc: defineBilingualText(
+    "communityPage",
+    "tierChallengeDesc",
+    "누구나 첫 1화와 세계관을 등록하고 독자 피드백을 받는 오픈 연재 트랙",
+    "Open serialization track where anyone publishes Episode 1 and gathers reader feedback",
+  ),
+  tierChallengeCta: defineBilingualText("communityPage", "tierChallengeCta", "오픈 연재 시작", "Start open series"),
+  tierBestLabel: defineBilingualText("communityPage", "tierBestLabel", "베스트도전 · 쇼케이스 승격", "Best Challenge · Showcase"),
+  tierBestDesc: defineBilingualText(
+    "communityPage",
+    "tierBestDesc",
+    "열독률·별점·예고편 반응 상위 작품이 모이는 정식 승격 후보 쇼케이스",
+    "Promotion-candidate showcase featuring top works by read-through, ratings, and trailer engagement",
+  ),
+  tierBestCta: defineBilingualText("communityPage", "tierBestCta", "작품 홍보관 등록", "Submit to showcase"),
+  tierOriginalsLabel: defineBilingualText("communityPage", "tierOriginalsLabel", "정식 요일연재 · ORIGINALS", "Weekly Originals"),
+  tierOriginalsDesc: defineBilingualText(
+    "communityPage",
+    "tierOriginalsDesc",
+    "요일별 정기 연재와 실시간 랭킹·기다무 편성으로 독자층을 확장하는 단계",
+    "Expand readership through weekly schedules, live rankings, and wait-until-free programming",
+  ),
+  tierOriginalsCta: defineBilingualText("communityPage", "tierOriginalsCta", "요일연재 편성표", "Weekly calendar"),
+  tierIpLabel: defineBilingualText("communityPage", "tierIpLabel", "수익화 · 2차 IP 사업화", "Monetization & IP Expansion"),
+  tierIpDesc: defineBilingualText(
+    "communityPage",
+    "tierIpDesc",
+    "후원·유료분 정산과 영상화·출판·게임 IP 확장을 연결하는 프로 작가 단계",
+    "Connect paid episodes, patron support, and print/video/game IP adaptations",
+  ),
+  tierIpCta: defineBilingualText("communityPage", "tierIpCta", "수익·정산 센터", "Revenue center"),
+  reaLinkTimelapse: defineBilingualText(
+    "communityPage",
+    "reaLinkTimelapse",
+    "직무별 WIP 타임랩스·pixiv Sketch 라이브",
+    "Role WIP Timelapses & Live Sketch",
+  ),
+  reaLinkHuman: defineBilingualText(
+    "communityPage",
+    "reaLinkHuman",
+    "인간 순수 창작 (Cara/DeviantArt No-AI)",
+    "Human-Verified Art (No-AI)",
+  ),
+  reaLinkAiProvenance: defineBilingualText(
+    "communityPage",
+    "reaLinkAiProvenance",
+    "AI 보조 투명성·Dribbble 5색 팔레트 스와치",
+    "AI Provenance & 5-Color Swatch",
+  ),
+  reaLinkMembership: defineBilingualText(
+    "communityPage",
+    "reaLinkMembership",
+    "팬딩(Fanding)·포스타입·Patreon·FANBOX·Substack 선공개/PSD 티어",
+    "Fanding · Postype · Patreon · FANBOX · Substack PSD Tiers",
+  ),
+  reaLinkRecruiting: defineBilingualText(
+    "communityPage",
+    "reaLinkRecruiting",
+    "크레페·크몽·스튜디오 어시스턴트 구인 매칭",
+    "CREPE · Kmong · Studio Assistant Recruiting",
+  ),
+  reaSimulatorGroup: defineBilingualText(
+    "communityPage",
+    "reaSimulatorGroup",
+    "크리에이터 수익화·부스·출처증명 시뮬레이터",
+    "Creator monetization, booth, and provenance simulator",
+  ),
+  reaTrackCommission: defineBilingualText(
+    "communityPage",
+    "reaTrackCommission",
+    "Skeb·VGen·크레페 무수정 커미션 슬롯",
+    "Skeb · VGen · CREPE Commission Slots",
+  ),
+  reaTrackTier: defineBilingualText(
+    "communityPage",
+    "reaTrackTier",
+    "텀블벅·팬딩·DLsite·Fantia 티어 보상",
+    "Tumblbug · Fanding · DLsite · Fantia Tiers",
+  ),
+  reaTrackBooth: defineBilingualText(
+    "communityPage",
+    "reaTrackBooth",
+    "코미케·멜론북스·pictSQUARE 300DPI 부스컷",
+    "Comiket · Melonbooks 300DPI Booth Cut",
+  ),
+  reaTrackShield: defineBilingualText(
+    "communityPage",
+    "reaTrackShield",
+    "Cara No-AI · C2PA · Nightshade 보호",
+    "Cara No-AI · C2PA · Nightshade Shield",
+  ),
   configurationPreview: defineBilingualText("communityPage", "configurationPreview", "구성 미리보기:", "Configuration preview:"),
   commissionPreview: defineBilingualText("communityPage", "commissionPreview", "Skeb 무수정 리퀘스트 + VGen·크레페 캐릭터 시트 슬롯 예약 구성 예시", "Skeb requests + VGen/Crepe character sheet booking configuration example"),
   tierPreview: defineBilingualText("communityPage", "tierPreview", "텀블벅·와디즈 달성률 게이지 + 팬딩·DLsite·Fantia PSD 티어 배포 구성 예시", "Tumblbug/Wadiz funding progress + Fanding/DLsite/Fantia PSD tier distribution configuration example"),
@@ -196,6 +314,29 @@ const COPY = {
   scopeNotFoundCta: defineBilingualText("communityPage", "scopeNotFoundCta", "통합 커뮤니티로 이동", "Go to the unified community"),
 } as const;
 
+const LEAGUE_TIER_COPY_KEYS = {
+  challenge: {
+    label: COPY.tierChallengeLabel,
+    description: COPY.tierChallengeDesc,
+    cta: COPY.tierChallengeCta,
+  },
+  "best-challenge": {
+    label: COPY.tierBestLabel,
+    description: COPY.tierBestDesc,
+    cta: COPY.tierBestCta,
+  },
+  originals: {
+    label: COPY.tierOriginalsLabel,
+    description: COPY.tierOriginalsDesc,
+    cta: COPY.tierOriginalsCta,
+  },
+  "creator-101": {
+    label: COPY.tierIpLabel,
+    description: COPY.tierIpDesc,
+    cta: COPY.tierIpCta,
+  },
+} as const;
+
 function parseScope(raw: string | undefined): Exclude<FanCafeScopeFilter, "all" | "cafe"> | null {
   return SCOPES.find((scope) => scope === raw) ?? null;
 }
@@ -247,13 +388,13 @@ export function CommunityPage() {
   return (
     <Container size="wide" className="community-layout py-5 sm:py-7 lg:py-8">
       <div>
-      <header className="community-layout-header">
-        <div>
-          <p className="text-xs font-bold text-accent">{t(COPY.heroEyebrow)}</p>
-          <h1>{t(COPY.heroTitle)}</h1>
-          <p className="text-sm text-fg-2">{t(COPY.heroSummary)}</p>
-        </div>
-        <div className="community-layout-actions">
+        <header className="community-layout-header">
+          <div>
+            <p className="text-xs font-bold text-accent">{t(COPY.heroEyebrow)}</p>
+            <h1>{t(COPY.heroTitle)}</h1>
+            <p className="text-sm text-fg-2">{t(COPY.heroSummary)}</p>
+          </div>
+          <div className="community-layout-actions">
             <Link href="/showcase" className={buttonClass({ size: "md", className: "min-h-11" })}>
               {t(COPY.ctaGallery)}
               <ArrowRight size={16} aria-hidden="true" />
@@ -269,8 +410,8 @@ export function CommunityPage() {
             <Link href="/studio/new" className={buttonClass({ variant: "ghost", size: "md", className: "min-h-11" })}>
               {t(COPY.directoriesCta)}<ArrowRight size={16} aria-hidden="true" />
             </Link>
-        </div>
-      </header>
+          </div>
+        </header>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
@@ -289,7 +430,7 @@ export function CommunityPage() {
               type="button"
               aria-pressed={sectionView === id}
               onClick={() => setSectionView(id)}
-              className={`min-h-8 rounded-full border px-3 text-xs font-bold transition-colors ${
+              className={`inline-flex min-h-11 items-center rounded-full border px-3.5 text-xs font-bold transition-colors ${
                 sectionView === id
                   ? "border-accent bg-accent text-on-accent"
                   : "border-line bg-panel/70 text-fg-2 hover:border-accent/50 hover:text-fg"
@@ -301,253 +442,253 @@ export function CommunityPage() {
         </div>
       </div>
 
-
-
       {showFeed ? (
-      <>
-      <nav className="community-layout-directory" aria-labelledby="community-directory-heading">
-        <h2 id="community-directory-heading" className="sr-only">{t(COPY.directoriesTitle)}</h2>
-        {COMMUNITY_SCOPE_DIRECTORIES.map((entry) => {
-          const Icon = COMMUNITY_SCOPE_ICONS[entry.value];
-          return (
-            <Link key={entry.value} href={entry.href} className="community-layout-directory-link">
-              <Icon size={22} aria-hidden="true" />
-              <span>{t(COMMUNITY_SCOPE_DIRECTORY_LABEL_KEYS[entry.value])}</span>
-              <span className="sr-only">{t(COMMUNITY_SCOPE_DIRECTORY_DESCRIPTION_KEYS[entry.value])}</span>
-            </Link>
-          );
-        })}
-      </nav>
+        <>
+          <nav className="community-layout-directory" aria-labelledby="community-directory-heading">
+            <h2 id="community-directory-heading" className="sr-only">{t(COPY.directoriesTitle)}</h2>
+            {COMMUNITY_SCOPE_DIRECTORIES.map((entry) => {
+              const Icon = COMMUNITY_SCOPE_ICONS[entry.value];
+              return (
+                <Link key={entry.value} href={entry.href} className="community-layout-directory-link">
+                  <Icon size={22} aria-hidden="true" />
+                  <span>{t(COMMUNITY_SCOPE_DIRECTORY_LABEL_KEYS[entry.value])}</span>
+                  <span className="sr-only">{t(COMMUNITY_SCOPE_DIRECTORY_DESCRIPTION_KEYS[entry.value])}</span>
+                </Link>
+              );
+            })}
+          </nav>
 
-      <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1" aria-label={t(COPY.unifiedFeedRegion)}>
-        <FanCafePanel scope="all" targetLabel={t(COPY.unifiedFeedLabel)} compact hideSpaceGuide />
-      </section>
-      <CommunityDisclosure title={t(COPY.guideSection)}>
-      <SiteContextualSubNav pathnameOverride="/community" className="mt-4" />
-      <section
-        aria-label="커뮤니티 빠른 길잡이"
-        data-testid="community-quick-guide"
-        className="mt-8 rounded-2xl border border-line bg-card/65 p-4"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-bold text-fg">
-            처음 방문하셨나요? 관심 있는 활동부터 바로 참여해 보세요
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/community/reviews"
-              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+          <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1" aria-label={t(COPY.unifiedFeedRegion)}>
+            <FanCafePanel scope="all" targetLabel={t(COPY.unifiedFeedLabel)} compact hideSpaceGuide />
+          </section>
+          <CommunityDisclosure title={t(COPY.guideSection)}>
+            <SiteContextualSubNav pathnameOverride="/community" className="mt-4" />
+            <section
+              aria-label={t(COPY.quickGuideRegion)}
+              data-testid="community-quick-guide"
+              className="mt-8 rounded-2xl border border-line bg-card/65 p-4"
             >
-              작품 리뷰·감상평 보기
-              <ArrowRight size={12} aria-hidden="true" />
-            </Link>
-            <Link
-              href="/community/timelapse"
-              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-            >
-              작화 타임랩스 갤러리
-              <ArrowRight size={12} aria-hidden="true" />
-            </Link>
-            <Link
-              href="/community/promote/new"
-              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs font-bold text-accent transition-colors hover:bg-accent/15"
-            >
-              내 신작 홍보하기
-              <ArrowRight size={12} aria-hidden="true" />
-            </Link>
-            <Link
-              href="/showcase/promo"
-              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-            >
-              홍보 영상·트레일러 만들기
-              <ArrowRight size={12} aria-hidden="true" />
-            </Link>
-            <Link
-              href="/cuts"
-              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-            >
-              숏폼 컷츠 피드
-              <ArrowRight size={12} aria-hidden="true" />
-            </Link>
-            <Link
-              href="/newsletter"
-              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-            >
-              뉴스레터 구독·발송
-              <ArrowRight size={12} aria-hidden="true" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      </CommunityDisclosure>
-      </>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-bold text-fg">
+                  {t(COPY.quickGuidePrompt)}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href="/community/reviews"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                  >
+                    {t(COPY.quickReviews)}
+                    <ArrowRight size={12} aria-hidden="true" />
+                  </Link>
+                  <Link
+                    href="/community/timelapse"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                  >
+                    {t(COPY.quickTimelapse)}
+                    <ArrowRight size={12} aria-hidden="true" />
+                  </Link>
+                  <Link
+                    href="/community/promote/new"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-accent/35 bg-accent/10 px-3.5 text-xs font-bold text-accent transition-colors hover:bg-accent/15"
+                  >
+                    {t(COPY.quickPromoteNew)}
+                    <ArrowRight size={12} aria-hidden="true" />
+                  </Link>
+                  <Link
+                    href="/showcase/promo"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                  >
+                    {t(COPY.quickPromoVideo)}
+                    <ArrowRight size={12} aria-hidden="true" />
+                  </Link>
+                  <Link
+                    href="/cuts"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                  >
+                    {t(COPY.quickCuts)}
+                    <ArrowRight size={12} aria-hidden="true" />
+                  </Link>
+                  <Link
+                    href="/newsletter"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                  >
+                    {t(COPY.quickNewsletter)}
+                    <ArrowRight size={12} aria-hidden="true" />
+                  </Link>
+                </div>
+              </div>
+            </section>
+          </CommunityDisclosure>
+        </>
       ) : null}
 
       {showLeague ? (
-      <CommunityDisclosure key={`league-${sectionView}`} title={t(COPY.leagueSection)} initiallyOpen={sectionView === "league"}>
-      <section
-        aria-label="오픈 연재 승격 리그 및 창작자 성장 트랙"
-        data-testid="community-promotion-league-strip"
-        className="mt-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
-      >
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
-              OPEN SERIALIZATION LEAGUE · CHALLENGE → BEST → ORIGINALS → IP BIZ
-            </span>
-            <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
-              첫 1화 등록부터 정식 요일연재·수익화까지 4단계 성장 리그
-            </h2>
-          </div>
-          <Link
-            href="/community/promote"
-            className={buttonClass({ size: "sm", className: "min-h-9 gap-1.5 rounded-full px-3.5 text-xs font-bold" })}
+        <CommunityDisclosure key={`league-${sectionView}`} title={t(COPY.leagueSection)} initiallyOpen={sectionView === "league"}>
+          <section
+            aria-label={t(COPY.leagueRegion)}
+            data-testid="community-promotion-league-strip"
+            className="mt-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
           >
-            내 작품 홍보 등록
-            <ArrowRight size={13} aria-hidden="true" />
-          </Link>
-        </div>
-        <ol className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          {COMMUNITY_PROMOTION_LEAGUE_TIERS.map((tier) => (
-            <li
-              key={tier.id}
-              className="flex flex-col justify-between gap-2 rounded-2xl border border-line bg-panel/65 p-3.5 transition-colors hover:border-accent/45"
-            >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <span
-                  aria-hidden="true"
-                  className="mb-2.5 block h-20 w-full rounded-xl border border-line/60 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${LEAGUE_TIER_IMAGES[tier.id] ?? "/assets/site-experience/site-art-v1/cards/nb-community-plaza-640.webp"})` }}
-                />
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-extrabold text-accent">{tier.badge}</span>
-                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
-                    STEP {tier.stepNumber}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs font-extrabold text-fg sm:text-sm">{tier.label}</p>
-                <p className="mt-1 text-[11px] leading-snug text-fg-3">{tier.description}</p>
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
+                  OPEN SERIALIZATION LEAGUE · CHALLENGE → BEST → ORIGINALS → IP BIZ
+                </span>
+                <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
+                  {t(COPY.leagueHeading)}
+                </h2>
               </div>
               <Link
-                href={tier.route}
-                className="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline"
+                href="/community/promote"
+                className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 rounded-full px-3.5 text-xs font-bold" })}
               >
-                {tier.ctaLabel}
-                <ArrowRight size={12} aria-hidden="true" />
+                {t(COPY.leaguePromoteCta)}
+                <ArrowRight size={13} aria-hidden="true" />
               </Link>
-            </li>
-          ))}
-        </ol>
-      </section>
+            </div>
+            <ol className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+              {COMMUNITY_PROMOTION_LEAGUE_TIERS.map((tier) => {
+                const copyKeys = LEAGUE_TIER_COPY_KEYS[tier.id];
+                return (
+                  <li
+                    key={tier.id}
+                    className="flex flex-col justify-between gap-2 rounded-2xl bg-panel/75 p-3.5 transition-colors hover:bg-raised/70"
+                  >
+                    <div>
+                      <span
+                        aria-hidden="true"
+                        className="mb-2.5 block h-20 w-full rounded-xl bg-cover bg-center"
+                        style={{ backgroundImage: `url(${LEAGUE_TIER_IMAGES[tier.id] ?? "/assets/site-experience/site-art-v1/cards/nb-community-plaza-640.webp"})` }}
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-extrabold text-accent">{tier.badge}</span>
+                        <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+                          STEP {tier.stepNumber}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs font-extrabold text-fg sm:text-sm">{t(copyKeys.label)}</p>
+                      <p className="mt-1 text-[11px] leading-snug text-fg-3">{t(copyKeys.description)}</p>
+                    </div>
+                    <Link
+                      href={tier.route}
+                      className="inline-flex min-h-11 items-center gap-1 text-xs font-bold text-accent hover:underline"
+                    >
+                      {t(copyKeys.cta)}
+                      <ArrowRight size={12} aria-hidden="true" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
 
-      <CommunityActivityPreview />
-      </CommunityDisclosure>
+          <CommunityActivityPreview />
+        </CommunityDisclosure>
       ) : null}
 
       {showPromote ? (
-      <CommunityDisclosure key={`promote-${sectionView}`} title={t(COPY.promoteSection)} initiallyOpen={sectionView === "promote"}>
-      <Section
-        className="mt-12 sm:mt-14"
-        eyebrow={t(COPY.promoteEyebrow)}
-        title={t(COPY.promoteTitle)}
-        desc={t(COPY.promoteDescription)}
-      >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <SiteLinkCard
-            href="/community/promote?stage=amateur"
-            icon={Sparkles}
-            title={t(COPY.promoteAmateur)}
-            description={t(COPY.promoteAmateurBody)}
-            cta={t(COPY.promoteOpen)}
-          />
-          <SiteLinkCard
-            href="/community/promote?kind=trailer"
-            icon={Clapperboard}
-            title={t(COPY.promoteTrailer)}
-            description={t(COPY.promoteTrailerBody)}
-            cta={t(COPY.promoteOpen)}
-          />
-          <SiteLinkCard
-            href="/showcase/promo"
-            icon={Clapperboard}
-            title={t(COPY.promoteStudio)}
-            description={t(COPY.promoteStudioBody)}
-            cta={t(COPY.promoteStudioCta)}
-          />
-          <SiteLinkCard
-            href="/community/promote/new"
-            icon={Megaphone}
-            title={t(COPY.promoteNew)}
-            description={t(COPY.promoteNewBody)}
-            cta={t(COPY.promoteNew)}
-          />
-        </div>
-        <div
-          data-testid="community-rea-creator-showcase-bar"
-          className="mt-4 space-y-2.5 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
-        >
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-extrabold text-accent">
-              CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE · DRIBBBLE · PATREON · POSTYPE · FANDING · SUBSTACK · DLSITE · COMIKET
-            </span>
-            {[
-              { href: "/community/timelapse", ko: "직무별 WIP 타임랩스·pixiv Sketch 라이브", en: "Role WIP & Live Sketch" },
-              { href: "/community?provenance=human-verified", ko: "인간 순수 창작 (Cara/DeviantArt No-AI)", en: "Human-Verified Art" },
-              { href: "/community?provenance=ai-assisted", ko: "AI 보조 투명성·Dribbble 5색 팔레트 스와치", en: "AI Provenance & 5-Color Swatch" },
-              { href: "/creator/membership", ko: "팬딩(Fanding)·포스타입·Patreon·FANBOX·Substack 선공개/PSD 티어", en: "Fanding/Postype/Patreon/FANBOX/Substack Tiers" },
-              { href: "/team/recruiting", ko: "크레페·크몽·스튜디오 어시스턴트 구인 매칭", en: "CREPE/Kmong/Studio Assistant Recruiting" },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-              >
-                {item.ko}
-              </Link>
-            ))}
-          </div>
-          <div
-            data-testid="community-rea-interactive-workbench"
-            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/25 bg-accent/5 px-3 py-2"
+        <CommunityDisclosure key={`promote-${sectionView}`} title={t(COPY.promoteSection)} initiallyOpen={sectionView === "promote"}>
+          <Section
+            className="mt-12 sm:mt-14"
+            eyebrow={t(COPY.promoteEyebrow)}
+            title={t(COPY.promoteTitle)}
+            desc={t(COPY.promoteDescription)}
           >
-            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="크리에이터 수익화·부스·출처증명 시뮬레이터">
-              <span className="text-[11px] font-extrabold text-accent">{t(COPY.configurationPreview)}</span>
-              {([
-                { id: "skeb-vgen-commission", label: "Skeb·VGen·크레페 무수정 커미션 슬롯" },
-                { id: "tumblbug-fantia-tier", label: "텀블벅·팬딩·DLsite·Fantia 티어 보상" },
-                { id: "comiket-booth-cut", label: "코미케·멜론북스·pictSQUARE 300DPI 부스컷" },
-                { id: "c2pa-nightshade-shield", label: "Cara No-AI · C2PA · Nightshade 보호" },
-              ] as const).map((track) => (
-                <button
-                  key={track.id}
-                  type="button"
-                  data-testid={`community-rea-track-${track.id}`}
-                  aria-pressed={activeReaTrack === track.id}
-                  onClick={() => setActiveReaTrack(track.id)}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                    activeReaTrack === track.id
-                      ? "bg-accent text-on-accent"
-                      : "border border-line bg-panel text-fg-2 hover:border-accent/45"
-                  }`}
-                >
-                  {track.label}
-                </button>
-              ))}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <SiteLinkCard
+                href="/community/promote?stage=amateur"
+                icon={Sparkles}
+                title={t(COPY.promoteAmateur)}
+                description={t(COPY.promoteAmateurBody)}
+                cta={t(COPY.promoteOpen)}
+              />
+              <SiteLinkCard
+                href="/community/promote?kind=trailer"
+                icon={Clapperboard}
+                title={t(COPY.promoteTrailer)}
+                description={t(COPY.promoteTrailerBody)}
+                cta={t(COPY.promoteOpen)}
+              />
+              <SiteLinkCard
+                href="/showcase/promo"
+                icon={Clapperboard}
+                title={t(COPY.promoteStudio)}
+                description={t(COPY.promoteStudioBody)}
+                cta={t(COPY.promoteStudioCta)}
+              />
+              <SiteLinkCard
+                href="/community/promote/new"
+                icon={Megaphone}
+                title={t(COPY.promoteNew)}
+                description={t(COPY.promoteNewBody)}
+                cta={t(COPY.promoteNew)}
+              />
             </div>
-            <span data-testid="community-rea-active-track-summary" className="text-[11px] font-semibold text-fg-2">
-              {activeReaTrack === "skeb-vgen-commission"
-                ? t(COPY.commissionPreview)
-                : activeReaTrack === "tumblbug-fantia-tier"
-                  ? t(COPY.tierPreview)
-                  : activeReaTrack === "comiket-booth-cut"
-                    ? t(COPY.boothPreview)
-                    : t(COPY.protectionPreview)}
-            </span>
-          </div>
-        </div>
-      </Section>
-      </CommunityDisclosure>
+            <div
+              data-testid="community-rea-creator-showcase-bar"
+              className="mt-4 space-y-2.5 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
+            >
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-extrabold text-accent">
+                  CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE · DRIBBBLE · PATREON · POSTYPE · FANDING · SUBSTACK · DLSITE · COMIKET
+                </span>
+                {([
+                  { href: "/community/timelapse", label: COPY.reaLinkTimelapse },
+                  { href: "/community?provenance=human-verified", label: COPY.reaLinkHuman },
+                  { href: "/community?provenance=ai-assisted", label: COPY.reaLinkAiProvenance },
+                  { href: "/creator/membership", label: COPY.reaLinkMembership },
+                  { href: "/team/recruiting", label: COPY.reaLinkRecruiting },
+                ] as const).map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3 text-[11px] font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                  >
+                    {t(item.label)}
+                  </Link>
+                ))}
+              </div>
+              <div
+                data-testid="community-rea-interactive-workbench"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-panel/80 px-3 py-2"
+              >
+                <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t(COPY.reaSimulatorGroup)}>
+                  <span className="text-[11px] font-extrabold text-accent">{t(COPY.configurationPreview)}</span>
+                  {([
+                    { id: "skeb-vgen-commission", label: COPY.reaTrackCommission },
+                    { id: "tumblbug-fantia-tier", label: COPY.reaTrackTier },
+                    { id: "comiket-booth-cut", label: COPY.reaTrackBooth },
+                    { id: "c2pa-nightshade-shield", label: COPY.reaTrackShield },
+                  ] as const).map((track) => (
+                    <button
+                      key={track.id}
+                      type="button"
+                      data-testid={`community-rea-track-${track.id}`}
+                      aria-pressed={activeReaTrack === track.id}
+                      onClick={() => setActiveReaTrack(track.id)}
+                      className={`inline-flex min-h-11 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
+                        activeReaTrack === track.id
+                          ? "bg-accent text-on-accent"
+                          : "border border-line bg-card text-fg-2 hover:border-accent/45"
+                      }`}
+                    >
+                      {t(track.label)}
+                    </button>
+                  ))}
+                </div>
+                <span data-testid="community-rea-active-track-summary" className="text-[11px] font-semibold text-fg-2">
+                  {activeReaTrack === "skeb-vgen-commission"
+                    ? t(COPY.commissionPreview)
+                    : activeReaTrack === "tumblbug-fantia-tier"
+                      ? t(COPY.tierPreview)
+                      : activeReaTrack === "comiket-booth-cut"
+                        ? t(COPY.boothPreview)
+                        : t(COPY.protectionPreview)}
+                </span>
+              </div>
+            </div>
+          </Section>
+        </CommunityDisclosure>
       ) : null}
       <CommunityDisclosure title={t(COPY.heroArtCaption)}>
         <figure>

@@ -1,20 +1,21 @@
 import { Brush, Cpu, FileSpreadsheet, Film, Music } from "lucide-react";
 
+import { studioRoutePath } from "@/domains/creator/studio-route-registry";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
 const SUITE_ITEMS = [
-  { id: "brush-lab", href: "/studio/brush-lab", icon: Brush, ko: "브러시 스튜디오 V6", en: "Brush Studio V6" },
-  { id: "audio-bgm", href: "/studio/assets/audio", icon: Music, ko: "장면 BGM · 오디오", en: "Scene BGM & Audio" },
-  { id: "motion-webtoon", href: "/studio/motion-webtoon", icon: Film, ko: "모션 웹툰 타임라인", en: "Motion Webtoon" },
-  { id: "luna-ai", href: "/studio/ai-lab", icon: Cpu, ko: "Luna AI · 엔진 큐", en: "Luna AI & Engine Queue" },
-  { id: "pdf-workbench", href: "/studio/pdf-workbench", icon: FileSpreadsheet, ko: "PDF 원고 워크벤치", en: "PDF Manuscript Workbench" },
+  { id: "brush-lab", href: studioRoutePath("asset-brush-new"), icon: Brush, ko: "브러시 스튜디오 V6", en: "Brush Studio V6" },
+  { id: "audio-bgm", href: studioRoutePath("asset-audio"), icon: Music, ko: "장면 BGM · 오디오", en: "Scene BGM & Audio" },
+  { id: "motion-webtoon", href: studioRoutePath("motion-webtoon"), icon: Film, ko: "모션 웹툰 타임라인", en: "Motion Webtoon" },
+  { id: "luna-ai", href: studioRoutePath("ai-lab"), icon: Cpu, ko: "Luna AI · 엔진 큐", en: "Luna AI & Engine Queue" },
+  { id: "pdf-workbench", href: studioRoutePath("pdf-workbench"), icon: FileSpreadsheet, ko: "PDF 원고 워크벤치", en: "PDF Manuscript Workbench" },
 ] as const;
 
 export function StudioSpecialistSuiteBar({
   projectId,
 }: {
-  readonly projectId: string | null;
+  readonly projectId?: string | null;
 }) {
   const bt = useBilingual("StudioSpecialistSuiteBar");
 

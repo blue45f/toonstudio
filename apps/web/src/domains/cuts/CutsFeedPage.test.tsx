@@ -75,13 +75,15 @@ describe("CutsFeedPage 준비 상태", () => {
     expect(screen.queryByText("클립을 불러오는 중…")).toBeNull();
     expect(screen.queryByText("아직 공개된 클립이 없어요.")).toBeNull();
 
-    // 피드 필터 칩과 단축키 안내가 상단에 노출된다.
+    // 피드 필터 칩과 단축키 안내가 상단에 44px 터치 타깃으로 노출된다.
     const filterGroup = screen.getByRole("group", { name: "피드 필터" });
     expect(filterGroup).toBeTruthy();
-    expect(screen.getByRole("button", { name: "리워드 대상" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "리믹스 가능" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "인기순" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "리워드 대상" }).className).toContain("min-h-11");
+    expect(screen.getByRole("button", { name: "리믹스 가능" }).className).toContain("min-h-11");
+    expect(screen.getByRole("button", { name: "인기순" }).className).toContain("min-h-11");
     expect(screen.getByTestId("cuts-rea-interactive-motion-dub-bar")).toBeTruthy();
+    expect(screen.getByTestId("cuts-rea-motion-rive-statemachine").className).toContain("min-h-11");
+    expect(screen.getByTestId("cuts-rea-dub-rask-heygen-130lang").className).toContain("min-h-11");
     expect(screen.getByTestId("cuts-rea-active-engine-summary").textContent).toContain(
       "[구성 미리보기] Rive 스크롤/탭 상태머신",
     );

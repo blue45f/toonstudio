@@ -1,5 +1,5 @@
 import "../studio-shell/creator-workflow-surfaces.css";
-import { RefreshCw } from "lucide-react";
+import { ArrowRight, Layers, RefreshCw } from "lucide-react";
 import { Suspense, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
@@ -127,6 +127,7 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
   }
 
   const aggregate = project.aggregate;
+  const encodedProjectId = encodeURIComponent(aggregate.projectId);
   return (
     <div data-creator-workflow="production-project" data-route-ready="production-project" className="min-h-dvh bg-canvas text-fg">
       <ProductionProjectHeader aggregate={aggregate} access={project.access} roleLens={roleLens} onRoleLensChange={setRoleLens} saveState={project.saveState} isDemo={project.isDemo} />
@@ -155,15 +156,26 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
               <strong className="font-extrabold text-accent">
                 {bt("SHOTGRID · FTRACK · KITSU · LINEAR · AYON 8단계 에피소드 DAG & 15직무 부하 밸런서", "SHOTGRID · FTRACK · KITSU · LINEAR · AYON 8-Stage Episode DAG & 15-Role Workload Balancer")}
               </strong>
-              <span data-testid="production-rea-cadence-badge" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
-                {episodeCadence === "weekly-70cuts"
-                  ? bt(`주간 70컷 마감 · 현재 렌즈 ${roleLens}`, `Weekly 70 Cuts · Lens: ${roleLens}`)
-                  : episodeCadence === "biweekly-100cuts"
-                    ? bt(`격주 100컷 고밀도 · 현재 렌즈 ${roleLens}`, `Biweekly 100 Cuts · Lens: ${roleLens}`)
-                    : bt(`일일 인스타/숏스트립 25컷 · 현재 렌즈 ${roleLens}`, `Daily 25 Cuts · Lens: ${roleLens}`)}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span data-testid="production-rea-cadence-badge" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+                  {episodeCadence === "weekly-70cuts"
+                    ? bt(`주간 70컷 마감 · 현재 렌즈 ${roleLens}`, `Weekly 70 Cuts · Lens: ${roleLens}`)
+                    : episodeCadence === "biweekly-100cuts"
+                      ? bt(`격주 100컷 고밀도 · 현재 렌즈 ${roleLens}`, `Biweekly 100 Cuts · Lens: ${roleLens}`)
+                      : bt(`일일 인스타/숏스트립 25컷 · 현재 렌즈 ${roleLens}`, `Daily 25 Cuts · Lens: ${roleLens}`)}
+                </span>
+                <Link
+                  to={`/studio/p/${encodedProjectId}/overview`}
+                  data-testid="production-studio-workspace-link"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft px-3 text-xs font-bold text-accent transition-colors hover:border-accent"
+                >
+                  <Layers size={13} aria-hidden="true" />
+                  {bt("Studio 작업실 열기", "Open Studio Workspace")}
+                  <ArrowRight size={12} aria-hidden="true" />
+                </Link>
+              </div>
             </div>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("DAG 관제 모드", "DAG control mode")}>
                 {([
                   { id: "deadline-bottleneck", ko: "① 크리티컬 패스 마감 병목 탐지", en: "1. Critical-Path Bottleneck" },
@@ -176,13 +188,17 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
                     aria-pressed={criticalPathMode === mode.id}
                     data-testid={`production-rea-dag-${mode.id}`}
                     onClick={() => setCriticalPathMode(mode.id)}
-                    className={criticalPathMode === mode.id ? "rounded-lg border border-accent bg-accent/15 px-2.5 py-1 font-bold text-accent" : "rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2"}
+                    className={
+                      criticalPathMode === mode.id
+                        ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent/15 px-3 font-bold text-accent"
+                        : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3 text-fg-2 hover:border-accent/45 hover:text-fg"
+                    }
                   >
                     {bt(mode.ko, mode.en)}
                   </button>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-1" role="group" aria-label={bt("연재 주기 기준", "Serialization cadence")}>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("연재 주기 기준", "Serialization cadence")}>
                 {([
                   { id: "weekly-70cuts", ko: "주간 70컷", en: "Weekly 70c" },
                   { id: "biweekly-100cuts", ko: "격주 100컷", en: "Biweekly 100c" },
@@ -194,14 +210,18 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
                     aria-pressed={episodeCadence === cad.id}
                     data-testid={`production-rea-cadence-${cad.id}`}
                     onClick={() => setEpisodeCadence(cad.id)}
-                    className={episodeCadence === cad.id ? "rounded-md border border-accent bg-accent px-2 py-0.5 text-[11px] font-bold text-on-accent" : "rounded-md border border-line bg-panel px-2 py-0.5 text-[11px] text-fg-3"}
+                    className={
+                      episodeCadence === cad.id
+                        ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent px-3 text-[11px] font-bold text-on-accent"
+                        : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3 text-[11px] text-fg-2 hover:border-accent/45 hover:text-fg"
+                    }
                   >
                     {bt(cad.ko, cad.en)}
                   </button>
                 ))}
               </div>
             </div>
-            <p data-testid="production-rea-dag-status" className="mt-2 rounded-xl border border-line bg-panel/70 px-3 py-2 text-[11px] leading-relaxed text-fg-2">
+            <p data-testid="production-rea-dag-status" className="mt-2.5 rounded-xl bg-panel/80 px-3 py-2 text-[11px] leading-relaxed text-fg-2">
               {criticalPathMode === "deadline-bottleneck"
                 ? bt("Kitsu·ShotGrid DAG 분석: [3D 배경 은선 추출 → 메인 선화 인계] 구간의 대기 시간(Slack)이 +4.5시간으로 가장 짧아 우선 검수 슬롯으로 지정되었습니다.", "Kitsu/ShotGrid DAG analysis: [3D BG LT → Lead Line Handoff] has the tightest slack (+4.5h) and is prioritized for review.")
                 : criticalPathMode === "assistant-load-balance"

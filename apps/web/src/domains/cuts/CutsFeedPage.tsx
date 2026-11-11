@@ -417,7 +417,7 @@ export function CutsFeedPage() {
           <div
             role="group"
             aria-label={t("피드 필터", "Feed filter")}
-            className="flex flex-wrap items-center gap-1"
+            className="flex flex-wrap items-center gap-1.5"
           >
             {(
               [
@@ -432,7 +432,7 @@ export function CutsFeedPage() {
                 type="button"
                 aria-pressed={feedCategory === chip.id}
                 onClick={() => setFeedCategory(chip.id)}
-                className={`rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+                className={`inline-flex min-h-11 items-center rounded-full px-3.5 text-xs font-bold transition-colors ${
                   feedCategory === chip.id
                     ? "bg-white text-black"
                     : "bg-white/15 text-white/85 hover:bg-white/25"
@@ -447,14 +447,14 @@ export function CutsFeedPage() {
           <span className="hidden rounded-full bg-black/45 px-2.5 py-1 text-[0.72rem] font-medium text-white/75 md:inline-block">
             {t("↑/↓ 클립 이동 · M 음소거 토글", "↑/↓ move · M toggle mute")}
           </span>
-          <Link href="/showcase/promo" className="cuts-feed__rewards whitespace-nowrap">
+          <Link href="/showcase/promo" className="cuts-feed__rewards inline-flex min-h-11 items-center whitespace-nowrap">
             {t("예고편 스튜디오", "Promo studio")}
           </Link>
-          <Link href="/cuts/rewards" className="cuts-feed__rewards whitespace-nowrap">
+          <Link href="/cuts/rewards" className="cuts-feed__rewards inline-flex min-h-11 items-center whitespace-nowrap">
             <Coins size={15} aria-hidden="true" />
             {t("리워드", "Rewards")}
           </Link>
-          <Link href="/cuts/studio" className="cuts-feed__make whitespace-nowrap">
+          <Link href="/cuts/studio" className="cuts-feed__make inline-flex min-h-11 items-center whitespace-nowrap">
             <Clapperboard size={16} aria-hidden="true" />
             {t("클립 만들기", "Create clip")}
           </Link>
@@ -481,7 +481,7 @@ export function CutsFeedPage() {
                   data-testid={`cuts-rea-motion-${item.id}`}
                   aria-pressed={motionEngine === item.id}
                   onClick={() => setMotionEngine(item.id)}
-                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold transition-colors ${
+                  className={`inline-flex min-h-11 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
                     motionEngine === item.id ? "bg-white text-black" : "bg-white/15 text-white/85 hover:bg-white/25"
                   }`}
                 >
@@ -502,7 +502,7 @@ export function CutsFeedPage() {
                   data-testid={`cuts-rea-dub-${item.id}`}
                   aria-pressed={dubbingMode === item.id}
                   onClick={() => setDubbingMode(item.id)}
-                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold transition-colors ${
+                  className={`inline-flex min-h-11 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
                     dubbingMode === item.id ? "bg-white text-black" : "bg-white/15 text-white/85 hover:bg-white/25"
                   }`}
                 >

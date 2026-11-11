@@ -11,7 +11,7 @@ const KANBAN_STAGE_STEPS = [
     en: "1. Storyboard",
     roleKo: "컷 분할·대사 흐름",
     roleEn: "Cuts & pacing",
-    hrefSuffix: "/studio/episode",
+    resolveHref: (encodedId: string) => `/studio/p/${encodedId}/story`,
   },
   {
     id: "bg3d",
@@ -20,7 +20,7 @@ const KANBAN_STAGE_STEPS = [
     en: "2. 3D Set",
     roleKo: "카메라·은선 추출",
     roleEn: "Camera & line extract",
-    hrefSuffix: "/studio/bg3d",
+    resolveHref: (encodedId: string) => `/studio/bg3d?project=${encodedId}`,
   },
   {
     id: "lineart",
@@ -29,7 +29,7 @@ const KANBAN_STAGE_STEPS = [
     en: "3. Lineart",
     roleKo: "벡터·필압 펜선",
     roleEn: "Vector & ink strokes",
-    hrefSuffix: "/studio/canvas",
+    resolveHref: (encodedId: string) => `/studio/p/${encodedId}/production`,
   },
   {
     id: "coloring",
@@ -38,7 +38,7 @@ const KANBAN_STAGE_STEPS = [
     en: "4. Coloring",
     roleKo: "지정색·조명 LUT",
     roleEn: "Flats & lighting LUT",
-    hrefSuffix: "/studio/characters",
+    resolveHref: (encodedId: string) => `/studio/p/${encodedId}/assets`,
   },
   {
     id: "lettering",
@@ -47,7 +47,7 @@ const KANBAN_STAGE_STEPS = [
     en: "5. Typeset & Sign-off",
     roleKo: "규격 검수·출고 승인",
     roleEn: "Preflight & sign-off",
-    hrefSuffix: "/studio/export",
+    resolveHref: (encodedId: string) => `/studio/p/${encodedId}/export`,
   },
 ] as const;
 
@@ -74,8 +74,8 @@ export function StudioProjectTeamKanbanBridge({
             </span>
             <span className="text-xs font-semibold text-fg-2">
               {bt(
-                "회차별 5열 공정 상태와 권리 BOM·인계 기록을 한 화면에서 이어갑니다.",
-                "Track the 5-stage episode pipeline, handoffs, and Rights BOM in one view.",
+                "회차별 5열 공정 상태와 권리 BOM·인계 기록을 프로젝트 문맥 유지 채 이어갑니다.",
+                "Track the 5-stage episode pipeline, handoffs, and Rights BOM while keeping project context.",
               )}
             </span>
           </div>
@@ -120,7 +120,7 @@ export function StudioProjectTeamKanbanBridge({
               className="min-w-[164px] shrink-0 snap-start sm:min-w-0"
             >
               <Link
-                href={step.hrefSuffix}
+                href={step.resolveHref(encodedId)}
                 className="flex min-h-11 h-full flex-col justify-between gap-1.5 rounded-xl border border-line bg-card p-2.5 text-left transition-colors hover:border-accent/55 hover:bg-raised/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-fg">

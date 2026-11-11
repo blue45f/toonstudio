@@ -9,7 +9,7 @@ import { StudioProjectTeamKanbanBridge } from "./StudioProjectTeamKanbanBridge";
 afterEach(cleanup);
 
 describe("StudioProjectTeamKanbanBridge", () => {
-  it("renders the 5-stage production Kanban cards with 44px touch targets and links to Kanban, Handoff, and Rights BOM", () => {
+  it("renders the 5-stage production Kanban cards with project-scoped canonical links and 44px touch targets", () => {
     render(
       <MemoryRouter>
         <StudioProjectTeamKanbanBridge projectId="proj-alpha" />
@@ -25,10 +25,13 @@ describe("StudioProjectTeamKanbanBridge", () => {
 
     const storyboardCard = within(section).getByTestId("studio-kanban-stage-card-storyboard");
     expect(within(storyboardCard).getByRole("link").className).toContain("min-h-11");
-    expect(within(storyboardCard).getByRole("link").getAttribute("href")).toBe("/studio/episode");
+    expect(within(storyboardCard).getByRole("link").getAttribute("href")).toBe("/studio/p/proj-alpha/story");
 
     const bg3dCard = within(section).getByTestId("studio-kanban-stage-card-bg3d");
-    expect(within(bg3dCard).getByRole("link").getAttribute("href")).toBe("/studio/bg3d");
+    expect(within(bg3dCard).getByRole("link").getAttribute("href")).toBe("/studio/bg3d?project=proj-alpha");
+
+    const exportCard = within(section).getByTestId("studio-kanban-stage-card-lettering");
+    expect(within(exportCard).getByRole("link").getAttribute("href")).toBe("/studio/p/proj-alpha/export");
 
     expect(within(section).getByRole("link", { name: /회차 공정 칸반 열기/u }).getAttribute("href"))
       .toBe("/production/projects/proj-alpha/production");

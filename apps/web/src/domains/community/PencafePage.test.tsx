@@ -69,7 +69,6 @@ describe("PencafePage", () => {
 
   it("shows a page-level error fallback with retry when the feed crashes", async () => {
     mocks.crashFeed = true;
-    // 에러 바운더리의 console.error 노이즈를 테스트 출력에서 숨긴다.
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     try {
       renderPage("/pencafe/%EC%9B%B9%ED%88%B0%20%EC%97%B0%EA%B5%AC%ED%9A%8C");
@@ -86,8 +85,11 @@ describe("PencafePage", () => {
     }
   });
 
-  it("REA 팬덤 등급·라이브 워치파티 워크벤치를 렌더링하고 양방향 상태를 전환한다", () => {
+  it("REA 팬덤 등급·라이브 워치파티 워크벤치를 44px 터치 타깃으로 렌더링하고 양방향 상태를 전환한다", () => {
     renderPage("/community/pencafe");
+
+    expect(screen.getByRole("link", { name: /창작 쇼케이스/u }).getAttribute("href")).toBe("/showcase");
+    expect(screen.getByRole("link", { name: /새 작품 시작/u }).getAttribute("href")).toBe("/create");
 
     const bar = screen.getByTestId("pencafe-rea-watchparty-bar");
     expect(bar.textContent).toContain("Naver Cafe · Weverse · Discord Stage · Chzzk Watch Party");
@@ -95,6 +97,7 @@ describe("PencafePage", () => {
     const tierRookie = screen.getByTestId("pencafe-rea-tier-rookie-reader");
     const tierBinge = screen.getByTestId("pencafe-rea-tier-verified-binge-fan");
     const tierPatron = screen.getByTestId("pencafe-rea-tier-patron-inner-circle");
+    expect(tierRookie.className).toContain("min-h-11");
 
     expect(tierRookie.getAttribute("aria-pressed")).toBe("true");
     expect(tierBinge.getAttribute("aria-pressed")).toBe("false");
@@ -103,6 +106,7 @@ describe("PencafePage", () => {
     const liveWatch = screen.getByTestId("pencafe-rea-live-episode-watch-party");
     const liveAma = screen.getByTestId("pencafe-rea-live-live-sketch-ama");
     const liveGoods = screen.getByTestId("pencafe-rea-live-goods-group-order");
+    expect(liveWatch.className).toContain("min-h-11");
 
     expect(liveWatch.getAttribute("aria-pressed")).toBe("true");
     expect(liveAma.getAttribute("aria-pressed")).toBe("false");
@@ -131,12 +135,13 @@ describe("PencafePage", () => {
     expect(status.textContent).toContain("단행본·굿즈 공동구매");
   });
 
-  it("영어 로케일(en)에서 REA 워크벤치에 한글이 섞이지 않는다", () => {
+  it("영어 로케일(en)에서 REA 워크벤치와 상단 브리지에 한글이 섞이지 않는다", () => {
     useI18n.setState({ lang: "en" });
     renderPage("/community/pencafe");
 
     const bar = screen.getByTestId("pencafe-rea-watchparty-bar");
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByRole("link", { name: /Creator Showcase/u }).getAttribute("href")).toBe("/showcase");
 
     fireEvent.click(screen.getByTestId("pencafe-rea-tier-patron-inner-circle"));
     fireEvent.click(screen.getByTestId("pencafe-rea-live-goods-group-order"));

@@ -73,9 +73,12 @@ afterEach(() => {
 });
 
 describe("CreatorAnalyticsPage", () => {
-  it("연결 전(404)에서는 샘플 숫자를 자동으로 표시하지 않고 연결 전 상태를 보여 준다", () => {
+  it("연결 전(404)에서는 샘플 숫자를 자동으로 표시하지 않고 연결 전 상태와 발행·출고 브리지를 보여 준다", () => {
     renderPage();
     expect(screen.getByText("실제 집계가 아직 연결되지 않았어요")).toBeTruthy();
+    const publishBridge = screen.getByTestId("creator-analytics-publish-bridge");
+    expect(within(publishBridge).getByRole("link", { name: /연재·배급 허브/u }).getAttribute("href")).toBe("/publish");
+    expect(within(publishBridge).getByRole("link", { name: /스튜디오 원고 출고/u }).getAttribute("href")).toBe("/studio/export");
     expect(screen.queryByRole("article", { name: "조회수" })).toBeNull();
     expect(screen.queryByRole("note", { name: "예시 데이터 안내" })).toBeNull();
     expect(screen.queryByText("예시 데이터로 보는 중")).toBeNull();

@@ -1,5 +1,5 @@
 import { Component, lazy, Suspense, useState, type ReactNode } from "react";
-import { PenLine } from "lucide-react";
+import { ArrowRight, PenLine, Sparkles, UsersRound } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 import { FanCafePanel } from "./components/fan-cafe-panel";
@@ -12,6 +12,7 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { useI18n, useT } from "@/shared/lib/i18n";
+import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle, useMetaDescription, usePageSocialMeta } from "@/shared/seo/use-document-title";
 
 const SharePageButton = lazy(async () => {
@@ -95,7 +96,7 @@ class PencafeFeedBoundary extends Component<PencafeFeedBoundaryProps, PencafeFee
           <button
             type="button"
             onClick={this.props.onRetry}
-            className="mt-4 min-h-11 rounded-lg border border-bad/35 px-3 py-2 text-xs font-semibold text-bad"
+            className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-bad/35 px-3 py-2 text-xs font-semibold text-bad"
           >
             {this.props.retryLabel}
           </button>
@@ -176,7 +177,6 @@ export function PencafePage() {
   const isKo = lang.startsWith("ko");
   const pickLang = (ko: string, en: string) => (isKo ? ko : en);
   const { name } = useParams();
-  // Router parameters are already decoded, including literal percent characters.
   const targetLabel = name ?? "";
   const [feedRetryTick, setFeedRetryTick] = useState(0);
   const [fandomTier, setFandomTier] = useState<FandomTierId>("rookie-reader");
@@ -209,26 +209,51 @@ export function PencafePage() {
   return (
     <Container size="wide" className="relative py-6 sm:py-10">
       <SiteContextualSubNav pathnameOverride="/community/pencafe" className="mb-5" />
-      <header className="mb-6 flex flex-col gap-2 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+      <header className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow flex items-center gap-1.5 text-accent">
             <PenLine size={13} />
-            {t(COPY.eyebrow)}</p>
+            {t(COPY.eyebrow)}
+          </p>
           <h1 className="mt-2 text-[clamp(1.6rem,7vw,1.875rem)] font-bold tracking-tight sm:text-4xl">{shareTitle}</h1>
           <p className="lede mt-2 max-w-xl text-pretty text-sm leading-relaxed text-fg-2">
-            {t(COPY.lede)}</p>
+            {t(COPY.lede)}
+          </p>
         </div>
-        {targetLabel && (
-          <Suspense fallback={null}>
-            <SharePageButton
-              path={sharePath}
-              text={shareTitle}
-              description={shareDescription}
-              label={t(COPY.shareLabel)}
-              actionLabel={t(COPY.shareActionLabel)}
-            />
-          </Suspense>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/showcase"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+          >
+            <Sparkles size={14} aria-hidden="true" className="text-accent" />
+            {pickLang("창작 쇼케이스", "Creator Showcase")}
+          </Link>
+          <Link
+            href="/collaborate"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+          >
+            <UsersRound size={14} aria-hidden="true" className="text-accent" />
+            {pickLang("번역·어시 협업", "Collaborate")}
+          </Link>
+          <Link
+            href="/create"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft px-3 text-xs font-bold text-accent transition-colors hover:border-accent"
+          >
+            {pickLang("새 작품 시작", "Start Creating")}
+            <ArrowRight size={13} aria-hidden="true" />
+          </Link>
+          {targetLabel ? (
+            <Suspense fallback={null}>
+              <SharePageButton
+                path={sharePath}
+                text={shareTitle}
+                description={shareDescription}
+                label={t(COPY.shareLabel)}
+                actionLabel={t(COPY.shareActionLabel)}
+              />
+            </Suspense>
+          ) : null}
+        </div>
       </header>
 
       <img
@@ -248,7 +273,7 @@ export function PencafePage() {
           <span className="text-xs font-semibold text-accent">
             {pickLang("REA 팬덤 등급 · 라이브 워치파티 시뮬레이터", "REA Fandom Tier & Live Watch-Party Simulator")}
           </span>
-          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+          <span className="rounded-lg bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
             Naver Cafe · Weverse · Discord Stage · Chzzk Watch Party
           </span>
         </div>
@@ -271,8 +296,8 @@ export function PencafePage() {
                 onClick={() => setFandomTier(item.id)}
                 className={
                   active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                    ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent-soft px-3.5 text-xs font-semibold text-accent"
+                    : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 text-xs font-semibold text-fg-2 hover:border-accent/45 hover:text-fg"
                 }
               >
                 {pickLang(item.ko, item.en)}
@@ -299,8 +324,8 @@ export function PencafePage() {
                 onClick={() => setLiveMode(item.id)}
                 className={
                   active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                    ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent-soft px-3.5 text-xs font-semibold text-accent"
+                    : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 text-xs font-semibold text-fg-2 hover:border-accent/45 hover:text-fg"
                 }
               >
                 {pickLang(item.ko, item.en)}
@@ -311,7 +336,7 @@ export function PencafePage() {
         <p
           data-testid="pencafe-rea-status"
           aria-live="polite"
-          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
+          className="mt-3 rounded-xl bg-panel/80 px-3 py-2 font-mono text-xs text-fg"
         >
           {pickLang(
             `${activeTier.ko} + ${activeLive.ko} · ${activeTier.detailKo} (${activeLive.detailKo})`,
@@ -322,13 +347,13 @@ export function PencafePage() {
 
       <section aria-label={t(COPY.feedRegion)}>
         <PencafeFeedBoundary
-        key={feedRetryTick}
-        title={t(COPY.feedErrorTitle)}
-        message={t(COPY.feedErrorMessage)}
-        retryLabel={t(COPY.feedErrorRetry)}
-        onRetry={() => setFeedRetryTick((tick) => tick + 1)}
-      >
-        <FanCafePanel scope="pencafe" targetId={targetLabel} targetLabel={targetLabel} compact />
+          key={feedRetryTick}
+          title={t(COPY.feedErrorTitle)}
+          message={t(COPY.feedErrorMessage)}
+          retryLabel={t(COPY.feedErrorRetry)}
+          onRetry={() => setFeedRetryTick((tick) => tick + 1)}
+        >
+          <FanCafePanel scope="pencafe" targetId={targetLabel} targetLabel={targetLabel} compact />
         </PencafeFeedBoundary>
       </section>
     </Container>

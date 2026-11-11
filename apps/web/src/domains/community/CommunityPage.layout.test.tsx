@@ -106,12 +106,15 @@ describe("CommunityPage 대화 우선 배치", () => {
       expect(screen.getByTestId("community-rea-active-track-summary").textContent).toContain("예시");
     }
   });
-  it("추가된 탐색·접기 문구가 영어 useT 경로도 지원한다", () => {
+  it("추가된 탐색·접기·리그·쇼케이스 문구가 영어 useT 경로에서도 한글 누출 없이 동작한다", () => {
     i18n.locale = "en";page();
     expect(screen.getByRole("group",{name:"Community sections"})).toBeTruthy();
     expect(screen.getByRole("button",{name:"All sections"}).getAttribute("aria-pressed")).toBe("true");
     expect(disclosure("Community quick guide").open).toBe(false);
     expect(screen.getByRole("heading",{name:"A story drawn alone, a world widened together."})).toBeTruthy();
+    expect(screen.getByTestId("community-quick-guide").textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("community-promotion-league-strip").textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("community-rea-creator-showcase-bar").textContent).not.toMatch(/[가-힣]/u);
   });
   it("CSS에 44px 대상·초점·reduced-motion 제한이 존재한다", () => {
     const css = readFileSync(resolve("apps/web/src/domains/community/community-page-layout.css"),"utf8");
@@ -130,7 +133,6 @@ describe("CommunityPage 대화 우선 배치", () => {
       expect(matches).toHaveLength(1);
       const contract = matches[0];
       expect(contract.selectorText.split(",").map(selector => selector.trim())).toEqual(selectors);
-      // :where() 등으로 우선순위를 낮추지 않은 ID 1개 + 클래스 1개가 모든 분기에 있어야 한다.
       for (const selector of contract.selectorText.split(",")) {
         expect(selector.match(/#[\w-]+/g)).toEqual(["#main-content"]);
         expect(selector.match(/\.[\w-]+/g)).toEqual([".community-layout"]);
@@ -154,5 +156,4 @@ describe("CommunityPage 대화 우선 배치", () => {
     container.querySelector(".community-layout")?.append(checkbox);
     expect(checkbox.matches(selector)).toBe(false);
   });
-
 });
