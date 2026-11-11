@@ -1606,7 +1606,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                   <span className="absolute bottom-0 right-0 size-4 rounded-md border border-line-strong" style={{ backgroundColor: colorWorkspace?.secondary ?? "#ffffff" }} />
                   <span className="absolute left-0 top-0 size-4 rounded-md border border-line-strong" style={{ backgroundColor: color }} />
                 </span>
-                <span className="max-w-full truncate">{label.color}</span>
+                <span className="max-w-full truncate">{bt("색상", "Color")}</span>
               </button>
               <StudioDockButton
                 icon={Undo2}

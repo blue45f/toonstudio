@@ -582,7 +582,7 @@ describe("StudioMobileEditingDock", () => {
     expect(row.className).toContain("grid-cols-6");
     expect(row.closest('[data-studio-mobile-dock-scroll]')).toBeNull();
     for (const name of ["도형", "주 색"]) expect(screen.queryByRole("button", { name })).toBeNull();
-
+    expect(within(row).getByRole("button", { name: "브러시 색상" }).textContent).toBe("색상");
     fireEvent.click(within(row).getByRole("button", { name: "작업 메뉴" }));
     const tools = screen.getByRole("toolbar", { name: "작업 메뉴 · 드로잉 도구" });
     for (const name of ["선택", "픽셀", "채우기", "도형", "브러시 설정 (굵기·색·프리셋)", "레이어 열기", "소재 찾기", "전체 도구 열기"]) expect(within(tools).getByRole("button", { name })).toBeTruthy();
@@ -1960,9 +1960,9 @@ describe("StudioMobileEditingDock", () => {
   it("renders the drawing tool row in the active locale instead of hardcoded Korean", () => {
     useI18n.getState().setLang("en");
     render(<StudioMobileEditingDock {...createProps({ isMobile: true })} />);
-
     const toolbar = screen.getByRole("toolbar", { name: "Drawing tools" });
     expect(screen.getByRole("navigation", { name: "Studio mobile toolbar" })).toBeTruthy();
+    expect(within(toolbar).getByRole("button", { name: "Brush color" }).textContent).toBe("Color");
     for (const name of ["Pen", "Eraser", "Brush color", "Tools"]) {
       expect(within(toolbar).getByRole("button", { name })).toBeTruthy();
     }

@@ -22,6 +22,7 @@ describe("함께 작업 접힘", () => {
     const summary = screen.getByText("함께 작업");
     const details = detailsForSummary();
     expect(details.open).toBe(false);
+    expect(details.querySelector('[data-studio-collaboration-body] [data-studio-collaboration-huddle-slot]')).not.toBeNull();
     expect(screen.queryByRole("button", { name: "팀원 커서 보기" })).toBeNull();
     expect(mounted).toHaveBeenCalledOnce();
     act(() => { details.open = true; fireEvent(details, new Event("toggle")); });
@@ -49,6 +50,7 @@ describe("함께 작업 접힘", () => {
     viewport.mobile = false;
     view.rerender(<StudioCanvasCollaborationDisclosure mobileImmersive onOpenTeam={vi.fn()}><Controls /></StudioCanvasCollaborationDisclosure>);
     expect(screen.getByText("함께 작업").closest("details")?.open).toBe(true);
+    expect(document.getElementById("studio-collaboration-huddle-slot")).toBeNull();
     expect(screen.getByRole("button", { name: "따라가기" })).toBeTruthy();
     expect(mounted).toHaveBeenCalledOnce(); expect(unmounted).not.toHaveBeenCalled();
     viewport.mobile = true;

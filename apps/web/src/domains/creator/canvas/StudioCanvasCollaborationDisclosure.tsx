@@ -76,6 +76,7 @@ export function StudioCanvasCollaborationDisclosure({
           {bt("팀·채팅 열기", "Open team and chat")}
         </button>
         {children}
+        {isMobile ? <div id="studio-collaboration-huddle-slot" data-studio-collaboration-huddle-slot="true" /> : null}
       </div>
     </details>
   );

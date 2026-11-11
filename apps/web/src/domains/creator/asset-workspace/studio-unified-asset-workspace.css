@@ -292,8 +292,8 @@
   }
   .studio-unified-assets [data-studio-asset-detail-pane="true"] {
     display: block;
-    max-block-size: min(68dvh, 46rem);
-    overflow-y: auto;
+    max-block-size: none;
+    overflow: visible;
     border-block-start: 0;
     border-inline-start: 1px solid var(--color-line);
     padding: 0 0 0 0.75rem;

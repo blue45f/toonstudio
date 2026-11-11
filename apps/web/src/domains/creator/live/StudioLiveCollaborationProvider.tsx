@@ -1062,7 +1062,7 @@ export function StudioLiveCollaborationProvider({
   return (
     <StudioLiveCollaborationContext.Provider value={value}>
       {children}
-      {showHuddleLauncher && workId && participant && <Suspense fallback={null}><StudioP2pHuddleLauncher /></Suspense>}
+      {showHuddleLauncher && workId && participant && <Suspense fallback={null}><StudioP2pHuddleLauncher idleChromeTargetId="studio-collaboration-huddle-slot" /></Suspense>}
     </StudioLiveCollaborationContext.Provider>
   );
 }
