@@ -8,6 +8,7 @@ export * from "./ik-apply";
 export * from "./joint-drag";
 export * from "./joint-limits";
 export * from "./pose-blend";
+export * from "./pose-intensity";
 export * from "./presets";
 export * from "./presets/rotation-dsl";
 export * from "./reference-skeleton";

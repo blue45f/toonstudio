@@ -8,11 +8,13 @@ import { normalizeHex } from "../shared/color";
 
 import { applyUndoToken, clonePaintLayer, createPaintLayer, createTileSnapshotSet, MAX_BRUSH_RADIUS_PX, MIN_BRUSH_RADIUS_PX, snapshotAllTiles, toUndoToken } from "./paint-layer";
 import { createStrokeSession } from "./stroke-session";
+import { stampWebtoonDecal } from "./webtoon-decals";
 
 import type { BrushDab, BrushSettings, PaintLayer, PaintUndoToken, PartRole } from "../contracts";
 import type { MutablePaintLayer } from "./paint-layer";
 import type { PaintPressureMode } from "./paint-pressure";
-import type { StrokeSession } from "./stroke-session";
+import type { PaintToolMode, StrokeSession } from "./stroke-session";
+import type { StampWebtoonDecalOptions, WebtoonDecalId } from "./webtoon-decals";
 
 export interface PaintSessionState {
   readonly brush: BrushSettings;
@@ -20,6 +22,8 @@ export interface PaintSessionState {
   readonly wrap: boolean;
   readonly pressureMode: PaintPressureMode;
   readonly bodyLineMaskEnabled: boolean;
+  readonly toolMode: PaintToolMode;
+  readonly symmetry: boolean;
   /** 생성된 레이어(부위 → 레이어). 참조는 변경마다 새 Map. */
   readonly layers: ReadonlyMap<PartRole, PaintLayer>;
   readonly strokeActive: boolean;
@@ -34,6 +38,8 @@ export interface PaintSessionOptions {
   readonly layerSize?: number;
   readonly pressureMode?: PaintPressureMode;
   readonly bodyLineMaskEnabled?: boolean;
+  readonly toolMode?: PaintToolMode;
+  readonly symmetry?: boolean;
 }
 
 export interface PaintSession {
@@ -44,6 +50,8 @@ export interface PaintSession {
   setWrap(wrap: boolean): void;
   setPressureMode(mode: PaintPressureMode): void;
   setBodyLineMaskEnabled(enabled: boolean): void;
+  setToolMode(mode: PaintToolMode): void;
+  setSymmetry(enabled: boolean): void;
   /** 부위 레이어(없으면 생성) */
   layer(part: PartRole): MutablePaintLayer;
   /** 활성 부위 레이어에 스트로크를 시작한다. 진행 중인 스트로크가 있으면 먼저 닫고 그 토큰을 버린다(호출 측 오류). */
@@ -51,6 +59,8 @@ export interface PaintSession {
   extendStroke(dab: BrushDab): number;
   /** 스트로크를 닫고 undo 토큰을 돌려준다(진행 중이 아니면 null). 토큰은 호출 측이 "paint/stroke"로 dispatch한다. */
   endStroke(): PaintUndoToken | null;
+  /** 선택한 웹툰 디테일 데칼을 활성 부위(또는 지정 부위)에 스탬프하고 undo 토큰을 반환한다. */
+  stampDecal(decalId: WebtoonDecalId, options?: StampWebtoonDecalOptions & { readonly part?: PartRole }): PaintUndoToken | null;
   /** history undo/redo가 넘긴 토큰을 레이어에 적용하고 역토큰을 돌려준다. 레이어가 없으면 null. */
   applyToken(token: PaintUndoToken): PaintUndoToken | null;
   /** 레시피 불러오기 등으로 레이어 전체를 교체한다(복사). */
@@ -83,6 +93,8 @@ export function createPaintSession(options: PaintSessionOptions = {}): PaintSess
   let wrap = options.wrap ?? true;
   let pressureMode: PaintPressureMode = options.pressureMode ?? "constant";
   let bodyLineMaskEnabled = options.bodyLineMaskEnabled ?? true;
+  let toolMode: PaintToolMode = options.toolMode ?? "brush";
+  let symmetry = options.symmetry ?? false;
   let stroke: StrokeSession | null = null;
   let version = 0;
   let snapshot: PaintSessionState | null = null;
@@ -104,7 +116,18 @@ export function createPaintSession(options: PaintSessionOptions = {}): PaintSess
   return {
     getState() {
       if (!snapshot) {
-        snapshot = { brush, activePart, wrap, pressureMode, bodyLineMaskEnabled, layers: new Map(layers), strokeActive: stroke !== null, version };
+        snapshot = {
+          brush,
+          activePart,
+          wrap,
+          pressureMode,
+          bodyLineMaskEnabled,
+          toolMode,
+          symmetry,
+          layers: new Map(layers),
+          strokeActive: stroke !== null,
+          version,
+        };
       }
       return snapshot;
     },
@@ -137,6 +160,14 @@ export function createPaintSession(options: PaintSessionOptions = {}): PaintSess
       bodyLineMaskEnabled = next;
       invalidate();
     },
+    setToolMode(next) {
+      toolMode = next;
+      invalidate();
+    },
+    setSymmetry(next) {
+      symmetry = next;
+      invalidate();
+    },
     layer(part) {
       const created = !layers.has(part);
       const layer = ensureLayer(part);
@@ -146,7 +177,7 @@ export function createPaintSession(options: PaintSessionOptions = {}): PaintSess
     beginStroke(dab, part = activePart) {
       if (stroke) stroke.end();
       const layer = ensureLayer(part);
-      stroke = createStrokeSession(layer, brush, { wrap, pressureMode });
+      stroke = createStrokeSession(layer, brush, { wrap, pressureMode, toolMode, symmetry });
       stroke.begin(dab);
       invalidate();
     },
@@ -160,6 +191,22 @@ export function createPaintSession(options: PaintSessionOptions = {}): PaintSess
       if (!stroke) return null;
       const token = stroke.end();
       stroke = null;
+      invalidate();
+      return token;
+    },
+    stampDecal(decalId, stampOptions = {}) {
+      if (stroke) {
+        stroke.end();
+        stroke = null;
+      }
+      const part = stampOptions.part ?? activePart;
+      const layer = ensureLayer(part);
+      const token = stampWebtoonDecal(layer, decalId, {
+        wrap,
+        symmetry,
+        ...stampOptions,
+      });
+      if (token.tiles.length === 0) return null;
       invalidate();
       return token;
     },

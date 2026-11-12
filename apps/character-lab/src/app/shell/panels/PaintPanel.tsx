@@ -1,11 +1,7 @@
 /**
- * PaintPanel: 브러시 크기·색·불투명도·경도·간격, 레이어(부위) 선택, UV 랩, 페인트 undo·레이어 비우기.
+ * PaintPanel: 브러시/지우개 모드, 좌우 대칭 그리기(U축 미러), 웹툰 디테일 스탬프(데칼),
+ * 브러시 크기·색·불투명도·경도·간격, 레이어(부위) 선택, UV 랩, 페인트 undo·레이어 비우기.
  * 브러시 상태는 paint/paint-session(React 밖 스토어)에 있고 뷰포트 드로잉 포인터가 같은 세션을 쓴다.
- * undo는 history/undo 명령으로 보내며 토큰 적용(session.applyToken → engine.updatePaintTexture)은 셸이 한다.
- * 레이어 비우기는 패널이 직접 비운 레이어를 `engine.updatePaintTexture`로 올린다(레이어 revision을 구독하는 곳이 없다).
- *
- * 키트 소스 경고(계약 문서 8.4절, `paint/paint-kit-warning`): 페인트 레이어는 역할 단위 하나인데 헤어·의상·신발·액세서리는 변형(프리셋)마다 UV가 달라
- * 변형을 바꾸면 그림이 어긋난다. 칠하는 것은 막지 않고, 선택한 부위의 경고와 이미 칠한 다른 부위(레시피를 불러온 직후 포함)의 경고를 보인다.
  */
 import { useCallback, useId, useSyncExternalStore } from "react";
 
@@ -13,9 +9,11 @@ import { PAINTABLE_PART_ROLES, PART_ROLE_LABELS_KO, isPartRole } from "../../../
 import { kitPaintWarningKo, kitPaintWarningsForLayers } from "../../../paint/paint-kit-warning";
 import { isPaintPressureMode } from "../../../paint/paint-pressure";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
+import { WEBTOON_DECAL_SPECS } from "../../../paint/webtoon-decals";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
 import type { PaintSession, PaintSessionState } from "../../../paint/paint-session";
+import type { WebtoonDecalId } from "../../../paint/webtoon-decals";
 
 export interface PaintPanelProps {
   readonly session?: PaintSession;
@@ -56,7 +54,6 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
   const engineReady = labState.engine.phase === "ready";
   const sourceKind = labState.recipe.source.kind;
   const activeKitWarning = kitPaintWarningKo(sourceKind, state.activePart);
-  // 이미 칠한 다른 부위 중 변형을 바꾸면 어긋날 수 있는 것(선택한 부위는 위 경고가 이미 말한다)
   const otherKitWarnings = kitPaintWarningsForLayers(sourceKind, [...state.layers.values()]).filter((warning) => warning.part !== state.activePart);
 
   const onUndo = useCallback(() => {
@@ -68,10 +65,19 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
     const token = session.clearLayer(part);
     if (!token) return;
     dispatch({ type: "paint/stroke", undoToken: token });
-    // 레이어 revision을 구독해 엔진에 올리는 곳이 없으므로 비운 레이어를 직접 올린다(스트로크·undo와 같은 `updatePaintTexture` 경로).
-    // 올리지 않으면 뷰포트·PNG는 이전 칠을 보이고, 이후 undo가 엔진에 '비워지지 않은' 상태를 다시 올려 실제 상태를 알 수 없게 된다.
     engineSession.engine()?.updatePaintTexture(session.layer(part));
   }, [dispatch, engineSession, session, state.activePart]);
+
+  const onStampDecal = useCallback(
+    (decalId: WebtoonDecalId) => {
+      const part = state.activePart;
+      const token = session.stampDecal(decalId, { part, opacity: state.brush.opacity });
+      if (!token) return;
+      dispatch({ type: "paint/stroke", undoToken: token });
+      engineSession.engine()?.updatePaintTexture(session.layer(part));
+    },
+    [dispatch, engineSession, session, state.activePart, state.brush.opacity],
+  );
 
   return (
     <section className="cl-paint-panel" aria-labelledby={`${ids}-title`}>
@@ -107,6 +113,35 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
           ))}
         </ul>
       ) : null}
+      <div className="cl-paint-row" role="group" aria-label="드로잉 도구 모드" data-testid="paint-tool-mode-group">
+        <button
+          type="button"
+          className="cl-preset-chip"
+          aria-pressed={state.toolMode === "brush"}
+          data-testid="paint-tool-brush"
+          onClick={() => session.setToolMode("brush")}
+        >
+          브러시 펜
+        </button>
+        <button
+          type="button"
+          className="cl-preset-chip"
+          aria-pressed={state.toolMode === "eraser"}
+          data-testid="paint-tool-eraser"
+          onClick={() => session.setToolMode("eraser")}
+        >
+          지우개
+        </button>
+      </div>
+      <div className="cl-paint-row">
+        <label htmlFor={`${ids}-symmetry`}>좌우 대칭 그리기 (U축 미러)</label>
+        <input
+          id={`${ids}-symmetry`}
+          type="checkbox"
+          checked={state.symmetry}
+          onChange={(event) => session.setSymmetry(event.target.checked)}
+        />
+      </div>
       <div className="cl-paint-row" role="group" aria-label="빠른 브러시 프리셋" data-testid="paint-brush-presets">
         {(
           [
@@ -120,13 +155,31 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
             type="button"
             className="cl-preset-chip"
             aria-pressed={
+              state.toolMode === "brush" &&
               state.brush.radiusPx === preset.radiusPx &&
               Math.abs(state.brush.opacity - preset.opacity) < 1e-4 &&
               Math.abs(state.brush.hardness - preset.hardness) < 1e-4
             }
-            onClick={() => session.setBrush({ radiusPx: preset.radiusPx, opacity: preset.opacity, hardness: preset.hardness })}
+            onClick={() => {
+              session.setToolMode("brush");
+              session.setBrush({ radiusPx: preset.radiusPx, opacity: preset.opacity, hardness: preset.hardness });
+            }}
           >
             {preset.label}
+          </button>
+        ))}
+      </div>
+      <div className="cl-paint-row" role="group" aria-label="웹툰 디테일 스탬프" data-testid="paint-webtoon-decals">
+        {WEBTOON_DECAL_SPECS.map((spec) => (
+          <button
+            key={spec.id}
+            type="button"
+            className="cl-preset-chip"
+            data-testid={`paint-decal-${spec.id}`}
+            title={`${spec.labelKo} 디테일 스탬프를 현재 레이어(${PART_ROLE_LABELS_KO[state.activePart]})에 추가합니다`}
+            onClick={() => onStampDecal(spec.id)}
+          >
+            {`스탬프: ${spec.labelKo}`}
           </button>
         ))}
       </div>
@@ -167,9 +220,9 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
         />
       </div>
       <p className="cl-paint-hint" data-testid="shaper-paint-stroke-readout">
-        기준 반지름 {state.brush.radiusPx.toFixed(1)} px · 의상 마스킹 {state.bodyLineMaskEnabled ? "ON" : "OFF"}
+        도구 {state.toolMode === "eraser" ? "지우개" : "브러시"} · 대칭 {state.symmetry ? "ON" : "OFF"} · 기준 반지름 {state.brush.radiusPx.toFixed(1)} px · 의상 마스킹 {state.bodyLineMaskEnabled ? "ON" : "OFF"}
       </p>
-      <p className="cl-paint-hint">가상 필압은 스트로크를 끝내면 양끝이 가늘어집니다. 펜 필압은 반지름과 불투명도에 반영됩니다. 의상 마스킹은 포인터 중심의 가림을 검사하며, 큰 UV 브러시의 모든 픽셀이나 모델에서 제거된 몸 표면을 복원하지 않습니다.</p>
+      <p className="cl-paint-hint">가상 필압은 스트로크를 끝내면 양끝이 가늘어집니다. 좌우 대칭 그리기를 켜면 양볼 볼터치나 대칭 문양이 U축 반대편에도 함께 기록됩니다.</p>
       <p className="cl-paint-status">
         {PART_ROLE_LABELS_KO[state.activePart]} 레이어 {activeLayer ? `${activeLayer.width}×${activeLayer.height} · 개정 ${activeLayer.revision}` : "(아직 없음)"}
         {state.strokeActive ? " · 스트로크 진행 중" : ""}

@@ -33,7 +33,6 @@ describe("PaintPanel", () => {
     expect(state.activePart).toBe("hair");
     expect(state.wrap).toBe(false);
     expect(screen.getByText(/헤어 레이어 \(아직 없음\)/u)).toBeTruthy();
-    // <output>도 암묵적 role="status"라 getByRole("status")는 다중 매치가 되므로 텍스트로 찾는다.
     expect(screen.getByText(/엔진이 준비되지 않아/u)).toBeTruthy();
   });
 
@@ -85,7 +84,6 @@ describe("PaintPanel", () => {
     const session = createPaintSession({ layerSize: 64, brush: { radiusPx: 4, hardness: 1, opacity: 1 } });
     session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
     session.endStroke();
-    // 스트로크 경로(ViewportPane 드라이버)가 올린 칠을 흉내 낸다
     engine.updatePaintTexture(session.layer("skin"));
     expect(engine.paintUploads).toHaveLength(1);
     expect(engine.paintUploads[0]?.rgba.some((byte) => byte !== 0)).toBe(true);
@@ -96,12 +94,10 @@ describe("PaintPanel", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "레이어 비우기" }));
     expect(dispatched.map((command) => command.type)).toEqual(["paint/stroke"]);
-    // 비운 뒤 엔진에 올라간 레이어는 투명이다(업로드가 없으면 엔진 텍스처는 이전 칠을 그대로 보인다)
     expect(engine.paintUploads).toHaveLength(2);
     const uploaded = engine.paintUploads[1];
     expect(uploaded?.part).toBe("skin");
     expect(uploaded?.rgba.every((byte) => byte === 0)).toBe(true);
-    // 이미 빈 레이어를 다시 비우면 토큰도 업로드도 없다
     fireEvent.click(screen.getByRole("button", { name: "레이어 비우기" }));
     expect(engine.paintUploads).toHaveLength(2);
   });
@@ -161,7 +157,6 @@ describe("PaintPanel", () => {
       const items = Array.from(list.querySelectorAll("li")).map((item) => item.getAttribute("data-part"));
       expect(items.sort()).toEqual(["hair", "top"]);
       expect(list.textContent).toMatch(/이미 칠한 헤어 레이어: 헤어 변형을 바꾸면/u);
-      // 선택 부위(헤어)로 옮기면 그 부위는 위 단일 경고가 말하므로 목록에서 빠진다
       fireEvent.change(screen.getByLabelText("레이어(부위)"), { target: { value: "hair" } });
       const after = Array.from(screen.getByRole("list", { name: "어긋날 수 있는 레이어" }).querySelectorAll("li")).map((item) => item.getAttribute("data-part"));
       expect(after).toEqual(["top"]);
@@ -226,5 +221,33 @@ describe("PaintPanel", () => {
     fireEvent.click(screen.getByLabelText("의상 뒤 신체 페인트 차단"));
     expect(session.getState().bodyLineMaskEnabled).toBe(false);
     expect(readout.textContent).toContain("의상 마스킹 OFF");
+  });
+
+  it("브러시/지우개 모드 전환·좌우 대칭 그리기·웹툰 디테일 스탬프가 undo 토큰과 엔진 업로드를 기록한다", () => {
+    const engine = createMockEngine();
+    const engineSession = createMockEngineSession({ phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics });
+    engineSession.setEngine(engine);
+    const dispatched: LabCommand[] = [];
+    const session = createPaintSession({ layerSize: 64, activePart: "head" });
+
+    render(
+      <MockLabProvider engineSession={engineSession} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <PaintPanel session={session} />
+      </MockLabProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId("paint-tool-eraser"));
+    expect(session.getState().toolMode).toBe("eraser");
+    expect(screen.getByTestId("shaper-paint-stroke-readout").textContent).toContain("도구 지우개");
+
+    fireEvent.click(screen.getByLabelText("좌우 대칭 그리기 (U축 미러)"));
+    expect(session.getState().symmetry).toBe(true);
+    expect(screen.getByTestId("shaper-paint-stroke-readout").textContent).toContain("대칭 ON");
+
+    fireEvent.click(screen.getByTestId("paint-decal-blush-slash"));
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]?.type).toBe("paint/stroke");
+    expect(engine.paintUploads).toHaveLength(1);
+    expect(engine.paintUploads[0]?.part).toBe("head");
   });
 });

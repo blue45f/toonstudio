@@ -1,10 +1,5 @@
 /**
- * ExportPanel: 투명 PNG(해상도 입력) · 레시피 저장/불러오기 · GLB · 레이어 PSD(ID 마스크·참조 패스 옵션) · 진행/실패 표시.
- * 엔진은 useEngineSession().engine()으로 클릭 시점에 ref 접근하고, 출력 크기는 입력값만 쓴다(뷰포트 크기 유도 금지).
- * 저장은 export/download.browser `saveBytes`(Blob URL revoke 보장)이며 테스트는 deps.save를 주입한다.
- *
- * 레시피 불러오기 직후 안내(실패가 아니라 상태 문구): v1 → v2 변환(`recipeMigrationNoticeKo`)과, 키트 소스로 불러온 칠한 레이어 중 변형(프리셋)을 바꾸면
- * UV가 달라져 어긋날 수 있는 것(`kitPaintWarningsForLayers`)을 이어서 보인다. 이벤트 계약(`contracts/events.ts`)은 건드리지 않고 패널이 직접 보인다.
+ * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트) · 레시피 저장/불러오기 · GLB · 레이어 PSD · 진행/실패 표시.
  */
 import { useCallback, useId, useState, useSyncExternalStore } from "react";
 
@@ -23,6 +18,7 @@ import { saveBytes } from "../../../export/download.browser";
 import { MAX_PNG_EXPORT_DIMENSION, MAX_PSD_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportGlb, exportLayeredPsd, exportRecipe, exportShaperStylePreset, exportTransparentPng } from "../../../export/export-session";
 import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
 import { RECIPE_FILE_SUFFIX, extractPaintLayers, parseRecipeFile, parseShaperPresetTextToRecipe } from "../../../export/recipe-file";
+import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
 import { uploadReplacedLayers } from "../../../paint/paint-bridge";
 import { kitPaintWarningsForLayers } from "../../../paint/paint-kit-warning";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
@@ -38,7 +34,6 @@ export interface ExportPanelDeps {
   readonly save?: SaveBytesFn;
   readonly now?: () => number;
   readonly readFile?: (file: File) => Promise<string>;
-  /** PSD 조립 전 ag-psd 캔버스 팩토리 등록(기본: psd-canvas.browser, 멱등). 테스트는 스텁을 주입한다. */
   readonly preparePsd?: () => void;
 }
 
@@ -78,7 +73,6 @@ function describeExportPoseKo(recipe: CharacterRecipe): string {
   return `사용자 편집 포즈 (본 ${boneCount}개${handSuffix})`;
 }
 
-/** File → 텍스트(Blob.text가 없는 환경은 FileReader) */
 export function readTextFile(file: File): Promise<string> {
   if (typeof file.text === "function") return file.text();
   return new Promise((resolve, reject) => {
@@ -125,10 +119,9 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const [includeReferencePasses, setIncludeReferencePasses] = useState(false);
   const [splitHairLayers, setSplitHairLayers] = useState(false);
   const [useLuminanceToAlpha, setUseLuminanceToAlpha] = useState(false);
-  const [busy, setBusy] = useState<ExportKind | "import" | null>(null);
+  const [busy, setBusy] = useState<ExportKind | "turnaround" | "import" | null>(null);
   const [receipt, setReceipt] = useState<ExportReceipt | null>(null);
   const [failure, setFailure] = useState<LabFailure | null>(null);
-  /** 레시피 불러오기 직후 안내(변환·키트 페인트 경고·미로드 패키지 안내). 다음 작업을 시작하면 지운다. */
   const [notices, setNotices] = useState<readonly string[]>([]);
 
   const engineReady = engineStatus.phase === "ready";
@@ -166,7 +159,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   }, [engineSession, now]);
 
   const run = useCallback(
-    async (kind: ExportKind | "import", task: () => Promise<void>): Promise<void> => {
+    async (kind: ExportKind | "turnaround" | "import", task: () => Promise<void>): Promise<void> => {
       if (busy) return;
       setNotices([]);
       setReceipt(null);
@@ -186,6 +179,15 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
       const engine = requireEngine();
       if (!engine) return;
       finish(await exportTransparentPng(engine, { width, height, framing: framingValue, settleSteps }, { now }));
+    });
+  };
+
+  const onTurnaroundPng = (): void => {
+    void run("turnaround", async () => {
+      const engine = requireEngine();
+      if (!engine) return;
+      const { panelWidth, panelHeight } = clampTurnaroundPanelSize(width, height);
+      finish(await exportTurnaroundSheetPng(engine, { panelWidth, panelHeight, framingMode: framing, settleSteps }, { now }));
     });
   };
 
@@ -280,7 +282,6 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
       }
       const migrationNotice = recipeMigrationNoticeKo(parsed);
       if (migrationNotice !== null) importNotices.push(migrationNotice);
-      // recipe/load는 스토어가 이전 레이어를 가리키는 페인트 undo 이력을 비운다. 엔진 텍스처는 여기서 새 세션과 맞춘다.
       dispatch({ type: "recipe/load", recipe: parsed.recipe });
       const nextSource = parsed.recipe.source;
       if (nextSource.kind === "procedural") {
@@ -316,7 +317,6 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         const previousLayers = session.layersForExport();
         session.replaceLayers(paint.layers);
         const engine = engineSession.engine();
-        // 새 파일에 없는 부위의 이전 칠이 뷰포트에 남지 않도록 사라진 부위는 빈 레이어로 비운다(엔진 페인트 텍스처에는 제거 API가 없다).
         if (engine) uploadReplacedLayers(previousLayers, session.layersForExport(), (layer) => engine.updatePaintTexture(layer));
       }
       for (const warning of kitPaintWarningsForLayers(parsed.recipe.source.kind, paint.layers)) {
@@ -448,6 +448,15 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         <button type="button" onClick={onPng} disabled={!engineReady || busy !== null}>
           투명 PNG 저장
         </button>
+        <button
+          type="button"
+          data-testid="export-turnaround-sheet-png"
+          title="0° 정면 · 35° 반측면 · 90° 측면 · 180° 후면을 가로 한 장으로 이어 붙인 투명 캐릭터 설정시트 PNG를 저장합니다"
+          onClick={onTurnaroundPng}
+          disabled={!engineReady || busy !== null}
+        >
+          4방향 설정시트 PNG 저장
+        </button>
         <button type="button" onClick={onGlb} disabled={!engineReady || busy !== null}>
           GLB 저장
         </button>
@@ -495,7 +504,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
       </fieldset>
       {busy ? (
         <p className="cl-export-progress" role="status" aria-live="polite">
-          {busy === "import" ? "레시피 불러오는 중…" : `${busy.toUpperCase()} 내보내는 중…`}
+          {busy === "import" ? "레시피 불러오는 중…" : busy === "turnaround" ? "4방향 설정시트 내보내는 중…" : `${busy.toUpperCase()} 내보내는 중…`}
         </p>
       ) : null}
       {receipt ? (

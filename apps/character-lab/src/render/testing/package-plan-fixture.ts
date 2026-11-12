@@ -81,6 +81,9 @@ function buildMixamoBones(): Readonly<Record<string, HumanoidBoneName>> {
     "mixamorig:Head": "head",
     "TS_OrionEye.L": "leftEye",
     "TS_OrionEye.R": "rightEye",
+    "TS_ShaperEye.L": "leftEye",
+    "TS_ShaperEye.R": "rightEye",
+    TS_ShaperJaw: "jaw",
   };
   const limbs: ReadonlyArray<readonly [string, string]> = [
     ["Shoulder", "Shoulder"],
@@ -96,7 +99,7 @@ function buildMixamoBones(): Readonly<Record<string, HumanoidBoneName>> {
     for (const [mixamo, vrm] of limbs) map[`mixamorig:${side}${mixamo}`] = `${vrmSide}${vrm}` as HumanoidBoneName;
     for (const finger of MIXAMO_FINGERS) {
       finger.segments.forEach((segment, index) => {
-        map[`mixamorig:${side}Hand${finger.mixamo}${index + 1}`] = `${vrmSide}${finger.vrm}${segment}` as HumanoidBoneName;
+        map[`mixamorig:${side}Hand${finger.mixamo}${index + 1}`] = `${vrmSide}${vrm}` as HumanoidBoneName;
       });
     }
   }
@@ -106,8 +109,12 @@ function buildMixamoBones(): Readonly<Record<string, HumanoidBoneName>> {
 const MIXAMO_BONES = buildMixamoBones();
 
 function roleForMeshNode(name: string): PartRole | null {
-  if (parseAuthoredHairMeshName(name)) return "hair";
+  if (parseAuthoredHairMeshName(name.replace(/_Outline$/u, ""))) return "hair";
   const lower = name.toLowerCase();
+  if (lower.startsWith("ts_top")) return "top";
+  if (lower.startsWith("ts_bottom")) return "bottom";
+  if (lower.startsWith("ts_shoes")) return "shoes";
+  if (lower.startsWith("ts_accessory")) return "accessory";
   if (lower.includes("brow")) return "brow";
   if (lower.includes("pupil")) return "pupil";
   if (lower.includes("eye")) return "eyeball";

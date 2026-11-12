@@ -1,5 +1,5 @@
 /**
- * ViewportPane: 엔진 캔버스 + 도구 막대 + HUD 오버레이 + 관절 핸들(SVG) + SHAPER 형상 제어점(ControlPoint) + 모델 위 드로잉 오버레이.
+ * ViewportPane: 엔진 캔버스 + 도구 막대(4방향 시점·투명 격자·원고 컷 매칭 포함) + HUD 오버레이 + 관절 핸들(SVG) + SHAPER 형상 제어점(ControlPoint) + 모델 위 드로잉 오버레이.
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
@@ -30,6 +30,13 @@ import {
 } from "./shaper-control-points";
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
 import {
+  ViewportBackdropLayers,
+  ViewportCompositionBar,
+  ViewportOnboardingCard,
+  ViewportSvgGizmoLayer,
+  clampReferenceOpacity,
+} from "./viewport-backdrop-overlay";
+import {
   SHAPER_BUILTIN_BODY_PRESETS,
   SHAPER_BUILTIN_FACE_PRESETS,
   applySymmetryToPose,
@@ -44,6 +51,7 @@ import {
 } from "./viewport-interactions";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
+import type { ReferenceCutPlacement, ReferenceCutState } from "./viewport-backdrop-overlay";
 import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
 import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
@@ -64,7 +72,6 @@ const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; reado
   { mode: "face", label: "얼굴" },
 ];
 const FILL: CSSProperties = { position: "absolute", inset: 0 };
-const NO_POINTER: CSSProperties = { ...FILL, width: "100%", height: "100%", pointerEvents: "none" };
 const CANVAS_KEY_SHORTCUTS = "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0 Home";
 
 interface DragSession {
@@ -114,6 +121,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const paint = paintSession ?? getDefaultPaintSession();
   const activePart = useSyncExternalStore(paint.subscribe, () => paint.getState().activePart, () => paint.getState().activePart);
   const brushRadius = useSyncExternalStore(paint.subscribe, () => Math.round(paint.getState().brush.radiusPx), () => Math.round(paint.getState().brush.radiusPx));
+  const toolMode = useSyncExternalStore(paint.subscribe, () => paint.getState().toolMode, () => paint.getState().toolMode);
+  const paintSymmetry = useSyncExternalStore(paint.subscribe, () => paint.getState().symmetry, () => paint.getState().symmetry);
 
   const engineText = describeEngineStatus(labState.engine);
   const engine = labState.engine.phase === "ready" ? engineSession.engine() : null;
@@ -123,6 +132,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [showControlPoints, setShowControlPoints] = useState(initialOverlays?.controlPoints ?? false);
   const [showHud, setShowHud] = useState(initialOverlays?.hud ?? false);
   const [framing, setFraming] = useState<CameraFraming["mode"]>(DEFAULT_FRAMING.mode);
+  const [activeYawDeg, setActiveYawDeg] = useState<number | null>(null);
+  const [checkerboard, setCheckerboard] = useState(false);
+  const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
   const [symmetryMode, setSymmetryMode] = useState(false);
   const [pivotMode, setPivotMode] = useState<ShaperPivotMode>("parent");
@@ -269,6 +281,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       try {
         engine.setCamera({ ...DEFAULT_FRAMING, mode });
         setFraming(mode);
+        setActiveYawDeg(0);
         setNotice(null);
       } catch (error) {
         setNotice(failureText(error, "카메라를 바꾸지 못했습니다."));
@@ -276,6 +289,43 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     },
     [engine],
   );
+
+  const onSelectTurnaround = useCallback(
+    (yawDeg: 0 | 35 | 90 | 180): void => {
+      if (!engine) return;
+      try {
+        engine.setCamera({ ...DEFAULT_FRAMING, mode: framing, yawDeg, pitchDeg: 0, distanceScale: 1 });
+        setActiveYawDeg(yawDeg);
+        setNotice(`4방향 시점 전환: ${yawDeg}°`);
+      } catch (error) {
+        setNotice(failureText(error, "시점을 바꾸지 못했습니다."));
+      }
+    },
+    [engine, framing],
+  );
+
+  const onLoadReferenceFile = useCallback((file: File): void => {
+    const url = typeof URL.createObjectURL === "function" ? URL.createObjectURL(file) : "";
+    if (!url) {
+      setNotice("이 브라우저 환경에서는 로컬 이미지 미리보기 URL을 생성할 수 없습니다.");
+      return;
+    }
+    setReferenceCut((prev) => ({
+      url,
+      fileName: file.name,
+      opacity: prev ? prev.opacity : 0.45,
+      placement: prev ? prev.placement : "underlay",
+    }));
+    setNotice(`원고 컷 참조 로드됨: ${file.name}`);
+  }, []);
+
+  const onChangeReferenceOpacity = useCallback((opacity: number): void => {
+    setReferenceCut((prev) => (prev ? { ...prev, opacity: clampReferenceOpacity(opacity) } : null));
+  }, []);
+
+  const onChangeReferencePlacement = useCallback((placement: ReferenceCutPlacement): void => {
+    setReferenceCut((prev) => (prev ? { ...prev, placement } : null));
+  }, []);
 
   const selectBackend = useCallback(
     (backend: EngineBackend): void => {
@@ -296,6 +346,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     if (!engine) return;
     try {
       engine.setCamera({ ...DEFAULT_FRAMING, mode: framing });
+      setActiveYawDeg(0);
       setNotice(null);
     } catch (error) {
       setNotice(failureText(error, "시점을 초기화하지 못했습니다."));
@@ -303,12 +354,29 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   }, [engine, framing]);
 
   const presetRecipeRef = useRef(labState.recipe);
-
   useEffect(() => {
-    if (shaperPresetId && labState.recipe !== presetRecipeRef.current) {
-      setShaperPresetId("");
-    }
+    if (shaperPresetId && labState.recipe !== presetRecipeRef.current) setShaperPresetId("");
   }, [labState.recipe, shaperPresetId]);
+
+  const cancelDrag = useCallback((): void => {
+    const session = dragRef.current;
+    const cpSession = cpDragRef.current;
+    dragRef.current = null;
+    cpDragRef.current = null;
+    setDraggingBone(null);
+    setDraggingCp(null);
+    if (driverRef.current?.active) driverRef.current.cancel();
+    releaseCapture(session?.target, session?.pointerId ?? -1);
+    releaseCapture(cpSession?.target, cpSession?.pointerId ?? -1);
+    if (session?.basePlan) {
+      try {
+        session.engine.applyPlan(session.basePlan);
+        syncHandles(session.engine);
+      } catch (error) {
+        setNotice(failureText(error, "드래그 미리보기를 되돌리지 못했습니다."));
+      }
+    }
+  }, [syncHandles]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -360,7 +428,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [engine, onFraming, onResetView, dispatch]);
+  }, [engine, onFraming, onResetView, dispatch, cancelDrag]);
 
   const applyShaperBuiltInPreset = useCallback(
     (presetKey: string): void => {
@@ -393,26 +461,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     },
     [dispatch, store],
   );
-
-  const cancelDrag = useCallback((): void => {
-    const session = dragRef.current;
-    const cpSession = cpDragRef.current;
-    dragRef.current = null;
-    cpDragRef.current = null;
-    setDraggingBone(null);
-    setDraggingCp(null);
-    if (driverRef.current?.active) driverRef.current.cancel();
-    releaseCapture(session?.target, session?.pointerId ?? -1);
-    releaseCapture(cpSession?.target, cpSession?.pointerId ?? -1);
-    if (session?.basePlan) {
-      try {
-        session.engine.applyPlan(session.basePlan);
-        syncHandles(session.engine);
-      } catch (error) {
-        setNotice(failureText(error, "드래그 미리보기를 되돌리지 못했습니다."));
-      }
-    }
-  }, [syncHandles]);
 
   useEffect(() => {
     if (!draggingBone && !draggingCp) return undefined;
@@ -474,14 +522,12 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     const camera = readViewportCamera(session.engine);
     const currentPixel = camera ? pixelOf(event, camera) : null;
     if (!camera || !currentPixel) return;
-
     if (session.mode === 3) {
       const scaleOut = computeShaperBoneScaleDrag({ handleBone: session.handle.bone as HumanoidBoneName, startPixel: session.startPixel, currentPixel, renderWidth: camera.width, renderHeight: camera.height, baseBody: session.baseBody });
       session.scaleOutcome = scaleOut;
       setNotice(scaleOut.labelKo);
       return;
     }
-
     if (session.mode === 1) {
       const ikOut = computeShaperIkHandleDrag({ skeleton: session.skeleton, startPose: poseRef.current, handleBone: session.handle.bone as HumanoidBoneName, camera, startPixel: session.startPixel, currentPixel, symmetryEnabled: symmetryRef.current || event.altKey, pivotMode: pivotModeRef.current, onFailure: reportSkeletonFailure });
       if (!ikOut) return;
@@ -497,7 +543,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       }
       return;
     }
-
     let outcome: JointDragOutcome | null;
     try {
       outcome = computeJointDrag({ skeleton: session.skeleton, startPose: session.startPose, pivot: session.pivot, camera, startPixel: session.startPixel, currentPixel, onFailure: reportSkeletonFailure });
@@ -626,8 +671,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const activeHandle = draggingBone ? handles.find((entry) => entry.bone === draggingBone) ?? null : null;
 
   return (
-    <div ref={containerRef} className="cl-viewport" style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
-      <canvas key={canvasGeneration} ref={registerCanvas} className="cl-viewport-canvas" aria-label="캐릭터 뷰포트" aria-keyshortcuts={CANVAS_KEY_SHORTCUTS} tabIndex={0} />
+    <div ref={containerRef} className="cl-viewport" data-checkerboard={checkerboard ? "true" : undefined} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
+      <ViewportBackdropLayers checkerboard={checkerboard} referenceCut={referenceCut} />
+      <canvas key={canvasGeneration} ref={registerCanvas} className="cl-viewport-canvas" aria-label="캐릭터 뷰포트" aria-keyshortcuts={CANVAS_KEY_SHORTCUTS} tabIndex={0} style={{ position: "relative", zIndex: 1 }} />
 
       <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "absolute", top: 8, left: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
         <span className="cl-viewport-group" role="group" aria-label="카메라 프레이밍" style={{ display: "inline-flex", gap: 4 }}>
@@ -641,6 +687,18 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
             <option value="max">3ds Max 조작</option>
           </select>
         </span>
+        <ViewportCompositionBar
+          engineReady={Boolean(engine)}
+          checkerboard={checkerboard}
+          activeYawDeg={activeYawDeg}
+          referenceCut={referenceCut}
+          onToggleCheckerboard={() => setCheckerboard((prev) => !prev)}
+          onSelectTurnaround={onSelectTurnaround}
+          onLoadReferenceFile={onLoadReferenceFile}
+          onChangeReferenceOpacity={onChangeReferenceOpacity}
+          onChangeReferencePlacement={onChangeReferencePlacement}
+          onClearReference={() => { setReferenceCut(null); setNotice("원고 컷 참조를 해제했습니다."); }}
+        />
         <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
           <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>관절 핸들</button>
           <button type="button" className="cl-viewport-button" aria-pressed={showFingers} disabled={!showHandles} onClick={() => setShowFingers((value) => !value)}>손가락 핸들</button>
@@ -673,88 +731,37 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         </span>
       </div>
 
-      {labState.engine.phase === "idle" ? (
-        <div className="cl-viewport-onboarding" data-testid="viewport-onboarding-card" style={{ position: "absolute", inset: "52px 16px 56px 16px", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-          <div className="cl-viewport-onboarding-inner" style={{ pointerEvents: "auto" }}>
-            <h2 className="cl-viewport-onboarding-title">빠른 시작 3단계 가이드</h2>
-            <p className="cl-viewport-onboarding-desc">렌더 엔진은 자동으로 시작되거나 대체되지 않습니다(ADR-0018). 아래 1단계 버튼으로 엔진을 먼저 시작하세요.</p>
-            <ol className="cl-viewport-onboarding-steps">
-              <li>
-                <strong>1단계: 렌더 엔진 선택</strong> — 환경에 맞는 그래픽 백엔드를 직접 선택합니다.
-                <div className="cl-viewport-onboarding-actions" role="group" aria-label="빠른 엔진 시작">
-                  <button type="button" className="cl-button cl-button--primary" data-testid="onboarding-start-webgpu" onClick={() => selectBackend("webgpu")}>WebGPU로 시작</button>
-                  <button type="button" className="cl-button" data-testid="onboarding-start-webgl2" onClick={() => selectBackend("webgl2")}>WebGL2로 시작</button>
-                </div>
-              </li>
-              <li><strong>2단계: 좌측 15슬롯 외형 조합 &amp; 상단 빠른 테마 프리셋 적용</strong> — 체형·얼굴·헤어·의상 슬롯을 고르고 상단 스타일 프리셋으로 셰이딩 분위기를 바꿉니다.</li>
-              <li><strong>3단계: 우측 인스펙터에서 체형·표정·포즈·렌더 조절 및 PNG/PSD/GLB 내보내기</strong> — 세부 슬라이더·관절 핸들·페인트 조절 후 결과물을 저장합니다.</li>
-            </ol>
-          </div>
-        </div>
-      ) : null}
-
+      {labState.engine.phase === "idle" ? <ViewportOnboardingCard onSelectBackend={selectBackend} /> : null}
       {labState.engine.phase !== "ready" ? (
         <p className="cl-viewport-status" role="status" data-tone={engineText.tone} style={{ position: "absolute", left: 12, right: 12, bottom: 12, margin: 0 }}>{engineText.text}</p>
       ) : null}
 
       {engine && (showHandles || showControlPoints) ? (
-        <svg ref={svgRef} className="cl-viewport-handles" role="group" aria-label="관절 핸들" data-gizmo-mode={gizmoMode} viewBox={viewBox} preserveAspectRatio="none" style={NO_POINTER}>
-          {boneLinks.map((link) => (
-            <line key={`${link.fromBone}->${link.toBone}`} className="cl-viewport-bone-link" data-from={link.fromBone} data-to={link.toBone} data-side={link.side} x1={link.x1} y1={link.y1} x2={link.x2} y2={link.y2} stroke={link.side === "left" ? "rgba(255, 107, 107, 0.72)" : link.side === "right" ? "rgba(77, 171, 247, 0.72)" : "rgba(105, 219, 124, 0.72)"} strokeWidth={Math.max(1.5, 1.8 * ratio)} strokeLinecap="round" />
-          ))}
-          {activeHandle ? (
-            <circle className="cl-viewport-gizmo-ring" data-gizmo-ring={activeHandle.bone} cx={activeHandle.screen[0]} cy={activeHandle.screen[1]} r={22 * Math.max(1, ratio)} fill="none" stroke="rgba(255, 212, 59, 0.9)" strokeWidth={Math.max(1.5, 2 * ratio)} strokeDasharray="4 3" />
-          ) : null}
-          {showHandles
-            ? handles.map((handle) => (
-                <circle
-                  key={handle.bone}
-                  className="cl-viewport-handle"
-                  data-bone={handle.bone}
-                  data-dragging={draggingBone === handle.bone ? "true" : undefined}
-                  aria-disabled={skeletonCorrupted ? "true" : undefined}
-                  aria-label={`${jointLabelKo(handle.bone)} 관절 핸들`}
-                  cx={handle.screen[0]}
-                  cy={handle.screen[1]}
-                  r={(draggingBone === handle.bone ? 8 : 6) * Math.max(1, ratio)}
-                  style={{ pointerEvents: "all", cursor: skeletonCorrupted ? "not-allowed" : draggingBone === handle.bone ? "grabbing" : "grab", touchAction: "none" }}
-                  onPointerDown={(event) => onHandleDown(event, handle)}
-                  onPointerMove={onHandleMove}
-                  onPointerUp={(event) => finishDrag(event, true)}
-                  onPointerCancel={(event) => finishDrag(event, false)}
-                  onLostPointerCapture={(event) => { if (dragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
-                >
-                  <title>{jointLabelKo(handle.bone)}</title>
-                </circle>
-              ))
-            : null}
-          {showControlPoints
-            ? controlPoints.map((cp) => (
-                <circle
-                  key={cp.id}
-                  className="cl-viewport-control-point"
-                  data-control-point={cp.id}
-                  data-category={cp.category}
-                  data-dragging={draggingCp === cp.id ? "true" : undefined}
-                  aria-label={cp.labelKo}
-                  cx={cp.screen[0]}
-                  cy={cp.screen[1]}
-                  r={(draggingCp === cp.id ? 7.5 : 5.5) * Math.max(1, ratio)}
-                  fill={cp.category === "face" ? "rgba(64, 224, 128, 0.9)" : "rgba(56, 217, 169, 0.88)"}
-                  stroke="#0b2e13"
-                  strokeWidth={Math.max(1.2, 1.5 * ratio)}
-                  style={{ pointerEvents: "all", cursor: "move", touchAction: "none" }}
-                  onPointerDown={(event) => onControlPointDown(event, cp)}
-                  onPointerMove={onControlPointMove}
-                  onPointerUp={(event) => finishControlPointDrag(event, true)}
-                  onPointerCancel={(event) => finishControlPointDrag(event, false)}
-                  onLostPointerCapture={(event) => { if (cpDragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
-                >
-                  <title>{cp.labelKo}</title>
-                </circle>
-              ))
-            : null}
-        </svg>
+        <ViewportSvgGizmoLayer
+          svgRef={svgRef}
+          gizmoMode={gizmoMode}
+          viewBox={viewBox}
+          ratio={ratio}
+          showHandles={showHandles}
+          showControlPoints={showControlPoints}
+          skeletonCorrupted={skeletonCorrupted}
+          boneLinks={boneLinks}
+          handles={handles}
+          activeHandle={activeHandle}
+          draggingBone={draggingBone}
+          controlPoints={controlPoints}
+          draggingCp={draggingCp}
+          onHandleDown={onHandleDown}
+          onHandleMove={onHandleMove}
+          onHandleUp={(event) => finishDrag(event, true)}
+          onHandleCancel={(event) => finishDrag(event, false)}
+          onHandleLostCapture={(event) => { if (dragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
+          onControlPointDown={onControlPointDown}
+          onControlPointMove={onControlPointMove}
+          onControlPointUp={(event) => finishControlPointDrag(event, true)}
+          onControlPointCancel={(event) => finishControlPointDrag(event, false)}
+          onControlPointLostCapture={(event) => { if (cpDragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
+        />
       ) : null}
 
       {engine && ui.drawingMode ? (
@@ -763,7 +770,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
       {engine && ui.drawingMode ? (
         <p className="cl-viewport-hint" style={{ position: "absolute", top: 44, left: 8, margin: 0 }}>
-          드로잉 모드 · 레이어 {PART_ROLE_LABELS_KO[activePart]} · 브러시 {brushRadius}px — 카메라 조작은 꺼져 있습니다(드로잉을 끄면 회전·확대).
+          드로잉 모드({toolMode === "eraser" ? "지우개" : "브러시"}{paintSymmetry ? " · 대칭 ON" : ""}) · 레이어 {PART_ROLE_LABELS_KO[activePart]} · 브러시 {brushRadius}px — 카메라 조작은 꺼져 있습니다(드로잉을 끄면 회전·확대).
         </p>
       ) : null}
 

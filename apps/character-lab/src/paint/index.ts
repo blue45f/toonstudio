@@ -7,3 +7,4 @@ export * from "./paint-layer";
 export * from "./paint-session";
 export * from "./stroke-session";
 export * from "./uv-stroke";
+export * from "./webtoon-decals";

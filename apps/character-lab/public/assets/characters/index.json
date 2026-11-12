@@ -111,6 +111,45 @@
           "sha256": "8bbabbcdbf78ea57a0b23296da9f1d49c799b0489eec459f301eaf558e151db4"
         }
       }
+    },
+    {
+      "id": "shaper-atelier-protagonist",
+      "displayName": "SHAPER Atelier · Webtoon Protagonist (7.5등신 풀파츠)",
+      "role": "shaper-flagship",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-12",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 4,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        3296,
+        1712,
+        948
+      ],
+      "glbTriangles": 14538,
+      "files": {
+        "glb": {
+          "path": "shaper-atelier-protagonist/shaper-atelier-protagonist.glb",
+          "bytes": 1010448,
+          "sha256": "9b3a89fc2725be591bc05fea6ba8c5f737dd4ece5991d6473900b6f915f06341"
+        },
+        "manifest": {
+          "path": "shaper-atelier-protagonist/manifest.json",
+          "bytes": 37153,
+          "sha256": "b43d7e905afe1234dcda498b97816ee255d46a591903a566f2f3917b0c56cfdd"
+        },
+        "slotMapping": {
+          "path": "shaper-atelier-protagonist/slot-mapping.json",
+          "bytes": 4257,
+          "sha256": "0416a065cb95a289fe0897491caabcde6642ae895b6105643e7123751d31920e"
+        },
+        "contactSheet": {
+          "path": "shaper-atelier-protagonist/contact-sheet.png",
+          "bytes": 516884,
+          "sha256": "1599ebcc4329e272af031d4014f4cb4eccd5edda92b267cd865faae265762d2d"
+        }
+      }
     }
   ]
 }

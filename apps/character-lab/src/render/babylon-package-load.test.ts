@@ -1,8 +1,6 @@
 /**
  * 제작 패키지 GLB 로드 — **실제** `public/assets/characters/*\/*.glb`를 Node에서 읽어 NullEngine에 로드하고
  * GLB JSON 청크(정답)와 대조한다: 메시 이름·프리미티브 분리·morph 수·본 수·헤어 LOD 가시성·좌표계·모델 공간 포즈 규약.
- * `_Outline` 셸·멀티 프리미티브·규약 밖 이름은 실제 패키지에 없거나 일부만 있어 합성 GLB(`testing/glb-fixture.ts`)로 확인한다.
- * 텍스처 디코드·셰이더 컴파일·렌더 결과는 NullEngine이 검증하지 못한다(브라우저 미검증).
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -42,7 +40,6 @@ interface GltfJson {
   readonly skins?: ReadonlyArray<{ readonly joints: readonly number[] }>;
 }
 
-/** GLB JSON에서 Babylon이 만들 메시 이름과 프리미티브별 morph target 수 */
 function expectedMeshes(bytes: Uint8Array): Map<string, number> {
   const json = parseGlb(bytes).json as unknown as GltfJson;
   const out = new Map<string, number>();
@@ -107,7 +104,6 @@ describe.each(PACKAGE_IDS)("실제 패키지 %s", (id) => {
     const mappedPresent = Object.keys(plan.boneMap).filter((name) => engine.readBone(name) !== null).length;
     expect(rig?.humanoidBoneCount).toBe(mappedPresent);
     expect(rig?.auxiliaryBoneCount).toBe(joints - mappedPresent);
-    // shape key 이름은 플랜(shapeKeyMap)으로 재지정된다: 매핑된 이름만 morphNames에 param:/facs: 형태로 나타난다
     const mappedNames = new Set(Object.values(plan.shapeKeyMap));
     for (const name of mappedNames) expect(rig?.morphNames).toContain(name);
     for (const raw of Object.keys(plan.shapeKeyMap)) expect(rig?.morphNames).not.toContain(raw);
@@ -120,7 +116,6 @@ describe.each(PACKAGE_IDS)("실제 패키지 %s", (id) => {
       expect(hair).toHaveLength(3);
       const chosen = Math.min(preferred, 2);
       hair.forEach((part, index) => {
-        // 파츠 이름은 정렬되어 LOD0·LOD1·LOD2 순이다
         const lod = Number(/LOD(\d+)$/u.exec(part.id)?.[1]);
         expect(lod).toBe(index);
         expect(part.visible).toBe(lod === chosen);
@@ -178,9 +173,7 @@ describe("Orion 제작 패키지(스킨·모델 공간 포즈)", () => {
     engine.applyPlan(applyPlanFixture({ morphWeights: { "param:jawWidth:+": 0.5 } }));
     const after = engine.inspectRig();
     expect(after?.morphInfluences["param:jawWidth:+"]).toBeCloseTo(0.5, 6);
-    // 같은 이름의 타깃이 프리미티브마다 하나씩 → 양쪽 메시에서 1개씩 활성
     expect(after?.parts.find((part) => part.role === "skin")?.activeMorphTargetsByMesh).toEqual([1, 1]);
-    // morph 이름이 플랜에 없으면 건너뜀으로 보고된다
     const receipt = engine.applyPlan(applyPlanFixture({ morphWeights: { "param:jawWidth:+": 0.5, "param:earAngle:+": 1 } }));
     expect(receipt.appliedMorphs).toBe(1);
     expect(receipt.skippedMorphs).toEqual(["param:earAngle:+"]);
@@ -199,7 +192,6 @@ describe("Orion 제작 패키지(스킨·모델 공간 포즈)", () => {
     expect(bone("head")[1]).toBeLessThan(1.9);
     expect(bone("leftUpperArm")[0]).toBeGreaterThan(0.05);
     expect(bone("rightUpperArm")[0]).toBeLessThan(-0.05);
-    // 눈은 머리 본보다 앞(+Z)에 있다
     expect(bone("leftEye")[2]).toBeGreaterThan(bone("head")[2] + 0.05);
     expect(bone("leftEye")[0]).toBeGreaterThan(bone("rightEye")[0]);
     expect(engine.inspectScene().rightHanded).toBe(true);
@@ -223,9 +215,7 @@ describe("Orion 제작 패키지(스킨·모델 공간 포즈)", () => {
       expect(actual[1], `${name}.y`).toBeCloseTo(expected[1], 4);
       expect(actual[2], `${name}.z`).toBeCloseTo(expected[2], 4);
     }
-    // 피벗(어깨 관절)은 움직이지 않고 반대쪽 팔은 그대로다
     expect(read("leftUpperArm")[0]).toBeCloseTo(pivot[0], 5);
-    // 포즈를 비우면 rest로 돌아온다
     engine.applyPlan(applyPlanFixture({ revision: 2 }));
     expect(read("leftHand")[0]).toBeCloseTo(hand[0], 4);
     expect(read("leftHand")[1]).toBeCloseTo(hand[1], 4);
@@ -239,7 +229,6 @@ describe("Orion 제작 패키지(스킨·모델 공간 포즈)", () => {
     engine.applyPlan(applyPlanFixture({ boneRotations: { leftUpperArm: pose } }));
     const rotated = engine.readBone("leftLowerArm")?.rotation as Quat;
     const expected = qMultiply(pose, restRotation);
-    // 쿼터니언 부호 이중성을 허용해 비교한다
     const sign = Math.sign(rotated.reduce((sum, value, i) => sum + value * (expected[i] ?? 0), 0)) || 1;
     for (let i = 0; i < 4; i += 1) expect(rotated[i] ?? 0).toBeCloseTo(sign * (expected[i] ?? 0), 4);
   });
@@ -257,7 +246,6 @@ describe("Orion 제작 패키지(스킨·모델 공간 포즈)", () => {
     expect(byName.get("head")?.parent).toBe("neck");
     expect((skeleton?.bones ?? []).every((bone) => bone.restRotation.join(",") === "0,0,0,1")).toBe(true);
     expect((skeleton?.bones ?? []).filter((bone) => bone.auxiliary).length).toBe(engine.inspectRig()?.auxiliaryBoneCount);
-    // rest 월드 위치 재구성이 리그의 실제 월드 위치와 일치한다(부모 오프셋의 합)
     const world = (name: string): Vec3 => {
       let cursor = byName.get(name);
       const out: [number, number, number] = [0, 0, 0];
@@ -358,7 +346,6 @@ describe("합성 GLB: 규약 처리(_Outline·멀티 프리미티브·규약 밖
     const part = engine.inspectRig()?.parts[0];
     expect(part?.meshNames).toEqual(["TS_Test_Head_primitive0", "TS_Test_Head_primitive1"]);
     expect(part?.morphTargetCountsByMesh).toEqual([2, 2]);
-    // 플랜에 매핑된 이름만 재지정되고 매핑이 없는 이름은 원래 이름으로 노출된다(무음 삭제 없음)
     expect(engine.inspectRig()?.morphNames).toContain("param:eyeSize:+");
     expect(engine.inspectRig()?.morphNames).toContain("unmappedKey");
     engine.applyPlan(applyPlanFixture({ morphWeights: { "param:eyeSize:+": 0.7 } }));
@@ -374,7 +361,6 @@ describe("합성 GLB: 규약 처리(_Outline·멀티 프리미티브·규약 밖
   it("헤어 LOD 이름 규약: preferredLod 이하 중 가장 상세한 LOD가 보이고 없으면 가장 상세한 것", async () => {
     const meshes = [{ name: "TS_AuthoredHair_short-layered_LOD1" }, { name: "TS_AuthoredHair_short-layered_LOD2" }];
     const engine = await loadSynthetic(meshes, 0);
-    // LOD0이 없으므로 가장 상세한 LOD1이 선택된다
     const visible = engine.inspectRig()?.parts.filter((part) => part.visible).map((part) => part.id);
     expect(visible).toEqual(["TS_AuthoredHair_short-layered_LOD1"]);
   });
@@ -391,7 +377,6 @@ describe("실패 경로(fail-visible)", () => {
     );
     expect(failure?.code).toBe("package-glb-load-failed");
     expect(failure?.reasonKo).toContain("제작 패키지 GLB");
-    // 실패 뒤에도 리그는 비어 있고 엔진은 쓸 수 있다
     expect(harness.engine.inspectRig()).toBeNull();
   });
 
@@ -445,5 +430,36 @@ describe("순수 헬퍼", () => {
     expect(summary.jointCount).toBe(67);
     expect(summary.primitiveCountByNode["Avatar_Orion_Body"]).toBe(2);
     expect(summary.targetNames.length).toBeGreaterThanOrEqual(24);
+  });
+});
+
+describe("shaper-atelier-protagonist 제작 패키지(7.5등신 풀파츠·_Outline 셸·워드로브)", () => {
+  const ID = "shaper-atelier-protagonist";
+
+  it("55 휴머노이드 본·분리형 워드로브(top/bottom/shoes/accessory)·실제 헤어 _Outline 셸·morph가 NullEngine에서 정상 구동된다", async () => {
+    const { engine } = await loadPackage(ID);
+    const rig = engine.inspectRig();
+    expect(rig?.kind).toBe("package");
+    expect(rig?.skeletonBoneCount).toBe(55);
+    expect(rig?.humanoidBoneCount).toBe(55);
+
+    const roles = new Set(rig?.parts.map((part) => part.role) ?? []);
+    expect(roles.has("top")).toBe(true);
+    expect(roles.has("bottom")).toBe(true);
+    expect(roles.has("shoes")).toBe(true);
+    expect(roles.has("accessory")).toBe(true);
+    expect(roles.has("head")).toBe(true);
+    expect(roles.has("skin")).toBe(true);
+
+    const hairLod0 = rig?.parts.find((part) => part.id === "TS_AuthoredHair_wolf-layered_LOD0");
+    expect(hairLod0?.visible).toBe(true);
+    expect(hairLod0?.outlineMeshNames).toEqual(["TS_AuthoredHair_wolf-layered_LOD0_Outline"]);
+    expect(hairLod0?.outlineShellVisible).toBe(false);
+
+    engine.setShading({ ...DEFAULT_SHADING, mode: "toon" });
+    expect(engine.inspectRig()?.parts.find((part) => part.id === "TS_AuthoredHair_wolf-layered_LOD0")?.outlineShellVisible).toBe(true);
+
+    const receipt = engine.applyPlan(applyPlanFixture({ morphWeights: { "param:eyeSize:+": 0.65, "facs:mouthSmile": 0.8 } }));
+    expect(receipt.appliedMorphs).toBe(2);
   });
 });
