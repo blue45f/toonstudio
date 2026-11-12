@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioBg3dAuthoredEnvironmentCyclesPanel } from "./StudioBg3dAuthoredEnvironmentCyclesPanel";
@@ -36,6 +36,31 @@ const WEB_PUBLIC_DIR = path.resolve(import.meta.dirname, "../../../../public");
 describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
   afterEach(() => {
     cleanup();
+  });
+
+  it("배치 요청이 끝나도 실제 위치 확정 전에는 성공 상태를 만들지 않는다", async () => {
+    let finishRequest: () => void = () => undefined;
+    const request = new Promise<void>((resolve) => { finishRequest = resolve; });
+    const onAdd = vi.fn(() => request);
+    const rendered = render(<StudioBg3dAuthoredEnvironmentCyclesPanel onAdd={onAdd} defaultExpanded />);
+    const authored = STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1[0];
+    if (!authored) throw new Error("자체 제작 배경 fixture 필요");
+    const action = screen.getByTestId(`bg3d-authored-add-${authored.id}`);
+    fireEvent.click(action);
+    expect(onAdd).toHaveBeenCalledWith(authored.id);
+    expect(action.textContent).toBe("배치 위치 고르기");
+    expect(screen.queryByText(/배치됨/)).toBeNull();
+    await act(async () => { finishRequest(); await request; });
+    expect(action.textContent).toBe("배치 위치 고르기");
+    expect(screen.queryByText(/배치됨/)).toBeNull();
+    fireEvent.click(screen.getByTestId("bg3d-tab-cycles-v6"));
+    const cyclesAction = screen.getByTestId("bg3d-cycles-v6-add-scene");
+    fireEvent.click(cyclesAction);
+    expect(cyclesAction.textContent).toContain("배치 위치 고르기");
+    expect(screen.queryByText(/배치됨/)).toBeNull();
+    rendered.rerender(<StudioBg3dAuthoredEnvironmentCyclesPanel onAdd={onAdd} defaultExpanded disabled />);
+    fireEvent.click(cyclesAction);
+    expect(onAdd).toHaveBeenCalledTimes(2);
   });
 
   it("registers all 95 CC0-1.0 GLB assets (8 pose + 8 essential + 11 refined-v8 + 33 scene + 35 hand/wear) and covers 100% of public/assets/3d/*.glb on disk", () => {
