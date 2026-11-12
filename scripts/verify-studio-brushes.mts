@@ -96,12 +96,14 @@ import {
 } from "../apps/web/src/domains/creator/studio-cc0-mypaint-preset-import-v1";
 
 import { initializeStudioVerifierPageOnce, installStudioCanvasScaleDiagnostics } from "./lib/studio-brush-verifier-session";
+import { selectStudioCollaborationPen } from "./lib/studio-collaboration-readiness";
 import {
   clickStudioControlAfterReadiness,
   prepareStudioDrawingUi,
   waitForStudioDrawingReady,
 } from "./lib/studio-drawing-readiness";
 import { verifyStudioServiceStatusAccess } from "./lib/studio-drawing-readiness-service-status";
+import { prepareFilterMenuWorkspace } from "./lib/studio-filter-menu-workspace";
 import { openMobileBrushSettings } from "./lib/studio-mobile-brush-settings";
 import {
   isStaticPreviewReadinessResponse,
@@ -930,11 +932,9 @@ async function prepareStudioPage(page: Page, studioUrl: string): Promise<void> {
 }
 
 async function activateDesktopPen(page: Page): Promise<void> {
-  const penRail = page.locator('button[data-studio-rail-tool-id="pen"]');
-  if (await penRail.count() > 0) {
-    await penRail.first().click();
-  } else {
-    await page.keyboard.press("b");
+  await selectStudioCollaborationPen(page);
+  if (await prepareFilterMenuWorkspace(page)) {
+    await selectStudioCollaborationPen(page);
   }
   const toolbar = page.locator('[data-studio-draw-options="true"]');
   await toolbar.waitFor({ state: "visible", timeout: 8_000 });
