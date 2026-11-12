@@ -42,4 +42,15 @@ describe("camera-framing", () => {
     expect(isDegenerateBounds({ min: [0, 0, 0], max: [0, 0, 0] })).toBe(true);
     expect(isDegenerateBounds(FALLBACK_BOUNDS)).toBe(false);
   });
+
+  it("T-포즈처럼 가로 폭이 넓은 bbox와 세로형(2:3) 종횡비에서도 face < bust < full-body 거리 위계를 유지한다", () => {
+    const tPoseBounds = { min: [-0.84, 0, -0.15] as const, max: [0.84, 1.84, 0.15] as const };
+    for (const aspect of [1, 2 / 3, 16 / 9]) {
+      const full = resolveFraming(DEFAULT_FRAMING, tPoseBounds, 0.8, aspect);
+      const bust = resolveFraming(BUST_FRAMING, tPoseBounds, 0.8, aspect);
+      const face = resolveFraming(FACE_FRAMING, tPoseBounds, 0.8, aspect);
+      expect(face.radius).toBeLessThan(bust.radius);
+      expect(bust.radius).toBeLessThan(full.radius * 0.65);
+    }
+  });
 });

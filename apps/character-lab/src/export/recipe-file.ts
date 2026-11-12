@@ -2,10 +2,15 @@
  * 레시피 JSON 파일 저장·불러오기. 파싱은 contracts/recipe.ts `parseRecipe`(strict zod, 미래 버전 거부)를 쓴다.
  * 페인트 레이어는 PNG base64 레코드로 레시피에 포함한다.
  */
-import { createDefaultRecipe, failVisible, parseRecipe, pickBaseChannelColors, recipeDigest } from "../contracts";
+import { DEFAULT_SUBLAYER_ORDER, createDefaultRecipe, failVisible, parseRecipe, pickBaseChannelColors, recipeDigest } from "../contracts";
 import { stableStringify } from "../shared/stable-json";
 
-import { decodePaintLayerRecord, encodePaintLayerRecord } from "./paint-layer-record";
+import {
+  decodePaintLayerRecord,
+  decodePaintSublayerPartRecord,
+  encodePaintLayerRecord,
+  encodePaintSublayerPartRecord,
+} from "./paint-layer-record";
 import {
   buildShaper3mfModelXml,
   evaluateShaperPresetAssetUpdates,
@@ -31,7 +36,7 @@ import type {
   ShaperPresetTransformRecord,
   ShaperServerAssetDescriptor,
 } from "./shaper-preset";
-import type { CharacterRecipe, LabFailure, PaintLayer, ParseRecipeResult } from "../contracts";
+import type { CharacterRecipe, LabFailure, PaintLayer, PaintPartSublayerState, ParseRecipeResult } from "../contracts";
 
 export const RECIPE_FILE_SUFFIX = ".character.json";
 export const RECIPE_MIME = "application/json";
@@ -78,17 +83,38 @@ export function recipeFileName(recipe: CharacterRecipe, date: Date = new Date())
   return `character-${recipeDigest(recipe).slice(0, 8)}-${datePart(date)}${RECIPE_FILE_SUFFIX}`;
 }
 
-/** 레시피에 페인트 레이어를 PNG base64로 넣는다(빈 레이어는 제외). */
+function isNonDefaultPartSublayers(state: PaintPartSublayerState): boolean {
+  if (!state.order.every((idx, pos) => idx === DEFAULT_SUBLAYER_ORDER[pos])) return true;
+  for (const slot of state.slots) {
+    if (!slot.visible || Math.abs(slot.opacity - 1) > 1e-6) return true;
+    if (slot.index !== 0 && slot.rgba !== null && slot.rgba.some((b) => b !== 0)) return true;
+  }
+  return false;
+}
+
+/** 레시피에 페인트 레이어(및 비기본 다중 서브레이어 상태)를 PNG base64로 넣는다(빈 마스터 레이어는 제외, 숨김 서브레이어 픽셀은 보존). */
 export async function embedPaintLayers(
   recipe: CharacterRecipe,
   layers: readonly PaintLayer[],
+  sublayers?: readonly PaintPartSublayerState[],
 ): Promise<CharacterRecipe> {
   const records = [];
   for (const layer of layers) {
     if (layer.rgba.every((b) => b === 0)) continue;
     records.push(await encodePaintLayerRecord(layer));
   }
-  return { ...recipe, paint: { layers: records } };
+  const sublayerRecords = [];
+  for (const subState of sublayers ?? []) {
+    if (!isNonDefaultPartSublayers(subState)) continue;
+    sublayerRecords.push(await encodePaintSublayerPartRecord(subState));
+  }
+  return {
+    ...recipe,
+    paint: {
+      layers: records,
+      ...(sublayerRecords.length > 0 ? { sublayers: sublayerRecords } : {}),
+    },
+  };
 }
 
 export interface ExtractedPaintLayers {
@@ -96,19 +122,38 @@ export interface ExtractedPaintLayers {
   readonly failures: readonly LabFailure[];
 }
 
-/** 레시피의 페인트 레코드를 디코드한다. 깨진 레코드는 건너뛰고 사유를 모은다. */
+export interface ExtractedPaintState extends ExtractedPaintLayers {
+  readonly sublayers: readonly PaintPartSublayerState[];
+}
+
+/** 레시피의 마스터 페인트 레코드를 디코드한다. 깨진 레코드는 건너뛰고 사유를 모은다. */
 export async function extractPaintLayers(
   recipe: CharacterRecipe,
   now?: number,
 ): Promise<ExtractedPaintLayers> {
+  const state = await extractPaintState(recipe, now);
+  return { layers: state.layers, failures: state.failures };
+}
+
+/** 레시피의 마스터 페인트 레코드와 다중 서브레이어 레코드를 모두 디코드한다. */
+export async function extractPaintState(
+  recipe: CharacterRecipe,
+  now?: number,
+): Promise<ExtractedPaintState> {
   const layers: PaintLayer[] = [];
+  const sublayers: PaintPartSublayerState[] = [];
   const failures: LabFailure[] = [];
   for (const record of recipe.paint.layers) {
     const result = await decodePaintLayerRecord(record, now);
     if (result.ok) layers.push(result.layer);
     else failures.push(result.failure);
   }
-  return { layers, failures };
+  for (const subRecord of recipe.paint.sublayers ?? []) {
+    const result = await decodePaintSublayerPartRecord(subRecord, now);
+    if (result.ok) sublayers.push(result.state);
+    else failures.push(result.failure);
+  }
+  return { layers, sublayers, failures };
 }
 
 export interface ShaperStylePresetData {

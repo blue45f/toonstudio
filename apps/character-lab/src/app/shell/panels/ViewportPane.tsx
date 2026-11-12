@@ -619,6 +619,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     const driver = driverRef.current;
     if (!driver || event.button !== 0) return;
     event.preventDefault();
+    const guard = paint.canPaintActiveSublayer(paint.getState().activePart);
+    if (!guard.ok) { setNotice(guard.reasonKo); return; }
     const ndc = clientToNdc(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect());
     if (typeof event.currentTarget.setPointerCapture === "function") event.currentTarget.setPointerCapture(event.pointerId);
     const touched = ndc ? driver.down({ ndcX: ndc[0], ndcY: ndc[1], pressure: normalizePointerPressure(event) }) : false;

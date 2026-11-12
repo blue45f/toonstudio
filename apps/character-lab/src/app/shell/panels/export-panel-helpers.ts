@@ -10,7 +10,7 @@ import {
   failVisible,
 } from "../../../contracts";
 import { deriveKitCapabilities } from "../../../domains/authored/kit-capability";
-import { extractPaintLayers, parseRecipeFile, parseShaperPresetTextToRecipe } from "../../../export/recipe-file";
+import { extractPaintState, parseRecipeFile, parseShaperPresetTextToRecipe } from "../../../export/recipe-file";
 import { uploadReplacedLayers } from "../../../paint/paint-bridge";
 import { kitPaintWarningsForLayers } from "../../../paint/paint-kit-warning";
 import { recipeMigrationNoticeKo } from "../../../state/recipe-io";
@@ -135,7 +135,7 @@ export async function applyImportedRecipeText(
     return { ok: false, failure: parsed.failure };
   }
 
-  const paint = await extractPaintLayers(parsed.recipe, now);
+  const paint = await extractPaintState(parsed.recipe, now);
   const firstFailure = paint.failures[0];
   if (firstFailure) {
     return { ok: false, failure: firstFailure };
@@ -180,13 +180,15 @@ export async function applyImportedRecipeText(
     }
   }
 
-  if (!isShaperPreset || paint.layers.length > 0) {
+  if (!isShaperPreset || paint.layers.length > 0 || paint.sublayers.length > 0) {
     const previousLayers = session.layersForExport();
-    session.replaceLayers(paint.layers);
+    session.replacePaintState({ layers: paint.layers, sublayers: paint.sublayers });
     if (engine) uploadReplacedLayers(previousLayers, session.layersForExport(), (layer) => engine.updatePaintTexture(layer));
   }
 
-  for (const warning of kitPaintWarningsForLayers(parsed.recipe.source.kind, paint.layers)) {
+  const restoredLayers = session.layersForExport();
+  const warnTargetLayers = restoredLayers.length > 0 ? restoredLayers : paint.layers;
+  for (const warning of kitPaintWarningsForLayers(parsed.recipe.source.kind, warnTargetLayers)) {
     importNotices.push(`이미 칠한 ${PART_ROLE_LABELS_KO[warning.part]} 레이어: ${warning.messageKo}`);
   }
 

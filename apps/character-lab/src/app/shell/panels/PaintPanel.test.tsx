@@ -291,4 +291,67 @@ describe("PaintPanel", () => {
     expect(dispatched.some((cmd) => cmd.type === "paint/stroke")).toBe(true);
     expect(readPixel(session.layer("head"), 32, 32)).toEqual([17, 34, 51, 255]);
   });
+
+  it("서브레이어 상/하 순서 변경·방향키 키보드 탐색·포인터 드래그 불투명도 단일 Undo 병합·숨김 스탬프 차단이 동작한다", () => {
+    const engine = createMockEngine();
+    const engineSession = createMockEngineSession({ phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics });
+    engineSession.setEngine(engine);
+    const dispatched: LabCommand[] = [];
+    const session = createPaintSession({ layerSize: 64, activePart: "head", brush: { radiusPx: 6, hardness: 1, opacity: 1, color: "#112233" } });
+
+    act(() => {
+      session.setActiveSublayer(0);
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+      session.setActiveSublayer(1);
+      session.setBrush({ color: "#ff3366", opacity: 1, hardness: 1 });
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+    });
+
+    render(
+      <MockLabProvider engineSession={engineSession} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <PaintPanel session={session} />
+      </MockLabProvider>,
+    );
+
+    // L1에서 키보드 ArrowLeft → L0 선택, 다시 ArrowRight → L1 선택
+    const chip1 = screen.getByTestId("paint-sublayer-1");
+    chip1.focus();
+    fireEvent.keyDown(chip1, { key: "ArrowLeft" });
+    expect(session.getState().activeSublayer).toBe(0);
+    expect(document.activeElement).toBe(screen.getByTestId("paint-sublayer-0"));
+    fireEvent.keyDown(screen.getByTestId("paint-sublayer-0"), { key: "ArrowRight" });
+    expect(session.getState().activeSublayer).toBe(1);
+
+    // L1을 아래(배경)로 이동하면 [1, 0, 2, 3, 4, 5]가 되어 L0 선화가 위로 올라오고 Undo 토큰이 1회 dispatch된다
+    dispatched.length = 0;
+    fireEvent.click(screen.getByTestId("paint-sublayer-move-down"));
+    expect(session.getState().sublayerOrders.get("head")).toEqual([1, 0, 2, 3, 4, 5]);
+    expect(readPixel(session.layer("head"), 32, 32)).toEqual([17, 34, 51, 255]);
+    expect(screen.getByTestId("paint-sublayer-order-readout").textContent).toContain("L1 → L0 → L2");
+    expect(dispatched).toHaveLength(1);
+
+    // 포인터 드래그 중 연속 불투명도 변경은 실시간 반영하되 pointerUp에서 단 1개의 병합 Undo 단계만 커밋한다
+    const opacityInput = screen.getByTestId("paint-sublayer-opacity");
+    fireEvent.pointerDown(opacityInput);
+    fireEvent.change(opacityInput, { target: { value: "0.8" } });
+    fireEvent.change(opacityInput, { target: { value: "0.5" } });
+    fireEvent.change(opacityInput, { target: { value: "0.35" } });
+    expect(dispatched).toHaveLength(1); // 아직 드래그 중이므로 추가 커밋 없음
+    fireEvent.pointerUp(opacityInput);
+    expect(dispatched).toHaveLength(2);
+    const mergedOpCmd = dispatched[1];
+    if (mergedOpCmd?.type === "paint/stroke") {
+      act(() => {
+        session.applyToken(mergedOpCmd.undoToken);
+      });
+      expect(session.getState().sublayers.get("head")?.[1]?.opacity).toBeCloseTo(1, 5);
+    }
+
+    // 숨김 처리 시 그리기 차단 배너가 표시되고 웹툰 디테일 스탬프 버튼이 비활성화된다
+    fireEvent.click(screen.getByTestId("paint-sublayer-visible"));
+    expect(screen.getByTestId("paint-sublayer-blocked-hint").textContent).toContain("숨김");
+    expect((screen.getByTestId("paint-decal-blush-slash") as HTMLButtonElement).disabled).toBe(true);
+  });
 });

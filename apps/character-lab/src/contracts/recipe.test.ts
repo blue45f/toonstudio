@@ -328,4 +328,28 @@ describe("contracts/recipe v3(2026-10-23 CORE-1)", () => {
     expect(recipeDigest({ ...recipe, hairColor: { ...recipe.hairColor, tipMix: 0.1 } })).not.toBe(digest);
     expect(recipeDigest({ ...recipe, colors: { ...recipe.colors, lip: "#aa3344" } })).not.toBe(digest);
   });
+
+  it("paint.sublayers: v3 선택 확장으로 6슬롯·0..5 순서 순열·부위 유일성을 검증하고 v2 파일에서는 거부한다", () => {
+    const recipe = base();
+    const validSublayer = {
+      part: "head" as const,
+      width: 64,
+      height: 64,
+      order: [1, 0, 2, 3, 4, 5] as const,
+      slots: [
+        { index: 0 as const, visible: true, opacity: 1, pngBase64: "AAAA" },
+        { index: 1 as const, visible: false, opacity: 0.65, pngBase64: "BBBB" },
+        { index: 2 as const, visible: true, opacity: 1 },
+        { index: 3 as const, visible: true, opacity: 1 },
+        { index: 4 as const, visible: true, opacity: 1 },
+        { index: 5 as const, visible: true, opacity: 1 },
+      ] as const,
+    };
+    expect(parseRecipe({ ...recipe, paint: { layers: [], sublayers: [validSublayer] } }).ok).toBe(true);
+    expect(invalidReason({ ...recipe, paint: { layers: [], sublayers: [{ ...validSublayer, order: [0, 0, 2, 3, 4, 5] }] } })).toContain("순서");
+    const swappedSlots = [validSublayer.slots[1], validSublayer.slots[0], ...validSublayer.slots.slice(2)];
+    expect(invalidReason({ ...recipe, paint: { layers: [], sublayers: [{ ...validSublayer, slots: swappedSlots }] } })).toContain("index 0..5");
+    expect(invalidReason({ ...recipe, paint: { layers: [], sublayers: [validSublayer, validSublayer] } })).toContain("중복된 부위");
+    expect(invalidReason({ ...legacyRecipeV2Fixture(), paint: { layers: [], sublayers: [validSublayer] } })).toContain("paint");
+  });
 });

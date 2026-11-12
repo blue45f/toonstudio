@@ -118,6 +118,84 @@ export const paintLayerRecordSchema = z
   })
   .strict();
 
+export const paintSublayerIndexSchema = z.union([
+  z.literal(0),
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+  z.literal(5),
+]);
+
+export const paintSublayerOrderSchema = z
+  .tuple([
+    paintSublayerIndexSchema,
+    paintSublayerIndexSchema,
+    paintSublayerIndexSchema,
+    paintSublayerIndexSchema,
+    paintSublayerIndexSchema,
+    paintSublayerIndexSchema,
+  ])
+  .readonly()
+  .refine((order) => new Set(order).size === 6, {
+    message: "서브레이어 순서(order)는 0..5가 중복 없이 한 번씩 포함되어야 합니다.",
+  });
+
+export const paintSublayerSlotRecordSchema = z
+  .object({
+    index: paintSublayerIndexSchema,
+    visible: z.boolean(),
+    opacity: z.number().min(0).max(1),
+    /** 비어 있지 않은 서브레이어 슬롯만 RGBA PNG base64를 기록한다 */
+    pngBase64: z.string().optional(),
+  })
+  .strict();
+
+export const paintSublayerPartRecordSchema = z
+  .object({
+    part: z.enum(PART_ROLES),
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+    order: paintSublayerOrderSchema,
+    slots: z
+      .tuple([
+        paintSublayerSlotRecordSchema,
+        paintSublayerSlotRecordSchema,
+        paintSublayerSlotRecordSchema,
+        paintSublayerSlotRecordSchema,
+        paintSublayerSlotRecordSchema,
+        paintSublayerSlotRecordSchema,
+      ])
+      .readonly()
+      .refine((slots) => slots.every((slot, idx) => slot.index === idx), {
+        message: "서브레이어 슬롯 배열은 index 0..5 순서여야 합니다.",
+      }),
+  })
+  .strict();
+
+/** v3 `paint`: 합성 마스터 `layers`(하위 호환·PSD용) + 선택적 6단 `sublayers`(개별 픽셀·숨김·순서·불투명도 보존) */
+export const paintStateSchemaV3 = z
+  .object({
+    layers: z.array(paintLayerRecordSchema),
+    sublayers: z.array(paintSublayerPartRecordSchema).optional(),
+  })
+  .strict()
+  .refine(
+    (paint) => {
+      if (!paint.sublayers) return true;
+      const seen = new Set<string>();
+      for (const entry of paint.sublayers) {
+        if (seen.has(entry.part)) return false;
+        seen.add(entry.part);
+      }
+      return true;
+    },
+    {
+      message: "paint.sublayers에 중복된 부위(part)가 있습니다.",
+      path: ["sublayers"],
+    },
+  );
+
 /** v3 `style`: 마지막으로 적용한 화풍 팩(출처)·비례 목표(없으면 소스 고유 비례)·화풍 중립 표정(플래너가 표정 가중치에 더한다) */
 export const recipeStyleSchema = z
   .object({
@@ -146,11 +224,12 @@ const recipeBodyShapeV2 = {
   paint: z.object({ layers: z.array(paintLayerRecordSchema) }).strict(),
 };
 
-/** v3 필드: v2 공통 필드의 colors·shading을 넓히고 커스터마이즈 필드를 더한다 */
+/** v3 필드: v2 공통 필드의 colors·shading·paint(서브레이어 선택 확장)를 넓히고 커스터마이즈 필드를 더한다 */
 const recipeBodyShapeV3 = {
   ...recipeBodyShapeV2,
   colors: channelColorsSchema,
   shading: shadingProfileSchema,
+  paint: paintStateSchemaV3,
   style: recipeStyleSchema,
   wardrobe: wardrobeSchema,
   partParams: partParamsSchema,
@@ -221,6 +300,9 @@ export type RecipeColors = z.infer<typeof recipeColorsSchema>;
 export type RecipeSource = z.infer<typeof recipeSourceSchema>;
 export type RecipeSlots = CharacterRecipe["slots"];
 export type PaintLayerRecord = z.infer<typeof paintLayerRecordSchema>;
+export type PaintSublayerSlotRecord = z.infer<typeof paintSublayerSlotRecordSchema>;
+export type PaintSublayerPartRecord = z.infer<typeof paintSublayerPartRecordSchema>;
+export type PaintStateV3 = z.infer<typeof paintStateSchemaV3>;
 export type RecipeStyle = z.infer<typeof recipeStyleSchema>;
 
 /** 프리셋 patch가 바꿀 수 있는 파츠 슬롯 */

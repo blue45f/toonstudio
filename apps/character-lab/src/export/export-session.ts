@@ -16,7 +16,7 @@ import {
   serializeShaperStylePreset,
 } from "./recipe-file";
 
-import type { CameraFraming, CaptureProvenance, CaptureRequest, CharacterEngine, CharacterRecipe, LabFailure, PaintLayer, RenderPassId } from "../contracts";
+import type { CameraFraming, CaptureProvenance, CaptureRequest, CharacterEngine, CharacterRecipe, LabFailure, PaintLayer, PaintPartSublayerState, RenderPassId } from "../contracts";
 import type { LineArtOptions } from "./line-extract";
 import type { PsdPlanReceipt } from "./psd-plan";
 
@@ -225,12 +225,16 @@ export async function exportGlb(engine: CharacterEngine, recipe: CharacterRecipe
   }
 }
 
-/** 레시피 JSON(페인트 레이어 PNG base64 포함, UTF-8). */
-export async function exportRecipe(recipe: CharacterRecipe, paintLayers: readonly PaintLayer[], deps: ExportDeps = {}): Promise<ExportOutcome> {
+export interface ExportRecipeDeps extends ExportDeps {
+  readonly sublayers?: readonly PaintPartSublayerState[];
+}
+
+/** 레시피 JSON(페인트 레이어 및 서브레이어 PNG base64 포함, UTF-8). */
+export async function exportRecipe(recipe: CharacterRecipe, paintLayers: readonly PaintLayer[], deps: ExportRecipeDeps = {}): Promise<ExportOutcome> {
   const now = deps.now ?? defaultNow;
   const started = now();
   try {
-    const embedded = await embedPaintLayers(recipe, paintLayers);
+    const embedded = await embedPaintLayers(recipe, paintLayers, deps.sublayers);
     const text = serializeRecipe(embedded);
     const bytes = new TextEncoder().encode(text);
     return {

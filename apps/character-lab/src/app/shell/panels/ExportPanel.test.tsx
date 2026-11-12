@@ -704,4 +704,81 @@ describe("ExportPanel", () => {
     expect(paintSession.layersForExport()).toHaveLength(1);
     expect(paintSession.layersForExport()[0]?.part).toBe("head");
   });
+
+  it("다중 서브레이어(숨김·불투명도·순서) 레시피 저장/복원 왕복, 2×2 종횡비 축소 안내, 키보드 단축키 및 포커스 전환을 검증한다", async () => {
+    const { readPixel } = await import("../../../paint/paint-layer");
+    const calls: SaveCall[] = [];
+    const dispatched: LabCommand[] = [];
+    const engine = createMockEngine();
+    const paintSession = createPaintSession({ layerSize: 16, activePart: "head", brush: { radiusPx: 3, hardness: 1, opacity: 1, color: "#112233" } });
+
+    paintSession.setActiveSublayer(0);
+    paintSession.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+    paintSession.endStroke();
+    paintSession.setActiveSublayer(1);
+    paintSession.setBrush({ color: "#ee3355" });
+    paintSession.beginStroke({ u: 0.25, v: 0.25, pressure: 1 });
+    paintSession.endStroke();
+    paintSession.setSublayerVisible("head", 1, false);
+    paintSession.setActiveSublayer(2);
+    paintSession.setBrush({ color: "#22aa88" });
+    paintSession.beginStroke({ u: 0.75, v: 0.75, pressure: 1 });
+    paintSession.endStroke();
+    paintSession.setSublayerOpacity("head", 2, 0.6);
+    paintSession.moveSublayer("head", 2, "down");
+
+    let savedJson = "";
+    render(
+      <MockLabProvider engineSession={readySession(engine)} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <ExportPanel
+          session={paintSession}
+          deps={{
+            save: (fileName, bytes, mime) => {
+              if (fileName.endsWith(".character.json")) savedJson = new TextDecoder().decode(bytes);
+              return fakeSave(calls)(fileName, bytes, mime);
+            },
+            now: () => 20,
+            readFile: async () => savedJson,
+          }}
+        />
+      </MockLabProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));
+    await waitFor(() => expect(savedJson.length).toBeGreaterThan(50));
+    expect(JSON.parse(savedJson).paint.sublayers).toHaveLength(1);
+    act(() => paintSession.replaceLayers([]));
+
+    const fileInput = screen.getByTestId("export-recipe-file-input") as HTMLInputElement;
+    let clickedByKeyboard = false;
+    fileInput.addEventListener("click", () => { clickedByKeyboard = true; });
+    fireEvent.keyDown(fileInput, { key: "Enter" });
+    expect(clickedByKeyboard).toBe(true);
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [new File([savedJson], "multi.character.json", { type: "application/json" })] } });
+    });
+    await waitFor(() => expect(dispatched.some((cmd) => cmd.type === "recipe/load")).toBe(true));
+    expect(paintSession.getState().sublayerOrders.get("head")).toEqual([0, 2, 1, 3, 4, 5]);
+    expect(paintSession.getState().sublayers.get("head")?.[1]?.visible).toBe(false);
+    expect(paintSession.getState().sublayers.get("head")?.[2]?.opacity).toBeCloseTo(0.6, 5);
+    expect(readPixel(paintSession.sublayer("head", 1), 4, 4)).toEqual([238, 51, 85, 255]);
+
+    const firstPreset = within(screen.getByTestId("export-resolution-presets")).getByRole("button", { name: "웹툰 컷 (800×1200)" });
+    firstPreset.focus();
+    fireEvent.keyDown(firstPreset, { key: "ArrowRight" });
+    expect((screen.getByLabelText("너비(px)") as HTMLInputElement).value).toBe("1024");
+
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "1600" } });
+    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "2400" } });
+    fireEvent.keyDown(screen.getByRole("heading", { name: "내보내기" }), { key: "Q", ctrlKey: true, shiftKey: true });
+    await waitFor(() => expect(calls.some((c) => c.fileName === "character-mock-2730x4096-quad-sheet.png")).toBe(true));
+    expect(screen.getByRole("list", { name: "레시피 불러오기 안내" }).textContent).toContain("종횡비를 유지한 채 셀당 1365×2048px");
+
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "4000" } });
+    fireEvent.click(screen.getByRole("button", { name: "레이어 PSD 저장" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("export-failure-alert")));
+    fireEvent.keyDown(screen.getByTestId("export-failure-alert"), { key: "Escape" });
+    expect(screen.queryByTestId("export-failure-alert")).toBeNull();
+  });
 });

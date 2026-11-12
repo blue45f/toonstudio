@@ -180,20 +180,29 @@ export function toUndoToken(set: TileSnapshotSet): PaintUndoToken {
   return { part: set.layer.part, tiles, tileSize: PAINT_TILE_SIZE };
 }
 
-/** 여러 토큰을 하나로(같은 타일은 먼저 나온 토큰 우선 = 가장 이른 변경 전 상태). */
+/** 여러 토큰을 하나로(같은 타일은 먼저 나온 토큰 우선 = 가장 이른 변경 전 상태, 서브레이어 단계는 시간순 연결). */
 export function mergeUndoTokens(tokens: readonly PaintUndoToken[]): PaintUndoToken | null {
   const first = tokens[0];
   if (!first) return null;
   const seen = new Map<string, PaintUndoTile>();
+  const steps: number[] = [];
   for (const token of tokens) {
     if (token.part !== first.part) throw new Error(`mergeUndoTokens: 부위가 다른 토큰(${token.part} ≠ ${first.part})은 합칠 수 없습니다.`);
     for (const tile of token.tiles) {
       const key = `${tile.x},${tile.y}`;
       if (!seen.has(key)) seen.set(key, tile);
     }
+    if (token.sublayerSteps) {
+      for (const stepId of token.sublayerSteps) steps.push(stepId);
+    }
   }
   const tiles = [...seen.values()].sort((a, b) => a.y - b.y || a.x - b.x);
-  return { part: first.part, tiles, tileSize: PAINT_TILE_SIZE };
+  return {
+    part: first.part,
+    tiles,
+    tileSize: PAINT_TILE_SIZE,
+    ...(steps.length > 0 ? { sublayerSteps: steps } : {}),
+  };
 }
 
 /**

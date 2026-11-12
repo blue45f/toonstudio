@@ -10,7 +10,7 @@ import { pressureBrush } from "../../../paint/paint-pressure";
 import { PROJECTION_FALLBACK_SCREEN_NDC, overlayHasPaint, premultipliedPixel, unpremultiplyPixel } from "../../../render/projection-paint";
 import { parseHex, srgbToLinear } from "../../../shared/color";
 
-import type { BrushSettings, PaintLayer, PaintUndoToken, PaintUndoTile, PartRole } from "../../../contracts";
+import type { BrushSettings, PaintLayer, PaintSublayerIndex, PaintUndoTile, PaintUndoToken, PartRole } from "../../../contracts";
 import type { PaintLayerUploader, PointerPaintDriver, PointerPaintPorts, PointerSample } from "../../../paint/paint-bridge";
 import type { PaintPressureMode } from "../../../paint/paint-pressure";
 import type { PaintSession } from "../../../paint/paint-session";
@@ -107,6 +107,7 @@ export function createProjectionStrokeDriver(session: PaintSession, port: Projec
   let touching = false;
   let dabCount = 0;
   let part: PartRole = session.getState().activePart;
+  let sublayerIndex: PaintSublayerIndex = session.getState().activeSublayer;
   let last: { readonly x: number; readonly y: number } | null = null;
   let screenSize: readonly [number, number] = PROJECTION_FALLBACK_SCREEN_NDC;
   const bitmaps = new Map<string, ProjectionBrushBitmap>();
@@ -154,10 +155,10 @@ export function createProjectionStrokeDriver(session: PaintSession, port: Projec
       }
       const overlay = await port.flush();
       if (!overlay) return;
-      const layer = session.layer(overlay.part);
-      const after = compositeOverlayTiles(layer, overlay);
+      const targetSublayer = session.sublayer(overlay.part, sublayerIndex);
+      const after = compositeOverlayTiles(targetSublayer, overlay);
       if (!after) return;
-      const inverse = session.applyToken(after);
+      const inverse = session.applySublayerAfterToken(overlay.part, sublayerIndex, after);
       if (!inverse) throw new Error("세션이 부위 레이어를 찾지 못했습니다.");
       ports.upload(session.layer(overlay.part));
       ports.commit(inverse);
@@ -187,6 +188,12 @@ export function createProjectionStrokeDriver(session: PaintSession, port: Projec
         return false;
       }
       part = session.getState().activePart;
+      const guard = session.canPaintActiveSublayer(part);
+      if (!guard.ok) {
+        ports.notify?.(guard.reasonKo);
+        return false;
+      }
+      sublayerIndex = session.getState().activeSublayer;
       pressureMode = session.getState().pressureMode;
       strokeBrush = session.getState().brush;
       samples.length = 0;
@@ -246,7 +253,12 @@ export function createProjectionStrokeDriver(session: PaintSession, port: Projec
 // ---------------------------------------------------------------- 전환 드라이버
 
 export function createSwitchingPaintDriver(session: PaintSession, ports: PointerPaintPorts & ProjectionPaintPorts): PointerPaintDriver {
-  const cpu = createPointerPaintDriver(session, { pick: ports.pick, upload: ports.upload, commit: ports.commit });
+  const cpu = createPointerPaintDriver(session, {
+    pick: ports.pick,
+    upload: ports.upload,
+    commit: ports.commit,
+    ...(ports.notify ? { notify: ports.notify } : {}),
+  });
   const shared = { finalizing: false };
   let current: PointerPaintDriver = cpu;
 

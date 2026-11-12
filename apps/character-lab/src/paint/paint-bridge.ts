@@ -102,6 +102,8 @@ export interface PointerPaintPorts {
   readonly upload: PaintLayerUploader;
   /** 스트로크 종료 시 토큰 1개(`dispatch({ type: "paint/stroke", undoToken })`). */
   readonly commit: (token: PaintUndoToken) => void;
+  /** 숨김·불투명도 0 서브레이어 차단 등 한글 안내 콜백 */
+  readonly notify?: (messageKo: string | null) => void;
 }
 
 export interface PointerSample {
@@ -186,7 +188,8 @@ export function createPointerPaintDriver(session: PaintSession, ports: PointerPa
   const finish = (commit: boolean): PaintUndoToken | null => {
     closeSegment();
     const merged = mergeUndoTokens(tokens);
-    const result = merged && merged.tiles.length > 0 ? merged : null;
+    const hasSublayerSteps = (merged?.sublayerSteps?.length ?? 0) > 0;
+    const result = merged && (merged.tiles.length > 0 || hasSublayerSteps) ? merged : null;
     if (result) {
       if (commit) ports.commit(result);
       else {
@@ -210,8 +213,13 @@ export function createPointerPaintDriver(session: PaintSession, ports: PointerPa
     },
     down(sample) {
       if (active) finish(true);
-      active = true;
       part = session.getState().activePart;
+      const guard = session.canPaintActiveSublayer(part);
+      if (!guard.ok) {
+        ports.notify?.(guard.reasonKo);
+        return false;
+      }
+      active = true;
       pressureMode = session.getState().pressureMode;
       const hit = hitOnActivePart(sample);
       if (!hit) return false;

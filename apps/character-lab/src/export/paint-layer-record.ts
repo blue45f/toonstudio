@@ -1,11 +1,21 @@
 /**
- * 페인트 레이어 ↔ 레시피 `paint.layers[]` 레코드(PNG base64). Buffer 없이 btoa/atob(Node 22·브라우저 공통)를 쓴다.
+ * 페인트 레이어 및 다중 서브레이어 ↔ 레시피 `paint.layers[]` · `paint.sublayers[]` 레코드(PNG base64).
+ * Buffer 없이 btoa/atob(Node 22·브라우저 공통)를 쓴다.
  */
 import { failVisible } from "../contracts";
 
 import { decodePng, encodePng } from "./png-encoder";
 
-import type { LabFailure, PaintLayer, PaintLayerRecord } from "../contracts";
+import type {
+  LabFailure,
+  PaintLayer,
+  PaintLayerRecord,
+  PaintPartSublayerState,
+  PaintSublayerIndex,
+  PaintSublayerPartRecord,
+  PaintSublayerSlotRecord,
+  PaintSublayerSlotState,
+} from "../contracts";
 
 const CHUNK = 0x8000;
 
@@ -56,4 +66,138 @@ export async function decodePaintLayerRecord(record: PaintLayerRecord, now?: num
     };
   }
   return { ok: true, layer: { part: record.part, width: decoded.width, height: decoded.height, rgba: decoded.rgba, revision: 0 } };
+}
+
+export async function encodePaintSublayerPartRecord(
+  state: PaintPartSublayerState,
+): Promise<PaintSublayerPartRecord> {
+  const encodeSlot = async (slot: PaintSublayerSlotState): Promise<PaintSublayerSlotRecord> => {
+    const hasPixels = slot.rgba !== null && slot.rgba.some((b) => b !== 0);
+    if (!hasPixels || !slot.rgba) {
+      return { index: slot.index, visible: slot.visible, opacity: slot.opacity };
+    }
+    const png = await encodePng({ width: state.width, height: state.height, rgba: slot.rgba }, { filter: "adaptive" });
+    return {
+      index: slot.index,
+      visible: slot.visible,
+      opacity: slot.opacity,
+      pngBase64: bytesToBase64(png),
+    };
+  };
+
+  const s0 = await encodeSlot(state.slots[0]);
+  const s1 = await encodeSlot(state.slots[1]);
+  const s2 = await encodeSlot(state.slots[2]);
+  const s3 = await encodeSlot(state.slots[3]);
+  const s4 = await encodeSlot(state.slots[4]);
+  const s5 = await encodeSlot(state.slots[5]);
+
+  return {
+    part: state.part,
+    width: state.width,
+    height: state.height,
+    order: [...state.order],
+    slots: [s0, s1, s2, s3, s4, s5],
+  };
+}
+
+export type DecodePaintSublayerPartResult =
+  | { readonly ok: true; readonly state: PaintPartSublayerState }
+  | { readonly ok: false; readonly failure: LabFailure };
+
+export async function decodePaintSublayerPartRecord(
+  record: PaintSublayerPartRecord,
+  now?: number,
+): Promise<DecodePaintSublayerPartResult> {
+  const decodeSlot = async (
+    slotRecord: PaintSublayerSlotRecord,
+    expectedIndex: PaintSublayerIndex,
+  ): Promise<{ readonly ok: true; readonly slot: PaintSublayerSlotState } | { readonly ok: false; readonly failure: LabFailure }> => {
+    if (slotRecord.pngBase64 === undefined) {
+      return {
+        ok: true,
+        slot: {
+          index: expectedIndex,
+          visible: slotRecord.visible,
+          opacity: slotRecord.opacity,
+          rgba: null,
+        },
+      };
+    }
+    let bytes: Uint8Array;
+    try {
+      bytes = base64ToBytes(slotRecord.pngBase64);
+    } catch (error) {
+      return {
+        ok: false,
+        failure: failVisible(
+          "paint-sublayer-base64",
+          `페인트 서브레이어(${record.part} · L${expectedIndex})의 base64가 올바르지 않습니다.`,
+          error,
+          now,
+        ),
+      };
+    }
+    let decoded: Awaited<ReturnType<typeof decodePng>>;
+    try {
+      decoded = await decodePng(bytes);
+    } catch (error) {
+      return {
+        ok: false,
+        failure: failVisible(
+          "paint-sublayer-png",
+          `페인트 서브레이어(${record.part} · L${expectedIndex})의 PNG를 디코드할 수 없습니다.`,
+          error,
+          now,
+        ),
+      };
+    }
+    if (decoded.width !== record.width || decoded.height !== record.height) {
+      return {
+        ok: false,
+        failure: failVisible(
+          "paint-sublayer-size",
+          `페인트 서브레이어(${record.part} · L${expectedIndex}) PNG 크기 ${decoded.width}×${decoded.height}가 레코드 ${record.width}×${record.height}와 다릅니다.`,
+          undefined,
+          now,
+        ),
+      };
+    }
+    return {
+      ok: true,
+      slot: {
+        index: expectedIndex,
+        visible: slotRecord.visible,
+        opacity: slotRecord.opacity,
+        rgba: decoded.rgba,
+      },
+    };
+  };
+
+  const decodedSlots: PaintSublayerSlotState[] = [];
+  for (const idx of [0, 1, 2, 3, 4, 5] as const) {
+    const slotRec = record.slots[idx];
+    const outcome = await decodeSlot(slotRec, idx);
+    if (!outcome.ok) return outcome;
+    decodedSlots.push(outcome.slot);
+  }
+
+  const [s0, s1, s2, s3, s4, s5] = decodedSlots;
+  if (!s0 || !s1 || !s2 || !s3 || !s4 || !s5) {
+    return {
+      ok: false,
+      failure: failVisible("paint-sublayer-corrupt", `페인트 서브레이어(${record.part}) 슬롯 개수가 올바르지 않습니다.`, undefined, now),
+    };
+  }
+
+  return {
+    ok: true,
+    state: {
+      part: record.part,
+      width: record.width,
+      height: record.height,
+      order: [...record.order],
+      slots: [s0, s1, s2, s3, s4, s5],
+    },
+  };
 }
