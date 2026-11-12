@@ -1,9 +1,9 @@
-/* 드로잉 기본 화면 안에서만 적용한다. 기존 전체 배치와 모바일 도구는 유지한다. */
-.studio-drawing-clarity-header{position:relative;z-index:50;display:flex;align-items:center;gap:12px;min-height:76px;padding:10px 18px;border-bottom:1px solid var(--color-line);background:var(--color-panel);color:var(--color-fg);container-type:inline-size;flex-shrink:0}
-.studio-drawing-clarity-title{min-width:80px;max-width:180px;flex:1 1 160px}
+/* 그리기 기본 표시만 정리하며 원고·명령·기존 전체 배치는 유지한다. */
+.studio-drawing-clarity-header{position:relative;z-index:50;display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:6px 12px;min-height:60px;padding:8px 18px;border-bottom:1px solid var(--color-line);background:var(--color-panel);color:var(--color-fg);container-type:inline-size;flex-shrink:0}
+.studio-drawing-clarity-title{min-width:0;max-width:none}
 .studio-drawing-clarity-title h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:700}
 .studio-drawing-clarity-title p{font-size:12px;color:var(--color-fg-2);margin-top:4px}
-.studio-drawing-clarity-tools{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.studio-drawing-clarity-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:6px;border:1px solid var(--color-line);border-radius:16px;background:var(--color-panel)}
 .studio-drawing-clarity-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;min-width:44px;padding:8px 12px;border:1px solid var(--color-line);border-radius:12px;background:var(--color-panel);color:var(--color-fg);font-size:13px;white-space:nowrap;cursor:pointer}
 .studio-drawing-clarity-button:hover{background:var(--color-raised)}
 .studio-drawing-clarity-button[aria-pressed=true]{border-color:var(--color-accent);background:var(--color-accent-soft)}
@@ -12,18 +12,16 @@
 .studio-drawing-clarity-swatch{display:block;inline-size:19px;block-size:19px;border:1px solid var(--color-line-strong);border-radius:6px}
 .studio-drawing-clarity-save{background:var(--color-accent);color:var(--color-on-accent);border-color:var(--color-accent);font-weight:700;min-width:80px}
 .studio-drawing-clarity-save:hover{background:color-mix(in srgb,var(--color-accent) 86%,var(--color-fg) 14%)}
-.studio-drawing-clarity-header [data-studio-document-chrome-slot=true]{flex:0 1 auto;max-width:300px;margin-left:auto}
+.studio-drawing-clarity-header [data-studio-document-chrome-slot=true]{grid-column:1/-1;min-width:0;width:100%;max-width:none;margin:0}
 .studio-drawing-clarity-more{position:relative;flex-shrink:0}
-.studio-drawing-clarity-more summary{display:grid;place-items:center;list-style:none;min-width:44px;min-height:44px;border-radius:12px;cursor:pointer}
+.studio-drawing-clarity-more summary{display:grid;place-items:center;list-style:none;min-width:48px;min-height:48px;border-radius:12px;cursor:pointer;gap:4px;font-size:12px}
 .studio-drawing-clarity-more summary::-webkit-details-marker{display:none}
 .studio-drawing-clarity-menu{position:absolute;top:calc(100% + 8px);right:0;z-index:60;display:flex;flex-direction:column;min-width:220px;padding:8px;border:1px solid var(--color-line);border-radius:14px;background:var(--color-panel);box-shadow:0 12px 32px #0004}
 .studio-drawing-clarity-menu[hidden]{display:none}
-.studio-drawing-clarity-menu button{min-height:44px;min-width:44px;border-radius:8px;padding:8px 12px;text-align:left;font-size:13px}
+.studio-drawing-clarity-menu button{min-height:48px;min-width:48px;border-radius:8px;padding:10px 12px;text-align:left;font-size:14px}
 .studio-drawing-clarity-menu button:hover{background:var(--color-raised)}
-.studio-drawing-clarity-rail{display:flex;flex-direction:column;align-self:stretch;gap:10px;order:5;flex:0 0 80px;padding:12px 6px;border-left:1px solid var(--color-line);background:var(--color-panel)}
-.studio-drawing-clarity-rail button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:64px;min-width:44px;padding:8px 4px;border:1px solid transparent;border-radius:12px;font-size:12px;color:var(--color-fg)}
+.studio-drawing-clarity-rail{display:flex;flex-direction:column;align-self:stretch;order:-1;flex:0 0 132px;padding:16px 8px;background:var(--color-panel)}
 .studio-drawing-clarity-rail button:hover{background:var(--color-raised)}
-.studio-drawing-clarity-rail button[aria-expanded=true]{border-color:var(--color-accent);background:var(--color-accent-soft)}
 .studio-drawing-clarity-pane-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:60px;padding:8px 12px;border-bottom:1px solid var(--color-line);background:var(--color-panel)}
 .studio-drawing-clarity-pane-heading h2{font-size:15px;font-weight:700}
 .studio-drawing-clarity-pane{display:flex;flex-direction:column;min-height:0;flex-shrink:0;border-left:1px solid var(--color-line);background:var(--color-panel)}
@@ -43,13 +41,12 @@ body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-stud
 [data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-page-sequence-strip=true]{display:none}
 [data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-canvas-viewport=true]{--studio-page-strip-offset:0px!important;--studio-draw-options-height:0px!important}
 [data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-status-bar=true]{bottom:12px!important;max-width:calc(100% - 24px)}
-@container (max-width:1180px){.studio-drawing-clarity-tools .studio-drawing-clarity-button{padding-inline:8px;gap:4px}.studio-drawing-clarity-title{max-width:130px}.studio-drawing-clarity-header [data-studio-document-chrome-slot=true]{max-width:230px}}
 @media(prefers-reduced-motion:reduce){.studio-drawing-clarity-header *,.studio-drawing-clarity-rail *{transition:none!important;animation:none!important}}
 @media(forced-colors:active){.studio-drawing-clarity-button,.studio-drawing-clarity-rail button{border-color:ButtonText}.studio-drawing-clarity-button[aria-pressed=true],.studio-drawing-clarity-rail button[aria-expanded=true]{outline:2px solid Highlight}}
 .studio-drawing-clarity-entry-mobile{padding:4px 8px;border-top:1px solid var(--color-line)}
 .studio-drawing-clarity-entry-mobile:empty{display:none}
 .studio-drawing-clarity-entry-mobile>.studio-drawing-clarity-button{width:100%}
-.studio-drawing-clarity-mobile-header{display:grid;grid-template-columns:44px minmax(0,1fr) auto 44px;gap:6px;padding:8px;min-height:60px}
+.studio-drawing-clarity-mobile-header{grid-template-columns:44px minmax(0,1fr) auto;gap:6px;padding:8px;min-height:60px}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title{min-width:0;max-width:none}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title h1{font-size:14px}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-save{min-width:62px;padding-inline:10px}
@@ -71,3 +68,37 @@ html:not([data-studio-canvas-only=true]) [data-studio-editor=true][data-studio-m
 .studio-drawing-clarity-mobile-help>header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .studio-drawing-clarity-mobile-help h2{font-size:16px;font-weight:700}
 .studio-drawing-clarity-mobile-help p{margin-block:16px;font-size:14px;line-height:1.7}
+
+/* 원고와 마지막 실제 기기 저장은 첫 줄, 현재 페이지와 기록은 같은 보조 줄에 둔다. */
+.studio-drawing-clarity-context-row{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;border-top:1px solid var(--color-line);padding-top:4px}
+.studio-drawing-clarity-context-row>p{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--color-fg-2)}
+.studio-drawing-clarity-context-actions,.studio-drawing-clarity-history{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.studio-drawing-clarity-history button{min-width:48px;min-height:48px;padding:4px 8px}
+.studio-drawing-clarity-tools>.studio-drawing-clarity-button,.studio-drawing-clarity-tools summary{display:flex;flex-direction:column;gap:5px;min-height:54px;width:100%;padding:6px 4px;font-size:12px}
+.studio-drawing-clarity-more-slot{display:block;min-width:0}
+.studio-drawing-clarity-more-slot>.studio-drawing-clarity-more{width:100%}
+.studio-drawing-clarity-header:has(>.studio-drawing-clarity-more){grid-template-columns:44px minmax(0,1fr) auto 48px}
+.studio-drawing-clarity-rail .studio-drawing-clarity-menu{top:0;left:calc(100% + 10px);right:auto;max-height:calc(100dvh - 12rem);overflow-y:auto;overscroll-behavior:contain}
+/* 성공 상태의 중복 문장만 아이콘으로 줄이며 오류·재시도·라이브 안내는 그대로 보인다. */
+.studio-drawing-clarity-header:has([data-save-state=saved]){grid-template-columns:44px minmax(0,1fr) 48px auto}
+.studio-drawing-clarity-header:has([data-save-state=saved])>.studio-drawing-clarity-save{grid-column:4;grid-row:1}
+.studio-drawing-clarity-header:has([data-save-state=saved])>[data-studio-document-chrome-slot=true]{grid-column:3;grid-row:1;width:48px}
+.studio-drawing-clarity-header:has([data-save-state=saved]) [data-studio-save-status-chrome-mount=true]{gap:0;flex-wrap:nowrap}
+.studio-drawing-clarity-header:has([data-save-state=saved]) [data-studio-save-status-bar]{max-width:0;flex:0}
+.studio-drawing-clarity-header:has([data-save-state=saved]) [data-studio-save-sync-status-center]>button{width:48px;min-height:48px;padding:0;justify-content:center;border-color:transparent;background:transparent;box-shadow:none}
+.studio-drawing-clarity-header:has([data-save-state=saved]) [data-studio-save-sync-status-center]>button>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] [data-studio-mobile-primary-actions]{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] [data-studio-mobile-primary-actions] button{min-height:48px;font-size:12px}
+[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-workspace-menu=true]{display:none}
+[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-editing-dock=true] .studio-drawing-clarity-menu{top:auto;bottom:calc(100% + 10px);right:0;width:min(300px,calc(100vw - 20px));max-height:min(65dvh,30rem);overflow-y:auto;overscroll-behavior:contain}
+.studio-drawing-clarity-mobile-header .studio-drawing-clarity-history button{font-size:11px;gap:3px}
+.studio-drawing-clarity-mobile-header [data-studio-save-sync-status-center]>[role=dialog]{position:fixed;top:calc(env(safe-area-inset-top) + 68px);left:8px;right:8px;width:auto;max-width:none;max-height:calc(100dvh - 88px);margin:0}
+@media(prefers-reduced-motion:reduce){.studio-drawing-clarity-more *{transition:none!important;animation:none!important}}
+.studio-drawing-clarity-header:has(>.studio-drawing-clarity-more):has([data-save-state=saved]){grid-template-columns:44px minmax(0,1fr) 48px auto 48px}
+.studio-drawing-clarity-header>.studio-drawing-clarity-more{grid-column:-2/-1;grid-row:1}
+.studio-drawing-clarity-receipt{display:flex;align-items:center;min-width:0;white-space:nowrap}
+.studio-drawing-clarity-receipt>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.studio-drawing-clarity-receipt>time,.studio-drawing-clarity-receipt>span[aria-hidden]{flex-shrink:0}
+.studio-drawing-clarity-mobile-header .studio-drawing-clarity-receipt{font-size:11px}
+.studio-drawing-clarity-save{min-height:48px}
+.studio-drawing-clarity-more[open]>summary,.studio-drawing-clarity-more summary[data-studio-clarity-open]{background:var(--color-accent-soft);color:var(--color-accent)}

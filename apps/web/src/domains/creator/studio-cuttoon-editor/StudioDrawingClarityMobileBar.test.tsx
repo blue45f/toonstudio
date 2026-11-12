@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultStudioAppSettings } from "../studio-app-settings";
 import { createStudioWorkspaceDefaultState } from "../studio-workspaces";
 import { subscribeStudioAllTools } from "../studio-toolbar-channel";
+import { createStudioSaveSyncSignalStore } from "../studio-save-sync-signals";
 import { StudioDrawingClarityProvider, type StudioDrawingClaritySession } from "./StudioDrawingClarity";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import { StudioDrawingClarityMobileBar, type StudioDrawingClarityMobileSession } from "./StudioDrawingClarityMobileBar";
@@ -22,6 +23,7 @@ function session(): MobileFixture {
     location: { pathname: "/studio/canvas", search: "?uiMode=basic", hash: "", state: null, key: "mobile" },
     studioDrawingClarityBaseline: { ownerScope: "guest", source: "default", state },
     title: "나의 첫 웹툰", studioMenubarActivePageLabel: "1페이지", studioMainMenuGroups: [],
+    saveSyncStore: createStudioSaveSyncSignalStore(),
     saving: false, collaborationDocumentLocked: false, sharedDocument: null, collaborationLockMessage: () => "편집 잠김",
     studioMenubarContentHandlers: { setStudioUiDensity: vi.fn(), handleSave: vi.fn<StudioDrawingClarityMobileSession["studioMenubarContentHandlers"]["handleSave"]>().mockResolvedValue(undefined) },
     studioMobileEditingDockHandlers: { openInspectorRoute: vi.fn() },
@@ -36,7 +38,7 @@ function Surface({ value }: { value: MobileFixture }) {
   </div>;
 }
 function show(value = session()) { return render(<StudioDrawingClarityProvider session={value}><Surface value={value} /></StudioDrawingClarityProvider>); }
-function more() { const trigger = screen.getByLabelText("도구와 도움말"); fireEvent.click(trigger); return trigger; }
+function more() { const trigger = screen.getByLabelText("더보기 · 도구와 도움말"); fireEvent.click(trigger); return trigger; }
 
 /** 네이티브 모달이 열린 동안 외부 초점을 차단하는 브라우저 계약을 재현한다. */
 function nativeModal() {
@@ -148,5 +150,26 @@ describe("웹 모바일 기본 상단", () => {
       view.unmount(); expect(native.close).toHaveBeenCalledTimes(1); expect(closed).toHaveBeenCalledTimes(1);
       expect(value.setTutorialHubOpen).not.toHaveBeenCalled();
     } finally { native.restore(); }
+  });
+
+  it("더보기 하나를 하단 도구 슬롯에 두고 상단에 중복 생성하지 않는다", async () => {
+    const host = document.createElement("span"); host.id = "studio-drawing-clarity-mobile-more-slot"; document.body.append(host);
+    try {
+      const view = show(); await waitFor(() => expect(host.querySelector("summary")).not.toBeNull());
+      expect(document.querySelectorAll('[data-studio-clarity-more-trigger="true"]')).toHaveLength(1);
+      expect(view.container.querySelector('[data-studio-drawing-clarity-mobile-header] summary')).toBeNull();
+    } finally { cleanup(); host.remove(); }
+  });
+
+  it("원고의 실제 receipt만 마지막 기기 저장 시각으로 표시하고 baseline을 완료로 꾸미지 않는다", () => {
+    const store = createStudioSaveSyncSignalStore(), value = { ...session(), saveSyncStore: store }; store.reset("actual-draft");
+    store.noteBaseline(3); show(value); expect(screen.getByText("아직 기기 저장 전")).toBeTruthy();
+    expect(document.querySelector("time")).toBeNull();
+    const savedAtMs = Date.parse("2026-11-12T04:32:00.000Z");
+    act(() => store.noteDurableReceipt({ savedAtMs, authority: "sqlite-fallback", sequence: null, revision: 1, generation: 3 }));
+    expect(screen.getByText("마지막 기기 저장")).toBeTruthy(); expect(document.querySelector("time")?.dateTime).toBe("2026-11-12T04:32:00.000Z");
+    act(() => { store.noteEditGeneration(4); store.noteFailure(savedAtMs + 1000); });
+    expect(document.querySelector("time")?.dateTime).toBe("2026-11-12T04:32:00.000Z"); expect(screen.queryByText("이 기기에 저장됨")).toBeNull();
+    act(() => store.reset("different-draft")); expect(document.querySelector("time")).toBeNull(); expect(screen.getByText("아직 기기 저장 전")).toBeTruthy();
   });
 });

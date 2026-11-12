@@ -1,4 +1,7 @@
 import { useStudioMobileDockMetrics } from "./useStudioMobileDockMetrics";
+import { createPortal } from "react-dom";
+import { useStudioDrawingClarity } from "./studio-cuttoon-editor/StudioDrawingClarityContext";
+import { useStudioChromePortalTarget } from "./studio-shell/use-studio-chrome-portal-target";
 import {
   ArrowDownToLine,
   ArrowUpToLine,
@@ -42,7 +45,6 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-
 import { StudioDualColorWell } from "./StudioDualColorWell";
 import { useStudioColorWorkspace } from "./color/StudioColorWorkspaceContext";
 import { requestStudioAllTools } from "./studio-toolbar-channel";
@@ -90,7 +92,6 @@ import {
   type StudioLivingInkControlsProps,
 } from "./StudioLivingInkControls";
 import { StudioSavedBrushShelf } from "./StudioSavedBrushShelf";
-
 import type {
   StudioBrushDefaultRestoreDirection,
   StudioBrushDefaultRestoreTransaction,
@@ -128,7 +129,6 @@ import type { StudioInspectorRoute } from "./studio-inspector-layout";
 import type { PageState } from "./studio-page-state";
 import type { StudioProDrawPrefs } from "./studio-pro-draw-prefs";
 import type { StudioWorkspaceState } from "./studio-workspaces";
-
 import { useT } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -144,16 +144,13 @@ const STUDIO_MOBILE_FILTER_KINDS = [
   ["brightness-contrast", "명도 / 대비"],
   ["color-curves", "색상 커브"],
 ] as const satisfies readonly (readonly [StudioFilterKind, string])[];
-
 type StudioDrawSheetStyle = CSSProperties & {
   "--studio-draw-sheet-height": string;
   "--studio-draw-sheet-reserved-bottom": string;
 };
-
 function clampZoom(z: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 20) / 20));
 }
-
 function studioDrawSheetSizeStyle(
   snap: StudioMobileSheetSnap,
   keyboardInset: number,
@@ -179,7 +176,6 @@ function studioDrawSheetSizeStyle(
     scrollPaddingBottom: "0.75rem",
   };
 }
-
 interface StudioMobileFilterSelectProps {
   filterMutationLocked: boolean;
   filterPreparationBusy: boolean;
@@ -188,7 +184,6 @@ interface StudioMobileFilterSelectProps {
   onSelect: (kind: StudioFilterKind) => void;
   placement: "context" | "workspace";
 }
-
 /**
  * Keeps the invisible native select affordance identical in both thumb-reachable mobile rows.
  * The visible shell remains a 44px target while native selection provides familiar mobile UX.
@@ -598,6 +593,8 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   useStudioMobileDockMetrics(isMobile, measuredDockRef, drawSheetRef);
   const t = useT();
   const bt = useBilingual("studio.mobileDock");
+  const mobileClarity = useStudioDrawingClarity()?.active === true && isMobile;
+  const clarityHistoryHost = useStudioChromePortalTarget("studio-drawing-clarity-history-slot");
   const localizedWorkspaceToggle = localizeStudioText(t, "작업 메뉴", "studio.mobileDock.workspaceToggle");
   // 도크 라벨은 로케일 팩 키를 우선하고, 팩이 아직 안 붙었거나 키가 없으면 저작 한국어로 되돌아온다.
   // 기존 키가 정확히 같은 의미면 새 키를 만들지 않고 재사용한다(75개 팩 전부에 이미 번역이 있다).
@@ -716,7 +713,6 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
   const workspaceToggleAccessibleLabel = workspaceDockExpanded
     ? `${label.collapse} · ${label.workspaceToggle}`
     : label.workspaceToggle;
-
   useEffect(() => {
     if (!isMobile || mobileSheet === null) return;
     setQuickStartOpen(false);
@@ -738,6 +734,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
       setColorToolsOpen(false);
       return;
     }
+    if (mobileClarity && workspaceDockExpanded) { setWorkspaceDockExpanded(false); return; }
     if (!workspaceDockExpanded && !colorToolsOpen) return;
     const panel = workspaceDockExpanded ? workspacePanelRef.current : mobileColorControlsRef.current;
     panel?.querySelector<HTMLButtonElement>("[data-studio-mobile-sheet-close]")?.focus();
@@ -765,7 +762,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
       document.removeEventListener("pointerdown", onOutsidePointer);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [isMobile, workspaceDockExpanded, colorToolsOpen]);
+  }, [isMobile, mobileClarity, workspaceDockExpanded, colorToolsOpen]);
 
   const penHintPreviewProps = penModeActive
     ? {
@@ -782,6 +779,38 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
         hintPreview: "shape" as const,
         hintPreviewVariant: drawShape,
       };
+  const historyActions = <>
+              <StudioDockButton
+                icon={Undo2}
+                label={label.undo}
+                data-studio-primary-action="undo"
+                hintDescription="마지막 편집을 한 단계 되돌립니다. 공동 작업 변경 이력과 함께 안전하게 이동합니다."
+                hintUnavailableReason={undoDisabled ? undoUnavailableTitle : undefined}
+                disabled={undoDisabled}
+                title={undoDisabled ? undoUnavailableTitle : "실행취소"}
+                onClick={() => {
+                  setWorkspaceDockExpanded(false);
+                  setColorToolsOpen(false);
+                  undo();
+                }}
+                aria-label={label.undo === label.undoAria ? label.undo : `${label.undo} · ${label.undoAria}`}
+              />
+              <StudioDockButton
+                icon={Redo2}
+                label={label.redo}
+                data-studio-primary-action="redo"
+                hintDescription="되돌린 편집을 한 단계 다시 적용합니다."
+                hintUnavailableReason={redoDisabled ? redoUnavailableTitle : undefined}
+                disabled={redoDisabled}
+                title={redoDisabled ? redoUnavailableTitle : "다시실행"}
+                onClick={() => {
+                  setWorkspaceDockExpanded(false);
+                  setColorToolsOpen(false);
+                  redo();
+                }}
+                aria-label={label.redo === label.redoAria ? label.redo : `${label.redo} · ${label.redoAria}`}
+              />
+  </>;
   return (
     <>
         {/* Photoshop Mobile식 선택 문맥 작업바. 속성 패널까지 왕복하지 않고 가장 빈번한 후속 행동을
@@ -1522,11 +1551,11 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
           </section>
         ) : null}
 
-        {/* 기본 행은 6개의 고정 슬롯만 유지한다. 추가 도구는 스크롤 대신 작업 메뉴에서 찾는다. */}
+        {/* 간단한 그리기는 기존 기본3도구와 더보기, 나머지 배치는 기존6슬롯을 사용한다. */}
         {isMobile && (
           <nav
             aria-label={label.dock}
-            data-studio-mobile-editing-dock="true"
+            data-studio-mobile-editing-dock="true" data-studio-mobile-primary-layout={mobileClarity && clarityHistoryHost ? "simple" : undefined}
             ref={measuredDockRef}
             data-studio-mobile-dock-expanded={workspaceDockExpanded ? "true" : "false"}
             onFocusCapture={(event) => {
@@ -1608,37 +1637,8 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 </span>
                 <span className="max-w-full truncate">{bt("색상", "Color")}</span>
               </button>
-              <StudioDockButton
-                icon={Undo2}
-                label={label.undo}
-                data-studio-primary-action="undo"
-                hintDescription="마지막 편집을 한 단계 되돌립니다. 공동 작업 변경 이력과 함께 안전하게 이동합니다."
-                hintUnavailableReason={undoDisabled ? undoUnavailableTitle : undefined}
-                disabled={undoDisabled}
-                title={undoDisabled ? undoUnavailableTitle : "실행취소"}
-                onClick={() => {
-                  setWorkspaceDockExpanded(false);
-                  setColorToolsOpen(false);
-                  undo();
-                }}
-                aria-label={label.undo === label.undoAria ? label.undo : `${label.undo} · ${label.undoAria}`}
-              />
-              <StudioDockButton
-                icon={Redo2}
-                label={label.redo}
-                data-studio-primary-action="redo"
-                hintDescription="되돌린 편집을 한 단계 다시 적용합니다."
-                hintUnavailableReason={redoDisabled ? redoUnavailableTitle : undefined}
-                disabled={redoDisabled}
-                title={redoDisabled ? redoUnavailableTitle : "다시실행"}
-                onClick={() => {
-                  setWorkspaceDockExpanded(false);
-                  setColorToolsOpen(false);
-                  redo();
-                }}
-                aria-label={label.redo === label.redoAria ? label.redo : `${label.redo} · ${label.redoAria}`}
-              />
-              <button
+              {mobileClarity && clarityHistoryHost ? createPortal(historyActions, clarityHistoryHost) : historyActions}
+              {mobileClarity ? <span id="studio-drawing-clarity-mobile-more-slot" className="studio-drawing-clarity-more-slot" /> : <button
                 type="button" ref={workspaceToggleRef}
                 aria-controls={MOBILE_WORKSPACE_TOOLS_ID} aria-expanded={workspaceDockExpanded}
                 aria-label={workspaceToggleAccessibleLabel} title={workspaceToggleAccessibleLabel}
@@ -1650,7 +1650,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                 <Grid3X3 size={18} aria-hidden />
                 <span>{workspaceDockExpanded ? label.collapse : label.workspaceToggle}</span>
                 {!workspaceDockExpanded && workspaceDockHasActiveTool ? <span aria-hidden className="absolute right-1 top-1 size-1.5 rounded-full bg-accent" /> : null}
-              </button>
+              </button>}
             </div>
             <section id={`${scrollDescriptionId}-colors`} ref={mobileColorControlsRef} hidden={!colorToolsOpen}
               aria-label={label.color} aria-hidden={!colorToolsOpen} data-studio-mobile-color-controls="true"

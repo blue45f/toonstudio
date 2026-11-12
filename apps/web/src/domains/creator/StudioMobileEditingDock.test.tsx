@@ -1,11 +1,8 @@
 // @vitest-environment jsdom
-
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { errors, type Locator, type Page } from "playwright";
 import { openMobileBrushSettings } from "../../../../../scripts/lib/studio-mobile-brush-settings";
-
-
 import { StudioColorWorkspaceProvider } from "./color/StudioColorWorkspaceContext";
 import { DEFAULT_STUDIO_LIVING_INK_MATERIAL_CONTROLS } from "./studio-living-ink-gpu-protocol";
 import {
@@ -25,12 +22,12 @@ import {
   type StudioMobileEditingDockProps,
 } from "./StudioMobileEditingDock";
 import { StudioMobileSheetHandle } from "./StudioMobileSheetHandle";
-
+import { DrawingClarityContext, type DrawingClarityState } from "./studio-cuttoon-editor/StudioDrawingClarityContext";
+import { StudioDrawingClarityMore } from "./studio-cuttoon-editor/StudioDrawingClarityMore";
 import type { NormalizedStudioBrushDynamicsSettings } from "./brush/studio-brush-dynamics";
 import type { StudioBrushSnapshot } from "./brush/studio-brush-library";
 import type { StudioProDrawPrefs } from "./studio-pro-draw-prefs";
 import type { StudioWorkspaceState } from "./studio-workspaces";
-
 import { i18nDict, registerI18nLocaleEntries, useI18n } from "@/shared/lib/i18n";
 
 interface MockDockButtonProps {
@@ -54,11 +51,9 @@ interface MockDockButtonProps {
   readonly onPointerEnter?: import("react").PointerEventHandler<HTMLButtonElement>;
   readonly title?: string;
 }
-
 const mobileInspectorPreload = vi.hoisted(() => ({ drawingSurface: vi.fn(), assets: vi.fn() }));
 vi.mock("./studio-inspector-aside-loader", () => ({ preloadStudioInspectorDrawingSurface: mobileInspectorPreload.drawingSurface }));
 vi.mock("./studio-tool-belt-lazy-ui", () => ({ preloadStudioAssetToolPopoverBody: mobileInspectorPreload.assets }));
-
 vi.mock("./studio-chrome-ui", () => ({
   StudioContextActionButton: ({ label, disabled, onClick, title }: MockDockButtonProps) => (
     <button type="button" disabled={disabled} onClick={onClick} title={title}>{label}</button>
@@ -134,7 +129,6 @@ vi.mock("./studio-chrome-ui", () => ({
     </button>
   ),
 }));
-
 vi.mock("./studio-page-lazy-ui", () => ({
   StudioBrushLibraryPanel: () => null,
   StudioBrushStudio: () => null,
@@ -149,20 +143,16 @@ vi.mock("./studio-page-lazy-ui", () => ({
   ),
   loadStudioBrushStudio: vi.fn(async () => undefined),
 }));
-
 const preloadStudioFilterDialog = vi.hoisted(() => vi.fn());
 vi.mock("./studio-filter-dialog-intent", () => ({
   useStudioFilterDialogIntent: () => preloadStudioFilterDialog,
 }));
-
 vi.mock("./StudioLineCorrectionControls", () => ({
   StudioLineCorrectionControls: () => null,
 }));
-
 vi.mock("./StudioSavedBrushShelf", () => ({
   StudioSavedBrushShelf: () => null,
 }));
-
 function createHandlers(): StudioMobileEditingDockHandlers {
   return {
     activateCanvasTool: vi.fn(),
@@ -189,7 +179,6 @@ function createHandlers(): StudioMobileEditingDockHandlers {
     undo: vi.fn(),
   };
 }
-
 function createProps(
   overrides: Partial<StudioMobileEditingDockProps> = {},
 ): StudioMobileEditingDockProps {
@@ -323,29 +312,23 @@ function createProps(
     ...overrides,
   };
 }
-
 // The dock's labels come from the locale packs now, so the locale has to be explicit: jsdom
 // reports `en-US`, and these assertions are written against the Korean source copy.
 beforeEach(() => {
   useI18n.getState().setLang("ko");
 });
-
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
-
 describe("StudioMobileEditingDock", () => {
   it("does not mount mobile dock chrome on a desktop surface", () => {
     const view = render(<StudioMobileEditingDock {...createProps()} />);
-
     expect(view.container.innerHTML).toBe("");
     expect(screen.queryByRole("navigation", { name: "스튜디오 모바일 도구막대" })).toBeNull();
   });
-
   it("dismisses the quick-start surface whenever a mobile editing sheet is active", () => {
     const setQuickStartOpen = vi.fn();
-
     render(
       <StudioMobileEditingDock
         {...createProps({
@@ -355,16 +338,13 @@ describe("StudioMobileEditingDock", () => {
         })}
       />,
     );
-
     expect(setQuickStartOpen).toHaveBeenCalledOnce();
     expect(setQuickStartOpen).toHaveBeenCalledWith(false);
   });
-
   it("preserves a single essential row, safe-area placement, and history disabled semantics", () => {
     const props = createProps({ isMobile: true, mobileKeyboardInset: 18 });
     const view = render(<StudioMobileEditingDock {...props} />);
     let dock = screen.getByRole("navigation", { name: "스튜디오 모바일 도구막대" });
-
     expect(dock.getAttribute("data-studio-mobile-editing-dock")).toBe("true");
     expect(dock.className).toContain("env(safe-area-inset-bottom)");
     expect(dock.style.bottom).toBe("18px");
@@ -420,14 +400,12 @@ describe("StudioMobileEditingDock", () => {
     expect(within(dock).getByRole("button", { name: "되돌리기 · 실행취소" }).getAttribute("data-hint-description")).toContain("한 단계 되돌립니다");
     expect(within(dock).getByRole("button", { name: "다시 · 다시실행" }).getAttribute("data-hint-description")).toContain("다시 적용");
     expect(dock.querySelector("button button")).toBeNull();
-
     view.rerender(<StudioMobileEditingDock {...createProps({ isMobile: true, hi: 1 })} />);
     dock = screen.getByRole("navigation", { name: "스튜디오 모바일 도구막대" });
     expect(within(dock).getByRole<HTMLButtonElement>("button", { name: "되돌리기 · 실행취소" }).disabled).toBe(false);
     expect(within(dock).getByRole<HTMLButtonElement>("button", { name: "다시 · 다시실행" }).disabled).toBe(true);
     expect(within(dock).getByRole("button", { name: "되돌리기 · 실행취소" }).getAttribute("data-hint-description")).toContain("한 단계 되돌립니다");
     expect(within(dock).getByRole("button", { name: "다시 · 다시실행" }).getAttribute("data-hint-description")).toContain("다시 적용");
-
     view.rerender(
       <StudioMobileEditingDock
         {...createProps({ isMobile: true, collaborationDocumentLocked: true })}
@@ -439,7 +417,6 @@ describe("StudioMobileEditingDock", () => {
     expect(within(dock).getByRole("button", { name: "되돌리기 · 실행취소" }).getAttribute("data-hint-unavailable-reason")).toContain("문서 잠금");
     expect(within(dock).getByRole("button", { name: "다시 · 다시실행" }).getAttribute("data-hint-unavailable-reason")).toContain("문서 잠금");
   });
-
   it("opens tool properties first from the Panel launcher while drawing without a selection", () => {
     const stableHandlers = createHandlers();
     const view = render(
@@ -452,7 +429,6 @@ describe("StudioMobileEditingDock", () => {
         })}
       />,
     );
-
     fireEvent.click(
       screen.getByRole("button", { name: "작업 메뉴" }),
     );
@@ -472,7 +448,6 @@ describe("StudioMobileEditingDock", () => {
       { primary: "properties" },
       "props",
     );
-
     vi.mocked(stableHandlers.openInspectorRoute).mockClear();
     fireEvent.click(screen.getByRole("button", { name: "작업 메뉴" }));
     view.rerender(
@@ -496,7 +471,6 @@ describe("StudioMobileEditingDock", () => {
       "props",
     );
   });
-
   it("distinguishes page management from the quick-start new-work action", () => {
     const setMobileSheet = vi.fn();
     const setQuickStartOpen = vi.fn();
@@ -509,7 +483,6 @@ describe("StudioMobileEditingDock", () => {
         })}
       />,
     );
-
     fireEvent.click(screen.getByRole("button", { name: "작업 메뉴" }));
     let workspace = screen.getByRole("toolbar", { name: "작업 공간" });
     const pages = within(workspace).getByRole("button", { name: "페이지 목록 열기" });
@@ -520,7 +493,6 @@ describe("StudioMobileEditingDock", () => {
     expect(pages.getAttribute("aria-pressed")).toBeNull();
     fireEvent.click(pages);
     expect(setMobileSheet).toHaveBeenCalledWith(expect.any(Function));
-
     fireEvent.click(screen.getByRole("button", { name: "작업 메뉴" }));
     const newWork = within(workspace).getByRole("button", {
       name: "빠른 시작 · 새 작업 열기",
@@ -531,7 +503,6 @@ describe("StudioMobileEditingDock", () => {
     fireEvent.click(newWork);
     expect(setMobileSheet).toHaveBeenLastCalledWith(null);
     expect(setQuickStartOpen).toHaveBeenCalledWith(true);
-
     view.rerender(
       <StudioMobileEditingDock
         {...createProps({
@@ -547,11 +518,9 @@ describe("StudioMobileEditingDock", () => {
     const closePages = within(workspace).getByRole("button", { name: "페이지 목록 닫기" });
     expect(closePages.getAttribute("aria-expanded")).toBe("true");
   });
-
   it("warms the inspector and drawing palettes from both mobile panel intent paths", () => {
     mobileInspectorPreload.drawingSurface.mockClear();
     render(<StudioMobileEditingDock {...createProps({ isMobile: true })} />);
-
     const workspaceToggle = screen.getByRole("button", {
       name: "작업 메뉴",
     });
@@ -2149,5 +2118,36 @@ describe("모바일 브러시 메뉴 재준비 회귀", () => {
     fireEvent.keyDown(colorVisionSheet, { key: "Escape" });
     expect(setMobileSheet).toHaveBeenCalledWith(null);
     expect(document.activeElement).toBe(workspaceToggle);
+  });
+});
+describe("명료한 그리기의 기존 모바일 도크 재사용", () => {
+  const clarity = (active: boolean): DrawingClarityState => ({ active, available: true, panel: null, open: vi.fn(), reveal: vi.fn(), close: vi.fn(), chooseSimple: vi.fn(), showSavedLayout: vi.fn() });
+  function surface(props: StudioMobileEditingDockProps, active = true) {
+    return <DrawingClarityContext.Provider value={clarity(active)}><div data-studio-editor="true"><div id="studio-drawing-clarity-history-slot" />
+      <StudioMobileEditingDock {...props} /><StudioDrawingClarityMore id="test-drawing-menu" hostId="studio-drawing-clarity-mobile-more-slot" purpose="도구와 도움말" actions={[]} /></div></DrawingClarityContext.Provider>;
+  }
+  it("원래 기록 버튼을 상단으로 옮겨 sidecar 권한·색상 닫기·같은 명령을 유지한다", async () => {
+    const props = createProps({ isMobile: true, sidecarUndoAvailable: true, sidecarRedoAvailable: true }); render(surface(props));
+    const history = document.getElementById("studio-drawing-clarity-history-slot"); if (!history) throw new Error("실제 상단 슬롯 누락");
+    await waitFor(() => expect(within(history).getAllByRole("button")).toHaveLength(2));
+    const primary = document.querySelector('[data-studio-mobile-primary-actions="true"]'); expect(primary?.children).toHaveLength(4);
+    expect(document.querySelector('#studio-drawing-clarity-mobile-more-slot summary')).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "브러시 색상" })); expect(document.querySelector('[data-studio-mobile-color-controls="true"]')?.hasAttribute("hidden")).toBe(false);
+    const undo = within(history).getByRole("button", { name: "되돌리기 · 실행취소" }); expect(undo.matches(":disabled")).toBe(false); fireEvent.click(undo);
+    expect(props.stableHandlers.undo).toHaveBeenCalledOnce(); expect(document.querySelector('[data-studio-mobile-color-controls="true"]')?.hasAttribute("hidden")).toBe(true);
+  });
+  it("간단한 표시를 끝내면 기존6도구와 원래 작업 메뉴를 돌려준다", async () => {
+    const props = createProps({ isMobile: true }), view = render(surface(props));
+    await waitFor(() => expect(document.querySelector('[data-studio-mobile-primary-layout="simple"]')).not.toBeNull()); view.rerender(surface(props, false));
+    expect(document.querySelector('[data-studio-mobile-primary-actions="true"]')?.children).toHaveLength(6);
+    expect(document.querySelector('[data-studio-mobile-workspace-toggle="true"]')).not.toBeNull(); expect(document.getElementById("studio-drawing-clarity-mobile-more-slot")).toBeNull();
+    expect(document.getElementById("studio-drawing-clarity-history-slot")?.querySelectorAll("button")).toHaveLength(0);
+  });
+  it("명료한 표시에서도 첫 펜 선택과 재탭 설정의 원래 차이를 유지한다", () => {
+    const props = createProps({ isMobile: true, tool: "select", drawMode: "pen" }), view = render(surface(props)); fireEvent.click(screen.getByRole("button", { name: "펜" }));
+    expect(props.stableHandlers.activateCanvasTool).toHaveBeenCalledExactlyOnceWith("draw", "pen");
+    vi.mocked(props.setMobileSheet).mockClear(); view.rerender(surface({ ...props, tool: "draw" })); fireEvent.click(screen.getByRole("button", { name: "펜" }));
+    expect(props.stableHandlers.activateCanvasTool).toHaveBeenCalledTimes(1); const update = vi.mocked(props.setMobileSheet).mock.calls[0]?.[0];
+    expect(typeof update).toBe("function"); if (typeof update !== "function") throw new Error("원래 재탭 설정 명령 누락"); expect(update(null)).toBe("draw");
   });
 });

@@ -1,0 +1,69 @@
+// @vitest-environment jsdom
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { StudioDrawingClarityMore } from "./StudioDrawingClarityMore";
+
+afterEach(cleanup);
+function menu(hostId = "mobile-tools", run = vi.fn()) {
+  return <StudioDrawingClarityMore id="drawing-menu" hostId={hostId} purpose="도구와 도움말"
+    actions={Array.from({ length: 8 }, (_, index) => ({ id: String(index), label: `목적 ${index + 1}`, run }))} />;
+}
+function trigger() { return screen.getByLabelText("더보기 · 도구와 도움말"); }
+
+describe("드로잉 더보기의 실제 진입점과 초점", () => {
+  it("이름 있는8개 행동을 한 트리거에서 찾고 실제 누른 트리거로 복귀한다", () => {
+    const run = vi.fn(); render(menu("absent", run)); const source = trigger(); source.focus(); fireEvent.click(source);
+    expect(screen.getAllByRole("button")).toHaveLength(8); fireEvent.click(screen.getByRole("button", { name: "목적 4" }));
+    expect(run).toHaveBeenCalledExactlyOnceWith(source); expect(document.activeElement).toBe(source);
+    expect(screen.queryByRole("button", { name: "목적 4" })).toBeNull();
+  });
+  it("Escape는 실행하지 않고 현재 더보기만 닫아 같은 하단 트리거로 돌아간다", () => {
+    const run = vi.fn(); render(<><span id="mobile-tools" />{menu("mobile-tools", run)}</>);
+    const source = trigger(); source.focus(); fireEvent.click(source); const action = screen.getByRole("button", { name: "목적 1" }); action.focus();
+    fireEvent.keyDown(action, { key: "Escape" }); expect(source.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(source); expect(run).not.toHaveBeenCalled();
+  });
+  it("하단 host가 사라지고 다시 생겨도 중복 메뉴 없이 초점을 복구한다", async () => {
+    const host = document.createElement("span"); host.id = "mobile-tools"; document.body.append(host);
+    try {
+      const view = render(menu()); await waitFor(() => expect(host.querySelector("summary")).not.toBeNull()); trigger().focus();
+      act(() => host.remove()); await waitFor(() => expect(view.container.querySelector("summary")).not.toBeNull());
+      expect(document.activeElement).toBe(trigger()); expect(document.querySelectorAll('[data-studio-clarity-more-trigger="true"]')).toHaveLength(1);
+      act(() => document.body.append(host)); await waitFor(() => expect(host.querySelector("summary")).not.toBeNull());
+      expect(document.activeElement).toBe(trigger()); expect(document.querySelectorAll('[data-studio-clarity-more-trigger="true"]')).toHaveLength(1);
+    } finally { cleanup(); host.remove(); }
+  });
+  it("모바일과PC 컴포넌트를 교체할 때 기존 초점을 새 더보기로 넘긴다", async () => {
+    function Surface({ mobile }: { mobile: boolean }) {
+      return <div data-studio-editor="true"><span id={mobile ? "mobile-tools" : "pc-tools"} />
+        <StudioDrawingClarityMore key={mobile ? "mobile" : "pc"} id="drawing-menu" hostId={mobile ? "mobile-tools" : "pc-tools"}
+          purpose="도구와 도움말" actions={[]} /></div>;
+    }
+    const view = render(<Surface mobile />); trigger().focus();
+    view.rerender(<Surface mobile={false} />); await waitFor(() => expect(document.activeElement).toBe(trigger()));
+    expect(document.querySelectorAll('[data-studio-clarity-more-trigger="true"]')).toHaveLength(1);
+  });
+  it("외부로 옮긴 사용자의 초점은 host 이동으로 빼앗지 않는다", async () => {
+    const host = document.createElement("span"); host.id = "mobile-tools"; document.body.append(host);
+    try {
+      render(<><button type="button">다른 작업</button>{menu()}</>); const other = screen.getByRole("button", { name: "다른 작업" });
+      trigger().focus(); other.focus(); act(() => host.remove()); await waitFor(() => expect(trigger().parentElement?.parentElement).not.toBe(host));
+      expect(document.activeElement).toBe(other);
+    } finally { cleanup(); host.remove(); }
+  });
+  it("기존 배치로 돌아가면 간단한 그리기 진입점으로 초점을 유지한다", async () => {
+    function Surface({ simple }: { simple: boolean }) {
+      return <div data-studio-editor="true">{simple ? menu() : <button type="button" data-studio-clarity-entry="true">간단한 그리기</button>}</div>;
+    }
+    const view = render(<Surface simple />); trigger().focus(); view.rerender(<Surface simple={false} />);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "간단한 그리기" })));
+  });
+  it("기존 배치의 새 대화상자가 받은 초점을 복귀 버튼으로 빼앗지 않는다", async () => {
+    function Surface({ simple }: { simple: boolean }) {
+      return <div data-studio-editor="true">{simple ? menu() : <><button type="button" data-studio-clarity-entry="true">간단한 그리기</button><div role="dialog" aria-label="팀 작업"><button type="button" ref={(node) => { node?.focus(); }}>팀 작업 닫기</button></div></>}</div>;
+    }
+    const view = render(<Surface simple />); trigger().focus(); view.rerender(<Surface simple={false} />);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "팀 작업 닫기" })));
+  });
+});
