@@ -1,7 +1,7 @@
 /**
  * ExportPanel 하위 프리셋 칩 행 + 진행률·미저장 백업·영수증·안내·실패/재시도 피드백 섹션.
  */
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { describeReceipt } from "../export-panel-helpers";
 
@@ -175,6 +175,10 @@ export function ExportStatusSection({
   onRetryLastFailed,
   failureAlertRef,
 }: ExportStatusSectionProps) {
+  useEffect(() => {
+    if (failure) failureAlertRef.current?.focus();
+  }, [failure, failureAlertRef]);
+
   return (
     <>
       {busy ? (

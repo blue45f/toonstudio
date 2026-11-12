@@ -14,6 +14,7 @@ import {
   evaluateUnsavedCharacterWork,
   hasUnsavedCharacterWork,
   markCharacterWorkSaved,
+  recipeContentDigest,
   restoreCharacterWorkBackup,
 } from "./unsaved-work";
 
@@ -30,6 +31,30 @@ function createTestStore() {
 }
 
 describe("unsaved-work (미저장 캐릭터·페인트 작업 보호 및 스냅샷 복구)", () => {
+  it("레시피 내용 해시는 소스와 저장된 페인트 메타데이터를 제외하되 색상 변경은 구분한다", () => {
+    const recipe = createKitDefaultRecipe();
+    const digest = recipeContentDigest(recipe);
+    expect(recipeContentDigest({
+      ...recipe,
+      source: { kind: "package", characterId: "other-character", sha256: "a".repeat(64) },
+      paint: { layers: [{ part: "head", width: 16, height: 16, pngBase64: "AAAA" }] },
+    })).toBe(digest);
+    expect(recipeContentDigest({ ...recipe, colors: { ...recipe.colors, hair: "#123456" } })).not.toBe(digest);
+  });
+
+  it("65,536바이트 간격으로 같은 픽셀을 이동해도 저장 후 페인트 변경으로 감지한다", () => {
+    const store = createTestStore();
+    const session = createPaintSession({ layerSize: 256 });
+    const layer = session.layer("head");
+    layer.rgba.set([120, 60, 30, 255], 0);
+    markCharacterWorkSaved(store, store.getState().recipe, session);
+    expect(hasUnsavedCharacterWork(store, store.getState(), session)).toBe(false);
+
+    layer.rgba.set([0, 0, 0, 0], 0);
+    layer.rgba.set([120, 60, 30, 255], 65536);
+    expect(evaluateUnsavedCharacterWork(store, store.getState(), session).hasUnsavedPaint).toBe(true);
+  });
+
   it("초기 상태에서 모델(소스)만 바꾼 경우는 미저장 편집으로 오탐하지 않고, 포즈·색상·페인트 편집 시 미저장으로 감지한다", () => {
     const store = createTestStore();
     const session = createPaintSession({ layerSize: 16 });

@@ -31,6 +31,7 @@ import {
   restoreCharacterWorkBackup,
 } from "../unsaved-work";
 
+import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
 import {
   FRAMING_LABELS_KO,
   applyImportedRecipeText,
@@ -41,7 +42,6 @@ import {
   describeExportSourceKo,
   readTextFile,
 } from "./export-panel-helpers";
-import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
 
 import type { ExportBusyKind } from "./export-panel/ExportStatusSection";
 import type { CameraFramingMode, EngineStatus, LabFailure } from "../../../contracts";
@@ -139,9 +139,6 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     setNotices([]);
     setFailedKind(actionKind);
     setFailure(nextFailure);
-    queueMicrotask(() => {
-      failureAlertRef.current?.focus();
-    });
   }, []);
 
   const finish = useCallback(

@@ -20,7 +20,7 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     const engineSession = createMockEngineSession({ phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics });
     engineSession.setEngine(engine);
     render(
-      <MockLabProvider engineSession={engineSession} {...(dispatchSpy ? { dispatchSpy } : {})}>
+      <MockLabProvider initialState={{ engine: engineSession.status() }} engineSession={engineSession} {...(dispatchSpy ? { dispatchSpy } : {})}>
         <ViewportPane hudIntervalMs={0} />
       </MockLabProvider>,
     );

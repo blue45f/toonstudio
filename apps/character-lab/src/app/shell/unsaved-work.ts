@@ -12,7 +12,7 @@
 import { recipeDigest } from "../../contracts";
 import { uploadReplacedLayers } from "../../paint/paint-bridge";
 import { clonePaintLayer, isPaintLayerEmpty } from "../../paint/paint-layer";
-import { fnv1aHex } from "../../shared/hash";
+import { fnv1a32Hex } from "../../shared/hash";
 
 import type {
   CharacterEngine,
@@ -52,19 +52,18 @@ const checkpointsByStore = new WeakMap<object, WorkCheckpoint>();
 
 /** 소스(모델 종류)만 제외한 캐릭터 편집 내용(슬롯·포즈·표정·체형·색상·의상·물리·셰이딩)의 결정적 요약 해시. */
 export function recipeContentDigest(recipe: CharacterRecipe): string {
-  return recipeDigest({ ...recipe, source: CANONICAL_SOURCE, paint: undefined });
+  return recipeDigest({ ...recipe, source: CANONICAL_SOURCE, paint: { layers: [] } });
 }
 
 function hashBytesSample(bytes: Uint8ClampedArray): string {
-  // 타일 전체의 정확한 변경 감지를 위해 비영(non-zero) 바이트 오프셋과 값을 FNV-1a 입력 문자열에 반영하되,
-  // 고해상도 레이어에서도 빠르게 동작하도록 64바이트 보폭 + 전체 합산을 함께 해시한다.
+  // 비영 바이트의 전체 오프셋과 값을 해시해 큰 레이어에서도 위치 이동을 감지한다.
   let nonZeroCount = 0;
   let rolling = 2166136261;
   for (let i = 0; i < bytes.length; i += 1) {
     const v = bytes[i] ?? 0;
     if (v !== 0) {
       nonZeroCount += 1;
-      rolling = Math.imul(rolling ^ ((i & 0xffff) ^ (v << 8)), 16777619) >>> 0;
+      rolling = Math.imul(rolling ^ i ^ (v << 8), 16777619) >>> 0;
     }
   }
   if (nonZeroCount === 0) return "empty";
@@ -88,7 +87,7 @@ export function computePaintSignature(session: PaintSession): string {
     parts.push(`S:${sub.part}:${sub.order.join("")}:[${slotDesc}]`);
   }
   if (parts.length === 0) return "paint:empty";
-  return `paint:${fnv1aHex(parts.sort().join("|"))}`;
+  return `paint:${fnv1a32Hex(parts.sort().join("|"))}`;
 }
 
 const EMPTY_PAINT_SIGNATURE = "paint:empty";

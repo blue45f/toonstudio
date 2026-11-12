@@ -5,7 +5,7 @@ import { DEFAULT_BRUSH } from "../contracts";
 import { applyUndoToken, createPaintLayer, eraseDab, isPaintLayerEmpty, mirrorDabHorizontal, readPixel, stampDab } from "./paint-layer";
 import { createPaintSession } from "./paint-session";
 import { createStrokeSession } from "./stroke-session";
-import { WEBTOON_DECAL_SPECS, evaluateWebtoonDecalAlpha, isWebtoonDecalId, stampWebtoonDecal } from "./webtoon-decals";
+import { WEBTOON_DECAL_SPECS, evaluateWebtoonDecalAlpha, isWebtoonDecalId } from "./webtoon-decals";
 
 describe("paint: 지우개·좌우 대칭·웹툰 디테일 스탬프", () => {
   it("mirrorDabHorizontal은 U 좌표를 1 - u로 대칭 반전하고 V·필압을 보존한다", () => {

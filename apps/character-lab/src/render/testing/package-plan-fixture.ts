@@ -3,7 +3,7 @@
  * 매핑(본·shape key·메시 역할)은 authored 작업자 모듈 대신 계약의 별칭 표 + 최소 Mixamo 표로 만든다
  * (render 디렉터리는 domains/authored를 import하지 않는다). 플랜 생성·SHA 검증은 authored 작업자 소관이다.
  */
-import { BLENDER_SHAPE_KEY_ALIASES, CHARACTER_PACKAGE_KIND, CHARACTER_PACKAGE_SCHEMA_VERSION, FACS_SHAPE_KEY_ALIASES, facsMorphName, paramMorphName, parseAuthoredHairMeshName, parseCharacterPackageManifest } from "../../contracts";
+import { BLENDER_SHAPE_KEY_ALIASES, CHARACTER_PACKAGE_KIND, CHARACTER_PACKAGE_SCHEMA_VERSION, FACS_SHAPE_KEY_ALIASES, facsMorphName, isFacsUnit, paramMorphName, parseAuthoredHairMeshName, parseCharacterPackageManifest } from "../../contracts";
 
 import type { AuthoredPackagePlan, HumanoidBoneName, MorphTargetName, PartRole, SlotCapabilityMap } from "../../contracts";
 
@@ -99,7 +99,7 @@ function buildMixamoBones(): Readonly<Record<string, HumanoidBoneName>> {
     for (const [mixamo, vrm] of limbs) map[`mixamorig:${side}${mixamo}`] = `${vrmSide}${vrm}` as HumanoidBoneName;
     for (const finger of MIXAMO_FINGERS) {
       finger.segments.forEach((segment, index) => {
-        map[`mixamorig:${side}Hand${finger.mixamo}${index + 1}`] = `${vrmSide}${vrm}` as HumanoidBoneName;
+        map[`mixamorig:${side}Hand${finger.mixamo}${index + 1}`] = `${vrmSide}${finger.vrm}${segment}` as HumanoidBoneName;
       });
     }
   }
@@ -146,7 +146,8 @@ export function createPackagePlanFixture(options: PackagePlanFixtureOptions): Au
       shapeKeyMap[name] = paramMorphName(blender.key, blender.sign);
       continue;
     }
-    const facs = FACS_SHAPE_KEY_ALIASES[name];
+    // 제작 GLB는 ARKit 좌우 별칭뿐 아니라 규약 FACS 이름도 직접 쓴다.
+    const facs = FACS_SHAPE_KEY_ALIASES[name] ?? (isFacsUnit(name) ? name : undefined);
     if (facs) shapeKeyMap[name] = facsMorphName(facs);
   }
   const boneMap: Record<string, HumanoidBoneName> = {};

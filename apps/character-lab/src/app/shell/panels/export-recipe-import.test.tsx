@@ -54,7 +54,7 @@ function buildPopulatedTestCatalog(): PresetCatalog {
         patch: {},
         requires: [],
         conflictsWith: [],
-        thumbnailFraming: { mode: "full-body", yawDeg: 0, pitchDeg: 0, distanceScale: 1, fovDeg: 28 },
+        thumbnailFraming: { mode: "full-body", yawDeg: 0, pitchDeg: 0, distanceScale: 1 },
         license: "original",
       });
     }
@@ -83,9 +83,9 @@ describe("ExportPanel 레시피 불러오기 무결성·복구·원본 보존", 
     });
 
     // 1) 현재 진행 중인 사용자 작업 구성: 체형/포즈/색 편집 + 다중 서브레이어(L0 + 숨김 L1 + 불투명도 0.6 L2 + 순서 변경) + Undo 스택
-    store.dispatch({ type: "param/set", key: "height", value: 0.42 });
-    store.dispatch({ type: "color/set", key: "skin", hex: "#e6bfa8" });
-    store.dispatch({ type: "pose/set", bone: "head", quat: [0, 0.1, 0, 0.995] });
+    store.dispatch({ type: "param/set", group: "body", key: "height", value: 0.42 });
+    store.dispatch({ type: "color/set", key: "skin", value: "#e6bfa8" });
+    store.dispatch({ type: "pose/set", pose: { head: [0, 0.1, 0, 0.995] }, scope: "full", labelKo: "머리 포즈" });
 
     paintSession.setActiveSublayer(0);
     paintSession.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "head");
