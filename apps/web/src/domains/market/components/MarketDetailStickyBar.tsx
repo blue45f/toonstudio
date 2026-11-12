@@ -4,7 +4,7 @@ import {
   Heart,
   Palette,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useMarketLibrary } from "../hooks/use-market-library";
 import { useMarketWishlist } from "../hooks/use-market-wishlist";
@@ -22,6 +22,7 @@ import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-mark
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
+import { useOverlayClearance } from "@/shared/lib/overlay-clearance";
 import Link from "@/shared/navigation/router-link";
 
 interface MarketDetailStickyBarProps {
@@ -36,6 +37,8 @@ export function MarketDetailStickyBar({
   onOpenAcquisition,
 }: MarketDetailStickyBarProps) {
   const [visible, setVisible] = useState(false);
+  const barRef = useRef<HTMLElement>(null);
+  useOverlayClearance(barRef, visible);
   const { isWishlisted, toggleWishlist } = useMarketWishlist();
   const { isAcquired } = useMarketLibrary();
   const wishlisted = isWishlisted(record.id);
@@ -72,6 +75,7 @@ export function MarketDetailStickyBar({
 
   return (
     <aside
+      ref={barRef}
       aria-label="에셋 빠른 실행 바"
       data-market-sticky-bar="true"
       style={{ bottom: "max(0px, calc(var(--site-float-base, 1rem) - 1rem))" }}
@@ -115,7 +119,7 @@ export function MarketDetailStickyBar({
               variant: "outline",
               size: "sm",
               className: cn(
-                "gap-1 px-2.5",
+                "min-w-12 gap-1 px-2.5",
                 wishlisted && "border-warn/40 bg-warn/10 text-warn",
               ),
             })}
