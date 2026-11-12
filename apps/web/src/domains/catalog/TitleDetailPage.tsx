@@ -281,7 +281,7 @@ export function TitleDetailPage() {
                 </span>
                 <div>
                   <p className="font-display text-[10px] font-extrabold uppercase tracking-wider text-accent">
-                    WHERE TO READ · ROUTER
+                    {bi("공식 감상처", "Official reading platforms")}
                   </p>
                   <p className="text-sm font-bold text-fg">
                     {bi("어디서 볼 수 있나요", "Where to read")}

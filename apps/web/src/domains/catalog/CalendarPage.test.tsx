@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EMPTY_TITLE_FILTERS } from "@/shared/lib/title-filters";
@@ -59,10 +59,24 @@ function staleSnapshot() {
   };
 }
 
-function renderPage() {
+function LocationProbe() {
+  const { pathname, search, hash } = useLocation();
+  return <output data-testid="calendar-location">{pathname}{search}{hash}</output>;
+}
+
+function DetailReturnStub() {
+  const navigate = useNavigate();
+  return <button type="button" onClick={() => navigate(-1)}>캘린더로 돌아가기</button>;
+}
+
+function renderPage(entry = "/calendar") {
   return render(
-    <MemoryRouter initialEntries={["/calendar"]}>
-      <CalendarPage />
+    <MemoryRouter initialEntries={[entry]}>
+      <LocationProbe />
+      <Routes>
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/title/:slug" element={<DetailReturnStub />} />
+      </Routes>
     </MemoryRouter>
   );
 }
@@ -185,5 +199,75 @@ describe("캘린더 시안 적용 후 기능 보존", () => {
     page.rerender(<MemoryRouter><CalendarPage /></MemoryRouter>);
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByRole("button", { name: /내보내기/ }).hasAttribute("disabled")).toBe(false);
+  });
+});
+
+describe("캘린더 상세 방문 후 선택한 요일 복원", () => {
+  it("URL에 있는 요일은 실제 오늘과 달라도 새로 열었을 때 같은 목록을 보여 준다", () => {
+    const entry = "/calendar?utm_source=reading&day=mon&x=1&x=2#weekly";
+    const first = renderPage(entry);
+    expect(screen.getAllByRole("tab")[0].getAttribute("aria-selected")).toBe("true");
+    expect(within(screen.getByRole("tabpanel")).getByRole("heading").textContent).toBe("월요일 연재 (1편)");
+    const reloadUrl = screen.getByTestId("calendar-location").textContent ?? "";
+    first.unmount();
+    renderPage(reloadUrl);
+    expect(screen.getAllByRole("tab")[0].getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("calendar-location").textContent).toBe(entry);
+    // 오늘 표시와 선택한 요일은 별개다. 응답의 옛 월요일을 오늘로 만들지 않는다.
+    expect(screen.getByText("수요일").closest("p")?.textContent).toContain("오늘은");
+  });
+
+  it("요일 선택과 상세에서 뒤로 가기는 URL·기존 query·fragment와 원카드 복귀 키를 유지한다", () => {
+    renderPage("/calendar?utm_source=reading&x=1&x=2#weekly");
+    fireEvent.click(screen.getAllByRole("tab")[0]);
+    const selectedUrl = screen.getByTestId("calendar-location").textContent ?? "";
+    const parsed = new URL(selectedUrl, "http://localhost");
+    expect(parsed.searchParams.get("day")).toBe("mon");
+    expect(parsed.searchParams.get("utm_source")).toBe("reading");
+    expect(parsed.searchParams.getAll("x")).toEqual(["1", "2"]);
+    expect(parsed.hash).toBe("#weekly");
+    const cardLink = within(screen.getByRole("tabpanel")).getByRole("link", { name: /월요 연재작/u });
+    expect(cardLink.getAttribute("data-route-return-focus")).toBe("catalog-calendar:월:mon-1");
+    fireEvent.click(cardLink);
+    expect(screen.getByTestId("calendar-location").textContent).toBe("/title/mon-1");
+    fireEvent.click(screen.getByRole("button", { name: "캘린더로 돌아가기" }));
+    expect(screen.getByTestId("calendar-location").textContent).toBe(selectedUrl);
+    expect(screen.getAllByRole("tab")[0].getAttribute("aria-selected")).toBe("true");
+    expect(within(screen.getByRole("tabpanel")).getByRole("link", { name: /월요 연재작/u }).getAttribute("data-route-return-focus"))
+      .toBe("catalog-calendar:월:mon-1");
+  });
+
+  it("여러 요일에 나오는 같은 작품의 복귀 키를 요일별로 구분한다", () => {
+    const snapshot = staleSnapshot();
+    snapshot.days[2].items.push(card("mon-1", "월요 연재작"));
+    mockResource({ data: snapshot });
+    renderPage("/calendar?day=mon");
+    const keys = new Set(screen.getAllByRole("link").filter((link) => link.getAttribute("href") === "/title/mon-1")
+      .map((link) => link.getAttribute("data-route-return-focus")));
+    expect([...keys]).toEqual(["catalog-calendar:월:mon-1", "catalog-calendar:수:mon-1"]);
+  });
+
+  it("오늘 보기는 요일 query만 지우고 다른 값과 실제 오늘 기준을 보존한다", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView");
+    Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
+    try {
+      renderPage("/calendar?day=mon&utm_source=reading&x=1&x=2#weekly");
+      fireEvent.click(screen.getByRole("button", { name: "오늘 보기" }));
+      const parsed = new URL(screen.getByTestId("calendar-location").textContent ?? "", "http://localhost");
+      expect(parsed.searchParams.has("day")).toBe(false);
+      expect(parsed.searchParams.get("utm_source")).toBe("reading");
+      expect(parsed.searchParams.getAll("x")).toEqual(["1", "2"]);
+      expect(parsed.hash).toBe("#weekly");
+      expect(screen.getAllByRole("tab")[2].getAttribute("aria-selected")).toBe("true");
+    } finally {
+      if (descriptor) Object.defineProperty(Element.prototype, "scrollIntoView", descriptor);
+      else Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    }
+  });
+
+  it("모르는 요일 값은 URL을 덮어쓰지 않고 실제 오늘로 표시한다", () => {
+    renderPage("/calendar?day=unknown&utm_source=reading");
+    expect(screen.getAllByRole("tab")[2].getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("calendar-location").textContent).toBe("/calendar?day=unknown&utm_source=reading");
   });
 });
