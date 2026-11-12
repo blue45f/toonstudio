@@ -16,6 +16,8 @@
 
 import { CheckCircle2, CloudOff, LoaderCircle, RotateCcw, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useServiceStatusSlot } from "@/shared/lib/modal-status-slot";
 
 import {
   translateBilingualValueForActiveLocale,
@@ -70,6 +72,8 @@ export interface StudioSaveStatusBarProps {
    * 스크린리더 라이브 알림·읽기 전용 경고·인라인 복구 버튼은 그대로 유지한다.
    */
   readonly companionCenterMounted?: boolean;
+  /** 간단한 그리기는 상태 센터 한 곳에 요약하고 전이 알림·실패 재시도는 유지한다. */
+  readonly presentation?: "default" | "drawing";
 }
 
 /** Render the always-visible one-line save state for the editor menubar. */
@@ -80,8 +84,10 @@ export function StudioSaveStatusBar({
   connectivity = null,
   onRecheckConnection,
   companionCenterMounted = false,
+  presentation = "default",
 }: StudioSaveStatusBarProps) {
   useBilingualI18nRevision();
+  const serviceSlot = useServiceStatusSlot();
   const view = resolveSaveRecoveryView(status, connectivity, { readOnlyTab });
   const state: SaveRecoveryKind = view.kind;
   const hasLocalReceipt = status.lastSavedAt > 0;
@@ -178,10 +184,12 @@ export function StudioSaveStatusBar({
         ? "text-warning"
         : "text-fg-2";
 
-  const showVisualText = !companionCenterMounted || state === "readonly";
+  const liveRegion = <span role="status" aria-live="polite" className="sr-only">{announcement}</span>;
+  const liveTarget = presentation === "drawing" && serviceSlot?.kind === "modal" ? serviceSlot.element : null;
+  const showVisualText = presentation !== "drawing" && (!companionCenterMounted || state === "readonly");
 
   return (
-    <div className="flex items-center gap-2" data-studio-save-status-bar data-save-state={state}>
+    <div className={presentation === "drawing" ? "contents" : "flex items-center gap-2"} data-studio-save-status-bar data-save-state={state}>
       {showVisualText ? (
         <span className={`flex min-h-8 items-center gap-1.5 text-[0.75rem] font-medium tabular-nums ${tone}`} aria-hidden="true">
           <Icon className={`size-3.5 ${state === "saving" || state === "reconnecting" ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden="true" />
@@ -192,13 +200,14 @@ export function StudioSaveStatusBar({
         <button
           type="button"
           onClick={onRetrySave}
+          data-studio-inline-save-retry="true"
           className="flex min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 text-[0.75rem] font-semibold text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"
         >
           <RotateCcw className="size-3.5" aria-hidden="true" />
           {bi("다시 시도", "Retry")}
         </button>
       ) : null}
-      {view.canRecheckConnection && onRecheckConnection ? (
+      {presentation !== "drawing" && view.canRecheckConnection && onRecheckConnection ? (
         <button
           type="button"
           onClick={onRecheckConnection}
@@ -209,9 +218,7 @@ export function StudioSaveStatusBar({
         </button>
       ) : null}
       {/* 라이브 영역: 전이 시에만 내용이 바뀐다. */}
-      <span role="status" aria-live="polite" className="sr-only">
-        {announcement}
-      </span>
+      {liveTarget ? createPortal(liveRegion, liveTarget) : liveRegion}
     </div>
   );
 }

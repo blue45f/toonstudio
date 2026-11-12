@@ -24,6 +24,9 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useEditorStatusSlot, useServiceStatusSlot } from "@/shared/lib/modal-status-slot";
+import { StudioDraftSaveRecordMetrics } from "./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecordMetrics";
 import {
   extractStudioDraftSaveError,
   formatStudioDraftSaveInterval,
@@ -256,6 +259,7 @@ export function StudioDraftSaveCenter({
   onExportBackup,
 }: StudioDraftSaveCenterProps) {
   const reliability = useStudioReliabilityStatus(), scopedDraftSaveState = useStudioScopedDraftSaveState(), scopedDraftSaveAvailable = scopedDraftSaveState.available;
+  const bt = useBilingual("StudioDraftSaveCenter"), editorStatusSlot = useEditorStatusSlot(), serviceStatusSlot = useServiceStatusSlot();
   const connectivity = useStudioConnectivity();
   const isOnline = connectivity.serverAvailable;
   const durableSaveIntent = useStudioDurableSaveIntent(saveIntentScope);
@@ -348,8 +352,9 @@ export function StudioDraftSaveCenter({
   const anchorAtBottom = mobileImmersive || canvasOnlyMode;
   // 데스크톱 또는 명시한 모바일 저장 자리에만 배치한다. 캔버스 전용 모드는 기존 부유 버튼을 유지한다.
   const menubarSlot = useStudioMenubarStatusSlot("save");
-  const inline = menubarSlot !== null && (!anchorAtBottom || (mobileImmersive && !canvasOnlyMode && menubarSlot.dataset.studioClarityMobileSaveSlot === "true"));
-  const popoverPosition = useStudioMenubarPopoverPosition(triggerRef, inline && open);
+  const embedded = !canvasOnlyMode && menubarSlot?.dataset.studioDrawingSaveDetails === "true";
+  const inline = menubarSlot !== null && (embedded || !anchorAtBottom || (mobileImmersive && !canvasOnlyMode && menubarSlot.dataset.studioClarityMobileSaveSlot === "true"));
+  const popoverPosition = useStudioMenubarPopoverPosition(triggerRef, inline && open && !embedded);
   // 오프라인 단계의 상태 문구에는 이미 '오프라인'이 들어 있어 연결 배지를 겹쳐 달지 않는다.
   const showConnectionBadge = model.phase !== "offline";
   const inlineCompact = INLINE_COMPACT_CLASS[
@@ -357,6 +362,7 @@ export function StudioDraftSaveCenter({
   ];
   const backupAvailable = workHydrated && !workHydrationFailed;
   const promoteBackup = model.shouldPromoteBackup && backupAvailable;
+  const closeEmbeddedDetails = () => { const outer = embedded ? menubarSlot?.closest("dialog") : null; if (outer?.open) outer.close("next-task"); };
 
   const queueDeferredSave = useCallback(() => {
     void rememberDurableIntent(serverRevision);
@@ -560,7 +566,7 @@ export function StudioDraftSaveCenter({
   }, [clearDeferredSave, saving, serverRevision]);
 
   useEffect(() => {
-    if (!open || typeof document === "undefined") return;
+    if (!open || embedded || typeof document === "undefined") return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
@@ -579,7 +585,7 @@ export function StudioDraftSaveCenter({
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, embedded]);
   const closeAndRestoreFocus = () => {
     setOpen(false);
     triggerRef.current?.focus({ preventScroll: true });
@@ -636,21 +642,79 @@ export function StudioDraftSaveCenter({
   const dialogPlacementClass = inline
     ? "fixed z-[100]"
     : cn("absolute right-0", anchorAtBottom ? "bottom-full mb-2" : "top-full mt-2");
-  const dialogVisible = open && (!inline || popoverPosition !== null);
+  const criticalSaveLabel = serverSaveError ? bt("서버 저장 확인 필요", "Check the server save") : outboxWarning ? bt("저장 대기 기록 확인 필요", "Check the pending save record") : null;
+  const recordMetrics = <StudioDraftSaveRecordMetrics checkpointCount={checkpointCount} serverRevision={serverRevision} serverRevisionLoading={serverRevisionLoading} serverRevisionCount={serverRevisions.length} lastServerSaveAt={lastServerSaveAt} loadingLabel={frozenStatus4Text("studio.frozenStatus4.draft.revisionsLoading", "버전 기록 불러오는 중")} />;
+  const recordExplanation = <p className="mt-3 text-[0.68rem] leading-relaxed text-fg-3">             같은 탭의 저장 예약과 재실행 후 확인할 기기 기록은 구분됩니다. 저장 대기 기록은 원고 저장 완료를 뜻하지 않습니다. 원고 복구·기기 저장 상태를 확인하고 프로젝트 백업을 보관해 주세요. 충돌 시에는 자동 덮어쓰기 대신 버전 비교·복원 흐름을 사용합니다.           </p>;
+  const protectionInfo = (
+          <div className="mt-3 rounded-xl border border-line bg-card/70 px-3 py-2.5 text-xs text-fg-2">
+            <p className="font-bold text-fg">2단계 자동 보호</p>
+            <p className="mt-1 leading-relaxed">
+              기기 복구 체크포인트와 서버 저장 번호는 별개입니다. 편집이 멈춘 뒤 약 {formatStudioDraftSaveInterval(STUDIO_SERVER_AUTOSAVE_IDLE_MS)}가 지나면 서버 자동 저장도 시도합니다.
+            </p>
+          </div>
+  );
+  const primarySaveAction = <button
+              type="button"
+              onClick={() => { if (model.primaryAction === "versions" || (model.primaryAction === "metadata" && onContinuePendingSave)) closeEmbeddedDetails(); handlePrimaryAction(); }}
+              disabled={scopedDraftSaveState.pendingConfirmation ? saving || !workHydrated || workHydrationFailed : model.saveActionDisabled}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-black text-on-accent shadow-sm hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {model.primaryAction === "versions" ? (
+                <History className="h-4 w-4" aria-hidden />
+              ) : saving || model.phase === "loading" ? (
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
+              ) : serverSaveError ? (
+                <RefreshCw className="h-4 w-4" aria-hidden />
+              ) : (
+                <Save className="h-4 w-4" aria-hidden />
+              )}
+              {scopedDraftSaveState.pendingConfirmation ? "저장 상태 확인" : model.saveActionLabel}
+            </button>;
+  const versionsAction = <button
+                type="button"
+                onClick={() => {
+                  closeEmbeddedDetails(); setOpen(false);
+                  onOpenVersions();
+                }}
+                disabled={!model.canOpenVersions}
+                className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 py-2 text-xs font-bold hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <History className="h-4 w-4" aria-hidden />
+                버전·체크포인트
+              </button>;
+  const backupAction = <button
+                type="button"
+                onClick={() => void Promise.resolve(onExportBackup())}
+                disabled={!backupAvailable}
+                className={cn(
+                  "flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45",
+                  promoteBackup
+                    ? "border-warning/45 bg-warning-soft/20 text-warning hover:bg-warning-soft/30"
+                    : "border-line bg-card hover:bg-raised",
+                )}
+              >
+                <Download className="h-4 w-4" aria-hidden />
+                {backupAvailable ? "프로젝트 백업" : "원고 로드 후 백업"}
+              </button>;
+  const popoverStyle = inline && popoverPosition ? { ...popoverPosition,
+    ...(menubarSlot?.dataset.studioClarityMobileSaveSlot === "true" ? { left: 8, right: 8,
+      maxHeight: `calc(100dvh - ${(typeof popoverPosition.top === "number" ? popoverPosition.top : 0) + 8}px)` } : {}),
+  } : undefined;
+  const dialogVisible = embedded || (open && (!inline || popoverPosition !== null));
   useEffect(() => {
-    if (dialogVisible && document.activeElement === triggerRef.current) dialogCloseRef.current?.focus({ preventScroll: true });
-  }, [dialogVisible]);
+    if (!embedded && dialogVisible && document.activeElement === triggerRef.current) dialogCloseRef.current?.focus({ preventScroll: true });
+  }, [dialogVisible, embedded]);
   const dialog = dialogVisible ? (
         <div
           ref={dialogRef}
           id={dialogId}
-          role="dialog"
-          aria-modal="false"
+          role={embedded ? "region" : "dialog"}
+          aria-modal={embedded ? undefined : "false"}
           aria-labelledby={`${dialogId}-title`}
           aria-describedby={`${dialogId}-description`}
-          data-studio-draft-save-dialog={inline ? "menubar" : "floating"}
-          className={cn(DIALOG_CLASS, dialogPlacementClass)}
-          style={inline && popoverPosition ? (menubarSlot?.dataset.studioClarityMobileSaveSlot === "true" ? { ...popoverPosition, left: 8, right: 8 } : popoverPosition) : undefined}
+          data-studio-draft-save-dialog={embedded ? "embedded" : inline ? "menubar" : "floating"}
+          className={embedded ? "studio-drawing-draft-save-details" : cn(DIALOG_CLASS, dialogPlacementClass)}
+          style={embedded ? undefined : popoverStyle}
         >
           {offlineSceneNotice ? (
             <div data-studio-offline-scene-notice="true" className="mb-3 flex items-start gap-2 rounded-xl border border-accent/35 bg-accent-soft/30 p-2.5 text-xs text-fg-2">
@@ -658,7 +722,7 @@ export function StudioDraftSaveCenter({
               {onDismissOfflineSceneNotice ? (
                 <button type="button" aria-label="알림 닫기" onClick={() => {
                   onDismissOfflineSceneNotice();
-                  dialogCloseRef.current?.focus({ preventScroll: true });
+                  (dialogCloseRef.current ?? dialogRef.current?.closest("dialog")?.querySelector<HTMLButtonElement>('[aria-label="저장 상태 닫기"]'))?.focus({ preventScroll: true });
                 }}
                   className="grid size-11 shrink-0 place-items-center rounded-lg hover:bg-accent-soft/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
                   <X size={14} aria-hidden="true" />
@@ -671,13 +735,13 @@ export function StudioDraftSaveCenter({
               <StatusIcon tone={model.tone} className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 id={`${dialogId}-title`} className="text-base font-black">초안 저장 센터</h2>
+              <h2 id={`${dialogId}-title`} className="text-base font-black">{embedded ? bt("다른 기기에서 이어서", "Continue on another device") : "초안 저장 센터"}</h2>
               <p className="mt-0.5 text-sm font-bold leading-snug">{model.headline}</p>
               <p id={`${dialogId}-description`} className="mt-1 text-xs leading-relaxed text-fg-3">
-                {model.detail}
+                {embedded && serverSaveError ? bt("서버 저장 결과를 확인하지 못했어요. 원고를 유지하고 다시 시도하거나 프로젝트 백업을 받아 주세요.", "The server save could not be confirmed. Keep this draft, retry or download a project backup.") : model.detail}
               </p>
             </div>
-            <button
+            {!embedded ? <button
               ref={dialogCloseRef}
               type="button"
               onClick={closeAndRestoreFocus}
@@ -685,16 +749,12 @@ export function StudioDraftSaveCenter({
               className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
             >
               <X className="h-4 w-4" aria-hidden />
-            </button>
+            </button> : null}
           </div>
 
-          <div className="mt-3 rounded-xl border border-line bg-card/70 px-3 py-2.5 text-xs text-fg-2">
-            <p className="font-bold text-fg">2단계 자동 보호</p>
-            <p className="mt-1 leading-relaxed">
-              기기 복구 체크포인트와 서버 저장 번호는 별개입니다. 편집이 멈춘 뒤 약 {formatStudioDraftSaveInterval(STUDIO_SERVER_AUTOSAVE_IDLE_MS)}가 지나면 서버 자동 저장도 시도합니다.
-            </p>
-          </div>
+          {!embedded ? protectionInfo : null}
 
+          {!embedded ? (
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <SaveStatusCard
               label="이 기기"
@@ -711,31 +771,9 @@ export function StudioDraftSaveCenter({
               footer={serverRevision === null ? "서버 기록 없음" : `현재 저장 번호 #${serverRevision}`}
             />
           </div>
+          ) : null}
 
-          <dl className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-            <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">기기 체크포인트</dt>
-              <dd className="mt-1 text-sm font-black">{checkpointCount}개</dd>
-            </div>
-            <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">서버 저장 번호</dt>
-              <dd className="mt-1 text-sm font-black">{serverRevision ?? "—"}</dd>
-            </div>
-            <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">서버 버전</dt>
-              <dd className="mt-1 flex items-center justify-center gap-1 text-sm font-black">
-                {serverRevisionLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-label={frozenStatus4Text("studio.frozenStatus4.draft.revisionsLoading", "버전 기록 불러오는 중")} />
-                ) : `${serverRevisions.length}개`}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-line bg-card/70 px-2 py-2.5">
-              <dt className="text-[0.64rem] font-bold uppercase tracking-wide text-fg-3">마지막 서버 확인</dt>
-              <dd className="mt-1 text-xs font-black">
-                {lastServerSaveAt === null ? "—" : formatStudioDraftSaveTime(lastServerSaveAt)}
-              </dd>
-            </div>
-          </dl>
+          {!embedded ? recordMetrics : null}
 
           {deferredSave ? (
             <div className="mt-3 rounded-xl border border-warning/40 bg-warning-soft/20 p-3 text-xs text-warning">
@@ -774,61 +812,21 @@ export function StudioDraftSaveCenter({
             </p>
           ) : null}
 
-          <div className="mt-3 grid gap-2">
-            <button
-              type="button"
-              onClick={handlePrimaryAction}
-              disabled={scopedDraftSaveState.pendingConfirmation ? saving || !workHydrated || workHydrationFailed : model.saveActionDisabled}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-black text-on-accent shadow-sm hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {model.primaryAction === "versions" ? (
-                <History className="h-4 w-4" aria-hidden />
-              ) : saving || model.phase === "loading" ? (
-                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
-              ) : serverSaveError ? (
-                <RefreshCw className="h-4 w-4" aria-hidden />
-              ) : (
-                <Save className="h-4 w-4" aria-hidden />
-              )}
-              {scopedDraftSaveState.pendingConfirmation ? "저장 상태 확인" : model.saveActionLabel}
-            </button>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onOpenVersions();
-                }}
-                disabled={!model.canOpenVersions}
-                className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 py-2 text-xs font-bold hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                <History className="h-4 w-4" aria-hidden />
-                버전·체크포인트
-              </button>
-              <button
-                type="button"
-                onClick={() => void Promise.resolve(onExportBackup())}
-                disabled={!backupAvailable}
-                className={cn(
-                  "flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45",
-                  promoteBackup
-                    ? "border-warning/45 bg-warning-soft/20 text-warning hover:bg-warning-soft/30"
-                    : "border-line bg-card hover:bg-raised",
-                )}
-              >
-                <Download className="h-4 w-4" aria-hidden />
-                {backupAvailable ? "프로젝트 백업" : "원고 로드 후 백업"}
-              </button>
-            </div>
+          <div className="mt-3 grid gap-2" data-studio-draft-save-actions="true">
+            {embedded ? <>{backupAction}{primarySaveAction}</> : <>{primarySaveAction}<div className="grid grid-cols-2 gap-2">{versionsAction}{backupAction}</div></>}
           </div>
+          {embedded && serverSaveError ? <details className="mt-3 rounded-xl border border-line p-3"><summary>{bt("문제 해결 정보", "Troubleshooting details")}</summary><p className="mt-2 whitespace-pre-wrap break-words text-xs text-fg-3">{model.detail}</p></details> : null}
+          {embedded ? <details className="mt-4 border-t border-line pt-2"><summary className="cursor-pointer py-3 text-sm font-semibold">{bt("버전·저장 기록 보기", "Versions and save records")}</summary>{recordMetrics}{versionsAction}{protectionInfo}{recordExplanation}</details> : null}
 
-          <p className="mt-3 text-[0.68rem] leading-relaxed text-fg-3">
-            같은 탭의 저장 예약과 재실행 후 확인할 기기 기록은 구분됩니다. 저장 대기 기록은 원고 저장 완료를 뜻하지 않습니다. 원고 복구·기기 저장 상태를 확인하고 프로젝트 백업을 보관해 주세요. 충돌 시에는 자동 덮어쓰기 대신 버전 비교·복원 흐름을 사용합니다.
-          </p>
+          {!embedded ? recordExplanation : null}
         </div>
   ) : null;
   const forceVisible = model.tone === "danger" || model.tone === "warning" ? "true" : undefined;
+  if (embedded && menubarSlot) return <>
+    {serviceStatusSlot?.kind === "modal" ? createPortal(statusRegions, serviceStatusSlot.element) : statusRegions}
+    {criticalSaveLabel && editorStatusSlot ? createPortal(<span data-studio-draft-save-attention="true">{criticalSaveLabel}</span>, editorStatusSlot.summary) : null}
+    {createPortal(dialog, menubarSlot)}
+  </>;
   if (inline) {
     return (
       <>

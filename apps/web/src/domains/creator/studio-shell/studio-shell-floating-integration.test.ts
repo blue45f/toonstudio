@@ -62,7 +62,8 @@ describe("studio shell floating integration", () => {
     expect(inline).toContain('data-studio-offline-presentation="status-center"');
     expect(inline).toContain("</section>, editor.element)");
     expect(inline).toContain("importantSummary ? createPortal");
-    expect(inline).toContain("</span>, editor.summary)");
+    expect(inline).toContain("</span>, modalStatusHost ?? editor.summary)");
+    expect(inline).toContain("modalStatusHost ? createPortal(manualNotice, modalStatusHost) : manualNotice");
     expect(inline).not.toContain("data-studio-shell-floating-target");
     expect(standalone).toContain('data-studio-shell-floating-target="offline-readiness"');
     expect(standalone).toContain('data-studio-shell-force-visible="true"');

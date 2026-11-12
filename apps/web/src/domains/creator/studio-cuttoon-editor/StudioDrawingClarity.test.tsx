@@ -238,56 +238,44 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
   });
 });
 
-describe("저장 요약 축소와 중요한 안내의 가시성", () => {
+describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성", () => {
   function showStatus(state: "saved" | "failed", notice: string | null, host = true, mobile = false) {
     const css = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css", "utf8");
-    const rules = css.split("\n").filter(line => line.includes("[data-save-state=saved]"));
-    const selectors = rules.map(line => line.slice(0, line.indexOf("{")));
-    const view = render(<><style>{rules.join("\n")}</style>
+    const rules = css.split("\n").filter(line => line.startsWith("button[data-studio-drawing-save-summary=true]") || line.startsWith(".studio-drawing-clarity-title") || line.startsWith("[data-studio-connection-notice-summary]"));
+    return render(<><style>{rules.join("\n")}</style>
       <header className={`studio-drawing-clarity-header${mobile ? " studio-drawing-clarity-mobile-header" : ""}`}>
-        <button className="studio-drawing-clarity-save">저장</button>
-        {!mobile ? <details className="studio-drawing-clarity-more"><summary>더보기</summary></details> : null}
-        <div data-studio-document-chrome-slot="true" data-testid="저장 자리">
-          <div data-studio-save-status-chrome-mount="true">
-            <div data-studio-save-status-bar="true" data-save-state={state}><span role="status" /></div>
-            <div data-studio-save-sync-status-center="true"><button data-testid="상태 버튼">
-              <span data-testid="상태 문구">이 기기에 저장됨</span>
-              {host ? <span data-studio-connection-notice-summary="true">{notice ? <span role="alert">{notice}</span> : null}</span> : null}
-            </button></div>
-          </div>
+        <div className="studio-drawing-clarity-title" data-testid="저장 자리"><h1>나의 원고</h1>
+          <div data-studio-save-status-bar="true" data-save-state={state}><span role="status" /></div>
+          <button data-studio-drawing-save-summary="true" data-testid="상태 버튼">
+            <span data-testid="상태 문구">{state === "saved" ? "이 기기에 저장됨 · 14:30" : "저장 확인 필요"}</span>
+            {host ? <span data-studio-connection-notice-summary="true">{notice ? <span role="alert">{notice}</span> : null}</span> : null}
+          </button>
         </div>
       </header>
     </>);
-    return { ...view, selectors };
   }
-
-  it("실제 형제 구조에서 저장 완료와 비어 있는 요약이 함께 있을 때만 모든 축소 규칙을 적용한다", () => {
-    const view = showStatus("saved", null);
-    expect(view.selectors.length).toBeGreaterThan(0);
-    for (const selector of view.selectors) expect(view.container.querySelectorAll(selector).length, selector).toBeGreaterThan(0);
-    expect(getComputedStyle(screen.getByTestId("상태 버튼")).width).toBe("48px");
+  it("정상 저장도 결과와 저장 대상을 직접 읽을 수 있는 48px 진입점으로 유지한다", () => {
+    showStatus("saved", null);
     expect(getComputedStyle(screen.getByTestId("상태 버튼")).minHeight).toBe("48px");
-    expect(getComputedStyle(screen.getByTestId("상태 문구")).clipPath).toBe("inset(50%)");
-    expect(getComputedStyle(screen.getByTestId("저장 자리")).width).toBe("48px");
+    expect(getComputedStyle(screen.getByTestId("상태 버튼")).minWidth).toBe("48px");
+    expect(getComputedStyle(screen.getByTestId("상태 문구")).clipPath).not.toBe("inset(50%)");
+    expect(screen.getByRole("button", { name: "이 기기에 저장됨 · 14:30" })).toBeTruthy();
   });
-
-  it.each(["온라인 기능 제한", "오프라인 도구 준비 실패", "저장 공간 95% · 백업 필요"])("저장 완료여도 %s 안내의 글자·버튼·슬롯·그리드를 축소하지 않는다", notice => {
+  it.each(["온라인 기능 제한", "오프라인 도구 준비 실패", "저장 공간 95% · 백업 필요"])("저장 완료여도 %s 안내를 잘라내거나 결과 아래에서 숨기지 않는다", notice => {
     for (const mobile of [false, true]) {
-      const view = showStatus("saved", notice, true, mobile);
-      for (const selector of view.selectors) expect(view.container.querySelectorAll(selector).length, selector).toBe(0);
-      expect(getComputedStyle(screen.getByTestId("상태 문구")).clipPath).not.toBe("inset(50%)");
-      expect(getComputedStyle(screen.getByTestId("상태 버튼")).width).not.toBe("48px");
-      expect(getComputedStyle(screen.getByTestId("저장 자리")).width).not.toBe("48px");
-      expect(screen.getByRole("alert").textContent).toBe(notice);
-      view.unmount();
+      const view = showStatus("saved", notice, true, mobile), alert = screen.getByRole("alert");
+      expect(alert.textContent).toBe(notice);
+      expect(getComputedStyle(alert.parentElement!).clipPath).not.toBe("inset(50%)");
+      expect(getComputedStyle(screen.getByTestId("상태 버튼")).minHeight).toBe("48px");
+      expect(screen.getByTestId("저장 자리").querySelector("h1")?.textContent).toBe("나의 원고");
+      expect(screen.getByRole("button").textContent).toContain(notice); view.unmount();
     }
   });
-
-  it("요약 자리가 없거나 저장 실패이면 다른 빈 live span이 있어도 축소하지 않는다", () => {
-    for (const input of [{ state: "saved" as const, host: false }, { state: "failed" as const, host: true }]) {
-      const view = showStatus(input.state, null, input.host);
-      for (const selector of view.selectors) expect(view.container.querySelectorAll(selector).length, selector).toBe(0);
-      view.unmount();
+  it("요약 host가 없어도 실패 또는 완료 문구와 저장 상세 진입을 가리지 않는다", () => {
+    for (const state of ["saved", "failed"] as const) {
+      const view = showStatus(state, null, false);
+      expect(screen.getByRole("button").textContent).toContain(state === "failed" ? "저장 확인 필요" : "이 기기에 저장됨");
+      expect(getComputedStyle(screen.getByTestId("상태 문구")).clipPath).not.toBe("inset(50%)"); view.unmount();
     }
   });
 });

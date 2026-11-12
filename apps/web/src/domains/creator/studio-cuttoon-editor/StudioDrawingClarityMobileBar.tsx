@@ -4,8 +4,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioEditorReturnButton } from "../StudioEditorReturnButton";
 import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
 import { StudioDocumentChromeSlot } from "../studio-shell/StudioDocumentChromeSlot";
-import { STUDIO_MENUBAR_STATUS_SLOT_REFS } from "../studio-shell/studio-menubar-status-slot";
 import { requestStudioMobileDeviceGuide } from "../studio-shell/mobile-device-guide-channel";
+import { requestStudioShellFloatingLayoutManagerOpen } from "../studio-shell/studio-shell-floating-layout-events";
 import { parseStudioWorkspaceRoute } from "../studio-workspace-route";
 import { installStudioCommandExecutionBindings } from "../studio-command-execution-registry";
 import { requestStudioAllTools } from "../studio-toolbar-channel";
@@ -14,12 +14,12 @@ import { createStudioDrawingClarityCommandBindings } from "./StudioDrawingClarit
 import { StudioDrawingClaritySaveButton, type StudioDrawingClaritySaveSession } from "./StudioDrawingClaritySaveButton";
 import { StudioDrawingClarityMobileHelp } from "./StudioDrawingClarityMobileHelp";
 import { StudioDrawingClarityMore } from "./StudioDrawingClarityMore";
-import { StudioDrawingClarityReceipt } from "./StudioDrawingClarityReceipt";
+import { requestStudioDrawingReliability } from "./studio-drawing-assistance-channel";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export type StudioDrawingClarityMobileSession = StudioDrawingClaritySaveSession & Pick<StudioCuttoonEditorViewSession,
-  "title" | "studioMenubarActivePageLabel" | "studioMainMenuGroups" | "setMobileSheet" | "setMenu" | "location"
+  "title" | "studioMenubarActivePageLabel" | "studioMainMenuGroups" | "setMobileSheet" | "setMenu" | "location" | "activePageIndex"
   | "setExportMenuOpen" | "setTeamPanelOpen" | "setTutorialHubOpen" | "appSettings" | "saveSyncStore">
   & { readonly studioMobileEditingDockHandlers: Pick<StudioCuttoonEditorViewSession["studioMobileEditingDockHandlers"], "openInspectorRoute"> };
 
@@ -43,9 +43,9 @@ export function StudioDrawingClarityMobileBar({ session: s }: { readonly session
       data-studio-device-guide-entry={guideSurface ?? undefined}
       className="studio-drawing-clarity-header studio-drawing-clarity-mobile-header">
       <StudioEditorReturnButton variant="lane" onReturn={returnFromStudioEditorInBrowser} />
-      <div className="studio-drawing-clarity-title"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDrawingClarityReceipt store={s.saveSyncStore} /></div>
+      <div className="studio-drawing-clarity-title"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDocumentChromeSlot /></div>
       <StudioDrawingClaritySaveButton session={s} />
-      <StudioDrawingClarityMore id="studio-drawing-clarity-mobile-menu" hostId="studio-drawing-clarity-mobile-more-slot" purpose={bt("도구와 도움말", "Tools and help")} triggerRef={moreRef} actions={[
+      <StudioDrawingClarityMore id="studio-drawing-clarity-mobile-menu" hostId="studio-drawing-clarity-mobile-more-slot" purpose={bt("도구와 도움말", "Tools and help")} presentation="tasks" triggerRef={moreRef} actions={[
         { id: "pages", label: bt("페이지 보기", "View pages"), run: () => s.setMobileSheet("pages") },
         { id: "layers", label: bt("레이어·속성 보기", "View layers and properties"), run: openInspector },
         { id: "assets", label: bt("소재 찾기", "Find assets"), run: () => { s.setMobileSheet(null); preloadStudioAssetToolPopoverBody(); s.setMenu("asset"); } },
@@ -55,10 +55,11 @@ export function StudioDrawingClarityMobileBar({ session: s }: { readonly session
         { id: "windows", label: bt("프로젝트·창 도구 보기", "Show project and window tools"), run: clarity.showSavedLayout },
         { id: "help", label: bt("그리기·손가락 안내", "Drawing and touch guide"), run: () => setHelpOpen(true) },
         { id: "device", label: bt("이 기기에서 할 수 있는 작업", "Tasks available on this device"), run: (trigger) => { if (guideSurface) requestStudioMobileDeviceGuide(`studio-editor-${guideSurface}`, trigger); } },
+        { id: "view", label: bt("화면과 작업 환경", "Display and workspace"), run: requestStudioShellFloatingLayoutManagerOpen },
+        { id: "status", label: bt("저장·화면 문제 해결", "Save and display troubleshooting"), run: requestStudioDrawingReliability },
       ]} />
-      <StudioDocumentChromeSlot />
-      <div className="studio-drawing-clarity-context-row"><div ref={STUDIO_MENUBAR_STATUS_SLOT_REFS.save} data-studio-clarity-mobile-save-slot="true" className="flex min-w-0 items-center empty:hidden" />{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? <p>{s.studioMenubarActivePageLabel}</p> : null}<div id="studio-drawing-clarity-history-slot" className="studio-drawing-clarity-history ml-auto" role="toolbar" aria-label={bt("편집 기록", "Edit history")} /></div>
     </header>
+    <div className="studio-drawing-clarity-context-row studio-drawing-clarity-mobile-context"><button type="button" className="studio-drawing-page-position" title={s.studioMenubarActivePageLabel} onClick={() => s.setMobileSheet("pages")}>{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? s.studioMenubarActivePageLabel : `${bt("페이지", "Page")} ${s.activePageIndex + 1}`}<span aria-hidden>⌄</span></button><div id="studio-drawing-clarity-history-slot" className="studio-drawing-clarity-history" role="toolbar" aria-label={bt("편집 기록", "Edit history")} /></div>
     {helpOpen ? <StudioDrawingClarityMobileHelp touch={s.appSettings.touch} onClose={closeHelp} onTutorial={() => { setHelpOpen(false); s.setTutorialHubOpen(true); }} /> : null}
   </>;
 }

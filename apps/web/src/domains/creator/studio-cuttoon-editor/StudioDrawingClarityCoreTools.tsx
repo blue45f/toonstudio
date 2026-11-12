@@ -1,4 +1,4 @@
-import { Eraser, Pencil, Redo2, Undo2 } from "lucide-react";
+import { Eraser, Layers, Pencil, Redo2, Undo2 } from "lucide-react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
@@ -9,8 +9,9 @@ export type StudioDrawingClarityCoreSession = Pick<StudioCuttoonEditorViewSessio
   & { readonly studioMenubarContentHandlers: Pick<StudioCuttoonEditorViewSession["studioMenubarContentHandlers"], "undo" | "redo"> };
 
 /** 펜·지우개·색상과 같은 위치의 더보기만 먼저 보여 준다. */
-export function StudioDrawingClarityCoreTools({ session: s }: {
+export function StudioDrawingClarityCoreTools({ session: s, onOpenLayers }: {
   readonly session: StudioDrawingClarityCoreSession;
+  readonly onOpenLayers?: (trigger: HTMLElement) => void;
 }) {
   const bt = useBilingual("studio.drawingClarity");
   const blocked = s.activeSurfaceReviewLocked || s.pageEditLocked || (s.canvasInteractionBlocked && s.scopedCanvasDrawingAvailable !== true);
@@ -21,6 +22,7 @@ export function StudioDrawingClarityCoreTools({ session: s }: {
           onClick={() => s.activatePrimaryCanvasTool("draw", "eraser")} title={bt("지우개 · E", "Eraser · E")}><Eraser size={19} aria-hidden /><span>{bt("지우개", "Eraser")}</span></button>
         <button type="button" className="studio-drawing-clarity-button" disabled={blocked} aria-pressed={s.colorWheelOpen}
           onClick={() => s.setColorWheelOpen((value) => !value)}><span className="studio-drawing-clarity-swatch" style={{ backgroundColor: s.color }} aria-hidden /><span>{bt("색상", "Color")}</span></button>
+        {onOpenLayers ? <button type="button" className="studio-drawing-clarity-button" onClick={(event) => onOpenLayers(event.currentTarget)}><Layers size={19} aria-hidden /><span>{bt("레이어", "Layers")}</span></button> : null}
         <span id="studio-drawing-clarity-desktop-more-slot" className="studio-drawing-clarity-more-slot" />
       </div>;
 }

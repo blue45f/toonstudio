@@ -27,7 +27,12 @@
  */
 
 import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useStudioDrawingClarity } from "./studio-cuttoon-editor/StudioDrawingClarityContext";
+import { StudioDrawingClarityTaskDialog } from "./studio-cuttoon-editor/StudioDrawingClarityTaskDialog";
+import { subscribeStudioDrawingReliability } from "./studio-cuttoon-editor/studio-drawing-assistance-channel";
 
 import {
   dismissStudioDestructiveActionRecord,
@@ -139,12 +144,19 @@ function SignalRow({ signal }: { signal: StudioReliabilitySignal }) {
 }
 
 export function StudioReliabilityStatusRail() {
+  const drawing = useStudioDrawingClarity()?.active === true, bt = useBilingual("studio.drawingClarity");
+  const rootRef = useRef<HTMLDivElement>(null), returnTrigger = useRef<HTMLElement | null>(null);
   const status = useStudioReliabilityStatus();
   const destructive = useStudioDestructiveActionRecord();
   const rejectedStrokes = useStudioRejectedStrokeRecords();
   const rejectedStrokeStorageError = useStudioRejectedStrokeStorageError();
   const [detailOpen, setDetailOpen] = useState(false);
   const [rejectedStrokeNotice, setRejectedStrokeNotice] = useState<string | null>(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!drawing || !root) return;
+    return subscribeStudioDrawingReliability(root, (trigger) => { returnTrigger.current = trigger; setDetailOpen(true); });
+  }, [drawing]);
 
   useEffect(() => {
     // 고지 표면이 마운트되면 로스 관측을 세운다. GPU 디바이스를 미리 잡지는 않는다.
@@ -172,8 +184,40 @@ export function StudioReliabilityStatusRail() {
         ? "ok"
         : "quiet";
 
-  return (
-    <div
+  const quietLauncher = drawing && (tone === "quiet" || tone === "ok");
+  const detail = (
+          <div
+            id={RELIABILITY_DETAIL_ID}
+            data-studio-reliability-detail
+            className="pointer-events-auto w-full max-w-[min(20rem,100%)] rounded-xl border border-line/60 bg-panel/95 p-2.5 text-xs shadow-lg backdrop-blur-md"
+          >
+            <p className="mb-1.5 font-bold text-fg-2">{drawing ? bt("기기와 작업 상태", "Device and work status") : "저장·GPU·저장소 상태"}</p>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+              {RELIABILITY_CHANNEL_LABELS.map(([channel, label]) => (
+                <div key={channel} className="contents">
+                  <dt className="font-semibold text-fg-3">{drawing && channel === "gpu" ? bt("화면 표시", "Display") : drawing && channel === "storage" ? bt("저장 공간", "Storage space") : label}</dt>
+                  <dd
+                    data-studio-reliability-detail-channel={channel}
+                    className={`min-w-0 font-medium ${status[channel] ? "text-warning" : "text-fg-2"}`}
+                  >
+                    {status[channel]?.title ?? "이상 없음"}
+                  </dd>
+                </div>
+              ))}
+              <dt className="font-semibold text-fg-3">안전 모드</dt>
+              <dd
+                data-studio-reliability-detail-channel="safe-mode"
+                className={`min-w-0 font-medium ${safeMode.active ? "text-warning" : "text-fg-2"}`}
+              >
+                {safeMode.active
+                  ? safeMode.reasons.map(describeStudioSafeModeReason).join(" · ")
+                  : "꺼짐"}
+              </dd>
+            </dl>
+          </div>
+  );
+  return (<>
+    <div ref={rootRef}
       data-studio-reliability-status-rail
       data-studio-reliability-tone={tone}
       /*
@@ -334,59 +378,32 @@ export function StudioReliabilityStatusRail() {
        * 알고 싶을 때 눌러서(마우스·탭 포커스·Enter/Space 모두) 확인하는 자리다.
        */}
       <div className="flex w-full flex-col items-end gap-1.5">
-        {detailOpen ? (
-          <div
-            id={RELIABILITY_DETAIL_ID}
-            data-studio-reliability-detail
-            className="pointer-events-auto w-full max-w-[min(20rem,100%)] rounded-xl border border-line/60 bg-panel/95 p-2.5 text-xs shadow-lg backdrop-blur-md"
-          >
-            <p className="mb-1.5 font-bold text-fg-2">저장·GPU·저장소 상태</p>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-              {RELIABILITY_CHANNEL_LABELS.map(([channel, label]) => (
-                <div key={channel} className="contents">
-                  <dt className="font-semibold text-fg-3">{label}</dt>
-                  <dd
-                    data-studio-reliability-detail-channel={channel}
-                    className={`min-w-0 font-medium ${status[channel] ? "text-warning" : "text-fg-2"}`}
-                  >
-                    {status[channel]?.title ?? "이상 없음"}
-                  </dd>
-                </div>
-              ))}
-              <dt className="font-semibold text-fg-3">안전 모드</dt>
-              <dd
-                data-studio-reliability-detail-channel="safe-mode"
-                className={`min-w-0 font-medium ${safeMode.active ? "text-warning" : "text-fg-2"}`}
-              >
-                {safeMode.active
-                  ? safeMode.reasons.map(describeStudioSafeModeReason).join(" · ")
-                  : "꺼짐"}
-              </dd>
-            </dl>
-          </div>
-        ) : null}
+        {detailOpen && !drawing ? detail : null}
 
-        <button
+        {!quietLauncher ? <button
           type="button"
           data-studio-reliability-chip
           aria-expanded={detailOpen}
           aria-controls={RELIABILITY_DETAIL_ID}
           aria-label={`저장·GPU·저장소 상태 · ${toneSummary(tone)}`}
-          onClick={() => setDetailOpen((open) => !open)}
+          onClick={(event) => { if (drawing) returnTrigger.current = event.currentTarget; setDetailOpen((open) => !open); }}
           onKeyDown={(event) => {
             if (event.key === "Escape" && detailOpen) {
               event.stopPropagation();
               setDetailOpen(false);
             }
           }}
-          className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full border backdrop-blur-md backdrop-saturate-150 transition-colors hover:bg-raised/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${toneChipClassName(tone)}`}
+          className={`pointer-events-auto grid size-12 shrink-0 place-items-center rounded-full border backdrop-blur-md backdrop-saturate-150 transition-colors hover:bg-raised/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${toneChipClassName(tone)}`}
         >
           <span
             aria-hidden
             className={`size-2.5 rounded-full ${toneDotClassName(tone)} ${tone === "quiet" ? "" : "motion-safe:animate-pulse"}`}
           />
-        </button>
+        </button> : null}
       </div>
     </div>
-  );
+    {drawing && detailOpen && typeof document !== "undefined" ? createPortal(<StudioDrawingClarityTaskDialog id="studio-drawing-reliability-task" title={bt("저장·화면 문제 해결", "Save and display troubleshooting")} kind="reliability"
+      returnFocus={() => quietLauncher ? rootRef.current?.closest('[data-studio-editor="true"]')?.querySelector<HTMLElement>('[data-studio-clarity-more-trigger="true"]') ?? null : returnTrigger.current}
+      onClose={() => setDetailOpen(false)}>{() => detail}</StudioDrawingClarityTaskDialog>, document.body) : null}
+  </>);
 }

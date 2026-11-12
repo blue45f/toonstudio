@@ -1551,7 +1551,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
           </section>
         ) : null}
 
-        {/* 간단한 그리기는 기존 기본3도구와 더보기, 나머지 배치는 기존6슬롯을 사용한다. */}
+        {/* 간단한 그리기는 펜·지우개·색·레이어·더보기, 나머지 배치는 기존6슬롯을 사용한다. */}
         {isMobile && (
           <nav
             aria-label={label.dock}
@@ -1635,10 +1635,10 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                   <span className="absolute bottom-0 right-0 size-4 rounded-md border border-line-strong" style={{ backgroundColor: colorWorkspace?.secondary ?? "#ffffff" }} />
                   <span className="absolute left-0 top-0 size-4 rounded-md border border-line-strong" style={{ backgroundColor: color }} />
                 </span>
-                <span className="max-w-full truncate">{bt("색상", "Color")}</span>
+                <span className="max-w-full truncate">{bt(mobileClarity ? "색" : "색상", "Color")}</span>
               </button>
               {mobileClarity && clarityHistoryHost ? createPortal(historyActions, clarityHistoryHost) : historyActions}
-              {mobileClarity ? <span id="studio-drawing-clarity-mobile-more-slot" className="studio-drawing-clarity-more-slot" /> : <button
+              {mobileClarity ? <><StudioDockNavButton icon={Layers} label={bt("레이어", "Layers")} aria-label={bt("레이어 열기", "Open layers")} onClick={() => { setWorkspaceDockExpanded(false); setMenu(null); openInspectorRoute({ primary: "layers" }, "props"); }} /><span id="studio-drawing-clarity-mobile-more-slot" className="studio-drawing-clarity-more-slot" /></> : <button
                 type="button" ref={workspaceToggleRef}
                 aria-controls={MOBILE_WORKSPACE_TOOLS_ID} aria-expanded={workspaceDockExpanded}
                 aria-label={workspaceToggleAccessibleLabel} title={workspaceToggleAccessibleLabel}

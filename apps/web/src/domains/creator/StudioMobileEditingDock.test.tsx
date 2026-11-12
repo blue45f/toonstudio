@@ -2130,8 +2130,8 @@ describe("명료한 그리기의 기존 모바일 도크 재사용", () => {
     const props = createProps({ isMobile: true, sidecarUndoAvailable: true, sidecarRedoAvailable: true }); render(surface(props));
     const history = document.getElementById("studio-drawing-clarity-history-slot"); if (!history) throw new Error("실제 상단 슬롯 누락");
     await waitFor(() => expect(within(history).getAllByRole("button")).toHaveLength(2));
-    const primary = document.querySelector('[data-studio-mobile-primary-actions="true"]'); expect(primary?.children).toHaveLength(4);
-    expect(document.querySelector('#studio-drawing-clarity-mobile-more-slot summary')).not.toBeNull();
+    const primary = document.querySelector('[data-studio-mobile-primary-actions="true"]'); expect(primary?.children).toHaveLength(5);
+    expect(document.querySelector('#studio-drawing-clarity-mobile-more-slot summary')).not.toBeNull(); fireEvent.click(screen.getByRole("button", { name: "레이어 열기" })); expect(props.stableHandlers.openInspectorRoute).toHaveBeenCalledWith({ primary: "layers" }, "props");
     fireEvent.click(screen.getByRole("button", { name: "브러시 색상" })); expect(document.querySelector('[data-studio-mobile-color-controls="true"]')?.hasAttribute("hidden")).toBe(false);
     const undo = within(history).getByRole("button", { name: "되돌리기 · 실행취소" }); expect(undo.matches(":disabled")).toBe(false); fireEvent.click(undo);
     expect(props.stableHandlers.undo).toHaveBeenCalledOnce(); expect(document.querySelector('[data-studio-mobile-color-controls="true"]')?.hasAttribute("hidden")).toBe(true);

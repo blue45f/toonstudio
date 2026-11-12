@@ -51,6 +51,7 @@ export function StudioSaveStatusChromeMount({
   const connectivity = useStudioConnectivity();
   const slot = useStudioChromePortalTarget("studio-document-chrome-slot");
   const menubar = slot?.closest<HTMLElement>('[data-studio-app-menubar="true"]') ?? null;
+  const presentation = menubar?.dataset.studioDrawingClarityHeader === "true" ? "drawing" : "default";
   const suggestion = publishSuggestion ? (
     <StudioFirstPublishSuggestion
       firstSaveCompleted={signals.lastReceipt !== null}
@@ -62,8 +63,9 @@ export function StudioSaveStatusChromeMount({
   ) : null;
   const bar = (
     <div
-      className="flex items-center gap-1.5"
+      className={presentation === "drawing" ? "contents" : "flex items-center gap-1.5"}
       data-studio-save-status-chrome-mount="true"
+      data-studio-save-presentation={presentation}
     >
       <StudioSaveStatusBar
         status={status}
@@ -72,6 +74,7 @@ export function StudioSaveStatusChromeMount({
         connectivity={connectivity}
         onRecheckConnection={requestStudioConnectivityRecheck}
         companionCenterMounted
+        presentation={presentation}
       />
       <StudioSaveSyncStatusCenter
         journal={journalSnapshot}
@@ -80,6 +83,8 @@ export function StudioSaveStatusChromeMount({
         connectivity={connectivity}
         onRetrySave={onRequestSaveFlush}
         onRecheckConnection={requestStudioConnectivityRecheck}
+        presentation={presentation}
+        readOnlyTab={leadership === "follower"}
       />
     </div>
   );

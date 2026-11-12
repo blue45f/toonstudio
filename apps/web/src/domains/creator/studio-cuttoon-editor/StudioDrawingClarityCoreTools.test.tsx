@@ -29,6 +29,12 @@ describe("간단한 그리기의 실제 핵심 도구 연결", () => {
     expect(value.studioMenubarContentHandlers.redo).toHaveBeenCalledOnce();
     expect(document.getElementById("studio-drawing-clarity-desktop-more-slot")).not.toBeNull();
   });
+  it("레이어 직접 접근은 실제 진입점을 기존 inspector 명령에 전달한다", () => {
+    const open = vi.fn(); render(<StudioDrawingClarityCoreTools session={session()} onOpenLayers={open} />);
+    const button = screen.getByRole("button", { name: "레이어" }); fireEvent.click(button);
+    expect(open).toHaveBeenCalledExactlyOnceWith(button);
+    expect(document.getElementById("studio-drawing-clarity-desktop-more-slot")).toBeTruthy();
+  });
   it("기존 비활성 권한과 기록 상태를 우회하지 않고 더보기 자리는 유지한다", () => {
     const value = { ...session(), canvasInteractionBlocked: true, menuEditUndoDisabled: true, menuEditRedoDisabled: true };
     render(<><StudioDrawingClarityCoreTools session={value} /><StudioDrawingClarityHistory session={value} /></>);

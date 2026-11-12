@@ -1,7 +1,5 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { readFileSync } from "node:fs";
-import { createPortal } from "react-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultStudioAppSettings } from "../studio-app-settings";
@@ -13,6 +11,7 @@ import { resolveStudioMobileTouchPlan } from "../studio-mobile-touch-flow";
 import { useStudioMenubarStatusSlot } from "../studio-shell/studio-menubar-status-slot";
 import { StudioDrawingClarityProvider, type StudioDrawingClaritySession } from "./StudioDrawingClarity";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
+import { StudioDrawingClarityReceipt } from "./StudioDrawingClarityReceipt";
 import { StudioDrawingClarityMobileBar, type StudioDrawingClarityMobileSession } from "./StudioDrawingClarityMobileBar";
 
 vi.mock("../studio-collab/studio-scoped-draft-save", () => ({ useStudioScopedDraftSaveState: () => ({ available: false, pendingConfirmation: false }) }));
@@ -27,7 +26,7 @@ function session(): MobileFixture {
     workspaceState: state, workMode: "all", uiDensityMode: "simple", appSettings: defaultStudioAppSettings(),
     location: { pathname: "/studio/canvas", search: "?uiMode=basic", hash: "", state: null, key: "mobile" },
     studioDrawingClarityBaseline: { ownerScope: "guest", source: "default", state },
-    title: "나의 첫 웹툰", studioMenubarActivePageLabel: "1페이지", studioMainMenuGroups: [],
+    title: "나의 첫 웹툰", activePageIndex: 0, studioMenubarActivePageLabel: "1페이지", studioMainMenuGroups: [],
     saveSyncStore: createStudioSaveSyncSignalStore(),
     saving: false, collaborationDocumentLocked: false, sharedDocument: null, collaborationLockMessage: () => "편집 잠김",
     studioMenubarContentHandlers: { setStudioUiDensity: vi.fn(), handleSave: vi.fn<StudioDrawingClarityMobileSession["studioMenubarContentHandlers"]["handleSave"]>().mockResolvedValue(undefined) },
@@ -75,16 +74,13 @@ describe("웹 모바일 기본 상단", () => {
     expect(screen.getByText("2페이지 · 첫 만남")).toBeTruthy();
     expect(screen.getByRole("toolbar", { name: "편집 기록" })).toBeTruthy();
   });
-  it("저장 상태 host는 보이는 모바일 상단에 등록하고 화면을 떠나면 해제한다", () => {
-    const css = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css", "utf8");
-    const rule = css.split("\n").find(line => line.includes(".studio-drawing-clarity-mobile-header .studio-drawing-clarity-context-row button"));
-    function SlotProbe() { const host = useStudioMenubarStatusSlot("save"); return <><output data-testid="모바일 저장 자리">{host?.getAttribute("data-studio-clarity-mobile-save-slot") ?? "없음"}</output>{host ? createPortal(<button className="원래저장버튼">서버 버전과 복구</button>, host) : null}</>; }
-    const probe = render(<><style>{`.원래저장버튼{min-width:44px;min-height:44px}${rule ?? ""}`}</style><SlotProbe /></>), view = show();
-    expect(screen.getByTestId("모바일 저장 자리").textContent).toBe("true");
-    expect(view.container.querySelector('[data-studio-clarity-mobile-save-slot="true"]')?.closest('[data-studio-drawing-clarity-mobile-header]')).toBeTruthy();
-    expect(getComputedStyle(screen.getByRole("button", { name: "서버 버전과 복구" })).minWidth).toBe("48px");
-    expect(getComputedStyle(screen.getByRole("button", { name: "서버 버전과 복구" })).minHeight).toBe("48px");
-    view.unmount(); expect(screen.getByTestId("모바일 저장 자리").textContent).toBe("없음"); probe.unmount();
+  it("상단 제목 안에 실제 저장 요약 자리를 하나 두고 이전 save host를 중복 등록하지 않는다", () => {
+    function SlotProbe() { const host = useStudioMenubarStatusSlot("save"); return <output data-testid="저장 상세 자리">{host ? "중복" : "없음"}</output>; }
+    const probe = render(<SlotProbe />), view = show();
+    expect(screen.getByTestId("저장 상세 자리").textContent).toBe("없음");
+    expect(view.container.querySelector('.studio-drawing-clarity-title #studio-document-chrome-slot')).toBeTruthy();
+    expect(view.container.querySelector('[data-studio-clarity-mobile-save-slot]')).toBeNull();
+    view.unmount(); expect(screen.getByTestId("저장 상세 자리").textContent).toBe("없음"); probe.unmount();
   });
   it.each(["Escape", "닫기", "접기"])("더보기의 기기 작업 안내는 같은 표면의 원래 내용을 열고 %s 뒤 같은 트리거로 돌아간다", (method) => {
     vi.stubGlobal("matchMedia", vi.fn((media: string) => ({ matches: true, media, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
@@ -134,7 +130,7 @@ describe("웹 모바일 기본 상단", () => {
   it("메뉴의 페이지·레이어·소재·출력은 기존 모바일 명령을 사용한다", () => {
     const value = session(); show(value);
     more(); fireEvent.click(screen.getByRole("button", { name: "페이지 보기" })); expect(value.setMobileSheet).toHaveBeenLastCalledWith("pages");
-    more(); fireEvent.click(screen.getByRole("button", { name: "레이어·속성 보기" })); expect(value.studioMobileEditingDockHandlers.openInspectorRoute).toHaveBeenCalledWith({ primary: "layers" }, "props");
+    more(); fireEvent.click(screen.getByText("레이어와 기존 작업 배치")); fireEvent.click(screen.getByRole("button", { name: "레이어·속성 보기" })); expect(value.studioMobileEditingDockHandlers.openInspectorRoute).toHaveBeenCalledWith({ primary: "layers" }, "props");
     more(); fireEvent.click(screen.getByRole("button", { name: "소재 찾기" })); expect(value.setMenu).toHaveBeenLastCalledWith("asset");
     more(); fireEvent.click(screen.getByRole("button", { name: "원고 내보내기" })); expect(value.setExportMenuOpen).toHaveBeenCalledWith(true);
   });
@@ -153,7 +149,7 @@ describe("웹 모바일 기본 상단", () => {
     fireEvent.keyDown(dialog, { key: "Escape" }); expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(trigger);
   });
   it("프로젝트·창 도구는 간결화 표시를 종료해 기존 영역을 보여 주며 다시 돌아올 수 있다", () => {
-    show(); more(); fireEvent.click(screen.getByRole("button", { name: "프로젝트·창 도구 보기" }));
+    show(); more(); fireEvent.click(screen.getByText("레이어와 기존 작업 배치")); fireEvent.click(screen.getByRole("button", { name: "프로젝트·창 도구 보기" }));
     expect(screen.getByRole("region", { name: "기존 작업 배치" })).toBeTruthy();
     expect(document.querySelector('[data-studio-drawing-clarity-mobile="true"]')).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" })); expect(screen.getByRole("region", { name: "원고와 저장" })).toBeTruthy();
@@ -178,7 +174,7 @@ describe("웹 모바일 기본 상단", () => {
       if (method === "Escape") fireEvent.keyDown(dialog, { key: "Escape" });
       else if (method === "네이티브 취소") fireEvent(dialog, new Event("cancel", { cancelable: true }));
       else fireEvent.click(screen.getByRole("button", { name: "그리기 안내 닫기" }));
-      expect(native.close).toHaveBeenCalledTimes(1); expect(closed).toHaveBeenCalledTimes(1);
+      expect(native.close.mock.contexts.filter(node => node === dialog)).toHaveLength(1); expect(closed).toHaveBeenCalledTimes(1);
       expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(trigger);
       expect(native.focus.mock.contexts.filter((node) => node === trigger)).toHaveLength(1);
     } finally { native.restore(); }
@@ -190,8 +186,8 @@ describe("웹 모바일 기본 상단", () => {
     try {
       const value = session(); vi.mocked(value.setTutorialHubOpen).mockImplementation((open) => { if (open === true) destination.focus(); });
       show(value); const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
-      native.focus.mockClear(); fireEvent.click(screen.getByRole("button", { name: "사용법 따라 하기" }));
-      expect(native.close).toHaveBeenCalledTimes(1); expect(value.setTutorialHubOpen).toHaveBeenCalledExactlyOnceWith(true);
+      const dialog = screen.getByRole("dialog", { name: "그리기·손가락 안내" }); native.focus.mockClear(); fireEvent.click(screen.getByRole("button", { name: "사용법 따라 하기" }));
+      expect(native.close.mock.contexts.filter(node => node === dialog)).toHaveLength(1); expect(value.setTutorialHubOpen).toHaveBeenCalledExactlyOnceWith(true);
       expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(destination);
       expect(native.focus.mock.contexts.filter((node) => node === trigger)).toHaveLength(0);
     } finally { native.restore(); destination.remove(); }
@@ -202,7 +198,7 @@ describe("웹 모바일 기본 상단", () => {
     try {
       const value = session(), view = show(value); more(); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
       const dialog = screen.getByRole("dialog", { name: "그리기·손가락 안내" }), closed = vi.fn(); dialog.addEventListener("close", closed);
-      view.unmount(); expect(native.close).toHaveBeenCalledTimes(1); expect(closed).toHaveBeenCalledTimes(1);
+      view.unmount(); expect(native.close.mock.contexts.filter(node => node === dialog)).toHaveLength(1); expect(closed).toHaveBeenCalledTimes(1);
       expect(value.setTutorialHubOpen).not.toHaveBeenCalled();
     } finally { native.restore(); }
   });
@@ -218,7 +214,7 @@ describe("웹 모바일 기본 상단", () => {
 
   it("원고의 실제 receipt만 마지막 기기 저장 시각으로 표시하고 baseline을 완료로 꾸미지 않는다", () => {
     const store = createStudioSaveSyncSignalStore(), value = { ...session(), saveSyncStore: store }; store.reset("actual-draft");
-    store.noteBaseline(3); show(value); expect(screen.getByText("아직 기기 저장 전")).toBeTruthy();
+    store.noteBaseline(3); render(<StudioDrawingClarityReceipt store={value.saveSyncStore} />); expect(screen.getByText("아직 기기 저장 전")).toBeTruthy();
     expect(document.querySelector("time")).toBeNull();
     const savedAtMs = Date.parse("2026-11-12T04:32:00.000Z");
     act(() => store.noteDurableReceipt({ savedAtMs, authority: "sqlite-fallback", sequence: null, revision: 1, generation: 3 }));

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioDrawingClarityMore } from "./StudioDrawingClarityMore";
+import { getActiveServiceStatusSlot } from "@/shared/lib/modal-status-slot";
 
 afterEach(cleanup);
 function menu(hostId = "mobile-tools", run = vi.fn()) {
@@ -85,5 +86,88 @@ describe("드로잉 더보기의 실제 진입점과 초점", () => {
     }
     const view = render(<Surface simple />); trigger().focus(); view.rerender(<Surface simple={false} />);
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "팀 작업 닫기" })));
+  });
+});
+
+
+// jsdom has no top layer/inert implementation. These fixtures check controller calls;
+// actual native Tab containment and background inert remain browser checks.
+describe("목적 화면으로 여는 드로잉 더보기", () => {
+  let restoreNative: () => void;
+  const nativeEvents: string[] = [];
+  let pendingClose: HTMLDialogElement[] = [];
+  beforeEach(() => {
+    nativeEvents.length = 0; pendingClose = [];
+    const proto = HTMLDialogElement.prototype;
+    const show = Object.getOwnPropertyDescriptor(proto, "showModal"), close = Object.getOwnPropertyDescriptor(proto, "close");
+    Object.defineProperty(proto, "showModal", { configurable: true, value: function (this: HTMLDialogElement) { this.open = true; nativeEvents.push("show"); } });
+    Object.defineProperty(proto, "close", { configurable: true, value: function (this: HTMLDialogElement) {
+      if (!this.open) return; this.open = false; nativeEvents.push("close"); pendingClose.push(this);
+    } });
+    restoreNative = () => {
+      if (show) Object.defineProperty(proto, "showModal", show); else Reflect.deleteProperty(proto, "showModal");
+      if (close) Object.defineProperty(proto, "close", close); else Reflect.deleteProperty(proto, "close");
+    };
+  });
+  afterEach(() => { cleanup(); restoreNative(); pendingClose = []; });
+  function tasks(run = vi.fn()) {
+    return <StudioDrawingClarityMore id="drawing-tasks" hostId="absent" purpose="도구와 도움말" presentation="tasks"
+      actions={[
+        { id: "pages", label: "페이지와 컷", run }, { id: "assets", label: "소재 찾기", run },
+        { id: "export", label: "내보내기", run }, { id: "team", label: "함께 작업", run },
+        { id: "device", label: "이 기기에서 할 수 있는 작업", run }, { id: "layers", label: "레이어", run },
+        { id: "windows", label: "기존 작업 배치", run }, { id: "view", label: "보기 설정", run },
+      ]} />;
+  }
+  it("원본 트리거에서 native 화면으로 초점이 진입하며 이름 있는 부가 기능을 보존한다", () => {
+    render(tasks()); const source = trigger(); source.focus(); fireEvent.click(source);
+    const dialog = screen.getByRole("dialog", { name: "원고 도구" }) as HTMLDialogElement;
+    expect(dialog.parentElement).toBe(document.body);
+    expect(dialog.open).toBe(true); expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(dialog.getAttribute("data-studio-shortcut-boundary")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "그리기로 돌아가기" }));
+    expect(source.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(source.getAttribute("aria-controls")).toBe(dialog.id);
+    expect(nativeEvents).toEqual(["show"]);
+    expect(getActiveServiceStatusSlot()?.element.closest("dialog")).toBe(dialog);
+    expect(dialog.querySelectorAll('[data-studio-clarity-action]')).toHaveLength(8);
+    const advanced = dialog.querySelector<HTMLDetailsElement>(".studio-drawing-task-advanced")!;
+    expect(advanced.open).toBe(false);
+    expect(advanced.querySelector('[data-studio-clarity-action="layers"]')).not.toBeNull();
+    expect(advanced.querySelector('[data-studio-clarity-action="windows"]')).not.toBeNull();
+  });
+  it("내부 포인터는 닫기를 선행하지 않고 native를 닫은 뒤 원본 트리거로 실제 행동을 한 번 실행한다", () => {
+    const next = document.createElement("button"); next.textContent = "다음 작업"; document.body.append(next);
+    let source: HTMLElement;
+    const run = vi.fn((actual: HTMLElement) => {
+      nativeEvents.push("run"); expect(actual).toBe(source);
+      expect((document.getElementById("drawing-tasks") as HTMLDialogElement).open).toBe(false);
+      next.focus();
+    });
+    try {
+      render(tasks(run)); source = trigger(); source.focus(); fireEvent.click(source);
+      const action = screen.getByRole("button", { name: "소재 찾기" });
+      fireEvent.pointerDown(action);
+      expect(source.getAttribute("aria-expanded")).toBe("true");
+      expect(nativeEvents).toEqual(["show"]);
+      fireEvent.click(action);
+      expect(nativeEvents).toEqual(["show", "close", "run"]);
+      expect(run).toHaveBeenCalledExactlyOnceWith(source);
+      expect(screen.queryByRole("dialog", { name: "원고 도구" })).toBeNull();
+      expect(source.getAttribute("aria-expanded")).toBe("false");
+      expect(document.activeElement).toBe(next);
+      act(() => { pendingClose.splice(0).forEach(node => node.dispatchEvent(new Event("close"))); });
+      expect(run).toHaveBeenCalledTimes(1); expect(getActiveServiceStatusSlot()).toBeNull();
+    } finally { next.remove(); }
+  });
+  it("첫 Escape는 행동을 실행하지 않고 같은 더보기로 돌아가며 modal 자리를 정리한다", () => {
+    const run = vi.fn(); render(tasks(run)); const source = trigger(); source.focus(); fireEvent.click(source);
+    const action = screen.getByRole("button", { name: "이 기기에서 할 수 있는 작업" }); action.focus();
+    fireEvent.keyDown(action, { key: "Escape" });
+    expect(run).not.toHaveBeenCalled(); expect(document.activeElement).toBe(source);
+    expect(source.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("dialog", { name: "원고 도구" })).toBeNull();
+    expect(getActiveServiceStatusSlot()).toBeNull();
+    expect(nativeEvents).toEqual(["show", "close"]);
   });
 });

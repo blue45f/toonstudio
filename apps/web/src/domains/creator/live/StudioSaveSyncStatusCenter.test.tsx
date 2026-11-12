@@ -17,7 +17,7 @@ import {
 } from "../studio-save-sync-signals";
 
 import type { StudioConnectivitySnapshot } from "../offline/studio-connectivity";
-import { getActiveEditorStatusSlot } from "@/shared/lib/modal-status-slot";
+import { getActiveEditorStatusSlot, getActiveServiceStatusSlot } from "@/shared/lib/modal-status-slot";
 
 afterEach(() => {
   cleanup();
@@ -364,5 +364,122 @@ describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
       />
     );
     expect(screen.queryByRole("progressbar", { name: "이 기기 저장 대기열 진행률" })).toBeNull();
+  });
+});
+
+
+function drawingDialog(): HTMLDialogElement {
+  const node = document.querySelector<HTMLDialogElement>('[data-studio-drawing-save-dialog="true"]');
+  if (!node) throw new Error("drawing save dialog missing");
+  node.showModal = vi.fn(() => node.setAttribute("open", ""));
+  node.close = vi.fn(() => { node.removeAttribute("open"); node.dispatchEvent(new Event("close")); });
+  return node;
+}
+
+describe("drawing save purpose screen", () => {
+  const savedAt = Date.parse("2026-11-12T08:35:20.156Z");
+  const status: StudioSaveSyncStatus = { documentId: "drawing", localDurable: true, pendingOperationsCount: 0,
+    lastSavedAt: savedAt, lastCheckpointAt: savedAt, cloudSyncStatus: "synced", summaryText: "" };
+
+  it("shows the actual local receipt, keeps permanent hidden hosts and restores the header focus", () => {
+    const recheck = vi.fn(), checkpoint = vi.fn();
+    const view = render(<StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("drawing")}
+      statusOverride={status} onForceCheckpoint={checkpoint} onRecheckConnection={recheck}
+      connectivity={{ browserOnline: true, serverReachable: false, checking: false, mode: "server-unavailable",
+        serverAvailable: false, localOnly: true, lastCheckedAt: savedAt, consecutiveFailures: 2 }} />);
+    const dialog = drawingDialog();
+    const slot = getActiveEditorStatusSlot();
+    const trigger = screen.getByRole("button", { name: /^저장 상태 열기: 이 기기 ·/u });
+    const receipt = trigger.querySelector("[data-studio-clarity-receipt] time");
+    expect(receipt?.getAttribute("datetime")).toBe("2026-11-12T08:35:20.156Z");
+    expect(trigger.textContent).not.toMatch(/서버|연결/u);
+    expect(trigger.getAttribute("data-studio-local-save-state")).toBe("saved");
+    expect(slot?.element.closest("dialog")).toBe(dialog);
+    expect(slot?.summary.closest("button")).toBe(trigger);
+    const embeddedHost = dialog.querySelector('[data-studio-drawing-save-details="true"]');
+    expect(embeddedHost).not.toBeNull();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    trigger.focus(); fireEvent.keyDown(trigger, { key: "Enter" }); fireEvent.click(trigger);
+    expect(dialog.open).toBe(true);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "저장 상태 닫기" }));
+    expect(getActiveServiceStatusSlot()?.element).toBe(slot?.element);
+    fireEvent.click(screen.getByRole("button", { name: "연결 다시 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "복구 지점 만들기" }));
+    expect(recheck).toHaveBeenCalledTimes(1); expect(checkpoint).toHaveBeenCalledTimes(1);
+    const records = screen.getByText("연결·복구 기록 보기").closest("details");
+    expect(records?.open).toBe(false);
+    expect(records?.textContent).toMatch(/서버 저장은 확인되지 않았어요/u);
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(document.activeElement).toBe(trigger);
+    expect(dialog.hidden).toBe(true);
+    expect(getActiveEditorStatusSlot()).toBe(slot);
+    expect(dialog.querySelector('[data-studio-drawing-save-details="true"]')).toBe(embeddedHost);
+    expect(getActiveServiceStatusSlot()?.kind).toBe("editor");
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    view.unmount(); expect(getActiveEditorStatusSlot()).toBeNull();
+  });
+
+  it("네이티브 모달 미지원 때는 비모달임을 알리고 닫기 초점을 보존한다", () => {
+    render(<StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("drawing")} statusOverride={status} />);
+    const dialog = drawingDialog();
+    Object.defineProperty(dialog, "showModal", { configurable: true, value: undefined });
+    const trigger = screen.getByRole("button", { name: /^저장 상태 열기: 이 기기 ·/u });
+    fireEvent.click(trigger);
+    expect(dialog.open).toBe(true);
+    expect(dialog.getAttribute("aria-modal")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태 닫기" }));
+    expect(dialog.hidden).toBe(true);
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("ignores an earlier queued close after the user opens the save screen again", () => {
+    render(<StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("drawing")} statusOverride={status} />);
+    const dialog = drawingDialog(), trigger = screen.getByRole("button", { name: /^저장 상태 열기: 이 기기 ·/u });
+    const oldClose: Event[] = [];
+    dialog.close = vi.fn(() => { dialog.removeAttribute("open"); oldClose.push(new Event("close")); });
+    fireEvent.click(trigger); fireEvent.click(screen.getByRole("button", { name: "저장 상태 닫기" }));
+    expect(dialog.open).toBe(false); expect(document.activeElement).toBe(trigger);
+    fireEvent.click(trigger); expect(dialog.open).toBe(true);
+    for (const event of oldClose) fireEvent(dialog, event);
+    expect(dialog.open).toBe(true); expect(dialog.hidden).toBe(false);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "저장 상태 닫기" }));
+    fireEvent.keyDown(dialog, { key: "Escape" }); expect(dialog.open).toBe(false); expect(document.activeElement).toBe(trigger);
+    expect(dialog.getAttribute("aria-modal")).toBe("true"); expect(dialog.hasAttribute("data-studio-shortcut-boundary")).toBe(true);
+  });
+
+  it("does not steal focus from the next task when embedded version navigation closes the native screen", () => {
+    const next = document.createElement("button"); next.textContent = "버전 복구"; document.body.append(next);
+    try {
+      render(<StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("drawing")} statusOverride={status} />);
+      const dialog = drawingDialog(); fireEvent.click(screen.getByRole("button", { name: /^저장 상태 열기: 이 기기 ·/u }));
+      dialog.returnValue = "next-task"; dialog.removeAttribute("open"); next.focus();
+      fireEvent(dialog, new Event("close")); expect(dialog.hidden).toBe(true); expect(document.activeElement).toBe(next);
+      fireEvent.click(screen.getByRole("button", { name: /^저장 상태 열기: 이 기기 ·/u }));
+      expect(dialog.returnValue).toBe(""); fireEvent.keyDown(dialog, { key: "Escape" });
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: /^저장 상태 열기: 이 기기 ·/u }));
+    } finally { next.remove(); }
+  });
+
+  it.each([
+    ["empty", { lastSavedAt: 0, lastCheckpointAt: 0 }, false, "아직 저장 전"],
+    ["pending", { pendingOperationsCount: 2, cloudSyncStatus: "pending" }, false, "이 기기에 저장 중"],
+    ["failed", { localDurable: false }, false, "저장 확인 필요"],
+    ["readonly", {}, true, "다른 탭이 기기 저장 담당"],
+  ] as const)("does not promote %s state to a completed receipt", (state, patch, readOnlyTab, label) => {
+    render(<StudioSaveSyncStatusCenter presentation="drawing" readOnlyTab={readOnlyTab}
+      journal={createEmptyOperationJournal("drawing")} statusOverride={{ ...status, ...patch }} />);
+    const trigger = screen.getByRole("button", { name: `저장 상태 열기: ${label}` });
+    expect(trigger.getAttribute("data-studio-local-save-state")).toBe(state);
+    expect(trigger.querySelector("time")).toBeNull();
+  });
+
+  it("keeps local failure retry ahead of device preparation notices", () => {
+    const retry = vi.fn();
+    render(<StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("drawing")}
+      statusOverride={{ ...status, localDurable: false }} onRetrySave={retry} />);
+    drawingDialog(); fireEvent.click(screen.getByRole("button", { name: "저장 상태 열기: 저장 확인 필요" }));
+    const action = screen.getByRole("button", { name: "지금 다시 시도" });
+    expect(action.compareDocumentPosition(getActiveEditorStatusSlot()!.element) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    fireEvent.click(action); expect(retry).toHaveBeenCalledTimes(1);
   });
 });
