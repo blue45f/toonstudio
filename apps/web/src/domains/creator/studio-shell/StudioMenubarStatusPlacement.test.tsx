@@ -12,6 +12,9 @@ import {
 import { INITIAL_STUDIO_LIVE_SYNC_SNAPSHOT } from "../live/studio-live-sync-safety";
 import { StudioDraftOperationSyncAssistant } from "../StudioDraftOperationSyncAssistant";
 import { StudioDraftSaveCenter } from "../StudioDraftSaveCenter";
+import { StudioSaveSyncStatusCenter } from "../StudioSaveSyncStatusCenter";
+import { createEmptyOperationJournal } from "../studio-operation-recovery-coordinator";
+import { getActiveEditorStatusSlot } from "@/shared/lib/modal-status-slot";
 import { resetStudioReliabilityStatus } from "../studio-reliability-status-store";
 import {
   STUDIO_MENUBAR_STATUS_SLOT_REFS,
@@ -233,6 +236,8 @@ describe("desktop menubar status placement", () => {
       expect(dialog.style.top).toBe("192px");
       expect(dialog.style.left).toBe("8px");
       expect(dialog.style.right).toBe("8px");
+      // 상단 192px과 아래 여백 8px을 먼저 합쳐 실제 사용 가능 높이를 제한한다.
+      expect(dialog.style.maxHeight).toBe("calc(100dvh - 200px)");
       // 폭도 화면보다 16px 작게 제한하므로 왼쪽 버튼에 오른쪽 정렬해 화면 밖으로 밀리지 않는다.
       expect(dialog.className).toContain("w-[min(26rem,calc(100vw-1rem))]");
       expect(dialog.style.right).not.toBe(`${width - 56}px`);
@@ -417,5 +422,77 @@ describe("desktop menubar status placement", () => {
     expect(trigger.className).toContain("max-2xl:w-11");
     expect(trigger.className).toContain("2xl:w-48");
     expect(trigger.className).not.toContain("max-w-[13rem]");
+  });
+});
+
+
+function embeddedDrawingSave(overrides: Partial<ComponentProps<typeof StudioDraftSaveCenter>> = {}) {
+  render(<><StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("drawing-embedded")} /><SaveCenter mobileImmersive {...overrides} /></>);
+  const dialog = document.querySelector<HTMLDialogElement>('[data-studio-drawing-save-dialog="true"]');
+  if (!dialog) throw new Error("drawing save purpose screen missing");
+  dialog.showModal = vi.fn(() => dialog.setAttribute("open", ""));
+  dialog.close = vi.fn(() => { dialog.removeAttribute("open"); dialog.dispatchEvent(new Event("close")); });
+  return dialog;
+}
+
+describe("drawing save screen embeds existing draft authorities", () => {
+  it("keeps backup and actual server actions in one dialog, moving version counts into named records", async () => {
+    setOnline(true);
+    const onSaveDraft = vi.fn(() => Promise.resolve()), onExportBackup = vi.fn(), onOpenVersions = vi.fn();
+    const dialog = embeddedDrawingSave({ onSaveDraft, onExportBackup, onOpenVersions, localCheckpointCount: 3,
+      serverCurrentRevision: 7, serverRevisions: [{ revision: 7, createdAt: "2026-11-12T08:35:20.156Z" }] });
+    expect(document.querySelector('[data-studio-draft-save-trigger]')).toBeNull();
+    expect(document.querySelectorAll('[data-studio-drawing-save-details="true"]')).toHaveLength(1);
+    const embedded = dialog.querySelector('[data-studio-draft-save-dialog="embedded"]');
+    expect(embedded).not.toBeNull(); expect(embedded?.getAttribute("role")).toBe("region");
+    expect(screen.queryByRole("button", { name: "프로젝트 백업" })).toBeNull();
+    const trigger = screen.getByRole("button", { name: /저장 상태 열기:/u });
+    fireEvent.click(trigger);
+    expect(screen.getAllByRole("dialog")).toEqual([dialog]);
+    const backup = screen.getByRole("button", { name: "프로젝트 백업" });
+    const server = screen.getByRole("button", { name: "지금 서버에 저장" });
+    expect(backup.compareDocumentPosition(server) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    fireEvent.click(backup); fireEvent.click(server);
+    expect(onExportBackup).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1));
+    expect(dialog.open).toBe(true);
+    const records = within(dialog).getByText("버전·저장 기록 보기").closest("details");
+    expect(records?.open).toBe(false);
+    expect(records?.querySelector('[data-studio-save-record-metrics="true"]')).not.toBeNull();
+    expect(within(records!).getByText("버전·체크포인트").closest("details")).toBe(records);
+    records!.open = true;
+    fireEvent.click(within(dialog).getByRole("button", { name: "버전·체크포인트" }));
+    expect(onOpenVersions).toHaveBeenCalledTimes(1);
+    expect(dialog.open).toBe(false); expect(document.activeElement).toBe(trigger);
+  });
+
+  it("keeps failures and retry reachable without leaking a raw technical error into the header", async () => {
+    setOnline(true);
+    const raw = "서버 초안 저장 실패: SQLite write failure: raw_private_engine_detail";
+    const onSaveDraft = vi.fn(() => Promise.resolve());
+    const dialog = embeddedDrawingSave({ error: new Error(raw), onSaveDraft });
+    const slot = getActiveEditorStatusSlot();
+    expect(slot?.summary.textContent).toBe("서버 저장 확인 필요");
+    expect(slot?.summary.textContent).not.toContain(raw);
+    expect(slot?.summary.querySelector('[role="status"]')).toBeNull();
+    expect(screen.getAllByRole("status").some((node) => node.textContent?.includes("서버"))).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기:/u }));
+    expect(getActiveEditorStatusSlot()?.element.querySelectorAll('[role="status"]')).toHaveLength(2);
+    const troubleshoot = within(dialog).getByText("문제 해결 정보").closest("details");
+    expect(troubleshoot?.open).toBe(false); expect(troubleshoot?.textContent).toContain(raw);
+    const retry = within(dialog).getByRole("button", { name: "서버 저장 다시 시도" });
+    fireEvent.click(retry); await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1));
+    expect(dialog.open).toBe(true);
+  });
+
+  it("closes only the presentation before opening the existing required-information workflow", () => {
+    setOnline(true);
+    const onContinuePendingSave = vi.fn(), onSaveDraft = vi.fn();
+    const dialog = embeddedDrawingSave({ pendingSaveIntent: "draft", onContinuePendingSave, onSaveDraft });
+    fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기:/u }));
+    const action = within(dialog).getByRole("button", { name: "초안 저장 계속" });
+    fireEvent.click(action);
+    expect(onContinuePendingSave).toHaveBeenCalledTimes(1); expect(onSaveDraft).not.toHaveBeenCalled();
+    expect(dialog.open).toBe(false);
   });
 });

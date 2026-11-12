@@ -513,13 +513,15 @@ describe("TitleReaderPage — 숨긴 메뉴와 Escape 초점", () => {
   });
 });
 
-it("모바일 footer와 본문 여백은 기존 셸의 하단 안전 기준선을 사용하고 z-index를 올리지 않는다 (실측 아님)", () => {
+it("모든 폭에서 footer와 본문은 상태 알림의 실측 여백을 소비하고 모바일 기준선과 z-index를 유지한다 (실측 아님)", () => {
   const { container } = renderReader("/title/fog-signal/read/2");
   const footer = screen.getByRole("contentinfo");
-  expect(footer.classList.contains("max-md:bottom-[var(--site-float-base)]")).toBe(true);
-  expect(footer.classList.contains("bottom-0")).toBe(true);
+  expect(footer.classList.contains("max-md:bottom-[max(var(--site-float-base),var(--service-status-overlay-clearance,0px))]")).toBe(true);
+  expect(footer.classList.contains("bottom-[max(0px,var(--service-status-overlay-clearance,0px))]")).toBe(true);
   expect(footer.classList.contains("z-40")).toBe(true);
-  expect(container.querySelector('[class*="max-md:pb-[calc(9rem+var(--site-float-base))]"]')).not.toBeNull();
+  const body = container.querySelector(".reader-reference-body");
+  expect(body?.classList.contains("pb-[calc(9rem+max(0px,var(--service-status-overlay-clearance,0px)))]")).toBe(true);
+  expect(body?.classList.contains("max-md:pb-[calc(9rem+max(var(--site-float-base),var(--service-status-overlay-clearance,0px)))]")).toBe(true);
 });
 
 

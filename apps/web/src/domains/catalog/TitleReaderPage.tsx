@@ -306,7 +306,7 @@ function ReaderShell({
         )}
       </header>
 
-      <div onPointerDown={handleContentPointerDown} className={cn("reader-reference-body mx-auto w-full px-4 pb-36 max-md:pb-[calc(9rem+var(--site-float-base))]", WIDTH_CLASSES[comfort.width])}>
+      <div onPointerDown={handleContentPointerDown} className={cn("reader-reference-body mx-auto w-full px-4 pb-[calc(9rem+max(0px,var(--service-status-overlay-clearance,0px)))] max-md:pb-[calc(9rem+max(var(--site-float-base),var(--service-status-overlay-clearance,0px)))]", WIDTH_CLASSES[comfort.width])}>
         <ReaderPlatformNotice title={title} platformLink={platformLink} detailPath={detailPath}>
           {/* 회차 제목·날짜는 계약에 없어 작품 실데이터만 간결하게 표시한다. */}
           <section aria-label={bi("회차 정보", "Episode info")} className="reader-episode-context">
@@ -335,7 +335,7 @@ function ReaderShell({
         inert={!chromeVisible}
         aria-hidden={!chromeVisible}
         className={cn(
-          "fixed inset-x-0 bottom-0 max-md:bottom-[var(--site-float-base)] z-40 border-t border-white/10 bg-[oklch(0.095_0.018_265/0.88)] backdrop-blur-md",
+          "fixed inset-x-0 bottom-[max(0px,var(--service-status-overlay-clearance,0px))] max-md:bottom-[max(var(--site-float-base),var(--service-status-overlay-clearance,0px))] z-40 border-t border-white/10 bg-[oklch(0.095_0.018_265/0.88)] backdrop-blur-md",
           chromeClass,
         )}
       >

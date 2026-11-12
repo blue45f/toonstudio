@@ -15,7 +15,8 @@ import { StudioDrawingClarityMobileBar } from "./StudioDrawingClarityMobileBar";
 import { StudioDrawingClarityExport } from "./StudioDrawingClarityExport";
 import { StudioDrawingClarityCoreTools, StudioDrawingClarityHistory } from "./StudioDrawingClarityCoreTools";
 import { StudioDrawingClarityMore } from "./StudioDrawingClarityMore";
-import { StudioDrawingClarityReceipt } from "./StudioDrawingClarityReceipt";
+import { requestStudioDrawingReliability } from "./studio-drawing-assistance-channel";
+import { requestStudioShellFloatingLayoutManagerOpen } from "../studio-shell/studio-shell-floating-layout-events";
 import { useStudioDrawingClarity, type StudioDrawingClarityPanel } from "./StudioDrawingClarityContext";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
@@ -58,9 +59,9 @@ function StudioDrawingClarityDesktopBar({ session: s }: { readonly session: Stud
     <header id="studio-menubar" role="region" tabIndex={-1} aria-label={bt("드로잉 도구와 저장", "Drawing tools and save")}
       data-studio-app-menubar="true" data-studio-drawing-clarity-header="true" className="studio-drawing-clarity-header">
       <StudioEditorReturnButton variant="lane" onReturn={returnFromStudioEditorInBrowser} />
-      <div className="studio-drawing-clarity-title"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDrawingClarityReceipt store={s.saveSyncStore} /></div>
+      <div className="studio-drawing-clarity-title"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDocumentChromeSlot /></div>
       <StudioDrawingClaritySaveButton session={s} />
-      <StudioDrawingClarityMore id="studio-drawing-clarity-more-menu" hostId="studio-drawing-clarity-desktop-more-slot" purpose={bt("작업 설정과 도움말", "Work settings and help")} triggerRef={moreRef} panel={clarity.panel} actions={[
+      <StudioDrawingClarityMore id="studio-drawing-clarity-more-menu" hostId="studio-drawing-clarity-desktop-more-slot" purpose={bt("작업 설정과 도움말", "Work settings and help")} presentation="tasks" triggerRef={moreRef} panel={clarity.panel} actions={[
         { id: "layers", label: bt("레이어·속성 보기", "View layers and properties"), run: (trigger) => { clarity.open("layers", trigger); s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "layers" }); } },
         { id: "brush", label: bt("펜·브러시 설정", "Pen and brush settings"), run: (trigger) => clarity.open("brush", trigger) },
         { id: "pages", label: bt("페이지 보기", "View pages"), run: (trigger) => clarity.open("pages", trigger) },
@@ -69,10 +70,11 @@ function StudioDrawingClarityDesktopBar({ session: s }: { readonly session: Stud
         { id: "all", label: bt("전체 도구", "All tools"), run: (trigger) => { openInspector(); requestStudioAllTools(trigger); } },
         { id: "windows", label: bt("프로젝트·창 도구 보기", "Show project and window tools"), run: clarity.showSavedLayout },
         { id: "help", label: bt("사용 방법", "How to use"), run: () => openStudioHelpCenter({ section: "current-tool" }) },
+        { id: "view", label: bt("화면과 작업 환경", "Display and workspace"), run: requestStudioShellFloatingLayoutManagerOpen },
+        { id: "status", label: bt("저장·화면 문제 해결", "Save and display troubleshooting"), run: requestStudioDrawingReliability },
       ]} />
-      <StudioDocumentChromeSlot />
-      <div className="studio-drawing-clarity-context-row"><p>{s.studioMenubarActivePageLabel}</p><div className="studio-drawing-clarity-context-actions"><StudioDrawingClarityHistory session={s} /><button type="button" data-studio-clarity-find-tools="true" className="studio-drawing-clarity-button" onClick={(event) => openSearch(event.currentTarget)}><Search size={18} aria-hidden /><span>{bt("도구 찾기", "Find tools")}</span></button></div></div>
     </header>
+    <div className="studio-drawing-clarity-context-row"><button type="button" className="studio-drawing-page-position" onClick={(event) => clarity.open("pages", event.currentTarget)}>{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? s.studioMenubarActivePageLabel : `${bt("페이지", "Page")} ${s.activePageIndex + 1}`}<span aria-hidden>⌄</span></button><div className="studio-drawing-clarity-context-actions"><StudioDrawingClarityHistory session={s} /><button type="button" data-studio-clarity-find-tools="true" className="studio-drawing-clarity-button" onClick={(event) => openSearch(event.currentTarget)}><Search size={18} aria-hidden /><span>{bt("도구 찾기", "Find tools")}</span></button></div></div>
     {notice ? <p role="status" className="px-3 py-1 text-xs text-fg-2">{notice}</p> : null}
   </>;
 }
@@ -87,6 +89,6 @@ export function StudioDrawingClarityRail({ session: s }: { readonly session: Stu
   const clarity = useStudioDrawingClarity(), bt = useBilingual("studio.drawingClarity");
   if (!clarity?.active || s.isMobile) return null;
   return <nav className="studio-drawing-clarity-rail" aria-label={bt("기본 그리기", "Basic drawing")}>
-    <StudioDrawingClarityCoreTools session={s} />
+    <span className="studio-drawing-rail-brand" aria-hidden>S</span><StudioDrawingClarityCoreTools session={s} onOpenLayers={(trigger) => { clarity.open("layers", trigger); s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "layers" }); }} />
   </nav>;
 }
