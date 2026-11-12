@@ -6,7 +6,6 @@ import {
   browserBrushLibraryStorage,
   brushActivityAt,
   brushMatchesSnapshot,
-  DEFAULT_STUDIO_BRUSH_SNAPSHOT,
   deleteBrush,
   readBrushLibrary,
   sanitizeBrushSnapshot,
@@ -24,7 +23,11 @@ import {
   type StudioBrushSlotsState,
 } from "./studio-brush-slots";
 import { studioV6BrushCatalogId, studioV6RecipeIdFromCatalogId } from "./studio-brush-v6-id";
-import { planStudioMaterialBrush } from "./studio-material-brush-runtime";
+import {
+  executeStudioSavedBrushQuickShelfApply,
+  hasValidStudioSavedBrushMaterialReceipt,
+  recoverStudioSavedBrushForQuickShelfApply,
+} from "./studio-quick-shelf-apply-contract";
 
 export interface StudioCompetitorFavoriteSlotSpec {
   readonly slotIndex: number;
@@ -167,25 +170,6 @@ export function buildStudioCompetitorFavoriteSlotBrushes(
   );
 }
 
-function hasValidV6MaterialReceipt(brush: StudioSavedBrush): boolean {
-  if (brush.enginePrograms?.material?.runtime?.fallbackPolicy !== "none") {
-    return false;
-  }
-  try {
-    const marks = planStudioMaterialBrush({
-      points: [8, 16, 28, 12, 48, 18],
-      pressures: [0.42, 0.82, 0.28],
-      stroke: brush.color,
-      strokeWidth: brush.strokeWidth,
-      opacity: brush.brushOpacity,
-      brushEnginePrograms: brush.enginePrograms ?? undefined,
-    });
-    return Array.isArray(marks) && marks.length > 0;
-  } catch {
-    return false;
-  }
-}
-
 function isUnmodifiedCanonicalDuplicate(
   existing: StudioSavedBrush,
   canonical: StudioSavedBrush,
@@ -252,7 +236,7 @@ export function reconcileStudioCompetitorFavoriteLibrary(
       });
     }
     const { snapshot: safeExisting } = sanitizeBrushSnapshot(existing);
-    const keepExistingReceipt = hasValidV6MaterialReceipt({
+    const keepExistingReceipt = hasValidStudioSavedBrushMaterialReceipt({
       ...existing,
       ...safeExisting,
     });
@@ -318,17 +302,16 @@ export function syncStudioCompetitorFavoritesToQuickSlotsState(
   return { slots: nextSlots };
 }
 
-export type StudioFavoriteBrushRecoveryStatus =
-  | "ok"
-  | "rebuilt-v6-receipt"
-  | "sanitized-snapshot"
-  | "fallback-safe-pen";
-
-export interface StudioFavoriteBrushRecoveryResult {
-  readonly brush: StudioSavedBrush;
-  readonly status: StudioFavoriteBrushRecoveryStatus;
-  readonly adjustedFields: readonly string[];
-}
+export {
+  alignQuickShelfSavedBrushDisplayIdentity,
+  hasValidStudioSavedBrushMaterialReceipt,
+  inspectSavedBrushV6ProviderGate,
+  resolveActiveQuickShelfSavedBrush,
+  type StudioCanvasApplyExecutionResult,
+  type StudioFavoriteBrushRecoveryResult,
+  type StudioFavoriteBrushRecoveryStatus,
+  type StudioSavedBrushProviderGateVerdict,
+} from "./studio-quick-shelf-apply-contract";
 
 function resolveKnownV6RecipeId(brush: Partial<StudioSavedBrush>): string | null {
   const bySlot = studioCompetitorFavoriteSlotBySavedId(brush.id);
@@ -338,140 +321,25 @@ function resolveKnownV6RecipeId(brush: Partial<StudioSavedBrush>): string | null
   return studioV6RecipeIdFromCatalogId(brush.sourcePresetId);
 }
 
-export function createSafeFallbackCanvasBrush(
-  raw: Partial<StudioSavedBrush> | null | undefined,
-): StudioSavedBrush {
-  const { snapshot } = sanitizeBrushSnapshot({
-    ...DEFAULT_STUDIO_BRUSH_SNAPSHOT,
-    color: raw?.color,
-    strokeWidth: raw?.strokeWidth,
-    brushOpacity: raw?.brushOpacity,
-    brushId: DEFAULT_STUDIO_BRUSH_SNAPSHOT.brushId,
-    enginePrograms: null,
-  });
-  const now = Date.now();
-  return {
-    id: typeof raw?.id === "string" && raw.id.trim() ? raw.id : "fallback:safe-pen",
-    name: typeof raw?.name === "string" && raw.name.trim() ? raw.name.trim() : "복구 기본 펜",
-    createdAt: typeof raw?.createdAt === "number" && Number.isFinite(raw.createdAt) ? raw.createdAt : now,
-    updatedAt: now,
-    pinned: raw?.pinned === true,
-    lastUsedAt: typeof raw?.lastUsedAt === "number" && Number.isFinite(raw.lastUsedAt) ? raw.lastUsedAt : now,
-    ...snapshot,
-  };
-}
-
 /**
- * 저장 브러시를 원고 캔버스에 적용하기 전에 손상된 스냅샷이나 깨진 V6/V7.4 머티리얼 영수증을 자가 복구한다.
+ * 저장 브러시를 원고 캔버스에 적용하기 전에 스냅샷 범위와 V6/V7.4 무폴백·권리·provider 계약을 검증한다.
  * 기존 코어·팩·임포트 프리셋(`pen`, `gpen`, `watercolor`, `essentials:*`, `.abr`, `.sut` 등)은 그대로 호환 보존한다.
  */
 export function recoverStudioBrushForCanvasApply(
   brush: StudioSavedBrush,
-): StudioFavoriteBrushRecoveryResult {
-  if (!brush || typeof brush !== "object") {
-    return {
-      brush: createSafeFallbackCanvasBrush(null),
-      status: "fallback-safe-pen",
-      adjustedFields: ["brush"],
-    };
-  }
-
-  const { snapshot, adjustedFields } = sanitizeBrushSnapshot(brush);
-  const sanitizedBrush: StudioSavedBrush = {
-    ...(brush.originalSource ? { originalSource: brush.originalSource } : {}),
-    id: typeof brush.id === "string" && brush.id.trim() ? brush.id : "recovered-brush",
-    name: typeof brush.name === "string" && brush.name.trim() ? brush.name.trim() : "복구된 브러시",
-    createdAt: Number.isFinite(brush.createdAt) ? brush.createdAt : Date.now(),
-    updatedAt: Number.isFinite(brush.updatedAt) ? brush.updatedAt : Date.now(),
-    pinned: brush.pinned === true,
-    lastUsedAt:
-      typeof brush.lastUsedAt === "number" && Number.isFinite(brush.lastUsedAt)
-        ? brush.lastUsedAt
-        : null,
-    ...snapshot,
-  };
-
-  const recipeId = resolveKnownV6RecipeId(brush);
-  if (recipeId) {
-    if (!hasValidV6MaterialReceipt(sanitizedBrush)) {
-      try {
-        const program = createBrushStudioV6Program(recipeId);
-        const canonical = createBrushStudioV6ProductBrush(program);
-        const { snapshot: reSanitized } = sanitizeBrushSnapshot({
-          ...sanitizedBrush,
-          brushId: canonical.brushId,
-          brushDynamics: canonical.brushDynamics,
-          enginePrograms: canonical.enginePrograms,
-        });
-        return {
-          brush: {
-            ...sanitizedBrush,
-            ...reSanitized,
-            sourcePresetId: sanitizedBrush.sourcePresetId ?? studioV6BrushCatalogId(recipeId),
-            sourcePresetName: sanitizedBrush.sourcePresetName ?? program.name,
-          },
-          status: "rebuilt-v6-receipt",
-          adjustedFields: [...new Set([...adjustedFields, "enginePrograms"])],
-        };
-      } catch {
-        return {
-          brush: createSafeFallbackCanvasBrush(sanitizedBrush),
-          status: "fallback-safe-pen",
-          adjustedFields: [...new Set([...adjustedFields, "brushId", "enginePrograms"])],
-        };
-      }
-    }
-  }
-
-  return {
-    brush: sanitizedBrush,
-    status: adjustedFields.length > 0 ? "sanitized-snapshot" : "ok",
-    adjustedFields,
-  };
-}
-
-export interface StudioCanvasApplyExecutionResult {
-  readonly appliedBrush: StudioSavedBrush | null;
-  readonly status: StudioFavoriteBrushRecoveryStatus | "apply-failed";
-  readonly adjustedFields: readonly string[];
-  readonly error?: unknown;
+): import("./studio-quick-shelf-apply-contract").StudioFavoriteBrushRecoveryResult {
+  return recoverStudioSavedBrushForQuickShelfApply(brush, resolveKnownV6RecipeId);
 }
 
 /**
- * 원고 캔버스 `onApply` 콜백 호출 시 자가 복구를 선행하고, 콜백 내부에서 런타임 예외가 발생하더라도
- * 안전 기본 펜 스냅샷으로 2차 폴백하여 드로잉 세션이 멈추지 않도록 보장한다.
+ * 원고 캔버스 `onApply` 호출 시 무폴백(`fallbackPolicy: "none"`) 및 라이선스 게이트를 엄격히 유지하며,
+ * provider 불가 또는 런타임 예외 발생 시 다른 브러시(`pen`)로 덮어쓰지 않고 기존 활성 브러시를 보존한다.
  */
 export function applyStudioSavedBrushWithRecovery(
   brush: StudioSavedBrush,
   onApply: (resolved: StudioSavedBrush) => void,
-): StudioCanvasApplyExecutionResult {
-  const recovered = recoverStudioBrushForCanvasApply(brush);
-  try {
-    onApply(recovered.brush);
-    return {
-      appliedBrush: recovered.brush,
-      status: recovered.status,
-      adjustedFields: recovered.adjustedFields,
-    };
-  } catch (primaryError) {
-    const safeFallback = createSafeFallbackCanvasBrush(recovered.brush);
-    try {
-      onApply(safeFallback);
-      return {
-        appliedBrush: safeFallback,
-        status: "fallback-safe-pen",
-        adjustedFields: [...new Set([...recovered.adjustedFields, "fallbackSafePen"])],
-        error: primaryError,
-      };
-    } catch (secondaryError) {
-      return {
-        appliedBrush: null,
-        status: "apply-failed",
-        adjustedFields: recovered.adjustedFields,
-        error: secondaryError,
-      };
-    }
-  }
+): import("./studio-quick-shelf-apply-contract").StudioCanvasApplyExecutionResult {
+  return executeStudioSavedBrushQuickShelfApply(brush, onApply, resolveKnownV6RecipeId);
 }
 
 export type StudioFavoriteSlotPinStatus =

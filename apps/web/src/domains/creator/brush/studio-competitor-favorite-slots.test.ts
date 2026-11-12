@@ -205,10 +205,11 @@ describe("studio competitor flagship favorite slots", () => {
     expect(writeCount).toBe(0);
   });
 
-  it("self-heals stripped V6 receipts and falls back to a safe pen when canvas onApply throws", () => {
+  it("self-heals stripped permissive V6 receipts, aligns display name, and preserves existing brush without pen fallback on failure", () => {
     const canonical = buildStudioCompetitorFavoriteSlotBrushes()[2]!;
     const brokenFlagship: StudioSavedBrush = {
       ...canonical,
+      name: "내 커스텀 캘리 닙",
       color: "#224466",
       strokeWidth: 15,
       enginePrograms: null,
@@ -216,25 +217,75 @@ describe("studio competitor flagship favorite slots", () => {
 
     const recovered = recoverStudioBrushForCanvasApply(brokenFlagship);
     expect(recovered.status).toBe("rebuilt-v6-receipt");
-    expect(recovered.brush.color).toBe("#224466");
-    expect(recovered.brush.strokeWidth).toBe(15);
-    expect(recovered.brush.enginePrograms?.material?.runtime?.fallbackPolicy).toBe("none");
+    expect(recovered.brush).not.toBeNull();
+    expect(recovered.brush?.color).toBe("#224466");
+    expect(recovered.brush?.strokeWidth).toBe(15);
+    expect(recovered.brush?.sourcePresetName).toBe("내 커스텀 캘리 닙");
+    expect(recovered.brush?.enginePrograms?.material?.runtime?.fallbackPolicy).toBe("none");
 
-    const legacy = createBrush("기본 펜", DEFAULT_STUDIO_BRUSH_SNAPSHOT);
-    expect(recoverStudioBrushForCanvasApply(legacy).status).toBe("ok");
+    const legacy = createBrush("내 콘티 펜", {
+      ...DEFAULT_STUDIO_BRUSH_SNAPSHOT,
+      brushId: "gpen",
+    });
+    const recoveredLegacy = recoverStudioBrushForCanvasApply(legacy);
+    expect(recoveredLegacy.status).toBe("ok");
+    expect(recoveredLegacy.brush?.sourcePresetName).toBe("내 콘티 펜");
 
-    const onApply = vi
-      .fn<(resolved: StudioSavedBrush) => void>()
-      .mockImplementationOnce(() => {
-        throw new Error("gpu pipeline unavailable");
-      })
-      .mockImplementationOnce(() => undefined);
+    // 런타임 예외 시 기본 펜("pen")으로 2차 덮어쓰기하지 않고 기존 브러시를 그대로 보존한다.
+    const onApply = vi.fn<(resolved: StudioSavedBrush) => void>(() => {
+      throw new Error("gpu pipeline unavailable");
+    });
+    const execResult = applyStudioSavedBrushWithRecovery(recovered.brush!, onApply);
+    expect(execResult.status).toBe("apply-failed");
+    expect(onApply).toHaveBeenCalledTimes(1);
+    expect(execResult.appliedBrush).toBeNull();
+    expect(execResult.reason).toContain("gpu pipeline unavailable");
+    expect(execResult.reason).toContain("현재 브러시는 그대로 유지됩니다");
+  });
 
-    const execResult = applyStudioSavedBrushWithRecovery(recovered.brush, onApply);
-    expect(execResult.status).toBe("fallback-safe-pen");
-    expect(onApply).toHaveBeenCalledTimes(2);
-    expect(execResult.appliedBrush?.brushId).toBe("pen");
-    expect(execResult.appliedBrush?.enginePrograms).toBeNull();
+  it("blocks private-grant and incompatible provider presets under fallbackPolicy: none without calling onApply", () => {
+    const baseValid = buildStudioCompetitorFavoriteSlotBrushes()[0]!;
+
+    // 1) 라이선스·권리 차단(private-grant: mineral-bloom -> deposit-wet, pigment-inkwash-density, physics-inkwash)
+    const blockedRecipeBrush: StudioSavedBrush = {
+      ...baseValid,
+      id: "saved:v6:mineral-bloom",
+      name: "미네랄 수묵 번짐",
+      sourcePresetId: "v6:mineral-bloom",
+      enginePrograms: null,
+    };
+    const onApply = vi.fn();
+    const blockedResult = applyStudioSavedBrushWithRecovery(blockedRecipeBrush, onApply);
+    expect(blockedResult.status).toBe("provider-unavailable");
+    expect(blockedResult.appliedBrush).toBeNull();
+    expect(blockedResult.blockedNodeIds).toEqual(
+      expect.arrayContaining(["deposit-wet", "physics-inkwash"]),
+    );
+    expect(blockedResult.reason).toContain("deposit-wet");
+    expect(onApply).not.toHaveBeenCalled();
+
+    // 2) 비호환 제품 경로(wrong-product-path: carrier-google-mesh) 머티리얼 슬롯 차단
+    const wrongPathBrush: StudioSavedBrush = {
+      ...baseValid,
+      id: "saved:custom:mesh",
+      name: "벡터 메쉬 실험 펜",
+      sourcePresetId: undefined,
+      enginePrograms: {
+        ...baseValid.enginePrograms,
+        material: {
+          ...baseValid.enginePrograms!.material!,
+          slots: {
+            ...baseValid.enginePrograms!.material!.slots,
+            carrier: "carrier-google-mesh",
+          },
+        },
+      },
+    };
+    const wrongPathResult = applyStudioSavedBrushWithRecovery(wrongPathBrush, onApply);
+    expect(wrongPathResult.status).toBe("provider-unavailable");
+    expect(wrongPathResult.appliedBrush).toBeNull();
+    expect(wrongPathResult.blockedNodeIds).toContain("carrier-google-mesh");
+    expect(onApply).not.toHaveBeenCalled();
   });
 
   it("commits to product repository and coalesces concurrent pin requests", async () => {

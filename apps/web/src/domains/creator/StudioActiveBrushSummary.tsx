@@ -10,6 +10,7 @@ import { loadStudioBrushCatalogItemById } from "./brush/studio-brush-catalog-loa
 import { isStudioBrushPackCatalogId } from "./brush/studio-brush-pack-id";
 import { describeStudioBrushRuntimeSemantics } from "./brush/studio-brush-semantic-quality";
 import { STUDIO_STABILIZER_MODES } from "./brush/studio-stroke-stabilizer";
+import { isStudioV6BrushCatalogId } from "./brush/studio-brush-v6-id";
 import { StudioBrushPresetIcon } from "./brush/StudioBrushPresetIcon";
 
 import type { StudioBrushCatalogItem } from "./brush/studio-brush-catalog-core";
@@ -112,12 +113,16 @@ export function StudioActiveBrushSummary({
   const needsProMetadata =
     !injectedCatalogItem
     && !coreCatalogItem
-    && isStudioBrushPackCatalogId(brushId);
+    && (isStudioBrushPackCatalogId(brushId) || isStudioV6BrushCatalogId(brushId));
   const deferredCatalogItem =
     deferredMetadata?.brushId === brushId && deferredMetadata.status === "loaded"
       ? deferredMetadata.item
       : null;
   const catalogItem = injectedCatalogItem ?? coreCatalogItem ?? deferredCatalogItem;
+  const displayBrushName =
+    (!brushName.trim() || brushName === brushId) && catalogItem?.name
+      ? catalogItem.name
+      : brushName;
   const metadataFailed =
     needsProMetadata
     && deferredMetadata?.brushId === brushId
@@ -197,7 +202,7 @@ export function StudioActiveBrushSummary({
             {label}
           </span>
           <span aria-live="polite" className="truncate text-xs font-bold text-fg">
-            {brushName}
+            {displayBrushName}
           </span>
         </span>
         <span className="mt-1 flex min-w-0 flex-wrap items-center gap-1 text-[0.6rem] leading-none text-fg-3">

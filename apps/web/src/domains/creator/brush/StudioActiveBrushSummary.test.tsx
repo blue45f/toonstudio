@@ -83,4 +83,22 @@ describe("StudioActiveBrushSummary", () => {
     expect(summary?.getAttribute("data-studio-brush-runtime-dynamics")).toBe("mapped-dabs");
     expect(summary?.getAttribute("data-studio-brush-semantic-source")).toBe("runtime-contract");
   });
+
+  it("resolves deferred V6 preset name and media/tip metadata instead of falling back to user round tip", async () => {
+    render(
+      <StudioActiveBrushSummary
+        {...commonProps}
+        brushId="v6:rebelle-capillary-wash"
+        brushName="v6:rebelle-capillary-wash"
+      />
+    );
+
+    const summary = document.querySelector("[data-studio-active-brush-summary]");
+    expect(summary?.getAttribute("data-studio-brush-metadata-state")).toBe("loading");
+    expect(screen.queryByText(/사용자 · 원형 촉/u)).toBeNull();
+
+    expect(await screen.findByText(/리벨급 모세관 번짐 수채/u)).toBeTruthy();
+    expect(summary?.getAttribute("data-studio-brush-metadata-state")).toBe("loaded");
+    expect(summary?.textContent).toContain("수채·번짐");
+  });
 });
