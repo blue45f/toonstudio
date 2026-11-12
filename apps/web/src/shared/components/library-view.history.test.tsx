@@ -86,20 +86,20 @@ function renderLibrary(url = "/library?tab=shelf", options: { initialTab?: Tab; 
   return render(<MemoryRouter initialEntries={entries} initialIndex={entries.length - 1}><TestApp initialTab={options.initialTab} /></MemoryRouter>);
 }
 const currentUrl = () => new URL(screen.getByTestId("current-url").textContent ?? "", "http://localhost");
-const selected = (name: string) => expect(screen.getByRole("tab", { name, exact: true }).getAttribute("aria-selected")).toBe("true");
+const selected = (name: string) => expect(screen.getByRole("tab", { name }).getAttribute("aria-selected")).toBe("true");
 
 describe("서재 읽기 상태와 기존 history 복귀", () => {
   it("실제 다른 경로에 도착한 뒤 POP하면 읽기 상태·원래 CTA 초점·스크롤을 복원한다", async () => {
     renderLibrary("/library?tab=shelf&project=work%2Fone&tag=a&tag=b");
-    fireEvent.click(screen.getByRole("tab", { name: "보류", exact: true }));
+    fireEvent.click(screen.getByRole("tab", { name: "보류" }));
     selected("보류");
     act(() => { position = 620; fireEvent.scroll(window); });
-    fireEvent.click(screen.getByRole("link", { name: "작품 탐색하기", exact: true }));
+    fireEvent.click(screen.getByRole("link", { name: "작품 탐색하기" }));
     expect(await screen.findByRole("heading", { name: "작품 탐색 화면" })).toBeTruthy();
-    expect(screen.queryByRole("tab", { name: "보류", exact: true })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "이전 화면", exact: true }));
+    expect(screen.queryByRole("tab", { name: "보류" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "이전 화면" }));
     await waitFor(() => selected("보류"));
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("link", { name: "작품 탐색하기", exact: true })));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("link", { name: "작품 탐색하기" })));
     expect(position).toBe(620);
     expect(currentUrl().searchParams.get("project")).toBe("work/one");
     expect(currentUrl().searchParams.getAll("tag")).toEqual(["a", "b"]);
@@ -109,12 +109,12 @@ describe("서재 읽기 상태와 기존 history 복귀", () => {
 
   it("주 탭도 다른 화면에서 돌아오면 사용자가 고른 평가 탭을 유지한다", async () => {
     renderLibrary();
-    fireEvent.click(screen.getByRole("tab", { name: "평가", exact: true }));
-    fireEvent.click(screen.getByRole("link", { name: "평가하러 가기", exact: true }));
+    fireEvent.click(screen.getByRole("tab", { name: "평가" }));
+    fireEvent.click(screen.getByRole("link", { name: "평가하러 가기" }));
     expect(await screen.findByRole("heading", { name: "랭킹 화면" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "이전 화면", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "이전 화면" }));
     await waitFor(() => selected("평가"));
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("link", { name: "평가하러 가기", exact: true })));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("link", { name: "평가하러 가기" })));
   });
 
   it.each([
@@ -122,7 +122,7 @@ describe("서재 읽기 상태와 기존 history 복귀", () => {
   ])("직접 진입의 엄격한 libraryRead=%s를 %s로 표시하되 초점을 빼앗지 않는다", (value, name) => {
     renderLibrary(`/library?tab=shelf&libraryRead=${value}`);
     selected(name);
-    expect(document.activeElement).not.toBe(screen.getByRole("link", { name: "작품 탐색하기", exact: true }));
+    expect(document.activeElement).not.toBe(screen.getByRole("link", { name: "작품 탐색하기" }));
   });
 
   it.each(["invalid", "PAUSED", "paused%20", "paused&libraryRead=done", ""]) (
@@ -136,12 +136,12 @@ describe("서재 읽기 상태와 기존 history 복귀", () => {
 
   it("선택 시 다른 query·중복 값·hash·경로를 유지하고 브라우저 뒤로 기록을 늘리지 않는다", () => {
     renderLibrary("/library?tab=shelf&project=work%2Fone&tag=a&tag=b#memo", { entries: ["/explore", "/library?tab=shelf&project=work%2Fone&tag=a&tag=b#memo"] });
-    fireEvent.click(screen.getByRole("tab", { name: "보류", exact: true }));
+    fireEvent.click(screen.getByRole("tab", { name: "보류" }));
     const url = currentUrl();
     expect(url.pathname).toBe("/library"); expect(url.hash).toBe("#memo");
     expect(url.searchParams.get("libraryRead")).toBe("paused");
     expect(url.searchParams.get("project")).toBe("work/one"); expect(url.searchParams.getAll("tag")).toEqual(["a", "b"]);
-    fireEvent.click(screen.getByRole("button", { name: "이전 화면", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "이전 화면" }));
     expect(screen.getByRole("heading", { name: "작품 탐색 화면" })).toBeTruthy();
   });
 
@@ -153,7 +153,7 @@ describe("서재 읽기 상태와 기존 history 복귀", () => {
     const state = { currentProject: { id: "work-one" }, returnTo: "/home" };
     const originalReads = { ...mocks.store.reads };
     render(<MemoryRouter initialEntries={[{ pathname: "/library", search: "?tab=shelf&project=work-one", state }]}><TestApp /></MemoryRouter>);
-    fireEvent.click(screen.getByRole("tab", { name: "보류", exact: true }));
+    fireEvent.click(screen.getByRole("tab", { name: "보류" }));
     expect(JSON.parse(screen.getByTestId("current-state").textContent ?? "null")).toEqual(state);
     expect(mocks.store.reads).toEqual(originalReads);
     expect(mocks.store.createCollection).not.toHaveBeenCalled();
@@ -166,21 +166,21 @@ describe("서재 읽기 상태와 기존 history 복귀", () => {
     const url = "/library?tab=shelf&libraryRead=paused";
     renderLibrary(url, { entries: [url, url] });
     const originalKey = screen.getByTestId("current-key").textContent;
-    fireEvent.click(screen.getByRole("link", { name: "작품 탐색하기", exact: true }));
+    fireEvent.click(screen.getByRole("link", { name: "작품 탐색하기" }));
     expect(await screen.findByRole("heading", { name: "작품 탐색 화면" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "두 기록 이전", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "두 기록 이전" }));
     await waitFor(() => selected("보류"));
     expect(screen.getByTestId("current-key").textContent).not.toBe(originalKey);
-    expect(document.activeElement).not.toBe(screen.getByRole("link", { name: "작품 탐색하기", exact: true }));
+    expect(document.activeElement).not.toBe(screen.getByRole("link", { name: "작품 탐색하기" }));
   });
 
   it("늦게 돌아온 서재가 이미 선택한 외부 입력의 초점을 빼앗지 않는다", async () => {
     const initialEntries = ["/library?tab=shelf&libraryRead=paused"];
     const view = render(<MemoryRouter initialEntries={initialEntries}><TestApp /></MemoryRouter>);
-    fireEvent.click(screen.getByRole("link", { name: "작품 탐색하기", exact: true }));
+    fireEvent.click(screen.getByRole("link", { name: "작품 탐색하기" }));
     expect(await screen.findByRole("heading", { name: "작품 탐색 화면" })).toBeTruthy();
     view.rerender(<MemoryRouter initialEntries={initialEntries}><TestApp hideLibrary /></MemoryRouter>);
-    fireEvent.click(screen.getByRole("button", { name: "이전 화면", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "이전 화면" }));
     expect(await screen.findByText("서재 불러오는 중")).toBeTruthy();
     const input = screen.getByRole("textbox", { name: "다른 입력" }); input.focus();
     view.rerender(<MemoryRouter initialEntries={initialEntries}><TestApp /></MemoryRouter>);
