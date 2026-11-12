@@ -68,6 +68,7 @@ jobs:
     timeout-minutes: 35
     env:
       NODE_OPTIONS: --max-old-space-size=8192
+      TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR: ${{ runner.temp }}/studio-chemy-toolchain
     steps:
       - uses: actions/checkout@v7
         with:
@@ -105,6 +106,13 @@ jobs:
         run: pnpm exec tsx scripts/audit-studio-brush-quality-portfolio.mts
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: 원래 Chemy 골든의 고정 도구·Chromium 별도 설치
+        if: ${{ !cancelled() }}
+        timeout-minutes: 5
+        run: |
+          npm install --prefix "$TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR" --ignore-scripts --no-audit --no-fund --save-exact \
+            playwright@1.64.1 vite@8.3.4 spectral.js@3.0.0 colormix@3.2.0
+          node "$TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR/node_modules/playwright/cli.js" install --with-deps chromium
       - name: Compare all shipped materials in the real Canvas2D renderer at DPR 1, 2 and 3
         env:
           TOONSPECTRUM_MATERIAL_VERIFY_DIR: ${{ runner.temp }}/studio-material-morphology

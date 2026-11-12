@@ -3,10 +3,10 @@ import { createHash } from "node:crypto";
 import { decodePng } from "image-js";
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, realpathSync, existsSync } from "node:fs";
-import { createRequire } from "node:module";
 import { arch, platform, cpus, totalmem } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createStudioChemyToolchainRequire, loadStudioChemyBrowserToolchain } from "./lib/studio-chemy-toolchain.mjs";
 
 const REPO = fileURLToPath(new URL("../", import.meta.url));
 const ORIGINAL = "289effabfebec9fcb215063bc1a6eddee989e98a";
@@ -171,7 +171,7 @@ async function run() {
       check(originalChemySha256(raw) === image.rawRgbaSha256 && image.width === 640 && image.height === 480, side + " 현재 raw 지문이 다릅니다.");
       currentPair[side] = { inputSha256: image.inputSha256, geometrySha256: image.primitive.orderedGeometrySha256, opacitySha256: image.primitive.opacitySha256, raw, png };
     }
-    const require = createRequire(join(REPO, "package.json")), aliases = {}, dependencyRoots = [];
+    const require = createStudioChemyToolchainRequire(), aliases = {}, dependencyRoots = [];
     for (const [name, specifier] of [["vite", "vite"], ["playwright", "playwright"], ["spectral.js", "spectral.js"], ["colormix", "colormix/dist/index.mjs"]]) {
       const entry = require.resolve(specifier), dir = packageRoot(name, entry); check(jsonFile(join(dir, "package.json")).version === manifest.dependencies[name].version, name + " pin이 원래/current lock과 다릅니다.");
       if (name === "spectral.js" || name === "colormix") aliases[specifier] = entry; dependencyRoots.push(dir);
@@ -185,7 +185,7 @@ async function run() {
     const entryFile = join(reference, ENTRY), originalCode = readFileSync(entryFile, "utf8"), entryExpected = manifest.files.find((f) => f.path === ENTRY); check(entryExpected, "원래 entry가 manifest에 없습니다.");
     const instrumented = instrumentOriginalChemyEntry(originalCode, entryExpected.sha256);
     const qaDriver = `import { __qaElement, __qaDraw, __qaPlan } from '/${ENTRY}'; import { mapBrushStudioV6Pressure } from '/apps/web/src/domains/creator/brush-lab/brush-studio-v6-material-engine.ts'; import { chemySha256, inspectLegacyChemyPrimitives, observeChemyPixels } from '/__qa/observe.ts'; export async function capture(baseline){const inputs={low:__qaElement('klecks-chemy',0.15),high:__qaElement('klecks-chemy',0.85)}, images={low:__qaDraw(inputs.low),high:__qaDraw(inputs.high)}, marks={low:__qaPlan(inputs.low),high:__qaPlan(inputs.high)}, result={}; for(const side of ['low','high']){const input=inputs[side],image=images[side],plan=marks[side]; result[side]={input:JSON.stringify(input),inputSha256:await chemySha256(JSON.stringify(input)),geometrySha256:await chemySha256(JSON.stringify(plan.map(({opacity,...m})=>m))),opacitySha256:await chemySha256(JSON.stringify(plan.map(m=>m.opacity))),count:plan.length,width:image.target.width,height:image.target.height,mappedPressure:mapBrushStudioV6Pressure(input.pressures[0],input.brushEnginePrograms.material.input),pixels:await observeChemyPixels(image.rgba,baseline.pixels[side].fixturePngSha256),raw:Array.from(image.rgba),png:image.target.toDataURL('image/png')};} result.primitive=await inspectLegacyChemyPrimitives(marks.low,marks.high,baseline.snapshot.mappedPressures);return result;}`;
-    const { createServer } = await import("vite"); const { chromium } = await import("playwright");
+    const { createServer, chromium } = await loadStudioChemyBrowserToolchain();
     const paths = new Set(manifest.files.map((f) => f.path)), virtual = { "/__qa/driver.ts": qaDriver, "/__qa/observe.ts": policyCode };
     vite = await createServer({ configFile: false, envDir: false, publicDir: false, root: reference, cacheDir: cache, resolve: { alias: aliases }, optimizeDeps: { entries: [entryFile], include: ["mixbox", "spectral.js", "colormix/dist/index.mjs"] }, server: { host: "127.0.0.1", port: 0, fs: { allow: [reference, work, ...dependencyRoots] } }, plugins: [{ name: "frozen-original-chemy-export-only", enforce: "pre", configureServer(server) { server.middlewares.use((req, res, next) => { if (req.url !== "/__original_chemy__") return next(); res.setHeader("Content-Type", "text/html"); res.end("<!doctype html><title>Frozen original Chemy two Canvas</title>"); }); }, resolveId(id, importer) { if (Object.hasOwn(virtual, id)) return id;
       if (importer?.startsWith(reference + sep) && id.startsWith(".")) {
