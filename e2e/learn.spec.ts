@@ -2,6 +2,7 @@ import { LESSONS, TERMS } from "../apps/web/src/domains/learn/learning-content";
 import { learningProgressStorageKey } from "../apps/web/src/domains/learn/learning-storage";
 
 import { expect, test } from "./fixtures/non-studio-test";
+import { openLessonExample, openLessonNotes, selectLessonStep } from "./helpers/learn-lesson-navigation";
 
 import type { Page } from "@playwright/test";
 
@@ -48,7 +49,9 @@ for (const lesson of LESSONS) {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`/learn/lessons/${lesson.id}`);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(lesson.title);
-    await expect(page.locator(".learn-page").getByRole("slider")).toHaveCount(2);
+    const lab = await openLessonExample(page);
+    await expect(lab.getByRole("slider")).toHaveCount(2);
+    await selectLessonStep(page, "check");
     await expect(page.getByRole("button", { name: "이 강좌 학습 완료", exact: true })).toBeDisabled();
     expect(errors).toEqual([]);
   });
@@ -73,16 +76,18 @@ test("Korean and English search, bookmarks, deep links and back navigation", asy
 test("completion requires the assignment and correct quiz, survives reload, and revokes on uncheck", async ({ page }) => {
   const lesson = LESSONS[0];
   await page.goto(`/learn/lessons/${lesson.id}`);
+  await selectLessonStep(page, "check");
   const finish = page.getByRole("button", { name: "이 강좌 학습 완료", exact: true });
   await page.getByRole("radio").nth(lesson.quiz.answer).check();
   await expect(finish).toBeDisabled();
   for (const checkbox of await page.getByRole("checkbox").all()) await checkbox.check();
-  await page.getByLabel("나의 실습 메모", { exact: true }).fill("컷의 역할을 구분했다.");
+  await (await openLessonNotes(page)).fill("컷의 역할을 구분했다.");
   await expect(finish).toBeEnabled();
   await finish.click();
   await page.reload();
+  await selectLessonStep(page, "check");
   await expect(page.getByRole("button", { name: "학습 완료됨", exact: true })).toBeDisabled();
-  await expect(page.getByLabel("나의 실습 메모", { exact: true })).toHaveValue("컷의 역할을 구분했다.");
+  await expect(await openLessonNotes(page)).toHaveValue("컷의 역할을 구분했다.");
   await page.getByRole("checkbox").first().uncheck();
   await expect(finish).toBeDisabled();
 });
@@ -91,12 +96,13 @@ test("reduced motion remains step-readable and mobile has no document overflow",
   await page.setViewportSize({ width: 375, height: 812 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/learn/lessons/camera-perspective");
-  await expect(page.getByRole("button", { name: "설명 재생", exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "3단계", exact: true }).click();
-  await expect(page.locator(".learn-caption").first()).toContainText("눈높이");
-  await page.locator(".learn-page").getByRole("slider").first().focus();
+  const lab = await openLessonExample(page);
+  await expect(lab.getByRole("button", { name: "설명 재생", exact: true })).toBeDisabled();
+  await lab.getByRole("button", { name: "3단계", exact: true }).click();
+  await expect(lab.locator(".learn-caption")).toContainText("눈높이");
+  await lab.getByRole("slider").first().focus();
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator(".learn-page").getByRole("slider").first()).toHaveValue("131");
+  await expect(lab.getByRole("slider").first()).toHaveValue("131");
   for (const path of ["/learn", "/learn/glossary", "/learn/studio", "/learn/lessons/lettering"]) {
     await page.goto(path);
     await expect(page.locator(".learn-page")).toBeVisible();
@@ -118,15 +124,16 @@ test("malformed storage and unavailable persistent writes do not crash learning"
     };
   }, GUEST_STORAGE_KEY);
   await page.goto("/learn/lessons/story-board");
-  await page.getByLabel("나의 실습 메모", { exact: true }).fill("저장 실패 중에도 유지할 메모");
+  await (await openLessonNotes(page)).fill("저장 실패 중에도 유지할 메모");
+  await selectLessonStep(page, "check");
   await page.getByRole("checkbox").first().check();
   await expect(page.getByLabel("나의 실습 메모", { exact: true })).toHaveValue("저장 실패 중에도 유지할 메모");
-  await expect(page.getByRole("status").filter({ hasText: "기록을 기기에 저장하지 못했습니다" })).toBeVisible();
+  await expect(page.locator(".learn-page > [role=status]")).toContainText("기록을 기기에 저장하지 못했습니다");
 });
 
 test("reset is explicit and does not erase records on cancel", async ({ page }) => {
   await page.goto("/learn/lessons/story-board");
-  await page.getByLabel("나의 실습 메모", { exact: true }).fill("보존할 메모");
+  await (await openLessonNotes(page)).fill("보존할 메모");
   await page.getByRole("button", { name: "학습 기록 초기화…", exact: true }).click();
   await page.getByRole("button", { name: "취소", exact: true }).click();
   await expect(page.getByLabel("나의 실습 메모", { exact: true })).toHaveValue("보존할 메모");

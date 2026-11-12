@@ -158,9 +158,10 @@ test("market kind, explicit search and sorting reach the API with the chosen con
     await route.fulfill({ status: 200, json: { items: [], limit: 12, hasMore: false, nextCursor: null } });
   });
   await page.goto("/market/browse");
-  await page.getByRole("button", { name: "브러시", exact: true }).click();
+  await page.getByRole("combobox", { name: "소재 종류 필터", exact: true }).selectOption("brush");
   await expect(page).toHaveURL(/kind=brush/u);
-  const field = page.getByRole("searchbox", { name: "마켓 리소스 검색" });
+  const field = page.getByRole("search", { name: "소재 검색", exact: true })
+    .getByRole("searchbox", { name: "어떤 소재가 필요한가요?", exact: true });
   await field.fill("잉크"); await field.press("Enter");
   await page.getByRole("combobox", { name: "정렬 기준" }).selectOption("newest");
   await expect.poll(() => requests.some((url) => url.searchParams.get("kind") === "brush" && url.searchParams.get("search") === "잉크" && url.searchParams.get("sort") === "newest")).toBe(true);
