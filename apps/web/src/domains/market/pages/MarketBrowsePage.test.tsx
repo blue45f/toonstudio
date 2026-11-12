@@ -174,7 +174,7 @@ describe("MarketBrowsePage", () => {
       .toContain("min-h-12");
     expect(screen.getByText(/현재/).closest("p")?.textContent).toContain("현재 0개 표시");
     // 이름 있는 필터에서 이전 작업군 버튼에 도달하고, 선택 효과도 원래 URL 계약으로 이어진다.
-    fireEvent.click(screen.getByRole("button", { name: "3D", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "3D" }));
     expect(Object.fromEntries(new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "")))
       .toEqual({ q: "ink", kind: "3d-asset", license: "cc0-1.0" });
     expect(kind.value).toBe("3d");
