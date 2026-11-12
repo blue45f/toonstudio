@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 
 import { chromium, expect } from "@playwright/test";
 import { assertStudioWorkspaceHome } from "./lib/studio-workspace-browser-contract.mjs";
-import { assertPublicCreatorHome } from "./lib/public-home-browser-contract.mjs";
+import { assertPublicCreatorHome, openPublicHomeIdeaInput } from "./lib/public-home-browser-contract.mjs";
 import { assertPublicMobileNavigation } from "./lib/public-navigation-browser-contract.mjs";
 import { installBetaEventDismissal } from "./lib/public-page-event-gate.mjs";
 
@@ -71,8 +71,19 @@ try {
       await form.getByRole('button', { name: '검색', exact: true }).click();
       await expect(page).toHaveURL(/\/search\?q=/u);
       await expect(page.locator('main h1')).toHaveCount(1);
-      const filters = page.locator('main a[href="#toonstudio-search-explorer-top"]');
+      const methods = page.locator('details.search-page-methods');
+      await expect(methods).not.toHaveAttribute('open');
+      const summary = methods.locator(':scope > summary');
+      await expect(summary).toBeVisible();
+      await summary.scrollIntoViewIfNeeded();
+      await summary.focus();
+      await expect(summary).toBeFocused();
+      await summary.press('Enter');
+      await expect(methods).toHaveAttribute('open');
+      const filters = methods.locator('a[href="#toonstudio-search-explorer-top"]');
+      await expect(filters).toBeVisible();
       await filters.focus();
+      await expect(filters).toBeFocused();
       await page.keyboard.press('Enter');
       await expect(page.locator('#toonstudio-search-explorer-top')).toBeFocused();
       const top = await page.locator('#toonstudio-search-explorer-top').evaluate((element) => element.getBoundingClientRect().top);
@@ -113,16 +124,19 @@ try {
       const dashboard = page.locator('[data-reference-dashboard="true"]');
       await expect(dashboard).toBeVisible({ timeout: 30000 });
       // 기본 모드(이야기 만들기)는 입력한 문장을 들고 질문형 창작 흐름으로 간다.
-      await dashboard.locator('#rd-idea-input').fill('비 오는 날의 첫사랑');
-      await dashboard.locator('#rd-idea-input').press('Enter');
+      await expect(dashboard.locator('details.rd-idea-help')).not.toHaveAttribute('open');
+      const idea = await openPublicHomeIdeaInput(dashboard);
+      await idea.fill('비 오는 날의 첫사랑');
+      await idea.press('Enter');
       await expect(page).toHaveURL((url) => url.pathname === "/create"
         && url.searchParams.get("intent") === "my-story" && url.searchParams.get("topic") === "free-story"
         && url.searchParams.get("idea") === "비 오는 날의 첫사랑");
       await page.goBack();
       await expect(dashboard).toBeVisible({ timeout: 30000 });
-      // 작품 찾기 모드는 같은 입력을 카탈로그 검색으로 보낸다.
+      // 뒤로 가기의 접힘 상태를 확인하고 필요한 경우 다시 펼친 뒤 작품 검색으로 전환한다.
+      const restoredIdea = await openPublicHomeIdeaInput(dashboard);
       await dashboard.locator('.rd-idea-modes button').nth(1).click();
-      await dashboard.locator('#rd-idea-input').fill('마법');
+      await restoredIdea.fill('마법');
       await dashboard.locator('.rd-idea-submit').click();
       await expect(page).toHaveURL((url) => url.pathname === "/search" && url.searchParams.get("q") === "마법");
       await expect(page.locator('main h1')).toHaveCount(1);

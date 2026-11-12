@@ -27,6 +27,24 @@ export async function assertPublicCreatorHome(page) {
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "Public home must not overflow horizontally");
 }
 
+/** 접힌 아이디어 입력을 실제 summary 키보드 동작으로 연다. 뒤로 가기로 열린 상태가 복원되면 그대로 둔다. */
+export async function openPublicHomeIdeaInput(dashboard) {
+  const help = dashboard.locator("details.rd-idea-help");
+  const summary = help.locator(":scope > summary");
+  const input = help.locator("#rd-idea-input");
+  await expect(help).toBeVisible();
+  if (await help.getAttribute("open") === null) {
+    await expect(summary).toBeVisible();
+    await summary.scrollIntoViewIfNeeded();
+    await summary.focus();
+    await expect(summary).toBeFocused();
+    await summary.press("Enter");
+  }
+  await expect(help).toHaveAttribute("open");
+  await expect(input).toBeVisible();
+  return input;
+}
+
 /** 통합 입력: 기본은 이야기 만들기, 작품 찾기로 바꿔도 입력한 문장은 유지된다(제출 이동은 verify-public-site-experience 가 본다). */
 async function assertPublicHomeInput(dashboard) {
   const help = dashboard.locator("details.rd-idea-help");
@@ -36,10 +54,7 @@ async function assertPublicHomeInput(dashboard) {
   await expect(help).not.toHaveAttribute("open");
   await expect(input).toBeHidden();
   await expect(summary).toHaveText(/아이디어 쓰기.*작품 찾기/u);
-  await summary.scrollIntoViewIfNeeded();
-  await summary.focus(); await summary.press("Enter");
-  await expect(help).toHaveAttribute("open");
-  await expect(input).toBeVisible();
+  await openPublicHomeIdeaInput(dashboard);
   await expect(modes).toHaveCount(2);
   await expect(modes.nth(0)).toHaveAttribute("aria-pressed", "true");
   await expect(modes.nth(1)).toHaveAttribute("aria-pressed", "false");
