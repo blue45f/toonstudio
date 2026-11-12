@@ -639,7 +639,7 @@ describe("StudioCanvasStatusRail", () => {
       return new DOMRect();
     });
 
-    const stickyProps = createStickyProps(mode);
+    const stickyProps = { ...createStickyProps(mode), mobileImmersive: true };
     const railProps = createProps({ mobileImmersive: true, hasAutosave: true });
     const viewport = (viewTool: typeof mode | null) => (
       <div data-testid="viewport" data-studio-mobile-immersive="true">
