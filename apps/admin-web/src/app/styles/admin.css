@@ -95,6 +95,13 @@ body {
 .admin-brand__label { color: var(--admin-muted); font-size: 12px; padding: 7px 12px; border: 1px solid var(--admin-line); border-radius: 8px; }
 .admin-brand__security { color: var(--admin-good); background: oklch(0.80 0.15 155 / 0.12); border: 1px solid oklch(0.80 0.15 155 / 0.35); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
 .admin-brand a:focus-visible { outline: 3px solid var(--admin-focus); outline-offset: 4px; }
+.admin-local-navigation { display: flex; flex-wrap: wrap; gap: 12px; width: min(1080px, 100%); }
+.admin-local-navigation a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 16px; color: var(--admin-fg); border: 1px solid var(--admin-line); border-radius: 8px; text-decoration: none; }
+.admin-local-navigation a[aria-current=page] { border-color: var(--admin-accent); background: var(--admin-raised); }
+.admin-local-navigation a:focus-visible, .admin-quality-access button:focus-visible { outline: 3px solid var(--admin-focus); outline-offset: 3px; }
+.admin-quality-access { width: min(1320px, 100%); min-width: 0; }
+.admin-quality-access > [hidden] { display: none; }
+.admin-quality-access > .policy-alert button { min-height: 44px; padding: 10px 16px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-raised); color: var(--admin-fg); font: inherit; cursor: pointer; }
 .policy-card, .policy-status, .admin-card { box-shadow: inset 0 1px oklch(1 0 0 / 0.04), 0 14px 40px oklch(0 0 0 / 0.2); }
 .operation-policy h1, .operation-policy h2, .operation-policy h3 { text-wrap: balance; }
 .operation-policy p, .operation-policy li { text-wrap: pretty; }

@@ -42,9 +42,25 @@ function Location() { const location = useLocation(); return <output aria-label=
 function open(path: string, state = authorized) {
   return render(<MemoryRouter initialEntries={[path]}><AdminGateOverrideProvider value={state}><AdminRouter /><Location /></AdminGateOverrideProvider></MemoryRouter>);
 }
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("AdminRouter access and real route transitions", () => {
+  it("운영 설정 조회 중·실패 후에도 독립 검증 보드의 실제 문서 진입점을 유지한다", async () => {
+    const { AdminOps: ActualAdminOps } = await vi.importActual<typeof import("../components/AdminOps")>("../components/AdminOps");
+    const client = await import("../components/admin-client");
+    const fetch = vi.spyOn(client, "adminFetch").mockRejectedValue(new Error("운영 설정 fixture 실패"));
+    render(<ActualAdminOps uid="actor-a" />);
+
+    const link = screen.getByRole("link", { name: "admin.ciQuality.open" });
+    expect(link.tagName).toBe("A");
+    expect(link.getAttribute("href")).toBe("/admin/platform/quality/");
+    expect(link.hasAttribute("target")).toBe(false);
+    expect(screen.getByRole("heading", { name: "admin.ciQuality.title" })).toBeTruthy();
+    await screen.findByText("운영 설정 fixture 실패");
+    expect(screen.getByRole("link", { name: "admin.ciQuality.open" })).toBe(link);
+    expect(fetch.mock.calls).toEqual([["/config", "actor-a"]]);
+  });
+
   it("shows a loading surface until the authorized lazy route resolves", async () => {
     open("/admin/analytics/traffic");
     expect(screen.getByLabelText("Authorized admin shell").getAttribute("data-user-id")).toBe("actor-a");

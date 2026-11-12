@@ -62,14 +62,14 @@ test("reviewed mode toggle applies after preview and survives browser reload", a
   expect(fixture.applications()).toBe(2);
 });
 
-test("mobile layout keeps controls usable and does not overflow", async ({ page }) => {
+test("mobile layout keeps controls usable and does not overflow", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await policyFixture(page);
   await page.goto("/");
   await expect(page.getByText("현재: 무료 운영")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await expect(page.getByRole("radio", { name: "무료 운영", exact: true })).toBeChecked();
-  await page.screenshot({ path: "artifacts/operation-policy-browser/mobile.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("mobile.png"), fullPage: true });
 });
 
 test("unauthorized administrator response never renders the controls", async ({ page }) => {

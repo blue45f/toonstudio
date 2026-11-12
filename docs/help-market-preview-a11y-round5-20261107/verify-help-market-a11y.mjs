@@ -365,7 +365,7 @@ async function main() {
     console.log("Verification report written to:", reportPath);
     console.log("Summary:", JSON.stringify(report.summary, null, 2));
 
-    const allPassed = Object.entries(report.summary).every(([k, v]) =>
+    const allPassed = Object.values(report.summary).every((v) =>
       typeof v === "boolean" ? v : v >= 260,
     );
     if (!allPassed) {

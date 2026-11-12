@@ -52,12 +52,18 @@ registerI18nLocaleEntries("en", paidOperationsI18n.en);
 registerI18nEnglishSourceEntries(paidOperationsI18n.en);
 
 registerI18nLocaleEntries("ko", {
+  "admin.ciQuality.title": "CI·QA 검증",
+  "admin.ciQuality.description": "CI 결과, 외부 QA 참고 자료와 근거의 최신성을 기록합니다. 무료 수동 기록 보드이며 코드 수정·배포·계정 설정은 실행하지 않습니다.",
+  "admin.ciQuality.open": "검증 보드 열기",
   "adminRest.status.integrations.loadFailed": "연동 운영 상태를 불러오지 못했습니다.",
   "adminRest.status.webVitals.loading": "성능 실측 불러오는 중",
   "adminRest.status.webVitals.retry": "다시 불러오기",
 });
 
 registerI18nLocaleEntries("en", {
+  "admin.ciQuality.title": "CI & QA verification",
+  "admin.ciQuality.description": "Record CI results, external QA references and evidence freshness. This free manual board does not modify code, deploy or change account settings.",
+  "admin.ciQuality.open": "Open verification board",
   "adminRest.status.integrations.loadFailed": "Could not load integration operations status.",
   "adminRest.status.webVitals.loading": "Loading performance measurements",
   "adminRest.status.webVitals.retry": "Reload",
