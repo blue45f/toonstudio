@@ -7,6 +7,7 @@
  * 2D 핸드 셋업 패드(벌림·쥐기·엄지 대립), 클립스튜디오 `.pep`/`.3dp` 양방향 변환을 제공한다.
  */
 
+import { StudioMannequinRotationControls, type StudioMannequinRotationCommand } from "./StudioMannequinRotationControls";
 import {
   AlertTriangle,
   Camera,
@@ -1215,8 +1216,8 @@ export function StudioMannequinPoserPanel({
     commitPoseWithHistory(next, currentMeta);
   }, [commitPoseWithHistory, readCurrentSemanticMeta, spec]);
 
-  const handleViewportKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleRotateDirection = useCallback(
+    (event: StudioMannequinRotationCommand) => {
       if (!selectedJointId || jointLocksRef.current[selectedJointId]) return;
       const stepRad = ((event.shiftKey ? 0.5 : 2) * Math.PI) / 180;
       const prevPose = poseRef.current;
@@ -1227,7 +1228,6 @@ export function StudioMannequinPoserPanel({
       else if (event.key === "ArrowLeft") nextRot = event.altKey ? [cur[0], cur[1] - stepRad, cur[2]] : [cur[0], cur[1], cur[2] + stepRad];
       else if (event.key === "ArrowRight") nextRot = event.altKey ? [cur[0], cur[1] + stepRad, cur[2]] : [cur[0], cur[1], cur[2] - stepRad];
       if (!nextRot) return;
-      event.preventDefault();
       if (!event.repeat) resetPoseHistoryGesture();
       recordPoseHistoryOncePerGesture();
       const clamped = clampStudioMannequinJointRotation(selectedJointId, nextRot);
@@ -1620,14 +1620,13 @@ export function StudioMannequinPoserPanel({
             ) : (
               <div
                 ref={viewportRef}
-                tabIndex={0}
                 className={cn("h-full w-full", STUDIO_FOCUS_RING)}
                 data-studio-mannequin-viewport="true"
-                aria-label="3D 데생 인형 뷰포트 — 몸 드래그로 관절 회전, 손·발 핸들 드래그로 IK, 더블클릭으로 부위 확대, 포커스 후 화살표 키로 선택 관절 회전"
+                aria-label="3D 데생 인형 뷰포트"
                 {...viewportGestures.handlers}
-                onKeyDown={handleViewportKeyDown}
               />
             )}
+            {sceneError ? null : <StudioMannequinRotationControls disabled={!selectedJointId || !!jointLocks[selectedJointId]} onRotate={handleRotateDirection} />}
             {sceneError ? null : <StudioMannequinDuoFigureSwitch duo={duo} />}
             {error ? (
               <p role="alert" className="absolute inset-x-3 bottom-3 rounded-lg border border-warn/40 bg-panel/95 px-3 py-2 text-[0.72rem] leading-relaxed text-warn shadow-lg">

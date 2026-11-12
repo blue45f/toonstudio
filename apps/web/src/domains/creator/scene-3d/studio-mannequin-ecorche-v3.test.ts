@@ -192,10 +192,12 @@ describe("2D 핸드 셋업 패드 & 손가락 벌림(Splay)", () => {
     expect(pointPose.segmentCurls.ring).toEqual([12, 12, 12]);
 
     const merged = mergeHandPadIntoFingerPose(undefined, "left", pointPose);
-    expect(merged.left.middle[1]).toBeGreaterThan(80);
-    expect(merged.right.middle[1]).toBe(0);
+    expect(merged.left?.middle?.[1]).toBeGreaterThan(80);
+    expect(merged.right?.middle?.[1]).toBe(0);
 
-    const digits = buildSplayedHandDigitPrimitives("leftHand", 0.16, 1, merged.left, openSpread.splayDeg);
+    const { thumb, index, middle, ring, little } = merged.left ?? {};
+    if (!thumb || !index || !middle || !ring || !little) throw new Error("왼손 다섯 손가락 분절이 모두 필요합니다.");
+    const digits = buildSplayedHandDigitPrimitives("leftHand", 0.16, 1, { thumb, index, middle, ring, little }, openSpread.splayDeg);
     expect(digits.length).toBe(25);
   });
 });
@@ -369,7 +371,7 @@ describe("클립스튜디오 .pep / .3dp 양방향 호환 브리지", () => {
     expect(restored.aliasName).toBe("HeroActionPose");
     expect(restored.mappedBoneCount).toBeGreaterThanOrEqual(49);
     expect(restored.pose.joints.rightLowerLeg?.[0]).toBeCloseTo(0.62, 2);
-    expect(restored.fingerPose.left.index[0]).toBeGreaterThan(60);
+    expect(restored.fingerPose.left?.index?.[0]).toBeGreaterThan(60);
   });
 
   it("체형 비율 파라미터를 .3dp XML로 내보내고 다시 가져와 등신·근육 경향을 보존한다", () => {
@@ -450,7 +452,10 @@ describe("체형 변경 후 접촉 목표 유지 · 양손 무간섭 · Undo/Red
       locks: {},
     })!;
     expect(redoneOnSd.meta).toEqual(heroChinMeta);
-    expect(redoneOnSd.pose.pelvisOffset[1]).not.toBeCloseTo(heroChinPose.pelvisOffset[1], 2);
+    // 골반 높이 차이는 체형 변경의 계약이 아니다. 새 팔 체인과 접촉 목표를 직접 검증한다.
+    expect(redoneOnSd.pose.joints.rightUpperArm).not.toEqual(heroChinPose.joints.rightUpperArm);
+    expect(redoneOnSd.pose).toEqual(retargetStudioMannequinSemanticPose(sdSpec, heroChinPose, heroChinMeta));
+    expect(applyStudioMannequinHandContact(sdSpec, redoneOnSd.pose, "right", "chin").residualDistanceM).toBeLessThan(0.035);
     expect(measureStudioMannequinBodyFloor(sdSpec, redoneOnSd.pose).lowestY).toBeCloseTo(0, 3);
 
     expect(

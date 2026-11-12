@@ -422,6 +422,10 @@ export function retargetStudioMannequinSemanticPose(
     const bothCandidate = normalizeStudioMannequinPose({
       joints: {
         ...leftGround.joints,
+        // 양손 지지는 단손 접지의 몸통 비틀림을 제거해 좌우 도달 높이를 맞춘다.
+        pelvis: clampStudioMannequinJointRotation("pelvis", [rad(40), 0, 0]),
+        spine: clampStudioMannequinJointRotation("spine", [rad(38), 0, 0]),
+        chest: clampStudioMannequinJointRotation("chest", [rad(34), 0, 0]),
         rightUpperArm: clampStudioMannequinJointRotation("rightUpperArm", [rad(-92), 0, rad(-6)]),
         rightLowerArm: clampStudioMannequinJointRotation("rightLowerArm", [rad(-8), 0, 0]),
         rightHand: clampStudioMannequinJointRotation("rightHand", [rad(58), 0, 0]),
