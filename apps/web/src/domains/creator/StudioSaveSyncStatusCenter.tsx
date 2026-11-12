@@ -25,12 +25,13 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { registerEditorStatusSlot } from "@/shared/lib/modal-status-slot";
 
 import { resolveSaveRecoveryView } from "./studio-save-recovery-ux";
 import {
@@ -99,6 +100,9 @@ export function StudioSaveSyncStatusCenter({
 }: StudioSaveSyncStatusCenterProps) {
   useBilingualI18nRevision();
   const [open, setOpen] = useState(false);
+  const noticeSummaryId = useId();
+  const [noticeElement, setNoticeElement] = useState<HTMLDivElement | null>(null);
+  const [noticeSummary, setNoticeSummary] = useState<HTMLSpanElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const peakPendingRef = useRef(0);
@@ -114,6 +118,10 @@ export function StudioSaveSyncStatusCenter({
   }
   const peakPendingCount = Math.max(peakPendingRef.current, status.pendingOperationsCount);
   const drainedPendingCount = Math.max(0, peakPendingCount - status.pendingOperationsCount);
+
+  useEffect(() => noticeElement && noticeSummary
+    ? registerEditorStatusSlot(noticeElement, noticeSummary)
+    : undefined, [noticeElement, noticeSummary]);
 
   useEffect(() => {
     if (!open) return;
@@ -192,17 +200,21 @@ export function StudioSaveSyncStatusCenter({
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={`저장 상태 열기: ${saveLabel}`}
+        aria-describedby={noticeSummaryId}
         className="flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.75rem] font-medium tabular-nums text-fg shadow-sm backdrop-blur transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"
       >
         <StatusIcon
           className={`size-3.5 ${statusTone} ${view.kind === "reconnecting" ? "animate-spin motion-reduce:animate-none" : ""}`}
           aria-hidden
         />
-        <span>{saveLabel}</span>
+        <span className="min-w-0 text-left">
+          <span>{saveLabel}</span>
+          <span ref={setNoticeSummary} id={noticeSummaryId} className="flex flex-wrap items-center gap-x-2" data-studio-connection-notice-summary="true" />
+        </span>
       </button>
 
-      {open ? (
         <div
+          hidden={!open}
           role="dialog"
           aria-label="저장 상태 상세"
           className="absolute right-0 top-full z-50 mt-1.5 max-h-[calc(100dvh-4rem)] w-[min(22rem,calc(100vw-1rem))] overflow-y-auto overscroll-contain rounded-xl border border-line bg-card p-3.5 text-fg shadow-xl"
@@ -216,7 +228,7 @@ export function StudioSaveSyncStatusCenter({
             </div>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => { setOpen(false); triggerRef.current?.focus(); }}
               aria-label="저장 상태 닫기"
               className="grid min-h-8 min-w-8 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg pointer-coarse:min-h-11 pointer-coarse:min-w-11"
             >
@@ -315,6 +327,8 @@ export function StudioSaveSyncStatusCenter({
             ) : null}
           </div>
 
+          <div ref={setNoticeElement} data-studio-connection-notice-details="true" />
+
           <details className="mt-3 rounded-lg border border-line bg-panel/35">
             <summary className="cursor-pointer px-2.5 py-2 text-[0.72rem] font-semibold text-fg-2">
               고급 진단 보기
@@ -352,7 +366,6 @@ export function StudioSaveSyncStatusCenter({
             </div>
           </details>
         </div>
-      ) : null}
     </div>
   );
 }

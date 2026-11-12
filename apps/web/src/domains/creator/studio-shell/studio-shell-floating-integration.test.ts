@@ -13,6 +13,7 @@ function source(path: string): string {
 
 describe("studio shell floating integration", () => {
   it("registers every persistent drawing chrome target without owning transient safety UI", () => {
+    const huddle = source("live/huddle/StudioP2pHuddleLauncher.tsx");
     expect(source("studio-shell/StudioDocumentWindowHub.tsx"))
       .toContain('data-studio-document-window-hub-bar="true"');
     expect(source("studio-shell/StudioDocumentWorkspaceDock.tsx"))
@@ -28,8 +29,11 @@ describe("studio shell floating integration", () => {
       .toContain('data-studio-drawing-input-deck-panel="true"');
     expect(source("offline/StudioOfflinePanel.tsx"))
       .toContain('data-studio-shell-floating-target="offline-readiness"');
-    expect(source("live/huddle/StudioP2pHuddleLauncher.tsx"))
-      .toContain('data-studio-shell-floating-target={placement === "floating" ? "collaboration" : undefined}');
+    // 대기 중이고 오류가 없는 런처만 상단 자리로 옮기며, 진행 중인 대화·알림은 기존 플로팅을 유지한다.
+    expect(huddle).toContain('const idleTarget = placement === "floating" && !active && !open && !notice && !snapshot?.error ? chromeTarget : null');
+    expect(huddle).toContain('const dockPlacement = idleTarget ? "inline" : placement');
+    expect(huddle).toContain('data-studio-shell-floating-target={dockPlacement === "floating" ? "collaboration" : undefined}');
+    expect(huddle).toContain('return idleTarget ? createPortal(dock, idleTarget) : dock');
     expect(source("StudioWorkspaceArrangementToolbar.tsx"))
       .toContain('data-studio-shell-floating-target="workspace-arrangement"');
     expect(source("StudioWorkspaceArrangementControls.tsx"))
@@ -42,7 +46,7 @@ describe("studio shell floating integration", () => {
       .toContain('strokeFocusPhase === "drawing"');
   });
 
-  it("keeps phone floating status controls in separate lanes above the editing dock", () => {
+  it("keeps standalone phone status lanes and editor-owned offline details without duplicate floating UI", () => {
     const saveCenter = source("StudioDraftSaveCenterImpl.tsx");
     const offline = source("offline/StudioOfflinePanel.tsx");
     const huddle = source("live/huddle/StudioP2pHuddleLauncher.tsx");
@@ -50,8 +54,18 @@ describe("studio shell floating integration", () => {
     expect(saveCenter).toContain("var(--studio-canvas-bottom-inset,7rem)+4.25rem");
     expect(offline).toContain("var(--studio-canvas-bottom-inset,7rem)+7.5rem");
     expect(offline).toContain('const shouldShowPanel = connectivity.mode !== "online"');
-    expect(offline).toContain("if (!shouldShowPanel) return null;");
-    expect(offline).toContain('data-studio-shell-force-visible="true"');
+    expect(offline).toContain("if (!shouldShowPanel && !editor) return null;");
+    const portalStart = offline.indexOf("if (editor) return"), fallbackStart = offline.lastIndexOf("return (");
+    expect(portalStart).toBeGreaterThan(-1);
+    expect(fallbackStart).toBeGreaterThan(portalStart);
+    const inline = offline.slice(portalStart, fallbackStart), standalone = offline.slice(fallbackStart);
+    expect(inline).toContain('data-studio-offline-presentation="status-center"');
+    expect(inline).toContain("</section>, editor.element)");
+    expect(inline).toContain("importantSummary ? createPortal");
+    expect(inline).toContain("</span>, editor.summary)");
+    expect(inline).not.toContain("data-studio-shell-floating-target");
+    expect(standalone).toContain('data-studio-shell-floating-target="offline-readiness"');
+    expect(standalone).toContain('data-studio-shell-force-visible="true"');
     expect(huddle).toContain("var(--studio-canvas-bottom-inset,7rem)+4.25rem");
     expect(huddle).toContain("studio-p2p-huddle-dock pointer-events-none");
     expect(huddle).toContain("studio-p2p-huddle-panel pointer-events-auto");

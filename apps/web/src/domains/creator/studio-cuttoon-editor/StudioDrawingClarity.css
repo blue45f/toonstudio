@@ -10,7 +10,7 @@
 .studio-drawing-clarity-button:disabled{opacity:.45;cursor:default}
 .studio-drawing-clarity-button:focus-visible,.studio-drawing-clarity-rail button:focus-visible,.studio-drawing-clarity-more summary:focus-visible,.studio-drawing-clarity-menu button:focus-visible{outline:2px solid var(--color-accent);outline-offset:3px}
 .studio-drawing-clarity-swatch{display:block;inline-size:19px;block-size:19px;border:1px solid var(--color-line-strong);border-radius:6px}
-.studio-drawing-clarity-save{background:var(--color-accent);color:var(--color-on-accent);border-color:var(--color-accent);font-weight:700;min-width:80px}
+.studio-drawing-clarity-save{background:var(--color-accent);color:var(--color-on-accent);border-color:var(--color-accent);font-weight:700;min-width:80px;min-height:48px}
 .studio-drawing-clarity-save:hover{background:color-mix(in srgb,var(--color-accent) 86%,var(--color-fg) 14%)}
 .studio-drawing-clarity-header [data-studio-document-chrome-slot=true]{grid-column:1/-1;min-width:0;width:100%;max-width:none;margin:0}
 .studio-drawing-clarity-more{position:relative;flex-shrink:0}
@@ -47,10 +47,8 @@ body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-stud
 .studio-drawing-clarity-entry-mobile:empty{display:none}
 .studio-drawing-clarity-entry-mobile>.studio-drawing-clarity-button{width:100%}
 .studio-drawing-clarity-mobile-header{grid-template-columns:44px minmax(0,1fr) auto;gap:6px;padding:8px;min-height:60px}
-.studio-drawing-clarity-mobile-header .studio-drawing-clarity-title{min-width:0;max-width:none}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title h1{font-size:14px}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-save{min-width:62px;padding-inline:10px}
-.studio-drawing-clarity-mobile-header>[data-studio-document-chrome-slot=true]{grid-column:1/-1;width:100%;max-width:none;margin:0;min-width:0}
 .studio-drawing-clarity-mobile-header [data-studio-document-window-hub-bar=true]{display:none}
 .studio-drawing-clarity-mobile-header [data-studio-save-status-chrome-mount=true]{justify-content:flex-end;flex-wrap:nowrap;gap:4px;min-width:0;max-width:100%}
 .studio-drawing-clarity-mobile-header [data-studio-save-status-chrome-mount=true] button{min-width:44px;min-height:44px}
@@ -80,24 +78,23 @@ html:not([data-studio-canvas-only=true]) [data-studio-editor=true][data-studio-m
 .studio-drawing-clarity-header:has(>.studio-drawing-clarity-more){grid-template-columns:44px minmax(0,1fr) auto 48px}
 .studio-drawing-clarity-rail .studio-drawing-clarity-menu{top:0;left:calc(100% + 10px);right:auto;max-height:calc(100dvh - 12rem);overflow-y:auto;overscroll-behavior:contain}
 /* 성공 상태의 중복 문장만 아이콘으로 줄이며 오류·재시도·라이브 안내는 그대로 보인다. */
-.studio-drawing-clarity-header:has([data-save-state=saved]){grid-template-columns:44px minmax(0,1fr) 48px auto}
-.studio-drawing-clarity-header:has([data-save-state=saved])>.studio-drawing-clarity-save{grid-column:4;grid-row:1}
-.studio-drawing-clarity-header:has([data-save-state=saved])>[data-studio-document-chrome-slot=true]{grid-column:3;grid-row:1;width:48px}
-.studio-drawing-clarity-header:has([data-save-state=saved]) [data-studio-save-status-chrome-mount=true]{gap:0;flex-wrap:nowrap}
-.studio-drawing-clarity-header:has([data-save-state=saved]) [data-studio-save-status-bar]{max-width:0;flex:0}
-.studio-drawing-clarity-header:has([data-save-state=saved]) [data-studio-save-sync-status-center]>button{width:48px;min-height:48px;padding:0;justify-content:center;border-color:transparent;background:transparent;box-shadow:none}
-.studio-drawing-clarity-header:has([data-save-state=saved]) [data-studio-save-sync-status-center]>button>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.studio-drawing-clarity-header:has([data-save-state=saved]):has([data-studio-connection-notice-summary]:empty){grid-template-columns:44px minmax(0,1fr) 48px auto}
+.studio-drawing-clarity-header:has([data-save-state=saved]):has([data-studio-connection-notice-summary]:empty)>.studio-drawing-clarity-save{grid-column:4;grid-row:1}
+.studio-drawing-clarity-header:has([data-save-state=saved]):has([data-studio-connection-notice-summary]:empty)>[data-studio-document-chrome-slot=true]{grid-column:3;grid-row:1;width:48px}
+.studio-drawing-clarity-header:has([data-save-state=saved]):has([data-studio-connection-notice-summary]:empty) [data-studio-save-status-chrome-mount=true]{gap:0;flex-wrap:nowrap}
+.studio-drawing-clarity-header:has([data-save-state=saved]):has([data-studio-connection-notice-summary]:empty) [data-studio-save-status-bar]{max-width:0;flex:0}
+.studio-drawing-clarity-header:has([data-save-state=saved]):has([data-studio-connection-notice-summary]:empty) [data-studio-save-sync-status-center]>button{width:48px;min-height:48px;padding:0;justify-content:center;border-color:transparent;background:transparent;box-shadow:none}
+.studio-drawing-clarity-header:has([data-save-state=saved]):has([data-studio-connection-notice-summary]:empty) [data-studio-save-sync-status-center]>button>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] [data-studio-mobile-primary-actions]{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] [data-studio-mobile-primary-actions] button{min-height:48px;font-size:12px}
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-workspace-menu=true]{display:none}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-history button{font-size:11px;gap:3px}
 .studio-drawing-clarity-mobile-header [data-studio-save-sync-status-center]>[role=dialog]{position:fixed;top:calc(env(safe-area-inset-top) + 68px);left:8px;right:8px;width:auto;max-width:none;max-height:calc(100dvh - 88px);margin:0}
 @media(prefers-reduced-motion:reduce){.studio-drawing-clarity-more *{transition:none!important;animation:none!important}}
-.studio-drawing-clarity-header:has(>.studio-drawing-clarity-more):has([data-save-state=saved]){grid-template-columns:44px minmax(0,1fr) 48px auto 48px}
+.studio-drawing-clarity-header:has(>.studio-drawing-clarity-more):has([data-save-state=saved]):has([data-studio-connection-notice-summary]:empty){grid-template-columns:44px minmax(0,1fr) 48px auto 48px}
 .studio-drawing-clarity-header>.studio-drawing-clarity-more{grid-column:-2/-1;grid-row:1}
 .studio-drawing-clarity-receipt{display:flex;align-items:center;min-width:0;white-space:nowrap}
 .studio-drawing-clarity-receipt>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .studio-drawing-clarity-receipt>time,.studio-drawing-clarity-receipt>span[aria-hidden]{flex-shrink:0}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-receipt{font-size:11px}
-.studio-drawing-clarity-save{min-height:48px}
 .studio-drawing-clarity-more[open]>summary,.studio-drawing-clarity-more summary[data-studio-clarity-open]{background:var(--color-accent-soft);color:var(--color-accent)}

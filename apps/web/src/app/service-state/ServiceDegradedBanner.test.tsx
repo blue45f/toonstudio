@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ServiceDegradedBanner } from "./ServiceDegradedBanner";
+import { StudioSaveSyncStatusCenter } from "@/domains/creator/StudioSaveSyncStatusCenter";
+import { createEmptyOperationJournal } from "@/domains/creator/studio-operation-recovery-coordinator";
 
 import { useI18n } from "@/shared/lib/i18n";
-import { registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
+import { getActiveEditorStatusSlot, registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
 
 const availableCapabilities = {
   publicCatalog: "available",
@@ -423,4 +425,71 @@ it("연결 준비 안내도 실제 모바일 도크 높이 위에 머문다", ()
   expect(chip.getAttribute("data-service-degraded-banner")).toBe("warming");
   expect(chip.className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem)");
   expect(chip.className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem+env(safe-area-inset-bottom))");
+});
+
+function EditorStatusHarness({ editor = true }: { readonly editor?: boolean }) {
+  return <MemoryRouter>
+    <ServiceDegradedBanner immersive />
+    {editor ? <StudioSaveSyncStatusCenter journal={createEmptyOperationJournal("notice-test")} /> : null}
+  </MemoryRouter>;
+}
+
+describe("편집기에서 저장·연결 상태 한곳으로 이동", () => {
+  it("닫힌 패널에서는 한 번 알리고, 같은 버튼을 열면 원문·재확인·상태 페이지를 제공한다", () => {
+    render(<EditorStatusHarness />);
+    const trigger = screen.getByRole("button", { name: "저장 상태 열기: 아직 저장 기록 없음" });
+    const summary = screen.getByRole("status");
+    expect(trigger.contains(summary)).toBe(true);
+    expect(summary.textContent).toContain("온라인 기능 확인 필요");
+    expect(summary.className).not.toContain("fixed");
+    expect(screen.queryByRole("link", { name: "상태 자세히" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "다시 확인" })).toBeNull();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+
+    fireEvent.click(trigger);
+    const panel = screen.getByRole("dialog", { name: "저장 상태 상세" });
+    expect(within(panel).getByText(/커뮤니티 조회 · 클라우드 저장이 제한됩니다/u)).toBeTruthy();
+    expect(within(panel).getByRole("link", { name: "상태 자세히" }).getAttribute("href")).toBe("/status");
+    fireEvent.click(within(panel).getByRole("button", { name: "다시 확인" }));
+    expect(mocks.refresh).toHaveBeenCalledOnce();
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "저장 상태 상세" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "상태 자세히" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("연결 준비·제한·복구가 바뀌어도 원고 저장 성공으로 표시하지 않는다", () => {
+    mocks.state = { ...mocks.state, report: null, warmingUp: true };
+    const view = render(<EditorStatusHarness />);
+    expect(screen.getByRole("status").textContent).toContain("온라인 연결 확인 중");
+    mocks.state = { ...mocks.state, warmingUp: false };
+    view.rerender(<EditorStatusHarness />);
+    expect(screen.getByRole("status").textContent).toContain("온라인 기능 확인 필요");
+    mocks.state = { ...mocks.state, status: "available", recoveredAt: Date.now() };
+    view.rerender(<EditorStatusHarness />);
+    expect(screen.getByRole("status").textContent).toContain("온라인 기능 복구");
+    expect(screen.getByRole("button", { name: "저장 상태 열기: 아직 저장 기록 없음" })).toBeTruthy();
+    expect(screen.queryByText("이 기기에 저장됨")).toBeNull();
+  });
+
+  it("모달 알림 우선·닫은 뒤 편집기 복귀·편집기 해제 뒤 기본 배치를 유지한다", () => {
+    const view = render(<EditorStatusHarness />);
+    const editor = getActiveEditorStatusSlot();
+    const modal = document.createElement("div");
+    document.body.appendChild(modal);
+    let close = () => {};
+    act(() => { close = registerModalStatusSlot(modal); });
+    try {
+      expect(modal.contains(screen.getByRole("status"))).toBe(true);
+      expect(getActiveEditorStatusSlot()).toBe(editor);
+    } finally {
+      act(() => close());
+      modal.remove();
+    }
+    expect(editor?.summary.contains(screen.getByRole("status"))).toBe(true);
+    view.rerender(<EditorStatusHarness editor={false} />);
+    expect(getActiveEditorStatusSlot()).toBeNull();
+    expect(screen.getByRole("status").className).toContain("fixed");
+  });
 });

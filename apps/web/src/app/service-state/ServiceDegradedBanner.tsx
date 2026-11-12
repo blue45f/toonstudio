@@ -8,7 +8,7 @@ import {
 } from "@/platform/service-capability-state";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { useModalStatusSlot } from "@/shared/lib/modal-status-slot";
+import { useServiceStatusSlot, type ServiceStatusSlot } from "@/shared/lib/modal-status-slot";
 import { useOverlayClearance } from "@/shared/lib/overlay-clearance";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
@@ -53,14 +53,14 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
   const visible = state.status === "degraded" || recoveryVisible;
   // 거의 전체 화면을 쓰는 모달이 상태 자리를 내주면 떠 있는 배너 대신 그 자리에 한 줄 칩으로 들어간다.
   // 떠 있는 배너(z-90)가 모달의 뷰포트 아래쪽·검색창을 가리던 문제를 막는다(알림은 숨기지 않는다).
-  const modalStatusSlot = useModalStatusSlot();
+  const statusSlot = useServiceStatusSlot();
 
   // 실제 알림 높이를 공유해 OST·베타 안내가 경고·재시도 버튼을 가리거나 그 아래 숨지 않게 한다.
   // 웜업 동안에는 이 컴포넌트가 연결 칩을 따로 렌더링해 bannerRef가 비어 있으므로,
   // 렌더링 형태가 바뀌는 전이(웜업→저하·복구)에서도 다시 재도록 상태 조합을 다시 잼 키에 넣는다.
   useOverlayClearance(
     bannerRef,
-    visible && immersive && modalStatusSlot === null,
+    visible && immersive && statusSlot === null,
     `${state.status}:${state.warmingUp === true}:${compact}`,
   );
 
@@ -78,15 +78,13 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
   );
   if (!visible) return null;
   if (state.warmingUp === true && state.status === "degraded") {
-    return modalStatusSlot
-      ? createPortal(
-        <ServiceStatusSlotChip
+    return statusSlot
+      ? <ServiceStatusSlotNotice
+          slot={statusSlot}
           tone="warming"
           title={bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.")}
           description={bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.")}
-        />,
-        modalStatusSlot,
-      )
+        />
       : <ServiceWarmupNotice immersive={immersive} />;
   }
 
@@ -115,16 +113,16 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
         "Some online requests did not respond. This is not a confirmed full outage, and browsing and local editing keep working.",
       );
 
-  if (modalStatusSlot) {
-    return createPortal(
-      <ServiceStatusSlotChip
+  if (statusSlot) {
+    return (
+      <ServiceStatusSlotNotice
+        slot={statusSlot}
         tone={recovered ? "recovered" : "degraded"}
         title={title}
         description={description}
         checking={state.checking}
         onRefresh={recovered ? undefined : requestServiceCapabilityRefresh}
-      />,
-      modalStatusSlot,
+      />
     );
   }
 
@@ -236,19 +234,61 @@ function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
  * 모달이 내준 상태 자리에 들어가는 한 줄 칩. 떠 있는 배너와 같은 상태·문구를 쓰되
  * 설명은 화면 읽기용(sr-only)과 툴팁으로만 두고, 다시 확인 버튼 하나만 남긴다.
  */
+interface ServiceStatusNoticeProps {
+  readonly tone: "degraded" | "recovered" | "warming";
+  readonly title: string;
+  readonly description: string;
+  readonly checking?: boolean;
+  readonly onRefresh?: () => void;
+}
+
+/** 모달에는 한 줄 칩, 편집기에는 같은 상태 버튼의 요약과 펼쳐 보는 상세를 제공한다. */
+function ServiceStatusSlotNotice({ slot, ...notice }: ServiceStatusNoticeProps & { readonly slot: ServiceStatusSlot }) {
+  const bt = useBilingual(COPY_SCOPE);
+  if (slot.kind === "modal") return createPortal(<ServiceStatusSlotChip {...notice} />, slot.element);
+  const Icon = notice.tone === "warming" ? LoaderCircle : notice.tone === "recovered" ? CheckCircle2 : AlertTriangle;
+  const label = notice.tone === "warming"
+    ? bt("온라인 연결 확인 중", "Checking online connection")
+    : notice.tone === "recovered"
+      ? bt("온라인 기능 복구", "Online features restored")
+      : bt("온라인 기능 확인 필요", "Check online features");
+  return <>
+    {createPortal(
+      <span role="status" aria-live="polite" aria-atomic="true" title={notice.title}
+        data-service-status-placement="editor-summary" data-service-degraded-banner={notice.tone}
+        className="inline-flex min-w-0 items-center gap-1 text-xs text-fg-2">
+        <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+        <span>{label}</span>
+        <span className="sr-only">{notice.title}</span>
+      </span>, slot.summary,
+    )}
+    {createPortal(
+      <section aria-label={bt("온라인 연결 상태", "Online connection status")}
+        data-service-status-placement="editor-details" className="mt-3 rounded-lg border border-line bg-panel/60 p-2.5 text-xs">
+        <p className="font-semibold text-fg">{notice.title}</p>
+        <p className="mt-1 leading-relaxed text-fg-2">{notice.description}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {notice.onRefresh ? <button type="button" onClick={notice.onRefresh} disabled={notice.checking}
+            className="inline-flex min-h-12 items-center gap-1.5 rounded-lg border border-line px-3 font-semibold disabled:opacity-50">
+            <RefreshCw className={cn("size-3.5", notice.checking && "animate-spin motion-reduce:animate-none")} aria-hidden="true" />
+            {notice.checking ? bt("확인 중", "Checking") : bt("다시 확인", "Check again")}
+          </button> : null}
+          <Link href="/status" className="inline-flex min-h-12 items-center rounded-lg border border-line px-3 font-semibold">
+            {bt("상태 자세히", "Status details")}
+          </Link>
+        </div>
+      </section>, slot.element,
+    )}
+  </>;
+}
+
 function ServiceStatusSlotChip({
   tone,
   title,
   description,
   checking = false,
   onRefresh,
-}: {
-  readonly tone: "degraded" | "recovered" | "warming";
-  readonly title: string;
-  readonly description: string;
-  readonly checking?: boolean;
-  readonly onRefresh?: () => void;
-}): ReactElement {
+}: ServiceStatusNoticeProps): ReactElement {
   const bt = useBilingual(COPY_SCOPE);
   return (
     <div

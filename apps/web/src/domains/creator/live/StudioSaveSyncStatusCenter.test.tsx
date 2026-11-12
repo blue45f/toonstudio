@@ -17,6 +17,7 @@ import {
 } from "../studio-save-sync-signals";
 
 import type { StudioConnectivitySnapshot } from "../offline/studio-connectivity";
+import { getActiveEditorStatusSlot } from "@/shared/lib/modal-status-slot";
 
 afterEach(() => {
   cleanup();
@@ -40,6 +41,25 @@ function openAdvancedDiagnostics(): HTMLButtonElement {
 }
 
 describe("StudioSaveSyncStatusCenter", () => {
+  it("같은 상태 버튼과 숨김 상세 자리를 유지하며 닫기·해제 시 초점과 등록을 정리한다", () => {
+    const view = render(<StudioSaveSyncStatusCenter journal={createEmptyOperationJournal("slot-test")} />);
+    const slot = getActiveEditorStatusSlot();
+    const trigger = screen.getByRole("button", { name: /저장 상태 열기/u });
+    expect(slot?.summary.closest("button")).toBe(trigger);
+    expect(trigger.getAttribute("aria-describedby")).toBe(slot?.summary.id);
+    expect(slot?.element.closest('[role="dialog"]')?.hasAttribute("hidden")).toBe(true);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    fireEvent.click(trigger);
+    expect(getActiveEditorStatusSlot()).toBe(slot);
+    expect(slot?.element.closest('[role="dialog"]')?.hasAttribute("hidden")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태 닫기" }));
+    expect(document.activeElement).toBe(trigger);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(getActiveEditorStatusSlot()).toBe(slot);
+    view.unmount();
+    expect(getActiveEditorStatusSlot()).toBeNull();
+  });
+
   it("로컬 체크포인트가 있으면 저장 범위를 기기로 표시한다", () => {
     const journal = createJournalCheckpoint(createEmptyOperationJournal("doc-1"), {});
     render(<StudioSaveSyncStatusCenter journal={journal} />);
@@ -206,6 +226,31 @@ describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
     fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기/u }));
     fireEvent.click(screen.getByRole("button", { name: "지금 다시 시도" }));
     expect(onRetrySave).toHaveBeenCalledTimes(1);
+  });
+
+  it("연결 준비 안내보다 실제 저장 상태와 복구 행동을 먼저 제공한다", () => {
+    render(
+      <StudioSaveSyncStatusCenter
+        journal={createEmptyOperationJournal("notice-order")}
+        statusOverride={{ ...baseStatus, localDurable: false }}
+        onRetrySave={vi.fn()}
+        onForceCheckpoint={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태 열기: 저장 확인 필요" }));
+    const slot = getActiveEditorStatusSlot();
+    if (!slot) throw new Error("편집기 알림 자리 누락");
+    for (const prior of [
+      screen.getByText("이 기기"),
+      screen.getByText("서버"),
+      screen.getByText("복구"),
+      screen.getByRole("button", { name: "지금 다시 시도" }),
+      screen.getByRole("button", { name: "복구 지점 만들기" }),
+    ]) {
+      expect(prior.compareDocumentPosition(slot.element) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    }
+    expect(slot.element.compareDocumentPosition(screen.getByText("고급 진단 보기"))
+      & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
   });
 
   it("shows server failure on the pill and offers a connection recheck in the dialog", () => {
