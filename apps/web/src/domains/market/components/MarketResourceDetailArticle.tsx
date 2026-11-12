@@ -421,7 +421,7 @@ export function MarketResourceDetailArticle({
             />
             <Link
               href={studioHandoff.href}
-              className={buttonClass({ variant: "solid", size: "md", className: "w-full" })}
+              className={buttonClass({ variant: "solid", size: "md", className: "w-full min-h-12 [--site-control-size:48px]" })}
             >
               <Download className="h-4 w-4" aria-hidden="true" />
               {studioActionLabel}

@@ -26,18 +26,24 @@
 .site-menu-utility[aria-current="page"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent); }
 :root:not(:has([data-site-ost="mounted"])) [data-site-menu-ost="true"] { display: none; }
 @media (max-width: 1179px) {
+  :root { --site-control-size: 48px; }
+  [data-slot="button"]:not([data-own-control-size]) { min-block-size: 48px; }
+  [data-slot="button"][data-size="icon"]:not([data-own-control-size]) { min-inline-size: 48px; }
   :root:has(nav[data-site-product]) { --site-float-base: calc(5.75rem + env(safe-area-inset-bottom)); }
   :root:has([data-site-mobile-utilities="available"]) [data-site-ost-pill] { display: none; }
   :root:has(nav[data-site-product]) #main-content { padding-block-end: max(6rem, var(--floating-stack-clearance, 0px)); }
   :root:has(nav[data-site-product]) .site-footer__meta { padding-block-end: calc(6rem + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 767px) {
-  :root { --site-control-size: 48px; }
   .site-menu-utility { flex-direction: column; align-items: flex-start; }
   .site-menu-utility small { line-height: 1.5; }
-  [data-slot="button"]:not([data-own-control-size]) { min-block-size: 48px; }
-  [data-slot="button"][data-size="icon"]:not([data-own-control-size]) { min-inline-size: 48px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .site-menu-utility { transition: none; }
+}
+
+/* 실제 공통 메뉴가 연결된 Workspace의 새 기본 메뉴 버튼만 기존 5탭과 맞춘다. */
+@media (max-width: 767px) {
+  .workspace-nav > [data-workspace-menu-trigger] { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:66px; gap:3px; padding:5px 2px; border:1px solid transparent; border-radius:12px; background:transparent; color:var(--color-fg-2); font-size:12px; }
+  .workspace-nav > [data-workspace-menu-trigger]:is(:hover,:focus-visible) { border-color:var(--color-line-strong); background:var(--color-raised); }
 }

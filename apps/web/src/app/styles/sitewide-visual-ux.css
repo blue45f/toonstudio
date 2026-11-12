@@ -439,7 +439,7 @@ html:has(.site-header) #main-content :where(a[href], button, input, textarea, se
 
 /* Keep public-page content clear of the fixed mobile navigation and floating utilities.
    The bottom rail is rendered outside #main-content, so reserve its occupied space explicitly. */
-@media (max-width: 767px) {
+@media (max-width: 1179px) {
   /* 스크롤 컨테이너는 뷰포트(html)다. 키보드 초점·앵커 이동이 하단 탭과 떠 있는 열(⚙·맨 위로) 밑에
      가려지지 않도록 그 높이(기준선 5.75rem + ⚙ 3rem + 여유)만큼 아래 스크롤 여백을 둔다(WCAG 2.2 2.4.11). */
   html:has(nav[data-site-product]) {

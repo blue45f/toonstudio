@@ -3,7 +3,7 @@ import { useContext, type ReactNode } from "react";
 import { WorkspaceAccountContext } from "./workspace-account-context";
 import Link from "@/shared/navigation/router-link";
 import { useI18n } from "@/shared/lib/i18n";
-import { WorkspaceNavigation } from "./WorkspaceNavigation";
+import { WorkspaceMenuNavigation } from "./WorkspaceMenuNavigation";
 import { CampusControls } from "../spatial-campus/CampusControls";
 import { ToonStudioMark } from "../toonstudio-mark";
 import { ToonStudioWordmark } from "../toonstudio-brand";
@@ -36,7 +36,7 @@ export function WorkspaceSidebar({ activeId, context, children }: {
   const korean = useI18n((state) => state.lang.startsWith("ko"));
   return <aside className="workspace-sidebar" data-slot="workspace-sidebar">
     <p className="workspace-sidebar-caption" aria-hidden="true">WORKSPACE</p>
-    <WorkspaceNavigation activeId={activeId} context={context} />
+    <WorkspaceMenuNavigation activeId={activeId} context={context} />
     {children}
     <nav className="workspace-support-nav" aria-label={korean ? "도움과 환경 설정" : "Help and preferences"}>
       <Link href="/help"><HelpCircle size={18} aria-hidden="true" /><span>{korean ? "사용 가이드" : "User guide"}</span></Link>

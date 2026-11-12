@@ -156,7 +156,7 @@ export function MarketDetailStickyBar({
             className={buttonClass({
               variant: "solid",
               size: "sm",
-              className: "gap-1.5 bg-gradient-to-r from-accent to-accent-2 text-on-accent shadow-sm",
+              className: "min-h-12 [--site-control-size:48px] gap-1.5 bg-gradient-to-r from-accent to-accent-2 text-on-accent shadow-sm",
             })}
           >
             <StudioActionIcon className="size-3.5" aria-hidden="true" />
