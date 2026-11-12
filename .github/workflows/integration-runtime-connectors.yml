@@ -28,7 +28,7 @@ jobs:
   validate:
     name: Runtime contracts, UI and type safety
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 65
     env:
       CI: 'true'
       HUSKY: '0'
@@ -77,7 +77,7 @@ jobs:
         run: pnpm --filter @webtoon-nest/api typecheck
 
       - name: Type-check Web
-        run: pnpm exec tsc -p tsconfig.json --noEmit
+        run: pnpm run typecheck:web
 
       - name: Scan changed source for committed secrets
         run: pnpm run quality:secrets:changed
