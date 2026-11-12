@@ -29,8 +29,17 @@ export async function assertPublicCreatorHome(page) {
 
 /** 통합 입력: 기본은 이야기 만들기, 작품 찾기로 바꿔도 입력한 문장은 유지된다(제출 이동은 verify-public-site-experience 가 본다). */
 async function assertPublicHomeInput(dashboard) {
-  const modes = dashboard.locator(".rd-idea-modes button");
-  const input = dashboard.locator("#rd-idea-input");
+  const help = dashboard.locator("details.rd-idea-help");
+  const summary = help.locator(":scope > summary");
+  const modes = help.locator(".rd-idea-modes button");
+  const input = help.locator("#rd-idea-input");
+  await expect(help).not.toHaveAttribute("open");
+  await expect(input).toBeHidden();
+  await expect(summary).toHaveText(/아이디어 쓰기.*작품 찾기/u);
+  await summary.scrollIntoViewIfNeeded();
+  await summary.focus(); await summary.press("Enter");
+  await expect(help).toHaveAttribute("open");
+  await expect(input).toBeVisible();
   await expect(modes).toHaveCount(2);
   await expect(modes.nth(0)).toHaveAttribute("aria-pressed", "true");
   await expect(modes.nth(1)).toHaveAttribute("aria-pressed", "false");
@@ -44,16 +53,36 @@ async function assertPublicHomeInput(dashboard) {
   await modes.nth(0).click();
   await expect(modes.nth(0)).toHaveAttribute("aria-pressed", "true");
   await expect(input).toHaveValue("비 오는 날의 첫사랑");
+  await input.press("Escape");
+  await expect(help).not.toHaveAttribute("open");
+  await expect(summary).toBeFocused();
+  await summary.press("Enter");
+  await expect(help).toHaveAttribute("open");
+  await expect(input).toHaveValue("비 오는 날의 첫사랑");
   await input.fill("");
   await expect(dashboard.locator(".rd-idea-submit")).toBeVisible();
+  await input.press("Escape");
+  await expect(help).not.toHaveAttribute("open");
+  await expect(summary).toBeFocused();
 }
 
 /** Luna 제안 칩은 대화형 AI 흉내가 아니라 실제 시작 동선으로 가는 링크다. */
 async function assertPublicHomeLuna(dashboard) {
-  const luna = dashboard.getByRole("complementary", { name: "Luna 창작 안내" });
+  const help = dashboard.locator("details.rd-luna-help");
+  const summary = help.locator(":scope > summary");
+  const luna = help.getByRole("complementary", { name: "Luna 창작 안내" });
+  await expect(help).not.toHaveAttribute("open");
+  await expect(luna).toBeHidden();
+  await expect(summary).toHaveText(/시작이 막막한가요/u);
+  await summary.scrollIntoViewIfNeeded();
+  await summary.focus(); await summary.press("Enter");
+  await expect(help).toHaveAttribute("open");
   await expect(luna).toBeVisible();
   await expect(luna.getByRole("log", { name: "Luna와의 대화" })).toBeVisible();
   assert.deepEqual(await hrefsOf(luna.locator(".rd-luna-chips a")), readHomeContentHrefs("HOME_LUNA_SUGGESTIONS"));
+  await summary.press("Escape");
+  await expect(help).not.toHaveAttribute("open");
+  await expect(summary).toBeFocused();
 }
 
 /** 시작 카드·핵심 작업실·편집기 미리보기는 접힌 "더 알아보기" 밴드 아래에 있다. 키보드로 펼쳐서 본다. */

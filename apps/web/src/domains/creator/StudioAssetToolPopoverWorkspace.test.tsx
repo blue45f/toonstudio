@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
@@ -27,9 +27,6 @@ vi.mock("./StudioAssetToolPopoverBody", () => ({
   StudioAssetToolPopoverBody: () => (
     <div data-testid="legacy-body">기존 도구</div>
   ),
-}));
-vi.mock("./studio-chrome-ui", () => ({
-  StudioMenuPopoverHeader: () => <div data-testid="menu-header" />,
 }));
 vi.mock("./StudioUnifiedAssetPreviewSurface", () => ({
   StudioUnifiedAssetPreviewSurface: ({ preview }: { preview: { kind: string } }) => (
@@ -204,8 +201,19 @@ describe("StudioAssetToolPopoverWorkspace", () => {
   it("renders one integrated workspace without the previous duplicate subtabs", async () => {
     const { toolBelt } = createToolBelt();
     render(<StudioAssetToolPopoverWorkspace toolBelt={toolBelt} />);
-    expect(await screen.findByRole("region", { name: "통합 에셋 작업 공간" })).toBeTruthy();
-    expect(screen.getByTestId("menu-header")).toBeTruthy();
+    const workspace = await screen.findByRole("region", { name: "통합 에셋 작업 공간" });
+    expect(screen.getAllByRole("region", { name: "통합 에셋 작업 공간" })).toHaveLength(1);
+    const controls = within(workspace);
+    expect(controls.getByRole("searchbox", { name: "에셋 통합 검색" })).toBeTruthy();
+    expect(controls.getAllByRole("button", { name: "통합 탐색" })).toHaveLength(1);
+    expect(controls.getAllByRole("button", { name: "보관함 · 마켓" })).toHaveLength(1);
+    expect(controls.getByRole("button", { name: "통합 탐색" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(controls.getByRole("button", { name: "보관함 · 마켓" }));
+    expect(await controls.findByTestId("legacy-panel")).toBeTruthy();
+    expect(controls.getByRole("button", { name: "보관함 · 마켓" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(controls.getByRole("button", { name: "통합 탐색" }));
+    expect(controls.getByRole("searchbox", { name: "에셋 통합 검색" })).toBeTruthy();
+    expect(controls.getByRole("button", { name: "통합 탐색" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.queryByRole("button", { name: "에셋 탭" })).toBeNull();
   });
 
