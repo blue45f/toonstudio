@@ -86,17 +86,19 @@ export async function installGuestOfflineEnvironment(page: Page, options: GuestE
  */
 export async function waitForEditorSettled(page: Page): Promise<void> {
   await page.locator("#studio-app-shell").waitFor({ state: "visible", timeout: 120_000 });
-  // 데스크톱 메뉴바는 menubar 항목(menuitem)이 지연 로딩으로 채워진다. 모바일 알약에는 menuitem 이 없고 단추만 있다.
+  // 기본 그리기·모바일은 단추, 저장된 전체 배치는 menuitem을 사용하므로 실제 표시된 명령을 기다린다.
   const menubar = page.locator("#studio-menubar");
-  const compact = (page.viewportSize()?.width ?? 1440) < 1024;
-  await expect((compact ? menubar.getByRole("button") : menubar.getByRole("menuitem")).first()).toBeVisible({ timeout: 60_000 });
+  await expect(menubar.locator('button:visible, [role="menuitem"]:visible').first()).toBeVisible({ timeout: 60_000 });
   await expect
     .poll(() => page.locator('[aria-busy="true"], [data-studio-lazy-surface]').count(), {
       timeout: 60_000,
       message: "지연 로딩 중인 조각(aria-busy)이 끝나지 않았어요",
     })
     .toBe(0);
-  await expect(page.getByRole("button", { name: "연결 다시 확인" }).first()).toBeVisible({ timeout: 45_000 });
+  const connectionState = page.locator('[data-service-degraded-banner]:visible').or(
+    page.getByRole("status").filter({ hasText: "오프라인 · 기기 저장. 서버 연결 없이 작업 중이에요" }),
+  );
+  await expect(connectionState.first()).toBeVisible({ timeout: 45_000 });
   await settleLayout(page);
 }
 

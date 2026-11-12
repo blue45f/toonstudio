@@ -197,27 +197,42 @@ test.describe("mobile shell accessibility", () => {
     const banner = page.locator("[data-service-degraded-banner]");
     const player = page.getByTestId("site-background-music-player");
     await expect(banner).toBeVisible();
+    await page.getByRole("button", { name: "전체 메뉴", exact: true }).click();
+    const menu = page.getByRole("dialog");
+    await menu.getByRole("button", { name: /배경 음악/u }).click();
+    await expect(menu).toBeHidden();
     await expect(player).toBeVisible();
+    await expect(player).toHaveAttribute("data-site-ost-expanded", "true");
     for (const width of [390, 320, 430]) {
       await page.setViewportSize({ width, height: 844 });
       for (const expanded of [false, true]) {
         if (expanded) await banner.getByRole("button", { name: "서비스 상태 알림 펼치기" }).click();
-        await expect.poll(async () => player.locator("button").evaluateAll((buttons) => buttons.every((button) => {
-          const r = button.getBoundingClientRect();
-          return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth
-            && [0.2, 0.5, 0.8].every((x) => [0.2, 0.5, 0.8].every((y) =>
-              button.contains(document.elementFromPoint(r.x + r.width * x, r.y + r.height * y))));
-        }))).toBe(true);
+        const controls = player.getByRole("button");
+        expect(await controls.count()).toBeGreaterThan(0);
+        for (const control of await controls.all()) {
+          await control.scrollIntoViewIfNeeded();
+          await expect.poll(() => control.evaluate((button) => {
+            const r = button.getBoundingClientRect();
+            return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth
+              && [0.2, 0.5, 0.8].every((x) => [0.2, 0.5, 0.8].every((y) =>
+                button.contains(document.elementFromPoint(r.x + r.width * x, r.y + r.height * y))));
+          })).toBe(true);
+        }
+        const panelBounds = await player.locator(":scope > div").first().boundingBox();
+        const bannerBounds = await banner.boundingBox();
+        expect(panelBounds).not.toBeNull();
+        expect(panelBounds?.y).toBeGreaterThanOrEqual(0);
+        expect(bannerBounds).not.toBeNull();
+        expect(panelBounds && bannerBounds && (
+          panelBounds.y + panelBounds.height <= bannerBounds.y
+          || bannerBounds.y + bannerBounds.height <= panelBounds.y
+          || panelBounds.x + panelBounds.width <= bannerBounds.x
+          || bannerBounds.x + bannerBounds.width <= panelBounds.x
+        ), `OST 설정과 서비스 상태 알림이 겹치지 않아야 합니다: ${JSON.stringify({ width, expanded, panelBounds, bannerBounds })}`).toBe(true);
         if (expanded) await banner.getByRole("button", { name: "서비스 상태 알림 접기" }).click();
       }
     }
-    await player.getByRole("button", { name: /오리지널 애니·웹툰 OST/u }).click();
-    const settings = player.locator(":scope > div").first();
-    const bounds = await settings.boundingBox();
-    expect(bounds).not.toBeNull();
-    expect(bounds?.y).toBeGreaterThanOrEqual(0);
-    const bannerBounds = await banner.boundingBox();
-    expect((bounds?.y ?? 0) + (bounds?.height ?? 0)).toBeLessThan(bannerBounds?.y ?? 0);
+
   });
 
   for (const route of MOBILE_A11Y_ROUTES) {

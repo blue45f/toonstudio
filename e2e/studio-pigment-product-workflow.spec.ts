@@ -73,11 +73,28 @@ async function fileBytes(download: Download, testInfo: TestInfo, name: string): 
   await download.saveAs(path);
   return readFile(path);
 }
+/** 브러시·파일 메뉴 검증에 필요한 저장 배치를 제품의 실제 더보기 동선으로 연다. */
+async function openPigmentWorkspace(page: Page): Promise<void> {
+  const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]');
+  if (await clarity.isVisible()) {
+    await page.locator('[data-studio-clarity-more-trigger="true"]:visible').click();
+    await page.getByText("레이어와 기존 작업 배치", { exact: true }).click();
+    await page.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true }).click();
+    await expect(clarity).toBeHidden();
+  }
+  await expect(page.locator('[data-studio-main-menu-trigger="file"]')).toBeVisible();
+}
+async function waitForPigmentEditorSettled(page: Page): Promise<void> {
+  await waitForEditorSettled(page);
+  await openPigmentWorkspace(page);
+}
 async function menu(page: Page, itemId: string): Promise<void> {
+  await openPigmentWorkspace(page);
   await page.locator('[data-studio-main-menu-trigger="file"]').click();
   await page.locator(`[data-studio-menu-item-id="${itemId}"]`).click();
 }
 async function downloadPng(page: Page, testInfo: TestInfo, name: string): Promise<Buffer> {
+  await openPigmentWorkspace(page);
   return withStudioCaptureNativeTrace(process.env.TOONSTUDIO_TRACE_CAPTURE_FRAMES === "1" && name === "v2-converted.png", {
     createSession: async () => {
       const browser = page.context().browser();
@@ -322,7 +339,7 @@ test("기본 권리 차단과 자체 안료 선택·SQLite 저장·재열기·�
   const restoredAuthoring = await page.evaluate((key) => localStorage.getItem(key), `toonstudio.brush-program-v6:${encodeURIComponent(`brush:${brushId}`)}`);
   expect(record(JSON.parse(restoredAuthoring ?? "null")).materialReceipt).toEqual(expectedMaterial);
   await page.goto(href, { waitUntil: "domcontentloaded" });
-  await waitForEditorSettled(page);
+  await waitForPigmentEditorSettled(page);
   await expect(page.locator("[data-studio-brush-active-pill]")).toContainText("QA 자체 안료 기능 보존");
   const originalUrl = page.url();
   const key = currentKey(page);
@@ -346,7 +363,7 @@ test("기본 권리 차단과 자체 안료 선택·SQLite 저장·재열기·�
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForStudioPageRestored(page, committedPage);
   expect(currentKey(page)).toBe(key);
-  await waitForEditorSettled(page);
+  await waitForPigmentEditorSettled(page);
   expect(page.url()).toBe(originalUrl);
   expect((await savedPage(page, key, String(committedPage.id))).elements).toEqual(committedPage.elements);
   const exported = await downloadBackup(page, testInfo, "reopened-project.json");
@@ -409,7 +426,7 @@ for (const version of [1, 2] as const) {
     const fixture = legacyPage(version);
     const route = `/studio/draft/qa-pigment-v${version}?workspace=draw`;
     await page.goto(route, { waitUntil: "domcontentloaded" });
-    await waitForEditorSettled(page);
+    await waitForPigmentEditorSettled(page);
     const key = currentKey(page);
     const moduleUrl = await resolveDurableStudioAutosaveModuleUrl(page);
     expect(moduleUrl).not.toBeNull();
@@ -437,6 +454,7 @@ for (const version of [1, 2] as const) {
     const exportError = page.getByText("이전 Mixbox 획은 색 확인 후 자체 혼색 사본으로 전환해야 표시·내보내기할 수 있습니다. 원본은 유지됩니다.", { exact: true }).first();
     await expect(exportError).toHaveCount(0);
     page.on("download", observe);
+    await openPigmentWorkspace(page);
     await page.locator('button[data-studio-primary-action="export"]').click();
     await expect(exportError).toBeVisible();
     expect(unexpected).toHaveLength(0);
@@ -458,7 +476,7 @@ for (const version of [1, 2] as const) {
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForStudioPageRestored(page, converted);
     expect(currentKey(page)).toBe(key);
-    await waitForEditorSettled(page);
+    await waitForPigmentEditorSettled(page);
     const project = await downloadBackup(page, testInfo, `v${version}-converted-project.json`);
     const reopened = records(project.pagesList).find((candidate) => candidate.id === fixture.page.id);
     if (!reopened) throw new Error("다시 연 원고의 제품 백업에 대상 페이지가 없습니다.");
@@ -488,7 +506,7 @@ if (process.env.TOONSTUDIO_PIGMENT_CLIP_CONTRAST === "1") {
       const label = clipBelow ? "on" : "off";
       const route = `/studio/draft/qa-pigment-v2-clip-${label}-${crypto.randomUUID()}?workspace=draw`;
       await page.goto(route, { waitUntil: "domcontentloaded" });
-      await waitForEditorSettled(page);
+      await waitForPigmentEditorSettled(page);
       const originalUrl = page.url();
       const key = currentKey(page);
       const moduleUrl = await resolveDurableStudioAutosaveModuleUrl(page);
@@ -516,6 +534,7 @@ if (process.env.TOONSTUDIO_PIGMENT_CLIP_CONTRAST === "1") {
       const exportError = page.getByText("이전 Mixbox 획은 색 확인 후 자체 혼색 사본으로 전환해야 표시·내보내기할 수 있습니다. 원본은 유지됩니다.", { exact: true }).first();
       await expect(exportError).toHaveCount(0);
       page.on("download", observe);
+      await openPigmentWorkspace(page);
       await page.locator('button[data-studio-primary-action="export"]').click();
       await expect(exportError).toBeVisible();
       expect(unexpected).toHaveLength(0);
@@ -536,7 +555,7 @@ if (process.env.TOONSTUDIO_PIGMENT_CLIP_CONTRAST === "1") {
       await page.reload({ waitUntil: "domcontentloaded" });
       await waitForStudioPageRestored(page, converted);
       expect(currentKey(page)).toBe(key);
-      await waitForEditorSettled(page);
+      await waitForPigmentEditorSettled(page);
       expect(page.url()).toBe(originalUrl);
       const project = await downloadBackup(page, testInfo, `v2-clip-${label}-converted-project.json`);
       const reopened = records(project.pagesList).find((candidate) => candidate.id === fixture.page.id);
@@ -713,7 +732,7 @@ async function seedClipSemanticDraft(page: Page, route: string, raw: string, rea
   if (!actualRoute.valid || actualRoute.projectId || actualRoute.documentId || !actualRoute.draftId?.startsWith("qa-clip-semantic-v28-")) {
     throw new Error("현재 경로가 공유 프로젝트와 분리된 시험 draft인지 확인하지 못했습니다.");
   }
-  await waitForEditorSettled(page);
+  await waitForPigmentEditorSettled(page);
   const key = currentKey(page);
   const existing = await readDurableStudioAutosaveDocument(page, key);
   if (existing?.pagesList.some((candidate) => Array.isArray(candidate.elements) && candidate.elements.length > 0)) {
@@ -726,7 +745,7 @@ async function seedClipSemanticDraft(page: Page, route: string, raw: string, rea
   await page.goto(route, { waitUntil: "domcontentloaded" });
   expect(currentKey(page)).toBe(key);
   await restoreIfPrompted(page, ready);
-  await waitForEditorSettled(page);
+  await waitForPigmentEditorSettled(page);
   return key;
 }
 
@@ -973,7 +992,7 @@ if (process.env.TOONSTUDIO_PIGMENT_CLIP_CONTRAST === "1") {
     assertClipSemanticImagePreserved(converted, fixture.image);
     await page.reload({ waitUntil: "domcontentloaded" });
     await restoreIfPrompted(page, () => page.locator("[data-studio-canvas-viewport]").first().isVisible());
-    await waitForEditorSettled(page);
+    await waitForPigmentEditorSettled(page);
     const sourceAfterReopen = await savedPage(page, sourceKey, fixture.page.id);
     expect(sourceAfterReopen.elements).toEqual(converted.elements);
     assertPreserved(fixture.source, before, sourceAfterReopen);
