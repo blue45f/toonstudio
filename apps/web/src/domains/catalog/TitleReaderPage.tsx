@@ -4,7 +4,6 @@ import {
   ChevronRight,
   ListOrdered,
   SlidersHorizontal,
-  X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -213,7 +212,7 @@ function ReaderShell({
   const quickEpisodes = publishedEpisodes.slice(episodeWindowStart, episodeWindowStart + 24);
   const chipClass = (active: boolean) =>
     cn(
-      "min-h-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! rounded-full border px-2.5 font-semibold transition-colors",
+      "min-h-12 [min-block-size:3rem]! [min-inline-size:3rem]! rounded-full border px-2.5 font-semibold transition-colors",
       active ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/15 bg-white/5 text-white/80 hover:bg-white/15",
     );
 
@@ -223,7 +222,7 @@ function ReaderShell({
       tabIndex={-1}
       data-reader-theme={comfort.theme}
       data-reader-width={comfort.width}
-      className={cn("min-h-[100dvh] outline-none transition-colors duration-200 motion-reduce:transition-none", THEME_CLASSES[comfort.theme])}
+      className={cn("reader-reference-root min-h-[100dvh] outline-none transition-colors duration-200 motion-reduce:transition-none", THEME_CLASSES[comfort.theme])}
     >
       {/* 상단 바 */}
       <header
@@ -239,9 +238,9 @@ function ReaderShell({
           <Link
             href={detailPath}
             aria-label={bi("작품 상세로 나가기", "Back to title details")}
-            className="grid size-11 shrink-0 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            className="grid size-12 shrink-0 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           >
-            <X size={20} aria-hidden />
+            <ChevronLeft size={20} aria-hidden />
           </Link>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold leading-tight">{title.title}</p>
@@ -260,7 +259,7 @@ function ReaderShell({
             aria-expanded={settingsOpen}
             aria-label={bi("보기 설정", "Reader settings")}
             className={cn(
-              "grid size-11 shrink-0 place-items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white",
+              "grid size-12 shrink-0 place-items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white",
               settingsOpen ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/15 bg-white/5 text-white/85 hover:bg-white/15",
             )}
           >
@@ -302,36 +301,32 @@ function ReaderShell({
               </div>
 
             </div>
+            <p className="mt-3 leading-6 text-white/70">{bi("화면을 탭하면 메뉴가 사라져요 — Esc로 나가기 · M 메뉴 토글", "Tap the screen to hide menus — Esc to exit · M toggle menu")}</p>
           </section>
         )}
       </header>
 
       <div onPointerDown={handleContentPointerDown} className={cn("reader-reference-body mx-auto w-full px-4 pb-36 max-md:pb-[calc(9rem+var(--site-float-base))]", WIDTH_CLASSES[comfort.width])}>
-        {/* 회차 제목·날짜는 계약에 없어 작품 실데이터만 간결하게 표시한다. */}
-        <section aria-label={bi("회차 정보", "Episode info")} className="reader-episode-context">
-          <p className="reader-episode-context-title">
-            <strong>{currentEpisodeConfirmed
-              ? formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode) })
-              : bi("공식 감상 안내", "Official reading guide")}</strong>{" · "}{title.title}
-          </p>
-          <p className="reader-episode-context-meta">{title.author}{" · "}{STATUS_LABEL[title.status]}
-            {title.updateDays && title.updateDays.length > 0 && ` · ${title.updateDays.join("·")} ${bi("연재", "serial")}`}
-          </p>
-        </section>
-
-        <ReaderPlatformNotice platformLink={platformLink} detailPath={detailPath} />
+        <ReaderPlatformNotice title={title} platformLink={platformLink} detailPath={detailPath}>
+          {/* 회차 제목·날짜는 계약에 없어 작품 실데이터만 간결하게 표시한다. */}
+          <section aria-label={bi("회차 정보", "Episode info")} className="reader-episode-context">
+            <p className="reader-episode-context-number">
+              <strong>{currentEpisodeConfirmed
+                ? formatI18nTemplate(bi("{v0}화", "Episode {v0}"), { v0: String(episode) })
+                : bi("공식 감상 안내", "Official reading guide")}</strong>
+            </p>
+            <p className="reader-episode-context-title">{title.title}</p>
+            <p className="reader-episode-context-meta">{title.author}{" · "}{STATUS_LABEL[title.status]}
+              {title.updateDays && title.updateDays.length > 0 && ` · ${title.updateDays.join("·")} ${bi("연재", "serial")}`}
+            </p>
+          </section>
+        </ReaderPlatformNotice>
 
         {publishedEpisodes.includes(episode) && !hasNext && <p className="mb-4 text-center text-sm text-white/75">{bi("확인된 공개 회차 중 마지막 회차예요", "This is the latest confirmed published episode")}</p>}
 
         <TitleReaderReaBridgeCard title={title} episode={episode} />
         <TitleReaderImmersiveCreationBar />
 
-        <p className="mt-6 text-center text-xs text-white/65">
-          {bi(
-            "화면을 탭하면 메뉴가 사라져요 — Esc로 나가기 · M 메뉴 토글",
-            "Tap the screen to hide menus — Esc to exit · M toggle menu",
-          )}
-        </p>
       </div>
 
       {/* 하단 바 */}
@@ -351,7 +346,7 @@ function ReaderShell({
           >
             <div className="mb-2 flex items-center justify-between text-xs text-white/70">
               <span className="font-semibold">{bi("회차 빠른 이동", "Quick episode jump")}</span>
-              <Link href={`${detailPath}#episodes`} className="inline-flex min-h-11 items-center font-semibold text-white/85 underline-offset-4 hover:underline">
+              <Link href={`${detailPath}#episodes`} className="inline-flex min-h-12 items-center font-semibold text-white/85 underline-offset-4 hover:underline">
                 {bi("전체 회차 상세 보기", "Full episode list")}
               </Link>
             </div>
@@ -364,7 +359,7 @@ function ReaderShell({
                     href={`/title/${encodeURIComponent(title.slug)}/read/${epNum}`}
                     aria-current={isCurrent ? "page" : undefined}
                     className={cn(
-                      "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border px-3 text-xs font-semibold transition-colors",
+                      "inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-full border px-3 text-xs font-semibold transition-colors",
                       isCurrent
                         ? "border-white bg-white text-[oklch(0.16_0.02_265)]"
                         : "border-white/15 bg-white/5 text-white/80 hover:bg-white/15",
@@ -377,11 +372,11 @@ function ReaderShell({
             </div>
           </section>
         )}
-        <div className={cn("mx-auto flex h-16 w-full items-center gap-1.5 px-3 sm:gap-2 sm:px-4", WIDTH_CLASSES[comfort.width])}>
+        <div className={cn("reader-navigation-controls mx-auto flex min-h-16 w-full items-center gap-1.5 px-3 sm:gap-2 sm:px-4", WIDTH_CLASSES[comfort.width])}>
           <Link
             href={`${detailPath}#episodes`}
             aria-label={bi("회차 목록", "Episode list")}
-            className="grid size-11 shrink-0 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            className="grid size-12 shrink-0 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           >
             <ListOrdered size={19} aria-hidden />
           </Link>
@@ -392,7 +387,7 @@ function ReaderShell({
             aria-expanded={episodeDrawerOpen}
             aria-label={bi("회차 빠른 이동", "Quick episode jump")}
             className={cn(
-              "inline-flex min-h-11 [min-block-size:2.75rem]! shrink-0 items-center rounded-full border px-2.5 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white",
+              "inline-flex min-h-12 [min-block-size:3rem]! shrink-0 items-center rounded-full border px-2.5 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white",
               episodeDrawerOpen ? "border-white bg-white text-[oklch(0.16_0.02_265)]" : "border-white/15 bg-white/5 text-white/80 hover:bg-white/15",
             )}
           >
@@ -401,35 +396,35 @@ function ReaderShell({
           {hasPrev ? (
             <Link
               href={`/title/${encodeURIComponent(title.slug)}/read/${previousEpisode}`}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
             >
               <ChevronLeft size={17} aria-hidden />
-              <span className="sr-only min-[420px]:not-sr-only">{bi("이전 화", "Prev")}</span>
+              <span className="reader-episode-action-label">{bi("이전 화", "Prev")}</span>
             </Link>
           ) : quickEpisodes.length > 0 ? (
             <span
               aria-disabled="true"
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
+              className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
             >
               <ChevronLeft size={17} aria-hidden />
-              <span className="sr-only min-[420px]:not-sr-only">{bi("이전 화", "Prev")}</span>
+              <span className="reader-episode-action-label">{bi("이전 화", "Prev")}</span>
             </span>
           ) : null}
           <span aria-hidden className="min-w-0 flex-1" />
           {hasNext ? (
             <Link
               href={`/title/${encodeURIComponent(title.slug)}/read/${nextEpisode}`}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
             >
-              <span className="sr-only min-[420px]:not-sr-only">{bi("다음 화", "Next")}</span>
+              <span className="reader-episode-action-label">{bi("다음 화", "Next")}</span>
               <ChevronRight size={17} aria-hidden />
             </Link>
           ) : quickEpisodes.length > 0 ? (
             <span
               aria-disabled="true"
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
+              className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-medium text-white/30"
             >
-              <span className="sr-only min-[420px]:not-sr-only">{bi("다음 화", "Next")}</span>
+              <span className="reader-episode-action-label">{bi("다음 화", "Next")}</span>
               <ChevronRight size={17} aria-hidden />
             </span>
           ) : null}
@@ -448,13 +443,13 @@ function ReaderMessageShell({
 }) {
   useBilingualI18nRevision();
   return (
-    <div className="grid min-h-[100dvh] place-items-center bg-reader-canvas px-4 py-16 text-white">
+    <div className="reader-reference-root grid min-h-[100dvh] place-items-center bg-reader-canvas px-4 py-16 text-white">
       <div className="w-full max-w-md">
         {children}
         {detailPath && (
           <Link
             href={detailPath}
-            className="mt-5 inline-flex min-h-11 items-center rounded-full border border-white/25 bg-white/5 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="mt-5 inline-flex min-h-12 items-center rounded-full border border-white/25 bg-white/5 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             {bi("작품 상세로", "Title details")}
           </Link>
@@ -476,6 +471,7 @@ export function TitleReaderPage() {
   useBilingualI18nRevision();
   const { showAvailability } = useAppConfig();
   const { slug, episode: episodeParam } = useParams();
+  const requestedDetailPath = slug ? `/title/${encodeURIComponent(slug)}` : null;
   const titleApiUrl = slug ? `/api/titles/${encodeURIComponent(slug)}` : null;
   const resource = useApiResource<ReaderTitleResponse>(
     titleApiUrl,
@@ -496,12 +492,12 @@ export function TitleReaderPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-reader-canvas px-4 py-[4.5rem]" role="status" aria-label={bi("불러오는 중", "Loading")}>
-        <div className="mx-auto flex w-full max-w-[720px] flex-col gap-4">
+      <ReaderMessageShell detailPath={requestedDetailPath}>
+        <div className="flex w-full flex-col gap-4" role="status" aria-label={bi("불러오는 중", "Loading")}>
           <div className="h-28 animate-pulse rounded-2xl bg-white/8 motion-reduce:animate-none" />
-          <div className="h-[50dvh] animate-pulse rounded-2xl bg-white/6 motion-reduce:animate-none" />
+          <div className="h-40 animate-pulse rounded-2xl bg-white/6 motion-reduce:animate-none" />
         </div>
-      </div>
+      </ReaderMessageShell>
     );
   }
 
@@ -509,16 +505,14 @@ export function TitleReaderPage() {
 
   if (error || !data || !title) {
     return (
-      <div className="grid min-h-[100dvh] place-items-center bg-reader-canvas px-4 py-16">
-        <div className="w-full max-w-md">
-          <ErrorState
-            className="[&>button]:[min-block-size:2.75rem]!"
-            title={bi("작품을 불러오지 못했습니다", "Couldn't load this title")}
-            message={error}
-            onRetry={reload}
-          />
-        </div>
-      </div>
+      <ReaderMessageShell detailPath={requestedDetailPath}>
+        <ErrorState
+          className="[&>button]:[min-block-size:3rem]!"
+          title={bi("작품을 불러오지 못했습니다", "Couldn't load this title")}
+          message={error}
+          onRetry={reload}
+        />
+      </ReaderMessageShell>
     );
   }
 
@@ -545,7 +539,7 @@ export function TitleReaderPage() {
         {latestPublishedEpisode != null && (
           <Link
             href={`/title/${encodeURIComponent(title.slug)}/read/${latestPublishedEpisode}`}
-            className="mt-5 inline-flex min-h-11 items-center rounded-full bg-white px-5 text-sm font-bold text-[oklch(0.16_0.02_265)] transition-colors hover:bg-white/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="mt-5 inline-flex min-h-12 items-center rounded-full bg-white px-5 text-sm font-bold text-[oklch(0.16_0.02_265)] transition-colors hover:bg-white/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             {formatI18nTemplate(bi("마지막 화({v0}화)로", "Go to the latest (ep. {v0})"), {
               v0: String(latestPublishedEpisode),

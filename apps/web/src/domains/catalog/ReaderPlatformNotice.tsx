@@ -1,5 +1,8 @@
-import { ArrowUpRight, BookOpen, Sparkles } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import type { ReactNode } from "react";
 
+import { TitlePoster } from "@/shared/components/title-poster";
+import type { Title } from "@/shared/lib/types";
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
@@ -7,18 +10,24 @@ import "./reader-reference-layout.css";
 
 /** 원고 제공 여부를 확정하지 않은 대기 화면 대신 실제 감상 경로를 먼저 안내한다. */
 export function ReaderPlatformNotice({
+  title,
+  children,
   platformLink,
   detailPath,
 }: {
+  readonly title: Title;
+  readonly children: ReactNode;
   readonly platformLink: { name: string; href: string } | null;
   readonly detailPath: string;
 }) {
   const bt = useBilingual("TitleReaderPage");
   return (
     <section className="reader-platform-notice" aria-label={bt("회차 내용", "Episode content")}>
-      <div className="reader-platform-art" aria-hidden="true">
-        <Sparkles className="reader-platform-sparkles" strokeWidth={1.5} />
-        <BookOpen className="reader-platform-book" strokeWidth={1.4} />
+      <div className="reader-platform-identity">
+        <div className="reader-platform-cover">
+          <TitlePoster title={title} size="sm" titleAs="div" sizes="112px" priority />
+        </div>
+        {children}
       </div>
       <h1>{platformLink
         ? bt("공식 플랫폼에서 작품을 감상하세요", "Read this title on its official platform")
@@ -34,7 +43,7 @@ export function ReaderPlatformNotice({
           {formatI18nTemplate(bt("{v0}에서 읽기", "Read on {v0}"), { v0: platformLink.name })}
           <ArrowUpRight size={18} aria-hidden="true" />
         </a>}
-        <Link className="reader-platform-detail" href={detailPath}>{bt("작품 상세로", "Title details")}</Link>
+        <Link className={platformLink ? "reader-platform-detail" : "reader-platform-primary"} href={detailPath}>{bt("작품 상세로", "Title details")}</Link>
       </div>
       <p className="reader-platform-progress-note">{bt("컷이 제공되지 않아 읽기 진도를 기록하지 않아요.", "Reading progress is not recorded because panels are not provided.")}</p>
     </section>
