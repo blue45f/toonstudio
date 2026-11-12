@@ -12,7 +12,9 @@ export const drawingCaptureRegions = new WeakMap<Page, DrawingCaptureRegion>();
 interface CaptureGeometry { readonly width: number; readonly height: number; }
 interface CapturePoint { readonly x: number; readonly y: number; }
 interface AuthoredPath { readonly author: number; readonly zoom: number; readonly points: readonly CapturePoint[]; }
-interface CaptureProof { readonly page: number; readonly zoom: number; readonly region: DrawingCaptureRegion; readonly paths: readonly { readonly author: number; readonly pointCount: number; readonly bounds: DrawingCaptureRegion }[]; }
+interface CaptureAlignment { readonly desiredX: number; readonly desiredY: number; readonly shiftX: number; readonly shiftY: number; }
+interface CaptureProof { readonly page: number; readonly zoom: number; readonly region: DrawingCaptureRegion; readonly alignment: CaptureAlignment; readonly paths: readonly { readonly author: number; readonly pointCount: number; readonly brushMarginPx: number; readonly bounds: DrawingCaptureRegion }[]; }
+const captureAlignments = new WeakMap<Page, CaptureAlignment>();
 const captureGeometries = new WeakMap<BrowserContext, CaptureGeometry>();
 const authoredPaths = new WeakMap<BrowserContext, AuthoredPath[]>();
 const captureProofs = new WeakMap<BrowserContext, CaptureProof[]>();
@@ -43,7 +45,13 @@ export async function drawingCaptureRegion(page: Page): Promise<DrawingCaptureRe
     captureGeometries.set(context, geometry);
   }
   assert.ok(geometry.width >= 100 && geometry.height >= 100, "전체 시험 획을 담을 측정 영역이 부족합니다.");
-  const region = { x: Math.round(viewport.x + viewport.width / 2 - geometry.width / 2), y: Math.round(viewport.y + viewport.height / 2 - geometry.height / 2), ...geometry };
+  const desiredX = Math.round(viewport.x + viewport.width / 2 - geometry.width / 2);
+  const desiredY = Math.round(viewport.y + viewport.height / 2 - geometry.height / 2);
+  assert.ok(band.bottom - band.top >= geometry.height + 16,
+    `같은 pixel 크기를 보존할 가시 캔버스 띠가 부족합니다: ${JSON.stringify({ geometry, band, viewport })}`);
+  // 같은 크기를 지키면서 원래 도움 버튼·복구 안내와 겹친 부분만 가시 띠 안으로 최소 이동한다.
+  const region = { x: desiredX, y: Math.max(Math.ceil(band.top + 8), Math.min(desiredY, Math.floor(band.bottom - geometry.height - 8))), ...geometry };
+  captureAlignments.set(page, { desiredX, desiredY, shiftX: region.x - desiredX, shiftY: region.y - desiredY });
   assert.ok(region.x >= viewport.x && region.x + region.width <= viewport.x + viewport.width
     && region.y >= band.top && region.y + region.height <= band.bottom,
   `고정 크기 측정 영역이 가시 캔버스를 벗어났습니다: ${JSON.stringify({ region, band, viewport })}`);
@@ -72,15 +80,20 @@ export async function verifyDrawingCapturePaths(page: Page, region: DrawingCaptu
       && point.y - margin >= region.y && point.y + margin <= region.y + region.height),
     `시험 획 전체 경로가 측정 영역에 들어오지 않습니다: ${JSON.stringify({ author: path.author, zoom, region, projected })}`);
     const xs = projected.map(point => point.x), ys = projected.map(point => point.y);
-    return { author: path.author, pointCount: projected.length, bounds: { x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) } };
+    return { author: path.author, pointCount: projected.length, brushMarginPx: margin, bounds: { x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) } };
   });
   const proofs = captureProofs.get(context) ?? [];
-  proofs.push({ page: context.pages().indexOf(page), zoom, region, paths });
+  const alignment = captureAlignments.get(page);
+  assert.ok(alignment, "pixel 영역의 중심 정렬·최소 이동 영수증이 없습니다.");
+  proofs.push({ page: context.pages().indexOf(page), zoom, region, alignment, paths });
   captureProofs.set(context, proofs);
 }
 export function drawingCaptureEvidence(page: Page): unknown {
   const context = page.context();
-  return { geometry: captureGeometries.get(context), authoredPaths: authoredPaths.get(context), snapshots: captureProofs.get(context) };
+  const paths = authoredPaths.get(context) ?? [];
+  assert.equal(paths.length, 4, "전체 4획의 입력 경로가 기록되어야 합니다.");
+  assert.ok(paths.every(path => path.points.length === 49), "각 시험 획의 전체 49점이 보존되어야 합니다.");
+  return { geometry: captureGeometries.get(context), authoredPaths: paths, snapshots: captureProofs.get(context) };
 }
 
 /**
