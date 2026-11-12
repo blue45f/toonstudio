@@ -81,12 +81,9 @@ import { studioVirtualDecorationNavigationWorld } from "./studio-virtual-space-d
 import { StudioVirtualSpaceEngineBridge } from "./studio-virtual-space-engine-bridge";
 import { isStudioSocialWalkTogether, studioSocialRequestFollowsPeer } from "./studio-virtual-space-social-walk";
 import type { StudioVirtualSpaceEngineStatus, StudioVirtualSpaceNearbyNpc, StudioVirtualSpaceZoneChange } from "./studio-virtual-space-engine-events";
-import {
-  readStudioVirtualSpaceAvatarIndex,
-  readStudioVirtualSpaceTourSeen,
-  writeStudioVirtualSpaceAvatarIndex,
-  writeStudioVirtualSpaceTourSeen,
-} from "./studio-virtual-space-entry-preference";
+import { readStudioVirtualSpaceAvatarIndex, readStudioVirtualSpaceTourSeen, writeStudioVirtualSpaceTourSeen } from "./studio-virtual-space-entry-preference";
+import { StudioVirtualAvatarPersistenceNotice } from "./studio-virtual-avatar-persistence";
+import { useStudioVirtualAvatarPersistence } from "./use-studio-virtual-avatar-persistence";
 import {
   startStudioFocusSession,
   stopStudioFocusSession,
@@ -374,6 +371,7 @@ export function VirtualSpaceExperience({
   }, [setChatTyping]);
   const [activity, setActivity] = useState<StudioVirtualSpaceActivity>("available");
   const [avatarIndex, setAvatarIndex] = useState(initialAvatarIndex);
+  const { save: persistAvatarChoice, status: avatarSaveStatus, retry: retryAvatarChoice } = useStudioVirtualAvatarPersistence();
   const [runtimeMetrics, setRuntimeMetrics] = useState<StudioVirtualRuntimeMetrics>(EMPTY_STUDIO_VIRTUAL_RUNTIME_METRICS);
   const captureVirtualPhoto = useCallback(() => {
     void captureStudioVirtualPhoto().then((capture) => {
@@ -1312,7 +1310,7 @@ export function VirtualSpaceExperience({
   const selectAvatar = useCallback((nextIndex: number) => {
     if (!Number.isInteger(nextIndex) || nextIndex < STUDIO_VIRTUAL_SPACE_AUTO_AVATAR || nextIndex >= STUDIO_CHARACTER_SKINS.length) return;
     setAvatarIndex(nextIndex);
-    writeStudioVirtualSpaceAvatarIndex(nextIndex);
+    persistAvatarChoice(nextIndex);
     const controller = controllerRef.current;
     if (controller) {
       controller.setAvatarIndex(nextIndex);
@@ -1324,7 +1322,7 @@ export function VirtualSpaceExperience({
       selfRef.current = self;
       return { ...current, self };
     });
-  }, [worldManifest]);
+  }, [persistAvatarChoice, worldManifest]);
 
   // ── HUD 조작 ────────────────────────────────────────────────────────────────
   const closeTopLayer = useCallback((): boolean => {
@@ -1725,13 +1723,12 @@ export function VirtualSpaceExperience({
           }))} /> : null}
       </StudioVirtualSpacePanelGate>;
       case "build": return <StudioVirtualSpacePanelGate active>
+        <StudioVirtualAvatarPersistenceNotice status={avatarSaveStatus} onRetry={retryAvatarChoice} personal={personal} />
         {stageKind === "three" ? <><VirtualThreeThemePanel />
           <Suspense fallback={<p role="status">{bt("3D 아바타 목록을 불러오는 중…", "Loading 3D avatars…")}</p>}>
             <LazyVirtualThreeAvatarPicker avatarIndex={avatarIndex} onSelect={selectAvatar} />
           </Suspense></> : <section className="space-panel-section" aria-label={bt("내 캐릭터", "My character")}>
           <StudioVirtualThemeCharacterPicker mode="all" includeAuto stageKind={stageKind} identity={fallbackIdentity} artStyle={artStyle} spaceTheme={spaceTheme} avatarIndex={avatarIndex} onSelect={selectAvatar} />
-          <p className="space-panel-note">{personal ? bt("캐릭터 선택은 이 브라우저에 저장됩니다.", "Your character choice is saved in this browser.")
-            : bt("이 선택은 이 브라우저에만 저장되고 P2P로 팀원에게 공유됩니다.", "This choice stays in this browser and is shared with teammates over P2P.")}</p>
         </section>}
         <SpaceAvatarDetailSection identity={fallbackIdentity} />
         {stageKind !== "three" ? <fieldset className="space-panel-section studio-vspace-art-style-picker">
