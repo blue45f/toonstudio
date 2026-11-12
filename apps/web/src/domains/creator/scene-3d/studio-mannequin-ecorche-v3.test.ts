@@ -262,8 +262,8 @@ describe("프로 키네마틱스 · 손발 접촉 솔버 · 사면도 픽킹 (v5
     expect(rightGesture.hasCounterTilt).toBe(true);
     expect(leftGesture.contrappostoAngleDeg).toBeGreaterThan(8);
     expect(analyzeStudioMannequinBalance(spec, leftPose).state).toBe("balanced");
-    expect(measureStudioMannequinBodyFloor(spec, leftPose)).toBeCloseTo(0, 4);
-    expect(measureStudioMannequinBodyFloor(spec, rightPose)).toBeCloseTo(0, 4);
+    expect(measureStudioMannequinBodyFloor(spec, leftPose).lowestY).toBeCloseTo(0, 4);
+    expect(measureStudioMannequinBodyFloor(spec, rightPose).lowestY).toBeCloseTo(0, 4);
     expect(leftPose.joints.leftLowerArm?.[0]).toBeLessThan(0);
   });
 
@@ -272,10 +272,12 @@ describe("프로 키네마틱스 · 손발 접촉 솔버 · 사면도 픽킹 (v5
       const params = resolveStudioMannequinArchetypeParams(archetypeId);
       const spec = buildStudioMannequinSpec(params);
       const rest = createStudioMannequinRestPose();
-      for (const target of STUDIO_MANNEQUIN_HAND_CONTACT_TARGETS) {
-        const res = applyStudioMannequinHandContact(spec, rest, "right", target.id);
-        expect(res.residualDistanceM).toBeLessThan(0.035);
-        expect(measureStudioMannequinBodyFloor(spec, res.pose)).toBeGreaterThanOrEqual(-1e-3);
+      for (const side of ["left", "right"] as const) {
+        for (const target of STUDIO_MANNEQUIN_HAND_CONTACT_TARGETS) {
+          const res = applyStudioMannequinHandContact(spec, rest, side, target.id);
+          expect(res.residualDistanceM).toBeLessThan(0.035);
+          expect(measureStudioMannequinBodyFloor(spec, res.pose).lowestY).toBeGreaterThanOrEqual(-1e-3);
+        }
       }
     }
   });
@@ -298,14 +300,26 @@ describe("프로 키네마틱스 · 손발 접촉 솔버 · 사면도 픽킹 (v5
     expect(rects).toHaveLength(4);
     // 좌상단(main: x=200, y=150 in CSS top-origin) -> 서브패널 정중앙 NDC (0, 0)
     const mainPick = resolveStudioMannequinQuadPointerNdc(200, 150, 800, 600);
-    expect(mainPick?.slot).toBe("main");
-    expect(mainPick?.ndcX).toBeCloseTo(0, 5);
-    expect(mainPick?.ndcY).toBeCloseTo(0, 5);
+    expect(mainPick.slot).toBe("main");
+    expect(mainPick.ndcX).toBeCloseTo(0, 5);
+    expect(mainPick.ndcY).toBeCloseTo(0, 5);
     // 우하단(top: x=600, y=450 in CSS top-origin) -> 서브패널 정중앙 NDC (0, 0)
     const topPick = resolveStudioMannequinQuadPointerNdc(600, 450, 800, 600);
-    expect(topPick?.slot).toBe("top");
-    expect(topPick?.ndcX).toBeCloseTo(0, 5);
-    expect(topPick?.ndcY).toBeCloseTo(0, 5);
+    expect(topPick.slot).toBe("top");
+    expect(topPick.ndcX).toBeCloseTo(0, 5);
+    expect(topPick.ndcY).toBeCloseTo(0, 5);
+    // DOMRect 오프셋 객체 시그니처(씬 레이캐스터 실사용 계약)도 동일하게 역투영된다
+    const offsetFrontPick = resolveStudioMannequinQuadPointerNdc({
+      clientX: 120 + 600,
+      clientY: 80 + 150,
+      rectLeft: 120,
+      rectTop: 80,
+      rectWidth: 800,
+      rectHeight: 600,
+    });
+    expect(offsetFrontPick.slot).toBe("front");
+    expect(offsetFrontPick.ndcX).toBeCloseTo(0, 5);
+    expect(offsetFrontPick.ndcY).toBeCloseTo(0, 5);
 
     const guides = buildStudioMannequinConstructionGuides(spec);
     expect(guides.some((g) => g.kind === "loomis")).toBe(true);

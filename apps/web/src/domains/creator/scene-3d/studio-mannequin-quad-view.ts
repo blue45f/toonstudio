@@ -85,23 +85,54 @@ export interface StudioMannequinQuadPointerHit {
   readonly paneHeight: number;
 }
 
-/**
- * CSS 클라이언트 좌표(`clientX`, `clientY`)와 캔버스 `DOMRect`로부터
- * 4분할 사면도 중 어느 사분면을 가리키는지와 해당 사분면 내부의 정규화 장치 좌표(`[-1, 1]`)를 순수 계산한다.
- */
-export function resolveStudioMannequinQuadPointerNdc(input: {
+export interface StudioMannequinQuadPointerInput {
   readonly clientX: number;
   readonly clientY: number;
   readonly rectLeft: number;
   readonly rectTop: number;
   readonly rectWidth: number;
   readonly rectHeight: number;
-}): StudioMannequinQuadPointerHit {
-  const safeW = Math.max(2, input.rectWidth);
-  const safeH = Math.max(2, input.rectHeight);
-  const localX = Math.min(safeW, Math.max(0, input.clientX - input.rectLeft));
+}
+
+/**
+ * CSS 클라이언트 좌표(`{ clientX, clientY, rectLeft, rectTop, rectWidth, rectHeight }`) 또는
+ * 캔버스 로컬 좌표(`localX, localY, rectWidth, rectHeight`)로부터
+ * 4분할 사면도 중 어느 사분면을 가리키는지와 해당 사분면 내부의 정규화 장치 좌표(`[-1, 1]`)를 순수 계산한다.
+ */
+export function resolveStudioMannequinQuadPointerNdc(
+  input: StudioMannequinQuadPointerInput,
+): StudioMannequinQuadPointerHit;
+export function resolveStudioMannequinQuadPointerNdc(
+  localX: number,
+  localY: number,
+  rectWidth: number,
+  rectHeight: number,
+): StudioMannequinQuadPointerHit;
+export function resolveStudioMannequinQuadPointerNdc(
+  inputOrLocalX: StudioMannequinQuadPointerInput | number,
+  localYArg?: number,
+  rectWidthArg?: number,
+  rectHeightArg?: number,
+): StudioMannequinQuadPointerHit {
+  const normalized: StudioMannequinQuadPointerInput =
+    typeof inputOrLocalX === "number"
+      ? {
+          clientX: inputOrLocalX,
+          clientY: localYArg ?? 0,
+          rectLeft: 0,
+          rectTop: 0,
+          rectWidth: rectWidthArg ?? 2,
+          rectHeight: rectHeightArg ?? 2,
+        }
+      : inputOrLocalX;
+
+  const safeW = Math.max(2, Number.isFinite(normalized.rectWidth) ? normalized.rectWidth : 2);
+  const safeH = Math.max(2, Number.isFinite(normalized.rectHeight) ? normalized.rectHeight : 2);
+  const rawX = (normalized.clientX ?? 0) - (normalized.rectLeft ?? 0);
+  const rawY = (normalized.clientY ?? 0) - (normalized.rectTop ?? 0);
+  const localX = Math.min(safeW, Math.max(0, Number.isFinite(rawX) ? rawX : 0));
   // CSS Y는 상단=0, WebGL Y는 하단=0 이므로 반전해 사분면 rect와 대조한다.
-  const glY = Math.min(safeH, Math.max(0, safeH - (input.clientY - input.rectTop)));
+  const glY = Math.min(safeH, Math.max(0, safeH - (Number.isFinite(rawY) ? rawY : 0)));
   const rects = computeStudioMannequinQuadViewRects(safeW, safeH);
 
   const matched =

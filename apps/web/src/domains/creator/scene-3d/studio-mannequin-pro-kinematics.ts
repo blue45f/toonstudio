@@ -1,21 +1,33 @@
 /**
- * Studio 3D 데생 인형 v3 — 프로 키네마틱스·무게중심(CoM) 밸런스·작화 보조선 엔진.
+ * Studio 3D 데생 인형 v5 — 프로 키네마틱스·분절 무게중심(CoM) 밸런스·발 고정 균형 보정·작화 보조선 엔진.
  *
  * 클립스튜디오 3D 데생 인형을 능가하기 위한 핵심 키네마틱스 및 작화 보조 기능:
  * 1. 관절 잠금(Joint Lock): 잠긴 관절은 IK·포즈 프리셋·미러·자동 균형 보정에서 보존.
  * 2. 견갑상완 리듬(Scapulohumeral Rhythm): 팔 거상 시 쇄골/견갑골이 2:1 해부학 비율로 자연 동반 회전해 어깨 찢어짐 방지.
- * 3. 생체역학 무게중심(Center of Mass) 추선 & 지지 다각형 밸런스 판정 + 원클릭 균형 보정.
+ * 3. 생체역학 분절 무게중심(Center of Mass) 추선 & 기능적 지지면(FBoS) 판정 + 접지 발 고정(Foot-Pinned) 원클릭 균형 보정.
  * 4. 작화 보조선(Loomis 두상 십자선 · 흉곽/골반 정중선 및 기울기 축 · 사지 단축법 등고선 링).
  *
  * CSP `.pep`/`.3dp` 브리지는 `studio-mannequin-csp-bridge.ts`에서 제공하며 여기서 함께 재노출한다.
  * Three.js 비의존 순수 모듈 — 단위 테스트 가능하며 결정적이다.
  */
 
-import { studioMannequinMatrixFromEulerXyz as eulerToMat3 } from "./studio-mannequin-ik";
+import {
+  computeStudioMannequinJointFrames,
+  studioMannequinMat3Apply,
+  studioMannequinMat3Multiply,
+  type StudioMannequinMat3,
+} from "./studio-mannequin-forward-kinematics";
+import {
+  solveStudioMannequinTwoBoneIk,
+  studioMannequinEulerXyzFromMatrix,
+  studioMannequinMatrixFromEulerXyz as eulerToMat3,
+} from "./studio-mannequin-ik";
 import {
   STUDIO_MANNEQUIN_JOINT_IDS,
   blendStudioMannequinBuild,
   clampStudioMannequinJointRotation,
+  getStudioMannequinJointLimit,
+  type StudioMannequinChainId,
   type StudioMannequinJointId,
   type StudioMannequinSpec,
   type StudioMannequinVec3,
@@ -30,12 +42,16 @@ export {
   type CspPepImportResult,
 } from "./studio-mannequin-csp-bridge";
 
-function rad(deg: number): number {
-  return (deg * Math.PI) / 180;
+function rad(degVal: number): number {
+  return (degVal * Math.PI) / 180;
 }
 
 function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
+}
+
+function transposeMat3(m: StudioMannequinMat3): StudioMannequinMat3 {
+  return [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]];
 }
 
 // ── 1. 관절 잠금(Joint Lock) ─────────────────────────────────────────────────
@@ -100,7 +116,7 @@ export function applyStudioMannequinJointLocks(
 /**
  * 상완(UpperArm)을 옆으로 들어 올리거나(외전) 앞으로 높이 들 때(굴곡),
  * 해부학적 견갑상완 리듬(약 2:1 비율, 22° 이상 거상 시 활성)에 따라 쇄골(Shoulder)을
- * 자연스럽게 상방 회전·전인시킨다. 클립스튜디오의 고질적인 만세 포즈 어깨 함몰을 해결한다.
+ * 자연스럽게 상방 회전·전인시킨다.
  */
 export function applyStudioMannequinScapulohumeralRhythm(
   pose: StudioMannequinPose,
@@ -156,7 +172,7 @@ export function applyStudioMannequinScapulohumeralRhythm(
   });
 }
 
-// ── 3. 전진 운동학(FK) & 무게중심(Center of Mass) 밸런스 분석기 ──────────────
+// ── 3. 전진 운동학(FK) & 분절 무게중심(Center of Mass) 밸런스 분석기 ─────────
 
 type Mat3Tuple = readonly [
   number, number, number,
@@ -211,6 +227,50 @@ const JOINT_MASS_WEIGHTS: Readonly<Record<StudioMannequinJointId, number>> = Obj
   rightFoot: 0.0145,
 });
 
+/** 각 관절 로컬 좌표계에서의 실제 분절 질량중심(Segment CoM) 오프셋. */
+function segmentLocalComOffset(spec: StudioMannequinSpec, id: StudioMannequinJointId): StudioMannequinVec3 {
+  const hu = spec.headUnit;
+  const torsoRef = spec.heightM * 0.28;
+  switch (id) {
+    case "pelvis":
+      return [0, 0.04 * hu, 0];
+    case "spine":
+      return [0, 0.16 * torsoRef, 0];
+    case "chest":
+      return [0, 0.22 * torsoRef, 0];
+    case "neck":
+      return [0, 0.13 * hu, 0];
+    case "head":
+      return [0, 0.50 * hu, 0];
+    case "leftShoulder":
+      return [0.25 * hu, 0, 0];
+    case "rightShoulder":
+      return [-0.25 * hu, 0, 0];
+    case "leftUpperArm":
+      return [0, -0.48 * spec.chains.leftArm.upperLength, 0];
+    case "rightUpperArm":
+      return [0, -0.48 * spec.chains.rightArm.upperLength, 0];
+    case "leftLowerArm":
+      return [0, -0.45 * spec.chains.leftArm.lowerLength, 0];
+    case "rightLowerArm":
+      return [0, -0.45 * spec.chains.rightArm.lowerLength, 0];
+    case "leftHand":
+    case "rightHand":
+      return [0, -0.04 * spec.heightM, 0];
+    case "leftUpperLeg":
+      return [0, -0.45 * spec.chains.leftLeg.upperLength, 0];
+    case "rightUpperLeg":
+      return [0, -0.45 * spec.chains.rightLeg.upperLength, 0];
+    case "leftLowerLeg":
+      return [0, -0.45 * spec.chains.leftLeg.lowerLength, 0];
+    case "rightLowerLeg":
+      return [0, -0.45 * spec.chains.rightLeg.lowerLength, 0];
+    case "leftFoot":
+    case "rightFoot":
+      return [0, -0.10 * hu, 0.22 * hu];
+  }
+}
+
 export type StudioMannequinBalanceState =
   | "balanced"
   | "edge"
@@ -264,13 +324,13 @@ export function computeStudioMannequinWorldJointPositions(
 }
 
 /**
- * 현재 체형과 포즈에서 3D 무게중심(CoM), 바닥 투영 추선, 접지 지지면 안정성을 분석한다.
+ * 현재 체형과 포즈에서 회전된 분절 3D 무게중심(CoM), 바닥 투영 추선, 기능적 지지면(FBoS) 안정성을 분석한다.
  */
 export function analyzeStudioMannequinBalance(
   spec: StudioMannequinSpec,
   pose: StudioMannequinPose,
 ): StudioMannequinBalanceReport {
-  const worldPos = computeStudioMannequinWorldJointPositions(spec, pose);
+  const frames = computeStudioMannequinJointFrames(spec, pose);
   let totalWeight = 0;
   let cx = 0;
   let cy = 0;
@@ -278,15 +338,17 @@ export function analyzeStudioMannequinBalance(
 
   for (const id of STUDIO_MANNEQUIN_JOINT_IDS) {
     const w = JOINT_MASS_WEIGHTS[id] ?? 0.01;
-    const p = worldPos[id];
-    const yShift = id === "head" ? spec.headUnit * 0.45 : 0;
-    cx += p[0] * w;
-    cy += (p[1] + yShift) * w;
-    cz += p[2] * w;
+    const frame = frames.get(id);
+    if (!frame) continue;
+    const worldSegOffset = studioMannequinMat3Apply(frame.rotation, segmentLocalComOffset(spec, id));
+    cx += (frame.position[0] + worldSegOffset[0]) * w;
+    cy += (frame.position[1] + worldSegOffset[1]) * w;
+    cz += (frame.position[2] + worldSegOffset[2]) * w;
     totalWeight += w;
   }
 
-  const com: StudioMannequinVec3 = [cx / totalWeight, cy / totalWeight, cz / totalWeight];
+  const denom = totalWeight || 1;
+  const com: StudioMannequinVec3 = [cx / denom, cy / denom, cz / denom];
   const groundProjection: StudioMannequinVec3 = [com[0], 0, com[2]];
 
   const ankleThreshold = Math.max(0.16, spec.headUnit * 0.58);
@@ -301,11 +363,13 @@ export function analyzeStudioMannequinBalance(
   const footLen = 0.95 * spec.headUnit * (spec.params.footScale ?? 1);
 
   for (const jId of candidateJoints) {
-    const p = worldPos[jId];
+    const p = frames.get(jId)?.position;
+    if (!p) continue;
     if (p[1] <= ankleThreshold) {
       if (jId === "leftFoot" || jId === "rightFoot") {
-        groundedContacts.push([p[0], 0, p[2] - 0.04 * footLen]);
-        groundedContacts.push([p[0], 0, p[2] + 0.48 * footLen]);
+        // 해부학적 뒤꿈치(-0.24·발길이)부터 앞꿈치 볼(+0.50·발길이)까지의 실제 지지 구간
+        groundedContacts.push([p[0], 0, p[2] - 0.24 * footLen]);
+        groundedContacts.push([p[0], 0, p[2] + 0.50 * footLen]);
       } else {
         groundedContacts.push([p[0], 0, p[2]]);
       }
@@ -335,16 +399,17 @@ export function analyzeStudioMannequinBalance(
     minZ = Math.min(minZ, c[2]);
     maxZ = Math.max(maxZ, c[2]);
   }
-  const footHalfWidth = 0.14 * spec.headUnit * (spec.params.footScale ?? 1);
+  const footHalfWidth = 0.05 * spec.headUnit * (spec.params.footScale ?? 1);
   minX -= footHalfWidth;
   maxX += footHalfWidth;
-  minZ -= footHalfWidth * 0.65;
-  maxZ += footHalfWidth * 0.85;
+  minZ -= footHalfWidth * 0.5;
+  maxZ += footHalfWidth * 0.5;
 
   const supportCenter: StudioMannequinVec3 = [(minX + maxX) * 0.5, 0, (minZ + maxZ) * 0.5];
-  const halfSpanX = Math.max(0.05, (maxX - minX) * 0.5);
-  const halfSpanZ = Math.max(0.06, (maxZ - minZ) * 0.5);
-  const supportRadiusM = Math.hypot(halfSpanX, halfSpanZ) * 0.72;
+  // 생체역학적 기능 지지면(Functional Base of Support — 발목 토크가 유지 가능한 유효 균형 반경)
+  const halfSpanX = Math.max(0.042, (maxX - minX) * 0.5 * 0.68);
+  const halfSpanZ = Math.max(0.052, (maxZ - minZ) * 0.5 * 0.78);
+  const supportRadiusM = Math.hypot(halfSpanX, halfSpanZ) * 0.75;
 
   const dxOut = Math.max(0, Math.abs(com[0] - supportCenter[0]) - halfSpanX);
   const dzOut = Math.max(0, Math.abs(com[2] - supportCenter[2]) - halfSpanZ);
@@ -359,7 +424,7 @@ export function analyzeStudioMannequinBalance(
   const state: StudioMannequinBalanceState =
     outsideDist > 0.005
       ? "off-balance"
-      : marginM < 0.028
+      : marginM < 0.022
         ? "edge"
         : "balanced";
 
@@ -375,26 +440,117 @@ export function analyzeStudioMannequinBalance(
   };
 }
 
+function pinGroundedLegToTarget(
+  spec: StudioMannequinSpec,
+  pose: StudioMannequinPose,
+  chainId: Extract<StudioMannequinChainId, "leftLeg" | "rightLeg">,
+  worldTarget: StudioMannequinVec3,
+): StudioMannequinPose {
+  const chain = spec.chains[chainId];
+  const upperSpec = spec.joints.find((j) => j.id === chain.rootJointId);
+  if (!upperSpec) return pose;
+  const frames = computeStudioMannequinJointFrames(spec, pose);
+  const pelvisFrame = frames.get("pelvis");
+  const endFrame = frames.get(chain.effectorJointId);
+  if (!pelvisFrame || !endFrame) return pose;
+
+  const invPelvis = transposeMat3(pelvisFrame.rotation);
+  const targetLocal = studioMannequinMat3Apply(invPelvis, [
+    worldTarget[0] - pelvisFrame.position[0],
+    worldTarget[1] - pelvisFrame.position[1],
+    worldTarget[2] - pelvisFrame.position[2],
+  ]);
+  const chainScale = chain.upperLength + chain.lowerLength;
+  const poleLocal: StudioMannequinVec3 = [
+    upperSpec.offset[0] + chain.poleHint[0] * chainScale,
+    upperSpec.offset[1] + chain.poleHint[1] * chainScale,
+    upperSpec.offset[2] + chain.poleHint[2] * chainScale,
+  ];
+  const upperLimit = getStudioMannequinJointLimit(chain.rootJointId);
+  const lowerLimit = getStudioMannequinJointLimit(chain.midJointId);
+  const solved = solveStudioMannequinTwoBoneIk(
+    {
+      root: upperSpec.offset,
+      target: targetLocal,
+      pole: poleLocal,
+      upperLength: chain.upperLength,
+      lowerLength: chain.lowerLength,
+      hingeSign: chain.hingeSign,
+    },
+    {
+      upper: { x: upperLimit.x, y: upperLimit.y, z: upperLimit.z },
+      lower: { x: lowerLimit.x, y: lowerLimit.y, z: lowerLimit.z },
+    },
+  );
+  const moved = normalizeStudioMannequinPose({
+    joints: {
+      ...pose.joints,
+      [chain.rootJointId]: solved.upperEuler,
+      [chain.midJointId]: solved.lowerEuler,
+    },
+    pelvisOffset: pose.pelvisOffset,
+  });
+  const movedMid = computeStudioMannequinJointFrames(spec, moved).get(chain.midJointId);
+  if (!movedMid) return moved;
+  const endLocal = studioMannequinMat3Multiply(transposeMat3(movedMid.rotation), endFrame.rotation);
+  return normalizeStudioMannequinPose({
+    joints: {
+      ...moved.joints,
+      [chain.effectorJointId]: clampStudioMannequinJointRotation(
+        chain.effectorJointId,
+        studioMannequinEulerXyzFromMatrix(endLocal),
+      ),
+    },
+    pelvisOffset: moved.pelvisOffset,
+  });
+}
+
 /**
- * 원클릭 무게중심 자동 균형(Auto-Balance): 접지된 발을 기준으로 골반 수평 오프셋을 이동시켜
- * 무게중심 추선이 지지면 중앙에 안착하도록 보정한다. 공중 점프 포즈는 건드리지 않는다.
+ * 원클릭 무게중심 자동 균형(Foot-Pinned Hip Counterweight Auto-Balance):
+ * 접지된 양발의 월드 위치와 발바닥 각도를 지면에 고정한 채 골반을 반대 방향으로 수평 이동시켜
+ * 무게중심 추선이 지지면 정중앙에 안착하도록 생체역학적으로 보정한다. 공중 점프 포즈는 보존한다.
  */
 export function stabilizeStudioMannequinCenterOfMass(
   spec: StudioMannequinSpec,
   pose: StudioMannequinPose,
 ): StudioMannequinPose {
-  const report = analyzeStudioMannequinBalance(spec, pose);
-  if (report.state === "airborne") return pose;
-  const shiftX = report.supportCenter[0] - report.centerOfMass[0];
-  const shiftZ = report.supportCenter[2] - report.centerOfMass[2];
-  return normalizeStudioMannequinPose({
-    joints: pose.joints,
-    pelvisOffset: [
-      pose.pelvisOffset[0] + shiftX * 0.88,
-      pose.pelvisOffset[1],
-      pose.pelvisOffset[2] + shiftZ * 0.88,
-    ],
-  });
+  const initialReport = analyzeStudioMannequinBalance(spec, pose);
+  if (initialReport.state === "airborne") return pose;
+
+  const initialFrames = computeStudioMannequinJointFrames(spec, pose);
+  const ankleThreshold = Math.max(0.16, spec.headUnit * 0.58);
+  const leftFootPos = initialFrames.get("leftFoot")?.position;
+  const rightFootPos = initialFrames.get("rightFoot")?.position;
+  const pinnedLeft = leftFootPos && leftFootPos[1] <= ankleThreshold ? leftFootPos : null;
+  const pinnedRight = rightFootPos && rightFootPos[1] <= ankleThreshold ? rightFootPos : null;
+
+  const legLength = spec.chains.leftLeg.upperLength + spec.chains.leftLeg.lowerLength;
+  const basePelvisY = pose.pelvisOffset[1];
+  let current = pose;
+
+  for (let iter = 0; iter < 5; iter += 1) {
+    const report = analyzeStudioMannequinBalance(spec, current);
+    if (report.state === "airborne") break;
+    const shiftX = report.supportCenter[0] - report.centerOfMass[0];
+    const shiftZ = report.supportCenter[2] - report.centerOfMass[2];
+    if (Math.hypot(shiftX, shiftZ) < 0.001) break;
+
+    const nextX = current.pelvisOffset[0] + shiftX * 0.95;
+    const nextZ = current.pelvisOffset[2] + shiftZ * 0.95;
+    const horizSq =
+      (nextX - pose.pelvisOffset[0]) ** 2 + (nextZ - pose.pelvisOffset[2]) ** 2;
+    const kneeMicroSag =
+      legLength - Math.sqrt(Math.max(0.01, legLength * legLength - horizSq)) + 0.003;
+
+    current = normalizeStudioMannequinPose({
+      joints: current.joints,
+      pelvisOffset: [nextX, basePelvisY - kneeMicroSag, nextZ],
+    });
+    if (pinnedLeft) current = pinGroundedLegToTarget(spec, current, "leftLeg", pinnedLeft);
+    if (pinnedRight) current = pinGroundedLegToTarget(spec, current, "rightLeg", pinnedRight);
+  }
+
+  return current;
 }
 
 // ── 4. 작화 보조선(Loomis 십자선 · 정중선 · 사지 단축 등고선) ─────────────────
