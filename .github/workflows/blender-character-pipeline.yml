@@ -52,7 +52,8 @@ jobs:
   contracts:
     name: contracts-and-runtime-boundary
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    # 전체 파일 분할 검사가 25분을 넘어 마지막 샤드에서 중단돼 Core와 예산을 맞춘다.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
 
