@@ -137,7 +137,7 @@
   ],
   "selectedCount": 8,
   "selectedBytes": 2480171,
-  "copyStatus": "metadata only; parent must materialize these8PNGs before publishing linked README",
+  "copyStatus": "8개 PNG를 저장소에 보존했고 각 파일의 SHA-256을 다시 확인함; 정적 제안이며 운영 구현 증거와 구분",
   "excludedFromArchive": [
     "all1323per-routePNGs",
     "privateLibrary/PageopaqueIDs",
