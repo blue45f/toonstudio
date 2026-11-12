@@ -9,6 +9,7 @@ import {
   sampleBrushStudioV7BarrelTwistChisel,
   sampleBrushStudioV7BristleBundle,
   sampleBrushStudioV7CentrifugalBristleTurn,
+  sampleBrushStudioV7ChiselTwistDrag,
   sampleBrushStudioV7DualMaskCarve,
   sampleBrushStudioV7NibSplitPooling,
   sampleBrushStudioV7Sediment,
@@ -105,8 +106,8 @@ export function brushStudioV6MaterialActiveTuningKeys(program: BrushStudioV6Mate
   if (program.slots.physics.includes("physics-bristle-split-merge")) for (const key of ["bristleStrands", "friction", "viscosity"] as const) result.add(key);
   if (program.slots.physics.includes("physics-centrifugal-bristle-turn")) for (const key of ["bristleStrands", "friction", "viscosity", "gloss"] as const) result.add(key);
   if (program.slots.physics.includes("physics-centripetal-adaptive-stamp")) result.add("stabilization");
-  if (program.slots.physics.includes("physics-dual-mask-boolean")) for (const key of ["surfaceTooth", "granulation"] as const) result.add(key);
   if (program.slots.physics.includes("physics-barrel-twist-chisel")) result.add("friction");
+  if (program.slots.physics.includes("physics-dual-mask-boolean")) for (const key of ["surfaceTooth", "granulation"] as const) result.add(key);
   if (program.slots.finish.includes("finish-directional-relief")) for (const key of ["relief", "gloss"] as const) result.add(key);
   if (pattern && mode !== "particle") { activeTuningKeysCache.set(program, result); return result; }
   const modeKeys: Readonly<Record<typeof mode, readonly (keyof BrushStudioV6Tuning)[]>> = {
@@ -285,6 +286,7 @@ export function createBrushStudioV6MaterialStroke(
   const strokeMarks: BrushStudioV6MaterialMark[] = [];
   let previous: BrushStudioV6MaterialPoint | null = null, prevHistory: BrushStudioV7CurveControlSample | null = null;
   let lastDirectionRad: number | null = null;
+  let lastChiselTwistDeg: number | null = null;
   let remaining = step, pathLength = 0, emittedMarks = 0, dabIndex = 0, clippedDabs = 0;
   let initializedBristles = false, initializedWetEdges = false, smudgeMix = 0;
 
@@ -461,7 +463,7 @@ export function createBrushStudioV6MaterialStroke(
         const grainAngle = advancedSurface ? angle + Math.sin(surfaceContact.fiberAngle - angle) * surfaceContact.anisotropy * 0.72 : angle;
         const major = advancedSurface ? 1 + surfaceContact.anisotropy * 0.9 : 1;
         const minor = advancedSurface ? 1 - surfaceContact.anisotropy * 0.42 : 1;
-        emit("grain", x, y, cellSize * (charcoal ? 1.4 : 0.7) * major, cellSize * (charcoal ? 0.65 : 0.32) * minor * (1 + tilt * 0.4), grainAngle, alpha * contact * (charcoal ? 1.8 : 1.2), 0);
+        emit("grain", x, y, cellSize * (charcoal ? 1.4 : 0.7) * major, cellSize * (charcoal ? 0.65 : 0.32) * minor * (subpixelSdfAa ? 1 + tilt * 0.4 : 1), grainAngle, alpha * contact * (charcoal ? 1.8 : 1.2), 0);
       }
       return;
     }
@@ -549,7 +551,11 @@ export function createBrushStudioV6MaterialStroke(
 
     const marker = program.slots.deposition === "deposit-marker";
     const advancedSurface = isBrushStudioV7AdvancedSurface(program.slots.surface);
-    const twistChisel = barrelTwistChisel ? sampleBrushStudioV7BarrelTwistChisel({ baseRadiusPx: radius, twistDeg: finite(point.twist ?? 0), tilt01: tilt, strokeDirectionRad: direction }) : null;
+    if (barrelTwistChisel) lastChiselTwistDeg = sampleBrushStudioV7ChiselTwistDrag({
+      previousTwistDeg: lastChiselTwistDeg, targetTwistDeg: finite(point.twist ?? 0),
+      friction01: t.friction, travelPx: directional ? step * densityMultiplier : 0, radiusPx: radius,
+    });
+    const twistChisel = barrelTwistChisel ? sampleBrushStudioV7BarrelTwistChisel({ baseRadiusPx: radius, twistDeg: lastChiselTwistDeg ?? 0, tilt01: tilt, strokeDirectionRad: direction }) : null;
     const nibSplit = nibSplitPooling ? sampleBrushStudioV7NibSplitPooling({ radiusPx: radius, pressure01: pressure, angularDeltaRad, segmentDistancePx: segmentDistPx }) : null;
     const inkAngle = twistChisel ? twistChisel.nibAngleRad : angle;
     const inkAlpha = alpha * (nibSplit?.dwellOpacityBoost ?? 1);
@@ -618,7 +624,14 @@ export function createBrushStudioV6MaterialStroke(
       if (centripetalAdaptive && !topology) {
         const curSample: BrushStudioV7CurveControlSample = { x: point.x, y: point.y, pressure: point.pressure, tilt: point.tilt, twist: point.twist };
         const prevSample: BrushStudioV7CurveControlSample = { x: previous.x, y: previous.y, pressure: previous.pressure, tilt: finite(previous.tilt ?? 0), twist: finite(previous.twist ?? 0) };
-        const p0 = prevHistory ?? { ...prevSample, x: 2 * prevSample.x - curSample.x, y: 2 * prevSample.y - curSample.y };
+        const reflected = { ...prevSample, x: 2 * prevSample.x - curSample.x, y: 2 * prevSample.y - curSample.y };
+        // 보정 강도는 이전 접선의 반영량을 조절하며, 0이면 현재 구간의 직선 접선을 유지한다.
+        const stabilization = unit(t.stabilization);
+        const p0 = prevHistory ? {
+          ...prevHistory,
+          x: reflected.x + (prevHistory.x - reflected.x) * stabilization,
+          y: reflected.y + (prevHistory.y - reflected.y) * stabilization,
+        } : reflected;
         const p3: BrushStudioV7CurveControlSample = { x: 2 * point.x - previous.x, y: 2 * point.y - previous.y, pressure: point.pressure, tilt: point.tilt, twist: point.twist };
         const subPoints = interpolateBrushStudioV7CentripetalSegment(p0, prevSample, curSample, p3, 4);
         let cursorPt: BrushStudioV6MaterialPoint = previous;
@@ -639,7 +652,7 @@ export function createBrushStudioV6MaterialStroke(
       return marks;
     },
     marks: () => strokeMarks,
-    reset(): void { topology?.reset(); strokeMarks.length = 0; previous = null; prevHistory = null; lastDirectionRad = null; remaining = step; pathLength = 0; emittedMarks = 0; dabIndex = 0; clippedDabs = 0; initializedBristles = false; initializedWetEdges = false; smudgeMix = 0; },
+    reset(): void { topology?.reset(); strokeMarks.length = 0; previous = null; prevHistory = null; lastDirectionRad = null; lastChiselTwistDeg = null; remaining = step; pathLength = 0; emittedMarks = 0; dabIndex = 0; clippedDabs = 0; initializedBristles = false; initializedWetEdges = false; smudgeMix = 0; },
     statistics: () => ({ pathLength, emittedMarks, resampledDabs: dabIndex, clippedDabs }),
   };
 }

@@ -120,12 +120,6 @@ function BrushTraySelectionAlert({
       data-testid="studio-brush-tray-error-alert"
       data-error-kind={issue.kind}
       data-blocked-nodes={blockedSummary || undefined}
-      onKeyDown={(event) => {
-        if (event.key !== "Escape") return;
-        event.preventDefault();
-        event.stopPropagation();
-        onDismiss();
-      }}
       className="mt-1 flex w-full flex-wrap items-center justify-between gap-1.5 rounded-xl border border-danger/45 bg-danger/10 px-2.5 py-1.5 text-[0.62rem] leading-snug text-fg"
     >
       <span className="flex min-w-0 flex-1 items-start gap-1">
@@ -136,6 +130,12 @@ function BrushTraySelectionAlert({
         <button
           type="button"
           data-testid="studio-brush-tray-retry-button"
+          onKeyDown={(event) => {
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            event.stopPropagation();
+            onDismiss();
+          }}
           onClick={onRetry}
           className={cn(
             "flex min-h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 py-0.5 text-[0.6rem] font-semibold text-fg hover:bg-raised",
@@ -148,6 +148,12 @@ function BrushTraySelectionAlert({
         <button
           type="button"
           data-testid="studio-brush-tray-dismiss-error"
+          onKeyDown={(event) => {
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            event.stopPropagation();
+            onDismiss();
+          }}
           onClick={onDismiss}
           className={cn(
             "flex min-h-7 items-center rounded-lg px-1.5 py-0.5 text-[0.6rem] font-medium text-fg-2 hover:bg-raised hover:text-fg",

@@ -193,7 +193,7 @@ export function inspectSavedBrushV6ProviderGate(
         reason: `"${brushName}" 프리셋의 무폴백(fallbackPolicy: "none") 실행 영수증이 유효하지 않아 현재 브러시를 그대로 유지합니다.`,
       };
     }
-    const disallowedBindings = Array.isArray(runtime.bindings)
+    const disallowedBindings: typeof runtime.bindings = Array.isArray(runtime.bindings)
       ? runtime.bindings.filter(
           (binding) => !brushStudioV6LicenseProfileAllows(licenseProfile, binding.rights),
         )

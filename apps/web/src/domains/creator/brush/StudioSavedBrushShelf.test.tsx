@@ -256,7 +256,7 @@ describe("StudioSavedBrushShelf", () => {
     // 닫기(또는 Escape) 시 알림이 닫히고 키보드 포커스가 프리셋 칩으로 복원된다.
     const dismissBtn = screen.getByTestId("saved-brush-shelf-dismiss-error");
     dismissBtn.focus();
-    fireEvent.keyDown(alert, { key: "Escape" });
+    fireEvent.keyDown(screen.getByTestId("saved-brush-shelf-dismiss-error"), { key: "Escape" });
     expect(screen.queryByRole("alert")).toBeNull();
     expect(document.activeElement).toBe(blockedChip);
   });

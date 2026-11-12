@@ -274,12 +274,6 @@ export function StudioSavedBrushShelf({
               ? failureState.blockedNodeIds.join(",")
               : undefined
           }
-          onKeyDown={(event) => {
-            if (event.key !== "Escape") return;
-            event.preventDefault();
-            event.stopPropagation();
-            dismissFailureAndRestoreFocus(failureState.brush.id);
-          }}
           className="mt-1.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-danger/45 bg-danger/10 px-2.5 py-2 text-[0.64rem] leading-relaxed text-fg"
         >
           <p className="flex min-w-0 flex-1 items-start gap-1.5">
@@ -290,6 +284,12 @@ export function StudioSavedBrushShelf({
             <button
               type="button"
               data-testid="saved-brush-shelf-retry-button"
+              onKeyDown={(event) => {
+                if (event.key !== "Escape") return;
+                event.preventDefault();
+                event.stopPropagation();
+                dismissFailureAndRestoreFocus(failureState.brush.id);
+              }}
               onClick={() => handleApplyBrush(failureState.brush, true)}
               className="flex min-h-8 items-center gap-1 rounded-lg border border-line-strong bg-card px-2.5 py-1 text-[0.62rem] font-semibold text-fg hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
             >
@@ -298,6 +298,12 @@ export function StudioSavedBrushShelf({
             <button
               type="button"
               data-testid="saved-brush-shelf-dismiss-error"
+              onKeyDown={(event) => {
+                if (event.key !== "Escape") return;
+                event.preventDefault();
+                event.stopPropagation();
+                dismissFailureAndRestoreFocus(failureState.brush.id);
+              }}
               onClick={() => dismissFailureAndRestoreFocus(failureState.brush.id)}
               className="flex min-h-8 items-center rounded-lg px-2 py-1 text-[0.62rem] font-medium text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
             >

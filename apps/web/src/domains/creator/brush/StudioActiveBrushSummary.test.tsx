@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioActiveBrushSummary } from "../StudioActiveBrushSummary";
 
@@ -72,6 +72,7 @@ describe("StudioActiveBrushSummary", () => {
     expect(screen.getByText("프로 브러시 · 정보 불러오는 중")).toBeTruthy();
     expect(screen.queryByText(/사용자 · 원형 촉/u)).toBeNull();
 
+    await act(() => vi.dynamicImportSettled());
     expect(await screen.findByText("질감 · 소프트 입자 촉")).toBeTruthy();
     expect(screen.getByText("알파 질감 · 다중 매핑")).toBeTruthy();
     expect(summary?.getAttribute("data-studio-brush-metadata-state")).toBe("loaded");
@@ -97,8 +98,9 @@ describe("StudioActiveBrushSummary", () => {
     expect(summary?.getAttribute("data-studio-brush-metadata-state")).toBe("loading");
     expect(screen.queryByText(/사용자 · 원형 촉/u)).toBeNull();
 
-    expect(await screen.findByText(/리벨급 모세관 번짐 수채/u)).toBeTruthy();
+    await act(() => vi.dynamicImportSettled());
+    expect(await screen.findByText(/모세관 꽃양배추 수채 워시/u)).toBeTruthy();
     expect(summary?.getAttribute("data-studio-brush-metadata-state")).toBe("loaded");
-    expect(summary?.textContent).toContain("수채·번짐");
+    expect(summary?.textContent).toContain("수채·수묵");
   });
 });

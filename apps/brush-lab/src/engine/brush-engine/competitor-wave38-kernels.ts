@@ -142,7 +142,7 @@ export function evaluateDualBrushBooleanMasking(params: {
       const fine = valueNoise2D(px + 13.7, py - 7.3, scale * 0.48, seed ^ 0x5f3759df);
       const secondaryMask = clamp01(coarse * 0.65 + fine * 0.35);
 
-      let dualAlpha = primaryAlpha;
+      let dualAlpha: number;
       if (primaryAlpha <= 0) {
         dualAlpha = 0;
       } else if (params.combineMode === "multiply") {

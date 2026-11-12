@@ -265,17 +265,20 @@ describe("studio competitor flagship favorite slots", () => {
     expect(onApply).not.toHaveBeenCalled();
 
     // 2) 비호환 제품 경로(wrong-product-path: carrier-google-mesh) 머티리얼 슬롯 차단
+    const basePrograms = baseValid.enginePrograms;
+    const baseMaterial = basePrograms?.material;
+    if (!basePrograms || !baseMaterial) throw new Error("정상 브러시의 재료 프로그램이 필요합니다.");
     const wrongPathBrush: StudioSavedBrush = {
       ...baseValid,
       id: "saved:custom:mesh",
       name: "벡터 메쉬 실험 펜",
       sourcePresetId: undefined,
       enginePrograms: {
-        ...baseValid.enginePrograms,
+        ...basePrograms,
         material: {
-          ...baseValid.enginePrograms!.material!,
+          ...baseMaterial,
           slots: {
-            ...baseValid.enginePrograms!.material!.slots,
+            ...baseMaterial.slots,
             carrier: "carrier-google-mesh",
           },
         },

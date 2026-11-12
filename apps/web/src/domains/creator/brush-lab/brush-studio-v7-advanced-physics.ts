@@ -203,6 +203,21 @@ export function sampleBrushStudioV7DualMaskCarve(input: {
 /**
  * V7.4 스타일러스 배럴 트위스트(0~360°) + 기울기 3D 치즐 닙 투영(`physics-barrel-twist-chisel`).
  */
+/** 재료 마찰에 따른 닙 회전 지연을 이벤트 수가 아닌 실제 dab 이동 거리로 적분한다. */
+export function sampleBrushStudioV7ChiselTwistDrag(input: {
+  readonly previousTwistDeg: number | null;
+  readonly targetTwistDeg: number;
+  readonly friction01: number;
+  readonly travelPx: number;
+  readonly radiusPx: number;
+}): number {
+  if (input.previousTwistDeg === null || unit(input.friction01) === 0) return input.targetTwistDeg;
+  const deltaRad = wrapAngleDelta(input.previousTwistDeg * Math.PI / 180, input.targetTwistDeg * Math.PI / 180);
+  const dragDistance = Math.max(0.25, input.radiusPx) * unit(input.friction01) * 2;
+  const response = -Math.expm1(-Math.max(0, input.travelPx) / dragDistance);
+  return input.previousTwistDeg + deltaRad * 180 / Math.PI * response;
+}
+
 export function sampleBrushStudioV7BarrelTwistChisel(input: {
   readonly baseRadiusPx: number;
   readonly twistDeg: number;

@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -75,6 +75,7 @@ describe("StudioBrushTray", () => {
     const tray = screen.getByRole("listbox").closest("[data-studio-brush-tray]");
     expect(tray?.getAttribute("aria-busy")).toBe("true");
     expect(tray?.getAttribute("data-studio-pro-catalog-state")).toBe("loading");
+    await act(() => vi.dynamicImportSettled());
     const heart = await screen.findByRole("option", {
       name: /즐겨찾기 브러시 잎송이 · 질감/,
     });
@@ -108,6 +109,7 @@ describe("StudioBrushTray", () => {
       />
     );
 
+    await act(() => vi.dynamicImportSettled());
     const option = await screen.findByRole("option", {
       name: new RegExp(`즐겨찾기 브러시 ${v6.name}`),
     });
@@ -146,6 +148,7 @@ describe("StudioBrushTray", () => {
         onOpenLibrary={vi.fn()}
       />
     );
+    await act(() => vi.dynamicImportSettled());
     const heart = await screen.findByRole("option", {
       name: /즐겨찾기 브러시 잎송이/,
     });
@@ -217,10 +220,11 @@ describe("StudioBrushTray", () => {
       />
     );
 
+    await act(() => vi.dynamicImportSettled());
     const blockedOption = await screen.findByRole("option", {
       name: new RegExp(`즐겨찾기 브러시 ${blockedV6.name}`),
     });
-    const penOption = screen.getByRole("option", { name: /즐겨찾기 브러시 펜/ });
+    const penOption = screen.getByRole("option", { name: /즐겨찾기 브러시 매끈한 펜/ });
 
     fireEvent.click(blockedOption);
 
@@ -244,7 +248,7 @@ describe("StudioBrushTray", () => {
 
     const dismissButton = screen.getByTestId("studio-brush-tray-dismiss-error");
     dismissButton.focus();
-    fireEvent.click(dismissButton);
+    fireEvent.keyDown(dismissButton, { key: "Escape" });
     expect(screen.queryByTestId("studio-brush-tray-error-alert")).toBeNull();
     expect(document.activeElement).toBe(blockedOption);
   });
@@ -270,8 +274,8 @@ describe("StudioBrushTray", () => {
     }
 
     render(<ControlledTrayHarness />);
-    const penChip = screen.getByRole("option", { name: /즐겨찾기 브러시 펜/ });
-    const markerChip = screen.getByRole("option", { name: /즐겨찾기 브러시 마카/ });
+    const penChip = screen.getByRole("option", { name: /즐겨찾기 브러시 매끈한 펜/ });
+    const markerChip = screen.getByRole("option", { name: /즐겨찾기 브러시 반투명 마커/ });
 
     // 1차 시도 실패: 기존 pen 활성 상태가 유지된다.
     fireEvent.click(markerChip);
