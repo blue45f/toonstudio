@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 
 import { SiteBackgroundMusicPlayer } from "./SiteBackgroundMusicPlayer";
 
-import { requestSiteOstPanelToggle } from "@/shared/lib/site-background-music";
+import { requestSiteOstPanelOpen, requestSiteOstPanelToggle } from "@/shared/lib/site-background-music";
 
 const mocks = vi.hoisted(() => ({
   moodId: "pop",
@@ -401,7 +401,7 @@ describe("mobile settings cluster entry point", () => {
     localStorage.clear();
   });
 
-  it("opens from the settings cluster request, focuses the panel and returns focus to the cluster", async () => {
+  it.each(["cluster", "menu"] as const)("opens the music panel and returns focus to the visible %s entry", async (entry) => {
     mockManifest();
     // 휴대폰에서는 알약이 CSS로 숨으므로 접은 뒤 초점은 ⚙ 토글로 돌아가야 한다.
     const visibility = vi.fn(function (this: HTMLElement) {
@@ -411,7 +411,7 @@ describe("mobile settings cluster entry point", () => {
     try {
       render(
         <MemoryRouter initialEntries={["/ranking"]}>
-          <button type="button" data-floating-controls-toggle>설정</button>
+          <button type="button" {...(entry === "menu" ? { "data-site-mobile-menu-trigger": "true" } : { "data-floating-controls-toggle": true })}>설정</button>
           <SiteBackgroundMusicPlayer />
         </MemoryRouter>,
       );
@@ -431,6 +431,23 @@ describe("mobile settings cluster entry point", () => {
     } finally {
       Reflect.deleteProperty(HTMLElement.prototype, "checkVisibility");
     }
+  });
+
+  it("명시적인 음악 진입은 이미 열린 패널을 유지하고 조작 초점을 다시 넣는다", async () => {
+    mockManifest();
+    render(<MemoryRouter initialEntries={["/ranking"]}>
+      <button type="button" data-site-mobile-menu-trigger="true">전체 메뉴</button>
+      <SiteBackgroundMusicPlayer />
+    </MemoryRouter>);
+    await screen.findByText("네온 스크롤");
+    act(() => requestSiteOstPanelOpen());
+    const close = await screen.findByRole("button", { name: "OST 플레이어 접기" });
+    await waitFor(() => expect(document.activeElement).toBe(close));
+    screen.getByRole("button", { name: "전체 메뉴" }).focus();
+    act(() => requestSiteOstPanelOpen());
+    expect(screen.getByTestId("site-background-music-player").getAttribute("data-site-ost-expanded")).toBe("true");
+    expect(document.activeElement).toBe(close);
+    expect(localStorage.getItem("ts_site_bgm_expanded")).toBe("1");
   });
 
   it("does not restore a previously expanded panel on a phone-width viewport", async () => {

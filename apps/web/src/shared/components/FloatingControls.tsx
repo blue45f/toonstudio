@@ -48,6 +48,8 @@ export interface FloatingControlsProps {
   wakeRadiusPx?: number;
   /** 추가 클래스(루트). */
   className?: string;
+  /** 전체 메뉴가 설정을 제공하는 웹 셸에서는 좁은 화면의 고정 묶음을 생략한다. */
+  mobileMode?: "floating" | "menu";
 }
 
 const PILL =
@@ -80,6 +82,7 @@ export function FloatingControls({
   hideAfterMs = 4000,
   wakeRadiusPx = 120,
   className,
+  mobileMode = "floating",
 }: FloatingControlsProps) {
   void _showBgm;
   const theme = useTheme((s) => s.theme);
@@ -248,8 +251,9 @@ export function FloatingControls({
     <div
       ref={rootRef}
       data-floating-controls="true"
+      data-floating-controls-mobile={mobileMode === "menu" ? "disabled" : undefined}
       data-floating-controls-open={open || undefined}
-      className={cx(PLACEMENT_CLASS[placement], className)}
+      className={cx(PLACEMENT_CLASS[placement], mobileMode === "menu" && "hidden min-[1180px]:block", className)}
       onMouseEnter={hold}
       onMouseLeave={scheduleHide}
       onFocusCapture={hold}
@@ -273,7 +277,7 @@ export function FloatingControls({
       {/* 모바일(접힘형만): 단일 토글 — 콘텐츠를 가리지 않게 면적 최소화. 탭하면 위로 펼침.
           DOM 순서는 토글 -> 펼침 패널로 두어 정방향 Tab이 열린 패널 안으로 진입하게 하고,
           flex-col-reverse로 시각적 배치(패널이 토글 위)를 그대로 유지한다. */}
-      {collapsible && (
+      {collapsible && mobileMode === "floating" && (
         <div className="flex flex-col-reverse items-end gap-2 md:hidden">
           <button
             ref={toggleRef}

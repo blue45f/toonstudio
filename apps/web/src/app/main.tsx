@@ -18,6 +18,7 @@ import "./styles/globals.css";
 import "./styles/studio-overlay-stacking.css";
 import "./styles/design-themes.css";
 import "./styles/sitewide-visual-ux.css";
+import "./styles/mobile-first-shell.css";
 import "./styles/unified-theme-contract.css";
 import "./styles/product-journey-readability.css";
 import "./styles/reference-visual-system.css";

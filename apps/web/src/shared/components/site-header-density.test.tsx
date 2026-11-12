@@ -79,7 +79,7 @@ describe("단일 창작 헤더", () => {
         "/market",
       ]);
     // 헤더의 제작/전체 진입은 레거시 별칭(/new, /more)이 아닌 canonical 경로로 직접 연결한다.
-    expect(within(navigation).getByRole("link", { name: "제작" }).getAttribute("href")).toBe("/studio");
+    expect(within(navigation).getByRole("link", { name: "내 작업" }).getAttribute("href")).toBe("/studio");
     // 가상 스튜디오는 강등됐지만 삭제되지 않았다 — 제작 드롭다운에서 canonical 경로로 도달한다.
     expect(within(navigation).getByRole("link", { name: /^가상 스튜디오/u }).getAttribute("href")).toBe("/studio/space");
     // 협업은 팀·프로젝트 맥락이 없는 홈에서는 1차 메뉴에 없다(전체 메뉴·⌘K에는 남는다).
@@ -98,9 +98,9 @@ describe("단일 창작 헤더", () => {
     const navigation = within(header).getByRole("navigation", { name: "주요 메뉴" });
     // 드롭다운이 없는 목적지는 아이콘 없이 글자만으로 표시한다(시안의 가벼운 1차 표시).
     expect(within(navigation).getByRole("link", { name: "커뮤니티" }).querySelector("svg")).toBeNull();
-    expect(within(navigation).getByRole("link", { name: "마켓" }).querySelector("svg")).toBeNull();
+    expect(within(navigation).getByRole("link", { name: "소재 찾기" }).querySelector("svg")).toBeNull();
     // 가상 스튜디오는 1차 메뉴가 아니라 제작 드롭다운 패널 안의 항목이다(아이콘은 패널 안에서만 둔다).
-    const studioMenu = within(navigation).getByRole("link", { name: "제작" }).parentElement?.querySelector("ul");
+    const studioMenu = within(navigation).getByRole("link", { name: "내 작업" }).parentElement?.querySelector("ul");
     expect(studioMenu?.querySelector('a[href="/studio/space"]')).not.toBeNull();
     expect(navigation.querySelector('a[data-navigation-entry][href="/studio/space"]')).toBeNull();
   });
@@ -109,10 +109,10 @@ describe("단일 창작 헤더", () => {
     render(<HeaderWithAppearance />);
     const navigation = screen.getByRole("navigation", { name: "주요 메뉴" });
 
-    const explore = within(navigation).getByRole("link", { name: "탐색" });
+    const explore = within(navigation).getByRole("link", { name: "작품 찾기" });
     expect(explore.getAttribute("aria-haspopup")).toBe("true");
     const exploreMenu = explore.parentElement?.querySelector("ul");
-    expect(exploreMenu?.getAttribute("aria-label")).toBe("탐색");
+    expect(exploreMenu?.getAttribute("aria-label")).toBe("작품 찾기");
     expect(Array.from(exploreMenu?.querySelectorAll("a") ?? []).map((link) => link.getAttribute("href")))
       .toEqual(["/explore", "/ranking", "/calendar"]);
 
@@ -123,7 +123,7 @@ describe("단일 창작 헤더", () => {
       .toEqual(["/research", "/learn/classroom", "/guide"]);
 
     expect(within(navigation).getByRole("link", { name: "커뮤니티" }).getAttribute("aria-haspopup")).toBeNull();
-    expect(within(navigation).getByRole("link", { name: "마켓" }).getAttribute("href")).toBe("/market");
+    expect(within(navigation).getByRole("link", { name: "소재 찾기" }).getAttribute("href")).toBe("/market");
   });
 
   it("홈에서 화면 분위기 전환의 상태와 왕복 조작을 유지한다", () => {
@@ -146,7 +146,7 @@ describe("단일 창작 헤더", () => {
     expect(screen.queryByRole("navigation", { name: "창작 단계별 바로가기" })).toBeNull();
     expect(container.querySelector(".public-site-journey")).toBeNull();
     expect(container.querySelectorAll('[aria-current="step"]')).toHaveLength(0);
-    expect(within(navigation).getByRole("link", { name: "마켓" }).getAttribute("aria-current")).toBe("true");
+    expect(within(navigation).getByRole("link", { name: "소재 찾기" }).getAttribute("aria-current")).toBe("true");
     // 화면 분위기 전환은 홈 머리글과 설정 화면에서 한다.
     expect(screen.queryAllByRole("button", { name: "차분한 화면" })).toHaveLength(0);
     expect(container.querySelector(".site-header__appearance")).toBeNull();
@@ -154,14 +154,14 @@ describe("단일 창작 헤더", () => {
 
   it.each([
     // 가상 스튜디오(S1-2 강등)는 제작 구역이라 1차 메뉴에서는 제작이 현재 축이다.
-    ["/studio/space", "제작", ["탐색", "커뮤니티", "배우기", "마켓"]],
-    ["/studio/p/project-1/space", "제작", ["탐색", "커뮤니티", "배우기", "마켓"]],
-    ["/production/projects/demo/overview", "협업", ["제작", "커뮤니티"]],
-    ["/collaborate", "협업", ["커뮤니티", "제작"]],
-    ["/studio/assets/characters/new", "제작", ["탐색", "커뮤니티", "배우기", "마켓"]],
-    ["/market", "마켓", ["탐색"]],
-    ["/learn/classroom", "배우기", ["탐색"]],
-    ["/ranking", "탐색", ["마켓", "배우기"]],
+    ["/studio/space", "내 작업", ["작품 찾기", "커뮤니티", "배우기", "소재 찾기"]],
+    ["/studio/p/project-1/space", "내 작업", ["작품 찾기", "커뮤니티", "배우기", "소재 찾기"]],
+    ["/production/projects/demo/overview", "협업", ["내 작업", "커뮤니티"]],
+    ["/collaborate", "협업", ["커뮤니티", "내 작업"]],
+    ["/studio/assets/characters/new", "내 작업", ["작품 찾기", "커뮤니티", "배우기", "소재 찾기"]],
+    ["/market", "소재 찾기", ["작품 찾기"]],
+    ["/learn/classroom", "배우기", ["작품 찾기"]],
+    ["/ranking", "작품 찾기", ["소재 찾기", "배우기"]],
   ])("%s에서는 %s만 현재 창작 축으로 표시한다", (pathname, current, others) => {
     render(<HeaderWithAppearance pathname={pathname} />);
     const navigation = screen.getByRole("navigation", { name: "주요 메뉴" });
@@ -188,7 +188,7 @@ describe("단일 창작 헤더", () => {
     render(<HeaderWithAppearance />);
 
     const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
-    expect(within(navigation).getByRole("link", { name: "Create" }).getAttribute("href"))
+    expect(within(navigation).getByRole("link", { name: "My work" }).getAttribute("href"))
       .toBe("/studio");
     expect(within(navigation).getByRole("link", { name: /^Virtual studio/u }).getAttribute("href"))
       .toBe("/studio/space");
@@ -220,8 +220,8 @@ describe("단일 창작 헤더", () => {
       );
 
       const navigation = screen.getByRole("navigation", { name: "주요 메뉴" });
-      const studio = within(navigation).getByRole("link", { name: "제작" });
-      const explore = within(navigation).getByRole("link", { name: "탐색" });
+      const studio = within(navigation).getByRole("link", { name: "내 작업" });
+      const explore = within(navigation).getByRole("link", { name: "작품 찾기" });
       const learn = within(navigation).getByRole("link", { name: "배우기" });
       const community = within(navigation).getByRole("link", { name: "커뮤니티" });
 

@@ -200,7 +200,7 @@ describe("모바일 전체 메뉴", () => {
     const { unmount } = render(tabs(true));
     const navigation = screen.getByRole("navigation", { name: "nav.quickAccess" });
     const hrefs = within(navigation).getAllByRole("link").map((link) => link.getAttribute("href"));
-    expect(hrefs).toEqual(["/", "/studio", "/discover", "/community", "/sitemap"]);
+    expect(hrefs).toEqual(["/studio", "/discover", "/market", "/my"]);
     for (const href of hrefs) {
       expect(href).not.toMatch(/^\/(new|more)(\/|$)/u);
     }
@@ -226,5 +226,26 @@ describe("모바일 전체 메뉴", () => {
     const labelSpan = notificationsLink?.querySelector("span");
     expect(labelSpan?.className).toContain("min-w-0");
     expect(labelSpan?.className).toContain("truncate");
+  });
+});
+
+
+describe("모바일의 공통 네 목적 현재 위치", () => {
+  it.each(["/studio", "/discover", "/market", "/my"] as const)("정본 목적 %s를 현재 탭 하나로 표시한다", (href) => {
+    render(<MemoryRouter initialEntries={["/production/projects"]}><MobileHeaderNavigation
+      menuOpen={false} menuId="purpose-menu" panelRef={createRef<HTMLDivElement>()}
+      closeMenu={() => {}} isActive={() => false} isPurposeActive={() => false}
+      currentPurposeHref={href} /></MemoryRouter>);
+    const nav = screen.getByRole("navigation", { name: "nav.quickAccess" });
+    const current = nav.querySelectorAll('a[aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]?.getAttribute("href")).toBe(href);
+  });
+  it("목적 외 안내 페이지는 네 목적 중 하나를 거짓으로 활성화하지 않는다", () => {
+    render(<MemoryRouter initialEntries={["/about"]}><MobileHeaderNavigation
+      menuOpen={false} menuId="outside-purpose" panelRef={createRef<HTMLDivElement>()}
+      closeMenu={() => {}} isActive={() => false} isPurposeActive={() => true}
+      currentPurposeHref={null} /></MemoryRouter>);
+    expect(screen.getByRole("navigation", { name: "nav.quickAccess" }).querySelectorAll('[aria-current="page"]')).toHaveLength(0);
   });
 });

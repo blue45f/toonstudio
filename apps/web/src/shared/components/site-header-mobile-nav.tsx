@@ -16,6 +16,9 @@ import {
   siteNavigationText,
 } from "./site-navigation";
 import { ToonStudioMark } from "./toonstudio-mark";
+import { SiteMenuUtilities } from "./SiteMenuUtilities";
+import { useSiteMenuAudioHandoff } from "./use-site-menu-audio-handoff";
+import type { SiteMobilePurposeHref } from "./site-mobile-purpose";
 import { ToonStudioWordmark } from "./toonstudio-brand";
 
 import Link from "@/shared/navigation/router-link";
@@ -35,8 +38,10 @@ interface MobileHeaderNavigationProps {
   menuId: string;
   panelRef: RefObject<HTMLDivElement | null>;
   closeMenu: () => void;
+  closeForUtility?: () => void;
   isActive: (href: string, exact?: boolean) => boolean;
   isPurposeActive: (href: string, exact?: boolean) => boolean;
+  currentPurposeHref?: SiteMobilePurposeHref | null;
   hideBottomTabs?: boolean;
   /** Responsive gate: the bottom tab bar renders only on the mobile viewport,
    * even if the CSS `md:hidden` rule were ever lost in a build. */
@@ -113,14 +118,17 @@ export function MobileHeaderNavigation({
   menuId,
   panelRef,
   closeMenu,
+  closeForUtility,
   isActive,
   isPurposeActive,
+  currentPurposeHref,
   hideBottomTabs = false,
   isMobileViewport = true,
 }: MobileHeaderNavigationProps) {
   useBilingualI18nRevision();
   const { pathname, key: locationKey } = useLocation();
   const previousLocationKey = useRef(locationKey);
+  const openMusic = useSiteMenuAudioHandoff(menuOpen, locationKey, closeForUtility ?? closeMenu);
   const language = useI18n((state) => state.lang);
   const locale = siteNavigationLocale(language);
   const t = useT();
@@ -229,6 +237,7 @@ export function MobileHeaderNavigation({
 
   return (
     <>
+      <span hidden data-site-mobile-utilities="available" />
       {menuOpen && (
         <div
           ref={overlayRef}
@@ -288,6 +297,7 @@ export function MobileHeaderNavigation({
                 </Link>
               </div>
 
+              <SiteMenuUtilities onOpenMusic={openMusic} settingsActive={isActive("/settings")} />
               <div className="grid items-start gap-2">
                 {navigationGroups.map((group) => (
                   <details
@@ -376,7 +386,7 @@ export function MobileHeaderNavigation({
               </Link>
 
               <div className="mt-4 grid grid-cols-2 gap-2 border-t border-line pt-4 sm:grid-cols-4">
-                {SITE_UTILITY_NAVIGATION.map((item) => {
+                {SITE_UTILITY_NAVIGATION.filter((item) => item.id !== "settings").map((item) => {
                   const active = isActive(item.href, item.exact);
                   const Icon = item.icon;
                   const label = siteNavigationText(item.label, locale);
@@ -424,7 +434,7 @@ export function MobileHeaderNavigation({
         <nav
           aria-label={t("nav.quickAccess")}
           data-site-product={navigationContext}
-          className="fixed inset-x-0 bottom-0 z-50 border-t border-accent/25 bg-panel/94 shadow-[0_-12px_35px_-28px_var(--color-fg)] backdrop-blur-2xl md:hidden"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-accent/25 bg-panel/94 shadow-[0_-12px_35px_-28px_var(--color-fg)] backdrop-blur-2xl min-[1180px]:hidden"
         >
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
           <div
@@ -434,7 +444,9 @@ export function MobileHeaderNavigation({
             )}
           >
             {mobileTabs.map((item) => {
-              const active = isPurposeActive(item.href, item.exact);
+              const active = currentPurposeHref === undefined
+                ? isPurposeActive(item.href, item.exact)
+                : currentPurposeHref === item.href;
               const Icon = item.icon;
               const label = siteNavigationText(item.label, locale);
               return (

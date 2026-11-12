@@ -76,10 +76,10 @@
 @media (max-width: 767px) {
   :root:has(nav[data-site-product]) { --site-float-base: calc(5.75rem + env(safe-area-inset-bottom)); }
   /* 조작 열이 있으면 알림 열은 그 폭(여백 16px + 버튼 48px + 간격 12px)만큼 비켜 선다. */
-  :root:has([data-floating-controls="true"], [data-back-to-top="true"], [data-voice-guide-placement="fixed"]) {
+  :root:has([data-floating-controls="true"]:not([data-floating-controls-mobile="disabled"]), [data-back-to-top="true"], [data-voice-guide-placement="fixed"]) {
     --site-float-column: 4.75rem;
   }
-  :root:has([data-floating-controls="true"]) { --site-float-controls-slot: var(--site-float-slot); }
+  :root:has([data-floating-controls="true"]:not([data-floating-controls-mobile="disabled"])) { --site-float-controls-slot: var(--site-float-slot); }
   :root:has([data-voice-guide-placement="fixed"]) { --site-float-voice-slot: var(--site-float-slot); }
 }
 @media (max-width: 767px) {
@@ -107,7 +107,7 @@
 
 @media (max-width: 767px) {
   /* ⚙ 묶음이 있는 화면에서는 OST 알약을 따로 띄우지 않는다. 펼친 패널은 그대로 보인다. */
-  :root:has([data-floating-controls="true"]) [data-site-ost-pill] {
+  :root:has([data-floating-controls="true"]:not([data-floating-controls-mobile="disabled"])) [data-site-ost-pill] {
     display: none;
   }
   /* ⚙ 묶음이나 OST 패널을 펼친 동안, 또 음성 안내 자막이 열려 있는 동안에는
