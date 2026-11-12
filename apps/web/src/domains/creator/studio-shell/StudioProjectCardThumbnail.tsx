@@ -150,7 +150,9 @@ function localStorageOrNull(): Storage | null {
 interface ProjectPreviewLoad {
   /** 브라우저 자동저장(localStorage)에서 바로 읽은 후보. */
   readonly browser: Promise<PreviewCandidate | null>;
-  /** SQLite 내구 저장본까지 합친 최종 후보. */
+  /** SQLite 초기화가 늦어도 읽기 전용 OPFS 원고를 먼저 보여 준다. */
+  readonly opfs: Promise<{ readonly hasRecord: boolean; readonly candidate: PreviewCandidate | null }>;
+  /** OPFS와 SQLite 내구 저장본까지 합친 최종 후보. */
   readonly durable: Promise<PreviewCandidate | null>;
 }
 
@@ -171,35 +173,77 @@ function previewLoadKey(project: StudioProjectLibraryEntry, authUserId: string |
   ]);
 }
 
+type PreviewDurableRecord = Readonly<{
+  state: "snapshot";
+  savedAt: string;
+  payload: StudioAutosavePayload;
+}> | Readonly<{ state: "cleared"; savedAt: string }> | null;
+
+function previewFromSources(
+  browser: readonly (StudioAutosavePayload | null)[],
+  opfs: readonly PreviewDurableRecord[],
+  sqlite: readonly PreviewDurableRecord[] = [],
+): PreviewCandidate | null {
+  return newestCandidate(browser.map((compatibility, index) => {
+    // 편집기와 같은 키별 정본 순서: 최신 시각 → 같은 시각의 삭제 표식 → OPFS.
+    // 내구 기록이 있으면 브라우저 호환 후보를 저장 완료 원고로 승격하지 않는다.
+    const records = [opfs[index], sqlite[index]].filter((row): row is NonNullable<PreviewDurableRecord> => row != null);
+    records.sort((left, right) => Date.parse(right.savedAt) - Date.parse(left.savedAt)
+      || Number(right.state === "cleared") - Number(left.state === "cleared"));
+    const winner = records[0];
+    return winner ? winner.state === "snapshot" ? winner.payload : null : compatibility;
+  }));
+}
+
+async function readPreviewOpfsRows(keys: readonly string[]): Promise<PreviewDurableRecord[]> {
+  try {
+    const { createStudioAutosaveOpfsSession } = await import("../studio-autosave-opfs-session");
+    return await Promise.all(keys.map(async (key) => {
+      let session: Awaited<ReturnType<typeof createStudioAutosaveOpfsSession>> = null;
+      try {
+        // 원고 leadership을 취득하지 않으며 쓰기·삭제·복구 마이그레이션은 하지 않는다.
+        session = await createStudioAutosaveOpfsSession(key, undefined, { readOnly: true });
+        return await session?.readLatest() ?? null;
+      } catch {
+        return null;
+      } finally {
+        await session?.dispose().catch(() => undefined);
+      }
+    }));
+  } catch {
+    return keys.map(() => null);
+  }
+}
+
 function startProjectPreviewLoad(
   storage: Storage,
   project: StudioProjectLibraryEntry,
   authUserId: string | null,
 ): ProjectPreviewLoad {
-  // 자동저장 해석기(3D 스테이지 정규화 포함)는 미리보기가 필요할 때만 불러와 목록 첫 화면을 막지 않는다.
+  // 자동저장 해석기와 내구 저장소는 미리보기가 필요할 때만 불러온다.
   const browserRead = import("../studio-autosave").then(({ readStudioAutosave, studioAutosaveKey: autosaveKey }) => {
     const keys = studioProjectPreviewAutosaveKeys(storage, project, authUserId, autosaveKey);
     return { keys, payloads: keys.map((key) => readStudioAutosave(storage, key)?.payload ?? null) };
   });
   const browser = browserRead.then(({ payloads }) => newestCandidate(payloads));
-  const durable = browserRead.then(async ({ keys, payloads }) => {
+  const opfsRows = browserRead.then(({ keys }) => readPreviewOpfsRows(keys));
+  const opfs = Promise.all([browserRead, opfsRows]).then(([{ payloads }, rows]) => ({
+    hasRecord: rows.some((row) => row !== null), candidate: previewFromSources(payloads, rows),
+  }));
+  const sqliteRows = browserRead.then(async ({ keys }) => {
     try {
       const { acquireStudioAutosaveSqliteStore } = await import("../studio-autosave-sqlite-store");
       const store = await acquireStudioAutosaveSqliteStore();
-      const rows = await Promise.all(keys.map(async (key) => {
-        try {
-          const row = await store.read(key);
-          return row?.state === "snapshot" ? row.payload : null;
-        } catch {
-          return null;
-        }
+      return await Promise.all(keys.map(async (key) => {
+        try { return await store.read(key); } catch { return null; }
       }));
-      return newestCandidate([...payloads, ...rows]);
     } catch {
-      return newestCandidate(payloads);
+      return keys.map(() => null);
     }
   });
-  return { browser, durable };
+  const durable = Promise.all([browserRead, opfsRows, sqliteRows]).then(([{ payloads }, opfs, sqlite]) =>
+    previewFromSources(payloads, opfs, sqlite));
+  return { browser, opfs, durable };
 }
 
 function loadProjectPreview(
@@ -333,8 +377,14 @@ export function StudioProjectCardThumbnail({
 }): ReactElement {
   const bt = useBilingual("StudioProjectCardThumbnail");
   const { nearViewport, rootRef } = useNearViewport();
-  const [preview, setPreview] = useState<PreviewCandidate | null>(null);
-  const [phase, setPhase] = useState<PreviewPhase>("idle");
+  const [previewState, setPreviewState] = useState<{
+    readonly projectId: string;
+    readonly phase: PreviewPhase;
+    readonly preview: PreviewCandidate | null;
+  }>({ projectId: project.id, phase: "idle", preview: null });
+  // 새 작품 props가 들어온 첫 렌더부터 이전 작품의 이미지를 노출하지 않는다.
+  const { preview, phase } = previewState.projectId === project.id
+    ? previewState : { preview: null, phase: "idle" as const };
   const [storedThumbnailFailed, setStoredThumbnailFailed] = useState(false);
   const decorative = variant === "cover";
 
@@ -345,27 +395,28 @@ export function StudioProjectCardThumbnail({
   useEffect(() => {
     if (!nearViewport) return;
     const storage = localStorageOrNull();
+    const publish = (candidate: PreviewCandidate | null) => setPreviewState({
+      projectId: project.id, phase: candidate ? "ready" : "empty", preview: candidate,
+    });
     if (!storage) {
-      setPhase("empty");
+      publish(null);
       return;
     }
 
     let disposed = false;
-    // 목록 새로고침(포커스·저장 이벤트) 때 이미 그린 미리보기를 지우지 않고 새 결과로 교체한다.
-    setPhase((current) => (current === "ready" ? current : "loading"));
+    // 같은 작품의 저장 이벤트에는 기존 그림을 유지하고, 다른 작품으로 바뀌면 초기화한다.
+    setPreviewState((current) => current.projectId === project.id && current.phase === "ready"
+      ? current : { projectId: project.id, phase: "loading", preview: null });
     const load = loadProjectPreview(storage, project, authUserId);
     load.browser.then((candidate) => {
-      if (disposed || !candidate) return;
-      setPreview(candidate);
-      setPhase("ready");
+      if (!disposed && candidate) publish(candidate);
+    }, () => undefined);
+    load.opfs.then(({ hasRecord, candidate }) => {
+      if (!disposed && hasRecord) publish(candidate);
     }, () => undefined);
     load.durable.then((candidate) => {
-      if (disposed) return;
-      setPreview(candidate);
-      setPhase(candidate ? "ready" : "empty");
-    }, () => {
-      if (!disposed) setPhase("empty");
-    });
+      if (!disposed) publish(candidate);
+    }, () => { if (!disposed) publish(null); });
 
     return () => {
       disposed = true;

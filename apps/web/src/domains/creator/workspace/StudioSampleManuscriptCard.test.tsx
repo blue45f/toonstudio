@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,7 +13,7 @@ import {
   SAMPLE_PROJECT_ID,
 } from "../studio-sample-manuscript-content";
 import { findSampleManuscriptPracticeCopy } from "../studio-sample-manuscript-seed";
-import { readStudioProjectLibrary } from "../studio-project-library-store";
+import { readStudioProjectLibrary, STUDIO_PROJECT_LIBRARY_UPDATED_EVENT } from "../studio-project-library-store";
 import { StudioSampleManuscriptCard } from "./StudioSampleManuscriptCard";
 
 // 내구 저장소(OPFS/SQLite)와 로그인 세션은 jsdom 에 없으므로 심는 훅을 가짜로 바꿔 배선만 확인한다.
@@ -170,5 +170,33 @@ describe("StudioSampleManuscriptCard", () => {
     expect((await screen.findByRole("alert")).closest("details")).toBeNull();
     expect(screen.getByRole("button", { name: /다시 시도|Try again/u }).closest("details")).toBeNull();
   });
+
+  it.each(["written", "kept-existing", "busy", "unavailable"] as const)(
+    "세션 확정이 늦어도 실제 쓰기 완료(%s)만 목록 미리보기를 갱신한다",
+    async (outcome) => {
+      persistence.ownerReady = false;
+      let finish: (result: StudioSeedDurableOutcome) => void = () => { throw new Error("pending 저장 준비 전"); };
+      const pending = new Promise<StudioSeedDurableOutcome>((resolve) => { finish = resolve; });
+      persistence.persist.mockReturnValue(pending);
+      const view = renderCard();
+      await screen.findByRole("heading", { name: /완성 원고를 뜯어보고|Take a finished manuscript apart/u });
+      const before = readStudioProjectLibrary(window.localStorage).projects.find((project) => project.id === SAMPLE_PROJECT_ID);
+      expect(before?.lastOpenedDocumentId).toBeTruthy();
+      expect(persistence.persist).not.toHaveBeenCalled();
+
+      persistence.ownerReady = true;
+      view.rerender(<MemoryRouter><StudioSampleManuscriptCard /></MemoryRouter>);
+      await waitFor(() => expect(persistence.persist).toHaveBeenCalledOnce());
+      const dispatch = vi.spyOn(window, "dispatchEvent");
+      const updates = () => dispatch.mock.calls.filter(([event]) => event.type === STUDIO_PROJECT_LIBRARY_UPDATED_EVENT);
+      expect(updates()).toHaveLength(0);
+      await act(async () => { finish(outcome); await pending; });
+      expect(updates()).toHaveLength(outcome === "written" ? 1 : 0);
+      const after = readStudioProjectLibrary(window.localStorage).projects.find((project) => project.id === SAMPLE_PROJECT_ID);
+      expect(after?.lastOpenedDocumentId).toBe(before?.lastOpenedDocumentId);
+      expect(after?.title).toBe(before?.title);
+      if (outcome !== "written") expect(after?.lastOpenedAt).toBe(before?.lastOpenedAt);
+    },
+  );
 
 });

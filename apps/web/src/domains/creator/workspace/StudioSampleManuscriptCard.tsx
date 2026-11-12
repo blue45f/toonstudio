@@ -55,10 +55,10 @@ export function StudioSampleManuscriptCard({ compact = false }: { readonly compa
         return;
       }
       setState({ kind: "ready", copy: findSampleManuscriptPracticeCopy(window.localStorage) });
-      // 원본 샘플 초안도 편집기가 복구할 수 있는 내구 저장소에 심는다(첫 시딩이면 미리보기가 읽도록 한 번 더 표시).
+      // 세션 지연으로 metadata가 먼저 생겼어도 실제 내구 쓰기 완료 뒤 미리보기를 갱신한다.
       if (ownerReady) {
         void persist(result.autosave).then((outcome) => {
-          if (outcome !== "written" || result.status !== "seeded") return;
+          if (outcome !== "written") return;
           markStudioProjectOpened(window.localStorage, SAMPLE_PROJECT_ID, result.documentId, {
             at: new Date().toISOString(),
             target: window,

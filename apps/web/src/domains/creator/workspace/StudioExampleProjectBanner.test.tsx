@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -14,7 +14,7 @@ import {
   readExampleJourney,
   setExampleJourneyDismissed,
 } from "../studio-example-project-content";
-import { readStudioProjectLibrary } from "../studio-project-library-store";
+import { readStudioProjectLibrary, STUDIO_PROJECT_LIBRARY_UPDATED_EVENT } from "../studio-project-library-store";
 import { StudioExampleProjectBanner } from "./StudioExampleProjectBanner";
 
 // 내구 저장소(OPFS/SQLite)와 로그인 세션은 jsdom 에 없으므로 심는 훅을 가짜로 바꿔 배선만 확인한다.
@@ -173,5 +173,33 @@ describe("StudioExampleProjectBanner", () => {
     expect(screen.queryByRole("button", { name: /여정 다시 보기|Show the journey again/u })).toBeNull();
     expect(readExampleJourney(window.localStorage).dismissed).toBe(true);
   });
+
+  it.each(["written", "kept-existing", "busy", "unavailable"] as const)(
+    "세션 확정이 늦어도 실제 쓰기 완료(%s)만 목록 미리보기를 갱신한다",
+    async (outcome) => {
+      persistence.ownerReady = false;
+      let finish: (result: StudioSeedDurableOutcome) => void = () => { throw new Error("pending 저장 준비 전"); };
+      const pending = new Promise<StudioSeedDurableOutcome>((resolve) => { finish = resolve; });
+      persistence.persist.mockReturnValue(pending);
+      const view = renderBanner();
+      await screen.findByRole("heading", { name: /예제 프로젝트로 한 컷을 완주|Finish one panel/u });
+      const before = readStudioProjectLibrary(window.localStorage).projects.find((project) => project.id === EXAMPLE_PROJECT_ID);
+      expect(before?.lastOpenedDocumentId).toBeTruthy();
+      expect(persistence.persist).not.toHaveBeenCalled();
+
+      persistence.ownerReady = true;
+      view.rerender(<MemoryRouter><StudioExampleProjectBanner /></MemoryRouter>);
+      await waitFor(() => expect(persistence.persist).toHaveBeenCalledOnce());
+      const dispatch = vi.spyOn(window, "dispatchEvent");
+      const updates = () => dispatch.mock.calls.filter(([event]) => event.type === STUDIO_PROJECT_LIBRARY_UPDATED_EVENT);
+      expect(updates()).toHaveLength(0);
+      await act(async () => { finish(outcome); await pending; });
+      expect(updates()).toHaveLength(outcome === "written" ? 1 : 0);
+      const after = readStudioProjectLibrary(window.localStorage).projects.find((project) => project.id === EXAMPLE_PROJECT_ID);
+      expect(after?.lastOpenedDocumentId).toBe(before?.lastOpenedDocumentId);
+      expect(after?.title).toBe(before?.title);
+      if (outcome !== "written") expect(after?.lastOpenedAt).toBe(before?.lastOpenedAt);
+    },
+  );
 
 });

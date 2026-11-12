@@ -56,10 +56,10 @@ export function StudioExampleProjectBanner({ compact = false }: { readonly compa
         journey: readExampleJourney(window.localStorage),
       });
       // 초안은 편집기가 복구할 수 있는 내구 저장소(OPFS/SQLite, 편집기와 같은 소유자 키)에 심는다.
-      // 첫 시딩이면 심은 뒤 한 번 더 "열어 봄"으로 표시해 카드 미리보기가 새 초안을 읽게 한다.
+      // 세션 준비를 기다리다 metadata가 먼저 생긴 경우도 실제 쓰기가 끝난 뒤 미리보기를 갱신한다.
       if (ownerReady) {
         void persist(result.autosave).then((outcome) => {
-          if (outcome !== "written" || result.status !== "seeded") return;
+          if (outcome !== "written") return;
           markStudioProjectOpened(window.localStorage, EXAMPLE_PROJECT_ID, result.documentId, {
             at: new Date().toISOString(),
             target: window,
