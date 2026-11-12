@@ -132,4 +132,12 @@ ToonStudio은 위 6개 원본 모델과 썸네일 렌더(`kitbash-v9/thumbnails/
 
 ToonStudio은 위 8개 원본 배경 오브젝트 모델과 썸네일 렌더(`kitbash-v10/thumbnails/*.png`)를 **CC0 1.0**으로 제공합니다.
 
+## ToonStudio 상부 배경 소품 V11
+
+별도 정적 경로 `/studio-assets/kitbash-v11/`의 천장 공조·레일 조명·블라인드·간판·교실 방송 설비·
+한옥 처마 6개는 ToonStudio이 외부 에셋 없이 직접 제작한 CC0 1.0 GLB다.
+기존 팩의 경로·저작권·라이선스 조건은 바꾸지 않는다. 파일별 조건과 생성 명령은
+[V11 라이선스 원장](../../studio-assets/kitbash-v11/LICENSES.md), 바이트·SHA-256은
+[V11 제작 출처](../../studio-assets/kitbash-v11/provenance.json)를 참조한다.
+
 
