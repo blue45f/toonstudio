@@ -1,5 +1,5 @@
 import { siteMobilePurposeHref } from "./site-mobile-purpose";
-import { LAYOUT_SITE_NAVIGATION } from "./layout/layout-tokens";
+import { LAYOUT_SITE_NAVIGATION } from "./layout/layout-site-navigation";
 import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,

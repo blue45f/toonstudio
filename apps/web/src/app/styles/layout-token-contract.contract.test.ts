@@ -8,6 +8,10 @@ const layoutTokens = readFileSync(
   new URL("../../shared/components/layout/layout-tokens.ts", import.meta.url),
   "utf8",
 );
+const siteNavigationTokens = readFileSync(
+  new URL("../../shared/components/layout/layout-site-navigation.ts", import.meta.url),
+  "utf8",
+);
 const publicShell = readFileSync(
   new URL("../../shared/components/public-site-shell.css", import.meta.url),
   "utf8",
@@ -587,7 +591,7 @@ function nonStandardWidthValues(css: string): number[] {
 
 describe("브레이크포인트 표준 경계 계약 (BP)", () => {
   const breakpointsBlock = tsBlock(layoutTokens, "export const LAYOUT_BREAKPOINTS");
-  const navigationBlock = tsBlock(layoutTokens, "export const LAYOUT_SITE_NAVIGATION");
+  const navigationBlock = tsBlock(siteNavigationTokens, "export const LAYOUT_SITE_NAVIGATION");
   const navigationDesktop = Number.parseFloat(tsField(navigationBlock, "desktopMin"));
   const navigationMobile = Number.parseFloat(tsField(navigationBlock, "mobileMax"));
   const scanned = {
@@ -643,7 +647,9 @@ describe("브레이크포인트 표준 경계 계약 (BP)", () => {
     expect(navigationMobile).toBe(navigationDesktop - 1);
     expect(tsField(navigationBlock, "mobileQuery")).toBe(`(max-width: ${navigationMobile}px)`);
     expect(siteHeader.split("window.matchMedia(LAYOUT_SITE_NAVIGATION.mobileQuery)")).toHaveLength(3);
-    expect(siteHeader).toContain('import { LAYOUT_SITE_NAVIGATION } from "./layout/layout-tokens"');
+    expect(siteHeader).toContain('import { LAYOUT_SITE_NAVIGATION } from "./layout/layout-site-navigation"');
+    expect(layoutTokens).toContain('export { LAYOUT_SITE_NAVIGATION } from "./layout-site-navigation"');
+    expect(tsBlock(layoutTokens, "export const LAYOUT_SITE_NAVIGATION")).toBe("");
     expect(publicShell).toContain(`@media (width >= ${navigationDesktop}px) {\n  .site-header__primary { display: flex; }`);
     expect(publicShell).not.toMatch(/@media \(width >= 1024px\)\s*\{\s*\.site-header__primary/u);
     expect(mobileNavigation).toContain(`min-[${navigationDesktop}px]:hidden`);
