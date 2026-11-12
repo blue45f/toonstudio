@@ -62,6 +62,8 @@ export function clonePrimitives(primitives: BgPrimitive[]): BgPrimitive[] {
     position: [...p.position] as [number, number, number],
     rotation: [...p.rotation] as [number, number, number],
     scale: [...p.scale] as [number, number, number],
+    ...(p.tags ? { tags: [...p.tags] } : {}),
+    ...(p.componentRef ? { componentRef: { ...p.componentRef } } : {}),
     name: p.name,
     visible: p.visible,
     locked: p.locked,

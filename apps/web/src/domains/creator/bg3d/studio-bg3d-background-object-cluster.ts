@@ -3,9 +3,9 @@
  *
  * 배경 3D 전용 범위:
  * - 캐릭터·데생인형·브러시 모듈과 완전히 독립된 순수 배경 오브젝트 합성기다.
- * - 빈 벽면·골목길·교실·작업실·지하철역·병동·한옥 마당·판타지 서고의 단조로움을 해소하기 위해
- *   8종의 배경 오브젝트 클러스터 아키타입을 반복 모듈 수·생활감 밀도·배치 대형·배색 테마로 조합해
- *   바닥(y >= 0) 정렬된 다중 파츠 `BgPrimitive[]`를 결정론적으로 생성한다.
+ * - `makeGeometry`의 단위 메시 치수(`cylinder` 지름 0.6, `cone` 지름 0.8, `torus` 1.1×1.1×0.3) 보정,
+ *   Three.js 기본 오일러 `'XYZ'` 월드 Y축 회전 행렬 합성(짐벌락 방지), 회전 OBB 기준 바닥 접지(`minY === 0`),
+ *   반복 삽입 시 충돌 없는 노드 ID(`NODE_ID_PATTERN`) 및 비중첩 간격 계산, 장면 문서 v3 무손실 직렬화 정규형을 보장한다.
  */
 
 import type { BgPrimitive, BgPrimitiveKind } from "../studio-background-3d-metadata";
@@ -30,10 +30,12 @@ export type Bg3dObjectSurfaceTheme =
 
 export interface Bg3dObjectClusterArchetypeMeta {
   readonly id: Bg3dObjectClusterArchetypeId;
+  readonly shortCode: string;
   readonly labelKo: string;
   readonly genreTagKo: string;
   readonly descriptionKo: string;
   readonly v10GlbAssetId: string;
+  readonly keywordsKo: readonly string[];
 }
 
 export interface Bg3dObjectClusterSpec {
@@ -43,6 +45,8 @@ export interface Bg3dObjectClusterSpec {
   readonly arrangement: Bg3dObjectClusterArrangement;
   readonly surfaceTheme: Bg3dObjectSurfaceTheme;
   readonly anchorOffsetXZ?: readonly [number, number];
+  /** 반복 삽입 시 노드 ID 충돌을 막는 선택 인스턴스 토큰 (`[A-Za-z0-9._~-]`). */
+  readonly instanceKey?: string;
 }
 
 export interface Bg3dObjectClusterBuildResult {
@@ -53,68 +57,130 @@ export interface Bg3dObjectClusterBuildResult {
   readonly estimatedLineArtEdges: number;
   readonly monotonyReliefScore: number;
   readonly footprintMeters: readonly [number, number, number];
+  readonly anchorOffsetXZ: readonly [number, number];
   readonly summaryKo: string;
+}
+
+export interface Bg3dPrimitivesWorldBoundsSummary {
+  readonly min: readonly [number, number, number];
+  readonly max: readonly [number, number, number];
+  readonly size: readonly [number, number, number];
 }
 
 export const STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES: readonly Bg3dObjectClusterArchetypeMeta[] =
   Object.freeze([
     {
       id: "alley-wall-utility-clutter",
+      shortCode: "alley",
       labelKo: "골목 2단 실외기·가스배관 세트",
       genreTagKo: "현대·스릴러",
       descriptionKo: "앵글 브래킷 2단 실외기·도시가스 계량기·동관/배수 파이프·차단 밸브를 벽면에 밀착 배치해요.",
       v10GlbAssetId: "kitbash-v10-alley-ac-meter-pipe-wall-v10",
+      keywordsKo: Object.freeze(["골목", "실외기", "에어컨", "가스계량기", "배관", "파이프", "스릴러", "느와르"]),
     },
     {
       id: "classroom-front-locker-rig",
+      shortCode: "class",
       labelKo: "교실 와이드 칠판·교탁·사물함",
       genreTagKo: "학원·청춘",
       descriptionKo: "웨인스코팅 벽체·녹색 칠판·분필받이·교탁·3×3 철제 사물함과 벽시계를 한 번에 구성해요.",
       v10GlbAssetId: "kitbash-v10-classroom-podium-locker-wall-v10",
+      keywordsKo: Object.freeze(["교실", "학교", "칠판", "교탁", "사물함", "로커", "시계", "학원물"]),
     },
     {
       id: "office-creator-workstation",
+      shortCode: "desk",
       labelKo: "작업실 모션데스크·액정태블릿",
       genreTagKo: "오피스·일상",
       descriptionKo: "전동 데스크·기울임 펜 디스플레이·서브 모니터 암·타공판 선반·데스크 램프·스피커를 배치해요.",
       v10GlbAssetId: "kitbash-v10-creator-dual-monitor-desk-v10",
+      keywordsKo: Object.freeze(["작업실", "오피스", "책상", "모션데스크", "액정태블릿", "모니터", "컴퓨터", "스피커"]),
     },
     {
       id: "convenience-patio-street-furniture",
+      shortCode: "street",
       labelKo: "도심 분리수거함·입간판·볼라드",
       genreTagKo: "일상·스트리트",
       descriptionKo: "캐노피 3색 분리수거 스테이션·원목 A보드 카페 입간판·반사띠 볼라드로 보도블록을 채워요.",
       v10GlbAssetId: "kitbash-v10-street-recycling-station-a-board-v10",
+      keywordsKo: Object.freeze(["거리", "도심", "분리수거", "쓰레기통", "입간판", "카페", "볼라드", "파라솔"]),
     },
     {
       id: "subway-platform-gate-bay",
+      shortCode: "subway",
       labelKo: "지하철 개찰구·플랩 게이트 베이",
       genreTagKo: "도시·액션",
       descriptionKo: "스테인리스 개찰구 하우징·교통카드 단말기·강화유리 플랩·점자 유도 타일 통로를 생성해요.",
       v10GlbAssetId: "kitbash-v10-subway-turnstile-gate-set-v10",
+      keywordsKo: Object.freeze(["지하철", "역사", "개찰구", "게이트", "교통카드", "점자블록", "플랫폼", "도시"]),
     },
     {
       id: "hospital-ward-corridor-set",
+      shortCode: "ward",
       labelKo: "병원 복도 대기석·수액 폴대 세트",
       genreTagKo: "메디컬·드라마",
       descriptionKo: "복도 범퍼레일 벽체·3인용 대기 벤치·5발 이동식 IV 수액 폴대·진료 호출 모니터를 조합해요.",
       v10GlbAssetId: "kitbash-v10-hospital-corridor-station-v10",
+      keywordsKo: Object.freeze(["병원", "병동", "복도", "대기석", "벤치", "수액", "링거", "모니터", "메디컬"]),
     },
     {
       id: "hanok-jangdokdae-stone-wall",
+      shortCode: "hanok",
       labelKo: "한옥 기와담장·장독대·석등 마당",
       genreTagKo: "사극·무협·전통",
       descriptionKo: "암수키와 토담·2단 장대석 단상·배흘림 옹기 독 군락·사각 화강암 석등으로 전통 마당을 꾸며요.",
       v10GlbAssetId: "kitbash-v10-hanok-jangdokdae-courtyard-v10",
+      keywordsKo: Object.freeze(["한옥", "전통", "사극", "무협", "기와", "담장", "장독대", "옹기", "항아리", "석등"]),
     },
     {
       id: "fantasy-dungeon-alchemy-props",
+      shortCode: "alchemy",
       labelKo: "마탑 고딕 아치 서가·포션·촛대",
       genreTagKo: "로판·판타지",
       descriptionKo: "황동 아치 고목 서가·마도서 묶음·발광 엘릭서 플라스크·3구 스탠드 촛대로 실내 밀도를 높여요.",
       v10GlbAssetId: "kitbash-v10-fantasy-alchemy-bookshelf-rack-v10",
+      keywordsKo: Object.freeze(["판타지", "로판", "마탑", "서가", "책장", "마도서", "포션", "연금술", "촛대"]),
     },
   ]);
+
+/** 검색어로 8종 배경 오브젝트 클러스터 아키타입을 필터링한다 (한/영 키워드·장르·설명 매칭). */
+export function searchStudioBg3dObjectClusterArchetypes(
+  query: string,
+): readonly Bg3dObjectClusterArchetypeMeta[] {
+  const normalized = query.normalize("NFKC").trim().toLocaleLowerCase("ko-KR");
+  if (!normalized) return STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES;
+  const tokens = normalized.split(/\s+/u).filter(Boolean);
+  return STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES.filter((item) => {
+    const haystack = [
+      item.id,
+      item.shortCode,
+      item.labelKo,
+      item.genreTagKo,
+      item.descriptionKo,
+      item.v10GlbAssetId,
+      ...item.keywordsKo,
+    ]
+      .join(" ")
+      .normalize("NFKC")
+      .toLocaleLowerCase("ko-KR");
+    return tokens.every((token) => haystack.includes(token));
+  });
+}
+
+/** 반복 배치 시 외곽 크기에 비례해 겹치지 않는 XZ 앵커 오프셋을 계산한다 (첫 배치는 `[0, 0]`). */
+export function computeBg3dClusterNonOverlappingOffsetXZ(
+  placementOrdinal: number,
+  footprintMeters: readonly [number, number, number],
+  gapMeters = 0.8,
+): readonly [number, number] {
+  const safeOrd = Math.max(0, Math.floor(placementOrdinal));
+  if (safeOrd === 0) return [0, 0];
+  const col = safeOrd % 4;
+  const row = Math.floor(safeOrd / 4) % 4;
+  const stepX = Math.max(1.6, footprintMeters[0] + gapMeters);
+  const stepZ = Math.max(1.4, footprintMeters[2] + gapMeters);
+  return [round4(col * stepX), round4(row * stepZ)];
+}
 
 interface ThemePalette {
   readonly base: string;
@@ -160,23 +226,183 @@ const SURFACE_THEMES: Readonly<Record<Bg3dObjectSurfaceTheme, ThemePalette>> = O
   },
 });
 
-function round3(n: number): number {
-  return Math.round(n * 1000) / 1000;
+function round4(n: number): number {
+  const r = Math.round(n * 10000) / 10000;
+  return Object.is(r, -0) ? 0 : r;
+}
+
+function round6(n: number): number {
+  const r = Math.round(n * 1000000) / 1000000;
+  return Object.is(r, -0) ? 0 : r;
 }
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
-function rotateXZ(
-  x: number,
-  z: number,
-  yawRad: number,
-): readonly [number, number] {
-  if (Math.abs(yawRad) < 1e-6) return [x, z];
+function sanitizeInstanceKey(raw: string | undefined): string {
+  if (!raw) return "";
+  return raw.replace(/[^A-Za-z0-9._~-]/gu, "").slice(0, 20);
+}
+
+function rotateXZ(x: number, z: number, yawRad: number): readonly [number, number] {
+  if (Math.abs(yawRad) < 1e-7) return [x, z];
   const c = Math.cos(yawRad);
   const s = Math.sin(yawRad);
   return [x * c + z * s, -x * s + z * c];
+}
+
+/**
+ * `makeGeometry(kind)`의 단위 메시 전체 크기 `[baseX, baseY, baseZ]`.
+ * 목표 물리 치수(m)를 이 값으로 나누어 `BgPrimitive.scale`에 넣으면 뷰포트에서 1:1 미터 규격으로 그려진다.
+ */
+export function unitMeshFullSizeForKind(kind: BgPrimitiveKind): readonly [number, number, number] {
+  switch (kind) {
+    case "cylinder":
+    case "tube":
+      return [0.6, 1.0, 0.6];
+    case "cone":
+      return [0.8, 1.0, 0.8];
+    case "torus":
+      return [1.1, 1.1, 0.3];
+    case "capsule":
+      return [0.6, 1.3, 0.6];
+    case "plane":
+    case "ring":
+      return [1.0, 0.002, 1.0];
+    default:
+      return [1.0, 1.0, 1.0];
+  }
+}
+
+/**
+ * Three.js 기본 오일러 `'XYZ'`(`M = Rx * Ry * Rz`) 로컬 회전에 월드 Y축 회전(`Ry(yaw)`)을 좌측 곱셈해
+ * 짐벌락과 축 뒤틀림 없는 정규 `'XYZ'` 오일러 라디안 `[rx, ry, rz]`를 반환한다.
+ */
+export function composeWorldYawWithLocalEulerXyz(
+  localRot: readonly [number, number, number],
+  yawRad: number,
+): [number, number, number] {
+  const [rx, ry, rz] = localRot;
+  if (Math.abs(yawRad) < 1e-7) {
+    return [round6(rx), round6(ry), round6(rz)];
+  }
+  const a = Math.cos(rx);
+  const b = Math.sin(rx);
+  const c = Math.cos(ry);
+  const d = Math.sin(ry);
+  const e = Math.cos(rz);
+  const f = Math.sin(rz);
+
+  const l00 = c * e;
+  const l01 = -c * f;
+  const l02 = d;
+  const l10 = a * f + b * e * d;
+  const l11 = a * e - b * f * d;
+  const l12 = -b * c;
+  const l20 = b * f - a * e * d;
+  const l21 = b * e + a * f * d;
+  const l22 = a * c;
+
+  const cy = Math.cos(yawRad);
+  const sy = Math.sin(yawRad);
+
+  const m00 = cy * l00 + sy * l20;
+  const m01 = cy * l01 + sy * l21;
+  const m02 = cy * l02 + sy * l22;
+  const m11 = l11;
+  const m12 = l12;
+  const m21 = -sy * l01 + cy * l21;
+  const m22 = -sy * l02 + cy * l22;
+  void l10;
+
+  const sinY = clamp(m02, -1, 1);
+  const outY = Math.asin(sinY);
+  let outX: number;
+  let outZ: number;
+  if (Math.abs(sinY) < 0.9999995) {
+    outX = Math.atan2(-m12, m22);
+    outZ = Math.atan2(-m01, m00);
+  } else {
+    outX = Math.atan2(m21, m11);
+    outZ = 0;
+  }
+  return [round6(outX), round6(outY), round6(outZ)];
+}
+
+function rotateVecEulerXyz(
+  vx: number,
+  vy: number,
+  vz: number,
+  rot: readonly [number, number, number],
+): readonly [number, number, number] {
+  const [rx, ry, rz] = rot;
+  const a = Math.cos(rx);
+  const b = Math.sin(rx);
+  const c = Math.cos(ry);
+  const d = Math.sin(ry);
+  const e = Math.cos(rz);
+  const f = Math.sin(rz);
+  return [
+    c * e * vx - c * f * vy + d * vz,
+    (a * f + b * e * d) * vx + (a * e - b * f * d) * vy - b * c * vz,
+    (b * f - a * e * d) * vx + (b * e + a * f * d) * vy + a * c * vz,
+  ];
+}
+
+/** `makeGeometry(kind)`와 `scale`·`rotation`을 모두 반영한 정확한 월드 축 정렬 반크기 `[hx, hy, hz]`. */
+export function computePrimitiveWorldHalfExtents(
+  kind: BgPrimitiveKind,
+  rotation: readonly [number, number, number],
+  scale: readonly [number, number, number],
+): readonly [number, number, number] {
+  const [ux, uy, uz] = unitMeshFullSizeForKind(kind);
+  const hx = Math.abs(ux * 0.5 * scale[0]);
+  const hy = Math.abs(uy * 0.5 * scale[1]);
+  const hz = Math.abs(uz * 0.5 * scale[2]);
+  let maxX = 0;
+  let maxY = 0;
+  let maxZ = 0;
+  for (const ox of [-1, 1] as const) {
+    for (const oy of [-1, 1] as const) {
+      for (const oz of [-1, 1] as const) {
+        const [wx, wy, wz] = rotateVecEulerXyz(hx * ox, hy * oy, hz * oz, rotation);
+        maxX = Math.max(maxX, Math.abs(wx));
+        maxY = Math.max(maxY, Math.abs(wy));
+        maxZ = Math.max(maxZ, Math.abs(wz));
+      }
+    }
+  }
+  return [maxX, maxY, maxZ];
+}
+
+/** 배치된 `BgPrimitive[]` 묶음 전체의 월드 AABB(`min`, `max`, `size`)를 계산한다. */
+export function measureBg3dPrimitivesWorldBounds(
+  primitives: readonly BgPrimitive[],
+): Bg3dPrimitivesWorldBoundsSummary {
+  if (primitives.length === 0) {
+    return { min: [0, 0, 0], max: [0, 0, 0], size: [0, 0, 0] };
+  }
+  let minX = Infinity;
+  let minY = Infinity;
+  let minZ = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let maxZ = -Infinity;
+  for (const prim of primitives) {
+    const [hx, hy, hz] = computePrimitiveWorldHalfExtents(prim.kind, prim.rotation, prim.scale);
+    minX = Math.min(minX, prim.position[0] - hx);
+    maxX = Math.max(maxX, prim.position[0] + hx);
+    minY = Math.min(minY, prim.position[1] - hy);
+    maxY = Math.max(maxY, prim.position[1] + hy);
+    minZ = Math.min(minZ, prim.position[2] - hz);
+    maxZ = Math.max(maxZ, prim.position[2] + hz);
+  }
+  return {
+    min: [round4(minX), round4(minY), round4(minZ)],
+    max: [round4(maxX), round4(maxY), round4(maxZ)],
+    size: [round4(maxX - minX), round4(maxY - minY), round4(maxZ - minZ)],
+  };
 }
 
 interface LocalPart {
@@ -184,9 +410,24 @@ interface LocalPart {
   readonly name: string;
   readonly kind: BgPrimitiveKind;
   readonly pos: readonly [number, number, number];
-  readonly scale: readonly [number, number, number];
+  /** 회전 전 로컬 축 기준 목표 물리 외곽 크기 `[widthX, heightY, depthZ]` (m). */
+  readonly size: readonly [number, number, number];
+  /** `triangularPrism` 등 직접 로컬 스케일 배율을 지정할 때만 사용. */
+  readonly rawScale?: readonly [number, number, number];
   readonly color: string;
   readonly rot?: readonly [number, number, number];
+}
+
+function resolvePartScale(part: LocalPart): readonly [number, number, number] {
+  if (part.rawScale) {
+    return [round4(part.rawScale[0]), round4(part.rawScale[1]), round4(part.rawScale[2])];
+  }
+  const [ux, uy, uz] = unitMeshFullSizeForKind(part.kind);
+  return [
+    round4(part.size[0] / ux),
+    round4(part.size[1] / uy),
+    round4(part.size[2] / uz),
+  ];
 }
 
 function buildSingleModuleParts(
@@ -199,25 +440,25 @@ function buildSingleModuleParts(
   switch (archetype) {
     case "alley-wall-utility-clutter": {
       parts.push(
-        { suffix: "rack-l", name: "Angle_Rack_Post_L", kind: "box", pos: [-0.48, 0.88, 0], scale: [0.05, 1.76, 0.48], color: pal.metal },
-        { suffix: "rack-r", name: "Angle_Rack_Post_R", kind: "box", pos: [0.48, 0.88, 0], scale: [0.05, 1.76, 0.48], color: pal.metal },
-        { suffix: "ac-low", name: "AC_Condenser_Lower", kind: "box", pos: [0, 0.45, 0.02], scale: [0.86, 0.56, 0.38], color: pal.base },
-        { suffix: "fan-low", name: "AC_Fan_Shroud_Lower", kind: "torus", pos: [-0.14, 0.45, 0.22], scale: [0.38, 0.38, 0.14], color: pal.dark },
-        { suffix: "ac-high", name: "AC_Condenser_Upper", kind: "box", pos: [0, 1.26, 0.02], scale: [0.86, 0.56, 0.38], color: pal.base },
-        { suffix: "fan-high", name: "AC_Fan_Shroud_Upper", kind: "torus", pos: [-0.14, 1.26, 0.22], scale: [0.38, 0.38, 0.14], color: pal.dark },
-        { suffix: "gas-meter", name: "CityGas_Meter_Box", kind: "box", pos: [0.74, 1.28, -0.04], scale: [0.28, 0.34, 0.18], color: pal.metal },
-        { suffix: "gas-pipe", name: "Gas_Riser_Pipe", kind: "cylinder", pos: [0.68, 0.92, -0.06], scale: [0.05, 1.84, 0.05], color: "#eab308" },
+        { suffix: "rack-l", name: "Angle_Rack_Post_L", kind: "box", pos: [-0.48, 0.88, 0], size: [0.05, 1.76, 0.48], color: pal.metal },
+        { suffix: "rack-r", name: "Angle_Rack_Post_R", kind: "box", pos: [0.48, 0.88, 0], size: [0.05, 1.76, 0.48], color: pal.metal },
+        { suffix: "ac-low", name: "AC_Condenser_Lower", kind: "box", pos: [0, 0.45, 0.02], size: [0.86, 0.56, 0.38], color: pal.base },
+        { suffix: "fan-low", name: "AC_Fan_Shroud_Lower", kind: "torus", pos: [-0.14, 0.45, 0.22], size: [0.38, 0.38, 0.06], color: pal.dark },
+        { suffix: "ac-high", name: "AC_Condenser_Upper", kind: "box", pos: [0, 1.26, 0.02], size: [0.86, 0.56, 0.38], color: pal.base },
+        { suffix: "fan-high", name: "AC_Fan_Shroud_Upper", kind: "torus", pos: [-0.14, 1.26, 0.22], size: [0.38, 0.38, 0.06], color: pal.dark },
+        { suffix: "gas-meter", name: "CityGas_Meter_Box", kind: "box", pos: [0.74, 1.28, -0.04], size: [0.28, 0.34, 0.18], color: pal.metal },
+        { suffix: "gas-pipe", name: "Gas_Riser_Pipe", kind: "cylinder", pos: [0.68, 0.92, -0.06], size: [0.05, 1.84, 0.05], color: "#eab308" },
       );
       if (density >= 2) {
         parts.push(
-          { suffix: "copper-pipe", name: "Coolant_Copper_Line", kind: "cylinder", pos: [0.55, 0.88, -0.08], scale: [0.04, 1.72, 0.04], color: "#b45309" },
-          { suffix: "valve", name: "Gas_Shutoff_Valve", kind: "box", pos: [0.68, 0.98, 0.02], scale: [0.11, 0.04, 0.06], color: "#dc2626" },
+          { suffix: "copper-pipe", name: "Coolant_Copper_Line", kind: "cylinder", pos: [0.55, 0.86, -0.08], size: [0.04, 1.72, 0.04], color: "#b45309" },
+          { suffix: "valve", name: "Gas_Shutoff_Valve", kind: "box", pos: [0.68, 0.98, 0.02], size: [0.11, 0.04, 0.06], color: "#dc2626" },
         );
       }
       if (density >= 3) {
         parts.push(
-          { suffix: "crate", name: "Alley_Utility_Crate", kind: "box", pos: [0.76, 0.22, 0.16], scale: [0.38, 0.44, 0.34], color: pal.accent },
-          { suffix: "conduit-box", name: "Wall_Junction_Box", kind: "box", pos: [-0.72, 1.42, -0.05], scale: [0.24, 0.34, 0.14], color: pal.metal },
+          { suffix: "crate", name: "Alley_Utility_Crate", kind: "box", pos: [0.76, 0.22, 0.16], size: [0.38, 0.44, 0.34], color: pal.accent },
+          { suffix: "conduit-box", name: "Wall_Junction_Box", kind: "box", pos: [-0.72, 1.42, -0.05], size: [0.24, 0.34, 0.14], color: pal.metal },
         );
       }
       return { spanX: 1.85, parts };
@@ -225,24 +466,24 @@ function buildSingleModuleParts(
 
     case "classroom-front-locker-rig": {
       parts.push(
-        { suffix: "wall", name: "Classroom_Front_Wall", kind: "box", pos: [0, 1.28, -0.36], scale: [3.6, 2.56, 0.12], color: pal.base },
-        { suffix: "wainscot", name: "Wood_Wainscot_Base", kind: "box", pos: [0, 0.40, -0.34], scale: [3.62, 0.80, 0.14], color: pal.wood },
-        { suffix: "board", name: "Wide_Chalkboard", kind: "box", pos: [-0.52, 1.48, -0.28], scale: [2.28, 1.12, 0.05], color: "#1f4d3a" },
-        { suffix: "tray", name: "Chalk_Ledge_Rail", kind: "box", pos: [-0.52, 0.90, -0.22], scale: [2.34, 0.04, 0.12], color: pal.metal },
-        { suffix: "podium", name: "Teacher_Oak_Podium", kind: "box", pos: [-0.52, 0.52, 0.32], scale: [0.84, 1.04, 0.54], color: pal.wood },
-        { suffix: "locker-body", name: "Student_Locker_Bank", kind: "box", pos: [1.24, 0.90, -0.10], scale: [1.08, 1.80, 0.44], color: pal.metal },
+        { suffix: "wall", name: "Classroom_Front_Wall", kind: "box", pos: [0, 1.28, -0.36], size: [3.6, 2.56, 0.12], color: pal.base },
+        { suffix: "wainscot", name: "Wood_Wainscot_Base", kind: "box", pos: [0, 0.40, -0.34], size: [3.62, 0.80, 0.14], color: pal.wood },
+        { suffix: "board", name: "Wide_Chalkboard", kind: "box", pos: [-0.52, 1.48, -0.28], size: [2.28, 1.12, 0.05], color: "#1f4d3a" },
+        { suffix: "tray", name: "Chalk_Ledge_Rail", kind: "box", pos: [-0.52, 0.90, -0.22], size: [2.34, 0.04, 0.12], color: pal.metal },
+        { suffix: "podium", name: "Teacher_Oak_Podium", kind: "box", pos: [-0.52, 0.52, 0.32], size: [0.84, 1.04, 0.54], color: pal.wood },
+        { suffix: "locker-body", name: "Student_Locker_Bank", kind: "box", pos: [1.24, 0.90, -0.10], size: [1.08, 1.80, 0.44], color: pal.metal },
       );
       if (density >= 2) {
         parts.push(
-          { suffix: "clock", name: "Classroom_Wall_Clock", kind: "cylinder", pos: [-0.52, 2.26, -0.28], scale: [0.32, 0.05, 0.32], color: "#f8fafc", rot: [Math.PI / 2, 0, 0] },
-          { suffix: "eraser", name: "Chalk_Eraser", kind: "box", pos: [-0.15, 0.94, -0.20], scale: [0.16, 0.05, 0.07], color: pal.accent },
-          { suffix: "mic", name: "Podium_Gooseneck_Mic", kind: "cylinder", pos: [-0.34, 1.18, 0.42], scale: [0.03, 0.28, 0.03], color: pal.dark, rot: [-0.25, 0, 0] },
+          { suffix: "clock", name: "Classroom_Wall_Clock", kind: "cylinder", pos: [-0.52, 2.26, -0.28], size: [0.32, 0.05, 0.32], color: "#f8fafc", rot: [Math.PI / 2, 0, 0] },
+          { suffix: "eraser", name: "Chalk_Eraser", kind: "box", pos: [-0.15, 0.94, -0.20], size: [0.16, 0.05, 0.07], color: pal.accent },
+          { suffix: "mic", name: "Podium_Gooseneck_Mic", kind: "cylinder", pos: [-0.34, 1.18, 0.42], size: [0.03, 0.28, 0.03], color: pal.dark, rot: [-0.25, 0, 0] },
         );
       }
       if (density >= 3) {
         parts.push(
-          { suffix: "broom-cabinet", name: "Cleaning_Tool_Locker", kind: "box", pos: [-1.88, 0.90, -0.12], scale: [0.44, 1.80, 0.42], color: pal.metal },
-          { suffix: "top-plant", name: "Locker_Top_Planter", kind: "sphere", pos: [1.38, 1.98, -0.08], scale: [0.34, 0.28, 0.34], color: "#2f855a" },
+          { suffix: "broom-cabinet", name: "Cleaning_Tool_Locker", kind: "box", pos: [-1.88, 0.90, -0.12], size: [0.44, 1.80, 0.42], color: pal.metal },
+          { suffix: "top-plant", name: "Locker_Top_Planter", kind: "sphere", pos: [1.38, 1.94, -0.08], size: [0.34, 0.28, 0.34], color: "#2f855a" },
         );
       }
       return { spanX: 3.85, parts };
@@ -250,25 +491,26 @@ function buildSingleModuleParts(
 
     case "office-creator-workstation": {
       parts.push(
-        { suffix: "leg-l", name: "MotionDesk_Leg_L", kind: "box", pos: [-0.68, 0.37, 0], scale: [0.08, 0.74, 0.62], color: pal.dark },
-        { suffix: "leg-r", name: "MotionDesk_Leg_R", kind: "box", pos: [0.68, 0.37, 0], scale: [0.08, 0.74, 0.62], color: pal.dark },
-        { suffix: "top", name: "MotionDesk_Walnut_Slab", kind: "box", pos: [0, 0.76, 0], scale: [1.64, 0.04, 0.78], color: pal.wood },
-        { suffix: "pen-disp", name: "Pen_Display_24in", kind: "box", pos: [-0.10, 0.92, 0.08], scale: [0.58, 0.34, 0.04], color: pal.glow, rot: [-0.62, 0, 0] },
-        { suffix: "sub-arm", name: "Monitor_Arm_Post", kind: "cylinder", pos: [-0.54, 1.08, -0.28], scale: [0.05, 0.62, 0.05], color: pal.dark },
-        { suffix: "sub-mon", name: "Reference_Monitor", kind: "box", pos: [-0.42, 1.28, -0.16], scale: [0.52, 0.32, 0.03], color: pal.dark, rot: [0, 0.26, 0] },
+        { suffix: "leg-l", name: "MotionDesk_Leg_L", kind: "box", pos: [-0.68, 0.37, 0], size: [0.08, 0.74, 0.62], color: pal.dark },
+        { suffix: "leg-r", name: "MotionDesk_Leg_R", kind: "box", pos: [0.68, 0.37, 0], size: [0.08, 0.74, 0.62], color: pal.dark },
+        { suffix: "top", name: "MotionDesk_Walnut_Slab", kind: "box", pos: [0, 0.76, 0], size: [1.64, 0.04, 0.78], color: pal.wood },
+        { suffix: "pen-disp", name: "Pen_Display_24in", kind: "box", pos: [-0.10, 0.92, 0.08], size: [0.58, 0.34, 0.04], color: pal.glow, rot: [-0.62, 0, 0] },
+        { suffix: "sub-arm", name: "Monitor_Arm_Post", kind: "cylinder", pos: [-0.54, 1.08, -0.28], size: [0.05, 0.62, 0.05], color: pal.dark },
+        { suffix: "sub-mon", name: "Reference_Monitor", kind: "box", pos: [-0.42, 1.28, -0.16], size: [0.52, 0.32, 0.03], color: pal.dark, rot: [0, 0.26, 0] },
       );
       if (density >= 2) {
         parts.push(
-          { suffix: "pegboard", name: "Desk_Pegboard_Back", kind: "box", pos: [0.46, 1.06, -0.34], scale: [0.56, 0.54, 0.03], color: pal.base },
-          { suffix: "lamp-bar", name: "Desk_LED_TaskBar", kind: "box", pos: [-0.08, 1.42, -0.02], scale: [0.44, 0.03, 0.04], color: pal.glow },
-          { suffix: "spk-l", name: "Studio_Speaker_L", kind: "box", pos: [-0.70, 0.89, -0.18], scale: [0.13, 0.22, 0.16], color: pal.dark },
-          { suffix: "spk-r", name: "Studio_Speaker_R", kind: "box", pos: [0.70, 0.89, -0.18], scale: [0.13, 0.22, 0.16], color: pal.dark },
+          { suffix: "pegboard", name: "Desk_Pegboard_Back", kind: "box", pos: [0.46, 1.05, -0.34], size: [0.56, 0.54, 0.03], color: pal.base },
+          { suffix: "lamp-post", name: "Desk_LED_Stand_Arm", kind: "cylinder", pos: [0.12, 1.10, -0.24], size: [0.03, 0.64, 0.03], color: pal.dark },
+          { suffix: "lamp-bar", name: "Desk_LED_TaskBar", kind: "box", pos: [-0.08, 1.42, -0.02], size: [0.44, 0.03, 0.04], color: pal.glow },
+          { suffix: "spk-l", name: "Studio_Speaker_L", kind: "box", pos: [-0.70, 0.89, -0.18], size: [0.13, 0.22, 0.16], color: pal.dark },
+          { suffix: "spk-r", name: "Studio_Speaker_R", kind: "box", pos: [0.70, 0.89, -0.18], size: [0.13, 0.22, 0.16], color: pal.dark },
         );
       }
       if (density >= 3) {
         parts.push(
-          { suffix: "pc-tower", name: "Workstation_PC_Case", kind: "box", pos: [0.96, 0.24, -0.06], scale: [0.23, 0.48, 0.46], color: pal.dark },
-          { suffix: "stylus-cup", name: "Brass_Stylus_Holder", kind: "cylinder", pos: [0.30, 0.83, 0.16], scale: [0.08, 0.10, 0.08], color: "#d97706" },
+          { suffix: "pc-tower", name: "Workstation_PC_Case", kind: "box", pos: [0.96, 0.24, -0.06], size: [0.23, 0.48, 0.46], color: pal.dark },
+          { suffix: "stylus-cup", name: "Brass_Stylus_Holder", kind: "cylinder", pos: [0.30, 0.83, 0.16], size: [0.08, 0.10, 0.08], color: "#d97706" },
         );
       }
       return { spanX: 2.25, parts };
@@ -276,73 +518,79 @@ function buildSingleModuleParts(
 
     case "convenience-patio-street-furniture": {
       parts.push(
-        { suffix: "pad", name: "Recycle_Shelter_Pad", kind: "box", pos: [-0.32, 0.03, 0], scale: [1.66, 0.06, 0.78], color: pal.dark },
-        { suffix: "canopy", name: "Recycle_Sloped_Canopy", kind: "box", pos: [-0.32, 1.48, 0], scale: [1.64, 0.06, 0.82], color: pal.dark, rot: [0.18, 0, 0] },
-        { suffix: "bin-1", name: "Recycle_Bin_Plastic", kind: "box", pos: [-0.82, 0.54, 0], scale: [0.42, 0.96, 0.48], color: "#2563eb" },
-        { suffix: "bin-2", name: "Recycle_Bin_Glass", kind: "box", pos: [-0.32, 0.54, 0], scale: [0.42, 0.96, 0.48], color: "#16a34a" },
-        { suffix: "bin-3", name: "Recycle_Bin_Can", kind: "box", pos: [0.18, 0.54, 0], scale: [0.42, 0.96, 0.48], color: "#d97706" },
-        { suffix: "aboard", name: "Cafe_Wood_ABoard", kind: "box", pos: [0.84, 0.48, 0.10], scale: [0.52, 0.96, 0.36], color: pal.wood, rot: [0, -0.22, 0] },
+        { suffix: "pad", name: "Recycle_Shelter_Pad", kind: "box", pos: [-0.32, 0.03, 0], size: [1.66, 0.06, 0.78], color: pal.dark },
+        { suffix: "post-l", name: "Recycle_Shelter_Post_L", kind: "box", pos: [-1.06, 0.76, -0.26], size: [0.06, 1.46, 0.06], color: pal.dark },
+        { suffix: "post-r", name: "Recycle_Shelter_Post_R", kind: "box", pos: [0.42, 0.76, -0.26], size: [0.06, 1.46, 0.06], color: pal.dark },
+        { suffix: "canopy", name: "Recycle_Sloped_Canopy", kind: "box", pos: [-0.32, 1.48, 0], size: [1.64, 0.06, 0.82], color: pal.dark, rot: [0.18, 0, 0] },
+        { suffix: "bin-1", name: "Recycle_Bin_Plastic", kind: "box", pos: [-0.82, 0.54, 0], size: [0.42, 0.96, 0.48], color: "#2563eb" },
+        { suffix: "bin-2", name: "Recycle_Bin_Glass", kind: "box", pos: [-0.32, 0.54, 0], size: [0.42, 0.96, 0.48], color: "#16a34a" },
+        { suffix: "bin-3", name: "Recycle_Bin_Can", kind: "box", pos: [0.18, 0.54, 0], size: [0.42, 0.96, 0.48], color: "#d97706" },
+        { suffix: "aboard", name: "Cafe_Wood_ABoard", kind: "box", pos: [0.84, 0.48, 0.10], size: [0.52, 0.96, 0.36], color: pal.wood, rot: [0, -0.22, 0] },
       );
       if (density >= 2) {
         parts.push(
-          { suffix: "bollard-l", name: "Reflective_Bollard_L", kind: "cylinder", pos: [-1.10, 0.39, 0.42], scale: [0.14, 0.78, 0.14], color: pal.dark },
-          { suffix: "bollard-r", name: "Reflective_Bollard_R", kind: "cylinder", pos: [1.28, 0.39, 0.42], scale: [0.14, 0.78, 0.14], color: pal.dark },
+          { suffix: "bollard-l", name: "Reflective_Bollard_L", kind: "cylinder", pos: [-1.10, 0.39, 0.42], size: [0.14, 0.78, 0.14], color: pal.dark },
+          { suffix: "bollard-r", name: "Reflective_Bollard_R", kind: "cylinder", pos: [1.28, 0.39, 0.42], size: [0.14, 0.78, 0.14], color: pal.dark },
         );
       }
       if (density >= 3) {
         parts.push(
-          { suffix: "patio-tbl", name: "Patio_Round_Table", kind: "cylinder", pos: [1.68, 0.74, -0.05], scale: [0.76, 0.05, 0.76], color: pal.base },
-          { suffix: "patio-pole", name: "Patio_Parasol_Pole", kind: "cylinder", pos: [1.68, 1.05, -0.05], scale: [0.06, 2.10, 0.06], color: pal.metal },
-          { suffix: "parasol", name: "Patio_Parasol_Canopy", kind: "cone", pos: [1.68, 2.12, -0.05], scale: [1.55, 0.42, 1.55], color: pal.accent },
+          { suffix: "patio-tbl", name: "Patio_Round_Table", kind: "cylinder", pos: [1.68, 0.74, -0.05], size: [0.76, 0.05, 0.76], color: pal.base },
+          { suffix: "patio-pole", name: "Patio_Parasol_Pole", kind: "cylinder", pos: [1.68, 1.05, -0.05], size: [0.06, 2.10, 0.06], color: pal.metal },
+          { suffix: "parasol", name: "Patio_Parasol_Canopy", kind: "cone", pos: [1.68, 2.12, -0.05], size: [1.55, 0.42, 1.55], color: pal.accent },
         );
       }
-      return { spanX: 2.95, parts };
+      return { spanX: 3.15, parts };
     }
 
     case "subway-platform-gate-bay": {
       parts.push(
-        { suffix: "deck", name: "Station_Floor_Base", kind: "box", pos: [0, 0.03, 0], scale: [1.68, 0.06, 1.56], color: pal.dark },
-        { suffix: "gate-l", name: "Turnstile_Pedestal_L", kind: "box", pos: [-0.46, 0.52, 0], scale: [0.26, 0.94, 1.38], color: pal.metal },
-        { suffix: "gate-r", name: "Turnstile_Pedestal_R", kind: "box", pos: [0.46, 0.52, 0], scale: [0.26, 0.94, 1.38], color: pal.metal },
-        { suffix: "flap-l", name: "Barrier_Flap_L", kind: "box", pos: [-0.19, 0.54, 0.05], scale: [0.24, 0.66, 0.03], color: "#ef4444" },
-        { suffix: "flap-r", name: "Barrier_Flap_R", kind: "box", pos: [0.19, 0.54, 0.05], scale: [0.24, 0.66, 0.03], color: "#ef4444" },
-        { suffix: "reader-l", name: "NFC_Card_Pad_L", kind: "cylinder", pos: [-0.46, 1.02, 0.52], scale: [0.14, 0.04, 0.14], color: pal.glow },
-        { suffix: "reader-r", name: "NFC_Card_Pad_R", kind: "cylinder", pos: [0.46, 1.02, 0.52], scale: [0.14, 0.04, 0.14], color: pal.glow },
+        { suffix: "deck", name: "Station_Floor_Base", kind: "box", pos: [0, 0.03, 0], size: [1.68, 0.06, 1.56], color: pal.dark },
+        { suffix: "gate-l", name: "Turnstile_Pedestal_L", kind: "box", pos: [-0.46, 0.53, 0], size: [0.26, 0.94, 1.38], color: pal.metal },
+        { suffix: "gate-r", name: "Turnstile_Pedestal_R", kind: "box", pos: [0.46, 0.53, 0], size: [0.26, 0.94, 1.38], color: pal.metal },
+        { suffix: "flap-l", name: "Barrier_Flap_L", kind: "box", pos: [-0.19, 0.54, 0.05], size: [0.24, 0.66, 0.03], color: "#ef4444" },
+        { suffix: "flap-r", name: "Barrier_Flap_R", kind: "box", pos: [0.19, 0.54, 0.05], size: [0.24, 0.66, 0.03], color: "#ef4444" },
+        { suffix: "reader-l", name: "NFC_Card_Pad_L", kind: "cylinder", pos: [-0.46, 1.02, 0.52], size: [0.14, 0.04, 0.14], color: pal.glow },
+        { suffix: "reader-r", name: "NFC_Card_Pad_R", kind: "cylinder", pos: [0.46, 1.02, 0.52], size: [0.14, 0.04, 0.14], color: pal.glow },
       );
       if (density >= 2) {
         parts.push(
-          { suffix: "tactile", name: "Tactile_Guide_Strip", kind: "box", pos: [0, 0.065, 0.58], scale: [1.20, 0.015, 0.28], color: "#eab308" },
-          { suffix: "sign", name: "Hanging_Station_Sign", kind: "box", pos: [0, 2.38, 0], scale: [1.48, 0.34, 0.08], color: pal.accent },
+          { suffix: "tactile", name: "Tactile_Guide_Strip", kind: "box", pos: [0, 0.068, 0.58], size: [1.20, 0.016, 0.28], color: "#eab308" },
+          { suffix: "portal-l", name: "Gate_Portal_Post_L", kind: "box", pos: [-0.74, 1.24, -0.35], size: [0.06, 2.36, 0.06], color: pal.dark },
+          { suffix: "portal-r", name: "Gate_Portal_Post_R", kind: "box", pos: [0.74, 1.24, -0.35], size: [0.06, 2.36, 0.06], color: pal.dark },
+          { suffix: "sign", name: "Hanging_Station_Sign", kind: "box", pos: [0, 2.34, -0.35], size: [1.54, 0.32, 0.08], color: pal.accent },
         );
       }
       if (density >= 3) {
         parts.push(
-          { suffix: "fire-hydrant", name: "Station_Fire_Cabinet", kind: "box", pos: [1.05, 0.68, -0.45], scale: [0.42, 1.24, 0.22], color: "#dc2626" },
+          { suffix: "fire-hydrant", name: "Station_Fire_Cabinet", kind: "box", pos: [1.05, 0.62, -0.45], size: [0.42, 1.24, 0.22], color: "#dc2626" },
         );
       }
-      return { spanX: 1.95, parts };
+      return { spanX: 2.35, parts };
     }
 
     case "hospital-ward-corridor-set": {
       parts.push(
-        { suffix: "wall", name: "Ward_Corridor_Wall", kind: "box", pos: [0, 1.04, -0.36], scale: [2.36, 2.08, 0.12], color: pal.base },
-        { suffix: "bumper", name: "Ward_Handrail_Bumper", kind: "box", pos: [0, 0.88, -0.28], scale: [2.38, 0.14, 0.05], color: pal.accent },
-        { suffix: "beam", name: "Waiting_Bench_Beam", kind: "box", pos: [-0.28, 0.38, 0.04], scale: [1.66, 0.12, 0.44], color: pal.dark },
-        { suffix: "seat-1", name: "Ward_Seat_1", kind: "box", pos: [-0.84, 0.58, -0.02], scale: [0.48, 0.44, 0.44], color: "#4fd1c5" },
-        { suffix: "seat-2", name: "Ward_Seat_2", kind: "box", pos: [-0.28, 0.58, -0.02], scale: [0.48, 0.44, 0.44], color: "#4fd1c5" },
-        { suffix: "seat-3", name: "Ward_Seat_3", kind: "box", pos: [0.28, 0.58, -0.02], scale: [0.48, 0.44, 0.44], color: "#4fd1c5" },
-        { suffix: "iv-pole", name: "Mobile_IV_Stand", kind: "cylinder", pos: [0.92, 0.88, 0.08], scale: [0.05, 1.76, 0.05], color: pal.metal },
-        { suffix: "iv-base", name: "IV_Caster_Base", kind: "cylinder", pos: [0.92, 0.05, 0.08], scale: [0.46, 0.08, 0.46], color: pal.dark },
+        { suffix: "wall", name: "Ward_Corridor_Wall", kind: "box", pos: [0, 1.04, -0.36], size: [2.36, 2.08, 0.12], color: pal.base },
+        { suffix: "bumper", name: "Ward_Handrail_Bumper", kind: "box", pos: [0, 0.88, -0.28], size: [2.38, 0.14, 0.05], color: pal.accent },
+        { suffix: "bench-leg-l", name: "Waiting_Bench_Leg_L", kind: "box", pos: [-0.84, 0.19, 0.02], size: [0.08, 0.38, 0.42], color: pal.dark },
+        { suffix: "bench-leg-r", name: "Waiting_Bench_Leg_R", kind: "box", pos: [0.28, 0.19, 0.02], size: [0.08, 0.38, 0.42], color: pal.dark },
+        { suffix: "beam", name: "Waiting_Bench_Beam", kind: "box", pos: [-0.28, 0.38, 0.02], size: [1.66, 0.08, 0.14], color: pal.dark },
+        { suffix: "seat-1", name: "Ward_Seat_1", kind: "box", pos: [-0.84, 0.58, -0.02], size: [0.48, 0.40, 0.44], color: "#4fd1c5" },
+        { suffix: "seat-2", name: "Ward_Seat_2", kind: "box", pos: [-0.28, 0.58, -0.02], size: [0.48, 0.40, 0.44], color: "#4fd1c5" },
+        { suffix: "seat-3", name: "Ward_Seat_3", kind: "box", pos: [0.28, 0.58, -0.02], size: [0.48, 0.40, 0.44], color: "#4fd1c5" },
+        { suffix: "iv-pole", name: "Mobile_IV_Stand", kind: "cylinder", pos: [0.92, 0.90, 0.08], size: [0.05, 1.76, 0.05], color: pal.metal },
+        { suffix: "iv-base", name: "IV_Caster_Base", kind: "cylinder", pos: [0.92, 0.04, 0.08], size: [0.46, 0.08, 0.46], color: pal.dark },
       );
       if (density >= 2) {
         parts.push(
-          { suffix: "iv-bag", name: "Saline_Fluid_Bag", kind: "box", pos: [0.84, 1.56, 0.08], scale: [0.11, 0.22, 0.05], color: pal.glow },
-          { suffix: "monitor", name: "Queue_Display_Board", kind: "box", pos: [-0.28, 1.52, -0.27], scale: [0.94, 0.54, 0.05], color: pal.glow },
+          { suffix: "iv-bag", name: "Saline_Fluid_Bag", kind: "box", pos: [0.84, 1.56, 0.08], size: [0.11, 0.22, 0.05], color: pal.glow },
+          { suffix: "monitor", name: "Queue_Display_Board", kind: "box", pos: [-0.28, 1.52, -0.27], size: [0.94, 0.54, 0.05], color: pal.glow },
         );
       }
       if (density >= 3) {
         parts.push(
-          { suffix: "sanitizer", name: "Hand_Sanitizer_Unit", kind: "box", pos: [0.48, 1.28, -0.26], scale: [0.14, 0.26, 0.10], color: "#f8fafc" },
+          { suffix: "sanitizer", name: "Hand_Sanitizer_Unit", kind: "box", pos: [0.48, 1.28, -0.26], size: [0.14, 0.26, 0.10], color: "#f8fafc" },
         );
       }
       return { spanX: 2.45, parts };
@@ -350,25 +598,25 @@ function buildSingleModuleParts(
 
     case "hanok-jangdokdae-stone-wall": {
       parts.push(
-        { suffix: "wall", name: "Hanok_Courtyard_Wall", kind: "box", pos: [0, 0.78, -0.68], scale: [2.84, 1.56, 0.28], color: pal.base },
-        { suffix: "giwa-cap", name: "Giwa_Roof_Coping", kind: "triangularPrism", pos: [0, 1.66, -0.68], scale: [0.56, 2.96, 0.28], color: pal.dark, rot: [-Math.PI / 2, 0, Math.PI / 2] },
-        { suffix: "tier-1", name: "Jangdok_Stone_Tier1", kind: "box", pos: [-0.26, 0.09, 0.04], scale: [2.08, 0.18, 1.20], color: pal.metal },
-        { suffix: "tier-2", name: "Jangdok_Stone_Tier2", kind: "box", pos: [-0.26, 0.27, -0.20], scale: [1.84, 0.18, 0.58], color: pal.metal },
-        { suffix: "jar-1", name: "Onggi_Large_Jar_1", kind: "sphere", pos: [-0.78, 0.64, -0.20], scale: [0.48, 0.62, 0.48], color: "#4a2511" },
-        { suffix: "jar-2", name: "Onggi_Large_Jar_2", kind: "sphere", pos: [-0.26, 0.66, -0.20], scale: [0.52, 0.66, 0.52], color: "#5c2e14" },
-        { suffix: "jar-3", name: "Onggi_Large_Jar_3", kind: "sphere", pos: [0.26, 0.62, -0.20], scale: [0.46, 0.58, 0.46], color: "#4a2511" },
-        { suffix: "lantern", name: "Granite_Stone_Lantern", kind: "box", pos: [1.06, 0.52, 0.12], scale: [0.36, 1.04, 0.36], color: pal.metal },
+        { suffix: "wall", name: "Hanok_Courtyard_Wall", kind: "box", pos: [0, 0.78, -0.68], size: [2.84, 1.56, 0.28], color: pal.base },
+        { suffix: "giwa-cap", name: "Giwa_Roof_Coping", kind: "triangularPrism", pos: [0, 1.63, -0.68], size: [2.96, 0.28, 0.56], rawScale: [0.56, 2.96, 0.28], color: pal.dark, rot: [-Math.PI / 2, 0, Math.PI / 2] },
+        { suffix: "tier-1", name: "Jangdok_Stone_Tier1", kind: "box", pos: [-0.26, 0.09, 0.04], size: [2.08, 0.18, 1.20], color: pal.metal },
+        { suffix: "tier-2", name: "Jangdok_Stone_Tier2", kind: "box", pos: [-0.26, 0.27, -0.20], size: [1.84, 0.18, 0.58], color: pal.metal },
+        { suffix: "jar-1", name: "Onggi_Large_Jar_1", kind: "sphere", pos: [-0.78, 0.65, -0.20], size: [0.48, 0.62, 0.48], color: "#4a2511" },
+        { suffix: "jar-2", name: "Onggi_Large_Jar_2", kind: "sphere", pos: [-0.26, 0.67, -0.20], size: [0.52, 0.66, 0.52], color: "#5c2e14" },
+        { suffix: "jar-3", name: "Onggi_Large_Jar_3", kind: "sphere", pos: [0.26, 0.63, -0.20], size: [0.46, 0.58, 0.46], color: "#4a2511" },
+        { suffix: "lantern", name: "Granite_Stone_Lantern", kind: "box", pos: [1.06, 0.52, 0.12], size: [0.36, 1.04, 0.36], color: pal.metal },
       );
       if (density >= 2) {
         parts.push(
-          { suffix: "jar-sm-1", name: "Onggi_Medium_Jar_1", kind: "sphere", pos: [-0.56, 0.38, 0.32], scale: [0.36, 0.44, 0.36], color: "#5c2e14" },
-          { suffix: "jar-sm-2", name: "Onggi_Medium_Jar_2", kind: "sphere", pos: [-0.04, 0.38, 0.32], scale: [0.36, 0.44, 0.36], color: "#4a2511" },
-          { suffix: "lantern-glow", name: "Lantern_Light_Core", kind: "box", pos: [1.06, 0.84, 0.12], scale: [0.22, 0.18, 0.22], color: pal.glow },
+          { suffix: "jar-sm-1", name: "Onggi_Medium_Jar_1", kind: "sphere", pos: [-0.56, 0.38, 0.32], size: [0.36, 0.44, 0.36], color: "#5c2e14" },
+          { suffix: "jar-sm-2", name: "Onggi_Medium_Jar_2", kind: "sphere", pos: [-0.04, 0.38, 0.32], size: [0.36, 0.44, 0.36], color: "#4a2511" },
+          { suffix: "lantern-glow", name: "Lantern_Light_Core", kind: "box", pos: [1.06, 0.84, 0.12], size: [0.22, 0.18, 0.22], color: pal.glow },
         );
       }
       if (density >= 3) {
         parts.push(
-          { suffix: "lantern-cap", name: "Lantern_Pyramid_Cap", kind: "pyramid", pos: [1.06, 1.12, 0.12], scale: [0.48, 0.22, 0.48], color: pal.dark },
+          { suffix: "lantern-cap", name: "Lantern_Pyramid_Cap", kind: "pyramid", pos: [1.06, 1.15, 0.12], size: [0.48, 0.22, 0.48], color: pal.dark },
         );
       }
       return { spanX: 3.05, parts };
@@ -376,23 +624,24 @@ function buildSingleModuleParts(
 
     case "fantasy-dungeon-alchemy-props": {
       parts.push(
-        { suffix: "shelf-body", name: "Gothic_Bookshelf_Frame", kind: "box", pos: [-0.18, 1.06, 0], scale: [1.54, 2.12, 0.44], color: pal.wood },
-        { suffix: "arch", name: "Ornate_Brass_Arch", kind: "torus", pos: [-0.18, 2.08, 0], scale: [1.36, 0.68, 0.18], color: "#d97706" },
-        { suffix: "tomes-1", name: "Grimoire_Row_Lower", kind: "box", pos: [-0.32, 0.74, 0.04], scale: [1.12, 0.28, 0.28], color: "#7f1d1d" },
-        { suffix: "tomes-2", name: "Grimoire_Row_Mid", kind: "box", pos: [-0.46, 1.24, 0.04], scale: [0.76, 0.28, 0.28], color: "#1e3a8a" },
-        { suffix: "potion-1", name: "Mana_Potion_Flask", kind: "sphere", pos: [0.12, 1.18, 0.06], scale: [0.16, 0.18, 0.16], color: pal.glow },
-        { suffix: "potion-2", name: "Vitality_Elixir_Flask", kind: "sphere", pos: [0.32, 1.18, 0.06], scale: [0.16, 0.18, 0.16], color: "#ec4899" },
-        { suffix: "candelabra", name: "Brass_Stand_Candelabra", kind: "cylinder", pos: [0.86, 0.68, 0.08], scale: [0.08, 1.36, 0.08], color: "#d97706" },
+        { suffix: "shelf-body", name: "Gothic_Bookshelf_Frame", kind: "box", pos: [-0.18, 1.06, 0], size: [1.54, 2.12, 0.44], color: pal.wood },
+        { suffix: "arch", name: "Ornate_Brass_Arch", kind: "torus", pos: [-0.18, 2.08, 0], size: [1.36, 0.68, 0.08], color: "#d97706" },
+        { suffix: "tomes-1", name: "Grimoire_Row_Lower", kind: "box", pos: [-0.32, 0.74, 0.04], size: [1.12, 0.28, 0.28], color: "#7f1d1d" },
+        { suffix: "tomes-2", name: "Grimoire_Row_Mid", kind: "box", pos: [-0.46, 1.24, 0.04], size: [0.76, 0.28, 0.28], color: "#1e3a8a" },
+        { suffix: "potion-1", name: "Mana_Potion_Flask", kind: "sphere", pos: [0.12, 1.18, 0.06], size: [0.16, 0.18, 0.16], color: pal.glow },
+        { suffix: "potion-2", name: "Vitality_Elixir_Flask", kind: "sphere", pos: [0.32, 1.18, 0.06], size: [0.16, 0.18, 0.16], color: "#ec4899" },
+        { suffix: "candelabra-base", name: "Candelabra_Disc_Base", kind: "cylinder", pos: [0.86, 0.03, 0.08], size: [0.36, 0.06, 0.36], color: "#d97706" },
+        { suffix: "candelabra", name: "Brass_Stand_Candelabra", kind: "cylinder", pos: [0.86, 0.71, 0.08], size: [0.08, 1.36, 0.08], color: "#d97706" },
       );
       if (density >= 2) {
         parts.push(
-          { suffix: "candelabra-base", name: "Candelabra_Disc_Base", kind: "cylinder", pos: [0.86, 0.03, 0.08], scale: [0.36, 0.06, 0.36], color: "#d97706" },
-          { suffix: "flame", name: "Beeswax_Candle_Glow", kind: "cone", pos: [0.86, 1.46, 0.08], scale: [0.16, 0.18, 0.16], color: "#fbbf24" },
+          { suffix: "flame", name: "Beeswax_Candle_Glow", kind: "cone", pos: [0.86, 1.48, 0.08], size: [0.16, 0.18, 0.16], color: "#fbbf24" },
+          { suffix: "tomes-3", name: "Grimoire_Row_Upper", kind: "box", pos: [-0.22, 1.72, 0.04], size: [0.88, 0.26, 0.26], color: "#4c1d95" },
         );
       }
       if (density >= 3) {
         parts.push(
-          { suffix: "chest", name: "Arcane_Relic_Chest", kind: "box", pos: [0.88, 0.22, -0.32], scale: [0.58, 0.44, 0.38], color: pal.wood },
+          { suffix: "chest", name: "Arcane_Relic_Chest", kind: "box", pos: [0.88, 0.22, -0.32], size: [0.58, 0.44, 0.38], color: pal.wood },
         );
       }
       return { spanX: 2.15, parts };
@@ -411,26 +660,40 @@ export function buildBg3dObjectClusterPrimitives(
     rawSpec.clutterDensity === "lived-in" ? 3 : rawSpec.clutterDensity === "detailed" ? 2 : 1;
   const pal = SURFACE_THEMES[rawSpec.surfaceTheme];
   const [anchorX, anchorZ] = rawSpec.anchorOffsetXZ ?? [0, 0];
+  const safeKey = sanitizeInstanceKey(rawSpec.instanceKey);
   const meta =
     STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES.find((item) => item.id === rawSpec.archetype) ??
     STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES[0]!;
 
   const { spanX, parts: baseParts } = buildSingleModuleParts(rawSpec.archetype, densityNum, pal);
-  const primitives: BgPrimitive[] = [];
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let maxY = 0;
-  let minZ = Infinity;
-  let maxZ = -Infinity;
+  const canonicalTags = Object.freeze(
+    [`BgCluster_${rawSpec.archetype}`, "BgObject_Cluster_V10"].sort(),
+  );
+
+  interface StagedPrim {
+    readonly id: string;
+    readonly name: string;
+    readonly kind: BgPrimitiveKind;
+    readonly wx: number;
+    readonly wy: number;
+    readonly wz: number;
+    readonly rot: [number, number, number];
+    readonly scale: [number, number, number];
+    readonly half: readonly [number, number, number];
+    readonly color: string;
+  }
+
+  const staged: StagedPrim[] = [];
+  const halfCornerTurn = Math.ceil(modules / 2);
 
   for (let m = 0; m < modules; m++) {
     let modOffsetX = (m - (modules - 1) * 0.5) * (spanX + 0.18);
     let modOffsetZ = 0;
     let yaw = 0;
 
-    if (rawSpec.arrangement === "l-corner" && m >= Math.ceil(modules / 2)) {
-      const idxInCorner = m - Math.ceil(modules / 2);
-      modOffsetX = (Math.ceil(modules / 2) - 0.5) * (spanX * 0.65);
+    if (rawSpec.arrangement === "l-corner" && m >= halfCornerTurn) {
+      const idxInCorner = m - halfCornerTurn;
+      modOffsetX = (halfCornerTurn - 0.5) * (spanX * 0.65) + 0.35;
       modOffsetZ = (idxInCorner + 0.65) * (spanX + 0.18);
       yaw = -Math.PI / 2;
     } else if (rawSpec.arrangement === "staggered-street") {
@@ -439,30 +702,67 @@ export function buildBg3dObjectClusterPrimitives(
 
     for (const part of baseParts) {
       const [rx, rz] = rotateXZ(part.pos[0], part.pos[2], yaw);
-      const wx = round3(anchorX + modOffsetX + rx);
-      const wy = round3(Math.max(part.scale[1] * 0.5, part.pos[1]));
-      const wz = round3(anchorZ + modOffsetZ + rz);
-      const baseRot = part.rot ?? [0, 0, 0];
+      const scale = resolvePartScale(part);
+      const rot = composeWorldYawWithLocalEulerXyz(part.rot ?? [0, 0, 0], yaw);
+      const mutableScale: [number, number, number] = [scale[0], scale[1], scale[2]];
+      const half = computePrimitiveWorldHalfExtents(part.kind, rot, mutableScale);
+      const wx = round4(anchorX + modOffsetX + rx);
+      // 회전·스케일된 OBB 바닥이 절대 y < 0으로 파고들지 않도록 보정한다.
+      const wy = Math.max(half[1], part.pos[1]);
+      const wz = round4(anchorZ + modOffsetZ + rz);
+      const idCore = safeKey ? `${meta.shortCode}-${safeKey}` : meta.shortCode;
 
-      minX = Math.min(minX, wx - part.scale[0] * 0.5);
-      maxX = Math.max(maxX, wx + part.scale[0] * 0.5);
-      maxY = Math.max(maxY, wy + part.scale[1] * 0.5);
-      minZ = Math.min(minZ, wz - part.scale[2] * 0.5);
-      maxZ = Math.max(maxZ, wz + part.scale[2] * 0.5);
-
-      primitives.push({
-        id: `bgobj-v10-${rawSpec.archetype}-m${m + 1}-${part.suffix}`,
+      staged.push({
+        id: `bgobj-v10-${idCore}-m${m + 1}-${part.suffix}`,
         name: `${part.name}_${m + 1}`,
         kind: part.kind,
-        position: [wx, wy, wz],
-        rotation: [round3(baseRot[0]), round3(baseRot[1] + yaw), round3(baseRot[2])],
-        scale: [round3(part.scale[0]), round3(part.scale[1]), round3(part.scale[2])],
-        color: part.color,
-        componentRef: { id: meta.v10GlbAssetId, name: meta.labelKo },
-        tags: ["BgObject_Cluster_V10", `BgCluster_${rawSpec.archetype}`],
+        wx,
+        wy,
+        wz,
+        rot,
+        scale: mutableScale,
+        half,
+        color: part.color.toLowerCase(),
       });
     }
   }
+
+  // 클러스터 최하단이 지면(y === 0)에 정확히 밀착되도록 수직 영점 정규화를 수행한다.
+  let rawMinY = Infinity;
+  for (const item of staged) {
+    rawMinY = Math.min(rawMinY, item.wy - item.half[1]);
+  }
+  const groundShiftY = Number.isFinite(rawMinY) ? rawMinY : 0;
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let maxY = 0;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+
+  const primitives: BgPrimitive[] = staged.map((item) => {
+    const finalY = round4(Math.max(item.half[1], item.wy - groundShiftY));
+    minX = Math.min(minX, item.wx - item.half[0]);
+    maxX = Math.max(maxX, item.wx + item.half[0]);
+    maxY = Math.max(maxY, finalY + item.half[1]);
+    minZ = Math.min(minZ, item.wz - item.half[2]);
+    maxZ = Math.max(maxZ, item.wz + item.half[2]);
+
+    return {
+      id: item.id,
+      name: item.name,
+      kind: item.kind,
+      position: [item.wx, finalY, item.wz],
+      rotation: item.rot,
+      scale: item.scale,
+      color: item.color,
+      visible: true,
+      locked: false,
+      parentId: null,
+      componentRef: { id: meta.v10GlbAssetId, name: meta.labelKo },
+      tags: [...canonicalTags],
+    };
+  });
 
   const estimatedLineArtEdges = primitives.length * 14;
   const monotonyReliefScore = clamp(
@@ -471,9 +771,9 @@ export function buildBg3dObjectClusterPrimitives(
     99,
   );
   const footprintMeters: readonly [number, number, number] = [
-    round3(Math.max(0.5, maxX - minX)),
-    round3(Math.max(0.5, maxY)),
-    round3(Math.max(0.5, maxZ - minZ)),
+    round4(Math.max(0.5, maxX - minX)),
+    round4(Math.max(0.5, maxY)),
+    round4(Math.max(0.5, maxZ - minZ)),
   ];
 
   return {
@@ -484,6 +784,7 @@ export function buildBg3dObjectClusterPrimitives(
     estimatedLineArtEdges,
     monotonyReliefScore,
     footprintMeters,
+    anchorOffsetXZ: [round4(anchorX), round4(anchorZ)],
     summaryKo: `${meta.labelKo} (${modules}모듈 · ${primitives.length}파츠 · 선화 엣지 약 ${estimatedLineArtEdges}선)`,
   };
 }
