@@ -16,10 +16,14 @@ import {
   resolveDurableStudioAutosaveModuleUrl,
   seedDurableStudioAutosaveDocument,
 } from "../scripts/lib/studio-verify-durable-autosave.mjs";
+import { enabledStudioHistoryControl } from "../scripts/lib/studio-verify-history-controls.mts";
 
 import { expect, test } from "./fixtures/non-studio-test";
-import { installGuestOfflineEnvironment, waitForEditorSettled } from "./helpers/studio-editor-a11y";
+import { waitForStudioCaptureDownload } from "./helpers/studio-capture-download";
+import { installGuestOfflineEnvironment } from "./helpers/studio-editor-a11y";
 import { restoreIfPrompted, waitForStudioPageRestored } from "./helpers/studio-editor-restore-readiness";
+import { clickPigmentBlockedPngExport } from "./helpers/studio-pigment-blocked-export";
+import { waitForPigmentEditorSettled as waitForEditorSettled } from "./helpers/studio-pigment-editor-entry";
 
 import type { BrushStudioV6MaterialConfig } from "../apps/web/src/domains/creator/brush-lab/brush-studio-v6-material-engine";
 import type { DrawEl } from "../apps/web/src/domains/creator/studio-element-model";
@@ -114,14 +118,12 @@ async function downloadPng(page: Page, testInfo: TestInfo, name: string): Promis
   }, name, async () => {
     await attachCaptureState(page, testInfo, `${name}.before.json`);
     await page.bringToFront();
-    const pending = page.waitForEvent("download");
-    const button = page.locator('button[data-studio-primary-action="export"]');
-    await expect(button).toHaveAttribute("aria-label", /PNG/u);
-    await button.click();
-    const failed = page.getByText(CAPTURE_TIMEOUT_TEXT, { exact: true }).first()
-      .waitFor({ state: "visible", timeout: 180_000 })
-      .then(() => { throw new Error("실제 PNG 내보내기가 render-timeout 오류를 표시했습니다."); });
-    const bytes = await fileBytes(await Promise.race([pending, failed]), testInfo, name);
+    const download = await waitForStudioCaptureDownload(page, async () => {
+      const button = page.locator('button[data-studio-primary-action="export"]');
+      await expect(button).toHaveAttribute("aria-label", /PNG/u);
+      await button.click();
+    }, page.getByText(CAPTURE_TIMEOUT_TEXT, { exact: true }).first());
+    const bytes = await fileBytes(download, testInfo, name);
     expect([...bytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
     expect(bytes.readUInt32BE(16)).toBeGreaterThan(0);
     expect(bytes.readUInt32BE(20)).toBeGreaterThan(0);
@@ -437,11 +439,10 @@ for (const version of [1, 2] as const) {
     const exportError = page.getByText("이전 Mixbox 획은 색 확인 후 자체 혼색 사본으로 전환해야 표시·내보내기할 수 있습니다. 원본은 유지됩니다.", { exact: true }).first();
     await expect(exportError).toHaveCount(0);
     page.on("download", observe);
-    await page.locator('button[data-studio-primary-action="export"]').click();
+    await clickPigmentBlockedPngExport(page, exportError);
     await expect(exportError).toBeVisible();
     expect(unexpected).toHaveLength(0);
     page.off("download", observe);
-
     await warning.getByRole("button", { name: "원본 보존·자체 혼색 사본 만들기", exact: true }).click();
     await expect(warning).toHaveCount(0);
     await expect.poll(async () => records((await savedPage(page, key, fixture.page.id)).elements)
@@ -449,10 +450,10 @@ for (const version of [1, 2] as const) {
     const converted = await savedPage(page, key, fixture.page.id);
     assertPreserved(fixture.source, before, converted);
 
-    await page.locator('button[data-studio-primary-action="undo"]').first().click();
+    await (await enabledStudioHistoryControl(page, "undo")).click();
     await expect(warning).toBeVisible();
     await expect.poll(async () => (await savedPage(page, key, fixture.page.id)).elements).toEqual(before.elements);
-    await page.locator('button[data-studio-primary-action="redo"]').first().click();
+    await (await enabledStudioHistoryControl(page, "redo")).click();
     await expect(warning).toHaveCount(0);
     await expect.poll(async () => (await savedPage(page, key, fixture.page.id)).elements).toEqual(converted.elements);
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -516,21 +517,20 @@ if (process.env.TOONSTUDIO_PIGMENT_CLIP_CONTRAST === "1") {
       const exportError = page.getByText("이전 Mixbox 획은 색 확인 후 자체 혼색 사본으로 전환해야 표시·내보내기할 수 있습니다. 원본은 유지됩니다.", { exact: true }).first();
       await expect(exportError).toHaveCount(0);
       page.on("download", observe);
-      await page.locator('button[data-studio-primary-action="export"]').click();
+      await clickPigmentBlockedPngExport(page, exportError);
       await expect(exportError).toBeVisible();
       expect(unexpected).toHaveLength(0);
       page.off("download", observe);
-
       await warning.getByRole("button", { name: "원본 보존·자체 혼색 사본 만들기", exact: true }).click();
       await expect(warning).toHaveCount(0);
       await expect.poll(async () => records((await savedPage(page, key, fixture.page.id)).elements)
         .some((element) => element.legacyPigmentArchive !== undefined)).toBe(true);
       const converted = await savedPage(page, key, fixture.page.id);
       assertPreserved(source, before, converted);
-      await page.locator('button[data-studio-primary-action="undo"]').first().click();
+      await (await enabledStudioHistoryControl(page, "undo")).click();
       await expect(warning).toBeVisible();
       await expect.poll(async () => (await savedPage(page, key, fixture.page.id)).elements).toEqual(before.elements);
-      await page.locator('button[data-studio-primary-action="redo"]').first().click();
+      await (await enabledStudioHistoryControl(page, "redo")).click();
       await expect(warning).toHaveCount(0);
       await expect.poll(async () => (await savedPage(page, key, fixture.page.id)).elements).toEqual(converted.elements);
       await page.reload({ waitUntil: "domcontentloaded" });
