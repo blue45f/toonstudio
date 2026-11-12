@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { createPortal } from "react-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
@@ -123,6 +125,32 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(screen.getByLabelText("화면").textContent).toBe("기존");
     expect(settings.toolbar).toBe(toolbar);
     expect(toolbar.profiles).toBeUndefined();
+  });
+
+  it("기본 화면은 body 포털 HUD와 중복 시작 안내만 접고 기존 배치에서 복원한다", () => {
+    const css = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css", "utf8")
+      .split("\n").filter((line) => line.includes("data-studio-brush-hud=true]") || line.includes("data-studio-document-window-hub-bar=true]{display:none}") || line.includes("data-studio-quickstart-collapsed=true]")).join("\n");
+    function Surface() {
+      const clarity = useStudioDrawingClarity();
+      return <div data-studio-editor="true" data-studio-drawing-clarity={clarity?.active ? "true" : undefined}>
+        <div data-testid="문서 도구" data-studio-document-window-hub-bar="true">프로젝트·창</div>
+        <div data-testid="자동 시작" data-studio-cinematic-canvas-welcome="collapsed">시작 방법 보기</div>
+        <div data-testid="자동 사용법" data-studio-creative-starter="true" data-studio-quickstart-collapsed="true">사용법</div>
+        <div data-testid="요청한 안내" data-studio-cinematic-canvas-welcome="true">펼친 안내</div>
+        <button data-studio-status-error-dismiss="true">저장 오류 확인</button>
+        <button data-studio-collaboration-following="true">따라가기 중단</button>
+      </div>;
+    }
+    render(<><style>{css}</style><StudioDrawingClarityProvider session={session()}><Probe /><Surface /></StudioDrawingClarityProvider>
+      {createPortal(<div data-testid="포털 HUD" data-studio-brush-hud="true" style={{ display: "grid" }}>브러시</div>, document.body)}
+      <button data-studio-shell-force-visible="true">진행 중 통화</button></>);
+    for (const name of ["포털 HUD", "문서 도구", "자동 시작", "자동 사용법"]) expect(getComputedStyle(screen.getByTestId(name)).display).toBe("none");
+    expect(getComputedStyle(screen.getByTestId("요청한 안내")).display).not.toBe("none");
+    for (const name of ["저장 오류 확인", "따라가기 중단", "진행 중 통화"]) expect(getComputedStyle(screen.getByRole("button", { name })).display).not.toBe("none");
+    fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
+    for (const name of ["포털 HUD", "문서 도구", "자동 시작", "자동 사용법"]) expect(getComputedStyle(screen.getByTestId(name)).display).not.toBe("none");
+    fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
+    expect(getComputedStyle(screen.getByTestId("포털 HUD")).display).toBe("none");
   });
 
   it("계정 변경 때 이전 세션의 수동 화면·패널 선택을 넘기지 않는다", () => {

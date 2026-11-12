@@ -79,7 +79,7 @@ function StudioDrawingClarityDesktopBar({ session: s }: { readonly session: Stud
         <div id="studio-drawing-clarity-more-menu" hidden={!moreOpen} className="studio-drawing-clarity-menu">
           <button type="button" onClick={() => { closeMore(); openStudioHelpCenter({ section: "recovery" }); }}>{bt("저장·복구 확인", "Check save and recovery")}</button>
           <button type="button" onClick={(event) => { closeMore(); openInspector(); requestStudioAllTools(moreRef.current ?? event.currentTarget); }}>{bt("전체 도구", "All tools")}</button>
-          <button type="button" onClick={clarity.showSavedLayout}>{bt("내 작업 배치 보기", "Show my workspace")}</button>
+          <button type="button" onClick={clarity.showSavedLayout}>{bt("프로젝트·창 도구 보기", "Show project and window tools")}</button>
           <button type="button" onClick={() => { closeMore(); openStudioHelpCenter({ section: "current-tool" }); }}>{bt("사용 방법", "How to use")}</button>
         </div>
       </details>

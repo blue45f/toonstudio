@@ -32,7 +32,10 @@
 .studio-drawing-clarity-pane--brush [data-studio-brush-workbench-dock=true]{position:static!important;min-height:0;flex:1;border:0}
 .studio-drawing-clarity-pane--inspector{min-width:0;max-width:min(360px,38vw)}
 .studio-drawing-clarity-pane--inspector>div:not(.studio-drawing-clarity-pane-heading){min-height:0}
-[data-studio-drawing-clarity=true] [data-studio-brush-hud=true]{display:none}
+/* 브러시 HUD는 body 포털이므로 편집기 하위 선택자로는 접히지 않는다. */
+body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-studio-brush-hud=true]{display:none!important}
+[data-studio-drawing-clarity=true] [data-studio-document-window-hub-bar=true]{display:none}
+[data-studio-drawing-clarity=true] [data-studio-cinematic-canvas-welcome=collapsed], [data-studio-drawing-clarity=true] [data-studio-creative-starter=true][data-studio-quickstart-collapsed=true]{display:none}
 [data-studio-drawing-clarity=true] [data-studio-workflow-guide]{display:none}
 /* 배율·맞춤은 남기고 도구 수치와 중복 모드 선택은 기존 작업 배치에서 확인한다. */
 [data-studio-drawing-clarity=true] [data-studio-status-bar=true]>:nth-child(n+3){display:none}
