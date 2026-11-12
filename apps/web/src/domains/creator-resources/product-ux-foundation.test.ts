@@ -84,7 +84,8 @@ describe("purpose-first product UX foundation", () => {
     expect(header).toContain("function useDestinationActive()");
     expect(header).toContain("isPurposeActive={isPurposeActive}");
     expect(mobile).toContain("isPurposeActive: (href: string, exact?: boolean) => boolean;");
-    expect(mobile).toContain("const active = isPurposeActive(item.href, item.exact);");
+    expect(mobile).toMatch(/const active = currentPurposeHref === undefined\s*\? isPurposeActive\(item\.href, item\.exact\)\s*: currentPurposeHref === item\.href/u);
+    expect(mobile).toContain("const active = isActive(item.href, item.exact);");
   });
 
   it("indexes the new purpose hubs in the global command palette", () => {
