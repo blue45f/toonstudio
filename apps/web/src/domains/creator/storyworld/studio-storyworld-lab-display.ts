@@ -40,3 +40,10 @@ export function severityIcon(severity: StoryworldSeverity): typeof XCircle {
   if (severity === "warning") return AlertTriangle;
   return Info;
 }
+
+export function formatStoryworldMinutes(value: number): string {
+  if (value < 60) return `${new Intl.NumberFormat("ko-KR").format(value)}분`;
+  const hours = Math.floor(value / 60);
+  const minutes = value % 60;
+  return minutes === 0 ? `${hours}시간` : `${hours}시간 ${minutes}분`;
+}
