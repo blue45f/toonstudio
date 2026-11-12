@@ -449,9 +449,24 @@ export function StudioCommandSearchDialog({
   useEffect(() => {
     const node = dialogRef.current;
     if (!open || !node) return;
+    // F1이 인스펙터를 연 직후에는 검색 입력보다 패널 제목이 먼저 초점을 받을 수 있다.
+    // 그 전이 동안에도 맨 위 검색의 첫 Escape를 받고, 별도 대화상자의 키는 남겨 둔다.
+    const dismissBeforeFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.isComposing || event.defaultPrevented) return;
+      const target = event.target;
+      if (target instanceof Node && node.contains(target)) return;
+      if (target instanceof Element && target.closest('[role="dialog"], dialog[open]')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      onClose();
+    };
     node.addEventListener("keydown", onKeyDown);
-    return () => node.removeEventListener("keydown", onKeyDown);
-  }, [open, onKeyDown]);
+    window.addEventListener("keydown", dismissBeforeFocus, true);
+    return () => {
+      node.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", dismissBeforeFocus, true);
+    };
+  }, [open, onClose, onKeyDown]);
 
   if (!open || typeof document === "undefined") return null;
 
