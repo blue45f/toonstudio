@@ -138,7 +138,7 @@ export function computeBg3dClusterNonOverlappingOffsetXZ(
   const safeOrd = Math.max(0, Math.floor(placementOrdinal));
   if (safeOrd === 0) return [0, 0];
   const col = safeOrd % 4;
-  const row = Math.floor(safeOrd / 4) % 4;
+  const row = Math.floor(safeOrd / 4);
   const stepX = Math.max(1.6, footprintMeters[0] + gapMeters);
   const stepZ = Math.max(1.4, footprintMeters[2] + gapMeters);
   return [round4(col * stepX), round4(row * stepZ)];

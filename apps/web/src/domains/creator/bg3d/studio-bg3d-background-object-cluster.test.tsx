@@ -8,7 +8,7 @@ import { violatesErrorPattern } from "@/shared/language/error-pattern";
 import { findToneViolations } from "@/shared/language/tone-policy";
 
 import { COMPOSITE_PRESETS, instantiateCompositePreset } from "../studio-background-3d-composites";
-import { KITBASH_V10_BG_OBJECT_PRESETS } from "../studio-background-3d-kitbash-presets";
+import { KITBASH_V10_BG_OBJECT_PRESETS } from "./studio-background-3d-kitbash-presets";
 import {
   encodeBg3dSceneHash,
   parseBg3dSceneFromDataUrl,
@@ -25,6 +25,7 @@ import {
   STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES,
   buildBg3dObjectClusterPrimitives,
   composeWorldYawWithLocalEulerXyz,
+  computeBg3dClusterNonOverlappingOffsetXZ,
   createBg3dClusterUniqueInstanceKey,
   measureBg3dPrimitivesWorldBounds,
   resolveBg3dClusterPlacementOrdinal,
@@ -300,6 +301,28 @@ describe("studio-bg3d-background-object-cluster — 6 core flows + post-reload p
     );
     expect(Math.abs(clockNormal.x)).toBeCloseTo(1, 3);
     expect(Math.abs(clockNormal.z)).toBeLessThan(1e-3);
+  });
+
+  it("17번째 이후에도 배치 행이 처음으로 돌아가지 않아 반복 클러스터가 겹치지 않는다", () => {
+    const spec = {
+      archetype: "classroom-front-locker-rig",
+      moduleCount: 2,
+      clutterDensity: "detailed",
+      arrangement: "l-corner",
+      surfaceTheme: "daylight-neutral",
+    } as const;
+    const preview = buildBg3dObjectClusterPrimitives(spec);
+    const boxes: THREE.Box3[] = [];
+    for (let ordinal = 0; ordinal < 32; ordinal += 1) {
+      const built = buildBg3dObjectClusterPrimitives({
+        ...spec,
+        anchorOffsetXZ: computeBg3dClusterNonOverlappingOffsetXZ(ordinal, preview.footprintMeters),
+        instanceKey: `repeat-${ordinal}`,
+      });
+      const box = computeThreeWorldBox(built.primitives);
+      for (const previous of boxes) expect(box.intersectsBox(previous)).toBe(false);
+      boxes.push(box);
+    }
   });
 
   it("3~5. 중복 삽입 · Undo/Redo · 저장/복원 후 재삽입: 문서 v3 · 사용자 템플릿 · DataURL 해시 왕복 및 탭 재마운트 후 재삽입까지 ID 충돌·중첩 없이 통과한다", () => {

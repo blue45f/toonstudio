@@ -5,7 +5,7 @@
 import {
   KITBASH_COMPOSITE_PRESETS,
   KITBASH_V10_BG_OBJECT_PRESETS,
-} from "./studio-background-3d-kitbash-presets";
+} from "./bg3d/studio-background-3d-kitbash-presets";
 import { uid, type BgPrimitive, type BgPrimitiveKind } from "./studio-background-3d-primitives";
 
 export type BgCompositeCategory = "building" | "nature" | "vehicle" | "prop";

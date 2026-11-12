@@ -5,7 +5,7 @@
  * 한국형 상가·편의점·카페·정자·버스정류장·포장마차·전신주·실외기·배달 스쿠터·판타지 제단·SF 키오스크 등
  * 14종의 다중 파츠(10~15개 프리미티브) 조형 프리셋을 정의한다.
  */
-import type { BgCompositePreset } from "./studio-background-3d-composites";
+import type { BgCompositePreset } from "../studio-background-3d-composites";
 
 export const KITBASH_COMPOSITE_PRESETS: readonly BgCompositePreset[] = [
   // ── building (고밀도 건축 파사드·구조물 4종) ─────────────────────────────

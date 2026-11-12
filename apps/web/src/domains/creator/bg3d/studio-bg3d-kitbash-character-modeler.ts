@@ -249,6 +249,13 @@ export function buildParametricBackgroundKitbashPrimitives(
             tag,
           ),
         );
+        // 기본 밀도에서도 출입구를 구별할 수 있도록 좌우 문설주와 문턱을 유지한다.
+        if (isDoorBay) {
+          for (const side of [-1, 1]) {
+            out.push(mkPrim(nextId("doorjamb"), `Entrance_Jamb_${side < 0 ? "L" : "R"}`, "box", [bx + side * bayWidth * 0.4, yBase + 1.05, depth * 0.5 + 0.06], [0.08, 2.1, 0.12], pal.trim, tag));
+          }
+          out.push(mkPrim(nextId("threshold"), "Entrance_Threshold", "box", [bx, yBase + 0.025, depth * 0.5 + 0.08], [bayWidth * 0.84, 0.05, 0.2], pal.trim, tag));
+        }
         if (densityLevel >= 2) {
           out.push(mkPrim(nextId("mullion"), `Mullion_F${f + 1}_B${b + 1}`, "box", [bx - bayWidth * 0.38, yBase + 1.3, depth * 0.5 + 0.06], [0.07, floorHeight * 0.86, 0.09], pal.trim, tag));
         }

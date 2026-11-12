@@ -772,7 +772,8 @@ describe("ExportPanel", () => {
     fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "1600" } });
     fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "2400" } });
     fireEvent.keyDown(screen.getByRole("heading", { name: "내보내기" }), { key: "Q", ctrlKey: true, shiftKey: true });
-    await waitFor(() => expect(calls.some((c) => c.fileName === "character-mock-2730x4096-quad-sheet.png")).toBe(true));
+    // 4096px PNG를 실제 인코딩하므로 캡처 완료 이후의 비동기 압축까지 기다린다.
+    await waitFor(() => expect(calls.some((c) => c.fileName === "character-mock-2730x4096-quad-sheet.png")).toBe(true), { timeout: 30000 });
     expect(screen.getByRole("list", { name: "레시피 불러오기 안내" }).textContent).toContain("종횡비를 유지한 채 셀당 1365×2048px");
 
     fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "4000" } });
@@ -780,5 +781,5 @@ describe("ExportPanel", () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("export-failure-alert")));
     fireEvent.keyDown(screen.getByTestId("export-failure-alert"), { key: "Escape" });
     expect(screen.queryByTestId("export-failure-alert")).toBeNull();
-  });
+  }, 60000);
 });

@@ -9,6 +9,8 @@
  * - 시네마틱 카메라 (`PERSP`/`ORTHO`/`PANO`, `FISHEYE_LENS_POLYNOMIAL` K0..K4, `shift_x`/`shift_y`, 보케 조리개)
  */
 
+import { Euler, Quaternion, Vector3 } from "three";
+
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 
@@ -659,6 +661,24 @@ export function evaluateBlenderCameraRig(
 /**
  * 6B. Blender 5.2 대표 판타지·웹툰 3D 배경 세트 프리셋 생성기 (`BgPrimitive[]`).
  */
+/** 지원되는 두 사각뿔의 밑면을 맞붙여 팔면체 실루엣을 구성한다. 원래 중심·회전·외곽 크기는 유지한다. */
+function buildCrystalPyramids(source: Omit<BgPrimitive, "kind">): BgPrimitive[] {
+  const rotation = new Euler(...source.rotation);
+  const upperQuaternion = new Quaternion().setFromEuler(rotation);
+  const lowerRotation = new Euler().setFromQuaternion(
+    upperQuaternion.clone().multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI)),
+  );
+  const offset = new Vector3(0, source.scale[1] / 4, 0).applyEuler(rotation);
+  return [1, -1].map((side) => ({
+    ...source,
+    id: `${source.id}-${side > 0 ? "upper" : "lower"}`,
+    kind: "pyramid",
+    position: [source.position[0] + side * offset.x, source.position[1] + side * offset.y, source.position[2] + side * offset.z],
+    rotation: side > 0 ? [...source.rotation] : [lowerRotation.x, lowerRotation.y, lowerRotation.z],
+    scale: [source.scale[0], source.scale[1] / 2, source.scale[2]],
+  }));
+}
+
 export function buildBlenderPresetScenePrimitives(
   themeId: BlenderScenePresetThemeId,
 ): { readonly labelKo: string; readonly primitives: readonly BgPrimitive[] } {
@@ -672,7 +692,7 @@ export function buildBlenderPresetScenePrimitives(
           { id: "bl-citadel-step-1", name: "Citadel_Dais_Step_1", kind: "box", position: [0, 0.32, -2.6], rotation: [0, 0, 0], scale: [4.4, 0.24, 3.4], color: "#ddb892", tags: ["Blender_Citadel"] },
           { id: "bl-citadel-throne", name: "Citadel_Throne_Dais", kind: "box", position: [0, 0.72, -3.5], rotation: [0, 0, 0], scale: [3.6, 0.8, 2.4], color: "#c9a876", tags: ["Blender_Citadel"] },
           { id: "bl-citadel-throne-back", name: "Citadel_High_Throne_Back", kind: "box", position: [0, 1.95, -4.15], rotation: [0, 0, 0], scale: [1.35, 1.9, 0.28], color: "#b08968", tags: ["Blender_Citadel"] },
-          { id: "bl-citadel-sword", name: "Citadel_Relic_Sword", kind: "octahedron", position: [0, 2.15, -3.05], rotation: [0, 0, 0], scale: [0.32, 1.55, 0.16], color: "#90e0ef", tags: ["Blender_Citadel"] },
+          ...buildCrystalPyramids({ id: "bl-citadel-sword", name: "Citadel_Relic_Sword", position: [0, 2.15, -3.05], rotation: [0, 0, 0], scale: [0.32, 1.55, 0.16], color: "#90e0ef", tags: ["Blender_Citadel"] }),
           { id: "bl-citadel-pillar-l1", name: "Citadel_Pillar_L1", kind: "cylinder", position: [-3.2, 2.2, -1.5], rotation: [0, 0, 0], scale: [0.72, 4.2, 0.72], color: "#e9ecef", tags: ["Blender_Citadel"] },
           { id: "bl-citadel-pillar-r1", name: "Citadel_Pillar_R1", kind: "cylinder", position: [3.2, 2.2, -1.5], rotation: [0, 0, 0], scale: [0.72, 4.2, 0.72], color: "#e9ecef", tags: ["Blender_Citadel"] },
           { id: "bl-citadel-pillar-l2", name: "Citadel_Pillar_L2", kind: "cylinder", position: [-3.2, 2.2, 1.8], rotation: [0, 0, 0], scale: [0.72, 4.2, 0.72], color: "#e9ecef", tags: ["Blender_Citadel"] },
@@ -707,9 +727,9 @@ export function buildBlenderPresetScenePrimitives(
           { id: "bl-arcane-ring-1", name: "Astrolabe_Ring_Outer", kind: "torus", position: [0, 3.4, 0], rotation: [0.4, 0.2, 0], scale: [3.2, 3.2, 0.32], color: "#d6b26a", tags: ["Blender_Arcane"] },
           { id: "bl-arcane-ring-2", name: "Astrolabe_Ring_Inner", kind: "torus", position: [0, 3.4, 0], rotation: [-0.55, 0.65, 0.2], scale: [2.35, 2.35, 0.24], color: "#ffd166", tags: ["Blender_Arcane"] },
           { id: "bl-arcane-core", name: "Astrolabe_Core_Orb", kind: "sphere", position: [0, 3.4, 0], rotation: [0, 0, 0], scale: [1.15, 1.15, 1.15], color: "#8ec2c2", tags: ["Blender_Arcane"] },
-          { id: "bl-arcane-crystal-n", name: "Floating_Crystal_N", kind: "octahedron", position: [0, 2.9, -2.9], rotation: [0.1, 0.4, 0], scale: [0.55, 1.25, 0.55], color: "#90e0ef", tags: ["Blender_Arcane"] },
-          { id: "bl-arcane-crystal-e", name: "Floating_Crystal_E", kind: "octahedron", position: [2.9, 3.1, 0], rotation: [0, 0.2, -0.12], scale: [0.55, 1.25, 0.55], color: "#c77dff", tags: ["Blender_Arcane"] },
-          { id: "bl-arcane-crystal-w", name: "Floating_Crystal_W", kind: "octahedron", position: [-2.9, 3.1, 0], rotation: [0, -0.2, 0.12], scale: [0.55, 1.25, 0.55], color: "#c77dff", tags: ["Blender_Arcane"] },
+          ...buildCrystalPyramids({ id: "bl-arcane-crystal-n", name: "Floating_Crystal_N", position: [0, 2.9, -2.9], rotation: [0.1, 0.4, 0], scale: [0.55, 1.25, 0.55], color: "#90e0ef", tags: ["Blender_Arcane"] }),
+          ...buildCrystalPyramids({ id: "bl-arcane-crystal-e", name: "Floating_Crystal_E", position: [2.9, 3.1, 0], rotation: [0, 0.2, -0.12], scale: [0.55, 1.25, 0.55], color: "#c77dff", tags: ["Blender_Arcane"] }),
+          ...buildCrystalPyramids({ id: "bl-arcane-crystal-w", name: "Floating_Crystal_W", position: [-2.9, 3.1, 0], rotation: [0, -0.2, 0.12], scale: [0.55, 1.25, 0.55], color: "#c77dff", tags: ["Blender_Arcane"] }),
           { id: "bl-arcane-lectern", name: "Arcane_Grimoire_Lectern", kind: "cylinder", position: [0, 2.75, 1.65], rotation: [0, 0, 0], scale: [0.42, 0.92, 0.42], color: "#c9a876", tags: ["Blender_Arcane"] },
         ],
       };
@@ -720,7 +740,7 @@ export function buildBlenderPresetScenePrimitives(
           { id: "bl-boss-arena", name: "Boss_Arena_Platform", kind: "cylinder", position: [0, 0.2, 0], rotation: [0, 0, 0], scale: [9.0, 0.4, 9.0], color: "#495057", tags: ["Blender_BossArena"] },
           { id: "bl-boss-inner-seal", name: "Boss_Seal_Ring", kind: "torus", position: [0, 0.44, 0], rotation: [Math.PI / 2, 0, 0], scale: [5.6, 5.6, 0.24], color: "#e63946", tags: ["Blender_BossArena"] },
           { id: "bl-boss-altar-center", name: "Boss_Blood_Altar", kind: "hexPrism", position: [0, 0.85, -1.2], rotation: [0, 0, 0], scale: [2.2, 0.9, 2.2], color: "#343a40", tags: ["Blender_BossArena"] },
-          { id: "bl-boss-core-shard", name: "Abyss_Core_Shard", kind: "octahedron", position: [0, 2.25, -1.2], rotation: [0.2, 0.5, 0], scale: [0.85, 1.75, 0.85], color: "#f72585", tags: ["Blender_BossArena"] },
+          ...buildCrystalPyramids({ id: "bl-boss-core-shard", name: "Abyss_Core_Shard", position: [0, 2.25, -1.2], rotation: [0.2, 0.5, 0], scale: [0.85, 1.75, 0.85], color: "#f72585", tags: ["Blender_BossArena"] }),
           { id: "bl-boss-obelisk-nw", name: "Runic_Obelisk_NW", kind: "pyramid", position: [-3.2, 1.9, -3.2], rotation: [0, 0.4, 0], scale: [1.1, 3.6, 1.1], color: "#c9909f", tags: ["Blender_BossArena"] },
           { id: "bl-boss-obelisk-ne", name: "Runic_Obelisk_NE", kind: "pyramid", position: [3.2, 1.9, -3.2], rotation: [0, -0.4, 0], scale: [1.1, 3.6, 1.1], color: "#c9909f", tags: ["Blender_BossArena"] },
           { id: "bl-boss-obelisk-sw", name: "Runic_Obelisk_SW", kind: "pyramid", position: [-3.2, 1.65, 2.8], rotation: [0, -0.35, 0], scale: [0.95, 3.1, 0.95], color: "#9d4edd", tags: ["Blender_BossArena"] },

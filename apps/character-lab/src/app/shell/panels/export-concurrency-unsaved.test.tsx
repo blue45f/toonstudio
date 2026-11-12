@@ -10,7 +10,7 @@ import {
   createPresetCatalog,
   failVisible,
 } from "../../../contracts";
-import { serializeRecipeFile } from "../../../export/recipe-file";
+import { serializeRecipe } from "../../../export/recipe-file";
 import { createPaintSession } from "../../../paint/paint-session";
 import { APPEARANCE_PRESETS } from "../../../presets";
 import { createLabStore } from "../../../state/lab-store";
@@ -51,7 +51,7 @@ function createRealHarness() {
   const savedFiles: Array<{ readonly fileName: string; readonly bytes: Uint8Array; readonly mime: string }> = [];
   const save: NonNullable<ExportPanelDeps["save"]> = (fileName, bytes, mime) => {
     savedFiles.push({ fileName, bytes, mime });
-    return { ok: true };
+    return { ok: true, fileName, bytes: bytes.byteLength, url: "blob:test" };
   };
   return { catalog, store, engine, engineSession, packagePlans, session, savedFiles, save };
 }
@@ -140,7 +140,8 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
     fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "2500" } });
     fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "2500" } });
     fireEvent.click(screen.getByTestId("export-quad-sheet-png"));
-    await waitFor(() => expect(screen.getByLabelText("레시피 불러오기 안내")).toBeTruthy());
+    // 실제 4096px PNG 인코딩이 끝난 뒤 안내를 검증한다(기본 1초 대기는 느린 CI에서 완료 전 만료된다).
+    await waitFor(() => expect(screen.getByLabelText("레시피 불러오기 안내")).toBeTruthy(), { timeout: 30000 });
     expect(h.savedFiles).toHaveLength(1);
 
     // 2) 다음 2×2 캡처가 실패하면 이전 성공 영수증과 이전 축소 안내(notices)가 함께 지워지고 실패 알림 + 다시 시도 버튼이 나타난다
@@ -161,12 +162,12 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
     shouldFailCapture = false;
     fireEvent.click(retryBtn);
 
-    await waitFor(() => expect(screen.getByTestId("export-receipt")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("export-receipt")).toBeTruthy(), { timeout: 30000 });
     expect(screen.queryByTestId("export-failure-alert")).toBeNull();
     expect(screen.queryByTestId("export-retry-last-action")).toBeNull();
     expect(h.savedFiles).toHaveLength(2);
     expect(h.savedFiles[1]?.fileName).toContain("1600x2400-quad-sheet.png");
-  });
+  }, 60000);
 
   it("미로드 패키지 레시피 불러오기 실패 시 원본을 보존하고, 패키지 등록 후 파일 재선택 없이 '다시 시도'만으로 불러오기를 완료한다", async () => {
     const h = createRealHarness();
@@ -178,7 +179,7 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
       source: { kind: "package" as const, characterId: "hero-hunter", sha256: pkgSha },
       colors: { ...createDefaultRecipe().colors, hair: "#1a2438" },
     };
-    const fileText = await serializeRecipeFile(pkgRecipe, []);
+    const fileText = await serializeRecipe(pkgRecipe);
     const file = new File([fileText], "hero-hunter.character.json", { type: "application/json" });
 
     render(
@@ -212,7 +213,7 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
   it("미저장 포즈·다중 페인트 작업 위에 새 레시피를 불러오면 이전 작업 백업 배너를 제공하고 1클릭으로 6단 서브레이어까지 복원한다", async () => {
     const h = createRealHarness();
     // 1) 초보 작가가 포즈/색상 변경 + head 서브레이어 L2 페인트 작업 수행 (미저장 상태)
-    h.store.dispatch({ type: "color/set", key: "eye", value: "#3366cc" });
+    h.store.dispatch({ type: "color/set", key: "iris", value: "#3366cc" });
     h.session.setActivePart("head");
     h.session.setActiveSublayer(2);
     h.session.setBrush({ color: "#ee4477", radiusPx: 3, opacity: 0.9 });
@@ -224,9 +225,9 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
     // 2) 다른 레시피 파일을 실수로 불러옴
     const incomingRecipe = {
       ...createKitDefaultRecipe(),
-      colors: { ...createKitDefaultRecipe().colors, eye: "#884422" },
+      colors: { ...createKitDefaultRecipe().colors, iris: "#884422" },
     };
-    const incomingText = await serializeRecipeFile(incomingRecipe, []);
+    const incomingText = await serializeRecipe(incomingRecipe);
     const incomingFile = new File([incomingText], "other.character.json", { type: "application/json" });
 
     render(
@@ -237,13 +238,13 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
 
     fireEvent.change(screen.getByTestId("export-recipe-file-input"), { target: { files: [incomingFile] } });
     await waitFor(() => expect(screen.getByTestId("export-unsaved-backup-banner")).toBeTruthy());
-    expect(h.store.getState().recipe.colors.eye).toBe("#884422");
+    expect(h.store.getState().recipe.colors.iris).toBe("#884422");
     expect(h.session.sublayersForExport()).toHaveLength(0);
 
     // 3) '이전 작업으로 되돌리기' 클릭 시 눈 색상(#3366cc)과 head L2 서브레이어(불투명도 0.75 + 픽셀) 및 엔진 텍스처가 즉시 복원된다
     fireEvent.click(screen.getByTestId("export-restore-pre-import"));
     expect(screen.queryByTestId("export-unsaved-backup-banner")).toBeNull();
-    expect(h.store.getState().recipe.colors.eye).toBe("#3366cc");
+    expect(h.store.getState().recipe.colors.iris).toBe("#3366cc");
     expect(h.session.sublayersForExport()).toHaveLength(1);
     expect(h.session.getState().sublayers.get("head")?.[2]?.opacity).toBeCloseTo(0.75, 3);
     expect(h.session.getState().sublayers.get("head")?.[2]?.hasPixels).toBe(true);

@@ -2,8 +2,9 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { COMPOSITE_PRESETS, createCompositePrimitives } from "../studio-background-3d-composites";
-import { KITBASH_COMPOSITE_PRESETS } from "../studio-background-3d-kitbash-presets";
+import { PRIMITIVE_DEFS } from "../studio-background-3d-metadata";
+import { COMPOSITE_PRESETS, instantiateCompositePreset } from "../studio-background-3d-composites";
+import { KITBASH_COMPOSITE_PRESETS } from "./studio-background-3d-kitbash-presets";
 import { StudioBg3dArchitecturalModelingPanel } from "./StudioBg3dArchitecturalModelingPanel";
 import { StudioBg3dKitbashCharacterModelerPanel } from "./StudioBg3dKitbashCharacterModelerPanel";
 import {
@@ -29,7 +30,7 @@ describe("studio-bg3d-kitbash-character-modeler & high-density background preset
 
     for (const preset of KITBASH_COMPOSITE_PRESETS) {
       expect(preset.parts.length).toBeGreaterThanOrEqual(10);
-      const created = createCompositePrimitives(preset.id, [], { position: [1.5, 0, -2.0] });
+      const created = instantiateCompositePreset(preset, 0);
       expect(created).toHaveLength(preset.parts.length);
       for (const prim of created) {
         expect(prim.scale[0]).toBeGreaterThan(0);
@@ -119,6 +120,19 @@ describe("studio-bg3d-kitbash-character-modeler & high-density background preset
     ] as const) {
       const built = buildBlenderPresetScenePrimitives(theme);
       expect(built.primitives.length).toBeGreaterThanOrEqual(9);
+      expect(new Set(built.primitives.map((part) => part.id)).size).toBe(built.primitives.length);
+      for (const part of built.primitives) {
+        expect(PRIMITIVE_DEFS[part.kind]).toBeDefined();
+        expect(part.scale.every((size) => Number.isFinite(size) && size > 0)).toBe(true);
+      }
+      for (const upper of built.primitives.filter((part) => part.id.endsWith("-upper"))) {
+        const lower = built.primitives.find((part) => part.id === upper.id.replace(/-upper$/u, "-lower"));
+        expect(lower).toBeDefined();
+        expect(upper.kind).toBe("pyramid");
+        expect(lower?.kind).toBe("pyramid");
+        expect(lower?.scale).toEqual(upper.scale);
+        expect(Math.hypot(...upper.position.map((value, i) => value - (lower?.position[i] ?? Number.NaN)))).toBeCloseTo(upper.scale[1], 8);
+      }
     }
 
     const sculpt = evaluateBlenderEditSculptSession({
