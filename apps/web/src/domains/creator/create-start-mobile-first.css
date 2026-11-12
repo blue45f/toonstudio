@@ -1,0 +1,199 @@
+/* 공유 시안의 두 시작 방법. 모든 색은 사용자가 선택한 제품 테마를 따른다. */
+.create-start-page[data-page-container] {
+  max-width: 1224px;
+  color: var(--color-fg);
+}
+
+.create-start-heading { margin-bottom: 20px; }
+.create-start-heading h1 {
+  margin: 0;
+  font-size: clamp(1.875rem, 3vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -.045em;
+}
+.create-start-heading > p {
+  margin: 10px 0 0;
+  color: var(--color-fg-2);
+  font-size: .875rem;
+  line-height: 1.65;
+}
+.create-start-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  color: var(--color-accent);
+  font-size: .875rem;
+  font-weight: 600;
+}
+.create-start-choice-grid { display: grid; gap: 14px; }
+.create-start-choice {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-width: 0;
+  min-height: 192px;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  background: var(--color-card);
+}
+.create-start-choice::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(90deg, var(--color-card) 12%, color-mix(in srgb, var(--color-card) 86%, transparent) 54%, transparent);
+  content: "";
+  pointer-events: none;
+}
+.create-start-choice-art {
+  position: absolute;
+  z-index: -2;
+  inset: 0 0 0 auto;
+  width: 56%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  mask-image: linear-gradient(90deg, transparent, black 35%);
+  pointer-events: none;
+}
+.create-start-choice-copy { width: 100%; min-width: 0; padding: 20px; }
+.create-start-choice-kind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 7px;
+  color: var(--color-cool);
+  font-size: .75rem;
+  font-weight: 600;
+}
+.create-start-choice h2 { margin: 0; font-size: 1.4375rem; line-height: 1.35; font-weight: 800; letter-spacing: -.035em; }
+.create-start-choice-description {
+  max-width: 220px;
+  margin: 7px 0 16px;
+  color: var(--color-fg-2);
+  font-size: .8125rem;
+  line-height: 1.6;
+}
+.create-start-choice-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-width: 170px;
+  max-width: 100%;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: .875rem;
+  font-weight: 700;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.create-start-choice-drawing .create-start-choice-action {
+  border-color: var(--color-line-strong);
+  background: var(--color-raised);
+  color: var(--color-fg);
+}
+.create-start-choice-action:hover:not(:disabled) { outline: 1px solid var(--color-accent); outline-offset: 2px; }
+.create-start-choice-action:disabled { cursor: wait; opacity: .7; }
+.create-start-choice-error {
+  position: relative;
+  max-width: 100%;
+  margin: 12px 0 0;
+  padding: 12px;
+  border: 1px solid var(--color-danger);
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-danger);
+  font-size: .8125rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.create-start-secondary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.create-start-secondary a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-panel);
+  font-size: .8125rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.create-start-secondary svg, .create-start-recent svg { flex-shrink: 0; }
+.create-start-recent { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-line); }
+.create-start-recent-link { display: flex; align-items: center; gap: 10px; border-radius: 10px; }
+.create-start-recent-link > img, .create-start-recent-placeholder {
+  width: 48px;
+  height: 54px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.create-start-recent-placeholder { display: grid; place-items: center; background: var(--color-raised); color: var(--color-accent); font-size: 1.25rem; font-weight: 700; }
+.create-start-recent-copy { display: grid; min-width: 0; flex: 1; gap: 5px; }
+.create-start-recent-copy small { color: var(--color-fg-2); font-size: .75rem; }
+.create-start-recent-copy strong { overflow-wrap: anywhere; font-size: .875rem; line-height: 1.5; }
+.create-start-recent-action { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; color: var(--color-fg-2); font-size: .8125rem; font-weight: 600; }
+.create-start-recent-empty { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--color-fg-2); font-size: .8125rem; }
+.create-start-recent-empty a { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; font-weight: 600; }
+.create-start-section-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--color-line); }
+.create-start-section-nav button { border: 1px solid var(--color-line); border-radius: 12px; padding: 10px 12px; color: var(--color-fg-2); background: var(--color-panel); font-size: .8125rem; font-weight: 600; }
+.create-start-section-nav button[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent); }
+
+/* 하위 기존 도구의 44px inline 최소값보다도 이 화면의 48px 계약을 우선한다. */
+.create-start-page :where(a, button, summary) { min-height: 48px !important; }
+.create-start-page :where(a, button, summary):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+.create-start-page :where(a, button, summary) { scroll-margin-block: 96px; }
+
+@media (min-width: 640px) {
+  .create-start-heading { margin-bottom: 28px; }
+  .create-start-heading > p { font-size: 1rem; }
+  .create-start-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .create-start-choice { min-height: 350px; align-items: flex-end; }
+  .create-start-choice-art { width: 100%; mask-image: none; object-position: center 38%; }
+  .create-start-choice::after { background: linear-gradient(180deg, transparent 5%, color-mix(in srgb, var(--color-card) 25%, transparent) 32%, var(--color-card) 85%); }
+  .create-start-choice-copy { padding: 22px; }
+  .create-start-choice h2 { font-size: 1.6875rem; }
+  .create-start-choice-description { max-width: none; font-size: .875rem; }
+  .create-start-choice-action { min-width: 190px; }
+  .create-start-secondary { gap: 14px; margin-top: 18px; }
+  .create-start-secondary a { padding-inline: 18px; font-size: .9375rem; }
+  .create-start-section-nav { display: flex; flex-wrap: wrap; }
+  .create-start-section-nav button { flex: 1; min-width: 140px; }
+}
+@media (min-width: 1024px) {
+  .create-start-choice-grid { gap: 24px; }
+  .create-start-choice { min-height: 390px; }
+  .create-start-choice-copy { padding: 28px; }
+  .create-start-choice h2 { font-size: 2rem; }
+  .create-start-choice-description { margin-bottom: 20px; font-size: 1rem; }
+  .create-start-choice-kind { font-size: .875rem; }
+  .create-start-choice-action { min-width: 220px; padding: 12px 18px; font-size: 1rem; }
+}
+@media (max-width: 359px) {
+  .create-start-choice-copy { padding: 16px; }
+  .create-start-choice h2 { font-size: 1.25rem; }
+  .create-start-choice-description { max-width: 180px; }
+  .create-start-recent-action { font-size: .75rem; }
+  .create-start-recent-copy small { font-size: .6875rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .create-start-page *, .create-start-page *::before, .create-start-page *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .create-start-choice-art { visibility: hidden; }
+  .create-start-choice::after { display: none; }
+  .create-start-choice, .create-start-choice-action, .create-start-section-nav button { border-color: ButtonText; }
+}
