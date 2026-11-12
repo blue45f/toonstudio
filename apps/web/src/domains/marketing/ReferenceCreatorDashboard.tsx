@@ -1,11 +1,9 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Boxes, ChevronDown, ChevronRight, Compass, FolderKanban, Glasses, PencilLine, Plus, Search, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, Boxes, ChevronDown, ChevronRight, Compass, FileCheck, FolderKanban, Glasses, PencilLine, Plus, Search, Sparkles } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
-import { SpectacleHero } from "@/shared/components/layout/SpectacleHero";
-import { ToonStudioWordmark } from "@/shared/components/toonstudio-brand";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import { DiscoverHomePreview } from "@/domains/catalog/public/DiscoverHomePreview";
 
@@ -16,12 +14,13 @@ import { ServiceFlowNext } from "./public/intro-primitives";
 import { ReferenceEditorPreview } from "./ReferenceEditorPreview";
 import { HOME_EXAMPLES, HOME_LEARN_MORE, HOME_QUICK_STARTS, homeArt } from "./reference-home-content";
 import "./reference-creator-dashboard.css";
+import "./reference-creator-dashboard-hero.css";
 
 /**
  * 공개 홈(/)은 BLUEPRINT §3.3의 4밴드로 조립한다(data-home-band):
- * ① 히어로(통합 입력이 1차 행동, Luna 창작 안내는 요청할 때 펼침)
- * ② 이어하기 — 지금 할 일 카드(HomeNowCard)와 예시 작품 선반.
- *    다른 도구·감상 방식은 접이식 메뉴에서 선택한다.
+ * ① 실제 이어하기·가까운 일정을 우선하고, 원고 아트와 작품 시작·둘러보기로 이어진다.
+ *    빈 상태·완료·불러오기 폴백은 소개 다음. 아이디어와 Luna는 이름 있는 접이식 진입.
+ * ② 예시 작품 선반과 다른 도구·감상 방식의 접이식 메뉴.
  * ③ 작품 발견 미리보기(스포트라이트 1장 + 요일 레일 1줄).
  * ④ 더 알아보기 — 시작 카드·핵심 작업실·편집기 미리보기·챕터 링크.
  */
@@ -30,6 +29,7 @@ export function ReferenceCreatorDashboard() {
   const navigate = useNavigate();
   const [idea, setIdea] = useState("");
   const [inputMode, setInputMode] = useState<"create" | "search">("create");
+  const helpersRef = useRef<HTMLDivElement>(null);
   const searching = inputMode === "search";
   const submitInput = (event: FormEvent) => {
     event.preventDefault();
@@ -40,63 +40,80 @@ export function ReferenceCreatorDashboard() {
     }
     navigate(text ? `/create?intent=my-story&topic=free-story&idea=${encodeURIComponent(text)}` : "/create?intent=my-story");
   };
+  useEffect(() => {
+    const closeHelpOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.isComposing || event.defaultPrevented || !(event.target instanceof Element)) return;
+      const details = event.target.closest<HTMLDetailsElement>("details[open]");
+      if (!details || !helpersRef.current?.contains(details)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      details.open = false;
+      details.querySelector("summary")?.focus();
+    };
+    window.addEventListener("keydown", closeHelpOnEscape);
+    return () => window.removeEventListener("keydown", closeHelpOnEscape);
+  }, []);
   return <div className="reference-dashboard" data-reference-dashboard="true">
     <div data-home-band="hero">
-      <SpectacleHero
-        className="rd-poster"
-        artClassName="rd-poster-art"
-        innerClassName="rd-poster-inner"
-        copyClassName="rd-story"
-        eyebrowClassName="rd-eyebrow"
-        ledeClassName="rd-intro"
-        titleId="creator-hero-title"
-        art={{
-          src: "/brand/illustrated-20260928/hero.webp",
-          srcSet: "/brand/illustrated-20260928/hero-320.webp 320w, /brand/illustrated-20260928/hero-640.webp 640w, /brand/illustrated-20260928/hero.webp 677w",
-          sizes: "100vw",
-        }}
-        beforeTitle={<p className="rd-brand"><ToonStudioWordmark /><small>Stories Come to Life</small></p>}
-        eyebrow={bi("상상하는 모든 이야기, 여기서 작품이 됩니다.", "Every story you imagine starts here.")}
-        title={<>{bi("오늘은 어떤 이야기를", "What story will you")}<br /><em>{bi("만들까요?", "create today?")}</em></>}
-        lede={bi("당신의 상상이, 세상을 놀라게 할 웹툰이 됩니다.", "Your imagination. Your next extraordinary story.")}
-        aside={
-          <details className="rd-luna-help">
-            <summary className="rd-optional-summary">
-              <Sparkles size={16} aria-hidden="true" />
-              <span>{bi("시작이 막막한가요?", "Need help getting started?")}</span>
-              <ChevronDown size={16} aria-hidden="true" />
-            </summary>
-            <HomeLunaPanel />
-          </details>
-        }
-      >
-            <form className="rd-idea" onSubmit={submitInput}>
-              <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
-                <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
-                  <PencilLine size={14} aria-hidden="true" /><span>{bi("이야기 만들기", "Create a story")}</span>
-                </button>
-                <button type="button" aria-pressed={searching} onClick={() => setInputMode("search")}>
-                  <Search size={14} aria-hidden="true" /><span>{bi("작품 찾기", "Find stories")}</span>
-                </button>
-              </div>
-              <label className="sr-only" htmlFor="rd-idea-input">{searching ? bi("작품 검색", "Story search") : bi("아이디어 입력", "Idea input")}</label>
-              <input
-                id="rd-idea-input"
-                value={idea}
-                onChange={(event) => setIdea(event.target.value)}
-                placeholder={searching
-                  ? bi("작품명·작가·태그로 찾아보세요", "Search by title, creator or tag")
-                  : bi("아이디어를 입력해보세요 (예: 비 오는 날의 첫사랑)", "Type an idea (e.g. first love on a rainy day)")}
-                maxLength={200}
-                autoComplete="off"
-                enterKeyHint={searching ? "search" : undefined}
-              />
-              <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
-            </form>
-      </SpectacleHero>
+      <HomeNowCard>
+      <section className="rd-clarity-hero" aria-labelledby="creator-hero-title">
+        <div className="rd-clarity-copy">
+          <h1 id="creator-hero-title">{bi("상상한 장면을,", "Imagine a scene.")}<br /><span>{bi("나의 작품으로.", "Make it your story.")}</span></h1>
+          <p>{bi("이야기를 쓰고, 그리고, 이어가세요.", "Write, draw, and keep your story going.")}</p>
+          <div className="rd-clarity-actions">
+            <Link className="rd-clarity-start" href="/create">{bi("작품 시작하기", "Start a work")}<ArrowRight size={20} aria-hidden="true" /></Link>
+            <Link className="rd-clarity-browse" href="/discover">{bi("둘러보기", "Explore")}<ChevronRight size={18} aria-hidden="true" /></Link>
+          </div>
+        </div>
+        <figure className="rd-clarity-art" aria-label={bi("선화에서 완성작으로 이어지는 브랜드 예시 원고", "Brand artwork: from line art to a finished scene")}>
+          <div className="rd-clarity-manuscript">
+            <img src="/brand/illustrated-20260928/canvas-noir-640.webp" srcSet="/brand/illustrated-20260928/canvas-noir-320.webp 320w, /brand/illustrated-20260928/canvas-noir-640.webp 640w" sizes="(max-width: 639px) 38vw, 24vw" alt={bi("빗속 인물의 흑백 원고 예시", "Example black-and-white manuscript of a character in the rain")} width={640} height={638} decoding="async" />
+            <img src="/brand/illustrated-20260928/hero-640.webp" srcSet="/brand/illustrated-20260928/hero-320.webp 320w, /brand/illustrated-20260928/hero-640.webp 640w" sizes="(max-width: 639px) 48vw, 30vw" alt={bi("보랏빛 도시를 배경으로 한 컬러 원고 예시", "Example color manuscript with a purple city backdrop")} width={640} height={637} decoding="async" fetchPriority="high" />
+          </div>
+          <div className="rd-clarity-sketch"><img src="/brand/lobby-hq-20261003/storyboard-480.webp" alt={bi("세 장면으로 이어진 연필 콘티 예시", "Example pencil storyboard with three scenes")} width={480} height={485} decoding="async" /></div>
+          <figcaption>{bi("ToonStudio 브랜드 아트", "ToonStudio brand artwork")}</figcaption>
+        </figure>
+      </section>
+      <nav className="rd-clarity-journey" aria-label={bi("작품을 만드는 순서", "Steps to create your work")}>
+        <Link href="/create?intent=my-story"><span className="rd-clarity-journey-icon"><BookOpen size={24} aria-hidden="true" /></span><span><strong>{bi("이야기 준비", "Plan your story")}</strong><small>{bi("첫 생각을 첫 장면으로", "Turn an idea into a first scene")}</small></span><ChevronRight size={18} aria-hidden="true" /></Link>
+        <Link href="/studio/new?lane=blank"><span className="rd-clarity-journey-icon"><PencilLine size={24} aria-hidden="true" /></span><span><strong>{bi("원고 그리기", "Draw your pages")}</strong><small>{bi("캔버스에서 자유롭게", "Create freely on the canvas")}</small></span><ChevronRight size={18} aria-hidden="true" /></Link>
+        <Link href="/studio?view=exports"><span className="rd-clarity-journey-icon"><FileCheck size={24} aria-hidden="true" /></span><span><strong>{bi("작품 완성", "Finish your work")}</strong><small>{bi("확인하고 내보내기", "Review and export")}</small></span><ChevronRight size={18} aria-hidden="true" /></Link>
+      </nav>
+      <div ref={helpersRef} className="rd-clarity-helpers">
+        <details className="rd-idea-help">
+          <summary className="rd-optional-summary"><PencilLine size={16} aria-hidden="true" /><span>{bi("아이디어 쓰기 · 작품 찾기", "Write an idea · Find a story")}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+          <form className="rd-idea" onSubmit={submitInput}>
+            <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
+              <button type="button" aria-pressed={!searching} onClick={() => setInputMode("create")}>
+                <PencilLine size={14} aria-hidden="true" /><span>{bi("이야기 만들기", "Create a story")}</span>
+              </button>
+              <button type="button" aria-pressed={searching} onClick={() => setInputMode("search")}>
+                <Search size={14} aria-hidden="true" /><span>{bi("작품 찾기", "Find stories")}</span>
+              </button>
+            </div>
+            <label className="sr-only" htmlFor="rd-idea-input">{searching ? bi("작품 검색", "Story search") : bi("아이디어 입력", "Idea input")}</label>
+            <input
+              id="rd-idea-input"
+              value={idea}
+              onChange={(event) => setIdea(event.target.value)}
+              placeholder={searching
+                ? bi("작품명·작가·태그로 찾아보세요", "Search by title, creator or tag")
+                : bi("아이디어를 입력해보세요 (예: 비 오는 날의 첫사랑)", "Type an idea (e.g. first love on a rainy day)")}
+              maxLength={200}
+              autoComplete="off"
+              enterKeyHint={searching ? "search" : undefined}
+            />
+            <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
+          </form>
+        </details>
+        <details className="rd-luna-help">
+          <summary className="rd-optional-summary"><Sparkles size={16} aria-hidden="true" /><span>{bi("시작이 막막한가요?", "Need help getting started?")}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+          <HomeLunaPanel />
+        </details>
+      </div>
+      </HomeNowCard>
     </div>
     <div data-home-band="continue">
-      <HomeNowCard />
       <details className="rd-launchpad-help">
         <summary className="rd-optional-summary">
           <span>{bi("다른 시작 방법 보기", "More ways to start")}</span>
