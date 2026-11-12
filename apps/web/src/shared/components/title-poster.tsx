@@ -3,6 +3,7 @@ import { CoverImage } from "./cover-image";
 import { COVER_GRID_SIZES, COVER_HERO_SIZES } from "./cover-image-sizing";
 
 import { coverStandardSrcSet } from "@/shared/lib/cover-proxy";
+import { useT } from "@/shared/lib/i18n";
 
 import type { Title } from "@/shared/lib/types";
 
@@ -47,11 +48,11 @@ export function TitlePoster({
   // 표지 오버레이 제목의 시맨틱 태그. 상위 카드가 별도 제목을 가질 땐 "div"로 내려 heading 중복/순서 위반 방지.
   titleAs?: "h2" | "h3" | "div";
 }) {
+  const t = useT();
   const s = SIZE[size];
   const [from, to] = title.cover;
   const isNovel = title.type === "webnovel";
   const glyph = title.title.replace(/[^가-힣A-Za-z0-9]/g, "").charAt(0) || "W";
-  const issue = String(title.releaseYear).slice(-2);
   const glyphNode = (
     <div
       className={cx(
@@ -107,17 +108,12 @@ export function TitlePoster({
       <div className={cx("absolute left-0 top-0 flex items-center gap-1.5", s.pad)}>
         <span
           className={cx(
-            "shrink-0 whitespace-nowrap rounded-md border border-[oklch(0.95_0.01_85/0.28)] bg-[oklch(0.16_0.01_70/0.56)] px-1.5 py-0.5 font-display font-semibold uppercase text-[oklch(0.95_0.01_85/0.9)] backdrop-blur-sm",
+            "shrink-0 whitespace-nowrap rounded-md border border-[oklch(0.95_0.01_85/0.28)] bg-[oklch(0.16_0.01_70/0.56)] px-1.5 py-0.5 font-display font-semibold text-[oklch(0.95_0.01_85/0.9)] backdrop-blur-sm",
             s.type
           )}
         >
-          {isNovel ? "NOVEL" : "TOON"}
+          {t(isNovel ? "titleFilter.option.type.webnovel" : "titleFilter.option.type.webtoon")}
         </span>
-        {size !== "sm" && (
-          <span className={cx("font-display font-semibold text-[oklch(0.95_0.01_85/0.62)]", s.type, size === "hero" && "hidden sm:inline")}>
-            IDX {issue}
-          </span>
-        )}
       </div>
 
       {rank != null && (
