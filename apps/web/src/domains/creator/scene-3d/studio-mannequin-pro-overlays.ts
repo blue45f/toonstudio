@@ -1,15 +1,18 @@
 /**
- * Studio 3D 데생 인형 v4 — Three.js 유기 단면 로프트 메시 빌더 & 작화 보조선·동세선·무게중심(CoM) 오버레이.
+ * Studio 3D 데생 인형 v5 — Three.js 유기 단면 로프트·연속 스키닝 몸통 메시 빌더 & 작화 보조선·동세선·무게중심 오버레이.
  *
  * 순수 데이터 계층(`studio-mannequin-ecorche-anatomy.ts`, `studio-mannequin-pro-kinematics.ts`,
- * `studio-mannequin-gesture-dynamics.ts`)이 산출한 다중 단면 로프트 스펙, 루미스 두상 십자선,
- * 단축법 등고선, 3D 동세선(Line of Action), 생체역학 무게중심 추선을 Three.js 지오메트리와
- * 온디맨드 오버레이 그룹으로 변환·수명 관리한다.
+ * `studio-mannequin-gesture-dynamics.ts`)이 산출한 다중 단면 로프트, 3본 연속 스키닝 몸통(`SkinnedMesh`),
+ * 루미스 두상 십자선, 단축법 등고선, 3D 동세선, 생체역학 무게중심 추선을 Three.js 객체로 변환·수명 관리한다.
  */
 
 import * as THREE from "three";
 
-import type { StudioMannequinLoftTubeSpec } from "./studio-mannequin-ecorche-anatomy";
+import type {
+  StudioMannequinLoftSection,
+  StudioMannequinLoftTubeSpec,
+  StudioMannequinSkinnedTorsoSpec,
+} from "./studio-mannequin-ecorche-anatomy";
 import { analyzeStudioMannequinGesture } from "./studio-mannequin-gesture-dynamics";
 import type { StudioMannequinJointId, StudioMannequinSpec } from "./studio-mannequin-model";
 import type { StudioMannequinPose } from "./studio-mannequin-poses";
@@ -21,29 +24,28 @@ import {
   type StudioMannequinGuideVisibility,
 } from "./studio-mannequin-pro-kinematics";
 
-/**
- * 슈퍼엘립스 타원 단면 열을 따라 닫힌 유기적 로프트 BufferGeometry를 생성한다.
- * Asaro 다면체 모드(`flatShaded: true`)에서는 비공유 평면 법선을 계산해 명암 경계선을 칼같이 살린다.
- */
-export function buildStudioMannequinLoftGeometry(
-  tube: StudioMannequinLoftTubeSpec,
-): THREE.BufferGeometry {
-  const ringCount = tube.sections.length;
-  const segs = Math.max(6, tube.radialSegments);
-  const exp = 2 / Math.max(0.8, tube.superellipsePower);
-
+function sampleLoftRings(
+  sections: readonly StudioMannequinLoftSection[],
+  radialSegments: number,
+  superellipsePower: number,
+  normalInflate = 0,
+): THREE.Vector3[][] {
+  const ringCount = sections.length;
+  const segs = Math.max(6, radialSegments);
+  const exp = 2 / Math.max(0.8, superellipsePower);
   const ringPoints: THREE.Vector3[][] = [];
+
   for (let i = 0; i < ringCount; i += 1) {
-    const sec = tube.sections[i];
+    const sec = sections[i];
     if (!sec) continue;
-    const prev = tube.sections[Math.max(0, i - 1)] ?? sec;
-    const next = tube.sections[Math.min(ringCount - 1, i + 1)] ?? sec;
+    const prev = sections[Math.max(0, i - 1)] ?? sec;
+    const next = sections[Math.min(ringCount - 1, i + 1)] ?? sec;
     const tangent = new THREE.Vector3(
       next.center[0] - prev.center[0],
       next.center[1] - prev.center[1],
       next.center[2] - prev.center[2],
     );
-    if (tangent.lengthSq() < 1e-10) tangent.set(0, -1, 0);
+    if (tangent.lengthSq() < 1e-10) tangent.set(0, 1, 0);
     else tangent.normalize();
 
     const ref = Math.abs(tangent.z) < 0.92 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
@@ -55,6 +57,8 @@ export function buildStudioMannequinLoftGeometry(
     const bx = axisX.clone().multiplyScalar(ct).addScaledVector(axisZ, st);
     const bz = axisZ.clone().multiplyScalar(ct).addScaledVector(axisX, -st);
     const center = new THREE.Vector3(sec.center[0], sec.center[1], sec.center[2]);
+    const rx = Math.max(0.001, sec.radiusX + normalInflate);
+    const rz = Math.max(0.001, sec.radiusZ + normalInflate);
 
     const ring: THREE.Vector3[] = [];
     for (let k = 0; k < segs; k += 1) {
@@ -63,25 +67,28 @@ export function buildStudioMannequinLoftGeometry(
       const s = Math.sin(th);
       const sc = Math.sign(c) * Math.pow(Math.abs(c), exp);
       const ss = Math.sign(s) * Math.pow(Math.abs(s), exp);
-      ring.push(
-        center
-          .clone()
-          .addScaledVector(bx, sec.radiusX * sc)
-          .addScaledVector(bz, sec.radiusZ * ss),
-      );
+      ring.push(center.clone().addScaledVector(bx, rx * sc).addScaledVector(bz, rz * ss));
     }
     ringPoints.push(ring);
   }
+  return ringPoints;
+}
+
+/**
+ * 슈퍼엘립스 타원 단면 열을 따라 닫힌 유기적 로프트 BufferGeometry를 생성한다.
+ * Asaro 다면체 모드(`flatShaded: true`)에서는 비공유 평면 법선을 계산해 명암 경계선을 살린다.
+ */
+export function buildStudioMannequinLoftGeometry(
+  tube: StudioMannequinLoftTubeSpec,
+): THREE.BufferGeometry {
+  const segs = Math.max(6, tube.radialSegments);
+  const ringPoints = sampleLoftRings(tube.sections, segs, tube.superellipsePower, 0);
 
   const positions: number[] = [];
   const indices: number[] = [];
-
   for (const ring of ringPoints) {
-    for (const pt of ring) {
-      positions.push(pt.x, pt.y, pt.z);
-    }
+    for (const pt of ring) positions.push(pt.x, pt.y, pt.z);
   }
-
   for (let r = 0; r < ringPoints.length - 1; r += 1) {
     const r0 = r * segs;
     const r1 = (r + 1) * segs;
@@ -91,7 +98,6 @@ export function buildStudioMannequinLoftGeometry(
       indices.push(r0 + k, r1 + kn, r0 + kn);
     }
   }
-
   if (ringPoints.length >= 2) {
     const firstCenter = tube.sections[0]?.center ?? [0, 0, 0];
     const lastCenter = tube.sections[tube.sections.length - 1]?.center ?? [0, 0, 0];
@@ -99,7 +105,6 @@ export function buildStudioMannequinLoftGeometry(
     positions.push(firstCenter[0], firstCenter[1], firstCenter[2]);
     const endCapIdx = positions.length / 3;
     positions.push(lastCenter[0], lastCenter[1], lastCenter[2]);
-
     const lastRingBase = (ringPoints.length - 1) * segs;
     for (let k = 0; k < segs; k += 1) {
       const kn = (k + 1) % segs;
@@ -118,7 +123,79 @@ export function buildStudioMannequinLoftGeometry(
     nonIndexed.computeVertexNormals();
     return nonIndexed;
   }
+  baseGeom.computeVertexNormals();
+  return baseGeom;
+}
 
+/**
+ * 골반·허리·가슴 3본 연속 스키닝을 위한 `skinIndex`/`skinWeight` 포함 BufferGeometry를 생성한다.
+ * `normalInflate`를 전달하면 원점 오프셋 없이 외곽선(Inverted Hull) 두께만큼 등방 팽창된 지오메트리를 만든다.
+ */
+export function buildStudioMannequinSkinnedTorsoGeometry(
+  torso: StudioMannequinSkinnedTorsoSpec,
+  normalInflate = 0,
+): THREE.BufferGeometry {
+  const segs = Math.max(6, torso.radialSegments);
+  const ringPoints = sampleLoftRings(torso.sections, segs, torso.superellipsePower, normalInflate);
+
+  const positions: number[] = [];
+  const skinIndices: number[] = [];
+  const skinWeights: number[] = [];
+  const indices: number[] = [];
+
+  for (let r = 0; r < ringPoints.length; r += 1) {
+    const ring = ringPoints[r] ?? [];
+    const w = torso.sections[r]?.boneWeights ?? [1, 0, 0];
+    for (const pt of ring) {
+      positions.push(pt.x, pt.y, pt.z);
+      skinIndices.push(0, 1, 2, 0);
+      skinWeights.push(w[0], w[1], w[2], 0);
+    }
+  }
+
+  for (let r = 0; r < ringPoints.length - 1; r += 1) {
+    const r0 = r * segs;
+    const r1 = (r + 1) * segs;
+    for (let k = 0; k < segs; k += 1) {
+      const kn = (k + 1) % segs;
+      indices.push(r0 + k, r1 + k, r1 + kn);
+      indices.push(r0 + k, r1 + kn, r0 + kn);
+    }
+  }
+
+  if (ringPoints.length >= 2) {
+    const firstSec = torso.sections[0]!;
+    const lastSec = torso.sections[torso.sections.length - 1]!;
+    const startCapIdx = positions.length / 3;
+    positions.push(firstSec.center[0], firstSec.center[1] - normalInflate, firstSec.center[2]);
+    skinIndices.push(0, 1, 2, 0);
+    skinWeights.push(firstSec.boneWeights[0], firstSec.boneWeights[1], firstSec.boneWeights[2], 0);
+
+    const endCapIdx = positions.length / 3;
+    positions.push(lastSec.center[0], lastSec.center[1] + normalInflate, lastSec.center[2]);
+    skinIndices.push(0, 1, 2, 0);
+    skinWeights.push(lastSec.boneWeights[0], lastSec.boneWeights[1], lastSec.boneWeights[2], 0);
+
+    const lastRingBase = (ringPoints.length - 1) * segs;
+    for (let k = 0; k < segs; k += 1) {
+      const kn = (k + 1) % segs;
+      indices.push(startCapIdx, kn, k);
+      indices.push(endCapIdx, lastRingBase + k, lastRingBase + kn);
+    }
+  }
+
+  const baseGeom = new THREE.BufferGeometry();
+  baseGeom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  baseGeom.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndices, 4));
+  baseGeom.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeights, 4));
+  baseGeom.setIndex(indices);
+
+  if (torso.flatShaded) {
+    const nonIndexed = baseGeom.toNonIndexed();
+    baseGeom.dispose();
+    nonIndexed.computeVertexNormals();
+    return nonIndexed;
+  }
   baseGeom.computeVertexNormals();
   return baseGeom;
 }
@@ -161,21 +238,9 @@ export function createStudioMannequinProOverlayController(
   const rootGroup = new THREE.Group();
   rootGroup.name = "studio-mannequin-pro-overlays";
 
-  const loomisMaterial = new THREE.LineBasicMaterial({
-    color: 0x38bdf8,
-    transparent: true,
-    opacity: 0.78,
-  });
-  const centerlineMaterial = new THREE.LineBasicMaterial({
-    color: 0xf59e0b,
-    transparent: true,
-    opacity: 0.82,
-  });
-  const contourMaterial = new THREE.LineBasicMaterial({
-    color: 0x22d3ee,
-    transparent: true,
-    opacity: 0.56,
-  });
+  const loomisMaterial = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.78 });
+  const centerlineMaterial = new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.82 });
+  const contourMaterial = new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.56 });
   const actionLineMaterial = new THREE.LineBasicMaterial({
     color: 0xfb7185,
     transparent: true,

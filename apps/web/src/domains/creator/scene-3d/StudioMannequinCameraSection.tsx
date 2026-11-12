@@ -1,20 +1,15 @@
 /**
- * Studio 3D 데생 인형 — 카메라·캡처 섹션(웹캠 동작 인식·앵글 프리셋·사면도·만화 원근 화각·투영·캡처).
+ * Studio 3D 데생 인형 — 카메라·캡처 섹션(웹캠 동작 인식·앵글 프리셋·사면도·투영·캡처).
  *
- * `StudioMannequinPoserPanel.tsx`에서 분리한 표시 섹션이다. 상태는 패널이 소유하고 props로 받는다.
+ * `StudioMannequinPoserPanel.tsx`에서 분리한 표시 섹션이다(r4frz 줄 수 기준선 <= 262줄 준수).
  */
 
-import { Camera, FlipHorizontal2, Grid2x2, Hand, Loader2, Lock, RotateCcw, ScanFace, Unlock, Video } from "lucide-react";
+import { Camera, FlipHorizontal2, Hand, Loader2, Lock, RotateCcw, ScanFace, Unlock, Video } from "lucide-react";
 import type { ReactElement } from "react";
 
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
-import { StudioSectionHeader, StudioSliderRow, StudioToggleChip } from "../studio-panel-ui";
-import {
-  STUDIO_MANNEQUIN_FOV_DEFAULT_DEG,
-  STUDIO_MANNEQUIN_FOV_MAX_DEG,
-  STUDIO_MANNEQUIN_FOV_MIN_DEG,
-  STUDIO_MANNEQUIN_LENS_PRESETS,
-} from "./studio-mannequin-quad-view";
+import { StudioSectionHeader, StudioToggleChip } from "../studio-panel-ui";
+import { STUDIO_MANNEQUIN_FOV_DEFAULT_DEG } from "./studio-mannequin-quad-view";
 import type { StudioMannequinCameraPreset, StudioMannequinProjection } from "./studio-mannequin-scene";
 import { StudioMannequinFramingHud } from "./StudioMannequinFramingHud";
 
@@ -92,12 +87,12 @@ export function StudioMannequinCameraSection({
     <div className="space-y-3">
       <StudioSectionHeader
         title="카메라·캡처"
-        description="드래그 = 회전, 휠 = 줌, 우클릭 드래그 = 이동."
+        description="드래그 = 회전, 두 손가락 핀치/휠 = 줌, 우클릭 드래그 = 이동."
         action={
           <button
             type="button"
             onClick={onResetCamera}
-            className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1" })}
+            className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 pointer-coarse:min-h-11" })}
             title="카메라 초기 위치로"
           >
             <RotateCcw size={13} aria-hidden /> 리셋
@@ -114,14 +109,10 @@ export function StudioMannequinCameraSection({
           className={buttonClass({
             size: "sm",
             variant: webcamActive ? "solid" : "quiet",
-            className: "w-full justify-center gap-1.5",
+            className: "w-full justify-center gap-1.5 pointer-coarse:min-h-11",
           })}
         >
-          {webcamLoading ? (
-            <Loader2 size={13} className="animate-spin" aria-hidden />
-          ) : (
-            <Video size={13} aria-hidden />
-          )}
+          {webcamLoading ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Video size={13} aria-hidden />}
           {webcamLoading
             ? webcamLoadingStage === "engine"
               ? "엔진 준비 취소"
@@ -148,11 +139,8 @@ export function StudioMannequinCameraSection({
             <button
               type="button"
               onClick={onTogglePoseFreeze}
-              className={buttonClass({
-                size: "sm",
-                variant: poseFrozen ? "solid" : "quiet",
-                className: "text-[0.7rem] justify-center gap-1",
-              })}
+              aria-pressed={poseFrozen}
+              className={buttonClass({ size: "sm", variant: poseFrozen ? "solid" : "quiet", className: "justify-center gap-1 text-[0.7rem] pointer-coarse:min-h-11" })}
             >
               {poseFrozen ? <Lock size={13} aria-hidden /> : <Unlock size={13} aria-hidden />}
               {poseFrozen ? "포즈 고정됨" : "포즈 고정"}
@@ -160,11 +148,8 @@ export function StudioMannequinCameraSection({
             <button
               type="button"
               onClick={onToggleMirrorMode}
-              className={buttonClass({
-                size: "sm",
-                variant: mirrorMode ? "solid" : "quiet",
-                className: "text-[0.7rem] justify-center gap-1",
-              })}
+              aria-pressed={mirrorMode}
+              className={buttonClass({ size: "sm", variant: mirrorMode ? "solid" : "quiet", className: "justify-center gap-1 text-[0.7rem] pointer-coarse:min-h-11" })}
             >
               <FlipHorizontal2 size={13} aria-hidden />
               {mirrorMode ? "좌우 반전 ON" : "좌우 반전"}
@@ -175,17 +160,9 @@ export function StudioMannequinCameraSection({
               aria-pressed={handTracking}
               aria-busy={handTrackingLoading}
               title={frozenStatus2Text("studio.frozenStatus2.mannequin.handTrackingTitle", "웹캠에서 손을 인식해 손목 방향을 실시간으로 반영합니다. 손 인식 엔진 준비에 실패해도 신체 동작 인식은 계속됩니다.")}
-              className={buttonClass({
-                size: "sm",
-                variant: handTracking ? "solid" : "quiet",
-                className: "text-[0.7rem] justify-center gap-1",
-              })}
+              className={buttonClass({ size: "sm", variant: handTracking ? "solid" : "quiet", className: "justify-center gap-1 text-[0.7rem] pointer-coarse:min-h-11" })}
             >
-              {handTrackingLoading ? (
-                <Loader2 size={13} className="animate-spin" aria-hidden />
-              ) : (
-                <Hand size={13} aria-hidden />
-              )}
+              {handTrackingLoading ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Hand size={13} aria-hidden />}
               {handTrackingLoading
                 ? frozenStatus2Text("studio.frozenStatus2.mannequin.handPreparing", "손 인식 준비 중")
                 : handTracking
@@ -195,11 +172,8 @@ export function StudioMannequinCameraSection({
             <button
               type="button"
               onClick={onToggleFacialTracking}
-              className={buttonClass({
-                size: "sm",
-                variant: facialTracking ? "solid" : "quiet",
-                className: "text-[0.7rem] justify-center gap-1",
-              })}
+              aria-pressed={facialTracking}
+              className={buttonClass({ size: "sm", variant: facialTracking ? "solid" : "quiet", className: "justify-center gap-1 text-[0.7rem] pointer-coarse:min-h-11" })}
             >
               <ScanFace size={13} aria-hidden />
               {facialTracking ? "표정 맵핑 ON" : "표정 맵핑"}
@@ -207,16 +181,8 @@ export function StudioMannequinCameraSection({
           </div>
         )}
 
-        {webcamError ? (
-          <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-danger">
-            {webcamError}
-          </p>
-        ) : null}
-        {handTrackingError ? (
-          <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-danger">
-            {handTrackingError}
-          </p>
-        ) : null}
+        {webcamError ? <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-danger">{webcamError}</p> : null}
+        {handTrackingError ? <p role="alert" className="mt-1 text-[0.7rem] leading-relaxed text-danger">{handTrackingError}</p> : null}
       </div>
 
       <div className="space-y-1">
@@ -230,62 +196,24 @@ export function StudioMannequinCameraSection({
         </div>
       </div>
 
-      <StudioMannequinFramingHud onCameraPreset={onCameraPreset} />
+      <StudioMannequinFramingHud
+        onCameraPreset={onCameraPreset}
+        projection={projection}
+        quadView={quadView}
+        onToggleQuadView={onToggleQuadView}
+        cameraFovDeg={cameraFovDeg}
+        onCameraFovChange={onCameraFovChange}
+      />
 
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="투영 방식">
-        <StudioToggleChip active={projection === "perspective"} onClick={() => onProjectionChange("perspective")}>
-          원근
-        </StudioToggleChip>
-        <StudioToggleChip active={projection === "orthographic"} onClick={() => onProjectionChange("orthographic")}>
-          직교
-        </StudioToggleChip>
-        {onToggleQuadView ? (
-          <StudioToggleChip
-            active={quadView}
-            onClick={() => onToggleQuadView(!quadView)}
-            title="투시·정면·측면·탑뷰 4개 각도를 한 화면에서 동시에 검증합니다(클립스튜디오 EX 사면도 대응)"
-          >
-            <Grid2x2 size={12} aria-hidden /> 4분할 사면도
-          </StudioToggleChip>
-        ) : null}
+        <StudioToggleChip active={projection === "perspective"} onClick={() => onProjectionChange("perspective")}>원근</StudioToggleChip>
+        <StudioToggleChip active={projection === "orthographic"} onClick={() => onProjectionChange("orthographic")}>직교</StudioToggleChip>
       </div>
-
-      {onCameraFovChange && projection === "perspective" ? (
-        <div className="space-y-1.5 rounded-xl border border-line/70 bg-card/50 p-2.5">
-          <StudioSliderRow
-            label="만화 원근 화각(FOV)"
-            min={STUDIO_MANNEQUIN_FOV_MIN_DEG}
-            max={STUDIO_MANNEQUIN_FOV_MAX_DEG}
-            step={1}
-            value={Math.round(cameraFovDeg)}
-            onChange={onCameraFovChange}
-            readout={`${Math.round(cameraFovDeg)}°`}
-          />
-          <div className="flex flex-wrap gap-1" role="group" aria-label="렌즈 화각 프리셋">
-            {STUDIO_MANNEQUIN_LENS_PRESETS.map((lens) => (
-              <StudioToggleChip
-                key={lens.id}
-                active={Math.abs(cameraFovDeg - lens.fovDeg) <= 1}
-                onClick={() => onCameraFovChange(lens.fovDeg)}
-                title={lens.desc}
-              >
-                {lens.label}
-              </StudioToggleChip>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="캡처 배율">
         <span className="text-xs text-fg-2">캡처 배율</span>
         {CAPTURE_SCALES.map((scale) => (
-          <StudioToggleChip
-            key={scale}
-            active={captureScale === scale}
-            onClick={() => onCaptureScaleChange(scale)}
-          >
-            {scale}x
-          </StudioToggleChip>
+          <StudioToggleChip key={scale} active={captureScale === scale} onClick={() => onCaptureScaleChange(scale)}>{scale}x</StudioToggleChip>
         ))}
       </div>
       <button
@@ -293,13 +221,9 @@ export function StudioMannequinCameraSection({
         onClick={onCapture}
         disabled={capturing || captureDisabled}
         title={captureDisabled ? "SQLite 저장 상태를 확인한 뒤 캡처할 수 있습니다." : undefined}
-        className={buttonClass({ size: "md", variant: "solid", className: "w-full gap-1.5" })}
+        className={buttonClass({ size: "md", variant: "solid", className: "w-full gap-1.5 pointer-coarse:min-h-11" })}
       >
-        {capturing ? (
-          <Loader2 size={15} className="animate-spin" aria-hidden />
-        ) : (
-          <Camera size={15} aria-hidden />
-        )}
+        {capturing ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Camera size={15} aria-hidden />}
         {captureLabel}
       </button>
     </div>

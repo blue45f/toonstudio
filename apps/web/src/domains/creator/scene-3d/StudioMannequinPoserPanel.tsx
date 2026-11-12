@@ -24,7 +24,7 @@ import { createPortal } from "react-dom";
 import { confirmStudioDestructiveAction } from "../studio-destructive-action-preview";
 import { studioDiscardUnpersistedMannequinStateRequest } from "../studio-destructive-command-catalog";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
-import { studioSegmentChipClass } from "../studio-panel-ui";
+import { STUDIO_FOCUS_RING, studioSegmentChipClass } from "../studio-panel-ui";
 import { copyStudioText } from "../studio-workbench-clipboard";
 import {
   StudioVrmPhotoPoseScanner,
@@ -55,7 +55,9 @@ import {
   analyzeStudioMannequinGesture,
   applyStudioMannequinBreathingParams,
   applyStudioMannequinGazeTarget,
+  applyStudioMannequinHandContact,
   buildStudioMannequinContrappostoPose,
+  type StudioMannequinHandContactTargetId,
 } from "./studio-mannequin-gesture-dynamics";
 import {
   STUDIO_MANNEQUIN_BODY_PRESETS,
@@ -1012,11 +1014,46 @@ export function StudioMannequinPoserPanel({
     [commitPoseWithHistory, spec],
   );
 
+  const handleApplyHandContact = useCallback(
+    (side: "left" | "right", targetId: StudioMannequinHandContactTargetId) => {
+      const result = applyStudioMannequinHandContact(spec, poseRef.current, side, targetId, jointLocksRef.current);
+      commitPoseWithHistory(result.pose);
+    },
+    [commitPoseWithHistory, spec],
+  );
+
   const handleLookAtCamera = useCallback(() => {
     const target = sceneRef.current?.getCameraWorldPosition?.() ?? [0, spec.heightM * 0.88, 3.1];
     const next = applyStudioMannequinGazeTarget(spec, poseRef.current, target, jointLocksRef.current, 1);
     commitPoseWithHistory(next);
   }, [commitPoseWithHistory, spec]);
+
+  const handleViewportKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!selectedJointId || jointLocksRef.current[selectedJointId]) return;
+      const stepRad = ((event.shiftKey ? 0.5 : 2) * Math.PI) / 180;
+      const cur = poseRef.current.joints[selectedJointId] ?? [0, 0, 0];
+      let nextRot: [number, number, number] | null = null;
+      if (event.key === "ArrowUp") nextRot = [cur[0] - stepRad, cur[1], cur[2]];
+      else if (event.key === "ArrowDown") nextRot = [cur[0] + stepRad, cur[1], cur[2]];
+      else if (event.key === "ArrowLeft") nextRot = event.altKey ? [cur[0], cur[1] - stepRad, cur[2]] : [cur[0], cur[1], cur[2] + stepRad];
+      else if (event.key === "ArrowRight") nextRot = event.altKey ? [cur[0], cur[1] + stepRad, cur[2]] : [cur[0], cur[1], cur[2] - stepRad];
+      if (!nextRot) return;
+      event.preventDefault();
+      if (!event.repeat) resetPoseHistoryGesture();
+      recordPoseHistoryOncePerGesture();
+      const clamped = clampStudioMannequinJointRotation(selectedJointId, nextRot);
+      let next = normalizeStudioMannequinPose({
+        joints: { ...poseRef.current.joints, [selectedJointId]: clamped },
+        pelvisOffset: poseRef.current.pelvisOffset,
+      });
+      if (rhythmRef.current && (selectedJointId === "leftUpperArm" || selectedJointId === "rightUpperArm")) {
+        next = applyStudioMannequinScapulohumeralRhythm(next, jointLocksRef.current, 1);
+      }
+      commitPose(groundFootPose(next, stateRef.current.params).pose);
+    },
+    [commitPose, groundFootPose, recordPoseHistoryOncePerGesture, resetPoseHistoryGesture, selectedJointId],
+  );
 
   const handleExportJson = useCallback(() => {
     const json = exportStudioMannequinStateToJSON(stateRef.current);
@@ -1055,7 +1092,7 @@ export function StudioMannequinPoserPanel({
         setCaptureNotice(`클립스튜디오 포즈 적용됨 (${imported.aliasName} · ${imported.mappedBoneCount}본)`);
         setError(null);
       } catch (cause) {
-        setError(getErrorText(cause, "클립스튜디오 .pep 포즈 XML을 읽지 못했습니다."));
+        setError(getErrorText(cause, "유효하지 않은 클립스튜디오 .pep 포즈 XML입니다."));
       }
     };
     reader.readAsText(file);
@@ -1079,7 +1116,7 @@ export function StudioMannequinPoserPanel({
         setCaptureNotice("클립스튜디오 .3dp 체형 비율이 적용되었습니다.");
         setError(null);
       } catch (cause) {
-        setError(getErrorText(cause, "클립스튜디오 .3dp 체형 XML을 읽지 못했습니다."));
+        setError(getErrorText(cause, "유효하지 않은 클립스튜디오 .3dp 체형 XML입니다."));
       }
     };
     reader.readAsText(file);
@@ -1365,10 +1402,12 @@ export function StudioMannequinPoserPanel({
             ) : (
               <div
                 ref={viewportRef}
-                className="h-full w-full"
+                tabIndex={0}
+                className={cn("h-full w-full", STUDIO_FOCUS_RING)}
                 data-studio-mannequin-viewport="true"
-                aria-label="3D 데생 인형 뷰포트 — 몸 드래그로 관절 회전, 손·발 핸들 드래그로 IK, 더블클릭으로 부위 확대"
+                aria-label="3D 데생 인형 뷰포트 — 몸 드래그로 관절 회전, 손·발 핸들 드래그로 IK, 더블클릭으로 부위 확대, 포커스 후 화살표 키로 선택 관절 회전"
                 {...viewportGestures.handlers}
+                onKeyDown={handleViewportKeyDown}
               />
             )}
             {sceneError ? null : <StudioMannequinDuoFigureSwitch duo={duo} />}
@@ -1387,7 +1426,7 @@ export function StudioMannequinPoserPanel({
                   type="button"
                   onClick={() => setTab(entry.id)}
                   aria-pressed={tab === entry.id}
-                  className={cn(studioSegmentChipClass(tab === entry.id), "min-h-9 min-w-0 justify-center gap-1 whitespace-nowrap rounded-xl px-2")}
+                  className={cn(studioSegmentChipClass(tab === entry.id), "min-h-9 min-w-0 justify-center gap-1 whitespace-nowrap rounded-xl px-2 pointer-coarse:min-h-11")}
                 >
                   {entry.icon}
                   {entry.label}
@@ -1515,6 +1554,7 @@ export function StudioMannequinPoserPanel({
                   <StudioMannequinJointSection
                     selectedJointId={selectedJointId}
                     rotation={selectedRotation}
+                    noJointSelectedText={frozenStatus2Text("studio.frozenStatus2.mannequin.noJointSelected", "선택된 관절이 없습니다. 뷰포트의 마네킹을 클릭하면 해당 부위 관절이 선택됩니다.")}
                     jointLocks={jointLocks}
                     scapulohumeralRhythm={scapulohumeralRhythm}
                     guideVisibility={guideVisibility}
@@ -1532,6 +1572,7 @@ export function StudioMannequinPoserPanel({
                     onGuideVisibilityChange={(patch) => setGuideVisibility((prev) => ({ ...prev, ...patch }))}
                     onAutoBalance={handleAutoBalance}
                     onApplyContrapposto={handleApplyContrapposto}
+                    onApplyHandContact={handleApplyHandContact}
                     onLookAtCamera={handleLookAtCamera}
                     onApplyHandPad={handleApplyHandPad}
                     onImportCspPep={() => cspPepInputRef.current?.click()}

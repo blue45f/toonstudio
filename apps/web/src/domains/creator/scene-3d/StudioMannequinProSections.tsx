@@ -1,16 +1,21 @@
 /**
- * Studio 3D 데생 인형 v4 — 체형(에코르셰·웹툰 원형·호흡 확장·.3dp 호환) 및 관절(잠금·견갑상완 리듬·동세선·콘트라포스토·시선 응시·무게중심·2D 핸드 패드·.pep 호환) 섹션.
+ * Studio 3D 데생 인형 v5 — 체형(에코르셰·웹툰 원형·호흡 확장·.3dp) 및 관절(잠금·견갑상완 리듬·동세선·콘트라포스토·손발 신체/바닥 밀착·시선 응시·무게중심·키보드/터치 2D 핸드 패드·.pep) 섹션.
  *
- * `StudioMannequinPoserPanel.tsx`의 비대화를 막고 클립스튜디오를 능가하는 프로 작화 제어 기능을
- * 모듈화한다. 정적 연결 게이트(`check-unconnected-code`) 준수를 위해 실제 JSX에 마운트되는
- * 두 섹션 컴포넌트만 export 한다.
+ * 정적 연결 게이트(`check-unconnected-code`) 준수를 위해 실제 JSX에 마운트되는 두 섹션 컴포넌트만 export 하며,
+ * 모든 조작 컨트롤에 모바일 44px 터치 타깃(`pointer-coarse:min-h-11`)과 키보드 포커스 링(`STUDIO_FOCUS_RING`)을 보장한다.
  */
 
 import { Compass, Download, Eye, Hand, Lock, RotateCcw, Scale, Sparkles, Unlock, Upload } from "lucide-react";
-import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactElement } from "react";
-
-import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import {
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactElement,
+} from "react";
+
+import {
+  STUDIO_FOCUS_RING,
   StudioPanelChip,
   StudioSectionHeader,
   StudioSliderRow,
@@ -25,7 +30,11 @@ import {
   type StudioMannequinHandPadOutput,
   type StudioMannequinSurfaceMode,
 } from "./studio-mannequin-ecorche-anatomy";
-import type { StudioMannequinGestureAnalysis } from "./studio-mannequin-gesture-dynamics";
+import {
+  STUDIO_MANNEQUIN_HAND_CONTACT_TARGETS,
+  type StudioMannequinGestureAnalysis,
+  type StudioMannequinHandContactTargetId,
+} from "./studio-mannequin-gesture-dynamics";
 import {
   STUDIO_MANNEQUIN_ANATOMY_PARAM_RANGES,
   STUDIO_MANNEQUIN_ARCHETYPE_PRESETS,
@@ -62,6 +71,7 @@ import { cn } from "@/shared/lib/utils";
 
 const RAD_TO_DEG = 180 / Math.PI;
 const DEG_TO_RAD = Math.PI / 180;
+const TOUCH_OUTLINE_BTN = "gap-1 text-xs pointer-coarse:min-h-11 pointer-coarse:px-3";
 
 const BODY_SLIDERS: readonly {
   key: StudioMannequinCoreParamKey;
@@ -162,15 +172,11 @@ export function StudioMannequinBodySection({
             <span className="flex items-center gap-1 text-xs font-semibold text-fg-2">
               <Sparkles size={13} className="text-accent" aria-hidden /> 웹툰 캐릭터 원형 프리셋
             </span>
-            <span className="text-[0.62rem] text-fg-3">23종 해부·두상 통합</span>
+            <span className="text-[0.7rem] text-fg-3">23종 해부·두상 통합</span>
           </div>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="웹툰 캐릭터 원형 프리셋">
             {(Object.keys(STUDIO_MANNEQUIN_ARCHETYPE_PRESETS) as StudioMannequinArchetypePresetId[]).map((id) => (
-              <StudioPanelChip
-                key={id}
-                onClick={() => onApplyArchetype(id)}
-                title={STUDIO_MANNEQUIN_ARCHETYPE_PRESETS[id].desc}
-              >
+              <StudioPanelChip key={id} onClick={() => onApplyArchetype(id)} title={STUDIO_MANNEQUIN_ARCHETYPE_PRESETS[id].desc}>
                 {STUDIO_MANNEQUIN_ARCHETYPE_PRESETS[id].label}
               </StudioPanelChip>
             ))}
@@ -178,10 +184,7 @@ export function StudioMannequinBodySection({
         </div>
       ) : null}
 
-      <StudioSectionHeader
-        title="체형 프리셋"
-        description="다양한 등신 비율 및 신장 파라미터를 선택하세요."
-      />
+      <StudioSectionHeader title="체형 프리셋" description="다양한 등신 비율 및 신장 파라미터를 선택하세요." />
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="체형 프리셋">
         {(Object.keys(STUDIO_MANNEQUIN_BODY_PRESETS) as StudioMannequinBodyPresetId[]).map((presetId) => (
           <StudioPanelChip
@@ -198,16 +201,11 @@ export function StudioMannequinBodySection({
         <div className="space-y-2 rounded-xl border border-line/70 bg-card/50 p-2.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-semibold text-fg-2">에코르셰 조형 모드</span>
-            <span className="text-[0.64rem] text-accent">v4 싱글스킨 로프트</span>
+            <span className="text-[0.7rem] text-accent">v5 연속 스키닝</span>
           </div>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="에코르셰 조형 모드">
             {STUDIO_MANNEQUIN_SURFACE_MODES.map((mode) => (
-              <StudioToggleChip
-                key={mode.id}
-                active={surfaceMode === mode.id}
-                onClick={() => onSurfaceModeChange(mode.id)}
-                title={mode.desc}
-              >
+              <StudioToggleChip key={mode.id} active={surfaceMode === mode.id} onClick={() => onSurfaceModeChange(mode.id)} title={mode.desc}>
                 {mode.label}
               </StudioToggleChip>
             ))}
@@ -254,12 +252,7 @@ export function StudioMannequinBodySection({
         <span className="text-xs font-semibold text-fg-2">재질·표면 스타일</span>
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="재질 스타일">
           {STUDIO_MANNEQUIN_MATERIAL_STYLES.map((style) => (
-            <StudioToggleChip
-              key={style.id}
-              active={materialStyle === style.id}
-              onClick={() => onMaterialStyleChange(style.id)}
-              title={style.desc}
-            >
+            <StudioToggleChip key={style.id} active={materialStyle === style.id} onClick={() => onMaterialStyleChange(style.id)} title={style.desc}>
               {style.label}
             </StudioToggleChip>
           ))}
@@ -311,10 +304,7 @@ export function StudioMannequinBodySection({
       </div>
 
       <div className="space-y-3 border-t border-line/60 pt-3">
-        <StudioSectionHeader
-          title="얼굴 비율"
-          description="웹툰·애니 스타일의 머리 형태와 턱선·눈·코 비율을 조절합니다."
-        />
+        <StudioSectionHeader title="얼굴 비율" description="웹툰·애니 스타일의 머리 형태와 턱선·눈·코 비율을 조절합니다." />
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="헤드 프리셋">
           {(Object.keys(STUDIO_MANNEQUIN_HEAD_PRESETS) as StudioMannequinHeadPresetId[]).map((headId) => (
             <StudioPanelChip
@@ -348,26 +338,15 @@ export function StudioMannequinBodySection({
 
       {onImportCsp3dp || onExportCsp3dp ? (
         <div className="space-y-2 border-t border-line/60 pt-3">
-          <StudioSectionHeader
-            title="클립스튜디오 체형(.3dp) 호환"
-            description="CLIP STUDIO PAINT 체형 소재(.3dp XML)를 불러오거나 내보냅니다."
-          />
+          <StudioSectionHeader title="클립스튜디오 체형(.3dp) 호환" description="CLIP STUDIO PAINT 체형 소재(.3dp XML)를 불러오거나 내보냅니다." />
           <div className="flex flex-wrap gap-1.5">
             {onImportCsp3dp ? (
-              <button
-                type="button"
-                onClick={onImportCsp3dp}
-                className={buttonClass({ size: "sm", variant: "outline", className: "gap-1 text-xs" })}
-              >
+              <button type="button" onClick={onImportCsp3dp} className={buttonClass({ size: "sm", variant: "outline", className: TOUCH_OUTLINE_BTN })}>
                 <Upload size={13} aria-hidden /> .3dp 체형 가져오기
               </button>
             ) : null}
             {onExportCsp3dp ? (
-              <button
-                type="button"
-                onClick={onExportCsp3dp}
-                className={buttonClass({ size: "sm", variant: "outline", className: "gap-1 text-xs" })}
-              >
+              <button type="button" onClick={onExportCsp3dp} className={buttonClass({ size: "sm", variant: "outline", className: TOUCH_OUTLINE_BTN })}>
                 <Download size={13} aria-hidden /> .3dp 체형 내보내기
               </button>
             ) : null}
@@ -414,6 +393,28 @@ function HandSetupPad2D({
     emitFromCoords(nextSpread, nextClench, thumbOpposition, fistStyle);
   };
 
+  const handlePadKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 0.02 : 0.08;
+    let nextSpread = spread;
+    let nextClench = clench;
+    if (event.key === "ArrowRight") nextSpread = Math.min(1, Math.round((spread + step) * 100) / 100);
+    else if (event.key === "ArrowLeft") nextSpread = Math.max(-0.25, Math.round((spread - step) * 100) / 100);
+    else if (event.key === "ArrowDown") nextClench = Math.min(1, Math.round((clench + step) * 100) / 100);
+    else if (event.key === "ArrowUp") nextClench = Math.max(0, Math.round((clench - step) * 100) / 100);
+    else if (event.key === "Home") {
+      nextSpread = 0;
+      nextClench = 0;
+    } else if (event.key === "End") {
+      nextClench = 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    setSpread(nextSpread);
+    setClench(nextClench);
+    emitFromCoords(nextSpread, nextClench, thumbOpposition, fistStyle);
+  };
+
   const cursorLeftPct = ((spread + 0.25) / 1.25) * 100;
   const cursorTopPct = clench * 100;
 
@@ -434,28 +435,38 @@ function HandSetupPad2D({
 
       <div
         ref={padRef}
-        role="application"
-        aria-label="2D 핸드 셋업 패드 — 가로 손가락 벌림, 세로 주먹 쥐기"
+        role="slider"
+        tabIndex={0}
+        aria-label="2D 핸드 셋업 패드 — 좌우 화살표로 손가락 벌림, 상하 화살표로 주먹 쥐기 조절"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(clench * 100)}
+        aria-valuetext={`벌림 ${Math.round(spread * 100)}%, 쥐기 ${Math.round(clench * 100)}%`}
+        onKeyDown={handlePadKeyDown}
         onPointerDown={(e) => {
+          e.currentTarget.focus();
           e.currentTarget.setPointerCapture(e.pointerId);
           updateFromPointer(e);
         }}
         onPointerMove={(e) => {
           if (e.buttons > 0) updateFromPointer(e);
         }}
-        className="relative h-28 w-full cursor-crosshair select-none rounded-lg border border-line bg-canvas/70 touch-none"
+        className={cn(
+          "relative h-28 w-full cursor-crosshair select-none rounded-lg border border-line bg-canvas/70 touch-none pointer-coarse:h-36",
+          STUDIO_FOCUS_RING,
+        )}
       >
-        <span className="pointer-events-none absolute left-2 top-1.5 text-[0.6rem] text-fg-3">모으기 · 편 손</span>
-        <span className="pointer-events-none absolute right-2 top-1.5 text-[0.6rem] text-fg-3">최대 벌림</span>
-        <span className="pointer-events-none absolute bottom-1.5 left-2 text-[0.6rem] text-fg-3">주먹 쥐기</span>
-        <span className="pointer-events-none absolute bottom-1.5 right-2 text-[0.6rem] text-fg-3">갈퀴·파지</span>
+        <span className="pointer-events-none absolute left-2 top-1.5 text-[0.68rem] text-fg-3">모으기 · 편 손</span>
+        <span className="pointer-events-none absolute right-2 top-1.5 text-[0.68rem] text-fg-3">최대 벌림</span>
+        <span className="pointer-events-none absolute bottom-1.5 left-2 text-[0.68rem] text-fg-3">주먹 쥐기</span>
+        <span className="pointer-events-none absolute bottom-1.5 right-2 text-[0.68rem] text-fg-3">갈퀴·파지</span>
         <div
-          className="pointer-events-none absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-accent shadow"
+          className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-panel bg-accent shadow pointer-coarse:size-5"
           style={{ left: `${cursorLeftPct}%`, top: `${cursorTopPct}%` }}
         />
       </div>
 
-      <div className="flex flex-wrap gap-1" role="group" aria-label="주먹 변형 스타일">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="주먹 변형 스타일">
         {STUDIO_MANNEQUIN_FIST_STYLES.map((style) => (
           <StudioToggleChip
             key={style.id}
@@ -490,6 +501,7 @@ function HandSetupPad2D({
 export function StudioMannequinJointSection({
   selectedJointId,
   rotation,
+  noJointSelectedText = "선택된 관절이 없습니다. 뷰포트의 마네킹을 클릭하면 해당 부위 관절이 선택됩니다.",
   jointLocks = {},
   scapulohumeralRhythm = true,
   guideVisibility = STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
@@ -504,6 +516,7 @@ export function StudioMannequinJointSection({
   onGuideVisibilityChange,
   onAutoBalance,
   onApplyContrapposto,
+  onApplyHandContact,
   onLookAtCamera,
   onApplyHandPad,
   onImportCspPep,
@@ -511,6 +524,7 @@ export function StudioMannequinJointSection({
 }: {
   readonly selectedJointId: StudioMannequinJointId | null;
   readonly rotation: StudioMannequinVec3;
+  readonly noJointSelectedText?: string;
   readonly jointLocks?: StudioMannequinJointLockMap;
   readonly scapulohumeralRhythm?: boolean;
   readonly guideVisibility?: StudioMannequinGuideVisibility;
@@ -525,11 +539,13 @@ export function StudioMannequinJointSection({
   readonly onGuideVisibilityChange?: (patch: Partial<StudioMannequinGuideVisibility>) => void;
   readonly onAutoBalance?: () => void;
   readonly onApplyContrapposto?: (weightSide: "left" | "right") => void;
+  readonly onApplyHandContact?: (side: "left" | "right", targetId: StudioMannequinHandContactTargetId) => void;
   readonly onLookAtCamera?: () => void;
   readonly onApplyHandPad?: (side: "left" | "right" | "both", output: StudioMannequinHandPadOutput) => void;
   readonly onImportCspPep?: () => void;
   readonly onExportCspPep?: () => void;
 }): ReactElement {
+  const [contactSide, setContactSide] = useState<"left" | "right">("right");
   const jointLimit = selectedJointId ? getStudioMannequinJointLimit(selectedJointId) : null;
   const isSelectedLocked = selectedJointId ? jointLocks[selectedJointId] === true : false;
   const lockedCount = countStudioMannequinLockedJoints(jointLocks);
@@ -545,14 +561,14 @@ export function StudioMannequinJointSection({
     <div className="space-y-3">
       <StudioSectionHeader
         title="관절"
-        description="몸을 직접 드래그하면 관절이 회전하고, 손·발 원형 핸들을 드래그하면 IK로 팔다리가 따라옵니다. Alt+드래그는 비틀기, Shift는 정밀 조절, 더블클릭은 부위 확대입니다."
+        description="몸 드래그로 관절 회전, 손·발 핸들 드래그로 IK, 포커스 후 방향키로 2° 정밀 회전합니다."
         action={
           selectedJointId ? (
             <button
               type="button"
               onClick={onResetJoint}
               disabled={isSelectedLocked}
-              className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1" })}
+              className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1 pointer-coarse:min-h-11" })}
               title="선택한 관절 회전 초기화"
             >
               <RotateCcw size={13} aria-hidden /> 초기화
@@ -570,7 +586,10 @@ export function StudioMannequinJointSection({
             if (next) onSelectJoint(next as StudioMannequinJointId);
           }}
           aria-label="편집할 관절 선택"
-          className="h-8 min-w-0 flex-1 rounded-md border border-line bg-card px-2 text-[0.72rem] text-fg outline-none focus:border-accent/60 pointer-coarse:min-h-11"
+          className={cn(
+            "h-8 min-w-0 flex-1 rounded-md border border-line bg-card px-2 text-[0.72rem] text-fg outline-none focus:border-accent/60 pointer-coarse:min-h-11",
+            STUDIO_FOCUS_RING,
+          )}
         >
           <option value="" disabled>관절을 선택하세요</option>
           {STUDIO_MANNEQUIN_JOINT_IDS.map((jointId) => (
@@ -631,8 +650,8 @@ export function StudioMannequinJointSection({
           ))}
         </div>
       ) : (
-        <p className="rounded-lg border border-dashed border-line/70 bg-card/60 p-3 text-[0.7rem] leading-relaxed text-fg-3">
-          {frozenStatus2Text("studio.frozenStatus2.mannequin.noJointSelected", "선택된 관절이 없습니다. 뷰포트의 마네킹을 클릭하면 해당 부위 관절이 선택됩니다.")}
+        <p className="rounded-lg border border-dashed border-line/70 bg-card/60 p-3 text-[0.72rem] leading-relaxed text-fg-3">
+          {noJointSelectedText}
         </p>
       )}
 
@@ -642,7 +661,7 @@ export function StudioMannequinJointSection({
             <span className="flex items-center gap-1 text-xs font-semibold text-fg-2">
               <Scale size={13} className="text-accent" aria-hidden /> 무게중심(CoM) 밸런스
             </span>
-            <span className={cn("rounded-full border px-2 py-0.5 text-[0.64rem] font-semibold", BALANCE_LABELS[balanceReport.state].tone)}>
+            <span role="status" aria-live="polite" className={cn("rounded-full border px-2 py-0.5 text-[0.7rem] font-semibold", BALANCE_LABELS[balanceReport.state].tone)}>
               {BALANCE_LABELS[balanceReport.state].label} · 편차 {balanceReport.horizontalOffsetCm}cm
             </span>
           </div>
@@ -651,7 +670,7 @@ export function StudioMannequinJointSection({
               type="button"
               onClick={onAutoBalance}
               disabled={balanceReport.state === "airborne"}
-              className={buttonClass({ size: "sm", variant: "outline", className: "w-full justify-center gap-1 text-xs" })}
+              className={buttonClass({ size: "sm", variant: "outline", className: `w-full justify-center ${TOUCH_OUTLINE_BTN}` })}
             >
               <Scale size={13} aria-hidden /> 원클릭 무게중심 균형 보정
             </button>
@@ -666,7 +685,7 @@ export function StudioMannequinJointSection({
               <Sparkles size={13} className="text-accent" aria-hidden /> 동세·콘트라포스토·시선
             </span>
             {gestureAnalysis ? (
-              <span className="text-[0.64rem] text-fg-3">
+              <span role="status" aria-live="polite" className="text-[0.7rem] text-fg-3">
                 반대기울기 {gestureAnalysis.contrappostoAngleDeg}° · 만곡 {gestureAnalysis.actionCurveBowCm}cm
               </span>
             ) : null}
@@ -674,10 +693,10 @@ export function StudioMannequinJointSection({
           <div className="flex flex-wrap gap-1.5">
             {onApplyContrapposto ? (
               <>
-                <StudioPanelChip onClick={() => onApplyContrapposto("left")} title="왼다리 지지 콘트라포스토 S-리듬 생성">
+                <StudioPanelChip onClick={() => onApplyContrapposto("left")} title="왼다리 지지 콘트라포스토 S-리듬 및 발바닥 밀착">
                   좌측 콘트라포스토
                 </StudioPanelChip>
-                <StudioPanelChip onClick={() => onApplyContrapposto("right")} title="오른다리 지지 콘트라포스토 S-리듬 생성">
+                <StudioPanelChip onClick={() => onApplyContrapposto("right")} title="오른다리 지지 콘트라포스토 S-리듬 및 발바닥 밀착">
                   우측 콘트라포스토
                 </StudioPanelChip>
               </>
@@ -687,6 +706,27 @@ export function StudioMannequinJointSection({
                 <Eye size={12} aria-hidden /> 카메라 시선 응시
               </StudioPanelChip>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {onApplyHandContact ? (
+        <div className="space-y-2 rounded-xl border border-line/70 bg-card/50 p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1 text-xs font-semibold text-fg-2">
+              <Hand size={13} className="text-accent" aria-hidden /> 손 신체·바닥 밀착 스냅
+            </span>
+            <div className="flex gap-1" role="group" aria-label="손 밀착 대상 팔">
+              <StudioToggleChip active={contactSide === "left"} onClick={() => setContactSide("left")}>왼손</StudioToggleChip>
+              <StudioToggleChip active={contactSide === "right"} onClick={() => setContactSide("right")}>오른손</StudioToggleChip>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="손 밀착 위치">
+            {STUDIO_MANNEQUIN_HAND_CONTACT_TARGETS.map((target) => (
+              <StudioPanelChip key={target.id} onClick={() => onApplyHandContact(contactSide, target.id)} title={target.desc}>
+                {target.label}
+              </StudioPanelChip>
+            ))}
           </div>
         </div>
       ) : null}
@@ -703,28 +743,16 @@ export function StudioMannequinJointSection({
             >
               3D 동세선
             </StudioToggleChip>
-            <StudioToggleChip
-              active={guideVisibility.loomisHead}
-              onClick={() => onGuideVisibilityChange({ loomisHead: !guideVisibility.loomisHead })}
-            >
+            <StudioToggleChip active={guideVisibility.loomisHead} onClick={() => onGuideVisibilityChange({ loomisHead: !guideVisibility.loomisHead })}>
               루미스 두상선
             </StudioToggleChip>
-            <StudioToggleChip
-              active={guideVisibility.torsoCenterline}
-              onClick={() => onGuideVisibilityChange({ torsoCenterline: !guideVisibility.torsoCenterline })}
-            >
+            <StudioToggleChip active={guideVisibility.torsoCenterline} onClick={() => onGuideVisibilityChange({ torsoCenterline: !guideVisibility.torsoCenterline })}>
               흉곽·골반 축
             </StudioToggleChip>
-            <StudioToggleChip
-              active={guideVisibility.limbCrossContours}
-              onClick={() => onGuideVisibilityChange({ limbCrossContours: !guideVisibility.limbCrossContours })}
-            >
+            <StudioToggleChip active={guideVisibility.limbCrossContours} onClick={() => onGuideVisibilityChange({ limbCrossContours: !guideVisibility.limbCrossContours })}>
               단축 등고선
             </StudioToggleChip>
-            <StudioToggleChip
-              active={guideVisibility.balancePlumbLine}
-              onClick={() => onGuideVisibilityChange({ balancePlumbLine: !guideVisibility.balancePlumbLine })}
-            >
+            <StudioToggleChip active={guideVisibility.balancePlumbLine} onClick={() => onGuideVisibilityChange({ balancePlumbLine: !guideVisibility.balancePlumbLine })}>
               무게중심 추선
             </StudioToggleChip>
           </div>
@@ -735,26 +763,15 @@ export function StudioMannequinJointSection({
 
       {onImportCspPep || onExportCspPep ? (
         <div className="space-y-2 border-t border-line/60 pt-3">
-          <StudioSectionHeader
-            title="클립스튜디오 포즈(.pep) 호환"
-            description="CLIP STUDIO PAINT 56본 포즈 파일(.pep XML, 손가락 30관절 포함)을 양방향 변환합니다."
-          />
+          <StudioSectionHeader title="클립스튜디오 포즈(.pep) 호환" description="CLIP STUDIO PAINT 56본 포즈 파일(.pep XML, 손가락 30관절 포함)을 양방향 변환합니다." />
           <div className="flex flex-wrap gap-1.5">
             {onImportCspPep ? (
-              <button
-                type="button"
-                onClick={onImportCspPep}
-                className={buttonClass({ size: "sm", variant: "outline", className: "gap-1 text-xs" })}
-              >
+              <button type="button" onClick={onImportCspPep} className={buttonClass({ size: "sm", variant: "outline", className: TOUCH_OUTLINE_BTN })}>
                 <Upload size={13} aria-hidden /> .pep 포즈 가져오기
               </button>
             ) : null}
             {onExportCspPep ? (
-              <button
-                type="button"
-                onClick={onExportCspPep}
-                className={buttonClass({ size: "sm", variant: "outline", className: "gap-1 text-xs" })}
-              >
+              <button type="button" onClick={onExportCspPep} className={buttonClass({ size: "sm", variant: "outline", className: TOUCH_OUTLINE_BTN })}>
                 <Download size={13} aria-hidden /> .pep 포즈 내보내기
               </button>
             ) : null}

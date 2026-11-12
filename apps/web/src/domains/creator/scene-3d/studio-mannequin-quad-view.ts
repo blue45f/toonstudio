@@ -1,9 +1,9 @@
 /**
- * Studio 3D 데생 인형 v4 — 4분할 사면도(All-Sides Quad View) & 만화 원근(Lens FOV) 헬퍼.
+ * Studio 3D 데생 인형 v5 — 4분할 사면도(All-Sides Quad View) 렌더링·사분면 포인터 픽킹 & 만화 원근(Lens FOV) 헬퍼.
  *
- * 클립스튜디오 EX 전용 '사면도(All Sides View)'를 넘어 단일 WebGL 캔버스 위에서
- * 상시 루프 없이 온디맨드(invalidate)로 4개 뷰포트(주 투시 · 정면 · 측면 · 탑뷰)를 동시에 그리고,
- * 웹툰 연출용 렌즈 화각(망원 18° 인물화 ~ 초광각 80° 액션 단축 과장)을 결정적으로 계산한다.
+ * 단일 WebGL 캔버스 위에서 상시 루프 없이 온디맨드(invalidate)로 4개 뷰포트(주 투시 · 정면 · 측면 · 탑뷰)를
+ * 동시에 그리며, 4분할 활성 상태에서도 사용자가 어느 사분면을 클릭·드래그하든 해당 사분면의 정확한 카메라와
+ * 로컬 NDC로 광선을 쏴 관절 회전·IK 드래그를 조작할 수 있게 한다.
  */
 
 import * as THREE from "three";
@@ -36,10 +36,14 @@ export function clampStudioMannequinFovDeg(value: unknown): number {
   return Math.min(STUDIO_MANNEQUIN_FOV_MAX_DEG, Math.max(STUDIO_MANNEQUIN_FOV_MIN_DEG, value));
 }
 
+export type StudioMannequinQuadSlot = "main" | "front" | "side" | "top";
+
 export interface StudioMannequinQuadViewportRect {
-  readonly slot: "main" | "front" | "side" | "top";
+  readonly slot: StudioMannequinQuadSlot;
   readonly labelKo: string;
+  /** WebGL 좌하단 원점 기준 X(px). */
   readonly x: number;
+  /** WebGL 좌하단 원점 기준 Y(px). */
   readonly y: number;
   readonly width: number;
   readonly height: number;
@@ -73,6 +77,56 @@ export function computeStudioMannequinQuadViewRects(
   ];
 }
 
+export interface StudioMannequinQuadPointerHit {
+  readonly slot: StudioMannequinQuadSlot;
+  readonly ndcX: number;
+  readonly ndcY: number;
+  readonly paneWidth: number;
+  readonly paneHeight: number;
+}
+
+/**
+ * CSS 클라이언트 좌표(`clientX`, `clientY`)와 캔버스 `DOMRect`로부터
+ * 4분할 사면도 중 어느 사분면을 가리키는지와 해당 사분면 내부의 정규화 장치 좌표(`[-1, 1]`)를 순수 계산한다.
+ */
+export function resolveStudioMannequinQuadPointerNdc(input: {
+  readonly clientX: number;
+  readonly clientY: number;
+  readonly rectLeft: number;
+  readonly rectTop: number;
+  readonly rectWidth: number;
+  readonly rectHeight: number;
+}): StudioMannequinQuadPointerHit {
+  const safeW = Math.max(2, input.rectWidth);
+  const safeH = Math.max(2, input.rectHeight);
+  const localX = Math.min(safeW, Math.max(0, input.clientX - input.rectLeft));
+  // CSS Y는 상단=0, WebGL Y는 하단=0 이므로 반전해 사분면 rect와 대조한다.
+  const glY = Math.min(safeH, Math.max(0, safeH - (input.clientY - input.rectTop)));
+  const rects = computeStudioMannequinQuadViewRects(safeW, safeH);
+
+  const matched =
+    rects.find(
+      (r) =>
+        localX >= r.x &&
+        localX <= r.x + r.width &&
+        glY >= r.y &&
+        glY <= r.y + r.height,
+    ) ?? rects[0];
+
+  const paneW = Math.max(1, matched.width);
+  const paneH = Math.max(1, matched.height);
+  const ndcX = ((localX - matched.x) / paneW) * 2 - 1;
+  const ndcY = ((glY - matched.y) / paneH) * 2 - 1;
+
+  return {
+    slot: matched.slot,
+    ndcX: Math.min(1, Math.max(-1, ndcX)),
+    ndcY: Math.min(1, Math.max(-1, ndcY)),
+    paneWidth: paneW,
+    paneHeight: paneH,
+  };
+}
+
 export interface StudioMannequinQuadOrthoRig {
   renderQuadView(input: {
     readonly renderer: THREE.WebGLRenderer;
@@ -82,6 +136,13 @@ export interface StudioMannequinQuadOrthoRig {
     readonly viewWidth: number;
     readonly viewHeight: number;
   }): void;
+  cameraForSlot(
+    slot: StudioMannequinQuadSlot,
+    mainCamera: THREE.Camera,
+    bounds: THREE.Box3,
+    paneWidth: number,
+    paneHeight: number,
+  ): THREE.Camera;
 }
 
 const ORTHO_DIRECTIONS: Readonly<Record<"front" | "side" | "top", StudioMannequinVec3>> = Object.freeze({
@@ -90,9 +151,6 @@ const ORTHO_DIRECTIONS: Readonly<Record<"front" | "side" | "top", StudioMannequi
   top: [0, 1, 0.02],
 });
 
-/**
- * 4분할 사면도 보조 직교 카메라 3기(정면·측면·탑뷰)를 재사용하며 단일 캔버스에 4분할 렌더링을 수행한다.
- */
 export function createStudioMannequinQuadOrthoRig(): StudioMannequinQuadOrthoRig {
   const orthoFront = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.05, 60);
   const orthoSide = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.05, 60);
@@ -104,6 +162,7 @@ export function createStudioMannequinQuadOrthoRig(): StudioMannequinQuadOrthoRig
     direction: StudioMannequinVec3,
     aspect: number,
   ): void {
+    if (bounds.isEmpty()) return;
     const fovRef = 32;
     const frame = fitStudioMannequinCameraToBounds({
       bounds: {
@@ -126,9 +185,20 @@ export function createStudioMannequinQuadOrthoRig(): StudioMannequinQuadOrthoRig
     cam.top = halfH;
     cam.bottom = -halfH;
     cam.updateProjectionMatrix();
+    cam.updateMatrixWorld(true);
+  }
+
+  function resolveOrthoCamera(slot: "front" | "side" | "top"): THREE.OrthographicCamera {
+    return slot === "front" ? orthoFront : slot === "side" ? orthoSide : orthoTop;
   }
 
   return {
+    cameraForSlot(slot, mainCamera, bounds, paneWidth, paneHeight) {
+      if (slot === "main") return mainCamera;
+      const cam = resolveOrthoCamera(slot);
+      syncOrthoSlot(cam, bounds, ORTHO_DIRECTIONS[slot], paneWidth / Math.max(1, paneHeight));
+      return cam;
+    },
     renderQuadView({ renderer, scene, mainCamera, bounds, viewWidth, viewHeight }) {
       const rects = computeStudioMannequinQuadViewRects(viewWidth, viewHeight);
       const prevAutoClear = renderer.autoClear;
@@ -139,6 +209,12 @@ export function createStudioMannequinQuadOrthoRig(): StudioMannequinQuadOrthoRig
       renderer.autoClear = false;
       renderer.setScissorTest(true);
 
+      // 주 뷰포트도 4분할 사각형 종횡비에 맞춰 투영 행렬을 일시 보정해 찌그러짐(aspect distortion)을 막는다.
+      const persp = (mainCamera as THREE.PerspectiveCamera).isPerspectiveCamera
+        ? (mainCamera as THREE.PerspectiveCamera)
+        : null;
+      const savedAspect = persp ? persp.aspect : 1;
+
       for (const rect of rects) {
         if (rect.width <= 0 || rect.height <= 0) continue;
         renderer.setViewport(rect.x, rect.y, rect.width, rect.height);
@@ -146,16 +222,18 @@ export function createStudioMannequinQuadOrthoRig(): StudioMannequinQuadOrthoRig
         renderer.clearDepth();
 
         if (rect.slot === "main") {
+          if (persp) {
+            persp.aspect = rect.width / Math.max(1, rect.height);
+            persp.updateProjectionMatrix();
+          }
           renderer.render(scene, mainCamera);
+          if (persp) {
+            persp.aspect = savedAspect;
+            persp.updateProjectionMatrix();
+          }
         } else if (!bounds.isEmpty()) {
-          const aspect = rect.width / Math.max(1, rect.height);
-          const cam =
-            rect.slot === "front"
-              ? orthoFront
-              : rect.slot === "side"
-                ? orthoSide
-                : orthoTop;
-          syncOrthoSlot(cam, bounds, ORTHO_DIRECTIONS[rect.slot], aspect);
+          const cam = resolveOrthoCamera(rect.slot);
+          syncOrthoSlot(cam, bounds, ORTHO_DIRECTIONS[rect.slot], rect.width / Math.max(1, rect.height));
           renderer.render(scene, cam);
         }
       }

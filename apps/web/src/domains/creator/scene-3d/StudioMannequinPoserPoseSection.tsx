@@ -248,14 +248,14 @@ export function StudioMannequinPoseSection({
           onChange={(event) => setQuery(event.target.value.slice(0, 200))}
           placeholder="포즈 검색 — 예: 주먹, 포옹, 검, 앉기"
           aria-label="포즈 라이브러리 검색"
-          className="h-9 w-full rounded-lg border border-line bg-card pl-8 pr-9 text-sm text-fg placeholder:text-fg-3 outline-none transition-colors focus:border-accent pointer-coarse:h-11 pointer-coarse:pr-12"
+          className="h-9 w-full rounded-lg border border-line bg-card pl-8 pr-9 text-sm text-fg placeholder:text-fg-3 outline-none transition-colors focus:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent pointer-coarse:h-11 pointer-coarse:pr-12"
         />
         {query ? (
           <button
             type="button"
             onClick={() => setQuery("")}
             aria-label="검색어 지우기"
-            className="absolute right-1 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-fg-3 hover:bg-raised hover:text-fg pointer-coarse:size-10"
+            className="absolute right-1 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-fg-3 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent pointer-coarse:size-11"
           >
             <X size={13} aria-hidden />
           </button>
@@ -264,15 +264,15 @@ export function StudioMannequinPoseSection({
 
       <div
         data-testid="mannequin-text-to-motion-bar"
-        className="rounded-lg border border-line/70 bg-card/80 p-2 text-[0.68rem]"
+        className="rounded-lg border border-line/70 bg-card/80 p-2 text-[0.7rem]"
       >
         <div className="mb-1 flex items-center justify-between gap-2">
           <span className="font-semibold text-fg">
             Tripo Studio 텍스트를 동작으로 (Text-to-Motion) & 리깅 액션 프리셋
           </span>
-          <span className="text-[0.62rem] text-fg-3">클릭 시 데생 인형 포즈 즉시 반영</span>
+          <span className="text-[0.68rem] text-fg-3">클릭 시 데생 인형 포즈 즉시 반영</span>
         </div>
-        <div className="flex flex-wrap gap-1" role="group" aria-label="Tripo Text-to-Motion 액션 프리셋">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tripo Text-to-Motion 액션 프리셋">
           {GEN3D_TEXT_TO_MOTION_PRESETS.map((motion) => (
             <button
               key={motion.id}
@@ -283,7 +283,7 @@ export function StudioMannequinPoseSection({
                 onApplyPreset(motion.mannequinPosePresetId);
               }}
               title={`${motion.motionPrompt} (${motion.tripoPresetId})`}
-              className="rounded-md border border-line bg-panel px-2 py-0.5 text-[0.65rem] text-fg-2 transition-colors hover:border-accent hover:bg-accent-soft hover:text-fg disabled:opacity-50"
+              className="rounded-md border border-line bg-panel px-2 py-0.5 text-[0.7rem] text-fg-2 transition-colors hover:border-accent hover:bg-accent-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50 pointer-coarse:min-h-11 pointer-coarse:px-2.5"
             >
               {motion.labelKo}
             </button>
@@ -291,9 +291,9 @@ export function StudioMannequinPoseSection({
         </div>
         <div
           data-testid="mannequin-tripo3d-mcp-calibration-bar"
-          className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-line/50 pt-1.5"
+          className="mt-1.5 flex flex-wrap items-center gap-1.5 border-t border-line/50 pt-1.5"
         >
-          <span className="text-[0.62rem] font-semibold text-fg-3">Tripo3D MCP 캘리브레이션 GLB:</span>
+          <span className="text-[0.68rem] font-semibold text-fg-3">Tripo3D MCP 캘리브레이션 GLB:</span>
           {GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin").map((model) => (
             <button
               key={model.id}
@@ -306,7 +306,7 @@ export function StudioMannequinPoseSection({
                 }
               }}
               title={`${model.url} (${model.triangles.toLocaleString("ko-KR")} Tri · ${model.drawCalls} DC · GLBForge ${model.glbforgeScore}/100)`}
-              className="rounded-md border border-accent/40 bg-accent-soft/20 px-2 py-0.5 text-[0.63rem] font-medium text-fg-2 transition-colors hover:border-accent hover:bg-accent-soft/50 hover:text-fg disabled:opacity-50"
+              className="rounded-md border border-accent/40 bg-accent-soft/20 px-2 py-0.5 text-[0.7rem] font-medium text-fg-2 transition-colors hover:border-accent hover:bg-accent-soft/50 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50 pointer-coarse:min-h-11 pointer-coarse:px-2.5"
             >
               {model.nameKo} ({model.triangles.toLocaleString("ko-KR")} Tri)
             </button>

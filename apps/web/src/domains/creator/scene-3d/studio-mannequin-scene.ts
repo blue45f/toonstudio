@@ -55,7 +55,9 @@ import { createStudioMannequinProOverlayController } from "./studio-mannequin-pr
 import {
   STUDIO_MANNEQUIN_FOV_DEFAULT_DEG,
   clampStudioMannequinFovDeg,
+  computeStudioMannequinQuadViewRects,
   createStudioMannequinQuadOrthoRig,
+  resolveStudioMannequinQuadPointerNdc,
 } from "./studio-mannequin-quad-view";
 import {
   buildStudioMannequinJointRangeArc,
@@ -800,6 +802,9 @@ export function createStudioMannequinScene(
   const pointerNdc = new THREE.Vector2();
   const dragPlane = new THREE.Plane();
   const dragPoint = new THREE.Vector3();
+  const activeTouchPointers = new Set<number>();
+  let dragCamera: THREE.Camera = activeCamera;
+  let dragPaneRect: { left: number; top: number; width: number; height: number } | null = null;
   let draggingChain: StudioMannequinChainSpec | null = null;
   let draggingFigureId: StudioMannequinFigureId = "lead";
   let dragPointerId: number | null = null;
@@ -813,14 +818,45 @@ export function createStudioMannequinScene(
     startRotation: StudioMannequinVec3;
     twistMode: boolean;
     didMove: boolean;
+    paneWidth: number;
+    paneHeight: number;
   } | null = null;
 
-  function updatePointerNdc(event: PointerEvent): void {
+  function resolvePickCameraAndNdc(event: PointerEvent | MouseEvent): {
+    camera: THREE.Camera;
+    paneRect: { left: number; top: number; width: number; height: number };
+  } {
     const rect = renderer.domElement.getBoundingClientRect();
-    pointerNdc.set(
-      ((event.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1,
-      -((event.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1,
-    );
+    const rw = Math.max(1, rect.width);
+    const rh = Math.max(1, rect.height);
+    if (!quadViewEnabled) {
+      pointerNdc.set(
+        ((event.clientX - rect.left) / rw) * 2 - 1,
+        -((event.clientY - rect.top) / rh) * 2 + 1,
+      );
+      return { camera: activeCamera, paneRect: { left: rect.left, top: rect.top, width: rw, height: rh } };
+    }
+    scene.updateMatrixWorld(true);
+    const bounds = new THREE.Box3();
+    for (const figure of allFigures()) {
+      for (const mesh of figure.bodyMeshes()) bounds.expandByObject(mesh);
+    }
+    const hit = resolveStudioMannequinQuadPointerNdc({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      rectLeft: rect.left,
+      rectTop: rect.top,
+      rectWidth: rw,
+      rectHeight: rh,
+    });
+    const quadRects = computeStudioMannequinQuadViewRects(rw, rh);
+    const slotRect = quadRects.find((r) => r.slot === hit.slot) ?? quadRects[0];
+    const cssTop = rect.top + (rh - (slotRect.y + slotRect.height));
+    pointerNdc.set(hit.ndcX, hit.ndcY);
+    return {
+      camera: quadOrthoRig.cameraForSlot(hit.slot, activeCamera, bounds, hit.paneWidth, hit.paneHeight),
+      paneRect: { left: rect.left + slotRect.x, top: cssTop, width: hit.paneWidth, height: hit.paneHeight },
+    };
   }
 
   function allBodyMeshes(): THREE.Mesh[] {
@@ -901,23 +937,55 @@ export function createStudioMannequinScene(
   }
 
   function handlePointerDown(event: PointerEvent): void {
-    if (disposed || event.button !== 0 || !event.isPrimary || directDrag || draggingChain) return;
-    updatePointerNdc(event);
-    raycaster.setFromCamera(pointerNdc, activeCamera);
+    if (disposed) return;
+    if (event.pointerType === "touch") {
+      activeTouchPointers.add(event.pointerId);
+      // 모바일 2손가락 핀치 줌 전환: 아직 미세 드래그 전인 단일 관절 회전을 취소하고 OrbitControls에 제어권을 넘긴다.
+      if (activeTouchPointers.size >= 2 && directDrag && !directDrag.didMove) {
+        const prevGroup = figureById(directDrag.figureId)?.joints().get(directDrag.jointId);
+        if (prevGroup) prevGroup.rotation.set(...directDrag.startRotation);
+        if (renderer.domElement.hasPointerCapture(directDrag.pointerId)) {
+          renderer.domElement.releasePointerCapture(directDrag.pointerId);
+        }
+        directDrag = null;
+        if (controls) controls.enabled = true;
+        renderer.domElement.style.cursor = "grab";
+        invalidate();
+        return;
+      }
+    }
+    if (event.button !== 0 || !event.isPrimary || directDrag || draggingChain) return;
+    const { camera: pickCamera, paneRect } = resolvePickCameraAndNdc(event);
+    raycaster.setFromCamera(pointerNdc, pickCamera);
 
-    const handleHits = raycaster.intersectObjects([...activeFigure().effectorHandles()], false);
-    const handleHit = handleHits[0];
-    if (handleHit) {
-      const chainId = (handleHit.object.userData as StudioMannequinEffectorHandleUserData)
+    const handles = [...activeFigure().effectorHandles()];
+    let hitHandleObject: THREE.Object3D | undefined = raycaster.intersectObjects(handles, false)[0]?.object;
+    if (!hitHandleObject && event.pointerType === "touch") {
+      const candidatePos = new THREE.Vector3();
+      let bestDist = Number.POSITIVE_INFINITY;
+      for (const hObj of handles) {
+        hObj.getWorldPosition(candidatePos);
+        const d = raycaster.ray.distanceToPoint(candidatePos);
+        const touchRadius = Math.max(0.034, hObj.scale.x * 1.95);
+        if (d <= touchRadius && d < bestDist) {
+          bestDist = d;
+          hitHandleObject = hObj;
+        }
+      }
+    }
+    if (hitHandleObject) {
+      const chainId = (hitHandleObject.userData as StudioMannequinEffectorHandleUserData)
         .studioMannequinChainId;
       draggingFigureId = activeFigureId;
       draggingChain = activeFigure().spec().chains[chainId];
       dragPointerId = event.pointerId;
       dragStartPose = activeFigure().readPose();
+      dragCamera = pickCamera;
+      dragPaneRect = paneRect;
       const cameraDirection = new THREE.Vector3();
-      activeCamera.getWorldDirection(cameraDirection);
+      dragCamera.getWorldDirection(cameraDirection);
       const handleWorld = new THREE.Vector3();
-      handleHit.object.getWorldPosition(handleWorld);
+      hitHandleObject.getWorldPosition(handleWorld);
       dragPlane.setFromNormalAndCoplanarPoint(cameraDirection, handleWorld);
       if (controls) controls.enabled = false;
       renderer.domElement.style.cursor = "grabbing";
@@ -938,7 +1006,7 @@ export function createStudioMannequinScene(
       notifySelection(activeFigureId, jointId);
       const isLocked = activeFigureId === "lead" && jointLocks[jointId] === true;
       const group = activeFigure().joints().get(jointId);
-      if (group && !isLocked) {
+      if (group && !isLocked && activeTouchPointers.size < 2) {
         directDrag = {
           pointerId: event.pointerId,
           figureId: activeFigureId,
@@ -948,6 +1016,8 @@ export function createStudioMannequinScene(
           startRotation: [group.rotation.x, group.rotation.y, group.rotation.z],
           twistMode: event.altKey,
           didMove: false,
+          paneWidth: paneRect.width,
+          paneHeight: paneRect.height,
         };
         if (controls) controls.enabled = false;
         renderer.domElement.style.cursor = "grabbing";
@@ -966,6 +1036,10 @@ export function createStudioMannequinScene(
   function handlePointerMove(event: PointerEvent): void {
     if (disposed) return;
     if (directDrag && event.pointerId === directDrag.pointerId) {
+      if (event.pointerType === "touch" && activeTouchPointers.size >= 2 && !directDrag.didMove) {
+        finishPointerInteraction(event, true);
+        return;
+      }
       const deltaX = event.clientX - directDrag.startClientX;
       const deltaY = event.clientY - directDrag.startClientY;
       if (!directDrag.didMove && Math.hypot(deltaX, deltaY) < 3) return;
@@ -977,8 +1051,8 @@ export function createStudioMannequinScene(
         startRotation: directDrag.startRotation,
         deltaX,
         deltaY,
-        viewportWidth: viewWidth,
-        viewportHeight: viewHeight,
+        viewportWidth: directDrag.paneWidth,
+        viewportHeight: directDrag.paneHeight,
         twistMode: directDrag.twistMode,
         fine: event.shiftKey,
       });
@@ -996,8 +1070,12 @@ export function createStudioMannequinScene(
     if (!draggingChain || event.pointerId !== dragPointerId) return;
     const figure = figureById(draggingFigureId);
     if (!figure) return;
-    updatePointerNdc(event);
-    raycaster.setFromCamera(pointerNdc, activeCamera);
+    const pr = dragPaneRect ?? { left: 0, top: 0, width: viewWidth, height: viewHeight };
+    pointerNdc.set(
+      ((event.clientX - pr.left) / Math.max(1, pr.width)) * 2 - 1,
+      -((event.clientY - pr.top) / Math.max(1, pr.height)) * 2 + 1,
+    );
+    raycaster.setFromCamera(pointerNdc, dragCamera);
     if (!raycaster.ray.intersectPlane(dragPlane, dragPoint)) return;
     solveChainToward(figure, draggingChain, dragPoint);
     invalidate();
@@ -1005,6 +1083,7 @@ export function createStudioMannequinScene(
   }
 
   function finishPointerInteraction(event: PointerEvent, cancelled = false): void {
+    activeTouchPointers.delete(event.pointerId);
     if (directDrag && event.pointerId === directDrag.pointerId) {
       const session = directDrag;
       directDrag = null;
@@ -1028,6 +1107,7 @@ export function createStudioMannequinScene(
     draggingChain = null;
     dragPointerId = null;
     dragStartPose = null;
+    dragPaneRect = null;
     if (controls) controls.enabled = true;
     renderer.domElement.style.cursor = "grab";
     if (renderer.domElement.hasPointerCapture(event.pointerId)) {
@@ -1060,8 +1140,8 @@ export function createStudioMannequinScene(
 
   function handleDoubleClick(event: MouseEvent): void {
     if (disposed) return;
-    updatePointerNdc(event as PointerEvent);
-    raycaster.setFromCamera(pointerNdc, activeCamera);
+    const { camera: pickCamera } = resolvePickCameraAndNdc(event);
+    raycaster.setFromCamera(pointerNdc, pickCamera);
     const bodyHit = raycaster.intersectObjects(allBodyMeshes(), false)[0];
     const jointId = bodyHit
       ? (bodyHit.object.userData as StudioMannequinBodyMeshUserData).studioMannequinJointId

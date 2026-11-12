@@ -3,13 +3,13 @@
  *
  * 포즈 변경·IK 드래그가 끝날 때 발이 지면을 관통하면 골반을 자동으로 들어
  * 발바닥을 밀착시키는 접지 솔버(studio-mannequin-foot-grounding)를 켜고
- * 끄는 스위치다. 끄면 솔버 판정은 표시만 되고 포즈는 바뀌지 않는다.
- * 마지막 판정(들어 올린 양·toe roll)은 status 문구로 보여 줘, 포즈가 왜
- * 살짝 움직였는지 사용자가 알 수 있게 한다.
+ * 끄는 스위치다. 모바일·터치 기기(`pointer-coarse`)에서도 44px 조작 타깃과
+ * 키보드 `focus-visible` 외곽선을 보장한다.
  */
 
 import type { ReactElement } from "react";
 
+import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { cn } from "@/shared/lib/utils";
 
 import type { StudioMannequinFootGroundingResult } from "./studio-mannequin-foot-grounding";
@@ -39,7 +39,8 @@ export function StudioMannequinFootGroundingToggle({
             : "자동 접지가 꺼져 있습니다. 포즈가 바뀌어도 발 관통을 자동으로 보정하지 않습니다."
         }
         className={cn(
-          "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[0.7rem] font-semibold transition-colors",
+          "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[0.72rem] font-semibold transition-colors pointer-coarse:min-h-11 pointer-coarse:px-3",
+          STUDIO_FOCUS_RING,
           enabled
             ? "border-accent/60 bg-accent-soft/40 text-fg"
             : "border-line text-fg-3 hover:border-accent/40 hover:text-fg-2",
@@ -48,7 +49,7 @@ export function StudioMannequinFootGroundingToggle({
         자동 접지 {enabled ? "ON" : "OFF"}
       </button>
       {enabled && lastResult ? (
-        <span className="text-[0.66rem] text-fg-3" role="status">
+        <span className="text-[0.7rem] text-fg-3" role="status" aria-live="polite">
           {describeStudioMannequinFootGroundingResult(lastResult)}
         </span>
       ) : null}
