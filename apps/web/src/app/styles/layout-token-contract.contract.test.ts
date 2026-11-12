@@ -592,8 +592,12 @@ function nonStandardWidthValues(css: string): number[] {
 describe("브레이크포인트 표준 경계 계약 (BP)", () => {
   const breakpointsBlock = tsBlock(layoutTokens, "export const LAYOUT_BREAKPOINTS");
   const navigationBlock = tsBlock(siteNavigationTokens, "export const LAYOUT_SITE_NAVIGATION");
-  const navigationDesktop = Number.parseFloat(tsField(navigationBlock, "desktopMin"));
-  const navigationMobile = Number.parseFloat(tsField(navigationBlock, "mobileMax"));
+  const desktopMin = tsField(navigationBlock, "desktopMin");
+  const mobileMax = tsField(navigationBlock, "mobileMax");
+  if (desktopMin === undefined) throw new Error("탐색 경계 정본에 desktopMin 필드가 없습니다.");
+  if (mobileMax === undefined) throw new Error("탐색 경계 정본에 mobileMax 필드가 없습니다.");
+  const navigationDesktop = Number.parseFloat(desktopMin);
+  const navigationMobile = Number.parseFloat(mobileMax);
   const scanned = {
     "sitewide-visual-ux.css": sitewide,
     "unified-theme-contract.css": unified,

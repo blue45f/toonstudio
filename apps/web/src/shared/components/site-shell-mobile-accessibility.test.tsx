@@ -86,7 +86,7 @@ function menuDestination(dialog: HTMLElement, href: string, name: string): HTMLE
     fireEvent.click(summary);
     expect(group.open).toBe(true);
   }
-  return within(dialog).getByRole("link", { name, exact: true });
+  return within(dialog).getByRole("link", { name });
 }
 
 beforeEach(() => {

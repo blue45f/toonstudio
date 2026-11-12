@@ -59,7 +59,7 @@ describe("collaboration browser entry contract", () => {
     expect(stroke).toContain("does not reach the drawing canvas");
     expect(stroke).not.toContain("const y = bounds.y + bounds.height * verticalFraction;");
     expect(source).toContain("await parkStudioCollaborationCursors(page);");
-    expect(drawingCaptureSource).toContain("await peer.mouse.move(x, (band.top + band.bottom) / 2)");
+    expect(drawingCaptureSource).toContain("await peer.mouse.move(x, band.top + 24)");
     expect(drawingCaptureSource).toContain("await peer.mouse.move(8, 8)");
   });
 
