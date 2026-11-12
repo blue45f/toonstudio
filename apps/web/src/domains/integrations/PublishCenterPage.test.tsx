@@ -63,7 +63,7 @@ async function prepareInputs() {
   fireEvent.change(screen.getByLabelText("제목"), { target: { value: "별빛 항해자" } });
   fireEvent.change(screen.getByLabelText("작품 대표 주소"), { target: { value: "https://example.com/works/one" } });
 }
-const prepareButton = () => screen.getByRole("button", { name: "게시 정보 JSON 준비" });
+const prepareButton = () => screen.getByRole("button", { name: "파일 준비하기" });
 const stepButton = (number: 1 | 2 | 3) => within(screen.getByRole("navigation", { name: "게시 정보 준비 단계" })).getByRole("button", { name: new RegExp(`^${number}\\.`) });
 const preparedFiles = () => screen.findByRole("heading", { name: "파일 결과를 확인하세요" });
 
@@ -79,12 +79,42 @@ beforeEach(() => {
 afterEach(() => { cleanup(); useApp.setState({ userId: null }); vi.unstubAllGlobals(); });
 
 describe("PublishCenterPage 게시 준비 계약", () => {
-  it("카드 상태와 기본 채널 선택을 유지한다", async () => {
+  it("채널의 긴 지원 설명은 따로 열어 확인하고 선택 변경은 준비 파일에 반영한다", async () => {
+    renderPage(); await prepareInputs();
+    const support = screen.getByRole("group", { name: "채널별 지원 범위" });
+    expect((support as HTMLDetailsElement).open).toBe(false);
+    expect(screen.getByRole("checkbox", { name: "외부 웹툰 플랫폼" })).toBeTruthy();
+    fireEvent.click(within(support).getByText("채널별 지원 범위"));
+    expect((support as HTMLDetailsElement).open).toBe(true);
+    expect(within(support).getByText("외부 플랫폼 수동 전달 정보")).toBeTruthy();
+    expect(within(support).getByText("플랫폼에서 업로드 결과를 확인하세요.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("checkbox", { name: "외부 웹툰 플랫폼" }));
+    fireEvent.click(prepareButton());
+    await preparedFiles();
+    expect(mocks.buildPublishPackage).toHaveBeenCalledWith(expect.objectContaining({ channels: ["rss-json-feed"] }));
+  });
+
+  it("선택 가능한 채널이 없으면 준비를 막고 채널을 다시 불러온 뒤 같은 입력으로 이어간다", async () => {
+    mocks.catalog.mockResolvedValueOnce({ ...catalogFixture, providers: [] });
+    renderPage(); await prepareInputs();
+    await screen.findByText("현재 선택할 수 있는 게시 채널이 없어요.");
+    expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(prepareButton());
+    expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "채널 다시 불러오기" }));
+    await screen.findByRole("checkbox", { name: "외부 웹툰 플랫폼" });
+    expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("별빛 항해자");
+    expect((screen.getByLabelText("작품 대표 주소") as HTMLInputElement).value).toBe("https://example.com/works/one");
+    fireEvent.click(prepareButton()); await preparedFiles();
+    expect(mocks.buildPublishPackage).toHaveBeenCalledTimes(1);
+  });
+
+  it("간결한 채널 행에서 지원 상태와 기본 선택을 확인한다", async () => {
     const { container } = renderPage();
     await screen.findByText("외부 웹툰 플랫폼");
-    expect(screen.getByText(/수동 완주 가능 · 채널 정보만 포함/)).toBeTruthy();
-    expect(screen.getByText("직접 업로드용 패키지로 준비돼요")).toBeTruthy();
-    expect(screen.getByText(/사용 가능 · 채널 정보만 포함/)).toBeTruthy();
+    expect(screen.getByText("직접 업로드")).toBeTruthy();
+    expect(screen.getByText("사용 가능")).toBeTruthy();
+    expect(screen.getByText("선택한 채널 정보를 JSON 파일에 담아요. 업로드·예약은 해당 채널에서 진행해 주세요.")).toBeTruthy();
     expect(container.querySelector<HTMLInputElement>("#publish-channel-external-webtoon-platforms")?.checked).toBe(true);
     expect(container.querySelector<HTMLInputElement>("#publish-channel-rss-json-feed")?.checked).toBe(true);
   });
@@ -201,7 +231,7 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     expect(screen.getByText("게시 정보 파일이 준비됐어요. 외부 게시와 예약은 아직 실행되지 않았습니다.")).toBeTruthy();
     expect(screen.queryByText("규격 검사를 통과했습니다.")).toBeNull();
     expect(screen.queryByText("바로 실행")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "게시 정보 JSON 다운로드" }));
+    fireEvent.click(screen.getByRole("button", { name: "게시 정보 파일 받기" }));
     expect(mocks.downloadJson).toHaveBeenCalledWith("publish-project-1.json", expect.objectContaining({ schema: "toonstudio.publish-package/1", ready: true, directlyExecutable: false, projectId: "project-1" }));
     expect(mocks.buildFeedPreview).not.toHaveBeenCalled();
   });
@@ -231,7 +261,7 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     fireEvent.click(screen.getByRole("button", { name: "입력 내용 수정" }));
     fireEvent.change(screen.getByLabelText("제목"), { target: { value: "바꾼 제목" } });
     expect(screen.queryByText("게시 정보 JSON 준비됨")).toBeNull();
-    expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "게시 정보 파일 받기" })).toBeNull();
   });
 
   it("프로젝트 확인 실패는 입력을 보존하고 재확인 후 준비할 수 있다", async () => {
@@ -264,7 +294,7 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     fireEvent.click(screen.getByRole("button", { name: "다른 작품 주소로 이동" }));
     await waitFor(() => expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("다음 작품"));
     await act(async () => finish(packageFixture));
-    expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "게시 정보 파일 받기" })).toBeNull();
     expect(screen.getByRole("link", { name: "선택한 프로젝트로 돌아가기" }).getAttribute("href")).toBe("/production/projects/project-2/overview");
   });
 
@@ -285,7 +315,7 @@ describe("PublishCenterPage 게시 준비 계약", () => {
     expect((screen.getByLabelText("제목") as HTMLInputElement).value).toBe("");
     expect((screen.getByLabelText("작품 대표 주소") as HTMLInputElement).value).toBe("");
     expect((screen.getByLabelText("설명") as HTMLTextAreaElement).value).toBe("");
-    expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "게시 정보 파일 받기" })).toBeNull();
     expect((prepareButton() as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -302,7 +332,10 @@ describe("PublishCenterPage 게시 준비 계약", () => {
 
   it("390px 조건에서 주 행동을 하나로 유지하고 보조 안내는 접힌 채 실제 목적지를 보존한다", async () => {
     vi.stubGlobal("innerWidth", 390); renderPage(); await prepareInputs();
-    expect(screen.getAllByRole("button", { name: "게시 정보 JSON 준비" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "파일 준비하기" })).toHaveLength(1);
+    const related = screen.getByRole("navigation", { name: "다른 작업" });
+    expect(within(related).getByRole("link", { name: "원고 출력·검수" }).getAttribute("href")).toBe("/studio/publish");
+    expect(within(related).getByRole("link", { name: "연동 채널 확인" }).getAttribute("href")).toBe("/settings/integrations");
     expect(document.querySelector("[data-publish-preparation-actions]")?.classList.contains("sticky")).toBe(true);
     expect(stepButton(3).getAttribute("disabled")).not.toBeNull();
     expect(screen.queryByRole("heading", { name: "파일 결과를 확인하세요" })).toBeNull();
@@ -316,7 +349,7 @@ describe("PublishCenterPage 게시 준비 계약", () => {
   it("영어 안내와 기존 Studio·기술·신뢰 목적지를 유지한다", async () => {
     mocks.lang = "en"; renderPage(); await screen.findByText("외부 웹툰 플랫폼");
     const guide = screen.getByRole("group", { name: "Manuscript export and publication planning guide" });
-    expect(screen.getByRole("button", { name: "Prepare publication JSON" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Prepare file" })).toBeTruthy();
     const bridge = within(guide).getByTestId("publish-surface-cross-bridge");
     expect(bridge.textContent).not.toMatch(/[가-힣]/u);
     for (const href of ["/studio/publish", "/about/technology/architecture", "/creator-support", "/accessibility"]) expect(bridge.querySelector(`a[href="${href}"]`)).toBeTruthy();
@@ -406,9 +439,9 @@ describe("게시 정보 준비의 단계·복귀 계약", () => {
     await waitFor(() => expect(stepButton(1).getAttribute("aria-current")).toBe("step"));
     await act(async () => finish(packageFixture));
     expect(stepButton(1).getAttribute("aria-current")).toBe("step");
-    expect(screen.queryByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "게시 정보 파일 받기" })).toBeNull();
     fireEvent.click(stepButton(3)); await preparedFiles();
-    expect(screen.getByRole("button", { name: "게시 정보 JSON 다운로드" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "게시 정보 파일 받기" })).toBeTruthy();
   });
 
   it("다른 화면으로 떠난 뒤 응답이 도착해도 게시 준비로 돌아오지 않는다", async () => {
