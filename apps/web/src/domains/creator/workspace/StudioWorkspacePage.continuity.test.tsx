@@ -60,7 +60,7 @@ describe("studio workspace continuity and safe recovery", () => {
   it("keeps the selected work on the unified home destination without leaking it into public routes", () => {
     render(<App entries={["/home?project=older"]} />);
     expect(nav("작업 홈").getAttribute("href")).toBe("/home?project=older");
-    expect(nav("탐색").getAttribute("href")).toBe("/discover");
+    expect(nav("작품 찾기").getAttribute("href")).toBe("/discover");
     expect(nav("커뮤니티").getAttribute("href")).toBe("/community");
     expect(screen.getByRole("combobox").getAttribute("disabled")).toBeNull();
     expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("older");
@@ -69,7 +69,7 @@ describe("studio workspace continuity and safe recovery", () => {
   it("keeps personal scope only on the unified home destination", () => {
     render(<App entries={["/home?scope=personal"]} />);
     expect(nav("작업 홈").getAttribute("href")).toBe("/home?scope=personal");
-    expect(nav("탐색").getAttribute("href")).toBe("/discover");
+    expect(nav("작품 찾기").getAttribute("href")).toBe("/discover");
     expect(nav("커뮤니티").getAttribute("href")).toBe("/community");
     expect(screen.getByTestId("location").textContent).toBe("/home?scope=personal");
     expect((screen.getByRole("combobox") as HTMLSelectElement).value).toBe("");

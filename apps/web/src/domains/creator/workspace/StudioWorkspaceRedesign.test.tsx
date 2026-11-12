@@ -64,8 +64,8 @@ describe("studio-first visual redesign retains real actions", () => {
     expect(within(nav).getAllByRole("link")).toHaveLength(5);
     expect(within(nav).getByRole("link", { name: "커뮤니티" }).getAttribute("aria-current")).toBe("page");
     expect(within(nav).getByRole("link", { name: "작업 홈" }).getAttribute("href")).toBe("/home?project=exact");
-    expect(within(nav).getByRole("link", { name: "제작" }).getAttribute("href")).toBe("/studio");
-    expect(within(nav).getByRole("link", { name: "탐색" }).getAttribute("href")).toBe("/discover");
+    expect(within(nav).getByRole("link", { name: "내 작업" }).getAttribute("href")).toBe("/studio");
+    expect(within(nav).getByRole("link", { name: "작품 찾기" }).getAttribute("href")).toBe("/discover");
     expect(within(nav).getByRole("link", { name: "전체 메뉴" }).getAttribute("href")).toBe("/sitemap");
     const brand = screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === "ToonStudioSTORYCOMESTOLIFE홈" });
     expect(brand.hasAttribute("aria-label")).toBe(false);
