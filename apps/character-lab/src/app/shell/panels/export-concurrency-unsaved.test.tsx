@@ -141,7 +141,7 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
     await waitFor(() => expect(screen.getByLabelText("레시피 불러오기 안내")).toBeTruthy());
     expect(screen.getByTestId("export-receipt")).toBeTruthy();
 
-    // 2) 다음 2×2 캡처가 실패하면 이전 성공 영수증과 이전 축소 안내(notices)가 함께 지워지고 실패 알림 + 다시 시도 버튼이 나타난다
+    // 2) 다음 2×2 캡처가 실패하면 이전 성공 영수증과 이전 안내(notices)가 함께 지워지고 실패 알림 + 다시 시도 버튼이 나타난다
     shouldFailCapture = true;
     fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "800" } });
     fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "1200" } });
