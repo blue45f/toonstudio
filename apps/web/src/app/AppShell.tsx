@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { RouteScrollRestoration } from "./RouteScrollRestoration";
 import { AppRouter } from "./routes/AppRouter";
 import { shouldShowEntryIntro } from "./entry-intro-policy";
-import { resolveShellChrome } from "./shell-chrome-policy";
+import { resolveShellChrome, usesFloatingServiceNotice } from "./shell-chrome-policy";
 import { SpatialCampusFrame } from "./spatial-campus/SpatialCampusFrame";
 import {
   campusTaskRoute,
@@ -199,13 +199,13 @@ export function AppShell({
   // PWA 설치 안내는 발표·영상 화면에서만 제외한다(호스트 자체 게이트와 이중 구조).
   const pwaInstallPromptAllowed = supportsPwaInstallPrompts(pathname);
   // 몰입 예외(전역 크롬 제거) 판정은 shell-chrome-policy의 명시 목록이 단일 기준이다.
-  const { immersiveVirtualHome, immersiveVirtualProject, immersiveReader, immersiveVirtualExperience } =
-    resolveShellChrome({
+  const shellChrome = resolveShellChrome({
       pathname,
       normalizedPath,
       hasTaskRoute: taskRoute !== null,
       protectedCampus,
     });
+  const { immersiveVirtualHome, immersiveVirtualProject, immersiveReader, immersiveVirtualExperience } = shellChrome;
   const enhancedSite =
     Boolean(header)
     && supportsSiteExperience(pathname)
@@ -251,10 +251,10 @@ export function AppShell({
         ) : null}
         {immersiveVirtualExperience ? null : header}
         <Suspense fallback={null}>
-          <ServiceDegradedBanner immersive={
-            isStudioWorkspaceRoutePathname(pathname)
-            || (immersiveVirtualExperience && normalizedPath !== "/home")
-          } />
+          <ServiceDegradedBanner immersive={usesFloatingServiceNotice(normalizedPath, shellChrome, {
+            studioWorkspace: isStudioWorkspaceRoutePathname(pathname),
+            focusedTask: taskRoute?.chrome === "focused",
+          })} />
         </Suspense>
         {enhancedSite ? <SiteConnectionNotice /> : null}
         {immersiveVirtualExperience || !pwaInstallPromptAllowed ? null : <PwaInstallNudge />}

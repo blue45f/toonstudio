@@ -77,3 +77,16 @@ export function resolveShellChrome(input: ShellChromeInput): ShellChromeDecision
     immersiveVirtualExperience,
   };
 }
+
+/** 일반 작업·보호 페이지의 크롬 생략을 전체 화면 편집기의 떠 있는 알림과 구분한다. */
+export function usesFloatingServiceNotice(
+  normalizedPath: string,
+  decision: Pick<ShellChromeDecision, "immersiveVirtualHome" | "immersiveVirtualProject" | "immersiveReader">,
+  options: { readonly studioWorkspace?: boolean; readonly focusedTask?: boolean } = {},
+): boolean {
+  return options.studioWorkspace === true
+    || options.focusedTask === true
+    || (decision.immersiveVirtualHome && normalizedPath !== "/home")
+    || decision.immersiveVirtualProject
+    || decision.immersiveReader;
+}
