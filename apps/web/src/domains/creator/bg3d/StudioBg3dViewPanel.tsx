@@ -176,6 +176,8 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelBridgeProps) {
       <StudioBg3dSpatialStoryboardLauncher
         hidden={props.hidden}
         disabled={disabled}
+        organization={props.organization}
+        roomDimensions={props.roomDimensions}
         onInsertScenePrimitives={props.onInsertScenePrimitives}
         arraySelection={props.arraySelection}
         onExecuteSelectionArray={props.onExecuteSelectionArray}

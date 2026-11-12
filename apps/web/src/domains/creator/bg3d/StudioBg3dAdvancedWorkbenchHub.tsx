@@ -183,6 +183,8 @@ export interface StudioBg3dAdvancedWorkbenchHubProps extends StudioBg3dWorkbench
 export function StudioBg3dAdvancedWorkbenchHub({
   defaultTab = "atmosphere",
   disabled = false,
+  organization,
+  roomDimensions,
   onInsertScenePrimitives,
   arraySelection,
   onExecuteSelectionArray,
@@ -552,6 +554,8 @@ export function StudioBg3dAdvancedWorkbenchHub({
 
         {activeTab === "spatial-modeler" ? (
           <StudioBg3dSpatialModelerPanel
+            organization={organization}
+            roomDimensions={roomDimensions}
             disabled={disabled}
             onApplyStyle={(style) => {
               if (style.faceStyle === "hidden-line") {
