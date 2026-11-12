@@ -747,6 +747,7 @@ export function AccessibleTooltipLayer(): ReactElement | null {
   } as CSSProperties;
 
   return createPortal(
+    <aside aria-label={isKoreanDocument() ? "조작 도움말" : "Control help"}>
     <div
       ref={bubbleRef}
       id={tooltipId}
@@ -776,7 +777,8 @@ export function AccessibleTooltipLayer(): ReactElement | null {
         </p>
       ) : null}
       <span aria-hidden data-app-tooltip-accent="true" />
-    </div>,
+    </div>
+    </aside>,
     document.body,
   );
 }

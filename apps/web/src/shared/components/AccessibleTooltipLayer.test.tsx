@@ -102,6 +102,7 @@ describe("AccessibleTooltipLayer", () => {
     expect(tooltip.textContent).toContain("Alt+M");
     expect(tooltip.getAttribute("data-positioned")).toBe("true");
     expect(button.getAttribute("aria-describedby")).toContain(tooltip.id);
+    expect(screen.getByRole("complementary", { name: "조작 도움말" }).contains(tooltip)).toBe(true);
   });
 
   it("avoids noisy aria-label duplication when a control already has visible text", () => {
