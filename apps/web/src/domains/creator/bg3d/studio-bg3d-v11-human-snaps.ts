@@ -122,7 +122,7 @@ export function resolveBg3dClusterHumanSnapPoints(params: {
   const cosY = Math.cos(yawRad);
   const sinY = Math.sin(yawRad);
 
-  return ARCHETYPE_LOCAL_SNAPS[params.archetype].map((snap, idx) => {
+  return ARCHETYPE_LOCAL_SNAPS[params.archetype].flatMap((snap, idx) => {
     const wx = ox + snap.localPos[0] * cosY + snap.localPos[2] * sinY;
     const wz = oz - snap.localPos[0] * sinY + snap.localPos[2] * cosY;
     const nx = snap.localForward[0] * cosY + snap.localForward[2] * sinY;
@@ -154,6 +154,14 @@ export function resolveBg3dClusterHumanSnapPoints(params: {
     const surface = name
       ? params.primitives?.find((p) => p.name?.startsWith(name))
       : undefined;
+    if (params.primitives !== undefined) {
+      if (name && !surface) return [];
+      if (
+        params.archetype === "convenience-patio-street-furniture"
+        && snap.role === "seat"
+        && !params.primitives.some((p) => p.name?.startsWith("Patio_Parasol_Canopy"))
+      ) return [];
+    }
     if (surface) {
       const [, hy] = computeV11PrimitiveWorldHalfExtents(
         surface.kind,
@@ -166,6 +174,6 @@ export function resolveBg3dClusterHumanSnapPoints(params: {
         surface.position[2],
       ];
     }
-    return point;
+    return [point];
   });
 }

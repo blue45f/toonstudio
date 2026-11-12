@@ -1,6 +1,7 @@
 import { buildBg3dObjectClusterPrimitives } from "./studio-bg3d-background-object-cluster";
 import { findStudioBg3dEssentialAsset } from "./studio-bg3d-essential-pose-prop-catalog";
 import { normalizeStudioBg3dComponentRef } from "./studio-bg3d-hierarchy";
+import { DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE } from "./studio-bg3d-scene-document";
 import {
   DEFAULT_UPPER_META,
   STUDIO_BG3D_V11_UPPER_ARCHETYPES,
@@ -156,8 +157,11 @@ export function buildBg3dV11UpperClusterPrimitives(
       rotation,
       scale,
       color: palette[part.paletteSlot].toLowerCase(),
-      roughness: part.roughness,
-      metalness: part.metalness,
+      materialOverride: {
+        ...DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE,
+        roughness: part.roughness,
+        metalness: part.metalness,
+      },
       visible: true,
       locked: false,
       parentId: null,
