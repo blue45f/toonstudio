@@ -1,15 +1,9 @@
 /**
- * Studio 3D 데생 인형 포저 패널.
+ * Studio 3D 데생 인형 포저 패널 (v3 에코르셰 해부학·견갑상완 리듬·무게중심 추선·2D 핸드 셋업·CSP 호환 통합).
  *
- * 클립스튜디오 데생 인형처럼 외부 모델 파일 없이 절차 생성 마네킹을 체형·포즈·관절·카메라
- * 4개 섹션으로 다루고, 결과를 PNG data URL 로 캔버스에 삽입한다(onInsert 콜백).
- *
- * 확장 지원:
- * - 11가지 다양 체형 프리셋 & 6가지 표면 재질 스타일(목조, 클레이, 와이어프레임, 셀 셰이딩 등).
- * - 카테고리별 다채로운 3D 포즈 프리셋 라이브러리 (기본, 액션, 일상, 스포츠, 웹툰 연출).
- * - 데생 인형 JSON 파일 내보내기/가져오기 & 공유 해시 URL 복사.
- * - 카메라/사진 동작 인식 트래킹 플랜 연동.
- * - 6종 카메라 앵글 프리셋 (정면, 측면, 후면, 탑뷰, 하이앵글, 로우앵글).
+ * 클립스튜디오 데생 인형을 능가하는 에코르셰 근육 면·유기 단면 로프트·아사로 다면체 모드,
+ * 관절 잠금(Joint Lock), 견갑상완 리듬, 생체역학 무게중심(CoM) 자동 균형, 루미스·단축 등고선 가이드,
+ * 2D 핸드 셋업 패드(벌림·쥐기·엄지 대립), 클립스튜디오 `.pep`/`.3dp` 양방향 변환을 제공한다.
  */
 
 import {
@@ -17,7 +11,6 @@ import {
   Camera,
   PersonStanding,
   Redo2,
-  RotateCcw,
   Sliders,
   Sparkles,
   Undo2,
@@ -25,28 +18,20 @@ import {
   Wand2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import { confirmStudioDestructiveAction } from "../studio-destructive-action-preview";
 import { studioDiscardUnpersistedMannequinStateRequest } from "../studio-destructive-command-catalog";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
-import {
-  StudioPanelChip,
-  StudioSectionHeader,
-  StudioSliderRow,
-  StudioToggleChip,
-  studioSegmentChipClass,
-} from "../studio-panel-ui";
+import { studioSegmentChipClass } from "../studio-panel-ui";
 import { copyStudioText } from "../studio-workbench-clipboard";
 import {
   StudioVrmPhotoPoseScanner,
   type StudioVrmPhotoPoseApplyPayload,
 } from "../vrm/StudioVrmPhotoPoseScanner";
 
-import {
-  getWebtoonPosePresetById,
-} from "./studio-3d-advanced-poses-library";
+import { getWebtoonPosePresetById } from "./studio-3d-advanced-poses-library";
 import { StudioMannequinDuoFigureSwitch, StudioMannequinDuoPartnerCard } from "./StudioMannequinDuoPartnerCard";
 import {
   isStudioMannequinDuoPreset,
@@ -59,33 +44,30 @@ import { StudioMannequinPoserHeaderActions } from "./StudioMannequinPoserHeaderA
 import { studioMannequinPosesNearlyEqual, useStudioMannequinViewportGestures } from "./use-studio-mannequin-viewport-gestures";
 
 import { getProductStudioMannequinStateSqliteRepository } from "./studio-mannequin-bg3d-preset-sqlite-repository";
+import { applyStudioBodyMorph, type StudioBodyMorph } from "./studio-body-morphs";
 import {
-  STUDIO_MANNEQUIN_ANATOMY_PARAM_RANGES,
+  mergeHandPadIntoFingerPose,
+  type StudioMannequinFingerSplayMap,
+  type StudioMannequinHandPadOutput,
+  type StudioMannequinSurfaceMode,
+} from "./studio-mannequin-ecorche-anatomy";
+import {
   STUDIO_MANNEQUIN_BODY_PRESETS,
   STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
-  STUDIO_MANNEQUIN_HEAD_PARAM_RANGES,
+  STUDIO_MANNEQUIN_FINGER_NAMES,
   STUDIO_MANNEQUIN_HEAD_PRESETS,
-  STUDIO_MANNEQUIN_JOINT_IDS,
-  STUDIO_MANNEQUIN_JOINT_LABELS,
-  STUDIO_MANNEQUIN_MATERIAL_STYLES,
-  STUDIO_MANNEQUIN_PARAM_RANGES,
   buildStudioMannequinSpec,
   clampStudioMannequinBodyParams,
+  clampStudioMannequinFingerPose,
   clampStudioMannequinJointRotation,
-  getStudioMannequinJointLimit,
-  type StudioMannequinAnatomyParamKey,
   type StudioMannequinBodyParams,
-  type StudioMannequinBodyPresetId,
-  type StudioMannequinCoreParamKey,
-  type StudioMannequinHeadParamKey,
-  type StudioMannequinHeadPresetId,
+  type StudioMannequinFingerName,
+  type StudioMannequinFingerPose,
   type StudioMannequinJointId,
   type StudioMannequinMaterialStyle,
   type StudioMannequinVec3,
 } from "./studio-mannequin-model";
 import { createStudioMannequinPhotoPoseApplyPlan } from "./studio-mannequin-photo-pose-apply";
-// 손 추적은 웹캠 모듈과 별개의 MediaPipe task 소유자(mannequin-video-hand)라
-// 이 모듈에서 직접 가져온다. 웹캠 모듈 경유 re-export 를 두지 않는다.
 import {
   createStudioMannequinHandFrameResult,
   disposeStudioMannequinHandLandmarker,
@@ -105,6 +87,21 @@ import {
   type StudioMannequinPose,
   type StudioMannequinPoseCategory,
 } from "./studio-mannequin-poses";
+import {
+  STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
+  analyzeStudioMannequinBalance,
+  applyStudioMannequinJointLocks,
+  applyStudioMannequinScapulohumeralRhythm,
+  exportMannequinParamsToCsp3dp,
+  exportMannequinPoseToCspPep,
+  importCsp3dpToMannequinParams,
+  importCspPepPoseToMannequin,
+  stabilizeStudioMannequinCenterOfMass,
+  toggleStudioMannequinJointLock,
+  type StudioMannequinGuideVisibility,
+  type StudioMannequinJointLockMap,
+} from "./studio-mannequin-pro-kinematics";
+import { StudioMannequinBodySection, StudioMannequinJointSection } from "./StudioMannequinProSections";
 import {
   StudioMagicPoserPanel,
   type StudioMagicPoserScene,
@@ -148,41 +145,27 @@ import {
   type ShaperPresetSelection,
 } from "./studio-shaper-model";
 import { StudioShaperPanel } from "./StudioShaperPanel";
+import { StudioMannequinPoseSection } from "./StudioMannequinPoserPoseSection";
 import "../studio-3d-ui/studio-3d-illustrated-chrome.css";
 import "../studio-3d-ui/studio-3d-reference-workspace.css";
-
-import type { ReactElement } from "react";
 
 import { ModalStatusSlot } from "@/shared/components/modal-status-slot";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
-// 포즈 탭 본문(통합 포즈 라이브러리·실루엣 카드)은 StudioMannequinPoserPoseSection 이 맡는다.
-import { StudioMannequinPoseSection } from "./StudioMannequinPoserPoseSection";
-
+export { StudioMannequinBodySection, StudioMannequinCameraSection, StudioMannequinJointSection, StudioMannequinPoseSection };
 export type { StudioMannequinCaptureResult } from "./studio-mannequin-scene";
 
 export interface StudioMannequinPoserPanelProps {
   readonly open: boolean;
   readonly onClose: () => void;
   readonly onInsert: (result: StudioMannequinCaptureResult) => Promise<boolean | void> | boolean | void;
-  /**
-   * `/studio/poser?starter=` — 패널이 열릴 때 자동 적용할 포즈 프리셋 id.
-   * 데생 인형 프리셋을 먼저 찾고, 없으면 웹툰 포즈 프리셋에서 찾는다.
-   * 알 수 없는 id는 무시한다.
-   */
   readonly initialPosePresetId?: string;
-  /** "canvas"(기본): 캡처를 편집기에 넣고 닫는다. "download": 독립 진입점 — PNG로 받고 포저는 열어 둔다. */
   readonly captureTarget?: "canvas" | "download";
 }
 
 type MannequinTabId = "shaper" | "body" | "pose" | "magic" | "joint" | "camera";
-type StudioMannequinPersistenceStatus =
-  | "idle"
-  | "loading"
-  | "ready"
-  | "saving"
-  | "memory-only";
+type StudioMannequinPersistenceStatus = "idle" | "loading" | "ready" | "saving" | "memory-only";
 
 interface StudioMannequinPhotoPoseApplyStatus {
   readonly sourceName: string;
@@ -190,10 +173,7 @@ interface StudioMannequinPhotoPoseApplyStatus {
   readonly appliedJointCount: number;
 }
 
-const RAD_TO_DEG = 180 / Math.PI;
-const DEG_TO_RAD = Math.PI / 180;
 const STUDIO_MANNEQUIN_PHOTO_MIN_APPLIED_JOINTS = 6;
-/** 손 detectForVideo 가 이 횟수만큼 연속 실패하면 손 추적만 중단한다(신체 추적 유지). */
 const STUDIO_MANNEQUIN_HAND_MAX_FRAME_FAILURES = 20;
 
 const TABS: readonly { id: MannequinTabId; label: string; icon: ReactElement }[] = Object.freeze([
@@ -203,57 +183,6 @@ const TABS: readonly { id: MannequinTabId; label: string; icon: ReactElement }[]
   { id: "magic", label: "매직 포저", icon: <Sparkles size={13} aria-hidden /> },
   { id: "joint", label: "관절", icon: <Sliders size={13} aria-hidden /> },
   { id: "camera", label: "카메라·캡처", icon: <Camera size={13} aria-hidden /> },
-]);
-
-const BODY_SLIDERS: readonly {
-  key: StudioMannequinCoreParamKey;
-  label: string;
-  step: number;
-  format: (v: number) => string;
-}[] = Object.freeze([
-  { key: "heightCm", label: "신장", step: 1, format: (v) => `${Math.round(v)}cm` },
-  { key: "headCount", label: "두신 비율", step: 0.1, format: (v) => `${v.toFixed(1)}등신` },
-  { key: "shoulderWidth", label: "어깨 너비", step: 0.02, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "pelvisWidth", label: "골반 너비", step: 0.02, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "armLength", label: "팔 길이", step: 0.02, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "legLength", label: "다리 비율", step: 0.02, format: (v) => `${Math.round(v * 100)}%` },
-  {
-    key: "build",
-    label: "체형 블렌드",
-    step: 0.1,
-    format: (v) => (v < 0.5 ? "마른" : v < 1.5 ? "표준" : v < 2.5 ? "근육" : "통통"),
-  },
-]);
-
-const ANATOMY_SLIDERS: readonly {
-  key: StudioMannequinAnatomyParamKey;
-  label: string;
-  step: number;
-}[] = Object.freeze([
-  { key: "torsoDepth", label: "몸통 깊이", step: 0.02 },
-  { key: "chestWidth", label: "흉곽 너비", step: 0.02 },
-  { key: "pelvisDepth", label: "골반 깊이", step: 0.02 },
-  { key: "waistWidth", label: "허리 너비", step: 0.02 },
-  { key: "limbThickness", label: "사지 전체 굵기", step: 0.02 },
-  { key: "upperArmThickness", label: "상완 굵기", step: 0.02 },
-  { key: "forearmThickness", label: "전완 굵기", step: 0.02 },
-  { key: "thighThickness", label: "허벅지 굵기", step: 0.02 },
-  { key: "calfThickness", label: "종아리 굵기", step: 0.02 },
-  { key: "handScale", label: "손 크기", step: 0.02 },
-  { key: "footScale", label: "발 크기", step: 0.02 },
-  { key: "neckThickness", label: "목 굵기", step: 0.02 },
-]);
-
-const HEAD_SLIDERS: readonly {
-  key: keyof StudioMannequinBodyParams;
-  label: string;
-  step: number;
-  format: (v: number) => string;
-}[] = Object.freeze([
-  { key: "faceWidth", label: "턱/얼굴 너비", step: 0.02, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "chinLength", label: "턱 길이", step: 0.02, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "eyeScale", label: "눈 크기/비율", step: 0.02, format: (v) => `${Math.round(v * 100)}%` },
-  { key: "noseHeight", label: "코 높이", step: 0.02, format: (v) => `${Math.round(v * 100)}%` },
 ]);
 
 function getErrorText(cause: unknown, fallback: string): string {
@@ -267,247 +196,15 @@ function createWebcamPreflightError(name: string, message: string): Error {
   return error;
 }
 
-export function StudioMannequinBodySection({
-  params,
-  materialStyle,
-  onParamsChange,
-  onApplyPreset,
-  onMaterialStyleChange,
-}: {
-  params: StudioMannequinBodyParams;
-  materialStyle: StudioMannequinMaterialStyle;
-  onParamsChange: (next: StudioMannequinBodyParams) => void;
-  onApplyPreset: (presetId: StudioMannequinBodyPresetId) => void;
-  onMaterialStyleChange: (style: StudioMannequinMaterialStyle) => void;
-}): ReactElement {
-  return (
-    <div className="space-y-4">
-      <StudioSectionHeader
-        title="체형 프리셋"
-        description="다양한 등신 비율 및 신장 파라미터를 선택하세요."
-      />
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="체형 프리셋">
-        {(Object.keys(STUDIO_MANNEQUIN_BODY_PRESETS) as StudioMannequinBodyPresetId[]).map(
-          (presetId) => (
-            <StudioPanelChip
-              key={presetId}
-              onClick={() => onApplyPreset(presetId)}
-              title={`${STUDIO_MANNEQUIN_BODY_PRESETS[presetId].label} 체형 프리셋 적용`}
-            >
-              {STUDIO_MANNEQUIN_BODY_PRESETS[presetId].label}
-            </StudioPanelChip>
-          ),
-        )}
-      </div>
-
-      <div className="space-y-1.5 pt-1">
-        <span className="text-xs font-semibold text-fg-2">재질·표면 스타일</span>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="재질 스타일">
-          {STUDIO_MANNEQUIN_MATERIAL_STYLES.map((style) => (
-            <StudioToggleChip
-              key={style.id}
-              active={materialStyle === style.id}
-              onClick={() => onMaterialStyleChange(style.id)}
-              title={style.desc}
-            >
-              {style.label}
-            </StudioToggleChip>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2 pt-1">
-        <span className="text-xs font-semibold text-fg-2">세부 체형 조절</span>
-        {BODY_SLIDERS.map(({ key, label, step, format }) => {
-          const [min, max] = STUDIO_MANNEQUIN_PARAM_RANGES[key];
-          return (
-            <StudioSliderRow
-              key={key}
-              label={label}
-              min={min}
-              max={max}
-              step={step}
-              value={params[key]}
-              onChange={(next) =>
-                onParamsChange(clampStudioMannequinBodyParams({ ...params, [key]: next }))
-              }
-              readout={format(params[key])}
-            />
-          );
-        })}
-      </div>
-
-      <div className="space-y-3 pt-3 border-t border-line/60">
-        <StudioSectionHeader
-          title="해부학 비례"
-          description="흉곽·골반 깊이와 상완·전완·허벅지·종아리를 독립 조절해 같은 등신에서도 실제 인체에 가까운 테이퍼와 질량 분포를 만듭니다."
-        />
-        <div className="space-y-2">
-          {ANATOMY_SLIDERS.map(({ key, label, step }) => {
-            const [min, max] = STUDIO_MANNEQUIN_ANATOMY_PARAM_RANGES[key];
-            const value = params[key] ?? 1;
-            return (
-              <StudioSliderRow
-                key={key}
-                label={label}
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                onChange={(next) =>
-                  onParamsChange(clampStudioMannequinBodyParams({ ...params, [key]: next }))
-                }
-                readout={`${Math.round(value * 100)}%`}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="space-y-3 pt-3 border-t border-line/60">
-        <StudioSectionHeader
-          title="얼굴 비율"
-          description="웹툰·애니 스타일의 머리 형태와 턱선·눈·코 비율을 조절합니다."
-        />
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="헤드 프리셋">
-          {(Object.keys(STUDIO_MANNEQUIN_HEAD_PRESETS) as StudioMannequinHeadPresetId[]).map(
-            (headId) => (
-              <StudioPanelChip
-                key={headId}
-                onClick={() =>
-                  onParamsChange(
-                    clampStudioMannequinBodyParams({
-                      ...params,
-                      ...STUDIO_MANNEQUIN_HEAD_PRESETS[headId].params,
-                    }),
-                  )
-                }
-                title={`${STUDIO_MANNEQUIN_HEAD_PRESETS[headId].label} 헤드 프리셋 적용`}
-              >
-                {STUDIO_MANNEQUIN_HEAD_PRESETS[headId].label}
-              </StudioPanelChip>
-            ),
-          )}
-        </div>
-        <div className="space-y-2">
-          {HEAD_SLIDERS.map(({ key, label, step, format }) => {
-            const [min, max] = STUDIO_MANNEQUIN_HEAD_PARAM_RANGES[key as StudioMannequinHeadParamKey];
-            const value = (params[key] as number | undefined) ?? 1.0;
-            return (
-              <StudioSliderRow
-                key={key}
-                label={label}
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                onChange={(next) =>
-                  onParamsChange(
-                    clampStudioMannequinBodyParams({ ...params, [key]: next }),
-                  )
-                }
-                readout={format(value)}
-              />
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
+function downloadTextBlob(content: string, filename: string, mimeType = "application/xml"): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
-
-export { StudioMannequinCameraSection, StudioMannequinPoseSection };
-
-export function StudioMannequinJointSection({
-  selectedJointId,
-  rotation,
-  onSelectJoint,
-  onRotate,
-  onResetJoint,
-}: {
-  selectedJointId: StudioMannequinJointId | null;
-  rotation: StudioMannequinVec3;
-  onSelectJoint: (jointId: StudioMannequinJointId) => void;
-  onRotate: (rotation: StudioMannequinVec3) => void;
-  onResetJoint: () => void;
-}): ReactElement {
-  const jointLimit = selectedJointId ? getStudioMannequinJointLimit(selectedJointId) : null;
-  const axes: readonly { axis: 0 | 1 | 2; label: string; range: readonly [number, number] }[] =
-    jointLimit
-      ? [
-          { axis: 0, label: "X 회전", range: jointLimit.x },
-          { axis: 1, label: "Y 회전", range: jointLimit.y },
-          { axis: 2, label: "Z 회전", range: jointLimit.z },
-        ]
-      : [];
-  return (
-    <div className="space-y-3">
-      <StudioSectionHeader
-        title="관절"
-        description="몸을 직접 드래그하면 관절이 회전하고, 손·발 원형 핸들을 드래그하면 IK로 팔다리가 따라옵니다. Alt+드래그는 비틀기, Shift는 정밀 조절, 더블클릭은 부위 확대입니다."
-        action={
-          selectedJointId ? (
-            <button
-              type="button"
-              onClick={onResetJoint}
-              className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1" })}
-              title="선택한 관절 회전 초기화"
-            >
-              <RotateCcw size={13} aria-hidden /> 초기화
-            </button>
-          ) : undefined
-        }
-      />
-      <label className="flex items-center justify-between gap-2 text-xs text-fg-2">
-        관절 선택
-        <select
-          value={selectedJointId ?? ""}
-          onChange={(event) => {
-            const next = event.target.value;
-            if (next) onSelectJoint(next as StudioMannequinJointId);
-          }}
-          aria-label="편집할 관절 선택"
-          className="h-8 min-w-0 flex-1 rounded-md border border-line bg-card px-2 text-[0.72rem] text-fg outline-none focus:border-accent/60 pointer-coarse:min-h-11"
-        >
-          <option value="" disabled>
-            관절을 선택하세요
-          </option>
-          {STUDIO_MANNEQUIN_JOINT_IDS.map((jointId) => (
-            <option key={jointId} value={jointId}>
-              {STUDIO_MANNEQUIN_JOINT_LABELS[jointId]}
-            </option>
-          ))}
-        </select>
-      </label>
-      {selectedJointId && jointLimit ? (
-        <div className="space-y-2">
-          {axes.map(({ axis, label, range }) => (
-            <StudioSliderRow
-              key={axis}
-              label={label}
-              min={Math.round(range[0] * RAD_TO_DEG)}
-              max={Math.round(range[1] * RAD_TO_DEG)}
-              step={1}
-              value={Math.round(rotation[axis] * RAD_TO_DEG)}
-              onChange={(nextDeg) => {
-                const next: [number, number, number] = [rotation[0], rotation[1], rotation[2]];
-                next[axis] = nextDeg * DEG_TO_RAD;
-                onRotate(next);
-              }}
-              readout={`${Math.round(rotation[axis] * RAD_TO_DEG)}°`}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="rounded-lg border border-dashed border-line/70 bg-card/60 p-3 text-[0.7rem] leading-relaxed text-fg-3">
-          {frozenStatus2Text("studio.frozenStatus2.mannequin.noJointSelected", "선택된 관절이 없습니다. 뷰포트의 마네킹을 클릭하면 해당 부위 관절이 선택됩니다.")}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ── 패널 본체 ────────────────────────────────────────────────────────────────
 
 export function StudioMannequinPoserPanel({
   open,
@@ -519,23 +216,32 @@ export function StudioMannequinPoserPanel({
   const dialogTitleId = useId();
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<StudioMannequinSceneHandle | null>(null);
-  /** 매직 포저 라이팅 스튜디오가 마지막으로 적용한 릭 — 씬 재생성 시 initialLightingRig로 복원한다. */
   const lightingRigRef = useRef<StudioMannequinLightingRig | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cspPepInputRef = useRef<HTMLInputElement | null>(null);
+  const csp3dpInputRef = useRef<HTMLInputElement | null>(null);
   const [stateRepository] = useState(getProductStudioMannequinStateSqliteRepository);
 
-  const [params, setParams] = useState<StudioMannequinBodyParams>(
-    STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
-  );
+  const [params, setParams] = useState<StudioMannequinBodyParams>(STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS);
   const [pose, setPose] = useState<StudioMannequinPose>(createStudioMannequinRestPose);
   const [materialStyle, setMaterialStyle] = useState<StudioMannequinMaterialStyle>("wood");
+  const [surfaceMode, setSurfaceMode] = useState<StudioMannequinSurfaceMode>("ecorche");
+  const [pectoralVolume, setPectoralVolume] = useState(1);
+  const [muscleDefinition, setMuscleDefinition] = useState(1);
+  const [fingerPose, setFingerPose] = useState<StudioMannequinFingerPose>(() => clampStudioMannequinFingerPose(undefined));
+  const [leftSplayDeg, setLeftSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
+  const [rightSplayDeg, setRightSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
+  const [jointLocks, setJointLocks] = useState<StudioMannequinJointLockMap>({});
+  const [scapulohumeralRhythm, setScapulohumeralRhythm] = useState(true);
+  const [guideVisibility, setGuideVisibility] = useState<StudioMannequinGuideVisibility>(
+    STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
+  );
+
   const [poseCategory, setPoseCategory] = useState<StudioMannequinPoseCategory | "all">("all");
   const [tab, setTab] = useState<MannequinTabId>("pose");
   const [selectedJointId, setSelectedJointId] = useState<StudioMannequinJointId | null>(null);
   const [projection, setProjection] = useState<StudioMannequinProjection>("perspective");
-  // 구도 브리프(E2) 스냅샷의 근거 — 카메라 프리셋은 씬 핸들 명령과 함께 상태로도 남긴다.
   const [cameraPreset, setCameraPreset] = useState<StudioMannequinCameraPreset>("home");
-  // 앵글 칩 선택 표시 — 궤도 회전·이동·부위 확대·리셋으로 화면이 프리셋에서 벗어나면 null.
   const [selectedCameraAngle, setSelectedCameraAngle] = useState<StudioMannequinCameraPreset | null>(null);
   const [captureNotice, setCaptureNotice] = useState<string | null>(null);
   const [lastPosePresetId, setLastPosePresetId] = useState<string | null>(initialPosePresetId ?? null);
@@ -546,12 +252,9 @@ export function StudioMannequinPoserPanel({
   const [sceneError, setSceneError] = useState<string | null>(null);
   const [persistenceStatus, setPersistenceStatus] = useState<StudioMannequinPersistenceStatus>("idle");
   const [photoPoseApplyStatus, setPhotoPoseApplyStatus] = useState<StudioMannequinPhotoPoseApplyStatus | null>(null);
-  // 자동 접지(foot-contact) — 포즈 변경·IK 드래그 종료 시 발 관통을 골반 오프셋으로 보정한다.
   const footGrounding = useStudioMannequinFootGrounding();
   const groundFootPose = footGrounding.groundPose;
 
-  // 포즈 되돌리기/다시실행 히스토리. 웹캠 매 프레임은 기록하지 않고
-  // 사용자 결정(프리셋 적용·관절 편집·사진 적용 등) 단위로만 기록한다.
   const poseHistoryRef = useRef<StudioPoseHistory>(createStudioPoseHistory());
   const [poseHistorySnapshot, setPoseHistorySnapshot] = useState<StudioPoseHistory>(poseHistoryRef.current);
   const rotateGestureRecordedRef = useRef(false);
@@ -587,8 +290,12 @@ export function StudioMannequinPoserPanel({
   const persistenceGenerationRef = useRef(0);
   const stateRevisionRef = useRef(0);
   const poseRef = useRef(pose);
+  const jointLocksRef = useRef(jointLocks);
+  const rhythmRef = useRef(scapulohumeralRhythm);
+  jointLocksRef.current = jointLocks;
+  rhythmRef.current = scapulohumeralRhythm;
   const stateRef = useRef<StudioMannequinPersistentState>({ params, pose });
-  // 2인 구도 상대 인형(B-02) — 씬·상대 히스토리는 훅이 맡고, 바뀐 상대는 같은 틱에 영속 스냅샷에 싣는다.
+
   const commitDuoPartnerState = useCallback((partner: StudioMannequinPersistentPartner | null, userEdit: boolean) => {
     if (userEdit) stateRevisionRef.current += 1;
     stateRef.current = composeStudioMannequinDuoState(stateRef.current, partner);
@@ -618,18 +325,17 @@ export function StudioMannequinPoserPanel({
     return nextPose;
   }, []);
 
-  /** 사용자 결정 직전에 현재 포즈를 히스토리에 기록한다. 웹캠 루프에서는 호출하지 않는다. */
   function recordPoseHistory(): void {
     poseHistoryRef.current = recordStudioPoseHistory(poseHistoryRef.current, poseRef.current);
     setPoseHistorySnapshot(poseHistoryRef.current);
   }
 
-  /** 사용자 결정(프리셋·미러·초기화·사진 적용 등)으로 포즈를 바꿀 때 사용한다. 자동 접지가 켜져 있으면 커밋 전에 발 관통을 골반 오프셋으로 보정하고, 커밋한 포즈를 돌려준다. */
   const commitPoseWithHistory = useCallback(
     (nextPose: StudioMannequinPose): StudioMannequinPose => {
+      const locked = applyStudioMannequinJointLocks(poseRef.current, nextPose, jointLocksRef.current);
       recordPoseHistory();
       rotateGestureRecordedRef.current = true;
-      return commitPose(groundFootPose(nextPose, stateRef.current.params).pose);
+      return commitPose(groundFootPose(locked, stateRef.current.params).pose);
     },
     [commitPose, groundFootPose],
   );
@@ -638,14 +344,13 @@ export function StudioMannequinPoserPanel({
     rotateGestureRecordedRef.current = false;
   }, []);
 
-  /** 연속 제스처(슬라이더·뷰포트 드래그·매직 포저 조작)는 제스처당 한 번만 기록한다 — 드래그 1회 = 되돌리기 1단계. */
   const recordPoseHistoryOncePerGesture = useCallback(() => {
     if (rotateGestureRecordedRef.current) return;
     rotateGestureRecordedRef.current = true;
     poseHistoryRef.current = recordStudioPoseHistory(poseHistoryRef.current, poseRef.current);
     setPoseHistorySnapshot(poseHistoryRef.current);
   }, []);
-  // 키보드 조작도 키를 새로 누를 때마다 제스처 경계다(누르고 있는 반복 입력은 한 단계).
+
   const resetPoseHistoryGestureOnKey = (event: React.KeyboardEvent) => {
     if (!event.repeat) resetPoseHistoryGesture();
   };
@@ -655,41 +360,59 @@ export function StudioMannequinPoserPanel({
   });
   const notePoseEdited = viewportGestures.notePoseEdited;
 
-  /**
-   * 매직 포저 탭(`StudioMagicPoserPanel`)용 씬 어댑터. 고아 컴포넌트 해소 마운트이며,
-   * 포즈의 단일 진실 공급원(마네킹 패널의 pose 상태)을 유지한다:
-   * - setPose → 히스토리 기록 후 pose 상태로 반영 (effect가 실제 씬에 동기화)
-   * - getPose → 현재 pose 상태
-   * - setJointRotation → 관절 슬라이더와 동일한 경로로 pose 상태에 반영
-   * - setLightingRig → 실제 씬 핸들의 setLightingRig로 직행해 뷰포트 조명을 교체
-   *   (조명은 pose 상태와 무관한 렌더 상태라 React 상태를 거치지 않는다)
-   * 어댑터가 항상 제공되므로 매직 포저의 `scene` 미전달 no-op 경로를 타지 않는다.
-   */
+  // 매직 포저 어댑터: 50종 손 프리셋의 30마디 굴곡(setFingerCurls) + 체형 모프(onBodyMorphChange) 완전 연동
   const magicPoserScene = useMemo<StudioMagicPoserScene>(
     () => ({
       setPose: (nextPose: StudioMannequinPose) => {
+        const locked = applyStudioMannequinJointLocks(poseRef.current, nextPose, jointLocksRef.current);
         recordPoseHistoryOncePerGesture();
-        return commitPose(groundFootPose(nextPose, stateRef.current.params).pose);
+        return commitPose(groundFootPose(locked, stateRef.current.params).pose);
       },
       getPose: () => poseRef.current,
       setJointRotation: (jointId, rotation) => {
+        if (jointLocksRef.current[jointId]) return;
         const clamped = clampStudioMannequinJointRotation(jointId, rotation);
         recordPoseHistoryOncePerGesture();
-        commitPose(
-          normalizeStudioMannequinPose({
-            joints: { ...poseRef.current.joints, [jointId]: clamped },
-            pelvisOffset: poseRef.current.pelvisOffset,
-          }),
-        );
+        let next = normalizeStudioMannequinPose({
+          joints: { ...poseRef.current.joints, [jointId]: clamped },
+          pelvisOffset: poseRef.current.pelvisOffset,
+        });
+        if (rhythmRef.current && (jointId === "leftUpperArm" || jointId === "rightUpperArm")) {
+          next = applyStudioMannequinScapulohumeralRhythm(next, jointLocksRef.current, 1);
+        }
+        commitPose(next);
+      },
+      setFingerCurls: (side, curls) => {
+        setFingerPose((prev) => {
+          const handPatch: Partial<Record<StudioMannequinFingerName, readonly [number, number, number]>> = {};
+          for (const fname of STUDIO_MANNEQUIN_FINGER_NAMES) {
+            const c = curls[fname];
+            if (typeof c === "number" && Number.isFinite(c)) {
+              handPatch[fname] = [c, c, c];
+            }
+          }
+          return clampStudioMannequinFingerPose({
+            ...prev,
+            [side]: { ...prev[side], ...handPatch },
+          });
+        });
       },
       setLightingRig: (rig: StudioMannequinLightingRig) => {
         lightingRigRef.current = rig;
         sceneRef.current?.setLightingRig(rig);
       },
-      getLightingRig: () =>
-        sceneRef.current?.getLightingRig() ?? lightingRigRef.current,
+      getLightingRig: () => sceneRef.current?.getLightingRig() ?? lightingRigRef.current,
     }),
     [commitPose, groundFootPose, recordPoseHistoryOncePerGesture],
+  );
+
+  const morphBaseParamsRef = useRef<StudioMannequinBodyParams | null>(null);
+  const handleMagicBodyMorphChange = useCallback(
+    (morph: StudioBodyMorph) => {
+      if (!morphBaseParamsRef.current) morphBaseParamsRef.current = stateRef.current.params;
+      commitParams(applyStudioBodyMorph(morphBaseParamsRef.current, morph));
+    },
+    [commitParams],
   );
 
   const handleUndoPose = useCallback(() => {
@@ -710,7 +433,6 @@ export function StudioMannequinPoserPanel({
 
   const poseHistoryDescription = useMemo(() => describeStudioPoseHistory(poseHistorySnapshot), [poseHistorySnapshot]);
 
-  // 구도 → 생성 브리프(E2) 호스트 스냅샷: 지금 포저가 잡은 구도를 패널 계약으로 공급한다.
   const compositionSnapshot = useMemo(
     () =>
       buildStudioMannequinCompositionSnapshot({
@@ -731,10 +453,8 @@ export function StudioMannequinPoserPanel({
     handTrackingRef.current = false;
     handTrackingLoadingRef.current = false;
     handFailureStreakRef.current = 0;
-
     handInitAbortControllerRef.current?.abort();
     handInitAbortControllerRef.current = null;
-
     handLandmarkerRef.current = null;
     disposeStudioMannequinHandLandmarker();
   }, []);
@@ -744,33 +464,27 @@ export function StudioMannequinPoserPanel({
     setHandTracking(false);
     setHandTrackingLoading(false);
     setHandTrackingError(null);
-
     webcamSessionRef.current += 1;
     webcamActiveRef.current = false;
     webcamLoadingRef.current = false;
-
     webcamAbortControllerRef.current?.abort();
     webcamAbortControllerRef.current = null;
-
     if (webcamFrameRef.current !== null) {
       cancelAnimationFrame(webcamFrameRef.current);
       webcamFrameRef.current = null;
     }
-
     const video = webcamVideoRef.current;
     if (video) {
       try {
         video.pause();
       } catch {
-        // Some embedded browsers do not expose pause() until metadata has loaded.
+        // Ignore embedded browser pause() errors prior to metadata load.
       }
       video.srcObject = null;
     }
-
     const stream = webcamStreamRef.current;
     webcamStreamRef.current = null;
     if (stream) stopStudioMannequinMediaStream(stream);
-
     webcamLandmarkerRef.current = null;
     disposeStudioMannequinPoseLandmarker();
   }, [releaseHandTrackingResources]);
@@ -787,7 +501,6 @@ export function StudioMannequinPoserPanel({
       stopWebcam();
       return;
     }
-
     const session = webcamSessionRef.current + 1;
     webcamSessionRef.current = session;
     const abortController = new AbortController();
@@ -798,24 +511,14 @@ export function StudioMannequinPoserPanel({
     try {
       setWebcamLoadingStage("engine");
       setWebcamError(null);
-
       if (window.isSecureContext === false) {
-        throw createWebcamPreflightError(
-          "StudioMannequinInsecureContextError",
-          "Camera access requires a secure context.",
-        );
+        throw createWebcamPreflightError("StudioMannequinInsecureContextError", "Camera access requires a secure context.");
       }
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw createWebcamPreflightError(
-          "StudioMannequinCameraUnavailableError",
-          "navigator.mediaDevices.getUserMedia is unavailable.",
-        );
+        throw createWebcamPreflightError("StudioMannequinCameraUnavailableError", "navigator.mediaDevices.getUserMedia is unavailable.");
       }
-
       failureStage = "engine";
-      const landmarker = await initStudioMannequinPoseLandmarker({
-        signal: abortController.signal,
-      });
+      const landmarker = await initStudioMannequinPoseLandmarker({ signal: abortController.signal });
       if (webcamSessionRef.current !== session || abortController.signal.aborted) return;
 
       failureStage = "camera";
@@ -823,11 +526,7 @@ export function StudioMannequinPoserPanel({
       const stream = await requestStudioMannequinCameraStream(
         () => navigator.mediaDevices.getUserMedia({
           audio: false,
-          video: {
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            facingMode: { ideal: "user" },
-          },
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: { ideal: "user" } },
         }),
         { signal: abortController.signal },
       );
@@ -835,16 +534,11 @@ export function StudioMannequinPoserPanel({
         stopStudioMannequinMediaStream(stream);
         return;
       }
-
       webcamStreamRef.current = stream;
       const video = webcamVideoRef.current;
       if (!video) {
-        throw createWebcamPreflightError(
-          "StudioMannequinCameraUnavailableError",
-          "The webcam preview element is unavailable.",
-        );
+        throw createWebcamPreflightError("StudioMannequinCameraUnavailableError", "The webcam preview element is unavailable.");
       }
-
       video.srcObject = stream;
       await video.play();
       if (webcamSessionRef.current !== session || abortController.signal.aborted) {
@@ -852,21 +546,15 @@ export function StudioMannequinPoserPanel({
         video.srcObject = null;
         return;
       }
-
       webcamLandmarkerRef.current = landmarker;
       webcamActiveRef.current = true;
       webcamLoadingRef.current = false;
       setWebcamLoadingStage(null);
       setWebcamActive(true);
     } catch (cause) {
-      if (
-        webcamSessionRef.current !== session
-        || abortController.signal.aborted
-        || isStudioMannequinWebcamAbortError(cause)
-      ) {
+      if (webcamSessionRef.current !== session || abortController.signal.aborted || isStudioMannequinWebcamAbortError(cause)) {
         return;
       }
-
       console.warn(`Studio mannequin webcam ${failureStage} initialization failed:`, cause);
       releaseWebcamResources();
       setWebcamActive(false);
@@ -880,20 +568,8 @@ export function StudioMannequinPoserPanel({
     }
   }, [releaseWebcamResources, stopWebcam]);
 
-  /**
-   * 라이브 손 트래킹 토글. 웹캠 세션(신체 추적)과 같은 비디오 엘리먼트를 공유하므로
-   * 카메라 스트림을 새로 열지 않고 HandLandmarker(VIDEO)만 별도로 올린다.
-   * 손 엔진 준비 실패는 손 토글만 끄고 신체 추적은 유지한다.
-   */
   const handleToggleHandTracking = useCallback(() => {
-    if (handTrackingLoadingRef.current) {
-      releaseHandTrackingResources();
-      setHandTracking(false);
-      setHandTrackingLoading(false);
-      setHandTrackingError(null);
-      return;
-    }
-    if (handTrackingRef.current) {
+    if (handTrackingLoadingRef.current || handTrackingRef.current) {
       releaseHandTrackingResources();
       setHandTracking(false);
       setHandTrackingLoading(false);
@@ -901,7 +577,6 @@ export function StudioMannequinPoserPanel({
       return;
     }
     if (!webcamActiveRef.current) return;
-
     const abortController = new AbortController();
     handInitAbortControllerRef.current = abortController;
     handTrackingLoadingRef.current = true;
@@ -911,7 +586,6 @@ export function StudioMannequinPoserPanel({
     void initStudioMannequinHandLandmarker({ signal: abortController.signal }).then(
       (landmarker) => {
         if (abortController.signal.aborted || !webcamActiveRef.current) {
-          // 늦게 도착한 손 엔진은 신체 세션과 엮이지 않게 즉시 정리한다.
           disposeStudioMannequinHandLandmarker();
           return;
         }
@@ -923,12 +597,7 @@ export function StudioMannequinPoserPanel({
         setHandTracking(true);
       },
       (cause: unknown) => {
-        if (
-          abortController.signal.aborted
-          || isStudioMannequinWebcamAbortError(cause)
-        ) {
-          return;
-        }
+        if (abortController.signal.aborted || isStudioMannequinWebcamAbortError(cause)) return;
         console.warn("Studio mannequin hand tracking initialization failed:", cause);
         releaseHandTrackingResources();
         setHandTracking(false);
@@ -946,9 +615,7 @@ export function StudioMannequinPoserPanel({
 
   poseRef.current = pose;
 
-  // 사진 포즈 적용 후 사용자가 포즈를 바꾸면 적용 상태 배너를 닫는다.
   const photoPoseAppliedPoseRef = useRef<StudioMannequinPose | null>(null);
-
   useEffect(() => {
     if (!photoPoseAppliedPoseRef.current || pose === photoPoseAppliedPoseRef.current) return;
     photoPoseAppliedPoseRef.current = null;
@@ -958,7 +625,6 @@ export function StudioMannequinPoserPanel({
   useEffect(() => {
     if (!webcamActive) return;
     let lastVideoTime = -1;
-
     const loop = () => {
       if (!webcamActiveRef.current) return;
       try {
@@ -979,17 +645,10 @@ export function StudioMannequinPoserPanel({
                 mirrorMode: mirrorModeRef.current,
                 smoothing: 0.35,
               });
-              const smoothedJoints = smoothMannequinJointRotations(
-                poseRef.current.joints,
-                rawJoints,
-                0.35,
-              );
+              const smoothedJoints = smoothMannequinJointRotations(poseRef.current.joints, rawJoints, 0.35);
               const updatedPose: StudioMannequinPose = {
                 ...poseRef.current,
-                joints: {
-                  ...poseRef.current.joints,
-                  ...smoothedJoints,
-                },
+                joints: { ...poseRef.current.joints, ...smoothedJoints },
               };
               commitPose(updatedPose);
               sceneRef.current?.setPose(updatedPose);
@@ -1003,21 +662,12 @@ export function StudioMannequinPoserPanel({
             try {
               const handDetection = handLandmarker.detectForVideo(video, performance.now());
               try {
-                const handFrame = createStudioMannequinHandFrameResult(handDetection, {
-                  mirror: mirrorModeRef.current,
-                });
+                const handFrame = createStudioMannequinHandFrameResult(handDetection, { mirror: mirrorModeRef.current });
                 if (Object.keys(handFrame.wrists).length > 0) {
-                  const smoothedWrists = smoothMannequinJointRotations(
-                    poseRef.current.joints,
-                    handFrame.wrists,
-                    0.35,
-                  );
+                  const smoothedWrists = smoothMannequinJointRotations(poseRef.current.joints, handFrame.wrists, 0.35);
                   const updatedPose: StudioMannequinPose = {
                     ...poseRef.current,
-                    joints: {
-                      ...poseRef.current.joints,
-                      ...smoothedWrists,
-                    },
+                    joints: { ...poseRef.current.joints, ...smoothedWrists },
                   };
                   commitPose(updatedPose);
                   sceneRef.current?.setPose(updatedPose);
@@ -1027,8 +677,6 @@ export function StudioMannequinPoserPanel({
                 handDetection.close?.();
               }
             } catch (handCause) {
-              // 손 프레임 실패는 신체 추적 루프를 절대 멈추지 않는다. 손 엔진이 계속
-              // 실패할 때만 손 추적 토글을 끄고, 신체 동작 인식은 그대로 유지한다.
               console.warn("Studio mannequin hand frame analysis failed:", handCause);
               const streak = handFailureStreakRef.current + 1;
               handFailureStreakRef.current = streak;
@@ -1048,11 +696,9 @@ export function StudioMannequinPoserPanel({
         setWebcamError(getStudioMannequinWebcamErrorMessage("tracking", cause));
         return;
       }
-
       webcamFrameRef.current = requestAnimationFrame(loop);
     };
     webcamFrameRef.current = requestAnimationFrame(loop);
-
     return () => {
       if (webcamFrameRef.current !== null) {
         cancelAnimationFrame(webcamFrameRef.current);
@@ -1061,19 +707,17 @@ export function StudioMannequinPoserPanel({
     };
   }, [commitPose, releaseHandTrackingResources, releaseWebcamResources, webcamActive]);
 
-  const spec = useMemo(() => buildStudioMannequinSpec(params), [params]);
+  const spec = useMemo(
+    () => buildStudioMannequinSpec(params, { fingerPose }),
+    [params, fingerPose],
+  );
+  const balanceReport = useMemo(() => analyzeStudioMannequinBalance(spec, pose), [spec, pose]);
 
   const poseFromSceneRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
-      // Route/access transitions can unmount this panel without calling closeWithPersist().
-      // Queue the latest canonical state before invalidating UI generations. The SQLite
-      // repository serializes writes, so this also safely follows an in-flight explicit save.
-      // There is no browser-KV/memory fallback: a failed late flush remains an observable
-      // repository failure in diagnostics, while the component is already gone and cannot
-      // truthfully present a retry UI.
       if (hydrationSafeForFinalFlushRef.current) {
         void stateRepository.save(stateRef.current).catch((cause: unknown) => {
           console.warn("Studio mannequin final SQLite flush failed:", cause);
@@ -1086,9 +730,6 @@ export function StudioMannequinPoserPanel({
   }, [stateRepository]);
 
   const persistState = useCallback(async (): Promise<boolean> => {
-    // A save is only authoritative after the prior durable snapshot has been read. Saving while
-    // hydration is pending (or after it failed) could replace an unknown existing snapshot with
-    // the component's initial defaults.
     if (!hydrationSafeForFinalFlushRef.current) {
       setError(persistenceStatus === "memory-only" ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteUnknownSave", "기존 SQLite 상태를 확인하지 못해 저장하거나 닫을 수 없습니다. JSON으로 내보낸 뒤 다시 열어 주세요.") : frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteLoadingRetry", "기존 SQLite 상태를 불러오는 중입니다. 완료된 뒤 다시 시도해 주세요."));
       return false;
@@ -1132,9 +773,7 @@ export function StudioMannequinPoserPanel({
   }, [onClose, persistState, persistenceStatus, releaseWebcamResources]);
 
   const closeWithoutPersist = useCallback(async () => {
-    if (!(await confirmStudioDestructiveAction(
-      studioDiscardUnpersistedMannequinStateRequest(),
-    )) || !mountedRef.current) return;
+    if (!(await confirmStudioDestructiveAction(studioDiscardUnpersistedMannequinStateRequest())) || !mountedRef.current) return;
     releaseWebcamResources();
     setWebcamActive(false);
     setWebcamLoadingStage(null);
@@ -1151,24 +790,13 @@ export function StudioMannequinPoserPanel({
     setPersistenceStatus("loading");
     setError(null);
     void stateRepository.load().then((stored) => {
-      if (
-        !active ||
-        !mountedRef.current ||
-        hydrationGenerationRef.current !== generation
-      ) {
-        return;
-      }
-      // A real edit made while the read was pending is newer than the loaded snapshot. Keep the
-      // edited state, but mark it safe to flush because the prior durable read completed first.
+      if (!active || !mountedRef.current || hydrationGenerationRef.current !== generation) return;
       if (stateRevisionRef.current !== startingRevision) {
         hydrationSafeForFinalFlushRef.current = true;
         setPersistenceStatus("ready");
         return;
       }
       if (stored) {
-        // React may unmount in the same turn before these state updates commit. Advance the
-        // synchronous flush authority first so final cleanup can never write initial defaults
-        // over the durable snapshot that just finished loading.
         stateRef.current = stored;
         poseRef.current = stored.pose;
         setParams(stored.params);
@@ -1185,9 +813,7 @@ export function StudioMannequinPoserPanel({
     });
     return () => {
       active = false;
-      if (hydrationGenerationRef.current === generation) {
-        hydrationGenerationRef.current += 1;
-      }
+      if (hydrationGenerationRef.current === generation) hydrationGenerationRef.current += 1;
     };
   }, [open, restoreDuoPartner, stateRepository]);
 
@@ -1205,11 +831,9 @@ export function StudioMannequinPoserPanel({
         initialLightingRig: lightingRigRef.current,
         onSelectJoint: (jointId) => setSelectedJointId(jointId),
         onPoseEdited: (editedPose) => {
-          // IK·직접 드래그 종료 시점에만 접지를 적용한다(드래그 중에는 포즈를 빼앗지 않는다).
-          // 보정이 있으면 씬에도 보정 포즈를 다시 동기화해야 하므로 from-scene 플래그를 내린다.
-          // 드래그 1회 = 되돌리기 1단계: 뷰포트 pointerdown이 그은 경계 안에서 한 번 기록한다(바뀐 게 없으면 생략).
           notePoseEdited();
-          const grounded = groundFootPose(editedPose, stateRef.current.params);
+          const locked = applyStudioMannequinJointLocks(poseRef.current, editedPose, jointLocksRef.current);
+          const grounded = groundFootPose(locked, stateRef.current.params);
           if (!studioMannequinPosesNearlyEqual(grounded.pose, poseRef.current)) recordPoseHistoryOncePerGesture();
           poseFromSceneRef.current = !grounded.applied;
           commitPose(grounded.pose);
@@ -1226,8 +850,7 @@ export function StudioMannequinPoserPanel({
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
-      const { width, height } = entry.contentRect;
-      handle.resize(width, height);
+      handle.resize(entry.contentRect.width, entry.contentRect.height);
     });
     resizeObserver.observe(container);
 
@@ -1241,6 +864,29 @@ export function StudioMannequinPoserPanel({
   useEffect(() => {
     sceneRef.current?.setBodySpec(spec);
   }, [spec]);
+
+  useEffect(() => {
+    sceneRef.current?.setEcorcheState?.({
+      surfaceMode,
+      pectoralVolume,
+      muscleDefinition,
+      fingerPose,
+      leftSplayDeg,
+      rightSplayDeg,
+    });
+  }, [surfaceMode, pectoralVolume, muscleDefinition, fingerPose, leftSplayDeg, rightSplayDeg]);
+
+  useEffect(() => {
+    sceneRef.current?.setJointLocks?.(jointLocks);
+  }, [jointLocks]);
+
+  useEffect(() => {
+    sceneRef.current?.setScapulohumeralRhythm?.(scapulohumeralRhythm);
+  }, [scapulohumeralRhythm]);
+
+  useEffect(() => {
+    sceneRef.current?.setGuideVisibility?.(guideVisibility);
+  }, [guideVisibility]);
 
   useEffect(() => {
     if (poseFromSceneRef.current) {
@@ -1261,9 +907,6 @@ export function StudioMannequinPoserPanel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, capturing, closeWithPersist, persistenceStatus]);
 
-  // 프리셋은 적용 시점에 지금 체형으로 지지 방식대로 접지한다(손 전용은 손만 얹는다).
-  // 2인 프리셋은 같은 클릭 한 번으로 상대 인형까지 계산된 거리·시선·접지로 씬에 넣고,
-  // 상대를 조작 중이면 1인 프리셋은 상대에게 적용한다.
   const applyPosePreset = useCallback((presetId: string) => {
     const preset = STUDIO_MANNEQUIN_POSE_PRESETS.find((entry) => entry.id === presetId);
     if (!preset) return;
@@ -1277,7 +920,6 @@ export function StudioMannequinPoserPanel({
     commitPoseWithHistory(resolveStudioMannequinLibraryPresetPose(preset, params, poseRef.current));
   }, [applyPoseToPartner, commitPoseWithHistory, params, placeDuo]);
 
-  // 웹툰 포즈 프리셋(Shaper식 클릭 적용): 데생 인형 정본 포즈로 바꿔 같은 규칙으로 적용한다.
   const applyWebtoonPosePreset = useCallback((presetId: string) => {
     const preset = getWebtoonPosePresetById(presetId);
     if (!preset) return;
@@ -1291,10 +933,6 @@ export function StudioMannequinPoserPanel({
     commitPoseWithHistory(resolveStudioMannequinWebtoonPresetPose(preset, params));
   }, [applyPoseToPartner, commitPoseWithHistory, params, placeDuo]);
 
-  /**
-   * `?starter=` 자동 적용. 패널이 열리는 동안 최초 1회만 시도한다.
-   * 데생 인형 프리셋 → 웹툰 포즈 프리셋 순으로 찾고, 둘 다 없으면 무시한다.
-   */
   const starterPresetAppliedRef = useRef(false);
   useEffect(() => {
     if (!open || starterPresetAppliedRef.current) return;
@@ -1310,29 +948,38 @@ export function StudioMannequinPoserPanel({
 
   const handleRotateSelected = useCallback(
     (rotation: StudioMannequinVec3) => {
-      if (!selectedJointId) return;
-      // 슬라이더 드래그 같은 연속 제스처에서는 제스처당 한 번만 기록한다.
+      if (!selectedJointId || jointLocksRef.current[selectedJointId]) return;
       recordPoseHistoryOncePerGesture();
       const clamped = clampStudioMannequinJointRotation(selectedJointId, rotation);
-      commitPose(
-        normalizeStudioMannequinPose({
-          joints: { ...poseRef.current.joints, [selectedJointId]: clamped },
-          pelvisOffset: poseRef.current.pelvisOffset,
-        }),
-      );
+      let next = normalizeStudioMannequinPose({
+        joints: { ...poseRef.current.joints, [selectedJointId]: clamped },
+        pelvisOffset: poseRef.current.pelvisOffset,
+      });
+      if (rhythmRef.current && (selectedJointId === "leftUpperArm" || selectedJointId === "rightUpperArm")) {
+        next = applyStudioMannequinScapulohumeralRhythm(next, jointLocksRef.current, 1);
+      }
+      commitPose(next);
     },
     [commitPose, recordPoseHistoryOncePerGesture, selectedJointId],
   );
 
+  const handleApplyHandPad = useCallback(
+    (side: "left" | "right" | "both", output: StudioMannequinHandPadOutput) => {
+      setFingerPose((prev) => mergeHandPadIntoFingerPose(prev, side, output));
+      if (side === "left" || side === "both") setLeftSplayDeg(output.splayDeg);
+      if (side === "right" || side === "both") setRightSplayDeg(output.splayDeg);
+    },
+    [],
+  );
+
+  const handleAutoBalance = useCallback(() => {
+    const stabilized = stabilizeStudioMannequinCenterOfMass(spec, poseRef.current);
+    commitPoseWithHistory(stabilized);
+  }, [commitPoseWithHistory, spec]);
+
   const handleExportJson = useCallback(() => {
     const json = exportStudioMannequinStateToJSON(stateRef.current);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `toonstudio-mannequin-${Date.now()}.mannequin`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadTextBlob(json, `toonstudio-mannequin-${Date.now()}.mannequin`, "application/json");
   }, []);
 
   const handleImportJson = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1340,8 +987,7 @@ export function StudioMannequinPoserPanel({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      const content = e.target?.result;
-      const imported = importStudioMannequinStateFromJSON(content);
+      const imported = importStudioMannequinStateFromJSON(e.target?.result);
       if (imported) {
         commitParams(imported.params);
         commitPoseWithHistory(imported.pose);
@@ -1355,9 +1001,55 @@ export function StudioMannequinPoserPanel({
     event.target.value = "";
   }, [commitParams, commitPoseWithHistory, restoreDuoPartner]);
 
-  // 인앱 WebView 는 navigator.clipboard 자체를 안 주기도 한다. 그때 프로퍼티 접근이 onClick
-  // 안에서 동기 throw 라 에러 바운더리가 3D 패널을 통째로 날렸다. 성공 여부를 기다린 뒤에만
-  // "복사됨"을 띄운다 — 링크를 못 받은 사용자에게 받았다고 말하지 않는다.
+  const handleImportCspPep = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const xml = typeof e.target?.result === "string" ? e.target.result : "";
+        const imported = importCspPepPoseToMannequin(xml);
+        setFingerPose(imported.fingerPose);
+        commitPoseWithHistory(imported.pose);
+        setCaptureNotice(`클립스튜디오 포즈 적용됨 (${imported.aliasName} · ${imported.mappedBoneCount}본)`);
+        setError(null);
+      } catch (cause) {
+        setError(getErrorText(cause, "클립스튜디오 .pep 포즈 XML을 읽지 못했습니다."));
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  }, [commitPoseWithHistory]);
+
+  const handleExportCspPep = useCallback(() => {
+    const xml = exportMannequinPoseToCspPep(poseRef.current, "ToonStudio_Ecorche_v3", fingerPose);
+    downloadTextBlob(xml, `toonstudio-pose-${Date.now()}.pep`, "application/xml");
+  }, [fingerPose]);
+
+  const handleImportCsp3dp = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const xml = typeof e.target?.result === "string" ? e.target.result : "";
+        const nextParams = importCsp3dpToMannequinParams(xml, stateRef.current.params);
+        commitParams(nextParams);
+        setCaptureNotice("클립스튜디오 .3dp 체형 비율이 적용되었습니다.");
+        setError(null);
+      } catch (cause) {
+        setError(getErrorText(cause, "클립스튜디오 .3dp 체형 XML을 읽지 못했습니다."));
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  }, [commitParams]);
+
+  const handleExportCsp3dp = useCallback(() => {
+    const xml = exportMannequinParamsToCsp3dp(stateRef.current.params);
+    downloadTextBlob(xml, `toonstudio-body-${Date.now()}.3dp`, "application/xml");
+  }, []);
+
   const handleCopyShareLink = useCallback(() => {
     const hash = encodeStudioMannequinShareHash(stateRef.current);
     const fullUrl = `${window.location.origin}${window.location.pathname}${hash}`;
@@ -1369,29 +1061,21 @@ export function StudioMannequinPoserPanel({
   }, []);
 
   const handleApplyPhotoPose = useCallback((payload: StudioVrmPhotoPoseApplyPayload): boolean => {
-    if (
-      payload.confidence.quality === "low"
-      || payload.confidence.overall < 0.5
-      || payload.confidence.coverage < 0.6
-    ) {
+    if (payload.confidence.quality === "low" || payload.confidence.overall < 0.5 || payload.confidence.coverage < 0.6) {
       setError("사진 포즈 신뢰도가 낮아 적용하지 않았습니다. 사람이 더 크게 보이는 전신 사진을 선택해 주세요.");
       return false;
     }
-
-    const before = poseRef.current;
     const plan = createStudioMannequinPhotoPoseApplyPlan({
-      currentPose: before,
+      currentPose: poseRef.current,
       mediaPipeLandmarks: payload.worldLandmarks,
       handDetections: payload.handDetections ?? [],
       mirrorMode: false,
       minimumVisibility: 0.35,
     });
-
     if (plan.appliedJoints.length < STUDIO_MANNEQUIN_PHOTO_MIN_APPLIED_JOINTS) {
       setError("사진에서 안전하게 적용할 수 있는 관절이 부족해 기존 포즈를 유지했습니다. 팔·다리가 선명한 전신 사진을 다시 선택해 주세요.");
       return false;
     }
-
     photoPoseAppliedPoseRef.current = commitPoseWithHistory(plan.pose);
     setPhotoPoseApplyStatus({
       sourceName: payload.sourceName,
@@ -1415,59 +1099,28 @@ export function StudioMannequinPoserPanel({
     } else if (sel.body === "body-slim-male") {
       nextParams = { ...nextParams, headCount: 7.6, heightCm: 176, shoulderWidth: 1.08, pelvisWidth: 0.95, build: 0.9 };
     }
-
-    if (sel.face === "face-sharp") {
-      nextParams = { ...nextParams, ...STUDIO_MANNEQUIN_HEAD_PRESETS.sharp.params };
-    } else if (sel.face === "face-round") {
-      nextParams = { ...nextParams, ...STUDIO_MANNEQUIN_HEAD_PRESETS.round.params };
-    } else if (sel.face === "face-square") {
-      nextParams = { ...nextParams, faceWidth: 1.15, chinLength: 1.05, eyeScale: 1.0, noseHeight: 1.1 };
-    } else if (sel.face === "face-chibi") {
-      nextParams = { ...nextParams, ...STUDIO_MANNEQUIN_HEAD_PRESETS.chibi.params };
-    } else if (sel.face === "face-oval") {
-      nextParams = { ...nextParams, ...STUDIO_MANNEQUIN_HEAD_PRESETS.anime.params };
-    }
-
-    if (sel.eye === "eye-romance") {
-      nextParams = { ...nextParams, eyeScale: 1.16 };
-    } else if (sel.eye === "eye-gentle") {
-      nextParams = { ...nextParams, eyeScale: 1.08 };
-    } else if (sel.eye === "eye-action") {
-      nextParams = { ...nextParams, eyeScale: 0.96 };
-    } else if (sel.eye === "eye-cat") {
-      nextParams = { ...nextParams, eyeScale: 1.04 };
-    }
-
-    if (sel.nose === "nose-dot") {
-      nextParams = { ...nextParams, noseHeight: 0.84 };
-    } else if (sel.nose === "nose-straight") {
-      nextParams = { ...nextParams, noseHeight: 1.04 };
-    } else if (sel.nose === "nose-bridge") {
-      nextParams = { ...nextParams, noseHeight: 1.14 };
-    }
+    if (sel.face === "face-sharp") nextParams = { ...nextParams, ...STUDIO_MANNEQUIN_HEAD_PRESETS.sharp.params };
+    else if (sel.face === "face-round") nextParams = { ...nextParams, ...STUDIO_MANNEQUIN_HEAD_PRESETS.round.params };
+    else if (sel.face === "face-square") nextParams = { ...nextParams, faceWidth: 1.15, chinLength: 1.05, eyeScale: 1.0, noseHeight: 1.1 };
+    else if (sel.face === "face-chibi") nextParams = { ...nextParams, ...STUDIO_MANNEQUIN_HEAD_PRESETS.chibi.params };
+    else if (sel.face === "face-oval") nextParams = { ...nextParams, ...STUDIO_MANNEQUIN_HEAD_PRESETS.anime.params };
+    if (sel.eye === "eye-romance") nextParams = { ...nextParams, eyeScale: 1.16 };
+    else if (sel.eye === "eye-gentle") nextParams = { ...nextParams, eyeScale: 1.08 };
+    else if (sel.eye === "eye-action") nextParams = { ...nextParams, eyeScale: 0.96 };
+    else if (sel.eye === "eye-cat") nextParams = { ...nextParams, eyeScale: 1.04 };
+    if (sel.nose === "nose-dot") nextParams = { ...nextParams, noseHeight: 0.84 };
+    else if (sel.nose === "nose-straight") nextParams = { ...nextParams, noseHeight: 1.04 };
+    else if (sel.nose === "nose-bridge") nextParams = { ...nextParams, noseHeight: 1.14 };
     commitParams(nextParams);
 
-    if (sel.bodypose === "pose-stand") {
-      commitPoseWithHistory(createStudioMannequinRestPose());
-    } else if (sel.bodypose === "pose-run") {
-      applyPosePreset("dash");
-    } else if (sel.bodypose === "pose-sit") {
-      applyPosePreset("sit-chair");
-    } else if (sel.bodypose === "pose-hip") {
-      applyPosePreset("cross-arms");
-    } else if (sel.bodypose === "pose-sword") {
-      applyPosePreset("sword-ready");
-    }
-
+    if (sel.bodypose === "pose-stand") commitPoseWithHistory(createStudioMannequinRestPose());
+    else if (sel.bodypose === "pose-run") applyPosePreset("dash");
+    else if (sel.bodypose === "pose-sit") applyPosePreset("sit-chair");
+    else if (sel.bodypose === "pose-hip") applyPosePreset("cross-arms");
+    else if (sel.bodypose === "pose-sword") applyPosePreset("sword-ready");
     if (sel.handpose) applyPosePreset(sel.handpose);
   }, [applyPosePreset, commitParams, commitPoseWithHistory, params]);
 
-  /**
-   * 셰이퍼 탭의 체형 슬라이더 → 데생 인형 실시간 반영.
-   * 셰이퍼 패널(`StudioShaperPanel`)이 `onBodyParamsChange`로 방출하는 부분
-   * 파라미터를 현재 체형에 병합·클램프해 커밋하면 `spec` 메모 → 씬 `setBodySpec`
-   * effect 경로로 인형이 즉시 다시 만들어진다.
-   */
   const handleShaperBodyParamsChange = useCallback((partial: Partial<StudioMannequinBodyParams>) => {
     commitParams(clampStudioMannequinBodyParams({ ...stateRef.current.params, ...partial }));
   }, [commitParams]);
@@ -1485,57 +1138,42 @@ export function StudioMannequinPoserPanel({
         img.onerror = reject;
         img.src = result.pngDataUrl;
       });
-
       const offCanvas = document.createElement("canvas");
       offCanvas.width = result.width;
       offCanvas.height = result.height;
       const ctx = offCanvas.getContext("2d");
       if (!ctx) return;
       ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, result.width, result.height);
-      const beauty = new Uint8ClampedArray(imgData.data);
+      const beauty = new Uint8ClampedArray(ctx.getImageData(0, 0, result.width, result.height).data);
       const flatColor = new Uint8ClampedArray(beauty.length);
       const shadowCel = new Uint8ClampedArray(beauty.length);
       const highlights = new Uint8ClampedArray(beauty.length);
       const lineArt = new Uint8ClampedArray(beauty.length);
       const w = result.width;
       const h = result.height;
-      const luminanceAt = (pixelIndex: number) => (
-        beauty[pixelIndex] * 0.2126
-        + beauty[pixelIndex + 1] * 0.7152
-        + beauty[pixelIndex + 2] * 0.0722
-      );
+      const luminanceAt = (i: number) => beauty[i] * 0.2126 + beauty[i + 1] * 0.7152 + beauty[i + 2] * 0.0722;
 
       for (let y = 0; y < h; y += 1) {
         for (let x = 0; x < w; x += 1) {
           const idx = (y * w + x) * 4;
           const alpha = beauty[idx + 3];
           if (alpha <= 4) continue;
-          const red = beauty[idx];
-          const green = beauty[idx + 1];
-          const blue = beauty[idx + 2];
-          const maximum = Math.max(red, green, blue, 1);
-          const normalize = Math.min(1.45, Math.max(0.72, 190 / maximum));
-          flatColor[idx] = Math.min(255, Math.round(red * normalize));
-          flatColor[idx + 1] = Math.min(255, Math.round(green * normalize));
-          flatColor[idx + 2] = Math.min(255, Math.round(blue * normalize));
+          const normalize = Math.min(1.45, Math.max(0.72, 190 / Math.max(beauty[idx], beauty[idx + 1], beauty[idx + 2], 1)));
+          flatColor[idx] = Math.min(255, Math.round(beauty[idx] * normalize));
+          flatColor[idx + 1] = Math.min(255, Math.round(beauty[idx + 1] * normalize));
+          flatColor[idx + 2] = Math.min(255, Math.round(beauty[idx + 2] * normalize));
           flatColor[idx + 3] = alpha;
-
-          const luminance = luminanceAt(idx);
-          const shadowAmount = Math.min(1, Math.max(0, (172 - luminance) / 105));
+          const lum = luminanceAt(idx);
           shadowCel[idx] = 48;
           shadowCel[idx + 1] = 36;
           shadowCel[idx + 2] = 52;
-          shadowCel[idx + 3] = Math.round(alpha * shadowAmount * 0.76);
-
-          const highlightAmount = Math.min(1, Math.max(0, (luminance - 188) / 67));
+          shadowCel[idx + 3] = Math.round(alpha * Math.min(1, Math.max(0, (172 - lum) / 105)) * 0.76);
           highlights[idx] = 255;
           highlights[idx + 1] = 241;
           highlights[idx + 2] = 219;
-          highlights[idx + 3] = Math.round(alpha * highlightAmount * 0.58);
+          highlights[idx + 3] = Math.round(alpha * Math.min(1, Math.max(0, (lum - 188) / 67)) * 0.58);
         }
       }
-
       for (let y = 1; y < h - 1; y += 1) {
         for (let x = 1; x < w - 1; x += 1) {
           const idx = (y * w + x) * 4;
@@ -1545,14 +1183,8 @@ export function StudioMannequinPoserPanel({
           const right = idx + 4;
           const up = idx - w * 4;
           const down = idx + w * 4;
-          const boundary = Math.max(
-            Math.abs(alpha - beauty[left + 3]),
-            Math.abs(alpha - beauty[right + 3]),
-            Math.abs(alpha - beauty[up + 3]),
-            Math.abs(alpha - beauty[down + 3]),
-          );
-          const formEdge = Math.abs(luminanceAt(left) - luminanceAt(right))
-            + Math.abs(luminanceAt(up) - luminanceAt(down));
+          const boundary = Math.max(Math.abs(alpha - beauty[left + 3]), Math.abs(alpha - beauty[right + 3]), Math.abs(alpha - beauty[up + 3]), Math.abs(alpha - beauty[down + 3]));
+          const formEdge = Math.abs(luminanceAt(left) - luminanceAt(right)) + Math.abs(luminanceAt(up) - luminanceAt(down));
           const lineAlpha = Math.min(255, Math.round(boundary * 1.4 + Math.max(0, formEdge - 46) * 2.1));
           if (lineAlpha <= 18) continue;
           lineArt[idx] = 24;
@@ -1561,16 +1193,7 @@ export function StudioMannequinPoserPanel({
           lineArt[idx + 3] = lineAlpha;
         }
       }
-
-      const psdBlob = buildShaperLayeredPsd({
-        width: result.width,
-        height: result.height,
-        flatColor,
-        shadowCel,
-        highlights,
-        lineArt,
-      });
-
+      const psdBlob = buildShaperLayeredPsd({ width: w, height: h, flatColor, shadowCel, highlights, lineArt });
       const url = URL.createObjectURL(psdBlob);
       const a = document.createElement("a");
       a.href = url;
@@ -1601,7 +1224,6 @@ export function StudioMannequinPoserPanel({
           throw new Error(frozenStatus2Text("studio.frozenStatus2.mannequin.docChanged", "편집 중 문서가 바뀌어 캡처를 삽입하지 않았습니다. 현재 페이지에서 다시 시도해 주세요."));
         }
         if (!(await persistState())) return;
-        // 독립 진입점(PNG 저장)은 다른 각도로 다시 캡처할 수 있게 포저를 열어 둔다. 편집기 삽입은 넣고 닫는다.
         if (captureTarget === "download") setCaptureNotice(`PNG로 저장했습니다 (${result.width}×${result.height})`);
         else onClose();
       } catch (cause) {
@@ -1620,9 +1242,7 @@ export function StudioMannequinPoserPanel({
 
   if (!open) return null;
 
-  const selectedRotation: StudioMannequinVec3 = selectedJointId
-    ? pose.joints[selectedJointId] ?? [0, 0, 0]
-    : [0, 0, 0];
+  const selectedRotation: StudioMannequinVec3 = selectedJointId ? pose.joints[selectedJointId] ?? [0, 0, 0] : [0, 0, 0];
 
   return createPortal(
     <div
@@ -1637,13 +1257,10 @@ export function StudioMannequinPoserPanel({
         paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
       }}
     >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".mannequin,.json"
-        className="hidden"
-        onChange={handleImportJson}
-      />
+      <input ref={fileInputRef} type="file" accept=".mannequin,.json" className="hidden" onChange={handleImportJson} />
+      <input ref={cspPepInputRef} type="file" accept=".pep,.xml" className="hidden" onChange={handleImportCspPep} />
+      <input ref={csp3dpInputRef} type="file" accept=".3dp,.xml" className="hidden" onChange={handleImportCsp3dp} />
+
       <div data-studio-mannequin-surface="true" className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
         <header data-studio-mannequin-header="true" className="flex items-center justify-between gap-2 border-b border-line/70 px-3 py-2">
           <div className="flex min-w-0 items-center gap-2">
@@ -1651,7 +1268,6 @@ export function StudioMannequinPoserPanel({
               <PersonStanding size={16} className="text-accent" aria-hidden />
               3D 데생 인형
             </h2>
-            {/* 휴대폰에서는 화면 읽기용으로만 남겨 저장 상태·캡처 저장 알림을 대화상자 안에서 읽어 준다. */}
             <span
               aria-live="polite"
               className={cn(
@@ -1676,33 +1292,27 @@ export function StudioMannequinPoserPanel({
             />
           </div>
           <div className="flex min-w-0 items-center gap-1.5">
-          {/* 온라인 상태 알림은 떠서 뷰포트·검색창을 가리지 않고 이 자리에 한 줄로 들어온다. */}
-          <ModalStatusSlot className="flex min-w-0 justify-end" />
-          <button
-            type="button"
-            onClick={persistenceStatus === "memory-only" ? closeWithoutPersist : closeWithPersist}
-            disabled={
-              persistenceStatus === "idle"
-              || persistenceStatus === "loading"
-              || persistenceStatus === "saving"
-            }
-            title={
-              persistenceStatus === "loading" || persistenceStatus === "idle"
-                ? "SQLite 상태를 불러온 뒤 닫을 수 있습니다."
-                : persistenceStatus === "memory-only"
-                  ? "현재 탭의 변경을 저장하지 않고 닫습니다. 먼저 JSON으로 내보내세요."
-                  : undefined
-            }
-            className={buttonClass({ size: "icon", variant: "quiet", className: "pointer-coarse:size-11" })}
-            aria-label="3D 데생 인형 닫기"
-          >
-            <X size={16} aria-hidden />
-          </button>
+            <ModalStatusSlot className="flex min-w-0 justify-end" />
+            <button
+              type="button"
+              onClick={persistenceStatus === "memory-only" ? closeWithoutPersist : closeWithPersist}
+              disabled={persistenceStatus === "idle" || persistenceStatus === "loading" || persistenceStatus === "saving"}
+              title={
+                persistenceStatus === "loading" || persistenceStatus === "idle"
+                  ? "SQLite 상태를 불러온 뒤 닫을 수 있습니다."
+                  : persistenceStatus === "memory-only"
+                    ? "현재 탭의 변경을 저장하지 않고 닫습니다. 먼저 JSON으로 내보내세요."
+                    : undefined
+              }
+              className={buttonClass({ size: "icon", variant: "quiet", className: "pointer-coarse:size-11" })}
+              aria-label="3D 데생 인형 닫기"
+            >
+              <X size={16} aria-hidden />
+            </button>
           </div>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-          {/* 뷰포트 */}
           <div data-studio-mannequin-stage="true" className="relative min-h-0 flex-1 basis-1/2">
             {sceneError ? (
               <div className="grid h-full place-items-center p-6 text-center">
@@ -1722,19 +1332,13 @@ export function StudioMannequinPoserPanel({
             )}
             {sceneError ? null : <StudioMannequinDuoFigureSwitch duo={duo} />}
             {error ? (
-              <p
-                role="alert"
-                className="absolute inset-x-3 bottom-3 rounded-lg border border-warn/40 bg-panel/95 px-3 py-2 text-[0.72rem] leading-relaxed text-warn shadow-lg"
-              >
+              <p role="alert" className="absolute inset-x-3 bottom-3 rounded-lg border border-warn/40 bg-panel/95 px-3 py-2 text-[0.72rem] leading-relaxed text-warn shadow-lg">
                 {error}
               </p>
             ) : null}
           </div>
 
-          {/* 컨트롤 */}
-          {/* 모바일에서는 뷰포트와 설정이 화면을 반씩 나눈다(설정 내용이 길어도 인형이 가려지지 않게). */}
           <aside className="flex min-h-0 w-full flex-1 basis-1/2 flex-col border-t border-line/70 md:w-[320px] md:flex-none md:basis-auto md:border-l md:border-t-0">
-            {/* 여섯 탭을 3×2 격자로 둔다. 320px 열에 한 줄로 두면 글자가 세로로 쪼개졌다. */}
             <nav className="grid grid-cols-3 gap-1 border-b border-line/60 p-2" aria-label="데생 인형 설정 탭">
               {TABS.map((entry) => (
                 <button
@@ -1749,11 +1353,8 @@ export function StudioMannequinPoserPanel({
                 </button>
               ))}
             </nav>
-            {/* 되돌리기/다시실행 — 사용자 결정 단위 히스토리. 상태가 숫자로 보인다. */}
-            <div
-              className="flex flex-wrap items-center gap-1.5 border-b border-line/60 px-3 py-2"
-              aria-label="포즈 변경 히스토리"
-            >
+
+            <div className="flex flex-wrap items-center gap-1.5 border-b border-line/60 px-3 py-2" aria-label="포즈 변경 히스토리">
               <button
                 type="button"
                 onClick={handleUndoPose}
@@ -1779,6 +1380,7 @@ export function StudioMannequinPoserPanel({
               </span>
               <StudioMannequinFootGroundingToggle enabled={footGrounding.enabled} onToggle={footGrounding.onToggle} lastResult={footGrounding.lastResult} />
             </div>
+
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               {tab === "shaper" ? (
                 <StudioShaperPanel
@@ -1794,14 +1396,30 @@ export function StudioMannequinPoserPanel({
                 <StudioMannequinBodySection
                   params={params}
                   materialStyle={materialStyle}
-                  onParamsChange={commitParams}
-                  onApplyPreset={(presetId) =>
-                    commitParams(STUDIO_MANNEQUIN_BODY_PRESETS[presetId].params)
-                  }
+                  surfaceMode={surfaceMode}
+                  pectoralVolume={pectoralVolume}
+                  muscleDefinition={muscleDefinition}
+                  onParamsChange={(next) => {
+                    morphBaseParamsRef.current = next;
+                    commitParams(next);
+                  }}
+                  onApplyPreset={(presetId) => {
+                    const next = STUDIO_MANNEQUIN_BODY_PRESETS[presetId].params;
+                    morphBaseParamsRef.current = next;
+                    commitParams(next);
+                  }}
                   onMaterialStyleChange={(style) => {
                     setMaterialStyle(style);
                     sceneRef.current?.setMaterialStyle(style);
                   }}
+                  onSurfaceModeChange={(mode) => {
+                    setSurfaceMode(mode);
+                    sceneRef.current?.setSurfaceMode?.(mode);
+                  }}
+                  onPectoralVolumeChange={setPectoralVolume}
+                  onMuscleDefinitionChange={setMuscleDefinition}
+                  onImportCsp3dp={() => csp3dpInputRef.current?.click()}
+                  onExportCsp3dp={handleExportCsp3dp}
                 />
               ) : null}
               {tab === "pose" ? (
@@ -1813,11 +1431,7 @@ export function StudioMannequinPoserPanel({
                     onApply={handleApplyPhotoPose}
                   />
                   {photoPoseApplyStatus ? (
-                    <div
-                      role="status"
-                      aria-live="polite"
-                      className="mb-3 rounded-lg border border-accent/35 bg-accent-soft/60 p-2 text-[0.66rem] leading-relaxed text-fg-2"
-                    >
+                    <div role="status" aria-live="polite" className="mb-3 rounded-lg border border-accent/35 bg-accent-soft/60 p-2 text-[0.66rem] leading-relaxed text-fg-2">
                       <div className="flex items-center justify-between gap-2">
                         <span className="min-w-0 truncate" title={photoPoseApplyStatus.sourceName}>
                           사진 포즈 적용됨 · 관절 {photoPoseApplyStatus.appliedJointCount}개 · 신뢰도 {photoPoseApplyStatus.confidencePercent}%
@@ -1840,7 +1454,12 @@ export function StudioMannequinPoserPanel({
               ) : null}
               {tab === "magic" ? (
                 <div onPointerDownCapture={resetPoseHistoryGesture} onKeyDownCapture={resetPoseHistoryGestureOnKey}>
-                  <StudioMagicPoserPanel scene={magicPoserScene} currentPose={pose} hostOwnsHistory />
+                  <StudioMagicPoserPanel
+                    scene={magicPoserScene}
+                    currentPose={pose}
+                    hostOwnsHistory
+                    onBodyMorphChange={handleMagicBodyMorphChange}
+                  />
                 </div>
               ) : null}
               {tab === "joint" ? (
@@ -1848,61 +1467,73 @@ export function StudioMannequinPoserPanel({
                   <StudioMannequinJointSection
                     selectedJointId={selectedJointId}
                     rotation={selectedRotation}
+                    jointLocks={jointLocks}
+                    scapulohumeralRhythm={scapulohumeralRhythm}
+                    guideVisibility={guideVisibility}
+                    balanceReport={balanceReport}
                     onSelectJoint={(jointId) => {
                       setSelectedJointId(jointId);
                       sceneRef.current?.selectJoint(jointId);
                     }}
                     onRotate={handleRotateSelected}
                     onResetJoint={() => handleRotateSelected([0, 0, 0])}
+                    onToggleJointLock={(jointId) => setJointLocks((prev) => toggleStudioMannequinJointLock(prev, jointId))}
+                    onClearAllJointLocks={() => setJointLocks({})}
+                    onToggleScapulohumeralRhythm={setScapulohumeralRhythm}
+                    onGuideVisibilityChange={(patch) => setGuideVisibility((prev) => ({ ...prev, ...patch }))}
+                    onAutoBalance={handleAutoBalance}
+                    onApplyHandPad={handleApplyHandPad}
+                    onImportCspPep={() => cspPepInputRef.current?.click()}
+                    onExportCspPep={handleExportCspPep}
                   />
                 </div>
               ) : null}
               {tab === "camera" ? (
                 <>
-                <StudioMannequinCameraSection
-                  projection={projection}
-                  onProjectionChange={(next) => {
-                    setProjection(next);
-                    sceneRef.current?.setProjection(next);
-                  }}
-                  captureScale={captureScale}
-                  onCaptureScaleChange={setCaptureScale}
-                  onCameraPreset={(preset) => {
-                    setCameraPreset(preset);
-                    setSelectedCameraAngle(preset);
-                    sceneRef.current?.setCameraPreset(preset);
-                  }}
-                  selectedCameraAngle={selectedCameraAngle}
-                  onResetCamera={() => {
-                    setCameraPreset("home");
-                    setSelectedCameraAngle(null);
-                    sceneRef.current?.resetCamera();
-                  }}
-                  onCapture={handleCapture}
-                  capturing={capturing}
-                  captureDisabled={persistenceStatus !== "ready"}
-                  captureLabel={captureTarget === "download" ? "PNG로 저장" : "캔버스로 캡처"}
-                  webcamActive={webcamActive}
-                  webcamLoadingStage={webcamLoadingStage}
-                  webcamError={webcamError}
-                  onToggleWebcam={handleToggleWebcam}
-                  poseFrozen={poseFrozen}
-                  onTogglePoseFreeze={() => setPoseFrozen((prev) => !prev)}
-                  mirrorMode={mirrorMode}
-                  onToggleMirrorMode={() => setMirrorMode((prev) => !prev)}
-                  handTracking={handTracking}
-                  onToggleHandTracking={handleToggleHandTracking}
-                  handTrackingLoading={handTrackingLoading}
-                  handTrackingError={handTrackingError}
-                  facialTracking={facialTracking}
-                  onToggleFacialTracking={() => setFacialTracking((prev) => !prev)}
-                />
-                <div className="mt-3 border-t border-line/60 pt-3">
-                  <StudioCompositionGenerationBriefPanel
-                    snapshot={compositionSnapshot}
-                    onInsertCaptureFallback={handleCapture}
+                  <StudioMannequinCameraSection
+                    projection={projection}
+                    onProjectionChange={(next) => {
+                      setProjection(next);
+                      sceneRef.current?.setProjection(next);
+                    }}
+                    captureScale={captureScale}
+                    onCaptureScaleChange={setCaptureScale}
+                    onCameraPreset={(preset) => {
+                      setCameraPreset(preset);
+                      setSelectedCameraAngle(preset);
+                      sceneRef.current?.setCameraPreset(preset);
+                    }}
+                    selectedCameraAngle={selectedCameraAngle}
+                    onResetCamera={() => {
+                      setCameraPreset("home");
+                      setSelectedCameraAngle(null);
+                      sceneRef.current?.resetCamera();
+                    }}
+                    onCapture={handleCapture}
+                    capturing={capturing}
+                    captureDisabled={persistenceStatus !== "ready"}
+                    captureLabel={captureTarget === "download" ? "PNG로 저장" : "캔버스로 캡처"}
+                    webcamActive={webcamActive}
+                    webcamLoadingStage={webcamLoadingStage}
+                    webcamError={webcamError}
+                    onToggleWebcam={handleToggleWebcam}
+                    poseFrozen={poseFrozen}
+                    onTogglePoseFreeze={() => setPoseFrozen((prev) => !prev)}
+                    mirrorMode={mirrorMode}
+                    onToggleMirrorMode={() => setMirrorMode((prev) => !prev)}
+                    handTracking={handTracking}
+                    onToggleHandTracking={handleToggleHandTracking}
+                    handTrackingLoading={handTrackingLoading}
+                    handTrackingError={handTrackingError}
+                    facialTracking={facialTracking}
+                    onToggleFacialTracking={() => setFacialTracking((prev) => !prev)}
                   />
-                </div>
+                  <div className="mt-3 border-t border-line/60 pt-3">
+                    <StudioCompositionGenerationBriefPanel
+                      snapshot={compositionSnapshot}
+                      onInsertCaptureFallback={handleCapture}
+                    />
+                  </div>
                 </>
               ) : null}
               <video ref={webcamVideoRef} className="hidden" playsInline muted />

@@ -1,13 +1,13 @@
 /**
- * Studio 3D 데생 인형 — Three.js 씬 계층.
+ * Studio 3D 데생 인형 — Three.js 씬 계층 (v3 에코르셰·작화 보조선·무게중심 추선·관절 잠금·견갑상완 리듬 통합).
  *
- * studio-mannequin-model.ts 스펙에서 관절 그룹/프리미티브 메시를 만들고, 관절 클릭 선택·
+ * studio-mannequin-model.ts 스펙에서 관절 그룹/프리미티브/에코르셰 메시를 만들고, 관절 클릭 선택·
  * 손/발 IK 드래그·원근/직교 카메라·오빗 컨트롤·리사이즈·캡처를 담당한다.
  *
  * 하우스 규칙 준수:
  * - 렌더링은 invalidate() 기반 on-demand 1프레임 rAF — 상시 루프가 없어 패널이 닫히면
  *   자동으로 멈추고, dispose()가 보류 중 rAF·지오메트리·머티리얼·렌더러를 전부 정리한다.
- * - Math.random 없이 완전 결정적(툰 그라디언트도 절차 생성 DataTexture).
+ * - 난수 호출 없이 완전 결정적(툰 그라디언트도 절차 생성 DataTexture).
  * - Three import 는 이 파일과 패널 청크 안에만 머문다(check:studio-bundle 경계).
  * - 캡처는 VRM 포저와 같은 오프스크린 렌더타깃 → Worker PNG 인코딩 파이프라인을 재사용한다.
  */
@@ -22,6 +22,10 @@ import {
 } from "../vrm/studio-vrm-raster-capture";
 
 import { fitStudioMannequinCameraToBounds } from "./studio-mannequin-camera-framing";
+import {
+  resolveStudioMannequinSurfaceMode,
+  type StudioMannequinSurfaceMode,
+} from "./studio-mannequin-ecorche-anatomy";
 import { solveStudioMannequinTwoBoneIk } from "./studio-mannequin-ik";
 import {
   buildStudioMannequinSpec,
@@ -40,6 +44,15 @@ import {
   type StudioMannequinPose,
 } from "./studio-mannequin-poses";
 import {
+  STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
+  analyzeStudioMannequinBalance,
+  applyStudioMannequinScapulohumeralRhythm,
+  type StudioMannequinBalanceReport,
+  type StudioMannequinGuideVisibility,
+  type StudioMannequinJointLockMap,
+} from "./studio-mannequin-pro-kinematics";
+import { createStudioMannequinProOverlayController } from "./studio-mannequin-pro-overlays";
+import {
   buildStudioMannequinJointRangeArc,
   resolveStudioMannequinOutlineMode,
   resolveStudioMannequinOutlineVisible,
@@ -50,23 +63,42 @@ import {
   resolveStudioMannequinLightingPlan,
   type StudioMannequinLightingPlan,
   type StudioMannequinLightingRig,
-  type StudioMannequinSceneLightPlan,
 } from "./studio-mannequin-lighting";
 import {
   createStudioMannequinSceneFigure,
   type StudioMannequinBodyMeshUserData,
   type StudioMannequinEffectorHandleUserData,
+  type StudioMannequinFigureEcorcheState,
   type StudioMannequinFigureId,
   type StudioMannequinFigureMaterials,
   type StudioMannequinSceneFigure,
 } from "./studio-mannequin-scene-figure";
+import {
+  createStudioMannequinLightingObject,
+  disposeStudioMannequinLightObject,
+  mountStudioMannequinLightingGroup,
+  readStudioMannequinLightingSnapshot,
+  replaceStudioMannequinLightingGroup,
+  snapshotStudioMannequinLightingPlan,
+  type StudioMannequinLightingSnapshot,
+  type StudioMannequinMountedLightSnapshot,
+} from "./studio-mannequin-scene-lighting";
 import {
   createStudioMannequinMaterialPalette,
   createStudioMannequinToonGradientTexture,
   disposeStudioMannequinMaterialPalette,
 } from "./studio-mannequin-scene-materials";
 
-export type { StudioMannequinFigureId } from "./studio-mannequin-scene-figure";
+export type { StudioMannequinFigureId, StudioMannequinFigureEcorcheState } from "./studio-mannequin-scene-figure";
+export {
+  createStudioMannequinLightingObject,
+  mountStudioMannequinLightingGroup,
+  readStudioMannequinLightingSnapshot,
+  replaceStudioMannequinLightingGroup,
+  snapshotStudioMannequinLightingPlan,
+  type StudioMannequinLightingSnapshot,
+  type StudioMannequinMountedLightSnapshot,
+};
 
 export type StudioMannequinProjection = "perspective" | "orthographic";
 
@@ -75,30 +107,14 @@ export interface StudioMannequinCaptureResult {
   /** 캡처 래스터 크기(px) — PNG 원본 치수. */
   readonly width: number;
   readonly height: number;
-  /**
-   * 100% 줌에서 문서에 놓일 논리 크기(캡처 시점의 뷰포트 논리 뷰 크기). 캡처는
-   * pixelRatio × 배율로 슈퍼샘플링되므로 래스터 크기로 삽입하면 물리적으로 커진다 —
-   * 소비자는 displayWidth ?? width 로 논리 크기 삽입을 선택한다(VRM 3D 삽입 계약과 동일).
-   * 래스터가 논리 크기보다 작게 축소된 경우(픽셀 예산 등)에는 업스케일 삽입을 막기 위해
-   * 생략된다.
-   */
+  /** 100% 줌에서 문서에 놓일 논리 크기(업스케일 삽입 방지). */
   readonly displayWidth?: number;
   readonly displayHeight?: number;
-  /**
-   * 캡처 시점에 뷰포트에 실제로 마운트돼 있던 조명 스냅샷. 캡처 이미지가 어떤
-   * 조명으로 렌더됐는지 결과만으로 대조할 수 있게 한다(캡처 일치 검증용).
-   * `readStudioMannequinLightingSnapshot`이 THREE 조명 객체에서 읽어낸 값과
-   * 같은 모양이며, 순수 경로(`resolveStudioMannequinCaptureResult` 직접 호출)
-   * 에서 생략하면 필드 자체가 붙지 않는다.
-   */
+  /** 캡처 시점에 뷰포트에 마운트돼 있던 조명 스냅샷. */
   readonly lighting?: StudioMannequinLightingSnapshot;
 }
 
-/**
- * 캡처 래스터와 논리 뷰 크기로 삽입 결과를 만든다 — display 쌍은 둘 다 유한 양수이면서
- * 래스터 이하일 때만 포함한다(업스케일 금지 — studio-3d-insert-controller 의
- * resolveVrmInsertDisplaySize 와 같은 규칙). 순수 함수라 WebGL 없이 단위 테스트된다.
- */
+/** 캡처 래스터와 논리 뷰 크기로 삽입 결과를 만든다(순수 함수). */
 export function resolveStudioMannequinCaptureResult(input: {
   readonly pngDataUrl: string;
   readonly width: number;
@@ -125,15 +141,12 @@ export interface StudioMannequinSceneOptions {
   readonly container: HTMLElement;
   readonly initialSpec?: StudioMannequinSpec;
   readonly initialPose?: StudioMannequinPose;
-  /** 윤곽선 모드 초기값(기본 auto = 셀 셰이딩에서만 표시, 기존 동작). */
   readonly initialOutlineMode?: StudioMannequinOutlineMode;
-  /** 선택 관절 가동범위 아크 표시 초기값(기본 true). */
   readonly initialShowJointRangeArc?: boolean;
-  /** 라이팅 스튜디오 릭 초기값. 없거나 조명이 비어 있으면 기존 고정 3점 리그로 시작한다. */
   readonly initialLightingRig?: StudioMannequinLightingRig | null;
-  /** 뷰포트에서 몸통/팔다리를 클릭해 관절을 고르면 호출된다(빈 곳 클릭 시 null). */
+  readonly initialSurfaceMode?: StudioMannequinSurfaceMode;
+  readonly initialGuideVisibility?: Partial<StudioMannequinGuideVisibility>;
   readonly onSelectJoint?: (jointId: StudioMannequinJointId | null) => void;
-  /** IK 또는 직접 관절 드래그가 끝날 때 최종 포즈로 1회 호출된다(프레임당 React 갱신 금지 계약). */
   readonly onPoseEdited?: (pose: StudioMannequinPose) => void;
 }
 
@@ -147,10 +160,8 @@ export interface StudioMannequinScenePartner {
 
 /** 상대 인형을 뷰포트에서 직접 다듬을 때의 알림(2인 구도 훅이 구독한다). */
 export interface StudioMannequinScenePartnerListener {
-  /** 상대 인형 IK·관절 드래그가 끝날 때 최종 포즈로 1회 호출된다. */
   readonly onPoseEdited?: (pose: StudioMannequinPose) => void;
   readonly onSelectJoint?: (jointId: StudioMannequinJointId | null) => void;
-  /** 다른 인형을 눌러 조작 대상이 바뀌었을 때. */
   readonly onActiveFigureChange?: (figure: StudioMannequinFigureId) => void;
 }
 
@@ -167,16 +178,9 @@ export interface StudioMannequinSceneHandle {
   getOutlineMode(): StudioMannequinOutlineMode;
   setShowJointRangeArc(show: boolean): void;
   getShowJointRangeArc(): boolean;
-  /**
-   * 라이팅 스튜디오 릭을 실제 뷰포트 조명으로 교체한다. null이거나 조명이 빈
-   * 릭이면 기존 고정 3점 리그로 돌아간다. 교체 즉시 다음 프레임에 반영된다.
-   */
   setLightingRig(rig: StudioMannequinLightingRig | null): void;
-  /** 마지막으로 적용한 릭(미적용이면 null). */
   getLightingRig(): StudioMannequinLightingRig | null;
-  /** 현재 마운트된 조명 계획(릭을 변환한 값). */
   getLightingPlan(): StudioMannequinLightingPlan;
-  /** 현재 THREE 조명 객체에서 읽어낸 실측 스냅샷(캡처 결과의 lighting과 같은 값). */
   getLightingSnapshot(): StudioMannequinLightingSnapshot;
   setCameraPreset(preset: "front" | "side" | "back" | "top" | "high" | "low"): void;
   setProjection(projection: StudioMannequinProjection): void;
@@ -188,17 +192,22 @@ export interface StudioMannequinSceneHandle {
     scale: number,
     options?: { signal?: AbortSignal },
   ): Promise<StudioMannequinCaptureResult>;
-  // ── 2인 구도(선택 기능 — 테스트 스텁·구형 호스트는 생략할 수 있다) ──
-  /** 상대 인형을 넣거나 갱신한다. null 이면 제거한다. 캡처에도 함께 담긴다. */
+  // ── 2인 구도(선택 기능) ──
   setPartner?(partner: StudioMannequinScenePartner | null): void;
-  /**
-   * 뷰포트 IK 핸들·관절 드래그를 받을 인형. 상대가 없으면 항상 주인공이다. 바뀌면 이전
-   * 인형의 관절 선택을 비우고(소유자에게 null 통지) 리스너에 새 대상을 알린다.
-   */
   setActiveFigure?(figure: StudioMannequinFigureId): void;
   setPartnerListener?(listener: StudioMannequinScenePartnerListener | null): void;
-  /** 그려진 인형(들)이 모두 보이도록 지금 방향 그대로 카메라를 다시 맞춘다. */
   frameAll?(): void;
+  // ── v3 에코르셰·프로 키네마틱스·작화 보조선(선택 기능 — 기존 테스트 스텁 하위 호환) ──
+  setSurfaceMode?(mode: StudioMannequinSurfaceMode): void;
+  getSurfaceMode?(): StudioMannequinSurfaceMode;
+  setEcorcheState?(next: Partial<StudioMannequinFigureEcorcheState>): void;
+  getEcorcheState?(): StudioMannequinFigureEcorcheState;
+  setGuideVisibility?(visibility: Partial<StudioMannequinGuideVisibility>): void;
+  getGuideVisibility?(): StudioMannequinGuideVisibility;
+  setJointLocks?(locks: StudioMannequinJointLockMap): void;
+  getJointLocks?(): StudioMannequinJointLockMap;
+  setScapulohumeralRhythm?(enabled: boolean): void;
+  getBalanceReport?(): StudioMannequinBalanceReport;
   dispose(): void;
 }
 
@@ -230,10 +239,8 @@ const CAMERA_REFERENCE_OFFSETS: Readonly<Record<StudioMannequinCameraPreset, Stu
 export interface StudioMannequinCameraPresetUi {
   readonly labelKo: string;
   readonly labelEn: string;
-  /** 한 줄 설명(10초 이해용). */
   readonly descriptionKo: string;
   readonly descriptionEn: string;
-  /** 호버 툴팁. */
   readonly tooltipKo: string;
   readonly tooltipEn: string;
   readonly icon: "home" | "user" | "users" | "video" | "arrow-down-to-line" | "arrow-up-from-line" | "arrow-down-from-line";
@@ -338,10 +345,6 @@ export const STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT = 0.85;
 /** 환경광 세기 상한. */
 export const STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_MAX = 1;
 
-/**
- * 환경광 세기 확정 — 미지정·비유한 값은 기본값으로, 0(IBL 끔)은 허용하고,
- * 범위를 벗어나면 0~MAX로 클램프한다.
- */
 export function resolveStudioMannequinEnvironmentIntensity(value: number | undefined): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return STUDIO_MANNEQUIN_ENVIRONMENT_INTENSITY_DEFAULT;
@@ -360,17 +363,10 @@ export interface StudioMannequinPointerRotationInput {
   readonly deltaY: number;
   readonly viewportWidth: number;
   readonly viewportHeight: number;
-  /** Alt-drag: horizontal motion twists around the local Y axis. */
   readonly twistMode?: boolean;
-  /** Shift precision modifier for mouse/pen; touch keeps the regular direct-manipulation rate. */
   readonly fine?: boolean;
 }
 
-/**
- * Converts a screen-space drag into a limited local joint rotation. Default dragging bends in the
- * camera plane (vertical → X, horizontal → Z); Alt uses horizontal motion for Y-axis twist.
- * The function is deterministic and shared by mouse, pen and touch pointer events.
- */
 export function resolveStudioMannequinPointerRotation(
   input: StudioMannequinPointerRotationInput,
 ): StudioMannequinVec3 {
@@ -387,214 +383,11 @@ export function resolveStudioMannequinPointerRotation(
   return clampStudioMannequinJointRotation(input.jointId, next);
 }
 
-
-// ── 라이팅 릭 마운트 ─────────────────────────────────────────────────────
-// `resolveStudioMannequinLightingPlan`의 계획을 실제 THREE 조명 객체로 만드는
-// 층이다. WebGL 렌더러가 없어도 그룹 생성·교체·실측이 가능해, 릭 교체가
-// 뷰포트 조명 상태로 전파되는 경로를 단위 테스트로 그대로 검증할 수 있다.
-// 씬 핸들의 setLightingRig도 정확히 이 함수들을 통해서만 조명을 교체한다.
-
-/** 마운트된 조명 1개의 실측 스냅샷(계획 스냅샷과 같은 모양). */
-export interface StudioMannequinMountedLightSnapshot {
-  readonly kind: StudioMannequinSceneLightPlan["kind"];
-  readonly intensity: number;
-  /** 16진 색상 문자열(#rrggbb, 소문자). */
-  readonly color: string;
-  readonly position: StudioMannequinVec3;
-  readonly angle?: number;
-  readonly penumbra?: number;
-  readonly distance?: number;
-  readonly castShadow: boolean;
-}
-
-/** 마운트된 라이팅 전체의 실측 스냅샷 — 캡처 결과의 lighting 필드와 같은 모양. */
-export interface StudioMannequinLightingSnapshot {
-  readonly hemisphere: {
-    readonly skyColor: string;
-    readonly groundColor: string;
-    readonly intensity: number;
-  } | null;
-  readonly lights: readonly StudioMannequinMountedLightSnapshot[];
-  readonly shadowsEnabled: boolean;
-  readonly isDefault: boolean;
-}
-
-interface StudioMannequinLightingGroupUserData {
-  studioMannequinShadowsEnabled?: boolean;
-  studioMannequinIsDefault?: boolean;
-}
-
-/** 계획을 스냅샷으로 변환한다(순수). 실측 스냅샷과 대조하는 기준값이다. */
-export function snapshotStudioMannequinLightingPlan(
-  plan: StudioMannequinLightingPlan,
-): StudioMannequinLightingSnapshot {
-  return {
-    hemisphere: plan.hemisphere ? { ...plan.hemisphere } : null,
-    lights: plan.lights.map((light) => ({
-      kind: light.kind,
-      intensity: light.intensity,
-      color: light.color.toLowerCase(),
-      position: [light.position[0], light.position[1], light.position[2]] as const,
-      ...(light.angle !== undefined ? { angle: light.angle } : {}),
-      ...(light.penumbra !== undefined ? { penumbra: light.penumbra } : {}),
-      ...(light.distance !== undefined ? { distance: light.distance } : {}),
-      castShadow: light.castShadow,
-    })),
-    shadowsEnabled: plan.shadowsEnabled,
-    isDefault: plan.isDefault,
-  };
-}
-
-function configureStudioMannequinShadow(
-  light: THREE.DirectionalLight | THREE.SpotLight,
-): void {
-  light.castShadow = true;
-  light.shadow.mapSize.set(2048, 2048);
-  light.shadow.camera.near = 0.1;
-  light.shadow.camera.far = 12;
-  if (light instanceof THREE.DirectionalLight) {
-    light.shadow.camera.left = -2.6;
-    light.shadow.camera.right = 2.6;
-    light.shadow.camera.top = 3.2;
-    light.shadow.camera.bottom = -0.4;
-  }
-  light.shadow.bias = -0.0002;
-  light.shadow.normalBias = 0.018;
-}
-
-/** 계획 조명 1개를 실제 THREE 조명 객체로 만든다. */
-export function createStudioMannequinLightingObject(
-  spec: StudioMannequinSceneLightPlan,
-): THREE.Light {
-  let light: THREE.Light;
-  if (spec.kind === "spot") {
-    const spot = new THREE.SpotLight(
-      spec.color,
-      spec.intensity,
-      spec.distance ?? 0,
-      spec.angle ?? 0.5,
-      spec.penumbra ?? 0.45,
-    );
-    if (spec.castShadow) configureStudioMannequinShadow(spot);
-    light = spot;
-  } else if (spec.kind === "point") {
-    // 계획 단계에서 point는 castShadow가 항상 false다(큐브 섀도맵 예산).
-    light = new THREE.PointLight(spec.color, spec.intensity, spec.distance ?? 0);
-  } else {
-    const directional = new THREE.DirectionalLight(spec.color, spec.intensity);
-    if (spec.castShadow) configureStudioMannequinShadow(directional);
-    light = directional;
-  }
-  light.position.set(spec.position[0], spec.position[1], spec.position[2]);
-  light.name = `studio-mannequin-light:${spec.kind}`;
-  return light;
-}
-
-function disposeStudioMannequinLightObject(object: THREE.Object3D): void {
-  if (
-    object instanceof THREE.DirectionalLight
-    || object instanceof THREE.SpotLight
-    || object instanceof THREE.PointLight
-  ) {
-    object.shadow.map?.dispose();
-    object.shadow.map = null;
-  }
-}
-
-/**
- * 그룹 안의 조명을 계획대로 통째로 교체한다. 기존 조명의 섀도맵은 반납하고,
- * 그룹 userData에 계획 메타(shadowsEnabled/isDefault)를 남겨 실측 때 돌려준다.
- */
-export function replaceStudioMannequinLightingGroup(
-  group: THREE.Group,
-  plan: StudioMannequinLightingPlan,
-): void {
-  for (const child of [...group.children]) {
-    group.remove(child);
-    disposeStudioMannequinLightObject(child);
-  }
-  if (plan.hemisphere) {
-    const hemisphere = new THREE.HemisphereLight(
-      plan.hemisphere.skyColor,
-      plan.hemisphere.groundColor,
-      plan.hemisphere.intensity,
-    );
-    hemisphere.name = "studio-mannequin-light:hemisphere";
-    group.add(hemisphere);
-  }
-  for (const spec of plan.lights) group.add(createStudioMannequinLightingObject(spec));
-  const userData = group.userData as StudioMannequinLightingGroupUserData;
-  userData.studioMannequinShadowsEnabled = plan.shadowsEnabled;
-  userData.studioMannequinIsDefault = plan.isDefault;
-}
-
-/** 계획으로 라이팅 그룹을 새로 만든다(씬 마운트·테스트 공용 진입점). */
-export function mountStudioMannequinLightingGroup(
-  plan: StudioMannequinLightingPlan,
-): THREE.Group {
-  const group = new THREE.Group();
-  group.name = "studio-mannequin-lighting-rig";
-  replaceStudioMannequinLightingGroup(group, plan);
-  return group;
-}
-
-function toHexColor(color: THREE.Color): string {
-  return `#${color.getHexString()}`;
-}
-
-/** 마운트된 그룹에서 실제 조명 값을 읽어낸다 — 계획이 아니라 객체가 진실이다. */
-export function readStudioMannequinLightingSnapshot(
-  group: THREE.Group,
-): StudioMannequinLightingSnapshot {
-  let hemisphere: StudioMannequinLightingSnapshot["hemisphere"] = null;
-  const lights: StudioMannequinMountedLightSnapshot[] = [];
-  for (const child of group.children) {
-    if (child instanceof THREE.HemisphereLight) {
-      hemisphere = {
-        skyColor: toHexColor(child.color),
-        groundColor: toHexColor(child.groundColor),
-        intensity: child.intensity,
-      };
-      continue;
-    }
-    if (!(child instanceof THREE.Light)) continue;
-    const position = child.position.toArray();
-    const base = {
-      intensity: child.intensity,
-      color: toHexColor(child.color),
-      position: [position[0] ?? 0, position[1] ?? 0, position[2] ?? 0] as const,
-      castShadow: child.castShadow,
-    };
-    if (child instanceof THREE.SpotLight) {
-      lights.push({
-        ...base,
-        kind: "spot",
-        angle: child.angle,
-        penumbra: child.penumbra,
-        distance: child.distance,
-      });
-    } else if (child instanceof THREE.PointLight) {
-      lights.push({ ...base, kind: "point", distance: child.distance });
-    } else if (child instanceof THREE.DirectionalLight) {
-      lights.push({ ...base, kind: "directional" });
-    }
-  }
-  const userData = group.userData as StudioMannequinLightingGroupUserData;
-  return {
-    hemisphere,
-    lights,
-    shadowsEnabled: userData.studioMannequinShadowsEnabled ?? true,
-    isDefault: userData.studioMannequinIsDefault ?? false,
-  };
-}
-
-/** 인형 루트 아래에서 선택·드래그된 메시가 속한 인형을 찾는다. */
 function figureIdOf(object: THREE.Object3D): StudioMannequinFigureId {
   const userData = object.userData as Partial<StudioMannequinBodyMeshUserData>;
   return userData.studioMannequinFigureId === "partner" ? "partner" : "lead";
 }
 
-/** 프리셋 앵글의 시선 방향(타깃 → 카메라). 크기는 프레이밍이 경계 상자로 다시 정한다. */
 function cameraPresetDirection(preset: StudioMannequinCameraPreset): StudioMannequinVec3 {
   const frame = resolveStudioMannequinCameraFrame(CAMERA_REFERENCE_HEIGHT_M, preset);
   return [
@@ -622,7 +415,6 @@ export function createStudioMannequinScene(
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
-  // three r186 은 PCFSoftShadowMap 을 없애고 PCFShadowMap 으로 대체하며 매 진입 경고를 냈다.
   renderer.shadowMap.type = THREE.PCFShadowMap;
   const initialWidth = Math.max(1, container.clientWidth || 1);
   const initialHeight = Math.max(1, container.clientHeight || 1);
@@ -636,9 +428,6 @@ export function createStudioMannequinScene(
 
   const scene = new THREE.Scene();
 
-  // 조명 — 라이팅 스튜디오 릭을 계획으로 변환해 그룹으로 마운트한다. 릭이
-  // 없거나 비어 있으면 계획이 기존 고정 3점 리그와 픽셀 단위로 같아, 스튜디오를
-  // 열기 전 초기 화면은 예전과 달라지지 않는다.
   let currentLightingRig: StudioMannequinLightingRig | null =
     options.initialLightingRig ?? null;
   let currentLightingPlan = resolveStudioMannequinLightingPlan(currentLightingRig);
@@ -646,7 +435,6 @@ export function createStudioMannequinScene(
   renderer.shadowMap.enabled = currentLightingPlan.shadowsEnabled;
   scene.add(lightingGroup);
 
-  // 바닥 그리드와 접지 그림자(캡처 시 숨김).
   const helpers = new THREE.Group();
   const grid = new THREE.GridHelper(4, 20, 0x766c5d, 0x3d3831);
   const gridMaterial = grid.material as THREE.Material;
@@ -661,7 +449,6 @@ export function createStudioMannequinScene(
   helpers.add(grid, shadowCatcher);
   scene.add(helpers);
 
-  // 머티리얼 — 몸체·관절구·랜드마크·시선 가이드를 역할별로 분리하고 두 인형이 공유한다.
   const gradientMap = createStudioMannequinToonGradientTexture();
   let currentMaterialStyle: StudioMannequinMaterialStyle = "wood";
   let materialPalette = createStudioMannequinMaterialPalette(currentMaterialStyle, gradientMap);
@@ -673,26 +460,25 @@ export function createStudioMannequinScene(
     depthTest: false,
   });
   const handleGeometry = new THREE.SphereGeometry(1, 20, 14);
-  // 툰 데생 모드는 화면 공간 post-process 없이도 깨끗한 실루엣을 얻도록 inverted hull을 쓴다.
-  // body geometry를 공유하므로 별도 삼각형 메모리를 만들지 않고, 마네킹 rebuild 때 같이 수명 관리한다.
   const outlineMaterial = new THREE.MeshBasicMaterial({
     color: 0x241f1a,
     side: THREE.BackSide,
     transparent: true,
     opacity: 0.82,
   });
-  // 윤곽선 모드(auto/on/off)와 가동범위 아크 — 판정은 studio-mannequin-readability 순수 계약이 담당한다.
   let outlineMode: StudioMannequinOutlineMode = resolveStudioMannequinOutlineMode(
     options.initialOutlineMode ?? STUDIO_MANNEQUIN_OUTLINE_MODE_DEFAULT,
   );
   let showJointRangeArc = options.initialShowJointRangeArc ?? true;
+  let jointLocks: StudioMannequinJointLockMap = {};
+  let scapulohumeralRhythmEnabled = true;
+
   const figureMaterials: StudioMannequinFigureMaterials = {
     palette: () => materialPalette,
     selected: selectedMaterial,
     handle: handleMaterial,
     handleGeometry,
     outline: outlineMaterial,
-    // 윤곽선 표시 여부는 읽기성 헬퍼 한 곳이 정한다 — 메시를 만들 때와 스타일·모드를 바꿀 때 모두 이 경로다.
     outlineVisible: (role) => resolveStudioMannequinOutlineVisible({
       mode: outlineMode,
       style: currentMaterialStyle,
@@ -700,9 +486,6 @@ export function createStudioMannequinScene(
     }),
   };
 
-  // 선택 관절의 가동범위 아크(라인+끝점+현재 각도 마커). 관절 그룹의 자식으로 붙이지 않고
-  // 씬 직속 그룹에 두어, 매 프레임 관절 월드 행렬로 위치·자세를 동기화한다(아크 자체가
-  // 관절 회전을 따라 돌면 가동 구간 기준이 흐트러지기 때문).
   const rangeArcGroup = new THREE.Group();
   rangeArcGroup.name = "studio-mannequin-joint-range-arc";
   rangeArcGroup.visible = false;
@@ -731,8 +514,6 @@ export function createStudioMannequinScene(
   let rangeArcBuiltKey: string | null = null;
   scene.add(rangeArcGroup);
 
-  // ── 인형(주인공 + 2인 구도 상대) ────────────────────────────────────────
-  // 주인공은 패널의 포즈 상태와 1:1 이고, 상대는 2인 구도 훅이 setPartner 로 넣는다.
   let currentPose = normalizeStudioMannequinPose(
     options.initialPose ?? createStudioMannequinRestPose(),
   );
@@ -741,8 +522,20 @@ export function createStudioMannequinScene(
     spec,
     pose: currentPose,
     materials: figureMaterials,
+    initialEcorcheState: {
+      surfaceMode: resolveStudioMannequinSurfaceMode(options.initialSurfaceMode ?? "ecorche"),
+    },
   });
   scene.add(lead.root);
+
+  // v3 작화 보조선(Loomis 두상·흉곽/골반 축·단축 등고선) & 무게중심(CoM) 추선 컨트롤러
+  const proOverlays = createStudioMannequinProOverlayController(
+    options.initialGuideVisibility ?? STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
+  );
+  scene.add(proOverlays.rootGroup);
+  proOverlays.rebuildFigureGuides(spec, lead.joints());
+  proOverlays.syncBalanceOverlay(spec, currentPose);
+
   let partner: StudioMannequinSceneFigure | null = null;
   let partnerListener: StudioMannequinScenePartnerListener | null = null;
   let activeFigureId: StudioMannequinFigureId = "lead";
@@ -765,7 +558,6 @@ export function createStudioMannequinScene(
     partner?.setSelection(activeFigureId === "partner" ? selectedJointId : null);
   }
 
-  /** IK 핸들은 지금 조작 중인 인형에만 보인다 — 어느 인형을 다듬는지 화면에서 바로 읽힌다. */
   function applyHandleVisibility(): void {
     lead.setHandlesVisible(activeFigureId === "lead");
     partner?.setHandlesVisible(activeFigureId === "partner");
@@ -773,6 +565,7 @@ export function createStudioMannequinScene(
 
   function applyPoseToGraph(pose: StudioMannequinPose): void {
     lead.applyPose(pose);
+    proOverlays.syncBalanceOverlay(spec, pose);
   }
 
   function applyOutlineVisibility(): void {
@@ -784,7 +577,6 @@ export function createStudioMannequinScene(
     else options.onSelectJoint?.(jointId);
   }
 
-  /** 조작 대상 인형을 바꾼다. 이전 인형의 선택은 비워 관절 탭이 엉뚱한 인형을 가리키지 않게 한다. */
   function setActiveFigureInternal(next: StudioMannequinFigureId, notify: boolean): void {
     const resolved = next === "partner" && partner ? "partner" : "lead";
     if (resolved === activeFigureId) return;
@@ -801,7 +593,6 @@ export function createStudioMannequinScene(
     invalidate();
   }
 
-  // ── 카메라 + 컨트롤 ───────────────────────────────────────────────────────
   let viewWidth = initialWidth;
   let viewHeight = initialHeight;
   let projection: StudioMannequinProjection = "perspective";
@@ -848,10 +639,6 @@ export function createStudioMannequinScene(
     controls.update();
   }
 
-  /**
-   * 그려진 인형(들)의 월드 경계 상자가 화면에 들어오도록 카메라를 맞춘다. 방향을 주지 않으면
-   * 지금 보는 방향을 유지한다 — 3등신 SD·쪼그린 포즈·2인 구도에서도 발이 잘리지 않는다.
-   */
   function frameFigures(direction?: StudioMannequinVec3): void {
     scene.updateMatrixWorld(true);
     const box = new THREE.Box3();
@@ -879,12 +666,12 @@ export function createStudioMannequinScene(
     updateOrthographicFrustum();
   }
 
-  // ── on-demand 렌더 루프 (invalidate 기반, 상시 rAF 없음) ────────────────
   let pendingFrame = 0;
 
   function renderNow(): void {
     if (disposed) return;
     syncJointRangeArc();
+    proOverlays.syncBalanceOverlay(spec, lead.readPose());
     renderer.render(scene, activeCamera);
   }
 
@@ -910,12 +697,6 @@ export function createStudioMannequinScene(
     rangeArcGroup.visible = false;
   }
 
-  /**
-   * 선택 관절의 가동범위 아크를 현재 포즈에 동기화한다. 아크 지오메트리는
-   * (관절, 주축)이 바뀔 때만 다시 만들고, 평소에는 그룹 위치·자세와 현재 각도
-   * 마커만 옮긴다 — renderNow(온디맨드 프레임)에서 호출돼 드래그 중에도 따라온다.
-   * 자세는 관절 부모의 월드 자세를 써서 관절 자체 회전이 구간 기준을 돌리지 않게 한다.
-   */
   function syncJointRangeArc(): void {
     if (!showJointRangeArc || !selectedJointId) {
       if (rangeArcBuiltKey !== null) clearJointRangeArc();
@@ -987,7 +768,6 @@ export function createStudioMannequinScene(
     rangeArcGroup.visible = true;
   }
 
-  // ── 포인터 상호작용(관절 선택 + IK 드래그) ──────────────────────────────
   const raycaster = new THREE.Raycaster();
   const pointerNdc = new THREE.Vector2();
   const dragPlane = new THREE.Plane();
@@ -1019,11 +799,23 @@ export function createStudioMannequinScene(
     return allFigures().flatMap((figure) => [...figure.bodyMeshes()]);
   }
 
+  function syncFigureRhythmAndBulge(figure: StudioMannequinSceneFigure): void {
+    const activeLocks = figure.id === "lead" ? jointLocks : {};
+    let read = figure.readPose();
+    if (scapulohumeralRhythmEnabled) {
+      read = applyStudioMannequinScapulohumeralRhythm(read, activeLocks, 1);
+    }
+    figure.applyPose(read);
+  }
+
   function solveChainToward(
     figure: StudioMannequinSceneFigure,
     chain: StudioMannequinChainSpec,
     worldTarget: THREE.Vector3,
   ): void {
+    const activeLocks = figure.id === "lead" ? jointLocks : {};
+    if (activeLocks[chain.rootJointId] && activeLocks[chain.midJointId]) return;
+
     const figureJoints = figure.joints();
     const upperJoint = figureJoints.get(chain.rootJointId);
     const midJoint = figureJoints.get(chain.midJointId);
@@ -1035,7 +827,6 @@ export function createStudioMannequinScene(
     const rootLocal = upperJoint.position.clone();
     const targetLocal = worldTarget.clone().applyMatrix4(parentInverse);
 
-    // 폴: 현재 굽힘이 살아 있으면 현 팔꿈치/무릎 위치, 퇴화 시 체인 기본 힌트.
     midJoint.updateWorldMatrix(true, false);
     const midLocal = new THREE.Vector3()
       .setFromMatrixPosition(midJoint.matrixWorld)
@@ -1067,11 +858,11 @@ export function createStudioMannequinScene(
       },
     );
 
-    upperJoint.rotation.set(...solved.upperEuler);
-    midJoint.rotation.set(...solved.lowerEuler);
+    if (!activeLocks[chain.rootJointId]) upperJoint.rotation.set(...solved.upperEuler);
+    if (!activeLocks[chain.midJointId]) midJoint.rotation.set(...solved.lowerEuler);
+    syncFigureRhythmAndBulge(figure);
   }
 
-  /** 드래그가 끝난 인형의 포즈를 소유자(패널: 주인공, 2인 구도 훅: 상대)에게 알린다. */
   function commitFigurePose(figureId: StudioMannequinFigureId): void {
     if (figureId === "partner") {
       if (partner) partnerListener?.onPoseEdited?.(partner.readPose());
@@ -1113,13 +904,13 @@ export function createStudioMannequinScene(
       ? (bodyHit.object.userData as StudioMannequinBodyMeshUserData).studioMannequinJointId
       : null;
     if (bodyHit && isStudioMannequinJointId(jointId)) {
-      // 다른 인형을 누르면 그 인형이 조작 대상이 된다(상대 ↔ 주인공 전환).
       setActiveFigureInternal(figureIdOf(bodyHit.object), true);
       selectedJointId = jointId;
       applySelectionTint();
       notifySelection(activeFigureId, jointId);
+      const isLocked = activeFigureId === "lead" && jointLocks[jointId] === true;
       const group = activeFigure().joints().get(jointId);
-      if (group) {
+      if (group && !isLocked) {
         directDrag = {
           pointerId: event.pointerId,
           figureId: activeFigureId,
@@ -1150,8 +941,9 @@ export function createStudioMannequinScene(
       const deltaX = event.clientX - directDrag.startClientX;
       const deltaY = event.clientY - directDrag.startClientY;
       if (!directDrag.didMove && Math.hypot(deltaX, deltaY) < 3) return;
-      const group = figureById(directDrag.figureId)?.joints().get(directDrag.jointId);
-      if (!group) return;
+      const figure = figureById(directDrag.figureId);
+      const group = figure?.joints().get(directDrag.jointId);
+      if (!figure || !group) return;
       const rotation = resolveStudioMannequinPointerRotation({
         jointId: directDrag.jointId,
         startRotation: directDrag.startRotation,
@@ -1164,6 +956,11 @@ export function createStudioMannequinScene(
       });
       directDrag.didMove = true;
       group.rotation.set(rotation[0], rotation[1], rotation[2]);
+      if (directDrag.jointId === "leftUpperArm" || directDrag.jointId === "rightUpperArm") {
+        syncFigureRhythmAndBulge(figure);
+      } else {
+        figure.applyPose(figure.readPose());
+      }
       invalidate();
       event.preventDefault();
       return;
@@ -1271,8 +1068,6 @@ export function createStudioMannequinScene(
   renderer.domElement.addEventListener("lostpointercapture", handleLostPointerCapture, { passive: true });
   renderer.domElement.addEventListener("dblclick", handleDoubleClick);
 
-  // ── 캡처 ─────────────────────────────────────────────────────────────────
-
   function clampCaptureDimensions(scale: number): { width: number; height: number } {
     const safeScale = Math.min(MAX_CAPTURE_SCALE, Math.max(MIN_CAPTURE_SCALE, scale));
     const pixelRatio = renderer.getPixelRatio();
@@ -1292,25 +1087,23 @@ export function createStudioMannequinScene(
   ): Promise<StudioMannequinCaptureResult> {
     if (disposed) throw new Error("이미 정리된 3D 데생 인형 씬입니다.");
     const { width, height } = clampCaptureDimensions(scale);
-    // 논리 뷰 크기는 인코딩 await 중 리사이즈로 바뀔 수 있으니 래스터 계산 시점에 스냅샷한다.
     const displayWidth = viewWidth;
     const displayHeight = viewHeight;
-    // 캡처가 어떤 조명으로 렌더되는지, 마운트된 조명 객체에서 실측해 결과에 싣는다.
     const lighting = readStudioMannequinLightingSnapshot(lightingGroup);
 
-    // 헬퍼(그리드·IK 핸들)와 선택 틴트는 참고용 이미지에 굽지 않는다. 2인 구도의 상대도
-    // 같은 씬에 있으므로 두 인형이 함께 캡처된다.
     const previousSelection = selectedJointId;
     selectedJointId = null;
     applySelectionTint();
     helpers.visible = false;
     rangeArcGroup.visible = false;
+    proOverlays.setCaptureHidden(true);
     for (const figure of allFigures()) figure.setHandlesVisible(false);
     let rgba: Uint8ClampedArray;
     try {
       rgba = captureStudioVrmRgba(renderer, scene, activeCamera, { width, height });
     } finally {
       helpers.visible = true;
+      proOverlays.setCaptureHidden(false);
       applyHandleVisibility();
       selectedJointId = previousSelection;
       applySelectionTint();
@@ -1332,12 +1125,6 @@ export function createStudioMannequinScene(
     });
   }
 
-  /**
-   * 릭을 뷰포트 조명으로 교체하는 유일한 경로다. 계획을 다시 만들고 그룹을
-   * 통째로 교체한 뒤, 그림자 on/off가 바뀌었으면 이미 컴파일된 머티리얼이
-   * 새 섀도 설정을 타도록 needsUpdate를 찍는다(shadowMap.enabled 토글은
-   * 머티리얼 재컴파일 없이는 반영되지 않는다).
-   */
   function applyLightingRig(rig: StudioMannequinLightingRig | null): void {
     currentLightingRig = rig;
     const plan = resolveStudioMannequinLightingPlan(rig);
@@ -1356,7 +1143,6 @@ export function createStudioMannequinScene(
     invalidate();
   }
 
-  /** 상대 인형을 넣거나 갱신·제거한다. 처음 들어오거나 빠질 때만 두 인형이 보이도록 다시 프레이밍한다. */
   function applyPartner(next: StudioMannequinScenePartner | null): void {
     if (!next) {
       if (!partner) return;
@@ -1375,6 +1161,7 @@ export function createStudioMannequinScene(
         spec: next.spec,
         pose,
         materials: figureMaterials,
+        initialEcorcheState: { surfaceMode: lead.getEcorcheState().surfaceMode },
       });
       scene.add(partner.root);
     } else if (partner.spec() !== next.spec) {
@@ -1389,8 +1176,6 @@ export function createStudioMannequinScene(
     invalidate();
   }
 
-  // ── 핸들 구성 ────────────────────────────────────────────────────────────
-
   applyHandleVisibility();
   attachControls();
   frameFigures(cameraPresetDirection("home"));
@@ -1401,9 +1186,10 @@ export function createStudioMannequinScene(
       if (disposed) return;
       spec = nextSpec;
       lead.rebuild(spec, currentPose);
+      proOverlays.rebuildFigureGuides(spec, lead.joints());
+      proOverlays.syncBalanceOverlay(spec, currentPose);
       applySelectionTint();
       applyHandleVisibility();
-      // 체형이 바뀌면 지금 보는 방향을 유지한 채 인형(들)이 화면에 들어오게 다시 맞춘다.
       frameFigures();
       invalidate();
     },
@@ -1417,12 +1203,18 @@ export function createStudioMannequinScene(
       return disposed ? currentPose : lead.readPose();
     },
     setJointRotation(jointId, rotation) {
-      if (disposed) return;
+      if (disposed || jointLocks[jointId]) return;
       const group = lead.joints().get(jointId);
       if (!group) return;
       const clamped = clampStudioMannequinJointRotation(jointId, rotation);
       group.rotation.set(clamped[0], clamped[1], clamped[2]);
+      if (jointId === "leftUpperArm" || jointId === "rightUpperArm") {
+        syncFigureRhythmAndBulge(lead);
+      } else {
+        lead.applyPose(lead.readPose());
+      }
       currentPose = lead.readPose();
+      proOverlays.syncBalanceOverlay(spec, currentPose);
       invalidate();
     },
     getJointRotation(jointId) {
@@ -1432,7 +1224,6 @@ export function createStudioMannequinScene(
     },
     selectJoint(jointId) {
       if (disposed) return;
-      // 패널의 관절 탭은 주인공 전용이다 — 주인공 관절을 고르면 조작 대상도 주인공으로 돌아온다.
       if (jointId && activeFigureId !== "lead") setActiveFigureInternal("lead", true);
       selectedJointId = jointId;
       applySelectionTint();
@@ -1534,6 +1325,49 @@ export function createStudioMannequinScene(
       frameFigures();
       invalidate();
     },
+    setSurfaceMode(mode) {
+      if (disposed) return;
+      lead.setEcorcheState({ surfaceMode: mode }, currentPose);
+      partner?.setEcorcheState({ surfaceMode: mode }, partner.readPose());
+      proOverlays.rebuildFigureGuides(spec, lead.joints());
+      applySelectionTint();
+      applyHandleVisibility();
+      invalidate();
+    },
+    getSurfaceMode() {
+      return lead.getEcorcheState().surfaceMode;
+    },
+    setEcorcheState(next) {
+      if (disposed) return;
+      lead.setEcorcheState(next, currentPose);
+      proOverlays.rebuildFigureGuides(spec, lead.joints());
+      applySelectionTint();
+      applyHandleVisibility();
+      invalidate();
+    },
+    getEcorcheState() {
+      return lead.getEcorcheState();
+    },
+    setGuideVisibility(next) {
+      if (disposed) return;
+      proOverlays.setVisibility(next);
+      invalidate();
+    },
+    getGuideVisibility() {
+      return proOverlays.getVisibility();
+    },
+    setJointLocks(locks) {
+      jointLocks = locks;
+    },
+    getJointLocks() {
+      return jointLocks;
+    },
+    setScapulohumeralRhythm(enabled) {
+      scapulohumeralRhythmEnabled = enabled === true;
+    },
+    getBalanceReport() {
+      return analyzeStudioMannequinBalance(spec, lead.readPose());
+    },
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -1550,6 +1384,7 @@ export function createStudioMannequinScene(
       controls?.dispose();
       controls = null;
       partnerListener = null;
+      proOverlays.dispose();
       for (const child of [...lightingGroup.children]) {
         disposeStudioMannequinLightObject(child);
       }
