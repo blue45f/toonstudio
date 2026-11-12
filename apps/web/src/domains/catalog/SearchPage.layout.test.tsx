@@ -149,8 +149,31 @@ describe("검색 페이지 결과 우선 배치", () => {
     expect(child.mounts).toHaveBeenCalledTimes(1);
   });
 
+  it("다른 찾기 방법을 반복해서 열고 닫아도 작품 검색 입력을 유지한다", () => {
+    page("/search?q=달&genres=판타지");
+    const methods = screen.getByTestId("search-page-methods") as HTMLDetailsElement;
+    const summary = methods.querySelector("summary") as HTMLElement;
+    const field = screen.getByRole("searchbox") as HTMLInputElement;
+    expect(summary.textContent).toContain("다른 찾기 방법");
+    expect(methods.open).toBe(false);
+    expect(field.closest("details")).toBeNull();
+    fireEvent.change(field, { target: { value: "작성 중인 검색어" } });
+    for (let index = 0; index < 3; index += 1) {
+      fireEvent.click(summary);
+      expect(methods.open).toBe(true);
+      expect(within(methods).getByRole("navigation", { name: "검색 방식" })).toBeTruthy();
+      fireEvent.click(summary);
+      expect(methods.open).toBe(false);
+    }
+    expect(screen.getByRole("searchbox")).toBe(field);
+    expect(field.value).toBe("작성 중인 검색어");
+    expect(child.mounts).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("작품 검색");
+  });
+
   it("모드 링크가 기존 공유 URL 변환 계약을 유지한다", () => {
     page("/search?q=달&genres=판타지&status=completed&pricing=free&sort=rating&view=list&savedOnly=true");
+    fireEvent.click(screen.getByTestId("search-page-methods").querySelector("summary") as HTMLElement);
     const nav = screen.getByRole("navigation", { name: "검색 방식" });
     const links = within(nav).getAllByRole("link");
     expect(links).toHaveLength(3);
@@ -187,6 +210,7 @@ describe("검색 페이지 결과 우선 배치", () => {
 
   it("native anchor와 초점 가능한 검색 목적지를 유지한다", () => {
     page();
+    fireEvent.click(screen.getByTestId("search-page-methods").querySelector("summary") as HTMLElement);
     expect(screen.getByRole("link", { name: /검색·조건으로 이동|Jump to search and filters/ }).getAttribute("href")).toBe("#toonstudio-search-explorer-top");
     const destination = document.getElementById("toonstudio-search-explorer-top");
     expect(destination?.getAttribute("tabindex")).toBe("-1");

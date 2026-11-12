@@ -488,18 +488,20 @@ export function sanitizeCatalogApiData<T>(apiUrl: string | null, raw: T | null):
     const rawCatalog =
       obj.catalog && typeof obj.catalog === "object"
         ? (obj.catalog as Record<string, unknown>)
-        : {};
+        : null;
     return {
       ...obj,
       items,
-      catalog: {
-        ...rawCatalog,
-        platformCoverage: sanitizePlatformCoverageList(rawCatalog.platformCoverage, items),
-        filteredPlatformCoverage: sanitizePlatformCoverageList(
-          rawCatalog.filteredPlatformCoverage,
-          items,
-        ),
-      },
+      ...(rawCatalog ? {
+        catalog: {
+          ...rawCatalog,
+          platformCoverage: sanitizePlatformCoverageList(rawCatalog.platformCoverage, items),
+          filteredPlatformCoverage: sanitizePlatformCoverageList(
+            rawCatalog.filteredPlatformCoverage,
+            items,
+          ),
+        },
+      } : {}),
     } as unknown as T;
   }
 

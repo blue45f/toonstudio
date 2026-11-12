@@ -128,3 +128,16 @@
 .search-facet-group > summary { list-style: none; }
 .search-facet-group > summary::-webkit-details-marker { display: none; }
 .search-facet-group[open] > summary svg { transform: rotate(180deg); }
+
+/* 작품 검색과 결과를 다른 탐색 방식보다 먼저 표시한다. */
+.search-page-heading-compact { position: relative; display: block; min-height: 3rem; margin-bottom: .75rem; }
+.search-page-heading-compact > h1 { display: flex; min-height: 3rem; align-items: center; padding-right: 9.5rem; }
+.search-page-methods { min-width: 0; }
+.search-page-methods-summary { position: absolute; top: 0; right: 0; display: flex; max-width: 9rem; min-height: 3rem; align-items: center; gap: .375rem; padding: .5rem .625rem; border: 1px solid var(--color-line); border-radius: .75rem; color: var(--color-fg-2); font-size: .875rem; cursor: pointer; list-style: none; }
+.search-page-methods-summary > svg { flex-shrink: 0; }
+.search-page-methods-summary::-webkit-details-marker { display: none; }
+.search-page-methods-summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.search-page-methods[open] > .search-page-methods-summary svg { transform: rotate(180deg); }
+.search-page-methods > .search-page-modes { max-width: none; margin: .75rem 0 .5rem; }
+.search-page-methods > a { margin-bottom: .5rem; }
+@media (max-width: 639px) { .search-page-heading-compact > h1 { font-size: 1.25rem; } }
