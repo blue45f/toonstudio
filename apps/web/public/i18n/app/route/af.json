@@ -91,5 +91,6 @@
   "route.technologyStory": "Storie",
   "route.technologyVideos": "Video's",
   "route.terms": "Voorwaardes van diens",
-  "route.unknown": "Bladsy"
+  "route.unknown": "Bladsy",
+  "route.offline": "Connection & on-device content"
 }

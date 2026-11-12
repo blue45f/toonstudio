@@ -91,5 +91,6 @@
   "route.technologyStory": "Yaratilish hikoyasi",
   "route.technologyVideos": "Videolar",
   "route.terms": "Xizmat shartlari",
-  "route.unknown": "Sahifa"
+  "route.unknown": "Sahifa",
+  "route.offline": "Connection & on-device content"
 }

@@ -616,7 +616,7 @@ describe("StudioCanvasStatusRail", () => {
     expect((rail as HTMLElement | null)?.style.top).toBe("8rem");
   });
 
-  it.each(["zoom", "rotate"] as const)("keeps the mobile notice below both presence and %s controls as the HUD closes", (mode) => {
+  it.each(["zoom", "rotate"] as const)("모바일 알림은 협업 접힘과 %s 도구 아래에 머물고 HUD 닫힘에 맞춰 이동한다", (mode) => {
     viewportState.mobile = true;
     const resizeCallbacks: Array<() => void> = [];
     const observe = vi.fn();
@@ -658,7 +658,12 @@ describe("StudioCanvasStatusRail", () => {
       "sticky", "top-2", '[[data-studio-mobile-immersive="true"]_&]:top-16', "h-0",
     ]));
     expect(stack?.className).toBe("flex flex-col gap-2");
-    expect(stack?.firstElementChild).toBe(presence);
+    const disclosure = stack?.firstElementChild;
+    expect(disclosure?.tagName).toBe("DETAILS");
+    expect(disclosure?.querySelector("[data-studio-presence-controls]")).toBe(presence);
+    expect(disclosure?.hasAttribute("open")).toBe(false);
+    expect(disclosure?.querySelector("summary")?.getAttribute("aria-expanded")).toBe("false");
+    expect(disclosure?.querySelector("[data-studio-collaboration-body]")?.hasAttribute("hidden")).toBe(true);
     expect(stack?.lastElementChild).toBe(hud.parentElement);
     expect(presence?.className).not.toMatch(/\bsticky\b|\bh-0\b/u);
     expect(hud.parentElement?.className).not.toMatch(/\bsticky\b|\bh-0\b/u);

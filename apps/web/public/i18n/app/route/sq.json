@@ -91,5 +91,6 @@
   "route.technologyStory": "Historia",
   "route.technologyVideos": "Videot",
   "route.terms": "Kushtet e shërbimit",
-  "route.unknown": "Faqe"
+  "route.unknown": "Faqe",
+  "route.offline": "Connection & on-device content"
 }

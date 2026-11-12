@@ -91,5 +91,6 @@
   "route.technologyStory": "Kisah",
   "route.technologyVideos": "Video",
   "route.terms": "Syarat perkhidmatan",
-  "route.unknown": "Halaman"
+  "route.unknown": "Halaman",
+  "route.offline": "Connection & on-device content"
 }

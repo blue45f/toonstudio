@@ -91,5 +91,6 @@
   "route.technologyStory": "ಕಥೆ",
   "route.technologyVideos": "ವೀಡಿಯೊಗಳು",
   "route.terms": "ಸೇವೆಗೆ ಸಂಬಂಧಿಸಿದ ನಿಯಮಗಳು",
-  "route.unknown": "ಪುಟ"
+  "route.unknown": "ಪುಟ",
+  "route.offline": "Connection & on-device content"
 }

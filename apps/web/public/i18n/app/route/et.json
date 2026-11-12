@@ -91,5 +91,6 @@
   "route.technologyStory": "Lugu",
   "route.technologyVideos": "Videod",
   "route.terms": "Teenuse tingimused",
-  "route.unknown": "Lehekülg"
+  "route.unknown": "Lehekülg",
+  "route.offline": "Connection & on-device content"
 }

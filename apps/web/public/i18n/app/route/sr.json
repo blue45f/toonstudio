@@ -91,5 +91,6 @@
   "route.technologyStory": "Историја стварања",
   "route.technologyVideos": "Видео снимци",
   "route.terms": "Услови коришћења",
-  "route.unknown": "Страница"
+  "route.unknown": "Страница",
+  "route.offline": "Connection & on-device content"
 }

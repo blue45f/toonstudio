@@ -91,5 +91,6 @@
   "route.technologyStory": "નિર્માણ સ્ટોરી",
   "route.technologyVideos": "વિડિઓઝ",
   "route.terms": "સેવાની શરતો",
-  "route.unknown": "પાનું"
+  "route.unknown": "પાનું",
+  "route.offline": "Connection & on-device content"
 }

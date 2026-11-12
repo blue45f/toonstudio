@@ -91,5 +91,6 @@
   "route.technologyStory": "Hadithi",
   "route.technologyVideos": "Video",
   "route.terms": "Masharti ya huduma",
-  "route.unknown": "Ukurasa"
+  "route.unknown": "Ukurasa",
+  "route.offline": "Connection & on-device content"
 }

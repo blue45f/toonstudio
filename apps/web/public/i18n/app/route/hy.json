@@ -91,5 +91,6 @@
   "route.technologyStory": "Պատմություն",
   "route.technologyVideos": "Տեսանյութեր",
   "route.terms": "Ծառայության պայմանները",
-  "route.unknown": "Էջ"
+  "route.unknown": "Էջ",
+  "route.offline": "Connection & on-device content"
 }

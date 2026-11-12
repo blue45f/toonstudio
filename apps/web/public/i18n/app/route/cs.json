@@ -91,5 +91,6 @@
   "route.technologyStory": "Příběh vzniku",
   "route.technologyVideos": "Videa",
   "route.terms": "Podmínky poskytování služeb",
-  "route.unknown": "Stránka"
+  "route.unknown": "Stránka",
+  "route.offline": "Connection & on-device content"
 }

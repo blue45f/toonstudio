@@ -91,5 +91,6 @@
   "route.technologyStory": "เรื่องราวการสร้างงาน",
   "route.technologyVideos": "วิดีโอ",
   "route.terms": "กติกาการบริการ",
-  "route.unknown": "หน้า"
+  "route.unknown": "หน้า",
+  "route.offline": "Connection & on-device content"
 }

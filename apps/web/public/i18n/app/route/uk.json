@@ -91,5 +91,6 @@
   "route.technologyStory": "Історія створення",
   "route.technologyVideos": "Відео",
   "route.terms": "Умови обслуговування",
-  "route.unknown": "Страница"
+  "route.unknown": "Страница",
+  "route.offline": "Connection & on-device content"
 }

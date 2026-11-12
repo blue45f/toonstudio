@@ -91,5 +91,6 @@
   "route.technologyStory": "కథ",
   "route.technologyVideos": "వీడియోలు",
   "route.terms": "సేవ యొక్క నిబంధనలు",
-  "route.unknown": "పేజీ"
+  "route.unknown": "పేజీ",
+  "route.offline": "Connection & on-device content"
 }

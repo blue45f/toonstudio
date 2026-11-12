@@ -64,7 +64,9 @@ describe("palette, Brand Kit and clip product SQLite authority", () => {
     expect(palettePanel).toContain("loadGenerationRef");
     expect(palettePanel).toContain("mutationGenerationRef");
     expect(brandPanel).toContain("data-studio-brand-kit-authority");
-    expect(brandPanel).toContain("현재 탭 메모리 임시");
+    expect(brandPanel).toContain('storageState === "memory"');
+    expect(brandPanel).toContain("현재 탭에만 유지 · 새로고침하면 사라짐");
+    expect(brandPanel).toContain("This tab only · lost on refresh");
     expect(brandPanel).toContain("paletteLoadGenerationRef");
     expect(page).toContain("clipHydrationGenerationRef");
     expect(page).toContain("clipMutationGenerationRef");

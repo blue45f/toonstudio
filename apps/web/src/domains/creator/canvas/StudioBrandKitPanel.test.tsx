@@ -100,7 +100,8 @@ describe("StudioBrandKitPanel durable authority", () => {
 
     await openCreatorAndName("오프라인 브랜드");
 
-    expect(await screen.findByText("현재 탭에만 유지 · 새로고침하면 사라짐")).toBeTruthy();
+    const memoryNotice = await screen.findByText("현재 탭에만 유지 · 새로고침하면 사라짐");
+    expect(memoryNotice.closest("[data-studio-brand-kit-authority]")?.getAttribute("data-studio-brand-kit-authority")).toBe("memory");
     expect(screen.getByRole("alert").textContent).toContain("현재 탭에만 유지");
     expect(screen.getByText("오프라인 브랜드")).toBeTruthy();
   });

@@ -91,5 +91,6 @@
   "route.technologyStory": "Poveste",
   "route.technologyVideos": "Videoclipuri",
   "route.terms": "Termenii de utilizare",
-  "route.unknown": "Pagina"
+  "route.unknown": "Pagina",
+  "route.offline": "Connection & on-device content"
 }

@@ -91,5 +91,6 @@
   "route.technologyStory": "Verhaal",
   "route.technologyVideos": "Video's",
   "route.terms": "Voorwaarden van de dienstverlening",
-  "route.unknown": "Pagina"
+  "route.unknown": "Pagina",
+  "route.offline": "Connection & on-device content"
 }
