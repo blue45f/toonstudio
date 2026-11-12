@@ -57,6 +57,12 @@ function BackButton() {
   return <button type="button" onClick={() => navigate(-1)}>뒤로</button>;
 }
 
+function openFilters() {
+  const trigger = screen.getByRole("button", { name: /^필터(?:\s*\d+)?$/u });
+  if (trigger.getAttribute("aria-expanded") !== "true") fireEvent.click(trigger);
+  return trigger;
+}
+
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
@@ -137,6 +143,7 @@ describe("MarketBrowsePage", () => {
     render(
       <MemoryRouter initialEntries={["/market/browse?q=ink&kind=brush&license=cc0-1.0"]}>
         <MarketBrowsePage />
+        <LocationProbe />
       </MemoryRouter>
     );
 
@@ -149,6 +156,12 @@ describe("MarketBrowsePage", () => {
 
     expect(screen.getByRole("button", { name: "검색어 지우기" }).className)
       .toContain("size-12");
+    const kind = screen.getByRole<HTMLSelectElement>("combobox", { name: "소재 종류 필터" });
+    expect(kind.value).toBe("brush");
+    // 소스 최소 크기 계약이다. 실제48px·가림·모바일 조작은 새 번들 브라우저에서 별도 검증한다.
+    expect(kind.className).toContain("min-h-12");
+    expect(kind.closest("[data-market-filter-panel]")).toBeNull();
+    openFilters();
     const brushFamily = screen.getByRole("button", { name: "브러시" });
     expect(brushFamily.className).toContain("min-h-11");
     expect(brushFamily.getAttribute("aria-pressed")).toBe("true");
@@ -160,6 +173,17 @@ describe("MarketBrowsePage", () => {
     expect(screen.getByRole("button", { name: "조건 초기화" }).className)
       .toContain("min-h-12");
     expect(screen.getByText(/현재/).closest("p")?.textContent).toContain("현재 0개 표시");
+    // 이름 있는 필터에서 이전 작업군 버튼에 도달하고, 선택 효과도 원래 URL 계약으로 이어진다.
+    fireEvent.click(screen.getByRole("button", { name: "3D", exact: true }));
+    expect(Object.fromEntries(new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "")))
+      .toEqual({ q: "ink", kind: "3d-asset", license: "cc0-1.0" });
+    expect(kind.value).toBe("3d");
+    expect(brushFamily.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(brushFamily);
+    expect(Object.fromEntries(new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "")))
+      .toEqual({ q: "ink", kind: "brush", license: "cc0-1.0" });
+    expect(kind.value).toBe("brush");
+    expect(brushFamily.getAttribute("aria-pressed")).toBe("true");
   });
 
   it("merges an immediate submitted search and sort change without dropping the selected kind", () => {
@@ -369,6 +393,7 @@ it("빈 공개 마켓에서 가입 없는 기본 소재로 이동할 수 있다"
 it("마켓에 없는 무료 CC0 재료는 리서치 데스크의 3D 자료 검색으로 이어진다", () => {
   useResources.mockReturnValue(marketPage());
   render(<MemoryRouter><MarketBrowsePage /></MemoryRouter>);
+  openFilters();
   fireEvent.click(screen.getByText("마켓 메뉴·제작 도구"));
   expect(screen.getByRole("link", { name: "무료 CC0 재료 찾기" }).getAttribute("href")).toBe("/research/3d-assets");
   expect(screen.getByLabelText("라이선스 필터")).toBeTruthy();
@@ -383,6 +408,7 @@ it("웹툰 제작 공정별 원클릭 프리셋 필터 바로 종류와 사용�
     </MemoryRouter>,
   );
 
+  openFilters();
   fireEvent.click(screen.getByText("자주 쓰는 조건으로 찾기"));
   const presetSection = screen.getByRole("region", { name: "웹툰 제작 공정별 원클릭 프리셋" });
   expect(presetSection).toBeTruthy();
@@ -407,6 +433,7 @@ it("AI 미포함·상업 연재 허용·렌더러 서버 패싯과 필터 프리
     </MemoryRouter>,
   );
 
+  openFilters();
   fireEvent.click(screen.getByText("상업 이용·호환 조건"));
   fireEvent.click(screen.getByRole("button", { name: "AI 미포함만" }));
   fireEvent.click(screen.getByRole("button", { name: "상업 연재 허용" }));
@@ -444,26 +471,37 @@ it("AI 미포함·상업 연재 허용·렌더러 서버 패싯과 필터 프리
 
 
 describe("소재 찾기의 기본·보조 작업 구분", () => {
-  it("검색·현재 종류·사용권·적용 조건은 바로 보이며 중복 메뉴와 빠른 조건은 접혀 있다", () => {
+  it("검색·종류·선택 조건을 먼저 보여주고 필터에서 이용 조건을 다시 찾을 수 있다", () => {
     const { container } = render(<MemoryRouter initialEntries={["/market/browse?q=ink&kind=brush&license=cc0-1.0"]}><MarketBrowsePage /></MemoryRouter>);
     const search = screen.getByRole("searchbox", { name: "어떤 소재가 필요한가요?" });
     expect(search.closest("details")).toBeNull();
     expect(screen.getByLabelText("어떤 소재가 필요한가요?")).toBe(search);
     const kind = screen.getByRole<HTMLSelectElement>("combobox", { name: "소재 종류 필터" });
     expect(kind.closest("details")).toBeNull(); expect(kind.value).toBe("brush");
-    expect(screen.getByRole("combobox", { name: "라이선스 필터" }).closest("details")).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "라이선스 필터" })).toBeNull();
+    const panel = container.querySelector<HTMLElement>("[data-market-filter-panel]");
+    expect(panel?.hidden).toBe(true);
     expect(screen.getByLabelText("적용된 조건").closest("details")).toBeNull();
     const menus = container.querySelectorAll<HTMLDetailsElement>("[data-market-tools], [data-market-quick-filters], [data-market-advanced-filters], [data-market-subcategories]");
     expect(menus.length).toBeGreaterThanOrEqual(3);
     for (const menu of menus) expect(menu.open).toBe(false);
     const tools = container.querySelector("[data-market-tools]");
     expect(search.compareDocumentPosition(tools as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const trigger = openFilters();
+    const license = screen.getByRole<HTMLSelectElement>("combobox", { name: "라이선스 필터" });
+    expect(license.value).toBe("cc0-1.0");
+    expect(panel?.hidden).toBe(false);
+    license.focus(); fireEvent.keyDown(license, { key: "Escape" });
+    expect(panel?.hidden).toBe(true);
+    expect(document.activeElement).toBe(trigger);
+    expect(screen.getByLabelText("적용된 조건").closest("[data-market-filter-panel]")).toBeNull();
     expect(container.querySelector('[data-contextual-subnav="market-hub"]')).toBeNull();
     expect(screen.queryByRole("img", { name: /브랜드/u })).toBeNull();
   });
 
   it("마켓 메뉴의 원래 목적지를 찾을 수 있고 Escape 후 현재 입력과 초점을 보존한다", () => {
     const { container } = render(<MemoryRouter initialEntries={["/market/browse?q=ink&kind=brush"]}><MarketBrowsePage /><LocationProbe /></MemoryRouter>);
+    openFilters();
     const menu = container.querySelector<HTMLDetailsElement>("[data-market-tools]");
     const summary = menu?.querySelector("summary");
     if (!menu || !summary) throw new Error("마켓 메뉴가 필요합니다.");
@@ -480,6 +518,7 @@ describe("소재 찾기의 기본·보조 작업 구분", () => {
 
   it("고급 조건을 닫아도 선택한 상업 이용 조건과 제거 행동은 남는다", () => {
     const { container } = render(<MemoryRouter initialEntries={["/market/browse?commercial=true&kind=brush"]}><MarketBrowsePage /><LocationProbe /></MemoryRouter>);
+    openFilters();
     const menu = container.querySelector<HTMLDetailsElement>("[data-market-advanced-filters]");
     const summary = menu?.querySelector("summary");
     if (!menu || !summary) throw new Error("상업 이용 조건이 필요합니다.");

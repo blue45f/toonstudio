@@ -74,6 +74,7 @@ export function MarketDetailStickyBar({
     <aside
       aria-label="에셋 빠른 실행 바"
       data-market-sticky-bar="true"
+      style={{ bottom: "max(0px, calc(var(--site-float-base, 1rem) - 1rem))" }}
       className={cn(
         "fixed bottom-0 inset-x-0 z-40 border-t border-line/80 bg-card/90 backdrop-blur-md px-4 py-2.5 shadow-xl",
         "animate-fade-up duration-200",

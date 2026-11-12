@@ -7,7 +7,6 @@ import {
   Search,
   SearchX,
   SlidersHorizontal,
-  Store,
   Upload,
   X,
 } from "lucide-react";
@@ -25,7 +24,6 @@ import { MarketSentenceSearch } from "../components/MarketSentenceSearch";
 import { MARKET_COMPARE_MAX_ITEMS, useMarketCompare } from "../hooks/use-market-compare";
 import { useMarketSearchHistory } from "../hooks/use-market-search-history";
 
-import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { CampusObjectSource } from "@/shared/components/spatial-campus/CampusObjectSource";
 import { MarketResourceCard } from "../components/MarketResourceCard";
 import { StaleNoticeBar } from "../components/StaleNoticeBar";
@@ -89,31 +87,32 @@ const PROCESS_PRESET_FILTERS: readonly ProcessPresetFilter[] = [
   { id: "free-cc0", labelKo: "무료/즉시 사용", labelEn: "Free / CC0 ready", kind: null, tag: null, license: "cc0-1.0" },
 ] as const;
 
-/** 세부 조건(라이선스) 목록의 선택 버튼. */
-function filterChipClass(active: boolean): string {
-  return cn(
-    "inline-flex min-h-11 items-center whitespace-nowrap rounded-xl border px-3 text-xs font-semibold transition-colors",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
-    active
-      ? "border-accent/50 bg-accent-soft text-accent"
-      : "border-line bg-card text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg",
-  );
-}
-
 export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boolean } = {}) {
   const t = useBilingual("MarketBrowsePage");
   const searchInputId = useId();
   const supplementaryMenus = useRef<HTMLDivElement>(null);
+  const filterTrigger = useRef<HTMLButtonElement>(null);
+  const filterPanel = useRef<HTMLElement>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterPanelId = `${searchInputId}-filters`;
   useEffect(() => {
     const owner = supplementaryMenus.current;
     if (!owner) return;
     const closeOnEscape = (event: KeyboardEvent) => {
-      const details = event.target instanceof HTMLElement ? event.target.closest("details") : null;
-      if (event.key !== "Escape" || !details?.open || !owner.contains(details)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      details.open = false;
-      details.querySelector("summary")?.focus({ preventScroll: true });
+      if (event.key !== "Escape") return;
+      const target = event.target;
+      const details = target instanceof HTMLElement ? target.closest("details") : null;
+      if (details?.open && owner.contains(details)) {
+        event.preventDefault();
+        event.stopPropagation();
+        details.open = false;
+        details.querySelector("summary")?.focus({ preventScroll: true });
+      } else if (target instanceof Node && filterPanel.current?.contains(target)) {
+        event.preventDefault();
+        event.stopPropagation();
+        setFiltersOpen(false);
+        filterTrigger.current?.focus();
+      }
     };
     owner.addEventListener("keydown", closeOnEscape);
     return () => owner.removeEventListener("keydown", closeOnEscape);
@@ -269,6 +268,10 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
       query.origin,
   );
 
+  const activeFilterCount = [activeKind, activeLicense, query.tag, query.publisher,
+    query.containsAi !== undefined, query.engine, query.commercial !== undefined, query.origin,
+  ].filter(Boolean).length;
+
   const visibleItems = useMemo(
     () => sortMarketResourcesForDisplay(page.items, displaySort),
     [displaySort, page.items],
@@ -285,21 +288,12 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
       }))} />
       <section className="border-b border-line bg-ledger">
         <Container size="wide" className="py-4 sm:py-6">
-          <SitePageHeader
-            surface="plain"
-            icon={Store}
-            eyebrow={t("소재 마켓", "Material market")}
-            title={pageTitle}
-            description={<>
-              {t("다음 컷에 필요한 재료를 골라보세요.", "Pick the materials your next panel needs.")}
-              <span className="max-sm:hidden">{" "}{t("구도를 시작하는 템플릿, 장면을 채우는 소재, 손맛을 만드는 브러시와 색감까지 웹툰 제작 순서에 맞춰 찾을 수 있습니다.", "From composition-starting templates to scene-filling materials, brushes, and colors that shape your hand — find them in webtoon production order.")}</span>
-            </>}
-          />
+          <h1 className="font-display text-2xl font-bold text-fg sm:text-3xl">{pageTitle}</h1>
 
           <form
             role="search"
             aria-label={t("소재 검색", "Material search")}
-            className="mt-4 grid max-w-2xl gap-2"
+            className="mt-3 grid max-w-2xl gap-2"
             onSubmit={(event) => {
               event.preventDefault();
               if (composingRef.current) return;
@@ -311,7 +305,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
               }
             }}
           >
-            <label htmlFor={searchInputId} className="text-base font-semibold text-fg">{t("어떤 소재가 필요한가요?", "What material do you need?")}</label>
+            <label htmlFor={searchInputId} className="text-sm font-medium text-fg">{t("어떤 소재가 필요한가요?", "What material do you need?")}</label>
             <div className="flex min-w-0 items-center gap-2">
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-3" aria-hidden="true" />
@@ -338,51 +332,11 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
             <button type="submit" className={buttonClass({ variant: "solid", size: "md", className: "min-h-12" })}>{t("검색", "Search")}</button>
             </div>
           </form>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:hidden" aria-label={t("기본 소재 조건", "Material filters")}>
-            <label className="grid min-w-0 gap-2 text-base font-semibold text-fg">
-              {t("소재 종류", "Material kind")}
-              <select aria-label={t("소재 종류 필터", "Material kind filter")} value={activeFamily?.id ?? "all"}
-                onChange={(event) => selectFamily(MARKET_RESOURCE_FAMILIES.find((family) => family.id === event.target.value) ?? null)}
-                className="min-h-12 min-w-0 rounded-xl border border-line bg-card px-3 text-base text-fg">
-                <option value="all">{t("모든 소재", "All materials")}</option>
-                {MARKET_RESOURCE_FAMILIES.map((family) => <option key={family.id} value={family.id}>{t(family.label, family.labelEn)}</option>)}
-              </select>
-            </label>
-            <label className="grid min-w-0 gap-2 text-base font-semibold text-fg">
-              {t("라이선스", "License")}
-              <select
-                aria-label={t("라이선스 필터", "License filter")}
-                value={activeLicense ?? ""}
-                onChange={(event) => patchParams({ license: event.target.value || null })}
-                className="min-h-12 rounded-xl border border-line bg-card px-3 text-base text-fg"
-              >
-                <option value="">{t("전체 라이선스", "All licenses")}</option>
-                {MARKET_LICENSES.map((license) => (
-                  <option key={license.license} value={license.license}>{license.label}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <MarketSentenceSearch onApply={applySentenceFilters} />
-          {!embedded ? (
-            <details className="market-browse-extra-menu mt-4" data-market-tools="">
-              <summary>{t("마켓 메뉴·제작 도구", "Market menu & creation tools")} <ChevronDown size={16} aria-hidden="true" /></summary>
-              <div className="market-browse-menu-body">
-                <MarketNavHeader />
-                <nav aria-label={t("원고와 리서치 도구", "Manuscript and research tools")} className="flex flex-wrap gap-2">
-                  <Link href="/studio/assets" className={buttonClass({ variant: "outline", size: "sm" })}>{t("원고의 소재 보관함", "Manuscript assets")}</Link>
-                  <Link href="/studio/brushes" className={buttonClass({ variant: "outline", size: "sm" })}>{t("브러시 만들기", "Create brushes")}</Link>
-                  <Link href="/research" className={buttonClass({ variant: "outline", size: "sm" })}>{t("리서치 데스크", "Research desk")}</Link>
-                  <Link href="/learn/paths/visual-finish" className={buttonClass({ variant: "outline", size: "sm" })}>{t("선화·채색 실습", "Line-art & coloring practice")}</Link>
-                  <Link href="/research/3d-assets" className={buttonClass({ variant: "outline", size: "sm" })}>{t("무료 CC0 재료 찾기", "Find free CC0 materials")}</Link>
-                </nav>
-              </div>
-            </details>
-          ) : null}
+
         </Container>
       </section>
 
-      <Container size="wide" className="py-6 sm:py-8">
+      <Container size="wide" className="py-4 sm:py-6">
         {compareCount > 0 ? (
           <div
             data-market-compare-tray-banner="true"
@@ -415,6 +369,36 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           filters={
             <>
 
+        <div className="flex items-end gap-2">
+          <label className="grid min-w-0 flex-1 gap-1.5 text-sm font-medium text-fg">
+            {t("소재 종류", "Material kind")}
+            <select aria-label={t("소재 종류 필터", "Material kind filter")} value={activeFamily?.id ?? "all"}
+              onChange={(event) => selectFamily(MARKET_RESOURCE_FAMILIES.find((family) => family.id === event.target.value) ?? null)}
+              className="min-h-12 min-w-0 rounded-xl border border-line bg-card px-3 text-base text-fg">
+              <option value="all">{t("모든 소재", "All materials")}</option>
+              {MARKET_RESOURCE_FAMILIES.map((family) => <option key={family.id} value={family.id}>{t(family.label, family.labelEn)}</option>)}
+            </select>
+          </label>
+          <button ref={filterTrigger} type="button" aria-expanded={filtersOpen} aria-controls={filterPanelId}
+            onClick={() => setFiltersOpen((value) => !value)}
+            className={buttonClass({ variant: "outline", size: "md", className: "min-h-12 gap-2" })}>
+            <SlidersHorizontal size={16} aria-hidden="true" />{t("필터", "Filters")}
+            {activeFilterCount > 0 ? <span className="numeral tnum text-accent">{activeFilterCount}</span> : null}
+          </button>
+        </div>
+        <section ref={filterPanel} id={filterPanelId} data-market-filter-panel="" hidden={!filtersOpen}
+          aria-label={t("소재 조건과 찾기 방법", "Material filters and search methods")}
+          className="market-browse-menu-body mt-3 rounded-xl border border-line bg-panel">
+          <label className="grid gap-2 text-sm font-semibold text-fg">
+            {t("라이선스", "License")}
+            <select aria-label={t("라이선스 필터", "License filter")} value={activeLicense ?? ""}
+              onChange={(event) => patchParams({ license: event.target.value || null })}
+              className="min-h-12 rounded-xl border border-line bg-card px-3 text-base text-fg">
+              <option value="">{t("전체 라이선스", "All licenses")}</option>
+              {MARKET_LICENSES.map((license) => <option key={license.license} value={license.license}>{license.label}</option>)}
+            </select>
+          </label>
+          <p className="mt-2 text-xs leading-5 text-fg-2">{t("무료 여부와 상업 이용 조건은 다릅니다. 사용하기 전에 상세 화면에서 이용 조건을 확인하세요.", "Free materials can have different commercial-use terms. Check the usage terms on the detail page before using them.")}</p>
         <section aria-labelledby="market-work-family-title" className="max-sm:hidden">
           <h2 id="market-work-family-title" className="text-sm font-bold text-fg">{t("어떤 리소스가 필요한가요?", "What kind of resource do you need?")}</h2>
           <p className="mt-1 text-sm text-fg-2 max-sm:sr-only">{t("한 번 선택하면 그 작업군에 필요한 세부 카테고리만 아래에 보여줍니다.", "Once selected, only the subcategories for that work family are shown below.")}</p>
@@ -523,7 +507,25 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           </div>
         </details>
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line/60 pt-4">
+          <MarketSentenceSearch onApply={applySentenceFilters} />
+          {!embedded ? (
+            <details className="market-browse-extra-menu mt-4" data-market-tools="">
+              <summary>{t("마켓 메뉴·제작 도구", "Market menu & creation tools")} <ChevronDown size={16} aria-hidden="true" /></summary>
+              <div className="market-browse-menu-body">
+                <MarketNavHeader />
+                <nav aria-label={t("원고와 리서치 도구", "Manuscript and research tools")} className="flex flex-wrap gap-2">
+                  <Link href="/studio/assets" className={buttonClass({ variant: "outline", size: "sm" })}>{t("원고의 소재 보관함", "Manuscript assets")}</Link>
+                  <Link href="/studio/brushes" className={buttonClass({ variant: "outline", size: "sm" })}>{t("브러시 만들기", "Create brushes")}</Link>
+                  <Link href="/research" className={buttonClass({ variant: "outline", size: "sm" })}>{t("리서치 데스크", "Research desk")}</Link>
+                  <Link href="/learn/paths/visual-finish" className={buttonClass({ variant: "outline", size: "sm" })}>{t("선화·채색 실습", "Line-art & coloring practice")}</Link>
+                  <Link href="/research/3d-assets" className={buttonClass({ variant: "outline", size: "sm" })}>{t("무료 CC0 재료 찾기", "Find free CC0 materials")}</Link>
+                </nav>
+              </div>
+            </details>
+          ) : null}
+        </section>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           {!hasInvalidQuery && !page.loading && !page.error ? (
             <p className="text-xs text-fg-3" aria-live="polite">
               {t("현재", "Showing")} <span className="numeral tnum font-semibold text-fg">{page.items.length}</span>{t("개 표시", " items")}
@@ -533,26 +535,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           <div className="flex flex-wrap items-center justify-end gap-2">
             <MarketViewToggle value={layout} onChange={(value) => patchParams({ layout: value === "grid" ? null : value })} />
 
-            <details className="group relative hidden sm:block">
-              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg [&::-webkit-details-marker]:hidden">
-                <SlidersHorizontal className="size-3.5" aria-hidden="true" />
-                {t("세부 조건", "Detailed filters")}
-                {activeLicense || query.publisher ? <span className="size-2 rounded-full bg-accent" aria-label={t("세부 조건 적용됨", "Detailed filters applied")} /> : null}
-                <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
-              </summary>
-              <div className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-line bg-panel p-3 shadow-xl">
-                <p className="text-xs font-bold text-fg">{t("라이선스", "License")}</p>
-                <div className="mt-2 grid gap-1.5">
-                  <button type="button" onClick={() => patchParams({ license: null })} aria-pressed={!activeLicense} className={cn(filterChipClass(!activeLicense), "justify-start")}>{t("전체 라이선스", "All licenses")}</button>
-                  {MARKET_LICENSES.map((license) => (
-                    <button key={license.license} type="button" onClick={() => patchParams({ license: activeLicense === license.license ? null : license.license })} aria-pressed={activeLicense === license.license} className={cn(filterChipClass(activeLicense === license.license), "justify-start")}>
-                      {license.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-3 text-xs leading-5 text-fg-3">{t("무료 여부와 상업 이용 가능 여부는 다릅니다. 작품 공개 전 상세 화면의 사용권 요약을 다시 확인하세요.", "Whether it's free and whether commercial use is allowed are different things. Re-check the license summary on the detail screen before publishing your work.")}</p>
-              </div>
-            </details>
+
 
             <label className="inline-flex min-h-11 items-center gap-2 text-xs font-medium text-fg-2">
               <span>{t("정렬", "Sort")}</span>

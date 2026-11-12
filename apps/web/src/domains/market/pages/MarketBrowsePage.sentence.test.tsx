@@ -66,6 +66,8 @@ const sentenceBox = () => screen.getByRole("textbox", { name: "찾는 자료를 
 const lastQuery = () => useResources.mock.lastCall?.[0];
 
 function openSentence() {
+  const trigger = screen.getByRole("button", { name: /^필터(?:\s*\d+)?$/u });
+  if (trigger.getAttribute("aria-expanded") !== "true") fireEvent.click(trigger);
   fireEvent.click(screen.getByRole("button", { name: "문장으로 찾기" }));
 }
 function applySentence(value: string) {
