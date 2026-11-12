@@ -75,6 +75,8 @@ test("mobile layout keeps controls usable and does not overflow", async ({ page 
 test("unauthorized administrator response never renders the controls", async ({ page }) => {
   await policyFixture(page, { denied: true });
   await page.goto("/");
-  await expect(page.getByText("서비스 관리자 권한이 필요합니다.", { exact: false })).toBeVisible();
+  const denial = page.getByRole("alert");
+  await expect(denial.getByText("서비스 관리자 권한이 필요합니다.", { exact: true })).toBeVisible();
+  await expect(denial.getByRole("button", { name: "로그인·권한 다시 확인" })).toBeVisible();
   await expect(page.getByRole("radio")).toHaveCount(0);
 });
