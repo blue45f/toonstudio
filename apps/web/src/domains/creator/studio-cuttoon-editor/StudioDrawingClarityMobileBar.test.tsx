@@ -38,6 +38,26 @@ function Surface({ value }: { value: MobileFixture }) {
 function show(value = session()) { return render(<StudioDrawingClarityProvider session={value}><Surface value={value} /></StudioDrawingClarityProvider>); }
 function more() { const trigger = screen.getByLabelText("도구와 도움말"); fireEvent.click(trigger); return trigger; }
 
+/** 네이티브 모달이 열린 동안 외부 초점을 차단하는 브라우저 계약을 재현한다. */
+function nativeModal() {
+  const prototype = HTMLDialogElement.prototype;
+  const previousShow = Object.getOwnPropertyDescriptor(prototype, "showModal");
+  const previousClose = Object.getOwnPropertyDescriptor(prototype, "close");
+  const originalFocus = HTMLElement.prototype.focus;
+  const close = vi.fn(function (this: HTMLDialogElement) { this.open = false; this.dispatchEvent(new Event("close")); });
+  Object.defineProperty(prototype, "showModal", { configurable: true, value: function (this: HTMLDialogElement) { this.open = true; } });
+  Object.defineProperty(prototype, "close", { configurable: true, value: close });
+  const focus = vi.spyOn(HTMLElement.prototype, "focus").mockImplementation(function (this: HTMLElement, options?: FocusOptions) {
+    const modal = document.querySelector("dialog[open]");
+    if (!modal || modal.contains(this)) originalFocus.call(this, options);
+  });
+  return { close, focus, restore() {
+    cleanup(); focus.mockRestore();
+    if (previousShow) Object.defineProperty(prototype, "showModal", previousShow); else Reflect.deleteProperty(prototype, "showModal");
+    if (previousClose) Object.defineProperty(prototype, "close", previousClose); else Reflect.deleteProperty(prototype, "close");
+  } };
+}
+
 describe("웹 모바일 기본 상단", () => {
   it("원고·뒤로·저장과 실제 상태 슬롯 하나만 두고 하단 도구를 중복 생성하지 않는다", () => {
     const { container } = show();
@@ -90,5 +110,43 @@ describe("웹 모바일 기본 상단", () => {
   it("열린 도구 메뉴의 Escape는 메뉴만 닫고 트리거로 돌아간다", () => {
     show(); const trigger = more(); fireEvent.keyDown(screen.getByRole("button", { name: "페이지 보기" }), { key: "Escape" });
     expect(screen.queryByRole("button", { name: "페이지 보기" })).toBeNull(); expect(document.activeElement).toBe(trigger);
+  });
+
+  it.each(["Escape", "네이티브 취소", "닫기 버튼"])("안내 닫기(%s)는 네이티브 모달을 먼저 닫아 외부 초점을 한 번 복구한다", (method) => {
+    const native = nativeModal();
+    try {
+      show(); const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
+      const dialog = screen.getByRole("dialog", { name: "그리기·손가락 안내" }), closed = vi.fn();
+      dialog.addEventListener("close", closed); native.focus.mockClear();
+      if (method === "Escape") fireEvent.keyDown(dialog, { key: "Escape" });
+      else if (method === "네이티브 취소") fireEvent(dialog, new Event("cancel", { cancelable: true }));
+      else fireEvent.click(screen.getByRole("button", { name: "그리기 안내 닫기" }));
+      expect(native.close).toHaveBeenCalledTimes(1); expect(closed).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(trigger);
+      expect(native.focus.mock.contexts.filter((node) => node === trigger)).toHaveLength(1);
+    } finally { native.restore(); }
+  });
+
+  it("사용법 전환은 모달을 먼저 닫고 다음 안내로 초점을 넘기며 중복 호출하지 않는다", () => {
+    const native = nativeModal(), destination = document.createElement("button");
+    destination.textContent = "다음 사용법 안내"; document.body.append(destination);
+    try {
+      const value = session(); vi.mocked(value.setTutorialHubOpen).mockImplementation((open) => { if (open === true) destination.focus(); });
+      show(value); const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
+      native.focus.mockClear(); fireEvent.click(screen.getByRole("button", { name: "사용법 따라 하기" }));
+      expect(native.close).toHaveBeenCalledTimes(1); expect(value.setTutorialHubOpen).toHaveBeenCalledExactlyOnceWith(true);
+      expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(destination);
+      expect(native.focus.mock.contexts.filter((node) => node === trigger)).toHaveLength(0);
+    } finally { native.restore(); destination.remove(); }
+  });
+
+  it("안내가 열린 채 상위 화면을 떠나면 네이티브 모달을 한 번 정리한다", () => {
+    const native = nativeModal();
+    try {
+      const value = session(), view = show(value); more(); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
+      const dialog = screen.getByRole("dialog", { name: "그리기·손가락 안내" }), closed = vi.fn(); dialog.addEventListener("close", closed);
+      view.unmount(); expect(native.close).toHaveBeenCalledTimes(1); expect(closed).toHaveBeenCalledTimes(1);
+      expect(value.setTutorialHubOpen).not.toHaveBeenCalled();
+    } finally { native.restore(); }
   });
 });
