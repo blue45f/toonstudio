@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { Archive, ChevronDown, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
+import { Archive, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -8,7 +8,6 @@ import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 import { StudioProjectLibraryResumeCard } from "./StudioProjectLibraryResumeCard";
-import { StudioProjectLibraryFastStartStrip } from "./StudioProjectLibraryFastStartStrip";
 import { STUDIO_LIBRARY_SECTION_ID } from "./studio-creator-lobby-model";
 import { studioLibraryRecentWork } from "./studio-library-recent-work";
 import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryManagementViewHref, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
@@ -239,46 +238,6 @@ export function StudioProjectLibraryManagementHeader({
           ) : selectionTools}
         </div>
       </section>
-
-      <div className="studio-library-secondary-tools">
-        {view === "active" && !hasSearchQuery ? <details className="studio-library-alternative-starts group rounded-xl border border-line bg-card" data-studio-other-starts="true">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
-              {bi("다른 작업 시작", "Start something else")}
-              <ChevronDown size={16} aria-hidden="true" className="group-open:rotate-180" />
-            </summary>
-            <StudioProjectLibraryFastStartStrip className="px-3 pb-3" />
-          </details> : null}
-      <details className="studio-library-auxiliary-management rounded-xl border border-line bg-card">
-        <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-xs font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-          {bi("저장·내보내기·제작 관리", "Save, export and production")}
-        </summary>
-        <div className="px-3 pb-3">
-          <p className="mb-2 text-xs leading-5 text-fg-2 sm:hidden">
-            {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
-          </p>
-        <nav className="flex flex-wrap items-center gap-1" aria-label={bi("저장과 배포", "Storage and distribution")}>
-          <Link href="/studio/recovery" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("작업 복구", "Recover work")}
-          </Link>
-          <Link href="/studio/import" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
-          </Link>
-          <Link href="/studio?view=storage" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("저장·백업", "Save & backup")}
-          </Link>
-          <Link href="/studio?view=exports" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("내보내기", "Export")}
-          </Link>
-          <Link href="/studio?view=publications" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("게시", "Publishing")}
-          </Link>
-        </nav>
-          <Link href="/production" className={buttonClass({ variant: "quiet", className: "min-h-11 whitespace-normal" })}>
-            {bi("제작 관리", "Production management")}
-          </Link>
-        </div>
-      </details>
-      </div>
 
       {selectedProjects.length > 0 ? (
         <section className="sticky top-3 z-30 mt-3 rounded-2xl border border-accent/35 bg-card/95 p-3 shadow-lg backdrop-blur" aria-label={bi("선택 작업", "Selection actions")}>

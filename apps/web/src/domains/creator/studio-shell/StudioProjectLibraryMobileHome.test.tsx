@@ -69,7 +69,12 @@ describe("모바일 작업 홈의 재개와 저장 정보", () => {
       storageHref="/studio?view=storage&project=my-work" onToggle={vi.fn()} onTouch={onResume}
       onOpenSave={save} onSavePackage={vi.fn()} onDuplicate={vi.fn()} onArchive={archive} onTrash={vi.fn()}
     /></MemoryRouter>);
-    expect(screen.getByRole("link", { name: "이어서 작업" }).getAttribute("href")).toBe(RESUME);
+    const continueWork = screen.getByRole("link", { name: "이어서 작업" });
+    expect(continueWork.getAttribute("href")).toBe(RESUME);
+    expect(continueWork.closest(".studio-library-project-row-description")).toBeTruthy();
+    expect(continueWork.closest("details")).toBeNull();
+    fireEvent.click(continueWork);
+    expect(onResume).toHaveBeenCalledOnce();
     expect(screen.getByRole("heading", { name: work.title })).toBeTruthy();
     const management = container.querySelector("details");
     expect(management?.open).toBe(false);

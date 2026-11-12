@@ -43,10 +43,10 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-function renderCard() {
+function renderCard(compact = false) {
   return render(
     <MemoryRouter>
-      <StudioSampleManuscriptCard />
+      <StudioSampleManuscriptCard compact={compact} />
     </MemoryRouter>,
   );
 }
@@ -124,4 +124,51 @@ describe("StudioSampleManuscriptCard", () => {
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByRole("button", { name: /다시 시도|Try again/u })).toBeTruthy();
   });
+
+  it("접힌 구조 안내를 열고 사본을 만든 뒤 다시 열어도 같은 사본을 이어한다", async () => {
+    const { container } = renderCard(true);
+    const summary = await screen.findByText(/^(완성 원고로 따라 그리기|Learn from a finished manuscript)$/u);
+    const details = summary.closest("details");
+    expect(details?.open).toBe(false);
+    await waitFor(() => expect(persistence.persist).toHaveBeenCalledOnce());
+    fireEvent.click(summary);
+    expect(details?.open).toBe(true);
+    expect(container.querySelectorAll("ol li")).toHaveLength(6);
+    fireEvent.click(screen.getByRole("button", { name: /연습 사본 만들어 따라 그리기|Make a practice copy and trace/u }));
+    const copy = await screen.findByRole("link", { name: /연습 사본 이어서 따라 그리기|Keep tracing/u });
+    const href = copy.getAttribute("href");
+    fireEvent.click(summary);
+    expect(details?.open).toBe(false);
+    fireEvent.click(summary);
+    expect(copy.getAttribute("href")).toBe(href);
+    expect(href).toBe("/studio/p/sample-practice-1/d/sample-practice-1-ep01?workspace=comic");
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(2);
+  });
+
+  it("사본 저장 실패를 닫힌 안내 밖에 남기고 재시도 후 실제 사본 링크를 제공한다", async () => {
+    persistence.persist.mockImplementation(async (seed) => seed.workId.startsWith("sample-practice") ? "unavailable" : "written");
+    renderCard(true);
+    const summary = await screen.findByText(/^(완성 원고로 따라 그리기|Learn from a finished manuscript)$/u);
+    fireEvent.click(summary);
+    const create = screen.getByRole("button", { name: /연습 사본 만들어 따라 그리기|Make a practice copy and trace/u });
+    fireEvent.click(create);
+    const alert = await screen.findByRole("alert");
+    fireEvent.click(summary);
+    expect(summary.closest("details")?.open).toBe(false);
+    expect(alert.closest("details")).toBeNull();
+    expect(screen.queryByRole("link", { name: /연습 사본 이어서 따라 그리기|Keep tracing/u })).toBeNull();
+    persistence.persist.mockResolvedValue("written");
+    fireEvent.click(summary);
+    fireEvent.click(create);
+    expect(await screen.findByRole("link", { name: /연습 사본 이어서 따라 그리기|Keep tracing/u })).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("컴팩트 표시에서도 준비 실패와 재시도를 접지 않는다", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
+    renderCard(true);
+    expect((await screen.findByRole("alert")).closest("details")).toBeNull();
+    expect(screen.getByRole("button", { name: /다시 시도|Try again/u }).closest("details")).toBeNull();
+  });
+
 });

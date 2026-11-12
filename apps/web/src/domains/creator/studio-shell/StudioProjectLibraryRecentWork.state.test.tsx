@@ -48,7 +48,7 @@ afterEach(() => { cleanup(); window.localStorage.clear(); useI18n.setState({ lan
 describe("개인 활동에 따른 작업 홈", () => {
   it("시딩된 예제만 있으면 새 작업을 우선하고 개인 최근 작업으로 오인시키지 않는다", () => {
     seedExamples();
-    show();
+    const { container } = show(true);
     expect(screen.queryByRole("region", { name: "최근 작업 빠른 이어하기" })).toBeNull();
     const primary = document.querySelectorAll("[data-studio-library-primary-action]");
     expect(primary).toHaveLength(1);
@@ -58,7 +58,13 @@ describe("개인 활동에 따른 작업 홈", () => {
     expect(alternatives?.open).toBe(false);
     fireEvent.click(screen.getByText("다른 작업 시작", { exact: true }));
     expect(alternatives?.open).toBe(true);
-    expect(alternatives?.querySelectorAll("a")).toHaveLength(4);
+    expect(Array.from(alternatives?.querySelectorAll("a") ?? [], (link) => link.getAttribute("href"))).toEqual([
+      "/studio/new?kind=webtoon&template=webtoon-vertical", "/studio/new?kind=four-cut&template=four-cut-classic", "/studio/bg3d", "/studio/import",
+    ]);
+    const list = container.querySelector('[data-studio-project-sections="true"]');
+    if (!list || !alternatives) throw new Error("작품 목록이나 보조 도구가 없습니다.");
+    expect(list.compareDocumentPosition(alternatives) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("link", { name: "작업 복구" }).getAttribute("href")).toBe("/studio/recovery");
   });
 
   it.each([EXAMPLE_PROJECT_ID, SAMPLE_PROJECT_ID])("실제 편집기 사용 맥락이 있는 %s 원본은 같은 ID로 이어한다", (id) => {
@@ -80,7 +86,7 @@ describe("개인 활동에 따른 작업 홈", () => {
   it("제목에 샘플이 들어가도 사용자가 만든 작업은 우선하며 다른 시작 방식은 펼쳐서 고른다", () => {
     seedExamples();
     seedProject("user-named-sample", "샘플이라는 이름의 나의 작품");
-    show();
+    show(true);
     expect(screen.getByRole("region", { name: "최근 작업 빠른 이어하기" }).textContent).toContain("샘플이라는 이름의 나의 작품");
     const summary = screen.getByText("다른 작업 시작", { exact: true });
     const details = summary.closest("details");
@@ -114,7 +120,12 @@ describe("개인 활동에 따른 작업 홈", () => {
     ensureStudioSaveProfile(window.localStorage, "profile-only", { provider: "local-file", now: AT });
     const { container } = show(true);
     expect(container.querySelector("[data-studio-recent-save-badge]")).toBeNull();
-    expect(screen.getByText("저장 설정이 있는 프로젝트입니다. 실제 저장 위치와 완료 시각은 원고에서 확인하세요.")).toBeTruthy();
+    const explanation = screen.getByText("저장 설정이 있는 프로젝트입니다. 실제 저장 위치와 완료 시각은 원고에서 확인하세요.");
+    const details = explanation.closest("details");
+    expect(details?.open).toBe(false);
+    fireEvent.click(screen.getByText("저장·내보내기·제작 관리", { exact: true }));
+    expect(details?.open).toBe(true);
+    expect(explanation.closest('[data-studio-project-sections="true"]')).toBeNull();
   });
 
   it("보관된 작업을 숨기지 않고 보관함에서도 개인 이어하기 주 행동으로 승격하지 않는다", () => {

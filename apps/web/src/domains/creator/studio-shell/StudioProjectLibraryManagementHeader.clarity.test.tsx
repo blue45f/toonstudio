@@ -40,13 +40,8 @@ describe("작업 홈의 첫 행동과 상태 안내", () => {
     expect(container.querySelector(".studio-library-first-work")).toBeNull();
     expect(screen.getByRole("link", { name: "새 작업" }).getAttribute("href")).toBe("/create");
     expect(screen.getByRole("link", { name: "파일 가져오기" }).getAttribute("href")).toBe("/studio/import");
-    expect(screen.getByRole("link", { name: "작업 복구" }).getAttribute("href")).toBe("/studio/recovery");
-    const alternatives = container.querySelector<HTMLDetailsElement>('[data-studio-other-starts="true"]');
-    expect(alternatives?.open).toBe(false);
-    expect(alternatives?.querySelector("summary")?.textContent).toBe("다른 작업 시작");
-    expect(Array.from(alternatives?.querySelectorAll("a") ?? [], (link) => link.getAttribute("href"))).toEqual([
-      "/studio/new?kind=webtoon&template=webtoon-vertical", "/studio/new?kind=four-cut&template=four-cut-classic", "/studio/bg3d", "/studio/import",
-    ]);
+    expect(screen.queryByRole("link", { name: "작업 복구" })).toBeNull();
+    expect(container.querySelector('[data-studio-other-starts="true"]')).toBeNull();
     expect(screen.getByRole("link", { name: "새 작업" }).getAttribute("data-studio-library-primary-action")).toBe("new");
     expect(container.textContent).not.toMatch(/OPFS|SQLite|1초|오른쪽 규격/u);
   });
@@ -71,7 +66,7 @@ describe("작업 홈의 첫 행동과 상태 안내", () => {
     expect(within(recent).queryByRole("list", { name: "5단계 제작 공정 흐름" })).toBeNull();
     expect(within(recent).getByRole("link", { name: "최근 작업 열기" }).getAttribute("href")).toContain(`/studio/p/${project.id}/`);
     expect(within(recent).getByRole("link", { name: "작품 단계" }).getAttribute("href")).toBe(`/studio/p/${project.id}/overview`);
-    expect(container.querySelector<HTMLDetailsElement>('[data-studio-other-starts="true"]')?.open).toBe(false);
+    expect(container.querySelector('[data-studio-other-starts="true"]')).toBeNull();
     expect(within(recent).getByRole("link", { name: "최근 작업 열기" }).getAttribute("data-studio-library-primary-action")).toBe("resume");
   });
 

@@ -2,12 +2,13 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
 import type { PersonalCloudConnectionStatus } from "../save-first/personal-cloud-client";
 import { serializeStudioAutosave, studioAutosaveKey } from "../studio-autosave";
 import { EXAMPLE_PROJECT_ID, EXAMPLE_PROJECT_TITLE } from "../studio-example-project-content";
 import {
+  readStudioExactResumeContext,
   studioExactResumeStorageKey,
   writeStudioExactResumeContext,
 } from "../studio-exact-resume-context";
@@ -48,6 +49,11 @@ function temporaryWorkRegion(): HTMLElement {
   return screen.getByRole("region", { name: /^임시 작업|^Temporary work/u });
 }
 
+function CurrentLocation() {
+  const location = useLocation();
+  return <output data-testid="library-navigation-location">{location.pathname}{location.search}</output>;
+}
+
 beforeEach(() => {
   window.localStorage.clear();
   personalCloudClientMocks.listPersonalCloudConnections.mockReset();
@@ -80,7 +86,11 @@ describe("StudioProjectLibraryPage", () => {
     expect(create.closest("details")).toBeNull();
     expect(importFiles.closest("details")).toBeNull();
     expect(create.compareDocumentPosition(importFiles) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const summary = tools.getByText(/저장·내보내기·제작 관리|Save, export and production/u);
+    const summary = screen.getByText(/저장·내보내기·제작 관리|Save, export and production/u);
+    expect(summary.closest('[data-studio-library-toolbar="true"]')).toBeNull();
+    const projects = document.querySelector('[data-studio-project-sections="true"]');
+    if (!projects) throw new Error("관리 도구 앞의 작품 목록이 없습니다.");
+    expect(projects.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const details = summary.closest("details");
     if (!details) throw new Error("부가 관리 도구 접기 영역이 없습니다.");
     expect(details.open).toBe(false);
@@ -88,6 +98,7 @@ describe("StudioProjectLibraryPage", () => {
     expect(details.open).toBe(true);
     expect(within(details).getByRole("link", { name: /저장·백업|Save & backup/u }).getAttribute("href")).toBe("/studio?view=storage");
     expect(within(details).getByRole("link", { name: /^제작 관리$|^Production management$/u }).getAttribute("href")).toBe("/production");
+    expect(within(details).getByRole("link", { name: /^작업 복구$|^Recover work$/u }).getAttribute("href")).toBe("/studio/recovery");
     fireEvent.click(summary);
     expect(details.open).toBe(false);
     expect(tools.getByRole("textbox", { name: /프로젝트 검색|Search projects/u }).closest("details")).toBeNull();
@@ -276,7 +287,7 @@ describe("StudioProjectLibraryPage", () => {
     markStudioProjectOpened(window.localStorage, project.id, document.id, {
       at: "2026-09-17T09:00:00.000Z",
     });
-    writeStudioExactResumeContext(window.localStorage, {
+    const exactContext = writeStudioExactResumeContext(window.localStorage, {
       projectId: project.id,
       documentId: document.id,
       workspace: "comic",
@@ -296,17 +307,28 @@ describe("StudioProjectLibraryPage", () => {
     render(
       <MemoryRouter initialEntries={["/studio"]}>
         <StudioProjectLibraryPage />
+        <CurrentLocation />
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("최근 위치 기억됨")).toBeTruthy();
-    expect(screen.getByText("최근 페이지 · 확대 140% · 선택 1개")).toBeTruthy();
-    // 시딩된 예제·샘플 카드에도 "이어서 작업" 링크가 있으므로 이 작품의 카드 안에서 확인한다.
-    const card = screen.getByRole("heading", { name: "이어보기 작품" }).closest("article");
-    expect(card).not.toBeNull();
-    expect(within(card as HTMLElement).getByRole("link", { name: "이어서 작업" }).getAttribute("href")).toBe(
-      `/studio/p/${project.id}/d/${document.id}?focus=cut%3A44&language=ko-KR&resume=latest&version=approved-9&workspace=comic`,
-    );
+    // 일반적인 기억됨 문구 대신 같은 카드의 실제 위치 요약과 이동 결과를 확인한다.
+    const card = (await screen.findByRole("heading", { name: "이어보기 작품" })).closest("article");
+    if (!card) throw new Error("이어보기 작품 카드가 없습니다.");
+    const context = within(card).getByText("최근 페이지 · 확대 140% · 선택 1개");
+    expect(context.closest("details")).toBeNull();
+    const continueWork = within(card).getByRole("link", { name: "이어서 작업" });
+    const destination = `/studio/p/${project.id}/d/${document.id}?focus=cut%3A44&language=ko-KR&resume=latest&version=approved-9&workspace=comic`;
+    expect(continueWork.getAttribute("href")).toBe(destination);
+    expect(continueWork.closest("details")).toBeNull();
+    fireEvent.click(continueWork);
+    await waitFor(() => expect(screen.getByTestId("library-navigation-location").textContent).toBe(destination));
+    expect(readStudioExactResumeContext(window.localStorage, project.id, document.id)).toEqual(exactContext);
+    expect(readStudioExactResumeContext(window.localStorage, project.id, document.id)).toMatchObject({
+      pageId: "page-8", selectedElementIds: ["bubble-4"], zoom: 1.4, scrollLeft: 220, scrollTop: 1_620,
+      tool: "select", drawMode: "pen", workspace: "comic", focus: "cut:44", language: "ko-KR", sourceVersion: "approved-9",
+    });
+    expect(readStudioProjectLibrary(window.localStorage).projects.find((entry) => entry.id === project.id)?.lastOpenedDocumentId)
+      .toBe(document.id);
   });
 
   it("seeds the example project and the sample manuscript on first entry and lists them as recent work in the lobby", async () => {

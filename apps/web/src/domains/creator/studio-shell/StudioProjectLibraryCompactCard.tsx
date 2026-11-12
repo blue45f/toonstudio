@@ -12,7 +12,7 @@ import { studioProjectLibraryDateLabel } from "./studio-project-library-manageme
 export function StudioProjectLibraryCompactCard(props: ComponentProps<typeof StudioProjectLibraryCard>) {
   const bt = useBilingual("StudioProjectLibraryCompactCard");
   const { project, profile, locale, authUserId, checked, temporary, isMostRecent, localFileSaved, busy,
-    continueHref, resumeSummary, resumeExact, overviewHref, storageHref, onToggle, onTouch, onOpenSave,
+    continueHref, resumeSummary, overviewHref, storageHref, onToggle, onTouch, onOpenSave,
     onSavePackage, onDuplicate, onArchive, onTrash } = props;
   return (
     <article data-studio-project-card="true" data-selected={checked || undefined}
@@ -27,19 +27,17 @@ export function StudioProjectLibraryCompactCard(props: ComponentProps<typeof Stu
           <h3 title={project.title} data-studio-project-title="true" className="line-clamp-2 break-words">
             <Link href={continueHref} onClick={onTouch} data-studio-card-title-link="true">{project.title}</Link>
           </h3>
-          <p>{bt("마지막 열기", "Last opened")} {studioProjectLibraryDateLabel(project.lastOpenedAt, locale)}</p>
+          <Link href={continueHref} onClick={onTouch} data-studio-card-continue="true" className="studio-library-row-continue">
+            <FolderOpen size={16} aria-hidden="true" />{bt("이어서 작업", "Continue")}
+          </Link>
           {isMostRecent ? <span data-studio-recent-badge="true" className="mr-1 text-xs font-semibold text-accent">{bt("최근 작업", "Most recent")}</span> : null}
           <StudioProjectSaveBadge profile={profile} locale={locale} />
           {resumeSummary ? <div className="studio-library-row-resume-context">
-            <p>{resumeExact ? bt("최근 위치 기억됨", "Recent position remembered") : bt("최근 문서로 이동", "Continue in recent document")}</p>
             <p>{resumeSummary}</p>
           </div> : null}
         </div>
       </div>
       <div className="studio-library-project-row-actions">
-        <Link href={continueHref} onClick={onTouch} data-studio-card-continue="true" className="studio-library-row-continue">
-          <FolderOpen size={16} aria-hidden="true" />{bt("이어서 작업", "Continue")}
-        </Link>
         {temporary ? (
           <button type="button" onClick={onOpenSave}><Save size={16} aria-hidden="true" />{bt("정식 저장", "Save")}</button>
         ) : localFileSaved ? (
@@ -50,6 +48,7 @@ export function StudioProjectLibraryCompactCard(props: ComponentProps<typeof Stu
         <details className="studio-library-project-row-management">
           <summary>{bt("작업 관리", "Manage work")}</summary>
           <div>
+            <p>{bt("마지막 열기", "Last opened")} {studioProjectLibraryDateLabel(project.lastOpenedAt, locale)}</p>
             <Link href={overviewHref}>{bt("프로젝트 관리", "Manage project")}</Link>
             <Link href={storageHref}>{bt("저장 상태 확인", "Check save status")}</Link>
             <button type="button" onClick={onDuplicate}

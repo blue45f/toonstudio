@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Check, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronDown, Check, RotateCcw, Sparkles } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -27,11 +27,11 @@ type BannerState =
   | { readonly kind: "error" };
 
 /**
- * 라이브러리 상단 고정: 신규 기기에서는 예제 프로젝트를 한 번 심고,
- * 완주 여정 체크리스트를 목록 위에 고정한다.
+ * 신규 기기에서는 예제 프로젝트를 한 번 심고 완주 여정을 제공한다.
+ * compact 표시는 목록 뒤에서 단계를 접어도 시딩과 진행 상태를 유지한다.
  * 시딩 실패(저장소 접근 불가 등)는 라이브러리 전체를 막지 않고 이 배너 안에서만 알린다.
  */
-export function StudioExampleProjectBanner() {
+export function StudioExampleProjectBanner({ compact = false }: { readonly compact?: boolean } = {}) {
   const bt = useBilingual("StudioExampleProjectBanner");
   const [state, setState] = useState<BannerState>({ kind: "loading" });
   const [journeyError, setJourneyError] = useState(false);
@@ -104,7 +104,7 @@ export function StudioExampleProjectBanner() {
         </p>
         <button
           type="button"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
+          className="mt-3 inline-flex min-h-12 items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
           onClick={() => { setState({ kind: "loading" }); setAttempt((value) => value + 1); }}
         >
           <RotateCcw size={13} aria-hidden="true" />
@@ -130,7 +130,7 @@ export function StudioExampleProjectBanner() {
         </p>
         <button
           type="button"
-          className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
+          className="mt-2 inline-flex min-h-12 items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
           onClick={() => {
             try {
               restoreStudioProject(window.localStorage, EXAMPLE_PROJECT_ID, { target: window });
@@ -151,7 +151,7 @@ export function StudioExampleProjectBanner() {
   const progress = exampleJourneyProgress(journey);
   const steps = exampleJourneySteps(editorHref);
 
-  if (journey.dismissed) {
+  if (journey.dismissed && !compact) {
     return (
       <section
         className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-card px-5 py-4"
@@ -164,7 +164,7 @@ export function StudioExampleProjectBanner() {
         </p>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
+          className="inline-flex min-h-12 items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
           onClick={() => {
             try {
               const next = setExampleJourneyDismissed(window.localStorage, false);
@@ -181,12 +181,7 @@ export function StudioExampleProjectBanner() {
     );
   }
 
-  return (
-    <section
-      className="mt-6 rounded-3xl border border-line bg-card px-5 py-6"
-      aria-labelledby="example-project-banner-title"
-      data-example-project-banner="ready"
-    >
+  const content = (<>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[0.68rem] font-black uppercase tracking-widest text-fg-3">
@@ -204,7 +199,7 @@ export function StudioExampleProjectBanner() {
         </div>
         <Link
           href={editorHref}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-fg px-4 py-2 text-sm font-black text-bg"
+          className="inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-full bg-fg px-4 py-2 text-sm font-black text-bg"
         >
           {bt("예제 열기", "Open the example")}
           <ArrowRight size={15} aria-hidden="true" />
@@ -225,6 +220,7 @@ export function StudioExampleProjectBanner() {
         <span className="shrink-0 whitespace-nowrap text-xs font-bold text-fg-3">
           {bt("완주까지", "To the finish")} {progress.done}/{progress.total}
         </span>
+        {!compact ? (
         <button
           type="button"
           className="shrink-0 whitespace-nowrap text-xs font-bold text-fg-3 underline underline-offset-2"
@@ -240,6 +236,7 @@ export function StudioExampleProjectBanner() {
         >
           {bt("접어 두기", "Collapse")}
         </button>
+        ) : null}
       </div>
 
       <ol className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -247,7 +244,7 @@ export function StudioExampleProjectBanner() {
           const done = journey.doneIds.includes(step.id as ExampleJourneyStepId);
           return (
             <li key={step.id} className="rounded-2xl border border-line px-4 py-3">
-              <label className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2.5">
+              <label className="grid min-h-12 cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2.5">
                 <input
                   type="checkbox"
                   className="row-span-2 mt-1 shrink-0"
@@ -275,7 +272,7 @@ export function StudioExampleProjectBanner() {
               </label>
               <Link
                 href={step.href}
-                className="mt-2 inline-flex items-center gap-1 pl-7 text-xs font-bold text-fg underline underline-offset-2"
+                className="mt-2 inline-flex min-h-12 items-center gap-1 pl-7 text-xs font-bold text-fg underline underline-offset-2"
               >
                 {step.id === "open-example" ? EXAMPLE_PROJECT_TITLE : bt("바로 가기", "Go there")}
                 <ArrowRight size={12} aria-hidden="true" />
@@ -285,14 +282,32 @@ export function StudioExampleProjectBanner() {
         })}
       </ol>
 
-      {journeyError ? (
-        <p role="alert" className="mt-3 text-xs font-bold text-warning">
-          {bt("진행 상황을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.", "Progress couldn't be saved. Check your browser storage.")}
-        </p>
-      ) : null}
       {progress.done === progress.total ? (
         <p className="mt-3 text-sm font-black text-fg">
           {bt("완주했어요! 이제 내 작품으로 같은 흐름을 이어가 보세요.", "You finished the journey! Now run the same flow on your own work.")}
+        </p>
+      ) : null}
+  </>);
+
+  return (
+    <section
+      className={compact ? "mt-3 rounded-2xl border border-line bg-card px-4 py-2" : "mt-6 rounded-3xl border border-line bg-card px-5 py-6"}
+      aria-labelledby={compact ? undefined : "example-project-banner-title"}
+      data-example-project-banner="ready"
+    >
+      {compact ? (
+        <details className="group" data-studio-library-learning="example">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-xl text-sm font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+            <span className="min-w-0 flex-1">{bt("예제로 첫 작품 완성하기", "Finish your first work with an example")}</span>
+            <span className="text-xs font-semibold text-fg-2">{progress.done}/{progress.total}</span>
+            <ChevronDown size={16} aria-hidden="true" className="shrink-0 group-open:rotate-180" />
+          </summary>
+          <div className="pb-3 pt-2">{content}</div>
+        </details>
+      ) : content}
+      {journeyError ? (
+        <p role="alert" className="mt-3 text-xs font-bold text-warning">
+          {bt("진행 상황을 저장하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.", "Progress couldn't be saved. Check your browser storage.")}
         </p>
       ) : null}
     </section>

@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { FolderOpen } from "lucide-react";
+import { ChevronDown, FolderOpen } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -11,6 +11,8 @@ import {
   StudioProjectLibraryRecoveryRow,
 } from "./StudioProjectLibraryManagementUi";
 import { StudioProjectLibraryCompactCard } from "./StudioProjectLibraryCompactCard";
+import { StudioProjectLibraryFastStartStrip } from "./StudioProjectLibraryFastStartStrip";
+import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS } from "./studio-project-library-management-model";
 import { StudioExampleProjectBanner } from "../workspace/StudioExampleProjectBanner";
 import { StudioSampleManuscriptCard } from "../workspace/StudioSampleManuscriptCard";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
@@ -184,7 +186,7 @@ export function StudioProjectLibraryManagementContent({
           </section>
         )
       ) : view === "active" ? (
-        <div className="mt-6 space-y-8" data-studio-project-sections="true">
+        <div className="mt-3 space-y-4" data-studio-project-sections="true">
           {temporaryProjects.length > 0 ? (
             <section aria-labelledby="temporary-work-title">
               <div className="flex flex-wrap items-end justify-between gap-3">
@@ -193,9 +195,6 @@ export function StudioProjectLibraryManagementContent({
                     {bi("임시 작업", "Temporary work")}
                     <span className="ml-2 text-sm font-bold text-fg-3">{temporaryProjects.length}</span>
                   </h2>
-                  <p className="mt-1 text-xs leading-5 text-fg-3">
-                    {bi("저장 위치를 아직 지정하지 않은 작업입니다. 원고를 열어 실제 저장 상태를 확인하세요.", "These projects have no chosen save destination. Open a manuscript to check its current save status.")}
-                  </p>
                 </div>
               </div>
               <div ref={temporaryGridRef} data-studio-project-grid="temporary" className="studio-library-compact-grid">
@@ -230,13 +229,7 @@ export function StudioProjectLibraryManagementContent({
                     {bi("프로젝트", "Projects")}
                     <span className="ml-2 text-sm font-bold text-fg-3">{savedProjects.length}</span>
                   </h2>
-                  <p className="mt-1 text-xs leading-5 text-fg-3">
-                    {bi("저장 설정이 있는 프로젝트입니다. 실제 저장 위치와 완료 시각은 원고에서 확인하세요.", "These projects have save settings. Check the manuscript for the actual destination and completed save time.")}
-                  </p>
                 </div>
-                <Link href="/studio/import" className="inline-flex min-h-11 items-center text-xs font-bold text-accent underline underline-offset-4">
-                  {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
-                </Link>
               </div>
               <div ref={savedGridRef} data-studio-project-grid="saved" className="studio-library-compact-grid">
                 {shownSavedProjects.map((project) => renderProjectCard(project, false))}
@@ -286,13 +279,56 @@ export function StudioProjectLibraryManagementContent({
         </section>
       )}
 
-      {/* 시딩과 마운트 조건은 유지하고, 예제 안내만 실제 작업 목록 뒤에 둔다. */}
-      {view === "active" && !query ? <StudioExampleProjectBanner /> : null}
-      {view === "active" && !query ? <StudioSampleManuscriptCard /> : null}
+      <div className="studio-library-secondary-tools">
+        {view === "active" && !query.trim() ? <details className="studio-library-alternative-starts group rounded-xl border border-line bg-card" data-studio-other-starts="true">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+              {bi("다른 작업 시작", "Start something else")}
+              <ChevronDown size={16} aria-hidden="true" className="group-open:rotate-180" />
+            </summary>
+            <StudioProjectLibraryFastStartStrip className="px-3 pb-3" />
+          </details> : null}
+        <details className="studio-library-auxiliary-management rounded-xl border border-line bg-card">
+          <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-xs font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+            {bi("저장·내보내기·제작 관리", "Save, export and production")}
+          </summary>
+          <div className="px-3 pb-3">
+            <p className="mb-2 text-xs leading-5 text-fg-2 sm:hidden">
+              {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
+            </p>
+            {view === "active" ? <div className="mb-3 space-y-1 text-xs leading-5 text-fg-2">
+              <p><strong>{bi("임시 작업", "Temporary work")}</strong> — <span>{bi("저장 위치를 아직 지정하지 않은 작업입니다. 원고를 열어 실제 저장 상태를 확인하세요.", "These projects have no chosen save destination. Open a manuscript to check its current save status.")}</span></p>
+              <p><strong>{bi("프로젝트", "Projects")}</strong> — <span>{bi("저장 설정이 있는 프로젝트입니다. 실제 저장 위치와 완료 시각은 원고에서 확인하세요.", "These projects have save settings. Check the manuscript for the actual destination and completed save time.")}</span></p>
+            </div> : null}
+            <nav className="flex flex-wrap items-center gap-1" aria-label={bi("저장과 배포", "Storage and distribution")}>
+              <Link href="/studio/recovery" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+                {bi("작업 복구", "Recover work")}
+              </Link>
+              <Link href="/studio/import" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+                {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
+              </Link>
+              <Link href="/studio?view=storage" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+                {bi("저장·백업", "Save & backup")}
+              </Link>
+              <Link href="/studio?view=exports" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+                {bi("내보내기", "Export")}
+              </Link>
+              <Link href="/studio?view=publications" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+                {bi("게시", "Publishing")}
+              </Link>
+            </nav>
+            <Link href="/production" className={buttonClass({ variant: "quiet", className: "min-h-11 whitespace-normal" })}>
+              {bi("제작 관리", "Production management")}
+            </Link>
+            <p className="mt-3 text-xs leading-5 text-fg-3">
+              {bi("임시 자동저장, 정식 저장, 백업, 내보내기와 게시를 분리해 관리합니다. 휴지통의 완전 삭제만 되돌릴 수 없습니다.", "Temporary autosave, explicit save, backup, export and publishing are managed separately. Only permanent deletion from Trash cannot be undone.")}
+            </p>
+          </div>
+        </details>
+      </div>
 
-      <footer className="mt-10 border-t border-line pt-5 text-xs leading-5 text-fg-3">
-        {bi("임시 자동저장, 정식 저장, 백업, 내보내기와 게시를 분리해 관리합니다. 휴지통의 완전 삭제만 되돌릴 수 없습니다.", "Temporary autosave, explicit save, backup, export and publishing are managed separately. Only permanent deletion from Trash cannot be undone.")}
-      </footer>
+      {/* 접힌 안내도 마운트를 유지해 시딩과 진행 상태를 보존한다. 오류·복구 안내는 접지 않는다. */}
+      {view === "active" && !query ? <StudioExampleProjectBanner compact /> : null}
+      {view === "active" && !query ? <StudioSampleManuscriptCard compact /> : null}
     </>
   );
 }
