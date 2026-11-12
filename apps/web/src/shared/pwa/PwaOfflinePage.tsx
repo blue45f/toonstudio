@@ -64,17 +64,17 @@ const OFFLINE_FEATURES = [
   },
   {
     icon: Download,
-    ko: "로컬 자동 저장",
-    en: "Local auto-save",
-    koDescription: "작업은 기기에 저장되어 사라지지 않아요.",
-    enDescription: "Work is stored on-device and never lost.",
+    ko: "기기에 작업 보관",
+    en: "Work stored on this device",
+    koDescription: "브라우저에 저장한 작업을 다시 열 수 있어요. 중요한 작업은 파일로도 백업해 주세요.",
+    enDescription: "Reopen work saved in this browser. Keep a file backup of important work.",
   },
   {
     icon: RefreshCw,
-    ko: "복귀 시 자동 동기화",
-    en: "Auto-sync on reconnect",
-    koDescription: "온라인이 되면 쌓인 작업이 자동으로 올라가요.",
-    enDescription: "Queued work uploads automatically when you're back online.",
+    ko: "다시 연결한 뒤 확인",
+    en: "Check after reconnecting",
+    koDescription: "연결이 돌아오면 저장 상태와 필요한 동기화를 확인해 주세요.",
+    enDescription: "When the connection returns, check the save status and any required sync.",
   },
 ] as const;
 
@@ -214,6 +214,11 @@ export function PwaOfflinePage() {
             {bi("오프라인 팩 준비", "Prepare offline pack")}
           </button>
         </div>
+
+        <section className="pwa-offline__music" aria-labelledby="pwa-offline-music-title">
+          <h2 id="pwa-offline-music-title">{bi("음악 설정", "Music settings")}</h2>
+          <div id="workspace-audio-dock" className="pwa-offline__music-dock" />
+        </section>
 
         <div
           className="pwa-offline__readiness"
