@@ -73,9 +73,14 @@ async function loadBundledSimdFileset(): Promise<StudioMediaPipeVisionWasmFilese
 }
 
 async function loadBundledNoSimdFileset(): Promise<StudioMediaPipeVisionWasmFileset> {
-  throw new Error(
-    "@mediapipe/tasks-vision 1.2+는 WebAssembly SIMD 환경을 요구하며 nosimd 번들을 제공하지 않습니다.",
-  );
+  const [loaderModule, binaryModule] = await Promise.all([
+    import("@mediapipe/tasks-vision/vision_wasm_nosimd_internal.js?url"),
+    import("@mediapipe/tasks-vision/vision_wasm_nosimd_internal.wasm?url"),
+  ]);
+  return assertLocalFileset({
+    wasmLoaderPath: loaderModule.default,
+    wasmBinaryPath: binaryModule.default,
+  });
 }
 
 /** Probe once, select one variant before loading, and fail closed if either step fails. */
