@@ -269,8 +269,6 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
       }))} />
       <section className="border-b border-line bg-ledger">
         <Container size="wide" className="py-7 sm:py-10 lg:py-12">
-          {!embedded ? <SiteContextualSubNav pathnameOverride="/market/browse" className="mb-4" /> : null}
-          {!embedded ? <MarketNavHeader /> : null}
           <SitePageHeader
             surface="plain"
             icon={Store}
@@ -330,6 +328,12 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
             <button type="submit" className={buttonClass({ variant: "solid", size: "md" })}>{t("검색", "Search")}</button>
           </form>
           <MarketSentenceSearch onApply={applySentenceFilters} />
+          {!embedded ? (
+            <div className="mt-5 border-t border-line pt-4">
+              <SiteContextualSubNav pathnameOverride="/market/browse" className="mb-4" />
+              <MarketNavHeader />
+            </div>
+          ) : null}
         </Container>
       </section>
 
