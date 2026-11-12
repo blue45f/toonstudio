@@ -1,28 +1,38 @@
 /**
- * PosePanel: 포즈 프리셋 10 · 손 포즈 프리셋 8 · 적용 범위(스코프) · IK 목표(손·발 4 + 머리 척추 체인) · 관절 제한 도구.
- *
- * - 프리셋 카드 클릭 = dispatch 1회. 범위가 '전신'이면 `slot/apply`(슬롯 기록·썸네일·되돌리기 라벨), 다른 범위는
- *   `pose/set`(범위 안 본만 교체, 밖은 보존 — reducer의 mergePoseScoped는 animation `mergePose(replaceScope)`와 같은 의미).
- * - 손 포즈: 양손 = `slot/apply`(hand-pose, 양쪽 patch), 왼손/오른손 = `hand-pose/set`(한쪽만).
- * - IK: 참조 스켈레톤(createReferenceSkeleton)으로 현재 레시피 포즈를 FK → 목표 환산 → `pose/set`(전신, 결과 포즈 전체).
- *   손·발은 해석적 two-bone(폴 벡터 선택), 머리는 척추 FABRIK 체인. 도달 불가·관절 제한 클램프는 사유를 status 문구와
- *   `data-status`(reached/clamped/unreachable, core CSS 색상)로 보여주고(무음 없음) 결과 포즈(최대 신장·클램프)는 그대로 기록한다.
- * - 뷰포트의 관절 핸들 드래그는 render ViewportPane이 animation/joint-drag.ts로 같은 `pose/set`을 보낸다.
- * - 스타일 접두 `cl-pose-`(core의 character-lab.css가 정의).
+ * PosePanel: 포즈 프리셋 10 · 손 포즈 프리셋 8 · 포즈 강도(0%–150% Slerp) · 적용 범위(스코프) · IK 목표(손·발 4 + 머리 척추 체인) · 관절 제한 도구.
  */
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { SPINE_IK_CHAIN, solveChainIk } from "../../../animation/fabrik";
 import { solveIkGoal } from "../../../animation/ik-apply";
 import { clampPoseToLimits, poseLimitViolations } from "../../../animation/joint-limits";
+import { MAX_POSE_INTENSITY, MIN_POSE_INTENSITY, scalePoseIntensity } from "../../../animation/pose-intensity";
 import { HAND_POSE_PRESETS, POSE_PRESETS } from "../../../animation/presets";
-import { createReferenceSkeleton } from "../../../animation/reference-skeleton";
-import { computeWorldTransforms } from "../../../animation/skeleton-fk";
 import { computeGroundedBodyHeight } from "../../../animation/two-bone-ik";
-import { IK_CHAINS, POSE_SCOPE_LABELS_KO } from "../../../contracts";
+import { POSE_SCOPE_LABELS_KO } from "../../../contracts";
 import { hasPoseSkeleton, readPoseSkeleton } from "../../../render/pose-skeleton";
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions } from "../lab-store-context";
 
+import {
+  CoordInputs,
+  HAND_SIDES,
+  HAND_SIDE_LABELS_KO,
+  IK_TARGET_IDS,
+  IK_TARGET_LABELS_KO,
+  PoseDisabledReasonDetails,
+  REFERENCE_SKELETON,
+  REST_WORLD_TRANSFORMS,
+  describeActiveRigSourceKo,
+  describeIkOutcome,
+  ikEndPosition,
+  ikStatusTone,
+  isHandSide,
+  isIkTargetId,
+  midPosition,
+  mirrorHumanoidPoseLeftRight,
+  parseCoords,
+  toCoords,
+} from "./pose-panel-helpers";
 import {
   classifySkeletonBoundaryError,
   diagnoseSkeletonData,
@@ -31,183 +41,25 @@ import {
   type SkeletonBoundaryOptions,
 } from "./skeleton-boundary-guard";
 
-import type { HandPosePreset, HumanoidBoneName, IkChainId, LabFailure, Pose, PosePreset, PoseScope, Quat, RecipeSource, SkeletonData, Vec3 } from "../../../contracts";
+import type { Coords, HandSide, IkStatusTone, IkTargetId } from "./pose-panel-helpers";
+import type { HandPosePreset, LabFailure, Pose, PosePreset, PoseScope, Vec3 } from "../../../contracts";
 
-/** 패널에서 고를 수 있는 적용 범위(손 전용 스코프는 손 포즈 섹션이 맡는다) */
-export const POSE_PANEL_SCOPES: readonly PoseScope[] = ["full", "upper", "arms-hands", "lower"];
-
-export type IkTargetId = IkChainId | "head";
-
-export const IK_TARGET_IDS: readonly IkTargetId[] = ["leftArm", "rightArm", "leftLeg", "rightLeg", "head"];
-
-export const IK_TARGET_LABELS_KO: Readonly<Record<IkTargetId, string>> = {
-  leftArm: "왼손",
-  rightArm: "오른손",
-  leftLeg: "왼발",
-  rightLeg: "오른발",
-  head: "머리(척추 체인)",
+export {
+  IK_TARGET_IDS,
+  IK_TARGET_LABELS_KO,
+  describeIkOutcome,
+  ikEndPosition,
+  ikStatusTone,
+  mirrorHumanoidPoseLeftRight,
+  parseCoords,
 };
+export type { IkStatusTone, IkTargetId };
 
-type HandSide = "both" | "left" | "right";
-
-const HAND_SIDE_LABELS_KO: Readonly<Record<HandSide, string>> = { both: "양손", left: "왼손", right: "오른손" };
-const HAND_SIDES: readonly HandSide[] = ["both", "left", "right"];
-
-/** 패널 IK 환산에 쓰는 소스 독립 참조 스켈레톤(결정적) */
-const REFERENCE_SKELETON = createReferenceSkeleton();
-const REST_WORLD_TRANSFORMS = computeWorldTransforms(REFERENCE_SKELETON, {});
-
-/**
- * SHAPER UIPresetManager::ClickItem (0x06000357) & BoneManager::SymmetryBoneRot (0x04000083 = [1, -1, -1]) 역공학 내재화:
- * 좌(`left*`)·우(`right*`) 휴머노이드 본 이름을 맞바꾸고 쿼터니언의 Y·Z 회전 성분을 반전(`[qx, -qy, -qz, qw]`)해 포즈를 좌우 대칭 반전한다.
- */
-export function mirrorHumanoidPoseLeftRight(pose: Pose): Pose {
-  const swapBoneName = (bone: HumanoidBoneName): HumanoidBoneName => {
-    if (bone.startsWith("left")) return `right${bone.slice(4)}` as HumanoidBoneName;
-    if (bone.startsWith("right")) return `left${bone.slice(5)}` as HumanoidBoneName;
-    return bone;
-  };
-  const mirrorQuat = (q: Quat): Quat => [q[0], -q[1], -q[2], q[3]];
-  const out: Partial<Record<HumanoidBoneName, Quat>> = {};
-  for (const [bone, q] of Object.entries(pose) as Array<[HumanoidBoneName, Quat | undefined]>) {
-    if (!q) continue;
-    out[swapBoneName(bone)] = mirrorQuat(q);
-  }
-  return out;
-}
-
-interface Coords {
-  readonly x: string;
-  readonly y: string;
-  readonly z: string;
-}
-
-function isIkTargetId(value: string): value is IkTargetId {
-  return (IK_TARGET_IDS as readonly string[]).includes(value);
-}
-
-function isHandSide(value: string): value is HandSide {
-  return (HAND_SIDES as readonly string[]).includes(value);
-}
-
-function endBoneOf(target: IkTargetId): HumanoidBoneName {
-  return target === "head" ? "head" : IK_CHAINS[target][2];
-}
-
-function midBoneOf(target: IkTargetId): HumanoidBoneName {
-  return target === "head" ? "chest" : IK_CHAINS[target][1];
-}
-
-/** 스켈레톤(기본: 참조 스켈레톤) 기준 현재 포즈의 말단(손·발·머리) 월드 위치 */
-export function ikEndPosition(
-  pose: Pose,
-  target: IkTargetId,
-  skeleton: SkeletonData = REFERENCE_SKELETON,
-  options?: SkeletonBoundaryOptions,
-): Vec3 {
-  const fk = safeComputeWorldTransforms(skeleton, pose, options);
-  if (!fk.ok) return REST_WORLD_TRANSFORMS.get(endBoneOf(target))?.position ?? [0, 0, 0];
-  return fk.transforms.get(endBoneOf(target))?.position ?? [0, 0, 0];
-}
-
-function midPosition(
-  pose: Pose,
-  target: IkTargetId,
-  skeleton: SkeletonData = REFERENCE_SKELETON,
-  options?: SkeletonBoundaryOptions,
-): Vec3 {
-  const fk = safeComputeWorldTransforms(skeleton, pose, options);
-  if (!fk.ok) return REST_WORLD_TRANSFORMS.get(midBoneOf(target))?.position ?? [0, 0, 0];
-  return fk.transforms.get(midBoneOf(target))?.position ?? [0, 0, 0];
-}
-
-function toCoords(v: Vec3): Coords {
-  return { x: v[0].toFixed(3), y: v[1].toFixed(3), z: v[2].toFixed(3) };
-}
-
-/** 세 좌표 문자열을 Vec3로. 빈 칸·비수치는 null(무음 0 대체 금지). */
-export function parseCoords(coords: Coords): Vec3 | null {
-  const parts = [coords.x, coords.y, coords.z].map((text) => (text.trim() === "" ? Number.NaN : Number(text)));
-  const [x, y, z] = parts;
-  if (x === undefined || y === undefined || z === undefined || !parts.every(Number.isFinite)) return null;
-  return [x, y, z];
-}
-
-interface IkOutcome {
-  readonly reached: boolean;
-  readonly error: number;
-  readonly status: string;
-  readonly reasonKo?: string;
-}
-
-/** IK 결과를 사용자 문장으로(도달/미도달 + 사유 + 오차 mm) */
-export function describeIkOutcome(labelKo: string, outcome: IkOutcome): string {
-  const mm = (outcome.error * 1000).toFixed(1);
-  if (outcome.reached) return `${labelKo} 목표 도달 (오차 ${mm} mm)`;
-  return `${labelKo} 목표 미도달(${outcome.status}): ${outcome.reasonKo ?? "사유 없음"} · 오차 ${mm} mm`;
-}
-
-/** core CSS `.cl-pose-ik-status[data-status]`가 색을 입히는 결과 분류 */
-export type IkStatusTone = "reached" | "clamped" | "unreachable";
-
-/** 도달 / 관절 제한 클램프 / 그 외 미도달(최대 신장·최소 접힘·중간 관절 제한·미수렴·퇴화) */
-export function ikStatusTone(outcome: IkOutcome): IkStatusTone {
-  if (outcome.reached) return "reached";
-  return outcome.status === "clamped" ? "clamped" : "unreachable";
-}
+export const POSE_PANEL_SCOPES: readonly PoseScope[] = ["full", "upper", "arms-hands", "lower"];
 
 interface IkStatusLine {
   readonly text: string;
-  /** 입력 오류(좌표 비수치)처럼 솔버를 돌리지 않은 경우는 없음 */
   readonly status?: IkStatusTone;
-}
-
-interface CoordInputsProps {
-  readonly idPrefix: string;
-  readonly labelPrefix: string;
-  readonly value: Coords;
-  readonly disabled?: boolean;
-  readonly onChange: (next: Coords) => void;
-}
-
-function CoordInputs({ idPrefix, labelPrefix, value, disabled, onChange }: CoordInputsProps) {
-  const axes: ReadonlyArray<readonly [keyof Coords, string]> = [
-    ["x", "X"],
-    ["y", "Y"],
-    ["z", "Z"],
-  ];
-  return (
-    <div className="cl-pose-row cl-pose-coords">
-      {axes.map(([key, axis]) => (
-        <span key={key} className="cl-pose-coord">
-          <label htmlFor={`${idPrefix}-${key}`}>{`${labelPrefix} ${axis}`}</label>
-          <input
-            id={`${idPrefix}-${key}`}
-            type="number"
-            step={0.01}
-            disabled={disabled}
-            value={value[key]}
-            onChange={(event) => onChange({ ...value, [key]: event.target.value })}
-          />
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function describeActiveRigSourceKo(source: RecipeSource): string {
-  switch (source.kind) {
-    case "kit":
-      return `모듈식 키트 (${source.kitId} · ${source.baseId === "female" ? "여성 베이스" : "남성 베이스"})`;
-    case "package":
-      return `제작 패키지 (${source.characterId})`;
-    case "procedural":
-      return "절차적 휴머노이드";
-    default: {
-      const exhaustive: never = source;
-      return String((exhaustive as { kind?: unknown }).kind);
-    }
-  }
 }
 
 export function PosePanel() {
@@ -232,11 +84,21 @@ export function PosePanel() {
 
   const [scope, setScope] = useState<PoseScope>("full");
   const [handSide, setHandSide] = useState<HandSide>("both");
+  const [poseIntensity, setPoseIntensity] = useState(1);
+  const intensityBasePoseRef = useRef<Pose | null>(null);
+  const lastScaledPoseRef = useRef<Pose | null>(null);
   const [ikTarget, setIkTarget] = useState<IkTargetId>("leftArm");
   const [coords, setCoords] = useState<Coords>(() => toCoords(ikEndPosition(recipe.pose, "leftArm", safeSkeleton)));
   const [usePole, setUsePole] = useState(false);
   const [pole, setPole] = useState<Coords>(() => toCoords(midPosition(recipe.pose, "leftArm", safeSkeleton)));
   const [ikStatus, setIkStatus] = useState<IkStatusLine | null>(null);
+
+  useEffect(() => {
+    if (lastScaledPoseRef.current && recipe.pose === lastScaledPoseRef.current) return;
+    intensityBasePoseRef.current = null;
+    lastScaledPoseRef.current = null;
+    setPoseIntensity(1);
+  }, [recipe.pose]);
 
   const poseCapability = capabilities.pose;
   const handCapability = capabilities["hand-pose"];
@@ -266,13 +128,8 @@ export function PosePanel() {
             ? `${selectedPreset.labelKo} (편집된 본 ${boneCount}개)`
             : `사용자 편집 포즈 (${POSE_SCOPE_LABELS_KO[scope]} · 본 ${boneCount}개)`;
   const groundedHeight = useMemo(() => {
-    const onFailure = (failure: LabFailure): void => {
-      renderFailureRef.current = failure;
-    };
-    const restFk =
-      activeSkeleton === REFERENCE_SKELETON
-        ? { ok: true as const, transforms: REST_WORLD_TRANSFORMS }
-        : safeComputeWorldTransforms(activeSkeleton, {}, { onFailure });
+    const onFailure = (failure: LabFailure): void => { renderFailureRef.current = failure; };
+    const restFk = activeSkeleton === REFERENCE_SKELETON ? { ok: true as const, transforms: REST_WORLD_TRANSFORMS } : safeComputeWorldTransforms(activeSkeleton, {}, { onFailure });
     const restWorld = restFk.ok ? restFk.transforms : REST_WORLD_TRANSFORMS;
     const worldFk = safeComputeWorldTransforms(activeSkeleton, recipe.pose, { onFailure });
     const world = worldFk.ok ? worldFk.transforms : REST_WORLD_TRANSFORMS;
@@ -281,15 +138,7 @@ export function PosePanel() {
     const ankleRightY = world.get("rightFoot")?.position[1] ?? defaultAnkleY;
     const rootPosition = world.get("hips")?.position ?? [0, 0.9, 0];
     const headBoneY = world.get("head")?.position[1] ?? 1.52;
-    return computeGroundedBodyHeight({
-      ankleLeftY,
-      ankleRightY,
-      defaultAnkleY,
-      rootPosition,
-      pelvisIkTargetY: rootPosition[1],
-      headBoneY,
-      headMeshMaxLocalY: 0.18,
-    });
+    return computeGroundedBodyHeight({ ankleLeftY, ankleRightY, defaultAnkleY, rootPosition, pelvisIkTargetY: rootPosition[1], headBoneY, headMeshMaxLocalY: 0.18 });
   }, [activeSkeleton, recipe.pose]);
 
   useEffect(() => {
@@ -310,9 +159,7 @@ export function PosePanel() {
     setPole((prev) => (prev.x === nextPole.x && prev.y === nextPole.y && prev.z === nextPole.z ? prev : nextPole));
   }, [skeletonSig, skeletonFailure, activeSkeleton, recipe.pose, ikTarget]);
 
-  const boundaryOptions: SkeletonBoundaryOptions = {
-    onFailure: (failure) => postSkeletonFailureOnce(store, failure),
-  };
+  const boundaryOptions: SkeletonBoundaryOptions = { onFailure: (failure) => postSkeletonFailureOnce(store, failure) };
 
   const guardCorruptedRig = (): boolean => {
     const failure = skeletonFailure ?? diagnoseSkeletonData(activeSkeleton);
@@ -323,13 +170,11 @@ export function PosePanel() {
 
   const applyPosePreset = (preset: PosePreset, altMirror = false): void => {
     if (guardCorruptedRig()) return;
+    intensityBasePoseRef.current = null;
+    lastScaledPoseRef.current = null;
+    setPoseIntensity(1);
     if (altMirror) {
-      dispatch({
-        type: "pose/set",
-        pose: mirrorHumanoidPoseLeftRight(preset.pose),
-        scope,
-        labelKo: `포즈 ${preset.labelKo} (좌우 반전)`,
-      });
+      dispatch({ type: "pose/set", pose: mirrorHumanoidPoseLeftRight(preset.pose), scope, labelKo: `포즈 ${preset.labelKo} (좌우 반전)` });
       return;
     }
     if (scope === "full") {
@@ -337,6 +182,17 @@ export function PosePanel() {
       return;
     }
     dispatch({ type: "pose/set", pose: preset.pose, scope, labelKo: `포즈 ${preset.labelKo} (${POSE_SCOPE_LABELS_KO[scope]})` });
+  };
+
+  const onChangePoseIntensity = (nextIntensity: number): void => {
+    if (guardCorruptedRig()) return;
+    const basePose = intensityBasePoseRef.current ?? (boneCount > 0 ? recipe.pose : selectedPreset?.pose ?? {});
+    if (Object.keys(basePose).length === 0) return;
+    intensityBasePoseRef.current = basePose;
+    const scaled = scalePoseIntensity(basePose, nextIntensity);
+    lastScaledPoseRef.current = scaled;
+    setPoseIntensity(nextIntensity);
+    dispatch({ type: "pose/set", pose: scaled, scope: "full", labelKo: `포즈 강도 ${Math.round(nextIntensity * 100)}%`, coalesceKey: "pose:intensity" });
   };
 
   const applyHandPreset = (preset: HandPosePreset): void => {
@@ -412,6 +268,9 @@ export function PosePanel() {
 
   const resetPose = (): void => {
     if (guardCorruptedRig()) return;
+    intensityBasePoseRef.current = null;
+    lastScaledPoseRef.current = null;
+    setPoseIntensity(1);
     dispatch({ type: "pose/set", pose: {}, scope: "full", labelKo: "포즈 초기화(rest)" });
   };
 
@@ -436,44 +295,21 @@ export function PosePanel() {
     poseCapability.status !== "available" ? `${ids}-pose-reason` : null,
     hasEmptySkeleton ? `${ids}-empty-skeleton-notice` : null,
     isRigUnloaded ? `${ids}-unloaded-rig-notice` : null,
-  ]
-    .filter((item): item is string => item !== null)
-    .join(" ");
+  ].filter((item): item is string => item !== null).join(" ");
 
-  const effectiveIkStatus: IkStatusLine | null = ikStatus;
+  const canAdjustIntensity = !poseBlocked && (boneCount > 0 || intensityBasePoseRef.current !== null || Object.keys(selectedPreset?.pose ?? {}).length > 0);
 
   return (
     <section className="cl-pose-panel" aria-label="포즈">
       <h2 className="cl-pose-title">포즈</h2>
       <div className="cl-pose-rig-summary" role="region" aria-label="활성 리그 및 포즈 선택 상태" data-testid="pose-rig-summary">
         <div className="cl-pose-rig-meta">
-          <span className="cl-pose-rig-source" data-testid="pose-active-rig-source">
-            활성 리그: {describeActiveRigSourceKo(recipe.source)}
-          </span>
-          <span className="cl-pose-rig-pose" data-testid="pose-active-selection-summary">
-            선택 상태: {selectedPoseSummaryKo}
-          </span>
+          <span className="cl-pose-rig-source" data-testid="pose-active-rig-source">활성 리그: {describeActiveRigSourceKo(recipe.source)}</span>
+          <span className="cl-pose-rig-pose" data-testid="pose-active-selection-summary">선택 상태: {selectedPoseSummaryKo}</span>
         </div>
         <div className="cl-pose-rig-actions" role="group" aria-label="실험 단계 빠른 이동">
-          <button
-            type="button"
-            className="cl-button cl-pose-rig-switch"
-            data-testid="pose-switch-to-package-tab"
-            aria-describedby={poseReasonDescribedBy || undefined}
-            onClick={() => switchInspectorTabWithFocus("package")}
-          >
-            리그·패키지 선택
-          </button>
-          {!poseBlocked ? (
-            <button
-              type="button"
-              className="cl-button cl-pose-rig-switch"
-              data-testid="pose-switch-to-export-tab"
-              onClick={() => switchInspectorTabWithFocus("export")}
-            >
-              내보내기·보존
-            </button>
-          ) : null}
+          <button type="button" className="cl-button cl-pose-rig-switch" data-testid="pose-switch-to-package-tab" aria-describedby={poseReasonDescribedBy || undefined} onClick={() => switchInspectorTabWithFocus("package")}>리그·패키지 선택</button>
+          {!poseBlocked ? <button type="button" className="cl-button cl-pose-rig-switch" data-testid="pose-switch-to-export-tab" onClick={() => switchInspectorTabWithFocus("export")}>내보내기·보존</button> : null}
         </div>
       </div>
       {skeletonFailure ? (
@@ -490,54 +326,21 @@ export function PosePanel() {
         </p>
       ) : null}
       {poseBlocked ? (
-        <details className="cl-pose-advanced-diagnostics" data-testid="pose-disabled-reason-details">
-          <summary className="cl-pose-diagnostics-summary" data-testid="pose-disabled-reason-summary">
-            비활성 상세 사유 보기
-          </summary>
-          <div className="cl-pose-diagnostics-body">
-            {skeletonFailure ? (
-              <p className="cl-pose-reason" data-testid="pose-skeleton-failure-detail">
-                상세 진단: {skeletonFailure.reasonKo}
-              </p>
-            ) : null}
-            {poseCapability.status !== "available" ? (
-              <p id={`${ids}-pose-reason`} className="cl-pose-reason" role="note" data-testid="pose-capability-reason">
-                {sharedUnavailableReason ? "포즈·손 포즈 슬롯 미지원" : `포즈 슬롯 ${poseCapability.status === "partial" ? "부분 지원" : "미지원"}`}: {poseCapability.reasonKo ?? "사유 없음"}
-              </p>
-            ) : hasEmptySkeleton ? (
-              <p id={`${ids}-pose-reason`} className="cl-pose-reason" role="note" data-testid="pose-capability-reason">
-                포즈·손 포즈 슬롯 미지원: 엔진이 보고한 포즈 가능 본이 0개(정적 메시)입니다.
-              </p>
-            ) : null}
-            {handDisabled && !sharedUnavailableReason ? (
-              <p className="cl-pose-reason" role="note" data-testid="pose-hand-capability-reason">
-                손 포즈 슬롯 미지원: {handCapability.reasonKo ?? "사유 없음"}
-              </p>
-            ) : null}
-            {unsupportedPose && unsupportedPose.reasonKo !== poseCapability.reasonKo ? (
-              <p className="cl-pose-reason" role="status">
-                현재 포즈가 적용되지 않았습니다: {unsupportedPose.reasonKo}
-              </p>
-            ) : null}
-            {unsupportedHand && unsupportedHand.reasonKo !== handCapability.reasonKo && unsupportedHand.reasonKo !== poseCapability.reasonKo ? (
-              <p className="cl-pose-reason" role="status">
-                현재 손 포즈가 적용되지 않았습니다: {unsupportedHand.reasonKo}
-              </p>
-            ) : null}
-          </div>
-        </details>
+        <PoseDisabledReasonDetails
+          ids={ids}
+          skeletonFailure={skeletonFailure}
+          poseCapability={poseCapability}
+          handCapability={handCapability}
+          sharedUnavailableReason={sharedUnavailableReason}
+          hasEmptySkeleton={hasEmptySkeleton}
+          handDisabled={handDisabled}
+          {...(unsupportedPose ? { unsupportedPoseReason: unsupportedPose.reasonKo } : {})}
+          {...(unsupportedHand ? { unsupportedHandReason: unsupportedHand.reasonKo } : {})}
+        />
       ) : (
         <>
-          {poseCapability.status !== "available" ? (
-            <p id={`${ids}-pose-reason`} className="cl-pose-reason" role="note" data-testid="pose-capability-reason">
-              포즈 슬롯 부분 지원: {poseCapability.reasonKo ?? "사유 없음"}
-            </p>
-          ) : null}
-          {unsupportedPose ? (
-            <p className="cl-pose-reason" role="status">
-              현재 포즈가 적용되지 않았습니다: {unsupportedPose.reasonKo}
-            </p>
-          ) : null}
+          {poseCapability.status !== "available" ? <p id={`${ids}-pose-reason`} className="cl-pose-reason" role="note" data-testid="pose-capability-reason">포즈 슬롯 부분 지원: {poseCapability.reasonKo ?? "사유 없음"}</p> : null}
+          {unsupportedPose ? <p className="cl-pose-reason" role="status">현재 포즈가 적용되지 않았습니다: {unsupportedPose.reasonKo}</p> : null}
         </>
       )}
 
@@ -546,20 +349,18 @@ export function PosePanel() {
           <legend>적용 범위</legend>
           {POSE_PANEL_SCOPES.map((item) => (
             <label key={item} className="cl-pose-radio" htmlFor={`${ids}-scope-${item}`}>
-              <input
-                id={`${ids}-scope-${item}`}
-                type="radio"
-                name={`${ids}-scope`}
-                value={item}
-                checked={scope === item}
-                disabled={poseBlocked}
-                onChange={() => setScope(item)}
-              />
+              <input id={`${ids}-scope-${item}`} type="radio" name={`${ids}-scope`} value={item} checked={scope === item} disabled={poseBlocked} onChange={() => setScope(item)} />
               {POSE_SCOPE_LABELS_KO[item]}
             </label>
           ))}
           <p className="cl-pose-hint">전신은 슬롯 프리셋으로 기록하고, 다른 범위는 범위 안 본만 바꿉니다(밖은 보존).</p>
         </fieldset>
+
+        <div className="cl-pose-row" data-testid="pose-intensity-row">
+          <label htmlFor={`${ids}-pose-intensity`}>포즈 강도</label>
+          <input id={`${ids}-pose-intensity`} data-testid="pose-intensity-slider" type="range" min={MIN_POSE_INTENSITY} max={MAX_POSE_INTENSITY} step={0.05} disabled={!canAdjustIntensity} value={poseIntensity} onChange={(event) => onChangePoseIntensity(Number(event.target.value))} />
+          <output htmlFor={`${ids}-pose-intensity`} data-testid="pose-intensity-output">{`${Math.round(poseIntensity * 100)}%`}</output>
+        </div>
 
         <div className="cl-pose-row" role="group" aria-label="Tripo Text-to-Motion 및 VRM 캘리브레이션 빠른 스탠스" data-testid="pose-tripo-quick-chips">
           {(
@@ -573,15 +374,7 @@ export function PosePanel() {
             const matched = POSE_PRESETS.find((item) => item.id === quick.id);
             if (!matched) return null;
             return (
-              <button
-                key={quick.id}
-                type="button"
-                className="cl-preset-chip"
-                aria-pressed={scope === "full" && recipe.slots.pose === quick.id}
-                disabled={poseBlocked}
-                data-testid={`pose-quick-chip-${quick.id.replace("pose/", "")}`}
-                onClick={() => applyPosePreset(matched, false)}
-              >
+              <button key={quick.id} type="button" className="cl-preset-chip" aria-pressed={scope === "full" && recipe.slots.pose === quick.id} disabled={poseBlocked} data-testid={`pose-quick-chip-${quick.id.replace("pose/", "")}`} onClick={() => applyPosePreset(matched, false)}>
                 {quick.label}
               </button>
             );
@@ -592,35 +385,18 @@ export function PosePanel() {
           {POSE_PRESETS.map((preset) => {
             const selected = scope === "full" && recipe.slots.pose === preset.id;
             return (
-              <button
-                key={preset.id}
-                type="button"
-                className={`cl-pose-card${selected ? " cl-pose-card--selected" : ""}`}
-                aria-pressed={selected}
-                disabled={poseBlocked}
-                title={poseCapability.reasonKo}
-                data-preset-id={preset.id}
-                onClick={(event) => applyPosePreset(preset, event.altKey)}
-              >
+              <button key={preset.id} type="button" className={`cl-pose-card${selected ? " cl-pose-card--selected" : ""}`} aria-pressed={selected} disabled={poseBlocked} title={poseCapability.reasonKo} data-preset-id={preset.id} onClick={(event) => applyPosePreset(preset, event.altKey)}>
                 <span className="cl-pose-card-label">{preset.labelKo}</span>
-                <span className="cl-pose-card-meta">
-                  {POSE_SCOPE_LABELS_KO[preset.scope]} · 본 {Object.keys(preset.pose).length}개
-                </span>
+                <span className="cl-pose-card-meta">{POSE_SCOPE_LABELS_KO[preset.scope]} · 본 {Object.keys(preset.pose).length}개</span>
               </button>
             );
           })}
         </div>
 
         <div className="cl-pose-actions" role="group" aria-label="주요 포즈 편집 도구">
-          <button type="button" onClick={resetPose} disabled={poseBlocked}>
-            포즈 초기화
-          </button>
-          <button type="button" onClick={mirrorCurrentPose} disabled={poseBlocked || boneCount === 0}>
-            포즈 좌우 반전
-          </button>
-          <button type="button" onClick={clampPose} disabled={poseBlocked || violations.length === 0}>
-            관절 제한으로 클램프
-          </button>
+          <button type="button" onClick={resetPose} disabled={poseBlocked}>포즈 초기화</button>
+          <button type="button" onClick={mirrorCurrentPose} disabled={poseBlocked || boneCount === 0}>포즈 좌우 반전</button>
+          <button type="button" onClick={clampPose} disabled={poseBlocked || violations.length === 0}>관절 제한으로 클램프</button>
         </div>
       </div>
 
@@ -640,21 +416,14 @@ export function PosePanel() {
         </summary>
         <div className="cl-pose-diagnostics-body">
           <p className="cl-pose-grounded" data-testid="pose-grounded-height">
-            {groundedHeight.labelKo} · 최저 발목 접지 보정 {groundedHeight.groundDeltaY >= 0 ? "+" : ""}
-            {(groundedHeight.groundDeltaY * 100).toFixed(1)} cm
+            {groundedHeight.labelKo} · 최저 발목 접지 보정 {groundedHeight.groundDeltaY >= 0 ? "+" : ""}{(groundedHeight.groundDeltaY * 100).toFixed(1)} cm
           </p>
           <p className="cl-pose-hint" data-testid="pose-skeleton-diagnostics">
-            {hasEmptySkeleton
-              ? "스켈레톤 본 0개 · 정적 메시(스켈레톤 없음)"
-              : `스켈레톤 본 ${activeSkeleton.bones.length}개 · ${skeletonFailure ? `${skeletonFailure.reasonKo} [${skeletonFailure.code}]` : "정상"}`}
+            {hasEmptySkeleton ? "스켈레톤 본 0개 · 정적 메시(스켈레톤 없음)" : `스켈레톤 본 ${activeSkeleton.bones.length}개 · ${skeletonFailure ? `${skeletonFailure.reasonKo} [${skeletonFailure.code}]` : "정상"}`}
           </p>
           {violations.length > 0 ? (
             <ul className="cl-pose-violation-list" data-testid="pose-violation-list" aria-label="관절 제한 위반 상세">
-              {violations.map((v) => (
-                <li key={v.bone}>
-                  {`${v.bone} · 스윙 ${v.swingDeg.toFixed(1)}°/${v.limit.swing}° · 트위스트 ${Math.abs(v.twistDeg).toFixed(1)}°/${v.limit.twist}°`}
-                </li>
-              ))}
+              {violations.map((v) => <li key={v.bone}>{`${v.bone} · 스윙 ${v.swingDeg.toFixed(1)}°/${v.limit.swing}° · 트위스트 ${Math.abs(v.twistDeg).toFixed(1)}°/${v.limit.twist}°`}</li>)}
             </ul>
           ) : null}
         </div>
@@ -662,30 +431,12 @@ export function PosePanel() {
 
       <fieldset className="cl-pose-hand">
         <legend>손 포즈</legend>
-        {handCapability.status !== "available" && (!poseBlocked || handCapability.status === "partial") ? (
-          <p className="cl-pose-reason" role="note">
-            손 포즈 슬롯 {handCapability.status === "partial" ? "부분 지원" : "미지원"}: {handCapability.reasonKo ?? "사유 없음"}
-          </p>
-        ) : null}
-        {!poseBlocked && unsupportedHand ? (
-          <p className="cl-pose-reason" role="status">
-            현재 손 포즈가 적용되지 않았습니다: {unsupportedHand.reasonKo}
-          </p>
-        ) : null}
+        {handCapability.status !== "available" && (!poseBlocked || handCapability.status === "partial") ? <p className="cl-pose-reason" role="note">손 포즈 슬롯 {handCapability.status === "partial" ? "부분 지원" : "미지원"}: {handCapability.reasonKo ?? "사유 없음"}</p> : null}
+        {!poseBlocked && unsupportedHand ? <p className="cl-pose-reason" role="status">현재 손 포즈가 적용되지 않았습니다: {unsupportedHand.reasonKo}</p> : null}
         <div className="cl-pose-row">
           {HAND_SIDES.map((side) => (
             <label key={side} className="cl-pose-radio" htmlFor={`${ids}-hand-${side}`}>
-              <input
-                id={`${ids}-hand-${side}`}
-                type="radio"
-                name={`${ids}-hand`}
-                value={side}
-                checked={handSide === side}
-                disabled={handBlocked}
-                onChange={(event) => {
-                  if (isHandSide(event.target.value)) setHandSide(event.target.value);
-                }}
-              />
+              <input id={`${ids}-hand-${side}`} type="radio" name={`${ids}-hand`} value={side} checked={handSide === side} disabled={handBlocked} onChange={(event) => { if (isHandSide(event.target.value)) setHandSide(event.target.value); }} />
               {HAND_SIDE_LABELS_KO[side]}
             </label>
           ))}
@@ -694,16 +445,7 @@ export function PosePanel() {
           {HAND_POSE_PRESETS.map((preset) => {
             const selected = recipe.slots["hand-pose"] === preset.id;
             return (
-              <button
-                key={preset.id}
-                type="button"
-                className={`cl-pose-card${selected ? " cl-pose-card--selected" : ""}`}
-                aria-pressed={selected}
-                disabled={handBlocked}
-                title={handCapability.reasonKo}
-                data-preset-id={preset.id}
-                onClick={() => applyHandPreset(preset)}
-              >
+              <button key={preset.id} type="button" className={`cl-pose-card${selected ? " cl-pose-card--selected" : ""}`} aria-pressed={selected} disabled={handBlocked} title={handCapability.reasonKo} data-preset-id={preset.id} onClick={() => applyHandPreset(preset)}>
                 <span className="cl-pose-card-label">{preset.labelKo}</span>
               </button>
             );
@@ -715,41 +457,14 @@ export function PosePanel() {
         <legend>IK 목표</legend>
         <div className="cl-pose-row">
           <label htmlFor={`${ids}-ik-target`}>부위</label>
-          <select
-            id={`${ids}-ik-target`}
-            value={ikTarget}
-            disabled={poseBlocked}
-            onChange={(event) => {
-              if (isIkTargetId(event.target.value)) selectIkTarget(event.target.value);
-            }}
-          >
-            {IK_TARGET_IDS.map((item) => (
-              <option key={item} value={item}>
-                {IK_TARGET_LABELS_KO[item]}
-              </option>
-            ))}
+          <select id={`${ids}-ik-target`} value={ikTarget} disabled={poseBlocked} onChange={(event) => { if (isIkTargetId(event.target.value)) selectIkTarget(event.target.value); }}>
+            {IK_TARGET_IDS.map((item) => <option key={item} value={item}>{IK_TARGET_LABELS_KO[item]}</option>)}
           </select>
         </div>
         <CoordInputs idPrefix={`${ids}-target`} labelPrefix="목표" value={coords} disabled={poseBlocked} onChange={setCoords} />
         <div className="cl-pose-row" role="group" aria-label="IK 빠른 위치 이동" data-testid="pose-ik-quick-nudge">
-          {(
-            [
-              { id: "up", label: "위로 +10cm", delta: [0, 0.1, 0] as const },
-              { id: "down", label: "아래로 -10cm", delta: [0, -0.1, 0] as const },
-              { id: "forward", label: "앞으로 +10cm", delta: [0, 0, 0.1] as const },
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="cl-preset-chip"
-              disabled={poseBlocked}
-              onClick={() => {
-                if (guardCorruptedRig()) return;
-                const base = parseCoords(coords) ?? ikEndPosition(recipe.pose, ikTarget, activeSkeleton, boundaryOptions);
-                setCoords(toCoords([base[0] + item.delta[0], base[1] + item.delta[1], base[2] + item.delta[2]]));
-              }}
-            >
+          {([{ id: "up", label: "위로 +10cm", delta: [0, 0.1, 0] as const }, { id: "down", label: "아래로 -10cm", delta: [0, -0.1, 0] as const }, { id: "forward", label: "앞으로 +10cm", delta: [0, 0, 0.1] as const }] as const).map((item) => (
+            <button key={item.id} type="button" className="cl-preset-chip" disabled={poseBlocked} onClick={() => { if (guardCorruptedRig()) return; const base = parseCoords(coords) ?? ikEndPosition(recipe.pose, ikTarget, activeSkeleton, boundaryOptions); setCoords(toCoords([base[0] + item.delta[0], base[1] + item.delta[1], base[2] + item.delta[2]])); }}>
               {item.label}
             </button>
           ))}
@@ -757,28 +472,18 @@ export function PosePanel() {
         {ikTarget !== "head" ? (
           <div className="cl-pose-row">
             <label className="cl-pose-radio" htmlFor={`${ids}-pole`}>
-              <input
-                id={`${ids}-pole`}
-                type="checkbox"
-                checked={usePole}
-                disabled={poseBlocked}
-                onChange={(event) => setUsePole(event.target.checked)}
-              />
+              <input id={`${ids}-pole`} type="checkbox" checked={usePole} disabled={poseBlocked} onChange={(event) => setUsePole(event.target.checked)} />
               폴 벡터 지정(팔꿈치·무릎이 향할 위치)
             </label>
           </div>
         ) : null}
         {ikTarget !== "head" && usePole ? <CoordInputs idPrefix={`${ids}-pole`} labelPrefix="폴" value={pole} disabled={poseBlocked} onChange={setPole} /> : null}
         <div className="cl-pose-actions">
-          <button type="button" onClick={readCurrent} disabled={poseBlocked}>
-            현재 위치 읽기
-          </button>
-          <button type="button" onClick={applyIk} disabled={poseBlocked}>
-            IK 적용
-          </button>
+          <button type="button" onClick={readCurrent} disabled={poseBlocked}>현재 위치 읽기</button>
+          <button type="button" onClick={applyIk} disabled={poseBlocked}>IK 적용</button>
         </div>
-        <p className="cl-pose-ik-status" role="status" data-status={effectiveIkStatus?.status}>
-          {effectiveIkStatus?.text ?? "목표 좌표(미터, 모델 공간: 정면 +Z · 왼쪽 +X · 위 +Y)를 넣고 IK 적용을 누르세요."}
+        <p className="cl-pose-ik-status" role="status" data-status={ikStatus?.status}>
+          {ikStatus?.text ?? "목표 좌표(미터, 모델 공간: 정면 +Z · 왼쪽 +X · 위 +Y)를 넣고 IK 적용을 누르세요."}
         </p>
       </fieldset>
       <p className="cl-pose-footer">뷰포트의 관절 핸들 드래그도 같은 포즈 명령으로 기록됩니다(swing-twist 관절 제한).</p>

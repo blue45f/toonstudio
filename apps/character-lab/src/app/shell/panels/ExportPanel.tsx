@@ -1,92 +1,70 @@
 /**
- * ExportPanel: 투명 PNG(해상도 입력) · 레시피 저장/불러오기 · GLB · 레이어 PSD(ID 마스크·참조 패스 옵션) · 진행/실패 표시.
- * 엔진은 useEngineSession().engine()으로 클릭 시점에 ref 접근하고, 출력 크기는 입력값만 쓴다(뷰포트 크기 유도 금지).
- * 저장은 export/download.browser `saveBytes`(Blob URL revoke 보장)이며 테스트는 deps.save를 주입한다.
- *
- * 레시피 불러오기 직후 안내(실패가 아니라 상태 문구): v1 → v2 변환(`recipeMigrationNoticeKo`)과, 키트 소스로 불러온 칠한 레이어 중 변형(프리셋)을 바꾸면
- * UV가 달라져 어긋날 수 있는 것(`kitPaintWarningsForLayers`)을 이어서 보인다. 이벤트 계약(`contracts/events.ts`)은 건드리지 않고 패널이 직접 보인다.
+ * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트) ·
+ * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 ·
+ * GLB · 레이어 PSD · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
  */
-import { useCallback, useId, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
-import { POSE_PRESETS } from "../../../animation/presets";
-import {
-  ALL_AVAILABLE_CAPABILITIES,
-  ALL_UNAVAILABLE_CAPABILITIES,
-  CAMERA_FRAMING_MODES,
-  DEFAULT_FRAMING,
-  PART_ROLE_LABELS_KO,
-  failVisible,
-  recipeDigest,
-} from "../../../contracts";
-import { deriveKitCapabilities } from "../../../domains/authored/kit-capability";
+import { CAMERA_FRAMING_MODES, DEFAULT_FRAMING, failVisible, isLabFailure, recipeDigest } from "../../../contracts";
 import { saveBytes } from "../../../export/download.browser";
-import { MAX_PNG_EXPORT_DIMENSION, MAX_PSD_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportGlb, exportLayeredPsd, exportRecipe, exportShaperStylePreset, exportTransparentPng } from "../../../export/export-session";
+import {
+  MAX_PNG_EXPORT_DIMENSION,
+  MAX_PSD_EXPORT_DIMENSION,
+  MAX_SETTLE_STEPS,
+  MIN_EXPORT_DIMENSION,
+  exportGlb,
+  exportLayeredPsd,
+  exportRecipe,
+  exportShaperStylePreset,
+  exportTransparentPng,
+} from "../../../export/export-session";
 import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
-import { RECIPE_FILE_SUFFIX, extractPaintLayers, parseRecipeFile, parseShaperPresetTextToRecipe } from "../../../export/recipe-file";
-import { uploadReplacedLayers } from "../../../paint/paint-bridge";
-import { kitPaintWarningsForLayers } from "../../../paint/paint-kit-warning";
+import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../export/quad-reference-sheet";
+import { RECIPE_FILE_SUFFIX } from "../../../export/recipe-file";
+import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
-import { recipeMigrationNoticeKo } from "../../../state/recipe-io";
 import { useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
+import {
+  captureCharacterWorkBackup,
+  hasUnsavedCharacterWork,
+  markCharacterWorkSaved,
+  restoreCharacterWorkBackup,
+} from "../unsaved-work";
 
-import type { CameraFramingMode, CharacterRecipe, EngineStatus, LabFailure, RecipeSource } from "../../../contracts";
-import type { ExportKind, ExportReceipt } from "../../../export/export-session";
+import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
+import {
+  FRAMING_LABELS_KO,
+  applyImportedRecipeText,
+  clampExportInt,
+  defaultReadClipboard,
+  defaultWriteClipboard,
+  describeExportPoseKo,
+  describeExportSourceKo,
+  readTextFile,
+} from "./export-panel-helpers";
+
+import type { ExportBusyKind } from "./export-panel/ExportStatusSection";
+import type { CameraFramingMode, EngineStatus, LabFailure } from "../../../contracts";
+import type { ExportReceipt } from "../../../export/export-session";
 import type { SaveBytesFn } from "../../../export/save-bytes";
 import type { PaintSession } from "../../../paint/paint-session";
+import type { CharacterWorkBackup } from "../unsaved-work";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+
+export { readTextFile };
 
 export interface ExportPanelDeps {
   readonly save?: SaveBytesFn;
   readonly now?: () => number;
   readonly readFile?: (file: File) => Promise<string>;
-  /** PSD 조립 전 ag-psd 캔버스 팩토리 등록(기본: psd-canvas.browser, 멱등). 테스트는 스텁을 주입한다. */
   readonly preparePsd?: () => void;
+  readonly writeClipboard?: (text: string) => Promise<void>;
+  readonly readClipboard?: () => Promise<string>;
 }
 
 export interface ExportPanelProps {
   readonly session?: PaintSession;
   readonly deps?: ExportPanelDeps;
-}
-
-const FRAMING_LABELS_KO: Record<CameraFramingMode, string> = { "full-body": "전신", bust: "상반신", face: "얼굴", custom: "현재 카메라" };
-
-function describeExportSourceKo(source: RecipeSource, isPackageRegistered: boolean): string {
-  switch (source.kind) {
-    case "kit":
-      return `모듈식 키트 (${source.kitId} · ${source.baseId === "female" ? "여성 베이스" : "남성 베이스"})`;
-    case "package":
-      return `제작 패키지 (${source.characterId} · ${isPackageRegistered ? "등록됨" : "미로드"})`;
-    case "procedural":
-      return "절차적 휴머노이드";
-    default: {
-      const exhaustive: never = source;
-      return String((exhaustive as { kind?: unknown }).kind);
-    }
-  }
-}
-
-function describeExportPoseKo(recipe: CharacterRecipe): string {
-  const boneCount = Object.keys(recipe.pose).length;
-  const preset = POSE_PRESETS.find((item) => item.id === recipe.slots.pose);
-  const handPresetId = recipe.slots["hand-pose"];
-  const handSuffix = handPresetId ? ` · 손 ${handPresetId.replace("hand-pose/", "")}` : "";
-  if (boneCount === 0) {
-    return `기본 자세(Rest · 프리셋: ${preset?.labelKo ?? "없음"}${handSuffix})`;
-  }
-  if (preset) {
-    return `${preset.labelKo} (본 ${boneCount}개${handSuffix})`;
-  }
-  return `사용자 편집 포즈 (본 ${boneCount}개${handSuffix})`;
-}
-
-/** File → 텍스트(Blob.text가 없는 환경은 FileReader) */
-export function readTextFile(file: File): Promise<string> {
-  if (typeof file.text === "function") return file.text();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error ?? new Error("파일을 읽을 수 없습니다."));
-    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-    reader.readAsText(file);
-  });
 }
 
 function useEngineStatus(): EngineStatus {
@@ -98,25 +76,38 @@ function useEngineStatus(): EngineStatus {
   );
 }
 
-function describeReceipt(receipt: ExportReceipt): string {
-  const size = receipt.width && receipt.height ? ` · ${receipt.width}×${receipt.height}` : "";
-  const psd = receipt.psd ? ` · 레이어 ${receipt.psd.layerCount}(그룹 ${receipt.psd.groupCount}) · 재합성 MAE ${receipt.psd.recomposeMae.toFixed(2)}` : "";
-  return `${receipt.fileName} (${receipt.bytes.toLocaleString("ko-KR")} B${size}${psd} · ${receipt.durationMs} ms)`;
-}
-
 export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: ExportPanelProps) {
   const save = deps.save ?? saveBytes;
   const now = deps.now ?? (() => Date.now());
   const readFile = deps.readFile ?? readTextFile;
   const preparePsd = deps.preparePsd ?? installPsdBrowserCanvas;
+  const writeClipboard = deps.writeClipboard ?? defaultWriteClipboard;
+  const readClipboard = deps.readClipboard ?? defaultReadClipboard;
   const ids = useId();
   const labState = useLabState();
   const dispatch = useDispatch();
   const { setInspectorTab } = useUiActions();
-  const { store, packagePlans } = useLabContext();
+  const { store, catalog, packagePlans } = useLabContext();
   const kitPlans = useKitPlans();
   const engineSession = useEngineSession();
   const engineStatus = useEngineStatus();
+
+  hasUnsavedCharacterWork(store, labState, session);
+
+  const mountedRef = useRef(true);
+  const busyRef = useRef<ExportBusyKind | null>(null);
+  const lastImportFileRef = useRef<File | undefined>(undefined);
+  const latestRetryActionsRef = useRef<Partial<Record<ExportBusyKind, () => void>>>({});
+  const failureAlertRef = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      busyRef.current = null;
+    };
+  }, []);
+
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
   const [framing, setFraming] = useState<CameraFramingMode>("full-body");
@@ -125,81 +116,170 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const [includeReferencePasses, setIncludeReferencePasses] = useState(false);
   const [splitHairLayers, setSplitHairLayers] = useState(false);
   const [useLuminanceToAlpha, setUseLuminanceToAlpha] = useState(false);
-  const [busy, setBusy] = useState<ExportKind | "import" | null>(null);
+  const [busy, setBusy] = useState<ExportBusyKind | null>(null);
+  const [progressDetail, setProgressDetail] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ExportReceipt | null>(null);
   const [failure, setFailure] = useState<LabFailure | null>(null);
-  /** 레시피 불러오기 직후 안내(변환·키트 페인트 경고·미로드 패키지 안내). 다음 작업을 시작하면 지운다. */
+  const [failedKind, setFailedKind] = useState<ExportBusyKind | null>(null);
   const [notices, setNotices] = useState<readonly string[]>([]);
+  const [preImportBackup, setPreImportBackup] = useState<CharacterWorkBackup | null>(null);
 
   const engineReady = engineStatus.phase === "ready";
   const hairSupport = engineSession.engine()?.psdHairLayers?.();
-  const hairSplitReason = hairSupport?.status === "available" ? null : hairSupport?.reasonKo ?? "현재 엔진은 기하학적 헤어 분리를 지원하지 않습니다. 헤어 분리를 끄고 일반 PSD로 저장할 수 있습니다.";
+  const hairSplitReason =
+    hairSupport?.status === "available"
+      ? null
+      : hairSupport?.reasonKo ?? "현재 엔진은 기하학적 헤어 분리를 지원하지 않습니다. 헤어 분리를 끄고 일반 PSD로 저장할 수 있습니다.";
   const framingValue = { ...DEFAULT_FRAMING, mode: framing };
   const activeDigest8 = recipeDigest(labState.recipe).slice(0, 8);
 
+  const reportFailure = useCallback((nextFailure: LabFailure, actionKind: ExportBusyKind): void => {
+    if (!mountedRef.current) return;
+    setReceipt(null);
+    setNotices([]);
+    setFailedKind(actionKind);
+    setFailure(nextFailure);
+  }, []);
+
   const finish = useCallback(
-    (outcome: { ok: true; bytes: Uint8Array; receipt: ExportReceipt } | { ok: false; failure: LabFailure }): void => {
+    (
+      actionKind: ExportBusyKind,
+      outcome: { ok: true; bytes: Uint8Array; receipt: ExportReceipt } | { ok: false; failure: LabFailure },
+      extraNotices: readonly string[] = [],
+    ): boolean => {
       if (!outcome.ok) {
-        setReceipt(null);
-        setFailure(outcome.failure);
-        return;
+        reportFailure(outcome.failure, actionKind);
+        return false;
       }
       const saved = save(outcome.receipt.fileName, outcome.bytes, outcome.receipt.mime);
       if (!saved.ok) {
-        setReceipt(null);
-        setFailure(saved.failure);
-        return;
+        reportFailure(saved.failure, actionKind);
+        return false;
       }
+      if (!mountedRef.current) return false;
       setFailure(null);
+      setFailedKind(null);
+      setNotices(extraNotices);
       setReceipt(outcome.receipt);
+      return true;
     },
-    [save],
+    [reportFailure, save],
   );
 
-  const requireEngine = useCallback(() => {
-    const engine = engineSession.engine();
-    if (!engine) {
-      setReceipt(null);
-      setFailure(failVisible("export-no-engine", "엔진이 준비되지 않아 내보낼 수 없습니다. 먼저 렌더 backend를 선택하세요.", undefined, now()));
-    }
-    return engine;
-  }, [engineSession, now]);
-
-  const run = useCallback(
-    async (kind: ExportKind | "import", task: () => Promise<void>): Promise<void> => {
-      if (busy) return;
-      setNotices([]);
-      setReceipt(null);
-      setFailure(null);
-      setBusy(kind);
-      try {
-        await task();
-      } finally {
-        setBusy(null);
+  const requireEngine = useCallback(
+    (actionKind: ExportBusyKind) => {
+      const engine = engineSession.engine();
+      if (!engine) {
+        reportFailure(
+          failVisible("export-no-engine", "엔진이 준비되지 않아 내보낼 수 없습니다. 먼저 렌더 backend를 선택하세요.", undefined, now()),
+          actionKind,
+        );
       }
+      return engine;
     },
-    [busy],
+    [engineSession, now, reportFailure],
   );
+
+  const run = useCallback(async (kind: ExportBusyKind, task: () => Promise<void>): Promise<void> => {
+    if (busyRef.current !== null) return;
+    busyRef.current = kind;
+    setNotices([]);
+    setReceipt(null);
+    setFailure(null);
+    setFailedKind(null);
+    setProgressDetail(null);
+    setBusy(kind);
+    try {
+      await task();
+    } catch (error) {
+      reportFailure(
+        isLabFailure(error)
+          ? error
+          : failVisible("export-unexpected", `${BUSY_ACTION_LABELS_KO[kind]} 중 예기치 않은 오류가 발생했습니다.`, error, now()),
+        kind,
+      );
+    } finally {
+      busyRef.current = null;
+      if (mountedRef.current) {
+        setBusy(null);
+        setProgressDetail(null);
+      }
+    }
+  }, [now, reportFailure]);
 
   const onPng = (): void => {
     void run("png", async () => {
-      const engine = requireEngine();
+      const engine = requireEngine("png");
       if (!engine) return;
-      finish(await exportTransparentPng(engine, { width, height, framing: framingValue, settleSteps }, { now }));
+      finish("png", await exportTransparentPng(engine, { width, height, framing: framingValue, settleSteps }, { now }));
+    });
+  };
+
+  const onTurnaroundPng = (): void => {
+    void run("turnaround", async () => {
+      const engine = requireEngine("turnaround");
+      if (!engine) return;
+      const { panelWidth, panelHeight } = clampTurnaroundPanelSize(width, height);
+      finish(
+        "turnaround",
+        await exportTurnaroundSheetPng(
+          engine,
+          {
+            panelWidth,
+            panelHeight,
+            framingMode: framing,
+            settleSteps,
+            onProgress: (step, total, labelKo) => {
+              if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
+            },
+          },
+          { now },
+        ),
+      );
+    });
+  };
+
+  const onQuadSheetPng = (): void => {
+    void run("quad-sheet", async () => {
+      const engine = requireEngine("quad-sheet");
+      if (!engine) return;
+      const { cellWidth, cellHeight, wasScaledDown } = clampQuadSheetCellSize(width, height);
+      const scaleNotices = wasScaledDown
+        ? [
+            `요청 셀 크기(${width}×${height}px)가 PNG 최대 규격(${MAX_PNG_EXPORT_DIMENSION}×${MAX_PNG_EXPORT_DIMENSION}px)을 넘어 종횡비를 유지한 채 셀당 ${cellWidth}×${cellHeight}px(전체 ${cellWidth * 2}×${cellHeight * 2}px)로 자동 조정해 저장했습니다.`,
+          ]
+        : [];
+      finish(
+        "quad-sheet",
+        await exportQuadReferenceSheetPng(
+          engine,
+          {
+            cellWidth,
+            cellHeight,
+            settleSteps,
+            onProgress: (step, total, labelKo) => {
+              if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
+            },
+          },
+          { now },
+        ),
+        scaleNotices,
+      );
     });
   };
 
   const onPsd = (): void => {
     void run("psd", async () => {
-      const engine = requireEngine();
+      const engine = requireEngine("psd");
       if (!engine) return;
       try {
         preparePsd();
       } catch (error) {
-        setFailure(failVisible("export-psd-canvas", "PSD 캔버스 팩토리를 등록할 수 없어 PSD를 만들 수 없습니다.", error, now()));
+        reportFailure(failVisible("export-psd-canvas", "PSD 캔버스 팩토리를 등록할 수 없어 PSD를 만들 수 없습니다.", error, now()), "psd");
         return;
       }
       finish(
+        "psd",
         await exportLayeredPsd(
           engine,
           session.layersForExport(),
@@ -221,121 +301,175 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
 
   const onGlb = (): void => {
     void run("glb", async () => {
-      const engine = requireEngine();
+      const engine = requireEngine("glb");
       if (!engine) return;
-      finish(await exportGlb(engine, labState.recipe, { now }));
+      finish("glb", await exportGlb(engine, labState.recipe, { now }));
     });
   };
 
   const onRecipeSave = (): void => {
     void run("recipe", async () => {
-      finish(await exportRecipe(labState.recipe, session.layersForExport(), { now }));
+      const ok = finish(
+        "recipe",
+        await exportRecipe(labState.recipe, session.layersForExport(), {
+          now,
+          sublayers: session.sublayersForExport(),
+        }),
+      );
+      if (ok) {
+        markCharacterWorkSaved(store, labState.recipe, session);
+        setPreImportBackup(null);
+      }
     });
   };
 
   const onShaperPresetSave = (): void => {
     void run("shaper-preset", async () => {
-      finish(exportShaperStylePreset(labState.recipe, { now }));
+      finish("shaper-preset", exportShaperStylePreset(labState.recipe, { now }));
+    });
+  };
+
+  const onCopyRecipeClipboard = (): void => {
+    void run("clipboard-copy", async () => {
+      const exported = await exportRecipe(labState.recipe, session.layersForExport(), {
+        now,
+        sublayers: session.sublayersForExport(),
+      });
+      if (!exported.ok) {
+        reportFailure(exported.failure, "clipboard-copy");
+        return;
+      }
+      try {
+        await writeClipboard(new TextDecoder().decode(exported.bytes));
+      } catch (error) {
+        reportFailure(
+          isLabFailure(error)
+            ? error
+            : failVisible("clipboard-write-failed", "레시피 JSON을 로컬 클립보드에 복사하지 못했습니다.", error, now()),
+          "clipboard-copy",
+        );
+        return;
+      }
+      if (!mountedRef.current) return;
+      setFailure(null);
+      setFailedKind(null);
+      setNotices(["현재 캐릭터 레시피(다중 페인트 서브레이어 포함)를 클립보드에 복사했습니다. 팀원이나 다른 탭에서 바로 붙여넣을 수 있습니다."]);
+      setReceipt({ ...exported.receipt, fileName: `clipboard:${exported.receipt.fileName}` });
+    });
+  };
+
+  const applyImportWithBackup = async (text: string, sourceLabel: string, actionKind: "import" | "clipboard-paste"): Promise<void> => {
+    const currentState = store.getState();
+    const backupIfUnsaved = hasUnsavedCharacterWork(store, currentState, session)
+      ? captureCharacterWorkBackup(currentState.recipe, currentState.capabilities, session, now())
+      : null;
+    const outcome = await applyImportedRecipeText({
+      text,
+      sourceLabel,
+      forceShaperPreset: sourceLabel.toLowerCase().endsWith(".preset"),
+      currentRecipe: currentState.recipe,
+      now: now(),
+      session,
+      engine: engineSession.engine(),
+      dispatch,
+      applyStoreEvent: (event) => store.applyEvent(event),
+      getRegisteredPackage: (characterId) => packagePlans.get(characterId),
+      peekKitManifest: kitPlans ? (src) => kitPlans.peek(src) : undefined,
+      catalog,
+      validateKitRecipe: kitPlans ? (recipe) => kitPlans.plan(recipe) : undefined,
+    });
+    if (!outcome.ok) {
+      reportFailure(outcome.failure, actionKind);
+      return;
+    }
+    if (!mountedRef.current) return;
+    if (backupIfUnsaved) setPreImportBackup(backupIfUnsaved);
+    markCharacterWorkSaved(store, store.getState().recipe, session);
+    setNotices(outcome.notices);
+    setFailure(null);
+    setFailedKind(null);
+    setReceipt(outcome.receipt);
+  };
+
+  const onPasteRecipeClipboard = (): void => {
+    void run("clipboard-paste", async () => {
+      let text: string;
+      try {
+        text = await readClipboard();
+      } catch (error) {
+        reportFailure(
+          isLabFailure(error)
+            ? error
+            : failVisible("clipboard-read-failed", "클립보드에서 레시피 텍스트를 읽지 못했습니다.", error, now()),
+          "clipboard-paste",
+        );
+        return;
+      }
+      if (text.replace(/^\ufeff/u, "").trim().length === 0) {
+        reportFailure(
+          failVisible("recipe-clipboard-empty", "클립보드가 비어 있습니다. 먼저 레시피 JSON(.character.json) 또는 SHAPER 프리셋(.preset) 텍스트를 복사하세요.", undefined, now()),
+          "clipboard-paste",
+        );
+        return;
+      }
+      await applyImportWithBackup(text, "clipboard.character.json", "clipboard-paste");
     });
   };
 
   const onRecipeFile = (file: File | undefined): void => {
     if (!file) return;
+    lastImportFileRef.current = file;
     void run("import", async () => {
+      if (mountedRef.current) setProgressDetail(file.name);
       let text: string;
       try {
         text = await readFile(file);
       } catch (error) {
-        setFailure(failVisible("recipe-file-read", `${file.name}: 파일을 읽을 수 없습니다.`, error, now()));
+        reportFailure(failVisible("recipe-file-read", `${file.name}: 파일을 읽을 수 없습니다.`, error, now()), "import");
         return;
       }
-      if (text.trim().length === 0) {
-        setFailure(
-          failVisible(
-            "recipe-file-empty",
-            `${file.name}: 파일이 비어 있습니다(0 B). 올바른 레시피(.character.json) 또는 프리셋(.preset) 파일을 선택하세요.`,
-            undefined,
-            now(),
-          ),
+      if (text.replace(/^\ufeff/u, "").trim().length === 0) {
+        reportFailure(
+          failVisible("recipe-file-empty", `${file.name}: 파일이 비어 있습니다(0 B). 올바른 레시피(.character.json) 또는 프리셋(.preset) 파일을 선택하세요.`, undefined, now()),
+          "import",
         );
         return;
       }
-      const isShaperPreset = file.name.toLowerCase().endsWith(".preset");
-      const parsed = isShaperPreset
-        ? parseShaperPresetTextToRecipe(text, labState.recipe, now())
-        : parseRecipeFile(text, now());
-      if (!parsed.ok) {
-        setFailure(parsed.failure);
-        return;
-      }
-      const paint = await extractPaintLayers(parsed.recipe, now());
-      const firstFailure = paint.failures[0];
-      if (firstFailure) {
-        setFailure(firstFailure);
-        return;
-      }
-      const importNotices: string[] = [];
-      if (isShaperPreset) {
-        importNotices.push("SHAPER 프리셋 파일을 현재 형식(v3)으로 변환해 열었습니다.");
-      }
-      const migrationNotice = recipeMigrationNoticeKo(parsed);
-      if (migrationNotice !== null) importNotices.push(migrationNotice);
-      // recipe/load는 스토어가 이전 레이어를 가리키는 페인트 undo 이력을 비운다. 엔진 텍스처는 여기서 새 세션과 맞춘다.
-      dispatch({ type: "recipe/load", recipe: parsed.recipe });
-      const nextSource = parsed.recipe.source;
-      if (nextSource.kind === "procedural") {
-        if (!engineSession.engine()) {
-          store.applyEvent({ type: "source/capabilities", capabilities: ALL_AVAILABLE_CAPABILITIES });
-        }
-      } else if (nextSource.kind === "package") {
-        const registered = packagePlans.get(nextSource.characterId);
-        if (!registered) {
-          if (!engineSession.engine()) {
-            store.applyEvent({ type: "source/capabilities", capabilities: ALL_UNAVAILABLE_CAPABILITIES });
-          }
-          importNotices.push(
-            `제작 패키지 '${nextSource.characterId}'가 아직 로드되지 않았습니다. 제작 패키지 탭에서 해당 패키지를 불러오면 스켈레톤·슬롯 능력이 활성화됩니다.`,
-          );
-        } else if (registered.glbSha256 !== nextSource.sha256) {
-          if (!engineSession.engine()) {
-            store.applyEvent({ type: "source/capabilities", capabilities: ALL_UNAVAILABLE_CAPABILITIES });
-          }
-          importNotices.push(
-            `제작 패키지 '${nextSource.characterId}'의 GLB SHA-256이 현재 등록된 패키지와 다릅니다. 제작 패키지 탭에서 다시 불러오세요.`,
-          );
-        } else if (!engineSession.engine()) {
-          store.applyEvent({ type: "source/capabilities", capabilities: registered.capabilities });
-        }
-      } else if (nextSource.kind === "kit" && !engineSession.engine()) {
-        const manifest = kitPlans?.peek(nextSource);
-        if (manifest && manifest.bases[nextSource.baseId]) {
-          store.applyEvent({ type: "source/capabilities", capabilities: deriveKitCapabilities(manifest, nextSource.baseId) });
-        }
-      }
-      if (!isShaperPreset || paint.layers.length > 0) {
-        const previousLayers = session.layersForExport();
-        session.replaceLayers(paint.layers);
-        const engine = engineSession.engine();
-        // 새 파일에 없는 부위의 이전 칠이 뷰포트에 남지 않도록 사라진 부위는 빈 레이어로 비운다(엔진 페인트 텍스처에는 제거 API가 없다).
-        if (engine) uploadReplacedLayers(previousLayers, session.layersForExport(), (layer) => engine.updatePaintTexture(layer));
-      }
-      for (const warning of kitPaintWarningsForLayers(parsed.recipe.source.kind, paint.layers)) {
-        importNotices.push(`이미 칠한 ${PART_ROLE_LABELS_KO[warning.part]} 레이어: ${warning.messageKo}`);
-      }
-      setNotices(importNotices);
-      setFailure(null);
-      setReceipt({ kind: "recipe", fileName: file.name, mime: "application/json", bytes: text.length, durationMs: 0 });
+      await applyImportWithBackup(text, file.name, "import");
     });
   };
 
-  const clampInt = (value: string, min: number, max: number, fallback: number): number => {
-    const parsed = Number.parseInt(value, 10);
-    return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+  latestRetryActionsRef.current = {
+    png: onPng,
+    turnaround: onTurnaroundPng,
+    "quad-sheet": onQuadSheetPng,
+    psd: onPsd,
+    glb: onGlb,
+    recipe: onRecipeSave,
+    "shaper-preset": onShaperPresetSave,
+    import: () => onRecipeFile(lastImportFileRef.current),
+    "clipboard-copy": onCopyRecipeClipboard,
+    "clipboard-paste": onPasteRecipeClipboard,
+  };
+
+  const onRestorePreImportBackup = (): void => {
+    if (!preImportBackup || busyRef.current !== null) return;
+    restoreCharacterWorkBackup({
+      backup: preImportBackup,
+      session,
+      engine: engineSession.engine(),
+      dispatch,
+      applyStoreEvent: (event) => store.applyEvent(event),
+    });
+    setPreImportBackup(null);
+    setReceipt(null);
+    setFailure(null);
+    setFailedKind(null);
+    setNotices(["불러오기 직전의 미저장 캐릭터·페인트 작업을 그대로 복구했습니다."]);
   };
 
   const isPackageRegistered =
-    labState.recipe.source.kind === "package" &&
-    Boolean(packagePlans.get(labState.recipe.source.characterId));
+    labState.recipe.source.kind === "package" && Boolean(packagePlans.get(labState.recipe.source.characterId));
 
   const switchInspectorTabWithFocus = (targetTab: "package" | "pose"): void => {
     setInspectorTab(targetTab);
@@ -343,8 +477,28 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     requestAnimationFrame(() => document.getElementById(`cl-tab-${targetTab}`)?.focus());
   };
 
+  const onSectionKeyDown = (event: ReactKeyboardEvent<HTMLElement>): void => {
+    if (event.key === "Escape" && !busy && failure) {
+      event.preventDefault();
+      setFailure(null);
+      setFailedKind(null);
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey && event.key.toLowerCase() === "q") {
+      if (engineReady && busyRef.current === null) {
+        event.preventDefault();
+        onQuadSheetPng();
+      }
+    }
+  };
+
   return (
-    <section className="cl-export-panel" aria-labelledby={`${ids}-title`}>
+    <section
+      className="cl-export-panel"
+      aria-labelledby={`${ids}-title`}
+      aria-busy={busy !== null}
+      onKeyDown={onSectionKeyDown}
+    >
       <h2 id={`${ids}-title`}>내보내기</h2>
       <div className="cl-export-experiment-summary" role="region" aria-label="현재 실험 상태 및 빠른 이동" data-testid="export-experiment-summary">
         <div className="cl-export-experiment-meta">
@@ -356,20 +510,10 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           </span>
         </div>
         <div className="cl-export-nav-actions" role="group" aria-label="실험 단계 이동">
-          <button
-            type="button"
-            className="cl-button cl-export-nav-btn"
-            data-testid="export-switch-to-package-tab"
-            onClick={() => switchInspectorTabWithFocus("package")}
-          >
+          <button type="button" className="cl-button cl-export-nav-btn" data-testid="export-switch-to-package-tab" onClick={() => switchInspectorTabWithFocus("package")}>
             패키지 선택 탭으로
           </button>
-          <button
-            type="button"
-            className="cl-button cl-export-nav-btn"
-            data-testid="export-switch-to-pose-tab"
-            onClick={() => switchInspectorTabWithFocus("pose")}
-          >
+          <button type="button" className="cl-button cl-export-nav-btn" data-testid="export-switch-to-pose-tab" onClick={() => switchInspectorTabWithFocus("pose")}>
             포즈 실험 탭으로
           </button>
         </div>
@@ -379,58 +523,21 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           엔진 상태: {engineStatus.phase} — PNG·PSD·GLB는 엔진이 준비된 뒤 사용할 수 있습니다. 레시피 저장/불러오기는 가능합니다.
         </p>
       ) : null}
-      <div className="cl-export-row" role="group" aria-label="빠른 해상도 프리셋" data-testid="export-resolution-presets">
-        {(
-          [
-            { id: "webtoon-cut", label: "웹툰 컷 (800×1200)", w: 800, h: 1200 },
-            { id: "square-1k", label: "정방형 기본 (1024×1024)", w: 1024, h: 1024 },
-            { id: "manuscript-2k", label: "고해상도 원고 (2048×2048)", w: 2048, h: 2048 },
-          ] as const
-        ).map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            className="cl-preset-chip"
-            aria-pressed={width === preset.w && height === preset.h && framing === "full-body"}
-            onClick={() => {
-              setWidth(preset.w);
-              setHeight(preset.h);
-              setFraming("full-body");
-            }}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
-      <div className="cl-export-row" role="group" aria-label="VRM 4-View 턴어라운드 및 프레이밍 프리셋" data-testid="export-vrm-framing-presets">
-        {(
-          [
-            { id: "vrm-full", label: "VRM 전신 턴어라운드 (1024×1536)", w: 1024, h: 1536, mode: "full-body" as const },
-            { id: "vrm-bust", label: "VRM 상반신 소개컷 (1024×1024)", w: 1024, h: 1024, mode: "bust" as const },
-            { id: "vrm-face", label: "VRM 표정 시트 클로즈업 (1024×1024)", w: 1024, h: 1024, mode: "face" as const },
-          ] as const
-        ).map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            className="cl-preset-chip"
-            data-testid={`export-preset-${preset.id}`}
-            aria-pressed={width === preset.w && height === preset.h && framing === preset.mode}
-            onClick={() => {
-              setWidth(preset.w);
-              setHeight(preset.h);
-              setFraming(preset.mode);
-            }}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
+      <ExportPresetRows
+        width={width}
+        height={height}
+        framing={framing}
+        onSelectPreset={(w, h, mode) => {
+          setWidth(w);
+          setHeight(h);
+          setFraming(mode);
+        }}
+      />
       <div className="cl-export-row">
         <label htmlFor={`${ids}-width`}>너비(px)</label>
-        <input id={`${ids}-width`} type="number" min={MIN_EXPORT_DIMENSION} max={MAX_PNG_EXPORT_DIMENSION} value={width} onChange={(event) => setWidth(clampInt(event.target.value, 1, MAX_PNG_EXPORT_DIMENSION, width))} />
+        <input id={`${ids}-width`} type="number" min={MIN_EXPORT_DIMENSION} max={MAX_PNG_EXPORT_DIMENSION} value={width} onChange={(event) => setWidth(clampExportInt(event.target.value, 1, MAX_PNG_EXPORT_DIMENSION, width))} />
         <label htmlFor={`${ids}-height`}>높이(px)</label>
-        <input id={`${ids}-height`} type="number" min={MIN_EXPORT_DIMENSION} max={MAX_PNG_EXPORT_DIMENSION} value={height} onChange={(event) => setHeight(clampInt(event.target.value, 1, MAX_PNG_EXPORT_DIMENSION, height))} />
+        <input id={`${ids}-height`} type="number" min={MIN_EXPORT_DIMENSION} max={MAX_PNG_EXPORT_DIMENSION} value={height} onChange={(event) => setHeight(clampExportInt(event.target.value, 1, MAX_PNG_EXPORT_DIMENSION, height))} />
       </div>
       <div className="cl-export-row">
         <label htmlFor={`${ids}-framing`}>프레이밍</label>
@@ -442,11 +549,30 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           ))}
         </select>
         <label htmlFor={`${ids}-settle`}>물리 settle 스텝</label>
-        <input id={`${ids}-settle`} type="number" min={0} max={MAX_SETTLE_STEPS} value={settleSteps} onChange={(event) => setSettleSteps(clampInt(event.target.value, 0, MAX_SETTLE_STEPS, 0))} />
+        <input id={`${ids}-settle`} type="number" min={0} max={MAX_SETTLE_STEPS} value={settleSteps} onChange={(event) => setSettleSteps(clampExportInt(event.target.value, 0, MAX_SETTLE_STEPS, 0))} />
       </div>
       <div className="cl-export-actions">
         <button type="button" onClick={onPng} disabled={!engineReady || busy !== null}>
           투명 PNG 저장
+        </button>
+        <button
+          type="button"
+          data-testid="export-turnaround-sheet-png"
+          title="0° 정면 · 35° 반측면 · 90° 측면 · 180° 후면을 가로 한 장으로 이어 붙인 투명 캐릭터 설정시트 PNG를 저장합니다"
+          onClick={onTurnaroundPng}
+          disabled={!engineReady || busy !== null}
+        >
+          4방향 설정시트 PNG 저장
+        </button>
+        <button
+          type="button"
+          data-testid="export-quad-sheet-png"
+          aria-keyshortcuts="Control+Shift+Q Meta+Shift+Q"
+          title="전신 정면 · 전신 35° 반측면 · 상반신 바스트컷 · 얼굴 클로즈업을 종횡비 유지·잘림 방지 마진이 적용된 2×2 투명 PNG로 저장합니다 (단축키 Ctrl/Cmd+Shift+Q)"
+          onClick={onQuadSheetPng}
+          disabled={!engineReady || busy !== null}
+        >
+          2×2 종합 설정시트 PNG 저장
         </button>
         <button type="button" onClick={onGlb} disabled={!engineReady || busy !== null}>
           GLB 저장
@@ -457,6 +583,24 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         <button type="button" onClick={onShaperPresetSave} disabled={busy !== null}>
           SHAPER 프리셋 저장
         </button>
+        <button
+          type="button"
+          data-testid="export-copy-recipe-clipboard"
+          title="외부 서버 전송 없이 로컬 클립보드로 현재 캐릭터 레시피 JSON(다중 페인트 서브레이어 포함)을 즉시 복사합니다"
+          onClick={onCopyRecipeClipboard}
+          disabled={busy !== null}
+        >
+          레시피 클립보드 복사
+        </button>
+        <button
+          type="button"
+          data-testid="export-paste-recipe-clipboard"
+          title="클립보드에 복사된 레시피(.character.json) 또는 SHAPER 프리셋(.preset) 텍스트를 즉시 불러옵니다"
+          onClick={onPasteRecipeClipboard}
+          disabled={busy !== null}
+        >
+          클립보드 레시피 붙여넣기
+        </button>
         <label className="cl-export-file" htmlFor={`${ids}-file`}>
           레시피 불러오기
           <input
@@ -465,6 +609,12 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
             type="file"
             accept={`${RECIPE_FILE_SUFFIX},.json,.preset,application/json,text/plain`}
             disabled={busy !== null}
+            onKeyDown={(event) => {
+              if ((event.key === "Enter" || event.key === " ") && busyRef.current === null) {
+                event.preventDefault();
+                event.currentTarget.click();
+              }
+            }}
             onChange={(event) => {
               const file = event.currentTarget.files?.[0];
               event.currentTarget.value = "";
@@ -493,32 +643,22 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           레이어 PSD 저장
         </button>
       </fieldset>
-      {busy ? (
-        <p className="cl-export-progress" role="status" aria-live="polite">
-          {busy === "import" ? "레시피 불러오는 중…" : `${busy.toUpperCase()} 내보내는 중…`}
-        </p>
-      ) : null}
-      {receipt ? (
-        <p className="cl-export-receipt" role="status" data-testid="export-receipt">
-          저장됨: {describeReceipt(receipt)}
-        </p>
-      ) : null}
-      {notices.length > 0 ? (
-        <div className="cl-export-notices" role="status">
-          <ul aria-label="레시피 불러오기 안내">
-            {notices.map((notice) => (
-              <li key={notice} className="cl-export-notice">
-                {notice}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {failure ? (
-        <p className="cl-export-failure" role="alert" data-testid="export-failure-alert">
-          실패({failure.code}): {failure.reasonKo}
-        </p>
-      ) : null}
+      <ExportStatusSection
+        busy={busy}
+        progressDetail={progressDetail}
+        hasPreImportBackup={preImportBackup !== null}
+        onRestorePreImportBackup={onRestorePreImportBackup}
+        onDismissPreImportBackup={() => setPreImportBackup(null)}
+        receipt={receipt}
+        notices={notices}
+        failure={failure}
+        failedKind={failedKind}
+        retryDisabled={busy !== null || (failedKind === "import" && !lastImportFileRef.current)}
+        onRetryLastFailed={() => {
+          if (failedKind && busyRef.current === null) latestRetryActionsRef.current[failedKind]?.();
+        }}
+        failureAlertRef={failureAlertRef}
+      />
     </section>
   );
 }

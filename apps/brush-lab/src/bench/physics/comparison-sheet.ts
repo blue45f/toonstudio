@@ -46,6 +46,20 @@ export function defaultSheetColumns(): SheetColumn[] {
   ];
 }
 
+/** Wave 37/38 원심 부채꼴 벌어짐·기울기 측면 그레인·입출필 테이퍼 비교 시트 열. */
+export function wave38ParitySheetColumns(): SheetColumn[] {
+  return [
+    { id: "cpu-reference", label: "CPU-REF", descriptionKo: "기준선 스칼라 붓모 모델", make: () => createCpuReferenceLane() },
+    { id: "pbd-32", label: "PBD N32 BASE", descriptionKo: "기본 PBD 털 32올(원심 벌어짐 전)", make: () => createBristlePbdLane({ bristles: 32 }) },
+    {
+      id: "pbd-32-wave38",
+      label: "PBD N32 FAN+TILT",
+      descriptionKo: "PBD 털 32올 + 급선회 원심 부채꼴 벌어짐 + 기울기 측면 그레인 + 입출필 테이퍼",
+      make: () => createBristlePbdLane({ bristles: 32, enableTurnFanSplay: true, enableTiltSizeShading: true, enableStrokeTaper: true }),
+    },
+  ];
+}
+
 export interface SheetTile {
   strokeId: string;
   columnId: string;

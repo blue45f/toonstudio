@@ -5,5 +5,7 @@ export * from "./paint-bridge";
 export * from "./paint-kit-warning";
 export * from "./paint-layer";
 export * from "./paint-session";
+export * from "./paint-sublayers";
 export * from "./stroke-session";
 export * from "./uv-stroke";
+export * from "./webtoon-decals";

@@ -5,13 +5,13 @@ import { arch, cpus, platform, tmpdir, totalmem } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { chromium } from "playwright";
-import { createServer } from "vite";
+import { loadStudioChemyBrowserToolchain } from "./lib/studio-chemy-toolchain.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2);
 if (args.some((arg) => arg !== "--legacy-chemy-pressure-only")) throw new Error("지원하지 않는 hybrid 진단 인자입니다.");
 const pressureOnly = args.includes("--legacy-chemy-pressure-only");
+const { chromium, createServer } = await loadStudioChemyBrowserToolchain();
 const output = resolve(process.env.TOONSPECTRUM_HYBRID_VERIFY_DIR || join(tmpdir(), "studio-hybrid-topology"));
 mkdirSync(output, { recursive: true });
 const harness = "/__hybrid_topology_audit__";

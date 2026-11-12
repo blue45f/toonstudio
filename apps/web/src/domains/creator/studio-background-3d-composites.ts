@@ -2,6 +2,10 @@
 // 상대 위치로 조합된 형태를 코드로 합성한다. 외부 glTF 에셋 없이 기존 PRIMITIVE_DEFS의 13종
 // 지오메트리만 재사용(studio-background-3d-primitives.ts §makeGeometry 확장 없음) — 라이선스/
 // 파일크기 리스크를 피하기 위한 설계 결정.
+import {
+  KITBASH_COMPOSITE_PRESETS,
+  KITBASH_V10_BG_OBJECT_PRESETS,
+} from "./bg3d/studio-background-3d-kitbash-presets";
 import { uid, type BgPrimitive, type BgPrimitiveKind } from "./studio-background-3d-primitives";
 
 export type BgCompositeCategory = "building" | "nature" | "vehicle" | "prop";
@@ -14,7 +18,7 @@ export const COMPOSITE_CATEGORY_LABELS: Record<BgCompositeCategory, string> = {
 };
 export const COMPOSITE_CATEGORIES = Object.keys(COMPOSITE_CATEGORY_LABELS) as BgCompositeCategory[];
 
-interface BgCompositePart {
+export interface BgCompositePart {
   kind: BgPrimitiveKind;
   offset: [number, number, number]; // 앵커(0,0,0) 기준 상대 위치, 미터
   rotation: [number, number, number]; // Euler XYZ, 라디안 — BgPrimitive와 동일 계약
@@ -66,15 +70,6 @@ export const COMPOSITE_PRESETS: BgCompositePreset[] = [
     footprint: 2.0,
     parts: [
       { kind: "box", offset: [0, 1.0, 0], rotation: [0, 0, 0], scale: [2.6, 2.0, 2.2], color: "#e3d9c4" },
-      // triangularPrism(radialSegments=3 원기둥)의 세 꼭짓점은 로컬 (X=0,Z=+r) / (X=±0.87r,Z=-0.5r)에
-      // 있다 — "뾰족한 꼭짓점"은 로컬 Z축 방향이지 X축이 아니다. Z축 회전은 X·Y만 섞고 Z는 그대로
-      // 두므로, z축 90°만 주면(리뷰에서 발견된 버그) 꼭짓점이 계속 Z방향을 가리켜 위로 세워지지 않고
-      // 벽면 쪽으로 삐져나온 비대칭 쐐기 모양이 된다(node+three.js로 world-space 정점 직접 계산해
-      // 확인함). X축 -90° 회전으로 Z(꼭짓점 방향)→Y(위) 매핑을 만들고, 이어서 Z축 90° 회전으로
-      // Y(원래 압출축)→X(용마루 방향, 건물 폭과 정렬)를 만들어야 apex-up 지붕이 나온다. 이 offset/
-      // scale 조합에서는 밑변이 정확히 몸체 상단(y=2.0)에 맞닿고 꼭짓점은 y=3.2. scale.x(2.8)=지붕
-      // 깊이 방향 처마 폭(±1.21, 벽 z=±1.1보다 넓게 오버행), scale.y(2.9)=용마루 길이(벽 x=±1.3보다
-      // 넓게 오버행), scale.z(1.6)=지붕 물매 높이(밑변 대비 +1.2).
       {
         kind: "triangularPrism",
         offset: [0, 2.4, 0],
@@ -150,7 +145,6 @@ export const COMPOSITE_PRESETS: BgCompositePreset[] = [
     parts: [
       { kind: "box", offset: [0, 0.4, 0], rotation: [0, 0, 0], scale: [1.05, 0.55, 2.0], color: "#8a3f3f" },
       { kind: "box", offset: [0, 0.78, -0.1], rotation: [0, 0, 0], scale: [0.85, 0.42, 1.05], color: "#6f3232" },
-      // 바퀴: cylinder는 기본적으로 Y축이 회전축이라 z축 90°로 눕혀야 좌우 축(X)에 걸리는 원판이 된다.
       {
         kind: "cylinder",
         offset: [0.6, 0.26, 0.72],
@@ -654,6 +648,8 @@ export const COMPOSITE_PRESETS: BgCompositePreset[] = [
       { kind: "cylinder", offset: [-1.55, 0.36, -0.86], rotation: [0, 0, Math.PI / 2], scale: [0.76, 0.14, 0.76], color: "#22252a" },
     ],
   },
+  ...KITBASH_COMPOSITE_PRESETS,
+  ...KITBASH_V10_BG_OBJECT_PRESETS,
 ];
 
 /**

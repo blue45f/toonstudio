@@ -1,0 +1,143 @@
+{
+  "schema": "toonstudio.character-lab.slot-mapping/1",
+  "characterId": "shaper-atelier-protagonist",
+  "generatedAt": "2026-11-12",
+  "capabilities": {
+    "face-shape": {
+      "status": "available"
+    },
+    "eyes": {
+      "status": "available"
+    },
+    "irises": {
+      "status": "partial",
+      "reasonKo": "irisSize shape key가 없어 눈동자 색·시선만 바꿀 수 있습니다(크기는 눈 본 스케일 근사)."
+    },
+    "nose": {
+      "status": "available"
+    },
+    "mouth": {
+      "status": "available"
+    },
+    "ears": {
+      "status": "available"
+    },
+    "hair": {
+      "status": "partial",
+      "reasonKo": "제작 패키지는 교체형 헤어를 제공하지 않습니다(스타일 'wolf-layered' 1종, LOD 3단 + _Outline 외곽 셸 사용 가능)."
+    },
+    "body": {
+      "status": "partial",
+      "reasonKo": "파이프라인 v1은 체형 shape key 대신 55본 휴머노이드 본 스케일 리타게팅을 사용합니다."
+    },
+    "top": {
+      "status": "partial",
+      "reasonKo": "상의 메시(TS_Top_blazer) 1종이 분리 제작되어 색상·3D 페인트·포즈 변형을 지원합니다(교체 세트는 모듈식 키트 사용)."
+    },
+    "bottom": {
+      "status": "partial",
+      "reasonKo": "하의 메시(TS_Bottom_pleated-skirt) 1종이 분리 제작되어 색상·3D 페인트·포즈 변형을 지원합니다."
+    },
+    "shoes": {
+      "status": "partial",
+      "reasonKo": "신발 메시(TS_Shoes_loafers) 1종이 분리 제작되어 색상·3D 페인트·포즈 변형을 지원합니다."
+    },
+    "accessory": {
+      "status": "partial",
+      "reasonKo": "액세서리 메시(TS_Accessory_ribbon) 1종이 분리 제작되어 색상·3D 페인트·포즈 변형을 지원합니다."
+    },
+    "expression": {
+      "status": "available"
+    },
+    "pose": {
+      "status": "available"
+    },
+    "hand-pose": {
+      "status": "available"
+    }
+  },
+  "slots": [
+    {
+      "slot": "face-shape",
+      "status": "available",
+      "missing": []
+    },
+    {
+      "slot": "eyes",
+      "status": "available",
+      "missing": []
+    },
+    {
+      "slot": "irises",
+      "status": "partial",
+      "notes": "irisSize shape key가 없어 눈동자 색·시선만 바꿀 수 있습니다(크기는 눈 본 스케일 근사).",
+      "missing": []
+    },
+    {
+      "slot": "nose",
+      "status": "available",
+      "missing": []
+    },
+    {
+      "slot": "mouth",
+      "status": "available",
+      "missing": []
+    },
+    {
+      "slot": "ears",
+      "status": "available",
+      "missing": []
+    },
+    {
+      "slot": "hair",
+      "status": "partial",
+      "notes": "제작 패키지는 교체형 헤어를 제공하지 않습니다(스타일 'wolf-layered' 1종, LOD 3단 + _Outline 외곽 셸 사용 가능).",
+      "missing": []
+    },
+    {
+      "slot": "body",
+      "status": "partial",
+      "notes": "파이프라인 v1은 체형 shape key 대신 55본 휴머노이드 본 스케일 리타게팅을 사용합니다.",
+      "missing": []
+    },
+    {
+      "slot": "top",
+      "status": "partial",
+      "notes": "상의 메시(TS_Top_blazer) 1종이 분리 제작되어 색상·3D 페인트·포즈 변형을 지원합니다(교체 세트는 모듈식 키트 사용).",
+      "missing": []
+    },
+    {
+      "slot": "bottom",
+      "status": "partial",
+      "notes": "하의 메시(TS_Bottom_pleated-skirt) 1종이 분리 제작되어 색상·3D 페인트·포즈 변형을 지원합니다.",
+      "missing": []
+    },
+    {
+      "slot": "shoes",
+      "status": "partial",
+      "notes": "신발 메시(TS_Shoes_loafers) 1종이 분리 제작되어 색상·3D 페인트·포즈 변형을 지원합니다.",
+      "missing": []
+    },
+    {
+      "slot": "accessory",
+      "status": "partial",
+      "notes": "액세서리 메시(TS_Accessory_ribbon) 1종이 분리 제작되어 색상·3D 페인트·포즈 변형을 지원합니다.",
+      "missing": []
+    },
+    {
+      "slot": "expression",
+      "status": "available",
+      "missing": []
+    },
+    {
+      "slot": "pose",
+      "status": "available",
+      "missing": []
+    },
+    {
+      "slot": "hand-pose",
+      "status": "available",
+      "missing": []
+    }
+  ]
+}

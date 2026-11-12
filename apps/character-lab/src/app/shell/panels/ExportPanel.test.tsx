@@ -52,6 +52,7 @@ describe("ExportPanel", () => {
     );
     expect(screen.getByRole("status").textContent).toMatch(/엔진 상태: idle/u);
     expect((screen.getByRole("button", { name: "투명 PNG 저장" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId("export-turnaround-sheet-png") as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "레이어 PSD 저장" }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "GLB 저장" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));
@@ -174,12 +175,10 @@ describe("ExportPanel", () => {
   it("레시피 불러오기: 새 파일에 없는 부위의 이전 칠은 엔진 텍스처에서 비워지고, 있는 부위는 새 내용으로 올라간다", async () => {
     const engine = createMockEngine();
     const paintSession = createPaintSession({ layerSize: 8, brush: { radiusPx: 2, hardness: 1, opacity: 1 } });
-    // top에 칠하고 엔진에 올라간 상태(스트로크 경로 흉내)
     paintSession.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "top");
     paintSession.endStroke();
     engine.updatePaintTexture(paintSession.layer("top"));
     expect(engine.paintUploads).toHaveLength(1);
-    // 불러올 파일은 skin만 칠해져 있고 top 레이어가 없다
     const source = createPaintSession({ layerSize: 8, brush: { radiusPx: 2, hardness: 1, opacity: 1 } });
     source.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "skin");
     source.endStroke();
@@ -199,7 +198,6 @@ describe("ExportPanel", () => {
     const skin = afterLoad.find((layer) => layer.part === "skin");
     const top = afterLoad.find((layer) => layer.part === "top");
     expect(skin?.rgba.some((byte) => byte !== 0)).toBe(true);
-    // 엔진 텍스처에는 제거 API가 없으므로 top은 같은 크기의 투명 레이어를 올려 비운다(뷰포트에 이전 칠이 남지 않는다)
     expect(top).toBeDefined();
     expect(top?.rgba.every((byte) => byte === 0)).toBe(true);
     expect(top?.width).toBe(8);
@@ -207,7 +205,6 @@ describe("ExportPanel", () => {
 
   it("v1 레시피 파일을 불러오면 변환 안내를 상태 문구로 보이고, 다음 작업을 시작하면 지운다", async () => {
     const dispatched: LabCommand[] = [];
-    // v1 파일 모양은 fixture로 만든다(v3 기본 레시피를 펼치면 v3 전용 필드가 섞여 v1 파일이 아니다)
     const v1Text = JSON.stringify(legacyRecipeV1Fixture({ ...createDefaultRecipe(), body: { height: 0.25 } }));
     const calls: SaveCall[] = [];
     render(
@@ -222,7 +219,6 @@ describe("ExportPanel", () => {
     const list = screen.getByRole("list", { name: "레시피 불러오기 안내" });
     expect(list.textContent).toBe("레시피 v1 파일을 현재 형식(v3)으로 변환해 열었습니다. 저장하면 v3 파일로 기록됩니다.");
     expect(screen.queryByRole("alert")).toBeNull();
-    // 다른 작업(레시피 저장)을 시작하면 안내는 사라진다
     fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(screen.queryByRole("list", { name: "레시피 불러오기 안내" })).toBeNull();
@@ -264,7 +260,6 @@ describe("ExportPanel", () => {
     await waitFor(() => expect(dispatched).toHaveLength(1));
     const items = within(screen.getByRole("list", { name: "레시피 불러오기 안내" })).getAllByRole("listitem");
     expect(items.map((node) => node.textContent)).toEqual(["이미 칠한 상의 레이어: 상의 변형을 바꾸면 UV가 달라져 그림이 어긋납니다. 변형을 확정한 뒤에 칠하세요."]);
-    // 절차 소스 파일은 같은 칠이 있어도 경고가 없다
     text = proceduralText;
     await act(async () => {
       fireEvent.change(screen.getByLabelText("레시피 불러오기"), { target: { files: [new File([proceduralText], "proc.character.json", { type: "application/json" })] } });
@@ -295,15 +290,12 @@ describe("ExportPanel", () => {
     expect((screen.getByLabelText("높이(px)") as HTMLInputElement).value).toBe("1024");
     expect((screen.getByLabelText("프레이밍") as HTMLSelectElement).value).toBe("face");
     expect(vrmFaceBtn.getAttribute("aria-pressed")).toBe("true");
-    // face 프레이밍일 때는 전신 정방형 기본 버튼이 동시에 눌린 것으로 표시되지 않는다
     expect(squareBtn.getAttribute("aria-pressed")).toBe("false");
 
-    // 다시 정방형 기본 클릭 시 full-body 프레이밍으로 복원된다
     fireEvent.click(squareBtn);
     expect((screen.getByLabelText("프레이밍") as HTMLSelectElement).value).toBe("full-body");
     expect(squareBtn.getAttribute("aria-pressed")).toBe("true");
 
-    // 성공 저장 후 이어서 실패가 발생하면 이전 '저장됨:' 영수증은 지워지고 사용자 입력(너비/높이)은 그대로 보존된다
     fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));
     await waitFor(() => expect(screen.getByText(/저장됨:/u)).toBeTruthy());
     fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "4000" } });
@@ -380,7 +372,6 @@ describe("ExportPanel", () => {
     });
     await waitFor(() => expect(dispatched).toHaveLength(1));
     expect(dispatched[0]?.type).toBe("recipe/load");
-    // .preset 불러오기 후에도 기존 칠한 페인트 레이어가 지워지지 않고 유지되어야 하며 input.value는 빈 문자열로 초기화된다
     expect(paintSession.layersForExport()).toHaveLength(1);
     expect(input.value).toBe("");
     expect(screen.getByRole("list", { name: "레시피 불러오기 안내" }).textContent).toContain(
@@ -478,17 +469,14 @@ describe("ExportPanel", () => {
       </MockLabProvider>,
     );
 
-    // 1. 실험 요약 카드에 패키지 소스·포즈·손 프리셋·관절 변형 수가 명확히 표시된다
     expect(screen.getByTestId("export-active-source").textContent).toContain("제작 패키지 (orion · 등록됨)");
     expect(screen.getByTestId("export-active-pose").textContent).toContain("손 흔들기 (본 2개 · 손 peace)");
 
-    // 2. 레시피 저장 실행(.character.json)
     fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(savedRecipeJson).toContain('"characterId": "orion"');
     expect(savedRecipeJson).toContain('"pose": "pose/wave"');
 
-    // 3. 다른 실험 상태로 초기화(절차 소스 기본 레시피 + 빈 페인트 + 비활성 능력표 가정)
     act(() => {
       store.dispatch({ type: "recipe/load", recipe: createDefaultRecipe() });
       store.applyEvent({ type: "source/capabilities", capabilities: ALL_UNAVAILABLE_CAPABILITIES });
@@ -498,7 +486,6 @@ describe("ExportPanel", () => {
     expect(paintSession.layersForExport()).toHaveLength(0);
     expect(store.getState().capabilities.pose.status).toBe("unavailable");
 
-    // 4. 저장해 둔 .character.json 재가져오기 → 패키지 소스·포즈·페인트 레이어·패키지 능력표까지 완전 복원
     await act(async () => {
       fireEvent.change(screen.getByLabelText("레시피 불러오기"), {
         target: { files: [new File([savedRecipeJson], "orion-wave.character.json", { type: "application/json" })] },
@@ -509,7 +496,6 @@ describe("ExportPanel", () => {
     expect(paintSession.layersForExport()).toHaveLength(1);
     expect(store.getState().capabilities.pose.status).toBe("available");
 
-    // 5. 탭 전환 버튼(패키지 선택 탭으로 / 포즈 실험 탭으로) 및 초점 복원 검증
     const packageTab = document.createElement("button");
     packageTab.id = "cl-tab-package";
     const poseTab = document.createElement("button");
@@ -571,7 +557,6 @@ describe("ExportPanel", () => {
 
     const input = screen.getByLabelText("레시피 불러오기") as HTMLInputElement;
 
-    // 1. 빈 파일(0 B) 불러오기 → 명확한 recipe-file-empty 오류를 표시하고 기존 레시피·페인트를 유지한다
     fileContentToRead = "   \n  ";
     await act(async () => {
       fireEvent.change(input, {
@@ -584,7 +569,6 @@ describe("ExportPanel", () => {
     expect(paintSession.layersForExport()).toHaveLength(1);
     expect(screen.queryByTestId("export-receipt")).toBeNull();
 
-    // 2. 손상된 내장 페인트 PNG가 포함된 레시피 → recipe/load 디스패치 금지, 기존 페인트 레이어 보존, 거짓 '저장됨:' 영수증 금지
     const baseRecipe = createDefaultRecipe();
     const corruptPaintRecipe = {
       ...baseRecipe,
@@ -612,7 +596,6 @@ describe("ExportPanel", () => {
     expect(paintSession.layersForExport()).toHaveLength(1);
     expect(screen.queryByTestId("export-receipt")).toBeNull();
 
-    // 3. 실패 후 유효한 긴 이름 레시피로 재시도 → 오류가 걷히고 영수증·능력표가 정상 갱신된다
     const longFileName = `experiment_${"very_long_segment_".repeat(6)}restore.character.json`;
     const validProceduralRecipe = {
       ...baseRecipe,
@@ -627,10 +610,8 @@ describe("ExportPanel", () => {
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
     expect(screen.getByTestId("export-receipt").textContent).toContain(longFileName);
     expect(store.getState().recipe.slots.pose).toBe("pose/cheer");
-    // 절차 소스로 복구되면서 비활성 상태였던 pose 능력표도 available로 동기화된다
     expect(store.getState().capabilities.pose.status).toBe("available");
 
-    // 4. 파일 선택 창에서 취소(files: []) → 기존 영수증과 레시피 상태를 그대로 보존한다
     await act(async () => {
       fireEvent.change(input, { target: { files: [] } });
     });
@@ -638,7 +619,6 @@ describe("ExportPanel", () => {
     expect(screen.getByTestId("export-receipt").textContent).toContain(longFileName);
     expect(store.getState().recipe.slots.pose).toBe("pose/cheer");
 
-    // 5. 아직 PackagePanel에서 불러오지 않은 제작 패키지 레시피를 가져오면 미등록 안내를 띄우고 거짓 준비 상태를 막는다
     const unloadedPkgRecipe = {
       ...baseRecipe,
       source: {
@@ -659,6 +639,147 @@ describe("ExportPanel", () => {
       "제작 패키지 'unloaded_hero_pkg'가 아직 로드되지 않았습니다.",
     );
   });
+
+  it("4방향 설정시트 PNG 저장 버튼이 0°·35°·90°·180° 캡처 후 가로 합성 turnaround PNG를 저장한다", async () => {
+    const calls: SaveCall[] = [];
+    const engine = createMockEngine();
+    render(
+      <MockLabProvider engineSession={readySession(engine)}>
+        <ExportPanel session={createPaintSession({ layerSize: 8 })} deps={{ save: fakeSave(calls), now: () => 1 }} />
+      </MockLabProvider>,
+    );
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "32" } });
+    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "48" } });
+    fireEvent.click(screen.getByTestId("export-turnaround-sheet-png"));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.fileName).toBe("character-mock-128x48-turnaround.png");
+    expect(isPng(calls[0]?.bytes ?? new Uint8Array())).toBe(true);
+    expect(screen.getByTestId("export-receipt").textContent).toContain("128×48");
+  });
+
+  it("2×2 종합 설정시트 PNG 저장 및 로컬 클립보드 레시피 복사·붙여넣기 왕복이 동작하고 빈 클립보드 오류를 노출한다", async () => {
+    const calls: SaveCall[] = [];
+    const dispatched: LabCommand[] = [];
+    const engine = createMockEngine();
+    const paintSession = createPaintSession({ layerSize: 8, brush: { radiusPx: 2, hardness: 1, opacity: 1, color: "#cc2244" } });
+    paintSession.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "head");
+    paintSession.endStroke();
+
+    let clipboardText = "";
+    render(
+      <MockLabProvider engineSession={readySession(engine)} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <ExportPanel
+          session={paintSession}
+          deps={{
+            save: fakeSave(calls),
+            now: () => 10,
+            writeClipboard: async (text) => {
+              clipboardText = text;
+            },
+            readClipboard: async () => clipboardText,
+          }}
+        />
+      </MockLabProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "32" } });
+    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "40" } });
+    fireEvent.click(screen.getByTestId("export-quad-sheet-png"));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.fileName).toBe("character-mock-64x80-quad-sheet.png");
+    expect(isPng(calls[0]?.bytes ?? new Uint8Array())).toBe(true);
+
+    fireEvent.click(screen.getByTestId("export-paste-recipe-clipboard"));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/recipe-clipboard-empty/u));
+
+    fireEvent.click(screen.getByTestId("export-copy-recipe-clipboard"));
+    await waitFor(() => expect(clipboardText.length).toBeGreaterThan(20));
+    act(() => {
+      paintSession.replaceLayers([]);
+    });
+    expect(paintSession.layersForExport()).toHaveLength(0);
+
+    fireEvent.click(screen.getByTestId("export-paste-recipe-clipboard"));
+    await waitFor(() => expect(dispatched.some((cmd) => cmd.type === "recipe/load")).toBe(true));
+    expect(paintSession.layersForExport()).toHaveLength(1);
+    expect(paintSession.layersForExport()[0]?.part).toBe("head");
+  });
+
+  it("다중 서브레이어(숨김·불투명도·순서) 레시피 저장/복원 왕복, 2×2 종횡비 축소 안내, 키보드 단축키 및 포커스 전환을 검증한다", async () => {
+    const { readPixel } = await import("../../../paint/paint-layer");
+    const calls: SaveCall[] = [];
+    const dispatched: LabCommand[] = [];
+    const engine = createMockEngine();
+    const paintSession = createPaintSession({ layerSize: 16, activePart: "head", brush: { radiusPx: 3, hardness: 1, opacity: 1, color: "#112233" } });
+
+    paintSession.setActiveSublayer(0);
+    paintSession.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+    paintSession.endStroke();
+    paintSession.setActiveSublayer(1);
+    paintSession.setBrush({ color: "#ee3355" });
+    paintSession.beginStroke({ u: 0.25, v: 0.25, pressure: 1 });
+    paintSession.endStroke();
+    paintSession.setSublayerVisible("head", 1, false);
+    paintSession.setActiveSublayer(2);
+    paintSession.setBrush({ color: "#22aa88" });
+    paintSession.beginStroke({ u: 0.75, v: 0.75, pressure: 1 });
+    paintSession.endStroke();
+    paintSession.setSublayerOpacity("head", 2, 0.6);
+    paintSession.moveSublayer("head", 2, "down");
+
+    let savedJson = "";
+    render(
+      <MockLabProvider engineSession={readySession(engine)} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <ExportPanel
+          session={paintSession}
+          deps={{
+            save: (fileName, bytes, mime) => {
+              if (fileName.endsWith(".character.json")) savedJson = new TextDecoder().decode(bytes);
+              return fakeSave(calls)(fileName, bytes, mime);
+            },
+            now: () => 20,
+            readFile: async () => savedJson,
+          }}
+        />
+      </MockLabProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "레시피 저장" }));
+    await waitFor(() => expect(savedJson.length).toBeGreaterThan(50));
+    expect(JSON.parse(savedJson).paint.sublayers).toHaveLength(1);
+    act(() => paintSession.replaceLayers([]));
+
+    const fileInput = screen.getByTestId("export-recipe-file-input") as HTMLInputElement;
+    let clickedByKeyboard = false;
+    fileInput.addEventListener("click", () => { clickedByKeyboard = true; });
+    fireEvent.keyDown(fileInput, { key: "Enter" });
+    expect(clickedByKeyboard).toBe(true);
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [new File([savedJson], "multi.character.json", { type: "application/json" })] } });
+    });
+    await waitFor(() => expect(dispatched.some((cmd) => cmd.type === "recipe/load")).toBe(true));
+    expect(paintSession.getState().sublayerOrders.get("head")).toEqual([0, 2, 1, 3, 4, 5]);
+    expect(paintSession.getState().sublayers.get("head")?.[1]?.visible).toBe(false);
+    expect(paintSession.getState().sublayers.get("head")?.[2]?.opacity).toBeCloseTo(0.6, 5);
+    expect(readPixel(paintSession.sublayer("head", 1), 4, 4)).toEqual([238, 51, 85, 255]);
+
+    const firstPreset = within(screen.getByTestId("export-resolution-presets")).getByRole("button", { name: "웹툰 컷 (800×1200)" });
+    firstPreset.focus();
+    fireEvent.keyDown(firstPreset, { key: "ArrowRight" });
+    expect((screen.getByLabelText("너비(px)") as HTMLInputElement).value).toBe("1024");
+
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "1600" } });
+    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "2400" } });
+    fireEvent.keyDown(screen.getByRole("heading", { name: "내보내기" }), { key: "Q", ctrlKey: true, shiftKey: true });
+    // 4096px PNG를 실제 인코딩하므로 캡처 완료 이후의 비동기 압축까지 기다린다.
+    await waitFor(() => expect(calls.some((c) => c.fileName === "character-mock-2730x4096-quad-sheet.png")).toBe(true), { timeout: 30000 });
+    expect(screen.getByRole("list", { name: "레시피 불러오기 안내" }).textContent).toContain("종횡비를 유지한 채 셀당 1365×2048px");
+
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "4000" } });
+    fireEvent.click(screen.getByRole("button", { name: "레이어 PSD 저장" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("export-failure-alert")));
+    fireEvent.keyDown(screen.getByTestId("export-failure-alert"), { key: "Escape" });
+    expect(screen.queryByTestId("export-failure-alert")).toBeNull();
+  }, 60000);
 });
-
-

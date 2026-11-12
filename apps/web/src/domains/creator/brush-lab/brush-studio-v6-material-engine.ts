@@ -2,7 +2,21 @@ import { BrushStudioV6MaterialPaletteCache } from "./brush-studio-v6-material-pa
 import { brushStudioV6MaterialExecutionForNode } from "./brush-studio-v6-license-profile";
 import { brushStudioV6Topology } from "./brush-studio-v6-topology-catalog";
 import { isBrushStudioV7AdvancedSurface, sampleBrushStudioV7SurfaceContact } from "./brush-studio-v7-surface-library";
-import { sampleBrushStudioV7BackrunLobes, sampleBrushStudioV7BristleBundle, sampleBrushStudioV7Sediment, sampleBrushStudioV7VectorField, shadeBrushStudioV7ReliefColor } from "./brush-studio-v7-advanced-physics";
+import {
+  computeBrushStudioV7ImpastoShading,
+  interpolateBrushStudioV7CentripetalSegment,
+  sampleBrushStudioV7BackrunLobes,
+  sampleBrushStudioV7BarrelTwistChisel,
+  sampleBrushStudioV7BristleBundle,
+  sampleBrushStudioV7CentrifugalBristleTurn,
+  sampleBrushStudioV7ChiselTwistDrag,
+  sampleBrushStudioV7DualMaskCarve,
+  sampleBrushStudioV7NibSplitPooling,
+  sampleBrushStudioV7Sediment,
+  sampleBrushStudioV7SubpixelEnvelopeTaper,
+  sampleBrushStudioV7VectorField,
+  shadeBrushStudioV7ReliefColor,
+} from "./brush-studio-v7-advanced-physics";
 import { createBrushStudioV6TopologyStroke } from "./brush-studio-v6-topology-engine";
 import { brushStudioV6TopologyActiveTuning, brushStudioV6TopologyStep, paintBrushStudioV6TopologyPrimitive } from "./brush-studio-v6-topology-material";
 import { BrushStudioV6LegacyPigmentMigrationRequiredError, requiresLegacyMixboxStrokeMigration } from "./brush-studio-v6-legacy-pigment";
@@ -16,12 +30,10 @@ import {
   mixBrushStudioV6PigmentColors,
 } from "./brush-studio-v6-pigment-provider";
 import type { BrushStudioV6InputPolicy, BrushStudioV6Program, BrushStudioV6Tuning } from "./brush-studio-v6-engine";
+import type { BrushStudioV7CurveControlSample } from "./brush-studio-v7-advanced-physics";
 
 /** Portable contact solver. It neither loads graph providers nor reads the canvas. */
-type BrushStudioV6MaterialProgramCore = Pick<
-  BrushStudioV6Program,
-  "seed" | "slots" | "tuning" | "input"
->;
+type BrushStudioV6MaterialProgramCore = Pick<BrushStudioV6Program, "seed" | "slots" | "tuning" | "input">;
 
 export type BrushStudioV6MaterialProgram = BrushStudioV6MaterialProgramCore & {
   /** Omitted means a newly authored in-memory program; persisted receipts always specify a version. */
@@ -37,12 +49,8 @@ export const BRUSH_STUDIO_V6_MATERIAL_ENGINE = Object.freeze({
   id: "cpu-contact-v2",
   backend: "cpu",
   pigments: Object.freeze([
-    "spectral-js-v3", "open-km-spectral-v1", "colormix-lab-v3",
-    "rgb-linear-v1",
-    "spectral-wgm-v1",
-    "toonstudio-latent-pigment-v1",
-    "ks-reference-wgm-v1",
-    "inkwash-density-wgm-v1",
+    "spectral-js-v3", "open-km-spectral-v1", "colormix-lab-v3", "rgb-linear-v1",
+    "spectral-wgm-v1", "toonstudio-latent-pigment-v1", "ks-reference-wgm-v1", "inkwash-density-wgm-v1",
   ]),
   contact: "distance-sampled grain, dual tips, persistent reservoirs, bristles, particles and patterns",
   wet: "deterministic porous deposition approximation; no canvas readback",
@@ -53,37 +61,26 @@ export function normalizeBrushStudioV6MaterialConfig(raw: unknown): BrushStudioV
   return normalizeStudioBrushMaterialProgramContract(raw) as unknown as BrushStudioV6MaterialConfig | null;
 }
 
-function usesEnhancedMaterialAdapters(program: BrushStudioV6MaterialProgram): boolean {
-  // V1 receipts predate the dual-tip and stroke-local smudge adapters. Replaying those receipts
-  // through the newer adapters would alter already-saved artwork. Omitted versions are live/new
-  // authoring programs; persisted V2 receipts explicitly opt into the enhanced provider behavior.
-  return program.version !== 1;
-}
+function usesEnhancedMaterialAdapters(program: BrushStudioV6MaterialProgram): boolean { return program.version !== 1; }
 
 function contactMode(program: BrushStudioV6MaterialProgram): "bristle" | "particle" | "grain" | "relief" | "wet" | "ink" {
   const physics = program.slots.physics;
   if (physics.includes("physics-bristle")) return "bristle";
   if (program.slots.deposition === "deposit-particles" || program.slots.carrier === "carrier-webgpu-particles") return "particle";
-  const wet = physics.includes("physics-inkwash") || program.slots.deposition === "deposit-wet";
+  const wet = physics.includes("physics-inkwash") || program.slots.deposition === "deposit-wet" || program.slots.deposition === "deposit-watercolor";
   if (program.slots.deposition === "deposit-dry" || program.slots.tip === "tip-grain-exemplar" && !wet) return "grain";
   if (physics.includes("physics-height")) return "relief";
   return wet ? "wet" : "ink";
 }
 
-const activeTuningKeysCache = new WeakMap<
-  BrushStudioV6MaterialProgram,
-  ReadonlySet<keyof BrushStudioV6Tuning>
->();
+const activeTuningKeysCache = new WeakMap<BrushStudioV6MaterialProgram, ReadonlySet<keyof BrushStudioV6Tuning>>();
 
 /** Workbench controls use the same branch decision as the contact solver. */
 export function brushStudioV6MaterialActiveTuningKeys(program: BrushStudioV6MaterialProgram): ReadonlySet<keyof BrushStudioV6Tuning> {
   const cached = activeTuningKeysCache.get(program);
   if (cached) return cached;
   const topologyKeys = brushStudioV6TopologyActiveTuning(program);
-  if (topologyKeys) {
-    activeTuningKeysCache.set(program, topologyKeys);
-    return topologyKeys;
-  }
+  if (topologyKeys) { activeTuningKeysCache.set(program, topologyKeys); return topologyKeys; }
   const result = new Set<keyof BrushStudioV6Tuning>(["size", "opacity", "flow", "spacing", "primaryColor"]);
   const mode = contactMode(program);
   const enhancedAdapters = usesEnhancedMaterialAdapters(program);
@@ -98,40 +95,27 @@ export function brushStudioV6MaterialActiveTuningKeys(program: BrushStudioV6Mate
     || mode === "wet" && (program.tuning.wetness > 0 || program.tuning.granulation > 0);
   if (program.slots.finish.includes("finish-neon") || program.slots.physics.includes("physics-thin-film")
     || (pattern ? !gridUsesOnlyPrimary || mode === "particle" : secondaryInBase)) result.add("secondaryColor");
-  if (pickupActive) {
-    result.add("pickup");
-    // At pickup 0 the solver never mixes the secondary pigment (bristle mix and
-    // smudge accumulation both scale with pickup), so the color is not an
-    // effective control until pickup is raised — mirror secondaryInBase.
-    if (program.tuning.pickup > 0) result.add("secondaryColor");
-  }
+  if (pickupActive) { result.add("pickup"); if (program.tuning.pickup > 0) result.add("secondaryColor"); }
   if (pattern) {
     result.add("patternJitter");
-    // Stitch rings use nib size/spacing; density and patternScale do not participate.
-    if (program.slots.pattern !== "pattern-stitch") {
-      result.add("patternDensity");
-      result.add("patternScale");
-    }
+    if (program.slots.pattern !== "pattern-stitch") { result.add("patternDensity"); result.add("patternScale"); }
   }
   if (program.slots.physics.includes("physics-thin-film")) for (const key of ["wetness", "gravity", "viscosity"] as const) result.add(key);
   if (program.slots.physics.includes("physics-backrun-capillary")) for (const key of ["wetness", "diffusion", "absorbency", "evaporation", "advection"] as const) result.add(key);
   if (program.slots.physics.includes("physics-pigment-sedimentation")) for (const key of ["granulation", "absorbency"] as const) result.add(key);
   if (program.slots.physics.includes("physics-bristle-split-merge")) for (const key of ["bristleStrands", "friction", "viscosity"] as const) result.add(key);
+  if (program.slots.physics.includes("physics-centrifugal-bristle-turn")) for (const key of ["bristleStrands", "friction", "viscosity", "gloss"] as const) result.add(key);
+  if (program.slots.physics.includes("physics-centripetal-adaptive-stamp")) result.add("stabilization");
+  if (program.slots.physics.includes("physics-barrel-twist-chisel")) result.add("friction");
+  if (program.slots.physics.includes("physics-dual-mask-boolean")) for (const key of ["surfaceTooth", "granulation"] as const) result.add(key);
   if (program.slots.finish.includes("finish-directional-relief")) for (const key of ["relief", "gloss"] as const) result.add(key);
-  if (pattern && mode !== "particle") {
-    activeTuningKeysCache.set(program, result);
-    return result;
-  }
+  if (pattern && mode !== "particle") { activeTuningKeysCache.set(program, result); return result; }
   const modeKeys: Readonly<Record<typeof mode, readonly (keyof BrushStudioV6Tuning)[]>> = {
     bristle: ["bristleStrands", "friction", "viscosity", "reservoir", ...(bristlePickup ? ["pickup"] as const : []), "relief", "surfaceTooth"],
     particle: ["particleCount", "patternJitter", ...(program.slots.physics.includes("physics-reaction") ? ["reactionRate"] as const : [])],
     grain: ["surfaceTooth", "granulation"],
     relief: ["reservoir", "plasticity", "relief"],
-    wet: [
-      "absorbency", "diffusion", "wetness", "granulation",
-      ...(program.slots.finish.includes("finish-edge-bloom") ? ["edgeDarkening"] as const : []),
-      ...(program.slots.physics.includes("physics-dry-contact") ? ["surfaceTooth"] as const : []),
-    ],
+    wet: ["absorbency", "diffusion", "wetness", "granulation", ...(program.slots.finish.includes("finish-edge-bloom") ? ["edgeDarkening"] as const : []), ...(program.slots.physics.includes("physics-dry-contact") ? ["surfaceTooth"] as const : [])],
     ink: program.slots.deposition === "deposit-marker" ? ["edgeDarkening"] : [],
   };
   for (const key of modeKeys[mode]) result.add(key);
@@ -139,8 +123,7 @@ export function brushStudioV6MaterialActiveTuningKeys(program: BrushStudioV6Mate
   return result;
 }
 export interface BrushStudioV6MaterialPoint {
-  readonly x: number;
-  readonly y: number;
+  readonly x: number; readonly y: number;
   /** Calibrated pressure, 0..1. Predicted samples must not be submitted here. */
   readonly pressure: number;
   /** Tilt magnitude normalized to 0..1; not degrees. */
@@ -151,21 +134,12 @@ export interface BrushStudioV6MaterialPoint {
 export interface BrushStudioV6MaterialMark {
   readonly kind: "ink" | "grain" | "bristle" | "wet" | "relief" | "particle" | "pattern";
   readonly shape: "ellipse" | "rect" | "ring" | "capsule";
-  readonly x: number;
-  readonly y: number;
-  readonly radiusX: number;
-  readonly radiusY: number;
-  readonly angle: number;
-  readonly opacity: number;
-  readonly color: string;
-  readonly secondaryMix: number;
-  readonly height: number;
+  readonly x: number; readonly y: number; readonly radiusX: number; readonly radiusY: number;
+  readonly angle: number; readonly opacity: number; readonly color: string;
+  readonly secondaryMix: number; readonly height: number;
 }
 export interface BrushStudioV6MaterialStatistics {
-  readonly pathLength: number;
-  readonly emittedMarks: number;
-  readonly resampledDabs: number;
-  readonly clippedDabs: number;
+  readonly pathLength: number; readonly emittedMarks: number; readonly resampledDabs: number; readonly clippedDabs: number;
 }
 export interface BrushStudioV6MaterialStroke {
   push(point: BrushStudioV6MaterialPoint): readonly BrushStudioV6MaterialMark[];
@@ -191,11 +165,7 @@ export function sampleBrushStudioV6PaperContact(surface: string, x: number, y: n
 
 export type BrushStudioV6MaterialNodeExecution = "native" | "adapter" | "unavailable";
 
-/** Exact product kernels and explicit, persisted compatibility adapters share one provider manifest. */
-export function brushStudioV6MaterialNodeExecution(
-  id: string,
-): BrushStudioV6MaterialNodeExecution {
-  // 명시 배정된 호환 이식(예: Klecks 위상 커널)은 위상 판정보다 먼저 본다 — 영수증의 호환 어댑터 기록과 같은 값을 낸다.
+export function brushStudioV6MaterialNodeExecution(id: string): BrushStudioV6MaterialNodeExecution {
   const execution = brushStudioV6MaterialExecutionForNode(id);
   if (execution === "compatibility-adapter") return "adapter";
   if (brushStudioV6Topology(id) || execution === "native") return "native";
@@ -215,30 +185,27 @@ export function mapBrushStudioV6Tilt(degrees: number, input: Pick<BrushStudioV6I
 }
 
 export function mixBrushStudioV6MaterialColors(
-  first: string,
-  second: string,
-  weight: number,
+  first: string, second: string, weight: number,
   provider: import("./brush-studio-v6-pigment-provider").BrushStudioV6PigmentProviderId | boolean = "spectral-wgm-v1",
 ): string {
-  const providerId = typeof provider === "boolean"
-    ? provider ? "spectral-wgm-v1" : "rgb-linear-v1"
-    : provider;
+  const providerId = typeof provider === "boolean" ? provider ? "spectral-wgm-v1" : "rgb-linear-v1" : provider;
   return mixBrushStudioV6PigmentColors(first, second, weight, providerId);
 }
 
-const materialPaletteCache = new BrushStudioV6MaterialPaletteCache(
-  createBrushStudioV6PigmentPalette,
-);
+const materialPaletteCache = new BrushStudioV6MaterialPaletteCache(createBrushStudioV6PigmentPalette);
 
 export interface BrushStudioV6ResolvedTipProfile {
   readonly enhancedAdapters: boolean; readonly pickup: number; readonly smudgeAdapter: boolean;
   readonly size: number; readonly mode: "bristle" | "particle" | "grain" | "relief" | "wet" | "ink";
   readonly spacing: number; readonly step: number; readonly seed: number; readonly physics: ReadonlySet<string>;
-  readonly backrun: boolean; readonly sedimentation: boolean; readonly splitMerge: boolean; readonly directionalRelief: boolean;
-  readonly bristle: boolean; readonly wet: boolean; readonly knife: boolean; readonly particles: boolean;
-  readonly chisel: boolean; readonly dualTip: boolean; readonly motifTip: boolean; readonly luminousDeposit: boolean;
-  readonly wetSheen: boolean; readonly chromaFringe: boolean; readonly patternId: string; readonly nativeVectorPattern: boolean;
-  readonly laneCount: number; readonly maxPatternMarks: number; readonly palette: readonly string[];
+  readonly backrun: boolean; readonly sedimentation: boolean; readonly splitMerge: boolean;
+  readonly centripetalAdaptive: boolean; readonly centrifugalBristle: boolean; readonly subpixelSdfAa: boolean;
+  readonly dualMaskBoolean: boolean; readonly barrelTwistChisel: boolean; readonly nibSplitPooling: boolean;
+  readonly directionalRelief: boolean; readonly bristle: boolean; readonly wet: boolean; readonly knife: boolean;
+  readonly particles: boolean; readonly chisel: boolean; readonly dualTip: boolean; readonly motifTip: boolean;
+  readonly luminousDeposit: boolean; readonly wetSheen: boolean; readonly chromaFringe: boolean;
+  readonly patternId: string; readonly nativeVectorPattern: boolean; readonly laneCount: number;
+  readonly maxPatternMarks: number; readonly palette: readonly string[];
   readonly roundness: number; readonly angleRad: number; readonly hardness: number;
 }
 
@@ -260,6 +227,12 @@ export function resolveTipProfile(program: BrushStudioV6MaterialProgram): BrushS
   const backrun = enhancedAdapters && physics.has("physics-backrun-capillary");
   const sedimentation = enhancedAdapters && physics.has("physics-pigment-sedimentation");
   const splitMerge = enhancedAdapters && physics.has("physics-bristle-split-merge");
+  const centripetalAdaptive = enhancedAdapters && physics.has("physics-centripetal-adaptive-stamp");
+  const centrifugalBristle = enhancedAdapters && physics.has("physics-centrifugal-bristle-turn");
+  const dualMaskBoolean = enhancedAdapters && physics.has("physics-dual-mask-boolean");
+  const barrelTwistChisel = enhancedAdapters && physics.has("physics-barrel-twist-chisel");
+  const nibSplitPooling = enhancedAdapters && physics.has("physics-nib-split-pooling");
+  const subpixelSdfAa = enhancedAdapters && program.slots.finish.includes("finish-subpixel-sdf-aa");
   const directionalRelief = enhancedAdapters && program.slots.finish.includes("finish-directional-relief");
   const bristle = mode === "bristle", wet = mode === "wet", knife = mode === "relief", particles = mode === "particle";
   const chisel = program.slots.tip === "tip-chisel-sdf";
@@ -277,8 +250,9 @@ export function resolveTipProfile(program: BrushStudioV6MaterialProgram): BrushS
   const palette = materialPaletteCache.get(t.primaryColor, t.secondaryColor, pigmentProvider.id);
   const profile: BrushStudioV6ResolvedTipProfile = Object.freeze({
     enhancedAdapters, pickup, smudgeAdapter, size, mode, spacing, step, seed, physics,
-    backrun, sedimentation, splitMerge, directionalRelief, bristle, wet, knife, particles,
-    chisel, dualTip, motifTip, luminousDeposit, wetSheen, chromaFringe, patternId,
+    backrun, sedimentation, splitMerge, centripetalAdaptive, centrifugalBristle, subpixelSdfAa,
+    dualMaskBoolean, barrelTwistChisel, nibSplitPooling, directionalRelief,
+    bristle, wet, knife, particles, chisel, dualTip, motifTip, luminousDeposit, wetSheen, chromaFringe, patternId,
     nativeVectorPattern, laneCount, maxPatternMarks, palette,
     roundness: chisel ? 0.28 : 1, angleRad: chisel || knife ? Math.PI / 4 : 0, hardness: program.slots.deposition === "deposit-marker" ? 0.65 : 1,
   });
@@ -295,24 +269,28 @@ export function createBrushStudioV6MaterialStroke(
   const t = program.tuning;
   const {
     pickup, smudgeAdapter, size, mode, step, seed, physics, backrun, sedimentation, splitMerge,
-    directionalRelief, bristle, wet, knife, particles, chisel, dualTip, motifTip,
-    luminousDeposit, wetSheen, chromaFringe, patternId, nativeVectorPattern, laneCount, maxPatternMarks, palette,
+    centripetalAdaptive, centrifugalBristle, subpixelSdfAa, dualMaskBoolean, barrelTwistChisel, nibSplitPooling,
+    directionalRelief, bristle, wet, knife, particles,
+    chisel, dualTip, motifTip, luminousDeposit, wetSheen, chromaFringe, patternId, nativeVectorPattern, laneCount, maxPatternMarks, palette,
   } = resolveTipProfile(program);
   const markBudget = Math.round(bounded(options.maxMarksPerPush ?? 8192, 64, 32768));
   const topology = createBrushStudioV6TopologyStroke(program, step);
   const advancedWetMarks = (backrun ? 4 : 0) + (sedimentation ? 5 : 0);
   const directionalReliefMarks = directionalRelief && mode === "relief" ? 5 : 0;
   const bristleMarks = bristle ? laneCount * (splitMerge ? 2 : 1) : 0;
-  const baseMarksPerDab = topology ? topology.maxPrimitivesPerDab * 3 : (patternId !== "pattern-none" ? maxPatternMarks + (particles ? 36 : 0) : bristle ? bristleMarks : mode === "grain" ? 36 : particles ? 36 : 6) + 4 + advancedWetMarks + directionalReliefMarks;
+  const aaMarks = (subpixelSdfAa ? 2 : 0) + (nibSplitPooling ? 2 : 0);
+  const baseMarksPerDab = topology ? topology.maxPrimitivesPerDab * 3 : (patternId !== "pattern-none" ? maxPatternMarks + (particles ? 36 : 0) : bristle ? bristleMarks : mode === "grain" ? 36 : particles ? 36 : 6) + 4 + advancedWetMarks + directionalReliefMarks + aaMarks;
   const marksPerDab = baseMarksPerDab * (1 + (dualTip ? 1 : 0) + (motifTip ? 1 : 0));
   const laneX = new Float64Array(topology ? 0 : laneCount), laneY = new Float64Array(topology ? 0 : laneCount);
   const reservoir = new Float64Array(topology ? 0 : laneCount), wetEdges = new Float64Array(topology ? 0 : 4);
   const strokeMarks: BrushStudioV6MaterialMark[] = [];
-  let previous: BrushStudioV6MaterialPoint | null = null;
+  let previous: BrushStudioV6MaterialPoint | null = null, prevHistory: BrushStudioV7CurveControlSample | null = null;
+  let lastDirectionRad: number | null = null;
+  let lastChiselTwistDeg: number | null = null;
   let remaining = step, pathLength = 0, emittedMarks = 0, dabIndex = 0, clippedDabs = 0;
   let initializedBristles = false, initializedWetEdges = false, smudgeMix = 0;
 
-  function deposit(point: BrushStudioV6MaterialPoint, direction: number, marks: BrushStudioV6MaterialMark[], densityMultiplier = 1, directional = true): void {
+  function deposit(point: BrushStudioV6MaterialPoint, direction: number, marks: BrushStudioV6MaterialMark[], densityMultiplier = 1, directional = true, segmentDistPx = step): void {
     const tipProfile = resolveTipProfile(program);
     const index = dabIndex++;
     const pressure = unit(point.pressure);
@@ -321,59 +299,50 @@ export function createBrushStudioV6MaterialStroke(
     const angle = chisel || knife ? (finite(point.twist ?? 0) * Math.PI / 180 + tipProfile.angleRad) : direction;
     const widthPressure = program.slots.carrier === "carrier-perfect-outline" ? pressure * pressure : pressure;
     const radius = size * (0.035 + widthPressure * 0.465) * (1 + tilt * 0.7);
-    // Optical density per unit distance prevents darker high-Hz input streams.
     const alpha = unit(t.opacity) * -Math.expm1(Math.log1p(-Math.min(0.999, unit(t.flow))) * step * densityMultiplier / Math.max(1, radius * 1.4));
     const random = (lane: number, salt = 0) => noise(index, lane, seed ^ salt);
-    const pushMark = (kind: BrushStudioV6MaterialMark["kind"], x: number, y: number,
-      rx: number, ry: number, rotation: number, opacity: number, secondaryMix: number,
-      height: number, shape: BrushStudioV6MaterialMark["shape"]): void => {
+    let angularDeltaRad = 0;
+    if (directional && lastDirectionRad !== null) {
+      let diff = direction - lastDirectionRad;
+      while (diff > Math.PI) diff -= TAU;
+      while (diff < -Math.PI) diff += TAU;
+      angularDeltaRad = diff;
+    }
+    if (directional) lastDirectionRad = direction;
+
+    const pushMark = (kind: BrushStudioV6MaterialMark["kind"], x: number, y: number, rx: number, ry: number,
+      rotation: number, opacity: number, secondaryMix: number, height: number, shape: BrushStudioV6MaterialMark["shape"]): void => {
       if (marks.length >= markBudget || opacity < 0.00001) return;
       const resolvedMix = unit(secondaryMix);
       const baseColor = palette[Math.round(resolvedMix * 32)]!;
       const resolvedHeight = unit(height);
-      const color = directionalRelief && resolvedHeight > 0
-        ? shadeBrushStudioV7ReliefColor(baseColor, rotation, resolvedHeight, t.gloss)
-        : baseColor;
-      marks.push({ kind, shape, x, y, radiusX: Math.max(0.12, rx), radiusY: Math.max(0.12, ry),
-        angle: rotation, opacity: unit(opacity), color, secondaryMix: resolvedMix, height: resolvedHeight });
+      const color = centrifugalBristle && resolvedHeight > 0
+        ? computeBrushStudioV7ImpastoShading({ hex: baseColor, strokeAngleRad: rotation, height: resolvedHeight, gloss: t.gloss, bristleFurrow: t.friction }).shadedHex
+        : directionalRelief && resolvedHeight > 0
+          ? shadeBrushStudioV7ReliefColor(baseColor, rotation, resolvedHeight, t.gloss)
+          : baseColor;
+      marks.push({ kind, shape, x, y, radiusX: Math.max(0.12, rx), radiusY: Math.max(0.12, ry), angle: rotation, opacity: unit(opacity), color, secondaryMix: resolvedMix, height: resolvedHeight });
     };
-    const emit = (kind: BrushStudioV6MaterialMark["kind"], x: number, y: number, rx: number,
-      ry: number, rotation: number, opacity: number, mix = 0, height = 0,
-      shape: BrushStudioV6MaterialMark["shape"] = "ellipse"): void => {
+    const emit = (kind: BrushStudioV6MaterialMark["kind"], x: number, y: number, rx: number, ry: number,
+      rotation: number, opacity: number, mix = 0, height = 0, shape: BrushStudioV6MaterialMark["shape"] = "ellipse"): void => {
       const sourceMix = unit(mix);
-      const resolvedMix = smudgeAdapter
-        ? unit(sourceMix * (1 - pickup) + smudgeMix * pickup)
-        : sourceMix;
-      pushMark(kind, x, y, rx, ry, rotation, opacity, resolvedMix, height, shape);
+      const resolvedMix = smudgeAdapter ? unit(sourceMix * (1 - pickup) + smudgeMix * pickup) : sourceMix;
+      const carve = dualMaskBoolean ? sampleBrushStudioV7DualMaskCarve({ x, y, seed, surfaceTooth01: t.surfaceTooth, granulation01: t.granulation }) : null;
+      pushMark(kind, x, y, rx, carve ? ry * carve.minorRadiusScale : ry, rotation, carve ? opacity * carve.opacityScale : opacity, resolvedMix, height, shape);
       if (smudgeAdapter) {
         const gathered = unit(sourceMix + random(37, 0x534d5544) * 0.28);
         smudgeMix = unit(smudgeMix * (0.86 + (1 - pickup) * 0.1) + gathered * pickup * 0.08);
       }
       if (motifTip && kind !== "pattern") {
-        pushMark(
-          "pattern",
-          x,
-          y,
-          rx * 0.55,
-          Math.max(0.12, ry * 0.16),
-          rotation + Math.PI / 4,
-          opacity * 0.72,
-          unit(resolvedMix * 0.55 + 0.2),
-          height * 0.6,
-          "rect",
-        );
+        pushMark("pattern", x, y, rx * 0.55, Math.max(0.12, ry * 0.16), rotation + Math.PI / 4, opacity * 0.72, unit(resolvedMix * 0.55 + 0.2), height * 0.6, "rect");
       }
       if (!dualTip || kind === "pattern") return;
       const offset = Math.max(0.2, Math.min(Math.abs(rx), Math.abs(ry)) * 0.42);
-      const secondaryRotation = rotation + 0.28;
-      pushMark(kind, x - Math.sin(rotation) * offset, y + Math.cos(rotation) * offset,
-        rx * 0.82, ry * 0.58, secondaryRotation, opacity * 0.62,
-        unit(resolvedMix * 0.72 + 0.18), height * 0.75, shape);
+      pushMark(kind, x - Math.sin(rotation) * offset, y + Math.cos(rotation) * offset, rx * 0.82, ry * 0.58, rotation + 0.28, opacity * 0.62, unit(resolvedMix * 0.72 + 0.18), height * 0.75, shape);
     };
 
     if (topology) {
-      topology.deposit({ x: point.x, y: point.y, radius, pressure, direction, index, directional,
-        discontinuity: densityMultiplier > 1 }, (mark) => {
+      topology.deposit({ x: point.x, y: point.y, radius, pressure, direction, index, directional, discontinuity: densityMultiplier > 1 }, (mark) => {
         const paper = sampleBrushStudioV6PaperContact(program.slots.surface, mark.x, mark.y, seed);
         paintBrushStudioV6TopologyPrimitive(program, mark, pressure, paper, finite(point.twist ?? 0), emit);
       });
@@ -403,27 +372,21 @@ export function createBrushStudioV6MaterialStroke(
           const length = scale * (0.32 + t.patternDensity * 0.68) * (textile ? 1.2 : 0.9);
           const thickness = Math.max(0.16, scale * (0.018 + t.patternDensity * 0.055));
           const height = textile ? unit(t.relief) * (0.28 + (lane % 3) * 0.1) : 0;
-          emit("pattern", probeX, probeY, length, thickness, turn, alpha * (0.8 + t.patternDensity * 0.45),
-            lane / Math.max(1, count - 1) * 0.42, height, "capsule");
+          emit("pattern", probeX, probeY, length, thickness, turn, alpha * (0.8 + t.patternDensity * 0.45), lane / Math.max(1, count - 1) * 0.42, height, "capsule");
           if (textile && lane % 2 === 0) {
             const crossTurn = turn + Math.PI / 2 + (patternId === "pattern-textile-twill" ? 0.22 : 0);
-            emit("pattern", probeX, probeY, length * 0.56, thickness * 0.82, crossTurn,
-              alpha * (0.48 + t.patternDensity * 0.32), 0.52, height * 0.72, "capsule");
+            emit("pattern", probeX, probeY, length * 0.56, thickness * 0.82, crossTurn, alpha * (0.48 + t.patternDensity * 0.32), 0.52, height * 0.72, "capsule");
           }
         }
       } else if (["pattern-dot-tone", "pattern-cross-hatch", "pattern-weave", "pattern-brick"].includes(patternId)) {
         const cells = Math.min(6, Math.ceil(radius / scale));
-        const originX = Math.floor(point.x / scale);
-        const originY = Math.floor(point.y / scale);
+        const originX = Math.floor(point.x / scale), originY = Math.floor(point.y / scale);
         for (let row = -cells; row <= cells; row++) for (let column = -cells; column <= cells; column++) {
-          const cellX = originX + column;
-          const cellY = originY + row;
-          // Stable document-cell offsets preserve the same pattern through replay and event batching.
+          const cellX = originX + column, cellY = originY + row;
           const x = (cellX + 0.5 + (noise(cellX, cellY, seed + 101) - 0.5) * t.patternJitter * 0.7) * scale;
           const y = (cellY + 0.5 + (noise(cellX, cellY, seed + 103) - 0.5) * t.patternJitter * 0.7) * scale;
           if (Math.hypot(x - point.x, y - point.y) > radius) continue;
-          const dot = patternId === "pattern-dot-tone";
-          const lineRadius = scale * (0.01 + t.patternDensity * 0.12);
+          const dot = patternId === "pattern-dot-tone", lineRadius = scale * (0.01 + t.patternDensity * 0.12);
           emit("pattern", x, y, dot ? scale * (0.06 + t.patternDensity * 0.25) : scale * 0.6, dot ? scale * (0.06 + t.patternDensity * 0.25) : lineRadius, patternId === "pattern-brick" ? 0 : Math.PI / 4, alpha, 0, 0, dot ? "ellipse" : "rect");
           if (patternId === "pattern-weave") emit("pattern", x, y, scale * 0.6, lineRadius, -Math.PI / 4, alpha, 0.3, 0, "rect");
         }
@@ -441,38 +404,27 @@ export function createBrushStudioV6MaterialStroke(
     }
 
     if (bristle) {
-      const normalX = -Math.sin(direction);
-      const normalY = Math.cos(direction);
+      const normalX = -Math.sin(direction), normalY = Math.cos(direction);
       const compliance = Math.max(0.2, size * (0.015 + t.viscosity * 0.11 + t.friction * 0.07));
       for (let lane = 0; lane < laneCount; lane++) {
         const lanePosition = (lane / (laneCount - 1) - 0.5) * 2;
         const initialLoading = (0.25 + t.reservoir * 0.75) * (0.65 + noise(lane, 0, seed) * 0.35);
         if (!directional) {
-          // A stationary nib leaves a seeded, round contact patch. Its unknown heading
-          // must not initialize the strand positions later connected by the first movement.
-          const turn = noise(lane, 79, seed) * TAU;
-          const distance = radius * Math.sqrt(noise(lane, 83, seed)) * 0.8;
-          const thickness = Math.max(0.18, size / laneCount * (0.35 + pressure * 0.45 + t.viscosity * 0.2))
-            * (1 + initialLoading * unit(t.relief) * 0.6);
-          emit("bristle", point.x + Math.cos(turn) * distance, point.y + Math.sin(turn) * distance,
-            thickness, thickness, 0, alpha * pressure * initialLoading * 5,
-            noise(lane, 19, seed) * pickup, initialLoading * t.relief);
+          const turn = noise(lane, 79, seed) * TAU, distance = radius * Math.sqrt(noise(lane, 83, seed)) * 0.8;
+          const thickness = Math.max(0.18, size / laneCount * (0.35 + pressure * 0.45 + t.viscosity * 0.2)) * (1 + initialLoading * unit(t.relief) * 0.6);
+          emit("bristle", point.x + Math.cos(turn) * distance, point.y + Math.sin(turn) * distance, thickness, thickness, 0, alpha * pressure * initialLoading * 5, noise(lane, 19, seed) * pickup, initialLoading * t.relief);
           continue;
         }
-        const bundle = splitMerge ? sampleBrushStudioV7BristleBundle({
-          lane, laneCount, pathLength: index * step, size, seed, pressure, friction: t.friction, viscosity: t.viscosity,
-        }) : null;
+        const bundle = splitMerge ? sampleBrushStudioV7BristleBundle({ lane, laneCount, pathLength: index * step, size, seed, pressure, friction: t.friction, viscosity: t.viscosity }) : null;
+        const fan = centrifugalBristle ? sampleBrushStudioV7CentrifugalBristleTurn({ lanePositionSigned: lanePosition, radius, angularDeltaRad, segmentDistancePx: segmentDistPx, tilt01: tilt, stiffness01: 1 - unit(t.viscosity) * 0.5 }) : null;
         const strandSpacing = (noise(lane, 61, seed) - 0.5) * radius / laneCount;
-        const splay = lanePosition * radius * (0.6 + pressure * 0.55) * (bundle?.splayGain ?? 1) + strandSpacing;
-        // Real bundles have unequal strand lengths and stiffness. Fixed per-lane
-        // offsets stagger contact joints without frame/event dependent jitter.
+        const splay = lanePosition * radius * (0.6 + pressure * 0.55) * (bundle?.splayGain ?? 1) + strandSpacing + (fan?.normalOffsetGainPx ?? 0);
         const strandLength = (noise(lane, 67, seed) - 0.5) * size * 0.22;
         const response = 1 - Math.exp(-step / (compliance * (0.6 + noise(lane, 71, seed) * 0.85)));
         const targetX = point.x + normalX * splay + Math.cos(direction) * strandLength;
         const targetY = point.y + normalY * splay + Math.sin(direction) * strandLength;
         if (!initializedBristles) { laneX[lane] = targetX; laneY[lane] = targetY; reservoir[lane] = initialLoading; }
-        const previousX = laneX[lane]!;
-        const previousY = laneY[lane]!;
+        const previousX = laneX[lane]!, previousY = laneY[lane]!;
         laneX[lane] = previousX + (targetX - previousX) * response;
         laneY[lane] = previousY + (targetY - previousY) * response;
         const loading = reservoir[lane]!;
@@ -481,25 +433,17 @@ export function createBrushStudioV6MaterialStroke(
         reservoir[lane] = unit(loading - loss + refill);
         const paper = sampleBrushStudioV6PaperContact(program.slots.surface, laneX[lane]!, laneY[lane]!, seed);
         const contact = Math.max(0, pressure - Math.abs(lanePosition) * 0.18 - paper * t.surfaceTooth * 0.12);
-        // Loaded paint forms a wider raised ridge. Encode that relief in the actual
-        // shared contact geometry, so both Canvas and SVG show the same contribution.
         const thickness = Math.max(0.18, size / laneCount * (0.35 + contact * 0.45 + t.viscosity * 0.2) * (0.7 + noise(lane, 7, seed) * 0.6))
-          * (1 + loading * unit(t.relief) * 0.6) * (bundle?.widthGain ?? 1);
-        const travelX = laneX[lane]! - previousX;
-        const travelY = laneY[lane]! - previousY;
+          * (1 + loading * unit(t.relief) * 0.6) * (bundle?.widthGain ?? 1) * (fan?.tiltWidthScale ?? 1);
+        const travelX = laneX[lane]! - previousX, travelY = laneY[lane]! - previousY;
         const travel = Math.hypot(travelX, travelY);
         const travelAngle = travel > 0.0001 ? Math.atan2(travelY, travelX) : direction;
-        const centerX = (previousX + laneX[lane]!) * 0.5;
-        const centerY = (previousY + laneY[lane]!) * 0.5;
-        emit("bristle", centerX, centerY, travel * 0.5 + thickness, thickness, travelAngle,
-          alpha * contact * loading * 5, noise(lane, 19, seed) * pickup, loading * t.relief, "capsule");
+        const centerX = (previousX + laneX[lane]!) * 0.5, centerY = (previousY + laneY[lane]!) * 0.5;
+        emit("bristle", centerX, centerY, travel * 0.5 + thickness, thickness, travelAngle, alpha * contact * loading * 5, noise(lane, 19, seed) * pickup, loading * t.relief, "capsule");
         if (bundle && bundle.branchOpacity > 0.08 && lane % 3 === 0) {
           const branchAngle = travelAngle + (noise(lane, index, seed ^ 0x4252414e) - 0.5) * 0.22 * bundle.split;
           const branchThickness = thickness * (0.5 + bundle.split * 0.28);
-          emit("bristle", centerX + normalX * bundle.branchOffset, centerY + normalY * bundle.branchOffset,
-            travel * 0.42 + branchThickness, branchThickness, branchAngle,
-            alpha * contact * loading * bundle.branchOpacity * 3.2,
-            unit(noise(lane, 29, seed) * pickup + bundle.split * 0.12), loading * t.relief * 0.72, "capsule");
+          emit("bristle", centerX + normalX * bundle.branchOffset, centerY + normalY * bundle.branchOffset, travel * 0.42 + branchThickness, branchThickness, branchAngle, alpha * contact * loading * bundle.branchOpacity * 3.2, unit(noise(lane, 29, seed) * pickup + bundle.split * 0.12), loading * t.relief * 0.72, "capsule");
         }
       }
       if (directional) initializedBristles = true;
@@ -507,28 +451,19 @@ export function createBrushStudioV6MaterialStroke(
     }
 
     if (mode === "grain") {
-      const count = Math.round(12 + t.surfaceTooth * 24);
-      const cellSize = Math.max(0.7, 2.8 - t.granulation * 1.9);
+      const count = Math.round(12 + t.surfaceTooth * 24), cellSize = Math.max(0.7, 2.8 - t.granulation * 1.9);
+      const tiltSpreadScale = subpixelSdfAa ? 1 + tilt * 1.15 : 1;
       for (let lane = 0; lane < count; lane++) {
-        const turn = random(lane) * TAU;
-        const distance = Math.sqrt(random(lane, 43)) * radius;
-        const x = point.x + Math.cos(turn) * distance;
-        const y = point.y + Math.sin(turn) * distance * (1 - tilt * 0.55);
-        // The same paper position always has the same tooth, independent of dab seed.
-        const surfaceContact = sampleBrushStudioV7SurfaceContact(program.slots.surface,
-          Math.floor(x / cellSize) * cellSize, Math.floor(y / cellSize) * cellSize, seed);
-        const tooth = surfaceContact.tooth;
-        const contact = unit((pressure - tooth * t.surfaceTooth * 0.85) * 2);
+        const turn = random(lane) * TAU, distance = Math.sqrt(random(lane, 43)) * radius * tiltSpreadScale;
+        const x = point.x + Math.cos(turn) * distance, y = point.y + Math.sin(turn) * distance * (1 - tilt * 0.55);
+        const surfaceContact = sampleBrushStudioV7SurfaceContact(program.slots.surface, Math.floor(x / cellSize) * cellSize, Math.floor(y / cellSize) * cellSize, seed);
+        const contact = unit((pressure - surfaceContact.tooth * t.surfaceTooth * 0.85) * 2);
         const charcoal = program.slots.pickup !== "pickup-none";
         const advancedSurface = isBrushStudioV7AdvancedSurface(program.slots.surface);
-        const grainAngle = advancedSurface
-          ? angle + Math.sin(surfaceContact.fiberAngle - angle) * surfaceContact.anisotropy * 0.72
-          : angle;
+        const grainAngle = advancedSurface ? angle + Math.sin(surfaceContact.fiberAngle - angle) * surfaceContact.anisotropy * 0.72 : angle;
         const major = advancedSurface ? 1 + surfaceContact.anisotropy * 0.9 : 1;
         const minor = advancedSurface ? 1 - surfaceContact.anisotropy * 0.42 : 1;
-        emit("grain", x, y, cellSize * (charcoal ? 1.4 : 0.7) * major,
-          cellSize * (charcoal ? 0.65 : 0.32) * minor, grainAngle,
-          alpha * contact * (charcoal ? 1.8 : 1.2), 0);
+        emit("grain", x, y, cellSize * (charcoal ? 1.4 : 0.7) * major, cellSize * (charcoal ? 0.65 : 0.32) * minor * (subpixelSdfAa ? 1 + tilt * 0.4 : 1), grainAngle, alpha * contact * (charcoal ? 1.8 : 1.2), 0);
       }
       return;
     }
@@ -536,10 +471,8 @@ export function createBrushStudioV6MaterialStroke(
     if (particles) {
       const count = Math.round(bounded(t.particleCount / 90, 1, 36));
       for (let lane = 0; lane < count; lane++) {
-        const turn = random(lane) * TAU;
-        const distance = radius * Math.sqrt(random(lane, 3)) * (1 + t.patternJitter * 2);
-        const reaction = physics.has("physics-reaction");
-        const gravity = physics.has("physics-thin-film") ? t.gravity * distance * 0.3 : 0;
+        const turn = random(lane) * TAU, distance = radius * Math.sqrt(random(lane, 3)) * (1 + t.patternJitter * 2);
+        const reaction = physics.has("physics-reaction"), gravity = physics.has("physics-thin-film") ? t.gravity * distance * 0.3 : 0;
         emit("particle", point.x + Math.cos(turn) * distance, point.y + Math.sin(turn) * distance + gravity, reaction ? radius * (0.15 + t.reactionRate * 0.45) : 0.3 + radius * random(lane, 9) * 0.12, reaction ? 0.3 : 0.3 + radius * random(lane, 9) * 0.12, turn, alpha * (0.5 + random(lane, 11)), random(lane, 17), 0, reaction ? "rect" : "ellipse");
       }
       return;
@@ -549,29 +482,20 @@ export function createBrushStudioV6MaterialStroke(
       const load = Math.exp(-index * step * (1 - t.reservoir) / (size * 35));
       const advancedSurface = isBrushStudioV7AdvancedSurface(program.slots.surface);
       const surfaceContact = sampleBrushStudioV7SurfaceContact(program.slots.surface, point.x, point.y, seed);
-      const ridgeAngle = advancedSurface
-        ? angle + Math.sin(surfaceContact.fiberAngle - angle) * surfaceContact.anisotropy * 0.34
-        : angle;
+      const ridgeAngle = advancedSurface ? angle + Math.sin(surfaceContact.fiberAngle - angle) * surfaceContact.anisotropy * 0.34 : angle;
       const drag = advancedSurface ? 0.78 + (1 - surfaceContact.tooth) * 0.32 : 1;
       const reliefGain = advancedSurface ? 0.82 + surfaceContact.tooth * 0.36 : 1;
-      emit("relief", point.x, point.y, radius * drag, radius * (0.16 + t.plasticity * 0.24),
-        ridgeAngle, alpha * load * reliefGain, 0, t.relief * load * reliefGain, "rect");
+      emit("relief", point.x, point.y, radius * drag, radius * (0.16 + t.plasticity * 0.24), ridgeAngle, alpha * load * reliefGain, 0, t.relief * load * reliefGain, "rect");
       for (let lane = -2; lane <= 2; lane++) {
         const offset = lane * radius * 0.13;
-        emit("relief", point.x - Math.sin(ridgeAngle) * offset, point.y + Math.cos(ridgeAngle) * offset,
-          radius * 0.9 * drag, Math.max(0.2, radius * 0.025), ridgeAngle,
-          alpha * t.relief * (lane % 2 ? 0.8 : 0.3) * reliefGain, lane % 2 ? 0.4 : 0.1, t.relief, "rect");
+        emit("relief", point.x - Math.sin(ridgeAngle) * offset, point.y + Math.cos(ridgeAngle) * offset, radius * 0.9 * drag, Math.max(0.2, radius * 0.025), ridgeAngle, alpha * t.relief * (lane % 2 ? 0.8 : 0.3) * reliefGain, lane % 2 ? 0.4 : 0.1, t.relief, "rect");
       }
       if (directionalRelief) {
         for (let lane = -2; lane <= 2; lane++) {
-          const phase = noise(index, lane + 5, seed ^ 0x52414b45) - 0.5;
-          const offset = (lane + phase * 0.42) * radius * 0.105;
+          const phase = noise(index, lane + 5, seed ^ 0x52414b45) - 0.5, offset = (lane + phase * 0.42) * radius * 0.105;
           const ridgeTurn = ridgeAngle + phase * 0.16 + Math.sin(index * 0.37 + lane) * 0.035;
           const ridgeHeight = unit(t.relief) * (0.48 + Math.abs(lane) * 0.08 + noise(index, lane + 11, seed) * 0.24);
-          emit("relief", point.x - Math.sin(ridgeAngle) * offset, point.y + Math.cos(ridgeAngle) * offset,
-            radius * (0.62 + noise(index, lane + 19, seed) * 0.24) * drag,
-            Math.max(0.16, radius * (0.012 + unit(t.gloss) * 0.018)), ridgeTurn,
-            alpha * (0.18 + unit(t.gloss) * 0.34) * reliefGain, lane % 2 === 0 ? 0.08 : 0.5, ridgeHeight, "capsule");
+          emit("relief", point.x - Math.sin(ridgeAngle) * offset, point.y + Math.cos(ridgeAngle) * offset, radius * (0.62 + noise(index, lane + 19, seed) * 0.24) * drag, Math.max(0.16, radius * (0.012 + unit(t.gloss) * 0.018)), ridgeTurn, alpha * (0.18 + unit(t.gloss) * 0.34) * reliefGain, lane % 2 === 0 ? 0.08 : 0.5, ridgeHeight, "capsule");
         }
       }
       return;
@@ -579,74 +503,45 @@ export function createBrushStudioV6MaterialStroke(
 
     if (wet) {
       const advancedSurface = isBrushStudioV7AdvancedSurface(program.slots.surface);
-      const surfaceContact = sampleBrushStudioV7SurfaceContact(program.slots.surface,
-        Math.floor(point.x / 2) * 2, Math.floor(point.y / 2) * 2, seed);
+      const surfaceContact = sampleBrushStudioV7SurfaceContact(program.slots.surface, Math.floor(point.x / 2) * 2, Math.floor(point.y / 2) * 2, seed);
       const absorbency = unit(t.absorbency);
-      const effectiveAbsorbency = advancedSurface
-        ? unit(absorbency * (0.58 + surfaceContact.localAbsorbency * 0.72))
-        : absorbency;
+      const effectiveAbsorbency = advancedSurface ? unit(absorbency * (0.58 + surfaceContact.localAbsorbency * 0.72)) : absorbency;
       const spread = 1 + t.diffusion * t.wetness * (0.3 + effectiveAbsorbency * 0.8);
       if (advancedSurface) {
         const capillary = surfaceContact.anisotropy * t.diffusion * t.wetness * 0.34;
-        emit("wet", point.x, point.y, radius * spread * (1 + capillary),
-          radius * spread * (1 - capillary * 0.58), surfaceContact.fiberAngle,
-          alpha * t.wetness * 0.24, 0.25);
+        emit("wet", point.x, point.y, radius * spread * (1 + capillary), radius * spread * (1 - capillary * 0.58), surfaceContact.fiberAngle, alpha * t.wetness * 0.24, 0.25);
       } else {
         emit("wet", point.x, point.y, radius * spread, radius * spread, angle, alpha * t.wetness * 0.24, 0.25);
       }
       const tooth = surfaceContact.tooth;
       const resist = physics.has("physics-dry-contact") ? unit((tooth - t.surfaceTooth * 0.5) * 3) : 1;
-      const bodyAngle = advancedSurface
-        ? angle + Math.sin(surfaceContact.fiberAngle - angle) * surfaceContact.anisotropy * 0.48
-        : angle;
+      const bodyAngle = advancedSurface ? angle + Math.sin(surfaceContact.fiberAngle - angle) * surfaceContact.anisotropy * 0.48 : angle;
       const bodyAspect = chisel ? 0.38 : advancedSurface ? 1 - surfaceContact.anisotropy * 0.16 : 1;
-      emit("wet", point.x, point.y, radius, radius * bodyAspect, bodyAngle,
-        alpha * (0.55 + tooth * t.granulation * 0.5) * resist, t.granulation * tooth * 0.35);
+      emit("wet", point.x, point.y, radius, radius * bodyAspect, bodyAngle, alpha * (0.55 + tooth * t.granulation * 0.5) * resist, t.granulation * tooth * 0.35);
       if (backrun && directional) {
-        const lobes = sampleBrushStudioV7BackrunLobes({
-          x: point.x, y: point.y, radius, direction, index, seed, wetness: t.wetness, diffusion: t.diffusion,
-          absorbency: effectiveAbsorbency, evaporation: t.evaporation, advection: t.advection,
-          fiberAngle: surfaceContact.fiberAngle, anisotropy: surfaceContact.anisotropy, tooth,
-        });
-        lobes.forEach((lobe, lobeIndex) => emit("wet", lobe.x, lobe.y, lobe.radiusX, lobe.radiusY,
-          lobe.angle, alpha * lobe.opacity * 3.4, lobe.mix, 0, lobeIndex % 2 === 0 ? "ring" : "ellipse"));
+        const lobes = sampleBrushStudioV7BackrunLobes({ x: point.x, y: point.y, radius, direction, index, seed, wetness: t.wetness, diffusion: t.diffusion, absorbency: effectiveAbsorbency, evaporation: t.evaporation, advection: t.advection, fiberAngle: surfaceContact.fiberAngle, anisotropy: surfaceContact.anisotropy, tooth });
+        lobes.forEach((lobe, lobeIndex) => emit("wet", lobe.x, lobe.y, lobe.radiusX, lobe.radiusY, lobe.angle, alpha * lobe.opacity * 3.4, lobe.mix, 0, lobeIndex % 2 === 0 ? "ring" : "ellipse"));
       }
       if (sedimentation) {
-        const sediment = sampleBrushStudioV7Sediment({
-          x: point.x, y: point.y, radius, index, seed, granulation: t.granulation,
-          absorbency: effectiveAbsorbency, tooth: unit(tooth * t.surfaceTooth),
-          fiberAngle: surfaceContact.fiberAngle, anisotropy: surfaceContact.anisotropy,
-        });
-        for (const grain of sediment) emit("grain", grain.x, grain.y, grain.radiusX, grain.radiusY,
-          grain.angle, alpha * grain.opacity * 4.2, grain.mix, 0, "ellipse");
+        const sediment = sampleBrushStudioV7Sediment({ x: point.x, y: point.y, radius, index, seed, granulation: t.granulation, absorbency: effectiveAbsorbency, tooth: unit(tooth * t.surfaceTooth), fiberAngle: surfaceContact.fiberAngle, anisotropy: surfaceContact.anisotropy });
+        for (const grain of sediment) emit("grain", grain.x, grain.y, grain.radiusX, grain.radiusY, grain.angle, alpha * grain.opacity * 4.2, grain.mix, 0, "ellipse");
       }
-      const normalX = -Math.sin(direction);
-      const normalY = Math.cos(direction);
-      if (wetSheen) {
-        emit("wet", point.x - normalX * radius * 0.16, point.y - normalY * radius * 0.16, radius * 0.72, Math.max(0.16, radius * 0.16), direction, alpha * unit(t.wetness) * 0.2, 0.82, 0, "ellipse");
-      }
+      const normalX = -Math.sin(direction), normalY = Math.cos(direction);
+      if (wetSheen) emit("wet", point.x - normalX * radius * 0.16, point.y - normalY * radius * 0.16, radius * 0.72, Math.max(0.16, radius * 0.16), direction, alpha * unit(t.wetness) * 0.2, 0.82, 0, "ellipse");
       if (chromaFringe && directional) {
         const fringe = radius * spread * (0.08 + unit(t.diffusion) * 0.12);
         emit("wet", point.x + normalX * fringe, point.y + normalY * fringe, radius * 1.05, Math.max(0.18, radius * 0.2), direction, alpha * 0.13, 1, 0, "capsule");
         emit("wet", point.x - normalX * fringe, point.y - normalY * fringe, radius, Math.max(0.18, radius * 0.16), direction, alpha * 0.08, 0.42, 0, "capsule");
       }
-      if (program.slots.finish.includes("finish-edge-bloom")
-        && t.edgeDarkening > 0 && directional) {
-        const edgeRadius = radius * spread * (0.96 + tooth * 0.06);
-        const thickness = Math.max(0.18, radius * (0.025 + t.granulation * 0.025));
+      if (program.slots.finish.includes("finish-edge-bloom") && t.edgeDarkening > 0 && directional) {
+        const edgeRadius = radius * spread * (0.96 + tooth * 0.06), thickness = Math.max(0.18, radius * (0.025 + t.granulation * 0.025));
         for (let side = 0; side < 2; side++) {
           const sign = side === 0 ? -1 : 1;
-          const x = point.x + normalX * edgeRadius * sign;
-          const y = point.y + normalY * edgeRadius * sign;
-          const previousX = initializedWetEdges ? wetEdges[side * 2]! : x;
-          const previousY = initializedWetEdges ? wetEdges[side * 2 + 1]! : y;
-          const dx = x - previousX;
-          const dy = y - previousY;
-          // Deposit on the two moving wet boundaries, not an entire ring around
-          // every dab, which leaves regular dark crossbars inside the wash.
+          const x = point.x + normalX * edgeRadius * sign, y = point.y + normalY * edgeRadius * sign;
+          const previousX = initializedWetEdges ? wetEdges[side * 2]! : x, previousY = initializedWetEdges ? wetEdges[side * 2 + 1]! : y;
+          const dx = x - previousX, dy = y - previousY;
           emit("wet", (x + previousX) * 0.5, (y + previousY) * 0.5, Math.hypot(dx, dy) * 0.5 + thickness, thickness, Math.atan2(dy, dx), alpha * t.edgeDarkening * (0.65 + tooth * 0.35), 0, 0, "capsule");
-          wetEdges[side * 2] = x;
-          wetEdges[side * 2 + 1] = y;
+          wetEdges[side * 2] = x; wetEdges[side * 2 + 1] = y;
         }
         initializedWetEdges = true;
       }
@@ -656,24 +551,62 @@ export function createBrushStudioV6MaterialStroke(
 
     const marker = program.slots.deposition === "deposit-marker";
     const advancedSurface = isBrushStudioV7AdvancedSurface(program.slots.surface);
-    const adjustedRoundness = chisel ? tipProfile.roundness + tilt * 0.2 : tipProfile.roundness;
+    if (barrelTwistChisel) lastChiselTwistDeg = sampleBrushStudioV7ChiselTwistDrag({
+      previousTwistDeg: lastChiselTwistDeg, targetTwistDeg: finite(point.twist ?? 0),
+      friction01: t.friction, travelPx: directional ? step * densityMultiplier : 0, radiusPx: radius,
+    });
+    const twistChisel = barrelTwistChisel ? sampleBrushStudioV7BarrelTwistChisel({ baseRadiusPx: radius, twistDeg: lastChiselTwistDeg ?? 0, tilt01: tilt, strokeDirectionRad: direction }) : null;
+    const nibSplit = nibSplitPooling ? sampleBrushStudioV7NibSplitPooling({ radiusPx: radius, pressure01: pressure, angularDeltaRad, segmentDistancePx: segmentDistPx }) : null;
+    const inkAngle = twistChisel ? twistChisel.nibAngleRad : angle;
+    const inkAlpha = alpha * (nibSplit?.dwellOpacityBoost ?? 1);
+    const adjustedRoundness = twistChisel ? twistChisel.minorRadiusPx / Math.max(0.25, twistChisel.majorRadiusPx) : chisel ? tipProfile.roundness + tilt * 0.2 : tipProfile.roundness;
+    const baseMajorR = twistChisel ? twistChisel.majorRadiusPx : radius;
+    const sdfEnvelope = subpixelSdfAa ? sampleBrushStudioV7SubpixelEnvelopeTaper({ dabIndex: index, pressure01: pressure, radiusPx: baseMajorR }) : null;
+    const effectiveRadius = sdfEnvelope ? baseMajorR * sdfEnvelope.coreRadiusScale : baseMajorR;
+    if (sdfEnvelope) emit("ink", point.x, point.y, sdfEnvelope.haloRadiusPx, sdfEnvelope.haloRadiusPx * adjustedRoundness, inkAngle, inkAlpha * sdfEnvelope.haloOpacityScale, 0, 0, chisel ? "rect" : "ellipse");
     if (advancedSurface) {
       const surfaceContact = sampleBrushStudioV7SurfaceContact(program.slots.surface, point.x, point.y, seed);
       const fiberInfluence = surfaceContact.anisotropy * (marker ? 0.24 : 0.1);
-      const contactAngle = angle + Math.sin(surfaceContact.fiberAngle - angle) * fiberInfluence;
+      const contactAngle = inkAngle + Math.sin(surfaceContact.fiberAngle - inkAngle) * fiberInfluence;
       const bleed = marker ? 1 + surfaceContact.localAbsorbency * unit(t.absorbency) * 0.2 : 1;
       const toothGain = 1 - surfaceContact.tooth * unit(t.surfaceTooth) * 0.14;
       const aspect = chisel ? adjustedRoundness : adjustedRoundness - surfaceContact.anisotropy * 0.09;
-      emit("ink", point.x, point.y, radius * bleed, radius * aspect, contactAngle,
-        alpha * tipProfile.hardness * toothGain, 0, 0, chisel ? "rect" : "ellipse");
-      if (marker && t.edgeDarkening > 0) {
-        emit("ink", point.x, point.y, radius * bleed, radius * 0.42, contactAngle,
-          alpha * t.edgeDarkening * (0.82 + surfaceContact.localAbsorbency * 0.24), 0, 0, "ring");
-      }
+      emit("ink", point.x, point.y, effectiveRadius * bleed, effectiveRadius * aspect, contactAngle, inkAlpha * tipProfile.hardness * toothGain, 0, 0, chisel ? "rect" : "ellipse");
+      if (marker && t.edgeDarkening > 0) emit("ink", point.x, point.y, effectiveRadius * bleed, effectiveRadius * 0.42, contactAngle, inkAlpha * t.edgeDarkening * (0.82 + surfaceContact.localAbsorbency * 0.24), 0, 0, "ring");
     } else {
-      emit("ink", point.x, point.y, radius, radius * adjustedRoundness, angle, alpha * tipProfile.hardness, 0, 0, chisel ? "rect" : "ellipse");
-      if (marker && t.edgeDarkening > 0) emit("ink", point.x, point.y, radius, radius * 0.42, angle, alpha * t.edgeDarkening, 0, 0, "ring");
+      emit("ink", point.x, point.y, effectiveRadius, effectiveRadius * adjustedRoundness, inkAngle, inkAlpha * tipProfile.hardness, 0, 0, chisel ? "rect" : "ellipse");
+      if (marker && t.edgeDarkening > 0) emit("ink", point.x, point.y, effectiveRadius, effectiveRadius * 0.42, inkAngle, inkAlpha * t.edgeDarkening, 0, 0, "ring");
     }
+    if (nibSplit && nibSplit.tineSplitOffsetPx > 0.2 && directional) {
+      const nx = -Math.sin(direction) * nibSplit.tineSplitOffsetPx, ny = Math.cos(direction) * nibSplit.tineSplitOffsetPx;
+      emit("ink", point.x + nx, point.y + ny, nibSplit.railRadiusPx, nibSplit.railRadiusPx * 0.72, direction, inkAlpha * 0.42, 0, 0, "capsule");
+      emit("ink", point.x - nx, point.y - ny, nibSplit.railRadiusPx, nibSplit.railRadiusPx * 0.72, direction, inkAlpha * 0.42, 0, 0, "capsule");
+    }
+  }
+
+  function advanceSegment(fromPt: BrushStudioV6MaterialPoint, toPt: BrushStudioV6MaterialPoint, localStep: number, marks: BrushStudioV6MaterialMark[]): void {
+    const dx = toPt.x - fromPt.x, dy = toPt.y - fromPt.y, distance = Math.hypot(dx, dy);
+    if (!Number.isFinite(distance) || distance < 1e-9) return;
+    pathLength += distance;
+    const direction = Math.atan2(dy, dx);
+    const totalDabs = Math.max(0, Math.floor((distance - remaining + 1e-8) / localStep) + 1);
+    const sampleCount = Math.min(totalDabs, 1024, Math.max(1, Math.floor(markBudget / marksPerDab)));
+    const initialDabIndex = dabIndex;
+    for (let index = 0; index < sampleCount; index++) {
+      const sampleIndex = sampleCount === totalDabs ? index : sampleCount === 1 ? totalDabs - 1 : Math.round(index * (totalDabs - 1) / (sampleCount - 1));
+      dabIndex = initialDabIndex + sampleIndex;
+      const ratio = Math.min(1, (remaining + sampleIndex * localStep) / distance);
+      const twistDelta = ((finite(toPt.twist ?? 0) - finite(fromPt.twist ?? 0) + 540) % 360) - 180;
+      deposit({
+        x: fromPt.x + dx * ratio, y: fromPt.y + dy * ratio,
+        pressure: fromPt.pressure + (toPt.pressure - fromPt.pressure) * ratio,
+        tilt: finite(fromPt.tilt ?? 0) + (finite(toPt.tilt ?? 0) - finite(fromPt.tilt ?? 0)) * ratio,
+        twist: finite(fromPt.twist ?? 0) + twistDelta * ratio,
+      }, direction, marks, (totalDabs / sampleCount) * (localStep / step), true, distance);
+    }
+    clippedDabs += totalDabs - sampleCount;
+    dabIndex = initialDabIndex + totalDabs;
+    remaining = Math.max(0, remaining + totalDabs * localStep - distance);
   }
 
   return {
@@ -682,41 +615,44 @@ export function createBrushStudioV6MaterialStroke(
       const point = { ...input, pressure: unit(input.pressure), tilt: unit(input.tilt ?? 0), twist: finite(input.twist ?? 0) };
       const marks: BrushStudioV6MaterialMark[] = [];
       if (!previous) {
-        deposit(point, 0, marks, 1, false);
+        deposit(point, 0, marks, 1, false, step);
         previous = point;
         emittedMarks += marks.length;
         if (strokeMarks.length < markBudget) strokeMarks.push(...marks.slice(0, markBudget - strokeMarks.length));
         return marks;
       }
-      const dx = point.x - previous.x;
-      const dy = point.y - previous.y;
-      const distance = Math.hypot(dx, dy);
-      if (!Number.isFinite(distance)) return marks;
-      if (distance < 1e-9) { previous = point; return marks; }
-      pathLength += distance;
-      const direction = Math.atan2(dy, dx);
-      const totalDabs = Math.max(0, Math.floor((distance - remaining + 1e-8) / step) + 1);
-      // Exceptional sparse/teleport segments cover their full extent at coarser
-      // spacing. Normal input never reaches this explicit, reported degradation.
-      const sampleCount = Math.min(totalDabs, 1024, Math.max(1, Math.floor(markBudget / marksPerDab)));
-      const initialDabIndex = dabIndex;
-      for (let index = 0; index < sampleCount; index++) {
-        const sampleIndex = sampleCount === totalDabs ? index : sampleCount === 1 ? totalDabs - 1 : Math.round(index * (totalDabs - 1) / (sampleCount - 1));
-        dabIndex = initialDabIndex + sampleIndex;
-        const ratio = Math.min(1, (remaining + sampleIndex * step) / distance);
-        const twistDelta = ((point.twist - finite(previous.twist ?? 0) + 540) % 360) - 180;
-        deposit({ x: previous.x + dx * ratio, y: previous.y + dy * ratio, pressure: previous.pressure + (point.pressure - previous.pressure) * ratio, tilt: finite(previous.tilt ?? 0) + (point.tilt - finite(previous.tilt ?? 0)) * ratio, twist: finite(previous.twist ?? 0) + twistDelta * ratio }, direction, marks, totalDabs / sampleCount);
+      if (centripetalAdaptive && !topology) {
+        const curSample: BrushStudioV7CurveControlSample = { x: point.x, y: point.y, pressure: point.pressure, tilt: point.tilt, twist: point.twist };
+        const prevSample: BrushStudioV7CurveControlSample = { x: previous.x, y: previous.y, pressure: previous.pressure, tilt: finite(previous.tilt ?? 0), twist: finite(previous.twist ?? 0) };
+        const reflected = { ...prevSample, x: 2 * prevSample.x - curSample.x, y: 2 * prevSample.y - curSample.y };
+        // 보정 강도는 이전 접선의 반영량을 조절하며, 0이면 현재 구간의 직선 접선을 유지한다.
+        const stabilization = unit(t.stabilization);
+        const p0 = prevHistory ? {
+          ...prevHistory,
+          x: reflected.x + (prevHistory.x - reflected.x) * stabilization,
+          y: reflected.y + (prevHistory.y - reflected.y) * stabilization,
+        } : reflected;
+        const p3: BrushStudioV7CurveControlSample = { x: 2 * point.x - previous.x, y: 2 * point.y - previous.y, pressure: point.pressure, tilt: point.tilt, twist: point.twist };
+        const subPoints = interpolateBrushStudioV7CentripetalSegment(p0, prevSample, curSample, p3, 4);
+        let cursorPt: BrushStudioV6MaterialPoint = previous;
+        for (const sub of subPoints) {
+          advanceSegment(cursorPt, sub, Math.max(0.28, step * sub.stepTighteningFactor), marks);
+          cursorPt = sub;
+        }
+        prevHistory = prevSample;
+        previous = point;
+        emittedMarks += marks.length;
+        if (strokeMarks.length < markBudget) strokeMarks.push(...marks.slice(0, markBudget - strokeMarks.length));
+        return marks;
       }
-      clippedDabs += totalDabs - sampleCount;
-      dabIndex = initialDabIndex + totalDabs;
-      remaining = Math.max(0, remaining + totalDabs * step - distance);
+      advanceSegment(previous, point, step, marks);
       previous = point;
       emittedMarks += marks.length;
       if (strokeMarks.length < markBudget) strokeMarks.push(...marks.slice(0, markBudget - strokeMarks.length));
       return marks;
     },
     marks: () => strokeMarks,
-    reset(): void { topology?.reset(); strokeMarks.length = 0; previous = null; remaining = step; pathLength = 0; emittedMarks = 0; dabIndex = 0; clippedDabs = 0; initializedBristles = false; initializedWetEdges = false; smudgeMix = 0; },
+    reset(): void { topology?.reset(); strokeMarks.length = 0; previous = null; prevHistory = null; lastDirectionRad = null; lastChiselTwistDeg = null; remaining = step; pathLength = 0; emittedMarks = 0; dabIndex = 0; clippedDabs = 0; initializedBristles = false; initializedWetEdges = false; smudgeMix = 0; },
     statistics: () => ({ pathLength, emittedMarks, resampledDabs: dabIndex, clippedDabs }),
   };
 }
@@ -734,14 +670,10 @@ export function renderBrushStudioV6MaterialMarks(context: CanvasRenderingContext
     if (mark.shape === "rect") context.fillRect(-mark.radiusX, -mark.radiusY, mark.radiusX * 2, mark.radiusY * 2);
     else if (mark.shape === "capsule") {
       context.beginPath();
-      if (typeof context.roundRect === "function") {
-        context.roundRect(-mark.radiusX, -mark.radiusY, mark.radiusX * 2, mark.radiusY * 2, Math.min(mark.radiusX, mark.radiusY));
-      } else {
-        context.rect(-mark.radiusX, -mark.radiusY, mark.radiusX * 2, mark.radiusY * 2);
-      }
+      if (typeof context.roundRect === "function") context.roundRect(-mark.radiusX, -mark.radiusY, mark.radiusX * 2, mark.radiusY * 2, Math.min(mark.radiusX, mark.radiusY));
+      else context.rect(-mark.radiusX, -mark.radiusY, mark.radiusX * 2, mark.radiusY * 2);
       context.fill();
-    }
-    else {
+    } else {
       context.beginPath();
       context.ellipse(0, 0, mark.radiusX, mark.radiusY, 0, 0, TAU);
       context.closePath();
@@ -753,12 +685,6 @@ export function renderBrushStudioV6MaterialMarks(context: CanvasRenderingContext
   context.restore();
 }
 
-/**
- * Export the same contact geometry using explicit closed paths for curved marks.
- * SVG ellipse/rounded-rect shortcuts and Canvas paths rasterize differently for very thin,
- * translucent marks in Chromium. Arc paths preserve the geometry while keeping measured
- * paint/alpha much closer to the canonical Canvas path. Canvas/replay calculations are unchanged.
- */
 export function brushStudioV6MaterialMarksToSvg(
   marks: readonly BrushStudioV6MaterialMark[],
   curves: "legacy-primitives" | "canvas-paths" = "legacy-primitives",
@@ -769,16 +695,14 @@ export function brushStudioV6MaterialMarksToSvg(
     const style = `transform="${transform}" opacity="${n(mark.opacity)}"`;
     if (mark.shape === "capsule" && curves === "canvas-paths") {
       const radius = Math.min(mark.radiusX, mark.radiusY);
-      const x = n(mark.radiusX), y = n(mark.radiusY), r = n(radius);
-      const ix = n(mark.radiusX - radius), iy = n(mark.radiusY - radius);
+      const x = n(mark.radiusX), y = n(mark.radiusY), r = n(radius), ix = n(mark.radiusX - radius), iy = n(mark.radiusY - radius);
       const arc = `A${r} ${r} 0 0 1`;
-      const d = `M${-ix} ${-y} H${ix} ${arc} ${x} ${-iy} V${iy} ${arc} ${ix} ${y} H${-ix} ${arc} ${-x} ${iy} V${-iy} ${arc} ${-ix} ${-y} Z`;
-      return `<path ${style} d="${d}" fill="${mark.color}"/>`;
+      return `<path ${style} d="M${-ix} ${-y} H${ix} ${arc} ${x} ${-iy} V${iy} ${arc} ${ix} ${y} H${-ix} ${arc} ${-x} ${iy} V${-iy} ${arc} ${-ix} ${-y} Z" fill="${mark.color}"/>`;
     }
     if (mark.shape === "rect" || mark.shape === "capsule") return `<rect ${style} x="${n(-mark.radiusX)}" y="${n(-mark.radiusY)}" width="${n(mark.radiusX * 2)}" height="${n(mark.radiusY * 2)}"${mark.shape === "capsule" ? ` rx="${n(Math.min(mark.radiusX, mark.radiusY))}"` : ""} fill="${mark.color}"/>`;
     const paint = mark.shape === "ring" ? `fill="none" stroke="${mark.color}" stroke-width="${n(Math.max(0.3, Math.min(mark.radiusX, mark.radiusY) * 0.2))}"` : `fill="${mark.color}"`;
     if (curves === "legacy-primitives") return `<ellipse ${style} rx="${n(mark.radiusX)}" ry="${n(mark.radiusY)}" ${paint}/>`;
     const rx = n(mark.radiusX), ry = n(mark.radiusY);
-    return `<path ${style} d="M${rx} 0 A${rx} ${ry} 0 0 1 ${-rx} 0 A${rx} ${ry} 0 0 1 ${rx} 0 Z" ${paint}/>`;
+    return `<path ${style} d="M${rx} 0 A${rx} ${ry} 0 0 1 ${-rx} ${0} A${rx} ${ry} 0 0 1 ${rx} 0 Z" ${paint}/>`;
   }).join("");
 }

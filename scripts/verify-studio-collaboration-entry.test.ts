@@ -13,6 +13,7 @@ import {
 import type { Route } from "playwright";
 
 const source = readFileSync("scripts/verify-studio-collaboration-sync.mts", "utf8");
+const drawingCaptureSource = readFileSync("scripts/lib/studio-collaboration-drawing-capture.ts", "utf8");
 
 describe("collaboration browser entry contract", () => {
   it("opens the canonical editor rather than the non-editor Studio home", () => {
@@ -47,14 +48,19 @@ describe("collaboration browser entry contract", () => {
 
   it("획을 플로팅 크롬이 아닌 실제 캔버스 띠에 그리고, 가린 경로는 캔버스 판정 전에 실패시킨다", () => {
     const stroke = source.slice(
-      source.indexOf("async function drawableCanvasBand("),
+      source.indexOf("async function strokePathObstructions("),
       source.indexOf("async function peerCount("),
     );
+    expect(drawingCaptureSource).toContain("export async function drawableCanvasBand(");
+    expect(drawingCaptureSource).toContain("hit instanceof HTMLCanvasElement");
     expect(stroke).toContain("hit instanceof HTMLCanvasElement");
     expect(stroke).toContain("const band = await drawableCanvasBand(");
     expect(stroke).toContain("const obstructions = await strokePathObstructions(page, path);");
     expect(stroke).toContain("does not reach the drawing canvas");
     expect(stroke).not.toContain("const y = bounds.y + bounds.height * verticalFraction;");
+    expect(source).toContain("await parkStudioCollaborationCursors(page);");
+    expect(drawingCaptureSource).toContain("await peer.mouse.move(x, (band.top + band.bottom) / 2)");
+    expect(drawingCaptureSource).toContain("await peer.mouse.move(8, 8)");
   });
 
   it("acknowledges the current beta notice before collaboration input begins", () => {

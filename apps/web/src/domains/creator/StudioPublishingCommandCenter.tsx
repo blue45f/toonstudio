@@ -1312,7 +1312,7 @@ export function StudioPublishingCommandCenter({
           return;
         }
         const revision = saved.revision ?? sharedMetaSnapshot.revision;
-        setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.pub.draftSaved", { revision }, "초안을 버전 #{revision}로 안전하게 저장했습니다."));
+        setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.pub.draftSaved", { revision }, "초안을 revision {revision}로 안전하게 저장했습니다."));
       } else {
         navigate(resultHref, { replace: true });
       }

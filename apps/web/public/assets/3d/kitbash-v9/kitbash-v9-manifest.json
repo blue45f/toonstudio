@@ -1,0 +1,80 @@
+{
+  "pack": "ToonStudio Kitbash Modeling Pack V9",
+  "generator": "scripts/blender/generate_kitbash_modeling_pack_v9.py",
+  "blenderVersion": "5.2.0 LTS",
+  "license": "CC0-1.0",
+  "assets": {
+    "convenience_storefront_v9": {
+      "labelKo": "한국형 편의점·상가 파사드 V9",
+      "dimensionsM": [
+        4.078,
+        2.878,
+        3.06
+      ],
+      "bytes": 102476,
+      "meshes": 24,
+      "materials": 7,
+      "triangles": 3464
+    },
+    "urban_utility_pole_cluster_v9": {
+      "labelKo": "도심 전신주·변압기·가로등 클러스터 V9",
+      "dimensionsM": [
+        1.586,
+        1.515,
+        4.565
+      ],
+      "bytes": 166324,
+      "meshes": 28,
+      "materials": 6,
+      "triangles": 5864
+    },
+    "rooftop_hvac_watertank_rig_v9": {
+      "labelKo": "옥상 대형 공조기·물탱크·배관 설비 V9",
+      "dimensionsM": [
+        2.65,
+        1.48,
+        2.28
+      ],
+      "bytes": 182044,
+      "meshes": 36,
+      "materials": 5,
+      "triangles": 6036
+    },
+    "cafe_terrace_kiosk_set_v9": {
+      "labelKo": "오픈 카페 어닝 부스·테라스 키오스크 V9",
+      "dimensionsM": [
+        3.1,
+        2.206,
+        2.717
+      ],
+      "bytes": 175980,
+      "meshes": 30,
+      "materials": 6,
+      "triangles": 6544
+    },
+    "arcane_portal_sanctum_v9": {
+      "labelKo": "판타지 각성 룬 관문·성소 제단 V9",
+      "dimensionsM": [
+        3.437,
+        3.437,
+        3.36
+      ],
+      "bytes": 307552,
+      "meshes": 29,
+      "materials": 5,
+      "triangles": 12940
+    },
+    "stylized_hero_mannequin_bust_v9": {
+      "labelKo": "웹툰 8등신 캐릭터 조형 마네킹 흉상 V9",
+      "dimensionsM": [
+        0.626,
+        0.48,
+        1.082
+      ],
+      "bytes": 272548,
+      "meshes": 27,
+      "materials": 5,
+      "triangles": 11672
+    }
+  }
+}

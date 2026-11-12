@@ -10,6 +10,7 @@ export async function assertStudioWorkspaceHome(page) {
   const mainNavigation = home.locator(".workspace-nav");
   const navigation = mainNavigation.locator("a");
   const mobile = await page.evaluate(() => matchMedia("(max-width: 767px)").matches);
+  await expect(home.locator("dialog[open]")).toHaveCount(0);
   if (mobile) {
     // 정상 모바일은 메뉴 청크 준비를 기다린다. 링크 폴백만 보고 성공 처리하지 않는다.
     await expect(mainNavigation).toHaveAttribute("data-site-mobile-utilities", "available");

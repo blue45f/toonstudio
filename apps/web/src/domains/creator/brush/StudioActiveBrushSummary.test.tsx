@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioActiveBrushSummary } from "../StudioActiveBrushSummary";
 
@@ -72,6 +72,7 @@ describe("StudioActiveBrushSummary", () => {
     expect(screen.getByText("프로 브러시 · 정보 불러오는 중")).toBeTruthy();
     expect(screen.queryByText(/사용자 · 원형 촉/u)).toBeNull();
 
+    await act(() => vi.dynamicImportSettled());
     expect(await screen.findByText("질감 · 소프트 입자 촉")).toBeTruthy();
     expect(screen.getByText("알파 질감 · 다중 매핑")).toBeTruthy();
     expect(summary?.getAttribute("data-studio-brush-metadata-state")).toBe("loaded");
@@ -82,5 +83,24 @@ describe("StudioActiveBrushSummary", () => {
     expect(summary?.getAttribute("data-studio-brush-runtime-texture")).toBe("custom-alpha-capable");
     expect(summary?.getAttribute("data-studio-brush-runtime-dynamics")).toBe("mapped-dabs");
     expect(summary?.getAttribute("data-studio-brush-semantic-source")).toBe("runtime-contract");
+  });
+
+  it("resolves deferred V6 preset name and media/tip metadata instead of falling back to user round tip", async () => {
+    render(
+      <StudioActiveBrushSummary
+        {...commonProps}
+        brushId="v6:rebelle-capillary-wash"
+        brushName="v6:rebelle-capillary-wash"
+      />
+    );
+
+    const summary = document.querySelector("[data-studio-active-brush-summary]");
+    expect(summary?.getAttribute("data-studio-brush-metadata-state")).toBe("loading");
+    expect(screen.queryByText(/사용자 · 원형 촉/u)).toBeNull();
+
+    await act(() => vi.dynamicImportSettled());
+    expect(await screen.findByText(/모세관 꽃양배추 수채 워시/u)).toBeTruthy();
+    expect(summary?.getAttribute("data-studio-brush-metadata-state")).toBe("loaded");
+    expect(summary?.textContent).toContain("수채·수묵");
   });
 });

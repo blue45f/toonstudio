@@ -19,6 +19,7 @@ import {
   type BlenderScenePresetThemeId,
   type BlenderSculptToolId,
 } from "./studio-bg3d-blender-full-engine";
+import { StudioBg3dKitbashCharacterModelerPanel } from "./StudioBg3dKitbashCharacterModelerPanel";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 
 export interface StudioBg3dBlenderFullSectionsProps {
@@ -403,7 +404,7 @@ export function StudioBg3dBlenderFullSections({
             ))}
           </div>
 
-          <div className="flex items-center gap-2 text-[0.62rem]">
+          <div className="flex flex-wrap items-center gap-2 text-[0.62rem]">
             <span>Dyntopo 디테일: {dyntopoPx}px</span>
             <input
               type="range"
@@ -416,9 +417,29 @@ export function StudioBg3dBlenderFullSections({
               onChange={(e) => setDyntopoPx(Number(e.target.value))}
               className="w-20 accent-accent"
             />
+            <button
+              type="button"
+              disabled={disabled}
+              data-testid="bg3d-blender-edit-sculpt-insert-btn"
+              onClick={() => {
+                onStatusChange?.(editSculptEval.summaryKo);
+                onInsertScenePrimitives?.(editSculptEval.primitives, editSculptEval.summaryKo);
+              }}
+              className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[0.62rem] font-bold text-on-accent"
+            >
+              <Sparkles className="size-3" aria-hidden />
+              <span>현재 3D 장면에 조형 메시 배치 ({editSculptEval.primitives.length})</span>
+            </button>
           </div>
         </div>
       </section>
+
+      <StudioBg3dKitbashCharacterModelerPanel
+        disabled={disabled}
+        defaultMode="background"
+        onStatusChange={onStatusChange}
+        onInsertScenePrimitives={onInsertScenePrimitives}
+      />
 
       {/* 8. Grease Pencil v3 (GPv3) & Freestyle 9 Edge Types */}
       <section

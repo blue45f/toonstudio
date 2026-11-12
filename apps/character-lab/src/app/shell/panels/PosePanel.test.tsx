@@ -125,7 +125,6 @@ describe("PosePanel IK", () => {
   });
 
   it("엔진이 poseSkeleton()을 제공하면 활성 스켈레톤 기준으로 초기 좌표·신장·척추 체인(upperChest 생략 포함) IK를 계산한다", () => {
-    // upperChest가 없고 neck의 부모가 chest이며 루트 높이가 +0.2m 높은 라이브 스켈레톤
     const customSkeleton: SkeletonData = {
       bones: skeleton.bones
         .filter((b) => b.name !== "upperChest")
@@ -334,7 +333,6 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect(screen.getAllByText(/\[skeleton-cycle\]/u).length).toBeGreaterThanOrEqual(2);
     fireEvent.click(screen.getByRole("button", { name: "관절 제한으로 클램프" }));
 
-    // 동일 실패 중복 게시 없음 & 상태 오염 명령 dispatch 없음
     expect(store.getState().failures).toHaveLength(1);
     expect(store.dispatched).toEqual([]);
   });
@@ -355,7 +353,6 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect(store.getState().failures).toHaveLength(1);
     expect(store.getState().failures[0]?.code).toBe("skeleton-non-finite-rest");
 
-    // 손상 리그에서는 포즈 카드·빠른 스탠스·초기화·손 포즈·IK 입력 및 버튼이 모두 비활성화되어 조작을 차단한다
     expect(card("포즈 프리셋", "서기").disabled).toBe(true);
     expect((screen.getByTestId("pose-quick-chip-hands-on-hips") as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "포즈 초기화" }) as HTMLButtonElement).disabled).toBe(true);
@@ -369,7 +366,6 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
     expect(store.dispatched).toEqual([]);
 
-    // 정상 스켈레톤으로 복구 후 리렌더 시 즉시 조작이 활성화되고 IK 적용이 정상 동작한다
     currentSkeleton = skeleton;
     view.rerender(
       <MockLabProvider store={store} engineSession={session}>
@@ -535,7 +531,6 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
       </MockLabProvider>,
     );
 
-    // 1. 리그 없음(미로드): 1문장 + 1개 다음 행동(리그·패키지 선택)만 우선 노출, 상세 사유는 접힘에 통합 보존
     expect(screen.getByTestId("pose-active-selection-summary").textContent).toBe("선택 상태: 리그 미로드 · 포즈 비활성");
     expect(screen.getByTestId("pose-unloaded-rig-notice").textContent).toMatch(/리그·패키지 선택 탭에서 소스를 확인하세요\.$/u);
     expect(screen.queryByTestId("pose-empty-skeleton-notice")).toBeNull();
@@ -548,7 +543,6 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect(screen.queryByTestId("pose-hand-capability-reason")).toBeNull();
     expect(screen.getAllByText(new RegExp(unloadedReason, "u"))).toHaveLength(1);
 
-    // 2. 정적 메시(스켈레톤 없음 능력 사유): 정적 메시 1문장 + 1개 다음 행동 노출, 상세 사유는 접힘에 보존
     const staticMeshReason = "패키지에 휴머노이드 본이 없습니다(스켈레톤 없음).";
     view.rerender(
       <MockLabProvider
@@ -570,7 +564,6 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect((screen.getByTestId("pose-disabled-reason-details") as HTMLDetailsElement).open).toBe(false);
     expect(screen.getByTestId("pose-capability-reason").textContent).toContain(staticMeshReason);
 
-    // 3. 손상 스켈레톤: 손상 1문장 + 1개 다음 행동 노출, 상세 진단은 접힘에 보존
     const session = createMockEngineSession({ phase: "ready", backend: "webgpu", diagnostics: mockDiagnostics("webgpu") });
     session.setEngine(Object.assign(createMockEngine({ backend: "webgpu" }), { poseSkeleton: () => cycleSkeleton }));
     view.rerender(
@@ -584,5 +577,23 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     expect((screen.getByTestId("pose-disabled-reason-details") as HTMLDetailsElement).open).toBe(false);
     expect(screen.getByTestId("pose-skeleton-failure-detail").textContent).toMatch(/상세 진단:/u);
   });
-});
 
+  it("포즈 강도 슬라이더(0%–150%)가 기준 포즈를 구면 보간·과장한 pose/set 명령을 coalesceKey와 함께 보낸다", () => {
+    const recipe = createDefaultRecipe();
+    recipe.pose = { leftUpperArm: qFromAxisAngle([0, 0, 1], degToRad(-60)) };
+    const dispatched = setup({ recipe });
+    const slider = screen.getByTestId("pose-intensity-slider") as HTMLInputElement;
+    expect(slider.disabled).toBe(false);
+    expect(screen.getByTestId("pose-intensity-output").textContent).toBe("100%");
+
+    fireEvent.change(slider, { target: { value: "0.5" } });
+    expect(screen.getByTestId("pose-intensity-output").textContent).toBe("50%");
+    expect(dispatched).toHaveLength(1);
+    const cmd = dispatched[0];
+    expect(cmd?.type).toBe("pose/set");
+    if (cmd?.type === "pose/set") {
+      expect(cmd.coalesceKey).toBe("pose:intensity");
+      expect(cmd.labelKo).toBe("포즈 강도 50%");
+    }
+  });
+});

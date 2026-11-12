@@ -38,6 +38,8 @@ const sceneHandle: StudioMannequinSceneHandle = {
   setCameraPreset: vi.fn(),
   setProjection: vi.fn(),
   getProjection: vi.fn(() => "perspective" as const),
+  setQuadView: vi.fn(),
+  setCameraFovDeg: vi.fn(),
   resetCamera: vi.fn(),
   resize: vi.fn(),
   invalidate: vi.fn(),
@@ -331,7 +333,7 @@ async function openCameraTabAndStartWebcam(): Promise<void> {
   });
 
   renderPanel();
-  fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+  fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
   fireEvent.click(screen.getByRole("button", { name: "웹캠 실시간 동작 인식 시작" }));
 
   await waitFor(() => {
@@ -499,7 +501,7 @@ describe("StudioMannequinPoserPanel", () => {
     });
 
     renderPanel();
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     fireEvent.click(screen.getByRole("button", { name: "웹캠 실시간 동작 인식 시작" }));
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "실시간 동작 인식 중지" })).toBeTruthy();
@@ -560,7 +562,7 @@ describe("StudioMannequinPoserPanel", () => {
     expect(screen.queryByText(/호스트 연결 대기 중/)).toBeNull();
     fireEvent.click(screen.getByRole("tab", { name: "체형" }));
     vi.mocked(sceneHandle.setBodySpec).mockClear();
-    const heightSlider = screen.getByLabelText(/키/);
+    const heightSlider = screen.getByRole("slider", { name: /^키/ });
     fireEvent.change(heightSlider, { target: { value: "190" } });
     await waitFor(() => {
       expect(sceneHandle.setBodySpec).toHaveBeenCalled();
@@ -656,7 +658,7 @@ describe("StudioMannequinPoserPanel", () => {
     });
 
     renderPanel();
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     fireEvent.click(screen.getByRole("button", { name: "웹캠 실시간 동작 인식 시작" }));
 
     await waitFor(() => {
@@ -689,7 +691,7 @@ describe("StudioMannequinPoserPanel", () => {
     });
 
     renderPanel();
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     fireEvent.click(screen.getByRole("button", { name: "웹캠 실시간 동작 인식 시작" }));
 
     await waitFor(() => {
@@ -725,7 +727,7 @@ describe("StudioMannequinPoserPanel", () => {
     });
 
     renderPanel();
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     fireEvent.click(screen.getByRole("button", { name: "웹캠 실시간 동작 인식 시작" }));
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "실시간 동작 인식 중지" })).toBeTruthy();
@@ -750,7 +752,7 @@ describe("StudioMannequinPoserPanel", () => {
     });
 
     const { unmount } = renderPanel();
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     fireEvent.click(screen.getByRole("button", { name: "웹캠 실시간 동작 인식 시작" }));
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "실시간 동작 인식 중지" })).toBeTruthy();
@@ -773,7 +775,7 @@ describe("StudioMannequinPoserPanel", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     renderPanel();
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     fireEvent.click(screen.getByRole("button", { name: "웹캠 실시간 동작 인식 시작" }));
 
     await waitFor(() => {
@@ -797,7 +799,7 @@ describe("StudioMannequinPoserPanel", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     renderPanel();
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     fireEvent.click(screen.getByRole("button", { name: "웹캠 실시간 동작 인식 시작" }));
 
     await waitFor(() => {
@@ -934,7 +936,7 @@ describe("StudioMannequinPoserPanel", () => {
     fireEvent.click(closeButton);
     fireEvent.keyDown(window, { key: "Escape" });
 
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     const captureButton = screen.getByRole("button", { name: /캔버스로 캡처/ }) as HTMLButtonElement;
     expect(captureButton.disabled).toBe(true);
     fireEvent.click(captureButton);
@@ -972,7 +974,7 @@ describe("StudioMannequinPoserPanel", () => {
       confirmLabel: "저장하지 않고 닫기",
     });
     fireEvent.keyDown(window, { key: "Escape" });
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     const captureButton = screen.getByRole("button", { name: /캔버스로 캡처/ }) as HTMLButtonElement;
     expect(captureButton.disabled).toBe(true);
     fireEvent.click(captureButton);
@@ -1242,7 +1244,7 @@ describe("StudioMannequinPoserPanel 실사용 감사 B 수정", () => {
   it("B-13: 카메라 앵글 칩이 선택 상태를 보이고, 궤도 회전·리셋 뒤에는 선택이 풀린다", async () => {
     renderPanel();
     await waitForPersistenceReady();
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     const front = screen.getByRole("button", { name: "정면" });
     expect(front.getAttribute("aria-pressed")).toBe("false");
     fireEvent.click(front);
@@ -1267,7 +1269,7 @@ describe("StudioMannequinPoserPanel 실사용 감사 B 수정", () => {
       <StudioMannequinPoserPanel open onClose={onClose} onInsert={onInsert} captureTarget="download" />,
     );
     await waitForPersistenceReady();
-    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
     expect(screen.queryByRole("button", { name: /캔버스로 캡처/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /PNG로 저장/ }));
     await waitFor(() => {
@@ -1337,5 +1339,148 @@ describe("StudioMannequinPoserPanel 실사용 감사 B 수정", () => {
     fireEvent.click(screen.getByRole("button", { name: /^손 \d+$/ }));
     expect(screen.getByRole("button", { name: "주먹 (Fist)" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "일도양단 발도세" })).toBeNull();
+  });
+});
+
+describe("StudioMannequinPoserPanel 손 접촉·콘트라포스토·사면도 영속 및 체형·Undo 일관성", () => {
+  it("손 접촉·콘트라포스토·사면도·화각·정투영 설정을 SQLite v3 상태로 저장하고 재오픈 시 UI와 씬에 그대로 복원한다", async () => {
+    let persistedSnapshot: unknown = null;
+    persistenceRuntimeMocks.save.mockImplementation(async (state: unknown) => {
+      persistedSnapshot = state;
+      return state;
+    });
+
+    const onClose = vi.fn();
+    const firstView = renderPanel({ onClose });
+    await waitForPersistenceReady();
+
+    fireEvent.click(screen.getByRole("button", { name: /^관절/ }));
+    fireEvent.click(screen.getByRole("button", { name: "좌측 콘트라포스토" }));
+    fireEvent.click(screen.getByRole("button", { name: "턱 괴기" }));
+    expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("true");
+
+    // 카메라 탭에서 4분할 사면도 + 정투영 + 망원 18° 프리셋 설정
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
+    fireEvent.click(screen.getByRole("button", { name: /4분할 사면도/ }));
+    fireEvent.click(screen.getByRole("button", { name: /망원 18°/ }));
+    fireEvent.click(screen.getByRole("button", { name: "직교" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "3D 데생 인형 닫기" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(persistedSnapshot).toMatchObject({
+      rig: {
+        handContacts: { right: "chin" },
+        contrapposto: "left",
+        quadView: true,
+        cameraFovDeg: 18,
+        projection: "orthographic",
+      },
+    });
+    firstView.unmount();
+
+    vi.clearAllMocks();
+    persistenceRuntimeMocks.load.mockResolvedValueOnce(persistedSnapshot);
+    renderPanel();
+    await waitForPersistenceReady();
+
+    expect(sceneHandle.setProjection).toHaveBeenCalledWith("orthographic");
+    expect(sceneHandle.setQuadView).toHaveBeenCalledWith(true);
+    expect(sceneHandle.setCameraFovDeg).toHaveBeenCalledWith(18);
+
+    fireEvent.click(screen.getByRole("button", { name: /^관절/ }));
+    expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "카메라·캡처" }));
+    expect(screen.getByRole("button", { name: /4분할 사면도 ON/ }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("체형 변경 시 활성 손 접촉·콘트라포스토 목표를 새 체형에 맞춰 유지하고 Undo/Redo 시 토글 상태까지 일관되게 되돌린다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+
+    fireEvent.click(screen.getByRole("button", { name: /^관절/ }));
+    fireEvent.click(screen.getByRole("button", { name: "좌측 콘트라포스토" }));
+    fireEvent.click(screen.getByRole("button", { name: "턱 괴기" }));
+    const poseBeforeBodyChange = vi.mocked(sceneHandle.setPose).mock.calls.at(-1)?.[0];
+    expect(poseBeforeBodyChange).toBeDefined();
+
+    vi.mocked(sceneHandle.setPose).mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /^체형/ }));
+    fireEvent.click(screen.getByRole("button", { name: "5두신 SD" }));
+    await waitFor(() => expect(sceneHandle.setPose).toHaveBeenCalled());
+    const poseAfterSd = vi.mocked(sceneHandle.setPose).mock.calls.at(-1)?.[0];
+    expect(poseAfterSd?.joints.rightUpperArm).not.toEqual(poseBeforeBodyChange?.joints.rightUpperArm);
+    const sdSpec = vi.mocked(sceneHandle.setBodySpec).mock.calls.at(-1)?.[0];
+    if (!sdSpec || !poseAfterSd) throw new Error("SD 체형과 리타깃 포즈가 필요합니다.");
+    expect(sdSpec.params.headCount).toBe(5);
+    expect(measureStudioMannequinBodyFloor(sdSpec, poseAfterSd).lowestY).toBeCloseTo(0, 3);
+
+    fireEvent.click(screen.getByRole("button", { name: /^관절/ }));
+    expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: /되돌리기/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("false");
+      expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /다시실행/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("true");
+      expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+    });
+  });
+
+  it("잘못된/미지원 JSON 가져오기는 기존 포즈를 보존한 채 오류를 안내하고, 구버전/부분 오염 JSON은 안전 복구 후 안내한다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+
+    fireEvent.click(screen.getByRole("button", { name: "달리기" }));
+    await waitFor(() => expect(sceneHandle.setPose).toHaveBeenCalled());
+    const runPose = vi.mocked(sceneHandle.setPose).mock.calls.at(-1)?.[0];
+    vi.mocked(sceneHandle.setPose).mockClear();
+
+    const fileInput = document.querySelector('input[accept=".mannequin,.json"]') as HTMLInputElement;
+    expect(fileInput).toBeTruthy();
+
+    // 1) 미지원 상위 버전(v99) 파일 → 기존 달리기 포즈 유지 + 명확한 한글 안내
+    const futureFile = new File(
+      [JSON.stringify({ kind: "studio-mannequin-state", version: 99, pose: { joints: {}, pelvisOffset: [0, 0, 0] } })],
+      "future.mannequin",
+      { type: "application/json" },
+    );
+    fireEvent.change(fileInput, { target: { files: [futureFile] } });
+    await waitFor(() => {
+      expect(screen.getByRole("alert").textContent).toContain("지원하지 않는 데생 인형 문서 버전");
+    });
+    expect(sceneHandle.setPose).not.toHaveBeenCalled();
+
+    // 2) 비정상 rig 하위 필드가 섞인 v3 파일 → 유효한 체형·포즈·사면도는 살리고 복구 안내 표시
+    const sitPreset = STUDIO_MANNEQUIN_POSE_PRESETS.find((p) => p.id === "sit-chair")!;
+    const partialDirtyFile = new File(
+      [
+        JSON.stringify({
+          kind: "studio-mannequin-state",
+          version: 3,
+          params: { ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, heightCm: 175 },
+          pose: sitPreset.pose,
+          rig: { quadView: true, contrapposto: "invalid-dir", cameraFovDeg: 500 },
+        }),
+      ],
+      "dirty.mannequin",
+      { type: "application/json" },
+    );
+    fireEvent.change(fileInput, { target: { files: [partialDirtyFile] } });
+    await waitFor(() => {
+      expect(sceneHandle.setPose).toHaveBeenCalled();
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(screen.getByText(/안전한 기본값으로 복구/)).toBeTruthy();
+    });
+    expect(sceneHandle.setQuadView).toHaveBeenCalledWith(true);
+    expect(sceneHandle.setCameraFovDeg).toHaveBeenCalledWith(85);
+    expect(runPose).toBeDefined();
   });
 });

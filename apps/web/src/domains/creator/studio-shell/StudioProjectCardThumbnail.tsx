@@ -292,7 +292,7 @@ function useNearViewport(): {
 function PreviewLoading({ locale: _locale }: { readonly locale: string }) {
   const bt = useBilingual("StudioProjectCardThumbnail.loading");
   return (
-    <div className="grid h-full place-items-center bg-panel/70 text-fg-3">
+    <div className="grid h-full place-items-center bg-panel/70 text-fg-2">
       <div className="flex items-center gap-2 text-xs font-semibold">
         <LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
         {bt("미리보기 불러오는 중", "Loading preview")}

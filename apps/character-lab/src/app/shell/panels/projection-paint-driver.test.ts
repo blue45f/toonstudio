@@ -470,4 +470,36 @@ describe("전환 드라이버", () => {
     expect(port.calls.cancel).toBe(1);
     expect(driver.active).toBe(false);
   });
+
+  it("투영 스트로크는 활성 서브레이어(L2)에만 합성되어 L0을 보존하고 Undo/Redo 시 평탄화하지 않으며 숨김 레이어는 차단한다", async () => {
+    const port = fakePort("skin");
+    const { session, commits, notices, driver } = switching(port);
+    session.setActiveSublayer(0);
+    session.setBrush({ color: "#0000ff", radiusPx: 4, hardness: 1, opacity: 1 });
+    session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+    session.endStroke();
+    expect(readPixel(session.sublayer("skin", 0), 64, 64)).toEqual([0, 0, 255, 255]);
+
+    session.setActiveSublayer(2);
+    session.setBrush(BRUSH);
+    expect(driver.down({ ndcX: -0.5, ndcY: 0.5, pressure: 1 })).toBe(true);
+    driver.up();
+    await settle();
+    expect(commits).toHaveLength(1);
+    expect(readPixel(session.sublayer("skin", 2), 32, 32)).toEqual([255, 0, 0, 255]);
+    expect(readPixel(session.sublayer("skin", 0), 32, 32)[3]).toBe(0);
+    expect(readPixel(session.sublayer("skin", 0), 64, 64)).toEqual([0, 0, 255, 255]);
+
+    const token = commits[0];
+    if (!token) throw new Error("토큰 없음");
+    const redo = session.applyToken(token);
+    expect(readPixel(session.sublayer("skin", 2), 32, 32)[3]).toBe(0);
+    expect(readPixel(session.sublayer("skin", 0), 64, 64)).toEqual([0, 0, 255, 255]);
+    if (redo) session.applyToken(redo);
+    expect(readPixel(session.sublayer("skin", 2), 32, 32)).toEqual([255, 0, 0, 255]);
+
+    session.setSublayerVisible("skin", 2, false);
+    expect(driver.down({ ndcX: 0, ndcY: 0, pressure: 1 })).toBe(false);
+    expect(notices.at(-1)).toContain("숨김");
+  });
 });

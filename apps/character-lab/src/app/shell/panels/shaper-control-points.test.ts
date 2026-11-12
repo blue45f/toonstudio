@@ -148,7 +148,13 @@ describe("SHAPER ControlPoint · 기즈모 모드 · 풀세트 아키타입 브�
 
   it("SHAPER 풀세트 아키타입·포즈·부위 프리셋이 유효한 명령 시퀀스를 생성한다", () => {
     expect(Object.keys(SHAPER_BUILTIN_ARCHETYPE_PRESETS).length).toBeGreaterThanOrEqual(5);
-    expect(Object.keys(SHAPER_BUILTIN_POSE_PRESETS)).toEqual(["shaper-pose-1", "shaper-pose-2", "shaper-pose-3"]);
+    const poseIds = ["shaper-pose-1", "shaper-pose-2", "shaper-pose-3", "shaper-pose-action-dash", "shaper-pose-murim-sword", "shaper-pose-romance-gaze", "shaper-pose-thriller-guard"];
+    expect(Object.keys(SHAPER_BUILTIN_POSE_PRESETS)).toEqual(poseIds);
+    for (const id of poseIds) {
+      expect(buildShaperPresetCommands(id)?.commands).toEqual([
+        expect.objectContaining({ type: "pose/set", scope: "full" }),
+      ]);
+    }
     expect(Object.keys(SHAPER_BUILTIN_PART_PRESETS).length).toBeGreaterThanOrEqual(5);
 
     const survivorMale = buildShaperPresetCommands("shaper-archetype-survivor-male");

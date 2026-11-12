@@ -1,6 +1,6 @@
 /**
  * SHAPER 0.5.563 `BuiltInData/Presets/{head,eyes,nose,mouth,ears,hair,body,pose,defaultStyle}/*.preset`
- * 역공학 추출 데이터에 기반한 풀세트 아키타입·포즈·부위별 프리셋 라이브러리.
+ * 역공학 추출 데이터 및 웹툰 장르별 연출 문법에 기반한 풀세트 아키타입·포즈·부위별 프리셋 라이브러리.
  */
 import { qNormalize, type Quat, type Vec3 } from "../../../shared/math";
 
@@ -33,14 +33,20 @@ function eulerDegToQuat(deg: Vec3): Quat {
   ]);
 }
 
+export type ShaperBuiltinPoseId =
+  | "shaper-pose-1"
+  | "shaper-pose-2"
+  | "shaper-pose-3"
+  | "shaper-pose-action-dash"
+  | "shaper-pose-murim-sword"
+  | "shaper-pose-romance-gaze"
+  | "shaper-pose-thriller-guard";
+
 /**
- * SHAPER `BuiltInData/Presets/pose/{포즈1,포즈2,포즈3}.preset`에서 추출한 정본 포즈 프리셋
+ * SHAPER `BuiltInData/Presets/pose` 정본 포즈 3종 + 웹툰 핵심 장르 연출 포즈 4종
  */
 export const SHAPER_BUILTIN_POSE_PRESETS: Readonly<
-  Record<
-    "shaper-pose-1" | "shaper-pose-2" | "shaper-pose-3",
-    { readonly id: string; readonly labelKo: string; readonly pose: Pose }
-  >
+  Record<ShaperBuiltinPoseId, { readonly id: ShaperBuiltinPoseId; readonly labelKo: string; readonly pose: Pose }>
 > = {
   "shaper-pose-1": {
     id: "shaper-pose-1",
@@ -97,6 +103,82 @@ export const SHAPER_BUILTIN_POSE_PRESETS: Readonly<
       leftLowerLeg: eulerDegToQuat([6, 0, 0]),
       rightUpperLeg: eulerDegToQuat([5, -6, 3]),
       rightLowerLeg: eulerDegToQuat([10, 0, 0]),
+    },
+  },
+  "shaper-pose-action-dash": {
+    id: "shaper-pose-action-dash",
+    labelKo: "웹툰 액션 질주·돌파 컷",
+    pose: {
+      hips: eulerDegToQuat([18, -16, 4]),
+      spine: eulerDegToQuat([14, 10, -3]),
+      chest: eulerDegToQuat([10, 12, -2]),
+      neck: eulerDegToQuat([-12, -10, 2]),
+      head: eulerDegToQuat([-10, -14, 4]),
+      leftUpperArm: eulerDegToQuat([-38, 18, -22]),
+      leftLowerArm: eulerDegToQuat([62, 14, 0]),
+      rightUpperArm: eulerDegToQuat([42, -16, 26]),
+      rightLowerArm: eulerDegToQuat([54, -12, 0]),
+      leftUpperLeg: eulerDegToQuat([-44, 6, -4]),
+      leftLowerLeg: eulerDegToQuat([52, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([34, -6, 4]),
+      rightLowerLeg: eulerDegToQuat([28, 0, 0]),
+    },
+  },
+  "shaper-pose-murim-sword": {
+    id: "shaper-pose-murim-sword",
+    labelKo: "무협·판타지 발도 준비세",
+    pose: {
+      hips: eulerDegToQuat([8, 24, -4]),
+      spine: eulerDegToQuat([4, -12, 3]),
+      chest: eulerDegToQuat([2, -16, 2]),
+      neck: eulerDegToQuat([-4, 14, -2]),
+      head: eulerDegToQuat([-4, 20, -3]),
+      leftUpperArm: eulerDegToQuat([22, 26, -18]),
+      leftLowerArm: eulerDegToQuat([48, 24, 0]),
+      rightUpperArm: eulerDegToQuat([-24, -22, 30]),
+      rightLowerArm: eulerDegToQuat([58, -18, 0]),
+      leftUpperLeg: eulerDegToQuat([-26, -10, -8]),
+      leftLowerLeg: eulerDegToQuat([34, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([18, 14, 10]),
+      rightLowerLeg: eulerDegToQuat([26, 0, 0]),
+    },
+  },
+  "shaper-pose-romance-gaze": {
+    id: "shaper-pose-romance-gaze",
+    labelKo: "로판·학원물 뒤돌아보는 시선",
+    pose: {
+      hips: eulerDegToQuat([0, 28, -3]),
+      spine: eulerDegToQuat([-2, -10, 2]),
+      chest: eulerDegToQuat([-4, -16, 3]),
+      neck: eulerDegToQuat([4, -18, -3]),
+      head: eulerDegToQuat([-3, -24, -4]),
+      leftUpperArm: eulerDegToQuat([12, 8, -28]),
+      leftLowerArm: eulerDegToQuat([26, 16, 0]),
+      rightUpperArm: eulerDegToQuat([18, -18, 24]),
+      rightLowerArm: eulerDegToQuat([44, -26, 0]),
+      leftUpperLeg: eulerDegToQuat([6, -4, 3]),
+      leftLowerLeg: eulerDegToQuat([10, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([-8, 8, -4]),
+      rightLowerLeg: eulerDegToQuat([16, 0, 0]),
+    },
+  },
+  "shaper-pose-thriller-guard": {
+    id: "shaper-pose-thriller-guard",
+    labelKo: "스릴러·생존물 경계 방어세",
+    pose: {
+      hips: eulerDegToQuat([10, -18, 3]),
+      spine: eulerDegToQuat([8, 8, -2]),
+      chest: eulerDegToQuat([6, 10, -2]),
+      neck: eulerDegToQuat([-8, -12, 3]),
+      head: eulerDegToQuat([-6, -16, 2]),
+      leftUpperArm: eulerDegToQuat([-28, 22, -24]),
+      leftLowerArm: eulerDegToQuat([68, 22, 0]),
+      rightUpperArm: eulerDegToQuat([-22, -18, 22]),
+      rightLowerArm: eulerDegToQuat([64, -20, 0]),
+      leftUpperLeg: eulerDegToQuat([-18, 6, -6]),
+      leftLowerLeg: eulerDegToQuat([26, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([14, -8, 6]),
+      rightLowerLeg: eulerDegToQuat([22, 0, 0]),
     },
   },
 };
@@ -158,8 +240,7 @@ export interface ShaperArchetypePreset {
 }
 
 /**
- * SHAPER `BuiltInData`의 대표 캐릭터 조합(헤어+얼굴형+이목구비+체형+의상+포즈+웹툰 기본 피부색 `#ffecce`)을
- * 원클릭으로 한 번에 적용해 대머리 마네킹 상태 없이 즉시 완성된 SHAPER 스타일 캐릭터를 구성한다.
+ * SHAPER `BuiltInData` 및 웹툰 장르 대표 캐릭터 조합을 원클릭으로 일괄 적용하는 풀세트 아키타입
  */
 export const SHAPER_BUILTIN_ARCHETYPE_PRESETS: Readonly<Record<string, ShaperArchetypePreset>> = {
   "shaper-archetype-survivor-male": {
@@ -247,6 +328,40 @@ export const SHAPER_BUILTIN_ARCHETYPE_PRESETS: Readonly<Record<string, ShaperArc
     colors: { skin: "#fff1dc", hair: "#dfd3c3", brow: "#b8a898", iris: "#3ba38b", top: "#eef4f8", bottom: "#2d4a53", shoes: "#4a3b32" },
     pose: SHAPER_BUILTIN_POSE_PRESETS["shaper-pose-2"].pose,
   },
+  "shaper-archetype-academy-protagonist": {
+    id: "shaper-archetype-academy-protagonist",
+    labelKo: "SHAPER 아카데미 주인공 풀세트 (울프레이어드+블레이저+로맨스시선)",
+    bodyParams: { height: 0.08, headSize: 0.04, shoulderWidth: -0.12, chestDepth: 0.12, waist: -0.28, hip: 0.16, armLength: -0.02, legLength: 0.22, neckLength: 0.09 },
+    faceParams: {
+      faceShape: -0.3, jawWidth: -0.32, chinLength: -0.02, cheekVolume: 0.08, forehead: 0.08,
+      eyeSize: 0.3, eyeSpacing: 0.05, eyeTilt: 0.16, noseHeight: 0.22, noseWidth: -0.26, noseDepth: 0.2,
+      mouthWidth: -0.06, lipFullness: 0.14, earSize: -0.02, earAngle: 0.02,
+    },
+    slots: {
+      "face-shape": "face-shape/v-line", eyes: "eyes/almond", irises: "irises/star-highlight", nose: "nose/straight",
+      mouth: "mouth/smile-corner", ears: "ears/small", hair: "hair/wolf-layered", body: "body/slim",
+      top: "top/blazer", bottom: "bottom/pleated-skirt", shoes: "shoes/loafers", accessory: "accessory/ribbon",
+    },
+    colors: { skin: "#fff0e2", hair: "#2a283e", brow: "#2a283e", iris: "#7b52c7", top: "#21293d", bottom: "#2c344a", shoes: "#2c2226", accessory: "#d94662" },
+    pose: SHAPER_BUILTIN_POSE_PRESETS["shaper-pose-romance-gaze"].pose,
+  },
+  "shaper-archetype-murim-swordsman": {
+    id: "shaper-archetype-murim-swordsman",
+    labelKo: "SHAPER 무협·헌터 검사 풀세트 (포니테일+트렌치코트+발도세)",
+    bodyParams: { height: 0.38, headSize: -0.16, shoulderWidth: 0.42, chestDepth: 0.26, waist: -0.08, hip: -0.1, armLength: 0.18, legLength: 0.3, neckLength: 0.1 },
+    faceParams: {
+      faceShape: -0.28, jawWidth: -0.24, chinLength: 0.08, cheekVolume: -0.1, forehead: 0.06,
+      eyeSize: -0.06, eyeSpacing: 0.04, eyeTilt: 0.3, noseHeight: 0.28, noseWidth: -0.16, noseDepth: 0.24,
+      mouthWidth: 0.02, lipFullness: -0.04, earSize: 0.02, earAngle: 0.04,
+    },
+    slots: {
+      "face-shape": "face-shape/sharp", eyes: "eyes/narrow", irises: "irises/cat", nose: "nose/high-bridge",
+      mouth: "mouth/thin", ears: "ears/standard", hair: "hair/action-pony", body: "body/athletic",
+      top: "top/trench-coat", bottom: "bottom/slacks", shoes: "shoes/boots",
+    },
+    colors: { skin: "#ffecce", hair: "#1e2028", brow: "#1e2028", iris: "#c23b4b", top: "#1b202b", bottom: "#141820", shoes: "#101216" },
+    pose: SHAPER_BUILTIN_POSE_PRESETS["shaper-pose-murim-sword"].pose,
+  },
 };
 
 /**
@@ -285,7 +400,7 @@ export function buildShaperPresetCommands(presetKey: string): {
   }
 
   if (presetKey in SHAPER_BUILTIN_POSE_PRESETS) {
-    const preset = SHAPER_BUILTIN_POSE_PRESETS[presetKey as keyof typeof SHAPER_BUILTIN_POSE_PRESETS];
+    const preset = SHAPER_BUILTIN_POSE_PRESETS[presetKey as ShaperBuiltinPoseId];
     return {
       commands: [{ type: "pose/set", pose: preset.pose, scope: "full", labelKo: preset.labelKo, coalesceKey: `shaper-pose:${preset.id}` }],
       noticeKo: `${preset.labelKo}을 적용했습니다.`,

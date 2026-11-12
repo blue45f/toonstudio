@@ -25,6 +25,9 @@ const COMPONENT_OPTIONS: readonly { readonly id: SketchUpArchitecturalComponentK
   { id: "window-bay", labelKo: "돌출 베이 윈도우" },
   { id: "door-arch", labelKo: "아치형 정문" },
   { id: "street-colonnade", labelKo: "열주 회랑" },
+  { id: "storefront-awning", labelKo: "상가 쇼윈도·어닝" },
+  { id: "rooftop-mechanical", labelKo: "옥상 물탱크·실외기" },
+  { id: "street-bus-shelter", labelKo: "버스정류장 쉘터" },
 ];
 
 type InputKey = "width" | "height" | "depth" | "x" | "y" | "z";
@@ -58,7 +61,12 @@ export function StudioBg3dArchitecturalModelingPanel({
   });
   const [status, setStatus] = useState<string | null>(null);
   const usesDepth = kind !== "staircase-spiral";
-  const usesCount = kind.startsWith("staircase-") || kind === "street-colonnade";
+  const usesCount =
+    kind.startsWith("staircase-")
+    || kind === "street-colonnade"
+    || kind === "storefront-awning"
+    || kind === "rooftop-mechanical"
+    || kind === "street-bus-shelter";
   const values = {
     width: Number(inputs.width), height: Number(inputs.height), depth: Number(inputs.depth),
     x: Number(inputs.x), y: Number(inputs.y), z: Number(inputs.z),

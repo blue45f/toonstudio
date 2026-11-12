@@ -241,6 +241,21 @@ test.describe("mobile shell accessibility", () => {
     await expect(player.locator("[data-site-ost-pill] button")).toHaveCount(2);
   }
 
+  async function assertAllOstButtonsReachable(page: Page) {
+    const controls = page.getByTestId("site-background-music-player").getByRole("button");
+    expect(await controls.count()).toBeGreaterThan(0);
+    for (const control of await controls.all()) {
+      await control.scrollIntoViewIfNeeded();
+      await expect.poll(() => control.evaluate((button) => {
+        const r = button.getBoundingClientRect();
+        return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.top >= 0
+          && r.right <= innerWidth && r.bottom <= innerHeight
+          && [0.2, 0.5, 0.8].every((x) => [0.2, 0.5, 0.8].every((y) =>
+            button.contains(document.elementFromPoint(r.x + r.width * x, r.y + r.height * y))));
+      })).toBe(true);
+    }
+  }
+
   test("서비스 장애 알림과 OST: 본문 연결 안내는 세 폭에서 터치를 가리지 않는다", async ({ page }) => {
     // 기존 전체 API 503의 실제 연결 준비 상태에는 펼침 버튼이 없다.
     await assertNoBlockingViolations(page, "/studio");
@@ -265,11 +280,12 @@ test.describe("mobile shell accessibility", () => {
       await assertOstExpanded(page, "menu");
       await expect.poll(async () => player.evaluate((element) => element.closest("[inert]") === null)).toBe(true);
       await expect.poll(async () => page.evaluate(() => ({ body: document.body.style.overflow, root: document.documentElement.style.overflow }))).toEqual(scrollBeforeMenu);
-      // 명시적으로 연 옵션 패널은 본문을 덮을 수 있다. 조작 없는 inline 안내에 원래 고정 배너의
-      // 동시 비겹침 조건을 적용하지 않고, 실제 패널 조작과 닫은 뒤 본문·초점 복원을 검사한다.
+      // main의 실제 배너/뷰포트 패널 배치를 함께 검증한다. 스크롤되는 설정 버튼은 정상
+      // 스크롤로 노출한 뒤 모두 검사하고, 고정 배너의 실제 별도 상태 검증도 아래에서 유지한다.
+      await assertAllOstButtonsReachable(page);
       await expect.poll(() => readServiceOstGeometry(page), { message: `본문 연결 안내·OST ${width}px` }).toMatchObject({
         surfacesPresent: true, expanded: true, settingsVisible: true, floating: false, pillCount: 2, bannerControlCount: 0,
-        panelInViewport: true, touchAndHit: true,
+        panelInViewport: true, touchAndHit: true, noOverlap: true,
       });
       await player.getByRole("button", { name: "OST 플레이어 접기", exact: true }).click();
       await expect(player).not.toHaveAttribute("data-site-ost-expanded", "true");

@@ -96,4 +96,41 @@ describe("studio-pose-history (되돌리기/다시실행)", () => {
       redoCount: 0,
     });
   });
+
+  it("손 접촉·콘트라포스토 메타데이터를 되돌리기·다시실행 전 구간에서 포즈와 함께 정확히 보존한다", () => {
+    const rest = createStudioMannequinRestPose();
+    const poseLeftContra = poseWithSpine(12);
+    const poseChinContact = poseWithSpine(24);
+
+    let history = createStudioPoseHistory();
+    history = recordStudioPoseHistory(history, rest);
+    expect("pastMeta" in history).toBe(false);
+
+    history = recordStudioPoseHistory(history, poseLeftContra, {
+      contrapposto: "left",
+    });
+    expect(history.pastMeta).toEqual([undefined, { contrapposto: "left" }]);
+
+    const undone1 = undoStudioPoseHistory(history, poseChinContact, {
+      contrapposto: "left",
+      handContacts: { right: "chin" },
+    });
+    expect(undone1?.pose).toBe(poseLeftContra);
+    expect(undone1?.meta).toEqual({ contrapposto: "left" });
+
+    const undone2 = undoStudioPoseHistory(undone1!.history, undone1!.pose, undone1!.meta);
+    expect(undone2?.pose).toBe(rest);
+    expect(undone2?.meta).toBeUndefined();
+
+    const redone1 = redoStudioPoseHistory(undone2!.history, undone2!.pose, undone2!.meta);
+    expect(redone1?.pose).toBe(poseLeftContra);
+    expect(redone1?.meta).toEqual({ contrapposto: "left" });
+
+    const redone2 = redoStudioPoseHistory(redone1!.history, redone1!.pose, redone1!.meta);
+    expect(redone2?.pose).toBe(poseChinContact);
+    expect(redone2?.meta).toEqual({
+      contrapposto: "left",
+      handContacts: { right: "chin" },
+    });
+  });
 });

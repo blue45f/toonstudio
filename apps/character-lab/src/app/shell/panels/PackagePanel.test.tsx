@@ -90,6 +90,8 @@ describe("PackagePanel", () => {
     await screen.findByText("Avatar Orion · Authored Toon");
     expect(screen.getByText("ToonStudio Reference Character")).toBeTruthy();
     expect(screen.getByText("Tripo Studio H3.1 · SHAPER Rigged Webtoon")).toBeTruthy();
+    expect(screen.getByText("SHAPER Atelier · Webtoon Protagonist (7.5등신 풀파츠)")).toBeTruthy();
+    expect(screen.getByText("SHAPER Atelier · Male Lead Hunter (8등신 풀파츠)")).toBeTruthy();
     expect(screen.getByText("주 캐릭터")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Avatar Orion · Authored Toon 불러오기" }));
     await waitFor(() => expect(screen.getByRole("table")).toBeTruthy(), { timeout: 15000 });

@@ -16,6 +16,7 @@ import {
   computeBrushStudioV7ImpastoShading,
   sampleBrushStudioV7BackrunLobes,
   sampleBrushStudioV7BristleBundle,
+  sampleBrushStudioV7ChiselTwistDrag,
   sampleBrushStudioV7Sediment,
   sampleBrushStudioV7VectorField,
   shadeBrushStudioV7ReliefColor,
@@ -233,5 +234,32 @@ function signature(marks: readonly BrushStudioV6MaterialMark[]): string[] {
     expect(lit.specularBoost).toBeGreaterThan(0);
     expect(shadow.specularBoost).toBe(0);
     expect(lit.furrowDepth).toBeGreaterThan(0);
+  });
+});
+describe("배럴 트위스트 마찰 회전 저항", () => {
+  it("마찰 0은 목표 각도를 그대로 사용하고, 높은 마찰은 최단 회전 방향으로 점진적으로 추종한다", () => {
+    const input = { previousTwistDeg: 359, targetTwistDeg: 1, travelPx: 1, radiusPx: 10 };
+    expect(sampleBrushStudioV7ChiselTwistDrag({ ...input, friction01: 0 })).toBe(1);
+    const dragged = sampleBrushStudioV7ChiselTwistDrag({ ...input, friction01: 1 });
+    expect(dragged).toBeGreaterThan(359);
+    expect(dragged).toBeLessThan(361);
+    expect(sampleBrushStudioV7ChiselTwistDrag({ ...input, previousTwistDeg: null, friction01: 1 })).toBe(1);
+  });
+
+  it("같은 이동 거리를 분할해도 회전 응답이 같고 stroke reset은 닙 회전 이력을 초기화한다", () => {
+    const input = { previousTwistDeg: 0, targetTwistDeg: 90, friction01: 0.8, radiusPx: 10 };
+    const full = sampleBrushStudioV7ChiselTwistDrag({ ...input, travelPx: 4 });
+    const first = sampleBrushStudioV7ChiselTwistDrag({ ...input, travelPx: 2 });
+    const second = sampleBrushStudioV7ChiselTwistDrag({ ...input, previousTwistDeg: first, travelPx: 2 });
+    expect(second).toBeCloseTo(full, 12);
+    const base = createBrushStudioV6Program("calligraphy-barrel-twist-nib");
+    const stroke = createBrushStudioV6MaterialStroke({ ...base, tuning: { ...base.tuning, friction: 1 } });
+    const points = [
+      { x: 10, y: 10, pressure: 0.7, twist: 0 },
+      { x: 40, y: 25, pressure: 0.7, twist: 90 },
+    ];
+    const initial = points.flatMap((point) => stroke.push(point));
+    stroke.reset();
+    expect(points.flatMap((point) => stroke.push(point))).toEqual(initial);
   });
 });

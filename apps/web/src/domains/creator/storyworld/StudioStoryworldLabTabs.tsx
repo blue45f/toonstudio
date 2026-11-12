@@ -35,13 +35,11 @@ import {
   friendlyStoryworldFileError,
   parseStoryworldProject,
 } from "./studio-storyworld-document";
-import { formatStoryworldMinutes, scoreTone } from "./studio-storyworld-lab-display";
-
-const MATURITY_LABELS: Readonly<Record<StoryworldCapabilityMaturity, string>> = {
-  engine: "바로 사용 가능",
-  adapter: "다른 기능과 연결",
-  experimental: "시험 중 기능",
-};
+import {
+  STORYWORLD_MATURITY_LABELS,
+  formatStoryworldMinutes,
+  scoreTone,
+} from "./studio-storyworld-lab-display";
 
 export function OverviewTab({ project, result, onOpenIssues, onOpenData, onEditElement }: {
   readonly project: StoryworldProject;
@@ -339,7 +337,7 @@ export function CapabilitiesTab() {
       <div className="storyworld-segmented" data-own-control-size="" role="group" aria-label="기능 성숙도 필터">
         {(["all", "engine", "adapter", "experimental"] as const).map((value) => (
           <button aria-pressed={maturity === value} className="min-h-11 px-3" key={value} onClick={() => setMaturity(value)} type="button">
-            {value === "all" ? "전체" : MATURITY_LABELS[value]}
+            {value === "all" ? "전체" : STORYWORLD_MATURITY_LABELS[value]}
           </button>
         ))}
       </div>
@@ -354,7 +352,7 @@ export function CapabilitiesTab() {
                 <article key={capability.id}>
                   <div className="storyworld-capability-grid__topline">
                     <BrainCircuit aria-hidden size={18} />
-                    <span data-maturity={capability.maturity}>{MATURITY_LABELS[capability.maturity]}</span>
+                    <span data-maturity={capability.maturity}>{STORYWORLD_MATURITY_LABELS[capability.maturity]}</span>
                   </div>
                   <h3>{capability.name}</h3>
                   <p>{capability.oneLine}</p>

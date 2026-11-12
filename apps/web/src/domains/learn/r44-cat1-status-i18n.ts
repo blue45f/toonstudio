@@ -17,13 +17,11 @@ import {
 } from "@/shared/lib/i18n";
 
 registerI18nLocaleEntries("ko", {
-  "r44cat1.learn.learnContent.missionIdleNote": "새 탭에서 열립니다. 기존 작업을 자동 변경하지 않습니다.",
   "r44cat1.learn.linkButton.copied": "현재 예제 설정과 설명 단계의 링크를 복사했습니다. 개인 메모와 학습 기록은 포함하지 않습니다.",
   "r44cat1.learn.streakRecovery.hiatusDeclared": "{track} 휴재를 선언했어요. 그 기간은 기록이 끊기지 않습니다.",
 });
 
 registerI18nLocaleEntries("en", {
-  "r44cat1.learn.learnContent.missionIdleNote": "It opens in a new tab. Your existing work is not changed automatically.",
   "r44cat1.learn.linkButton.copied": "Copied the link for the current example settings and explanation step. Personal notes and learning records are not included.",
   "r44cat1.learn.streakRecovery.hiatusDeclared": "You declared a {track} hiatus. Your streak will not be broken during that period.",
 });

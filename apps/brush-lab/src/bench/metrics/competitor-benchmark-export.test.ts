@@ -42,6 +42,10 @@ describe("브러시 벤치마크 JSON v2", () => {
       "bezierSmoothedJitterRmsPx", "ggxSpecularHighlightBrdf", "rybGreenComplementRgb", "fluidDivergenceReductionDelta",
       "ghostWashMudEliminationGain01", "spectral38ChromaPreservationGain01", "quadraticPigmentEndpointIdentityError",
       "p5BrushGrownVertexCount", "p5BrushSuperGaussianPressure01", "lazyBrushOutsideDeadZone", "seant23CubicFlatness",
+      "centripetalScallopReductionGain01", "centripetalCornerKinkReduction01", "subpixelAaStaircaseReduction01",
+      "bristleCentrifugalFanSplayRatio", "capillaryEdgeRingContrastGain01", "smudgeReservoirContinuity01",
+      "dualBrushLeakage01", "dualBrushInternalContrastGain01", "barrelTwistBroadToEdgeRatio",
+      "dipPenTineSplitSpanPx", "fiberFeatherAnisotropyRatio",
       "webgpuZeroCopyHotPathMapAsyncCount", "webgpuCpuDrawCallLoopCount", "compositeQualityScore100", "promotionGatePassed",
     ].sort());
     expect(bundle.summaryReport.quadraticPigmentEndpointIdentityError).toBe(0);

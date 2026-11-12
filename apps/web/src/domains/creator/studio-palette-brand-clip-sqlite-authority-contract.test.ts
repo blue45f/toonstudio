@@ -65,6 +65,7 @@ describe("palette, Brand Kit and clip product SQLite authority", () => {
     expect(palettePanel).toContain("mutationGenerationRef");
     expect(brandPanel).toContain("data-studio-brand-kit-authority");
     expect(brandPanel).toMatch(/storageState === "memory"\s*\?\s*creatorStorageText\("현재 탭에만 유지 · 새로고침하면 사라짐"/u);
+    expect(brandPanel).toContain("This tab only · lost on refresh");
     expect(brandPanel).toContain('panelStatusText("studio.panelStatus.brandKit.saveFailedMemoryOnly"');
     expect(brandPanel).toContain('<StudioDeviceStorageMessage message={error} />');
     expect(brandPanel).toContain("paletteLoadGenerationRef");

@@ -9,6 +9,7 @@
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
+import { buildSketchUpUrbanArchitecturalPrimitives } from "./studio-bg3d-sketchup-urban-components";
 
 export interface SketchUpSandboxTerrainGrid {
   readonly cols: number;
@@ -106,7 +107,10 @@ export type SketchUpArchitecturalComponentKind =
   | "roof-hanok"
   | "window-bay"
   | "door-arch"
-  | "street-colonnade";
+  | "street-colonnade"
+  | "storefront-awning"
+  | "rooftop-mechanical"
+  | "street-bus-shelter";
 
 export interface SketchUpArchitecturalComponentParams {
   readonly kind: SketchUpArchitecturalComponentKind;
@@ -758,6 +762,20 @@ export function buildSketchUpArchitecturalComponentPrimitives(
       }
       break;
     }
+    case "storefront-awning":
+    case "rooftop-mechanical":
+    case "street-bus-shelter": {
+      const urban = buildSketchUpUrbanArchitecturalPrimitives({
+        kind: params.kind,
+        widthMeters: w,
+        heightMeters: h,
+        depthMeters: d,
+        count,
+      });
+      labelKo = urban.labelKo;
+      primitives.push(...urban.primitives);
+      break;
+    }
   }
 
   return {
@@ -769,31 +787,4 @@ export function buildSketchUpArchitecturalComponentPrimitives(
   };
 }
 
-/**
- * 5. SketchUp LayOut 스타일 2D 벡터 단면도(Section Cutaway + Poché) SVG 생성기.
- */
-export function buildSketchUpLayOutVectorCutawaySvg(options: {
-  readonly title: string;
-  readonly widthMeters: number;
-  readonly heightMeters: number;
-  readonly sectionElevationMeters: number;
-  readonly pocheFillHex?: string;
-}): { readonly svg: string; readonly byteLength: number } {
-  const fill = options.pocheFillHex ?? "#262626";
-  const wPx = Math.round(options.widthMeters * 80);
-  const hPx = Math.round(options.heightMeters * 80);
-  const svg = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${wPx + 120} ${hPx + 120}" width="${wPx + 120}" height="${hPx + 120}">`,
-    `  <rect width="100%" height="100%" fill="#ffffff"/>`,
-    `  <g transform="translate(60,60)">`,
-    `    <rect x="0" y="0" width="${wPx}" height="${hPx}" fill="none" stroke="#000000" stroke-width="3"/>`,
-    `    <rect x="16" y="16" width="${Math.max(20, wPx - 32)}" height="${Math.max(20, hPx - 32)}" fill="${fill}" fill-opacity="0.18" stroke="#000000" stroke-width="2"/>`,
-    `    <text x="12" y="-16" font-family="monospace" font-size="14" fill="#111111">${options.title} — Section @ EL +${options.sectionElevationMeters.toFixed(2)}m</text>`,
-    `  </g>`,
-    `</svg>`,
-  ].join("\n");
-  return {
-    svg,
-    byteLength: new TextEncoder().encode(svg).byteLength,
-  };
-}
+export { buildSketchUpLayOutVectorCutawaySvg } from "./studio-bg3d-sketchup-urban-components";

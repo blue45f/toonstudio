@@ -33,7 +33,6 @@ describe("PaintPanel", () => {
     expect(state.activePart).toBe("hair");
     expect(state.wrap).toBe(false);
     expect(screen.getByText(/헤어 레이어 \(아직 없음\)/u)).toBeTruthy();
-    // <output>도 암묵적 role="status"라 getByRole("status")는 다중 매치가 되므로 텍스트로 찾는다.
     expect(screen.getByText(/엔진이 준비되지 않아/u)).toBeTruthy();
   });
 
@@ -85,7 +84,6 @@ describe("PaintPanel", () => {
     const session = createPaintSession({ layerSize: 64, brush: { radiusPx: 4, hardness: 1, opacity: 1 } });
     session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
     session.endStroke();
-    // 스트로크 경로(ViewportPane 드라이버)가 올린 칠을 흉내 낸다
     engine.updatePaintTexture(session.layer("skin"));
     expect(engine.paintUploads).toHaveLength(1);
     expect(engine.paintUploads[0]?.rgba.some((byte) => byte !== 0)).toBe(true);
@@ -96,12 +94,10 @@ describe("PaintPanel", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "레이어 비우기" }));
     expect(dispatched.map((command) => command.type)).toEqual(["paint/stroke"]);
-    // 비운 뒤 엔진에 올라간 레이어는 투명이다(업로드가 없으면 엔진 텍스처는 이전 칠을 그대로 보인다)
     expect(engine.paintUploads).toHaveLength(2);
     const uploaded = engine.paintUploads[1];
     expect(uploaded?.part).toBe("skin");
     expect(uploaded?.rgba.every((byte) => byte === 0)).toBe(true);
-    // 이미 빈 레이어를 다시 비우면 토큰도 업로드도 없다
     fireEvent.click(screen.getByRole("button", { name: "레이어 비우기" }));
     expect(engine.paintUploads).toHaveLength(2);
   });
@@ -161,7 +157,6 @@ describe("PaintPanel", () => {
       const items = Array.from(list.querySelectorAll("li")).map((item) => item.getAttribute("data-part"));
       expect(items.sort()).toEqual(["hair", "top"]);
       expect(list.textContent).toMatch(/이미 칠한 헤어 레이어: 헤어 변형을 바꾸면/u);
-      // 선택 부위(헤어)로 옮기면 그 부위는 위 단일 경고가 말하므로 목록에서 빠진다
       fireEvent.change(screen.getByLabelText("레이어(부위)"), { target: { value: "hair" } });
       const after = Array.from(screen.getByRole("list", { name: "어긋날 수 있는 레이어" }).querySelectorAll("li")).map((item) => item.getAttribute("data-part"));
       expect(after).toEqual(["top"]);
@@ -226,5 +221,137 @@ describe("PaintPanel", () => {
     fireEvent.click(screen.getByLabelText("의상 뒤 신체 페인트 차단"));
     expect(session.getState().bodyLineMaskEnabled).toBe(false);
     expect(readout.textContent).toContain("의상 마스킹 OFF");
+  });
+
+  it("브러시/지우개 모드 전환·좌우 대칭 그리기·웹툰 디테일 스탬프가 undo 토큰과 엔진 업로드를 기록한다", () => {
+    const engine = createMockEngine();
+    const engineSession = createMockEngineSession({ phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics });
+    engineSession.setEngine(engine);
+    const dispatched: LabCommand[] = [];
+    const session = createPaintSession({ layerSize: 64, activePart: "head" });
+
+    render(
+      <MockLabProvider engineSession={engineSession} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <PaintPanel session={session} />
+      </MockLabProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId("paint-tool-eraser"));
+    expect(session.getState().toolMode).toBe("eraser");
+    expect(screen.getByTestId("shaper-paint-stroke-readout").textContent).toContain("도구 지우개");
+
+    fireEvent.click(screen.getByLabelText("좌우 대칭 그리기 (U축 미러)"));
+    expect(session.getState().symmetry).toBe(true);
+    expect(screen.getByTestId("shaper-paint-stroke-readout").textContent).toContain("대칭 ON");
+
+    fireEvent.click(screen.getByTestId("paint-decal-blush-slash"));
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]?.type).toBe("paint/stroke");
+    expect(engine.paintUploads).toHaveLength(1);
+    expect(engine.paintUploads[0]?.part).toBe("head");
+  });
+
+  it("SHAPER 서브레이어(Layer 0~5) 전환·개별 숨김/불투명도·선택 서브레이어 비우기가 마스터 텍스처에 즉시 합성된다", () => {
+    const engine = createMockEngine();
+    const engineSession = createMockEngineSession({ phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics });
+    engineSession.setEngine(engine);
+    const dispatched: LabCommand[] = [];
+    const session = createPaintSession({ layerSize: 64, activePart: "head", brush: { radiusPx: 6, hardness: 1, opacity: 1, color: "#112233" } });
+
+    act(() => {
+      session.setActiveSublayer(0);
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+    });
+
+    render(
+      <MockLabProvider engineSession={engineSession} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <PaintPanel session={session} />
+      </MockLabProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId("paint-sublayer-1"));
+    expect(session.getState().activeSublayer).toBe(1);
+    expect(screen.getByTestId("shaper-paint-stroke-readout").textContent).toContain("서브레이어 L1");
+
+    act(() => {
+      session.setBrush({ color: "#ff3366", opacity: 1, hardness: 1 });
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+    });
+    expect(readPixel(session.layer("head"), 32, 32)).toEqual([255, 51, 102, 255]);
+
+    fireEvent.click(screen.getByTestId("paint-sublayer-visible"));
+    expect(readPixel(session.layer("head"), 32, 32)).toEqual([17, 34, 51, 255]);
+    expect(engine.paintUploads.length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(screen.getByTestId("paint-sublayer-visible"));
+    fireEvent.change(screen.getByTestId("paint-sublayer-opacity"), { target: { value: "0.6" } });
+    fireEvent.click(screen.getByTestId("paint-clear-sublayer"));
+    expect(dispatched.some((cmd) => cmd.type === "paint/stroke")).toBe(true);
+    expect(readPixel(session.layer("head"), 32, 32)).toEqual([17, 34, 51, 255]);
+  });
+
+  it("서브레이어 상/하 순서 변경·방향키 키보드 탐색·포인터 드래그 불투명도 단일 Undo 병합·숨김 스탬프 차단이 동작한다", () => {
+    const engine = createMockEngine();
+    const engineSession = createMockEngineSession({ phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics });
+    engineSession.setEngine(engine);
+    const dispatched: LabCommand[] = [];
+    const session = createPaintSession({ layerSize: 64, activePart: "head", brush: { radiusPx: 6, hardness: 1, opacity: 1, color: "#112233" } });
+
+    act(() => {
+      session.setActiveSublayer(0);
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+      session.setActiveSublayer(1);
+      session.setBrush({ color: "#ff3366", opacity: 1, hardness: 1 });
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+    });
+
+    render(
+      <MockLabProvider engineSession={engineSession} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <PaintPanel session={session} />
+      </MockLabProvider>,
+    );
+
+    // L1에서 키보드 ArrowLeft → L0 선택, 다시 ArrowRight → L1 선택
+    const chip1 = screen.getByTestId("paint-sublayer-1");
+    chip1.focus();
+    fireEvent.keyDown(chip1, { key: "ArrowLeft" });
+    expect(session.getState().activeSublayer).toBe(0);
+    expect(document.activeElement).toBe(screen.getByTestId("paint-sublayer-0"));
+    fireEvent.keyDown(screen.getByTestId("paint-sublayer-0"), { key: "ArrowRight" });
+    expect(session.getState().activeSublayer).toBe(1);
+
+    // L1을 아래(배경)로 이동하면 [1, 0, 2, 3, 4, 5]가 되어 L0 선화가 위로 올라오고 Undo 토큰이 1회 dispatch된다
+    dispatched.length = 0;
+    fireEvent.click(screen.getByTestId("paint-sublayer-move-down"));
+    expect(session.getState().sublayerOrders.get("head")).toEqual([1, 0, 2, 3, 4, 5]);
+    expect(readPixel(session.layer("head"), 32, 32)).toEqual([17, 34, 51, 255]);
+    expect(screen.getByTestId("paint-sublayer-order-readout").textContent).toContain("L1 → L0 → L2");
+    expect(dispatched).toHaveLength(1);
+
+    // 포인터 드래그 중 연속 불투명도 변경은 실시간 반영하되 pointerUp에서 단 1개의 병합 Undo 단계만 커밋한다
+    const opacityInput = screen.getByTestId("paint-sublayer-opacity");
+    fireEvent.pointerDown(opacityInput);
+    fireEvent.change(opacityInput, { target: { value: "0.8" } });
+    fireEvent.change(opacityInput, { target: { value: "0.5" } });
+    fireEvent.change(opacityInput, { target: { value: "0.35" } });
+    expect(dispatched).toHaveLength(1); // 아직 드래그 중이므로 추가 커밋 없음
+    fireEvent.pointerUp(opacityInput);
+    expect(dispatched).toHaveLength(2);
+    const mergedOpCmd = dispatched[1];
+    if (mergedOpCmd?.type === "paint/stroke") {
+      act(() => {
+        session.applyToken(mergedOpCmd.undoToken);
+      });
+      expect(session.getState().sublayers.get("head")?.[1]?.opacity).toBeCloseTo(1, 5);
+    }
+
+    // 숨김 처리 시 그리기 차단 배너가 표시되고 웹툰 디테일 스탬프 버튼이 비활성화된다
+    fireEvent.click(screen.getByTestId("paint-sublayer-visible"));
+    expect(screen.getByTestId("paint-sublayer-blocked-hint").textContent).toContain("숨김");
+    expect((screen.getByTestId("paint-decal-blush-slash") as HTMLButtonElement).disabled).toBe(true);
   });
 });

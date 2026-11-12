@@ -616,7 +616,12 @@ describe("StudioCanvasStatusRail", () => {
     expect((rail as HTMLElement | null)?.style.top).toBe("8rem");
   });
 
-  it.each(["zoom", "rotate"] as const)("keeps the mobile notice below both presence and %s controls as the HUD closes", (mode) => {
+  it.each([
+    { mode: "zoom", mobileImmersive: true },
+    { mode: "rotate", mobileImmersive: true },
+    { mode: "zoom", mobileImmersive: false },
+    { mode: "rotate", mobileImmersive: false },
+  ] as const)("모바일 알림은 협업 배치($mobileImmersive)와 $mode 도구 아래에 머문다", ({ mode, mobileImmersive }) => {
     viewportState.mobile = true;
     const resizeCallbacks: Array<() => void> = [];
     const observe = vi.fn();
@@ -639,7 +644,7 @@ describe("StudioCanvasStatusRail", () => {
       return new DOMRect();
     });
 
-    const stickyProps = createStickyProps(mode);
+    const stickyProps = { ...createStickyProps(mode), mobileImmersive };
     const railProps = createProps({ mobileImmersive: true, hasAutosave: true });
     const viewport = (viewTool: typeof mode | null) => (
       <div data-testid="viewport" data-studio-mobile-immersive="true">
@@ -651,7 +656,6 @@ describe("StudioCanvasStatusRail", () => {
     const band = container.querySelector<HTMLElement>("[data-studio-floating-controls]");
     const stack = band?.firstElementChild;
     const presence = container.querySelector("[data-studio-presence-controls]");
-    const collaboration = presence?.closest<HTMLDetailsElement>("[data-studio-collaboration-disclosure]");
     const hud = screen.getByRole("toolbar", { name: `${mode} view controls` });
     const rail = container.querySelector<HTMLElement>("[data-studio-canvas-status-rail]");
 
@@ -659,9 +663,14 @@ describe("StudioCanvasStatusRail", () => {
       "sticky", "top-2", '[[data-studio-mobile-immersive="true"]_&]:top-16', "h-0",
     ]));
     expect(stack?.className).toBe("flex flex-col gap-2");
-    expect(collaboration?.open).toBe(true);
-    expect(collaboration?.querySelector("[data-studio-collaboration-body]")?.contains(presence)).toBe(true);
-    expect(stack?.firstElementChild).toBe(collaboration);
+    const disclosure = stack?.firstElementChild;
+    expect(disclosure?.tagName).toBe("DETAILS");
+    expect(disclosure?.querySelector("[data-studio-presence-controls]")).toBe(presence);
+    expect(disclosure?.hasAttribute("open")).toBe(!mobileImmersive);
+    const summary = disclosure?.querySelector("summary");
+    expect(summary?.hasAttribute("hidden")).toBe(!mobileImmersive);
+    if (mobileImmersive) expect(summary?.getAttribute("aria-expanded")).toBe("false");
+    expect(disclosure?.querySelector("[data-studio-collaboration-body]")?.hasAttribute("hidden")).toBe(mobileImmersive);
     expect(stack?.lastElementChild).toBe(hud.parentElement);
     expect(presence?.className).not.toMatch(/\bsticky\b|\bh-0\b/u);
     expect(hud.parentElement?.className).not.toMatch(/\bsticky\b|\bh-0\b/u);

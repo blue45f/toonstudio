@@ -334,9 +334,45 @@ export const STUDIO_MANNEQUIN_STATE_DOC_KIND = "studio-mannequin-state" as const
 export const STUDIO_MANNEQUIN_STATE_DOC_VERSION = 1 as const;
 /** 2인 구도 상대 인형을 담은 문서 버전. 상대가 없으면 v1 그대로(바이트 동일) 저장한다. */
 export const STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION = 2 as const;
+/** 손 접촉 목표·콘트라포스토·사면도·렌즈 화각 등 비기본 뷰/리그 설정이 있을 때의 문서 버전. */
+export const STUDIO_MANNEQUIN_STATE_DOC_RIG_VERSION = 3 as const;
 export const STUDIO_MANNEQUIN_STATE_DOC_MAX_BYTES = 24 * 1024;
 /** 상대 루트 위치 한계(m) — 주인공 로컬 프레임 기준. */
 const PARTNER_OFFSET_LIMIT = 5;
+const RIG_FOV_MIN_DEG = 15;
+const RIG_FOV_MAX_DEG = 85;
+const RIG_FOV_DEFAULT_DEG = 35;
+
+export const STUDIO_MANNEQUIN_PERSISTED_HAND_CONTACT_IDS = [
+  "hip",
+  "chin",
+  "chest",
+  "occiput",
+  "ground",
+] as const;
+
+export type StudioMannequinPersistedHandContactTargetId =
+  (typeof STUDIO_MANNEQUIN_PERSISTED_HAND_CONTACT_IDS)[number];
+
+export interface StudioMannequinHandContactMap {
+  readonly left?: StudioMannequinPersistedHandContactTargetId;
+  readonly right?: StudioMannequinPersistedHandContactTargetId;
+}
+
+export type StudioMannequinContrappostoSide = "left" | "right";
+
+/**
+ * 비기본 리그·뷰포트 영속 설정.
+ * 모든 값이 기본값(접촉 없음, 콘트라포스토 없음, 사면도 OFF, 화각 35°, 원근 투영)이면
+ * 키 자체를 생략해 기존 v1/v2 문서와 바이트 단위로 100% 호환되게 유지한다.
+ */
+export interface StudioMannequinPersistentRigState {
+  readonly handContacts?: StudioMannequinHandContactMap;
+  readonly contrapposto?: StudioMannequinContrappostoSide;
+  readonly quadView?: true;
+  readonly cameraFovDeg?: number;
+  readonly projection?: "orthographic";
+}
 
 /** 2인 구도의 상대 인형 — 체형·포즈와 주인공 로컬 프레임 기준 배치. */
 export interface StudioMannequinPersistentPartner {
@@ -353,6 +389,87 @@ export interface StudioMannequinPersistentState {
   readonly pose: StudioMannequinPose;
   /** 2인 구도의 상대 인형. 구버전(v1) 문서와 1인 작업에는 없다. */
   readonly partner?: StudioMannequinPersistentPartner;
+  /** 비기본 손 접촉·콘트라포스토·사면도·화각 설정. 기본값만 있으면 생략된다. */
+  readonly rig?: StudioMannequinPersistentRigState;
+}
+
+export function isStudioMannequinPersistedHandContactTargetId(
+  value: unknown,
+): value is StudioMannequinPersistedHandContactTargetId {
+  return (
+    typeof value === "string" &&
+    (STUDIO_MANNEQUIN_PERSISTED_HAND_CONTACT_IDS as readonly string[]).includes(value)
+  );
+}
+
+function quantizeRigFovDeg(value: number): number {
+  const clamped = Math.min(RIG_FOV_MAX_DEG, Math.max(RIG_FOV_MIN_DEG, value));
+  const rounded = Math.round(clamped * 100) / 100;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
+/**
+ * 리그·사면도 설정을 저장 정본으로 정규화한다.
+ * 유효한 비기본 항목이 하나도 없으면 undefined 를 반환해 v1/v2 호환성을 보장한다.
+ */
+export function canonicalizeStudioMannequinRigState(
+  input: unknown,
+): StudioMannequinPersistentRigState | undefined {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return undefined;
+  const source = input as {
+    readonly handContacts?: unknown;
+    readonly contrapposto?: unknown;
+    readonly quadView?: unknown;
+    readonly cameraFovDeg?: unknown;
+    readonly projection?: unknown;
+  };
+
+  let handContacts: StudioMannequinHandContactMap | undefined;
+  if (
+    typeof source.handContacts === "object" &&
+    source.handContacts !== null &&
+    !Array.isArray(source.handContacts)
+  ) {
+    const hc = source.handContacts as Record<string, unknown>;
+    const left = isStudioMannequinPersistedHandContactTargetId(hc.left) ? hc.left : undefined;
+    const right = isStudioMannequinPersistedHandContactTargetId(hc.right) ? hc.right : undefined;
+    if (left || right) {
+      handContacts = {
+        ...(left ? { left } : {}),
+        ...(right ? { right } : {}),
+      };
+    }
+  }
+
+  const contrapposto: StudioMannequinContrappostoSide | undefined =
+    source.contrapposto === "left" || source.contrapposto === "right"
+      ? source.contrapposto
+      : undefined;
+
+  const quadView: true | undefined = source.quadView === true ? true : undefined;
+
+  let cameraFovDeg: number | undefined;
+  if (typeof source.cameraFovDeg === "number" && Number.isFinite(source.cameraFovDeg)) {
+    const q = quantizeRigFovDeg(source.cameraFovDeg);
+    if (Math.abs(q - RIG_FOV_DEFAULT_DEG) > 1e-6) {
+      cameraFovDeg = q;
+    }
+  }
+
+  const projection: "orthographic" | undefined =
+    source.projection === "orthographic" ? "orthographic" : undefined;
+
+  if (!handContacts && !contrapposto && !quadView && cameraFovDeg === undefined && !projection) {
+    return undefined;
+  }
+
+  return {
+    ...(handContacts ? { handContacts } : {}),
+    ...(contrapposto ? { contrapposto } : {}),
+    ...(quadView ? { quadView } : {}),
+    ...(cameraFovDeg !== undefined ? { cameraFovDeg } : {}),
+    ...(projection ? { projection } : {}),
+  };
 }
 
 function quantizePartnerAxis(value: unknown): number {
@@ -374,8 +491,6 @@ function canonicalPartner(source: {
     params: clampStudioMannequinBodyParams(source.params),
     pose: normalizeStudioMannequinPose(source.pose),
     offset: [quantizePartnerAxis(offset[0]), quantizePartnerAxis(offset[1]), quantizePartnerAxis(offset[2])],
-    // −π 근처는 1e-6 격자 양자화와 [−π, π) 접기가 서로를 뒤집어 왕복이 흔들린다 —
-    // 같은 마주 보기 방향인 +π 쪽 격자점으로 고정해 정규화를 멱등하게 만든다.
     yawRad: yaw <= -Math.PI + 1e-6 ? canonicalizeStudioMannequinAngle(Math.PI - 1e-6) : yaw,
   };
 }
@@ -395,19 +510,33 @@ export function canonicalizeStudioMannequinPartner(
 
 export function serializeStudioMannequinState(input: StudioMannequinPersistentState): string {
   const partner = input.partner ? normalizeStudioMannequinPartner(input.partner) : null;
+  const rig = input.rig ? canonicalizeStudioMannequinRigState(input.rig) : undefined;
+  const params = clampStudioMannequinBodyParams(input.params);
+  const pose = normalizeStudioMannequinPose(input.pose);
+
+  if (rig) {
+    return JSON.stringify({
+      kind: STUDIO_MANNEQUIN_STATE_DOC_KIND,
+      version: STUDIO_MANNEQUIN_STATE_DOC_RIG_VERSION,
+      params,
+      pose,
+      ...(partner ? { partner } : {}),
+      rig,
+    });
+  }
   if (!partner) {
     return JSON.stringify({
       kind: STUDIO_MANNEQUIN_STATE_DOC_KIND,
       version: STUDIO_MANNEQUIN_STATE_DOC_VERSION,
-      params: clampStudioMannequinBodyParams(input.params),
-      pose: normalizeStudioMannequinPose(input.pose),
+      params,
+      pose,
     });
   }
   return JSON.stringify({
     kind: STUDIO_MANNEQUIN_STATE_DOC_KIND,
     version: STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION,
-    params: clampStudioMannequinBodyParams(input.params),
-    pose: normalizeStudioMannequinPose(input.pose),
+    params,
+    pose,
     partner,
   });
 }
@@ -429,22 +558,35 @@ export function parseStudioMannequinState(raw: unknown): StudioMannequinPersiste
     params?: unknown;
     pose?: unknown;
     partner?: unknown;
+    rig?: unknown;
   };
   if (doc.kind !== STUDIO_MANNEQUIN_STATE_DOC_KIND) return null;
   if (doc.version === STUDIO_MANNEQUIN_STATE_DOC_VERSION) {
-    // 구버전 문서: 상대 인형이 없다(1인 작업).
     return {
       params: clampStudioMannequinBodyParams(doc.params),
       pose: normalizeStudioMannequinPose(doc.pose),
     };
   }
-  if (doc.version !== STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION) return null;
-  const partner = normalizeStudioMannequinPartner(doc.partner);
-  return {
-    params: clampStudioMannequinBodyParams(doc.params),
-    pose: normalizeStudioMannequinPose(doc.pose),
-    ...(partner ? { partner } : {}),
-  };
+  if (doc.version === STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION) {
+    const partner = normalizeStudioMannequinPartner(doc.partner);
+    return {
+      params: clampStudioMannequinBodyParams(doc.params),
+      pose: normalizeStudioMannequinPose(doc.pose),
+      ...(partner ? { partner } : {}),
+    };
+  }
+  if (doc.version === STUDIO_MANNEQUIN_STATE_DOC_RIG_VERSION) {
+    const rig = canonicalizeStudioMannequinRigState(doc.rig);
+    if (!rig) return null;
+    const partner = normalizeStudioMannequinPartner(doc.partner);
+    return {
+      params: clampStudioMannequinBodyParams(doc.params),
+      pose: normalizeStudioMannequinPose(doc.pose),
+      ...(partner ? { partner } : {}),
+      rig,
+    };
+  }
+  return null;
 }
 
 // ── 공유 내보내기/가져오기 + 클립보드 해시 ────────────────────────────────

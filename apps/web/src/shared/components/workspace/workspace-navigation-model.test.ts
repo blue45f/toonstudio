@@ -27,6 +27,12 @@ describe("studio-first navigation contract", () => {
       SITE_NAVIGATION_ITEMS.market, SITE_NAVIGATION_ITEMS.me,
     ]);
     expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.href)).toEqual(["/studio", "/discover", "/market", "/my"]);
+    expect(TOONSTUDIO_MOBILE_TABS.map((item) => [item.id, item.label.ko, item.href])).toEqual([
+      ["studio", "내 작업", "/studio"],
+      ["explore", "작품 찾기", "/discover"],
+      ["market", "소재 찾기", "/market"],
+      ["me", "내 정보", "/my"],
+    ]);
     expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.label.ko)).toEqual(["내 작업", "작품 찾기", "소재 찾기", "내 정보"]);
     expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.label.en)).toEqual(["My work", "Discover", "Assets", "My account"]);
     expect(TOONSTUDIO_MOBILE_TABS[0]).toBe(TOONSTUDIO_PRIMARY_NAVIGATION[1]);

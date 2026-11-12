@@ -43,9 +43,14 @@ export function resolveFraming(framing: CameraFraming, bounds: WorldBounds = FAL
   const depth = Math.max(1e-3, bounds.max[2] - bounds.min[2]);
   const { centerY, span } = framedHeight(framing.mode, height);
   const target: Vec3 = [(bounds.min[0] + bounds.max[0]) / 2, centerY(bounds.min[1]), (bounds.min[2] + bounds.max[2]) / 2];
-  // 수직·수평 중 더 큰 요구 거리를 쓴다.
+  // 수직·수평 중 더 큰 요구 거리를 쓴다. bust·face는 T-포즈 양팔 너비에 끌려 줌아웃되지 않도록 어깨·두상 폭 상한을 둔다.
   const verticalRadius = span / 2 / Math.tan(fov / 2);
-  const horizontalSpan = framing.mode === "face" ? Math.max(width * 0.35, span) : Math.max(width, span * 0.6);
+  const horizontalSpan =
+    framing.mode === "face"
+      ? Math.max(Math.min(width * 0.35, height * 0.22), span)
+      : framing.mode === "bust"
+        ? Math.max(Math.min(width, height * 0.46), span * 0.85)
+        : Math.max(width, span * 0.6);
   const horizontalRadius = horizontalSpan / 2 / Math.tan(fov / 2) / Math.max(0.2, aspect);
   const base = Math.max(verticalRadius, horizontalRadius) + depth / 2;
   const radius = base * clamp(Number.isFinite(framing.distanceScale) ? framing.distanceScale : 1, 0.1, 10);

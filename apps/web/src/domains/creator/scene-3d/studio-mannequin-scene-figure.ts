@@ -1,29 +1,43 @@
 /**
- * Studio 3D 데생 인형 — 인형 한 체의 Three.js 그래프(씬 계층).
+ * Studio 3D 데생 인형 — 인형 한 체의 Three.js 그래프(v5 연속 3본 스키닝 몸통 + 에코르셰 해부학 통합).
  *
- * 스펙(관절 계층 + 프리미티브)으로 관절 그룹·몸 메시·윤곽선·IK 핸들을 만들고, 포즈 적용·
- * 읽기·선택 틴트·배치(루트 위치·요)를 담당한다. 2인 구도에서 주인공과 상대가 같은 코드로
- * 그려지도록 씬 본체(`studio-mannequin-scene.ts`)에서 분리했다 — 재질·핸들 지오메트리는
- * 씬이 소유하고 두 인형이 공유한다.
+ * 스펙(관절 계층 + 프리미티브 + 연속 스키닝 몸통 `THREE.SkinnedMesh` + 에코르셰 근육·능동 굴곡 팽창)으로
+ * 관절 그룹·몸 메시·윤곽선·IK 핸들을 만들고, 포즈 적용·읽기·선택 틴트·배치(루트 위치·요)를 담당한다.
  */
 
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
 import {
+  buildSplayedHandDigitPrimitives,
+  buildStudioMannequinEcorchePrimitives,
+  buildStudioMannequinLoftTubes,
+  buildStudioMannequinSkinnedTorsoSpec,
+  computeStudioMannequinFlexionBulge,
+  resolveStudioMannequinSurfaceMode,
+  shouldSkipLegacyCoreBodyPrimitive,
+  type StudioMannequinFingerSplayMap,
+  type StudioMannequinSurfaceMode,
+} from "./studio-mannequin-ecorche-anatomy";
+import {
   STUDIO_MANNEQUIN_CHAIN_IDS,
+  clampStudioMannequinFingerPose,
   clampStudioMannequinJointRotation,
   type StudioMannequinChainId,
+  type StudioMannequinFingerPose,
   type StudioMannequinJointId,
   type StudioMannequinPrimitiveMaterialRole,
   type StudioMannequinSpec,
   type StudioMannequinVec3,
 } from "./studio-mannequin-model";
 import { normalizeStudioMannequinPose, type StudioMannequinPose } from "./studio-mannequin-poses";
+import {
+  buildStudioMannequinLoftGeometry,
+  buildStudioMannequinSkinnedTorsoGeometry,
+} from "./studio-mannequin-pro-overlays";
 
 import type { StudioMannequinMaterialPalette } from "./studio-mannequin-scene-materials";
 
-/** 장면 안 인형 구분 — 주인공(패널 포즈 상태)과 2인 구도의 상대. */
 export type StudioMannequinFigureId = "lead" | "partner";
 
 export interface StudioMannequinEffectorHandleUserData {
@@ -35,9 +49,20 @@ export interface StudioMannequinBodyMeshUserData {
   studioMannequinJointId: StudioMannequinJointId;
   studioMannequinMaterialRole: StudioMannequinPrimitiveMaterialRole;
   studioMannequinFigureId: StudioMannequinFigureId;
+  studioMannequinDynamicBulge?: "leftBicep" | "rightBicep" | "leftCalf" | "rightCalf" | "leftGlute" | "rightGlute";
+  studioMannequinRestScale?: StudioMannequinVec3;
+  studioMannequinTorsoSkinned?: boolean;
 }
 
-/** 두 인형이 공유하는 재질·지오메트리 공급자(씬이 소유). */
+export interface StudioMannequinFigureEcorcheState {
+  readonly surfaceMode: StudioMannequinSurfaceMode;
+  readonly pectoralVolume: number;
+  readonly muscleDefinition: number;
+  readonly fingerPose?: StudioMannequinFingerPose;
+  readonly leftSplayDeg?: Partial<StudioMannequinFingerSplayMap>;
+  readonly rightSplayDeg?: Partial<StudioMannequinFingerSplayMap>;
+}
+
 export interface StudioMannequinFigureMaterials {
   readonly palette: () => StudioMannequinMaterialPalette;
   readonly selected: THREE.Material;
@@ -49,13 +74,14 @@ export interface StudioMannequinFigureMaterials {
 
 export interface StudioMannequinSceneFigure {
   readonly id: StudioMannequinFigureId;
-  /** 인형 루트 — 2인 구도 배치(위치·요)가 걸린다. */
   readonly root: THREE.Group;
   readonly spec: () => StudioMannequinSpec;
   readonly joints: () => ReadonlyMap<StudioMannequinJointId, THREE.Group>;
   readonly bodyMeshes: () => readonly THREE.Mesh[];
   readonly effectorHandles: () => readonly THREE.Mesh[];
   rebuild(spec: StudioMannequinSpec, pose: StudioMannequinPose): void;
+  setEcorcheState(next: Partial<StudioMannequinFigureEcorcheState>, pose: StudioMannequinPose): void;
+  getEcorcheState(): StudioMannequinFigureEcorcheState;
   applyPose(pose: StudioMannequinPose): void;
   readPose(): StudioMannequinPose;
   setSelection(jointId: StudioMannequinJointId | null): void;
@@ -70,10 +96,13 @@ function toVec3(value: StudioMannequinVec3): THREE.Vector3 {
   return new THREE.Vector3(value[0], value[1], value[2]);
 }
 
-/**
- * IK 핸들 반지름(m). 두신 단위만 쓰면 3등신 SD(두신 40cm)에서 핸들 구가 손발보다 커져
- * 손끝을 가렸다 — 키에 비례한 상한을 함께 둬 인형 크기에 맞춘다.
- */
+function hasNonZeroSplay(splay?: Partial<StudioMannequinFingerSplayMap>): boolean {
+  if (!splay) return false;
+  return Object.values(splay).some((deg) => typeof deg === "number" && Math.abs(deg) > 1e-4);
+}
+
+const SPLIT_TORSO_TUBE_IDS = new Set(["loft-pelvis-basin", "loft-spine-waist", "loft-chest-ribcage"]);
+
 export function resolveStudioMannequinEffectorHandleRadius(spec: StudioMannequinSpec): number {
   return Math.min(spec.headUnit * 0.16, spec.heightM * 0.023);
 }
@@ -83,33 +112,103 @@ export function createStudioMannequinSceneFigure(input: {
   readonly spec: StudioMannequinSpec;
   readonly pose: StudioMannequinPose;
   readonly materials: StudioMannequinFigureMaterials;
+  readonly initialEcorcheState?: Partial<StudioMannequinFigureEcorcheState>;
 }): StudioMannequinSceneFigure {
   const { id, materials } = input;
   const root = new THREE.Group();
   root.name = `studio-mannequin-figure:${id}`;
   let spec = input.spec;
+  let ecorcheState: StudioMannequinFigureEcorcheState = {
+    surfaceMode: resolveStudioMannequinSurfaceMode(input.initialEcorcheState?.surfaceMode ?? "ecorche"),
+    pectoralVolume: input.initialEcorcheState?.pectoralVolume ?? 1,
+    muscleDefinition: input.initialEcorcheState?.muscleDefinition ?? 1,
+    fingerPose: input.initialEcorcheState?.fingerPose,
+    leftSplayDeg: input.initialEcorcheState?.leftSplayDeg,
+    rightSplayDeg: input.initialEcorcheState?.rightSplayDeg,
+  };
   let joints = new Map<StudioMannequinJointId, THREE.Group>();
   let bodyMeshes: THREE.Mesh[] = [];
   let outlineMeshes: THREE.Mesh[] = [];
   let effectorHandles: THREE.Mesh[] = [];
+  let torsoBones: [THREE.Bone, THREE.Bone, THREE.Bone] | null = null;
+  let torsoSkeleton: THREE.Skeleton | null = null;
+  let torsoOutlineOwnGeometry: THREE.BufferGeometry | null = null;
   let pelvisRestOffset = new THREE.Vector3();
   let selectedJointId: StudioMannequinJointId | null = null;
 
   function disposeGraph(): void {
-    // outline은 body geometry를 공유하므로 먼저 scene에서만 분리하고 geometry는 body가 한 번만 dispose한다.
     for (const outline of outlineMeshes) outline.removeFromParent();
     outlineMeshes = [];
+    if (torsoOutlineOwnGeometry) {
+      torsoOutlineOwnGeometry.dispose();
+      torsoOutlineOwnGeometry = null;
+    }
+    if (torsoSkeleton) {
+      torsoSkeleton.dispose();
+      torsoSkeleton = null;
+    }
+    torsoBones = null;
     for (const mesh of bodyMeshes) {
       mesh.geometry.dispose();
       mesh.removeFromParent();
     }
-    // 핸들 지오메트리는 씬이 소유한 공유 구라 여기서 해제하지 않는다.
     for (const handle of effectorHandles) handle.removeFromParent();
     bodyMeshes = [];
     effectorHandles = [];
     for (const group of joints.values()) group.removeFromParent();
     joints = new Map();
     root.clear();
+  }
+
+  function syncTorsoBones(): void {
+    if (!torsoBones) return;
+    const pelvisGroup = joints.get("pelvis");
+    const spineGroup = joints.get("spine");
+    const chestGroup = joints.get("chest");
+    if (pelvisGroup) {
+      torsoBones[0].position.copy(pelvisGroup.position);
+      torsoBones[0].rotation.copy(pelvisGroup.rotation);
+    }
+    if (spineGroup) torsoBones[1].rotation.copy(spineGroup.rotation);
+    if (chestGroup) torsoBones[2].rotation.copy(chestGroup.rotation);
+    torsoBones[0].updateMatrixWorld(true);
+  }
+
+  function attachBodyMesh(
+    jointGroup: THREE.Group,
+    mesh: THREE.Mesh,
+    jointId: StudioMannequinJointId,
+    materialRole: StudioMannequinPrimitiveMaterialRole,
+    dynamicBulge?: StudioMannequinBodyMeshUserData["studioMannequinDynamicBulge"],
+  ): void {
+    const restScale: StudioMannequinVec3 = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
+    Object.assign(mesh.userData as StudioMannequinBodyMeshUserData, {
+      studioMannequinJointId: jointId,
+      studioMannequinMaterialRole: materialRole,
+      studioMannequinFigureId: id,
+      ...(dynamicBulge ? { studioMannequinDynamicBulge: dynamicBulge, studioMannequinRestScale: restScale } : {}),
+    });
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    jointGroup.add(mesh);
+    bodyMeshes.push(mesh);
+
+    const outline = new THREE.Mesh(mesh.geometry, materials.outline);
+    outline.position.copy(mesh.position);
+    outline.quaternion.copy(mesh.quaternion);
+    outline.scale.copy(mesh.scale).multiplyScalar(1.026);
+    Object.assign(outline.userData as StudioMannequinBodyMeshUserData, {
+      studioMannequinJointId: jointId,
+      studioMannequinMaterialRole: materialRole,
+      studioMannequinFigureId: id,
+      ...(dynamicBulge ? { studioMannequinDynamicBulge: dynamicBulge, studioMannequinRestScale: [outline.scale.x, outline.scale.y, outline.scale.z] } : {}),
+    });
+    outline.visible = materials.outlineVisible(materialRole);
+    outline.castShadow = false;
+    outline.receiveShadow = false;
+    outline.renderOrder = -1;
+    jointGroup.add(outline);
+    outlineMeshes.push(outline);
   }
 
   function buildPrimitiveMesh(primitive: StudioMannequinSpec["primitives"][number]): THREE.Mesh {
@@ -181,13 +280,47 @@ export function createStudioMannequinSceneFigure(input: {
     return mesh;
   }
 
+  function applyDynamicBulgeScales(pose: StudioMannequinPose): void {
+    if (ecorcheState.surfaceMode === "standard") return;
+    const bulge = computeStudioMannequinFlexionBulge(pose, ecorcheState.muscleDefinition);
+    const applyToList = (list: THREE.Mesh[]) => {
+      for (const mesh of list) {
+        const ud = mesh.userData as StudioMannequinBodyMeshUserData;
+        if (!ud.studioMannequinDynamicBulge || !ud.studioMannequinRestScale) continue;
+        const factor =
+          ud.studioMannequinDynamicBulge === "leftBicep"
+            ? bulge.leftBicepScale
+            : ud.studioMannequinDynamicBulge === "rightBicep"
+              ? bulge.rightBicepScale
+              : ud.studioMannequinDynamicBulge === "leftCalf"
+                ? bulge.leftCalfScale
+                : ud.studioMannequinDynamicBulge === "rightCalf"
+                  ? bulge.rightCalfScale
+                  : ud.studioMannequinDynamicBulge === "leftGlute"
+                    ? bulge.leftGluteScale
+                    : bulge.rightGluteScale;
+        mesh.scale.set(
+          ud.studioMannequinRestScale[0] * Math.sqrt(factor),
+          ud.studioMannequinRestScale[1],
+          ud.studioMannequinRestScale[2] * factor,
+        );
+      }
+    };
+    applyToList(bodyMeshes);
+    applyToList(outlineMeshes);
+  }
+
   function applySelectionTint(): void {
     const palette = materials.palette();
     for (const mesh of bodyMeshes) {
       const userData = mesh.userData as StudioMannequinBodyMeshUserData;
-      mesh.material = userData.studioMannequinJointId === selectedJointId
-        ? materials.selected
-        : palette[userData.studioMannequinMaterialRole];
+      const isTorsoMatch =
+        userData.studioMannequinTorsoSkinned === true &&
+        (selectedJointId === "pelvis" || selectedJointId === "spine" || selectedJointId === "chest");
+      mesh.material =
+        isTorsoMatch || userData.studioMannequinJointId === selectedJointId
+          ? materials.selected
+          : palette[userData.studioMannequinMaterialRole];
     }
   }
 
@@ -213,6 +346,8 @@ export function createStudioMannequinSceneFigure(input: {
       pelvisRestOffset.y + pose.pelvisOffset[1],
       pelvisRestOffset.z + pose.pelvisOffset[2],
     );
+    syncTorsoBones();
+    applyDynamicBulgeScales(pose);
   }
 
   function readPose(): StudioMannequinPose {
@@ -233,6 +368,84 @@ export function createStudioMannequinSceneFigure(input: {
     return normalizeStudioMannequinPose({ joints: jointRotations, pelvisOffset });
   }
 
+  function detectDynamicBulgeTag(
+    primitive: StudioMannequinSpec["primitives"][number],
+  ): StudioMannequinBodyMeshUserData["studioMannequinDynamicBulge"] | undefined {
+    if (primitive.kind !== "sphere" || primitive.materialRole !== "body") return undefined;
+    if (primitive.jointId === "leftUpperArm" && primitive.center[2] > 0.01) return "leftBicep";
+    if (primitive.jointId === "rightUpperArm" && primitive.center[2] > 0.01) return "rightBicep";
+    if (primitive.jointId === "leftLowerLeg" && primitive.center[2] < -0.01) return "leftCalf";
+    if (primitive.jointId === "rightLowerLeg" && primitive.center[2] < -0.01) return "rightCalf";
+    if (primitive.jointId === "pelvis" && primitive.center[2] < -0.05) {
+      return primitive.center[0] >= 0 ? "leftGlute" : "rightGlute";
+    }
+    return undefined;
+  }
+
+  function mountContinuousSkinnedTorso(): void {
+    const torsoSpec = buildStudioMannequinSkinnedTorsoSpec(spec, {
+      surfaceMode: ecorcheState.surfaceMode,
+      pectoralVolume: ecorcheState.pectoralVolume,
+      muscleDefinition: ecorcheState.muscleDefinition,
+    });
+    if (!torsoSpec) return;
+
+    const bPelvis = new THREE.Bone();
+    const bSpine = new THREE.Bone();
+    const bChest = new THREE.Bone();
+    bPelvis.position.copy(toVec3(torsoSpec.boneOffsets[0]));
+    bSpine.position.copy(toVec3(torsoSpec.boneOffsets[1]));
+    bChest.position.copy(toVec3(torsoSpec.boneOffsets[2]));
+    bPelvis.add(bSpine);
+    bSpine.add(bChest);
+    root.add(bPelvis);
+
+    const y0 = torsoSpec.boneOffsets[0][1];
+    const y1 = y0 + torsoSpec.boneOffsets[1][1];
+    const y2 = y1 + torsoSpec.boneOffsets[2][1];
+    const boneInverses = [
+      new THREE.Matrix4().makeTranslation(0, -y0, 0),
+      new THREE.Matrix4().makeTranslation(0, -y1, 0),
+      new THREE.Matrix4().makeTranslation(0, -y2, 0),
+    ];
+    torsoBones = [bPelvis, bSpine, bChest];
+    torsoSkeleton = new THREE.Skeleton(torsoBones, boneInverses);
+
+    const bodyGeom = buildStudioMannequinSkinnedTorsoGeometry(torsoSpec, 0);
+    const skinnedMesh = new THREE.SkinnedMesh(bodyGeom, materials.palette()[torsoSpec.materialRole]);
+    skinnedMesh.name = `studio-mannequin-loft:${torsoSpec.id}`;
+    skinnedMesh.frustumCulled = false;
+    skinnedMesh.castShadow = true;
+    skinnedMesh.receiveShadow = true;
+    skinnedMesh.bind(torsoSkeleton, new THREE.Matrix4());
+    Object.assign(skinnedMesh.userData as StudioMannequinBodyMeshUserData, {
+      studioMannequinJointId: "chest",
+      studioMannequinMaterialRole: torsoSpec.materialRole,
+      studioMannequinFigureId: id,
+      studioMannequinTorsoSkinned: true,
+    });
+    root.add(skinnedMesh);
+    bodyMeshes.push(skinnedMesh);
+
+    torsoOutlineOwnGeometry = buildStudioMannequinSkinnedTorsoGeometry(torsoSpec, 0.0055 * spec.headUnit);
+    const skinnedOutline = new THREE.SkinnedMesh(torsoOutlineOwnGeometry, materials.outline);
+    skinnedOutline.frustumCulled = false;
+    skinnedOutline.castShadow = false;
+    skinnedOutline.receiveShadow = false;
+    skinnedOutline.renderOrder = -1;
+    skinnedOutline.bind(torsoSkeleton, new THREE.Matrix4());
+    Object.assign(skinnedOutline.userData as StudioMannequinBodyMeshUserData, {
+      studioMannequinJointId: "chest",
+      studioMannequinMaterialRole: torsoSpec.materialRole,
+      studioMannequinFigureId: id,
+      studioMannequinTorsoSkinned: true,
+    });
+    const role = torsoSpec.materialRole;
+    skinnedOutline.visible = materials.outlineVisible(role);
+    root.add(skinnedOutline);
+    outlineMeshes.push(skinnedOutline);
+  }
+
   function rebuild(nextSpec: StudioMannequinSpec, pose: StudioMannequinPose): void {
     spec = nextSpec;
     disposeGraph();
@@ -246,39 +459,87 @@ export function createStudioMannequinSceneFigure(input: {
       if (jointSpec.id === "pelvis") pelvisRestOffset = toVec3(jointSpec.offset);
     }
 
+    const replaceLeftDigits = hasNonZeroSplay(ecorcheState.leftSplayDeg);
+    const replaceRightDigits = hasNonZeroSplay(ecorcheState.rightSplayDeg);
+    const handLen = 0.085 * spec.heightM * spec.params.armLength * (spec.params.handScale ?? 1);
+
     for (const primitive of spec.primitives) {
+      if (shouldSkipLegacyCoreBodyPrimitive(primitive, ecorcheState.surfaceMode)) {
+        continue;
+      }
+      if (
+        (replaceLeftDigits && primitive.jointId === "leftHand" && primitive.kind !== "box")
+        || (replaceRightDigits && primitive.jointId === "rightHand" && primitive.kind !== "box")
+      ) {
+        const isWristSphere =
+          primitive.kind === "sphere"
+          && Math.abs(primitive.center[0]) < 1e-5
+          && Math.abs(primitive.center[1]) < 1e-5;
+        if (!isWristSphere) continue;
+      }
       const jointGroup = joints.get(primitive.jointId);
       if (!jointGroup) continue;
       const mesh = buildPrimitiveMesh(primitive);
-      const materialRole = primitive.materialRole ?? "body";
-      Object.assign(mesh.userData as StudioMannequinBodyMeshUserData, {
-        studioMannequinJointId: primitive.jointId,
-        studioMannequinMaterialRole: materialRole,
-        studioMannequinFigureId: id,
-      });
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      jointGroup.add(mesh);
-      bodyMeshes.push(mesh);
-
-      const outline = new THREE.Mesh(mesh.geometry, materials.outline);
-      outline.position.copy(mesh.position);
-      outline.quaternion.copy(mesh.quaternion);
-      outline.scale.copy(mesh.scale).multiplyScalar(1.026);
-      Object.assign(outline.userData as StudioMannequinBodyMeshUserData, {
-        studioMannequinJointId: primitive.jointId,
-        studioMannequinMaterialRole: materialRole,
-        studioMannequinFigureId: id,
-      });
-      outline.visible = materials.outlineVisible(materialRole);
-      outline.castShadow = false;
-      outline.receiveShadow = false;
-      outline.renderOrder = -1;
-      jointGroup.add(outline);
-      outlineMeshes.push(outline);
+      attachBodyMesh(jointGroup, mesh, primitive.jointId, primitive.materialRole ?? "body");
     }
 
-    // 손목/발목 IK 핸들 — 항상 위에 그려지는 반투명 구. 크기는 인형 스케일에 비례한다.
+    if (replaceLeftDigits || replaceRightDigits) {
+      const resolvedFingers = clampStudioMannequinFingerPose(ecorcheState.fingerPose);
+      if (replaceLeftDigits) {
+        const leftGroup = joints.get("leftHand");
+        if (leftGroup) {
+          for (const prim of buildSplayedHandDigitPrimitives("leftHand", handLen, 1, resolvedFingers.left, ecorcheState.leftSplayDeg)) {
+            attachBodyMesh(leftGroup, buildPrimitiveMesh(prim), "leftHand", prim.materialRole ?? "body");
+          }
+        }
+      }
+      if (replaceRightDigits) {
+        const rightGroup = joints.get("rightHand");
+        if (rightGroup) {
+          for (const prim of buildSplayedHandDigitPrimitives("rightHand", handLen, -1, resolvedFingers.right, ecorcheState.rightSplayDeg)) {
+            attachBodyMesh(rightGroup, buildPrimitiveMesh(prim), "rightHand", prim.materialRole ?? "body");
+          }
+        }
+      }
+    }
+
+    if (ecorcheState.surfaceMode !== "standard") {
+      mountContinuousSkinnedTorso();
+
+      const loftTubes = buildStudioMannequinLoftTubes(spec, {
+        surfaceMode: ecorcheState.surfaceMode,
+        pectoralVolume: ecorcheState.pectoralVolume,
+        muscleDefinition: ecorcheState.muscleDefinition,
+      });
+      for (const tube of loftTubes) {
+        if (SPLIT_TORSO_TUBE_IDS.has(tube.id)) continue;
+        const jointGroup = joints.get(tube.jointId);
+        if (!jointGroup) continue;
+        const geometry = buildStudioMannequinLoftGeometry(tube);
+        const mesh = new THREE.Mesh(geometry, materials.palette()[tube.materialRole]);
+        mesh.name = `studio-mannequin-loft:${tube.id}`;
+        attachBodyMesh(jointGroup, mesh, tube.jointId, tube.materialRole);
+      }
+
+      const ecorchePrimitives = buildStudioMannequinEcorchePrimitives(spec, {
+        surfaceMode: ecorcheState.surfaceMode,
+        pectoralVolume: ecorcheState.pectoralVolume,
+        muscleDefinition: ecorcheState.muscleDefinition,
+      });
+      for (const prim of ecorchePrimitives) {
+        const jointGroup = joints.get(prim.jointId);
+        if (!jointGroup) continue;
+        const mesh = buildPrimitiveMesh(prim);
+        attachBodyMesh(
+          jointGroup,
+          mesh,
+          prim.jointId,
+          prim.materialRole ?? "body",
+          detectDynamicBulgeTag(prim),
+        );
+      }
+    }
+
     const handleRadius = resolveStudioMannequinEffectorHandleRadius(spec);
     for (const chainId of STUDIO_MANNEQUIN_CHAIN_IDS) {
       const chain = spec.chains[chainId];
@@ -309,6 +570,15 @@ export function createStudioMannequinSceneFigure(input: {
     bodyMeshes: () => bodyMeshes,
     effectorHandles: () => effectorHandles,
     rebuild,
+    setEcorcheState(next, pose) {
+      ecorcheState = {
+        ...ecorcheState,
+        ...next,
+        surfaceMode: resolveStudioMannequinSurfaceMode(next.surfaceMode ?? ecorcheState.surfaceMode),
+      };
+      rebuild(spec, pose);
+    },
+    getEcorcheState: () => ecorcheState,
     applyPose,
     readPose,
     setSelection(jointId) {

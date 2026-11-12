@@ -49,7 +49,7 @@ function materialLabel(material: BrushStudioV6MaterialConfig): string {
   if (material.slots.deposition === "deposit-particles") return "입자·성장 브러시";
   if (material.slots.deposition === "deposit-dry") return "종이 접촉·건식 브러시";
   if (material.slots.physics.includes("physics-height")) return "물감 능선·나이프 브러시";
-  if (material.slots.deposition === "deposit-wet") return "번짐·과립 브러시";
+  if (material.slots.deposition === "deposit-wet" || material.slots.deposition === "deposit-watercolor") return "번짐·과립 브러시";
   return "커스텀 재료 브러시";
 }
 

@@ -2,8 +2,8 @@
  * StudioBrushTray — compact recent/favorite shelf with a full-library exit.
  * Pure presentation; the complete searchable catalog lives in StudioBrushLibrarySheet.
  */
-import { History, LayoutGrid, Star } from "lucide-react";
-import { useEffect, useState, type KeyboardEvent, type ReactElement } from "react";
+import { AlertCircle, History, LayoutGrid, RotateCcw, Star } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
 
 import { planNeonBrushPasses } from "../studio-fx-brush";
 import { STUDIO_FOCUS_RING, STUDIO_EASE } from "../studio-panel-ui";
@@ -35,15 +35,17 @@ import type {
   StudioBrushTrayItem,
   StudioQuickBrushSource,
 } from "../studio-creative-ux";
+import type { StudioV6BrushCatalogSelectionBlock } from "./studio-brush-v6-catalog-runtime";
 
 import { useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import "../studio-brush-canvas-status-i18n";
 
 export interface StudioBrushTrayProps {
   activeBrushId: string;
-  onSelect: (item: StudioBrushTrayItem) => void;
+  onSelect: (item: StudioBrushTrayItem) => void | Promise<void>;
   /** Combined core + procedural catalogue; omitted callers use the canonical built-in catalogue. */
   brushCatalogItems?: readonly StudioBrushTrayItem[];
   recentBrushIds?: readonly string[];
@@ -54,6 +56,36 @@ export interface StudioBrushTrayProps {
   "aria-label"?: string;
 }
 
+interface StudioV6TrayRuntimeModule {
+  studioV6BrushCatalogSelectionBlock(
+    catalogId: unknown,
+  ): StudioV6BrushCatalogSelectionBlock | null;
+}
+
+let cachedV6TrayRuntime: StudioV6TrayRuntimeModule | null = null;
+let v6TrayRuntimePromise: Promise<StudioV6TrayRuntimeModule> | null = null;
+
+function loadStudioV6TrayRuntime(): Promise<StudioV6TrayRuntimeModule> {
+  if (cachedV6TrayRuntime) return Promise.resolve(cachedV6TrayRuntime);
+  v6TrayRuntimePromise ??= import("./studio-brush-v6-catalog-runtime")
+    .then((mod) => {
+      cachedV6TrayRuntime = mod;
+      return mod;
+    })
+    .catch((error) => {
+      v6TrayRuntimePromise = null;
+      throw error;
+    });
+  return v6TrayRuntimePromise;
+}
+
+interface TraySelectionIssue {
+  readonly item: StudioBrushTrayItem;
+  readonly kind: "provider-unavailable" | "apply-failed";
+  readonly blockedNodeIds: readonly string[];
+  readonly detail: string | null;
+}
+
 const QUICK_SOURCE_LABEL: Record<StudioQuickBrushSource, string> = {
   favorite: "즐겨찾기",
   recent: "최근 사용",
@@ -62,6 +94,78 @@ const QUICK_SOURCE_LABEL: Record<StudioQuickBrushSource, string> = {
 
 const PREVIEW_W = 40;
 const PREVIEW_H = 18;
+
+function BrushTraySelectionAlert({
+  issue,
+  onRetry,
+  onDismiss,
+}: {
+  issue: TraySelectionIssue;
+  onRetry: () => void;
+  onDismiss: () => void;
+}): ReactElement {
+  const t = useBilingual("StudioBrushTray");
+  const blockedSummary = issue.blockedNodeIds.join(", ");
+  const message =
+    issue.kind === "provider-unavailable"
+      ? `${issue.item.name} — ${t("무폴백·권리 게이트에서 제공되지 않는 재료 엔진이어서 현재 브러시를 그대로 유지합니다", "Unavailable under the no-fallback license/provider gate; keeping the current brush")}${blockedSummary ? ` (${blockedSummary})` : ""}.`
+      : `${issue.item.name} — ${t("캔버스 전환에 실패해 현재 브러시를 그대로 유지합니다", "Canvas switch failed; keeping the current brush")}${issue.detail ? ` (${issue.detail})` : ""}.`;
+  const retryLabel = t("다시 시도", "Retry");
+  const dismissLabel = t("닫기", "Dismiss");
+
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      data-testid="studio-brush-tray-error-alert"
+      data-error-kind={issue.kind}
+      data-blocked-nodes={blockedSummary || undefined}
+      className="mt-1 flex w-full flex-wrap items-center justify-between gap-1.5 rounded-xl border border-danger/45 bg-danger/10 px-2.5 py-1.5 text-[0.62rem] leading-snug text-fg"
+    >
+      <span className="flex min-w-0 flex-1 items-start gap-1">
+        <AlertCircle size={12} className="mt-0.5 shrink-0 text-danger" aria-hidden />
+        <span className="min-w-0 break-words">{message}</span>
+      </span>
+      <span className="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          data-testid="studio-brush-tray-retry-button"
+          onKeyDown={(event) => {
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            event.stopPropagation();
+            onDismiss();
+          }}
+          onClick={onRetry}
+          className={cn(
+            "flex min-h-7 items-center gap-1 rounded-lg border border-line-strong bg-card px-2 py-0.5 text-[0.6rem] font-semibold text-fg hover:bg-raised",
+            STUDIO_FOCUS_RING,
+          )}
+        >
+          <RotateCcw size={10} aria-hidden />
+          <span>{retryLabel}</span>
+        </button>
+        <button
+          type="button"
+          data-testid="studio-brush-tray-dismiss-error"
+          onKeyDown={(event) => {
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            event.stopPropagation();
+            onDismiss();
+          }}
+          onClick={onDismiss}
+          className={cn(
+            "flex min-h-7 items-center rounded-lg px-1.5 py-0.5 text-[0.6rem] font-medium text-fg-2 hover:bg-raised hover:text-fg",
+            STUDIO_FOCUS_RING,
+          )}
+        >
+          <span>{dismissLabel}</span>
+        </button>
+      </span>
+    </div>
+  );
+}
 
 function BrushPreviewGlyph({
   item,
@@ -196,16 +300,28 @@ export function StudioBrushTray({
   "aria-label": ariaLabel = "빠른 보조 도구 — 즐겨찾기, 최근 사용, 추천",
 }: StudioBrushTrayProps): ReactElement {
   const t = useT();
+  const trayRootRef = useRef<HTMLDivElement>(null);
   const [focusedBrushId, setFocusedBrushId] = useState<string | null>(null);
   const [deferredCatalogItems, setDeferredCatalogItems] =
     useState<readonly StudioBrushTrayItem[] | null>(null);
   const [failedProMetadataKey, setFailedProMetadataKey] = useState<string | null>(null);
+  const [selectionIssue, setSelectionIssue] = useState<TraySelectionIssue | null>(null);
+
+  const candidateIds = [activeBrushId, ...favoriteBrushIds, ...recentBrushIds];
+  const hasV6Candidate =
+    candidateIds.some((id) => isStudioV6BrushCatalogId(id))
+    || Boolean(brushCatalogItems?.some((item) => isStudioV6BrushCatalogId(item.id)));
   const proMetadataRequestKey = brushCatalogItems
     ? ""
-    : [activeBrushId, ...favoriteBrushIds, ...recentBrushIds]
+    : candidateIds
         .filter((id) => isStudioBrushPackCatalogId(id) || isStudioV6BrushCatalogId(id))
         .join("\u0000");
   const needsProMetadata = proMetadataRequestKey.length > 0;
+
+  useEffect(() => {
+    if (!hasV6Candidate || cachedV6TrayRuntime) return;
+    void loadStudioV6TrayRuntime().catch(() => undefined);
+  }, [hasV6Candidate]);
 
   useEffect(() => {
     if (!needsProMetadata) return;
@@ -213,7 +329,14 @@ export function StudioBrushTray({
     // The tray is a LISTING lane: the listed (quarantine-filtered) inventory keeps a quarantined
     // favorite/MRU id from re-surfacing as a chip. Current-brush metadata resolution stays on the
     // unfiltered lane (`loadStudioBrushCatalogItemById` in StudioActiveBrushSummary).
-    void loadStudioLibraryBrushCatalogItems()
+    const loadAll = hasV6Candidate
+      ? Promise.all([
+          loadStudioLibraryBrushCatalogItems(),
+          loadStudioV6TrayRuntime().catch(() => null),
+        ]).then(([items]) => items)
+      : loadStudioLibraryBrushCatalogItems();
+
+    void loadAll
       .then((items) => {
         if (live) setDeferredCatalogItems(items);
       })
@@ -223,7 +346,7 @@ export function StudioBrushTray({
     return () => {
       live = false;
     };
-  }, [needsProMetadata, proMetadataRequestKey]);
+  }, [hasV6Candidate, needsProMetadata, proMetadataRequestKey]);
 
   const resolvedCatalogItems =
     brushCatalogItems ?? (needsProMetadata ? deferredCatalogItems ?? undefined : undefined);
@@ -242,10 +365,112 @@ export function StudioBrushTray({
       ? activeBrushId
       : visible[0]?.id ?? null;
 
+  function restoreFocusToChip(brushId: string): void {
+    setFocusedBrushId(brushId);
+    const options = trayRootRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]');
+    const chip = Array.from(options ?? []).find(
+      (btn) => btn.getAttribute("data-studio-brush-chip") === brushId,
+    );
+    chip?.focus({ preventScroll: true });
+    chip?.scrollIntoView?.({ block: "nearest" });
+  }
+
+  function invokeOnSelectSafely(item: StudioBrushTrayItem, restoreFocus: boolean): void {
+    try {
+      const maybePromise = onSelect(item);
+      if (
+        maybePromise
+        && typeof (maybePromise as PromiseLike<unknown>).then === "function"
+      ) {
+        void Promise.resolve(maybePromise)
+          .then(() => {
+            setSelectionIssue((prev) => (prev ? null : prev));
+            if (restoreFocus) restoreFocusToChip(item.id);
+          })
+          .catch((cause: unknown) => {
+            setSelectionIssue({
+              item,
+              kind: "apply-failed",
+              blockedNodeIds: [],
+              detail: cause instanceof Error && cause.message.trim() ? cause.message.trim() : null,
+            });
+            if (restoreFocus) restoreFocusToChip(item.id);
+          });
+        return;
+      }
+      if (selectionIssue !== null) setSelectionIssue(null);
+      if (restoreFocus) restoreFocusToChip(item.id);
+    } catch (cause) {
+      setSelectionIssue({
+        item,
+        kind: "apply-failed",
+        blockedNodeIds: [],
+        detail: cause instanceof Error && cause.message.trim() ? cause.message.trim() : null,
+      });
+      if (restoreFocus) restoreFocusToChip(item.id);
+    }
+  }
+
+  function applyV6BlockOrSelect(
+    runtime: StudioV6TrayRuntimeModule,
+    item: StudioBrushTrayItem,
+    restoreFocus: boolean,
+  ): void {
+    const block = runtime.studioV6BrushCatalogSelectionBlock(item.id);
+    if (block) {
+      setSelectionIssue({
+        item,
+        kind: "provider-unavailable",
+        blockedNodeIds: block.blockedNodeIds,
+        detail: null,
+      });
+      if (restoreFocus) restoreFocusToChip(item.id);
+      return;
+    }
+    invokeOnSelectSafely(item, restoreFocus);
+  }
+
+  function handleSelectItem(item: StudioBrushTrayItem, restoreFocus = false): void {
+    if (isStudioV6BrushCatalogId(item.id)) {
+      if (cachedV6TrayRuntime) {
+        applyV6BlockOrSelect(cachedV6TrayRuntime, item, restoreFocus);
+        return;
+      }
+      void loadStudioV6TrayRuntime()
+        .then((runtime) => {
+          applyV6BlockOrSelect(runtime, item, restoreFocus);
+        })
+        .catch((cause: unknown) => {
+          setSelectionIssue({
+            item,
+            kind: "apply-failed",
+            blockedNodeIds: [],
+            detail: cause instanceof Error && cause.message.trim() ? cause.message.trim() : null,
+          });
+          if (restoreFocus) restoreFocusToChip(item.id);
+        });
+      return;
+    }
+    invokeOnSelectSafely(item, restoreFocus);
+  }
+
+  function dismissSelectionIssue(): void {
+    if (!selectionIssue) return;
+    const targetId = selectionIssue.item.id;
+    setSelectionIssue(null);
+    restoreFocusToChip(targetId);
+  }
+
   function onBrushKeyDown(
     event: KeyboardEvent<HTMLButtonElement>,
     currentIndex: number,
   ): void {
+    if (event.key === "Escape" && selectionIssue) {
+      event.preventDefault();
+      event.stopPropagation();
+      dismissSelectionIssue();
+      return;
+    }
     const lastIndex = visible.length - 1;
     let nextIndex: number;
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
@@ -273,8 +498,10 @@ export function StudioBrushTray({
 
   return (
     <div
+      ref={trayRootRef}
       data-studio-brush-tray="true"
       data-studio-brush-surface-role="quick-subtools"
+      data-studio-active-brush-id={activeBrushId}
       data-studio-pro-catalog-state={
         needsProMetadata
           ? proMetadataFailed
@@ -285,7 +512,11 @@ export function StudioBrushTray({
           : "core"
       }
       aria-busy={proMetadataLoading ? true : undefined}
-      className={cn("flex min-w-0 max-w-full items-center gap-1", className)}
+      className={cn(
+        "flex min-w-0 max-w-full items-center gap-1",
+        selectionIssue && "flex-wrap",
+        className,
+      )}
     >
       {proMetadataFailed ? (
         <span role="status" className="sr-only">
@@ -299,6 +530,7 @@ export function StudioBrushTray({
       >
         {visible.map((item, itemIndex) => {
           const active = activeBrushId === item.id;
+          const failedHere = selectionIssue?.item.id === item.id;
           const surface = studioBrushChipSurface(item.mediaGroup);
           const sourceLabel = QUICK_SOURCE_LABEL[item.quickSource];
           const kindLabel = studioBrushCatalogKindLabel(item);
@@ -313,10 +545,22 @@ export function StudioBrushTray({
               tabIndex={item.id === rovingBrushId ? 0 : -1}
               aria-label={`${sourceLabel} 브러시 ${item.name} · ${engineLaneLabel ? `${engineLaneLabel} · ` : ""}${kindLabel} — ${item.hint}`}
               title={`${sourceLabel} · ${engineLaneLabel ? `${engineLaneLabel} · ` : ""}${kindLabel} · ${item.name} — ${item.hint}`}
-              onClick={() => onSelect(item)}
-              onFocus={() => setFocusedBrushId(item.id)}
+              onClick={() => handleSelectItem(item)}
+              onPointerEnter={() => {
+                if (isStudioV6BrushCatalogId(item.id) && !cachedV6TrayRuntime) {
+                  void loadStudioV6TrayRuntime().catch(() => undefined);
+                }
+              }}
+              onFocus={() => {
+                setFocusedBrushId(item.id);
+                if (isStudioV6BrushCatalogId(item.id) && !cachedV6TrayRuntime) {
+                  void loadStudioV6TrayRuntime().catch(() => undefined);
+                }
+              }}
               onKeyDown={(event) => onBrushKeyDown(event, itemIndex)}
               data-studio-brush-chip={item.id}
+              data-studio-active-brush-chip={active ? "true" : undefined}
+              data-studio-brush-apply-state={failedHere ? selectionIssue.kind : undefined}
               data-studio-brush-media={item.mediaGroup}
               data-studio-brush-kind={kindLabel}
               data-studio-brush-engine-lane={engineLane?.lane}
@@ -328,7 +572,9 @@ export function StudioBrushTray({
                 STUDIO_FOCUS_RING,
                 active
                   ? "border-accent/60 bg-accent text-on-accent shadow-[0_2px_10px_oklch(0.72_0.185_42/0.28)]"
-                  : "border-line/50 text-fg-2 hover:border-line/90 hover:bg-raised hover:text-fg hover:shadow-sm"
+                  : failedHere
+                    ? "border-danger/65 text-fg-2 hover:border-danger hover:bg-raised"
+                    : "border-line/50 text-fg-2 hover:border-line/90 hover:bg-raised hover:text-fg hover:shadow-sm"
               )}
               style={
                 active
@@ -399,6 +645,13 @@ export function StudioBrushTray({
         <LayoutGrid size={13} strokeWidth={1.75} aria-hidden />
         <span className="whitespace-nowrap">라이브러리</span>
       </button>
+      {selectionIssue ? (
+        <BrushTraySelectionAlert
+          issue={selectionIssue}
+          onRetry={() => handleSelectItem(selectionIssue.item, true)}
+          onDismiss={dismissSelectionIssue}
+        />
+      ) : null}
     </div>
   );
 }

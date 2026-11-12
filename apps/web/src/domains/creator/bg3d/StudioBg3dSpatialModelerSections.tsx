@@ -2,6 +2,7 @@ import { Camera, Combine, FileCode2, Mountain, Sparkles } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
+import { StudioBg3dBackgroundObjectClusterSection } from "./StudioBg3dBackgroundObjectClusterSection";
 import { StudioBg3dSketchUpWebtoonStagingSection } from "./StudioBg3dSketchUpWebtoonStagingSection";
 import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
@@ -163,6 +164,13 @@ export function StudioBg3dSpatialModelerSections({
 
   return (
     <>
+      <StudioBg3dBackgroundObjectClusterSection
+        disabled={disabled}
+        defaultExpanded
+        onInsertScenePrimitives={onInsertScenePrimitives}
+        onStatusChange={onStatusChange}
+      />
+
       {/* 6. Sandbox & Terrain */}
       <details name="spatial-modeler-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
         <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">

@@ -51,6 +51,7 @@ import {
 import { cn } from "@/shared/lib/utils";
 
 import { SiteOstTrackSelect } from "./SiteOstTrackSelect";
+import { useSiteOstPanelPlacement } from "./use-site-ost-panel-placement";
 
 const SITE_ROUTE_SUSPENSION = "site-route-audio-conflict";
 /** 하단 탭이 있는 휴대폰 폭. 이 폭에서는 지난 방문의 펼친 패널을 되살리지 않는다. */
@@ -156,6 +157,7 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
   // 휴대폰에서 지난 방문의 펼친 패널을 되살리면 첫 화면 본문을 덮으므로 넓은 화면에서만 복원한다.
   const [expanded, setExpanded] = useState(() => initial.expanded && !narrowViewport());
   const asideRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const dockToggle = useRef<HTMLButtonElement>(null);
   const pillToggle = useRef<HTMLButtonElement>(null);
   const panelClose = useRef<HTMLButtonElement>(null);
@@ -210,6 +212,7 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
   const [playlistTracks, setPlaylistTracks] = useState<readonly SiteOstTrack[]>([]);
   const [sourceError, setSourceError] = useState("");
   const suspended = externallySuspended || experience.suspended || focusedTask;
+  useSiteOstPanelPlacement(panelRef, expanded && !suspended, dock);
   const hasPublishedOst = playlistTracks.length > 0;
   // 접힌 알약이 떠 있는 동안 그 높이를 게시해 본문 하단 여백(--floating-stack-clearance)이
   // 알약까지 포함한 스택 총높이를 보장하게 한다. 펼친 패널은 하단 모서리를 통째로 쓰므로 제외한다.
@@ -348,8 +351,8 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
       aria-label={korean ? "툰스튜디오 오리지널 OST" : "ToonStudio original OST"}
     >
       {expanded ? (
-        <div className={cn("w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-panel/95 shadow-2xl backdrop-blur-xl", dock ? "fixed right-3 top-20 sm:absolute sm:right-0 sm:top-14" : "mb-2")}>
-          <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
+        <div ref={panelRef} data-site-ost-panel="true" className={cn("flex w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-line bg-panel/95 shadow-2xl backdrop-blur-xl", dock ? "fixed right-3 top-20 sm:absolute sm:right-0 sm:top-14" : "mb-2")}>
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3">
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-accent">
                 <Sparkles className="size-3.5" aria-hidden="true" /> TOONSTUDIO ORIGINAL OST
@@ -362,7 +365,7 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
             </button>
           </div>
 
-          <div className="max-h-[min(65dvh,38rem,calc(100dvh-var(--service-status-overlay-clearance,0px)-12rem))] space-y-4 overflow-y-auto overscroll-contain p-4">
+          <div className="min-h-0 max-h-[min(65dvh,38rem,calc(100dvh-var(--service-status-overlay-clearance,0px)-12rem))] space-y-4 overflow-y-auto overscroll-contain p-4">
             <div className="rounded-xl border border-accent/25 bg-accent/5 px-3 py-2 text-xs leading-5 text-fg-2">
               <span className="font-black text-accent">{korean ? "오리지널 전용" : "Original only"}</span>
               <span>{korean ? " · 레퍼런스/스톡/브라우저 합성 BGM으로 자동 대체하지 않습니다." : " · No automatic fallback to reference, stock, or browser-synthesized music."}</span>

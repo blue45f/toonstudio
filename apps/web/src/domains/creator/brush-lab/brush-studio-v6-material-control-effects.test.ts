@@ -3,7 +3,7 @@ import { BRUSH_STUDIO_V6_RECIPES, createBrushStudioV6Program, type BrushStudioV6
 import { brushStudioV6MaterialActiveTuningKeys, brushStudioV6MaterialMarksToSvg, createBrushStudioV6MaterialStroke } from "./brush-studio-v6-material-engine";
 
 const ranges: Partial<Record<keyof BrushStudioV6Tuning, readonly [number | string, number | string]>> = {
-  size: [12, 64], opacity: [0.1, 0.9], flow: [0.1, 0.9], spacing: [0.06, 0.4],
+  stabilization: [0, 1], size: [12, 64], opacity: [0.1, 0.9], flow: [0.1, 0.9], spacing: [0.06, 0.4],
   primaryColor: ["#102030", "#e09030"], secondaryColor: ["#e08020", "#2050e0"],
   surfaceTooth: [0, 1], friction: [0, 1], absorbency: [0, 1], granulation: [0, 1],
   edgeDarkening: [0, 1], pickup: [0, 1], reservoir: [0, 1], wetness: [0.1, 1],
