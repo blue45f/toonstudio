@@ -2,6 +2,7 @@ import { TOONSPECTRUM_CSRF_HEADER, TOONSPECTRUM_CSRF_HEADER_VALUE } from "@toons
 
 interface AdminRequestOptions {
   readonly body?: unknown;
+  readonly signal?: AbortSignal;
 }
 
 export class AdminApiError extends Error {
@@ -29,6 +30,7 @@ export async function requestAdminJson<T>(path: string, options: AdminRequestOpt
     credentials: "same-origin",
     cache: "no-store",
     redirect: "error",
+    signal: options.signal,
     headers: hasBody
       ? {
           "Content-Type": "application/json",
