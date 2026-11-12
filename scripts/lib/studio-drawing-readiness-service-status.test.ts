@@ -147,6 +147,19 @@ describe("브러시 검증의 실제 연결 안내 진입", () => {
     expect(f.dialog.hidden).toBe(true);
   });
 
+  it("필터 gate는 픽셀 기준선 전에 실제 연결 안내를 확인하고 DOM을 제거하지 않는다", () => {
+    const source = readFileSync(resolve(__dirname, "../verify-studio-filter-dialog.mts"), "utf8");
+    const start = source.indexOf("await waitForStudioDrawingReady(page, { requireWelcome: true })");
+    const end = source.indexOf("await prepareFilterMenuWorkspace(page)", start);
+    expect(start).toBeGreaterThan(0);
+    expect(end).toBeGreaterThan(start);
+    const readiness = source.slice(start, end);
+    expect(readiness).toContain("await verifyStudioServiceStatusAccess(page)");
+    expect(readiness).not.toContain("150_000");
+    expect(readiness).not.toMatch(/\.remove\(|page\.evaluate/u);
+    expect(end).toBeLessThan(source.indexOf("const liveBaseline = await screenshotClipped(page, clip)"));
+  });
+
   it("새 helper와 test는 기존 PR/main 경로 범위에 들어가며 원래 브러시 gate가 호출한다", () => {
     const workflow: unknown = parse(readFileSync(resolve(__dirname, "../../.github/workflows/studio-brush-filter-stability.yml"), "utf8"));
     expect(workflow).toMatchObject({ on: {

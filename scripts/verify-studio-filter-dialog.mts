@@ -38,8 +38,9 @@ import {
 import { parseStudioWorkspaceRoute } from "../apps/web/src/domains/creator/studio-workspace-route";
 
 import { canonicalImageElementIds } from "./lib/studio-canonical-image-identity";
-import { waitForStudioCollaborationDocumentLane } from "./lib/studio-collaboration-readiness";
+import { selectStudioCollaborationPen, waitForStudioCollaborationDocumentLane } from "./lib/studio-collaboration-readiness";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import { verifyStudioServiceStatusAccess } from "./lib/studio-drawing-readiness-service-status";
 import { assertStudioFilterCanonicalEvidence, assertStudioFilterCanonicalUnchanged, assertStudioFilterRecoveryUnchanged } from "./lib/studio-filter-canonical-evidence";
 import { studioFilterComparisonBandHeight } from "./lib/studio-filter-comparison-region";
 import { installStudioFilterConnectionFault } from "./lib/studio-filter-connection-fault";
@@ -214,26 +215,55 @@ function collectBrowserErrors(
   });
 }
 
+/** 전체 메뉴·목록·이미지 삽입을 검증하는 이 수집기에서만, 원본 픽셀을 재기 전에 실제 메뉴 배치를 연다. */
+async function prepareFilterMenuWorkspace(page: Page): Promise<void> {
+  const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').first();
+  if (!await clarity.isVisible()) return;
+  const deadline = Date.now() + 10_000;
+  const remaining = () => {
+    const value = deadline - Date.now();
+    if (value <= 0) throw new Error("필터 메뉴 작업 배치 진입 10000ms 예산을 초과했습니다.");
+    return value;
+  };
+  const originalUrl = page.url();
+  const shell = page.locator("#studio-app-shell");
+  const originalDensity = await shell.getAttribute("data-studio-ui-density", { timeout: remaining() });
+  const more = page.locator('summary[data-studio-clarity-more-trigger="true"]:visible');
+  invariant(await more.count() === 1, "필터 검증의 실제 더보기 진입점은 하나여야 합니다");
+  await more.click({ timeout: remaining() });
+  const tools = page.getByRole("dialog", { name: "원고 도구", exact: true });
+  await tools.waitFor({ state: "visible", timeout: remaining() });
+  const advanced = tools.locator("details.studio-drawing-task-advanced");
+  const summary = advanced.locator(":scope > summary");
+  invariant((await summary.innerText({ timeout: remaining() })).trim() === "레이어와 기존 작업 배치", "메뉴 도구의 접힌 목적 이름이 다릅니다");
+  if (!await advanced.evaluate(element => (element as HTMLDetailsElement).open)) await summary.click({ timeout: remaining() });
+  await tools.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true }).click({ timeout: remaining() });
+  await tools.waitFor({ state: "hidden", timeout: remaining() });
+  await page.locator('[data-studio-main-menu="true"]').waitFor({ state: "visible", timeout: remaining() });
+  invariant(page.url() === originalUrl, "메뉴 배치 진입이 필터 대상 원고 URL을 바꿨습니다");
+  invariant(await shell.getAttribute("data-studio-ui-density", { timeout: remaining() }) === originalDensity,
+    "메뉴 배치 진입이 사용자의 화면 구성 설정을 바꿨습니다");
+  log("메뉴·전체 필터 목록·이미지 삽입 검증을 위해 실제 프로젝트·창 도구를 열었습니다. 기본 Clarity 직접 필터 진입 검증과 별도입니다.");
+}
+
 /**
  * 필터 적용은 선택 도구 + 선택 레이어 상태를 만들고 실행취소는 도구를 되돌리지 않는다. 선택이 없는 선택 도구에서는
  * 옵션 줄이 한 줄(min-h-11)로 줄어 캔버스가 20px 올라가므로(StudioOptionsBars.tsx), 기준선과 같은 펜 배치로
  * 돌아온 뒤에 복원 화면을 찍는다.
  */
 async function returnToPenLayout(page: Page): Promise<void> {
-  await page.locator('button[data-studio-rail-tool-id="pen"]').first().click();
-  await page.locator('[data-studio-draw-options="true"]').waitFor({ state: "visible", timeout: 10_000 });
+  await selectStudioCollaborationPen(page, 10_000);
   await page.waitForTimeout(300);
 }
 
 async function activatePenAndDraw(page: Page): Promise<void> {
-  await page.keyboard.press("b");
-  const toolbar = page.locator('[data-studio-draw-options="true"]');
-  await toolbar.waitFor({ state: "visible", timeout: 10_000 });
-  await page.waitForFunction(() =>
-    document.querySelector('[data-studio-draw-options="true"]')
-      ?.getAttribute("data-studio-active-draw-mode") === "pen"
-  );
-  await toolbar.locator('[data-studio-brush-active-pill="true"]').waitFor({ state: "visible" });
+  // 공통 helper가 현재 보이는 펜과 선택 상태를 확인하며, 기존 배치의 정확한 pen mode도 유지한다.
+  await selectStudioCollaborationPen(page, 10_000);
+  const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').first();
+  if (!await clarity.isVisible()) {
+    await page.locator('[data-studio-draw-options="true"] [data-studio-brush-active-pill="true"]')
+      .waitFor({ state: "visible" });
+  }
 
   const viewport = page.locator("[data-studio-canvas-viewport]");
   await viewport.waitFor({ state: "visible", timeout: 10_000 });
@@ -766,21 +796,17 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
       document.documentElement.dataset.serviceCapabilityState ?? ""
     ), undefined, { timeout: 20_000 });
     if (await page.locator("html").getAttribute("data-service-capability-state") === "degraded") {
-      // 정적 미리보기에는 API가 없어 처음 90초(WARMUP_WINDOW_MS)는 고정 칩("warming")이고, 그 뒤 진짜 degraded 배너로
-      // 바뀌며 `html:has([data-service-degraded-banner="degraded"]) [data-studio-status-bar]` 가 하단 바를 20px 올린다.
-      // 기준선을 칩 상태에서 찍으면 90초 뒤 실행취소 비교가 어긋나므로, 안정된 degraded 상태까지 기다린 뒤에 잰다.
-      await page.locator('[data-service-degraded-banner="degraded"]').waitFor({ state: "visible", timeout: 150_000 });
-      // degraded 배너는 그 자체로 필터와 무관한 전역 알림이다. 게이트가 의도적으로 유발한
-      // 상태가 아니고 닫을 수 없어, 필터 실행 영역을 재기 전에 배너를 흐름에서 빼 둔다.
-      await page.evaluate(() => document
-        .querySelector("[data-service-degraded-banner]")
-        ?.remove());
+      // 접힌 연결 안내는 실제 저장 창에서 읽고 닫는다. 안내 DOM이나 문서·편집 설정을 바꾸지 않는다.
+      const serviceStatus = await verifyStudioServiceStatusAccess(page);
+      log(`실제 연결 안내 확인: ${JSON.stringify(serviceStatus)}`);
     }
 
     if (AUTHENTICATED) {
       // 캔버스가 보이는 것과 서버의 공동 편집 원고가 준비된 것은 별개다.
       await waitForStudioCollaborationDocumentLane(page, new Set(["synced"]));
     }
+    // 메뉴로 전환한 뒤 같은 화면 배치에서 원본·적용·실행취소 픽셀을 비교한다.
+    await prepareFilterMenuWorkspace(page);
     await activatePenAndDraw(page);
     let originalDocument = await waitForSavedPages(page, (document) =>
       document.pagesList.flatMap((item) => item.elements ?? []).filter((item) =>
