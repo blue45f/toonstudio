@@ -1318,6 +1318,7 @@ import {
 import { resolveStudioWorkspaceCanvasDockInsets } from "./studio-workspace-canvas-dock";
 import { readStudioWorkspaceDeviceSignalsFromGlobals } from "./studio-workspace-device-signals";
 import { resolveStudioWorkspacePanelLayoutVisibility } from "./studio-workspace-presentation-layout";
+import type { StudioDrawingClarityBaseline } from "./studio-cuttoon-editor/StudioDrawingClarityPolicy";
 import {
   studio2dSurfaceNavigationHref,
   type Studio2dWorkspaceSurface,
@@ -3176,9 +3177,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     const abortRef = autoActionAbortRef;
     return () => abortRef.current?.abort();
   }, []);
-  // 작업공간은 원고 내용과 분리된 계정/브라우저별 UI 상태다. 첫 페인트는 안전한 기본값으로
-  // 시작하고, owner-scoped SQLite/OPFS snapshot을 비동기로 hydration한다. 그 사이의 UI 편집은
-  // 아래 dirty revision fence가 보존하므로 늦은 load가 사용자의 새 배치를 덮지 않는다.
   const taskWorkspaceId = studioTaskWorkspaceId(studioRoute.documentWorkspace, uiDensityMode);
   const currentWorkspaceOwnerScope = studioWorkspaceOwnerScope(studioAuthUserId);
   const [workspacePersistence, setWorkspacePersistence] = useState<StudioWorkspaceLoadResult>(() => ({
@@ -3194,6 +3192,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const [workspaceSyncNotice, setWorkspaceSyncNotice] = useState<string | null>(null);
   const [workspaceMenuEpoch, setWorkspaceMenuEpoch] = useState(0);
   const workspaceState = workspacePersistence.state;
+  const [studioDrawingClarityBaseline, setStudioDrawingClarityBaseline] = useState<StudioDrawingClarityBaseline | null>(null);
   const [drawingLayoutRestorePoint, setDrawingLayoutRestorePoint] = useState<{
     ownerScope: string;
     layout: StudioWorkspaceLayout;
@@ -3923,6 +3922,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setPendingExternalWorkspaceSync,
     setWorkspaceMenuEpoch,
     setWorkspacePersistence,
+    setStudioDrawingClarityBaseline,
     setWorkspaceSyncNotice,
     setWorkspaceSyncRetryEpoch,
     studioAuthUserId,
@@ -3942,8 +3942,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const persistStudioWorkspaceStateFromEffect = useEffectEvent(
     persistStudioWorkspaceState,
   );
-  // 활성 프리셋 스냅샷은 그대로 두고 liveLayout만 저장한다. 패널 폭은 pointerup까지 기다려
-  // 최종값 한 번만 SQLite에 기록한다.
+  // 프리셋은 보존하고 liveLayout만 저장한다. 패널 폭은 pointerup 최종값만 기록한다.
   useEffect(() => {
     const ownerScope = currentWorkspaceOwnerScope;
     if (workspacePersistence.ownerScope !== ownerScope) return;
@@ -29345,6 +29344,7 @@ function clearSelectionForEdit() {
       workspaceMenuEpoch={workspaceMenuEpoch}
       workspacePersistence={workspacePersistence}
       workspaceState={workspaceState}
+      studioDrawingClarityBaseline={studioDrawingClarityBaseline}
       workspaceSyncNotice={workspaceSyncNotice}
       wrapRef={wrapRef}
       writerRoom={writerRoom}

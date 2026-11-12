@@ -28,6 +28,7 @@ import {
 } from "./studio-workspaces";
 
 import type { StudioWorkspaceLayoutSource } from "./studio-menu-session-model";
+import type { StudioDrawingClarityBaseline } from "./studio-cuttoon-editor/StudioDrawingClarityPolicy";
 import type { PendingStudioWorkspaceSync } from "./studio-page-editor-ui-contracts";
 import type { StudioUiBooleanPreferenceKey } from "./studio-ui-preferences-sqlite";
 import type {
@@ -35,13 +36,8 @@ import type {
   StudioWorkspaceRuntimeSaveResult,
 } from "./studio-workspace-sqlite-runtime";
 
-/**
- * StudioPage에서 추출한 작업공간 SQLite/OPFS 지속성 클러스터 — owner-scoped hydration,
- * dirty revision fence, BroadcastChannel invalidation 3-way merge, 그리고 패널 열림
- * 오버라이드/불리언 UI 환경설정 hydration. 상태·ref 선언은 StudioPage가 소유하고 이 파일은
- * 효과·저장 경로만 소유한다. 계약과 세대/펜스 로직은 추출 전 StudioPage와 동일하다.
- *
- * react-compiler가 이 파일의 훅을 컴파일하므로, 훅 인자에서 파생된 ref 별칭의 변이는 모두
+/** StudioPage에서 추출한 작업공간 SQLite/OPFS 지속성 클러스터 — owner-scoped hydration,
+ * dirty revision fence와 상태·ref 소유권은 유지하며, 훅 인자에서 파생된 ref 별칭의 변이는
  * 컴파일 경계 밖(모듈 함수)에서 수행한다 — live/studio-collaboration-wiring.ts와 같은 패턴.
  */
 export interface StudioPageWorkspacePersistenceContext {
@@ -66,6 +62,7 @@ export interface StudioPageWorkspacePersistenceContext {
     Dispatch<SetStateAction<PendingStudioWorkspaceSync | null>>;
   readonly setWorkspaceMenuEpoch: Dispatch<SetStateAction<number>>;
   readonly setWorkspacePersistence: Dispatch<SetStateAction<StudioWorkspaceLoadResult>>;
+  readonly setStudioDrawingClarityBaseline: Dispatch<SetStateAction<StudioDrawingClarityBaseline | null>>;
   readonly setWorkspaceSyncNotice: Dispatch<SetStateAction<string | null>>;
   readonly setWorkspaceSyncRetryEpoch: Dispatch<SetStateAction<number>>;
   readonly studioAuthUserId: string | null;
@@ -241,6 +238,7 @@ function runStudioWorkspaceOwnerHydration(
     next: PendingStudioWorkspaceSync | null,
   ): void => replaceStudioPendingExternalWorkspaceSync(context, next);
   const generation = workspaceHydrationGenerationRef.current + 1;
+  context.setStudioDrawingClarityBaseline(null);
   workspaceHydrationGenerationRef.current = generation;
   workspaceDirtyRevisionRef.current = 0;
   const ownerScope = currentWorkspaceOwnerScope;
@@ -325,6 +323,8 @@ function runStudioWorkspaceOwnerHydration(
     const hydratedState = workspaceDirtyRevisionRef.current === 0
       ? applyStudioTaskWorkspace(result.state, context.taskWorkspaceId)
       : result.state;
+    context.setStudioDrawingClarityBaseline(result.failure === null && result.authority === "sqlite-opfs"
+      ? Object.freeze({ ownerScope, source: result.source, state: hydratedState }) : null);
     updateWorkspacePersistenceSnapshot({
       state: hydratedState,
       ownerScope: result.ownerScope,

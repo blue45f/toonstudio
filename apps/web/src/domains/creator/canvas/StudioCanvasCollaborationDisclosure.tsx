@@ -21,10 +21,11 @@ export function StudioCanvasCollaborationDisclosure({
   const bt = useBilingual("StudioCanvasCollaborationDisclosure");
   const smallViewport = useIsMobile();
   const isMobile = smallViewport && mobileImmersive;
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(following);
   const summaryRef = useRef<HTMLElement>(null);
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const panelId = useId();
+  useEffect(() => { if (following) setExpanded(true); }, [following]);
   useEffect(() => {
     if (!isMobile || !expanded) return;
     const ownerDocument = detailsRef.current?.ownerDocument;
@@ -47,6 +48,7 @@ export function StudioCanvasCollaborationDisclosure({
       data-studio-shortcut-boundary="true"
       data-studio-collaboration-disclosure="true"
       data-studio-collaboration-mobile={isMobile ? "true" : undefined}
+      data-studio-collaboration-following={following ? "true" : undefined}
       open={!isMobile || expanded}
       onToggle={(event) => {
         if (isMobile) setExpanded(event.currentTarget.open);

@@ -1,5 +1,4 @@
-/* Extracted session contract from StudioCuttoonEditor.
- * Matches the original closure bag from StudioPage/StudioCuttoonEditor. */
+/* StudioPage/StudioCuttoonEditor의 기존 세션 계약. */
 import type { StudioAnimaticWorkspaceDocument } from "../animatic/studio-animatic-workspace";
 
 import type { StudioSaveIntentScope } from "../studio-durable-save-intent";
@@ -564,6 +563,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   workspaceMenuEpoch: number;
   workspacePersistence: import("../studio-workspaces").StudioWorkspaceLoadResult;
   workspaceState: import("../studio-workspaces").StudioWorkspaceState;
+  studioDrawingClarityBaseline: import("./StudioDrawingClarityPolicy").StudioDrawingClarityBaseline | null;
   workspaceSyncNotice: string | null;
   wrapRef: import("react").RefObject<HTMLDivElement | null>;
   writerRoom: { version: 1; stages: { premise: { text: string; characterIds: string[]; }; synopsis: { text: string; characterIds: string[]; }; "episode-outline": { title: string; summary: string; characterIds: string[]; }; beats: { items: { id: string; order: number; title: string; summary: string; characterIds: string[]; }[]; }; scenes: { items: { id: string; order: number; beatIds: string[]; heading: string; summary: string; location: string; time: string; characterIds: string[]; }[]; }; "panel-plan": { items: { id: string; order: number; sceneId: string; shot: string; action: string; characterIds: string[]; }[]; }; "dialogue-sfx": { dialogue: { id: string; order: number; panelId: string; characterId: string | null; text: string; }[]; sfx: { id: string; order: number; panelId: string; presetId: string | null; customText: string; style: { emphasis: "quiet" | "normal" | "strong"; scale: "small" | "medium" | "large"; }; }[]; }; }; completion: { premise: boolean; synopsis: boolean; "episode-outline": boolean; beats: boolean; scenes: boolean; "panel-plan": boolean; "dialogue-sfx": boolean; }; suggestions: { id: string; targetPath: string; currentValue: string | number | boolean | string[] | null; proposedValue: string | number | boolean | string[] | null; rationale: string; status: "pending" | "accepted" | "rejected"; createdAt: string; provenanceRef?: string | undefined; resolvedAt?: string | undefined; }[]; lastDecision?: { kind: "accept" | "reject"; suggestionStates: { id: string; status: "pending" | "accepted" | "rejected"; resolvedAt?: string | undefined; }[]; targetValues: { targetPath: string; value: string | number | boolean | string[] | null; }[]; decidedAt: string; } | undefined; };

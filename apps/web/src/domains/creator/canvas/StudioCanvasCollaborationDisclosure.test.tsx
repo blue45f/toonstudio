@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { useEffect } from "react";
+import { readFileSync } from "node:fs";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -66,10 +67,38 @@ describe("함께 작업 접힘", () => {
     fireEvent.click(screen.getByRole("button", { name: "팀·채팅 열기" }));
     expect(onOpenTeam).toHaveBeenCalledOnce();
   });
-  it("접혀 있어도 화면 따라가기 중인 현재 문맥을 표시한다", () => {
-    render(<StudioCanvasCollaborationDisclosure mobileImmersive following onOpenTeam={vi.fn()}>{null}</StudioCanvasCollaborationDisclosure>);
-    expect(detailsForSummary().open).toBe(false);
+  it("화면 따라가기 중에는 현재 문맥과 기존 중단 조작을 먼저 펼쳐 보인다", () => {
+    const stop = vi.fn();
+    render(<StudioCanvasCollaborationDisclosure mobileImmersive following onOpenTeam={vi.fn()}><button onClick={stop}>따라가기 중지</button></StudioCanvasCollaborationDisclosure>);
+    expect(detailsForSummary().open).toBe(true);
     expect(screen.getByText("따라가기 중")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "따라가기 중지" })); expect(stop).toHaveBeenCalledOnce();
+  });
+
+  it("간결한 모바일은 idle 행만 접고 active-follow·외부 P2P 표면과 모드 복귀는 보존한다", () => {
+    const css = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css", "utf8");
+    const rule = css.split("\n").find((line) => line.startsWith("[data-studio-drawing-clarity-mobile=true] [data-studio-collaboration-disclosure=true]"));
+    if (!rule) throw new Error("협업 행의 실제 명료성 CSS 규칙이 필요합니다.");
+    const stopped = vi.fn(), mounted = vi.fn(), unmounted = vi.fn();
+    function ExistingControls() { useEffect(() => { mounted(); return unmounted; }, []); return <button onClick={stopped}>따라가기 중지</button>; }
+    function Surface({ following, clarity }: { following: boolean; clarity: boolean }) {
+      return <><style>{rule}</style><div data-studio-drawing-clarity-mobile={clarity ? "true" : undefined}>
+        <StudioCanvasCollaborationDisclosure mobileImmersive following={following} onOpenTeam={vi.fn()}><ExistingControls /></StudioCanvasCollaborationDisclosure>
+        <div data-studio-huddle-placement="floating"><button>진행 중인 통화</button></div>
+      </div></>;
+    }
+    const view = render(<Surface following={false} clarity />);
+    expect(getComputedStyle(detailsForSummary()).display).toBe("none");
+    expect(screen.getByRole("button", { name: "진행 중인 통화" })).toBeTruthy();
+    view.rerender(<Surface following clarity />);
+    expect(detailsForSummary().getAttribute("data-studio-collaboration-following")).toBe("true");
+    expect(getComputedStyle(detailsForSummary()).display).not.toBe("none");
+    expect(detailsForSummary().open).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "따라가기 중지" })); expect(stopped).toHaveBeenCalledOnce();
+    view.rerender(<Surface following={false} clarity={false} />);
+    expect(getComputedStyle(detailsForSummary()).display).not.toBe("none");
+    expect(screen.getByRole("button", { name: "진행 중인 통화" })).toBeTruthy();
+    expect(mounted).toHaveBeenCalledOnce(); expect(unmounted).not.toHaveBeenCalled();
   });
 
 });

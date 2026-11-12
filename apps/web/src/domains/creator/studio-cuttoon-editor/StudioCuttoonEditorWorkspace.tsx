@@ -18,6 +18,8 @@ import { StudioCuttoonEditorPanels } from "./StudioCuttoonEditorPanels";
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import { StudioCuttoonEditorSessionDialogs } from "./StudioCuttoonEditorSessionDialogs";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
+import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
+import { StudioDrawingClarityPaneHeading, StudioDrawingClarityRail } from "./StudioDrawingClarityBar";
 
 import "./studio-cinematic-canvas-v4.css";
 
@@ -26,6 +28,14 @@ const LazyStudioBrushWorkbenchDock = lazy(() => import("../brush/StudioBrushWork
 const TOOL_RAIL_LAYOUT = { version: 2, xRatio: 0.02, yRatio: 0.1, width: 96, height: 720, dock: "free", positionLocked: false, sizeLocked: false } as const;
 
 export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) {
+  const clarity = useStudioDrawingClarity(), compact = clarity?.active === true && !s.isMobile;
+  const setClarityPanelOpen = (panel: "layers" | "pages", next: import("react").SetStateAction<boolean>) => {
+    if (!clarity) return;
+    const shouldOpen = typeof next === "function" ? next(clarity.panel === panel) : next;
+    if (!shouldOpen) { clarity.close(); return; }
+    const trigger = document.querySelector<HTMLElement>(panel === "layers" ? "[data-studio-clarity-find-tools]" : '[data-studio-clarity-open="pages"]');
+    if (trigger) clarity.reveal(panel, trigger);
+  };
   const {
     activeSurfaceReviewLocked,
     admittedBg3dOpen,
@@ -211,6 +221,9 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             className="fixed inset-0 z-[59] bg-black/45 backdrop-blur-sm lg:hidden"
           />
         )}
+        <div id={compact ? "studio-drawing-clarity-panel-pages" : undefined} hidden={compact && clarity.panel !== "pages"}
+          className={compact ? "studio-drawing-clarity-pane studio-drawing-clarity-pane--pages" : "contents"}>
+          {compact && clarity.panel === "pages" ? <StudioDrawingClarityPaneHeading panel="pages" /> : null}
         {/* 왼쪽: 페이지 목록 — 접히면 아이콘 엣지 레일.
             Work-mode gate: this pane is the "page-strip" + "left-panel" chrome.
             When the composed gate (uiChromeExposure, density × work mode)
@@ -263,18 +276,21 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             pageDnd={pageDnd}
             pages={pages}
             pagesSheetRef={pagesSheetRef}
-            presentationPanelsHidden={presentationPanelsHidden}
+            presentationPanelsHidden={compact ? false : presentationPanelsHidden}
             setCurrentPageId={setCurrentPageId}
-            setLeftPanelOpen={setLeftPanelOpenWithOverride}
+            setLeftPanelOpen={compact ? (next) => setClarityPanelOpen("pages", next) : setLeftPanelOpenWithOverride}
             setMasterPanelOpen={setMasterPanelOpen}
             setMetaEditPageId={setMetaEditPageId}
             setMobileSheet={setMobileSheet}
-            visibleLeftPanelOpen={visibleLeftPanelOpen}
+            visibleLeftPanelOpen={compact ? clarity.panel === "pages" : visibleLeftPanelOpen}
             stableHandlers={studioPageListPaneHandlers}
           />
         </Suspense>
         )}
 
+        </div>
+
+        <div className={compact ? "hidden" : "contents"}>
         {/* Left vertical toolbar — desktop only; mobile uses bottom dock / horizontal belt.
             Work-mode gate: "tool-rail" is folded by the lettering/finish modes
             (studio-work-mode.ts). When the composed gate (uiChromeExposure,
@@ -303,7 +319,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
           surfaceId="tool-rail"
           label="그리기 도구"
           defaultLayout={TOOL_RAIL_LAYOUT}
-          disabled={isMobile || canvasOnlyMode || mobileImmersive || presentationPanelsHidden}
+          disabled={compact || isMobile || canvasOnlyMode || mobileImmersive || presentationPanelsHidden}
           minWidth={80}
           minHeight={240}
           maxWidth={320}
@@ -323,8 +339,13 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
         </StudioWorkspaceRegion>
         )}
 
+        </div>
+
+        <div id={compact ? "studio-drawing-clarity-panel-brush" : undefined} hidden={compact && clarity.panel !== "brush"}
+          className={compact ? "studio-drawing-clarity-pane studio-drawing-clarity-pane--brush" : "contents"}>
+          {compact && clarity.panel === "brush" ? <StudioDrawingClarityPaneHeading panel="brush" /> : null}
         {!isMobile && !canvasOnlyMode && !mobileImmersive && !presentationPanelsHidden
-          && s.studioOptionsBarsDrawModel.libraryDockOpen ? (
+          && (compact ? clarity.panel === "brush" : s.studioOptionsBarsDrawModel.libraryDockOpen) ? (
           <Suspense fallback={<div role="status" className="hidden w-64 shrink-0 border-r border-line bg-panel p-3 text-sm text-fg-2 lg:block xl:w-[17rem]">{editorShellStatusText("studio.editorShellStatus.workspace.brushLibraryOpening", "브러시 라이브러리를 여는 중…")}</div>}>
             <LazyStudioBrushWorkbenchDock
               key={`${s.studioOptionsBarsDrawModel.workspaceOwnerScope}:${drawMode === "eraser" ? "erase" : "paint"}`}
@@ -344,13 +365,14 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
               onSelect={s.applyStudioBrushCatalogSelection}
               onSelectionLifecycle={s.studioBrushCatalogHandlers.selectionLifecycle}
               onToggleFavorite={s.studioBrushCatalogHandlers.toggleFavorite}
-              onCollapse={() => s.studioOptionsBarsHandlers.toggleBrushDock?.()}
+              onCollapse={() => compact ? clarity.close() : s.studioOptionsBarsHandlers.toggleBrushDock?.()}
               onOpenBrushStudio={s.studioOptionsBarsHandlers.openBrushStudio}
               expanded={s.brushCatalogSession?.placement === "desktop-dock"}
               onExpandCatalog={(trigger) => s.studioBrushCatalogHandlers.toggle("desktop-dock", trigger)}
             />
           </Suspense>
         ) : null}
+        </div>
         {/* 참(Charm) 바 — 자주 쓰는 소재를 한 번에 붙이는 도킹 가능한 소형 패널. 꺼져 있으면 아무것도 그리지 않는다.
             슬롯째 지연 로드한다(`StudioCharmBarSlotLazy`): 정적으로 가져오면 Studio 첫 청크 그래프가 커져 번들 래칫을 깬다. */}
         <StudioCharmBarSlotLazy session={s} />
@@ -358,6 +380,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             패널을 왼쪽에 도킹하면 행 방향을 뒤집어 [패널|스플리터|캔버스]가 된다. */}
         <div
           data-studio-inspector-dock={inspectorDockSide}
+          style={compact ? { order: 1 } : undefined}
           className={
             inspectorDockSide === "left"
               ? "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:flex-row-reverse"
@@ -365,6 +388,10 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
           }
         >
           <StudioCuttoonEditorCanvasColumn {...s} />
+          <div id={compact ? "studio-drawing-clarity-panel-layers" : undefined} hidden={compact && clarity.panel !== "layers"}
+            className={compact ? "studio-drawing-clarity-pane studio-drawing-clarity-pane--inspector" : "contents"}>
+            {compact && clarity.panel === "layers" ? <StudioDrawingClarityPaneHeading panel="layers" /> : null}
+            <div className={compact ? "flex min-h-0 flex-1" : "contents"}>
           {/* Work-mode gate: the inspector column is the "right-panel" chrome.
               Same composed-gate pattern as the page pane and tool rail: a
               folded verdict mounts a slim strip whose expand button reuses
@@ -389,12 +416,18 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
               </button>
             </div>
           ) : (
-            <StudioCuttoonEditorInspectorColumn {...s} />
+            <StudioCuttoonEditorInspectorColumn {...s}
+              presentationPanelsHidden={compact ? false : s.presentationPanelsHidden}
+              visibleRightPanelOpen={compact ? clarity.panel === "layers" : s.visibleRightPanelOpen}
+              setRightPanelOpenWithOverride={compact ? (next) => setClarityPanelOpen("layers", next) : s.setRightPanelOpenWithOverride} />
           )}
+            </div>
+          </div>
         </div>
+        <StudioDrawingClarityRail session={s} />
         <StudioCuttoonEditorPanels {...s} />
         <StudioCuttoonEditorSessionDialogs {...s} />
-        <StudioWorkspaceArrangementToolbar disabled={isMobile || canvasOnlyMode || mobileImmersive || presentationPanelsHidden} />
+        <StudioWorkspaceArrangementToolbar disabled={compact || isMobile || canvasOnlyMode || mobileImmersive || presentationPanelsHidden} />
       </div>
   );
 }

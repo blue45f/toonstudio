@@ -2,6 +2,7 @@ import { memo, useCallback } from "react";
 
 import { CANVAS_W } from "../studio-assets";
 import { studioUiDensityAllows } from "../studio-ui-density";
+import { useStudioDrawingClarity } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
 import { StudioColorBlindFilterDefs } from "../StudioColorBlindPreview";
 
 import { StudioCinematicCanvasWelcome } from "./StudioCinematicCanvasWelcome";
@@ -38,6 +39,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
   ...rest
 }: StudioCanvasViewportProps) {
   const props: StudioCanvasViewportProps = { zoomHostRef, ...rest };
+  const clarity = useStudioDrawingClarity();
   const zoomHostNodeRef = zoomHostRef;
   const live = useStudioCanvasViewportLiveSurfaces(props);
   /**
@@ -406,7 +408,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
 
         <StudioCinematicCanvasWelcome
           pageKey={activePage.id}
-          initiallyCollapsed={!studioUiDensityAllows(uiDensityMode, "workflow-guide")}
+          initiallyCollapsed={Boolean(clarity?.active && props.isMobile) || !studioUiDensityAllows(uiDensityMode, "workflow-guide")}
           onOpenTutorial={() => openFeatureTutorial(null)}
           onDrawNow={() => { dismissQuickStart(); stableHandlers.activateCanvasTool("draw", "pen"); wrapRef.current?.focus({ preventScroll: true }); }}
           visible={shouldShowStudioCinematicCanvasWelcome({
