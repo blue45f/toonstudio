@@ -12,6 +12,26 @@ function menu(hostId = "mobile-tools", run = vi.fn()) {
 function trigger() { return screen.getByLabelText("더보기 · 도구와 도움말"); }
 
 describe("드로잉 더보기의 실제 진입점과 초점", () => {
+  it("메뉴는 캔버스의 잘림·상태 도구 계층을 벗어나고 내부 포인터는 행동을 보존한다", () => {
+    render(<div style={{ overflow: "hidden", isolation: "isolate" }}><button type="button">다른 영역</button>{menu("absent")}</div>);
+    const source = trigger(); fireEvent.click(source);
+    const action = screen.getByRole("button", { name: "목적 1" });
+    expect(action.parentElement?.parentElement).toBe(document.body);
+    fireEvent.pointerDown(action);
+    expect(source.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.pointerDown(screen.getByRole("button", { name: "다른 영역" }));
+    expect(source.getAttribute("aria-expanded")).toBe("false");
+    expect(document.getElementById("drawing-menu")?.hidden).toBe(true);
+  });
+  it("포털에서도 Tab으로 첫 행동에 진입하고 역방향·끝에서는 같은 트리거로 돌아간다", () => {
+    render(menu("absent")); const source = trigger(); source.focus(); fireEvent.click(source);
+    const first = screen.getByRole("button", { name: "목적 1" });
+    const last = screen.getByRole("button", { name: "목적 8" });
+    fireEvent.keyDown(source, { key: "Tab" }); expect(document.activeElement).toBe(first);
+    fireEvent.keyDown(first, { key: "Tab", shiftKey: true }); expect(document.activeElement).toBe(source);
+    last.focus(); fireEvent.keyDown(last, { key: "Tab" });
+    expect(document.activeElement).toBe(source); expect(source.getAttribute("aria-expanded")).toBe("false");
+  });
   it("이름 있는8개 행동을 한 트리거에서 찾고 실제 누른 트리거로 복귀한다", () => {
     const run = vi.fn(); render(menu("absent", run)); const source = trigger(); source.focus(); fireEvent.click(source);
     expect(screen.getAllByRole("button")).toHaveLength(8); fireEvent.click(screen.getByRole("button", { name: "목적 4" }));

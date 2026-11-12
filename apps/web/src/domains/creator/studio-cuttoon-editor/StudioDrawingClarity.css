@@ -16,7 +16,7 @@
 .studio-drawing-clarity-more{position:relative;flex-shrink:0}
 .studio-drawing-clarity-more summary{display:grid;place-items:center;list-style:none;min-width:48px;min-height:48px;border-radius:12px;cursor:pointer;gap:4px;font-size:12px}
 .studio-drawing-clarity-more summary::-webkit-details-marker{display:none}
-.studio-drawing-clarity-menu{position:absolute;top:calc(100% + 8px);right:0;z-index:60;display:flex;flex-direction:column;min-width:220px;padding:8px;border:1px solid var(--color-line);border-radius:14px;background:var(--color-panel);box-shadow:0 12px 32px #0004}
+.studio-drawing-clarity-menu{--site-control-size:48px;position:fixed;z-index:100;display:flex;flex-direction:column;min-width:0;overflow-y:auto;overscroll-behavior:contain;padding:8px;border:1px solid var(--color-line);border-radius:14px;background:var(--color-panel);box-shadow:0 12px 32px #0004}
 .studio-drawing-clarity-menu[hidden]{display:none}
 .studio-drawing-clarity-menu button{min-height:48px;min-width:48px;border-radius:8px;padding:10px 12px;text-align:left;font-size:14px}
 .studio-drawing-clarity-menu button:hover{background:var(--color-raised)}
@@ -90,7 +90,6 @@ html:not([data-studio-canvas-only=true]) [data-studio-editor=true][data-studio-m
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] [data-studio-mobile-primary-actions]{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-layout=simple] [data-studio-mobile-primary-actions] button{min-height:48px;font-size:12px}
 [data-studio-drawing-clarity-mobile=true] [data-studio-mobile-workspace-menu=true]{display:none}
-[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-editing-dock=true] .studio-drawing-clarity-menu{top:auto;bottom:calc(100% + 10px);right:0;width:min(300px,calc(100vw - 20px));max-height:min(65dvh,30rem);overflow-y:auto;overscroll-behavior:contain}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-history button{font-size:11px;gap:3px}
 .studio-drawing-clarity-mobile-header [data-studio-save-sync-status-center]>[role=dialog]{position:fixed;top:calc(env(safe-area-inset-top) + 68px);left:8px;right:8px;width:auto;max-width:none;max-height:calc(100dvh - 88px);margin:0}
 @media(prefers-reduced-motion:reduce){.studio-drawing-clarity-more *{transition:none!important;animation:none!important}}
