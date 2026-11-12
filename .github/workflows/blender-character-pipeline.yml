@@ -44,6 +44,8 @@ concurrency:
 
 env:
   BLENDER_VERSION: 5.2.1
+  # 공식 5.2.1 checksum의 Linux x64 값을 고정해 mirror 응답도 검증한다.
+  BLENDER_ARCHIVE_SHA256: a31f524fa99a527d3d52b7f5aaa68c34e1a19d5a1c9473f79c5cc610fd5b10e9
   VRM_ADDON_VERSION: 4.5.0
   VRM_ADDON_SHA256: e5e0f923a0bb11eb1320870b2db8091948dd5b63014510d839016a112e40a35a
   NODE_OPTIONS: --max-old-space-size=12288
@@ -152,11 +154,12 @@ jobs:
           checksum="blender-${BLENDER_VERSION}.sha256"
           curl --fail --location --retry 5 --retry-all-errors \
             --output "$archive" \
-            "https://download.blender.org/release/Blender5.2/$archive"
+            "https://mirror.blender.org/release/Blender5.2/$archive"
           curl --fail --location --retry 5 --retry-all-errors \
             --output "$checksum" \
-            "https://download.blender.org/release/Blender5.2/$checksum"
+            "https://mirror.blender.org/release/Blender5.2/$checksum"
           grep " $archive$" "$checksum" | sha256sum --check -
+          echo "$BLENDER_ARCHIVE_SHA256  $archive" | sha256sum --check -
           tar -xf "$archive"
           mv "blender-${BLENDER_VERSION}-linux-x64" "blender-${BLENDER_VERSION}-linux-x64.ready"
           rm -f "$archive" "$checksum"
