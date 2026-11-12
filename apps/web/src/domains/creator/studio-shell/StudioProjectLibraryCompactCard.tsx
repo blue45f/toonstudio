@@ -51,7 +51,7 @@ export function StudioProjectLibraryCompactCard(props: CardProps & { readonly se
         {selectionVisible ? <StudioProjectSelectionCheckbox checked={checked}
           label={formatI18nTemplate(bt("{value0} 선택", "Select {value0}"), { value0: project.title })} onChange={onToggle} /> : null}
         <div className="studio-library-project-row-thumbnail">
-          <StudioProjectCardThumbnail project={project} authUserId={authUserId} locale={locale} />
+          <StudioProjectCardThumbnail project={project} authUserId={authUserId} locale={locale} variant="cover" />
         </div>
         <div className="studio-library-project-row-description">
           <h3 title={project.title} data-studio-project-title="true" className="line-clamp-2 break-words">
