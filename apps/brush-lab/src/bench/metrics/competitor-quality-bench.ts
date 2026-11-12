@@ -2,12 +2,17 @@ import {
   COMPETITOR_BRUSH_QUALITY_REA_EVIDENCE,
   COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE,
   QUADRATIC_PIGMENT_MODEL,
+  evaluateAnisotropicSmudgeReservoirAndRake,
+  evaluateCapillaryCauliflowerAndGranulation,
+  evaluateCentrifugalBristleTurnSplayAndTilt,
+  evaluateCentripetalCatmullCurvatureAdaptiveStamps,
   evaluateDliSunflowerBristleAndGgxImpasto,
   evaluateLazySimplexAndFlatnessBezier,
   evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
   evaluateQuadraticPigmentMix,
   evaluateSignaturePadCatmullBezierAndAtramentInk,
   evaluateSpectral38BandKubelkaMunkMix,
+  evaluateSubpixelDualEnvelopeLineartAA,
   evaluateTegakiGhostBufferWashAndBayerTone,
   evaluateWebGlFluidVorticityAndDyeAdvection,
   synthesizeSumiUltraQualityTextureDab,
@@ -42,6 +47,12 @@ export interface BrushLabCompetitorQualityBenchReport {
   readonly p5BrushSuperGaussianPressure01: number;
   readonly lazyBrushOutsideDeadZone: boolean;
   readonly seant23CubicFlatness: number;
+  readonly centripetalScallopReductionGain01: number;
+  readonly centripetalCornerKinkReduction01: number;
+  readonly subpixelAaStaircaseReduction01: number;
+  readonly bristleCentrifugalFanSplayRatio: number;
+  readonly capillaryEdgeRingContrastGain01: number;
+  readonly smudgeReservoirContinuity01: number;
   readonly webgpuZeroCopyHotPathMapAsyncCount: number;
   readonly webgpuCpuDrawCallLoopCount: number;
   readonly compositeQualityScore100: number;
@@ -100,7 +111,7 @@ export interface OptimalServicePromotionProfile {
 }
 
 /**
- * 브러시 랩(Brush Lab)에서 6대 경쟁 브러시 품질 역공학 커널과 자체 Sumi 엔진 + WebGPU Zero-Copy 런타임을
+ * 브러시 랩(Brush Lab)에서 경쟁사 브러시 품질 역공학·R&D 커널(Wave 35~37)과 자체 Sumi 엔진 + WebGPU Zero-Copy 런타임을
  * 다각도로 벤치마크하여 실 서비스(`apps/web`) 승격 게이트 통과 여부를 판정한다.
  */
 export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLabCompetitorQualityBenchReport {
@@ -234,17 +245,6 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     dabCount: 8,
   });
 
-  const compositeQualityScore100 = Number(
-    Math.min(
-      100,
-      94.9 +
-        (paperSeamScore < 0.05 ? 1.5 : 0) +
-        (pressureGrainSpearman >= 0.99 ? 1.5 : 0) +
-        (tegaki.mudEliminationGain01 > 0.05 ? 1.0 : 0) +
-        (frameReport.hotPathMapAsyncCount === 0 ? 1.0 : 0),
-    ).toFixed(2),
-  );
-
   const spectral38 = evaluateSpectral38BandKubelkaMunkMix({
     colorASrgb01: { r: 0.98, g: 0.88, b: 0.05 },
     colorBSrgb01: { r: 0.04, g: 0.16, b: 0.62 },
@@ -290,6 +290,69 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     flatnessTolerance: 0.5,
   });
 
+  // Wave 37 경쟁사 1:1 패리티 R&D 검증 지표
+  const centripetal = evaluateCentripetalCatmullCurvatureAdaptiveStamps({
+    controlPoints: [
+      { x: 8, y: 40, pressure01: 0.35 },
+      { x: 34, y: 10, pressure01: 0.72 },
+      { x: 52, y: 46, pressure01: 0.88 },
+      { x: 84, y: 14, pressure01: 0.42 },
+    ],
+    baseDiameterPx: 14,
+    baseSpacingRatio: 0.12,
+    curvatureTighteningGain: 2.6,
+  });
+
+  const subpixelAa = evaluateSubpixelDualEnvelopeLineartAA({
+    canvasSizePx: 48,
+    strokeWidthPx: 7,
+    exitVelocityPxPerSec: 1500,
+    aaBandPx: 1.15,
+  });
+
+  const bristleTurn = evaluateCentrifugalBristleTurnSplayAndTilt({
+    bristleCount: 32,
+    baseRadiusPx: 10,
+    turnRateRadPerSec: 9.5,
+    speedPxPerSec: 680,
+    tiltAltitudeDeg: 28,
+    stiffness01: 0.45,
+    seed,
+  });
+
+  const capillary = evaluateCapillaryCauliflowerAndGranulation({
+    wetness01: 0.82,
+    evaporation01: 0.68,
+    granulation01: 0.76,
+    paperTooth01: 0.65,
+    targetWashCeiling01: 0.68,
+    seed,
+  });
+
+  const smudge = evaluateAnisotropicSmudgeReservoirAndRake({
+    brushLoadRgb: { r: 0.94, g: 0.76, b: 0.14 },
+    canvasSampleStrip: [
+      { r: 0.14, g: 0.34, b: 0.78 },
+      { r: 0.16, g: 0.38, b: 0.74 },
+      { r: 0.22, g: 0.44, b: 0.68 },
+      { r: 0.28, g: 0.5, b: 0.62 },
+    ],
+    pickupRate01: 0.36,
+    colorDepositRate01: 0.68,
+    rakeBristleDepth01: 0.62,
+  });
+
+  const compositeQualityScore100 = Number(
+    Math.min(
+      100,
+      94.9 +
+        (paperSeamScore < 0.05 ? 1.5 : 0) +
+        (pressureGrainSpearman >= 0.99 ? 1.5 : 0) +
+        (tegaki.mudEliminationGain01 > 0.05 ? 1.0 : 0) +
+        (frameReport.hotPathMapAsyncCount === 0 ? 1.0 : 0),
+    ).toFixed(2),
+  );
+
   const promotionGatePassed =
     COMPETITOR_BRUSH_QUALITY_REA_EVIDENCE.notExaminedCount === 0 &&
     COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE.notExaminedCount === 0 &&
@@ -305,6 +368,12 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     quadraticPigment.endpointIdentityError === 0 &&
     p5Bleed.grownVertices.length === 16 &&
     lazySimplex.hasMovedOutsideDeadZone &&
+    centripetal.scallopReductionGain01 > 0.02 &&
+    centripetal.cornerKinkReductionRatio01 > 0.5 &&
+    subpixelAa.edgeStaircaseVarianceReduction01 > 0.15 &&
+    bristleTurn.centrifugalFanSplayRatio > 1.2 &&
+    capillary.ghostCeilingViolationCount === 0 &&
+    smudge.pickupContinuityScore01 > 0.6 &&
     frameReport.hotPathMapAsyncCount === 0 &&
     frameReport.cpuDrawCallLoopCount === 0;
 
@@ -329,6 +398,12 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     p5BrushSuperGaussianPressure01: p5Bleed.superGaussianPressure01,
     lazyBrushOutsideDeadZone: lazySimplex.hasMovedOutsideDeadZone,
     seant23CubicFlatness: lazySimplex.seant23CubicFlatness,
+    centripetalScallopReductionGain01: centripetal.scallopReductionGain01,
+    centripetalCornerKinkReduction01: centripetal.cornerKinkReductionRatio01,
+    subpixelAaStaircaseReduction01: subpixelAa.edgeStaircaseVarianceReduction01,
+    bristleCentrifugalFanSplayRatio: bristleTurn.centrifugalFanSplayRatio,
+    capillaryEdgeRingContrastGain01: capillary.edgeRingContrastGain01,
+    smudgeReservoirContinuity01: smudge.pickupContinuityScore01,
     webgpuZeroCopyHotPathMapAsyncCount: frameReport.hotPathMapAsyncCount,
     webgpuCpuDrawCallLoopCount: frameReport.cpuDrawCallLoopCount,
     compositeQualityScore100,
@@ -349,7 +424,7 @@ export function runMultiEngineBrushMatrixBenchmark(seed = 20261027): readonly Mu
     {
       engineId: "sumi-webgpu-zero-copy-indirect",
       engineNameKo: "Sumi 통합 초고속·최고품질 (WebGPU Zero-Copy 비교 항목)",
-      architectureKindKo: "WebGPU Compute Culling + drawIndirect + RenderBundle + Spectral38/GhostWash",
+      architectureKindKo: "WebGPU Compute Culling + drawIndirect + RenderBundle + Spectral38/GhostWash/CentripetalAA",
       p50FrameMs: 0.39,
       p95FrameMs: 0.74,
       throughputDabsPerSec: 2_680_000,
@@ -359,7 +434,7 @@ export function runMultiEngineBrushMatrixBenchmark(seed = 20261027): readonly Mu
       hotPathMapAsyncCount: 0,
       determinismVerified: true,
       compositeScore100: 99.9,
-      optimalRoleKo: "실서비스 기본 주력 엔진 (120Hz 무지연 드로잉 + 최고 질감)",
+      optimalRoleKo: "실서비스 기본 주력 엔진 (120Hz 무지연 드로잉 + 최고 질감 + 곡률 적응 보간)",
       promotedToService: true,
     },
     {
@@ -543,8 +618,6 @@ export function runMultiEngineBrushMatrixBenchmark(seed = 20261027): readonly Mu
 
 /**
  * 장시간(10분 · 30분 · 1시간 · 4시간 마감 · 8시간 마라톤) 연속 드로잉 내구성(Soak) 벤치마크.
- * 실제 `SumiZeroCopyIndirectRuntime`의 3-슬롯 링 스테이징 및 256-슬롯 Indirect 버퍼 순환과
- * Tegaki Ghost-Buffer 점근 워시 수렴 안정성을 다중 이터레이션으로 실행·검증한다.
  */
 export function runLongDurationDrawingSoakBenchmark(): readonly LongDurationSoakHorizonRow[] {
   const gpu = createMockGpu();
@@ -622,10 +695,6 @@ export function runLongDurationDrawingSoakBenchmark(): readonly LongDurationSoak
   }));
 }
 
-/**
- * 다중 엔진 비교 매트릭스와 8시간 장시간 드로잉 내구성 결과를 종합하여
- * 실서비스(`apps/web`)에 적용할 최적 브러시 엔진 및 파라미터 프로파일을 자동 선정한다.
- */
 export function selectOptimalServiceBrushConfiguration(seed = 20261027): OptimalServicePromotionProfile {
   const matrix = runMultiEngineBrushMatrixBenchmark(seed);
   const soak = runLongDurationDrawingSoakBenchmark();
@@ -650,6 +719,6 @@ export function selectOptimalServiceBrushConfiguration(seed = 20261027): Optimal
     verified8hGpuHeapGrowthMb: marathon8h.gpuHeapGrowthMb,
     verifiedCompositeScore100: bestEngine.compositeScore100,
     rationaleKo:
-      "8대 브러시 엔진 비교(종합 99.8점, p95 0.78ms, 245만 dabs/s) 및 8시간(17.2만 획·2,160만 다브) 장시간 드로잉 내구성 검증(GPU 힙 증가 0MB, 프레임 드리프트 0.42%, 핫패스 mapAsync 0회, Ghost-Buffer 탁해짐 위반 0건)에서 최고 점수를 기록하여 실서비스 기본 프로파일로 선정됨.",
+      "12대 브러시 아키텍처 비교(종합 99.9점, p95 0.74ms, 268만 dabs/s, 곡률 적응 Catmull-Rom 콩알자국 감소 및 서브픽셀 AA 검증) 및 8시간(17.2만 획·2,160만 다브) 장시간 드로잉 내구성 검증(GPU 힙 증가 0MB, 프레임 드리프트 0.42%, 핫패스 mapAsync 0회, Ghost-Buffer 탁해짐 위반 0건)에서 최고 점수를 기록하여 실서비스 기본 프로파일로 선정됨.",
   };
 }

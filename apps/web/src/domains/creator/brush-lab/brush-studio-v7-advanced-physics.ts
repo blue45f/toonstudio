@@ -27,6 +27,19 @@ export interface BrushStudioV7BristleBundleSample {
   readonly branchOpacity: number;
 }
 
+export interface BrushStudioV7CurveControlSample {
+  readonly x: number;
+  readonly y: number;
+  readonly pressure: number;
+  readonly tilt: number;
+  readonly twist: number;
+}
+
+export interface BrushStudioV7CentripetalSubPoint extends BrushStudioV7CurveControlSample {
+  readonly curvatureInvPx: number;
+  readonly stepTighteningFactor: number;
+}
+
 const TAU = Math.PI * 2;
 const unit = (value: number): number => Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
 
@@ -34,6 +47,135 @@ function hashNoise(x: number, y: number, seed: number): number {
   let value = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ seed;
   value = Math.imul(value ^ (value >>> 13), 1274126177);
   return ((value ^ (value >>> 16)) >>> 0) / 4294967296;
+}
+
+function wrapAngleDelta(a: number, b: number): number {
+  let delta = b - a;
+  while (delta > Math.PI) delta -= TAU;
+  while (delta < -Math.PI) delta += TAU;
+  return delta;
+}
+
+/**
+ * V7.3 구심(Centripetal, alpha=0.5) Catmull-Rom 스플라인 보간 및 곡률 기반 스텝 조밀화(`physics-centripetal-adaptive-stamp`).
+ * 비균일 포인터 간격에서도 자기교차(cusp) 없이 곡선을 복원하고 급회전 구간에서 간격을 촘촘히 줄인다.
+ */
+export function interpolateBrushStudioV7CentripetalSegment(
+  p0: BrushStudioV7CurveControlSample,
+  p1: BrushStudioV7CurveControlSample,
+  p2: BrushStudioV7CurveControlSample,
+  p3: BrushStudioV7CurveControlSample,
+  subdivisions = 4,
+): readonly BrushStudioV7CentripetalSubPoint[] {
+  const count = Math.max(1, Math.min(12, Math.round(subdivisions)));
+  const knotStep = (a: BrushStudioV7CurveControlSample, b: BrushStudioV7CurveControlSample) =>
+    Math.max(1e-3, Math.sqrt(Math.hypot(b.x - a.x, b.y - a.y)));
+
+  const t0 = 0;
+  const t1 = t0 + knotStep(p0, p1);
+  const t2 = t1 + knotStep(p1, p2);
+  const t3 = t2 + knotStep(p2, p3);
+
+  const lerpSample = (
+    a: BrushStudioV7CurveControlSample,
+    b: BrushStudioV7CurveControlSample,
+    ta: number,
+    tb: number,
+    t: number,
+  ): BrushStudioV7CurveControlSample => {
+    const w = (t - ta) / Math.max(1e-5, tb - ta);
+    const twistDelta = ((b.twist - a.twist + 540) % 360) - 180;
+    return {
+      x: a.x + (b.x - a.x) * w,
+      y: a.y + (b.y - a.y) * w,
+      pressure: a.pressure + (b.pressure - a.pressure) * w,
+      tilt: a.tilt + (b.tilt - a.tilt) * w,
+      twist: a.twist + twistDelta * w,
+    };
+  };
+
+  const pts: BrushStudioV7CurveControlSample[] = [];
+  for (let i = 0; i <= count; i++) {
+    const t = t1 + (i / count) * (t2 - t1);
+    const a1 = lerpSample(p0, p1, t0, t1, t);
+    const a2 = lerpSample(p1, p2, t1, t2, t);
+    const a3 = lerpSample(p2, p3, t2, t3, t);
+    const b1 = lerpSample(a1, a2, t0, t2, t);
+    const b2 = lerpSample(a2, a3, t1, t3, t);
+    const out = lerpSample(b1, b2, t1, t2, t);
+    pts.push({ ...out, pressure: unit(out.pressure), tilt: unit(out.tilt) });
+  }
+
+  return Object.freeze(
+    pts.slice(1).map((pt, idx) => {
+      const prev = pts[idx]!;
+      const next = pts[Math.min(pts.length - 1, idx + 2)]!;
+      const a1 = Math.atan2(pt.y - prev.y, pt.x - prev.x);
+      const a2 = Math.atan2(next.y - pt.y, next.x - pt.x);
+      const halfChord = Math.max(0.25, Math.hypot(next.x - prev.x, next.y - prev.y) * 0.5);
+      const curvatureInvPx = idx + 2 < pts.length ? Math.abs(wrapAngleDelta(a1, a2)) / halfChord : 0;
+      const stepTighteningFactor = Math.max(0.38, 1 / (1 + curvatureInvPx * 18));
+      return Object.freeze({
+        ...pt,
+        curvatureInvPx,
+        stepTighteningFactor,
+      });
+    }),
+  );
+}
+
+/**
+ * V7.3 원심 강모 급선회 부채꼴 벌어짐(`physics-centrifugal-bristle-turn`).
+ */
+export function sampleBrushStudioV7CentrifugalBristleTurn(input: {
+  readonly lanePositionSigned: number;
+  readonly radius: number;
+  readonly angularDeltaRad: number;
+  readonly segmentDistancePx: number;
+  readonly tilt01: number;
+  readonly stiffness01: number;
+}): {
+  readonly normalOffsetGainPx: number;
+  readonly tiltWidthScale: number;
+} {
+  const turnIntensity = Math.min(
+    1.4,
+    (Math.abs(input.angularDeltaRad) * Math.max(1, input.segmentDistancePx)) /
+      Math.max(2, input.radius * (0.45 + unit(input.stiffness01) * 0.85)),
+  );
+  const outwardSign = input.angularDeltaRad >= 0 ? -1 : 1;
+  const isOuter = input.lanePositionSigned * outwardSign >= 0;
+  const fanShift = outwardSign * turnIntensity * input.radius * (isOuter ? 0.58 : 0.16) * (0.35 + Math.abs(input.lanePositionSigned));
+  const tiltWidthScale = 1 + unit(input.tilt01) * 0.85;
+  return Object.freeze({
+    normalOffsetGainPx: fanShift,
+    tiltWidthScale,
+  });
+}
+
+/**
+ * V7.3 서브픽셀 SDF 이중 엔벨로프 안티앨리어싱 및 입출필 칼끝 테이퍼(`finish-subpixel-sdf-aa`).
+ */
+export function sampleBrushStudioV7SubpixelEnvelopeTaper(input: {
+  readonly dabIndex: number;
+  readonly pressure01: number;
+  readonly radiusPx: number;
+}): {
+  readonly coreRadiusScale: number;
+  readonly haloRadiusPx: number;
+  readonly haloOpacityScale: number;
+} {
+  const entryRamp = Math.min(1, (input.dabIndex + 1) / 4);
+  const pressureTaper = input.pressure01 < 0.22 ? Math.max(0.24, input.pressure01 / 0.22) : 1;
+  const coreRadiusScale = Math.max(0.28, 0.35 + 0.65 * entryRamp * pressureTaper);
+  const coreRadius = Math.max(0.18, input.radiusPx * coreRadiusScale);
+  const haloRadiusPx = coreRadius + Math.min(1.15, Math.max(0.45, coreRadius * 0.26));
+  const haloOpacityScale = 0.22;
+  return Object.freeze({
+    coreRadiusScale,
+    haloRadiusPx,
+    haloOpacityScale,
+  });
 }
 
 export function sampleBrushStudioV7BackrunLobes(input: {
@@ -219,9 +361,7 @@ export interface BrushStudioV7ImpastoShadingResult {
 }
 
 /**
- * V7.2 고해상도 임파스토 법선 + Blinn-Phong 스페큘러 + 브리슬 고랑(furrow) 미세 음영 계산기.
- * 평탄면(height === 0)에서는 원본 색상을 무변형으로 보존하고,
- * 두꺼운 물감 능선에서는 램버트 확산광과 정반사 하이라이트를 함께 합성한다.
+ * V7.2/V7.3 고해상도 임파스토 법선 + Blinn-Phong 스페큘러 + 브리슬 고랑(furrow) 미세 음영 계산기.
  */
 export function computeBrushStudioV7ImpastoShading(
   input: BrushStudioV7ImpastoShadingInput,
@@ -240,18 +380,15 @@ export function computeBrushStudioV7ImpastoShading(
   const lightAzimuth = input.lightAzimuthRad ?? -Math.PI * 0.28;
   const lightElevation = Math.max(0.15, Math.min(1.4, input.lightElevationRad ?? 0.82));
 
-  // 법선 기울기: 브러시 진행 방향의 측면 능선(ridge)과 브리슬 고랑(furrow) 반영
   const ridgeNormalAngle = input.strokeAngleRad;
   const facing = Math.cos(ridgeNormalAngle - lightAzimuth);
   const crossFacing = Math.abs(Math.sin(ridgeNormalAngle - lightAzimuth));
   const furrowDepth = unit(safeHeight * safeFurrow * (0.35 + crossFacing * 0.65));
 
-  // Lambertian 확산 계수 (0.65 .. 1.25)
   const slope = safeHeight * (0.45 + furrowDepth * 0.35);
   const lambertDelta = facing * slope * Math.cos(lightElevation);
   const diffuseFactor = Math.max(0.62, Math.min(1.28, 1 + lambertDelta * 0.42 - furrowDepth * 0.08));
 
-  // Blinn-Phong 정반사 부스트 (능선이 광원을 향할 때만 발생)
   const halfAngleCos = Math.max(0, facing * 0.55 + Math.sin(lightElevation) * 0.45);
   const shininess = 12 + safeGloss * 28;
   const rawSpec = Math.pow(halfAngleCos, shininess) * safeHeight * (0.12 + safeGloss * 0.42);

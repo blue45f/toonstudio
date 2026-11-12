@@ -765,3 +765,5 @@ export function synthesizeSumiUltraQualityTextureDab(params: {
 }
 
 export * from "./competitor-wave36-kernels";
+export * from "./competitor-wave37-kernels";
+

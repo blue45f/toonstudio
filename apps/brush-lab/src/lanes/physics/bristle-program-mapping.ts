@@ -55,6 +55,12 @@ export interface BristleLaneOptions {
   brush?: Partial<BristleBrushConfig>;
   /** 방향 출처. 기본 `velocity`(손잡이 속도 방향), `tilt`는 표본 기울기가 0이 아닐 때 그 방위각. */
   headingSource?: "velocity" | "tilt";
+  /** Wave 37: 급선회 시 외측 털이 원심력으로 부채꼴 벌어지는 응답 활성화(기본 false — 기존 픽셀 해시 불변). */
+  enableTurnFanSplay?: boolean;
+  /** Wave 37: 저고도 스타일러스 기울기 측면 셰이딩 폭·그레인 확장 활성화(기본 false — 기존 픽셀 해시 불변). */
+  enableTiltSizeShading?: boolean;
+  /** Wave 37: 입필·출필 테이퍼 감쇠 활성화(기본 false — 기존 픽셀 해시 불변). */
+  enableStrokeTaper?: boolean;
 }
 
 const CURVE_LABEL_KO: Readonly<Record<PressureCurveId, string>> = {
@@ -79,6 +85,12 @@ export interface BristleDabResponse {
   flowScale: PressureCurveTable | null;
   /** 프로그램의 건조 끊김(dryBreakup 0..1). 적재량이 줄수록 dab가 확률적으로 빠진다. */
   dryBreakup: number;
+  /** Wave 37 옵트인: 급선회 외측 강모 원심 부채꼴 벌어짐 배율(0이면 비활성). */
+  turnFanSplayGain?: number;
+  /** Wave 37 옵트인: 저고도 기울기 측면 셰이딩 폭 확장 배율(0이면 비활성). */
+  tiltBroadSideGain?: number;
+  /** Wave 37 옵트인: 입필·출필 테이퍼 dab 구간 수(0이면 비활성). */
+  strokeTaperDabs?: number;
 }
 
 /** 프로그램 → 붓털 설정/흐름 매핑. */
@@ -158,6 +170,9 @@ export function mapProgramToBristle(program: BrushProgram, options: BristleLaneO
   const tipKind = program.tip.kind;
   const halfLo = response.halfWidthPx.eval(0.15);
   const halfHi = response.halfWidthPx.eval(1);
+  const turnFanSplay = Boolean(options.enableTurnFanSplay);
+  const tiltShading = Boolean(options.enableTiltSizeShading);
+  const strokeTaper = Boolean(options.enableStrokeTaper);
   const dabResponse: BristleDabResponse = {
     fillRatio,
     minRadiusPx: BRISTLE_MIN_DAB_RADIUS_PX,
@@ -167,16 +182,24 @@ export function mapProgramToBristle(program: BrushProgram, options: BristleLaneO
     grain: response.grain,
     flowScale: response.flowScale,
     dryBreakup: program.edge.dryBreakup,
+    ...(turnFanSplay ? { turnFanSplayGain: 0.85 } : {}),
+    ...(tiltShading ? { tiltBroadSideGain: 1.45 } : {}),
+    ...(strokeTaper ? { strokeTaperDabs: 6 } : {}),
   };
   const unmappedKo = [
     `팁 종류 ${tipKind}·종횡비 ${program.tip.aspect}·각도(dab는 항상 둥글다. 팁 경도 ${program.tip.hardness}와 초타원 지수만 옮긴다)`,
-    "프리셋의 dab 간격(spacing) 설정(간격은 현재 dab 반경에 비례하는 고정 비율)·산포·테이퍼·색 동역학(지터)",
+    strokeTaper
+      ? "프리셋의 dab 간격(spacing) 설정(간격은 현재 dab 반경에 비례하는 고정 비율)·산포·색 동역학(지터)"
+      : "프리셋의 dab 간격(spacing) 설정(간격은 현재 dab 반경에 비례하는 고정 비율)·산포·테이퍼·색 동역학(지터)",
     response.grain
       ? "종이 결 위상·질감 팁 형상(그레인 응답 강도만 압력 표로 옮기고 결 자체는 표면의 종이 필드가 준다)"
       : "종이 그레인·질감(이 프리셋은 종이·흑연 그레인이 없어 dab의 그레인 응답은 0)",
     "습식 매체 파라미터·종이 마찰 흐름 손실",
   ];
-  for (const text of response.unmappedInputsKo) unmappedKo.push(text);
+  for (const text of response.unmappedInputsKo) {
+    if (tiltShading && text.includes("기울기")) continue;
+    unmappedKo.push(text);
+  }
   const notesKo: string[] = [];
   if (response.halfWidthClamped) notesKo.push(`접촉 반폭이 상한 ${PRESET_MAX_HALF_WIDTH_PX}px를 넘어 잘렸다 — 압력이 높을 때 선이 cpu-reference보다 좁다`);
   if (model === "airbrush") {
@@ -200,6 +223,15 @@ export function mapProgramToBristle(program: BrushProgram, options: BristleLaneO
       ...(response.grain ? ["종이·흑연 그레인 → dab 그레인 응답(압력 표)"] : []),
       "불투명도·블렌드는 엔진 표면의 획 합성(cpu-reference와 같은 경로)이 그대로 적용한다",
       "손잡이 속도 → dab 농도(빠를수록 최대 65% 옅게)·간격(최대 1.6배 성글게)·방향 타원(장축 1.12·단축 0.9, 50 px/s 이상에서 진행 방향 추종)",
+      ...(turnFanSplay
+        ? ["급선회 원심 부채꼴 벌어짐(Wave 37): 각속도와 손잡이 속도에 비례해 코너 외측 털이 부채꼴로 확산"]
+        : []),
+      ...(tiltShading
+        ? ["스타일러스 기울기 측면 셰이딩(Wave 37): 저고도 기울기에서 dab 단축 폭과 종이 그레인 응답을 확장"]
+        : []),
+      ...(strokeTaper
+        ? ["입필·출필 테이퍼(Wave 37): 초기 dab 구간과 저필압 해제 구간에서 반경·흐름을 매끄럽게 감쇠"]
+        : []),
       ...(program.edge.dryBreakup > 0
         ? [`건조 끊김 ${program.edge.dryBreakup}(적재량이 줄수록 dab가 확률적으로 빠진다 — 마른 붓 질감)`]
         : []),

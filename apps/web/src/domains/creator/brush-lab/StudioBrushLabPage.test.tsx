@@ -74,11 +74,25 @@ describe("StudioBrushLabPage — REA 습식 안료 & 스타일러스 커브 워�
     expect(screen.getByTestId("brush-lab-rea-status").textContent).toContain("heavy-chisel-tilt");
   });
 
+  it("Wave 37 플래그십 레시피 전환 시 구심 곡률 보간 및 출필 테이퍼 지표가 갱신된다", () => {
+    renderBrushLab();
+    expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain("csp-real-gpen-aa");
+    fireEvent.click(screen.getByTestId("brush-lab-wave37-recipe-krita-impasto-fan-bristle"));
+    expect(
+      screen.getByTestId("brush-lab-wave37-recipe-krita-impasto-fan-bristle").getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain("krita-impasto-fan-bristle");
+  });
+
   it("en 로케일에서는 한글이 전혀 포함되지 않는다", () => {
     useI18n.setState({ lang: "en" });
     renderBrushLab();
     const bar = screen.getByTestId("brush-lab-rea-wetmix-wgsl-bar");
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByTestId("brush-lab-rea-status").textContent).toContain("Kernel:");
+
+    const wave37Panel = screen.getByTestId("brush-lab-wave37-stroke-refinement-panel");
+    expect(wave37Panel.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain("Recipe:");
   });
 });

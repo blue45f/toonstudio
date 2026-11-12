@@ -10,14 +10,20 @@ import {
 import {
   WEBTOON_BRUSH_GENRE_RECOMMENDATIONS,
   evaluateWebtoonBrushVerifyAiGate,
+  expandWebtoonBrushFreshLensDraft,
   type BrushLabFreshLensId,
   type WebtoonBrushGenreId,
 } from "../../bench/metrics/webtoon-brush-verify-ai-remix";
 import {
   QUADRATIC_PIGMENT_MODEL,
+  evaluateAnisotropicSmudgeReservoirAndRake,
+  evaluateCapillaryCauliflowerAndGranulation,
+  evaluateCentrifugalBristleTurnSplayAndTilt,
+  evaluateCentripetalCatmullCurvatureAdaptiveStamps,
   evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
   evaluateQuadraticPigmentMix,
   evaluateSpectral38BandKubelkaMunkMix,
+  evaluateSubpixelDualEnvelopeLineartAA,
 } from "../../engine/brush-engine/competitor-quality-kernels";
 import { downloadJson } from "../../platform/download";
 import { useLab } from "../shell/lab-context";
@@ -36,6 +42,9 @@ export function BenchmarkResultsView() {
   const [pigmentMixRatio01, setPigmentMixRatio01] = useState<number>(0.5);
   const [selectedGenreId, setSelectedGenreId] = useState<WebtoonBrushGenreId>("action-gpen-slash");
   const [selectedLensId, setSelectedLensId] = useState<BrushLabFreshLensId>("contrarian-take");
+  const [showModeBDraft, setShowModeBDraft] = useState<boolean>(false);
+  const [turnRateRadPerSec, setTurnRateRadPerSec] = useState<number>(9.5);
+  const [tiltAltitudeDeg, setTiltAltitudeDeg] = useState<number>(28);
 
   const summaryReport = useMemo(() => runBrushLabCompetitorQualityBenchmark(seed), [seed]);
   const engineMatrix = useMemo(() => runMultiEngineBrushMatrixBenchmark(seed), [seed]);
@@ -81,6 +90,55 @@ export function BenchmarkResultsView() {
     [pigmentMixRatio01, seed],
   );
 
+  const liveWave37 = useMemo(() => {
+    const centripetal = evaluateCentripetalCatmullCurvatureAdaptiveStamps({
+      controlPoints: [
+        { x: 8, y: 40, pressure01: 0.35 },
+        { x: 34, y: 10, pressure01: 0.72 },
+        { x: 52, y: 46, pressure01: 0.88 },
+        { x: 84, y: 14, pressure01: 0.42 },
+      ],
+      baseDiameterPx: 14,
+      baseSpacingRatio: 0.12,
+      curvatureTighteningGain: 2.6,
+    });
+    const subpixelAa = evaluateSubpixelDualEnvelopeLineartAA({
+      canvasSizePx: 48,
+      strokeWidthPx: 7,
+      exitVelocityPxPerSec: 1500,
+      aaBandPx: 1.15,
+    });
+    const bristleTurn = evaluateCentrifugalBristleTurnSplayAndTilt({
+      bristleCount: 32,
+      baseRadiusPx: 10,
+      turnRateRadPerSec,
+      speedPxPerSec: 680,
+      tiltAltitudeDeg,
+      stiffness01: 0.45,
+      seed,
+    });
+    const capillary = evaluateCapillaryCauliflowerAndGranulation({
+      wetness01: 0.82,
+      evaporation01: 0.68,
+      granulation01: pigmentMixRatio01,
+      paperTooth01: 0.65,
+      targetWashCeiling01: 0.68,
+      seed,
+    });
+    const smudge = evaluateAnisotropicSmudgeReservoirAndRake({
+      brushLoadRgb: { r: 0.94, g: 0.76, b: 0.14 },
+      canvasSampleStrip: [
+        { r: 0.14, g: 0.34, b: 0.78 },
+        { r: 0.18, g: 0.4, b: 0.72 },
+        { r: 0.24, g: 0.46, b: 0.66 },
+      ],
+      pickupRate01: pigmentMixRatio01 * 0.7,
+      colorDepositRate01: 0.68,
+      rakeBristleDepth01: 0.62,
+    });
+    return { centripetal, subpixelAa, bristleTurn, capillary, smudge };
+  }, [pigmentMixRatio01, seed, tiltAltitudeDeg, turnRateRadPerSec]);
+
   const brushVerifyAiReport = useMemo(
     () =>
       evaluateWebtoonBrushVerifyAiGate({
@@ -104,6 +162,11 @@ export function BenchmarkResultsView() {
       brushVerifyAiReport.remixes.find((r) => r.id === selectedLensId) ??
       brushVerifyAiReport.remixes[0]!,
     [brushVerifyAiReport.remixes, selectedLensId],
+  );
+
+  const expandedModeBDraft = useMemo(
+    () => expandWebtoonBrushFreshLensDraft(brushVerifyAiReport, selectedLensId),
+    [brushVerifyAiReport, selectedLensId],
   );
 
   const visibleEngines = promotedOnly
@@ -191,7 +254,7 @@ export function BenchmarkResultsView() {
     >
       <h2>다중 브러시 엔진 비교 & 장시간(8시간 마라톤) 드로잉 벤치마크 결과</h2>
       <p className="lab-muted">
-        6대 경쟁 브러시 품질 역공학 커널(David Li 3D 유화/GGX, Pavel 유체 와류, Tegaki Ghost-Buffer/Bayer, SignaturePad 베지어, Atrament/Drauu)과 자체 Sumi WebGPU Zero-Copy Indirect 엔진을 다각도로 테스트하고, 10분~8시간 연속 드로잉 내구성을 검증하여 실서비스(<code>apps/web</code>) 최적 설정을 자동 도출합니다.
+        경쟁사 브러시 품질 역공학·R&amp;D 커널(구심 Catmull-Rom 곡률 적응 보간, 서브픽셀 SDF AA, 원심 강모 부채꼴 벌어짐, 모세관 꽃양배추 링, David Li 3D 유화/GGX, Tegaki Ghost-Buffer)과 자체 Sumi WebGPU Zero-Copy Indirect 엔진을 다각도로 검증하여 실서비스(<code>apps/web</code>) 최적 설정을 자동 도출합니다.
       </p>
 
       <div className="lab-banner lab-banner--ok" data-testid="lab-optimal-service-profile-card">
@@ -286,6 +349,15 @@ export function BenchmarkResultsView() {
               {remix.badgeKo}
             </button>
           ))}
+          <button
+            type="button"
+            className="lab-button"
+            data-testid="lab-brush-toggle-mode-b-draft-btn"
+            aria-pressed={showModeBDraft}
+            onClick={() => setShowModeBDraft((v) => !v)}
+          >
+            {showModeBDraft ? "Mode B 초안 접기" : "Mode B 채널별 초안 펼치기"}
+          </button>
         </div>
         <div data-testid="lab-brush-fresh-lens-detail">
           <p>
@@ -300,6 +372,17 @@ export function BenchmarkResultsView() {
                 <li key={idx}>{step}</li>
               ))}
             </ol>
+          ) : null}
+          {showModeBDraft ? (
+            <div className="lab-banner" data-testid="lab-brush-mode-b-draft-card">
+              <p className="lab-mono">
+                [{expandedModeBDraft.channelFormatKo}] {expandedModeBDraft.headlineKo}
+              </p>
+              {expandedModeBDraft.bodyParagraphsKo.map((para, idx) => (
+                <p key={idx} className="lab-muted">{para}</p>
+              ))}
+              <p className="lab-mono">{expandedModeBDraft.keyTakeawayKo}</p>
+            </div>
           ) : null}
         </div>
       </div>
@@ -318,6 +401,18 @@ export function BenchmarkResultsView() {
           <dd className="lab-mono">{summaryReport.grainContrastPreservationRatio.toFixed(3)}</dd>
         </div>
         <div>
+          <dt title="구심 Catmull-Rom 곡률 적응형 스탬프 보간으로 감소한 코너 꺾임 비율">코너 꺾임 감소율</dt>
+          <dd className="lab-mono">-{(summaryReport.centripetalCornerKinkReduction01 * 100).toFixed(1)}%</dd>
+        </div>
+        <div>
+          <dt title="서브픽셀 1px Smoothstep SDF AA 적용 시 대각선 계단 분산 감소율">서브픽셀 계단 감소</dt>
+          <dd className="lab-mono">-{(summaryReport.subpixelAaStaircaseReduction01 * 100).toFixed(1)}%</dd>
+        </div>
+        <div>
+          <dt title="물리 강모 급선회 원심 부채꼴 벌어짐 배율">급선회 강모 벌어짐</dt>
+          <dd className="lab-mono">{summaryReport.bristleCentrifugalFanSplayRatio.toFixed(2)}×</dd>
+        </div>
+        <div>
           <dt title="Tegaki Ghost-Buffer 점근 워시를 통한 획 내부 탁해짐 제거 이득">무탁점 워시 이득</dt>
           <dd className="lab-mono">+{(summaryReport.ghostWashMudEliminationGain01 * 100).toFixed(1)}%</dd>
         </div>
@@ -330,16 +425,47 @@ export function BenchmarkResultsView() {
           <dd className="lab-verdict-PASS">{summaryReport.quadraticPigmentEndpointIdentityError.toFixed(4)}</dd>
         </div>
         <div>
-          <dt title="Cook-Torrance GGX 미세면 정반사 임파스토 하이라이트 강도">GGX 임파스토 BRDF</dt>
-          <dd className="lab-mono">{summaryReport.ggxSpecularHighlightBrdf.toFixed(3)}</dd>
-        </div>
-        <div>
           <dt title="기존 수치 기준의 충족 여부이며 원산지·운영 승격 승인이 아니다">수치 품질 게이트</dt>
           <dd className={summaryReport.promotionGatePassed ? "lab-verdict-PASS" : "lab-verdict-FAIL"}>
             {summaryReport.promotionGatePassed ? "PASS (수치 기준 충족)" : "FAIL"}
           </dd>
         </div>
       </dl>
+
+      <div className="lab-banner" data-testid="lab-wave37-competitor-parity-simulator">
+        <strong>Wave 37 경쟁사 1:1 패리티 물리·보간 실시간 R&amp;D 검증기 (Catmull 적응 스탬프 · 서브픽셀 AA · 원심 강모 · 모세관 링)</strong>
+        <div className="lab-button-row">
+          <label htmlFor="lab-wave37-turn-rate-slider">
+            선회 각속도(rad/s): <span className="lab-mono">{turnRateRadPerSec.toFixed(1)}</span>
+          </label>
+          <input
+            id="lab-wave37-turn-rate-slider"
+            type="range"
+            min={0}
+            max={18}
+            step={0.5}
+            value={turnRateRadPerSec}
+            data-testid="lab-wave37-turn-rate-slider"
+            onChange={(e) => setTurnRateRadPerSec(Number(e.target.value))}
+          />
+          <label htmlFor="lab-wave37-tilt-altitude-slider">
+            펜 기울기 고도각(°): <span className="lab-mono">{tiltAltitudeDeg}°</span>
+          </label>
+          <input
+            id="lab-wave37-tilt-altitude-slider"
+            type="range"
+            min={15}
+            max={85}
+            step={5}
+            value={tiltAltitudeDeg}
+            data-testid="lab-wave37-tilt-altitude-slider"
+            onChange={(e) => setTiltAltitudeDeg(Number(e.target.value))}
+          />
+        </div>
+        <p className="lab-mono" data-testid="lab-wave37-live-readout">
+          구심 Catmull 스탬프 {liveWave37.centripetal.adaptiveStamps.length}개(콩알자국 이득 -{(liveWave37.centripetal.scallopReductionGain01 * 100).toFixed(1)}% · 코너 꺾임 -{(liveWave37.centripetal.cornerKinkReductionRatio01 * 100).toFixed(1)}%) · 서브픽셀 SDF AA 계단 분산 -{(liveWave37.subpixelAa.edgeStaircaseVarianceReduction01 * 100).toFixed(1)}%(끝선 반경 {liveWave37.subpixelAa.terminalRadiusPx.toFixed(2)}px) · 원심 강모 부채꼴 {liveWave37.bristleTurn.centrifugalFanSplayRatio.toFixed(2)}×(기울기 측면 종횡비 {liveWave37.bristleTurn.tiltedBroadSideAspectRatio.toFixed(2)}×) · 모세관 엣지 링 대비 +{(liveWave37.capillary.edgeRingContrastGain01 * 100).toFixed(1)}%(천장 위반 {liveWave37.capillary.ghostCeilingViolationCount}건) · 스머지 연속성 {(liveWave37.smudge.pickupContinuityScore01 * 100).toFixed(1)}%
+        </p>
+      </div>
 
       <div className="lab-banner" data-testid="lab-wave36-interactive-inspector">
         <label htmlFor="lab-wave36-pigment-ratio-slider">

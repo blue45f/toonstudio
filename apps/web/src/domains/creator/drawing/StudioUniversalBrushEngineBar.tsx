@@ -382,7 +382,6 @@ export function StudioUniversalBrushEngineBar({
         }
       `}</style>
 
-      {/* Wave 27 & 31: 워크스페이스 도크 탭 + 통합 퀵서치 필터 + Klecks 비선형 정밀 슬라이더 HUD */}
       <div
         className="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-line/60 pb-2"
         data-studio-klecks-precision-hud="true"
@@ -736,6 +735,8 @@ export function StudioUniversalBrushEngineBar({
           <span data-studio-brushlab-quality-telemetry="true">{tx("GGX·GhostWash·와류·브러시랩")}: {activeUniversalTelemetry.competitorQualityEval.ggxSpecularBrdf.toFixed(2)}/{activeUniversalTelemetry.competitorQualityEval.mudEliminationGain01.toFixed(2)}/{activeUniversalTelemetry.competitorQualityEval.fluidVorticityForceMagnitude.toFixed(1)}/{activeUniversalTelemetry.competitorQualityEval.brushLabCompositeScore100}점</span>
           <span>·</span>
           <span data-studio-brushlab-soak-optimal-badge="true">{tx("8h Soak·드리프트·Spectral38·Mixbox7D·p5Bleed")}: {(activeUniversalTelemetry.competitorQualityEval.soak8hTotalDabs / 1_000_000).toFixed(1)}M댑/{activeUniversalTelemetry.competitorQualityEval.soak8hFrameDriftPct}%/+{Math.round(activeUniversalTelemetry.competitorQualityEval.spectral38ChromaGain01 * 100)}%/{activeUniversalTelemetry.competitorQualityEval.p5BrushGrownVerticesCount}v</span>
+          <span>·</span>
+          <span data-studio-wave37-stroke-refinement="true">{tx("구심꺾임·콩알·칼끝")}: -{Math.round(activeUniversalTelemetry.competitorQualityEval.centripetalKinkReduction01 * 100)}%/+{Math.round(activeUniversalTelemetry.competitorQualityEval.centripetalScallopGain01 * 100)}%/{activeUniversalTelemetry.competitorQualityEval.terminalTaperRadiusPx.toFixed(1)}px</span>
           <span>·</span>
           <span>{tx("QR 바이트")}: {activeUniversalTelemetry.qrLength}B</span>
         </span>
