@@ -651,6 +651,7 @@ describe("StudioCanvasStatusRail", () => {
     const band = container.querySelector<HTMLElement>("[data-studio-floating-controls]");
     const stack = band?.firstElementChild;
     const presence = container.querySelector("[data-studio-presence-controls]");
+    const collaboration = presence?.closest<HTMLDetailsElement>("[data-studio-collaboration-disclosure]");
     const hud = screen.getByRole("toolbar", { name: `${mode} view controls` });
     const rail = container.querySelector<HTMLElement>("[data-studio-canvas-status-rail]");
 
@@ -658,7 +659,9 @@ describe("StudioCanvasStatusRail", () => {
       "sticky", "top-2", '[[data-studio-mobile-immersive="true"]_&]:top-16', "h-0",
     ]));
     expect(stack?.className).toBe("flex flex-col gap-2");
-    expect(stack?.firstElementChild).toBe(presence);
+    expect(collaboration?.open).toBe(true);
+    expect(collaboration?.querySelector("[data-studio-collaboration-body]")?.contains(presence)).toBe(true);
+    expect(stack?.firstElementChild).toBe(collaboration);
     expect(stack?.lastElementChild).toBe(hud.parentElement);
     expect(presence?.className).not.toMatch(/\bsticky\b|\bh-0\b/u);
     expect(hud.parentElement?.className).not.toMatch(/\bsticky\b|\bh-0\b/u);

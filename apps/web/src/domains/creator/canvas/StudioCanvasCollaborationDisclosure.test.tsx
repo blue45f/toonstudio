@@ -77,7 +77,7 @@ describe("함께 작업 접힘", () => {
 
   it("간결한 모바일은 idle 행만 접고 active-follow·외부 P2P 표면과 모드 복귀는 보존한다", () => {
     const css = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css", "utf8");
-    const rule = css.split("\n").find((line) => line.startsWith("[data-studio-drawing-clarity-mobile=true] [data-studio-collaboration-disclosure=true]"));
+    const rule = css.split("\n").find((line) => line.startsWith("[data-studio-drawing-clarity-mobile=true] ") && line.includes("[data-studio-collaboration-disclosure=true]"));
     if (!rule) throw new Error("협업 행의 실제 명료성 CSS 규칙이 필요합니다.");
     const stopped = vi.fn(), mounted = vi.fn(), unmounted = vi.fn();
     function ExistingControls() { useEffect(() => { mounted(); return unmounted; }, []); return <button onClick={stopped}>따라가기 중지</button>; }

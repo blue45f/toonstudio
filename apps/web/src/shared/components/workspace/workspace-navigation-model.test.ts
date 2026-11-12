@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TOONSTUDIO_MOBILE_TABS, TOONSTUDIO_PRIMARY_NAVIGATION } from "../site-navigation";
+import { SITE_NAVIGATION_ITEMS, TOONSTUDIO_MOBILE_TABS, TOONSTUDIO_PRIMARY_NAVIGATION } from "../site-navigation";
 import { supportsRoutePurposeScene } from "../site-experience/site-experience-policy";
 import { workspaceNavigationActiveId, workspaceNavigationContext, workspaceNavigationHref } from "./workspace-navigation-model";
 
@@ -18,9 +18,19 @@ describe("studio-first navigation contract", () => {
   ])("keeps %s in the right global destination", (path, id) => {
     expect(workspaceNavigationActiveId(path!)).toBe(id);
   });
-  it("uses the same five labels on mobile and desktop", () => {
-    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.id)).toEqual(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.id));
-    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.label.ko)).toEqual(["작업 홈", "제작", "탐색", "커뮤니티", "전체 메뉴"]);
+  it("keeps five workspace destinations and four public mobile purposes with shared destination identities", () => {
+    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.id)).toEqual(["workspace-home", "studio", "explore", "community", "all-menu"]);
+    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.href)).toEqual(["/home", "/studio", "/discover", "/community", "/sitemap"]);
+    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.label.ko)).toEqual(["작업 홈", "내 작업", "작품 찾기", "커뮤니티", "전체 메뉴"]);
+    expect(TOONSTUDIO_MOBILE_TABS).toEqual([
+      SITE_NAVIGATION_ITEMS.studio, SITE_NAVIGATION_ITEMS.explore,
+      SITE_NAVIGATION_ITEMS.market, SITE_NAVIGATION_ITEMS.me,
+    ]);
+    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.href)).toEqual(["/studio", "/discover", "/market", "/my"]);
+    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.label.ko)).toEqual(["내 작업", "작품 찾기", "소재 찾기", "내 정보"]);
+    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.label.en)).toEqual(["My work", "Discover", "Assets", "My account"]);
+    expect(TOONSTUDIO_MOBILE_TABS[0]).toBe(TOONSTUDIO_PRIMARY_NAVIGATION[1]);
+    expect(TOONSTUDIO_MOBILE_TABS[1]).toBe(TOONSTUDIO_PRIMARY_NAVIGATION[2]);
   });
   it.each(["/", "/home", "/team", "/hub"])("does not duplicate workspace chrome with a promotional scene on %s", (path) => {
     expect(supportsRoutePurposeScene(path)).toBe(false);
