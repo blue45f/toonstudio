@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useI18n } from "@/shared/lib/i18n";
-import { registerEditorStatusSlot } from "@/shared/lib/modal-status-slot";
+import { registerEditorStatusSlot, registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
 
 import { STUDIO_OFFLINE_AUTOMATION_EVENT } from "./studio-offline-automation";
 import { StudioOfflinePanel } from "./StudioOfflinePanel";
@@ -345,5 +345,42 @@ describe("기존 저장 상태 안의 오프라인 준비", () => {
     expect(region.textContent).toContain("separate from manuscript saving");
     expect(within(region).getByRole("button", { name: "Request device-storage retention" })).toBeTruthy();
     expect(region.textContent).not.toMatch(/OPFS|SQLite|service worker/iu);
+  });
+});
+
+
+describe("네이티브 대화상자 안의 오프라인 결과 알림", () => {
+  it.each(["저장", "다른 도구"])("%s 화면이 열려도 준비 경고와 수동 결과를 한 번만 안에서 알린다", async (kind) => {
+    runtime.inspect.mockResolvedValue({ ...device, usage: 95 });
+    runtime.persist.mockResolvedValueOnce(true);
+    const editor = mountEditorStatus();
+    const view = render(<StudioOfflinePanel />);
+    await screen.findByRole("alert");
+    const otherHost = document.createElement("div");
+    if (kind === "다른 도구") document.body.append(otherHost);
+    const host = kind === "저장" ? editor.element : otherHost;
+    let releaseModal = () => {};
+    act(() => { releaseModal = registerModalStatusSlot(host); });
+    try {
+      expect(screen.getAllByRole("alert")).toHaveLength(1);
+      expect(host.contains(screen.getByRole("alert"))).toBe(true);
+      expect(editor.summary.textContent).toBe("");
+      const request = screen.getByRole<HTMLButtonElement>("button", { name: "기기 보관 유지 요청" });
+      await waitFor(() => expect(request.disabled).toBe(false));
+      if (kind === "다른 도구") {
+        // 다른 도구가 열렸을 때는 자동 경고만 확인하고 저장 조작은 실행하지 않는다.
+        expect(host.contains(screen.getByRole("status"))).toBe(true);
+      } else {
+        fireEvent.click(request);
+        await waitFor(() => expect(within(host).getByRole("status").textContent).toContain("기기 보관 유지 요청이 허용됐습니다."));
+        expect(screen.getAllByRole("status")).toHaveLength(1);
+      }
+      act(() => { releaseModal(); });
+      expect(editor.summary.contains(screen.getByRole("alert"))).toBe(true);
+      expect(editor.element.contains(screen.getByRole("status"))).toBe(false);
+      if (kind === "저장") expect(screen.getByRole("status").textContent).toContain("원고 저장 완료는 별도로 확인해 주세요.");
+    } finally {
+      view.unmount(); releaseModal(); otherHost.remove();
+    }
   });
 });

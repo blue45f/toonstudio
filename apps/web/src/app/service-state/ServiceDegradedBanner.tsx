@@ -252,8 +252,9 @@ function ServiceStatusSlotNotice({ slot, ...notice }: ServiceStatusNoticeProps &
     : notice.tone === "recovered"
       ? bt("온라인 기능 복구", "Online features restored")
       : bt("온라인 기능 확인 필요", "Check online features");
+  const compactWarmup = notice.tone === "warming" && slot.summary.dataset.studioDrawingSaveSummary === "true";
   return <>
-    {createPortal(
+    {!compactWarmup && createPortal(
       <span role="status" aria-live="polite" aria-atomic="true" title={notice.title}
         data-service-status-placement="editor-summary" data-service-degraded-banner={notice.tone}
         className="inline-flex min-w-0 items-center gap-1 text-xs text-fg-2">

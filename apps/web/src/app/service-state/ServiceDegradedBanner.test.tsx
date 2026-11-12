@@ -8,7 +8,7 @@ import { StudioSaveSyncStatusCenter } from "@/domains/creator/StudioSaveSyncStat
 import { createEmptyOperationJournal } from "@/domains/creator/studio-operation-recovery-coordinator";
 
 import { useI18n } from "@/shared/lib/i18n";
-import { getActiveEditorStatusSlot, registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
+import { getActiveEditorStatusSlot, registerEditorStatusSlot, registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
 
 const availableCapabilities = {
   publicCatalog: "available",
@@ -492,4 +492,28 @@ describe("편집기에서 저장·연결 상태 한곳으로 이동", () => {
     expect(getActiveEditorStatusSlot()).toBeNull();
     expect(screen.getByRole("status").className).toContain("fixed");
   });
+});
+
+
+it("그리기 저장 요약은 연결 준비를 상세에 두고 실제 제한·복구는 계속 알린다", () => {
+  const summary = document.createElement("span"), details = document.createElement("div");
+  summary.dataset.studioDrawingSaveSummary = "true";
+  document.body.append(summary, details);
+  const release = registerEditorStatusSlot(details, summary);
+  mocks.state = { ...mocks.state, warmingUp: true, report: null };
+  const view = renderBanner(true);
+  try {
+    expect(summary.textContent).toBe("");
+    expect(within(details).getByText("온라인 기능을 연결하는 중이에요.")).toBeTruthy();
+    expect(within(details).getByRole("link", { name: "상태 자세히" })).toBeTruthy();
+    mocks.state = { ...mocks.state, warmingUp: false };
+    view.rerender(<MemoryRouter><ServiceDegradedBanner immersive /></MemoryRouter>);
+    expect(within(summary).getByRole("status").textContent).toContain("온라인 기능 확인 필요");
+    mocks.state = { ...mocks.state, status: "available", recoveredAt: Date.now() };
+    view.rerender(<MemoryRouter><ServiceDegradedBanner immersive /></MemoryRouter>);
+    expect(within(summary).getByRole("status").textContent).toContain("온라인 기능 복구");
+    expect(screen.queryByText("이 기기에 저장됨")).toBeNull();
+  } finally {
+    view.unmount(); release(); summary.remove(); details.remove();
+  }
 });

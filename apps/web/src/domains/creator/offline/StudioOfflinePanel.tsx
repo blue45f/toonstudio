@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { useEditorStatusSlot } from "@/shared/lib/modal-status-slot";
+import { useEditorStatusSlot, useServiceStatusSlot } from "@/shared/lib/modal-status-slot";
 import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import {
@@ -30,6 +30,8 @@ function dataSaverEnabled(): boolean {
 export function StudioOfflinePanel() {
   const bt = useBilingual("StudioOfflinePanel");
   const editor = useEditorStatusSlot();
+  const activeStatus = useServiceStatusSlot();
+  const modalStatusHost = activeStatus?.kind === "modal" ? activeStatus.element : null;
   const connectivity = useStudioConnectivity();
   const [device, setDevice] = useState<StudioOfflineDeviceState | null>(null);
   const [busy, setBusy] = useState(false);
@@ -219,16 +221,17 @@ export function StudioOfflinePanel() {
     </div>
   );
 
+  const manualNotice = <span role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-studio-offline-manual-result="true">{manualResult}</span>;
   if (editor) return <>
-    {/* 수동 실행 결과만 알린다. 숨김 상세·상단 요약 밖에 두어 닫힘과 정상 헤더 축소를 유지한다. */}
-    <span role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-studio-offline-manual-result="true">{manualResult}</span>
+    {/* 네이티브 대화상자가 열리면 배경은 inert이므로, 같은 알림을 활성 대화상자 안으로 옮긴다. */}
+    {modalStatusHost ? createPortal(manualNotice, modalStatusHost) : manualNotice}
     {createPortal(<section aria-label={bt("연결 없이 작업할 준비", "Prepare to work without a connection")}
       className="mt-3 border-t border-line pt-3 text-xs text-fg" data-studio-offline-panel="true"
       data-studio-offline-presentation="status-center" data-studio-local-only={connectivity.localOnly ? "true" : "false"}>
       <h3 className="font-semibold">{bt("연결 없이 작업할 준비", "Prepare to work without a connection")}</h3>{content}
     </section>, editor.element)}
     {importantSummary ? createPortal(<span data-studio-offline-important="true" className="text-warn"
-      role={preparationIssue === "partial" && !storageWarning ? "status" : "alert"}>{importantSummary}</span>, editor.summary) : null}
+      role={preparationIssue === "partial" && !storageWarning ? "status" : "alert"}>{importantSummary}</span>, modalStatusHost ?? editor.summary) : null}
   </>;
 
   return (
