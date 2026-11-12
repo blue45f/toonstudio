@@ -2,15 +2,20 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
+import { afterEach, test } from "vitest";
 
 import { loadStudioChemyBrowserToolchain } from "./studio-chemy-toolchain.mjs";
 
 const manifest = JSON.parse(readFileSync(new URL("../fixtures/studio-chemy-v1-pressure/original-source-manifest.json", import.meta.url), "utf8"));
 
-function fixture(t, playwrightVersion = manifest.dependencies.playwright.version) {
+const directories = [];
+afterEach(() => {
+  for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true });
+});
+
+function fixture(playwrightVersion = manifest.dependencies.playwright.version) {
   const directory = mkdtempSync(join(tmpdir(), "toon-chemy-toolchain-test-"));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  directories.push(directory);
   for (const [name, version, source] of [
     ["playwright", playwrightVersion, 'export const chromium = { marker: "isolated-frozen-browser", launch() {} };'],
     ["vite", manifest.dependencies.vite.version, 'export function createServer() { return "isolated-frozen-server"; }'],
@@ -23,18 +28,18 @@ function fixture(t, playwrightVersion = manifest.dependencies.playwright.version
   return directory;
 }
 
-test("제품 설치와 구분한 별도 경로의 고정 Playwright·Vite를 함께 선택한다", async (t) => {
-  const selected = await loadStudioChemyBrowserToolchain(fixture(t));
+test("제품 설치와 구분한 별도 경로의 고정 Playwright·Vite를 함께 선택한다", async () => {
+  const selected = await loadStudioChemyBrowserToolchain(fixture());
   assert.equal(selected.chromium.marker, "isolated-frozen-browser");
   assert.equal(selected.createServer(), "isolated-frozen-server");
 });
 
-test("일반 브라우저 패키지로 올라가면 고정 골든 실행 전에 거부한다", async (t) => {
-  await assert.rejects(loadStudioChemyBrowserToolchain(fixture(t, "1.65.0")), /playwright 1\.64\.1.*실제 1\.65\.0/u);
+test("일반 브라우저 패키지로 올라가면 고정 골든 실행 전에 거부한다", async () => {
+  await assert.rejects(loadStudioChemyBrowserToolchain(fixture("1.65.0")), /playwright 1\.64\.1.*실제 1\.65\.0/u);
 });
 
-test("CommonJS Playwright의 기본 export에서도 Chromium API를 고른다", async (t) => {
-  const directory = fixture(t);
+test("CommonJS Playwright의 기본 export에서도 Chromium API를 고른다", async () => {
+  const directory = fixture();
   const moduleDirectory = join(directory, "node_modules/playwright");
   const metadata = JSON.parse(readFileSync(join(moduleDirectory, "package.json"), "utf8"));
   writeFileSync(join(moduleDirectory, "package.json"), JSON.stringify({ ...metadata, exports: { ".": "./index.cjs", "./package.json": "./package.json" } }));
@@ -42,8 +47,8 @@ test("CommonJS Playwright의 기본 export에서도 Chromium API를 고른다", 
   assert.equal((await loadStudioChemyBrowserToolchain(directory)).chromium.marker, "commonjs-frozen-browser");
 });
 
-test("고정 Vite 버전도 브라우저와 별도로 검증한다", async (t) => {
-  const directory = fixture(t);
+test("고정 Vite 버전도 브라우저와 별도로 검증한다", async () => {
+  const directory = fixture();
   const packageFile = join(directory, "node_modules/vite/package.json");
   const metadata = JSON.parse(readFileSync(packageFile, "utf8"));
   writeFileSync(packageFile, JSON.stringify({ ...metadata, version: "8.3.6" }));

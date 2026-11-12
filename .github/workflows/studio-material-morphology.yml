@@ -19,6 +19,8 @@ on:
       - scripts/verify-studio-chemy-v1-original-linux-reference.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/original-source-manifest.json
       - scripts/lib/studio-chemy-v1-pressure-baselines.ts
+      - scripts/lib/studio-chemy-toolchain.mjs
+      - scripts/lib/studio-chemy-toolchain.test.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/baseline.json
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/low.png
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/high.png
@@ -40,6 +42,8 @@ on:
       - scripts/verify-studio-chemy-v1-original-linux-reference.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/original-source-manifest.json
       - scripts/lib/studio-chemy-v1-pressure-baselines.ts
+      - scripts/lib/studio-chemy-toolchain.mjs
+      - scripts/lib/studio-chemy-toolchain.test.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/baseline.json
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/low.png
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/high.png
@@ -92,6 +96,7 @@ jobs:
             apps/web/src/domains/creator/studio-competitor-specialty-brush-expansion.test.ts \
             scripts/studio-brush-long-matrix-quality.test.ts \
             scripts/studio-material-atlas-boundary.test.ts \
+            scripts/lib/studio-chemy-toolchain.test.mjs \
             2>&1 | tee "$RUNNER_TEMP/studio-material-morphology/brush-tests.log"
       - name: Quiet performance and incremental live streaming regressions
         run: |

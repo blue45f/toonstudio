@@ -184,7 +184,13 @@ async function waitForDocumentLane(
 
 async function enableBrushTool(page: Page): Promise<void> {
   await dismissOverlays(page);
-  // 기본 그리기와 저장된 전체 배치 모두에서 사용자가 보는 펜 버튼의 실제 선택 상태를 확인한다.
+  // 복제·재진입 탭은 저장된 전체 배치를 복원할 수 있어 같은 출시된 그리기 화면에서 픽셀을 비교한다.
+  const simpleEntry = page.locator('[data-studio-clarity-entry="true"]');
+  if (await simpleEntry.isVisible()) {
+    await simpleEntry.click();
+    await page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').waitFor({ state: "visible" });
+  }
+  // 사용자가 보는 펜 버튼의 실제 선택 상태를 확인한다.
   const pen = page.getByRole("button", { name: /^(펜(?: \(B\))?|Pen(?: \(B\))?)$/u }).first();
   await pen.waitFor({ state: "visible", timeout: 10_000 });
   if (await pen.getAttribute("aria-pressed") !== "true") await pen.click();
@@ -194,13 +200,37 @@ async function enableBrushTool(page: Page): Promise<void> {
   });
 }
 
+interface DrawingCaptureRegion {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+const drawingCaptureRegions = new WeakMap<Page, DrawingCaptureRegion>();
+
+/** 실제 획 경로 전체가 들어가는 가시 캔버스 띠를 고정해 떠 있는 크롬을 잉크로 세지 않는다. */
+async function drawingCaptureRegion(page: Page): Promise<DrawingCaptureRegion> {
+  const existing = drawingCaptureRegions.get(page);
+  if (existing) return existing;
+  const viewport = await page.locator('[data-studio-canvas-viewport="true"]').first().boundingBox();
+  assert.ok(viewport, "그리기 픽셀 영역의 캔버스 위치를 읽지 못했습니다.");
+  const left = viewport.x + viewport.width * 0.25;
+  const right = viewport.x + viewport.width * 0.71;
+  const columns = Array.from({ length: 13 }, (_, index) => left + (right - left) * index / 12);
+  const band = await drawableCanvasBand(page, viewport, columns);
+  const region = { x: left, y: band.top + 8, width: right - left, height: band.bottom - band.top - 16 };
+  assert.ok(region.height > 40, "실제 획을 담을 가시 캔버스 띠가 부족합니다.");
+  drawingCaptureRegions.set(page, region);
+  return region;
+}
+
 async function canvasFingerprint(page: Page): Promise<StudioCompositedCanvasFingerprint> {
   // Firefox의 비활성 탭 합성 프레임이 아니라 사용자가 탭을 열었을 때의 실제 출력을 확인한다.
   await page.bringToFront();
   const documentSurface = page.locator('[data-studio-post-processing-scope=""]').first();
   await documentSurface.waitFor({ state: "visible" });
-  const clip = await documentSurface.boundingBox();
-  assert.ok(clip, "composited document surface has no browser bounds");
+  await documentSurface.waitFor({ state: "visible" });
+  const clip = await drawingCaptureRegion(page);
   // Page-level capture reads the browser compositor. Element screenshots can reuse a transparent
   // or stale backing store when CanvasKit owns document pixels with preserveDrawingBuffer=false.
   const screenshot = await page.screenshot({
@@ -477,7 +507,10 @@ async function drawStroke(
     bounds,
     Array.from({ length: 9 }, (_, index) => startX + (endX - startX) * (index / 8)),
   );
-  const y = band.top + amplitude + (band.bottom - band.top - amplitude * 2) * verticalFraction;
+  const capture = await drawingCaptureRegion(page);
+  assert.ok(capture.y >= band.top && capture.y + capture.height <= band.bottom,
+    "픽셀 비교 영역이 현재 가시 캔버스 띠를 벗어났습니다.");
+  const y = capture.y + amplitude + (capture.height - amplitude * 2) * verticalFraction;
   const path = Array.from({ length: 49 }, (_, step) => {
     const progress = step / 48;
     return {
@@ -732,6 +765,9 @@ try {
     pageC.screenshot({ path: join(SCRATCH, "tab-c-late-join.png"), fullPage: true }),
   ]);
 
+  report.captureRegions = {
+    A: drawingCaptureRegions.get(pageA), B: drawingCaptureRegions.get(pageB), C: drawingCaptureRegions.get(pageC),
+  };
   report.status = "PASS";
   report.roomUrl = roomUrl;
   report.phases = { initial: { A: phaseA, B: phaseB, C: phaseC }, settled: settledPhases };
