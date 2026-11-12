@@ -1,6 +1,8 @@
 /**
  * 페인트 레이어 및 다중 서브레이어 ↔ 레시피 `paint.layers[]` · `paint.sublayers[]` 레코드(PNG base64).
  * Buffer 없이 btoa/atob(Node 22·브라우저 공통)를 쓴다.
+ * 구버전/외부 도구가 기록한 `data:image/png;base64,` 접두사·MIME 개행·URL-safe base64는 정규화해 안전하게 복구하며,
+ * 빈 base64·비정상 치수(> 4096px)·해상도 불일치는 명시 코드(`paint-layer-*` / `paint-sublayer-*`)로 거부한다.
  */
 import { failVisible } from "../contracts";
 
@@ -18,6 +20,9 @@ import type {
 } from "../contracts";
 
 const CHUNK = 0x8000;
+export const MAX_PAINT_RECORD_DIMENSION = 4096;
+
+const DATA_PNG_BASE64_PREFIX = /^data:image\/png;base64,/iu;
 
 export function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -27,8 +32,22 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+/**
+ * 구버전 `data:image/png;base64,` 접두사·MIME 줄바꿈·URL-safe(`-`/`_`)·누락 패딩을 정규화해 바이트로 디코드한다.
+ * 빈 문자열이나 base64 알파벳 밖 문자는 즉시 예외를 던진다.
+ */
 export function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
+  const withoutPrefix = base64.trim().replace(DATA_PNG_BASE64_PREFIX, "");
+  const compact = withoutPrefix.replace(/[\r\n\t ]+/gu, "").replace(/-/gu, "+").replace(/_/gu, "/");
+  if (compact.length === 0) {
+    throw new Error("페인트 PNG base64 문자열이 비어 있습니다.");
+  }
+  const mod = compact.length % 4;
+  if (mod === 1) {
+    throw new Error("페인트 PNG base64 길이가 올바르지 않습니다.");
+  }
+  const padded = mod === 0 ? compact : `${compact}${"=".repeat(4 - mod)}`;
+  const binary = atob(padded);
   const out = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
   return out;
@@ -42,6 +61,22 @@ export async function encodePaintLayerRecord(layer: PaintLayer): Promise<PaintLa
 export type DecodePaintLayerResult = { readonly ok: true; readonly layer: PaintLayer } | { readonly ok: false; readonly failure: LabFailure };
 
 export async function decodePaintLayerRecord(record: PaintLayerRecord, now?: number): Promise<DecodePaintLayerResult> {
+  if (
+    record.width <= 0 ||
+    record.height <= 0 ||
+    record.width > MAX_PAINT_RECORD_DIMENSION ||
+    record.height > MAX_PAINT_RECORD_DIMENSION
+  ) {
+    return {
+      ok: false,
+      failure: failVisible(
+        "paint-layer-size",
+        `페인트 레이어(${record.part}) 레코드 크기(${record.width}×${record.height})가 허용 범위(1~${MAX_PAINT_RECORD_DIMENSION}px)를 벗어났습니다.`,
+        undefined,
+        now,
+      ),
+    };
+  }
   let bytes: Uint8Array;
   try {
     bytes = base64ToBytes(record.pngBase64);
@@ -109,6 +144,22 @@ export async function decodePaintSublayerPartRecord(
   record: PaintSublayerPartRecord,
   now?: number,
 ): Promise<DecodePaintSublayerPartResult> {
+  if (
+    record.width <= 0 ||
+    record.height <= 0 ||
+    record.width > MAX_PAINT_RECORD_DIMENSION ||
+    record.height > MAX_PAINT_RECORD_DIMENSION
+  ) {
+    return {
+      ok: false,
+      failure: failVisible(
+        "paint-sublayer-size",
+        `페인트 서브레이어(${record.part}) 레코드 크기(${record.width}×${record.height})가 허용 범위(1~${MAX_PAINT_RECORD_DIMENSION}px)를 벗어났습니다.`,
+        undefined,
+        now,
+      ),
+    };
+  }
   const decodeSlot = async (
     slotRecord: PaintSublayerSlotRecord,
     expectedIndex: PaintSublayerIndex,

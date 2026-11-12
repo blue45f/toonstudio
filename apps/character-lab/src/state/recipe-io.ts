@@ -6,6 +6,7 @@
  * 취소 판정(`isAbortError`)은 순수 함수라 여기 두고 Node 테스트로 검증한다.
  */
 import { RECIPE_VERSION, failVisible, parseRecipe, recipeDigest } from "../contracts";
+import { parseJsonSafely } from "../shared/json-safety";
 import { stableStringify } from "../shared/stable-json";
 
 import type { CharacterRecipe, ParseRecipeResult } from "../contracts";
@@ -21,19 +22,15 @@ export function serializeRecipe(recipe: CharacterRecipe): string {
 }
 
 /**
- * JSON 구문 오류는 `recipe-json-syntax`, 스키마·버전 오류는 parseRecipe의 코드를 그대로 쓴다.
- * v1 파일은 parseRecipe가 v2로 명시 변환하며 성공 결과의 `migratedFrom`(=1)으로 알린다(`recipeMigrationNoticeKo`로 안내문을 만든다).
- * 변환된 레시피를 다시 직렬화하면 입력 텍스트와 달리 `"version": 2`다(무음 변환이 아니라 저장 시 새 형식이 된다).
+ * JSON 구문·바이너리 오류는 `recipe-json-syntax`, 객체 중복 키는 `recipe-duplicate-id`, 스키마·버전 오류는 parseRecipe의 코드를 그대로 쓴다.
+ * 선두 UTF-8 BOM(`\uFEFF`)은 자동 제거해 복구하며, v1/v2 파일은 parseRecipe가 v3로 명시 변환해 `migratedFrom`으로 알린다.
  */
 export function deserializeRecipe(text: string, now?: number): ParseRecipeResult {
-  let json: unknown;
-  try {
-    json = JSON.parse(text);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, failure: failVisible("recipe-json-syntax", `레시피 파일이 올바른 JSON이 아닙니다: ${message}`, error, now) };
+  const safe = parseJsonSafely(text);
+  if (!safe.ok) {
+    return { ok: false, failure: failVisible(safe.code, safe.reasonKo, safe.detail, now) };
   }
-  return parseRecipe(json, now);
+  return parseRecipe(safe.value, now);
 }
 
 /**

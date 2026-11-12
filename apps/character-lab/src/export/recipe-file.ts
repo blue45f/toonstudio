@@ -3,6 +3,7 @@
  * 페인트 레이어는 PNG base64 레코드로 레시피에 포함한다.
  */
 import { DEFAULT_SUBLAYER_ORDER, createDefaultRecipe, failVisible, parseRecipe, pickBaseChannelColors, recipeDigest } from "../contracts";
+import { detectBinaryFileSignature, parseJsonSafely, stripUtf8Bom } from "../shared/json-safety";
 import { stableStringify } from "../shared/stable-json";
 
 import {
@@ -60,16 +61,14 @@ export function parseRecipeFile(text: string, now?: number): ParseRecipeResult {
       ),
     };
   }
-  let json: unknown;
-  try {
-    json = JSON.parse(text);
-  } catch (error) {
+  const safe = parseJsonSafely(text);
+  if (!safe.ok) {
     return {
       ok: false,
-      failure: failVisible("recipe-json-syntax", "레시피 파일이 올바른 JSON이 아닙니다.", error, now),
+      failure: failVisible(safe.code, safe.reasonKo, safe.detail, now),
     };
   }
-  return parseRecipe(json, now);
+  return parseRecipe(safe.value, now);
 }
 
 function datePart(date: Date): string {
@@ -617,7 +616,27 @@ export function parseShaperPresetTextToRecipe(
       ),
     };
   }
-  const { pairs } = tokenizeShaperPresetLines(text);
+  const binary = detectBinaryFileSignature(text);
+  if (binary) {
+    return {
+      ok: false,
+      failure: failVisible("shaper-preset-syntax", binary.reasonKo, undefined, now),
+    };
+  }
+  const { text: cleanText } = stripUtf8Bom(text);
+  const trimmed = cleanText.trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    return {
+      ok: false,
+      failure: failVisible(
+        "shaper-preset-syntax",
+        "SHAPER .preset 형식이 아니라 JSON 문서입니다. 확장자를 .character.json으로 바꾸거나 JSON 레시피로 불러오세요.",
+        undefined,
+        now,
+      ),
+    };
+  }
+  const { pairs } = tokenizeShaperPresetLines(cleanText);
   if (pairs.length === 0) {
     return {
       ok: false,
@@ -627,8 +646,8 @@ export function parseShaperPresetTextToRecipe(
   const styleKeys = new Set(["hC", "sC", "ssT", "ssC", "ssL", "ssW", "rsT", "rsC", "rsL", "rsW", "olC", "olT", "olP", "hID", "shT", "lAX", "lAY"]);
   const hasStyleToken = pairs.some(([k]) => styleKeys.has(k));
   const hasPartToken = pairs.some(([k]) => !styleKeys.has(k));
-  const style = hasStyleToken ? parseShaperStylePreset(text) : undefined;
-  const part = hasPartToken ? (parseShaperPartPreset(text) ?? undefined) : undefined;
+  const style = hasStyleToken ? parseShaperStylePreset(cleanText) : undefined;
+  const part = hasPartToken ? (parseShaperPartPreset(cleanText) ?? undefined) : undefined;
   const recipe = shaperPresetToCharacterRecipe({
     ...(style !== undefined ? { style } : {}),
     ...(part !== undefined ? { part } : {}),

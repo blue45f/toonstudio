@@ -4,7 +4,6 @@
  * 결정: 사용자 저장/열기는 ExportPanel의 `export/recipe-file.ts`(`*.character.json`, 페인트 레이어 PNG 내장) 하나로 통일하고,
  * `state/recipe-io.ts`(`character-<digest8>.json`)는 정규형 직렬화와 파일 접근 capability 판정용으로 유지한다.
  * 두 영역은 서로 import할 수 없으므로(영역 경계), 둘이 같은 바이트·같은 레시피를 주고받는지는 영역 위의 app 층인 여기서 검증한다.
- * 이 계약이 깨지면 "둘 다 읽을 수 있다"는 README 설명과 ExportPanel의 `accept` 목록이 거짓이 된다.
  */
 import { describe, expect, it } from "vitest";
 
@@ -17,13 +16,11 @@ import { defaultRecipeFixture, legacyRecipeV1Fixture, legacyRecipeV2Fixture, rec
 
 import type { CharacterRecipe } from "../contracts";
 
-/** 슬롯·색·체형 파라미터를 기본값에서 바꾼 레시피(정규형이 키 순서·숫자에 의존하는지 보려는 입력). */
 function customizedRecipe(): CharacterRecipe {
   const base = recipeWithSlots({ hair: "hair/soft-bob", top: null });
   return { ...base, body: { ...base.body, height: 0.35 }, colors: { ...base.colors, skin: "#c8a080" } };
 }
 
-/** 레시피 v3 전용 필드를 모두 기본값에서 바꾼 레시피(2026-10-23 CORE-1) */
 function customizedV3Recipe(): CharacterRecipe {
   const base = customizedRecipe();
   return {
@@ -52,7 +49,7 @@ describe("레시피 파일 상호 읽기(state/recipe-io ↔ export/recipe-file)
     }
   });
 
-  it("state가 저장한 파일을 export가 열고, export가 저장한 파일을 state가 연다(레시피·digest 동일)", () => {
+  it("state가 저장한 파일을 export가 열고, export가 저장한 파일을 state가 연다(레시피·digest·UTF-8 BOM 동일)", () => {
     const recipe = customizedRecipe();
     const fromState = parseRecipeFile(stateSerialize(recipe));
     if (!fromState.ok) throw new Error(fromState.failure.reasonKo);
@@ -63,6 +60,11 @@ describe("레시피 파일 상호 읽기(state/recipe-io ↔ export/recipe-file)
     if (!fromExport.ok) throw new Error(fromExport.failure.reasonKo);
     expect(fromExport.recipe).toEqual(recipe);
     expect(recipeDigest(fromExport.recipe)).toBe(recipeDigest(recipe));
+
+    const bomText = `\ufeff${exportSerialize(recipe)}`;
+    const bomA = parseRecipeFile(bomText);
+    const bomB = deserializeRecipe(bomText);
+    expect(bomA.ok && bomB.ok && bomA.recipe).toEqual(recipe);
   });
 
   it("페인트 레이어를 내장한 레시피 파일도 두 파서가 같은 레시피로 열고, export가 레이어 픽셀을 그대로 복원한다", async () => {
@@ -90,12 +92,24 @@ describe("레시피 파일 상호 읽기(state/recipe-io ↔ export/recipe-file)
     expect(bytesEqual(extracted.layers[0]?.rgba ?? new Uint8ClampedArray(0), layer.rgba)).toBe(true);
   });
 
-  it("손상된 JSON·알 수 없는 키는 두 파서가 같은 코드의 LabFailure로 거절한다(throw·무음 통과 없음)", () => {
+  it("손상된 JSON·바이너리·알 수 없는 키·중복 키는 두 파서가 같은 코드의 LabFailure로 거절한다(throw·무음 통과 없음)", () => {
     const broken = "{ not json";
     const a = parseRecipeFile(broken, 7);
     const b = deserializeRecipe(broken, 7);
     expect(!a.ok && a.failure.code).toBe("recipe-json-syntax");
     expect(!b.ok && b.failure.code).toBe("recipe-json-syntax");
+
+    const binaryGlb = "glTF\u0002\u0000\u0000\u0000\u0010\u0000\u0000\u0000";
+    const g1 = parseRecipeFile(binaryGlb, 7);
+    const g2 = deserializeRecipe(binaryGlb, 7);
+    expect(!g1.ok && g1.failure.code).toBe("recipe-json-syntax");
+    expect(!g2.ok && g2.failure.code).toBe("recipe-json-syntax");
+
+    const dupKeyText = exportSerialize(defaultRecipeFixture()).replace('"skin": "#f3d3bd"', '"skin": "#111111",\n    "skin": "#f3d3bd"');
+    const k1 = parseRecipeFile(dupKeyText, 7);
+    const k2 = deserializeRecipe(dupKeyText, 7);
+    expect(!k1.ok && k1.failure.code).toBe("recipe-duplicate-id");
+    expect(!k2.ok && k2.failure.code).toBe("recipe-duplicate-id");
 
     const unknownKey = JSON.stringify({ ...defaultRecipeFixture(), surprise: 1 });
     const c = parseRecipeFile(unknownKey, 7);

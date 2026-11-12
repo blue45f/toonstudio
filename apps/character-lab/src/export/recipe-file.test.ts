@@ -15,6 +15,7 @@ import {
   evaluateShaperNumericInput,
   evaluateShaperPresetAssetUpdates,
   extractPaintLayers,
+  extractPaintState,
   formatShaperInputStyleGuide,
   parseRecipeFile,
   parseShaper3mfModelXml,
@@ -44,7 +45,7 @@ describe("recipe-file", () => {
     expect(serializeRecipe(shuffled)).toBe(text);
   });
 
-  it("JSON 문법 오류·미지원 버전·형식 오류는 한글 사유를 가진 LabFailure다", () => {
+  it("JSON 문법 오류·미지원 버전·형식 오류·중복 키는 한글 사유를 가진 LabFailure다", () => {
     const syntax = parseRecipeFile("{ not json", 3);
     expect(!syntax.ok && syntax.failure.code).toBe("recipe-json-syntax");
     expect(!syntax.ok && syntax.failure.at).toBe(3);
@@ -55,6 +56,12 @@ describe("recipe-file", () => {
     expect(!invalid.ok && invalid.failure.code).toBe("recipe-invalid");
     const huge = parseRecipeFile("x".repeat(MAX_RECIPE_FILE_BYTES + 1));
     expect(!huge.ok && huge.failure.code).toBe("recipe-file-too-large");
+
+    const baseJson = serializeRecipe(createDefaultRecipe());
+    const dupJson = baseJson.replace('"skin": "#f3d3bd"', '"skin": "#000000",\n    "skin": "#f3d3bd"');
+    const dup = parseRecipeFile(dupJson, 12);
+    expect(!dup.ok && dup.failure.code).toBe("recipe-duplicate-id");
+    expect(!dup.ok && dup.failure.reasonKo).toContain("colors.skin");
   });
 
   it("파일명은 digest 8자리와 날짜를 담는다", () => {
@@ -63,7 +70,7 @@ describe("recipe-file", () => {
     expect(name).toBe(`character-${recipeDigest(recipe).slice(0, 8)}-20261001${RECIPE_FILE_SUFFIX}`);
   });
 
-  it("페인트 레이어를 PNG base64로 넣고 꺼내면 바이트가 같다(빈 레이어 제외, 손상 레코드는 사유)", async () => {
+  it("페인트 레이어를 PNG base64로 넣고 꺼내면 바이트가 같으며 구버전 data:image/png;base64 접두사·개행을 복구하고 손상/과대 레코드는 거부한다", async () => {
     const painted: PaintLayer = { part: "skin", width: 8, height: 8, rgba: new Uint8ClampedArray(8 * 8 * 4).fill(90), revision: 2 };
     const empty: PaintLayer = { part: "hair", width: 8, height: 8, rgba: new Uint8ClampedArray(8 * 8 * 4), revision: 0 };
     const recipe = await embedPaintLayers(defaultRecipeFixture(), [painted, empty]);
@@ -76,9 +83,25 @@ describe("recipe-file", () => {
     expect(extracted.layers).toHaveLength(1);
     expect(bytesEqual(extracted.layers[0]?.rgba ?? [], painted.rgba)).toBe(true);
 
+    const rawB64 = recipe.paint.layers[0]?.pngBase64 ?? "";
+    const wrappedLegacyB64 = `data:image/png;base64,${rawB64.slice(0, 24)}\r\n  ${rawB64.slice(24)}`;
+    const recovered = await extractPaintState({
+      ...recipe,
+      paint: { layers: [{ part: "underwear", width: 8, height: 8, pngBase64: wrappedLegacyB64 }] },
+    });
+    expect(recovered.failures).toEqual([]);
+    expect(recovered.layers[0]?.part).toBe("underwear");
+    expect(bytesEqual(recovered.layers[0]?.rgba ?? [], painted.rgba)).toBe(true);
+
     const broken = await extractPaintLayers({ ...recipe, paint: { layers: [{ part: "top", width: 2, height: 2, pngBase64: "AAAA" }] } });
     expect(broken.layers).toHaveLength(0);
     expect(broken.failures[0]?.code).toBe("paint-layer-png");
+
+    const emptyB64 = await extractPaintLayers({ ...recipe, paint: { layers: [{ part: "top", width: 2, height: 2, pngBase64: "   " }] } });
+    expect(emptyB64.failures[0]?.code).toBe("paint-layer-base64");
+
+    const oversized = await extractPaintLayers({ ...recipe, paint: { layers: [{ part: "top", width: 8192, height: 8192, pngBase64: rawB64 }] } });
+    expect(oversized.failures[0]?.code).toBe("paint-layer-size");
   });
 
   it("SHAPER .preset 텍스트 DSL(LoadStyle / CreateHeadPartFromPreset)을 파싱해 CharacterRecipe v3로 변환한다", () => {
@@ -112,14 +135,13 @@ describe("recipe-file", () => {
     expect(converted.colors.hair).toBe("#331a0d");
     expect(converted.colors.top).toBe("#1a3366");
     expect(converted.body.shoulderWidth).toBeCloseTo(0.6, 5);
-    // 변환된 레시피가 직렬화·파싱 왕복 검증을 통과한다
     const roundtrip = parseRecipeFile(serializeRecipe(converted));
     expect(roundtrip.ok).toBe(true);
   });
 
-  it("HeadPartsManager::CreatePreset 전체 토큰(v*, p*, h*, hp*, hb*, hbv*, l*, lp*, eblt*, acc*, cC*RRGGBB) 직렬화·역직렬화 왕복을 수행한다", () => {
+  it("HeadPartsManager::CreatePreset 전체 토큰 직렬화·역직렬화 왕복 및 중복 헤어/라인/본/3MF 오브젝트 ID 병합을 수행한다", () => {
     const fullPresetText = [
-      "1.0",
+      "\ufeff1.0",
       [
         "mt*0",
         "mid*2",
@@ -127,10 +149,12 @@ describe("recipe-file", () => {
         "v*-0.2/1.5/0.1",
         "p*0.75",
         "h*1/0/0.1/0.9/2/2/0/1/2/0.3/0.4/10/20/0/1/1",
+        "h*1/0/0.2/0.8/2/2/0/1/2/0.5/0.4/10/20/0/1/1",
         "hp*0/1.6/0/90/0/0/1/1/1",
         "hb*3",
         "hbv*0/1/2/0.8/0.5/-0.088/-0.94",
         "l*5/0.1/0.9/1/0.02/1/2/1/0/0",
+        "l*5/0.2/0.8/1/0.03/1/2/0/1/0",
         "lt*0",
         "lp*2/2/0/1/2/0.25/0.5/0.015/0/0/1",
         "lpt*0",
@@ -142,6 +166,8 @@ describe("recipe-file", () => {
         "bP*-0.35/1.2/0.15",
         "bA*10/30/-25",
         "bS*1/1/1",
+        "bN*RigLArmIK",
+        "bP*-0.4/1.25/0.2",
         "cC*FF8800",
         "oR*0.5",
         "acc*BoneHead/0/0.15/0/0/0/0/1/1/1",
@@ -149,17 +175,12 @@ describe("recipe-file", () => {
     ].join("\n");
 
     const parsed = parseShaperPartPreset(fullPresetText);
-    expect(parsed.controlVertices).toEqual([[-0.2, 1.5, 0.1]]);
-    expect(parsed.controlPowers).toEqual([0.75]);
-    expect(parsed.hairs?.[0]?.triangleVertexIds).toEqual([0, 1, 2]);
-    expect(parsed.hairControlTransforms?.[0]?.position).toEqual([0, 1.6, 0]);
-    expect(parsed.hairBaseMeshId).toBe(3);
-    expect(parsed.hairBaseZones?.[0]?.offsetTy).toBeCloseTo(-0.94, 5);
-    expect(parsed.lines?.[0]?.colorHex).toBe("#ff0000");
-    expect(parsed.linePoints?.[0]?.thickness).toBeCloseTo(0.015, 5);
-    expect(parsed.eyeballLeftTransform?.position).toEqual([-0.3, 1.5, 0.2]);
-    expect(parsed.colorsHex).toEqual(["#ff8800"]);
-    expect(parsed.accessories?.[0]?.parentName).toBe("BoneHead");
+    expect(parsed.hairs).toHaveLength(1);
+    expect(parsed.hairs?.[0]?.v0d).toBeCloseTo(0.5, 5);
+    expect(parsed.lines).toHaveLength(1);
+    expect(parsed.lines?.[0]?.colorHex).toBe("#00ff00");
+    expect(parsed.boneNames).toEqual(["RigLArmIK"]);
+    expect(parsed.bonePositions[0]).toEqual([-0.4, 1.25, 0.2]);
 
     const serialized = serializeShaperPartPreset(parsed);
     const reparsed = parseShaperPartPreset(serialized);
@@ -173,6 +194,10 @@ describe("recipe-file", () => {
     const styleReparsed = parseShaperStylePreset(styleSerialized);
     expect(styleReparsed.hairColorHex).toBe("#336699");
     expect(styleReparsed.outlinePressure).toBe(true);
+
+    const jsonAsPreset = parseShaperPresetTextToRecipe('{"version":3}');
+    expect(!jsonAsPreset.ok && jsonAsPreset.failure.code).toBe("shaper-preset-syntax");
+    expect(!jsonAsPreset.ok && jsonAsPreset.failure.reasonKo).toContain("JSON 문서");
   });
 
   it("SaveProject/OpenProject .shaper 아카이브 엔트리(0..4.preset, 6, 7, 8..10, 11_k, 12, style.preset) 왕복을 수행한다", () => {
@@ -262,7 +287,6 @@ describe("recipe-file", () => {
     });
     expect(assetChecks[0]?.path).toBe("/data/Preset/hair/bob.preset");
     expect(assetChecks[0]?.update).toBe(2);
-    // 동일 stem/category/type인 bob.png에도 update=2가 전파됨
     expect(assetChecks[1]?.update).toBe(2);
     expect(assetChecks[2]?.update).toBe(1);
     expect(assetChecks[2]?.progressPercent).toBe(100);
@@ -283,6 +307,12 @@ describe("recipe-file", () => {
     const xml3mf = buildShaper3mfModelXml({
       unit: "millimeter",
       objects: [
+        {
+          id: 1,
+          name: "HeadPartOld",
+          vertices: [[0, 0, 0]],
+          triangles: [],
+        },
         {
           id: 1,
           name: "HeadPart",

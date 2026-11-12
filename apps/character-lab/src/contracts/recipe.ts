@@ -173,28 +173,49 @@ export const paintSublayerPartRecordSchema = z
   })
   .strict();
 
+function hasUniquePaintParts<T extends { readonly part: string }>(items: readonly T[]): boolean {
+  const seen = new Set<string>();
+  for (const item of items) {
+    if (seen.has(item.part)) return false;
+    seen.add(item.part);
+  }
+  return true;
+}
+
+export const paintLayersArraySchema = z.array(paintLayerRecordSchema).refine(hasUniquePaintParts, {
+  message: "paint.layers에 중복된 부위(part)가 있습니다.",
+});
+
 /** v3 `paint`: 합성 마스터 `layers`(하위 호환·PSD용) + 선택적 6단 `sublayers`(개별 픽셀·숨김·순서·불투명도 보존) */
 export const paintStateSchemaV3 = z
   .object({
-    layers: z.array(paintLayerRecordSchema),
+    layers: paintLayersArraySchema,
     sublayers: z.array(paintSublayerPartRecordSchema).optional(),
   })
   .strict()
-  .refine(
-    (paint) => {
-      if (!paint.sublayers) return true;
-      const seen = new Set<string>();
-      for (const entry of paint.sublayers) {
-        if (seen.has(entry.part)) return false;
-        seen.add(entry.part);
+  .superRefine((paint, ctx) => {
+    if (!paint.sublayers) return;
+    if (!hasUniquePaintParts(paint.sublayers)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["sublayers"],
+        message: "paint.sublayers에 중복된 부위(part)가 있습니다.",
+      });
+    }
+    const masterByPart = new Map(paint.layers.map((layer) => [layer.part, layer]));
+    for (let i = 0; i < paint.sublayers.length; i += 1) {
+      const sub = paint.sublayers[i];
+      if (!sub) continue;
+      const master = masterByPart.get(sub.part);
+      if (master && (master.width !== sub.width || master.height !== sub.height)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["sublayers", i],
+          message: `paint.layers(${master.width}×${master.height})와 paint.sublayers(${sub.width}×${sub.height})의 부위(${sub.part}) 해상도가 일치하지 않습니다.`,
+        });
       }
-      return true;
-    },
-    {
-      message: "paint.sublayers에 중복된 부위(part)가 있습니다.",
-      path: ["sublayers"],
-    },
-  );
+    }
+  });
 
 /** v3 `style`: 마지막으로 적용한 화풍 팩(출처)·비례 목표(없으면 소스 고유 비례)·화풍 중립 표정(플래너가 표정 가중치에 더한다) */
 export const recipeStyleSchema = z
@@ -221,7 +242,7 @@ const recipeBodyShapeV2 = {
   handPose: handPoseSchema,
   physics: z.object({ provider: z.enum(PHYSICS_PROVIDER_IDS) }).strict(),
   shading: shadingProfileSchemaV2,
-  paint: z.object({ layers: z.array(paintLayerRecordSchema) }).strict(),
+  paint: z.object({ layers: paintLayersArraySchema }).strict(),
 };
 
 /** v3 필드: v2 공통 필드의 colors·shading·paint(서브레이어 선택 확장)를 넓히고 커스터마이즈 필드를 더한다 */

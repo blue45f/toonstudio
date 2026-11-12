@@ -116,7 +116,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const labState = useLabState();
   const dispatch = useDispatch();
   const { setInspectorTab } = useUiActions();
-  const { store, packagePlans } = useLabContext();
+  const { store, catalog, packagePlans } = useLabContext();
   const kitPlans = useKitPlans();
   const engineSession = useEngineSession();
   const engineStatus = useEngineStatus();
@@ -323,7 +323,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         );
         return;
       }
-      if (text.trim().length === 0) {
+      if (text.replace(/^\ufeff/u, "").trim().length === 0) {
         reportFailure(
           failVisible(
             "recipe-clipboard-empty",
@@ -345,6 +345,8 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         applyStoreEvent: (event) => store.applyEvent(event),
         getRegisteredPackage: (characterId) => packagePlans.get(characterId),
         peekKitManifest: kitPlans ? (src) => kitPlans.peek(src) : undefined,
+        catalog,
+        validateKitRecipe: kitPlans ? (recipe) => kitPlans.plan(recipe) : undefined,
       });
       if (!outcome.ok) {
         reportFailure(outcome.failure);
@@ -366,7 +368,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         reportFailure(failVisible("recipe-file-read", `${file.name}: 파일을 읽을 수 없습니다.`, error, now()));
         return;
       }
-      if (text.trim().length === 0) {
+      if (text.replace(/^\ufeff/u, "").trim().length === 0) {
         reportFailure(
           failVisible(
             "recipe-file-empty",
@@ -389,6 +391,8 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         applyStoreEvent: (event) => store.applyEvent(event),
         getRegisteredPackage: (characterId) => packagePlans.get(characterId),
         peekKitManifest: kitPlans ? (src) => kitPlans.peek(src) : undefined,
+        catalog,
+        validateKitRecipe: kitPlans ? (recipe) => kitPlans.plan(recipe) : undefined,
       });
       if (!outcome.ok) {
         reportFailure(outcome.failure);

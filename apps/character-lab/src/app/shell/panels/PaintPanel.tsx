@@ -1,7 +1,7 @@
 /**
  * PaintPanel: 브러시/지우개 모드, SHAPER 다중 드로잉 서브레이어(Layer 0~5 · 숨김 · 순서 · 불투명도 · 비우기),
  * 좌우 대칭 그리기(U축 미러), 웹툰 디테일 스탬프(데칼), 브러시 크기·색·불투명도·경도·간격,
- * 레이어(부위) 선택, UV 랩, 페인트 undo·레이어 비우기.
+ * 레이어(부위) 선택, UV 랩, 페인트 undo·레이어 비우기·구버전 비표준 부위 보존 안내/비우기.
  * 브러시 상태는 paint/paint-session(React 밖 스토어)에 있고 뷰포트 드로잉 포인터가 같은 세션을 쓴다.
  */
 import { useCallback, useId, useSyncExternalStore } from "react";
@@ -15,7 +15,7 @@ import { useDispatch, useEngineSession, useLabState } from "../lab-store-context
 
 import { PaintSublayerControls } from "./paint-sublayer-controls";
 
-import type { PaintUndoToken } from "../../../contracts";
+import type { PaintUndoToken, PartRole } from "../../../contracts";
 import type { PaintSession, PaintSessionState } from "../../../paint/paint-session";
 import type { PaintSublayerIndex, SublayerMoveDirection } from "../../../paint/paint-sublayers";
 import type { WebtoonDecalId } from "../../../paint/webtoon-decals";
@@ -63,6 +63,9 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
   const sourceKind = labState.recipe.source.kind;
   const activeKitWarning = kitPaintWarningKo(sourceKind, state.activePart);
   const otherKitWarnings = kitPaintWarningsForLayers(sourceKind, [...state.layers.values()]).filter((warning) => warning.part !== state.activePart);
+  const preservedLegacyLayers = [...state.layers.values()].filter(
+    (layer) => !(PAINTABLE_PART_ROLES as readonly string[]).includes(layer.part) && layer.rgba.some((b) => b !== 0),
+  );
 
   const onUndo = useCallback(() => {
     dispatch({ type: "history/undo" });
@@ -73,6 +76,16 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
       dispatch({ type: "paint/stroke", undoToken });
     },
     [dispatch],
+  );
+
+  const onClearPreservedPart = useCallback(
+    (part: PartRole) => {
+      const token = session.clearLayer(part);
+      if (!token) return;
+      dispatch({ type: "paint/stroke", undoToken: token });
+      engineSession.engine()?.updatePaintTexture(session.layer(part));
+    },
+    [dispatch, engineSession, session],
   );
 
   const onClear = useCallback(() => {
@@ -169,6 +182,23 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
           {otherKitWarnings.map((warning) => (
             <li key={warning.part} data-part={warning.part}>
               이미 칠한 {PART_ROLE_LABELS_KO[warning.part]} 레이어: {warning.messageKo}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {preservedLegacyLayers.length > 0 ? (
+        <ul className="cl-paint-hint" aria-label="구버전 보존 부위 레이어" data-testid="paint-preserved-legacy-layers">
+          {preservedLegacyLayers.map((layer) => (
+            <li key={layer.part} data-part={layer.part}>
+              구버전 보존 레이어: {PART_ROLE_LABELS_KO[layer.part]} ({layer.width}×{layer.height}){" "}
+              <button
+                type="button"
+                className="cl-button cl-button-small"
+                data-testid={`paint-clear-legacy-${layer.part}`}
+                onClick={() => onClearPreservedPart(layer.part)}
+              >
+                {`${PART_ROLE_LABELS_KO[layer.part]} 레이어 비우기`}
+              </button>
             </li>
           ))}
         </ul>

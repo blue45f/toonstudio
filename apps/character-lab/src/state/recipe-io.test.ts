@@ -24,13 +24,32 @@ describe("state/recipe-io", () => {
     expect(serializeRecipe(a)).toContain('"version": 3');
   });
 
-  it("손상된 JSON은 recipe-json-syntax 한글 사유로 실패한다", () => {
+  it("손상된 JSON·잘린 JSON·바이너리 파일은 recipe-json-syntax 한글 사유로 실패하고 중복 키는 recipe-duplicate-id로 거부한다", () => {
     const result = deserializeRecipe("{ not json", 7);
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.failure.code).toBe("recipe-json-syntax");
     expect(result.failure.reasonKo).toContain("올바른 JSON이 아닙니다");
     expect(result.failure.at).toBe(7);
+
+    const glb = deserializeRecipe("glTF\u0002\u0000\u0000\u0000\u0014\u0000\u0000\u0000", 8);
+    expect(!glb.ok && glb.failure.code).toBe("recipe-json-syntax");
+    expect(!glb.ok && glb.failure.reasonKo).toContain("GLB 3D 모델 바이너리");
+
+    const baseText = serializeRecipe(createDefaultRecipe());
+    const withBom = deserializeRecipe(`\ufeff${baseText}`);
+    expect(withBom.ok).toBe(true);
+    if (withBom.ok) {
+      expect(serializeRecipe(withBom.recipe)).toBe(baseText);
+    }
+
+    const duplicateKeyText = baseText.replace('"hair": "#2b1d16"', '"hair": "#111111",\n    "hair": "#2b1d16"');
+    const dupResult = deserializeRecipe(duplicateKeyText, 9);
+    expect(dupResult.ok).toBe(false);
+    if (!dupResult.ok) {
+      expect(dupResult.failure.code).toBe("recipe-duplicate-id");
+      expect(dupResult.failure.reasonKo).toContain("colors.hair");
+    }
   });
 
   it("스키마 위반·버전 불일치는 parseRecipe 코드를 그대로 쓴다", () => {
@@ -43,7 +62,6 @@ describe("state/recipe-io", () => {
   });
 
   describe("레시피 v1 → v3 불러오기", () => {
-    // 2026-10-23 v3 도입: v1 파일 모양은 시험 fixture(legacyRecipeV1Fixture)로 만든다. 변환 목표는 v3다.
     function v1Text(overrides: Record<string, unknown> = {}): string {
       return JSON.stringify({ ...legacyRecipeV1Fixture(), ...overrides });
     }
@@ -139,7 +157,6 @@ describe("state/recipe-io", () => {
     expect(openMethodFor({ showOpenFilePicker: picker })).toBe("file-system-access");
     expect(saveMethodFor({})).toBe("anchor-download");
     expect(saveMethodFor({ showSaveFilePicker: picker })).toBe("file-system-access");
-    // 열기와 저장은 독립 판정이다(한쪽만 있는 브라우저).
     expect(openMethodFor({ showSaveFilePicker: picker })).toBe("input-file");
     expect(saveMethodFor({ showOpenFilePicker: picker })).toBe("anchor-download");
   });

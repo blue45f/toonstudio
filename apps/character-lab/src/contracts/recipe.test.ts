@@ -57,7 +57,6 @@ describe("contracts/recipe", () => {
   });
 
   it("미래·알 수 없는 버전은 지원 버전 목록과 함께 한글 사유로 거부한다", () => {
-    // 2026-10-23 v3 도입으로 3은 지원 버전이 됐다(미래 버전 예시를 4로 올림, 지원 목록 문구에 3 추가).
     for (const version of [4, 0, "3", null, undefined]) {
       const result = parseRecipe({ ...createDefaultRecipe(), version });
       expect(result.ok).toBe(false);
@@ -100,14 +99,11 @@ describe("contracts/recipe", () => {
     const kit = createKitDefaultRecipe();
     expect(kit.shading.toon).toEqual({ ...DEFAULT_SHADING.toon, rampSteps: 2, rim: false });
     expect(KIT_DEFAULT_TOON).toEqual({ rampSteps: 2, rim: false });
-    // 툰 외 셰이딩은 절차 기본과 같다
     expect({ ...kit.shading, toon: DEFAULT_SHADING.toon }).toEqual(DEFAULT_SHADING);
     expect(characterRecipeSchema.safeParse(kit).success).toBe(true);
     expect(createDefaultRecipe().shading).toEqual(DEFAULT_SHADING);
     expect(DEFAULT_SHADING.toon).toMatchObject({ rampSteps: 3, rim: true });
-    // 키트 베이스가 달라도 같은 기본값이다
     expect(createKitDefaultRecipe("male").shading).toEqual(kit.shading);
-    // 팩토리가 돌려주는 셰이딩은 서로 공유되지 않는다(DEFAULT_SHADING을 변조하지 않는다)
     expect(kit.shading).not.toBe(DEFAULT_SHADING);
     expect(createKitDefaultRecipe().shading).not.toBe(kit.shading);
   });
@@ -123,14 +119,12 @@ describe("contracts/recipe", () => {
   });
 
   it("v1 레시피는 명시 마이그레이션 사슬(v1 → v2 → v3)로 열리고 migratedFrom을 남긴다", () => {
-    // v3 도입(2026-10-23): v1 파일 모양은 v3 기본 레시피를 펼쳐서는 만들 수 없으므로 시험 fixture로 만든다. 결과는 v3다.
     const v1 = { ...legacyRecipeV1Fixture(), body: { height: 0.25 } };
     const procedural = parseRecipe(JSON.parse(JSON.stringify(v1)));
     expect(procedural.ok).toBe(true);
     if (procedural.ok) {
       expect(procedural.migratedFrom).toBe(1);
       expect(procedural.recipe.version).toBe(3);
-      // 소스를 키트로 바꿔치기하지 않는다(절차는 절차로 열린다)
       expect(procedural.recipe.source).toEqual({ kind: "procedural" });
       expect(procedural.recipe.body).toEqual({ height: 0.25 });
       expect(procedural.recipe).toEqual(migrateRecipeV2ToV3(migrateRecipeV1ToV2(characterRecipeSchemaV1.parse(v1))));
@@ -154,12 +148,25 @@ describe("contracts/recipe", () => {
     expect(characterRecipeSchema.safeParse({ ...createDefaultRecipe(), version: 1 }).success).toBe(false);
   });
 
-  it("underwear 역할은 페인트 레이어 레코드에서도 값 집합이 넓어질 뿐 기존 레코드는 그대로 유효하다", () => {
+  it("underwear 역할은 페인트 레이어 레코드에서도 유효하고, v1·v2·v3 모두 paint.layers 내 중복 부위(part)를 거부한다", () => {
     const base = createDefaultRecipe();
     const layer = { part: "skin", width: 4, height: 4, pngBase64: "AAAA" };
     expect(parseRecipe({ ...base, paint: { layers: [layer] } }).ok).toBe(true);
     expect(parseRecipe({ ...base, paint: { layers: [{ ...layer, part: "underwear" }] } }).ok).toBe(true);
     expect(parseRecipe({ ...base, paint: { layers: [{ ...layer, part: "cape" }] } }).ok).toBe(false);
+
+    const dupV3 = parseRecipe({ ...base, paint: { layers: [layer, { ...layer, pngBase64: "BBBB" }] } });
+    expect(dupV3.ok).toBe(false);
+    if (!dupV3.ok) {
+      expect(dupV3.failure.code).toBe("recipe-invalid");
+      expect(dupV3.failure.reasonKo).toContain("paint.layers에 중복된 부위");
+    }
+
+    const dupV2 = parseRecipe({ ...legacyRecipeV2Fixture(), paint: { layers: [layer, layer] } });
+    expect(!dupV2.ok && dupV2.failure.reasonKo).toContain("paint.layers에 중복된 부위");
+
+    const dupV1 = parseRecipe({ ...legacyRecipeV1Fixture(), paint: { layers: [layer, layer] } });
+    expect(!dupV1.ok && dupV1.failure.reasonKo).toContain("paint.layers에 중복된 부위");
   });
 
   it("digest는 키 순서와 무관하고 값 변경에 민감하다", () => {
@@ -329,7 +336,7 @@ describe("contracts/recipe v3(2026-10-23 CORE-1)", () => {
     expect(recipeDigest({ ...recipe, colors: { ...recipe.colors, lip: "#aa3344" } })).not.toBe(digest);
   });
 
-  it("paint.sublayers: v3 선택 확장으로 6슬롯·0..5 순서 순열·부위 유일성을 검증하고 v2 파일에서는 거부한다", () => {
+  it("paint.sublayers: v3 선택 확장으로 6슬롯·0..5 순서 순열·부위 유일성·마스터 해상도 일치를 검증하고 v2 파일에서는 거부한다", () => {
     const recipe = base();
     const validSublayer = {
       part: "head" as const,
@@ -346,6 +353,13 @@ describe("contracts/recipe v3(2026-10-23 CORE-1)", () => {
       ] as const,
     };
     expect(parseRecipe({ ...recipe, paint: { layers: [], sublayers: [validSublayer] } }).ok).toBe(true);
+    expect(parseRecipe({ ...recipe, paint: { layers: [{ part: "head", width: 64, height: 64, pngBase64: "AAAA" }], sublayers: [validSublayer] } }).ok).toBe(true);
+    expect(
+      invalidReason({
+        ...recipe,
+        paint: { layers: [{ part: "head", width: 32, height: 32, pngBase64: "AAAA" }], sublayers: [validSublayer] },
+      }),
+    ).toContain("해상도가 일치하지 않습니다");
     expect(invalidReason({ ...recipe, paint: { layers: [], sublayers: [{ ...validSublayer, order: [0, 0, 2, 3, 4, 5] }] } })).toContain("순서");
     const swappedSlots = [validSublayer.slots[1], validSublayer.slots[0], ...validSublayer.slots.slice(2)];
     expect(invalidReason({ ...recipe, paint: { layers: [], sublayers: [{ ...validSublayer, slots: swappedSlots }] } })).toContain("index 0..5");
