@@ -36,7 +36,7 @@ describe("StudioQuickStart", () => {
     const document = readStudioProjectDocuments(window.localStorage, projects[0]!.id).documents[0]!;
     expect(document).toMatchObject({ width: 1600, height: 1200, defaultWorkspace: "draw" });
     expect(screen.getByLabelText("location").textContent)
-      .toBe(`/studio/p/${projects[0]!.id}/d/${document.id}?workspace=draw&uiMode=focus&startTool=draw`);
+      .toBe(`/studio/p/${projects[0]!.id}/d/${document.id}?workspace=draw&startTool=draw`);
   });
   it("creates a recoverable webtoon from the primary action", () => {
     mountQuickStart();
@@ -78,7 +78,8 @@ it("시작 화면 카드도 한 번의 클릭으로 새 그림을 열고 기존 
   expect(projects.find((project) => project.id === existing.id)).toEqual(existing);
   const next = projects.find((project) => project.id !== existing.id);
   expect(next).toMatchObject({ kind: "illustration", templateId: "quick-sketch" });
-  expect(screen.getByLabelText("location").textContent).toContain("uiMode=focus&startTool=draw");
+  expect(screen.getByLabelText("location").textContent).toContain("workspace=draw&startTool=draw");
+  expect(new URL(screen.getByLabelText("location").textContent!, "http://local.test").searchParams.has("uiMode")).toBe(false);
 });
 
 
@@ -115,5 +116,6 @@ it("그리기 이미지 카드의 저장 실패는 기존 작업과 시작 위�
   expect(projects).toHaveLength(2);
   expect(projects.find((project) => project.id === existing.id)).toEqual(existing);
   expect(screen.queryByRole("alert")).toBeNull();
-  expect(screen.getByLabelText("location").textContent).toContain("uiMode=focus&startTool=draw");
+  expect(screen.getByLabelText("location").textContent).toContain("workspace=draw&startTool=draw");
+  expect(new URL(screen.getByLabelText("location").textContent!, "http://local.test").searchParams.has("uiMode")).toBe(false);
 });
