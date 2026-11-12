@@ -461,4 +461,43 @@ describe("게시 정보 준비의 단계·복귀 계약", () => {
     expect(screen.getByRole("alert").textContent).toContain("입력한 내용은 유지됩니다");
     expect(mocks.buildPublishPackage).not.toHaveBeenCalled();
   });
+
+  it("작품 선택·파일 준비·단계와 브라우저 이동에서 외부 query·fragment·돌아갈 문맥을 보존한다", async () => {
+    const returnContext = { source: "library", scrollY: 420, returnTo: "/my/works" };
+    function NavigationContext() {
+      const location = useLocation();
+      const navigate = useNavigate();
+      return <>
+        <output aria-label="문맥을 포함한 준비 주소">{location.pathname}{location.search}{location.hash}</output>
+        <output aria-label="돌아갈 문맥">{JSON.stringify(location.state)}</output>
+        <button type="button" onClick={() => navigate(-1)}>문맥 검증 뒤로</button>
+        <button type="button" onClick={() => navigate(1)}>문맥 검증 앞으로</button>
+      </>;
+    }
+    mocks.listProjects.mockResolvedValue({ projects: [projectSummary] });
+    render(<MemoryRouter initialEntries={[{
+      pathname: "/publish", search: "?source=library&tag=one&tag=two", hash: "#prepare", state: returnContext,
+    }]}><PublishCenterPage /><NavigationContext /></MemoryRouter>);
+    const expectContext = (step: string) => {
+      const url = new URL(screen.getByLabelText("문맥을 포함한 준비 주소").textContent ?? "", "https://example.test");
+      expect(url.searchParams.get("source")).toBe("library");
+      expect(url.searchParams.getAll("tag")).toEqual(["one", "two"]);
+      expect(url.searchParams.get("projectId")).toBe("project-1");
+      expect(url.searchParams.get("step")).toBe(step);
+      expect(url.hash).toBe("#prepare");
+      expect(JSON.parse(screen.getByLabelText("돌아갈 문맥").textContent ?? "null")).toEqual(returnContext);
+    };
+    fireEvent.click(await screen.findByRole("button", { name: /이 작품으로 게시 준비/u }));
+    await screen.findByRole("link", { name: "선택한 프로젝트로 돌아가기" });
+    expectContext("details");
+    await prepareInputs(); fireEvent.click(prepareButton()); await preparedFiles(); expectContext("files");
+    fireEvent.click(screen.getByRole("button", { name: "입력 내용 수정" })); expectContext("details");
+    fireEvent.click(stepButton(1)); expectContext("project");
+    fireEvent.click(screen.getByRole("button", { name: "문맥 검증 뒤로" }));
+    await waitFor(() => expectContext("details"));
+    expect((screen.getByLabelText("작품 대표 주소") as HTMLInputElement).value).toBe("https://example.com/works/one");
+    fireEvent.click(screen.getByRole("button", { name: "문맥 검증 앞으로" }));
+    await waitFor(() => expectContext("project"));
+    expect(mocks.buildPublishPackage).toHaveBeenCalledTimes(1);
+  });
 });

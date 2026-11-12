@@ -89,14 +89,14 @@ export function SerialCenterOverview({
   </Link>;
 
   return (
-    <section className={selectionMode ? "py-3" : "rounded-3xl border border-line bg-card p-5 sm:p-6"} aria-label={ko ? "내 작품 연재 현황" : "My works' serialization status"}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section className={selectionMode ? "py-3" : "rounded-3xl border border-line bg-card p-5 sm:p-6"} aria-label={selectionMode ? (ko ? "제작 프로젝트 선택" : "Choose a production project") : (ko ? "내 작품 연재 현황" : "My works' serialization status")}>
+      {!selectionMode ? <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          {!selectionMode ? <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent">
             {ko ? "연재 현황" : "Serialization status"}
-          </p> : null}
-          <h2 className={selectionMode ? "text-base font-bold text-fg" : "mt-1.5 text-xl font-black tracking-tight text-fg"}>
-            {selectionMode ? (ko ? "내 제작 프로젝트" : "My production projects") : (ko ? "내 작품은 지금 어디까지 왔나" : "Where each of my works stands")}
+          </p>
+          <h2 className="mt-1.5 text-xl font-black tracking-tight text-fg">
+            {ko ? "내 작품은 지금 어디까지 왔나" : "Where each of my works stands"}
           </h2>
         </div>
         {userId && !selectionMode && !loading && !error && projects.length > 0 ? (
@@ -106,12 +106,14 @@ export function SerialCenterOverview({
               : `${projects.length} work(s) · ${overdueTotal} overdue task(s) · ${readyTotal} episode(s) ready to publish`}
           </p>
         ) : null}
-      </div>
+      </div> : null}
 
       {!userId ? (
-        <div className="mt-5 flex flex-col items-start gap-3 rounded-2xl bg-panel/60 p-5">
+        <div className={selectionMode ? "flex flex-col items-start gap-3 py-2" : "mt-5 flex flex-col items-start gap-3 rounded-2xl bg-panel/60 p-5"}>
           <p className="text-sm leading-6 text-fg-2">
-            {ko
+            {selectionMode
+              ? (ko ? "제작 프로젝트를 고르려면 로그인해 주세요." : "Sign in to choose a production project.")
+              : ko
               ? "로그인하면 내 작품의 다음 발행 예정, 준비된 회차, 밀린 작업을 여기서 한눈에 볼 수 있어요."
               : "Sign in to see each work's next release, ready episodes, and overdue tasks at a glance."}
           </p>

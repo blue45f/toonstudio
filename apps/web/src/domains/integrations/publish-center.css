@@ -4,6 +4,10 @@
   gap: 6px;
 }
 
+.publish-center__actions {
+  --site-control-size: 48px;
+}
+
 .publish-center__step {
   display: flex;
   min-width: 0;

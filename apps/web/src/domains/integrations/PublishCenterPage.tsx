@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, Download, FileCheck2, Rss } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { getApiErrorMessage } from "@/platform/api";
 import { useI18n } from "@/shared/lib/i18n";
@@ -41,7 +41,8 @@ function PublishCenterSession() {
   const ko = useI18n((state) => state.lang).startsWith("ko");
   const userId = useApp((state) => state.userId);
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { catalog, error, loading, refresh } = useIntegrationCatalog();
   const publishingProviders = useMemo(() => catalog?.providers.filter((provider) => provider.category === "publishing") ?? [], [catalog]);
   // 작품·계정이 바뀌면 바깥 세션을 교체하지만 단계 이동은 같은 입력 소유자를 유지한다.
@@ -105,11 +106,14 @@ function PublishCenterSession() {
     target.focus(); target.scrollIntoView?.({ block: "nearest", behavior: "auto" });
   }, [step, location.key, location.search, focusNonce, searchParams]);
 
+  const setPreparationSearch = (params: URLSearchParams, replace = false) => {
+    navigate({ pathname: location.pathname, search: `?${params.toString()}`, hash: location.hash }, { replace, state: location.state });
+  };
   const goToStep = (next: PreparationStep, targetId?: string) => {
     const nextParams = new URLSearchParams(searchParams); nextParams.set("step", next);
     pendingFocus.current = { id: targetId ?? `publish-step-heading-${next}`, search: `?${nextParams.toString()}` };
     setFocusNonce((current) => current + 1);
-    if (nextParams.toString() !== searchParams.toString()) setSearchParams(nextParams);
+    if (nextParams.toString() !== searchParams.toString()) setPreparationSearch(nextParams);
   };
   const clearPreparedFiles = () => { setResult(null); setFeedResult(null); setValidationField(null); };
   const toggleChannel = (id: string) => {
@@ -206,9 +210,9 @@ function PublishCenterSession() {
             const projectParams = new URLSearchParams(searchParams);
             projectParams.set("projectId", project.projectId); projectParams.set("step", "project");
             projectParams.delete("title"); projectParams.delete("canonicalUrl");
-            setSearchParams(projectParams, { replace: true });
+            setPreparationSearch(projectParams, true);
             const detailsParams = new URLSearchParams(projectParams); detailsParams.set("step", "details");
-            setSearchParams(detailsParams);
+            setPreparationSearch(detailsParams);
           }} /></div></details>
           {!projectId ? <p className="mt-4 text-sm leading-6 text-fg-2" role="status">{ko ? "작품을 고르면 게시 정보를 입력할 수 있어요." : "Choose a work to continue with its publication details."}</p> : null}
         </section>

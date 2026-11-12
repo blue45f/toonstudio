@@ -66,6 +66,7 @@ describe("SerialCenterOverview", () => {
 
   it("비로그인에서는 현황을 부르지 않고 로그인 안내와 캘린더 구분을 보여준다", () => {
     renderOverview();
+    expect(screen.getByRole("heading", { name: "내 작품은 지금 어디까지 왔나" })).toBeTruthy();
     expect(screen.getByText(/로그인하면 내 작품의 다음 발행 예정/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "로그인하기" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "제작 프로젝트 만들러 가기" })).toBeNull();
@@ -166,11 +167,28 @@ describe("SerialCenterOverview", () => {
     api.listProductionProjects.mockResolvedValue({ projects: [project] });
     const onSelectProject = vi.fn();
     render(<MemoryRouter><SerialCenterOverview ko selectionMode onSelectProject={onSelectProject} /></MemoryRouter>);
-    expect(await screen.findByRole("heading", { name: "내 제작 프로젝트" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "제작 프로젝트 선택" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "내 제작 프로젝트" })).toBeNull();
     expect(await screen.findByText("별빛 항해자")).toBeTruthy();
     expect(screen.queryByText("밀린 작업")).toBeNull();
     expect(screen.queryByRole("link", { name: /회차 관리/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /이 작품으로 게시 준비/ }));
     expect(onSelectProject).toHaveBeenCalledWith(project);
+  });
+
+  it("게시 작품 선택의 로그인 안내는 선택 목적만 설명하고 같은 로그인 경로를 유지한다", () => {
+    const onSelectProject = vi.fn();
+    const { rerender } = render(<MemoryRouter><SerialCenterOverview ko selectionMode onSelectProject={onSelectProject} /></MemoryRouter>);
+    expect(screen.getByText("제작 프로젝트를 고르려면 로그인해 주세요.")).toBeTruthy();
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.queryByText(/다음 발행 예정/)).toBeNull();
+    expect(screen.getByRole("link", { name: "로그인하기" }).getAttribute("href")).toBe("/auth/login");
+    expect(api.listProductionProjects).not.toHaveBeenCalled();
+    expect(onSelectProject).not.toHaveBeenCalled();
+    rerender(<MemoryRouter><SerialCenterOverview ko={false} selectionMode onSelectProject={onSelectProject} /></MemoryRouter>);
+    expect(screen.getByRole("region", { name: "Choose a production project" })).toBeTruthy();
+    expect(screen.getByText("Sign in to choose a production project.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/auth/login");
+    expect(api.listProductionProjects).not.toHaveBeenCalled();
   });
 });
