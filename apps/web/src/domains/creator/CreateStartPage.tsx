@@ -6,7 +6,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import type { StudioProjectLibraryEntry } from "./studio-project-library-store";
 import { studioLibraryRecentWork } from "./studio-shell/studio-library-recent-work";
 import { resolveStudioProjectResumeTarget } from "./studio-project-resume-target";
-import "./create-start-mobile-first.css";
+import "./studio-shell/create-start-mobile-first.css";
 import { studioProjectLibraryLocale } from "./studio-shell/studio-project-library-management-model";
 import { useStudioProjectLibrary } from "./studio-shell/useStudioProjectLibrary";
 import { useResolvedStudioProjectThumbnailUrl } from "./studio-shell/useStudioProjectThumbnailUrl";
