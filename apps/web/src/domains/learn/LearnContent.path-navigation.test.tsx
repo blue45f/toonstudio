@@ -79,6 +79,7 @@ describe("선택한 학습 경로의 연속성", () => {
     expect(currentUrl()).toBe(pathLesson("story-board"));
     fireEvent.keyDown(window, { key: "[" });
     expect(currentUrl()).toBe(pathLesson("story-board"));
+    fireEvent.click(screen.getByText("실습 메모", { selector: "summary" }));
     fireEvent.keyDown(screen.getByRole("textbox", { name: "나의 실습 메모" }), { key: "]" });
     expect(currentUrl()).toBe(pathLesson("story-board"));
     fireEvent.click(screen.getByRole("link", { name: "← 첫 3컷 완성 경로로" }));
@@ -97,6 +98,7 @@ describe("선택한 학습 경로의 연속성", () => {
     renderLearning("/learn/lessons/character-silhouette?from=visual-finish");
     const lesson = LESSONS.find((item) => item.id === "character-silhouette");
     if (!lesson) throw new Error("그림 완성도 경로의 첫 수업이 필요합니다.");
+    fireEvent.click(screen.getByRole("button", { name: "자가 확인" }));
     const checklist = within(screen.getByRole("group", { name: /실습 체크리스트/ }));
     for (const checkbox of checklist.getAllByRole("checkbox")) fireEvent.click(checkbox);
     fireEvent.click(screen.getByRole("radio", { name: lesson.quiz.options[lesson.quiz.answer] }));
@@ -158,6 +160,7 @@ describe("강좌 제목 초점과 복귀한 조작의 협력", () => {
 
   it("검색 query PUSH로 바뀌어도 같은 강좌의 실습 메모 초점과 입력은 보존한다", () => {
     renderLearning(pathLesson("scroll-rhythm"));
+    fireEvent.click(screen.getByText("실습 메모", { selector: "summary" }));
     const memo = screen.getByRole("textbox", { name: "나의 실습 메모" });
     fireEvent.change(memo, { target: { value: "검색 뒤에도 이 메모를 계속 쓴다" } }); memo.focus();
     fireEvent.click(screen.getByRole("button", { name: "학습 검색 변경" }));

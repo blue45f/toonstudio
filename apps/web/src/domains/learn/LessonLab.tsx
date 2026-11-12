@@ -23,7 +23,7 @@ export function LessonDiagram({ kind, value, frame, view = "both" }: { kind: Lab
   /* eslint-disable shadcn/no-raw-colors -- 학습 도식(기준·비교 SVG)의 고정 색 팔레트는 명암 구분 데이터라 토큰으로 바꾸면 도식 판독이 달라진다. 예외 원장: docs/SHADCN_RAW_COLORS_EXCEPTIONS.md */
   return (
     <svg className="learn-diagram" data-view={selectedView} viewBox={viewBox} role="img" aria-labelledby={`${titleId} ${descriptionId}`}>
-      <title id={titleId}>{config.title} · {selectedView === "both" ? "전체 보기" : selectedView === "reference" ? "기준만" : "비교만"}</title>
+      <title id={titleId}>{`${config.title} · ${selectedView === "both" ? "전체 보기" : selectedView === "reference" ? "기준만" : "비교만"}`}</title>
       <desc id={descriptionId}>{config.label}: {parameter} {config.unit}. {config.stages[stage]} 학습용 개념도이며 실제 원고나 엔진 측정 결과가 아닙니다.</desc>
       <rect width="640" height="360" fill="#f5f7fa" rx="14" />
       {kind === "pacing" && [20, parameter].map((gap, column) => (
@@ -104,7 +104,7 @@ function compactViewport() {
   return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 640px)").matches;
 }
 
-export function LessonLab({ kind }: { kind: LabKind }) {
+export function LessonLab({ kind, active = true }: { kind: LabKind; active?: boolean }) {
   const config = LAB_CONFIGS[kind];
   const { pathname, search } = useLocation();
   const [initial] = useState(() => readLabState(kind, search, compactViewport()));
@@ -116,13 +116,16 @@ export function LessonLab({ kind }: { kind: LabKind }) {
   const root = useRef<HTMLElement>(null);
   const id = useId();
   const stage = Math.min(2, Math.floor(timeline.frame / 100));
+  const linkedState = readLabState(kind, search, compactViewport());
 
   useEffect(() => {
-    const state = readLabState(kind, search, compactViewport());
-    setValue(state.value);
-    setView(state.view);
-    dispatch({ type: "seek", frame: state.frame });
-  }, [kind, search]);
+    setValue(linkedState.value);
+    setView(linkedState.view);
+    dispatch({ type: "seek", frame: linkedState.frame });
+  }, [kind, linkedState.value, linkedState.view, linkedState.frame]);
+  useEffect(() => {
+    if (!active) dispatch({ type: "pause" });
+  }, [active]);
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -131,7 +134,7 @@ export function LessonLab({ kind }: { kind: LabKind }) {
     return () => media.removeEventListener("change", sync);
   }, []);
   useEffect(() => {
-    if (!timeline.playing || !motionEnabled) return;
+    if (!timeline.playing || !motionEnabled || !active) return;
     let previous = performance.now();
     let handle = 0;
     const tick = (now: number) => {
@@ -141,7 +144,7 @@ export function LessonLab({ kind }: { kind: LabKind }) {
     };
     handle = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(handle);
-  }, [timeline.playing, motionEnabled, speed]);
+  }, [timeline.playing, motionEnabled, speed, active]);
   useEffect(() => {
     const stop = () => { if (document.hidden) dispatch({ type: "pause" }); };
     document.addEventListener("visibilitychange", stop);
