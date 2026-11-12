@@ -34,6 +34,7 @@
 .studio-drawing-clarity-pane--inspector>div:not(.studio-drawing-clarity-pane-heading){min-height:0}
 /* 브러시 HUD는 body 포털이므로 편집기 하위 선택자로는 접히지 않는다. */
 body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-studio-brush-hud=true]{display:none!important}
+body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-studio-shell-floating-target=document-tools]:has(>button[aria-expanded=false]){display:none}
 [data-studio-drawing-clarity=true] [data-studio-document-window-hub-bar=true]{display:none}
 [data-studio-drawing-clarity=true] [data-studio-cinematic-canvas-welcome=collapsed], [data-studio-drawing-clarity=true] [data-studio-creative-starter=true][data-studio-quickstart-collapsed=true]{display:none}
 [data-studio-drawing-clarity=true] [data-studio-workflow-guide]{display:none}
