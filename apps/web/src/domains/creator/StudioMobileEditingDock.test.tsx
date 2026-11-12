@@ -1967,7 +1967,8 @@ describe("StudioMobileEditingDock", () => {
 });
 describe("모바일 브러시 메뉴 재준비 회귀", () => {
   async function runLateNotice(alwaysInterrupt: boolean) {
-    const setMobileSheet = vi.fn<StudioMobileEditingDockProps["setMobileSheet"]>();
+    let mobileSheet: StudioMobileEditingDockProps["mobileSheet"] = null;
+    const setMobileSheet = vi.fn<StudioMobileEditingDockProps["setMobileSheet"]>((value) => { mobileSheet = typeof value === "function" ? value(mobileSheet) : value; });
     render(<>
       <StudioMobileEditingDock {...createProps({ isMobile: true, setMobileSheet })} />
       <button type="button" aria-label="지연 안내의 정상 닫기">안내 닫기</button>
@@ -1980,6 +1981,7 @@ describe("모바일 브러시 메뉴 재준비 회귀", () => {
     expect(panel.hidden).toBe(false);
     const close = screen.getByRole("button", { name: "지연 안내의 정상 닫기" });
     const betaSelector = '[data-studio-beta-notice="true"]';
+    const sheetSelector = '[data-studio-sheet-id="draw"][data-studio-mobile-sheet="draw"][role="dialog"]:not([aria-hidden="true"]):not([inert])';
     let noticeVisible = false, attempts = 0, normalTargetClicks = 0, reopened = 0;
     const outsidePointerClosed: boolean[] = [];
     const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -1987,7 +1989,8 @@ describe("모바일 브러시 메뉴 재준비 회귀", () => {
       const current = {
         first: () => current,
         isVisible: async () => selector === '[data-studio-canvas-viewport="true"]' || selector === ".konvajs-content"
-          || (selector === betaSelector && noticeVisible),
+          || (selector === betaSelector && noticeVisible) || (selector === sheetSelector && mobileSheet === "draw"),
+        waitFor: async (options: { state: string; timeout: number }) => { expect(selector).toBe(sheetSelector); expect(options.state).toBe("visible"); expect(options.timeout).toBeGreaterThan(0); expect(mobileSheet).toBe("draw"); },
         locator: () => ({ click: async (options: { timeout: number }) => {
           expect(selector).toBe(betaSelector);
           expect(options.timeout).toBeGreaterThan(0);
@@ -2027,15 +2030,12 @@ describe("모바일 브러시 메뉴 재준비 회귀", () => {
         click: async () => { fireEvent.pointerDown(toggle); fireEvent.click(toggle); reopened += 1; },
       };
       if (selector === '[data-studio-mobile-workspace-menu="true"]') return {
-        locator: (button: string) => {
-          expect(button).toBe('button[aria-controls="studio-mobile-draw-settings"]:not([data-studio-primary-action])');
-          return target;
-        },
         waitFor: async (options: { state: string; timeout: number }) => {
           expect(options.state).toBe("hidden"); expect(options.timeout).toBeGreaterThan(0); expect(panel.hidden).toBe(true);
         },
       };
-      throw new Error(`예상하지 않은 도크 선택자: ${selector}`);
+      expect(selector).toBe(':scope[data-studio-mobile-primary-layout="simple"] [data-studio-mobile-primary-actions="true"] button[aria-controls="studio-mobile-draw-settings"][aria-pressed="true"], [data-studio-mobile-workspace-menu="true"] button[aria-controls="studio-mobile-draw-settings"]:not([data-studio-primary-action]):not([data-studio-mobile-tool])');
+      return { filter: (options: { visible: boolean }) => { expect(options).toEqual({ visible: true }); return target; } };
     } } as unknown as Locator;
     const started = Date.now();
     let finishedAt = -1;

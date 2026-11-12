@@ -96,6 +96,7 @@ import {
 } from "../apps/web/src/domains/creator/studio-cc0-mypaint-preset-import-v1";
 
 import { initializeStudioVerifierPageOnce, installStudioCanvasScaleDiagnostics } from "./lib/studio-brush-verifier-session";
+import { activateDesktopPen } from "./lib/studio-desktop-brush-activation";
 import {
   clickStudioControlAfterReadiness,
   prepareStudioDrawingUi,
@@ -927,29 +928,6 @@ async function prepareStudioPage(page: Page, studioUrl: string): Promise<void> {
   }));
   invariant(shellState.bodyTextLength > 0, "Studio rendered a blank document");
   invariant(!shellState.hasErrorOverlay, "Vite error overlay is visible");
-}
-
-async function activateDesktopPen(page: Page): Promise<void> {
-  const penRail = page.locator('button[data-studio-rail-tool-id="pen"]');
-  if (await penRail.count() > 0) {
-    await penRail.first().click();
-  } else {
-    await page.keyboard.press("b");
-  }
-  const toolbar = page.locator('[data-studio-draw-options="true"]');
-  await toolbar.waitFor({ state: "visible", timeout: 8_000 });
-  await page.waitForFunction(() =>
-    document.querySelector('[data-studio-draw-options="true"]')
-      ?.getAttribute("data-studio-active-draw-mode") === "pen"
-  );
-  await page.locator('[data-studio-brush-active-pill="true"]').waitFor({ state: "visible" });
-
-  const inspectorNavigator = page.getByTestId("studio-inspector-navigator");
-  await inspectorNavigator.waitFor({ state: "visible" });
-  const propertiesTab = inspectorNavigator.locator(
-    '[data-studio-inspector-primary-tab="properties"]',
-  );
-  if (await propertiesTab.getAttribute("aria-selected") !== "true") await propertiesTab.click();
 }
 
 async function activateDesktopEraser(page: Page): Promise<void> {
