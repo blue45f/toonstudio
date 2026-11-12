@@ -1,5 +1,5 @@
 import { ArrowRight, ChevronDown, FolderOpen, X } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -16,6 +16,39 @@ import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
 import { useStudioProjectLibrary } from "./useStudioProjectLibrary";
 
 const DISMISS_KEY_PREFIX = "toonstudio:active-project-bridge:dismissed:";
+const RETURN_KEY = "toonstudio:active-project-bridge:return:v1";
+type ReturnAction = "project" | "contextual";
+interface ReturnMarker {
+  readonly historyKey: string;
+  readonly pathname: string;
+  readonly routeProjectId: string | null;
+  readonly projectId: string;
+  readonly action: ReturnAction;
+}
+
+function contextStorage(): Storage | null {
+  try { return typeof window === "undefined" ? null : window.sessionStorage; }
+  catch { return null; }
+}
+
+function readReturnMarker(): ReturnMarker | null {
+  try {
+    const raw = contextStorage()?.getItem(RETURN_KEY);
+    if (!raw || raw.length > 2048) return null;
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== "object"
+      || !("historyKey" in value) || typeof value.historyKey !== "string" || value.historyKey.length > 256
+      || !("pathname" in value) || typeof value.pathname !== "string" || value.pathname.length > 512
+      || !("routeProjectId" in value) || (value.routeProjectId !== null && (typeof value.routeProjectId !== "string" || value.routeProjectId.length > 160))
+      || !("projectId" in value) || typeof value.projectId !== "string" || !value.projectId || value.projectId.length > 160
+      || !("action" in value) || (value.action !== "project" && value.action !== "contextual")) return null;
+    return { historyKey: value.historyKey, pathname: value.pathname, routeProjectId: value.routeProjectId, projectId: value.projectId, action: value.action };
+  } catch { return null; }
+}
+
+function isNativeProjectHistoryReturn(): boolean {
+  return globalThis.performance?.getEntriesByType?.("navigation").some((entry) => "type" in entry && entry.type === "back_forward") ?? false;
+}
 
 function dismissKey(pathname: string, projectId: string): string {
   const area = pathname.split("/").filter(Boolean)[0] ?? "home";
@@ -23,7 +56,7 @@ function dismissKey(pathname: string, projectId: string): string {
 }
 
 export function ActiveProjectContextBridge() {
-  const { pathname, search } = useLocation();
+  const { pathname, search, key: historyKey } = useLocation();
   const korean = useI18n((state) => state.lang.startsWith("ko"));
   const locale = korean ? "ko" : "en";
   const library = useStudioProjectLibrary(locale, "active");
@@ -34,16 +67,19 @@ export function ActiveProjectContextBridge() {
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const routeKey = `${pathname}${search}`;
-  const [manualSelection, setManualSelection] = useState<{ routeKey: string; projectId: string } | null>(null);
-  const manualProjectId = manualSelection?.routeKey === routeKey ? manualSelection.projectId : null;
-
   const explicitProjectId = useMemo(
     () => activeProjectIdFromLocation(pathname, search),
     [pathname, search],
   );
-  const storedProjectId = typeof window === "undefined"
-    ? null
-    : readActiveProjectContext(window.sessionStorage);
+  // 탭·검색 조건은 작품 선택을 바꾸지 않는다. URL이 다른 작품을 명시하면 기존 우선순위를 따른다.
+  const selectionKey = `${pathname}\n${explicitProjectId ?? ""}`;
+  const [manualSelection, setManualSelection] = useState<{ selectionKey: string; projectId: string } | null>(() => {
+    const marker = readReturnMarker();
+    return isNativeProjectHistoryReturn() && marker?.historyKey === historyKey && marker.pathname === pathname
+      && marker.routeProjectId === explicitProjectId ? { selectionKey, projectId: marker.projectId } : null;
+  });
+  const manualProjectId = manualSelection?.selectionKey === selectionKey ? manualSelection.projectId : null;
+  const storedProjectId = readActiveProjectContext(contextStorage());
   const projectOptions = useMemo(() => [...library.projects]
     .sort((left, right) => Date.parse(right.lastOpenedAt) - Date.parse(left.lastOpenedAt)), [library.projects]);
   const recentProject = projectOptions[0] ?? null;
@@ -54,7 +90,7 @@ export function ActiveProjectContextBridge() {
 
   useEffect(() => {
     if (!selectedProject || typeof window === "undefined") return;
-    writeActiveProjectContext(window.sessionStorage, selectedProject.id);
+    writeActiveProjectContext(contextStorage(), selectedProject.id);
   }, [selectedProject]);
 
   useEffect(() => {
@@ -83,6 +119,30 @@ export function ActiveProjectContextBridge() {
     return () => details.removeEventListener("keydown", onKeyDown);
   }, [dismissed, routeKey, selectedProject?.id]);
 
+  useEffect(() => {
+    const restore = (historyReturn: boolean) => {
+      const marker = readReturnMarker();
+      if (!marker || marker.historyKey !== historyKey || marker.pathname !== pathname
+        || marker.routeProjectId !== explicitProjectId || marker.projectId !== selectedProject?.id) return;
+      const details = detailsRef.current;
+      if (!details || dismissed) return;
+      try { contextStorage()?.removeItem(RETURN_KEY); } catch { /* 저장이 막혀도 현재 화면은 유지한다. */ }
+      if (!historyReturn) return;
+      const focused = document.activeElement;
+      // 일반 진입과 외부 입력의 초점은 건드리지 않고, 표식을 만든 native 복귀에만 적용한다.
+      if (focused && focused !== document.body && focused !== document.documentElement
+        && focused.id !== "main-content" && !asideRef.current?.contains(focused)) return;
+      const target = details.querySelector<HTMLAnchorElement>(`[data-active-project-return-action="${marker.action}"]`);
+      if (!target) return;
+      details.open = true;
+      target.focus({ preventScroll: true });
+    };
+    const onPageShow = (event: PageTransitionEvent) => { if (event.persisted) restore(true); };
+    restore(isNativeProjectHistoryReturn());
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [dismissed, explicitProjectId, historyKey, pathname, selectedProject?.id]);
+
   if (!supportsActiveProjectBridge(pathname) || !selectedProject || dismissed) return null;
 
   const contextual = contextualProjectHref(pathname, selectedProject.id);
@@ -101,11 +161,21 @@ export function ActiveProjectContextBridge() {
     setDismissed(true);
   };
   const selectProject = (projectId: string) => {
-    setManualSelection({ routeKey, projectId });
+    setManualSelection({ selectionKey, projectId });
     setDismissed(false);
     if (typeof window !== "undefined") {
-      writeActiveProjectContext(window.sessionStorage, projectId);
+      writeActiveProjectContext(contextStorage(), projectId);
     }
+  };
+
+  const rememberReturn = (event: MouseEvent<HTMLAnchorElement>, action: ReturnAction) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const href = event.currentTarget.getAttribute("href");
+    if (!href || !(href === "/studio" || href.startsWith("/studio/"))) return;
+    // 문서 경계를 넘는 출발만 기록하며 주소 query·원고·저장 상태는 복제하지 않는다.
+    try {
+      contextStorage()?.setItem(RETURN_KEY, JSON.stringify({ historyKey, pathname, routeProjectId: explicitProjectId, projectId: selectedProject.id, action }));
+    } catch { /* 복귀 표식이 없어도 기존 링크 이동은 계속한다. */ }
   };
 
   const sampleKind = selectedProject.id === EXAMPLE_PROJECT_ID
@@ -174,11 +244,11 @@ export function ActiveProjectContextBridge() {
             </p>
           </div>
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
-            <Link href={projectHref} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2 transition hover:border-line-strong hover:text-fg motion-reduce:transition-none">
+            <Link href={projectHref} data-active-project-return-action="project" onClick={(event) => rememberReturn(event, "project")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2 transition hover:border-line-strong hover:text-fg motion-reduce:transition-none">
               <FolderOpen size={15} aria-hidden="true" />
               {korean ? "프로젝트" : "Project"}
             </Link>
-            <Link href={contextual.href} className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-black text-on-accent shadow-sm transition hover:bg-accent-2 motion-reduce:transition-none">
+            <Link href={contextual.href} data-active-project-return-action="contextual" onClick={(event) => rememberReturn(event, "contextual")} className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-black text-on-accent shadow-sm transition hover:bg-accent-2 motion-reduce:transition-none">
               {korean ? contextual.labelKo : contextual.labelEn}
               <ArrowRight size={15} aria-hidden="true" className="shrink-0" />
             </Link>

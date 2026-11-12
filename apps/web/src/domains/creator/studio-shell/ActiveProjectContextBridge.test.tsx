@@ -9,16 +9,31 @@ import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
 import { ActiveProjectContextBridge } from "./ActiveProjectContextBridge";
 
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
-import type { PropsWithChildren } from "react";
+import type { AnchorHTMLAttributes, PropsWithChildren } from "react";
 
 const CONTEXT_KEY = "toonstudio:active-project-context:v1";
+const RETURN_KEY = "toonstudio:active-project-bridge:return:v1";
+const originalNavigationEntries = Object.getOwnPropertyDescriptor(window.performance, "getEntriesByType");
+function nativeNavigationType(type: "navigate" | "reload" | "back_forward") {
+  Object.defineProperty(window.performance, "getEntriesByType", {
+    configurable: true,
+    value: (entryType: string) => entryType === "navigation" ? [{ entryType, type }] : [],
+  });
+}
+function nativePageReturn() {
+  const event = new Event("pageshow");
+  Object.defineProperty(event, "persisted", { value: true });
+  fireEvent(window, event);
+}
 const fixtures = vi.hoisted(() => ({ projects: [] as StudioProjectLibraryEntry[], lang: "ko" }));
 
 vi.mock("@/shared/lib/i18n", () => ({
   useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: fixtures.lang }),
 }));
 vi.mock("@/shared/navigation/router-link", () => ({
-  default: ({ children, href, ...props }: PropsWithChildren<{ href: string }>) => <a href={href} {...props}>{children}</a>,
+  default: ({ children, href, onClick, ...props }: PropsWithChildren<AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }>) => <a href={href} {...props} onClick={(event) => {
+    onClick?.(event); event.preventDefault();
+  }}>{children}</a>,
 }));
 vi.mock("./useStudioProjectLibrary", () => ({
   useStudioProjectLibrary: () => ({ projects: fixtures.projects, state: null, error: null, reload: vi.fn() }),
@@ -43,13 +58,15 @@ function ContextHarness() {
     <button onClick={() => navigate("/market?project=project-a")}>마켓으로</button>
     <button onClick={() => navigate("/learn?project=project-b")}>다른 작품 학습</button>
     <button onClick={() => navigate(-1)}>뒤로</button>
+    <button onClick={() => navigate("/learn?project=project-a&view=library&q=채색")}>검색 조건 변경</button>
+    <button onClick={() => navigate("/learn?view=library&q=채색")}>일반 검색 조건 변경</button>
     <input aria-label="페이지의 다른 입력" />
     <ActiveProjectContextBridge />
     <h1>페이지 본문</h1>
   </main>;
 }
-function show(route = "/market") {
-  return render(<MemoryRouter initialEntries={[route]}><ContextHarness /></MemoryRouter>);
+function show(route = "/market", key = "source-entry") {
+  return render(<MemoryRouter initialEntries={[{ pathname: route.split("?")[0], search: route.includes("?") ? `?${route.split("?")[1]}` : "", key }]}><ContextHarness /></MemoryRouter>);
 }
 function disclosure() {
   const node = document.querySelector("[data-active-project-context] details");
@@ -70,13 +87,17 @@ function selectedTitle() {
 }
 
 beforeEach(() => {
-  window.sessionStorage.clear(); fixtures.lang = "ko";
+  window.sessionStorage.clear(); fixtures.lang = "ko"; nativeNavigationType("navigate");
   fixtures.projects = [
     project("project-a", "최근 작품", "2026-09-26T02:00:00.000Z"),
     project("project-b", "두 번째 작품", "2026-09-25T02:00:00.000Z"),
   ];
 });
-afterEach(() => { cleanup(); window.sessionStorage.clear(); });
+afterEach(() => {
+  cleanup(); window.sessionStorage.clear(); vi.restoreAllMocks();
+  if (originalNavigationEntries) Object.defineProperty(window.performance, "getEntriesByType", originalNavigationEntries);
+  else Reflect.deleteProperty(window.performance, "getEntriesByType");
+});
 
 describe("현재 작품 메뉴의 정보 밀도와 선택", () => {
   it("작품명은 기본 노출하고 부가 행동은 이름 있는 같은 메뉴에서 연다", () => {
@@ -255,5 +276,105 @@ describe("기존 선택 우선순위와 영역별 복귀", () => {
     fireEvent.click(screen.getByRole("button", { name: "다른 작품 학습" }));
     await waitFor(() => expect(selectedTitle()?.textContent).toBe("두 번째 작품"));
     expect(window.sessionStorage.getItem("toonstudio:active-project-bridge:dismissed:learn:project-b")).toBeNull();
+  });
+});
+
+
+describe("현재 작품의 검색 선택과 실제 문서 경계 복귀", () => {
+  it.each([
+    ["/learn?project=project-a", "검색 조건 변경"],
+    ["/learn", "일반 검색 조건 변경"],
+  ])("%s의 탭·검색 변경은 수동 작품 선택을 유지한다", (route, action) => {
+    show(route); openMenu();
+    fireEvent.change(screen.getByRole("combobox", { name: "작품 바꾸기" }), { target: { value: "project-b" } });
+    fireEvent.click(screen.getByRole("button", { name: action }));
+    expect(selectedTitle()?.textContent).toBe("두 번째 작품");
+    expect(window.sessionStorage.getItem(CONTEXT_KEY)).toBe("project-b");
+    expect(disclosure().open).toBe(false);
+  });
+
+  it("프로젝트로 나간 history entry로 native Back하면 메뉴와 원래 링크 초점을 복원한다", async () => {
+    const first = show("/learn"); openMenu();
+    const projectLink = screen.getByRole("link", { name: "프로젝트" });
+    projectLink.focus(); fireEvent.click(projectLink);
+    expect(window.sessionStorage.getItem(RETURN_KEY)).not.toBeNull();
+    first.unmount(); nativeNavigationType("back_forward");
+    show("/learn");
+    await waitFor(() => expect(disclosure().open).toBe(true));
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: "프로젝트" }));
+    expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
+    expect(window.sessionStorage.getItem(CONTEXT_KEY)).toBe("project-a");
+  });
+
+  it("소재 추가의 native 경계와 BFCache 복귀도 실제 연결 행동으로 초점을 돌린다", () => {
+    show("/market"); openMenu();
+    const link = screen.getByRole("link", { name: /이 작품에 소재 추가/u });
+    link.focus(); fireEvent.click(link);
+    expect(window.sessionStorage.getItem(RETURN_KEY)).not.toBeNull();
+    disclosure().open = false; link.blur();
+    nativePageReturn();
+    expect(disclosure().open).toBe(true);
+    expect(document.activeElement).toBe(link);
+    expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
+  });
+
+  it.each(["navigate", "reload"] as const)("같은 주소의 일반 %s 진입은 과거 복귀 기록으로 초점을 옮기지 않는다", (type) => {
+    const first = show("/learn"); openMenu();
+    fireEvent.click(screen.getByRole("link", { name: "프로젝트" }));
+    first.unmount(); nativeNavigationType(type);
+    show("/learn");
+    expect(disclosure().open).toBe(false);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it.each([
+    ["/learn", "another-entry"],
+    ["/market", "source-entry"],
+    ["/learn?project=project-b", "source-entry"],
+  ])("다른 URL·history key·작품인 %s/%s에서는 초점을 가로채지 않는다", (route, key) => {
+    const first = show("/learn"); openMenu();
+    fireEvent.click(screen.getByRole("link", { name: "프로젝트" }));
+    first.unmount(); nativeNavigationType("back_forward");
+    show(route, key);
+    expect(disclosure().open).toBe(false);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("다른 입력에 이미 복원된 초점은 BFCache 복귀가 빼앗지 않는다", () => {
+    show("/learn"); openMenu();
+    fireEvent.click(screen.getByRole("link", { name: "프로젝트" }));
+    const outside = screen.getByRole("textbox", { name: "페이지의 다른 입력" }); outside.focus();
+    disclosure().open = false;
+    nativePageReturn();
+    expect(document.activeElement).toBe(outside);
+    expect(disclosure().open).toBe(false);
+  });
+
+  it.each([{ ctrlKey: true }, { metaKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 }])("다른 탭/보조 클릭 %j에는 현재 탭 복귀 기록을 쓰지 않는다", (modifiers) => {
+    show("/learn"); openMenu();
+    fireEvent.click(screen.getByRole("link", { name: "프로젝트" }), modifiers);
+    expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
+  });
+
+  it("이미 취소된 클릭이나 일반 실습 링크에는 native 복귀 기록을 쓰지 않는다", () => {
+    show("/learn"); openMenu();
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true }); event.preventDefault();
+    fireEvent(screen.getByRole("link", { name: "프로젝트" }), event);
+    expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: /이 작품에서 실습/u }));
+    expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
+  });
+
+  it("sessionStorage getter가 거부돼도 선택과 프로젝트 링크를 계속 쓴다", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, "sessionStorage");
+    Object.defineProperty(window, "sessionStorage", { configurable: true, get() { throw new DOMException("storage denied", "SecurityError"); } });
+    try {
+      show("/learn"); openMenu();
+      fireEvent.change(screen.getByRole("combobox", { name: "작품 바꾸기" }), { target: { value: "project-b" } });
+      expect(selectedTitle()?.textContent).toBe("두 번째 작품");
+      expect(() => fireEvent.click(screen.getByRole("link", { name: "프로젝트" }))).not.toThrow();
+    } finally {
+      if (descriptor) Object.defineProperty(window, "sessionStorage", descriptor);
+    }
   });
 });
