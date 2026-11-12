@@ -41,23 +41,26 @@ const valid: StudioFilterResponsiveLayout = {
   })),
 };
 
-describe("필터 게이트는 서비스 배너를 먼저 치운다", () => {
+describe("필터 게이트는 연결 안내를 보존하고 실제 작업 배치에서 측정한다", () => {
   const gate = () => readFileSync(
     new URL("../verify-studio-filter-dialog.mts", import.meta.url), "utf8");
 
-  it("degraded 배너를 확인한 뒤 필터 창을 열기 전에 제거한다", () => {
+  it("실제 연결 안내를 읽고 닫은 뒤 메뉴 작업 배치를 연다", () => {
     const source = gate();
-    const waitIndex = source.indexOf(`page.locator('[data-service-degraded-banner="degraded"]')`);
-    const removeIndex = source.indexOf('?.remove()');
-    expect(waitIndex).toBeGreaterThan(-1);
-    expect(removeIndex).toBeGreaterThan(waitIndex);
+    const statusIndex = source.indexOf("await verifyStudioServiceStatusAccess(page)");
+    const workspaceIndex = source.indexOf("await prepareFilterMenuWorkspace(page)");
+    expect(statusIndex).toBeGreaterThan(-1);
+    expect(workspaceIndex).toBeGreaterThan(statusIndex);
+    expect(source).not.toMatch(/\.remove\(|\.removeChild\(/u);
   });
-  it("배너 제거는 측정 전에 일어난다", () => {
+  it("원본 픽셀과 반응형 영역은 같은 메뉴 작업 배치를 준비한 뒤 측정한다", () => {
     const source = gate();
-    const removeIndex = source.indexOf('?.remove()');
+    const workspaceIndex = source.indexOf("await prepareFilterMenuWorkspace(page)");
+    const baselineIndex = source.indexOf("const liveBaseline = await screenshotClipped(page, clip)");
     const measureIndex = source.indexOf("await measureStudioFilterResponsiveLayout(page)");
-    expect(removeIndex).toBeGreaterThan(-1);
-    expect(measureIndex).toBeGreaterThan(removeIndex);
+    expect(workspaceIndex).toBeGreaterThan(-1);
+    expect(baselineIndex).toBeGreaterThan(workspaceIndex);
+    expect(measureIndex).toBeGreaterThan(baselineIndex);
   });
 });
 

@@ -48,6 +48,7 @@ import {
   nudgeFirstParameterSlider, prepareStudioFilterGalleryForVerification,
   STUDIO_FILTER_TARGET_DESCRIPTION, studioFilterDialogSurface, studioFilterTargetFromDescription,
 } from "./lib/studio-filter-dialog-surface";
+import { prepareFilterMenuWorkspace } from "./lib/studio-filter-menu-workspace";
 import {
   measureStudioFilterResponsiveLayout, studioFilterResponsiveLayoutIssues, waitForStudioFilterLayoutSettled,
   type StudioFilterResponsiveLayout,
@@ -213,37 +214,6 @@ function collectBrowserErrors(
     }
     if (AUTHENTICATED || !isOptionalStudioPreviewApiError(message, previewUrl)) collector.failedResponses.push(message);
   });
-}
-
-/** 전체 메뉴·목록·이미지 삽입을 검증하는 이 수집기에서만, 원본 픽셀을 재기 전에 실제 메뉴 배치를 연다. */
-async function prepareFilterMenuWorkspace(page: Page): Promise<void> {
-  const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').first();
-  if (!await clarity.isVisible()) return;
-  const deadline = Date.now() + 10_000;
-  const remaining = () => {
-    const value = deadline - Date.now();
-    if (value <= 0) throw new Error("필터 메뉴 작업 배치 진입 10000ms 예산을 초과했습니다.");
-    return value;
-  };
-  const originalUrl = page.url();
-  const shell = page.locator("#studio-app-shell");
-  const originalDensity = await shell.getAttribute("data-studio-ui-density", { timeout: remaining() });
-  const more = page.locator('summary[data-studio-clarity-more-trigger="true"]:visible');
-  invariant(await more.count() === 1, "필터 검증의 실제 더보기 진입점은 하나여야 합니다");
-  await more.click({ timeout: remaining() });
-  const tools = page.getByRole("dialog", { name: "원고 도구", exact: true });
-  await tools.waitFor({ state: "visible", timeout: remaining() });
-  const advanced = tools.locator("details.studio-drawing-task-advanced");
-  const summary = advanced.locator(":scope > summary");
-  invariant((await summary.innerText({ timeout: remaining() })).trim() === "레이어와 기존 작업 배치", "메뉴 도구의 접힌 목적 이름이 다릅니다");
-  if (!await advanced.evaluate(element => (element as HTMLDetailsElement).open)) await summary.click({ timeout: remaining() });
-  await tools.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true }).click({ timeout: remaining() });
-  await tools.waitFor({ state: "hidden", timeout: remaining() });
-  await page.locator('[data-studio-main-menu="true"]').waitFor({ state: "visible", timeout: remaining() });
-  invariant(page.url() === originalUrl, "메뉴 배치 진입이 필터 대상 원고 URL을 바꿨습니다");
-  invariant(await shell.getAttribute("data-studio-ui-density", { timeout: remaining() }) === originalDensity,
-    "메뉴 배치 진입이 사용자의 화면 구성 설정을 바꿨습니다");
-  log("메뉴·전체 필터 목록·이미지 삽입 검증을 위해 실제 프로젝트·창 도구를 열었습니다. 기본 Clarity 직접 필터 진입 검증과 별도입니다.");
 }
 
 /**
@@ -806,7 +776,10 @@ async function main(runtime?: AuthenticatedRuntime): Promise<void> {
       await waitForStudioCollaborationDocumentLane(page, new Set(["synced"]));
     }
     // 메뉴로 전환한 뒤 같은 화면 배치에서 원본·적용·실행취소 픽셀을 비교한다.
-    await prepareFilterMenuWorkspace(page);
+    const openedMenuWorkspace = await prepareFilterMenuWorkspace(page);
+    if (openedMenuWorkspace) {
+      log("메뉴·전체 필터 목록·이미지 삽입 검증을 위해 실제 프로젝트·창 도구를 열었습니다. 기본 Clarity 직접 필터 진입 검증과 별도입니다.");
+    }
     await activatePenAndDraw(page);
     let originalDocument = await waitForSavedPages(page, (document) =>
       document.pagesList.flatMap((item) => item.elements ?? []).filter((item) =>

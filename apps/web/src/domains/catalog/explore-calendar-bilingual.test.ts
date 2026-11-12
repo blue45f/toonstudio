@@ -93,7 +93,7 @@ function scan(source: string): { stripped: string; literals: Literal[] } {
 /** 장르 정본의 필터 ID는 번역 문구가 아니다. GENRES.filter의 includes 배열만 한정한다. */
 function isCanonicalGenreMembership(stripped: string, lit: Literal): boolean {
   if (!GENRES.some((genre) => genre === lit.raw.slice(1, -1))) return false;
-  const memberships = /\bGENRES\.filter\(\s*\(\s*([A-Za-z_$][\w$]*)\s*\)\s*=>\s*(\[[^\[\]]*\])\s*\.includes\(\s*\1\s*\)\s*\)/gu;
+  const memberships = /\bGENRES\.filter\(\s*\(\s*([A-Za-z_$][\w$]*)\s*\)\s*=>\s*(\[[^[\]]*\])\s*\.includes\(\s*\1\s*\)\s*\)/gu;
   for (const match of stripped.matchAll(memberships)) {
     const array = match[2];
     if (!array || match.index === undefined) continue;
