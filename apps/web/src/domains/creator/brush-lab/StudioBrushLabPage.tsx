@@ -7,10 +7,11 @@ import {
   Gauge,
   GitFork,
   Library,
+  RotateCcw,
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -20,6 +21,7 @@ import { registerStudioBrushGrainSourcesV1 } from "../brush/studio-brush-grain-s
 import {
   STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS,
   pinStudioCompetitorFavoritesToProductRepository,
+  type StudioFavoriteSlotPinResult,
 } from "../brush/studio-competitor-favorite-slots";
 import { refineStudioCompetitorFreehandStroke } from "../brush/studio-competitor-stroke-refinement";
 import {
@@ -116,6 +118,49 @@ const WAVE37_FLAGSHIP_RECIPES = [
   },
 ] as const;
 
+function resolveToolbarNextIndex(
+  event: KeyboardEvent<HTMLButtonElement>,
+  currentIndex: number,
+  total: number,
+  allowDigits = false,
+): { readonly nextIndex: number; readonly digitShortcut: boolean } | null {
+  if (total <= 0) return null;
+  if (
+    allowDigits
+    && !event.altKey
+    && !event.ctrlKey
+    && !event.metaKey
+    && !event.shiftKey
+    && /^[1-9]$/u.test(event.key)
+  ) {
+    const slot = Number(event.key) - 1;
+    if (slot >= 0 && slot < total) {
+      return { nextIndex: slot, digitShortcut: true };
+    }
+  }
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    return { nextIndex: (currentIndex + 1) % total, digitShortcut: false };
+  }
+  if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    return { nextIndex: (currentIndex - 1 + total) % total, digitShortcut: false };
+  }
+  if (event.key === "Home") {
+    return { nextIndex: 0, digitShortcut: false };
+  }
+  if (event.key === "End") {
+    return { nextIndex: total - 1, digitShortcut: false };
+  }
+  return null;
+}
+
+function focusToolbarButtonAt(currentButton: HTMLButtonElement, nextIndex: number): void {
+  const toolbar = currentButton.closest<HTMLElement>('[role="toolbar"]');
+  const buttons = toolbar?.querySelectorAll<HTMLButtonElement>("button");
+  const target = buttons?.[nextIndex];
+  target?.focus({ preventScroll: true });
+  target?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+}
+
 /** Render the canonical full editor for the single Brush Studio product. */
 export function StudioBrushLabPage() {
   const params = useParams<{ workId?: string; sourceWorkId?: string; brushId?: string }>();
@@ -127,7 +172,9 @@ export function StudioBrushLabPage() {
   const [stylusCurve, setStylusCurve] = useState<(typeof STYLUS_CURVES)[number]["id"]>("scurve-soft-ink");
   const [wave37RecipeId, setWave37RecipeId] =
     useState<(typeof WAVE37_FLAGSHIP_RECIPES)[number]["id"]>("csp-real-gpen-aa");
-  const [pinnedSlotsCount, setPinnedSlotsCount] = useState<number | null>(null);
+  const [pinResult, setPinResult] = useState<StudioFavoriteSlotPinResult | null>(null);
+  const [pinError, setPinError] = useState<boolean>(false);
+  const [isPinningFavorites, setIsPinningFavorites] = useState<boolean>(false);
   const activeKernel = KERNEL_MODES.find((item) => item.id === kernelMode) ?? KERNEL_MODES[0];
   const activeCurve = STYLUS_CURVES.find((item) => item.id === stylusCurve) ?? STYLUS_CURVES[0];
   const activeWave37Recipe =
@@ -146,6 +193,42 @@ export function StudioBrushLabPage() {
     [activeWave37Recipe.spacing, activeWave37Recipe.taper],
   );
 
+  function selectKernelMode(nextId: (typeof KERNEL_MODES)[number]["id"]): void {
+    setKernelMode(nextId);
+    globalThis.dispatchEvent?.(
+      new CustomEvent("toonspectrum:brush-lab-rea-preset", {
+        detail: { kernelMode: nextId },
+      }),
+    );
+  }
+
+  function selectStylusCurve(nextId: (typeof STYLUS_CURVES)[number]["id"]): void {
+    setStylusCurve(nextId);
+    globalThis.dispatchEvent?.(
+      new CustomEvent("toonspectrum:brush-lab-rea-preset", {
+        detail: { stylusCurve: nextId },
+      }),
+    );
+  }
+
+  async function runPinFavorites(resetCustomizations: boolean): Promise<void> {
+    if (isPinningFavorites) return;
+    setIsPinningFavorites(true);
+    setPinError(false);
+    try {
+      const result = await pinStudioCompetitorFavoritesToProductRepository(
+        undefined,
+        resetCustomizations ? { resetCustomizations: true } : undefined,
+      );
+      setPinResult(result);
+    } catch {
+      setPinError(true);
+      setPinResult(null);
+    } finally {
+      setIsPinningFavorites(false);
+    }
+  }
+
   const context = resolveStudioBrushEditorContext(params, location.search);
   useEffect(() => {
     registerStudioBrushGrainSourcesV1();
@@ -163,6 +246,8 @@ export function StudioBrushLabPage() {
         srcSet: "/brand/hero-20261009/brush-lab-hero-960.webp 960w, /brand/hero-20261009/brush-lab-hero.webp 1680w",
         alt: "붓과 잉크, 수채 도구와 펜 태블릿이 놓인 작가 책상에서 만화 원고를 그리는 손",
       };
+
+  const pinNeedsAttention = pinError || pinResult?.status === "memory-only";
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1920px] px-4 py-5 sm:px-6 lg:px-8">
@@ -343,61 +428,78 @@ export function StudioBrushLabPage() {
           <span className="text-xs font-semibold text-fg-2">
             {pickLang("커널 모드:", "Kernel Mode:")}
           </span>
-          {KERNEL_MODES.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              data-testid={`brush-lab-rea-kernel-${item.id}`}
-              aria-pressed={kernelMode === item.id}
-              onClick={() => {
-                setKernelMode(item.id);
-                globalThis.dispatchEvent?.(
-                  new CustomEvent("toonspectrum:brush-lab-rea-preset", {
-                    detail: { kernelMode: item.id },
-                  }),
-                );
-              }}
-              className={
-                kernelMode === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
-              }
-            >
-              {pickLang(item.ko, item.en)}
-            </button>
-          ))}
+          <div
+            role="toolbar"
+            aria-label={pickLang("커널 모드 선택", "Select Kernel Mode")}
+            className="flex flex-wrap items-center gap-2"
+          >
+            {KERNEL_MODES.map((item, idx) => (
+              <button
+                key={item.id}
+                type="button"
+                tabIndex={kernelMode === item.id ? 0 : -1}
+                data-testid={`brush-lab-rea-kernel-${item.id}`}
+                aria-pressed={kernelMode === item.id}
+                onClick={() => selectKernelMode(item.id)}
+                onKeyDown={(event) => {
+                  const nav = resolveToolbarNextIndex(event, idx, KERNEL_MODES.length);
+                  const next = nav ? KERNEL_MODES[nav.nextIndex] : undefined;
+                  if (!nav || !next) return;
+                  event.preventDefault();
+                  selectKernelMode(next.id);
+                  focusToolbarButtonAt(event.currentTarget, nav.nextIndex);
+                }}
+                className={`${
+                  kernelMode === item.id
+                    ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                } ${STUDIO_FOCUS_RING}`}
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold text-fg-2">
             {pickLang("스타일러스 곡선:", "Stylus Curve:")}
           </span>
-          {STYLUS_CURVES.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              data-testid={`brush-lab-rea-curve-${item.id}`}
-              aria-pressed={stylusCurve === item.id}
-              onClick={() => {
-                setStylusCurve(item.id);
-                globalThis.dispatchEvent?.(
-                  new CustomEvent("toonspectrum:brush-lab-rea-preset", {
-                    detail: { stylusCurve: item.id },
-                  }),
-                );
-              }}
-              className={
-                stylusCurve === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
-              }
-            >
-              {pickLang(item.ko, item.en)}
-            </button>
-          ))}
+          <div
+            role="toolbar"
+            aria-label={pickLang("스타일러스 곡선 선택", "Select Stylus Curve")}
+            className="flex flex-wrap items-center gap-2"
+          >
+            {STYLUS_CURVES.map((item, idx) => (
+              <button
+                key={item.id}
+                type="button"
+                tabIndex={stylusCurve === item.id ? 0 : -1}
+                data-testid={`brush-lab-rea-curve-${item.id}`}
+                aria-pressed={stylusCurve === item.id}
+                onClick={() => selectStylusCurve(item.id)}
+                onKeyDown={(event) => {
+                  const nav = resolveToolbarNextIndex(event, idx, STYLUS_CURVES.length);
+                  const next = nav ? STYLUS_CURVES[nav.nextIndex] : undefined;
+                  if (!nav || !next) return;
+                  event.preventDefault();
+                  selectStylusCurve(next.id);
+                  focusToolbarButtonAt(event.currentTarget, nav.nextIndex);
+                }}
+                className={`${
+                  stylusCurve === item.id
+                    ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                } ${STUDIO_FOCUS_RING}`}
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            ))}
+          </div>
         </div>
         <p
           data-testid="brush-lab-rea-status"
           aria-live="polite"
+          aria-atomic="true"
           className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
         >
           {pickLang(
@@ -425,8 +527,8 @@ export function StudioBrushLabPage() {
             </p>
             <p className="mt-1 text-xs text-fg-2">
               {pickLang(
-                "아래 플래그십 브러시는 드로잉 캔버스 머티리얼 엔진(V7.3)과 브러시 스튜디오에 동시 등록되어 바로 사용할 수 있습니다.",
-                "Flagship V7.3 recipes below run natively inside both Brush Studio and the live drawing canvas.",
+                "아래 플래그십 브러시는 드로잉 캔버스 머티리얼 엔진(V7.4)과 브러시 스튜디오에 동시 등록되어 바로 사용할 수 있습니다.",
+                "Flagship V7.4 recipes below run natively inside both Brush Studio and the live drawing canvas.",
               )}
             </p>
           </div>
@@ -456,55 +558,97 @@ export function StudioBrushLabPage() {
             ))}
           </svg>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {WAVE37_FLAGSHIP_RECIPES.map((recipe) => (
+        <div
+          role="toolbar"
+          aria-label={pickLang("플래그십 6종 레시피 선택 (방향키·숫자 1~6)", "Select 6 Flagship Recipes (Arrow Keys or 1-6)")}
+          className="mt-3 flex flex-wrap items-center gap-2"
+        >
+          {WAVE37_FLAGSHIP_RECIPES.map((recipe, idx) => (
             <button
               key={recipe.id}
               type="button"
+              tabIndex={wave37RecipeId === recipe.id ? 0 : -1}
+              aria-keyshortcuts={String(idx + 1)}
               data-testid={`brush-lab-wave37-recipe-${recipe.id}`}
               aria-pressed={wave37RecipeId === recipe.id}
               onClick={() => setWave37RecipeId(recipe.id)}
-              className={
+              onKeyDown={(event) => {
+                const nav = resolveToolbarNextIndex(event, idx, WAVE37_FLAGSHIP_RECIPES.length, true);
+                const next = nav ? WAVE37_FLAGSHIP_RECIPES[nav.nextIndex] : undefined;
+                if (!nav || !next) return;
+                event.preventDefault();
+                setWave37RecipeId(next.id);
+                focusToolbarButtonAt(event.currentTarget, nav.nextIndex);
+              }}
+              className={`${
                 wave37RecipeId === recipe.id
                   ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
                   : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
-              }
+              } ${STUDIO_FOCUS_RING}`}
             >
-              {pickLang(recipe.ko, recipe.en)}
+              {pickLang(`${idx + 1}. ${recipe.ko}`, `${idx + 1}. ${recipe.en}`)}
             </button>
           ))}
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <button
-            type="button"
-            data-testid="brush-lab-pin-favorites-btn"
-            onClick={() => {
-              void pinStudioCompetitorFavoritesToProductRepository().then((res) => {
-                setPinnedSlotsCount(res.pinnedCount);
-              });
-            }}
-            className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent hover:bg-accent/20"
-          >
-            {pickLang(
-              `원고 캔버스 빠른 선반에 플래그십 ${STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS.length}종 고정 배치`,
-              `Pin ${STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS.length} Flagships to Canvas Quick Shelf`,
-            )}
-          </button>
-          {pinnedSlotsCount !== null ? (
-            <span
-              role="status"
-              data-testid="brush-lab-pin-favorites-status"
-              className="font-mono text-xs font-semibold text-accent"
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={isPinningFavorites}
+              aria-busy={isPinningFavorites || undefined}
+              data-testid="brush-lab-pin-favorites-btn"
+              onClick={() => {
+                void runPinFavorites(false);
+              }}
+              className={`inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent hover:bg-accent/20 disabled:opacity-60 ${STUDIO_FOCUS_RING}`}
             >
               {pickLang(
-                `원고 캔버스 즐겨찾기 빠른 선반에 ${pinnedSlotsCount}종 고정 완료`,
-                `Pinned ${pinnedSlotsCount} flagship brushes to canvas quick shelf`,
+                `원고 캔버스 빠른 선반에 플래그십 ${STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS.length}종 고정 배치`,
+                `Pin ${STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS.length} Flagships to Canvas Quick Shelf`,
               )}
+            </button>
+            <button
+              type="button"
+              disabled={isPinningFavorites}
+              data-testid="brush-lab-restore-favorites-order-btn"
+              onClick={() => {
+                void runPinFavorites(true);
+              }}
+              className={`inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2 hover:border-line-strong hover:bg-raised disabled:opacity-60 ${STUDIO_FOCUS_RING}`}
+            >
+              <RotateCcw size={13} aria-hidden />
+              {pickLang("기본값·1~6 순서 복원", "Restore Default 1-6 Order")}
+            </button>
+          </div>
+          {pinError || pinResult !== null ? (
+            <span
+              role={pinNeedsAttention ? "alert" : "status"}
+              aria-live="polite"
+              aria-atomic="true"
+              data-testid="brush-lab-pin-favorites-status"
+              className={`font-mono text-xs font-semibold ${pinNeedsAttention ? "text-bad" : "text-accent"}`}
+            >
+              {pinNeedsAttention
+                ? pickLang(
+                    "저장소 제한으로 영구 저장하지 못하고 현재 화면 복구본만 준비했어요. 공간 확인 후 다시 시도해 주세요.",
+                    "Storage unavailable: prepared in-memory recovery slots only. Check storage and retry.",
+                  )
+                : pinResult?.status === "pinned-memory-session"
+                  ? pickLang(
+                      `현재 세션 빠른 선반에 ${pinResult.pinnedCount}종 고정 완료 (비영속 세션${pinResult.collapsedDuplicateCount > 0 ? ` · 중복 ${pinResult.collapsedDuplicateCount}개 병합` : ""})`,
+                      `Pinned ${pinResult.pinnedCount} flagships to active session quick shelf (non-persistent${pinResult.collapsedDuplicateCount > 0 ? ` · merged ${pinResult.collapsedDuplicateCount} duplicates` : ""})`,
+                    )
+                  : pickLang(
+                      `원고 캔버스 즐겨찾기 빠른 선반에 ${pinResult?.pinnedCount ?? 0}종 고정 완료${(pinResult?.collapsedDuplicateCount ?? 0) > 0 ? ` (중복 ${pinResult?.collapsedDuplicateCount}개 병합)` : ""}`,
+                      `Pinned ${pinResult?.pinnedCount ?? 0} flagship brushes to canvas quick shelf${(pinResult?.collapsedDuplicateCount ?? 0) > 0 ? ` (merged ${pinResult?.collapsedDuplicateCount} duplicates)` : ""}`,
+                    )}
             </span>
           ) : null}
         </div>
         <p
           data-testid="brush-lab-wave37-metrics"
+          aria-live="polite"
+          aria-atomic="true"
           className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-2"
         >
           {pickLang(

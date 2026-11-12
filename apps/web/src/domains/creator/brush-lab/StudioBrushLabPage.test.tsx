@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import * as favoriteSlotsModule from "../brush/studio-competitor-favorite-slots";
 import { StudioBrushLabPage } from "./StudioBrushLabPage";
 
 vi.mock("./StudioBrushIntegratedWorkbench", () => ({
@@ -26,6 +27,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   useI18n.setState({ lang: "ko" });
 });
 
@@ -74,26 +76,81 @@ describe("StudioBrushLabPage — REA 습식 안료 & 스타일러스 커브 워�
     expect(screen.getByTestId("brush-lab-rea-status").textContent).toContain("heavy-chisel-tilt");
   });
 
-  it("Wave 37/38 플래그십 레시피 전환 및 원고 캔버스 빠른 선반 원클릭 고정 배치가 동작한다", async () => {
+  it("Wave 37/38 플래그십 레시피 키보드(방향키·숫자키 1~6) 전환 및 빠른 선반 고정·순서 복원이 동작한다", async () => {
     renderBrushLab();
-    expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain("csp-real-gpen-aa");
-    fireEvent.click(screen.getByTestId("brush-lab-wave37-recipe-calligraphy-barrel-twist-nib"));
+    const firstRecipeBtn = screen.getByTestId("brush-lab-wave37-recipe-csp-real-gpen-aa");
+    expect(firstRecipeBtn.tabIndex).toBe(0);
+    expect(screen.getByTestId("brush-lab-wave37-recipe-csp-dual-chalk-ink-liner").tabIndex).toBe(-1);
+
+    fireEvent.keyDown(firstRecipeBtn, { key: "ArrowRight" });
+    expect(
+      screen.getByTestId("brush-lab-wave37-recipe-csp-dual-chalk-ink-liner").getAttribute("aria-pressed"),
+    ).toBe("true");
+
+    fireEvent.keyDown(screen.getByTestId("brush-lab-wave37-recipe-csp-dual-chalk-ink-liner"), {
+      key: "3",
+    });
     expect(
       screen.getByTestId("brush-lab-wave37-recipe-calligraphy-barrel-twist-nib").getAttribute("aria-pressed"),
     ).toBe("true");
-    expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain("calligraphy-barrel-twist-nib");
+    expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain(
+      "calligraphy-barrel-twist-nib",
+    );
 
     fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
     const pinnedStatus = await screen.findByTestId("brush-lab-pin-favorites-status");
+    expect(pinnedStatus.getAttribute("role")).toBe("status");
     expect(pinnedStatus.textContent).toContain("6종 고정 완료");
+
+    const spy = vi.spyOn(favoriteSlotsModule, "pinStudioCompetitorFavoritesToProductRepository");
+    fireEvent.click(screen.getByTestId("brush-lab-restore-favorites-order-btn"));
+    await screen.findByTestId("brush-lab-pin-favorites-status");
+    expect(spy).toHaveBeenCalledWith(undefined, { resetCustomizations: true });
   });
 
-  it("en 로케일에서는 한글이 전혀 포함되지 않는다", () => {
+  it("저장소 영속화 실패(memory-only) 시 영구 저장 완료로 가장하지 않고 role=alert 복구 안내를 표시한다", async () => {
+    vi.spyOn(
+      favoriteSlotsModule,
+      "pinStudioCompetitorFavoritesToProductRepository",
+    ).mockResolvedValueOnce({
+      status: "memory-only",
+      durable: false,
+      pinnedCount: 6,
+      collapsedDuplicateCount: 0,
+      quickShelfIds: [],
+      brushes: favoriteSlotsModule.buildStudioCompetitorFavoriteSlotBrushes(),
+      failureCode: "storage-error",
+    });
+
+    renderBrushLab();
+    fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
+    const alertNode = await screen.findByTestId("brush-lab-pin-favorites-status");
+    expect(alertNode.getAttribute("role")).toBe("alert");
+    expect(alertNode.textContent).toContain("영구 저장하지 못하고");
+  });
+
+  it("en 로케일에서는 정상·오류 상태 모두 한글이 전혀 포함되지 않는다", async () => {
     useI18n.setState({ lang: "en" });
+    vi.spyOn(
+      favoriteSlotsModule,
+      "pinStudioCompetitorFavoritesToProductRepository",
+    ).mockResolvedValueOnce({
+      status: "memory-only",
+      durable: false,
+      pinnedCount: 6,
+      collapsedDuplicateCount: 0,
+      quickShelfIds: [],
+      brushes: favoriteSlotsModule.buildStudioCompetitorFavoriteSlotBrushes(),
+      failureCode: "storage-error",
+    });
+
     renderBrushLab();
     const bar = screen.getByTestId("brush-lab-rea-wetmix-wgsl-bar");
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByTestId("brush-lab-rea-status").textContent).toContain("Kernel:");
+
+    fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
+    await screen.findByTestId("brush-lab-pin-favorites-status");
 
     const wave37Panel = screen.getByTestId("brush-lab-wave37-stroke-refinement-panel");
     expect(wave37Panel.textContent).not.toMatch(/[가-힣]/u);
