@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { GENRES } from "@/shared/lib/taxonomy";
+
 /**
  * /explore · /calendar 이중언어 편입 고정 테스트.
  *
@@ -88,7 +90,21 @@ function scan(source: string): { stripped: string; literals: Literal[] } {
   return { stripped: chars.join(""), literals };
 }
 
+/** 장르 정본의 필터 ID는 번역 문구가 아니다. GENRES.filter의 includes 배열만 한정한다. */
+function isCanonicalGenreMembership(stripped: string, lit: Literal): boolean {
+  if (!GENRES.some((genre) => genre === lit.raw.slice(1, -1))) return false;
+  const memberships = /\bGENRES\.filter\(\s*\(\s*([A-Za-z_$][\w$]*)\s*\)\s*=>\s*(\[[^\[\]]*\])\s*\.includes\(\s*\1\s*\)\s*\)/gu;
+  for (const match of stripped.matchAll(memberships)) {
+    const array = match[2];
+    if (!array || match.index === undefined) continue;
+    const start = match.index + match[0].indexOf(array);
+    if (lit.start >= start && lit.end <= start + array.length) return true;
+  }
+  return false;
+}
+
 function isCovered(stripped: string, literals: Literal[], lit: Literal): boolean {
+  if (isCanonicalGenreMembership(stripped, lit)) return true;
   const before = stripped.slice(0, lit.start).trimEnd();
   // bt("한글", "English") — bt의 첫 인자.
   if (before.endsWith("bt(")) return true;
@@ -170,6 +186,14 @@ function btCallArities(source: string): (number | ".spread")[] {
   }
   return arities;
 }
+
+it("장르 데이터 membership은 허용하되 같은 단어의 미번역 UI와 미등록 키는 계속 찾는다", () => {
+  expect(uncoveredHangul('GENRES.filter((genre) => ["로맨스", "판타지", "액션"].includes(genre))')).toEqual([]);
+  expect(uncoveredHangul('const label = "판타지";')).toEqual(['line 1: "판타지"']);
+  expect(uncoveredHangul('GENRES.filter((genre) => ["로맨스", "미등록장르"].includes(genre))'))
+    .toEqual(['line 1: "미등록장르"']);
+  expect(uncoveredHangul('<button>{"액션"}</button>')).toEqual(['line 1: "액션"']);
+});
 
 const PAGES = ["ExplorePage.tsx", "CalendarPage.tsx"] as const;
 
