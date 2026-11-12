@@ -184,15 +184,11 @@ async function waitForDocumentLane(
 
 async function enableBrushTool(page: Page): Promise<void> {
   await dismissOverlays(page);
-  const drawOptions = page.locator('[data-studio-draw-options="true"]').first();
-  if (await drawOptions.isVisible().catch(() => false)) return;
-  const drawTool = page.locator('[data-studio-rail-tool-id="draw"]').first();
-  if (await drawTool.isVisible().catch(() => false)) {
-    await drawTool.click();
-  } else {
-    await page.keyboard.press("b");
-  }
-  await drawOptions.waitFor({
+  // 기본 그리기와 저장된 전체 배치 모두에서 사용자가 보는 펜 버튼의 실제 선택 상태를 확인한다.
+  const pen = page.getByRole("button", { name: /^(펜(?: \(B\))?|Pen(?: \(B\))?)$/u }).first();
+  await pen.waitFor({ state: "visible", timeout: 10_000 });
+  if (await pen.getAttribute("aria-pressed") !== "true") await pen.click();
+  await pen.and(page.locator('[aria-pressed="true"]')).waitFor({
     state: "visible",
     timeout: 10_000,
   });

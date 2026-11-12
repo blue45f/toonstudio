@@ -8,10 +8,20 @@ export async function assertStudioWorkspaceHome(page) {
   await expect(page.locator("main h1")).toHaveCount(1);
   await expect(home.locator("#workspace-title")).toBeVisible();
   const navigation = home.locator(".workspace-nav a");
-  await expect(navigation).toHaveCount(5);
+  await expect(navigation).toHaveCount(4);
   assert.deepEqual(await navigation.evaluateAll((links) => links.map((link) => new URL(link.href).pathname)),
-    ["/home", "/studio", "/discover", "/community", "/sitemap"]);
+    ["/home", "/studio", "/discover", "/community"]);
+  // 다섯 번째 목적지는 현재 셸에서 전체 메뉴 대화상자를 여는 버튼이다.
+  const allMenu = home.locator('.workspace-nav button[data-navigation-entry="all-menu"]');
+  await expect(allMenu).toHaveAttribute("aria-haspopup", "dialog");
   await expect(home.locator("dialog[open]")).toHaveCount(0);
+  await allMenu.click();
+  await expect(allMenu).toHaveAttribute("aria-expanded", "true");
+  const navigationPanel = home.locator("dialog[open]");
+  await expect(navigationPanel.locator('a[href="/sitemap"]').first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(navigationPanel).toHaveCount(0);
+  await expect(allMenu).toBeFocused();
   await expect(page.locator(".vs2-bottom, .public-site-journey, video")).toHaveCount(0);
   const primary = home.locator(".workspace-statusbar .workspace-primary, .workspace-live-status .workspace-live-actions > a");
   await expect(primary).toBeVisible();

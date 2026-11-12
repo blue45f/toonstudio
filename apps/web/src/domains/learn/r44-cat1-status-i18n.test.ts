@@ -62,9 +62,9 @@ function placeholders(value: string): string[] {
 }
 
 describe("r44cat1.learn 사전 (44라운드 형제 등록 모듈)", () => {
-  it("ko/en 키가 패리티를 이루고 3키이며 en에 한글이 없다", () => {
+  it("ko/en 키가 패리티를 이루고 현재 소비하는 2키이며 en에 한글이 없다", () => {
     expect(Object.keys(DICTS.en).sort()).toEqual(KEYS);
-    expect(KEYS).toHaveLength(3);
+    expect(KEYS).toHaveLength(2);
     for (const key of KEYS) {
       expect(key.startsWith("r44cat1.learn."), key).toBe(true);
       expect(DICTS.ko[key], `ko missing ${key}`).toBeTruthy();

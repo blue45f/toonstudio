@@ -141,8 +141,16 @@ try {
   const dismiss = page.locator('[data-studio-quickstart-dismiss="true"]');
   if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
   await page.keyboard.press("Escape");
-  const pen = page.locator('button[data-studio-rail-tool-id="pen"]');
-  await pen.first().click();
+  // 인스펙터 팔레트 검증은 출시된 더보기 동선으로 전체 작업 배치를 연 뒤 진행한다.
+  const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]');
+  if (await clarity.isVisible()) {
+    await page.locator('[data-studio-clarity-more-trigger="true"]:visible').click();
+    await page.getByText("레이어와 기존 작업 배치", { exact: true }).click();
+    await page.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true }).click();
+    await clarity.waitFor({ state: "hidden" });
+  }
+  const pen = page.getByRole("button", { name: /^(펜(?: \(B\))?|Pen(?: \(B\))?)$/u }).first();
+  await pen.click();
   const properties = page.locator('[data-studio-inspector-primary-tab="properties"]');
   if (await properties.isVisible().catch(() => false)) await properties.click();
   const trigger = page.locator('[data-studio-drawing-palette-icon-trigger="sub-tools"]');

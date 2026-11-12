@@ -70,6 +70,7 @@ const LEARN_STATUS_KEYS = [
 
 const CONSUMERS = [
   "LearnContent.tsx",
+  "LessonSession.tsx",
   "LearningClassesPage.tsx",
   "LearningClassroomPage.tsx",
   "LearningHome.tsx",

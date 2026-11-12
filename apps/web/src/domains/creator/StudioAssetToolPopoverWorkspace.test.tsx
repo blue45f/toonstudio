@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
@@ -27,9 +27,6 @@ vi.mock("./StudioAssetToolPopoverBody", () => ({
   StudioAssetToolPopoverBody: () => (
     <div data-testid="legacy-body">기존 도구</div>
   ),
-}));
-vi.mock("./studio-chrome-ui", () => ({
-  StudioMenuPopoverHeader: () => <div data-testid="menu-header" />,
 }));
 vi.mock("./StudioUnifiedAssetPreviewSurface", () => ({
   StudioUnifiedAssetPreviewSurface: ({ preview }: { preview: { kind: string } }) => (
@@ -204,8 +201,9 @@ describe("StudioAssetToolPopoverWorkspace", () => {
   it("renders one integrated workspace without the previous duplicate subtabs", async () => {
     const { toolBelt } = createToolBelt();
     render(<StudioAssetToolPopoverWorkspace toolBelt={toolBelt} />);
-    expect(await screen.findByRole("region", { name: "통합 에셋 작업 공간" })).toBeTruthy();
-    expect(screen.getByTestId("menu-header")).toBeTruthy();
+    const workspace = await screen.findByRole("region", { name: "통합 에셋 작업 공간" });
+    expect(screen.getAllByRole("region", { name: "통합 에셋 작업 공간" })).toHaveLength(1);
+    expect(within(workspace).getByRole("searchbox", { name: "에셋 통합 검색" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "에셋 탭" })).toBeNull();
   });
 
