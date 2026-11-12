@@ -10,16 +10,17 @@ import { ensureStudioSaveProfile } from "../save-first/studio-save-profile";
 import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
 import { archiveStudioProject, createStudioProject, trashStudioProject } from "../studio-project-library-store";
 import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
+import { StudioProjectLibraryManagementContent } from "./StudioProjectLibraryManagementContent";
 import { StudioProjectLibraryManagementHeader } from "./StudioProjectLibraryManagementHeader";
 import { useStudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
 
-function HeaderHarness() {
+function HeaderHarness({ content = false }: { content?: boolean }) {
   const controller = useStudioProjectLibraryManagementController();
-  return <StudioProjectLibraryManagementHeader controller={controller} />;
+  return <><StudioProjectLibraryManagementHeader controller={controller} />{content ? <StudioProjectLibraryManagementContent controller={controller} /> : null}</>;
 }
 
-function showHeader(route = "/studio") {
-  return render(<MemoryRouter initialEntries={[route]}><HeaderHarness /></MemoryRouter>);
+function showHeader(route = "/studio", content = false) {
+  return render(<MemoryRouter initialEntries={[route]}><HeaderHarness content={content} /></MemoryRouter>);
 }
 
 beforeEach(() => {
@@ -56,25 +57,25 @@ describe("작업 홈의 첫 행동과 상태 안내", () => {
     if (configured) {
       ensureStudioSaveProfile(window.localStorage, project.id, { provider: "local-file", now: "2026-11-11T00:00:00.000Z" });
     }
-    const { container } = showHeader();
+    const { container } = showHeader("/studio", true);
     const recent = screen.getByRole("region", { name: "최근 작업 빠른 이어하기" });
     const badge = recent.querySelector('[data-studio-recent-save-badge="true"]');
     expect(badge).toBeNull();
     expect(recent.textContent).not.toMatch(/자동저장됨|정식 저장 연결됨|저장 위치 지정됨/u);
     const newWork = screen.getByRole("link", { name: "새 작업" });
-    expect(recent.compareDocumentPosition(newWork) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(newWork.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(recent).queryByRole("list", { name: "5단계 제작 공정 흐름" })).toBeNull();
-    expect(within(recent).getByRole("link", { name: "최근 작업 열기" }).getAttribute("href")).toContain(`/studio/p/${project.id}/`);
+    expect(within(recent).getByRole("link", { name: "이어서 작업" }).getAttribute("href")).toContain(`/studio/p/${project.id}/`);
     expect(within(recent).getByRole("link", { name: "작품 단계" }).getAttribute("href")).toBe(`/studio/p/${project.id}/overview`);
-    expect(container.querySelector('[data-studio-other-starts="true"]')).toBeNull();
-    expect(within(recent).getByRole("link", { name: "최근 작업 열기" }).getAttribute("data-studio-library-primary-action")).toBe("resume");
+    expect(container.querySelector<HTMLDetailsElement>('[data-studio-other-starts="true"]')?.open).toBe(false);
+    expect(within(recent).getByRole("link", { name: "이어서 작업" }).getAttribute("data-studio-library-primary-action")).toBe("resume");
   });
 
   it("기본 예제 두 개를 개인 작업과 구분하고 검색은 직접, 일괄 선택은 이름 있는 보조 도구로 제공한다", () => {
     for (const [id, title] of [[EXAMPLE_PROJECT_ID, "기본 예제"], [SAMPLE_PROJECT_ID, "기본 샘플"]]) {
       createStudioProject(window.localStorage, { id, title, kind: "webtoon", createdAt: "2026-11-11T00:00:00.000Z" });
     }
-    const { container } = showHeader();
+    const { container } = showHeader("/studio", true);
     expect(screen.getByText("개인 작업은 아직 없습니다. 아래 예제를 열어 체험할 수 있어요.")).toBeTruthy();
     expect(screen.getByRole("link", { name: /^내 작업\s*2$/u })).toBeTruthy();
     expect(screen.queryByRole("region", { name: "최근 작업 빠른 이어하기" })).toBeNull();

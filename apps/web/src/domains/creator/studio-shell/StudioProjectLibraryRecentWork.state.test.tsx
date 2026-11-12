@@ -38,7 +38,7 @@ function Harness({ content = false }: { content?: boolean }) {
   return <><StudioProjectLibraryManagementHeader controller={controller} />{content ? <StudioProjectLibraryManagementContent controller={controller} /> : null}</>;
 }
 
-function show(content = false, route = "/studio") {
+function show(content = true, route = "/studio") {
   return render(<MemoryRouter initialEntries={[route]}><Harness content={content} /></MemoryRouter>);
 }
 
@@ -77,7 +77,7 @@ describe("개인 활동에 따른 작업 홈", () => {
     show();
     const recent = screen.getByRole("region", { name: "최근 작업 빠른 이어하기" });
     expect(within(recent).getByText(opened.project.title)).toBeTruthy();
-    const resume = within(recent).getByRole("link", { name: "최근 작업 열기" });
+    const resume = within(recent).getByRole("link", { name: "이어서 작업" });
     expect(resume.getAttribute("href")).toContain(`/studio/p/${id}/d/${opened.document.id}`);
     expect(resume.getAttribute("data-studio-library-primary-action")).toBe("resume");
     expect(screen.getByRole("link", { name: "새 작업" }).hasAttribute("data-studio-library-primary-action")).toBe(false);
@@ -101,11 +101,12 @@ describe("개인 활동에 따른 작업 홈", () => {
     expect(details?.open).toBe(false);
   });
 
-  it("Header와 Content가 같은 최근 작업 판정을 쓰고 목록의 예제와 사용자 작업을 모두 보존한다", () => {
+  it("최근 작업을 한 번만 표시하고 목록의 예제와 사용자 작업을 모두 보존한다", () => {
     seedExamples();
     seedProject("user-work", "직접 만든 개인 작품");
     const { container } = show(true);
     expect(container.querySelectorAll("[data-recent-primary='true']")).toHaveLength(1);
+    expect(container.querySelectorAll("[data-studio-project-card='true']")).toHaveLength(3);
     expect(container.querySelector("[data-recent-primary='true']")?.textContent).toContain("직접 만든 개인 작품");
     expect(screen.getByRole("heading", { name: "기본 예제 원고" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "기본 샘플 원고" })).toBeTruthy();
@@ -113,6 +114,32 @@ describe("개인 활동에 따른 작업 홈", () => {
     expect(screen.queryByText("복구 가능", { exact: true })).toBeNull();
     expect(container.textContent).not.toContain("이 기기에 자동저장된 작업입니다.");
     expect(container.textContent).not.toContain("파일 또는 개인 저장소와 연결한 정식 프로젝트입니다.");
+  });
+
+  it("검색 다음에 최근 원고를 한 번만 두고 같은 원고를 선택·보관·실행 취소한다", () => {
+    seedProject("hero-actions", "최근 원고 관리");
+    const { container } = show(true);
+    const search = screen.getByRole("textbox", { name: "프로젝트 검색" });
+    const recent = screen.getByRole("region", { name: "최근 작업 빠른 이어하기" });
+    expect(search.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelectorAll('[data-studio-selection-checkbox]')).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "작품 선택" }));
+    const checkbox = within(recent).getByRole("checkbox", { name: "최근 원고 관리 선택" });
+    fireEvent.click(checkbox);
+    expect(checkbox.getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("region", { name: "선택 작업" }).textContent).toContain("1개 선택");
+    fireEvent.click(screen.getByRole("button", { name: "선택 마치기" }));
+    expect(screen.queryByRole("region", { name: "선택 작업" })).toBeNull();
+    fireEvent.click(within(recent).getByText("작업 관리", { exact: true }));
+    const archive = within(recent).getByRole("button", { name: "보관" });
+    archive.focus();
+    fireEvent.click(archive);
+    expect(screen.queryByRole("heading", { name: "최근 원고 관리" })).toBeNull();
+    const notice = container.querySelector('[data-studio-library-notice="true"]');
+    expect(document.activeElement).toBe(notice);
+    fireEvent.click(screen.getByRole("button", { name: "실행 취소" }));
+    expect(screen.getByRole("heading", { name: "최근 원고 관리" })).toBeTruthy();
+    expect(container.querySelectorAll('[data-recent-primary="true"]')).toHaveLength(1);
   });
 
   it("프로필의 수동 저장 메타데이터만으로 최근 저장 완료를 표시하지 않는다", () => {

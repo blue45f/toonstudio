@@ -7,7 +7,6 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
-import { StudioProjectLibraryResumeCard } from "./StudioProjectLibraryResumeCard";
 import { STUDIO_LIBRARY_SECTION_ID } from "./studio-creator-lobby-model";
 import { studioLibraryRecentWork } from "./studio-library-recent-work";
 import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryManagementViewHref, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
@@ -23,17 +22,16 @@ export function StudioProjectLibraryManagementHeader({
 }) {
   useBilingualI18nRevision();
   const {
-    locale: _locale, authUserId, view, library, profiles, query, setQuery, sort, setSort,
+    view, library, profiles, query, setQuery, sort, setSort,
     setSelectedIds, notice, setNotice, setDeleteRequest, listedProjects,
     viewCounts, visibleProjects, selectedProjects, allVisibleSelected,
     toggleVisibleSelection, archiveProjects, trashProjects, restoreProjects,
-    projectOverviewHref, projectResumeTarget,
+    projectResumeTarget,
   } = controller;
   const hasSearchQuery = query.trim().length > 0;
   const recentProject = view === "active" && !hasSearchQuery
     ? studioLibraryRecentWork(listedProjects, projectResumeTarget)[0] ?? null
     : null;
-  const recentResumeTarget = recentProject ? projectResumeTarget(recentProject) : null;
   const entryActions = (
     <div className="studio-library-entry-actions" data-studio-primary-entry-actions="true">
       <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"}
@@ -42,9 +40,9 @@ export function StudioProjectLibraryManagementHeader({
         <Plus size={16} aria-hidden="true" />
         {bi("새 작업", "New work")}
       </Link>
-      <Link href="/studio/import" className={buttonClass({ variant: "quiet", className: "min-h-12 min-w-0 whitespace-normal rounded-xl px-3 text-fg-2" })}>
+      {!recentProject ? <Link href="/studio/import" className={buttonClass({ variant: "quiet", className: "min-h-12 min-w-0 whitespace-normal rounded-xl px-3 text-fg-2" })}>
         {bi("파일 가져오기", "Import files")}
-      </Link>
+      </Link> : null}
     </div>
   );
   const selectionTools = (
@@ -81,12 +79,12 @@ export function StudioProjectLibraryManagementHeader({
       aria-label={bi("프로젝트 라이브러리 도구", "Project library tools")}
       className="studio-library-mobile-home scroll-mt-4 focus:outline-none"
     >
-      <header className="flex flex-col gap-3 border-b border-line pb-4 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <header className="studio-library-heading">
         <div className="min-w-0">
           <h1 className="text-2xl font-black tracking-tight text-fg sm:text-3xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
           </h1>
-          <p className="mt-1 text-sm leading-5 text-fg-2">
+          {!recentProject ? <p className="mt-1 text-sm leading-5 text-fg-2">
             {view === "active" && !hasSearchQuery && !recentProject
               ? listedProjects.length > 0
                 ? bi("개인 작업은 아직 없습니다. 아래 예제를 열어 체험할 수 있어요.", "You have no personal work yet. Try an example below.")
@@ -94,27 +92,12 @@ export function StudioProjectLibraryManagementHeader({
               : view === "active"
                 ? bi("작업을 이어 하거나 목록에서 원고를 찾으세요.", "Continue your work or find a manuscript below.")
                 : bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
-          </p>
+          </p> : null}
         </div>
+        {entryActions}
       </header>
 
-      {recentProject && recentResumeTarget ? (
-        <div className="mt-3">
-          <StudioProjectLibraryResumeCard
-            project={recentProject}
-            profile={profiles.profileFor(recentProject.id)}
-            authUserId={authUserId}
-            locale={_locale}
-            resumeHref={recentResumeTarget.href}
-            overviewHref={projectOverviewHref(recentProject)}
-            onResume={() => { library.touch(recentProject.id, recentResumeTarget.documentId); }}
-          />
-        </div>
-      ) : null}
-
-      {entryActions}
-
-      <div className="mt-3">
+      {view !== "active" ? <div className="mt-3">
         <nav className="overflow-x-auto" aria-label={bi("내 작업 보기", "My work views")}>
           <div className="flex min-w-max gap-1 rounded-2xl border border-line bg-card p-1">
             {(["active", "archived", "trash"] as const).map((candidate) => (
@@ -138,23 +121,23 @@ export function StudioProjectLibraryManagementHeader({
           </div>
         </nav>
 
-      </div>
+      </div> : null}
 
       {notice ? (
-        <div role="status" aria-live="polite" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft/20 px-3 py-2 text-sm font-semibold text-fg">
+        <div role="status" aria-live="polite" tabIndex={-1} data-studio-library-notice="true" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft/20 px-3 py-2 text-sm font-semibold text-fg">
           <span>{notice.message}</span>
           <span className="flex items-center gap-3">
             {notice.action ? (
-              <button type="button" onClick={notice.action} className="inline-flex min-h-11 items-center text-xs font-black text-accent underline underline-offset-4">
+              <button type="button" onClick={notice.action} className="inline-flex min-h-12 items-center text-xs font-black text-accent underline underline-offset-4">
                 {notice.actionLabel}
               </button>
             ) : null}
             {notice.actionHref && notice.actionLabel ? (
-              <Link href={notice.actionHref} className="inline-flex min-h-11 items-center text-xs font-black text-accent underline underline-offset-4">
+              <Link href={notice.actionHref} className="inline-flex min-h-12 items-center text-xs font-black text-accent underline underline-offset-4">
                 {notice.actionLabel}
               </Link>
             ) : null}
-            <button type="button" onClick={() => setNotice(null)} className="min-h-11 text-xs underline underline-offset-4">
+            <button type="button" onClick={() => setNotice(null)} className="min-h-12 text-xs underline underline-offset-4">
               {bi("닫기", "Dismiss")}
             </button>
           </span>
@@ -171,20 +154,20 @@ export function StudioProjectLibraryManagementHeader({
                 library.reload();
                 profiles.reload();
               }}
-              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-xs font-black text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-xs font-black text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <RotateCcw size={14} aria-hidden="true" />
               {bi("다시 시도", "Try again")}
             </button>
             <Link
               href="/studio/import"
-              className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-12 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {bi("파일에서 열기", "Open from file")}
             </Link>
             <Link
               href="/studio/new"
-              className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-12 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {bi("새 작업 시작", "Start new work")}
             </Link>
@@ -216,15 +199,15 @@ export function StudioProjectLibraryManagementHeader({
                       ?.focus();
                   }
                 }}
-                placeholder={bi("제목·종류·설명 검색", "Search title, type or description")}
-                className="min-h-11 w-full rounded-xl border border-line bg-panel pl-10 pr-3 text-sm text-fg outline-none focus:border-accent"
+                placeholder={bi("내 작품 찾기", "Find my work")}
+                className="min-h-12 w-full rounded-xl border border-line bg-panel pl-10 pr-3 text-sm text-fg outline-none focus:border-accent"
               />
             </label>
             {query.trim().length > 0 ? (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 shrink-0" })}
+                className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 shrink-0" })}
               >
                 {bi("검색어 지우기", "Clear search")}
               </button>
@@ -253,33 +236,33 @@ export function StudioProjectLibraryManagementHeader({
             <div className="flex flex-wrap gap-2">
               {view === "active" ? (
                 <>
-                  <button type="button" onClick={() => archiveProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
+                  <button type="button" onClick={() => archiveProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12 gap-1.5" })}>
                     <Archive size={14} aria-hidden="true" />{bi("선택 보관", "Archive selected")}
                   </button>
-                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}>
+                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 삭제", "Trash selected")}
                   </button>
                 </>
               ) : view === "archived" ? (
                 <>
-                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
+                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12 gap-1.5" })}>
                     <RotateCcw size={14} aria-hidden="true" />{bi("선택 복원", "Restore selected")}
                   </button>
-                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}>
+                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 삭제", "Trash selected")}
                   </button>
                 </>
               ) : (
                 <>
-                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
+                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12 gap-1.5" })}>
                     <RotateCcw size={14} aria-hidden="true" />{bi("선택 복원", "Restore selected")}
                   </button>
-                  <button type="button" onClick={() => setDeleteRequest({ ids: selectedProjects.map((project) => project.id), source: "selected" })} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}>
+                  <button type="button" onClick={() => setDeleteRequest({ ids: selectedProjects.map((project) => project.id), source: "selected" })} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 완전 삭제", "Delete selected")}
                   </button>
                 </>
               )}
-              <button type="button" onClick={() => setSelectedIds(new Set())} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11" })}>
+              <button type="button" onClick={() => setSelectedIds(new Set())} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12" })}>
                 {bi("선택 해제", "Clear")}
               </button>
             </div>
@@ -292,7 +275,7 @@ export function StudioProjectLibraryManagementHeader({
           <button
             type="button"
             onClick={() => restoreProjects(listedProjects.map((project) => project.id))}
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12 gap-1.5" })}
           >
             <RotateCcw size={14} aria-hidden="true" />
             {view === "trash"
@@ -303,7 +286,7 @@ export function StudioProjectLibraryManagementHeader({
             <button
               type="button"
               onClick={() => setDeleteRequest({ ids: listedProjects.map((project) => project.id), source: "all" })}
-              className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}
+              className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 gap-1.5 text-danger" })}
             >
               <Trash2 size={14} aria-hidden="true" />
               {bi("휴지통 비우기", "Empty Trash")}

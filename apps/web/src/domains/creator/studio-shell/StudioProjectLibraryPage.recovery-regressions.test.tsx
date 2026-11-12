@@ -94,7 +94,7 @@ describe("더 보기의 키보드 위치", () => {
   for (const section of ["temporary", "saved", "recovery"] as const) {
     for (const last of [false, true]) {
       it(`${section} ${last ? "마지막" : "중간"} 확장에서 처음 추가한 작업으로 초점을 옮긴다`, async () => {
-        const initial = section === "recovery" ? 24 : 12;
+        const initial = 24;
         const count = initial + (last ? 2 : 30);
         for (let i = 0; i < count; i += 1) {
           const id = `focus-${i}`;
@@ -103,8 +103,10 @@ describe("더 보기의 키보드 위치", () => {
           if (section === "recovery") archiveStudioProject(window.localStorage, id, { at: DATE });
         }
         const { container } = showLibrary(section === "recovery" ? "archived" : "active");
-        const list = container.querySelector(section === "recovery" ? '[data-studio-recovery-list]' : `[data-studio-project-grid="${section}"]`);
-        const more = container.querySelector<HTMLButtonElement>(`[data-studio-load-more="${section}"]`);
+        if (section !== "recovery") fireEvent.click(screen.getByRole("button", { name: "작품 선택" }));
+        const grid = section === "recovery" ? "recovery" : "active";
+        const list = container.querySelector(grid === "recovery" ? '[data-studio-recovery-list]' : '[data-studio-project-grid="active"]');
+        const more = container.querySelector<HTMLButtonElement>(`[data-studio-load-more="${grid}"]`);
         if (!list || !more) throw new Error("점진 표시 목록과 더 보기 버튼이 필요합니다.");
         expect(list.querySelectorAll('[data-studio-selection-checkbox]')).toHaveLength(initial);
         more.focus();
@@ -112,10 +114,27 @@ describe("더 보기의 키보드 위치", () => {
         const added = list.querySelectorAll('[data-studio-selection-checkbox]')[initial];
         await waitFor(() => expect(document.activeElement).toBe(added));
         expect(document.activeElement?.isConnected).toBe(true);
-        expect(container.querySelector(`[data-studio-load-more="${section}"]`) === null).toBe(last);
+        expect(container.querySelector(`[data-studio-load-more="${grid}"]`) === null).toBe(last);
       });
     }
   }
+});
+
+describe("간결한 목록의 키보드 더 보기", () => {
+  it("선택 모드가 아니면 처음 추가한 원고의 이어하기로 이동한다", async () => {
+    for (let i = 0; i < 26; i += 1) createStudioProject(window.localStorage, {
+      id: `browse-${i}`, title: `회귀 목록 ${i}`, kind: "webtoon", createdAt: DATE,
+    });
+    const { container } = showLibrary();
+    expect(container.querySelectorAll('[data-studio-selection-checkbox]')).toHaveLength(0);
+    const more = container.querySelector<HTMLButtonElement>('[data-studio-load-more="active"]');
+    if (!more) throw new Error("작업 더 보기 버튼이 없습니다.");
+    more.focus();
+    fireEvent.click(more, { detail: 0 });
+    const added = container.querySelectorAll('[data-studio-project-grid="active"] [data-studio-card-continue]')[24];
+    await waitFor(() => expect(document.activeElement).toBe(added));
+    expect(container.querySelector('[data-studio-load-more="active"]')).toBeNull();
+  });
 });
 
 describe("기존 검색·전체 선택 계약", () => {

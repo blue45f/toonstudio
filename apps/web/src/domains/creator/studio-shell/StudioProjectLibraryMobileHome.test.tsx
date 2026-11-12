@@ -36,7 +36,7 @@ describe("모바일 작업 홈의 재개와 저장 정보", () => {
       authUserId={null} locale="ko" resumeHref={RESUME}
       overviewHref="/studio/p/my-work/overview" onResume={onResume}
     /></MemoryRouter>);
-    const resume = screen.getByRole("link", { name: "최근 작업 열기" });
+    const resume = screen.getByRole("link", { name: "이어서 작업" });
     expect(resume.getAttribute("href")).toBe(RESUME);
     expect(container.querySelector("[data-thumbnail-project='my-work']")).toBeTruthy();
     fireEvent.click(resume);
@@ -59,7 +59,7 @@ describe("모바일 작업 홈의 재개와 저장 정보", () => {
     expect(container.textContent).not.toMatch(/저장됨|저장 완료|자동저장됨/u);
   });
 
-  it("간결한 목록에서 이어하기·저장은 직접 제공하고 관리 기능은 펼쳐서 실행한다", () => {
+  it("간결한 목록에서 이어하기는 직접 제공하고 저장과 관리 기능은 펼쳐서 실행한다", () => {
     const work = project();
     const archive = vi.fn(); const save = vi.fn();
     const { container } = render(<MemoryRouter><StudioProjectLibraryCompactCard
@@ -71,7 +71,7 @@ describe("모바일 작업 홈의 재개와 저장 정보", () => {
     /></MemoryRouter>);
     const continueWork = screen.getByRole("link", { name: "이어서 작업" });
     expect(continueWork.getAttribute("href")).toBe(RESUME);
-    expect(continueWork.closest(".studio-library-project-row-description")).toBeTruthy();
+    expect(continueWork.closest(".studio-library-project-row-main")).toBeTruthy();
     expect(continueWork.closest("details")).toBeNull();
     fireEvent.click(continueWork);
     expect(onResume).toHaveBeenCalledOnce();
@@ -80,9 +80,9 @@ describe("모바일 작업 홈의 재개와 저장 정보", () => {
     expect(management?.open).toBe(false);
     expect(screen.getByRole("button", { name: "보관" }).closest("details")).toBe(management);
     expect(screen.getByText("3번째 컷").closest("details")).toBeNull();
+    fireEvent.click(screen.getByText("작업 관리", { exact: true }));
     fireEvent.click(screen.getByRole("button", { name: "정식 저장" }));
     expect(save).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByText("작업 관리", { exact: true }));
     const details = container.querySelector("details");
     expect(details?.open).toBe(true);
     if (!details) throw new Error("관리 메뉴가 없습니다.");

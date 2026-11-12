@@ -45,8 +45,10 @@ vi.mock("../save-first/personal-cloud-client", () => ({
   disconnectPersonalCloud: personalCloudClientMocks.disconnectPersonalCloud,
 }));
 
-function temporaryWorkRegion(): HTMLElement {
-  return screen.getByRole("region", { name: /^임시 작업|^Temporary work/u });
+function workCard(title: string): HTMLElement {
+  const card = screen.getByRole("heading", { name: title }).closest("article");
+  if (!card) throw new Error("작업 카드가 없습니다.");
+  return card;
 }
 
 function CurrentLocation() {
@@ -177,9 +179,8 @@ describe("StudioProjectLibraryPage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^임시 작업|^Temporary work/u })).toBeTruthy();
-    // 로비의 최근 프로젝트에도 같은 제목이 보이므로 목록 영역 안에서 확인한다.
-    expect(within(temporaryWorkRegion()).getByText("작품 A")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "작품 A" })).toBeTruthy();
+    expect(within(workCard("작품 A")).getByText(/임시 작업|Temporary work/u)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^정식 저장$|^Save$/u }));
 
     const dialog = await screen.findByRole("dialog");
@@ -212,7 +213,7 @@ describe("StudioProjectLibraryPage", () => {
       ).toHaveLength(2);
     });
     await waitFor(() => {
-      expect(within(temporaryWorkRegion()).getByText("작품 A 복사본")).toBeTruthy();
+      expect(within(workCard("작품 A 복사본")).getByText("작품 A 복사본")).toBeTruthy();
     });
   });
 
@@ -261,14 +262,15 @@ describe("StudioProjectLibraryPage", () => {
       </MemoryRouter>,
     );
 
-    const preview = await screen.findByRole("img", {
-      name: "썸네일 작품 최근 작업 미리보기",
+    const card = workCard("썸네일 작품");
+    const preview = card.querySelector('[data-studio-project-thumbnail="cover"]');
+    expect(preview?.getAttribute("aria-hidden")).toBe("true");
+    await waitFor(() => {
+      expect(preview?.getAttribute("data-project-preview-state")).toBe("autosave");
+      expect(preview?.querySelector('svg rect[x="80"][y="90"][width="560"][height="720"]')).toBeTruthy();
     });
-    expect(preview).toBeTruthy();
-    // 시딩된 예제·샘플 카드에도 같은 캡션이 붙으므로 이 작품의 카드 안에서 확인한다.
-    const card = preview.closest("article");
-    expect(card).not.toBeNull();
-    expect(within(card as HTMLElement).getByText("최근 자동 저장")).toBeTruthy();
+    // 표지는 장식으로 두되 실제 저장된 컷을 그리며 작품 이름은 제목 링크로 전달한다.
+    expect(within(card).getByRole("link", { name: project.title })).toBeTruthy();
   });
 
   it("continues from the exact document page, selection and viewport context", async () => {
@@ -442,7 +444,7 @@ describe("StudioProjectLibraryPage", () => {
 
     expect(await screen.findByRole("heading", { name: "검색 대상 작품" })).toBeTruthy();
 
-    const searchInput = screen.getByPlaceholderText(/제목·종류·설명 검색|Search title, type or description/u);
+    const searchInput = screen.getByRole("textbox", { name: /프로젝트 검색|Search projects/u });
     fireEvent.change(searchInput, { target: { value: "일치하지않는검색어" } });
 
     expect(await screen.findByRole("heading", { name: /검색 결과가 없습니다|No matching projects/u })).toBeTruthy();
@@ -511,7 +513,7 @@ describe("StudioProjectLibraryPage", () => {
       const status = await screen.findByRole("status");
       expect(within(status).getByText(/프로젝트 파일을 저장하지 못했습니다|The project file could not be saved/u)).toBeTruthy();
       expect(within(status).getByRole("button", { name: /다시 시도|Try again/u })).toBeTruthy();
-      expect(within(temporaryWorkRegion()).getByText("저장 실패 복구 작품")).toBeTruthy();
+      expect(within(workCard("저장 실패 복구 작품")).getByText("저장 실패 복구 작품")).toBeTruthy();
     } finally {
       if (originalPicker) targetWindow.showSaveFilePicker = originalPicker;
       else delete targetWindow.showSaveFilePicker;
@@ -624,7 +626,7 @@ describe("StudioProjectLibraryPage", () => {
     const recentBar = await screen.findByRole("region", { name: /최근 작업 빠른 이어하기|Quick resume recent work/u });
     expect(recentBar.getAttribute("data-studio-recent-work-bar")).toBe("true");
     expect(within(recentBar).getByText(longTitle).getAttribute("title")).toBe(longTitle);
-    const openRecentLink = within(recentBar).getByRole("link", { name: /^최근 작업 열기$|^Open recent work$/u });
+    const openRecentLink = within(recentBar).getByRole("link", { name: /^이어서 작업$|^Continue$/u });
     expect(openRecentLink.getAttribute("href")).toContain("/studio/p/series-recent/");
     expect(within(recentBar).queryByRole("link", { name: /\.toonstudio 파일 열기|Open \.toonstudio file/u })).toBeNull();
 
@@ -747,15 +749,13 @@ describe("StudioProjectLibraryPage", () => {
     const initialCards = container.querySelectorAll('[data-studio-project-card="true"]');
     expect(initialCards.length).toBe(24);
 
-    const loadMoreTemporary = container.querySelector<HTMLButtonElement>('[data-studio-load-more="temporary"]');
-    const loadMoreSaved = container.querySelector<HTMLButtonElement>('[data-studio-load-more="saved"]');
-    expect(loadMoreTemporary).not.toBeNull();
-    expect(loadMoreSaved).not.toBeNull();
-
-    fireEvent.click(loadMoreTemporary!);
+    const loadMore = container.querySelector<HTMLButtonElement>('[data-studio-load-more="active"]');
+    expect(loadMore).not.toBeNull();
+    fireEvent.click(loadMore!);
     expect(container.querySelectorAll('[data-studio-project-card="true"]').length).toBe(48);
 
-    // Keyboard selection navigation (ArrowDown ->ArrowUp) and Escape to clear selection
+    // 선택 모드에서 최근 원고도 같은 키보드 선택 흐름에 포함한다.
+    fireEvent.click(screen.getByRole("button", { name: /작품 선택|Select work/u }));
     const checkboxes = container.querySelectorAll<HTMLButtonElement>('[data-studio-selection-checkbox="true"]');
     expect(checkboxes.length).toBe(48);
     checkboxes[0]!.focus();
