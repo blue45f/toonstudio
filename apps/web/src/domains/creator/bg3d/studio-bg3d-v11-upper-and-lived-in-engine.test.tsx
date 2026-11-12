@@ -370,7 +370,9 @@ describe("V11 패널 거부·상태·다국어 계약", () => {
     expect(insert).not.toHaveBeenCalled();
     fireEvent.click(upper);
     expect(insert).toHaveBeenCalledTimes(1);
-    expect(insert.mock.calls[0]![0].every((p) => p.tags?.includes("BgV11_Upper"))).toBe(true);
+    const inserted = insert.mock.calls[0]?.[0];
+    if (!inserted) throw new Error("상부 단독 배치 명령이 전달되지 않았습니다.");
+    expect(inserted.every((p) => p.tags?.includes("BgV11_Upper"))).toBe(true);
     view.rerender(
       <StudioBg3dV11UpperRoomAssemblerPanel
         roomDimensions={{ width: 2, depth: 2, wallHeight: 1 }}
@@ -385,7 +387,9 @@ describe("V11 패널 거부·상태·다국어 계약", () => {
   });
 
   it("실제 기본 원룸에서 맞는 초기 세트를 추천하고 두 삽입 명령을 바로 사용할 수 있다", () => {
-    const room = getStudioBg3dRoomPreset("studio-flat")!.spec;
+    const preset = getStudioBg3dRoomPreset("studio-flat");
+    if (!preset) throw new Error("기본 원룸 프리셋이 없습니다.");
+    const room = preset.spec;
     const insert = vi.fn((_primitives: readonly Bg3dV11ScenePrimitive[]) => true);
     render(
       <StudioBg3dV11UpperRoomAssemblerPanel
@@ -403,7 +407,9 @@ describe("V11 패널 거부·상태·다국어 계약", () => {
       fireEvent.click(button);
     }
     expect(insert).toHaveBeenCalledTimes(2);
-    const bounds = measureV11PrimitivesWorldBounds(insert.mock.calls[0]![0]);
+    const inserted = insert.mock.calls[0]?.[0];
+    if (!inserted) throw new Error("기본 방의 배치 명령이 전달되지 않았습니다.");
+    const bounds = measureV11PrimitivesWorldBounds(inserted);
     expect(bounds.min[0]).toBeGreaterThanOrEqual(-room.width / 2 - 0.0001);
     expect(bounds.max[0]).toBeLessThanOrEqual(room.width / 2 + 0.0001);
     expect(bounds.min[2]).toBeGreaterThanOrEqual(-room.depth / 2 - 0.0001);
@@ -412,7 +418,9 @@ describe("V11 패널 거부·상태·다국어 계약", () => {
   });
 
   it("사용자가 고른 세트는 이후 방 크기가 바뀌어도 자동 교체하지 않는다", () => {
-    const room = getStudioBg3dRoomPreset("studio-flat")!.spec;
+    const preset = getStudioBg3dRoomPreset("studio-flat");
+    if (!preset) throw new Error("기본 원룸 프리셋이 없습니다.");
+    const room = preset.spec;
     const insert = vi.fn(() => true);
     const view = render(
       <StudioBg3dV11UpperRoomAssemblerPanel
