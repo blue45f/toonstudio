@@ -9,6 +9,7 @@ import { chromium } from "playwright";
 import { STUDIO_FILTER_DIALOG_CATALOG } from "../apps/web/src/domains/creator/filter/studio-filter-catalog";
 
 import { REPO_ROOT, WEB_ROOT, WEB_VITE_CONFIG } from "./lib/repo-paths.mjs";
+import { selectStudioCollaborationPen } from "./lib/studio-collaboration-readiness";
 import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 import type { Page } from "playwright";
@@ -141,8 +142,31 @@ try {
   const dismiss = page.locator('[data-studio-quickstart-dismiss="true"]');
   if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
   await page.keyboard.press("Escape");
-  const pen = page.locator('button[data-studio-rail-tool-id="pen"]');
-  await pen.first().click();
+  await selectStudioCollaborationPen(page, 15_000);
+  const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').first();
+  if (await clarity.isVisible()) {
+    // 펜 선택과 보조 패널 열기는 별도 행동이다. 더보기의 실제 닫기·초점 복귀도 보존한다.
+    const more = page.locator('summary[data-studio-clarity-more-trigger="true"]:visible');
+    assert.equal(await more.count(), 1, "실제 더보기 진입점은 하나여야 합니다");
+    await more.click();
+    const tools = page.getByRole("dialog", { name: "원고 도구", exact: true });
+    await tools.waitFor({ state: "visible" });
+    await page.keyboard.press("Escape");
+    await tools.waitFor({ state: "hidden" });
+    assert(await more.evaluate(element => element === document.activeElement), "더보기 Escape 후 원래 트리거 초점 복귀");
+    await more.click();
+    await tools.waitFor({ state: "visible" });
+    const advanced = tools.locator("details.studio-drawing-task-advanced");
+    const advancedSummary = advanced.locator(":scope > summary");
+    assert.equal((await advancedSummary.innerText()).trim(), "레이어와 기존 작업 배치");
+    if (!await advanced.evaluate(element => (element as HTMLDetailsElement).open)) await advancedSummary.click();
+    await tools.getByRole("button", { name: "레이어·속성 보기", exact: true }).click();
+    await tools.waitFor({ state: "hidden" });
+    const inspectorPane = page.locator("#studio-drawing-clarity-panel-layers");
+    await inspectorPane.waitFor({ state: "visible" });
+    await page.waitForFunction(() => document.activeElement?.matches("#studio-drawing-clarity-panel-layers [data-clarity-pane-heading]") === true);
+    assert.equal(await clarity.getAttribute("data-studio-drawing-clarity"), "true", "목적 패널을 열 때 기본 그리기를 유지합니다");
+  }
   const properties = page.locator('[data-studio-inspector-primary-tab="properties"]');
   if (await properties.isVisible().catch(() => false)) await properties.click();
   const trigger = page.locator('[data-studio-drawing-palette-icon-trigger="sub-tools"]');
@@ -163,9 +187,25 @@ try {
   for (let i = 1; i <= 24; i++) await page.mouse.move(x + i * 4, y + Math.sin(i / 4) * 25);
   await page.mouse.up();
   await page.waitForTimeout(400);
-  const nav = page.locator('[data-studio-main-menu="true"]');
-  await nav.locator('[data-studio-main-menu-trigger="filter"]').click();
-  await page.locator('[data-studio-main-menu-panel="true"] [data-studio-menu-item-id="gaussian-blur"]').click();
+  if (await clarity.isVisible()) {
+    // 기본 그리기에서 같은 권한·disabled 계약을 가진 실제 필터 명령을 검색해 실행한다.
+    await clarity.locator('[data-studio-clarity-find-tools="true"]').click();
+    const commandSearch = page.getByRole("dialog", { name: "기능·설정 찾기", exact: true });
+    await commandSearch.waitFor({ state: "visible" });
+    await commandSearch.getByRole("combobox", { name: "기능·설정 찾기", exact: true }).fill("가우시안 블러");
+    const gaussian = commandSearch.getByRole("option").filter({ has: page.getByText("가우시안 블러", { exact: true }) });
+    await gaussian.waitFor({ state: "visible" });
+    assert.equal(await gaussian.count(), 1, "정확한 가우시안 블러 결과만 실행합니다");
+    assert.equal(await gaussian.getAttribute("data-action"), "execute", "도움말이 아닌 실제 필터 실행이어야 합니다");
+    assert.notEqual(await gaussian.getAttribute("aria-disabled"), "true", "편집 권한과 필터 적용 가능성을 우회하지 않습니다");
+    await gaussian.click();
+    await commandSearch.waitFor({ state: "hidden" });
+    assert.equal(await clarity.getAttribute("data-studio-drawing-clarity"), "true", "필터를 열 때 기본 그리기를 유지합니다");
+  } else {
+    const nav = page.locator('[data-studio-main-menu="true"]');
+    await nav.locator('[data-studio-main-menu-trigger="filter"]').click();
+    await page.locator('[data-studio-main-menu-panel="true"] [data-studio-menu-item-id="gaussian-blur"]').click();
+  }
   const dialog = page.locator('[aria-labelledby="studio-filter-dialog-title"]');
   await dialog.waitFor({ state: "visible" });
   const filterSearch = dialog.getByRole("searchbox", { name: "필터 검색" });
