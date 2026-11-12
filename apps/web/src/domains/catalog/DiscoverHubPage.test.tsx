@@ -127,7 +127,8 @@ describe("DiscoverHubPage", () => {
     renderPage();
 
     const spotlight = screen.getByRole("article", { name: "스포트라이트 작품" });
-    expect(within(spotlight).getByRole("link", { name: "스포트라이트 작품" }).getAttribute("href")).toBe("/title/lead");
+    expect(within(spotlight).getByRole("link", { name: "스포트라이트 작품 작품 보기" }).getAttribute("href")).toBe("/title/lead");
+    fireEvent.click(within(spotlight).getByText("함께 추천하는 작품"));
     expect(within(spotlight).getByRole("link", { name: /작품-f1/ }).getAttribute("href")).toBe("/title/f1");
     // 대표 작품 카드는 히어로 제목 뒤, 첫 레일보다 앞에 온다.
     const heading = screen.getByRole("heading", { level: 1 });
@@ -176,6 +177,7 @@ describe("DiscoverHubPage", () => {
     expect(resource.reload).toHaveBeenCalledTimes(1);
     openDiscoveryTools();
     expect(screen.getByRole("link", { name: /두 작품 비교/ }).getAttribute("href")).toBe("/compare");
+    fireEvent.click(screen.getByText("장르 바로 찾기"));
     expect(screen.getByRole("link", { name: "#로맨스" }).getAttribute("href")).toBe(`/explore?genre=${encodeURIComponent("로맨스")}`);
   });
 
@@ -211,9 +213,9 @@ describe("DiscoverHubPage", () => {
     renderPage();
     openDiscoveryTools();
     const destinations = [
-      ["정확히 검색", "/search"], ["조건으로 탐색", "/explore"],
-      ["맞춤 추천", "/recommend"], ["통합 랭킹", "/ranking"],
-      ["연재 캘린더", "/calendar"], ["랜덤 발견", "/random"],
+      ["정확히 검색", "/search"], ["장르·조건", "/explore"],
+      ["맞춤 추천", "/recommend"], ["인기", "/ranking"],
+      ["요일별", "/calendar"], ["랜덤 발견", "/random"],
       ["두 작품 비교", "/compare"], ["내 서재", "/library"],
       ["숏폼 컷츠", "/cuts"], ["캐릭터 토크", "/character-chat"],
       ["작품 이야기 나누기", "/community"], ["참고자료 찾기", "/research"],

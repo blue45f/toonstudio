@@ -1,3 +1,5 @@
+import "./discover-hub-layout.css";
+
 import { ArrowRight, Star } from "lucide-react";
 
 import type { Title } from "@/shared/lib/types";
@@ -41,14 +43,14 @@ function Poster({ title, className, glyphClassName, priority }: {
   readonly priority?: boolean;
 }) {
   return (
-    <span className={cn("relative block overflow-hidden border border-line bg-panel", className)}>
+    <span aria-hidden="true" className={cn("relative block overflow-hidden border border-line bg-panel", className)}>
       {title.coverImage ? (
         <CoverImage
           src={title.coverImage}
           alt=""
           priority={priority}
           srcSet={coverStandardSrcSet(title.coverImage)}
-          sizes="(max-width: 639px) 7rem, 9rem"
+          sizes={priority ? "(max-width: 639px) 70vw, (max-width: 1023px) 45vw, 42rem" : "3rem"}
           className="absolute inset-0 size-full object-cover"
           fallback={<PosterFallback title={title} className={glyphClassName} />}
         />
@@ -64,11 +66,7 @@ export interface DiscoverSpotlightProps {
   readonly loading: boolean;
 }
 
-/**
- * 탐색 허브 히어로의 대표 작품 카드 — 편집 추천 작품을 큰 표지와 함께 보여 주고,
- * 같은 추천에서 두 편을 더 잇는다(Netflix·왓챠의 상단 추천 구성).
- * 카드 본문 전체가 대표 작품 링크이고, 아래 추천 두 편은 각자의 링크다.
- */
+/** 실제 대표작 이미지를 먼저 보여 주며, 회차를 추정하지 않고 작품 상세로 연결한다. */
 export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps) {
   const bt = useBilingual("DiscoverSpotlight");
   const pick = snapshot ? pickDiscoverSpotlight(snapshot) : null;
@@ -80,17 +78,13 @@ export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps)
         role="status"
         aria-busy="true"
         aria-label={bt("대표 작품을 불러오는 중", "Loading the featured story")}
-        className="overflow-hidden rounded-2xl border border-line bg-panel/70 p-5"
+        className="discover-spotlight-loading"
       >
-        <div className="flex gap-4" aria-hidden="true">
-          <span data-slot="skeleton" className="skeleton block aspect-[3/4] w-28 shrink-0 rounded-xl sm:w-32" />
-          <span className="flex-1 space-y-2.5 pt-1">
-            <span data-slot="skeleton" className="skeleton block h-3 w-20" />
-            <span data-slot="skeleton" className="skeleton block h-6 w-4/5" />
-            <span data-slot="skeleton" className="skeleton block h-3 w-3/5" />
-            <span data-slot="skeleton" className="skeleton block h-3 w-full" />
-            <span data-slot="skeleton" className="skeleton block h-3 w-5/6" />
-          </span>
+        <div className="discover-spotlight-loading-art skeleton" aria-hidden="true" />
+        <div className="discover-spotlight-loading-copy" aria-hidden="true">
+          <span data-slot="skeleton" className="skeleton block h-4 w-24 rounded" />
+          <span data-slot="skeleton" className="skeleton mt-3 block h-8 w-4/5 rounded" />
+          <span data-slot="skeleton" className="skeleton mt-3 block h-4 w-3/5 rounded" />
         </div>
       </div>
     );
@@ -104,84 +98,49 @@ export function DiscoverSpotlight({ snapshot, loading }: DiscoverSpotlightProps)
     <article
       aria-labelledby="discover-spotlight-title"
       data-discover-spotlight=""
-      className="relative isolate overflow-hidden rounded-2xl border border-line bg-panel"
+      className="discover-spotlight"
     >
-      {/* 표지를 흐리게 깐 배경 — 장식이며, 표지를 못 불러오면 토큰 배경만 남는다. */}
-      {lead.coverImage ? (
-        <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-45 motion-safe:transition-opacity">
-          <CoverImage
-            src={lead.coverImage}
-            alt=""
-            srcSet={coverStandardSrcSet(lead.coverImage)}
-            sizes="100vw"
-            className="size-full scale-110 object-cover blur-2xl"
-            fallback={<span aria-hidden="true" className="block size-full bg-panel" />}
-          />
-        </span>
-      ) : null}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(115deg,color-mix(in_oklch,var(--color-canvas)_94%,transparent)_20%,color-mix(in_oklch,var(--color-canvas)_72%,transparent)_65%,color-mix(in_oklch,var(--color-accent)_18%,transparent))]"
-      />
-
-      <div className="group relative flex gap-3.5 p-3.5 min-[360px]:gap-4 min-[360px]:p-4 sm:gap-5 sm:p-5">
-        <Poster
-          title={lead}
-          priority
-          className="aspect-[3/4] w-24 min-[360px]:w-28 shrink-0 rounded-xl shadow-lg transition-transform duration-200 motion-safe:group-hover:-translate-y-0.5 sm:w-36"
-          glyphClassName="text-5xl"
-        />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <p className="eyebrow flex items-center gap-1.5 text-accent">
-            <Star size={13} aria-hidden="true" />
-            {bt("오늘의 추천", "SPOTLIGHT")}
-          </p>
-          <h2 id="discover-spotlight-title" className="mt-1.5 line-clamp-2 break-keep text-xl font-bold leading-tight text-fg sm:text-2xl">
-            <Link
-              href={`/title/${lead.slug}`}
-              className="rounded-md after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-            >
-              {lead.title}
-            </Link>
-          </h2>
-          <p className="mt-1 truncate text-xs text-fg-2">{meta}</p>
-          {rating > 0 ? (
-            <p className="mt-2 flex items-center gap-1 text-xs text-fg-2">
-              <Star size={13} className="fill-current text-accent" aria-hidden="true" />
-              <span className="numeral font-semibold text-fg">{rating.toFixed(1)}</span>
-              <span className="text-fg-3">{bt("평균 평점", "average rating")}</span>
-            </p>
-          ) : null}
-          {lead.synopsis ? (
-            <p className="mt-2 line-clamp-3 text-pretty break-keep text-xs leading-5 text-fg-2 sm:text-[0.8rem]">{lead.synopsis}</p>
-          ) : null}
-          <span className="mt-auto inline-flex items-center gap-1 pt-3 text-xs font-bold text-accent" aria-hidden="true">
-            {bt("작품 보기", "View story")}
-            <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-          </span>
+      <div className="discover-spotlight-stage">
+        <Poster title={lead} priority className="discover-spotlight-art" glyphClassName="text-7xl" />
+        <span aria-hidden="true" className="discover-spotlight-scrim" />
+        <div className="discover-spotlight-copy">
+          <div className="discover-spotlight-topline">
+            <p className="discover-spotlight-kicker">{bt("오늘 만날 이야기", "Today's story")}</p>
+            {rating > 0 ? (
+              <span className="discover-spotlight-rating" aria-label={bt(`평균 평점 ${rating.toFixed(1)}`, `Average rating ${rating.toFixed(1)}`)}>
+                <Star size={13} aria-hidden="true" />{rating.toFixed(1)}
+              </span>
+            ) : null}
+          </div>
+          <h2 id="discover-spotlight-title">{lead.title}</h2>
+          <p className="discover-spotlight-meta">{meta}</p>
+          {lead.synopsis ? <p className="discover-spotlight-synopsis">{lead.synopsis}</p> : null}
+          <Link
+            href={`/title/${lead.slug}`}
+            aria-label={bt(`${lead.title} 작품 보기`, `View ${lead.title}`)}
+            className="discover-spotlight-action"
+          >
+            {bt("작품 보기", "View story")}<ArrowRight size={18} aria-hidden="true" />
+          </Link>
         </div>
       </div>
-
       {more.length > 0 ? (
-        <div className="relative border-t border-line/70 bg-canvas/40 px-4 py-3 sm:px-5">
-          <p className="text-xs font-semibold text-fg-3">{bt("함께 볼 만한 추천", "More picks")}</p>
-          <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+        <details className="discover-spotlight-more">
+          <summary>{bt("함께 추천하는 작품", "More story picks")}<span aria-hidden="true">＋</span></summary>
+          <ul className="discover-spotlight-more-list">
             {more.map((title) => (
-              <li key={title.id} className="min-w-0">
-                <Link
-                  href={`/title/${title.slug}`}
-                  className="flex min-h-11 items-center gap-2.5 rounded-xl px-1.5 py-1 transition-colors hover:bg-raised/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                >
-                  <Poster title={title} className="aspect-[3/4] w-8 shrink-0 rounded-md" glyphClassName="text-sm" />
+              <li key={title.id}>
+                <Link href={`/title/${title.slug}`} className="discover-spotlight-more-link">
+                  <Poster title={title} className="aspect-[3/4] w-10 shrink-0 rounded-lg" glyphClassName="text-sm" />
                   <span className="min-w-0">
-                    <span className="block truncate text-xs font-semibold text-fg">{title.title}</span>
-                    <span className="block truncate text-xs text-fg-3">{(Array.isArray(title.genres) ? title.genres : []).slice(0, 2).join("·")}</span>
+                    <span className="block truncate text-sm font-semibold text-fg">{title.title}</span>
+                    <span className="block truncate text-xs text-fg-2">{(Array.isArray(title.genres) ? title.genres : []).slice(0, 2).join("·")}</span>
                   </span>
                 </Link>
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       ) : null}
     </article>
   );

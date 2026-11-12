@@ -305,14 +305,12 @@ export function DiscoverHubPage() {
       <div className="discover-hub-hero" data-has-spotlight={showSpotlight ? "true" : "false"}>
         <div className="discover-hub-intro">
       <header className="discover-hub-header" aria-labelledby="discover-title">
-        <p className="text-xs font-bold tracking-wider text-accent">{bt("작품 찾기", "Discover")}</p>
         <h1 id="discover-title" className="discover-hub-title font-bold tracking-tight text-fg">
           {bt("다음 이야기를 찾아요", "Find your next story")}
         </h1>
-        <div className="mt-4">
+        <div className="discover-hub-search">
         <form onSubmit={submit} role="search" className="discover-hub-search-form grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2">
           <label className="flex min-h-12 min-w-0 items-center gap-2.5 rounded-2xl border border-line-strong bg-card/90 px-3.5 focus-within:border-accent/55 focus-within:ring-2 focus-within:ring-accent/25">
-            <Search size={18} className="shrink-0 text-accent" aria-hidden="true" />
             <span className="sr-only">{searchLabel}</span>
             <input
               type="search"
@@ -342,45 +340,30 @@ export function DiscoverHubPage() {
               </button>
             ) : null}
           </label>
-          <button type="submit" className={buttonClass({ size: "lg", className: "min-h-12 rounded-2xl px-5 sm:px-6 text-base font-bold" })}>
-            {bt("검색", "Search")}
+          <button type="submit" aria-label={bt("작품 검색", "Search stories")} className={buttonClass({ size: "lg", className: "discover-hub-submit min-h-12 gap-2 rounded-2xl text-base font-bold" })}>
+            <Search size={19} aria-hidden="true" />
+            <span className="hidden sm:inline">{bt("검색", "Search")}</span>
           </button>
         </form>
-        <nav aria-label={bt("장르로 바로 찾기", "Jump in by genre")} className="mt-4">
-          <ul className="discover-hub-quick-genres">
-            {GENRES.slice(0, QUICK_GENRE_COUNT).map((genre) => (
-              <li key={genre} className="discover-hub-quick-genre">
-                <Link
-                  href={`/explore?genre=${encodeURIComponent(genre)}`}
-                  className="inline-flex min-h-11 items-center rounded-full border border-line bg-card/70 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                >
-                  #{genre}
-                </Link>
-              </li>
-            ))}
-            <li className="shrink-0">
-              <Link
-                href="/explore"
-                className="inline-flex min-h-11 items-center gap-1 rounded-full border border-accent/35 bg-accent-soft/60 px-3.5 text-xs font-bold text-accent transition-colors hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-              >
-                {bt("전체 장르", "All genres")}
-                <ArrowRight size={13} aria-hidden="true" />
-              </Link>
-            </li>
-          </ul>
+        </div>
+        <nav aria-label={bt("작품 탐색 목적", "Story discovery destinations")} className="discover-hub-purpose-nav">
+          <Link href="/discover" aria-current="page">{bt("추천", "For you")}</Link>
+          <Link href="/ranking">{bt("인기", "Popular")}</Link>
+          <Link href="/calendar">{bt("요일별", "By day")}</Link>
+          <Link href="/explore">{bt("장르·조건", "Genres & filters")}</Link>
         </nav>
-        </div>
       </header>
-        <details className="discover-hub-catalog">
-          <summary>{bt("카탈로그 출처와 집계", "Catalog sources and counts")}</summary>
-          <CatalogSnapshotLine snapshot={home.data} loading={home.loading} />
-        </details>
         </div>
-        {showSpotlight ? (
-          <div className="discover-hub-spotlight">
-            <DiscoverSpotlight snapshot={home.data} loading={home.loading} />
-          </div>
-        ) : null}
+        <div className="discover-hub-stories">
+          {showSpotlight ? (
+            <div className="discover-hub-spotlight">
+              <DiscoverSpotlight snapshot={home.data} loading={home.loading} />
+            </div>
+          ) : null}
+          <Suspense fallback={null}>
+            <LazyDiscoverRecentShelf />
+          </Suspense>
+        </div>
       </div>
 
       <section aria-labelledby="discover-shelves-title" className="discover-hub-shelves min-w-0">
@@ -414,9 +397,6 @@ export function DiscoverHubPage() {
         <div className="flex min-w-0 flex-col gap-8">
           <Suspense fallback={<p role="status">{bt("추천 작품을 불러오는 중", "Loading story picks")}</p>}>
             <LazyDiscoverShelves snapshot={home.data} loading={home.loading} error={home.error} onRetry={home.reload} />
-          </Suspense>
-          <Suspense fallback={null}>
-            <LazyDiscoverRecentShelf />
           </Suspense>
         </div>
       </section>
@@ -528,21 +508,38 @@ export function DiscoverHubPage() {
       <Section
         className="mt-8 sm:mt-10"
         eyebrow={bt("다른 찾기 방법", "More ways to discover")}
-        title={bt("원하는 방식으로 찾기", "Choose how you want to find it")}
+        title={bt("다른 방법으로 찾기", "More ways to find a story")}
       >
-        <nav aria-label={bt("작품 찾는 방법", "Ways to find stories")} className="discover-hub-methods">
-          {DESTINATIONS.filter((destination) => ["/explore", "/ranking", "/calendar"].includes(destination.href)).map((destination) => (
-            <Link key={destination.href} href={destination.href}
-              className="discover-hub-method">
-              <destination.icon size={22} className="shrink-0 text-accent" aria-hidden="true" />
-              <span className="min-w-0 flex-1">
-                <strong className="block text-base text-fg">{bt(...destination.title)}</strong>
-                <span className="mt-1 block text-sm text-fg-2">{bt(...destination.body)}</span>
-              </span>
-              <ArrowRight size={18} className="shrink-0 text-accent" aria-hidden="true" />
-            </Link>
-          ))}
+        <details className="discover-hub-genres">
+          <summary>{bt("장르 바로 찾기", "Quick genre links")}</summary>
+        <nav aria-label={bt("장르로 바로 찾기", "Jump in by genre")} className="mt-1">
+          <ul className="discover-hub-quick-genres">
+            {GENRES.slice(0, QUICK_GENRE_COUNT).map((genre) => (
+              <li key={genre} className="discover-hub-quick-genre">
+                <Link
+                  href={`/explore?genre=${encodeURIComponent(genre)}`}
+                  className="inline-flex min-h-11 items-center rounded-full border border-line bg-card/70 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                >
+                  #{genre}
+                </Link>
+              </li>
+            ))}
+            <li className="shrink-0">
+              <Link
+                href="/explore"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full border border-accent/35 bg-accent-soft/60 px-3.5 text-xs font-bold text-accent transition-colors hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              >
+                {bt("전체 장르", "All genres")}
+                <ArrowRight size={13} aria-hidden="true" />
+              </Link>
+            </li>
+          </ul>
         </nav>
+        </details>
+        <details className="discover-hub-catalog">
+          <summary>{bt("카탈로그 출처와 집계", "Catalog sources and counts")}</summary>
+          <CatalogSnapshotLine snapshot={home.data} loading={home.loading} />
+        </details>
         <SiteDisclosure className="mt-4" icon={Compass} title={bt("더 많은 탐색 도구", "More discovery tools")}>
           <SiteContextualSubNav pathnameOverride="/discover" className="mb-4" />
         <nav aria-label={bt("상황별 빠른 탐색", "Quick discovery presets")} className="mt-2.5">
