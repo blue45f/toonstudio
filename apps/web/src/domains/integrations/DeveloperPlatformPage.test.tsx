@@ -120,7 +120,9 @@ describe("DeveloperPlatformPage", () => {
     );
 
     const bar = screen.getByTestId("developer-platform-rea-webhook-bar");
-    expect(bar.textContent).toContain("Figma Plugin API · Blender Python · GitHub Webhooks · Stripe Events");
+    expect(bar.textContent).toContain("선택 예시 · 실제 전송·권한 변경 없음");
+    const detail = screen.getByText("선택한 연결의 기술 정보", { selector: "summary" }).closest("details");
+    expect(detail?.open).toBe(false);
 
     const evPublished = screen.getByTestId("dev-platform-rea-event-episode-published-hmac");
     const evAsset = screen.getByTestId("dev-platform-rea-event-asset-bundle-verified");

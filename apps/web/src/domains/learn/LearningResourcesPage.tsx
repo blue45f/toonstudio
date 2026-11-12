@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { MotionIllustration, type MotionIllustrationName } from "@/shared/motion-assets";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { searchYouTubeLearningResources, type YouTubeLearningSearchResponse } from "./learning-resource-client";
 import {
   CURATED_LEARNING_RESOURCES,
@@ -102,6 +103,7 @@ function ResourceCard({ resource }: { readonly resource: LearningResource }) {
 }
 
 export function LearningResourcesPage() {
+  const bt = useBilingual("LearningResourcesPage");
   const [params, setParams] = useSearchParams();
   const [youtubeQuery, setYoutubeQuery] = useState("");
   const [youtubeState, setYoutubeState] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -168,23 +170,23 @@ export function LearningResourcesPage() {
           data-own-control-size=""
           data-testid="learn-resources-rea-skilltree-bar"
           role="group"
-          aria-label="REA 직무별 스킬트리 및 실습 키트 매처"
+          aria-label={bt("직무별 학습 자료 찾기", "Find lessons for your work")}
           className="mb-4 rounded-2xl border border-line bg-card/90 p-3.5 text-xs"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <strong className="font-extrabold text-accent">
-              COLOSO · CLASS101 · PROKO · CGMA · DRAWABOX · SCOTT ROBERTSON 직무 스킬트리 & 1-Click 필터 매처
+              {bt("연습할 내용을 골라 자료를 찾아보세요", "Choose what to practice and find learning resources")}
             </strong>
             <span data-testid="learn-resources-rea-match-badge" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
-              매칭 자료 {visibleResources.length}개 · 현재 직군 {role === "all" ? "전체" : ROLE_LABELS[role]}
+              {bt(`찾은 자료 ${visibleResources.length}개`, `${visibleResources.length} resources found`)}
             </span>
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="직무별 커리큘럼 스킬트리">
+          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={bt("연습 분야", "Practice area")}>
             {([
-              { id: "storyboard-pacing", label: "① 스토리·연출 콘티 (Save the Cat! · 필름문법)", roleValue: "story", stepValue: "storyboard", desc: "Save the Cat! 15비트 서사 구조와 스크롤 호흡·컷 연출 강좌를 즉시 필터링합니다." },
-              { id: "anatomy-croquis", label: "② 인체 해부학·선화 (Proko · Vilppu · 포스드로잉)", roleValue: "line-art", stepValue: "lineart", desc: "Proko·Glenn Vilppu 제스처 드로잉과 필압 선화·펜터치 교정 자료를 즉시 연결합니다." },
-              { id: "bg3d-perspective", label: "③ 3D 배경·투시 도법 (Drawabox · SketchUp · LT)", roleValue: "background", stepValue: "background", desc: "Drawabox·Scott Robertson 투시 도법과 SketchUp/Blender 6-Pass 은선 추출 자료를 매칭합니다." },
-              { id: "color-lighting", label: "④ 채색·시네마틱 조명 (Marco Bucci · ShotDeck)", roleValue: "color", stepValue: "coloring", desc: "Marco Bucci 색채 설계·림라이트/역광 보정·그라데이션 맵 채색 커리큘럼을 매칭합니다." },
+              { id: "storyboard-pacing", label: bt("스토리·콘티", "Story and storyboard"), roleValue: "story", stepValue: "storyboard" },
+              { id: "anatomy-croquis", label: bt("인체·선화", "Anatomy and line art"), roleValue: "line-art", stepValue: "lineart" },
+              { id: "bg3d-perspective", label: bt("배경·투시", "Settings and perspective"), roleValue: "background", stepValue: "background" },
+              { id: "color-lighting", label: bt("채색·조명", "Color and lighting"), roleValue: "color", stepValue: "coloring" },
             ] as const).map((track) => (
               <button
                 key={track.id}
@@ -210,12 +212,12 @@ export function LearningResourcesPage() {
           </div>
           <p data-testid="learn-resources-rea-skilltree-status" className="mt-2 rounded-xl border border-line bg-panel/70 px-3 py-2 text-[11px] leading-relaxed text-fg-2">
             {skillTrack === "storyboard-pacing"
-              ? "콜로소·CGMA·Save the Cat! 기준: 로그라인 설계 → 15비트 플롯 → 스마트폰 세로 스크롤 시선 유도 콘티 실습으로 이어집니다."
+              ? bt("이야기 구성과 컷 연출을 연습할 자료를 보고 있어요.", "Showing resources for story structure and panel direction.")
               : skillTrack === "anatomy-croquis"
-                ? "Proko·New Masters Academy·Vilppu 기준: 30초 포스(Force) 크로키 → 해부학 랜드마크 → G펜/벡터 선화 필압 정리로 이어집니다."
+                ? bt("인체의 움직임과 선 그리기를 연습할 자료를 보고 있어요.", "Showing resources for figure movement and line drawing.")
                 : skillTrack === "bg3d-perspective"
-                  ? "Drawabox·Scott Robertson·ACON3D 기준: 1·2·3점 투시 그리드 → 3D 에셋 카메라 화각(24~50mm) → 6패스 은선 합성으로 이어집니다."
-                  : "Marco Bucci·ShotDeck·Schoolism 기준: 평면 밑색 분리 → 색온도 대비(한색 그림자·난색 조명) → 대기원근 후보정으로 이어집니다."}
+                  ? bt("배경의 구도와 원근을 연습할 자료를 보고 있어요.", "Showing resources for setting composition and perspective.")
+                  : bt("색과 빛을 다루는 연습 자료를 보고 있어요.", "Showing resources for working with color and light.")}
           </p>
         </div>
         <div className="academy-resource-filters" role="group" aria-label="자료 검색 및 필터">

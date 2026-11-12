@@ -228,10 +228,10 @@ export function DeveloperPlatformPage() {
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-semibold text-accent">
-            {pickLang("REA 서명 웹훅 · 플러그인 샌드박스 시뮬레이터", "REA Signed Webhook & Plugin Sandbox Simulator")}
+            {pickLang("웹훅·플러그인 연결 미리보기", "Preview webhook and plugin connections")}
           </span>
           <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
-            Figma Plugin API · Blender Python · GitHub Webhooks · Stripe Events
+            {pickLang("선택 예시 · 실제 전송·권한 변경 없음", "Selection preview · No requests or permission changes")}
           </span>
         </div>
         <div
@@ -290,6 +290,8 @@ export function DeveloperPlatformPage() {
             );
           })}
         </div>
+        <details className="mt-3 rounded-xl border border-line bg-panel px-3 py-2">
+          <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-fg-2">{pickLang("선택한 연결의 기술 정보", "Technical details of the selected connection")}</summary>
         <p
           data-testid="developer-platform-rea-status"
           aria-live="polite"
@@ -300,6 +302,7 @@ export function DeveloperPlatformPage() {
             `${activeEvent.en} + ${activeScope.en} · ${activeEvent.detailEn} (${activeScope.detailEn})`,
           )}
         </p>
+        </details>
       </section>
       {!manifest && !error ? <IntegrationLoading message={ko ? "개발자 계약을 불러오고 있습니다." : "Loading developer contract."} /> : null}
       {error ? <IntegrationError message={error} onRetry={retry} /> : null}

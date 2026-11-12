@@ -149,8 +149,8 @@ export function WebtoonProcessToolchain() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-bold text-fg-2">
               {bt(
-                `REA 공정 도구 카탈로그 · 총 ${WEBTOON_PROCESS_TOOLCHAIN.length}단계 공정 · 클래스101/콜로소/탈잉/CGMA/Gnomon 커리큘럼 · 투닝플러스/Mangaplay/LlamaGen 콘티 · Posemaniacs 30초 크로키 연동`,
-                `REA Process Toolchain · ${WEBTOON_PROCESS_TOOLCHAIN.length} stages · Class101/Coloso/Taling/CGMA/Gnomon curriculum · Tooning Plus/Mangaplay/LlamaGen storyboard · Posemaniacs 30s croquis`,
+                `제작 단계별 도구와 학습 자료 · ${WEBTOON_PROCESS_TOOLCHAIN.length}단계에서 다음 할 일을 골라보세요`,
+                `Find tools and lessons for each of ${WEBTOON_PROCESS_TOOLCHAIN.length} production steps`,
               )}
             </span>
             <div className="flex flex-wrap items-center gap-2">
@@ -165,7 +165,7 @@ export function WebtoonProcessToolchain() {
                 to="/settings/role?tab=workspace"
                 className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel px-3.5 py-2 font-semibold text-fg-2 hover:border-accent/45 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
-                {bt("15개 세부직무 맞춤 배치 설정", "15-Sub-Role Workspace Setup")}
+                {bt("내 작업에 맞게 화면 설정", "Set up your workspace")}
               </Link>
             </div>
           </div>
@@ -174,8 +174,8 @@ export function WebtoonProcessToolchain() {
             data-testid="learn-rea-interactive-practice-bar"
             className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/25 bg-accent/5 px-3 py-2"
           >
-            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("아카데미 실습 랩 모드", "Academy Practice Lab Mode")}>
-              <span className="font-extrabold text-accent">{bt("실습 랩:", "Practice Lab:")}</span>
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("연습할 내용", "Practice topic")}>
+              <span className="font-extrabold text-accent">{bt("연습 주제:", "Practice topic:")}</span>
               {([
                 { id: "posemaniacs-croquis", ko: "Posemaniacs·Proko 해부학 크로키", en: "Posemaniacs/Proko Croquis" },
                 { id: "savethecat-15beat", ko: "Save the Cat! 15비트·Dramatica 서사 진단", en: "Save the Cat! 15-Beat & Dramatica" },

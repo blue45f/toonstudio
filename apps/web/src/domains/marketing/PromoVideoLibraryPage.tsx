@@ -85,7 +85,7 @@ const COPY = {
     searchPlaceholder: "영상 제목·설명·쓰는 곳으로 검색",
     resetFilter: "필터 초기화",
     reaBenchmarkTitle:
-      "글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터·동선 역공학 아키텍처 기준표 보기",
+      "웹툰·창작 서비스의 구성과 사용 흐름 참고 자료",
     pipelineLabel: "창작·예고편·배포 6단계 통합 동선",
     discoveryPresetsLabel: "경쟁사 표준 탐색·랭킹 바로가기",
     relatedMenu: "홍보 메뉴",
@@ -137,7 +137,7 @@ const COPY = {
     searchPlaceholder: "Search by clip title, description or usage",
     resetFilter: "Reset filters",
     reaBenchmarkTitle:
-      "View REA router & user-flow reverse-engineering benchmark across 13 webtoon & creator platforms",
+      "Reference material on webtoon and creator service workflows",
     pipelineLabel: "6-Step Creator-to-Promotion Pipeline",
     discoveryPresetsLabel: "Competitor-Standard Discovery & Ranking Presets",
     relatedMenu: "Promo menu",
