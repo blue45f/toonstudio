@@ -12,7 +12,7 @@ import {
   X,
   Webcam,
 } from "lucide-react";
-
+import { StudioDeviceStorageMessage } from "../storage-feedback/StudioDeviceStorageMessage";
 import {
   PROP_CATEGORY_LABELS,
 } from "./studio-vrm-poser-catalogs";
@@ -221,14 +221,14 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                           <span
                             className={cx(
                               "size-1.5 rounded-full",
-                              faceDetected ? "bg-green-500 animate-pulse" : "bg-red-500"
+                              faceDetected ? "bg-good animate-pulse" : "bg-bad"
                             )}
                           />
                           {faceDetected ? frozenStatus4Text("studio.frozenStatus4.vrmD.faceDetected", "얼굴 감지됨") : frozenStatus4Text("studio.frozenStatus4.vrmD.faceSearching", "얼굴 감지 중...")}
                         </div>
                         {faceLostLong && (
                           <div
-                            className="absolute inset-x-2 bottom-2 rounded bg-black/70 px-2 py-1 text-center text-[0.66rem] font-semibold text-amber-300"
+                            className="absolute inset-x-2 bottom-2 rounded bg-black/70 px-2 py-1 text-center text-[0.66rem] font-semibold text-warn"
                             role="status"
                           >
                             {frozenStatus4Text("studio.frozenStatus4.vrmD.faceNotVisible", "얼굴이 보이지 않아요 — 카메라 정면에 위치해 주세요")}
@@ -261,7 +261,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                     {!webcamActive && !webcamError && typeof window !== "undefined" && (
                       <>
                         {!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && (
-                          <div className="flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-500 mb-3 leading-relaxed">
+                          <div className="flex items-start gap-2 rounded-lg border border-warn/25 bg-warn/10 p-3 text-xs text-warn dark:text-warn mb-3 leading-relaxed">
                             <AlertTriangle className="shrink-0 mt-0.5" size={14} />
                             <div>
                               <p className="font-semibold mb-1 text-[0.72rem]">{frozenStatus4Text("studio.frozenStatus4.vrmD.insecureEnvTitle", "⚠️ 비보안 환경 접속 (카메라 비활성화)")}</p>
@@ -276,7 +276,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                           </div>
                         )}
                         {window.isSecureContext && browserPermissionState === "denied" && (
-                          <div className="flex items-start gap-2 rounded-lg border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-500 mb-3 leading-relaxed">
+                          <div className="flex items-start gap-2 rounded-lg border border-bad/25 bg-bad/10 p-3 text-xs text-bad mb-3 leading-relaxed">
                             <AlertTriangle className="shrink-0 mt-0.5" size={14} />
                             <div className="flex-1">
                               <p className="font-semibold mb-1 text-[0.72rem]">{frozenStatus4Text("studio.frozenStatus4.vrmD.cameraDeniedTitle", "⚠️ 카메라 권한 차단됨 (팝업이 뜨지 않음)")}</p>
@@ -302,7 +302,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                     )}
 
                     {webcamError && (
-                      <div className="flex flex-col gap-2 rounded-lg border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-500 mb-3 leading-relaxed">
+                      <div className="flex flex-col gap-2 rounded-lg border border-bad/25 bg-bad/10 p-3 text-xs text-bad mb-3 leading-relaxed">
                         <div className="flex items-start gap-2">
                           <AlertTriangle className="shrink-0 mt-0.5" size={14} />
                           <div>
@@ -315,7 +315,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                         <div className="flex gap-2 pl-6">
                           <button
                             type="button"
-                            className="rounded border border-red-500/40 px-2.5 py-1 text-[0.65rem] hover:bg-red-500/10"
+                            className="rounded border border-bad/40 px-2.5 py-1 text-[0.65rem] hover:bg-bad/10"
                             onClick={() => {
                               setWebcamError(null);
                               setWebcamErrorStage(null);
@@ -327,7 +327,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                           {webcamErrorStage !== "engine" ? (
                             <button
                               type="button"
-                              className="rounded border border-red-500/40 px-2.5 py-1 text-[0.65rem] hover:bg-red-500/10"
+                              className="rounded border border-bad/40 px-2.5 py-1 text-[0.65rem] hover:bg-bad/10"
                               onClick={() => {
                                 // Re-check permission state
                                 setBrowserPermissionState("prompt");
@@ -392,7 +392,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                               CONTROL_BUTTON,
                               "flex-1",
                               webcamActive
-                                ? "border-red-500/35 bg-red-500/10 text-red-500 hover:bg-red-500/15"
+                                ? "border-bad/35 bg-bad/10 text-bad hover:bg-bad/15"
                                 : "border-accent/55 bg-accent-soft text-accent hover:bg-accent-soft/80"
                             )}
                             onClick={() => {
@@ -506,7 +506,7 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                                   정면 캘리브레이션
                                   {calibrated && !calibrating ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibApplied", " · 적용됨") : ""}
                                   {calibrationPersistenceStatus === "sqlite" && calibrated
-                                    ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibSavedSqlite", " · SQLite 저장됨")
+                                    ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibSavedSqlite", " · 이 기기에 저장됨")
                                     : ""}
                                   {calibrationPersistenceStatus === "saving" ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibSaving", " · 저장 중") : ""}
                                   {calibrationPersistenceStatus === "memory" ? frozenStatus4Text("studio.frozenStatus4.vrmD.calibMemoryOnly", " · 현재 탭만") : ""}
@@ -541,12 +541,12 @@ export function StudioVrmPoserPanelBodyD({ h }: { h: StudioVrmPoserHost }) {
                                 정면·무표정 기준으로 머리 각도와 시선, 눈 크기를 보정합니다. 비스듬히 앉아도 정면 응시가 유지됩니다.
                               </p>
                               {calibrationPersistenceMessage && (
-                                <p
-                                  className="rounded border border-amber-500/25 bg-amber-500/10 px-2 py-1.5 text-[0.64rem] leading-relaxed text-amber-700 dark:text-amber-300"
+                                <div
+                                  className="rounded border border-warn/25 bg-warn/10 px-2 py-1.5 text-[0.64rem] leading-relaxed text-warn dark:text-warn"
                                   role="status"
                                 >
-                                  {calibrationPersistenceMessage}
-                                </p>
+                                  <StudioDeviceStorageMessage message={calibrationPersistenceMessage} />
+                                </div>
                               )}
                             </div>
                           </div>

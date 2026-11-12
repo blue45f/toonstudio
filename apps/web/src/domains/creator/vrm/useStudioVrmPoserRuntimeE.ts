@@ -499,7 +499,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
     }
     const insertLibraryEntry = libraryEntries.find((entry: VrmLibraryEntry) => entry.id === activeModelId);
     if (insertLibraryEntry?.source === "memory") {
-      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.memoryOnlyVrm", "현재 VRM은 SQLite/OPFS 저장 실패로 이 탭 메모리에만 있습니다. 새로고침 후 손실되지 않도록 저장소를 복구하고 다시 업로드한 뒤 프로젝트에 추가해 주세요."));
+      setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.memoryOnlyVrm", "현재 캐릭터를 저장하지 못해 이 탭에만 유지합니다. 새로고침하면 사라집니다. 저장 공간을 확보하고 다시 업로드한 뒤 프로젝트에 추가해 주세요."));
       setStatus("ready");
       return;
     }

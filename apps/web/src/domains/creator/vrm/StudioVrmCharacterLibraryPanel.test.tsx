@@ -344,8 +344,8 @@ describe("StudioVrmCharacterLibraryPanel", () => {
     const thumbnail = view.container.querySelector("img");
     expect(thumbnail?.getAttribute("alt")).toBe("");
     expect(thumbnail?.className).toContain("object-contain");
-    expect(screen.getByText("번들")).toBeTruthy();
-    expect(screen.getByText("SQLite/OPFS")).toBeTruthy();
+    expect(screen.getByText("기본 제공")).toBeTruthy();
+    expect(screen.getByText("이 기기")).toBeTruthy();
   });
 
   it("shows unknown and restricted rights without disabling local model selection", () => {

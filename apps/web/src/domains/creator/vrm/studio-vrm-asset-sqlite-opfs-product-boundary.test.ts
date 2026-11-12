@@ -145,9 +145,9 @@ describe("VRM asset SQLite/OPFS product boundary", () => {
   it("labels memory-only use and blocks portable insert until durable storage succeeds", () => {
     const poser = source("StudioVrmPoser.tsx");
     const panel = source("StudioVrmCharacterLibraryPanel.tsx");
-    expect(poser).toContain("현재 탭 메모리에만 유지합니다");
+    expect(poser).toContain("현재 탭에만 유지합니다");
     expect(poser).toContain('insertLibraryEntry?.source === "memory"');
     expect(panel).toContain('entry.source === "memory"');
-    expect(panel).toContain("현재 탭 임시");
+    expect(panel).toContain("현재 탭에만 유지");
   });
 });

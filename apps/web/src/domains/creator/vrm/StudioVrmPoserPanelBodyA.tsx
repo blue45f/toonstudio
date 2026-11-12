@@ -1,3 +1,4 @@
+import { StudioVrmStorageNotice } from "../storage-feedback/StudioDeviceStorageMessage";
 import { StudioVrmPaintMaterialControls } from "./StudioVrmPaintMaterialControls";
 import { frozenStatus4Text } from "../studio-frozen4-status-i18n";
 /**
@@ -963,20 +964,7 @@ export function StudioVrmPoserPanelBodyA({ h }: { h: StudioVrmPoserHost }) {
                   </div>
 
                   {vrmCreativePersistenceMessage ? (
-                    <p
-                      className={cx(
-                        "rounded-lg border px-2.5 py-2 text-[0.65rem] leading-relaxed",
-                        vrmCreativePersistenceStatus === "memory"
-                          || vrmCreativePersistenceStatus === "read-error"
-                          ? "border-warn/35 bg-warn/10 text-warn"
-                          : "border-line/55 bg-card/35 text-fg-3",
-                      )}
-                      role="status"
-                      aria-live="polite"
-                      data-studio-vrm-creative-authority={vrmCreativePersistenceStatus}
-                    >
-                      {vrmCreativePersistenceMessage}
-                    </p>
+                    <StudioVrmStorageNotice message={vrmCreativePersistenceMessage} authority={vrmCreativePersistenceStatus} />
                   ) : null}
                   
                   {savedPoses.length === 0 ? (

@@ -1,3 +1,4 @@
+import { creatorStorageDetail, creatorStorageText } from "../storage-feedback/studio-device-storage-copy";
 /**
  * Studio VRM poser runtime slice extracted from `StudioVrmPoser.tsx` (behavior unchanged).
  * The caller passes one host object; this hook destructures the original local names.
@@ -208,7 +209,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
     const generation = vrmCreativeMutationGenerationRef.current + 1;
     vrmCreativeMutationGenerationRef.current = generation;
     setVrmCreativePersistenceStatus("saving");
-    setVrmCreativePersistenceMessage("SQLite/OPFS에 저장하는 중입니다.");
+    setVrmCreativePersistenceMessage(creatorStorageText("이 기기에 저장하는 중입니다.", "Saving on this device…"));
     const persisted = vrmCreativeMutationTailRef.current
       .catch(() => undefined)
       .then(operation);
@@ -221,7 +222,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
       if (vrmCreativeDirtyAuthoritiesRef.current.size > 0) {
         setVrmCreativePersistenceStatus("memory");
         setVrmCreativePersistenceMessage(
-          "일부 VRM 창작 데이터는 현재 탭 메모리 임시 상태입니다. 새로고침하면 사라질 수 있습니다.",
+          creatorStorageText("일부 변경은 현재 탭에만 유지됩니다. 새로고침하면 사라질 수 있어요. 저장 공간을 확인한 뒤 다시 저장해 주세요.", "Some changes remain in this tab only and may be lost on refresh. Check device storage and save again."),
         );
         return;
       }
@@ -234,9 +235,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
       }
       setVrmCreativePersistenceStatus("memory");
       setVrmCreativePersistenceMessage(
-        `SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 현재 탭 메모리 임시 · 새로고침 시 사라짐: ${
-          caughtError instanceof Error ? caughtError.message : String(caughtError)
-        }`,
+        creatorStorageDetail(creatorStorageText("저장에 실패해 변경을 현재 탭에만 유지합니다. 새로고침하면 사라집니다. 저장 공간을 확인한 뒤 다시 저장해 주세요.", "Saving failed. Changes remain in this tab only and will be lost on refresh. Check device storage and save again."), caughtError),
       );
     });
   }
@@ -269,7 +268,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
     enqueueVrmCreativePersistence(
       "poses",
       () => creativeRepository.saveCustomPoses(next),
-      `“${canonicalLabel}” 포즈를 SQLite/OPFS에 저장했습니다.`,
+      creatorStorageText("“{name}” 포즈를 이 기기에 저장했습니다.", "Saved pose “{name}” on this device.", { name: canonicalLabel }),
     );
   }
 
@@ -286,7 +285,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
       enqueueVrmCreativePersistence(
         "poses",
         () => creativeRepository.saveCustomPoses(next),
-        "커스텀 포즈 삭제를 SQLite/OPFS에 저장했습니다.",
+        creatorStorageText("포즈 삭제를 이 기기에 저장했습니다.", "Saved the pose deletion on this device."),
       );
       if (activePoseId === id) {
         setActivePoseId("default");
@@ -444,7 +443,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
     enqueueVrmCreativePersistence(
       "full-states",
       () => creativeRepository.saveFullStates(next),
-      `“${name}” 전체 상태를 SQLite/OPFS에 저장했습니다.`,
+      creatorStorageText("“{name}” 설정을 이 기기에 저장했습니다.", "Saved settings “{name}” on this device.", { name }),
     );
     setFullStateName("");
   }
@@ -458,7 +457,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
     enqueueVrmCreativePersistence(
       "full-states",
       () => creativeRepository.saveFullStates(next),
-      `“${name}” 전체 상태 삭제를 SQLite/OPFS에 저장했습니다.`,
+      creatorStorageText("“{name}” 설정 삭제를 이 기기에 저장했습니다.", "Saved deletion of settings “{name}” on this device.", { name }),
     );
   }
   function commitFullStateRestore(
@@ -713,7 +712,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
             enqueueVrmCreativePersistence(
               "poses",
               () => creativeRepository.saveCustomPoses(next),
-              `커스텀 포즈 ${imported.length}개를 SQLite/OPFS에 저장했습니다.`,
+              creatorStorageText("포즈 {count}개를 이 기기에 저장했습니다.", "Saved {count} poses on this device.", { count: imported.length }),
             );
           })().catch((caughtError: unknown) => {
             notify?.(caughtError instanceof Error

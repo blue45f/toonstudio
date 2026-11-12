@@ -142,11 +142,11 @@ const SHELF_ENTRIES: readonly AssetShelfEntry[] = [
   {
     id: "light-cc0",
     category: "lighting",
-    spec: "CC0 · RIGHTS BOM",
+    spec: "CC0",
     titleKo: "ambientCG CC0 PBR 재질",
     titleEn: "ambientCG CC0 PBR Materials",
-    metaKo: "Rights BOM 출처 자동 보존 즉시 적용",
-    metaEn: "Zero-attribution CC0 with Rights BOM tracking",
+    metaKo: "출처와 이용 조건을 확인하고 적용",
+    metaEn: "Check source and usage terms before applying",
     href: "/research/open-data/ambientcg",
   },
 ] as const;

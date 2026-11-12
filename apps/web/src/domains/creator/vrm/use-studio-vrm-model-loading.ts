@@ -7,6 +7,7 @@
 import { disposeStudioVrmAsset as disposeVrm, loadStudioVrmAsset as loadVrmAsset } from "./studio-vrm-asset-runtime";
 import { getErrorMessage, getVrmLoadErrorMessage } from "./studio-vrm-poser-helpers";
 import { resolveStudioVrmLibraryErrorFromCause } from "../status-i18n/studio-producer-error-i18n-vrm-library";
+import { creatorStorageText } from "../storage-feedback/studio-device-storage-copy";
 import {
   createUploadedVrmRecord,
   deleteStoredVrmModel,
@@ -258,7 +259,7 @@ export function useStudioVrmModelLoading({
       if (memoryOnly) {
         setLibraryError(
           refreshSucceeded
-            ? "SQLite/OPFS 저장에 실패해 선택한 VRM을 현재 탭 메모리에만 유지합니다. 새로고침하면 사라지며 프로젝트 삽입은 durable 저장 전까지 차단됩니다."
+            ? creatorStorageText("선택한 캐릭터를 저장하지 못해 현재 탭에만 유지합니다. 새로고침하면 사라집니다. 저장 공간을 확보하고 다시 업로드해 주세요. 이 기기에 저장되기 전에는 프로젝트에 추가할 수 없습니다.", "The selected character could not be saved and remains in this tab only. It will be lost on refresh. Free device storage and upload it again. It cannot be added to a project until saved on this device.")
             : "일부 VRM은 현재 탭 메모리에만 유지되며, 저장된 라이브러리 새로고침에도 실패했습니다. 현재 목록과 페이지 위치를 보존했습니다. 다시 불러오기를 시도해 주세요.",
         );
       } else if (!refreshSucceeded) {

@@ -121,7 +121,7 @@ describe("sensitive Studio browser state stays session-scoped", () => {
     expect(poser).toContain("recentPreferencesRuntime.rememberPose(poseId)");
     expect(poser).toContain("recentPreferencesRuntime.rememberCharacter(modelId)");
     expect(poser).toContain('data-studio-vrm-recent-persistence-warning="memory-only"');
-    expect(poser).toContain("SQLite/OPFS 다시 연결");
+    expect(poser).toContain("기기 저장 다시 시도");
     expect(preferences).toContain("acquireStudioLocalDatabase");
     expect(preferences).toContain("database.asAsyncKeyValueStore(");
     expect(preferences).toContain('"studio-vrm-poser-preferences-v12"');

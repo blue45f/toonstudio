@@ -1,3 +1,5 @@
+import { creatorStorageText } from "./storage-feedback/studio-device-storage-copy";
+import { StudioDeviceStorageMessage } from "./storage-feedback/StudioDeviceStorageMessage";
 import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
 // 브랜드 킷 패널 — "스타일" 툴바 그룹 팝오버 안에 서브탭 콘텐츠로 얹히는 컴포넌트.
 // 팔레트(참조)·제목/본문 글꼴·로고를 하나의 이름 붙은 킷으로 저장·이름변경·삭제하고,
@@ -297,7 +299,7 @@ export function StudioBrandKitPanel({
       } catch (cause) {
         if (!active || !mountedRef.current || generation !== loadGenerationRef.current) return;
         setStorageState("unavailable");
-        setError(panelStatusText("studio.panelStatus.brandKit.openFailed", {"detail": cause instanceof Error ? cause.message : String(cause)}, "SQLite/OPFS 브랜드 킷을 열지 못했습니다: {detail}. 기존 브라우저 키는 자동으로 읽지 않습니다."));
+        setError(panelStatusText("studio.panelStatus.brandKit.openFailed", {"detail": cause instanceof Error ? cause.message : String(cause)}, "브랜드 킷을 불러오지 못했습니다. 저장 공간을 확인한 뒤 패널을 다시 열어 주세요.\n\n[details] {detail}"));
       }
     };
 
@@ -321,7 +323,7 @@ export function StudioBrandKitPanel({
       } catch (cause) {
         if (!active || !mountedRef.current || generation !== paletteLoadGenerationRef.current) return;
         setPalettes([]);
-        setError(panelStatusText("studio.panelStatus.brandKit.paletteLoadFailed", {"detail": cause instanceof Error ? cause.message : String(cause)}, "연결할 SQLite 팔레트를 불러오지 못했습니다: {detail}"));
+        setError(panelStatusText("studio.panelStatus.brandKit.paletteLoadFailed", {"detail": cause instanceof Error ? cause.message : String(cause)}, "연결할 팔레트를 불러오지 못했습니다. 저장 공간을 확인하고 다시 열어 주세요.\n\n[details] {detail}"));
       }
     };
     void hydratePalettes();
@@ -395,7 +397,7 @@ export function StudioBrandKitPanel({
       }
       memoryModeRef.current = true;
       setStorageState("memory");
-      setError(panelStatusText("studio.panelStatus.brandKit.saveFailedMemoryOnly", {"detail": cause instanceof Error ? cause.message : String(cause)}, "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 새로고침하면 사라집니다: {detail}"));
+      setError(panelStatusText("studio.panelStatus.brandKit.saveFailedMemoryOnly", {"detail": cause instanceof Error ? cause.message : String(cause)}, "변경을 저장하지 못해 현재 탭에만 유지합니다. 새로고침하면 사라집니다. 패널을 닫지 말고 저장 공간을 확보한 뒤 다시 시도해 주세요.\n\n[details] {detail}"));
       return "memory";
     } finally {
       if (mountedRef.current && generation === mutationGenerationRef.current) {
@@ -473,8 +475,8 @@ export function StudioBrandKitPanel({
     ).then((outcome) => {
       if (!mountedRef.current || outcome === "rejected") return;
       setDoneMsg(outcome === "durable"
-        ? `"${kit.name}" 브랜드 킷을 만들었어요.`
-        : `"${kit.name}" 브랜드 킷은 현재 탭 메모리에만 있습니다. 새로고침하면 사라집니다.`);
+        ? creatorStorageText("“{name}” 브랜드 킷을 만들었어요.", "Created brand kit “{name}”.", { name: kit.name })
+        : creatorStorageText("“{name}” 브랜드 킷은 현재 탭에만 유지됩니다. 새로고침하면 사라집니다.", "Brand kit “{name}” remains in this tab only and will be lost on refresh.", { name: kit.name }));
       setDraftName("");
       setDraftPaletteId("");
       setDraftHeadingFont(DEFAULT_BRAND_KIT_FONT);
@@ -499,20 +501,20 @@ export function StudioBrandKitPanel({
 
       <p className="mb-1.5 text-[0.6rem] font-semibold text-fg-3" aria-live="polite">
         {storageState === "loading"
-          ? panelStatusText("studio.panelStatus.brandKit.storageChecking", "SQLite/OPFS 브랜드 킷 확인 중")
+          ? panelStatusText("studio.panelStatus.brandKit.storageChecking", "이 기기의 브랜드 킷 확인 중")
           : storageState === "sqlite"
-            ? "이 기기 SQLite/OPFS 저장"
+            ? creatorStorageText("이 기기 저장소 사용 중", "Using device storage")
             : storageState === "memory"
-              ? "현재 탭 메모리 임시 · 새로고침 시 사라짐"
+              ? creatorStorageText("현재 탭에만 유지 · 새로고침하면 사라짐", "This tab only · lost on refresh")
               : storageState === "unavailable"
-                ? panelStatusText("studio.panelStatus.brandKit.storageUnavailable", "SQLite/OPFS 사용 불가 · 저장되지 않음")
-                : "주입 저장소"}
+                ? panelStatusText("studio.panelStatus.brandKit.storageUnavailable", "이 기기에 저장할 수 없음 · 저장되지 않음")
+                : creatorStorageText("현재 실행 환경의 저장소 사용 중", "Using storage for this session")}
       </p>
 
       {error && (
-        <p className="mb-1.5 text-[0.66rem] text-bad" role="alert">
-          {error}
-        </p>
+        <div className="mb-1.5 text-[0.66rem] text-bad" role="alert">
+          <StudioDeviceStorageMessage message={error} />
+        </div>
       )}
       {doneMsg && !error && (
         <p className="mb-1.5 text-[0.66rem] text-good" role="status">
@@ -782,7 +784,7 @@ export function StudioBrandKitPanel({
       )}
 
       <div className="mt-2 space-y-0.5 border-t border-line/60 pt-1.5 text-[0.6rem] leading-snug text-fg-3">
-        <p>브랜드 킷은 이 기기의 SQLite/OPFS에 저장돼요(다른 기기·계정과 공유되지 않아요).</p>
+        <p>{creatorStorageText("브랜드 킷은 저장이 확인된 이 기기에서 다시 쓸 수 있어요. 다른 기기·계정과 공유되지 않아요.", "Brand kits can be reused on this device after saving is confirmed. They are not shared with other devices or accounts.")}</p>
         <p>로고 적용은 문서 마스터에 저장되고, 실행취소(⌘Z)가 지원되지 않아요.</p>
         <p>팔레트가 삭제되면 이 킷의 팔레트 연결도 함께 끊겨요(로고·글꼴은 영향 없어요).</p>
         <p>Google Fonts는 처음 고를 때만 구글 서버에서 내려받아요(API 키·별도 비용 없음, 완전 오프라인은 아니에요).</p>

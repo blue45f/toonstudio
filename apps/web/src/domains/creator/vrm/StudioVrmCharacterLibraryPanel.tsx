@@ -1,3 +1,4 @@
+import { creatorStorageText } from "../storage-feedback/studio-device-storage-copy";
 import {
   AlertTriangle,
   ChevronDown,
@@ -444,10 +445,10 @@ export function StudioVrmCharacterLibraryPanel({
                     )}
                   >
                     {entry.source === "sample"
-                      ? "번들"
+                      ? creatorStorageText("기본 제공", "Included")
                       : entry.source === "memory"
-                        ? "현재 탭 임시"
-                        : "SQLite/OPFS"}
+                        ? creatorStorageText("현재 탭에만 유지", "This tab only")
+                        : creatorStorageText("이 기기", "This device")}
                   </span>
                 </span>
               </button>
