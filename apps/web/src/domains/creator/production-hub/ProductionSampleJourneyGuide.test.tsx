@@ -24,6 +24,8 @@ describe("ProductionSampleJourneyGuide", () => {
     expect(screen.getByText("샘플 프로젝트")).toBeTruthy();
     expect(screen.getByText(/사람·일정·원고는 모두 예시입니다/u)).toBeTruthy();
     expect(screen.getByText(/새로고침하면 처음 상태로 돌아갑니다/u)).toBeTruthy();
+    expect(screen.getByText("예시 데이터 · 새로고침하면 초기화")).toBeTruthy();
+    expect(screen.getByText(/변경은 같은 탭에서만 유지되며/u)).toBeTruthy();
   });
 
   it("follows the production flow and marks the current step from the address", () => {
