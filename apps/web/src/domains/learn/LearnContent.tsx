@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Link, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Route, Routes, useLocation, useNavigate, useNavigationType, useParams, useSearchParams } from "react-router-dom";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { LESSONS, READINGS, TERMS } from "./learning-content";
@@ -177,6 +177,7 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
   const id = useId();
   const [shortcutNotice, setShortcutNotice] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const entryNavigation = useRef(useNavigationType());
   const finishHeadingRef = useRef<HTMLHeadingElement>(null);
   const practice = useLearningPractice();
   const saved = store.progress.lessons[lesson.id] ?? EMPTY_LESSON;
@@ -199,8 +200,12 @@ function LessonSession({ lesson, store }: { lesson: Lesson; store: LearningStore
       candidate && getMissionStatus(candidate, practice.progress, store.progress) !== "completed") ?? null
     : suggestedMission;
 
-  // 강좌가 바뀌면 제목으로 포커스를 옮겨 이전·다음 강좌 이동을 스크린리더에 알린다.
+  // key가 다른 강좌의 PUSH는 제목을 알리고, POP·native 복귀와 같은 강좌의 query는 초점을 유지한다.
   useEffect(() => {
+    if (entryNavigation.current !== "PUSH") return;
+    const focused = document.activeElement;
+    if (focused?.matches("input,textarea,select,[contenteditable]:not([contenteditable='false'])")
+      || focused?.closest("[data-active-project-context]")) return;
     headingRef.current?.focus({ preventScroll: true });
   }, [lesson.id]);
 

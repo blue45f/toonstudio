@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { LearnPage } from "./LearnPage";
@@ -18,8 +18,13 @@ function LocationProbe() {
   return <output aria-label="현재 학습 주소">{location.pathname}{location.search}{location.hash}</output>;
 }
 
+function HistoryControls() {
+  const navigate = useNavigate();
+  return <><button onClick={() => navigate(-1)}>학습 뒤로</button><button onClick={() => navigate(`${pathLesson("scroll-rhythm")}&q=채색`)}>학습 검색 변경</button></>;
+}
+
 function renderLearning(url: string) {
-  render(<MemoryRouter initialEntries={[url]}><LocationProbe /><Routes>
+  render(<MemoryRouter initialEntries={[url]}><LocationProbe /><HistoryControls /><Routes>
     <Route path="/learn/*" element={<LearnPage />} />
   </Routes></MemoryRouter>);
 }
@@ -123,5 +128,57 @@ describe("선택한 학습 경로의 연속성", () => {
     const last = LESSONS[LESSONS.length - 1];
     renderLearning(`/learn/lessons/${last.id}`);
     expect(lessonNav().getByRole("link", { name: /전체 강좌 다시 보기/ }).getAttribute("href")).toBe("/learn");
+  });
+});
+
+
+describe("강좌 제목 초점과 복귀한 조작의 협력", () => {
+  it("POP 초기 진입은 이미 복원된 현재 작품 링크 초점을 덮지 않는다", () => {
+    const region = document.createElement("aside"); region.dataset.activeProjectContext = "true";
+    const link = document.createElement("a"); link.href = "/learn"; link.textContent = "돌아온 작품 실습";
+    region.append(link); document.body.append(region); link.focus();
+    try {
+      renderLearning(pathLesson("scroll-rhythm"));
+      expect(document.activeElement).toBe(link);
+    } finally { region.remove(); }
+  });
+
+  it("실제 이전·다음 PUSH는 새 제목으로 이동하고 POP는 사용 중인 외부 입력을 보존한다", () => {
+    const outside = document.createElement("input"); outside.setAttribute("aria-label", "다른 영역 입력"); document.body.append(outside);
+    try {
+      renderLearning(pathLesson("scroll-rhythm"));
+      fireEvent.click(lessonNav().getByRole("link", { name: /다음 수업/ }));
+      expect(currentUrl()).toBe(pathLesson("lettering"));
+      expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 }));
+      outside.focus(); fireEvent.click(screen.getByRole("button", { name: "학습 뒤로" }));
+      expect(currentUrl()).toBe(pathLesson("scroll-rhythm"));
+      expect(document.activeElement).toBe(outside);
+    } finally { outside.remove(); }
+  });
+
+  it("검색 query PUSH로 바뀌어도 같은 강좌의 실습 메모 초점과 입력은 보존한다", () => {
+    renderLearning(pathLesson("scroll-rhythm"));
+    const memo = screen.getByRole("textbox", { name: "나의 실습 메모" });
+    fireEvent.change(memo, { target: { value: "검색 뒤에도 이 메모를 계속 쓴다" } }); memo.focus();
+    fireEvent.click(screen.getByRole("button", { name: "학습 검색 변경" }));
+    expect(new URL(currentUrl() ?? "", "http://localhost").searchParams.get("q")).toBe("채색");
+    expect(document.activeElement).toBe(memo);
+    if (!(memo instanceof HTMLTextAreaElement)) throw new Error("실습 메모 입력 누락");
+    expect(memo.value).toBe("검색 뒤에도 이 메모를 계속 쓴다");
+  });
+});
+
+
+describe("늦게 준비된 강좌의 기존 입력 초점", () => {
+  it.each(["input", "editable"] as const)("PUSH 진입 중 이미 쓰는 외부 %s의 초점을 유지한다", (kind) => {
+    const outside = document.createElement(kind === "input" ? "input" : "div");
+    if (kind === "editable") { outside.setAttribute("contenteditable", "true"); outside.tabIndex = 0; }
+    document.body.append(outside);
+    try {
+      renderLearning("/learn/paths/first-three-panels"); outside.focus();
+      fireEvent.click(screen.getByRole("link", { name: /경로 시작하기/ }));
+      expect(currentUrl()).toBe(pathLesson("story-board"));
+      expect(document.activeElement).toBe(outside);
+    } finally { outside.remove(); }
   });
 });

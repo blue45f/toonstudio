@@ -30,11 +30,12 @@ const fixtures = vi.hoisted(() => ({ projects: [] as StudioProjectLibraryEntry[]
 vi.mock("@/shared/lib/i18n", () => ({
   useI18n: (selector: (state: { lang: string }) => unknown) => selector({ lang: fixtures.lang }),
 }));
-vi.mock("@/shared/navigation/router-link", () => ({
-  default: ({ children, href, onClick, ...props }: PropsWithChildren<AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }>) => <a href={href} {...props} onClick={(event) => {
-    onClick?.(event); event.preventDefault();
-  }}>{children}</a>,
-}));
+vi.mock("@/shared/navigation/router-link", async () => {
+  const { Link } = await import("react-router-dom");
+  return { default: ({ children, href, onClick, ...props }: PropsWithChildren<AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }>) => href.startsWith("/studio/")
+    ? <a href={href} {...props} onClick={(event) => { onClick?.(event); event.preventDefault(); }}>{children}</a>
+    : <Link to={href} onClick={onClick} {...props}>{children}</Link> };
+});
 vi.mock("./useStudioProjectLibrary", () => ({
   useStudioProjectLibrary: () => ({ projects: fixtures.projects, state: null, error: null, reload: vi.fn() }),
 }));
@@ -356,12 +357,10 @@ describe("현재 작품의 검색 선택과 실제 문서 경계 복귀", () => 
     expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
   });
 
-  it("이미 취소된 클릭이나 일반 실습 링크에는 native 복귀 기록을 쓰지 않는다", () => {
+  it("이미 취소된 클릭에는 복귀 기록을 쓰지 않는다", () => {
     show("/learn"); openMenu();
     const event = new MouseEvent("click", { bubbles: true, cancelable: true }); event.preventDefault();
     fireEvent(screen.getByRole("link", { name: "프로젝트" }), event);
-    expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
-    fireEvent.click(screen.getByRole("link", { name: /이 작품에서 실습/u }));
     expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
   });
 
@@ -376,5 +375,32 @@ describe("현재 작품의 검색 선택과 실제 문서 경계 복귀", () => 
     } finally {
       if (descriptor) Object.defineProperty(window, "sessionStorage", descriptor);
     }
+  });
+});
+
+
+describe("현재 작품의 실습 SPA 복귀", () => {
+  it("실습 링크로 이동한 뒤 실제 POP에서는 원래 펼친 메뉴·실습 링크를 복원한다", async () => {
+    show("/learn/lesson"); openMenu();
+    const practice = screen.getByRole("link", { name: /이 작품에서 실습/u }); practice.focus();
+    fireEvent.click(practice);
+    await waitFor(() => expect(screen.getByTestId("route").textContent).toBe("/learn?project=project-a"));
+    expect(disclosure().open).toBe(false);
+    expect(window.sessionStorage.getItem(RETURN_KEY)).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "뒤로" }));
+    await waitFor(() => expect(screen.getByTestId("route").textContent).toBe("/learn/lesson"));
+    expect(disclosure().open).toBe(true);
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: /이 작품에서 실습/u }));
+    expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
+  });
+
+  it("SPA POP도 이미 사용 중인 외부 입력 초점을 침범하지 않는다", async () => {
+    show("/learn/lesson"); openMenu();
+    fireEvent.click(screen.getByRole("link", { name: /이 작품에서 실습/u }));
+    const outside = screen.getByRole("textbox", { name: "페이지의 다른 입력" }); outside.focus();
+    fireEvent.click(screen.getByRole("button", { name: "뒤로" }));
+    await waitFor(() => expect(screen.getByTestId("route").textContent).toBe("/learn/lesson"));
+    expect(document.activeElement).toBe(outside);
+    expect(disclosure().open).toBe(false);
   });
 });

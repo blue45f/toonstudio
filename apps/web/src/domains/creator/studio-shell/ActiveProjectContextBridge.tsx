@@ -1,6 +1,6 @@
 import { ArrowRight, ChevronDown, FolderOpen, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigationType } from "react-router-dom";
 
 import { useI18n } from "@/shared/lib/i18n";
 import Link from "@/shared/navigation/router-link";
@@ -57,6 +57,8 @@ function dismissKey(pathname: string, projectId: string): string {
 
 export function ActiveProjectContextBridge() {
   const { pathname, search, key: historyKey } = useLocation();
+  const navigationType = useNavigationType();
+  const previousHistoryKey = useRef<string | null>(null);
   const korean = useI18n((state) => state.lang.startsWith("ko"));
   const locale = korean ? "ko" : "en";
   const library = useStudioProjectLibrary(locale, "active");
@@ -120,6 +122,8 @@ export function ActiveProjectContextBridge() {
   }, [dismissed, routeKey, selectedProject?.id]);
 
   useEffect(() => {
+    const returnedInApp = navigationType === "POP" && previousHistoryKey.current !== null && previousHistoryKey.current !== historyKey;
+    previousHistoryKey.current = historyKey;
     const restore = (historyReturn: boolean) => {
       const marker = readReturnMarker();
       if (!marker || marker.historyKey !== historyKey || marker.pathname !== pathname
@@ -129,7 +133,7 @@ export function ActiveProjectContextBridge() {
       try { contextStorage()?.removeItem(RETURN_KEY); } catch { /* 저장이 막혀도 현재 화면은 유지한다. */ }
       if (!historyReturn) return;
       const focused = document.activeElement;
-      // 일반 진입과 외부 입력의 초점은 건드리지 않고, 표식을 만든 native 복귀에만 적용한다.
+      // 일반 진입과 외부 입력의 초점은 건드리지 않고, 표식을 만든 뒤로 복귀에만 적용한다.
       if (focused && focused !== document.body && focused !== document.documentElement
         && focused.id !== "main-content" && !asideRef.current?.contains(focused)) return;
       const target = details.querySelector<HTMLAnchorElement>(`[data-active-project-return-action="${marker.action}"]`);
@@ -138,10 +142,10 @@ export function ActiveProjectContextBridge() {
       target.focus({ preventScroll: true });
     };
     const onPageShow = (event: PageTransitionEvent) => { if (event.persisted) restore(true); };
-    restore(isNativeProjectHistoryReturn());
+    restore(returnedInApp || isNativeProjectHistoryReturn());
     window.addEventListener("pageshow", onPageShow);
     return () => window.removeEventListener("pageshow", onPageShow);
-  }, [dismissed, explicitProjectId, historyKey, pathname, selectedProject?.id]);
+  }, [dismissed, explicitProjectId, historyKey, navigationType, pathname, selectedProject?.id]);
 
   if (!supportsActiveProjectBridge(pathname) || !selectedProject || dismissed) return null;
 
@@ -171,8 +175,8 @@ export function ActiveProjectContextBridge() {
   const rememberReturn = (event: MouseEvent<HTMLAnchorElement>, action: ReturnAction) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const href = event.currentTarget.getAttribute("href");
-    if (!href || !(href === "/studio" || href.startsWith("/studio/"))) return;
-    // 문서 경계를 넘는 출발만 기록하며 주소 query·원고·저장 상태는 복제하지 않는다.
+    if (!href?.startsWith("/") || href.startsWith("//")) return;
+    // 현재 작품의 내부 이동 원점만 기록하며 주소 query·원고·저장 상태는 복제하지 않는다.
     try {
       contextStorage()?.setItem(RETURN_KEY, JSON.stringify({ historyKey, pathname, routeProjectId: explicitProjectId, projectId: selectedProject.id, action }));
     } catch { /* 복귀 표식이 없어도 기존 링크 이동은 계속한다. */ }
