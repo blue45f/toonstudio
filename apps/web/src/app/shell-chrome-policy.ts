@@ -86,7 +86,7 @@ export function usesFloatingServiceNotice(
 ): boolean {
   return options.studioWorkspace === true
     || options.focusedTask === true
-    || (decision.immersiveVirtualHome && normalizedPath !== "/home")
+    || (decision.immersiveVirtualHome && normalizedPath !== "/home" && normalizedPath !== "/studio")
     || decision.immersiveVirtualProject
     || decision.immersiveReader;
 }

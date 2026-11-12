@@ -38,8 +38,8 @@ describe("서비스 상태 안내의 실제 몰입 범위", () => {
     expect(usesFloatingServiceNotice("/studio/new", decide("/studio/new", { hasTaskRoute: true }), { focusedTask: true })).toBe(true);
   });
 
-  it("가상 홈의 기존 본문·제공된 상태 자리 예외를 유지한다", () => {
-    expect(usesFloatingServiceNotice("/home", decide("/home"))).toBe(false);
+  it.each(["/home", "/studio"])("%s의 로컬 작업 안내는 기존 본문 흐름에 둔다", (path) => {
+    expect(usesFloatingServiceNotice(path, decide(path))).toBe(false);
   });
 });
 
