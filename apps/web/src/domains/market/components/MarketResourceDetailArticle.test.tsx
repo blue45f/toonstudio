@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MarketResourceDetailArticle } from "./MarketResourceDetailArticle";
+import { MarketDetailPackageInspector } from "./MarketDetailPackageInspector";
 import { MarketDetailLicenseAdvisor } from "./MarketDetailLicenseAdvisor";
 import { useI18n } from "@/shared/lib/i18n";
 
@@ -31,11 +32,15 @@ vi.mock("./MarketResourceReleaseHistory", () => ({
   ),
 }));
 
+const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+
 afterEach(() => {
   cleanup();
   useI18n.getState().setLang("ko");
   localStorage.removeItem(CREATOR_MARKETPLACE_INSTALL_RECEIPT_STORAGE_KEY);
   vi.restoreAllMocks();
+  if (originalClipboardDescriptor) Object.defineProperty(navigator, "clipboard", originalClipboardDescriptor);
+  else Reflect.deleteProperty(navigator, "clipboard");
 });
 
 function marketRecord(kind: Extract<
@@ -154,6 +159,7 @@ describe("MarketResourceDetailArticle actions and metadata", () => {
       .toBe("/terms");
     expect(screen.getByRole("heading", { name: "이용 조건과 호환성" }))
       .toBeTruthy();
+    fireEvent.click(screen.getByText("기술 정보 · 패키지와 파일"));
     expect(screen.getByRole("button", { name: "메타데이터 스냅샷 다운로드" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "세션 확인 중" })).toBeTruthy();
     expect(screen.getByTestId("release-history").getAttribute("data-resource-id"))
@@ -406,6 +412,7 @@ describe("MarketResourceDetailArticle actions and metadata", () => {
     fireEvent.click(followButton);
     expect(screen.getByRole("button", { name: "배급자 팔로우 중" }).getAttribute("aria-pressed")).toBe("true");
 
+    fireEvent.click(screen.getByText("기술 정보 · 패키지와 파일"));
     expect(screen.getByTestId("market-detail-spec-audit")).toBeTruthy();
     expect(screen.getByRole("button", { name: "패키지 manifest SHA-256 해시 복사" })).toBeTruthy();
     expect(screen.getByTestId("market-license-permission-matrix")).toBeTruthy();
@@ -414,5 +421,125 @@ describe("MarketResourceDetailArticle actions and metadata", () => {
     const seatsInput = screen.getByLabelText("동시 작업 인원");
     fireEvent.change(seatsInput, { target: { value: "3" } });
     expect(screen.getByText(/선택된 라이선스의 허용 인원/u)).toBeTruthy();
+  });
+});
+
+
+describe("마켓 상세 정보 우선순위와 복사 복구", () => {
+  it.each(["ko", "en"] as const)("%s 구성 이름은 바로 보이고 기술 정보와 다운로드는 이름 있는 영역에서 다시 찾는다", (locale) => {
+    useI18n.getState().setLang(locale);
+    const record = marketRecord("asset");
+    const download = vi.fn();
+    render(<MarketDetailPackageInspector record={record} onDownloadMetadata={download} />);
+    const summary = screen.getByText(locale === "ko" ? "기술 정보 · 패키지와 파일" : "Technical details · package and files");
+    const details = summary.closest("details");
+    expect(details?.open).toBe(false);
+    expect(within(screen.getByRole("list", { name: locale === "ko" ? "구성 항목" : "Included items" })).getByText("스타터 항목")).toBeTruthy();
+    expect(screen.getByText(record.packageId).closest("details")).toBe(details);
+    const downloadName = locale === "ko" ? "메타데이터 스냅샷 다운로드" : "Download metadata snapshot";
+    // DOM 테스트 환경은 닫힌 details의 하위 role도 반환한다. 실제 비노출·키보드 활성화는 브라우저에서 검증한다.
+    const downloadButton = screen.getByRole("button", { name: downloadName, hidden: true });
+    expect(summary.tagName).toBe("SUMMARY");
+    expect(details?.firstElementChild).toBe(summary);
+    expect(downloadButton.closest("details")).toBe(details);
+    expect(details?.hasAttribute("open")).toBe(false);
+    expect(download).not.toHaveBeenCalled();
+    fireEvent.click(summary);
+    expect(details?.open).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: downloadName }));
+    expect(download).toHaveBeenCalledTimes(1);
+    fireEvent.click(summary);
+    expect(details?.open).toBe(false);
+    summary.focus();
+    expect(document.activeElement).toBe(summary);
+    fireEvent.click(summary);
+    expect(details?.open).toBe(true);
+    expect(screen.getByRole("button", { name: downloadName })).toBe(downloadButton);
+    expect(download).toHaveBeenCalledTimes(1);
+  });
+
+  it("이름 목록과 기술 정보에서 같은 검색 조건을 유지하고 빈 결과를 구분한다", () => {
+    const original = marketRecord("asset");
+    const first = original.entries.at(0);
+    if (!first) throw new Error("테스트 구성 항목이 필요합니다.");
+    const record = { ...original, entries: [first, { ...first, id: "prop/desk", name: "책상" }, { ...first, id: "prop/lamp", name: "조명" }] };
+    render(<MarketDetailPackageInspector record={record} onDownloadMetadata={vi.fn()} />);
+    const search = screen.getByRole("searchbox", { name: "패키지 구성 항목 검색" });
+    fireEvent.change(search, { target: { value: "prop/lamp" } });
+    const names = within(screen.getByRole("list", { name: "구성 항목" }));
+    expect(names.getByText("조명")).toBeTruthy();
+    expect(names.queryByText("책상")).toBeNull();
+    fireEvent.click(screen.getByText("기술 정보 · 패키지와 파일"));
+    expect(screen.getByRole("button", { name: "조명 SHA-256 해시 복사" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "책상 SHA-256 해시 복사" })).toBeNull();
+    fireEvent.change(search, { target: { value: "없는 항목" } });
+    expect(screen.getByRole("status").textContent).toContain("일치하는 구성 항목이 없어요");
+  });
+
+  it.each(["hash", "credit"] as const)("%s 클립보드 API가 없을 때도 원문 선택과 실패 안내를 제공한다", async (target) => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+    if (target === "hash") {
+      render(<MarketDetailPackageInspector record={marketRecord("asset")} onDownloadMetadata={vi.fn()} />);
+      fireEvent.click(screen.getByText("기술 정보 · 패키지와 파일"));
+    } else {
+      render(<MarketDetailLicenseAdvisor record={marketRecord("asset")} />);
+    }
+    fireEvent.click(screen.getByRole("button", { name: target === "hash" ? "패키지 manifest SHA-256 해시 복사" : "출처 표기문 복사" }));
+    await screen.findByRole("alert");
+    expect(screen.getByRole("textbox", { name: target === "hash" ? "복사할 해시 원문" : "출처 표기문 원문" })).toBeTruthy();
+    expect(screen.queryByText("해시를 복사했어요.")).toBeNull();
+    expect(screen.queryByRole("button", { name: "복사 완료" })).toBeNull();
+  });
+
+  it("기술 정보를 접어도 필수 권리와 출처 안내는 유지한다", () => {
+    const record = { ...marketRecord("asset"), attributionText: "원작자 이름을 표시하세요" };
+    renderDetail(record);
+    expect(screen.getByRole("heading", { name: "이용 조건과 호환성" }).closest("details")).toBeNull();
+    expect(screen.getByRole("link", { name: "ToonStudio 표준 사용권" }).closest("details")).toBeNull();
+    expect(screen.getByText(record.attributionText).closest("details")).toBeNull();
+    expect(screen.getByText("배급자가 직접 만든 리소스입니다.").closest("details")).toBeNull();
+  });
+
+  it.each(["manifest", "entry"] as const)("%s 해시 복사 거부 시 완료를 표시하지 않고 원문과 재시도를 보존한다", async (target) => {
+    const record = marketRecord("asset");
+    const writeText = vi.fn().mockRejectedValueOnce(new Error("clipboard denied")).mockResolvedValueOnce(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(<MarketDetailPackageInspector record={record} onDownloadMetadata={vi.fn()} />);
+    fireEvent.click(screen.getByText("기술 정보 · 패키지와 파일"));
+    const name = target === "manifest" ? "패키지 manifest SHA-256 해시 복사" : "스타터 항목 SHA-256 해시 복사";
+    const entry = record.entries.at(0);
+    if (!entry) throw new Error("테스트 구성 항목이 필요합니다.");
+    const expected = target === "manifest" ? record.manifestHash : entry.delivery.sha256;
+    fireEvent.click(screen.getByRole("button", { name }));
+    await screen.findByRole("alert");
+    expect(screen.queryByText("해시를 복사했어요.")).toBeNull();
+    const original = screen.getByRole("textbox", { name: "복사할 해시 원문" }) as HTMLTextAreaElement;
+    expect(original.value).toBe(expected);
+    fireEvent.focus(original);
+    expect(original.selectionEnd - original.selectionStart).toBe(expected.length);
+    fireEvent.click(screen.getByRole("button", { name }));
+    await screen.findByText("해시를 복사했어요.");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(writeText).toHaveBeenNthCalledWith(1, expected);
+    expect(writeText).toHaveBeenNthCalledWith(2, expected);
+  });
+
+  it("출처 표기문 복사 거부 시 원문을 유지하고 실제 재시도 성공 후에만 완료를 표시한다", async () => {
+    const writeText = vi.fn().mockRejectedValueOnce(new Error("clipboard denied")).mockResolvedValueOnce(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(<MarketDetailLicenseAdvisor record={marketRecord("asset")} />);
+    const original = screen.getByRole("textbox", { name: "출처 표기문 원문" }) as HTMLTextAreaElement;
+    const credit = original.value;
+    fireEvent.click(screen.getByRole("button", { name: "출처 표기문 복사" }));
+    await screen.findByRole("alert");
+    expect(screen.queryByRole("button", { name: "복사 완료" })).toBeNull();
+    expect(original.value).toBe(credit);
+    fireEvent.focus(original);
+    expect(original.selectionEnd - original.selectionStart).toBe(credit.length);
+    fireEvent.click(screen.getByRole("button", { name: "출처 표기문 복사" }));
+    await screen.findByRole("button", { name: "복사 완료" });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(writeText).toHaveBeenNthCalledWith(1, credit);
+    expect(writeText).toHaveBeenNthCalledWith(2, credit);
   });
 });

@@ -54,6 +54,7 @@ export function MarketDetailLicenseAdvisor({
   const [teamSeats, setTeamSeats] = useState<number>(1);
   const [resellingRaw, setResellingRaw] = useState(false);
   const [copiedCredit, setCopiedCredit] = useState(false);
+  const [creditCopyFailed, setCreditCopyFailed] = useState(false);
 
   const commercialAllowed = record.license !== "cc-by-nc-4.0";
   const attributionRequired =
@@ -78,15 +79,19 @@ export function MarketDetailLicenseAdvisor({
   }, [license.label, record.attributionText, record.name, record.publisher.name]);
 
   const handleCopyCredit = async () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(creditTemplate);
-      } catch {
-        // Clipboard restricted
+    setCopiedCredit(false);
+    try {
+      if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+        setCreditCopyFailed(true);
+        return;
       }
+      await navigator.clipboard.writeText(creditTemplate);
+      setCreditCopyFailed(false);
+      setCopiedCredit(true);
+      window.setTimeout(() => setCopiedCredit(false), 2000);
+    } catch {
+      setCreditCopyFailed(true);
     }
-    setCopiedCredit(true);
-    window.setTimeout(() => setCopiedCredit(false), 2000);
   };
 
   return (
@@ -240,7 +245,7 @@ export function MarketDetailLicenseAdvisor({
       {/* 출처 표기문 1-Click 복사 & 팀 작업 인원 시뮬레이터 */}
       <div className="grid gap-3 rounded-xl border border-line bg-panel/60 p-3.5 text-xs lg:grid-cols-[1fr_1.1fr]">
         <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <strong className="font-bold text-fg">
               {t("웹툰 회차 하단 출처 표기문", "Episode credit line")}
             </strong>
@@ -250,7 +255,7 @@ export function MarketDetailLicenseAdvisor({
               className={buttonClass({
                 variant: "outline",
                 size: "sm",
-                className: "min-h-7 gap-1 px-2 text-[11px]",
+                className: "min-h-12 [--site-control-size:48px] gap-1 px-2 text-xs",
               })}
             >
               {copiedCredit ? (
@@ -261,9 +266,14 @@ export function MarketDetailLicenseAdvisor({
               {copiedCredit ? t("복사 완료", "Copied") : t("출처 표기문 복사", "Copy credit")}
             </button>
           </div>
-          <code className="block break-words rounded-lg border border-line bg-card px-2.5 py-2 font-mono text-[11px] text-fg-2">
-            {creditTemplate}
-          </code>
+          {creditCopyFailed ? <p role="alert" className="text-sm text-fg">{t("복사하지 못했어요. 아래 원문을 선택해 복사하거나 복사 버튼으로 다시 시도하세요.", "Could not copy. Select the original text below to copy it, or try the copy button again.")}</p> : null}
+          <textarea
+            readOnly
+            value={creditTemplate}
+            aria-label={t("출처 표기문 원문", "Original credit line")}
+            onFocus={(event) => event.currentTarget.select()}
+            className="min-h-12 w-full rounded-lg border border-line bg-card px-2.5 py-2 font-mono text-xs text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          />
         </div>
 
         <div className="space-y-2 border-t border-line/60 pt-2.5 lg:border-l lg:border-t-0 lg:pl-3.5 lg:pt-0">

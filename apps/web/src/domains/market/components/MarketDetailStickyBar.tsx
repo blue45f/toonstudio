@@ -110,7 +110,7 @@ export function MarketDetailStickyBar({
         </div>
 
         {/* Right actions */}
-        <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
+        <div className="flex w-full min-w-0 flex-nowrap items-center justify-end gap-2 sm:w-auto sm:flex-wrap">
           <button
             type="button"
             onClick={() => toggleWishlist(record)}
@@ -119,7 +119,7 @@ export function MarketDetailStickyBar({
               variant: "outline",
               size: "sm",
               className: cn(
-                "min-w-12 gap-1 px-2.5",
+                "min-h-12 min-w-12 shrink-0 gap-1 px-2.5",
                 wishlisted && "border-warn/40 bg-warn/10 text-warn",
               ),
             })}
@@ -147,11 +147,11 @@ export function MarketDetailStickyBar({
                 className={buttonClass({
                   variant: "outline",
                   size: "sm",
-                  className: "gap-1.5 border-accent text-accent hover:bg-accent/10",
+                  className: "h-auto min-h-12 min-w-12 flex-1 basis-0 whitespace-normal py-2 pointer-coarse:h-auto sm:flex-none sm:basis-auto gap-1.5 border-accent text-accent hover:bg-accent/10",
                 })}
               >
-                <Download className="size-3.5" />
-                <span>내 에셋에 추가</span>
+                <Download className="size-3.5 shrink-0" />
+                <span className="min-w-0 whitespace-normal text-center leading-5">내 에셋에 추가</span>
               </button>
             </>
           )}
@@ -161,12 +161,11 @@ export function MarketDetailStickyBar({
             className={buttonClass({
               variant: "solid",
               size: "sm",
-              className: "min-h-12 [--site-control-size:48px] gap-1.5 bg-gradient-to-r from-accent to-accent-2 text-on-accent shadow-sm",
+              className: "h-auto min-h-12 min-w-12 flex-[1.4] basis-0 sm:flex-1 sm:basis-auto whitespace-normal py-2 pointer-coarse:h-auto [--site-control-size:48px] gap-1.5 bg-gradient-to-r from-accent to-accent-2 text-on-accent shadow-sm",
             })}
           >
-            <StudioActionIcon className="size-3.5" aria-hidden="true" />
-            <span className="hidden md:inline">{studioHandoff.actionLabel}</span>
-            <span className="md:hidden">Studio</span>
+            <StudioActionIcon className="size-3.5 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 whitespace-normal text-center leading-5">{studioHandoff.actionLabel}</span>
           </Link>
         </div>
       </div>

@@ -97,6 +97,18 @@ describe("MarketDetailStickyBar 게스트 사전 고지", () => {
     expect(onOpenAcquisition).toHaveBeenCalledTimes(1);
   });
 
+  it("작은 화면에서도 구체적인 적용 행동명을 유지하고 기존 Studio 경로로 연결한다", async () => {
+    await renderBar(GUEST);
+    const action = screen.getByRole("link", { name: studioHandoff.actionLabel });
+    expect(action.getAttribute("href")).toBe(studioHandoff.href);
+    expect(action.textContent).toBe(studioHandoff.actionLabel);
+    expect(screen.queryByText("Studio", { exact: true })).toBeNull();
+    expect(screen.getByText(studioHandoff.actionLabel).className).not.toMatch(/(?:^|\s)(?:hidden|md:inline)(?:\s|$)/);
+    expect(action.className).toContain("whitespace-normal");
+    expect(action.className).toContain("min-h-12");
+    expect(action.className).toContain("pointer-coarse:h-auto");
+  });
+
   it("로그인한 사용자에게는 고지가 없고 버튼도 고지를 참조하지 않는다", async () => {
     await renderBar(SIGNED_IN);
 
