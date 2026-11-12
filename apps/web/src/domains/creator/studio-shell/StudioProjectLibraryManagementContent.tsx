@@ -8,12 +8,11 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
 import { studioLibraryRecentWork } from "./studio-library-recent-work";
 import {
-  StudioProjectLibraryCard,
   StudioProjectLibraryRecoveryRow,
 } from "./StudioProjectLibraryManagementUi";
+import { StudioProjectLibraryCompactCard } from "./StudioProjectLibraryCompactCard";
 import { StudioExampleProjectBanner } from "../workspace/StudioExampleProjectBanner";
 import { StudioSampleManuscriptCard } from "../workspace/StudioSampleManuscriptCard";
-import { StudioWorkspaceLibraryEmptyState } from "../workspace/StudioWorkspaceLibraryEmptyState";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
@@ -75,7 +74,7 @@ export function StudioProjectLibraryManagementContent({
       binding.provider === "local-file" && binding.syncState === "synced"
     ));
     return (
-      <StudioProjectLibraryCard
+      <StudioProjectLibraryCompactCard
         key={project.id}
         project={project}
         profile={profile}
@@ -123,7 +122,7 @@ export function StudioProjectLibraryManagementContent({
     <>
       {visibleProjects.length === 0 ? (
         view === "active" && !query ? (
-          <StudioWorkspaceLibraryEmptyState />
+          null
         ) : (
           <section
             data-studio-empty-state={query ? "search" : view}
@@ -199,7 +198,7 @@ export function StudioProjectLibraryManagementContent({
                   </p>
                 </div>
               </div>
-              <div ref={temporaryGridRef} data-studio-project-grid="temporary" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div ref={temporaryGridRef} data-studio-project-grid="temporary" className="studio-library-compact-grid">
                 {shownTemporaryProjects.map((project) => renderProjectCard(project, true))}
               </div>
               {temporaryProjects.length > shownTemporaryProjects.length ? (
@@ -239,7 +238,7 @@ export function StudioProjectLibraryManagementContent({
                   {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
                 </Link>
               </div>
-              <div ref={savedGridRef} data-studio-project-grid="saved" className="mt-4 grid gap-3.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div ref={savedGridRef} data-studio-project-grid="saved" className="studio-library-compact-grid">
                 {shownSavedProjects.map((project) => renderProjectCard(project, false))}
               </div>
               {savedProjects.length > shownSavedProjects.length ? (
