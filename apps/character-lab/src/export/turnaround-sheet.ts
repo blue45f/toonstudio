@@ -19,6 +19,8 @@ export interface ExportTurnaroundSheetOptions {
   readonly panelHeight: number;
   readonly framingMode?: CameraFramingMode;
   readonly settleSteps?: number;
+  /** 4방향 순차 캡처 진행 콜백(1..4, 총 4컷, 현재 각도 라벨) */
+  readonly onProgress?: (stepIndex: number, totalSteps: number, labelKo: string) => void;
 }
 
 const defaultNow = (): number => Date.now();
@@ -108,7 +110,10 @@ export async function exportTurnaroundSheetPng(
   const panels: CapturedRaster[] = [];
   let lastProvenance = undefined;
 
-  for (const yawDeg of TURNAROUND_YAW_ANGLES_DEG) {
+  for (let idx = 0; idx < TURNAROUND_YAW_ANGLES_DEG.length; idx += 1) {
+    const yawDeg = TURNAROUND_YAW_ANGLES_DEG[idx];
+    if (yawDeg === undefined) continue;
+    options.onProgress?.(idx + 1, TURNAROUND_YAW_ANGLES_DEG.length, `${yawDeg}° 시점`);
     try {
       const captured = await engine.renderPasses({
         width: panelWidth,

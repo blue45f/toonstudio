@@ -77,6 +77,8 @@ export interface ExportQuadReferenceSheetOptions {
   /** 2×2 격자의 셀 1칸 높이(px). 전체 시트 높이 = cellHeight × 2 (최대 4096px) */
   readonly cellHeight: number;
   readonly settleSteps?: number;
+  /** 4컷 순차 캡처 진행 콜백(1..4, 총 4컷, 현재 컷 한글 이름) */
+  readonly onProgress?: (stepIndex: number, totalSteps: number, labelKo: string) => void;
 }
 
 const defaultNow = (): number => Date.now();
@@ -209,7 +211,10 @@ export async function exportQuadReferenceSheetPng(
   let lastProvenance = undefined;
   const expectedCellBytes = cellWidth * cellHeight * 4;
 
-  for (const spec of panelSpecs) {
+  for (let idx = 0; idx < panelSpecs.length; idx += 1) {
+    const spec = panelSpecs[idx];
+    if (!spec) continue;
+    options.onProgress?.(idx + 1, panelSpecs.length, spec.labelKo);
     try {
       const captured = await engine.renderPasses({
         width: cellWidth,

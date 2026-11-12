@@ -7,10 +7,13 @@ import "../styles/shaper-studio-theme.css";
  */
 import { useEffect } from "react";
 
+import { getDefaultPaintSession } from "../../paint/paint-session";
+
 import { FailureBanner } from "./FailureBanner";
 import { LabStoreProvider } from "./lab-store-context";
 import { TopBar } from "./TopBar";
 import { parseLabRouteSearchParams, serializeLabRouteSearchParams } from "./ui-state";
+import { hasUnsavedCharacterWork } from "./unsaved-work";
 import { WorkbenchLayout } from "./WorkbenchLayout";
 
 import type { LabRuntime } from "./lab-runtime";
@@ -21,6 +24,22 @@ export interface CharacterLabAppProps {
 
 export function CharacterLabApp({ runtime }: CharacterLabAppProps) {
   useEffect(() => runtime.start(), [runtime]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const paintSession = getDefaultPaintSession();
+    // 초기 부팅 상태를 기준 체크포인트로 기록해 두고, 이후 미저장 편집·페인트가 있을 때 탭 닫기/새로고침을 경고한다.
+    hasUnsavedCharacterWork(runtime.store, runtime.store.getState(), paintSession);
+    const onBeforeUnload = (event: BeforeUnloadEvent): void => {
+      if (!hasUnsavedCharacterWork(runtime.store, runtime.store.getState(), paintSession)) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [runtime]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
