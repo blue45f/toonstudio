@@ -346,9 +346,9 @@ export function StudioDraftSaveCenter({
   ]);
   const model = useMemo(() => resolveStudioDraftSaveCenter(input), [input]);
   const anchorAtBottom = mobileImmersive || canvasOnlyMode;
-  // 데스크톱 메뉴바가 자리를 내주면 상단 바 안의 상태 버튼으로 그린다(인스펙터 머리글을 가리지 않는다).
+  // 데스크톱 또는 명시한 모바일 저장 자리에만 배치한다. 캔버스 전용 모드는 기존 부유 버튼을 유지한다.
   const menubarSlot = useStudioMenubarStatusSlot("save");
-  const inline = menubarSlot !== null && !anchorAtBottom;
+  const inline = menubarSlot !== null && (!anchorAtBottom || (mobileImmersive && !canvasOnlyMode && menubarSlot.dataset.studioClarityMobileSaveSlot === "true"));
   const popoverPosition = useStudioMenubarPopoverPosition(triggerRef, inline && open);
   // 오프라인 단계의 상태 문구에는 이미 '오프라인'이 들어 있어 연결 배지를 겹쳐 달지 않는다.
   const showConnectionBadge = model.phase !== "offline";
@@ -580,12 +580,10 @@ export function StudioDraftSaveCenter({
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
-
   const closeAndRestoreFocus = () => {
     setOpen(false);
     triggerRef.current?.focus({ preventScroll: true });
   };
-
   const statusRegions = (
     <>
       <span className="sr-only" role="status" aria-live="polite">{model.ariaLiveMessage}</span>
@@ -639,6 +637,9 @@ export function StudioDraftSaveCenter({
     ? "fixed z-[100]"
     : cn("absolute right-0", anchorAtBottom ? "bottom-full mb-2" : "top-full mt-2");
   const dialogVisible = open && (!inline || popoverPosition !== null);
+  useEffect(() => {
+    if (dialogVisible && document.activeElement === triggerRef.current) dialogCloseRef.current?.focus({ preventScroll: true });
+  }, [dialogVisible]);
   const dialog = dialogVisible ? (
         <div
           ref={dialogRef}
@@ -649,7 +650,7 @@ export function StudioDraftSaveCenter({
           aria-describedby={`${dialogId}-description`}
           data-studio-draft-save-dialog={inline ? "menubar" : "floating"}
           className={cn(DIALOG_CLASS, dialogPlacementClass)}
-          style={inline && popoverPosition ? popoverPosition : undefined}
+          style={inline && popoverPosition ? (menubarSlot?.dataset.studioClarityMobileSaveSlot === "true" ? { ...popoverPosition, left: 8, right: 8 } : popoverPosition) : undefined}
         >
           {offlineSceneNotice ? (
             <div data-studio-offline-scene-notice="true" className="mb-3 flex items-start gap-2 rounded-xl border border-accent/35 bg-accent-soft/30 p-2.5 text-xs text-fg-2">
@@ -828,7 +829,6 @@ export function StudioDraftSaveCenter({
         </div>
   ) : null;
   const forceVisible = model.tone === "danger" || model.tone === "warning" ? "true" : undefined;
-
   if (inline) {
     return (
       <>

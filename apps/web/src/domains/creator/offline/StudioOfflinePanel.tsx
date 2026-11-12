@@ -36,6 +36,7 @@ export function StudioOfflinePanel() {
   const [prepared, setPrepared] = useState(false);
   const [preparationIssue, setPreparationIssue] = useState<"partial" | "error" | null>(null);
   const [technicalDetail, setTechnicalDetail] = useState<string | null>(null);
+  const [manualResult, setManualResult] = useState("");
   const [message, setMessage] = useState(
     () => bt("스튜디오가 열린 뒤 현재 버전의 필수 편집 도구를 이 기기에 자동으로 준비합니다.", "After Studio opens, its current essential editing tools are prepared on this device automatically."),
   );
@@ -89,6 +90,7 @@ export function StudioOfflinePanel() {
     if (operation.current) return;
     operation.current = true;
     setBusy(true);
+    setManualResult("");
     setPrepared(false);
     setPreparationIssue(null);
     setTechnicalDetail(null);
@@ -102,6 +104,7 @@ export function StudioOfflinePanel() {
         ? bt(`오프라인 전환 준비가 완료됐습니다. 편집 도구 ${report.cached}개를 이 기기에서 확인했습니다.`, `Ready to work offline. ${report.cached} editing resources were checked on this device.`)
         : bt(`${report.checked}개 중 ${report.cached}개를 준비했습니다. 일부 도구는 연결이 필요할 수 있어 연결 상태가 바뀌면 다시 확인합니다.`, `${report.cached} of ${report.checked} resources are ready. Some tools may need a connection; they will be checked again when the connection changes.`));
       await refresh();
+      if (mounted.current && report.complete) setManualResult(bt("오프라인 도구 확인을 마쳤습니다. 원고 저장 완료와는 별개입니다.", "Offline tools were checked. This does not confirm manuscript saving."));
     } catch (cause) {
       if (mounted.current) {
         setPreparationIssue("error");
@@ -118,6 +121,7 @@ export function StudioOfflinePanel() {
     if (operation.current) return;
     operation.current = true;
     setBusy(true);
+    setManualResult("");
     setTechnicalDetail(null);
     try {
       const granted = await requestStudioPersistentStorage();
@@ -126,9 +130,13 @@ export function StudioOfflinePanel() {
         ? bt("브라우저가 기기 보관 유지 요청을 허용했습니다. 원고 저장 완료와는 별개입니다. 사이트 데이터를 직접 지우면 원고도 사라지므로 작업 파일 백업도 유지해 주세요.", "The browser allowed the request to keep device storage. This does not confirm that a manuscript was saved. Deleting site data also removes manuscripts, so keep a work-file backup.")
         : creatorSub2StatusText("studio.creatorSub2.status.offline.panel.persistDenied", "브라우저가 지속 저장을 허용하지 않았거나 지원하지 않습니다. 로컬 자동 저장은 계속되지만 프로젝트 파일 백업을 권장합니다."));
       await refresh();
+      if (mounted.current) setManualResult(granted === true
+        ? bt("기기 보관 유지 요청이 허용됐습니다. 원고 저장 완료는 별도로 확인해 주세요.", "Device-storage retention was allowed. Check manuscript saving separately.")
+        : bt("기기 보관 유지 요청이 허용되지 않았습니다. 작업 파일 백업을 유지해 주세요.", "Device-storage retention was not allowed. Keep a work-file backup."));
     } catch (cause) {
       if (mounted.current) {
         setMessage(bt("기기 보관 유지 요청을 완료하지 못했습니다. 작업 파일로 백업한 뒤 다시 시도해 주세요.", "The device-storage request could not be completed. Back up your work file and try again."));
+        setManualResult(bt("기기 보관 유지 요청 실패. 작업 파일로 백업하고 다시 시도해 주세요.", "Device-storage retention failed. Back up your work file and try again."));
         setTechnicalDetail(cause instanceof Error ? cause.message : String(cause));
       }
     } finally {
@@ -212,6 +220,8 @@ export function StudioOfflinePanel() {
   );
 
   if (editor) return <>
+    {/* 수동 실행 결과만 알린다. 숨김 상세·상단 요약 밖에 두어 닫힘과 정상 헤더 축소를 유지한다. */}
+    <span role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-studio-offline-manual-result="true">{manualResult}</span>
     {createPortal(<section aria-label={bt("연결 없이 작업할 준비", "Prepare to work without a connection")}
       className="mt-3 border-t border-line pt-3 text-xs text-fg" data-studio-offline-panel="true"
       data-studio-offline-presentation="status-center" data-studio-local-only={connectivity.localOnly ? "true" : "false"}>

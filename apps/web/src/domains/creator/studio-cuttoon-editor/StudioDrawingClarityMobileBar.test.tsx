@@ -1,18 +1,23 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { createPortal } from "react-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultStudioAppSettings } from "../studio-app-settings";
 import { createStudioWorkspaceDefaultState } from "../studio-workspaces";
 import { subscribeStudioAllTools } from "../studio-toolbar-channel";
 import { createStudioSaveSyncSignalStore } from "../studio-save-sync-signals";
+import { MobileFullEditNotice } from "../studio-shell/MobileFullEditNotice";
+import { resolveStudioMobileTouchPlan } from "../studio-mobile-touch-flow";
+import { useStudioMenubarStatusSlot } from "../studio-shell/studio-menubar-status-slot";
 import { StudioDrawingClarityProvider, type StudioDrawingClaritySession } from "./StudioDrawingClarity";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import { StudioDrawingClarityMobileBar, type StudioDrawingClarityMobileSession } from "./StudioDrawingClarityMobileBar";
 
 vi.mock("../studio-collab/studio-scoped-draft-save", () => ({ useStudioScopedDraftSaveState: () => ({ available: false, pendingConfirmation: false }) }));
 vi.mock("../studio-tool-belt-lazy-ui", () => ({ preloadStudioAssetToolPopoverBody: vi.fn() }));
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 type MobileFixture = StudioDrawingClaritySession & StudioDrawingClarityMobileSession;
 function session(): MobileFixture {
@@ -61,6 +66,56 @@ function nativeModal() {
 }
 
 describe("웹 모바일 기본 상단", () => {
+  it("동일한 원고·페이지 이름은 반복하지 않고 다른 페이지 문맥은 유지한다", () => {
+    const value = { ...session(), title: "EP01 원고", studioMenubarActivePageLabel: " EP01 원고 " };
+    const view = show(value);
+    expect(screen.getAllByText("EP01 원고")).toHaveLength(1);
+    expect(screen.getByRole("toolbar", { name: "편집 기록" })).toBeTruthy();
+    view.unmount(); show({ ...value, studioMenubarActivePageLabel: "2페이지 · 첫 만남" });
+    expect(screen.getByText("2페이지 · 첫 만남")).toBeTruthy();
+    expect(screen.getByRole("toolbar", { name: "편집 기록" })).toBeTruthy();
+  });
+  it("저장 상태 host는 보이는 모바일 상단에 등록하고 화면을 떠나면 해제한다", () => {
+    const css = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css", "utf8");
+    const rule = css.split("\n").find(line => line.includes(".studio-drawing-clarity-mobile-header .studio-drawing-clarity-context-row button"));
+    function SlotProbe() { const host = useStudioMenubarStatusSlot("save"); return <><output data-testid="모바일 저장 자리">{host?.getAttribute("data-studio-clarity-mobile-save-slot") ?? "없음"}</output>{host ? createPortal(<button className="원래저장버튼">서버 버전과 복구</button>, host) : null}</>; }
+    const probe = render(<><style>{`.원래저장버튼{min-width:44px;min-height:44px}${rule ?? ""}`}</style><SlotProbe /></>), view = show();
+    expect(screen.getByTestId("모바일 저장 자리").textContent).toBe("true");
+    expect(view.container.querySelector('[data-studio-clarity-mobile-save-slot="true"]')?.closest('[data-studio-drawing-clarity-mobile-header]')).toBeTruthy();
+    expect(getComputedStyle(screen.getByRole("button", { name: "서버 버전과 복구" })).minWidth).toBe("48px");
+    expect(getComputedStyle(screen.getByRole("button", { name: "서버 버전과 복구" })).minHeight).toBe("48px");
+    view.unmount(); expect(screen.getByTestId("모바일 저장 자리").textContent).toBe("없음"); probe.unmount();
+  });
+  it.each(["Escape", "닫기", "접기"])("더보기의 기기 작업 안내는 같은 표면의 원래 내용을 열고 %s 뒤 같은 트리거로 돌아간다", (method) => {
+    vi.stubGlobal("matchMedia", vi.fn((media: string) => ({ matches: true, media, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+    const plan = resolveStudioMobileTouchPlan("canvas");
+    render(<MobileFullEditNotice startCollapsed surfaceId="studio-editor-canvas" surfaceLabel={plan.label} mobileCapabilities={plan.canDo} mobileLimitations={plan.cannotDo} touchTier={plan.tier} />);
+    show(); const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "이 기기에서 할 수 있는 작업" }));
+    expect(screen.queryByRole("button", { name: "페이지 보기" })).toBeNull();
+    const guide = screen.getByRole("complementary", { name: "모바일 편집 안내" });
+    for (const item of [...plan.canDo, ...plan.cannotDo]) expect(screen.getByText(item.ko).closest("[hidden]")).toBeNull();
+    const toggle = screen.getByRole("button", { name: "기기 안내 접기" }); expect(document.activeElement).toBe(toggle);
+    if (method === "Escape") fireEvent.keyDown(toggle, { key: "Escape" });
+    else if (method === "접기") fireEvent.click(toggle);
+    else fireEvent.click(screen.getByRole("button", { name: "안내 접고 계속하기" }));
+    expect(guide.getAttribute("data-studio-mobile-notice-expanded")).toBe("false"); expect(document.activeElement).toBe(trigger);
+  });
+  it.each([
+    { pathname: "/studio/comic", search: "?uiMode=basic" },
+    { pathname: "/studio/p/p1/d/d1", search: "?workspace=storyboard&uiMode=basic" },
+    { pathname: "/studio/p/p1/d/d1", search: "?workspace=localization&uiMode=basic" },
+  ])("comic으로 해석되는 $pathname$search도 실제 표면의 안내를 열고 더보기로 복귀한다", (location) => {
+    vi.stubGlobal("matchMedia", vi.fn((media: string) => ({ matches: true, media, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+    const plan = resolveStudioMobileTouchPlan("comic");
+    render(<MobileFullEditNotice startCollapsed surfaceId="studio-editor-comic" surfaceLabel={plan.label} mobileCapabilities={plan.canDo} mobileLimitations={plan.cannotDo} touchTier={plan.tier} />);
+    const value = session(); show({ ...value, location: { ...value.location, ...location } });
+    const simple = screen.queryByRole("button", { name: "간단한 그리기" }); if (simple) fireEvent.click(simple);
+    expect(document.querySelector('[data-studio-device-guide-entry="comic"]')).toBeTruthy();
+    const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "이 기기에서 할 수 있는 작업" }));
+    for (const item of [...plan.canDo, ...plan.cannotDo]) expect(screen.getByText(item.ko).closest("[hidden]")).toBeNull();
+    fireEvent.keyDown(screen.getByRole("button", { name: "기기 안내 접기" }), { key: "Escape" });
+    expect(document.activeElement).toBe(trigger);
+  });
   it("원고·뒤로·저장과 실제 상태 슬롯 하나만 두고 하단 도구를 중복 생성하지 않는다", () => {
     const { container } = show();
     expect(screen.getByRole("heading", { name: "나의 첫 웹툰" })).toBeTruthy();

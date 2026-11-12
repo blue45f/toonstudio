@@ -4,6 +4,9 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioEditorReturnButton } from "../StudioEditorReturnButton";
 import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
 import { StudioDocumentChromeSlot } from "../studio-shell/StudioDocumentChromeSlot";
+import { STUDIO_MENUBAR_STATUS_SLOT_REFS } from "../studio-shell/studio-menubar-status-slot";
+import { requestStudioMobileDeviceGuide } from "../studio-shell/mobile-device-guide-channel";
+import { parseStudioWorkspaceRoute } from "../studio-workspace-route";
 import { installStudioCommandExecutionBindings } from "../studio-command-execution-registry";
 import { requestStudioAllTools } from "../studio-toolbar-channel";
 import { preloadStudioAssetToolPopoverBody } from "../studio-tool-belt-lazy-ui";
@@ -16,7 +19,7 @@ import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export type StudioDrawingClarityMobileSession = StudioDrawingClaritySaveSession & Pick<StudioCuttoonEditorViewSession,
-  "title" | "studioMenubarActivePageLabel" | "studioMainMenuGroups" | "setMobileSheet" | "setMenu"
+  "title" | "studioMenubarActivePageLabel" | "studioMainMenuGroups" | "setMobileSheet" | "setMenu" | "location"
   | "setExportMenuOpen" | "setTeamPanelOpen" | "setTutorialHubOpen" | "appSettings" | "saveSyncStore">
   & { readonly studioMobileEditingDockHandlers: Pick<StudioCuttoonEditorViewSession["studioMobileEditingDockHandlers"], "openInspectorRoute"> };
 
@@ -24,6 +27,7 @@ export type StudioDrawingClarityMobileSession = StudioDrawingClaritySaveSession 
 export function StudioDrawingClarityMobileBar({ session: s }: { readonly session: StudioDrawingClarityMobileSession }) {
   const clarity = useStudioDrawingClarity(), bt = useBilingual("studio.drawingClarity");
   const moreRef = useRef<HTMLElement>(null);
+  const route = parseStudioWorkspaceRoute(s.location), guideSurface = route.valid ? route.surface : null;
   const [helpOpen, setHelpOpen] = useState(false);
   const showSavedLayout = clarity?.showSavedLayout;
   const openInspector = useCallback(() => s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "layers" }, "props"), [s.studioMobileEditingDockHandlers]);
@@ -36,6 +40,7 @@ export function StudioDrawingClarityMobileBar({ session: s }: { readonly session
   return <>
     <header id="studio-menubar" role="region" tabIndex={-1} aria-label={bt("원고와 저장", "Draft and save")}
       data-studio-app-menubar="true" data-studio-drawing-clarity-header="true" data-studio-drawing-clarity-mobile-header="true"
+      data-studio-device-guide-entry={guideSurface ?? undefined}
       className="studio-drawing-clarity-header studio-drawing-clarity-mobile-header">
       <StudioEditorReturnButton variant="lane" onReturn={returnFromStudioEditorInBrowser} />
       <div className="studio-drawing-clarity-title"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDrawingClarityReceipt store={s.saveSyncStore} /></div>
@@ -49,9 +54,10 @@ export function StudioDrawingClarityMobileBar({ session: s }: { readonly session
         { id: "team", label: bt("함께 작업", "Work together"), run: () => { clarity.showSavedLayout(); s.setTeamPanelOpen(true); } },
         { id: "windows", label: bt("프로젝트·창 도구 보기", "Show project and window tools"), run: clarity.showSavedLayout },
         { id: "help", label: bt("그리기·손가락 안내", "Drawing and touch guide"), run: () => setHelpOpen(true) },
+        { id: "device", label: bt("이 기기에서 할 수 있는 작업", "Tasks available on this device"), run: (trigger) => { if (guideSurface) requestStudioMobileDeviceGuide(`studio-editor-${guideSurface}`, trigger); } },
       ]} />
       <StudioDocumentChromeSlot />
-      <div className="studio-drawing-clarity-context-row"><p>{s.studioMenubarActivePageLabel}</p><div id="studio-drawing-clarity-history-slot" className="studio-drawing-clarity-history" role="toolbar" aria-label={bt("편집 기록", "Edit history")} /></div>
+      <div className="studio-drawing-clarity-context-row"><div ref={STUDIO_MENUBAR_STATUS_SLOT_REFS.save} data-studio-clarity-mobile-save-slot="true" className="flex min-w-0 items-center empty:hidden" />{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? <p>{s.studioMenubarActivePageLabel}</p> : null}<div id="studio-drawing-clarity-history-slot" className="studio-drawing-clarity-history ml-auto" role="toolbar" aria-label={bt("편집 기록", "Edit history")} /></div>
     </header>
     {helpOpen ? <StudioDrawingClarityMobileHelp touch={s.appSettings.touch} onClose={closeHelp} onTutorial={() => { setHelpOpen(false); s.setTutorialHubOpen(true); }} /> : null}
   </>;

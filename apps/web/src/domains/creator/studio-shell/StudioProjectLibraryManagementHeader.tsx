@@ -123,7 +123,7 @@ export function StudioProjectLibraryManagementHeader({
                 href={studioProjectLibraryManagementViewHref(candidate)}
                 aria-current={candidate === view ? "page" : undefined}
                 className={cn(
-                  "inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-bold",
+                  "inline-flex min-h-12 items-center rounded-xl px-3 text-xs font-bold",
                   candidate === view
                     ? "bg-accent text-on-accent"
                     : "text-fg-2 hover:bg-raised hover:text-fg",

@@ -202,6 +202,65 @@ it("연결 안내를 모바일 작업 메뉴 실측 높이 위에 두고 복구 
 });
 
 describe("기존 저장 상태 안의 오프라인 준비", () => {
+  it.each(["허용", "거부", "실패"] as const)("수동 보관 요청 %s 결과를 숨김 상세 밖의 한 알림으로 전달한다", async (result) => {
+    if (result === "실패") runtime.persist.mockRejectedValueOnce(new Error("storage request failed"));
+    else runtime.persist.mockResolvedValueOnce(result === "허용");
+    const editor = mountEditorStatus();
+    render(<StudioOfflinePanel />);
+    const live = screen.getByRole("status");
+    expect(live.textContent).toBe("");
+    expect(editor.element.contains(live)).toBe(false);
+    expect(editor.summary.contains(live)).toBe(false);
+    const request = await screen.findByRole<HTMLButtonElement>("button", { name: "기기 보관 유지 요청" });
+    await waitFor(() => expect(request.disabled).toBe(false));
+    fireEvent.click(request);
+    const expected = result === "허용" ? "기기 보관 유지 요청이 허용됐습니다."
+      : result === "거부" ? "기기 보관 유지 요청이 허용되지 않았습니다." : "기기 보관 유지 요청 실패.";
+    await waitFor(() => expect(live.textContent).toContain(expected));
+    expect(screen.getAllByRole("status")).toEqual([live]);
+    expect(editor.summary.textContent).toBe("");
+    expect(editor.element.querySelector('[role="status"], [role="alert"], [aria-live]')).toBeNull();
+    expect(runtime.persist).toHaveBeenCalledTimes(1);
+  });
+
+  it("수동 도구 확인 성공은 상세를 닫아도 안내하며 저장 완료로 말하지 않는다", async () => {
+    const report = { schema: 1, buildId: "build-1", checked: 5, cached: 5, downloadedBytes: 20, missing: [], complete: true };
+    let complete: ((value: typeof report) => void) | undefined;
+    const preparation = new Promise<typeof report>((resolve) => { complete = resolve; });
+    runtime.prepare.mockReturnValueOnce(preparation);
+    const editor = mountEditorStatus();
+    render(<StudioOfflinePanel />);
+    const live = screen.getByRole("status");
+    const request = await screen.findByRole<HTMLButtonElement>("button", { name: "오프라인 준비 다시 확인" });
+    await waitFor(() => expect(request.disabled).toBe(false));
+    fireEvent.click(request);
+    editor.element.hidden = true;
+    const finish = complete;
+    if (!finish) throw new Error("수동 준비 완료 콜백 누락");
+    await act(async () => { finish(report); await preparation; });
+    expect(live.textContent).toBe("오프라인 도구 확인을 마쳤습니다. 원고 저장 완료와는 별개입니다.");
+    expect(live.closest("[hidden]")).toBeNull();
+    expect(editor.summary.textContent).toBe("");
+    expect(runtime.prepare).toHaveBeenCalledTimes(1);
+  });
+
+  it("자동 준비 완료와 실패는 수동 결과 채널을 갱신하지 않는다", async () => {
+    const editor = mountEditorStatus();
+    render(<StudioOfflinePanel />);
+    const live = screen.getByRole("status");
+    await act(async () => { await Promise.resolve(); });
+    for (const phase of ["ready", "error"] as const) {
+      act(() => { window.dispatchEvent(new CustomEvent(STUDIO_OFFLINE_AUTOMATION_EVENT, {
+        detail: { phase, message: phase === "ready" ? "자동 준비 완료" : "자동 준비 실패" },
+      })); });
+      expect(live.textContent).toBe("");
+    }
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(editor.summary.contains(screen.getByRole("alert"))).toBe(true);
+    expect(editor.element.querySelector('[role="status"], [role="alert"], [aria-live]')).toBeNull();
+    expect(runtime.prepare).not.toHaveBeenCalled();
+  });
+
   it("상단 상태가 있으면 캔버스 중복 안내 대신 상세에서 준비·백업·재시도를 제공한다", async () => {
     useServerUnavailable();
     const editor = mountEditorStatus();
