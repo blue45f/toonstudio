@@ -66,7 +66,7 @@ function contactMode(program: BrushStudioV6MaterialProgram): "bristle" | "partic
   const physics = program.slots.physics;
   if (physics.includes("physics-bristle")) return "bristle";
   if (program.slots.deposition === "deposit-particles" || program.slots.carrier === "carrier-webgpu-particles") return "particle";
-  const wet = physics.includes("physics-inkwash") || program.slots.deposition === "deposit-wet";
+  const wet = physics.includes("physics-inkwash") || program.slots.deposition === "deposit-wet" || program.slots.deposition === "deposit-watercolor";
   if (program.slots.deposition === "deposit-dry" || program.slots.tip === "tip-grain-exemplar" && !wet) return "grain";
   if (physics.includes("physics-height")) return "relief";
   return wet ? "wet" : "ink";

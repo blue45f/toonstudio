@@ -67,7 +67,7 @@ const NODE_LABELS: Readonly<Record<string, string>> = Object.freeze({
   "surface-coldpress": "Cold-press Watercolor", "surface-printmaking": "Printmaking Tooth",
   "surface-linen": "Linen Canvas", "surface-porous": "Porous Fiber",
   "surface-realbrush": "Captured Material Surface", "deposit-ink": "Ink Deposit",
-  "deposit-marker": "Marker Deposit", "deposit-dry": "Dry Deposit", "deposit-wet": "Wet Deposit",
+  "deposit-marker": "Marker Deposit", "deposit-dry": "Dry Deposit", "deposit-watercolor": "Capillary Watercolor", "deposit-wet": "Wet Deposit",
   "deposit-oil": "Oil Deposit", "deposit-particles": "Particle Deposit", "deposit-light": "Light Deposit",
   "pickup-none": "No Pickup", "pickup-krita-smudge": "Krita Color Smudge",
   "pickup-pigment-reservoir": "Local Pigment Reservoir", "pigment-rgb": "RGB / OKLab",
@@ -214,7 +214,7 @@ function v6Traits(seed: BrushStudioV6RecipeSeed, stages: readonly StudioBrushEng
   add(ids.includes("surface-linen"), "리넨 결");
   add(ids.includes("physics-dry-contact"), "마른 접촉");
   add(ids.includes("physics-height"), "입체 물감");
-  add(ids.includes("deposit-wet") || ids.includes("physics-inkwash"), "습식 번짐");
+  add(ids.includes("deposit-wet") || ids.includes("deposit-watercolor") || ids.includes("physics-inkwash"), "습식 번짐");
   add(ids.includes("physics-porous-paper"), "종이 흡수");
   add((tuning?.granulation ?? 0) >= 0.55, "고과립");
   add(ids.includes("physics-reaction"), "반응·결정");

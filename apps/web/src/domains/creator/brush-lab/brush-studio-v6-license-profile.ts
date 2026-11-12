@@ -56,7 +56,7 @@ const INTERNAL_MATERIAL_NODE_IDS = Object.freeze([
   "carrier-webgpu-centerline", "carrier-webgpu-ribbon", "carrier-webgpu-particles",
   "tip-round-sdf", "tip-chisel-sdf", "tip-grain-exemplar", "tip-motif-atlas",
   "surface-smooth", "surface-kent", "surface-coldpress", "surface-printmaking", "surface-linen", "surface-porous",
-  "deposit-ink", "deposit-marker", "deposit-dry", "deposit-oil", "deposit-particles", "deposit-light",
+  "deposit-ink", "deposit-marker", "deposit-dry", "deposit-watercolor", "deposit-oil", "deposit-particles", "deposit-light",
   "pickup-none", "pickup-pigment-reservoir", "pigment-rgb",
   "physics-dry-contact", "physics-thin-film", "physics-bristle", "physics-particles", "physics-reaction", "physics-height",
   "physics-backrun-capillary", "physics-pigment-sedimentation", "physics-bristle-split-merge",

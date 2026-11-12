@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { createBrushStudioV6Program } from "../brush-lab/brush-studio-v6-engine";
+import { createBrushStudioV6ProductBrush } from "../brush-lab/brush-studio-v6-product-bridge";
+
 import {
   BRUSH_LIBRARY_KEY,
   BRUSH_LIBRARY_STORAGE_VERSION,
@@ -12,6 +15,7 @@ import {
   type StudioSavedBrush,
 } from "./studio-brush-library";
 import { studioBrushProductProfile } from "./studio-brush-product-profile";
+import { materializeStudioBrushCatalogSelection } from "./studio-brush-selection";
 import { assignStudioBrushSlot, emptyStudioBrushSlots } from "./studio-brush-slots";
 import { studioV6BrushCatalogItemById } from "./studio-brush-v6-catalog";
 import {
@@ -36,7 +40,7 @@ function createMemoryStorage(initial: Record<string, string> = {}): BrushLibrary
 }
 
 describe("studio competitor flagship favorite slots", () => {
-  it("materializes 6 no-fallback pinned flagship brushes that emit real canvas marks", () => {
+  it("materializes 6 no-fallback pinned flagship brushes under permissive-only without bypassing private-grant gates", async () => {
     const slotBrushes = buildStudioCompetitorFavoriteSlotBrushes(1_762_950_000_000);
     expect(slotBrushes).toHaveLength(6);
 
@@ -46,6 +50,11 @@ describe("studio competitor flagship favorite slots", () => {
       expect(brush.pinned).toBe(true);
       expect(brush.sourcePresetId).toBe(spec.catalogId);
       expect(brush.enginePrograms?.material?.runtime?.fallbackPolicy).toBe("none");
+      expect(brush.enginePrograms?.material?.runtime?.licenseProfile).toBe("permissive-only");
+
+      const catalogSelection = await materializeStudioBrushCatalogSelection(spec.catalogId);
+      expect(catalogSelection, spec.catalogId).not.toBeNull();
+      expect(catalogSelection?.enginePrograms?.material?.runtime?.fallbackPolicy).toBe("none");
 
       const catalogItem = studioV6BrushCatalogItemById(spec.catalogId);
       expect(catalogItem).not.toBeNull();
@@ -65,19 +74,22 @@ describe("studio competitor flagship favorite slots", () => {
       });
       expect(marks.length).toBeGreaterThan(0);
     }
+
+    // 무폴백 정책 유지 검증: private-grant 권리(mineral-bloom: deposit-wet, physics-inkwash)는 기본 프로필에서 계속 차단된다.
+    expect(() => createBrushStudioV6ProductBrush(createBrushStudioV6Program("mineral-bloom"))).toThrow(
+      /deposit-wet/u,
+    );
   });
 
   it("collapses unmodified same-preset clones while preserving customized and legacy presets", () => {
     const storage = createMemoryStorage();
     const canonicalFirst = buildStudioCompetitorFavoriteSlotBrushes(1_762_950_000_000)[0]!;
 
-    // 1) 완전 동일한 무수정 중복 클론 (다른 ID로 먼저 저장되어 빠른 선반 슬롯을 잠식하던 케이스)
     saveBrush(storage, {
       ...canonicalFirst,
       id: "legacy-clone:v6:csp-real-gpen-aa",
       pinned: true,
     });
-    // 2) 같은 sourcePresetId 이지만 사용자가 두께·이름을 커스터마이즈한 브러시 -> 절대 삭제 금지
     saveBrush(storage, {
       ...canonicalFirst,
       id: "user-tuned-gpen",
@@ -85,7 +97,6 @@ describe("studio competitor flagship favorite slots", () => {
       strokeWidth: 19,
       pinned: true,
     });
-    // 3) 기존 레거시 코어 브러시 -> 호환성 보존
     const legacyWatercolor = createBrush("내 수채화 펜", {
       ...DEFAULT_STUDIO_BRUSH_SNAPSHOT,
       brushId: "watercolor",
@@ -105,13 +116,11 @@ describe("studio competitor flagship favorite slots", () => {
       true,
     );
     expect(persisted.brushes.some((b) => b.id === legacyWatercolor.id)).toBe(true);
-    // 6 flagship + 1 user-tuned + 1 legacy watercolor = 8
     expect(persisted.brushes).toHaveLength(8);
   });
 
   it("restores canonical 1-to-6 quick shelf order even after newer activity timestamps or slot usage", () => {
     const storage = createMemoryStorage();
-    // 2026년 이후 타임스탬프를 가진 기존 고정 브러시가 있어도 1~6번 슬롯이 최상단 순서대로 복원되어야 한다.
     const newerPinned = {
       ...createBrush("최신 고정 브러시", DEFAULT_STUDIO_BRUSH_SNAPSHOT),
       pinned: true,
@@ -126,7 +135,6 @@ describe("studio competitor flagship favorite slots", () => {
       STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS.map((s) => s.savedId),
     );
 
-    // 사용자가 4번 슬롯의 색상·두께를 바꾸고 가장 최근에 사용해 순서가 뒤섞인 상황을 시뮬레이션
     const fourthSlot = firstPin.brushes.find(
       (b) => b.id === "favorite-slot:v6:procreate-6b-tilt-graphite",
     )!;
@@ -140,7 +148,6 @@ describe("studio competitor flagship favorite slots", () => {
       "favorite-slot:v6:procreate-6b-tilt-graphite",
     );
 
-    // 일반 재고정: 사용자 커스텀(색상 #123456, 두께 22)은 유지하면서 1~6 순서만 복원
     const reordered = pinStudioCompetitorFavoritesToBrushLibrary(storage, 1_762_950_000_000);
     expect(reordered.quickShelfIds.slice(0, 6)).toEqual(
       STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS.map((s) => s.savedId),
@@ -151,7 +158,6 @@ describe("studio competitor flagship favorite slots", () => {
     expect(preservedFourth.color).toBe("#123456");
     expect(preservedFourth.strokeWidth).toBe(22);
 
-    // 기본값 복원(resetCustomizations: true): 공장 초기 스냅샷과 1~6 순서를 함께 복원
     const resetResult = pinStudioCompetitorFavoritesToBrushLibrary(storage, 1_762_950_000_000, {
       resetCustomizations: true,
     });
@@ -174,7 +180,6 @@ describe("studio competitor flagship favorite slots", () => {
 
     const synced = syncStudioCompetitorFavoritesToQuickSlotsState(withCustomSlot2);
     expect(synced.slots[0]?.sourcePresetId).toBe("v6:csp-real-gpen-aa");
-    // 2번 슬롯(index 1)은 사용자가 직접 배정한 수채화 슬롯을 그대로 유지
     expect(synced.slots[1]?.brushId).toBe("watercolor");
     expect(synced.slots[2]?.sourcePresetId).toBe("v6:calligraphy-barrel-twist-nib");
 
@@ -215,11 +220,9 @@ describe("studio competitor flagship favorite slots", () => {
     expect(recovered.brush.strokeWidth).toBe(15);
     expect(recovered.brush.enginePrograms?.material?.runtime?.fallbackPolicy).toBe("none");
 
-    // 기존 일반 프리셋은 무보정 통과
     const legacy = createBrush("기본 펜", DEFAULT_STUDIO_BRUSH_SNAPSHOT);
     expect(recoverStudioBrushForCanvasApply(legacy).status).toBe("ok");
 
-    // 캔버스 onApply가 1차 호출에서 예외를 던지면 안전 기본 펜으로 자동 폴백 재시도
     const onApply = vi
       .fn<(resolved: StudioSavedBrush) => void>()
       .mockImplementationOnce(() => {
